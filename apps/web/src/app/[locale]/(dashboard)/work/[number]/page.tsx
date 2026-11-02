@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { WorkItemView } from "@/components/work/WorkItemView";
 import { WorkLoadError } from "@/components/work/WorkLoadError";
 import { listFrom, loadWork, requireWorkPage } from "@/lib/work/server";
-import type { WorkItemDetailResponse, WorkMember } from "@/lib/work/types";
+import type { ReplyDraft, WorkCycle, WorkItemDetailResponse, WorkMember, WorkProject, WorkSettingsResponse } from "@/lib/work/types";
 
 type Params = Promise<{ number: string }>;
 
@@ -20,15 +20,20 @@ export default async function WorkItemPage({ params }: { params: Params }) {
 	const number = parseNumber((await params).number);
 	if (!number) notFound();
 	const context = await requireWorkPage();
-	const [detail, members] = await Promise.all([
+	const [detail, members, projects, cycles, settings] = await Promise.all([
 		loadWork<WorkItemDetailResponse>(context, `items/${number}`),
 		loadWork<{ members: WorkMember[] }>(context, "members"),
+		loadWork<{ projects: WorkProject[] }>(context, "projects"),
+		loadWork<{ cycles: WorkCycle[] }>(context, "cycles"),
+		loadWork<WorkSettingsResponse>(context, "settings"),
 	]);
 	if (!detail.ok) {
 		if (detail.status === 404) notFound();
 		return <WorkLoadError status={detail.status} message={detail.message} />;
 	}
-	const { item, events, requests, runs, errorGroup } = detail.data;
+	const { item, events, requests, runs, errorGroup, children, parent, relations, subscribed } = detail.data;
+	// Drafts only exist for items with customer requests.
+	const drafts = requests?.length ? await loadWork<{ drafts: ReplyDraft[] }>(context, "reply-drafts", { status: "draft", itemNumber: number }) : null;
 	return (
 		<WorkItemView
 			item={item}
@@ -37,6 +42,14 @@ export default async function WorkItemPage({ params }: { params: Params }) {
 			runs={runs ?? []}
 			errorGroup={errorGroup ?? null}
 			members={members.ok ? listFrom<WorkMember>(members.data, "members") : []}
+			projects={projects.ok ? listFrom<WorkProject>(projects.data, "projects") : []}
+			cycles={cycles.ok ? listFrom<WorkCycle>(cycles.data, "cycles") : []}
+			settings={settings.ok ? settings.data?.settings ?? null : null}
+			drafts={drafts?.ok ? listFrom<ReplyDraft>(drafts.data, "drafts") : []}
+			children={children ?? []}
+			parent={parent ?? null}
+			relations={relations ?? []}
+			subscribed={subscribed === true}
 		/>
 	);
 }

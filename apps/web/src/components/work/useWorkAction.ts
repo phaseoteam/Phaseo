@@ -14,6 +14,10 @@ export function useWorkErrorMessage() {
 	return useCallback((error: WorkActionError) => {
 		if (error.code === "github_token_missing") return t("githubTokenMissing");
 		if (error.code === "triage_required") return t("triageRequired");
+		if (error.code === "no_next_cycle") return t("noNextCycle");
+		if (error.code === "cycle_overlaps") return t("cycleOverlaps");
+		if (error.code === "relation_exists") return t("relationExists");
+		if (error.code === "recipient_mismatch" || error.code === "draft_not_open") return t("draftChanged");
 		if (error.status === 403) return t("forbidden");
 		if (error.status === 400 && !error.message && !error.code) return t("selectWorkspace");
 		return error.message ?? t("actionFailed");

@@ -11,6 +11,7 @@ import {
 	deleteIntakeForm,
 	getGithubWorkflow,
 	linkGithubRepo,
+	saveWorkSettings,
 	updateErrorProject,
 	updateGithubRepo,
 	updateIntakeForm,
@@ -22,11 +23,11 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { normaliseGithubRepo } from "@/lib/work/format";
 import { errorFetchExample, errorScriptTag, intakeCurlExample, intakeFormHtml } from "@/lib/work/snippets";
-import type { ErrorProject, GithubRepo, IntakeForm } from "@/lib/work/types";
+import { DEFAULT_WORK_SETTINGS, type ErrorProject, type GithubRepo, type IntakeForm, type WorkSettings } from "@/lib/work/types";
 import { useWorkAction } from "./useWorkAction";
-import { CopyBlock, TimeAgo, useRelativeTime } from "./WorkBits";
+import { CopyBlock, PriorityIcon, TimeAgo, useRelativeTime, useWorkCopy } from "./WorkBits";
 
-export function WorkSettingsView({ forms, projects, repos }: { forms: IntakeForm[]; projects: ErrorProject[]; repos: GithubRepo[] }) {
+export function WorkSettingsView({ forms, projects, repos, settings = null, canEditSettings = true }: { forms: IntakeForm[]; projects: ErrorProject[]; repos: GithubRepo[]; settings?: WorkSettings | null; canEditSettings?: boolean }) {
 	const t = useTranslations("Work.settings");
 	return (
 		<div className="space-y-10">
@@ -34,6 +35,7 @@ export function WorkSettingsView({ forms, projects, repos }: { forms: IntakeForm
 				<h2 className="text-base font-semibold">{t("title")}</h2>
 				<p className="text-sm text-muted-foreground">{t("description")}</p>
 			</div>
+			<TrackerSection settings={settings ?? DEFAULT_WORK_SETTINGS} canEdit={canEditSettings} />
 			<IntakeFormsSection forms={forms} />
 			<ErrorProjectsSection projects={projects} />
 			<GithubReposSection repos={repos} />
@@ -318,6 +320,93 @@ function GithubReposSection({ repos }: { repos: GithubRepo[] }) {
 				<p className="text-xs text-muted-foreground">{t("tokenHint")}</p>
 				{error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
 				<Button type="submit" size="sm" disabled={busy !== null || !repo.trim()}>{t("link")}</Button>
+			</form>
+		</Section>
+	);
+}
+
+const SLA_PRIORITIES = ["1", "2", "3", "4"] as const;
+
+/** SLA hours per priority, stall days, ambient follow-ups and support drafts. Owners and admins can save. */
+function TrackerSection({ settings, canEdit }: { settings: WorkSettings; canEdit: boolean }) {
+	const t = useTranslations("Work.settings.tracker");
+	const tCommon = useTranslations("Work.common");
+	const copy = useWorkCopy();
+	const { perform, busy } = useWorkAction();
+	const id = useId();
+	const initial = () => ({
+		slaHours: Object.fromEntries(SLA_PRIORITIES.map((key) => [key, String(settings.slaHours?.[key] ?? DEFAULT_WORK_SETTINGS.slaHours[key])])) as Record<(typeof SLA_PRIORITIES)[number], string>,
+		stallDays: String(settings.stallDays ?? DEFAULT_WORK_SETTINGS.stallDays),
+		ambientEnabled: settings.ambientEnabled ?? false,
+		supportDraftsEnabled: settings.supportDraftsEnabled ?? true,
+	});
+	const [draft, setDraft] = useState(initial);
+	const [seen, setSeen] = useState(settings);
+	if (seen !== settings) { setSeen(settings); setDraft(initial()); }
+	const [error, setError] = useState<string | null>(null);
+
+	const save = async (event: FormEvent) => {
+		event.preventDefault();
+		const slaHours = {} as WorkSettings["slaHours"];
+		for (const key of SLA_PRIORITIES) {
+			const hours = Number(draft.slaHours[key]);
+			if (!Number.isInteger(hours) || hours < 1 || hours > 2160) return setError(t("slaInvalid"));
+			slaHours[key] = hours;
+		}
+		const stallDays = Number(draft.stallDays);
+		if (!Number.isInteger(stallDays) || stallDays < 1 || stallDays > 90) return setError(t("stallInvalid"));
+		setError(null);
+		await perform("tracker", () => saveWorkSettings({ slaHours, stallDays, ambientEnabled: draft.ambientEnabled, supportDraftsEnabled: draft.supportDraftsEnabled }));
+	};
+
+	return (
+		<Section id="work-tracker-settings" title={t("title")} description={t("description")}>
+			<form onSubmit={save} className="space-y-5">
+				{canEdit ? null : <Callout tone="info">{t("readOnly")}</Callout>}
+				<fieldset disabled={!canEdit} className="space-y-5">
+				<fieldset className="space-y-2">
+					<legend className="text-sm font-medium">{t("slaTitle")}</legend>
+					<p className="text-xs text-muted-foreground">{t("slaHint")}</p>
+					<div className="grid gap-3 sm:grid-cols-4">
+						{SLA_PRIORITIES.map((key) => (
+							<div key={key} className="space-y-1.5">
+								<Label htmlFor={`${id}-sla-${key}`} className="flex items-center gap-1.5"><PriorityIcon priority={Number(key)} />{copy.priority(Number(key))}</Label>
+								<div className="flex items-center gap-2">
+									<Input id={`${id}-sla-${key}`} type="number" min={1} max={2160} inputMode="numeric" value={draft.slaHours[key]} onChange={(event) => setDraft({ ...draft, slaHours: { ...draft.slaHours, [key]: event.target.value } })} className="h-8 w-24 rounded-md tabular-nums" />
+									<span className="text-xs text-muted-foreground">{t("hours")}</span>
+								</div>
+							</div>
+						))}
+					</div>
+				</fieldset>
+				<div className="space-y-1.5">
+					<Label htmlFor={`${id}-stall`}>{t("stallDays")}</Label>
+					<div className="flex items-center gap-2">
+						<Input id={`${id}-stall`} type="number" min={1} max={90} inputMode="numeric" value={draft.stallDays} onChange={(event) => setDraft({ ...draft, stallDays: event.target.value })} className="h-8 w-24 rounded-md tabular-nums" />
+						<span className="text-xs text-muted-foreground">{t("days")}</span>
+					</div>
+					<p className="text-xs text-muted-foreground">{t("stallHint")}</p>
+				</div>
+				<div className="space-y-2">
+					<label className="flex items-start gap-3 text-sm">
+						<Switch className="mt-0.5" disabled={!canEdit} checked={draft.ambientEnabled} onCheckedChange={(checked) => setDraft({ ...draft, ambientEnabled: Boolean(checked) })} />
+						<span className="space-y-0.5">
+							<span className="block font-medium">{t("ambient")}</span>
+							<span className="block text-xs text-muted-foreground">{t("ambientHint")}</span>
+						</span>
+					</label>
+					{draft.ambientEnabled ? <Callout tone="warning">{t("ambientExperimental")}</Callout> : null}
+				</div>
+				<label className="flex items-start gap-3 text-sm">
+					<Switch className="mt-0.5" disabled={!canEdit} checked={draft.supportDraftsEnabled} onCheckedChange={(checked) => setDraft({ ...draft, supportDraftsEnabled: Boolean(checked) })} />
+					<span className="space-y-0.5">
+						<span className="block font-medium">{t("supportDrafts")}</span>
+						<span className="block text-xs text-muted-foreground">{t("supportDraftsHint")}</span>
+					</span>
+				</label>
+				{error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
+				<Button type="submit" size="sm" disabled={busy !== null}>{busy === "tracker" ? tCommon("saving") : tCommon("save")}</Button>
+				</fieldset>
 			</form>
 		</Section>
 	);

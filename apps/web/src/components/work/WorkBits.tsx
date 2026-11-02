@@ -180,3 +180,35 @@ export function CopyBlock({ label, value, multiline = false }: { label: string; 
 		</div>
 	);
 }
+
+/** The SLA flag shown on rows and the item page: nothing when on track. */
+export function SlaBadge({ status, compact = false }: { status: "breached" | "at_risk" | "ok" | "none"; compact?: boolean }) {
+	const t = useTranslations("Work.sla");
+	if (status !== "breached" && status !== "at_risk") return null;
+	const label = t(status === "breached" ? "breached" : "atRisk");
+	return (
+		<span
+			title={label}
+			className={cn(
+				"inline-flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-px text-[11px] font-medium",
+				status === "breached" ? "border-red-600/40 text-red-700 dark:border-red-400/40 dark:text-red-300" : "border-amber-600/40 text-amber-700 dark:border-amber-400/40 dark:text-amber-300",
+			)}
+		>
+			<OctagonAlert className="size-3" aria-hidden="true" />
+			<span className={cn(compact && "sr-only")}>{label}</span>
+		</span>
+	);
+}
+
+/** A thin progress bar with its share as text beside it. */
+export function ProgressBar({ value, label, className }: { value: number; label: string; className?: string }) {
+	const share = Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0));
+	return (
+		<span className={cn("inline-flex items-center gap-2", className)}>
+			<span role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(share * 100)} className="h-1.5 w-24 overflow-hidden rounded-md bg-muted">
+				<span className="block h-full rounded-md bg-foreground/70" style={{ width: `${share * 100}%` }} />
+			</span>
+			<span className="text-xs text-muted-foreground tabular-nums">{Math.round(share * 100)}%</span>
+		</span>
+	);
+}

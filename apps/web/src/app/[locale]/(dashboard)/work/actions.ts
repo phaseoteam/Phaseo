@@ -11,10 +11,23 @@ import type {
 	ErrorProject,
 	GithubRepo,
 	IntakeForm,
+	ReplyDraft,
+	ReplyDraftSendResponse,
 	WorkAgent,
+	WorkCycle,
 	WorkItem,
 	WorkItemEvent,
 	WorkItemState,
+	WorkMember,
+	WorkNotification,
+	WorkProject,
+	WorkProjectState,
+	WorkRelation,
+	WorkRelationKind,
+	WorkSettings,
+	WorkView,
+	WorkViewFilters,
+	WorkViewLayout,
 } from "@/lib/work/types";
 
 export type WorkActionError = { ok: false; status: number | null; code: string | null; message: string | null };
@@ -47,7 +60,7 @@ function failure(error: unknown): WorkActionError {
 	return { ok: false, status: null, code: null, message: null };
 }
 
-async function send<T>(method: "POST" | "PATCH" | "DELETE", path: string, body: Record<string, unknown> = {}): Promise<T> {
+async function send<T>(method: "POST" | "PATCH" | "PUT" | "DELETE", path: string, body: Record<string, unknown> = {}): Promise<T> {
 	const context = await account();
 	return fetchAccountWebApi<T>(`${BASE}/${path}`, context.accessToken, {
 		method,
@@ -83,6 +96,11 @@ export type CreateWorkItemInput = {
 	assigneeUserId?: string | null;
 	assigneeAgent?: WorkAgent | null;
 	githubRepo?: string | null;
+	projectId?: string | null;
+	cycleId?: string | null;
+	parentNumber?: number | null;
+	estimate?: number | null;
+	dueAt?: string | null;
 };
 
 export async function createWorkItem(input: CreateWorkItemInput) {
@@ -197,4 +215,139 @@ export async function deleteGithubRepo(repoId: string) {
 
 export async function getGithubWorkflow(repoId: string) {
 	return run(() => get<{ workflow: string }>(`github-repos/${id(repoId)}/workflow`));
+}
+
+// Batch 2: bulk edits, relations, subscriptions
+
+export type BulkWorkChanges = {
+	state?: WorkItemState;
+	priority?: number;
+	assigneeUserId?: string | null;
+	assigneeAgent?: WorkAgent | null;
+	labelsAdd?: string[];
+	labelsRemove?: string[];
+	projectId?: string | null;
+	cycleId?: string | null;
+};
+
+export async function bulkUpdateWorkItems(numbers: number[], changes: BulkWorkChanges) {
+	const unique = [...new Set(numbers.map((number) => Math.trunc(number)).filter((number) => number > 0))].slice(0, 100);
+	return run(() => send<{ updated: number; failed?: number; notFound?: number }>("POST", "items/bulk", { numbers: unique, changes }));
+}
+
+export async function addWorkRelation(number: number, kind: WorkRelationKind | "blocked_by", otherNumber: number) {
+	return run(() => send<{ relations: WorkRelation[] }>("POST", `${itemPath(number)}/relations`, { kind, otherNumber: Math.trunc(otherNumber) }));
+}
+
+export async function removeWorkRelation(number: number, relationId: string) {
+	return run(() => send<{ relations?: WorkRelation[] }>("DELETE", `${itemPath(number)}/relations/${id(relationId)}`));
+}
+
+export async function setWorkSubscription(number: number, subscribed: boolean) {
+	return run(() => send<{ subscribed: boolean }>("POST", `${itemPath(number)}/subscription`, { subscribed }));
+}
+
+/** Items for the palette and pickers, searched by title or number across every state. */
+export async function findWorkItems(query: string) {
+	const q = query.trim().slice(0, 200);
+	return run(() => get<{ items: WorkItem[] }>(`items?limit=20${q ? `&q=${encodeURIComponent(q)}` : ""}`));
+}
+
+export async function listWorkMembers() {
+	return run(() => get<{ members: WorkMember[] }>("members"));
+}
+
+// Projects
+
+export type WorkProjectInput = { name: string; description?: string; state?: WorkProjectState; leadUserId?: string | null; targetDate?: string | null };
+
+export async function createWorkProject(input: WorkProjectInput) {
+	return run(() => send<{ project: WorkProject }>("POST", "projects", input));
+}
+
+export async function updateWorkProject(projectId: string, input: Partial<WorkProjectInput>) {
+	return run(() => send<{ project: WorkProject }>("PATCH", `projects/${id(projectId)}`, input));
+}
+
+export async function deleteWorkProject(projectId: string) {
+	return run(() => send<Record<string, unknown>>("DELETE", `projects/${id(projectId)}`));
+}
+
+// Cycles
+
+export type WorkCycleInput = { name?: string | null; startsOn: string; endsOn: string };
+
+export async function createWorkCycle(input: WorkCycleInput) {
+	return run(() => send<{ cycle: WorkCycle }>("POST", "cycles", input));
+}
+
+export async function updateWorkCycle(cycleId: string, input: Partial<WorkCycleInput>) {
+	return run(() => send<{ cycle: WorkCycle }>("PATCH", `cycles/${id(cycleId)}`, input));
+}
+
+export async function deleteWorkCycle(cycleId: string) {
+	return run(() => send<Record<string, unknown>>("DELETE", `cycles/${id(cycleId)}`));
+}
+
+export async function rolloverWorkCycle(cycleId: string) {
+	return run(() => send<{ moved: number; failed?: number; more?: boolean; nextCycle?: WorkCycle }>("POST", `cycles/${id(cycleId)}/rollover`));
+}
+
+// Views
+
+export type WorkViewInput = { name: string; filters: WorkViewFilters; layout: WorkViewLayout; shared?: boolean };
+
+export async function listWorkViews() {
+	return run(() => get<{ views: WorkView[] }>("views"));
+}
+
+export async function createWorkView(input: WorkViewInput) {
+	return run(() => send<{ view: WorkView }>("POST", "views", input));
+}
+
+export async function updateWorkView(viewId: string, input: Partial<WorkViewInput>) {
+	return run(() => send<{ view: WorkView }>("PATCH", `views/${id(viewId)}`, input));
+}
+
+export async function deleteWorkView(viewId: string) {
+	return run(() => send<Record<string, unknown>>("DELETE", `views/${id(viewId)}`));
+}
+
+// Settings
+
+export async function saveWorkSettings(settings: WorkSettings) {
+	return run(() => send<{ settings: WorkSettings }>("PUT", "settings", settings));
+}
+
+// Notifications
+
+export async function getWorkNotifications(options: { unread?: boolean; limit?: number; cursor?: string } = {}) {
+	const search = new URLSearchParams({ limit: String(Math.min(100, Math.max(1, options.limit ?? 50))) });
+	if (options.unread) search.set("unread", "1");
+	if (options.cursor) search.set("cursor", options.cursor);
+	return run(() => get<{ notifications: WorkNotification[]; unreadCount: number; nextCursor?: string | null }>(`notifications?${search.toString()}`));
+}
+
+export async function markWorkNotificationsRead(input: { ids: string[] } | { all: true }) {
+	const body = "all" in input ? { all: true } : { ids: input.ids.slice(0, 200) };
+	return run(() => send<Record<string, unknown>>("POST", "notifications/read", body));
+}
+
+// Reply drafts. Sending only ever happens from a person's confirmed click.
+
+export async function updateReplyDraft(draftId: string, input: { subject?: string; body?: string }) {
+	return run(() => send<{ draft: ReplyDraft }>("PATCH", `reply-drafts/${id(draftId)}`, input));
+}
+
+export async function discardReplyDraft(draftId: string) {
+	return run(() => send<{ draft?: ReplyDraft }>("POST", `reply-drafts/${id(draftId)}/discard`));
+}
+
+/**
+ * Sends a reviewed draft to the recipient the person confirmed; the API refuses if the request's
+ * address has changed since. delivery "manual" means web-api only marked it sent (it has no email
+ * sender for arbitrary recipients), so the UI copies the reply and offers a mailto link.
+ */
+export async function sendReplyDraft(draftId: string, confirmRecipient: string) {
+	return run(() => send<ReplyDraftSendResponse>("POST", `reply-drafts/${id(draftId)}/send`, { confirmRecipient }));
 }

@@ -1,9 +1,10 @@
 "use client";
 
-import { useId, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
-import { Bot, ChevronRight, Copy, ExternalLink, GitBranch, GitPullRequest, MessageSquare, RotateCcw, Sparkles, CircleCheck, Info, Bug } from "lucide-react";
+import { useId, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
+import { Bell, BellOff, Bot, ChevronRight, Copy, ExternalLink, GitBranch, GitPullRequest, MessageSquare, Pencil, Plus, RotateCcw, Sparkles, CircleCheck, Info, Bug, X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { commentOnWorkItem, createGithubIssueForItem, triageWorkItem, updateWorkItem, type UpdateWorkItemInput } from "@/app/(dashboard)/work/actions";
+import { addWorkRelation, commentOnWorkItem, createGithubIssueForItem, createWorkItem, removeWorkRelation, setWorkSubscription, triageWorkItem, updateWorkItem, type UpdateWorkItemInput } from "@/app/(dashboard)/work/actions";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -14,9 +15,13 @@ import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { formatCostNanos, isClosedState, normaliseGithubRepo, parseItemNumber, parseLabels } from "@/lib/work/format";
 import { assigneeKey, parseAssigneeKey } from "@/lib/work/inbox";
-import type { AgentRun, CustomerRequest, ErrorGroup, WorkItem, WorkItemEvent, WorkMember } from "@/lib/work/types";
+import { activeMention, insertMention, mentionHandle, mentionSuggestions } from "@/lib/work/mentions";
+import { slaStatus } from "@/lib/work/sla";
+import type { AgentRun, CustomerRequest, ErrorGroup, ReplyDraft, WorkCycle, WorkItem, WorkItemEvent, WorkItemSummary, WorkMember, WorkProject, WorkRelation, WorkSettings } from "@/lib/work/types";
+import { ReplyDraftsSection } from "./ReplyDrafts";
 import { useWorkAction } from "./useWorkAction";
-import { AssigneeLabel, SourceIcon, TimeAgo, memberName, useWorkCopy } from "./WorkBits";
+import { AssigneeLabel, SlaBadge, SourceIcon, StateIcon, TimeAgo, memberName, useWorkCopy } from "./WorkBits";
+import { WorkMarkdown } from "./WorkMarkdown";
 import { AssigneeSelect, PrioritySelect, StateSelect } from "./WorkSelects";
 
 export type WorkItemViewProps = {
@@ -26,30 +31,51 @@ export type WorkItemViewProps = {
 	runs: AgentRun[];
 	errorGroup: ErrorGroup | null;
 	members: WorkMember[];
+	projects?: WorkProject[];
+	cycles?: WorkCycle[];
+	settings?: WorkSettings | null;
+	drafts?: ReplyDraft[];
+	children?: WorkItemSummary[];
+	parent?: WorkItemSummary | null;
+	relations?: WorkRelation[];
+	subscribed?: boolean;
 };
 
-export function WorkItemView({ item, events, requests, runs, errorGroup, members }: WorkItemViewProps) {
+export function WorkItemView({ item, events, requests, runs, errorGroup, members, projects = [], cycles = [], settings = null, drafts = [], children = [], parent = null, relations = [], subscribed = false }: WorkItemViewProps) {
 	const t = useTranslations("Work.item");
 	const { perform, busy } = useWorkAction();
 	const [duplicateOpen, setDuplicateOpen] = useState(false);
 	const [repoOpen, setRepoOpen] = useState(false);
 	const update = (key: string, input: UpdateWorkItemInput) => perform(key, () => updateWorkItem(item.number, input));
 	const closed = isClosedState(item.state);
+	const sla = slaStatus(item, Date.now(), settings);
 
 	const createIssue = (repo?: string) => perform("github", () => createGithubIssueForItem(item.number, repo));
 
 	return (
 		<div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
 			<div className="min-w-0 space-y-6">
-				<nav className="flex items-center gap-1 text-xs text-muted-foreground">
-					<Link href="/work" className="hover:text-foreground">{t("back")}</Link>
-					<ChevronRight className="size-3" aria-hidden="true" />
-					<span className="font-mono">#{item.number}</span>
-				</nav>
+				<div className="flex flex-wrap items-center justify-between gap-2">
+					<nav className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+						<Link href="/work" className="hover:text-foreground">{t("back")}</Link>
+						<ChevronRight className="size-3" aria-hidden="true" />
+						{parent ? (
+							<>
+								<Link href={`/work/${parent.number}`} className="max-w-48 truncate hover:text-foreground">#{parent.number} {parent.title}</Link>
+								<ChevronRight className="size-3" aria-hidden="true" />
+							</>
+						) : null}
+						<span className="font-mono">#{item.number}</span>
+					</nav>
+					<div className="flex items-center gap-2">
+						<SlaBadge status={sla} />
+						<SubscribeToggle number={item.number} subscribed={subscribed} />
+					</div>
+				</div>
 
 				<div className="space-y-2">
 					<InlineTitle key={`title-${item.updatedAt}`} value={item.title} label={t("titleLabel")} onSave={(title) => update("title", { title })} />
-					<InlineDescription key={`description-${item.updatedAt}`} value={item.description} label={t("descriptionLabel")} placeholder={t("descriptionPlaceholder")} onSave={(description) => update("description", { description })} />
+					<DescriptionEditor key={`description-${item.updatedAt}`} value={item.description} label={t("descriptionLabel")} placeholder={t("descriptionPlaceholder")} onSave={(description) => update("description", { description })} />
 				</div>
 
 				<div className="flex flex-wrap gap-2">
@@ -87,12 +113,15 @@ export function WorkItemView({ item, events, requests, runs, errorGroup, members
 					</section>
 				) : null}
 
+				<SubItemsSection item={item} items={children} />
+				<RelationsSection number={item.number} relations={relations} />
 				<RequestsSection requests={requests} />
+				<ReplyDraftsSection drafts={drafts.filter((draft) => draft.workItemId === item.id)} requests={requests} />
 				<RunsSection runs={runs} />
 				<Timeline item={item} events={events} members={members} />
 			</div>
 
-			<ItemProperties item={item} errorGroup={errorGroup} members={members} busy={busy} onUpdate={update} />
+			<ItemProperties item={item} errorGroup={errorGroup} members={members} projects={projects} cycles={cycles} parent={parent} busy={busy} onUpdate={update} />
 
 			<DuplicateDialog open={duplicateOpen} onOpenChange={setDuplicateOpen} current={item.number} onSubmit={async (number) => {
 				const result = await update("duplicate", { duplicateOf: number, state: "cancelled" });
@@ -129,19 +158,41 @@ function InlineTitle({ value, label, onSave }: { value: string; label: string; o
 	);
 }
 
-function InlineDescription({ value, label, placeholder, onSave }: { value: string; label: string; placeholder: string; onSave: (value: string) => unknown }) {
+/** The description as Markdown; Edit (or a click on an empty one) swaps in the text box. */
+function DescriptionEditor({ value, label, placeholder, onSave }: { value: string; label: string; placeholder: string; onSave: (value: string) => unknown }) {
+	const t = useTranslations("Work.item");
+	const [editing, setEditing] = useState(false);
 	const [draft, setDraft] = useState(value);
+	if (editing) {
+		const finish = () => { setEditing(false); if (draft !== value) onSave(draft); };
+		return (
+			<div className="space-y-1">
+				<Textarea
+					autoFocus
+					value={draft}
+					aria-label={label}
+					placeholder={placeholder}
+					maxLength={20000}
+					onChange={(event) => setDraft(event.target.value)}
+					onBlur={finish}
+					onKeyDown={(event) => {
+						if (event.key === "Escape") { setDraft(value); setEditing(false); }
+						if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) event.currentTarget.blur();
+					}}
+					className="field-sizing-content min-h-24 rounded-md px-1.5 font-mono text-sm"
+				/>
+				<p className="px-1.5 text-xs text-muted-foreground">{t("markdownHint")}</p>
+			</div>
+		);
+	}
+	if (!value.trim()) {
+		return <button type="button" onClick={() => setEditing(true)} className="block w-full rounded-md px-1.5 py-1 text-left text-sm text-muted-foreground hover:bg-muted/40">{placeholder}</button>;
+	}
 	return (
-		<Textarea
-			value={draft}
-			aria-label={label}
-			placeholder={placeholder}
-			maxLength={20000}
-			onChange={(event) => setDraft(event.target.value)}
-			onBlur={() => { if (draft !== value) onSave(draft); }}
-			onKeyDown={(event) => { if (event.key === "Escape") { setDraft(value); event.currentTarget.blur(); } }}
-			className="field-sizing-content min-h-16 rounded-md border-transparent bg-transparent px-1.5 text-sm shadow-none hover:border-border focus-visible:border-ring dark:bg-transparent"
-		/>
+		<div className="group relative rounded-md px-1.5 py-1 hover:bg-muted/30">
+			<WorkMarkdown>{value}</WorkMarkdown>
+			<Button type="button" variant="ghost" size="icon-xs" aria-label={t("editDescription")} title={t("editDescription")} onClick={() => setEditing(true)} className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"><Pencil aria-hidden="true" /></Button>
+		</div>
 	);
 }
 
@@ -181,19 +232,44 @@ function ExternalRow({ href, children }: { href: string; children: ReactNode }) 
 	);
 }
 
-function ItemProperties({ item, errorGroup, members, busy, onUpdate }: { item: WorkItem; errorGroup: ErrorGroup | null; members: WorkMember[]; busy: string | null; onUpdate: (key: string, input: UpdateWorkItemInput) => unknown }) {
+function ItemProperties({ item, errorGroup, members, projects, cycles, parent, busy, onUpdate }: { item: WorkItem; errorGroup: ErrorGroup | null; members: WorkMember[]; projects: WorkProject[]; cycles: WorkCycle[]; parent: WorkItemSummary | null; busy: string | null; onUpdate: (key: string, input: UpdateWorkItemInput) => unknown }) {
 	const t = useTranslations("Work.item");
 	const tCreate = useTranslations("Work.create");
 	const tCommon = useTranslations("Work.common");
 	const copy = useWorkCopy();
 	const disabled = busy !== null;
 	const prNumber = item.githubPrUrl?.match(/\/pull\/(\d+)/)?.[1];
+	const parentNumber = parent?.number ?? item.parentNumber ?? null;
 	return (
 		<aside aria-label={t("properties")} className="space-y-5 lg:border-l lg:pl-6">
 			<dl className="space-y-1.5">
 				<PropertyRow label={t("state")}><StateSelect size="sm" label={t("state")} value={item.state} disabled={disabled} onChange={(state) => onUpdate("state", { state })} className="border-transparent bg-transparent hover:bg-muted" /></PropertyRow>
 				<PropertyRow label={t("priority")}><PrioritySelect size="sm" label={t("priority")} value={item.priority} disabled={disabled} onChange={(priority) => onUpdate("priority", { priority })} className="border-transparent bg-transparent hover:bg-muted" /></PropertyRow>
 				<PropertyRow label={t("assignee")}><AssigneeSelect size="sm" label={t("assignee")} value={assigneeKey(item)} members={members} disabled={disabled} onChange={(value) => onUpdate("assignee", parseAssigneeKey(value))} className="border-transparent bg-transparent hover:bg-muted" /></PropertyRow>
+				<PropertyRow label={t("project")}>
+					<OptionProperty label={t("project")} value={item.projectId ?? "none"} disabled={disabled} noneLabel={t("noProject")}
+						options={projects.map((project) => ({ value: project.id, label: project.name }))}
+						onChange={(value) => onUpdate("project", { projectId: value === "none" ? null : value })} />
+				</PropertyRow>
+				<PropertyRow label={t("cycle")}>
+					<OptionProperty label={t("cycle")} value={item.cycleId ?? "none"} disabled={disabled} noneLabel={t("noCycle")}
+						options={cycles.map((cycle) => ({ value: cycle.id, label: cycle.name || t("cycleNumber", { number: cycle.number }) }))}
+						onChange={(value) => onUpdate("cycle", { cycleId: value === "none" ? null : value })} />
+				</PropertyRow>
+				<PropertyRow label={t("estimate")}>
+					<TextProperty key={`estimate-${item.estimate ?? ""}`} value={typeof item.estimate === "number" ? String(item.estimate) : ""} label={t("estimate")} placeholder={t("estimatePlaceholder")} onSave={(value) => {
+						if (!value) return onUpdate("estimate", { estimate: null });
+						const points = Number(value);
+						if (Number.isInteger(points) && points >= 0 && points <= 21) return onUpdate("estimate", { estimate: points });
+					}} />
+				</PropertyRow>
+				<PropertyRow label={t("parent")}>
+					<TextProperty key={`parent-${parentNumber ?? ""}`} mono value={parentNumber ? `#${parentNumber}` : ""} label={t("parent")} placeholder={t("parentPlaceholder")} onSave={(value) => {
+						if (!value) return onUpdate("parent", { parentNumber: null });
+						const number = parseItemNumber(value);
+						if (number && number !== item.number) return onUpdate("parent", { parentNumber: number });
+					}} />
+				</PropertyRow>
 				<PropertyRow label={t("labels")}>
 					<TextProperty key={`labels-${item.labels.join(",")}`} value={item.labels.join(", ")} label={t("labels")} placeholder={t("labelsPlaceholder")} onSave={(value) => onUpdate("labels", { labels: parseLabels(value) })} />
 				</PropertyRow>
@@ -221,6 +297,7 @@ function ItemProperties({ item, errorGroup, members, busy, onUpdate }: { item: W
 				) : null}
 			</dl>
 			<dl className="space-y-1.5 border-t pt-4">
+				{item.slaDueAt ? <PropertyRow label={t("slaDue")}><TimeAgo value={item.slaDueAt} className="px-2 text-muted-foreground" /></PropertyRow> : null}
 				<PropertyRow label={t("source")}><span className="inline-flex items-center gap-1.5 px-2"><SourceIcon source={item.source} />{copy.source(item.source)}</span></PropertyRow>
 				<PropertyRow label={t("created")}><TimeAgo value={item.createdAt} className="px-2 text-muted-foreground" /></PropertyRow>
 				<PropertyRow label={t("updated")}><TimeAgo value={item.updatedAt} className="px-2 text-muted-foreground" /></PropertyRow>
@@ -345,7 +422,7 @@ function Timeline({ item, events, members }: { item: WorkItem; events: WorkItemE
 											<TimeAgo value={event.createdAt} />
 											{url ? <a href={url} target="_blank" rel="noreferrer" className="ml-auto inline-flex items-center gap-1 hover:text-foreground"><ExternalLink className="size-3" aria-hidden="true" /></a> : null}
 										</div>
-										<p className="px-3 py-2 text-sm whitespace-pre-wrap">{event.body}</p>
+										<WorkMarkdown className="px-3 py-2">{event.body}</WorkMarkdown>
 									</div>
 								</li>
 							);
@@ -366,15 +443,30 @@ function Timeline({ item, events, members }: { item: WorkItem; events: WorkItemE
 					})}
 				</ol>
 			) : <p className="text-sm text-muted-foreground">{t("noActivity")}</p>}
-			<CommentBox number={item.number} />
+			<CommentBox number={item.number} members={members} />
 		</section>
 	);
 }
 
-function CommentBox({ number }: { number: number }) {
+function CommentBox({ number, members }: { number: number; members: WorkMember[] }) {
 	const t = useTranslations("Work.item");
 	const { perform, busy } = useWorkAction();
 	const [body, setBody] = useState("");
+	const [caret, setCaret] = useState(0);
+	const [highlight, setHighlight] = useState(0);
+	const [dismissed, setDismissed] = useState<number | null>(null);
+	const textarea = useRef<HTMLTextAreaElement>(null);
+	const mention = activeMention(body, caret);
+	const suggestions = mention && dismissed !== mention.start ? mentionSuggestions(members, mention.query) : [];
+	const listId = useId();
+	const choose = (member: WorkMember) => {
+		if (!mention) return;
+		const next = insertMention(body, mention, member);
+		setBody(next.text);
+		setCaret(next.caret);
+		setHighlight(0);
+		window.requestAnimationFrame(() => { textarea.current?.focus(); textarea.current?.setSelectionRange(next.caret, next.caret); });
+	};
 	const submit = async (event?: FormEvent) => {
 		event?.preventDefault();
 		if (!body.trim()) return;
@@ -383,17 +475,47 @@ function CommentBox({ number }: { number: number }) {
 	};
 	return (
 		<form onSubmit={submit} className="space-y-2">
-			<Textarea
-				value={body}
-				rows={3}
-				maxLength={20000}
-				aria-label={t("comment")}
-				placeholder={t("commentPlaceholder")}
-				onChange={(event) => setBody(event.target.value)}
-				onKeyDown={(event) => { if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) void submit(); }}
-				className="rounded-md"
-			/>
-			<div className="flex justify-end">
+			<div className="relative">
+				<Textarea
+					ref={textarea}
+					value={body}
+					rows={3}
+					maxLength={20000}
+					aria-label={t("comment")}
+					placeholder={t("commentPlaceholder")}
+					role="combobox"
+					aria-expanded={suggestions.length > 0}
+					aria-controls={suggestions.length ? listId : undefined}
+					aria-autocomplete="list"
+					aria-activedescendant={suggestions.length ? `${listId}-${Math.min(highlight, suggestions.length - 1)}` : undefined}
+					onChange={(event) => { setBody(event.target.value); setCaret(event.target.selectionStart ?? event.target.value.length); setHighlight(0); }}
+					onSelect={(event) => setCaret(event.currentTarget.selectionStart ?? 0)}
+					onKeyDown={(event) => {
+						if (suggestions.length) {
+							if (event.key === "ArrowDown") { event.preventDefault(); setHighlight((highlight + 1) % suggestions.length); return; }
+							if (event.key === "ArrowUp") { event.preventDefault(); setHighlight((highlight - 1 + suggestions.length) % suggestions.length); return; }
+							if (event.key === "Enter" || event.key === "Tab") { event.preventDefault(); choose(suggestions[Math.min(highlight, suggestions.length - 1)]!); return; }
+							if (event.key === "Escape") { event.preventDefault(); setDismissed(mention?.start ?? null); return; }
+						}
+						if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) void submit();
+					}}
+					className="rounded-md"
+				/>
+				{suggestions.length ? (
+					<ul id={listId} role="listbox" aria-label={t("mentionSuggestions")} className="absolute top-full left-0 z-20 mt-1 w-64 overflow-hidden rounded-md border bg-popover py-1 text-sm shadow-md">
+						{suggestions.map((member, index) => (
+							<li key={member.userId} id={`${listId}-${index}`} role="option" aria-selected={index === highlight}
+								onMouseDown={(event) => { event.preventDefault(); choose(member); }}
+								className={cn("flex cursor-pointer items-center gap-2 px-2 py-1", index === highlight && "bg-muted")}>
+								<AssigneeLabel agent={null} userId={member.userId} members={members} />
+								<span className="ml-auto font-mono text-xs text-muted-foreground">@{mentionHandle(member)}</span>
+							</li>
+						))}
+					</ul>
+				) : null}
+			</div>
+			<div className="flex items-center justify-between gap-2">
+				<span className="text-xs text-muted-foreground">{t("commentHint")}</span>
 				<Button type="submit" size="sm" disabled={busy !== null || !body.trim()}>{t("comment")}</Button>
 			</div>
 		</form>
@@ -469,5 +591,159 @@ function RepoDialog({ open, onOpenChange, onSubmit }: { open: boolean; onOpenCha
 				</form>
 			</DialogContent>
 		</Dialog>
+	);
+}
+
+function SubscribeToggle({ number, subscribed }: { number: number; subscribed: boolean }) {
+	const t = useTranslations("Work.item");
+	const { perform, busy } = useWorkAction();
+	const [optimistic, setOptimistic] = useState<boolean | null>(null);
+	const [seen, setSeen] = useState(subscribed);
+	if (seen !== subscribed) { setSeen(subscribed); setOptimistic(null); }
+	const on = optimistic ?? subscribed;
+	const toggle = async () => {
+		setOptimistic(!on);
+		const result = await perform("subscription", () => setWorkSubscription(number, !on));
+		if (!result.ok) setOptimistic(null);
+	};
+	return (
+		<Button type="button" size="sm" variant="ghost" aria-pressed={on} disabled={busy !== null} onClick={toggle} title={on ? t("unsubscribeHint") : t("subscribeHint")}>
+			{on ? <BellOff aria-hidden="true" /> : <Bell aria-hidden="true" />}
+			{on ? t("unsubscribe") : t("subscribe")}
+		</Button>
+	);
+}
+
+function OptionProperty({ label, value, options, noneLabel, disabled, onChange }: { label: string; value: string; options: Array<{ value: string; label: string }>; noneLabel: string; disabled: boolean; onChange: (value: string) => void }) {
+	const selected = options.find((option) => option.value === value);
+	return (
+		<Select value={value} disabled={disabled} onValueChange={(next) => { if (next !== value) onChange(next); }}>
+			<SelectTrigger size="sm" aria-label={label} className="w-full justify-between rounded-md border-transparent bg-transparent hover:bg-muted">
+				<SelectValue><span className={cn("truncate", !selected && "text-muted-foreground")}>{selected?.label ?? (value === "none" ? noneLabel : "…")}</span></SelectValue>
+			</SelectTrigger>
+			<SelectContent>
+				<SelectItem value="none">{noneLabel}</SelectItem>
+				{options.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
+			</SelectContent>
+		</Select>
+	);
+}
+
+function SubItemsSection({ item, items }: { item: WorkItem; items: WorkItemSummary[] }) {
+	const t = useTranslations("Work.item");
+	const copy = useWorkCopy();
+	const { perform, busy } = useWorkAction();
+	const [title, setTitle] = useState("");
+	const [adding, setAdding] = useState(false);
+	const done = items.filter((child) => isClosedState(child.state)).length;
+	const add = async (event: FormEvent) => {
+		event.preventDefault();
+		if (!title.trim()) return;
+		const result = await perform("sub-item", () => createWorkItem({
+			title: title.trim(),
+			parentNumber: item.number,
+			state: "todo",
+			...(item.projectId ? { projectId: item.projectId } : {}),
+			...(item.cycleId ? { cycleId: item.cycleId } : {}),
+		}));
+		if (result.ok) setTitle("");
+	};
+	return (
+		<section aria-labelledby="work-item-children" className="space-y-2">
+			<div className="flex items-center justify-between gap-2">
+				<h2 id="work-item-children" className="text-sm font-medium">
+					{t("subItems")}
+					{items.length ? <span className="ml-2 text-xs font-normal text-muted-foreground tabular-nums">{t("doneOf", { done, total: items.length })}</span> : null}
+				</h2>
+				{adding ? null : <Button type="button" size="xs" variant="ghost" onClick={() => setAdding(true)}><Plus aria-hidden="true" />{t("addSubItem")}</Button>}
+			</div>
+			{items.length ? (
+				<ul className="divide-y rounded-md border">
+					{items.map((child) => (
+						<li key={child.id} className="relative flex items-center gap-3 px-3 py-1.5 text-sm hover:bg-muted/40">
+							<StateIcon state={child.state} label={copy.state(child.state)} />
+							<span className="w-12 shrink-0 font-mono text-xs text-muted-foreground tabular-nums">#{child.number}</span>
+							<Link href={`/work/${child.number}`} className={cn("min-w-0 flex-1 truncate after:absolute after:inset-0", isClosedState(child.state) && "text-muted-foreground line-through")}>{child.title}</Link>
+						</li>
+					))}
+				</ul>
+			) : null}
+			{adding ? (
+				<form onSubmit={add} className="flex gap-2">
+					<Input autoFocus value={title} maxLength={300} aria-label={t("subItemTitle")} placeholder={t("subItemTitle")} onChange={(event) => setTitle(event.target.value)}
+						onKeyDown={(event) => { if (event.key === "Escape") { setTitle(""); setAdding(false); } }} className="h-8 rounded-md text-sm" />
+					<Button type="submit" size="sm" disabled={busy !== null || !title.trim()}>{t("add")}</Button>
+					<Button type="button" size="icon-sm" variant="ghost" aria-label={t("cancelAdd")} onClick={() => { setTitle(""); setAdding(false); }}><X aria-hidden="true" /></Button>
+				</form>
+			) : null}
+		</section>
+	);
+}
+
+type RelationChoice = "blocks" | "blocked_by" | "related";
+
+function relationGroup(relation: WorkRelation): RelationChoice {
+	return relation.direction;
+}
+
+function RelationsSection({ number, relations }: { number: number; relations: WorkRelation[] }) {
+	const t = useTranslations("Work.item");
+	const copy = useWorkCopy();
+	const { perform, busy } = useWorkAction();
+	const [adding, setAdding] = useState(false);
+	const [choice, setChoice] = useState<RelationChoice>("blocks");
+	const [other, setOther] = useState("");
+	const [error, setError] = useState<string | null>(null);
+	const groups = (["blocked_by", "blocks", "related"] as const).map((group) => ({ group, relations: relations.filter((relation) => relationGroup(relation) === group) })).filter((entry) => entry.relations.length);
+
+	const add = async (event: FormEvent) => {
+		event.preventDefault();
+		const otherNumber = parseItemNumber(other);
+		if (!otherNumber || otherNumber === number) return setError(t("duplicateInvalid"));
+		setError(null);
+		const result = await perform("relation", () => addWorkRelation(number, choice, otherNumber));
+		if (result.ok) { setOther(""); setAdding(false); }
+	};
+
+	return (
+		<section aria-labelledby="work-item-relations" className="space-y-2">
+			<div className="flex items-center justify-between gap-2">
+				<h2 id="work-item-relations" className="text-sm font-medium">{t("relations")}</h2>
+				{adding ? null : <Button type="button" size="xs" variant="ghost" onClick={() => setAdding(true)}><Plus aria-hidden="true" />{t("addRelation")}</Button>}
+			</div>
+			{groups.map(({ group, relations: entries }) => (
+				<div key={group} className="space-y-1">
+					<p className={cn("text-xs", group === "blocked_by" ? "text-amber-700 dark:text-amber-300" : "text-muted-foreground")}>{t(`relationKinds.${group}`)}</p>
+					<ul className="divide-y rounded-md border">
+						{entries.map((relation) => (
+							<li key={relation.id} className="flex items-center gap-3 px-3 py-1.5 text-sm">
+								{relation.otherState ? <StateIcon state={relation.otherState} label={copy.state(relation.otherState)} /> : <span className="size-4 shrink-0" />}
+								<span className="w-12 shrink-0 font-mono text-xs text-muted-foreground tabular-nums">{relation.otherNumber ? `#${relation.otherNumber}` : "—"}</span>
+								{relation.otherNumber ? <Link href={`/work/${relation.otherNumber}`} className="min-w-0 flex-1 truncate hover:underline">{relation.otherTitle ?? ""}</Link> : <span className="min-w-0 flex-1 truncate text-muted-foreground">{relation.otherTitle ?? ""}</span>}
+								<Button type="button" size="icon-xs" variant="ghost" disabled={busy !== null} aria-label={t("removeRelation", { number: relation.otherNumber ?? "" })} title={t("removeRelation", { number: relation.otherNumber ?? "" })}
+									onClick={() => perform("relation-remove", () => removeWorkRelation(number, relation.id))}><X aria-hidden="true" /></Button>
+							</li>
+						))}
+					</ul>
+				</div>
+			))}
+			{!groups.length && !adding ? <p className="text-xs text-muted-foreground">{t("noRelations")}</p> : null}
+			{adding ? (
+				<form onSubmit={add} className="flex flex-wrap items-start gap-2">
+					<Select value={choice} onValueChange={(value) => setChoice(value as RelationChoice)}>
+						<SelectTrigger size="sm" aria-label={t("relationKind")} className="w-36 rounded-md"><SelectValue>{t(`relationKinds.${choice}`)}</SelectValue></SelectTrigger>
+						<SelectContent>
+							{(["blocks", "blocked_by", "related"] as const).map((kind) => <SelectItem key={kind} value={kind}>{t(`relationKinds.${kind}`)}</SelectItem>)}
+						</SelectContent>
+					</Select>
+					<div className="space-y-1">
+						<Input autoFocus inputMode="numeric" value={other} placeholder="42" aria-label={t("relationOther")} onChange={(event) => setOther(event.target.value)} className="h-7 w-28 rounded-md font-mono text-sm" />
+						{error ? <p role="alert" className="text-xs text-destructive">{error}</p> : null}
+					</div>
+					<Button type="submit" size="sm" disabled={busy !== null || !other.trim()}>{t("add")}</Button>
+					<Button type="button" size="icon-sm" variant="ghost" aria-label={t("cancelAdd")} onClick={() => { setOther(""); setError(null); setAdding(false); }}><X aria-hidden="true" /></Button>
+				</form>
+			) : null}
+		</section>
 	);
 }

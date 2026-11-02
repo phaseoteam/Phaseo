@@ -12,11 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Link, useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
-import { CUSTOMER_REQUEST_STATUSES, type Customer, type CustomerRequest, type CustomerRequestStatus, type WorkItem } from "@/lib/work/types";
+import { CUSTOMER_REQUEST_STATUSES, type Customer, type CustomerRequest, type CustomerRequestStatus, type ReplyDraft, type WorkItem } from "@/lib/work/types";
+import { ReplyDraftEditor } from "./ReplyDrafts";
 import { useWorkAction } from "./useWorkAction";
 import { StateIcon, TimeAgo, useWorkCopy } from "./WorkBits";
 
-export function RequestsView({ status, requests, customers }: { status: CustomerRequestStatus; requests: CustomerRequest[]; customers: Customer[] }) {
+export function RequestsView({ status, requests, customers, drafts = [] }: { status: CustomerRequestStatus; requests: CustomerRequest[]; customers: Customer[]; drafts?: ReplyDraft[] }) {
 	const t = useTranslations("Work.requests");
 	const [creating, setCreating] = useState(false);
 	const [linking, setLinking] = useState<CustomerRequest | null>(null);
@@ -46,7 +47,7 @@ export function RequestsView({ status, requests, customers }: { status: Customer
 			</div>
 			{requests.length ? (
 				<ul className="divide-y rounded-md border">
-					{requests.map((request) => <RequestRow key={request.id} request={request} customers={customers} onLink={() => setLinking(request)} />)}
+					{requests.map((request) => <RequestRow key={request.id} request={request} customers={customers} drafts={drafts.filter((draft) => draft.requestId === request.id && draft.status === "draft")} onLink={() => setLinking(request)} />)}
 				</ul>
 			) : <p className="rounded-md border border-dashed px-4 py-10 text-center text-sm text-muted-foreground">{t(`empty.${status}`)}</p>}
 			{creating ? <NewRequestDialog customers={customers} onClose={() => setCreating(false)} /> : null}
@@ -55,7 +56,7 @@ export function RequestsView({ status, requests, customers }: { status: Customer
 	);
 }
 
-function RequestRow({ request, customers, onLink }: { request: CustomerRequest; customers: Customer[]; onLink: () => void }) {
+function RequestRow({ request, customers, drafts, onLink }: { request: CustomerRequest; customers: Customer[]; drafts: ReplyDraft[]; onLink: () => void }) {
 	const t = useTranslations("Work.requests");
 	const router = useRouter();
 	const { perform, busy } = useWorkAction();
@@ -100,6 +101,12 @@ function RequestRow({ request, customers, onLink }: { request: CustomerRequest; 
 				{request.status === "new" ? <Button type="button" size="xs" variant="ghost" disabled={busy !== null} onClick={() => perform("dismiss", () => updateCustomerRequest(request.id, { status: "dismissed" }))}><Ban aria-hidden="true" />{t("dismiss")}</Button> : null}
 				{request.status === "dismissed" ? <Button type="button" size="xs" variant="ghost" disabled={busy !== null} onClick={() => perform("restore", () => updateCustomerRequest(request.id, { status: "new" }))}><RotateCcw aria-hidden="true" />{t("restore")}</Button> : null}
 			</div>
+			{drafts.length ? (
+				<div className="space-y-2 pt-1">
+					<p className="text-xs font-medium text-muted-foreground">{t("replyDrafts")}</p>
+					<ul className="space-y-2">{drafts.map((draft) => <ReplyDraftEditor key={draft.id} draft={draft} request={request} showItemLink />)}</ul>
+				</div>
+			) : null}
 		</li>
 	);
 }

@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { WorkLoadError } from "@/components/work/WorkLoadError";
 import { WorkSettingsView } from "@/components/work/WorkSettingsView";
 import { listFrom, loadWork, requireWorkPage } from "@/lib/work/server";
-import type { ErrorProject, GithubRepo, IntakeForm } from "@/lib/work/types";
+import type { ErrorProject, GithubRepo, IntakeForm, WorkSettingsResponse } from "@/lib/work/types";
 
 export async function generateMetadata(): Promise<Metadata> {
 	const t = await getTranslations("Work.settings");
@@ -12,10 +12,11 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function WorkSettingsPage() {
 	const context = await requireWorkPage();
-	const [forms, projects, repos] = await Promise.all([
+	const [forms, projects, repos, settings] = await Promise.all([
 		loadWork<{ forms: IntakeForm[] }>(context, "intake-forms"),
 		loadWork<{ projects: ErrorProject[] }>(context, "error-projects"),
 		loadWork<{ repos: GithubRepo[] }>(context, "github-repos"),
+		loadWork<WorkSettingsResponse>(context, "settings"),
 	]);
 	const failed = [forms, projects, repos].find((result) => !result.ok);
 	if (failed && !failed.ok) return <WorkLoadError status={failed.status} message={failed.message} />;
@@ -24,6 +25,8 @@ export default async function WorkSettingsPage() {
 			forms={forms.ok ? listFrom<IntakeForm>(forms.data, "forms") : []}
 			projects={projects.ok ? listFrom<ErrorProject>(projects.data, "projects") : []}
 			repos={repos.ok ? listFrom<GithubRepo>(repos.data, "repos") : []}
+			settings={settings.ok ? settings.data?.settings ?? null : null}
+			canEditSettings={settings.ok ? settings.data?.canEdit !== false : false}
 		/>
 	);
 }
