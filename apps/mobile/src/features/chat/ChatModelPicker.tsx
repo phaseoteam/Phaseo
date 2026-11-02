@@ -2,9 +2,9 @@ import { LegendList } from "@legendapp/list/react-native";
 import { useRouter } from "expo-router";
 import { Check, Search, Sparkles, Star, X } from "lucide-react-native";
 import { memo, useCallback, useDeferredValue, useMemo, useState } from "react";
-import { Pressable, ScrollView, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { Logo } from "@/components/Logo";
-import { Badge, Button, Chip, ChipRow, EmptyState, ErrorState, Header, Icon, SearchField, SkeletonRows, Text, toast, useToneColor } from "@/components/ui";
+import { Badge, Button, Chip, ChipRow, EmptyState, ErrorState, Header, HorizontalScroll, Icon, SearchField, SkeletonRows, Text, toast, useToneColor } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { formatPrice, formatTokens } from "@/lib/format";
 import { haptic } from "@/lib/haptics";
@@ -144,7 +144,7 @@ export function ChatModelPicker({ chatId }: { chatId: string | null }) {
         right={<Button label="Done" size="sm" variant="ghost" onPress={() => router.back()} />}
       />
       {selected.length ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" className="grow-0" contentContainerClassName="gap-1.5 px-4 pb-2">
+        <HorizontalScroll keyboardShouldPersistTaps="handled" className="grow-0" contentContainerClassName="gap-1.5 px-4 pb-2">
           {selected.map((id) => {
             const option = byId.get(id);
             const label = option?.label ?? id.split("/").at(-1) ?? id;
@@ -158,7 +158,7 @@ export function ChatModelPicker({ chatId }: { chatId: string | null }) {
               </View>
             );
           })}
-        </ScrollView>
+        </HorizontalScroll>
       ) : null}
       <View className="px-4 pb-2"><SearchField value={query} onChangeText={setQuery} placeholder="Search models, labs or providers" /></View>
       <ChipRow className="pb-2">

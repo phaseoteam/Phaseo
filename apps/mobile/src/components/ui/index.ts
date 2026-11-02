@@ -4,6 +4,7 @@ export { Badge, Chip, ChipRow } from "./chip";
 export { Icon, useToneColor } from "./icon";
 export { SearchField, TextField } from "./input";
 export { Divider, Fact, Row, Section } from "./list";
+export { HorizontalScroll, OutsideDrawer } from "./horizontal-scroll";
 export { Header, ReadableWidth, Screen } from "./screen";
 export { DialogFrame, RouteSheet, routeSheetOptions, Sheet } from "./dialog";
 export { dialogFrame, placeDropdown, type Anchor, type DialogSize } from "./overlay";

@@ -1,7 +1,7 @@
 import { Image } from "expo-image";
 import { AudioLines, FileText, X } from "lucide-react-native";
-import { Pressable, ScrollView, View } from "react-native";
-import { Icon, Text } from "@/components/ui";
+import { Pressable, View } from "react-native";
+import { HorizontalScroll, Icon, Text } from "@/components/ui";
 import type { ChatAttachment } from "@/features/chat/types";
 
 /** One attachment as a square: the picture, or the file's icon with its name under it. */
@@ -21,7 +21,7 @@ export function AttachmentThumbnail({ attachment, size, compact }: { attachment:
 export function AttachmentStrip({ attachments, disabled, onRemove }: { attachments: ChatAttachment[]; disabled?: boolean; onRemove(id: string): void }) {
   if (!attachments.length) return null;
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="always" className="grow-0" contentContainerClassName="flex-row gap-2.5">
+    <HorizontalScroll keyboardShouldPersistTaps="always" className="grow-0" contentContainerClassName="flex-row gap-2.5">
       {attachments.map((attachment) => (
         <View key={attachment.id} className="relative">
           <AttachmentThumbnail attachment={attachment} size={72} />
@@ -37,7 +37,7 @@ export function AttachmentStrip({ attachments, disabled, onRemove }: { attachmen
           </Pressable>
         </View>
       ))}
-    </ScrollView>
+    </HorizontalScroll>
   );
 }
 

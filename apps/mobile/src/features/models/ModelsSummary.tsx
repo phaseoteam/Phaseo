@@ -13,23 +13,19 @@ import { onePerModel } from "./releases";
 import { useCatalogue } from "./state";
 
 // One label per release, most useful first: "Released" beats "Announced" when both apply.
-// Upcoming entries (mostly retirements) read in the future tense.
-const RELEASE_TYPES: [string, string, string][] = [["added", "Added to Phaseo", "Coming to Phaseo"], ["released", "Released", "Releases"], ["announced", "Announced", "Announcement"], ["deprecated", "Deprecated", "Deprecated"], ["retired", "Retired", "Retires"]];
+// Only new models are listed; retirements and deprecations are left out.
+const RELEASE_TYPES: [string, string][] = [["added", "Added to Phaseo"], ["released", "Released"], ["announced", "Announced"]];
 // The feed sends display-cased types ("Released", "Retired"); compare in one form.
 const typeKey = (value: string) => value.trim().toLowerCase().replace(/[\s-]+/g, "_");
-const releaseLabel = (types: string[], upcoming: boolean) => {
-  const match = RELEASE_TYPES.find(([type]) => types.some((value) => typeKey(value) === type));
-  return match ? match[upcoming ? 2 : 1] : "Update";
-};
-const isNewRelease = (release: ModelRelease) => release.types.some((value) => ["released", "added", "announced"].includes(typeKey(value)));
+const releaseLabel = (release: ModelRelease) => RELEASE_TYPES.find(([type]) => release.types.some((value) => typeKey(value) === type))?.[1];
 
 // Phones list a few of each so the catalogue starts within a scroll or two; the catalogue below is sorted newest
 // first by default, so it carries on where Latest releases stops. The tablet's detail pane has room for more.
-const PHONE_COUNTS = { latest: 5, upcoming: 3, trending: 5 };
-const SPLIT_COUNTS = { latest: 8, upcoming: 5, trending: 6 };
+const PHONE_COUNTS = { latest: 5, trending: 5 };
+const SPLIT_COUNTS = { latest: 8, trending: 6 };
 
 /**
- * The top of Models: a way to sign in, the latest and coming releases and the most used models. Above the list on
+ * The top of Models: a way to sign in, the latest releases and the most used models. Above the list on
  * phones, until a search or filter (then the matches come first); on split layouts it fills the detail pane until
  * a model is chosen. Compare, Providers and Usage are in the sidebar, which every screen opens.
  */
@@ -55,14 +51,8 @@ export function ModelsSummary() {
       )}
 
       <Section title="Latest releases" className={split ? undefined : "mt-5"}>
-        {releases.isLoading ? <ReleaseSkeleton /> : onePerModel((releases.data?.past ?? []).filter(isNewRelease)).slice(0, counts.latest).map((release, index, list) => <ReleaseRow key={`${release.model.model_id}-${release.date}`} release={release} last={index === list.length - 1} />)}
+        {releases.isLoading ? <ReleaseSkeleton /> : onePerModel((releases.data?.past ?? []).filter((release) => releaseLabel(release))).slice(0, counts.latest).map((release, index, list) => <ReleaseRow key={`${release.model.model_id}-${release.date}`} release={release} last={index === list.length - 1} />)}
       </Section>
-
-      {releases.data?.future.length ? (
-        <Section title="Coming up" className="mt-8">
-          {releases.data.future.slice(0, counts.upcoming).map((release, index, list) => <ReleaseRow key={`${release.model.model_id}-${release.date}`} release={release} last={index === list.length - 1} upcoming />)}
-        </Section>
-      ) : null}
 
       {trending.length ? (
         <Section title="Most used this week" description="By tokens through Phaseo." className="mt-8">
@@ -89,9 +79,9 @@ function releaseDay(date: string) {
   return today ? "Today" : formatCalendarDate(date, "—");
 }
 
-function ReleaseRow({ release, last, upcoming }: { release: ModelRelease; last: boolean; upcoming?: boolean }) {
+function ReleaseRow({ release, last }: { release: ModelRelease; last: boolean }) {
   const router = useRouter();
-  const type = releaseLabel(release.types, Boolean(upcoming));
+  const type = releaseLabel(release) ?? "Update";
   const org = release.model.organisation?.name ?? release.model.organisation_name ?? release.model.model_id.split("/")[0];
   return (
     <Row
