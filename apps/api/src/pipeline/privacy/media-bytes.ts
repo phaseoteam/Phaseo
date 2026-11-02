@@ -7,10 +7,14 @@ export const REDACTED_BASE64 = "[REDACTED_BASE64]";
 const MIN_BARE_BASE64_LENGTH = 256;
 const BARE_BASE64 = /^[A-Za-z0-9+/_-]+={0,2}$/;
 const EMBEDDED_DATA_URL = /data:[\w.+-]+\/[\w.+-]+(?:;[\w.+-]+=[\w.+-]+)*;base64,[A-Za-z0-9+/=]+/g;
-const MEDIA_BYTE_KEYS = new Set(["b64_json", "partial_image_b64"]);
+// Fields that only ever carry bytes (or, for file_data, a data URL or bare base64).
+const MEDIA_BYTE_KEYS = new Set(["b64_json", "partial_image_b64", "file_data", "base64"]);
 
 /** A field holding media bytes, judged by its key and the object around it. */
 export function isMediaBytesField(key: string, parent: Record<string, unknown>): boolean {
+	const value = parent[key];
+	// A link to the media is kept; only the bytes go.
+	if (typeof value === "string" && /^https?:\/\//i.test(value)) return false;
 	if (MEDIA_BYTE_KEYS.has(key)) return true;
 	if (key === "result" && parent.type === "image_generation_call") return true;
 	if (key !== "data") return false;
@@ -43,9 +47,28 @@ export function redactMediaString(value: string, onRedact: () => void = () => {}
 	});
 }
 
+/**
+ * Provider requests are often kept as the serialised body that was sent. Parse those so
+ * their fields are checked too; strings with no media are returned untouched.
+ */
+function stripSerializedJson(value: string, depth: number): string | null {
+	const trimmed = value.trimStart();
+	if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) return null;
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(value);
+	} catch {
+		return null;
+	}
+	if (!parsed || typeof parsed !== "object") return null;
+	const stripped = stripMediaBytes(parsed, depth + 1);
+	const serialized = JSON.stringify(stripped);
+	return serialized === JSON.stringify(parsed) ? value : serialized;
+}
+
 /** A JSON-safe copy of `value` with every media byte string replaced by a placeholder. */
 export function stripMediaBytes(value: unknown, depth = 0): unknown {
-	if (typeof value === "string") return redactMediaString(value);
+	if (typeof value === "string") return stripSerializedJson(value, depth) ?? redactMediaString(value);
 	if (!value || typeof value !== "object") return value;
 	// Deeper than any real payload; drop it rather than store it unchecked.
 	if (depth > 64) return "[TRUNCATED_DEPTH]";
@@ -59,7 +82,7 @@ export function stripMediaBytes(value: unknown, depth = 0): unknown {
 					? REDACTED_BASE64
 					: isOpaqueTokenField(key, record)
 						? entry
-						: redactMediaString(entry)
+						: stripMediaBytes(entry, depth + 1)
 				: stripMediaBytes(entry, depth + 1),
 		]),
 	);

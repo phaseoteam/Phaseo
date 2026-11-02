@@ -1,6 +1,6 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { redactSensitiveInfoForStorage } from "@/pipeline/before/sensitiveInfo";
-import { isMediaBytesField, REDACTED_BASE64, redactMediaString } from "@/pipeline/privacy/media-bytes";
+import { isMediaBytesField, REDACTED_BASE64, redactMediaString, stripMediaBytes } from "@/pipeline/privacy/media-bytes";
 
 export const DATA_CONTRIBUTION_POLICY_VERSION = "2026-07-26-v2";
 export const DATA_CONTRIBUTION_REDACTION_VERSION = "2026-10-29-v2";
@@ -175,7 +175,8 @@ export function sanitizeDataContributionPayload(value: unknown): {
 	redactionCount: number;
 } {
 	const context = { redactionCount: 0 };
-	return { value: sanitize(value, context), redactionCount: context.redactionCount };
+	// stripMediaBytes also reaches media inside serialised JSON strings.
+	return { value: sanitize(stripMediaBytes(value), context), redactionCount: context.redactionCount };
 }
 
 export async function pruneExpiredDataContributions(limit = 250): Promise<{ deleted: number; failed: number }> {
