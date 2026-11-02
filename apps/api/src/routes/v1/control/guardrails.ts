@@ -13,6 +13,7 @@ import {
 	parsePathId,
 	parsePositiveInt,
 	requireJsonBody,
+	rejectThirdPartyOAuthSpendingChange,
 	requireCapability,
 	requireOAuthWorkspaceRole,
 } from "./route-helpers";
@@ -34,6 +35,10 @@ function guardrailWriteFailed(scope: string, error: unknown): Response {
 	}
 	return internalServerError(scope, error);
 }
+
+// Guardrails carry cost and request limits for the keys and members they hold, so apps that sign in
+// with Phaseo can read them but not create, change, detach or delete them.
+const GUARDRAIL_APP_REFUSAL = "Apps that use Sign in with Phaseo can't change guardrails. The person can change them under Settings, Guardrails.";
 
 const DEFAULT_LIMIT = 100;
 const MAX_LIMIT = 250;
@@ -302,6 +307,8 @@ async function handleCreateGuardrail(req: Request) {
 	if (!auth.ok) return (auth as GuardErr).response;
 	const scopeError = requireCapability(auth.value, CAPABILITIES.GUARDRAILS_WRITE);
 	if (scopeError) return scopeError;
+	const appError = rejectThirdPartyOAuthSpendingChange(auth.value, GUARDRAIL_APP_REFUSAL);
+	if (appError) return appError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
 
@@ -360,6 +367,8 @@ async function handleUpdateGuardrail(req: Request) {
 	if (!auth.ok) return (auth as GuardErr).response;
 	const scopeError = requireCapability(auth.value, CAPABILITIES.GUARDRAILS_WRITE);
 	if (scopeError) return scopeError;
+	const appError = rejectThirdPartyOAuthSpendingChange(auth.value, GUARDRAIL_APP_REFUSAL);
+	if (appError) return appError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
 
@@ -395,6 +404,8 @@ async function handleDeleteGuardrail(req: Request) {
 	if (!auth.ok) return (auth as GuardErr).response;
 	const scopeError = requireCapability(auth.value, CAPABILITIES.GUARDRAILS_DELETE);
 	if (scopeError) return scopeError;
+	const appError = rejectThirdPartyOAuthSpendingChange(auth.value, GUARDRAIL_APP_REFUSAL);
+	if (appError) return appError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
 
@@ -430,6 +441,8 @@ async function handleSetGuardrailKeys(req: Request) {
 	if (!auth.ok) return (auth as GuardErr).response;
 	const scopeError = requireCapability(auth.value, CAPABILITIES.GUARDRAILS_WRITE);
 	if (scopeError) return scopeError;
+	const appError = rejectThirdPartyOAuthSpendingChange(auth.value, GUARDRAIL_APP_REFUSAL);
+	if (appError) return appError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
 	const id = parseGuardrailResourceId(new URL(req.url));
@@ -496,6 +509,8 @@ async function handleAddGuardrailKeys(req: Request) {
 	if (!auth.ok) return (auth as GuardErr).response;
 	const scopeError = requireCapability(auth.value, CAPABILITIES.GUARDRAILS_WRITE);
 	if (scopeError) return scopeError;
+	const appError = rejectThirdPartyOAuthSpendingChange(auth.value, GUARDRAIL_APP_REFUSAL);
+	if (appError) return appError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
 
@@ -551,6 +566,8 @@ async function handleRemoveGuardrailKeys(req: Request) {
 	if (!auth.ok) return (auth as GuardErr).response;
 	const scopeError = requireCapability(auth.value, CAPABILITIES.GUARDRAILS_WRITE);
 	if (scopeError) return scopeError;
+	const appError = rejectThirdPartyOAuthSpendingChange(auth.value, GUARDRAIL_APP_REFUSAL);
+	if (appError) return appError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
 
@@ -610,6 +627,8 @@ async function handleAddGuardrailMembers(req: Request) {
 	if (!auth.ok) return (auth as GuardErr).response;
 	const scopeError = requireCapability(auth.value, CAPABILITIES.GUARDRAILS_WRITE);
 	if (scopeError) return scopeError;
+	const appError = rejectThirdPartyOAuthSpendingChange(auth.value, GUARDRAIL_APP_REFUSAL);
+	if (appError) return appError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
 
@@ -666,6 +685,8 @@ async function handleRemoveGuardrailMembers(req: Request) {
 	if (!auth.ok) return (auth as GuardErr).response;
 	const scopeError = requireCapability(auth.value, CAPABILITIES.GUARDRAILS_WRITE);
 	if (scopeError) return scopeError;
+	const appError = rejectThirdPartyOAuthSpendingChange(auth.value, GUARDRAIL_APP_REFUSAL);
+	if (appError) return appError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
 

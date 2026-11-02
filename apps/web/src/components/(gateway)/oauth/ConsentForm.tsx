@@ -27,12 +27,21 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { isSafeOAuthRedirectUrl } from "@/lib/oauth/safeUrls";
 import {
 	groupConsentScopes,
 	type ConsentScopeGroupKey,
 } from "./consentScopeGroups";
+import {
+	DEFAULT_CONSENT_SPEND_LIMIT_USD,
+	MAX_CONSENT_SPEND_LIMIT_USD,
+	MIN_CONSENT_SPEND_LIMIT_USD,
+	checkConsentSpendLimit,
+	formatConsentSpendLimit,
+	formatConsentSpendLimitInput,
+} from "./consentSpendLimit";
 import { scopePermissionFor, type ScopePermission, type ScopeTone } from "./scopePermission";
 
 interface ConsentFormProps {
@@ -109,7 +118,21 @@ export default function ConsentForm({
 	const [error, setError] = useState<string | null>(null);
 	const [unverifiedAcknowledged, setUnverifiedAcknowledged] = useState(false);
 	const [selectedScopes, setSelectedScopes] = useState<string[]>(requestedScopes);
+	const [spendLimitInput, setSpendLimitInput] = useState(DEFAULT_CONSENT_SPEND_LIMIT_USD.toFixed(2));
+	const [noSpendLimit, setNoSpendLimit] = useState(false);
 	const isFirstParty = Boolean(oauthApp.is_first_party);
+	// A third-party app with gateway access gets a key that spends the active team's credits;
+	// the limit chosen here becomes that key's monthly cost limit.
+	const asksSpendLimit = !isFirstParty && requestedScopes.includes("gateway:access");
+	const spendLimitCheck = checkConsentSpendLimit(spendLimitInput);
+	const spendLimitNanos = spendLimitCheck.ok ? spendLimitCheck.nanos : null;
+	const spendLimitInvalid = asksSpendLimit && !noSpendLimit && spendLimitNanos === null;
+	const spendLimitErrorMessage = !spendLimitCheck.ok && spendLimitCheck.reason === "format"
+		? t("spendLimitFormat")
+		: t("spendLimitInvalid", {
+			min: formatConsentSpendLimit(MIN_CONSENT_SPEND_LIMIT_USD),
+			max: formatConsentSpendLimit(MAX_CONSENT_SPEND_LIMIT_USD),
+		});
 	const isUnverified = oauthApp.registration_source === "dynamic" && !oauthApp.is_first_party;
 	const displayedAppDescription = isFirstParty ? t("firstPartyDescription") : oauthApp.description;
 	const logoSrc = consentLogoSrc(oauthApp.logo_url);
@@ -216,6 +239,10 @@ export default function ConsentForm({
 			setError(t("choosePrimaryTeam"));
 			return;
 		}
+		if (spendLimitInvalid) {
+			setError(spendLimitErrorMessage);
+			return;
+		}
 
 		setLoading(true);
 		setError(null);
@@ -236,6 +263,7 @@ export default function ConsentForm({
 					code_challenge: codeChallenge,
 					code_challenge_method: codeChallengeMethod,
 					resource,
+					...(asksSpendLimit ? { monthly_limit_cost_nanos: noSpendLimit ? 0 : spendLimitNanos } : {}),
 				}),
 			});
 			const result = await response.json();
@@ -543,6 +571,55 @@ export default function ConsentForm({
 					</Accordion>
 				</div>
 
+				{asksSpendLimit ? (
+					<div className="space-y-3">
+						<div>
+							<Label htmlFor="consent-spend-limit">{t("spendLimitTitle")}</Label>
+							<p className="text-xs text-muted-foreground mt-1">
+								{t("spendLimitDescription")}
+							</p>
+						</div>
+						<div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+							<div className="relative sm:w-48">
+								<span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+								<Input
+									id="consent-spend-limit"
+									inputMode="decimal"
+									value={spendLimitInput}
+									disabled={noSpendLimit}
+									className="pl-7"
+									aria-invalid={spendLimitInvalid || undefined}
+									aria-describedby="consent-spend-limit-help"
+									onChange={(event) => setSpendLimitInput(event.target.value)}
+									// Show a valid amount the way it is read: "1000.5" becomes "1,000.50".
+									onBlur={() => {
+										if (spendLimitNanos !== null) setSpendLimitInput(formatConsentSpendLimitInput(spendLimitNanos));
+									}}
+								/>
+							</div>
+							<label className="flex items-center gap-2 text-sm">
+								<Checkbox
+									className="rounded-md"
+									checked={noSpendLimit}
+									onCheckedChange={(checked) => setNoSpendLimit(checked === true)}
+								/>
+								<span>{t("spendLimitNoLimit")}</span>
+							</label>
+						</div>
+						<p
+							id="consent-spend-limit-help"
+							aria-live="polite"
+							className={`text-xs ${spendLimitInvalid ? "text-destructive" : "text-muted-foreground"}`}
+						>
+							{noSpendLimit
+								? t("spendLimitNoLimitHelp")
+								: spendLimitNanos === null
+									? spendLimitErrorMessage
+									: t("spendLimitSummary", { amount: formatConsentSpendLimit(spendLimitNanos / 1_000_000_000) })}
+						</p>
+					</div>
+				) : null}
+
 				<div className="rounded-md border bg-muted/30 p-3">
 					<div className="text-xs text-muted-foreground mb-1">{t("authorizingAs")}</div>
 					<div className="font-medium text-sm">
@@ -565,7 +642,7 @@ export default function ConsentForm({
 				</Button>
 				<Button
 					onClick={handleApprove}
-					disabled={loading || !selectedTeamIds.length || !primaryTeamId || (isUnverified && !unverifiedAcknowledged)}
+					disabled={loading || !selectedTeamIds.length || !primaryTeamId || (isUnverified && !unverifiedAcknowledged) || spendLimitInvalid}
 					className="flex-1 rounded-md"
 				>
 					{loading ? t("authorizing") : t("authorizePermissions", { count: selectedScopes.length })}

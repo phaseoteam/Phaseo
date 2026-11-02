@@ -180,6 +180,17 @@ function rateLimitError(error = "temporarily_unavailable") {
 	return oauthError(error, "Too many OAuth requests; retry later", error === "slow_down" ? 400 : 429, { "Retry-After": "60" });
 }
 
+// The consent screen's monthly spending limit for a third-party app's key, in nanodollars.
+// 0 means no limit; a consent that sends none (an older consent page) gets the default.
+const DEFAULT_CONSENT_MONTHLY_LIMIT_NANOS = 20_000_000_000;
+const MAX_CONSENT_MONTHLY_LIMIT_NANOS = 1_000_000 * 1_000_000_000;
+
+function parseConsentMonthlyLimit(raw: unknown): number | null {
+	if (raw === undefined || raw === null) return DEFAULT_CONSENT_MONTHLY_LIMIT_NANOS;
+	if (typeof raw !== "number" || !Number.isSafeInteger(raw) || raw < 0 || raw > MAX_CONSENT_MONTHLY_LIMIT_NANOS) return null;
+	return raw;
+}
+
 function normalizeWorkspaceIds(raw: unknown): string[] {
 	if (Array.isArray(raw)) {
 		return Array.from(
@@ -676,6 +687,10 @@ oauthRouter.post(
 		if (resource && !isProtectedResourceAllowed(resource)) {
 			return oauthError("invalid_target", "resource must be an HTTPS or loopback protected resource URL");
 		}
+		const monthlyLimitNanos = parseConsentMonthlyLimit(body.monthly_limit_cost_nanos);
+		if (monthlyLimitNanos === null) {
+			return oauthError("invalid_request", "monthly_limit_cost_nanos must be a whole number from 0 (no limit) to 1000000000000000");
+		}
 
 		const client = await loadOAuthClient(clientId);
 		if (!client || !assertRedirectAllowed(client, redirectUri)) {
@@ -731,6 +746,10 @@ oauthRouter.post(
 			code_challenge: codeChallenge,
 			code_challenge_method: codeChallengeMethod,
 			...(resource ? { resource } : {}),
+			// A third-party app's key spends the active workspace's credits. The limit chosen on this
+			// consent travels with this code, and its exchange makes it the key's monthly cost limit,
+			// so another approval in flight for the same app can't swap in its amount.
+			...(client.is_first_party ? {} : { key_monthly_limit_cost_nanos: monthlyLimitNanos }),
 			expires_at: makeAuthCodeExpiry(),
 		});
 		if (insert.error) return oauthStorageError("oauth.authorization_code.insert", insert.error);

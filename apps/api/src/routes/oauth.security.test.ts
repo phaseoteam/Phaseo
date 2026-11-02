@@ -15,6 +15,8 @@ const state = vi.hoisted(() => ({
 	oauthAuth: { ok: false, reason: "invalid_token" } as Record<string, unknown>,
 	pollStatus: "ok" as string,
 	displayName: null as string | null,
+	memberships: [] as Array<{ workspace_id: string }>,
+	insertedCodes: [] as Array<Record<string, unknown>>,
 }));
 
 const FUTURE_EXPIRES_AT = "2999-01-01T00:00:00.000Z";
@@ -57,8 +59,15 @@ vi.mock("@/runtime/env", () => ({
 					},
 				};
 			}
+			if (table === "workspace_members") {
+				return { select: () => ({ eq: () => ({ in: async () => ({ data: state.memberships, error: null }) }) }) };
+			}
 			if (table === "oauth_authorization_codes") {
 				return {
+					insert: async (payload: Record<string, unknown>) => {
+						state.insertedCodes.push(payload);
+						return { error: null };
+					},
 					select: () => ({
 						in: () => ({
 							eq: () => ({
@@ -233,6 +242,8 @@ describe("OAuth route security", () => {
 		state.consentParams = null;
 		state.oauthAuth = { ok: false, reason: "invalid_token" };
 		state.pollStatus = "ok";
+		state.memberships = [];
+		state.insertedCodes.length = 0;
 		vi.resetModules();
 	});
 
@@ -653,6 +664,76 @@ describe("OAuth route security", () => {
 		expect(response.status).toBe(403);
 		expect(await response.json()).toMatchObject({ error: "access_denied" });
 		expect(vi.mocked(service.ensureGrants)).not.toHaveBeenCalled();
+	});
+
+	describe("monthly spending limit on consent", () => {
+		const approve = async (extra: Record<string, unknown>) => {
+			const { oauthRouter } = await import("./oauth");
+			return oauthRouter.request("https://example.com/authorize/approve", {
+				method: "POST",
+				headers: { authorization: "Bearer user-session", "content-type": "application/json" },
+				body: JSON.stringify({
+					client_id: state.client.id,
+					redirect_uri: "https://example.com/callback",
+					primary_workspace_id: "ws_1",
+					scopes: ["gateway:access", "models:read"],
+					code_challenge: "a".repeat(43),
+					code_challenge_method: "S256",
+					...extra,
+				}),
+			});
+		};
+
+		beforeEach(() => {
+			state.client = { id: "partner_app", name: "Partner App", client_type: "public", is_first_party: false };
+			state.memberships = [{ workspace_id: "ws_1" }];
+		});
+
+		it("stores the chosen limit with this consent's authorization code, for the active workspace", async () => {
+			const response = await approve({ monthly_limit_cost_nanos: 35_000_000_000 });
+
+			expect(response.status).toBe(200);
+			expect(state.insertedCodes).toEqual([expect.objectContaining({
+				client_id: "partner_app",
+				user_id: "user_1",
+				workspace_id: "ws_1",
+				key_monthly_limit_cost_nanos: 35_000_000_000,
+			})]);
+		});
+
+		it("keeps each approval's amount with its own code when two are in flight", async () => {
+			expect((await approve({ monthly_limit_cost_nanos: 10_000_000_000 })).status).toBe(200);
+			expect((await approve({ monthly_limit_cost_nanos: 30_000_000_000 })).status).toBe(200);
+
+			expect(state.insertedCodes.map((code) => code.key_monthly_limit_cost_nanos)).toEqual([10_000_000_000, 30_000_000_000]);
+		});
+
+		it("stores no limit as 0, and $20 a month when the consent page sent none", async () => {
+			expect((await approve({ monthly_limit_cost_nanos: 0 })).status).toBe(200);
+			expect((await approve({})).status).toBe(200);
+			expect(state.insertedCodes.map((code) => code.key_monthly_limit_cost_nanos)).toEqual([0, 20_000_000_000]);
+		});
+
+		it("rejects a limit that isn't a whole number of nanodollars in range, before granting anything", async () => {
+			const service = await import("@/lib/oauth/service");
+			vi.mocked(service.ensureGrants).mockClear();
+			for (const value of [-1, 1.5, "20", 1_000_000_000_000_001]) {
+				const response = await approve({ monthly_limit_cost_nanos: value });
+				expect(response.status).toBe(400);
+				expect(await response.json()).toMatchObject({ error: "invalid_request" });
+			}
+			expect(vi.mocked(service.ensureGrants)).not.toHaveBeenCalled();
+			expect(state.insertedCodes).toEqual([]);
+		});
+
+		it("sets no limit for first-party apps", async () => {
+			state.client = { id: "phaseo_cli", name: "Phaseo CLI", client_type: "public", is_first_party: true };
+			const response = await approve({ scopes: ["openid", "models:read"] });
+
+			expect(response.status).toBe(200);
+			expect(state.insertedCodes).toHaveLength(1);
+			expect(state.insertedCodes[0]).not.toHaveProperty("key_monthly_limit_cost_nanos");
+		});
 	});
 
 	it("rejects Gateway API resource approval without gateway access consent", async () => {
