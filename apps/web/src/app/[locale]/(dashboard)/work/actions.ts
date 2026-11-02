@@ -457,6 +457,12 @@ export async function deleteWorkWebhook(webhookId: string) {
 	return run(() => send<Record<string, unknown>>("DELETE", `webhooks/${id(webhookId)}`));
 }
 
+// Import
+
+export async function importWorkItems(input: { rows: Array<Record<string, string>>; source: string; projectId?: string | null }) {
+	return run(() => send<{ created: number; skipped: number; numbers: number[]; failedAt: number | null }>("POST", "items/import", input));
+}
+
 // Reactions
 
 export async function toggleWorkReaction(eventId: string, emoji: ReactionEmoji) {

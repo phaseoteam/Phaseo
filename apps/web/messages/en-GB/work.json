@@ -826,5 +826,33 @@
 		"noAnswer": "no answer",
 		"noDeliveries": "Nothing sent yet",
 		"turnedOff": "Turned off after {count} failures"
+	},
+	"import": {
+		"title": "Import items",
+		"description": "Bring items in from another tracker's CSV export. Check which column goes where, then import. Imported items start without a customer or an error attached.",
+		"file": "CSV file",
+		"tooLarge": "The file is over 10 MB. Split it and import each part.",
+		"noRows": "The file has no rows under its header.",
+		"rowsFound": "{count, plural, one {# row} other {# rows}} found",
+		"fields": {
+			"title": "Title",
+			"description": "Description",
+			"state": "State",
+			"priority": "Priority",
+			"labels": "Labels",
+			"estimate": "Estimate",
+			"externalId": "Original ID"
+		},
+		"notImported": "Not imported",
+		"column": "Column {number}",
+		"project": "Put them in project",
+		"noProject": "No project",
+		"needTitle": "Choose the column with each item's title.",
+		"importCount": "Import {count, plural, one {# item} other {# items}}",
+		"importing": "Importing {done} of {total}…",
+		"cancel": "Cancel",
+		"done": "Imported {created, plural, one {# item} other {# items}}.",
+		"stopped": "The import stopped after {created, plural, one {# item} other {# items}}. Try the rest again.",
+		"failedPart": "The import stopped after {created, plural, one {# item} other {# items}}: {error}"
 	}
 }

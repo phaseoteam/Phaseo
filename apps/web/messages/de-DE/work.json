@@ -826,5 +826,33 @@
 		"noAnswer": "keine Antwort",
 		"noDeliveries": "Noch nichts gesendet",
 		"turnedOff": "Nach {count} Fehlern deaktiviert"
+	},
+	"import": {
+		"title": "Einträge importieren",
+		"description": "Hol Einträge aus dem CSV-Export eines anderen Trackers. Prüfe, welche Spalte wohin gehört, und importiere dann. Importierte Einträge haben anfangs keinen Kunden und keinen Fehler zugeordnet.",
+		"file": "CSV-Datei",
+		"tooLarge": "Die Datei ist größer als 10 MB. Teile sie auf und importiere jeden Teil einzeln.",
+		"noRows": "Die Datei enthält unter der Kopfzeile keine Zeilen.",
+		"rowsFound": "{count, plural, one {# Zeile} other {# Zeilen}} gefunden",
+		"fields": {
+			"title": "Titel",
+			"description": "Beschreibung",
+			"state": "Status",
+			"priority": "Priorität",
+			"labels": "Labels",
+			"estimate": "Schätzung",
+			"externalId": "Ursprüngliche ID"
+		},
+		"notImported": "Nicht importiert",
+		"column": "Spalte {number}",
+		"project": "In Projekt ablegen",
+		"noProject": "Kein Projekt",
+		"needTitle": "Wähle die Spalte mit dem Titel jedes Eintrags.",
+		"importCount": "{count, plural, one {# Eintrag} other {# Einträge}} importieren",
+		"importing": "Importiere {done} von {total}…",
+		"cancel": "Abbrechen",
+		"done": "{created, plural, one {# Eintrag} other {# Einträge}} importiert.",
+		"stopped": "Der Import wurde nach {created, plural, one {# Eintrag} other {# Einträgen}} angehalten. Versuche den Rest erneut.",
+		"failedPart": "Der Import wurde nach {created, plural, one {# Eintrag} other {# Einträgen}} angehalten: {error}"
 	}
 }

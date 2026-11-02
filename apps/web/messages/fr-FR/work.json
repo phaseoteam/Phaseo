@@ -826,5 +826,33 @@
 		"noAnswer": "aucune réponse",
 		"noDeliveries": "Rien n’a encore été envoyé",
 		"turnedOff": "Désactivé après {count} échecs"
+	},
+	"import": {
+		"title": "Importer des éléments",
+		"description": "Importez des éléments depuis l’export CSV d’un autre outil de suivi. Vérifiez quelle colonne correspond à quel champ, puis lancez l’import. Les éléments importés n’ont au départ ni client ni erreur associés.",
+		"file": "Fichier CSV",
+		"tooLarge": "Le fichier dépasse 10 Mo. Divisez-le et importez chaque partie.",
+		"noRows": "Le fichier ne contient aucune ligne sous l’en-tête.",
+		"rowsFound": "{count, plural, one {# ligne trouvée} other {# lignes trouvées}}",
+		"fields": {
+			"title": "Titre",
+			"description": "Description",
+			"state": "État",
+			"priority": "Priorité",
+			"labels": "Libellés",
+			"estimate": "Estimation",
+			"externalId": "ID d’origine"
+		},
+		"notImported": "Non importé",
+		"column": "Colonne {number}",
+		"project": "Les placer dans le projet",
+		"noProject": "Aucun projet",
+		"needTitle": "Choisissez la colonne contenant le titre de chaque élément.",
+		"importCount": "Importer {count, plural, one {# élément} other {# éléments}}",
+		"importing": "Import de {done} sur {total}…",
+		"cancel": "Annuler",
+		"done": "{created, plural, one {# élément importé} other {# éléments importés}}.",
+		"stopped": "L’import s’est arrêté après {created, plural, one {# élément} other {# éléments}}. Réessayez pour le reste.",
+		"failedPart": "L’import s’est arrêté après {created, plural, one {# élément} other {# éléments}} : {error}"
 	}
 }

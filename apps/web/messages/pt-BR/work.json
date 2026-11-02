@@ -826,5 +826,33 @@
 		"noAnswer": "sem resposta",
 		"noDeliveries": "Nada enviado ainda",
 		"turnedOff": "Desativado após {count} falhas"
+	},
+	"import": {
+		"title": "Importar itens",
+		"description": "Traga itens da exportação CSV de outro rastreador. Confira qual coluna vai para cada campo e depois importe. Os itens importados começam sem cliente nem erro vinculado.",
+		"file": "Arquivo CSV",
+		"tooLarge": "O arquivo tem mais de 10 MB. Divida-o e importe cada parte.",
+		"noRows": "O arquivo não tem linhas abaixo do cabeçalho.",
+		"rowsFound": "{count, plural, one {# linha encontrada} other {# linhas encontradas}}",
+		"fields": {
+			"title": "Título",
+			"description": "Descrição",
+			"state": "Estado",
+			"priority": "Prioridade",
+			"labels": "Rótulos",
+			"estimate": "Estimativa",
+			"externalId": "ID original"
+		},
+		"notImported": "Não importado",
+		"column": "Coluna {number}",
+		"project": "Colocar no projeto",
+		"noProject": "Nenhum projeto",
+		"needTitle": "Escolha a coluna com o título de cada item.",
+		"importCount": "Importar {count, plural, one {# item} other {# itens}}",
+		"importing": "Importando {done} de {total}…",
+		"cancel": "Cancelar",
+		"done": "{created, plural, one {# item importado} other {# itens importados}}.",
+		"stopped": "A importação parou após {created, plural, one {# item} other {# itens}}. Tente importar o restante novamente.",
+		"failedPart": "A importação parou após {created, plural, one {# item} other {# itens}}: {error}"
 	}
 }

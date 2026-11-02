@@ -826,5 +826,33 @@
 		"noAnswer": "sin respuesta",
 		"noDeliveries": "Aún no se ha enviado nada",
 		"turnedOff": "Desactivado tras {count} fallos"
+	},
+	"import": {
+		"title": "Importar elementos",
+		"description": "Trae elementos desde la exportación CSV de otro gestor. Comprueba qué columna va en cada campo y luego importa. Los elementos importados empiezan sin cliente ni error asociado.",
+		"file": "Archivo CSV",
+		"tooLarge": "El archivo supera los 10 MB. Divídelo e importa cada parte.",
+		"noRows": "El archivo no tiene filas debajo del encabezado.",
+		"rowsFound": "{count, plural, one {# fila encontrada} other {# filas encontradas}}",
+		"fields": {
+			"title": "Título",
+			"description": "Descripción",
+			"state": "Estado",
+			"priority": "Prioridad",
+			"labels": "Etiquetas",
+			"estimate": "Estimación",
+			"externalId": "ID original"
+		},
+		"notImported": "Sin importar",
+		"column": "Columna {number}",
+		"project": "Ponerlos en el proyecto",
+		"noProject": "Sin proyecto",
+		"needTitle": "Elige la columna con el título de cada elemento.",
+		"importCount": "Importar {count, plural, one {# elemento} other {# elementos}}",
+		"importing": "Importando {done} de {total}…",
+		"cancel": "Cancelar",
+		"done": "{created, plural, one {Se importó # elemento} other {Se importaron # elementos}}.",
+		"stopped": "La importación se detuvo tras {created, plural, one {# elemento} other {# elementos}}. Vuelve a intentarlo con el resto.",
+		"failedPart": "La importación se detuvo tras {created, plural, one {# elemento} other {# elementos}}: {error}"
 	}
 }

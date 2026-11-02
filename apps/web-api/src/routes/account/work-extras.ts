@@ -25,6 +25,7 @@ import {
 	type RecurrenceRow,
 	type TemplateRow,
 } from "@/work/extras";
+import { importItems, MAX_IMPORT_ROWS } from "@/work/importer";
 import { loadWorkProject } from "@/work/projects";
 import { accessFromQuery, badRequest, isWorkspaceOwnerOrAdmin, json, notFound, pathUuid, readBody, unavailable, workAccess } from "./work-shared";
 
@@ -369,4 +370,34 @@ accountWorkExtrasRouter.post("/events/:id/reactions", async (c) => {
 	}
 	const reactions = await loadReactions(context.client, context.workspaceId, [id], context.user.id);
 	return json(c, { eventId: id, reactions: reactions[id] ?? [] });
+});
+
+// ---------------------------------------------------------------------------------------------
+// Import
+// ---------------------------------------------------------------------------------------------
+
+/** POST /items/import {rows, source, projectId?}: rows read from a CSV export, at most MAX_IMPORT_ROWS. */
+accountWorkExtrasRouter.post("/items/import", async (c) => {
+	const body = await readBody(c);
+	const access = await workAccess(c, body.workspaceId);
+	if ("response" in access) return access.response;
+	const { context } = access;
+	if (!Array.isArray(body.rows) || !body.rows.length) return badRequest(c, "rows must be a list of items");
+	if (body.rows.length > MAX_IMPORT_ROWS) return badRequest(c, `Send at most ${MAX_IMPORT_ROWS} rows at a time`);
+	let projectId: string | null = null;
+	if (body.projectId !== undefined && body.projectId !== null) {
+		if (typeof body.projectId !== "string" || !/^[0-9a-f-]{36}$/i.test(body.projectId)) return badRequest(c, "projectId must be a project id");
+		if (!await loadWorkProject(context.client, context.workspaceId, body.projectId).catch(() => null)) return badRequest(c, "projectId must be a project in this workspace");
+		projectId = body.projectId.toLowerCase();
+	}
+	const result = await importItems({
+		client: context.client,
+		workspaceId: context.workspaceId,
+		userId: context.user.id,
+		actorName: access.actorName ?? null,
+		source: typeof body.source === "string" ? body.source : "a CSV file",
+		rows: body.rows,
+		projectId,
+	});
+	return json(c, result, result.created ? 201 : 200);
 });

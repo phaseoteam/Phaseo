@@ -826,5 +826,33 @@
 		"noAnswer": "无响应",
 		"noDeliveries": "尚未发送任何内容",
 		"turnedOff": "失败 {count} 次后已关闭"
+	},
+	"import": {
+		"title": "导入条目",
+		"description": "从其他跟踪工具的 CSV 导出中导入条目。确认各列对应的字段后再导入。导入的条目初始不关联任何客户或错误。",
+		"file": "CSV 文件",
+		"tooLarge": "文件超过 10 MB。请拆分后分别导入。",
+		"noRows": "文件表头下没有任何行。",
+		"rowsFound": "找到 {count, plural, other {# 行}}",
+		"fields": {
+			"title": "标题",
+			"description": "描述",
+			"state": "状态",
+			"priority": "优先级",
+			"labels": "标签",
+			"estimate": "估算",
+			"externalId": "原始 ID"
+		},
+		"notImported": "不导入",
+		"column": "第 {number} 列",
+		"project": "放入项目",
+		"noProject": "无项目",
+		"needTitle": "请选择包含各条目标题的列。",
+		"importCount": "导入 {count, plural, other {# 个条目}}",
+		"importing": "正在导入 {done}/{total}…",
+		"cancel": "取消",
+		"done": "已导入 {created, plural, other {# 个条目}}。",
+		"stopped": "导入 {created, plural, other {# 个条目}}后已停止。请重新导入其余条目。",
+		"failedPart": "导入 {created, plural, other {# 个条目}}后已停止：{error}"
 	}
 }

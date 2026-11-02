@@ -826,5 +826,33 @@
 		"noAnswer": "応答なし",
 		"noDeliveries": "まだ送信されていません",
 		"turnedOff": "{count} 回失敗したためオフになりました"
+	},
+	"import": {
+		"title": "項目をインポート",
+		"description": "別のトラッカーの CSV エクスポートから項目を取り込みます。各列の割り当てを確認してから、インポートしてください。インポートした項目には、最初は顧客やエラーが関連付けられていません。",
+		"file": "CSV ファイル",
+		"tooLarge": "ファイルが 10 MB を超えています。分割して、それぞれをインポートしてください。",
+		"noRows": "ファイルのヘッダーの下に行がありません。",
+		"rowsFound": "{count, plural, other {# 行}}が見つかりました",
+		"fields": {
+			"title": "タイトル",
+			"description": "説明",
+			"state": "状態",
+			"priority": "優先度",
+			"labels": "ラベル",
+			"estimate": "見積もり",
+			"externalId": "元の ID"
+		},
+		"notImported": "インポートしない",
+		"column": "列 {number}",
+		"project": "追加先のプロジェクト",
+		"noProject": "プロジェクトなし",
+		"needTitle": "各項目のタイトルが入った列を選択してください。",
+		"importCount": "{count, plural, other {# 件の項目}}をインポート",
+		"importing": "{total} 件中 {done} 件をインポート中…",
+		"cancel": "キャンセル",
+		"done": "{created, plural, other {# 件の項目}}をインポートしました。",
+		"stopped": "{created, plural, other {# 件の項目}}をインポートした時点で停止しました。残りをもう一度インポートしてください。",
+		"failedPart": "{created, plural, other {# 件の項目}}をインポートした時点で停止しました: {error}"
 	}
 }
