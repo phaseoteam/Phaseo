@@ -1,12 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { STALL_AFTER, STALL_GRACE, activityMessage, checksActivity, heldBackLine, lastProgress, parseBots, sortActivity, stallAction, stallLimits, stallNudge, stallNudgeLine, stallSummary, trustedActivity, type GithubActivity } from "./activity";
+import { STALL_AFTER, STALL_GRACE, activityMessage, checksActivity, heldBackLine, lastProgress, mayPush, pushes, parseBots, sortActivity, stallAction, stallLimits, stallNudge, stallNudgeLine, stallSummary, trustedActivity, type GithubActivity } from "./activity";
 import type { LogLine } from "./types";
 
-const entry = (patch: Partial<GithubActivity>): GithubActivity => ({ id: "comment:1", kind: "comment", author: "maria", association: "MEMBER", body: "Round half up, not down.", at: 1_000, ...patch });
+const entry = (patch: Partial<GithubActivity>): GithubActivity => ({ id: "comment:1", kind: "comment", author: "maria", association: "MEMBER", canPush: true, body: "Round half up, not down.", at: 1_000, ...patch });
 
 describe("which GitHub activity goes to agents", () => {
 	it("passes on people who can push, GitHub's checks and known review bots, and holds back everyone else", () => {
 		expect(trustedActivity(entry({ association: "OWNER" }))).toBe(true);
+		// An organisation member who can only read, or whose access GitHub couldn't confirm, doesn't direct agents.
+		expect(trustedActivity(entry({ association: "MEMBER", canPush: false }))).toBe(false);
+		expect(trustedActivity(entry({ association: "MEMBER", canPush: undefined }))).toBe(false);
+		// Someone who can't push isn't asked about: GitHub would only say no.
+		expect(mayPush(entry({ association: "NONE" }))).toBe(false);
+		expect(mayPush(entry({ author: "codex[bot]", bot: true }))).toBe(false);
+		expect(mayPush(entry({}))).toBe(true);
+		expect(["admin", "maintain", "write", "WRITE"].map(pushes)).toEqual([true, true, true, true]);
+		expect(["triage", "read", "none", "", undefined].map(pushes)).toEqual([false, false, false, false, false]);
 		expect(trustedActivity(entry({ association: "COLLABORATOR" }))).toBe(true);
 		expect(trustedActivity(entry({ association: "CONTRIBUTOR" }))).toBe(false);
 		expect(trustedActivity(entry({ association: "NONE" }))).toBe(false);
@@ -55,8 +64,10 @@ describe("which GitHub activity goes to agents", () => {
 		expect(activityMessage([entry({ number: 42 }), entry({ id: "comment:2", number: 57 })])).toContain("@maria commented on #57:");
 	});
 
-	it("gives failed checks one id per commit and set of checks", () => {
+	it("gives failed checks one id per commit and set of checks, and cuts very long log lines", () => {
 		expect(checksActivity("abc", [{ name: "lint" }, { name: "test" }], 1).id).toBe("checks:abc:lint,test");
+		const body = checksActivity("abc", [{ name: "build", log: `ok\n${"x".repeat(5_000)}` }], 1).body;
+		expect(body.split("\n").every((row) => row.length <= 500)).toBe(true);
 	});
 });
 

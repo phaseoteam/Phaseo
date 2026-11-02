@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { linkedItem } from "../../shared/factory/actions";
-import { activityFrom, ciFrom, ghError, linkWork, mergeStateFrom, timelineFrom, workItem } from "./github";
+import { activityFrom, withoutHtmlComments, ciFrom, ghError, linkWork, mergeStateFrom, timelineFrom, workItem } from "./github";
 
 describe("activityFrom", () => {
 	const line = (entry: Record<string, unknown>) => JSON.stringify({ id: 7, author: "maria", bot: false, association: "MEMBER", body: "Looks off", url: "https://github.com/o/r/pull/5#r7", at: "2026-11-01T10:00:00Z", ...entry });
@@ -21,6 +21,13 @@ describe("activityFrom", () => {
 	it("drops hidden HTML comments, and comments that were nothing else", () => {
 		const out = [line({ body: "<!-- codex-review-state:v1 {\"a\":1} -->\n**P1** Off by one" }), line({ id: 8, body: "<!-- only state -->" })].join("\n");
 		expect(activityFrom("comment", out).map((entry) => entry.body)).toEqual(["**P1** Off by one"]);
+	});
+
+	it("leaves no hidden comment behind, nested or left open", () => {
+		expect(withoutHtmlComments("a<!--<!-- x -->-->b")).toBe("a-->b");
+		expect(withoutHtmlComments("<!<!-- x -->-- y -->z")).toBe("z");
+		expect(withoutHtmlComments("Fine\n<!-- never closed")).toBe("Fine");
+		expect(withoutHtmlComments("no comments")).toBe("no comments");
 	});
 
 	it("keeps where a line comment is", () => {

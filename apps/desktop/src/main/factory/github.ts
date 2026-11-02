@@ -2,7 +2,7 @@ import { execFile, spawn } from "node:child_process";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { GithubActivity } from "../../shared/factory/activity";
+import { pushes, type GithubActivity } from "../../shared/factory/activity";
 import { emptyStages } from "../../shared/factory/stages";
 import { githubRepoOf } from "./clones";
 import type { CheckRun, CiStatus, CloseReason, IssueComment, Mentionable, PullFile, PullFiles, RepoLabel, Reviewer, MergeMethod, MergeState, ReviewState, ReviewVerdict, TimelineComment, TimelineEntry, TimelineEventIcon, WorkItem } from "../../shared/factory/types";
@@ -415,14 +415,33 @@ export function activityFrom(kind: GithubActivity["kind"], out: string): GithubA
 	return out.split("\n").filter(Boolean).map((line) => JSON.parse(line) as Json).flatMap((entry): GithubActivity[] => {
 		const raw = (entry.body as string | null) ?? "";
 		if (FACTORY_SIGNATURE.test(raw.trim())) return [];
-		// Hidden HTML comments (review bots keep their state in them) don't show on GitHub, so the agent doesn't need them.
-		const body = raw.replace(/<!--[\s\S]*?-->/g, "").trim();
+		const body = withoutHtmlComments(raw);
 		if (!body && kind !== "review") return [];
 		if (kind === "review" && (entry.state === "PENDING" || (entry.state === "COMMENTED" && !body.trim()))) return [];
 		const at = Date.parse(entry.at ?? "");
 		if (!Number.isFinite(at)) return [];
 		return [{ id: `${kind}:${entry.id}`, kind, author: entry.author ?? "ghost", bot: entry.bot || undefined, association: entry.association ?? undefined, body, at, url: entry.url ?? undefined, state: entry.state ?? undefined, path: entry.path ?? undefined, line: entry.line ?? undefined }];
 	});
+}
+
+/**
+ * A comment as GitHub shows it: hidden HTML comments (review bots keep their state in them) left out, including nested
+ * leftovers and one left open at the end, which GitHub hides too.
+ */
+export function withoutHtmlComments(text: string): string {
+	let out = text, before: string;
+	do {
+		before = out;
+		out = out.replace(/<!--[\s\S]*?-->/g, "");
+	} while (out !== before);
+	const open = out.indexOf("<!--");
+	return (open >= 0 ? out.slice(0, open) : out).trim();
+}
+
+/** Whether someone can push to a repository: their collaborator permission is admin, maintain or write. */
+export async function canPush(repo: string, login: string): Promise<boolean> {
+	const permission = await gh(["api", `repos/${repo}/collaborators/${encodeURIComponent(login)}/permission`, "--jq", ".permission"], OUTSIDE);
+	return pushes(permission.trim());
 }
 
 /** Who gh is signed in as, and their photo. */

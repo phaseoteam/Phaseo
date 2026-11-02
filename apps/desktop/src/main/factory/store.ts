@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { copyFile, mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { TRUSTED_BOTS, activityMessage, checksActivity, heldBackLine, sortActivity, stallAction, stallLimits, stallNudge, stallNudgeLine, stallSummary, type GithubActivity } from "../../shared/factory/activity";
+import { TRUSTED_BOTS, activityMessage, checksActivity, heldBackLine, mayPush, sortActivity, stallAction, stallLimits, stallNudge, stallNudgeLine, stallSummary, type GithubActivity } from "../../shared/factory/activity";
 import { autopilotFits, lastRun, linkedItem, pullsFor, stageAgent, withItemEffort } from "../../shared/factory/actions";
 import { INPUTS_FOLDER, attachRef, attachable, attachmentKey, attachmentsFor, imageProblem, isAttachmentName, supportsAttach } from "../../shared/factory/attachments";
 import { DEMO_AGENTS, DEMO_SETTINGS, demoAttachment, demoItems, demoNotes, demoProof, demoRepos, demoRuns } from "../../shared/factory/demo";
@@ -13,7 +13,7 @@ import { TRIAGE_THRESHOLD, similarIssues } from "../../shared/factory/similar";
 import { ASKS_REPORTER, STAGES, ciBrief, conflictBrief, currentStage, emptyStages, findingsBrief, staleChecks, issueBody, replyPrompt, stageLabel, stagePrompt, stagesFor } from "../../shared/factory/stages";
 import type { AgentProfile, CheckRun, FactorySettings, GithubChange, ImageUpload, PullFiles, RepoLabel, IssueComment, Mentionable, MergeState, NotePatch, TimelineEntry, RepoNote, RepoStatus, FactorySnapshot, ItemAction, LogLine, NewIssueInput, Run, RunOutcome, RunReport, SimilarItem, StageId, StageStatus, StartRunInput, WorkItem } from "../../shared/factory/types";
 import { localClones } from "./clones";
-import { MAX_ATTACH, SEARCH_LIMIT, activitySince, allComments, changesSince, checkoutRepo, closeAsDuplicate, closeItem, comment, commentsSince, allChecks, lineComment, pullFiles, replyToThread, resolveThread, assignable, deleteComment, editComment, editItem, editPeopleOrLabels, repoLabels, rerunFailed, updateBranch, createIssue, createPullRequest, failedLog, ghVersion, githubLogin, importOpen, itemTimeline, mentionable, readItem, linkWork, markDraft, markReady, mergePull, mergeState, openCounts, pullChecks, reopenItem, reviewPull } from "./github";
+import { MAX_ATTACH, SEARCH_LIMIT, activitySince, allComments, canPush, changesSince, checkoutRepo, closeAsDuplicate, closeItem, comment, commentsSince, allChecks, lineComment, pullFiles, replyToThread, resolveThread, assignable, deleteComment, editComment, editItem, editPeopleOrLabels, repoLabels, rerunFailed, updateBranch, createIssue, createPullRequest, failedLog, ghVersion, githubLogin, importOpen, itemTimeline, mentionable, readItem, linkWork, markDraft, markReady, mergePull, mergeState, openCounts, pullChecks, reopenItem, reviewPull } from "./github";
 import { changedFiles, git, prepareProof, prepareWorktree, proofDir } from "./worktrees";
 import type { AgentProcess, StageRunner, StageWorkspace } from "./runner";
 
@@ -112,6 +112,8 @@ const STALE_AFTER = 30_000;
 const CI_POLL = 30_000;
 /** How often running runs are looked at for stalls. */
 const STALL_POLL = 60_000;
+/** How long GitHub's answer to "can this person push here?" is kept. */
+const PUSH_ACCESS_FOR = 10 * 60_000;
 
 export class FactoryStore {
 	private snapshot: FactorySnapshot;
@@ -144,6 +146,8 @@ export class FactoryStore {
 	private hearing = new Set<string>();
 	/** When each running run's thread last showed its agent at work. */
 	private movedAt = new Map<string, number>();
+	/** Whether each person can push to each repository, by "repo:login", and when GitHub said so. */
+	private pushAccess = new Map<string, { at: number; can: boolean }>();
 	/** The agents as the desktop's accounts offer them, before the efforts chosen in Settings. */
 	private discovered: AgentProfile[] = [];
 	private readonly createdAt = Date.now();
@@ -1350,7 +1354,7 @@ export class FactoryStore {
 			const readAt = Date.now();
 			try {
 				// Everything since the run started, every time: what it already heard is skipped by id.
-				const found = (await Promise.all(items.map((candidate) => activitySince(candidate.repo, candidate.kind, candidate.number, run.startedAt)))).flat();
+				const found = (await Promise.all(items.map(async (candidate) => this.withPushAccess(candidate.repo, await activitySince(candidate.repo, candidate.kind, candidate.number, run.startedAt))))).flat();
 				this.patchRun(run.id, (current) => ({ ...current, heardAt: readAt }));
 				this.passOn(run.id, found);
 			} catch {
@@ -1358,6 +1362,24 @@ export class FactoryStore {
 			} finally {
 				this.hearing.delete(run.id);
 			}
+		}));
+	}
+
+	/**
+	 * Marks which authors GitHub says can push to the repository. Asked once per person and repository for a while;
+	 * when GitHub can't say, the comment is held back.
+	 */
+	private async withPushAccess(repo: string, activity: GithubActivity[]): Promise<GithubActivity[]> {
+		const now = Date.now();
+		return Promise.all(activity.map(async (entry) => {
+			if (!mayPush(entry)) return entry;
+			const key = `${repo}:${entry.author.toLowerCase()}`;
+			let known = this.pushAccess.get(key);
+			if (!known || now - known.at > PUSH_ACCESS_FOR) {
+				known = { at: now, can: await canPush(repo, entry.author).catch(() => false) };
+				this.pushAccess.set(key, known);
+			}
+			return { ...entry, canPush: known.can };
 		}));
 	}
 
@@ -1399,6 +1421,11 @@ export class FactoryStore {
 		for (const run of this.snapshot.runs) {
 			const session = this.sessions.get(run.id);
 			if (run.status !== "running" || !session || this.stalled.has(run.id)) continue;
+			// Waiting on a person isn't stalling: the clock starts again once they answer.
+			if (session.waiting?.()) {
+				this.movedAt.set(run.id, now);
+				continue;
+			}
 			const movedAt = this.movedAt.get(run.id);
 			const limits = stallLimits(this.snapshot.settings);
 			const action = stallAction(run, now, movedAt, limits);

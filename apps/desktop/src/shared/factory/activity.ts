@@ -25,6 +25,11 @@ export interface GithubActivity {
 	url?: string;
 	/** Which item it's on, when the run works on more than one (an issue and its pull request). */
 	number?: number;
+	/**
+	 * Whether the author can push to the repository, as GitHub's permission check said. author_association alone isn't
+	 * enough: MEMBER is anyone in the organisation, who may only be able to read.
+	 */
+	canPush?: boolean;
 }
 
 /**
@@ -40,13 +45,27 @@ export function parseBots(text: string): string[] {
 	return [...new Set(bots)];
 }
 
-const WRITE_ACCESS = new Set(["OWNER", "MEMBER", "COLLABORATOR"]);
+/** Associations that may come with push access, worth asking GitHub about. Everyone else can't push. */
+const MAY_PUSH = new Set(["OWNER", "MEMBER", "COLLABORATOR"]);
 
-/** Whether an agent should act on it: GitHub's own checks, people who can push here, and the review bots above. */
+/** People whose push access is worth checking: the rest are held back without asking GitHub. */
+export function mayPush(activity: GithubActivity): boolean {
+	return activity.kind !== "checks" && !activity.bot && !activity.author.endsWith("[bot]") && MAY_PUSH.has((activity.association ?? "").toUpperCase());
+}
+
+/** A collaborator permission from GitHub that lets someone push: admin, maintain or write. */
+export function pushes(permission: string | undefined): boolean {
+	return ["admin", "maintain", "write"].includes((permission ?? "").toLowerCase());
+}
+
+/**
+ * Whether an agent should act on it: GitHub's own checks, the review bots above, and people GitHub confirmed can push
+ * here. Someone whose access couldn't be checked is held back.
+ */
 export function trustedActivity(activity: GithubActivity, bots: readonly string[] = TRUSTED_BOTS): boolean {
 	if (activity.kind === "checks") return true;
 	if (activity.bot || activity.author.endsWith("[bot]")) return bots.some((bot) => bot.toLowerCase() === activity.author.toLowerCase());
-	return WRITE_ACCESS.has((activity.association ?? "").toUpperCase());
+	return mayPush(activity) && activity.canPush === true;
 }
 
 /** The new activity a run hasn't heard yet, split into what goes to the agent and what's held back. */
@@ -57,6 +76,8 @@ export function sortActivity(activity: GithubActivity[], heard: readonly string[
 
 /** How much of a failed check's log goes to the agent. The end is where the error usually is. */
 const CHECK_LOG_LINES = 80;
+/** A minified bundle or JSON dump can make one log line huge; each is cut to this. */
+const MAX_CHECK_LINE = 500;
 const MAX_BODY = 4_000;
 
 function describe(entry: GithubActivity, several: boolean): string {
@@ -84,7 +105,7 @@ export function activityMessage(activity: GithubActivity[]): string {
 export function checksActivity(head: string, failed: { name: string; link?: string; log?: string }[], at: number, number?: number): GithubActivity {
 	const body = failed.map((check) => [
 		`${check.name}${check.link ? ` (${check.link})` : ""}`,
-		...(check.log ? ["```", check.log.split("\n").slice(-CHECK_LOG_LINES).join("\n"), "```"] : []),
+		...(check.log ? ["```", check.log.split("\n").slice(-CHECK_LOG_LINES).map((row) => row.slice(0, MAX_CHECK_LINE)).join("\n"), "```"] : []),
 	].join("\n")).join("\n\n");
 	return { id: `checks:${head}:${failed.map((check) => check.name).join(",")}`, kind: "checks", author: "github", body, at, number };
 }
