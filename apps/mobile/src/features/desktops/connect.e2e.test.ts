@@ -86,6 +86,9 @@ function nextEvent<T extends ClientEvent["type"]>(client: DesktopClient, type: T
   });
 }
 
+// Real sockets and key exchange: the first pairing takes about 3 s and more on a busy machine, past Jest's 5 s default.
+jest.setTimeout(20_000);
+
 describe("the phone app through the real Phaseo Connect relay and desktop client", () => {
   const cleanup: (() => Promise<void> | void)[] = [];
   afterEach(async () => {
