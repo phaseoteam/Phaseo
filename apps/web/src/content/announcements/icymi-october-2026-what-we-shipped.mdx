@@ -23,7 +23,7 @@ This recap covers the work that shipped from **1 October 2026** through **31 Oct
 
 ### Rate limits and budgets you can set yourself
 
-Owners and admins can now create named rate limit policies in **Settings → Rate limits**. A policy can cap requests per minute, tokens per minute and concurrent requests. You can assign it to an API key, a member, a department, a guardrail or the end-user default. **Strict mode** checks the per-minute limits before the request reaches a provider, for teams that would rather refuse a request than go over. Limited requests return `429` with OpenAI-style `x-ratelimit-*` headers, and the page shows how many requests each policy throttled in the last 24 hours. The `/v1/rate-limits` API is in beta.
+Owners and admins can now create named rate limit policies in **Settings → Rate limits**. A policy can cap requests per minute, tokens per minute and concurrent requests. You can assign it to an API key, a member, a department, a guardrail or the end-user default. **Strict mode** checks the per-minute limits before the request reaches a provider, for teams that would rather refuse a request than go over. Requests over a per-minute limit return `429` with OpenAI-style `x-ratelimit-*` headers, and the page shows how many requests each policy throttled in the last 24 hours. The `/v1/rate-limits` API is in beta.
 
 Departments gained daily, weekly and monthly budgets in **Settings → Budgets**. They alert owners and admins at 80% and 100%. Since 29 October, once a department has used its budget, API-key requests that count toward it are refused until the budget resets. A workspace setting can count each member's spend toward their primary department only. **Settings → Notifications** added rate limit alerts, and the Terraform provider can now manage rate limit policies, assignments and department budgets.
 
@@ -62,7 +62,7 @@ The top-level `models` fallback list now works on every inference endpoint. The 
 
 ### Privacy and key security
 
-**Require zero data retention** now keeps prompt and response content out of request logs, the response cache, data samples and Phaseo's telemetry, whether it is set by the workspace, a key guardrail or the request. Request details tell you when content was skipped. Owners and admins can also limit who can view stored prompts and responses in **Settings → Privacy**.
+**Require zero data retention** now keeps prompt and response content out of request logs, data samples and Phaseo's telemetry, whether it is set by the workspace, a key guardrail or the request. Request details tell you when content was skipped. Owners and admins can also limit who can view stored prompts and responses in **Settings → Privacy**.
 
 API keys each gained their own page with usage charts, limits and settings. Keys can be restricted to labelled IP addresses and CIDR ranges, and can record where they are stored, such as Vercel, GitHub Actions or 1Password. **Settings → API Keys → Key Security** flags keys with no spend limit, expiry, recent use, IP allowlist or recorded storage location, and suggests a fix.
 
