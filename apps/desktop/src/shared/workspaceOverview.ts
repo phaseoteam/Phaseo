@@ -1,7 +1,8 @@
 import type { Task, Workspace } from "./workspace";
 import { inboxReasonFromCounts, type TaskAttention } from "./inbox";
+import type { OperatorPause } from "./operator";
 
-export type TaskOverview = Pick<Task, "id" | "title" | "harness" | "model" | "mode" | "status" | "pinned" | "tags" | "settledOverride" | "settledAt" | "unsettledAt" | "snoozedUntil" | "snoozedAt" | "lastSnoozeWakeAt" | "lastVisitedAt" | "autoSettle" | "orderKey" | "archived" | "createdAt" | "updatedAt" | "revision" | "projectId" | "accountId" | "agentId" | "parentId" | "delegation" | "launch" | "missionId" | "inboxReadAt" | "pullRequests" | "issues" | "usageTotals" | "autopilot"> & TaskAttention & { attentionReason?: string; attentionKey: string; queueCount?: number; lastCompletedAt?: string; lastUserMessageAt?: string };
+export type TaskOverview = Pick<Task, "id" | "title" | "harness" | "model" | "mode" | "status" | "pinned" | "tags" | "settledOverride" | "settledAt" | "unsettledAt" | "snoozedUntil" | "snoozedAt" | "lastSnoozeWakeAt" | "lastVisitedAt" | "autoSettle" | "orderKey" | "archived" | "createdAt" | "updatedAt" | "revision" | "projectId" | "accountId" | "agentId" | "parentId" | "delegation" | "launch" | "missionId" | "inboxReadAt" | "pullRequests" | "issues" | "usageTotals" | "autopilot"> & TaskAttention & { /** The operator chat: how many subscriptions and held events it has, and why it is paused. */ operator?: { subscriptions: number; held: number; capNanos: number; paused?: OperatorPause }; attentionReason?: string; attentionKey: string; queueCount?: number; lastCompletedAt?: string; lastUserMessageAt?: string };
 export type WorkspaceOverview = Omit<Workspace, "tasks"> & { tasks: TaskOverview[] };
 export function emptyOverview(): WorkspaceOverview { return { version: 1, projects: [], accounts: [], agents: [], mcpConnections: [], tasks: [] }; }
 
@@ -17,6 +18,7 @@ export function taskOverview(task: Task, conversation?: ConversationSummary): Ta
 		queueCount: task.queue?.length ?? 0, lastCompletedAt: summary.lastCompletedAt, lastUserMessageAt: summary.lastUserAt,
 		archived: Boolean(task.archived), createdAt: task.createdAt, updatedAt: task.updatedAt, revision: task.revision,
 		projectId: task.projectId, accountId: task.accountId, agentId: task.agentId, parentId: task.parentId, delegation: task.delegation, launch: task.launch, missionId: task.missionId, inboxReadAt: task.inboxReadAt, pullRequests: task.pullRequests, issues: task.issues, usageTotals: task.usageTotals, autopilot: task.autopilot,
+		...task.operator ? { operator: { subscriptions: task.operator.subscriptions.length, held: task.operator.held.length, capNanos: task.operator.capNanos, ...task.operator.paused ? { paused: task.operator.paused } : {} } } : {},
 		approvalsCount: task.approvals?.length ?? 0, answersCount: (task.questions?.length ?? 0) + (task.forms?.length ?? 0),
 		steeringReviewCount: task.steering?.filter(value => value.status === "unconfirmed" || value.status === "rejected").length ?? 0,
 		attentionKey: JSON.stringify([summary.lastUserId ?? null, task.approvals?.map(value => value.id) ?? [], task.questions?.map(value => value.id) ?? [], task.forms?.map(value => value.id) ?? [], task.steering?.map(value => [value.id, value.status]) ?? []]),

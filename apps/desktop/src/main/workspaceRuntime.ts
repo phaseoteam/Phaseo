@@ -50,6 +50,8 @@ import { AttachmentService } from "./attachments";
 import type { FormAnswer } from "../shared/agentForms";
 import { formAnswerError } from "../shared/agentForms";
 import { OpenCodeService } from "./openCodeService";
+import { OperatorService } from "./operatorService";
+import type { AppControl } from "./appControl";
 import { CursorAdapter } from "./cursorAdapter";
 import type { ImportedConversation } from "./taskImport";
 import type { Attachment } from "../shared/workspace";
@@ -168,6 +170,7 @@ export class WorkspaceRuntime {
 		this.openCode = new OpenCodeService(directory);
 		const modelDiscovery = () => this.discoverThreadModels, installationDiscovery = () => this.discoverInstallations, missions = () => this.missionCommand, guides = () => this.pullRequestGuideTools;
 		this.threads = new WorkspaceThreads({ store: this.store, isClosing: () => this.closing, broadcast: () => this.broadcast(), start: id => this.start(id), command: command => this.command(command), createWorktree: (projectId, branch, base) => this.createWorktree(projectId, branch, base), assertHarnessAvailable: harness => this.assertHarnessAvailable(harness), assertProjectAvailable: id => this.assertProjectAvailable(id), readIssue: (root, repository, number) => this.github.readIssue(root, repository, number), get discoverModels() { return modelDiscovery(); }, get discoverInstallations() { return installationDiscovery(); }, get missions() { return missions(); }, get pullRequestGuides() { return guides(); }, modelDiscoveries: this.modelDiscoveries }, () => this.store.getPreferences().maxActiveAgents);
+		this.operator = new OperatorService(this.operatorHost());
 		// Deliveries recorded while the app was closed wake idle parents as they would at runtime, after the host has wired its hooks.
 		// Children cut off by the app quitting are only reported: waking the parent for them would spend tokens nobody asked for.
 		const finished = (id: string) => { try { return this.store.getTask(id).status !== "interrupted"; } catch { return false; } };
@@ -191,6 +194,11 @@ export class WorkspaceRuntime {
 		this.usageBackfill.unref?.();
 	}
 	private readonly threads: WorkspaceThreads;
+	/** The operator chat's events, subscriptions and safety (main/operatorService.ts). */
+	readonly operator: OperatorService;
+	private operatorHost() { return { store: this.store, isClosing: () => this.closing, broadcast: () => this.broadcast(), wake: (id: string) => this.wake(id), cancel: (id: string) => this.command({ type: "cancel", id }), note: (id: string, title: string, text: string) => this.recordActivity(id, { id: `operator:${randomUUID()}`, type: "tool", title, text, status: "completed" }), createThread: (command: Parameters<WorkspaceRuntime["createThread"]>[0], title: string) => this.createThread(command, title) }; }
+	/** The app command registry, set by the app once it has a window; offered to top-level chats as list_app_commands and run_app_command. */
+	appControl?: AppControl;
 
 	/** Whether Autopilot acts for this chat: the experimental setting is on, the chat is in Autopilot, and its spend cap has not stopped it. */
 	private autopilotActive(id: string) {
@@ -507,6 +515,7 @@ export class WorkspaceRuntime {
 		this.broadcast();
 		if (!queued || !update) return;
 		this.start(taskId);
+		this.operator.watchNotice("pull-request.update", taskId, update.summary);
 		this.onPullRequestNotice?.(taskId, update.summary, update.outcome);
 	}
 	/** Raised for each watched pull request update, for the desktop notification. */
@@ -527,6 +536,7 @@ export class WorkspaceRuntime {
 		this.broadcast();
 		if (!queued || !update) return;
 		this.start(taskId);
+		this.operator.watchNotice("issue.update", taskId, update.summary);
 		this.onIssueNotice?.(taskId, update.summary, update.outcome);
 	}
 	/** Raised for each watched issue update, for the desktop notification. */
@@ -561,7 +571,7 @@ export class WorkspaceRuntime {
 	}
 	private broadcast() {
 		const parents = this.store.collectDelegationResults();
-		this.onChange(this.store.getOverview()); this.threads.changed();
+		this.onChange(this.store.getOverview()); this.threads.changed(); this.operator.changed();
 		for (const listener of [...this.threadListeners]) try { listener(); } catch { /* A listener's failure is its own. */ }
 		if (!this.closing) for (const id of parents) this.wake(id);
 	}
@@ -596,13 +606,18 @@ export class WorkspaceRuntime {
 			const collected = this.store.collectDelegationResults();
 			if (collected.length) { this.onChange(this.store.getOverview()); this.threads.changed(); for (const other of collected) if (other !== id) this.wake(other); }
 			let task; try { task = this.store.getTask(id); } catch { return; }
-			if (!task.archived && ["idle", "completed"].includes(task.status)) this.start(id);
+			// The operator also wakes after it was stopped or failed: its events are the person's standing request.
+			if (!task.archived && (["idle", "completed"].includes(task.status) || (task.operator && !task.operator.paused && ["failed", "interrupted"].includes(task.status)))) this.start(id);
 		}, 250));
 	}
 	threadTools(parentId: string): ThreadTools {
 		// Only Code chats run commands, so a Chat-mode secret would have nothing to use it.
 		const code = this.store.getTask(parentId)?.mode !== "chat";
-		const tools = { ...this.threads.forThread(parentId), ...code ? { requestSecret: (input: SecretRequestInput, signal?: AbortSignal) => this.requestSecret(parentId, input, signal) } : {}, ...this.factoryTools ? { factory: this.factoryTools(parentId) } : {}, ...this.triageProject(parentId) ? { draftIssue: (draft: unknown) => this.draftIssue(parentId, draft) } : {} };
+		const task = this.store.getTask(parentId), appControl = this.appControl;
+		// Delegated agents work in the background and do not move the person's window; the operator alone subscribes to events.
+		const app = appControl && !task.delegation ? { app: { list: (query?: string) => appControl.list(query), run: (command: string, args?: unknown) => appControl.run("agent", command, args) } } : {};
+		const operator = task.operator && !task.archived ? { operator: this.operator.tools(parentId) } : {};
+		const tools = { ...this.threads.forThread(parentId), ...app, ...operator, ...code ? { requestSecret: (input: SecretRequestInput, signal?: AbortSignal) => this.requestSecret(parentId, input, signal) } : {}, ...this.factoryTools ? { factory: this.factoryTools(parentId) } : {}, ...this.triageProject(parentId) ? { draftIssue: (draft: unknown) => this.draftIssue(parentId, draft) } : {} };
 		return this.browserTools ? { ...tools, browser: this.browserTools(parentId) } : tools; }
 	/** The triage project of a top-level chat working in one; delegated agents report to their parent instead of drafting. */
 	private triageProject(id: string) {
@@ -1235,7 +1250,7 @@ export class WorkspaceRuntime {
 			this.executions.delete(id);
 			if (this.settledByTurn.delete(id)) this.settled(id);
 			if (!this.closing && this.store.getTask(id).status === "completed" && this.store.getTask(id).queue.length) this.start(id);
-			else if (!this.closing) void this.autopilotAfterTurn(id).catch(() => {});
+			else if (!this.closing) { void this.autopilotAfterTurn(id).catch(() => {}); this.operator.afterTurn(id); }
 		});
 		this.executions.set(id, execution);
 		// Failures outside provider execution must be visible rather than unhandled.
@@ -1474,7 +1489,7 @@ export class WorkspaceRuntime {
 		}
 	}
 	async close() {
-		this.closing = true; this.settleAbort.abort(); clearTimeout(this.broadcastTimer); clearTimeout(this.usageBackfill); clearTimeout(this.flushClock); for (const timer of this.wakeTimers.values()) clearTimeout(timer); this.wakeTimers.clear(); for (const close of this.orchestrationSessions.values()) close(); this.broadcast();
+		this.closing = true; this.operator.close(); this.settleAbort.abort(); clearTimeout(this.broadcastTimer); clearTimeout(this.usageBackfill); clearTimeout(this.flushClock); for (const timer of this.wakeTimers.values()) clearTimeout(timer); this.wakeTimers.clear(); for (const close of this.orchestrationSessions.values()) close(); this.broadcast();
 		for (const timer of this.limitTimers.values()) clearTimeout(timer); this.limitTimers.clear();
 		// Chats cut off by quitting are offered to continue at the next start.
 		for (const id of this.running.keys()) { const task = this.store.apply({ type: "cancel", id }); task.interruptedByQuit = true; task.error = "Phaseo quit during this turn. Resume to continue."; this.store.saveTask(task); }

@@ -182,6 +182,11 @@ const desktopApi: PhaseoDesktopApi = {
 	getWindowState: () => ipcRenderer.invoke("desktop:get-window-state"),
 	performWindowAction: (action) => ipcRenderer.invoke("desktop:window-action", action),
 	performAppAction: (action) => ipcRenderer.invoke("desktop:app-action", action),
+	appCommands: {
+		run: (command, args) => ipcRenderer.invoke("desktop:app-command", command, args),
+		onRequest: listener => { const subscription = (_event: Electron.IpcRendererEvent, request: Parameters<typeof listener>[0]) => listener(request); ipcRenderer.on("desktop:app-command-request", subscription); return () => ipcRenderer.removeListener("desktop:app-command-request", subscription); },
+		reply: result => ipcRenderer.send("desktop:app-command-result", result),
+	},
 	keybindings: {
 		get: () => ipcRenderer.invoke("desktop:keybindings"),
 		save: entries => ipcRenderer.invoke("desktop:save-keybindings", entries),

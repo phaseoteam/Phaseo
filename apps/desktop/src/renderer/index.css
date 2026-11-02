@@ -12,6 +12,7 @@
 
 /* Shared components (@phaseo/ui) live outside this app, so Tailwind has to be told to scan them. */
 @source "../../../../packages/shared/ui/src";
+@source "../../../../packages/shared/app-kit/src/ui-recipes";
 
 @custom-variant dark (&:where(.dark, .dark *));
 

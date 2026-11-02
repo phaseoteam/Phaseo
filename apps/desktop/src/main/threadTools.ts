@@ -3,6 +3,7 @@ import { normalizeTags } from "../shared/tags";
 import { organizeActions, waitDefaultMs, waitMaximumMs, type DelegateRequest, type LaunchRequest, type LaunchWorkspace, type FactoryAgentTools, type OrganizeAction, type IssueToolAction, type PullRequestToolAction, type PullRequestToolTarget, maximumGuideTargets, type ScheduleUpdate, type ThreadTools } from "../shared/orchestration";
 import { validateSchedule } from "../shared/missions";
 import { secretRequestTimeout, validateSecretRequest } from "../shared/secretRequests";
+import { operatorEventKinds } from "../shared/operator";
 import { browserAgentDefaults, validateBrowserOpen, validateBrowserSnapshot, validateBrowserTab, validateBrowserTarget, validateBrowserType, type BrowserAgentTools } from "../shared/browserAgent";
 
 function object(value: unknown): Record<string, unknown> {
@@ -115,6 +116,27 @@ export function factoryTools(factory: FactoryAgentTools) {
 	];
 }
 
+/**
+ * The app command registry (shared/appCommands.ts) for agents: two tools reach every command the person can pick, so a
+ * new command needs no new tool. Commands only change what the window shows or are reversible, so none asks first.
+ */
+export function appTools(app: NonNullable<ThreadTools["app"]>) {
+	return [
+		({ id: "list_app_commands", description: "List the app commands you can run with run_app_command: the actions the person can pick in the Phaseo command palette (open a chat, page or pane, switch mode, change the theme, draft a new chat, show a notification, read what is on screen, open or pause the operator), each with its arguments. Narrow with query words.", parameters: { type: "object", properties: { query: { type: "string" } }, additionalProperties: false }, execute: async (raw: unknown) => app.list(text(object(raw ?? {}), "query", 200, true)) }),
+		({ id: "run_app_command", description: "Run one app command from list_app_commands in the Phaseo window, as if the person picked it. app.state returns what is on screen. Use it when the person asks to see or open something, or as the operator; do not move the window around otherwise.", parameters: { type: "object", properties: { command: { type: "string", description: "A command id from list_app_commands, such as inbox.open." }, args: { type: "object", description: "The command's arguments, as list_app_commands describes them." } }, required: ["command"], additionalProperties: false }, execute: async (raw: unknown) => { const input = object(raw); return app.run(text(input, "command", 100)!, input.args); } }),
+	];
+}
+
+/** The operator chat's event subscriptions. */
+export function operatorTools(operator: NonNullable<ThreadTools["operator"]>) {
+	const kinds = { type: "array", minItems: 1, items: { type: "string", enum: [...operatorEventKinds] } };
+	return [
+		({ id: "subscribe_events", description: "Choose workspace events that wake you, the operator: thread.completed, thread.failed, thread.needs-you (approval, answer or the person needed), thread.limited (usage limit), pull-request.update and issue.update (from watched pull requests and issues). Narrow with threadIds, projectId or scheduledOnly (runs of scheduled tasks). priority wake (default) wakes you; digest waits for the next wake. Events that land together arrive as one message. Subscribe narrowly: each wake is a turn, and the operator has an hourly wake budget and a spend cap.", parameters: { type: "object", properties: { kinds, threadIds: { type: "array", items: { type: "string" }, maxItems: 50 }, projectId: { type: "string" }, scheduledOnly: { type: "boolean" }, priority: { type: "string", enum: ["wake", "digest"] }, label: { type: "string", description: "What this subscription is for, in a few words." } }, required: ["kinds"], additionalProperties: false }, execute: async (raw: unknown) => operator.subscribe(raw) }),
+		({ id: "unsubscribe_events", description: "Remove one of your event subscriptions by its id from list_subscriptions.", parameters: { type: "object", properties: { id: { type: "string" } }, required: ["id"], additionalProperties: false }, execute: async (raw: unknown) => operator.unsubscribe(text(object(raw), "id", 100)!) }),
+		({ id: "list_subscriptions", description: "List your event subscriptions, how many events are held for your next wake, whether you are paused and why, wakes left this hour, and your spend against your cap.", parameters: { type: "object", properties: {}, additionalProperties: false }, execute: async () => operator.list() }),
+	];
+}
+
 export function threadTools(service: ThreadTools, options: { images?: boolean } = {}) {
 	const threadParameters = { type: "object" as const, properties: { id: { type: "string" as const } }, required: ["id"], additionalProperties: false };
 	// Flat objects rather than oneOf: several providers reject union schemas in tool parameters.
@@ -172,5 +194,7 @@ export function threadTools(service: ThreadTools, options: { images?: boolean } 
 		...service.requestSecret ? [({ id: "request_secret", description: `Ask the user to type a secret (an API key, token or password) into a private field in this chat, and wait (default ${secretRequestTimeout.default / 60000} minutes). You never see the value, and it never enters the conversation. Returns a secretRef, which run_command takes as secrets: { NAME: secretRef } to set an environment variable for one command, or with delivery "file" an owner-only file path to read inside a shell command, for example TOKEN="$(cat <file>)". Either lasts 24 hours. Never print the secret. When you need a secret or are asked how to provide one, call this instead of asking for it in the chat. declined means the user chose not to; ask again only if they want to.`, parameters: { type: "object", properties: { label: { type: "string", description: "What to enter, such as 'Stripe test key'." }, reason: { type: "string", description: "What it is for and where to find it." }, placeholder: { type: "string" }, delivery: { type: "string", enum: ["secretRef", "file"], description: "secretRef for run_command (Phaseo chats' default); file for any other shell (the default elsewhere)." }, timeoutMs: { type: "integer", minimum: secretRequestTimeout.minimum, maximum: secretRequestTimeout.maximum } }, required: ["label", "reason"], additionalProperties: false }, execute: async (raw: unknown, context?: unknown) => service.requestSecret!(validateSecretRequest(raw), abortSignal(context)) })] : [],
 		...service.browser ? browserTools(service.browser, { images: options.images ?? true }) : [],
 		...service.factory ? factoryTools(service.factory) : [],
+		...service.app ? appTools(service.app) : [],
+		...service.operator ? operatorTools(service.operator) : [],
 	];
 }

@@ -2,10 +2,10 @@ import type { Task, TaskStatus } from "./workspace";
 import type { TaskOverview } from "./workspaceOverview";
 import { sidebarSection } from "./threadLifecycle";
 
-export type TaskAttention = { archived: boolean; status: TaskStatus; approvalsCount: number; answersCount: number; steeringReviewCount: number; autopilot?: Task["autopilot"] };
+export type TaskAttention = { archived: boolean; status: TaskStatus; approvalsCount: number; answersCount: number; steeringReviewCount: number; autopilot?: Task["autopilot"]; operator?: { paused?: { reason: string } } };
 
 export function inboxReason(task: Task): string | undefined {
-	return inboxReasonFromCounts({ archived: task.archived, status: task.status, approvalsCount: task.approvals?.length ?? 0, answersCount: (task.forms?.length ?? 0) + (task.questions?.length ?? 0), autopilot: task.autopilot, steeringReviewCount: task.steering?.filter(value => value.status === "unconfirmed" || value.status === "rejected").length ?? 0 });
+	return inboxReasonFromCounts({ archived: task.archived, status: task.status, approvalsCount: task.approvals?.length ?? 0, answersCount: (task.forms?.length ?? 0) + (task.questions?.length ?? 0), autopilot: task.autopilot, operator: task.operator, steeringReviewCount: task.steering?.filter(value => value.status === "unconfirmed" || value.status === "rejected").length ?? 0 });
 }
 
 export function inboxReasonFromCounts(task: TaskAttention): string | undefined {
@@ -16,6 +16,8 @@ export function inboxReasonFromCounts(task: TaskAttention): string | undefined {
 	// Autopilot hands a chat back when it needs the person, when it stopped making progress, or at its spend cap.
 	if (task.autopilot?.handback?.reason === "cap" && task.status !== "running") return "Spend cap reached";
 	if ((task.autopilot?.handback?.reason === "blocked" || task.autopilot?.handback?.reason === "stalled") && task.status === "completed") return "Autopilot needs you";
+	// The operator pauses itself at its spend cap or when its wakes stop needing action; the person resumes it.
+	if ((task.operator?.paused?.reason === "cap" || task.operator?.paused?.reason === "stalled") && task.status !== "running") return "Operator paused";
 	if (task.status === "waiting") return "Waiting for you";
 	if (task.status === "failed") return "Task failed";
 	if (task.status === "interrupted") return "Task interrupted";

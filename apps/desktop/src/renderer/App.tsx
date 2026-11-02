@@ -8,6 +8,7 @@ import { runUndo } from "./shell/threadUndo";
 import { isSettled } from "../shared/threadLifecycle";
 import { useAppTheme } from "./lib/appTheme";
 import { useWorkspace, WorkspaceProvider } from "./app/workspace";
+import { useAppCommandHost } from "./lib/appCommands";
 import { Titlebar } from "./shell/Titlebar";
 import { Sidebar } from "./shell/Sidebar";
 import { RightPanel } from "./shell/RightPanel";
@@ -91,6 +92,7 @@ function ErrorBanner() {
 function Shell() {
 	const { sidebarOpen, settings } = useWorkspace();
 	useShortcuts();
+	useAppCommandHost();
 	return <div className="flex h-full flex-col">
 		<Titlebar />
 		<div className="relative flex min-h-0 flex-1">

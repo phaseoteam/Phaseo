@@ -117,6 +117,7 @@ import { cursorAccountStatus, cursorModels, cursorSignIn } from "./cursorAccount
 import { registerDiagnosticsIpc, stopTracing, traceIpcHandlers } from "./diagnostics/diagnosticsIpc";
 import type { ProcessOwner } from "./diagnostics/processTable";
 import { span } from "./diagnostics/tracer";
+import { AppControl } from "./appControl";
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 const preloadPath = path.join(currentDirectory, "../preload/index.cjs");
@@ -125,6 +126,8 @@ const developmentUrl = app.isPackaged ? undefined : process.env.PHASEO_DESKTOP_D
 const applicationIcon = path.join(app.getAppPath(), "assets", `icon-${developmentUrl ? "development" : "production"}.png`);
 const updateFeedUrl = process.env.PHASEO_DESKTOP_UPDATE_URL;
 let workspaceRuntime: WorkspaceRuntime;
+/** The app command registry's main side (main/appControl.ts), once the workspace is open. */
+let appControl: AppControl | undefined;
 let pullRequestGuides: PullRequestGuides;
 /** Code ▸ Factory; PHASEO_FACTORY_DEMO=1 runs it on demo data, for screenshots. */
 let factoryService: FactoryService | undefined;
@@ -1030,6 +1033,8 @@ function senderWindow(event: Electron.IpcMainInvokeEvent): BrowserWindow | null 
 }
 
 const browserHost = new BrowserHost();
+ipcMain.handle("desktop:app-command", (event, command: unknown, args: unknown) => { if (!senderWindow(event) || !appControl) throw new Error("Invalid app command."); return appControl.run("person", command, args); });
+ipcMain.on("desktop:app-command-result", (event, result: unknown) => { if (event.senderFrame === event.sender.mainFrame) appControl?.resolve(result); });
 registerFactoryIpc(ipcMain, () => factoryService, senderWindow, async window => { const picked = await dialog.showOpenDialog(window, { title: "Choose a local clone of the repository", properties: ["openDirectory"] }); return picked.canceled ? undefined : picked.filePaths[0]; });
 const browserAgent = new BrowserAgent(browserHost, () => [...appWindows].find(window => !window.isDestroyed()));
 let browserRecordings: BrowserRecordings;
@@ -1208,6 +1213,18 @@ app.whenReady().then(() => {
 		return limitResetAt(await nativeAccountStatus(harness, account?.configDirectory ?? app.getPath("userData"), account, AbortSignal.timeout(30000)));
 	};
 	workspaceRuntime.browserTools = chatId => browserAgent.forChat(chatId);
+	const control: AppControl = appControl = new AppControl({
+		send: request => { const window = [...appWindows].find(value => !value.isDestroyed()); if (!window) return false; window.webContents.send("desktop:app-command-request", request); return true; },
+		main: async (command, _args, caller) => {
+			const operator = workspaceRuntime.operator;
+			if (command === "operator.open") { const opened = operator.open(); await control.renderer("chat.open", { threadId: opened.threadId }).catch(() => undefined); return opened; }
+			if (command === "operator.pause") return operator.pause("person", caller === "agent" ? "The operator paused itself. Its events are held until you resume it." : "Paused by you. Its events are held until you resume it.");
+			if (command === "operator.resume") return operator.resume();
+			if (command === "operator.raiseCap") return operator.raiseCap();
+			throw new Error("Unknown app command.");
+		},
+	});
+	workspaceRuntime.appControl = control;
 	browserRecordings = new BrowserRecordings(path.join(app.getPath("userData"), "browser-recordings"));
 	terminalService.onEvent = event => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:terminal-event", event); };
 	workspaceRuntime.onChange = state => {

@@ -1,4 +1,4 @@
-import { Activity, CalendarClock, ChartLine, Gauge, Inbox, Code2, GitPullRequestArrow, Link2, Keyboard, Columns3, FolderPlus, Globe, MessageSquare, Moon, PanelLeft, Plus, Settings, SquareTerminal, Sun, UserRound, Files, Archive, FileSearch, TextSearch, Search, Copy, GitBranchPlus, Bug } from "lucide-react";
+import { Bot, Pause, Play, Activity, CalendarClock, ChartLine, Gauge, Inbox, Code2, GitPullRequestArrow, Link2, Keyboard, Columns3, FolderPlus, Globe, MessageSquare, Moon, PanelLeft, Plus, Settings, SquareTerminal, Sun, UserRound, Files, Archive, FileSearch, TextSearch, Search, Copy, GitBranchPlus, Bug } from "lucide-react";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { errorText, useWorkspace } from "../app/workspace";
 import { ScrollArea } from "../components/ui/scroll-area";
@@ -11,15 +11,29 @@ import { StatusDot } from "./Sidebar";
 import { pullRequestSearchTerms } from "../../shared/pullRequestView";
 import { issueSearchTerms } from "../../shared/issueView";
 import { ModelStack, modelName } from "../chat/ModelPicker";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ComponentType } from "react";
+import { paletteEntries, type PaletteEntry } from "../../shared/appCommands";
+import { runAppCommand } from "../lib/appCommands";
 import { MessageSearchResults, useMessageSearch } from "./MessageSearch";
 import { requestFind } from "../chat/ChatFind";
 import { CloneProjectDialog, openCloneProject, OpenProjectItems } from "./PaletteExtras";
 import { showToast } from "../components/ui/toast";
 import { startTriage } from "./Triage";
 
+const entryIcons: Record<string, ComponentType> = { "New chat": Plus, "Operator": Bot, "Switch to Chat": MessageSquare, "Switch to Code": Code2, "Inbox": Inbox, "Usage": ChartLine, "Usage limits": Gauge, "Scheduled tasks": CalendarClock, "Open pull requests": GitPullRequestArrow, "Toggle sidebar": PanelLeft, "Show files and changes": Files, "Open terminal": SquareTerminal, "Open browser": Globe, "Settings": Settings, "Accounts and sign-in": UserRound, "Keyboard shortcuts": Keyboard, "Diagnostics": Activity };
+/** The keyboard shortcut that does what a palette entry does, when there is one. */
+function entryShortcut(entry: PaletteEntry) {
+	if (entry.command === "chat.new") return shortcut("chat.new");
+	if (entry.command === "mode.set") return shortcut(entry.args?.mode === "code" ? "mode.code" : "mode.chat");
+	if (entry.command === "sidebar.set") return shortcut("sidebar.toggle");
+	if (entry.command === "pane.open" && entry.args?.surface === "terminal") return shortcut("terminal.toggle");
+	if (entry.command === "settings.open" && !entry.args) return shortcut("settings.open");
+	return "";
+}
+
 export function CommandPalette() {
-	const { commandsOpen, setCommandsOpen, overview, compareGroups, openCompare, taskById, select, setMode, openSettings, openScheduled, openPullRequests, openInbox, openUsage, selectedId, setRightPanel, setSidebarOpen, resolvedTheme, setTheme, api, setOverview, setError, setNewChatProjectId } = useWorkspace();
+	const { commandsOpen, setCommandsOpen, overview, compareGroups, openCompare, taskById, select, setMode, selectedId, setRightPanel, resolvedTheme, setTheme, api, setOverview, setError, setNewChatProjectId } = useWorkspace();
+	const operatorChat = overview.tasks.find(task => task.operator && !task.archived);
 	const run = (action: () => void) => { setCommandsOpen(false); action(); };
 	const [search, setSearch] = useState("");
 	const messageSearch = useMessageSearch(search, commandsOpen);
@@ -36,34 +50,20 @@ export function CommandPalette() {
 		<ScrollArea className="max-h-[420px]" viewportClassName="max-h-[420px]"><CommandList className="max-h-none overflow-visible p-1">
 			{!messageSearch.hits.length && !messageSearch.searching && <CommandEmpty>Nothing matches.</CommandEmpty>}
 			<CommandGroup heading="Actions">
-				<CommandItem onSelect={() => run(() => select(undefined))}><Plus />New chat<CommandShortcut>{shortcut("chat.new")}</CommandShortcut></CommandItem>
-				<CommandItem onSelect={() => run(() => setMode("chat"))}><MessageSquare />Switch to Chat<CommandShortcut>{shortcut("mode.chat")}</CommandShortcut></CommandItem>
-				<CommandItem onSelect={() => run(() => setMode("code"))}><Code2 />Switch to Code<CommandShortcut>{shortcut("mode.code")}</CommandShortcut></CommandItem>
+				{paletteEntries.map(entry => { const Icon = entryIcons[entry.title] ?? Bot, keys = entryShortcut(entry); return <CommandItem key={entry.title} value={`${entry.title} ${entry.keywords ?? ""}`} onSelect={() => run(() => void runAppCommand(entry.command, entry.args).catch(reason => showToast("error", `Could not run ${entry.title}`, errorText(reason))))}><Icon />{entry.title}{keys && <CommandShortcut>{keys}</CommandShortcut>}</CommandItem>; })}
+				{operatorChat && <CommandItem value={operatorChat.operator?.paused ? "Resume the operator" : "Pause the operator stop"} onSelect={() => run(() => void runAppCommand(operatorChat.operator?.paused ? "operator.resume" : "operator.pause").catch(reason => showToast("error", "Could not change the operator", errorText(reason))))}>{operatorChat.operator?.paused ? <Play /> : <Pause />}{operatorChat.operator?.paused ? "Resume the operator" : "Pause the operator"}</CommandItem>}
 				<CommandItem onSelect={() => run(() => { if (api) void api.chooseProject().then(state => { setOverview(state); const added = state.projects.find(value => !overview.projects.some(existing => existing.id === value.id)); if (added) { setMode("code"); setNewChatProjectId(added.id); select(undefined); } }, reason => setError(errorText(reason))); })}><FolderPlus />Open project folder…</CommandItem>
 				<CommandItem value="Clone a repository git url github add project" onSelect={() => run(() => openCloneProject())}><GitBranchPlus />Clone a repository…</CommandItem>
 				{api && <CommandItem value="Triage a Phaseo bug triage debug problem broken crash report issue fix this app" onSelect={() => run(() => { setMode("code"); select(undefined); startTriage(api); })}>
 					<Bug /><span className="flex min-w-0 flex-col"><span>Triage a Phaseo bug</span><span className="truncate text-xs text-muted-foreground">An agent debugs this app from its own source and helps you file an issue</span></span>
 				</CommandItem>}
 				{current && <CommandItem value="Copy chat ID identifier reference" onSelect={() => run(() => copyId(current.id))}><Copy />Copy chat ID</CommandItem>}
-				<CommandItem value="Inbox needs you waiting attention autopilot log decisions" onSelect={() => run(openInbox)}><Inbox />Inbox</CommandItem>
-				<CommandItem value="Usage cost tokens spend today pace forecast pull requests settled" onSelect={() => run(() => openUsage())}><ChartLine />Usage</CommandItem>
-				<CommandItem value="Usage limits subscriptions rings Claude Codex" onSelect={() => run(() => openUsage("limits"))}><Gauge />Usage limits</CommandItem>
-				<CommandItem onSelect={() => run(openScheduled)}><CalendarClock />Scheduled tasks</CommandItem>
 			<CommandItem value="Archived chats restore unarchive deleted" onSelect={() => run(() => openArchivedChats())}><Archive />Archived chats</CommandItem>
-				<CommandItem value="Open pull requests prs pr github review merge branch" onSelect={() => run(openPullRequests)}><GitPullRequestArrow />Open pull requests</CommandItem>
 				{current?.projectId && <CommandItem value="Show linked pull requests prs linked stack" disabled={!linked.length} onSelect={() => run(() => setRightPanel("pulls"))}><Link2 />Show linked pull requests</CommandItem>}
-				<CommandItem onSelect={() => run(() => setSidebarOpen(open => !open))}><PanelLeft />Toggle sidebar<CommandShortcut>{shortcut("sidebar.toggle")}</CommandShortcut></CommandItem>
-				<CommandItem onSelect={() => run(() => setRightPanel("changes"))}><Files />Show files and changes</CommandItem>
 			{current?.projectId && <CommandItem value="Go to file open quick" onSelect={() => run(() => runCommand("filePicker.toggle"))}><FileSearch />Go to file…<CommandShortcut>{shortcut("filePicker.toggle")}</CommandShortcut></CommandItem>}
 			{current?.projectId && <CommandItem value="Search in files contents grep project text" onSelect={() => run(() => runCommand("projectSearch.toggle"))}><TextSearch />Search in files…<CommandShortcut>{shortcut("projectSearch.toggle")}</CommandShortcut></CommandItem>}
 			{current && <CommandItem value="Find in chat search this conversation" onSelect={() => run(() => runCommand("chat.find"))}><Search />Find in chat<CommandShortcut>{shortcut("chat.find")}</CommandShortcut></CommandItem>}
-				<CommandItem onSelect={() => run(() => setRightPanel("terminal"))}><SquareTerminal />Open terminal<CommandShortcut>{shortcut("terminal.toggle")}</CommandShortcut></CommandItem>
-				<CommandItem onSelect={() => run(() => setRightPanel("browser"))}><Globe />Open browser</CommandItem>
 				<CommandItem onSelect={() => run(() => setTheme(resolvedTheme === "dark" ? "light" : "dark"))}>{resolvedTheme === "dark" ? <Sun /> : <Moon />}Use {resolvedTheme === "dark" ? "light" : "dark"} theme</CommandItem>
-				<CommandItem onSelect={() => run(() => openSettings())}><Settings />Settings<CommandShortcut>{shortcut("settings.open")}</CommandShortcut></CommandItem>
-				<CommandItem onSelect={() => run(() => openSettings("accounts"))}><UserRound />Accounts and sign-in</CommandItem>
-				<CommandItem onSelect={() => run(() => openSettings("keyboard"))}><Keyboard />Keyboard shortcuts</CommandItem>
-				<CommandItem value="Diagnostics processes cpu memory traces logs slow failures" onSelect={() => run(() => openSettings("diagnostics"))}><Activity />Diagnostics</CommandItem>
 			</CommandGroup>
 			{current?.projectId && <OpenProjectItems projectId={current.projectId} open={commandsOpen} run={run} />}
 			{compareGroups.length > 0 && <CommandGroup heading="Comparisons">
