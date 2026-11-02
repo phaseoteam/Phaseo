@@ -85,8 +85,10 @@ export function ModelBrowser() {
       <View className="px-4 pb-3 pt-2">
         <SearchField value={filters.query} onChangeText={(value) => updateFilters({ query: value })} placeholder="Search models, labs or IDs" />
       </View>
-      {/* One row: how the list is ordered, the full filters sheet and labs, then the two quick switches. */}
+      {/* One row: Clear first while anything is on (a switch further along may be off screen), how the list is
+          ordered, the full filters sheet and labs, then the two quick switches. */}
       <ChipRow className="pb-3">
+        {filterCount ? <Chip label="Clear" icon={X} onPress={() => filtersStore.set({ ...DEFAULT_FILTERS, query: filters.query, sort: filters.sort })} /> : null}
         <View ref={sortRef} collapsable={false}>
           <Chip label={SORT_LABELS[filters.sort]} icon={ArrowUpDown} dropdown onPress={() => (split ? void sortMenu.show(sortRef) : router.push("/filters/sort"))} />
         </View>
@@ -101,7 +103,6 @@ export function ModelBrowser() {
         />
         <Chip label="On Phaseo" icon={CircleCheck} selected={filters.availability === "phaseo"} onPress={() => updateFilters({ availability: filters.availability === "phaseo" ? "all" : "phaseo" })} />
         <Chip label="Free" icon={Gift} selected={filters.availability === "free"} onPress={() => updateFilters({ availability: filters.availability === "free" ? "all" : "free" })} />
-        {filterCount ? <Chip label="Clear" icon={X} onPress={() => filtersStore.set({ ...DEFAULT_FILTERS, query: filters.query, sort: filters.sort })} /> : null}
       </ChipRow>
       <View className="h-px bg-border" />
       {catalogue.isLoading ? (

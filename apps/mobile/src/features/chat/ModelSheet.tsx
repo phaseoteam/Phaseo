@@ -183,7 +183,7 @@ function EffortOption({ row, onPick }: { row: EffortRow; onPick(id: string | nul
       className="mr-2 h-11 flex-row items-center gap-2 rounded-md px-2 active:bg-accent"
     >
       <Text variant="body" numberOfLines={1} className={cn("flex-1", row.selected && "font-semibold")}>{row.label}</Text>
-      {row.isDefault ? <Text variant="caption">Default</Text> : null}
+      {row.isDefault && row.label !== "Default" ? <Text variant="caption">Default</Text> : null}
       {row.selected ? <Icon icon={Check} tone="foreground" size={18} /> : <View className="w-[18px]" />}
     </Pressable>
   );
