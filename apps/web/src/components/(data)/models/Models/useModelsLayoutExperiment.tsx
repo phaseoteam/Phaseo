@@ -22,6 +22,9 @@ export function useModelsLayoutExperiment(enabled: boolean) {
 	const pendingVitals = useRef<EventProperties[]>([]);
 	const vitalSink = useRef<((properties: EventProperties) => void) | null>(null);
 	const vitalsActive = useRef(false);
+	// Events from before analytics consent (first rows, early vitals) wait here and
+	// are only sent if the visitor accepts on this page; nothing leaves the browser first.
+	const awaitingConsent = useRef<{ event: LayoutEvent; properties: EventProperties }[]>([]);
 
 	useEffect(() => {
 		if (!enabled) return;
@@ -90,7 +93,11 @@ export function useModelsLayoutExperiment(enabled: boolean) {
 	}, [enabled]);
 
 	const track = useCallback((event: LayoutEvent, properties: EventProperties = {}) => {
-		if (!enabled || !assignment || !isAnalyticsCaptureAllowed()) return;
+		if (!enabled || !assignment) return;
+		if (!isAnalyticsCaptureAllowed()) {
+			if (awaitingConsent.current.length < 50) awaitingConsent.current.push({ event, properties });
+			return;
+		}
 		const metadata = { experiment: MODELS_LAYOUT_EXPERIMENT, variant: assignment.variant, in_experiment: assignment.inExperiment ?? false, ...properties };
 		captureProductEvent(event, metadata);
 		assignment.client?.logEvent(event, properties.value, Object.fromEntries(
@@ -111,6 +118,20 @@ export function useModelsLayoutExperiment(enabled: boolean) {
 		vitalSink.current = (properties) => track("models_layout_web_vital", properties);
 		for (const metric of pendingVitals.current.splice(0)) track("models_layout_web_vital", metric);
 		return () => { vitalSink.current = null; };
+	}, [assignment, track]);
+
+	useEffect(() => {
+		if (!assignment) return;
+		const flush = () => {
+			if (!isAnalyticsCaptureAllowed()) return;
+			for (const pending of awaitingConsent.current.splice(0)) track(pending.event, pending.properties);
+		};
+		window.addEventListener(ANALYTICS_CONSENT_EVENT, flush);
+		window.addEventListener("storage", flush);
+		return () => {
+			window.removeEventListener(ANALYTICS_CONSENT_EVENT, flush);
+			window.removeEventListener("storage", flush);
+		};
 	}, [assignment, track]);
 
 	const rowsRef = useRef<HTMLDivElement>(null);
