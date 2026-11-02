@@ -33,7 +33,7 @@ Quickstart checklist for agents:
 
 - Create the key with the CLI: `npm install -g @phaseo/cli`, then `phaseo login` (or `phaseo login --device-code` in a headless shell; a person approves the sign-in), then `phaseo keys create --name <name> --json`. Never generate or guess a key. Send it as `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` from server-side code only.
 - For paid models, run `phaseo login --scopes billing:write` once, then `phaseo credits add --amount <usd> --json` starts a top-up. With a saved card, a workspace owner or admin confirms it from an emailed link. With no saved card, the response has `next_action: "open_checkout_url"` and a checkout link that an owner or admin opens to pay; the card is then saved for later top-ups. Do not send the user to the dashboard for keys, credits or settings; see https://phaseo.app/docs/v1/developers/manage-from-an-agent.md.
-- Make the first request with `POST https://api.phaseo.app/v1/responses`, sending `model` and `input`. `phaseo/free` works without a wallet balance.
+- Make the first request with `POST https://api.phaseo.app/v1/responses`, sending `model` and `input`. The examples use `openai/gpt-6-astra`, a paid model that needs credits. `phaseo/free` picks an available free model and works without a wallet balance.
 - Read the reply from `output[].content[]` where `type` is `output_text`.
 - If the request fails, branch on the JSON `error` code as described in https://phaseo.app/docs/v1/api-reference/errors.md.
 </Visibility>
@@ -67,6 +67,8 @@ Treat your API key like a password. Do not expose it in client-side code.
 ## 2. Send a text request
 
 Use `POST /v1/responses` for the first request. It is the recommended endpoint for new text-generation work.
+
+The examples use `openai/gpt-6-astra`, a paid model, so add credits first (see step 1). To try Phaseo without credits, use `phaseo/free` instead; it picks an available free model. See [Launch on the free router](./cookbook/free-router-first-deploy).
 
 ### Install an SDK
 
@@ -320,7 +322,8 @@ console.log(result.text);
 
 ```json
 {
-  "id": "resp_...",
+  "id": "G-...",
+  "nativeResponseId": "resp_...",
   "object": "response",
   "created_at": 1730000000,
   "status": "completed",
@@ -345,13 +348,13 @@ console.log(result.text);
 }
 ```
 
-For direct Responses API calls, read the assistant reply from `output[].content[]` where `type` is `output_text`.
+For direct Responses API calls, read the assistant reply from `output[].content[]` where `type` is `output_text`. `id` is the Phaseo request ID, which identifies the request in your logs; `nativeResponseId` is the provider's ID for the same response.
 
 If you use the Vercel AI SDK, read the reply from `result.text`.
 
 ### Stream the reply
 
-To print the reply as it is generated, stream it. Each chunk's `text` holds only the new text, so this loop prints the answer once. Closing events such as `response.output_text.done` have an empty `text`; their full text is in `fullText` (TypeScript) or `full_text` (Python).
+To print the reply as it is generated, stream it. Each `response.output_text.delta` event's `text` holds only the new text, so this loop prints the answer once. Closing events such as `response.output_text.done` repeat text that has already streamed.
 
 <CodeGroup>
 ```typescript TypeScript SDK
@@ -363,7 +366,7 @@ for await (const chunk of client.streamResponses({
   model: "openai/gpt-6-astra",
   input: "Reply with: quickstart works",
 })) {
-  if (chunk.text) process.stdout.write(chunk.text);
+  if (chunk.type === "response.output_text.delta") process.stdout.write(chunk.text);
 }
 ```
 
@@ -378,13 +381,11 @@ for chunk in client.stream_responses(
         "input": "Reply with: quickstart works",
     }
 ):
-    if chunk["text"]:
+    if chunk.get("type") == "response.output_text.delta":
         print(chunk["text"], end="", flush=True)
 print()
 ```
 </CodeGroup>
-
-If the answer prints twice, update the SDK: older releases also put the full text on the closing event.
 
 ---
 
@@ -664,7 +665,7 @@ See the [Decisions API reference](./api-reference/endpoint/decisions) for the fu
 
 - `401`: check the API key and `Authorization` header.
 - `400`: check the request body and model ID.
-- `402`: switch to a `:free` model or add credits before using a paid model.
+- `402`: add credits before using a paid model, or use `phaseo/free`.
 - `429` or `5xx`: retry with exponential backoff.
 
 Use the [Error Handling reference](./api-reference/errors) to debug quickly.
