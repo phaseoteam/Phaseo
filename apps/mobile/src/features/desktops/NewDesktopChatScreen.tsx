@@ -51,11 +51,11 @@ export function NewDesktopChatScreen({ desktopId, projectId }: { desktopId: stri
   }, [chats, projectId]);
 
   const label = list && choice ? codeModelLabel(list, choice) : null;
-  if (desktop === undefined) return <Screen><Header back title="New thread" /></Screen>;
+  if (desktop === undefined) return <Screen><Header sidebar back title="New thread" /></Screen>;
   if (!client || !desktop) {
     return (
       <Screen>
-        <Header back title="New thread" />
+        <Header sidebar back title="New thread" />
         <EmptyState className="flex-1" title="This computer isn't paired" body="Pair it again from Account → Desktops." />
       </Screen>
     );
@@ -77,7 +77,7 @@ export function NewDesktopChatScreen({ desktopId, projectId }: { desktopId: stri
 
   return (
     <Screen>
-      <Header back title="New thread" subtitle={`${desktop.desktopName} · ${connectionLabel(connection)}`} />
+      <Header sidebar back title="New thread" subtitle={`${desktop.desktopName} · ${connectionLabel(connection)}`} />
       <ConnectionNotice client={client} />
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
         <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" className="flex-1" contentContainerClassName="pb-6">

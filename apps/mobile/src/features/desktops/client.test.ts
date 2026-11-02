@@ -101,10 +101,33 @@ describe.each(["direct", "connect"] as const)("over %s", (via) => {
     return { desktop, client, clock, saved };
   }
 
+  test("lists the computer's projects and hears when they change", async () => {
+    const { desktop, client } = await connected();
+    expect(desktop.received[0]).toMatchObject({ type: "hello", protocol: 2 });
+    const { projects } = await client.request("list_projects", {});
+    expect(projects.map((project) => project.id)).toEqual(["p2", "p1", "p3", "w1"]);
+    const changed = nextEvent(client, "projects_changed");
+    desktop.emit({ type: "projects_changed", projects: [{ id: "p1", name: "Phaseo", repository: true }] });
+    expect((await changed).projects).toEqual([{ id: "p1", name: "Phaseo", repository: true }]);
+    client.stop();
+  });
+
+  test("speaks protocol 1 with a computer from before projects, which refuses list_projects", async () => {
+    const desktop = new FakeDesktop();
+    desktop.protocol = 1;
+    const saved = await pairDesktop(desktop.pairingLink({ connect: true }), deps(desktop));
+    if (via === "connect") desktop.reachable = false;
+    const { client } = clientFor(desktop, saved);
+    client.start();
+    expect(await stateReached(client, "connected")).toMatchObject({ protocol: 1 });
+    await expect(client.request("list_projects", {})).rejects.toMatchObject({ code: "invalid_frame" });
+    client.stop();
+  });
+
   test("says hello first, then lists and reads chats", async () => {
     const { desktop, client } = await connected();
     expect(desktop.received[0]).toMatchObject({ type: "hello", deviceId: "dev-1", appVersion: "0.1.0" });
-    expect(client.state.get()).toEqual({ status: "connected", via, desktopName: "Studio PC" });
+    expect(client.state.get()).toEqual({ status: "connected", via, desktopName: "Studio PC", protocol: 2 });
     const { chats } = await client.request("list_chats", {});
     expect(sortChats(chats).map((chat) => chat.id)).toEqual(["c2", "c1"]);
     const read = await client.request("read_chat", { chatId: "c1" });

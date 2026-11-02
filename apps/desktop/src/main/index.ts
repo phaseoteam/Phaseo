@@ -1323,6 +1323,8 @@ app.whenReady().then(() => {
 			command: command => workspaceRuntime.command(command),
 			newChat: input => startPhoneChat(() => workspaceRuntime.store.getOverview(), command => workspaceRuntime.command(command), phoneDiscover, input),
 			models: input => phoneModels(workspaceRuntime.store.getOverview(), phoneDiscover, input),
+			// A worktree's .git is a file, which existsSync also finds.
+			isRepository: directory => existsSync(path.join(directory, ".git")),
 		},
 	});
 	void phoneService.start().catch(() => {});

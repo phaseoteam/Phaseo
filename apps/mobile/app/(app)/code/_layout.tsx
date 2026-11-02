@@ -1,9 +1,8 @@
-import { SplitStack } from "@/components/shell/SplitStack";
-import { CodeScreen } from "@/features/desktops/CodeScreen";
+import { Stack } from "expo-router";
+import { useLayout } from "@/hooks/useLayout";
 
-// A thread opened from a notification or link gets the Code list under it, so back returns there.
-export const unstable_settings = { anchor: "index" };
-
+// A computer's threads are listed in the sidebar, so a thread is the root of this stack, like a chat in Chat.
 export default function CodeLayout() {
-  return <SplitStack list={<CodeScreen />} />;
+  const { split } = useLayout();
+  return <Stack screenOptions={{ headerShown: false, animation: split ? "fade" : "default" }} />;
 }

@@ -23,47 +23,45 @@ beforeEach(() => {
   jest.clearAllMocks();
 });
 
-describe("the computer Code shows", () => {
-  it("remembers the picked computer for the next launch", async () => {
+describe("the workspace the app works in", () => {
+  it("starts in Phaseo and remembers a computer for the next launch", async () => {
     const first = load();
     release();
     await settle();
-    expect(first.pickedDesktopStore.get()).toBeNull();
+    expect(first.workspaceStore.get()).toEqual({ kind: "phaseo" });
     first.chooseDesktop("desk-2");
     const next = load();
     release();
     await settle();
-    expect(next.pickedDesktopStore.get()).toBe("desk-2");
-  });
-
-  it("keeps the computer picked under the old Chat | Code switch", async () => {
-    saved.set("phaseo.chat.sidebar", JSON.stringify({ mode: "code", desktopId: "desk-1" }));
-    const picked = load();
+    expect(next.workspaceStore.get()).toEqual({ kind: "desktop", desktopId: "desk-2" });
+    next.choosePhaseo();
+    const third = load();
     release();
     await settle();
-    expect(picked.pickedDesktopStore.get()).toBe("desk-1");
+    expect(third.workspaceStore.get()).toEqual({ kind: "phaseo" });
   });
 
   it("keeps a choice made before storage answers", async () => {
-    saved.set("phaseo.chat.sidebar", JSON.stringify({ desktopId: "desk-1" }));
+    saved.set("phaseo.workspace", JSON.stringify({ kind: "desktop", desktopId: "desk-1" }));
     const picked = load();
     picked.chooseDesktop("desk-3");
     release();
     await settle();
-    expect(picked.pickedDesktopStore.get()).toBe("desk-3");
+    expect(picked.workspaceStore.get()).toEqual({ kind: "desktop", desktopId: "desk-3" });
   });
 
-  it("reads damaged stored values as nothing picked", () => {
-    const { readPickedDesktop } = load();
-    expect(readPickedDesktop("not json")).toBeNull();
-    expect(readPickedDesktop(JSON.stringify({ desktopId: 4 }))).toBeNull();
+  it("reads damaged stored values as Phaseo", () => {
+    const { readWorkspace } = load();
+    expect(readWorkspace("not json")).toEqual({ kind: "phaseo" });
+    expect(readWorkspace(JSON.stringify({ kind: "desktop", desktopId: 4 }))).toEqual({ kind: "phaseo" });
   });
 
-  it("is the remembered one while it's paired, else the first", () => {
-    const { chosenDesktop } = load();
+  it("is the chosen computer while it's paired, and Phaseo once it's removed", () => {
+    const { workspaceDesktop } = load();
     const desktops = [{ desktopId: "desk-1" }, { desktopId: "desk-2" }];
-    expect(chosenDesktop(desktops, "desk-2")).toEqual({ desktopId: "desk-2" });
-    expect(chosenDesktop(desktops, "removed")).toEqual({ desktopId: "desk-1" });
-    expect(chosenDesktop([], "desk-1")).toBeNull();
+    expect(workspaceDesktop(desktops, { kind: "desktop", desktopId: "desk-2" })).toEqual({ desktopId: "desk-2" });
+    expect(workspaceDesktop(desktops, { kind: "desktop", desktopId: "removed" })).toBeNull();
+    expect(workspaceDesktop(desktops, { kind: "phaseo" })).toBeNull();
+    expect(workspaceDesktop(null, { kind: "desktop", desktopId: "desk-1" })).toBeNull();
   });
 });

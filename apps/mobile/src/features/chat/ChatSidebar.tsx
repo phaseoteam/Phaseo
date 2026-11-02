@@ -1,51 +1,72 @@
 import { usePathname, useRouter, type Href } from "expo-router";
-import { SquarePen, SquareTerminal } from "lucide-react-native";
+import { SquarePen } from "lucide-react-native";
 import { useCallback, useState } from "react";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import { chatOpens, sectionOf } from "@/components/shell/navigation";
 import { SidebarFooter } from "@/components/shell/SidebarFooter";
 import { useOpenScreen } from "@/components/shell/useOpenScreen";
-import { Button, Icon, IconButton, Screen, SearchField, Text } from "@/components/ui";
-import { useNeedsYouCount } from "@/features/desktops/needsYou";
-import { CODE_HREF } from "@/features/desktops/routes";
-import { cn } from "@/lib/cn";
+import { Button, IconButton, Screen, SearchField, Text } from "@/components/ui";
+import { CodeThreadList } from "@/features/desktops/CodeThreadList";
+import { workspaceDesktop, workspaceStore } from "@/features/desktops/picked";
+import type { SavedDesktop } from "@/features/desktops/reach";
+import { CODE_HREF, desktopChatInPath, newDesktopChatHref } from "@/features/desktops/routes";
+import { useDesktops } from "@/features/desktops/store";
+import { WorkspaceSwitcher } from "@/features/desktops/WorkspaceSwitcher";
 import { useAuth } from "@/providers/AuthProvider";
 import { useSidebarDrawer } from "@/components/shell/sidebarDrawer";
 import { ChatList } from "./ChatList";
 
 /**
- * The app's sidebar: a drawer over every screen on phones, always open on the left on split layouts. Search and New chat, Code
- * (a paired computer's threads, with how many need you), the chats on this device, then Models, Providers and Usage
- * and the profile row for Account. Signed out, it keeps only the public screens and a way to sign in.
+ * The app's sidebar: a drawer over every screen on phones, always open on the left on split layouts. At the top, the
+ * workspace switcher: Phaseo shows search, New chat and the chats on this device; a paired computer shows its
+ * projects and threads, with New thread. Then Models, Providers and Usage and the profile row for Account. Signed
+ * out, it keeps only the public screens and a way to sign in.
  */
 export function ChatSidebar() {
-  const router = useRouter();
   const pathname = usePathname();
   const drawer = useSidebarDrawer();
   const signedIn = Boolean(useAuth().session);
   const openScreen = useOpenScreen();
+  const desktops = useDesktops();
+  const desktop = workspaceDesktop(desktops, workspaceStore.use());
 
   const go = useCallback((href: string) => {
     drawer?.close();
     openScreen(href);
   }, [drawer, openScreen]);
 
-  const open = useCallback((href: Href) => {
-    drawer?.close();
-    if (chatOpens(pathname) === "replace") router.replace(href);
-    else go(String(href));
-  }, [drawer, go, router, pathname]);
-
   return (
     <Screen>
-      {signedIn ? <Chats pathname={pathname} open={open} go={go} /> : <SignedOut />}
+      {signedIn ? (
+        <>
+          <WorkspaceSwitcher />
+          {desktop ? <Computer key={desktop.desktopId} desktop={desktop} pathname={pathname} go={go} /> : <Chats pathname={pathname} go={go} />}
+        </>
+      ) : <SignedOut />}
       <SidebarFooter pathname={pathname} go={go} />
     </Screen>
   );
 }
 
-function Chats({ pathname, open, go }: { pathname: string; open(href: Href): void; go(href: string): void }) {
+/**
+ * Opens a chat or thread from the list. Inside its own section it takes the open one's place, so Chat (or the
+ * computer's thread) stays one screen and back leaves the app; from anywhere else it opens the way the sidebar opens
+ * screens.
+ */
+function useOpenFromList(pathname: string, go: (href: string) => void, section: string) {
+  const router = useRouter();
   const drawer = useSidebarDrawer();
+  return useCallback((href: Href) => {
+    drawer?.close();
+    const inPlace = section === "/chat" ? chatOpens(pathname) === "replace" : sectionOf(pathname) === section;
+    if (inPlace) router.replace(href);
+    else go(String(href));
+  }, [drawer, go, router, pathname, section]);
+}
+
+function Chats({ pathname, go }: { pathname: string; go(href: string): void }) {
+  const drawer = useSidebarDrawer();
+  const open = useOpenFromList(pathname, go, "/chat");
   const [query, setQuery] = useState("");
   const newChat = () => {
     // Chat's own screen is already a new chat.
@@ -54,33 +75,30 @@ function Chats({ pathname, open, go }: { pathname: string; open(href: Href): voi
   };
   return (
     <>
-      <View className="flex-row items-center gap-1 pb-2 pl-4 pr-2 pt-2">
+      <View className="flex-row items-center gap-1 pb-2 pl-4 pr-2">
         <SearchField className="flex-1" value={query} onChangeText={setQuery} placeholder="Search chats" />
         <IconButton icon={SquarePen} label="New chat" onPress={newChat} />
       </View>
-      <CodeEntry selected={sectionOf(pathname) === CODE_HREF} onPress={() => go(CODE_HREF)} />
-      <View className="mx-4 mb-1 mt-1 h-px bg-border" />
       <View className="flex-1"><ChatList query={query} open={open} /></View>
     </>
   );
 }
 
-/** Code: a paired computer's threads on their own screen, with how many need you. */
-function CodeEntry({ selected, onPress }: { selected: boolean; onPress(): void }) {
-  const count = useNeedsYouCount();
+/** A paired computer's projects and threads, as its own sidebar lists them. */
+function Computer({ desktop, pathname, go }: { desktop: SavedDesktop; pathname: string; go(href: string): void }) {
+  const open = useOpenFromList(pathname, go, CODE_HREF);
+  const [query, setQuery] = useState("");
+  const selected = desktopChatInPath(pathname);
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={count ? `Code, ${count} need you` : "Code"}
-      accessibilityHint="Your threads on a paired computer"
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      className={cn("mx-2 h-10 flex-row items-center gap-3 rounded-md px-3 active:bg-accent", selected && "bg-accent")}
-    >
-      <Icon icon={SquareTerminal} tone={selected ? "foreground" : "muted"} size={19} />
-      <Text variant="body" className={cn("flex-1", selected && "font-semibold")}>Code</Text>
-      {count ? <Text variant="caption" className="font-semibold text-warning">{`${count} need you`}</Text> : null}
-    </Pressable>
+    <>
+      <View className="flex-row items-center gap-1 pb-2 pl-4 pr-2">
+        <SearchField className="flex-1" value={query} onChangeText={setQuery} placeholder="Search threads" />
+        <IconButton icon={SquarePen} label={`New thread on ${desktop.desktopName}`} onPress={() => open(newDesktopChatHref(desktop.desktopId))} />
+      </View>
+      <View className="flex-1">
+        <CodeThreadList desktop={desktop} query={query} selectedChatId={selected?.desktopId === desktop.desktopId ? selected.chatId : null} open={open} />
+      </View>
+    </>
   );
 }
 

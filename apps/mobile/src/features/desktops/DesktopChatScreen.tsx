@@ -20,6 +20,7 @@ import { openDesktopChat } from "./DesktopConnections";
 import { knownModelsOf, useDesktopChat } from "./hooks";
 import { threadModel } from "./newThread";
 import { PendingCards } from "./PendingCards";
+import { chooseDesktop } from "./picked";
 import type { PhoneActivity, PhoneMessage } from "./protocol";
 import { useDesktop } from "./store";
 
@@ -32,7 +33,10 @@ function reportFailure(title: string, error: unknown) {
   else toast(problemText(error), { title, tone: "error" });
 }
 
-/** A thread on a paired computer, as its own screen over the Code list: back returns there. */
+/**
+ * A thread on a paired computer. Like a chat in Chat, it leads with the sidebar, which lists the computer's threads;
+ * opening one (from the sidebar, a notification or a link) makes its computer the app's workspace.
+ */
 export function DesktopChatScreen({ desktopId, chatId }: { desktopId: string; chatId: string }) {
   const desktop = useDesktop(desktopId);
   const client = desktop ? clientFor(desktop) : null;
@@ -40,11 +44,13 @@ export function DesktopChatScreen({ desktopId, chatId }: { desktopId: string; ch
     openDesktopChat.set({ desktopId, chatId });
     return () => openDesktopChat.set((current) => (current?.chatId === chatId && current.desktopId === desktopId ? null : current));
   }, [desktopId, chatId]);
-  if (desktop === undefined) return <Screen><Header back title="Thread" /><SkeletonRows count={5} /></Screen>;
+  const paired = Boolean(desktop);
+  useEffect(() => { if (paired) chooseDesktop(desktopId); }, [paired, desktopId]);
+  if (desktop === undefined) return <Screen><Header sidebar back title="Thread" /><SkeletonRows count={5} /></Screen>;
   if (!client || !desktop) {
     return (
       <Screen>
-        <Header back title="Thread" />
+        <Header sidebar back title="Thread" />
         <EmptyState className="flex-1" title="This computer isn't paired" body="It may have been removed from this phone. Pair it again from Account → Desktops." />
       </Screen>
     );
@@ -73,6 +79,7 @@ function ChatView({ client, chatId, desktopName }: { client: DesktopClient; chat
   return (
     <Screen>
       <Header
+        sidebar
         back
         title={chat?.title ?? "Thread"}
         subtitle={[chat ? chatStatusLabel(chat) : connectionLabel(connection), chat?.project, desktopName].filter(Boolean).join(" · ")}

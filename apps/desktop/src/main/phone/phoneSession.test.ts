@@ -30,6 +30,48 @@ describe("phone session", () => {
 		vi.advanceTimersByTime(250);
 		expect(frames.filter(frame => frame.type === "entries")).toEqual([]);
 	});
+	it("tells a phone from before protocol 2 that it speaks 1, and a newer phone 2 with its capabilities", async () => {
+		const { session, frames } = connected();
+		await session.receive(JSON.stringify({ id: "old", type: "hello", deviceId: "dev", appVersion: "0.1.0" }));
+		expect(frames.at(-1)).toMatchObject({ id: "old", ok: true, result: { protocol: 1 } });
+		expect((frames.at(-1) as { result: object }).result).not.toHaveProperty("capabilities");
+		await session.receive(JSON.stringify({ id: "new", type: "hello", deviceId: "dev", appVersion: "0.2.0", protocol: 2 }));
+		expect(frames.at(-1)).toMatchObject({ id: "new", ok: true, result: { protocol: 2, capabilities: [] } });
+	});
+	it("lists projects pinned first, empty ones too, with worktrees under their source and removed or Factory ones left out", async () => {
+		const { app, session, frames } = connected();
+		const at = "2026-11-01T00:00:00.000Z";
+		app.projects.push(
+			{ id: "p2", name: "Blog", directory: "/work/blog", createdAt: at, pinned: true },
+			{ id: "p3", name: "Notes", directory: "/scratch/notes", createdAt: at, archived: true },
+			{ id: "w1", name: "Phaseo (fix)", directory: "/work/phaseo-fix", createdAt: at, worktree: { sourceProjectId: "p1", branch: "fix/login", baseCommit: "abc" } },
+			{ id: "w2", name: "Old", directory: "/work/old", createdAt: at, worktree: { sourceProjectId: "p1", branch: "old", baseCommit: "abc", removedAt: at } },
+			{ id: "w3", name: "Item", directory: "/ws/factory/worktrees/item", createdAt: at, worktree: { sourceProjectId: "p1", branch: "factory/item", baseCommit: "abc" } },
+		);
+		await session.receive(JSON.stringify({ id: "p", type: "list_projects" }));
+		expect(frames.at(-1)).toMatchObject({ id: "p", ok: true, result: { projects: [
+			{ id: "p2", name: "Blog", pinned: true, repository: true },
+			{ id: "p1", name: "Phaseo", repository: true },
+			{ id: "p3", name: "Notes", archived: true, repository: false },
+			{ id: "w1", worktreeOf: "p1", branch: "fix/login", repository: true },
+		] } });
+		expect((frames.at(-1) as { result: { projects: unknown[] } }).result.projects).toHaveLength(4);
+	});
+	it("sends projects_changed only to a phone that read the projects, and only when they change", async () => {
+		const { app, hub, session, frames } = connected();
+		const other: DesktopFrame[] = [];
+		hub.open({ id: "old-phone", name: "Old" }, frame => other.push(frame));
+		await session.receive(JSON.stringify({ id: "p", type: "list_projects" }));
+		frames.length = 0; app.repositoryChecks.length = 0;
+		// A streamed token changes the overview but not the projects: nothing is sent and the disk isn't asked.
+		app.touch(app.get("chat-1")); app.changed();
+		expect(frames.filter(frame => frame.type === "projects_changed")).toEqual([]);
+		expect(app.repositoryChecks).toEqual([]);
+		app.projects.push({ id: "p2", name: "Blog", directory: "/work/blog", createdAt: "2026-11-01T00:00:00.000Z" });
+		app.changed();
+		expect(frames.filter(frame => frame.type === "projects_changed")).toEqual([{ type: "projects_changed", projects: [expect.objectContaining({ id: "p1" }), expect.objectContaining({ id: "p2", name: "Blog" })] }]);
+		expect(other.filter(frame => frame.type === "projects_changed")).toEqual([]);
+	});
 	it("answers rate_limited past 50 requests a second for one device", async () => {
 		const app = fakePhoneHost(), hub = new PhoneHub(app.host, () => 0), frames: DesktopFrame[] = [];
 		const first = hub.open({ id: "dev", name: "Pixel" }, frame => frames.push(frame)), second = hub.open({ id: "dev", name: "Pixel" }, frame => frames.push(frame));

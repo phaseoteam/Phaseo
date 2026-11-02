@@ -36,6 +36,15 @@ describe("phone frames", () => {
 		expect(refused(JSON.stringify({ id: "1", type: "new_chat", text: "x", mode: "code", reasoningEffort: "h".repeat(101) })).message).toContain("reasoningEffort");
 		expect(refused(JSON.stringify({ id: "1", type: "list_models", projectId: "a\u0001" }))).toMatchObject({ code: "invalid_frame", id: "1", type: "list_models" });
 	});
+	it("lists projects, and lets hello carry the phone's protocol", () => {
+		expect(parsePhoneFrame(JSON.stringify({ id: "1", type: "list_projects", extra: 1 }))).toEqual({ id: "1", type: "list_projects" });
+		expect(parsePhoneFrame(JSON.stringify({ id: "2", type: "hello", deviceId: "d", appVersion: "1", protocol: 2 }))).toEqual({ id: "2", type: "hello", deviceId: "d", appVersion: "1", protocol: 2 });
+		// A phone from before protocol 2 sends none.
+		expect(parsePhoneFrame(JSON.stringify({ id: "3", type: "hello", deviceId: "d", appVersion: "1" }))).toEqual({ id: "3", type: "hello", deviceId: "d", appVersion: "1" });
+		expect(refused(JSON.stringify({ id: "4", type: "hello", deviceId: "d", appVersion: "1", protocol: "2" })).message).toContain("protocol");
+		expect(parseDesktopFrame(JSON.stringify({ type: "projects_changed", projects: [{ id: "p1", name: "Phaseo", repository: true }] }))).toMatchObject({ type: "projects_changed" });
+		expect(() => parseDesktopFrame(JSON.stringify({ type: "projects_changed" }))).toThrow(PhoneProtocolError);
+	});
 	it("names efforts the same way on both sides", () => {
 		expect(effortLabel("xhigh")).toBe("Extra high");
 		expect(effortLabel("medium")).toBe("Medium");

@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
-import { errorResponse, okResponse, parsePhoneFrame, phoneLimits, phoneProtocolVersion, PhoneProtocolError, RequestRate, type AttentionKind, type DesktopFrame, type PhoneChatMode, type PhoneEntry, type PhoneRequest, type PhoneResponse, type PhoneResults } from "@phaseo/phone-protocol";
+import { errorResponse, okResponse, parsePhoneFrame, phoneLimits, phoneProtocolVersion, PhoneProtocolError, RequestRate, type AttentionKind, type DesktopFrame, type PhoneChatMode, type PhoneEntry, type PhoneProject, type PhoneRequest, type PhoneResponse, type PhoneResults } from "@phaseo/phone-protocol";
 import type { ConversationPage, ConversationPageQuery } from "../../shared/conversationPage";
 import { validateCommand, type AgentActivity, type Message, type Task, type WorkspaceCommand } from "../../shared/workspace";
 import type { TaskOverview, WorkspaceOverview } from "../../shared/workspaceOverview";
-import { attentionOf, chatListPage, phoneChat, phoneChats, phoneDetail, readingOrder } from "./phoneChats";
+import { attentionOf, chatListPage, phoneChat, phoneChats, phoneDetail, phoneProjects, readingOrder } from "./phoneChats";
 
 /** What the phone server needs from the app: the same reads and commands the window uses. */
 export type PhoneHost = {
@@ -18,6 +18,8 @@ export type PhoneHost = {
 	newChat: (input: { text: string; projectId?: string; mode: PhoneChatMode; model?: string; reasoningEffort?: string }) => Promise<string>;
 	/** What a new chat (in that project) could run on, and what it would use unasked (phoneHost's phoneModels). */
 	models: (input: { projectId?: string }) => Promise<PhoneResults["list_models"]>;
+	/** Whether a project's folder is a git checkout. Asked only when the project list changes. */
+	isRepository: (directory: string) => boolean;
 };
 export type PhoneDevice = { id: string; name: string };
 export type Attention = { chatId: string; kind: AttentionKind; summary: string };
@@ -57,6 +59,8 @@ export class PhoneSession {
 	/** The list rows (or chat details) the phone has, by chat. */
 	private readonly sentChats = new Map<string, string>();
 	private readonly dirtyChats = new Set<string>();
+	/** The signature of the project list the phone last got; unset until it reads one. */
+	private sentProjects?: string;
 	private readonly dirtyEntries = new Set<string>();
 	private timer?: ReturnType<typeof setTimeout>;
 	private lastFlush = 0;
@@ -87,9 +91,17 @@ export class PhoneSession {
 	private async answer(request: PhoneRequest): Promise<PhoneResponse> {
 		const command = async (value: unknown) => { await this.host.command(validateCommand(value)); };
 		switch (request.type) {
-			case "hello":
+			case "hello": {
 				if (request.deviceId !== this.device.id) throw new PhoneProtocolError("unauthorized", "This device signed in as another.");
-				return okResponse(request, { desktopName: this.host.desktopName(), appVersion: this.host.appVersion, protocol: phoneProtocolVersion });
+				// A phone from before 2 sends no protocol and refuses a higher one, so it's told 1.
+				const protocol = Math.min(request.protocol ?? 1, phoneProtocolVersion);
+				return okResponse(request, { desktopName: this.host.desktopName(), appVersion: this.host.appVersion, protocol, ...protocol >= 2 ? { capabilities: [] } : {} });
+			}
+			case "list_projects": {
+				const projects = phoneProjects(this.host.overview().projects, this.host.isRepository);
+				this.sentProjects = signature(projects);
+				return okResponse(request, { projects });
+			}
 			case "list_chats": {
 				const page = chatListPage(this.host.overview(), request.cursor, request.limit ?? phoneLimits.pageSize);
 				for (const chat of page.chats) if (!this.subscribed.has(chat.id)) this.sentChats.set(chat.id, signature(chat));
@@ -170,6 +182,13 @@ export class PhoneSession {
 		if (this.dirtyChats.size || this.dirtyEntries.size) this.schedule();
 	}
 	attention(event: Attention) { if (!this.closed) this.send({ type: "attention", ...event }); }
+	/** The project list as it is now; sent only to a phone that has read it (older phones don't know the event), and only when it differs. */
+	projectsChanged(projects: PhoneProject[], mark: string) {
+		if (this.closed || this.sentProjects === undefined || this.sentProjects === mark) return;
+		this.sentProjects = mark;
+		this.send({ type: "projects_changed", projects });
+	}
+	get listensToProjects() { return this.sentProjects !== undefined; }
 
 	private schedule() {
 		if (this.timer) return;
@@ -220,8 +239,13 @@ export class PhoneHub {
 	private readonly sessions = new Set<PhoneSession>();
 	private readonly rates = new Map<string, RequestRate>();
 	private last = new Map<string, TaskOverview>();
+	private projectsKey?: string;
 	onAttention?: (event: Attention, connected: ReadonlySet<string>) => void;
-	constructor(private readonly host: PhoneHost, private readonly now: () => number = Date.now) { this.last = new Map(host.overview().tasks.map(task => [task.id, task])); }
+	constructor(private readonly host: PhoneHost, private readonly now: () => number = Date.now) {
+		const overview = host.overview();
+		this.last = new Map(overview.tasks.map(task => [task.id, task]));
+		this.projectsKey = signature(overview.projects);
+	}
 	open(device: PhoneDevice, send: (frame: DesktopFrame) => void) {
 		// One budget per device, however many sockets it opens.
 		let rate = this.rates.get(device.id);
@@ -234,11 +258,25 @@ export class PhoneHub {
 	/** Ends every connection of a device that was removed. */
 	closeDevice(deviceId: string) { for (const session of [...this.sessions]) if (session.device.id === deviceId) session.close(); this.rates.delete(deviceId); }
 	closeAll() { for (const session of [...this.sessions]) session.close(); }
+	/**
+	 * The overview changes with every streamed token, so the projects are compared by their own fields first, and the
+	 * phone's rows (which look at the disk) are built only when those changed and a phone is listening.
+	 */
+	private projectsChanged(overview: WorkspaceOverview) {
+		const key = signature(overview.projects);
+		if (key === this.projectsKey) return;
+		this.projectsKey = key;
+		const listening = [...this.sessions].filter(session => session.listensToProjects);
+		if (!listening.length) return;
+		const projects = phoneProjects(overview.projects, this.host.isRepository), mark = signature(projects);
+		for (const session of listening) session.projectsChanged(projects, mark);
+	}
 	connectedDevices() { return new Set([...this.sessions].map(session => session.device.id)); }
 	overviewChanged(overview: WorkspaceOverview) {
 		const before = this.last;
 		this.last = new Map(overview.tasks.map(task => [task.id, task]));
 		for (const session of this.sessions) session.changed(before, overview);
+		this.projectsChanged(overview);
 		for (const task of overview.tasks) {
 			const attention = attentionOf(before.get(task.id), task);
 			if (!attention) continue;

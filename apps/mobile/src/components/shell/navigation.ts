@@ -33,11 +33,11 @@ const DESTINATIONS = ["/chat", "/models", "/providers", "/account", "/code"];
  * (`depth` 0), as the sidebar opens it. Those show the sidebar button and open the drawer from a drag anywhere, edge
  * included. Everything else is a detail (a provider opened from a model, or Usage over Account's list): back on the
  * left and the edge swipe for back, and a drag that starts away from the edge opens the drawer. Chat stays one
- * screen, so all of it leads with the sidebar.
+ * screen, so all of it leads with the sidebar, and so does a computer's thread (/code), which the sidebar lists.
  */
 export function leadsWithSidebar(pathname: string, depth: number) {
   const section = sectionOf(pathname);
-  return pathname === "/" || section === "/chat" || (DESTINATIONS.includes(section) && opensAsSection(pathname) && depth === 0);
+  return pathname === "/" || section === "/chat" || section === "/code" || (DESTINATIONS.includes(section) && opensAsSection(pathname) && depth === 0);
 }
 
 export type SidebarMove = "stay" | "back" | "push" | "switch" | "replace";
