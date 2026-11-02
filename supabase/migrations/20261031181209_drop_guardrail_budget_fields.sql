@@ -14,13 +14,13 @@
 
 SET local check_function_bodies = off;
 
--- Hold the table from the check through the drop, so no value can be written in between.
-LOCK TABLE public.workspace_guardrails IN ACCESS EXCLUSIVE MODE;
-
+-- One statement, so the lock holds from the check through the drop even when the migration is
+-- not run in a transaction: no value can be written in between.
 DO $$
 DECLARE
   v_set integer;
 BEGIN
+  LOCK TABLE public.workspace_guardrails IN ACCESS EXCLUSIVE MODE;
   IF EXISTS (
     SELECT 1 FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'workspace_guardrails' AND column_name = 'daily_limit_requests'
@@ -33,12 +33,12 @@ BEGIN
       RAISE EXCEPTION 'guardrail_budget_values_present: % guardrail(s) hold non-zero budget values; not dropping', v_set;
     END IF;
   END IF;
-END $$;
 
-ALTER TABLE public.workspace_guardrails
-  DROP COLUMN IF EXISTS daily_limit_requests,
-  DROP COLUMN IF EXISTS weekly_limit_requests,
-  DROP COLUMN IF EXISTS monthly_limit_requests,
-  DROP COLUMN IF EXISTS daily_limit_cost_nanos,
-  DROP COLUMN IF EXISTS weekly_limit_cost_nanos,
-  DROP COLUMN IF EXISTS monthly_limit_cost_nanos;
+  ALTER TABLE public.workspace_guardrails
+    DROP COLUMN IF EXISTS daily_limit_requests,
+    DROP COLUMN IF EXISTS weekly_limit_requests,
+    DROP COLUMN IF EXISTS monthly_limit_requests,
+    DROP COLUMN IF EXISTS daily_limit_cost_nanos,
+    DROP COLUMN IF EXISTS weekly_limit_cost_nanos,
+    DROP COLUMN IF EXISTS monthly_limit_cost_nanos;
+END $$;
