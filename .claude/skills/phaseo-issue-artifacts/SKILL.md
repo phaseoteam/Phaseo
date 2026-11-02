@@ -85,7 +85,8 @@ pre{overflow:auto;border:1px solid var(--line);padding:12px;border-radius:6px}
 
 ### 3. Safety check
 
-Read through the whole page before you attach it. Remove API keys, tokens,
+Read through every file before you attach it, including the HTML page and any
+Markdown artifact such as `notes.md`. Remove API keys, tokens,
 `.env` values, Supabase project refs and service keys, internal hostnames,
 customer or workspace identifiers, emails and raw production rows. Redact or
 summarise instead.
@@ -103,12 +104,12 @@ instead of putting them in the page:
 
 When the work changes later, edit the artifact instead of adding a new one:
 `gh issue artifact list <issue>`, then
-`gh issue artifact edit <issue> <number> --body-file <slug>.html`.
+`gh issue artifact edit <issue> <number> --body-file '<path>/<slug>.html'`.
 
 ### 5. Verify
 
-Run `gh issue artifact list <issue>` and report the issue URL and the artifact
-URL. If `create` fails, report the error. Possible causes are a `gh` older than
+Run `gh issue artifact list <issue> --json number,name,url` and report the
+issue URL and the artifact URL. If `create` fails, report the error. Possible causes are a `gh` older than
 2.103 or the preview not being available. Don't paste the page into the issue
 body as a fallback.
 

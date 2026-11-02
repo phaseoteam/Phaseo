@@ -113,7 +113,7 @@ Most code changes do not need an internal documentation change; agents can read 
 - Track active work in its GitHub issue or PR. A merged PR is the implementation record; do not keep a second checklist in the repository.
 
 ## Issue Guidelines
-- When creating or substantially updating a GitHub issue, follow the `phaseo-issue-artifacts` skill: keep the body short and attach a self-contained HTML page (plan, root cause, investigation) with `gh issue artifact create`. The repo is public, so artifacts must contain no secrets or private data.
+- When creating or substantially updating a GitHub issue, follow the `phaseo-issue-artifacts` skill: keep the body short and attach a self-contained HTML page (plan, root cause, investigation) with `gh issue artifact create`. Skip the page for trivial issues such as typos or one-line requests. The repo is public, so artifacts must contain no secrets or private data.
 
 ## Commit & Pull Request Guidelines
 - Commit subjects in history are short, descriptive, and scoped. Add a `.changeset` entry when shipping SDK/API/web changes that should version.
