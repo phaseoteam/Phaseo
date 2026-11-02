@@ -1,10 +1,18 @@
 // Purpose: Verify OIDC tokens that external platforms issue to customer workloads.
-// Why: Lets the gateway accept a short-lived Vercel or GitHub Actions token
-// instead of a long-lived Phaseo API key.
-// How: Strict JWS parsing, asymmetric algorithms only, cached JWKS, and
-// standard time-claim checks. Policy matching lives in policy.ts.
+// Why: Lets the gateway accept a short-lived platform token (Vercel, GitHub
+// Actions, GitLab, Google Cloud, AWS, a workspace's own issuer...) instead of a
+// long-lived Phaseo API key.
+// How: Strict JWS parsing, asymmetric algorithms only, cached JWKS (found by
+// OIDC discovery for custom issuers), and standard time-claim checks. Policy
+// matching lives in policy.ts.
 
-import { jwksUrlForIssuer, presetProviderForIssuer, type WorkloadIdentityProvider } from "./issuers";
+import {
+	discoveryUrlForIssuer,
+	isAllowedDiscoveredJwksUrl,
+	jwksUrlForIssuer,
+	providerForIssuer,
+	type WorkloadIdentityProvider,
+} from "./issuers";
 
 const MAX_TOKEN_LENGTH = 8_192;
 const CLOCK_SKEW_SECONDS = 60;
@@ -19,6 +27,7 @@ export const WORKLOAD_IDENTITY_AUDIENCE = "https://api.phaseo.app";
 const JWKS_L1_TTL_MS = 10 * 60 * 1000;
 const JWKS_KV_TTL_SECONDS = 60 * 60;
 const JWKS_KV_PREFIX = "workload-identity:jwks:v1:";
+const DISCOVERY_KV_PREFIX = "workload-identity:discovery:v1:";
 // An unknown kid triggers at most one refetch per URL per window, so random
 // kids cannot turn the gateway into a JWKS request amplifier.
 const JWKS_FORCED_REFRESH_INTERVAL_MS = 60 * 1000;
@@ -29,7 +38,7 @@ const JWKS_MAX_BYTES = 64 * 1024;
 const JWKS_FAILURE_BACKOFF_MS = 60 * 1000;
 const JWKS_FAILURE_MAX_ENTRIES = 1_000;
 
-type SupportedAlg = "RS256" | "ES256";
+type SupportedAlg = "RS256" | "ES256" | "ES384";
 const ALGORITHMS: Record<SupportedAlg, { kty: string; import: RsaHashedImportParams | EcKeyImportParams; verify: AlgorithmIdentifier | EcdsaParams }> = {
 	RS256: {
 		kty: "RSA",
@@ -41,7 +50,17 @@ const ALGORITHMS: Record<SupportedAlg, { kty: string; import: RsaHashedImportPar
 		import: { name: "ECDSA", namedCurve: "P-256" },
 		verify: { name: "ECDSA", hash: "SHA-256" },
 	},
+	// AWS outbound identity federation signs with ES384 unless the caller asks for RS256.
+	ES384: {
+		kty: "EC",
+		import: { name: "ECDSA", namedCurve: "P-384" },
+		verify: { name: "ECDSA", hash: "SHA-384" },
+	},
 };
+
+function isSupportedAlg(value: unknown): value is SupportedAlg {
+	return typeof value === "string" && Object.hasOwn(ALGORITHMS, value);
+}
 
 export type WorkloadTokenClaims = Record<string, unknown> & {
 	iss: string;
@@ -72,6 +91,8 @@ export type WorkloadTokenFailure = { ok: false; reason: WorkloadTokenFailureReas
 export type JwksSource = {
 	/** Returns the issuer's signing keys; `forceRefresh` bypasses caches. */
 	getKeys(url: string, options?: { forceRefresh?: boolean }): Promise<JsonWebKey[]>;
+	/** JWKS URL from a custom issuer's discovery document, already checked against the issuer's host. */
+	getJwksUri?(issuer: string): Promise<string>;
 };
 
 type DecodedJwt = {
@@ -162,16 +183,17 @@ export async function verifyWorkloadToken(
 
 	const { header, payload } = decoded;
 	const alg = header.alg;
-	if (alg !== "RS256" && alg !== "ES256") return { ok: false, reason: "workload_token_unsupported_alg" };
+	if (!isSupportedAlg(alg)) return { ok: false, reason: "workload_token_unsupported_alg" };
 	if (header.crit !== undefined) return { ok: false, reason: "workload_token_unsupported_alg" };
 	const kid = typeof header.kid === "string" && header.kid.length > 0 ? header.kid : null;
 	if (!kid) return { ok: false, reason: "workload_token_malformed" };
 
 	const iss = payload.iss;
 	if (typeof iss !== "string") return { ok: false, reason: "workload_token_malformed" };
-	const provider = presetProviderForIssuer(iss);
-	const jwksUrl = provider ? jwksUrlForIssuer(iss, provider) : null;
-	if (!provider || !jwksUrl) return { ok: false, reason: "workload_issuer_not_trusted" };
+	const provider = providerForIssuer(iss);
+	if (!provider) return { ok: false, reason: "workload_issuer_not_trusted" };
+	// Custom issuers are only ever looked up once an active policy names them.
+	if (provider === "custom" && !options.configuredIssuers) return { ok: false, reason: "workload_issuer_not_trusted" };
 
 	const aud = payload.aud;
 	const audienceValid = typeof aud === "string" || (Array.isArray(aud) && aud.length > 0 && aud.every((value) => typeof value === "string"));
@@ -191,6 +213,17 @@ export async function verifyWorkloadToken(
 	const maxLifetime = options.maxLifetimeSeconds ?? DEFAULT_MAX_TOKEN_LIFETIME_SECONDS;
 	if (payload.exp - notBefore > maxLifetime) return { ok: false, reason: "workload_token_lifetime_too_long" };
 	if (options.configuredIssuers && !options.configuredIssuers.has(iss)) return { ok: false, reason: "workload_issuer_not_trusted" };
+
+	let jwksUrl = jwksUrlForIssuer(iss, provider);
+	if (provider === "custom") {
+		if (!options.jwks.getJwksUri) return { ok: false, reason: "workload_jwks_unavailable" };
+		try {
+			jwksUrl = await options.jwks.getJwksUri(iss);
+		} catch {
+			return { ok: false, reason: "workload_jwks_unavailable" };
+		}
+	}
+	if (!jwksUrl) return { ok: false, reason: "workload_issuer_not_trusted" };
 
 	let keys: JsonWebKey[];
 	try {
@@ -219,21 +252,23 @@ export async function verifyWorkloadToken(
 
 /* -------------------- JWKS source -------------------- */
 
-type JwksL1Entry = { keys: JsonWebKey[]; expiresAt: number };
-const jwksL1 = new Map<string, JwksL1Entry>();
+type L1Entry<T> = { value: T; expiresAt: number };
+const jwksL1 = new Map<string, L1Entry<JsonWebKey[]>>();
+const discoveryL1 = new Map<string, L1Entry<string>>();
 // When each URL last started a forced refresh, successful or not.
 const forcedRefreshAt = new Map<string, number>();
 const failedUntil = new Map<string, number>();
-const inFlight = new Map<string, Promise<JsonWebKey[]>>();
+const inFlight = new Map<string, Promise<unknown>>();
 
 export function __resetWorkloadJwksCacheForTests(): void {
 	jwksL1.clear();
+	discoveryL1.clear();
 	forcedRefreshAt.clear();
 	failedUntil.clear();
 	inFlight.clear();
 }
 
-async function fetchJwksDocument(url: string, fetchImpl: typeof fetch): Promise<JsonWebKey[]> {
+async function fetchJsonDocument(url: string, fetchImpl: typeof fetch): Promise<Record<string, unknown>> {
 	const response = await fetchImpl(url, {
 		headers: { accept: "application/json", "user-agent": "Phaseo-Gateway/1.0" },
 		redirect: "manual",
@@ -244,70 +279,120 @@ async function fetchJwksDocument(url: string, fetchImpl: typeof fetch): Promise<
 	if (declaredLength > JWKS_MAX_BYTES) throw new Error("jwks_too_large");
 	const text = await response.text();
 	if (text.length > JWKS_MAX_BYTES) throw new Error("jwks_too_large");
-	const parsed = JSON.parse(text) as { keys?: unknown };
-	if (!Array.isArray(parsed.keys)) throw new Error("jwks_invalid");
-	return parsed.keys.filter((key): key is JsonWebKey => Boolean(key) && typeof key === "object");
+	const parsed = JSON.parse(text) as unknown;
+	if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("jwks_invalid");
+	return parsed as Record<string, unknown>;
+}
+
+function parseKeys(document: { keys?: unknown }): JsonWebKey[] {
+	if (!Array.isArray(document.keys)) throw new Error("jwks_invalid");
+	return document.keys.filter((key): key is JsonWebKey => Boolean(key) && typeof key === "object");
 }
 
 /**
- * Isolate cache (10 min) in front of KV (1 h) in front of the issuer.
- * Callers must only pass URLs from `jwksUrlForIssuer`.
+ * Isolate cache (10 min) in front of KV (1 h) in front of the issuer, for key
+ * sets and for custom issuers' discovery documents.
+ * Callers must only pass URLs from `jwksUrlForIssuer` or `getJwksUri`.
  */
 export function createJwksSource(args: { kv?: KVNamespace | null; fetchImpl?: typeof fetch; nowMs?: () => number }): JwksSource {
 	const fetchImpl = args.fetchImpl ?? fetch;
 	const nowMs = args.nowMs ?? Date.now;
-	return {
-		async getKeys(url, options = {}) {
-			const now = nowMs();
-			const l1 = jwksL1.get(url);
-			if (options.forceRefresh) {
-				// Rate-limit forced refresh attempts, reserving the slot before the fetch so
-				// failures and concurrent requests cannot bypass it.
-				const last = forcedRefreshAt.get(url);
-				if (last !== undefined && now - last < JWKS_FORCED_REFRESH_INTERVAL_MS) return l1?.keys ?? [];
-				forcedRefreshAt.set(url, now);
-			} else {
-				if (l1 && l1.expiresAt > now) return l1.keys;
-				if (args.kv) {
-					try {
-						const cached = await args.kv.get(`${JWKS_KV_PREFIX}${url}`, "json") as { keys?: unknown } | null;
-						if (cached && Array.isArray(cached.keys)) {
-							const keys = cached.keys as JsonWebKey[];
-							jwksL1.set(url, { keys, expiresAt: now + JWKS_L1_TTL_MS });
-							return keys;
-						}
-					} catch {
-						// Fall through to the issuer when KV is unavailable.
-					}
-				}
-			}
 
-			if ((failedUntil.get(url) ?? 0) > now) throw new Error("jwks_backoff");
-			// Concurrent misses share one fetch.
-			let pending = inFlight.get(url);
-			if (!pending) {
-				pending = fetchJwksDocument(url, fetchImpl).finally(() => inFlight.delete(url));
-				inFlight.set(url, pending);
+	async function load<T>(spec: {
+		url: string;
+		l1: Map<string, L1Entry<T>>;
+		kvPrefix: string;
+		parse(document: Record<string, unknown>): T;
+		toKv(value: T): Record<string, unknown>;
+		forceRefresh?: boolean;
+		fallback?: T;
+	}): Promise<T> {
+		const { url, l1 } = spec;
+		const now = nowMs();
+		const cached = l1.get(url);
+		if (spec.forceRefresh) {
+			// Rate-limit forced refresh attempts, reserving the slot before the fetch so
+			// failures and concurrent requests cannot bypass it.
+			const last = forcedRefreshAt.get(url);
+			if (last !== undefined && now - last < JWKS_FORCED_REFRESH_INTERVAL_MS) {
+				const value = cached?.value ?? spec.fallback;
+				if (value === undefined) throw new Error("jwks_backoff");
+				return value;
 			}
-			let keys: JsonWebKey[];
-			try {
-				keys = await pending;
-			} catch (error) {
-				failedUntil.delete(url);
-				failedUntil.set(url, now + JWKS_FAILURE_BACKOFF_MS);
-				while (failedUntil.size > JWKS_FAILURE_MAX_ENTRIES) failedUntil.delete(failedUntil.keys().next().value as string);
-				throw error;
-			}
-			failedUntil.delete(url);
-			jwksL1.set(url, { keys, expiresAt: now + JWKS_L1_TTL_MS });
+			forcedRefreshAt.set(url, now);
+		} else {
+			if (cached && cached.expiresAt > now) return cached.value;
 			if (args.kv) {
 				try {
-					await args.kv.put(`${JWKS_KV_PREFIX}${url}`, JSON.stringify({ keys }), { expirationTtl: JWKS_KV_TTL_SECONDS });
+					const stored = await args.kv.get(`${spec.kvPrefix}${url}`, "json") as Record<string, unknown> | null;
+					if (stored) {
+						const value = spec.parse(stored);
+						l1.set(url, { value, expiresAt: now + JWKS_L1_TTL_MS });
+						return value;
+					}
 				} catch {
-					// Caching is best effort.
+					// Fall through to the issuer when KV is unavailable or holds a bad entry.
 				}
 			}
-			return keys;
+		}
+
+		if ((failedUntil.get(url) ?? 0) > now) throw new Error("jwks_backoff");
+		// Concurrent misses share one fetch.
+		let pending = inFlight.get(url) as Promise<T> | undefined;
+		if (!pending) {
+			pending = fetchJsonDocument(url, fetchImpl).then(spec.parse).finally(() => inFlight.delete(url));
+			inFlight.set(url, pending);
+		}
+		let value: T;
+		try {
+			value = await pending;
+		} catch (error) {
+			failedUntil.delete(url);
+			failedUntil.set(url, now + JWKS_FAILURE_BACKOFF_MS);
+			while (failedUntil.size > JWKS_FAILURE_MAX_ENTRIES) failedUntil.delete(failedUntil.keys().next().value as string);
+			throw error;
+		}
+		failedUntil.delete(url);
+		l1.set(url, { value, expiresAt: now + JWKS_L1_TTL_MS });
+		while (l1.size > JWKS_FAILURE_MAX_ENTRIES) l1.delete(l1.keys().next().value as string);
+		if (args.kv) {
+			try {
+				await args.kv.put(`${spec.kvPrefix}${url}`, JSON.stringify(spec.toKv(value)), { expirationTtl: JWKS_KV_TTL_SECONDS });
+			} catch {
+				// Caching is best effort.
+			}
+		}
+		return value;
+	}
+
+	return {
+		getKeys(url, options = {}) {
+			return load({
+				url,
+				l1: jwksL1,
+				kvPrefix: JWKS_KV_PREFIX,
+				parse: parseKeys,
+				toKv: (keys) => ({ keys }),
+				forceRefresh: options.forceRefresh,
+				fallback: [],
+			});
+		},
+		async getJwksUri(issuer) {
+			const url = discoveryUrlForIssuer(issuer);
+			if (!url) throw new Error("issuer_not_custom");
+			return load({
+				url,
+				l1: discoveryL1,
+				kvPrefix: DISCOVERY_KV_PREFIX,
+				parse: (document) => {
+					// OIDC Discovery: the document must name the issuer it was fetched for.
+					if (document.issuer !== issuer || !isAllowedDiscoveredJwksUrl(issuer, document.jwks_uri)) {
+						throw new Error("discovery_invalid");
+					}
+					return document.jwks_uri;
+				},
+				toKv: (jwksUri) => ({ issuer, jwks_uri: jwksUri }),
+			});
 		},
 	};
 }

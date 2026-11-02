@@ -25,7 +25,9 @@ const runtime = vi.hoisted(() => {
 				filters.push([column, value]);
 				if (filters.length === 3) {
 					state.policyQueries.push(filters);
-					return Promise.resolve({ data: state.policyError ? null : state.policyRows, error: state.policyError });
+					const result = Promise.resolve({ data: state.policyError ? null : state.policyRows, error: state.policyError });
+					// Custom-issuer lookups add a row limit.
+					return Object.assign(result, { limit: (count: number) => (filters.push(["limit", count]), result) });
 				}
 				return chain;
 			},
@@ -79,6 +81,9 @@ const ISSUER = "https://oidc.vercel.com/acme";
 const JWKS_URL = `${ISSUER}/.well-known/jwks`;
 let signer: TestSigner;
 let jwksFetches = 0;
+const CUSTOM_ISSUER = "https://oidc.example.com/clusters/prod";
+// Extra documents served by the stubbed fetch (custom issuers' discovery and keys).
+let extraDocuments: Record<string, unknown> = {};
 
 function claims(overrides: Record<string, unknown> = {}): Record<string, unknown> {
 	const now = Math.floor(Date.now() / 1000);
@@ -147,12 +152,17 @@ beforeEach(() => {
 	runtime.state.keyUpdates = [];
 	runtime.state.background = [];
 	jwksFetches = 0;
+	extraDocuments = {};
 	__resetAuthCachesForTests();
 	__resetWorkloadIdentityAuthCachesForTests();
 	__resetWorkloadJwksCacheForTests();
 	__resetLastUsedThrottleForTests();
 	vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 		const url = String(input);
+		if (url in extraDocuments) {
+			jwksFetches += 1;
+			return new Response(JSON.stringify(extraDocuments[url]), { status: 200 });
+		}
 		if (url !== JWKS_URL) return new Response("not found", { status: 404 });
 		jwksFetches += 1;
 		return new Response(JSON.stringify({ keys: [signer.publicJwk] }), { status: 200 });
@@ -176,7 +186,7 @@ describe("authenticate with workload identity tokens", () => {
 			internal: false,
 			authMethod: "api_key",
 		});
-		expect(runtime.state.policyQueries).toEqual([[["issuer", ISSUER], ["pinned_owner_id", "team_123"], ["status", "active"]]]);
+		expect(runtime.state.policyQueries).toEqual([[["issuer", ISSUER], ["status", "active"], ["pinned_owner_id", "team_123"]]]);
 		await Promise.all(runtime.state.background);
 		expect(runtime.state.keyUpdates).toHaveLength(1);
 	});
@@ -189,9 +199,42 @@ describe("authenticate with workload identity tokens", () => {
 	});
 
 	it("leaves other JWTs on the existing path", async () => {
-		const result = await authenticate(request(await signTestToken(signer, claims({ iss: "https://evil.example.com" }))));
-		expect(result).toEqual({ ok: false, reason: "invalid_key_format" });
+		for (const iss of ["phaseo-cli", "http://evil.example.com", "https://127.0.0.1", "https://localhost"]) {
+			const result = await authenticate(request(await signTestToken(signer, claims({ iss }))));
+			expect(result).toEqual({ ok: false, reason: "invalid_key_format" });
+		}
 		expect(jwksFetches).toBe(0);
+	});
+
+	it("refuses an unconfigured custom issuer without any outbound request", async () => {
+		const result = await authenticate(request(await signTestToken(signer, claims({ iss: "https://evil.example.com" }))));
+		expect(result).toEqual({ ok: false, reason: "workload_issuer_not_trusted" });
+		expect(jwksFetches).toBe(0);
+		expect(runtime.state.policyQueries).toHaveLength(0);
+	});
+
+	it("authenticates a custom issuer's token by the claim its policy pins", async () => {
+		runtime.state.issuers = [ISSUER, CUSTOM_ISSUER];
+		extraDocuments = {
+			[`${CUSTOM_ISSUER}/.well-known/openid-configuration`]: { issuer: CUSTOM_ISSUER, jwks_uri: `${CUSTOM_ISSUER}/keys` },
+			[`${CUSTOM_ISSUER}/keys`]: { keys: [signer.publicJwk] },
+		};
+		runtime.state.policyRows = [policyRow({
+			provider: "custom",
+			issuer: CUSTOM_ISSUER,
+			pinned_claim: "sub",
+			pinned_owner_id: "system:serviceaccount:prod:api",
+			claim_conditions: { "kubernetes.io/cluster": ["prod"] },
+		})];
+		const token = await signTestToken(signer, claims({ iss: CUSTOM_ISSUER, sub: "system:serviceaccount:prod:api", "kubernetes.io/cluster": "prod" }));
+		expect(await authenticate(request(token))).toMatchObject({ ok: true, apiKeyId: "key_1", workspaceId: "ws_1" });
+		// Custom policies are found by issuer alone, bounded, never by an unverified owner value.
+		expect(runtime.state.policyQueries).toEqual([[["issuer", CUSTOM_ISSUER], ["status", "active"], ["provider", "custom"], ["limit", 200]]]);
+		expect(jwksFetches).toBe(2);
+
+		__resetWorkloadIdentityAuthCachesForTests();
+		const otherAccount = await signTestToken(signer, claims({ iss: CUSTOM_ISSUER, sub: "system:serviceaccount:prod:other", "kubernetes.io/cluster": "prod" }));
+		expect(await authenticate(request(otherAccount))).toEqual({ ok: false, reason: "workload_identity_no_matching_policy" });
 	});
 
 	it("never fetches keys for an issuer no active policy names", async () => {
