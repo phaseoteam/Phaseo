@@ -184,7 +184,7 @@ describe.each(["direct", "connect"] as const)("over %s", (via) => {
     expect(list.selected).toEqual({ model: "gpt-6.1", reasoningEffort: "low" });
     expect(desktop.received.at(-1)).toMatchObject({ type: "list_models", projectId: "p1" });
 
-    const { chat } = await client.request("new_chat", { text: "Ship it", mode: "code", ...newThreadModel(list, { model: "gpt-6.1", effort: "high" }) });
+    const { chat } = await client.request("new_chat", { text: "Ship it", mode: "code", ...newThreadModel(list, { harness: "", model: "gpt-6.1", effort: "high" }) });
     expect(desktop.received.at(-1)).toMatchObject({ type: "new_chat", reasoningEffort: "high" });
     expect(desktop.received.at(-1)).not.toHaveProperty("model");
     expect(chat).toMatchObject({ model: "gpt-6.1" });
@@ -195,11 +195,29 @@ describe.each(["direct", "connect"] as const)("over %s", (via) => {
     client.stop();
   });
 
+  test("lists every agent on a newer computer and starts a thread on another agent's model", async () => {
+    const { desktop, client } = await connected();
+    desktop.models = {
+      ...desktop.models!,
+      selected: { harness: "codex", model: "gpt-6.1", reasoningEffort: "low" },
+      agents: [
+        { harness: "phaseo", name: "Phaseo", source: "phaseo", accountId: "acc", models: [{ id: "anthropic/claude-sonnet-5", name: "Claude Sonnet 5" }] },
+        { harness: "codex", name: "Codex", source: "local", models: desktop.models!.models },
+      ],
+    };
+    const list = await client.request("list_models", { mode: "plan" });
+    expect(desktop.received.at(-1)).toMatchObject({ type: "list_models", mode: "plan" });
+    const { chat } = await client.request("new_chat", { text: "Plan it", mode: "plan", ...newThreadModel(list, { harness: "phaseo", accountId: "acc", model: "anthropic/claude-sonnet-5", effort: null }) });
+    expect(desktop.received.at(-1)).toMatchObject({ type: "new_chat", harness: "phaseo", accountId: "acc", model: "anthropic/claude-sonnet-5" });
+    expect(chat).toMatchObject({ mode: "plan", model: "anthropic/claude-sonnet-5" });
+    client.stop();
+  });
+
   test("leaves the model to a computer from before list_models", async () => {
     const { desktop, client } = await connected();
     desktop.models = null;
     await expect(client.request("list_models", {})).rejects.toMatchObject({ code: "invalid_frame" });
-    const { chat } = await client.request("new_chat", { text: "x", mode: "chat", ...newThreadModel(null, { model: "gpt-6.1", effort: "high" }) });
+    const { chat } = await client.request("new_chat", { text: "x", mode: "chat", ...newThreadModel(null, { harness: "", model: "gpt-6.1", effort: "high" }) });
     expect(chat.id).toBeTruthy();
     expect(desktop.received.at(-1)).not.toHaveProperty("reasoningEffort");
     client.stop();

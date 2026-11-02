@@ -12,7 +12,14 @@ What the Phaseo desktop app and the Phaseo phone app say to each other, shared b
 
 ## Models for a new chat
 
-A phone can't change the model of a chat that exists. For a new one, `list_models` (with the `projectId` the chat will use, if any) returns the models of the agent the computer would start it with, each with its efforts, and `selected`, the model and effort it would use unasked. `new_chat` takes one of those ids as `model` and one of its effort ids as `reasoningEffort`; the computer refuses anything else. Leave both out to keep the computer's choice. A computer from before `list_models` answers it with `invalid_frame`, so phones fall back to the computer's choice.
+A phone can't change the model of a chat that exists. For a new one, `list_models` (with the `projectId` the chat will use and its `mode`) answers as the computer's own new-chat picker would:
+
+- `agents`: every agent the chat could run on. Phaseo (`source: "phaseo"`, with the computer's Phaseo account as `accountId`) when an account can call the gateway, then each coding agent installed and signed in on the computer (`source: "local"`). Grok only outside Chat, and none the project turns off. Each lists its models with their efforts; `legacy` models belong behind "N older". An agent whose models couldn't be read has `error` and no models, and the rest still list.
+- `selected`: the agent, model and effort the chat starts with unasked. In a project (Code or Plan), the project's default model. Otherwise the model the person last chose in the window (their default, else the last picked). Otherwise the Phaseo account's default. With none of these, the picker opens on the first model listed.
+- `favourites`: the window's starred models as `harness:model` keys. `permissionMode`: what the chat runs with, the project's default, else the latest chat's. The phone shows it and can't change it.
+- `models`: the selected agent's models again, for phones from before agents.
+
+`new_chat` names the agent (`harness`, and `accountId` for Phaseo) with one of its `model` ids and one of that model's effort ids as `reasoningEffort`; the computer refuses anything it didn't list. Without `harness` the model must be the default agent's, and leaving out the model too keeps the computer's choice (refused only when nothing above applies). A computer from before `list_models` answers it with `invalid_frame`, and one from before agents ignores `mode` and sends only `models` and `selected`.
 
 List rows carry `model`, `branch` (the worktree's) and `settled`; `read_chat`'s chat adds `reasoningEffort` when the chat set one. `effortLabel(id)` gives the word both apps show for an effort.
 

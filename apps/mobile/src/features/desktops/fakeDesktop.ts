@@ -1,7 +1,7 @@
 import {
   checkDirectAuth, directChallenge, encodePairingLink, EnvelopeChannel, generateKeyPair, isEnvelope, okResponse, openPairRequest, errorResponse, parsePhoneFrame,
   randomToken, readRelayOutbound, relayDesktopAddress, relayPairing, sealPairResponse, sharedKey,
-  type DesktopFrame, type PhoneChatDetail, type PhoneEntry, type PhoneFrame, type PhoneModel, type PhoneProject, type PhoneRequest, type PhoneResponse,
+  type DesktopFrame, type PhoneChatDetail, type PhoneEntry, type PhoneFrame, type PhoneProject, type PhoneRequest, type PhoneResults, type PhoneResponse,
 } from "./protocol";
 import type { FetchLike } from "./reach";
 import type { OpenSocket, SocketLike } from "./transport";
@@ -67,7 +67,7 @@ export class FakeDesktop {
     { id: "w1", name: "Phaseo (fix)", worktreeOf: "p1", branch: "fix/login", repository: true },
   ];
   /** What a new thread can start on; null answers list_models as a computer from before it did. */
-  models: { models: PhoneModel[]; selected: { model: string; reasoningEffort?: string } } | null = {
+  models: PhoneResults["list_models"] | null = {
     models: [
       { id: "gpt-6.1", name: "GPT-6.1", efforts: [{ id: "low", label: "Low" }, { id: "medium", label: "Medium" }, { id: "high", label: "High" }], defaultEffort: "medium" },
       { id: "gpt-6.1-mini", name: "GPT-6.1 mini" },
@@ -226,7 +226,9 @@ export class FakeDesktop {
       case "list_models":
         return this.models ? okResponse(request, this.models) : errorResponse(request.id, request.type, "invalid_frame", "Unknown frame type.") as PhoneResponse;
       case "new_chat": {
-        const model = this.models?.models.find((entry) => entry.id === (request.model ?? this.models?.selected.model));
+        // A named agent's own models; without one, the default agent's.
+        const pool = request.harness ? this.models?.agents?.find((agent) => agent.harness === request.harness && (agent.accountId ?? "") === (request.accountId ?? ""))?.models ?? [] : this.models?.models;
+        const model = pool?.find((entry) => entry.id === (request.model ?? this.models?.selected.model));
         if (request.model && !model) return errorResponse(request.id, request.type, "rejected", "That model isn't available on this computer any more.") as PhoneResponse;
         if (request.reasoningEffort && !model?.efforts?.some((effort) => effort.id === request.reasoningEffort)) return errorResponse(request.id, request.type, "rejected", "That model doesn't offer that effort.") as PhoneResponse;
         const reasoningEffort = request.reasoningEffort ?? (request.model ? undefined : this.models?.selected.reasoningEffort);

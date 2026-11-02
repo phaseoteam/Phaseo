@@ -107,7 +107,7 @@ import { branchPullRequest, forgetBranchPullRequest } from "./branchPullRequest"
 import { createPullRequest, parsePullRequestText, pullRequestPrompt, threadWorkLog, type PullRequestContext } from "./createPullRequest";
 import { OutsideAgentsMcp } from "./outsideAgentsMcp";
 import { PhoneService, type PhaseoSignIn } from "./phone/phoneService";
-import { phoneModels, startPhoneChat, type DiscoverModels } from "./phone/phoneHost";
+import { phoneModels, startPhoneChat, type DiscoverModels, type PhoneModelSources } from "./phone/phoneHost";
 import { codeHostSettings, configureCodeHosts, removeCodeHostToken, saveCodeHostToken, saveCustomCodeHosts } from "./codeHosts";
 import { codeHostKinds, validHostName, type CodeHostKind } from "../shared/codeHosts";
 import { validateCodeHostTokenRequest } from "../shared/codeHostSettings";
@@ -122,6 +122,8 @@ import { nativeAccountStatus } from "./accountStatus";
 import { checkAcpAgent } from "./acpAgentStatus";
 import { validateMcpCommand } from "../shared/mcp";
 import { validatePreferences } from "../shared/preferences";
+import { validateRememberedModels, type RememberedModels } from "../shared/rememberedModels";
+import { cachedConnectedHarnesses } from "./connectedHarnesses";
 import { validateProjectUpdate } from "../shared/projectSettings";
 import { TaskNotifications } from "./taskNotifications";
 import { MissionService } from "./missionService";
@@ -542,10 +544,14 @@ ipcMain.handle("workspace:usage-hubs", async (event, request: unknown) => {
 });
 ipcMain.handle("workspace:account-status", async (event, harness: unknown, id: unknown) => {
 	if (!senderWindow(event) || (harness !== "codex" && harness !== "claude" && harness !== "cursor" && harness !== "grok") || (id !== undefined && typeof id !== "string")) throw new Error("Invalid account status request.");
+	return accountStatus(harness, id as string | undefined);
+});
+/** Whether a CLI (or one of its accounts) is signed in, as Settings checks it; concurrent checks of one key share a run. */
+function accountStatus(harness: "codex" | "claude" | "cursor" | "grok", id?: string) {
 	const account = id ? workspaceRuntime.store.getAccounts().find(value => value.id === id && value.harness === harness && (value.kind === "native" || harness === "cursor")) : undefined;
 	if (id && !account) throw new Error("Account no longer exists.");
 	workspaceRuntime.assertHarnessAvailable(harness);
-	const key = id as string | undefined ?? harness; const running = accountStatusRuns.get(key); if (running) return running;
+	const key = id ?? harness; const running = accountStatusRuns.get(key); if (running) return running;
 	if (accountChecks.has(key) || (id && signIns.has(id))) throw new Error("An account check or sign-in is already in progress.");
 	const controller = new AbortController(); accountChecks.set(key, controller);
 	const run = (async () => {
@@ -558,7 +564,7 @@ ipcMain.handle("workspace:account-status", async (event, harness: unknown, id: u
 	})().finally(() => { accountChecks.delete(key); accountStatusRuns.delete(key); });
 	accountStatusRuns.set(key, run);
 	return run;
-});
+}
 ipcMain.handle("workspace:check-agent", async (event, id: unknown) => {
 	if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid agent check.");
 	const agent = workspaceRuntime.store.getAgents().find(value => value.id === id); if (!agent) throw new Error("Agent no longer exists.");
@@ -1052,6 +1058,22 @@ ipcMain.handle("workspace:installations", async event => {
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
 	return harnessInstallations();
 });
+// One check of the local agents for the window's pickers and for phones (see connectedHarnesses.ts).
+const connectedLocalHarnesses = cachedConnectedHarnesses({
+	installations: harnessInstallations,
+	authenticated: async harness => (await accountStatus(harness)).authenticated === true,
+	models: async harness => { workspaceRuntime.assertHarnessAvailable(harness); return await discoverDesktopModels(harness); },
+});
+ipcMain.handle("workspace:connected-harnesses", async (event, force: unknown) => {
+	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
+	return connectedLocalHarnesses(force === true);
+});
+/** The window's remembered model and favourites, mirrored from its storage each time it starts and whenever they change. */
+let rememberedModels: RememberedModels = { favourites: [] };
+ipcMain.handle("workspace:remember-models", (event, value: unknown) => {
+	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
+	rememberedModels = validateRememberedModels(value);
+});
 
 ipcMain.handle("workspace:update-harness", async (event, harness: unknown) => {
 	if (!senderWindow(event) || (harness !== "codex" && harness !== "claude" && harness !== "pi")) throw new Error("Invalid harness update request.");
@@ -1314,6 +1336,8 @@ app.whenReady().then(() => {
 	void outsideAgents.start();
 	// Phones use the same reads, commands and model lists as the window, so each action is checked the same way.
 	const phoneDiscover: DiscoverModels = async (harness, accountId, projectId) => { workspaceRuntime.assertHarnessAvailable(harness); return await discoverDesktopModels(harness, accountId, projectId); };
+	// A phone's new chat reads the same agents, remembered model and permissions the window's new-chat screen does.
+	const phoneSources: PhoneModelSources = { discover: phoneDiscover, localHarnesses: () => connectedLocalHarnesses(), remembered: () => rememberedModels, permissionOf: id => workspaceRuntime.store.getTask(id).permissionMode };
 	phoneService = new PhoneService({
 		directory: workspaceDirectory, vault: { get: id => vault.get(id), set: (id, value) => vault.set(id, value) }, phaseo: phoneSignIn,
 		changed: state => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:phone-changed", state); },
@@ -1321,8 +1345,8 @@ app.whenReady().then(() => {
 			desktopName: () => hostname(), appVersion: app.getVersion(),
 			overview: () => workspaceRuntime.store.getOverview(), task: id => workspaceRuntime.store.getTask(id), page: query => workspaceRuntime.store.conversationPage(query),
 			command: command => workspaceRuntime.command(command),
-			newChat: input => startPhoneChat(() => workspaceRuntime.store.getOverview(), command => workspaceRuntime.command(command), phoneDiscover, input),
-			models: input => phoneModels(workspaceRuntime.store.getOverview(), phoneDiscover, input),
+			newChat: input => startPhoneChat(() => workspaceRuntime.store.getOverview(), command => workspaceRuntime.command(command), phoneSources, input),
+			models: input => phoneModels(workspaceRuntime.store.getOverview(), phoneSources, input),
 			// A worktree's .git is a file, which existsSync also finds.
 			isRepository: directory => existsSync(path.join(directory, ".git")),
 		},

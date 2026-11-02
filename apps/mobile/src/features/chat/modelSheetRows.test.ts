@@ -5,7 +5,7 @@ const option = (modelId: string, releaseDate: string, more: Partial<ChatModelOpt
   modelId, label: modelId.split("/")[1]!, orgId: modelId.split("/")[0]!, orgName: modelId.split("/")[0]!, releaseDate, status: "active", free: false,
   inputPrice: 1, outputPrice: 2, contextWindow: 128_000, inputModalities: ["text"], providerIds: [], providerNames: [], routes: [], ...more,
 });
-const shape = <T,>(rows: ReturnType<typeof modelSheetRows<T>>, idOf: (item: T) => string) => rows.map((row) => (row.type === "heading" ? `# ${row.title}` : row.type === "more" ? `more ${row.hidden}` : idOf(row.item)));
+const shape = <T,>(rows: ReturnType<typeof modelSheetRows<T>>, idOf: (item: T) => string) => rows.map((row) => (row.type === "heading" ? `# ${row.title}` : row.type === "more" ? `more ${row.hidden}` : row.type === "note" ? `! ${row.text}` : idOf(row.item)));
 
 describe("the model sheet's list", () => {
   const options = [

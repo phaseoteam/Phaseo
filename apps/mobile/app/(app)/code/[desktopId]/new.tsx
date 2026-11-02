@@ -1,7 +1,7 @@
 import { useLocalSearchParams } from "expo-router";
-import { NewDesktopChatScreen } from "@/features/desktops/NewDesktopChatScreen";
+import { NewDesktopThread } from "@/features/desktops/NewDesktopThread";
 
-export default function NewDesktopChatRoute() {
+export default function NewDesktopThreadRoute() {
   const { desktopId, projectId } = useLocalSearchParams<{ desktopId: string; projectId?: string }>();
-  return <NewDesktopChatScreen key={`${desktopId}:${projectId ?? ""}`} desktopId={desktopId} projectId={projectId ?? null} />;
+  return <NewDesktopThread key={`${desktopId}:${projectId ?? ""}`} desktopId={desktopId} projectId={projectId ?? null} />;
 }
