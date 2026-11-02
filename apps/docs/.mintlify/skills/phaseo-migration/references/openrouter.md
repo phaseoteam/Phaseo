@@ -1,12 +1,13 @@
 # OpenRouter to Phaseo
 
-For a full inventory, mapping boundary, validation and report template, use the `openrouter-to-phaseo-migration` skill. This file covers the common case.
+For the full field tables, mapping boundary, validation and report template, use the `openrouter-to-phaseo-migration` skill. This file covers the common case.
 
 ## Detection signals
 
-- `openrouter.ai/api/v1`, `OPENROUTER_API_KEY`, keys starting `sk-or-v1`
-- `HTTP-Referer` and `X-Title` headers
-- `provider` objects, `models` fallback arrays, `openrouter/auto`, `@openrouter/ai-sdk-provider`
+- `openrouter.ai/api/v1`, `OPENROUTER_API_KEY`, `OPENROUTER_BASE_URL`, keys starting `sk-or-v1`
+- `HTTP-Referer`, `X-Title` and `X-OpenRouter-*` headers
+- `provider` objects, `models` fallback arrays, `plugins`, `transforms`, model suffixes such as `:nitro` or `:online`, `openrouter/auto`, `@preset/`
+- `@openrouter/ai-sdk-provider`, `@openrouter/sdk`, `openrouter` (PyPI)
 
 ## Before and after
 
@@ -26,21 +27,23 @@ const client = new OpenAI({
 });
 ```
 
-Model IDs use the same `<org>/<model>` shape, but verify every one with `GET /v1/models`; do not strip prefixes or guess replacements. For the AI SDK provider, see [vercel-ai-gateway.md](https://raw.githubusercontent.com/phaseoteam/Phaseo/main/.agents/skills/phaseo-migration/references/vercel-ai-gateway.md).
+Model IDs use the same `<org>/<model>` shape and most match, but some orgs differ (`x-ai/` is `spacex-ai/`, `meta-llama/` is `meta/`, `mistralai/` is `mistral/`). Verify every ID with `GET /v1/models?format=openai`; do not guess replacements. For the AI SDK provider, swap `@openrouter/ai-sdk-provider` for `@phaseo/ai-sdk-provider` (see [vercel-ai-gateway.md](https://raw.githubusercontent.com/phaseoteam/Phaseo/main/.agents/skills/phaseo-migration/references/vercel-ai-gateway.md)); OpenRouter's own SDKs need a client change, not just a new base URL.
 
 ## Feature mapping
 
 | OpenRouter | Phaseo | Notes |
 | --- | --- | --- |
-| `provider.order`, `provider.only`, `provider.ignore` | Same fields | Validate provider IDs; keep at least one route available |
+| `provider.order`, `only`, `ignore`, `allow_fallbacks`, `require_parameters`, `max_price` | Same fields | Use base provider IDs, not endpoint slugs |
 | `provider.sort` | `provider.sort` | `price`, `latency`, `throughput` |
-| `provider.zdr` | `provider.require_zero_data_retention` | Confirm a matching provider exists first |
-| `models` fallback array | `models` array | 1 to 25 entries; `model` stays the primary |
-| `:nitro` suffix | `:nitro` (throughput); also `:cheap`, `:fast` | Suffix overrides request and preset routing mode |
-| `openrouter/auto` | Phaseo Auto Routing | Alpha for selected workspaces; configure it with `phaseo routing auto update` or `PATCH /v1/routing/auto`, and check the docs before relying on it |
-| `HTTP-Referer`, `X-Title` | Accepted for app attribution | Add `X-App-Id` for stable grouping |
-| Shared provider and parameter defaults | Presets (`"model": "@slug"`) | Move them out of call sites |
-| OpenRouter-only response fields | No direct equivalent | Normalize in one compatibility layer |
+| `provider.zdr` | Same (alias of `provider.require_zero_data_retention`) | `data_collection: "deny"` returns 400; use `zdr: true` |
+| `models` fallback array | `models` array | 1 to 25 entries; `model` is required, so move `models[0]` into it |
+| `:nitro` suffix | `:nitro` (throughput); also `:cheap`, `:fast` | `:floor` becomes `:cheap`; remove `:online` and `:thinking` (use web search and `reasoning`) |
+| `openrouter/auto`, `openrouter/free` | `phaseo/auto`, `phaseo/free` | `phaseo/auto` is alpha for selected workspaces and can't be combined with `models`; configure it with `phaseo routing auto update` |
+| `plugins` `web`, `web-fetch`, `response-healing` | Same plugin IDs | Other plugins (`file-parser`, `context-compression`) return 400 |
+| `transforms`, `usage: { include: true }` | Not accepted | Remove; usage and cost are always returned |
+| `HTTP-Referer`, `X-Title` | Accepted for app attribution | Rename `X-OpenRouter-Title` to `X-Title`; add `X-App-Id` for stable grouping |
+| Presets `@preset/<slug>` | Presets (`"model": "@slug"`) | Recreate them in Phaseo |
+| `usage.cost`, `reasoning_details`, `provider` in responses | Returned | `native_finish_reason` and `is_byok` are not; normalize in one layer if callers read them |
 
 ## Gotchas
 
