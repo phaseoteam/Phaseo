@@ -13,6 +13,8 @@
   "vars": {
     "WEB_API_ORIGIN": "https://phaseo.app",
     "PHASEO_ENV": "production",
+    // Onboarding emails through Resend (same as the previous site).
+    "RESEND_ONBOARDING_AUTOMATIONS_ENABLED": "true",
     // Rollout canary (src/lib/start/canary.ts): on these hosts, CANARY_PERCENT
     // of visitors are served here and the rest pass through to the previous
     // site. 0 = everyone on the previous site (fast rollback); 100 = all here.
