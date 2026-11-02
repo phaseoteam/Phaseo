@@ -19,6 +19,7 @@ import { publicGamesRouter } from "./games";
 import { publicFeedbackRouter } from "./feedback";
 import { publicSpendReportsRouter } from "./spend-reports";
 import { publicToolsRouter } from "./tools";
+import { publicWorkRouter } from "./work";
 import { createPublicReadCoalescer } from "@/http/publicReadCoalescer";
 
 export const publicRouter = new Hono<{ Bindings: Env }>();
@@ -45,3 +46,4 @@ publicRouter.route("/games", publicGamesRouter);
 publicRouter.route("/feedback", publicFeedbackRouter);
 publicRouter.route("/spend-reports", publicSpendReportsRouter);
 publicRouter.route("/", publicToolsRouter);
+publicRouter.route("/work", publicWorkRouter);

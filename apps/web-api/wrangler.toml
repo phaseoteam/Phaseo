@@ -116,6 +116,16 @@ namespace_id = "42002"
 limit = 3000
 period = 60
 
+# Public work tracker endpoints (ask intake, error ingest, GitHub bridge). Scoped per
+# endpoint, token and client IP in application code.
+[[ratelimits]]
+name = "WORK_PUBLIC_RATE_LIMITER"
+namespace_id = "42004"
+
+[ratelimits.simple]
+limit = 120
+period = 60
+
 # Cloudflare owns the explicit application API namespaces below. Vercel owns
 # page rendering and normal web assets, but no application API handlers.
 [[routes]]
