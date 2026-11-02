@@ -1,16 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { useMemo } from "react";
 import { View } from "react-native";
 import { Logo } from "@/components/Logo";
 import { Button, Row, Section, Skeleton, Text } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
 import { getReleases, type ModelRelease } from "@/lib/api/models";
-import { isOnPhaseo, modelName, organisationName } from "@/lib/catalogue";
-import { formatCalendarDate, formatCompact } from "@/lib/format";
+import { formatCalendarDate } from "@/lib/format";
 import { useAuth } from "@/providers/AuthProvider";
 import { onePerModel } from "./releases";
-import { useCatalogue } from "./state";
 
 // One label per release, most useful first: "Released" beats "Announced" when both apply.
 // Only new models are listed; retirements and deprecations are left out.
@@ -19,13 +16,13 @@ const RELEASE_TYPES: [string, string][] = [["added", "Added to Phaseo"], ["relea
 const typeKey = (value: string) => value.trim().toLowerCase().replace(/[\s-]+/g, "_");
 const releaseLabel = (release: ModelRelease) => RELEASE_TYPES.find(([type]) => release.types.some((value) => typeKey(value) === type))?.[1];
 
-// Phones list a few of each so the catalogue starts within a scroll or two; the catalogue below is sorted newest
-// first by default, so it carries on where Latest releases stops. The tablet's detail pane has room for more.
-const PHONE_COUNTS = { latest: 5, trending: 5 };
-const SPLIT_COUNTS = { latest: 8, trending: 6 };
+// Phones list a few so the catalogue starts within a scroll; the catalogue below is sorted newest first by default,
+// so it carries on where Latest releases stops. The tablet's detail pane has room for more.
+const PHONE_LATEST = 5;
+const SPLIT_LATEST = 8;
 
 /**
- * The top of Models: a way to sign in, the latest releases and the most used models. Above the list on
+ * The top of Models: a way to sign in and the latest releases. Above the list on
  * phones, until a search or filter (then the matches come first); on split layouts it fills the detail pane until
  * a model is chosen. Compare, Providers and Usage are in the sidebar, which every screen opens.
  */
@@ -33,13 +30,8 @@ export function ModelsSummary() {
   const router = useRouter();
   const { split } = useLayout();
   const { session } = useAuth();
-  const counts = split ? SPLIT_COUNTS : PHONE_COUNTS;
-  const catalogue = useCatalogue();
+  const latest = split ? SPLIT_LATEST : PHONE_LATEST;
   const releases = useQuery({ queryKey: ["public", "releases"], queryFn: getReleases, staleTime: 10 * 60 * 1000 });
-  const trending = useMemo(
-    () => (catalogue.data?.models ?? []).filter((model) => isOnPhaseo(model) && (model.popularity_tokens_week ?? 0) > 0).sort((a, b) => (b.popularity_tokens_week ?? 0) - (a.popularity_tokens_week ?? 0)).slice(0, counts.trending),
-    [catalogue.data, counts.trending],
-  );
 
   return (
     <View className="pb-2">
@@ -51,23 +43,8 @@ export function ModelsSummary() {
       )}
 
       <Section title="Latest releases" className={split ? undefined : "mt-5"}>
-        {releases.isLoading ? <ReleaseSkeleton /> : onePerModel((releases.data?.past ?? []).filter((release) => releaseLabel(release))).slice(0, counts.latest).map((release, index, list) => <ReleaseRow key={`${release.model.model_id}-${release.date}`} release={release} last={index === list.length - 1} />)}
+        {releases.isLoading ? <ReleaseSkeleton /> : onePerModel((releases.data?.past ?? []).filter((release) => releaseLabel(release))).slice(0, latest).map((release, index, list) => <ReleaseRow key={`${release.model.model_id}-${release.date}`} release={release} last={index === list.length - 1} />)}
       </Section>
-
-      {trending.length ? (
-        <Section title="Most used this week" description="By tokens through Phaseo." className="mt-8">
-          {trending.map((model, index) => (
-            <Row
-              key={model.model_id}
-              leading={<Logo id={model.organisation_id} label={organisationName(model)} colour={model.organisation_colour} size={30} />}
-              title={modelName(model)}
-              subtitle={`${organisationName(model)} · ${formatCompact(model.popularity_tokens_week)} tokens`}
-              onPress={() => router.push(`/models/${model.model_id}`)}
-              last={index === trending.length - 1}
-            />
-          ))}
-        </Section>
-      ) : null}
     </View>
   );
 }

@@ -25,7 +25,7 @@ export function drawerSwipe(screenWidth: number) {
  * When the drawer's pan takes over. Closed, only a clear drag to the right opens it, so drags left stay with the
  * screen; on a detail (`leads` false) it also ignores drags that start in the back strip along the left edge. Open, a
  * drag either way follows the finger. It fails on vertical movement first, so lists scroll. Sideways rows keep their
- * drags through HorizontalScroll, which registers each row's scroll with this pan.
+ * drags through HorizontalScroll, whose swipe lock fails this pan for a touch that starts on a row.
  */
 export function drawerPan({ open, leads }: { open: boolean; leads: boolean }) {
   return {

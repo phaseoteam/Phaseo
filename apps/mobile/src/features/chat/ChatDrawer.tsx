@@ -4,8 +4,10 @@ import { useCallback, useEffect, useMemo, useState, type ComponentProps, type Re
 import { BackHandler, Pressable } from "react-native";
 import { Drawer } from "react-native-drawer-layout";
 import type { LegacyPanGesture } from "react-native-gesture-handler";
+import { useSharedValue } from "react-native-reanimated";
 import { inApp, leadsWithSidebar, sectionDepth } from "@/components/shell/navigation";
 import { SidebarDrawerContext, type SidebarDrawer } from "@/components/shell/sidebarDrawer";
+import { SwipeLockContext, swipeLocked } from "@/components/shell/swipeLock";
 import { Icon, Text } from "@/components/ui";
 import { useNeedsYouCount } from "@/features/desktops/needsYou";
 import { useLayout } from "@/hooks/useLayout";
@@ -27,14 +29,22 @@ export function ChatDrawer({ sidebar, children }: { sidebar: () => ReactNode; ch
   const button = useMemo(() => <SidebarButton onPress={() => setOpen(true)} />, []);
   const controls = useMemo<SidebarDrawer>(() => ({ open: () => setOpen(true), close: () => setOpen(false), button }), [button]);
   const swipe = drawerSwipe(width);
+  const lock = useSharedValue(0);
   const leads = leadsWithSidebar(pathname, navigation.isReady() ? sectionDepth(navigation.getRootState()) : 0);
   // react-native-drawer-layout's own pan, with clearer offsets than its 5 dp (later calls replace earlier ones). It
-  // builds the pan with the legacy Gesture API, though its types name gesture-handler 3's hook gesture.
+  // builds the pan with the legacy Gesture API, though its types name gesture-handler 3's hook gesture. A touch that
+  // landed on a sideways row fails the pan on the UI thread before it can activate (see swipeLock).
   const configurePan = useCallback((gesture: LegacyPanGesture) => {
     const pan = drawerPan({ open, leads });
-    const configured = gesture.activeOffsetX(pan.activeOffsetX).failOffsetY(pan.failOffsetY);
+    const configured = gesture
+      .activeOffsetX(pan.activeOffsetX)
+      .failOffsetY(pan.failOffsetY)
+      .onTouchesMove((_event, manager) => {
+        "worklet";
+        if (swipeLocked(lock, Date.now())) manager.fail();
+      });
     return pan.hitSlop ? configured.hitSlop(pan.hitSlop) : configured;
-  }, [open, leads]) as unknown as ComponentProps<typeof Drawer>["configureGestureHandler"];
+  }, [open, leads, lock]) as unknown as ComponentProps<typeof Drawer>["configureGestureHandler"];
 
   // Opening a screen in the app (from the sidebar, a link or a notification) closes the drawer. Pairing opens over the
   // app and keeps it open, so coming back shows the new computer's threads.
@@ -55,21 +65,23 @@ export function ChatDrawer({ sidebar, children }: { sidebar: () => ReactNode; ch
   if (split) return children;
   return (
     <SidebarDrawerContext.Provider value={controls}>
-      <Drawer
-        open={open}
-        onOpen={controls.open}
-        onClose={controls.close}
-        renderDrawerContent={sidebar}
-        drawerType="front"
-        drawerStyle={{ width: swipe.width }}
-        swipeEdgeWidth={swipe.swipeEdgeWidth}
-        swipeMinDistance={swipe.swipeMinDistance}
-        swipeMinVelocity={swipe.swipeMinVelocity}
-        configureGestureHandler={configurePan}
-        overlayAccessibilityLabel="Close sidebar"
-      >
-        {children}
-      </Drawer>
+      <SwipeLockContext.Provider value={lock}>
+        <Drawer
+          open={open}
+          onOpen={controls.open}
+          onClose={controls.close}
+          renderDrawerContent={sidebar}
+          drawerType="front"
+          drawerStyle={{ width: swipe.width }}
+          swipeEdgeWidth={swipe.swipeEdgeWidth}
+          swipeMinDistance={swipe.swipeMinDistance}
+          swipeMinVelocity={swipe.swipeMinVelocity}
+          configureGestureHandler={configurePan}
+          overlayAccessibilityLabel="Close sidebar"
+        >
+          {children}
+        </Drawer>
+      </SwipeLockContext.Provider>
     </SidebarDrawerContext.Provider>
   );
 }
