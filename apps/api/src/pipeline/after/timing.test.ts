@@ -192,4 +192,17 @@ describe("recordProviderRound", () => {
 		ctx.meta.preserve_stream_timing = true;
 		expect(resolveOutputSpeedWindow(ctx)).toEqual({ durationMs: 200, outputTokens: 21, reasoningTokens: 0 });
 	});
+
+	it("keeps reasoning tokens in the window when the round streamed its reasoning", () => {
+		const ctx = buildContext();
+		ctx.meta.selectedUpstreamFetchStartMs = 0;
+		ctx.meta.preserve_stream_timing = true;
+		recordProviderRound(ctx, {
+			completedAtMs: 11_200,
+			firstOutputAtMs: 200,
+			reasoningStreamed: true,
+			usage: { outputTokens: 1_000, reasoningTokens: 900 },
+		});
+		expect(resolveOutputSpeedWindow(ctx)).toEqual({ durationMs: 11_000, outputTokens: 1_000, reasoningTokens: null });
+	});
 });

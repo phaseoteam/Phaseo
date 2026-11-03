@@ -139,7 +139,7 @@ function attachStreamTimingMeta(args: {
     const tokensOut = getUsageOutputTokens(usage);
     const calculated = calculateOutputPerformanceMetrics({
         outputTokens: tokensOut,
-        reasoningTokens: getUsageReasoningTokens(usage),
+        reasoningTokens: ctx.meta.reasoningStreamed ? null : getUsageReasoningTokens(usage),
         providerDurationMs: generationMs,
         providerTtftMs: ctx.meta.provider_ttft_ms ?? null,
         gatewayE2eMs: ctx.meta.end_to_end_ms ?? null,

@@ -494,7 +494,7 @@ export async function handleSuccessAudit(
         : null;
     const outputPerformance = calculateOutputPerformanceMetrics({
         outputTokens,
-        reasoningTokens: getUsageReasoningTokens(usageWithMultimodal),
+        reasoningTokens: ctx.meta.reasoningStreamed ? null : getUsageReasoningTokens(usageWithMultimodal),
         providerDurationMs: generationMs,
         providerTtftMs,
         gatewayE2eMs: endToEndMs,

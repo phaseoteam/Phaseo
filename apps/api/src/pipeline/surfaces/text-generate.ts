@@ -654,6 +654,7 @@ async function materializeStreamResultToCompleted(args: {
 	const materializeStartedAt = performance.now();
 	// When the first generated output arrived, for provider TTFT (recordProviderRound).
 	let firstOutputAtMs: number | null = null;
+	let reasoningStreamed = false;
 	const consumed = await consumeTextProtocolStreamToIR({
 		protocol: args.protocol,
 		stream,
@@ -666,6 +667,7 @@ async function materializeStreamResultToCompleted(args: {
 				(event.type === "delta_text" || event.type === "delta_tool" || event.type === "delta_content_part")
 			) {
 				firstOutputAtMs = Date.now();
+				reasoningStreamed = event.type === "delta_text" && event.channel === "reasoning_text";
 			}
 			args.onEvent?.(event);
 		},
@@ -703,6 +705,7 @@ async function materializeStreamResultToCompleted(args: {
 		timing: {
 			...(args.result.timing ?? {}),
 			firstOutputAtMs,
+			reasoningStreamed,
 			generationMs: Math.max(
 				typeof args.result.timing?.generationMs === "number"
 					? args.result.timing.generationMs
@@ -1025,8 +1028,10 @@ async function runTextGeneratePipelineInner(
 			}
 		}
 		if (exec.result.kind === "completed") {
+			const roundTiming = (exec.result as { timing?: { firstOutputAtMs?: number | null; reasoningStreamed?: boolean } }).timing;
 			recordProviderRound(pre.ctx, {
-				firstOutputAtMs: (exec.result as { timing?: { firstOutputAtMs?: number | null } }).timing?.firstOutputAtMs,
+				firstOutputAtMs: roundTiming?.firstOutputAtMs,
+				reasoningStreamed: roundTiming?.reasoningStreamed,
 				usage: (exec.result.ir as IRChatResponse | undefined)?.usage,
 			});
 		}
@@ -1353,8 +1358,10 @@ async function runTextGeneratePipelineInner(
 					}
 				}
 				if (followUpResult.kind === "completed") {
+					const roundTiming = (followUpResult as { timing?: { firstOutputAtMs?: number | null; reasoningStreamed?: boolean } }).timing;
 					recordProviderRound(pre.ctx, {
-						firstOutputAtMs: (followUpResult as { timing?: { firstOutputAtMs?: number | null } }).timing?.firstOutputAtMs,
+						firstOutputAtMs: roundTiming?.firstOutputAtMs,
+						reasoningStreamed: roundTiming?.reasoningStreamed,
 						usage: (followUpResult.ir as IRChatResponse | undefined)?.usage,
 					});
 				}

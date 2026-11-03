@@ -868,6 +868,37 @@ describe("passthroughWithPricing", () => {
 		});
 	});
 
+	it.each([
+		["streamed reasoning", { reasoning_content: "thinking" }, true],
+		["answer text", { content: "hello" }, false],
+	])("notes whether the first output was %s, so output speed keeps or leaves out reasoning tokens", async (_label, delta, expected) => {
+		const ctx = baseCtx({
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+			meta: { startedAtMs: Date.now() - 80, upstreamStartMs: Date.now() - 40 },
+		});
+		const upstream = makeDelayedSseResponse([
+			{ data: { object: "chat.completion.chunk", choices: [{ index: 0, delta, finish_reason: null }] } },
+			{
+				data: {
+					object: "chat.completion",
+					choices: [{ index: 0, message: { role: "assistant", content: "hello" }, finish_reason: "stop" }],
+				},
+			},
+		], 5);
+
+		const response = await passthroughWithPricing({
+			upstream: upstream.response,
+			ctx,
+			provider: "openai",
+			priceCard: null,
+		});
+		await drain(response);
+
+		expect(typeof ctx.meta.provider_ttft_ms).toBe("number");
+		expect(ctx.meta.reasoningStreamed).toBe(expected);
+	});
+
 	it("records first-token latency, dispatch-to-terminal generation, and gateway end-to-end separately", async () => {
 		const ctx = baseCtx({
 			endpoint: "chat.completions",
