@@ -52,12 +52,29 @@ function finiteOrNull(value: unknown): number | null {
  */
 export function recordProviderRound(
 	ctx: PipelineContext,
-	round: { completedAtMs?: number; firstOutputAtMs?: number | null } = {},
+	round: {
+		completedAtMs?: number;
+		firstOutputAtMs?: number | null;
+		/** The first output was streamed reasoning, so reasoning tokens are inside the window. */
+		reasoningStreamed?: boolean;
+		/** The round's own usage, before it is added to earlier rounds. */
+		usage?: { outputTokens?: number; reasoningTokens?: number } | null;
+	} = {},
 ): void {
 	const dispatchAtMs = finiteOrNull(ctx.meta.selectedUpstreamFetchStartMs);
 	if (dispatchAtMs === null) return;
 	const completedAtMs = round.completedAtMs ?? Date.now();
 	const roundMs = Math.max(0, Math.round(completedAtMs - dispatchAtMs));
+	// Output speed of a multi-round response is the last round's: earlier rounds'
+	// tool time and the next round's wait are not output time.
+	const roundFirstOutputAtMs = finiteOrNull(round.firstOutputAtMs);
+	ctx.meta.lastProviderRoundSpeedWindow = roundFirstOutputAtMs === null
+		? null
+		: {
+			durationMs: Math.max(0, Math.round(completedAtMs - roundFirstOutputAtMs)),
+			outputTokens: finiteOrNull(round.usage?.outputTokens) ?? 0,
+			reasoningTokens: round.reasoningStreamed ? null : finiteOrNull(round.usage?.reasoningTokens),
+		};
 	ctx.meta.providerRoundsMs = (finiteOrNull(ctx.meta.providerRoundsMs) ?? 0) + roundMs;
 	ctx.meta.providerRoundsFailoverMs =
 		(finiteOrNull(ctx.meta.providerRoundsFailoverMs) ?? 0) + (currentRoundFailoverMs(ctx) ?? 0);
@@ -77,6 +94,16 @@ export function recordProviderRound(
 	const ttftMs = Math.max(1, Math.round(firstOutputAtMs - dispatchAtMs));
 	ctx.meta.provider_ttft_ms = ttftMs;
 	ctx.meta.latency_ms = ttftMs;
+}
+
+/**
+ * The output-speed window for a synthetic stream (a server-tool loop): the last
+ * provider round's. Undefined for other responses, which measure from provider
+ * TTFT to the end of the provider stream.
+ */
+export function resolveOutputSpeedWindow(ctx: PipelineContext) {
+	if (!ctx.meta.preserve_stream_timing) return undefined;
+	return ctx.meta.lastProviderRoundSpeedWindow ?? null;
 }
 
 function readTimingMetric(ctx: PipelineContext, key: string): number | null {

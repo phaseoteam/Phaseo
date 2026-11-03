@@ -474,6 +474,12 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                         firstOutputAt = frameReceivedAt;
                         const firstOutputAtMs = Date.now();
                         if (!ctx.meta.preserve_stream_timing) {
+                            // Streamed reasoning starts TTFT, so its tokens are output-speed tokens.
+                            ctx.meta.reasoningStreamed = events.some((event) =>
+                                event.type === "delta_text" &&
+                                event.channel === "reasoning_text" &&
+                                event.text.length > 0
+                            );
                             const upstreamStartMs = resolveSelectedUpstreamStartMs();
                             const gatewayStartMs = typeof ctx.meta.startedAtMs === "number"
                                 ? ctx.meta.startedAtMs

@@ -28,8 +28,9 @@ import {
 	resolveFailoverMs,
 	resolveExecuteTotalLatencyMs,
 	resolveNonStreamLatencyMs,
+	resolveOutputSpeedWindow,
 } from "./timing";
-import { calculateOutputPerformanceMetrics } from "./performance-metrics";
+import { calculateOutputPerformanceMetrics, getUsageReasoningTokens } from "./performance-metrics";
 import {
 	normalizeDataContributionPolicy,
 	persistDataContribution,
@@ -493,10 +494,12 @@ export async function handleSuccessAudit(
         : null;
     const outputPerformance = calculateOutputPerformanceMetrics({
         outputTokens,
+        reasoningTokens: ctx.meta.reasoningStreamed ? null : getUsageReasoningTokens(usageWithMultimodal),
         providerDurationMs: generationMs,
         providerTtftMs,
         gatewayE2eMs: endToEndMs,
         failoverMs: resolveFailoverMs(ctx),
+        speedWindow: isStream ? resolveOutputSpeedWindow(ctx) : undefined,
     });
     // Throughput is API-owned: output tokens divided by the full provider duration in seconds.
     ctx.meta.throughput_tps = outputPerformance.effectiveThroughputTps ?? undefined;
