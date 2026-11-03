@@ -112,17 +112,25 @@ function oggDuration(b: Uint8Array): number | undefined {
 	} else {
 		return undefined;
 	}
-	// The last page's granule position is the total sample count.
-	for (let i = b.length - 27; i >= 0; i--) {
-		if (b[i] === 0x4f && ascii(b, i, "OggS")) {
-			const lo = u32le(b, i + 6);
-			const hi = u32le(b, i + 10);
-			if (hi === 0xffffffff && lo === 0xffffffff) continue; // page with no completed packet
-			const granule = hi * 2 ** 32 + lo;
-			return rate > 0 && granule > preSkip ? (granule - preSkip) / rate : undefined;
-		}
+	// The last page's granule position is the total sample count. Walk the pages forward by their declared
+	// lengths: "OggS" can also occur inside packet data, so a backward byte search can land on a fake header.
+	const serial = u32le(b, 14);
+	let granule = -1;
+	for (let i = 0; i + 27 <= b.length; ) {
+		if (!ascii(b, i, "OggS") || b[i + 4] !== 0) break;
+		const count = b[i + 26];
+		if (i + 27 + count > b.length) break;
+		let body = 0;
+		for (let s = 0; s < count; s++) body += b[i + 27 + s];
+		const next = i + 27 + count + body;
+		if (next > b.length) break; // truncated final page
+		const lo = u32le(b, i + 6);
+		const hi = u32le(b, i + 10);
+		// Skip pages of other logical streams, and pages where no packet completes (granule -1).
+		if (u32le(b, i + 14) === serial && !(hi === 0xffffffff && lo === 0xffffffff)) granule = hi * 2 ** 32 + lo;
+		i = next;
 	}
-	return undefined;
+	return rate > 0 && granule > preSkip ? (granule - preSkip) / rate : undefined;
 }
 
 function wavDuration(b: Uint8Array): number | undefined {

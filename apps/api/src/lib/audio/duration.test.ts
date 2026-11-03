@@ -131,6 +131,31 @@ describe("audioDurationSeconds", () => {
 		});
 	}
 
+	it("ignores an OggS capture pattern inside packet data (walks real page boundaries)", async () => {
+		const preSkip = 312;
+		const opusHead = concat(ascii("OpusHead"), new Uint8Array([1, 2]), le(preSkip, 2), le(48000, 4), le(0, 2), new Uint8Array([0]));
+		const tags = concat(ascii("OpusTags"), le(0, 4), le(0, 4));
+		// The last audio packet's padding holds a fake page header claiming 10 s of samples.
+		const fakeHeader = concat(ascii("OggS"), new Uint8Array([0, 4]), le(10 * 48000 + preSkip, 8), le(0x1234, 4), le(99, 4), le(0, 4), new Uint8Array([0]));
+		const lastPacket = concat(new Uint8Array(64).fill(0xf8), fakeHeader, new Uint8Array(32));
+		const bytes = concat(
+			oggPage(opusHead, 0, 0, 2),
+			oggPage(tags, 0, 1, 0),
+			oggPage(new Uint8Array(200).fill(0xf8), 24000 + preSkip, 2, 0),
+			oggPage(lastPacket, 48000 + preSkip, 3, 4),
+		);
+		expect(audioDurationSeconds(bytes)).toBeCloseTo(1, 6);
+		expect(await reference(bytes, "audio/ogg")).toBeCloseTo(1, 3);
+	});
+
+	it("ignores pages from another logical Ogg stream and a truncated final page", () => {
+		const bytes = oggOpus(2);
+		const otherStream = oggPage(new Uint8Array(50), 999 * 48000, 7, 0);
+		otherStream.set(le(0x9999, 4), 14);
+		const truncated = oggPage(new Uint8Array(400), 50 * 48000, 9, 4).subarray(0, 100);
+		expect(audioDurationSeconds(concat(bytes, otherStream, truncated))).toBeCloseTo(2, 6);
+	});
+
 	it("uses the Xing frame count rather than walking frames", () => {
 		// Header claims 1000 frames but only 10 follow: the header wins, as it does in music-metadata.
 		const bytes = mp3WithInfoHeader(1000).subarray(0, 417 * 11);
