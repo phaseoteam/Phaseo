@@ -103,12 +103,26 @@ describe.each(["direct", "connect"] as const)("over %s", (via) => {
 
   test("lists the computer's projects and hears when they change", async () => {
     const { desktop, client } = await connected();
-    expect(desktop.received[0]).toMatchObject({ type: "hello", protocol: 3 });
+    expect(desktop.received[0]).toMatchObject({ type: "hello", protocol: 4 });
     const { projects } = await client.request("list_projects", {});
     expect(projects.map((project) => project.id)).toEqual(["p2", "p1", "p3", "w1"]);
     const changed = nextEvent(client, "projects_changed");
     desktop.emit({ type: "projects_changed", projects: [{ id: "p1", name: "Phaseo", repository: true }] });
     expect((await changed).projects).toEqual([{ id: "p1", name: "Phaseo", repository: true }]);
+    client.stop();
+  });
+
+  test("reads a thread's changes while the computer allows it, and stops the moment it's switched off there", async () => {
+    const { desktop, client } = await connected();
+    const diff = await client.request("read_diff", { chatId: "c1", scope: "uncommitted" });
+    expect(diff.files.map((file) => [file.path, file.additions, file.deletions])).toEqual([["src/usage.ts", 2, 1]]);
+    expect(desktop.received.at(-1)).toMatchObject({ type: "read_diff", chatId: "c1", scope: "uncommitted" });
+    const access = nextEvent(client, "access");
+    desktop.capabilities = [];
+    desktop.emit({ type: "access", capabilities: [] });
+    await access;
+    expect(client.state.get()).toMatchObject({ status: "connected", capabilities: [] });
+    await expect(client.request("git_status", { projectId: "p1" })).rejects.toMatchObject({ code: "forbidden", message: "Allow this on the computer: Settings → Phone." });
     client.stop();
   });
 
@@ -127,7 +141,7 @@ describe.each(["direct", "connect"] as const)("over %s", (via) => {
   test("says hello first, then lists and reads chats", async () => {
     const { desktop, client } = await connected();
     expect(desktop.received[0]).toMatchObject({ type: "hello", deviceId: "dev-1", appVersion: "0.1.0" });
-    expect(client.state.get()).toEqual({ status: "connected", via, desktopName: "Studio PC", protocol: 3 });
+    expect(client.state.get()).toEqual({ status: "connected", via, desktopName: "Studio PC", protocol: 4, capabilities: ["code"] });
     const { chats } = await client.request("list_chats", {});
     expect(sortChats(chats).map((chat) => chat.id)).toEqual(["c2", "c1"]);
     const read = await client.request("read_chat", { chatId: "c1" });

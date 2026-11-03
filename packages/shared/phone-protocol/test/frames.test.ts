@@ -72,6 +72,24 @@ describe("phone frames", () => {
 		expect(refused(JSON.stringify({ id: "13", type: "queue", chatId: "c", messageId: "q1", action: "remove", text: "x" })).message).toContain("Only edit");
 		expect(parsePhoneFrame(JSON.stringify({ id: "14", type: "list_chats", archived: true }))).toEqual({ id: "14", type: "list_chats", archived: true });
 	});
+	it("reads git status and diffs by chat or project, never by tree id (protocol 4)", () => {
+		const hash = "f".repeat(64);
+		expect(parsePhoneFrame(JSON.stringify({ id: "1", type: "git_status", projectId: "p1" }))).toEqual({ id: "1", type: "git_status", projectId: "p1" });
+		expect(parsePhoneFrame(JSON.stringify({ id: "2", type: "read_diff", scope: "turn", chatId: "c", messageId: "m", from: "a".repeat(40) }))).toEqual({ id: "2", type: "read_diff", scope: "turn", chatId: "c", messageId: "m" });
+		expect(parsePhoneFrame(JSON.stringify({ id: "3", type: "read_diff", scope: "branch", projectId: "p1", baseRef: "origin/main" }))).toEqual({ id: "3", type: "read_diff", scope: "branch", projectId: "p1", baseRef: "origin/main" });
+		expect(parsePhoneFrame(JSON.stringify({ id: "4", type: "read_diff_file", scope: "uncommitted", chatId: "c", path: "src/a b.ts", hash }))).toEqual({ id: "4", type: "read_diff_file", scope: "uncommitted", chatId: "c", path: "src/a b.ts", hash });
+		expect(refused(JSON.stringify({ id: "5", type: "git_status" })).message).toContain("projectId");
+		expect(refused(JSON.stringify({ id: "5", type: "read_diff", scope: "commit", projectId: "p1" })).message).toContain("scope");
+		expect(refused(JSON.stringify({ id: "5", type: "read_diff", scope: "uncommitted" })).message).toContain("chatId or a projectId");
+		expect(refused(JSON.stringify({ id: "5", type: "read_diff", scope: "uncommitted", chatId: "c", projectId: "p1" })).message).toContain("not both");
+		expect(refused(JSON.stringify({ id: "5", type: "read_diff", scope: "turn", projectId: "p1" })).message).toContain("chatId");
+		expect(refused(JSON.stringify({ id: "5", type: "read_diff", scope: "uncommitted", chatId: "c", messageId: "m" })).message).toContain("messageId");
+		expect(refused(JSON.stringify({ id: "5", type: "read_diff", scope: "turn", chatId: "c", baseRef: "main" })).message).toContain("baseRef");
+		expect(refused(JSON.stringify({ id: "5", type: "read_diff_file", scope: "uncommitted", chatId: "c", path: "a", hash: "nope" })).message).toContain("hash");
+		expect(refused(JSON.stringify({ id: "5", type: "read_diff_file", scope: "uncommitted", chatId: "c", path: "a b", hash })).message).toContain("path");
+		// The phone keeps only capabilities it knows.
+		expect(parseDesktopFrame(JSON.stringify({ type: "access", capabilities: ["code", "root"] }))).toEqual({ type: "access", capabilities: ["code"] });
+	});
 	it("names efforts the same way on both sides", () => {
 		expect(effortLabel("xhigh")).toBe("Extra high");
 		expect(effortLabel("medium")).toBe("Medium");

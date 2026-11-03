@@ -60,11 +60,11 @@ export const firstMessageId = (entries: PhoneEntry[]) => entries.find((entry): e
 export type ChatItem =
   | { kind: "message"; message: PhoneMessage }
   | { kind: "activities"; id: string; activities: PhoneActivity[] }
-  | { kind: "changes"; id: string; changes: PhoneTurnChanges };
+  | { kind: "changes"; id: string; /** The person's message that started the turn. */ messageId: string; changes: PhoneTurnChanges };
 export function chatItems(entries: PhoneEntry[]): ChatItem[] {
   const items: ChatItem[] = [];
   let turn: PhoneMessage | null = null;
-  const closeTurn = () => { if (turn?.changes) items.push({ kind: "changes", id: `changes-${turn.id}`, changes: turn.changes }); turn = null; };
+  const closeTurn = () => { if (turn?.changes) items.push({ kind: "changes", id: `changes-${turn.id}`, messageId: turn.id, changes: turn.changes }); turn = null; };
   for (const entry of entries) {
     if (entry.kind === "message") {
       // A steer joins the running turn; it doesn't start one.

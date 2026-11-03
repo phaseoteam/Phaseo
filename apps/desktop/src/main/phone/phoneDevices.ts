@@ -1,10 +1,17 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { pairingLifetimeMs, relayPairing, tokenHash, validatePairRequest, type PairResult } from "@phaseo/phone-protocol";
-import { defaultPhonePort, type PhoneAddressKind } from "../../shared/phone";
+import { pairingLifetimeMs, phoneCapabilities, relayPairing, tokenHash, validatePairRequest, type PairResult, type PhoneCapability } from "@phaseo/phone-protocol";
+import { defaultPhonePort, phoneAccessDefaults, type PhoneAccess, type PhoneAddressKind } from "../../shared/phone";
 
-export type PhoneDeviceRecord = { id: string; name: string; publicKey: string; relayTokenHash: string; pairedAt: string; lastSeenAt?: string };
+export type PhoneDeviceRecord = { id: string; name: string; publicKey: string; relayTokenHash: string; pairedAt: string; lastSeenAt?: string; access: PhoneAccess };
+/** A stored switch that isn't a boolean takes its default, so a phone paired before switches existed can read code and nothing more. */
+const readAccess = (value: unknown): PhoneAccess => {
+	const stored = value && typeof value === "object" ? value as Partial<Record<keyof PhoneAccess, unknown>> : {};
+	return { code: typeof stored.code === "boolean" ? stored.code : phoneAccessDefaults.code, changes: stored.changes === true, terminal: stored.terminal === true };
+};
+/** The capabilities a phone is told it has, in the protocol's order. */
+export const capabilitiesOf = (access: PhoneAccess): PhoneCapability[] => phoneCapabilities.filter(capability => access[capability]);
 /** Settings → Phone as kept on disk. Tokens are kept only as hashes; the identity key is in the credential vault. */
 export type PhoneSettings = { enabled: boolean; port: number; addresses: Record<PhoneAddressKind, boolean>; desktopId: string; tailscaleServe: boolean; connect: boolean; devices: PhoneDeviceRecord[] };
 const defaults = (): PhoneSettings => ({ enabled: false, port: defaultPhonePort, addresses: { lan: false, "tailscale-ip": true, "tailscale-https": true }, desktopId: randomUUID(), tailscaleServe: false, connect: false, devices: [] });
@@ -24,7 +31,7 @@ export class PhoneSettingsFile {
 				enabled: stored.enabled === true, port: Number.isInteger(stored.port) && stored.port! >= 1024 && stored.port! <= 65535 ? stored.port! : fallback.port,
 				addresses: { lan: addresses.lan === true, "tailscale-ip": addresses["tailscale-ip"] !== false, "tailscale-https": addresses["tailscale-https"] !== false },
 				desktopId: text(stored.desktopId, 100) ? stored.desktopId : fallback.desktopId, tailscaleServe: stored.tailscaleServe === true, connect: stored.connect === true,
-				devices: (Array.isArray(stored.devices) ? stored.devices : []).filter(device => device && text(device.id) && text(device.name) && text(device.publicKey) && text(device.relayTokenHash) && text(device.pairedAt)),
+				devices: (Array.isArray(stored.devices) ? stored.devices : []).filter(device => device && text(device.id) && text(device.name) && text(device.publicKey) && text(device.relayTokenHash) && text(device.pairedAt)).map(device => ({ ...device, access: readAccess(device.access) })),
 			};
 		} catch { this.value = fallback; }
 	}
@@ -48,6 +55,7 @@ export class PhonePairing {
 	private readonly codes = new Map<string, { expiresAt: number; relayDeviceId: string; relayTokenHash: string }>();
 	onPaired?: (device: PhoneDeviceRecord) => void;
 	onRemoved?: (deviceId: string) => void;
+	onAccessChanged?: (deviceId: string) => void;
 	onCodeExpired?: (relayDeviceId: string) => void;
 	constructor(private readonly store: DeviceStore, private readonly now: () => number = Date.now) {}
 
@@ -71,7 +79,7 @@ export class PhonePairing {
 		this.codes.delete(hash);
 		if (this.store.value.devices.length >= 20) throw new Error("Remove a phone before pairing another; up to 20 are kept.");
 		const relayToken = randomBytes(32).toString("base64url");
-		const device: PhoneDeviceRecord = { id: randomUUID(), name: request.deviceName, publicKey: request.devicePublicKey, relayTokenHash: tokenHash(relayToken), pairedAt: new Date(this.now()).toISOString() };
+		const device: PhoneDeviceRecord = { id: randomUUID(), name: request.deviceName, publicKey: request.devicePublicKey, relayTokenHash: tokenHash(relayToken), pairedAt: new Date(this.now()).toISOString(), access: { ...phoneAccessDefaults } };
 		this.store.save({ devices: [...this.store.value.devices, device] });
 		// After the caller has answered the phone: over Phaseo Connect, ending the pairing sign-in closes its socket.
 		queueMicrotask(() => this.onCodeExpired?.(code.relayDeviceId));
@@ -87,6 +95,12 @@ export class PhonePairing {
 		const device = this.store.value.devices.find(value => value.id === deviceId);
 		if (!device || (device.lastSeenAt && this.now() - Date.parse(device.lastSeenAt) < 60_000)) return;
 		this.store.save({ devices: this.store.value.devices.map(value => value.id === deviceId ? { ...value, lastSeenAt: new Date(this.now()).toISOString() } : value) });
+	}
+	/** Switches some of a phone's capabilities; its connections hear the new list at once. */
+	setAccess(deviceId: string, change: Partial<PhoneAccess>) {
+		if (!this.store.value.devices.some(device => device.id === deviceId)) throw new Error("That phone is no longer paired.");
+		this.store.save({ devices: this.store.value.devices.map(device => device.id === deviceId ? { ...device, access: { ...device.access, ...change } } : device) });
+		this.onAccessChanged?.(deviceId);
 	}
 	remove(deviceId: string) {
 		if (!this.store.value.devices.some(device => device.id === deviceId)) throw new Error("That phone is no longer paired.");

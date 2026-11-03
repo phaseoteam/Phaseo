@@ -14,9 +14,11 @@ import { codeListItems, codeStatus, type CodeListItem, type CodeStatus } from ".
 import { clientFor, useConnection } from "./connections";
 import { useDesktopChats, useDesktopProjects } from "./hooks";
 import { changeChat, chooseSnooze, renameChat } from "./organise";
-import type { PhoneChat } from "./protocol";
+import type { PhoneChat, PhoneResults } from "./protocol";
 import type { SavedDesktop } from "./reach";
 import { desktopChatHref, newDesktopChatHref } from "./routes";
+import { changedLabel } from "./review/diffLines";
+import { useProjectStatuses } from "./review/hooks";
 import { menuEntries, organises, snoozedLabel, type SwipeAction } from "./threadActions";
 import { ThreadRowActions } from "./ThreadRowActions";
 
@@ -78,6 +80,9 @@ export function CodeThreadList({ desktop, query, selectedChatId, open }: { deskt
   const search = useDeferredValue(query);
   const projects = useDesktopProjects(client);
   const items = useMemo(() => (chats ? codeListItems(chats, { query: search, settledOpen, snoozedOpen, projects }) : null), [chats, search, settledOpen, snoozedOpen, projects]);
+  // Each folder's branch and changed files, while the computer lets this phone read code.
+  const folderIds = useMemo(() => (items ?? []).flatMap((item) => (item.type === "folder" && item.projectId ? [item.projectId] : [])), [items]);
+  const statuses = useProjectStatuses(client, folderIds, chats);
   const openChat = useCallback((chat: PhoneChat) => open(desktopChatHref(desktopId, chat.id)), [open, desktopId]);
   const newThread = useCallback((projectId: string | null) => open(newDesktopChatHref(desktopId, projectId)), [open, desktopId]);
   const toggleSettled = useCallback(() => setSettledOpen((current) => !current), []);
@@ -106,10 +111,10 @@ export function CodeThreadList({ desktop, query, selectedChatId, open }: { deskt
         </ThreadRowActions>
       );
     }
-    if (item.type === "folder") return <FolderRow title={item.title} projectId={item.projectId} onNew={newThread} />;
+    if (item.type === "folder") return <FolderRow title={item.title} projectId={item.projectId} status={item.projectId ? statuses.get(item.projectId) : undefined} onNew={newThread} />;
     return <HeadingRow title={item.title} count={item.count} open={item.open} warn={item.key === "heading:needs-you"} onToggle={item.toggle === "settled" ? toggleSettled : item.toggle === "snoozed" ? toggleSnoozed : undefined} />;
-  }, [openChat, newThread, toggleSettled, toggleSnoozed, selectedChatId, organise, swiped, menu]);
-  const extraData = useMemo(() => ({ selectedChatId, organise }), [selectedChatId, organise]);
+  }, [openChat, newThread, toggleSettled, toggleSnoozed, selectedChatId, organise, swiped, menu, statuses]);
+  const extraData = useMemo(() => ({ selectedChatId, organise, statuses }), [selectedChatId, organise, statuses]);
   return (
     <>
       <ConnectionNotice client={client} />
@@ -149,12 +154,23 @@ function HeadingRow({ title, count, open, warn, onToggle }: { title: string; cou
   );
 }
 
-/** A project folder's heading, with its New thread action. */
-function FolderRow({ title, projectId, onNew }: { title: string; projectId: string | null; onNew(projectId: string | null): void }) {
+/** A project folder's heading, with its checked-out branch and how many files have changed when the phone may read code, and its New thread action. */
+function FolderRow({ title, projectId, status, onNew }: { title: string; projectId: string | null; status?: PhoneResults["git_status"]; onNew(projectId: string | null): void }) {
+  const changed = status?.repository ? changedLabel(status.files) : null;
+  const branch = status?.repository ? status.branch : "";
   return (
     <View className="mx-2 mt-2 h-9 flex-row items-center gap-2 pl-3">
       <Icon icon={Folder} tone="muted" size={14} />
-      <Text variant="caption" numberOfLines={1} className="flex-1 font-semibold text-muted-foreground">{title}</Text>
+      <Text variant="caption" numberOfLines={1} className="shrink font-semibold text-muted-foreground">{title}</Text>
+      <View className="flex-1 flex-row items-center gap-1.5" accessible={Boolean(branch || changed)} accessibilityLabel={[branch ? `branch ${branch}` : null, changed].filter(Boolean).join(", ")}>
+        {branch ? (
+          <View className="shrink flex-row items-center gap-1">
+            <Icon icon={GitBranch} tone="muted" size={12} />
+            <Text variant="caption" numberOfLines={1} className="shrink">{branch}</Text>
+          </View>
+        ) : null}
+        {changed ? <Text variant="caption" numberOfLines={1} className="text-warning">{changed}</Text> : null}
+      </View>
       <Pressable accessibilityRole="button" accessibilityLabel={projectId ? `New thread in ${title}` : "New thread without a project"} hitSlop={6} onPress={() => onNew(projectId)} className="h-9 w-9 items-center justify-center rounded-md active:bg-accent">
         <Icon icon={Plus} tone="muted" size={16} />
       </Pressable>

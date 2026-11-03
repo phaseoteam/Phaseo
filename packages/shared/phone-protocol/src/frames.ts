@@ -6,10 +6,10 @@ import { utf8Length } from "./base64url";
  */
 /**
  * 2 added list_projects, projects_changed and hello's capabilities; 3 added update_chat, set_chat, queue and the
- * archived list. A phone gates each newer frame on hello.protocol, since an older computer answers an unknown request
- * with invalid_frame.
+ * archived list; 4 added git_status, read_diff, read_diff_file, the access event and forbidden. A phone gates each newer
+ * frame on hello.protocol, since an older computer answers an unknown request with invalid_frame.
  */
-export const phoneProtocolVersion = 3;
+export const phoneProtocolVersion = 4;
 export const phoneLimits = {
 	/** Largest frame either side accepts, before or after decryption. */
 	frameBytes: 1024 * 1024,
@@ -23,6 +23,8 @@ export const phoneLimits = {
 	subscriptions: 100,
 	/** How often the desktop sends a chat's changed entries at most. */
 	entriesBatchMs: 250,
+	/** Most of one file's patch read_diff_file sends; the rest is cut at a line. */
+	diffFileBytes: 512 * 1024,
 } as const;
 
 export type PhoneChatStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
@@ -70,8 +72,27 @@ export type PhoneActivity = { kind: "activity"; id: string; type: "tool" | "reas
 export type PhoneEntry = PhoneMessage | PhoneActivity;
 /** A project on the computer. A worktree names the project it came from, whose folder lists its chats. */
 export type PhoneProject = { id: string; name: string; /** The checked-out branch, when the computer read it. */ branch?: string; worktreeOf?: string; pinned?: true; archived?: true; /** A git checkout. */ repository: boolean };
-/** Powers a paired phone has beyond threads, switched on per phone on the computer. Empty until a computer offers them. */
+/**
+ * Powers a paired phone has beyond threads, switched on per phone on the computer: `code` reads git status and diffs
+ * (from protocol 4); `changes` and `terminal` are for frames still to come. Empty from a computer before 4.
+ */
 export type PhoneCapability = "code" | "changes" | "terminal";
+export const phoneCapabilities: readonly PhoneCapability[] = ["code", "changes", "terminal"];
+/** What a review compares: uncommitted work, the branch since it left its base, or what one turn of a chat changed. */
+export type PhoneDiffScope = "uncommitted" | "branch" | "turn";
+/**
+ * Which diff: a chat's (in the chat's own folder, its worktree's when it has one) or a project's. A turn needs the chat
+ * and names the person's message that started it, else the latest that has snapshots; the computer reads the
+ * snapshots from that message, so the phone never sends tree ids.
+ */
+export type PhoneDiffTarget = { scope: PhoneDiffScope; projectId?: string; chatId?: string; messageId?: string; /** For branch: compare against this ref instead of the computer's guess. */ baseRef?: string };
+export type PhoneGitFileStatus = "added" | "modified" | "deleted" | "renamed" | "untracked" | "conflicted";
+export type PhoneGitFile = { path: string; oldPath?: string; status: PhoneGitFileStatus; /** Some of it is staged. */ staged: boolean };
+/**
+ * One file of a diff. `patch` is its part of the unified diff, from `diff --git` on. It's left out for a binary file,
+ * and when the frame had no room for it (read it with read_diff_file). Lines are -1 for a binary file.
+ */
+export type PhoneDiffFile = { path: string; oldPath?: string; status: "added" | "modified" | "deleted" | "renamed"; additions: number; deletions: number; binary?: true; patch?: string; /** read_diff_file cut the patch at diffFileBytes. */ truncated?: true };
 export type AttentionKind = "approval" | "question" | "done" | "failed";
 /** What update_chat does, as the window's sidebar menu does it; each has its reverse, so a phone can undo. */
 export const chatActions = ["settle", "unsettle", "wake", "mark-unread", "archive", "unarchive", "pin", "unpin", "rename", "snooze"] as const;
@@ -97,7 +118,13 @@ export type PhoneRequest =
 	/** From protocol 3: a stopped chat's mode (Code or Plan; a Chat stays one), model (one of its own agent's) or effort; `defaultEffort` goes back to the model's own. */
 	| { id: string; type: "set_chat"; chatId: string; mode?: PhoneChatMode; model?: string; reasoningEffort?: string; defaultEffort?: true }
 	/** From protocol 3: a queued message removed, edited (`text`), moved, or sent into the running turn now. */
-	| { id: string; type: "queue"; chatId: string; messageId: string; action: PhoneQueueAction; text?: string };
+	| { id: string; type: "queue"; chatId: string; messageId: string; action: PhoneQueueAction; text?: string }
+	/** From protocol 4, with the code capability: a project's branch and changed files, without their text. */
+	| { id: string; type: "git_status"; projectId: string }
+	/** From protocol 4, with the code capability: a diff split by file (see PhoneDiffTarget). */
+	| ({ id: string; type: "read_diff" } & PhoneDiffTarget)
+	/** One file of the diff read_diff answered with `hash`; refused as rejected once the diff has changed. */
+	| ({ id: string; type: "read_diff_file"; path: string; hash: string } & PhoneDiffTarget);
 export type PhoneFrame = PhoneRequest | { id?: string; type: "ping" } | { id?: string; type: "pong" };
 
 export type PhoneResults = {
@@ -124,8 +151,17 @@ export type PhoneResults = {
 	update_chat: { chat: PhoneChat };
 	set_chat: { chat: PhoneChatDetail };
 	queue: { chatId: string };
+	/** `repository` false: the folder isn't a git checkout, and the rest is empty. */
+	git_status: { repository: boolean; branch: string; upstream?: { name: string; ahead: number; behind: number }; hasRemote: boolean; files: PhoneGitFile[] };
+	/**
+	 * `hash` names this diff for read_diff_file. `truncated`: the computer stopped reading a very large diff, so files
+	 * are missing. headRef and baseRef say what a branch review compared.
+	 */
+	read_diff: { repository: boolean; files: PhoneDiffFile[]; hash: string; truncated: boolean; headRef?: string; baseRef?: string };
+	read_diff_file: { file: PhoneDiffFile };
 };
-export type PhoneErrorCode = "invalid_frame" | "too_large" | "rate_limited" | "unauthorized" | "not_found" | "rejected" | "internal";
+/** forbidden (from protocol 4): the phone lacks the capability; the person allows it on the computer. */
+export type PhoneErrorCode = "invalid_frame" | "too_large" | "rate_limited" | "unauthorized" | "not_found" | "rejected" | "forbidden" | "internal";
 export type PhoneResponse<T extends PhoneRequest["type"] = PhoneRequest["type"]> =
 	| { id: string; type: T; ok: true; result: PhoneResults[T] }
 	| { id: string; type: T; ok: false; error: { code: PhoneErrorCode; message: string } };
@@ -135,6 +171,8 @@ export type DesktopEvent =
 	| { type: "attention"; chatId: string; kind: AttentionKind; summary: string }
 	/** The project list changed. Sent only to a phone that has asked list_projects, so older phones never get it. */
 	| { type: "projects_changed"; projects: PhoneProject[] }
+	/** From protocol 4: the person changed this phone's capabilities on the computer; they apply at once. */
+	| { type: "access"; capabilities: PhoneCapability[] }
 	| { id?: string; type: "ping" } | { id?: string; type: "pong" };
 export type DesktopFrame = PhoneResponse | DesktopEvent;
 
@@ -142,7 +180,7 @@ export class PhoneProtocolError extends Error {
 	constructor(readonly code: PhoneErrorCode, message: string, readonly id?: string, readonly type?: string) { super(message); this.name = "PhoneProtocolError"; }
 }
 
-const requestTypes = new Set(["hello", "list_chats", "read_chat", "send", "answer_approval", "answer_question", "stop", "new_chat", "list_models", "subscribe", "list_projects", "update_chat", "set_chat", "queue"]);
+const requestTypes = new Set(["hello", "list_chats", "read_chat", "send", "answer_approval", "answer_question", "stop", "new_chat", "list_models", "subscribe", "list_projects", "update_chat", "set_chat", "queue", "git_status", "read_diff", "read_diff_file"]);
 const plain = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value === "object" && !Array.isArray(value);
 const validId = (value: unknown, max = 200): value is string => typeof value === "string" && value.length > 0 && value.length <= max && !/[\u0000-\u001f]/.test(value);
 
@@ -269,6 +307,25 @@ export function parsePhoneFrame(text: string): PhoneFrame {
 			if (frame.text !== undefined) fail("Only edit takes text.");
 			return { id: request, type, chatId: chatId(), messageId: frame.messageId as string, action };
 		}
+		case "git_status": {
+			if (!validId(frame.projectId)) fail("projectId is required.");
+			return { id: request, type, projectId: frame.projectId as string };
+		}
+		case "read_diff": case "read_diff_file": {
+			if (frame.scope !== "uncommitted" && frame.scope !== "branch" && frame.scope !== "turn") fail("scope must be uncommitted, branch or turn.");
+			const scope = frame.scope as PhoneDiffScope, chat = optional("chatId"), messageId = optional("messageId"), baseRef = optional("baseRef", 250);
+			const target = projectId();
+			if (!chat && !target.projectId) fail("A diff needs a chatId or a projectId.");
+			if (chat && target.projectId) fail("Name a chatId or a projectId, not both.");
+			if (scope === "turn" && !chat) fail("A turn's diff needs its chatId.");
+			if (messageId && scope !== "turn") fail("Only a turn takes messageId.");
+			if (baseRef && scope !== "branch") fail("Only branch takes baseRef.");
+			const fields = { scope, ...target, ...chat ? { chatId: chat } : {}, ...messageId ? { messageId } : {}, ...baseRef ? { baseRef } : {} };
+			if (type === "read_diff") return { id: request, type, ...fields };
+			if (typeof frame.path !== "string" || !frame.path || frame.path.length > 4096 || /[\u0000-\u001f]/.test(frame.path)) fail("path is required.");
+			if (typeof frame.hash !== "string" || !/^[a-f0-9]{64}$/.test(frame.hash)) fail("hash is required.");
+			return { id: request, type, ...fields, path: frame.path as string, hash: frame.hash as string };
+		}
 		case "subscribe": {
 			const ids = frame.chatIds;
 			if (!Array.isArray(ids) || ids.length > phoneLimits.subscriptions || ids.some(value => !validId(value))) fail(`chatIds must list up to ${phoneLimits.subscriptions} chat ids.`);
@@ -291,6 +348,7 @@ export function parseDesktopFrame(text: string): DesktopFrame {
 		case "entries": if (validId(frame.chatId) && Array.isArray(frame.entries)) return frame as unknown as DesktopEvent; break;
 		case "attention": if (validId(frame.chatId) && ["approval", "question", "done", "failed"].includes(frame.kind as string) && typeof frame.summary === "string") return frame as unknown as DesktopEvent; break;
 		case "projects_changed": if (Array.isArray(frame.projects)) return frame as unknown as DesktopEvent; break;
+		case "access": if (Array.isArray(frame.capabilities)) return { type: "access", capabilities: frame.capabilities.filter((value): value is PhoneCapability => phoneCapabilities.includes(value as PhoneCapability)) }; break;
 		case "ping": case "pong": return { type: frame.type, ...validId(frame.id, 64) ? { id: frame.id as string } : {} };
 	}
 	throw new PhoneProtocolError("invalid_frame", "Unknown or invalid desktop frame.");

@@ -1,7 +1,7 @@
 import {
   checkDirectAuth, directChallenge, encodePairingLink, EnvelopeChannel, generateKeyPair, isEnvelope, okResponse, openPairRequest, errorResponse, parsePhoneFrame,
   randomToken, readRelayOutbound, relayDesktopAddress, relayPairing, sealPairResponse, sharedKey,
-  type DesktopFrame, type PhoneChatDetail, type PhoneEntry, type PhoneFrame, type PhoneProject, type PhoneRequest, type PhoneResults, type PhoneResponse,
+  type DesktopFrame, type PhoneCapability, type PhoneChatDetail, type PhoneEntry, type PhoneFrame, type PhoneProject, type PhoneRequest, type PhoneResults, type PhoneResponse,
 } from "./protocol";
 import type { FetchLike } from "./reach";
 import type { OpenSocket, SocketLike } from "./transport";
@@ -57,8 +57,12 @@ export class FakeDesktop {
     { id: "c1", title: "Fix the build", mode: "code", status: "completed", updatedAt: "2026-11-01T09:00:00.000Z", unread: false, needsYou: false, project: "Phaseo", projectId: "p1", approvals: [], questions: [] },
     { id: "c2", title: "Release notes", mode: "chat", status: "waiting", updatedAt: "2026-11-01T08:00:00.000Z", unread: true, needsYou: true, attention: "Wants to run a command", approvals: [{ id: "a1", title: "Run pnpm build", description: "pnpm --filter web build" }], questions: [] },
   ];
-  /** The protocol it speaks; 1 answers like a computer from before list_projects, 2 like one from before update_chat. */
-  protocol = 3;
+  /** The protocol it speaks; 1 answers like a computer from before list_projects, 2 like one from before update_chat, 3 like one from before git_status. */
+  protocol = 4;
+  /** What it lets this phone do beyond threads (sent from protocol 4). */
+  capabilities: PhoneCapability[] = ["code"];
+  /** The diff read_diff answers with. */
+  diff: PhoneResults["read_diff"] = { repository: true, hash: "a".repeat(64), truncated: false, files: [{ path: "src/usage.ts", status: "modified", additions: 2, deletions: 1, patch: "diff --git a/src/usage.ts b/src/usage.ts\n@@ -1,2 +1,3 @@\n a\n-b\n+c\n+d\n" }] };
   /** Its projects: Blog has no threads yet, Scratch is archived and a worktree folds under Phaseo. */
   projects: PhoneProject[] = [
     { id: "p2", name: "Blog", pinned: true, repository: true },
@@ -201,7 +205,15 @@ export class FakeDesktop {
     switch (request.type) {
       case "hello": {
         const protocol = Math.min(request.protocol ?? 1, this.protocol);
-        return okResponse(request, { desktopName: this.desktopName, appVersion: "1.0.0", protocol, ...(protocol >= 2 ? { capabilities: [] } : {}) });
+        return okResponse(request, { desktopName: this.desktopName, appVersion: "1.0.0", protocol, ...(protocol >= 2 ? { capabilities: protocol >= 4 ? this.capabilities : [] } : {}) });
+      }
+      case "git_status": case "read_diff": case "read_diff_file": {
+        if (this.protocol < 4) return errorResponse(request.id, request.type, "invalid_frame", "Unknown frame type.") as PhoneResponse;
+        if (!this.capabilities.includes("code")) return errorResponse(request.id, request.type, "forbidden", "Allow this on the computer: Settings → Phone.") as PhoneResponse;
+        if (request.type === "git_status") return okResponse(request, { repository: true, branch: "main", hasRemote: false, files: [{ path: "src/usage.ts", status: "modified", staged: false }] });
+        if (request.type === "read_diff") return okResponse(request, this.diff);
+        const file = this.diff.files.find((entry) => entry.path === request.path);
+        return file ? okResponse(request, { file }) : errorResponse(request.id, request.type, "not_found", "That file isn't in these changes any more.") as PhoneResponse;
       }
       case "list_projects":
         return this.protocol >= 2 ? okResponse(request, { projects: this.projects }) : errorResponse(request.id, request.type, "invalid_frame", "Unknown frame type.") as PhoneResponse;

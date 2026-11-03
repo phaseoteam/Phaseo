@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Copy, QrCode, RefreshCw, Trash2 } from "lucide-react";
-import { connectPriceText, phoneAddressLabels, type ConnectView, type PhonePairingView, type PhoneState } from "../../shared/phone";
+import { connectPriceText, phoneAccessLabels, phoneAddressLabels, type ConnectView, type PhoneAccess, type PhonePairingView, type PhoneState } from "../../shared/phone";
 import { formatSpend } from "../../shared/usageAmounts";
 import { Switch } from "../components/ui/switch";
 import { showToast } from "../components/ui/toast";
@@ -81,7 +81,7 @@ export function PhoneSettings() {
 				</>} />
 			{connect && connectStatus(connect) && <SettingsNote role="status" tone={connect.status === "error" || connect.status === "payment-due" ? "error" : "muted"}>{connectStatus(connect)}</SettingsNote>}
 		</SettingsSection>
-		<SettingsSection title="Paired phones" description="A phone can read and answer chats, approve or decline actions, stop chats and start new ones. It can't change models, permissions or settings."
+		<SettingsSection title="Paired phones" description="A phone can read and answer chats, approve or decline actions, stop chats and start new ones. It can't change permissions or settings. The switches under each phone allow more, and a change applies at once."
 			action={<SettingsButton variant="primary" disabled={busy || !state?.enabled} title={state?.enabled ? undefined : "Turn on phone access first"} onClick={pair}><QrCode />Pair a phone</SettingsButton>}>
 			{pairing && <div className="flex items-start gap-5 px-4 py-4">
 				<QrImage qr={pairing.qr} label="Pairing QR code" />
@@ -97,7 +97,17 @@ export function PhoneSettings() {
 			</div>}
 			{state?.devices.map(device => <SettingsRow key={device.id} title={device.name}
 				description={`${device.connected ? "Connected now" : device.lastSeenAt ? `Last seen ${when(device.lastSeenAt)}` : "Not connected yet"}. Paired ${when(device.pairedAt)}.`}
-				control={<SettingsButton variant="danger" disabled={busy} onClick={() => void run(() => api.removePhone(device.id))}><Trash2 />Remove</SettingsButton>} />)}
+				control={<SettingsButton variant="danger" disabled={busy} onClick={() => void run(() => api.removePhone(device.id))}><Trash2 />Remove</SettingsButton>}>
+				<div className="flex flex-col gap-2.5 border-l border-border pl-3">
+					{(Object.keys(phoneAccessLabels) as (keyof PhoneAccess)[]).map(key => <div key={key} className="flex items-center gap-4">
+						<div className="min-w-0 flex-1">
+							<div className="text-[13px] font-medium">{phoneAccessLabels[key].title}</div>
+							<div className="text-xs text-muted-foreground">{phoneAccessLabels[key].description}</div>
+						</div>
+						<Switch aria-label={`${phoneAccessLabels[key].title} on ${device.name}`} checked={device.access[key]} disabled={busy} onCheckedChange={(checked: boolean) => void run(() => api.setPhoneAccess(device.id, { [key]: checked }))} />
+					</div>)}
+				</div>
+			</SettingsRow>)}
 			{state && !state.devices.length && !pairing && <SettingsNote>No phones yet.</SettingsNote>}
 		</SettingsSection>
 	</SettingsPageLayout>;

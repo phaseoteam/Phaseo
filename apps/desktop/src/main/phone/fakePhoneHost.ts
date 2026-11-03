@@ -1,9 +1,11 @@
+import { createHash } from "node:crypto";
 import { conversationPageOf } from "../../shared/conversationPage";
 import type { RememberedModels } from "../../shared/rememberedModels";
 import type { Account, Harness, Message, ModelOption, Project, Task, WorkspaceCommand } from "../../shared/workspace";
 import { settleBlocker } from "../../shared/threadLifecycle";
 import { overviewOrder, taskOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
-import type { TurnFileChange } from "../../shared/gitDiff";
+import type { GitDiffRequest, GitDiffResult, TurnFileChange } from "../../shared/gitDiff";
+import type { GitWorkingStatus } from "./phoneReview";
 import { phoneModels, phoneSetChat, startPhoneChat, type PhoneModelSources } from "./phoneHost";
 import type { PhoneHost } from "./phoneSession";
 
@@ -26,6 +28,8 @@ export function fakePhoneHost() {
 	const commands: WorkspaceCommand[] = [], repositoryChecks: string[] = [];
 	/** Each snapshot pair's changed files ("before:after"), and how often git was asked for one. */
 	const checkpointFiles = new Map<string, TurnFileChange[]>(), turnReads: string[] = [];
+	/** Each project's git status (none: not a checkout), the patch each diff returns, and the diffs asked for as "projectId scope…". */
+	const gitStatuses = new Map<string, GitWorkingStatus>(), patches = new Map<string, string>(), diffReads: { projectId: string; request: GitDiffRequest }[] = [];
 	let clock = Date.parse("2026-11-01T10:00:00.000Z");
 	const tick = () => new Date(clock += 1000).toISOString();
 	// A Phaseo account that can call the gateway, and Codex and Claude Code signed in on the computer.
@@ -91,6 +95,14 @@ export function fakePhoneHost() {
 		isRepository: directory => { repositoryChecks.push(directory); return !directory.startsWith("/scratch"); },
 		setChat: async input => { await host.command(await phoneSetChat(get(input.chatId), discover, input)); },
 		turnChanges: async (_projectId, before, after) => { turnReads.push(`${before}:${after}`); return checkpointFiles.get(`${before}:${after}`) ?? []; },
+		gitStatus: async projectId => gitStatuses.get(projectId) ?? null,
+		// A patch is found by its scope ("uncommitted", "branch", or "turn:before:after"), else the project's "*".
+		diff: async (projectId, request) => {
+			diffReads.push({ projectId, request });
+			const key = request.scope === "turn" ? `turn:${request.from}:${request.to}` : request.scope;
+			const patch = patches.get(key) ?? patches.get("*") ?? "";
+			return { patch, hash: createHash("sha256").update(patch).digest("hex"), truncated: false, repository: true } satisfies GitDiffResult;
+		},
 	};
-	return { host, tasks, projects, accounts, agents, sources, repositoryChecks, checkpointFiles, turnReads, commands, addTask, addMessage, get, touch, changed, overview, onChange: (listener: (overview: WorkspaceOverview) => void) => listeners.push(listener) };
+	return { host, tasks, projects, accounts, agents, sources, repositoryChecks, checkpointFiles, turnReads, gitStatuses, patches, diffReads, commands, addTask, addMessage, get, touch, changed, overview, onChange: (listener: (overview: WorkspaceOverview) => void) => listeners.push(listener) };
 }

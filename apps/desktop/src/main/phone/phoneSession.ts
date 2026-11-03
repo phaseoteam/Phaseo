@@ -1,11 +1,12 @@
 import { createHash } from "node:crypto";
-import { errorResponse, okResponse, parsePhoneFrame, phoneLimits, phoneProtocolVersion, PhoneProtocolError, RequestRate, type AttentionKind, type DesktopFrame, type PhoneEntry, type PhoneProject, type PhoneRequest, type PhoneResponse, type PhoneResults } from "@phaseo/phone-protocol";
+import { errorResponse, okResponse, parsePhoneFrame, phoneLimits, phoneProtocolVersion, PhoneProtocolError, RequestRate, type AttentionKind, type DesktopFrame, type PhoneCapability, type PhoneDiffTarget, type PhoneEntry, type PhoneProject, type PhoneRequest, type PhoneResponse, type PhoneResults } from "@phaseo/phone-protocol";
 import type { ConversationPage, ConversationPageQuery } from "../../shared/conversationPage";
-import type { TurnFileChange } from "../../shared/gitDiff";
+import type { GitDiffRequest, GitDiffResult, TurnFileChange } from "../../shared/gitDiff";
 import { validateCommand, type AgentActivity, type Message, type Task, type WorkspaceCommand } from "../../shared/workspace";
 import type { TaskOverview, WorkspaceOverview } from "../../shared/workspaceOverview";
 import type { PhoneModelsInput, PhoneNewChat, PhoneSetChat } from "./phoneHost";
 import { attentionOf, chatListPage, phoneChat, phoneChats, phoneDetail, phoneProjects, queuedChars, readingOrder, topLevelChats, TurnChangesCache, withTurnChanges } from "./phoneChats";
+import { phoneDiff, phoneDiffFile, phoneGitStatus, type GitWorkingStatus } from "./phoneReview";
 
 /** What the phone server needs from the app: the same reads and commands the window uses. */
 export type PhoneHost = {
@@ -26,8 +27,13 @@ export type PhoneHost = {
 	setChat: (input: PhoneSetChat) => Promise<void>;
 	/** The files a turn changed between two of the project's snapshots (gitCheckpoints' turnChanges). */
 	turnChanges: (projectId: string, before: string, after: string) => Promise<readonly TurnFileChange[]>;
+	/** The window's review status of a project's folder (projectFiles' gitWorkingStatus); null when it isn't a git checkout. */
+	gitStatus: (projectId: string) => Promise<GitWorkingStatus | null>;
+	/** The window's diff surface read (gitDiffScopes' gitScopedDiff) in a project's folder. */
+	diff: (projectId: string, request: GitDiffRequest) => Promise<GitDiffResult>;
 };
 export type PhoneDevice = { id: string; name: string };
+const forbidden = () => new PhoneProtocolError("forbidden", "Allow this on the computer: Settings → Phone.");
 export type Attention = { chatId: string; kind: AttentionKind; summary: string };
 
 const signature = (value: unknown) => createHash("sha1").update(JSON.stringify(value)).digest("base64");
@@ -74,7 +80,11 @@ export class PhoneSession {
 	private lastFlush = 0;
 	private closed = false;
 	private readonly closeListeners: (() => void)[] = [];
-	constructor(readonly device: PhoneDevice, private readonly host: PhoneHost, private readonly send: (frame: DesktopFrame) => void, private readonly rate: RequestRate, private readonly now: () => number = Date.now, private readonly turnChanges = new TurnChangesCache(host.turnChanges)) {}
+	/** What hello settled on; the access event goes only to a phone from 4 on, which knows it. */
+	private protocol = 1;
+	constructor(readonly device: PhoneDevice, private readonly host: PhoneHost, private readonly send: (frame: DesktopFrame) => void, private readonly rate: RequestRate, private readonly now: () => number = Date.now, private readonly turnChanges = new TurnChangesCache(host.turnChanges),
+		/** This phone's capabilities as the computer's settings say now, so a change applies to the next request. */
+		private readonly capabilities: () => readonly PhoneCapability[] = () => []) {}
 
 	/** One frame of text from the phone. Errors are answered, never thrown. */
 	async receive(text: string) {
@@ -102,8 +112,9 @@ export class PhoneSession {
 			case "hello": {
 				if (request.deviceId !== this.device.id) throw new PhoneProtocolError("unauthorized", "This device signed in as another.");
 				// A phone from before 2 sends no protocol and refuses a higher one, so it's told 1.
-				const protocol = Math.min(request.protocol ?? 1, phoneProtocolVersion);
-				return okResponse(request, { desktopName: this.host.desktopName(), appVersion: this.host.appVersion, protocol, ...protocol >= 2 ? { capabilities: [] } : {} });
+				const protocol = this.protocol = Math.min(request.protocol ?? 1, phoneProtocolVersion);
+				// Before 4 no frame needed one, so an older phone is told none, as it always was.
+				return okResponse(request, { desktopName: this.host.desktopName(), appVersion: this.host.appVersion, protocol, ...protocol >= 2 ? { capabilities: protocol >= 4 ? [...this.capabilities()] : [] } : {} });
 			}
 			case "list_projects": {
 				const projects = phoneProjects(this.host.overview().projects, this.host.isRepository);
@@ -186,6 +197,25 @@ export class PhoneSession {
 					: { type: "queue-move", id, messageId, direction: request.action });
 				return okResponse(request, { chatId: id });
 			}
+			case "git_status": {
+				this.allowed("code");
+				this.checkProject(request.projectId);
+				return okResponse(request, phoneGitStatus(await this.host.gitStatus(request.projectId)));
+			}
+			case "read_diff": {
+				this.allowed("code");
+				const { projectId, diff } = this.diffRequest(request);
+				return okResponse(request, phoneDiff(await this.host.diff(projectId, diff)));
+			}
+			case "read_diff_file": {
+				this.allowed("code");
+				const { projectId, diff } = this.diffRequest(request);
+				const result = await this.host.diff(projectId, diff);
+				if (result.hash !== request.hash) throw new Error("The changes moved on. Read the review again to see the latest.");
+				const file = phoneDiffFile(result, request.path);
+				if (!file) throw new PhoneProtocolError("not_found", "That file isn't in these changes any more.");
+				return okResponse(request, { file });
+			}
 			case "subscribe": {
 				const listed = new Set(phoneChats(this.host.overview()).map(task => task.id));
 				const chatIds = request.chatIds.filter(id => listed.has(id));
@@ -196,6 +226,24 @@ export class PhoneSession {
 		}
 	}
 
+	private allowed(capability: PhoneCapability) { if (!this.capabilities().includes(capability)) throw forbidden(); }
+	/**
+	 * The folder and comparison a diff request names. A chat's diff is in its own project, its worktree's when it has
+	 * one; a turn's snapshots come from the chat's message, never from the phone.
+	 */
+	private diffRequest(request: PhoneDiffTarget): { projectId: string; diff: GitDiffRequest } {
+		const projectId = request.chatId ? this.chatOverview(request.chatId).projectId : request.projectId;
+		if (!projectId) throw new PhoneProtocolError("not_found", "This thread isn't in a project, so it has no changes to review.");
+		if (!request.chatId) this.checkProject(projectId);
+		if (request.scope === "uncommitted") return { projectId, diff: { scope: "uncommitted" } };
+		if (request.scope === "branch") return { projectId, diff: { scope: "branch", ...request.baseRef ? { baseRef: request.baseRef } : {} } };
+		const messages = this.host.task(request.chatId!).messages.filter(message => message.role === "user" && message.checkpoint?.after);
+		const message = request.messageId ? messages.find(value => value.id === request.messageId) : messages.at(-1);
+		if (!message) throw new PhoneProtocolError("not_found", request.messageId ? "That turn has no saved snapshots to compare." : "No turn in this thread has saved snapshots yet.");
+		return { projectId, diff: { scope: "turn", from: message.checkpoint!.before, to: message.checkpoint!.after! } };
+	}
+	/** The person changed this phone's capabilities; a phone that knows the event hears them at once. */
+	accessChanged() { if (!this.closed && this.protocol >= 4) this.send({ type: "access", capabilities: [...this.capabilities()] }); }
 	private checkProject(projectId: string | undefined) {
 		if (projectId && !this.host.overview().projects.some(project => project.id === projectId && !project.worktree?.removedAt)) throw new PhoneProtocolError("not_found", "That project isn't on this computer any more.");
 	}
@@ -305,6 +353,8 @@ export class PhoneHub {
 	private projectsKey?: string;
 	private readonly turnChanges: TurnChangesCache;
 	onAttention?: (event: Attention, connected: ReadonlySet<string>) => void;
+	/** Each paired phone's capabilities, read on every request (PhoneService sets it from Settings → Phone). */
+	capabilitiesOf: (deviceId: string) => readonly PhoneCapability[] = () => [];
 	constructor(private readonly host: PhoneHost, private readonly now: () => number = Date.now) {
 		const overview = host.overview();
 		this.last = new Map(overview.tasks.map(task => [task.id, task]));
@@ -315,7 +365,7 @@ export class PhoneHub {
 		// One budget per device, however many sockets it opens.
 		let rate = this.rates.get(device.id);
 		if (!rate) { rate = new RequestRate(this.now); this.rates.set(device.id, rate); }
-		const session = new PhoneSession(device, this.host, send, rate, this.now, this.turnChanges);
+		const session = new PhoneSession(device, this.host, send, rate, this.now, this.turnChanges, () => this.capabilitiesOf(device.id));
 		this.sessions.add(session);
 		session.whenClosed(() => this.sessions.delete(session));
 		return session;
@@ -323,6 +373,8 @@ export class PhoneHub {
 	/** Ends every connection of a device that was removed. */
 	closeDevice(deviceId: string) { for (const session of [...this.sessions]) if (session.device.id === deviceId) session.close(); this.rates.delete(deviceId); }
 	closeAll() { for (const session of [...this.sessions]) session.close(); }
+	/** A device's capabilities changed: each of its connections hears them, and its next request is checked against them. */
+	accessChanged(deviceId: string) { for (const session of this.sessions) if (session.device.id === deviceId) session.accessChanged(); }
 	/**
 	 * The overview changes with every streamed token, so the projects are compared by their own fields first, and the
 	 * phone's rows (which look at the disk) are built only when those changed and a phone is listening.
