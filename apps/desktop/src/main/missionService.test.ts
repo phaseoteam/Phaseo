@@ -30,10 +30,12 @@ describe("desktop missions", () => {
 		} finally { await value.close(); }
 	});
 	it("runs a schedule made from a thread on someone else's checkout without the repository's own config", async () => {
-		const value = fixture(); try {
+		let ran!: () => void; const executed = new Promise<void>(resolve => { ran = resolve; });
+		const value = fixture(async () => { ran(); }); try {
 			const template = value.runtime.store.getTask(value.template.id); template.untrustedCheckout = true; value.runtime.store.saveTask(template);
 			value.service.command({ type: "run", id: value.mission.id });
-			await vi.waitFor(() => expect(value.execute).toHaveBeenCalledOnce());
+			await executed;
+			expect(value.execute).toHaveBeenCalledOnce();
 			expect(value.execute.mock.calls[0][0]).toMatchObject({ missionId: value.mission.id, untrustedCheckout: true });
 		} finally { await value.close(); }
 	});
