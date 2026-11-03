@@ -21,7 +21,7 @@ Le quota dépend de la situation du compte de l’espace de travail et augmente 
 
 Un espace de travail reçoit le quota le plus élevé auquel il a droit. Les changements prennent effet en quelques minutes.
 
-Les routes de modèles gratuits disposent également de **1500 requêtes par jour UTC**, partagées entre tous les modèles gratuits du même utilisateur et espace de travail. Les requêtes aux modèles payants ne consomment pas ce quota quotidien. Une requête gratuite admise compte même si le fournisseur échoue ensuite ; les fallbacks au sein de cette requête comptent une seule fois.
+Les routes de modèles gratuits disposent également de **1500 requêtes par jour UTC**, partagées entre tous les modèles gratuits et tous les espaces de travail dans lesquels le même utilisateur envoie des requêtes. Les requêtes aux modèles payants ne consomment pas ce quota quotidien. Une requête gratuite admise compte même si le fournisseur échoue ensuite ; les fallbacks au sein de cette requête comptent une seule fois.
 
 Ces limites s’appliquent à toutes les régions du gateway et peuvent être augmentées pour un utilisateur et un espace de travail précis. Les opérations sur les fichiers et les consultations du statut des tâches consomment le quota par minute ; les endpoints d’administration ne le consomment pas.
 
