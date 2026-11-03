@@ -1,5 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createClient, type GatewaySupabaseClient } from "@/runtime/supabase-client";
 import type { GatewayBindings } from "@/runtime/env.types";
 import {
     HEALTH_REPORT_MAX_AGE_MS, HEALTH_PUBLISH_INTERVAL_MS, HEALTH_SNAPSHOT_MAX_AGE_MS,
@@ -52,7 +52,7 @@ export class RoutingHealthDurableObject extends DurableObject<GatewayBindings> {
     private readonly reports = new Map<string, number>();
     private alarmAt: number | null = null;
     private readonly transitions = new Map<string, PendingTransition>();
-    private supabase: SupabaseClient | null = null;
+    private supabase: GatewaySupabaseClient | null = null;
 
     constructor(ctx: DurableObjectState, env: GatewayBindings) {
         super(ctx, env);
