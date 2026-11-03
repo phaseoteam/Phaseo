@@ -60,12 +60,15 @@ export function useThreadDiff(client: DesktopClient, chat: Pick<PhoneChat, "id" 
   const [state, setState] = useState<DiffState>({ key: "", diff: null, error: null, loading: false });
   const [files, setFiles] = useState<{ hash: string; byPath: ReadonlyMap<string, PhoneDiffFile | string> }>({ hash: "", byPath: new Map() });
   const chatId = chat?.id;
-  // State is set only when the answer arrives, never while the effect that asked runs.
+  // State is set only when the answer arrives, never while the effect that asked runs, and only by the latest read:
+  // an answer for a segment the person has left would otherwise replace the one they're looking at.
+  const latest = useRef(0);
   const read = useCallback(() => {
+    const asked = ++latest.current;
     if (!chatId || !allowed) return;
     client.request("read_diff", { chatId, scope, ...(scope === "turn" && messageId ? { messageId } : {}) }).then(
-      (diff) => setState({ key, diff, error: null, loading: false }),
-      (problem: unknown) => setState({ key, diff: null, error: { message: messageOf(problem), ...(problem instanceof DesktopRequestError ? { code: problem.code } : {}) }, loading: false }),
+      (diff) => { if (asked === latest.current) setState({ key, diff, error: null, loading: false }); },
+      (problem: unknown) => { if (asked === latest.current) setState({ key, diff: null, error: { message: messageOf(problem), ...(problem instanceof DesktopRequestError ? { code: problem.code } : {}) }, loading: false }); },
     );
   }, [client, chatId, scope, messageId, allowed, key]);
   useEffect(read, [read]);
