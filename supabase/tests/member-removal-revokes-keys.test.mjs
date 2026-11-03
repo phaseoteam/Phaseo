@@ -199,10 +199,13 @@ try {
     await rejects(db.query(`insert into public.workspace_invites (workspace_id, role) values ('${ws}', 'admin')`), /workspace_invite_admin_owner_only/, 'an admin cannot create an admin invite');
     await rejects(db.query(`update public.workspace_invites set role = 'admin' where id = '${memberInvite}'`), /workspace_invite_admin_owner_only/, 'an admin cannot switch an invite to admin');
     await db.query(`insert into public.workspace_invites (workspace_id, role) values ('${ws}', 'member')`);
+    // admin owns otherWs: an admin invite made there cannot be moved into ws, where they are only an admin.
+    const own = (await db.query(`insert into public.workspace_invites (workspace_id, role) values ('${otherWs}', 'admin') returning id`)).rows[0].id;
+    await rejects(db.query(`update public.workspace_invites set workspace_id = '${ws}' where id = '${own}'`), /workspace_invite_admin_owner_only/, 'an admin invite cannot be moved into a workspace the caller does not own');
   });
   await as('authenticated', owner, () => db.query(`update public.workspace_invites set role = 'admin' where id = '${memberInvite}'`));
   await db.query(`insert into public.workspace_invites (workspace_id, role) values ('${ws}', 'admin')`);
-  assert.equal((await db.query(`select count(*)::int as n from public.workspace_invites where role = 'admin'`)).rows[0].n, 2,
+  assert.equal((await db.query(`select count(*)::int as n from public.workspace_invites where role = 'admin' and workspace_id = '${ws}'`)).rows[0].n, 2,
     'the owner and the service role can still create admin invites');
 
   // The migration revokes keys already left behind by former members.
