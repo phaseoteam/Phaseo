@@ -1,5 +1,5 @@
 import type { Account, Harness, ModelOption, ModelOptionValues } from "../../shared/workspace";
-import type { AgentProfile } from "../../shared/factory/types";
+import type { AgentProfile, WorkItem } from "../../shared/factory/types";
 
 /**
  * Factory's agents are the desktop's own: every model on every usable account of every harness that can run a stage,
@@ -8,6 +8,20 @@ import type { AgentProfile } from "../../shared/factory/types";
 
 /** Harnesses a stage can run on: the ones agents can delegate to by name. */
 export const factoryHarnesses = ["claude", "codex", "phaseo", "opencode", "pi", "cursor", "grok"] as const satisfies readonly Harness[];
+/**
+ * Harnesses Factory runs on a pull request from a fork: the ones kept from loading the checkout's own settings, hooks and MCP
+ * servers (Task.untrustedCheckout). Codex, Grok and ACP agents load a repository's config whatever they're told, and it can
+ * run code on this computer. Issues and pull requests from the repository itself take any harness.
+ */
+export const forkSafeHarnesses = ["claude", "cursor", "pi", "opencode", "phaseo"] as const satisfies readonly Harness[];
+
+/** Refuses, before any thread is made, an agent that would load a fork's own config. */
+export function assertForkSafe(item: Pick<WorkItem, "kind" | "fork">, harness: Harness) {
+	if (item.kind !== "pull" || !item.fork || (forkSafeHarnesses as readonly Harness[]).includes(harness)) return;
+	const name = ({ codex: "Codex", grok: "Grok", antigravity: "Antigravity" } as Partial<Record<Harness, string>>)[harness];
+	throw new Error(`Factory can't run ${name ?? "an ACP agent"} on a pull request from a fork: it loads the repository's own ${name ? `${name} settings` : "settings"}, which can run code on this computer. Choose Claude, Cursor, Pi, OpenCode or Phaseo for Factory, or review this pull request yourself.`);
+}
+
 /** Phaseo and Cursor run only on a connected account; the rest also run on the harness's own sign-in. */
 const accountRequired = (harness: Harness) => harness === "phaseo" || harness === "cursor";
 /** A catalog can list hundreds of models; the picker offers this many per account, current ones first. */

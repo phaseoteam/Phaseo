@@ -5,7 +5,7 @@ import type { AgentProfile, LogLine, Run, WorkItem } from "../../shared/factory/
 import type { AgentActivity, Message, Task, WorkspaceCommand } from "../../shared/workspace";
 import type { WorkspaceOverview } from "../../shared/workspaceOverview";
 import type { WorkspaceStore } from "../workspaceStore";
-import { effortSettings } from "./agents";
+import { assertForkSafe, effortSettings } from "./agents";
 import type { AgentProcess, RunHandlers, StageStart, StageWorkspace } from "./runner";
 import type { FactoryThreads } from "./store";
 import { changedFiles, collectProof, git } from "./worktrees";
@@ -113,6 +113,7 @@ export class StageThreads implements FactoryThreads {
 			}
 		}
 		if (!agent) throw new Error("Connect an account in Settings → Accounts first: Factory's agents run on the desktop's accounts.");
+		assertForkSafe(item, agent.harness);
 		const projectId = workspace ? await this.worktreeProject(workspace) : undefined;
 		const thread = this.host.createThread({ type: "create-task", harness: agent.harness, accountId: agent.accountId, model: agent.model, mode: "code", permissionMode: "full-access", untrustedCheckout: true, projectId }, `#${item.number} ${item.title}`.slice(0, 100));
 		this.parents.set(item.id, thread.id);

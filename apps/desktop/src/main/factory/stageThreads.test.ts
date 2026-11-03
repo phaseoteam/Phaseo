@@ -86,6 +86,18 @@ describe("stage threads", () => {
 		} finally { await close(); }
 	});
 
+	it("makes no thread for an agent that would load a fork's own config, and one for an agent that won't", async () => {
+		const { runtime, threads, parents, close, clone, worktree } = setup(async () => {});
+		try {
+			const fork = { ...item, id: "acme/app#4", number: 4, fork: { repo: "someone/app", canPush: true } };
+			const workspace = { dir: worktree, branch: "factory/pr-4", clone };
+			await expect(threads.ensureParent(fork, agent, workspace)).rejects.toThrow("Factory can't run Codex on a pull request from a fork");
+			expect(parents.has(fork.id)).toBe(false); expect(runtime.store.getOverview().tasks).toEqual([]);
+			const parentId = await threads.ensureParent(fork, { ...agent, id: "claude:default:opus", harness: "claude", model: "opus", connectionId: "claude:default" }, workspace);
+			expect(runtime.store.getTask(parentId)).toMatchObject({ harness: "claude", untrustedCheckout: true });
+		} finally { await close(); }
+	});
+
 	it("never delivers a stage's result to the parent when the parent's own turn ends first", async () => {
 		let release!: () => void;
 		const held = new Promise<void>(resolve => { release = resolve; });

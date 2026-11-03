@@ -17,7 +17,7 @@ import { autoSettleRules, settingsProject, settleScriptTarget, worktreeCreateScr
 import { runProjectCommand } from "./runProjectCommand";
 import { mkdirSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import type { AgentActivity, AgentConnection, ApprovalDecision, ModelOption, WorkspaceCommand, AgentQuestion, QuestionRequest } from "../shared/workspace";
+import type { AgentActivity, AgentConnection, ApprovalDecision, ModelOption, Task, WorkspaceCommand, AgentQuestion, QuestionRequest } from "../shared/workspace";
 import { optionValue, questionAnswerError, questionOptions } from "../shared/agentQuestions";
 import { WorkspaceThreads } from "./workspaceThreads";
 import { git } from "./gitProcess";
@@ -77,6 +77,7 @@ import { GrokAdapter } from "./grokAdapter";
 import { codexModels } from "./modelCatalog";
 import type { Mission, MissionCommand } from "../shared/missions";
 import { span, startSpan, type ActiveSpan } from "./diagnostics/tracer";
+import { factoryDataFolder } from "./factory/service";
 
 // Questions answered by message do not hold up the turn.
 const hasRequests = (task: { approvals?: unknown[]; questions?: { responseMode?: string }[]; forms?: unknown[] }) => Boolean(task.approvals?.length || task.questions?.some(request => request.responseMode !== "message") || task.forms?.length);
@@ -88,7 +89,7 @@ function createAdapter(harness: Harness, agent?: AgentConnection, openCode?: Ope
 	const active = mcp.filter(connection => connection.enabled && !connection.archived && (!connection.projectId || connection.projectId === projectId));
 	if (harness === "codex") return new CodexAdapter(mcp);
 	if (harness === "claude") return new ClaudeAdapter(active);
-	if (harness === "opencode") return new OpenCodeAdapter(openCode ? signal => openCode.connect(signal) : undefined, mcp, openCode?.mcp, openCode ? signal => openCode.isolated(signal) : undefined);
+	if (harness === "opencode") return new OpenCodeAdapter(openCode ? signal => openCode.connect(signal) : undefined, mcp, openCode?.mcp, openCode ? (signal, options) => openCode.isolated(signal, options) : undefined);
 	if (harness === "pi") return new PiAdapter(active);
 	if (harness === "grok") return new GrokAdapter(active);
 	if (harness === "acp" && agent) return new AcpAdapter(agent, active);
@@ -1081,7 +1082,7 @@ export class WorkspaceRuntime {
 				return this.store.apply({ type: "send", id: thread.id, text: mission.prompt });
 			}
 			const template = this.store.getTask(mission.templateTaskId); if (template.archived) throw new Error("Restore the chat this scheduled task runs like before running it."); if (template.projectId) this.assertProjectAvailable(template.projectId);
-			const created = this.store.apply({ type: "create-task", harness: template.harness, model: template.model, mode: template.mode, permissionMode: template.permissionMode, serviceTier: template.serviceTier, accountId: template.accountId, projectId: template.projectId, agentId: template.agentId }); created.title = mission.title; created.missionId = mission.id; created.reasoningEffort = template.reasoningEffort; created.modelOptions = template.modelOptions; created.nativeMode = template.nativeMode; this.store.saveTask(created);
+			const created = this.store.apply({ type: "create-task", harness: template.harness, model: template.model, mode: template.mode, permissionMode: template.permissionMode, serviceTier: template.serviceTier, accountId: template.accountId, projectId: template.projectId, agentId: template.agentId }); created.title = mission.title; created.missionId = mission.id; created.reasoningEffort = template.reasoningEffort; created.modelOptions = template.modelOptions; created.nativeMode = template.nativeMode; if (template.untrustedCheckout) created.untrustedCheckout = true; this.store.saveTask(created);
 			return this.store.apply({ type: "send", id: created.id, text: mission.prompt });
 		});
 		this.broadcast(); this.start(task.id); return task;
@@ -1393,10 +1394,27 @@ export class WorkspaceRuntime {
 			this.store.saveTask(task); this.broadcast();
 		});
 	}
+	/** Whether a chat works on code the person didn't open themselves: in one of Factory's worktrees, or under a chat that does. */
+	private untrustedCheckout(task: Task): boolean {
+		const factory = factoryDataFolder(this.directory), projects = this.store.getProjects(), seen = new Set<string>();
+		for (let current: Task | undefined = task; current && !seen.has(current.id);) {
+			seen.add(current.id);
+			if (current.untrustedCheckout) return true;
+			const projectId = current.projectId, directory = projects.find(project => project.id === projectId)?.directory;
+			const relative = directory === undefined ? undefined : path.relative(factory, directory);
+			if (relative !== undefined && relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative)) return true;
+			const up: string | undefined = current.delegation?.parentTaskId ?? current.parentId ?? current.launch?.byTaskId;
+			try { current = up ? this.store.getTask(up) : undefined; } catch { current = undefined; }
+		}
+		return false;
+	}
 	private async drain(id: string, turn: ActiveSpan) {
 		if (this.running.has(id)) return;
 		let task = this.store.getTask(id);
 		if (!task.queue.length) return;
+		// Factory's checkouts run without the repository's own config however the message came: from Factory, or sent from
+		// Chats to a thread made before Factory flagged its threads (or one under, handed off from or launched by such a thread).
+		if (!task.untrustedCheckout && this.untrustedCheckout(task)) { task.untrustedCheckout = true; this.store.saveTask(task); }
 		let adapter: AgentAdapter;
 		let orchestration: Awaited<ReturnType<OrchestratorMcp["session"]>> | undefined;
 		// Set once the run's question handler exists; the orchestration server (created first) asks through it.
