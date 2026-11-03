@@ -10,6 +10,9 @@ describe("app command registry", () => {
 		expect(() => validateAppCommand("sidebar.set", { open: "yes" }, "agent")).toThrow("true or false");
 		expect(() => validateAppCommand("toast.show", { title: "x".repeat(121) }, "agent")).toThrow("longer than");
 		expect(validateAppCommand("pane.open", { surface: "terminal" }, "agent").args).toEqual({ surface: "terminal" });
+		expect(() => validateAppCommand("settings.set", { key: "theme" }, "agent")).toThrow("needs value");
+		expect(validateAppCommand("settings.set", { key: "autoSettleAfterDays", value: null }, "agent").args).toEqual({ key: "autoSettleAfterDays", value: null });
+		expect(() => validateAppCommand("settings.set", { key: "worktreeCleanup", value: { notes: "x".repeat(20001) } }, "agent")).toThrow("too large");
 	});
 
 	it("keeps person-only commands from agents and out of list_app_commands", () => {

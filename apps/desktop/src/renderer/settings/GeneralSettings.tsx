@@ -11,7 +11,7 @@ import { Switch } from "../components/ui/switch";
 import { ModelPicker } from "../chat/ModelPicker";
 import { ModelSettings } from "../chat/ModelSettings";
 import { workingSectionKey } from "../shell/codeThreads";
-import { publishWorkspacePreferences } from "../lib/workspacePreferences";
+import { publishWorkspacePreferences, useWorkspacePreferences } from "../lib/workspacePreferences";
 import { mergeMethodLabels } from "../views/pullRequests/pullRequestLogic";
 import { isMac } from "../lib/shortcuts";
 import { setSendKey, useSendKey } from "../chat/sendKey";
@@ -26,6 +26,9 @@ function usePreferences() {
 	const [supported, setSupported] = useState<boolean>();
 	const [loading, setLoading] = useState(true), [busy, setBusy] = useState(false), [error, setError] = useState("");
 	const pending = useRef(false);
+	// A change made elsewhere (an agent's settings.set) shows here at once.
+	const published = useWorkspacePreferences();
+	useEffect(() => { if (!loading) setPreferences(published); }, [published, loading]);
 	useEffect(() => {
 		if (!api) { setLoading(false); setError("Open the desktop application to load settings."); return; }
 		let active = true;

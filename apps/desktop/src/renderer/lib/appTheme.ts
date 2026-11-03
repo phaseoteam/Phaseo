@@ -20,6 +20,13 @@ function write(next: State) {
 	for (const listener of listeners) listener();
 }
 
+/** The colour theme in use and every theme to choose from, for the settings.list app command. */
+export function colourThemes() { const all = [...builtInThemes, ...state.custom]; return { activeId: all.some(theme => theme.id === state.activeId) ? state.activeId : builtInThemes[0].id, ids: all.map(theme => theme.id) }; }
+export function chooseColourTheme(id: string) {
+	if (!colourThemes().ids.includes(id)) throw new Error("No colour theme has that id.");
+	write({ ...state, activeId: id });
+}
+
 export function useThemes() {
 	const current = useSyncExternalStore(listener => { listeners.add(listener); return () => listeners.delete(listener); }, () => state);
 	const all = [...builtInThemes, ...current.custom];

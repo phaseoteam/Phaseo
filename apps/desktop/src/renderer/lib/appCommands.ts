@@ -4,8 +4,9 @@ import { useWorkspace, type RightPanelTab, type SettingsPage, type UsageView } f
 import { showToast } from "../components/ui/toast";
 import type { ThemePreference } from "../types";
 import { handNewChatDraft } from "./newChatDraft";
+import { listSettings, setSetting } from "./appSettings";
 
-type Handler = (args: AppCommandArgs) => unknown;
+type Handler = (args: AppCommandArgs, caller: "agent" | "person") => unknown;
 let handlers: Partial<Record<AppCommandId, Handler>> = {};
 
 /**
@@ -21,7 +22,7 @@ export async function runAppCommand(id: AppCommandId, args: AppCommandArgs = {})
 	}
 	const handler = handlers[command.id as AppCommandId];
 	if (!handler) throw new Error(`${command.title} is not available right now.`);
-	return handler(valid);
+	return handler(valid, "person");
 }
 
 /** Binds the renderer commands to the window's state and answers the main process's requests. Mounted once, in the shell. */
@@ -58,6 +59,8 @@ export function useAppCommandHost() {
 			"theme.set": args => current().setTheme(args.theme as ThemePreference),
 			"toast.show": args => { showToast((args.tone as "info" | "success" | "warning" | "error" | undefined) ?? "info", String(args.title), typeof args.detail === "string" ? args.detail : undefined); },
 			"palette.open": () => current().setCommandsOpen(true),
+			"settings.list": args => listSettings(typeof args.query === "string" ? args.query : undefined),
+			"settings.set": (args, caller) => setSetting(args.key, args.value, caller),
 		};
 		const api = window.phaseoDesktop?.appCommands;
 		const unsubscribe = api?.onRequest(request => {
@@ -65,7 +68,7 @@ export function useAppCommandHost() {
 				try {
 					const handler = handlers[request.command];
 					if (!handler || appCommand(request.command)?.surface !== "renderer") throw new Error("This window cannot run that command.");
-					api.reply({ requestId: request.requestId, ok: true, result: await handler(request.args) });
+					api.reply({ requestId: request.requestId, ok: true, result: await handler(request.args, request.caller === "person" ? "person" : "agent") });
 				} catch (error) { api.reply({ requestId: request.requestId, ok: false, error: error instanceof Error ? error.message : "The command failed." }); }
 			})();
 		});
