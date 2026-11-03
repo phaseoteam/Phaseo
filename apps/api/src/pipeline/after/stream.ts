@@ -145,6 +145,7 @@ function attachStreamTimingMeta(args: {
         providerTtftMs: ctx.meta.provider_ttft_ms ?? null,
         gatewayE2eMs: ctx.meta.end_to_end_ms ?? null,
         failoverMs: resolveFailoverMs(ctx),
+        outputArrivals: ctx.meta.outputArrivals ?? null,
         speedWindow: resolveOutputSpeedWindow(ctx),
     });
     const throughputTps = calculated.effectiveThroughputTps;

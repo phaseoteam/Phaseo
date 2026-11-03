@@ -655,6 +655,9 @@ async function materializeStreamResultToCompleted(args: {
 	// When the first generated output arrived, for provider TTFT (recordProviderRound).
 	let firstOutputAtMs: number | null = null;
 	let reasoningStreamed = false;
+	// Separate moments output arrived: 1 means the answer came in one read.
+	let outputArrivals = 0;
+	let lastOutputAtMs: number | null = null;
 	const consumed = await consumeTextProtocolStreamToIR({
 		protocol: args.protocol,
 		stream,
@@ -662,10 +665,14 @@ async function materializeStreamResultToCompleted(args: {
 		model: args.model,
 		provider: args.result.provider,
 		onEvent: (event) => {
-			if (
-				firstOutputAtMs === null &&
-				((event.type === "delta_text" && event.text.length > 0) || event.type === "delta_tool" || event.type === "delta_content_part")
-			) {
+			const isOutput =
+				(event.type === "delta_text" && event.text.length > 0) || event.type === "delta_tool" || event.type === "delta_content_part";
+			if (isOutput) {
+				const nowMs = Date.now();
+				if (lastOutputAtMs === null || nowMs > lastOutputAtMs) outputArrivals += 1;
+				lastOutputAtMs = nowMs;
+			}
+			if (firstOutputAtMs === null && isOutput) {
 				firstOutputAtMs = Date.now();
 				reasoningStreamed = event.type === "delta_text" && event.channel === "reasoning_text";
 			}
@@ -706,6 +713,7 @@ async function materializeStreamResultToCompleted(args: {
 			...(args.result.timing ?? {}),
 			firstOutputAtMs,
 			reasoningStreamed,
+			outputArrivals,
 			generationMs: Math.max(
 				typeof args.result.timing?.generationMs === "number"
 					? args.result.timing.generationMs
@@ -1028,10 +1036,11 @@ async function runTextGeneratePipelineInner(
 			}
 		}
 		if (exec.result.kind === "completed") {
-			const roundTiming = (exec.result as { timing?: { firstOutputAtMs?: number | null; reasoningStreamed?: boolean } }).timing;
+			const roundTiming = (exec.result as { timing?: { firstOutputAtMs?: number | null; reasoningStreamed?: boolean; outputArrivals?: number } }).timing;
 			recordProviderRound(pre.ctx, {
 				firstOutputAtMs: roundTiming?.firstOutputAtMs,
 				reasoningStreamed: roundTiming?.reasoningStreamed,
+				outputArrivals: roundTiming?.outputArrivals,
 				usage: (exec.result.ir as IRChatResponse | undefined)?.usage,
 			});
 		}
@@ -1358,10 +1367,11 @@ async function runTextGeneratePipelineInner(
 					}
 				}
 				if (followUpResult.kind === "completed") {
-					const roundTiming = (followUpResult as { timing?: { firstOutputAtMs?: number | null; reasoningStreamed?: boolean } }).timing;
+					const roundTiming = (followUpResult as { timing?: { firstOutputAtMs?: number | null; reasoningStreamed?: boolean; outputArrivals?: number } }).timing;
 					recordProviderRound(pre.ctx, {
 						firstOutputAtMs: roundTiming?.firstOutputAtMs,
 						reasoningStreamed: roundTiming?.reasoningStreamed,
+						outputArrivals: roundTiming?.outputArrivals,
 						usage: (followUpResult.ir as IRChatResponse | undefined)?.usage,
 					});
 				}

@@ -57,6 +57,8 @@ export function recordProviderRound(
 		firstOutputAtMs?: number | null;
 		/** The first output was streamed reasoning, so reasoning tokens are inside the window. */
 		reasoningStreamed?: boolean;
+		/** Separate moments output arrived in the round, when counted. */
+		outputArrivals?: number | null;
 		/** The round's own usage, before it is added to earlier rounds. */
 		usage?: { outputTokens?: number; reasoningTokens?: number } | null;
 	} = {},
@@ -74,6 +76,7 @@ export function recordProviderRound(
 			durationMs: Math.max(0, Math.round(completedAtMs - roundFirstOutputAtMs)),
 			outputTokens: finiteOrNull(round.usage?.outputTokens) ?? 0,
 			reasoningTokens: round.reasoningStreamed ? null : finiteOrNull(round.usage?.reasoningTokens),
+			arrivals: finiteOrNull(round.outputArrivals),
 		};
 	ctx.meta.providerRoundsMs = (finiteOrNull(ctx.meta.providerRoundsMs) ?? 0) + roundMs;
 	ctx.meta.providerRoundsFailoverMs =
