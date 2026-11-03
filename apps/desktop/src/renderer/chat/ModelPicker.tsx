@@ -1,5 +1,5 @@
 import { formatDateParts } from "@phaseo/app-kit/format";
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ChevronDown, CircleCheck, LoaderCircle, SearchIcon, Star } from "lucide-react";
 import type { Harness, ModelOption } from "../../shared/workspace";
@@ -11,6 +11,7 @@ import { usePersistedState } from "../lib/persistedState";
 import { rememberedSettings } from "../lib/modelSettings";
 import { cn } from "../lib/utils";
 import { ModelLogo } from "../components/ModelLogo";
+import { HarnessLogo } from "../components/HarnessLogo";
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../components/ui/tooltip";
 import { ScrollArea } from "../components/ui/scroll-area";
@@ -62,9 +63,24 @@ export function ModelStack({ models, size = "md", ringClassName = "bg-card ring-
 }
 
 type Entry = { key: string; harness: Harness; accountId?: string; model: ModelOption };
-type Source = "phaseo" | "local";
-const sourceOf = (harness: Harness): Source => harness === "phaseo" ? "phaseo" : "local";
-const sourceNames: Record<Source, string> = { phaseo: "Phaseo", local: "Local" };
+/**
+ * The picker's left column, as in T3 Code: favourites, then each local agent, then Phaseo's models, all of them
+ * and then one lab at a time, so no list mixes where a model runs.
+ */
+type Group = "favourites" | "phaseo" | Harness | `lab:${string}`;
+type GroupEntry = { id: Group; label: string; lab?: string };
+const labOf = (entry: Entry) => entry.model.organisationId ?? (entry.model.id.includes("/") ? entry.model.id.split("/")[0] : "");
+const inGroup = (entry: Entry, group: Group, favourites: Set<string>) => group === "favourites" ? favourites.has(entry.key)
+	: group === "phaseo" ? entry.harness === "phaseo"
+	: group.startsWith("lab:") ? entry.harness === "phaseo" && labOf(entry) === group.slice(4)
+	: entry.harness === group;
+const isPhaseoGroup = (group: Group) => group === "phaseo" || group.startsWith("lab:");
+/** Phaseo's labs for the left column, the ones with the most models first. */
+export function phaseoLabGroups(models: Pick<ModelOption, "id" | "organisationId" | "organisationName">[]): GroupEntry[] {
+	const labs = new Map<string, { label: string; count: number }>();
+	for (const model of models) { const lab = labOf({ model } as Entry); if (lab) labs.set(lab, { label: model.organisationName ?? lab, count: (labs.get(lab)?.count ?? 0) + 1 }); }
+	return [...labs].sort((a, b) => b[1].count - a[1].count || a[1].label.localeCompare(b[1].label)).map(([lab, value]) => ({ id: `lab:${lab}` as const, label: value.label, lab }));
+}
 const entryKey = (harness: Harness, id: string) => `${harness}:${id}`;
 /** A picked model starts from the settings last chosen for it; unset settings follow the harness default. */
 const selectionOf = (entry: Entry): ModelSelection => ({ harness: entry.harness, accountId: entry.accountId, model: entry.model.id, ...rememberedSettings(entry.harness, entry.model.id) });
@@ -137,7 +153,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	const { overview } = useWorkspace();
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
-	const [source, setSource] = useState<Source>("phaseo");
+	const [group, setGroup] = useState<Group>("phaseo");
 	const [showOlder, setShowOlder] = useState<Partial<Record<Harness, boolean>>>({});
 	const [filters, setFilters] = usePersistedState("phaseo.desktop.modelFilters", { free: false, new: false });
 	const [favourites, setFavourites] = usePersistedState<string[]>("phaseo.desktop.favouriteModels", []);
@@ -146,13 +162,19 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	const connected = useConnectedHarnesses();
 	const phaseoAccount = usablePhaseoAccounts(overview)[0];
 	const harnesses = useMemo(() => [...(phaseoAccount ? ["phaseo" as const] : []), ...[...connected].filter(harness => harness !== "phaseo" && harness !== "acp" && (agents || harness !== "grok"))], [connected, agents, phaseoAccount]);
-	const sources = (["phaseo", "local"] as const).filter(value => harnesses.some(harness => sourceOf(harness) === value));
-	const active: Source = sources.includes(source) ? source : sources[0] ?? "phaseo";
 	const onLoad = useCallback((harness: Harness, state: { entries: Entry[]; loading: boolean; error: string }) => setCatalogs(current => ({ ...current, [harness]: state })), []);
 
 	const all = useMemo(() => harnesses.flatMap(harness => catalogs[harness]?.entries ?? []), [harnesses, catalogs]);
 	const visible = useMemo(() => all.filter(entry => entry.harness !== "phaseo" || ((!filters.free || entry.model.id.endsWith(":free")) && (!filters.new || Date.now() - released(entry) <= twoWeeks))), [all, filters]);
 	const favouriteSet = useMemo(() => new Set(favourites), [favourites]);
+	const groups = useMemo((): GroupEntry[] => {
+		return [
+			{ id: "favourites", label: "Favourites" },
+			...harnesses.filter(harness => harness !== "phaseo").map(harness => ({ id: harness, label: harnessNames[harness] })),
+			...harnesses.includes("phaseo") ? [{ id: "phaseo" as const, label: "All Phaseo models" }, ...phaseoLabGroups((catalogs.phaseo?.entries ?? []).map(entry => entry.model))] : [],
+		];
+	}, [catalogs.phaseo?.entries, harnesses]);
+	const active: Group = groups.some(value => value.id === group) ? group : groups[1]?.id ?? "favourites";
 	const isSelected = (entry: Entry) => selections.some(value => sameSelection(value, { harness: entry.harness, accountId: entry.accountId, model: entry.model.id }));
 
 	const normalized = normalize(query);
@@ -160,34 +182,27 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 		? visible.map(entry => ({ entry, score: score(entry, normalized) })).filter(value => value.score > 0)
 			.sort((a, b) => b.score - a.score || Number(!!a.entry.model.legacy) - Number(!!b.entry.model.legacy) || released(b.entry) - released(a.entry)).map(value => value.entry)
 		: [], [normalized, visible]);
-	const rankedHere = useMemo(() => ranked.filter(entry => sourceOf(entry.harness) === active), [ranked, active]);
-	const elsewhere = ranked.length - rankedHere.length;
-	const otherSource: Source = active === "phaseo" ? "local" : "phaseo";
 
 	const sections = useMemo((): Section[] => {
-		if (normalized) return [{ heading: rankedHere.length > 25 ? `Results (25 of ${rankedHere.length})` : `Results: ${rankedHere.length}`, entries: rankedHere.slice(0, 25) }];
-		const here = visible.filter(entry => sourceOf(entry.harness) === active);
-		const result: Section[] = [];
-		const starred = here.filter(entry => favouriteSet.has(entry.key));
-		if (starred.length) result.push({ heading: "Favourites", entries: starred });
-		const rest = here.filter(entry => !favouriteSet.has(entry.key));
-		if (active === "local") {
-			for (const harness of harnesses.filter(value => value !== "phaseo")) {
-				const entries = rest.filter(entry => entry.harness === harness);
-				const older = entries.filter(entry => entry.model.legacy).length;
-				if (entries.length) result.push({ heading: harnessNames[harness], harness, older, entries: showOlder[harness] ? entries : entries.filter(entry => !entry.model.legacy) });
-			}
-			return result;
+		// A search looks everywhere, whichever group is open.
+		if (normalized) return [{ heading: ranked.length > 25 ? `Results (25 of ${ranked.length})` : `Results: ${ranked.length}`, entries: ranked.slice(0, 25) }];
+		const here = visible.filter(entry => inGroup(entry, active, favouriteSet));
+		const heading = groups.find(value => value.id === active)?.label ?? "";
+		if (active === "favourites") return here.length ? [{ heading, entries: here }] : [];
+		if (!isPhaseoGroup(active)) {
+			const harness = active as Harness, older = here.filter(entry => entry.model.legacy).length;
+			return here.length ? [{ heading, harness, older, entries: showOlder[harness] ? here : here.filter(entry => !entry.model.legacy) }] : [];
 		}
+		const result: Section[] = [];
 		const months = new Map<string, Entry[]>();
-		for (const entry of [...rest].sort((a, b) => released(b) - released(a))) {
+		for (const entry of [...here].sort((a, b) => released(b) - released(a))) {
 			const time = released(entry);
 			const heading = Number.isFinite(time) ? formatDateParts(time, { month: "long", year: "numeric", timeZone: "UTC" }) : "Other";
 			months.set(heading, [...months.get(heading) ?? [], entry]);
 		}
 		for (const [heading, entries] of months) result.push({ heading, entries });
 		return result;
-	}, [normalized, rankedHere, visible, active, favouriteSet, harnesses, showOlder]);
+	}, [normalized, ranked, visible, active, favouriteSet, groups, showOlder]);
 
 	const rows = useMemo(() => sections.flatMap((section): Row[] => [
 		{ type: "heading", key: `heading:${section.heading}`, heading: section.heading },
@@ -231,13 +246,13 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 			}
 		} else if (event.key === "Enter") { event.preventDefault(); activate(rows[activeIndex], event.ctrlKey || event.metaKey); }
 	};
-	const shown = harnesses.filter(harness => sourceOf(harness) === active);
-	const toolbar = sources.length > 1 || active === "phaseo" || !!multiple;
+	const shown = active === "favourites" ? harnesses : harnesses.filter(harness => isPhaseoGroup(active) ? harness === "phaseo" : harness === active);
+	const toolbar = isPhaseoGroup(active) || !!multiple;
 	const loading = shown.filter(harness => !catalogs[harness] || (catalogs[harness]!.loading && !catalogs[harness]!.entries.length));
 	const errors = shown.map(harness => catalogs[harness]?.error ? `${harnessNames[harness]}: ${catalogs[harness]!.error}` : "").filter(Boolean);
 
 	const first = selections[0];
-	const openChange = (value: boolean) => { setOpen(value); setQuery(""); if (value) setSource(first ? sourceOf(first.harness) : "phaseo"); };
+	const openChange = (value: boolean) => { setOpen(value); setQuery(""); if (value) setGroup(!first ? "phaseo" : first.harness !== "phaseo" ? first.harness : knownModel(first.model)?.organisationId ? `lab:${knownModel(first.model)!.organisationId}` : "phaseo"); };
 	const latestOpen = useRef(openChange); latestOpen.current = openChange;
 	// One model's reasoning, speed and context window sit in the same button and picker, as in T3 Code.
 	const settingsSelection = onSettingsChange && selections.length === 1 ? first : undefined;
@@ -259,8 +274,24 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 			<ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
 		</PopoverTrigger>
 		{/* Stays above or below the button and shrinks to fit below the title bar, rather than sliding sideways over the composer. */}
-			<PopoverContent align="end" side="top" sideOffset={8} collisionAvoidance={{ side: "flip", align: "shift", fallbackAxisSide: "none" }} collisionPadding={{ top: 52, right: 8, bottom: 8, left: 8 }} className={cn("max-h-(--available-height) gap-0 overflow-hidden rounded-xl p-0", descriptors.length ? "w-[min(94vw,700px)]" : "w-[min(92vw,520px)]")}>
+			<PopoverContent align="end" side="top" sideOffset={8} collisionAvoidance={{ side: "flip", align: "shift", fallbackAxisSide: "none" }} collisionPadding={{ top: 52, right: 8, bottom: 8, left: 8 }} className={cn("max-h-(--available-height) gap-0 overflow-hidden rounded-xl p-0", descriptors.length ? "w-[min(94vw,744px)]" : "w-[min(92vw,564px)]")}>
 				<div className="flex min-h-0 min-w-0 flex-1">
+				<div role="toolbar" aria-orientation="vertical" aria-label="Model groups" className="flex w-11 shrink-0 flex-col gap-1 overflow-y-auto overscroll-contain bg-muted/30 p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+					{groups.map((value, index) => <Fragment key={value.id}>
+						{/* A rule after favourites, and another where Phaseo's models begin. */}
+						{index > 0 && (value.id === "phaseo" || groups[index - 1].id === "favourites") && <div aria-hidden className="mx-1 border-b border-border/70" />}
+						<Tooltip>
+							<TooltipTrigger delay={200} render={<button type="button" aria-label={value.label} aria-pressed={active === value.id} onClick={() => { setGroup(value.id); setQuery(""); }}
+								className={cn("relative flex aspect-square w-full shrink-0 items-center justify-center rounded-md transition-colors hover:bg-foreground/10 [&_img]:size-5 [&_.harness-logo]:size-5", active === value.id && "bg-foreground/10")} />}>
+								{value.id === "favourites" ? <Star className="size-5 fill-current" />
+									: value.lab ? <ModelLogo model={{ id: `${value.lab}/model`, name: value.label, organisationId: value.lab }} harness="phaseo" />
+									: <HarnessLogo harness={value.id === "phaseo" ? "phaseo" : value.id as Harness} />}
+								{active === value.id && <span aria-hidden className="absolute top-1/2 -right-1 h-5 w-0.75 -translate-y-1/2 rounded-full bg-primary" />}
+							</TooltipTrigger>
+							<TooltipContent side="left">{value.label}</TooltipContent>
+						</Tooltip>
+					</Fragment>)}
+				</div>
 				<div className="flex min-w-0 flex-1 flex-col">
 				<div className={cn("p-2", toolbar ? "pb-1" : "border-b border-border/70")}>
 				<div className="flex h-8 items-center gap-2 rounded-lg border border-input bg-input/50 px-2.5">
@@ -271,11 +302,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 				</div>
 			</div>
 			{toolbar && <div className="flex h-10 items-center gap-1.5 border-b border-border/70 px-3 pb-1">
-				{sources.length > 1 && <div role="tablist" aria-label="Model source" className="mr-1 flex items-center gap-0.5 rounded-md bg-muted p-0.5">
-					{sources.map(value => <button key={value} type="button" role="tab" aria-selected={active === value} onClick={() => setSource(value)}
-						className={cn("h-6 rounded-[5px] px-2.5 text-xs font-semibold transition-colors", active === value ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>{sourceNames[value]}</button>)}
-				</div>}
-				{active === "phaseo" && <>
+				{isPhaseoGroup(active) && <>
 					<FilterButton active={filters.free} onClick={() => setFilters(current => ({ ...current, free: !current.free }))}>Free</FilterButton>
 					<FilterButton active={filters.new} onClick={() => setFilters(current => ({ ...current, new: !current.new }))}>New</FilterButton>
 				</>}
@@ -312,8 +339,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 				</div>
 			</ScrollArea>}
 			{!rows.length && !loading.length && <p className="py-6 text-center text-sm text-muted-foreground">{!harnesses.length ? "Sign in to Phaseo to choose from hundreds of models."
-				: elsewhere ? <button type="button" onClick={() => setSource(otherSource)} className="font-semibold text-primary hover:underline">{elsewhere} {elsewhere === 1 ? "match" : "matches"} in {sourceNames[otherSource]}</button>
-				: "No models found."}</p>}
+								: active === "favourites" && !normalized ? "Star a model to keep it here." : "No models found."}</p>}
 			{loading.map(harness => <div key={harness} className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground"><LoaderCircle className="size-3.5 animate-spin" />Loading {harnessNames[harness]} models…</div>)}
 			{errors.map(error => <p key={error} className="px-3 py-2 text-xs text-destructive">{error}</p>)}
 				</div>
