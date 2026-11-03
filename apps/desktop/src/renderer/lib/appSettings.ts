@@ -13,8 +13,8 @@ const flag = (value: unknown, name: string) => { if (typeof value !== "boolean")
 
 /** Settings kept on this device rather than in the workspace. Add one here when a new device setting appears in Settings. */
 const windowSettings: Record<string, WindowSetting> = {
-	theme: persisted("phaseo.desktop.theme", "system", { label: "Light or dark", page: "appearance", description: "light, dark or system.", type: "enum", values: ["system", "light", "dark"] }),
-	colourTheme: { label: "Colour theme", page: "appearance", description: "The colour theme, by id; settings.list gives the ids.", type: "enum", values: [], read: () => colourThemes().activeId, write: value => chooseColourTheme(choice(value, colourThemes().ids, "colourTheme")) },
+	theme: persisted("phaseo.desktop.theme", "system", { label: "Light or dark", page: "appearance", description: "light, dark or system. Colours are in config.get with area themes.", type: "enum", values: ["system", "light", "dark"] }),
+	colourTheme: { label: "Colour theme", page: "appearance", description: "The colour theme in use, by id; settings.list gives the ids. To change a theme's background or accent colours, use config.set with area themes.", type: "enum", values: [], read: () => colourThemes().activeId, write: value => chooseColourTheme(choice(value, colourThemes().ids, "colourTheme")) },
 	sendKey: { label: "Send with", page: "general", description: "enter, or mod+enter (Ctrl or ⌘ with Enter).", type: "enum", values: ["enter", "mod+enter"], read: currentSendKey, write: value => setSendKey(choice(value, ["enter", "mod+enter"], "sendKey") as "enter" | "mod+enter") },
 	autoOpenPanes: persisted("phaseo.desktop.panes.autoOpen", true, { label: "Open panes automatically", page: "general", description: "Show the diff when a turn changes files, and a linked pull request.", type: "boolean" }),
 	workingSection: persisted(workingSectionKey, false, { label: "Show a Working section", page: "general", description: "Fold working chats that need nothing into a Working section.", type: "boolean" }),
