@@ -8,6 +8,7 @@ CREATE TABLE "public"."gateway_request_charges" (
   "error_message"        text,
   "created_at"           timestamp with time zone NOT NULL DEFAULT now(),
   "updated_at"           timestamp with time zone NOT NULL DEFAULT now(),
+  "overdraft_nanos"      bigint                   NOT NULL DEFAULT 0,
   CONSTRAINT "gateway_request_charges_cost_nanos_check" CHECK ((cost_nanos > 0)),
   CONSTRAINT "gateway_request_charges_pkey" PRIMARY KEY (workspace_id, request_id),
   CONSTRAINT "gateway_request_charges_status_check" CHECK ((status = ANY (ARRAY['applying'::text, 'applied'::text, 'failed'::text]))),

@@ -7,6 +7,7 @@ CREATE TABLE "public"."credit_grant_redemptions" (
   "created_at"   timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT "credit_grant_redemptions_amount_nanos_check" CHECK ((amount_nanos > 0)),
   CONSTRAINT "credit_grant_redemptions_grant_user_unique" UNIQUE (grant_id, user_id),
+  CONSTRAINT "credit_grant_redemptions_grant_workspace_unique" UNIQUE (grant_id, workspace_id),
   CONSTRAINT "credit_grant_redemptions_pkey" PRIMARY KEY (id),
   CONSTRAINT "credit_grant_redemptions_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE,
   CONSTRAINT "credit_grant_redemptions_grant_id_fkey" FOREIGN KEY (grant_id) REFERENCES public.credit_grants(id) ON DELETE CASCADE,

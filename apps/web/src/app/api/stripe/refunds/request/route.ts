@@ -4,9 +4,6 @@ import { requireActiveTeamStripeCustomer } from "@/lib/server/activeTeamStripe";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { rejectCrossOriginRequest } from "@/lib/http/sameOrigin";
 
-const REFUND_WINDOW_MS = 24 * 60 * 60 * 1000;
-const TOP_UP_KINDS = new Set(["top_up", "top_up_one_off", "auto_top_up"]);
-const ACTIVE_REFUND_STATUSES = new Set(["pending", "applying", "processing", "succeeded"]);
 const REFUND_REASON_LABELS: Record<string, string> = {
     no_comment: "No comment",
     accidental_purchase: "Accidental purchase",
@@ -17,22 +14,19 @@ const REFUND_REASON_LABELS: Record<string, string> = {
     other: "Other",
 };
 const REFUND_REASON_CODES = new Set(Object.keys(REFUND_REASON_LABELS));
-
-function isPaidStatus(status: string | null | undefined): boolean {
-    const normalized = String(status ?? "").toLowerCase();
-    return normalized === "paid" || normalized === "succeeded";
-}
-
-function mapRefundStatus(status?: string | null): string {
-    const raw = String(status ?? "").toLowerCase();
-    if (!raw) return "Pending";
-    if (raw === "succeeded") return "Succeeded";
-    if (raw === "failed") return "Failed";
-    if (raw === "canceled") return "Canceled";
-    if (raw === "pending") return "Pending";
-    if (raw === "requires_action") return "Pending";
-    return "Pending";
-}
+const IN_PROGRESS_ERROR = "A refund for this purchase is already in progress or completed.";
+// Reasons returned by stripe_claim_self_serve_refund.
+const CLAIM_REJECTIONS: Record<string, { error: string; status: number }> = {
+    purchase_not_found: { error: "Purchase not found", status: 404 },
+    purchase_not_paid: { error: "This purchase is not in a refundable state", status: 409 },
+    window_expired: { error: "Self-serve refunds are only available for 24 hours after purchase.", status: 409 },
+    invalid_amount: { error: "Invalid purchase amount", status: 400 },
+    refund_claim_in_progress: { error: IN_PROGRESS_ERROR, status: 409 },
+    refund_already_exists: { error: IN_PROGRESS_ERROR, status: 409 },
+    lot_used: { error: "This top-up has already been used, so it is not eligible for self-serve refund.", status: 409 },
+    wallet_not_found: { error: "Wallet not found", status: 404 },
+};
+const DEFAULT_CLAIM_REJECTION = { error: "This purchase is not eligible for self-serve refund.", status: 409 };
 
 function parsePaymentIntentId(body: any): string | null {
     const value = body?.paymentIntentId ?? body?.payment_intent_id ?? null;
@@ -71,212 +65,123 @@ export async function POST(req: NextRequest) {
         const { workspaceId, customerId, userId } = await requireActiveTeamStripeCustomer();
         const supabase = createAdminClient();
 
-        const { data: purchase, error: purchaseErr } = await supabase
-            .from("credit_ledger")
-            .select("workspace_id,event_time,kind,amount_nanos,before_balance_nanos,status,ref_type,ref_id")
-            .eq("workspace_id", workspaceId)
-            .eq("ref_type", "Stripe_Payment_Intent")
-            .eq("ref_id", paymentIntentId)
-            .maybeSingle();
-
-        if (purchaseErr) throw purchaseErr;
-        if (!purchase) {
-            return NextResponse.json({ error: "Purchase not found" }, { status: 404 });
+        // Eligibility and the wallet debit happen in one SQL transaction before any money moves:
+        // the purchase and wallet rows are locked, usage is summed in SQL, held credits stay
+        // covered and the wallet never goes below zero.
+        const { data: claimRows, error: claimErr } = await supabase.rpc("stripe_claim_self_serve_refund", {
+            p_team_id: workspaceId,
+            p_payment_intent_id: paymentIntentId,
+            p_user_id: userId,
+        });
+        if (claimErr) throw claimErr;
+        const claim = (Array.isArray(claimRows) ? claimRows[0] : claimRows) as
+            | { ok?: boolean; reason?: string | null; amount_nanos?: number | string | null }
+            | null
+            | undefined;
+        if (!claim?.ok) {
+            const rejection = CLAIM_REJECTIONS[String(claim?.reason ?? "")] ?? DEFAULT_CLAIM_REJECTION;
+            return NextResponse.json({ error: rejection.error }, { status: rejection.status });
         }
+        const refundNetNanos = Number(claim.amount_nanos ?? 0);
 
-        if (!TOP_UP_KINDS.has(String(purchase.kind ?? ""))) {
-            return NextResponse.json({ error: "Only credit top-ups can be refunded here" }, { status: 400 });
-        }
-        if (!isPaidStatus(purchase.status)) {
-            return NextResponse.json({ error: "This purchase is not in a refundable state" }, { status: 409 });
-        }
-
-        const purchaseTs = new Date(String(purchase.event_time ?? "")).getTime();
-        if (!Number.isFinite(purchaseTs)) {
-            return NextResponse.json({ error: "Invalid purchase timestamp" }, { status: 400 });
-        }
-        if (Date.now() - purchaseTs > REFUND_WINDOW_MS) {
-            return NextResponse.json(
-                { error: "Self-serve refunds are only available for 24 hours after purchase." },
-                { status: 409 }
-            );
-        }
-
-        const amountNanos = Number(purchase.amount_nanos ?? 0);
-        const beforeBalanceNanos = Number(purchase.before_balance_nanos ?? 0);
-        if (!Number.isFinite(amountNanos) || amountNanos <= 0) {
-            return NextResponse.json({ error: "Invalid purchase amount" }, { status: 400 });
-        }
-
-        const { data: existingRefunds, error: refundLookupErr } = await supabase
-            .from("credit_ledger")
-            .select("ref_id,status")
-            .eq("workspace_id", workspaceId)
-            .eq("kind", "refund")
-            .eq("source_ref_type", "Stripe_Payment_Intent")
-            .eq("source_ref_id", paymentIntentId);
-
-        if (refundLookupErr) throw refundLookupErr;
-        if (
-            (existingRefunds ?? []).some((row) =>
-                ACTIVE_REFUND_STATUSES.has(String(row.status ?? "").toLowerCase())
-            )
-        ) {
-            return NextResponse.json(
-                { error: "A refund for this purchase is already in progress or completed." },
-                { status: 409 }
-            );
-        }
-
-        const { data: usageRows, error: usageErr } = await supabase
-		.from("gateway_requests")
-            .select("cost_nanos")
-            .eq("workspace_id", workspaceId)
-            .eq("success", true)
-            .gte("created_at", new Date(purchaseTs).toISOString());
-        if (usageErr) throw usageErr;
-
-        const usageSincePurchaseNanos = (usageRows ?? []).reduce((sum, row) => {
-            const nanos = Number(row.cost_nanos ?? 0);
-            return sum + (Number.isFinite(nanos) && nanos > 0 ? nanos : 0);
-        }, 0);
-
-        // Full-lot only: if usage exceeded the pre-purchase balance, this lot has been consumed.
-        if (usageSincePurchaseNanos > beforeBalanceNanos) {
-            return NextResponse.json(
-                {
-                    error: "This top-up has already been used, so it is not eligible for self-serve refund.",
-                },
-                { status: 409 }
-            );
-        }
+        // Gives the claimed credits back when no Stripe refund was created.
+        const releaseClaim = async () => {
+            const { error } = await supabase.rpc("stripe_apply_refund_once", {
+                p_workspace_id: workspaceId,
+                p_payment_intent_id: paymentIntentId,
+                p_refund_id: null,
+                p_refund_net_nanos: null,
+                p_status: "failed",
+            });
+            if (error) {
+                console.error("[refund.request] failed to release refund claim", {
+                    workspaceId,
+                    paymentIntentId,
+                    error: error.message,
+                });
+            }
+        };
 
         const stripe = getStripe();
-        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
-            expand: ["latest_charge"],
-        });
-
-        let originalGrossCents = Number(paymentIntent.amount ?? 0) || 0;
-        let refundedGrossCents = 0;
-        const latestCharge = paymentIntent.latest_charge;
-        if (latestCharge && typeof latestCharge === "object") {
-            originalGrossCents = Number((latestCharge as any).amount ?? originalGrossCents) || originalGrossCents;
-            refundedGrossCents = Number((latestCharge as any).amount_refunded ?? 0) || 0;
-        } else if (typeof latestCharge === "string" && latestCharge.trim().length > 0) {
-            const charge = await stripe.charges.retrieve(latestCharge);
-            originalGrossCents = Number(charge.amount ?? originalGrossCents) || originalGrossCents;
-            refundedGrossCents = Number(charge.amount_refunded ?? 0) || 0;
-        }
-
-        const refundableGrossCents = Math.max(0, originalGrossCents - refundedGrossCents);
-        if (refundableGrossCents <= 0) {
-            return NextResponse.json(
-                { error: "This payment no longer has a refundable amount." },
-                { status: 409 }
-            );
-        }
-
-        const refund = await stripe.refunds.create(
-            {
-                payment_intent: paymentIntentId,
-                amount: refundableGrossCents,
-                reason: "requested_by_customer",
-                metadata: {
-                    purpose: "self_serve_unused_lot_refund",
-                    workspace_id: workspaceId,
-                    user_id: userId,
-                    stripe_customer_id: customerId,
-                    user_reason: refundReasonLabel,
-                    user_reason_code: refundReasonCode,
-                },
-            },
-            {
-                idempotencyKey: `self_serve_refund:${workspaceId}:${paymentIntentId}`,
-            }
-        );
-
-        const refundGrossCents = Number(refund.amount ?? refundableGrossCents) || refundableGrossCents;
-        const ratio = originalGrossCents > 0 ? Math.min(1, refundGrossCents / originalGrossCents) : 1;
-        const refundNetNanos = Math.max(0, Math.round(amountNanos * ratio));
-        const negativeNetNanos = -refundNetNanos;
-
-        const { data: wallet, error: walletErr } = await supabase
-            .from("wallets")
-            .select("balance_nanos")
-            .eq("workspace_id", workspaceId)
-            .maybeSingle();
-        if (walletErr) throw walletErr;
-        const currentBalanceNanos = Number(wallet?.balance_nanos ?? 0);
-
-        const { error: refundLedgerErr } = await supabase.from("credit_ledger").upsert(
-            [
-                {
-                    workspace_id: workspaceId,
-                    kind: "refund",
-                    amount_nanos: negativeNetNanos,
-                    before_balance_nanos: currentBalanceNanos,
-                    after_balance_nanos: currentBalanceNanos,
-                    ref_type: "Stripe_Refund",
-                    ref_id: refund.id,
-                    status: mapRefundStatus(refund.status),
-                    event_time: new Date().toISOString(),
-                    source_ref_type: "Stripe_Payment_Intent",
-                    source_ref_id: paymentIntentId,
-                },
-            ],
-            {
-                onConflict: "ref_type,ref_id",
-            }
-        );
-        if (refundLedgerErr) throw refundLedgerErr;
-
-        let claimStateToWrite = "Requested";
-        const status = String(refund.status ?? "pending").toLowerCase();
-
-        if (status === "succeeded" && negativeNetNanos < 0) {
-            const { data: deltaRows, error: deltaErr } = await supabase.rpc("wallet_apply_delta", {
-                p_workspace_id: workspaceId,
-                p_delta_nanos: negativeNetNanos,
+        let refund: Awaited<ReturnType<typeof stripe.refunds.create>>;
+        try {
+            const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
+                expand: ["latest_charge"],
             });
 
-            if (deltaErr) {
-                console.warn("[refund.request] inline wallet_apply_delta failed; waiting for webhook reconciliation", {
-                    workspaceId,
-                    refundId: refund.id,
-                    error: deltaErr.message,
-                });
-            } else {
-                const deltaRow = deltaRows?.[0] ?? {};
-                const beforeBalanceAfterRefund = Number(deltaRow.before_balance_nanos ?? currentBalanceNanos);
-                const afterBalanceAfterRefund = Number(deltaRow.after_balance_nanos ?? currentBalanceNanos);
-                claimStateToWrite = "Succeeded";
-
-                await supabase
-                    .from("credit_ledger")
-                    .update({
-                        before_balance_nanos: beforeBalanceAfterRefund,
-                        after_balance_nanos: afterBalanceAfterRefund,
-                        status: "Succeeded",
-                        event_time: new Date().toISOString(),
-                    })
-                    .eq("ref_type", "Stripe_Refund")
-                    .eq("ref_id", refund.id);
+            let originalGrossCents = Number(paymentIntent.amount ?? 0) || 0;
+            let refundedGrossCents = 0;
+            const latestCharge = paymentIntent.latest_charge;
+            if (latestCharge && typeof latestCharge === "object") {
+                originalGrossCents = Number((latestCharge as any).amount ?? originalGrossCents) || originalGrossCents;
+                refundedGrossCents = Number((latestCharge as any).amount_refunded ?? 0) || 0;
+            } else if (typeof latestCharge === "string" && latestCharge.trim().length > 0) {
+                const charge = await stripe.charges.retrieve(latestCharge);
+                originalGrossCents = Number(charge.amount ?? originalGrossCents) || originalGrossCents;
+                refundedGrossCents = Number(charge.amount_refunded ?? 0) || 0;
             }
+
+            // The claim took the whole top-up out of the wallet, so only a payment with nothing
+            // refunded yet is refunded here.
+            if (originalGrossCents <= 0 || refundedGrossCents > 0) {
+                await releaseClaim();
+                return NextResponse.json(
+                    { error: "This payment no longer has a refundable amount." },
+                    { status: 409 }
+                );
+            }
+
+            refund = await stripe.refunds.create(
+                {
+                    payment_intent: paymentIntentId,
+                    amount: originalGrossCents,
+                    reason: "requested_by_customer",
+                    metadata: {
+                        purpose: "self_serve_unused_lot_refund",
+                        workspace_id: workspaceId,
+                        user_id: userId,
+                        stripe_customer_id: customerId,
+                        user_reason: refundReasonLabel,
+                        user_reason_code: refundReasonCode,
+                    },
+                },
+                {
+                    idempotencyKey: `self_serve_refund:${workspaceId}:${paymentIntentId}`,
+                }
+            );
+        } catch (stripeErr) {
+            // If Stripe did create the refund, its webhook debits the wallet again (by refund id).
+            await releaseClaim();
+            throw stripeErr;
+        }
+
+        const status = String(refund.status ?? "pending").toLowerCase();
+
+        // Links the claim's debit to this refund id. The refund webhooks call the same function,
+        // so whichever runs first applies it and the wallet is debited once.
+        const { error: applyErr } = await supabase.rpc("stripe_apply_refund_once", {
+            p_workspace_id: workspaceId,
+            p_payment_intent_id: paymentIntentId,
+            p_refund_id: refund.id,
+            p_refund_net_nanos: refundNetNanos,
+            p_status: status,
+        });
+        if (applyErr) {
+            console.warn("[refund.request] stripe_apply_refund_once failed; waiting for webhook reconciliation", {
+                workspaceId,
+                refundId: refund.id,
+                error: applyErr.message,
+            });
         }
 
         const { error: claimUpdateErr } = await supabase
             .from("credit_ledger")
-            .update({
-                refund_claim_state: claimStateToWrite,
-                refund_claim_reason: refundReasonLabel,
-                refund_claimed_at: new Date().toISOString(),
-                refund_claimed_by_user_id: userId,
-            })
+            .update({ refund_claim_reason: refundReasonLabel })
             .eq("workspace_id", workspaceId)
             .eq("ref_type", "Stripe_Payment_Intent")
             .eq("ref_id", paymentIntentId);
-        if (claimUpdateErr && !String(claimUpdateErr.message ?? "").toLowerCase().includes("column")) {
-            console.warn("[refund.request] failed to persist refund claim metadata", {
+        if (claimUpdateErr) {
+            console.warn("[refund.request] failed to persist refund claim reason", {
                 workspaceId,
                 paymentIntentId,
                 error: claimUpdateErr.message,

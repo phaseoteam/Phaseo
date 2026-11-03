@@ -132,7 +132,7 @@ export default function AutoTopUpClient({
 	const t = useTranslations("SettingsUI");
 	const text = (key: string) => t(`credits.autoTopUpPanel.${key}` as never);
 	const riskConfirmationPhrase = text("riskConfirmationPhrase");
-	const minimumTopUpText = text("minimumTopUp").replace("{amount}", fmtUSD(1, locale));
+	const minimumTopUpText = text("minimumTopUp").replace("{amount}", fmtUSD(5, locale));
 	// Compute current "best" default PM based on provided stripeInfo
 	const initialDefaultPm = useMemo(
 		() => getDefaultPmId(stripeInfo),
@@ -216,7 +216,8 @@ export default function AutoTopUpClient({
 		if (typeof minBefore !== "number" || typeof topUpAmount !== "number")
 			return false;
 		if (minBefore <= 0 || topUpAmount <= 0) return false;
-		if (topUpAmount < 1) return false; // guardrail: minimum $1
+		// The Stripe webhook credits $5 to $1,000,000, and the wallet refuses other amounts.
+		if (topUpAmount < 5 || topUpAmount > 1_000_000) return false;
 		return true;
 	}, [
 		enabled,

@@ -190,6 +190,40 @@ describe("recordUsageAndCharge", () => {
 		});
 	});
 
+	it("does not start an auto top-up below the $5 the Stripe webhook credits", async () => {
+		rpcMock.mockResolvedValue({
+			data: {
+				status: "top_up_required",
+				applied: true,
+				already_applied: false,
+				auto_top_up_amount_nanos: 4_990_000_000,
+				auto_top_up_account_id: null,
+				stripe_customer_id: null,
+			},
+			error: null,
+		});
+		const { recordUsageAndCharge } = await import("./persist");
+
+		await recordUsageAndCharge({ requestId: "req_small", workspaceId: "workspace_123", cost_nanos: 123 });
+
+		// Skipped before looking for a payment method, so nothing is charged or reported.
+		expect(enqueueAutoTopUpFailedEmailMock).not.toHaveBeenCalled();
+	});
+
+	it("does not start an auto top-up while the database reports one in flight", async () => {
+		rpcMock.mockResolvedValue({
+			data: { status: "top_up_pending", applied: true, already_applied: false, auto_top_up_amount_nanos: 0 },
+			error: null,
+		});
+		const { recordUsageAndCharge } = await import("./persist");
+
+		const result = await recordUsageAndCharge({ requestId: "req_pending", workspaceId: "workspace_123", cost_nanos: 123 });
+
+		expect(result.status).toBe("top_up_pending");
+		expect(enqueueAutoTopUpFailedEmailMock).not.toHaveBeenCalled();
+		expect(invalidateGatewayCreditCacheMock).toHaveBeenCalledWith("workspace_123");
+	});
+
 	it("deduplicates missing payment-method notifications across requests in the cooldown window", async () => {
 		rpcMock.mockResolvedValue({
 			data: {

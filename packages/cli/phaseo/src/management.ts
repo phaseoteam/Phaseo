@@ -532,7 +532,7 @@ const COMMANDS: Record<string, CommandSpec> = {
 	"notifications settings get": { usage: "", output: "detail", build: () => ({ method: "GET", path: "/notifications/settings" }) },
 	"notifications settings update": {
 		usage: "[--auto-top-up true|false] [--auto-top-up-threshold-usd <usd>] [--auto-top-up-amount-usd <usd>] [--payment-method <id>] [--low-balance-email true|false] [--low-balance-threshold-usd <usd>] [--auto-top-up-failure-email true|false] [--payment-method-expiring-email true|false] [--model-deprecation-email true|false] [--department-attribution all|primary] [--billing-time-zone <tz>] [--body-json <json>]",
-		description: "Enabling auto top-up needs --auto-top-up-threshold-usd, --auto-top-up-amount-usd (at least 1) and --payment-method in the same call.",
+		description: "Enabling auto top-up needs --auto-top-up-threshold-usd, --auto-top-up-amount-usd (5 to 1,000,000) and --payment-method in the same call.",
 		output: "action",
 		done: "Updated notification settings",
 		build: (_args, flags) => {

@@ -179,6 +179,27 @@ begin
     return;
   end if;
 
+  -- One redemption per workspace as well as per user, so several members can't
+  -- each redeem the same code into one workspace. The grant row lock above
+  -- serializes redemptions of this code.
+  if exists (
+    select 1
+    from public.credit_grant_redemptions r
+    where r.grant_id = v_grant.id
+      and r.workspace_id = p_workspace_id
+  ) then
+    return query
+    select
+      'already_redeemed'::text,
+      'This credit code has already been redeemed for this team.'::text,
+      v_grant.id,
+      null::bigint,
+      null::bigint,
+      null::bigint,
+      p_workspace_id;
+    return;
+  end if;
+
   insert into public.credit_grant_redemptions (
     grant_id,
     user_id,
@@ -190,8 +211,7 @@ begin
     p_workspace_id,
     v_grant.amount_nanos
   )
-  on conflict on constraint credit_grant_redemptions_grant_user_unique
-  do nothing
+  on conflict do nothing
   returning id
   into v_redemption_id;
 

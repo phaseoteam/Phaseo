@@ -560,12 +560,32 @@ function computeNetAndFeeFromGross(grossNanos: number, feePct: number) {
     return { netNanos: originalNanos, feeNanos };
 }
 
-function mapStripeRefundStatus(status?: string | null): "Pending" | "Succeeded" | "Failed" | "Canceled" {
-    const normalized = String(status ?? "").toLowerCase();
-    if (normalized === "succeeded") return "Succeeded";
-    if (normalized === "failed") return "Failed";
-    if (normalized === "canceled" || normalized === "cancelled") return "Canceled";
-    return "Pending";
+async function findCreditPurchase(
+    supabase: ReturnType<typeof getSupabase>,
+    paymentIntentId: string
+): Promise<{ workspaceId: string; amountNanos: number } | null> {
+    const { data, error } = await supabase
+        .from("credit_ledger")
+        .select("workspace_id, amount_nanos")
+        .eq("ref_type", "Stripe_Payment_Intent")
+        .eq("ref_id", paymentIntentId)
+        .maybeSingle();
+    if (error) throw error;
+    if (!data?.workspace_id) return null;
+    return { workspaceId: String(data.workspace_id), amountNanos: Number(data.amount_nanos ?? 0) || 0 };
+}
+
+// The credit (net of the top-up fee) matching part of a payment's gross amount.
+async function creditShareOfPayment(args: {
+    stripe: Stripe;
+    paymentIntentId: string;
+    purchaseNetNanos: number;
+    grossCents: number;
+}): Promise<number> {
+    const pi = await args.stripe.paymentIntents.retrieve(args.paymentIntentId);
+    const originalGrossCents = Number(pi.amount_received ?? pi.amount ?? 0) || 0;
+    const ratio = originalGrossCents > 0 ? Math.min(1, args.grossCents / originalGrossCents) : 1;
+    return Math.max(0, Math.round(args.purchaseNetNanos * ratio));
 }
 
 function mapStripeInvoiceStatus(
@@ -950,216 +970,92 @@ export async function POST(req: Request) {
                 break;
             }
 
-            case "refund.created": {
+            case "refund.created":
+            case "refund.updated": {
                 const refund = event.data.object as Stripe.Refund;
-                const piId = (refund.payment_intent as string) ?? null;
+                const piId = stripeResourceId(refund.payment_intent);
                 if (!piId) break;
 
-                const { data: piLedger } = await supabase
-                    .from("credit_ledger")
-                    .select("workspace_id, amount_nanos")
-                    .eq("ref_type", "Stripe_Payment_Intent")
-                    .eq("ref_id", piId)
-                    .maybeSingle();
-
-                const workspaceId = piLedger?.workspace_id ?? null;
-                if (!workspaceId) {
-                    console.warn("[stripe-webhook] refund.created: no matching payment ledger entry", {
+                const purchase = await findCreditPurchase(supabase, piId);
+                if (!purchase) {
+                    console.warn(`[stripe-webhook] ${event.type}: no matching payment ledger entry`, {
                         refundId: refund.id,
                         paymentIntentId: piId,
                     });
                     break;
                 }
 
-                const originalNetNanos = Number(piLedger?.amount_nanos ?? 0);
+                const refundNetNanos = await creditShareOfPayment({
+                    stripe,
+                    paymentIntentId: piId,
+                    purchaseNetNanos: purchase.amountNanos,
+                    grossCents: Number(refund.amount ?? 0) || 0,
+                });
 
-                const pi = await stripe.paymentIntents.retrieve(piId);
-                const originalGrossCents = Number(pi.amount_received ?? pi.amount ?? 0) || 0;
-                const originalGrossNanos = originalGrossCents * 10_000_000;
-                const refundGrossCents = Number(refund.amount ?? 0) || 0;
-                const refundGrossNanos = refundGrossCents * 10_000_000;
-
-                const ratio = originalGrossNanos > 0 ? Math.min(1, refundGrossNanos / originalGrossNanos) : 1;
-                const refundNetNanos = Math.max(0, Math.round(originalNetNanos * ratio));
-                const negativeNetNanos = -refundNetNanos;
-                const mappedStatus = mapStripeRefundStatus(refund.status);
-
-                // Read current wallet balance for a more accurate placeholder
-                const { data: currentWallet } = await supabase
-                    .from("wallets")
-                    .select("balance_nanos")
-                    .eq("workspace_id", workspaceId)
-                    .maybeSingle();
-                const currentBalance = Number(currentWallet?.balance_nanos ?? 0);
-
-                // Insert only if missing. Do not overwrite existing rows from API path.
-                await supabase.from("credit_ledger").upsert(
-                    [
-                        {
-                            workspace_id: workspaceId,
-                            kind: "refund",
-                            amount_nanos: negativeNetNanos,
-                            before_balance_nanos: currentBalance,
-                            after_balance_nanos: currentBalance,
-                            ref_type: "Stripe_Refund",
-                            ref_id: refund.id,
-                            status: mappedStatus,
-                            event_time: new Date().toISOString(),
-                            source_ref_type: "Stripe_Payment_Intent",
-                            source_ref_id: piId,
-                        },
-                    ],
-                    {
-                        onConflict: "ref_type,ref_id",
-                        ignoreDuplicates: true,
-                    }
-                );
-
-                // Always align mutable fields without touching before/after balances.
-                await supabase
-                    .from("credit_ledger")
-                    .update({
-                        status: mappedStatus,
-                        amount_nanos: negativeNetNanos,
-                        source_ref_type: "Stripe_Payment_Intent",
-                        source_ref_id: piId,
-                        event_time: new Date().toISOString(),
-                    })
-                    .eq("ref_type", "Stripe_Refund")
-                    .eq("ref_id", refund.id);
-
-                if (mappedStatus === "Succeeded") {
-                    const { data: refRow } = await supabase
-                        .from("credit_ledger")
-                        .select("workspace_id, amount_nanos, before_balance_nanos, after_balance_nanos, status")
-                        .eq("ref_type", "Stripe_Refund")
-                        .eq("ref_id", refund.id)
-                        .maybeSingle();
-
-                    const priorStatus = String(refRow?.status ?? "").toLowerCase();
-                    const priorBefore = Number(refRow?.before_balance_nanos ?? 0);
-                    const priorAfter = Number(refRow?.after_balance_nanos ?? 0);
-                    const alreadyApplied = priorStatus === "succeeded" && priorBefore !== priorAfter;
-
-                    if (!alreadyApplied) {
-                        const applyTeamId = refRow?.workspace_id ?? workspaceId;
-                        const applyDeltaNanos = Number(refRow?.amount_nanos ?? negativeNetNanos);
-
-                        if (applyTeamId && applyDeltaNanos < 0) {
-                            const { data: deltaRows, error: deltaErr } = await supabase.rpc("wallet_apply_delta", {
-                                p_workspace_id: applyTeamId,
-                                p_delta_nanos: applyDeltaNanos,
-                            });
-
-                            if (deltaErr) {
-                                console.error("[stripe-webhook] wallet_apply_delta failed for refund.created", {
-                                    refundId: refund.id,
-                                    workspaceId: applyTeamId,
-                                    error: deltaErr.message,
-                                });
-                                throw deltaErr;
-                            }
-
-                            const balanceResult = deltaRows?.[0] ?? {};
-                            const beforeBalanceNanos = Number(balanceResult.before_balance_nanos ?? priorBefore);
-                            const afterBalanceNanos = Number(balanceResult.after_balance_nanos ?? priorAfter);
-
-                            await supabase
-                                .from("credit_ledger")
-                                .update({
-                                    before_balance_nanos: beforeBalanceNanos,
-                                    after_balance_nanos: afterBalanceNanos,
-                                    status: "Succeeded",
-                                    event_time: new Date().toISOString(),
-                                })
-                                .eq("ref_type", "Stripe_Refund")
-                                .eq("ref_id", refund.id);
-                        }
-                    }
+                // Keyed on the refund id and locked in SQL: the self-serve route and both refund
+                // events apply the wallet debit exactly once (a failed refund gives it back).
+                const { error: refundErr } = await supabase.rpc("stripe_apply_refund_once", {
+                    p_workspace_id: purchase.workspaceId,
+                    p_payment_intent_id: piId,
+                    p_refund_id: refund.id,
+                    p_refund_net_nanos: refundNetNanos > 0 ? refundNetNanos : null,
+                    p_status: String(refund.status ?? "pending"),
+                });
+                if (refundErr) {
+                    console.error("[stripe-webhook] stripe_apply_refund_once failed", {
+                        eventType: event.type,
+                        refundId: refund.id,
+                        workspaceId: purchase.workspaceId,
+                        error: refundErr.message,
+                    });
+                    throw refundErr;
                 }
-
                 break;
             }
 
-            case "refund.updated": {
-                const refund = event.data.object as Stripe.Refund;
-                const status = refund.status as string | undefined;
-                const { data: existingRefundRow } = await supabase
-                    .from("credit_ledger")
-                    .select("workspace_id, amount_nanos, before_balance_nanos, after_balance_nanos, status")
-                    .eq("ref_type", "Stripe_Refund")
-                    .eq("ref_id", refund.id)
-                    .maybeSingle();
-
-                const priorStatus = String(existingRefundRow?.status ?? "").toLowerCase();
-                const priorBefore = Number(existingRefundRow?.before_balance_nanos ?? 0);
-                const priorAfter = Number(existingRefundRow?.after_balance_nanos ?? 0);
-                const alreadyApplied = priorStatus === "succeeded" && priorBefore !== priorAfter;
-
-                await supabase
-                    .from("credit_ledger")
-                    .update({
-                        status:
-                            status === "succeeded"
-                                ? "Succeeded"
-                                : status === "failed"
-                                    ? "Failed"
-                                    : status === "canceled"
-                                        ? "Canceled"
-                                        : status,
-                        event_time: new Date().toISOString(),
-                    })
-                    .eq("ref_type", "Stripe_Refund")
-                    .eq("ref_id", refund.id);
-
-                if (status === "succeeded" && !alreadyApplied) {
-                    let workspaceId = existingRefundRow?.workspace_id ?? null;
-                    let refundNetNegativeNanos = Number(existingRefundRow?.amount_nanos ?? 0);
-
-                    if (!workspaceId) {
-                        const { data: fallbackRow } = await supabase
-                            .from("credit_ledger")
-                            .select("workspace_id, amount_nanos")
-                            .eq("ref_type", "Stripe_Refund")
-                            .eq("ref_id", refund.id)
-                            .maybeSingle();
-                        workspaceId = fallbackRow?.workspace_id ?? null;
-                        refundNetNegativeNanos = Number(fallbackRow?.amount_nanos ?? 0);
-                    }
-
-                    if (workspaceId && refundNetNegativeNanos < 0) {
-                        // Use atomic RPC to prevent race conditions with concurrent balance changes
-                        const { data: deltaRows, error: deltaErr } = await supabase.rpc("wallet_apply_delta", {
-                            p_workspace_id: workspaceId,
-                            p_delta_nanos: refundNetNegativeNanos,
-                        });
-
-                        if (deltaErr) {
-                            console.error("[stripe-webhook] wallet_apply_delta failed for refund", {
-                                refundId: refund.id,
-                                workspaceId,
-                                error: deltaErr.message,
-                            });
-                            throw deltaErr;
-                        }
-
-                        const balanceResult = deltaRows?.[0] ?? {};
-                        const beforeBalanceNanos = Number(balanceResult.before_balance_nanos ?? 0);
-                        const afterBalanceNanos = Number(balanceResult.after_balance_nanos ?? 0);
-
-                        await supabase
-                            .from("credit_ledger")
-                            .update({
-                                before_balance_nanos: beforeBalanceNanos,
-                                after_balance_nanos: afterBalanceNanos,
-                                status: "Succeeded",
-                                event_time: new Date().toISOString(),
-                            })
-                            .eq("ref_type", "Stripe_Refund")
-                            .eq("ref_id", refund.id);
-                    }
+            // The Stripe webhook endpoint must be subscribed to these events.
+            case "charge.dispute.created":
+            case "charge.dispute.funds_withdrawn":
+            case "charge.dispute.closed":
+            case "charge.dispute.funds_reinstated": {
+                const dispute = event.data.object as Stripe.Dispute;
+                const piId = stripeResourceId(dispute.payment_intent);
+                const purchase = piId ? await findCreditPurchase(supabase, piId) : null;
+                if (!piId || !purchase) {
+                    console.warn(`[stripe-webhook] ${event.type}: not a credit purchase`, {
+                        disputeId: dispute.id,
+                        paymentIntentId: piId,
+                    });
+                    break;
                 }
 
+                const disputedNetNanos = await creditShareOfPayment({
+                    stripe,
+                    paymentIntentId: piId,
+                    purchaseNetNanos: purchase.amountNanos,
+                    grossCents: Number(dispute.amount ?? 0) || 0,
+                });
+                // Reinstated funds mean the dispute was won.
+                const disputeStatus = event.type === "charge.dispute.funds_reinstated" ? "won" : String(dispute.status ?? "needs_response");
+
+                // Keyed on the dispute id: an open or lost dispute takes the disputed credit out of
+                // the wallet once (it may go negative, which blocks the workspace); a won one gives it back.
+                const { error: disputeErr } = await supabase.rpc("stripe_apply_dispute_once", {
+                    p_workspace_id: purchase.workspaceId,
+                    p_payment_intent_id: piId,
+                    p_dispute_id: dispute.id,
+                    p_amount_nanos: disputedNetNanos > 0 ? disputedNetNanos : null,
+                    p_status: disputeStatus,
+                });
+                if (disputeErr) {
+                    console.error("[stripe-webhook] stripe_apply_dispute_once failed", {
+                        eventType: event.type,
+                        disputeId: dispute.id,
+                        workspaceId: purchase.workspaceId,
+                        error: disputeErr.message,
+                    });
+                    throw disputeErr;
+                }
                 break;
             }
 
