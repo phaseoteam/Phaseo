@@ -195,8 +195,11 @@ try {
     assert.equal(rows[0].ok, true, `service_role keeps TRUNCATE on ${table}`);
   }
   for (const table of ['presets', 'workspace_settings', 'keys', 'workspace_members']) {
-    const { rows } = await db.query(`select has_table_privilege('authenticated', $1, 'SELECT,INSERT,UPDATE,DELETE') as ok`, [`public.${table}`]);
-    assert.equal(rows[0].ok, true, `authenticated keeps ordinary access to ${table} (RLS still decides rows)`);
+    // A comma-separated list is true when any one privilege is held, so check each.
+    for (const privilege of ['SELECT', 'INSERT', 'UPDATE', 'DELETE']) {
+      const { rows } = await db.query(`select has_table_privilege('authenticated', $1, $2) as ok`, [`public.${table}`, privilege]);
+      assert.equal(rows[0].ok, true, `authenticated keeps ${privilege} on ${table} (RLS still decides rows)`);
+    }
   }
 
   console.log('client-writable-security-columns: all checks passed');
