@@ -452,6 +452,7 @@ spec:
 | `workload_identity_not_enabled` | 此工作区暂时无法使用受信任的工作负载。 | 目前请先使用 API 密钥。 |
 | `workload_token_expired` | 令牌已过期。 | 每次请求或每个作业步骤都请求新令牌。 |
 | `workload_token_lifetime_too_long` | 令牌签发时的有效期超过 12 小时，这是 Phaseo 接受的上限。 | 请求有效期更短的令牌，例如在 Kubernetes 上缩短 `expirationSeconds`，或在 GitLab 上缩短作业超时时间。 |
+| `workload_token_too_many_claims` | 自定义签发方的令牌包含超过 100 个不同的顶层声明值。 | 将签发方配置为发送更少的声明，或把额外的值移到嵌套对象中。 |
 | `workload_token_unsupported_alg` | 令牌不是用 RS256、ES256 或 ES384 签名的。 | 将签发方配置为使用其中一种算法。 |
 | `workload_token_invalid_signature` | 令牌的签名与平台的密钥不匹配。 | 按平台签发的原样发送令牌，不要修改。 |
 | `workload_jwks_unavailable` | Phaseo 无法获取平台的签名密钥。 | 稍等片刻后重试。对于自定义签发方，请确认 `<issuer>/.well-known/openid-configuration` 无需凭据即可从公网加载，并且其 `jwks_uri` 位于同一主机。 |

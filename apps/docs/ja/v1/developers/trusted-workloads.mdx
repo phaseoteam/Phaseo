@@ -452,6 +452,7 @@ Bitbucket Pipelines では、`oidc` のオーディエンスを設定したス�
 | `workload_identity_not_enabled` | このワークスペースでは信頼済みワークロードをまだ利用できません。 | 当面は API キーを使ってください。 |
 | `workload_token_expired` | トークンの有効期限が切れています。 | リクエストまたはジョブのステップごとに新しいトークンを取得してください。 |
 | `workload_token_lifetime_too_long` | トークンが、Phaseo が受け付ける上限である 12 時間より長く有効になるよう発行されています。 | 有効期間の短いトークンを要求してください。たとえば Kubernetes では `expirationSeconds` を短くし、GitLab ではジョブのタイムアウトを短くします。 |
+| `workload_token_too_many_claims` | カスタム発行元のトークンに、異なるトップレベルのクレーム値が 100 個を超えて含まれています。 | 発行元が送るクレームを減らすか、追加の値をネストしたオブジェクトに移してください。 |
 | `workload_token_unsupported_alg` | トークンが RS256、ES256、ES384 のいずれでも署名されていません。 | 発行元がこれらのいずれかを使うように設定してください。 |
 | `workload_token_invalid_signature` | トークンの署名がプラットフォームの鍵と一致しません。 | プラットフォームが発行したトークンを、変更せずにそのまま送信してください。 |
 | `workload_jwks_unavailable` | Phaseo がプラットフォームの署名鍵を取得できませんでした。 | 少し待ってから再試行してください。カスタム発行元の場合は、`<issuer>/.well-known/openid-configuration` が認証情報なしでインターネットから読み込めるか、そして `jwks_uri` が同じホストにあるかを確認してください。 |

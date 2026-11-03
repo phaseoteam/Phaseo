@@ -31,6 +31,10 @@ const ISSUERS_L1_TTL_MS = 60_000;
 // Owner values per policy query; the 8 KB token cap bounds how many there are in total.
 const OWNER_IDS_PER_QUERY = 50;
 const MAX_OWNER_ID_LENGTH = 256;
+// Every claim value of a custom token is a lookup candidate, so this bounds the
+// database work one signed token can cause: two queries at most. Real issuers
+// (Kubernetes, Bitbucket, GitLab) send well under 50 top-level claims.
+const MAX_CUSTOM_OWNER_CANDIDATES = 100;
 export const WORKLOAD_IDENTITY_WORKSPACE_HEADER = "x-phaseo-workspace";
 
 type PolicyKeyRow = {
@@ -233,6 +237,7 @@ export async function authenticateWorkloadIdentity(
 
 	const ownerIds = possibleOwnerIds(verified.provider, verified.claims);
 	if (ownerIds.length === 0) return { result: { ok: false, reason: "workload_identity_no_matching_policy" } };
+	if (ownerIds.length > MAX_CUSTOM_OWNER_CANDIDATES) return { result: { ok: false, reason: "workload_token_too_many_claims" } };
 
 	const policies = await loadCandidatePolicies(verified.claims.iss, ownerIds);
 	if (policies === "db_error") return { result: { ok: false, reason: "db_error" } };

@@ -264,6 +264,20 @@ describe("authenticate with workload identity tokens", () => {
 		expect(owners).toContain("owner-last");
 	});
 
+	it("refuses a custom token with more than 100 claim values before any policy lookup", async () => {
+		runtime.state.issuers = [ISSUER, CUSTOM_ISSUER];
+		extraDocuments = {
+			[`${CUSTOM_ISSUER}/.well-known/openid-configuration`]: { issuer: CUSTOM_ISSUER, jwks_uri: `${CUSTOM_ISSUER}/keys` },
+			[`${CUSTOM_ISSUER}/keys`]: { keys: [signer.publicJwk] },
+		};
+		runtime.state.policyRows = [policyRow({ provider: "custom", issuer: CUSTOM_ISSUER, pinned_claim: "zz_owner", pinned_owner_id: "owner-last", claim_conditions: {} })];
+		// The base claims (iss, aud, sub, ...) bring their own values, so 100 extras is over the cap.
+		const extra = Object.fromEntries(Array.from({ length: 100 }, (_, i) => [`claim_${i}`, `value-${i}`]));
+		const token = await signTestToken(signer, claims({ iss: CUSTOM_ISSUER, ...extra, zz_owner: "owner-last" }));
+		expect(await authenticate(request(token))).toEqual({ ok: false, reason: "workload_token_too_many_claims" });
+		expect(runtime.state.policyQueries).toHaveLength(0);
+	});
+
 	it("never fetches keys for an issuer no active policy names", async () => {
 		const result = await authenticate(request(await signTestToken(signer, claims({ iss: "https://oidc.vercel.com/some-other-team" }))));
 		expect(result).toEqual({ ok: false, reason: "workload_issuer_not_trusted" });
