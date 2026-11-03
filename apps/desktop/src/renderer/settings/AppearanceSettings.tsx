@@ -3,6 +3,7 @@ import { Check, Copy, Download, Ellipsis, Monitor, Moon, Pencil, Plus, Sun, Tras
 import { useWorkspace } from "../app/workspace";
 import { cn } from "../lib/utils";
 import { themeCss, useThemes } from "../lib/appTheme";
+import { useEffortDisplay } from "../lib/effortDisplay";
 import { builtInThemes, importTheme, serializeTheme, shareCode, themeColours, type Theme, type ThemeHalf, type ThemeMode } from "../lib/themes";
 import type { ThemePreference } from "../types";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
@@ -78,6 +79,7 @@ function ImportTheme({ onImport, onCancel }: { onImport: (theme: Theme) => void;
 export function AppearanceSettings() {
 	const { theme: mode, setTheme } = useWorkspace();
 	const { themes, active, choose, save, remove } = useThemes();
+	const [effortDisplay, setEffortDisplay] = useEffortDisplay();
 	const [editing, setEditing] = useState<Theme>();
 	const [importing, setImporting] = useState(false);
 	const [notice, setNotice] = useState("");
@@ -99,6 +101,11 @@ export function AppearanceSettings() {
 				control={<div role="radiogroup" aria-label="Theme" className="flex items-center gap-0.5 rounded-lg bg-muted p-0.5">
 					{modes.map(option => <button key={option.value} type="button" role="radio" aria-checked={mode === option.value} onClick={() => setTheme(option.value)}
 						className={cn("flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-semibold transition-colors [&_svg]:size-3.5", mode === option.value ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>{option.icon}{option.label}</button>)}
+				</div>} />
+			<SettingsRow title="Show reasoning as" description="How the model button shows the reasoning level. Ultracode and Ultrathink always show their names."
+				control={<div role="radiogroup" aria-label="Show reasoning as" className="flex items-center gap-0.5 rounded-lg bg-muted p-0.5">
+					{([["word", "Word"], ["dots", "Dots"], ["both", "Both"]] as const).map(([value, label]) => <button key={value} type="button" role="radio" aria-checked={effortDisplay === value} onClick={() => setEffortDisplay(value)}
+						className={cn("flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-semibold transition-colors", effortDisplay === value ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>{label}</button>)}
 				</div>} />
 		</SettingsSection>
 		<SettingsSection title="Theme" description="Each theme has a light and a dark side, so it works with any mode."

@@ -2,6 +2,7 @@ import { Check } from "lucide-react";
 import { cn } from "../lib/utils";
 import { Tip } from "../components/ui/tooltip";
 import { effortHints } from "../lib/effortHints";
+import { useEffortDisplay } from "../lib/effortDisplay";
 import type { ModelOption, ModelOptionDescriptor } from "../../shared/workspace";
 import type { ModelSelection } from "../lib/modelPreferences";
 import { rememberSettings } from "../lib/modelSettings";
@@ -71,16 +72,44 @@ export function speedTier(descriptor: ModelOptionDescriptor, value: string | boo
 
 const isReasoning = (descriptor: ModelOptionDescriptor) => /reason|effort|think/i.test(`${descriptor.id} ${descriptor.label}`);
 
+// Levels that change more than how hard the model thinks keep their name: Ultracode runs workflows, Ultrathink is a prompt.
+const namedLevels = new Set(["ultracode", "ultrathink"]);
+const offLevels = new Set(["none", "off"]);
+export type EffortDots = { count: number; filled: number; named: boolean };
+
+/**
+ * A reasoning level as dots, like T3 Code's bars: one per ordinary level, filled up to the chosen one, none filled for
+ * an off level. A named level fills them all and keeps its name. Undefined when there are too few or too many to count.
+ */
+export function effortDots(descriptor: ModelOptionDescriptor, value: string | boolean | undefined): EffortDots | undefined {
+	if (descriptor.type !== "select" || typeof value !== "string") return undefined;
+	const levels = descriptor.options.filter(option => !namedLevels.has(option.id));
+	const startsOff = offLevels.has(levels[0]?.id ?? "");
+	const count = levels.length - (startsOff ? 1 : 0);
+	if (count < 2 || count > 7) return undefined;
+	if (namedLevels.has(value)) return { count, filled: count, named: true };
+	const index = levels.findIndex(option => option.id === value);
+	return index < 0 ? undefined : { count, filled: startsOff ? index : index + 1, named: false };
+}
+
 /** What the model button shows after the name: the reasoning level and a speed glyph. The context window stays in the picker. */
 export function settingsSummary(selection: ModelSelection, descriptors: ModelOptionDescriptor[]) {
-	let effort: string | undefined, speed: SpeedTier | undefined;
+	let effort: string | undefined, dots: EffortDots | undefined, speed: SpeedTier | undefined;
 	for (const descriptor of descriptors) {
 		const value = current(selection, descriptor);
 		const label = descriptor.type === "select" ? descriptor.options.find(option => option.id === value)?.label : `${descriptor.label} ${value ? "On" : "Off"}`;
 		if (speedIds.includes(descriptor.id)) speed ??= speedTier(descriptor, value);
-		else if (!effort && isReasoning(descriptor)) effort = label;
+		else if (!effort && isReasoning(descriptor)) { effort = label; dots = effortDots(descriptor, value); }
 	}
-	return { effort, speed };
+	return { effort, dots, speed };
+}
+
+/** Dots on whole pixels, the chosen ones solid and the rest faint, in the text's colour. */
+export function EffortDotsGlyph({ dots }: { dots: EffortDots }) {
+	const width = dots.count * 6 - 2;
+	return <svg aria-hidden width={width} height={8} viewBox={`0 0 ${width} 8`} className="shrink-0" data-effort-dots>
+		{Array.from({ length: dots.count }, (_, index) => <circle key={index} cx={index * 6 + 2} cy={4} r={2} fill="currentColor" opacity={index < dots.filled ? 1 : 0.3} />)}
+	</svg>;
 }
 
 /** The web's service tier colours (its tier badges and model filters): Fast violet, Ultrafast fuchsia, Flex sky. */
@@ -98,12 +127,16 @@ export function SpeedGlyph({ tier, className }: { tier: SpeedTier; className?: s
 	</svg>;
 }
 
-/** The model button's tail: "High", the speed glyph, "1M". */
+/** The model button's tail: the reasoning level as Appearance asks (its word, dots or both), then the speed glyph. */
 export function SettingsSuffix({ selection, descriptors }: { selection: ModelSelection; descriptors: ModelOptionDescriptor[] }) {
-	const { effort, speed } = settingsSummary(selection, descriptors);
+	const { effort, dots, speed } = settingsSummary(selection, descriptors);
+	const [display] = useEffortDisplay();
 	if (!effort && !speed) return null;
+	// Without dots to draw, or for a named level, the word shows whatever the setting.
+	const word = effort && (display !== "dots" || !dots || dots.named);
 	return <span className="flex shrink-0 items-center gap-1.5 font-medium text-muted-foreground">
-		{effort && <span className="max-w-24 truncate">{effort}</span>}
+		{dots && display !== "word" && <EffortDotsGlyph dots={dots} />}
+		{word && <span className="max-w-24 truncate">{effort}</span>}
 		{speed && <SpeedGlyph tier={speed} />}
 	</span>;
 }

@@ -1,5 +1,6 @@
 import { isWorkspaceSetting, workspaceSettings, type SettingSpec } from "../../shared/appSettings";
 import { currentSendKey, setSendKey } from "../chat/sendKey";
+import { defaultEffortDisplay, effortDisplayKey, effortDisplays } from "./effortDisplay";
 import { workingSectionKey } from "../shell/codeThreads";
 import { chooseColourTheme, colourThemes } from "./appTheme";
 import { readPersistedValue, writePersistedValue } from "./persistedState";
@@ -15,6 +16,7 @@ const flag = (value: unknown, name: string) => { if (typeof value !== "boolean")
 const windowSettings: Record<string, WindowSetting> = {
 	theme: persisted("phaseo.desktop.theme", "system", { label: "Light or dark", page: "appearance", description: "light, dark or system. Colours are in config.get with area themes.", type: "enum", values: ["system", "light", "dark"] }),
 	colourTheme: { label: "Colour theme", page: "appearance", description: "The colour theme in use, by id; settings.list gives the ids. To change a theme's background or accent colours, use config.set with area themes.", type: "enum", values: [], read: () => colourThemes().activeId, write: value => chooseColourTheme(choice(value, colourThemes().ids, "colourTheme")) },
+	effortDisplay: persisted(effortDisplayKey, defaultEffortDisplay, { label: "Show reasoning as", page: "appearance", description: "How the model button shows the reasoning level: word, dots or both.", type: "enum", values: effortDisplays }),
 	sendKey: { label: "Send with", page: "general", description: "enter, or mod+enter (Ctrl or ⌘ with Enter).", type: "enum", values: ["enter", "mod+enter"], read: currentSendKey, write: value => setSendKey(choice(value, ["enter", "mod+enter"], "sendKey") as "enter" | "mod+enter") },
 	autoOpenPanes: persisted("phaseo.desktop.panes.autoOpen", true, { label: "Open panes automatically", page: "general", description: "Show the diff when a turn changes files, and a linked pull request.", type: "boolean" }),
 	workingSection: persisted(workingSectionKey, false, { label: "Show a Working section", page: "general", description: "Fold working chats that need nothing into a Working section.", type: "boolean" }),
