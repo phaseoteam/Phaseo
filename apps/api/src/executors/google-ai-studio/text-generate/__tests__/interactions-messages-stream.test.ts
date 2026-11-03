@@ -5,7 +5,7 @@ import type { ExecutorExecuteArgs } from "@executors/types";
 import { consumeTextProtocolStreamToIR } from "@pipeline/surfaces/server-tools.stream";
 import { executor } from "../index";
 import { installFetchMock } from "../../../../../tests/helpers/mock-fetch";
-import { interactionSseResponse } from "./interactions-sse";
+import { interactionSseResponse } from "../../../../../tests/helpers/google-interactions-sse";
 import { setupTestRuntime, teardownTestRuntime } from "../../../../../tests/helpers/runtime";
 
 vi.mock("@supabase/supabase-js", () => ({

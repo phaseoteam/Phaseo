@@ -3,7 +3,7 @@ import type { IRChatRequest } from "@core/ir";
 import type { ExecutorExecuteArgs } from "@executors/types";
 import { executor } from "../index";
 import { installFetchMock } from "../../../../../tests/helpers/mock-fetch";
-import { interactionSseEvents, interactionSseResponse } from "./interactions-sse";
+import { interactionSseEvents, interactionSseResponse } from "../../../../../tests/helpers/google-interactions-sse";
 import { setupTestRuntime, teardownTestRuntime } from "../../../../../tests/helpers/runtime";
 
 vi.mock("@supabase/supabase-js", () => ({
