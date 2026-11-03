@@ -202,9 +202,6 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 			return here.length ? [{ heading, harness, older, entries: showOlder[harness] ? here : here.filter(entry => !entry.model.legacy) }] : [];
 		}
 		const result: Section[] = [];
-		// All of Phaseo opens on what people use most this week, then every model by release month.
-		const used = active === "phaseo" && popularity ? here.filter(entry => popularity.has(entry.model.id)).sort((a, b) => popularity.get(b.model.id)! - popularity.get(a.model.id)!).slice(0, 8) : [];
-		if (used.length) result.push({ heading: "Most used this week", entries: used });
 		const months = new Map<string, Entry[]>();
 		for (const entry of [...here].sort((a, b) => released(b) - released(a))) {
 			const time = released(entry);
@@ -213,7 +210,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 		}
 		for (const [heading, entries] of months) result.push({ heading, entries });
 		return result;
-	}, [normalized, ranked, visible, active, favouriteSet, groups, showOlder, popularity]);
+	}, [normalized, ranked, visible, active, favouriteSet, groups, showOlder]);
 
 	const rows = useMemo(() => sections.flatMap((section): Row[] => [
 		{ type: "heading", key: `heading:${section.heading}`, heading: section.heading },
