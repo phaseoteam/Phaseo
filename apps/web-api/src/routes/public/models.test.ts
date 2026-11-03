@@ -1774,7 +1774,7 @@ describe("public model routes", () => {
 		]), { status: 200 })));
 
 		const response = await app.request(
-			"https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai",
+			"https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai&model_id=openai%2Fgpt-test",
 			{},
 			env,
 		);
@@ -1789,5 +1789,75 @@ describe("public model routes", () => {
 			halfOpenCount: 1,
 			checkedPairs: 2,
 		} } });
+	});
+
+	it("reports an open breaker past its cooldown as recovering, whatever was stored at opening", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([
+			{ provider_id: "openai", breaker_state: "open", is_deranked: true, open_until_ms: Date.now() - 1_000 },
+		]), { status: 200 })));
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai&model_id=openai%2Fgpt-test",
+			{},
+			env,
+		);
+
+		await expect(response.json()).resolves.toEqual({ providers: { openai: {
+			providerId: "openai",
+			deranked: false,
+			recovering: true,
+			openCount: 0,
+			halfOpenCount: 1,
+			checkedPairs: 1,
+		} } });
+	});
+
+	it("requires a model, so one model's outage never limits a provider on another model", async () => {
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+		const response = await app.request("https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai", {}, env);
+		expect(response.status).toBe(400);
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("fails rather than report a partial status when the rows fill a page", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(Array.from({ length: 1_000 }, () => ({
+			provider_id: "openai", breaker_state: "closed", is_deranked: false, open_until_ms: 0,
+		}))), { status: 200 })));
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai&model_id=openai%2Fgpt-test", {}, env,
+		);
+		expect(response.status).toBe(503);
+		expect(response.headers.get("cache-tag")).toBeNull();
+	});
+
+	it("limits the status to the model page's own model", async () => {
+		const fetchMock = vi.fn(async () => new Response(JSON.stringify([]), { status: 200 }));
+		vi.stubGlobal("fetch", fetchMock);
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai&model_id=moonshotai%2Fkimi-k3",
+			{},
+			env,
+		);
+
+		expect(response.status).toBe(200);
+		const url = new URL(String(fetchMock.mock.calls[0][0]));
+		expect(url.searchParams.get("model_id")).toBe("eq.moonshotai/kimi-k3");
+		expect(url.searchParams.get("provider_id")).toBe("in.(openai)");
+	});
+
+	it("does not cache an empty status when breaker state cannot be read", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ message: "unavailable" }), { status: 500 })));
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai&model_id=openai%2Fgpt-test",
+			{},
+			env,
+		);
+
+		expect(response.status).toBe(503);
+		expect(response.headers.get("cache-tag")).toBeNull();
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBeNull();
 	});
 });

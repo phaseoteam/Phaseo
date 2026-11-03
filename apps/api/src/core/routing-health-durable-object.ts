@@ -1,4 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { GatewayBindings } from "@/runtime/env.types";
 import {
     HEALTH_REPORT_MAX_AGE_MS, HEALTH_PUBLISH_INTERVAL_MS, HEALTH_SNAPSHOT_MAX_AGE_MS,
@@ -7,6 +8,13 @@ import {
 } from "@pipeline/execute/health-evidence";
 
 type Metadata = { id: number; pool: string; version: number; published: number; published_at: number };
+type Breaker = HealthEvidence["breaker"];
+/** The latest breaker change per provider not yet written to Postgres. */
+type PendingTransition = { from: Breaker; at: number };
+export type BreakerStateRow = {
+    provider_id: string; model_id: string; endpoint: string; breaker_state: Breaker; is_deranked: boolean;
+    open_until_ms: number; open_until: string | null; last_transition_at: string; updated_at: string; last_reason: string;
+};
 // Older reports are rejected outright, so their IDs need not be retained.
 const DEDUPE_RETENTION_MS = HEALTH_REPORT_MAX_AGE_MS + 5_000;
 const MAX_REPORT_IDS = 100_000;
@@ -24,6 +32,11 @@ export const HEALTH_URGENT_PUBLISH_GAP_MS = 1_000;
  * object is evicted between alarms, at most one publish interval of best-effort
  * evidence is lost. A breaker state change pulls the alarm forward so outages
  * propagate without waiting for the regular interval.
+ *
+ * Breaker transitions are also written to gateway_provider_health_states,
+ * which backs the public provider status and operator inspection. They are
+ * rare, so this is one small upsert per changed provider, retried from the
+ * object's storage until Postgres accepts it.
  */
 export class RoutingHealthDurableObject extends DurableObject<GatewayBindings> {
     private pool: string | null = null;
@@ -38,6 +51,8 @@ export class RoutingHealthDurableObject extends DurableObject<GatewayBindings> {
     /** Report ID -> receipt time, in arrival order. Memory only. */
     private readonly reports = new Map<string, number>();
     private alarmAt: number | null = null;
+    private readonly transitions = new Map<string, PendingTransition>();
+    private supabase: SupabaseClient | null = null;
 
     constructor(ctx: DurableObjectState, env: GatewayBindings) {
         super(ctx, env);
@@ -47,6 +62,8 @@ export class RoutingHealthDurableObject extends DurableObject<GatewayBindings> {
                 CREATE TABLE IF NOT EXISTS providers (provider TEXT PRIMARY KEY, state TEXT NOT NULL) WITHOUT ROWID;
                 CREATE TABLE IF NOT EXISTS metadata (id INTEGER PRIMARY KEY CHECK(id=1), pool TEXT NOT NULL,
                     version INTEGER NOT NULL, published INTEGER NOT NULL, published_at INTEGER NOT NULL);
+                CREATE TABLE IF NOT EXISTS breaker_transitions (provider TEXT PRIMARY KEY, from_state TEXT NOT NULL,
+                    at INTEGER NOT NULL) WITHOUT ROWID;
             `);
             const meta = sql.exec<Metadata>("SELECT * FROM metadata WHERE id=1").toArray()[0];
             if (meta) {
@@ -57,6 +74,9 @@ export class RoutingHealthDurableObject extends DurableObject<GatewayBindings> {
             }
             for (const row of sql.exec<{ provider: string; state: string }>("SELECT * FROM providers").toArray()) {
                 this.providers.set(row.provider, JSON.parse(row.state) as HealthEvidence);
+            }
+            for (const row of sql.exec<{ provider: string; from_state: Breaker; at: number }>("SELECT * FROM breaker_transitions").toArray()) {
+                this.transitions.set(row.provider, { from: row.from_state, at: row.at });
             }
             // Earlier versions persisted deduplication rows. Adopt any that are
             // still relevant once, then drop the table for good.
@@ -70,8 +90,8 @@ export class RoutingHealthDurableObject extends DurableObject<GatewayBindings> {
                 sql.exec("DROP TABLE reports");
             }
             this.alarmAt = await ctx.storage.getAlarm();
-            // Repair scheduling if unpublished state survived without an alarm.
-            if (this.version > this.published) this.schedule(this.nextAlarmTime(Date.now()));
+            // Repair scheduling if unpublished state or unrecorded transitions survived without an alarm.
+            if (this.version > this.published || this.transitions.size) this.schedule(this.nextAlarmTime(Date.now()));
         });
     }
 
@@ -124,7 +144,14 @@ export class RoutingHealthDurableObject extends DurableObject<GatewayBindings> {
         this.providers.set(event.provider, next);
         this.dirty.add(event.provider);
         this.version++;
-        if ((previous?.breaker ?? "closed") !== next.breaker) this.urgentVersion = this.version;
+        const from = previous?.breaker ?? "closed";
+        if (from !== next.breaker) {
+            this.urgentVersion = this.version;
+            this.transitions.set(event.provider, { from, at: now });
+            // The caller acts on this breaker state, so it must survive eviction before the alarm.
+            // Transitions are rare; ordinary evidence stays buffered.
+            this.persist();
+        }
         this.schedule(this.nextAlarmTime(now));
         return { health: next, version: this.version };
     }
@@ -141,6 +168,11 @@ export class RoutingHealthDurableObject extends DurableObject<GatewayBindings> {
             sql.exec(`INSERT INTO metadata VALUES (1,?,?,?,?) ON CONFLICT(id) DO UPDATE SET
                 version=excluded.version, published=excluded.published, published_at=excluded.published_at`,
                 this.pool, this.version, this.published, this.publishedAt);
+            for (const [provider, transition] of this.transitions) {
+                if (!providers.includes(provider)) continue;
+                sql.exec(`INSERT INTO breaker_transitions VALUES (?,?,?) ON CONFLICT(provider) DO UPDATE SET
+                    from_state=excluded.from_state, at=excluded.at`, provider, transition.from, transition.at);
+            }
         });
         this.dirty.clear();
         this.metadataDirty = false;
@@ -153,6 +185,7 @@ export class RoutingHealthDurableObject extends DurableObject<GatewayBindings> {
         if (!this.pool) return;
         const urgent = this.urgentVersion > this.published;
         const due = now - this.publishedAt >= (urgent ? HEALTH_URGENT_PUBLISH_GAP_MS : HEALTH_PUBLISH_INTERVAL_MS);
+        let publishError: unknown = null;
         if (this.version > this.published && due) {
             const [endpoint, model] = JSON.parse(this.pool) as [string, string];
             const version = this.version;
@@ -163,17 +196,65 @@ export class RoutingHealthDurableObject extends DurableObject<GatewayBindings> {
                 await this.env.GATEWAY_CACHE.put(healthSnapshotKey(endpoint, model), JSON.stringify(snapshot), {
                     expirationTtl: HEALTH_SNAPSHOT_MAX_AGE_MS / 1000,
                 });
+                // Reports may arrive during KV I/O; they remain unpublished.
+                this.published = version;
+                this.publishedAt = now;
+                this.metadataDirty = true;
             } catch (error) {
                 console.warn("routing_health_publish_failed", { pool: this.pool });
-                this.schedule(now + HEALTH_PUBLISH_INTERVAL_MS);
-                throw error;
+                publishError = error;
             }
-            // Reports may arrive during KV I/O; they remain unpublished.
-            this.published = version;
-            this.publishedAt = now;
-            this.metadataDirty = true;
         }
         this.persist();
+        // Provider status does not depend on KV: record transitions even when the publish failed.
+        await this.recordTransitions(now);
+        if (publishError) {
+            this.schedule(now + HEALTH_PUBLISH_INTERVAL_MS);
+            throw publishError;
+        }
         if (this.version > this.published) this.schedule(Math.max(Date.now() + 1000, this.nextAlarmTime(Date.now())));
+        else if (this.transitions.size) this.schedule(Date.now() + HEALTH_PUBLISH_INTERVAL_MS);
+    }
+
+    /** Writes persisted breaker changes to Postgres; failures stay pending for the next alarm. */
+    private async recordTransitions(now: number): Promise<void> {
+        if (!this.pool || !this.transitions.size) return;
+        const [endpoint, model] = JSON.parse(this.pool) as [string, string];
+        const pending = [...this.transitions].filter(([provider]) => !this.dirty.has(provider) && this.providers.has(provider));
+        if (!pending.length) return;
+        const rows = pending.map(([provider, transition]) => {
+            const health = this.providers.get(provider)!;
+            const until = Math.max(0, Math.round(health.breaker_until_ms));
+            return {
+                provider_id: provider, model_id: model, endpoint, breaker_state: health.breaker,
+                is_deranked: health.breaker === "open" && until > now,
+                open_until_ms: until, open_until: until > 0 ? new Date(until).toISOString() : null,
+                last_transition_at: new Date(transition.at).toISOString(), updated_at: new Date(now).toISOString(),
+                last_reason: `${transition.from}_to_${health.breaker}`,
+            } satisfies BreakerStateRow;
+        });
+        try {
+            await this.writeBreakerStates(rows);
+        } catch (error) {
+            console.warn("routing_health_breaker_record_failed", { pool: this.pool, providers: rows.length,
+                error: error instanceof Error ? error.message : String(error) });
+            return;
+        }
+        for (const [provider, transition] of pending) {
+            // A newer transition that arrived during the write stays pending.
+            if (this.transitions.get(provider) !== transition) continue;
+            this.transitions.delete(provider);
+            this.ctx.storage.sql.exec("DELETE FROM breaker_transitions WHERE provider=?", provider);
+        }
+    }
+
+    /** Overridden in tests. */
+    protected async writeBreakerStates(rows: BreakerStateRow[]): Promise<void> {
+        this.supabase ??= createClient(this.env.SUPABASE_URL, this.env.SUPABASE_SERVICE_ROLE_KEY, {
+            auth: { autoRefreshToken: false, persistSession: false },
+        });
+        const { error } = await this.supabase.from("gateway_provider_health_states")
+            .upsert(rows, { onConflict: "provider_id,model_id,endpoint" });
+        if (error) throw new Error(error.message);
     }
 }
