@@ -28,7 +28,7 @@ import {
 	withoutEmptyGeminiTextParts,
 } from "../../google/shared/function-history";
 import { normalizeGoogleModelSlug, resolveGoogleModelCandidates } from "../../google/shared/model";
-import { applyGoogleOutputTokenFallback, applyOpenAIUsageFallback } from "../../google/shared/usage-fallback";
+import { applyGoogleOutputTokenFallback, applyOpenAIUsageFallback, applyStreamedOutputTokenFallback } from "../../google/shared/usage-fallback";
 import {
 	getDefaultGoogleThinkingLevel,
 	getLowestGoogleThinkingLevel,
@@ -1715,6 +1715,7 @@ export function transformStream(
 	let interactionToolCallCount = 0;
 	let interactionSawFunctionCall = false;
 	let sawUsableOutput = false;
+	let streamedOutputChars = 0;
 	const emittedAnnotationKeys = new Set<string>();
 	// reasoning_details entries are numbered across the whole stream, per choice.
 	const reasoningDetailIndexes = new Map<number, number>();
@@ -1761,6 +1762,17 @@ export function transformStream(
 				}
 			}
 		}
+		for (const choice of irChunk.choices as any[]) {
+			if (typeof choice.delta?.content === "string") streamedOutputChars += choice.delta.content.length;
+			for (const part of choice.delta?.contentParts ?? []) {
+				if ((part?.type === "text" || part?.type === "reasoning_text") && typeof part.text === "string") {
+					streamedOutputChars += part.text.length;
+				}
+			}
+		}
+		// Google sometimes reports no output tokens for a streamed answer that has text;
+		// estimate them from the streamed text, as for a buffered answer.
+		if (irChunk.usage) applyStreamedOutputTokenFallback(irChunk.usage, streamedOutputChars);
 		if (irChunk.usage && options?.onUsage) {
 			try {
 				options.onUsage(irChunk.usage);
@@ -2163,57 +2175,84 @@ export function transformStream(
 		return emitted;
 	};
 
+	let rawText = "";
+	let emittedChunkCount = 0;
+	let finished = false;
+	// Flush what is left once Google's stream ends, then close.
+	const finishStream = (controller: ReadableStreamDefaultController<Uint8Array>) => {
+		finished = true;
+		const trimmed = buf.trim();
+		if (trimmed.length > 0) {
+			const { blocks, remainder } = splitSseBlocks(`${buf}\n\n`);
+			buf = remainder;
+			for (const block of blocks) {
+				const dataStr = block
+					.split(/\n/)
+					.map((line) => line.replace(/\r$/, ""))
+					.filter((line) => line.startsWith("data:"))
+					.map((line) => line.slice(5).trimStart())
+					.join("")
+					.trim();
+				if (!dataStr || dataStr === "[DONE]") continue;
+				let payload: any;
+				try {
+					payload = JSON.parse(dataStr);
+				} catch {
+					continue;
+				}
+				emittedChunkCount += emitPayloadEntries(toPayloadEntries(payload), controller);
+			}
+		}
+		if (emittedChunkCount === 0 && rawText.trim().length > 0) {
+			const normalized = rawText.replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
+			const fallbackPayloads = normalized.startsWith("data:")
+				? normalized
+					.split("\n")
+					.map((line) => line.trim())
+					.filter((line) => line.startsWith("data:"))
+					.map((line) => line.slice(5).trimStart())
+					.filter((line) => line.length > 0 && line !== "[DONE]")
+				: [normalized];
+			for (const payloadStr of fallbackPayloads) {
+				let payload: any;
+				try {
+					payload = JSON.parse(payloadStr);
+				} catch {
+					continue;
+				}
+				emittedChunkCount += emitPayloadEntries(toPayloadEntries(payload), controller);
+			}
+		}
+		if (!sawUsableOutput) {
+			const errorPayload = {
+				error: {
+					code: "google_empty_response",
+					message: "Google returned a successful response without any output.",
+				},
+			};
+			controller.enqueue(encoder.encode(
+				`event: response.failed\ndata: ${JSON.stringify({
+					type: "response.failed",
+						...errorPayload,
+				})}\n\n`,
+			));
+		}
+		controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+		controller.close();
+	};
+	// Reads Google's stream only as the client asks for more, and passes a cancel back
+	// to Google, so a slow or departed client does not leave the upstream running.
 	const openAIStream = new ReadableStream<Uint8Array>({
-		async start(controller) {
-			let rawText = "";
-			let emittedChunkCount = 0;
+		async pull(controller) {
+			if (finished) return;
 			try {
-				while (true) {
+				const emittedBefore = emittedChunkCount;
+				// A pull must enqueue or end the stream, or the waiting read never settles.
+				while (emittedChunkCount === emittedBefore) {
 					const { value, done } = await reader.read();
 					if (done) {
-						const trimmed = buf.trim();
-						if (trimmed.length > 0) {
-							const { blocks, remainder } = splitSseBlocks(`${buf}\n\n`);
-							buf = remainder;
-							for (const block of blocks) {
-								const dataStr = block
-									.split(/\n/)
-									.map((line) => line.replace(/\r$/, ""))
-									.filter((line) => line.startsWith("data:"))
-									.map((line) => line.slice(5).trimStart())
-									.join("")
-									.trim();
-								if (!dataStr || dataStr === "[DONE]") continue;
-								let payload: any;
-								try {
-									payload = JSON.parse(dataStr);
-								} catch {
-									continue;
-								}
-								emittedChunkCount += emitPayloadEntries(toPayloadEntries(payload), controller);
-							}
-						}
-						if (emittedChunkCount === 0 && rawText.trim().length > 0) {
-							const normalized = rawText.replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
-							const fallbackPayloads = normalized.startsWith("data:")
-								? normalized
-									.split("\n")
-									.map((line) => line.trim())
-									.filter((line) => line.startsWith("data:"))
-									.map((line) => line.slice(5).trimStart())
-									.filter((line) => line.length > 0 && line !== "[DONE]")
-								: [normalized];
-							for (const payloadStr of fallbackPayloads) {
-								let payload: any;
-								try {
-									payload = JSON.parse(payloadStr);
-								} catch {
-									continue;
-								}
-								emittedChunkCount += emitPayloadEntries(toPayloadEntries(payload), controller);
-							}
-						}
-						break;
+						finishStream(controller);
+						return;
 					}
 
 					const decoded = decoder.decode(value, { stream: true });
@@ -2243,27 +2282,15 @@ export function transformStream(
 						emittedChunkCount += emitPayloadEntries(toPayloadEntries(payload), controller);
 					}
 				}
-				if (!sawUsableOutput) {
-					const errorPayload = {
-						error: {
-							code: "google_empty_response",
-							message: "Google returned a successful response without any output.",
-						},
-					};
-					controller.enqueue(encoder.encode(
-						`event: response.failed\ndata: ${JSON.stringify({
-							type: "response.failed",
-								...errorPayload,
-						})}\n\n`,
-					));
-				}
-				controller.enqueue(encoder.encode("data: [DONE]\n\n"));
 			} catch (err) {
 				console.error("Gemini stream transform error:", err);
+				finished = true;
 				controller.error(err);
-			} finally {
-				controller.close();
 			}
+		},
+		cancel(reason) {
+			finished = true;
+			return reader.cancel(reason);
 		},
 	});
 

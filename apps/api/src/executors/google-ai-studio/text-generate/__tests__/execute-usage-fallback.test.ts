@@ -294,6 +294,59 @@ describe("google-ai-studio execute usage fallback", () => {
 		} finally { mock.restore(); }
 	});
 
+	it("bills a streamed answer from its text when Google reports no output tokens", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url.endsWith("/v1beta/interactions?alt=sse"),
+			response: interactionSseResponse({
+				id: "interactions/prompt-only-usage",
+				status: "completed",
+				steps: [{ type: "model_output", content: [{ type: "text", text: "x".repeat(40) }] }],
+				usage: { total_input_tokens: 6, total_output_tokens: 0, total_tokens: 6 },
+			}),
+		}]);
+		try {
+			const result = await executor(buildArgs({ model: "google/gemini-3.6-flash", stream: true }, { providerModelSlug: "gemini-3.6-flash", endpoint: "chat.completions", protocol: "openai.chat.completions" }));
+			if (result.kind !== "stream" || !result.stream) throw new Error("Expected an Interactions stream");
+			const body = await new Response(result.stream).text();
+			// 40 characters is about 10 tokens, as the buffered fallback estimates.
+			expect(body).toContain('"completion_tokens":10');
+			expect((await result.usageFinalizer?.())?.usage).toMatchObject({ input_text_tokens: 6, output_text_tokens: 10 });
+		} finally { mock.restore(); }
+	});
+
+	it("passes a client cancel back to Google and reads only as the client does", async () => {
+		const encoder = new TextEncoder();
+		const events = interactionSseEvents({
+			id: "interactions/cancel",
+			status: "completed",
+			steps: [{ type: "model_output", content: Array.from({ length: 50 }, (_, i) => ({ type: "text", text: `part ${i} ` })) }],
+			usage: { total_input_tokens: 6, total_output_tokens: 50, total_tokens: 56 },
+		});
+		let pulled = 0;
+		let cancelled = false;
+		const body = new ReadableStream<Uint8Array>({
+			pull(controller) {
+				if (pulled >= events.length) return controller.close();
+				controller.enqueue(encoder.encode(events[pulled++]));
+			},
+			cancel() { cancelled = true; },
+		}, { highWaterMark: 0 });
+		const mock = installFetchMock([{
+			match: (url) => url.endsWith("/v1beta/interactions?alt=sse"),
+			response: new Response(body, { headers: { "Content-Type": "text/event-stream" } }),
+		}]);
+		try {
+			const result = await executor(buildArgs({ model: "google/gemini-3.6-flash", stream: true }, { providerModelSlug: "gemini-3.6-flash", endpoint: "chat.completions", protocol: "openai.chat.completions" }));
+			if (result.kind !== "stream" || !result.stream) throw new Error("Expected an Interactions stream");
+			const reader = result.stream.getReader();
+			await reader.read();
+			// The client has read one chunk; the gateway has not drained Google's stream.
+			expect(pulled).toBeLessThan(events.length / 2);
+			await reader.cancel("client left");
+			expect(cancelled).toBe(true);
+		} finally { mock.restore(); }
+	});
+
 	it("keeps function-call arguments sent whole on the start event", async () => {
 		const sse = [
 			`data: ${JSON.stringify({ event_type: "step.start", index: 0, step: { type: "function_call", id: "call_1", name: "datetime", arguments: { timezone: "UTC" } } })}\n\n`,
