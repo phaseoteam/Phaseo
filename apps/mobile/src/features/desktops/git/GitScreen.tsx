@@ -107,9 +107,9 @@ function Git({ client, desktopId, projectId, chatId, where }: { client: DesktopC
         <Section title="Pull request">
           {status.pullRequest ? (
             <Row icon={GitPullRequest} title={`#${status.pullRequest.number} ${status.pullRequest.title}`} subtitle={[status.pullRequest.draft ? "Draft" : STATE_WORDS[status.pullRequest.state], status.pullRequest.repository].join(" · ")} onPress={() => router.push(desktopPullRequestHref(desktopId, projectId, status.pullRequest!.number))} />
-          ) : writes ? (
+          ) : status.pullRequest === undefined ? null : writes ? (
             <Row icon={GitPullRequestCreate} title="Create pull request" subtitle={!status.hasRemote ? "Push this branch to a GitHub remote first." : "The computer's title model writes its title and description, as the window's does."} onPress={status.hasRemote && !running ? () => void createPullRequest() : undefined} chevron={false} />
-          ) : status.pullRequest === null ? <Row icon={GitPullRequest} title="No pull request for this branch" /> : null}
+          ) : <Row icon={GitPullRequest} title="No pull request for this branch" />}
           {status.hasRemote ? <Row icon={List} title="All pull requests" onPress={() => router.push(desktopPullRequestsHref(desktopId, projectId, where))} last /> : null}
         </Section>
       </ScrollView>

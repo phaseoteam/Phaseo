@@ -1,8 +1,17 @@
-import { canPush, checkSummary, defaultMergeMethod, makesChanges, mergeBlocker, readsGit, switchableBranches, upstreamLabel, worktreeBases } from "./gitState";
+import { afterAction, canPush, checkSummary, defaultMergeMethod, makesChanges, mergeBlocker, readsGit, switchableBranches, upstreamLabel, worktreeBases } from "./gitState";
 
 const status = { repository: true, branch: "main", hasRemote: false, files: [] };
 
 describe("git on a phone", () => {
+  it("keeps the branch's pull request after an action on the same branch, and reads it again after a switch", () => {
+    const pullRequest = { repository: "phaseo/phaseo", number: 7, url: "https://github.com/phaseo/phaseo/pull/7", title: "Fix", state: "open" as const, draft: false };
+    const before = { ...status, hasRemote: true, pullRequest };
+    expect(afterAction(before, { ...status, hasRemote: true })).toEqual({ status: before, reload: false });
+    // Another branch's pull request isn't #7: it's unknown until the computer says, so Create pull request can show if it has none.
+    expect(afterAction(before, { ...status, branch: "fix/other", hasRemote: true })).toEqual({ status: { ...status, branch: "fix/other", hasRemote: true }, reload: true });
+    expect(afterAction({ ...before, pullRequest: null }, { ...status, branch: "fix/other", hasRemote: true })).toMatchObject({ reload: true });
+  });
+
   it("shows git from protocol 6 with Read code, and changes only with Make changes too", () => {
     expect(readsGit({ status: "connected", protocol: 6, capabilities: ["code"] })).toBe(true);
     expect(makesChanges({ status: "connected", protocol: 6, capabilities: ["code"] })).toBe(false);

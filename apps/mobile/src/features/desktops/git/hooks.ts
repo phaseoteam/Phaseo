@@ -3,7 +3,7 @@ import { useCallback, useRef, useState } from "react";
 import { DesktopRequestError, type ClientEvent, type DesktopClient } from "../client";
 import { useClientEvents, useConnection } from "../connections";
 import type { PhoneResults } from "../protocol";
-import { readsGit } from "./gitState";
+import { afterAction, readsGit } from "./gitState";
 
 /** A failed request: its words, and the computer's code (forbidden: switched off for this phone; not_found: gone). */
 export type GitError = { message: string; code?: string };
@@ -31,11 +31,14 @@ export function useGitStatus(client: DesktopClient, projectId: string) {
   }, [client, projectId, allowed]);
   useFocusEffect(read);
   useClientEvents(client, useCallback((event: ClientEvent) => { if (event.type === "connected" && event.reconnect) read(); }, [read]));
-  /** A status an action answered with; the branch's pull request is kept, as an action's answer doesn't carry it. */
+  /** A status an action answered with; after a switch to another branch, that branch's pull request is read again. */
+  const shown = state.key === projectId ? state.status : null;
   const replace = useCallback((status: Status) => {
     latest.current++;
-    setState((current) => ({ key: projectId, status: { ...status, ...(status.pullRequest === undefined && current.status?.pullRequest !== undefined ? { pullRequest: current.status.pullRequest } : {}) }, error: null, loading: false }));
-  }, [projectId]);
+    const next = afterAction(shown, status);
+    setState({ key: projectId, status: next.status, error: null, loading: false });
+    if (next.reload) read();
+  }, [projectId, shown, read]);
   const current = state.key === projectId ? state : { key: projectId, status: null, error: null, loading: true };
   return { allowed: allowed && current.error?.code !== "forbidden", ...current, reload: read, replace };
 }
