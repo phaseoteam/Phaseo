@@ -9,9 +9,9 @@ const context: ModelOptionDescriptor = { id: "contextWindow", label: "Context Wi
 
 describe("the model button's settings", () => {
 	it("tells Fast from Ultrafast, so each gets its own mark", () => {
-		expect(settingsSummary({ harness: "codex", model: "m", reasoningEffort: "high", serviceTier: "fast" }, [effort, tiers])).toEqual({ effort: "High", speed: "fast", context: undefined });
+		expect(settingsSummary({ harness: "codex", model: "m", reasoningEffort: "high", serviceTier: "fast" }, [effort, tiers])).toEqual({ effort: "High", speed: "fast" });
 		expect(settingsSummary({ harness: "codex", model: "m", reasoningEffort: "high", serviceTier: "ultrafast" }, [effort, tiers]).speed).toBe("ultrafast");
-		expect(settingsSummary({ harness: "claude", model: "m", options: { fastMode: true } }, [effort, fastMode, context])).toEqual({ effort: "Medium", speed: "fast", context: "1M" });
+		expect(settingsSummary({ harness: "claude", model: "m", options: { fastMode: true } }, [effort, fastMode, context])).toEqual({ effort: "Medium", speed: "fast" });
 	});
 	it("marks Flex too, on the slower side of Standard", () => {
 		const flexTiers: ModelOptionDescriptor = { id: "speed", label: "Speed", type: "select", options: [{ id: "flex", label: "Flex" }, { id: "standard", label: "Standard", isDefault: true }, { id: "priority", label: "Fast" }] };

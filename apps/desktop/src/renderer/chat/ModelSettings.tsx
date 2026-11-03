@@ -71,17 +71,16 @@ export function speedTier(descriptor: ModelOptionDescriptor, value: string | boo
 
 const isReasoning = (descriptor: ModelOptionDescriptor) => /reason|effort|think/i.test(`${descriptor.id} ${descriptor.label}`);
 
-/** What the model button shows after the name: the reasoning level, a speed glyph and the context window. */
+/** What the model button shows after the name: the reasoning level and a speed glyph. The context window stays in the picker. */
 export function settingsSummary(selection: ModelSelection, descriptors: ModelOptionDescriptor[]) {
-	let effort: string | undefined, speed: SpeedTier | undefined, context: string | undefined;
+	let effort: string | undefined, speed: SpeedTier | undefined;
 	for (const descriptor of descriptors) {
 		const value = current(selection, descriptor);
 		const label = descriptor.type === "select" ? descriptor.options.find(option => option.id === value)?.label : `${descriptor.label} ${value ? "On" : "Off"}`;
 		if (speedIds.includes(descriptor.id)) speed ??= speedTier(descriptor, value);
 		else if (!effort && isReasoning(descriptor)) effort = label;
-		else if (/context/i.test(descriptor.id)) context = label;
 	}
-	return { effort, speed, context };
+	return { effort, speed };
 }
 
 /** The web's service tier colours (its tier badges and model filters): Fast violet, Ultrafast fuchsia, Flex sky. */
@@ -101,12 +100,11 @@ export function SpeedGlyph({ tier, className }: { tier: SpeedTier; className?: s
 
 /** The model button's tail: "High", the speed glyph, "1M". */
 export function SettingsSuffix({ selection, descriptors }: { selection: ModelSelection; descriptors: ModelOptionDescriptor[] }) {
-	const { effort, speed, context } = settingsSummary(selection, descriptors);
-	if (!effort && !speed && !context) return null;
+	const { effort, speed } = settingsSummary(selection, descriptors);
+	if (!effort && !speed) return null;
 	return <span className="flex shrink-0 items-center gap-1.5 font-medium text-muted-foreground">
 		{effort && <span className="max-w-24 truncate">{effort}</span>}
 		{speed && <SpeedGlyph tier={speed} />}
-		{context && <span className="text-xs">{context}</span>}
 	</span>;
 }
 
