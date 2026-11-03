@@ -115,14 +115,25 @@ describe("desktop Git worktrees", () => {
 		const value = fixture(); const workspaceDirectory = path.join(value.directory, "workspace"); const runtime = new WorkspaceRuntime(workspaceDirectory); let checkout: string | undefined;
 		const library = path.join(value.directory, "library"); mkdirSync(library);
 		const git = (args: string[], cwd: string) => execFileSync("git", args, { cwd, windowsHide: true, stdio: "pipe" }).toString().trim();
-		git(["init", "-b", "main"], library); git(["config", "user.name", "Fixture"], library); git(["config", "user.email", "fixture@example.invalid"], library); git(["config", "commit.gpgsign", "false"], library);
+		git(["init", "-b", "main"], library); git(["config", "user.name", "Fixture"], library); git(["config", "user.email", "fixture@example.invalid"], library); git(["config", "commit.gpgsign", "false"], library); git(["config", "core.autocrlf", "false"], library);
 		writeFileSync(path.join(library, "lib.txt"), "Library\n"); git(["add", "."], library); git(["commit", "-m", "Library"], library);
-		// Local submodules need the file protocol allowed, for this repository only.
-		value.git(["-c", "protocol.file.allow=always", "submodule", "add", library, "vendor/library"]); value.git(["commit", "-m", "Add submodule"]); value.git(["config", "protocol.file.allow", "always"]);
+		// Local submodules need the file protocol allowed. Git 2.38 and later ignore the repository's own config for the
+		// submodule clone, so it goes in the environment, which the runtime's git processes inherit, for this test only.
+		vi.stubEnv("GIT_CONFIG_COUNT", "1"); vi.stubEnv("GIT_CONFIG_KEY_0", "protocol.file.allow"); vi.stubEnv("GIT_CONFIG_VALUE_0", "always");
+		value.git(["submodule", "add", library, "vendor/library"]); value.git(["commit", "-m", "Add submodule"]);
 		try {
 			const source = runtime.store.addProject(value.root);
-			const result = await runtime.createWorktree(source.id, "feature/submodules", "HEAD"); checkout = result.workspace.projects.find(item => item.id === result.projectId)!.directory;
-			expect(readFileSync(path.join(checkout, "vendor", "library", "lib.txt"), "utf8").trim()).toBe("Library");
-		} finally { await runtime.close(); if (checkout) { value.git(["worktree", "remove", "--force", checkout]); value.git(["worktree", "prune"]); } rmSync(value.directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); }
+			const result = await runtime.createWorktree(source.id, "feature/submodules", "HEAD"); const project = result.workspace.projects.find(item => item.id === result.projectId)!; checkout = project.directory;
+			expect(project.worktree?.submoduleError).toBeUndefined();
+			const libraryFile = path.join(checkout, "vendor", "library", "lib.txt");
+			// The submodule's clone takes line endings from the machine's Git settings, so put back the exact bytes.
+			const original = readFileSync(libraryFile); expect(original.toString("utf8").trim()).toBe("Library");
+			// A change inside a submodule blocks removal like any other change.
+			writeFileSync(libraryFile, "Edited\n");
+			await expect(runtime.removeWorktree(project.id)).rejects.toThrow("tracked and untracked"); expect(readFileSync(libraryFile, "utf8")).toBe("Edited\n");
+			writeFileSync(libraryFile, original);
+			// Once clean, it can be removed even though Git needs --force for checked-out submodules.
+			const removed = await runtime.removeWorktree(project.id); expect(removed.projects.find(item => item.id === project.id)?.worktree?.removedAt).toBeTruthy(); expect(existsSync(checkout)).toBe(false); checkout = undefined;
+		} finally { await runtime.close(); if (checkout) { value.git(["worktree", "remove", "--force", checkout]); value.git(["worktree", "prune"]); } vi.unstubAllEnvs(); rmSync(value.directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); }
 	}, 60000);
 });

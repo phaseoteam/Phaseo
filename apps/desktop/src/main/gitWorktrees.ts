@@ -53,7 +53,7 @@ export async function createGitWorktree(root: string, directory: string, branch:
 	});
 }
 
-/** Removes a managed worktree: one made directly inside one of `ownedRoots` (see ownedWorktreeRoots), clean, and still a worktree of `root`. */
+/** Removes a managed worktree: one made directly inside one of `ownedRoots` (see ownedWorktreeRoots), clean (submodules included), and still a worktree of `root`. */
 export async function removeGitWorktree(root: string, ownedRoots: string | readonly string[], directory: string, stopManagedTools?: () => Promise<void>) {
 	const target = await realpath(directory);
 	// A root that no longer exists owns nothing.
@@ -62,9 +62,14 @@ export async function removeGitWorktree(root: string, ownedRoots: string | reado
 	await withGitLock(root, async () => {
 		const [sourceCommon, targetCommon] = await Promise.all([root, target].map(async value => realpath((await git(value, ["rev-parse", "--path-format=absolute", "--git-common-dir"])).trim())));
 		if (path.relative(sourceCommon, targetCommon)) throw new Error("This worktree no longer belongs to its source repository.");
-		if ((await git(target, ["status", "--porcelain"])).trim()) throw new Error("Commit or move all tracked and untracked changes before removing this worktree.");
+		// Changes inside submodules count too, whatever the repository's ignore settings say.
+		const status = ["status", "--porcelain", "--ignore-submodules=none"];
+		if ((await git(target, status)).trim()) throw new Error("Commit or move all tracked and untracked changes before removing this worktree.");
 		await stopManagedTools?.();
-		if ((await git(target, ["status", "--porcelain"])).trim()) throw new Error("The worktree changed while its tools were stopping. Keep those changes before removing it.");
-		await git(root, ["worktree", "remove", "--", target]); await git(root, ["worktree", "prune"]);
+		if ((await git(target, status)).trim()) throw new Error("The worktree changed while its tools were stopping. Keep those changes before removing it.");
+		// Git refuses to remove a worktree with checked-out submodules unless forced. The checks above already found it
+		// clean, submodules included, so forcing loses nothing.
+		const submodules = existsSync(path.join(target, ".gitmodules")) && (await git(target, ["submodule", "status", "--recursive"])).split(/\r?\n/).some(line => line.trim() && !line.startsWith("-"));
+		await git(root, ["worktree", "remove", ...submodules ? ["--force"] : [], "--", target]); await git(root, ["worktree", "prune"]);
 	});
 }

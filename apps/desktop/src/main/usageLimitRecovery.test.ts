@@ -65,8 +65,11 @@ describe("usage-limit recovery in the runtime", () => {
 			const preferences = runtime.store.getPreferences();
 			runtime.store.savePreferences({ ...preferences, threads: { ...preferences.threads, autoResumeLimited: true, snoozeLimited: true } });
 			const id = (await runtime.command({ type: "create-task", harness: "claude", model: "default", mode: "code" })).tasks[0].id;
+			// The runtime announces every change; this resolves on the one that arms the resume.
+			const armed = new Promise<void>(resolve => { runtime.onChange = () => { if (runtime.store.getTask(id).usageLimit?.resumeAt) resolve(); }; });
 			await runtime.command({ type: "send", id, text: "Fix the build" });
-			await vi.waitFor(() => expect(runtime.store.getTask(id).usageLimit?.resumeAt).toBe(new Date(resetsAt + 60_000).toISOString()));
+			await armed;
+			expect(runtime.store.getTask(id).usageLimit?.resumeAt).toBe(new Date(resetsAt + 60_000).toISOString());
 			const task = runtime.store.getTask(id);
 			expect(task.usageLimit).toMatchObject({ autoResume: true, snoozed: true });
 			expect(task.snoozedUntil).toBe(new Date(resetsAt).toISOString());
