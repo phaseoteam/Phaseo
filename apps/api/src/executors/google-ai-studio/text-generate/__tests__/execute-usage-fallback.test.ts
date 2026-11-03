@@ -314,6 +314,40 @@ describe("google-ai-studio execute usage fallback", () => {
 		} finally { mock.restore(); }
 	});
 
+	it.each([
+		["responses", "openai.responses"],
+		["messages", "anthropic.messages"],
+	])("passes a %s client's cancel back to Google", async (endpoint, protocol) => {
+		const encoder = new TextEncoder();
+		const events = interactionSseEvents({
+			id: "interactions/cancel-protocol",
+			status: "completed",
+			steps: [{ type: "model_output", content: Array.from({ length: 50 }, (_, i) => ({ type: "text", text: `part ${i} ` })) }],
+			usage: { total_input_tokens: 6, total_output_tokens: 50, total_tokens: 56 },
+		});
+		let pulled = 0;
+		let cancelled = false;
+		const body = new ReadableStream<Uint8Array>({
+			pull(controller) {
+				if (pulled >= events.length) return controller.close();
+				controller.enqueue(encoder.encode(events[pulled++]));
+			},
+			cancel() { cancelled = true; },
+		}, { highWaterMark: 0 });
+		const mock = installFetchMock([{
+			match: (url) => url.endsWith("/v1beta/interactions?alt=sse"),
+			response: new Response(body, { headers: { "Content-Type": "text/event-stream" } }),
+		}]);
+		try {
+			const result = await executor(buildArgs({ model: "google/gemini-3.6-flash", stream: true }, { providerModelSlug: "gemini-3.6-flash", endpoint, protocol }));
+			if (result.kind !== "stream" || !result.stream) throw new Error("Expected an Interactions stream");
+			const reader = result.stream.getReader();
+			await reader.read();
+			await reader.cancel("client left");
+			expect(cancelled).toBe(true);
+		} finally { mock.restore(); }
+	});
+
 	it("passes a client cancel back to Google and reads only as the client does", async () => {
 		const encoder = new TextEncoder();
 		const events = interactionSseEvents({

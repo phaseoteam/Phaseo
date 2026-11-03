@@ -156,6 +156,12 @@ function isExecutableResponseToolItem(item: any): boolean {
 	return (itemType === "function_call" || itemType === "tool_call") && readResponseToolCallName(item) !== null;
 }
 
+/**
+ * Upstream readers whose downstream stream the client cancelled. The adapters read
+ * eagerly, so their loops end early on a cancel; they skip the failure log and close.
+ */
+export const cancelledReaders = new WeakSet<object>();
+
 export function transformChatStream(
 	stream: ReadableStream<Uint8Array>,
 	args: ExecutorExecuteArgs,
@@ -187,10 +193,16 @@ export function transformChatStream(
 					}
 				}
 			} catch (err) {
-				console.error("openai compat chat stream transform failed:", err);
+				// A client cancel ends the read loop early; that is not a failure.
+				if (!cancelledReaders.has(reader)) console.error("openai compat chat stream transform failed:", err);
 			} finally {
-				controller.close();
+				if (!cancelledReaders.has(reader)) controller.close();
 			}
+		},
+		// Pass a client cancel on to the stream this one reads, so the upstream stops too.
+		cancel(reason) {
+			cancelledReaders.add(reader);
+		return reader.cancel(reason);
 		},
 	});
 }
@@ -499,10 +511,16 @@ export function transformResponsesStreamToChat(
 					await emit(finalChunk, controller);
 				}
 			} catch (err) {
-				console.error("openai compat responses->chat stream transform failed:", err);
+				// A client cancel ends the read loop early; that is not a failure.
+				if (!cancelledReaders.has(reader)) console.error("openai compat responses->chat stream transform failed:", err);
 			} finally {
-				controller.close();
+				if (!cancelledReaders.has(reader)) controller.close();
 			}
+		},
+		// Pass a client cancel on to the stream this one reads, so the upstream stops too.
+		cancel(reason) {
+			cancelledReaders.add(reader);
+		return reader.cancel(reason);
 		},
 	});
 }
@@ -1267,10 +1285,16 @@ export function transformChatStreamToResponses(
 					}, controller);
 				}
 			} catch (err) {
-				console.error("openai compat chat->responses stream transform failed:", err);
+				// A client cancel ends the read loop early; that is not a failure.
+				if (!cancelledReaders.has(reader)) console.error("openai compat chat->responses stream transform failed:", err);
 			} finally {
-				controller.close();
+				if (!cancelledReaders.has(reader)) controller.close();
 			}
+		},
+		// Pass a client cancel on to the stream this one reads, so the upstream stops too.
+		cancel(reason) {
+			cancelledReaders.add(reader);
+		return reader.cancel(reason);
 		},
 	});
 }
