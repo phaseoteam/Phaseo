@@ -4,6 +4,7 @@ import type { ClientEvent, DesktopClient } from "../client";
 import { useClientEvents, useConnection } from "../connections";
 import { gitErrorOf, type GitError } from "../git/hooks";
 import { readsGit } from "../git/gitState";
+import { failedRead } from "./state";
 import type { PhoneDiffFile, PhonePullRequest, PhonePullRequestView } from "../protocol";
 
 /** A repository's open pull requests, read on coming into view, after a reconnect and on Refresh; more on request. */
@@ -17,7 +18,7 @@ export function usePullRequests(client: DesktopClient, projectId: string | null)
     setState((current) => ({ ...current, loading: true }));
     client.request("list_pull_requests", { projectId, ...(cursor ? { cursor } : {}) }).then(
       (page) => { if (asked === latest.current) setState((current) => ({ key, repository: page.repository, rows: cursor && current.key === key ? [...current.rows ?? [], ...page.pullRequests] : page.pullRequests, cursor: page.cursor, limitReached: page.limitReached, error: null, loading: false })); },
-      (problem: unknown) => { if (asked === latest.current) setState((current) => ({ ...current, key, error: gitErrorOf(problem), loading: false })); },
+      (problem: unknown) => { if (asked === latest.current) setState((current) => failedRead(current, key, { repository: null, rows: null, cursor: undefined, limitReached: false }, gitErrorOf(problem))); },
     );
   }, [client, projectId, allowed]);
   const reload = useCallback(() => read(), [read]);
@@ -39,7 +40,7 @@ export function usePullRequest(client: DesktopClient, projectId: string, number:
     setState((current) => ({ ...current, loading: true }));
     client.request("read_pull_request", { projectId, number }).then(
       (view) => { if (asked === latest.current) setState({ key, view, error: null, loading: false }); },
-      (problem: unknown) => { if (asked === latest.current) setState((current) => ({ ...current, key, error: gitErrorOf(problem), loading: false })); },
+      (problem: unknown) => { if (asked === latest.current) setState((current) => failedRead(current, key, { view: null }, gitErrorOf(problem))); },
     );
   }, [client, projectId, number, allowed, key]);
   useFocusEffect(read);
