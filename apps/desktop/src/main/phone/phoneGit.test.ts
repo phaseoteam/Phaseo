@@ -86,6 +86,29 @@ describe("phone git and pull requests", () => {
 		expect(app.git.notes).toEqual([{ device: "Daniel's Pixel", summary: "Started a thread in a new worktree from origin/main", projectId: "p1" }]);
 	});
 
+	it("answers a worktree thread with nothing once Make changes goes off while it starts, but still tells the window", async () => {
+		const { app, ask, allow } = await connected();
+		let release!: () => void;
+		app.git.hold = new Promise(resolve => { release = resolve; });
+		const pending = ask({ type: "new_chat", projectId: "p1", text: "Try it", mode: "code", workspace: { kind: "worktree", base: "main" } });
+		await Promise.resolve();
+		allow(["code"]);
+		release();
+		expect(await pending).toMatchObject({ ok: false, error: { code: "forbidden" } });
+		expect(app.git.notes.map(note => note.summary)).toEqual(["Started a thread in a new worktree from main"]);
+	});
+
+	it("links a new pull request only to a thread in the same project, whose work writes its description", async () => {
+		const { app, ask } = await connected();
+		app.projects.push({ id: "p2", name: "Other", directory: "/work/other", createdAt: "2026-11-01T00:00:00.000Z" });
+		app.addTask({ id: "elsewhere", projectId: "p2" });
+		app.addTask({ id: "here", projectId: "p1" });
+		expect(await ask({ type: "create_pull_request", projectId: "p1", chatId: "elsewhere" })).toMatchObject({ ok: false, error: { code: "rejected", message: "That thread is in another project." } });
+		expect(app.git.calls).toEqual([]);
+		expect(await ask({ type: "create_pull_request", projectId: "p1", chatId: "here" })).toMatchObject({ ok: true, result: { number: 12, status: "created" } });
+		expect(app.git.calls).toEqual([{ kind: "create-pull-request", projectId: "p1", value: "here" }]);
+	});
+
 	it("adds the branch's pull request to git status only when asked, from protocol 6", async () => {
 		const { app, ask } = await connected();
 		app.git.branchPullRequest = { branch: "fix/usage", pullRequest: { repository: "phaseo/phaseo", number: 7, url: "https://github.com/phaseo/phaseo/pull/7", title: "Fix", state: "OPEN", draft: false } };
@@ -124,6 +147,13 @@ describe("phone git and pull requests", () => {
 		expect(view.bodyTruncated).toBe(true);
 		expect(view.mergeMethod).toBeUndefined();
 		expect(view.events.map(event => event.kind)).toEqual(["commit", "comment"]);
+		// A busy pull request's activity at the text limit is several MiB: the latest that fit go, and it says so.
+		const comments = Array.from({ length: 100 }, (_, index) => ({ id: `IC_${index}`, kind: "comment" as const, author: { login: "sam" }, body: "é".repeat(phoneLimits.pullRequestTextChars), createdAt: `2026-11-01T10:00:00.${String(index).padStart(3, "0")}Z`, reactions: [] }));
+		const busy = phonePullRequestView(fakePullRequestView(7, { comments, commentCount: 100 }));
+		expect(Buffer.byteLength(JSON.stringify(busy))).toBeLessThan(phoneLimits.frameBytes - 64 * 1024);
+		expect(busy.eventsTruncated).toBe(true);
+		expect(busy.events.length).toBeGreaterThan(0);
+		expect(busy.events.at(-1)!.id).toBe("IC_99");
 		// Thousands of large patches still fit one frame: the rest say they were left out.
 		const page = phonePullRequestFiles({ repository: "r", number: 7, headOid: head, baseOid: head, page: 1, total: 100, hasNext: false, limitReached: false, files: Array.from({ length: 100 }, (_, index) => ({ filename: `f${index}.ts`, status: "modified", additions: 1, deletions: 1, blobOid: head, patch: `@@ -1 +1 @@\n${"+y".repeat(10_000)}`, preview: "available" as const })) });
 		expect(Buffer.byteLength(JSON.stringify(page))).toBeLessThan(phoneLimits.frameBytes - 64 * 1024);

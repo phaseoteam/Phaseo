@@ -191,7 +191,10 @@ export class PhoneSession {
 				this.checkProject(request.projectId);
 				const { id: _id, type: _type, ...input } = request;
 				const id = await this.host.newChat(input);
-				if (request.workspace) this.host.fromPhone({ device: this.device.name, summary: `Started a thread in a new worktree from ${request.workspace.base}`, projectId: request.projectId! });
+				if (request.workspace) {
+					this.host.fromPhone({ device: this.device.name, summary: `Started a thread in a new worktree from ${request.workspace.base}`, projectId: request.projectId! });
+					this.changes();
+				}
 				const overview = this.host.overview(), task = overview.tasks.find(value => value.id === id);
 				if (!task) throw new Error("The chat was started but could not be read.");
 				return okResponse(request, { chat: phoneChat(task, overview.projects) });
@@ -267,7 +270,8 @@ export class PhoneSession {
 			}
 			case "create_pull_request": {
 				this.changes(request.projectId);
-				if (request.chatId) this.chatOverview(request.chatId);
+				// The chat's work log writes the published description, so it must be this project's chat.
+				if (request.chatId && this.chatOverview(request.chatId).projectId !== request.projectId) throw new PhoneProtocolError("rejected", "That thread is in another project.");
 				const { repository, number, url, status } = await this.host.createPullRequest(request.projectId, request.chatId);
 				this.host.fromPhone({ device: this.device.name, summary: `${status === "created" ? "Created" : "Linked"} pull request #${number}`, projectId: request.projectId });
 				this.changes();

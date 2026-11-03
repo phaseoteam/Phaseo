@@ -28,10 +28,12 @@ const checkWord = (status: PullRequestCheckStatus): PhonePullRequestCheck["statu
 	status === "success" ? "passing" : status === "failure" || status === "cancelled" || status === "action-required" ? "failed" : status === "skipped" ? "skipped" : status === "neutral" ? "neutral" : "pending";
 /** The most of a pull request's activity a phone gets: the latest, since a long one's start is history. */
 const eventLimit = 100;
+/** Room left in a frame for the response around a result, and encryption. */
+const frameBudget = phoneLimits.frameBytes - 64 * 1024;
 
 /**
  * The window's pull request pane slimmed for a frame: the description and every comment cut at
- * phoneLimits.pullRequestTextChars, comments and commits merged into one timeline of the latest 100, and `mergeMethod`
+ * phoneLimits.pullRequestTextChars, comments and commits merged into one timeline of the latest 100 that fit, and `mergeMethod`
  * the computer's setting when the repository allows it.
  */
 export function phonePullRequestView(view: PullRequestView, preferred?: PullRequestMergeMethod | null): PhonePullRequestView {
@@ -44,20 +46,29 @@ export function phonePullRequestView(view: PullRequestView, preferred?: PullRequ
 		...view.commits.map((commit): PhonePullRequestEvent => ({ id: commit.oid, kind: "commit", ...commit.authors[0] ? { author: commit.authors[0].login } : {}, body: commit.headline, createdAt: commit.committedAt })),
 	].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 	const methods = phoneMergeMethods.filter(method => view.mergeMethods.includes(method));
-	return {
+	const result: PhonePullRequestView = {
 		...phonePullRequest(view), repository: view.repository, state: lower(view.state), body: body.text, ...body.truncated ? { bodyTruncated: true as const } : {},
 		headOid: view.headOid, baseOid: view.baseOid, additions: view.additions, deletions: view.deletions, changedFiles: view.changedFiles, mergeable: lower(view.mergeable),
 		checkRuns: view.checkRuns.slice(0, 100).map(check => ({ name: check.name, status: checkWord(check.status), ...check.url ? { url: check.url } : {} })),
 		reviews: view.reviews.map(review => ({ ...review.actor ? { author: review.actor.login } : {}, state: review.state, submittedAt: review.submittedAt })),
 		reviewers: view.reviewers.map(actor => actor.login),
-		events: events.slice(-eventLimit), eventsTruncated: events.length > eventLimit || view.commentsTruncated || view.commitCount > view.commits.length,
+		events: [], eventsTruncated: true,
 		mergeMethods: methods, ...preferred && methods.includes(preferred) ? { mergeMethod: preferred } : {},
 		viewer: { canMerge: view.viewer.canMerge, canUpdate: view.viewer.canUpdate },
 	};
+	// 100 comments at the text limit are several MiB, so the latest go in until the frame is full.
+	let used = Buffer.byteLength(JSON.stringify(result));
+	const kept: PhonePullRequestEvent[] = [];
+	for (let index = events.length - 1; index >= 0 && kept.length < eventLimit; index--) {
+		const size = Buffer.byteLength(JSON.stringify(events[index])) + 1;
+		if (used + size > frameBudget) break;
+		used += size;
+		kept.push(events[index]!);
+	}
+	result.events = kept.reverse();
+	result.eventsTruncated = kept.length < events.length || view.commentsTruncated || view.commitCount > view.commits.length;
+	return result;
 }
-
-/** Room left in a frame for its other fields and encryption. */
-const filesBudget = phoneLimits.frameBytes - 64 * 1024;
 const statusOf = (status: string): PhoneDiffFile["status"] => status === "added" ? "added" : status === "removed" ? "deleted" : status === "renamed" || status === "copied" ? "renamed" : "modified";
 
 /** A page of a pull request's files as read_diff has them; patches stop going in once the frame is full. */
@@ -68,7 +79,7 @@ export function phonePullRequestFiles(page: PullRequestFilesPage): PhoneResults[
 		used += Buffer.byteLength(JSON.stringify(entry));
 		if (!file.patch) return file.preview === "too-large" ? { ...entry, truncated: true } : entry;
 		const size = Buffer.byteLength(JSON.stringify(file.patch));
-		if (used + size > filesBudget) return { ...entry, truncated: true };
+		if (used + size > frameBudget) return { ...entry, truncated: true };
 		used += size;
 		return { ...entry, patch: file.patch };
 	});
