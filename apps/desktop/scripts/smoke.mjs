@@ -402,7 +402,7 @@ app.whenReady().then(async () => {
 			// then change reasoning through the composer's model settings menu.
 			await window.phaseoDesktop.workspace.command({type:'update-task',id:task.id,model:'fixture-model',mode:'plan'});
 			await window.__auditOpenComposer();
-			await window.__auditUntil(()=>window.__auditModelName()==='Fixture Model'&&window.__auditModelSettings()==='Low','fixture model settings');
+			await window.__auditUntil(()=>window.__auditModelName()==='Fixture Model'&&window.__auditModelSettings()==='Low',()=>'fixture model settings, shown: '+JSON.stringify([window.__auditModelName(),window.__auditModelSettings(),document.querySelector('main form button[aria-label="Choose model"]')?.textContent]));
 			await window.__auditModelSetting('Reasoning','High');
 			for(let attempt=0;attempt<30 && (await window.phaseoDesktop.workspace.task(task.id)).reasoningEffort!=='high';attempt++) await new Promise(resolve=>setTimeout(resolve,100));
 			await window.__auditOpenComposer();

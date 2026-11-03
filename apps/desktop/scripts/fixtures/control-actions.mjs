@@ -41,7 +41,8 @@ export async function installControlActions(owner) {
 const shellActions = String.raw`
   window.__auditUntil = async function(predicate,label,attempts=400) {
     for(let attempt=0;attempt<attempts;attempt++){const value=await predicate();if(value)return value;await new Promise(resolve=>setTimeout(resolve,25));}
-    throw Error('Did not settle: '+label);
+    // A label can be a function, so a failure says what the page showed when it gave up.
+    throw Error('Did not settle: '+(typeof label==='function'?label():label));
   };
   window.__auditButton = (text,root=document) => Array.from(root.querySelectorAll('button')).find(button=>button.textContent.trim()===text);
   window.__auditType = (input,value) => {
