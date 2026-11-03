@@ -456,7 +456,8 @@
 			"uppercase": "Füge mindestens einen lateinischen Großbuchstaben hinzu.",
 			"lowercase": "Füge mindestens einen lateinischen Kleinbuchstaben hinzu.",
 			"number": "Füge mindestens eine Zahl hinzu.",
-			"mismatch": "Die Passwörter stimmen nicht überein."
+			"mismatch": "Die Passwörter stimmen nicht überein.",
+			"signOutOthersFailed": "Dein Passwort wurde zurückgesetzt, aber wir konnten dich auf deinen anderen Geräten und in deinen Apps nicht abmelden. Ändere dein Passwort in den Kontoeinstellungen erneut, um es noch einmal zu versuchen."
 		},
 		"mfa": {
 			"title": "Zwei-Faktor-Authentifizierung",
@@ -473,10 +474,9 @@
 			"metaTitle": "Phaseo CLI aktivieren",
 			"metaDescription": "Genehmige eine Geräteanmeldung für Phaseo CLI.",
 			"title": "Phaseo CLI aktivieren",
-			"description": "Genehmige diese Anfrage nur, wenn der Code mit dem in deinem Terminal angezeigten Code übereinstimmt.",
-			"missingCode": "Öffne den vollständigen Bestätigungslink in deinem Terminal oder füge den Code so hinzu:",
+			"description": "Gib den in deinem Terminal angezeigten Code ein, um dich bei der Phaseo CLI anzumelden.",
+			"phishingWarning": "Gib nur einen Code aus einer Anmeldung ein, die du selbst in deinem eigenen Terminal gestartet hast. Wenn dir jemand diesen Code oder einen Link zu dieser Seite geschickt hat, brich ab: Wenn du ihn genehmigst, erhält diese Person Zugriff auf dein Phaseo-Konto.",
 			"deviceCode": "Gerätecode",
-			"requestedScopes": "Angeforderte Berechtigungen",
 			"requestError": "Diese Geräteanmeldung konnte nicht geladen werden. Prüfe den Code und versuche es erneut.",
 			"deny": "Ablehnen",
 			"approve": "CLI genehmigen",

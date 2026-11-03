@@ -456,7 +456,8 @@
 			"uppercase": "Ajoutez au moins une lettre latine majuscule.",
 			"lowercase": "Ajoutez au moins une lettre latine minuscule.",
 			"number": "Ajoutez au moins un chiffre.",
-			"mismatch": "Les mots de passe ne correspondent pas."
+			"mismatch": "Les mots de passe ne correspondent pas.",
+			"signOutOthersFailed": "Votre mot de passe a été réinitialisé, mais nous n’avons pas pu vous déconnecter de vos autres appareils et applications. Modifiez à nouveau votre mot de passe dans les paramètres du compte pour réessayer."
 		},
 		"mfa": {
 			"title": "Authentification à deux facteurs",
@@ -473,10 +474,9 @@
 			"metaTitle": "Activer Phaseo CLI",
 			"metaDescription": "Approuvez une demande de connexion pour Phaseo CLI.",
 			"title": "Activer Phaseo CLI",
-			"description": "N’approuvez cette demande que si le code correspond à celui affiché dans votre terminal.",
-			"missingCode": "Ouvrez le lien de vérification complet depuis votre terminal ou ajoutez le code avec",
+			"description": "Saisissez le code affiché dans votre terminal pour vous connecter à la CLI Phaseo.",
+			"phishingWarning": "Ne saisissez qu’un code issu d’une connexion que vous avez lancée vous-même, dans votre propre terminal. Si quelqu’un vous a envoyé ce code ou un lien vers cette page, arrêtez-vous : l’approuver lui donne accès à votre compte Phaseo.",
 			"deviceCode": "Code de l’appareil",
-			"requestedScopes": "Autorisations demandées",
 			"requestError": "Impossible de charger cette demande de connexion. Vérifiez le code, puis réessayez.",
 			"deny": "Refuser",
 			"approve": "Approuver CLI",

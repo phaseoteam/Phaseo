@@ -35,29 +35,42 @@ async function callDeviceActivation(body: Record<string, unknown>) {
 	return payload;
 }
 
+// The code comes only from what the person typed into the form, never from the link they opened,
+// so a link someone else sends can't pre-approve their device.
+function typedUserCode(formData: FormData) {
+	return String(formData.get("user_code") ?? "").trim().slice(0, 64);
+}
+
 export async function approveDeviceAction(formData: FormData) {
-	const userCode = String(formData.get("user_code") ?? "");
+	const userCode = typedUserCode(formData);
 	const workspaceId = String(formData.get("workspace_id") ?? "");
-	await callDeviceActivation({
-		action: "approve",
-		user_code: userCode,
-		workspace_id: workspaceId,
-	});
-	redirect("/activate?approved=1");
+	if (!userCode) redirect("/activate?error=1");
+	let approved = false;
+	try {
+		await callDeviceActivation({
+			action: "approve",
+			user_code: userCode,
+			workspace_id: workspaceId,
+		});
+		approved = true;
+	} catch {
+		approved = false;
+	}
+	redirect(approved ? "/activate?approved=1" : "/activate?error=1");
 }
 
 export async function denyDeviceAction(formData: FormData) {
-	const userCode = String(formData.get("user_code") ?? "");
-	await callDeviceActivation({
-		action: "deny",
-		user_code: userCode,
-	});
-	redirect("/activate?denied=1");
-}
-
-export async function lookupDeviceRequest(userCode: string) {
-	return callDeviceActivation({
-		action: "lookup",
-		user_code: userCode,
-	});
+	const userCode = typedUserCode(formData);
+	if (!userCode) redirect("/activate?error=1");
+	let denied = false;
+	try {
+		await callDeviceActivation({
+			action: "deny",
+			user_code: userCode,
+		});
+		denied = true;
+	} catch {
+		denied = false;
+	}
+	redirect(denied ? "/activate?denied=1" : "/activate?error=1");
 }

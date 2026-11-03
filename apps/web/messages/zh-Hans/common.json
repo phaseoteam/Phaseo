@@ -456,7 +456,8 @@
 			"uppercase": "至少包含一个英文字母大写字符。",
 			"lowercase": "至少包含一个英文字母小写字符。",
 			"number": "至少包含一个数字。",
-			"mismatch": "两次输入的密码不一致。"
+			"mismatch": "两次输入的密码不一致。",
+			"signOutOthersFailed": "密码已重置，但我们无法让你在其他设备和应用上退出登录。请在账户设置中再次更改密码以重试。"
 		},
 		"mfa": {
 			"title": "双重身份验证",
@@ -473,10 +474,9 @@
 			"metaTitle": "激活 Phaseo CLI",
 			"metaDescription": "批准 Phaseo CLI 的设备登录请求。",
 			"title": "激活 Phaseo CLI",
-			"description": "只有当代码与终端中显示的代码一致时，才批准此请求。",
-			"missingCode": "请从终端打开完整的验证链接，或使用以下参数添加代码：",
+			"description": "输入终端中显示的代码以登录 Phaseo CLI。",
+			"phishingWarning": "只输入你自己在自己的终端中发起登录时显示的代码。如果有人把这个代码或此页面的链接发给你，请停止操作：批准后对方将获得你的 Phaseo 账户访问权限。",
 			"deviceCode": "设备代码",
-			"requestedScopes": "请求的权限",
 			"requestError": "无法加载此设备登录请求。请检查代码后重试。",
 			"deny": "拒绝",
 			"approve": "批准 CLI",
