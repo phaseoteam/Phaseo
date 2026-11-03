@@ -274,8 +274,8 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 			<ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
 		</PopoverTrigger>
 		{/* Stays above or below the button and shrinks to fit below the title bar, rather than sliding sideways over the composer. */}
-			<PopoverContent align="end" side="top" sideOffset={8} collisionAvoidance={{ side: "flip", align: "shift", fallbackAxisSide: "none" }} collisionPadding={{ top: 52, right: 8, bottom: 8, left: 8 }} className={cn("max-h-(--available-height) gap-0 overflow-hidden rounded-xl p-0", descriptors.length ? "w-[min(94vw,744px)]" : "w-[min(92vw,564px)]")}>
-				<div className="flex min-h-0 min-w-0 flex-1">
+			<PopoverContent align="end" side="top" sideOffset={8} collisionAvoidance={{ side: "flip", align: "shift", fallbackAxisSide: "none" }} collisionPadding={{ top: 52, right: 8, bottom: 8, left: 8 }} className={cn("max-h-(--available-height) gap-0 overflow-hidden rounded-xl p-0", descriptors.length ? "w-[min(94vw,552px)]" : "w-[min(92vw,360px)]")}>
+				<div className="flex h-[min(346px,calc(var(--available-height)-48px))] min-h-0 min-w-0">
 				<div role="toolbar" aria-orientation="vertical" aria-label="Model groups" className="flex w-11 shrink-0 flex-col gap-1 overflow-y-auto overscroll-contain bg-muted/30 p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
 					{groups.map((value, index) => <Fragment key={value.id}>
 						{/* A rule after favourites, and another where Phaseo's models begin. */}
@@ -308,7 +308,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 				</>}
 				{multiple && <span className="ml-auto text-[11px] text-muted-foreground">{isMac() ? "⌘" : "Ctrl"}-click to compare up to {MAX_COMPARE}</span>}
 			</div>}
-			{rows.length > 0 && <ScrollArea style={{ height: `min(60vh, 440px, ${virtualizer.getTotalSize() + 12}px)` }} viewportRef={setViewport} viewportClassName="py-1.5 pr-3.5 pl-1.5">
+			{rows.length > 0 && <ScrollArea className="min-h-0 flex-1" viewportRef={setViewport} viewportClassName="py-1.5 pr-3.5 pl-1.5">
 				<div id="model-picker-list" role="listbox" aria-label="Models" className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
 					{virtualizer.getVirtualItems().map(item => {
 						const row = rows[item.index], highlighted = item.index === activeIndex;
@@ -343,7 +343,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 			{loading.map(harness => <div key={harness} className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground"><LoaderCircle className="size-3.5 animate-spin" />Loading {harnessNames[harness]} models…</div>)}
 			{errors.map(error => <p key={error} className="px-3 py-2 text-xs text-destructive">{error}</p>)}
 				</div>
-				{settingsSelection && descriptors.length > 0 && <ScrollArea className="w-48 shrink-0 border-l border-border/70 bg-muted/40" viewportClassName="max-h-[min(60vh,440px)] px-2 pt-3 pb-1.5">
+				{settingsSelection && descriptors.length > 0 && <ScrollArea className="w-48 shrink-0 border-l border-border/70 bg-muted/40" viewportClassName="px-2 pt-3 pb-1.5">
 					<ModelSettingsColumn selection={settingsSelection} descriptors={descriptors} onChange={next => onSettingsChange?.(next)} />
 				</ScrollArea>}
 				</div>
