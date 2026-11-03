@@ -26,7 +26,7 @@ export async function latestHarnessVersion(harness: Harness, request: typeof fet
 	if (cached && now - cached.at < cacheMs) return cached.version;
 	let version: string | undefined;
 	try {
-		const response = await request(`https://registry.npmjs.org/${name.replace("/", "%2F")}/latest`, { signal: AbortSignal.timeout(5_000), headers: { accept: "application/json" } });
+		const response = await request(`https://registry.npmjs.org/${name.replaceAll("/", "%2F")}/latest`, { signal: AbortSignal.timeout(5_000), headers: { accept: "application/json" } });
 		const body = response.ok ? await response.json() as { version?: unknown } : undefined;
 		if (typeof body?.version === "string" && /^\d+\.\d+\.\d+$/.test(body.version)) version = body.version;
 	} catch { /* Offline or the registry is unavailable. */ }
