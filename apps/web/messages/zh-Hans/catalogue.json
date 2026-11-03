@@ -2766,13 +2766,6 @@
 		"perMonth": "每月",
 		"calculatorNote": "使用每个模型下方所选的路由和层级，按 30 天计算。缓存的输入按缓存读取价格计费。",
 		"providers": "提供商",
-		"providersSub": "Phaseo 目前提供的路由，每 1M token 的标准层级价格",
-		"provider": "提供商",
-		"tiers": "层级",
-		"providerPriceNote": "标准层级价格。第一行是最便宜的路由；可在顶部模型名称下方选择其他路由。",
-		"noRoutesFor": "Phaseo 目前不路由 {name}。",
-		"otherListings": "{count, plural, other {另有列出但未经 Phaseo 路由：# 个提供商}}",
-		"otherListingsNote": "仅供参考：其他网关的列表，以及 Phaseo 已停用或禁用的路由。",
 		"benchmarks": "基准测试",
 		"benchmarksSub": "只有两个或以上已选模型报告的结果才会单独成行",
 		"benchmarksSubSingle": "此模型的所有基准测试结果",
@@ -2863,8 +2856,6 @@
 		"activityTokens30d": "Token，过去 30 天",
 		"activityPerDay": "每天",
 		"activityNoTokens": "仅请求，无 token 计费",
-		"providersSubMeters": "Phaseo 目前提供的路由，以及每条路由的标准层级价格",
-		"standardPrice": "标准价格",
 		"moreMetersCount": "{count, plural, other {另有 # 个计费项}}",
 		"priceFrom": "{price} 起",
 		"conditionFields": {
@@ -2890,7 +2881,13 @@
 		"showAllProviders": "显示全部 {count} 个提供商",
 		"showFewerProviders": "显示较少提供商",
 		"moreCount": "+{count}",
-		"routePrice": "输入 {input} · 输出 {output}"
+		"routePrice": "输入 {input} · 输出 {output}",
+		"providersAcrossSub": "每个模型在 Phaseo 上的运行位置，以及每百万 token 的标准层级价格。提供更多这些模型的提供商排在前面。",
+		"providersAcrossSubMeters": "每个模型在 Phaseo 上的运行位置，以及每条路由的标准层级价格。提供更多这些模型的提供商排在前面。",
+		"providersAcrossNote": "要按其中某个提供商计算整页价格，请在顶部模型名称下选择它。",
+		"routeContext": "{value} 上下文",
+		"otherListingsLabel": "另有列出，Phaseo 不路由",
+		"noRoutesAny": "Phaseo 目前不路由这些模型中的任何一个。"
 	},
 	"countries": {
 		"title": "各国 AI",

@@ -2766,13 +2766,6 @@
 		"perMonth": "شهريًا",
 		"calculatorNote": "تستخدم المسار والمستوى المختارين أسفل كل نموذج على مدى 30 يومًا. يُحتسب الإدخال المخزّن مؤقتًا بسعر قراءة ذاكرة التخزين المؤقت.",
 		"providers": "المزوّدون",
-		"providersSub": "المسارات التي يوفّرها Phaseo اليوم، بأسعار المستوى القياسي لكل 1M رمز",
-		"provider": "المزوّد",
-		"tiers": "المستويات",
-		"providerPriceNote": "أسعار المستوى القياسي. الصف الأول هو أرخص مسار؛ اختر مسارًا آخر أسفل اسم النموذج في الأعلى.",
-		"noRoutesFor": "لا يوجّه Phaseo النموذج {name} حاليًا.",
-		"otherListings": "مُدرج أيضًا ولا يوجّهه Phaseo: {count, plural, zero {لا مزوّدين} one {مزوّد واحد} two {مزوّدان} few {# مزوّدين} many {# مزوّدًا} other {# مزوّد}}",
-		"otherListingsNote": "للاطلاع فقط: قوائم البوابات الأخرى والمسارات التي أوقفها Phaseo أو عطّلها.",
 		"benchmarks": "المعايير",
 		"benchmarksSub": "لا يظهر صف إلا للنتائج التي يُبلغ عنها نموذجان أو أكثر من النماذج المحددة",
 		"benchmarksSubSingle": "كل نتائج المعايير لهذا النموذج",
@@ -2863,8 +2856,6 @@
 		"activityTokens30d": "الرموز، آخر 30 يومًا",
 		"activityPerDay": "يوميًا",
 		"activityNoTokens": "طلبات فقط، بلا عدّادات رموز",
-		"providersSubMeters": "المسارات التي يوفّرها Phaseo اليوم، مع السعر القياسي لكل مسار",
-		"standardPrice": "السعر القياسي",
 		"moreMetersCount": "{count, plural, zero {لا عدّادات إضافية} one {عدّاد إضافي واحد} two {عدّادان إضافيان} few {# عدّادات إضافية} many {# عدّادًا إضافيًا} other {# عدّاد إضافي}}",
 		"priceFrom": "من {price}",
 		"conditionFields": {
@@ -2890,7 +2881,13 @@
 		"showAllProviders": "عرض كل المزوّدين ({count})",
 		"showFewerProviders": "عرض مزوّدين أقل",
 		"moreCount": "+{count}",
-		"routePrice": "{input} إدخال · {output} إخراج"
+		"routePrice": "{input} إدخال · {output} إخراج",
+		"providersAcrossSub": "أين يعمل كل نموذج على Phaseo، مع الأسعار القياسية لكل مليون رمز. يظهر أولًا المزوّدون الذين يقدّمون عددًا أكبر من هذه النماذج.",
+		"providersAcrossSubMeters": "أين يعمل كل نموذج على Phaseo، مع السعر القياسي لكل مسار. يظهر أولًا المزوّدون الذين يقدّمون عددًا أكبر من هذه النماذج.",
+		"providersAcrossNote": "لحساب الصفحة كلها على أحد هؤلاء المزوّدين، اختره أسفل اسم النموذج في الأعلى.",
+		"routeContext": "سياق {value}",
+		"otherListingsLabel": "مُدرج أيضًا، بلا مسار عبر Phaseo",
+		"noRoutesAny": "لا يوجّه Phaseo أيًّا من هذه النماذج اليوم."
 	},
 	"countries": {
 		"title": "الذكاء الاصطناعي حسب الدولة",

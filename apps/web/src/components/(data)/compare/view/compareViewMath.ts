@@ -6,6 +6,7 @@ import type {
 	CompareViewCondition,
 	CompareViewModel,
 	CompareViewPriceRow,
+	CompareViewProvider,
 	CompareViewUsageByModel,
 } from "./types";
 
@@ -81,6 +82,34 @@ export type ConditionWords = {
 	seconds: (value: number) => string;
 };
 
+const LEGACY_OPS: Record<string, CompareViewCondition["op"]> = { "=": "eq", ne: "ne", "≠": "ne", "<": "lt", "≤": "lte", ">": "gt", "≥": "gte", in: "in" };
+
+/**
+ * The web API deployed before structured conditions sends only text, such as
+ * "video params.mode ne v2v and video params.draft = 1" or "input tokens > 272K".
+ * Reading it back into conditions lets those responses (and cached copies) format
+ * the same way. Returns null for text it can't read, which then shows as sent.
+ */
+export function parseLegacyCondition(text: string | null | undefined): CompareViewCondition[] | null {
+	if (!text) return null;
+	const conditions: CompareViewCondition[] = [];
+	for (const part of text.split(" and ")) {
+		const match = /^(.+?) (=|ne|≠|<|≤|>|≥|in) (.+)$/.exec(part.trim());
+		if (!match) return null;
+		const field = match[1]!.split(".").at(-1)!.trim().replace(/ /g, "_");
+		const op = LEGACY_OPS[match[2]!]!;
+		const read = (raw: string): string | number => {
+			const value = raw.trim();
+			// Token limits were shortened ("272K", "1M"); "2K" elsewhere is a resolution name.
+			const short = /tokens$/.test(field) ? /^(\d+(?:\.\d+)?)([KM])$/.exec(value) : null;
+			if (short) return Number(short[1]) * (short[2] === "M" ? 1_000_000 : 1_000);
+			return /^-?\d+(\.\d+)?$/.test(value) ? Number(value) : value;
+		};
+		conditions.push({ field, op, value: op === "in" ? match[3]!.split(",").map(read) : read(match[3]!) });
+	}
+	return conditions;
+}
+
 /** "480p", "2K", "audio to video": request values as a reader would write them. */
 function optionValue(value: string | number | boolean): string {
 	const label = String(value).trim();
@@ -112,6 +141,25 @@ export function describeCondition(condition: CompareViewCondition, words: Condit
 }
 
 // Routes
+
+export type ProviderLine = { id: string; name: string; logoId: string; routes: Array<CompareViewProvider | null> };
+
+/**
+ * Every provider that serves at least one compared model, with each model's route on it.
+ * Providers serving more of the compared models come first; then the one nearest the top
+ * of a model's own list, which the API sends cheapest first.
+ */
+export function providerLines(models: CompareViewModel[]): ProviderLine[] {
+	const lines = new Map<string, ProviderLine & { rank: number }>();
+	models.forEach((model, index) => model.providers.forEach((provider, rank) => {
+		const line = lines.get(provider.id) ?? { id: provider.id, name: provider.name, logoId: provider.logoId ?? provider.id, routes: models.map(() => null), rank };
+		line.routes[index] = provider;
+		line.rank = Math.min(line.rank, rank);
+		lines.set(provider.id, line);
+	}));
+	const served = (line: ProviderLine) => line.routes.filter(Boolean).length;
+	return [...lines.values()].sort((left, right) => served(right) - served(left) || left.rank - right.rank || left.name.localeCompare(right.name));
+}
 
 /** The route and tier a reader picked for a model. A null provider means the headline (cheapest) route. */
 export type RouteChoice = { provider: string | null; tier: string | null };

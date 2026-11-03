@@ -2766,13 +2766,6 @@
 		"perMonth": "Por mês",
 		"calculatorNote": "Usa a rota e o nível escolhidos abaixo de cada modelo, ao longo de 30 dias. A entrada em cache é cobrada pela tarifa de leitura de cache.",
 		"providers": "Provedores",
-		"providersSub": "Rotas que o Phaseo atende hoje, preços do nível padrão por 1M tokens",
-		"provider": "Provedor",
-		"tiers": "Níveis",
-		"providerPriceNote": "Preços do nível padrão. A primeira linha é a rota mais barata; escolha outra abaixo do nome do modelo, no topo.",
-		"noRoutesFor": "O Phaseo não roteia {name} no momento.",
-		"otherListings": "{count, plural, one {Também listado, não roteado pelo Phaseo: # provedor} other {Também listado, não roteado pelo Phaseo: # provedores}}",
-		"otherListingsNote": "Exibido como referência: listagens de outros gateways e rotas que o Phaseo encerrou ou desativou.",
 		"benchmarks": "Avaliações comparativas",
 		"benchmarksSub": "Só ganham uma linha os resultados informados por dois ou mais dos modelos selecionados",
 		"benchmarksSubSingle": "Todos os resultados de avaliação deste modelo",
@@ -2863,8 +2856,6 @@
 		"activityTokens30d": "Tokens, últimos 30 dias",
 		"activityPerDay": "Por dia",
 		"activityNoTokens": "Somente solicitações, sem medidores de tokens",
-		"providersSubMeters": "Rotas que o Phaseo atende hoje, com o preço padrão de cada rota",
-		"standardPrice": "Preço padrão",
 		"moreMetersCount": "{count, plural, one {mais # medidor} other {mais # medidores}}",
 		"priceFrom": "a partir de {price}",
 		"conditionFields": {
@@ -2890,7 +2881,13 @@
 		"showAllProviders": "Mostrar todos os {count} provedores",
 		"showFewerProviders": "Mostrar menos provedores",
 		"moreCount": "+{count}",
-		"routePrice": "{input} entrada · {output} saída"
+		"routePrice": "{input} entrada · {output} saída",
+		"providersAcrossSub": "Onde cada modelo roda no Phaseo, com preços padrão por 1 mi de tokens. Provedores que atendem mais desses modelos aparecem primeiro.",
+		"providersAcrossSubMeters": "Onde cada modelo roda no Phaseo, com o preço padrão de cada rota. Provedores que atendem mais desses modelos aparecem primeiro.",
+		"providersAcrossNote": "Para calcular a página inteira com um desses provedores, escolha-o abaixo do nome do modelo, no topo.",
+		"routeContext": "contexto de {value}",
+		"otherListingsLabel": "Também listado, sem rota no Phaseo",
+		"noRoutesAny": "O Phaseo não roteia nenhum desses modelos hoje."
 	},
 	"countries": {
 		"title": "IA por país",

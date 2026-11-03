@@ -2766,13 +2766,6 @@
 		"perMonth": "Pro Monat",
 		"calculatorNote": "Nutzt die unter jedem Modell gewählte Route und Stufe über 30 Tage. Zwischengespeicherte Eingaben werden zum Cache-Lesepreis berechnet.",
 		"providers": "Anbieter",
-		"providersSub": "Routen, die Phaseo heute bedient, Standardpreise pro 1M Tokens",
-		"provider": "Anbieter",
-		"tiers": "Stufen",
-		"providerPriceNote": "Preise der Standardstufe. Die erste Zeile ist die günstigste Route; eine andere wählst du oben unter dem Modellnamen.",
-		"noRoutesFor": "Phaseo routet {name} derzeit nicht.",
-		"otherListings": "{count, plural, one {Ebenfalls gelistet, nicht über Phaseo geroutet: # Anbieter} other {Ebenfalls gelistet, nicht über Phaseo geroutet: # Anbieter}}",
-		"otherListingsNote": "Zur Information: Einträge anderer Gateways und Routen, die Phaseo eingestellt oder deaktiviert hat.",
 		"benchmarks": "Vergleichstests",
 		"benchmarksSub": "Nur Ergebnisse, die mindestens zwei der ausgewählten Modelle angeben, erhalten eine Zeile",
 		"benchmarksSubSingle": "Alle Testergebnisse für dieses Modell",
@@ -2863,8 +2856,6 @@
 		"activityTokens30d": "Tokens, letzte 30 Tage",
 		"activityPerDay": "Pro Tag",
 		"activityNoTokens": "Nur Anfragen, keine Token-Zähler",
-		"providersSubMeters": "Routen, die Phaseo heute bedient, mit den Standardpreisen jeder Route",
-		"standardPrice": "Standardpreis",
 		"moreMetersCount": "{count, plural, one {# weiterer Zähler} other {# weitere Zähler}}",
 		"priceFrom": "ab {price}",
 		"conditionFields": {
@@ -2890,7 +2881,13 @@
 		"showAllProviders": "Alle {count} Anbieter anzeigen",
 		"showFewerProviders": "Weniger Anbieter anzeigen",
 		"moreCount": "+{count}",
-		"routePrice": "{input} Eingabe · {output} Ausgabe"
+		"routePrice": "{input} Eingabe · {output} Ausgabe",
+		"providersAcrossSub": "Wo jedes Modell auf Phaseo läuft, mit Standardpreisen pro 1 Mio. Tokens. Anbieter, die mehr dieser Modelle bedienen, stehen oben.",
+		"providersAcrossSubMeters": "Wo jedes Modell auf Phaseo läuft, mit dem Standardpreis jeder Route. Anbieter, die mehr dieser Modelle bedienen, stehen oben.",
+		"providersAcrossNote": "Um die ganze Seite mit einem dieser Anbieter zu berechnen, wähle ihn oben unter dem Modellnamen.",
+		"routeContext": "{value} Kontext",
+		"otherListingsLabel": "Auch gelistet, nicht über Phaseo geroutet",
+		"noRoutesAny": "Phaseo routet derzeit keines dieser Modelle."
 	},
 	"countries": {
 		"title": "KI nach Ländern",

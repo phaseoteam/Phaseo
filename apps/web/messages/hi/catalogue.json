@@ -2766,13 +2766,6 @@
 		"perMonth": "प्रति माह",
 		"calculatorNote": "हर मॉडल के नीचे चुने गए रूट और स्तर का उपयोग करता है, 30 दिनों के लिए। कैश किया गया इनपुट कैश-रीड दर पर बिल होता है।",
 		"providers": "प्रदाता",
-		"providersSub": "आज Phaseo पर उपलब्ध रूट, प्रति 1M टोकन मानक स्तर की कीमतें",
-		"provider": "प्रदाता",
-		"tiers": "स्तर",
-		"providerPriceNote": "मानक स्तर की कीमतें। पहली पंक्ति सबसे सस्ता रूट है; दूसरा रूट ऊपर मॉडल के नाम के नीचे चुनें।",
-		"noRoutesFor": "Phaseo अभी {name} को रूट नहीं करता।",
-		"otherListings": "{count, plural, one {अन्य लिस्टिंग, Phaseo से रूट नहीं होतीं: # प्रदाता} other {अन्य लिस्टिंग, Phaseo से रूट नहीं होतीं: # प्रदाता}}",
-		"otherListingsNote": "संदर्भ के लिए: अन्य गेटवे की लिस्टिंग और वे रूट जिन्हें Phaseo ने बंद या निष्क्रिय किया है।",
 		"benchmarks": "बेंचमार्क",
 		"benchmarksSub": "पंक्ति केवल उन परिणामों की है जिन्हें चुने गए दो या अधिक मॉडल रिपोर्ट करते हैं",
 		"benchmarksSubSingle": "इस मॉडल के सभी बेंचमार्क परिणाम",
@@ -2863,8 +2856,6 @@
 		"activityTokens30d": "टोकन, पिछले 30 दिन",
 		"activityPerDay": "प्रति दिन",
 		"activityNoTokens": "केवल अनुरोध, कोई टोकन मीटर नहीं",
-		"providersSubMeters": "आज Phaseo पर उपलब्ध रूट, हर रूट की मानक स्तर की कीमत के साथ",
-		"standardPrice": "मानक कीमत",
 		"moreMetersCount": "{count, plural, one {# और मीटर} other {# और मीटर}}",
 		"priceFrom": "{price} से",
 		"conditionFields": {
@@ -2890,7 +2881,13 @@
 		"showAllProviders": "सभी {count} प्रदाता दिखाएँ",
 		"showFewerProviders": "कम प्रदाता दिखाएँ",
 		"moreCount": "+{count}",
-		"routePrice": "{input} इनपुट · {output} आउटपुट"
+		"routePrice": "{input} इनपुट · {output} आउटपुट",
+		"providersAcrossSub": "हर मॉडल Phaseo पर कहाँ चलता है, प्रति 10 लाख टोकन मानक स्तर की कीमत के साथ। इनमें से ज़्यादा मॉडल देने वाले प्रदाता पहले दिखते हैं।",
+		"providersAcrossSubMeters": "हर मॉडल Phaseo पर कहाँ चलता है, हर रूट की मानक स्तर की कीमत के साथ। इनमें से ज़्यादा मॉडल देने वाले प्रदाता पहले दिखते हैं।",
+		"providersAcrossNote": "पूरे पेज की कीमत इनमें से किसी प्रदाता पर देखने के लिए, ऊपर मॉडल के नाम के नीचे उसे चुनें।",
+		"routeContext": "{value} संदर्भ",
+		"otherListingsLabel": "सूची में भी, Phaseo से रूट नहीं",
+		"noRoutesAny": "Phaseo आज इनमें से किसी भी मॉडल को रूट नहीं करता।"
 	},
 	"countries": {
 		"title": "देश के अनुसार AI",

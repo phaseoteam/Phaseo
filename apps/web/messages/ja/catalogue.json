@@ -2766,13 +2766,6 @@
 		"perMonth": "月あたり",
 		"calculatorNote": "各モデルの下で選んだルートと階層を使い、30日分で計算します。キャッシュされた入力はキャッシュ読み取り料金で課金されます。",
 		"providers": "プロバイダー",
-		"providersSub": "Phaseoが現在提供しているルート、1Mトークンあたりの標準階層料金",
-		"provider": "プロバイダー",
-		"tiers": "階層",
-		"providerPriceNote": "標準階層の価格です。最初の行が最安ルートです。別のルートは上部のモデル名の下で選べます。",
-		"noRoutesFor": "Phaseoは現在{name}をルーティングしていません。",
-		"otherListings": "{count, plural, other {Phaseoでルーティングしていない掲載: #件のプロバイダー}}",
-		"otherListingsNote": "参考情報: 他のゲートウェイの掲載情報と、Phaseoが終了または無効化したルートです。",
 		"benchmarks": "ベンチマーク",
 		"benchmarksSub": "選択したモデルのうち2つ以上が報告している結果のみを行として表示します",
 		"benchmarksSubSingle": "このモデルのすべてのベンチマーク結果",
@@ -2863,8 +2856,6 @@
 		"activityTokens30d": "トークン（過去30日間）",
 		"activityPerDay": "1日あたり",
 		"activityNoTokens": "リクエストのみ（トークン課金なし）",
-		"providersSubMeters": "Phaseoが現在提供しているルートと、各ルートの標準階層料金",
-		"standardPrice": "標準料金",
 		"moreMetersCount": "{count, plural, other {ほか#件の課金項目}}",
 		"priceFrom": "{price}から",
 		"conditionFields": {
@@ -2890,7 +2881,13 @@
 		"showAllProviders": "{count}件のプロバイダーをすべて表示",
 		"showFewerProviders": "プロバイダーの表示を減らす",
 		"moreCount": "+{count}",
-		"routePrice": "入力 {input} · 出力 {output}"
+		"routePrice": "入力 {input} · 出力 {output}",
+		"providersAcrossSub": "各モデルがPhaseo上でどこで動くかと、100万トークンあたりの標準階層料金。これらのモデルを多く提供するプロバイダーが先頭です。",
+		"providersAcrossSubMeters": "各モデルがPhaseo上でどこで動くかと、各ルートの標準階層料金。これらのモデルを多く提供するプロバイダーが先頭です。",
+		"providersAcrossNote": "ページ全体をこれらのプロバイダーのいずれかで計算するには、上部のモデル名の下で選択してください。",
+		"routeContext": "コンテキスト {value}",
+		"otherListingsLabel": "掲載あり（Phaseoのルートなし）",
+		"noRoutesAny": "現在、Phaseoはこれらのモデルをいずれもルーティングしていません。"
 	},
 	"countries": {
 		"title": "国別AI",

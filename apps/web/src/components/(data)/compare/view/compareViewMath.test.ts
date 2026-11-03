@@ -5,6 +5,8 @@ import {
 	buildVerdicts,
 	defaultEffort,
 	describeCondition,
+	parseLegacyCondition,
+	providerLines,
 	doSameJob,
 	effortLevels,
 	formatUsd,
@@ -319,5 +321,48 @@ describe("describeCondition", () => {
 		expect(describeCondition({ field: "resolution", op: "in", value: ["480p", "720p"] }, words)).toBe("Resolution: 480p / 720p");
 		expect(describeCondition({ field: "resolution", op: "in", value: ["1024x1792", "1792x1024"] }, words)).toBe("Resolution: 1024x1792 / 1792x1024");
 		expect(describeCondition({ field: "seconds", op: "in", value: [10] }, words)).toBe("Duration: 10 sec");
+	});
+});
+
+describe("parseLegacyCondition", () => {
+	const words = {
+		field: (field: string) => ({ input_tokens: "Input", resolution: "Resolution", mode: "Mode", draft: "Draft", seconds: "Duration" } as Record<string, string>)[field] ?? field,
+		is: (field: string, value: string) => `${field}: ${value}`,
+		isNot: (field: string, value: string) => `${field}: not ${value}`,
+		on: "on",
+		off: "off",
+		tokens: (value: number) => `${value / 1000}K`,
+		seconds: (value: number) => `${value} sec`,
+	};
+	const read = (text: string) => parseLegacyCondition(text)!.map((condition) => describeCondition(condition, words)).join(" · ");
+
+	// The text the deployed web API sent for Grok Imagine Video 1.5 and FLUX 3 Video on 3 Nov.
+	it("reads the deployed API's condition text back into tidy labels", () => {
+		expect(read("video params.resolution = 480p")).toBe("Resolution: 480p");
+		expect(read("video params.mode ne v2v and video params.draft = 1")).toBe("Mode: not v2v · Draft: on");
+		expect(read("video params.mode ne v2v and video params.resolution = hd and video params.draft = 0")).toBe("Mode: not v2v · Resolution: HD · Draft: off");
+		expect(read("input tokens > 272K")).toBe("Input > 272K");
+		expect(read("video params.resolution in 480P,480p,854x480")).toBe("Resolution: 480p");
+		expect(read("video params.seconds in 10")).toBe("Duration: 10 sec");
+	});
+
+	it("leaves text it can't read alone", () => {
+		expect(parseLegacyCondition("draft")).toBeNull();
+		expect(parseLegacyCondition(null)).toBeNull();
+	});
+});
+
+describe("providerLines", () => {
+	const route = (id: string, input: number) => ({ id, name: id.toUpperCase(), input, output: input * 4, cacheRead: null, contextWindow: null, maxOutput: null, tiers: ["standard"], quantisation: null });
+
+	it("lists each provider once with every model's route, shared providers first, then the cheapest", () => {
+		const glm = model("z-ai/glm-5.2", { providers: [route("ambient", 0.6), route("deepinfra", 0.75), route("wafer", 0.8)] });
+		const kimi = model("moonshotai/kimi-k3", { providers: [route("wafer", 0.5), route("deepinfra", 0.9)] });
+		const lines = providerLines([glm, kimi]);
+		expect(lines.map((line) => [line.id, line.routes.map((entry) => entry?.input ?? null)])).toEqual([
+			["wafer", [0.8, 0.5]],
+			["deepinfra", [0.75, 0.9]],
+			["ambient", [0.6, null]],
+		]);
 	});
 });

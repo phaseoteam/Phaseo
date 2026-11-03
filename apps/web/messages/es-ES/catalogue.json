@@ -2766,13 +2766,6 @@
 		"perMonth": "Al mes",
 		"calculatorNote": "Usa la ruta y el nivel elegidos debajo de cada modelo, durante 30 días. La entrada en caché se cobra a la tarifa de lectura de caché.",
 		"providers": "Proveedores",
-		"providersSub": "Rutas que Phaseo ofrece hoy, precios del nivel estándar por 1M tokens",
-		"provider": "Proveedor",
-		"tiers": "Niveles",
-		"providerPriceNote": "Precios del nivel estándar. La primera fila es la ruta más barata; elige otra debajo del nombre del modelo, arriba.",
-		"noRoutesFor": "Phaseo no enruta {name} actualmente.",
-		"otherListings": "{count, plural, one {También listado, Phaseo no lo enruta: # proveedor} other {También listado, Phaseo no lo enruta: # proveedores}}",
-		"otherListingsNote": "Se muestra como referencia: listados de otros gateways y rutas que Phaseo ha retirado o desactivado.",
 		"benchmarks": "Benchmarks",
 		"benchmarksSub": "Solo tienen fila los resultados que publican dos o más de los modelos seleccionados",
 		"benchmarksSubSingle": "Todos los resultados de benchmarks de este modelo",
@@ -2863,8 +2856,6 @@
 		"activityTokens30d": "Tokens, últimos 30 días",
 		"activityPerDay": "Por día",
 		"activityNoTokens": "Solo solicitudes, sin medidores de tokens",
-		"providersSubMeters": "Rutas que Phaseo ofrece hoy, con el precio estándar de cada ruta",
-		"standardPrice": "Precio estándar",
 		"moreMetersCount": "{count, plural, one {# medidor más} other {# medidores más}}",
 		"priceFrom": "desde {price}",
 		"conditionFields": {
@@ -2890,7 +2881,13 @@
 		"showAllProviders": "Mostrar los {count} proveedores",
 		"showFewerProviders": "Mostrar menos proveedores",
 		"moreCount": "+{count}",
-		"routePrice": "{input} entrada · {output} salida"
+		"routePrice": "{input} entrada · {output} salida",
+		"providersAcrossSub": "Dónde se ejecuta cada modelo en Phaseo, con precios estándar por 1 M de tokens. Primero aparecen los proveedores que ofrecen más de estos modelos.",
+		"providersAcrossSubMeters": "Dónde se ejecuta cada modelo en Phaseo, con el precio estándar de cada ruta. Primero aparecen los proveedores que ofrecen más de estos modelos.",
+		"providersAcrossNote": "Para calcular toda la página con uno de estos proveedores, elígelo debajo del nombre del modelo, arriba.",
+		"routeContext": "contexto de {value}",
+		"otherListingsLabel": "También listado, sin ruta en Phaseo",
+		"noRoutesAny": "Phaseo no enruta ninguno de estos modelos hoy."
 	},
 	"countries": {
 		"title": "IA por país",

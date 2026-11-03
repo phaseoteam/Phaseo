@@ -2766,13 +2766,6 @@
 		"perMonth": "Per month",
 		"calculatorNote": "Uses the route and tier chosen under each model, over 30 days. Cached input is billed at the cache-read rate.",
 		"providers": "Providers",
-		"providersSub": "Routes Phaseo serves today, standard-tier prices per 1M tokens",
-		"provider": "Provider",
-		"tiers": "Tiers",
-		"providerPriceNote": "Standard-tier prices. The first row is the cheapest route; pick another under the model’s name at the top.",
-		"noRoutesFor": "Phaseo doesn’t route {name} today.",
-		"otherListings": "{count, plural, one {Also listed, not routed by Phaseo: # provider} other {Also listed, not routed by Phaseo: # providers}}",
-		"otherListingsNote": "Shown for reference: other gateways’ listings and routes Phaseo has retired or disabled.",
 		"benchmarks": "Benchmarks",
 		"benchmarksSub": "Only results that two or more of the selected models report get a row",
 		"benchmarksSubSingle": "Every benchmark result for this model",
@@ -2863,8 +2856,6 @@
 		"activityTokens30d": "Tokens, last 30 days",
 		"activityPerDay": "Per day",
 		"activityNoTokens": "Requests only, no token meters",
-		"providersSubMeters": "Routes Phaseo serves today, with each route’s standard-tier prices",
-		"standardPrice": "Standard price",
 		"moreMetersCount": "{count, plural, one {# more meter} other {# more meters}}",
 		"priceFrom": "from {price}",
 		"conditionFields": {
@@ -2890,7 +2881,13 @@
 		"showAllProviders": "Show all {count} providers",
 		"showFewerProviders": "Show fewer providers",
 		"moreCount": "+{count}",
-		"routePrice": "{input} in · {output} out"
+		"routePrice": "{input} in · {output} out",
+		"providersAcrossSub": "Where each model runs on Phaseo, with standard-tier prices per 1M tokens. Providers that serve more of these models come first.",
+		"providersAcrossSubMeters": "Where each model runs on Phaseo, with each route’s standard-tier price. Providers that serve more of these models come first.",
+		"providersAcrossNote": "To price the whole page on one of these providers, pick it under the model’s name at the top.",
+		"routeContext": "{value} context",
+		"otherListingsLabel": "Also listed, not routed",
+		"noRoutesAny": "Phaseo doesn’t route any of these models today."
 	},
 	"countries": {
 		"title": "AI by country",
