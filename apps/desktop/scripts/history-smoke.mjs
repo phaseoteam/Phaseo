@@ -175,10 +175,15 @@ try {
   await run(`${earlierMessages}.click()`);
   await wait(`${messages}.length===100&&${messages}[0].textContent.includes('Résumé needle')`, "oldest conversation page");
   if (await run(`Boolean(${earlierMessages})`)) throw new Error("Oldest conversation history offers more pages.");
-  // Switching chats and returning starts again at the latest page.
+  // Switching chats and returning opens the chat where it was left: the message at the top of the view stays in view.
+  const leftAt = await run(`(()=>{const view=${host}.getBoundingClientRect().top;return ${messages}.find(row=>row.getBoundingClientRect().bottom>=view)?.dataset.conversationId})()`);
+  if (!leftAt) throw new Error("No message was in view before switching chats.");
   await run(`window.__auditOpenChat('History 043')`);
   await run(`window.__auditOpenChat('History 042')`);
-  await wait(`${messages}.length===50&&${messages}[0].textContent.includes('Conversation item 075')`, "conversation history resets on reopen");
+  await wait(`(()=>{const row=document.querySelector('main [data-conversation-id=${JSON.stringify(leftAt)}]'),box=${host}?.getBoundingClientRect();if(!row||!box)return false;const at=row.getBoundingClientRect();return at.bottom>=box.top&&at.top<box.bottom})()&&Boolean(${jump})`, "conversation reopens where it was left");
+  // Jump to latest goes back to the newest page and follows it.
+  await run(`${jump}.click()`);
+  await wait(`${messages}.length===50&&${messages}[0].textContent.includes('Conversation item 075')`, "jump returns to the latest page");
   await wait(atLatest, "reopened conversation follows latest");
   await run(`(()=>{${host}.scrollTop=100;${host}.dispatchEvent(new Event('scroll'))})()`);
   await wait(`Boolean(${jump})`, "reading history pauses automatic following");
