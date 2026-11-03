@@ -68,6 +68,31 @@ describe("phone review", () => {
 		expect(await ask({ type: "git_status", projectId: "p1" })).toMatchObject({ ok: false, error: { code: "forbidden" } });
 	});
 
+	it("sends nothing a read found once the switch went off while it ran", async () => {
+		const { session, allow, frames, app } = connected(["code"]);
+		app.gitStatuses.set("p1", { files: [{ path: "src/usage.ts", indexStatus: " ", worktreeStatus: "M" }], branch: "main", hasRemote: false });
+		app.patches.set("uncommitted", patch);
+		const { hash } = await app.host.diff("p1", { scope: "uncommitted" });
+		const held: (() => void)[] = [], { gitStatus, diff } = app.host;
+		let allHeld!: () => void;
+		const reading = new Promise<void>(resolve => { allHeld = resolve; });
+		const hold = <T>(read: Promise<T>) => new Promise<T>(resolve => { if (held.push(() => resolve(read)) === 3) allHeld(); });
+		app.host.gitStatus = projectId => hold(gitStatus(projectId));
+		app.host.diff = (projectId, request) => hold(diff(projectId, request));
+		const requests = [
+			{ id: "status", type: "git_status", projectId: "p1" },
+			{ id: "diff", type: "read_diff", scope: "uncommitted", projectId: "p1" },
+			{ id: "file", type: "read_diff_file", scope: "uncommitted", projectId: "p1", path: "src/usage.ts", hash },
+		];
+		const pending = requests.map(request => session.receive(JSON.stringify(request)));
+		await reading;
+		allow([]);
+		for (const release of held) release();
+		await Promise.all(pending);
+		for (const { id } of requests) expect(frames.find(frame => "id" in frame && frame.id === id)).toMatchObject({ ok: false, error: { code: "forbidden" } });
+		expect(JSON.stringify(frames)).not.toContain("usage()");
+	});
+
 	it("sends no access event to a phone from before protocol 4", async () => {
 		const { ask, allow, frames } = connected(["code"]);
 		await ask({ type: "hello", deviceId: "dev", appVersion: "1", protocol: 3 });

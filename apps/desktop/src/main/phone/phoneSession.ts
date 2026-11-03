@@ -200,17 +200,23 @@ export class PhoneSession {
 			case "git_status": {
 				this.allowed("code");
 				this.checkProject(request.projectId);
-				return okResponse(request, phoneGitStatus(await this.host.gitStatus(request.projectId)));
+				const status = await this.host.gitStatus(request.projectId);
+				// Read code can be turned off while git runs; nothing read before then goes out after.
+				this.allowed("code");
+				return okResponse(request, phoneGitStatus(status));
 			}
 			case "read_diff": {
 				this.allowed("code");
 				const { projectId, diff } = this.diffRequest(request);
-				return okResponse(request, phoneDiff(await this.host.diff(projectId, diff)));
+				const result = await this.host.diff(projectId, diff);
+				this.allowed("code");
+				return okResponse(request, phoneDiff(result));
 			}
 			case "read_diff_file": {
 				this.allowed("code");
 				const { projectId, diff } = this.diffRequest(request);
 				const result = await this.host.diff(projectId, diff);
+				this.allowed("code");
 				if (result.hash !== request.hash) throw new Error("The changes moved on. Read the review again to see the latest.");
 				const file = phoneDiffFile(result, request.path);
 				if (!file) throw new PhoneProtocolError("not_found", "That file isn't in these changes any more.");
