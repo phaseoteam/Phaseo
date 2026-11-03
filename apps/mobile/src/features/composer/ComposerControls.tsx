@@ -68,25 +68,21 @@ export function ComposerAttachButton({ disabled, onPress }: { disabled?: boolean
 }
 
 /**
- * The model and its effort: logos, the name, then the effort word muted, and a chevron. Beside one line of text it
- * shows only the logos; read-only (a computer thread's model) it has no chevron and doesn't press.
+ * The model and its effort: logos, the name, then the effort word muted, and a chevron. Short of room, the name
+ * truncates first. Read-only (a computer that can't change the thread from the phone) it has no chevron and doesn't press.
  */
-export function ComposerModelControl({ label, logos, iconOnly, onPress, readOnlyReason }: { label: ModelLabel; logos?: ReactNode; iconOnly?: boolean; onPress?: () => void; readOnlyReason?: string }) {
+export function ComposerModelControl({ label, logos, onPress, readOnlyReason, hint = "Choose the model and its effort" }: { label: ModelLabel; logos?: ReactNode; onPress?: () => void; readOnlyReason?: string; hint?: string }) {
   const suffix = modelLabelSuffix(label);
   const content = (
     <>
       {logos ? <View className="shrink-0">{logos}</View> : null}
-      {iconOnly && logos ? null : (
-        <>
-          <Text variant="label" numberOfLines={1} className={cn("shrink", !onPress && "text-muted-foreground")}>{label.model}</Text>
-          {suffix ? <Text variant="caption" numberOfLines={1} className="shrink">{suffix}</Text> : null}
-        </>
-      )}
+      <Text variant="label" numberOfLines={1} className={cn("shrink", !onPress && "text-muted-foreground")}>{label.model}</Text>
+      {suffix ? <Text variant="caption" numberOfLines={1} className="shrink-0">{suffix}</Text> : null}
       {onPress ? <Icon icon={ChevronDown} tone="muted" size={12} /> : null}
     </>
   );
   const className = "h-[44px] min-w-0 flex-row items-center gap-2 rounded-md px-2";
   const name = `Model and effort, ${modelLabelText(label)}`;
   if (!onPress) return <View accessible accessibilityLabel={readOnlyReason ? `${name}. ${readOnlyReason}` : name} className={className}>{content}</View>;
-  return <Pressable accessibilityRole="button" accessibilityLabel={name} accessibilityHint="Choose the model and its effort" onPress={onPress} className={cn(className, "active:bg-accent")}>{content}</Pressable>;
+  return <Pressable accessibilityRole="button" accessibilityLabel={name} accessibilityHint={hint} onPress={onPress} className={cn(className, "active:bg-accent")}>{content}</Pressable>;
 }

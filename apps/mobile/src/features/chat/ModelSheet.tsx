@@ -16,13 +16,15 @@ export type SheetModel = { id: string; label: string; detail?: string | null; or
 /**
  * Picks one model and its effort, for Phaseo chats and new computer threads. It opens tall and stays open while you
  * pick, until dismissed. Fixed at the top: the title, the chosen model with its effort folded into one row (open it
- * for the levels, each marked Default or ticked), search and filters. Below them the rows scroll: favourites and
+ * for the levels, each marked Default or ticked), any other settings, search and filters. Below them the rows scroll: favourites and
  * recent first, then a capped list with Show more.
  */
-export function ModelSheet<T>({ open, onClose, title = "Model", query, onQuery, controls, rows, describe, selected, selectedId, onPick, onShowMore, onToggleFavourite, effort, error, onRetry, footer }: {
+export function ModelSheet<T>({ open, onClose, title = "Model", settings, query, onQuery, controls, rows, describe, selected, selectedId, onPick, onShowMore, onToggleFavourite, effort, error, onRetry, footer }: {
   open: boolean;
   onClose(): void;
   title?: string;
+  /** More of the thread's settings, under the chosen model and over the search. */
+  settings?: ReactNode;
   query: string;
   onQuery(value: string): void;
   /** Filters under the search field. */
@@ -73,6 +75,7 @@ export function ModelSheet<T>({ open, onClose, title = "Model", query, onQuery, 
           <Button label="Done" size="sm" variant="ghost" onPress={onClose} />
         </View>
         {selected ? <SelectedModel model={selected} effort={effort?.rows.length ? effort : null} /> : null}
+        {settings}
         <View className="px-4 pb-3 pt-3"><SearchField value={query} onChangeText={onQuery} placeholder="Search models" /></View>
         {controls ? <View className="pb-3">{controls}</View> : null}
         <View className="h-px bg-border" />
