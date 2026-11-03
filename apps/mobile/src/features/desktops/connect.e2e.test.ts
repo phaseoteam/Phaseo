@@ -116,7 +116,7 @@ describe("the phone app through the real Phaseo Connect relay and desktop client
   test("pairs over Connect without the relay seeing the code, then lists chats and sends, sealed", async () => {
     const { relay, desktop, saved, client, pairingCode } = await paired();
     expect(saved).toMatchObject({ desktopId: desktop.desktopId, desktopName: "Test PC", relayToken: expect.any(String) });
-    expect(client.state.get()).toEqual({ status: "connected", via: "connect", desktopName: "Test PC", protocol: 6, capabilities: [] });
+    expect(client.state.get()).toEqual({ status: "connected", via: "connect", desktopName: "Test PC", protocol: 7, capabilities: [] });
     const { chats } = await client.request("list_chats", {});
     expect(chats).toEqual([expect.objectContaining({ id: "chat-1", title: "Release notes" })]);
     await client.request("send", { chatId: "chat-1", text: "Ship it" });

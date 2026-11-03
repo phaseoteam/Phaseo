@@ -114,7 +114,7 @@ function TerminalView({ session, api, focus, onFocus, onError }: { session: Term
 	const copy = () => { const text = terminalRef.current?.getSelection(); if (text) void navigator.clipboard.writeText(text).catch(() => report.current("The clipboard refused the copy.")); };
 	const paste = () => void navigator.clipboard.readText().then(text => { if (text && current.current.status === "running") terminalRef.current?.paste(text); terminalRef.current?.focus(); }, () => report.current("The clipboard could not be read. Press Ctrl+V instead."));
 	// Add to chat: the selected output goes into the open composer as a quoted block.
-	const addToChat = () => { const text = terminalRef.current?.getSelection(); if (!text?.trim()) return; if (!attachToComposer({ text: terminalContext(terminalTitle(current.current), text) })) showToast("info", "Open a chat to add terminal output to it."); };
+	const addToChat = () => { const text = terminalRef.current?.getSelection(); if (!text?.trim()) return; if (!attachToComposer({ text: terminalContext(terminalTitle({ title: current.current.title }), text) })) showToast("info", "Open a chat to add terminal output to it."); };
 	return <div className="terminal-view relative h-full w-full overflow-hidden bg-background p-1" onPointerDown={onFocus} onFocusCapture={onFocus}>
 		<ContextMenu.Root>
 			<ContextMenu.Trigger render={<div ref={host} className="h-full w-full" />} />

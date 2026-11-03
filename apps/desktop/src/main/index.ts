@@ -125,7 +125,7 @@ import { validateMcpCommand } from "../shared/mcp";
 import { validatePreferences } from "../shared/preferences";
 import { validateRememberedModels, type RememberedModels } from "../shared/rememberedModels";
 import { cachedConnectedHarnesses } from "./connectedHarnesses";
-import { validateProjectUpdate } from "../shared/projectSettings";
+import { settingsProject, validateProjectUpdate } from "../shared/projectSettings";
 import { TaskNotifications } from "./taskNotifications";
 import { MissionService } from "./missionService";
 import { validateMissionCommand } from "../shared/missions";
@@ -188,7 +188,12 @@ function terminalOwners() {
 }
 /** What a chat started that can serve pages: its terminals' shells and its background commands. */
 function serverRoots(event: Electron.IpcMainInvokeEvent, taskId: unknown): ServerRoot[] {
-	if (!senderWindow(event) || typeof taskId !== "string" || !taskId || taskId.length > 200) throw new Error("Invalid chat.");
+	if (!senderWindow(event)) throw new Error("Invalid chat.");
+	return chatServerRoots(taskId);
+}
+/** The same roots for the window and for a phone (whose session has already checked the chat is one it lists). */
+function chatServerRoots(taskId: unknown): ServerRoot[] {
+	if (typeof taskId !== "string" || !taskId || taskId.length > 200) throw new Error("Invalid chat.");
 	workspaceRuntime.store.getTask(taskId);
 	return [
 		...terminalService.processOwners().filter(owner => owner.taskId === taskId).map(owner => ({ pid: owner.pid, label: owner.title })),
@@ -222,9 +227,13 @@ ipcMain.handle("workspace:terminals", event => {
 });
 ipcMain.handle("workspace:terminal", (event, command: unknown) => {
 	if (!senderWindow(event)) throw new Error("Invalid terminal request.");
+	return terminalCommand(command);
+});
+/** The window's terminal command, which a phone's terminal frames run too. */
+function terminalCommand(command: unknown) {
 	if (command && typeof command === "object" && "type" in command && command.type === "open" && "projectId" in command && typeof command.projectId === "string") workspaceRuntime.assertProjectAvailable(command.projectId);
 	return terminalService.command(command);
-});
+}
 ipcMain.handle("workspace:link-title", (event, value: unknown) => { if (!senderWindow(event) || typeof value !== "string") throw new Error("Invalid link."); return linkTitle(value); });
 ipcMain.handle("workspace:open-link", async (event, value: unknown) => {
 	if (!senderWindow(event) || typeof value !== "string") throw new Error("Invalid link.");
@@ -1401,6 +1410,13 @@ app.whenReady().then(() => {
 				return source?.settings?.pullRequestMergeMethod ?? workspaceRuntime.store.getPreferences().pullRequestMergeMethod ?? null;
 			},
 			fromPhone: note => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:phone-note", { ...note, project: workspaceRuntime.store.getProjects().find(value => value.id === note.projectId)?.name }); },
+			// The window's terminals and Running servers, through the same functions as its IPC handlers.
+			terminals: () => terminalService.get(),
+			terminal: command => terminalCommand(command),
+			attachTerminal: (id, viewer, listener) => terminalService.attach(id, viewer, listener),
+			scripts: projectId => settingsProject(workspaceRuntime.store.getProjects(), projectId)?.settings?.scripts ?? [],
+			servers: chatId => span("thread.servers", undefined, () => threadServers(chatServerRoots(chatId))),
+			stopServer: (chatId, port, allowed) => stopThreadServer(chatServerRoots(chatId), port, allowed),
 		},
 	});
 	void phoneService.start().catch(() => {});
@@ -1464,7 +1480,7 @@ app.whenReady().then(() => {
 	serveHtmlRenders();
 	workspaceRuntime.htmlPreview = request => htmlPreview(request, htmlRenderUrl(request.html, request.appearance));
 	browserRecordings = new BrowserRecordings(path.join(app.getPath("userData"), "browser-recordings"));
-	terminalService.onEvent = event => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:terminal-event", event); };
+	terminalService.listen(event => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:terminal-event", event); });
 	workspaceRuntime.onChange = state => {
 		missionService.observe(state);
 		phoneService?.overviewChanged(state);

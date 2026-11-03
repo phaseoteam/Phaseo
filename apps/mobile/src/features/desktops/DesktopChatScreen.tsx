@@ -1,6 +1,6 @@
 import { LegendList } from "@legendapp/list/react-native";
 import { useRouter } from "expo-router";
-import { ChevronDown, ChevronRight, CircleAlert, FileDiff, FolderTree, GitBranch, GitCompareArrows, GitPullRequest, List, ListOrdered, MoreHorizontal, Wrench } from "lucide-react-native";
+import { ChevronDown, ChevronRight, CircleAlert, FileDiff, FolderTree, GitBranch, GitCompareArrows, GitPullRequest, List, ListOrdered, MoreHorizontal, SquareTerminal, Wrench } from "lucide-react-native";
 import { memo, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { ActivityIndicator, Linking, Pressable, View } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
@@ -28,6 +28,8 @@ import type { PhoneActivity, PhoneChatDetail, PhoneMessage, PhoneQueueAction, Ph
 import { readsFiles } from "./files/fileTree";
 import { readsGit } from "./git/gitState";
 import { readsCode } from "./review/diffLines";
+import { useTerminalMenu } from "./terminal/TerminalMenu";
+import { usesTerminals } from "./terminal/terminalState";
 import { desktopFilesHref, desktopGitHref, desktopPullRequestsHref, desktopReviewHref } from "./routes";
 import { useDesktop } from "./store";
 import { organises } from "./threadActions";
@@ -119,6 +121,9 @@ function ChatView({ client, desktopId, chatId, desktopName }: { client: DesktopC
       })}
     />
   ) : null;
+  // Terminal shows only while the computer lets this phone use terminals, which is off until switched on there.
+  const terminalMenu = useTerminalMenu(client, desktopId, chatId);
+  const terminalButton = usesTerminals(connection) && chat?.projectId ? <IconButton icon={SquareTerminal} label="Terminal" onPress={() => void terminalMenu.open()} /> : null;
   const pullRequestMenu = gitMenu ? null : pullRequests.length ? (
     <IconButton
       icon={GitPullRequest}
@@ -137,8 +142,9 @@ function ChatView({ client, desktopId, chatId, desktopName }: { client: DesktopC
         back
         title={chat?.title ?? "Thread"}
         subtitle={[chat ? chatStatusLabel(chat) : connectionLabel(connection), chat?.project, desktopName].filter(Boolean).join(" · ")}
-        right={filesButton || reviewButton || gitMenu || pullRequestMenu ? <View className="flex-row">{filesButton}{reviewButton}{gitMenu ?? pullRequestMenu}</View> : null}
+        right={terminalButton || filesButton || reviewButton || gitMenu || pullRequestMenu ? <View className="flex-row">{terminalButton}{filesButton}{reviewButton}{gitMenu ?? pullRequestMenu}</View> : null}
       />
+      {terminalMenu.serversSheet}
       <ConnectionNotice client={client} />
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
         {!view ? (error && connection.status === "connected" ? <ErrorState className="flex-1" error={new Error(error)} onRetry={reload} /> : <SkeletonRows count={5} />) : (

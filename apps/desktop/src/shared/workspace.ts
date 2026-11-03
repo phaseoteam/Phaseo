@@ -169,7 +169,8 @@ export type GitDiffContentsRequest = { filename: string; staged: boolean; hash: 
 export type GitDiffContents = { oldFile: { name: string; contents: string }; newFile: { name: string; contents: string } };
 export type GitHunkReview = { filename: string; staged: boolean; hash: string; hunks: { index: number; heading: string; text: string; patch: string }[] };
 export type GitCommand = { type: "stage" | "unstage"; filename: string } | { type: "stage-hunk" | "unstage-hunk"; filename: string; index: number; hash: string } | { type: "create-branch" | "switch-branch"; name: string } | { type: "commit"; message: string; /** Stages every change first when nothing is staged. */ all?: boolean; /** Pushes after committing (Commit & push). */ push?: boolean } | { type: "push" | "pull" };
-export type TerminalSession = { id: string; projectId?: string; /** The project action it runs, if any. */ scriptId?: string; title: string; cwd: string; output: string; ephemeral?: boolean; taskId?: string; status: "running" | "exited" | "interrupted"; exitCode?: number; createdAt: string; updatedAt: string };
+export type TerminalSession = { id: string; projectId?: string; /** The project action it runs, if any. */ scriptId?: string; title: string; cwd: string; output: string; ephemeral?: boolean; taskId?: string; status: "running" | "exited" | "interrupted"; exitCode?: number; createdAt: string; updatedAt: string;
+	/** The paired phones watching it now, by name; never saved with the transcript. */ phones?: string[] };
 export type TerminalCommand = { type: "open"; projectId?: string; /** The chat the terminal belongs to, for its drawer and tab titles. */ taskId?: string; /** Runs this project script in the new terminal, named after it. */ scriptId?: string } | { type: "write"; id: string; data: string } | { type: "resize"; id: string; columns: number; rows: number } | { type: "close" | "delete"; id: string };
 export type TerminalEvent = { sessionId: string; data?: string; session?: TerminalSession };
 export type WorkspaceCommand =
@@ -399,7 +400,7 @@ export type WorkspaceApi = {
 	refreshPhaseoConnect: () => Promise<PhoneState>;
 	onPhoneChanged: (listener: (state: PhoneState) => void) => () => void;
 	/** A paired phone changed code on this computer (committed, pushed, merged…), so the window says so. */
-	onPhoneNote: (listener: (note: { device: string; summary: string; projectId: string; project?: string }) => void) => () => void;
+	onPhoneNote: (listener: (note: { device: string; summary: string; projectId?: string; project?: string }) => void) => () => void;
 	saveCodeHostToken: (request: CodeHostTokenRequest) => Promise<CodeHostSettings>;
 	removeCodeHostToken: (kind: CodeHostKind, host: string) => Promise<CodeHostSettings>;
 	saveCodeHostServers: (servers: CustomCodeHost[]) => Promise<CodeHostSettings>;

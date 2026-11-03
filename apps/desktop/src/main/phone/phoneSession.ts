@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { errorResponse, okResponse, parsePhoneFrame, phoneLimits, phoneProtocolVersion, PhoneProtocolError, RequestRate, type AttentionKind, type DesktopFrame, type PhoneCapability, type PhoneDiffTarget, type PhoneEntry, type PhoneFilePreview, type PhoneFileTarget, type PhoneProject, type PhoneRequest, type PhoneResponse, type PhoneResults } from "@phaseo/phone-protocol";
 import type { ConversationPage, ConversationPageQuery } from "../../shared/conversationPage";
 import type { GitDiffRequest, GitDiffResult, TurnFileChange } from "../../shared/gitDiff";
-import { validateCommand, type AgentActivity, type Message, type Task, type WorkspaceCommand } from "../../shared/workspace";
+import { validateCommand, type AgentActivity, type Message, type Task, type TerminalCommand, type TerminalEvent, type TerminalSession, type WorkspaceCommand } from "../../shared/workspace";
 import type { TaskOverview, WorkspaceOverview } from "../../shared/workspaceOverview";
 import type { PhoneModelsInput, PhoneNewChat, PhoneSetChat } from "./phoneHost";
 import { attentionOf, chatListPage, phoneChat, phoneChats, phoneDetail, phoneProjects, queuedChars, readingOrder, topLevelChats, TurnChangesCache, withTurnChanges } from "./phoneChats";
@@ -14,6 +14,9 @@ import type { GitRefs } from "../../shared/gitDiff";
 import type { BranchPullRequest, CreatedPullRequestResult, ProjectPullRequests } from "../../shared/pullRequests";
 import type { PullRequestFilesPage, PullRequestFilesQuery } from "../../shared/pullRequestFiles";
 import type { PullRequestActionRequest, PullRequestMergeMethod, PullRequestView } from "../../shared/pullRequestView";
+import type { ProjectScript } from "../../shared/projectSettings";
+import type { ThreadServer } from "../../shared/threadServers";
+import { chatTerminals, latestOutput, phoneScripts, phoneServers, phoneTerminal, terminalReplay } from "./phoneTerminals";
 
 /** What the phone server needs from the app: the same reads and commands the window uses. */
 export type PhoneHost = {
@@ -60,7 +63,19 @@ export type PhoneHost = {
 	/** The merge method the window would pick for the project: its setting, else the app's; null when neither sets one. */
 	mergeMethod: (projectId: string) => PullRequestMergeMethod | null;
 	/** Tells the window what a phone changed, so a lost phone's actions are seen ("Pushed from Daniel's Pixel"). */
-	fromPhone: (note: { device: string; summary: string; projectId: string }) => void;
+	fromPhone: (note: { device: string; summary: string; projectId?: string }) => void;
+	/** Every terminal, as the window's list has them (terminalService's get). */
+	terminals: () => TerminalSession[];
+	/** The window's terminal command (workspace:terminal), with its check that the project is still there. */
+	terminal: (command: TerminalCommand) => TerminalSession[];
+	/** Watches a running terminal for a phone, which the window's title names meanwhile (terminalService's attach). */
+	attachTerminal: (id: string, viewer: string, listener: (event: TerminalEvent) => void) => { session: TerminalSession; output: string; detach: () => void };
+	/** A project's scripts, as the window's Run menu lists them (a worktree's are its source project's). */
+	scripts: (projectId: string) => readonly ProjectScript[];
+	/** The local servers a chat started, as its Running servers lists them, and Stop for one (threadServers). */
+	servers: (chatId: string) => Promise<ThreadServer[]>;
+	/** `allowed` throws if the phone lost the right to Stop while the server was looked up; it runs just before the kill. */
+	stopServer: (chatId: string, port: number, allowed: () => void) => Promise<ThreadServer>;
 };
 export type PhoneDevice = { id: string; name: string };
 const forbidden = () => new PhoneProtocolError("forbidden", "Allow this on the computer: Settings → Phone.");
@@ -72,6 +87,12 @@ const message = (error: unknown) => error instanceof Error ? error.message : "Th
 const entriesBudget = phoneLimits.frameBytes - 64 * 1024;
 const size = (entry: PhoneEntry) => Buffer.byteLength(JSON.stringify(entry)) + 1;
 /** Entries split into frames that each fit. */
+/** Room in a terminal_output frame for its other fields, so a whole frame stays within phoneLimits.terminalFrameBytes. */
+const terminalOutputBudget = phoneLimits.terminalFrameBytes - 1024;
+/** What a watched terminal may pile up between batches; only the latest frame's worth goes out anyway. */
+const terminalPendingChars = 4 * phoneLimits.terminalFrameBytes;
+/** A terminal this phone watches: what it wrote since the last batch, and its session when that changed. */
+type TerminalWatch = { detach: () => void; pending: string; skipped: boolean; session?: TerminalSession; sent: string };
 export function entryFrames(entries: PhoneEntry[]) {
 	const frames: PhoneEntry[][] = []; let current: PhoneEntry[] = [], bytes = 0;
 	for (const entry of entries) {
@@ -110,6 +131,7 @@ export class PhoneSession {
 	private lastFlush = 0;
 	private closed = false;
 	private readonly closeListeners: (() => void)[] = [];
+	private readonly terminals = new Map<string, TerminalWatch>();
 	/** What hello settled on; the access event goes only to a phone from 4 on, which knows it. */
 	private protocol = 1;
 	constructor(readonly device: PhoneDevice, private readonly host: PhoneHost, private readonly send: (frame: DesktopFrame) => void, private readonly rate: RequestRate, private readonly now: () => number = Date.now, private readonly turnChanges = new TurnChangesCache(host.turnChanges),
@@ -336,6 +358,65 @@ export class PhoneSession {
 				this.allowed("code");
 				return okResponse(request, file);
 			}
+			case "list_terminals": {
+				const chat = this.terminalChat(request.chatId);
+				return okResponse(request, { terminals: chatTerminals(this.host.terminals(), chat.id), scripts: chat.projectId ? phoneScripts(this.host.scripts(chat.projectId)) : [] });
+			}
+			case "open_terminal": {
+				const chat = this.terminalChat(request.chatId), projectId = chat.projectId;
+				if (!projectId) throw new PhoneProtocolError("not_found", "This thread isn't in a project, so it has no folder to open a terminal in.");
+				const before = new Set(this.host.terminals().map(session => session.id));
+				// The window's own open: the chat's folder (its worktree's when it has one), numbered as the window numbers them.
+				const opened = this.host.terminal({ type: "open", projectId, taskId: chat.id, ...request.scriptId ? { scriptId: request.scriptId } : {} }).find(session => !before.has(session.id) && session.taskId === chat.id);
+				if (!opened) throw new Error("The terminal was opened but could not be read.");
+				this.host.fromPhone({ device: this.device.name, summary: `Opened ${opened.title}`, projectId });
+				return okResponse(request, { terminal: phoneTerminal(opened) });
+			}
+			case "attach_terminal": {
+				const session = this.terminalOf(request.terminalId);
+				this.detachTerminal(session.id);
+				// A finished terminal's transcript is read once; only a running one streams.
+				if (session.status !== "running") return okResponse(request, { terminal: phoneTerminal(session), ...terminalReplay(session.output) });
+				const watch: TerminalWatch = { detach: () => {}, pending: "", skipped: false, sent: "" };
+				const attached = this.host.attachTerminal(session.id, this.device.name, event => this.terminalEvent(session.id, watch, event));
+				watch.detach = attached.detach; watch.sent = signature(phoneTerminal(attached.session));
+				this.terminals.set(session.id, watch);
+				return okResponse(request, { terminal: phoneTerminal(attached.session), ...terminalReplay(attached.output) });
+			}
+			case "detach_terminal":
+				// Always allowed: it only stops what the phone hears.
+				this.detachTerminal(request.terminalId);
+				return okResponse(request, { terminalId: request.terminalId });
+			case "terminal_input": {
+				const session = this.terminalOf(request.terminalId);
+				if (session.status !== "running") throw new PhoneProtocolError("rejected", "This terminal has exited.");
+				this.host.terminal({ type: "write", id: session.id, data: request.data });
+				return okResponse(request, { terminalId: session.id });
+			}
+			case "close_terminal": {
+				const session = this.terminalOf(request.terminalId);
+				if (session.status !== "running") throw new PhoneProtocolError("rejected", "This terminal has already exited.");
+				this.host.terminal({ type: "close", id: session.id });
+				this.host.fromPhone({ device: this.device.name, summary: `Closed ${session.title}`, ...session.projectId ? { projectId: session.projectId } : {} });
+				return okResponse(request, { terminalId: session.id });
+			}
+			case "list_servers": {
+				const chat = this.terminalChat(request.chatId);
+				const servers = await this.host.servers(chat.id);
+				this.allowed("code"); this.allowed("terminal");
+				return okResponse(request, { servers: phoneServers(servers) });
+			}
+			case "stop_server": {
+				const chat = this.terminalChat(request.chatId);
+				// stopThreadServer looks the port up again among the chat's own servers, so a port that changed hands is left alone.
+				// Checked again after the lookup, so a phone switched off or removed meanwhile kills nothing.
+				const stopped = await this.host.stopServer(chat.id, request.port, () => { if (this.closed) throw forbidden(); this.allowed("code"); this.allowed("terminal"); });
+				// It happened, so the window hears of it even if the phone loses the right to the answer.
+				this.host.fromPhone({ device: this.device.name, summary: `Stopped ${stopped.process ?? "the server"} on port ${stopped.port}`, ...chat.projectId ? { projectId: chat.projectId } : {} });
+				const servers = await this.host.servers(chat.id);
+				this.allowed("code"); this.allowed("terminal");
+				return okResponse(request, { servers: phoneServers(servers) });
+			}
 			case "subscribe": {
 				const listed = new Set(phoneChats(this.host.overview()).map(task => task.id));
 				const chatIds = request.chatIds.filter(id => listed.has(id));
@@ -347,6 +428,49 @@ export class PhoneSession {
 	}
 
 	private allowed(capability: PhoneCapability) { if (!this.capabilities().includes(capability)) throw forbidden(); }
+	private get usesTerminals() { const allowed = this.capabilities(); return allowed.includes("code") && allowed.includes("terminal"); }
+	/** Terminals need Read code too, as Make changes does: a shell can read every file the project has. */
+	private terminalChat(chatId: string) { this.allowed("code"); this.allowed("terminal"); return this.chatOverview(chatId); }
+	/**
+	 * A terminal the phone may use: one of a listed chat's. Never a sign-in terminal, a project's own or a scratch one,
+	 * whose ids the phone is never given.
+	 */
+	private terminalOf(id: string) {
+		this.allowed("code"); this.allowed("terminal");
+		const session = this.host.terminals().find(value => value.id === id);
+		if (!session || session.ephemeral || !session.taskId) throw new PhoneProtocolError("not_found", "This terminal is no longer on the computer.");
+		this.chatOverview(session.taskId);
+		return session;
+	}
+	private terminalEvent(id: string, watch: TerminalWatch, event: TerminalEvent) {
+		if (this.closed || this.terminals.get(id) !== watch) return;
+		if (event.data) {
+			watch.pending += event.data;
+			if (watch.pending.length > terminalPendingChars) { watch.pending = watch.pending.slice(-terminalPendingChars); watch.skipped = true; }
+		}
+		if (event.session) watch.session = event.session;
+		this.schedule();
+	}
+	private detachTerminal(id: string) { const watch = this.terminals.get(id); if (!watch) return; this.terminals.delete(id); watch.detach(); }
+	private detachTerminals() { for (const id of [...this.terminals.keys()]) this.detachTerminal(id); }
+	/** Each watched terminal's output since the last batch, cut to one frame, then its session when that changed. */
+	private flushTerminals() {
+		// Use terminals switched off: the phone stops hearing them at once, and the window stops naming it.
+		if (!this.usesTerminals) { this.detachTerminals(); return; }
+		for (const [id, watch] of [...this.terminals]) {
+			if (watch.pending) {
+				const { data, cut } = latestOutput(watch.pending, terminalOutputBudget);
+				this.send({ type: "terminal_output", terminalId: id, data, ...cut || watch.skipped ? { skipped: true as const } : {} });
+				watch.pending = ""; watch.skipped = false;
+			}
+			const session = watch.session;
+			if (!session) continue;
+			watch.session = undefined;
+			const terminal = phoneTerminal(session), mark = signature(terminal);
+			if (mark !== watch.sent) { watch.sent = mark; this.send({ type: "terminal_updated", terminal }); }
+			if (session.status !== "running") this.detachTerminal(id);
+		}
+	}
 	/** Making changes needs Read code too: every one of them answers with what the code looks like after. */
 	private changes(projectId?: string) {
 		this.allowed("code"); this.allowed("changes");
@@ -375,7 +499,11 @@ export class PhoneSession {
 		return projectId;
 	}
 	/** The person changed this phone's capabilities; a phone that knows the event hears them at once. */
-	accessChanged() { if (!this.closed && this.protocol >= 4) this.send({ type: "access", capabilities: [...this.capabilities()] }); }
+	accessChanged() {
+		if (this.closed) return;
+		if (!this.usesTerminals) this.detachTerminals();
+		if (this.protocol >= 4) this.send({ type: "access", capabilities: [...this.capabilities()] });
+	}
 	private checkProject(projectId: string | undefined) {
 		if (projectId && !this.host.overview().projects.some(project => project.id === projectId && !project.worktree?.removedAt)) throw new PhoneProtocolError("not_found", "That project isn't on this computer any more.");
 	}
@@ -463,10 +591,13 @@ export class PhoneSession {
 			} catch { /* Deleted since. */ }
 		}
 		this.dirtyEntries.clear();
+		if (this.terminals.size) this.flushTerminals();
 	}
 	close() {
 		if (this.closed) return;
 		this.closed = true; clearTimeout(this.timer);
+		// However the connection ends, a phone that's gone is never left named in the window's terminals.
+		this.detachTerminals();
 		for (const listener of this.closeListeners) listener();
 	}
 	whenClosed(listener: () => void) { if (this.closed) listener(); else this.closeListeners.push(listener); }

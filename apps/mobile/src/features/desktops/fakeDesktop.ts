@@ -68,6 +68,12 @@ export class FakeDesktop {
   branches: PhoneResults["list_branches"] = { current: "main", local: ["main", "fix/login"], remote: [] };
   /** Pull requests read_pull_request and pr_action answer with, by number. */
   pullRequests: PhoneResults["read_pull_request"][] = [];
+  /** Its terminals, what each has written, the ones a phone watches, what was typed, and the servers threads started. */
+  terminals: PhoneResults["open_terminal"]["terminal"][] = [];
+  terminalOutput = new Map<string, string>();
+  readonly watching = new Set<string>();
+  readonly typed: { terminalId: string; data: string }[] = [];
+  servers: PhoneResults["list_servers"]["servers"] = [];
   /** The diff read_diff answers with. */
   diff: PhoneResults["read_diff"] = { repository: true, hash: "a".repeat(64), truncated: false, files: [{ path: "src/usage.ts", status: "modified", additions: 2, deletions: 1, patch: "diff --git a/src/usage.ts b/src/usage.ts\n@@ -1,2 +1,3 @@\n a\n-b\n+c\n+d\n" }] };
   /** Its projects: Blog has no threads yet, Scratch is archived and a worktree folds under Phaseo. */
@@ -232,6 +238,8 @@ export class FakeDesktop {
       }
       case "list_branches": case "git_action": case "commit_message": case "create_pull_request": case "list_pull_requests": case "read_pull_request": case "pull_request_files": case "pr_action":
         return this.respondGit(request);
+      case "list_terminals": case "open_terminal": case "attach_terminal": case "detach_terminal": case "terminal_input": case "close_terminal": case "list_servers": case "stop_server":
+        return this.respondTerminal(request);
       case "list_projects":
         return this.protocol >= 2 ? okResponse(request, { projects: this.projects }) : errorResponse(request.id, request.type, "invalid_frame", "Unknown frame type.") as PhoneResponse;
       case "list_chats": return okResponse(request, { chats: this.chats.filter((entry) => Boolean(entry.archived) === Boolean(request.archived)).map(({ approvals: _approvals, questions: _questions, queue: _queue, ...row }) => row) });
@@ -317,6 +325,34 @@ export class FakeDesktop {
       }
     }
     return refuse("invalid_frame", "Unknown frame type.");
+  }
+
+  /** The terminal frames from protocol 7, which need code and terminal as the computer checks them. */
+  private respondTerminal(request: Extract<PhoneRequest, { type: "list_terminals" | "open_terminal" | "attach_terminal" | "detach_terminal" | "terminal_input" | "close_terminal" | "list_servers" | "stop_server" }>): PhoneResponse {
+    const refuse = (code: "invalid_frame" | "forbidden" | "rejected" | "not_found", message: string) => errorResponse(request.id, request.type, code, message) as PhoneResponse;
+    if (this.protocol < 7) return refuse("invalid_frame", "Unknown frame type.");
+    if (request.type === "detach_terminal") { this.watching.delete(request.terminalId); return okResponse(request, { terminalId: request.terminalId }); }
+    if (!this.capabilities.includes("code") || !this.capabilities.includes("terminal")) return refuse("forbidden", "Allow this on the computer: Settings → Phone.");
+    switch (request.type) {
+      case "list_terminals": return okResponse(request, { terminals: this.terminals.filter((terminal) => terminal.chatId === request.chatId), scripts: [{ id: "dev", name: "Dev server", command: "pnpm dev" }] });
+      case "open_terminal": {
+        const terminal = { id: `t${this.terminals.length + 1}`, title: request.scriptId ? "Dev server" : `Terminal ${this.terminals.length + 1}`, chatId: request.chatId, projectId: "p1", status: "running" as const, createdAt: "2026-11-01T10:00:00.000Z" };
+        this.terminals.push(terminal);
+        return okResponse(request, { terminal });
+      }
+      case "list_servers": return okResponse(request, { servers: this.servers });
+      case "stop_server":
+        if (!this.servers.some((server) => server.port === request.port)) return refuse("rejected", "That server is no longer running from this chat.");
+        this.servers = this.servers.filter((server) => server.port !== request.port);
+        return okResponse(request, { servers: this.servers });
+    }
+    const terminal = this.terminals.find((value) => value.id === request.terminalId);
+    if (!terminal) return refuse("not_found", "This terminal is no longer on the computer.");
+    if (request.type === "attach_terminal") { this.watching.add(terminal.id); return okResponse(request, { terminal, output: this.terminalOutput.get(terminal.id) ?? "", truncated: false }); }
+    if (terminal.status !== "running") return refuse("rejected", "This terminal has exited.");
+    if (request.type === "terminal_input") { this.typed.push({ terminalId: terminal.id, data: request.data }); return okResponse(request, { terminalId: terminal.id }); }
+    terminal.status = "exited";
+    return okResponse(request, { terminalId: terminal.id });
   }
 
   /** Sends an event to every connected phone, as the desktop does when a chat changes. */
