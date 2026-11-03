@@ -119,7 +119,7 @@ const errorText = (reason: unknown) => reason instanceof Error ? reason.message 
  */
 export async function phoneModels(overview: WorkspaceOverview, sources: PhoneModelSources, input: PhoneModelsInput): Promise<PhoneResults["list_models"]> {
 	const agents = phoneAgentList(overview, await sources.localHarnesses().catch(() => []), input);
-	const results = await Promise.allSettled(agents.map(agent => sources.discover(agent.harness, agent.accountId)));
+	const results = await Promise.allSettled(agents.map(agent => sources.discover(agent.harness, agent.accountId, input.projectId)));
 	const listed: PhoneAgent[] = agents.map((agent, index) => {
 		const result = results[index]!;
 		return {
@@ -167,7 +167,7 @@ export async function phoneNewChat(overview: WorkspaceOverview, sources: PhoneMo
 		return createTask({ harness: agent.harness, model: input.model!, ...accountId ? { accountId } : {} }, input, permissionMode);
 	}
 	const phaseo = agents.find(agent => agent.harness === "phaseo");
-	const selection = chosen ?? phoneDefaultSelection(overview, agents, remembered, input, phaseo ? await sources.discover("phaseo", phaseo.accountId).catch(() => []) : []);
+	const selection = chosen ?? phoneDefaultSelection(overview, agents, remembered, input, phaseo ? await sources.discover("phaseo", phaseo.accountId, input.projectId).catch(() => []) : []);
 	if (!selection) throw new Error(noDefault);
 	return createTask(selection, input, permissionMode);
 }
@@ -179,7 +179,7 @@ export async function phoneNewChat(overview: WorkspaceOverview, sources: PhoneMo
 export async function withPhoneModel(base: CreateTask, discover: DiscoverModels, input: { model?: string; reasoningEffort?: string }): Promise<CreateTask> {
 	if (!input.model && !input.reasoningEffort) return base;
 	const modelId = input.model ?? base.model;
-	const model = (await discover(base.harness, base.accountId)).find(value => value.id === modelId);
+	const model = (await discover(base.harness, base.accountId, base.projectId)).find(value => value.id === modelId);
 	if (!model) throw new Error("That model isn't available on this computer any more.");
 	const { reasoningEffort: _effort, serviceTier: _tier, modelOptions: _options, ...rest } = base;
 	const command: CreateTask = modelId === base.model ? base : { ...rest, model: modelId };

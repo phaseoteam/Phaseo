@@ -124,6 +124,16 @@ describe("a model the phone picks", () => {
 		await expect(withPhoneModel(base, app.sources.discover, { model: "gpt-9" })).rejects.toThrow("isn't available");
 		await expect(withPhoneModel(base, app.sources.discover, { model: "gpt-6.1-mini", reasoningEffort: "high" })).rejects.toThrow("doesn't offer that effort");
 	});
+	it("lists and starts a project's own models, read in that project", async () => {
+		const app = fakePhoneHost();
+		app.agents.projectModels = { p1: { codex: [{ id: "project-model", name: "Project model" }], phaseo: [{ id: "phaseo/project", name: "Project default", default: true }] } };
+		const listed = await phoneModels(app.overview(), app.sources, { projectId: "p1", mode: "code" });
+		expect(listed.agents?.find(agent => agent.harness === "codex")?.models.map(model => model.id)).toEqual(["project-model"]);
+		expect(listed.selected).toMatchObject({ harness: "phaseo", model: "phaseo/project" });
+		expect(await phoneNewChat(app.overview(), app.sources, { text: "x", projectId: "p1", mode: "code" })).toMatchObject({ harness: "phaseo", model: "phaseo/project" });
+		const base = await phoneNewChat(app.overview(), app.sources, { text: "x", projectId: "p1", mode: "code", harness: "codex", model: "project-model" });
+		expect(await withPhoneModel(base, app.sources.discover, { model: "project-model" })).toMatchObject({ harness: "codex", model: "project-model", projectId: "p1" });
+	});
 	it("puts an option harness's effort in its model options", async () => {
 		const app = fakePhoneHost();
 		const base = await phoneNewChat(app.overview(), app.sources, { text: "x", mode: "code", harness: "claude", model: "claude-opus-5-5" });

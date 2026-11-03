@@ -26,7 +26,7 @@ export function fakePhoneHost() {
 	const tick = () => new Date(clock += 1000).toISOString();
 	// A Phaseo account that can call the gateway, and Codex and Claude Code signed in on the computer.
 	const accounts: Account[] = [{ id: "phaseo-account", name: "Phaseo", harness: "phaseo", kind: "api", configured: true }];
-	const agents = { local: ["codex", "claude"] as Harness[], failing: new Set<Harness>(), remembered: { favourites: [] } as RememberedModels };
+	const agents = { local: ["codex", "claude"] as Harness[], failing: new Set<Harness>(), remembered: { favourites: [] } as RememberedModels, projectModels: {} as Record<string, Partial<Record<Harness, ModelOption[]>>> };
 	const overview = (): WorkspaceOverview => ({ version: 1, projects, accounts, agents: [], mcpConnections: [], tasks: [...tasks.values()].map(task => taskOverview(task)).sort(overviewOrder) });
 	const listeners: ((overview: WorkspaceOverview) => void)[] = [];
 	const changed = () => { const value = overview(); for (const listener of listeners) listener(value); };
@@ -41,7 +41,10 @@ export function fakePhoneHost() {
 		const task = get(taskId), entry: Message = { id: `m${task.messages.length + 1}-${taskId}`, createdAt: tick(), ...message };
 		task.messages.push(entry); touch(task); changed(); return entry;
 	};
-	const discover = async (harness: Harness) => { if (agents.failing.has(harness)) throw new Error("Not signed in on the computer."); return fakeModels[harness] ?? []; };
+	const discover = async (harness: Harness, _accountId?: string, projectId?: string) => {
+		if (agents.failing.has(harness)) throw new Error("Not signed in on the computer.");
+		return (projectId ? agents.projectModels[projectId]?.[harness] : undefined) ?? fakeModels[harness] ?? [];
+	};
 	const sources: PhoneModelSources = { discover, localHarnesses: async () => agents.local, remembered: () => agents.remembered, permissionOf: id => get(id).permissionMode };
 	const host: PhoneHost = {
 		desktopName: () => "Test PC", appVersion: "1.2.3", overview,
