@@ -59,10 +59,12 @@ export function settingsLabel(selection: ModelSelection, descriptors: ModelOptio
 }
 
 
-export type SpeedTier = "fast" | "ultrafast";
-/** Which fast speed a value is, for its glyph; Flex and the standard speed have none. */
+export type SpeedTier = "flex" | "fast" | "ultrafast";
+/** Which speed a value is, for its glyph; the standard speed has none. */
 export function speedTier(descriptor: ModelOptionDescriptor, value: string | boolean | undefined): SpeedTier | undefined {
-	if (!speedIds.includes(descriptor.id) || !isFast(descriptor, value)) return undefined;
+	if (!speedIds.includes(descriptor.id)) return undefined;
+	if (value === "flex") return "flex";
+	if (!isFast(descriptor, value)) return undefined;
 	const label = descriptor.type === "select" ? descriptor.options.find(option => option.id === value)?.label ?? "" : "";
 	return /ultra/i.test(`${String(value)} ${label}`) ? "ultrafast" : "fast";
 }
@@ -71,15 +73,15 @@ const isReasoning = (descriptor: ModelOptionDescriptor) => /reason|effort|think/
 
 /** What the model button shows after the name: the reasoning level, a speed glyph and the context window. */
 export function settingsSummary(selection: ModelSelection, descriptors: ModelOptionDescriptor[]) {
-	let effort: string | undefined, speed: SpeedTier | undefined, flex = false, context: string | undefined;
+	let effort: string | undefined, speed: SpeedTier | undefined, context: string | undefined;
 	for (const descriptor of descriptors) {
 		const value = current(selection, descriptor);
 		const label = descriptor.type === "select" ? descriptor.options.find(option => option.id === value)?.label : `${descriptor.label} ${value ? "On" : "Off"}`;
-		if (speedIds.includes(descriptor.id)) { speed ??= speedTier(descriptor, value); flex ||= value === "flex"; }
+		if (speedIds.includes(descriptor.id)) speed ??= speedTier(descriptor, value);
 		else if (!effort && isReasoning(descriptor)) effort = label;
 		else if (/context/i.test(descriptor.id)) context = label;
 	}
-	return { effort, speed, flex, context };
+	return { effort, speed, context };
 }
 
 /** The web's service tier colours (its tier badges and model filters): Fast violet, Ultrafast fuchsia, Flex sky. */
@@ -87,24 +89,23 @@ const tierText = { fast: "text-violet-600 dark:text-violet-400", ultrafast: "tex
 const tierBadge = { fast: "bg-violet-100 dark:bg-violet-950", ultrafast: "bg-fuchsia-100 dark:bg-fuchsia-950", flex: "bg-sky-100 dark:bg-sky-950" } as const;
 
 /**
- * Phaseo's speed marks: forward chevrons, two for Fast and three for Ultrafast, drawn on whole pixels so they
- * stay sharp at 1x, in the tier's colour.
+ * Phaseo's speed marks, in the tier's colour: chevrons forward, two for Fast and three for Ultrafast, and two back for
+ * Flex, the slower and cheaper side of Standard. Drawn on whole pixels so they stay sharp at 1x.
  */
 export function SpeedGlyph({ tier, className }: { tier: SpeedTier; className?: string }) {
-	const count = tier === "ultrafast" ? 3 : 2, width = 4 * count + 3;
+	const count = tier === "ultrafast" ? 3 : 2, width = 4 * count + 3, back = tier === "flex";
 	return <svg aria-hidden width={width} height={10} viewBox={`0 0 ${width} 10`} className={cn("shrink-0", tierText[tier], className)} data-speed={tier}>
-		{Array.from({ length: count }, (_, index) => <path key={index} d={`M${1 + index * 4} 1.5 L${4.5 + index * 4} 5 L${1 + index * 4} 8.5`} fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" />)}
+		{Array.from({ length: count }, (_, index) => <path key={index} d={back ? `M${4.5 + index * 4} 1.5 L${1 + index * 4} 5 L${4.5 + index * 4} 8.5` : `M${1 + index * 4} 1.5 L${4.5 + index * 4} 5 L${1 + index * 4} 8.5`} fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" />)}
 	</svg>;
 }
 
 /** The model button's tail: "High", the speed glyph, "1M". */
 export function SettingsSuffix({ selection, descriptors }: { selection: ModelSelection; descriptors: ModelOptionDescriptor[] }) {
-	const { effort, speed, flex, context } = settingsSummary(selection, descriptors);
-	if (!effort && !speed && !flex && !context) return null;
+	const { effort, speed, context } = settingsSummary(selection, descriptors);
+	if (!effort && !speed && !context) return null;
 	return <span className="flex shrink-0 items-center gap-1.5 font-medium text-muted-foreground">
 		{effort && <span className="max-w-24 truncate">{effort}</span>}
 		{speed && <SpeedGlyph tier={speed} />}
-		{flex && <span className={tierText.flex}>Flex</span>}
 		{context && <span className="text-xs">{context}</span>}
 	</span>;
 }
@@ -154,7 +155,7 @@ export function SpeedSegments({ selection, descriptors, onChange }: { selection:
 		{choicesOf(descriptor).map(option => {
 			const checked = value === option.id, tier = speedTier(descriptor, descriptor.type === "boolean" ? option.id === "true" : option.id);
 			// A chosen tier reads like the web's tier badge: its colour on a tint of it.
-			const tone = tier ?? (option.id === "flex" ? "flex" : undefined);
+			const tone = tier;
 			const hint = option.description ?? (option.id === "true" ? "Faster output at the model's Fast price" : option.id === "false" ? "The model's usual speed and price" : undefined);
 			const segment = <button key={option.id} type="button" role="radio" aria-checked={checked} data-checked={checked || undefined} aria-description={hint}
 				onClick={() => pick(selection, descriptor, option.id, onChange)}
