@@ -4,13 +4,14 @@
 // width and wraps what the computer writes.
 (function () {
   function post(message) { if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(JSON.stringify(message)); }
-  const term = new Terminal({ cursorBlink: true, fontFamily: "monospace", fontSize: 12, lineHeight: 1.15, scrollback: 5000 });
+  // disableStdin: the app types through its own field (see TerminalScreen), so a tap here never opens the keyboard.
+  const term = new Terminal({ disableStdin: true, cursorBlink: true, fontFamily: "monospace", fontSize: 12, lineHeight: 1.15, scrollback: 5000 });
   const fit = new FitAddon.FitAddon();
   term.loadAddon(fit);
   term.open(document.getElementById("terminal"));
+  if (term.textarea) term.textarea.readOnly = true;
   function size() { try { fit.fit(); } catch { /* Not laid out yet. */ } }
   window.addEventListener("resize", size);
-  term.onData(function (data) { post({ type: "input", data: data }); });
   window.phaseoTerminal = {
     write: function (data) { term.write(data); },
     reset: function () { term.reset(); },

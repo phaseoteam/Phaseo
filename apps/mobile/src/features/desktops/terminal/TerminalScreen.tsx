@@ -1,17 +1,18 @@
 import * as Clipboard from "expo-clipboard";
 import { ClipboardPaste, MoreHorizontal, ShieldOff, TextQuote, X } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type Ref } from "react";
-import { Pressable, ScrollView, View } from "react-native";
+import { Platform, Pressable, ScrollView, TextInput, View, type ScrollViewInstance } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCSSVariable } from "uniwind";
 import { WebView, type WebViewMessageEvent } from "react-native-webview";
 import type { AndroidWebViewProps, IOSWebViewProps } from "react-native-webview/lib/WebViewTypes";
-import { Button, confirm, EmptyState, ErrorState, Header, HorizontalScroll, Icon, IconButton, Screen, Sheet, showActions, SkeletonRows, Text, toast } from "@/components/ui";
+import { Button, confirm, EmptyState, ErrorState, Header, HorizontalScroll, Icon, IconButton, Screen, Sheet, showActions, SkeletonRows, Text, toast, useToneColor } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { haptic } from "@/lib/haptics";
 import { setChatDraft } from "../chatDraft";
 import type { DesktopClient } from "../client";
+import { Code } from "../Code";
 import { ConnectionNotice } from "../CodeThreadList";
 import { clientFor } from "../connections";
 import { useDesktop } from "../store";
@@ -39,7 +40,7 @@ type PageHandle = { injectJavaScript(code: string): void };
 type PageProps = AndroidWebViewProps & Pick<IOSWebViewProps, "hideKeyboardAccessoryView" | "keyboardDisplayRequiresUserAction"> & { ref?: Ref<PageHandle> };
 const Page = WebView as unknown as ComponentType<PageProps>;
 
-type PageMessage = { type: "ready" } | { type: "input"; data: string } | { type: "lines"; lines: string[] };
+type PageMessage = { type: "ready" } | { type: "lines"; lines: string[] };
 
 function TerminalView({ client, desktopId, chatId, terminalId, title }: { client: DesktopClient; desktopId: string; chatId: string; terminalId: string; title: string | null }) {
   const insets = useSafeAreaInsets();
@@ -65,6 +66,16 @@ function TerminalView({ client, desktopId, chatId, terminalId, title }: { client
     if (pressed) { setModifier(null); send(withModifier(data, pressed)); } else send(data);
   }, [send, setModifier]);
 
+  // Typing goes through a native field, not xterm's own: Android keyboards compose into a web text box and drop or
+  // repeat letters there. Enter sends the line and Enter; with Ctrl or Alt held, the next letter goes at once.
+  const [line, setLine] = useState("");
+  const placeholder = useToneColor("muted");
+  const changeLine = useCallback((value: string) => {
+    if (held.current && value.length === line.length + 1 && value.startsWith(line)) { type(value.slice(-1)); return; }
+    setLine(value);
+  }, [line, type]);
+  const submitLine = useCallback(() => { type(`${line}\r`); setLine(""); }, [line, type]);
+
   const [lines, setLines] = useState<string[] | null>(null);
   const [attachOpen, setAttachOpen] = useState(false);
   // Each opening starts with a fresh choice of lines.
@@ -84,9 +95,8 @@ function TerminalView({ client, desktopId, chatId, terminalId, title }: { client
       run(`window.phaseoTerminal.theme(${theme})`);
       const waiting = queued.current.join(""); queued.current = [];
       if (waiting) run(`window.phaseoTerminal.write(${JSON.stringify(waiting)})`);
-    } else if (message.type === "input") type(message.data);
-    else if (message.type === "lines") setLines(message.lines);
-  }, [run, theme, type]);
+    } else if (message.type === "lines") setLines(message.lines);
+  }, [run, theme]);
 
   const paste = async () => {
     const text = await Clipboard.getStringAsync().catch(() => "");
@@ -148,6 +158,27 @@ function TerminalView({ client, desktopId, chatId, terminalId, title }: { client
         )}
         <View className="border-t border-border bg-background" style={{ paddingBottom: Math.max(insets.bottom, 4) }}>
           {running ? (
+            <View className="flex-row items-center gap-2 px-2 pt-1.5">
+              <TextInput
+                value={line}
+                onChangeText={changeLine}
+                onSubmitEditing={submitLine}
+                submitBehavior="submit"
+                placeholder={modifier ? `${modifier === "ctrl" ? "Ctrl" : "Alt"} + a key` : "Type, then Enter"}
+                placeholderTextColor={placeholder}
+                autoCapitalize="none"
+                autoCorrect={false}
+                spellCheck={false}
+                autoComplete="off"
+                keyboardType={Platform.OS === "android" ? "visible-password" : "ascii-capable"}
+                returnKeyType="send"
+                accessibilityLabel={`Type in ${name}`}
+                className="h-10 flex-1 rounded-md border border-border bg-background px-3 text-[13px] text-foreground"
+                style={{ fontFamily: Platform.select({ ios: "Menlo", default: "monospace" }) }}
+              />
+            </View>
+          ) : null}
+          {running ? (
             <HorizontalScroll keyboardShouldPersistTaps="always" contentContainerClassName="gap-1.5 px-2 py-1.5">
               {keyBar.map((key) => {
                 const held = "modifier" in key && modifier === key.modifier;
@@ -155,7 +186,7 @@ function TerminalView({ client, desktopId, chatId, terminalId, title }: { client
                   <Pressable key={key.key} accessibilityRole="button" accessibilityLabel={key.label} accessibilityState={"modifier" in key ? { selected: held } : undefined}
                     onPress={() => { haptic("selection"); if ("modifier" in key) setModifier(held ? null : key.modifier); else type(key.data); }}
                     className={cn("h-9 min-w-11 items-center justify-center rounded-md border border-border px-2.5 active:bg-accent", held && "border-primary bg-primary")}>
-                    <Text variant="small" className={cn("font-mono", held && "text-primary-foreground")}>{key.label}</Text>
+                    <Text variant="small" className={cn(held && "text-primary-foreground")}>{key.label}</Text>
                   </Pressable>
                 );
               })}
@@ -176,6 +207,7 @@ function TerminalView({ client, desktopId, chatId, terminalId, title }: { client
 
 /** The terminal's latest lines: tap the first and last you want, then add them to the thread's message. */
 function AttachSheet({ open, lines, onClose, onAttach }: { open: boolean; lines: string[] | null; onClose(): void; onAttach(text: string): void }) {
+  const list = useRef<ScrollViewInstance>(null);
   // Until a line is tapped, the last line is chosen.
   const [picked, setPicked] = useState<{ from: number; to: number } | null>(null);
   const range = picked ?? (lines?.length ? { from: lines.length - 1, to: lines.length - 1 } : null);
@@ -190,20 +222,21 @@ function AttachSheet({ open, lines, onClose, onAttach }: { open: boolean; lines:
     <Sheet open={open} onClose={onClose} size="tall">
       <View className="gap-1 px-4 pb-2 pt-4">
         <Text variant="heading">Attach output</Text>
-        <Text variant="caption">{"Tap the first line and the last line to add to the thread's message."}</Text>
+        <Text variant="caption">{`Tap the first line and the last line to add to the thread's message.${count ? ` ${count === 1 ? "1 line" : `${count} lines`} chosen.` : ""}`}</Text>
       </View>
       {!lines ? <SkeletonRows count={6} /> : !lines.length ? <Text variant="caption" className="px-4 py-3">Nothing written yet.</Text> : (
-        <ScrollView className="flex-1" ref={(view) => { view?.scrollToEnd({ animated: false }); }}>
+        // Opens at the latest lines, which are the ones usually wanted.
+        <ScrollView ref={list} className="max-h-[440px]" onContentSizeChange={() => list.current?.scrollToEnd({ animated: false })}>
           {lines.map((line, index) => (
             <Pressable key={index} accessibilityRole="button" accessibilityState={{ selected: inside(index) }} onPress={() => pick(index)} className={cn("min-h-7 justify-center px-4 py-0.5 active:bg-accent", inside(index) && "bg-accent")}>
-              <Text className="font-mono text-[12px]" numberOfLines={3}>{line || " "}</Text>
+              <Code className="text-foreground" numberOfLines={3}>{line || " "}</Code>
             </Pressable>
           ))}
         </ScrollView>
       )}
       <View className="flex-row gap-2 border-t border-border px-4 py-3">
         <Button className="flex-1" label="Cancel" variant="secondary" onPress={onClose} />
-        <Button className="flex-1" label={count > 1 ? `Add ${count} lines` : "Add line"} disabled={!lines?.length || !range} onPress={() => range && lines && onAttach(selectedLines(lines, range.from, range.to))} />
+        <Button className="flex-1" label="Add to message" disabled={!lines?.length || !range} onPress={() => range && lines && onAttach(selectedLines(lines, range.from, range.to))} />
       </View>
     </Sheet>
   );
