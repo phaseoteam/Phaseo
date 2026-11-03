@@ -7,7 +7,9 @@
 // - aal1 is refused for a user with a verified factor (reads return nothing, writes fail),
 // - aal1 is allowed for a user without a verified factor (an unverified factor doesn't count),
 // - aal2 is allowed,
-// - anon catalogue reads and service_role are unaffected, and anon cannot call mfa_satisfied().
+// - anon catalogue reads and service_role are unaffected, and anon cannot call mfa_satisfied(),
+// - the same holds for the SECURITY DEFINER RPCs that bypass RLS (approve_workspace_join_request
+//   let an aal1 session add a member before the fix).
 // It also checks the migration ships the declarative function body and that every table definition
 // with a permissive policy for signed-in users carries the MFA policy (or is a listed public table).
 // Install @electric-sql/pglite@0.5.8 in a temporary directory and set PGLITE_MODULE to its
@@ -32,6 +34,49 @@ const manifest = JSON.parse(await read('../schemas/.pgdelta-export.json'));
 for (const list of ['loadOrder', 'files']) {
   assert(manifest[list].includes('public/functions/mfa_satisfied.sql'), `mfa_satisfied.sql is in the pgdelta ${list}`);
 }
+
+// SECURITY DEFINER functions bypass RLS, so the ones signed-in users can call that read or change
+// workspace data check mfa_satisfied() themselves. Every other definer function signed-in users or
+// anon can call is listed with the reason it is left alone, so a new one has to be classified here.
+const mfaCheck = `  if not public.mfa_satisfied() then
+    raise exception using errcode = '42501', message = 'mfa_required';
+  end if;
+
+`;
+const mfaFilter = '    and public.mfa_satisfied()\n'; // get_workspace_key_usage is a SQL function
+const protectedRpcs = ['approve_workspace_join_request', 'get_workspace_key_usage', 'monthly_spend_prev_cents', 'mtd_spend_cents',
+  'redeem_credit_code', 'reject_workspace_join_request'];
+const unprotectedRpcs = new Set([
+  'catalog_model_is_public', 'is_public_api_app', // public catalogue / public app checks, anon can call them
+  'is_active_invite_for_workspace', 'is_team_owner', 'is_workspace_admin', 'is_workspace_member', // RLS policy helpers
+  'mfa_satisfied', // the check itself
+  'reserve_provider_onboarding_submission_slot', // rate-limit counter for the caller's own submissions, no workspace data
+]);
+const rpcSql = {};
+for (const schema of ['public', 'private']) {
+  const dir = new URL(`../schemas/${schema}/functions/`, import.meta.url);
+  for (const file of await readdir(dir).catch(() => [])) {
+    const sql = normalize(await readFile(new URL(file, dir), 'utf8'));
+    const name = file.replace(/\.sql$/, '');
+    const create = sql.slice(0, sql.indexOf('$function$;', sql.indexOf('AS $function$') + 13) + 11);
+    const callable = new RegExp(`GRANT EXECUTE ON FUNCTION "${schema}"\\."${name}"\\([^)]*\\) TO [^;]*("authenticated"|"anon"|PUBLIC)`).test(sql);
+    if (!/^\s*SECURITY DEFINER$/m.test(create) || !callable) continue;
+    if (protectedRpcs.includes(name)) {
+      rpcSql[name] = create;
+      assert(create.includes(name === 'get_workspace_key_usage' ? mfaFilter : `begin\n${mfaCheck}`), `${name} checks MFA first`);
+      assert(migration.includes(create), `the migration ships the schema definition of ${name}`);
+    } else {
+      assert(unprotectedRpcs.has(`${name}`), `${schema}.${name} is a SECURITY DEFINER function signed-in users can call: decide whether it needs the MFA check`);
+    }
+  }
+}
+assert.deepEqual(Object.keys(rpcSql).sort(), protectedRpcs, 'every protected RPC was found');
+// The definitions before this migration: the same bodies without the check.
+const withoutCheck = (name) => {
+  const before = rpcSql[name].replace(`begin\n${mfaCheck}`, 'begin\n').replace(mfaFilter, '');
+  assert.notEqual(before, rpcSql[name]);
+  return before;
+};
 
 const policyName = 'mfa_required_when_enrolled';
 const policyFor = (table) => `CREATE POLICY "${policyName}" ON "public"."${table}"
@@ -104,16 +149,28 @@ try {
     alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;
     grant usage on schema public to anon, authenticated, service_role;
 
+    create type public.workspace_role as enum ('owner', 'admin', 'member');
+    create type public.join_request_status as enum ('pending', 'approved', 'denied', 'cancelled');
     create table public.workspaces (id uuid primary key, owner_user_id uuid not null, name text);
-    create table public.workspace_members (workspace_id uuid, user_id uuid, role text, primary key (workspace_id, user_id));
+    create table public.workspace_members (workspace_id uuid, user_id uuid, role public.workspace_role, primary key (workspace_id, user_id));
     create function public.is_workspace_admin(p uuid) returns boolean language sql stable security definer set search_path = ''
       as $$ select exists (select 1 from public.workspace_members m where m.workspace_id = p and m.user_id = auth.uid() and m.role in ('owner', 'admin')) $$;
     create function public.is_workspace_member(p uuid) returns boolean language sql stable security definer set search_path = ''
       as $$ select exists (select 1 from public.workspace_members m where m.workspace_id = p and m.user_id = auth.uid()) $$;
     grant execute on function public.is_workspace_admin(uuid), public.is_workspace_member(uuid) to authenticated;
-    create table public.workspace_invites (id uuid primary key default gen_random_uuid(), workspace_id uuid not null, email text, role text);
+    create table public.workspace_invites (id uuid primary key default gen_random_uuid(), workspace_id uuid not null, email text,
+      role public.workspace_role, expires_at timestamptz, max_uses integer, uses_count integer not null default 0);
     create table public.keys (id uuid primary key default gen_random_uuid(), workspace_id uuid not null, status text not null default 'active');
     create table public.v2_models (model_slug text primary key);
+    create table public.workspace_join_requests (id uuid primary key default gen_random_uuid(), workspace_id uuid not null, invite_id uuid,
+      requester_user_id uuid not null, decided_by uuid, decided_at timestamptz,
+      status public.join_request_status not null default 'pending');
+    alter table public.workspace_join_requests enable row level security;
+    -- Read by the spend and key-usage RPCs; signed-in users have no direct access.
+    create schema private;
+    create table private.v2_rpc_gateway_requests_compat (workspace_id uuid, key_id uuid, success boolean, cost_nanos bigint, created_at timestamptz);
+    insert into private.v2_rpc_gateway_requests_compat
+      select ws, '30000000-0000-4000-8000-000000000001', true, 250000000, now() from unnest(array['${ownerWs}', '${plainWs}']::uuid[]) ws;
 
     alter table public.workspaces enable row level security;
     alter table public.workspace_members enable row level security;
@@ -140,10 +197,27 @@ try {
     insert into public.v2_models values ('public-model');
   `);
   // The migration touches every signed-in table; the ones this test doesn't exercise exist as stubs.
-  const fixtureTables = new Set(['workspaces', 'workspace_members', 'workspace_invites', 'keys']);
+  const fixtureTables = new Set(['workspaces', 'workspace_members', 'workspace_invites', 'keys', 'workspace_join_requests']);
   for (const table of protectedTables.filter((t) => !fixtureTables.has(t))) {
     await db.exec(`create table public.${table} (id uuid primary key default gen_random_uuid()); alter table public.${table} enable row level security;`);
   }
+  // The protected RPCs as production has them before the fix.
+  for (const name of protectedRpcs) await db.exec(withoutCheck(name));
+  const joinRequest = async (workspace) => (await db.query(
+    `insert into public.workspace_join_requests (workspace_id, requester_user_id) values ($1, $2) returning id`, [workspace, attacker])).rows[0].id;
+  const attackerIsMember = async (workspace) => (await db.query(
+    `select 1 from public.workspace_members where workspace_id = $1 and user_id = $2`, [workspace, attacker])).rows.length === 1;
+  const approveSql = `select * from public.approve_workspace_join_request($1)`;
+  const ownerRequest = await joinRequest(ownerWs);
+
+  // Before the fix: the owner's password alone can approve a join request through the RPC.
+  await as(owner, 'aal1', async () => {
+    assert.equal((await db.query(approveSql, [ownerRequest])).rows.length, 1, 'before the fix an aal1 session of an MFA user can approve a join request');
+    assert.equal((await db.query(`select public.mtd_spend_cents($1)::int as c`, [ownerWs])).rows[0].c, 25, 'before the fix aal1 reads spend');
+  });
+  assert(await attackerIsMember(ownerWs), 'before the fix the approval added the requester');
+  await db.exec(`delete from public.workspace_members where user_id = '${attacker}';
+    update public.workspace_join_requests set status = 'pending', decided_by = null, decided_at = null;`);
 
   // Before the fix: the owner's password alone (an aal1 token) can invite someone and change keys.
   await as(owner, 'aal1', async () => {
@@ -201,7 +275,40 @@ try {
   assert.equal((await db.query(inviteSql, [ownerWs])).rows.length, 1, 'service_role writes as before');
   await db.exec('reset role;');
 
-  // 5. Every signed-in table has the restrictive policy, for authenticated only.
+  // 5. SECURITY DEFINER RPCs bypass RLS, so they check MFA themselves.
+  const plainRequest = await joinRequest(plainWs);
+  const spendSql = `select public.mtd_spend_cents($1)::int as c`;
+  const keyUsageSql = `select key_id from public.get_workspace_key_usage($1, now() - interval '1 day')`;
+  await as(owner, 'aal1', async () => {
+    await rejects(db.query(approveSql, [ownerRequest]), /mfa_required/, 'aal1 cannot approve a join request for an MFA user');
+    await rejects(db.query(`select * from public.reject_workspace_join_request($1)`, [ownerRequest]), /mfa_required/, 'aal1 cannot reject one');
+    await rejects(db.query(spendSql, [ownerWs]), /mfa_required/, 'aal1 cannot read spend');
+    await rejects(db.query(`select public.monthly_spend_prev_cents($1)`, [ownerWs]), /mfa_required/, 'aal1 cannot read last month');
+    await rejects(db.query(`select * from public.redeem_credit_code('PROMO', $1)`, [ownerWs]), /mfa_required/, 'aal1 cannot redeem credit');
+    assert.equal((await db.query(keyUsageSql, [ownerWs])).rows.length, 0, 'aal1 reads no key usage');
+  });
+  await as(owner, undefined, async () => {
+    await rejects(db.query(approveSql, [ownerRequest]), /mfa_required/, 'a token without aal cannot approve for an MFA user');
+  });
+  assert(!(await attackerIsMember(ownerWs)), 'the refused approvals added nobody');
+  await as(owner, 'aal2', async () => {
+    assert.equal((await db.query(spendSql, [ownerWs])).rows[0].c, 25, 'aal2 reads spend');
+    assert.equal((await db.query(keyUsageSql, [ownerWs])).rows.length, 1, 'aal2 reads key usage');
+    assert.equal((await db.query(approveSql, [ownerRequest])).rows.length, 1, 'aal2 can approve a join request');
+  });
+  assert(await attackerIsMember(ownerWs), 'the aal2 approval added the requester');
+  await as(plain, 'aal1', async () => {
+    assert.equal((await db.query(spendSql, [plainWs])).rows[0].c, 25, 'aal1 without MFA reads spend');
+    assert.equal((await db.query(approveSql, [plainRequest])).rows.length, 1, 'aal1 without MFA can approve a join request');
+  });
+  assert(await attackerIsMember(plainWs), 'the approval without MFA added the requester');
+  // service_role has no auth.uid(): the MFA check passes and the functions behave as before.
+  await db.exec('set role service_role;');
+  assert.equal((await db.query(`select public.mfa_satisfied() as ok`)).rows[0].ok, true, 'service_role satisfies the check');
+  await rejects(db.query(approveSql, [plainRequest]), /^(?!.*mfa_required).*Unauthorized/, 'service_role gets the original error');
+  await db.exec('reset role;');
+
+  // 6. Every signed-in table has the restrictive policy, for authenticated only.
   const { rows } = await db.query(`select tablename, permissive, roles::text[] as roles, cmd from pg_policies where policyname = $1`, [policyName]);
   assert.equal(rows.length, protectedTables.length);
   for (const row of rows) {
