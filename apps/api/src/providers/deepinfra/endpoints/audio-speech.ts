@@ -1,14 +1,15 @@
 import * as z from "zod";
+import { lazySchema } from "@core/lazy-schema";
 import { AudioSpeechSchema } from "@core/schemas";
 import type { AdapterResult, ProviderExecuteArgs } from "@providers/types";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "@providers/openai-compatible/config";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 
-const optionsSchema = z.object({
+const optionsSchema = lazySchema(() => z.object({
 	service_tier: z.enum(["default", "priority", "flex"]).optional(),
 	fail_fast: z.boolean().optional(),
 	extra_body: z.record(z.string(), z.unknown()).optional(),
-}).strict();
+}).strict());
 
 export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 	const body = AudioSpeechSchema.parse(args.body);

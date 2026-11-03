@@ -1,4 +1,5 @@
 import * as z from "zod";
+import { lazySchema } from "@core/lazy-schema";
 import { AudioTranscriptionSchema } from "@core/schemas";
 import type { AdapterResult, ProviderExecuteArgs } from "../types";
 import { resolveOpenAITransport } from "../shared/openai-transport";
@@ -6,10 +7,10 @@ import { exec as legacyTranscription } from "../openai/endpoints/audio-transcrip
 import { upstreamTestHeaders } from "../shared/testing";
 import { audioDurationSeconds } from "@/lib/audio/duration";
 
-const configSchema = z.object({
+const configSchema = lazySchema(() => z.object({
     enable_itn: z.boolean().optional(),
     format: z.object({ type: z.enum(["wav", "mp3", "ogg", "pcm"]), codec: z.string().optional(), rate: z.number().int().positive().optional(), bits: z.literal(16).optional(), channel: z.number().int().min(1).max(2).optional() }).optional(),
-}).strict();
+}).strict());
 
 async function finalTranscript(stream: ReadableStream<Uint8Array>): Promise<any> {
     const reader = stream.getReader();

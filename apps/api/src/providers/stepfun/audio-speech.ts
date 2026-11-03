@@ -1,16 +1,17 @@
 import * as z from "zod";
+import { lazySchema } from "@core/lazy-schema";
 import { AudioSpeechSchema } from "@core/schemas";
 import type { AdapterResult, ProviderExecuteArgs } from "../types";
 import { resolveOpenAITransport } from "../shared/openai-transport";
 import { upstreamTestHeaders } from "../shared/testing";
 
-const configSchema = z.object({
+const configSchema = lazySchema(() => z.object({
     volume: z.number().min(0.1).max(2).optional(),
     sample_rate: z.union([z.literal(8000), z.literal(16000), z.literal(22050), z.literal(24000), z.literal(48000)]).optional(),
     pronunciation_map: z.object({ tone: z.array(z.string()) }).optional(),
     markdown_filter: z.boolean().optional(),
     voice_label: z.object({ language: z.string().optional(), emotion: z.string().optional(), style: z.string().optional() }).strict().refine(value => Object.values(value).filter(Boolean).length <= 1, "Only one voice label can be supplied").optional(),
-}).strict();
+}).strict());
 
 export function countStepSpeechCharacters(input: string): number {
     return Array.from(input).reduce((count, character) => count + (/\p{Script=Han}/u.test(character) ? 1 : 0.5), 0);

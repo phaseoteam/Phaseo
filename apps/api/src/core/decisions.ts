@@ -27,21 +27,22 @@ export const DecisionProviderOptionsSchema = lazySchema(() => z.object({
 }).passthrough());
 
 const instructions = lazySchema(() => z.string().max(1048576));
-const commonQuestion = { name: instructions.optional(), instructions };
+// A function: calling .optional() at module load would build `instructions` eagerly.
+const commonQuestion = () => ({ name: instructions.optional(), instructions });
 const value = lazySchema(() => z.union([z.string(), z.boolean()]));
 const mediaUrl = (kind: "audio" | "video" | "image", maxLength = 24 * 1024 * 1024) => z.string().max(maxLength).refine(value => {
 	if (new RegExp(`^data:${kind}/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$`, "i").test(value)) return true;
 	try { return new URL(value).protocol === "https:"; } catch { return false; }
 }, "Use an inline base64 data URL or a public HTTPS URL.");
 export const NativeDecisionQuestionSchema = lazySchema(() => z.discriminatedUnion("type", [
-	z.object({ ...commonQuestion, type: z.literal("predicate") }).strict(),
-	z.object({ ...commonQuestion, type: z.literal("box") }).strict(),
+	z.object({ ...commonQuestion(), type: z.literal("predicate") }).strict(),
+	z.object({ ...commonQuestion(), type: z.literal("box") }).strict(),
 	z.object({
-		...commonQuestion, type: z.literal("choice"),
+		...commonQuestion(), type: z.literal("choice"),
 		choices: z.array(z.object({ value, description: instructions.optional() }).strict()).min(1),
 	}).strict(),
 	z.object({
-		...commonQuestion, type: z.literal("score"),
+		...commonQuestion(), type: z.literal("score"),
 		levels: z.array(z.object({ label: instructions, description: instructions.optional() }).strict()).min(1),
 	}).strict(),
 ]));
