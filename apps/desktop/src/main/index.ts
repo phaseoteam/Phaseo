@@ -654,12 +654,21 @@ ipcMain.handle("workspace:github-references", (event, id: unknown, query: unknow
 ipcMain.handle("workspace:pull-request-directory", (event, query: unknown) => { if (!senderWindow(event)) throw new Error("Invalid pull request list request."); return listPullRequestDirectory(workspaceRuntime.store.getProjects().filter(project => { try { workspaceRuntime.assertProjectAvailable(project.id); return true; } catch { return false; } }), query); });
 ipcMain.handle("workspace:pull-request", async (event, id: unknown, number: unknown) => { const details = await projectPullRequest(projectRoot(event, id), number); workspaceRuntime.syncPullRequestSnapshot(details.repository, details.number, pullRequestLinkSnapshot(details)); return details; });
 ipcMain.handle("workspace:pull-request-candidates", (event, id: unknown, query: unknown) => projectPullRequestCandidates(projectRoot(event, id), query));
-ipcMain.handle("workspace:pull-request-view", async (event, id: unknown, number: unknown) => { const view = await projectPullRequestView(projectRoot(event, id), number); workspaceRuntime.syncPullRequestSnapshot(view.repository, view.number, pullRequestLinkSnapshot(view)); return view; });
-ipcMain.handle("workspace:pull-request-action", async (event, id: unknown, request: unknown) => { const root = projectRoot(event, id); if (shutdownStarted) throw new Error("The workspace is shutting down."); const view = await projectPullRequestAction(root, request); workspaceRuntime.syncPullRequestSnapshot(view.repository, view.number, pullRequestLinkSnapshot(view)); return view; });
+ipcMain.handle("workspace:pull-request-view", (event, id: unknown, number: unknown) => { projectRoot(event, id); return readProjectPullRequestView(id as string, number); });
+ipcMain.handle("workspace:pull-request-action", (event, id: unknown, request: unknown) => { projectRoot(event, id); return runProjectPullRequestAction(id as string, request); });
+/** The window's pull request pane read and its actions, which phones use too; each keeps linked chats' snapshots current. */
+async function readProjectPullRequestView(id: string, number: unknown) { const view = await projectPullRequestView(projectDirectory(id), number); workspaceRuntime.syncPullRequestSnapshot(view.repository, view.number, pullRequestLinkSnapshot(view)); return view; }
+async function runProjectPullRequestAction(id: string, request: unknown) { const root = projectDirectory(id); if (shutdownStarted) throw new Error("The workspace is shutting down."); const view = await projectPullRequestAction(root, request); workspaceRuntime.syncPullRequestSnapshot(view.repository, view.number, pullRequestLinkSnapshot(view)); return view; }
 ipcMain.handle("workspace:branch-pull-request", (event, id: unknown, fresh: unknown) => branchPullRequest(projectRoot(event, id), fresh === true));
 ipcMain.handle("workspace:create-pull-request", async (event, id: unknown, taskId: unknown) => {
-	const root = projectRoot(event, id);
+	projectRoot(event, id);
 	if (typeof id !== "string" || (taskId !== undefined && typeof taskId !== "string") || shutdownStarted) throw new Error("Invalid pull request request.");
+	return { ...await createProjectPullRequest(id, taskId), workspace: workspaceRuntime.store.getOverview() };
+});
+/** The window's Create pull request, which a phone's create_pull_request runs too. */
+async function createProjectPullRequest(id: string, taskId: string | undefined) {
+	const root = projectDirectory(id);
+	if (shutdownStarted) throw new Error("The workspace is shutting down.");
 	// The title model writes the title and description from the branch, the repository's template and the chat's work; without one, the commits do.
 	const writer = "missing" in workspaceRuntime.titleModelAccount() ? undefined : async (context: PullRequestContext) => {
 		const thread = typeof taskId === "string" ? (() => { try { return threadWorkLog(workspaceRuntime.store.getTask(taskId)); } catch { return undefined; } })() : undefined;
@@ -673,8 +682,8 @@ ipcMain.handle("workspace:create-pull-request", async (event, id: unknown, taskI
 	const task = typeof taskId === "string" ? workspaceRuntime.store.getOverview().tasks.find(value => value.id === taskId) : undefined;
 	// Chats link GitHub pull requests only; a request on another host is created but not linked, and the result says so.
 	const linked = task && parsePullRequestReference(result.url)?.repository ? await workspaceRuntime.command({ type: "link-pull-request", id: task.id, reference: result.url, source: "created" }).then(() => true, () => false) : false;
-	return { ...result, linked, workspace: workspaceRuntime.store.getOverview() };
-});
+	return { ...result, linked };
+}
 ipcMain.handle("workspace:outside-agents", event => { if (!senderWindow(event) || !outsideAgents) throw new Error("Invalid request."); return outsideAgents.settings(); });
 ipcMain.handle("workspace:outside-agents-enable", (event, enabled: unknown, port: unknown) => { if (!senderWindow(event) || !outsideAgents || typeof enabled !== "boolean" || (port !== undefined && typeof port !== "number") || shutdownStarted) throw new Error("Invalid request."); return outsideAgents.setEnabled(enabled, port as number | undefined); });
 ipcMain.handle("workspace:outside-agent-token", (event, request: unknown) => { if (!senderWindow(event) || !outsideAgents) throw new Error("Invalid request."); return outsideAgents.createToken(request); });
@@ -738,10 +747,13 @@ ipcMain.handle("workspace:pull-request-set-files-viewed", (event, id: unknown, r
 ipcMain.handle("workspace:pull-request-threads", (event, id: unknown, query: unknown) => projectPullRequestThreads(projectRoot(event, id), query));
 ipcMain.handle("workspace:git-hunks", (event, id: unknown, filename: unknown, staged: unknown) => readGitHunks(projectRoot(event, id), filename, staged));
 ipcMain.handle("workspace:git-diff-contents", (event, id: unknown, request: unknown) => readGitDiffContents(projectRoot(event, id), request));
-ipcMain.handle("workspace:git-command", (event, id: unknown, command: unknown) => { const root = projectRoot(event, id); return workspaceRuntime.mutateProject(id as string, () => gitCommand(root, command)); });
+ipcMain.handle("workspace:git-command", (event, id: unknown, command: unknown) => { projectRoot(event, id); return runGitCommand(id as string, command); });
+/** The window's Git menu action, which a phone's git_action runs too. */
+function runGitCommand(id: string, command: unknown) { const root = projectDirectory(id); return workspaceRuntime.mutateProject(id, () => gitCommand(root, command)); }
+function writeCommitMessage(id: string) { const root = projectDirectory(id); return span("git.commit-message", undefined, () => generateCommitMessage(root, input => workspaceRuntime.completeWithTitleModel(input))); }
 ipcMain.handle("workspace:git-branches", (event, id: unknown) => gitBranches(projectRoot(event, id)));
 ipcMain.handle("workspace:turn-changes", (event, id: unknown, from: unknown, to: unknown) => { const root = projectRoot(event, id); if (!isTreeId(from) || !isTreeId(to)) throw new Error("This turn has no saved snapshot."); return turnChanges(root, from, to); });
-ipcMain.handle("workspace:git-commit-message", (event, id: unknown) => { const root = projectRoot(event, id); return span("git.commit-message", undefined, () => generateCommitMessage(root, input => workspaceRuntime.completeWithTitleModel(input))); });
+ipcMain.handle("workspace:git-commit-message", (event, id: unknown) => { projectRoot(event, id); return writeCommitMessage(id as string); });
 ipcMain.handle("workspace:git-init", (event, id: unknown) => { const root = projectRoot(event, id); return workspaceRuntime.mutateProject(id as string, () => gitInit(root)); });
 ipcMain.handle("workspace:publish-owners", (event, id: unknown) => publishOwners(projectRoot(event, id)));
 ipcMain.handle("workspace:publish-repository", async (event, id: unknown, request: unknown) => {
@@ -1351,7 +1363,11 @@ app.whenReady().then(() => {
 			desktopName: () => hostname(), appVersion: app.getVersion(),
 			overview: () => workspaceRuntime.store.getOverview(), task: id => workspaceRuntime.store.getTask(id), page: query => workspaceRuntime.store.conversationPage(query),
 			command: command => workspaceRuntime.command(command),
-			newChat: input => startPhoneChat(() => workspaceRuntime.store.getOverview(), command => workspaceRuntime.command(command), phoneSources, input),
+			newChat: input => startPhoneChat(() => workspaceRuntime.store.getOverview(), command => workspaceRuntime.command(command), phoneSources, input, async (request, create) => {
+				projectDirectory(request.projectId);
+				if (shutdownStarted) throw new Error("The workspace is shutting down.");
+				return (await workspaceRuntime.startWorktreeChat(validateWorktreeChatRequest(request), create)).taskId;
+			}),
 			models: input => phoneModels(workspaceRuntime.store.getOverview(), phoneSources, input),
 			// A worktree's .git is a file, which existsSync also finds.
 			isRepository: directory => existsSync(path.join(directory, ".git")),
@@ -1368,6 +1384,23 @@ app.whenReady().then(() => {
 			// The window's file browser reads (workspace:project-tree, workspace:file-preview) on the same folder checks.
 			files: async (projectId, request) => projectTree(projectDirectory(projectId), request),
 			readFile: async (projectId, filename) => phoneFilePreview(projectDirectory(projectId), filename),
+			// The window's Git menu, worktrees and pull request pane, through the same functions its IPC handlers call.
+			branches: async projectId => { const root = projectDirectory(projectId); return span("git.refs", undefined, () => gitRefs(root)); },
+			branchPullRequest: async projectId => branchPullRequest(projectDirectory(projectId)),
+			gitCommand: (projectId, command) => runGitCommand(projectId, command),
+			commitMessage: projectId => writeCommitMessage(projectId),
+			createPullRequest: (projectId, chatId) => createProjectPullRequest(projectId, chatId),
+			pullRequests: async (projectId, cursor) => { const root = projectDirectory(projectId); return span("gh.pull-requests", { page: cursor !== undefined }, () => projectPullRequests(root, cursor)); },
+			pullRequest: (projectId, number) => readProjectPullRequestView(projectId, number),
+			pullRequestFiles: async (projectId, query) => projectPullRequestFiles(projectDirectory(projectId), query),
+			pullRequestAction: (projectId, request) => runProjectPullRequestAction(projectId, request),
+			// The project's own merge method (a worktree's is its source project's), else the app's.
+			mergeMethod: projectId => {
+				const projects = workspaceRuntime.store.getProjects(), project = projects.find(value => value.id === projectId);
+				const source = project?.worktree ? projects.find(value => value.id === project.worktree!.sourceProjectId) ?? project : project;
+				return source?.settings?.pullRequestMergeMethod ?? workspaceRuntime.store.getPreferences().pullRequestMergeMethod ?? null;
+			},
+			fromPhone: note => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:phone-note", { ...note, project: workspaceRuntime.store.getProjects().find(value => value.id === note.projectId)?.name }); },
 		},
 	});
 	void phoneService.start().catch(() => {});

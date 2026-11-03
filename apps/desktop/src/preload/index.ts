@@ -149,6 +149,7 @@ const desktopApi: PhaseoDesktopApi = {
 		setPhaseoConnect: enabled => ipcRenderer.invoke("workspace:phone-connect", enabled),
 		refreshPhaseoConnect: () => ipcRenderer.invoke("workspace:phone-connect-refresh"),
 		onPhoneChanged: listener => { const changed = (_event: Electron.IpcRendererEvent, value: Parameters<typeof listener>[0]) => listener(value); ipcRenderer.on("workspace:phone-changed", changed); return () => { ipcRenderer.removeListener("workspace:phone-changed", changed); }; },
+		onPhoneNote: listener => { const noted = (_event: Electron.IpcRendererEvent, value: Parameters<typeof listener>[0]) => listener(value); ipcRenderer.on("workspace:phone-note", noted); return () => { ipcRenderer.removeListener("workspace:phone-note", noted); }; },
 		onOutsideAgentsChanged: listener => { const changed = (_event: Electron.IpcRendererEvent, value: Parameters<typeof listener>[0]) => listener(value); ipcRenderer.on("workspace:outside-agents-changed", changed); return () => { ipcRenderer.removeListener("workspace:outside-agents-changed", changed); }; },
 		saveCodeHostToken: request => ipcRenderer.invoke("workspace:code-host-token", request),
 		removeCodeHostToken: (kind, host) => ipcRenderer.invoke("workspace:code-host-token-remove", kind, host),

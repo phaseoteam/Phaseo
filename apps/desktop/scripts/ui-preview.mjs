@@ -118,6 +118,15 @@ if (demo) {
 				response.end(JSON.stringify({ choices: [{ index: 0, message: { role: "assistant", content: JSON.stringify(verdict) }, finish_reason: "stop" }], usage }));
 				return;
 			}
+			// The title model's other non-streamed calls (chat titles, Write message): a short canned answer, so no tokens are spent.
+			if (stream === false) {
+				const asks = JSON.stringify(messages).toLowerCase();
+				const content = asks.includes("commit message") ? "Tighten the October draft\n\nDemo message from the local stand-in gateway; no tokens were spent." : "Demo title";
+				await sleep(400);
+				response.writeHead(200, { "Content-Type": "application/json" });
+				response.end(JSON.stringify({ choices: [{ index: 0, message: { role: "assistant", content }, finish_reason: "stop" }], usage: { prompt_tokens: Math.ceil(body.length / 4), completion_tokens: 12, total_tokens: Math.ceil(body.length / 4) + 12 } }));
+				return;
+			}
 			response.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" });
 			await sleep(500);
 			const send = packet => response.write(`data: ${JSON.stringify(packet)}\n\n`);

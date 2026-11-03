@@ -18,8 +18,8 @@ export type PhoneAddress = {
 export type PhoneAccess = { code: boolean; changes: boolean; terminal: boolean };
 export const phoneAccessDefaults: PhoneAccess = { code: true, changes: false, terminal: false };
 export const phoneAccessLabels: Record<keyof PhoneAccess, { title: string; description: string }> = {
-	code: { title: "Read code", description: "Git status and the changes in each project and thread." },
-	changes: { title: "Make changes", description: "Commit, push, branches and pull requests. Not offered on the phone yet." },
+	code: { title: "Read code", description: "Git status, changes, files and pull requests in each project and thread." },
+	changes: { title: "Make changes", description: "Commit, push, pull and switch branches, start threads in new worktrees, and create, merge, review and comment on pull requests. Needs Read code. The window notes each change a phone makes." },
 	terminal: { title: "Use terminals", description: "Open terminals and type in them. Not offered on the phone yet." },
 };
 export type PhoneDeviceView = { id: string; name: string; pairedAt: string; lastSeenAt?: string; connected: boolean; access: PhoneAccess };

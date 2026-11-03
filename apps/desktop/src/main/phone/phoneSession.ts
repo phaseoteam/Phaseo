@@ -8,7 +8,12 @@ import type { PhoneModelsInput, PhoneNewChat, PhoneSetChat } from "./phoneHost";
 import { attentionOf, chatListPage, phoneChat, phoneChats, phoneDetail, phoneProjects, queuedChars, readingOrder, topLevelChats, TurnChangesCache, withTurnChanges } from "./phoneChats";
 import { phoneDiff, phoneDiffFile, phoneGitStatus, type GitWorkingStatus } from "./phoneReview";
 import { phoneFileList } from "./phoneFiles";
+import { phoneBranchPullRequest, phoneGitCommand, phoneGitSummary, phonePullRequest, phonePullRequestAction, phonePullRequestFiles, phonePullRequestSummary, phonePullRequestView } from "./phoneGit";
 import type { ProjectTreeRequest, ProjectTreeResult } from "../../shared/projectTree";
+import type { GitRefs } from "../../shared/gitDiff";
+import type { BranchPullRequest, CreatedPullRequestResult, ProjectPullRequests } from "../../shared/pullRequests";
+import type { PullRequestFilesPage, PullRequestFilesQuery } from "../../shared/pullRequestFiles";
+import type { PullRequestActionRequest, PullRequestMergeMethod, PullRequestView } from "../../shared/pullRequestView";
 
 /** What the phone server needs from the app: the same reads and commands the window uses. */
 export type PhoneHost = {
@@ -37,6 +42,25 @@ export type PhoneHost = {
 	files: (projectId: string, request: ProjectTreeRequest) => Promise<ProjectTreeResult>;
 	/** A project file through the window's preview, sized for a frame (phoneFiles' phoneFilePreview). */
 	readFile: (projectId: string, path: string) => Promise<PhoneFilePreview>;
+	/** The window's branch list for a project (gitDiffScopes' gitRefs). */
+	branches: (projectId: string) => Promise<GitRefs>;
+	/** The pull request of the project's branch (branchPullRequest, cached for 30 s as the window's is). */
+	branchPullRequest: (projectId: string) => Promise<BranchPullRequest>;
+	/** The window's Git command (gitOperations' gitCommand, through mutateProject); it validates the command again. */
+	gitCommand: (projectId: string, command: Record<string, unknown>) => Promise<unknown>;
+	/** The window's "Write message" (gitWorkflow's generateCommitMessage), which runs the computer's title model. */
+	commitMessage: (projectId: string) => Promise<string>;
+	/** The window's Create pull request, linked to the chat when given. */
+	createPullRequest: (projectId: string, chatId?: string) => Promise<CreatedPullRequestResult>;
+	pullRequests: (projectId: string, cursor?: string) => Promise<ProjectPullRequests>;
+	pullRequest: (projectId: string, number: number) => Promise<PullRequestView>;
+	pullRequestFiles: (projectId: string, query: PullRequestFilesQuery) => Promise<PullRequestFilesPage>;
+	/** The window's pull request action (projectPullRequestAction), which validates it and runs gh. */
+	pullRequestAction: (projectId: string, request: PullRequestActionRequest) => Promise<PullRequestView>;
+	/** The merge method the window would pick for the project: its setting, else the app's; null when neither sets one. */
+	mergeMethod: (projectId: string) => PullRequestMergeMethod | null;
+	/** Tells the window what a phone changed, so a lost phone's actions are seen ("Pushed from Daniel's Pixel"). */
+	fromPhone: (note: { device: string; summary: string; projectId: string }) => void;
 };
 export type PhoneDevice = { id: string; name: string };
 const forbidden = () => new PhoneProtocolError("forbidden", "Allow this on the computer: Settings → Phone.");
@@ -162,9 +186,12 @@ export class PhoneSession {
 				await command({ type: "cancel", id: request.chatId });
 				return okResponse(request, { chatId: request.chatId });
 			case "new_chat": {
+				// A worktree makes a branch and a folder, so it needs the same consent as the Git actions.
+				if (request.workspace) { this.allowed("code"); this.allowed("changes"); }
 				this.checkProject(request.projectId);
 				const { id: _id, type: _type, ...input } = request;
 				const id = await this.host.newChat(input);
+				if (request.workspace) this.host.fromPhone({ device: this.device.name, summary: `Started a thread in a new worktree from ${request.workspace.base}`, projectId: request.projectId! });
 				const overview = this.host.overview(), task = overview.tasks.find(value => value.id === id);
 				if (!task) throw new Error("The chat was started but could not be read.");
 				return okResponse(request, { chat: phoneChat(task, overview.projects) });
@@ -206,10 +233,73 @@ export class PhoneSession {
 			case "git_status": {
 				this.allowed("code");
 				this.checkProject(request.projectId);
-				const status = await this.host.gitStatus(request.projectId);
+				const [status, pullRequest] = await Promise.all([
+					this.host.gitStatus(request.projectId),
+					// From 6, and only when asked: it asks GitHub, which a sidebar's folder headings don't need.
+					request.pullRequest && this.protocol >= 6 ? this.host.branchPullRequest(request.projectId).then(phoneBranchPullRequest, () => null) : undefined,
+				]);
 				// Read code can be turned off while git runs; nothing read before then goes out after.
 				this.allowed("code");
+				return okResponse(request, { ...phoneGitStatus(status), ...pullRequest !== undefined && status ? { pullRequest } : {} });
+			}
+			case "list_branches": {
+				this.allowed("code");
+				this.checkProject(request.projectId);
+				const { current, local, remote } = await this.host.branches(request.projectId);
+				this.allowed("code");
+				return okResponse(request, { current, local, remote });
+			}
+			case "git_action": {
+				this.changes(request.projectId);
+				await this.host.gitCommand(request.projectId, phoneGitCommand(request));
+				// It happened, so the window hears of it even if the phone loses the right to the answer.
+				this.host.fromPhone({ device: this.device.name, summary: phoneGitSummary(request), projectId: request.projectId });
+				const status = await this.host.gitStatus(request.projectId);
+				this.changes();
 				return okResponse(request, phoneGitStatus(status));
+			}
+			case "commit_message": {
+				this.changes(request.projectId);
+				const message = await this.host.commitMessage(request.projectId);
+				this.changes();
+				if (!message.trim()) throw new Error("The title model didn't write a message. Write one yourself.");
+				return okResponse(request, { message });
+			}
+			case "create_pull_request": {
+				this.changes(request.projectId);
+				if (request.chatId) this.chatOverview(request.chatId);
+				const { repository, number, url, status } = await this.host.createPullRequest(request.projectId, request.chatId);
+				this.host.fromPhone({ device: this.device.name, summary: `${status === "created" ? "Created" : "Linked"} pull request #${number}`, projectId: request.projectId });
+				this.changes();
+				return okResponse(request, { repository, number, url, status });
+			}
+			case "list_pull_requests": {
+				this.allowed("code");
+				this.checkProject(request.projectId);
+				const page = await this.host.pullRequests(request.projectId, request.cursor);
+				this.allowed("code");
+				return okResponse(request, { repository: page.repository, pullRequests: page.requests.map(phonePullRequest), ...page.nextCursor ? { cursor: page.nextCursor } : {}, limitReached: page.limitReached });
+			}
+			case "read_pull_request": {
+				this.allowed("code");
+				this.checkProject(request.projectId);
+				const view = await this.host.pullRequest(request.projectId, request.number);
+				this.allowed("code");
+				return okResponse(request, phonePullRequestView(view, this.host.mergeMethod(request.projectId)));
+			}
+			case "pull_request_files": {
+				this.allowed("code");
+				this.checkProject(request.projectId);
+				const page = await this.host.pullRequestFiles(request.projectId, { number: request.number, headOid: request.headOid, baseOid: request.baseOid, page: request.page ?? 1 });
+				this.allowed("code");
+				return okResponse(request, phonePullRequestFiles(page));
+			}
+			case "pr_action": {
+				this.changes(request.projectId);
+				const view = await this.host.pullRequestAction(request.projectId, phonePullRequestAction(request.number, request.headOid, request.action));
+				this.host.fromPhone({ device: this.device.name, summary: phonePullRequestSummary(request.number, request.action), projectId: request.projectId });
+				this.changes();
+				return okResponse(request, phonePullRequestView(view, this.host.mergeMethod(request.projectId)));
 			}
 			case "read_diff": {
 				this.allowed("code");
@@ -253,6 +343,11 @@ export class PhoneSession {
 	}
 
 	private allowed(capability: PhoneCapability) { if (!this.capabilities().includes(capability)) throw forbidden(); }
+	/** Making changes needs Read code too: every one of them answers with what the code looks like after. */
+	private changes(projectId?: string) {
+		this.allowed("code"); this.allowed("changes");
+		if (projectId) this.checkProject(projectId);
+	}
 	/**
 	 * The folder and comparison a diff request names. A chat's diff is in its own project, its worktree's when it has
 	 * one; a turn's snapshots come from the chat's message, never from the phone.

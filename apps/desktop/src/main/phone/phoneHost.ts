@@ -10,7 +10,9 @@ type CreateTask = Extract<WorkspaceCommand, { type: "create-task" }>;
 const optionHarnesses = ["phaseo", "claude", "cursor", "pi", "opencode"];
 /** The models a harness offers, as the window's picker reads them. */
 export type DiscoverModels = (harness: Harness, accountId?: string, projectId?: string) => Promise<ModelOption[]>;
-export type PhoneNewChat = { text: string; projectId?: string; mode: PhoneChatMode; model?: string; reasoningEffort?: string; harness?: string; accountId?: string; agentId?: string };
+export type PhoneNewChat = { text: string; projectId?: string; mode: PhoneChatMode; model?: string; reasoningEffort?: string; harness?: string; accountId?: string; agentId?: string; workspace?: { kind: "worktree"; base: string } };
+/** The window's New worktree (workspaceRuntime's startWorktreeChat): the worktree, then the chat in it, whose first message waits for its setup. */
+export type StartWorktreeChat = (request: { projectId: string; base: string; text: string }, create: CreateTask) => Promise<string>;
 export type PhoneModelsInput = { projectId?: string; mode?: PhoneChatMode };
 
 /** What a phone's new chat needs from the app beyond the overview: the same sources the window's new-chat screen reads. */
@@ -191,11 +193,15 @@ export async function withPhoneModel(base: CreateTask, discover: DiscoverModels,
 }
 
 /** Creates the chat through the app's commands, checked as the window's are, and sends its first message. */
-export async function startPhoneChat(overview: () => WorkspaceOverview, command: (value: WorkspaceCommand) => Promise<WorkspaceOverview>, sources: PhoneModelSources, input: PhoneNewChat) {
+export async function startPhoneChat(overview: () => WorkspaceOverview, command: (value: WorkspaceCommand) => Promise<WorkspaceOverview>, sources: PhoneModelSources, input: PhoneNewChat, worktree?: StartWorktreeChat) {
 	const known = new Set(overview().tasks.map(task => task.id));
-	const create = await withPhoneModel(await phoneNewChat(overview(), sources, input), sources.discover, input);
-	const created = await command(validateCommand(create));
-	const id = created.tasks.find(task => !known.has(task.id))?.id;
+	const create = validateCommand(await withPhoneModel(await phoneNewChat(overview(), sources, input), sources.discover, input));
+	let id: string | undefined;
+	if (input.workspace) {
+		if (!worktree || !input.projectId || create.type !== "create-task") throw new Error("This computer can't start a worktree for a phone.");
+		id = await worktree({ projectId: input.projectId, base: input.workspace.base, text: input.text }, create);
+	} else id = (await command(create)).tasks.find(task => !known.has(task.id))?.id;
+	// As the window does, the first message is sent once the chat exists; a worktree chat's waits in its queue for the setup.
 	if (!id) throw new Error("The chat could not be started.");
 	await command({ type: "send", id, text: input.text });
 	return id;
