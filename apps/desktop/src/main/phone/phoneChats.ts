@@ -65,7 +65,8 @@ export function chatListPage(overview: WorkspaceOverview, cursor: string | undef
 	return { chats: page.map(task => phoneChat(task, overview.projects)), ...last && start + limit < chats.length ? { cursor: `${last.updatedAt}|${last.id}` } : {} };
 }
 
-const queuedChars = 2_000;
+/** A queued message longer than this reaches the phone cut, so the phone can't edit it without losing its end. */
+export const queuedChars = 2_000;
 
 export function phoneDetail(task: Task, overview: TaskOverview, projects: readonly Project[]): PhoneChatDetail {
 	const effort = taskEffort(task);
@@ -73,7 +74,7 @@ export function phoneDetail(task: Task, overview: TaskOverview, projects: readon
 	return {
 		...phoneChat(overview, projects), ...effort ? { reasoningEffort: effort } : {},
 		harness: task.harness, ...task.accountId ? { accountId: task.accountId } : {}, ...task.permissionMode ? { permissionMode: task.permissionMode } : {},
-		queue: (task.queue ?? []).map(message => ({ id: message.id, text: cut(message.text, queuedChars).text })),
+		queue: (task.queue ?? []).map(message => { const text = cut(message.text, queuedChars); return { id: message.id, text: text.text, ...text.truncated ? { truncated: true as const } : {} }; }),
 		...pullRequests.length ? { pullRequests: pullRequests.map(link => ({ repository: link.repository, number: link.number, url: link.url, ...link.snapshot ? { title: link.snapshot.title, state: link.snapshot.state } : {} })) } : {},
 		approvals: (task.approvals ?? []).map(approval => ({ id: approval.id, title: approval.method, description: cut(approval.description, requestChars).text, ...approval.kind === "plan" ? { plan: true as const } : {} })),
 		questions: (task.questions ?? []).map(request => ({ id: request.id, questions: request.questions.map(question => ({

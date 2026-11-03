@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { applyEntries, firstMessageId, mergeChat, mergeDetail, prependEntries, sortChats } from "./chatState";
+import { applyEntries, firstMessageId, mergeArchived, mergeChat, mergeDetail, prependEntries, sortChats } from "./chatState";
 import type { ClientEvent, DesktopClient } from "./client";
 import { useClientEvents, useConnection } from "./connections";
 import { allModels, type ModelList } from "./newThread";
@@ -42,6 +42,44 @@ export function useDesktopChats(client: DesktopClient | null) {
     try {
       const page = await client.request("list_chats", { cursor });
       setChats((current) => sortChats([...(current ?? []).filter((chat) => !page.chats.some((entry) => entry.id === chat.id)), ...page.chats]));
+      setCursor(page.cursor);
+    } catch (problem) {
+      setError(messageOf(problem));
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [client, cursor, loadingMore]);
+
+  return { chats, error, reload: load, loadMore: cursor ? loadMore : null, loadingMore };
+}
+
+/**
+ * A computer's archived threads (protocol 3), newest first, a page at a time, kept in step by chat_updated: an archived
+ * thread joins, a restored one leaves. Null while loading.
+ */
+export function useArchivedChats(client: DesktopClient | null) {
+  const [chats, setChats] = useState<PhoneChat[] | null>(null);
+  const [cursor, setCursor] = useState<string | undefined>();
+  const [error, setError] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const load = useCallback(() => {
+    if (!client) return;
+    client.request("list_chats", { archived: true }).then((page) => { setChats(page.chats); setCursor(page.cursor); setError(null); }, (problem: unknown) => setError(messageOf(problem)));
+  }, [client]);
+
+  useEffect(load, [load]);
+
+  useClientEvents(client, useCallback((event: ClientEvent) => {
+    if (event.type === "chat_updated") setChats((current) => (current ? mergeArchived(current, event.chat) : current));
+  }, []));
+
+  const loadMore = useCallback(async () => {
+    if (!client || !cursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const page = await client.request("list_chats", { archived: true, cursor });
+      setChats((current) => [...(current ?? []).filter((chat) => !page.chats.some((entry) => entry.id === chat.id)), ...page.chats]);
       setCursor(page.cursor);
     } catch (problem) {
       setError(messageOf(problem));

@@ -1,15 +1,13 @@
 import { LegendList } from "@legendapp/list/react-native";
 import { Archive } from "lucide-react-native";
-import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import { Button, EmptyState, ErrorState, Header, Screen, SkeletonRows, Text } from "@/components/ui";
 import { formatRelativeDay } from "@/lib/format";
-import { mergeArchived } from "./chatState";
-import type { ClientEvent, DesktopClient } from "./client";
+import type { DesktopClient } from "./client";
 import { ConnectionNotice } from "./CodeThreadList";
-import { clientFor, connectionLabel, useClientEvents, useConnection } from "./connections";
+import { clientFor, connectionLabel, useConnection } from "./connections";
+import { useArchivedChats } from "./hooks";
 import { changeChat } from "./organise";
-import type { PhoneChat } from "./protocol";
 import { useDesktop } from "./store";
 import { organises } from "./threadActions";
 
@@ -32,16 +30,7 @@ export function ArchivedThreadsScreen({ desktopId }: { desktopId: string }) {
 function ArchivedList({ client, desktopName }: { client: DesktopClient; desktopName: string }) {
   const connection = useConnection(client);
   const protocol = connection.status === "connected" ? connection.protocol : 0;
-  const [chats, setChats] = useState<PhoneChat[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const load = useCallback(() => {
-    if (!organises(protocol)) return;
-    client.request("list_chats", { archived: true }).then((page) => { setChats(page.chats); setError(null); }, (problem: unknown) => setError(problem instanceof Error ? problem.message : "Couldn't read the archive."));
-  }, [client, protocol]);
-  useEffect(load, [load]);
-  useClientEvents(client, useCallback((event: ClientEvent) => {
-    if (event.type === "chat_updated") setChats((current) => (current ? mergeArchived(current, event.chat) : current));
-  }, []));
+  const { chats, error, reload, loadMore, loadingMore } = useArchivedChats(organises(protocol) ? client : null);
   const subtitle = `${desktopName} · ${connectionLabel(connection)}`;
   const older = connection.status === "connected" && !organises(protocol);
   return (
@@ -49,7 +38,7 @@ function ArchivedList({ client, desktopName }: { client: DesktopClient; desktopN
       <Header back title="Archived threads" subtitle={subtitle} />
       <ConnectionNotice client={client} />
       {older ? <EmptyState className="flex-1" icon={Archive} title="Update Phaseo on the computer" body="This computer's version of Phaseo can't list archived threads yet." />
-        : chats == null ? (error ? <ErrorState className="flex-1" error={new Error(error)} onRetry={load} /> : <SkeletonRows count={6} />) : (
+        : chats == null ? (error ? <ErrorState className="flex-1" error={new Error(error)} onRetry={reload} /> : <SkeletonRows count={6} />) : (
           <LegendList
             data={chats}
             keyExtractor={(chat) => chat.id}
@@ -63,6 +52,8 @@ function ArchivedList({ client, desktopName }: { client: DesktopClient; desktopN
               </View>
             )}
             estimatedItemSize={56}
+            onEndReached={loadMore ?? undefined}
+            ListFooterComponent={loadingMore ? <SkeletonRows count={2} /> : null}
             ListEmptyComponent={<EmptyState icon={Archive} title="No archived threads" body="Threads you archive on the computer or from this phone are kept here." />}
             contentContainerStyle={{ paddingBottom: 24 }}
           />

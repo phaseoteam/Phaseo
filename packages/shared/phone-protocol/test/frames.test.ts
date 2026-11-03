@@ -64,6 +64,8 @@ describe("phone frames", () => {
 		expect(refused(JSON.stringify({ id: "7", type: "update_chat", chatId: "c", action: "snooze", until: "soon" })).message).toContain("until");
 		expect(parsePhoneFrame(JSON.stringify({ id: "8", type: "set_chat", chatId: "c", model: "gpt-6.1", reasoningEffort: "high" }))).toEqual({ id: "8", type: "set_chat", chatId: "c", model: "gpt-6.1", reasoningEffort: "high" });
 		expect(refused(JSON.stringify({ id: "9", type: "set_chat", chatId: "c" })).message).toContain("set_chat needs");
+		expect(parsePhoneFrame(JSON.stringify({ id: "11", type: "set_chat", chatId: "c", defaultEffort: true }))).toEqual({ id: "11", type: "set_chat", chatId: "c", defaultEffort: true });
+		expect(refused(JSON.stringify({ id: "12", type: "set_chat", chatId: "c", defaultEffort: true, reasoningEffort: "high" })).message).toContain("not both");
 		expect(refused(JSON.stringify({ id: "10", type: "set_chat", chatId: "c", permissionMode: "full-access" })).message).toContain("set_chat needs");
 		expect(parsePhoneFrame(JSON.stringify({ id: "11", type: "queue", chatId: "c", messageId: "q1", action: "edit", text: "Shorter" }))).toMatchObject({ action: "edit", text: "Shorter" });
 		expect(refused(JSON.stringify({ id: "12", type: "queue", chatId: "c", messageId: "q1", action: "edit" })).message).toContain("text");

@@ -218,6 +218,7 @@ export class FakeDesktop {
         if (request.mode) chat!.mode = request.mode;
         if (request.model) { chat!.model = request.model; delete chat!.reasoningEffort; }
         if (request.reasoningEffort) chat!.reasoningEffort = request.reasoningEffort;
+        if (request.defaultEffort) delete chat!.reasoningEffort;
         return okResponse(request, { chat: chat! });
       case "queue":
         if (!chat!.queue?.some((entry) => entry.id === request.messageId)) return errorResponse(request.id, request.type, "not_found", "That message has already been sent or removed.") as PhoneResponse;

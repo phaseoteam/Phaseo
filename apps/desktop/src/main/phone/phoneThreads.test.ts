@@ -86,6 +86,12 @@ describe("phone thread organisation and settings", () => {
 		await ask({ type: "set_chat", chatId: "claude-1", reasoningEffort: "low" });
 		// The model's other options stay.
 		expect(app.commands.at(-1)).toEqual({ type: "update-task", id: "claude-1", modelOptions: { thinking: true, effort: "low" } });
+		// Default goes back to the model's own effort, wherever the agent keeps it.
+		expect(await ask({ type: "set_chat", chatId: "codex-1", defaultEffort: true })).toMatchObject({ ok: true, result: { chat: { harness: "codex" } } });
+		expect(app.commands.at(-1)).toEqual({ type: "update-task", id: "codex-1", reasoningEffort: "" });
+		expect(app.get("codex-1").reasoningEffort).toBeFalsy();
+		await ask({ type: "set_chat", chatId: "claude-1", defaultEffort: true });
+		expect(app.commands.at(-1)).toEqual({ type: "update-task", id: "claude-1", modelOptions: { thinking: true } });
 		expect(await ask({ type: "set_chat", chatId: "codex-1", model: "gpt-6.1-mini", reasoningEffort: "low" })).toMatchObject({ ok: false, error: { message: "GPT-6.1 mini doesn't offer that effort." } });
 		expect(await ask({ type: "set_chat", chatId: "codex-1", model: "claude-opus-5-5" })).toMatchObject({ ok: false, error: { message: expect.stringContaining("isn't available") } });
 	});
@@ -120,6 +126,18 @@ describe("phone thread organisation and settings", () => {
 			{ type: "queue-remove", id: "chat-1", messageId: "q2" },
 		]);
 		expect(await ask({ type: "queue", chatId: "chat-1", messageId: "gone", action: "remove" })).toMatchObject({ ok: false, error: { code: "not_found" } });
+	});
+
+	it("marks a queued message the phone gets cut, and won't let an edit of it drop the rest", async () => {
+		const { app, ask } = connected();
+		const long = `${"a".repeat(2_000)}the end`;
+		Object.assign(app.get("chat-1"), { status: "running", queue: [{ id: "q1", text: long, createdAt: "2026-11-01T10:00:00.000Z" }] });
+		const read = await ask({ type: "read_chat", chatId: "chat-1" });
+		expect(read.result!.chat).toMatchObject({ queue: [{ id: "q1", truncated: true }] });
+		const before = app.commands.length;
+		expect(await ask({ type: "queue", chatId: "chat-1", messageId: "q1", action: "edit", text: "a".repeat(2_000) })).toMatchObject({ ok: false, error: { code: "rejected" } });
+		expect(app.commands.length).toBe(before);
+		expect(app.get("chat-1").queue[0]!.text).toBe(long);
 	});
 
 	it("adds each turn's changed files to its message once git has read them, reading each snapshot pair once", async () => {

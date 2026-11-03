@@ -1,4 +1,4 @@
-import { changesLabel, chatItems, mergeArchived, mergeChat, mergeDetail, workLogSummary } from "./chatState";
+import { changesLabel, chatItems, mergeArchived, mergeChat, mergeDetail, settingsChange, workLogSummary } from "./chatState";
 import { codeListItems } from "./codeList";
 import type { PhoneActivity, PhoneChat, PhoneChatDetail, PhoneEntry } from "./protocol";
 import { menuEntries, reverseOf, snoozeChoices, swipeActions } from "./threadActions";
@@ -8,14 +8,34 @@ const tool = (id: string, more: Partial<PhoneActivity> = {}): PhoneActivity => (
 
 describe("organising a computer's threads", () => {
   it("undoes each change with its reverse, from the thread as it was", () => {
-    expect(reverseOf({ action: "settle" }, chat("a"))).toEqual({ action: "unsettle" });
-    expect(reverseOf({ action: "archive" }, chat("a"))).toEqual({ action: "unarchive" });
-    expect(reverseOf({ action: "pin" }, chat("a"))).toEqual({ action: "unpin" });
-    expect(reverseOf({ action: "rename", title: "New" }, chat("a", { title: "Old" }))).toEqual({ action: "rename", title: "Old" });
-    expect(reverseOf({ action: "snooze", until: "2099-01-01T09:00:00.000Z" }, chat("a"))).toEqual({ action: "wake" });
+    expect(reverseOf({ action: "settle" }, chat("a"))).toEqual([{ action: "unsettle" }]);
+    expect(reverseOf({ action: "archive" }, chat("a"))).toEqual([{ action: "unarchive" }]);
+    expect(reverseOf({ action: "pin" }, chat("a"))).toEqual([{ action: "unpin" }]);
+    expect(reverseOf({ action: "rename", title: "New" }, chat("a", { title: "Old" }))).toEqual([{ action: "rename", title: "Old" }]);
+    expect(reverseOf({ action: "snooze", until: "2099-01-01T09:00:00.000Z" }, chat("a"))).toEqual([{ action: "wake" }]);
     // Snoozing again puts back the earlier time.
-    expect(reverseOf({ action: "snooze", until: "2099-01-02T09:00:00.000Z" }, chat("a", { snoozedUntil: "2099-01-01T09:00:00.000Z" }))).toEqual({ action: "snooze", until: "2099-01-01T09:00:00.000Z" });
+    expect(reverseOf({ action: "snooze", until: "2099-01-02T09:00:00.000Z" }, chat("a", { snoozedUntil: "2099-01-01T09:00:00.000Z" }))).toEqual([{ action: "snooze", until: "2099-01-01T09:00:00.000Z" }]);
     expect(reverseOf({ action: "mark-unread" }, chat("a"))).toBeNull();
+  });
+
+  it("puts back what the computer changed alongside: pinning unsettles and wakes, settling unpins", () => {
+    const until = "2099-01-01T09:00:00.000Z";
+    expect(reverseOf({ action: "pin" }, chat("a", { settled: true }))).toEqual([{ action: "unpin" }, { action: "settle" }]);
+    expect(reverseOf({ action: "pin" }, chat("a", { snoozedUntil: until }))).toEqual([{ action: "unpin" }, { action: "snooze", until }]);
+    expect(reverseOf({ action: "settle" }, chat("a", { pinned: true }))).toEqual([{ action: "unsettle" }, { action: "pin" }]);
+    // Pinning again in the undo wakes a snoozed thread, so its snooze follows.
+    expect(reverseOf({ action: "settle" }, chat("a", { pinned: true, snoozedUntil: until }))).toEqual([{ action: "unsettle" }, { action: "pin" }, { action: "snooze", until }]);
+    expect(reverseOf({ action: "unpin" }, chat("a", { pinned: true, snoozedUntil: until }))).toEqual([{ action: "pin" }, { action: "snooze", until }]);
+    // A snooze that has passed stays woken.
+    expect(reverseOf({ action: "pin" }, chat("a", { snoozedUntil: "2000-01-01T00:00:00.000Z" }))).toEqual([{ action: "unpin" }]);
+  });
+
+  it("asks the computer for the default effort back, and nothing when nothing changed", () => {
+    expect(settingsChange({ model: "m", reasoningEffort: "high" }, { model: "m", effort: null })).toEqual({ defaultEffort: true });
+    expect(settingsChange({ model: "m" }, { model: "m", effort: null })).toBeNull();
+    expect(settingsChange({ model: "m", reasoningEffort: "high" }, { model: "m", effort: "high" })).toBeNull();
+    expect(settingsChange({ model: "m" }, { model: "m", effort: "low" })).toEqual({ reasoningEffort: "low" });
+    expect(settingsChange({ model: "m", reasoningEffort: "high" }, { model: "n", effort: null })).toEqual({ model: "n" });
   });
 
   it("offers the window's swipe buttons for an active, snoozed and settled thread, the main one last", () => {

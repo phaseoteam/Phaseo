@@ -201,7 +201,7 @@ export async function startPhoneChat(overview: () => WorkspaceOverview, command:
 	return id;
 }
 
-export type PhoneSetChat = { chatId: string; mode?: PhoneChatMode; model?: string; reasoningEffort?: string };
+export type PhoneSetChat = { chatId: string; mode?: PhoneChatMode; model?: string; reasoningEffort?: string; defaultEffort?: true };
 type UpdateTask = Extract<WorkspaceCommand, { type: "update-task" }>;
 
 /**
@@ -216,13 +216,21 @@ export async function phoneSetChat(task: Task, discover: DiscoverModels, input: 
 		if (input.mode === "chat" || task.mode === "chat") throw new Error("A chat can switch only between Code and Plan.");
 		command.mode = input.mode;
 	}
-	if (!input.model && !input.reasoningEffort) return command;
+	if (!input.model && !input.reasoningEffort && !input.defaultEffort) return command;
 	const modelId = input.model ?? task.model;
 	const model = (await discover(task.harness, task.accountId, task.projectId)).find(value => value.id === modelId);
 	if (!model) throw new Error("That model isn't available on this computer any more.");
 	if (modelId !== task.model) command.model = modelId;
-	if (!input.reasoningEffort) return command;
 	const efforts = modelEfforts(task.harness, model);
+	// Back to the model's own effort, as the window stores it: an empty effort for Codex and Grok, no option for the rest.
+	// A new model already starts on its own.
+	if (input.defaultEffort) {
+		if (command.model || !efforts) return command;
+		if (efforts.setting === "reasoningEffort") return { ...command, reasoningEffort: "" };
+		const { [efforts.setting]: _effort, ...options } = task.modelOptions ?? {};
+		return { ...command, modelOptions: options };
+	}
+	if (!input.reasoningEffort) return command;
 	if (!efforts?.efforts.some(effort => effort.id === input.reasoningEffort)) throw new Error(`${model.name} doesn't offer that effort.`);
 	if (efforts.setting === "reasoningEffort") return { ...command, reasoningEffort: input.reasoningEffort };
 	// The model's other options stay, unless the model changed (the window drops them with the old model).

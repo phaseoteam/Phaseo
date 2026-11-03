@@ -5,11 +5,7 @@ export const organises = (protocol: number) => protocol >= 3;
 
 export type ChatChange = { action: PhoneChatAction; title?: string; until?: string };
 
-/**
- * What undoes a change, from the thread as it was: each action's reverse, a rename back to the old title, and a
- * snooze back to its old time (or a wake when it wasn't snoozed). Null when there's nothing to undo to.
- */
-export function reverseOf(change: ChatChange, before: Pick<PhoneChat, "title" | "snoozedUntil">): ChatChange | null {
+function reverseStep(change: ChatChange, before: Pick<PhoneChat, "title" | "snoozedUntil">, snoozeBack: ChatChange | null): ChatChange | null {
   switch (change.action) {
     case "settle": return { action: "unsettle" };
     case "unsettle": return { action: "settle" };
@@ -20,9 +16,26 @@ export function reverseOf(change: ChatChange, before: Pick<PhoneChat, "title" | 
     case "rename": return change.title === before.title ? null : { action: "rename", title: before.title };
     case "snooze": return before.snoozedUntil ? { action: "snooze", until: before.snoozedUntil } : { action: "wake" };
     // A snooze that has passed can't be put back; mark unread has no reverse on the computer.
-    case "wake": return before.snoozedUntil && Date.parse(before.snoozedUntil) > Date.now() ? { action: "snooze", until: before.snoozedUntil } : null;
+    case "wake": return snoozeBack;
     case "mark-unread": return null;
   }
+}
+
+/**
+ * What undoes a change, from the thread as it was, in order: the action's reverse (a rename back to the old title, a
+ * snooze back to its old time or a wake), then what the computer changed alongside it. Pinning there unsettles and wakes
+ * a thread, and settling unpins it, so undoing either puts those back. Null when there's nothing to undo to.
+ */
+export function reverseOf(change: ChatChange, before: Pick<PhoneChat, "title" | "snoozedUntil" | "pinned" | "settled">, now = Date.now()): ChatChange[] | null {
+  const snoozeBack: ChatChange | null = before.snoozedUntil && Date.parse(before.snoozedUntil) > now ? { action: "snooze", until: before.snoozedUntil } : null;
+  const first = reverseStep(change, before, snoozeBack);
+  if (!first) return null;
+  const steps = [first];
+  if (change.action === "settle" && before.pinned) steps.push({ action: "pin" });
+  if (change.action === "pin" && before.settled) steps.push({ action: "settle" });
+  // The pin woke the thread, or a pin in the undo will, so its snooze goes back last.
+  if (snoozeBack && (change.action === "pin" || steps.some((step) => step.action === "pin"))) steps.push(snoozeBack);
+  return steps;
 }
 
 /** A swipe's buttons: "snooze" opens the snooze choices. */

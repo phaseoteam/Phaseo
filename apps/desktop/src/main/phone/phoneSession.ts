@@ -5,7 +5,7 @@ import type { TurnFileChange } from "../../shared/gitDiff";
 import { validateCommand, type AgentActivity, type Message, type Task, type WorkspaceCommand } from "../../shared/workspace";
 import type { TaskOverview, WorkspaceOverview } from "../../shared/workspaceOverview";
 import type { PhoneModelsInput, PhoneNewChat, PhoneSetChat } from "./phoneHost";
-import { attentionOf, chatListPage, phoneChat, phoneChats, phoneDetail, phoneProjects, readingOrder, topLevelChats, TurnChangesCache, withTurnChanges } from "./phoneChats";
+import { attentionOf, chatListPage, phoneChat, phoneChats, phoneDetail, phoneProjects, queuedChars, readingOrder, topLevelChats, TurnChangesCache, withTurnChanges } from "./phoneChats";
 
 /** What the phone server needs from the app: the same reads and commands the window uses. */
 export type PhoneHost = {
@@ -177,6 +177,7 @@ export class PhoneSession {
 				const { chatId: id, messageId } = request;
 				const queued = this.host.task(id).queue.find(message => message.id === messageId);
 				if (!queued) throw new PhoneProtocolError("not_found", "That message has already been sent or removed.");
+				if (request.action === "edit" && queued.text.length > queuedChars) throw new PhoneProtocolError("rejected", "This message is too long to edit on a phone. Edit it on the computer.");
 				await command(request.action === "remove" ? { type: "queue-remove", id, messageId }
 					: request.action === "edit" ? { type: "queue-edit", id, messageId, text: request.text }
 					: request.action === "steer" ? { type: "steer", id, text: queued.text, queuedId: messageId }

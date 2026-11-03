@@ -43,8 +43,8 @@ export type PhoneLinkedPullRequest = { repository: string; number: number; url: 
 /** A chat with what it is waiting on, for the chat screen. */
 export type PhoneChatDetail = PhoneChat & {
 	approvals: PhoneApproval[]; questions: PhoneQuestionRequest[]; /** The effort the model runs at, when the chat set one. */ reasoningEffort?: string;
-	/** From protocol 3: messages waiting for the turn to end, in order; the agent the chat runs on (set_chat stays within it); its permissions, which a phone can't change; linked pull requests. */
-	queue?: { id: string; text: string }[]; harness?: string; accountId?: string; permissionMode?: PhonePermissionMode; pullRequests?: PhoneLinkedPullRequest[];
+	/** From protocol 3: messages waiting for the turn to end, in order; the agent the chat runs on (set_chat stays within it); its permissions, which a phone can't change; linked pull requests. A queued message cut for the phone is `truncated`, and the computer won't take an edit of it. */
+	queue?: { id: string; text: string; truncated?: true }[]; harness?: string; accountId?: string; permissionMode?: PhonePermissionMode; pullRequests?: PhoneLinkedPullRequest[];
 };
 /** A model a phone may start a chat with: the efforts it offers, in order, and the one it uses unless asked. */
 export type PhoneModel = {
@@ -94,8 +94,8 @@ export type PhoneRequest =
 	| { id: string; type: "subscribe"; chatIds: string[] }
 	/** From protocol 3. `title` goes with rename, `until` (an ISO time) with snooze. */
 	| { id: string; type: "update_chat"; chatId: string; action: PhoneChatAction; title?: string; until?: string }
-	/** From protocol 3: a stopped chat's mode (Code or Plan; a Chat stays one), model (one of its own agent's) or effort. */
-	| { id: string; type: "set_chat"; chatId: string; mode?: PhoneChatMode; model?: string; reasoningEffort?: string }
+	/** From protocol 3: a stopped chat's mode (Code or Plan; a Chat stays one), model (one of its own agent's) or effort; `defaultEffort` goes back to the model's own. */
+	| { id: string; type: "set_chat"; chatId: string; mode?: PhoneChatMode; model?: string; reasoningEffort?: string; defaultEffort?: true }
 	/** From protocol 3: a queued message removed, edited (`text`), moved, or sent into the running turn now. */
 	| { id: string; type: "queue"; chatId: string; messageId: string; action: PhoneQueueAction; text?: string };
 export type PhoneFrame = PhoneRequest | { id?: string; type: "ping" } | { id?: string; type: "pong" };
@@ -255,8 +255,11 @@ export function parsePhoneFrame(text: string): PhoneFrame {
 		case "set_chat": {
 			if (frame.mode !== undefined && frame.mode !== "chat" && frame.mode !== "code" && frame.mode !== "plan") fail("mode must be chat, code or plan.");
 			const model = optional("model"), reasoningEffort = optional("reasoningEffort", 100);
-			if (frame.mode === undefined && !model && !reasoningEffort) fail("set_chat needs a mode, model or reasoningEffort.");
-			return { id: request, type, chatId: chatId(), ...frame.mode !== undefined ? { mode: frame.mode as PhoneChatMode } : {}, ...model ? { model } : {}, ...reasoningEffort ? { reasoningEffort } : {} };
+			if (frame.defaultEffort !== undefined && frame.defaultEffort !== true) fail("defaultEffort must be true.");
+			const defaultEffort = frame.defaultEffort === true;
+			if (defaultEffort && reasoningEffort) fail("Send reasoningEffort or defaultEffort, not both.");
+			if (frame.mode === undefined && !model && !reasoningEffort && !defaultEffort) fail("set_chat needs a mode, model or reasoningEffort.");
+			return { id: request, type, chatId: chatId(), ...frame.mode !== undefined ? { mode: frame.mode as PhoneChatMode } : {}, ...model ? { model } : {}, ...reasoningEffort ? { reasoningEffort } : {}, ...defaultEffort ? { defaultEffort: true as const } : {} };
 		}
 		case "queue": {
 			const action = frame.action as PhoneQueueAction;

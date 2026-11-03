@@ -12,7 +12,7 @@ import { ComposerErrorNotice } from "@/features/composer/ComposerNotices";
 import { resolveSendPresentation, type FollowUpAction } from "@/features/composer/sendPresentation";
 import { cn } from "@/lib/cn";
 import { haptic } from "@/lib/haptics";
-import { changesLabel, chatItems, chatStatusLabel, workLogSummary, type ChatItem } from "./chatState";
+import { changesLabel, chatItems, chatStatusLabel, settingsChange, workLogSummary, type ChatItem } from "./chatState";
 import { DesktopRequestError, type DesktopClient } from "./client";
 import { ConnectionNotice } from "./CodeThreadList";
 import { clientFor, connectionLabel, useConnection } from "./connections";
@@ -286,7 +286,8 @@ function QueueControl({ client, chat, running, onEdit }: { client: DesktopClient
             onPress={() => showActions({
               title: message.text,
               actions: [
-                { key: "edit", label: "Edit", onPress: () => onEdit(message) },
+                // The phone has only the start of a long message; saving it would cut the rest on the computer.
+                ...(message.truncated ? [] : [{ key: "edit", label: "Edit", onPress: () => onEdit(message) }]),
                 ...QUEUE_ACTIONS.filter((entry) => !(entry.action === "up" && index === 0) && !(entry.action === "down" && index === queue.length - 1))
                   .map((entry) => ({ key: entry.action, label: entry.label, ...(entry.destructive ? { destructive: true } : {}), onPress: () => void act(message.id, entry.action) })),
               ],
@@ -315,7 +316,7 @@ function ThreadChips({ client, chat, running, onSettings }: { client: DesktopCli
   const choice: ModelChoice | null = chat.model && chat.harness ? { harness: chat.harness, ...(chat.accountId ? { accountId: chat.accountId } : {}), model: chat.model, effort: chat.reasoningEffort ?? null } : null;
   const usable = Boolean(changeable && own?.agents?.length && choice);
   const blocked = running ? "Stop the turn to change this." : null;
-  const set = async (change: { mode?: "code" | "plan"; model?: string; reasoningEffort?: string }) => {
+  const set = async (change: { mode?: "code" | "plan"; model?: string; reasoningEffort?: string; defaultEffort?: true }) => {
     if (blocked) { toast(blocked); return; }
     try { onSettings((await client.request("set_chat", { chatId: chat.id, ...change })).chat); }
     catch (problem) { reportFailure("Couldn't change the thread", problem); }
@@ -339,9 +340,8 @@ function ThreadChips({ client, chat, running, onSettings }: { client: DesktopCli
           open={sheet}
           onClose={() => setSheet(false)}
           onChoose={(next) => {
-            // A new model starts on its own default effort; the same model changes only its effort.
-            if (next.model !== chat.model) void set({ model: next.model, ...(next.effort ? { reasoningEffort: next.effort } : {}) });
-            else if (next.effort && next.effort !== chat.reasoningEffort) void set({ reasoningEffort: next.effort });
+            const change = settingsChange(chat, next);
+            if (change) void set(change);
           }}
         />
       ) : null}

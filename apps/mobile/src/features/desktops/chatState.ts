@@ -118,3 +118,13 @@ const statusWords: Record<PhoneChat["status"], string> = {
   completed: "Done",
 };
 export const chatStatusLabel = (chat: PhoneChat) => (chat.needsYou ? chat.attention ?? "Needs you" : statusWords[chat.status]);
+
+/**
+ * What picking a model and effort in a thread's sheet asks the computer to change. A new model starts on its own default
+ * effort; the default effort (null) clears the thread's own, so the model goes back to following its default.
+ */
+export function settingsChange(chat: Pick<PhoneChatDetail, "model" | "reasoningEffort">, next: { model: string; effort: string | null }): { model?: string; reasoningEffort?: string; defaultEffort?: true } | null {
+  if (next.model !== chat.model) return { model: next.model, ...(next.effort ? { reasoningEffort: next.effort } : {}) };
+  if (next.effort) return next.effort === chat.reasoningEffort ? null : { reasoningEffort: next.effort };
+  return chat.reasoningEffort ? { defaultEffort: true } : null;
+}
