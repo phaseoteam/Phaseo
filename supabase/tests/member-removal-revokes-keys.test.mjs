@@ -3,6 +3,7 @@
 //   they created working. Their keys are now revoked with the membership, and signed-in clients can no
 //   longer move a key's creator to someone else to dodge that.
 // - Anyone could read the unpublished draft_* columns of a public preset.
+// - Admins could create admin invites, or switch an invite to admin, through the Data API.
 // It reproduces each problem on the old schema, applies the real migration, and checks the fix.
 // Install @electric-sql/pglite@0.5.8 in a temporary directory and set PGLITE_MODULE to its
 // dist/index.js file URL. Run: node supabase/tests/member-removal-revokes-keys.test.mjs
@@ -19,7 +20,7 @@ const migration = normalize(await read(`../migrations/${migrationName}`));
 
 // The declarative files describe the same end state.
 const bodyOf = (sql) => sql.slice(sql.indexOf('$function$'), sql.lastIndexOf('$function$') + 10);
-for (const fn of ['revoke_oauth_on_workspace_member_delete', 'protect_key_created_by']) {
+for (const fn of ['revoke_oauth_on_workspace_member_delete', 'protect_key_created_by', 'enforce_workspace_invite_role_policy']) {
   const body = bodyOf(normalize(await read(`../schemas/public/functions/${fn}.sql`)));
   assert(body.length > 20 && migration.includes(body), `the migration ships the schema body of ${fn}`);
 }
@@ -73,7 +74,7 @@ try {
     grant usage on schema public to anon, authenticated, service_role;
 
     create table public.users (user_id uuid primary key);
-    create table public.workspaces (id uuid primary key);
+    create table public.workspaces (id uuid primary key, owner_user_id uuid);
     create table public.workspace_members (
       workspace_id uuid not null references public.workspaces(id) on delete cascade,
       user_id uuid not null references public.users(user_id) on delete cascade,
@@ -131,13 +132,30 @@ try {
     create policy presets_select_visible on public.presets for select to authenticated using (visibility = 'public');
     create policy presets_update_owned on public.presets for update to authenticated using (created_by = auth.uid()) with check (created_by = auth.uid());
 
+    create table public.workspace_invites (id uuid primary key default gen_random_uuid(), workspace_id uuid not null, role text not null default 'member');
+    alter table public.workspace_invites enable row level security;
+    create policy team_invites_insert_own_team on public.workspace_invites for insert to authenticated
+      with check (public.is_workspace_admin(workspace_id) and role in ('admin', 'member'));
+    create policy team_invites_update_own_team on public.workspace_invites for update to authenticated
+      using (public.is_workspace_admin(workspace_id)) with check (public.is_workspace_admin(workspace_id) and role in ('admin', 'member'));
+    create policy team_invites_select_own_team on public.workspace_invites for select to authenticated using (public.is_workspace_admin(workspace_id));
+    -- The invite role guard as it was before the fix: admin or member, from anyone.
+    create function public.enforce_workspace_invite_role_policy() returns trigger language plpgsql security definer set search_path to 'public' as $$
+    begin
+      if lower(coalesce(new.role::text, '')) not in ('admin', 'member') then raise exception 'invalid_workspace_invite_role'; end if;
+      return new;
+    end $$;
+    create trigger workspace_invites_role_policy_guard before insert or update on public.workspace_invites
+      for each row execute function public.enforce_workspace_invite_role_policy();
+    grant select, insert, update, delete on public.workspace_invites to authenticated;
+
     -- Production's grants before the fix.
     grant delete, insert, maintain, references, select, trigger, truncate, update on public.management_keys to anon, authenticated, service_role;
     grant delete, insert, select, update on public.keys, public.presets to anon, authenticated;
     grant all on all tables in schema public to service_role;
 
     insert into public.users values ('${owner}'), ('${admin}'), ('${other}'), ('${leaver}');
-    insert into public.workspaces values ('${ws}'), ('${otherWs}');
+    insert into public.workspaces values ('${ws}', '${owner}'), ('${otherWs}', '${admin}');
     insert into public.workspace_members values
       ('${ws}', '${owner}', 'owner'), ('${ws}', '${admin}', 'admin'), ('${ws}', '${other}', 'member'), ('${otherWs}', '${admin}', 'owner');
     insert into public.keys (id, workspace_id, created_by, status, revoked_reason) values
@@ -167,8 +185,25 @@ try {
   assert.equal((await keyStatus('keys', key(1))).status, 'active', 'before the fix a removed admin keeps an active key');
   assert.equal((await keyStatus('management_keys', mkey(1))).status, 'active', 'before the fix a removed admin keeps an active management key');
   await db.exec('rollback;');
+  await db.exec('begin;');
+  await as('authenticated', admin, () => db.query(`insert into public.workspace_invites (workspace_id, role) values ('${ws}', 'admin')`));
+  assert.equal((await db.query(`select count(*)::int as n from public.workspace_invites where role = 'admin'`)).rows[0].n, 1,
+    'before the fix an admin can create an admin invite');
+  await db.exec('rollback;');
 
   await db.exec(migration);
+
+  // Only the owner makes admins by invite; the service role (web-api checks the owner) is not limited.
+  const memberInvite = (await db.query(`insert into public.workspace_invites (workspace_id) values ('${ws}') returning id`)).rows[0].id;
+  await as('authenticated', admin, async () => {
+    await rejects(db.query(`insert into public.workspace_invites (workspace_id, role) values ('${ws}', 'admin')`), /workspace_invite_admin_owner_only/, 'an admin cannot create an admin invite');
+    await rejects(db.query(`update public.workspace_invites set role = 'admin' where id = '${memberInvite}'`), /workspace_invite_admin_owner_only/, 'an admin cannot switch an invite to admin');
+    await db.query(`insert into public.workspace_invites (workspace_id, role) values ('${ws}', 'member')`);
+  });
+  await as('authenticated', owner, () => db.query(`update public.workspace_invites set role = 'admin' where id = '${memberInvite}'`));
+  await db.query(`insert into public.workspace_invites (workspace_id, role) values ('${ws}', 'admin')`);
+  assert.equal((await db.query(`select count(*)::int as n from public.workspace_invites where role = 'admin'`)).rows[0].n, 2,
+    'the owner and the service role can still create admin invites');
 
   // The migration revokes keys already left behind by former members.
   assert.deepEqual(await keyStatus('keys', key(6)), { status: 'revoked', revoked_reason: 'member_removed', stamped: true },

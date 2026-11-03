@@ -127,3 +127,38 @@ REVOKE SELECT ON TABLE "public"."presets" FROM "anon", "authenticated";
 GRANT SELECT ("active_version_id", "archived_at", "config", "created_at", "created_by", "description", "fork_depth", "id", "name", "root_preset_id", "slug", "source_preset_id", "source_preset_version_id", "updated_at", "upstream_version_id", "versioning_method", "visibility", "workspace_id") ON TABLE "public"."presets" TO "anon";
 
 GRANT SELECT ("active_version_id", "archived_at", "config", "created_at", "created_by", "description", "fork_depth", "id", "name", "root_preset_id", "slug", "source_preset_id", "source_preset_version_id", "updated_at", "upstream_version_id", "versioning_method", "visibility", "workspace_id") ON TABLE "public"."presets" TO "authenticated";
+
+-- 4. Only the owner makes someone an admin by invite. Role changes were already owner-only, but admins
+-- could create an admin invite, or switch a member invite to admin through the Data API.
+CREATE OR REPLACE FUNCTION public.enforce_workspace_invite_role_policy()
+  RETURNS TRIGGER
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO 'public'
+  AS $function$
+begin
+  if lower(coalesce(new.role::text, '')) not in ('admin', 'member') then
+    raise exception using
+      errcode = '23514',
+      message = 'invalid_workspace_invite_role',
+      detail = 'Invite roles are restricted to admin and member.';
+  end if;
+
+  -- Like role changes, making someone an admin is the owner's call. Signed-in clients (admins can
+  -- write invites through the Data API) may only create or switch an invite to admin as the owner;
+  -- the service role (web-api checks the owner itself) has no auth.uid() and is not limited here.
+  if new.role::text = 'admin'
+    and (tg_op = 'INSERT' or old.role is distinct from new.role)
+    and auth.uid() is not null
+    and not exists (
+      select 1 from public.workspaces w where w.id = new.workspace_id and w.owner_user_id = auth.uid()
+    ) then
+    raise exception using
+      errcode = '42501',
+      message = 'workspace_invite_admin_owner_only',
+      detail = 'Only the workspace owner can invite admins.';
+  end if;
+
+  return new;
+end;
+$function$;

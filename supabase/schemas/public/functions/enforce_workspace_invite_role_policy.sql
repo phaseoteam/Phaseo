@@ -12,6 +12,21 @@ begin
       detail = 'Invite roles are restricted to admin and member.';
   end if;
 
+  -- Like role changes, making someone an admin is the owner's call. Signed-in clients (admins can
+  -- write invites through the Data API) may only create or switch an invite to admin as the owner;
+  -- the service role (web-api checks the owner itself) has no auth.uid() and is not limited here.
+  if new.role::text = 'admin'
+    and (tg_op = 'INSERT' or old.role is distinct from new.role)
+    and auth.uid() is not null
+    and not exists (
+      select 1 from public.workspaces w where w.id = new.workspace_id and w.owner_user_id = auth.uid()
+    ) then
+    raise exception using
+      errcode = '42501',
+      message = 'workspace_invite_admin_owner_only',
+      detail = 'Only the workspace owner can invite admins.';
+  end if;
+
   return new;
 end;
 $function$;
