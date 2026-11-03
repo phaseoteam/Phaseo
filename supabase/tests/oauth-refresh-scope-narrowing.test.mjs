@@ -9,10 +9,18 @@ import { readFile, readdir } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const normalize = (sql) => sql.replace(/\r\n/g, '\n').trim();
-const migrationName = (await readdir(new URL('../migrations/', import.meta.url))).find((name) => name.endsWith('_cli_credit_topups.sql'));
-const migration = await read(`../migrations/${migrationName}`);
+// The newest migration that defines the function ships the schema file's body. The declarative sync
+// reformats signatures but keeps each body as written; CI's schema check proves the rest is equivalent.
+const definesRotation = /create or replace function\s+"?public"?\."?rotate_oauth_refresh_token"?\s*\(/i;
+let migration = null;
+for (const name of (await readdir(new URL('../migrations/', import.meta.url))).filter((name) => name.endsWith('.sql')).sort()) {
+  const sql = await read(`../migrations/${name}`);
+  if (definesRotation.test(sql)) migration = sql;
+}
 const functionSql = await read('../schemas/public/functions/rotate_oauth_refresh_token.sql');
-assert(normalize(migration).includes(normalize(functionSql)), 'the migration ships the schema definition of rotate_oauth_refresh_token');
+const bodyStart = functionSql.indexOf('$function$');
+const functionBody = normalize(functionSql.slice(bodyStart, functionSql.indexOf('$function$', bodyStart + 10) + 10));
+assert(migration && normalize(migration).includes(functionBody), 'the newest migration defining rotate_oauth_refresh_token ships its schema body');
 
 const id = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const USER = id(1);
@@ -31,7 +39,7 @@ try {
     create table public.oauth_refresh_tokens (
       id uuid primary key default gen_random_uuid(), token_hash text not null unique, user_id uuid not null, workspace_id uuid not null,
       client_id text not null, scopes text[] not null default '{}', expires_at timestamptz, revoked_at timestamptz, last_used_at timestamptz,
-      rotated_from uuid, family_id uuid
+      rotated_from uuid, family_id uuid, key_id uuid
     );
     insert into public.workspace_members values ('${WS}', '${USER}');
     -- A later "phaseo login --scopes billing:write" widened the authorization.

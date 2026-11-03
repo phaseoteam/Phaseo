@@ -662,7 +662,10 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
 				try {
 					const updatePayload: Record<string, unknown> = { last_used_at: new Date().toISOString() };
 					if (hasHashMigration) updatePayload.hash = nextHash;
-					await supabase.from("keys").update(updatePayload).eq("id", keyRow.id);
+					const keyUpdate = supabase.from("keys").update(updatePayload).eq("id", keyRow.id);
+					// A refresh may have given the key a new secret since this request authenticated:
+					// migrate only the hash it matched, so the old access token can't come back.
+					await (hasHashMigration ? keyUpdate.eq("hash", keyRow.hash) : keyUpdate);
 					await supabase
 						.from("oauth_authorizations")
 						.update({ last_used_at: new Date().toISOString() })

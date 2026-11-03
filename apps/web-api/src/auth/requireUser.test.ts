@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Env } from "@/env";
-import { requireUser, tokenAssuranceLevel } from "./requireUser";
+import { isThirdPartyAppToken, requireUser, tokenAssuranceLevel } from "./requireUser";
 
 const env = { SUPABASE_URL: "https://project.supabase.co", SUPABASE_ANON_KEY: "anon" } as Env;
 
@@ -43,6 +43,39 @@ describe("requireUser and the second factor", () => {
     expect(await requireUser(request(token({ aal: "aal1" })), env)).toMatchObject({ id: "user-1" });
     signedIn([]);
     expect(await requireUser(request("opaque-token"), env)).toMatchObject({ id: "user-1" });
+  });
+});
+
+// The auth provider's OAuth server also issues access tokens to apps, with the app's client_id claim.
+describe("requireUser and tokens issued to apps", () => {
+  it("leaves the person's own session unaffected", async () => {
+    signedIn([]);
+    expect(await requireUser(request(token({ aal: "aal1" })), env)).toMatchObject({ id: "user-1" });
+  });
+
+  it.each(["phaseo_cli", "aistats_cli", "phaseo_desktop"])("keeps Phaseo's own app %s signed in", async (clientId) => {
+    signedIn([]);
+    expect(await requireUser(request(token({ client_id: clientId })), env)).toMatchObject({ id: "user-1" });
+    signedIn([totp]);
+    expect(await requireUser(request(token({ client_id: clientId, aal: "aal2" })), env)).toMatchObject({ id: "user-1" });
+  });
+
+  it.each([["a third-party app", "partner_app"], ["an empty client", ""], ["a non-string client", 42]])(
+    "treats a token issued to %s as signed out",
+    async (_name, clientId) => {
+      signedIn([]);
+      expect(await requireUser(request(token({ client_id: clientId, aal: "aal2" })), env)).toBeNull();
+    },
+  );
+});
+
+describe("isThirdPartyAppToken", () => {
+  it("is true only for a client_id claim that isn't Phaseo's own app's", () => {
+    expect(isThirdPartyAppToken(token({ client_id: "partner_app" }))).toBe(true);
+    expect(isThirdPartyAppToken(token({ client_id: " phaseo_cli " }))).toBe(false);
+    expect(isThirdPartyAppToken(token({ client_id: null }))).toBe(false);
+    expect(isThirdPartyAppToken(token({}))).toBe(false);
+    expect(isThirdPartyAppToken("not-a-jwt")).toBe(false);
   });
 });
 

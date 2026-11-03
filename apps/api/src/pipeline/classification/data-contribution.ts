@@ -1,5 +1,6 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { redactSensitiveInfoForStorage } from "@/pipeline/before/sensitiveInfo";
+import { isMediaBytesField, REDACTED_BASE64, redactMediaString, stripMediaBytes } from "@/pipeline/privacy/media-bytes";
 
 export const DATA_CONTRIBUTION_POLICY_VERSION = "2026-07-26-v2";
 export const DATA_CONTRIBUTION_REDACTION_VERSION = "2026-10-29-v2";
@@ -91,34 +92,11 @@ function replaceAndCount(
 	});
 }
 
-// Contributions never keep image, audio or file bytes, however small or wherever
-// they sit, so no user-supplied media is retained for training or review.
-const MIN_BARE_BASE64_LENGTH = 256;
-const BARE_BASE64 = /^[A-Za-z0-9+/_-]+={0,2}$/;
-const MEDIA_BYTE_KEYS = new Set(["b64_json", "partial_image_b64"]);
-
-function isMediaBytesField(key: string, parent: Record<string, unknown>): boolean {
-	if (MEDIA_BYTE_KEYS.has(key)) return true;
-	if (key !== "data") return false;
-	return parent.type === "base64" ||
-		"mime_type" in parent || "mimeType" in parent || "media_type" in parent || "format" in parent;
-}
-
 function redactString(value: string, context: SanitizationContext): string {
-	if (value.startsWith("data:")) {
+	// Contributions keep no image, audio or file bytes (see media-bytes.ts).
+	let redacted = redactMediaString(value, () => {
 		context.redactionCount += 1;
-		return "[REDACTED_DATA_URL]";
-	}
-	if (value.length >= MIN_BARE_BASE64_LENGTH && BARE_BASE64.test(value)) {
-		context.redactionCount += 1;
-		return "[REDACTED_BASE64]";
-	}
-	let redacted = replaceAndCount(
-		value,
-		/data:[\w.+-]+\/[\w.+-]+(?:;[\w.+-]+=[\w.+-]+)*;base64,[A-Za-z0-9+/=]+/g,
-		"[REDACTED_DATA_URL]",
-		context,
-	);
+	});
 	redacted = replaceAndCount(
 		redacted,
 		/\b(?:phaseo_v\d+_(?:sk|mk)_|sk-|pk-|rk-|sess-)[A-Za-z0-9_-]{12,}\b/g,
@@ -185,7 +163,7 @@ function sanitize(value: unknown, context: SanitizationContext, depth = 0): unkn
 				: typeof entry === "string" && entry && isMediaBytesField(key, record)
 					? (() => {
 						context.redactionCount += 1;
-						return "[REDACTED_BASE64]";
+						return REDACTED_BASE64;
 					})()
 					: sanitize(entry, context, depth + 1),
 		]),
@@ -197,7 +175,8 @@ export function sanitizeDataContributionPayload(value: unknown): {
 	redactionCount: number;
 } {
 	const context = { redactionCount: 0 };
-	return { value: sanitize(value, context), redactionCount: context.redactionCount };
+	// stripMediaBytes also reaches media inside serialised JSON strings.
+	return { value: sanitize(stripMediaBytes(value), context), redactionCount: context.redactionCount };
 }
 
 export async function pruneExpiredDataContributions(limit = 250): Promise<{ deleted: number; failed: number }> {

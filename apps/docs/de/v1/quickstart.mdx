@@ -32,7 +32,7 @@ Schnellstart-Checkliste für Agenten:
 
 - Erstelle den Schlüssel mit der CLI: `npm install -g @phaseo/cli`, dann `phaseo login` (oder `phaseo login --device-code` in einer Shell ohne Browser; ein Mensch bestätigt die Anmeldung), dann `phaseo keys create --name <name> --json`. Erzeuge oder rate nie einen Schlüssel. Sende ihn als `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` und nur aus serverseitigem Code.
 - Für kostenpflichtige Modelle führe einmal `phaseo login --scopes billing:write` aus; danach startet `phaseo credits add --amount <usd> --json` eine Aufladung. Mit gespeicherter Karte bestätigt ein Inhaber oder Admin des Workspace sie über einen Link per E-Mail. Ohne gespeicherte Karte enthält die Antwort `next_action: "open_checkout_url"` und einen Zahlungslink, den ein Inhaber oder Admin zum Bezahlen öffnet; die Karte wird dann für spätere Aufladungen gespeichert. Schicke Nutzer für Schlüssel, Guthaben oder Einstellungen nicht ins Dashboard; siehe https://phaseo.app/docs/v1/developers/manage-from-an-agent.md.
-- Sende die erste Anfrage mit `POST https://api.phaseo.app/v1/responses` und den Feldern `model` und `input`. `phaseo/free` funktioniert ohne Wallet-Guthaben.
+- Sende die erste Anfrage mit `POST https://api.phaseo.app/v1/responses` und den Feldern `model` und `input`. Die Beispiele verwenden `openai/gpt-6-astra`, ein kostenpflichtiges Modell, das Guthaben braucht. `phaseo/free` wählt ein verfügbares kostenloses Modell und funktioniert ohne Wallet-Guthaben.
 - Lies die Antwort aus `output[].content[]`, wo `type` den Wert `output_text` hat.
 - Wenn die Anfrage fehlschlägt, entscheide anhand des JSON-Codes `error`, wie in https://phaseo.app/docs/v1/api-reference/errors.md beschrieben.
 </Visibility>
@@ -66,6 +66,8 @@ Behandle deinen API-Schlüssel wie ein Passwort. Gib ihn nicht in clientseitigem
 ## 2. Textanfrage senden
 
 Verwende für die erste Anfrage `POST /v1/responses`. Dieser Endpoint wird für neue Textgenerierung empfohlen.
+
+Die Beispiele verwenden `openai/gpt-6-astra`, ein kostenpflichtiges Modell. Lade deshalb zuerst Guthaben auf (siehe Schritt 1). Um Phaseo ohne Guthaben auszuprobieren, verwende stattdessen `phaseo/free`; es wählt ein verfügbares kostenloses Modell. Siehe [Mit dem kostenlosen Router starten](./cookbook/free-router-first-deploy).
 
 ### SDK installieren
 
@@ -319,7 +321,8 @@ console.log(result.text);
 
 ```json
 {
-  "id": "resp_...",
+  "id": "G-...",
+  "nativeResponseId": "resp_...",
   "object": "response",
   "created_at": 1730000000,
   "status": "completed",
@@ -344,13 +347,13 @@ console.log(result.text);
 }
 ```
 
-Lies die Antwort des Assistenten bei direkten Responses-API-Aufrufen in `output[].content[]` an der Stelle mit `type` gleich `output_text` aus.
+Lies die Antwort des Assistenten bei direkten Responses-API-Aufrufen in `output[].content[]` an der Stelle mit `type` gleich `output_text` aus. `id` ist die Phaseo-Anfrage-ID, über die du die Anfrage in deinen Logs findest; `nativeResponseId` ist die ID des Anbieters für dieselbe Antwort.
 
 Wenn du das Vercel AI SDK verwendest, lies die Antwort aus `result.text` aus.
 
 ### Antwort streamen
 
-Wenn du die Antwort schon während der Generierung ausgeben willst, streame sie. Das Feld `text` jedes Chunks enthält nur den neuen Text, daher gibt diese Schleife die Antwort genau einmal aus. Abschließende Events wie `response.output_text.done` haben ein leeres `text`; ihren vollständigen Text findest du in `fullText` (TypeScript) bzw. `full_text` (Python).
+Wenn du die Antwort schon während der Generierung ausgeben willst, streame sie. Das Feld `text` jedes `response.output_text.delta`-Events enthält nur den neuen Text, daher gibt diese Schleife die Antwort genau einmal aus. Abschließende Events wie `response.output_text.done` wiederholen bereits gestreamten Text.
 
 <CodeGroup>
 ```typescript TypeScript SDK
@@ -362,7 +365,7 @@ for await (const chunk of client.streamResponses({
   model: "openai/gpt-6-astra",
   input: "Reply with: quickstart works",
 })) {
-  if (chunk.text) process.stdout.write(chunk.text);
+  if (chunk.type === "response.output_text.delta") process.stdout.write(chunk.text);
 }
 ```
 
@@ -377,13 +380,11 @@ for chunk in client.stream_responses(
         "input": "Reply with: quickstart works",
     }
 ):
-    if chunk["text"]:
+    if chunk.get("type") == "response.output_text.delta":
         print(chunk["text"], end="", flush=True)
 print()
 ```
 </CodeGroup>
-
-Wird die Antwort doppelt ausgegeben, aktualisiere das SDK: Ältere Versionen haben den vollständigen Text zusätzlich in das abschließende Event geschrieben.
 
 ---
 
@@ -663,7 +664,7 @@ Siehe die [Decisions-API-Referenz](./api-reference/endpoint/decisions) für voll
 
 - `401`: Prüfe den API-Schlüssel und den `Authorization`-Header.
 - `400`: Prüfe den Anfrageinhalt und die Modell-ID.
-- `402`: Wechsle zu einem `:free`-Modell oder lade Guthaben auf, bevor du ein kostenpflichtiges Modell nutzt.
+- `402`: Lade Guthaben auf, bevor du ein kostenpflichtiges Modell nutzt, oder verwende `phaseo/free`.
 - `429` oder `5xx`: Wiederhole die Anfrage mit exponentiellem Backoff.
 
 Nutze die [Referenz zur Fehlerbehandlung](./api-reference/errors.mdx), um das Problem schnell zu finden.

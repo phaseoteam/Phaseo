@@ -21,17 +21,37 @@ function bearerToken(request: Request): string | null {
   return token || null;
 }
 
-/** The session's authenticator assurance level from the access token, which getUser has already verified. */
-export function tokenAssuranceLevel(token: string): string | null {
+// Phaseo's own OAuth clients, as in the gateway's lib/oauth/clientIds.ts: the CLI (current and legacy IDs) and
+// the desktop app.
+const FIRST_PARTY_OAUTH_CLIENT_IDS = new Set(["phaseo_cli", "aistats_cli", "phaseo_desktop"]);
+
+function tokenClaims(token: string): Record<string, unknown> | null {
   const payload = token.split(".")[1];
   if (!payload) return null;
   try {
     const base64 = payload.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(payload.length / 4) * 4, "=");
-    const claims = JSON.parse(atob(base64)) as { aal?: unknown };
-    return typeof claims.aal === "string" ? claims.aal : null;
+    const claims = JSON.parse(atob(base64)) as unknown;
+    return claims && typeof claims === "object" ? claims as Record<string, unknown> : null;
   } catch {
     return null;
   }
+}
+
+/** The session's authenticator assurance level from the access token, which getUser has already verified. */
+export function tokenAssuranceLevel(token: string): string | null {
+  const aal = tokenClaims(token)?.aal;
+  return typeof aal === "string" ? aal : null;
+}
+
+/**
+ * Whether the auth provider issued the access token to a third-party app (its OAuth server puts the app's
+ * client_id in the token). Such a token is the app acting for the person, not the person signed in to
+ * Phaseo. A client_id that isn't Phaseo's own app's, even an empty one, counts.
+ */
+export function isThirdPartyAppToken(token: string): boolean {
+  const clientId = tokenClaims(token)?.client_id;
+  if (clientId === undefined || clientId === null) return false;
+  return !FIRST_PARTY_OAUTH_CLIENT_IDS.has(String(clientId).trim());
 }
 
 export async function requireUser(request: Request, env: Env): Promise<AuthenticatedUser | null> {
@@ -45,6 +65,10 @@ export async function requireUser(request: Request, env: Env): Promise<Authentic
   });
   const { data, error } = await supabase.auth.getUser(token);
   if (error || !data.user) return null;
+
+  // Account routes act as the person, so an app that signs in with Phaseo can't use them with its token,
+  // whatever it was granted. Phaseo's own apps (CLI, desktop) keep working.
+  if (isThirdPartyAppToken(token)) return null;
 
   // An account with a verified second factor must have used it in this session. The
   // website enforces this by redirecting pages to /auth/verify-mfa, which doesn't cover

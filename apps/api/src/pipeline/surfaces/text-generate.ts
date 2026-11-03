@@ -37,6 +37,7 @@ import {
 } from "./server-tools";
 import { UpstreamStreamError } from "@core/stream-errors";
 import { suppressFailedResponseBilling } from "../after/billing-policy";
+import { recordProviderRound } from "../after/timing";
 import { recordManagedProviderTokensOnce } from "@core/provider-rate-limits";
 import {
 	buildResponseCacheFingerprint,
@@ -651,13 +652,23 @@ async function materializeStreamResultToCompleted(args: {
 		throw new Error("gateway_stream_materialization_missing_body");
 	}
 	const materializeStartedAt = performance.now();
+	// When the first generated output arrived, for provider TTFT (recordProviderRound).
+	let firstOutputAtMs: number | null = null;
 	const consumed = await consumeTextProtocolStreamToIR({
 		protocol: args.protocol,
 		stream,
 		requestId: args.requestId,
 		model: args.model,
 		provider: args.result.provider,
-		onEvent: args.onEvent,
+		onEvent: (event) => {
+			if (
+				firstOutputAtMs === null &&
+				(event.type === "delta_text" || event.type === "delta_tool" || event.type === "delta_content_part")
+			) {
+				firstOutputAtMs = Date.now();
+			}
+			args.onEvent?.(event);
+		},
 	});
 	const materializedGenerationMs = Math.max(
 		0,
@@ -691,6 +702,7 @@ async function materializeStreamResultToCompleted(args: {
 		rawResponse: consumed.rawResponse,
 		timing: {
 			...(args.result.timing ?? {}),
+			firstOutputAtMs,
 			generationMs: Math.max(
 				typeof args.result.timing?.generationMs === "number"
 					? args.result.timing.generationMs
@@ -1012,6 +1024,9 @@ async function runTextGeneratePipelineInner(
 				});
 			}
 		}
+		if (exec.result.kind === "completed") {
+			recordProviderRound(pre.ctx, { firstOutputAtMs: (exec.result as { timing?: { firstOutputAtMs?: number | null } }).timing?.firstOutputAtMs });
+		}
 		if (
 			exec.result.kind === "completed" &&
 			exec.result.allowEmptySuccess !== true &&
@@ -1283,6 +1298,9 @@ async function runTextGeneratePipelineInner(
 						},
 					],
 				};
+				// Advisor and image tools share this meta and make their own provider calls;
+				// the follow-up's failover is measured from its own first dispatch only.
+				delete (pre.ctx.meta as Record<string, unknown>).upstreamFetchStartMs;
 				const followUpExec = await doRequestWithIR(pre.ctx, nextIrRequest, timing);
 				if (followUpExec instanceof Response) {
 					const header = timing.timer.header();
@@ -1330,6 +1348,9 @@ async function runTextGeneratePipelineInner(
 							req,
 						});
 					}
+				}
+				if (followUpResult.kind === "completed") {
+					recordProviderRound(pre.ctx, { firstOutputAtMs: (followUpResult as { timing?: { firstOutputAtMs?: number | null } }).timing?.firstOutputAtMs });
 				}
 				if (
 					followUpResult.kind === "completed" &&
@@ -1459,30 +1480,39 @@ async function runTextGeneratePipelineInner(
 			protocolResponse
 		) {
 			if (finalTurnBuffered) liveSink?.markFinalTurnBuffered();
-			const requestStartMs =
-				typeof pre.ctx.meta.upstreamStartMs === "number"
-					? pre.ctx.meta.upstreamStartMs
-					: typeof pre.ctx.meta.startedAtMs === "number"
-						? pre.ctx.meta.startedAtMs
-						: null;
+			// The same clocks as every other response: end to end from Worker receipt,
+			// provider time from recordProviderRound (all rounds, from each dispatch).
 			const endToEndMs =
-				requestStartMs !== null
-					? Math.max(0, Math.round(Date.now() - requestStartMs))
+				typeof pre.ctx.meta.startedAtMs === "number"
+					? Math.max(0, Math.round(Date.now() - pre.ctx.meta.startedAtMs))
 					: Math.max(0, Math.round(timing.timer.elapsed("execute_start")));
 			const resultTiming = (exec.result as { timing?: { generationMs?: number } }).timing;
-			const generationMs = Math.max(
-				0,
-				Math.round(
-					typeof resultTiming?.generationMs === "number"
-						? resultTiming.generationMs
-						: typeof exec.result.generationTimeMs === "number"
-							? exec.result.generationTimeMs
-							: 0,
-				),
-			);
+			const generationMs = typeof pre.ctx.meta.providerRoundsMs === "number"
+				? pre.ctx.meta.providerRoundsMs
+				: Math.max(
+					0,
+					Math.round(
+						typeof resultTiming?.generationMs === "number"
+							? resultTiming.generationMs
+							: typeof exec.result.generationTimeMs === "number"
+								? exec.result.generationTimeMs
+								: 0,
+					),
+				);
 			pre.ctx.meta.end_to_end_ms = endToEndMs;
 			pre.ctx.meta.generation_ms = generationMs;
-			pre.ctx.meta.latency_ms = Math.max(0, endToEndMs - generationMs);
+			if (typeof pre.ctx.meta.provider_ttft_ms === "number") {
+				pre.ctx.meta.latency_ms = pre.ctx.meta.provider_ttft_ms;
+			} else {
+				delete pre.ctx.meta.latency_ms;
+			}
+			// A live sink forwards each round's output as it arrives, so the client saw
+			// the first one then. Otherwise its first output is the synthetic stream, sent now.
+			const firstLiveOutputAtMs = liveSink ? pre.ctx.meta.firstProviderOutputAtMs : undefined;
+			pre.ctx.meta.gateway_ttft_ms =
+				typeof firstLiveOutputAtMs === "number" && typeof pre.ctx.meta.startedAtMs === "number"
+					? Math.max(1, Math.round(firstLiveOutputAtMs - pre.ctx.meta.startedAtMs))
+					: Math.max(1, endToEndMs);
 			pre.ctx.meta.preserve_stream_timing = true;
 
 			const stream = buildSyntheticServerToolStream({

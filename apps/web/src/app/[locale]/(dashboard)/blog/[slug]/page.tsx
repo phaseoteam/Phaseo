@@ -18,6 +18,7 @@ import {
 	createBlogHeadingsPlugin,
 	type BlogTocItem,
 } from "@/lib/content/blogToc";
+import { blogShareImage } from "@/lib/content/blogShareImage";
 import { canPreviewFutureBlogPosts } from "@/lib/flags/blogPreview";
 import { buildMetadata } from "@/lib/seo";
 import { cn } from "@/lib/utils";
@@ -61,11 +62,19 @@ export async function generateMetadata(
 		});
 	}
 
+	const shareImage = blogShareImage(post);
 	return buildMetadata({
 		title: `${post.title} | ${t("title")}`,
 		description: post.description,
 		path,
 		keywords: [t("title"), ...post.tags],
+		...(shareImage
+			? {
+					imagePath: shareImage.path,
+					imageAlt: post.title,
+					imageSize: shareImage.size ?? null,
+				}
+			: {}),
 	});
 }
 

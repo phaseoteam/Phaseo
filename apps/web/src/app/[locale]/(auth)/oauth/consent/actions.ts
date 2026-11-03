@@ -25,6 +25,8 @@ interface ApproveAuthorizationInput {
 	code_challenge?: string;
 	code_challenge_method?: string;
 	resource?: string;
+	/** Monthly spending limit for a third-party app's key, in nanodollars; 0 means no limit. */
+	monthly_limit_cost_nanos?: number;
 }
 
 interface ConsentResult {
@@ -235,6 +237,8 @@ export async function approveAuthorizationAction(
 				code_challenge: input.code_challenge,
 				code_challenge_method: input.code_challenge_method,
 				resource: input.resource,
+				// The API checks the range and applies it only to third-party apps.
+				...(input.monthly_limit_cost_nanos === undefined ? {} : { monthly_limit_cost_nanos: input.monthly_limit_cost_nanos }),
 			}),
 			cache: "no-store",
 		});

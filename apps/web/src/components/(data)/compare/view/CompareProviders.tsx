@@ -86,15 +86,16 @@ export function CompareProviders({ models }: { models: CompareViewModel[] }) {
 							</table>
 						</div>
 						<ul className="space-y-2 sm:hidden">
-							{model.providers.map((provider) => (
+							{model.providers.map((provider, index) => (
 								<li key={provider.id} className="rounded-md border border-border p-3 text-sm">
 									<Link href={`/api-providers/${provider.id}`} className="flex items-center gap-2 font-medium">
 										<ProviderLogo id={provider.id} alt={provider.name} size="xxs" />
 										{provider.name}
 									</Link>
-									<dl className="mt-2 grid grid-cols-3 gap-2 tabular-nums">
-										<div><dt className="text-xs text-muted-foreground">{t("input")}</dt><dd>{money(provider.input)}</dd></div>
-										<div><dt className="text-xs text-muted-foreground">{t("output")}</dt><dd>{money(provider.output)}</dd></div>
+									<dl className="mt-2 grid grid-cols-2 gap-2 tabular-nums">
+										<div><dt className="text-xs text-muted-foreground">{t("input")}</dt><dd className={cn(best(cheapestInput, index))}>{money(provider.input)}</dd></div>
+										<div><dt className="text-xs text-muted-foreground">{t("output")}</dt><dd className={cn(best(cheapestOutput, index))}>{money(provider.output)}</dd></div>
+										<div><dt className="text-xs text-muted-foreground">{t("cacheRead")}</dt><dd className={cn(best(cheapestCache, index))}>{money(provider.cacheRead)}</dd></div>
 										<div><dt className="text-xs text-muted-foreground">{t("contextWindow")}</dt><dd>{tokens(provider.contextWindow)}</dd></div>
 									</dl>
 									{provider.tiers.length ? <p className="mt-1 text-xs text-muted-foreground">{provider.tiers.map(format.tier).join(", ")}</p> : null}
