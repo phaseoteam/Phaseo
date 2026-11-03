@@ -5,6 +5,12 @@ describe("notification destination validation", () => {
 	it("accepts and masks multiple email destinations", () => { const target = validateNotificationTarget("email", JSON.stringify(["Alerts@Example.com", "ops@example.com"])); expect(JSON.parse(target)).toEqual(["alerts@example.com", "ops@example.com"]); expect(targetPreview("email", target)).toBe("al•••@example.com +1"); });
 	it("requires official Slack webhook hosts", () => { expect(() => validateNotificationTarget("slack", "https://example.com/hook")).toThrow(/Slack/); expect(validateNotificationTarget("slack", "https://hooks.slack.com/services/test")).toContain("hooks.slack.com"); });
 	it("rejects private custom webhook targets", () => { expect(() => validateNotificationTarget("custom_webhook", "https://127.0.0.1/hook")).toThrow(/private network/); });
+	it("rejects the private ranges and IPv6 forms the old regex missed", () => {
+		for (const host of ["[::ffff:7f00:1]", "100.64.0.1", "198.18.0.1", "[2002:7f00:1::]", "[64:ff9b::a00:1]"]) {
+			expect(() => validateNotificationTarget("custom_webhook", `https://${host}/hook`), host).toThrow(/private network/);
+		}
+		expect(validateNotificationTarget("custom_webhook", "https://hooks.example.com/hook")).toBe("https://hooks.example.com/hook");
+	});
 	it("normalizes Discord bot credentials", () => { expect(JSON.parse(validateNotificationTarget("discord", JSON.stringify({ channelId: "123456789012345678", botToken: "a".repeat(30) })))).toEqual({ channelId: "123456789012345678", botToken: "a".repeat(30), userIds: [], roleIds: [] }); });
 	it("stores explicit Discord webhook mentions", () => {
 		const target = validateNotificationTarget("discord_webhook", JSON.stringify({ url: "https://discord.com/api/webhooks/123456789012345/token-value", userIds: ["123456789012345678"], roleIds: ["987654321098765432"] }));
