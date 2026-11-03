@@ -10,6 +10,8 @@ describe("git on a phone", () => {
     // Another branch's pull request isn't #7: it's unknown until the computer says, so Create pull request can show if it has none.
     expect(afterAction(before, { ...status, branch: "fix/other", hasRemote: true })).toEqual({ status: { ...status, branch: "fix/other", hasRemote: true }, reload: true });
     expect(afterAction({ ...before, pullRequest: null }, { ...status, branch: "fix/other", hasRemote: true })).toMatchObject({ reload: true });
+    // An action that lands while the pull request is still being read supersedes that read, so it is read again.
+    expect(afterAction({ ...status, branch: "fix/other", hasRemote: true }, { ...status, branch: "fix/other", hasRemote: true })).toMatchObject({ reload: true });
   });
 
   it("shows git from protocol 6 with Read code, and changes only with Make changes too", () => {

@@ -10,11 +10,12 @@ type GitStatus = PhoneResults["git_status"];
 
 /**
  * The status an action answered with. It doesn't carry the branch's pull request, so the last one stays while the
- * branch does; on another branch it's unknown until read again, rather than the old branch's.
+ * branch does; on another branch, or while it was still being read (the action supersedes that read), it's unknown
+ * and read again, rather than showing the old branch's or nothing.
  */
 export function afterAction(previous: GitStatus | null, next: GitStatus): { status: GitStatus; reload: boolean } {
-  if (next.pullRequest !== undefined || previous?.pullRequest === undefined) return { status: next, reload: false };
-  if (previous.branch === next.branch) return { status: { ...next, pullRequest: previous.pullRequest }, reload: false };
+  if (next.pullRequest !== undefined) return { status: next, reload: false };
+  if (previous?.pullRequest !== undefined && previous.branch === next.branch) return { status: { ...next, pullRequest: previous.pullRequest }, reload: false };
   return { status: next, reload: true };
 }
 
