@@ -101,9 +101,13 @@ CREATE POLICY "presets_select_visible" ON "public"."presets"
 CREATE POLICY "presets_update_owned" ON "public"."presets"
   FOR UPDATE
   TO "authenticated"
-  USING ((created_by = ( SELECT auth.uid() AS uid)))
-  WITH CHECK ((created_by = ( SELECT auth.uid() AS uid)));
+  USING (((created_by = ( SELECT auth.uid() AS uid)) AND public.is_workspace_member(workspace_id)))
+  WITH CHECK (((created_by = ( SELECT auth.uid() AS uid)) AND public.is_workspace_member(workspace_id)));
 
-GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."presets" TO "anon", "authenticated", "service_role";
+GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."presets" TO "service_role";
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."presets" TO "anon";
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."presets" TO "authenticated";
 
 COMMENT ON INDEX "public"."presets_public_workspace_slug_key" IS 'Public preset slugs are unique within their workspace publisher namespace.';

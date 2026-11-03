@@ -35,7 +35,7 @@ Electron Forge creates platform-native distributables: MSIX and ZIP on Windows, 
 
 Forge needs to crawl a physical `node_modules` tree while packaging. The repository therefore narrowly public-hoists Electron Forge packages while leaving the rest of pnpm's dependency layout unchanged.
 
-Release builds can set `PHASEO_DESKTOP_UPDATE_URL` to enable the in-app update check. Store-managed MSIX releases receive updates through the Microsoft Store.
+Release builds can set `PHASEO_DESKTOP_UPDATE_URL` when building to enable the in-app update check. The URL is fixed into the bundle; packaged apps ignore the variable at run time. Store-managed MSIX releases receive updates through the Microsoft Store.
 
 Set `VITE_STATSIG_CLIENT_KEY` to your public Statsig client key when building the renderer. The `desktop_browser_suggestions` gate controls new-tab suggestions and address history suggestions. An unavailable gate or offline initialization preserves suggestions. Initialization uses an anonymous installation ID and disables event logging; server keys never belong in the renderer.
 

@@ -117,13 +117,14 @@ import { cursorAccountStatus, cursorModels, cursorSignIn } from "./cursorAccount
 import { registerDiagnosticsIpc, stopTracing, traceIpcHandlers } from "./diagnostics/diagnosticsIpc";
 import type { ProcessOwner } from "./diagnostics/processTable";
 import { span } from "./diagnostics/tracer";
+import { resolveUpdateFeedUrl } from "./updateFeed";
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 const preloadPath = path.join(currentDirectory, "../preload/index.cjs");
 const rendererPath = path.join(currentDirectory, "../renderer/index.html");
 const developmentUrl = app.isPackaged ? undefined : process.env.PHASEO_DESKTOP_DEV_URL;
 const applicationIcon = path.join(app.getAppPath(), "assets", `icon-${developmentUrl ? "development" : "production"}.png`);
-const updateFeedUrl = process.env.PHASEO_DESKTOP_UPDATE_URL;
+const updateFeedUrl = resolveUpdateFeedUrl(app.isPackaged, process.env);
 let workspaceRuntime: WorkspaceRuntime;
 let pullRequestGuides: PullRequestGuides;
 /** Code ▸ Factory; PHASEO_FACTORY_DEMO=1 runs it on demo data, for screenshots. */

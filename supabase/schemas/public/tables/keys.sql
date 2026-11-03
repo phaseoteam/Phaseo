@@ -104,7 +104,11 @@ CREATE POLICY "keys_update_own_team" ON "public"."keys"
   USING (public.is_workspace_admin(workspace_id))
   WITH CHECK (public.is_workspace_admin(workspace_id));
 
-GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."keys" TO "anon", "authenticated", "service_role";
+GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."keys" TO "service_role";
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."keys" TO "anon";
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."keys" TO "authenticated";
 
 CREATE INDEX keys_created_by_idx ON public.keys USING btree (created_by)
   WHERE (created_by IS NOT NULL);

@@ -20,6 +20,7 @@ import {
 	type CapabilityStatusOption,
 } from "@/lib/models/editorOptions";
 import { normalizeHttpUrl } from "@/lib/utils/urlSafety";
+import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi, fetchInternalWebApi } from "@/lib/web-api/client";
 import {
@@ -27,6 +28,13 @@ import {
 	revalidateModelDataOnlyTags,
 	revalidateModelDataTags,
 } from "@/lib/cache/revalidateDataTags";
+
+// Every export here is a server action reachable by a direct POST, so check the
+// caller is an admin before any side effect, cache expiry included.
+async function requireAdmin() {
+	const status = await fetchInternalAuthStatus();
+	if (!status.signedIn || !status.isAdmin) throw new Error("Unauthorized");
+}
 
 async function callCatalogMutation(path: `/api/account/models/catalog/${string}`, method: "POST" | "PUT" | "DELETE", body?: unknown) {
 	const { accessToken } = await getServerAccountContext();
@@ -240,6 +248,7 @@ function normalizeOrganisationLinks(rawLinks: OrganisationLinkPayload[]) {
 
 // react-doctor-disable-next-line
 export async function createOrganisationAction(formData: FormData) {
+	await requireAdmin();
 	const organisationId = requiredString(formData.get("organisation_id"), "organisation_id");
 	const name = requiredString(formData.get("name"), "name");
 	const socialLinks = normalizeOrganisationLinks(parseJsonField<OrganisationLinkPayload[]>(formData.get("social_links_payload"), "social_links_payload", []));
@@ -249,6 +258,7 @@ export async function createOrganisationAction(formData: FormData) {
 
 // react-doctor-disable-next-line
 export async function updateOrganisationAction(organisationId: string, formData: FormData) {
+	await requireAdmin();
 	const socialLinks = normalizeOrganisationLinks(parseJsonField<OrganisationLinkPayload[]>(formData.get("social_links_payload"), "social_links_payload", []));
 	await callCatalogMutation(`/api/account/models/catalog/organisations/${encodeURIComponent(organisationId)}`, "PUT", { name: requiredString(formData.get("name"), "name"), description: optionalString(formData.get("description")), country_code: optionalString(formData.get("country_code")), subdivision_code: optionalString(formData.get("subdivision_code")), colour: optionalString(formData.get("colour")), social_links: socialLinks });
 	revalidatePath("/internal/data/organisations");
@@ -256,6 +266,7 @@ export async function updateOrganisationAction(organisationId: string, formData:
 
 // react-doctor-disable-next-line
 export async function deleteOrganisationAction(organisationId: string) {
+	await requireAdmin();
 	await callCatalogMutation(`/api/account/models/catalog/organisations/${encodeURIComponent(organisationId)}`, "DELETE");
 	revalidatePath("/internal/data/organisations");
 }
@@ -273,6 +284,7 @@ function providerOfferFields(formData: FormData) {
 
 // react-doctor-disable-next-line
 export async function createAPIProviderAction(formData: FormData) {
+	await requireAdmin();
 	const apiProviderId = requiredString(formData.get("api_provider_id"), "api_provider_id");
 	const apiProviderName = requiredString(formData.get("api_provider_name"), "api_provider_name");
 	const promptTrainingPolicy = normalizeProviderPromptTrainingPolicy(
@@ -319,6 +331,7 @@ export async function createAPIProviderAction(formData: FormData) {
 
 // react-doctor-disable-next-line
 export async function updateAPIProviderAction(apiProviderId: string, formData: FormData) {
+	await requireAdmin();
 	const promptTrainingPolicy = normalizeProviderPromptTrainingPolicy(
 		formData.get("prompt_training_policy"),
 	);
@@ -361,6 +374,7 @@ export async function updateAPIProviderAction(apiProviderId: string, formData: F
 
 // react-doctor-disable-next-line
 export async function deleteAPIProviderAction(apiProviderId: string) {
+	await requireAdmin();
 	await callCatalogMutation(`/api/account/models/catalog/providers/${encodeURIComponent(apiProviderId)}`, "DELETE");
 	await submitIndexNowUrls(
 		getIndexNowProviderUrls(apiProviderId),
@@ -371,6 +385,7 @@ export async function deleteAPIProviderAction(apiProviderId: string) {
 
 // react-doctor-disable-next-line
 export async function createBenchmarkAction(formData: FormData) {
+	await requireAdmin();
 	const id = requiredString(formData.get("id"), "id");
 	const name = requiredString(formData.get("name"), "name");
 	await callCatalogMutation("/api/account/models/catalog/benchmarks", "POST", {
@@ -390,6 +405,7 @@ export async function createBenchmarkAction(formData: FormData) {
 
 // react-doctor-disable-next-line
 export async function updateBenchmarkAction(id: string, formData: FormData) {
+	await requireAdmin();
 	await callCatalogMutation(`/api/account/models/catalog/benchmarks/${encodeURIComponent(id)}`, "PUT", {
 			name: requiredString(formData.get("name"), "name"),
 			category: optionalString(formData.get("category")),
@@ -406,12 +422,14 @@ export async function updateBenchmarkAction(id: string, formData: FormData) {
 
 // react-doctor-disable-next-line
 export async function deleteBenchmarkAction(id: string) {
+	await requireAdmin();
 	await callCatalogMutation(`/api/account/models/catalog/benchmarks/${encodeURIComponent(id)}`, "DELETE");
 	revalidatePath("/internal/data/benchmarks");
 }
 
 // react-doctor-disable-next-line
 export async function createModelAction(formData: FormData) {
+	await requireAdmin();
 	const modelId = requiredString(formData.get("model_id"), "model_id");
 	const name = requiredString(formData.get("name"), "name");
 	const organisationId = requiredString(formData.get("organisation_id"), "organisation_id");
@@ -780,6 +798,7 @@ export async function createModelAction(formData: FormData) {
 
 // react-doctor-disable-next-line
 export async function updateModelAction(modelId: string, formData: FormData) {
+	await requireAdmin();
 	const organisationId = requiredString(formData.get("organisation_id"), "organisation_id");
 	const name = requiredString(formData.get("name"), "name");
 	const result = await updateModel({ modelId, name, organisation_id: organisationId, status: normalizeModelStatus(optionalString(formData.get("status"))), previous_model_id: optionalString(formData.get("previous_model_id")), replacement_model_id: optionalString(formData.get("replacement_model_id")), release_date: optionalString(formData.get("release_date")), announcement_date: optionalString(formData.get("announcement_date")), deprecation_date: optionalString(formData.get("deprecation_date")), retirement_date: optionalString(formData.get("retirement_date")), license: optionalString(formData.get("license")), input_types: normalizeCoreTypes(formData.get("input_types")), output_types: normalizeCoreTypes(formData.get("output_types")), hidden: formData.get("hidden") === "on" });
@@ -794,6 +813,7 @@ export async function updateModelAction(modelId: string, formData: FormData) {
 
 // react-doctor-disable-next-line
 export async function deleteModelAction(modelId: string) {
+	await requireAdmin();
 	await callCatalogMutation(`/api/account/models/catalog/models/${encodeURIComponent(modelId)}`, "DELETE");
 	await refreshSavedModelCaches(modelId);
 	await submitIndexNowUrls(
@@ -813,6 +833,7 @@ async function refreshSavedModelCaches(modelId: string) {
 
 // react-doctor-disable-next-line
 export async function revalidateSingleModelDataAction(modelId: string) {
+	await requireAdmin();
 	revalidateModelDataOnlyTags({ modelId });
 	revalidatePath(`/internal/data/models/edit/${modelId}`);
 	revalidatePath("/models");
@@ -824,6 +845,7 @@ export async function revalidateSingleModelDataAction(modelId: string) {
 
 // react-doctor-disable-next-line
 export async function revalidateSingleModelApiInfoAction(modelId: string) {
+	await requireAdmin();
 	await revalidateCloudflare(["web-api-models", "web-api-gateway-models", "web-api-model-pricing", "web-api-model-performance", "web-api-model-provider-health", "web-api-provider-routing-health", "web-api-providers"]);
 	revalidateModelApiInfoTags({ modelId });
 	revalidatePath(`/internal/data/models/edit/${modelId}`);
@@ -836,6 +858,7 @@ export async function revalidateSingleModelApiInfoAction(modelId: string) {
 
 // react-doctor-disable-next-line
 export async function revalidateSingleModelAllAction(modelId: string) {
+	await requireAdmin();
 	await revalidateCloudflare(["web-api-models", "web-api-gateway-models", "web-api-model-details", "web-api-model-benchmarks", "web-api-model-timelines", "web-api-model-subscriptions", "web-api-model-pricing", "web-api-model-performance", "web-api-model-notices", "web-api-providers", "web-api-organisations", "web-api-reference-data", "web-api-search"]);
 	revalidateModelDataTags({ modelId });
 	revalidatePath(`/internal/data/models/edit/${modelId}`);

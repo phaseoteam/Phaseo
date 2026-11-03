@@ -114,18 +114,38 @@ export type PolicyMatchResult =
 	| { ok: true; policy: WorkloadIdentityPolicy }
 	| { ok: false; reason: "workload_identity_no_matching_policy" | "workload_identity_ambiguous" };
 
+export const WORKLOAD_IDENTITY_AMBIGUOUS_MESSAGE =
+	"This token matches more than one trust policy. If they are in different workspaces, send the x-phaseo-workspace header with the workspace ID to choose one. If they are in the same workspace, narrow their conditions so only one matches.";
+
 /**
- * Exactly one policy must match. `workspaceId` narrows the candidates when
- * the caller names a workspace (for example the same repository trusted by
- * two workspaces).
+ * Every active policy the token satisfies. `workspaceId` narrows the
+ * candidates when the caller names a workspace (for example the same
+ * repository trusted by two workspaces).
+ */
+export function matchingWorkloadIdentityPolicies<P extends WorkloadIdentityPolicy>(
+	claims: WorkloadTokenClaims,
+	policies: P[],
+	options: { workspaceId?: string | null } = {},
+): P[] {
+	return policies.filter((policy) =>
+		(!options.workspaceId || policy.workspaceId === options.workspaceId) && policyMatchesClaims(policy, claims));
+}
+
+/**
+ * Exactly one policy must match. Never pick between several matches (oldest,
+ * first creator, ...): owner IDs are public, so any rule would let another
+ * workspace receive or block a caller's traffic. The caller names the
+ * workspace with `workspaceId` instead.
  */
 export function matchWorkloadIdentityPolicy(
 	claims: WorkloadTokenClaims,
 	policies: WorkloadIdentityPolicy[],
 	options: { workspaceId?: string | null } = {},
 ): PolicyMatchResult {
-	const matches = policies.filter((policy) =>
-		(!options.workspaceId || policy.workspaceId === options.workspaceId) && policyMatchesClaims(policy, claims));
+	return resolveWorkloadIdentityMatches(matchingWorkloadIdentityPolicies(claims, policies, options));
+}
+
+export function resolveWorkloadIdentityMatches(matches: WorkloadIdentityPolicy[]): PolicyMatchResult {
 	if (matches.length === 0) return { ok: false, reason: "workload_identity_no_matching_policy" };
 	if (matches.length > 1) return { ok: false, reason: "workload_identity_ambiguous" };
 	return { ok: true, policy: matches[0] };

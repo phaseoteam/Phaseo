@@ -9,7 +9,13 @@ import { isWorkloadIdentityAccessEnabled } from "@/core/feature-flags";
 import { shouldRecordLastUsed } from "@/core/last-used-throttle";
 import { isKeyIpAllowed } from "@/lib/security/keyIpAllowlist";
 import { presetProviderForIssuer, type WorkloadIdentityProvider } from "@/lib/workload-identity/issuers";
-import { matchWorkloadIdentityPolicy, REQUIRED_PINNED_CLAIMS, type WorkloadIdentityPolicy } from "@/lib/workload-identity/policy";
+import {
+	matchingWorkloadIdentityPolicies,
+	REQUIRED_PINNED_CLAIMS,
+	resolveWorkloadIdentityMatches,
+	WORKLOAD_IDENTITY_AMBIGUOUS_MESSAGE,
+	type WorkloadIdentityPolicy,
+} from "@/lib/workload-identity/policy";
 import { createJwksSource, readUnverifiedIssuer, verifyWorkloadToken, type JwksSource } from "@/lib/workload-identity/verify";
 import type { AuthFailure, AuthSuccess } from "./auth";
 
@@ -195,8 +201,21 @@ export async function authenticateWorkloadIdentity(
 
 	const policies = await loadCandidatePolicies(verified.claims.iss, ownerId);
 	if (policies === "db_error") return { result: { ok: false, reason: "db_error" } };
-	const match = matchWorkloadIdentityPolicy(verified.claims, policies, { workspaceId: workspaceHint });
-	if (match.ok === false) return { result: { ok: false, reason: match.reason } };
+	// Owner IDs are public, so another workspace can pin someone else's and make
+	// their token ambiguous. Never resolve that by dropping or ranking candidates
+	// (rollout state, age, creator): any such rule can route a caller's requests,
+	// and their prompts, into the other workspace. The caller names the workspace
+	// with the header instead, and the error says how.
+	const match = resolveWorkloadIdentityMatches(
+		matchingWorkloadIdentityPolicies(verified.claims, policies, { workspaceId: workspaceHint }),
+	);
+	if (match.ok === false) {
+		return {
+			result: match.reason === "workload_identity_ambiguous"
+				? { ok: false, reason: match.reason, message: WORKLOAD_IDENTITY_AMBIGUOUS_MESSAGE }
+				: { ok: false, reason: match.reason },
+		};
+	}
 
 	const key = (match.policy as CandidatePolicy).key;
 	const keyExpiresAt = key.expires_at ? Date.parse(key.expires_at) : Number.NaN;

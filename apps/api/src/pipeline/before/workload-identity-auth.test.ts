@@ -6,6 +6,7 @@ const runtime = vi.hoisted(() => {
 	const state = {
 		bindings: {} as Record<string, string | undefined>,
 		gateEnabled: true,
+		gateClosedWorkspaces: new Set<string>(),
 		issuers: ["https://oidc.vercel.com/acme"] as string[] | null,
 		issuerReads: 0,
 		gateCalls: [] as Array<Record<string, unknown>>,
@@ -57,7 +58,7 @@ const runtime = vi.hoisted(() => {
 vi.mock("@/core/feature-flags", () => ({
 	isWorkloadIdentityAccessEnabled: async (subject: Record<string, unknown>) => {
 		runtime.state.gateCalls.push(subject);
-		return runtime.state.gateEnabled;
+		return runtime.state.gateEnabled && !runtime.state.gateClosedWorkspaces.has(String(subject.workspaceId));
 	},
 }));
 
@@ -135,6 +136,7 @@ beforeAll(async () => {
 beforeEach(() => {
 	runtime.state.bindings = {};
 	runtime.state.gateEnabled = true;
+	runtime.state.gateClosedWorkspaces = new Set();
 	runtime.state.gateCalls = [];
 	runtime.state.issuers = [ISSUER];
 	runtime.state.issuerReads = 0;
@@ -271,8 +273,42 @@ describe("authenticate with workload identity tokens", () => {
 			policyRow({ id: "pol_2", workspace_id: "ws_2", key_id: "key_2" }, { id: "key_2", workspace_id: "ws_2", kid: "fedcba9876543210fedcba9876543210" }),
 		];
 		const token = await signTestToken(signer, claims());
-		expect(await authenticate(request(token))).toEqual({ ok: false, reason: "workload_identity_ambiguous" });
+		expect(await authenticate(request(token))).toEqual({
+			ok: false,
+			reason: "workload_identity_ambiguous",
+			message: expect.stringContaining("x-phaseo-workspace"),
+		});
 		expect(await authenticate(request(token, { "x-phaseo-workspace": "ws_2" }))).toMatchObject({ ok: true, workspaceId: "ws_2", apiKeyId: "key_2" });
+	});
+
+	it("never routes a token into a squatting workspace, whatever its rollout state", async () => {
+		// ws_squat pinned the victim's public owner ID. Whichever workspace is in the rollout, a token
+		// without the header is refused rather than sent to one of them.
+		runtime.state.policyRows = [
+			policyRow({ id: "pol_squat", workspace_id: "ws_squat", key_id: "key_squat" }, { id: "key_squat", workspace_id: "ws_squat", kid: "fedcba9876543210fedcba9876543210" }),
+			policyRow(),
+		];
+		const token = await signTestToken(signer, claims());
+		for (const closed of [["ws_squat"], ["ws_1"], []]) {
+			__resetWorkloadIdentityAuthCachesForTests();
+			runtime.state.gateClosedWorkspaces = new Set(closed);
+			expect(await authenticate(request(token))).toMatchObject({ ok: false, reason: "workload_identity_ambiguous" });
+		}
+		// The victim names their workspace and is unaffected.
+		__resetWorkloadIdentityAuthCachesForTests();
+		runtime.state.gateClosedWorkspaces = new Set();
+		expect(await authenticate(request(token, { "x-phaseo-workspace": "ws_1" }))).toMatchObject({ ok: true, workspaceId: "ws_1", apiKeyId: "key_1" });
+	});
+
+	it("does not let a policy with other conditions make a token ambiguous", async () => {
+		runtime.state.policyRows = [
+			policyRow({ id: "pol_squat", workspace_id: "ws_squat", key_id: "key_squat", claim_conditions: { project_id: ["prj_other"] } }, { id: "key_squat", workspace_id: "ws_squat" }),
+			policyRow(),
+		];
+		const token = await signTestToken(signer, claims());
+		expect(await authenticate(request(token))).toMatchObject({ ok: true, workspaceId: "ws_1" });
+		// Only the matching policy's workspace was checked against the gate.
+		expect(runtime.state.gateCalls.map((call) => call.workspaceId)).toEqual(["ws_1"]);
 	});
 
 	it("honours key status, kind, expiry and IP allowlist", async () => {

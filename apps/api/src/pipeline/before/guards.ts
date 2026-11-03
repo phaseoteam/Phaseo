@@ -387,8 +387,8 @@ export async function guardAuth(req: Request, options: GuardAuthOptions = {}): P
         allowOAuthJwt: options.allowOAuthJwt,
     });
     if (!auth.ok) {
-        const reason = (auth as AuthFailure).reason;
-        return { ok: false, response: err("unauthorised", { reason, request_id: requestId }) };
+        const { reason, message } = auth as AuthFailure;
+        return { ok: false, response: err("unauthorised", { reason, ...(message ? { message } : {}), request_id: requestId }) };
     }
     return {
         ok: true,
@@ -426,8 +426,8 @@ export async function guardManagementAuth(req: Request, options: GuardAuthOption
     const requestId = requestIdFor(req);
     const auth = await authenticateManagement(req, { useKvCache: options.useKvCache });
     if (!auth.ok) {
-        const reason = (auth as AuthFailure).reason;
-        return { ok: false, response: err("unauthorised", { reason, request_id: requestId }) };
+        const { reason, message } = auth as AuthFailure;
+        return { ok: false, response: err("unauthorised", { reason, ...(message ? { message } : {}), request_id: requestId }) };
     }
     return {
         ok: true,
