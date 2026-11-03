@@ -107,8 +107,14 @@ const shellActions = String.raw`
   };
   /** The effort and other settings named after the model on the composer's model button. */
   window.__auditModelSettings = function() { return document.querySelector('main form button[aria-label="Choose model"] [data-model-settings]')?.textContent.trim()??''; };
+  /** A narrow window rests the message box on one line without its model button, so open it first. */
+  window.__auditOpenComposer = async function() {
+    document.querySelector('main form [aria-label="Open the message box"]')?.click();
+    return window.__auditUntil(()=>document.querySelector('main form button[aria-label="Choose model"]'),'message box open');
+  };
   /** Choose one of the model's settings (such as Reasoning: High) in the model picker, then close it. */
   window.__auditModelSetting = async function(group,label) {
+    await window.__auditOpenComposer();
     const trigger=await window.__auditUntil(()=>{const value=document.querySelector('main form button[aria-label="Choose model"]');return value&&!value.disabled&&value;},'model picker');
     if(trigger.getAttribute('aria-expanded')!=='true')trigger.click();
     const radios=()=>Array.from(document.querySelector('[data-slot="popover-content"] [role="group"][aria-label="Model settings"]')?.querySelectorAll('[role="radiogroup"]')??[]).find(row=>row.getAttribute('aria-label')===group)?.querySelectorAll('[role="radio"]')??[];
