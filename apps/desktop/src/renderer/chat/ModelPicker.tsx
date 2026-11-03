@@ -18,9 +18,10 @@ import { ScrollArea } from "../components/ui/scroll-area";
 export const harnessNames: Record<Harness, string> = { phaseo: "Phaseo", codex: "Codex", claude: "Claude Code", opencode: "OpenCode", pi: "Pi", cursor: "Cursor", grok: "Grok", antigravity: "Antigravity", acp: "Agent" };
 export const MAX_COMPARE = 4;
 
+/** A name from a model id, for when no catalogue has named it yet: claude-opus-5-5 reads "Claude Opus 5.5". */
 export function modelLabel(id: string) {
-	const base = id.includes("/") ? id.slice(id.indexOf("/") + 1) : id;
-	return base.replace(/[-_]/g, " ").replace(/\b([a-z])/g, letter => letter.toUpperCase()).replace(/\bGpt\b/g, "GPT");
+	const base = (id.includes("/") ? id.slice(id.indexOf("/") + 1) : id).replace(/-\d{8}$/, "").replace(/\b(\d{1,2})-(\d{1,2})\b/g, "$1.$2");
+	return base.replace(/[-_]/g, " ").replace(/\b([a-z])/g, letter => letter.toUpperCase()).replace(/\bGpt (?=\d)/g, "GPT-").replace(/\bGpt\b/g, "GPT");
 }
 
 export const sameSelection = (a: ModelSelection, b: ModelSelection) => a.harness === b.harness && a.model === b.model && (a.accountId ?? "") === (b.accountId ?? "");
@@ -231,7 +232,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 		return () => window.removeEventListener(openEvent, show);
 	}, [openEvent, disabled]);
 	return <Popover open={open} onOpenChange={openChange}>
-		{harnesses.filter(harness => open || harness === "phaseo").map(harness => <Catalog key={harness} harness={harness} accountId={harness === "phaseo" ? phaseoAccount?.id : undefined} onLoad={onLoad} />)}
+		{harnesses.filter(harness => open || harness === "phaseo" || selections.some(selection => selection.harness === harness)).map(harness => <Catalog key={harness} harness={harness} accountId={harness === "phaseo" ? phaseoAccount?.id : undefined} onLoad={onLoad} />)}
 		<PopoverTrigger disabled={disabled} render={<button type="button" aria-label="Choose model" className={cn("flex h-8 max-w-64 items-center gap-1.5 rounded-lg px-2 text-[13px] font-semibold transition-colors hover:bg-muted disabled:opacity-50 data-popup-open:bg-muted", className)} />}>
 			{selections.length > 1
 				? <><ModelStack models={selections} /><span className="truncate">{selections.length} models</span></>

@@ -24,8 +24,7 @@ const percent = (part: number, whole: number) => whole ? `${Math.round(part / wh
 const harnessColours: Partial<Record<string, string>> = { phaseo: "#0a84c6", claude: "#d97757", codex: "var(--foreground)", cursor: "#8b8b8b", opencode: "#5b9bbd", grok: "color-mix(in srgb, var(--foreground) 72%, transparent)", antigravity: "#8c7bd1", pi: "#9a8f5e" };
 const colour = (harness: string) => harnessColours[harness] ?? "var(--muted-foreground)";
 const harnessName = (harness: string) => harnessNames[harness as Harness] ?? harness;
-/** A model's name; Claude Code reports versions with dashes (claude-opus-5-5-20261001), read as Claude Opus 5.5. */
-const modelName = (model: string) => modelLabel(model.replace(/-\d{8}$/, "").replace(/(\d)-(\d)(?!\d)/g, "$1.$2"));
+const modelName = modelLabel;
 
 const views: { id: UsageView; label: string }[] = [{ id: "cost", label: "Cost" }, { id: "tokens", label: "Tokens" }, { id: "limits", label: "Limits" }];
 

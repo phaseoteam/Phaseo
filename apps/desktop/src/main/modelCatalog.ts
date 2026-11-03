@@ -20,7 +20,8 @@ export async function readCodexModels(rpc: Pick<JsonRpc, "request">): Promise<Mo
 	do {
 		const page: { data: { model: string; displayName: string; description: string; hidden: boolean; isDefault: boolean; supportedReasoningEfforts?: { reasoningEffort: string; description: string }[]; defaultReasoningEffort?: string; serviceTiers?: { id: string; name: string; description: string }[]; defaultServiceTier?: string }[]; nextCursor: string | null } = await rpc.request("model/list", { cursor, limit: 100 });
 		models.push(...page.data.filter(model => !model.hidden).map(model => ({
-			id: model.model, name: model.displayName, description: model.description, default: model.isDefault,
+			// Codex names some models "GPT-6.1-Sol" and others "GPT-6.1 Terra"; the Phaseo catalogue writes "GPT-6.1 Sol".
+			id: model.model, name: model.displayName.replace(/(\d)-(?=[A-Z][a-z])/g, "$1 "), description: model.description, default: model.isDefault,
 			serviceTiers: model.serviceTiers?.filter(tier => typeof tier.id === "string" && tier.id.length > 0 && tier.id.length <= 100 && typeof tier.name === "string").slice(0, 20).map(tier => ({ id: tier.id, name: tier.name.slice(0, 100), description: typeof tier.description === "string" ? tier.description.slice(0, 2000) : "" })),
 			defaultServiceTier: model.defaultServiceTier,
 			reasoningEfforts: model.supportedReasoningEfforts?.filter(option => typeof option.reasoningEffort === "string" && option.reasoningEffort.length > 0 && option.reasoningEffort.length <= 100).slice(0, 100).map(option => ({ id: option.reasoningEffort, description: typeof option.description === "string" ? option.description.slice(0, 2000) : "" })),
