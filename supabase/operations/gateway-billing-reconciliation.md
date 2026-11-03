@@ -9,7 +9,9 @@ steps. Run each statement separately on a window of a few days.
 2. **Paid requests to charges.** Every successful, non-BYOK request row with a
    cost should have a charge of the same amount. `not_linked` rows were written
    before the link existed or were billed through wallet reservations (batch,
-   realtime); reconcile those through their reservations.
+   realtime, and videos paid by capturing their hold); reconcile those through
+   their reservations. A video paid by a direct completion charge links to its
+   `video_capture:<video id>` charge once the video finishes.
    `charge_shared_by_rows` means two rows carry one charge key, which step 1
    reports as `charge_linked_to_multiple_rows`; that charge counts once.
 3. **Customer-side totals for the provider comparison.** Requests, meter

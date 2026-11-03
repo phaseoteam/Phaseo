@@ -28,6 +28,16 @@ const GATEWAY_REQUEST_SYNC_RETRY_MS = 200;
 
 type GatewayRequestSyncResult = "updated" | "skipped_no_request_id" | "not_found" | "error";
 
+// Covers a gateway deployed ahead of the migration that adds the column.
+let gatewayRequestsHasBillingRequestId = true;
+
+function isMissingBillingRequestIdColumn(error: unknown): boolean {
+	const candidate = error && typeof error === "object" ? error as Record<string, unknown> : null;
+	const code = String(candidate?.code ?? "");
+	return (code === "PGRST204" || code === "42703") &&
+		String(candidate?.message ?? "").includes("billing_request_id");
+}
+
 function toPositiveNumber(value: unknown): number | undefined {
 	if (typeof value === "number" && Number.isFinite(value) && value > 0) {
 		return value;
@@ -255,6 +265,12 @@ async function syncGatewayRequestFromVideoFinalization(args: {
 	quality?: string | null;
 	durationMs?: number | null;
 	pricingLines?: unknown[] | null;
+	/**
+	 * The `gateway_request_charges` key that paid for the video: a direct completion charge's key,
+	 * null when the reservation paid (it writes no charge row) or nothing was charged, and
+	 * undefined to leave the row's link as it is.
+	 */
+	chargeRequestId: string | null | undefined;
 }): Promise<GatewayRequestSyncResult> {
 	const requestId = normalizeOptionalText(args.requestId);
 	if (!requestId) return "skipped_no_request_id";
@@ -316,6 +332,10 @@ async function syncGatewayRequestFromVideoFinalization(args: {
 						? row.pricing_lines
 						: [];
 			updatePatch.pricing_lines = pricingLines;
+			// The row was written with the submission's billing key, which is never charged.
+			if (gatewayRequestsHasBillingRequestId && args.chargeRequestId !== undefined) {
+				updatePatch.billing_request_id = args.chargeRequestId;
+			}
 
 			const { data: updatedRows, error: updateError } = await supabase
 				.from("gateway_requests")
@@ -323,6 +343,11 @@ async function syncGatewayRequestFromVideoFinalization(args: {
 				.eq("id", row.id)
 				.eq("workspace_id", args.workspaceId)
 				.select("id");
+			if (updateError && gatewayRequestsHasBillingRequestId && isMissingBillingRequestIdColumn(updateError)) {
+				gatewayRequestsHasBillingRequestId = false;
+				attempt -= 1;
+				continue;
+			}
 			if (updateError) throw updateError;
 			if (!Array.isArray(updatedRows) || updatedRows.length === 0) {
 				console.warn("video_gateway_request_sync_no_rows_updated", {
@@ -422,6 +447,7 @@ type VideoCompletionPricing = {
 	costNanos?: number;
 	pricedUsage?: Record<string, unknown>;
 	reason?: string;
+	chargeRequestId?: string;
 };
 
 async function computeVideoCompletionPricing(args: {
@@ -517,7 +543,7 @@ async function chargeVideoCompletion(args: {
 		workspaceId: args.workspaceId,
 		cost_nanos: pricing.costNanos,
 	});
-	return pricing;
+	return { ...pricing, chargeRequestId };
 }
 
 export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<FinalizeVideoJobResult> {
@@ -626,6 +652,7 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 			});
 			const syncResult = await syncGatewayRequestFromVideoFinalization({
 				workspaceId: args.workspaceId,
+				chargeRequestId: null,
 				requestId: requestIdForAudit,
 				costNanos: 0,
 				costUsd: 0,
@@ -667,6 +694,7 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 			});
 			await syncGatewayRequestFromVideoFinalization({
 				workspaceId: args.workspaceId,
+				chargeRequestId: null,
 				requestId: requestIdForAudit,
 				costNanos: 0,
 				costUsd: 0,
@@ -871,6 +899,7 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 			});
 			const syncResult = await syncGatewayRequestFromVideoFinalization({
 				workspaceId: args.workspaceId,
+				chargeRequestId: null,
 				requestId: requestIdForAudit,
 				costNanos: 0,
 				costUsd: 0,
@@ -943,6 +972,7 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 				});
 				const syncResult = await syncGatewayRequestFromVideoFinalization({
 					workspaceId: args.workspaceId,
+					chargeRequestId: null,
 					requestId: requestIdForAudit,
 					costNanos: completionCostNanos,
 					costUsd: completionCostUsd,
@@ -1044,6 +1074,7 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 		});
 		const syncResult = await syncGatewayRequestFromVideoFinalization({
 			workspaceId: args.workspaceId,
+			chargeRequestId: null,
 			requestId: requestIdForAudit,
 			costNanos: settledCostNanos,
 			costUsd: settledCostUsd,
@@ -1085,6 +1116,7 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 			});
 			const syncResult = await syncGatewayRequestFromVideoFinalization({
 				workspaceId: args.workspaceId,
+				chargeRequestId: null,
 				requestId: requestIdForAudit,
 				costNanos,
 				costUsd,
@@ -1121,6 +1153,7 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 			});
 			const syncResult = await syncGatewayRequestFromVideoFinalization({
 				workspaceId: args.workspaceId,
+				chargeRequestId: null,
 				requestId: requestIdForAudit,
 				costNanos: 0,
 				costUsd: 0,
@@ -1258,6 +1291,8 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 		quality: qualityForAudit,
 		durationMs: durationMs ?? null,
 		pricingLines: extractPricingLines(charge.pricedUsage),
+		// Another finaliser billed it and set the link.
+		chargeRequestId: charge.reason === "already_billed" ? undefined : (charge.chargeRequestId ?? null),
 	});
 	if ((charge.charged || charge.reason === "zero_cost" || charge.reason === "already_billed")) {
 		if (shouldMarkVideoJobBilled(syncResult)) {

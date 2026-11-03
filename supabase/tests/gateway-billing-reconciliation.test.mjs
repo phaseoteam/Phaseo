@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
-const migration = await read('../migrations/20261102114337_gateway_requests_billing_request_id.sql');
+const migration = await read('../migrations/20261103133059_gateway_requests_billing_request_id.sql');
 const schema = await read('../schemas/public/tables/gateway_requests.sql');
 const reconciliation = await read('../operations/gateway-billing-reconciliation.sql');
 

@@ -47,7 +47,8 @@ order by 1;
 
 -- 2. Paid request rows in the window and whether a charge exists for them.
 --    Expected: `charged` for billable rows. `not_linked` rows predate the link or were
---    billed through wallet reservations (batch, realtime) and are reconciled separately.
+--    billed through wallet reservations (batch, realtime, captured video holds) and are
+--    reconciled separately.
 with params as (
   select timestamptz '2026-11-01 00:00:00+00' as from_at, timestamptz '2026-11-08 00:00:00+00' as to_at
 ),
