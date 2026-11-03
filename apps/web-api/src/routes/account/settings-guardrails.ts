@@ -194,3 +194,77 @@ accountSettingsGuardrailsRouter.put("/guardrails/:guardrailId/members", async (c
 	scheduleInvalidation(c, context);
 	return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
 });
+
+/** Bounded so the `in` filters stay well inside PostgREST's URL limit and one change writes at most a few thousand rows. */
+export const MAX_ASSIGNMENT_TARGETS = 200;
+export const MAX_ASSIGNMENT_GUARDRAILS = 25;
+
+export type GuardrailAssignmentChange = {
+	targetType: "key" | "member";
+	targetIds: string[];
+	addGuardrailIds: string[];
+	removeGuardrailIds: string[];
+};
+
+function idList(value: unknown): string[] {
+	return Array.isArray(value) ? [...new Set(value.map((id) => String(id ?? "").trim()).filter(Boolean))] : [];
+}
+
+/** Reads an add/remove change for many keys or members; unlike the per-guardrail PUTs, it leaves every other assignment as it is. */
+export function parseGuardrailAssignmentChange(body: GuardrailPayload): GuardrailAssignmentChange | { error: string } {
+	const targetType = body.targetType === "key" || body.targetType === "member" ? body.targetType : null;
+	if (!targetType) return { error: "targetType must be key or member" };
+	const targetIds = idList(body.targetIds);
+	const addGuardrailIds = idList(body.addGuardrailIds);
+	const removeGuardrailIds = idList(body.removeGuardrailIds);
+	if (!targetIds.length) return { error: "Choose at least one target" };
+	if (targetIds.length > MAX_ASSIGNMENT_TARGETS) return { error: `Change at most ${MAX_ASSIGNMENT_TARGETS} targets at once` };
+	if (!addGuardrailIds.length && !removeGuardrailIds.length) return { error: "Nothing to change" };
+	if (addGuardrailIds.length + removeGuardrailIds.length > MAX_ASSIGNMENT_GUARDRAILS) return { error: `Change at most ${MAX_ASSIGNMENT_GUARDRAILS} guardrails at once` };
+	if (addGuardrailIds.some((id) => removeGuardrailIds.includes(id))) return { error: "A guardrail cannot be added and removed in one change" };
+	return { targetType, targetIds, addGuardrailIds, removeGuardrailIds };
+}
+
+accountSettingsGuardrailsRouter.patch("/guardrails/assignments", async (c) => {
+	const body: GuardrailPayload = await c.req.json<GuardrailPayload>().catch(() => ({}));
+	const context = await adminContext(c, body.workspaceId);
+	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const change = parseGuardrailAssignmentChange(body);
+	if ("error" in change) return c.json({ error: change.error }, 400, PRIVATE_NO_STORE_HEADERS);
+	const { targetType, targetIds, addGuardrailIds, removeGuardrailIds } = change;
+	const guardrailIds = [...addGuardrailIds, ...removeGuardrailIds];
+	const guardrails = await context.client.from("workspace_guardrails").select("id").eq("workspace_id", context.workspaceId).in("id", guardrailIds);
+	if (guardrails.error) return c.json({ error: "guardrail_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+	if ((guardrails.data ?? []).length !== guardrailIds.length) return c.json({ error: "Guardrail not found" }, 404, PRIVATE_NO_STORE_HEADERS);
+	if (targetType === "key") {
+		const keys = await context.client.from("keys").select("id,workspace_id,status").in("id", targetIds);
+		if (keys.error) return c.json({ error: "guardrail_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+		const valid = new Map((keys.data ?? []).map((key) => [key.id, key]));
+		if (targetIds.some((id) => valid.get(id)?.workspace_id !== context.workspaceId || String(valid.get(id)?.status).toLowerCase() === "deleted")) return c.json({ error: "One or more keys do not belong to this workspace" }, 409, PRIVATE_NO_STORE_HEADERS);
+		if (removeGuardrailIds.length) {
+			const removed = await context.client.from("key_guardrails").delete().in("key_id", targetIds).in("guardrail_id", removeGuardrailIds);
+			if (removed.error) return c.json({ error: "guardrail_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+		}
+		if (addGuardrailIds.length) {
+			const rows = targetIds.flatMap((keyId) => addGuardrailIds.map((guardrailId) => ({ key_id: keyId, guardrail_id: guardrailId })));
+			const added = await context.client.from("key_guardrails").upsert(rows, { onConflict: "key_id,guardrail_id", ignoreDuplicates: true });
+			if (added.error) return c.json({ error: "guardrail_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+		}
+	} else {
+		const members = await context.client.from("workspace_members").select("user_id").eq("workspace_id", context.workspaceId).in("user_id", targetIds);
+		if (members.error) return c.json({ error: "guardrail_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+		const validIds = new Set((members.data ?? []).map((member: any) => String(member.user_id)));
+		if (targetIds.some((id) => !validIds.has(id))) return c.json({ error: "One or more users do not belong to this workspace" }, 409, PRIVATE_NO_STORE_HEADERS);
+		if (removeGuardrailIds.length) {
+			const removed = await context.client.from("workspace_member_guardrails").delete().eq("workspace_id", context.workspaceId).in("user_id", targetIds).in("guardrail_id", removeGuardrailIds);
+			if (removed.error) return c.json({ error: "guardrail_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+		}
+		if (addGuardrailIds.length) {
+			const rows = targetIds.flatMap((userId) => addGuardrailIds.map((guardrailId) => ({ workspace_id: context.workspaceId, user_id: userId, guardrail_id: guardrailId })));
+			const added = await context.client.from("workspace_member_guardrails").upsert(rows, { onConflict: "workspace_id,user_id,guardrail_id", ignoreDuplicates: true });
+			if (added.error) return c.json({ error: "guardrail_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+		}
+	}
+	scheduleInvalidation(c, context);
+	return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
+});

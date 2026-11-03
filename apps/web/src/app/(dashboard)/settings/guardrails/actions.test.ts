@@ -8,7 +8,7 @@ jest.mock("@/lib/web-api/client", () => ({
 
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
-import { updateGlobalGuardrailsSettings } from "@/app/[locale]/(dashboard)/settings/guardrails/actions";
+import { updateGlobalGuardrailsSettings, updateGuardrailAssignments } from "@/app/[locale]/(dashboard)/settings/guardrails/actions";
 
 const mockGetServerAccountContext = jest.mocked(getServerAccountContext);
 const mockFetchAccountWebApi = jest.mocked(fetchAccountWebApi);
@@ -37,6 +37,27 @@ describe("workspace guardrail server actions", () => {
 				}),
 			}),
 		);
+	});
+
+	it("sends assignment changes as an add/remove delta for the rendered workspace", async () => {
+		await updateGuardrailAssignments({ targetType: "key", targetIds: ["key-1", "key-2"], addGuardrailIds: ["guardrail-1"] }, "workspace-a");
+
+		expect(mockFetchAccountWebApi).toHaveBeenCalledWith(
+			"/api/account/settings/guardrails/assignments",
+			"access-token",
+			expect.objectContaining({
+				method: "PATCH",
+				body: JSON.stringify({
+					targetType: "key",
+					targetIds: ["key-1", "key-2"],
+					addGuardrailIds: ["guardrail-1"],
+					workspaceId: "workspace-a",
+				}),
+			}),
+		);
+		await expect(
+			updateGuardrailAssignments({ targetType: "member", targetIds: ["user-1"], removeGuardrailIds: ["guardrail-1"] }, "workspace-b"),
+		).rejects.toThrow("Active workspace changed");
 	});
 
 	it("rejects a save after the active workspace changes", async () => {

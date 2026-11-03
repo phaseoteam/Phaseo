@@ -101,3 +101,19 @@ export async function setGuardrailMembers(guardrailId: string, userIds: string[]
 	refresh();
 	return result;
 }
+
+export type GuardrailAssignmentChange = {
+	targetType: "key" | "member";
+	targetIds: string[];
+	addGuardrailIds?: string[];
+	removeGuardrailIds?: string[];
+};
+
+/** Adds or removes guardrails on many keys or members without touching their other assignments. */
+export async function updateGuardrailAssignments(change: GuardrailAssignmentChange, expectedWorkspaceId?: string) {
+	const context = await account(expectedWorkspaceId);
+	const result = await fetchAccountWebApi<{ success: true }>("/api/account/settings/guardrails/assignments", context.accessToken, { method: "PATCH", body: JSON.stringify({ ...change, workspaceId: context.workspaceId }) });
+	refresh();
+	revalidatePath("/settings/keys");
+	return result;
+}

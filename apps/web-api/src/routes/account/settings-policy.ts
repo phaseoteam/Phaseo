@@ -42,7 +42,7 @@ function accountPolicyFromRow(row: any) {
 async function loadGuardrailReference(context: AccountWorkspaceContext) {
 	const [teamResult, keysResult, membersResult, providersResult, modelsResult] = await Promise.all([
 		context.client.from("workspaces").select("id,name").eq("id", context.workspaceId).maybeSingle(),
-		context.client.from("keys").select("id,name,prefix,status,created_at")
+		context.client.from("keys").select("id,name,prefix,status,created_at,created_by,oauth_user_id")
 			.eq("workspace_id", context.workspaceId).neq("status", "deleted")
 			.neq("name", "__chat_route_managed_key__").neq("name", SLACK_AGENT_MANAGED_KEY_NAME).order("created_at", { ascending: false }),
 		context.client.from("workspace_members").select("user_id,role,users(display_name)")
@@ -115,7 +115,8 @@ async function loadGuardrailReference(context: AccountWorkspaceContext) {
 				capabilities: capabilitiesByProviderModel.get(String((row as any).provider_model_id)) ?? [],
 			};
 		}),
-		keys: (keysResult.data ?? []).map((key) => ({ id: key.id, name: key.name, prefix: key.prefix, status: key.status })),
+		// The gateway applies the member guardrails of this user to the key, so the assignments view shows them as inherited.
+		keys: (keysResult.data ?? []).map((key) => ({ id: key.id, name: key.name, prefix: key.prefix, status: key.status, principalUserId: key.oauth_user_id ?? key.created_by ?? null })),
 		members: (membersResult.data ?? []).map((member: any) => ({
 			id: member.user_id,
 			name: member.users?.display_name ?? "Workspace member",
