@@ -1416,7 +1416,7 @@ app.whenReady().then(() => {
 			attachTerminal: (id, viewer, listener) => terminalService.attach(id, viewer, listener),
 			scripts: projectId => settingsProject(workspaceRuntime.store.getProjects(), projectId)?.settings?.scripts ?? [],
 			servers: chatId => span("thread.servers", undefined, () => threadServers(chatServerRoots(chatId))),
-			stopServer: (chatId, port) => stopThreadServer(chatServerRoots(chatId), port),
+			stopServer: (chatId, port, allowed) => stopThreadServer(chatServerRoots(chatId), port, allowed),
 		},
 	});
 	void phoneService.start().catch(() => {});

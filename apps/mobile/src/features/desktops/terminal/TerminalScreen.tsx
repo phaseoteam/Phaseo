@@ -16,9 +16,9 @@ import { Code } from "../Code";
 import { ConnectionNotice } from "../CodeThreadList";
 import { clientFor } from "../connections";
 import { useDesktop } from "../store";
-import { useTerminal, type TerminalSink } from "./hooks";
+import { useTerminal } from "./hooks";
 import { terminalPage } from "./terminalPage.generated";
-import { appendBlock, keyBar, pasteData, selectedLines, terminalContext, terminalStatus, withModifier, type Modifier } from "./terminalState";
+import { appendBlock, keyBar, pageOutput, pasteData, selectedLines, terminalContext, terminalStatus, withModifier, type Modifier } from "./terminalState";
 
 /**
  * A terminal on the computer, from a thread: xterm in a WebView (bundled, nothing loaded from the network) at the
@@ -44,16 +44,11 @@ type PageMessage = { type: "ready" } | { type: "lines"; lines: string[] };
 
 function TerminalView({ client, desktopId, chatId, terminalId, title }: { client: DesktopClient; desktopId: string; chatId: string; terminalId: string; title: string | null }) {
   const insets = useSafeAreaInsets();
-  const page = useRef<PageHandle>(null);
-  // Output waits here until the page has loaded xterm.
-  const ready = useRef(false);
-  const queued = useRef<string[]>([]);
-  const run = useCallback((code: string) => page.current?.injectJavaScript(`${code};true;`), []);
-  const sink = useMemo<TerminalSink>(() => ({
-    write: (data) => { if (!data) return; if (ready.current) run(`window.phaseoTerminal.write(${JSON.stringify(data)})`); else queued.current.push(data); },
-    reset: () => { queued.current = []; if (ready.current) run("window.phaseoTerminal.reset()"); },
-  }), [run]);
-  const { allowed, terminal, error, retry, send } = useTerminal(client, terminalId, sink);
+  const output = useMemo(() => pageOutput(), []);
+  const run = output.run;
+  // The page unmounts while terminals are off or the terminal can't be read; its next one starts unready.
+  const pageRef = useCallback((handle: PageHandle | null) => { output.page(handle); return () => output.page(null); }, [output]);
+  const { allowed, terminal, error, retry, send } = useTerminal(client, terminalId, output);
   const running = terminal?.status === "running";
   const name = terminal?.title ?? title ?? "Terminal";
 
@@ -85,18 +80,16 @@ function TerminalView({ client, desktopId, chatId, terminalId, title }: { client
   const foreground = String(useCSSVariable("--color-foreground") ?? "#fafafa");
   const muted = String(useCSSVariable("--color-muted") ?? "#27272a");
   const theme = JSON.stringify({ background, foreground, cursor: foreground, cursorAccent: background, selectionBackground: muted });
-  useEffect(() => { if (ready.current) run(`window.phaseoTerminal.theme(${theme})`); }, [run, theme]);
+  useEffect(() => { if (output.ready) run(`window.phaseoTerminal.theme(${theme})`); }, [output, run, theme]);
 
   const onMessage = useCallback((event: WebViewMessageEvent) => {
     let message: PageMessage;
     try { message = JSON.parse(event.nativeEvent.data) as PageMessage; } catch { return; }
     if (message.type === "ready") {
-      ready.current = true;
       run(`window.phaseoTerminal.theme(${theme})`);
-      const waiting = queued.current.join(""); queued.current = [];
-      if (waiting) run(`window.phaseoTerminal.write(${JSON.stringify(waiting)})`);
+      output.loaded();
     } else if (message.type === "lines") setLines(message.lines);
-  }, [run, theme]);
+  }, [output, run, theme]);
 
   const paste = async () => {
     const text = await Clipboard.getStringAsync().catch(() => "");
@@ -138,8 +131,9 @@ function TerminalView({ client, desktopId, chatId, terminalId, title }: { client
         {error && !terminal ? <ErrorState className="flex-1" error={new Error(error.message)} onRetry={retry} /> : (
           <View className="flex-1" style={{ backgroundColor: background }}>
             <Page
-              ref={page}
+              ref={pageRef}
               source={{ html: terminalPage }}
+              onLoadStart={output.unloaded}
               // The page is the bundled one; it never navigates anywhere, so a link printed in a terminal can't open in it.
               originWhitelist={["about:blank", "data:*"]}
               onShouldStartLoadWithRequest={(request) => request.url === "about:blank" || request.url.startsWith("data:")}

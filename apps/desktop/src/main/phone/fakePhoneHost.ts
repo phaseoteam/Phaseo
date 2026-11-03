@@ -114,6 +114,8 @@ export function fakePhoneHost() {
 		service: new TerminalService(terminalStore, "/scratch/terminals", spawn), ptys,
 		/** The servers each chat runs (Stop takes one off). Scripts live on the project's settings, as the window's do. */
 		servers: new Map<string, ThreadServer[]>(),
+		/** Stop's lookup of the server; a test can hold it open. */
+		lookup: async () => {},
 		setScripts: (projectId: string, scripts: ProjectScript[]) => { const project = projects.find(value => value.id === projectId)!; project.settings = { ...project.settings, scripts }; },
 	};
 	const host: PhoneHost = {
@@ -206,9 +208,11 @@ export function fakePhoneHost() {
 		attachTerminal: (id, viewer, listener) => terminals.service.attach(id, viewer, listener),
 		scripts: projectId => settingsProject(projects, projectId)?.settings?.scripts ?? [],
 		servers: async chatId => terminals.servers.get(chatId) ?? [],
-		stopServer: async (chatId, port) => {
+		stopServer: async (chatId, port, allowed) => {
+			await terminals.lookup();
 			const servers = terminals.servers.get(chatId) ?? [], server = servers.find(value => value.port === port);
 			if (!server) throw new Error("That server is no longer running from this chat.");
+			allowed();
 			terminals.servers.set(chatId, servers.filter(value => value !== server));
 			return server;
 		},

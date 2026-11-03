@@ -2,7 +2,32 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { phoneLimits } from "../protocol";
 import { terminalPage } from "./terminalPage.generated";
-import { appendBlock, inputChunks, pasteData, selectedLines, terminalContext, terminalStatus, usesTerminals, withModifier } from "./terminalState";
+import { appendBlock, inputChunks, pageOutput, pasteData, selectedLines, terminalContext, terminalStatus, usesTerminals, withModifier } from "./terminalState";
+
+describe("terminal page output", () => {
+  test("holds output until the page is ready, and again for a page mounted after the last went away", () => {
+    const injected: string[] = [];
+    const page = { injectJavaScript: (code: string) => { injected.push(code); } };
+    const output = pageOutput();
+    output.page(page);
+    output.write("$ ");
+    expect(injected).toEqual([]);
+    output.loaded();
+    expect(injected).toEqual(['window.phaseoTerminal.write("$ ");true;']);
+    // Terminals switched off: the page unmounts. Switched on again: the replay arrives before the new page is ready.
+    output.page(null);
+    output.page(page);
+    output.reset();
+    output.write("replay");
+    expect(injected).toHaveLength(1);
+    output.loaded();
+    expect(injected.at(-1)).toBe('window.phaseoTerminal.write("replay");true;');
+    // A page that reloads in place is unready until it says otherwise.
+    output.unloaded();
+    output.write("more");
+    expect(injected).toHaveLength(2);
+  });
+});
 
 describe("terminal on the phone", () => {
   test("shows only with protocol 7, Read code and Use terminals", () => {

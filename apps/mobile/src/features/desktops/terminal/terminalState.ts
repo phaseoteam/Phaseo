@@ -67,3 +67,25 @@ export function selectedLines(lines: readonly string[], from: number, to: number
   const [start, end] = from <= to ? [from, to] : [to, from];
   return lines.slice(start, end + 1).join("\n");
 }
+
+/**
+ * The terminal page and its output, held until the page in view has loaded xterm. A page that goes away or starts
+ * loading again has lost what it was given, so output waits again until that page says it's ready.
+ */
+export function pageOutput() {
+  let page: { injectJavaScript(code: string): void } | null = null, ready = false, queued: string[] = [];
+  const run = (code: string) => page?.injectJavaScript(`${code};true;`);
+  return {
+    run,
+    get ready() { return ready; },
+    page(handle: typeof page) { page = handle; if (!handle) ready = false; },
+    write(data: string) { if (!data) return; if (ready) run(`window.phaseoTerminal.write(${JSON.stringify(data)})`); else queued.push(data); },
+    reset() { queued = []; if (ready) run("window.phaseoTerminal.reset()"); },
+    loaded() {
+      ready = true;
+      const waiting = queued.join(""); queued = [];
+      if (waiting) run(`window.phaseoTerminal.write(${JSON.stringify(waiting)})`);
+    },
+    unloaded() { ready = false; },
+  };
+}

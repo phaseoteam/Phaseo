@@ -161,11 +161,29 @@ describe("phone terminals", () => {
 		expect(await ask({ type: "stop_server", chatId: "c1", port: 5173 })).toMatchObject({ ok: true, result: { servers: [{ port: 3000 }] } });
 		expect(app.git.notes.at(-1)).toEqual({ device: "Daniel's Pixel", summary: "Stopped node.exe on port 5173", projectId: "pt" });
 		expect(await ask({ type: "stop_server", chatId: "c1", port: 5173 })).toMatchObject({ ok: false, error: { code: "rejected", message: "That server is no longer running from this chat." } });
-		// Switched off while the stop runs: it happened, so the window hears; the phone gets no list.
+		// Switched off after the kill: it happened, so the window hears; the phone gets no list.
 		const stop = app.host.stopServer;
-		app.host.stopServer = async (chatId, port) => { const server = await stop(chatId, port); allow(["code"]); return server; };
+		app.host.stopServer = async (chatId, port, allowed) => { const server = await stop(chatId, port, allowed); allow(["code"]); return server; };
 		expect(await ask({ type: "stop_server", chatId: "c1", port: 3000 })).toMatchObject({ ok: false, error: { code: "forbidden" } });
 		expect(app.git.notes.at(-1)).toMatchObject({ summary: "Stopped the server on port 3000" });
+	});
+
+	it("kills nothing when Use terminals goes off, or the phone is removed, while Stop looks the server up", async () => {
+		for (const revoke of ["switched off", "removed"] as const) {
+			const { app, hub, ask, allow } = await connected();
+			const server = { port: 5173, url: "http://localhost:5173/", pid: 4242, startedBy: "Terminal 1" };
+			app.terminals.servers.set("c1", [server]);
+			let release = () => {};
+			app.terminals.lookup = () => new Promise<void>(resolve => { release = resolve; });
+			const answer = ask({ type: "stop_server", chatId: "c1", port: 5173 });
+			await Promise.resolve();
+			if (revoke === "switched off") allow(["code"]); else hub.closeDevice("dev");
+			release();
+			const response = await answer;
+			if (revoke === "switched off") expect(response).toMatchObject({ ok: false, error: { code: "forbidden" } });
+			expect(app.terminals.servers.get("c1")).toEqual([server]);
+			expect(app.git.notes.some(note => note.summary.startsWith("Stopped"))).toBe(false);
+		}
 	});
 });
 

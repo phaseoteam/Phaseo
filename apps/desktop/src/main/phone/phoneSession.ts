@@ -74,7 +74,8 @@ export type PhoneHost = {
 	scripts: (projectId: string) => readonly ProjectScript[];
 	/** The local servers a chat started, as its Running servers lists them, and Stop for one (threadServers). */
 	servers: (chatId: string) => Promise<ThreadServer[]>;
-	stopServer: (chatId: string, port: number) => Promise<ThreadServer>;
+	/** `allowed` throws if the phone lost the right to Stop while the server was looked up; it runs just before the kill. */
+	stopServer: (chatId: string, port: number, allowed: () => void) => Promise<ThreadServer>;
 };
 export type PhoneDevice = { id: string; name: string };
 const forbidden = () => new PhoneProtocolError("forbidden", "Allow this on the computer: Settings → Phone.");
@@ -408,7 +409,8 @@ export class PhoneSession {
 			case "stop_server": {
 				const chat = this.terminalChat(request.chatId);
 				// stopThreadServer looks the port up again among the chat's own servers, so a port that changed hands is left alone.
-				const stopped = await this.host.stopServer(chat.id, request.port);
+				// Checked again after the lookup, so a phone switched off or removed meanwhile kills nothing.
+				const stopped = await this.host.stopServer(chat.id, request.port, () => { if (this.closed) throw forbidden(); this.allowed("code"); this.allowed("terminal"); });
 				// It happened, so the window hears of it even if the phone loses the right to the answer.
 				this.host.fromPhone({ device: this.device.name, summary: `Stopped ${stopped.process ?? "the server"} on port ${stopped.port}`, ...chat.projectId ? { projectId: chat.projectId } : {} });
 				const servers = await this.host.servers(chat.id);

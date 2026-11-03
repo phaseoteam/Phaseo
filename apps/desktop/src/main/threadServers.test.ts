@@ -1,5 +1,12 @@
-import { describe, expect, it } from "vitest";
-import { descendants, threadServersFrom } from "./threadServers";
+import { execFile } from "node:child_process";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { listeningPorts } from "./browserLocalServers";
+import { readProcessTable } from "./terminalProcesses";
+import { descendants, stopThreadServer, threadServersFrom } from "./threadServers";
+
+vi.mock("node:child_process", () => ({ execFile: vi.fn((_file: string, _args: string[], _options: object, done: (error: Error | null) => void) => done(null)) }));
+vi.mock("./browserLocalServers", async original => ({ ...await original<object>(), listeningPorts: vi.fn() }));
+vi.mock("./terminalProcesses", async original => ({ ...await original<object>(), readProcessTable: vi.fn() }));
 
 const row = (pid: number, ppid: number, name = "node.exe") => ({ pid, ppid, name });
 // Electron (1) runs two chats' terminals (10, 20); chat A's shell runs pnpm (11), which runs vite (12).
@@ -20,5 +27,26 @@ describe("a chat's servers", () => {
 	it("stops a server's children before the server", () => {
 		expect(descendants(table, 11)).toEqual([13, 12]);
 		expect(descendants(table, 13)).toEqual([]);
+	});
+});
+
+describe("Stop", () => {
+	afterEach(() => { vi.restoreAllMocks(); vi.mocked(execFile).mockClear(); });
+
+	it("asks whether it may, after the lookup, and kills nothing when it may not", async () => {
+		const kill = vi.spyOn(process, "kill").mockImplementation(() => true);
+		vi.mocked(readProcessTable).mockResolvedValue(table);
+		let allowed = true;
+		// Access goes while the ports are read.
+		vi.mocked(listeningPorts).mockImplementation(async () => { allowed = false; return [{ host: "127.0.0.1", port: 5173, pid: 12, process: "node" }]; });
+		const check = () => { if (!allowed) throw new Error("forbidden"); };
+		await expect(stopThreadServer([{ pid: 10, label: "Dev server" }], 5173, check)).rejects.toThrow("forbidden");
+		expect(execFile).not.toHaveBeenCalled();
+		expect(kill).not.toHaveBeenCalled();
+		// Still allowed: it stops the server as before.
+		vi.mocked(listeningPorts).mockResolvedValue([{ host: "127.0.0.1", port: 5173, pid: 12, process: "node" }]);
+		allowed = true;
+		await expect(stopThreadServer([{ pid: 10, label: "Dev server" }], 5173, check)).resolves.toMatchObject({ port: 5173, pid: 12 });
+		expect(vi.mocked(execFile).mock.calls.length + kill.mock.calls.length).toBeGreaterThan(0);
 	});
 });
