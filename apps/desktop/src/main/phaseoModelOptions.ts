@@ -2,6 +2,7 @@ import type { ModelOptionDescriptor, ModelOptionValues } from "../shared/workspa
 
 // Mirrors the web chat's reasoningEffortSupport.ts and serviceTierSupport.ts for /v1/models parameter_details.
 const record = (value: unknown): Record<string, unknown> | undefined => value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
+const text = (value: unknown) => typeof value === "string" && value.trim() ? value.trim() : undefined;
 const efforts = { none: "None", instant: "Instant", minimal: "Minimal", low: "Low", medium: "Medium", high: "High", xhigh: "Extra High", max: "Max" } as const;
 const tiers = { standard: "Standard", priority: "Fast", ultrafast: "Ultrafast", flex: "Flex" } as const;
 type Support = { values: string[]; default?: string };
@@ -61,8 +62,16 @@ export function phaseoModelOptions(model: Record<string, unknown>): ModelOptionD
 	const routable = (Array.isArray(model.offers) ? model.offers : []).flatMap(offer => record(offer)?.routable === true ? [record(offer)!] : []);
 	const listed = routable.filter(offer => Array.isArray(offer.service_tiers));
 	const speeds = new Set(listed.length ? listed.flatMap(offer => parseList(offer.service_tiers, parseTier, Object.keys(tiers))) : routes.flatMap(tierValues));
+	// Slowest to fastest, each saying what it is and, when not every provider has it, which ones serve it:
+	// asking for a tier routes only to providers that offer it.
 	const extra = (["priority", "ultrafast", "flex"] as const).filter(tier => speeds.has(tier));
-	if (extra.length) options.push({ id: "speed", label: "Speed", type: "select", options: [{ id: "standard", label: tiers.standard, isDefault: true }, ...extra.map(id => ({ id, label: tiers[id] }))] });
+	const servedBy = (tier: string) => {
+		if (!listed.length) return "";
+		const names = [...new Set(listed.filter(offer => parseList(offer.service_tiers, parseTier, Object.keys(tiers)).includes(tier)).map(offer => text(record(offer.provider)?.name) ?? text(record(offer.provider)?.id) ?? ""))].filter(Boolean);
+		return names.length && names.length < routable.length ? ` Only through ${names.length > 3 ? `${names.slice(0, 3).join(", ")} and ${names.length - 3} more` : names.join(names.length === 2 ? " and " : ", ")}.` : "";
+	};
+	const about = { flex: "Slower and cheaper, when providers have spare capacity.", standard: "The provider's usual speed and price.", priority: "Served ahead of standard traffic, at the provider's Fast price.", ultrafast: "The provider's quickest processing, at its Ultrafast price." } as const;
+	if (extra.length) options.push({ id: "speed", label: "Speed", type: "select", options: (["flex", "standard", "priority", "ultrafast"] as const).filter(id => id === "standard" || speeds.has(id)).map(id => ({ id, label: tiers[id], description: `${about[id]}${id === "standard" ? "" : servedBy(id)}`, ...(id === "standard" ? { isDefault: true } : {}) })) });
 	return options;
 }
 

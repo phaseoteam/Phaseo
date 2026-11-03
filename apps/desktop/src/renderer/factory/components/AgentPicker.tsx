@@ -5,6 +5,7 @@ import { cn } from "../../lib/utils";
 import { AgentMark, harnessName } from "./Marks";
 import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover";
 import { Tip } from "../../components/ui/tooltip";
+import { effortHints } from "../../lib/effortHints";
 
 const BILLING: Record<Billing, string> = { subscription: "Subscription", api: "API credits" };
 
@@ -40,15 +41,6 @@ export function effortLabel(effort: string) {
 }
 
 /** What each level is for, under its name in the effort menu. */
-const EFFORT_HINT: Record<string, string> = {
-	minimal: "Barely thinks first",
-	low: "Quick answers to simple work",
-	medium: "Balanced speed and depth",
-	high: "Thinks hard on most work",
-	xhigh: "Longer thinking for tricky work",
-	max: "Thinks as long as it needs",
-	ultra: "The deepest thinking it offers",
-};
 
 /** "xhigh" is too long for a segment; the rest fit as they are. */
 function effortShort(effort: string) {
@@ -77,7 +69,7 @@ function EffortRow({ agent, effort }: { agent: AgentProfile; effort: ItemEffort 
 	const levels = agent.efforts ?? [];
 	const focus = hovered ?? chosen ?? "";
 	const hint = focus
-		? `${effortLabel(focus)}${focus === agent.defaultEffort ? " (default)" : ""}: ${EFFORT_HINT[focus] ?? "As the tool defines it"}`
+		? `${effortLabel(focus)}${focus === agent.defaultEffort ? " (default)" : ""}: ${effortHints[focus] ?? "As the tool defines it"}`
 		: own ? `Auto uses ${effortLabel(own)}, from ${agent.effort ? "Settings" : agent.label}` : `Auto uses whatever ${agent.label} does`;
 	return <div className="shrink-0 border-t border-border/70 bg-muted/40 px-3 pt-2 pb-2.5">
 		<div className="mb-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">

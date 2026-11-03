@@ -1,5 +1,7 @@
 import { Check } from "lucide-react";
 import { cn } from "../lib/utils";
+import { Tip } from "../components/ui/tooltip";
+import { effortHints } from "../lib/effortHints";
 import type { ModelOption, ModelOptionDescriptor } from "../../shared/workspace";
 import type { ModelSelection } from "../lib/modelPreferences";
 import { rememberSettings } from "../lib/modelSettings";
@@ -128,12 +130,16 @@ export function ModelSettingsColumn({ selection, descriptors, onChange }: { sele
 			const value = String(current(selection, descriptor));
 			return <div key={descriptor.id} role="radiogroup" aria-label={descriptor.label} className="flex flex-col gap-0.5">
 				<p className="px-2 pb-1.5 text-xs text-muted-foreground/80">{descriptor.label}</p>
-				{choicesOf(descriptor).map(option => <button key={option.id} type="button" role="radio" aria-checked={value === option.id} title={option.description}
-					onClick={() => pick(selection, descriptor, option.id, onChange)}
-					className="flex h-8 w-full shrink-0 items-center gap-2 rounded-sm px-2 text-left text-sm text-foreground outline-none hover:bg-foreground/[0.09] focus-visible:bg-foreground/[0.09]">
-					<span className="min-w-0 flex-1 truncate">{option.label}</span>
-					<Check className={cn("size-3.5 shrink-0", value !== option.id && "invisible")} />
-				</button>)}
+				{choicesOf(descriptor).map(option => {
+					const hint = option.description ?? (isReasoning(descriptor) ? effortHints[option.id] : undefined);
+					const row = <button key={option.id} type="button" role="radio" aria-checked={value === option.id} aria-description={hint}
+						onClick={() => pick(selection, descriptor, option.id, onChange)}
+						className="flex h-8 w-full shrink-0 items-center gap-2 rounded-sm px-2 text-left text-sm text-foreground outline-none hover:bg-foreground/[0.09] focus-visible:bg-foreground/[0.09]">
+						<span className="min-w-0 flex-1 truncate">{option.label}</span>
+						<Check className={cn("size-3.5 shrink-0", value !== option.id && "invisible")} />
+					</button>;
+					return hint ? <Tip key={option.id} label={hint} side="right">{row}</Tip> : row;
+				})}
 			</div>;
 		})}
 	</div>;
@@ -149,11 +155,13 @@ export function SpeedSegments({ selection, descriptors, onChange }: { selection:
 			const checked = value === option.id, tier = speedTier(descriptor, descriptor.type === "boolean" ? option.id === "true" : option.id);
 			// A chosen tier reads like the web's tier badge: its colour on a tint of it.
 			const tone = tier ?? (option.id === "flex" ? "flex" : undefined);
-			return <button key={option.id} type="button" role="radio" aria-checked={checked} data-checked={checked || undefined} title={option.description}
+			const hint = option.description ?? (option.id === "true" ? "Faster output at the model's Fast price" : option.id === "false" ? "The model's usual speed and price" : undefined);
+			const segment = <button key={option.id} type="button" role="radio" aria-checked={checked} data-checked={checked || undefined} aria-description={hint}
 				onClick={() => pick(selection, descriptor, option.id, onChange)}
 				className={cn("flex h-6 cursor-pointer items-center justify-center gap-1 px-2 text-xs text-muted-foreground outline-none first:rounded-l-md last:rounded-r-md hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset", checked && (tone ? cn(tierBadge[tone], tierText[tone], "hover:text-current") : "bg-input/72 text-foreground"))}>
 				{tier && <SpeedGlyph tier={tier} />}{option.label}
 			</button>;
+			return hint ? <Tip key={option.id} label={hint} side="top">{segment}</Tip> : segment;
 		})}
 	</div>;
 }

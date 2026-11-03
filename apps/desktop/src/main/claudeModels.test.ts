@@ -29,6 +29,17 @@ describe("claude models", () => {
 		expect(ids).toContain("claude-fable-5");
 	});
 
+	it("offers only the levels and Fast mode Claude Code reports for a known model", () => {
+		const reported = { id: "opus", name: "Opus", description: "Opus 5.5 · Best for everyday, complex tasks", resolvedModel: "claude-opus-5-5", supportsEffort: true, supportedEffortLevels: ["low", "medium", "high"], supportsFastMode: false };
+		const [opus] = claudeModelsFor([reported], "2.1.296");
+		const effort = opus.options?.find(option => option.id === "effort");
+		// Extra High, Max and Ultracode (which sends Extra High) go; Ultrathink is a prompt, so it stays.
+		expect(effort?.type === "select" && effort.options.map(option => option.id)).toEqual(["low", "medium", "high", "ultrathink"]);
+		expect(opus.options?.some(option => option.id === "fastMode")).toBe(false);
+		const [unreported] = claudeModelsFor([{ ...reported, supportedEffortLevels: undefined, supportsEffort: undefined, supportsFastMode: undefined }], "2.1.296");
+		expect(unreported.options?.map(option => option.id)).toEqual(["effort", "fastMode", "contextWindow"]);
+	});
+
 	it("keeps an alias it cannot parse", () => {
 		expect(claudeModelsFor([{ id: "custom", name: "Custom", description: "Something new" }], "2.1.296")[0]).toEqual({ id: "custom", name: "Custom", description: "Something new" });
 	});

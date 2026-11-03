@@ -16,6 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popove
 import { Tooltip, TooltipContent, TooltipTrigger } from "../components/ui/tooltip";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { useCommand } from "../lib/keybindings";
+import { useModelPopularity } from "../lib/modelPopularity";
 import { ModelSettingsColumn, SettingsSuffix, SpeedSegments, speedIds, useSettingDescriptors } from "./ModelSettings";
 
 export const harnessNames: Record<Harness, string> = { phaseo: "Phaseo", codex: "Codex", claude: "Claude Code", opencode: "OpenCode", pi: "Pi", cursor: "Cursor", grok: "Grok", antigravity: "Antigravity", acp: "Agent" };
@@ -75,11 +76,17 @@ const inGroup = (entry: Entry, group: Group, favourites: Set<string>) => group =
 	: group.startsWith("lab:") ? entry.harness === "phaseo" && labOf(entry) === group.slice(4)
 	: entry.harness === group;
 const isPhaseoGroup = (group: Group) => group === "phaseo" || group.startsWith("lab:");
-/** Phaseo's labs for the left column, the ones with the most models first. */
-export function phaseoLabGroups(models: Pick<ModelOption, "id" | "organisationId" | "organisationName">[]): GroupEntry[] {
-	const labs = new Map<string, { label: string; count: number }>();
-	for (const model of models) { const lab = labOf({ model } as Entry); if (lab) labs.set(lab, { label: model.organisationName ?? lab, count: (labs.get(lab)?.count ?? 0) + 1 }); }
-	return [...labs].sort((a, b) => b[1].count - a[1].count || a[1].label.localeCompare(b[1].label)).map(([lab, value]) => ({ id: `lab:${lab}` as const, label: value.label, lab }));
+/**
+ * Phaseo's labs for the left column: the most used first (their models' tokens this past week, as the website ranks
+ * models), then those with the most models, then by name.
+ */
+export function phaseoLabGroups(models: Pick<ModelOption, "id" | "organisationId" | "organisationName">[], popularity?: ReadonlyMap<string, number>): GroupEntry[] {
+	const labs = new Map<string, { label: string; count: number; tokens: number }>();
+	for (const model of models) {
+		const lab = labOf({ model } as Entry), current = labs.get(lab);
+		if (lab) labs.set(lab, { label: model.organisationName ?? lab, count: (current?.count ?? 0) + 1, tokens: (current?.tokens ?? 0) + (popularity?.get(model.id) ?? 0) });
+	}
+	return [...labs].sort((a, b) => b[1].tokens - a[1].tokens || b[1].count - a[1].count || a[1].label.localeCompare(b[1].label)).map(([lab, value]) => ({ id: `lab:${lab}` as const, label: value.label, lab }));
 }
 const entryKey = (harness: Harness, id: string) => `${harness}:${id}`;
 /** A picked model starts from the settings last chosen for it; unset settings follow the harness default. */
@@ -167,13 +174,14 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	const all = useMemo(() => harnesses.flatMap(harness => catalogs[harness]?.entries ?? []), [harnesses, catalogs]);
 	const visible = useMemo(() => all.filter(entry => entry.harness !== "phaseo" || ((!filters.free || entry.model.id.endsWith(":free")) && (!filters.new || Date.now() - released(entry) <= twoWeeks))), [all, filters]);
 	const favouriteSet = useMemo(() => new Set(favourites), [favourites]);
+	const popularity = useModelPopularity(open && harnesses.includes("phaseo"));
 	const groups = useMemo((): GroupEntry[] => {
 		return [
 			{ id: "favourites", label: "Favourites" },
 			...harnesses.filter(harness => harness !== "phaseo").map(harness => ({ id: harness, label: harnessNames[harness] })),
-			...harnesses.includes("phaseo") ? [{ id: "phaseo" as const, label: "All Phaseo models" }, ...phaseoLabGroups((catalogs.phaseo?.entries ?? []).map(entry => entry.model))] : [],
+			...harnesses.includes("phaseo") ? [{ id: "phaseo" as const, label: "All Phaseo models" }, ...phaseoLabGroups((catalogs.phaseo?.entries ?? []).map(entry => entry.model), popularity)] : [],
 		];
-	}, [catalogs.phaseo?.entries, harnesses]);
+	}, [catalogs.phaseo?.entries, harnesses, popularity]);
 	const active: Group = groups.some(value => value.id === group) ? group : groups[1]?.id ?? "favourites";
 	const isSelected = (entry: Entry) => selections.some(value => sameSelection(value, { harness: entry.harness, accountId: entry.accountId, model: entry.model.id }));
 
@@ -194,6 +202,9 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 			return here.length ? [{ heading, harness, older, entries: showOlder[harness] ? here : here.filter(entry => !entry.model.legacy) }] : [];
 		}
 		const result: Section[] = [];
+		// All of Phaseo opens on what people use most this week, then every model by release month.
+		const used = active === "phaseo" && popularity ? here.filter(entry => popularity.has(entry.model.id)).sort((a, b) => popularity.get(b.model.id)! - popularity.get(a.model.id)!).slice(0, 8) : [];
+		if (used.length) result.push({ heading: "Most used this week", entries: used });
 		const months = new Map<string, Entry[]>();
 		for (const entry of [...here].sort((a, b) => released(b) - released(a))) {
 			const time = released(entry);
@@ -202,7 +213,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 		}
 		for (const [heading, entries] of months) result.push({ heading, entries });
 		return result;
-	}, [normalized, ranked, visible, active, favouriteSet, groups, showOlder]);
+	}, [normalized, ranked, visible, active, favouriteSet, groups, showOlder, popularity]);
 
 	const rows = useMemo(() => sections.flatMap((section): Row[] => [
 		{ type: "heading", key: `heading:${section.heading}`, heading: section.heading },

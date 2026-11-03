@@ -24,6 +24,8 @@ describe("the picker's left column", () => {
 			{ id: "lab:anthropic", label: "Anthropic", lab: "anthropic" },
 			{ id: "lab:mistral", label: "mistral", lab: "mistral" },
 		]);
+		// This week's use comes first: one busy Mistral model outranks OpenAI's two quiet ones.
+		expect(phaseoLabGroups(models, new Map([["mistral/large-4", 900_000], ["openai/gpt-6-luna", 10]])).map(group => group.lab)).toEqual(["mistral", "openai", "anthropic"]);
 	});
 });
 

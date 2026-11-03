@@ -64,6 +64,18 @@ function reportedProfile(alias: ClaudeAlias): Profile {
 
 const profileFor = (id: string) => profiles[claudeModelManifest.find(model => model.id === id)?.profile ?? ""];
 
+/**
+ * What Claude Code reports about a model narrows its manifest profile, so the picker offers only levels it accepts:
+ * a level stays when the effort it sends is reported (Ultracode sends Extra High; Ultrathink is a prompt, so it stays
+ * while any level does), and Fast mode follows the report.
+ */
+function withReported(profile: Profile, alias: ClaudeAlias): Profile {
+	const levels = alias.supportsEffort === false ? [] : alias.supportedEffortLevels;
+	const sends = (effort: Effort) => { const mapped = profile.effortMap?.[effort]; return mapped === null ? null : mapped ?? effort; };
+	const effort = levels ? profile.effort.filter(id => { const sent = sends(id); return sent === null ? levels.length > 0 : levels.includes(sent); }) : profile.effort;
+	return { ...profile, effort, defaultEffort: profile.defaultEffort && effort.includes(profile.defaultEffort) ? profile.defaultEffort : undefined, ...(alias.supportsFastMode !== undefined ? { fastMode: alias.supportsFastMode } : {}) };
+}
+
 function compareVersions(left: string, right: string) {
 	const a = left.split(".").map(Number), b = right.split(".").map(Number);
 	for (let index = 0; index < Math.max(a.length, b.length); index++) {
@@ -87,7 +99,7 @@ export function claudeModelsFor(aliases: ClaudeAlias[], installedVersion?: strin
 		if (!id) { current.push({ id: alias.id, name: alias.name, description: alias.description }); continue; }
 		if (current.some(model => model.id === id)) continue;
 		const name = match ? `Claude ${described}` : claudeModelManifest.find(model => model.id === id)?.name ?? alias.name;
-		current.push(withOptions({ id, name, description: match ? details.find(detail => !detail.startsWith("$")) : alias.description }, profileFor(id) ?? reportedProfile(alias)));
+		current.push(withOptions({ id, name, description: match ? details.find(detail => !detail.startsWith("$")) : alias.description }, profileFor(id) ? withReported(profileFor(id)!, alias) : reportedProfile(alias)));
 	}
 	const known = new Set(current.map(model => model.id));
 	const older = claudeModelManifest.filter(model => !known.has(model.id) && supported(model.minVersion)).map(model => withOptions({ id: model.id, name: model.name, legacy: true }, profiles[model.profile]));
