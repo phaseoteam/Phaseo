@@ -7,7 +7,8 @@ const WORKSPACE = "00000000-0000-4000-8000-000000000001";
 const state = {
 	rpcCalls: [] as Array<{ name: string; args: any }>,
 	tables: [] as string[],
-	claim: { ok: true, reason: null as string | null, amount_nanos: 19_000_000_000 },
+	claim: { ok: true, reason: null as string | null, amount_nanos: 19_000_000_000, claim_ref_id: "self_serve_claim:pi_1:c1" as string | null },
+	claimError: null as { message: string } | null,
 	refundsCreate: jest.fn(),
 };
 
@@ -36,7 +37,9 @@ jest.mock("@/utils/supabase/admin", () => ({
 		},
 		rpc: async (name: string, args: any) => {
 			state.rpcCalls.push({ name, args });
-			if (name === "stripe_claim_self_serve_refund") return { data: [state.claim], error: null };
+			if (name === "stripe_claim_self_serve_refund") {
+				return state.claimError ? { data: null, error: state.claimError } : { data: [state.claim], error: null };
+			}
 			return { data: [{ applied: false }], error: null };
 		},
 	}),
@@ -66,13 +69,14 @@ beforeAll(() => {
 beforeEach(() => {
 	state.rpcCalls = [];
 	state.tables = [];
-	state.claim = { ok: true, reason: null, amount_nanos: 19_000_000_000 };
+	state.claim = { ok: true, reason: null, amount_nanos: 19_000_000_000, claim_ref_id: "self_serve_claim:pi_1:c1" };
+	state.claimError = null;
 	state.refundsCreate = jest.fn(async () => ({ id: "re_1", amount: 2000, status: "succeeded" }));
 });
 
 describe("self-serve refund route", () => {
 	it("refuses without creating a Stripe refund when the SQL claim says the credits were used", async () => {
-		state.claim = { ok: false, reason: "lot_used", amount_nanos: 0 };
+		state.claim = { ok: false, reason: "lot_used", amount_nanos: 0, claim_ref_id: null };
 		const response = await request();
 		expect(response.status).toBe(409);
 		await expect(response.json()).resolves.toEqual({ error: "This top-up has already been used, so it is not eligible for self-serve refund." });
@@ -92,7 +96,7 @@ describe("self-serve refund route", () => {
 		]);
 		expect(state.refundsCreate).toHaveBeenCalledWith(
 			expect.objectContaining({ payment_intent: "pi_1", amount: 2000 }),
-			{ idempotencyKey: `self_serve_refund:${WORKSPACE}:pi_1` },
+			{ idempotencyKey: `self_serve_refund:${WORKSPACE}:self_serve_claim:pi_1:c1` },
 		);
 		expect(state.tables).not.toContain("gateway_requests");
 	});
@@ -103,5 +107,28 @@ describe("self-serve refund route", () => {
 		expect(response.status).toBe(500);
 		expect(state.rpcCalls.map((call) => call.name)).toEqual(["stripe_claim_self_serve_refund", "stripe_apply_refund_once"]);
 		expect(state.rpcCalls[1].args).toEqual({ p_workspace_id: WORKSPACE, p_payment_intent_id: "pi_1", p_refund_id: null, p_refund_net_nanos: null, p_status: "failed" });
+	});
+
+	it("uses a new Stripe idempotency key for each claim, so a retry after a failed refund creates a new refund", async () => {
+		await request();
+		state.claim = { ...state.claim, claim_ref_id: "self_serve_claim:pi_1:c2" };
+		await request();
+		const keys = state.refundsCreate.mock.calls.map((call: any[]) => call[1].idempotencyKey);
+		expect(keys).toEqual([
+			`self_serve_refund:${WORKSPACE}:self_serve_claim:pi_1:c1`,
+			`self_serve_refund:${WORKSPACE}:self_serve_claim:pi_1:c2`,
+		]);
+	});
+
+	it("returns a retryable error without calling Stripe when the claim outcome is unknown", async () => {
+		state.claimError = { message: "upstream request timeout" };
+		const response = await request();
+		expect(response.status).toBe(503);
+		await expect(response.json()).resolves.toEqual({
+			error: "We couldn't confirm your refund request, and no refund was sent. Please try again in 15 minutes.",
+		});
+		expect(state.refundsCreate).not.toHaveBeenCalled();
+		// A committed claim can't be told apart from a concurrent request's, so nothing is released here.
+		expect(state.rpcCalls.map((call) => call.name)).toEqual(["stripe_claim_self_serve_refund"]);
 	});
 });

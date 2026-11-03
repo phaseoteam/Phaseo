@@ -27,6 +27,8 @@ const CLAIM_REJECTIONS: Record<string, { error: string; status: number }> = {
     wallet_not_found: { error: "Wallet not found", status: 404 },
 };
 const DEFAULT_CLAIM_REJECTION = { error: "This purchase is not eligible for self-serve refund.", status: 409 };
+const CLAIM_UNCERTAIN_ERROR =
+    "We couldn't confirm your refund request, and no refund was sent. Please try again in 15 minutes.";
 
 function parsePaymentIntentId(body: any): string | null {
     const value = body?.paymentIntentId ?? body?.payment_intent_id ?? null;
@@ -73,9 +75,20 @@ export async function POST(req: NextRequest) {
             p_payment_intent_id: paymentIntentId,
             p_user_id: userId,
         });
-        if (claimErr) throw claimErr;
+        if (claimErr) {
+            // The claim may have committed even though its response was lost. No Stripe refund is
+            // created, and the claim can't be told apart from a concurrent request's, so it isn't
+            // released here: the next claim after 15 minutes gives an unlinked claim back
+            // (stripe_claim_self_serve_refund).
+            console.error("[refund.request] refund claim outcome unknown", {
+                workspaceId,
+                paymentIntentId,
+                error: claimErr.message,
+            });
+            return NextResponse.json({ error: CLAIM_UNCERTAIN_ERROR }, { status: 503 });
+        }
         const claim = (Array.isArray(claimRows) ? claimRows[0] : claimRows) as
-            | { ok?: boolean; reason?: string | null; amount_nanos?: number | string | null }
+            | { ok?: boolean; reason?: string | null; amount_nanos?: number | string | null; claim_ref_id?: string | null }
             | null
             | undefined;
         if (!claim?.ok) {
@@ -83,6 +96,8 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: rejection.error }, { status: rejection.status });
         }
         const refundNetNanos = Number(claim.amount_nanos ?? 0);
+        // One Stripe refund per claim: a retry after a failed refund must not get the old refund back.
+        const claimRefId = String(claim.claim_ref_id ?? "").trim() || `self_serve_claim:${paymentIntentId}:${crypto.randomUUID()}`;
 
         // Gives the claimed credits back when no Stripe refund was created.
         const releaseClaim = async () => {
@@ -143,10 +158,11 @@ export async function POST(req: NextRequest) {
                         stripe_customer_id: customerId,
                         user_reason: refundReasonLabel,
                         user_reason_code: refundReasonCode,
+                        refund_claim_id: claimRefId,
                     },
                 },
                 {
-                    idempotencyKey: `self_serve_refund:${workspaceId}:${paymentIntentId}`,
+                    idempotencyKey: `self_serve_refund:${workspaceId}:${claimRefId}`,
                 }
             );
         } catch (stripeErr) {

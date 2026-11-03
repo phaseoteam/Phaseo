@@ -5,7 +5,8 @@
 //    always charged, into overdraft, and the overdraft is recorded; a batch hold can still be captured.
 // 2. Self-serve refund eligibility is checked in SQL: usage summed past 1,000 rows, holds respected,
 //    never below zero, and the wallet debited in the same transaction.
-// 3. A refund is applied to the wallet once per Stripe refund id, from the route and the webhooks.
+// 3. A refund is applied to the wallet once per Stripe refund id, from the route and the webhooks. A claim
+//    left unlinked for 15 minutes is given back, and a fresh claim is never left on an old failed refund.
 // 4. Disputes (chargebacks) are debited once per dispute id, into overdraft, and given back when won.
 // 5. One auto top-up in flight per wallet; auto_top_up_amount is limited to what the webhook credits.
 // 6. A credit code can be redeemed once per workspace, not once per member.
@@ -237,6 +238,61 @@ try {
   assert.equal(await balance(), usd(15));
   assert.equal((await one(`select refund_claim_state from public.credit_ledger where ref_id = 'pi_cancel'`)).refund_claim_state, 'Failed');
   assert.equal((await applyRefund('pi_cancel', null, null, 'failed')).status, 'claim_not_found');
+  const claimRow = (refId) => one(`select status, wallet_debited from public.credit_ledger where ref_type = 'Stripe_Refund' and ref_id = $1`, [refId]);
+  const ageClaim = (pi, minutes) => db.query(
+    `update public.credit_ledger set refund_claimed_at = now() - make_interval(mins => $2::int) where ref_type = 'Stripe_Payment_Intent' and ref_id = $1`, [pi, minutes]);
+  // A claim whose response was lost (Stripe never called, nothing linked) blocks for 15 minutes, then
+  // the next request gives it back and claims afresh.
+  await purchase('pi_lost', { amount: usd(4), before: usd(15) });
+  const lost = await claim('pi_lost');
+  assert.equal(lost.ok, true); assert.match(lost.claim_ref_id, /^self_serve_claim:pi_lost:/);
+  assert.equal(await balance(), usd(11));
+  await ageClaim('pi_lost', 14);
+  assert.equal((await claim('pi_lost')).reason, 'refund_claim_in_progress', 'a claim under 15 minutes old may still be in flight');
+  await ageClaim('pi_lost', 16);
+  const retried = await claim('pi_lost');
+  assert.equal(retried.ok, true, 'an abandoned claim no longer blocks the customer');
+  assert.notEqual(retried.claim_ref_id, lost.claim_ref_id, 'each claim has its own id for the Stripe idempotency key');
+  assert.equal(await balance(), usd(11), 'the abandoned debit is given back before the new claim debits once');
+  assert.deepEqual(await claimRow(lost.claim_ref_id), { status: 'Canceled', wallet_debited: false });
+  // The abandoned claim's refund did reach Stripe after all: its late webhook takes over the open claim,
+  // and the retry (Stripe finds nothing left to refund) has nothing to give back.
+  await applyRefund('pi_lost', 're_lost', usd(4), 'pending');
+  assert.equal((await applyRefund('pi_lost', null, null, 'failed')).status, 'claim_not_found');
+  await applyRefund('pi_lost', 're_lost', usd(4), 'succeeded');
+  assert.equal(await balance(), usd(11), 'the refund is debited once');
+  // An abandoned claim is also given back once the 24-hour window has closed, and a late refund for it
+  // is debited once when it succeeds, like a dashboard refund.
+  await purchase('pi_stale', { amount: usd(4), before: usd(11) });
+  const stale = await claim('pi_stale');
+  assert.equal(stale.ok, true); assert.equal(await balance(), usd(7));
+  await ageClaim('pi_stale', 16);
+  await db.query(`update public.credit_ledger set event_time = now() - interval '25 hours' where ref_type = 'Stripe_Payment_Intent' and ref_id = 'pi_stale'`);
+  assert.equal((await claim('pi_stale')).reason, 'window_expired');
+  assert.equal(await balance(), usd(11), 'the abandoned debit is given back even after the window');
+  assert.equal((await claim('pi_stale')).reason, 'window_expired');
+  assert.equal(await balance(), usd(11), 'and only once');
+  await applyRefund('pi_stale', 're_stale', usd(4), 'pending');
+  assert.equal(await balance(), usd(11));
+  await applyRefund('pi_stale', 're_stale', usd(4), 'succeeded');
+  await applyRefund('pi_stale', 're_stale', usd(4), 'succeeded');
+  assert.equal(await balance(), usd(7), 'a late refund for a released claim is debited once');
+  // A retry after a failed refund: if Stripe hands back the old failed refund id, the fresh claim's debit is
+  // given back rather than orphaned, and the customer can try again.
+  await setWallet({ balance: usd(15) });
+  await purchase('pi_retry', { amount: usd(4), before: usd(15) });
+  assert.equal((await claim('pi_retry')).ok, true);
+  await applyRefund('pi_retry', 're_retry', usd(4), 'failed');
+  assert.equal(await balance(), usd(15));
+  const fresh = await claim('pi_retry');
+  assert.equal(fresh.ok, true); assert.equal(await balance(), usd(11));
+  await applyRefund('pi_retry', 're_retry', usd(4), 'failed');
+  assert.equal(await balance(), usd(15), 'the fresh claim is given back, not left on the failed refund');
+  assert.deepEqual(await claimRow(fresh.claim_ref_id), { status: 'Canceled', wallet_debited: false });
+  assert.equal((await claim('pi_retry')).ok, true, 'the customer can claim again');
+  await applyRefund('pi_retry', 're_retry_2', usd(4), 'succeeded');
+  assert.equal(await balance(), usd(11), 'a new refund links to the new claim and debits once');
+  await setWallet({ balance: usd(15) });
   // A dashboard refund (no claim) is debited once when it succeeds, even into overdraft.
   await purchase('pi_dash', { amount: usd(20), before: 0, hoursAgo: 48 });
   await applyRefund('pi_dash', 're_dash', usd(20), 'pending');
