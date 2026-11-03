@@ -96,11 +96,18 @@ Uma oferta de provedor recém-lançada pode ter:
 - status do Phaseo: `Implementing`
 - saúde do roteamento: não aplicável porque o roteamento está desativado
 
-Uma rota estabelecida, mas temporariamente degradada, pode ter:
+Uma rota estabelecida que o Phaseo rebaixou manualmente pode ter:
 
 - disponibilidade do provedor: `Available`
 - status do Phaseo: `Enabled`
 - saúde do roteamento: `Deranked L2`
+
+Uma rota cujo provedor está falhando agora pode ter:
+
+- disponibilidade do provedor: `Available`
+- status do Phaseo: `Enabled`
+- saúde do roteamento: `Active`
+- roteamento em tempo real: `Temporariamente limitado`
 
 Um anúncio do provedor pode ter:
 

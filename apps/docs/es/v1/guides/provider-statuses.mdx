@@ -96,11 +96,18 @@ Una oferta de proveedor recién publicada puede tener estos estados:
 - estado de Phaseo: `Implementing`
 - salud del enrutamiento: no corresponde porque el enrutamiento está desactivado
 
-Una ruta estable que está experimentando una degradación temporal puede tener estos estados:
+Una ruta estable a la que Phaseo ha reducido la prioridad manualmente puede tener estos estados:
 
 - disponibilidad del proveedor: `Available`
 - estado de Phaseo: `Enabled`
 - salud del enrutamiento: `Deranked L2`
+
+Una ruta cuyo proveedor está fallando en este momento puede tener estos estados:
+
+- disponibilidad del proveedor: `Available`
+- estado de Phaseo: `Enabled`
+- salud del enrutamiento: `Active`
+- enrutamiento en directo: `Limitado temporalmente`
 
 Un anuncio de un proveedor puede tener estos estados:
 

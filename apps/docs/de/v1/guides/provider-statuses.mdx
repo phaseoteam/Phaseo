@@ -96,11 +96,18 @@ Ein neu veröffentlichtes Anbieterangebot kann diese Werte haben:
 - Phaseo-Status: `Implementing`
 - Routing-Zustand: nicht anwendbar, weil Routing deaktiviert ist
 
-Eine etablierte, vorübergehend beeinträchtigte Route kann diese Werte haben:
+Eine etablierte Route, die Phaseo manuell zurückgestuft hat, kann diese Werte haben:
 
 - Verfügbarkeit beim Anbieter: `Available`
 - Phaseo-Status: `Enabled`
 - Routing-Zustand: `Deranked L2`
+
+Eine Route, deren Anbieter gerade Fehler liefert, kann diese Werte haben:
+
+- Verfügbarkeit beim Anbieter: `Available`
+- Phaseo-Status: `Enabled`
+- Routing-Zustand: `Active`
+- Live-Routing: `Vorübergehend eingeschränkt`
 
 Eine Ankündigung des Anbieters kann diese Werte haben:
 

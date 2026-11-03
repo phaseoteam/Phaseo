@@ -107,11 +107,18 @@ A newly released provider offer can be:
 - Phaseo status: `Implementing`
 - routing health: not applicable because routing is off
 
-A mature but temporarily degraded route can be:
+A mature route that Phaseo has deprioritised by hand can be:
 
 - provider availability: `Available`
 - Phaseo status: `Enabled`
 - routing health: `Deranked L2`
+
+A route whose provider is failing right now can be:
+
+- provider availability: `Available`
+- Phaseo status: `Enabled`
+- routing health: `Active`
+- live routing: `Temporarily limited`
 
 A provider announcement can be:
 

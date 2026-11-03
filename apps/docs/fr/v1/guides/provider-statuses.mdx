@@ -96,11 +96,18 @@ Une offre fournisseur récemment publiée peut présenter les états suivants :
 - état Phaseo : `Implementing`
 - santé du routage : sans objet, car le routage est désactivé
 
-Une route mature temporairement dégradée peut présenter les états suivants :
+Une route mature dont Phaseo a réduit la priorité manuellement peut présenter les états suivants :
 
 - disponibilité du fournisseur : `Available`
 - état Phaseo : `Enabled`
 - santé du routage : `Deranked L2`
+
+Une route dont le fournisseur échoue en ce moment peut présenter les états suivants :
+
+- disponibilité du fournisseur : `Available`
+- état Phaseo : `Enabled`
+- santé du routage : `Active`
+- routage en direct : `Limité temporairement`
 
 Une annonce d’un fournisseur peut présenter les états suivants :
 
