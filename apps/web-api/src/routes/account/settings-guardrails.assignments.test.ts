@@ -3,6 +3,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Env } from "@/env";
 
 type Row = Record<string, unknown>;
+type Result = { data: Row[] | null; error: null };
+type FakeQuery = PromiseLike<Result> & {
+	select(columns: string): FakeQuery;
+	delete(): FakeQuery;
+	eq(column: string, value: unknown): FakeQuery;
+	neq(column: string, value: unknown): FakeQuery;
+	in(column: string, values: unknown[]): FakeQuery;
+	upsert(rows: Row[], options: { onConflict: string; ignoreDuplicates?: boolean }): Promise<Result>;
+};
 
 const mocks = vi.hoisted(() => ({
 	workspace: "ws-1",
@@ -19,7 +28,7 @@ function fakeClient() {
 		from(table: string) {
 			const filters: Array<(row: Row) => boolean> = [];
 			let op: "select" | "delete" = "select";
-			const run = () => {
+			const run = (): Result => {
 				const rows = mocks.db[table] ?? [];
 				const matches = rows.filter((row) => filters.every((filter) => filter(row)));
 				if (op === "delete") {
@@ -28,7 +37,7 @@ function fakeClient() {
 				}
 				return { data: matches, error: null };
 			};
-			const builder: any = {
+			const builder: FakeQuery = {
 				select: () => builder,
 				delete: () => { op = "delete"; return builder; },
 				eq: (column: string, value: unknown) => { filters.push((row) => row[column] === value); return builder; },
@@ -42,7 +51,7 @@ function fakeClient() {
 					mocks.db[table] = [...(mocks.db[table] ?? []), ...rows.filter((row) => !existing.has(keyOf(row)))];
 					return { data: null, error: null };
 				},
-				then: (resolve: (value: ReturnType<typeof run>) => unknown) => Promise.resolve(run()).then(resolve),
+				then: (onfulfilled, onrejected) => Promise.resolve(run()).then(onfulfilled, onrejected),
 			};
 			return builder;
 		},
@@ -58,11 +67,12 @@ vi.mock("./context", () => ({
 import { accountSettingsGuardrailsRouter } from "./settings-guardrails";
 
 const app = new Hono<{ Bindings: Env }>().route("/", accountSettingsGuardrailsRouter);
+const executionCtx: ExecutionContext = { waitUntil: mocks.waitUntil, passThroughOnException: () => {}, props: {} };
 const patch = (body: Row) => app.request("https://example.com/guardrails/assignments", {
 	method: "PATCH",
 	headers: { "content-type": "application/json" },
 	body: JSON.stringify({ workspaceId: mocks.workspace, ...body }),
-}, {} as Env, { waitUntil: mocks.waitUntil, passThroughOnException: () => {}, props: {} } as any);
+}, {} as Env, executionCtx);
 const pairs = (table: string, column: string) => (mocks.db[table] ?? []).map((row) => `${row[column]}:${row.guardrail_id}`).sort();
 
 beforeEach(() => {

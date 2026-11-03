@@ -530,6 +530,39 @@ describe("account policy settings routes", () => {
 		});
 	});
 
+	it("reads every page of keys and assignments for the guardrails view", async () => {
+		const pageRequests: string[] = [];
+		// Serves a full first page, then a short one, the way PostgREST caps a response.
+		const page = <T,>(url: string, make: (index: number) => T) => {
+			const params = new URL(url).searchParams;
+			pageRequests.push(`${new URL(url).pathname.split("/").pop()}:${params.get("offset") ?? "0"}:${params.get("order")}`);
+			const offset = Number(params.get("offset") ?? 0);
+			return new Response(JSON.stringify(Array.from({ length: offset === 0 ? 500 : 1 }, (_, index) => make(offset + index))), { status: 200 });
+		};
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = input instanceof Request ? input.url : String(input);
+			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" }), { status: 200 });
+			if (url.includes("workspace_members") && url.includes("teams%3Aworkspaces")) return new Response(JSON.stringify([{ workspace_id: "workspace-1", teams: { id: "workspace-1", name: "Team One" } }]), { status: 200 });
+			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]), { status: 200 });
+			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ id: "workspace-1", name: "Team One", owner_user_id: "user-1" }]), { status: 200 });
+			if (url.includes("workspace_guardrails")) return new Response(JSON.stringify([{ id: "guardrail-1", workspace_id: "workspace-1", name: "Default", enabled: true }]), { status: 200 });
+			if (url.includes("key_guardrails")) return page(url, (index) => ({ guardrail_id: "guardrail-1", key_id: `key-${index}` }));
+			if (url.includes("/keys?")) return page(url, (index) => ({ id: `key-${index}`, name: "Key", prefix: "ph_", status: "active" }));
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+
+		const response = await app.request("https://phaseo.app/api/account/settings/guardrails?workspaceId=workspace-1", { headers: { authorization: "Bearer session-token" } }, env);
+
+		expect(response.status).toBe(200);
+		const body = await response.json() as { keys: unknown[]; guardrailKeyIdsByGuardrailId: Record<string, string[]> };
+		expect(body.keys).toHaveLength(501);
+		expect(body.guardrailKeyIdsByGuardrailId["guardrail-1"]).toHaveLength(501);
+		expect(pageRequests).toEqual(expect.arrayContaining([
+			"keys:0:created_at.desc,id.asc", "keys:500:created_at.desc,id.asc",
+			"key_guardrails:0:guardrail_id.asc,key_id.asc", "key_guardrails:500:guardrail_id.asc,key_id.asc",
+		]));
+	});
+
 	it("replaces dynamic route key assignments through the atomic RPC", async () => {
 		let rpcBody: Record<string, unknown> | null = null;
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {

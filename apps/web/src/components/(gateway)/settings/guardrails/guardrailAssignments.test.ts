@@ -69,6 +69,14 @@ describe("effectiveGuardrailPolicy", () => {
 		]);
 		expect(policy.modelAllowCount).toBe(0);
 	});
+
+	it("leaves blocked ids out of the allowed counts", () => {
+		const policy = effectiveGuardrailPolicy([
+			guardrail("a", { provider_restriction_mode: "allowlist", provider_restriction_provider_ids: ["openai", "anthropic"], model_restriction_mode: "allowlist", allowed_api_model_ids: ["m1"] }),
+			guardrail("b", { provider_restriction_mode: "blocklist", provider_restriction_provider_ids: ["openai"], model_restriction_mode: "blocklist", allowed_api_model_ids: ["m1"] }),
+		]);
+		expect(policy).toMatchObject({ providerAllowCount: 1, providerBlockCount: 1, modelAllowCount: 0, modelBlockCount: 1 });
+	});
 });
 
 describe("buildGuardrailAssignmentRows", () => {

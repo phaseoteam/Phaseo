@@ -103,12 +103,14 @@ export function effectiveGuardrailPolicy(guardrails: SettingsGuardrailRow[]): Ef
 			}
 		}
 	}
+	// The gateway allows an id only when it is on the allowlist and not on the blocklist.
+	const allowedCount = (allow: Set<string> | null, block: Set<string>) => allow ? [...allow].filter((id) => !block.has(id)).length : null;
 	return {
 		activeCount: active.length,
 		zdrOnly,
-		providerAllowCount: providerAllow ? providerAllow.size : null,
+		providerAllowCount: allowedCount(providerAllow, providerBlock),
 		providerBlockCount: providerBlock.size,
-		modelAllowCount: modelAllow ? modelAllow.size : null,
+		modelAllowCount: allowedCount(modelAllow, modelBlock),
 		modelBlockCount: modelBlock.size,
 		promptInjection,
 		sensitiveInfoRuleCount: sensitiveRules.size,
