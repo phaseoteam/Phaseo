@@ -363,4 +363,22 @@ describe("workspace orchestration", () => {
 			expect(runtime.store.getTask(thread.id).untrustedCheckout).toBe(true);
 		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
 	});
+	it("won't run a thread on a fork's pull request, or one under it, on an agent that loads the fork's own config", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-fork-checkout-"));
+		const seen: Task[] = [];
+		const runtime = new WorkspaceRuntime(directory, () => ({ run: async task => { seen.push(task); }, cancel: async () => {} }));
+		try {
+			// Made before the check at creation (or past it): a flagged Codex thread, and an unflagged one under a flagged Claude thread.
+			const flagged = runtime.store.apply({ type: "create-task", harness: "codex", model: "gpt", mode: "code" }); flagged.forkCheckout = true; runtime.store.saveTask(flagged);
+			const parent = runtime.store.apply({ type: "create-task", harness: "claude", model: "opus", mode: "code", forkCheckout: true });
+			const child = runtime.store.apply({ type: "create-task", harness: "codex", model: "gpt", mode: "code" }); child.parentId = parent.id; runtime.store.saveTask(child);
+			for (const task of [flagged, child]) {
+				await runtime.command({ type: "send", id: task.id, text: "Go" });
+				await vi.waitFor(() => expect(runtime.store.getTask(task.id)).toMatchObject({ status: "failed", error: expect.stringContaining("This thread works on a pull request from a fork, so it can't run Codex") }));
+			}
+			expect(runtime.store.getTask(child.id).forkCheckout).toBe(true);
+			await runtime.command({ type: "send", id: parent.id, text: "Go" });
+			await vi.waitFor(() => expect(seen.map(task => task.id)).toEqual([parent.id]));
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
 });

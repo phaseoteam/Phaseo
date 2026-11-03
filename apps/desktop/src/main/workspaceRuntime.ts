@@ -78,6 +78,7 @@ import { codexModels } from "./modelCatalog";
 import type { Mission, MissionCommand } from "../shared/missions";
 import { span, startSpan, type ActiveSpan } from "./diagnostics/tracer";
 import { factoryDataFolder } from "./factory/service";
+import { assertForkCheckoutSafe } from "./factory/agents";
 
 // Questions answered by message do not hold up the turn.
 const hasRequests = (task: { approvals?: unknown[]; questions?: { responseMode?: string }[]; forms?: unknown[] }) => Boolean(task.approvals?.length || task.questions?.some(request => request.responseMode !== "message") || task.forms?.length);
@@ -1082,7 +1083,7 @@ export class WorkspaceRuntime {
 				return this.store.apply({ type: "send", id: thread.id, text: mission.prompt });
 			}
 			const template = this.store.getTask(mission.templateTaskId); if (template.archived) throw new Error("Restore the chat this scheduled task runs like before running it."); if (template.projectId) this.assertProjectAvailable(template.projectId);
-			const created = this.store.apply({ type: "create-task", harness: template.harness, model: template.model, mode: template.mode, permissionMode: template.permissionMode, serviceTier: template.serviceTier, accountId: template.accountId, projectId: template.projectId, agentId: template.agentId }); created.title = mission.title; created.missionId = mission.id; created.reasoningEffort = template.reasoningEffort; created.modelOptions = template.modelOptions; created.nativeMode = template.nativeMode; if (template.untrustedCheckout) created.untrustedCheckout = true; this.store.saveTask(created);
+			const created = this.store.apply({ type: "create-task", harness: template.harness, model: template.model, mode: template.mode, permissionMode: template.permissionMode, serviceTier: template.serviceTier, accountId: template.accountId, projectId: template.projectId, agentId: template.agentId }); created.title = mission.title; created.missionId = mission.id; created.reasoningEffort = template.reasoningEffort; created.modelOptions = template.modelOptions; created.nativeMode = template.nativeMode; if (template.untrustedCheckout) created.untrustedCheckout = true; if (template.forkCheckout) created.forkCheckout = true; this.store.saveTask(created);
 			return this.store.apply({ type: "send", id: created.id, text: mission.prompt });
 		});
 		this.broadcast(); this.start(task.id); return task;
@@ -1396,17 +1397,23 @@ export class WorkspaceRuntime {
 	}
 	/** Whether a chat works on code the person didn't open themselves: in one of Factory's worktrees, or under a chat that does. */
 	private untrustedCheckout(task: Task): boolean {
-		const factory = factoryDataFolder(this.directory), projects = this.store.getProjects(), seen = new Set<string>();
-		for (let current: Task | undefined = task; current && !seen.has(current.id);) {
-			seen.add(current.id);
+		const factory = factoryDataFolder(this.directory), projects = this.store.getProjects();
+		for (const current of this.lineage(task)) {
 			if (current.untrustedCheckout) return true;
 			const projectId = current.projectId, directory = projects.find(project => project.id === projectId)?.directory;
 			const relative = directory === undefined ? undefined : path.relative(factory, directory);
 			if (relative !== undefined && relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative)) return true;
+		}
+		return false;
+	}
+	/** The chat, then the one it was delegated from, handed off from or launched by, and so on up. */
+	private *lineage(task: Task): Generator<Task> {
+		const seen = new Set<string>();
+		for (let current: Task | undefined = task; current && !seen.has(current.id);) {
+			seen.add(current.id); yield current;
 			const up: string | undefined = current.delegation?.parentTaskId ?? current.parentId ?? current.launch?.byTaskId;
 			try { current = up ? this.store.getTask(up) : undefined; } catch { current = undefined; }
 		}
-		return false;
 	}
 	private async drain(id: string, turn: ActiveSpan) {
 		if (this.running.has(id)) return;
@@ -1415,6 +1422,8 @@ export class WorkspaceRuntime {
 		// Factory's checkouts run without the repository's own config however the message came: from Factory, or sent from
 		// Chats to a thread made before Factory flagged its threads (or one under, handed off from or launched by such a thread).
 		if (!task.untrustedCheckout && this.untrustedCheckout(task)) { task.untrustedCheckout = true; this.store.saveTask(task); }
+		// The same for a fork's pull request, which also runs only on harnesses that honour the flag (checked in setup below).
+		if (!task.forkCheckout && [...this.lineage(task)].some(current => current.forkCheckout)) { task.forkCheckout = true; this.store.saveTask(task); }
 		let adapter: AgentAdapter;
 		let orchestration: Awaited<ReturnType<OrchestratorMcp["session"]>> | undefined;
 		// Set once the run's question handler exists; the orchestration server (created first) asks through it.
@@ -1425,6 +1434,7 @@ export class WorkspaceRuntime {
 		try {
 			const credential = (accountId: string) => { if (!this.vault) throw new Error("Credential storage is unavailable."); const account = this.store.getAccounts().find(value => value.id === accountId); if (!account) throw new Error("Account no longer exists."); if (account.oauthExpiresAt && Date.parse(account.oauthExpiresAt) <= Date.now()) throw new Error("Sign in to Phaseo again to renew this account."); return this.vault.get(account.secretId ?? account.id); };
 			this.assertHarnessAvailable(task.harness);
+			assertForkCheckoutSafe(task, task.harness);
 			if (task.queue[0]?.nativeAction && !["opencode", "pi", "claude", "codex", "phaseo"].includes(task.harness)) throw new Error("This native action requires a supported native harness.");
 			if (task.accountId && this.signingInAccounts.has(task.accountId)) throw new Error("Finish this account's sign-in before retrying the instruction.");
 			if (task.accountId && this.credentialChanges.has(task.accountId)) throw new Error("Wait for this account's credential change to finish.");

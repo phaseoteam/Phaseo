@@ -63,6 +63,9 @@ interface Watch {
 }
 
 const same = (a: string, b: string) => path.relative(path.resolve(a), path.resolve(b)) === "";
+/** A pull request from a fork: its threads run only on harnesses kept from loading the fork's own config. */
+const fromFork = (item: WorkItem) => item.kind === "pull" && Boolean(item.fork);
+const forkCheckout = (item: WorkItem) => (fromFork(item) ? { forkCheckout: true as const } : {});
 const firstLine = (text: string) => text.split(/\r?\n/).map((line) => line.trim()).find(Boolean) ?? "";
 
 /** A finished activity as a log line; reasoning and usage stay in the thread. */
@@ -107,15 +110,16 @@ export class StageThreads implements FactoryThreads {
 				// Deleted: the item gets a new one.
 			}
 			if (parent) {
-				// Made before Factory's threads stopped loading the repository's own settings: it stops now too.
-				if (!parent.untrustedCheckout) { parent.untrustedCheckout = true; this.host.store.saveTask(parent); }
+				// Made before Factory's threads stopped loading the repository's own settings: it stops now too. One made before
+				// fork threads were flagged keeps to fork-safe harnesses from now on, as do threads made under it.
+				if (!parent.untrustedCheckout || (fromFork(item) && !parent.forkCheckout)) { parent.untrustedCheckout = true; if (fromFork(item)) parent.forkCheckout = true; this.host.store.saveTask(parent); }
 				return known;
 			}
 		}
 		if (!agent) throw new Error("Connect an account in Settings → Accounts first: Factory's agents run on the desktop's accounts.");
 		assertForkSafe(item, agent.harness);
 		const projectId = workspace ? await this.worktreeProject(workspace) : undefined;
-		const thread = this.host.createThread({ type: "create-task", harness: agent.harness, accountId: agent.accountId, model: agent.model, mode: "code", permissionMode: "full-access", untrustedCheckout: true, projectId }, `#${item.number} ${item.title}`.slice(0, 100));
+		const thread = this.host.createThread({ type: "create-task", harness: agent.harness, accountId: agent.accountId, model: agent.model, mode: "code", permissionMode: "full-access", untrustedCheckout: true, ...forkCheckout(item), projectId }, `#${item.number} ${item.title}`.slice(0, 100));
 		this.parents.set(item.id, thread.id);
 		await this.linkItem(thread.id, item);
 		return thread.id;
@@ -161,6 +165,8 @@ export class StageThreads implements FactoryThreads {
 			// A reply, or carrying on after an interruption: the same conversation goes on.
 			threadId = previous.id;
 			baseUsage = previous.usageTotals ?? baseUsage;
+			// Made before fork threads were flagged: the turn it carries on with keeps to fork-safe harnesses.
+			if (fromFork(item) && !previous.forkCheckout) { previous.forkCheckout = true; this.host.store.saveTask(previous); }
 			// The effort may have changed since the thread last ran: the carried-on turn uses the one chosen now.
 			const effort = effortSettings(agent);
 			if (effort.reasoningEffort || effort.modelOptions) await this.host.command({ type: "update-task", id: threadId, ...(effort.reasoningEffort ? { reasoningEffort: effort.reasoningEffort } : {}), ...(effort.modelOptions ? { modelOptions: { ...previous.modelOptions, ...effort.modelOptions } } : {}) });
@@ -168,7 +174,7 @@ export class StageThreads implements FactoryThreads {
 			startId = this.host.store.getTask(threadId).queue.findLast((message) => message.text === prompt)?.id
 				?? this.host.store.getTask(threadId).messages.findLast((message) => message.role === "user" && message.text === prompt)?.id;
 		} else {
-			const child = this.host.startStageThread(parentId, { type: "create-task", harness: agent.harness, accountId: agent.accountId, model: agent.model, mode: "code", permissionMode: "full-access", untrustedCheckout: true, projectId, ...effortSettings(agent) }, input.runId, prompt, title);
+			const child = this.host.startStageThread(parentId, { type: "create-task", harness: agent.harness, accountId: agent.accountId, model: agent.model, mode: "code", permissionMode: "full-access", untrustedCheckout: true, ...forkCheckout(item), projectId, ...effortSettings(agent) }, input.runId, prompt, title);
 			threadId = child.id;
 			startId = child.queue[0]?.id ?? child.messages.find((message) => message.role === "user")?.id;
 		}

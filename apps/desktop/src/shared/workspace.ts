@@ -109,6 +109,11 @@ export type Task = {
 	 * Delegated threads and handoffs keep it; nothing turns it off.
 	 */
 	untrustedCheckout?: true;
+	/**
+	 * The checkout is a pull request from a fork (Factory's thread for one, or one delegated, launched, forked or handed off
+	 * from it), so it runs only on harnesses that honour untrustedCheckout (forkSafeHarnesses). Kept like untrustedCheckout.
+	 */
+	forkCheckout?: true;
 	model: string; mode: "chat" | "code" | "plan"; status: TaskStatus; pinned: boolean;
 	/** Labels for grouping and filtering chats, set by the person or the chat's agent. */
 	tags?: string[];
@@ -207,7 +212,7 @@ export type WorkspaceCommand =
 	| { type: "update-account"; id: string; name?: string; endpoint?: string; apiKey?: string; archived?: boolean }
 	| { type: "add-agent"; name: string; executable: string; arguments: string[] }
 	| { type: "update-agent"; id: string; name?: string; executable?: string; arguments?: string[]; archived?: boolean }
-	| { type: "create-task"; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"]; permissionMode?: Task["permissionMode"]; reasoningEffort?: string; serviceTier?: string; modelOptions?: ModelOptionValues; autopilot?: { capNanos: number | null }; untrustedCheckout?: true }
+	| { type: "create-task"; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"]; permissionMode?: Task["permissionMode"]; reasoningEffort?: string; serviceTier?: string; modelOptions?: ModelOptionValues; autopilot?: { capNanos: number | null }; untrustedCheckout?: true; forkCheckout?: true }
 	| { type: "handoff"; id: string; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"]; permissionMode?: Task["permissionMode"]; reasoningEffort?: string; serviceTier?: string; modelOptions?: ModelOptionValues }
 	| { type: "update-task"; id: string; title?: string; pinned?: boolean; archived?: boolean; tags?: string[]; model?: string; mode?: Task["mode"]; permissionMode?: Task["permissionMode"]; serviceTier?: string; reasoningEffort?: string; nativeMode?: string; modelOptions?: ModelOptionValues; /** Turns Autopilot on with a spend cap, or off with null. */ autopilot?: { capNanos: number | null } | null }
 	| { type: "send"; id: string; text: string; threadReferences?: string[]; /** Issue and pull request URLs from `#` chips. */ githubReferences?: string[]; attachments?: string[]; nativeAction?: NativeAction }
@@ -480,6 +485,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 		validateModelOptions(command.modelOptions);
 		if (command.autopilot !== undefined && (command.type !== "create-task" || !validAutopilot(command.autopilot))) throw new Error("Invalid Autopilot setting.");
 		if (command.untrustedCheckout !== undefined && (command.type !== "create-task" || command.untrustedCheckout !== true)) throw new Error("Invalid checkout setting.");
+		if (command.forkCheckout !== undefined && (command.type !== "create-task" || command.forkCheckout !== true)) throw new Error("Invalid checkout setting.");
 	} else {
 		string("id");
 		switch (command.type) {

@@ -1,4 +1,4 @@
-import type { Account, Harness, ModelOption, ModelOptionValues } from "../../shared/workspace";
+import type { Account, Harness, ModelOption, ModelOptionValues, Task } from "../../shared/workspace";
 import type { AgentProfile, WorkItem } from "../../shared/factory/types";
 
 /**
@@ -15,11 +15,25 @@ export const factoryHarnesses = ["claude", "codex", "phaseo", "opencode", "pi", 
  */
 export const forkSafeHarnesses = ["claude", "cursor", "pi", "opencode", "phaseo"] as const satisfies readonly Harness[];
 
+const forkSafe = (harness: Harness) => (forkSafeHarnesses as readonly Harness[]).includes(harness);
+const unsafeName = (harness: Harness) => ({ codex: "Codex", grok: "Grok", antigravity: "Antigravity" } as Partial<Record<Harness, string>>)[harness];
+const loadsOwnConfig = (name: string | undefined) => `it loads the repository's own ${name ? `${name} settings` : "settings"}, which can run code on this computer`;
+
 /** Refuses, before any thread is made, an agent that would load a fork's own config. */
 export function assertForkSafe(item: Pick<WorkItem, "kind" | "fork">, harness: Harness) {
-	if (item.kind !== "pull" || !item.fork || (forkSafeHarnesses as readonly Harness[]).includes(harness)) return;
-	const name = ({ codex: "Codex", grok: "Grok", antigravity: "Antigravity" } as Partial<Record<Harness, string>>)[harness];
-	throw new Error(`Factory can't run ${name ?? "an ACP agent"} on a pull request from a fork: it loads the repository's own ${name ? `${name} settings` : "settings"}, which can run code on this computer. Choose Claude, Cursor, Pi, OpenCode or Phaseo for Factory, or review this pull request yourself.`);
+	if (item.kind !== "pull" || !item.fork || forkSafe(harness)) return;
+	const name = unsafeName(harness);
+	throw new Error(`Factory can't run ${name ?? "an ACP agent"} on a pull request from a fork: ${loadsOwnConfig(name)}. Choose Claude, Cursor, Pi, OpenCode or Phaseo for Factory, or review this pull request yourself.`);
+}
+
+/**
+ * Refuses a thread on a fork's pull request (Task.forkCheckout: Factory's, or one delegated, launched, forked or handed off
+ * from it) on an agent that would load the fork's own config. Checked when such a thread is made and when it runs.
+ */
+export function assertForkCheckoutSafe(task: Pick<Task, "forkCheckout">, harness: Harness) {
+	if (!task.forkCheckout || forkSafe(harness)) return;
+	const name = unsafeName(harness);
+	throw new Error(`This thread works on a pull request from a fork, so it can't run ${name ?? "an ACP agent"}: ${loadsOwnConfig(name)}. Choose Claude, Cursor, Pi, OpenCode or Phaseo.`);
 }
 
 /** Phaseo and Cursor run only on a connected account; the rest also run on the harness's own sign-in. */
