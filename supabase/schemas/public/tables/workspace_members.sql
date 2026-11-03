@@ -50,6 +50,13 @@ CREATE TRIGGER zz_workspace_members_refresh_effective
   FOR EACH ROW
   EXECUTE FUNCTION public.refresh_effective_entitlements_after_directory_change();
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."workspace_members"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "team_members_insert_admin" ON "public"."workspace_members"
   FOR INSERT
   TO "authenticated"

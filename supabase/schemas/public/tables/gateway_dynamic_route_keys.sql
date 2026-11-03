@@ -57,6 +57,13 @@ CREATE POLICY "gateway_dynamic_route_keys_workspace_update" ON "public"."gateway
     ((route.id = gateway_dynamic_route_keys.route_id) AND (gateway_key.workspace_id = route.workspace_id) AND ( SELECT public.is_workspace_admin(route.workspace_id) AS
     is_workspace_admin)))));
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."gateway_dynamic_route_keys"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."gateway_dynamic_route_keys" TO "anon", "authenticated", "service_role";
 
 COMMENT ON TABLE "public"."gateway_dynamic_route_keys" IS 'Attaches at most one active dynamic route to each inference API key.';

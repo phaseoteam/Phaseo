@@ -63,6 +63,13 @@ CREATE TRIGGER sync_workspace_baseline_guardrail
   WHEN (new.is_workspace_baseline)
   EXECUTE FUNCTION private.sync_workspace_baseline_guardrail();
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."workspace_guardrails"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "team_guardrails_delete_own_team" ON "public"."workspace_guardrails"
   FOR DELETE
   TO "authenticated"

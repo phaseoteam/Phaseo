@@ -77,6 +77,13 @@ CREATE TRIGGER presets_sync_legacy_writes
   FOR EACH ROW
   EXECUTE FUNCTION public.sync_legacy_preset_writes_to_draft();
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."presets"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "presets_delete_owned" ON "public"."presets"
   FOR DELETE
   TO "authenticated"

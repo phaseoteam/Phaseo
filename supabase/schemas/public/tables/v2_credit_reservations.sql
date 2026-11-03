@@ -37,6 +37,13 @@ CREATE INDEX v2_credit_reservations_external_ref_idx ON public.v2_credit_reserva
 
 CREATE INDEX v2_credit_reservations_workspace_status_idx ON public.v2_credit_reservations USING btree (workspace_id, status, created_at DESC);
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."v2_credit_reservations"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "v2_credit_reservations_workspace_select" ON "public"."v2_credit_reservations"
   FOR SELECT
   TO "authenticated"

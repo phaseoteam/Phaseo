@@ -78,6 +78,13 @@ CREATE POLICY "byok_keys_update_workspace_admin" ON "public"."byok_keys"
   USING (public.is_workspace_admin(workspace_id))
   WITH CHECK (public.is_workspace_admin(workspace_id));
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."byok_keys"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."byok_keys" TO "service_role";
 
 GRANT DELETE ON TABLE "public"."byok_keys" TO "authenticated";

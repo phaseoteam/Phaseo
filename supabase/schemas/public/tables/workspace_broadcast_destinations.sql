@@ -38,6 +38,13 @@ CREATE TRIGGER enforce_broadcast_destination_limit
   FOR EACH ROW
   EXECUTE FUNCTION public.enforce_broadcast_destination_limit();
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."workspace_broadcast_destinations"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "team_broadcast_destinations_delete_own_team" ON "public"."workspace_broadcast_destinations"
   FOR DELETE
   TO "authenticated"

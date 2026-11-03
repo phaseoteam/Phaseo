@@ -60,4 +60,11 @@ CREATE POLICY "broadcast_destination_rules_update_own_team" ON "public"."broadca
      JOIN public.workspace_broadcast_destinations d ON ((d.id = g.destination_id)))
   WHERE ((g.id = broadcast_destination_rules.rule_group_id) AND public.is_workspace_admin(d.workspace_id)))));
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."broadcast_destination_rules"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."broadcast_destination_rules" TO "anon", "authenticated", "service_role";

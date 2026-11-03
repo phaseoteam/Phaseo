@@ -131,6 +131,13 @@ CREATE TRIGGER validate_billing_time_zone
   FOR EACH ROW
   EXECUTE FUNCTION public.validate_workspace_billing_time_zone();
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."workspace_settings"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "team_settings_insert_own_team" ON "public"."workspace_settings"
   FOR INSERT
   TO "authenticated"

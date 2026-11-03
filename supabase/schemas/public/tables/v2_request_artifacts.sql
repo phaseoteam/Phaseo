@@ -34,6 +34,13 @@ CREATE UNIQUE INDEX v2_request_artifacts_request_kind_key ON public.v2_request_a
 CREATE INDEX v2_request_artifacts_retention_idx ON public.v2_request_artifacts USING btree (retention_until)
   WHERE (retention_until IS NOT NULL);
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."v2_request_artifacts"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "v2_request_artifacts_workspace_select" ON "public"."v2_request_artifacts"
   FOR SELECT
   TO "authenticated"
