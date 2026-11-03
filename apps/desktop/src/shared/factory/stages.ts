@@ -328,7 +328,8 @@ export function ciBrief(failed: { name: string; link?: string; log?: string }[])
 		...failed.flatMap((check) => [
 			"",
 			`${check.name}${check.link ? ` (${check.link})` : ""}`,
-			...(check.log ? ["Last lines of its log:", "```", check.log.split("\n").slice(-CI_LOG_LINES).join("\n"), "```"] : []),
+			// A log prints whatever the code under test prints (a fork's, perhaps), so it's fenced like other text from GitHub.
+			...(check.log ? ["Last lines of its log:", untrustedBlock(`log of ${check.name}`, check.log.split("\n").slice(-CI_LOG_LINES).join("\n"))] : []),
 		]),
 	].join("\n");
 }

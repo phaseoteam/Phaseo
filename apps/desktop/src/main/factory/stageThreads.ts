@@ -21,7 +21,7 @@ type CreateTask = Extract<WorkspaceCommand, { type: "create-task" }>;
 
 /** What Factory needs from the desktop's runtime (WorkspaceRuntime), so tests can pass a real one or their own. */
 export interface StageThreadHost {
-	readonly store: Pick<WorkspaceStore, "getTask" | "getTaskTail" | "getOverview" | "getProjects" | "addProject" | "saveProject">;
+	readonly store: Pick<WorkspaceStore, "getTask" | "getTaskTail" | "getOverview" | "getProjects" | "addProject" | "saveProject" | "saveTask">;
 	command(command: WorkspaceCommand): Promise<WorkspaceOverview>;
 	/** A thread made for Factory, not started. */
 	createThread(command: CreateTask, title: string): Task;
@@ -100,16 +100,21 @@ export class StageThreads implements FactoryThreads {
 	private async makeParent(item: WorkItem, agent: AgentProfile | undefined, workspace: StageWorkspace | undefined): Promise<string> {
 		const known = this.parents.get(item.id);
 		if (known) {
+			let parent: Task | undefined;
 			try {
-				this.host.store.getTask(known);
-				return known;
+				parent = this.host.store.getTask(known);
 			} catch {
 				// Deleted: the item gets a new one.
+			}
+			if (parent) {
+				// Made before Factory's threads stopped loading the repository's own settings: it stops now too.
+				if (!parent.untrustedCheckout) { parent.untrustedCheckout = true; this.host.store.saveTask(parent); }
+				return known;
 			}
 		}
 		if (!agent) throw new Error("Connect an account in Settings → Accounts first: Factory's agents run on the desktop's accounts.");
 		const projectId = workspace ? await this.worktreeProject(workspace) : undefined;
-		const thread = this.host.createThread({ type: "create-task", harness: agent.harness, accountId: agent.accountId, model: agent.model, mode: "code", permissionMode: "full-access", projectId }, `#${item.number} ${item.title}`.slice(0, 100));
+		const thread = this.host.createThread({ type: "create-task", harness: agent.harness, accountId: agent.accountId, model: agent.model, mode: "code", permissionMode: "full-access", untrustedCheckout: true, projectId }, `#${item.number} ${item.title}`.slice(0, 100));
 		this.parents.set(item.id, thread.id);
 		await this.linkItem(thread.id, item);
 		return thread.id;
@@ -162,7 +167,7 @@ export class StageThreads implements FactoryThreads {
 			startId = this.host.store.getTask(threadId).queue.findLast((message) => message.text === prompt)?.id
 				?? this.host.store.getTask(threadId).messages.findLast((message) => message.role === "user" && message.text === prompt)?.id;
 		} else {
-			const child = this.host.startStageThread(parentId, { type: "create-task", harness: agent.harness, accountId: agent.accountId, model: agent.model, mode: "code", permissionMode: "full-access", projectId, ...effortSettings(agent) }, input.runId, prompt, title);
+			const child = this.host.startStageThread(parentId, { type: "create-task", harness: agent.harness, accountId: agent.accountId, model: agent.model, mode: "code", permissionMode: "full-access", untrustedCheckout: true, projectId, ...effortSettings(agent) }, input.runId, prompt, title);
 			threadId = child.id;
 			startId = child.queue[0]?.id ?? child.messages.find((message) => message.role === "user")?.id;
 		}
@@ -202,6 +207,8 @@ export class StageThreads implements FactoryThreads {
 			const task = this.host.store.getTask(threadId);
 			if (task.archived || task.harness !== agent.harness || (task.accountId ?? undefined) !== (agent.accountId ?? undefined) || task.model !== agent.model) return undefined;
 			if (task.status === "running" || task.status === "waiting") return undefined;
+			// A thread from before Factory stopped loading the repository's own settings starts afresh instead.
+			if (!task.untrustedCheckout) return undefined;
 			return task;
 		} catch {
 			return undefined;

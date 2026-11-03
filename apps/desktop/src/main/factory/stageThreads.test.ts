@@ -60,6 +60,32 @@ describe("stage threads", () => {
 		} finally { await close(); }
 	});
 
+	it("runs every stage and item thread without the repository's own settings, hooks or MCP configs", async () => {
+		const seen: Task[] = [];
+		const { runtime, threads, parents, finished, start, close } = setup(async task => { seen.push(task); });
+		try {
+			await start("run-untrusted");
+			await vi.waitFor(() => expect(finished).toHaveLength(1));
+			const parentId = parents.get(item.id)!;
+			expect(runtime.store.getTask(parentId).untrustedCheckout).toBe(true);
+			// The harness adapter is handed the flag, so it loads only the person's own settings.
+			expect(seen).toEqual([expect.objectContaining({ delegation: expect.objectContaining({ kind: "stage" }), untrustedCheckout: true })]);
+			// An item thread from before the flag existed gets it when the item next runs, and its old stage thread isn't carried on.
+			const parent = runtime.store.getTask(parentId); delete parent.untrustedCheckout; runtime.store.saveTask(parent);
+			const old = seen[0]!.id, oldStage = runtime.store.getTask(old); delete oldStage.untrustedCheckout; runtime.store.saveTask(oldStage);
+			expect(threads.canResume(old, agent)).toBe(false);
+			await start("run-untrusted-2");
+			await vi.waitFor(() => expect(finished).toHaveLength(2));
+			expect(runtime.store.getTask(parentId).untrustedCheckout).toBe(true);
+			expect(seen[1]).toMatchObject({ untrustedCheckout: true });
+			// Threads delegated or handed off from one keep it.
+			const delegated = runtime.store.createDelegatedTask({ type: "create-task", harness: "codex", model: "gpt-test", mode: "code", projectId: seen[1]!.projectId }, { parentTaskId: seen[1]!.id, requestId: "delegated" }, "Help", "Helper");
+			expect(delegated.untrustedCheckout).toBe(true);
+			const handoff = runtime.store.apply({ type: "handoff", id: seen[1]!.id, harness: "claude", model: "default", mode: "code", projectId: seen[1]!.projectId });
+			expect(handoff.untrustedCheckout).toBe(true);
+		} finally { await close(); }
+	});
+
 	it("never delivers a stage's result to the parent when the parent's own turn ends first", async () => {
 		let release!: () => void;
 		const held = new Promise<void>(resolve => { release = resolve; });
@@ -129,10 +155,10 @@ describe("stage threads", () => {
 
 	it("tells a stop of the queued brief apart from the interruption before it", async () => {
 		// A thread interrupted earlier, whose new brief stays queued: the stand-in host never starts it.
-		const task = { id: "t", harness: agent.harness, model: agent.model, status: "interrupted", interruptedAt: new Date(Date.now() - 60_000).toISOString(), queue: [] as { id: string; text: string }[], messages: [], activities: [], revision: 1, archived: false } as unknown as Task;
+		const task = { id: "t", harness: agent.harness, model: agent.model, status: "interrupted", interruptedAt: new Date(Date.now() - 60_000).toISOString(), queue: [] as { id: string; text: string }[], messages: [], activities: [], revision: 1, archived: false, untrustedCheckout: true } as unknown as Task;
 		let changed = () => {};
 		const host = {
-			store: { getTask: () => task, getTaskTail: () => task, getOverview: () => ({ tasks: [{ id: "t", revision: task.revision }] }), getProjects: () => [], addProject: (directory: string) => ({ id: directory, name: "clone", directory }), saveProject: () => {} },
+			store: { getTask: () => task, getTaskTail: () => task, getOverview: () => ({ tasks: [{ id: "t", revision: task.revision }] }), getProjects: () => [], addProject: (directory: string) => ({ id: directory, name: "clone", directory }), saveProject: () => {}, saveTask: () => {} },
 			command: async (command: { type: string; text?: string }) => { if (command.type === "send") { task.queue.push({ id: "brief", text: command.text!, createdAt: new Date().toISOString() }); task.revision = (task.revision ?? 0) + 1; } return {}; },
 			createThread: () => { throw new Error("unused"); }, startStageThread: () => { throw new Error("unused"); },
 			onThreadsChange: (listener: () => void) => { changed = listener; return () => {}; },

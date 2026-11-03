@@ -1393,9 +1393,9 @@ export class FactoryStore {
 			return candidate.itemId === pullId || (!!item && linkedItem(item, this.snapshot.items)?.id === pullId);
 		});
 		if (!pull || !run) return;
-		// The logs of the first few: enough to see what broke without flooding the agent.
-		const read = await Promise.all(failed.slice(0, 3).map(async (check) => ({ ...check, log: await failedLog(pull.repo, check.link).catch(() => undefined) })));
-		this.passOn(run.id, [checksActivity(pull.head ?? String(pull.updatedAt), [...read, ...failed.slice(3)], Date.now(), pull.number)]);
+		// The logs of the first few: enough to see what broke without flooding the agent. A fork's are held back unread.
+		const read = pull.fork ? failed.slice(0, 3) : await Promise.all(failed.slice(0, 3).map(async (check) => ({ ...check, log: await failedLog(pull.repo, check.link).catch(() => undefined) })));
+		this.passOn(run.id, [checksActivity(pull.head ?? String(pull.updatedAt), [...read, ...failed.slice(3)], Date.now(), pull.number, Boolean(pull.fork))]);
 	}
 
 	/** Hands new activity to a running agent. Comments from people who can't direct agents are held back and noted. */
