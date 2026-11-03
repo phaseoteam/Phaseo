@@ -78,8 +78,14 @@ export const relayHolds = (frame: { type?: unknown; ok?: unknown }) => frame.ok 
 	&& (frame.type === "attention" || frame.type === "send" || frame.type === "answer_approval" || frame.type === "answer_question");
 
 export const connectRelayUrl = "wss://connect.phaseo.app";
-export const relayDesktopUrl = (relayUrl: string, desktopId: string) => `${relayUrl.replace(/\/+$/, "")}/v1/desktop/${encodeURIComponent(desktopId)}`;
-export const relayPhoneUrl = (relayUrl: string, desktopId: string) => `${relayUrl.replace(/\/+$/, "")}/v1/phone/${encodeURIComponent(desktopId)}`;
+/** The relay URL without trailing slashes. A loop, not a regex: the URL comes from a pairing link, and /\/+$/ backtracks on many slashes. */
+const trimSlashes = (url: string) => {
+	let end = url.length;
+	while (end > 0 && url[end - 1] === "/") end--;
+	return url.slice(0, end);
+};
+export const relayDesktopUrl = (relayUrl: string, desktopId: string) => `${trimSlashes(relayUrl)}/v1/desktop/${encodeURIComponent(desktopId)}`;
+export const relayPhoneUrl = (relayUrl: string, desktopId: string) => `${trimSlashes(relayUrl)}/v1/phone/${encodeURIComponent(desktopId)}`;
 
 const record = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value === "object" && !Array.isArray(value);
 

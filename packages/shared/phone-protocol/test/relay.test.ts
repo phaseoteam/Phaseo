@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EnvelopeChannel, generateKeyPair, parseRelayFrame, readRelayOutbound, relayDesktopAddress, relayDeviceIdPattern, relayHolds, relayPairing, sharedKey, toBase64url } from "../src/index";
+import { EnvelopeChannel, generateKeyPair, parseRelayFrame, readRelayOutbound, relayDesktopAddress, relayDeviceIdPattern, relayHolds, relayDesktopUrl, relayPairing, relayPhoneUrl, sharedKey, toBase64url } from "../src/index";
 
 describe("relay frames", () => {
 	it("accepts a sealed envelope as the relay reads it, keeping hold and a pairing key", () => {
@@ -28,5 +28,15 @@ describe("relay frames", () => {
 	});
 	it("gives a pairing sign-in a device id the relay accepts", () => {
 		expect(relayPairing(toBase64url(new Uint8Array(32).fill(1))).deviceId).toMatch(relayDeviceIdPattern);
+	});
+});
+
+describe("relay URLs", () => {
+	it("drop trailing slashes, and a link full of slashes stays fast", () => {
+		expect(relayPhoneUrl("wss://connect.phaseo.app//", "d 1")).toBe("wss://connect.phaseo.app/v1/phone/d%201");
+		expect(relayDesktopUrl("wss://connect.phaseo.app", "d")).toBe("wss://connect.phaseo.app/v1/desktop/d");
+		const started = performance.now();
+		relayPhoneUrl(`wss://x${"/".repeat(100_000)}a`, "d");
+		expect(performance.now() - started).toBeLessThan(100);
 	});
 });
