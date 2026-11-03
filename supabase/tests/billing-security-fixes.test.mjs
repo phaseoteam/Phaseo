@@ -284,14 +284,15 @@ try {
   assert.equal((await claim('pi_retry')).ok, true);
   await applyRefund('pi_retry', 're_retry', usd(4), 'failed');
   assert.equal(await balance(), usd(15));
+  // A retry gets its own claim (and its own Stripe idempotency key, so a new refund).
   const fresh = await claim('pi_retry');
   assert.equal(fresh.ok, true); assert.equal(await balance(), usd(11));
+  // A duplicate webhook for the older, failed refund must not cancel the newer claim.
   await applyRefund('pi_retry', 're_retry', usd(4), 'failed');
-  assert.equal(await balance(), usd(15), 'the fresh claim is given back, not left on the failed refund');
-  assert.deepEqual(await claimRow(fresh.claim_ref_id), { status: 'Canceled', wallet_debited: false });
-  assert.equal((await claim('pi_retry')).ok, true, 'the customer can claim again');
+  assert.equal(await balance(), usd(11), 'a replayed old failure leaves the newer claim debited');
+  assert.deepEqual(await claimRow(fresh.claim_ref_id), { status: 'Applying', wallet_debited: true });
   await applyRefund('pi_retry', 're_retry_2', usd(4), 'succeeded');
-  assert.equal(await balance(), usd(11), 'a new refund links to the new claim and debits once');
+  assert.equal(await balance(), usd(11), 'the new refund links to the new claim and debits once');
   await setWallet({ balance: usd(15) });
   // A dashboard refund (no claim) is debited once when it succeeds, even into overdraft.
   await purchase('pi_dash', { amount: usd(20), before: 0, hoursAgo: 48 });

@@ -72,36 +72,6 @@ begin
         if v_found and v_row.workspace_id <> p_workspace_id then
             raise exception 'refund_workspace_mismatch';
         end if;
-        -- A failed or canceled refund id never takes over a newer claim's
-        -- debit (e.g. Stripe returned the old refund for a reused idempotency
-        -- key): the open claim is given back instead of left orphaned.
-        if v_found and v_row.status in ('Failed', 'Canceled') then
-            with open_claims as (
-                select cl.id, case when cl.wallet_debited then abs(cl.amount_nanos) else 0 end as restore_nanos
-                from public.credit_ledger cl
-                where cl.ref_type = 'Stripe_Refund'
-                  and cl.workspace_id = p_workspace_id
-                  and cl.source_ref_type = 'Stripe_Payment_Intent'
-                  and cl.source_ref_id = p_payment_intent_id
-                  and cl.ref_id like 'self_serve_claim:%'
-                  and cl.status = 'Applying'
-                for update
-            ), released as (
-                update public.credit_ledger cl
-                set status = 'Canceled',
-                    wallet_debited = false,
-                    event_time = now()
-                from open_claims o
-                where cl.id = o.id
-                returning o.restore_nanos
-            )
-            update public.wallets w
-            set balance_nanos = w.balance_nanos + r.restore_nanos,
-                updated_at = now()
-            from (select coalesce(sum(restore_nanos), 0)::bigint as restore_nanos from released) r
-            where w.workspace_id = p_workspace_id
-              and r.restore_nanos > 0;
-        end if;
     end if;
 
     if not v_found then
