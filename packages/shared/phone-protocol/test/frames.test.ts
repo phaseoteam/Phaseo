@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { effortLabel, parseDesktopFrame, parsePhoneFrame, phoneLimits, PhoneProtocolError, RequestRate } from "../src/index";
+import { effortLabel, parseDesktopFrame, parsePhoneFrame, phoneLimits, PhoneProtocolError, relayHolds, RequestRate } from "../src/index";
 
 const refused = (text: string) => { try { parsePhoneFrame(text); } catch (error) { return error as PhoneProtocolError; } throw new Error("accepted"); };
 
@@ -89,6 +89,23 @@ describe("phone frames", () => {
 		expect(refused(JSON.stringify({ id: "5", type: "read_diff_file", scope: "uncommitted", chatId: "c", path: "a b", hash })).message).toContain("path");
 		// The phone keeps only capabilities it knows.
 		expect(parseDesktopFrame(JSON.stringify({ type: "access", capabilities: ["code", "root"] }))).toEqual({ type: "access", capabilities: ["code"] });
+	});
+	it("lists and reads files by chat or project, refusing paths that climb out (protocol 5)", () => {
+		expect(parsePhoneFrame(JSON.stringify({ id: "1", type: "list_files", chatId: "c", directory: "" }))).toEqual({ id: "1", type: "list_files", chatId: "c", directory: "" });
+		expect(parsePhoneFrame(JSON.stringify({ id: "2", type: "list_files", projectId: "p1", query: "usage" }))).toEqual({ id: "2", type: "list_files", projectId: "p1", query: "usage" });
+		expect(parsePhoneFrame(JSON.stringify({ id: "3", type: "read_file", projectId: "p1", path: "src/a b.ts" }))).toEqual({ id: "3", type: "read_file", projectId: "p1", path: "src/a b.ts" });
+		for (const path of ["../secret", "src/../../x", "/etc/passwd", "C:/Windows/win.ini", "src\\..\\x", "./a", "src/", ""]) {
+			expect(refused(JSON.stringify({ id: "4", type: "read_file", projectId: "p1", path })).message).toContain("path");
+		}
+		expect(refused(JSON.stringify({ id: "5", type: "list_files", projectId: "p1", directory: ".." })).message).toContain("directory");
+		expect(refused(JSON.stringify({ id: "5", type: "list_files", projectId: "p1" })).message).toContain("directory or a query");
+		expect(refused(JSON.stringify({ id: "5", type: "list_files", projectId: "p1", directory: "", query: "a" })).message).toContain("directory or a query");
+		expect(refused(JSON.stringify({ id: "5", type: "list_files", projectId: "p1", query: " " })).message).toContain("query");
+		expect(refused(JSON.stringify({ id: "5", type: "read_file", path: "a.ts" })).message).toContain("chatId or a projectId");
+		expect(refused(JSON.stringify({ id: "5", type: "read_file", chatId: "c", projectId: "p1", path: "a.ts" })).message).toContain("not both");
+		// Never held for an offline computer: a read is only worth anything now.
+		expect(relayHolds({ type: "read_file" })).toBe(false);
+		expect(relayHolds({ type: "list_files" })).toBe(false);
 	});
 	it("names efforts the same way on both sides", () => {
 		expect(effortLabel("xhigh")).toBe("Extra high");

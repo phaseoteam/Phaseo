@@ -6,10 +6,11 @@ import { utf8Length } from "./base64url";
  */
 /**
  * 2 added list_projects, projects_changed and hello's capabilities; 3 added update_chat, set_chat, queue and the
- * archived list; 4 added git_status, read_diff, read_diff_file, the access event and forbidden. A phone gates each newer
- * frame on hello.protocol, since an older computer answers an unknown request with invalid_frame.
+ * archived list; 4 added git_status, read_diff, read_diff_file, the access event and forbidden; 5 added list_files and
+ * read_file. A phone gates each newer frame on hello.protocol, since an older computer answers an unknown request with
+ * invalid_frame.
  */
-export const phoneProtocolVersion = 4;
+export const phoneProtocolVersion = 5;
 export const phoneLimits = {
 	/** Largest frame either side accepts, before or after decryption. */
 	frameBytes: 1024 * 1024,
@@ -25,6 +26,8 @@ export const phoneLimits = {
 	entriesBatchMs: 250,
 	/** Most of one file's patch read_diff_file sends; the rest is cut at a line. */
 	diffFileBytes: 512 * 1024,
+	/** Most of a file read_file sends: text past it is cut at a line, and a larger image isn't sent. */
+	fileBytes: 512 * 1024,
 } as const;
 
 export type PhoneChatStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
@@ -74,7 +77,7 @@ export type PhoneEntry = PhoneMessage | PhoneActivity;
 export type PhoneProject = { id: string; name: string; /** The checked-out branch, when the computer read it. */ branch?: string; worktreeOf?: string; pinned?: true; archived?: true; /** A git checkout. */ repository: boolean };
 /**
  * Powers a paired phone has beyond threads, switched on per phone on the computer: `code` reads git status and diffs
- * (from protocol 4); `changes` and `terminal` are for frames still to come. Empty from a computer before 4.
+ * (from protocol 4) and files (from 5); `changes` and `terminal` are for frames still to come. Empty from a computer before 4.
  */
 export type PhoneCapability = "code" | "changes" | "terminal";
 export const phoneCapabilities: readonly PhoneCapability[] = ["code", "changes", "terminal"];
@@ -93,6 +96,19 @@ export type PhoneGitFile = { path: string; oldPath?: string; status: PhoneGitFil
  * and when the frame had no room for it (read it with read_diff_file). Lines are -1 for a binary file.
  */
 export type PhoneDiffFile = { path: string; oldPath?: string; status: "added" | "modified" | "deleted" | "renamed"; additions: number; deletions: number; binary?: true; patch?: string; /** read_diff_file cut the patch at diffFileBytes. */ truncated?: true };
+/** Which folder a file request reads: a chat's (its worktree's when it has one) or a project's. */
+export type PhoneFileTarget = { projectId?: string; chatId?: string };
+/** A file or folder, by its path from the project's folder with forward slashes. */
+export type PhoneFileEntry = { name: string; path: string; directory: boolean };
+/**
+ * A file as the phone can show it: text (cut at a line past phoneLimits.fileBytes, `truncated`), an image up to that
+ * size, `too-large` for a larger image, or `unsupported` for anything else (binary files and PDFs).
+ */
+export type PhoneFilePreview =
+	| { kind: "text"; text: string; size: number; truncated: boolean }
+	| { kind: "image"; mimeType: string; dataUrl: string; size: number }
+	| { kind: "too-large"; size: number }
+	| { kind: "unsupported"; size: number };
 export type AttentionKind = "approval" | "question" | "done" | "failed";
 /** What update_chat does, as the window's sidebar menu does it; each has its reverse, so a phone can undo. */
 export const chatActions = ["settle", "unsettle", "wake", "mark-unread", "archive", "unarchive", "pin", "unpin", "rename", "snooze"] as const;
@@ -124,7 +140,14 @@ export type PhoneRequest =
 	/** From protocol 4, with the code capability: a diff split by file (see PhoneDiffTarget). */
 	| ({ id: string; type: "read_diff" } & PhoneDiffTarget)
 	/** One file of the diff read_diff answered with `hash`; refused as rejected once the diff has changed. */
-	| ({ id: string; type: "read_diff_file"; path: string; hash: string } & PhoneDiffTarget);
+	| ({ id: string; type: "read_diff_file"; path: string; hash: string } & PhoneDiffTarget)
+	/**
+	 * From protocol 5, with the code capability: one folder's files and folders (`directory`, "" for the top), or a
+	 * search across the project (`query`). Git-ignored files are left out, as in the window's file tree.
+	 */
+	| ({ id: string; type: "list_files"; directory?: string; query?: string } & PhoneFileTarget)
+	/** From protocol 5, with the code capability: one file to preview, read-only. */
+	| ({ id: string; type: "read_file"; path: string } & PhoneFileTarget);
 export type PhoneFrame = PhoneRequest | { id?: string; type: "ping" } | { id?: string; type: "pong" };
 
 export type PhoneResults = {
@@ -159,6 +182,9 @@ export type PhoneResults = {
 	 */
 	read_diff: { repository: boolean; files: PhoneDiffFile[]; hash: string; truncated: boolean; headRef?: string; baseRef?: string };
 	read_diff_file: { file: PhoneDiffFile };
+	/** `truncated`: more matched, or the folder holds more, than the computer sends. */
+	list_files: { entries: PhoneFileEntry[]; truncated: boolean };
+	read_file: PhoneFilePreview;
 };
 /** forbidden (from protocol 4): the phone lacks the capability; the person allows it on the computer. */
 export type PhoneErrorCode = "invalid_frame" | "too_large" | "rate_limited" | "unauthorized" | "not_found" | "rejected" | "forbidden" | "internal";
@@ -180,7 +206,10 @@ export class PhoneProtocolError extends Error {
 	constructor(readonly code: PhoneErrorCode, message: string, readonly id?: string, readonly type?: string) { super(message); this.name = "PhoneProtocolError"; }
 }
 
-const requestTypes = new Set(["hello", "list_chats", "read_chat", "send", "answer_approval", "answer_question", "stop", "new_chat", "list_models", "subscribe", "list_projects", "update_chat", "set_chat", "queue", "git_status", "read_diff", "read_diff_file"]);
+const requestTypes = new Set(["hello", "list_chats", "read_chat", "send", "answer_approval", "answer_question", "stop", "new_chat", "list_models", "subscribe", "list_projects", "update_chat", "set_chat", "queue", "git_status", "read_diff", "read_diff_file", "list_files", "read_file"]);
+/** A path in a project as a phone names it: forward slashes, not absolute, no `.` or `..` segments ("" is the top). */
+const projectPath = (value: unknown, top = false): value is string => typeof value === "string" && value.length <= 4096 && !/[\u0000-\u001f\\]/.test(value)
+	&& (value === "" ? top : !/^[a-zA-Z]:/.test(value) && value.split("/").every(segment => segment !== "" && segment !== "." && segment !== ".."));
 const plain = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value === "object" && !Array.isArray(value);
 const validId = (value: unknown, max = 200): value is string => typeof value === "string" && value.length > 0 && value.length <= max && !/[\u0000-\u001f]/.test(value);
 
@@ -325,6 +354,23 @@ export function parsePhoneFrame(text: string): PhoneFrame {
 			if (typeof frame.path !== "string" || !frame.path || frame.path.length > 4096 || /[\u0000-\u001f]/.test(frame.path)) fail("path is required.");
 			if (typeof frame.hash !== "string" || !/^[a-f0-9]{64}$/.test(frame.hash)) fail("hash is required.");
 			return { id: request, type, ...fields, path: frame.path as string, hash: frame.hash as string };
+		}
+		case "list_files": case "read_file": {
+			const chat = optional("chatId"), target = projectId();
+			if (!chat && !target.projectId) fail("Name a chatId or a projectId.");
+			if (chat && target.projectId) fail("Name a chatId or a projectId, not both.");
+			const fields = { ...target, ...chat ? { chatId: chat } : {} };
+			if (type === "read_file") {
+				if (!projectPath(frame.path)) fail("path must be a file inside the project, such as src/app.ts.");
+				return { id: request, type, ...fields, path: frame.path as string };
+			}
+			if ((frame.directory === undefined) === (frame.query === undefined)) fail("Name a directory or a query, not both.");
+			if (frame.directory !== undefined) {
+				if (!projectPath(frame.directory, true)) fail("directory must be a folder inside the project, such as src (\"\" for the top).");
+				return { id: request, type, ...fields, directory: frame.directory as string };
+			}
+			if (typeof frame.query !== "string" || !frame.query.trim() || frame.query.length > 500 || /[\u0000-\u001f]/.test(frame.query)) fail("query must be up to 500 characters.");
+			return { id: request, type, ...fields, query: frame.query as string };
 		}
 		case "subscribe": {
 			const ids = frame.chatIds;

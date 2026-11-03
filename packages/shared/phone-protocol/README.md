@@ -51,6 +51,15 @@ With `code`:
 
 None of these is held by Phaseo Connect for an offline computer. A review comment never reaches the computer as a frame: the phone puts it into the thread's message, which the person sends.
 
+## Files
+
+From version 5, also with `code`, and read-only. Both name a `chatId` (the thread's folder, its worktree's when it has one) or a `projectId`, not both.
+
+- `list_files { directory }` lists one folder (`""` for the top), folders first; `list_files { query }` searches names across the project. Both come from the window's file tree, so git-ignored files are left out, and `truncated` says more matched or the folder holds more than one frame carries.
+- `read_file { path }` previews one file through the window's preview: `text` (cut at the last whole line under `phoneLimits.fileBytes`, 512 KB, and further if its escaped JSON wouldn't fit a frame; `truncated` says so), `image` as a data URL up to 512 KB, `too-large` for a larger image, or `unsupported` for binary files and PDFs, each with the file's `size`.
+
+A path is relative to the project with forward slashes. The phone's frame refuses `.`/`..` segments, absolute paths and backslashes, and the computer resolves the real path and refuses anything outside the project, including through a link. Nothing here writes a file. "Add to message" on the phone puts `@path` into the thread's message, which the person sends.
+
 ## Direct connection
 
 Direct addresses are plain `http`/`ws` (a Wi-Fi or Tailscale IP has no certificate), so everything secret or private is sealed with the paired keys and no token is sent. `src/direct.ts` describes the handshake.

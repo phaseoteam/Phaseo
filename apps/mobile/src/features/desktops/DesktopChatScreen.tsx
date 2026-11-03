@@ -1,6 +1,6 @@
 import { LegendList } from "@legendapp/list/react-native";
 import { useRouter } from "expo-router";
-import { ChevronDown, ChevronRight, CircleAlert, FileDiff, GitCompareArrows, GitPullRequest, ListOrdered, MoreHorizontal, Wrench } from "lucide-react-native";
+import { ChevronDown, ChevronRight, CircleAlert, FileDiff, FolderTree, GitCompareArrows, GitPullRequest, ListOrdered, MoreHorizontal, Wrench } from "lucide-react-native";
 import { memo, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { ActivityIndicator, Linking, Pressable, View } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
@@ -25,8 +25,9 @@ import { listAgents, threadModel, type ModelChoice, type ModelList } from "./new
 import { PendingCards } from "./PendingCards";
 import { chooseDesktop } from "./picked";
 import type { PhoneActivity, PhoneChatDetail, PhoneMessage, PhoneQueueAction, PhoneTurnChanges } from "./protocol";
+import { readsFiles } from "./files/fileTree";
 import { readsCode } from "./review/diffLines";
-import { desktopReviewHref } from "./routes";
+import { desktopFilesHref, desktopReviewHref } from "./routes";
 import { useDesktop } from "./store";
 import { organises } from "./threadActions";
 
@@ -93,6 +94,8 @@ function ChatView({ client, desktopId, chatId, desktopName }: { client: DesktopC
 
   const pullRequests = chat?.pullRequests ?? [];
   const reviewButton = review ? <IconButton icon={GitCompareArrows} label="Review changes" onPress={() => openReview()} /> : null;
+  // Files, like Review, shows only while the computer lets this phone read code.
+  const filesButton = readsFiles(connection) && chat?.projectId ? <IconButton icon={FolderTree} label="Files" onPress={() => router.push(desktopFilesHref(desktopId, { chatId }, chat.project))} /> : null;
   const pullRequestMenu = pullRequests.length ? (
     <IconButton
       icon={GitPullRequest}
@@ -117,7 +120,7 @@ function ChatView({ client, desktopId, chatId, desktopName }: { client: DesktopC
         back
         title={chat?.title ?? "Thread"}
         subtitle={[chat ? chatStatusLabel(chat) : connectionLabel(connection), chat?.project, desktopName].filter(Boolean).join(" · ")}
-        right={reviewButton || pullRequestMenu ? <View className="flex-row">{reviewButton}{pullRequestMenu}</View> : null}
+        right={filesButton || reviewButton || pullRequestMenu ? <View className="flex-row">{filesButton}{reviewButton}{pullRequestMenu}</View> : null}
       />
       <ConnectionNotice client={client} />
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>

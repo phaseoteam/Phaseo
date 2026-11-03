@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { errorResponse, okResponse, parsePhoneFrame, phoneLimits, phoneProtocolVersion, PhoneProtocolError, RequestRate, type AttentionKind, type DesktopFrame, type PhoneCapability, type PhoneDiffTarget, type PhoneEntry, type PhoneProject, type PhoneRequest, type PhoneResponse, type PhoneResults } from "@phaseo/phone-protocol";
+import { errorResponse, okResponse, parsePhoneFrame, phoneLimits, phoneProtocolVersion, PhoneProtocolError, RequestRate, type AttentionKind, type DesktopFrame, type PhoneCapability, type PhoneDiffTarget, type PhoneEntry, type PhoneFilePreview, type PhoneFileTarget, type PhoneProject, type PhoneRequest, type PhoneResponse, type PhoneResults } from "@phaseo/phone-protocol";
 import type { ConversationPage, ConversationPageQuery } from "../../shared/conversationPage";
 import type { GitDiffRequest, GitDiffResult, TurnFileChange } from "../../shared/gitDiff";
 import { validateCommand, type AgentActivity, type Message, type Task, type WorkspaceCommand } from "../../shared/workspace";
@@ -7,6 +7,8 @@ import type { TaskOverview, WorkspaceOverview } from "../../shared/workspaceOver
 import type { PhoneModelsInput, PhoneNewChat, PhoneSetChat } from "./phoneHost";
 import { attentionOf, chatListPage, phoneChat, phoneChats, phoneDetail, phoneProjects, queuedChars, readingOrder, topLevelChats, TurnChangesCache, withTurnChanges } from "./phoneChats";
 import { phoneDiff, phoneDiffFile, phoneGitStatus, type GitWorkingStatus } from "./phoneReview";
+import { phoneFileList } from "./phoneFiles";
+import type { ProjectTreeRequest, ProjectTreeResult } from "../../shared/projectTree";
 
 /** What the phone server needs from the app: the same reads and commands the window uses. */
 export type PhoneHost = {
@@ -31,6 +33,10 @@ export type PhoneHost = {
 	gitStatus: (projectId: string) => Promise<GitWorkingStatus | null>;
 	/** The window's diff surface read (gitDiffScopes' gitScopedDiff) in a project's folder. */
 	diff: (projectId: string, request: GitDiffRequest) => Promise<GitDiffResult>;
+	/** The window's file tree (projectFileSearch's projectTree) of a project's folder. */
+	files: (projectId: string, request: ProjectTreeRequest) => Promise<ProjectTreeResult>;
+	/** A project file through the window's preview, sized for a frame (phoneFiles' phoneFilePreview). */
+	readFile: (projectId: string, path: string) => Promise<PhoneFilePreview>;
 };
 export type PhoneDevice = { id: string; name: string };
 const forbidden = () => new PhoneProtocolError("forbidden", "Allow this on the computer: Settings → Phone.");
@@ -222,6 +228,20 @@ export class PhoneSession {
 				if (!file) throw new PhoneProtocolError("not_found", "That file isn't in these changes any more.");
 				return okResponse(request, { file });
 			}
+			case "list_files": {
+				this.allowed("code");
+				const projectId = this.fileProject(request);
+				const listing = await this.host.files(projectId, request.query !== undefined ? { type: "search", query: request.query } : { type: "list", directory: request.directory ?? "" });
+				// As with git reads: nothing read before Read code was turned off goes out after.
+				this.allowed("code");
+				return okResponse(request, phoneFileList(listing));
+			}
+			case "read_file": {
+				this.allowed("code");
+				const file = await this.host.readFile(this.fileProject(request), request.path);
+				this.allowed("code");
+				return okResponse(request, file);
+			}
 			case "subscribe": {
 				const listed = new Set(phoneChats(this.host.overview()).map(task => task.id));
 				const chatIds = request.chatIds.filter(id => listed.has(id));
@@ -247,6 +267,13 @@ export class PhoneSession {
 		const message = request.messageId ? messages.find(value => value.id === request.messageId) : messages.at(-1);
 		if (!message) throw new PhoneProtocolError("not_found", request.messageId ? "That turn has no saved snapshots to compare." : "No turn in this thread has saved snapshots yet.");
 		return { projectId, diff: { scope: "turn", from: message.checkpoint!.before, to: message.checkpoint!.after! } };
+	}
+	/** The project whose folder a file request reads: a chat's own (its worktree's when it has one), or one still on the computer. */
+	private fileProject(request: PhoneFileTarget) {
+		const projectId = request.chatId ? this.chatOverview(request.chatId).projectId : request.projectId;
+		if (!projectId) throw new PhoneProtocolError("not_found", "This thread isn't in a project, so it has no files to show.");
+		if (!request.chatId) this.checkProject(projectId);
+		return projectId;
 	}
 	/** The person changed this phone's capabilities; a phone that knows the event hears them at once. */
 	accessChanged() { if (!this.closed && this.protocol >= 4) this.send({ type: "access", capabilities: [...this.capabilities()] }); }

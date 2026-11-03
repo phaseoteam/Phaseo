@@ -6,6 +6,8 @@ import { settleBlocker } from "../../shared/threadLifecycle";
 import { overviewOrder, taskOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
 import type { GitDiffRequest, GitDiffResult, TurnFileChange } from "../../shared/gitDiff";
 import type { GitWorkingStatus } from "./phoneReview";
+import { projectTree } from "../projectFileSearch";
+import { phoneFilePreview } from "./phoneFiles";
 import { phoneModels, phoneSetChat, startPhoneChat, type PhoneModelSources } from "./phoneHost";
 import type { PhoneHost } from "./phoneSession";
 
@@ -30,6 +32,9 @@ export function fakePhoneHost() {
 	const checkpointFiles = new Map<string, TurnFileChange[]>(), turnReads: string[] = [];
 	/** Each project's git status (none: not a checkout), the patch each diff returns, and the diffs asked for as "projectId scope…". */
 	const gitStatuses = new Map<string, GitWorkingStatus>(), patches = new Map<string, string>(), diffReads: { projectId: string; request: GitDiffRequest }[] = [];
+	/** Each project's folder on disk for file reads, which go through the real tree and preview; and the projects read. */
+	const fileRoots = new Map<string, string>(), fileReads: string[] = [];
+	const fileRoot = (projectId: string) => { fileReads.push(projectId); const root = fileRoots.get(projectId); if (!root) throw new Error("Project no longer exists."); return root; };
 	let clock = Date.parse("2026-11-01T10:00:00.000Z");
 	const tick = () => new Date(clock += 1000).toISOString();
 	// A Phaseo account that can call the gateway, and Codex and Claude Code signed in on the computer.
@@ -103,6 +108,8 @@ export function fakePhoneHost() {
 			const patch = patches.get(key) ?? patches.get("*") ?? "";
 			return { patch, hash: createHash("sha256").update(patch).digest("hex"), truncated: false, repository: true } satisfies GitDiffResult;
 		},
+		files: async (projectId, request) => projectTree(fileRoot(projectId), request),
+		readFile: async (projectId, filename) => phoneFilePreview(fileRoot(projectId), filename),
 	};
-	return { host, tasks, projects, accounts, agents, sources, repositoryChecks, checkpointFiles, turnReads, gitStatuses, patches, diffReads, commands, addTask, addMessage, get, touch, changed, overview, onChange: (listener: (overview: WorkspaceOverview) => void) => listeners.push(listener) };
+	return { host, tasks, projects, accounts, agents, sources, repositoryChecks, checkpointFiles, turnReads, gitStatuses, patches, diffReads, fileRoots, fileReads, commands, addTask, addMessage, get, touch, changed, overview, onChange: (listener: (overview: WorkspaceOverview) => void) => listeners.push(listener) };
 }
