@@ -468,6 +468,9 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                             }
                         }
                         lastOutputFrameAt = frameReceivedAt;
+                        // Separate network reads that carried output. One means the whole
+                        // answer arrived at once, so there is no streaming speed to measure.
+                        ctx.meta.outputArrivals = outputFrameIntervalCount + 1;
                     }
 
                     if (firstOutputAt === null && containsGeneratedOutput) {

@@ -186,11 +186,12 @@ describe("recordProviderRound", () => {
 		recordProviderRound(ctx, {
 			completedAtMs: 6200,
 			firstOutputAtMs: 6000,
+			outputArrivals: 12,
 			usage: { outputTokens: 21, reasoningTokens: 0 },
 		});
 		expect(resolveOutputSpeedWindow(ctx)).toBeUndefined();
 		ctx.meta.preserve_stream_timing = true;
-		expect(resolveOutputSpeedWindow(ctx)).toEqual({ durationMs: 200, outputTokens: 21, reasoningTokens: 0 });
+		expect(resolveOutputSpeedWindow(ctx)).toEqual({ durationMs: 200, outputTokens: 21, reasoningTokens: 0, arrivals: 12 });
 	});
 
 	it("keeps reasoning tokens in the window when the round streamed its reasoning", () => {
@@ -203,6 +204,6 @@ describe("recordProviderRound", () => {
 			reasoningStreamed: true,
 			usage: { outputTokens: 1_000, reasoningTokens: 900 },
 		});
-		expect(resolveOutputSpeedWindow(ctx)).toEqual({ durationMs: 11_000, outputTokens: 1_000, reasoningTokens: null });
+		expect(resolveOutputSpeedWindow(ctx)).toEqual({ durationMs: 11_000, outputTokens: 1_000, reasoningTokens: null, arrivals: null });
 	});
 });

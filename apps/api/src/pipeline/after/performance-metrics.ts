@@ -14,12 +14,12 @@ export type OutputSpeedWindow = {
 	durationMs: number | null;
 	outputTokens: number;
 	reasoningTokens?: number | null;
+	/**
+	 * Separate network reads that carried output. Unknown (undefined or null)
+	 * when the path does not count them.
+	 */
+	arrivals?: number | null;
 };
-
-/** Below this, the response arrived in one burst and its speed cannot be measured. */
-export const MIN_OUTPUT_SPEED_WINDOW_MS = 50;
-/** Faster than any hosted model streams; a higher figure is a measurement artefact. */
-export const MAX_PLAUSIBLE_OUTPUT_SPEED_TPS = 5_000;
 
 function finiteNonNegative(value: number | null | undefined): number | null {
 	return value != null && Number.isFinite(value) ? Math.max(0, value) : null;
@@ -30,8 +30,11 @@ function finiteNonNegative(value: number | null | undefined): number | null {
  *
  * Provider TTFT is the first visible output, so reasoning the provider did
  * before it is not part of the window. Usage counts reasoning inside output
- * tokens, so it is taken out here. A window too short to measure, or a speed no
- * model reaches, gives null rather than a misleading number.
+ * tokens, so it is taken out here.
+ *
+ * There is no speed limit: a model that streams fast gets its real figure. Speed
+ * is unmeasurable only when the output arrived in one network read (the provider
+ * held the answer and sent it at once) or took no measurable time.
  */
 export function calculateOutputSpeed(window: OutputSpeedWindow | null): {
 	outputSpeedTps: number | null;
@@ -39,17 +42,17 @@ export function calculateOutputSpeed(window: OutputSpeedWindow | null): {
 } {
 	const none = { outputSpeedTps: null, tpotMs: null };
 	if (!window) return none;
+	const arrivals = finiteNonNegative(window.arrivals);
+	if (arrivals !== null && arrivals < 2) return none;
 	const durationMs = finiteNonNegative(window.durationMs);
-	if (durationMs === null || durationMs < MIN_OUTPUT_SPEED_WINDOW_MS) return none;
+	if (durationMs === null || durationMs <= 0) return none;
 	const outputTokens = finiteNonNegative(window.outputTokens) ?? 0;
 	const reasoningTokens = finiteNonNegative(window.reasoningTokens) ?? 0;
 	const visibleTokens = Math.max(0, outputTokens - reasoningTokens);
 	const postFirstTokenCount = visibleTokens - 1;
 	if (postFirstTokenCount <= 0) return none;
 	const tpotMs = durationMs / postFirstTokenCount;
-	const outputSpeedTps = 1000 / tpotMs;
-	if (outputSpeedTps > MAX_PLAUSIBLE_OUTPUT_SPEED_TPS) return none;
-	return { outputSpeedTps, tpotMs };
+	return { outputSpeedTps: 1000 / tpotMs, tpotMs };
 }
 
 export function calculateOutputPerformanceMetrics(args: {
@@ -61,6 +64,8 @@ export function calculateOutputPerformanceMetrics(args: {
 	gatewayE2eMs: number | null;
 	/** Time spent on failed provider attempts; provider time, not Phaseo's. */
 	failoverMs?: number | null;
+	/** Separate network reads that carried output, when the stream counted them. */
+	outputArrivals?: number | null;
 	/**
 	 * Measure output speed over this window instead of provider duration after
 	 * TTFT, for example the final round of a server-tool loop. Null means the
@@ -86,6 +91,7 @@ export function calculateOutputPerformanceMetrics(args: {
 					durationMs: providerDurationMs - providerTtftMs,
 					outputTokens,
 					reasoningTokens: args.reasoningTokens,
+					arrivals: args.outputArrivals,
 				}
 				: null,
 	);

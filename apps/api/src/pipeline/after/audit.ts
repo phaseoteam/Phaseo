@@ -492,6 +492,7 @@ export async function handleSuccessAudit(
         providerTtftMs,
         gatewayE2eMs: endToEndMs,
         failoverMs: resolveFailoverMs(ctx),
+        outputArrivals: ctx.meta.outputArrivals ?? null,
         speedWindow: isStream ? resolveOutputSpeedWindow(ctx) : undefined,
     });
     // Throughput is API-owned: output tokens divided by the full provider duration in seconds.
