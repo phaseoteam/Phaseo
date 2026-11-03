@@ -62,8 +62,8 @@ export default [
 		},
 	},
 	{
-		// Not bundled into a Worker: tests, local scripts and tools, and the enterprise invoicing job (nothing calls it).
-		files: ["**/*.test.ts", "**/*.spec.ts", "tests/**", "scripts/**", "tools/**", "src/pipeline/invoicing/daily.ts"],
+		// Not bundled into a Worker: tests, local scripts and tools.
+		files: ["**/*.test.ts", "**/*.spec.ts", "tests/**", "scripts/**", "tools/**"],
 		rules: { "no-restricted-syntax": "off", "@typescript-eslint/no-restricted-imports": "off" },
 	},
 	{
