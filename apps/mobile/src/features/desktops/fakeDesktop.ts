@@ -58,9 +58,11 @@ export class FakeDesktop {
     { id: "c2", title: "Release notes", mode: "chat", status: "waiting", updatedAt: "2026-11-01T08:00:00.000Z", unread: true, needsYou: true, attention: "Wants to run a command", approvals: [{ id: "a1", title: "Run pnpm build", description: "pnpm --filter web build" }], questions: [] },
   ];
   /** The protocol it speaks; 1 answers like a computer from before list_projects, 2 like one from before update_chat, 3 like one from before git_status. */
-  protocol = 4;
+  protocol = 5;
   /** What it lets this phone do beyond threads (sent from protocol 4). */
   capabilities: PhoneCapability[] = ["code"];
+  /** The project's files by path, for list_files and read_file; folders are what their paths imply. */
+  files: Record<string, PhoneResults["read_file"]> = { "src/usage.ts": { kind: "text", text: "export const usage = 1;\n", size: 24, truncated: false }, "README.md": { kind: "text", text: "# Phaseo\n", size: 9, truncated: false } };
   /** The diff read_diff answers with. */
   diff: PhoneResults["read_diff"] = { repository: true, hash: "a".repeat(64), truncated: false, files: [{ path: "src/usage.ts", status: "modified", additions: 2, deletions: 1, patch: "diff --git a/src/usage.ts b/src/usage.ts\n@@ -1,2 +1,3 @@\n a\n-b\n+c\n+d\n" }] };
   /** Its projects: Blog has no threads yet, Scratch is archived and a worktree folds under Phaseo. */
@@ -214,6 +216,14 @@ export class FakeDesktop {
         if (request.type === "read_diff") return okResponse(request, this.diff);
         const file = this.diff.files.find((entry) => entry.path === request.path);
         return file ? okResponse(request, { file }) : errorResponse(request.id, request.type, "not_found", "That file isn't in these changes any more.") as PhoneResponse;
+      }
+      case "list_files": case "read_file": {
+        if (this.protocol < 5) return errorResponse(request.id, request.type, "invalid_frame", "Unknown frame type.") as PhoneResponse;
+        if (!this.capabilities.includes("code")) return errorResponse(request.id, request.type, "forbidden", "Allow this on the computer: Settings → Phone.") as PhoneResponse;
+        if (request.type === "read_file") return this.files[request.path] ? okResponse(request, this.files[request.path]!) : errorResponse(request.id, request.type, "not_found", "That file isn't in this project any more.") as PhoneResponse;
+        const paths = Object.keys(this.files), prefix = request.directory ? `${request.directory}/` : "";
+        const names = request.query !== undefined ? paths.filter((path) => path.includes(request.query!)) : [...new Set(paths.filter((path) => path.startsWith(prefix)).map((path) => prefix + path.slice(prefix.length).split("/")[0]))];
+        return okResponse(request, { entries: names.map((path) => ({ name: path.slice(path.lastIndexOf("/") + 1), path, directory: !this.files[path] })), truncated: false });
       }
       case "list_projects":
         return this.protocol >= 2 ? okResponse(request, { projects: this.projects }) : errorResponse(request.id, request.type, "invalid_frame", "Unknown frame type.") as PhoneResponse;

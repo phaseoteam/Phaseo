@@ -1,5 +1,5 @@
 import { notificationTarget } from "@/features/notifications/links";
-import { desktopChatHref, desktopChatInPath, desktopReviewHref, newDesktopChatHref } from "./routes";
+import { desktopChatHref, desktopChatInPath, desktopFilesHref, desktopReviewHref, newDesktopChatHref } from "./routes";
 
 describe("Code routes", () => {
   it("opens a tapped approval or needs-you notification in Code", () => {
@@ -14,6 +14,8 @@ describe("Code routes", () => {
     expect(newDesktopChatHref("desk 1")).toBe("/code/desk%201/new");
     expect(newDesktopChatHref("desk-1", "p/1")).toBe("/code/desk-1/new?projectId=p%2F1");
     expect(desktopReviewHref("desk-1", "a/b", "turn", "m 1")).toBe("/code/desk-1/review?chatId=a%2Fb&scope=turn&messageId=m%201");
+    expect(desktopFilesHref("desk-1", { chatId: "a/b" })).toBe("/code/desk-1/files?chatId=a%2Fb");
+    expect(desktopFilesHref("desk-1", { projectId: "p 1" }, "Phaseo", "src/a b.ts")).toBe("/code/desk-1/files?projectId=p%201&where=Phaseo&path=src%2Fa%20b.ts");
   });
 
   it("reads the open thread back from the path, for the list's selected row", () => {
@@ -21,6 +23,7 @@ describe("Code routes", () => {
     expect(desktopChatInPath("/code/desk%201/a%2Fb")).toEqual({ desktopId: "desk 1", chatId: "a/b" });
     expect(desktopChatInPath("/code/desk-1/new")).toBeNull();
     expect(desktopChatInPath("/code/desk-1/review")).toBeNull();
+    expect(desktopChatInPath("/code/desk-1/files")).toBeNull();
     expect(desktopChatInPath("/chat/c2")).toBeNull();
     expect(desktopChatInPath("/code/desk-1")).toBeNull();
   });

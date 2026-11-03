@@ -1,13 +1,14 @@
 import { LegendList } from "@legendapp/list/react-native";
 import { ChevronDown, ChevronRight, FileDiff, MessageSquarePlus, RefreshCw, ShieldOff } from "lucide-react-native";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Platform, Pressable, Text as NativeText, View, type TextProps } from "react-native";
+import { ActivityIndicator, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button, EmptyState, ErrorState, Header, IconButton, Screen, Segmented, Sheet, SkeletonRows, Text, TextField, toast, useToneColor, Icon } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { haptic } from "@/lib/haptics";
 import { setChatDraft } from "../chatDraft";
 import type { DesktopClient } from "../client";
+import { Code } from "../Code";
 import { ConnectionNotice } from "../CodeThreadList";
 import { clientFor } from "../connections";
 import { useDesktopChat } from "../hooks";
@@ -15,13 +16,6 @@ import type { PhoneDiffFile, PhoneDiffScope } from "../protocol";
 import { useDesktop } from "../store";
 import { appendBlock, diffRows, diffSummary, fileCounts, fileStatusWord, pickedRows, rangeLabel, reviewComment, SCOPES, splitPath, type DiffRow } from "./diffLines";
 import { useThreadDiff } from "./hooks";
-
-/** The app's type has no monospace face; code reads in the platform's, as Markdown's code blocks do. */
-const MONO = { fontFamily: Platform.select({ ios: "Menlo", default: "monospace" }) };
-/** Code text: React Native's own, since the app's Text sets its sans face by class, which wins over a style. */
-function Code({ className, ...props }: TextProps & { className?: string }) {
-  return <NativeText {...props} className={cn("text-[12px] text-muted-foreground", className)} style={MONO} />;
-}
 
 type Item =
   | { kind: "file"; key: string; file: PhoneDiffFile; open: boolean }

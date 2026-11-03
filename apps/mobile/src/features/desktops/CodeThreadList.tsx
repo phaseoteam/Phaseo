@@ -1,7 +1,7 @@
 import { LegendList } from "@legendapp/list/react-native";
 import * as Clipboard from "expo-clipboard";
 import { useRouter, type Href } from "expo-router";
-import { Camera, ChevronDown, ChevronRight, CircleAlert, CircleCheck, CircleDotDashed, ClipboardPaste, Folder, GitBranch, Monitor, Plus, ShieldQuestion, SquarePen, type LucideIcon } from "lucide-react-native";
+import { Camera, ChevronDown, ChevronRight, CircleAlert, CircleCheck, CircleDotDashed, ClipboardPaste, Folder, FolderTree, GitBranch, Monitor, Plus, ShieldQuestion, SquarePen, type LucideIcon } from "lucide-react-native";
 import { memo, useCallback, useDeferredValue, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, View } from "react-native";
 import { Button, Callout, CALLOUT_TONES, EmptyState, ErrorState, Icon, pointAnchor, showActions, SkeletonRows, Text, useToneColor, type Anchor } from "@/components/ui";
@@ -16,7 +16,8 @@ import { useDesktopChats, useDesktopProjects } from "./hooks";
 import { changeChat, chooseSnooze, renameChat } from "./organise";
 import type { PhoneChat, PhoneResults } from "./protocol";
 import type { SavedDesktop } from "./reach";
-import { desktopChatHref, newDesktopChatHref } from "./routes";
+import { readsFiles } from "./files/fileTree";
+import { desktopChatHref, desktopFilesHref, newDesktopChatHref } from "./routes";
 import { changedLabel } from "./review/diffLines";
 import { useProjectStatuses } from "./review/hooks";
 import { menuEntries, organises, snoozedLabel, type SwipeAction } from "./threadActions";
@@ -85,6 +86,9 @@ export function CodeThreadList({ desktop, query, selectedChatId, open }: { deskt
   const statuses = useProjectStatuses(client, folderIds, chats);
   const openChat = useCallback((chat: PhoneChat) => open(desktopChatHref(desktopId, chat.id)), [open, desktopId]);
   const newThread = useCallback((projectId: string | null) => open(newDesktopChatHref(desktopId, projectId)), [open, desktopId]);
+  // A folder's files, while the computer lets this phone read code.
+  const files = state.status === "connected" && readsFiles(state);
+  const openFiles = useCallback((projectId: string, title: string) => open(desktopFilesHref(desktopId, { projectId }, title)), [open, desktopId]);
   const toggleSettled = useCallback(() => setSettledOpen((current) => !current), []);
   const toggleSnoozed = useCallback(() => setSnoozedOpen((current) => !current), []);
   const swiped = useCallback((chat: PhoneChat, action: SwipeAction) => {
@@ -111,10 +115,10 @@ export function CodeThreadList({ desktop, query, selectedChatId, open }: { deskt
         </ThreadRowActions>
       );
     }
-    if (item.type === "folder") return <FolderRow title={item.title} projectId={item.projectId} status={item.projectId ? statuses.get(item.projectId) : undefined} onNew={newThread} />;
+    if (item.type === "folder") return <FolderRow title={item.title} projectId={item.projectId} status={item.projectId ? statuses.get(item.projectId) : undefined} onNew={newThread} onFiles={files ? openFiles : undefined} />;
     return <HeadingRow title={item.title} count={item.count} open={item.open} warn={item.key === "heading:needs-you"} onToggle={item.toggle === "settled" ? toggleSettled : item.toggle === "snoozed" ? toggleSnoozed : undefined} />;
-  }, [openChat, newThread, toggleSettled, toggleSnoozed, selectedChatId, organise, swiped, menu, statuses]);
-  const extraData = useMemo(() => ({ selectedChatId, organise, statuses }), [selectedChatId, organise, statuses]);
+  }, [openChat, newThread, openFiles, files, toggleSettled, toggleSnoozed, selectedChatId, organise, swiped, menu, statuses]);
+  const extraData = useMemo(() => ({ selectedChatId, organise, statuses, files }), [selectedChatId, organise, statuses, files]);
   return (
     <>
       <ConnectionNotice client={client} />
@@ -154,8 +158,11 @@ function HeadingRow({ title, count, open, warn, onToggle }: { title: string; cou
   );
 }
 
-/** A project folder's heading, with its checked-out branch and how many files have changed when the phone may read code, and its New thread action. */
-function FolderRow({ title, projectId, status, onNew }: { title: string; projectId: string | null; status?: PhoneResults["git_status"]; onNew(projectId: string | null): void }) {
+/**
+ * A project folder's heading, with its checked-out branch and how many files have changed when the phone may read code,
+ * its Files action then, and its New thread action.
+ */
+function FolderRow({ title, projectId, status, onNew, onFiles }: { title: string; projectId: string | null; status?: PhoneResults["git_status"]; onNew(projectId: string | null): void; onFiles?: (projectId: string, title: string) => void }) {
   const changed = status?.repository ? changedLabel(status.files) : null;
   const branch = status?.repository ? status.branch : "";
   return (
@@ -171,6 +178,11 @@ function FolderRow({ title, projectId, status, onNew }: { title: string; project
         ) : null}
         {changed ? <Text variant="caption" numberOfLines={1} className="text-warning">{changed}</Text> : null}
       </View>
+      {onFiles && projectId ? (
+        <Pressable accessibilityRole="button" accessibilityLabel={`Files in ${title}`} hitSlop={6} onPress={() => onFiles(projectId, title)} className="h-9 w-9 items-center justify-center rounded-md active:bg-accent">
+          <Icon icon={FolderTree} tone="muted" size={16} />
+        </Pressable>
+      ) : null}
       <Pressable accessibilityRole="button" accessibilityLabel={projectId ? `New thread in ${title}` : "New thread without a project"} hitSlop={6} onPress={() => onNew(projectId)} className="h-9 w-9 items-center justify-center rounded-md active:bg-accent">
         <Icon icon={Plus} tone="muted" size={16} />
       </Pressable>

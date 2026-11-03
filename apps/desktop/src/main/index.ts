@@ -108,6 +108,7 @@ import { createPullRequest, parsePullRequestText, pullRequestPrompt, threadWorkL
 import { OutsideAgentsMcp } from "./outsideAgentsMcp";
 import { PhoneService, type PhaseoSignIn } from "./phone/phoneService";
 import { phoneModels, phoneSetChat, startPhoneChat, type DiscoverModels, type PhoneModelSources } from "./phone/phoneHost";
+import { phoneFilePreview } from "./phone/phoneFiles";
 import { codeHostSettings, configureCodeHosts, removeCodeHostToken, saveCodeHostToken, saveCustomCodeHosts } from "./codeHosts";
 import { codeHostKinds, validHostName, type CodeHostKind } from "../shared/codeHosts";
 import { validateCodeHostTokenRequest } from "../shared/codeHostSettings";
@@ -1364,6 +1365,9 @@ app.whenReady().then(() => {
 			// The window's Review reads (workspace:git-review, workspace:git-diff) on the same folder checks.
 			gitStatus: async projectId => { const root = projectDirectory(projectId); return existsSync(path.join(root, ".git")) ? await span("git.review", undefined, () => gitWorkingStatus(root)) : null; },
 			diff: (projectId, request) => { const root = projectDirectory(projectId); return span("git.diff", undefined, () => gitScopedDiff(root, request)); },
+			// The window's file browser reads (workspace:project-tree, workspace:file-preview) on the same folder checks.
+			files: async (projectId, request) => projectTree(projectDirectory(projectId), request),
+			readFile: async (projectId, filename) => phoneFilePreview(projectDirectory(projectId), filename),
 		},
 	});
 	void phoneService.start().catch(() => {});
