@@ -227,7 +227,8 @@ app.whenReady().then(async () => {
     await run(`window.__auditType(${popup}.querySelector('[role=combobox]'),'owned model 0')`);
     await wait(`${items}[0]?.textContent.trim().startsWith('Anthropic: Owned model 0')`);
     await run(`${items}[0].click()`);
-    await wait(`!${popup}&&document.querySelector('main form [aria-label="Choose model"]').textContent.trim()==='Owned model 0'`);
+    // The button names the effort after the model, so compare the model name alone.
+    await wait(`!${popup}&&window.__auditModelName()==='Owned model 0'`);
     await run("window.__auditType(document.querySelector('main [aria-label=Message]'),'Keep my first message')");
     await wait("!document.querySelector('main form [aria-label=Send]').disabled");
     await run("document.querySelector('main form [aria-label=Send]').click()");
