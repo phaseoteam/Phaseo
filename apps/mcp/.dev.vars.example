@@ -6,3 +6,7 @@ PHASEO_MCP_RESOURCE_SERVER_SECRET="<generate-a-random-64-plus-character-secret>"
 
 # Optional: use a non-production token to verify the OpenAI challenge route.
 # OPENAI_APPS_CHALLENGE_TOKEN="<openai-provided-domain-token>"
+
+# Optional: the contents of the google-connected-apps.json file from Google
+# Connected Console, served at /.well-known/google-connected-apps.
+# GOOGLE_CONNECTED_APPS_VERIFICATION='{"<google-provided>":"<verification-file>"}'

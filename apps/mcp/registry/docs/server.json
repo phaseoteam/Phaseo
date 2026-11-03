@@ -1,0 +1,33 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "app.phaseo/docs",
+  "title": "Phaseo Docs",
+  "description": "Search and read the Phaseo AI gateway documentation, API reference and SDK guides. No sign-in.",
+  "version": "1.0.0",
+  "websiteUrl": "https://phaseo.app/docs",
+  "repository": {
+    "url": "https://github.com/phaseoteam/Phaseo",
+    "source": "github",
+    "subfolder": "apps/docs"
+  },
+  "icons": [
+    {
+      "src": "https://phaseo.app/png_logo_light.png",
+      "mimeType": "image/png",
+      "sizes": ["1024x1024"],
+      "theme": "light"
+    },
+    {
+      "src": "https://phaseo.app/png_logo_dark.png",
+      "mimeType": "image/png",
+      "sizes": ["1024x1024"],
+      "theme": "dark"
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://phaseo.app/docs/mcp"
+    }
+  ]
+}
