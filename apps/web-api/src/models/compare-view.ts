@@ -1,5 +1,6 @@
 import { composeModelPricing } from "@/models/pricing";
 import { plansForModel, providerRowsForModel, type ComparisonSources } from "@/models/compare";
+import { formatProviderOfferDisplayName, type ProviderOfferScope } from "@/lib/provider-display-name";
 
 type Row = Record<string, unknown>;
 
@@ -37,7 +38,7 @@ export type CompareViewModel = {
 };
 
 export type CompareViewPricing = {
-	provider: { id: string; name: string; routed: boolean };
+	provider: { id: string; name: string; logoId: string; routed: boolean };
 	tiers: Record<string, CompareViewPriceRow[]>;
 };
 
@@ -51,11 +52,22 @@ export type CompareViewPriceRow = {
 	conditional: boolean;
 	/** Human-readable condition for conditional rows, e.g. "input tokens > 200K". */
 	condition: string | null;
+	/** The same condition as data, so the page can lay it out and translate it. Empty for unconditional rows. */
+	conditions: CompareViewCondition[];
+};
+
+/** One request condition on a price, keyed by the last part of its path ("video_params.resolution" → "resolution"). */
+export type CompareViewCondition = {
+	field: string;
+	op: "eq" | "ne" | "lt" | "lte" | "gt" | "gte" | "in";
+	value: string | number | boolean | Array<string | number>;
 };
 
 export type CompareViewProvider = {
 	id: string;
 	name: string;
+	/** The provider family, so a regional route such as "anthropic-us" shows its parent's logo. */
+	logoId: string;
 	input: number | null;
 	output: number | null;
 	cacheRead: number | null;
@@ -295,13 +307,43 @@ function compactNumber(value: unknown): string {
 	return String(parsed);
 }
 
+/**
+ * "input tokens > 200K" for numeric limits; "resolution: 480p", "mode: not v2v" or "draft"
+ * for request options, using the last part of the path ("video_params.resolution" → "resolution").
+ */
 function describeConditions(match: unknown): string | null {
 	const parts = rows(match).map((condition) => {
-		const path = text(condition.path).replace(/_/g, " ");
-		const op = COMPARISON_SYMBOLS[text(condition.op)] ?? text(condition.op);
-		return path && op ? `${path} ${op} ${compactNumber(condition.value)}` : "";
+		const path = text(condition.path).split(".").at(-1)?.replace(/_/g, " ") ?? "";
+		const op = text(condition.op);
+		if (!path || !op) return "";
+		const value = condition.value;
+		if (op === "in" && Array.isArray(value)) return `${path}: ${[...new Set(value.map((item) => text(item).toLowerCase()))].join(" or ")}`;
+		const numeric = number(value);
+		const flag = typeof value === "boolean" ? value : numeric === 1 || numeric === 0 ? numeric === 1 : null;
+		if ((op === "eq" || op === "ne") && flag !== null && !/tokens|seconds|characters/.test(path)) {
+			return (op === "eq") === flag ? path : `no ${path}`;
+		}
+		if ((op === "eq" || op === "ne") && numeric === null) {
+			return `${path}: ${op === "ne" ? "not " : ""}${text(value)}`;
+		}
+		const symbol = COMPARISON_SYMBOLS[op] ?? (op === "ne" ? "≠" : op);
+		return `${path} ${symbol} ${compactNumber(value)}`;
 	}).filter(Boolean);
-	return parts.length ? parts.join(" and ") : null;
+	return parts.length ? parts.join(", ") : null;
+}
+
+const CONDITION_OPS = new Set<CompareViewCondition["op"]>(["eq", "ne", "lt", "lte", "gt", "gte", "in"]);
+
+function conditionList(match: unknown): CompareViewCondition[] {
+	return rows(match).flatMap((condition): CompareViewCondition[] => {
+		const field = text(condition.path).split(".").at(-1) ?? "";
+		const op = text(condition.op) as CompareViewCondition["op"];
+		const raw = condition.value;
+		const value = Array.isArray(raw)
+			? raw.filter((item): item is string | number => typeof item === "string" || typeof item === "number")
+			: typeof raw === "string" || typeof raw === "number" || typeof raw === "boolean" ? raw : null;
+		return field && CONDITION_OPS.has(op) && value !== null ? [{ field, op, value }] : [];
+	});
 }
 
 function displayLabel(rule: Row): string | null {
@@ -334,6 +376,7 @@ function tierRows(rules: Row[]): Record<string, CompareViewPriceRow[]> {
 			unit,
 			conditional: hasConditions(rule),
 			condition,
+			conditions: hasConditions(rule) ? conditionList(rule.match) : [],
 		});
 	}
 	const kindOrder: Record<CompareViewPriceRow["kind"], number> = { input: 0, output: 1, cacheRead: 2, cacheWrite5m: 3, cacheWrite1h: 4, cacheWrite: 5, other: 6 };
@@ -367,6 +410,7 @@ function paramNames(value: unknown): string[] {
 type ProviderEntry = {
 	id: string;
 	name: string;
+	logoId: string;
 	rules: Row[];
 	currentModels: ProviderModel[];
 	allModels: ProviderModel[];
@@ -381,7 +425,14 @@ function providerEntries(groups: PricingGroup[], current: Set<string>): Provider
 		const rules = group.pricing_rules as Row[];
 		return {
 			id: group.provider.api_provider_id,
-			name: text(group.provider.api_provider_name) || group.provider.api_provider_id,
+			// Regional routes share their parent's name ("Anthropic"), so the offer label keeps them apart: "Anthropic (US)".
+			name: formatProviderOfferDisplayName({
+				providerId: group.provider.api_provider_id,
+				providerName: text(group.provider.api_provider_name) || group.provider.api_provider_id,
+				offerLabel: text(group.provider.offer_label) || null,
+				offerScope: (text(group.provider.offer_scope) || null) as ProviderOfferScope | null,
+			}),
+			logoId: text(group.provider.provider_family_id) || group.provider.api_provider_id,
 			rules,
 			currentModels,
 			allModels: group.provider_models,
@@ -413,7 +464,7 @@ function compareEntries(labId: string) {
 	};
 }
 
-/** One entry per display name: regional and duplicate listings of the same provider collapse into the cheapest. */
+/** One entry per display name: duplicate listings of the same provider collapse into the cheapest. Regional routes have their own name. */
 function dedupeByName(entries: ProviderEntry[]): ProviderEntry[] {
 	const byName = new Map<string, ProviderEntry>();
 	for (const entry of entries) {
@@ -436,6 +487,7 @@ function toProvider(entry: ProviderEntry, isHeadline: boolean): CompareViewProvi
 	return {
 		id: entry.id,
 		name: entry.name,
+		logoId: entry.logoId,
 		input: entry.input,
 		output: entry.output,
 		cacheRead: entry.cacheRead,
@@ -590,7 +642,7 @@ function composeModel(model: Row, source: ComparisonSources, now: number): Compa
 	const headlineRouted = priced(routed);
 	const headline = headlineRouted ?? priced(entries);
 	const pricing: CompareViewPricing | null = headline ? {
-		provider: { id: headline.id, name: headline.name, routed: headlineRouted !== null },
+		provider: { id: headline.id, name: headline.name, logoId: headline.logoId, routed: headlineRouted !== null },
 		tiers: tierRows(headline.rules),
 	} : null;
 

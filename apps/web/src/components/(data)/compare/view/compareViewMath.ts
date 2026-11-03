@@ -3,8 +3,10 @@ import type {
 	ComparePriceKind,
 	CompareViewBenchmark,
 	CompareViewBenchmarkResult,
+	CompareViewCondition,
 	CompareViewModel,
 	CompareViewPriceRow,
+	CompareViewProvider,
 	CompareViewUsageByModel,
 } from "./types";
 
@@ -50,7 +52,118 @@ export function extraBands(model: CompareViewModel, tier: string, base: CompareV
 	return (model.pricing?.tiers[tier] ?? []).filter((row) => row.meter === base.meter && row !== base && row.conditional);
 }
 
+/** Message keys for the request fields prices are conditioned on; others show their own name. */
+export const CONDITION_FIELDS: Record<string, string> = {
+	input_tokens: "input",
+	long_context_input_tokens: "input",
+	seconds: "duration",
+	input_video_seconds: "inputVideo",
+	resolution: "resolution",
+	quality: "quality",
+	aspect_ratio: "aspectRatio",
+	audio: "audio",
+	generate_audio: "audio",
+	mode: "mode",
+	draft: "draft",
+	cache_ttl: "cacheDuration",
+	inference_geo: "region",
+	service_tier: "serviceTier",
+};
+
+const CONDITION_SYMBOLS = { lt: "<", lte: "≤", gt: ">", gte: "≥" } as const;
+
+export type ConditionWords = {
+	field: (field: string) => string;
+	is: (field: string, value: string) => string;
+	isNot: (field: string, value: string) => string;
+	on: string;
+	off: string;
+	/** Compact token counts ("272K"); used only when they are exact. */
+	tokens: (value: number) => string;
+	/** A plain number ("272,001"). */
+	number: (value: number) => string;
+	seconds: (value: number) => string;
+};
+
+const LEGACY_OPS: Record<string, CompareViewCondition["op"]> = { "=": "eq", ne: "ne", "≠": "ne", "<": "lt", "≤": "lte", ">": "gt", "≥": "gte", in: "in" };
+
+/**
+ * The web API deployed before structured conditions sends only text, such as
+ * "video params.mode ne v2v and video params.draft = 1" or "input tokens > 272K".
+ * Reading it back into conditions lets those responses (and cached copies) format
+ * the same way. Returns null for text it can't read, which then shows as sent.
+ */
+export function parseLegacyCondition(text: string | null | undefined): CompareViewCondition[] | null {
+	if (!text) return null;
+	const conditions: CompareViewCondition[] = [];
+	for (const part of text.split(" and ")) {
+		const match = /^(.+?) (=|ne|≠|<|≤|>|≥|in) (.+)$/.exec(part.trim());
+		if (!match) return null;
+		const field = match[1]!.split(".").at(-1)!.trim().replace(/ /g, "_");
+		const op = LEGACY_OPS[match[2]!]!;
+		const read = (raw: string): string | number => {
+			const value = raw.trim();
+			// Token limits were shortened ("272K", "1M"); "2K" elsewhere is a resolution name.
+			const short = /tokens$/.test(field) ? /^(\d+(?:\.\d+)?)([KM])$/.exec(value) : null;
+			if (short) return Number(short[1]) * (short[2] === "M" ? 1_000_000 : 1_000);
+			return /^-?\d+(\.\d+)?$/.test(value) ? Number(value) : value;
+		};
+		conditions.push({ field, op, value: op === "in" ? match[3]!.split(",").map(read) : read(match[3]!) });
+	}
+	return conditions;
+}
+
+/** "480p", "2K", "audio to video": request values as a reader would write them. */
+function optionValue(value: string | number | boolean): string {
+	const label = String(value).trim();
+	if (/^\d+p$/i.test(label)) return label.toLowerCase();
+	if (/^\d+k$/i.test(label) || /^(sd|hd|fhd|qhd|uhd)$/i.test(label)) return label.toUpperCase();
+	return label.replace(/_/g, " ");
+}
+
+/**
+ * One condition as a short phrase: "Input > 272K", "Resolution: 480p", "Mode: not v2v", "Draft: on".
+ * An "in" list drops aliases of the same option ("480P", "854x480") and keeps the short names.
+ */
+export function describeCondition(condition: CompareViewCondition, words: ConditionWords): string {
+	const field = words.field(condition.field);
+	const timed = /seconds$/.test(condition.field);
+	const counted = /tokens$/.test(condition.field);
+	// A price boundary is shown exactly: "272K" only when it is 272,000.
+	const number = (value: number) => (counted ? (value % 1_000 === 0 ? words.tokens(value) : words.number(value)) : timed ? words.seconds(value) : String(value));
+	const { op, value } = condition;
+	if (Array.isArray(value)) {
+		const labels = [...new Map(value.map((item) => [optionValue(item).toLowerCase(), typeof item === "number" ? number(item) : optionValue(item)])).values()];
+		const short = labels.filter((label) => /^\d+(p|K)$/.test(label));
+		return words.is(field, (short.length ? short : labels).join(" / "));
+	}
+	const flag = typeof value === "boolean" ? value : !counted && !timed && (value === 0 || value === 1) ? value === 1 : null;
+	if (flag !== null && (op === "eq" || op === "ne")) return words.is(field, (op === "eq") === flag ? words.on : words.off);
+	if (op === "lt" || op === "lte" || op === "gt" || op === "gte") return `${field} ${CONDITION_SYMBOLS[op]} ${typeof value === "number" ? number(value) : optionValue(value)}`;
+	const label = typeof value === "number" ? number(value) : optionValue(value);
+	return op === "ne" ? words.isNot(field, label) : words.is(field, label);
+}
+
 // Routes
+
+export type ProviderLine = { id: string; name: string; logoId: string; routes: Array<CompareViewProvider | null> };
+
+/**
+ * Every provider that serves at least one compared model, with each model's route on it.
+ * Providers serving more of the compared models come first; then the one nearest the top
+ * of a model's own list, which the API sends cheapest first.
+ */
+export function providerLines(models: CompareViewModel[]): ProviderLine[] {
+	const lines = new Map<string, ProviderLine & { rank: number }>();
+	models.forEach((model, index) => model.providers.forEach((provider, rank) => {
+		const line = lines.get(provider.id) ?? { id: provider.id, name: provider.name, logoId: provider.logoId ?? provider.id, routes: models.map(() => null), rank };
+		line.routes[index] = provider;
+		line.rank = Math.min(line.rank, rank);
+		lines.set(provider.id, line);
+	}));
+	const served = (line: ProviderLine) => line.routes.filter(Boolean).length;
+	return [...lines.values()].sort((left, right) => served(right) - served(left) || left.rank - right.rank || left.name.localeCompare(right.name));
+}
 
 /** The route and tier a reader picked for a model. A null provider means the headline (cheapest) route. */
 export type RouteChoice = { provider: string | null; tier: string | null };
@@ -63,14 +176,14 @@ export function applyRoute(model: CompareViewModel, provider: string | null | un
 	if (!provider || provider === model.pricing?.provider.id) return model;
 	const route = model.providers.find((entry) => entry.id === provider);
 	if (!route?.pricing) return model;
-	return { ...model, pricing: { provider: { id: route.id, name: route.name, routed: true }, tiers: route.pricing } };
+	return { ...model, pricing: { provider: { id: route.id, name: route.name, logoId: route.logoId, routed: true }, tiers: route.pricing } };
 }
 
 /** Routes a reader can pick: those with their own prices, plus the headline route. */
-export function routeOptions(model: CompareViewModel): Array<{ id: string; name: string }> {
+export function routeOptions(model: CompareViewModel): Array<{ id: string; name: string; logoId: string }> {
 	const headline = model.pricing?.provider;
-	const routes = model.providers.filter((route) => route.pricing || route.id === headline?.id).map((route) => ({ id: route.id, name: route.name }));
-	if (headline && !routes.some((route) => route.id === headline.id)) routes.unshift({ id: headline.id, name: headline.name });
+	const routes = model.providers.filter((route) => route.pricing || route.id === headline?.id).map((route) => ({ id: route.id, name: route.name, logoId: route.logoId ?? route.id }));
+	if (headline && !routes.some((route) => route.id === headline.id)) routes.unshift({ id: headline.id, name: headline.name, logoId: headline.logoId ?? headline.id });
 	return routes;
 }
 
