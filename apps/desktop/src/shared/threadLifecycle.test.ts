@@ -46,7 +46,7 @@ describe("Code chat lifecycle", () => {
 		expect(autoSettleAt(thread({ lastSnoozeWakeAt: iso(-day) }), 3, now)).toBeUndefined();
 	});
 
-	it("follows T3's pull request rules", () => {
+	it("follows the pull request rules", () => {
 		const pr = (state: "open" | "closed" | "merged", at: number) => ({ snapshot: { state, updatedAt: iso(at) } });
 		const rules = { days: 3, onMerge: true, keepPullRequests: false };
 		// An open or unread pull request holds even an idle chat.
@@ -62,7 +62,7 @@ describe("Code chat lifecycle", () => {
 		expect(autoSettleAt(reopened, { ...rules, keepPullRequests: true }, now)).toBeUndefined();
 	});
 
-	it("offers T3's snooze presets and short durations", () => {
+	it("offers the snooze presets and short durations", () => {
 		const morning = new Date(2026, 9, 15, 9, 0, 0);
 		expect(snoozePresets(morning).map(preset => preset.label)).toEqual(["In 1 hour", "In 3 hours", "This evening", "Tomorrow", "Next week"]);
 		expect(snoozePresets(new Date(2026, 9, 15, 17, 30)).map(preset => preset.label)).not.toContain("This evening");
@@ -71,7 +71,7 @@ describe("Code chat lifecycle", () => {
 		expect([shortDuration(10_000), shortDuration(4 * 60_000), shortDuration(2 * 3_600_000), shortDuration(3 * day)]).toEqual(["now", "4m", "2h", "3d"]);
 	});
 
-	it("orders Code chats like T3 and picks the next chat after parking one", () => {
+	it("orders Code chats for the sidebar and picks the next chat after parking one", () => {
 		const projects = [{ id: "p", name: "App", directory: "/app" }] as never;
 		const task = (id: string, patch: Partial<TaskOverview>) => ({ ...thread(), id, title: id, projectId: "p", harness: "codex", model: "m", mode: "code", attentionKey: "", steeringReviewCount: 0, ...patch }) as TaskOverview;
 		const sections = codeSections([

@@ -1,5 +1,5 @@
 /**
- * Starting a Code chat in a new worktree from the new-chat composer, after T3 Code's Workspace selector. The worktree
+ * Starting a Code chat in a new worktree from the new-chat composer's Workspace selector. The worktree
  * is made on a temporary branch, renamed from the first message (by the title model where one is set), and the
  * project's setup actions run before the agent starts. Progress is kept on the chat as `worktreeSetup`.
  */
@@ -20,18 +20,18 @@ export type WorktreeChatRequest = { projectId: string; base: string; text: strin
 
 export const worktreeSetupStageLabels: Record<WorktreeSetupStageId, string> = { checkout: "Create the worktree", branch: "Name the branch", setup: "Run the setup action" };
 
-/** T3's sanitizeBranchFragment: lower case, safe characters, up to 64 long, never empty. */
+/** A branch name fragment: lower case, safe characters, up to 64 long, never empty. */
 export function sanitizeBranchFragment(raw: string) {
 	const normalized = raw.trim().toLowerCase().replace(/['"`]/g, "").replace(/^[./\s_-]+|[./\s_-]+$/g, "");
 	const fragment = normalized.replace(/[^a-z0-9/_-]+/g, "-").replace(/\/+/g, "/").replace(/-+/g, "-").replace(/^[./_-]+|[./_-]+$/g, "").slice(0, 64).replace(/[./_-]+$/g, "");
 	return fragment || "update";
 }
 
-/** The temporary branch a new worktree starts on, as T3's `t3/<hex>`. */
+/** The temporary branch a new worktree starts on: the prefix and eight hex digits. */
 export const temporaryWorktreeBranch = (hex: string) => `${worktreeBranchPrefix}/${hex.toLowerCase().replace(/[^0-9a-f]/g, "").slice(0, 8)}`;
 export const isTemporaryWorktreeBranch = (branch: string) => new RegExp(`^${worktreeBranchPrefix}/[0-9a-f]{8}$`).test(branch);
 
-/** T3's static naming: the configured prefix, then the generated fragment without any prefix of its own. */
+/** Static naming: the configured prefix, then the generated fragment without any prefix of its own. */
 export function generatedBranchName(raw: string) {
 	const fragment = sanitizeBranchFragment(raw.replace(new RegExp(`^${worktreeBranchPrefix}/`), ""));
 	return `${worktreeBranchPrefix}/${fragment}`;
@@ -43,7 +43,7 @@ export function branchFromMessage(text: string) {
 	return generatedBranchName(words);
 }
 
-/** T3's resolveAutoFeatureBranchName: adds -2, -3 … until neither the name nor a branch nested under it exists. */
+/** A free branch name: adds -2, -3 … until neither the name nor a branch nested under it exists. */
 export function uniqueBranchName(existing: readonly string[], preferred: string) {
 	const names = existing.map(name => name.toLowerCase()), taken = new Set(names), parts = preferred.split("/");
 	let resolved = "";
@@ -57,7 +57,7 @@ export function uniqueBranchName(existing: readonly string[], preferred: string)
 	return resolved;
 }
 
-/** T3's branch-name prompt, for the title model. */
+/** The branch-name prompt, for the title model. */
 export function branchNamePrompt(message: string) {
 	return {
 		system: [

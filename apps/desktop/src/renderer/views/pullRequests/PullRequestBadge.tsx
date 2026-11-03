@@ -12,7 +12,7 @@ import { useBranchPullRequest } from "./useBranchPullRequest";
 import { useProjectRepository } from "./useProjectRepository";
 
 type Single = { number: number; url: string; title?: string; state?: "open" | "closed" | "merged"; draft?: boolean };
-/** What the badge shows (T3's resolveThreadPullRequestBadgePresentation): a stack count, "+N" for several, else #N. */
+/** What the badge shows: a stack count, "+N" for several, else #N. */
 export function badgePresentation(badge: Badge | null, single: Single | undefined) {
 	if (badge?.kind === "stack") { const aggregate = PULL_REQUEST_STATE_PRESENTATION[badge.state]; return { Icon: StackGlyph, toneClassName: aggregate.toneClassName, label: `Stack of ${badge.layers} pull requests, ${aggregate.label.toLowerCase()}`, text: String(badge.layers), opensList: true }; }
 	if (!single) return null;
@@ -22,7 +22,7 @@ export function badgePresentation(badge: Badge | null, single: Single | undefine
 	return { Icon: state?.Icon ?? PullRequestGlyph.pullRequest, toneClassName: state?.toneClassName ?? "text-muted-foreground", label: tooltip, text: String(single.number), opensList: false };
 }
 
-/** The chat's pull requests in the badge's hover card, in the linked list's order (T3's ThreadPullRequestsMiniList). */
+/** The chat's pull requests in the badge's hover card, in the linked list's order. */
 function MiniList({ links, single, onOpen }: { links: TaskPullRequestLink[]; single?: Single; onOpen: (event: MouseEvent<HTMLElement>, url: string) => void }) {
 	const lines = useMemo(() => pullRequestListLines(pullRequestChains(links)), [links]);
 	const item = (key: string, number: number, url: string, title: string, state: { Icon: typeof StackGlyph; toneClassName: string } | undefined, depth = 0, extra?: string) => <li key={key} style={{ paddingLeft: `${Math.min(depth, 3) * 0.75}rem` }}>
@@ -39,7 +39,7 @@ function MiniList({ links, single, onOpen }: { links: TaskPullRequestLink[]; sin
 }
 
 /**
- * The linked pull request badge on a chat's sidebar row and in its composer (T3's ThreadPullRequestBadgeControl): the
+ * The linked pull request badge on a chat's sidebar row and in its composer: the
  * state glyph and #N, "+N" for several, or a stack count, in the state's colour. Hovering lists them; clicking opens
  * the pull request, or the linked list when there are several. `branch` lets the composer fall back to the pull
  * request for the checkout's branch when nothing is linked.

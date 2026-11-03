@@ -12,7 +12,7 @@ type Complete = (input: { system: string; user: string; maxTokens: number; timeo
 
 const limit = (text: string, size: number) => text.length > size ? `${text.slice(0, size)}\n[truncated]` : text;
 
-/** T3's commit message prompt, asking for plain text instead of JSON. */
+/** The commit message prompt, asking for plain text instead of JSON. */
 export function commitMessagePrompt(input: { branch: string; summary: string; patch: string }) {
 	return {
 		system: [
@@ -46,7 +46,7 @@ export async function commitChanges(root: string) {
 	return { branch: branch.trim(), summary, patch: await git(root, ["diff", "--no-ext-diff"]).catch(() => "") };
 }
 
-/** T3's generated commit message: the title model reads the changes and writes the message. */
+/** A generated commit message: the title model reads the changes and writes the message. */
 export async function generateCommitMessage(root: string, complete: Complete) {
 	const { reply } = await complete({ ...commitMessagePrompt(await commitChanges(root)), maxTokens: 400, timeoutMs: 60_000, label: "The title model" });
 	return cleanCommitMessage(reply ?? "");
@@ -69,7 +69,7 @@ export async function gitPull(root: string) {
 	}
 }
 
-/** T3's Initialise Git: makes a plain folder a repository. */
+/** Initialise Git: makes a plain folder a repository. */
 export async function gitInit(root: string) {
 	let inside = false;
 	try { inside = (await git(root, ["rev-parse", "--is-inside-work-tree"])).trim() === "true"; } catch { /* Not a repository yet. */ }
@@ -89,7 +89,7 @@ export async function publishOwners(root: string, gh: Gh = runGh) {
 }
 
 /**
- * T3's Publish repository: creates the GitHub repository through `gh api --hostname github.com`, adds it as origin and
+ * Publish repository: creates the GitHub repository through `gh api --hostname github.com`, adds it as origin and
  * pushes the current branch when there are commits. The remote stays if the push fails, so a retry is a plain push.
  */
 export async function publishRepository(root: string, request: PublishRepositoryRequest, push: (root: string) => Promise<void>, gh: Gh = runGh) {

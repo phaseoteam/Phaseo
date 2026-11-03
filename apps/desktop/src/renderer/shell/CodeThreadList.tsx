@@ -3,19 +3,21 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, 
 import { isFactoryWorktree } from "../../shared/factory/projects";
 import { JumpHint, publishSidebarOrder, useJumpHints } from "../lib/sidebarOrder";
 import { ContextMenu } from "@base-ui/react/context-menu";
-import { AlarmClock, AlarmClockOff, Check, ChevronDown, CircleAlert, CircleCheck, CircleDashed, CircleDotDashed, Clock, FolderPlus, GitBranch, MessageCircleQuestion, Pin, PinOff, Plus, Settings, ShieldQuestion, Trash2, Undo2 } from "lucide-react";
+import { AlarmClock, AlarmClockOff, Archive, ArchiveRestore, Check, ChevronDown, ChevronRight, CircleAlert, CircleCheck, CircleDashed, CircleDotDashed, Clock, FolderPlus, GitBranch, MessageCircleQuestion, Pin, PinOff, Plus, Settings, ShieldQuestion, Trash2, Undo2 } from "lucide-react";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { useRemoveProject } from "../settings/removeProject";
 import { hasWoken, isUnread, settleBlocker, shortDuration } from "../../shared/threadLifecycle";
 import type { TaskOverview } from "../../shared/workspaceOverview";
 import { errorText, useWorkspace } from "../app/workspace";
 import { TagDots } from "../components/Tags";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { Tip } from "../components/ui/tooltip";
 import { ModelStack } from "../chat/ModelPicker";
 import { usePersistedState } from "../lib/persistedState";
 import { cn } from "../lib/utils";
-import { codeSections, createReturnTracker, workingSectionKey } from "./codeThreads";
+import { codeFolders, codeSections, createReturnTracker, projectFoldersKey, projectScopeKey, scopeLabel, workingSectionKey } from "./codeThreads";
+import { isProjectArchived, pickerProjects, projectScopes } from "../../shared/projectShelf";
+import type { Project } from "../../shared/workspace";
 import { BulkMenuItems, CustomSnoozeDialog, DeleteChatDialog, RenameInput, SnoozeItems, ThreadMenuItems, useThreadActions } from "./threadActions";
 import { chatDragType } from "../../shared/mentions";
 import { PullRequestBadge } from "../views/pullRequests/PullRequestBadge";
@@ -41,7 +43,7 @@ function elapsed(from: string | undefined, now: number) {
 	return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
 }
 
-/** T3's status slot: what needs the person first, then work in progress, then unread results, else when they last wrote. */
+/** The status slot: what needs the person first, then work in progress, then unread results, else when they last wrote. */
 function StatusLabel({ task, now, onDismissWake }: { task: TaskOverview; now: number; onDismissWake: () => void }) {
 	const label = (icon: ReactNode, text: ReactNode, className: string) => <span className={cn("flex shrink-0 items-center gap-1 text-[11px] font-medium", className)}>{icon}{text}</span>;
 	if (task.approvalsCount) return label(<ShieldQuestion className="size-3.5" />, "Approval", "text-warning");
@@ -59,7 +61,7 @@ function StatusLabel({ task, now, onDismissWake }: { task: TaskOverview; now: nu
 /** A chat in the pinned, active or working list: project, title, then branch, tags and model. Working rows are not dragged. */
 type RowControls = { picked: boolean; bulk?: ReactNode; onPick: (event: MouseEvent) => boolean; drag?: { onDragStart: (event: DragEvent) => void; onDragOver: (event: DragEvent) => void; onDrop: (event: DragEvent) => void; onDragEnd: () => void }; dropLine?: "above" | "below" };
 
-function CardRow({ task, now, scope, onScope, hint, controls }: { task: TaskOverview; now: number; scope: string; onScope: (id: string) => void; hint?: number; controls: RowControls }) {
+function CardRow({ task, now, scope, onScope, hint, controls, twoLine }: { task: TaskOverview; now: number; scope: readonly string[]; onScope: (id: string) => void; hint?: number; controls: RowControls; twoLine?: boolean }) {
 	const { overview, selectedId, select } = useWorkspace();
 	const actions = useThreadActions();
 	const [customSnooze, setCustomSnooze] = useState(false);
@@ -71,10 +73,11 @@ function CardRow({ task, now, scope, onScope, hint, controls }: { task: TaskOver
 	const blocked = settleBlocker(task);
 	return <ContextMenu.Root>
 		<ContextMenu.Trigger render={<div role="button" tabIndex={0} data-row-id={task.id} aria-current={selected ? "page" : undefined} onPointerEnter={() => prefetchTask(task.id)} aria-selected={controls.picked || undefined} draggable={!renaming && Boolean(controls.drag)} onClick={event => { if (!controls.onPick(event)) select(task.id); }} onKeyDown={event => { if (event.key === "Enter") select(task.id); }} {...controls.drag} />}
-			className={cn("group/row relative mx-2 flex h-[4.5rem] flex-col justify-center gap-0.5 rounded-md px-2.5 outline-none hover:bg-sidebar-accent/70 focus-visible:ring-2 focus-visible:ring-ring/40", selected && "bg-sidebar-accent", controls.picked && "bg-primary/10 ring-1 ring-primary/30 ring-inset")}>
+			className={cn("group/row relative mx-2 flex flex-col justify-center gap-0.5 rounded-md px-2.5", twoLine ? "h-14" : "h-[4.5rem]", "outline-none hover:bg-sidebar-accent/70 focus-visible:ring-2 focus-visible:ring-ring/40", selected && "bg-sidebar-accent", controls.picked && "bg-primary/10 ring-1 ring-primary/30 ring-inset")}>
 			{controls.dropLine && <span aria-hidden className={cn("pointer-events-none absolute inset-x-2 h-0.5 rounded-full bg-primary", controls.dropLine === "above" ? "-top-px" : "-bottom-px")} />}
 			<div className="flex h-5 items-center gap-1.5 text-xs text-muted-foreground">
-				<ProjectIcon project={project} className="size-3.5" /><span className="min-w-0 truncate">{project?.name}</span>
+				{twoLine ? renaming ? <RenameInput task={task} onDone={() => setRenaming(false)} /> : <span className={cn("min-w-0 truncate text-[13px]", quiet ? "text-sidebar-foreground/80" : "font-medium text-sidebar-foreground")}>{task.title}</span>
+					: <><ProjectIcon project={project} className="size-3.5" /><span className="min-w-0 truncate">{project?.name}</span></>}
 				{task.pinned && <Tip label="Unpin chat"><button type="button" aria-label="Unpin chat" onClick={event => { event.stopPropagation(); void actions.pin(task); }} className="group/pin grid size-4 shrink-0 place-items-center rounded hover:text-foreground"><Pin className="size-3 group-hover/pin:hidden" /><PinOff className="hidden size-3 group-hover/pin:block" /></button></Tip>}
 				<span className="ml-auto flex items-center group-hover/row:hidden group-has-[:focus-visible]/row:hidden">{hint !== undefined ? <JumpHint index={hint} /> : <StatusLabel task={task} now={now} onDismissWake={() => void actions.wake(task)} />}</span>
 				<span className="ml-auto hidden items-center gap-0.5 group-hover/row:flex group-has-[:focus-visible]/row:flex" onClick={event => event.stopPropagation()}>
@@ -87,7 +90,7 @@ function CardRow({ task, now, scope, onScope, hint, controls }: { task: TaskOver
 						className="flex h-5 items-center gap-1 rounded px-1.5 text-[11px] font-medium text-muted-foreground hover:bg-background/70 hover:text-foreground disabled:pointer-events-none disabled:opacity-40"><Check className="size-3.5" />Settle</button></span></Tip>
 				</span>
 			</div>
-			{renaming ? <RenameInput task={task} onDone={() => setRenaming(false)} /> : <div className={cn("truncate text-[13px]", quiet ? "text-sidebar-foreground/80" : "font-medium text-sidebar-foreground")}>{task.title}</div>}
+			{!twoLine && (renaming ? <RenameInput task={task} onDone={() => setRenaming(false)} /> : <div className={cn("truncate text-[13px]", quiet ? "text-sidebar-foreground/80" : "font-medium text-sidebar-foreground")}>{task.title}</div>)}
 			<div className="flex h-4 items-center gap-1.5 text-[11px] text-muted-foreground/70">
 				{project?.worktree && <span className="flex min-w-0 items-center gap-1 truncate font-mono"><GitBranch className="size-3 shrink-0" />{project.worktree.branch}</span>}
 				<PullRequestBadge taskId={task.id} projectId={task.projectId} links={task.pullRequests} />
@@ -103,7 +106,7 @@ function CardRow({ task, now, scope, onScope, hint, controls }: { task: TaskOver
 }
 
 /** A snoozed or settled chat: just the title, and when it wakes or how long ago it settled. */
-function SlimRow({ task, now, kind, scope, onScope }: { task: TaskOverview; now: number; kind: "snoozed" | "settled"; scope: string; onScope: (id: string) => void }) {
+function SlimRow({ task, now, kind, scope, onScope }: { task: TaskOverview; now: number; kind: "snoozed" | "settled"; scope: readonly string[]; onScope: (id: string) => void }) {
 	const { overview, selectedId, select } = useWorkspace();
 	const actions = useThreadActions();
 	const [customSnooze, setCustomSnooze] = useState(false);
@@ -128,17 +131,28 @@ function SlimRow({ task, now, kind, scope, onScope }: { task: TaskOverview; now:
 	</ContextMenu.Root>;
 }
 
-/** T3's collapsible section heading: label, a rule, and a chevron. Collapsed headings show the count. */
+/** A collapsible section heading: label, a rule, and a chevron. Collapsed headings show the count. */
 function SectionHeader({ label, count, open, onToggle, tone, drop }: { label: string; count: number; open: boolean; onToggle: () => void; tone?: "info"; drop?: { active: boolean; onDragOver: (event: DragEvent) => void; onDragLeave: () => void; onDrop: (event: DragEvent) => void } }) {
 	return <button type="button" aria-expanded={open} onClick={onToggle} onDragOver={drop?.onDragOver} onDragLeave={drop?.onDragLeave} onDrop={drop?.onDrop} className={cn("mx-2 flex h-8 w-[calc(100%-1rem)] items-center gap-2 rounded-md px-2.5 text-xs font-medium", drop?.active ? "bg-primary/10 text-primary" : tone === "info" ? "text-info" : "text-muted-foreground/70 hover:text-muted-foreground")}>
 		<span>{open ? label : `${label} (${count})`}</span><span className="h-px flex-1 bg-sidebar-border/60" /><ChevronDown className={cn("size-3 transition-transform", !open && "rotate-180")} />
 	</button>;
 }
 
+/** A project folder's heading: the project, its chat count when collapsed, and a chevron. */
+function FolderHeader({ project, count, open, onToggle }: { project: Project; count: number; open: boolean; onToggle: () => void }) {
+	return <button type="button" aria-expanded={open} onClick={onToggle} className="group/folder mx-2 mt-1 flex h-7 w-[calc(100%-1rem)] items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-muted-foreground hover:bg-sidebar-accent/70 hover:text-foreground">
+		<ChevronRight aria-hidden className={cn("size-3 shrink-0 transition-transform", open && "rotate-90")} /><ProjectIcon project={project} className="size-3.5" /><span className="min-w-0 truncate">{project.name}</span>
+		{!open && <span className="ml-auto shrink-0 text-[11px] text-muted-foreground/70 tabular-nums">{count}</span>}
+	</button>;
+}
+
 export function CodeThreadList() {
 	const { overview, api, setOverview, setError, selectedId, openProjectSettings } = useWorkspace();
-	const [scope, setScope] = usePersistedState("phaseo.desktop.codeProjectScope", "");
+	// The filter used to be one project under the old key; that choice carries over until the person changes it.
+	const [storedScope, setStoredScope] = usePersistedState<string[]>(projectScopeKey, (() => { try { return projectScopes(JSON.parse(localStorage.getItem("phaseo.desktop.codeProjectScope") ?? "\"\"")); } catch { return []; } })());
 	const [workingEnabled] = usePersistedState(workingSectionKey, false);
+	const [foldersEnabled] = usePersistedState(projectFoldersKey, false);
+	const [collapsedFolders, setCollapsedFolders] = usePersistedState<string[]>("phaseo.desktop.sidebar.collapsedFolders", []);
 	const [workingOpen, setWorkingOpen] = usePersistedState("phaseo.desktop.sidebar.workingExpanded", false);
 	const [snoozedOpen, setSnoozedOpen] = usePersistedState("phaseo.desktop.sidebar.snoozedExpanded", false);
 	const [settledOpen, setSettledOpen] = usePersistedState("phaseo.desktop.sidebar.settledExpanded", false);
@@ -146,7 +160,7 @@ export function CodeThreadList() {
 	const { command } = useWorkspace();
 	const actions = useThreadActions();
 	const removeProject = useRemoveProject();
-	// Ctrl/⌘-click picks chats, Shift-click picks a range; right-click a picked chat for the bulk menu (T3).
+	// Ctrl/⌘-click picks chats, Shift-click picks a range; right-click a picked chat for the bulk menu.
 	const [picked, setPicked] = useState<string[]>([]);
 	const anchor = useRef<string | undefined>(undefined);
 	const [dropAt, setDropAt] = useState<{ id: string; after: boolean } | "settled">();
@@ -158,20 +172,27 @@ export function CodeThreadList() {
 		window.addEventListener("keydown", onKeyDown);
 		return () => window.removeEventListener("keydown", onKeyDown);
 	}, [picked.length]);
-	// Factory's per-item worktrees stay out of the picker; their threads still list.
-	const projects = overview.projects.filter(project => !project.worktree?.removedAt && !isFactoryWorktree(project));
-	const scoped = projects.find(project => project.id === scope);
+	// Factory's per-item worktrees stay out of the picker; their threads still list. Archived projects leave it too.
+	const projects = pickerProjects(overview.projects.filter(project => !project.worktree?.removedAt && !isFactoryWorktree(project)));
+	const archived = overview.projects.filter(project => !project.worktree && project.archived);
+	const scopedProjects = projects.filter(project => projectScopes(storedScope).includes(project.id)), scope = scopedProjects.map(project => project.id);
+	const scoped = scopedProjects.length === 1 ? scopedProjects[0] : undefined;
+	const setScope = (id: string) => setStoredScope(id ? [id] : []);
+	const toggleScope = (id: string) => setStoredScope(scope.includes(id) ? scope.filter(value => value !== id) : [...scope, id]);
+	const organize = (project: Project, change: { pinned?: boolean; archived?: boolean }) => void command({ type: "organize-project", id: project.id, ...change }).then(done => { if (done && change.archived) setStoredScope(scope.filter(id => id !== project.id)); });
 	const running = overview.tasks.some(task => task.projectId && task.status === "running");
 	const now = useNow(running ? 1_000 : 30_000);
 	const sections = useMemo(() => {
 		returns.observe(workingEnabled ? overview.tasks : null);
-		return codeSections(overview.tasks, overview.projects, scoped ? scope : "", now, { working: workingEnabled, returnedAt: returns.returnedAt });
-	}, [overview.tasks, overview.projects, scope, scoped, now, workingEnabled]);
+		return codeSections(overview.tasks, overview.projects, storedScope.filter(id => overview.projects.some(project => project.id === id && !isProjectArchived(project, overview.projects))), now, { working: workingEnabled, returnedAt: returns.returnedAt });
+	}, [overview.tasks, overview.projects, storedScope, now, workingEnabled]);
+	const folders = foldersEnabled ? codeFolders(sections.active, overview.projects) : undefined;
 	const addProject = () => { if (api) void api.chooseProject().then(setOverview, reason => setError(errorText(reason))); };
 	// The open chat stays visible inside a collapsed section.
 	const visibleIn = (list: TaskOverview[], open: boolean, limit = Infinity) => open ? list.slice(0, limit) : list.filter(task => task.id === selectedId);
 	const visibleWorking = visibleIn(sections.working, workingOpen);
-	const ordered = [...sections.pinned, ...sections.active, ...visibleWorking].map(task => task.id);
+	const visibleActive = folders ? folders.flatMap(folder => visibleIn(folder.tasks, !collapsedFolders.includes(folder.project.id))) : sections.active;
+	const ordered = [...sections.pinned, ...visibleActive, ...visibleWorking].map(task => task.id);
 	publishSidebarOrder(ordered);
 	const hints = useJumpHints();
 	const draggedId = (event: DragEvent) => event.dataTransfer.types.includes(codeRowType) ? event.dataTransfer.getData(codeRowType) || "pending" : undefined;
@@ -184,7 +205,7 @@ export function CodeThreadList() {
 		setPicked([]); anchor.current = task.id; return false;
 	};
 	// Dropping on a card moves the chat there, pinning or unpinning it to match the section it lands in.
-	// With the Working section on, the active list is ordered by time, so a drop there only pins or unpins (T3).
+	// With the Working section on, the active list is ordered by time, so a drop there only pins or unpins.
 	const dropOn = async (target: TaskOverview, after: boolean, id: string) => {
 		const moved = overview.tasks.find(task => task.id === id);
 		if (!moved || moved.id === target.id) return;
@@ -199,9 +220,9 @@ export function CodeThreadList() {
 		const chosen = isPicked && picked.length > 1 ? overview.tasks.filter(value => picked.includes(value.id)) : undefined;
 		return {
 			picked: isPicked,
-			bulk: chosen && <BulkMenuItems tasks={chosen} scope={scoped ? scope : ""} onDone={() => setPicked([])} />,
+			bulk: chosen && <BulkMenuItems tasks={chosen} scope={scope} onDone={() => setPicked([])} />,
 			onPick: event => pick(task, event),
-			// T3's Working section follows live status, so its rows are neither dragged nor dropped on.
+			// The Working section follows live status, so its rows are neither dragged nor dropped on.
 			drag: fixed ? undefined : {
 				onDragStart: event => { event.dataTransfer.setData(codeRowType, task.id); event.dataTransfer.setData(chatDragType, JSON.stringify({ id: task.id, title: task.title })); event.dataTransfer.setData("text/plain", task.title); event.dataTransfer.effectAllowed = "copyMove"; },
 				onDragOver: event => { if (!draggedId(event)) return; event.preventDefault(); const box = event.currentTarget.getBoundingClientRect(); const after = event.clientY > box.top + box.height / 2; if (typeof dropAt !== "object" || dropAt.id !== task.id || dropAt.after !== after) setDropAt({ id: task.id, after }); },
@@ -215,9 +236,9 @@ export function CodeThreadList() {
 		active: dropAt === "settled",
 		onDragOver: (event: DragEvent) => { if (!draggedId(event)) return; event.preventDefault(); setDropAt("settled"); },
 		onDragLeave: () => setDropAt(undefined),
-		onDrop: (event: DragEvent) => { const id = draggedId(event); setDropAt(undefined); const task = overview.tasks.find(value => value.id === id); if (!task) return; event.preventDefault(); void actions.settle(task, scoped ? scope : ""); },
+		onDrop: (event: DragEvent) => { const id = draggedId(event); setDropAt(undefined); const task = overview.tasks.find(value => value.id === id); if (!task) return; event.preventDefault(); void actions.settle(task, scope); },
 	};
-	// T3's motion: rows that move slide from their old place (at most 40px) over 150 ms, unless motion is reduced.
+	// Rows that move slide from their old place (at most 40px) over 150 ms, unless motion is reduced.
 	useLayoutEffect(() => {
 		const rows = [...cards.current?.querySelectorAll<HTMLElement>("[data-row-id]") ?? []];
 		const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -230,25 +251,33 @@ export function CodeThreadList() {
 		}
 		tops.current = next;
 	});
-	const card = (task: TaskOverview, fixed = false) => { const index = ordered.indexOf(task.id); return <CardRow key={task.id} task={task} now={now} scope={scoped ? scope : ""} onScope={setScope} hint={hints && index >= 0 && index < 9 ? index + 1 : undefined} controls={controls(task, fixed)} />; };
-	const slim = (task: TaskOverview, kind: "snoozed" | "settled") => <SlimRow key={task.id} task={task} now={now} kind={kind} scope={scoped ? scope : ""} onScope={setScope} />;
+	const card = (task: TaskOverview, fixed = false, twoLine = false) => { const index = ordered.indexOf(task.id); return <CardRow key={task.id} task={task} now={now} scope={scope} onScope={setScope} hint={hints && index >= 0 && index < 9 ? index + 1 : undefined} controls={controls(task, fixed)} twoLine={twoLine} />; };
+	const slim = (task: TaskOverview, kind: "snoozed" | "settled") => <SlimRow key={task.id} task={task} now={now} kind={kind} scope={scope} onScope={setScope} />;
+	const toggleFolder = (id: string) => setCollapsedFolders(collapsedFolders.includes(id) ? collapsedFolders.filter(value => value !== id) : [...collapsedFolders, id]);
 	return <div className="flex flex-1 flex-col pb-3">
 		<div className="flex h-9 items-center gap-1 px-3 pt-1">
 			<DropdownMenu>
 				<DropdownMenuTrigger render={<button type="button" className="flex min-w-0 items-center gap-1 rounded-md px-1.5 py-1 text-xs font-bold text-sidebar-foreground/70 hover:bg-sidebar-accent/70 hover:text-foreground" />}>
-					<span className="truncate">{scoped?.name ?? "All projects"}</span><ChevronDown className="size-3 shrink-0" />
+					<span className="truncate">{scopeLabel(scopedProjects)}</span><ChevronDown className="size-3 shrink-0" />
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="start" className="w-60">
-					<DropdownMenuItem onClick={() => setScope("")}>All projects{!scoped && <Check className="ml-auto" />}</DropdownMenuItem>
+					<DropdownMenuItem onClick={() => setScope("")}>All projects{!scope.length && <Check className="ml-auto" />}</DropdownMenuItem>
 					<DropdownMenuSeparator />
-					{/* T3's project picker: each project has a settings button at the end of its row. */}
-					{projects.map(project => <DropdownMenuItem key={project.id} onClick={() => setScope(project.id)} className="group/project pr-1">
-						<ProjectIcon project={project} /><span className="min-w-0 flex-1 truncate">{project.name}</span>{project.id === scope && <Check />}
+					{/* Tick any number of projects; each row has pin and settings buttons at its end. */}
+					{projects.map(project => <DropdownMenuCheckboxItem key={project.id} checked={scope.includes(project.id)} onCheckedChange={() => toggleScope(project.id)} className="group/project pr-8">
+						<ProjectIcon project={project} /><span className="min-w-0 flex-1 truncate">{project.name}</span>
+						{!project.worktree && <Tip label={project.pinned ? `Unpin ${project.name}` : `Pin ${project.name} to the top`} side="right"><button type="button" aria-label={project.pinned ? `Unpin ${project.name}` : `Pin ${project.name}`} onPointerDown={event => event.stopPropagation()} onClick={event => { event.preventDefault(); event.stopPropagation(); organize(project, { pinned: !project.pinned }); }}
+							className={cn("grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground", !project.pinned && "opacity-0 group-hover/project:opacity-100 group-focus-visible/project:opacity-100")}>{project.pinned ? <PinOff className="size-3.5" /> : <Pin className="size-3.5" />}</button></Tip>}
 						<Tip label={`Project settings for ${project.name}`} side="right"><button type="button" aria-label={`Project settings for ${project.name}`} onPointerDown={event => event.stopPropagation()} onClick={event => { event.preventDefault(); event.stopPropagation(); openProjectSettings(project.id); }}
 							className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground opacity-0 group-hover/project:opacity-100 group-focus-visible/project:opacity-100 hover:bg-accent hover:text-foreground"><Settings className="size-3.5" /></button></Tip>
-					</DropdownMenuItem>)}
+					</DropdownMenuCheckboxItem>)}
 					<DropdownMenuSeparator />
 					{scoped && <DropdownMenuItem onClick={() => openProjectSettings(scoped.id)}><Settings />Project settings</DropdownMenuItem>}
+					{scoped && !scoped.worktree && <DropdownMenuItem onClick={() => organize(scoped, { archived: true })}><Archive />Archive project</DropdownMenuItem>}
+					{archived.length > 0 && <DropdownMenuSub>
+						<DropdownMenuSubTrigger><ArchiveRestore />Archived projects</DropdownMenuSubTrigger>
+						<DropdownMenuSubContent className="w-56">{archived.map(project => <DropdownMenuItem key={project.id} onClick={() => organize(project, { archived: false })}><ProjectIcon project={project} /><span className="min-w-0 flex-1 truncate">Unarchive {project.name}</span></DropdownMenuItem>)}</DropdownMenuSubContent>
+					</DropdownMenuSub>}
 					{scoped && !scoped.worktree && <DropdownMenuItem variant="destructive" onClick={() => void removeProject(scoped).then(removed => { if (removed) setScope(""); })}><Trash2 />Remove project</DropdownMenuItem>}
 					<DropdownMenuItem onClick={addProject}><FolderPlus />Add project…</DropdownMenuItem>
 				</DropdownMenuContent>
@@ -259,8 +288,12 @@ export function CodeThreadList() {
 			<p className="text-xs text-muted-foreground">No projects yet. Open a folder to start coding with an agent.</p>
 			<button type="button" onClick={addProject} className="mt-3 inline-flex h-7 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/85"><FolderPlus className="size-3.5" />Add project</button>
 		</div>}
-		{projects.length > 0 && !sections.pinned.length && !sections.active.length && !sections.working.length && <p className="px-4 py-3 text-xs text-muted-foreground">{scoped ? `No chats in ${scoped.name} yet` : "No chats yet"}</p>}
-		<div ref={cards} className="flex flex-col gap-0.5">{sections.pinned.map(task => card(task))}{sections.active.map(task => card(task))}</div>
+		{projects.length > 0 && !sections.pinned.length && !sections.active.length && !sections.working.length && <p className="px-4 py-3 text-xs text-muted-foreground">{scoped ? `No chats in ${scoped.name} yet` : scope.length ? "No chats in these projects yet" : "No chats yet"}</p>}
+		{/* In folders the list is ordered by time, so their rows are not dragged. */}
+		<div ref={cards} className="flex flex-col gap-0.5">{sections.pinned.map(task => card(task))}{folders ? folders.map(folder => { const open = !collapsedFolders.includes(folder.project.id); return <div key={folder.project.id} role="group" aria-label={folder.project.name} className="flex flex-col gap-0.5">
+			<FolderHeader project={folder.project} count={folder.tasks.length} open={open} onToggle={() => toggleFolder(folder.project.id)} />
+			{visibleIn(folder.tasks, open).map(task => card(task, true, true))}
+		</div>; }) : sections.active.map(task => card(task))}</div>
 		<div className="mt-auto flex flex-col pt-3">
 			{sections.working.length > 0 && <>
 				<SectionHeader label="Working" count={sections.working.length} open={workingOpen} onToggle={() => setWorkingOpen(!workingOpen)} />

@@ -13,7 +13,7 @@ import type { Account, ModelFacts, QueuedMessage, Task } from "../shared/workspa
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import type { WorkspaceStore } from "./workspaceStore";
 import { threadTools } from "./threadTools";
-import { orchestrationInstructions, threadToolLabel, threadToolLabels } from "../shared/orchestration";
+import { alwaysAskThreadTools, orchestrationInstructions, threadToolLabel, threadToolLabels } from "../shared/orchestration";
 import type { AttachmentContent } from "./attachments";
 import { phaseoConversationMessages } from "./attachmentPrompt";
 import { connectPhaseoMcp } from "./phaseoMcp";
@@ -25,7 +25,7 @@ import { describeCommandCall, phaseoCommandTools } from "./phaseoCommandTools";
 import type { BackgroundCommands } from "./backgroundCommands";
 import { readFilePreview } from "./projectFiles";
 import { appGitArgs } from "./appGit";
-import { approvalRule, commandAllowed, phaseoOrchestrationPrompt, runPhaseoTurn, type PhaseoReview } from "./phaseoTurn";
+import { approvalRule, commandAllowed, imageResultsToMessages, phaseoOrchestrationPrompt, runPhaseoTurn, type PhaseoReview } from "./phaseoTurn";
 
 const run = promisify(execFile);
 const planGuide = "You are in Plan mode. Research the project with the read-only tools (read_file, list_files, search_files, find_files) but do not change anything. When you understand the task, call propose_plan with a concrete plan. Ask with ask_user if a decision is genuinely the person's to make.";
@@ -130,7 +130,7 @@ export class PhaseoCodingAdapter implements AgentAdapter {
 			const editing = [...phaseoFileTools(cwd, { writable: true, instructions }), ...phaseoCommandTools(cwd, { taskId: task.id, background: this.extras.background, gate, ...this.extras.secrets ? { secrets: refs => this.extras.secrets!(task.id, refs) } : {} })];
 			const writeIds = new Set(editing.map(tool => tool.id).filter(id => fileWrites.has(id) || commandWrites.has(id)));
 			const images = !facts?.input || facts.input.includes("image");
-			const tools: AgentTool[] = [...callbacks.threads ? threadTools(callbacks.threads, { images: false }) : [], ...phaseoPlanTools(), ...phaseoQuestionTools(), ...editing, ...images ? [viewImageTool(cwd, this.steering)] : [], ...task.mode === "plan" ? [proposePlanTool(callbacks, live)] : [], ...skillTools?.tools() ?? [], ...mcp.tools];
+			const tools: AgentTool[] = [...callbacks.threads ? imageResultsToMessages(threadTools(callbacks.threads, { images }), this.steering) : [], ...phaseoPlanTools(), ...phaseoQuestionTools(), ...editing, ...images ? [viewImageTool(cwd, this.steering)] : [], ...task.mode === "plan" ? [proposePlanTool(callbacks, live)] : [], ...skillTools?.tools() ?? [], ...mcp.tools];
 			const environment = `Environment: ${process.platform === "win32" ? "Windows" : process.platform}; today is ${new Date().toISOString().slice(0, 10)}. The project folder is ${cwd}${branch ? ` on git branch ${branch}` : ""}. Use project-relative paths.`;
 			const codeGuide = "You are a coding agent working in the person's project. Find code with search_files and find_files, read only what you need with read_file (use offset and limit for large files), make focused edits with edit_file, and use write_file for new files or full rewrites. Match the surrounding style. Run the project's own checks with run_command where they exist, and say exactly what you ran; never claim a command or test ran without tool evidence. Use start_background_command for servers and watchers. Track multi-step work with update_plan. Keep progress notes short and finish with a concise summary of what changed and what is left.";
 			const streamed = new Set<number>();
@@ -185,7 +185,7 @@ export class PhaseoCodingAdapter implements AgentAdapter {
 		// Outside Code mode, full access does not cover tools that act on the world: MCP servers and the browser always ask.
 		const outsideCode = turn.task.mode !== "code" || !turn.live.writable;
 		if (turn.labels[call.name]) return rules.has(`tool:${call.name}`) ? { approve: true } : { title: turn.labels[call.name], details: details(call.input), always: approvalRule(call, "tool"), ask: outsideCode };
-		if (threadToolLabels[call.name]) return { title: threadToolLabel(call.name, call.input), details: details(call.input), ask: outsideCode && call.name.startsWith("browser_") };
+		if (threadToolLabels[call.name]) return { title: threadToolLabel(call.name, call.input), details: details(call.input), ask: (outsideCode && call.name.startsWith("browser_")) || alwaysAskThreadTools.has(call.name) };
 		return { title: call.name, details: details(call.input), ask: outsideCode };
 	}
 

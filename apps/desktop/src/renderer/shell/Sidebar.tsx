@@ -1,4 +1,5 @@
 import { formatAgoShort, formatDateParts } from "@phaseo/app-kit/format";
+import { useNow } from "../lib/useNow";
 import { prefetchTask } from "../lib/useSelectedTask";
 import { useMemo, useState, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -217,7 +218,7 @@ function AccountFooter() {
 	</div></div>;
 }
 
-/** T3's undo notice: the last settle, snooze, unpin or archive, for five seconds. */
+/** The undo notice: the last settle, snooze, unpin or archive, for five seconds. */
 function UndoNotice() {
 	const action = useThreadUndo();
 	if (!action) return null;
@@ -231,7 +232,9 @@ function UndoNotice() {
 /** The Inbox, in both modes: it lists what needs the person across every chat and agent, with how many. */
 function InboxLink() {
 	const { inboxPage, openInbox, overview } = useWorkspace();
-	const count = useMemo(() => inboxLists(overview.tasks).needsYou.length, [overview.tasks]);
+	// Ticks so a turn that goes silent counts without new data.
+	const now = useNow();
+	const count = useMemo(() => inboxLists(overview.tasks, now).needsYou.length, [overview.tasks, now]);
 	return <button type="button" aria-current={inboxPage ? "page" : undefined} onClick={openInbox}
 		className={cn("mt-1 flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-[13px] text-sidebar-foreground/85 hover:bg-sidebar-accent/70", inboxPage && "bg-sidebar-accent text-sidebar-foreground")}>
 		<Inbox className="size-4 text-muted-foreground" />Inbox
@@ -239,7 +242,7 @@ function InboxLink() {
 	</button>;
 }
 
-/** T3 puts Pull requests among the sidebar's page links. Chat mode has no projects, so only Code shows it. */
+/** Pull requests sits among the sidebar's page links. Chat mode has no projects, so only Code shows it. */
 function PullRequestsLink() {
 	const { pullRequestsPage, openPullRequests } = useWorkspace();
 	return <button type="button" aria-current={pullRequestsPage ? "page" : undefined} onClick={openPullRequests}
@@ -255,7 +258,7 @@ function SidebarFrame({ label, children }: { label: string; children: ReactNode 
 	const [width, setWidth] = usePersistedState("phaseo.desktop.sidebarWidth", sidebarWidths.default);
 	const [dragging, setDragging] = useState(false);
 	const clamp = (value: number) => Math.round(Math.min(sidebarWidths.max, Math.max(sidebarWidths.min, value)));
-	return <aside aria-label={label} style={{ width: clamp(width) }} className="relative flex shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+	return <aside aria-label={label} data-focus-region style={{ width: clamp(width) }} className="relative flex shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
 		{children}
 		<div role="separator" aria-orientation="vertical" aria-label="Resize sidebar" aria-valuemin={sidebarWidths.min} aria-valuemax={sidebarWidths.max} aria-valuenow={clamp(width)} tabIndex={0} title="Drag to resize, double-click to reset"
 			onPointerDown={event => {

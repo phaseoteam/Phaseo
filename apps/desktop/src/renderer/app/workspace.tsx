@@ -12,10 +12,10 @@ export type WorkspaceMode = "chat" | "code";
 export type CodeView = "threads" | "factory";
 /** Where Code ▸ Factory is: the open item (`owner/name#number`) and its tab, or the new issue form. */
 export type FactoryRoute = { item?: string; tab?: string; page?: "new" };
-export type RightPanelSurface = "changes" | "files" | "diff" | "terminal" | "browser" | "agents" | "pulls";
+export type RightPanelSurface = "changes" | "files" | "diff" | "terminal" | "browser" | "agents" | "pulls" | "side";
 /** A surface to show in the right pane, "files" for Files, or "restore" to reopen the chat's own tabs. */
 export type RightPanelTab = RightPanelSurface | "files" | "restore";
-export type SettingsPage = "general" | "appearance" | "notifications" | "accounts" | "usage" | "agents" | "mcp" | "keyboard" | "diagnostics" | "experimental" | "project" | FactorySettingsPage;
+export type SettingsPage = "general" | "appearance" | "notifications" | "accounts" | "usage" | "agents" | "mcp" | "code-hosts" | "outside-agents" | "keyboard" | "diagnostics" | "experimental" | "project" | FactorySettingsPage;
 /** Factory's pages in Settings. */
 export type FactorySettingsPage = "factory-repositories" | "factory-issues" | "factory-pulls" | "factory-notes" | "factory-checking";
 export type CompareGroup = { id: string; title: string; taskIds: string[]; createdAt: string };
@@ -41,7 +41,8 @@ type WorkspaceState = {
 	selectedId?: string;
 	select: (id?: string) => void;
 	compareId?: string;
-	openCompare: (id?: string) => void;
+	/** Opens a comparison; a Code fan-out stays in Code. */
+	openCompare: (id?: string, mode?: WorkspaceMode) => void;
 	compareGroups: CompareGroup[];
 	saveCompareGroup: (group: CompareGroup) => void;
 	removeCompareGroup: (id: string) => void;
@@ -176,7 +177,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 		setCompareId(undefined); setSelectedId(id); setSettings(undefined); setScheduled(false); setPullRequestsPage(false); setInboxPage(false); setUsagePage(false);
 		setModeState("code"); setCodeViewState("threads");
 	}, [setCompareId, setSelectedId, setModeState, setSettings, setCodeViewState]);
-	const openCompare = useCallback((id?: string) => { setSelectedId(undefined); setCompareId(id); setSettings(undefined); setScheduled(false); setPullRequestsPage(false); setInboxPage(false); setUsagePage(false); if (id) setModeState("chat"); }, [setSelectedId, setCompareId, setModeState, setSettings]);
+	const openCompare = useCallback((id?: string, mode: WorkspaceMode = "chat") => { setSelectedId(undefined); setCompareId(id); setSettings(undefined); setScheduled(false); setPullRequestsPage(false); setInboxPage(false); setUsagePage(false); if (id) setModeState(mode); }, [setSelectedId, setCompareId, setModeState, setSettings]);
 	const openScheduled = useCallback(() => { setSelectedId(undefined); setCompareId(undefined); setSettings(undefined); setPullRequestsPage(false); setInboxPage(false); setUsagePage(false); setScheduled(true); }, [setSelectedId, setCompareId, setSettings]);
 	const openPullRequests = useCallback(() => { setSelectedId(undefined); setCompareId(undefined); setSettings(undefined); setScheduled(false); setInboxPage(false); setUsagePage(false); setPullRequestsPage(true); setModeState("code"); setCodeViewState("threads"); }, [setSelectedId, setCompareId, setModeState, setSettings, setCodeViewState]);
 	const openInbox = useCallback(() => { setSelectedId(undefined); setCompareId(undefined); setSettings(undefined); setScheduled(false); setPullRequestsPage(false); setUsagePage(false); setInboxPage(true); }, [setSelectedId, setCompareId, setSettings]);

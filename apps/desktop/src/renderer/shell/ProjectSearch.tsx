@@ -31,7 +31,7 @@ function useSearch<T>(mode: Mode | undefined, wanted: Mode, query: string, run: 
 }
 
 /**
- * T3's Go to file (Mod+P) and Search in files (Mod+Shift+F) for the open chat's project. Results open in the Files
+ * Go to file (Mod+P) and Search in files (Mod+Shift+F) for the open chat's project. Results open in the Files
  * pane. Go to file ranks with the index the file tree and @ mentions use; Search in files asks Git.
  */
 export function ProjectSearchDialog() {

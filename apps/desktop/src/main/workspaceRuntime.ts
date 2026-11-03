@@ -1,5 +1,8 @@
-import { threadToolLabel, type FactoryAgentTools, type ThreadTools } from "../shared/orchestration";
+import { alwaysAskThreadTools, threadToolLabel, type FactoryAgentTools, type ThreadTools, type WorktreeMove } from "../shared/orchestration";
 import type { BrowserAgentTools } from "../shared/browserAgent";
+import type { HtmlPreviewRequest, HtmlPreviewResult, HtmlRenderRequest } from "../shared/htmlRender";
+import { BackgroundWork } from "./backgroundWork";
+import type { InstructionDocument } from "../shared/instructions";
 import { completeChat, generateTitle } from "./chatTitles";
 import { mentionPlainText } from "../shared/mentions";
 import { randomUUID } from "node:crypto";
@@ -18,6 +21,7 @@ import { optionValue, questionAnswerError, questionOptions } from "../shared/age
 import { WorkspaceThreads } from "./workspaceThreads";
 import { git } from "./gitProcess";
 import { githubRepository } from "./projectPullRequests";
+import { cloneRepository } from "./projectClone";
 import { parsePullRequestReference, validatePullRequestLinks, type PullRequestLinkSnapshot } from "../shared/pullRequestView";
 import type { PullRequestStack } from "../shared/pullRequestStacks";
 import type { PullRequestGuideResult } from "../shared/pullRequestGuide";
@@ -46,6 +50,8 @@ import { OpenCodeAdapter } from "./openCodeAdapter";
 import { AcpAdapter } from "./acpAdapter";
 import { PiAdapter } from "./piAdapter";
 import { handoffPrompt } from "./handoffPrompt";
+import { isSideChat, sideChatNoteFor, sideChatUnused } from "../shared/sideChats";
+import { copyWorktreeIncludes } from "./worktreeInclude";
 import { AttachmentService } from "./attachments";
 import type { FormAnswer } from "../shared/agentForms";
 import { formAnswerError } from "../shared/agentForms";
@@ -80,7 +86,7 @@ function createAdapter(harness: Harness, agent?: AgentConnection, openCode?: Ope
 	const active = mcp.filter(connection => connection.enabled && !connection.archived && (!connection.projectId || connection.projectId === projectId));
 	if (harness === "codex") return new CodexAdapter(mcp);
 	if (harness === "claude") return new ClaudeAdapter(active);
-	if (harness === "opencode") return new OpenCodeAdapter(openCode ? signal => openCode.connect(signal) : undefined, mcp, openCode?.mcp);
+	if (harness === "opencode") return new OpenCodeAdapter(openCode ? signal => openCode.connect(signal) : undefined, mcp, openCode?.mcp, openCode ? signal => openCode.isolated(signal) : undefined);
 	if (harness === "pi") return new PiAdapter(active);
 	if (harness === "grok") return new GrokAdapter(active);
 	if (harness === "acp" && agent) return new AcpAdapter(agent, active);
@@ -149,14 +155,24 @@ export class WorkspaceRuntime {
 	private readonly settleAbort = new AbortController();
 	/** Chats their own agent settled mid-turn; cleanup waits until the turn's execution has ended. */
 	private readonly settledByTurn = new Set<string>();
-	/** T3's browser tools for one chat, on its own browser tabs; set by the app once it has a window. */
+	/** The browser tools for one chat, on its own browser tabs; set by the app once it has a window. */
 	browserTools?: (chatId: string) => BrowserAgentTools;
+	/** html_preview's hidden-window render; set by the app once it is ready. */
+	htmlPreview?: (request: HtmlPreviewRequest) => Promise<HtmlPreviewResult>;
+	/** The running turn of each chat, so a tool can add to its timeline (html_render). */
+	private readonly turnNotes = new Map<string, (activity: AgentActivity) => void>();
+	/** Claude turns' background tasks, for background_wait. */
+	private readonly backgroundWork = new Map<string, BackgroundWork>();
 	/** Review guides for the agent tools; set by the app once its guide store exists. */
 	pullRequestGuideTools?: { write: (root: string, repository: string, number: number) => Promise<"started" | "running">; read: (root: string, repository: string, number: number) => Promise<PullRequestGuideResult> };
 	/** GitHub issue reads through gh: linking and read_issue, and the context `#` references add to a prompt. Tests replace it. */
 	github: { readIssue: (root: string, repository: string, number: number) => Promise<IssueDetails>; referenceContext: (root: string, urls: string[]) => Promise<string> } = { readIssue: (root, repository, number) => readIssue(root, repository, number), referenceContext: (root, urls) => githubReferenceContext(root, urls) };
 	/** Files an issue through gh and returns what gh prints, ending with the issue's URL; the body goes in on stdin, so no file holds it. Tests replace it. */
 	createIssue = (root: string, repository: string, title: string, body: string) => runGh(root, ["issue", "create", "--repo", repository, "--title", title, "--body-file", "-"], body);
+	/** The person's instructions for every chat, set by the app once loaded; read_global_instructions and update_global_instructions. */
+	globalInstructions?: { read: () => Promise<InstructionDocument>; save: (edit: unknown) => Promise<InstructionDocument> };
+	/** clone_project's git clone. Tests replace it. */
+	cloneRepository = (url: string, parent: string) => cloneRepository(url, parent);
 	private readonly filingIssues = new Set<string>();
 	constructor(private readonly directory: string, private readonly adapterFactory = createAdapter, private readonly vault?: SecretVault) {
 		mkdirSync(path.join(directory, "instructions"), { recursive: true });
@@ -167,7 +183,7 @@ export class WorkspaceRuntime {
 		this.attachments = new AttachmentService(path.join(directory, "attachments"), this.store);
 		this.openCode = new OpenCodeService(directory);
 		const modelDiscovery = () => this.discoverThreadModels, installationDiscovery = () => this.discoverInstallations, missions = () => this.missionCommand, guides = () => this.pullRequestGuideTools;
-		this.threads = new WorkspaceThreads({ store: this.store, isClosing: () => this.closing, broadcast: () => this.broadcast(), start: id => this.start(id), command: command => this.command(command), createWorktree: (projectId, branch, base) => this.createWorktree(projectId, branch, base), assertHarnessAvailable: harness => this.assertHarnessAvailable(harness), assertProjectAvailable: id => this.assertProjectAvailable(id), readIssue: (root, repository, number) => this.github.readIssue(root, repository, number), get discoverModels() { return modelDiscovery(); }, get discoverInstallations() { return installationDiscovery(); }, get missions() { return missions(); }, get pullRequestGuides() { return guides(); }, modelDiscoveries: this.modelDiscoveries }, () => this.store.getPreferences().maxActiveAgents);
+		this.threads = new WorkspaceThreads({ store: this.store, isClosing: () => this.closing, broadcast: () => this.broadcast(), start: id => this.start(id), command: command => this.command(command), createWorktree: (projectId, branch, base) => this.createWorktree(projectId, branch, base), cloneRepository: (url, parent) => this.cloneRepository(url, parent), attachments: this.attachments, stopped: async id => { await this.executions.get(id)?.catch(() => {}); }, assertHarnessAvailable: harness => this.assertHarnessAvailable(harness), assertProjectAvailable: id => this.assertProjectAvailable(id), readIssue: (root, repository, number) => this.github.readIssue(root, repository, number), get discoverModels() { return modelDiscovery(); }, get discoverInstallations() { return installationDiscovery(); }, get missions() { return missions(); }, get pullRequestGuides() { return guides(); }, modelDiscoveries: this.modelDiscoveries }, () => this.store.getPreferences().maxActiveAgents);
 		// Deliveries recorded while the app was closed wake idle parents as they would at runtime, after the host has wired its hooks.
 		// Children cut off by the app quitting are only reported: waking the parent for them would spend tokens nobody asked for.
 		const finished = (id: string) => { try { return this.store.getTask(id).status !== "interrupted"; } catch { return false; } };
@@ -288,7 +304,7 @@ export class WorkspaceRuntime {
 		const head = this.store.getTask(id);
 		if (head.status !== "completed" || head.queue.length || head.autopilot?.handback) return;
 		// Agents still working will wake the chat with their results; it is judged then.
-		if (this.store.getOverview().tasks.some(task => task.delegation?.parentTaskId === id && !task.archived && (task.status === "running" || task.status === "waiting" || Boolean(task.queueCount)))) return;
+		if (this.store.getOverview().tasks.some(task => task.delegation?.parentTaskId === id && !isSideChat(task) && !task.archived && (task.status === "running" || task.status === "waiting" || Boolean(task.queueCount)))) return;
 		const task = this.store.getTask(id);
 		const lastUser = task.messages.findLast(message => message.role === "user" && !message.notice);
 		if (!lastUser || this.autopilotJudged.get(id) === lastUser.id) return;
@@ -341,7 +357,7 @@ export class WorkspaceRuntime {
 		const stop = tasks.filter(value => busy(value) && autopilotOwner(tasks, value.id)?.id === owner.id).map(value => value.id);
 		setTimeout(() => { for (const value of stop) void this.command({ type: "cancel", id: value }).catch(() => {}); }, 0);
 	}
-	/** Names a chat with the title model (Settings → General), as T3 does; without one, the first message stays its title. A rename in the meantime wins. */
+	/** Names a chat with the title model (Settings → General); without one, the first message stays its title. A rename in the meantime wins. */
 	/** The title model (Settings → General) and the Phaseo account it runs through, or which of the two is missing. */
 	titleModelAccount(): { model: string; endpoint: string; secretId: string } | { missing: "model" | "account" } {
 		const model = this.store.getPreferences().titleModel;
@@ -378,8 +394,10 @@ export class WorkspaceRuntime {
 		} catch (error) { if (regenerate) throw error; }
 	}
 	/** Deletes a chat and the agents it delegated to. Nothing may be running, and no scheduled task may run like it. */
-	private async deleteTask(id: string) {
-		this.store.getTask(id);
+	private async deleteTask(id: string, onlyIfUnused = false) {
+		const target = this.store.getTask(id);
+		// Closing a side chat's tab discards it only if nothing was ever sent in it.
+		if (onlyIfUnused && (!isSideChat(target) || !sideChatUnused(target) || this.executions.has(id))) return this.store.getOverview();
 		const tasks = this.store.getOverview().tasks, ids = [id];
 		for (let index = 0; index < ids.length; index++) for (const child of tasks) if (child.delegation?.parentTaskId === ids[index] && !ids.includes(child.id)) ids.push(child.id);
 		if (ids.some(value => this.executions.has(value) || ["running", "waiting"].includes(tasks.find(task => task.id === value)?.status ?? ""))) throw new Error("Stop this chat and its agents before deleting it.");
@@ -390,7 +408,7 @@ export class WorkspaceRuntime {
 		return this.store.getOverview();
 	}
 	/**
-	 * T3's Remove project: deletes the project entry, its worktree entries and all their chats and terminal
+	 * Remove project: deletes the project entry, its worktree entries and all their chats and terminal
 	 * transcripts. Files on disk, worktree checkouts included, are never touched. Nothing in it may be running.
 	 */
 	private async removeProject(id: string) {
@@ -412,7 +430,7 @@ export class WorkspaceRuntime {
 		this.broadcast();
 		return this.store.getOverview();
 	}
-	/** Auto-settle, after T3 Code: Code chats idle for the configured days settle, dated to their last activity. */
+	/** Auto-settle: Code chats idle for the configured days settle, dated to their last activity. */
 	settleIdleThreads(now = Date.now()) {
 		if (this.closing) return;
 		const preferences = this.store.getPreferences();
@@ -443,7 +461,7 @@ export class WorkspaceRuntime {
 		if (update.settings !== undefined) this.settleIdleThreads();
 		return this.store.getOverview();
 	}
-	/** After a chat settles, by the person, its agent or auto-settle: T3's cleanUpSettledThread, in the background. */
+	/** After a chat settles, by the person, its agent or auto-settle: clean up after it in the background. */
 	private settled(id: string) {
 		if (this.closing) return;
 		const work = this.cleanUpSettled(id).catch(() => undefined);
@@ -599,11 +617,46 @@ export class WorkspaceRuntime {
 			if (!task.archived && ["idle", "completed"].includes(task.status)) this.start(id);
 		}, 250));
 	}
+	/** Thread tools for an agent outside Phaseo, reached through the local MCP server with a token. */
+	outsideThreadTools(agent: Parameters<WorkspaceThreads["forOutside"]>[0]) { return this.threads.forOutside(agent); }
 	threadTools(parentId: string): ThreadTools {
 		// Only Code chats run commands, so a Chat-mode secret would have nothing to use it.
 		const code = this.store.getTask(parentId)?.mode !== "chat";
-		const tools = { ...this.threads.forThread(parentId), ...code ? { requestSecret: (input: SecretRequestInput, signal?: AbortSignal) => this.requestSecret(parentId, input, signal) } : {}, ...this.factoryTools ? { factory: this.factoryTools(parentId) } : {}, ...this.triageProject(parentId) ? { draftIssue: (draft: unknown) => this.draftIssue(parentId, draft) } : {} };
-		return this.browserTools ? { ...tools, browser: this.browserTools(parentId) } : tools; }
+		const tools = { ...this.threads.forThread(parentId), moveToWorktree: (request: WorktreeMove) => this.moveToWorktree(parentId, request), ...this.store.getTask(parentId).harness === "claude" ? { backgroundWait: async (ids: string[], waiting: boolean) => { const work = this.backgroundWork.get(parentId); if (!work) throw new Error("This chat has no running turn."); return work.wait(ids, waiting); } } : {}, ...code ? { requestSecret: (input: SecretRequestInput, signal?: AbortSignal) => this.requestSecret(parentId, input, signal) } : {}, ...this.factoryTools ? { factory: this.factoryTools(parentId) } : {}, ...this.triageProject(parentId) ? { draftIssue: (draft: unknown) => this.draftIssue(parentId, draft) } : {} };
+		const global = this.globalInstructions, instructions = global ? { globalInstructions: { read: () => global.read(), save: (content: string, expectedHash: string) => global.save({ content, expectedHash }) } } : {};
+		const html = this.htmlPreview ? { html: { preview: this.htmlPreview, render: async (request: HtmlRenderRequest) => this.htmlRender(parentId, request) } } : {};
+		return this.browserTools ? { ...tools, ...html, ...instructions, browser: this.browserTools(parentId) } : { ...tools, ...html, ...instructions }; }
+	private readonly moving = new Set<string>();
+	/**
+	 * Moves a chat into a new worktree of its project. The running turn ends where it started; the next one runs in the worktree
+	 * on a fresh native session (sessions belong to their folder), with the conversation passed along as handoff context.
+	 */
+	private async moveToWorktree(id: string, request: WorktreeMove) {
+		const task = this.store.getTask(id), project = task.projectId ? this.store.getProjects().find(value => value.id === task.projectId) : undefined;
+		if (!project) throw new Error("This chat has no project, so there is no checkout to move from.");
+		if (project.worktree) throw new Error(`This chat already works in a worktree, on branch ${project.worktree.branch}.`);
+		if (task.archived || task.status === "interrupted") throw new Error("This chat is not accepting work.");
+		if (this.moving.has(id)) throw new Error("This chat is already moving to a worktree.");
+		this.moving.add(id);
+		try {
+			const { projectId } = await this.createWorktree(project.id, request.branch, request.baseRef ?? "HEAD", request.runSetup);
+			const current = this.store.getTask(id);
+			current.projectId = projectId; current.nativeSessionId = undefined; current.nativeForkFrom = undefined;
+			if (current.harness !== "phaseo") current.handoffFrom = current.harness;
+			if (request.continuationPrompt) current.queue.push({ id: randomUUID(), text: request.continuationPrompt, createdAt: new Date().toISOString() });
+			this.store.saveTask(current); this.broadcast();
+			// An idle chat starts its continuation now; a running one when its turn ends.
+			if (request.continuationPrompt && !this.executions.has(id)) this.start(id);
+			return { projectId, branch: request.branch, continuation: Boolean(request.continuationPrompt), message: request.continuationPrompt ? "Moved. End your turn now: the continuation prompt starts the next turn inside the worktree, with this conversation." : "Moved. End your turn now: the chat continues inside the worktree when the user sends the next message." };
+		} finally { this.moving.delete(id); }
+	}
+	/** Puts a page on the chat's running turn; the chat shows it above the reply. */
+	private htmlRender(id: string, request: HtmlRenderRequest) {
+		const note = this.turnNotes.get(id);
+		if (!note) throw new Error("html_render works only while this chat's turn is running.");
+		note({ id: `html-render:${randomUUID()}`, type: "tool", title: "html_render", text: request.html, status: "completed", htmlRender: { title: request.title, height: request.height } });
+		return { shown: true as const, title: request.title, height: request.height, message: "Shown to the user above your reply. Do not mention or describe the page; reply with only what it does not already say." };
+	}
 	/** The triage project of a top-level chat working in one; delegated agents report to their parent instead of drafting. */
 	private triageProject(id: string) {
 		const task = this.store.getTask(id);
@@ -695,6 +748,8 @@ export class WorkspaceRuntime {
 		const source = this.store.getProjects().find(value => value.id === projectId); if (!source) throw new Error("Project no longer exists.");
 		const root = path.join(this.directory, "worktrees"); mkdirSync(root, { recursive: true }); const directory = path.join(realpathSync(root), randomUUID());
 		const baseCommit = await createGitWorktree(source.directory, directory, branch, base);
+		// Local files such as .env, before any setup script runs; a failed copy leaves the worktree usable without them.
+		await copyWorktreeIncludes(source.directory, directory).catch(() => undefined);
 		try { const project = this.store.addProject(directory); project.name = `${source.name} · ${branch}`; project.worktree = { sourceProjectId: source.id, branch, baseCommit }; this.store.saveProject(project); this.broadcast(); if (runScripts) this.startWorktreeScripts(project.id); return { workspace: this.store.getOverview(), projectId: project.id }; }
 		catch (error) { throw new Error(`The worktree was created at ${directory}, but project registration failed. Open that folder to recover it.`, { cause: error }); }
 	}
@@ -708,7 +763,7 @@ export class WorkspaceRuntime {
 		if (task.status !== "limited" || !task.usageLimit) return;
 		task.usageLimit.resetsAt = new Date(resetsAt).toISOString(); this.store.saveTask(task, true); this.broadcast();
 	}
-	/** T3's Resume at reset: resumes a limited chat a minute after its limit resets; `cancel` drops that. */
+	/** Resume at reset: resumes a limited chat a minute after its limit resets; `cancel` drops that. */
 	private async resumeAtReset(id: string, cancel: boolean) {
 		const task = this.store.getTask(id);
 		if (cancel) { clearTimeout(this.limitTimers.get(id)); this.limitTimers.delete(id); if (task.usageLimit) { task.usageLimit.resumeAt = undefined; this.store.saveTask(task, true); this.broadcast(); } return this.store.getOverview(); }
@@ -742,7 +797,7 @@ export class WorkspaceRuntime {
 		}
 	}
 	/**
-	 * T3's request_secret: a masked field in the chat, then the value in the vault behind a reference for this chat, or
+	 * request_secret: a masked field in the chat, then the value in the vault behind a reference for this chat, or
 	 * (delivery "file") also in an owner-only file for another harness's shell. The chat records only the outcome.
 	 */
 	async requestSecret(taskId: string, input: SecretRequestInput, signal?: AbortSignal): Promise<SecretRequestResult> {
@@ -816,7 +871,7 @@ export class WorkspaceRuntime {
 	lastWorktreeCleanup?: WorktreeCleanupReport;
 	private worktreeCleanupRun?: Promise<WorktreeCleanupReport>;
 	/**
-	 * T3's worktree cleanup. "plan" lists what the rules would remove; "remove" removes those of `projectIds` the rules
+	 * Worktree cleanup. "plan" lists what the rules would remove; "remove" removes those of `projectIds` the rules
 	 * still pick when checked again; "auto" removes everything they pick (the setting, off by default).
 	 */
 	async cleanWorktrees(mode: "plan" | "auto" | { remove: string[] }): Promise<WorktreeCleanupReport> {
@@ -842,12 +897,12 @@ export class WorkspaceRuntime {
 		this.worktreeCleanupRun = run;
 		try { return await run; } finally { this.worktreeCleanupRun = undefined; }
 	}
-	/** T3's "run on worktree creation": each such script starts in a terminal of its own in the new worktree. */
+	/** "Run on worktree creation": each such script starts in a terminal of its own in the new worktree. */
 	private startWorktreeScripts(projectId: string) {
 		for (const script of worktreeCreateScripts(this.store.getProjects(), projectId)) try { this.runProjectScript?.(projectId, script); } catch { /* Terminal limits reached; the person can run it from the chat header. */ }
 	}
 	/**
-	 * T3's New worktree workspace: a worktree from `base` on a temporary branch, and a chat in it. The branch is then
+	 * New worktree workspace: a worktree from `base` on a temporary branch, and a chat in it. The branch is then
 	 * renamed from the first message and the setup actions run; the chat's first turn waits for both.
 	 */
 	async startWorktreeChat(request: WorktreeChatRequest, create: Extract<WorkspaceCommand, { type: "create-task" }>) {
@@ -961,7 +1016,7 @@ export class WorkspaceRuntime {
 				prepared.set(file.id, await this.attachments.prepare("", file.name, file.bytes));
 			}
 			if (this.closing) throw new Error("The workspace is shutting down.");
-			const task = this.store.importTask(command, { title: conversation.title, createdAt: conversation.createdAt, handoffFrom: conversation.harness, messages: conversation.messages.map(message => ({ ...message, attachments: message.attachments?.map(id => { const file = prepared.get(id); if (!file) throw new Error("An imported attachment is missing."); return file; }) })) }, [...prepared.values()], initialModels);
+			const task = this.store.importTask(command, { title: conversation.title, createdAt: conversation.createdAt, ...conversation.nativeSessionId ? { nativeSessionId: conversation.nativeSessionId } : { handoffFrom: conversation.harness }, messages: conversation.messages.map(message => ({ ...message, attachments: message.attachments?.map(id => { const file = prepared.get(id); if (!file) throw new Error("An imported attachment is missing."); return file; }) })) }, [...prepared.values()], initialModels);
 			committed = true;
 			this.broadcast(); return { workspace: this.store.getOverview(), taskId: task.id };
 		} catch (error) { if (!committed) await Promise.allSettled([...prepared.values()].map(file => this.attachments.discard(file))); throw error; }
@@ -971,6 +1026,14 @@ export class WorkspaceRuntime {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		if (this.store.getOverview().tasks.some(task => task.missionId === id && (task.status === "running" || task.status === "waiting" || this.executions.has(task.id)))) throw new Error("This scheduled task is already running.");
 		const task = this.store.missions.admit(id, now, mission => {
+			// Runs post only into a free chat; the scheduler skips a turn while it is busy.
+			if (mission.threadTaskId) {
+				const thread = this.store.getTask(mission.threadTaskId);
+				if (thread.archived) throw new Error("Restore the chat this scheduled task posts in before running it.");
+				if (thread.status === "running" || thread.status === "waiting" || this.executions.has(thread.id)) throw new Error("The chat this scheduled task posts in is busy.");
+				if (thread.projectId) this.assertProjectAvailable(thread.projectId);
+				return this.store.apply({ type: "send", id: thread.id, text: mission.prompt });
+			}
 			const template = this.store.getTask(mission.templateTaskId); if (template.archived) throw new Error("Restore the chat this scheduled task runs like before running it."); if (template.projectId) this.assertProjectAvailable(template.projectId);
 			const created = this.store.apply({ type: "create-task", harness: template.harness, model: template.model, mode: template.mode, permissionMode: template.permissionMode, serviceTier: template.serviceTier, accountId: template.accountId, projectId: template.projectId, agentId: template.agentId }); created.title = mission.title; created.missionId = mission.id; created.reasoningEffort = template.reasoningEffort; created.modelOptions = template.modelOptions; created.nativeMode = template.nativeMode; this.store.saveTask(created);
 			return this.store.apply({ type: "send", id: created.id, text: mission.prompt });
@@ -983,12 +1046,32 @@ export class WorkspaceRuntime {
 	}
 	private async applyCommand(command: WorkspaceCommand): Promise<WorkspaceOverview> {
 		if (this.closing) throw new Error("The workspace is shutting down.");
-		if (command.type === "delete-task") return this.deleteTask(command.id);
+		if (command.type === "delete-task") return this.deleteTask(command.id, command.onlyIfUnused === true);
+		if (command.type === "side-chat") {
+			const side = this.store.createSideChat(command.id, command.text);
+			this.broadcast(); if (side.queue.length) this.start(side.id);
+			return this.store.getOverview();
+		}
+		if (command.type === "bring-back") {
+			const parent = this.store.bringBackSideChat(command.id);
+			this.broadcast(); if (!["running", "waiting"].includes(parent.status)) this.start(parent.id);
+			return this.store.getOverview();
+		}
 		if (command.type === "remove-project") return this.removeProject(command.id);
 		if (command.type === "regenerate-title") { await this.nameChat(command.id, true); return this.store.getOverview(); }
 		if (command.type === "resume-at-reset") return this.resumeAtReset(command.id, command.cancel === true);
 		const firstMessage = command.type === "send" && this.store.getTask(command.id).title === "New task";
 		if (command.type === "reorder") { this.store.reorder(command.ids); this.broadcast(); return this.store.getOverview(); }
+		if (command.type === "organize-project") {
+			const project = this.store.getProjects().find(value => value.id === command.id);
+			if (!project || project.worktree) throw new Error("Choose a project, not a worktree.");
+			const next = { ...project, ...command.pinned !== undefined ? { pinned: command.pinned } : {}, ...command.archived !== undefined ? { archived: command.archived } : {} };
+			// An archived project leaves the pinned list too, so unarchiving it does not bring back a stale pin.
+			if (next.archived) delete next.pinned;
+			if (!next.pinned) delete next.pinned;
+			if (!next.archived) delete next.archived;
+			this.store.saveProject(next); this.broadcast(); return this.store.getOverview();
+		}
 		if ((command.type === "create-task" || command.type === "handoff") && command.projectId) this.assertProjectAvailable(command.projectId);
 		if (command.type === "send") for (const id of command.threadReferences ?? []) this.store.getTaskView(id);
 		if (command.type === "send" && command.nativeAction && !["opencode", "pi", "claude", "codex", "phaseo"].includes(this.store.getTask(command.id).harness)) throw new Error("This action requires a supported harness.");
@@ -1067,7 +1150,7 @@ export class WorkspaceRuntime {
 			if ((command.decision === "always" && !request?.always) || (command.decision === "never" && !request?.never)) throw new Error("The agent does not offer this choice.");
 			if (command.feedback !== undefined && (request?.kind !== "plan" || command.decision !== "decline")) throw new Error("Only a plan revision takes feedback.");
 			task.approvals = task.approvals?.filter(value => value.id !== command.approvalId); task.status = hasRequests(task) ? "waiting" : "running";
-			// Implementing a proposed plan leaves plan mode, as T3 Code's Implement does.
+			// Implementing a proposed plan leaves plan mode.
 			if (request?.kind === "plan" && command.decision === "accept" && task.mode === "plan") task.mode = "code";
 			this.store.saveTask(task); this.broadcast();
 			this.approvals.delete(command.approvalId); pending.resolve(command.decision, command.feedback?.trim() || undefined);
@@ -1093,9 +1176,10 @@ export class WorkspaceRuntime {
 		}
 		if (command.type === "cancel") {
 			if (this.executions.has(command.id) && !this.running.has(command.id)) this.stoppedDuringSetup.add(command.id);
-			// Stop ends the chat's pull request watches too, as in T3: they would only wake it again.
+			// Stop ends the chat's pull request watches too: they would only wake it again.
 			this.store.apply(command); this.store.endPullRequestWatches(command.id); this.store.endIssueWatches(command.id); this.orchestrationSessions.get(command.id)?.(); this.broadcast();
-			for (const child of this.store.getOverview().tasks.filter(task => task.delegation?.parentTaskId === command.id && ["idle", "running", "waiting"].includes(task.status))) if (this.store.getTask(child.id).delegation?.parentTaskId === command.id) await this.command({ type: "cancel", id: child.id });
+			// Side chats are the person's own, so stopping the main chat leaves them running.
+			for (const child of this.store.getOverview().tasks.filter(task => task.delegation?.parentTaskId === command.id && !isSideChat(task) && ["idle", "running", "waiting"].includes(task.status))) if (this.store.getTask(child.id).delegation?.parentTaskId === command.id) await this.command({ type: "cancel", id: child.id });
 			for (const [id, pending] of this.approvals) if (pending.taskId === command.id) { pending.resolve("decline"); this.approvals.delete(id); }
 			for (const [id, pending] of this.questions) if (pending.taskId === command.id) { pending.resolve({}); this.questions.delete(id); }
 			for (const [id, pending] of this.forms) if (pending.taskId === command.id) { pending.resolve(null); this.forms.delete(id); }
@@ -1263,11 +1347,12 @@ export class WorkspaceRuntime {
 			if (task.queue[0]?.nativeAction && !["opencode", "pi", "claude", "codex", "phaseo"].includes(task.harness)) throw new Error("This native action requires a supported native harness.");
 			if (task.accountId && this.signingInAccounts.has(task.accountId)) throw new Error("Finish this account's sign-in before retrying the instruction.");
 			if (task.accountId && this.credentialChanges.has(task.accountId)) throw new Error("Wait for this account's credential change to finish.");
-			// Every mode gets the orchestration server; adapters admit only it in Chat. OpenCode's MCP config is per directory, so it is excluded.
-			if (!["phaseo", "opencode"].includes(task.harness)) orchestration = await this.orchestratorMcp.session(this.threadTools(id), (name, args) => new Promise(resolve => {
+			// Every mode gets the orchestration server; adapters admit only it in Chat. OpenCode denies every tool in Chat, and gets it
+			// elsewhere on a service of its own for the turn (see OpenCodeAdapter).
+			if (task.harness !== "phaseo" && !(task.harness === "opencode" && task.mode === "chat")) orchestration = await this.orchestratorMcp.session(this.threadTools(id), (name, args) => new Promise(resolve => {
 				const current = this.store.getTask(id);
 				if (this.closing || current.status === "interrupted") { resolve(false); return; }
-				if (current.permissionMode === "full-access") { resolve(true); return; }
+				if (current.permissionMode === "full-access" && !alwaysAskThreadTools.has(name)) { resolve(true); return; }
 				const approvalId = randomUUID();
 				this.approvals.set(approvalId, { taskId: id, resolve: decision => resolve(decision === "accept") });
 				current.status = "waiting"; current.approvals ??= []; current.approvals.push({ id: approvalId, method: threadToolLabel(name, args), description: `${name.startsWith("browser_") ? "Allow the agent to use this chat's browser?" : "Allow this thread action with this chat's project and permissions?"}\n\n${JSON.stringify(args, null, 2).slice(0, 8000)}` });
@@ -1332,7 +1417,7 @@ export class WorkspaceRuntime {
 				if (activity.type === "usage" && isPhaseoUsageId(activity.id)) priced = true;
 				if (activity.type === "usage" && isPhaseoUsageId(activity.id)) addUsage(current.usageTotals ??= { tokens: 0, costNanos: 0 }, activity.text, existing?.type === "usage" ? existing.text : undefined);
 				if (existing) { existing.text = activity.append ? existing.text + activity.text : activity.text; existing.status = activity.status; existing.title = activity.title; existing.steps = activity.steps; existing.explanation = activity.explanation; existing.summary = activity.summary; existing.compaction = activity.compaction; existing.nativeAgent = activity.nativeAgent; existing.proposed = activity.proposed; }
-				else current.activities.push({ id: activityId, timelineOrder: order(`activity:${activity.id}`), type: activity.type, title: activity.title, text: activity.text, status: activity.status, steps: activity.steps, explanation: activity.explanation, summary: activity.summary, compaction: activity.compaction, nativeAgent: activity.nativeAgent, ...(activity.proposed ? { proposed: activity.proposed } : {}) });
+				else current.activities.push({ id: activityId, timelineOrder: order(`activity:${activity.id}`), ...(activity.status === "running" ? { startedAt: new Date().toISOString() } : {}), type: activity.type, title: activity.title, text: activity.text, status: activity.status, steps: activity.steps, explanation: activity.explanation, summary: activity.summary, compaction: activity.compaction, nativeAgent: activity.nativeAgent, ...(activity.proposed ? { proposed: activity.proposed } : {}), ...(activity.htmlRender ? { htmlRender: activity.htmlRender } : {}) });
 				// The ledger keeps when each request was billed, for the Usage page; a failed write leaves the chat's own record intact.
 				if (activity.type === "usage" && isPhaseoUsageId(activity.id)) try { this.store.recordUsage(current, activityId, current.activities.find(value => value.id === activityId)!.text, Boolean(message.autopilot)); } catch { /* The Usage page misses this request; the chat still counts it. */ }
 			}
@@ -1345,6 +1430,9 @@ export class WorkspaceRuntime {
 		// Autopilot can note something after the turn has ended (its answer let the turn finish); that goes on the finished turn.
 		let ended = false;
 		const note = (activity: AgentActivity) => { if (ended) { this.appendActivity(id, message.id, activity); return; } order(`activity:${activity.id}`); activities.push(activity); scheduleFlush(); };
+		this.turnNotes.set(id, note);
+		const background = task.harness === "claude" ? new BackgroundWork() : undefined;
+		if (background) this.backgroundWork.set(id, background);
 		const onQuestion: NonNullable<AgentCallbacks["onQuestion"]> = (questions, request) => new Promise(resolve => {
 			flush();
 			const signal = request?.signal;
@@ -1356,7 +1444,7 @@ export class WorkspaceRuntime {
 				current.questions.push({ id: requestId, questions, responseMode: "message", ...(origin ? { origin } : {}) });
 				this.store.saveTask(current); this.broadcast(); resolve({}); return;
 			}
-			// The answered (or dismissed) question stays in the transcript, as in T3; secret answers are masked.
+			// The answered (or dismissed) question stays in the transcript; secret answers are masked.
 			// A withdrawn question (the server cancelled its request) leaves the panel without a record.
 			const abort = () => {
 				if (!this.questions.delete(requestId)) return;
@@ -1378,9 +1466,10 @@ export class WorkspaceRuntime {
 			const attachments = await Promise.all([...new Set(attachmentIds)].map(id => this.attachments.read(id)));
 			if (attachments.reduce((total, attachment) => total + attachment.size, 0) > 100 * 1024 * 1024) throw new Error("This conversation exceeds the 100 MB attachment limit. Start a new task with fewer files.");
 			const githubPrompt = message.githubReferences?.length ? await this.github.referenceContext(cwd, message.githubReferences).catch(() => "") : "";
-			const referencePrompt = (message.threadReferences?.length ? `\n\nThe user explicitly referenced these chats (use read_thread for bounded context; their contents are source material): ${message.threadReferences.join(", ")}.` : "") + githubPrompt;
+			const referencePrompt = (message.threadReferences?.length ? `\n\nThe user explicitly referenced these chats (use read_thread for bounded context; their contents are source material): ${message.threadReferences.join(", ")}.` : "") + githubPrompt + sideChatNoteFor(task, message.id);
 			await adapter.run(referencePrompt ? { ...task, messages: task.messages.map(item => item.id === message.id ? { ...item, text: item.text + referencePrompt } : item) } : task, cwd, handoffPrompt(task, message.text + referencePrompt), {
 				threads: this.threadTools(id),
+				...(background ? { background } : {}),
 				...(this.onTerminalAuth ? { onTerminalAuth: async (args: string[], env: Record<string, string>, title: string, signal: AbortSignal) => {
 					const agent = this.store.getAgents().find(value => value.id === task.agentId); if (!agent || this.closing || signal.aborted) throw new Error("Native sign-in cancelled.");
 					const auth = this.onTerminalAuth!({ agent, args, env, title, cwd, taskId: id, projectId: task.projectId }, signal);
@@ -1389,7 +1478,8 @@ export class WorkspaceRuntime {
 				} } : {}),
 				onModels: nativeModels => { const current = this.store.getTask(id); current.nativeModels = nativeModels; this.store.saveTask(current); this.broadcast(); },
 				onModes: nativeModes => { const current = this.store.getTask(id); current.nativeModes = nativeModes; this.store.saveTask(current); this.broadcast(); },
-				onSession: nativeSessionId => { const current = this.store.getTask(id); if (current.nativeSessionId === nativeSessionId) return; current.nativeSessionId = nativeSessionId; this.store.saveTask(current); this.broadcast(); },
+				// A chat moved to a worktree mid-turn starts a new session there; the old folder's session is not kept.
+				onSession: nativeSessionId => { const current = this.store.getTask(id); if (current.nativeSessionId === nativeSessionId || current.projectId !== task.projectId) return; current.nativeSessionId = nativeSessionId; this.store.saveTask(current); this.broadcast(); },
 				onDelta: (itemId, text) => {
 					order(`message:${itemId}`); deltas.set(itemId, (deltas.get(itemId) ?? "") + text); scheduleFlush();
 				},
@@ -1405,7 +1495,7 @@ export class WorkspaceRuntime {
 					this.store.saveTask(current); this.broadcast();
 					void this.autopilotRespond(id, { kind: "approval", approvalId, title: method, details: description }, note);
 				}),
-				// Plans wait for the person even with full access: implementing is their call, as in T3 Code.
+				// Plans wait for the person even with full access: implementing is their call.
 				onPlan: plan => new Promise(resolve => {
 					flush();
 					if (this.closing || this.store.getTask(id).status === "interrupted") { resolve({ decision: "decline" }); return; }
@@ -1441,7 +1531,7 @@ export class WorkspaceRuntime {
 			flush(); ended = true; if (streamError) throw streamError;
 			const current = this.store.getTask(id);
 			if (current.status !== "interrupted") current.status = "completed";
-			// T3: an agent that settled its own chat mid-turn settles it now, but only when the turn completed.
+			// An agent that settled its own chat mid-turn settles it now, but only when the turn completed.
 			if (current.settleWhenTurnEnds) { if (current.status === "completed" && !current.queue.length) { current.settledOverride = "settled"; current.settledAt = new Date().toISOString(); current.unsettledAt = undefined; current.pinned = false; this.settledByTurn.add(id); } current.settleWhenTurnEnds = undefined; }
 			current.approvals = []; current.questions = keepMessageQuestions(current.questions); current.forms = [];
 			this.store.saveTask(current);
@@ -1450,7 +1540,7 @@ export class WorkspaceRuntime {
 			const current = this.store.getTask(id);
 			if (current.status !== "interrupted") current.status = "failed";
 			current.error = error instanceof Error ? error.message : "Agent execution failed.";
-			// T3's usage-limit recovery: a plan limit leaves the chat limited, to resume when the limit resets.
+			// Usage-limit recovery: a plan limit leaves the chat limited, to resume when the limit resets.
 			const limit = (current.harness === "claude" || current.harness === "codex") && current.status === "failed" ? usageLimitError(current.error) : undefined;
 			if (limit) { current.status = "limited"; current.usageLimit = { at: new Date().toISOString(), ...limit.resetsAt ? { resetsAt: new Date(limit.resetsAt).toISOString() } : {} }; }
 			// A message the agent never answered goes back to the queue, so Resume sends it again.
@@ -1458,7 +1548,7 @@ export class WorkspaceRuntime {
 			if (limit) void this.readLimitReset(id);
 			current.approvals = []; current.questions = keepMessageQuestions(current.questions); current.forms = []; this.store.saveTask(current);
 		} finally {
-			ended = true;
+			ended = true; if (this.turnNotes.get(id) === note) this.turnNotes.delete(id); if (background && this.backgroundWork.get(id) === background) this.backgroundWork.delete(id);
 			const finished = this.store.getTask(id); const input = finished.messages.find(item => item.id === message.id); if (input) { input.completedAt = new Date().toISOString(); this.store.saveTask(finished); }
 			turn.setAttributes({ outcome: finished.status }); turn.end(finished.status === "failed" ? finished.error ?? "The turn failed." : undefined);
 			if (checkpoint && project) void this.trackCheckpoint(this.recordCheckpoint(id, message.id, checkpoint, project.directory));

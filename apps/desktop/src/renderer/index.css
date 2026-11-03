@@ -36,7 +36,7 @@
 	--color-ring: var(--ring);
 	--color-success: var(--success);
 	--color-warning: var(--warning);
-	/* T3's info: snoozed chats, work in progress, renamed files. */
+	/* Info: snoozed chats, work in progress, renamed files. */
 	--color-info: var(--info);
 	--color-sidebar: var(--sidebar);
 	--color-sidebar-foreground: var(--sidebar-foreground);
@@ -50,7 +50,7 @@
 	--radius-2xl: calc(var(--radius) * 1.8);
 	--font-sans: Montserrat, ui-sans-serif, system-ui, sans-serif;
 	--font-mono: "Cascadia Code", "SF Mono", Consolas, ui-monospace, monospace;
-	/* T3 Code's two small sizes, for pull request rows and timelines. */
+	/* Two small sizes, for pull request rows and timelines. */
 	--text-2xs: 0.6875rem;
 	--text-2xs--line-height: calc(1 / 0.6875);
 	--text-3xs: 0.625rem;
@@ -125,6 +125,10 @@
 		padding: 0.1em 0.35em;
 		font-family: var(--font-mono);
 		font-size: 0.86em;
+	}
+	/* Your messages sit on the muted colour already. */
+	.message-user .message-markdown :not(pre) > code {
+		background: var(--background);
 	}
 	.message-markdown a {
 		color: var(--primary);
@@ -340,7 +344,7 @@ details[open] > summary::before { transform: rotate(90deg); }
 /* Summaries that draw their own chevron icon keep it. */
 summary:has(> svg:first-child)::before { display: none; }
 
-/* Browser loading bar, after T3 Code: grows to 90% over a few seconds, then fills and fades once the page loads. */
+/* Browser loading bar: grows to 90% over a few seconds, then fills and fades once the page loads. */
 @keyframes browser-loading-progress { from { transform: scaleX(0.04); } to { transform: scaleX(0.9); } }
 .browser-loading-progress { opacity: 0; transform: scaleX(1); transition: transform 150ms ease-out, opacity 150ms ease-out 220ms; }
 .browser-loading-progress[data-loading="true"] { opacity: 1; animation: browser-loading-progress 5.3s cubic-bezier(0.1, 0.5, 0.2, 1) forwards; }

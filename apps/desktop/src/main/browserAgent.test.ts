@@ -1,6 +1,6 @@
 import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";
-import { snapshotScript, targetScript } from "./browserAgent";
+import { boundedValue, keyPress, selectScript, snapshotScript, targetScript, waitScript } from "./browserAgent";
 import { overlayControllerScript, overlayCursorScript, overlayZoomScript } from "./browserOverlay";
 
 type FakeElement = { tagName: string; type?: string; id?: string; value?: string; checked?: boolean; disabled?: boolean; isContentEditable?: boolean; innerText?: string; attributes?: Record<string, string>; parentElement?: FakeElement | null; nodeType: 1; rect?: { left: number; top: number; width: number; height: number } };
@@ -54,6 +54,38 @@ describe("agent page scripts", () => {
 			{ selector: "#docs", role: "link", name: "Docs home", tag: "a" },
 		]);
 		expect(JSON.stringify(result)).not.toContain("hunter2");
+	});
+	it("chooses native select options by value or label and reports a custom dropdown", () => {
+		const events: string[] = [];
+		const options = [{ value: "r", label: "Red", selected: true }, { value: "g", label: "Green", selected: false }];
+		const select = { tagName: "SELECT", nodeType: 1 as const, multiple: false, options, dispatchEvent: (event: { type: string }) => events.push(event.type) };
+		const context = { ...page({ "#colour": [select as unknown as FakeElement], "#fake": [{ tagName: "DIV", nodeType: 1 }] }), Event: class { constructor(readonly type: string) {} } };
+		expect(run(selectScript("#colour", ["Green"]), context)).toEqual({ selected: ["g"] });
+		expect(options.map(option => option.selected)).toEqual([false, true]);
+		expect(events).toEqual(["input", "change"]);
+		expect(run(selectScript("#colour", ["r", "g"]), context)).toEqual({ error: "This <select> takes exactly one value." });
+		expect(run(selectScript("#colour", ["Blue"]), context)).toMatchObject({ error: expect.stringContaining("No option") });
+		expect(run(selectScript("#fake", ["x"]), context)).toMatchObject({ error: expect.stringContaining("not a native <select>") });
+	});
+	it("reports which wait condition is still missing", () => {
+		const spinner: FakeElement = { tagName: "DIV", nodeType: 1 };
+		expect(run(waitScript(".spinner", "hidden", undefined), page({ ".spinner": [spinner] }))).toEqual({ selector: false });
+		expect(run(waitScript(".spinner", "hidden", undefined), page({}))).toEqual({ done: true });
+		expect(run(waitScript(undefined, "visible", "Saved"), page({}, [], "Saving"))).toEqual({ text: false });
+		expect(run(waitScript(".spinner", "visible", "Saved"), page({ ".spinner": [spinner] }, [], "All Saved"))).toEqual({ done: true });
+	});
+	it("builds key presses with text only when they type", () => {
+		expect(keyPress("a")).toEqual([{ type: "keyDown", key: "a", code: "KeyA", windowsVirtualKeyCode: 65, nativeVirtualKeyCode: 65, modifiers: 0, text: "a", unmodifiedText: "a" }, { type: "keyUp", key: "a", code: "KeyA", windowsVirtualKeyCode: 65, nativeVirtualKeyCode: 65, modifiers: 0 }]);
+		expect(keyPress("a", ["Control"])[0]).toEqual({ type: "rawKeyDown", key: "a", code: "KeyA", windowsVirtualKeyCode: 65, nativeVirtualKeyCode: 65, modifiers: 2 });
+		expect(keyPress("Enter")[0]).toMatchObject({ type: "keyDown", code: "Enter", windowsVirtualKeyCode: 13, text: "\r" });
+		expect(keyPress("ArrowDown", ["Shift"])[0]).toMatchObject({ type: "rawKeyDown", windowsVirtualKeyCode: 40, modifiers: 8 });
+		expect(keyPress("F5")[0]).toMatchObject({ key: "F5", windowsVirtualKeyCode: 116 });
+	});
+	it("returns page values whole up to the limit, then as cut JSON text", () => {
+		expect(boundedValue(undefined, 10)).toEqual({ value: null });
+		expect(boundedValue({ a: 1 }, 10)).toEqual({ value: { a: 1 } });
+		expect(boundedValue("x".repeat(20), 10)).toEqual({ value: "\"xxxxxxxxx", truncated: true });
+		expect(boundedValue("€€€€", 6).value).toBe("\"€");
 	});
 	it("builds overlay calls from numbers and quoted names only", () => {
 		expect(overlayCursorScript(Number.NaN, 4, "click", 2)).toMatch(/\.cursor\(0, 4, "click", 2\)$/);

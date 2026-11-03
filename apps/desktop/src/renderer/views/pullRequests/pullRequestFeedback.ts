@@ -2,7 +2,7 @@ import type { PullRequestAction } from "../../../shared/pullRequestView";
 
 type ActionType = PullRequestAction["type"];
 
-/** Said as the thing that happened (T3's ACTION_SUCCESS_LABELS). Silent ones are acknowledged by what changes on screen. */
+/** Said as the thing that happened. Silent ones are acknowledged by what changes on screen. */
 const SUCCESS: Partial<Record<ActionType, string>> = {
 	merge: "Merge requested", ready: "Marked ready for review", draft: "Converted to draft", close: "Pull request closed", reopen: "Pull request reopened",
 	"update-branch": "Branch updated with the base branch", "enable-auto-merge": "Auto-merge enabled", "disable-auto-merge": "Auto-merge disabled",

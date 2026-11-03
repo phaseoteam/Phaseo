@@ -10,7 +10,7 @@ export type BrowserMenuActions = {
 };
 const schemes: { value: BrowserColorScheme; label: string }[] = [{ value: "system", label: "System" }, { value: "light", label: "Light" }, { value: "dark", label: "Dark" }];
 
-/** The three-dot menu at the end of the browser chrome, as in T3 Code. */
+/** The three-dot menu at the end of the browser chrome. */
 export function BrowserMoreMenu({ enabled, actions, zoom, colorScheme, devToolsOpen, deviceToolbar, muted, downloads, poppedOut, zoomShortcuts }: { enabled: boolean; actions: BrowserMenuActions; zoom: number; colorScheme: BrowserColorScheme; devToolsOpen: boolean; deviceToolbar: boolean; muted: boolean; downloads: number; poppedOut: boolean; zoomShortcuts: { in: string; out: string; reset: string } }) {
 	const disabled = !enabled;
 	return <DropdownMenu>

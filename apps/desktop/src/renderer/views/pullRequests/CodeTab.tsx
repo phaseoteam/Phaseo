@@ -89,7 +89,7 @@ export function ReviewThread({ thread, view, projectId, pending, onAction, hando
 	</div>;
 }
 
-/** A line comment held for the review, drawn flat with a dashed rule rather than T3's dashed card. */
+/** A line comment held for the review, drawn flat with a dashed rule rather than as a card. */
 function PendingComment({ comment, onRemove }: { comment: PendingReviewComment; onRemove: () => void }) {
 	return <div className="border-y border-border/60 bg-background px-3 py-2 font-sans text-xs whitespace-normal" data-pending-comment={comment.id} onPointerDown={event => event.stopPropagation()}>
 		<div className="border-l-2 border-dashed border-info/70 pl-3">
@@ -100,7 +100,7 @@ function PendingComment({ comment, onRemove }: { comment: PendingReviewComment; 
 	</div>;
 }
 
-/** T3's draft under the marked lines: "Add to review" holds it for the composer, "Add to agent" hands the lines to a chat. */
+/** The draft under the marked lines: "Add to review" holds it for the composer, "Add to agent" hands the lines to a chat. */
 function DraftComment({ label, onReview, onAgent, onCancel }: { label: string; onReview: (body: string) => void; onAgent?: (request: string) => void; onCancel: () => void }) {
 	const [text, setText] = useState("");
 	return <div className="border-y border-border/60 bg-background px-3 py-2 font-sans text-xs whitespace-normal" data-draft-comment="" onPointerDown={event => event.stopPropagation()}>
@@ -129,7 +129,7 @@ type Annotation = `thread:${string}` | `pending:${string}` | "draft";
 const noSelection = () => {};
 
 /**
- * Every changed file as its own diff, in reading order (source, then tests, then generated), with T3's toolbar: the
+ * Every changed file as its own diff, in reading order (source, then tests, then generated), with a toolbar: the
  * commit scope first, one count with its caveats as icons, and the diff options folded into a menu when narrow.
  * Viewed ticks are GitHub's own. Dragging line numbers drafts a line comment for the review or for the agent.
  */
@@ -165,7 +165,7 @@ export function CodeTab({ view, projectId, pending, onAction, onOpen, handoff, c
 	const ordered = useMemo(() => { const byPath = new Map(files.map(file => [file.filename, file])); return orderDiffFiles(files.map(file => ({ path: file.filename, lines: patchLines(file.patch) }))).map(path => byPath.get(path)!); }, [files]);
 	const markViewed = (file: PullRequestFile, next: boolean) => {
 		viewed.setViewed(file.filename, next);
-		// Ticking a file folds it away, as T3 Code does; unticking opens it again.
+		// Ticking a file folds it away; unticking opens it again.
 		setCollapsed(current => ({ ...current, [file.filename]: next }));
 	};
 	const isCollapsed = (file: PullRequestFile) => collapsed[file.filename] ?? (diffFilesCollapsed || (!scoped && viewed.isViewed(file.filename)));
@@ -265,7 +265,7 @@ export function CodeTab({ view, projectId, pending, onAction, onOpen, handoff, c
 						const thread = threads.find(value => `thread:${value.id}` === key);
 						return thread ? threadCard(thread) : null;
 					};
-					// One draft at a time, as T3 does: while it is open only its own lines stay marked.
+					// One draft at a time: while it is open only its own lines stay marked.
 					const lineSelection = !canComment ? undefined : !draft ? { selected: null, onSelect: (range: SelectedLineRange) => startDraft(file.filename, range) } : draft.path === file.filename ? { selected: draft.range, onSelect: noSelection } : undefined;
 					return <section key={file.filename} id={fileAnchor(file.filename)} aria-label={file.filename} className="border-b border-border/60" data-pr-file={file.filename}>
 						<div className="sticky top-0 z-10 flex h-9 items-center gap-2 border-b border-border/60 bg-background px-3 text-xs">

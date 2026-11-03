@@ -1,7 +1,7 @@
 import type { PullRequest } from "../../../shared/pullRequests";
 
 /**
- * The pull requests `#` offers (T3's filterComposerPullRequestMatches and rankPullRequestMatches): a number matches by
+ * The pull requests `#` offers: a number matches by
  * prefix, words by title, branch or author; linked ones come first, then an exact number, then the newest.
  */
 export function pullRequestMatches<T extends Pick<PullRequest, "number" | "title" | "head" | "author" | "updatedAt">>(requests: T[], query: string, linked: number[] = [], limit = 20): T[] {

@@ -7,8 +7,8 @@ import { actionFailureLabel, actionSuccessLabel, readableFailure } from "./pullR
 import { seedPullRequestTabStatus } from "./tabStatus";
 
 /**
- * One pull request: the latest view, a refresh that never overlaps itself, and writes that report as toasts the way
- * T3 Code's do ("Could not …" with GitHub's reason or a hint at what to check).
+ * One pull request: the latest view, a refresh that never overlaps itself, and writes that report as toasts
+ * ("Could not …" with GitHub's reason or a hint at what to check).
  */
 export function usePullRequest(projectId: string, number: number) {
 	const api = window.phaseoDesktop?.workspace;

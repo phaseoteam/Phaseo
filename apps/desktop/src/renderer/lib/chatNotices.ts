@@ -20,7 +20,7 @@ const notices: Record<string, { title: string; type: ToastType }> = {
 const listed = (task: TaskOverview) => !task.archived && !task.delegation?.parentTaskId;
 
 /**
- * In-app toasts, after T3's notification coordinator: a chat other than the open one finished or needs the person.
+ * In-app toasts: a chat other than the open one finished or needs the person.
  * `previous` is what each chat's attention was; undefined on the first overview, which is a silent baseline.
  */
 export function chatNotices(previous: ReadonlyMap<string, string> | undefined, tasks: readonly TaskOverview[], openId?: string) {

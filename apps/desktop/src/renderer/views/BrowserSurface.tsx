@@ -22,7 +22,7 @@ const pngFile = (base64: string, name: string) => new File([Uint8Array.from(atob
 export function attachToComposer(detail: { files?: File[]; text?: string }) { const payload = { ...detail, handled: false }; window.dispatchEvent(new CustomEvent("phaseo:composer-attach", { detail: payload })); return payload.handled; }
 export const overlayOpen = () => Array.from(document.querySelectorAll('dialog[open], [role="dialog"], [aria-modal="true"], [role="menu"], [role="listbox"]')).some(element => element.getClientRects().length > 0);
 
-/** One browser tab, as one pane tab: T3 Code's chrome row over a native page. */
+/** One browser tab, as one pane tab: a chrome row over a native page. */
 export function BrowserSurface({ context, tabId, covered, requestedLink }: { context: string; tabId: string; covered: boolean; requestedLink?: { url: string; request: number } }) {
 	const api = window.phaseoDesktop;
 	const tab = useBrowserTab(context, tabId);
@@ -81,7 +81,7 @@ export function BrowserSurface({ context, tabId, covered, requestedLink }: { con
 		const unsubscribe = api.onBrowserState(apply);
 		return () => { unsubscribe(); void api.browser({ type: "hide", id: tabId, slot: "pane" }).catch(() => undefined); };
 	}, [api, tabId, send]);
-	// While this tab shows here, its floating player steps aside (T3 Code).
+	// While this tab shows here, its floating player steps aside.
 	useEffect(() => markBrowserSurfaceShown(tabId), [tabId]);
 
 	// The native page sits over the slot, and hides while anything covers it.
@@ -127,7 +127,7 @@ export function BrowserSurface({ context, tabId, covered, requestedLink }: { con
 		setRecents(values => recordBrowserVisit(values, { url: state.url, title: state.title || state.url, at: Date.now(), project, ...(state.favicon ? { favicon: state.favicon } : {}) }));
 	}, [state?.url, state?.loading, state?.failure, state?.title, state?.favicon, project, setRecents]);
 
-	// A crashed page reloads quietly, backing off, as T3 Code does.
+	// A crashed page reloads quietly, backing off.
 	useEffect(() => {
 		if (!state?.crashed) return;
 		const plan = planBrowserCrashRecovery(recovery.current, Date.now());
@@ -175,7 +175,7 @@ export function BrowserSurface({ context, tabId, covered, requestedLink }: { con
 
 	const float = () => {
 		if (floating) { closeMiniPlayer(context); return; }
-		// T3 Code floats the page and closes the panel; the page moves into the player over the chat.
+		// Floating the page closes the panel; the page moves into the player over the chat.
 		openMiniPlayer(context, tabId, slotSize);
 		setRightPanel(undefined);
 	};
