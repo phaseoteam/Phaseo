@@ -107,7 +107,7 @@ import { branchPullRequest, forgetBranchPullRequest } from "./branchPullRequest"
 import { createPullRequest, parsePullRequestText, pullRequestPrompt, threadWorkLog, type PullRequestContext } from "./createPullRequest";
 import { OutsideAgentsMcp } from "./outsideAgentsMcp";
 import { PhoneService, type PhaseoSignIn } from "./phone/phoneService";
-import { phoneModels, startPhoneChat, type DiscoverModels, type PhoneModelSources } from "./phone/phoneHost";
+import { phoneModels, phoneSetChat, startPhoneChat, type DiscoverModels, type PhoneModelSources } from "./phone/phoneHost";
 import { codeHostSettings, configureCodeHosts, removeCodeHostToken, saveCodeHostToken, saveCustomCodeHosts } from "./codeHosts";
 import { codeHostKinds, validHostName, type CodeHostKind } from "../shared/codeHosts";
 import { validateCodeHostTokenRequest } from "../shared/codeHostSettings";
@@ -1349,6 +1349,13 @@ app.whenReady().then(() => {
 			models: input => phoneModels(workspaceRuntime.store.getOverview(), phoneSources, input),
 			// A worktree's .git is a file, which existsSync also finds.
 			isRepository: directory => existsSync(path.join(directory, ".git")),
+			setChat: async input => { await workspaceRuntime.command(validateCommand(await phoneSetChat(workspaceRuntime.store.getTask(input.chatId), phoneDiscover, input))); },
+			// The same read as the window's changed-files row (workspace:turn-changes), in the chat's own project folder.
+			turnChanges: (projectId, before, after) => {
+				const project = workspaceRuntime.store.getProjects().find(value => value.id === projectId);
+				if (!project) throw new Error("Project no longer exists.");
+				return turnChanges(project.directory, before, after);
+			},
 		},
 	});
 	void phoneService.start().catch(() => {});

@@ -129,7 +129,10 @@ export function useDesktopChat(client: DesktopClient | null, chatId: string) {
     setView((current) => (current ? { ...current, chat: { ...current.chat, ...(kind === "approval" ? { approvals: current.chat.approvals.filter((entry) => entry.id !== id) } : { questions: current.chat.questions.filter((entry) => entry.id !== id) }) } } : current));
   }, []);
 
-  return { view, error, reload: read, loadEarlier: view && view.earlier > 0 ? loadEarlier : null, loadingEarlier, settle };
+  /** Shows the chat as an answer just returned it (set_chat), before its update arrives. */
+  const replaceChat = useCallback((chat: PhoneChatDetail) => setView((current) => (current ? { ...current, chat: mergeDetail(current.chat, chat) } : current)), []);
+
+  return { view, error, reload: read, loadEarlier: view && view.earlier > 0 ? loadEarlier : null, loadingEarlier, settle, replaceChat };
 }
 
 /** The last model list each computer sent, so a thread's read-only control can name its model. */

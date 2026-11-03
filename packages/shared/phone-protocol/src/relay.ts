@@ -75,7 +75,9 @@ export type RelayRefusal = "unauthorized" | "bad_request" | "workspace_mismatch"
  * it returns.
  */
 export const relayHolds = (frame: { type?: unknown; ok?: unknown }) => frame.ok === undefined
-	&& (frame.type === "attention" || frame.type === "send" || frame.type === "answer_approval" || frame.type === "answer_question");
+	&& (frame.type === "attention" || frame.type === "send" || frame.type === "answer_approval" || frame.type === "answer_question"
+	// A person's explicit change to a chat; a queue edit or model change would be stale by the time the computer is back.
+	|| frame.type === "update_chat");
 
 export const connectRelayUrl = "wss://connect.phaseo.app";
 /** The relay URL without trailing slashes. A loop, not a regex: the URL comes from a pairing link, and /\/+$/ backtracks on many slashes. */

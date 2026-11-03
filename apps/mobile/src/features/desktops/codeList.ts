@@ -18,7 +18,7 @@ export function codeStatus(chat: Pick<PhoneChat, "needsYou" | "status" | "unread
 }
 
 export type CodeListItem =
-  | { type: "heading"; key: string; title: string; count: number; toggle?: "settled"; open: boolean }
+  | { type: "heading"; key: string; title: string; count: number; toggle?: "settled" | "snoozed"; open: boolean }
   | { type: "folder"; key: string; projectId: string | null; title: string }
   | { type: "thread"; key: string; chat: PhoneChat; /** Listed under its project's folder, so the row needn't name the project. */ inFolder: boolean };
 
@@ -28,22 +28,25 @@ const matches = (chat: PhoneChat, search: string) => `${chat.title} ${chat.proje
 type Folder = { projectId: string | null; title: string; pinned: boolean; chats: PhoneChat[] };
 
 /**
- * The computer's threads as its sidebar orders them: threads that need you first, then the rest in project folders,
- * then the settled ones under a heading that stays collapsed until opened. With the computer's `projects` (protocol
+ * The computer's threads as its sidebar orders them: threads that need you first, then pinned ones, then the rest in
+ * project folders, then the snoozed and the settled ones, each under a heading that stays collapsed until opened. With the computer's `projects` (protocol
  * 2), every project has a folder, empty ones too: pinned first in the computer's order, then by latest thread, then
  * the empty ones; archived projects and worktrees (whose threads the computer files under their source) have none.
  * Without them, folders come from the threads alone. Threads without a project are always last.
  */
-export function codeListItems(chats: readonly PhoneChat[], { query = "", settledOpen = false, projects = null }: { query?: string; settledOpen?: boolean; projects?: readonly PhoneProject[] | null } = {}): CodeListItem[] {
+export function codeListItems(chats: readonly PhoneChat[], { query = "", settledOpen = false, snoozedOpen = false, projects = null }: { query?: string; settledOpen?: boolean; snoozedOpen?: boolean; projects?: readonly PhoneProject[] | null } = {}): CodeListItem[] {
   const search = query.trim().toLocaleLowerCase();
   const shown = search ? chats.filter((chat) => matches(chat, search)) : [...chats];
   const needsYou = shown.filter((chat) => chat.needsYou).sort(newest);
-  const settled = shown.filter((chat) => !chat.needsYou && chat.settled).sort(newest);
+  // A snoozed thread that needs you comes back early, as on the computer.
+  const snoozed = shown.filter((chat) => !chat.needsYou && chat.snoozedUntil).sort(newest);
+  const settled = shown.filter((chat) => !chat.needsYou && !chat.snoozedUntil && chat.settled).sort(newest);
+  const pinned = shown.filter((chat) => !chat.needsYou && !chat.snoozedUntil && !chat.settled && chat.pinned).sort(newest);
   const folders = new Map<string, Folder>();
   for (const project of projects ?? []) {
     if (!project.worktreeOf && !project.archived) folders.set(project.id, { projectId: project.id, title: project.name, pinned: Boolean(project.pinned), chats: [] });
   }
-  for (const chat of shown.filter((entry) => !entry.needsYou && !entry.settled).sort(newest)) {
+  for (const chat of shown.filter((entry) => !entry.needsYou && !entry.settled && !entry.snoozedUntil && !entry.pinned).sort(newest)) {
     const key = chat.projectId ?? "";
     const folder = folders.get(key) ?? { projectId: chat.projectId ?? null, title: chat.project ?? "No project", pinned: false, chats: [] };
     folder.chats.push(chat);
@@ -52,6 +55,7 @@ export function codeListItems(chats: readonly PhoneChat[], { query = "", settled
   const items: CodeListItem[] = [];
   const thread = (chat: PhoneChat): CodeListItem => ({ type: "thread", key: chat.id, chat, inFolder: false });
   if (needsYou.length) items.push({ type: "heading", key: "heading:needs-you", title: "Needs you", count: needsYou.length, open: true }, ...needsYou.map(thread));
+  if (pinned.length) items.push({ type: "heading", key: "heading:pinned", title: "Pinned", count: pinned.length, open: true }, ...pinned.map(thread));
   const latest = (folder: Folder) => folder.chats[0]?.updatedAt ?? "";
   // A search shows only the folders it found threads in.
   const listed = [...folders.values()].filter((folder) => folder.chats.length || (!search && folder.projectId !== null));
@@ -62,7 +66,8 @@ export function codeListItems(chats: readonly PhoneChat[], { query = "", settled
     ...listed.filter((folder) => folder.projectId === null),
   ];
   for (const folder of ordered) items.push({ type: "folder", key: `folder:${folder.projectId ?? ""}`, projectId: folder.projectId, title: folder.title }, ...folder.chats.map((chat): CodeListItem => ({ type: "thread", key: chat.id, chat, inFolder: true })));
-  // Searching opens the settled threads, so a match is never hidden.
+  // Searching opens the folded sections, so a match is never hidden.
+  if (snoozed.length) items.push({ type: "heading", key: "heading:snoozed", title: "Snoozed", count: snoozed.length, toggle: "snoozed", open: snoozedOpen || Boolean(search) }, ...(snoozedOpen || search ? snoozed.map(thread) : []));
   const open = settledOpen || Boolean(search);
   if (settled.length) items.push({ type: "heading", key: "heading:settled", title: "Settled", count: settled.length, toggle: "settled", open }, ...(open ? settled.map(thread) : []));
   return items;

@@ -1,8 +1,10 @@
 import { conversationPageOf } from "../../shared/conversationPage";
 import type { RememberedModels } from "../../shared/rememberedModels";
 import type { Account, Harness, Message, ModelOption, Project, Task, WorkspaceCommand } from "../../shared/workspace";
+import { settleBlocker } from "../../shared/threadLifecycle";
 import { overviewOrder, taskOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
-import { phoneModels, startPhoneChat, type PhoneModelSources } from "./phoneHost";
+import type { TurnFileChange } from "../../shared/gitDiff";
+import { phoneModels, phoneSetChat, startPhoneChat, type PhoneModelSources } from "./phoneHost";
 import type { PhoneHost } from "./phoneSession";
 
 /** What each harness offers in the tests: Codex lists efforts on the model, Claude as a Reasoning option. */
@@ -22,6 +24,8 @@ export function fakePhoneHost() {
 	const tasks = new Map<string, Task>();
 	const projects: Project[] = [{ id: "p1", name: "Phaseo", directory: "/work/phaseo", createdAt: "2026-11-01T00:00:00.000Z" }];
 	const commands: WorkspaceCommand[] = [], repositoryChecks: string[] = [];
+	/** Each snapshot pair's changed files ("before:after"), and how often git was asked for one. */
+	const checkpointFiles = new Map<string, TurnFileChange[]>(), turnReads: string[] = [];
 	let clock = Date.parse("2026-11-01T10:00:00.000Z");
 	const tick = () => new Date(clock += 1000).toISOString();
 	// A Phaseo account that can call the gateway, and Codex and Claude Code signed in on the computer.
@@ -58,6 +62,26 @@ export function fakePhoneHost() {
 				const { type: _type, autopilot: _autopilot, ...fields } = command;
 				addTask({ id: `new-${tasks.size + 1}`, title: "New task", ...fields }); changed();
 			}
+			// The lifecycle and settings commands as the store applies them, its refusals included.
+			else if (command.type === "settle") { const task = get(command.id); const blocker = settleBlocker(taskOverview(task)); if (blocker) throw new Error(blocker); task.settledOverride = "settled"; task.settledAt = tick(); touch(task); changed(); }
+			else if (command.type === "unsettle") { const task = get(command.id); task.settledOverride = "active"; task.settledAt = undefined; touch(task); changed(); }
+			else if (command.type === "snooze") { const task = get(command.id); task.snoozedUntil = command.until; task.snoozedAt = tick(); touch(task); changed(); }
+			else if (command.type === "wake") { const task = get(command.id); task.snoozedUntil = task.snoozedAt = undefined; touch(task); changed(); }
+			else if (command.type === "mark-unread") { const task = get(command.id); task.lastVisitedAt = "2000-01-01T00:00:00.000Z"; touch(task); changed(); }
+			else if (command.type === "update-task") {
+				const task = get(command.id);
+				if ((command.model ?? command.mode ?? command.reasoningEffort ?? command.modelOptions) !== undefined && task.status === "running") throw new Error("Stop this task before changing its model or mode.");
+				if (command.model !== undefined && command.model !== task.model) { task.reasoningEffort = undefined; task.modelOptions = undefined; }
+				for (const key of ["title", "pinned", "archived", "model", "mode", "reasoningEffort", "modelOptions"] as const) if (command[key] !== undefined) Object.assign(task, { [key]: command[key] });
+				touch(task); changed();
+			}
+			else if (command.type === "queue-remove" || command.type === "queue-edit" || command.type === "queue-move") {
+				const task = get(command.id), at = task.queue.findIndex(value => value.id === command.messageId);
+				if (command.type === "queue-remove") task.queue.splice(at, 1);
+				else if (command.type === "queue-edit") task.queue[at] = { ...task.queue[at]!, text: command.text };
+				else { const to = command.direction === "up" ? at - 1 : at + 1; if (to >= 0 && to < task.queue.length) [task.queue[at], task.queue[to]] = [task.queue[to]!, task.queue[at]!]; }
+				touch(task); changed();
+			}
 			else if (command.type === "approval") { const task = get(command.id); if (!task.approvals?.some(value => value.id === command.approvalId)) throw new Error("This approval is no longer pending."); task.approvals = task.approvals.filter(value => value.id !== command.approvalId); touch(task); changed(); }
 			return overview();
 		},
@@ -65,6 +89,8 @@ export function fakePhoneHost() {
 		models: input => phoneModels(overview(), sources, input),
 		// Every test project is a checkout except one in /scratch.
 		isRepository: directory => { repositoryChecks.push(directory); return !directory.startsWith("/scratch"); },
+		setChat: async input => { await host.command(await phoneSetChat(get(input.chatId), discover, input)); },
+		turnChanges: async (_projectId, before, after) => { turnReads.push(`${before}:${after}`); return checkpointFiles.get(`${before}:${after}`) ?? []; },
 	};
-	return { host, tasks, projects, accounts, agents, sources, repositoryChecks, commands, addTask, addMessage, get, touch, changed, overview, onChange: (listener: (overview: WorkspaceOverview) => void) => listeners.push(listener) };
+	return { host, tasks, projects, accounts, agents, sources, repositoryChecks, checkpointFiles, turnReads, commands, addTask, addMessage, get, touch, changed, overview, onChange: (listener: (overview: WorkspaceOverview) => void) => listeners.push(listener) };
 }

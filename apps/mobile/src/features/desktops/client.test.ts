@@ -103,7 +103,7 @@ describe.each(["direct", "connect"] as const)("over %s", (via) => {
 
   test("lists the computer's projects and hears when they change", async () => {
     const { desktop, client } = await connected();
-    expect(desktop.received[0]).toMatchObject({ type: "hello", protocol: 2 });
+    expect(desktop.received[0]).toMatchObject({ type: "hello", protocol: 3 });
     const { projects } = await client.request("list_projects", {});
     expect(projects.map((project) => project.id)).toEqual(["p2", "p1", "p3", "w1"]);
     const changed = nextEvent(client, "projects_changed");
@@ -127,7 +127,7 @@ describe.each(["direct", "connect"] as const)("over %s", (via) => {
   test("says hello first, then lists and reads chats", async () => {
     const { desktop, client } = await connected();
     expect(desktop.received[0]).toMatchObject({ type: "hello", deviceId: "dev-1", appVersion: "0.1.0" });
-    expect(client.state.get()).toEqual({ status: "connected", via, desktopName: "Studio PC", protocol: 2 });
+    expect(client.state.get()).toEqual({ status: "connected", via, desktopName: "Studio PC", protocol: 3 });
     const { chats } = await client.request("list_chats", {});
     expect(sortChats(chats).map((chat) => chat.id)).toEqual(["c2", "c1"]);
     const read = await client.request("read_chat", { chatId: "c1" });
@@ -153,6 +153,31 @@ describe.each(["direct", "connect"] as const)("over %s", (via) => {
       expect(desktop.relayed).toHaveLength(6);
       expect(desktop.relayed.every((frame) => !("text" in frame))).toBe(true);
     }
+    client.stop();
+  });
+
+  test("settles and undoes a thread, edits its queue, and has only the settle held by the relay", async () => {
+    const { desktop, client } = await connected();
+    desktop.chats[0]!.queue = [{ id: "q1", text: "Then the docs" }];
+    expect((await client.request("update_chat", { chatId: "c1", action: "settle" })).chat).toMatchObject({ id: "c1", settled: true });
+    expect((await client.request("update_chat", { chatId: "c1", action: "unsettle" })).chat).not.toHaveProperty("settled");
+    await client.request("queue", { chatId: "c1", messageId: "q1", action: "edit", text: "Then the README" });
+    await client.request("set_chat", { chatId: "c1", reasoningEffort: "high" });
+    expect(desktop.chats[0]).toMatchObject({ queue: [{ id: "q1", text: "Then the README" }], reasoningEffort: "high" });
+    await expect(client.request("update_chat", { chatId: "c2", action: "settle" })).resolves.toBeTruthy();
+    if (via === "connect") {
+      // Organising is the person's explicit choice, so it waits for an offline computer; a queue edit or model change would be stale.
+      const types = desktop.relayed.filter((frame) => frame.hold === true).length;
+      expect(types).toBe(3);
+    }
+    client.stop();
+  });
+
+  test("lists the archived threads apart from the rest", async () => {
+    const { client } = await connected();
+    await client.request("update_chat", { chatId: "c1", action: "archive" });
+    expect((await client.request("list_chats", {})).chats.map((chat) => chat.id)).toEqual(["c2"]);
+    expect((await client.request("list_chats", { archived: true })).chats.map((chat) => chat.id)).toEqual(["c1"]);
     client.stop();
   });
 
@@ -396,7 +421,7 @@ describe("chat state", () => {
       { kind: "activity", id: "t2", type: "tool", title: "cat", text: "" },
       { kind: "message", id: "m2", role: "assistant", text: "Done", createdAt: "" },
     ];
-    expect(chatItems(entries).map((item) => (item.kind === "message" ? item.message.id : item.activities.map((entry) => entry.id).join("+")))).toEqual(["t0", "m1", "t1+t2", "m2"]);
+    expect(chatItems(entries).map((item) => (item.kind === "message" ? item.message.id : item.kind === "activities" ? item.activities.map((entry) => entry.id).join("+") : item.id))).toEqual(["t0", "m1", "t1+t2", "m2"]);
     expect(firstMessageId(entries)).toBe("m1");
   });
 });

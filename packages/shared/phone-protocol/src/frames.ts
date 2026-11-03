@@ -5,10 +5,11 @@ import { utf8Length } from "./base64url";
  * Requests carry an id; the answer echoes the id and type with `ok` and a result, or `ok: false` and an error.
  */
 /**
- * 2 added list_projects, projects_changed and hello's capabilities. A phone gates each newer frame on hello.protocol,
- * since an older computer answers an unknown request with invalid_frame.
+ * 2 added list_projects, projects_changed and hello's capabilities; 3 added update_chat, set_chat, queue and the
+ * archived list. A phone gates each newer frame on hello.protocol, since an older computer answers an unknown request
+ * with invalid_frame.
  */
-export const phoneProtocolVersion = 2;
+export const phoneProtocolVersion = 3;
 export const phoneLimits = {
 	/** Largest frame either side accepts, before or after decryption. */
 	frameBytes: 1024 * 1024,
@@ -30,14 +31,21 @@ export type PhoneChatMode = "chat" | "code" | "plan";
 export type PhoneChat = {
 	id: string; title: string; mode: PhoneChatMode; status: PhoneChatStatus; updatedAt: string; unread: boolean; needsYou: boolean; /** Why it needs the person, in words. */ attention?: string; projectId?: string; project?: string;
 	/** The model's id on the computer. */ model?: string; /** The worktree branch it works on. */ branch?: string; /** Settled on the computer: done with, kept at the foot of the list. */ settled?: true;
+	/** From protocol 3. */ pinned?: true; /** Hidden until then, unless it needs the person sooner. */ snoozedUntil?: string; /** Only in the archived list, or in the update that archived it. */ archived?: true;
 };
 export type PhoneApproval = { id: string; title: string; description: string; /** A proposed plan: its Markdown is the description. */ plan?: true };
 export type PhoneQuestionOption = { label: string; description?: string };
 export type PhoneQuestion = { id: string; header: string; question: string; multiSelect?: true; isOther?: true; isSecret?: true; options?: PhoneQuestionOption[] };
 /** One set of questions; answer_question names it by id and answers each question by its own id. */
 export type PhoneQuestionRequest = { id: string; questions: PhoneQuestion[] };
+/** A pull request linked to a chat, as last read. */
+export type PhoneLinkedPullRequest = { repository: string; number: number; url: string; title?: string; state?: "open" | "closed" | "merged" };
 /** A chat with what it is waiting on, for the chat screen. */
-export type PhoneChatDetail = PhoneChat & { approvals: PhoneApproval[]; questions: PhoneQuestionRequest[]; /** The effort the model runs at, when the chat set one. */ reasoningEffort?: string };
+export type PhoneChatDetail = PhoneChat & {
+	approvals: PhoneApproval[]; questions: PhoneQuestionRequest[]; /** The effort the model runs at, when the chat set one. */ reasoningEffort?: string;
+	/** From protocol 3: messages waiting for the turn to end, in order; the agent the chat runs on (set_chat stays within it); its permissions, which a phone can't change; linked pull requests. */
+	queue?: { id: string; text: string }[]; harness?: string; accountId?: string; permissionMode?: PhonePermissionMode; pullRequests?: PhoneLinkedPullRequest[];
+};
 /** A model a phone may start a chat with: the efforts it offers, in order, and the one it uses unless asked. */
 export type PhoneModel = {
 	id: string; name: string; efforts?: { id: string; label: string }[]; defaultEffort?: string;
@@ -52,7 +60,12 @@ export type PhoneAgent = { harness: string; name: string; accountId?: string; ag
 /** The agent and model a new chat starts with, and the effort when it sets one. */
 export type PhoneModelChoice = { harness?: string; accountId?: string; agentId?: string; model: string; reasoningEffort?: string };
 export type PhonePermissionMode = "supervised" | "accept-edits" | "full-access";
-export type PhoneMessage = { kind: "message"; id: string; role: "user" | "assistant" | "system" | "tool"; text: string; createdAt: string; completedAt?: string; delivery?: "steer" | "subagent"; notice?: string; attachments?: { name: string; kind: string }[]; /** The text was cut for the phone. */ truncated?: true };
+/** What a turn changed in the project, from its snapshots; lines are -1 when only binary files changed. */
+export type PhoneTurnChanges = { files: number; additions: number; deletions: number };
+export type PhoneMessage = {
+	kind: "message"; id: string; role: "user" | "assistant" | "system" | "tool"; text: string; createdAt: string; completedAt?: string; delivery?: "steer" | "subagent"; notice?: string; attachments?: { name: string; kind: string }[]; /** The text was cut for the phone. */ truncated?: true;
+	/** From protocol 3, on a person's message: the files the turn it started changed, once the computer has read them. */ changes?: PhoneTurnChanges;
+};
 export type PhoneActivity = { kind: "activity"; id: string; type: "tool" | "reasoning" | "plan" | "usage" | "compaction"; title: string; text: string; status?: "running" | "completed" | "failed"; summary?: string; steps?: { text: string; status: string }[]; truncated?: true };
 export type PhoneEntry = PhoneMessage | PhoneActivity;
 /** A project on the computer. A worktree names the project it came from, whose folder lists its chats. */
@@ -60,10 +73,15 @@ export type PhoneProject = { id: string; name: string; /** The checked-out branc
 /** Powers a paired phone has beyond threads, switched on per phone on the computer. Empty until a computer offers them. */
 export type PhoneCapability = "code" | "changes" | "terminal";
 export type AttentionKind = "approval" | "question" | "done" | "failed";
+/** What update_chat does, as the window's sidebar menu does it; each has its reverse, so a phone can undo. */
+export const chatActions = ["settle", "unsettle", "wake", "mark-unread", "archive", "unarchive", "pin", "unpin", "rename", "snooze"] as const;
+export type PhoneChatAction = typeof chatActions[number];
+export const queueActions = ["remove", "edit", "up", "down", "steer"] as const;
+export type PhoneQueueAction = typeof queueActions[number];
 
 export type PhoneRequest =
 	| { id: string; type: "hello"; deviceId: string; appVersion: string; /** The phone's phoneProtocolVersion; phones from before 2 leave it out. */ protocol?: number }
-	| { id: string; type: "list_chats"; cursor?: string; limit?: number }
+	| { id: string; type: "list_chats"; cursor?: string; limit?: number; /** From protocol 3: the archived chats instead. */ archived?: true }
 	| { id: string; type: "read_chat"; chatId: string; before?: string; limit?: number }
 	| { id: string; type: "send"; chatId: string; text: string; steer?: boolean }
 	| { id: string; type: "answer_approval"; chatId: string; approvalId: string; decision: "accept" | "decline" }
@@ -73,7 +91,13 @@ export type PhoneRequest =
 		/** From protocol 2: the agent (one of list_models' agents) the model belongs to; without it, the model is the default agent's. */ harness?: string; accountId?: string; agentId?: string }
 	| { id: string; type: "list_models"; projectId?: string; /** From protocol 2: some agents run only in Code (Grok). */ mode?: PhoneChatMode }
 	| { id: string; type: "list_projects" }
-	| { id: string; type: "subscribe"; chatIds: string[] };
+	| { id: string; type: "subscribe"; chatIds: string[] }
+	/** From protocol 3. `title` goes with rename, `until` (an ISO time) with snooze. */
+	| { id: string; type: "update_chat"; chatId: string; action: PhoneChatAction; title?: string; until?: string }
+	/** From protocol 3: a stopped chat's mode (Code or Plan; a Chat stays one), model (one of its own agent's) or effort. */
+	| { id: string; type: "set_chat"; chatId: string; mode?: PhoneChatMode; model?: string; reasoningEffort?: string }
+	/** From protocol 3: a queued message removed, edited (`text`), moved, or sent into the running turn now. */
+	| { id: string; type: "queue"; chatId: string; messageId: string; action: PhoneQueueAction; text?: string };
 export type PhoneFrame = PhoneRequest | { id?: string; type: "ping" } | { id?: string; type: "pong" };
 
 export type PhoneResults = {
@@ -96,6 +120,10 @@ export type PhoneResults = {
 	subscribe: { chatIds: string[] };
 	/** Every project, worktrees and archived ones included, so the phone can fold and hide them as the window does. */
 	list_projects: { projects: PhoneProject[] };
+	/** The chat as it is now, so the phone shows it at once and can offer the reverse action. */
+	update_chat: { chat: PhoneChat };
+	set_chat: { chat: PhoneChatDetail };
+	queue: { chatId: string };
 };
 export type PhoneErrorCode = "invalid_frame" | "too_large" | "rate_limited" | "unauthorized" | "not_found" | "rejected" | "internal";
 export type PhoneResponse<T extends PhoneRequest["type"] = PhoneRequest["type"]> =
@@ -114,7 +142,7 @@ export class PhoneProtocolError extends Error {
 	constructor(readonly code: PhoneErrorCode, message: string, readonly id?: string, readonly type?: string) { super(message); this.name = "PhoneProtocolError"; }
 }
 
-const requestTypes = new Set(["hello", "list_chats", "read_chat", "send", "answer_approval", "answer_question", "stop", "new_chat", "list_models", "subscribe", "list_projects"]);
+const requestTypes = new Set(["hello", "list_chats", "read_chat", "send", "answer_approval", "answer_question", "stop", "new_chat", "list_models", "subscribe", "list_projects", "update_chat", "set_chat", "queue"]);
 const plain = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value === "object" && !Array.isArray(value);
 const validId = (value: unknown, max = 200): value is string => typeof value === "string" && value.length > 0 && value.length <= max && !/[\u0000-\u001f]/.test(value);
 
@@ -168,7 +196,8 @@ export function parsePhoneFrame(text: string): PhoneFrame {
 		}
 		case "list_chats": {
 			if (frame.cursor !== undefined && !validId(frame.cursor, 400)) fail("Invalid cursor.");
-			return { id: request, type, ...frame.cursor !== undefined ? { cursor: frame.cursor as string } : {}, ...limit() };
+			if (frame.archived !== undefined && typeof frame.archived !== "boolean") fail("archived must be true or false.");
+			return { id: request, type, ...frame.cursor !== undefined ? { cursor: frame.cursor as string } : {}, ...limit(), ...frame.archived ? { archived: true as const } : {} };
 		}
 		case "read_chat": {
 			if (frame.before !== undefined && !validId(frame.before)) fail("Invalid before.");
@@ -212,6 +241,31 @@ export function parsePhoneFrame(text: string): PhoneFrame {
 			return { id: request, type, ...projectId(), ...frame.mode !== undefined ? { mode: frame.mode as PhoneChatMode } : {} };
 		}
 		case "list_projects": return { id: request, type };
+		case "update_chat": {
+			const action = frame.action as PhoneChatAction;
+			if (!chatActions.includes(action)) fail(`action must be one of ${chatActions.join(", ")}.`);
+			if (action === "rename") {
+				if (typeof frame.title !== "string" || !frame.title.trim() || frame.title.length > 200 || /[\u0000-\u001f]/.test(frame.title)) fail("rename needs a title of up to 200 characters.");
+			} else if (frame.title !== undefined) fail("Only rename takes a title.");
+			if (action === "snooze") {
+				if (typeof frame.until !== "string" || frame.until.length > 40 || Number.isNaN(Date.parse(frame.until))) fail("snooze needs until, an ISO time.");
+			} else if (frame.until !== undefined) fail("Only snooze takes until.");
+			return { id: request, type, chatId: chatId(), action, ...action === "rename" ? { title: (frame.title as string).trim() } : {}, ...action === "snooze" ? { until: frame.until as string } : {} };
+		}
+		case "set_chat": {
+			if (frame.mode !== undefined && frame.mode !== "chat" && frame.mode !== "code" && frame.mode !== "plan") fail("mode must be chat, code or plan.");
+			const model = optional("model"), reasoningEffort = optional("reasoningEffort", 100);
+			if (frame.mode === undefined && !model && !reasoningEffort) fail("set_chat needs a mode, model or reasoningEffort.");
+			return { id: request, type, chatId: chatId(), ...frame.mode !== undefined ? { mode: frame.mode as PhoneChatMode } : {}, ...model ? { model } : {}, ...reasoningEffort ? { reasoningEffort } : {} };
+		}
+		case "queue": {
+			const action = frame.action as PhoneQueueAction;
+			if (!queueActions.includes(action)) fail(`action must be one of ${queueActions.join(", ")}.`);
+			if (!validId(frame.messageId)) fail("messageId is required.");
+			if (action === "edit") return { id: request, type, chatId: chatId(), messageId: frame.messageId as string, action, text: text_("text") };
+			if (frame.text !== undefined) fail("Only edit takes text.");
+			return { id: request, type, chatId: chatId(), messageId: frame.messageId as string, action };
+		}
 		case "subscribe": {
 			const ids = frame.chatIds;
 			if (!Array.isArray(ids) || ids.length > phoneLimits.subscriptions || ids.some(value => !validId(value))) fail(`chatIds must list up to ${phoneLimits.subscriptions} chat ids.`);

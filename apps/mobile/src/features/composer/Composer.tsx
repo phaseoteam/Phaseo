@@ -20,6 +20,9 @@ const BOTTOM_GUTTER = 6;
 /** The share of the one-line row the text keeps; a long model name truncates first. */
 const INLINE_EDITOR_MIN_WIDTH = "40%";
 
+// Android draws the shadow from elevation; overflow-hidden clips only the content, not it.
+const FLOATING_BOX = { paddingVertical: 2, elevation: 6, shadowColor: "#000", shadowOpacity: 0.16, shadowRadius: 14, shadowOffset: { width: 0, height: 4 } } as const;
+
 export type ComposerModel = { label: ModelLabel; logos?: ReactNode; onPress?: () => void; readOnlyReason?: string };
 
 export type ComposerProps = {
@@ -50,6 +53,11 @@ export type ComposerProps = {
   /** A footnote under it. */
   below?: ReactNode;
   autoFocus?: boolean;
+  /**
+   * Floats over the content under it (a thread's feed scrolls behind it): no bar behind the box, which is raised with
+   * a shadow instead. The screen places it and pads its list by its height.
+   */
+  floating?: boolean;
   /** A new value focuses the text box (a suggested prompt was put in it). */
   focusKey?: number;
 };
@@ -119,10 +127,10 @@ export function Composer(props: ComposerProps) {
   };
 
   return (
-    <View className="bg-background px-3" style={{ paddingTop: 6, paddingBottom: (keyboardVisible ? 0 : insets.bottom) + BOTTOM_GUTTER }}>
+    <View className={props.floating ? "px-3" : "bg-background px-3"} pointerEvents="box-none" style={{ paddingTop: 6, paddingBottom: (keyboardVisible ? 0 : insets.bottom) + BOTTOM_GUTTER }}>
       {props.above}
       {matches.length ? <ComposerCommandPopover commands={matches} onSelect={pickCommand} /> : null}
-      <View className="overflow-hidden rounded-md border border-border bg-card" style={{ paddingVertical: 2 }}>
+      <View className="overflow-hidden rounded-md border border-border bg-card" style={props.floating ? FLOATING_BOX : { paddingVertical: 2 }}>
         {showStrip ? <View className="px-[14px] pb-2.5 pt-2"><AttachmentStrip attachments={attachments} disabled={locked} onRemove={(id) => props.onRemoveAttachment?.(id)} /></View> : null}
         <View onLayout={(event) => setRowWidth(event.nativeEvent.layout.width)} style={{ height: expanded ? height + TOOLBAR_HEIGHT : ROW_HEIGHT }}>
           <View className="absolute inset-x-0 bottom-0 flex-row items-center" style={{ height: ROW_HEIGHT }}>

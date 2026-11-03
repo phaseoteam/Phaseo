@@ -54,6 +54,22 @@ describe("phone frames", () => {
 		expect(parseDesktopFrame(JSON.stringify({ type: "projects_changed", projects: [{ id: "p1", name: "Phaseo", repository: true }] }))).toMatchObject({ type: "projects_changed" });
 		expect(() => parseDesktopFrame(JSON.stringify({ type: "projects_changed" }))).toThrow(PhoneProtocolError);
 	});
+	it("organises chats, changes their settings and edits their queue (protocol 3)", () => {
+		expect(parsePhoneFrame(JSON.stringify({ id: "1", type: "update_chat", chatId: "c", action: "settle" }))).toEqual({ id: "1", type: "update_chat", chatId: "c", action: "settle" });
+		expect(parsePhoneFrame(JSON.stringify({ id: "2", type: "update_chat", chatId: "c", action: "rename", title: "  New name " }))).toMatchObject({ title: "New name" });
+		expect(parsePhoneFrame(JSON.stringify({ id: "3", type: "update_chat", chatId: "c", action: "snooze", until: "2026-11-03T09:00:00.000Z" }))).toMatchObject({ until: "2026-11-03T09:00:00.000Z" });
+		expect(refused(JSON.stringify({ id: "4", type: "update_chat", chatId: "c", action: "delete" })).message).toContain("action");
+		expect(refused(JSON.stringify({ id: "5", type: "update_chat", chatId: "c", action: "rename" })).message).toContain("title");
+		expect(refused(JSON.stringify({ id: "6", type: "update_chat", chatId: "c", action: "settle", title: "x" })).message).toContain("title");
+		expect(refused(JSON.stringify({ id: "7", type: "update_chat", chatId: "c", action: "snooze", until: "soon" })).message).toContain("until");
+		expect(parsePhoneFrame(JSON.stringify({ id: "8", type: "set_chat", chatId: "c", model: "gpt-6.1", reasoningEffort: "high" }))).toEqual({ id: "8", type: "set_chat", chatId: "c", model: "gpt-6.1", reasoningEffort: "high" });
+		expect(refused(JSON.stringify({ id: "9", type: "set_chat", chatId: "c" })).message).toContain("set_chat needs");
+		expect(refused(JSON.stringify({ id: "10", type: "set_chat", chatId: "c", permissionMode: "full-access" })).message).toContain("set_chat needs");
+		expect(parsePhoneFrame(JSON.stringify({ id: "11", type: "queue", chatId: "c", messageId: "q1", action: "edit", text: "Shorter" }))).toMatchObject({ action: "edit", text: "Shorter" });
+		expect(refused(JSON.stringify({ id: "12", type: "queue", chatId: "c", messageId: "q1", action: "edit" })).message).toContain("text");
+		expect(refused(JSON.stringify({ id: "13", type: "queue", chatId: "c", messageId: "q1", action: "remove", text: "x" })).message).toContain("Only edit");
+		expect(parsePhoneFrame(JSON.stringify({ id: "14", type: "list_chats", archived: true }))).toEqual({ id: "14", type: "list_chats", archived: true });
+	});
 	it("names efforts the same way on both sides", () => {
 		expect(effortLabel("xhigh")).toBe("Extra high");
 		expect(effortLabel("medium")).toBe("Medium");
