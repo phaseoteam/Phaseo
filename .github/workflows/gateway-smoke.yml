@@ -15,7 +15,7 @@ on:
         required: true
         type: string
       paid:
-        description: 'Run the paid checks (generations, recorded usage, wallet charge)'
+        description: 'Run the paid checks (credit gating, generations, recorded usage, wallet charge)'
         required: false
         default: false
         type: boolean

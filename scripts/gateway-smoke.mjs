@@ -8,6 +8,7 @@ const USER_AGENT = 'Phaseo-Gateway-Smoke/1.0';
 // Guards against a mistyped budget; the smoke key's own spend limit is the real backstop.
 const MAX_SPEND_CEILING_USD = 1;
 const PROMPT = 'Reply with the single word OK.';
+// The buffered and streamed requests; the zero-balance probe adds one when its key is set.
 const PAID_REQUESTS = 2;
 const MAX_OUTPUT_TOKENS = 16;
 // Generous for the prompt plus chat formatting; usage_recorded fails if a request costs more than the bound.
@@ -27,8 +28,8 @@ function meterUnits(meter) {
 
 /**
  * Most one smoke request can cost, from `GET /v1/pricing/models`: every billable meter of every
- * active Chat price row for the model, across providers, service tiers and conditional rules.
- * Null when there are no rows or a price cannot be bounded.
+ * active Chat price row for the model, across providers, service tiers, conditional rules and
+ * time-of-day prices. Null when there are no rows or a price cannot be bounded.
  */
 export function requestCostBoundNanos(pricingModels, modelId) {
   const offers = (Array.isArray(pricingModels) ? pricingModels : [])
@@ -42,9 +43,15 @@ export function requestCostBoundNanos(pricingModels, modelId) {
     const rates = new Map();
     for (const price of meters) {
       const units = meterUnits(price?.meter);
-      const perUnit = Number(price?.price_per_unit) / Number(price?.unit_size);
-      if (units === null || price.currency !== 'USD' || !Number.isFinite(perUnit) || perUnit < 0) return null;
-      rates.set(price.meter, Math.max(rates.get(price.meter) ?? 0, units * perUnit));
+      if (units === null || price.currency !== 'USD') return null;
+      // A matching time window replaces the base price (pipeline/pricing/engine.ts), and a window
+      // without a price keeps it. The bound takes the dearest, whatever time the request runs.
+      const windows = Array.isArray(price.time_windows) ? price.time_windows : [];
+      const prices = [price.price_per_unit, ...windows.map((window) => window?.price_per_unit).filter((p) => p != null)];
+      for (const perUnit of prices.map((p) => Number(p) / Number(price.unit_size))) {
+        if (!Number.isFinite(perUnit) || perUnit < 0) return null;
+        rates.set(price.meter, Math.max(rates.get(price.meter) ?? 0, units * perUnit));
+      }
     }
     bound = Math.max(bound, [...rates.values()].reduce((sum, cost) => sum + cost, 0));
   }
@@ -158,18 +165,15 @@ export async function runSmoke(config, { fetcher = fetch, wait = (ms) => new Pro
 
   await expectStatus('invalid_request', 400, () => call('/chat/completions', { method: 'POST', body: { model: config.model, messages: 'not-a-list' } }));
 
-  if (config.lowCreditApiKey) {
-    await expectStatus('insufficient_credit', 402, () => call('/chat/completions', { method: 'POST', key: config.lowCreditApiKey, body: chat() }));
-  } else {
-    record('insufficient_credit', 'skip', { reason: 'PHASEO_SMOKE_LOW_CREDIT_API_KEY not set' });
-  }
-
-  const paidChecks = ['buffered_request', 'streamed_request', 'usage_recorded', 'billing_settled'];
+  // The zero-balance probe is a valid generation: if its workspace were funded, or credit gating
+  // regressed, it would be charged. So it runs only on paid runs and counts against the budget.
+  const paidChecks = ['insufficient_credit', 'buffered_request', 'streamed_request', 'usage_recorded', 'billing_settled'];
   if (!config.paid) {
     for (const id of paidChecks) record(id, 'skip', { reason: 'paid checks not requested' });
     return results;
   }
-  // Nothing is sent unless the published prices bound every paid request within the budget.
+  // Nothing is sent unless the published prices bound every billable request within the budget.
+  const billableRequests = PAID_REQUESTS + (config.lowCreditApiKey ? 1 : 0);
   let costBoundNanos = null;
   try {
     const { response } = await call('/pricing/models');
@@ -177,12 +181,18 @@ export async function runSmoke(config, { fetcher = fetch, wait = (ms) => new Pro
     if (response.ok) costBoundNanos = requestCostBoundNanos(body?.models, config.model);
   } catch { /* unreadable prices leave the bound unknown */ }
   const refusal = !(costBoundNanos > 0) ? 'cost_bound_unknown'
-    : PAID_REQUESTS * costBoundNanos > config.maxSpendNanos ? 'budget_below_cost_bound' : null;
+    : billableRequests * costBoundNanos > config.maxSpendNanos ? 'budget_below_cost_bound' : null;
   if (refusal) {
     for (const id of paidChecks) record(id, 'fail', { reason: refusal, cost_bound_nanos: costBoundNanos });
     return results;
   }
   if (balanceProblem) record('billing_settled', 'fail', { reason: balanceProblem });
+
+  if (config.lowCreditApiKey) {
+    await expectStatus('insufficient_credit', 402, () => call('/chat/completions', { method: 'POST', key: config.lowCreditApiKey, body: chat() }));
+  } else {
+    record('insufficient_credit', 'skip', { reason: 'PHASEO_SMOKE_LOW_CREDIT_API_KEY not set' });
+  }
 
   const generations = [];
   await check('buffered_request', async () => {

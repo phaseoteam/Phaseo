@@ -33,7 +33,7 @@ const pricingModels = (meters) => [
 ];
 
 /** A gateway that bills each generation `cost` nanos once its row is recorded. */
-function gateway({ cost = 3000, chargeDelta = null, rowUsage = null, streamError = false, rowsVisibleAfter = 1, meters = PRICED, chargeInvalid = 0 } = {}) {
+function gateway({ cost = 3000, chargeDelta = null, rowUsage = null, streamError = false, rowsVisibleAfter = 1, meters = PRICED, chargeInvalid = 0, lowCreditFunded = false } = {}) {
   let balance = 5_000_000_000;
   const rows = new Map();
   const lookups = new Map();
@@ -59,7 +59,7 @@ function gateway({ cost = 3000, chargeDelta = null, rowUsage = null, streamError
         balance -= chargeInvalid;
         return json(400, { error: { code: 'invalid_request', message: 'messages must be a list' } });
       }
-      if (auth === LOW) return json(402, { error: { code: 'insufficient_quota', message: 'add credits' } });
+      if (auth === LOW && !lowCreditFunded) return json(402, { error: { code: 'insufficient_quota', message: 'add credits' } });
       const id = `gen-${++next}`;
       const usage = { prompt_tokens: 12, completion_tokens: 2, total_tokens: 14 };
       rows.set(id, {
@@ -80,22 +80,24 @@ function gateway({ cost = 3000, chargeDelta = null, rowUsage = null, streamError
 }
 
 const outcomes = (results) => Object.fromEntries(results.map((r) => [r.check, r.outcome]));
+// Valid generations sent with either key: each could be charged.
+const paidSends = (calls) => calls.filter((c) => c.path === '/v1/chat/completions' && Array.isArray(c.body.messages)).length;
 
-test('a free run checks auth, discovery and rejections and spends nothing', async () => {
-  const { fetcher, calls } = gateway();
+test('a free run checks auth, discovery and rejections and sends no generation', async () => {
+  const { fetcher, calls } = gateway({ lowCreditFunded: true });
   const results = await runSmoke(config({ paid: false }), { fetcher });
   assert.deepEqual(outcomes(results), {
     auth_rejects_invalid_key: 'pass', auth_accepts_key: 'pass', discovery: 'pass', invalid_request: 'pass',
-    insufficient_credit: 'pass', buffered_request: 'skip', streamed_request: 'skip', usage_recorded: 'skip', billing_settled: 'skip',
+    insufficient_credit: 'skip', buffered_request: 'skip', streamed_request: 'skip', usage_recorded: 'skip', billing_settled: 'skip',
   });
-  assert.equal(calls.filter((c) => c.path === '/v1/chat/completions' && c.auth === KEY && Array.isArray(c.body.messages)).length, 0);
-  assert.equal(results.find((r) => r.check === 'insufficient_credit').error_code, 'insufficient_quota');
+  assert.equal(paidSends(calls), 0);
 });
 
 test('a paid run asserts responses, recorded usage and the exact wallet charge', async () => {
   const { fetcher } = gateway({ rowsVisibleAfter: 3 });
   const results = await runSmoke(config(), { fetcher, wait: async () => {} });
   assert.ok(results.every((r) => r.outcome === 'pass'), JSON.stringify(results));
+  assert.equal(results.find((r) => r.check === 'insufficient_credit').error_code, 'insufficient_quota');
   assert.deepEqual(results.find((r) => r.check === 'usage_recorded'), { check: 'usage_recorded', outcome: 'pass', requests: 2, spent_nanos: 6000, cost_bound_nanos: 288_000 });
   assert.equal(results.find((r) => r.check === 'billing_settled').charged_nanos, 6000);
   assert.equal(results.find((r) => r.check === 'streamed_request').request_id, 'gen-2');
@@ -115,17 +117,43 @@ test('fails when recorded usage differs from what the response reported', async 
   assert.equal(results.find((r) => r.check === 'usage_recorded').reason, 'usage_differs_from_response');
 });
 
-const paidSends = (calls) => calls.filter((c) => c.path === '/v1/chat/completions' && c.auth === KEY && Array.isArray(c.body.messages)).length;
-
-test('sends no paid request when the published prices could exceed the budget', async () => {
-  const { fetcher, calls } = gateway();
-  // Two requests may cost up to 576,000 nanos.
-  const results = await runSmoke(config({ maxSpendNanos: 500_000 }), { fetcher, wait: async () => {} });
+test('sends no generation when the published prices could exceed the budget', async () => {
+  const { fetcher, calls } = gateway({ lowCreditFunded: true });
+  // Three requests, counting the zero-balance probe, may cost up to 864,000 nanos.
+  const results = await runSmoke(config({ maxSpendNanos: 700_000 }), { fetcher, wait: async () => {} });
   assert.equal(results.find((r) => r.check === 'buffered_request').cost_bound_nanos, 288_000);
   assert.deepEqual(results.filter((r) => r.outcome === 'fail').map((r) => `${r.check}:${r.reason}`), [
-    'buffered_request:budget_below_cost_bound', 'streamed_request:budget_below_cost_bound',
+    'insufficient_credit:budget_below_cost_bound', 'buffered_request:budget_below_cost_bound', 'streamed_request:budget_below_cost_bound',
     'usage_recorded:budget_below_cost_bound', 'billing_settled:budget_below_cost_bound',
   ]);
+  assert.equal(paidSends(calls), 0);
+
+  // Without the zero-balance key, the same budget covers the two requests.
+  const unprobed = gateway();
+  const passed = await runSmoke(config({ maxSpendNanos: 700_000, lowCreditApiKey: '' }), { fetcher: unprobed.fetcher, wait: async () => {} });
+  assert.equal(outcomes(passed).buffered_request, 'pass');
+  assert.equal(paidSends(unprobed.calls), 2);
+});
+
+test('fails, within the budget, when the zero-balance key is unexpectedly funded', async () => {
+  const { fetcher, calls } = gateway({ lowCreditFunded: true });
+  const results = await runSmoke(config(), { fetcher, wait: async () => {} });
+  assert.deepEqual(results.find((r) => r.check === 'insufficient_credit'), {
+    check: 'insufficient_credit', outcome: 'fail', status: 200, duration_ms: results.find((r) => r.check === 'insufficient_credit').duration_ms,
+    error_code: null, reason: 'expected_402',
+  });
+  assert.equal(paidSends(calls), 3);
+});
+
+test('bounds a time-of-day price by its dearest window', async () => {
+  // $0.001 a request, $0.10 a request in a peak window: 288,000 + 100,000,000 nanos, over the $0.01 budget.
+  const { fetcher, calls } = gateway({ meters: [...PRICED, meter('requests', '0.001', { unit: 'request',
+    time_windows: [{ label: 'peak', timezone: 'UTC', start_time: '01:00', end_time: '04:00', price_per_unit: 0.1 }, { label: 'unpriced', timezone: 'UTC', start_time: '05:00', end_time: '06:00' }] })] });
+  const results = await runSmoke(config(), { fetcher, wait: async () => {} });
+  assert.deepEqual(
+    { reason: results.find((r) => r.check === 'buffered_request').reason, bound: results.find((r) => r.check === 'buffered_request').cost_bound_nanos },
+    { reason: 'budget_below_cost_bound', bound: 100_288_000 },
+  );
   assert.equal(paidSends(calls), 0);
 });
 
@@ -138,7 +166,8 @@ test('bounds a request by every chat meter, including per-request fees and the d
 });
 
 test('sends no paid request when a price cannot be bounded', async () => {
-  for (const meters of [[...PRICED, meter('deepinfra_cost_usd', '1', { unit: 'USD' })], [meter('input_text_tokens', '0.000001', { currency: 'EUR' })], []]) {
+  for (const meters of [[...PRICED, meter('deepinfra_cost_usd', '1', { unit: 'USD' })], [meter('input_text_tokens', '0.000001', { currency: 'EUR' })], [],
+    [meter('input_text_tokens', '0.000001', { time_windows: [{ label: 'peak', timezone: 'UTC', start_time: '01:00', end_time: '04:00', price_per_unit: 'n/a' }] })]]) {
     const { fetcher, calls } = gateway({ meters });
     const results = await runSmoke(config(), { fetcher, wait: async () => {} });
     assert.equal(results.find((r) => r.check === 'buffered_request').reason, 'cost_bound_unknown', JSON.stringify(meters));

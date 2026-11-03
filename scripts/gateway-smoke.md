@@ -14,7 +14,7 @@ authenticated requests, usage or billing; this does.
 | `auth_accepts_key` | free | the smoke key gets 404 for an unknown generation ID, not 401 |
 | `discovery` | free | `GET /v1/models` lists `PHASEO_SMOKE_MODEL` |
 | `invalid_request` | free | a malformed Chat Completions body gets 400 |
-| `insufficient_credit` | free | the zero-balance key gets 402 for a paid model |
+| `insufficient_credit` | paid | the zero-balance key gets 402 for a paid model |
 | `buffered_request` | paid | a Chat Completions request returns content, an ID and token usage |
 | `streamed_request` | paid | the streamed request returns content, a usage chunk and `[DONE]` |
 | `usage_recorded` | free | each request's generation row is successful, priced, and has the token counts the response reported, and cost no more than the published-price bound |
@@ -22,13 +22,20 @@ authenticated requests, usage or billing; this does.
 
 Paid checks run only with `--paid` (the workflow's `paid` input) and a budget in
 `PHASEO_SMOKE_MAX_SPEND_USD`, at most $1. Each paid run sends two requests
-capped at 16 output tokens. Before sending either, the check bounds what one
-request can cost from `GET /v1/pricing/models`: every billable meter of every
-active Chat price row for the model, across providers, service tiers and
-conditional rules, taking the dearest rule for each meter (256 prompt tokens, 16
-output tokens, and any per-request fee). It sends nothing if twice that bound
-exceeds the budget, or if a price cannot be bounded (no price rows, a meter it
-does not know, or a currency other than USD).
+capped at 16 output tokens, plus the zero-balance probe when its key is set:
+that probe is a valid request, which would be charged if its workspace were
+ever funded, so a free run never sends it. Before sending any of them, the
+check bounds what one request can cost from `GET /v1/pricing/models`: every
+billable meter of every active Chat price row for the model, across providers,
+service tiers, conditional rules and time-of-day prices, taking the dearest
+price for each meter (256 prompt tokens, 16 output tokens, and any per-request
+fee). It sends nothing if that bound times the number of requests exceeds the
+budget, or if a price cannot be bounded (no price rows, a meter it does not
+know, a currency other than USD, or an unreadable price).
+
+The bound is only as complete as `GET /v1/pricing/models`. Run paid checks only
+on a gateway that includes #3450; before it, that endpoint returned at most
+1,000 rows per table and could omit the dearest price.
 
 A missing management or zero-balance key reports its check as `skip`, never
 as a pass. A missing smoke key or model stops the run as a configuration error.
@@ -59,8 +66,8 @@ identifies them in logs and reporting.
 ## Run
 
 Actions, "Gateway Smoke", with a reason (the deploy commit or provider change).
-Leave `paid` off for a free check of auth, discovery and rejections; turn it on
-to check generation, usage and billing.
+Leave `paid` off for a free check of auth, discovery and invalid requests; turn
+it on to check credit gating, generation, usage and billing.
 
 Locally:
 
@@ -82,7 +89,7 @@ PHASEO_SMOKE_MAX_SPEND_USD=0.01 … node scripts/gateway-smoke.mjs --paid
 | `request_row_missing`, `usage_differs_from_response`, `cost_missing`, `cost_above_bound` | the audit writer and pricing for that request ID |
 | `balance_change_differs_from_recorded_cost` | `gateway_request_charges` for the smoke workspace; see `supabase/operations/gateway-billing-reconciliation.md` |
 | `budget_below_cost_bound` | the model's price; raise the budget or choose a cheaper model |
-| `cost_bound_unknown` | the model's Chat rows in `/v1/pricing/models`: none, a meter the check does not know, or a non-USD price |
+| `cost_bound_unknown` | the model's Chat rows in `/v1/pricing/models`: none, a meter the check does not know, a non-USD price, or an unreadable base or time-window price |
 
 The maintainer who deploys the gateway or changes a provider runs this check
 and owns acting on a failure; outages escalate through incident.io as in
