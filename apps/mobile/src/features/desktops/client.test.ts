@@ -1,6 +1,7 @@
 import { applyEntries, chatItems, firstMessageId, mergeChat, mergeDetail, sortChats } from "./chatState";
 import { DesktopClient, DesktopRequestError, type ClientEvent, type ConnectionState } from "./client";
 import { FakeDesktop } from "./fakeDesktop";
+import { makesChanges } from "./git/gitState";
 import { newThreadModel, threadModelLabel } from "./newThread";
 import { pairDesktop } from "./pairing";
 import type { PhoneChat, PhoneEntry } from "./protocol";
@@ -103,7 +104,7 @@ describe.each(["direct", "connect"] as const)("over %s", (via) => {
 
   test("lists the computer's projects and hears when they change", async () => {
     const { desktop, client } = await connected();
-    expect(desktop.received[0]).toMatchObject({ type: "hello", protocol: 5 });
+    expect(desktop.received[0]).toMatchObject({ type: "hello", protocol: 6 });
     const { projects } = await client.request("list_projects", {});
     expect(projects.map((project) => project.id)).toEqual(["p2", "p1", "p3", "w1"]);
     const changed = nextEvent(client, "projects_changed");
@@ -126,6 +127,37 @@ describe.each(["direct", "connect"] as const)("over %s", (via) => {
     client.stop();
   });
 
+  test("commits and pushes only with Make changes, with git's own reason when a push can't go", async () => {
+    const { desktop, client } = await connected();
+    await expect(client.request("git_action", { projectId: "p1", action: "commit", message: "Fix the usage total", all: true })).rejects.toMatchObject({ code: "forbidden" });
+    desktop.capabilities = ["code", "changes"];
+    const access = nextEvent(client, "access");
+    desktop.emit({ type: "access", capabilities: desktop.capabilities });
+    await access;
+    expect(makesChanges(client.state.get())).toBe(true);
+    const after = await client.request("git_action", { projectId: "p1", action: "commit", message: "Fix the usage total", all: true });
+    expect(after.files).toEqual([]);
+    await expect(client.request("git_action", { projectId: "p1", action: "push" })).rejects.toMatchObject({ code: "rejected", message: "Add a remote before pushing." });
+    // A change is never held for a computer that's offline: it would land long after the phone stopped waiting.
+    if (via === "connect") expect(desktop.relayed.filter((envelope) => envelope.hold)).toEqual([]);
+    client.stop();
+  });
+
+  test("hides git actions from a computer before protocol 6, which refuses them", async () => {
+    const desktop = new FakeDesktop();
+    desktop.protocol = 5;
+    desktop.capabilities = ["code", "changes"];
+    const saved = await pairDesktop(desktop.pairingLink({ connect: true }), deps(desktop));
+    if (via === "connect") desktop.reachable = false;
+    const { client } = clientFor(desktop, saved);
+    client.start();
+    const state = await stateReached(client, "connected");
+    expect(state).toMatchObject({ protocol: 5 });
+    expect(makesChanges(state)).toBe(false);
+    await expect(client.request("list_branches", { projectId: "p1" })).rejects.toMatchObject({ code: "invalid_frame" });
+    client.stop();
+  });
+
   test("speaks protocol 1 with a computer from before projects, which refuses list_projects", async () => {
     const desktop = new FakeDesktop();
     desktop.protocol = 1;
@@ -141,7 +173,7 @@ describe.each(["direct", "connect"] as const)("over %s", (via) => {
   test("says hello first, then lists and reads chats", async () => {
     const { desktop, client } = await connected();
     expect(desktop.received[0]).toMatchObject({ type: "hello", deviceId: "dev-1", appVersion: "0.1.0" });
-    expect(client.state.get()).toEqual({ status: "connected", via, desktopName: "Studio PC", protocol: 5, capabilities: ["code"] });
+    expect(client.state.get()).toEqual({ status: "connected", via, desktopName: "Studio PC", protocol: 6, capabilities: ["code"] });
     const { chats } = await client.request("list_chats", {});
     expect(sortChats(chats).map((chat) => chat.id)).toEqual(["c2", "c1"]);
     const read = await client.request("read_chat", { chatId: "c1" });

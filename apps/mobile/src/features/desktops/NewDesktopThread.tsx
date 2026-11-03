@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { ChevronDown, Folder } from "lucide-react-native";
+import { ChevronDown, Folder, GitBranch } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import { Keyboard, Pressable, View } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
@@ -16,6 +16,8 @@ import { choiceIn, newThreadModel, type ModelChoice } from "./newThread";
 import type { PhoneChatMode } from "./protocol";
 import { desktopChatHref } from "./routes";
 import { useDesktop } from "./store";
+import { makesChanges, worktreeBases } from "./git/gitState";
+import { useBranches } from "./git/hooks";
 import { useThreadDraft } from "./threadDraft";
 
 const MODES: { value: PhoneChatMode; label: string }[] = [
@@ -25,12 +27,14 @@ const MODES: { value: PhoneChatMode; label: string }[] = [
 ];
 const PLACEHOLDERS: Record<PhoneChatMode, string> = { chat: "Ask anything", code: "Describe the change", plan: "What should it plan?" };
 const NO_PROJECT = "none";
+const LOCAL = "\u0000local";
 
 /**
  * A new thread on a computer: an empty thread with the composer focused and a line asking what to build, whose
  * project name picks another. Under the composer, the mode (Chat, Code, Plan), the model (any agent on the computer,
  * starting where the computer's window would) and the permissions it runs with, which the phone shows but can't
- * change. The draft is kept per computer and project.
+ * change. With Make changes on, a Code or Plan thread in a git project can start in a new worktree from a base branch,
+ * as the window's Local / New worktree choice does. The draft is kept per computer and project.
  */
 export function NewDesktopThread({ desktopId, projectId }: { desktopId: string; projectId?: string | null }) {
   const router = useRouter();
@@ -47,7 +51,10 @@ export function NewDesktopThread({ desktopId, projectId }: { desktopId: string; 
   const [picked, setPicked] = useState<{ project: string | null; choice: ModelChoice } | null>(null);
   const choice = list ? choiceIn(list, picked?.project === project ? picked.choice : null) : null;
   const [starting, setStarting] = useState(false);
-  const [sheet, setSheet] = useState<"model" | "project" | null>(null);
+  const [sheet, setSheet] = useState<"model" | "project" | "workspace" | null>(null);
+  // A worktree base is the project's: another project starts Local again.
+  const [worktree, setWorktree] = useState<{ project: string; base: string } | null>(null);
+  const branches = useBranches(client, project);
 
   // The computer's projects when it lists them (pinned first, archived and worktrees left out), else those its threads name.
   const projects = useMemo(() => {
@@ -57,6 +64,9 @@ export function NewDesktopThread({ desktopId, projectId }: { desktopId: string; 
     return [...seen].map(([value, label]) => ({ value, label }));
   }, [listed, chats]);
   const projectName = project ? projects.find((entry) => entry.value === project)?.label ?? "This project" : null;
+  // Local / Worktree shows for a git project, in Code or Plan, while this phone may make changes.
+  const offersWorktree = Boolean(project && mode !== "chat" && makesChanges(connection) && listed?.find((entry) => entry.id === project)?.repository);
+  const base = offersWorktree && worktree?.project === project ? worktree.base : null;
 
   if (desktop === undefined) return <Screen><Header sidebar back title="New thread" /></Screen>;
   if (!client || !desktop) {
@@ -72,7 +82,7 @@ export function NewDesktopThread({ desktopId, projectId }: { desktopId: string; 
     setStarting(true);
     haptic("press");
     try {
-      const { chat } = await client.request("new_chat", { text: draft.text.trim(), mode, ...(project ? { projectId: project } : {}), ...newThreadModel(list, choice) });
+      const { chat } = await client.request("new_chat", { text: draft.text.trim(), mode, ...(project ? { projectId: project } : {}), ...newThreadModel(list, choice), ...(base ? { workspace: { kind: "worktree" as const, base } } : {}) });
       clear();
       // The new thread takes this screen's place.
       router.replace(desktopChatHref(desktopId, chat.id));
@@ -117,6 +127,7 @@ export function NewDesktopThread({ desktopId, projectId }: { desktopId: string; 
                 {MODES.map((entry) => <Chip key={entry.value} label={entry.label} selected={mode === entry.value} onPress={() => update({ mode: entry.value })} />)}
               </View>
               <ModelChip list={list} choice={choice} unavailable={unavailable} onPress={() => setSheet("model")} />
+              {offersWorktree ? <Chip icon={GitBranch} label={base ? `Worktree from ${base}` : "Local"} dropdown onPress={() => { branches.load(); setSheet("workspace"); }} /> : null}
               {list?.permissionMode ? <PermissionChip mode={list.permissionMode} /> : null}
             </HorizontalScroll>
           )}
@@ -128,6 +139,14 @@ export function NewDesktopThread({ desktopId, projectId }: { desktopId: string; 
         value={project ?? NO_PROJECT}
         options={[...projects, { value: NO_PROJECT, label: "No project" }]}
         onChange={(value) => setProject(value === NO_PROJECT ? null : value)}
+        onClose={() => setSheet(null)}
+      />
+      <OptionSheet
+        open={sheet === "workspace"}
+        title="Where it runs"
+        value={base ?? LOCAL}
+        options={[{ value: LOCAL, label: "Local", description: "In the project's own folder" }, ...(branches.refs ? worktreeBases(branches.refs) : []).map((name) => ({ value: name, label: `New worktree from ${name}` }))]}
+        onChange={(value) => setWorktree(value === LOCAL || !project ? null : { project, base: value })}
         onClose={() => setSheet(null)}
       />
       {list && choice ? <DesktopModelSheet list={list} choice={choice} onChoose={(next) => setPicked({ project, choice: next })} open={sheet === "model"} onClose={() => setSheet(null)} /> : null}
