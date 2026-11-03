@@ -664,7 +664,7 @@ async function materializeStreamResultToCompleted(args: {
 		onEvent: (event) => {
 			if (
 				firstOutputAtMs === null &&
-				(event.type === "delta_text" || event.type === "delta_tool" || event.type === "delta_content_part")
+				((event.type === "delta_text" && event.text.length > 0) || event.type === "delta_tool" || event.type === "delta_content_part")
 			) {
 				firstOutputAtMs = Date.now();
 				reasoningStreamed = event.type === "delta_text" && event.channel === "reasoning_text";

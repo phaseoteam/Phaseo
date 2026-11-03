@@ -877,7 +877,7 @@ describe("passthroughWithPricing", () => {
 			protocol: "openai.chat.completions",
 			meta: { startedAtMs: Date.now() - 80, upstreamStartMs: Date.now() - 40 },
 		});
-		const upstream = makeDelayedSseResponse([
+		const upstream = makeSseResponse([
 			{ data: { object: "chat.completion.chunk", choices: [{ index: 0, delta, finish_reason: null }] } },
 			{
 				data: {
@@ -885,10 +885,10 @@ describe("passthroughWithPricing", () => {
 					choices: [{ index: 0, message: { role: "assistant", content: "hello" }, finish_reason: "stop" }],
 				},
 			},
-		], 5);
+		]);
 
 		const response = await passthroughWithPricing({
-			upstream: upstream.response,
+			upstream,
 			ctx,
 			provider: "openai",
 			priceCard: null,
