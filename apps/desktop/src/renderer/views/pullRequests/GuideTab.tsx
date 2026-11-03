@@ -1,6 +1,6 @@
 import { formatDateTime } from "@phaseo/app-kit/format";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowRight, Check, ChevronDown, ChevronRight, ChevronUp, Code2, Eye, File, LoaderCircle, MessageCircleQuestion, MessageSquare, Sparkles, TriangleAlert } from "lucide-react";
+import { ArrowRight, BookOpen, Check, ChevronDown, ChevronRight, ChevronUp, Code2, Eye, File, LoaderCircle, MessageCircleQuestion, MessageSquare, TriangleAlert } from "lucide-react";
 import type { DiffLineAnnotation, SelectedLineRange } from "@pierre/diffs";
 import type { GuideExcerpt, GuideStop, PullRequestGuide, PullRequestGuideResult } from "../../../shared/pullRequestGuide";
 import type { PullRequestFile } from "../../../shared/pullRequestFiles";
@@ -257,7 +257,7 @@ export function GuideTab({ view, projectId, active, onOpenCode, onFinishReview, 
 	useEffect(() => { if (writeRequest !== answered.current) { answered.current = writeRequest; void write(); } }, [writeRequest, write]);
 	const guide = result?.guide ?? null;
 	const failure = result?.error ?? (loadError || undefined);
-	const writeButton = (label: string) => <Button size="xs" variant="outline" disabled={running} onClick={() => void write()}>{running ? <LoaderCircle aria-hidden className="size-3.5 animate-spin" /> : <Sparkles aria-hidden className="size-3.5" />}{running ? "Reading the change…" : label}</Button>;
+	const writeButton = (label: string) => <Button size="xs" variant="outline" disabled={running} onClick={() => void write()}>{running ? <LoaderCircle aria-hidden className="size-3.5 animate-spin" /> : <BookOpen aria-hidden className="size-3.5" />}{running ? "Reading the change…" : label}</Button>;
 	if (!guide) {
 		if (!result && !loadError) return <div className="flex min-h-48 items-center justify-center"><LoaderCircle aria-label="Loading" className="size-4 animate-spin text-muted-foreground" /></div>;
 		return <div className="flex min-h-48 flex-col items-center justify-center gap-2 px-4 py-10 text-center">

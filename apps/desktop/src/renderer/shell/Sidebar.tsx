@@ -3,7 +3,7 @@ import { prefetchTask } from "../lib/useSelectedTask";
 import { useMemo, useState, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { JumpHint, publishSidebarOrder, useJumpHints } from "../lib/sidebarOrder";
-import { Archive, ArchiveRestore, CalendarClock, Copy, Mail, Trash2, ChartLine, Inbox, Columns3, GitPullRequestArrow, Ellipsis, ExternalLink, LogIn, WandSparkles, Pencil, Pin, PinOff, Plus, Settings, Gauge, UserRound } from "lucide-react";
+import { Archive, ArchiveRestore, CalendarClock, Copy, Mail, Trash2, ChartLine, Inbox, Columns3, GitPullRequestArrow, Ellipsis, ExternalLink, LogIn, RefreshCw, Pencil, Pin, PinOff, Plus, Settings, Gauge, UserRound } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { chatDragType } from "../../shared/mentions";
 import type { TaskOverview } from "../../shared/workspaceOverview";
@@ -65,7 +65,7 @@ function RowMenu({ task, onRename }: { task: TaskOverview; onRename: () => void 
 		<DropdownMenuTrigger render={<button type="button" aria-label={`Actions for ${task.title}`} onClick={event => event.stopPropagation()} className="hidden size-5 shrink-0 place-items-center rounded text-muted-foreground group-hover/row:grid group-has-[:focus-visible]/row:grid hover:bg-background/70 hover:text-foreground data-popup-open:grid [&_svg]:size-3.5" />}><Ellipsis /></DropdownMenuTrigger>
 		<DropdownMenuContent align="start" className="w-44">
 			<DropdownMenuItem onClick={onRename}><Pencil />Rename</DropdownMenuItem>
-			<DropdownMenuItem onClick={() => void command({ type: "regenerate-title", id: task.id })}><WandSparkles />Regenerate title</DropdownMenuItem>
+			<DropdownMenuItem onClick={() => void command({ type: "regenerate-title", id: task.id })}><RefreshCw />Regenerate title</DropdownMenuItem>
 			<DropdownMenuItem onClick={() => void pin()}>{task.pinned ? <PinOff /> : <Pin />}{task.pinned ? "Unpin" : "Pin"}</DropdownMenuItem>
 			<TagMenu task={task} />
 			<DropdownMenuItem disabled={!task.lastCompletedAt || isUnread(task)} onClick={() => { leave(); void command({ type: "mark-unread", id: task.id }); }}><Mail />Mark unread</DropdownMenuItem>

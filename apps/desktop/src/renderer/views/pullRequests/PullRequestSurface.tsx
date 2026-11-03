@@ -1,6 +1,6 @@
 import { formatRelativeTime } from "@phaseo/app-kit/format";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowDownUp, ArrowLeft, ArrowUpRight, BookOpen, Check, ChevronDown, CircleDot, Copy, ExternalLink, FileDiff, FolderGit2, GitBranch, GitCommitHorizontal, Hammer, Link as LinkIcon, MessageCircleQuestion, MessageSquare, MoreHorizontal, Pencil, PlayCircle, RefreshCw, Sparkles, Trash2, TriangleAlert, Undo2, Unlink, X } from "lucide-react";
+import { ArrowDownUp, ArrowLeft, ArrowUpRight, BookOpen, Check, ChevronDown, CircleDot, Copy, ExternalLink, FileDiff, FolderGit2, GitBranch, GitCommitHorizontal, Hammer, Link as LinkIcon, MessageCircleQuestion, MessageSquare, MoreHorizontal, Pencil, PlayCircle, RefreshCw, Trash2, TriangleAlert, Undo2, Unlink, X } from "lucide-react";
 import { samePullRequest, type PullRequestMergeMethod, type PullRequestReactionContent, type PullRequestUpdateMethod, type PullRequestView } from "../../../shared/pullRequestView";
 import { useWorkspace } from "../../app/workspace";
 import { Badge } from "../../components/ui/badge";
@@ -160,7 +160,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 			<DropdownMenuItem disabled={handoff.pending !== undefined} onClick={() => void handoff.run("ask", view)}><MessageCircleQuestion className="mt-1 size-3.5 shrink-0 self-start" /><span className="flex min-w-0 flex-col"><span>Ask a question</span><span className="text-xs text-muted-foreground">Opens a chat that knows which pull request you mean.</span></span></DropdownMenuItem>
 			<DropdownMenuItem disabled={handoff.pending !== undefined} onClick={() => void handoff.run("explain", view)}><BookOpen className="mt-1 size-3.5 shrink-0 self-start" /><span className="flex min-w-0 flex-col"><span>Explain this PR</span><span className="text-xs text-muted-foreground">A walk through the diff and what to read closely.</span></span></DropdownMenuItem>
 			<DropdownMenuItem disabled={handoff.pending !== undefined || view.state !== "OPEN"} onClick={() => void handoff.run("fix", view)}><Hammer className="size-3.5" />{handoff.pending === "fix" ? "Preparing…" : "Fix findings in a chat"}</DropdownMenuItem>
-				<DropdownMenuItem onClick={() => { setGuideRequest(value => value + 1); selectTab("guide"); }}><Sparkles className="size-3.5" />{guideWritten ? "Rewrite guide" : "Write guide"}</DropdownMenuItem>
+				<DropdownMenuItem onClick={() => { setGuideRequest(value => value + 1); selectTab("guide"); }}><BookOpen className="size-3.5" />{guideWritten ? "Rewrite guide" : "Write guide"}</DropdownMenuItem>
 				{conflicting && <DropdownMenuItem onClick={() => open(`${view.url}/conflicts`)}><TriangleAlert className="size-3.5" />Resolve conflicts on GitHub</DropdownMenuItem>}
 			{view.state === "OPEN" && view.viewer.canUpdate && primary !== "ready" && <DropdownMenuItem disabled={busy} onClick={() => void pull.perform({ type: view.draft ? "ready" : "draft" })}>{view.draft ? <PullRequestGlyph.pullRequest className="size-3.5" /> : <PullRequestGlyph.draft className="size-3.5" />}{view.draft ? "Ready for review" : "Convert to draft"}</DropdownMenuItem>}
 			{canDisableAutoMerge && <DropdownMenuItem disabled={busy} onClick={() => void pull.perform({ type: "disable-auto-merge" })}><X className="size-3.5" />Disable auto-merge</DropdownMenuItem>}
