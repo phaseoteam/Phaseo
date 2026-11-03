@@ -8,6 +8,26 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"Produit","api":"API et SDK","models":"Modèles"}} clearLabel="Effacer" />
 
+<Update label="3 novembre 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produit</p>
+
+- **Bêta :** **Paramètres -> Clés API -> Workloads de confiance** permet aux propriétaires et administrateurs de remplacer les clés API par des jetons OIDC de courte durée de Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI, AWS ou de leur propre émetteur OIDC ; voir [Workloads de confiance](./developers/trusted-workloads.mdx) ([#3253](https://github.com/phaseoteam/Phaseo/pull/3253), [#3441](https://github.com/phaseoteam/Phaseo/pull/3441), [#3346](https://github.com/phaseoteam/Phaseo/pull/3346)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API et SDK</p>
+
+- **Bêta :** La passerelle accepte le jeton OIDC d'un workload de confiance à la place d'une clé API, et les clés de gestion peuvent créer et modifier les politiques de confiance avec `/v1/workload-identity/policies` ; voir [Workloads de confiance](./developers/trusted-workloads.mdx) ([#3243](https://github.com/phaseoteam/Phaseo/pull/3243), [#3287](https://github.com/phaseoteam/Phaseo/pull/3287), [#3441](https://github.com/phaseoteam/Phaseo/pull/3441)).
+
+</div>
+
+</Update>
+
 <Update label="2 novembre 2026">
 
 <div data-changelog-category="models">

@@ -8,6 +8,26 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"उत्पाद","api":"API और SDK","models":"मॉडल"}} clearLabel="साफ़ करें" />
 
+<Update label="3 नवंबर 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">उत्पाद</p>
+
+- **बीटा:** **सेटिंग्स -> API कुंजियाँ -> भरोसेमंद वर्कलोड** में मालिक और एडमिन API कुंजियों की जगह Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI, AWS या अपने OIDC जारीकर्ता के अल्पकालिक OIDC टोकन इस्तेमाल कर सकते हैं; देखें [भरोसेमंद वर्कलोड](./developers/trusted-workloads.mdx) ([#3253](https://github.com/phaseoteam/Phaseo/pull/3253), [#3441](https://github.com/phaseoteam/Phaseo/pull/3441), [#3346](https://github.com/phaseoteam/Phaseo/pull/3346))।
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API और SDK</p>
+
+- **बीटा:** गेटवे API कुंजी की जगह भरोसेमंद वर्कलोड का OIDC टोकन स्वीकार करता है, और प्रबंधन कुंजियाँ `/v1/workload-identity/policies` से ट्रस्ट नीतियाँ बना और बदल सकती हैं; देखें [भरोसेमंद वर्कलोड](./developers/trusted-workloads.mdx) ([#3243](https://github.com/phaseoteam/Phaseo/pull/3243), [#3287](https://github.com/phaseoteam/Phaseo/pull/3287), [#3441](https://github.com/phaseoteam/Phaseo/pull/3441))।
+
+</div>
+
+</Update>
+
 <Update label="2 नवंबर 2026">
 
 <div data-changelog-category="models">

@@ -8,6 +8,26 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"Produto","api":"API e SDKs","models":"Modelos"}} clearLabel="Limpar" />
 
+<Update label="3 de novembro de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- **Beta:** **Configurações -> Chaves de API -> Workloads confiáveis** permite que proprietários e administradores substituam chaves de API por tokens OIDC de curta duração de Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI, AWS ou do próprio emissor OIDC; veja [Workloads confiáveis](./developers/trusted-workloads.mdx) ([#3253](https://github.com/phaseoteam/Phaseo/pull/3253), [#3441](https://github.com/phaseoteam/Phaseo/pull/3441), [#3346](https://github.com/phaseoteam/Phaseo/pull/3346)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API e SDKs</p>
+
+- **Beta:** O gateway aceita o token OIDC de um workload confiável no lugar de uma chave de API, e chaves de gerenciamento podem criar e editar políticas de confiança com `/v1/workload-identity/policies`; veja [Workloads confiáveis](./developers/trusted-workloads.mdx) ([#3243](https://github.com/phaseoteam/Phaseo/pull/3243), [#3287](https://github.com/phaseoteam/Phaseo/pull/3287), [#3441](https://github.com/phaseoteam/Phaseo/pull/3441)).
+
+</div>
+
+</Update>
+
 <Update label="2 de novembro de 2026">
 
 <div data-changelog-category="models">

@@ -8,6 +8,26 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"Produkt","api":"API & SDKs","models":"Modelle"}} clearLabel="Zurücksetzen" />
 
+<Update label="3. November 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- **Beta:** Unter **Einstellungen -> API-Schlüssel -> Vertrauenswürdige Workloads** können Inhaber und Admins API-Schlüssel durch kurzlebige OIDC-Tokens von Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI, AWS oder ihrem eigenen OIDC-Aussteller ersetzen; siehe [Vertrauenswürdige Workloads](./developers/trusted-workloads.mdx) ([#3253](https://github.com/phaseoteam/Phaseo/pull/3253), [#3441](https://github.com/phaseoteam/Phaseo/pull/3441), [#3346](https://github.com/phaseoteam/Phaseo/pull/3346)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- **Beta:** Das Gateway akzeptiert das OIDC-Token eines vertrauenswürdigen Workloads anstelle eines API-Schlüssels, und Verwaltungsschlüssel können Vertrauensrichtlinien mit `/v1/workload-identity/policies` erstellen und bearbeiten; siehe [Vertrauenswürdige Workloads](./developers/trusted-workloads.mdx) ([#3243](https://github.com/phaseoteam/Phaseo/pull/3243), [#3287](https://github.com/phaseoteam/Phaseo/pull/3287), [#3441](https://github.com/phaseoteam/Phaseo/pull/3441)).
+
+</div>
+
+</Update>
+
 <Update label="2. November 2026">
 
 <div data-changelog-category="models">
