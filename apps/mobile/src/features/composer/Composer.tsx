@@ -17,7 +17,7 @@ import type { FollowUpAction, SendPresentation } from "./sendPresentation";
 
 /** Space under the composer, inside the bottom inset. */
 const BOTTOM_GUTTER = 6;
-/** The share of the one-line row the text keeps; a long model name truncates first. */
+/** The share of the one-line row the text keeps. One line shows only the model's logo; its name and effort show once the editor grows. */
 const INLINE_EDITOR_MIN_WIDTH = "40%";
 
 // Android draws the shadow from elevation; overflow-hidden clips only the content, not it.
@@ -65,8 +65,8 @@ export type ComposerProps = {
 
 /**
  * The message box for Phaseo chats and Code threads. One line beside its controls (+ for attachments, the text, the
- * model with its logo, name and effort, and send) until the text wraps; then the text takes the full width above them.
- * Beside one line, the model's name truncates before the text gives up its share. It grows to four lines, then scrolls. Focused, the draft's attachments show inside it;
+ * model's logo, and send) until the text wraps; then the text takes the full width above them, and the model shows its name
+ * and effort in the row below. It grows to four lines, then scrolls. Focused, the draft's attachments show inside it;
  * otherwise small thumbnails sit beside the text. With nothing typed, send becomes stop while a turn runs, or resume
  * while the queue is paused; a long press on send offers the other way to send while a turn runs.
  */
@@ -150,7 +150,7 @@ export function Composer(props: ComposerProps) {
             <View className="min-w-0 shrink flex-row items-center" style={expanded ? { flex: 1, justifyContent: "flex-end" } : undefined}>
               {props.model ? (
                 <View className="min-w-0 shrink">
-                  <ComposerModelControl label={props.model.label} logos={props.model.logos} onPress={locked || !props.model.onPress ? undefined : openModel} readOnlyReason={props.model.readOnlyReason} hint={props.model.hint} />
+                  <ComposerModelControl iconOnly={!expanded} label={props.model.label} logos={props.model.logos} onPress={locked || !props.model.onPress ? undefined : openModel} readOnlyReason={props.model.readOnlyReason} hint={props.model.hint} />
                 </View>
               ) : null}
               {showStop ? (

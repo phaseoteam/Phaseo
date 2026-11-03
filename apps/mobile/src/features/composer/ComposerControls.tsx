@@ -71,9 +71,9 @@ export function ComposerAttachButton({ disabled, onPress }: { disabled?: boolean
  * The model and its effort: logos, the name, then the effort word muted, and a chevron. Short of room, the name
  * truncates first. Read-only (a computer that can't change the thread from the phone) it has no chevron and doesn't press.
  */
-export function ComposerModelControl({ label, logos, onPress, readOnlyReason, hint = "Choose the model and its effort" }: { label: ModelLabel; logos?: ReactNode; onPress?: () => void; readOnlyReason?: string; hint?: string }) {
+export function ComposerModelControl({ label, logos, onPress, readOnlyReason, hint = "Choose the model and its effort", iconOnly = false }: { label: ModelLabel; logos?: ReactNode; onPress?: () => void; readOnlyReason?: string; hint?: string; /** Just the logo, while the composer is one line, so the draft keeps the row. */ iconOnly?: boolean }) {
   const suffix = modelLabelSuffix(label);
-  const content = (
+  const content = iconOnly && logos ? <View className="shrink-0">{logos}</View> : (
     <>
       {logos ? <View className="shrink-0">{logos}</View> : null}
       <Text variant="label" numberOfLines={1} className={cn("shrink", !onPress && "text-muted-foreground")}>{label.model}</Text>

@@ -1,6 +1,7 @@
 import { act } from "react";
 import { createRoot, type Root, type TestInstance } from "test-renderer";
 import { modelLabel } from "@/features/chat/modelSheetRows";
+import { Text } from "@/components/ui";
 import { ComposerModelControl } from "./ComposerControls";
 
 // The UI kit pulls in styling and a Text renderer this Jest preset can't load, so host elements stand in.
@@ -29,7 +30,14 @@ const labelled = () => {
 };
 
 describe("the composer's model control", () => {
-  it("names the model and its effort beside one line of text, not just its logo", () => {
+  it("shows only the logo beside one line of text, still naming the model and effort to a screen reader", () => {
+    render(<ComposerModelControl iconOnly logos={<Text>logo</Text>} label={modelLabel("Claude Opus 5.5", "Medium")} onPress={() => {}} />);
+    expect(texts()).toEqual(["logo"]);
+    expect(labelled().props.accessibilityLabel).toContain("Claude Opus 5.5");
+    expect(labelled().props.accessibilityLabel).toContain("Medium");
+  });
+
+  it("names the model and its effort once the composer grows", () => {
     render(<ComposerModelControl label={modelLabel("Claude Opus 5.5", "Medium")} onPress={() => {}} hint="Choose the model, its effort and the mode" />);
     expect(texts()).toEqual(expect.arrayContaining(["Claude Opus 5.5", "Medium"]));
     expect(labelled().props.accessibilityRole).toBe("button");
