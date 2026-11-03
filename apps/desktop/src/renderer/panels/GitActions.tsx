@@ -96,7 +96,7 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 		try {
 			const result = await api!.createPullRequest(projectId, taskId);
 			setOverview(result.workspace); setRefresh(value => value + 1); announceProjectChange(projectId);
-			toastManager.update(id, { type: "success", title: result.status === "created" ? `Created pull request #${result.number}` : `Pull request #${result.number} is already open`, description: [result.writtenBy && `${knownModel(result.writtenBy)?.name ?? modelLabel(result.writtenBy)} wrote the title and description.`, taskId && "Linked to this chat."].filter(Boolean).join(" ") || undefined, timeout: 6000, actionProps: { children: "Open", onClick: () => openPullRequest({ number: result.number }) } });
+			toastManager.update(id, { type: "success", title: result.status === "created" ? `Created pull request #${result.number}` : `Pull request #${result.number} is already open`, description: [result.writtenBy && `${knownModel(result.writtenBy)?.name ?? modelLabel(result.writtenBy)} wrote the title and description.`, taskId && (result.linked ? "Linked to this chat." : /^https:\/\/github\.com\//i.test(result.url) ? "It couldn't be linked to this chat." : "Only GitHub pull requests can be linked to a chat.")].filter(Boolean).join(" ") || undefined, timeout: 6000, actionProps: { children: "Open", onClick: () => openPullRequest({ number: result.number }) } });
 		} catch (reason) { toastManager.update(id, { type: "error", title: "Could not create the pull request", description: ipcError(reason), timeout: 8000 }); }
 	});
 	/** The title model writes the message from the changes; an empty message is written this way on commit. */

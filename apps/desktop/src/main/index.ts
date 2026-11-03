@@ -110,7 +110,7 @@ import { codeHostSettings, configureCodeHosts, removeCodeHostToken, saveCodeHost
 import { codeHostKinds, validHostName, type CodeHostKind } from "../shared/codeHosts";
 import { validateCodeHostTokenRequest } from "../shared/codeHostSettings";
 import { githubRepository } from "./projectPullRequests";
-import { pullRequestLinkSnapshot } from "../shared/pullRequestView";
+import { parsePullRequestReference, pullRequestLinkSnapshot } from "../shared/pullRequestView";
 import { readGitHunks } from "./gitHunks";
 import { readGitDiffContents } from "./gitDiffContents";
 import { piEntries } from "./piLaunch";
@@ -656,8 +656,9 @@ ipcMain.handle("workspace:create-pull-request", async (event, id: unknown, taskI
 	forgetBranchPullRequest(root);
 	// The pull request a Git action creates is linked to the chat it ran beside, as "Created from this chat".
 	const task = typeof taskId === "string" ? workspaceRuntime.store.getOverview().tasks.find(value => value.id === taskId) : undefined;
-	if (task) await workspaceRuntime.command({ type: "link-pull-request", id: task.id, reference: result.url, source: "created" }).catch(() => undefined);
-	return { ...result, workspace: workspaceRuntime.store.getOverview() };
+	// Chats link GitHub pull requests only; a request on another host is created but not linked, and the result says so.
+	const linked = task && parsePullRequestReference(result.url)?.repository ? await workspaceRuntime.command({ type: "link-pull-request", id: task.id, reference: result.url, source: "created" }).then(() => true, () => false) : false;
+	return { ...result, linked, workspace: workspaceRuntime.store.getOverview() };
 });
 ipcMain.handle("workspace:outside-agents", event => { if (!senderWindow(event) || !outsideAgents) throw new Error("Invalid request."); return outsideAgents.settings(); });
 ipcMain.handle("workspace:outside-agents-enable", (event, enabled: unknown, port: unknown) => { if (!senderWindow(event) || !outsideAgents || typeof enabled !== "boolean" || (port !== undefined && typeof port !== "number") || shutdownStarted) throw new Error("Invalid request."); return outsideAgents.setEnabled(enabled, port as number | undefined); });

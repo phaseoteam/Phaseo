@@ -369,7 +369,7 @@ export type WorkspaceApi = {
 	/** The pull request for the project checkout's current branch, linked or not; cached briefly unless `fresh`. */
 	branchPullRequest: (projectId: string, fresh?: boolean) => Promise<BranchPullRequest>;
 	/** Pushes the branch if needed and opens a pull request for it (or finds its open one), linked to `taskId` as created. */
-	createPullRequest: (projectId: string, taskId?: string) => Promise<CreatedPullRequestResult & { workspace: WorkspaceOverview }>;
+	createPullRequest: (projectId: string, taskId?: string) => Promise<CreatedPullRequestResult & { /** Whether it was linked to the chat; only GitHub pull requests can be. */ linked: boolean; workspace: WorkspaceOverview }>;
 	/** The project's GitHub repository (owner/repo) from its origin remote, or null when it has none. */
 	projectRepository: (projectId: string) => Promise<string | null>;
 	/** Settings ▸ Code hosts: saved self-hosted servers, which hosts have a token, and which host CLIs are installed. */

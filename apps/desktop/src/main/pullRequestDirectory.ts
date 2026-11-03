@@ -124,7 +124,9 @@ export async function listPullRequestDirectory(projects: readonly DirectoryProje
 	}));
 	for (const other of await Promise.all(others.map(project => otherHostEntries(project, query)))) { entries.push(...other.entries); errors.push(...other.errors); truncated ||= other.truncated; }
 	const seen = new Set<string>();
-	const unique = entries.filter(entry => { const key = `${entry.repository.toLowerCase()}#${entry.number}`; if (seen.has(key)) return false; seen.add(key); return true; });
+	// The host is part of a request's identity: acme/service#12 on GitHub and on GitLab are different requests.
+	const host = (url: string) => { try { return new URL(url).host.toLowerCase(); } catch { return ""; } };
+	const unique = entries.filter(entry => { const key = `${host(entry.url)}/${entry.repository.toLowerCase()}#${entry.number}`; if (seen.has(key)) return false; seen.add(key); return true; });
 	return { ...(viewer ? { viewer } : {}), entries: unique.sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)), errors, truncated, fetchedAt: new Date().toISOString() };
 }
 
