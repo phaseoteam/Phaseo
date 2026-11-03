@@ -5,6 +5,8 @@ description: "How upstream provider availability, Phaseo integration readiness, 
 icon: "activity"
 ---
 
+import { ProviderStatusExplorer } from "/snippets/provider-status.jsx";
+
 A provider/model offer has separate upstream and Phaseo statuses. This matters
 when a provider has released a model but Phaseo has not yet implemented or
 enabled the corresponding endpoint.
@@ -91,10 +93,20 @@ serving now.
 | <Icon icon="zap-off" color="#ea580c" /> Orange lightning bolt, crossed out | `Temporarily limited` | Requests failed several times in a row, or at least half of recent requests failed. | Routable, but other providers are tried first. |
 | <Icon icon="refresh-cw" color="#0ea5e9" /> Blue refresh arrows | `Recovering` | After a cooldown, Phaseo lets a few requests through to check the provider. | If a batch of them all succeed, routing returns to normal. If half or more fail, the route is limited again with a longer cooldown. |
 
+```mermaid
+flowchart TD
+  ok["Normal"] -->|"Several failures in a row, or half of recent requests fail"| lim["Temporarily limited"]
+  lim -->|"Cooldown ends"| rec["Recovering"]
+  rec -->|"A batch of requests all succeed"| ok
+  rec -->|"Half or more fail: longer cooldown"| lim
+```
+
 On model pages the live routing icon appears after the status icon, only while
 one of these states applies. A route can be `Lower priority` and
 `Temporarily limited` at the same time; both icons then show. Hover over an
 icon for details.
+
+<ProviderStatusExplorer />
 
 Live routing never changes the provider's availability, Phaseo's integration
 status or the hand-set routing health.

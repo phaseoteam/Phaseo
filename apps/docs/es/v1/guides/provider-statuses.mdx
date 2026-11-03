@@ -4,6 +4,8 @@ description: "Diferencias entre la disponibilidad del proveedor, la preparación
 icon: "activity"
 ---
 
+import { ProviderStatusExplorer } from "/snippets/provider-status.jsx";
+
 La oferta de un modelo en un proveedor tiene estados independientes para el proveedor y para Phaseo. Esto importa cuando un proveedor publica un modelo que Phaseo todavía no ha implementado o habilitado en el endpoint correspondiente.
 
 Verás estos campos en las páginas de modelos, las tarjetas de precios de los proveedores y las vistas de disponibilidad relacionadas.
@@ -80,10 +82,20 @@ solicitudes que está atendiendo en este momento.
 | <Icon icon="zap-off" color="#ea580c" /> Rayo naranja tachado | `Limitado temporalmente` | Las solicitudes han fallado varias veces seguidas, o al menos la mitad de las solicitudes recientes han fallado. | Enrutable, pero primero se prueban otros proveedores. |
 | <Icon icon="refresh-cw" color="#0ea5e9" /> Flechas azules de actualización | `En recuperación` | Tras una pausa, Phaseo deja pasar algunas solicitudes para comprobar el proveedor. | Si todas las de un lote funcionan, el enrutamiento vuelve a la normalidad. Si falla la mitad o más, la ruta vuelve a limitarse con una pausa más larga. |
 
+```mermaid
+flowchart TD
+  ok["Normal"] -->|"Varios fallos seguidos o falla la mitad de las solicitudes recientes"| lim["Limitado temporalmente"]
+  lim -->|"Termina la pausa"| rec["En recuperación"]
+  rec -->|"Todas las solicitudes de un lote funcionan"| ok
+  rec -->|"Falla la mitad o más: pausa más larga"| lim
+```
+
 En las páginas de modelos, el icono de enrutamiento en directo aparece después del
 icono de estado, solo mientras se aplica uno de estos estados. Una ruta puede tener
 `Prioridad más baja` y estar `Limitado temporalmente` a la vez; en ese caso se
 muestran ambos iconos. Pasa el cursor sobre un icono para ver los detalles.
+
+<ProviderStatusExplorer locale="es" />
 
 El enrutamiento en directo nunca cambia la disponibilidad del proveedor, el estado
 de la integración de Phaseo ni el estado de enrutamiento establecido manualmente.

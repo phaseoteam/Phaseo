@@ -4,6 +4,8 @@ description: "Entenda as diferenças entre a disponibilidade no provedor, a pron
 icon: "activity"
 ---
 
+import { ProviderStatusExplorer } from "/snippets/provider-status.jsx";
+
 Uma oferta de provedor e modelo tem status separados no provedor de origem e no Phaseo. Isso importa quando o provedor lança um modelo, mas o Phaseo ainda não implementou ou habilitou o endpoint correspondente.
 
 Você verá esses campos nas páginas de modelos, nos cartões de preços dos provedores e nas telas relacionadas à disponibilidade.
@@ -80,10 +82,20 @@ que está atendendo agora.
 | <Icon icon="zap-off" color="#ea580c" /> Raio laranja riscado | `Temporariamente limitado` | As solicitações falharam várias vezes seguidas, ou pelo menos metade das solicitações recentes falhou. | Roteável, mas outros provedores são tentados primeiro. |
 | <Icon icon="refresh-cw" color="#0ea5e9" /> Setas azuis de atualização | `Em recuperação` | Após uma pausa, o Phaseo deixa passar algumas solicitações para verificar o provedor. | Se todas as de um lote funcionarem, o roteamento volta ao normal. Se metade ou mais falhar, a rota é limitada de novo, com uma pausa mais longa. |
 
+```mermaid
+flowchart TD
+  ok["Normal"] -->|"Várias falhas seguidas ou metade das solicitações recentes falha"| lim["Temporariamente limitado"]
+  lim -->|"A pausa termina"| rec["Em recuperação"]
+  rec -->|"Todas as solicitações de um lote funcionam"| ok
+  rec -->|"Metade ou mais falha: pausa mais longa"| lim
+```
+
 Nas páginas de modelos, o ícone de roteamento em tempo real aparece depois do ícone
 de status, somente enquanto um desses status se aplica. Uma rota pode ter
 `Prioridade menor` e estar `Temporariamente limitado` ao mesmo tempo; nesse caso,
 os dois ícones aparecem. Passe o cursor sobre um ícone para ver os detalhes.
+
+<ProviderStatusExplorer locale="pt-BR" />
 
 O roteamento em tempo real nunca altera a disponibilidade do provedor, o status da
 integração do Phaseo nem a saúde do roteamento definida manualmente.
