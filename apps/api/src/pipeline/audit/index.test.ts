@@ -30,6 +30,7 @@ vi.mock("./io-logging", () => ({
 	resolveGatewayIoLoggingPolicy: (...args: any[]) => resolveGatewayIoLoggingPolicyMock(...args),
 	persistGatewayIoLog: (...args: any[]) => persistGatewayIoLogMock(...args),
 	requestZeroDataRetention: () => false,
+	keyKeepsContentOutOfTelemetry: async () => false,
 }));
 
 vi.mock("./upstream-requests", () => ({

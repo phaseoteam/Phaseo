@@ -6,7 +6,7 @@ vi.mock("@/runtime/env", () => ({
 	getBindings: () => getBindingsMock(),
 }));
 
-import { toPublicVideoResponse } from "./public";
+import { buildContentHeaders, toPublicVideoResponse } from "./public";
 
 describe("public video response helper", () => {
 	beforeEach(() => {
@@ -377,5 +377,40 @@ describe("public video response helper", () => {
 				content_url: "https://api.phaseo.app/v1/videos/G-456/content",
 			}),
 		]);
+	});
+});
+
+describe("video content headers", () => {
+	it("passes only transfer headers and serves video types inline", () => {
+		const headers = buildContentHeaders({
+			"Content-Type": "video/mp4",
+			"Content-Length": "1024",
+			"Accept-Ranges": "bytes",
+			"Set-Cookie": "provider=1",
+			"openai-organization": "org-secret",
+			"x-goog-hash": "crc32c=abc",
+		}, { contentDisposition: "inline", filename: "clip.mp4" });
+		expect(headers.get("content-type")).toBe("video/mp4");
+		expect(headers.get("content-length")).toBe("1024");
+		expect(headers.get("accept-ranges")).toBe("bytes");
+		expect(headers.get("content-disposition")).toBe("inline; filename=\"clip.mp4\"");
+		expect(headers.get("content-security-policy")).toBe("sandbox; default-src 'none'");
+		expect(headers.get("x-content-type-options")).toBe("nosniff");
+		for (const leaked of ["set-cookie", "openai-organization", "x-goog-hash"]) expect(headers.get(leaked)).toBeNull();
+	});
+
+	it.each(["text/html; charset=utf-8", "image/svg+xml", "application/javascript", "application/xhtml+xml"])(
+		"serves %s as an opaque download",
+		(type) => {
+			const headers = buildContentHeaders({ "Content-Type": type }, { contentDisposition: "inline", filename: "clip.mp4" });
+			expect(headers.get("content-type")).toBe("application/octet-stream");
+			expect(headers.get("content-disposition")).toBe("attachment; filename=\"clip.mp4\"");
+			expect(headers.get("content-security-policy")).toBe("sandbox; default-src 'none'");
+		},
+	);
+
+	it("keeps still images and the fallback type", () => {
+		expect(buildContentHeaders({ "Content-Type": "image/webp" }).get("content-type")).toBe("image/webp");
+		expect(buildContentHeaders(undefined, { contentType: "video/webm" }).get("content-type")).toBe("video/webm");
 	});
 });

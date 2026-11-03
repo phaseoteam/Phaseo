@@ -17,7 +17,7 @@ vi.mock("@/runtime/env", () => ({
 
 import {
 	__customerQuotaStateSizeForTests, __resetCustomerQuotaStateForTests,
-	customerScopeKey, guardCustomerQuota, guardFreeRouteQuota, parseCustomerLimits,
+	customerScopeKey, freeDayScopeKey, guardCustomerQuota, guardFreeRouteQuota, parseCustomerLimits,
 } from "./customer-rate-limits";
 import type { PriceCard } from "@pipeline/pricing/types";
 
@@ -52,6 +52,45 @@ describe("customer quota integration", () => {
 		expect(customerScopeKey({ ...args, userId: "other" })).not.toBe(customerScopeKey(args));
 		expect(customerScopeKey({ ...args, workspaceId: "other" })).not.toBe(customerScopeKey(args));
 		expect(customerScopeKey({ workspaceId: "workspace" })).toBe("customer-quota:v1:workspace:workspace");
+	});
+
+	it("keys the free-model daily allowance on the user, so new workspaces do not multiply it", async () => {
+		expect(freeDayScopeKey(args)).toBe("customer-quota:v1:user:owner");
+		expect(freeDayScopeKey({ ...args, workspaceId: "another-workspace" })).toBe(freeDayScopeKey(args));
+		expect(freeDayScopeKey({ ...args, userId: "other" })).not.toBe(freeDayScopeKey(args));
+		// Without a user the workspace scope applies.
+		expect(freeDayScopeKey({ workspaceId: "workspace" })).toBe(customerScopeKey({ workspaceId: "workspace" }));
+
+		mocks.admit.mockResolvedValue({ allowed: false, limit: 1500, remaining: 0, retryAfterSeconds: 3600 });
+		expect((await guardFreeRouteQuota({ ...args, pricingCard: card("free", "0") }))?.status).toBe(429);
+		// The same user in a freshly created workspace is still out of free requests: the shared counter says so.
+		expect((await guardFreeRouteQuota({ ...args, workspaceId: "new-workspace", admissionId: "next", pricingCard: card("free", "0") }))?.status).toBe(429);
+		expect(mocks.admit).toHaveBeenCalledTimes(2);
+		expect(mocks.getByName.mock.calls.every(([key]) => key === "customer-quota:v1:user:owner")).toBe(true);
+		// The per-minute limit stays per workspace and user.
+		minute({ workspaceId: "new-workspace" });
+		await settle();
+		expect(mocks.getByName).toHaveBeenLastCalledWith(customerScopeKey({ ...args, workspaceId: "new-workspace" }));
+	});
+
+	it("applies each workspace's own free-model limit to the user's shared count", async () => {
+		mocks.bindings = { ...mocks.bindings, CUSTOMER_RATE_LIMIT_LADDER_ENABLED: "true" };
+		mocks.readLimits.mockImplementation(async (workspaceId: string) => ({ tier: "trusted", requestsPerMinute: 60, freeRequestsPerDay: workspaceId === "raised" ? 9000 : 1500 }));
+		// The counter has 2,000 requests for this user: over 1,500, under 9,000.
+		mocks.admit.mockImplementation(async (_key: string, _kind: string, _id: string, limits: { freeRequestsPerDay?: number }) => (limits.freeRequestsPerDay ?? 0) > 2000
+			? { allowed: true, limit: limits.freeRequestsPerDay, remaining: (limits.freeRequestsPerDay ?? 0) - 2001, retryAfterSeconds: 0 }
+			: { allowed: false, limit: limits.freeRequestsPerDay, remaining: 0, retryAfterSeconds: 3600 });
+		const free = (workspaceId: string, admissionId: string) => guardFreeRouteQuota({ ...args, workspaceId, admissionId, pricingCard: card("free", "0") });
+
+		expect((await free("workspace", "a1"))?.status).toBe(429);
+		// A denial remembered for the 1,500 workspace doesn't block the 9,000 one.
+		expect(await free("raised", "b1")).toBeNull();
+		// And headroom learned from the 9,000 workspace doesn't admit requests in the 1,500 one.
+		expect((await free("workspace", "a2"))?.status).toBe(429);
+		expect(await free("raised", "b2")).toBeNull();
+		await settle();
+		// a2 is refused from the remembered 1,500 denial; b2 is admitted from 9,000 headroom and counted in the background.
+		expect(mocks.admit.mock.calls.map((call) => call[3].freeRequestsPerDay)).toEqual([1500, 9000, 9000]);
 	});
 
 	it("admits synchronously without waiting for the counter", async () => {
@@ -138,7 +177,7 @@ describe("customer quota integration", () => {
 
 	it("applies RPD to actual free pricing, including models without a :free suffix", async () => {
 		expect(await guardFreeRouteQuota({ ...args, pricingCard: card("free", "0") })).toBeNull();
-		expect(mocks.admit).toHaveBeenCalledWith(customerScopeKey(args), "free-day", "server-admission", expect.any(Object));
+		expect(mocks.admit).toHaveBeenCalledWith(freeDayScopeKey(args), "free-day", "server-admission", expect.any(Object));
 	});
 
 	it("rejects an exhausted scope on its first request to a cold isolate", async () => {
@@ -191,7 +230,7 @@ describe("customer quota integration", () => {
 	// free allowance, whatever service tier its SKU is labelled with.
 	it("applies RPD to a $0 route labelled with the standard plan", async () => {
 		expect(await guardFreeRouteQuota({ ...args, pricingCard: card("standard", "0") })).toBeNull();
-		expect(mocks.admit).toHaveBeenCalledWith(customerScopeKey(args), "free-day", "server-admission", expect.any(Object));
+		expect(mocks.admit).toHaveBeenCalledWith(freeDayScopeKey(args), "free-day", "server-admission", expect.any(Object));
 	});
 
 	it.each([1500, 2500])("explains the effective %i free-model limit and recovery options", async (limit) => {
@@ -203,7 +242,7 @@ describe("customer quota integration", () => {
 			code: "phaseo_free_model_limit_exceeded",
 			error_origin: "gateway",
 			reason: "free_requests_per_day",
-			description: `Phaseo free-model daily limit reached. This user and workspace have reached their daily allowance of ${limit} free-model requests, shared across all free models. The allowance resets at 00:00 UTC. Retry after 3600 seconds, choose a paid model, or ask your workspace administrator to request a higher limit.`,
+			description: `Phaseo free-model daily limit reached. This user has reached their daily allowance of ${limit} free-model requests, shared across all free models. The allowance resets at 00:00 UTC. Retry after 3600 seconds, choose a paid model, or ask your workspace administrator to request a higher limit.`,
 		});
 	});
 

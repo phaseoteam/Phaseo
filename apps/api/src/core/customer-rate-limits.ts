@@ -44,6 +44,19 @@ export function customerScopeKey(scope: CustomerScope): string {
 	return `customer-quota:v1:${scope.workspaceId}:${scope.userId || "workspace"}`;
 }
 
+/**
+ * The free-model daily allowance belongs to the user, across every workspace they use,
+ * so creating workspaces does not multiply it. Requests without a user fall back to the
+ * workspace scope. The per-minute limit stays per workspace and user.
+ */
+export function freeDayScopeKey(scope: CustomerScope): string {
+	return scope.userId ? `customer-quota:v1:user:${scope.userId}` : customerScopeKey(scope);
+}
+
+function quotaScopeKey(scope: CustomerScope, kind: CustomerQuotaKind): string {
+	return kind === "free-day" ? freeDayScopeKey(scope) : customerScopeKey(scope);
+}
+
 export function parseCustomerLimits(value: unknown): CustomerLimits {
 	if (value == null) return { ...DEFAULT_CUSTOMER_LIMITS };
 	if (typeof value !== "object" || Array.isArray(value)) throw new Error("invalid_customer_limits");
@@ -138,7 +151,7 @@ function quotaExceeded(args: { requestId: string; kind: CustomerQuotaKind }, lim
 		reason: args.kind === "minute" ? "customer_requests_per_minute" : "free_requests_per_day",
 		description: args.kind === "minute"
 			? `This user and workspace have reached their limit of ${limit} requests per minute. Retry after ${retryAfterSeconds} seconds.`
-			: `Phaseo free-model daily limit reached. This user and workspace have reached their daily allowance of ${limit} free-model requests, shared across all free models. The allowance resets at 00:00 UTC. Retry after ${retryAfterSeconds} seconds, choose a paid model, or ask your workspace administrator to request a higher limit.`,
+			: `Phaseo free-model daily limit reached. This user has reached their daily allowance of ${limit} free-model requests, shared across all free models. The allowance resets at 00:00 UTC. Retry after ${retryAfterSeconds} seconds, choose a paid model, or ask your workspace administrator to request a higher limit.`,
 	});
 	response.headers.set("Retry-After", String(retryAfterSeconds));
 	return response;
@@ -162,6 +175,8 @@ function countInBackground(bindings: GatewayBindings, scopeKey: string, args: {
 	kind: CustomerQuotaKind;
 	limits: () => Promise<Partial<CustomerLimits>>;
 	onCounted?: (admission: CustomerAdmission) => void;
+	/** Where this isolate remembers the result, when it differs from the counter's scope. */
+	localKey?: string;
 }): void {
 	const namespace = bindings.CUSTOMER_RATE_LIMITS!;
 	// The request may finish (and release its runtime) before counting does.
@@ -171,7 +186,7 @@ function countInBackground(bindings: GatewayBindings, scopeKey: string, args: {
 			const limits = await args.limits();
 			const stub = namespace.getByName(scopeKey) as unknown as CustomerStub;
 			const admission = await stub.admit(scopeKey, args.kind, args.admissionId, limits);
-			noteAdmission(args.kind, scopeKey, admission);
+			noteAdmission(args.kind, args.localKey ?? scopeKey, admission);
 			args.onCounted?.(admission);
 		} catch (error) {
 			// Fail open: the request was already admitted.
@@ -194,7 +209,7 @@ type QuotaArgs = CustomerScope & {
 
 type QuotaCheck =
 	| { decided: Response | null }
-	| { bindings: GatewayBindings; scopeKey: string; admissionKey: string; now: number };
+	| { bindings: GatewayBindings; scopeKey: string; localKey: string; admissionKey: string; now: number };
 
 /** The local decisions shared by every quota kind; never waits on the counter. */
 function checkLocally(args: QuotaArgs): QuotaCheck {
@@ -203,19 +218,22 @@ function checkLocally(args: QuotaArgs): QuotaCheck {
 	// Unit fixtures and local tools may run without Worker bindings.
 	if (!bindings || bindings.CUSTOMER_RATE_LIMITS_ENABLED !== "true") return { decided: null };
 	const now = Date.now();
-	const scopeKey = customerScopeKey(args);
-	const admissionKey = `${args.kind}|${scopeKey}|${args.admissionId}`;
+	const scopeKey = quotaScopeKey(args, args.kind);
+	// The free-day counter is shared by all of a user's workspaces, but each workspace can allow a
+	// different number, so this isolate remembers denials and headroom per workspace.
+	const localKey = args.kind === "free-day" ? `${scopeKey}|${args.workspaceId}` : scopeKey;
+	const admissionKey = `${args.kind}|${localKey}|${args.admissionId}`;
 	// A fallback attempt of a request that was already admitted and counted.
 	// (Minute admissions happen once per HTTP request; see customer-quota.ts.)
 	if ((admissions.get(admissionKey) ?? 0) > now) return { decided: null };
-	const denial = activeDenial(`${args.kind}|${scopeKey}`, now);
+	const denial = activeDenial(`${args.kind}|${localKey}`, now);
 	if (denial) return { decided: quotaExceeded(args, denial.limit, Math.max(1, Math.ceil((denial.until - now) / 1000))) };
 	if (!bindings.CUSTOMER_RATE_LIMITS) {
 		if (!missingBindingReported) console.error("customer_rate_limit_binding_missing");
 		missingBindingReported = true;
 		return { decided: null };
 	}
-	return { bindings, scopeKey, admissionKey, now };
+	return { bindings, scopeKey, localKey, admissionKey, now };
 }
 
 /**
@@ -226,7 +244,7 @@ export function guardCustomerQuota(args: QuotaArgs): Response | null {
 	const check = checkLocally(args);
 	if (!("bindings" in check)) return check.decided;
 	if (args.kind === "free-day") remember(admissions, check.admissionKey, check.now + ADMISSION_MEMORY_MS, MAX_ADMISSIONS);
-	countInBackground(check.bindings, check.scopeKey, { ...args, limits: () => customerLimitsFor(check.bindings, args.workspaceId) });
+	countInBackground(check.bindings, check.scopeKey, { ...args, localKey: check.localKey, limits: () => customerLimitsFor(check.bindings, args.workspaceId) });
 	return null;
 }
 
@@ -239,12 +257,12 @@ export function guardCustomerQuota(args: QuotaArgs): Response | null {
 async function guardFreeDayQuota(args: QuotaArgs): Promise<Response | null> {
 	const check = checkLocally(args);
 	if (!("bindings" in check)) return check.decided;
-	const { bindings, scopeKey, admissionKey, now } = check;
-	const known = freeDayHeadroom.get(scopeKey);
+	const { bindings, scopeKey, localKey, admissionKey, now } = check;
+	const known = freeDayHeadroom.get(localKey);
 	if (known && known.until > now && known.remaining > FREE_DAY_HEADROOM_MARGIN) {
 		known.remaining -= 1;
 		remember(admissions, admissionKey, now + ADMISSION_MEMORY_MS, MAX_ADMISSIONS);
-		countInBackground(bindings, scopeKey, { ...args, limits: () => customerLimitsFor(bindings, args.workspaceId) });
+		countInBackground(bindings, scopeKey, { ...args, localKey, limits: () => customerLimitsFor(bindings, args.workspaceId) });
 		return null;
 	}
 	const counted = await awaitShared((async () => {
@@ -257,7 +275,7 @@ async function guardFreeDayQuota(args: QuotaArgs): Promise<Response | null> {
 		remember(admissions, admissionKey, Date.now() + ADMISSION_MEMORY_MS, MAX_ADMISSIONS);
 		return null;
 	}
-	noteAdmission(args.kind, scopeKey, counted.value);
+	noteAdmission(args.kind, localKey, counted.value);
 	if (!counted.value.allowed) {
 		return quotaExceeded(args, counted.value.limit, Math.max(1, counted.value.retryAfterSeconds));
 	}

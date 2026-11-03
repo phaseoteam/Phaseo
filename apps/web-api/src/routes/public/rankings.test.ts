@@ -385,3 +385,30 @@ it("lists the AA Progress Index after the four index metrics with every configur
     { model_id: "test/old", score: 214.5, rank: 2 },
   ]);
 });
+
+describe("ranking query validation", () => {
+	// Every distinct URL misses the edge cache, so free-text values must never reach the database.
+	it.each([
+		"/rankings/timeseries?time_range=buster-1",
+		"/rankings/timeseries?bucket_size=buster-2",
+		"/rankings/market-share-timeseries?time_range=forever",
+		"/rankings/unique-users?bucket_size=minute",
+		"/rankings/tool-calls?time_range=x",
+		"/rankings/models?metric=random",
+		"/rankings/models?time_range=random",
+	])("rejects %s before any query", async (path) => {
+		const fetchMock = vi.fn(async () => new Response("[]"));
+		vi.stubGlobal("fetch", fetchMock);
+		const response = await app.request(`https://phaseo.app/api/_web${path}`, {}, env);
+		expect(response.status).toBe(400);
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it.each(["today", "24h", "week", "month", "year", "all"])("still accepts time_range=%s", async (range) => {
+		const fetchMock = vi.fn(async () => new Response("[]"));
+		vi.stubGlobal("fetch", fetchMock);
+		const response = await app.request(`https://phaseo.app/api/_web/rankings/timeseries?time_range=${range}&bucket_size=day`, {}, env);
+		expect(response.status).toBe(200);
+		expect(fetchMock).toHaveBeenCalled();
+	});
+});

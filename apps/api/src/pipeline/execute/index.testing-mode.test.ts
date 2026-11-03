@@ -985,6 +985,38 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		]);
 	});
 
+	it("records a thrown executor error without its stack", async () => {
+		const pricingCard = { provider: "openai", model: "openai/gpt-image-1-mini", endpoint: "image.generate", currency: "USD", rules: [] };
+		const candidate = {
+			providerId: "first",
+			pricingCard,
+			byokMeta: [],
+			providerModelSlug: "gpt-image-1-mini",
+			capabilityParams: {},
+			maxInputTokens: null,
+			maxOutputTokens: null,
+		};
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [candidate] });
+		rankProvidersMock.mockResolvedValue([{ candidate, health: {} }]);
+		const thrown = new TypeError("Cannot read properties of undefined (reading 'data')");
+		thrown.stack = `TypeError: ${thrown.message}\n    at mapImages (worker.js:4321:9)\n    at async execute (worker.js:12:3)`;
+		resolveProviderExecutorMock.mockImplementation(() => vi.fn().mockRejectedValue(thrown));
+		const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+		const ctx = createCtx({ testingMode: false });
+
+		await doRequestWithIR(ctx, { model: "openai/gpt-image-1-mini", prompt: "tiny blue square" } as any, createTiming());
+		consoleError.mockRestore();
+
+		for (const attempt of [ctx.attemptErrors[0], ctx.providerAttempts[0]]) {
+			expect(attempt).toMatchObject({
+				provider: "first",
+				upstream_error_message: "Cannot read properties of undefined (reading 'data')",
+				upstream_error_description: "executor_exception:TypeError",
+			});
+			expect(JSON.stringify(attempt)).not.toContain("worker.js");
+		}
+	});
+
 	it("skips breaker-blocked providers and falls back to the next candidate", async () => {
 		const pricingCard = {
 			provider: "openai",
