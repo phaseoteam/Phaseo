@@ -68,7 +68,7 @@ function Tree({ client, desktopId, target, where }: { client: DesktopClient; des
   const renderFound = useCallback(({ item }: { item: PhoneFileEntry }) => <EntryRow entry={item} depth={0} open={false} showFolder onPress={item.directory ? (entry) => { setQuery(""); reveal(entry.path); } : openFile} onLongPress={onLong} />, [openFile, onLong, reveal]);
 
   const body = !allowed ? <OffNotice /> : searching ? (
-    found.error ? <ErrorState className="flex-1" error={new Error(found.error.message)} />
+    found.error ? <ErrorState className="flex-1" error={new Error(found.error.message)} onRetry={found.reload} />
       : !found.result ? <SkeletonRows count={6} />
         : (
           <LegendList
@@ -99,7 +99,7 @@ function Tree({ client, desktopId, target, where }: { client: DesktopClient; des
 
   return (
     <Screen>
-      <Header back title="Files" subtitle={where} right={allowed ? <IconButton icon={RefreshCw} label="Refresh" onPress={reload} /> : null} />
+      <Header back title="Files" subtitle={where} right={allowed ? <IconButton icon={RefreshCw} label="Refresh" onPress={searching ? found.reload : reload} /> : null} />
       <ConnectionNotice client={client} />
       {allowed ? <View className="px-4 pb-2"><SearchField value={query} onChangeText={setQuery} placeholder="Search files" /></View> : null}
       {body}

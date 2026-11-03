@@ -56,11 +56,15 @@ export function useFileTree(client: DesktopClient, target: FilesTarget) {
 }
 const EMPTY: ReadonlyMap<string, Folder> = new Map();
 
-/** Files and folders across the project matching `query`, the latest answer only; null while the first one reads. */
+/**
+ * Files and folders across the project matching `query`, the latest answer only; null while the first one reads.
+ * Read again on Refresh and after a reconnect.
+ */
 export function useFileSearch(client: DesktopClient, target: FilesTarget, query: string) {
   const allowed = readsFiles(useConnection(client));
   const of = targetKey(target), key = `${of}|${query.trim()}`;
   const [state, setState] = useState<{ key: string; result: PhoneResults["list_files"] | null; error: FileError | null }>({ key: "", result: null, error: null });
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     if (!allowed || !query.trim()) return;
     let current = true;
@@ -69,8 +73,10 @@ export function useFileSearch(client: DesktopClient, target: FilesTarget, query:
       (problem: unknown) => { if (current) setState({ key, result: null, error: errorOf(problem) }); },
     );
     return () => { current = false; };
-  }, [client, allowed, of, key, query]);
-  return state.key === key ? state : { key, result: null, error: null };
+  }, [client, allowed, of, key, query, attempt]);
+  const reload = useCallback(() => setAttempt((value) => value + 1), []);
+  useClientEvents(client, useCallback((event: ClientEvent) => { if (event.type === "connected" && event.reconnect) reload(); }, [reload]));
+  return { ...(state.key === key ? state : { key, result: null, error: null }), reload };
 }
 
 /** One file's preview, read on opening, after a reconnect and on Refresh. */
