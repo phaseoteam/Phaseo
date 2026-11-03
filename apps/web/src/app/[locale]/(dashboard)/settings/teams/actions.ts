@@ -141,13 +141,11 @@ export async function createTeamInviteAction(
     workspaceId: string,
     creatorUserId: string,
     role: string,
-    token: string,
     expiresInDays = 7,
     maxUses?: number | null,
 ) {
     if (!workspaceId) throw new Error("Missing workspaceId");
     if (!creatorUserId) throw new Error("Missing creatorUserId");
-    if (!token || token.length < 6) throw new Error("Invalid token");
 
     const normalizedRole = String(role || "member").toLowerCase();
     if (!["admin", "member"].includes(normalizedRole)) {
@@ -156,7 +154,7 @@ export async function createTeamInviteAction(
 
     const { accessToken } = await getServerAccountContext();
 	if (!accessToken) throw new Error("Unauthorized");
-	return fetchAccountWebApi<{ id?: string; token: string }>(`/api/account/settings/teams/${encodeURIComponent(workspaceId)}/invites`, accessToken, { method: "POST", body: JSON.stringify({ creatorUserId, role: normalizedRole, token, expiresInDays, maxUses }) });
+	return fetchAccountWebApi<{ id?: string; token: string }>(`/api/account/settings/teams/${encodeURIComponent(workspaceId)}/invites`, accessToken, { method: "POST", body: JSON.stringify({ creatorUserId, role: normalizedRole, expiresInDays, maxUses }) });
 }
 
 export async function revealTeamInviteAction(inviteId: string) {

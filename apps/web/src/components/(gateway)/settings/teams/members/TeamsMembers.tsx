@@ -269,15 +269,16 @@ export default function TeamsMembers({
 	const confirmActionTitle = canLeaveTeam ? s("Leave workspace") : s("Revoke access");
 	const confirmActionButton = canLeaveTeam ? s("Leave workspace") : s("Revoke access");
 	const confirmActionLoading = canLeaveTeam ? s("phraseLeaving") : s("phraseRevoking");
+	// Removing someone revokes the keys they created in the workspace (see revoke_oauth_on_workspace_member_delete).
 	const confirmActionDescription = canLeaveTeam
-		? s("Are you sure you want to leave {workspace}?", {
+		? `${s("Are you sure you want to leave {workspace}?", {
 				workspace: activeWorkspaceName ?? s("this workspace"),
-		  })
+		  })} ${s("phraseYourKeysWillBeRevoked")}`
 		: isSelectedHigherRole
 			? s("phraseYouCanTRevokeAccessForSomeoneWithAHigherRoleThanYours")
-			: s("Are you sure you want to revoke access for {member}?", {
+			: `${s("Are you sure you want to revoke access for {member}?", {
 					member: selectedMember?.display_name ?? selectedMember?.user_id ?? s("this member"),
-				});
+				})} ${s("phraseMemberKeysWillBeRevoked")}`;
 
 	const saveRole = async () => {
 		if (!activeWorkspaceId || !selectedMember || !canEditSelectedRole) return;

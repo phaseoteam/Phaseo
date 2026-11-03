@@ -36,6 +36,7 @@ import {
 	persistDataContribution,
 } from "../classification/data-contribution";
 import { currentDataContributionDiscountNanos } from "../pricing/data-contribution-discount";
+import { searchObservabilityWithoutContent, webFetchObservabilityWithoutContent } from "@/core/request-content-details";
 
 /**
  * Search and fetch details for the request log. A key that never stores content
@@ -43,20 +44,11 @@ import { currentDataContributionDiscountNanos } from "../pricing/data-contributi
  * URLs, which all come from what was asked.
  */
 function searchObservabilityForLog(ctx: PipelineContext, value: unknown): unknown {
-	if (ctx.neverStoreContent !== true || !value || typeof value !== "object") return value;
-	const search = value as Record<string, unknown>;
-	return { ...search, results: [], citations: [], nativeSearches: [], managedSearches: [] };
+	return ctx.neverStoreContent === true ? searchObservabilityWithoutContent(value) : value;
 }
 
 function webFetchObservabilityForLog(ctx: PipelineContext, value: unknown): unknown {
-	if (ctx.neverStoreContent !== true || !value || typeof value !== "object") return value;
-	const fetches = (value as { fetches?: unknown }).fetches;
-	return {
-		...(value as Record<string, unknown>),
-		fetches: Array.isArray(fetches)
-			? fetches.map((entry) => ({ ...(entry as Record<string, unknown>), url: null, finalUrl: null, title: null }))
-			: fetches,
-	};
+	return ctx.neverStoreContent === true ? webFetchObservabilityWithoutContent(value) : value;
 }
 
 /** Which preset version served the request, and the ref it pinned, if any. */

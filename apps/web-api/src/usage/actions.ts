@@ -7,6 +7,7 @@ import type { AccountWorkspaceContext } from "@/routes/account/context";
 import { metadataForIds } from "@/routes/account/settings-usage";
 import { applyRequestLabelFilter, requestLabelFilterFromParams } from "@/usage/requestClassifiers";
 import { canReadIoLogContents, readIoLogContentsAccess } from "@/usage/ioLogContentsAccess";
+import { detailMetadataWithoutContent } from "@/usage/requestContentDetails";
 import {
 	LONG_RUNNING_REQUEST_ENDPOINTS,
 	buildNotInFilter,
@@ -375,13 +376,19 @@ const RESTRICTED_IO_LOG: GatewayIoLog = {
 	payload: null,
 };
 
+/** Whether the signed-in member may read this workspace's stored request contents. */
+async function memberMayReadContents(workspaceId: string): Promise<boolean> {
+	const { account } = current();
+	return canReadIoLogContents(await readIoLogContentsAccess(account.client, workspaceId), account.role);
+}
+
 async function fetchGatewayIoLog(
 	workspaceId: string,
 	requestId: string,
+	mayReadContents: boolean,
 ): Promise<GatewayIoLog | null> {
-	const { account, env } = current();
-	const access = await readIoLogContentsAccess(account.client, workspaceId);
-	if (!canReadIoLogContents(access, account.role)) return RESTRICTED_IO_LOG;
+	const { env } = current();
+	if (!mayReadContents) return RESTRICTED_IO_LOG;
 	const token = String(env.GATEWAY_INTERNAL_TEST_TOKEN ?? "").trim();
 	if (!token) return null;
 
@@ -1834,7 +1841,10 @@ export async function investigateGeneration(
 		const appName = request.app_id
 			? appMetadata.get(request.app_id)?.title ?? null
 			: null;
-		const ioLog = await fetchGatewayIoLog(workspaceId, trimmedRequestId);
+		// Search queries and fetched URLs follow the same contents setting as the I/O log.
+		const mayReadContents = await memberMayReadContents(workspaceId);
+		if (!mayReadContents) request.detail_metadata = detailMetadataWithoutContent(request.detail_metadata);
+		const ioLog = await fetchGatewayIoLog(workspaceId, trimmedRequestId, mayReadContents);
 
 		return {
 			success: true,
@@ -1894,7 +1904,10 @@ export async function investigateGeneration(
 			: request.app_id
 			? appMetadata.get(request.app_id)?.title ?? null
 			: null;
-	const ioLog = await fetchGatewayIoLog(workspaceId, trimmedRequestId);
+	// Search queries and fetched URLs follow the same contents setting as the I/O log.
+	const mayReadContents = await memberMayReadContents(workspaceId);
+	if (!mayReadContents) request.detail_metadata = detailMetadataWithoutContent(request.detail_metadata);
+	const ioLog = await fetchGatewayIoLog(workspaceId, trimmedRequestId, mayReadContents);
 
 	return {
 		success: true,
