@@ -2,8 +2,12 @@ import { configAreas, configAreaIds, validateFactoryPatch, type ConfigArea } fro
 import { keybindingCommands } from "../../shared/keybindings";
 import type { McpConnection } from "../../shared/mcp";
 import type { WorkspaceCommand } from "../../shared/workspace";
+import { allColourThemes, saveColourTheme } from "./appTheme";
+import { parseTheme, validColour } from "./themes";
 import { readModelPreferences, setDefaultModel, type ModelSelection } from "./modelPreferences";
 
+/** The theme editor's starting colours for a half a theme leaves to the stylesheet. */
+const fallbackHalf = { light: { canvas: "#ffffff", accent: "#0069a8" }, dark: { canvas: "#1c1c1c", accent: "#3b9fe0" } };
 const plain = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value === "object" && !Array.isArray(value);
 const desktop = () => { const api = window.phaseoDesktop; if (!api) throw new Error("Open the desktop application to change its configuration."); return api; };
 const area = (value: unknown): ConfigArea => { if (typeof value !== "string" || !configAreaIds.includes(value as ConfigArea)) throw new Error(`area must be one of ${configAreaIds.join(", ")}.`); return value as ConfigArea; };
@@ -19,6 +23,7 @@ export async function getConfig(name: unknown) {
 		case "agents": return { agents: (await api.workspace.overview()).agents };
 		case "accounts": return { accounts: (await api.workspace.overview()).accounts.map(({ id, name, harness, kind, endpoint, configured, archived, profile }) => ({ id, name, harness, kind, ...endpoint ? { endpoint } : {}, configured, ...archived ? { archived } : {}, ...profile?.name ? { signedInAs: profile.name } : {} })) };
 		case "keybindings": { const { entries, error } = await api.keybindings.get(); return { entries, ...error ? { error } : {}, commands: keybindingCommands.map(({ command, label, keys, ...rest }) => ({ command, label, keys, ..."when" in rest ? { when: rest.when } : {} })) }; }
+		case "themes": return allColourThemes();
 		case "defaultModel": { const { defaultSelection, recent } = readModelPreferences(); return { defaultModel: defaultSelection ?? null, recent: recent.slice(0, 10) }; }
 		case "factory": { const { settings } = await api.factory.snapshot(); return { settings }; }
 	}
@@ -70,6 +75,21 @@ export async function setConfig(name: unknown, value: unknown) {
 			const saved = await api.keybindings.save(entries as never);
 			if (saved.error) throw new Error(saved.error);
 			return { entries: saved.entries };
+		}
+		case "themes": {
+			if (!plain(value)) throw new Error("Pass { id?, name?, light?, dark? }.");
+			for (const mode of ["light", "dark"] as const) {
+				const colours = value[mode];
+				if (colours === undefined) continue;
+				if (!plain(colours) || Object.entries(colours).some(([field, colour]) => !["canvas", "accent"].includes(field) || !validColour(colour))) throw new Error(`${mode} takes canvas and accent as #rrggbb colours.`);
+			}
+			const { activeId, themes } = allColourThemes();
+			const base = themes.find(theme => theme.id === (typeof value.id === "string" ? value.id : activeId));
+			if (typeof value.id === "string" && !base) throw new Error("No colour theme has that id; omit id to make a new one.");
+			const half = (mode: "light" | "dark") => plain(value[mode]) || base?.[mode] ? { ...fallbackHalf[mode], ...base?.[mode], ...plain(value[mode]) ? value[mode] : {} } : undefined;
+			const theme = parseTheme({ name: typeof value.name === "string" ? value.name : base?.builtIn || !base ? `${base?.name ?? "My"} custom` : base.name, light: half("light"), dark: half("dark") });
+			const saved = saveColourTheme(base && !base.builtIn ? { ...theme, id: base.id } : theme);
+			return { theme: saved, activeId: saved.id };
 		}
 		case "defaultModel": {
 			if (value !== null && !plain(value)) throw new Error("Pass { harness, model, … } or null.");

@@ -55,7 +55,7 @@ export function themeColours(theme: ThemeHalf, mode: ThemeMode): Record<ThemeTok
 }
 
 const colour = /^(#[0-9a-f]{3,8}|(rgb|rgba|hsl|hsla|oklch|oklab|lab|lch|color-mix)\([^;{}]{1,200}\))$/i;
-const validColour = (value: unknown): value is string => typeof value === "string" && colour.test(value.trim());
+export const validColour = (value: unknown): value is string => typeof value === "string" && colour.test(value.trim());
 function validHalf(value: unknown): ThemeHalf | undefined {
 	if (!value || typeof value !== "object") return;
 	const { canvas, accent, tokens } = value as Record<string, unknown>;

@@ -27,6 +27,17 @@ export function chooseColourTheme(id: string) {
 	write({ ...state, activeId: id });
 }
 
+/** Adds or replaces a custom theme (ids are made unique against the built-ins) and makes it active. */
+export function saveColourTheme(theme: Theme) {
+	const taken = new Set([...builtInThemes.map(value => value.id), ...state.custom.filter(value => value.id !== theme.id).map(value => value.id)]);
+	let id = theme.id; for (let index = 2; taken.has(id); index++) id = `${theme.id}-${index}`;
+	const saved = { ...theme, id, builtIn: undefined };
+	write({ activeId: id, custom: [...state.custom.filter(value => value.id !== theme.id), saved] });
+	return saved;
+}
+/** Every theme with its colours, for config.get. */
+export const allColourThemes = () => ({ activeId: colourThemes().activeId, themes: [...builtInThemes, ...state.custom] });
+
 export function useThemes() {
 	const current = useSyncExternalStore(listener => { listeners.add(listener); return () => listeners.delete(listener); }, () => state);
 	const all = [...builtInThemes, ...current.custom];
@@ -34,14 +45,7 @@ export function useThemes() {
 		themes: all, custom: current.custom,
 		active: all.find(theme => theme.id === current.activeId) ?? builtInThemes[0],
 		choose: (id: string) => write({ ...state, activeId: id }),
-		/** Adds or replaces a custom theme (ids are made unique against the built-ins) and makes it active. */
-		save: (theme: Theme) => {
-			const taken = new Set([...builtInThemes.map(value => value.id), ...state.custom.filter(value => value.id !== theme.id).map(value => value.id)]);
-			let id = theme.id; for (let index = 2; taken.has(id); index++) id = `${theme.id}-${index}`;
-			const saved = { ...theme, id, builtIn: undefined };
-			write({ activeId: id, custom: [...state.custom.filter(value => value.id !== theme.id), saved] });
-			return saved;
-		},
+		save: saveColourTheme,
 		remove: (id: string) => write({ activeId: state.activeId === id ? "phaseo" : state.activeId, custom: state.custom.filter(value => value.id !== id) }),
 	};
 }
