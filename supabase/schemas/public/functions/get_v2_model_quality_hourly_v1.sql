@@ -52,6 +52,7 @@ scoped_facts as (
     fact.gateway_request_created_at,
     fact.occurred_at,
     fact.stream,
+    fact.success,
     fact.cloudflare_colo,
     fact.safe_metadata,
     fact.tool_call_count,
@@ -137,42 +138,41 @@ classified as (
     fact.input_tokens,
     fact.cached_read_tokens,
     fact.cache_telemetry_observed,
+    -- Tool calls the gateway validated in a successful reply. Calls known only
+    -- from usage were never checked, so they are not rated either way.
     case
-      when fact.safe_metadata #>> '{tool_call_validation,totalCalls}' ~ '^\d+$'
+      when fact.success is true and fact.safe_metadata #>> '{tool_call_validation,totalCalls}' ~ '^\d+$'
         then (fact.safe_metadata #>> '{tool_call_validation,totalCalls}')::bigint
-      when fact.tool_call_count > 0 then fact.tool_call_count::bigint
       else 0
     end tool_call_responses,
     case
-      when fact.safe_metadata #>> '{tool_call_validation,invalidCalls}' ~ '^\d+$'
+      when fact.success is true and fact.safe_metadata #>> '{tool_call_validation,invalidCalls}' ~ '^\d+$'
         then (fact.safe_metadata #>> '{tool_call_validation,invalidCalls}')::bigint
-      when fact.tool_call_count > 0 and fact.tool_call_succeeded = false
-        then fact.tool_call_count::bigint
       else 0
     end tool_call_errors,
     case
-      when fact.safe_metadata #>> '{tool_call_validation,invalidJson}' ~ '^\d+$'
+      when fact.success is true and fact.safe_metadata #>> '{tool_call_validation,invalidJson}' ~ '^\d+$'
         then (fact.safe_metadata #>> '{tool_call_validation,invalidJson}')::bigint
       else 0
     end tool_invalid_json_errors,
     case
-      when fact.safe_metadata #>> '{tool_call_validation,schemaMismatch}' ~ '^\d+$'
+      when fact.success is true and fact.safe_metadata #>> '{tool_call_validation,schemaMismatch}' ~ '^\d+$'
         then (fact.safe_metadata #>> '{tool_call_validation,schemaMismatch}')::bigint
       else 0
     end tool_schema_mismatch_errors,
     case
-      when fact.safe_metadata #>> '{tool_call_validation,unknownToolName}' ~ '^\d+$'
+      when fact.success is true and fact.safe_metadata #>> '{tool_call_validation,unknownToolName}' ~ '^\d+$'
         then (fact.safe_metadata #>> '{tool_call_validation,unknownToolName}')::bigint
       else 0
     end tool_unknown_name_errors,
-    coalesce(
-      fact.safe_metadata ->> 'structured_output_error_reason',
-      case
-        when fact.structured_output_attempted and fact.structured_output_succeeded then 'none'
-        when fact.structured_output_attempted then 'legacy_error'
-        else null
-      end
-    ) structured_error_reason,
+    -- A structured-output result only for a successful reply the gateway read.
+    case
+      when fact.success is true
+        and fact.structured_output_attempted
+        and coalesce(fact.safe_metadata ->> 'structured_output_success_basis', '') <> 'unobserved'
+        then fact.safe_metadata ->> 'structured_output_error_reason'
+      else null
+    end structured_error_reason,
     case
       when fact.input_tokens is null then null
       else fact.input_tokens
@@ -200,10 +200,10 @@ hourly as (
     sum(base.tool_schema_mismatch_errors)::bigint tool_schema_mismatch_errors,
     sum(base.tool_unknown_name_errors)::bigint tool_unknown_name_errors,
     count(*) filter (
-      where base.structured_error_reason in ('none', 'invalid_json', 'schema_mismatch', 'missing_output', 'legacy_error')
+      where base.structured_error_reason in ('none', 'invalid_json', 'schema_mismatch', 'missing_output')
     )::bigint structured_output_responses,
     count(*) filter (
-      where base.structured_error_reason in ('invalid_json', 'schema_mismatch', 'missing_output', 'legacy_error')
+      where base.structured_error_reason in ('invalid_json', 'schema_mismatch', 'missing_output')
     )::bigint structured_output_errors,
     count(*) filter (where base.structured_error_reason = 'invalid_json')::bigint structured_invalid_json_errors,
     count(*) filter (where base.structured_error_reason = 'schema_mismatch')::bigint structured_schema_mismatch_errors,

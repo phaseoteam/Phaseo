@@ -716,8 +716,16 @@ export async function auditSuccess(input: {
     try {
         const pricingLines = args.usagePriced?.pricing?.lines ?? [];
         const strippedUsage = stripPricingFromUsage(args.usagePriced);
-        const structuredOutput = validateStructuredOutputResponse(args.requestPayload, args.gatewayResponse);
-        const toolCallValidation = validateToolCallResponses(args.requestPayload, args.gatewayResponse);
+        // After the client disconnects, the stream is drained without passing frames
+        // through the gateway's rebuild, so the reply it holds may be partial. A partial
+        // reply would fail JSON and argument checks it never really failed: rate nothing.
+        const replyComplete = args.downstreamDisconnected !== true;
+        const structuredOutput: StructuredOutputValidation = replyComplete
+            ? validateStructuredOutputResponse(args.requestPayload, args.gatewayResponse)
+            : { attempted: isStructuredOutputRequest(args.requestPayload), succeeded: false, basis: "unobserved", errorReason: null };
+        const toolCallValidation: ToolCallValidation = replyComplete
+            ? validateToolCallResponses(args.requestPayload, args.gatewayResponse)
+            : { totalCalls: 0, invalidCalls: 0, invalidJson: 0, schemaMismatch: 0, unknownToolName: 0 };
         const appId = await ensureAppId({
             workspaceId: args.workspaceId,
             appTitle: args.appTitle ?? null,

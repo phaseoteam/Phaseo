@@ -206,6 +206,34 @@ describe("audit request detail persistence", () => {
 		expect(event.safe_metadata).toMatchObject({ structured_output_success_basis: "unobserved", structured_output_error_reason: null });
 	});
 
+	it.each([false, true])("rates a streamed reply's JSON and tool calls only if the client stayed (disconnected: %s)", async (disconnected) => {
+		const insert = vi.fn(() => ({ select: () => ({ single: async () => ({
+			data: { id: "row", created_at: "2026-11-03T00:00:00Z", workspace_id: "ws" }, error: null,
+		}) }) }));
+		const rpc = vi.fn().mockResolvedValue({ data: "fact", error: null });
+		getSupabaseAdminMock.mockReturnValue({ from: () => ({ insert }), rpc });
+		resolveGatewayIoLoggingPolicyMock.mockResolvedValue({ captureEnabled: false });
+		await auditSuccess({
+			requestId: "req", workspaceId: "ws", provider: "anthropic", model: "model", endpoint: "messages",
+			stream: true, byok: false, usagePriced: { output_tokens: 5 }, totalNanos: 1, currency: "USD",
+			downstreamDisconnected: disconnected,
+			requestPayload: {
+				tools: [{ name: "get_weather", input_schema: { type: "object", properties: { city: { type: "string" } } } }],
+				output_config: { format: { type: "json_object" } },
+			},
+			// What a drained stream leaves behind: the tool input cut off mid-JSON.
+			gatewayResponse: { type: "message", content: [{ type: "tool_use", name: "get_weather", input: '{"city":' }] },
+		});
+		const event = rpc.mock.calls.find((call) => call[1]?.p_event)?.[1].p_event;
+		if (disconnected) {
+			expect(event.tool_call_succeeded).toBeNull();
+			expect(event.safe_metadata).toMatchObject({ tool_call_validation: null, structured_output_success_basis: "unobserved", structured_output_error_reason: null });
+		} else {
+			expect(event.tool_call_succeeded).toBe(false);
+			expect(event.safe_metadata.tool_call_validation).toMatchObject({ totalCalls: 1, invalidJson: 1 });
+		}
+	});
+
 	it("does not upload when the authoritative request insert fails", async () => {
 		const put = vi.fn();
 		getBindingsMock.mockReturnValue({ GATEWAY_ROUTING_ARCHIVES_BUCKET: { put }, GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED: "true" });
