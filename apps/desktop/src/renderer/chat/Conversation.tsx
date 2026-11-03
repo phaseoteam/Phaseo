@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowDown, Plane, Brain, Check, ChevronRight, Circle, CircleDot, CircleSlash, Copy, FilePen, FileText, FolderSearch, GitBranch, GitPullRequestArrow, Layers, ListChecks, LoaderCircle, Paperclip, PenLine, Radio, RotateCcw, Search, Sparkles, SquareTerminal, Wrench, X } from "lucide-react";
+import { ArrowDown, Plane, Brain, Check, ChevronRight, Circle, CircleDot, CircleSlash, Copy, FilePen, FileText, GitBranch, GitPullRequestArrow, Layers, ListChecks, LoaderCircle, Paperclip, PenLine, Radio, RotateCcw, Search, Sparkles, SquareTerminal, Wrench, X , Globe, SlidersHorizontal, AppWindow, MessagesSquare, Bot} from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { MessageNavigationRail, type RailTurn } from "./MessageNavigationRail";
 import type { AgentActivity, Message, Task } from "../../shared/workspace";
@@ -24,20 +24,16 @@ import { MessageFold } from "./MessageFold";
 import { ConversationAnnouncer } from "./ConversationAnnouncer";
 import { ChatFindBar, clearPendingFind, FindTargetContext, useFindTarget, usePendingFind } from "./ChatFind";
 import { useCommand } from "../lib/keybindings";
+import { presentTool, summarizeTools, thoughtLine, toolInput, toolName, type ToolAction } from "./toolPresentation";
 
 const planOutcomes = { implemented: "Implemented", revised: "Revision requested", declined: "Not implemented" } as const;
 
 const toolLabels: Record<string, string> = { run_command: "Ran", start_background_command: "Started", read_background_output: "Read output", stop_background_command: "Stopped", list_background_commands: "Listed commands", read_file: "Read", view_image: "Viewed", edit_file: "Edited", write_file: "Wrote", delete_file: "Deleted", list_files: "Listed", search_files: "Searched", find_files: "Found files", propose_plan: "Proposed plan", load_tools: "Loaded tools", load_skill: "Loaded skill", ask_user: "Asked" };
-/** An MCP tool without its mcp__server__ prefix, as Claude Code names them. */
-const toolName = (title: string) => title.replace(/^mcp__.+?__/, "");
-function toolIcon(title: string) {
-	if (/command|terminal|bash|shell|run/i.test(title)) return SquareTerminal;
-	if (/write|edit|patch|apply/i.test(title)) return FilePen;
-	if (/read|open|view/i.test(title)) return FileText;
-	if (/search|grep|find|glob/i.test(title)) return Search;
-	if (/list|browse|ls/i.test(title)) return FolderSearch;
-	if (/skill/i.test(title)) return Sparkles;
-	return Wrench;
+const actionIcons: Record<ToolAction, typeof Wrench> = { command: SquareTerminal, read: FileText, edit: FilePen, search: Search, web: Globe, "app-change": SlidersHorizontal, "app-read": AppWindow, thread: MessagesSquare, tools: Sparkles, agent: Bot, other: Wrench };
+/** A row's label: what the call did in plain words, or the Phaseo harness's own verb for its tools. */
+function toolRow(activity: AgentActivity) {
+	const presentation = presentTool(activity), name = toolName(activity.title);
+	return { ...presentation, label: presentation.action === "other" && toolLabels[name] ? toolLabels[name] : presentation.label };
 }
 
 function ActionButton({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: ReactNode }) {
@@ -92,20 +88,23 @@ function PlanSteps({ activity }: { activity: AgentActivity }) {
 	</div>;
 }
 
-function ActivityRow({ activity, live }: { activity: AgentActivity; live: boolean }) {
+function ActivityRow({ activity, live, count = 1 }: { activity: AgentActivity; live: boolean; count?: number }) {
 	const [open, setOpen] = useState(false);
 	if (activity.type === "usage") return null;
 	if (activity.type === "plan" && activity.steps?.length) return <PlanSteps activity={activity} />;
 	const reasoning = activity.type === "reasoning";
 	const running = activity.status === "running" || (reasoning && live);
-	const Icon = reasoning ? Brain : activity.type === "compaction" ? Layers : activity.type === "plan" ? ListChecks : toolIcon(activity.title);
-	const label = reasoning ? (running ? "Thinking" : "Thought") : activity.type === "compaction" ? "Compacted context" : toolLabels[toolName(activity.title)] ?? toolName(activity.title).replaceAll("_", " ");
-	const summary = reasoning ? "" : activity.text.split("\n")[0];
-	const expandable = !!activity.text && (reasoning || activity.text.length > summary.length || activity.text.length > 80);
+	const tool = activity.type === "tool" ? toolRow(activity) : undefined;
+	const Icon = reasoning ? Brain : activity.type === "compaction" ? Layers : activity.type === "plan" ? ListChecks : actionIcons[tool?.action ?? "other"];
+	const label = reasoning ? thoughtLine(activity.text) || (running ? "Thinking" : "Thought") : activity.type === "compaction" ? "Compacted context" : tool?.label ?? activity.title;
+	// Without the call's input (the Phaseo harness reports output only), the output's first line says what it touched.
+	const summary = reasoning || !tool || toolInput(activity) ? "" : activity.text.split("\n")[0];
+	const expandable = !!activity.text.trim() && (!reasoning || activity.text.trim() !== label);
 	return <div className="text-[12.5px]">
 		<button type="button" disabled={!expandable} onClick={() => setOpen(value => !value)} aria-expanded={open} className="group/activity flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1 text-left text-muted-foreground hover:text-foreground disabled:hover:text-muted-foreground">
 			{running ? <LoaderCircle className="size-3.5 shrink-0 animate-spin text-primary" /> : <Icon className={cn("size-3.5 shrink-0 text-muted-foreground", activity.status === "failed" && "text-destructive")} />}
-			<span className={cn("shrink-0 font-medium text-foreground/85", running && "animate-pulse")}>{label}</span>
+			<span className={cn("min-w-0 truncate text-foreground/85", summary && "shrink-0", running && "animate-pulse")}>{label}</span>
+			{count > 1 && <span className="shrink-0 tabular-nums text-muted-foreground">×{count}</span>}
 			{summary && <span className="min-w-0 truncate font-mono text-[11.5px] text-muted-foreground">{summary}</span>}
 			{activity.status === "failed" && <X className="size-3.5 shrink-0 text-destructive" />}
 			{expandable && <ChevronRight className={cn("size-3.5 shrink-0 opacity-0 transition group-hover/activity:opacity-100", open && "rotate-90 opacity-100")} />}
@@ -122,19 +121,26 @@ function WorkLog({ entries, user, live, complete, task }: { entries: TurnEntry[]
 	// Find in chat opens the log around its match.
 	const found = useFindTarget(steps.map(entry => entry.value.id)), open = opened || found;
 	if (!steps.length) return null;
-	const tools = entries.filter(entry => entry.kind === "activity" && entry.value.type === "tool").length;
+	const tools = entries.flatMap(entry => entry.kind === "activity" && entry.value.type === "tool" ? [toolRow(entry.value)] : []);
+	// The same finished call in a row ("Looked up app commands" three times) is one row with a count.
+	const rows = steps.reduce<{ entry: TurnEntry; count: number }[]>((list, entry) => {
+		const previous = list.at(-1)?.entry;
+		const repeat = previous?.kind === "activity" && entry.kind === "activity" && previous.value.type === "tool" && entry.value.type === "tool" && previous.value.status !== "running" && previous.value.status === entry.value.status && toolRow(previous.value).label === toolRow(entry.value).label;
+		if (repeat) list.at(-1)!.count++; else list.push({ entry, count: 1 });
+		return list;
+	}, []);
 	const plan = entries.find(entry => entry.kind === "activity" && entry.value.type === "plan" && entry.value.steps?.length);
 	const onlyReasoning = steps.every(entry => entry.kind === "activity" && entry.value.type === "reasoning");
 	const title = live || !complete ? "Working" : onlyReasoning ? turnDuration(user).replace("Worked", "Thought") : turnDuration(user);
 	return <div className="flex flex-col gap-1">
 		<div>
-			<button type="button" onClick={() => setOpen(value => !value)} aria-expanded={open} className="flex items-center gap-1.5 py-1 text-[13px] text-muted-foreground hover:text-foreground">
-				{live ? <LoaderCircle className="size-3.5 animate-spin text-primary" /> : <ChevronRight className={cn("size-3.5 transition-transform", open && "rotate-90")} />}
-				<span className={cn("font-medium", live && "animate-pulse")}>{title}</span>
-				{tools > 0 && <span>· {tools} {tools === 1 ? "step" : "steps"}</span>}
+			<button type="button" onClick={() => setOpen(value => !value)} aria-expanded={open} className="flex max-w-full min-w-0 items-center gap-1.5 py-1 text-left text-[13px] text-muted-foreground hover:text-foreground">
+				{live ? <LoaderCircle className="size-3.5 shrink-0 animate-spin text-primary" /> : <ChevronRight className={cn("size-3.5 shrink-0 transition-transform", open && "rotate-90")} />}
+				<span className={cn("shrink-0 font-medium", live && "animate-pulse")}>{title}</span>
+				{tools.length > 0 && <span className="min-w-0 truncate">· {summarizeTools(tools)}</span>}
 			</button>
-			{open && <div className="mt-1 ml-[7px] flex flex-col gap-0.5 border-l border-border pl-1.5">{steps.map(entry => entry.kind === "activity"
-				? <ActivityRow key={entry.value.id} activity={entry.value} live={live && entry === steps.at(-1)} />
+			{open && <div className="mt-1 ml-[7px] flex flex-col gap-0.5 border-l border-border pl-1.5">{rows.map(({ entry, count }) => entry.kind === "activity"
+				? <ActivityRow key={entry.value.id} activity={entry.value} count={count} live={live && entry === steps.at(-1)} />
 				: <div key={entry.value.id} data-conversation-id={`message:${entry.value.id}`} data-selectable data-quote className="px-2 py-1 text-[13px] text-foreground/85"><MessageContent text={entry.value.text} projectId={task.projectId} repairLocalLinks /></div>)}</div>}
 		</div>
 		{!open && plan?.kind === "activity" && <PlanSteps activity={plan.value} />}
