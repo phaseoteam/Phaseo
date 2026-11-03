@@ -11,9 +11,8 @@
  * wrapping, no change.
  */
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { RelationshipMetadata } from "@phaseo/db";
 import { createHyperdriveScope, type HyperdriveScope } from "@phaseo/db/hyperdrive-scope";
-import relationships from "@phaseo/db/relationships.json";
+import { loadRelationships } from "@phaseo/db/relationships";
 import type { Env } from "@/env";
 import { databaseProvider } from "./providers";
 
@@ -42,7 +41,7 @@ export function createDataScope(env: Env, createScope: typeof createHyperdriveSc
 	return {
 		db: createScope(env.HYPERDRIVE, {
 			tags: { app: "web-api" },
-			relationships: relationships as RelationshipMetadata,
+			relationships: loadRelationships(),
 			maxRows: 1000,
 		}),
 		verifiedClaims: new Map(),

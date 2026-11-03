@@ -6,11 +6,10 @@
 //      With DATABASE_PROVIDER=supabase (the default) runWithDatabaseScope calls straight through.
 
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { RelationshipMetadata } from "@phaseo/db";
 import { createHyperdriveCompatClient } from "@phaseo/db/hyperdrive";
 import { createHyperdriveScope, type HyperdriveScope } from "@phaseo/db/hyperdrive-scope";
 import type { AuthSchemaReader } from "@phaseo/db/jwt";
-import relationships from "@phaseo/db/relationships.json";
+import { loadRelationships } from "@phaseo/db/relationships";
 import type { GatewayBindings } from "./env.types";
 
 export type DatabaseProvider = "supabase" | "planetscale";
@@ -39,11 +38,12 @@ export function authProvider(bindings: ProviderBindings | null | undefined): Aut
 	throw new Error(`Unknown AUTH_PROVIDER "${bindings?.AUTH_PROVIDER}" (expected supabase or better-auth)`);
 }
 
-const COMPAT_OPTIONS = {
+// A function so the relationship metadata is parsed on first use, not at module load.
+const compatOptions = () => ({
 	tags: { app: "gateway" },
-	relationships: relationships as RelationshipMetadata,
+	relationships: loadRelationships(),
 	maxRows: 1000,
-} as const;
+}) as const;
 
 function hyperdriveBinding(bindings: Partial<GatewayBindings>) {
 	const binding = bindings.HYPERDRIVE;
@@ -70,7 +70,7 @@ export async function runWithDatabaseScope<Ctx extends WaitUntilCtx | undefined,
 	createScope: typeof createHyperdriveScope = createHyperdriveScope,
 ): Promise<Result> {
 	if (databaseProvider(bindings) !== "planetscale") return handler(ctx);
-	const scope = createScope(hyperdriveBinding(bindings), COMPAT_OPTIONS);
+	const scope = createScope(hyperdriveBinding(bindings), compatOptions());
 	const closer: WaitUntilCtx = ctx ?? { waitUntil: (promise) => void promise.catch(() => undefined) };
 	try {
 		const result = (await databaseScope.run(scope, () => handler((ctx ? scope.trackingContext(ctx) : ctx) as Ctx))) as Result;
@@ -99,7 +99,7 @@ export function planetScaleServiceClient<Client>(bindings: Partial<GatewayBindin
 			warnedFallback = true;
 			console.warn("[db] PlanetScale client used outside a request scope; using the isolate client (expected only in Durable Objects)");
 		}
-		isolateFallback = { connectionString: binding.connectionString, client: createHyperdriveCompatClient(binding, { ...COMPAT_OPTIONS, role: "service_role" }).client };
+		isolateFallback = { connectionString: binding.connectionString, client: createHyperdriveCompatClient(binding, { ...compatOptions(), role: "service_role" }).client };
 	}
 	return isolateFallback.client as Client;
 }
@@ -120,7 +120,7 @@ export function planetScaleAuthSchemaClient(): AuthSchemaReader {
  * call `close(ctx)` with the object's state when done.
  */
 export function oneShotPlanetScaleClient(bindings: Partial<GatewayBindings>) {
-	return createHyperdriveCompatClient(hyperdriveBinding(bindings), { ...COMPAT_OPTIONS, role: "service_role" });
+	return createHyperdriveCompatClient(hyperdriveBinding(bindings), { ...compatOptions(), role: "service_role" });
 }
 
 /** Test seam. */

@@ -2,11 +2,12 @@
 // Generate @phaseo/db's static relationship + function metadata.
 //
 //   node packages/data/db/scripts/generate-relationships.mjs "$DATABASE_URL" > packages/data/db/src/generated/relationships.json
+//   node packages/data/db/scripts/build-relationships-module.mjs   (writes relationships.ts, which apps import)
 //
 // Runs one read-only introspection query (see relationships-introspection.mjs).
 // Point it at a database with the full schema (a PlanetScale branch, or a local
 // Postgres with database/planetscale/migrations applied), never at production
-// writes. Workers load the JSON at build time; nothing introspects per request.
+// writes. Apps bundle relationships.ts (built from the JSON); nothing introspects per request.
 import pg from "pg";
 import { INTROSPECTION_SQL, RELATION_SCHEMAS, RPC_SCHEMAS, shapeMetadata } from "./relationships-introspection.mjs";
 

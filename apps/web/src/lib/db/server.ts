@@ -12,9 +12,8 @@
  * Never import this from a client component: it pulls in `pg`.
  * Relative imports only: scripts/ load src/utils/supabase/admin.ts (which imports this) with tsx.
  */
-import type { RelationshipMetadata } from "@phaseo/db";
 import { createNodeCompatClient, createNodePool } from "@phaseo/db/node";
-import relationships from "@phaseo/db/relationships.json";
+import { loadRelationships } from "@phaseo/db/relationships";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 type Pool = ReturnType<typeof createNodePool>;
@@ -38,15 +37,16 @@ export function resetWebDbPoolForTests(): void {
 	pool = undefined;
 }
 
-const COMPAT_OPTIONS = {
+// A function so the relationship metadata is parsed on first use, not at module load.
+const compatOptions = () => ({
 	tags: { app: "web" },
-	relationships: relationships as RelationshipMetadata,
+	relationships: loadRelationships(),
 	maxRows: 1000,
-} as const;
+}) as const;
 
 /** service_role: bypasses RLS, like the Supabase service-role key. Server code only. */
 export function createServiceDataClient(): SupabaseClient {
-	return createNodeCompatClient(getWebDbPool(), { ...COMPAT_OPTIONS, role: "service_role" }) as unknown as SupabaseClient;
+	return createNodeCompatClient(getWebDbPool(), { ...compatOptions(), role: "service_role" }) as unknown as SupabaseClient;
 }
 
 /**
@@ -54,9 +54,9 @@ export function createServiceDataClient(): SupabaseClient {
  * come from a verified session (getSessionUser); `role` is forced to "authenticated".
  */
 export function createUserDataClient(claims: (Record<string, unknown> & { sub: string }) | null): SupabaseClient {
-	if (!claims) return createNodeCompatClient(getWebDbPool(), { ...COMPAT_OPTIONS, role: "anon" }) as unknown as SupabaseClient;
+	if (!claims) return createNodeCompatClient(getWebDbPool(), { ...compatOptions(), role: "anon" }) as unknown as SupabaseClient;
 	return createNodeCompatClient(getWebDbPool(), {
-		...COMPAT_OPTIONS,
+		...compatOptions(),
 		role: "authenticated",
 		claims: { ...claims, role: "authenticated" },
 	}) as unknown as SupabaseClient;

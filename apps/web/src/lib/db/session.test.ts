@@ -3,7 +3,7 @@ jest.mock('@phaseo/db/node', () => ({
     createNodePool: jest.fn(() => ({ on: jest.fn() })),
     createNodeCompatClient: jest.fn((_pool: unknown, options: unknown) => ({ kind: 'planetscale', options })),
 }))
-jest.mock('@phaseo/db/relationships.json', () => ({ version: 1, schemas: [], tables: {}, foreignKeys: [], functions: {} }))
+jest.mock('@phaseo/db/relationships', () => ({ loadRelationships: () => ({ version: 1, schemas: [], tables: {}, foreignKeys: [], functions: {} }) }))
 jest.mock('@/lib/auth/better-auth/server', () => ({ getAuth: jest.fn() }))
 
 import { createServerClient } from '@supabase/ssr'

@@ -11,12 +11,13 @@
 		"./hyperdrive-scope": "./src/connections/hyperdrive-scope.ts",
 		"./jwt": "./src/auth/jwt.ts",
 		"./node": "./src/connections/node.ts",
-		"./relationships.json": "./src/generated/relationships.json"
+		"./relationships": "./src/generated/relationships.ts"
 	},
 	"scripts": {
 		"typecheck": "tsc --noEmit -p tsconfig.json",
 		"test": "vitest run",
 		"generate:relationships": "node scripts/generate-relationships.mjs",
+		"build:relationships": "node scripts/build-relationships-module.mjs",
 		"scan:usage": "node scripts/scan-postgrest-usage.mjs"
 	},
 	"dependencies": {
