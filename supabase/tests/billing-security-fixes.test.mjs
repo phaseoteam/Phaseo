@@ -293,6 +293,22 @@ try {
   assert.deepEqual(await claimRow(fresh.claim_ref_id), { status: 'Applying', wallet_debited: true });
   await applyRefund('pi_retry', 're_retry_2', usd(4), 'succeeded');
   assert.equal(await balance(), usd(11), 'the new refund links to the new claim and debits once');
+  // A replayed old failure doesn't change the newer claim's purchase state, so if that newer request
+  // stops before reaching Stripe, the 15-minute recovery still gives its debit back.
+  await setWallet({ balance: usd(15) });
+  await purchase('pi_replay', { amount: usd(4), before: usd(15) });
+  assert.equal((await claim('pi_replay')).ok, true);
+  await applyRefund('pi_replay', 're_replay', usd(4), 'failed');
+  const newer = await claim('pi_replay');
+  assert.equal(newer.ok, true); assert.equal(await balance(), usd(11));
+  await applyRefund('pi_replay', 're_replay', usd(4), 'failed');
+  assert.equal((await one(`select refund_claim_state from public.credit_ledger where ref_type = 'Stripe_Payment_Intent' and ref_id = 'pi_replay'`)).refund_claim_state, 'Applying',
+    'an old refund event leaves the newer claim in progress');
+  await ageClaim('pi_replay', 16);
+  const recovered = await claim('pi_replay');
+  assert.equal(recovered.ok, true, 'the abandoned newer claim is recovered, not blocked as refund_already_exists');
+  assert.equal(await balance(), usd(11), 'its debit was given back before the next claim debited once');
+  assert.deepEqual(await claimRow(newer.claim_ref_id), { status: 'Canceled', wallet_debited: false });
   await setWallet({ balance: usd(15) });
   // A dashboard refund (no claim) is debited once when it succeeds, even into overdraft.
   await purchase('pi_dash', { amount: usd(20), before: 0, hoursAgo: 48 });

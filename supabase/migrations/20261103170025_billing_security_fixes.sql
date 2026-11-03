@@ -1194,7 +1194,20 @@ begin
         event_time = now()
     where id = v_row.id;
 
-    if v_purchase.id is not null and coalesce(v_purchase.refund_claim_state, '') in ('Applying', 'Requested') then
+    -- An event for an older refund doesn't change the state of a newer open
+    -- claim on the same payment (its own events and the 15-minute recovery
+    -- rely on that state).
+    if v_purchase.id is not null and coalesce(v_purchase.refund_claim_state, '') in ('Applying', 'Requested')
+       and not exists (
+           select 1
+           from public.credit_ledger other
+           where other.ref_type = 'Stripe_Refund'
+             and other.workspace_id = p_workspace_id
+             and other.source_ref_type = 'Stripe_Payment_Intent'
+             and other.source_ref_id = p_payment_intent_id
+             and other.status in ('Applying', 'Pending')
+             and other.id <> v_row.id
+       ) then
         update public.credit_ledger
         set refund_claim_state = case v_status when 'Pending' then 'Requested' else v_status end
         where id = v_purchase.id;
