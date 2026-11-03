@@ -180,6 +180,17 @@ function rateLimitError(error = "temporarily_unavailable") {
 	return oauthError(error, "Too many OAuth requests; retry later", error === "slow_down" ? 400 : 429, { "Retry-After": "60" });
 }
 
+// The consent screen's monthly spending limit for a third-party app's key, in nanodollars.
+// 0 means no limit; a consent that sends none (an older consent page) gets the default.
+const DEFAULT_CONSENT_MONTHLY_LIMIT_NANOS = 20_000_000_000;
+const MAX_CONSENT_MONTHLY_LIMIT_NANOS = 1_000_000 * 1_000_000_000;
+
+function parseConsentMonthlyLimit(raw: unknown): number | null {
+	if (raw === undefined || raw === null) return DEFAULT_CONSENT_MONTHLY_LIMIT_NANOS;
+	if (typeof raw !== "number" || !Number.isSafeInteger(raw) || raw < 0 || raw > MAX_CONSENT_MONTHLY_LIMIT_NANOS) return null;
+	return raw;
+}
+
 function normalizeWorkspaceIds(raw: unknown): string[] {
 	if (Array.isArray(raw)) {
 		return Array.from(
@@ -503,9 +514,9 @@ oauthRouter.post(
 			application_type: applicationType,
 			redirect_uris: safeRedirectUris,
 			response_types: ["code"],
-			// Dynamic clients receive resource-bound delegated access keys rather
-			// than refresh-token families, so register only the grant we issue.
-			grant_types: ["authorization_code"],
+			// Dynamic clients receive resource-bound delegated access keys with a
+			// refresh token that renews the same key.
+			grant_types: ["authorization_code", "refresh_token"],
 			token_endpoint_auth_method: "none",
 			scope: grantedScopes.join(" "),
 		}, 201, { "Cache-Control": "no-store" });
@@ -676,6 +687,10 @@ oauthRouter.post(
 		if (resource && !isProtectedResourceAllowed(resource)) {
 			return oauthError("invalid_target", "resource must be an HTTPS or loopback protected resource URL");
 		}
+		const monthlyLimitNanos = parseConsentMonthlyLimit(body.monthly_limit_cost_nanos);
+		if (monthlyLimitNanos === null) {
+			return oauthError("invalid_request", "monthly_limit_cost_nanos must be a whole number from 0 (no limit) to 1000000000000000");
+		}
 
 		const client = await loadOAuthClient(clientId);
 		if (!client || !assertRedirectAllowed(client, redirectUri)) {
@@ -731,6 +746,10 @@ oauthRouter.post(
 			code_challenge: codeChallenge,
 			code_challenge_method: codeChallengeMethod,
 			...(resource ? { resource } : {}),
+			// A third-party app's key spends the active workspace's credits. The limit chosen on this
+			// consent travels with this code, and its exchange makes it the key's monthly cost limit,
+			// so another approval in flight for the same app can't swap in its amount.
+			...(client.is_first_party ? {} : { key_monthly_limit_cost_nanos: monthlyLimitNanos }),
 			expires_at: makeAuthCodeExpiry(),
 		});
 		if (insert.error) return oauthStorageError("oauth.authorization_code.insert", insert.error);
@@ -989,15 +1008,28 @@ oauthRouter.post(
 				return oauthError("invalid_scope", "Management scopes are only available on tokens bound to the Phaseo MCP");
 			}
 			// The CLI retains refreshable sessions for `login`, logout, and token
-			// renewal. Third-party PKCE clients receive durable user-funded keys.
-			const tokens = isFirstPartyCliClient(client.id)
-				? await issueTokenPairForGrant(
+			// renewal. Third-party PKCE clients receive a user-funded delegated key
+			// and a refresh token that renews that same key.
+			if (isFirstPartyCliClient(client.id)) {
+				const tokens = await issueTokenPairForGrant(
 					{ type: "authorization_code", id: String(data.id) },
 					tokenInput,
-				)
-				: await issueOAuthManagedKeyForAuthorizationCode(String(data.id), tokenInput, { clientName: client.name ?? null });
-			if (!tokens) return oauthError("invalid_grant", "Authorization code is invalid or expired");
-			return json(tokens, 200, { "Cache-Control": "no-store" });
+				);
+				if (!tokens) return oauthError("invalid_grant", "Authorization code is invalid or expired");
+				return json(tokens, 200, { "Cache-Control": "no-store" });
+			}
+			const grant = await issueOAuthManagedKeyForAuthorizationCode(String(data.id), tokenInput, { clientName: client.name ?? null });
+			if (grant.ok === false) {
+				if (grant.reason === "key_inactive") {
+					// Signing in again never turns a key an owner or admin paused back on.
+					return oauthError(
+						"invalid_grant",
+						"This app's API key in the workspace is paused. Turn it back on in Settings > API Keys, then sign in again.",
+					);
+				}
+				return oauthError("invalid_grant", "Authorization code is invalid or expired");
+			}
+			return json(grant.tokens, 200, { "Cache-Control": "no-store" });
 		}
 
 		if (grantType === "refresh_token") {
@@ -1157,7 +1189,14 @@ oauthRouter.post(
 			return invalidBodyError(error);
 		}
 		const token = String(body.token ?? "").trim();
-		if (token) await revokeToken(token);
+		if (token) {
+			try {
+				await revokeToken(token);
+			} catch (error) {
+				// Never report a revocation that may not have happened as done.
+				return oauthStorageError("oauth.revoke", error);
+			}
+		}
 		return new Response(null, noStore(200));
 	}),
 );

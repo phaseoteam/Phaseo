@@ -37,13 +37,15 @@ Abteilungsbudgets werden über die API `/v1/department-budgets` verwaltet. Die A
 
 Inhaber und Admins können Abteilungsbudgets auch unter [Einstellungen → Budgets](https://phaseo.app/settings/budgets) verwalten oder mit der Ressource `phaseo_department_budget` des Terraform-Providers. Über die CLI: `phaseo department-budgets`.
 
+[Ausgabenwarnungen](../guides/spend-alerts.mdx) können warnen, bevor diese Limits erreicht sind. Eine sperrende Ausgabenregel gibt stattdessen `429` mit dem Fehlercode `spend_rule_blocked` zurück; sie arbeitet nach bestem Bemühen und greift einige Minuten, nachdem die Ausgaben ihr Limit überschritten haben. Für exakte Obergrenzen verwende daher Schlüssellimits und Budgets.
+
 ## Ratenlimit-Richtlinien
 
 Workspace-Admins können über die Management-API `/v1/rate-limits` benannte Ratenlimit-Richtlinien erstellen und sie API-Schlüsseln, Workspace-Mitgliedern, Abteilungen, Sicherheitsleitplanken oder als Standard für jeden Endnutzer zuweisen. Das Gateway setzt die Werte `requests_per_minute` und `tokens_per_minute` einer Richtlinie durch, jeweils gemessen über eine gleitende Minute:
 
 - **Schlüssel:** das eigene Kontingent des Schlüssels.
 - **Mitglied:** ein Kontingent, das sich die Schlüssel und OAuth-Anfragen des Mitglieds teilen.
-- **Abteilung:** ein Kontingent, das sich alles teilt, was der Abteilung zugerechnet wird. Ein mit einer Abteilung verknüpfter Schlüssel zählt nur für diese Abteilung. Jeder andere Schlüssel zählt für alle Abteilungen der Person, die ihn erstellt hat, und OAuth-Anfragen zählen für alle Abteilungen ihres Nutzers. Ein Mitglied mit einer Abteilungsüberschreibung zählt nur für die Abteilung der Überschreibung.
+- **Abteilung:** ein Kontingent, das sich alles teilt, was der Abteilung zugerechnet wird. Ein mit einer Abteilung verknüpfter Schlüssel zählt nur für diese Abteilung. Jeder andere Schlüssel zählt für alle Abteilungen der Person, die ihn erstellt hat, und OAuth-Anfragen zählen für alle Abteilungen ihres Nutzers. Ein Mitglied mit einer Abteilungsüberschreibung zählt nur für die Abteilung der Überschreibung. Damit diese Schlüssel und OAuth-Anfragen nur für die Hauptabteilung der Person zählen, setze die Abteilungszuordnung des Workspace auf primary: unter [Einstellungen → Benachrichtigungen](https://phaseo.app/settings/notifications), mit `spend.department_attribution` in `PATCH /v1/notifications/settings` oder mit `phaseo notifications settings update --department-attribution primary`. Abteilungsbudgets und Ausgabenregeln verwenden dieselbe Einstellung.
 - **Sicherheitsleitplanke:** ein eigenes Kontingent für jeden Schlüssel (oder OAuth-Nutzer), den die Leitplanke abdeckt.
 - **Standard pro Endnutzer:** ein eigenes Kontingent für jeden Endnutzer, erkannt am Feld `user` der Anfrage oder am Header `X-Phaseo-User-Id`. Anfragen ohne Endnutzer-ID werden dadurch nicht begrenzt.
 
@@ -87,6 +89,7 @@ Regeln zu Ratenlimits für Agenten, als Zusammenfassung dieser Seite:
 - Gateway-Kontingente liefern `429` mit dem Grund `customer_requests_per_minute` oder `free_requests_per_day`; warte die Sekunden aus `Retry-After` ab. Ist die Kontingentprüfung nicht verfügbar, liefert das Gateway `503` mit Hinweisen zur Wiederholung.
 - Schlüssellimits und Budgets liefern `429` mit `key_limit_exceeded` und einem `reset_at`. Ohne `Retry-After` setzt sich das Limit nicht von selbst zurück: Erhöhe das Limit oder nutze einen anderen Schlüssel, statt es erneut zu versuchen.
 - Ein aufgebrauchtes Abteilungsbudget liefert `429` mit `key_limit_exceeded`, dem Grund `department_<interval>_cost_budget_reached`, `department_id`, `department_name` und `reset_at`; warte die Sekunden aus `Retry-After` ab oder erhöhe das Budget. Batch-, Echtzeit- und OAuth-Anfragen werden durch Abteilungsbudgets nicht blockiert. Ist die Budgetprüfung nicht verfügbar, wird die Anfrage zugelassen.
+- Sperrende Ausgabenregeln geben `429` mit `spend_rule_blocked` zurück; warte `Retry-After` ab oder bitte einen Inhaber oder Administrator, die Sperre aufzuheben. `x-phaseo-spend-warning` bedeutet, dass eine Sperre folgen kann.
 - Ratenlimit-Richtlinien des Workspace liefern `429` mit `rate_limit_exceeded`, `policy_id` und `limit_scope`. `x-ratelimit-remaining-requests` ist ein Näherungswert.
 - `Retry-After` kann eine Sekundenzahl oder ein HTTP-Datum sein; prüfe den Wert, bevor du eine Wiederholung planst. Reiche einen unklaren Video- oder Stapelauftrag nie erneut ein, sondern prüfe seinen Status.
 </Visibility>

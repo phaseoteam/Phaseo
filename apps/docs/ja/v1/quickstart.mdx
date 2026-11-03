@@ -32,7 +32,7 @@ Rules:
 
 - キーは CLI で作成します。`npm install -g @phaseo/cli` を実行し、`phaseo login`（ヘッドレスのシェルでは `phaseo login --device-code`。サインインは人が承認します）、続けて `phaseo keys create --name <name> --json` を実行します。キーを生成したり推測したりしないでください。サーバー側のコードからのみ `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` として送信します。
 - 有料モデルを使う場合は、`phaseo login --scopes billing:write` を一度実行してから、`phaseo credits add --amount <usd> --json` でチャージを開始します。保存済みのカードがある場合は、ワークスペースのオーナーまたは管理者がメールのリンクから確認します。保存済みのカードがない場合は、レスポンスに `next_action: "open_checkout_url"` と支払いリンクが含まれ、オーナーまたは管理者がそれを開いて支払います。カードは以降のチャージ用に保存されます。キー、クレジット、設定のためにユーザーをダッシュボードへ案内しないでください。https://phaseo.app/docs/v1/developers/manage-from-an-agent.md を参照してください。
-- 最初のリクエストは `POST https://api.phaseo.app/v1/responses` に `model` と `input` を送ります。`phaseo/free` はウォレット残高がなくても使えます。
+- 最初のリクエストは `POST https://api.phaseo.app/v1/responses` に `model` と `input` を送ります。例では有料モデル `openai/gpt-6-astra` を使うため、クレジットが必要です。`phaseo/free` は利用可能な無料モデルを選び、ウォレット残高がなくても使えます。
 - 応答は `output[].content[]` のうち `type` が `output_text` の項目から読み取ります。
 - リクエストが失敗した場合は、https://phaseo.app/docs/v1/api-reference/errors.md の説明に従って JSON の `error` コードで分岐します。
 </Visibility>
@@ -66,6 +66,8 @@ API キーはパスワードと同じように扱ってください。クライ�
 ## 2. テキストリクエストを送信する
 
 最初のリクエストには `POST /v1/responses` を使用します。新しいテキスト生成の実装に推奨されるエンドポイントです。
+
+例では有料モデル `openai/gpt-6-astra` を使うため、先にクレジットを追加してください（手順 1 を参照）。クレジットなしで Phaseo を試すには、代わりに `phaseo/free` を使います。利用可能な無料モデルが選ばれます。[無料ルーターで始める](./cookbook/free-router-first-deploy)を参照してください。
 
 ### SDK をインストールする
 
@@ -319,7 +321,8 @@ console.log(result.text);
 
 ```json
 {
-  "id": "resp_...",
+  "id": "G-...",
+  "nativeResponseId": "resp_...",
   "object": "response",
   "created_at": 1730000000,
   "status": "completed",
@@ -344,13 +347,13 @@ console.log(result.text);
 }
 ```
 
-Responses API を直接呼び出す場合は、`output[].content[]` の `type` が `output_text` である項目からアシスタントの返答を読み取ります。
+Responses API を直接呼び出す場合は、`output[].content[]` の `type` が `output_text` である項目からアシスタントの返答を読み取ります。`id` は Phaseo のリクエスト ID で、ログ内のリクエストを特定します。`nativeResponseId` は同じ応答に対するプロバイダーの ID です。
 
 Vercel AI SDK を使用する場合は、`result.text` から返答を読み取ります。
 
 ### 返答をストリーミングする
 
-生成と同時に返答を表示するには、ストリーミングを使います。各チャンクの `text` には新しいテキストだけが入るため、このループは回答を 1 回だけ表示します。`response.output_text.done` などの終了イベントでは `text` は空で、全文は `fullText`（TypeScript）または `full_text`（Python）に入ります。
+生成と同時に返答を表示するには、ストリーミングを使います。各 `response.output_text.delta` イベントの `text` には新しいテキストだけが入るため、このループは回答を 1 回だけ表示します。`response.output_text.done` などの終了イベントは、すでにストリーミングされたテキストを繰り返します。
 
 <CodeGroup>
 ```typescript TypeScript SDK
@@ -362,7 +365,7 @@ for await (const chunk of client.streamResponses({
   model: "openai/gpt-6-astra",
   input: "Reply with: quickstart works",
 })) {
-  if (chunk.text) process.stdout.write(chunk.text);
+  if (chunk.type === "response.output_text.delta") process.stdout.write(chunk.text);
 }
 ```
 
@@ -377,13 +380,11 @@ for chunk in client.stream_responses(
         "input": "Reply with: quickstart works",
     }
 ):
-    if chunk["text"]:
+    if chunk.get("type") == "response.output_text.delta":
         print(chunk["text"], end="", flush=True)
 print()
 ```
 </CodeGroup>
-
-回答が 2 回表示される場合は SDK を更新してください。古いリリースでは終了イベントにも全文が入っていました。
 
 ---
 
@@ -663,7 +664,7 @@ print(decision["answers"])
 
 - `401`：API キーと `Authorization` ヘッダーを確認します。
 - `400`：リクエスト本文とモデル ID を確認します。
-- `402`：`:free` モデルに切り替えるか、有料モデルを使う前にクレジットを追加します。
+- `402`：有料モデルを使う前にクレジットを追加するか、`phaseo/free` を使います。
 - `429` または `5xx`：指数バックオフで再試行します。
 
 問題をすばやく調査するには、[エラー処理のリファレンス](./api-reference/errors.mdx)を参照してください。

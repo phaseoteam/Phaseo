@@ -9,7 +9,7 @@ import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { json, withRuntime } from "@/routes/utils";
-import { internalServerError, requireCapability, requireOAuthWorkspaceRole } from "./route-helpers";
+import { internalServerError, requireCapability, requireOAuthWorkspaceRole, rejectThirdPartyOAuthSpendingChange } from "./route-helpers";
 import { ensureWorkspaceWalletProvisioned, userHasPaidWorkspaceAccess } from "./management-helpers";
 
 type WorkspaceRow = {
@@ -565,6 +565,9 @@ async function handleAddWorkspaceMembers(req: Request) {
 	}
 	const scopeError = requireCapability(auth.value, CAPABILITIES.WORKSPACES_WRITE);
 	if (scopeError) return scopeError;
+	// A member can create keys and spend the workspace's credits.
+	const appError = rejectThirdPartyOAuthSpendingChange(auth.value, "Apps that use Sign in with Phaseo can't add members. The person can invite people under Settings, Members.");
+	if (appError) return appError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
 

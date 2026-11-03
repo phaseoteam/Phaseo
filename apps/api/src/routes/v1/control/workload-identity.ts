@@ -1,5 +1,7 @@
-// Workload identity trust policies: which Vercel deployments and GitHub Actions
-// workflows may call the gateway with their OIDC token instead of an API key.
+// Workload identity trust policies: which deployments, CI jobs and cloud
+// workloads (Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI,
+// AWS, or a workspace's own OIDC issuer) may call the gateway with their OIDC
+// token instead of an API key.
 // Owners and admins (dashboard sessions, OAuth) and management keys with the
 // keys:* scopes manage them, only for workspaces in the gateway_workload_identity
 // Statsig gate. Each policy owns a secretless keys row; the gateway reads
@@ -9,23 +11,38 @@ import { Hono } from "hono";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { isWorkloadIdentityAccessEnabled } from "@core/feature-flags";
-import { presetProviderForIssuer, type WorkloadIdentityProvider } from "@/lib/workload-identity/issuers";
-import { REQUIRED_PINNED_CLAIMS, validateWorkloadIdentityPolicy } from "@/lib/workload-identity/policy";
+import { isWorkloadIdentityProvider, WORKLOAD_IDENTITY_PROVIDERS, type WorkloadIdentityProvider } from "@/lib/workload-identity/issuers";
+import { pinnedClaimFor, validateWorkloadIdentityPolicy } from "@/lib/workload-identity/policy";
 import { WORKLOAD_IDENTITY_AUDIENCE } from "@/lib/workload-identity/verify";
 import { getSupabaseAdmin } from "@/runtime/env";
 import type { Env } from "@/runtime/types";
 import { json, withRuntime } from "@/routes/utils";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { authenticateDashboardSession } from "./dashboard-session";
-import { internalServerError, isResponse, parsePathId, requireCapability, requireJsonBody, requireOAuthWorkspaceRole } from "./route-helpers";
+import {
+	internalServerError,
+	isResponse,
+	parsePathId,
+	rejectThirdPartyOAuthSpendingChange,
+	requireCapability,
+	requireJsonBody,
+	requireOAuthWorkspaceRole,
+} from "./route-helpers";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 const SCOPES = [CAPABILITIES.KEYS_READ, CAPABILITIES.KEYS_WRITE];
-const COLUMNS = "id,workspace_id,key_id,name,provider,issuer,pinned_owner_id,claim_conditions,max_token_lifetime_seconds,status,created_by,created_at,updated_at,keys(kid,status,last_used_at)";
+const COLUMNS = "id,workspace_id,key_id,name,provider,issuer,pinned_claim,pinned_owner_id,claim_conditions,max_token_lifetime_seconds,status,created_by,created_at,updated_at,keys(kid,status,last_used_at)";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // Enforced by create_workload_identity_policy(); keep the two in step.
 const MAX_POLICIES_PER_WORKSPACE = 50;
-const GITHUB_ACTIONS_ISSUER = "https://token.actions.githubusercontent.com";
+// Platforms with one issuer (unless a GitHub enterprise customised it) need not repeat it.
+const DEFAULT_ISSUERS: Partial<Record<WorkloadIdentityProvider, string>> = {
+	github_actions: "https://token.actions.githubusercontent.com",
+	gitlab: "https://gitlab.com",
+	google_cloud: "https://accounts.google.com",
+	buildkite: "https://agent.buildkite.com",
+};
+const PROVIDER_LIST = WORKLOAD_IDENTITY_PROVIDERS.join(", ");
 
 type Row = {
 	id: string;
@@ -34,6 +51,7 @@ type Row = {
 	name: string;
 	provider: WorkloadIdentityProvider;
 	issuer: string;
+	pinned_claim: string | null;
 	pinned_owner_id: string;
 	claim_conditions: Record<string, string[]> | null;
 	max_token_lifetime_seconds: number;
@@ -62,6 +80,7 @@ function format(row: Row) {
 		name: row.name,
 		provider: row.provider,
 		issuer: row.issuer,
+		owner_claim: pinnedClaimFor(row.provider, row.pinned_claim),
 		owner_id: row.pinned_owner_id,
 		claim_conditions: row.claim_conditions ?? {},
 		max_token_lifetime_seconds: row.max_token_lifetime_seconds,
@@ -80,9 +99,10 @@ type PolicyAuth = { workspaceId: string; userId?: string | null };
 /**
  * Settings → Trusted workloads uses a dashboard session; Terraform and scripts
  * use a management key or OAuth token with the keys:* scope for the method,
- * since every policy owns a key. OAuth users must be owners or admins.
+ * since every policy owns a key. OAuth users must be owners or admins. Apps that sign in with Phaseo
+ * can't create or change policies (appRefusal), since a policy's key has no spending limit.
  */
-async function authorize(req: Request, capability: string): Promise<{ auth: PolicyAuth } | { response: Response }> {
+async function authorize(req: Request, capability: string, appRefusal?: string): Promise<{ auth: PolicyAuth } | { response: Response }> {
 	let auth: PolicyAuth;
 	const session = await authenticateDashboardSession(req, SCOPES);
 	if (session instanceof Response) return { response: session };
@@ -96,6 +116,8 @@ async function authorize(req: Request, capability: string): Promise<{ auth: Poli
 		if (scopeError) return { response: scopeError };
 		const roleError = await requireOAuthWorkspaceRole(management.value, management.value.workspaceId, ["owner", "admin"]);
 		if (roleError) return { response: roleError };
+		const appError = appRefusal ? rejectThirdPartyOAuthSpendingChange(management.value, appRefusal) : null;
+		if (appError) return { response: appError };
 		auth = management.value;
 	}
 	// Outside the rollout the feature does not exist for the workspace.
@@ -125,18 +147,22 @@ function parseConditions(value: unknown): Record<string, string[]> | null {
 function validate(input: {
 	provider: WorkloadIdentityProvider;
 	issuer: string;
+	ownerClaim?: string | null;
 	ownerId: string;
 	conditions: Record<string, string[]>;
 	maxTokenLifetimeSeconds?: number;
 }): { ok: true; conditions: Record<string, string[]>; maxTokenLifetimeSeconds: number } | { ok: false; errors: string[] } {
-	const pinnedClaim = REQUIRED_PINNED_CLAIMS[input.provider]?.[0];
-	if (!pinnedClaim) return { ok: false, errors: ["provider must be vercel or github_actions"] };
+	const pinnedClaim = pinnedClaimFor(input.provider, input.ownerClaim);
+	if (!pinnedClaim) {
+		return { ok: false, errors: [input.provider === "custom" ? "owner_claim is required for custom issuers" : `provider must be one of ${PROVIDER_LIST}`] };
+	}
 	if (Object.hasOwn(input.conditions, pinnedClaim)) {
 		return { ok: false, errors: [`set ${pinnedClaim} with owner_id, not in claim_conditions`] };
 	}
 	const result = validateWorkloadIdentityPolicy({
 		provider: input.provider,
 		issuer: input.issuer,
+		pinnedClaim: input.ownerClaim,
 		claimConditions: { ...input.conditions, [pinnedClaim]: input.ownerId ? [input.ownerId] : [] },
 		maxTokenLifetimeSeconds: input.maxTokenLifetimeSeconds,
 	});
@@ -145,7 +171,7 @@ function validate(input: {
 	return { ok: true, conditions, maxTokenLifetimeSeconds: result.value.maxTokenLifetimeSeconds };
 }
 
-async function audit(auth: PolicyAuth, action: string, row: Pick<Row, "id" | "name" | "provider" | "issuer" | "pinned_owner_id" | "key_id">, extra: Record<string, unknown> = {}) {
+async function audit(auth: PolicyAuth, action: string, row: Pick<Row, "id" | "name" | "provider" | "issuer" | "pinned_claim" | "pinned_owner_id" | "key_id">, extra: Record<string, unknown> = {}) {
 	await recordWorkspaceAuditEvent(getSupabaseAdmin(), {
 		workspaceId: auth.workspaceId,
 		actorUserId: auth.userId ?? null,
@@ -153,7 +179,7 @@ async function audit(auth: PolicyAuth, action: string, row: Pick<Row, "id" | "na
 		targetType: "workload_identity_policy",
 		targetId: row.id,
 		targetName: row.name,
-		metadata: { provider: row.provider, issuer: row.issuer, owner_id: row.pinned_owner_id, key_id: row.key_id, ...extra },
+		metadata: { provider: row.provider, issuer: row.issuer, owner_claim: pinnedClaimFor(row.provider, row.pinned_claim), owner_id: row.pinned_owner_id, key_id: row.key_id, ...extra },
 	});
 }
 
@@ -199,7 +225,11 @@ async function handleGet(req: Request) {
 }
 
 async function handleCreate(req: Request) {
-	const authorization = await authorize(req, CAPABILITIES.KEYS_WRITE);
+	const authorization = await authorize(
+		req,
+		CAPABILITIES.KEYS_WRITE,
+		"Apps that use Sign in with Phaseo can't create trusted workloads. The person can add one under Settings, Trusted workloads.",
+	);
 	if ("response" in authorization) return authorization.response;
 	const { auth } = authorization;
 	const body = await requireJsonBody(req);
@@ -207,16 +237,20 @@ async function handleCreate(req: Request) {
 
 	const name = text(body.name);
 	if (!name || name.length > 100) return badRequest("name must be 1 to 100 characters");
-	const provider = text(body.provider) as WorkloadIdentityProvider;
-	if (provider !== "vercel" && provider !== "github_actions") return badRequest("provider must be vercel or github_actions");
-	// GitHub has one issuer unless an enterprise customised it; Vercel's depends on the team's issuer mode.
-	const issuer = text(body.issuer) || (provider === "github_actions" ? GITHUB_ACTIONS_ISSUER : "");
-	if (presetProviderForIssuer(issuer) !== provider) return badRequest(`issuer is not a ${provider} issuer`);
+	const provider = text(body.provider);
+	if (!isWorkloadIdentityProvider(provider)) return badRequest(`provider must be one of ${PROVIDER_LIST}`);
+	// Vercel, CircleCI, AWS and custom issuers name a team, organization, account or host, so they are required.
+	const issuer = text(body.issuer) || (DEFAULT_ISSUERS[provider] ?? "");
+	if (!issuer) return badRequest(`issuer is required for ${provider}`);
+	const ownerClaim = text(body.owner_claim) || null;
+	if (ownerClaim && provider !== "custom" && ownerClaim !== pinnedClaimFor(provider)) {
+		return badRequest(`owner_claim is always ${pinnedClaimFor(provider)} for ${provider}`);
+	}
 	const conditions = parseConditions(body.claim_conditions);
 	if (!conditions) return badRequest("claim_conditions must be an object of claim names to value lists");
 	const lifetime = body.max_token_lifetime_seconds === undefined ? undefined : Number(body.max_token_lifetime_seconds);
 	const ownerId = text(body.owner_id);
-	const validated = validate({ provider, issuer, ownerId, conditions, maxTokenLifetimeSeconds: lifetime });
+	const validated = validate({ provider, issuer, ownerClaim: provider === "custom" ? ownerClaim : null, ownerId, conditions, maxTokenLifetimeSeconds: lifetime });
 	if (validated.ok === false) return badRequest("Invalid trust policy", validated.errors);
 
 	const workspaceId = auth.workspaceId;
@@ -228,6 +262,7 @@ async function handleCreate(req: Request) {
 			p_name: name,
 			p_provider: provider,
 			p_issuer: issuer,
+			p_pinned_claim: provider === "custom" ? ownerClaim : null,
 			p_pinned_owner_id: ownerId,
 			p_claim_conditions: validated.conditions,
 			p_max_token_lifetime_seconds: validated.maxTokenLifetimeSeconds,
@@ -248,7 +283,11 @@ async function handleCreate(req: Request) {
 }
 
 async function handleUpdate(req: Request) {
-	const authorization = await authorize(req, CAPABILITIES.KEYS_WRITE);
+	const authorization = await authorize(
+		req,
+		CAPABILITIES.KEYS_WRITE,
+		"Apps that use Sign in with Phaseo can't change trusted workloads. The person can change them under Settings, Trusted workloads.",
+	);
 	if ("response" in authorization) return authorization.response;
 	const { auth } = authorization;
 	const id = pathId(req);
@@ -256,7 +295,7 @@ async function handleUpdate(req: Request) {
 	const body = await requireJsonBody(req);
 	if (isResponse(body)) return body;
 	// Issuer, provider and owner identify what is trusted; change them with a new policy.
-	for (const field of ["provider", "issuer", "owner_id"]) {
+	for (const field of ["provider", "issuer", "owner_claim", "owner_id"]) {
 		if (field in body) return badRequest(`${field} cannot be changed; create a new trust policy instead`);
 	}
 
@@ -280,6 +319,7 @@ async function handleUpdate(req: Request) {
 			const validated = validate({
 				provider: existing.provider,
 				issuer: existing.issuer,
+				ownerClaim: existing.pinned_claim,
 				ownerId: existing.pinned_owner_id,
 				conditions,
 				maxTokenLifetimeSeconds: lifetime,

@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
-import { dirname, extname, join, relative, sep } from "node:path";
+import { dirname, extname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const docsRoot = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -15,7 +15,7 @@ const pageExtensions = new Set([".md", ".mdx"]);
 // The generated share-image line (scripts/sync-og-images.mjs) changes whenever a
 // title or description does, and is not translated, so it is left out of the hash.
 const OG_IMAGE_LINE = /^"og:image": .*\n/m;
-const hash = (contents) => {
+export const hash = (contents) => {
 	const normalized = (
 		Buffer.isBuffer(contents)
 			? contents.toString("utf8").replace(/\r\n/g, "\n")
@@ -345,13 +345,16 @@ function check(args) {
 	}
 }
 
-const [command, ...args] = process.argv.slice(2);
-try {
-	if (command === "init") initialize();
-	else if (command === "record") record(args);
-	else if (command === "check") check(args);
-	else throw new Error("Usage: translation-freshness.mjs <init|check|record> [options]");
-} catch (error) {
-	process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
-	process.exitCode = 1;
+// The release scripts import `hash`, so the command only runs when this file is executed.
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+	const [command, ...args] = process.argv.slice(2);
+	try {
+		if (command === "init") initialize();
+		else if (command === "record") record(args);
+		else if (command === "check") check(args);
+		else throw new Error("Usage: translation-freshness.mjs <init|check|record> [options]");
+	} catch (error) {
+		process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+		process.exitCode = 1;
+	}
 }

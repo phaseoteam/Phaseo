@@ -2,6 +2,7 @@ import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { isGatewayIoLoggingFeatureEnabled } from "@/core/feature-flags";
 import { fetchWorkspacePolicy } from "@/pipeline/before/workspacePolicy";
 import { getEffectiveRoutingHints } from "@/pipeline/requestRouting";
+import { stripMediaBytes } from "@/pipeline/privacy/media-bytes";
 
 export type GatewayIoLogStatus = "not_enabled" | "stored" | "missing_bucket" | "too_large" | "error" | "deleted";
 
@@ -75,10 +76,11 @@ function isMissingColumnError(error: unknown, column: string): boolean {
     return (code === "PGRST204" || code === "42703") && message.includes(column.toLowerCase());
 }
 
+// I/O logs keep no image, audio or file bytes; placeholders take their place.
 function sanitizeJsonValue(value: unknown): unknown {
     if (value === undefined) return null;
     try {
-        return JSON.parse(JSON.stringify(value));
+        return stripMediaBytes(JSON.parse(JSON.stringify(value)));
     } catch {
         return null;
     }

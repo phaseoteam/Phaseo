@@ -4970,7 +4970,7 @@ paths:
         - Gateway
       operationId: listWorkloadIdentityPolicies
       summary: Lister les règles de workloads de confiance
-      description: 'Liste les règles de workloads de confiance de l’espace de travail : les déploiements Vercel et les workflows GitHub Actions autorisés à appeler la passerelle avec leur jeton OIDC au lieu d’une clé API. Nécessite keys:read sur les clés de gestion et les jetons OAuth, ou un propriétaire ou un administrateur de l’espace de travail. Disponible uniquement pour les espaces de travail de la bêta des workloads de confiance ; les autres reçoivent 404.'
+      description: 'Liste les règles de workloads de confiance de l’espace de travail : les déploiements, jobs de CI et workloads cloud autorisés à appeler la passerelle avec leur jeton OIDC au lieu d’une clé API. Nécessite keys:read sur les clés de gestion et les jetons OAuth, ou un propriétaire ou un administrateur de l’espace de travail. Disponible uniquement pour les espaces de travail de la bêta des workloads de confiance ; les autres reçoivent 404.'
       responses:
         '200':
           description: Règles de workloads de confiance
@@ -5045,7 +5045,7 @@ paths:
         - Gateway
       operationId: updateWorkloadIdentityPolicy
       summary: Modifier une règle de workload de confiance
-      description: Modifie le nom, l’état, les conditions sur les claims ou la durée de vie maximale du jeton d’une règle. Le fournisseur, l’émetteur et le propriétaire ne peuvent pas changer ; créez plutôt une nouvelle règle. Les modifications atteignent la passerelle en moins d’une minute. Nécessite keys:write sur les clés de gestion et les jetons OAuth, ou un propriétaire ou un administrateur de l’espace de travail. Disponible uniquement pour les espaces de travail de la bêta des workloads de confiance ; les autres reçoivent 404.
+      description: Modifie le nom, l’état, les conditions sur les claims ou la durée de vie maximale du jeton d’une règle. Le fournisseur, l’émetteur, le claim du propriétaire et le propriétaire ne peuvent pas changer ; créez plutôt une nouvelle règle. Les modifications atteignent la passerelle en moins d’une minute. Nécessite keys:write sur les clés de gestion et les jetons OAuth, ou un propriétaire ou un administrateur de l’espace de travail. Disponible uniquement pour les espaces de travail de la bêta des workloads de confiance ; les autres reçoivent 404.
       requestBody:
         required: true
         content:
@@ -5405,7 +5405,7 @@ paths:
         - Gateway
       operationId: createSpendRule
       summary: Créer une règle de dépenses
-      description: Crée une règle de dépenses et définit ses destinations de notification. Toutes les métriques sont acceptées ; les règles renvoyées avec evaluated à false sont enregistrées et se déclencheront à partir d’une version ultérieure. Le blocage est appliqué au mieux et intervient quelques minutes après le seuil ; utilisez les limites de clé et les budgets d’espace de travail pour des plafonds exacts. Un espace de travail peut avoir 50 règles de dépenses.
+      description: Crée une règle de dépenses et définit ses destinations de notification. Toutes les métriques sont évaluées. Le blocage est appliqué au mieux et intervient quelques minutes après le seuil ; utilisez les limites de clé et les budgets d’espace de travail pour des plafonds exacts. Un espace de travail peut avoir 50 règles de dépenses.
       requestBody:
         required: true
         content:
@@ -23624,7 +23624,13 @@ components:
       enum:
         - vercel
         - github_actions
-      description: La plateforme qui émet les jetons OIDC.
+        - gitlab
+        - google_cloud
+        - buildkite
+        - circleci
+        - aws
+        - custom
+      description: La plateforme qui émet les jetons OIDC. Utilisez custom pour tout autre émetteur OIDC, comme un cluster Kubernetes ou une instance GitLab autogérée.
     WorkloadIdentityPolicy:
       type: object
       description: 'Un workload de confiance : les jetons de cet émetteur, pour le propriétaire épinglé et satisfaisant toutes les conditions sur les claims, s’authentifient avec la clé de la règle.'
@@ -23633,6 +23639,7 @@ components:
         - name
         - provider
         - issuer
+        - owner_claim
         - owner_id
         - claim_conditions
         - max_token_lifetime_seconds
@@ -23655,13 +23662,16 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: Émetteur du jeton, par exemple https://oidc.vercel.com/acme ou https://token.actions.githubusercontent.com.
+          description: Émetteur du jeton (le claim iss), par exemple https://oidc.vercel.com/acme, https://token.actions.githubusercontent.com ou https://accounts.google.com.
+        owner_claim:
+          type: string
+          description: 'Le claim du jeton auquel owner_id est comparé. Il est fixe pour chaque plateforme : owner_id pour vercel, repository_owner_id pour github_actions, project_id pour gitlab, sub pour google_cloud et aws, organization_id pour buildkite et oidc.circleci.com/org-id pour circleci. Les émetteurs custom utilisent le claim choisi à la création de la règle.'
         owner_id:
           type: string
-          description: L’ID de l’équipe Vercel épinglée (claim owner_id) ou l’ID de l’organisation ou de l’utilisateur GitHub (claim repository_owner_id).
+          description: 'Le propriétaire épinglé : la valeur que doit avoir le owner_claim du jeton, par exemple un ID d’équipe Vercel, un ID d’organisation ou d’utilisateur GitHub, un ID de projet GitLab, l’ID unique d’un compte de service Google, un ID d’organisation Buildkite, un ID d’organisation CircleCI ou l’ARN d’un rôle IAM AWS.'
         claim_conditions:
           type: object
-          description: Claims supplémentaires que le jeton doit satisfaire, sous la forme nom du claim et valeurs autorisées, par exemple project_id et environment pour Vercel, ou repository_id et ref pour GitHub Actions. Chaque claim doit correspondre à l’une de ses valeurs. 15 claims au maximum et 20 valeurs par claim ; iss, aud, exp, iat, nbf et jti ne peuvent pas être utilisés, et le claim du propriétaire épinglé est défini avec owner_id.
+          description: 'Claims supplémentaires que le jeton doit satisfaire, sous la forme nom du claim et valeurs autorisées, par exemple repository_id et ref pour GitHub Actions, ou project_path et ref pour GitLab. Chaque claim doit correspondre à l’une de ses valeurs. 15 claims au maximum et 20 valeurs par claim. Les noms de claim utilisent des lettres, des chiffres et . _ : / - et comptent jusqu’à 128 caractères ; iss, aud, exp, iat, nbf et jti ne peuvent pas être utilisés, et le claim du propriétaire est défini avec owner_id.'
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23718,14 +23728,19 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: 'Obligatoire pour Vercel : https://oidc.vercel.com/ suivi du slug de l’équipe, ou https://oidc.vercel.com pour l’émetteur global. Pour GitHub Actions, la valeur par défaut est https://token.actions.githubusercontent.com.'
+          description: L’émetteur des jetons. Facultatif pour github_actions (https://token.actions.githubusercontent.com par défaut ; ajoutez /<enterprise-slug> pour un émetteur d’entreprise personnalisé), gitlab (https://gitlab.com), google_cloud (https://accounts.google.com) et buildkite (https://agent.buildkite.com). Obligatoire pour vercel (https://oidc.vercel.com/<team-slug>, ou https://oidc.vercel.com pour l’émetteur global), circleci (https://oidc.circleci.com/org/<organization-id>), aws (l’émetteur https://<id>.tokens.sts.global.api.aws de votre compte) et custom (une URL https publique qui sert un document de découverte OIDC, sur un hôte qui n’appartient à aucune des autres plateformes).
+        owner_claim:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: 'Le claim du jeton auquel owner_id est comparé, par exemple sub. Obligatoire pour custom. Les autres plateformes utilisent un claim fixe (voir owner_claim dans la règle) : omettez-le ou envoyez ce claim. Il ne peut pas être modifié ensuite.'
         owner_id:
           type: string
           minLength: 1
-          description: L’ID de l’équipe Vercel ou de l’organisation ou de l’utilisateur GitHub à épingler.
+          description: 'La valeur que doit avoir le claim du propriétaire : un ID d’équipe Vercel, un ID d’organisation ou d’utilisateur GitHub, un ID de projet GitLab, l’ID unique d’un compte de service Google (pas son adresse e-mail), un ID d’organisation Buildkite, un ID d’organisation CircleCI (celui de l’émetteur), l’ARN d’un rôle IAM AWS ou, pour les émetteurs custom, la valeur de owner_claim à approuver.'
         claim_conditions:
           type: object
-          description: Claims supplémentaires que le jeton doit satisfaire, sous la forme nom du claim et valeurs autorisées, par exemple project_id et environment pour Vercel, ou repository_id et ref pour GitHub Actions. Chaque claim doit correspondre à l’une de ses valeurs. 15 claims au maximum et 20 valeurs par claim ; iss, aud, exp, iat, nbf et jti ne peuvent pas être utilisés, et le claim du propriétaire épinglé est défini avec owner_id.
+          description: 'Claims supplémentaires que le jeton doit satisfaire, sous la forme nom du claim et valeurs autorisées, par exemple repository_id et ref pour GitHub Actions, ou project_path et ref pour GitLab. Chaque claim doit correspondre à l’une de ses valeurs. 15 claims au maximum et 20 valeurs par claim. Les noms de claim utilisent des lettres, des chiffres et . _ : / - et comptent jusqu’à 128 caractères ; iss, aud, exp, iat, nbf et jti ne peuvent pas être utilisés, et le claim du propriétaire est défini avec owner_id.'
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23757,7 +23772,7 @@ components:
             - disabled
         claim_conditions:
           type: object
-          description: Claims supplémentaires que le jeton doit satisfaire, sous la forme nom du claim et valeurs autorisées, par exemple project_id et environment pour Vercel, ou repository_id et ref pour GitHub Actions. Chaque claim doit correspondre à l’une de ses valeurs. 15 claims au maximum et 20 valeurs par claim ; iss, aud, exp, iat, nbf et jti ne peuvent pas être utilisés, et le claim du propriétaire épinglé est défini avec owner_id.
+          description: 'Claims supplémentaires que le jeton doit satisfaire, sous la forme nom du claim et valeurs autorisées, par exemple repository_id et ref pour GitHub Actions, ou project_path et ref pour GitLab. Chaque claim doit correspondre à l’une de ses valeurs. 15 claims au maximum et 20 valeurs par claim. Les noms de claim utilisent des lettres, des chiffres et . _ : / - et comptent jusqu’à 128 caractères ; iss, aud, exp, iat, nbf et jti ne peuvent pas être utilisés, et le claim du propriétaire est défini avec owner_id.'
           maxProperties: 15
           additionalProperties:
             type: array
@@ -25323,7 +25338,7 @@ components:
       additionalProperties: false
     WorkspaceSpendAttribution:
       type: string
-      description: 'Comment les règles de dépenses imputent les dépenses d’une personne aux services lorsque sa clé n’a pas de service propre : all les impute à tous les services dont elle fait partie ; primary uniquement à son service principal. Le service propre d’une clé l’emporte toujours.'
+      description: 'Comment les règles de dépenses, les budgets de service et les limites de débit de service imputent les requêtes d’une personne aux services lorsque sa clé n’a pas de service propre : all les impute à tous les services dont elle fait partie ; primary uniquement à son service principal. Le service propre d’une clé et le remplacement d’annuaire d’un membre l’emportent toujours.'
       enum:
         - all
         - primary
@@ -26379,42 +26394,6 @@ components:
           enum:
             - true
       additionalProperties: false
-    GuardrailBudgetInput:
-      type: object
-      deprecated: true
-      description: Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.
-      properties:
-        dailyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        dailyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-      additionalProperties: false
     GuardrailPolicyInput:
       type: object
       properties:
@@ -26484,8 +26463,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        budgets:
-          $ref: '#/components/schemas/GuardrailBudgetInput'
       additionalProperties: false
     GuardrailCreateRequest:
       allOf:
@@ -26583,42 +26560,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        daily_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.
-        weekly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.
-        monthly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.
-        daily_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.
-        weekly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.
-        monthly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.
         created_at:
           type: string
           format: date-time
@@ -26730,42 +26671,6 @@ components:
               items:
                 type: object
                 additionalProperties: true
-            daily_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.
-            weekly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.
-            monthly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.
-            daily_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.
-            weekly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.
-            monthly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.
             created_at:
               type: string
               format: date-time

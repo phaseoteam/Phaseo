@@ -32,7 +32,7 @@ Rules:
 
 - 使用 CLI 创建密钥：先运行 `npm install -g @phaseo/cli`，再运行 `phaseo login`（无界面的 shell 中用 `phaseo login --device-code`；登录需要由人批准），然后运行 `phaseo keys create --name <name> --json`。不要生成或猜测密钥。只能在服务端代码中以 `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` 的形式发送。
 - 使用付费模型时，先运行一次 `phaseo login --scopes billing:write`，然后用 `phaseo credits add --amount <usd> --json` 发起充值。如果有已保存的银行卡，由工作区所有者或管理员通过邮件中的链接确认。如果没有已保存的银行卡，响应中会包含 `next_action: "open_checkout_url"` 和一个支付链接，由所有者或管理员打开并付款；银行卡随后会保存下来供之后充值使用。不要为了密钥、额度或设置把用户引导到控制台；请参阅 https://phaseo.app/docs/v1/developers/manage-from-an-agent.md。
-- 第一个请求使用 `POST https://api.phaseo.app/v1/responses`，发送 `model` 和 `input`。`phaseo/free` 无需钱包余额即可使用。
+- 第一个请求使用 `POST https://api.phaseo.app/v1/responses`，发送 `model` 和 `input`。示例使用付费模型 `openai/gpt-6-astra`，需要余额。`phaseo/free` 会选择一个可用的免费模型，无需钱包余额即可使用。
 - 从 `output[].content[]` 中 `type` 为 `output_text` 的项读取回复。
 - 如果请求失败，请按照 https://phaseo.app/docs/v1/api-reference/errors.md 中的说明，根据 JSON 中的 `error` 代码分支处理。
 </Visibility>
@@ -66,6 +66,8 @@ Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
 ## 2. 发送文本请求
 
 首次请求使用 `POST /v1/responses`。这是新文本生成集成的推荐端点。
+
+示例使用付费模型 `openai/gpt-6-astra`，因此请先充值（见第 1 步）。如需在没有余额的情况下试用 Phaseo，请改用 `phaseo/free`，它会选择一个可用的免费模型。参见[从免费路由器开始](./cookbook/free-router-first-deploy)。
 
 ### 安装 SDK
 
@@ -319,7 +321,8 @@ console.log(result.text);
 
 ```json
 {
-  "id": "resp_...",
+  "id": "G-...",
+  "nativeResponseId": "resp_...",
   "object": "response",
   "created_at": 1730000000,
   "status": "completed",
@@ -344,13 +347,13 @@ console.log(result.text);
 }
 ```
 
-直接调用 Responses API 时，请从 `output[].content[]` 中 `type` 为 `output_text` 的内容读取助手回复。
+直接调用 Responses API 时，请从 `output[].content[]` 中 `type` 为 `output_text` 的内容读取助手回复。`id` 是 Phaseo 请求 ID，用于在日志中识别该请求；`nativeResponseId` 是提供商为同一响应分配的 ID。
 
 如果使用 Vercel AI SDK，请从 `result.text` 读取回复。
 
 ### 流式输出回复
 
-如需在生成过程中打印回复，请使用流式输出。每个分块的 `text` 只包含新增文本，因此这个循环只会打印一次答案。`response.output_text.done` 等结束事件的 `text` 为空；其完整文本位于 `fullText`（TypeScript）或 `full_text`（Python）中。
+如需在生成过程中打印回复，请使用流式输出。每个 `response.output_text.delta` 事件的 `text` 只包含新增文本，因此这个循环只会打印一次答案。`response.output_text.done` 等结束事件会重复已经流式输出的文本。
 
 <CodeGroup>
 ```typescript TypeScript SDK
@@ -362,7 +365,7 @@ for await (const chunk of client.streamResponses({
   model: "openai/gpt-6-astra",
   input: "Reply with: quickstart works",
 })) {
-  if (chunk.text) process.stdout.write(chunk.text);
+  if (chunk.type === "response.output_text.delta") process.stdout.write(chunk.text);
 }
 ```
 
@@ -377,13 +380,11 @@ for chunk in client.stream_responses(
         "input": "Reply with: quickstart works",
     }
 ):
-    if chunk["text"]:
+    if chunk.get("type") == "response.output_text.delta":
         print(chunk["text"], end="", flush=True)
 print()
 ```
 </CodeGroup>
-
-如果答案被打印了两次，请更新 SDK：旧版本也会把完整文本放在结束事件中。
 
 ---
 
@@ -663,7 +664,7 @@ print(decision["answers"])
 
 - `401`：检查 API 密钥和 `Authorization` 请求头。
 - `400`：检查请求正文和模型 ID。
-- `402`：切换到 `:free` 模型，或在使用付费模型前充值。
+- `402`：使用付费模型前请先充值，或使用 `phaseo/free`。
 - `429` 或 `5xx`：使用指数退避策略重试。
 
 请参阅[错误处理参考](./api-reference/errors.mdx)，快速排查问题。

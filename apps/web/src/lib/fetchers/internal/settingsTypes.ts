@@ -586,7 +586,7 @@ export type SettingsPresetsInitialData = {
 };
 
 export type SettingsGuardrailProviderModel = { providerId: string; apiModelId: string; internalModelId: string | null; internalModelName?: string | null; organisationId?: string | null; organisationName?: string | null; providerPolicy?: { zeroDataRetention: boolean; dataPolicyTier: string; dataPolicyConfidence: string }; capabilities?: Array<{ id: string; dataPolicy: Record<string, unknown> | null }> };
-export type SettingsGuardrailRow = { id: string; enabled?: boolean | null; name?: string | null; description?: string | null; privacy_enable_paid_may_train?: boolean | null; privacy_enable_free_may_train?: boolean | null; privacy_enable_free_may_publish_prompts?: boolean | null; privacy_enable_input_output_logging?: boolean | null; privacy_zdr_only?: boolean | null; provider_restriction_mode?: string | null; provider_restriction_provider_ids?: string[] | null; provider_restriction_enforce_allowed?: boolean | null; model_restriction_mode?: string | null; allowed_api_model_ids?: string[] | null; prompt_injection_enabled?: boolean | null; prompt_injection_action?: string | null; sensitive_info_enabled?: boolean | null; sensitive_info_default_action?: string | null; sensitive_info_rules?: SensitiveInfoRulePayload[] | null; daily_limit_requests?: number | null; weekly_limit_requests?: number | null; monthly_limit_requests?: number | null; daily_limit_cost_nanos?: number | null; weekly_limit_cost_nanos?: number | null; monthly_limit_cost_nanos?: number | null };
+export type SettingsGuardrailRow = { id: string; enabled?: boolean | null; name?: string | null; description?: string | null; privacy_enable_paid_may_train?: boolean | null; privacy_enable_free_may_train?: boolean | null; privacy_enable_free_may_publish_prompts?: boolean | null; privacy_enable_input_output_logging?: boolean | null; privacy_zdr_only?: boolean | null; provider_restriction_mode?: string | null; provider_restriction_provider_ids?: string[] | null; provider_restriction_enforce_allowed?: boolean | null; model_restriction_mode?: string | null; allowed_api_model_ids?: string[] | null; prompt_injection_enabled?: boolean | null; prompt_injection_action?: string | null; sensitive_info_enabled?: boolean | null; sensitive_info_default_action?: string | null; sensitive_info_rules?: SensitiveInfoRulePayload[] | null };
 export type SettingsGuardrailMember = { id: string; name: string; role: string };
 export type SettingsGuardrailProvider = { id: string; name: string; familyId: string; offerLabel: string | null; offerScope: "global" | "regional" | "specialized" | null };
 export type SettingsGuardrailsInitialData = { activeProviderModels: SettingsGuardrailProviderModel[]; canManageGuardrails: boolean; guardrailKeyIdsByGuardrailId: Record<string, string[]>; guardrailMemberIdsByGuardrailId: Record<string, string[]>; guardrails: SettingsGuardrailRow[]; keys: Array<{ id: string; name: string; prefix: string; status: string }>; members: SettingsGuardrailMember[]; providers: SettingsGuardrailProvider[]; workspaceId: string | null };
@@ -656,7 +656,15 @@ export type SettingsRateLimitsInitialData = {
 	tier?: SettingsRateLimitTier | null;
 };
 
-export type SettingsWorkloadIdentityProvider = "vercel" | "github_actions";
+export type SettingsWorkloadIdentityProvider =
+	| "vercel"
+	| "github_actions"
+	| "gitlab"
+	| "google_cloud"
+	| "buildkite"
+	| "circleci"
+	| "aws"
+	| "custom";
 
 /** A trust policy from the gateway's /v1/workload-identity/policies (web-api settings-workload-identity). */
 export type SettingsWorkloadIdentityPolicy = {
@@ -664,7 +672,9 @@ export type SettingsWorkloadIdentityPolicy = {
 	name: string;
 	provider: SettingsWorkloadIdentityProvider;
 	issuer: string;
-	/** Vercel team ID or GitHub repository owner ID the token must carry. */
+	/** The claim ownerId is matched against: fixed per platform, chosen for custom issuers. Absent from older responses. */
+	ownerClaim?: string | null;
+	/** The pinned owner the token must carry, such as a Vercel team ID, GitHub owner ID or IAM role ARN. */
 	ownerId: string;
 	/** Exact-match conditions on other token claims, such as project_id or environment. */
 	claimConditions: Record<string, string[]>;

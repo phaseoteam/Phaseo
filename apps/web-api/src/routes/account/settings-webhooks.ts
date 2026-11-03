@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
+import { validatePublicEndpointUrlForDelivery } from "@/lib/public-endpoint-url";
 import { requireAccountWorkspace } from "./context";
 
 const DEFAULT_EVENTS = [
@@ -68,33 +69,18 @@ function endpointName(value: unknown): string {
 	return name;
 }
 
-function privateAddress(host: string): boolean {
-	const value = host.toLowerCase().replace(/^\[|\]$/g, "");
-	return (
-		!value ||
-		value === "localhost" ||
-		value.endsWith(".localhost") ||
-		/^(0|10|127|169\.254|192\.168)\./.test(value) ||
-		/^172\.(1[6-9]|2\d|3[01])\./.test(value) ||
-		value === "::" ||
-		value === "::1" ||
-		/^(fc|fd|fe8|fe9|fea|feb|ff)/.test(value)
-	);
-}
-
-async function endpoint(value: unknown): Promise<string> {
+// Checked on save and again before a test send, which also resolves DNS.
+export async function normalizeWebhookEndpointUrl(value: unknown): Promise<string> {
 	const input = text(value);
 	if (!input) throw new Error("Webhook URL is required");
-	let url: URL;
-	try {
-		url = new URL(input);
-	} catch {
-		throw new Error("Webhook URL must be a valid URL");
-	}
-	if (url.protocol !== "https:") throw new Error("Webhook URL must use https");
-	if (url.username || url.password || privateAddress(url.hostname)) {
+	const validated = await validatePublicEndpointUrlForDelivery(input);
+	if (validated.ok === false) {
+		if (validated.reason === "invalid") throw new Error("Webhook URL must be a valid URL");
+		if (validated.reason === "protocol") throw new Error("Webhook URL must use https");
+		if (validated.reason === "dns_resolution_failed") throw new Error("Webhook URL hostname could not be resolved");
 		throw new Error("Webhook URL must not target a private network");
 	}
+	const url = validated.url;
 	url.hash = "";
 	return url.toString();
 }
@@ -232,7 +218,7 @@ accountSettingsWebhooksRouter.post("/webhooks", async (c) => {
 			.insert({
 				workspace_id: context.workspaceId,
 				name: endpointName(body.name),
-				url: await endpoint(body.url),
+				url: await normalizeWebhookEndpointUrl(body.url),
 				events: events(body.events),
 				status: "active",
 				...encrypted,
@@ -254,7 +240,7 @@ accountSettingsWebhooksRouter.patch("/webhooks/:endpointId", async (c) => {
 	try {
 		const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
 		if (Object.prototype.hasOwnProperty.call(body, "name")) updates.name = endpointName(body.name);
-		if (Object.prototype.hasOwnProperty.call(body, "url")) updates.url = await endpoint(body.url);
+		if (Object.prototype.hasOwnProperty.call(body, "url")) updates.url = await normalizeWebhookEndpointUrl(body.url);
 		if (Object.prototype.hasOwnProperty.call(body, "events")) updates.events = events(body.events);
 		if (Object.keys(updates).length === 1) return c.json({ error: "No webhook changes supplied" }, 400, PRIVATE_NO_STORE_HEADERS);
 
@@ -327,7 +313,7 @@ accountSettingsWebhooksRouter.post("/webhooks/:endpointId/test", async (c) => {
 	if (!result.data) return c.json({ error: "Webhook endpoint not found" }, 404, PRIVATE_NO_STORE_HEADERS);
 	if (String(result.data.status) !== "active") return c.json({ error: "Enable the endpoint before sending a test" }, 409, PRIVATE_NO_STORE_HEADERS);
 	try {
-		const url = await endpoint(result.data.url);
+		const url = await normalizeWebhookEndpointUrl(result.data.url);
 		const secret = await decrypt(c.env, result.data as Record<string, unknown>);
 		const eventId = `evt_test_${crypto.randomUUID()}`;
 		const payload = JSON.stringify({

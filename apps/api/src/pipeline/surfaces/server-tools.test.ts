@@ -2063,6 +2063,61 @@ describe("buildServerToolContinuation", () => {
 		}
 	});
 
+	it("stops reading a direct web fetch body after the byte cap", async () => {
+		const chunk = new TextEncoder().encode("a".repeat(64 * 1024));
+		let bytesServed = 0;
+		let cancelled = false;
+		const endlessBody = new ReadableStream<Uint8Array>({
+			pull(controller) {
+				bytesServed += chunk.byteLength;
+				controller.enqueue(chunk);
+			},
+			cancel() {
+				cancelled = true;
+			},
+		});
+		const fetchMock = vi.fn(async () =>
+			new Response(endlessBody, { status: 200, headers: { "Content-Type": "text/plain" } }),
+		);
+		vi.stubGlobal("fetch", fetchMock);
+
+		try {
+			const continuation = await buildServerToolContinuation(
+				{
+					choices: [{
+						message: {
+							role: "assistant",
+							content: [],
+							toolCalls: [{
+								id: "call_huge_fetch",
+								name: "phaseo_web_fetch",
+								arguments: JSON.stringify({ url: "https://example.com/huge", max_chars: 100 }),
+							}],
+						},
+						finishReason: "tool_calls",
+					}],
+				} as any,
+				{
+					enabled: true,
+					datetimeDefaultTimezones: ["UTC"],
+					webSearchEnabled: false,
+					webSearchMaxResults: 5,
+					webSearchIncludeText: false,
+					webSearchIncludeHighlights: true,
+					webFetchEnabled: true,
+					webFetchMaxChars: 12000,
+				},
+			);
+
+			expect(cancelled).toBe(true);
+			expect(bytesServed).toBeLessThanOrEqual(2 * 1024 * 1024 + 4 * chunk.byteLength);
+			const parsed = JSON.parse(String(continuation?.toolResults[0]?.content));
+			expect(parsed).toMatchObject({ provider: "fetch", status: 200, truncated: true, returned_chars: 100 });
+		} finally {
+			vi.unstubAllGlobals();
+		}
+	});
+
 	it("rejects direct web fetch calls to private network targets", async () => {
 		const fetchMock = vi.fn();
 		vi.stubGlobal("fetch", fetchMock);

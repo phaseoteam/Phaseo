@@ -144,6 +144,89 @@ describe("persistGatewayIoLog", () => {
 		});
 	});
 
+	it("stores no image, audio or file bytes, but keeps image URLs and reasoning tokens", async () => {
+		const { persistGatewayIoLog } = await import("./io-logging");
+		const bytes64 = "A".repeat(400);
+
+		await persistGatewayIoLog({
+			requestId: "req_media",
+			workspaceId: "workspace_1",
+			keyId: "key_1",
+			endpoint: "messages",
+			success: true,
+			requestPayload: {
+				messages: [{
+					role: "user",
+					content: [
+						{ type: "image", source: { type: "base64", media_type: "image/png", data: "iVBORw0KGgo=" } },
+						{ type: "image_url", image_url: { url: "data:image/png;base64,iVBORw0KGgo=" } },
+						{ type: "image_url", image_url: { url: "https://example.com/cat.png" } },
+						{ type: "text", text: "See ![x](data:image/png;base64,iVBORw0KGgo=) here" },
+						{ type: "thinking", thinking: "Hmm", signature: bytes64 },
+					],
+				}],
+			},
+			gatewayResponse: { data: [{ b64_json: "iVBORw0KGgo=" }], output: [{ type: "reasoning", encrypted_content: bytes64 }] },
+			providerResponse: { candidates: [{ content: { parts: [{ inline_data: { mime_type: "image/png", data: bytes64 } }] } }] },
+		});
+
+		const [, stored] = state.bucket.put.mock.calls[0] ?? [];
+		const text = new TextDecoder().decode(stored as Uint8Array);
+		expect(text).not.toContain("iVBORw0KGgo");
+		const payload = JSON.parse(text);
+		expect(payload.request_payload.messages[0].content).toEqual([
+			{ type: "image", source: { type: "base64", media_type: "image/png", data: "[REDACTED_BASE64]" } },
+			{ type: "image_url", image_url: { url: "[REDACTED_DATA_URL]" } },
+			{ type: "image_url", image_url: { url: "https://example.com/cat.png" } },
+			{ type: "text", text: "See ![x]([REDACTED_DATA_URL]) here" },
+			{ type: "thinking", thinking: "Hmm", signature: bytes64 },
+		]);
+		expect(payload.gateway_response).toEqual({
+			data: [{ b64_json: "[REDACTED_BASE64]" }],
+			output: [{ type: "reasoning", encrypted_content: bytes64 }],
+		});
+		expect(payload.provider_response.candidates[0].content.parts[0].inline_data.data).toBe("[REDACTED_BASE64]");
+	});
+
+	it("strips media from serialised provider requests and short schema byte fields", async () => {
+		const { persistGatewayIoLog } = await import("./io-logging");
+		const pixel = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+		const serialized = JSON.stringify({
+			messages: [{ role: "user", content: [{ type: "image", source: { type: "base64", media_type: "image/png", data: "A".repeat(400) } }] }],
+		});
+
+		await persistGatewayIoLog({
+			requestId: "req_serialized",
+			workspaceId: "workspace_1",
+			keyId: "key_1",
+			endpoint: "chat.completions",
+			success: true,
+			requestPayload: {
+				messages: [{ role: "user", content: [
+					{ type: "file", file: { filename: "pixel.png", file_data: pixel } },
+					{ type: "input_file", file_data: "https://example.com/doc.pdf" },
+				] }],
+				images: [{ content_type: "image/png", base64: pixel }],
+			},
+			providerRequest: serialized,
+			providerResponse: "{\"output\":\"plain text\"}",
+		});
+
+		const [, stored] = state.bucket.put.mock.calls[0] ?? [];
+		const text = new TextDecoder().decode(stored as Uint8Array);
+		expect(text).not.toContain(pixel);
+		expect(text).not.toContain("A".repeat(400));
+		const payload = JSON.parse(text);
+		expect(payload.request_payload.messages[0].content).toEqual([
+			{ type: "file", file: { filename: "pixel.png", file_data: "[REDACTED_BASE64]" } },
+			{ type: "input_file", file_data: "https://example.com/doc.pdf" },
+		]);
+		expect(payload.request_payload.images).toEqual([{ content_type: "image/png", base64: "[REDACTED_BASE64]" }]);
+		expect(JSON.parse(payload.provider_request).messages[0].content[0].source.data).toBe("[REDACTED_BASE64]");
+		// Serialised bodies with no media are stored exactly as they were.
+		expect(payload.provider_response).toBe("{\"output\":\"plain text\"}");
+	});
+
 	it("keeps new logs for the included 90-day window when extended retention is suspended", async () => {
 		state.settings.io_logging_billing_status = "suspended";
 		const { persistGatewayIoLog } = await import("./io-logging");

@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { AudioLines, Binary, CircleCheck, FileText, Image as ImageIcon, Minus, Type, Video, type LucideIcon } from "lucide-react";
+import { getModalityTone } from "@/lib/models/modalityStyles";
 import { cn } from "@/lib/utils";
 import { CompareGrid, CompareNoteRow, CompareRow, CompareSection, MODEL_COLOURS, useCompareGrid, type CompareCell } from "./CompareGrid";
-import { bestIndices, priceRow, timeValue, visibleOnPhone, type Direction, type VerdictReason, type Verdicts } from "./compareViewMath";
+import { bestIndices, distinctDigits, priceRow, timeValue, visibleOnPhone, type Direction, type VerdictReason, type Verdicts } from "./compareViewMath";
 import type { CompareViewModel, CompareViewUsageByModel } from "./types";
 import { useCompareFormat, type CompareFormat } from "./useCompareFormat";
 
@@ -43,7 +44,7 @@ function hasModality(types: string[], key: string): boolean {
 	return lower.includes(key);
 }
 
-/** One icon per modality, lit when the model supports it, like a row of indicator lights. */
+/** One icon per modality, lit in the models-page filter colours when the model supports it. */
 function ModalityIcons({ types, format }: { types: string[]; format: CompareFormat }) {
 	// Embedding vectors only get an icon when a model outputs them, so ordinary rows stay at five.
 	const icons = hasModality(types, "embeddings") ? [...MODALITY_ICONS, ["embeddings", Binary] as [string, LucideIcon]] : MODALITY_ICONS;
@@ -56,7 +57,7 @@ function ModalityIcons({ types, format }: { types: string[]; format: CompareForm
 				return (
 					<span
 						key={key}
-						className={cn("inline-flex size-6 items-center justify-center rounded-md", on ? "bg-sky-500/10 text-sky-600 dark:text-sky-400" : "text-muted-foreground/30")}
+						className={cn("inline-flex size-6 items-center justify-center rounded-md", on ? getModalityTone(key).sidebarIconSelectedClassName : "text-muted-foreground/30")}
 						aria-hidden
 					>
 						<Icon className="size-3.5" />
@@ -140,6 +141,12 @@ export function CompareOverviewTable({ models }: { models: CompareViewModel[] })
 	const t = useTranslations("Catalogue.compareView");
 	const format = useCompareFormat();
 	const tokens = t("tokens");
+	const tokenCells = (field: "contextWindow" | "maxOutput") => {
+		const values = models.map((model) => model[field]?.tokens);
+		const digits = distinctDigits(values, format.compactTokens);
+		return numericCells(values, "higher", (value) => <WithUnit value={format.compactTokens(value, digits)} unit={tokens} />, t("notPublished"),
+			(index) => (models[index]![field]?.source === "providers" ? t("fromProviders") : undefined));
+	};
 	return (
 		<CompareSection id="overview" title={t("overview")}>
 			<CompareGrid label={t("overview")}>
@@ -150,16 +157,8 @@ export function CompareOverviewTable({ models }: { models: CompareViewModel[] })
 						text: model.lab.id,
 					}))}
 				/>
-				<CompareRow
-					label={t("contextWindow")}
-					cells={numericCells(models.map((model) => model.contextWindow?.tokens), "higher", (value) => <WithUnit value={format.compactTokens(value)} unit={tokens} />, t("notPublished"),
-						(index) => (models[index]!.contextWindow?.source === "providers" ? t("fromProviders") : undefined))}
-				/>
-				<CompareRow
-					label={t("maxOutput")}
-					cells={numericCells(models.map((model) => model.maxOutput?.tokens), "higher", (value) => <WithUnit value={format.compactTokens(value)} unit={tokens} />, t("notPublished"),
-						(index) => (models[index]!.maxOutput?.source === "providers" ? t("fromProviders") : undefined))}
-				/>
+				<CompareRow label={t("contextWindow")} cells={tokenCells("contextWindow")} />
+				<CompareRow label={t("maxOutput")} cells={tokenCells("maxOutput")} />
 				<CompareRow label={t("takes")} cells={modalityCells(models, "inputTypes", format, t("notPublished"))} />
 				<CompareRow label={t("returns")} cells={modalityCells(models, "outputTypes", format, t("notPublished"))} />
 				<CompareRow
@@ -191,16 +190,16 @@ export function ComparePerformance({ models, usage }: { models: CompareViewModel
 				<CompareRow
 					label={t("latency")}
 					labelSub={windowNote("latencyWindow")}
-					cells={numericCells(models.map((model) => usage[model.id]?.latencyP50Ms30m), "lower", (value) => format.latency(value), t("noTraffic"))}
+					cells={numericCells(models.map((model) => usage[model.id]?.latencyP50Ms30m), "lower", (value) => format.latency(value), t("noRecentTraffic"))}
 				/>
 				<CompareRow
 					label={t("throughput")}
 					labelSub={windowNote("throughputWindow")}
-					cells={numericCells(models.map((model) => usage[model.id]?.throughputP50TokPerSec30m), "higher", (value) => format.throughput(value), t("noTraffic"))}
+					cells={numericCells(models.map((model) => usage[model.id]?.throughputP50TokPerSec30m), "higher", (value) => format.throughput(value), t("noRecentTraffic"))}
 				/>
 				<CompareRow
 					label={t("requests24h")}
-					cells={numericCells(models.map((model) => usage[model.id]?.totalRequests || null), null, (value) => format.tokens(value), t("noTraffic"))}
+					cells={numericCells(models.map((model) => usage[model.id]?.totalRequests || null), null, (value) => format.tokens(value), t("noRequests24h"))}
 				/>
 			</CompareGrid>
 		</CompareSection>

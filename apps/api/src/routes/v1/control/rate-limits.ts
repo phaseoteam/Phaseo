@@ -14,6 +14,7 @@ import {
 	internalServerError,
 	isResponse,
 	parsePathId,
+	rejectThirdPartyOAuthSpendingChange,
 	requireCapability,
 	requireJsonBody,
 	requireOAuthWorkspaceRole,
@@ -204,6 +205,9 @@ async function authorize(req: Request, capability: string) {
 	if (!auth.ok) return { response: (auth as GuardErr).response } as const;
 	const scopeError = requireCapability(auth.value, capability);
 	if (scopeError) return { response: scopeError } as const;
+	// Rate limits hold keys, members and departments: apps can read them but not change them.
+	const appError = capability === CAPABILITIES.RATE_LIMITS_READ ? null : rejectThirdPartyOAuthSpendingChange(auth.value, "Apps that use Sign in with Phaseo can't change rate limits. The person can change them under Settings, Rate limits.");
+	if (appError) return { response: appError } as const;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return { response: roleError } as const;
 	return { auth: auth.value } as const;

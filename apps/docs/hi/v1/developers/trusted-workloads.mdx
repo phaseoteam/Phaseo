@@ -1,6 +1,6 @@
 ---
 title: "भरोसेमंद वर्कलोड"
-description: "Vercel डिप्लॉयमेंट और GitHub Actions जॉब को API कुंजी के बजाय कम समय तक चलने वाले OIDC टोकन से Phaseo को कॉल करने दें।"
+description: "Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI, AWS या आपके अपने OIDC इश्यूअर पर चलने वाले डिप्लॉयमेंट, CI जॉब और क्लाउड वर्कलोड को API कुंजी के बिना Phaseo को कॉल करने दें।"
 icon: "fingerprint-pattern"
 ---
 
@@ -8,22 +8,24 @@ icon: "fingerprint-pattern"
 भरोसेमंद वर्कलोड बीटा में है और धीरे-धीरे वर्कस्पेस के लिए उपलब्ध कराया जा रहा है। अगर आपके डैशबोर्ड में **सेटिंग्स → API कुंजियाँ → भरोसेमंद वर्कलोड** नहीं दिखता, तो आपके वर्कस्पेस को यह सुविधा अभी नहीं मिली है।
 </Note>
 
-Vercel और GitHub Actions हर डिप्लॉयमेंट या जॉब को एक हस्ताक्षरित टोकन देते हैं, जो बताता है कि वह कौन है, जैसे "यह `website` प्रोजेक्ट का प्रोडक्शन डिप्लॉयमेंट है" या "यह `acme/app` का एक वर्कफ़्लो है"। यह टोकन कुछ घंटों में समाप्त हो जाता है। भरोसेमंद वर्कलोड के साथ आप Phaseo को बताते हैं कि किन वर्कलोड पर भरोसा करना है, और वे API कुंजी के बजाय यही टोकन भेजते हैं। आपको अपनी प्रोजेक्ट सेटिंग्स या CI सीक्रेट में लंबे समय तक चलने वाली कोई चीज़ सहेजनी नहीं पड़ती।
+कई प्लेटफ़ॉर्म हर डिप्लॉयमेंट, जॉब या वर्कलोड को एक हस्ताक्षरित टोकन देते हैं, जो बताता है कि वह कौन है, जैसे "यह `website` प्रोजेक्ट का प्रोडक्शन डिप्लॉयमेंट है" या "यह GitLab प्रोजेक्ट `4815162` का एक जॉब है"। यह टोकन कुछ घंटों में समाप्त हो जाता है। भरोसेमंद वर्कलोड के साथ आप Phaseo को बताते हैं कि किन वर्कलोड पर भरोसा करना है, और वे API कुंजी के बजाय यही टोकन भेजते हैं। आपको अपनी प्रोजेक्ट सेटिंग्स या CI सीक्रेट में लंबे समय तक चलने वाली कोई चीज़ सहेजनी नहीं पड़ती।
 
-API कुंजियाँ पहले की तरह काम करती रहती हैं। Vercel या GitHub Actions पर चलने वाले कोड के लिए भरोसेमंद वर्कलोड का उपयोग करें, और बाकी सब के लिए API कुंजियाँ रखें, जैसे दूसरी जगहों के सर्वर, लोकल स्क्रिप्ट और मोबाइल ऐप।
+Phaseo, Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI और AWS के टोकन पर भरोसा करता है, और उस OIDC इश्यूअर के टोकन पर भी जिसे आप ख़ुद चलाते हैं, जैसे Kubernetes क्लस्टर, Bitbucket Pipelines या सेल्फ़-मैनेज्ड GitLab।
+
+API कुंजियाँ पहले की तरह काम करती रहती हैं। इन प्लेटफ़ॉर्म पर चलने वाले कोड के लिए भरोसेमंद वर्कलोड का उपयोग करें, और बाकी सब के लिए API कुंजियाँ रखें, जैसे लोकल स्क्रिप्ट और मोबाइल ऐप।
 
 ---
 
 ## यह कैसे काम करता है
 
-1. वर्कस्पेस का मालिक या एडमिन **सेटिंग्स → API कुंजियाँ → भरोसेमंद वर्कलोड** में एक **ट्रस्ट पॉलिसी** बनाता है। पॉलिसी में प्लेटफ़ॉर्म, आपकी Vercel टीम या GitHub मालिक, और वैकल्पिक शर्तें होती हैं, जैसे कोई प्रोजेक्ट, रिपॉज़िटरी, ब्रांच या एनवायरनमेंट।
+1. वर्कस्पेस का मालिक या एडमिन **सेटिंग्स → API कुंजियाँ → भरोसेमंद वर्कलोड** में एक **ट्रस्ट पॉलिसी** बनाता है। पॉलिसी में प्लेटफ़ॉर्म, वह मालिक जिस पर वह भरोसा करती है (जैसे GitHub मालिक, GitLab प्रोजेक्ट या AWS रोल), और वैकल्पिक शर्तें होती हैं, जैसे कोई प्रोजेक्ट, रिपॉज़िटरी, ब्रांच या एनवायरनमेंट।
 2. आपका कोड प्लेटफ़ॉर्म से ऑडियंस `https://api.phaseo.app` के लिए टोकन माँगता है और उसे `Authorization: Bearer <token>` के रूप में भेजता है।
 3. Phaseo टोकन के हस्ताक्षर और समाप्ति की जाँच करता है, फिर ठीक एक ऐसी सक्रिय पॉलिसी ढूँढता है जो उससे मेल खाती हो।
 4. अनुरोध उस पॉलिसी की कुंजी के रूप में चलता है। उस पर वही रेट लिमिट, बजट, लॉग और बिलिंग लागू होते हैं जो API कुंजी से किए गए अनुरोध पर होते हैं।
 
 ### ऑडियंस क्यों ज़रूरी है
 
-टोकन ऑडियंस `https://api.phaseo.app` के लिए जारी होने चाहिए। डिफ़ॉल्ट रूप से Vercel और GitHub Actions ऐसी ऑडियंस के लिए टोकन जारी करते हैं, जो आपके वर्कलोड द्वारा कॉल की जाने वाली सभी सेवाओं में साझा होती है। अगर Phaseo उन्हें स्वीकार करता, तो किसी दूसरी सेवा को भेजा गया टोकन Phaseo को कॉल करने के लिए दोबारा इस्तेमाल किया जा सकता था। Phaseo किसी भी दूसरी ऑडियंस वाले टोकन अस्वीकार करता है।
+टोकन ऑडियंस `https://api.phaseo.app` के लिए जारी होने चाहिए। डिफ़ॉल्ट रूप से ज़्यादातर प्लेटफ़ॉर्म ऐसी ऑडियंस के लिए टोकन जारी करते हैं, जो आपके वर्कलोड द्वारा कॉल की जाने वाली सभी सेवाओं में साझा होती है। अगर Phaseo उन्हें स्वीकार करता, तो किसी दूसरी सेवा को भेजा गया टोकन Phaseo को कॉल करने के लिए दोबारा इस्तेमाल किया जा सकता था। Phaseo किसी भी दूसरी ऑडियंस वाले टोकन अस्वीकार करता है।
 
 ---
 
@@ -34,6 +36,8 @@ API कुंजियाँ पहले की तरह काम करत�
 **सेटिंग्स → API कुंजियाँ → भरोसेमंद वर्कलोड** पर जाएँ और **नई पॉलिसी** चुनें। सिर्फ़ वर्कस्पेस के मालिक और एडमिन पॉलिसी प्रबंधित कर सकते हैं।
 </Step>
 <Step title="प्लेटफ़ॉर्म चुनें और ID भरें">
+हर प्लेटफ़ॉर्म पॉलिसी को एक ऐसी ID से बाँधता है जिसका नाम बदला नहीं जा सकता और जिसे कोई और नहीं ले सकता। नाम किसी और के हाथ जा सकते हैं, इसलिए Phaseo कभी सिर्फ़ नाम पर भरोसा नहीं करता।
+
 <Tabs>
 <Tab title="Vercel">
 - **टीम स्लग**: टीम का स्लग, जैसा `vercel.com/<team-slug>` में होता है। अगर आपका प्रोजेक्ट Vercel का ग्लोबल इश्यूअर मोड इस्तेमाल करता है (इश्यूअर `https://oidc.vercel.com/<team-slug>` के बजाय `https://oidc.vercel.com`), तो इसे खाली छोड़ें।
@@ -53,6 +57,66 @@ gh api repos/OWNER/REPO --jq '.id, .owner.id'
 ```
 
 Phaseo संख्यात्मक ID इस्तेमाल करता है, क्योंकि नाम बदले जा सकते हैं या कोई और उन्हें ले सकता है।
+</Tab>
+<Tab title="GitLab">
+GitLab.com पर मौजूद प्रोजेक्ट के लिए। सेल्फ़-मैनेज्ड GitLab के लिए **कस्टम OIDC इश्यूअर** चुनें।
+
+- **प्रोजेक्ट ID**: प्रोजेक्ट के ओवरव्यू पेज पर दिखने वाली संख्यात्मक ID। प्रोजेक्ट का नाम बदलने या उसे किसी दूसरे ग्रुप में ले जाने पर भी यह नहीं बदलती, इसलिए Phaseo ग्रुप के बजाय इसी ID से पॉलिसी बाँधता है।
+- **ब्रांच या टैग** (वैकल्पिक): ब्रांच या टैग का नाम, जैसे `main`।
+- **एनवायरनमेंट** (वैकल्पिक): जॉब का एनवायरनमेंट, जैसे `production`।
+
+प्रोजेक्ट के हर जॉब को स्वीकार करने के लिए दोनों शर्तें खाली छोड़ दें।
+</Tab>
+<Tab title="Google Cloud">
+Cloud Run, Compute Engine, GKE, Cloud Run functions, App Engine और Cloud Build पर मेटाडेटा सर्वर से मिलने वाले टोकन के लिए।
+
+- **सर्विस अकाउंट की यूनिक ID**: Google Cloud कंसोल में सर्विस अकाउंट के विवरण पेज पर दिखने वाली संख्यात्मक यूनिक ID। सभी Google अकाउंट एक ही इश्यूअर साझा करते हैं, इसलिए यही ID आपके वर्कलोड को अलग पहचानती है। ईमेल का इस्तेमाल न करें: सर्विस अकाउंट हटाए जाने पर कोई और उसी ईमेल से नया अकाउंट बना सकता है।
+- **सर्विस अकाउंट ईमेल** (वैकल्पिक): एक अतिरिक्त जाँच। टोकन में ईमेल तभी होता है जब वर्कलोड उन्हें `format=full` के साथ माँगता है।
+</Tab>
+<Tab title="Buildkite">
+- **ऑर्गनाइज़ेशन ID**: ऑर्गनाइज़ेशन का UUID। हर Buildkite टोकन में यह `organization_id` क्लेम में होता है, इसलिए आप इसे अपनी किसी पाइपलाइन द्वारा माँगे गए टोकन से पढ़ सकते हैं। ऑर्गनाइज़ेशन स्लग के उलट, यह कभी नहीं बदलता।
+- **पाइपलाइन स्लग** (वैकल्पिक): इसके बिना ऑर्गनाइज़ेशन की हर पाइपलाइन पर भरोसा किया जाता है।
+</Tab>
+<Tab title="CircleCI">
+- **ऑर्गनाइज़ेशन ID**: यह आपको **Organization Settings → Overview** में मिलेगी। हर CircleCI ऑर्गनाइज़ेशन का अपना इश्यूअर होता है, `https://oidc.circleci.com/org/<organisation ID>`, और Phaseo इसे इसी ID से बनाता है।
+- **प्रोजेक्ट ID** (वैकल्पिक): यह आपको **Project Settings → Overview** में मिलेगी। इसके बिना ऑर्गनाइज़ेशन के हर प्रोजेक्ट पर भरोसा किया जाता है।
+</Tab>
+<Tab title="AWS">
+IAM आउटबाउंड आइडेंटिटी फ़ेडरेशन (outbound identity federation) से मिलने वाले टोकन के लिए, जो किसी IAM रोल को बाहरी सेवा के लिए हस्ताक्षरित टोकन देता है।
+
+- **इश्यूअर URL**: हर AWS अकाउंट का अपना इश्यूअर होता है, जो `.tokens.sts.global.api.aws` पर खत्म होता है। `aws iam get-outbound-web-identity-federation-info` चलाएँ और `IssuerIdentifier` कॉपी करें। अगर यह विफल हो, तो पहले `aws iam enable-outbound-web-identity-federation` से यह सुविधा चालू करें।
+- **IAM रोल ARN**: सिर्फ़ इसी रोल के टोकन स्वीकार किए जाते हैं, जैसे `arn:aws:iam::123456789012:role/evals`। इश्यूअर पहले से आपके अकाउंट की पहचान करता है, इसलिए रोल ARN वर्कलोड की पहचान करता है।
+</Tab>
+<Tab title="कस्टम OIDC इश्यूअर">
+इसे किसी भी ऐसे दूसरे OIDC इश्यूअर के लिए इस्तेमाल करें जो ये सभी शर्तें पूरी करता हो:
+
+- उसका इश्यूअर URL एक सार्वजनिक `https://` URL है, जिसमें पोर्ट, query या fragment नहीं है, और जो ऊपर दिए किसी प्लेटफ़ॉर्म के होस्ट पर नहीं है।
+- वह `<issuer>/.well-known/openid-configuration` पर डिस्कवरी डॉक्यूमेंट देता है।
+- उसकी साइनिंग कुंजियाँ (`jwks_uri`) इश्यूअर वाले होस्ट पर ही हैं।
+- वह टोकन को RS256, ES256 या ES384 से साइन करता है और ऑडियंस `https://api.phaseo.app` के लिए टोकन जारी कर सकता है।
+
+भरें:
+
+- **इश्यूअर URL**: इसे ठीक वैसे ही कॉपी करें जैसा यह टोकन के `iss` क्लेम में है, आख़िरी स्लैश (अगर हो) समेत।
+- **मालिक क्लेम** और **मालिक वैल्यू**: वह क्लेम जो हर टोकन में होना चाहिए, और उसकी सटीक वैल्यू। ऐसा क्लेम चुनें जिसे कोई और दोबारा इस्तेमाल न कर सके, जैसे संख्यात्मक ID, न कि ऐसा नाम जिसे बदला या दोबारा रजिस्टर किया जा सके।
+- **अतिरिक्त क्लेम** और **ज़रूरी वैल्यू** (वैकल्पिक): एक और क्लेम जिससे टोकन का मेल खाना ज़रूरी है।
+
+शर्तें सिर्फ़ टॉप-लेवल क्लेम पर लागू होती हैं। नेस्टेड क्लेम, जैसे Kubernetes का `kubernetes.io` ऑब्जेक्ट, इस्तेमाल नहीं किए जा सकते।
+
+**Kubernetes (EKS, GKE, AKS)**: हर क्लस्टर का अपना इश्यूअर होता है। EKS पर `aws eks describe-cluster --name <cluster> --query cluster.identity.oidc.issuer` चलाएँ। AKS पर OIDC इश्यूअर चालू करें और `az aks show -n <cluster> -g <resource-group> --query oidcIssuerProfile.issuerUrl` चलाएँ। GKE पर इश्यूअर `https://container.googleapis.com/v1/projects/<project>/locations/<location>/clusters/<cluster>` है। मालिक क्लेम के रूप में `sub` इस्तेमाल करें, वैल्यू `system:serviceaccount:<namespace>:<service-account>` के साथ।
+
+ऐसे सेल्फ़-मैनेज्ड Kubernetes क्लस्टर काम नहीं करेंगे जिनका डिस्कवरी एंडपॉइंट सार्वजनिक नहीं है। Phaseo को डिस्कवरी डॉक्यूमेंट और कुंजियाँ बिना क्रेडेंशियल के इंटरनेट से लानी होती हैं, और ज़्यादातर क्लस्टर डिफ़ॉल्ट रूप से इसकी अनुमति नहीं देते।
+
+**Bitbucket Pipelines**: इश्यूअर `https://api.bitbucket.org/2.0/workspaces/<workspace>/pipelines-config/identity/oidc` है। मालिक क्लेम के रूप में `workspaceUuid` इस्तेमाल करें, और वैल्यू में कर्ली ब्रैकेट भी शामिल करें, जैसे `{a1b2c3d4-...}`। स्टेप में Phaseo ऑडियंस माँगें:
+
+```yaml
+- step:
+    oidc:
+      audiences:
+        - https://api.phaseo.app
+```
+
+**सेल्फ़-मैनेज्ड GitLab**: इश्यूअर आपका GitLab URL है, जैसे `https://gitlab.example.com`। मालिक क्लेम के रूप में `project_id` इस्तेमाल करें, प्रोजेक्ट की संख्यात्मक ID के साथ। आपका इंस्टेंस इंटरनेट से पहुँच योग्य होना चाहिए।
 </Tab>
 </Tabs>
 </Step>
@@ -84,7 +148,32 @@ resource "phaseo_trusted_workload" "deploy" {
 }
 ```
 
-`platform` की वैल्यू `vercel` या `github_actions` होती है। Vercel के लिए `issuer` भी सेट करें: `https://oidc.vercel.com/<team-slug>`, या ग्लोबल issuer मोड में `https://oidc.vercel.com`। साथ ही `project_id` और `environment` जैसी शर्तें इस्तेमाल करें। प्लेटफ़ॉर्म, issuer या owner बदलने पर पॉलिसी बदलकर नई बन जाती है। पॉलिसी में कोई सीक्रेट नहीं होता, इसलिए Terraform state में कुछ भी संवेदनशील सेव नहीं होता।
+`owner_id` प्लेटफ़ॉर्म के मालिक क्लेम की वैल्यू है। जहाँ प्लेटफ़ॉर्म को ज़रूरत हो, वहाँ `issuer` सेट करें:
+
+| `platform` | `issuer` | मालिक क्लेम |
+| --- | --- | --- |
+| `vercel` | ज़रूरी: `https://oidc.vercel.com/<team-slug>`, या ग्लोबल इश्यूअर मोड में `https://oidc.vercel.com` | `owner_id` (टीम ID) |
+| `github_actions` | डिफ़ॉल्ट: `https://token.actions.githubusercontent.com` | `repository_owner_id` |
+| `gitlab` | डिफ़ॉल्ट: `https://gitlab.com` | `project_id` |
+| `google_cloud` | डिफ़ॉल्ट: `https://accounts.google.com` | `sub` (सर्विस अकाउंट की यूनिक ID) |
+| `buildkite` | डिफ़ॉल्ट: `https://agent.buildkite.com` | `organization_id` |
+| `circleci` | ज़रूरी: `https://oidc.circleci.com/org/<organisation ID>` | `oidc.circleci.com/org-id` |
+| `aws` | ज़रूरी: आपके अकाउंट का इश्यूअर | `sub` (IAM रोल ARN) |
+| `custom` | ज़रूरी: आपका इश्यूअर URL | वह क्लेम जो आप `owner_claim` में सेट करते हैं |
+
+कस्टम इश्यूअर के लिए `owner_claim` भी सेट करें:
+
+```hcl
+resource "phaseo_trusted_workload" "cluster" {
+  name        = "Production cluster"
+  platform    = "custom"
+  issuer      = "https://oidc.eks.us-east-1.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE"
+  owner_claim = "sub"
+  owner_id    = "system:serviceaccount:prod:api"
+}
+```
+
+प्लेटफ़ॉर्म, issuer, मालिक क्लेम या owner बदलने पर पॉलिसी बदलकर नई बन जाती है। पॉलिसी में कोई सीक्रेट नहीं होता, इसलिए Terraform state में कुछ भी संवेदनशील सेव नहीं होता।
 
 API से यही फ़ील्ड `/v1/workload-identity/policies` पर भेजें। API में प्लेटफ़ॉर्म का नाम `provider` है:
 
@@ -95,13 +184,22 @@ curl https://api.phaseo.app/v1/workload-identity/policies \
   -d '{"name":"GitHub deploy (main)","provider":"github_actions","owner_id":"123456","claim_conditions":{"repository_id":["987654321"],"ref":["refs/heads/main"]}}'
 ```
 
+कस्टम इश्यूअर के लिए:
+
+```bash
+curl https://api.phaseo.app/v1/workload-identity/policies \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Production cluster","provider":"custom","issuer":"https://oidc.eks.us-east-1.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE","owner_claim":"sub","owner_id":"system:serviceaccount:prod:api"}'
+```
+
 [API संदर्भ](../api-reference/endpoint/trusted-workloads-create.mdx) में सभी फ़ील्ड और रिस्पॉन्स दिए गए हैं।
 
 ---
 
 ## टोकन से Phaseo को कॉल करें
 
-हर Phaseo SDK API कुंजी की जगह एक फ़ंक्शन स्वीकार करता है और उसे हर अनुरोध और हर दोबारा प्रयास से पहले कॉल करता है, ताकि हर अनुरोध मौजूदा टोकन इस्तेमाल करे। C++ को छोड़कर हर SDK में हर प्लेटफ़ॉर्म के लिए एक हेल्पर है। यह `https://api.phaseo.app` के लिए जारी टोकन लाता है और उसकी अवधि खत्म होने से एक मिनट पहले तक उसे दोबारा इस्तेमाल करता है:
+हर Phaseo SDK API कुंजी की जगह एक फ़ंक्शन स्वीकार करता है और उसे हर अनुरोध और हर दोबारा प्रयास से पहले कॉल करता है, ताकि हर अनुरोध मौजूदा टोकन इस्तेमाल करे। C++ को छोड़कर हर SDK में GitHub Actions और Vercel के लिए एक-एक हेल्पर है। यह `https://api.phaseo.app` के लिए जारी टोकन लाता है और उसकी अवधि खत्म होने से एक मिनट पहले तक उसे दोबारा इस्तेमाल करता है:
 
 | SDK | GitHub Actions | Vercel |
 | --- | --- | --- |
@@ -116,6 +214,22 @@ curl https://api.phaseo.app/v1/workload-identity/policies \
 | C++ | अपना फ़ंक्शन `set_api_key_provider` को दें | अपना फ़ंक्शन `set_api_key_provider` को दें |
 
 हेल्पर के लिए हर SDK का अगला रिलीज़ चाहिए। Vercel पर हेल्पर `VERCEL_OIDC_TOKEN_FILE` या `VERCEL_OIDC_TOKEN` से डिप्लॉयमेंट का टोकन बदलता है। Vercel Functions में टोकन हर अनुरोध के साथ `x-vercel-oidc-token` हेडर में आता है; इसे हेल्पर को टोकन के स्रोत के रूप में दें।
+
+दूसरे प्लेटफ़ॉर्म पर, अपना ऐसा फ़ंक्शन दें जो टोकन लौटाए, जैसे GitLab जॉब का वेरिएबल पढ़ने वाला या Google Cloud मेटाडेटा सर्वर को कॉल करने वाला फ़ंक्शन:
+
+```ts
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({
+	apiKey: async () => {
+		const response = await fetch(
+			"http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=https://api.phaseo.app",
+			{ headers: { "Metadata-Flavor": "Google" } },
+		);
+		return response.text();
+	},
+});
+```
 
 <Tabs>
 <Tab title="Vercel">
@@ -205,6 +319,111 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 GitHub Actions के टोकन कम समय के लिए मान्य होते हैं, इसलिए लंबे जॉब में नया टोकन माँगें।
 </Tab>
+<Tab title="GitLab">
+`.gitlab-ci.yml` में जॉब के लिए `id_tokens` एंट्री जोड़ें। GitLab टोकन को उस वेरिएबल में रखता है जिसका नाम आप देते हैं:
+
+```yaml
+evals:
+  id_tokens:
+    PHASEO_TOKEN:
+      aud: https://api.phaseo.app
+  script:
+    - >
+      curl https://api.phaseo.app/v1/chat/completions
+      -H "Authorization: Bearer $PHASEO_TOKEN"
+      -H "Content-Type: application/json"
+      -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from GitLab"}]}'
+```
+
+टोकन उतनी ही देर मान्य रहता है जितना जॉब का टाइमआउट है।
+</Tab>
+<Tab title="Google Cloud">
+मेटाडेटा सर्वर से टोकन माँगें। यह Cloud Run, Compute Engine, GKE, Cloud Run functions, App Engine और Cloud Build पर काम करता है:
+
+```bash
+TOKEN=$(curl -sS -H "Metadata-Flavor: Google" \
+  "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=https://api.phaseo.app")
+
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from Google Cloud"}]}'
+```
+
+अगर आपकी पॉलिसी सर्विस अकाउंट ईमेल जाँचती है, तो URL में `&format=full` जोड़ें। टोकन 1 घंटे तक मान्य रहते हैं।
+</Tab>
+<Tab title="Buildkite">
+किसी स्टेप के कमांड में एजेंट से टोकन माँगें:
+
+```bash
+TOKEN=$(buildkite-agent oidc request-token --audience https://api.phaseo.app)
+
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from Buildkite"}]}'
+```
+
+टोकन डिफ़ॉल्ट रूप से 5 मिनट तक मान्य रहते हैं। लंबे स्टेप के लिए नया टोकन माँगें या `--lifetime` में सेकंड दें।
+</Tab>
+<Tab title="CircleCI">
+जॉब के किसी स्टेप में CircleCI CLI से टोकन माँगें:
+
+```bash
+TOKEN=$(circleci run oidc get --claims '{"aud":"https://api.phaseo.app"}')
+
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from CircleCI"}]}'
+```
+
+टोकन 1 घंटे तक मान्य रहते हैं।
+</Tab>
+<Tab title="AWS">
+हर AWS अकाउंट में एक बार आउटबाउंड आइडेंटिटी फ़ेडरेशन चालू करें, फिर IAM रोल के रूप में टोकन माँगें। रोल को `sts:GetWebIdentityToken` की अनुमति चाहिए।
+
+```bash
+# Once per account
+aws iam enable-outbound-web-identity-federation
+
+# In the workload
+TOKEN=$(aws sts get-web-identity-token --audience https://api.phaseo.app \
+  --signing-algorithm ES384 --query WebIdentityToken --output text)
+
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from AWS"}]}'
+```
+
+Phaseo `ES384` और `RS256` स्वीकार करता है। टोकन डिफ़ॉल्ट रूप से 5 मिनट तक मान्य रहते हैं; 1 घंटे तक के लिए `--duration-seconds` दें।
+</Tab>
+<Tab title="कस्टम OIDC इश्यूअर">
+Kubernetes पर, Phaseo ऑडियंस के लिए जारी एक प्रोजेक्टेड सर्विस अकाउंट टोकन माउंट करें:
+
+```yaml
+spec:
+  serviceAccountName: api
+  containers:
+    - name: app
+      volumeMounts:
+        - name: phaseo-token
+          mountPath: /var/run/secrets/phaseo
+  volumes:
+    - name: phaseo-token
+      projected:
+        sources:
+          - serviceAccountToken:
+              audience: https://api.phaseo.app
+              expirationSeconds: 3600
+              path: token
+```
+
+हर अनुरोध से पहले `/var/run/secrets/phaseo/token` पढ़ें और उसकी सामग्री bearer टोकन के रूप में भेजें। Kubernetes टोकन की अवधि खत्म होने से पहले फ़ाइल को रीफ़्रेश करता है, इसलिए वैल्यू को मेमोरी में न रखें।
+
+Bitbucket Pipelines में, जिस स्टेप में `oidc` ऑडियंस सेट हैं, उसे टोकन `BITBUCKET_STEP_OIDC_TOKEN` में मिलता है।
+</Tab>
 </Tabs>
 
 ---
@@ -214,7 +433,8 @@ GitHub Actions के टोकन कम समय के लिए मान�
 - **कुंजी जैसे ही नियंत्रण।** अनुरोध पॉलिसी की कुंजी के रूप में चलते हैं, इसलिए कुंजी की रेट लिमिट, बजट, विभाग से जुड़ाव, IP अनुमति सूची, लॉगिंग सेटिंग्स और बिलिंग हमेशा की तरह लागू होते हैं।
 - **सिर्फ़ मॉडल कॉल।** वर्कलोड टोकन वहीं काम करते हैं जहाँ गेटवे API कुंजी काम करती है। मैनेजमेंट API इन्हें अस्वीकार करते हैं।
 - **सिर्फ़ एक मेल खाती पॉलिसी।** अगर दो वर्कस्पेस एक ही वर्कलोड पर भरोसा करते हैं, तो Phaseo तय नहीं कर पाता कि आपका मतलब किससे है और अनुरोध अस्वीकार कर देता है। किसी एक को चुनने के लिए `x-phaseo-workspace` हेडर में वर्कस्पेस ID भेजें।
-- **टोकन की अवधि।** पॉलिसी के **स्वीकार किया जाने वाला सबसे लंबा टोकन** से लंबी अवधि के लिए जारी किए गए टोकन अस्वीकार कर दिए जाते हैं।
+- **टोकन की अवधि।** पॉलिसी के **स्वीकार किया जाने वाला सबसे लंबा टोकन** से लंबी अवधि के लिए जारी किए गए टोकन अस्वीकार कर दिए जाते हैं, और Phaseo 12 घंटे से ज़्यादा के लिए जारी टोकन कभी स्वीकार नहीं करता। Buildkite और AWS के टोकन डिफ़ॉल्ट रूप से 5 मिनट तक मान्य रहते हैं; Google Cloud और CircleCI के टोकन 1 घंटे तक। GitLab टोकन जॉब के टाइमआउट जितनी देर मान्य रहते हैं, इसलिए 12 घंटे से ज़्यादा टाइमआउट वाले जॉब को ऐसा टोकन मिलता है जिसे Phaseo अस्वीकार करता है। AKS 24 घंटे तक के टोकन जारी कर सकता है, इसलिए कम `expirationSeconds` सेट करें।
+- **Azure अभी समर्थित नहीं है।** Azure मैनेज्ड आइडेंटिटी Phaseo ऑडियंस के लिए टोकन नहीं माँग सकतीं। AKS पर चलने वाले पॉड फिर भी कस्टम इश्यूअर के ज़रिए Kubernetes सर्विस अकाउंट टोकन इस्तेमाल कर सकते हैं।
 - **API कुंजियों पर कोई असर नहीं।** भरोसेमंद वर्कलोड प्रमाणीकरण का दूसरा तरीका जोड़ते हैं; वे API कुंजियों को न बदलते हैं, न बंद करते हैं।
 
 ---
@@ -226,11 +446,12 @@ GitHub Actions के टोकन कम समय के लिए मान�
 | संदेश | इसका मतलब | क्या करें |
 | --- | --- | --- |
 | `workload_token_wrong_audience` | टोकन `https://api.phaseo.app` के लिए जारी नहीं हुआ था। | इसी ऑडियंस के साथ टोकन माँगें। |
-| `workload_issuer_not_trusted` | कोई भी सक्रिय पॉलिसी इस टोकन के इश्यूअर का उपयोग नहीं करती। | Vercel टीम स्लग या इश्यूअर मोड जाँचें, और देखें कि पॉलिसी चालू है। |
-| `workload_identity_no_matching_policy` | टोकन मान्य है, लेकिन कोई सक्रिय पॉलिसी उससे मेल नहीं खाती। | टीम, मालिक, प्रोजेक्ट या रिपॉज़िटरी ID, एनवायरनमेंट, ब्रांच या टैग की शर्तें जाँचें, और देखें कि टोकन की अवधि पॉलिसी के **स्वीकार किया जाने वाला सबसे लंबा टोकन** से ज़्यादा न हो। |
+| `workload_issuer_not_trusted` | कोई भी सक्रिय पॉलिसी इस टोकन के इश्यूअर का उपयोग नहीं करती। | देखें कि पॉलिसी चालू है और उसका इश्यूअर टोकन के `iss` क्लेम से बिल्कुल मेल खाता है, जिसमें Vercel टीम स्लग या इश्यूअर मोड और कस्टम इश्यूअर का आख़िरी स्लैश भी शामिल है। |
+| `workload_identity_no_matching_policy` | टोकन मान्य है, लेकिन कोई सक्रिय पॉलिसी उससे मेल नहीं खाती। | मालिक ID, प्रोजेक्ट, रिपॉज़िटरी, पाइपलाइन, ब्रांच, टैग या एनवायरनमेंट की शर्तें जाँचें, और देखें कि टोकन की अवधि पॉलिसी के **स्वीकार किया जाने वाला सबसे लंबा टोकन** से ज़्यादा न हो। |
 | `workload_identity_ambiguous` | एक से ज़्यादा वर्कस्पेस इस वर्कलोड पर भरोसा करते हैं। | `x-phaseo-workspace: <workspace id>` भेजें। |
 | `workload_identity_not_enabled` | इस वर्कस्पेस के लिए भरोसेमंद वर्कलोड अभी उपलब्ध नहीं हैं। | फ़िलहाल API कुंजी का उपयोग करें। |
 | `workload_token_expired` | टोकन समाप्त हो गया है। | हर अनुरोध या जॉब स्टेप के लिए नया टोकन माँगें। |
-| `workload_token_lifetime_too_long` | टोकन 12 घंटे से ज़्यादा की अवधि के लिए जारी हुआ था, जो Phaseo की अधिकतम सीमा है। | कम अवधि वाला टोकन माँगें। |
+| `workload_token_lifetime_too_long` | टोकन 12 घंटे से ज़्यादा की अवधि के लिए जारी हुआ था, जो Phaseo की अधिकतम सीमा है। | कम अवधि वाला टोकन माँगें, जैसे Kubernetes पर कम `expirationSeconds` या GitLab पर जॉब का कम टाइमआउट। |
+| `workload_token_unsupported_alg` | टोकन RS256, ES256 या ES384 से साइन नहीं किया गया है। | इश्यूअर को इनमें से किसी एक का इस्तेमाल करने के लिए कॉन्फ़िगर करें। |
 | `workload_token_invalid_signature` | टोकन का हस्ताक्षर प्लेटफ़ॉर्म की कुंजियों से मेल नहीं खाता। | टोकन को बिना बदले, ठीक वैसे ही भेजें जैसे प्लेटफ़ॉर्म ने उसे जारी किया था। |
-| `workload_jwks_unavailable` | Phaseo प्लेटफ़ॉर्म की साइनिंग कुंजियाँ नहीं ला सका। | थोड़ी देर बाद फिर से कोशिश करें। |
+| `workload_jwks_unavailable` | Phaseo प्लेटफ़ॉर्म की साइनिंग कुंजियाँ नहीं ला सका। | थोड़ी देर बाद फिर से कोशिश करें। कस्टम इश्यूअर के लिए जाँचें कि `<issuer>/.well-known/openid-configuration` बिना क्रेडेंशियल के सार्वजनिक इंटरनेट से लोड होता है और उसका `jwks_uri` उसी होस्ट पर है। |

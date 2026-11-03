@@ -1,0 +1,9 @@
+---
+title: "Mettre à jour une règle de dépenses"
+sidebarTitle: "Mettre à jour une règle"
+badge: "Beta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml PATCH /spend-rules/{id}"
+description: "Modifie les champs, les destinations ou l'action d'une règle de dépenses."
+---
+
+Nécessite `spend_rules:write`. Les champs envoyés sont fusionnés avec la règle enregistrée, puis la règle entière est vérifiée à nouveau. `destination_ids` remplace les destinations de la règle ; omettez-le pour les conserver. Modifier l'action, la portée, la période ou la base d'une règle qui bloque lève son blocage actif.

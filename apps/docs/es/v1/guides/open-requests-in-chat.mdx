@@ -43,7 +43,7 @@ Si el modelo de la solicitud no está disponible en Chat, el chat usa tu modelo 
 ## Cómo continúa el chat
 
 - La solicitud se abre como un chat nuevo con su propio ID de sesión, guardado en tu navegador como cualquier otro chat. Los turnos continuados no se añaden a la sesión original en Registros.
-- Los mensajes que no has editado se envían en su forma original, así que las llamadas a herramientas, los resultados de herramientas, las imágenes, el audio y los archivos se conservan en el siguiente turno. Los mensajes editados y nuevos se envían como texto, como en cualquier chat.
+- Los mensajes que no has editado se envían en su forma original, así que las llamadas a herramientas, los resultados de herramientas y las URL de imágenes se conservan en el siguiente turno. Los mensajes editados y nuevos se envían como texto, como en cualquier chat.
 - Puedes cambiar de modelo, comparar varios modelos en paralelo, crear ramas o editar, como en cualquier chat.
 - Los turnos continuados se ejecutan en tu espacio de trabajo activo y se facturan como cualquier otra solicitud de Chat.
 
@@ -52,6 +52,7 @@ Si el modelo de la solicitud no está disponible en Chat, el chat usa tu modelo 
 Chat enumera todo lo que no pudo conservar antes de que continúes:
 
 - Turnos que el proveedor mantiene mediante `previous_response_id` o un ID de conversación. Solo se guardan los turnos incluidos en la propia solicitud.
+- Imágenes, audio y archivos enviados en línea. Los registros de E/S nunca guardan sus bytes. Las imágenes enviadas por URL se conservan.
 - Adjuntos enviados mediante ID de archivo o referencia remota en lugar de en línea.
 - Respuestas que fallaron, se cortaron u ofrecieron varias opciones (solo se conserva la primera).
 - Llamadas a herramientas que nunca recibieron un resultado. Se envían como texto.

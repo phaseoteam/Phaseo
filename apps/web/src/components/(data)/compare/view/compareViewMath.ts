@@ -141,6 +141,19 @@ export function bestIndices(values: Array<number | null | undefined>, direction:
 	return winners.length === values.length ? new Set() : new Set(winners);
 }
 
+/**
+ * The fewest significant digits (from `min`) at which different values also
+ * read differently. 1,050,000 and 1,048,576 are both "1.05M" at three digits,
+ * which would make a highlight on one of them look like a broken tie.
+ */
+export function distinctDigits(values: Array<number | null | undefined>, render: (value: number, digits: number) => string, min = 3, max = 7): number {
+	const distinct = [...new Set(values.filter((value): value is number => value != null && Number.isFinite(value)))];
+	for (let digits = min; digits < max; digits++) {
+		if (new Set(distinct.map((value) => render(value, digits))).size === distinct.length) return digits;
+	}
+	return max;
+}
+
 /** Models that share no output type do different jobs, so there's no "best" across them. */
 export function doSameJob(models: CompareViewModel[]): boolean {
 	const typed = models.filter((model) => model.outputTypes.length > 0);
@@ -218,6 +231,17 @@ export function pickResult(benchmark: CompareViewBenchmark, modelId: string, eff
 		return { kind: "result", result: bestResult(match, benchmark.higherIsBetter) };
 	}
 	return { kind: "result", result: bestResult(results, benchmark.higherIsBetter) };
+}
+
+/**
+ * The best of the picked results, only when they are comparable. A lab reports
+ * its own model with its own harness, version and task subset (Agents' Last
+ * Exam v1 at xhigh effort against another lab's launch-chart pass rate), so
+ * lab-reported scores are shown side by side without a winner.
+ */
+export function bestBenchmarkIndices(picks: PickedResult[], higherIsBetter: boolean): Set<number> {
+	if (picks.some((picked) => picked.kind === "result" && picked.result.selfReported)) return new Set();
+	return bestIndices(picks.map((picked) => (picked.kind === "result" ? picked.result.score : null)), higherIsBetter ? "higher" : "lower");
 }
 
 function bestResult(results: CompareViewBenchmarkResult[], higherIsBetter: boolean): CompareViewBenchmarkResult {

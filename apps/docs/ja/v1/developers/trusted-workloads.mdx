@@ -1,6 +1,6 @@
 ---
 title: "信頼済みワークロード"
-description: "Vercel のデプロイや GitHub Actions のジョブが、API キーの代わりに有効期間の短い OIDC トークンで Phaseo を呼び出せるようにします。"
+description: "Vercel、GitHub Actions、GitLab、Google Cloud、Buildkite、CircleCI、AWS、または独自の OIDC 発行元で動くデプロイ、CI ジョブ、クラウド ワークロードが、API キーなしで Phaseo を呼び出せるようにします。"
 icon: "fingerprint-pattern"
 ---
 
@@ -8,22 +8,24 @@ icon: "fingerprint-pattern"
 信頼済みワークロードはベータ版で、ワークスペースへ段階的に提供しています。ダッシュボードに **設定 → APIキー → 信頼済みワークロード** が表示されない場合、そのワークスペースではまだ利用できません。
 </Note>
 
-Vercel と GitHub Actions は、デプロイやジョブごとに、それが誰かを示す署名付きトークンを発行します。たとえば「これは `website` プロジェクトの本番デプロイです」や「これは `acme/app` のワークフローです」といった内容です。トークンは数時間以内に失効します。信頼済みワークロードを使うと、どのワークロードを信頼するかを Phaseo に設定でき、そのワークロードは API キーの代わりにこのトークンを送信します。プロジェクト設定や CI のシークレットに、長期間有効な認証情報を保存する必要はありません。
+多くのプラットフォームは、デプロイ、ジョブ、ワークロードごとに、それが誰かを示す署名付きトークンを発行します。たとえば「これは `website` プロジェクトの本番デプロイです」や「これは GitLab プロジェクト `4815162` のジョブです」といった内容です。トークンは数時間以内に失効します。信頼済みワークロードを使うと、どのワークロードを信頼するかを Phaseo に設定でき、そのワークロードは API キーの代わりにこのトークンを送信します。プロジェクト設定や CI のシークレットに、長期間有効な認証情報を保存する必要はありません。
 
-API キーは引き続き使えます。Vercel や GitHub Actions で動くコードには信頼済みワークロードを使い、それ以外の環境（他の場所にあるサーバー、ローカルスクリプト、モバイルアプリなど）では API キーを使い続けてください。
+Phaseo は、Vercel、GitHub Actions、GitLab、Google Cloud、Buildkite、CircleCI、AWS のトークンに加え、Kubernetes クラスター、Bitbucket Pipelines、セルフマネージドの GitLab など、自分で運用する OIDC 発行元のトークンも信頼できます。
+
+API キーは引き続き使えます。これらのプラットフォームで動くコードには信頼済みワークロードを使い、それ以外の環境（ローカルスクリプト、モバイルアプリなど）では API キーを使い続けてください。
 
 ---
 
 ## 仕組み
 
-1. ワークスペースのオーナーまたは管理者が、**設定 → APIキー → 信頼済みワークロード** で **信頼ポリシー** を作成します。ポリシーには、プラットフォーム、Vercel のチームまたは GitHub のオーナー、そしてプロジェクト、リポジトリ、ブランチ、環境などの任意の条件を指定します。
+1. ワークスペースのオーナーまたは管理者が、**設定 → APIキー → 信頼済みワークロード** で **信頼ポリシー** を作成します。ポリシーには、プラットフォーム、信頼するオーナー（GitHub のオーナー、GitLab のプロジェクト、AWS のロールなど）、そしてプロジェクト、リポジトリ、ブランチ、環境などの任意の条件を指定します。
 2. コードがプラットフォームにオーディエンス `https://api.phaseo.app` 向けのトークンを要求し、`Authorization: Bearer <token>` として送信します。
 3. Phaseo はトークンの署名と有効期限を確認し、そのトークンに一致する有効なポリシーがちょうど 1 つあるかを探します。
 4. リクエストは、そのポリシーのキーとして実行されます。API キーで送ったリクエストと同じレート制限、予算、ログ、課金が適用されます。
 
 ### オーディエンスが重要な理由
 
-トークンはオーディエンス `https://api.phaseo.app` 向けに発行されている必要があります。Vercel と GitHub Actions は、デフォルトでは、ワークロードが呼び出すすべてのサービスで共通のオーディエンス向けにトークンを発行します。Phaseo がそれを受け付けると、別のサービスに送ったトークンが Phaseo の呼び出しに再利用されるおそれがあります。Phaseo は、それ以外のオーディエンスを持つトークンを拒否します。
+トークンはオーディエンス `https://api.phaseo.app` 向けに発行されている必要があります。多くのプラットフォームは、デフォルトでは、ワークロードが呼び出すすべてのサービスで共通のオーディエンス向けにトークンを発行します。Phaseo がそれを受け付けると、別のサービスに送ったトークンが Phaseo の呼び出しに再利用されるおそれがあります。Phaseo は、それ以外のオーディエンスを持つトークンを拒否します。
 
 ---
 
@@ -34,6 +36,8 @@ API キーは引き続き使えます。Vercel や GitHub Actions で動くコ�
 **設定 → APIキー → 信頼済みワークロード** を開き、**新しいポリシー** を選択します。ポリシーを管理できるのは、ワークスペースのオーナーと管理者だけです。
 </Step>
 <Step title="プラットフォームを選んで ID を入力する">
+各プラットフォームでは、名前の変更や他人による取得ができない ID 1 つにポリシーを固定します。名前は持ち主が変わることがあるため、Phaseo は名前だけを信頼することはありません。
+
 <Tabs>
 <Tab title="Vercel">
 - **チームのスラッグ**: `vercel.com/<team-slug>` に含まれるチームのスラッグです。プロジェクトが Vercel のグローバル発行者モードを使っている場合（発行者が `https://oidc.vercel.com/<team-slug>` ではなく `https://oidc.vercel.com`）は空欄にします。
@@ -53,6 +57,66 @@ gh api repos/OWNER/REPO --jq '.id, .owner.id'
 ```
 
 名前は変更されたり、別の人に取得されたりする可能性があるため、Phaseo は数値 ID を使います。
+</Tab>
+<Tab title="GitLab">
+GitLab.com 上のプロジェクト向けです。セルフマネージドの GitLab では **カスタム OIDC 発行元** を選んでください。
+
+- **プロジェクト ID**: プロジェクトの概要ページに表示される数値 ID です。プロジェクトの名前を変えたり別のグループへ移動したりしても変わらないため、Phaseo はグループではなくこの ID に固定します。
+- **ブランチまたはタグ**（任意）: `main` などのブランチ名またはタグ名です。
+- **環境**（任意）: `production` などのジョブの環境です。
+
+どちらの条件も空欄にすると、プロジェクト内のすべてのジョブを受け付けます。
+</Tab>
+<Tab title="Google Cloud">
+Cloud Run、Compute Engine、GKE、Cloud Run functions、App Engine、Cloud Build のメタデータ サーバーが発行するトークン向けです。
+
+- **サービス アカウントの一意の ID**: Google Cloud コンソールのサービス アカウント詳細ページに表示される数値の一意の ID です。すべての Google アカウントが同じ発行元を共有するため、この ID でワークロードを区別します。メールアドレスは使わないでください。サービス アカウントを削除すると、誰かが同じメールアドレスで新しいアカウントを作成できます。
+- **サービス アカウントのメールアドレス**（任意）: 追加の確認です。トークンにメールアドレスが含まれるのは、ワークロードが `format=full` で要求した場合だけです。
+</Tab>
+<Tab title="Buildkite">
+- **組織 ID**: 組織の UUID です。Buildkite のトークンには必ず `organization_id` クレームとして含まれるため、パイプラインが要求したトークンから読み取れます。組織のスラッグと違い、変わることはありません。
+- **パイプライン スラッグ**（任意）: 指定しない場合、組織内のすべてのパイプラインが信頼されます。
+</Tab>
+<Tab title="CircleCI">
+- **組織 ID**: **Organization Settings → Overview** で確認できます。CircleCI の組織ごとに専用の発行元 `https://oidc.circleci.com/org/<organisation ID>` があり、Phaseo はこの ID から発行元を組み立てます。
+- **プロジェクト ID**（任意）: **Project Settings → Overview** で確認できます。指定しない場合、組織内のすべてのプロジェクトが信頼されます。
+</Tab>
+<Tab title="AWS">
+IAM のアウトバウンド ID フェデレーション（outbound identity federation）が発行するトークン向けです。これにより、IAM ロールは外部サービス用の署名付きトークンを受け取れます。
+
+- **発行元 URL**: AWS アカウントごとに専用の発行元があり、末尾は `.tokens.sts.global.api.aws` です。`aws iam get-outbound-web-identity-federation-info` を実行し、`IssuerIdentifier` をコピーします。失敗する場合は、先に `aws iam enable-outbound-web-identity-federation` で機能を有効にしてください。
+- **IAM ロール ARN**: このロールのトークンだけを受け付けます。例: `arn:aws:iam::123456789012:role/evals`。発行元がすでにアカウントを識別しているため、ロール ARN でワークロードを識別します。
+</Tab>
+<Tab title="カスタム OIDC 発行元">
+次の条件をすべて満たすその他の OIDC 発行元に使います。
+
+- 発行元 URL が公開された `https://` URL で、ポート、クエリ、フラグメントを含まず、上記のプラットフォームのホストではないこと。
+- `<issuer>/.well-known/openid-configuration` でディスカバリー ドキュメントを提供していること。
+- 署名鍵（`jwks_uri`）が発行元と同じホストにあること。
+- RS256、ES256、ES384 のいずれかでトークンに署名し、オーディエンス `https://api.phaseo.app` 向けに発行できること。
+
+入力する項目:
+
+- **発行元 URL**: トークンの `iss` クレームの値を、末尾のスラッシュも含めてそのままコピーします。
+- **オーナー クレーム** と **オーナーの値**: すべてのトークンに含まれる必要があるクレームと、その正確な値です。名前の変更や再登録ができる名前ではなく、数値 ID など他の誰も再利用できないクレームを選んでください。
+- **追加クレーム** と **必要な値**（任意）: トークンが一致する必要があるもう 1 つのクレームです。
+
+条件はトップレベルのクレームにだけ適用されます。Kubernetes の `kubernetes.io` オブジェクトのような入れ子のクレームは使えません。
+
+**Kubernetes（EKS、GKE、AKS）**: クラスターごとに専用の発行元があります。EKS では `aws eks describe-cluster --name <cluster> --query cluster.identity.oidc.issuer` を実行します。AKS では OIDC 発行元を有効にして `az aks show -n <cluster> -g <resource-group> --query oidcIssuerProfile.issuerUrl` を実行します。GKE の発行元は `https://container.googleapis.com/v1/projects/<project>/locations/<location>/clusters/<cluster>` です。オーナー クレームには `sub` を使い、値は `system:serviceaccount:<namespace>:<service-account>` にします。
+
+ディスカバリー エンドポイントが公開されていないセルフマネージドの Kubernetes クラスターでは使えません。Phaseo は認証情報なしでインターネットからディスカバリー ドキュメントと鍵を取得する必要がありますが、ほとんどのクラスターはデフォルトでこれを許可していません。
+
+**Bitbucket Pipelines**: 発行元は `https://api.bitbucket.org/2.0/workspaces/<workspace>/pipelines-config/identity/oidc` です。オーナー クレームには `workspaceUuid` を使い、値は `{a1b2c3d4-...}` のように波かっこを含めて入力します。ステップで Phaseo のオーディエンスを指定します。
+
+```yaml
+- step:
+    oidc:
+      audiences:
+        - https://api.phaseo.app
+```
+
+**セルフマネージドの GitLab**: 発行元は `https://gitlab.example.com` のような GitLab の URL です。オーナー クレームには `project_id` を使い、値はプロジェクトの数値 ID にします。インスタンスはインターネットからアクセスできる必要があります。
 </Tab>
 </Tabs>
 </Step>
@@ -84,7 +148,32 @@ resource "phaseo_trusted_workload" "deploy" {
 }
 ```
 
-`platform` には `vercel` または `github_actions` を指定します。Vercel の場合は `issuer` も指定してください。チーム単位の発行者モードでは `https://oidc.vercel.com/<team-slug>`、グローバル発行者モードでは `https://oidc.vercel.com` です。条件には `project_id` や `environment` などを使います。プラットフォーム、発行者、オーナーを変更すると、ポリシーは作り直されます。ポリシーにはシークレットがないため、Terraform の state に機密情報は保存されません。
+`owner_id` は、プラットフォームのオーナー クレームの値です。プラットフォームが必要とする場合は `issuer` を指定します。
+
+| `platform` | `issuer` | オーナー クレーム |
+| --- | --- | --- |
+| `vercel` | 必須: `https://oidc.vercel.com/<team-slug>`、グローバル発行者モードでは `https://oidc.vercel.com` | `owner_id`（チーム ID） |
+| `github_actions` | デフォルト: `https://token.actions.githubusercontent.com` | `repository_owner_id` |
+| `gitlab` | デフォルト: `https://gitlab.com` | `project_id` |
+| `google_cloud` | デフォルト: `https://accounts.google.com` | `sub`（サービス アカウントの一意の ID） |
+| `buildkite` | デフォルト: `https://agent.buildkite.com` | `organization_id` |
+| `circleci` | 必須: `https://oidc.circleci.com/org/<organisation ID>` | `oidc.circleci.com/org-id` |
+| `aws` | 必須: アカウントの発行元 | `sub`（IAM ロール ARN） |
+| `custom` | 必須: 発行元 URL | `owner_claim` で指定したクレーム |
+
+カスタム発行元では `owner_claim` も指定します。
+
+```hcl
+resource "phaseo_trusted_workload" "cluster" {
+  name        = "Production cluster"
+  platform    = "custom"
+  issuer      = "https://oidc.eks.us-east-1.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE"
+  owner_claim = "sub"
+  owner_id    = "system:serviceaccount:prod:api"
+}
+```
+
+プラットフォーム、発行者、オーナー クレーム、オーナーを変更すると、ポリシーは作り直されます。ポリシーにはシークレットがないため、Terraform の state に機密情報は保存されません。
 
 API では、同じフィールドを `/v1/workload-identity/policies` に送ります。API ではプラットフォームを `provider` と呼びます。
 
@@ -95,13 +184,22 @@ curl https://api.phaseo.app/v1/workload-identity/policies \
   -d '{"name":"GitHub deploy (main)","provider":"github_actions","owner_id":"123456","claim_conditions":{"repository_id":["987654321"],"ref":["refs/heads/main"]}}'
 ```
 
+カスタム発行元の場合:
+
+```bash
+curl https://api.phaseo.app/v1/workload-identity/policies \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Production cluster","provider":"custom","issuer":"https://oidc.eks.us-east-1.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE","owner_claim":"sub","owner_id":"system:serviceaccount:prod:api"}'
+```
+
 すべてのフィールドとレスポンスは [API リファレンス](../api-reference/endpoint/trusted-workloads-create.mdx)に記載しています。
 
 ---
 
 ## トークンで Phaseo を呼び出す
 
-Phaseo のすべての SDK は API キーの代わりに関数を受け付け、リクエストと再試行のたびにその関数を呼び出すため、各リクエストは最新のトークンを使います。C++ 以外の各 SDK には、プラットフォームごとのヘルパーがあります。`https://api.phaseo.app` 向けに発行されたトークンを取得し、有効期限の 1 分前まで再利用します。
+Phaseo のすべての SDK は API キーの代わりに関数を受け付け、リクエストと再試行のたびにその関数を呼び出すため、各リクエストは最新のトークンを使います。C++ 以外の各 SDK には、GitHub Actions 用と Vercel 用のヘルパーがあります。`https://api.phaseo.app` 向けに発行されたトークンを取得し、有効期限の 1 分前まで再利用します。
 
 | SDK | GitHub Actions | Vercel |
 | --- | --- | --- |
@@ -116,6 +214,22 @@ Phaseo のすべての SDK は API キーの代わりに関数を受け付け、
 | C++ | 独自の関数を `set_api_key_provider` に渡します | 独自の関数を `set_api_key_provider` に渡します |
 
 ヘルパーを使うには、各 SDK の次回リリースが必要です。Vercel では、ヘルパーが `VERCEL_OIDC_TOKEN_FILE` または `VERCEL_OIDC_TOKEN` のデプロイ用トークンを交換します。Vercel Functions では、トークンは各リクエストの `x-vercel-oidc-token` ヘッダーで届くので、トークンの取得元としてヘルパーに渡してください。
+
+その他のプラットフォームでは、トークンを返す独自の関数を渡します。たとえば GitLab ジョブの変数を読む関数や、Google Cloud のメタデータ サーバーを呼び出す関数です。
+
+```ts
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({
+	apiKey: async () => {
+		const response = await fetch(
+			"http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=https://api.phaseo.app",
+			{ headers: { "Metadata-Flavor": "Google" } },
+		);
+		return response.text();
+	},
+});
+```
 
 <Tabs>
 <Tab title="Vercel">
@@ -205,6 +319,111 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 GitHub Actions のトークンは有効期間が短いため、長時間のジョブでは新しいトークンを取得してください。
 </Tab>
+<Tab title="GitLab">
+`.gitlab-ci.yml` のジョブに `id_tokens` を追加します。GitLab は、指定した名前の変数にトークンを入れます。
+
+```yaml
+evals:
+  id_tokens:
+    PHASEO_TOKEN:
+      aud: https://api.phaseo.app
+  script:
+    - >
+      curl https://api.phaseo.app/v1/chat/completions
+      -H "Authorization: Bearer $PHASEO_TOKEN"
+      -H "Content-Type: application/json"
+      -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from GitLab"}]}'
+```
+
+トークンの有効期間はジョブのタイムアウトと同じです。
+</Tab>
+<Tab title="Google Cloud">
+メタデータ サーバーからトークンを取得します。Cloud Run、Compute Engine、GKE、Cloud Run functions、App Engine、Cloud Build で使えます。
+
+```bash
+TOKEN=$(curl -sS -H "Metadata-Flavor: Google" \
+  "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=https://api.phaseo.app")
+
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from Google Cloud"}]}'
+```
+
+ポリシーでサービス アカウントのメールアドレスを確認する場合は、URL に `&format=full` を追加してください。トークンの有効期間は 1 時間です。
+</Tab>
+<Tab title="Buildkite">
+ステップのコマンドで、エージェントを使ってトークンを取得します。
+
+```bash
+TOKEN=$(buildkite-agent oidc request-token --audience https://api.phaseo.app)
+
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from Buildkite"}]}'
+```
+
+トークンの有効期間はデフォルトで 5 分です。長いステップでは新しいトークンを取得するか、`--lifetime` に秒数を指定してください。
+</Tab>
+<Tab title="CircleCI">
+ジョブのステップで、CircleCI CLI を使ってトークンを取得します。
+
+```bash
+TOKEN=$(circleci run oidc get --claims '{"aud":"https://api.phaseo.app"}')
+
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from CircleCI"}]}'
+```
+
+トークンの有効期間は 1 時間です。
+</Tab>
+<Tab title="AWS">
+AWS アカウントごとに一度アウトバウンド ID フェデレーションを有効にし、その後 IAM ロールとしてトークンを要求します。ロールには `sts:GetWebIdentityToken` の権限が必要です。
+
+```bash
+# Once per account
+aws iam enable-outbound-web-identity-federation
+
+# In the workload
+TOKEN=$(aws sts get-web-identity-token --audience https://api.phaseo.app \
+  --signing-algorithm ES384 --query WebIdentityToken --output text)
+
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from AWS"}]}'
+```
+
+Phaseo は `ES384` と `RS256` を受け付けます。トークンの有効期間はデフォルトで 5 分で、`--duration-seconds` を指定すると最長 1 時間にできます。
+</Tab>
+<Tab title="カスタム OIDC 発行元">
+Kubernetes では、Phaseo のオーディエンス向けに発行される投影サービス アカウント トークンをマウントします。
+
+```yaml
+spec:
+  serviceAccountName: api
+  containers:
+    - name: app
+      volumeMounts:
+        - name: phaseo-token
+          mountPath: /var/run/secrets/phaseo
+  volumes:
+    - name: phaseo-token
+      projected:
+        sources:
+          - serviceAccountToken:
+              audience: https://api.phaseo.app
+              expirationSeconds: 3600
+              path: token
+```
+
+リクエストのたびに `/var/run/secrets/phaseo/token` を読み、その内容を Bearer トークンとして送信します。Kubernetes はトークンの期限が切れる前にファイルを更新するため、値をメモリに保持しないでください。
+
+Bitbucket Pipelines では、`oidc` のオーディエンスを設定したステップで `BITBUCKET_STEP_OIDC_TOKEN` にトークンが入ります。
+</Tab>
 </Tabs>
 
 ---
@@ -214,7 +433,8 @@ GitHub Actions のトークンは有効期間が短いため、長時間のジ�
 - **キーと同じ制御。** リクエストはポリシーのキーとして実行されるため、キーのレート制限、予算、部署との関連付け、IP 許可リスト、ログ設定、課金は通常どおり適用されます。
 - **モデル呼び出しのみ。** ワークロードのトークンは、Gateway の API キーが使える場所で使えます。管理 API はこれを拒否します。
 - **一致するポリシーは 1 つだけ。** 2 つのワークスペースが同じワークロードを信頼している場合、Phaseo はどちらを指しているか判断できないため、リクエストを拒否します。`x-phaseo-workspace` ヘッダーでワークスペース ID を送信して、どちらかを選んでください。
-- **トークンの有効期間。** ポリシーの **受け付ける最長トークン** より長く有効になるよう発行されたトークンは拒否されます。
+- **トークンの有効期間。** ポリシーの **受け付ける最長トークン** より長く有効になるよう発行されたトークンは拒否されます。また、Phaseo は 12 時間を超えて有効になるよう発行されたトークンを受け付けません。Buildkite と AWS のトークンはデフォルトで 5 分、Google Cloud と CircleCI のトークンは 1 時間有効です。GitLab のトークンはジョブのタイムアウトと同じ期間有効なため、タイムアウトが 12 時間を超えるジョブでは Phaseo が拒否するトークンになります。AKS は最長 24 時間のトークンを発行できるため、`expirationSeconds` を短く設定してください。
+- **Azure にはまだ対応していません。** Azure のマネージド ID は、Phaseo のオーディエンス向けのトークンを要求できません。AKS 上のポッドは、カスタム発行元を通じて Kubernetes のサービス アカウント トークンを使えます。
 - **API キーには影響しません。** 信頼済みワークロードは 2 つ目の認証方法を追加するもので、API キーを変更したり無効にしたりはしません。
 
 ---
@@ -226,11 +446,12 @@ GitHub Actions のトークンは有効期間が短いため、長時間のジ�
 | メッセージ | 意味 | 対処 |
 | --- | --- | --- |
 | `workload_token_wrong_audience` | トークンが `https://api.phaseo.app` 向けに発行されていません。 | このオーディエンスでトークンを要求してください。 |
-| `workload_issuer_not_trusted` | このトークンの発行者を使う有効なポリシーがありません。 | Vercel のチームのスラッグまたは発行者モードと、ポリシーがオンになっているかを確認してください。 |
-| `workload_identity_no_matching_policy` | トークンは有効ですが、一致する有効なポリシーがありません。 | チーム、オーナー、プロジェクト、リポジトリの ID、環境、ブランチ、タグの条件、そしてトークンの有効期間がポリシーの **受け付ける最長トークン** を超えていないかを確認してください。 |
+| `workload_issuer_not_trusted` | このトークンの発行者を使う有効なポリシーがありません。 | ポリシーがオンになっているか、そして発行元がトークンの `iss` クレームと完全に一致しているか（Vercel のチームのスラッグや発行者モード、カスタム発行元の末尾のスラッシュを含む）を確認してください。 |
+| `workload_identity_no_matching_policy` | トークンは有効ですが、一致する有効なポリシーがありません。 | オーナー ID、プロジェクト、リポジトリ、パイプライン、ブランチ、タグ、環境の条件、そしてトークンの有効期間がポリシーの **受け付ける最長トークン** を超えていないかを確認してください。 |
 | `workload_identity_ambiguous` | 複数のワークスペースがこのワークロードを信頼しています。 | `x-phaseo-workspace: <workspace id>` を送信してください。 |
 | `workload_identity_not_enabled` | このワークスペースでは信頼済みワークロードをまだ利用できません。 | 当面は API キーを使ってください。 |
 | `workload_token_expired` | トークンの有効期限が切れています。 | リクエストまたはジョブのステップごとに新しいトークンを取得してください。 |
-| `workload_token_lifetime_too_long` | トークンが、Phaseo が受け付ける上限である 12 時間より長く有効になるよう発行されています。 | 有効期間の短いトークンを要求してください。 |
+| `workload_token_lifetime_too_long` | トークンが、Phaseo が受け付ける上限である 12 時間より長く有効になるよう発行されています。 | 有効期間の短いトークンを要求してください。たとえば Kubernetes では `expirationSeconds` を短くし、GitLab ではジョブのタイムアウトを短くします。 |
+| `workload_token_unsupported_alg` | トークンが RS256、ES256、ES384 のいずれでも署名されていません。 | 発行元がこれらのいずれかを使うように設定してください。 |
 | `workload_token_invalid_signature` | トークンの署名がプラットフォームの鍵と一致しません。 | プラットフォームが発行したトークンを、変更せずにそのまま送信してください。 |
-| `workload_jwks_unavailable` | Phaseo がプラットフォームの署名鍵を取得できませんでした。 | 少し待ってから再試行してください。 |
+| `workload_jwks_unavailable` | Phaseo がプラットフォームの署名鍵を取得できませんでした。 | 少し待ってから再試行してください。カスタム発行元の場合は、`<issuer>/.well-known/openid-configuration` が認証情報なしでインターネットから読み込めるか、そして `jwks_uri` が同じホストにあるかを確認してください。 |

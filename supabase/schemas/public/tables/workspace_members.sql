@@ -60,7 +60,11 @@ CREATE POLICY "team_members_select_own_team" ON "public"."workspace_members"
   TO "authenticated"
   USING (public.is_workspace_member(workspace_id));
 
-GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."workspace_members" TO "anon", "authenticated", "service_role";
+GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."workspace_members" TO "service_role";
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."workspace_members" TO "anon";
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."workspace_members" TO "authenticated";
 
 CREATE POLICY "team_members_update_admin" ON "public"."workspace_members"
   FOR UPDATE

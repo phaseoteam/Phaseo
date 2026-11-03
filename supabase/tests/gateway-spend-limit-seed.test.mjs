@@ -30,7 +30,9 @@ try {
     alter table public.keys add column if not exists department_id uuid;
     -- Department tables, trimmed to what the seed reads.
     create table public.workspace_departments (id uuid primary key, workspace_id uuid not null, name text not null);
-    create table public.workspace_department_grants (workspace_id uuid not null, user_id uuid not null, department_id uuid not null);
+    create table public.workspace_department_grants (workspace_id uuid not null, user_id uuid not null, department_id uuid not null,
+      source_type text not null default 'manual', is_primary boolean not null default false, created_at timestamptz not null default now());
+    alter table public.workspace_settings add column if not exists department_spend_attribution text not null default 'all';
     create table public.workspace_member_overrides (workspace_id uuid not null, user_id uuid not null,
       department_override_enabled boolean not null default false, department_id uuid, primary key (workspace_id, user_id));
     create table public.workspace_department_budgets (id uuid primary key default gen_random_uuid(), workspace_id uuid not null,
@@ -47,13 +49,14 @@ try {
   const migration = await readFile(new URL('../migrations/20261029095151_department_budgets_in_spend_limit_seed.sql', import.meta.url), 'utf8');
   await db.exec(migration);
   await db.exec(migration);
-  const definitions = await Promise.all([
-    'private/functions/department_budget_key_departments.sql',
-    'public/functions/workspace_department_budget_status.sql',
-    'public/functions/gateway_spend_limit_seed.sql',
-  ].map(schema));
-  assert.equal(definitions.join('\n'), migration.replace(/^SET local check_function_bodies = off;\n\n/, ''),
-    'migration matches the declarative definitions');
+  // Then the one teaching the helper the workspace's primary-department setting.
+  const attributionMigration = await readFile(new URL('../migrations/20261031174621_department_attribution_primary_for_budgets.sql', import.meta.url), 'utf8');
+  await db.exec(attributionMigration);
+  for (const path of ['public/functions/workspace_department_budget_status.sql', 'public/functions/gateway_spend_limit_seed.sql']) {
+    assert.ok(migration.includes((await schema(path)).trim()), `${path} matches its migration`);
+  }
+  assert.ok(attributionMigration.includes((await schema('private/functions/department_budget_key_departments.sql')).trim()),
+    'the helper matches its migration');
   const manifest = JSON.parse(await schema('.pgdelta-export.json'));
   for (const list of ['loadOrder', 'files']) {
     assert.ok(manifest[list].includes('private/functions/department_budget_key_departments.sql'), `helper is in the manifest's ${list}`);
@@ -264,6 +267,24 @@ try {
   assert.deepEqual(helper.map((row) => [row.department_id, row.key_id]),
     [...sorted([dk.u1, dk.u2, dk.oauth]).map((key) => [ENG, key]), [SALES, dk.linked]]);
   assert.equal((await db.query(`select has_function_privilege('service_role', 'private.department_budget_key_departments(uuid)', 'execute') as ok`)).rows[0].ok, false);
+
+  // u1 also joins Sales as their primary department: with "all" they count toward both, with
+  // "primary" toward Sales only. Overrides (u2, u4) and linked keys are unaffected.
+  await db.exec(`insert into public.workspace_department_grants(workspace_id, user_id, department_id, is_primary, created_at)
+    values ('${workspace}', '${u(1)}', '${SALES}', true, now() + interval '1 day')`);
+  const attributed = async (mode) => {
+    await db.query(`delete from public.workspace_settings where workspace_id = $1`, [workspace]);
+    await db.query(`insert into public.workspace_settings(workspace_id, department_spend_attribution) values ($1, $2)`, [workspace, mode]);
+    return (await db.query(`select key_id, department_id from private.department_budget_key_departments($1) order by department_id, key_id`, [workspace]))
+      .rows.map((row) => [row.department_id, row.key_id]);
+  };
+  assert.deepEqual(await attributed('all'),
+    [...sorted([dk.u1, dk.u2, dk.oauth]).map((key) => [ENG, key]), ...sorted([dk.linked, dk.u1]).map((key) => [SALES, key])]);
+  assert.deepEqual(await attributed('primary'),
+    [...sorted([dk.u2, dk.oauth]).map((key) => [ENG, key]), ...sorted([dk.linked, dk.u1]).map((key) => [SALES, key])]);
+  // Without a primary flag, manual beats SCIM and then the oldest grant wins.
+  await db.exec(`update public.workspace_department_grants set is_primary = false where user_id = '${u(1)}'`);
+  assert.deepEqual((await attributed('primary')).filter(([, key]) => key === dk.u1), [[ENG, dk.u1]]);
 
   await assert.rejects(db.query(`select public.gateway_spend_limit_seed(null, ${keyIds})`), /workspace_id_required/);
   await assert.rejects(db.query(`select public.gateway_spend_limit_seed('${workspace}', ${keyIds},

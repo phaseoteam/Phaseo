@@ -298,7 +298,12 @@ test("builds workload identity, audit event, app, feedback, and test run request
 		await build(["workload-identity", "policies", "create", "--name", "CI", "--provider", "github_actions", "--owner-id", "acme", "--claim-conditions-json", "{\"repository\":\"acme/app\"}"]),
 		{ method: "POST", path: "/workload-identity/policies", body: { name: "CI", provider: "github_actions", owner_id: "acme", claim_conditions: { repository: "acme/app" } } },
 	);
+	assert.deepEqual(
+		await build(["workload-identity", "policies", "create", "--name", "Cluster", "--provider", "custom", "--issuer", "https://oidc.example.com", "--owner-claim", "sub", "--owner-id", "system:serviceaccount:prod:api"]),
+		{ method: "POST", path: "/workload-identity/policies", body: { name: "Cluster", provider: "custom", issuer: "https://oidc.example.com", owner_claim: "sub", owner_id: "system:serviceaccount:prod:api" } },
+	);
 	await assert.rejects(build(["workload-identity", "policies", "update", "p1", "--provider", "vercel"]), /Provide a field to update/);
+	await assert.rejects(build(["workload-identity", "policies", "update", "p1", "--owner-claim", "email"]), /Provide a field to update/);
 	assert.deepEqual(await build(["audit-events", "list", "--action", "key.created", "--target-type", "key", "--limit", "10"]), {
 		method: "GET",
 		path: "/audit-events?limit=10&action=key.created&target_type=key",

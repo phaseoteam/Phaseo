@@ -1,0 +1,9 @@
+---
+title: "更新支出规则"
+sidebarTitle: "更新规则"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml PATCH /spend-rules/{id}"
+description: "更改支出规则的字段、通知目标或操作。"
+---
+
+需要 `spend_rules:write`。你发送的字段会合并到已保存的规则上，然后重新检查整条规则。`destination_ids` 会替换规则的通知目标；省略则保留现有目标。更改拦截规则的操作、范围、周期或基准会解除其当前拦截。

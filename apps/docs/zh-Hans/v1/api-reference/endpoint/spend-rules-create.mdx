@@ -1,0 +1,9 @@
+---
+title: "创建支出规则"
+sidebarTitle: "创建规则"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /spend-rules"
+description: "创建支出警报，也可以创建在超出限额后拦截请求的提醒。"
+---
+
+需要 `spend_rules:write`。OAuth 调用方必须是工作区所有者或管理员。每个金额请以 USD（`*_usd`）或纳美元（`*_nanos`）之一发送，不要同时发送。每个工作区最多可有 50 条支出规则。指标、基准、范围和周期见[支出警报指南](../../guides/spend-alerts.mdx)。

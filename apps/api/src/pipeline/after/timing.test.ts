@@ -6,6 +6,7 @@ import {
 	resolveExecuteTotalLatencyMs,
 	resolveFailoverMs,
 	resolveNonStreamLatencyMs,
+	recordProviderRound,
 } from "./timing";
 
 function buildContext(overrides?: Partial<PipelineContext>): PipelineContext {
@@ -120,5 +121,55 @@ describe("after timing helpers", () => {
 		});
 
 		expect(resolveNonStreamLatencyMs(ctx, 25)).toBeNull();
+	});
+});
+
+describe("recordProviderRound", () => {
+	// The request from 11-02: received at 0, sent to the provider at 1173, first
+	// output at 1974, stream read to the end at 2118 (one round, no failover).
+	it("times a response read to the end from the selected dispatch, whatever the provider", () => {
+		const ctx = buildContext();
+		ctx.meta.startedAtMs = 0;
+		ctx.meta.upstreamFetchStartMs = 1173;
+		ctx.meta.selectedUpstreamFetchStartMs = 1173;
+		recordProviderRound(ctx, { completedAtMs: 2118, firstOutputAtMs: 1974 });
+		expect(ctx.meta.generation_ms).toBe(945);
+		expect(ctx.meta.provider_ttft_ms).toBe(801);
+		expect(ctx.meta.latency_ms).toBe(801);
+		expect(resolveFailoverMs(ctx)).toBe(0);
+	});
+
+	it("adds up server-tool rounds, keeps the first round's TTFT and sums failover per round", () => {
+		const ctx = buildContext();
+		ctx.meta.startedAtMs = 0;
+		// Round 1: a failed attempt at 100, the selected provider at 300, done at 1300.
+		ctx.meta.upstreamFetchStartMs = 100;
+		ctx.meta.selectedUpstreamFetchStartMs = 300;
+		recordProviderRound(ctx, { completedAtMs: 1300, firstOutputAtMs: 700 });
+		// Tools run until 1500; round 2 is sent at 1500 and done at 2000.
+		ctx.meta.upstreamFetchStartMs = 1500;
+		ctx.meta.selectedUpstreamFetchStartMs = 1500;
+		recordProviderRound(ctx, { completedAtMs: 2000, firstOutputAtMs: 1600 });
+		expect(ctx.meta.generation_ms).toBe(1500);
+		expect(ctx.meta.provider_ttft_ms).toBe(400);
+		// Only round 1's failed attempt, not the time between rounds.
+		expect(resolveFailoverMs(ctx)).toBe(200);
+	});
+
+	it("uses a buffered executor's first-output time when no stream was read", () => {
+		const ctx = buildContext();
+		ctx.meta.selectedUpstreamFetchStartMs = 1000;
+		ctx.meta.latency_ms = 250;
+		recordProviderRound(ctx, { completedAtMs: 1600 });
+		expect(ctx.meta.generation_ms).toBe(600);
+		expect(ctx.meta.provider_ttft_ms).toBe(250);
+	});
+
+	it("leaves an executor's own figures alone without a dispatch clock", () => {
+		const ctx = buildContext();
+		ctx.meta.generation_ms = 321;
+		recordProviderRound(ctx, { completedAtMs: 5000, firstOutputAtMs: 4000 });
+		expect(ctx.meta.generation_ms).toBe(321);
+		expect(ctx.meta.provider_ttft_ms).toBeUndefined();
 	});
 });

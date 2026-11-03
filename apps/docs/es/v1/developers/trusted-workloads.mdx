@@ -1,6 +1,6 @@
 ---
 title: "Cargas de trabajo de confianza"
-description: "Permite que los despliegues de Vercel y los jobs de GitHub Actions llamen a Phaseo con un token OIDC de corta duración en lugar de una clave de API."
+description: "Permite que despliegues, jobs de CI y cargas de trabajo en la nube en Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI, AWS o tu propio emisor OIDC llamen a Phaseo sin clave de API."
 icon: "fingerprint-pattern"
 ---
 
@@ -8,22 +8,24 @@ icon: "fingerprint-pattern"
 Las cargas de trabajo de confianza están en beta y se están habilitando de forma gradual en los espacios de trabajo. Si **Ajustes → Claves de API → Cargas de trabajo de confianza** no aparece en tu panel, tu espacio de trabajo todavía no las tiene.
 </Note>
 
-Vercel y GitHub Actions dan a cada despliegue o job un token firmado que indica quién es, por ejemplo "este es el despliegue de producción del proyecto `website`" o "este es un workflow de `acme/app`". El token caduca en unas horas. Con las cargas de trabajo de confianza, le indicas a Phaseo en qué cargas de trabajo confiar, y estas envían ese token en lugar de una clave de API. No tienes que guardar nada de larga duración en los ajustes del proyecto ni en los secretos de CI.
+Muchas plataformas dan a cada despliegue, job o carga de trabajo un token firmado que indica quién es, por ejemplo "este es el despliegue de producción del proyecto `website`" o "este es un job del proyecto de GitLab `4815162`". El token caduca en unas horas. Con las cargas de trabajo de confianza, le indicas a Phaseo en qué cargas de trabajo confiar, y estas envían ese token en lugar de una clave de API. No tienes que guardar nada de larga duración en los ajustes del proyecto ni en los secretos de CI.
 
-Las claves de API siguen funcionando. Usa las cargas de trabajo de confianza para el código que se ejecuta en Vercel o en GitHub Actions, y mantén las claves de API para todo lo demás, como servidores en otros lugares, scripts locales y aplicaciones móviles.
+Phaseo confía en tokens de Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI y AWS, y de un emisor OIDC que gestiones tú mismo, como un clúster de Kubernetes, Bitbucket Pipelines o GitLab autogestionado.
+
+Las claves de API siguen funcionando. Usa las cargas de trabajo de confianza para el código que se ejecuta en estas plataformas, y mantén las claves de API para todo lo demás, como scripts locales y aplicaciones móviles.
 
 ---
 
 ## Cómo funciona
 
-1. Un propietario o administrador del espacio de trabajo crea una **política de confianza** en **Ajustes → Claves de API → Cargas de trabajo de confianza**. La política indica la plataforma, tu equipo de Vercel o tu propietario de GitHub, y condiciones opcionales como un proyecto, un repositorio, una rama o un entorno.
+1. Un propietario o administrador del espacio de trabajo crea una **política de confianza** en **Ajustes → Claves de API → Cargas de trabajo de confianza**. La política indica la plataforma, el propietario en el que confía, como un propietario de GitHub, un proyecto de GitLab o un rol de AWS, y condiciones opcionales como un proyecto, un repositorio, una rama o un entorno.
 2. Tu código solicita a la plataforma un token para la audiencia `https://api.phaseo.app` y lo envía como `Authorization: Bearer <token>`.
 3. Phaseo comprueba la firma y la caducidad del token, y después busca exactamente una política activa que coincida con él.
 4. La solicitud se ejecuta como la clave de esa política. Recibe los mismos límites de velocidad, presupuestos, registros y facturación que una solicitud hecha con una clave de API.
 
 ### Por qué importa la audiencia
 
-Los tokens deben emitirse para la audiencia `https://api.phaseo.app`. De forma predeterminada, Vercel y GitHub Actions emiten tokens para una audiencia que comparten todos los servicios a los que llama tu carga de trabajo. Si Phaseo los aceptara, un token que enviaste a otro servicio podría reutilizarse para llamar a Phaseo. Phaseo rechaza los tokens con cualquier otra audiencia.
+Los tokens deben emitirse para la audiencia `https://api.phaseo.app`. De forma predeterminada, la mayoría de las plataformas emiten tokens para una audiencia que comparten todos los servicios a los que llama tu carga de trabajo. Si Phaseo los aceptara, un token que enviaste a otro servicio podría reutilizarse para llamar a Phaseo. Phaseo rechaza los tokens con cualquier otra audiencia.
 
 ---
 
@@ -34,6 +36,8 @@ Los tokens deben emitirse para la audiencia `https://api.phaseo.app`. De forma p
 Ve a **Ajustes → Claves de API → Cargas de trabajo de confianza** y selecciona **Nueva política**. Solo los propietarios y administradores del espacio de trabajo pueden gestionar políticas.
 </Step>
 <Step title="Elige la plataforma y completa los ID">
+Cada plataforma fija la política a un ID que no se puede renombrar ni puede pasar a manos de otra persona. Los nombres pueden cambiar de dueño, así que Phaseo nunca confía solo en un nombre.
+
 <Tabs>
 <Tab title="Vercel">
 - **Slug del equipo**: el slug del equipo, como en `vercel.com/<team-slug>`. Déjalo vacío si tu proyecto usa el modo de emisor global de Vercel (emisor `https://oidc.vercel.com` en lugar de `https://oidc.vercel.com/<team-slug>`).
@@ -53,6 +57,66 @@ gh api repos/OWNER/REPO --jq '.id, .owner.id'
 ```
 
 Phaseo usa ID numéricos porque los nombres pueden cambiarse o pasar a manos de otra persona.
+</Tab>
+<Tab title="GitLab">
+Para proyectos en GitLab.com. Para GitLab autogestionado, usa **Emisor OIDC propio**.
+
+- **ID del proyecto**: el ID numérico de la página de resumen del proyecto. No cambia si el proyecto se renombra o se mueve a otro grupo, por eso Phaseo fija este ID y no el grupo.
+- **Rama o etiqueta** (opcional): el nombre de la rama o etiqueta, como `main`.
+- **Entorno** (opcional): el entorno del job, como `production`.
+
+Deja ambas condiciones vacías para aceptar todos los jobs del proyecto.
+</Tab>
+<Tab title="Google Cloud">
+Para tokens del servidor de metadatos en Cloud Run, Compute Engine, GKE, Cloud Run functions, App Engine y Cloud Build.
+
+- **ID único de la cuenta de servicio**: el ID único numérico de la página de detalles de la cuenta de servicio en la consola de Google Cloud. Todas las cuentas de Google comparten el mismo emisor, así que este ID es lo que distingue tu carga de trabajo. No uses el correo: si se elimina la cuenta de servicio, alguien puede crear otra con el mismo correo.
+- **Correo de la cuenta de servicio** (opcional): una comprobación adicional. Los tokens solo incluyen el correo cuando la carga de trabajo los solicita con `format=full`.
+</Tab>
+<Tab title="Buildkite">
+- **ID de la organización**: el UUID de la organización. Todos los tokens de Buildkite lo llevan en el claim `organization_id`, así que puedes leerlo en un token que solicite una de tus pipelines. A diferencia del slug de la organización, nunca cambia.
+- **Slug de la pipeline** (opcional): sin él, se confía en todas las pipelines de la organización.
+</Tab>
+<Tab title="CircleCI">
+- **ID de la organización**: lo encontrarás en **Organization Settings → Overview**. Cada organización de CircleCI tiene su propio emisor, `https://oidc.circleci.com/org/<organisation ID>`, y Phaseo lo construye a partir de este ID.
+- **ID del proyecto** (opcional): lo encontrarás en **Project Settings → Overview**. Sin él, se confía en todos los proyectos de la organización.
+</Tab>
+<Tab title="AWS">
+Para tokens de la federación de identidad saliente de IAM (outbound identity federation), que da a un rol de IAM un token firmado para un servicio externo.
+
+- **URL del emisor**: cada cuenta de AWS tiene su propio emisor, que termina en `.tokens.sts.global.api.aws`. Ejecuta `aws iam get-outbound-web-identity-federation-info` y copia `IssuerIdentifier`. Si falla, activa primero la función con `aws iam enable-outbound-web-identity-federation`.
+- **ARN del rol de IAM**: solo se aceptan tokens de este rol, como `arn:aws:iam::123456789012:role/evals`. El emisor ya identifica tu cuenta, así que el ARN del rol identifica la carga de trabajo.
+</Tab>
+<Tab title="Emisor OIDC propio">
+Usa esta opción para cualquier otro emisor OIDC que cumpla todo lo siguiente:
+
+- Su URL de emisor es una URL `https://` pública, sin puerto, query ni fragmento, y no está en un host que pertenezca a una de las plataformas anteriores.
+- Ofrece un documento de descubrimiento en `<issuer>/.well-known/openid-configuration`.
+- Sus claves de firma (`jwks_uri`) están en el mismo host que el emisor.
+- Firma los tokens con RS256, ES256 o ES384 y puede emitirlos para la audiencia `https://api.phaseo.app`.
+
+Completa:
+
+- **URL del emisor**: cópiala exactamente como aparece en el claim `iss` del token, incluida cualquier barra final.
+- **Claim del propietario** y **Valor del propietario**: el claim que debe llevar cada token y el valor exacto que debe tener. Elige un claim que nadie más pueda reutilizar, como un ID numérico, en lugar de un nombre que se pueda renombrar o volver a registrar.
+- **Claim adicional** y **Valor obligatorio** (opcionales): otro claim con el que debe coincidir el token.
+
+Las condiciones solo se aplican a claims de primer nivel. No se pueden usar claims anidados, como el objeto `kubernetes.io` de Kubernetes.
+
+**Kubernetes (EKS, GKE, AKS)**: cada clúster tiene su propio emisor. En EKS, ejecuta `aws eks describe-cluster --name <cluster> --query cluster.identity.oidc.issuer`. En AKS, activa el emisor OIDC y ejecuta `az aks show -n <cluster> -g <resource-group> --query oidcIssuerProfile.issuerUrl`. En GKE, el emisor es `https://container.googleapis.com/v1/projects/<project>/locations/<location>/clusters/<cluster>`. Usa `sub` como claim del propietario, con el valor `system:serviceaccount:<namespace>:<service-account>`.
+
+Los clústeres de Kubernetes autogestionados cuyo endpoint de descubrimiento no es público no funcionan. Phaseo tiene que obtener el documento de descubrimiento y las claves desde internet sin credenciales, y la mayoría de los clústeres no lo permiten de forma predeterminada.
+
+**Bitbucket Pipelines**: el emisor es `https://api.bitbucket.org/2.0/workspaces/<workspace>/pipelines-config/identity/oidc`. Usa `workspaceUuid` como claim del propietario, con el valor incluidas sus llaves, como `{a1b2c3d4-...}`. Pide la audiencia de Phaseo en el step:
+
+```yaml
+- step:
+    oidc:
+      audiences:
+        - https://api.phaseo.app
+```
+
+**GitLab autogestionado**: el emisor es la URL de tu GitLab, como `https://gitlab.example.com`. Usa `project_id` como claim del propietario, con el ID numérico del proyecto. Tu instancia debe ser accesible desde internet.
 </Tab>
 </Tabs>
 </Step>
@@ -84,7 +148,32 @@ resource "phaseo_trusted_workload" "deploy" {
 }
 ```
 
-`platform` es `vercel` o `github_actions`. En Vercel, define también `issuer` como `https://oidc.vercel.com/<team-slug>`, o `https://oidc.vercel.com` en el modo de emisor global, y usa condiciones como `project_id` y `environment`. Si cambias la plataforma, el emisor o el propietario, la política se reemplaza. Una política no tiene secreto, así que no se guarda nada sensible en el estado de Terraform.
+`owner_id` es el valor del claim del propietario de la plataforma. Define `issuer` cuando la plataforma lo necesite:
+
+| `platform` | `issuer` | Claim del propietario |
+| --- | --- | --- |
+| `vercel` | Obligatorio: `https://oidc.vercel.com/<team-slug>`, o `https://oidc.vercel.com` en el modo de emisor global | `owner_id` (ID del equipo) |
+| `github_actions` | Predeterminado: `https://token.actions.githubusercontent.com` | `repository_owner_id` |
+| `gitlab` | Predeterminado: `https://gitlab.com` | `project_id` |
+| `google_cloud` | Predeterminado: `https://accounts.google.com` | `sub` (ID único de la cuenta de servicio) |
+| `buildkite` | Predeterminado: `https://agent.buildkite.com` | `organization_id` |
+| `circleci` | Obligatorio: `https://oidc.circleci.com/org/<organisation ID>` | `oidc.circleci.com/org-id` |
+| `aws` | Obligatorio: el emisor de tu cuenta | `sub` (ARN del rol de IAM) |
+| `custom` | Obligatorio: la URL de tu emisor | El claim que defines en `owner_claim` |
+
+Para un emisor propio, define también `owner_claim`:
+
+```hcl
+resource "phaseo_trusted_workload" "cluster" {
+  name        = "Production cluster"
+  platform    = "custom"
+  issuer      = "https://oidc.eks.us-east-1.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE"
+  owner_claim = "sub"
+  owner_id    = "system:serviceaccount:prod:api"
+}
+```
+
+Si cambias la plataforma, el emisor, el claim del propietario o el propietario, la política se reemplaza. Una política no tiene secreto, así que no se guarda nada sensible en el estado de Terraform.
 
 Con la API, envía los mismos campos a `/v1/workload-identity/policies`. En la API, la plataforma se llama `provider`:
 
@@ -95,13 +184,22 @@ curl https://api.phaseo.app/v1/workload-identity/policies \
   -d '{"name":"GitHub deploy (main)","provider":"github_actions","owner_id":"123456","claim_conditions":{"repository_id":["987654321"],"ref":["refs/heads/main"]}}'
 ```
 
+Para un emisor propio:
+
+```bash
+curl https://api.phaseo.app/v1/workload-identity/policies \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Production cluster","provider":"custom","issuer":"https://oidc.eks.us-east-1.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE","owner_claim":"sub","owner_id":"system:serviceaccount:prod:api"}'
+```
+
 La [referencia de la API](../api-reference/endpoint/trusted-workloads-create.mdx) describe todos los campos y respuestas.
 
 ---
 
 ## Llamar a Phaseo con un token
 
-Todos los SDK de Phaseo aceptan una función en lugar de la clave de API y la llaman antes de cada solicitud y cada reintento, así que cada solicitud usa un token vigente. Todos los SDK salvo C++ incluyen una función auxiliar para cada plataforma. Obtiene un token emitido para `https://api.phaseo.app` y lo reutiliza hasta un minuto antes de que caduque:
+Todos los SDK de Phaseo aceptan una función en lugar de la clave de API y la llaman antes de cada solicitud y cada reintento, así que cada solicitud usa un token vigente. Todos los SDK salvo C++ incluyen una función auxiliar para GitHub Actions y otra para Vercel. Obtiene un token emitido para `https://api.phaseo.app` y lo reutiliza hasta un minuto antes de que caduque:
 
 | SDK | GitHub Actions | Vercel |
 | --- | --- | --- |
@@ -116,6 +214,22 @@ Todos los SDK de Phaseo aceptan una función en lugar de la clave de API y la ll
 | C++ | Pasa tu propia función a `set_api_key_provider` | Pasa tu propia función a `set_api_key_provider` |
 
 Las funciones auxiliares necesitan la próxima versión de cada SDK. En Vercel, la función auxiliar intercambia el token del despliegue de `VERCEL_OIDC_TOKEN_FILE` o `VERCEL_OIDC_TOKEN`. En Vercel Functions el token llega en cada solicitud en la cabecera `x-vercel-oidc-token`; pásalo a la función auxiliar como origen del token.
+
+En otras plataformas, pasa tu propia función que devuelva el token, por ejemplo una que lea la variable del job de GitLab o llame al servidor de metadatos de Google Cloud:
+
+```ts
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({
+	apiKey: async () => {
+		const response = await fetch(
+			"http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=https://api.phaseo.app",
+			{ headers: { "Metadata-Flavor": "Google" } },
+		);
+		return response.text();
+	},
+});
+```
 
 <Tabs>
 <Tab title="Vercel">
@@ -205,6 +319,111 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 Los tokens de GitHub Actions son de corta duración, así que solicita uno nuevo en los jobs largos.
 </Tab>
+<Tab title="GitLab">
+Añade una entrada `id_tokens` al job en `.gitlab-ci.yml`. GitLab pone el token en la variable que indiques:
+
+```yaml
+evals:
+  id_tokens:
+    PHASEO_TOKEN:
+      aud: https://api.phaseo.app
+  script:
+    - >
+      curl https://api.phaseo.app/v1/chat/completions
+      -H "Authorization: Bearer $PHASEO_TOKEN"
+      -H "Content-Type: application/json"
+      -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from GitLab"}]}'
+```
+
+El token dura lo mismo que el tiempo de espera (timeout) del job.
+</Tab>
+<Tab title="Google Cloud">
+Solicita el token al servidor de metadatos. Funciona en Cloud Run, Compute Engine, GKE, Cloud Run functions, App Engine y Cloud Build:
+
+```bash
+TOKEN=$(curl -sS -H "Metadata-Flavor: Google" \
+  "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=https://api.phaseo.app")
+
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from Google Cloud"}]}'
+```
+
+Añade `&format=full` a la URL si tu política comprueba el correo de la cuenta de servicio. Los tokens duran 1 hora.
+</Tab>
+<Tab title="Buildkite">
+Solicita el token con el agente en el comando de un step:
+
+```bash
+TOKEN=$(buildkite-agent oidc request-token --audience https://api.phaseo.app)
+
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from Buildkite"}]}'
+```
+
+Los tokens duran 5 minutos de forma predeterminada. En steps más largos, solicita uno nuevo o pasa `--lifetime` en segundos.
+</Tab>
+<Tab title="CircleCI">
+Solicita el token con la CLI de CircleCI en un paso del job:
+
+```bash
+TOKEN=$(circleci run oidc get --claims '{"aud":"https://api.phaseo.app"}')
+
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from CircleCI"}]}'
+```
+
+Los tokens duran 1 hora.
+</Tab>
+<Tab title="AWS">
+Activa la federación de identidad saliente una vez por cuenta de AWS y luego solicita un token como el rol de IAM. El rol necesita permiso para `sts:GetWebIdentityToken`.
+
+```bash
+# Once per account
+aws iam enable-outbound-web-identity-federation
+
+# In the workload
+TOKEN=$(aws sts get-web-identity-token --audience https://api.phaseo.app \
+  --signing-algorithm ES384 --query WebIdentityToken --output text)
+
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from AWS"}]}'
+```
+
+Phaseo acepta `ES384` y `RS256`. Los tokens duran 5 minutos de forma predeterminada; pasa `--duration-seconds` para que duren hasta 1 hora.
+</Tab>
+<Tab title="Emisor OIDC propio">
+En Kubernetes, monta un token proyectado de cuenta de servicio emitido para la audiencia de Phaseo:
+
+```yaml
+spec:
+  serviceAccountName: api
+  containers:
+    - name: app
+      volumeMounts:
+        - name: phaseo-token
+          mountPath: /var/run/secrets/phaseo
+  volumes:
+    - name: phaseo-token
+      projected:
+        sources:
+          - serviceAccountToken:
+              audience: https://api.phaseo.app
+              expirationSeconds: 3600
+              path: token
+```
+
+Lee `/var/run/secrets/phaseo/token` antes de cada solicitud y envía su contenido como token bearer. Kubernetes renueva el archivo antes de que caduque el token, así que no guardes el valor en memoria.
+
+En Bitbucket Pipelines, un step con audiencias `oidc` definidas recibe el token en `BITBUCKET_STEP_OIDC_TOKEN`.
+</Tab>
 </Tabs>
 
 ---
@@ -214,7 +433,8 @@ Los tokens de GitHub Actions son de corta duración, así que solicita uno nuevo
 - **Los mismos controles que una clave.** Las solicitudes se ejecutan como la clave de la política, así que se aplican como siempre los límites de velocidad de la clave, los presupuestos, los vínculos a departamentos, las listas de IP permitidas, los ajustes de registro y la facturación.
 - **Solo llamadas a modelos.** Los tokens de cargas de trabajo funcionan donde funciona una clave de API del gateway. Las API de administración los rechazan.
 - **Una sola política coincidente.** Si dos espacios de trabajo confían en la misma carga de trabajo, Phaseo no puede saber a cuál te refieres y rechaza la solicitud. Envía el ID del espacio de trabajo en la cabecera `x-phaseo-workspace` para elegir uno.
-- **Duración del token.** Se rechazan los tokens emitidos para durar más que el **Token más largo aceptado** de la política.
+- **Duración del token.** Se rechazan los tokens emitidos para durar más que el **Token más largo aceptado** de la política, y Phaseo nunca acepta tokens emitidos para más de 12 horas. Los tokens de Buildkite y AWS duran 5 minutos de forma predeterminada; los de Google Cloud y CircleCI, 1 hora. Los tokens de GitLab duran lo mismo que el tiempo de espera del job, así que un job con un tiempo de espera de más de 12 horas recibe un token que Phaseo rechaza. AKS puede emitir tokens de hasta 24 horas, así que define un `expirationSeconds` más corto.
+- **Azure aún no es compatible.** Las identidades administradas de Azure no pueden solicitar tokens para la audiencia de Phaseo. Los pods de AKS sí pueden usar un token de cuenta de servicio de Kubernetes mediante un emisor propio.
 - **Las claves de API no cambian.** Las cargas de trabajo de confianza añaden una segunda forma de autenticarse; no modifican ni desactivan las claves de API.
 
 ---
@@ -226,11 +446,12 @@ Un token rechazado devuelve `401` con uno de estos mensajes:
 | Mensaje | Qué significa | Qué hacer |
 | --- | --- | --- |
 | `workload_token_wrong_audience` | El token no se emitió para `https://api.phaseo.app`. | Solicita el token con esa audiencia. |
-| `workload_issuer_not_trusted` | Ninguna política activa usa el emisor de este token. | Revisa el slug del equipo de Vercel o el modo de emisor, y que la política esté activada. |
-| `workload_identity_no_matching_policy` | El token es válido, pero ninguna política activa coincide con él. | Revisa los ID de equipo, propietario, proyecto o repositorio, las condiciones de entorno, rama o etiqueta, y que el token no dure más que el **Token más largo aceptado** de la política. |
+| `workload_issuer_not_trusted` | Ninguna política activa usa el emisor de este token. | Revisa que la política esté activada y que su emisor coincida exactamente con el claim `iss` del token, incluidos el slug del equipo de Vercel o el modo de emisor y cualquier barra final en un emisor propio. |
+| `workload_identity_no_matching_policy` | El token es válido, pero ninguna política activa coincide con él. | Revisa el ID del propietario, las condiciones de proyecto, repositorio, pipeline, rama, etiqueta o entorno, y que el token no dure más que el **Token más largo aceptado** de la política. |
 | `workload_identity_ambiguous` | Más de un espacio de trabajo confía en esta carga de trabajo. | Envía `x-phaseo-workspace: <workspace id>`. |
 | `workload_identity_not_enabled` | Las cargas de trabajo de confianza aún no están disponibles para este espacio de trabajo. | Usa una clave de API por ahora. |
 | `workload_token_expired` | El token ha caducado. | Solicita un token nuevo en cada solicitud o paso del job. |
-| `workload_token_lifetime_too_long` | El token se emitió para durar más de 12 horas, el máximo que acepta Phaseo. | Solicita un token de menor duración. |
+| `workload_token_lifetime_too_long` | El token se emitió para durar más de 12 horas, el máximo que acepta Phaseo. | Solicita un token de menor duración, por ejemplo con un `expirationSeconds` más corto en Kubernetes o un tiempo de espera del job más corto en GitLab. |
+| `workload_token_unsupported_alg` | El token no está firmado con RS256, ES256 ni ES384. | Configura el emisor para que use uno de ellos. |
 | `workload_token_invalid_signature` | La firma del token no coincide con las claves de la plataforma. | Envía el token sin modificar, tal como lo emitió la plataforma. |
-| `workload_jwks_unavailable` | Phaseo no pudo obtener las claves de firma de la plataforma. | Vuelve a intentarlo tras una breve espera. |
+| `workload_jwks_unavailable` | Phaseo no pudo obtener las claves de firma de la plataforma. | Vuelve a intentarlo tras una breve espera. En un emisor propio, comprueba que `<issuer>/.well-known/openid-configuration` se cargue desde internet sin credenciales y que su `jwks_uri` esté en el mismo host. |

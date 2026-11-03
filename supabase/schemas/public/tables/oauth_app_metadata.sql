@@ -66,7 +66,9 @@ CREATE POLICY "oauth_app_metadata_update_own_team" ON "public"."oauth_app_metada
   USING (public.is_workspace_member(workspace_id))
   WITH CHECK (public.is_workspace_member(workspace_id));
 
-GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."oauth_app_metadata" TO "anon", "authenticated", "service_role";
+GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."oauth_app_metadata" TO "service_role";
+
+GRANT SELECT ON TABLE "public"."oauth_app_metadata" TO "authenticated";
 
 COMMENT ON COLUMN "public"."oauth_app_metadata"."redirect_uris" IS 'Registered OAuth callback URLs for this app (mirrors Supabase OAuth client redirect_uris).';
 

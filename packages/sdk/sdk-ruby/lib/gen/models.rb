@@ -2532,10 +2532,6 @@ module Phaseo
     #   @return [Array<String>, nil]
     # @!attribute [rw] created_at
     #   @return [String, nil]
-    # @!attribute [rw] daily_limit_cost_nanos
-    #   @return [Integer, nil]
-    # @!attribute [rw] daily_limit_requests
-    #   @return [Integer, nil]
     # @!attribute [rw] description
     #   @return [String, nil]
     # @!attribute [rw] enabled
@@ -2544,10 +2540,6 @@ module Phaseo
     #   @return [String]
     # @!attribute [rw] model_restriction_mode
     #   @return [String, nil]
-    # @!attribute [rw] monthly_limit_cost_nanos
-    #   @return [Integer, nil]
-    # @!attribute [rw] monthly_limit_requests
-    #   @return [Integer, nil]
     # @!attribute [rw] name
     #   @return [String]
     # @!attribute [rw] privacy_enable_free_may_publish_prompts
@@ -2578,30 +2570,11 @@ module Phaseo
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] updated_at
     #   @return [String, nil]
-    # @!attribute [rw] weekly_limit_cost_nanos
-    #   @return [Integer, nil]
-    # @!attribute [rw] weekly_limit_requests
-    #   @return [Integer, nil]
     # @!attribute [rw] workspace_id
     #   @return [String]
-    Guardrail = Struct.new(:allowed_api_model_ids, :created_at, :daily_limit_cost_nanos, :daily_limit_requests, :description, :enabled, :id, :model_restriction_mode, :monthly_limit_cost_nanos, :monthly_limit_requests, :name, :privacy_enable_free_may_publish_prompts, :privacy_enable_free_may_train, :privacy_enable_input_output_logging, :privacy_enable_paid_may_train, :privacy_zdr_only, :prompt_injection_action, :prompt_injection_enabled, :provider_restriction_enforce_allowed, :provider_restriction_mode, :provider_restriction_provider_ids, :sensitive_info_default_action, :sensitive_info_enabled, :sensitive_info_rules, :updated_at, :weekly_limit_cost_nanos, :weekly_limit_requests, :workspace_id, keyword_init: true)
-    # @!attribute [rw] dailyCostNanos
-    #   @return [Integer, nil]
-    # @!attribute [rw] dailyRequests
-    #   @return [Integer, nil]
-    # @!attribute [rw] monthlyCostNanos
-    #   @return [Integer, nil]
-    # @!attribute [rw] monthlyRequests
-    #   @return [Integer, nil]
-    # @!attribute [rw] weeklyCostNanos
-    #   @return [Integer, nil]
-    # @!attribute [rw] weeklyRequests
-    #   @return [Integer, nil]
-    GuardrailBudgetInput = Struct.new(:dailyCostNanos, :dailyRequests, :monthlyCostNanos, :monthlyRequests, :weeklyCostNanos, :weeklyRequests, keyword_init: true)
+    Guardrail = Struct.new(:allowed_api_model_ids, :created_at, :description, :enabled, :id, :model_restriction_mode, :name, :privacy_enable_free_may_publish_prompts, :privacy_enable_free_may_train, :privacy_enable_input_output_logging, :privacy_enable_paid_may_train, :privacy_zdr_only, :prompt_injection_action, :prompt_injection_enabled, :provider_restriction_enforce_allowed, :provider_restriction_mode, :provider_restriction_provider_ids, :sensitive_info_default_action, :sensitive_info_enabled, :sensitive_info_rules, :updated_at, :workspace_id, keyword_init: true)
     # @!attribute [rw] allowedApiModelIds
     #   @return [Array<String>, nil]
-    # @!attribute [rw] budgets
-    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] description
     #   @return [String, nil]
     # @!attribute [rw] enabled
@@ -2636,7 +2609,7 @@ module Phaseo
     #   @return [Boolean, nil]
     # @!attribute [rw] sensitiveInfoRules
     #   @return [Array<Hash{String => Object}>, nil]
-    GuardrailCreateRequest = Struct.new(:allowedApiModelIds, :budgets, :description, :enabled, :modelRestrictionMode, :name, :privacyEnableFreeMayPublishPrompts, :privacyEnableFreeMayTrain, :privacyEnableInputOutputLogging, :privacyEnablePaidMayTrain, :privacyZdrOnly, :promptInjectionAction, :promptInjectionEnabled, :providerRestrictionEnforceAllowed, :providerRestrictionMode, :providerRestrictionProviderIds, :sensitiveInfoDefaultAction, :sensitiveInfoEnabled, :sensitiveInfoRules, keyword_init: true)
+    GuardrailCreateRequest = Struct.new(:allowedApiModelIds, :description, :enabled, :modelRestrictionMode, :name, :privacyEnableFreeMayPublishPrompts, :privacyEnableFreeMayTrain, :privacyEnableInputOutputLogging, :privacyEnablePaidMayTrain, :privacyZdrOnly, :promptInjectionAction, :promptInjectionEnabled, :providerRestrictionEnforceAllowed, :providerRestrictionMode, :providerRestrictionProviderIds, :sensitiveInfoDefaultAction, :sensitiveInfoEnabled, :sensitiveInfoRules, keyword_init: true)
     # @!attribute [rw] deleted
     #   @return [String]
     GuardrailDeleteResponse = Struct.new(:deleted, keyword_init: true)
@@ -2699,8 +2672,6 @@ module Phaseo
     GuardrailMemberListResponse = Struct.new(:data, :total_count, keyword_init: true)
     # @!attribute [rw] allowedApiModelIds
     #   @return [Array<String>, nil]
-    # @!attribute [rw] budgets
-    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] description
     #   @return [String, nil]
     # @!attribute [rw] enabled
@@ -2735,7 +2706,7 @@ module Phaseo
     #   @return [Boolean, nil]
     # @!attribute [rw] sensitiveInfoRules
     #   @return [Array<Hash{String => Object}>, nil]
-    GuardrailPolicyInput = Struct.new(:allowedApiModelIds, :budgets, :description, :enabled, :modelRestrictionMode, :name, :privacyEnableFreeMayPublishPrompts, :privacyEnableFreeMayTrain, :privacyEnableInputOutputLogging, :privacyEnablePaidMayTrain, :privacyZdrOnly, :promptInjectionAction, :promptInjectionEnabled, :providerRestrictionEnforceAllowed, :providerRestrictionMode, :providerRestrictionProviderIds, :sensitiveInfoDefaultAction, :sensitiveInfoEnabled, :sensitiveInfoRules, keyword_init: true)
+    GuardrailPolicyInput = Struct.new(:allowedApiModelIds, :description, :enabled, :modelRestrictionMode, :name, :privacyEnableFreeMayPublishPrompts, :privacyEnableFreeMayTrain, :privacyEnableInputOutputLogging, :privacyEnablePaidMayTrain, :privacyZdrOnly, :promptInjectionAction, :promptInjectionEnabled, :providerRestrictionEnforceAllowed, :providerRestrictionMode, :providerRestrictionProviderIds, :sensitiveInfoDefaultAction, :sensitiveInfoEnabled, :sensitiveInfoRules, keyword_init: true)
     # @!attribute [rw] removed_count
     #   @return [Integer]
     GuardrailRemoveResponse = Struct.new(:removed_count, keyword_init: true)
@@ -2744,8 +2715,6 @@ module Phaseo
     GuardrailResponse = Struct.new(:data, keyword_init: true)
     # @!attribute [rw] allowedApiModelIds
     #   @return [Array<String>, nil]
-    # @!attribute [rw] budgets
-    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] description
     #   @return [String, nil]
     # @!attribute [rw] enabled
@@ -2780,7 +2749,7 @@ module Phaseo
     #   @return [Boolean, nil]
     # @!attribute [rw] sensitiveInfoRules
     #   @return [Array<Hash{String => Object}>, nil]
-    GuardrailUpdateRequest = Struct.new(:allowedApiModelIds, :budgets, :description, :enabled, :modelRestrictionMode, :name, :privacyEnableFreeMayPublishPrompts, :privacyEnableFreeMayTrain, :privacyEnableInputOutputLogging, :privacyEnablePaidMayTrain, :privacyZdrOnly, :promptInjectionAction, :promptInjectionEnabled, :providerRestrictionEnforceAllowed, :providerRestrictionMode, :providerRestrictionProviderIds, :sensitiveInfoDefaultAction, :sensitiveInfoEnabled, :sensitiveInfoRules, keyword_init: true)
+    GuardrailUpdateRequest = Struct.new(:allowedApiModelIds, :description, :enabled, :modelRestrictionMode, :name, :privacyEnableFreeMayPublishPrompts, :privacyEnableFreeMayTrain, :privacyEnableInputOutputLogging, :privacyEnablePaidMayTrain, :privacyZdrOnly, :promptInjectionAction, :promptInjectionEnabled, :providerRestrictionEnforceAllowed, :providerRestrictionMode, :providerRestrictionProviderIds, :sensitiveInfoDefaultAction, :sensitiveInfoEnabled, :sensitiveInfoRules, keyword_init: true)
     # @!attribute [rw] user_ids
     #   @return [Array<String>]
     GuardrailUserIdsRequest = Struct.new(:user_ids, keyword_init: true)
@@ -5778,6 +5747,8 @@ module Phaseo
     #   @return [Integer]
     # @!attribute [rw] name
     #   @return [String]
+    # @!attribute [rw] owner_claim
+    #   @return [String]
     # @!attribute [rw] owner_id
     #   @return [String]
     # @!attribute [rw] provider
@@ -5786,7 +5757,7 @@ module Phaseo
     #   @return [String]
     # @!attribute [rw] updated_at
     #   @return [String]
-    WorkloadIdentityPolicy = Struct.new(:audience, :claim_conditions, :created_at, :created_by, :id, :issuer, :key_id, :last_used_at, :max_token_lifetime_seconds, :name, :owner_id, :provider, :status, :updated_at, keyword_init: true)
+    WorkloadIdentityPolicy = Struct.new(:audience, :claim_conditions, :created_at, :created_by, :id, :issuer, :key_id, :last_used_at, :max_token_lifetime_seconds, :name, :owner_claim, :owner_id, :provider, :status, :updated_at, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     WorkloadIdentityPolicyDeleteResponse = Struct.new(:data, keyword_init: true)
@@ -5798,11 +5769,13 @@ module Phaseo
     #   @return [Integer, nil]
     # @!attribute [rw] name
     #   @return [String]
+    # @!attribute [rw] owner_claim
+    #   @return [String, nil]
     # @!attribute [rw] owner_id
     #   @return [String]
     # @!attribute [rw] provider
     #   @return [String]
-    WorkloadIdentityPolicyInput = Struct.new(:claim_conditions, :issuer, :max_token_lifetime_seconds, :name, :owner_id, :provider, keyword_init: true)
+    WorkloadIdentityPolicyInput = Struct.new(:claim_conditions, :issuer, :max_token_lifetime_seconds, :name, :owner_claim, :owner_id, :provider, keyword_init: true)
     # @!attribute [rw] audience
     #   @return [String]
     # @!attribute [rw] data

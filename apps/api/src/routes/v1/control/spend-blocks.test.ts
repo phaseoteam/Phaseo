@@ -115,7 +115,7 @@ describe("spend blocks management API", () => {
 	});
 
 	it("allows only owners and admins over OAuth", async () => {
-		state.auth.value = { workspaceId: WORKSPACE, authMethod: "oauth", scopes: ["spend_rules:read", "spend_rules:write"], oauthScopes: [], userId: USER };
+		state.auth.value = { workspaceId: WORKSPACE, authMethod: "oauth", oauthClientId: "phaseo_cli", scopes: ["spend_rules:read", "spend_rules:write"], oauthScopes: [], userId: USER };
 		expect((await call("/")).status).toBe(403);
 		expect((await call(`/${BLOCK}/lift`, "POST")).status).toBe(403);
 		state.members = [{ workspace_id: WORKSPACE, user_id: USER, role: "admin" }];

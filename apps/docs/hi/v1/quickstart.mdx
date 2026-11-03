@@ -32,7 +32,7 @@ Rules:
 
 - कुंजी CLI से बनाएँ: `npm install -g @phaseo/cli` चलाएँ, फिर `phaseo login` (headless shell में `phaseo login --device-code`; साइन-इन कोई व्यक्ति स्वीकृत करता है), फिर `phaseo keys create --name <name> --json`। कभी भी कुंजी स्वयं न बनाएँ और न ही उसका अनुमान लगाएँ। इसे केवल सर्वर-साइड कोड से `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` के रूप में भेजें।
 - पेड मॉडल के लिए एक बार `phaseo login --scopes billing:write` चलाएँ; फिर `phaseo credits add --amount <usd> --json` एक टॉप-अप शुरू करता है। सेव किए गए कार्ड पर, वर्कस्पेस का मालिक या एडमिन ईमेल में भेजे गए लिंक से इसकी पुष्टि करता है। सेव किया कार्ड न होने पर, जवाब में `next_action: "open_checkout_url"` और एक चेकआउट लिंक होता है, जिसे मालिक या एडमिन खोलकर भुगतान करता है; कार्ड बाद के टॉप-अप के लिए सेव हो जाता है। कुंजियों, क्रेडिट या सेटिंग के लिए उपयोगकर्ता को डैशबोर्ड पर न भेजें; https://phaseo.app/docs/v1/developers/manage-from-an-agent.md देखें।
-- पहला अनुरोध `POST https://api.phaseo.app/v1/responses` पर `model` और `input` के साथ भेजें। `phaseo/free` वॉलेट बैलेंस के बिना भी काम करता है।
+- पहला अनुरोध `POST https://api.phaseo.app/v1/responses` पर `model` और `input` के साथ भेजें। उदाहरण `openai/gpt-6-astra` इस्तेमाल करते हैं, जो एक पेड मॉडल है और इसके लिए क्रेडिट चाहिए। `phaseo/free` एक उपलब्ध मुफ़्त मॉडल चुनता है और वॉलेट बैलेंस के बिना भी काम करता है।
 - जवाब `output[].content[]` में उस आइटम से पढ़ें जिसका `type` `output_text` है।
 - अनुरोध विफल होने पर https://phaseo.app/docs/v1/api-reference/errors.md में बताए अनुसार JSON के `error` कोड के आधार पर निर्णय लें।
 </Visibility>
@@ -66,6 +66,8 @@ API कुंजी को पासवर्ड की तरह सुरक�
 ## 2. टेक्स्ट अनुरोध भेजें
 
 पहले अनुरोध के लिए `POST /v1/responses` इस्तेमाल करें। नए टेक्स्ट जनरेशन इंटीग्रेशन के लिए यही सुझाया गया endpoint है।
+
+उदाहरण `openai/gpt-6-astra` इस्तेमाल करते हैं, जो एक पेड मॉडल है, इसलिए पहले क्रेडिट जोड़ें (चरण 1 देखें)। बिना क्रेडिट के Phaseo आज़माने के लिए इसकी जगह `phaseo/free` इस्तेमाल करें; यह एक उपलब्ध मुफ़्त मॉडल चुनता है। [मुफ़्त राउटर से शुरुआत करें](./cookbook/free-router-first-deploy) देखें।
 
 ### SDK इंस्टॉल करें
 
@@ -319,7 +321,8 @@ console.log(result.text);
 
 ```json
 {
-  "id": "resp_...",
+  "id": "G-...",
+  "nativeResponseId": "resp_...",
   "object": "response",
   "created_at": 1730000000,
   "status": "completed",
@@ -344,13 +347,13 @@ console.log(result.text);
 }
 ```
 
-Responses API को सीधे कॉल करने पर असिस्टेंट का जवाब `output[].content[]` में उस आइटम से पढ़ें जिसका `type` `output_text` है।
+Responses API को सीधे कॉल करने पर असिस्टेंट का जवाब `output[].content[]` में उस आइटम से पढ़ें जिसका `type` `output_text` है। `id` Phaseo अनुरोध ID है, जिससे आपके लॉग में अनुरोध पहचाना जाता है; `nativeResponseId` उसी जवाब के लिए provider की ID है।
 
 अगर आप Vercel AI SDK इस्तेमाल करते हैं, तो जवाब `result.text` से पढ़ें।
 
 ### जवाब स्ट्रीम करें
 
-जवाब बनते-बनते प्रिंट करने के लिए उसे स्ट्रीम करें। हर chunk के `text` में सिर्फ़ नया टेक्स्ट होता है, इसलिए यह लूप जवाब एक ही बार प्रिंट करता है। `response.output_text.done` जैसे समापन events में `text` खाली होता है; उनका पूरा टेक्स्ट `fullText` (TypeScript) या `full_text` (Python) में होता है।
+जवाब बनते-बनते प्रिंट करने के लिए उसे स्ट्रीम करें। हर `response.output_text.delta` event के `text` में सिर्फ़ नया टेक्स्ट होता है, इसलिए यह लूप जवाब एक ही बार प्रिंट करता है। `response.output_text.done` जैसे समापन events वह टेक्स्ट दोहराते हैं जो पहले ही स्ट्रीम हो चुका है।
 
 <CodeGroup>
 ```typescript TypeScript SDK
@@ -362,7 +365,7 @@ for await (const chunk of client.streamResponses({
   model: "openai/gpt-6-astra",
   input: "Reply with: quickstart works",
 })) {
-  if (chunk.text) process.stdout.write(chunk.text);
+  if (chunk.type === "response.output_text.delta") process.stdout.write(chunk.text);
 }
 ```
 
@@ -377,13 +380,11 @@ for chunk in client.stream_responses(
         "input": "Reply with: quickstart works",
     }
 ):
-    if chunk["text"]:
+    if chunk.get("type") == "response.output_text.delta":
         print(chunk["text"], end="", flush=True)
 print()
 ```
 </CodeGroup>
-
-अगर जवाब दो बार प्रिंट हो, तो SDK अपडेट करें: पुराने रिलीज़ समापन event में भी पूरा टेक्स्ट डालते थे।
 
 ---
 
@@ -663,7 +664,7 @@ print(decision["answers"])
 
 - `401`: API कुंजी और `Authorization` हेडर जाँचें।
 - `400`: अनुरोध बॉडी और मॉडल ID जाँचें।
-- `402`: `:free` मॉडल चुनें या पेड मॉडल इस्तेमाल करने से पहले क्रेडिट जोड़ें।
+- `402`: पेड मॉडल इस्तेमाल करने से पहले क्रेडिट जोड़ें, या `phaseo/free` इस्तेमाल करें।
 - `429` या `5xx`: एक्सपोनेंशियल बैकऑफ़ के साथ फिर कोशिश करें।
 
 समस्या जल्दी ढूँढ़ने के लिए [त्रुटि प्रबंधन संदर्भ](./api-reference/errors.mdx) देखें।

@@ -6754,17 +6754,17 @@
 	},
 	"trustedWorkloads": {
 		"title": "Workloads de confiance",
-		"description": "Permettez aux déploiements Vercel et aux jobs GitHub Actions d'appeler l'API avec un jeton OIDC de courte durée au lieu d'une clé API.",
+		"description": "Permettez aux déploiements, aux jobs de CI et aux workloads cloud d'appeler l'API avec un jeton OIDC de courte durée au lieu d'une clé API.",
 		"feedback": "Comment les workloads de confiance pourraient-ils mieux fonctionner pour vous ?",
 		"selectWorkspace": "Sélectionnez un espace de travail pour gérer les workloads de confiance.",
 		"unavailable": "Les workloads de confiance ne sont pas encore disponibles pour cet espace de travail.",
 		"adminsOnly": "Seuls les propriétaires et administrateurs de l'espace de travail peuvent voir et modifier les workloads de confiance.",
-		"howItWorks": "Vercel et GitHub Actions remettent à chaque déploiement ou job un jeton signé qui indique son identité et expire en quelques heures. Quand un jeton correspond à l'une de ces règles, la requête s'exécute avec la clé de cette règle, avec les mêmes limites, budgets, journaux et la même facturation qu'une clé API. Aucun secret n'est à stocker.",
+		"howItWorks": "Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI et AWS peuvent remettre à chaque déploiement, job ou workload un jeton signé qui indique son identité et expire en quelques heures, tout comme un émetteur OIDC que vous gérez vous-même, par exemple un cluster Kubernetes. Quand un jeton correspond à l'une de ces règles, la requête s'exécute avec la clé de cette règle, avec les mêmes limites, budgets, journaux et la même facturation qu'une clé API. Aucun secret n'est à stocker.",
 		"policiesTitle": "Règles de confiance",
 		"propagation": "Les modifications prennent effet en une minute environ.",
 		"newPolicy": "Nouvelle règle",
 		"emptyTitle": "Aucun workload de confiance pour l'instant",
-		"emptyBody": "Ajoutez une règle pour un projet Vercel ou un dépôt GitHub afin qu'il puisse appeler l'API sans clé API.",
+		"emptyBody": "Ajoutez une règle pour un projet, un dépôt, un pipeline, un compte de service ou un rôle afin qu'il puisse appeler l'API sans clé API.",
 		"noConditions": "Aucune",
 		"disabled": "Désactivée",
 		"enabledLabel": "Accepter les jetons pour {name}",
@@ -6789,15 +6789,28 @@
 		"audienceLabel": "Audience",
 		"providers": {
 			"vercel": "Vercel",
-			"github_actions": "GitHub Actions"
+			"github_actions": "GitHub Actions",
+			"gitlab": "GitLab",
+			"google_cloud": "Google Cloud",
+			"buildkite": "Buildkite",
+			"circleci": "CircleCI",
+			"aws": "AWS",
+			"custom": "Émetteur OIDC personnalisé"
 		},
 		"ownerLabel": {
 			"vercel": "ID de l'équipe",
-			"github_actions": "ID du propriétaire"
+			"github_actions": "ID du propriétaire",
+			"gitlab": "ID du projet",
+			"google_cloud": "ID du compte de service",
+			"buildkite": "ID de l'organisation",
+			"circleci": "ID de l'organisation",
+			"aws": "ARN du rôle"
 		},
 		"ownerWide": {
 			"vercel": "Fait confiance à tous les projets de cette équipe Vercel. Ajoutez un ID de projet pour la restreindre.",
-			"github_actions": "Fait confiance à tous les dépôts de ce propriétaire. Ajoutez un ID de dépôt pour la restreindre."
+			"github_actions": "Fait confiance à tous les dépôts de ce propriétaire. Ajoutez un ID de dépôt pour la restreindre.",
+			"buildkite": "Fait confiance à tous les pipelines de cette organisation Buildkite. Ajoutez le slug d'un pipeline pour la restreindre.",
+			"circleci": "Fait confiance à tous les projets de cette organisation CircleCI. Ajoutez un ID de projet pour la restreindre."
 		},
 		"environments": {
 			"production": "Production",
@@ -6820,7 +6833,36 @@
 			"githubIdsHint": "Utilisez les ID numériques, qui ne changent pas si le propriétaire ou le dépôt est renommé. L'ID du dépôt est facultatif, mais sans lui tous les dépôts du propriétaire sont approuvés.",
 			"githubRef": "Branche ou tag (facultatif)",
 			"lifetime": "Jeton le plus long accepté (heures)",
-			"lifetimeHint": "Les jetons émis pour durer plus longtemps sont refusés. Jusqu'à {max} heures."
+			"lifetimeHint": "Les jetons émis pour durer plus longtemps sont refusés. Jusqu'à {max} heures.",
+			"environmentOptional": "Environnement (facultatif)",
+			"gitlabProjectId": "ID du projet",
+			"gitlabProjectHint": "L'ID numérique affiché sur la page de présentation du projet sur GitLab.com. Il ne change pas si le projet est renommé ou déplacé. Pour un GitLab autogéré, choisissez Émetteur OIDC personnalisé.",
+			"gitlabRef": "Branche ou tag (facultatif)",
+			"gitlabConditionsHint": "Utilisez le nom de la branche ou du tag, par exemple main. Laissez les deux vides pour accepter tous les jobs du projet.",
+			"googleServiceAccountId": "ID unique du compte de service",
+			"googleServiceAccountHint": "L'ID unique numérique affiché sur la page de détails du compte de service dans la console Google Cloud. Utilisez-le plutôt que l'e-mail, qui peut être réutilisé si le compte est supprimé.",
+			"googleServiceAccountEmail": "E-mail du compte de service (facultatif)",
+			"googleEmailHint": "Les jetons n'incluent l'e-mail que si le workload les demande avec format=full.",
+			"buildkiteOrganizationId": "ID de l'organisation",
+			"buildkiteOrganizationHint": "L'UUID de l'organisation, que chaque jeton Buildkite contient dans sa revendication organization_id.",
+			"buildkitePipelineSlug": "Slug du pipeline (facultatif)",
+			"buildkitePipelineHint": "Sans lui, tous les pipelines de l'organisation sont approuvés.",
+			"circleciOrganizationId": "ID de l'organisation",
+			"circleciOrganizationHint": "Vous le trouverez dans CircleCI sous Organization Settings → Overview.",
+			"circleciProjectId": "ID du projet (facultatif)",
+			"circleciProjectHint": "Vous le trouverez sous Project Settings → Overview. Sans lui, tous les projets de l'organisation sont approuvés.",
+			"awsIssuer": "URL de l'émetteur",
+			"awsIssuerHint": "Chaque compte AWS a son propre émetteur. Exécutez aws iam get-outbound-web-identity-federation-info et copiez IssuerIdentifier.",
+			"awsRoleArn": "ARN du rôle IAM",
+			"awsRoleHint": "Seuls les jetons de ce rôle sont acceptés.",
+			"customIssuer": "URL de l'émetteur",
+			"customIssuerHint": "Une URL https publique qui sert /.well-known/openid-configuration, avec ses clés de signature sur le même hôte.",
+			"customOwnerClaim": "Revendication du propriétaire",
+			"customOwnerId": "Valeur du propriétaire",
+			"customOwnerHint": "Chaque jeton doit contenir cette revendication avec exactement cette valeur, par exemple sub pour un compte de service Kubernetes. Choisissez une revendication que personne d'autre ne peut réutiliser.",
+			"customConditionClaim": "Revendication supplémentaire (facultatif)",
+			"customConditionValue": "Valeur requise",
+			"customConditionHint": "Les jetons doivent aussi contenir cette revendication avec exactement cette valeur."
 		},
 		"problems": {
 			"name": "Saisissez un nom de 100 caractères maximum.",
@@ -6829,7 +6871,19 @@
 			"vercelProjectId": "Les ID de projet commencent par prj_.",
 			"githubOwnerId": "Saisissez l'ID numérique du propriétaire.",
 			"githubRepositoryId": "Saisissez l'ID numérique du dépôt.",
-			"lifetime": "Saisissez un nombre entier d'heures entre 1 et 12."
+			"lifetime": "Saisissez un nombre entier d'heures entre 1 et 12.",
+			"gitlabProjectId": "Saisissez l'ID numérique du projet.",
+			"googleServiceAccountId": "Saisissez l'ID unique numérique du compte de service.",
+			"googleServiceAccountEmail": "Saisissez une adresse e-mail, par exemple app@project.iam.gserviceaccount.com.",
+			"buildkiteOrganizationId": "Saisissez l'UUID de l'organisation.",
+			"circleciOrganizationId": "Saisissez l'ID de l'organisation, qui est un UUID.",
+			"circleciProjectId": "Saisissez l'ID du projet, qui est un UUID.",
+			"awsIssuer": "Saisissez l'émetteur fourni par AWS. Il se termine par .tokens.sts.global.api.aws.",
+			"awsRoleArn": "Saisissez un ARN de rôle, par exemple arn:aws:iam::123456789012:role/evals.",
+			"customIssuer": "Saisissez une URL https publique sans port, requête ni fragment.",
+			"customOwnerClaim": "Saisissez un nom de revendication comme sub. iss, aud, exp, iat, nbf et jti ne sont pas autorisés.",
+			"customOwnerId": "Saisissez la valeur que doit avoir la revendication du propriétaire.",
+			"customCondition": "Saisissez une revendication et une valeur, ou laissez les deux vides. La revendication doit être différente de celle du propriétaire."
 		},
 		"errors": {
 			"invalid": "{message}",
@@ -6842,7 +6896,10 @@
 			"deleted": "Règle supprimée",
 			"enabled": "Règle activée",
 			"disabled": "Règle désactivée"
-		}
+		},
+		"listPipeline": "Pipeline",
+		"listEmail": "E-mail du compte de service",
+		"usageCustomHint": "Tout émetteur OIDC avec une découverte publique fonctionne. Cet exemple donne à un pod Kubernetes un jeton de compte de service pour l'audience."
 	},
 	"budgets": {
 		"title": "Budgets",
@@ -7696,7 +7753,7 @@
 			"timeZoneHelp": "Les alertes quotidiennes, hebdomadaires et mensuelles suivent ce fuseau, sauf si une alerte définit le sien.",
 			"utcNote": "Les budgets de l'espace de travail et les limites de clé se réinitialisent toujours à minuit UTC.",
 			"attribution": "Dépenses par département",
-			"attributionHelp": "Comment les dépenses sont comptées lorsqu'une personne appartient à plusieurs départements.",
+			"attributionHelp": "Comment les règles de dépenses, les budgets de département et les limites de débit de département comptent une personne qui appartient à plusieurs départements.",
 			"attributionAll": "Tous ses départements",
 			"attributionAllHelp": "Ses dépenses comptent entièrement pour chaque département.",
 			"attributionPrimary": "Département principal uniquement",

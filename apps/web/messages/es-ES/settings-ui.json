@@ -6754,17 +6754,17 @@
 	},
 	"trustedWorkloads": {
 		"title": "Cargas de trabajo de confianza",
-		"description": "Permite que los despliegues de Vercel y los trabajos de GitHub Actions llamen a la API con un token OIDC de corta duración en lugar de una clave de API.",
+		"description": "Permite que despliegues, trabajos de CI y cargas de trabajo en la nube llamen a la API con un token OIDC de corta duración en lugar de una clave de API.",
 		"feedback": "¿Cómo podrían funcionar mejor para ti las cargas de trabajo de confianza?",
 		"selectWorkspace": "Selecciona un espacio de trabajo para gestionar las cargas de trabajo de confianza.",
 		"unavailable": "Las cargas de trabajo de confianza aún no están disponibles para este espacio de trabajo.",
 		"adminsOnly": "Solo los propietarios y administradores del espacio de trabajo pueden ver y cambiar las cargas de trabajo de confianza.",
-		"howItWorks": "Vercel y GitHub Actions dan a cada despliegue o trabajo un token firmado que indica quién es y caduca en pocas horas. Cuando un token coincide con una de estas políticas, la solicitud se ejecuta con la clave de esa política, con los mismos límites, presupuestos, registros y facturación que una clave de API. No hace falta guardar ningún secreto.",
+		"howItWorks": "Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI y AWS pueden dar a cada despliegue, trabajo o carga de trabajo un token firmado que indica quién es y caduca en pocas horas, igual que un emisor OIDC propio, como un clúster de Kubernetes. Cuando un token coincide con una de estas políticas, la solicitud se ejecuta con la clave de esa política, con los mismos límites, presupuestos, registros y facturación que una clave de API. No hace falta guardar ningún secreto.",
 		"policiesTitle": "Políticas de confianza",
 		"propagation": "Los cambios se aplican en aproximadamente un minuto.",
 		"newPolicy": "Nueva política",
 		"emptyTitle": "Aún no hay cargas de trabajo de confianza",
-		"emptyBody": "Añade una política para un proyecto de Vercel o un repositorio de GitHub para que pueda llamar a la API sin una clave de API.",
+		"emptyBody": "Añade una política para un proyecto, repositorio, pipeline, cuenta de servicio o rol para que pueda llamar a la API sin una clave de API.",
 		"noConditions": "Ninguna",
 		"disabled": "Desactivada",
 		"enabledLabel": "Aceptar tokens para {name}",
@@ -6789,15 +6789,28 @@
 		"audienceLabel": "Audiencia",
 		"providers": {
 			"vercel": "Vercel",
-			"github_actions": "GitHub Actions"
+			"github_actions": "GitHub Actions",
+			"gitlab": "GitLab",
+			"google_cloud": "Google Cloud",
+			"buildkite": "Buildkite",
+			"circleci": "CircleCI",
+			"aws": "AWS",
+			"custom": "Emisor OIDC propio"
 		},
 		"ownerLabel": {
 			"vercel": "ID del equipo",
-			"github_actions": "ID del propietario"
+			"github_actions": "ID del propietario",
+			"gitlab": "ID del proyecto",
+			"google_cloud": "ID de la cuenta de servicio",
+			"buildkite": "ID de la organización",
+			"circleci": "ID de la organización",
+			"aws": "ARN del rol"
 		},
 		"ownerWide": {
 			"vercel": "Confía en todos los proyectos de este equipo de Vercel. Añade un ID de proyecto para limitarla.",
-			"github_actions": "Confía en todos los repositorios de este propietario. Añade un ID de repositorio para limitarla."
+			"github_actions": "Confía en todos los repositorios de este propietario. Añade un ID de repositorio para limitarla.",
+			"buildkite": "Confía en todas las pipelines de esta organización de Buildkite. Añade el slug de una pipeline para limitarla.",
+			"circleci": "Confía en todos los proyectos de esta organización de CircleCI. Añade un ID de proyecto para limitarla."
 		},
 		"environments": {
 			"production": "Producción",
@@ -6820,7 +6833,36 @@
 			"githubIdsHint": "Usa los ID numéricos, que no cambian si se renombra el propietario o el repositorio. El ID del repositorio es opcional, pero sin él se confía en todos los repositorios del propietario.",
 			"githubRef": "Rama o etiqueta (opcional)",
 			"lifetime": "Token más largo aceptado (horas)",
-			"lifetimeHint": "Se rechazan los tokens emitidos para durar más. Hasta {max} horas."
+			"lifetimeHint": "Se rechazan los tokens emitidos para durar más. Hasta {max} horas.",
+			"environmentOptional": "Entorno (opcional)",
+			"gitlabProjectId": "ID del proyecto",
+			"gitlabProjectHint": "El ID numérico de la página de resumen del proyecto en GitLab.com. No cambia si el proyecto se renombra o se mueve. Para GitLab autogestionado, elige Emisor OIDC propio.",
+			"gitlabRef": "Rama o etiqueta (opcional)",
+			"gitlabConditionsHint": "Usa el nombre de la rama o etiqueta, como main. Deja ambos vacíos para aceptar cualquier trabajo del proyecto.",
+			"googleServiceAccountId": "ID único de la cuenta de servicio",
+			"googleServiceAccountHint": "El ID único numérico de la página de detalles de la cuenta de servicio en la consola de Google Cloud. Úsalo en lugar del correo, que se puede reutilizar si la cuenta se elimina.",
+			"googleServiceAccountEmail": "Correo de la cuenta de servicio (opcional)",
+			"googleEmailHint": "Los tokens solo incluyen el correo cuando la carga de trabajo los solicita con format=full.",
+			"buildkiteOrganizationId": "ID de la organización",
+			"buildkiteOrganizationHint": "El UUID de la organización, que todo token de Buildkite lleva en su claim organization_id.",
+			"buildkitePipelineSlug": "Slug de la pipeline (opcional)",
+			"buildkitePipelineHint": "Sin él, se confía en todas las pipelines de la organización.",
+			"circleciOrganizationId": "ID de la organización",
+			"circleciOrganizationHint": "Lo encontrarás en CircleCI, en Organization Settings → Overview.",
+			"circleciProjectId": "ID del proyecto (opcional)",
+			"circleciProjectHint": "Lo encontrarás en Project Settings → Overview. Sin él, se confía en todos los proyectos de la organización.",
+			"awsIssuer": "URL del emisor",
+			"awsIssuerHint": "Cada cuenta de AWS tiene su propio emisor. Ejecuta aws iam get-outbound-web-identity-federation-info y copia IssuerIdentifier.",
+			"awsRoleArn": "ARN del rol de IAM",
+			"awsRoleHint": "Solo se aceptan tokens de este rol.",
+			"customIssuer": "URL del emisor",
+			"customIssuerHint": "Una URL https pública que sirva /.well-known/openid-configuration y tenga sus claves de firma en el mismo host.",
+			"customOwnerClaim": "Claim del propietario",
+			"customOwnerId": "Valor del propietario",
+			"customOwnerHint": "Todos los tokens deben llevar este claim con exactamente este valor, como sub para una cuenta de servicio de Kubernetes. Elige un claim que nadie más pueda reutilizar.",
+			"customConditionClaim": "Claim adicional (opcional)",
+			"customConditionValue": "Valor obligatorio",
+			"customConditionHint": "Los tokens también deben llevar este claim con exactamente este valor."
 		},
 		"problems": {
 			"name": "Introduce un nombre de hasta 100 caracteres.",
@@ -6829,7 +6871,19 @@
 			"vercelProjectId": "Los ID de proyecto empiezan por prj_.",
 			"githubOwnerId": "Introduce el ID numérico del propietario.",
 			"githubRepositoryId": "Introduce el ID numérico del repositorio.",
-			"lifetime": "Introduce un número entero de horas entre 1 y 12."
+			"lifetime": "Introduce un número entero de horas entre 1 y 12.",
+			"gitlabProjectId": "Introduce el ID numérico del proyecto.",
+			"googleServiceAccountId": "Introduce el ID único numérico de la cuenta de servicio.",
+			"googleServiceAccountEmail": "Introduce una dirección de correo, como app@project.iam.gserviceaccount.com.",
+			"buildkiteOrganizationId": "Introduce el UUID de la organización.",
+			"circleciOrganizationId": "Introduce el ID de la organización, que es un UUID.",
+			"circleciProjectId": "Introduce el ID del proyecto, que es un UUID.",
+			"awsIssuer": "Introduce el emisor de AWS. Termina en .tokens.sts.global.api.aws.",
+			"awsRoleArn": "Introduce un ARN de rol, como arn:aws:iam::123456789012:role/evals.",
+			"customIssuer": "Introduce una URL https pública sin puerto, consulta ni fragmento.",
+			"customOwnerClaim": "Introduce un nombre de claim como sub. No se pueden usar iss, aud, exp, iat, nbf ni jti.",
+			"customOwnerId": "Introduce el valor que debe tener el claim del propietario.",
+			"customCondition": "Introduce un claim y un valor, o deja ambos vacíos. El claim debe ser distinto del claim del propietario."
 		},
 		"errors": {
 			"invalid": "{message}",
@@ -6842,7 +6896,10 @@
 			"deleted": "Política eliminada",
 			"enabled": "Política activada",
 			"disabled": "Política desactivada"
-		}
+		},
+		"listPipeline": "Pipeline",
+		"listEmail": "Correo de la cuenta de servicio",
+		"usageCustomHint": "Sirve cualquier emisor OIDC con descubrimiento público. Este ejemplo da a un pod de Kubernetes un token de cuenta de servicio para la audiencia."
 	},
 	"budgets": {
 		"title": "Presupuestos",
@@ -7696,7 +7753,7 @@
 			"timeZoneHelp": "Las alertas diarias, semanales y mensuales siguen esta zona salvo que una alerta defina la suya.",
 			"utcNote": "Los presupuestos del espacio de trabajo y los límites de clave siguen reiniciándose a medianoche UTC.",
 			"attribution": "Gasto por departamento",
-			"attributionHelp": "Cómo cuenta el gasto cuando una persona pertenece a más de un departamento.",
+			"attributionHelp": "Cómo cuentan a una persona que pertenece a más de un departamento las reglas de gasto, los presupuestos de departamento y los límites de frecuencia de departamento.",
 			"attributionAll": "Todos sus departamentos",
 			"attributionAllHelp": "Su gasto cuenta completo en cada departamento.",
 			"attributionPrimary": "Solo el departamento principal",

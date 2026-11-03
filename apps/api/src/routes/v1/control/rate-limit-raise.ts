@@ -14,7 +14,7 @@ import { json } from "@/routes/utils";
 import { customerRateLimitLadder, selfServeRaiseStatus, type SelfServeRaiseStatus } from "@core/customer-rate-limit-ladder";
 import { publishCustomerRateLimitTier, readCustomerRateLimitInputs } from "@core/customer-rate-limit-tiers";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
-import { internalServerError, requireCapability } from "./route-helpers";
+import { internalServerError, rejectThirdPartyOAuthSpendingChange, requireCapability } from "./route-helpers";
 import { authenticateDashboardSession, workspaceRole } from "./dashboard-session";
 
 const NO_STORE = { "Cache-Control": "no-store" };
@@ -39,6 +39,8 @@ async function authorize(req: Request, scope: string): Promise<{ caller: Caller 
 		if (!auth.ok) return { response: (auth as GuardErr).response };
 		const scopeError = requireCapability(auth.value, scope);
 		if (scopeError) return { response: scopeError };
+		const appError = scope === CAPABILITIES.RATE_LIMITS_READ ? null : rejectThirdPartyOAuthSpendingChange(auth.value, "Apps that use Sign in with Phaseo can't raise the workspace's rate limit tier. The person can ask for a raise under Settings, Rate limits.");
+		if (appError) return { response: appError };
 		if (auth.value.authMethod === "oauth") {
 			const userId = auth.value.userId?.trim();
 			if (!userId) return { response: forbidden("OAuth user is required") };

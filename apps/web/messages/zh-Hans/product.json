@@ -490,6 +490,7 @@
 				"earlier_history_missing": "此请求通过 ID 延续了之前的回复，因此不包含之前的轮次。",
 				"unsupported_content": "部分内容无法显示，已被省略。",
 				"attachment_reference": "部分附件通过 ID 引用，未随请求一起存储。",
+				"media_not_stored": "I/O 日志不保存图片、音频和文件，因此已省略。",
 				"no_response": "已记录的回复缺失或失败，因此聊天以请求结束。",
 				"response_truncated": "已记录的回复被截断了。",
 				"extra_choices": "只包含回复的第一个候选项。",

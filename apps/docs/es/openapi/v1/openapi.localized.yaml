@@ -4970,7 +4970,7 @@ paths:
         - Gateway
       operationId: listWorkloadIdentityPolicies
       summary: Listar políticas de cargas de trabajo de confianza
-      description: 'Lista las políticas de cargas de trabajo de confianza del espacio de trabajo: qué despliegues de Vercel y flujos de trabajo de GitHub Actions pueden llamar al gateway con su token OIDC en lugar de una clave de API. Requiere keys:read en claves de administración y tokens OAuth, o un propietario o administrador del espacio de trabajo. Solo está disponible para los espacios de trabajo de la beta de cargas de trabajo de confianza; los demás reciben 404.'
+      description: 'Lista las políticas de cargas de trabajo de confianza del espacio de trabajo: qué despliegues, trabajos de CI y cargas de trabajo en la nube pueden llamar al gateway con su token OIDC en lugar de una clave de API. Requiere keys:read en claves de administración y tokens OAuth, o un propietario o administrador del espacio de trabajo. Solo está disponible para los espacios de trabajo de la beta de cargas de trabajo de confianza; los demás reciben 404.'
       responses:
         '200':
           description: Políticas de cargas de trabajo de confianza
@@ -5045,7 +5045,7 @@ paths:
         - Gateway
       operationId: updateWorkloadIdentityPolicy
       summary: Actualizar una política de carga de trabajo de confianza
-      description: Cambia el nombre, el estado, las condiciones de claims o la duración máxima del token de una política. El proveedor, el emisor y el propietario no se pueden cambiar; en su lugar, crea una política nueva. Los cambios llegan al gateway en menos de un minuto. Requiere keys:write en claves de administración y tokens OAuth, o un propietario o administrador del espacio de trabajo. Solo está disponible para los espacios de trabajo de la beta de cargas de trabajo de confianza; los demás reciben 404.
+      description: Cambia el nombre, el estado, las condiciones de claims o la duración máxima del token de una política. El proveedor, el emisor, el claim del propietario y el propietario no se pueden cambiar; en su lugar, crea una política nueva. Los cambios llegan al gateway en menos de un minuto. Requiere keys:write en claves de administración y tokens OAuth, o un propietario o administrador del espacio de trabajo. Solo está disponible para los espacios de trabajo de la beta de cargas de trabajo de confianza; los demás reciben 404.
       requestBody:
         required: true
         content:
@@ -5405,7 +5405,7 @@ paths:
         - Gateway
       operationId: createSpendRule
       summary: Crear una regla de gasto
-      description: Crea una regla de gasto y define sus destinos de notificación. Se acepta cualquier métrica; las reglas que se devuelven con evaluated en false se guardan y empezarán a activarse en una versión posterior. El bloqueo se aplica en la medida de lo posible y actúa minutos después del umbral; usa los límites de clave y los presupuestos del espacio de trabajo para topes exactos. Un espacio de trabajo puede tener 50 reglas de gasto.
+      description: Crea una regla de gasto y define sus destinos de notificación. Se evalúan todas las métricas. El bloqueo se aplica en la medida de lo posible y actúa minutos después del umbral; usa los límites de clave y los presupuestos del espacio de trabajo para topes exactos. Un espacio de trabajo puede tener 50 reglas de gasto.
       requestBody:
         required: true
         content:
@@ -23624,7 +23624,13 @@ components:
       enum:
         - vercel
         - github_actions
-      description: La plataforma que emite los tokens OIDC.
+        - gitlab
+        - google_cloud
+        - buildkite
+        - circleci
+        - aws
+        - custom
+      description: La plataforma que emite los tokens OIDC. Usa custom para cualquier otro emisor OIDC, como un clúster de Kubernetes o una instancia autogestionada de GitLab.
     WorkloadIdentityPolicy:
       type: object
       description: 'Una carga de trabajo de confianza: los tokens de este emisor, para el propietario fijado y que cumplen todas las condiciones de claims, se autentican como la clave de la política.'
@@ -23633,6 +23639,7 @@ components:
         - name
         - provider
         - issuer
+        - owner_claim
         - owner_id
         - claim_conditions
         - max_token_lifetime_seconds
@@ -23655,13 +23662,16 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: Emisor del token, por ejemplo https://oidc.vercel.com/acme o https://token.actions.githubusercontent.com.
+          description: Emisor del token (el claim iss), por ejemplo https://oidc.vercel.com/acme, https://token.actions.githubusercontent.com o https://accounts.google.com.
+        owner_claim:
+          type: string
+          description: 'El claim del token con el que se compara owner_id. Es fijo para cada plataforma: owner_id para vercel, repository_owner_id para github_actions, project_id para gitlab, sub para google_cloud y aws, organization_id para buildkite y oidc.circleci.com/org-id para circleci. Los emisores custom usan el claim elegido al crear la política.'
         owner_id:
           type: string
-          description: El ID del equipo de Vercel fijado (claim owner_id) o el ID de la organización o el usuario de GitHub (claim repository_owner_id).
+          description: 'El propietario fijado: el valor que debe tener el owner_claim del token, como un ID de equipo de Vercel, un ID de organización o usuario de GitHub, un ID de proyecto de GitLab, el ID único de una cuenta de servicio de Google, un ID de organización de Buildkite, un ID de organización de CircleCI o el ARN de un rol de IAM de AWS.'
         claim_conditions:
           type: object
-          description: Claims adicionales que debe cumplir el token, como nombre del claim y valores permitidos; por ejemplo, project_id y environment para Vercel, o repository_id y ref para GitHub Actions. Cada claim debe coincidir con uno de sus valores. Como máximo 15 claims y 20 valores por claim; no se pueden usar iss, aud, exp, iat, nbf ni jti, y el claim del propietario fijado se establece con owner_id.
+          description: 'Claims adicionales que debe cumplir el token, como nombre del claim y valores permitidos; por ejemplo, repository_id y ref para GitHub Actions, o project_path y ref para GitLab. Cada claim debe coincidir con uno de sus valores. Como máximo 15 claims y 20 valores por claim. Los nombres de claim usan letras, dígitos y . _ : / - y tienen hasta 128 caracteres; no se pueden usar iss, aud, exp, iat, nbf ni jti, y el claim del propietario se establece con owner_id.'
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23718,14 +23728,19 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: 'Obligatorio para Vercel: https://oidc.vercel.com/ seguido del slug del equipo, o https://oidc.vercel.com para el emisor global. Para GitHub Actions, el valor predeterminado es https://token.actions.githubusercontent.com.'
+          description: El emisor de los tokens. Opcional para github_actions (de forma predeterminada https://token.actions.githubusercontent.com; añade /<enterprise-slug> para un emisor de empresa personalizado), gitlab (https://gitlab.com), google_cloud (https://accounts.google.com) y buildkite (https://agent.buildkite.com). Obligatorio para vercel (https://oidc.vercel.com/<team-slug>, o https://oidc.vercel.com para el emisor global), circleci (https://oidc.circleci.com/org/<organization-id>), aws (el emisor https://<id>.tokens.sts.global.api.aws de tu cuenta) y custom (una URL https pública que sirva un documento de descubrimiento OIDC, en un host que no pertenezca a ninguna de las otras plataformas).
+        owner_claim:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: El claim del token con el que se compara owner_id, por ejemplo sub. Obligatorio para custom. Las demás plataformas usan un claim fijo (consulta owner_claim en la política), así que omítelo o envía ese claim. No se puede cambiar después.
         owner_id:
           type: string
           minLength: 1
-          description: El ID del equipo de Vercel o de la organización o el usuario de GitHub que se fija.
+          description: 'El valor que debe tener el claim del propietario: un ID de equipo de Vercel, un ID de organización o usuario de GitHub, un ID de proyecto de GitLab, el ID único de una cuenta de servicio de Google (no su correo electrónico), un ID de organización de Buildkite, un ID de organización de CircleCI (el que aparece en el emisor), el ARN de un rol de IAM de AWS o, para emisores custom, el valor de owner_claim en el que se confía.'
         claim_conditions:
           type: object
-          description: Claims adicionales que debe cumplir el token, como nombre del claim y valores permitidos; por ejemplo, project_id y environment para Vercel, o repository_id y ref para GitHub Actions. Cada claim debe coincidir con uno de sus valores. Como máximo 15 claims y 20 valores por claim; no se pueden usar iss, aud, exp, iat, nbf ni jti, y el claim del propietario fijado se establece con owner_id.
+          description: 'Claims adicionales que debe cumplir el token, como nombre del claim y valores permitidos; por ejemplo, repository_id y ref para GitHub Actions, o project_path y ref para GitLab. Cada claim debe coincidir con uno de sus valores. Como máximo 15 claims y 20 valores por claim. Los nombres de claim usan letras, dígitos y . _ : / - y tienen hasta 128 caracteres; no se pueden usar iss, aud, exp, iat, nbf ni jti, y el claim del propietario se establece con owner_id.'
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23757,7 +23772,7 @@ components:
             - disabled
         claim_conditions:
           type: object
-          description: Claims adicionales que debe cumplir el token, como nombre del claim y valores permitidos; por ejemplo, project_id y environment para Vercel, o repository_id y ref para GitHub Actions. Cada claim debe coincidir con uno de sus valores. Como máximo 15 claims y 20 valores por claim; no se pueden usar iss, aud, exp, iat, nbf ni jti, y el claim del propietario fijado se establece con owner_id.
+          description: 'Claims adicionales que debe cumplir el token, como nombre del claim y valores permitidos; por ejemplo, repository_id y ref para GitHub Actions, o project_path y ref para GitLab. Cada claim debe coincidir con uno de sus valores. Como máximo 15 claims y 20 valores por claim. Los nombres de claim usan letras, dígitos y . _ : / - y tienen hasta 128 caracteres; no se pueden usar iss, aud, exp, iat, nbf ni jti, y el claim del propietario se establece con owner_id.'
           maxProperties: 15
           additionalProperties:
             type: array
@@ -25323,7 +25338,7 @@ components:
       additionalProperties: false
     WorkspaceSpendAttribution:
       type: string
-      description: 'Cómo cuentan las reglas de gasto el gasto de una persona en los departamentos cuando su clave no tiene departamento propio: all lo cuenta en todos los departamentos a los que pertenece; primary solo en su departamento principal. El departamento propio de una clave siempre prevalece.'
+      description: 'Cómo cuentan las reglas de gasto, los presupuestos de departamento y los límites de frecuencia de departamento las solicitudes de una persona en los departamentos cuando su clave no tiene departamento propio: all las cuenta en todos los departamentos a los que pertenece; primary solo en su departamento principal. El departamento propio de una clave y la anulación de directorio de un miembro siempre prevalecen.'
       enum:
         - all
         - primary
@@ -26379,42 +26394,6 @@ components:
           enum:
             - true
       additionalProperties: false
-    GuardrailBudgetInput:
-      type: object
-      deprecated: true
-      description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-      properties:
-        dailyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        dailyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-      additionalProperties: false
     GuardrailPolicyInput:
       type: object
       properties:
@@ -26484,8 +26463,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        budgets:
-          $ref: '#/components/schemas/GuardrailBudgetInput'
       additionalProperties: false
     GuardrailCreateRequest:
       allOf:
@@ -26583,42 +26560,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        daily_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-        weekly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-        monthly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-        daily_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-        weekly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-        monthly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
         created_at:
           type: string
           format: date-time
@@ -26730,42 +26671,6 @@ components:
               items:
                 type: object
                 additionalProperties: true
-            daily_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-            weekly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-            monthly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-            daily_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-            weekly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-            monthly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
             created_at:
               type: string
               format: date-time
