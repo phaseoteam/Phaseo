@@ -78,7 +78,7 @@ export function ModelSettings({ selection, onChange, disabled }: { selection: Mo
 			<span className="truncate">{label}</span>
 			<ChevronDown className="size-3.5 shrink-0" />
 		</DropdownMenuTrigger>
-		<DropdownMenuContent align="start" side="top" sideOffset={8} className="w-64">
+		<DropdownMenuContent align="end" side="top" sideOffset={8} className="w-64">
 			{descriptors.map((descriptor, index) => <Fragment key={descriptor.id}>
 				{index > 0 && <DropdownMenuSeparator />}
 				<DropdownMenuGroup>

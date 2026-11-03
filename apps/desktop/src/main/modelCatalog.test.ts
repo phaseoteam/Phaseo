@@ -68,7 +68,7 @@ describe("API model catalog", () => {
 	});
 	it("spells Codex model names the way the Phaseo catalogue does", async () => {
 		const request = vi.fn().mockResolvedValue({ data: [{ model: "gpt-6.1-sol", displayName: "GPT-6.1-Sol" }, { model: "gpt-6.1-terra", displayName: "GPT-6.1 Terra" }, { model: "gpt-4o-mini", displayName: "GPT-4o-mini" }], nextCursor: null });
-		expect((await readCodexModels({ request })).map(model => model.name)).toEqual(["GPT-6.1 Sol", "GPT-6.1 Terra", "GPT-4o-mini"]);
+		expect((await readCodexModels({ request })).map(model => model.name)).toEqual(["GPT 6.1 Sol", "GPT 6.1 Terra", "GPT-4o-mini"]);
 	});
 	it("uses the selected account and filters malformed catalog entries", async () => {
 		const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: [{ id: "model-one", name: "Model One" }, { id: 42 }, { id: "model-two" }] })));

@@ -1,4 +1,5 @@
 import type { Account, ModelOption } from "../shared/workspace";
+import { spellModelName } from "../shared/modelNames";
 import { phaseoModelFacts } from "./phaseoModelFacts";
 import { phaseoModelOptions } from "./phaseoModelOptions";
 
@@ -63,7 +64,7 @@ export async function apiModelCatalog(account: Account, key: string, previous?: 
 			const releaseDate = record(model.lifecycle)?.released_at;
 			const options = native ? phaseoModelOptions(model) : [];
 			const facts = native ? phaseoModelFacts(model) : undefined;
-			models.set(model.id, { id: model.id, name: typeof model.name === "string" && model.name.trim() ? model.name : model.id, ...(typeof model.description === "string" ? { description: model.description } : {}), ...(facts ? { facts } : {}),...(typeof organisationId === "string" && organisationId.trim() ? { organisationId } : {}), ...(typeof organisationName === "string" ? { organisationName } : {}), ...(typeof releaseDate === "string" ? { releaseDate } : {}), ...(options.length ? { options } : {}) });
+			models.set(model.id, { id: model.id, name: typeof model.name === "string" && model.name.trim() ? spellModelName(model.name) : model.id, ...(typeof model.description === "string" ? { description: model.description } : {}), ...(facts ? { facts } : {}),...(typeof organisationId === "string" && organisationId.trim() ? { organisationId } : {}), ...(typeof organisationName === "string" ? { organisationName } : {}), ...(typeof releaseDate === "string" ? { releaseDate } : {}), ...(options.length ? { options } : {}) });
 		}
 		if (seenIds.size > 10_000) throw new Error("Model catalog exceeded the limit.");
 		if (native && ((!entries.length && offset < (result.total as number)) || (page > 0 && entries.length > 0 && !added))) throw new Error("Model catalog repeated or omitted a page.");

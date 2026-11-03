@@ -21,7 +21,7 @@ export const MAX_COMPARE = 4;
 /** A name from a model id, for when no catalogue has named it yet: claude-opus-5-5 reads "Claude Opus 5.5". */
 export function modelLabel(id: string) {
 	const base = (id.includes("/") ? id.slice(id.indexOf("/") + 1) : id).replace(/-\d{8}$/, "").replace(/\b(\d{1,2})-(\d{1,2})\b/g, "$1.$2");
-	return base.replace(/[-_]/g, " ").replace(/\b([a-z])/g, letter => letter.toUpperCase()).replace(/\bGpt (?=\d)/g, "GPT-").replace(/\bGpt\b/g, "GPT");
+	return base.replace(/[-_]/g, " ").replace(/\b([a-z])/g, letter => letter.toUpperCase()).replace(/\bGpt\b/g, "GPT");
 }
 
 export const sameSelection = (a: ModelSelection, b: ModelSelection) => a.harness === b.harness && a.model === b.model && (a.accountId ?? "") === (b.accountId ?? "");
@@ -33,6 +33,18 @@ export function knownModel(id: string) { return knownModels.get(id); }
 export function modelName(selection: Pick<ModelSelection, "harness" | "model">) {
 	return knownModel(selection.model)?.name ?? (selection.model === "default" ? harnessNames[selection.harness] : modelLabel(selection.model));
 }
+
+/**
+ * The composer button's name. A local agent's model is already named by its logo, so it drops the family:
+ * "Opus 5.5" beside the Claude Code mascot. A Phaseo model keeps its full name, "Claude Opus 5.5" beside the lab's logo.
+ */
+export function shortModelName(selection: Pick<ModelSelection, "harness" | "model">) {
+	const name = modelName(selection);
+	return selection.harness === "phaseo" ? name : name.replace(/^Claude (?=\S)/, "");
+}
+
+/** Where a chat's model runs, which also says what pays for it: "in Claude Code" is your plan, "via Phaseo" is credits. */
+export const whereItRuns = (harness: Harness) => harness === "phaseo" ? "via Phaseo" : `in ${harnessNames[harness]}`;
 
 /** Resolved when the tooltip opens, after the catalog has loaded. */
 function ModelName({ value }: { value: Pick<ModelSelection, "harness" | "model"> }) { return modelName(value); }
@@ -221,7 +233,6 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	const loading = shown.filter(harness => !catalogs[harness] || (catalogs[harness]!.loading && !catalogs[harness]!.entries.length));
 	const errors = shown.map(harness => catalogs[harness]?.error ? `${harnessNames[harness]}: ${catalogs[harness]!.error}` : "").filter(Boolean);
 
-	const label = (selection: ModelSelection) => knownModel(selection.model)?.name ?? (selection.model === "default" ? harnessNames[selection.harness] : modelLabel(selection.model));
 	const first = selections[0];
 	const openChange = (value: boolean) => { setOpen(value); setQuery(""); if (value) setSource(first ? sourceOf(first.harness) : "phaseo"); };
 	const latestOpen = useRef(openChange); latestOpen.current = openChange;
@@ -233,10 +244,10 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	}, [openEvent, disabled]);
 	return <Popover open={open} onOpenChange={openChange}>
 		{harnesses.filter(harness => open || harness === "phaseo" || selections.some(selection => selection.harness === harness)).map(harness => <Catalog key={harness} harness={harness} accountId={harness === "phaseo" ? phaseoAccount?.id : undefined} onLoad={onLoad} />)}
-		<PopoverTrigger disabled={disabled} render={<button type="button" aria-label="Choose model" className={cn("flex h-8 max-w-64 items-center gap-1.5 rounded-lg px-2 text-[13px] font-semibold transition-colors hover:bg-muted disabled:opacity-50 data-popup-open:bg-muted", className)} />}>
+		<PopoverTrigger disabled={disabled} render={<button type="button" aria-label="Choose model" title={first && selections.length === 1 ? `${modelName(first)} ${whereItRuns(first.harness)}` : undefined} className={cn("flex h-8 max-w-64 items-center gap-1.5 rounded-lg px-2 text-[13px] font-semibold transition-colors hover:bg-muted disabled:opacity-50 data-popup-open:bg-muted", className)} />}>
 			{selections.length > 1
 				? <><ModelStack models={selections} /><span className="truncate">{selections.length} models</span></>
-				: first ? <><span className="flex size-5 items-center justify-center [&_img]:size-4 [&_.harness-logo]:size-4"><ModelLogo model={knownModel(first.model) ?? { id: first.model, name: first.model }} harness={first.harness} /></span><span className="truncate">{label(first)}</span></>
+				: first ? <><span className="flex size-5 items-center justify-center [&_img]:size-4 [&_.harness-logo]:size-4"><ModelLogo model={knownModel(first.model) ?? { id: first.model, name: first.model }} harness={first.harness} /></span><span className="truncate">{shortModelName(first)}</span></>
 				: <span className="text-muted-foreground">Choose a model</span>}
 			<ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
 		</PopoverTrigger>
@@ -279,7 +290,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 						return <div key={row.key} {...common} onMouseDown={event => { keepOpen.current = event.ctrlKey || event.metaKey; }} onClick={() => choose(entry)}
 							className={cn("group/model flex cursor-default items-center gap-2 rounded-md px-2", selected && "bg-foreground/5", highlighted && "bg-muted")}>
 							<span className="flex size-4 shrink-0 items-center justify-center [&_img]:size-4 [&_.harness-logo]:size-4"><ModelLogo model={entry.model} harness={entry.harness} /></span>
-							<span className="min-w-0 truncate text-[13px] font-medium">{entry.harness === "phaseo" && entry.model.organisationName ? `${entry.model.organisationName}: ` : ""}{entry.model.name.split(":")[0]}</span>
+							<span className="min-w-0 truncate text-[13px] font-medium">{entry.model.name.split(":")[0]}</span>
 							{variant && <span className="shrink-0 rounded-sm bg-success/15 px-1.5 text-[10px] font-semibold text-success">{variant === "free" ? "Free" : variant}</span>}
 							{entry.harness !== "phaseo" && (normalized || starred) && <span className="shrink-0 text-[11px] text-muted-foreground">{harnessNames[entry.harness]}</span>}
 							{selected && <CircleCheck className="size-4 shrink-0 text-foreground/70" />}

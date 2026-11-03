@@ -213,9 +213,11 @@ export function NewChat() {
 						<span className="mr-1 inline-flex size-3.5 align-[-2px] [&_img]:size-3.5 [&_.harness-logo]:size-3.5"><ModelLogo model={knownModel(value.model) ?? { id: value.model, name: value.model }} harness={value.harness} /></span>{knownModel(value.model)?.name ?? modelLabel(value.model)}
 					</ComposerChip>)}
 				</> : undefined}
-				tools={<>
-					<ModelPicker selections={selections} onChange={setSelections} multiple={!code} agents={code} disabled={busy} openEvent={openModelPickerEvent} />
+				model={<>
 					{selections.length === 1 && <ModelSettings selection={selections[0]} onChange={next => setSelections([next])} disabled={busy} />}
+					<ModelPicker selections={selections} onChange={setSelections} multiple={!code} agents={code} disabled={busy} openEvent={openModelPickerEvent} />
+				</>}
+				tools={<>
 					{code && <PermissionMenu value={autopilot ? "full-access" : permissionMode} onChange={value => { setPermissionMode(value); if (value !== "full-access") setAutopilot(undefined); }} />}
 					{code && workspacePreferences.autopilot && <AutopilotControl value={autopilot} onChange={value => setAutopilot(value ?? undefined)} />}
 					{code && project && !triaging && <WorktreeTargetControls target={worktree} disabled={busy} />}

@@ -280,12 +280,12 @@ function ChatComposer({ task }: { task: Task }) {
 				{task.projectId && <IssueBadge taskId={task.id} links={overview.tasks.find(value => value.id === task.id)?.issues} className="mr-1 h-7 px-1.5 hover:bg-accent/60" />}
 				{/* Only Phaseo's harness reports its window, and /compact is its own. */}
 				<ContextMeter task={task} onCompact={canCompact && task.harness === "phaseo" ? () => void command({ type: "send", id: task.id, text: "/compact" }) : undefined} />
+				<ModelSettings selection={selection} onChange={next => void changeSettings(next)} disabled={running || task.archived} />
+				<ModelPicker selections={[selection]} onChange={values => void changeModel(values[0])} agents={code} disabled={running || task.archived} openEvent={openModelPickerEvent} />
 			</>}
 			tools={<>
 				<ToolButton label="Attach files" disabled={uploading || task.archived} onClick={() => void attach()}><Paperclip /></ToolButton>
 				{!task.archived && <StashMenu onRestore={id => stash.restore(id)} />}
-				<ModelPicker selections={[selection]} onChange={values => void changeModel(values[0])} agents={code} disabled={running || task.archived} openEvent={openModelPickerEvent} />
-				<ModelSettings selection={selection} onChange={next => void changeSettings(next)} disabled={running || task.archived} />
 				{code && <PermissionMenu value={task.permissionMode} onChange={permissionMode => void command({ type: "update-task", id: task.id, permissionMode })} />}
 				{code && (preferences.autopilot || task.autopilot) && <AutopilotControl value={task.autopilot ? { capNanos: task.autopilot.capNanos } : undefined} disabled={running || task.archived || !preferences.autopilot} disabledReason={preferences.autopilot ? "Stop the chat to turn on Autopilot." : "Allow Autopilot in Settings → Experimental."} onChange={autopilot => void command({ type: "update-task", id: task.id, autopilot })} />}
 				{plan && <PlanIndicator onClear={running ? undefined : () => void command({ type: "update-task", id: task.id, mode: "code" })} />}
