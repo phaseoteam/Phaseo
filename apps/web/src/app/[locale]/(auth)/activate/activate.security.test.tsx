@@ -102,22 +102,34 @@ describe("CLI device activation", () => {
 
 		// A code in the submitted form is ignored: only the reviewed code is approved.
 		fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
-		await expect(approveDeviceAction(form({ user_code: "EVIL-CODE", workspace_id: "ws_1" }))).rejects.toMatchObject({ url: "/activate?approved=1" });
+		expect(html).toMatch(/name="reviewed_code"[^>]*value="WXYZ-1234"|value="WXYZ-1234"[^>]*name="reviewed_code"/);
+		await expect(approveDeviceAction(form({ reviewed_code: "WXYZ-1234", user_code: "EVIL-CODE", workspace_id: "ws_1" }))).rejects.toMatchObject({ url: "/activate?approved=1" });
 		expect(JSON.parse(String(fetchMock.mock.calls[1][1].body))).toEqual({ action: "approve", user_code: "WXYZ-1234", workspace_id: "ws_1" });
 		expect(cookieJar.size).toBe(0);
 	});
 
+	it("approves only the request shown in the form, not one reviewed in another tab", async () => {
+		signedIn();
+		// Tab A reviewed AAAA-AAAA, then tab B reviewed BBBB-BBBB (the cookie now holds B).
+		cookieJar.set("phaseo_device_code", "BBBB-BBBB");
+		await expect(approveDeviceAction(form({ reviewed_code: "AAAA-AAAA", workspace_id: "ws_1" }))).rejects.toMatchObject({ url: "/activate?error=1" });
+		await expect(denyDeviceAction(form({ reviewed_code: "AAAA-AAAA" }))).rejects.toMatchObject({ url: "/activate?error=1" });
+		await expect(approveDeviceAction(form({ workspace_id: "ws_1" }))).rejects.toMatchObject({ url: "/activate?error=1" });
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
 	it("cannot approve a code that was never typed on this page", async () => {
 		signedIn();
-		await expect(approveDeviceAction(form({ user_code: "ABCD-EFGH", workspace_id: "ws_1" }))).rejects.toMatchObject({ url: "/activate?error=1" });
+		await expect(approveDeviceAction(form({ reviewed_code: "ABCD-EFGH", user_code: "ABCD-EFGH", workspace_id: "ws_1" }))).rejects.toMatchObject({ url: "/activate?error=1" });
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
 	it("keeps requiring MFA before approving", async () => {
 		signedIn({ currentLevel: "aal1", nextLevel: "aal2" });
 		cookieJar.set("phaseo_device_code", "WXYZ-1234");
+		const mfaForm = form({ reviewed_code: "WXYZ-1234", workspace_id: "ws_1" });
 
-		await expect(approveDeviceAction(form({ user_code: "WXYZ-1234", workspace_id: "ws_1" }))).rejects.toMatchObject({ url: "/activate?error=1" });
+		await expect(approveDeviceAction(mfaForm)).rejects.toMatchObject({ url: "/activate?error=1" });
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
@@ -126,7 +138,7 @@ describe("CLI device activation", () => {
 		fetchMock.mockResolvedValue(new Response(JSON.stringify({ error: "expired_token" }), { status: 400 }));
 
 		cookieJar.set("phaseo_device_code", "NOPE-NOPE");
-		await expect(denyDeviceAction()).rejects.toMatchObject({ url: "/activate?error=1" });
+		await expect(denyDeviceAction(form({ reviewed_code: "NOPE-NOPE" }))).rejects.toMatchObject({ url: "/activate?error=1" });
 		await expect(approveDeviceAction(form({ user_code: "", workspace_id: "ws_1" }))).rejects.toMatchObject({ url: "/activate?error=1" });
 		expect(redirect).toHaveBeenCalledWith("/activate?error=1");
 	});

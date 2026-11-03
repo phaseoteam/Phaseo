@@ -49,6 +49,16 @@ export async function reviewedDeviceCode() {
 	return cleanUserCode((await cookies()).get(DEVICE_CODE_COOKIE)?.value);
 }
 
+/**
+ * The reviewed code, if the form was rendered for it. The cookie is shared by every tab, so the
+ * form also carries the code it showed: approving in one tab can't authorise a code reviewed in another.
+ */
+async function codeShownInForm(formData: FormData) {
+	const userCode = await reviewedDeviceCode();
+	const shown = cleanUserCode(formData.get("reviewed_code"));
+	return userCode && shown === userCode ? userCode : "";
+}
+
 /** Looks up the request behind a typed code so the person can see who asks and for what. */
 export async function lookupDeviceRequest(userCode: string) {
 	return callDeviceActivation({
@@ -78,7 +88,7 @@ export async function clearDeviceCodeAction() {
 
 // Step 2: approve or deny the reviewed code. The form carries only the workspace choice.
 export async function approveDeviceAction(formData: FormData) {
-	const userCode = await reviewedDeviceCode();
+	const userCode = await codeShownInForm(formData);
 	const workspaceId = String(formData.get("workspace_id") ?? "");
 	if (!userCode) redirect("/activate?error=1");
 	let approved = false;
@@ -96,8 +106,8 @@ export async function approveDeviceAction(formData: FormData) {
 	redirect(approved ? "/activate?approved=1" : "/activate?error=1");
 }
 
-export async function denyDeviceAction() {
-	const userCode = await reviewedDeviceCode();
+export async function denyDeviceAction(formData: FormData) {
+	const userCode = await codeShownInForm(formData);
 	if (!userCode) redirect("/activate?error=1");
 	let denied = false;
 	try {

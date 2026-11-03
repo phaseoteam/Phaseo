@@ -102,6 +102,7 @@ async function ActivatePageContent({ searchParams }: ActivatePageProps) {
 						</div>
 					</div>
 					<form id="approve-device" action={approveDeviceAction} className="space-y-2">
+						<input type="hidden" name="reviewed_code" value={userCode} />
 						<WorkspaceSelectField workspaces={workspaces} />
 					</form>
 				</CardContent>
@@ -110,6 +111,7 @@ async function ActivatePageContent({ searchParams }: ActivatePageProps) {
 						<Button type="submit" variant="ghost" className="w-full">{t("differentCode")}</Button>
 					</form>
 					<form action={denyDeviceAction} className="flex-1">
+						<input type="hidden" name="reviewed_code" value={userCode} />
 						<Button type="submit" variant="outline" className="w-full">{t("deny")}</Button>
 					</form>
 					<Button type="submit" form="approve-device" className="flex-1">{t("approve")}</Button>
