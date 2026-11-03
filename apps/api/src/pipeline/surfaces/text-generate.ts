@@ -1025,7 +1025,10 @@ async function runTextGeneratePipelineInner(
 			}
 		}
 		if (exec.result.kind === "completed") {
-			recordProviderRound(pre.ctx, { firstOutputAtMs: (exec.result as { timing?: { firstOutputAtMs?: number | null } }).timing?.firstOutputAtMs });
+			recordProviderRound(pre.ctx, {
+				firstOutputAtMs: (exec.result as { timing?: { firstOutputAtMs?: number | null } }).timing?.firstOutputAtMs,
+				usage: (exec.result.ir as IRChatResponse | undefined)?.usage,
+			});
 		}
 		if (
 			exec.result.kind === "completed" &&
@@ -1350,7 +1353,10 @@ async function runTextGeneratePipelineInner(
 					}
 				}
 				if (followUpResult.kind === "completed") {
-					recordProviderRound(pre.ctx, { firstOutputAtMs: (followUpResult as { timing?: { firstOutputAtMs?: number | null } }).timing?.firstOutputAtMs });
+					recordProviderRound(pre.ctx, {
+						firstOutputAtMs: (followUpResult as { timing?: { firstOutputAtMs?: number | null } }).timing?.firstOutputAtMs,
+						usage: (followUpResult.ir as IRChatResponse | undefined)?.usage,
+					});
 				}
 				if (
 					followUpResult.kind === "completed" &&

@@ -7,6 +7,7 @@ import {
 	resolveFailoverMs,
 	resolveNonStreamLatencyMs,
 	recordProviderRound,
+	resolveOutputSpeedWindow,
 } from "./timing";
 
 function buildContext(overrides?: Partial<PipelineContext>): PipelineContext {
@@ -171,5 +172,24 @@ describe("recordProviderRound", () => {
 		recordProviderRound(ctx, { completedAtMs: 5000, firstOutputAtMs: 4000 });
 		expect(ctx.meta.generation_ms).toBe(321);
 		expect(ctx.meta.provider_ttft_ms).toBeUndefined();
+	});
+
+	it("measures a synthetic stream's output speed over the last round only", () => {
+		const ctx = buildContext();
+		ctx.meta.selectedUpstreamFetchStartMs = 0;
+		recordProviderRound(ctx, {
+			completedAtMs: 3300,
+			firstOutputAtMs: 3200,
+			usage: { outputTokens: 15, reasoningTokens: 0 },
+		});
+		ctx.meta.selectedUpstreamFetchStartMs = 3400;
+		recordProviderRound(ctx, {
+			completedAtMs: 6200,
+			firstOutputAtMs: 6000,
+			usage: { outputTokens: 21, reasoningTokens: 0 },
+		});
+		expect(resolveOutputSpeedWindow(ctx)).toBeUndefined();
+		ctx.meta.preserve_stream_timing = true;
+		expect(resolveOutputSpeedWindow(ctx)).toEqual({ durationMs: 200, outputTokens: 21, reasoningTokens: 0 });
 	});
 });

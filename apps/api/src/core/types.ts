@@ -125,6 +125,8 @@ export type RequestMeta = {
     providerRoundsMs?: number;    // Internal: provider time of the rounds read to the end so far (recordProviderRound)
     providerRoundsFailoverMs?: number; // Internal: failover time of those rounds
     firstProviderOutputAtMs?: number; // Internal: epoch ms of the first generated output read from a provider
+    // Internal: the latest round read to the end, from its first output to its end; null when it had no output.
+    lastProviderRoundSpeedWindow?: { durationMs: number | null; outputTokens: number; reasoningTokens?: number | null } | null;
     downstreamDisconnected?: boolean; // Client closed the response while the gateway continued draining upstream
     streamCancellationSupport?: "supported" | "unsupported" | "unknown";
     streamProviderBillingOnCancel?: "stops" | "unknown";
