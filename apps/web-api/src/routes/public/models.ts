@@ -1031,6 +1031,8 @@ publicModelsRouter.get("/weekly-metrics", async (c) => {
 	}
 });
 
+const PROVIDER_ROUTING_HEALTH_MAX_ROWS = 1_000;
+
 /** Volatile provider circuit-breaker state shared by model provider lists. */
 publicModelsRouter.get("/provider-routing-health", async (c) => {
 	const providerIds = [...new Set(
@@ -1045,26 +1047,24 @@ publicModelsRouter.get("/provider-routing-health", async (c) => {
 	if (providerIds.length > 100) return c.json({ error: "too_many_provider_ids" }, 400);
 	// A model page asks about its own model: another model's outage does not limit this one.
 	const modelId = (c.req.query("model_id") ?? "").trim();
-	if (modelId.length > 500) return c.json({ error: "invalid_model_id" }, 400);
+	if (!modelId || modelId.length > 500) return c.json({ error: "model_id_required" }, 400);
 	const windowHours = Math.max(1, parseBoundedInt(c.req.query("window_hours"), 24, 168));
 	const nowMs = Date.now();
 	const sinceIso = new Date(nowMs - windowHours * 60 * 60 * 1000).toISOString();
 	try {
-		const rows: Array<Record<string, unknown>> = [];
-		for (let offset = 0; offset < 20_000; offset += 1_000) {
-			let query = getDataClient(c.env)
-				.from("gateway_provider_health_states")
-				.select("provider_id,breaker_state,is_deranked,open_until_ms,updated_at")
-				.in("provider_id", providerIds)
-				.gte("updated_at", sinceIso);
-			if (modelId) query = query.eq("model_id", modelId);
-			const { data, error } = await query
-				.order("updated_at", { ascending: false })
-				.range(offset, offset + 999);
-			if (error) throw error;
-			rows.push(...((data ?? []) as Array<Record<string, unknown>>));
-			if ((data?.length ?? 0) < 1_000) break;
-		}
+		// The primary key is (provider, model, endpoint), so one model has a row per provider and
+		// endpoint: a few hundred at most. A full page means that bound broke; fail rather than
+		// report a partial set as healthy.
+		const { data, error } = await getDataClient(c.env)
+			.from("gateway_provider_health_states")
+			.select("provider_id,breaker_state,is_deranked,open_until_ms,updated_at")
+			.in("provider_id", providerIds)
+			.eq("model_id", modelId)
+			.gte("updated_at", sinceIso)
+			.limit(PROVIDER_ROUTING_HEALTH_MAX_ROWS);
+		if (error) throw error;
+		const rows = (data ?? []) as Array<Record<string, unknown>>;
+		if (rows.length >= PROVIDER_ROUTING_HEALTH_MAX_ROWS) throw new Error("provider routing health exceeds one page");
 		const providers = Object.fromEntries(providerIds.map((providerId) => {
 			const matches = rows.filter((row) => row.provider_id === providerId);
 			// Rows change only on breaker transitions, so a stored is_deranked outlives the cooldown.
