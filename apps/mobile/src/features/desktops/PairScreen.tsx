@@ -43,7 +43,7 @@ export function PairScreen({ link }: { link?: string }) {
         // Approvals and questions from the computer arrive as notifications while the app runs.
         const { status } = await Notifications.getPermissionsAsync();
         if (status === "undetermined") await Notifications.requestPermissionsAsync().catch(() => undefined);
-        // Its threads are in Code, with it picked. Back returns to where pairing started (Desktops, or Code).
+        // The app switches to it, so the sidebar lists its threads. Back returns to where pairing started.
         chooseDesktop(desktop.desktopId);
         if (router.canGoBack()) router.back();
         else router.replace(CODE_HREF);

@@ -4,7 +4,11 @@ import { utf8Length } from "./base64url";
  * The frames a phone and a desktop exchange, the same over a direct WebSocket and inside Phaseo Connect envelopes.
  * Requests carry an id; the answer echoes the id and type with `ok` and a result, or `ok: false` and an error.
  */
-export const phoneProtocolVersion = 1;
+/**
+ * 2 added list_projects, projects_changed and hello's capabilities. A phone gates each newer frame on hello.protocol,
+ * since an older computer answers an unknown request with invalid_frame.
+ */
+export const phoneProtocolVersion = 2;
 export const phoneLimits = {
 	/** Largest frame either side accepts, before or after decryption. */
 	frameBytes: 1024 * 1024,
@@ -39,10 +43,14 @@ export type PhoneModel = { id: string; name: string; efforts?: { id: string; lab
 export type PhoneMessage = { kind: "message"; id: string; role: "user" | "assistant" | "system" | "tool"; text: string; createdAt: string; completedAt?: string; delivery?: "steer" | "subagent"; notice?: string; attachments?: { name: string; kind: string }[]; /** The text was cut for the phone. */ truncated?: true };
 export type PhoneActivity = { kind: "activity"; id: string; type: "tool" | "reasoning" | "plan" | "usage" | "compaction"; title: string; text: string; status?: "running" | "completed" | "failed"; summary?: string; steps?: { text: string; status: string }[]; truncated?: true };
 export type PhoneEntry = PhoneMessage | PhoneActivity;
+/** A project on the computer. A worktree names the project it came from, whose folder lists its chats. */
+export type PhoneProject = { id: string; name: string; /** The checked-out branch, when the computer read it. */ branch?: string; worktreeOf?: string; pinned?: true; archived?: true; /** A git checkout. */ repository: boolean };
+/** Powers a paired phone has beyond threads, switched on per phone on the computer. Empty until a computer offers them. */
+export type PhoneCapability = "code" | "changes" | "terminal";
 export type AttentionKind = "approval" | "question" | "done" | "failed";
 
 export type PhoneRequest =
-	| { id: string; type: "hello"; deviceId: string; appVersion: string }
+	| { id: string; type: "hello"; deviceId: string; appVersion: string; /** The phone's phoneProtocolVersion; phones from before 2 leave it out. */ protocol?: number }
 	| { id: string; type: "list_chats"; cursor?: string; limit?: number }
 	| { id: string; type: "read_chat"; chatId: string; before?: string; limit?: number }
 	| { id: string; type: "send"; chatId: string; text: string; steer?: boolean }
@@ -51,11 +59,13 @@ export type PhoneRequest =
 	| { id: string; type: "stop"; chatId: string }
 	| { id: string; type: "new_chat"; text: string; projectId?: string; mode: PhoneChatMode; /** One of list_models' ids; the computer's choice without it. */ model?: string; reasoningEffort?: string }
 	| { id: string; type: "list_models"; projectId?: string }
+	| { id: string; type: "list_projects" }
 	| { id: string; type: "subscribe"; chatIds: string[] };
 export type PhoneFrame = PhoneRequest | { id?: string; type: "ping" } | { id?: string; type: "pong" };
 
 export type PhoneResults = {
-	hello: { desktopName: string; appVersion: string; protocol: number };
+	/** protocol is the lower of the two sides' versions, so a phone from before 2 (which refuses a higher one) keeps working. */
+	hello: { desktopName: string; appVersion: string; protocol: number; /** From protocol 2. */ capabilities?: PhoneCapability[] };
 	list_chats: { chats: PhoneChat[]; cursor?: string };
 	read_chat: { chat: PhoneChatDetail; entries: PhoneEntry[]; /** Messages before these; pass the first message's id (not an activity's) as `before` to read them. */ earlier: number };
 	send: { chatId: string };
@@ -66,6 +76,8 @@ export type PhoneResults = {
 	/** The models of the agent a new chat (in that project) would use, and the model and effort it would start with. */
 	list_models: { models: PhoneModel[]; selected: { model: string; reasoningEffort?: string } };
 	subscribe: { chatIds: string[] };
+	/** Every project, worktrees and archived ones included, so the phone can fold and hide them as the window does. */
+	list_projects: { projects: PhoneProject[] };
 };
 export type PhoneErrorCode = "invalid_frame" | "too_large" | "rate_limited" | "unauthorized" | "not_found" | "rejected" | "internal";
 export type PhoneResponse<T extends PhoneRequest["type"] = PhoneRequest["type"]> =
@@ -75,6 +87,8 @@ export type DesktopEvent =
 	| { type: "chat_updated"; chat: PhoneChat | PhoneChatDetail }
 	| { type: "entries"; chatId: string; entries: PhoneEntry[] }
 	| { type: "attention"; chatId: string; kind: AttentionKind; summary: string }
+	/** The project list changed. Sent only to a phone that has asked list_projects, so older phones never get it. */
+	| { type: "projects_changed"; projects: PhoneProject[] }
 	| { id?: string; type: "ping" } | { id?: string; type: "pong" };
 export type DesktopFrame = PhoneResponse | DesktopEvent;
 
@@ -82,7 +96,7 @@ export class PhoneProtocolError extends Error {
 	constructor(readonly code: PhoneErrorCode, message: string, readonly id?: string, readonly type?: string) { super(message); this.name = "PhoneProtocolError"; }
 }
 
-const requestTypes = new Set(["hello", "list_chats", "read_chat", "send", "answer_approval", "answer_question", "stop", "new_chat", "list_models", "subscribe"]);
+const requestTypes = new Set(["hello", "list_chats", "read_chat", "send", "answer_approval", "answer_question", "stop", "new_chat", "list_models", "subscribe", "list_projects"]);
 const plain = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value === "object" && !Array.isArray(value);
 const validId = (value: unknown, max = 200): value is string => typeof value === "string" && value.length > 0 && value.length <= max && !/[\u0000-\u001f]/.test(value);
 
@@ -126,7 +140,8 @@ export function parsePhoneFrame(text: string): PhoneFrame {
 		case "hello": {
 			if (!validId(frame.deviceId)) fail("deviceId is required.");
 			if (typeof frame.appVersion !== "string" || frame.appVersion.length > 64) fail("appVersion is required.");
-			return { id: request, type, deviceId: frame.deviceId as string, appVersion: frame.appVersion as string };
+			if (frame.protocol !== undefined && (!Number.isSafeInteger(frame.protocol) || (frame.protocol as number) < 1)) fail("protocol must be a whole number.");
+			return { id: request, type, deviceId: frame.deviceId as string, appVersion: frame.appVersion as string, ...frame.protocol !== undefined ? { protocol: frame.protocol as number } : {} };
 		}
 		case "list_chats": {
 			if (frame.cursor !== undefined && !validId(frame.cursor, 400)) fail("Invalid cursor.");
@@ -166,6 +181,7 @@ export function parsePhoneFrame(text: string): PhoneFrame {
 			};
 		}
 		case "list_models": return { id: request, type, ...projectId() };
+		case "list_projects": return { id: request, type };
 		case "subscribe": {
 			const ids = frame.chatIds;
 			if (!Array.isArray(ids) || ids.length > phoneLimits.subscriptions || ids.some(value => !validId(value))) fail(`chatIds must list up to ${phoneLimits.subscriptions} chat ids.`);
@@ -187,6 +203,7 @@ export function parseDesktopFrame(text: string): DesktopFrame {
 		case "chat_updated": if (plain(frame.chat) && validId(frame.chat.id)) return frame as unknown as DesktopEvent; break;
 		case "entries": if (validId(frame.chatId) && Array.isArray(frame.entries)) return frame as unknown as DesktopEvent; break;
 		case "attention": if (validId(frame.chatId) && ["approval", "question", "done", "failed"].includes(frame.kind as string) && typeof frame.summary === "string") return frame as unknown as DesktopEvent; break;
+		case "projects_changed": if (Array.isArray(frame.projects)) return frame as unknown as DesktopEvent; break;
 		case "ping": case "pong": return { type: frame.type, ...validId(frame.id, 64) ? { id: frame.id as string } : {} };
 	}
 	throw new PhoneProtocolError("invalid_frame", "Unknown or invalid desktop frame.");

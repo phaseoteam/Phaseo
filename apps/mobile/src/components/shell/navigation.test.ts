@@ -127,14 +127,13 @@ describe("switching section", () => {
 
 describe("the header and the drawer's swipe on phones", () => {
   it("lead with the sidebar on Chat and on each section's root, as the sidebar opens them", () => {
-    for (const path of ["/", "/chat", "/chat/abc", "/models", "/providers", "/code", "/account", "/account/usage"]) {
+    for (const path of ["/", "/chat", "/chat/abc", "/models", "/providers", "/code", "/code/desk-1/c1", "/code/desk-1/new", "/account", "/account/usage"]) {
       expect([path, leadsWithSidebar(path, 0)]).toEqual([path, true]);
     }
   });
 
   it("keep back on details: a section's detail, Usage over Account, a provider opened from a model, and Compare", () => {
     expect(leadsWithSidebar("/models/openai/gpt-5", 1)).toBe(false);
-    expect(leadsWithSidebar("/code/desk-1/c1", 1)).toBe(false);
     expect(leadsWithSidebar("/account/usage", 1)).toBe(false);
     expect(leadsWithSidebar("/providers/groq", 0)).toBe(false);
     expect(leadsWithSidebar("/compare", 0)).toBe(false);

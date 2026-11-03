@@ -4,7 +4,8 @@ import { LinkRefused, LinkUnavailable, type DesktopTransport, type Link, type Li
 
 export type ConnectionState =
   | { status: "connecting" }
-  | { status: "connected"; via: TransportKind; desktopName: string }
+  /** protocol is the version both sides speak; frames newer than it are hidden (see phoneProtocolVersion). */
+  | { status: "connected"; via: TransportKind; desktopName: string; protocol: number }
   | { status: "offline"; message: string }
   | { status: "refused"; message: string }
   | { status: "stopped" };
@@ -180,7 +181,7 @@ export class DesktopClient {
       const cancelTimer = (this.options.schedule ?? defaultSchedule)(() => this.timedOut(helloId), this.options.requestTimeoutMs ?? 20_000);
       this.pending.set(helloId, { resolve: resolve as (result: unknown) => void, reject, cancelTimer, held: false });
     });
-    link.send({ id: helloId, type: "hello", deviceId: this.options.deviceId, appVersion: this.options.appVersion });
+    link.send({ id: helloId, type: "hello", deviceId: this.options.deviceId, appVersion: this.options.appVersion, protocol: phoneProtocolVersion });
     let result: PhoneResults["hello"];
     try { result = await hello; } catch (error) {
       if (generation !== this.generation) return;
@@ -192,7 +193,7 @@ export class DesktopClient {
     if (result.protocol > phoneProtocolVersion) { this.refuse("The computer runs a newer Phaseo. Update this app to use it."); return; }
     this.ready = true;
     this.attempt = 0;
-    this.state.set({ status: "connected", via: transport.kind, desktopName: result.desktopName });
+    this.state.set({ status: "connected", via: transport.kind, desktopName: result.desktopName, protocol: result.protocol });
     if (this.watched.size) link.send({ id: `r${++this.nextId}`, type: "subscribe", chatIds: [...this.watched.keys()] });
     const waiting = this.waiting;
     this.waiting = [];

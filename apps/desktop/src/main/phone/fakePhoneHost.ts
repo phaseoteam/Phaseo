@@ -19,7 +19,7 @@ export const fakeModels: Partial<Record<Harness, ModelOption[]>> = {
 export function fakePhoneHost() {
 	const tasks = new Map<string, Task>();
 	const projects: Project[] = [{ id: "p1", name: "Phaseo", directory: "/work/phaseo", createdAt: "2026-11-01T00:00:00.000Z" }];
-	const commands: WorkspaceCommand[] = [];
+	const commands: WorkspaceCommand[] = [], repositoryChecks: string[] = [];
 	let clock = Date.parse("2026-11-01T10:00:00.000Z");
 	const tick = () => new Date(clock += 1000).toISOString();
 	const overview = (): WorkspaceOverview => ({ version: 1, projects, accounts: [], agents: [], mcpConnections: [], tasks: [...tasks.values()].map(task => taskOverview(task)).sort(overviewOrder) });
@@ -54,6 +54,8 @@ export function fakePhoneHost() {
 		},
 		newChat: input => startPhoneChat(overview, async command => { await host.command(command); return overview(); }, discover, input),
 		models: input => phoneModels(overview(), discover, input),
+		// Every test project is a checkout except one in /scratch.
+		isRepository: directory => { repositoryChecks.push(directory); return !directory.startsWith("/scratch"); },
 	};
-	return { host, tasks, commands, addTask, addMessage, get, touch, changed, overview, onChange: (listener: (overview: WorkspaceOverview) => void) => listeners.push(listener) };
+	return { host, tasks, projects, repositoryChecks, commands, addTask, addMessage, get, touch, changed, overview, onChange: (listener: (overview: WorkspaceOverview) => void) => listeners.push(listener) };
 }

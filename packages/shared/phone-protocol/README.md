@@ -16,6 +16,12 @@ A phone can't change the model of a chat that exists. For a new one, `list_model
 
 List rows carry `model`, `branch` (the worktree's) and `settled`; `read_chat`'s chat adds `reasoningEffort` when the chat set one. `effortLabel(id)` gives the word both apps show for an effort.
 
+## Versions and projects
+
+`hello` carries the phone's `phoneProtocolVersion` as `protocol`, and the computer answers with the lower of the two, so a phone from before version 2 (which sends none and refuses a higher answer) is told 1 and keeps working. A phone shows a newer feature only when the answer is high enough; an older computer answers an unknown request with `invalid_frame`. From 2, `hello` also lists `capabilities`, the powers this phone has beyond threads (none yet).
+
+`list_projects` (version 2) returns every project, pinned first in the window's order: `repository` says whether it is a git checkout, archived projects are marked `archived`, and a worktree names its source as `worktreeOf` (its chats list under the source, as rows already say). Removed worktrees and Factory's per-item worktrees are left out. Once a phone has read the list, the computer sends `projects_changed` with the whole list whenever it changes; phones that never asked never get it.
+
 ## Direct connection
 
 Direct addresses are plain `http`/`ws` (a Wi-Fi or Tailscale IP has no certificate), so everything secret or private is sealed with the paired keys and no token is sent. `src/direct.ts` describes the handshake.

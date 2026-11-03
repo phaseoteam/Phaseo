@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { applyEntries, firstMessageId, mergeChat, mergeDetail, prependEntries, sortChats } from "./chatState";
 import type { ClientEvent, DesktopClient } from "./client";
-import { useClientEvents } from "./connections";
+import { useClientEvents, useConnection } from "./connections";
 import type { ModelList } from "./newThread";
-import type { PhoneChat, PhoneChatDetail, PhoneEntry } from "./protocol";
+import type { PhoneChat, PhoneChatDetail, PhoneEntry, PhoneProject } from "./protocol";
 
 const messageOf = (error: unknown) => (error instanceof Error ? error.message : "Something went wrong.");
 
@@ -51,6 +51,26 @@ export function useDesktopChats(client: DesktopClient | null) {
   }, [client, cursor, loadingMore]);
 
   return { chats, error, reload: load, loadMore: cursor ? loadMore : null, loadingMore };
+}
+
+/**
+ * A computer's projects (protocol 2), kept current by projects_changed and read again after each reconnect. Null
+ * while loading, or from a computer that can't list them, whose folders then come from its threads alone.
+ */
+export function useDesktopProjects(client: DesktopClient | null) {
+  const state = useConnection(client);
+  const protocol = state.status === "connected" ? state.protocol : 0;
+  const [projects, setProjects] = useState<PhoneProject[] | null>(null);
+  const load = useCallback(() => {
+    if (!client || protocol < 2) return;
+    client.request("list_projects", {}).then((result) => setProjects(result.projects), () => undefined);
+  }, [client, protocol]);
+  useEffect(load, [load]);
+  useClientEvents(client, useCallback((event: ClientEvent) => {
+    if (event.type === "projects_changed") setProjects(event.projects);
+  }, []));
+  // Each reconnect passes through "connecting", so `protocol` changes and the list is read again. An older computer has none to show.
+  return protocol === 1 ? null : projects;
 }
 
 type ChatView = { chat: PhoneChatDetail; entries: PhoneEntry[]; earlier: number };

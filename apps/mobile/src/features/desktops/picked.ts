@@ -1,35 +1,45 @@
 import { kv } from "@/lib/storage";
 import { createStore } from "@/lib/store";
 
-// The key from when the sidebar had a Chat | Code switch, so the computer picked then stays picked.
-const KEY = "phaseo.chat.sidebar";
+/**
+ * What the app is working in, switched at the top of the sidebar: Phaseo (the chats on this phone) or a paired
+ * computer (its projects and threads). Remembered on this device.
+ */
+export type Workspace = { kind: "phaseo" } | { kind: "desktop"; desktopId: string };
 
-export function readPickedDesktop(text: string | null): string | null {
+const KEY = "phaseo.workspace";
+const PHASEO: Workspace = { kind: "phaseo" };
+
+export function readWorkspace(text: string | null): Workspace {
   try {
-    const value = JSON.parse(text ?? "null") as { desktopId?: unknown } | null;
-    return typeof value?.desktopId === "string" ? value.desktopId : null;
+    const value = JSON.parse(text ?? "null") as { kind?: unknown; desktopId?: unknown } | null;
+    return value?.kind === "desktop" && typeof value.desktopId === "string" ? { kind: "desktop", desktopId: value.desktopId } : PHASEO;
   } catch {
-    return null;
+    return PHASEO;
   }
 }
 
-/** The computer whose threads Code shows, remembered on this device. */
-export const pickedDesktopStore = createStore<string | null>(null);
+export const workspaceStore = createStore<Workspace>(PHASEO);
 
 let changed = false;
 void kv.getItem(KEY).then((text) => {
   // A choice made before storage answered wins over the stored one.
-  if (!changed && text) pickedDesktopStore.set(readPickedDesktop(text));
+  if (!changed && text) workspaceStore.set(readWorkspace(text));
 });
 
-pickedDesktopStore.subscribe(() => {
+workspaceStore.subscribe(() => {
   changed = true;
-  void kv.setItem(KEY, JSON.stringify({ desktopId: pickedDesktopStore.get() }));
+  void kv.setItem(KEY, JSON.stringify(workspaceStore.get()));
 });
 
-export const chooseDesktop = (desktopId: string) => pickedDesktopStore.set(desktopId);
+export const choosePhaseo = () => workspaceStore.set(PHASEO);
+export const chooseDesktop = (desktopId: string) => {
+  const current = workspaceStore.get();
+  if (current.kind !== "desktop" || current.desktopId !== desktopId) workspaceStore.set({ kind: "desktop", desktopId });
+};
 
-/** The picked computer while it's still paired, else the first one paired; null with none. */
-export function chosenDesktop<T extends { desktopId: string }>(desktops: readonly T[], desktopId: string | null): T | null {
-  return desktops.find((desktop) => desktop.desktopId === desktopId) ?? desktops[0] ?? null;
+/** The computer the app is working in while it's still paired; null for Phaseo, or a computer since removed. */
+export function workspaceDesktop<T extends { desktopId: string }>(desktops: readonly T[] | null, workspace: Workspace): T | null {
+  if (workspace.kind !== "desktop") return null;
+  return desktops?.find((desktop) => desktop.desktopId === workspace.desktopId) ?? null;
 }

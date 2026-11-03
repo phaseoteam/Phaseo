@@ -1,4 +1,6 @@
-import type { AttentionKind, PhoneActivity, PhoneChat, PhoneChatDetail, PhoneEntry, PhoneMessage } from "@phaseo/phone-protocol";
+import type { AttentionKind, PhoneActivity, PhoneChat, PhoneChatDetail, PhoneEntry, PhoneMessage, PhoneProject } from "@phaseo/phone-protocol";
+import { isFactoryWorktree } from "../../shared/factory/projects";
+import { isProjectArchived } from "../../shared/projectShelf";
 import { isSettled, isUnread } from "../../shared/threadLifecycle";
 import type { AgentActivity, Message, Project, Task } from "../../shared/workspace";
 import { overviewOrder, type TaskOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
@@ -9,6 +11,20 @@ const cut = (text: string, max: number) => text.length > max ? { text: `${text.s
 
 /** The chats a phone lists: top-level and not archived. Agents' and side chats stay with their parent. */
 export const phoneChats = (overview: WorkspaceOverview) => overview.tasks.filter(task => !task.archived && !task.delegation).sort(overviewOrder);
+
+/**
+ * The projects a phone lists, pinned first as the window's pickers order them. Removed worktrees and Factory's
+ * per-item worktrees are left out, as the window's new-chat picker leaves them out; archived ones are marked so the
+ * phone can hide them. `repository` says whether a project's folder is a git checkout.
+ */
+export function phoneProjects(projects: readonly Project[], repository: (directory: string) => boolean): PhoneProject[] {
+	const listed = projects.filter(project => !project.worktree?.removedAt && !isFactoryWorktree(project));
+	return [...listed.filter(project => project.pinned), ...listed.filter(project => !project.pinned)].map(project => ({
+		id: project.id, name: project.name, repository: repository(project.directory),
+		...project.worktree ? { worktreeOf: project.worktree.sourceProjectId, branch: project.worktree.branch } : {},
+		...project.pinned ? { pinned: true as const } : {}, ...isProjectArchived(project, projects) ? { archived: true as const } : {},
+	}));
+}
 
 /** The effort a chat set: a field for Codex and Grok, a model option for the rest (see phoneHost's modelEfforts). */
 export const effortOptionIds = ["effort", "reasoning", "thinking"];

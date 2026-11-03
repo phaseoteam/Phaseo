@@ -1,5 +1,5 @@
 import { codeListItems, codeStatus } from "./codeList";
-import type { PhoneChat } from "./protocol";
+import type { PhoneChat, PhoneProject } from "./protocol";
 
 const chat = (id: string, updatedAt: string, more: Partial<PhoneChat> = {}): PhoneChat => ({ id, title: id, mode: "code", status: "completed", updatedAt, unread: false, needsYou: false, ...more });
 const shape = (items: ReturnType<typeof codeListItems>) => items.map((item) => (item.type === "thread" ? item.chat.id : item.type === "folder" ? `[${item.title}]` : `# ${item.title} (${item.count})${item.open ? "" : " closed"}`));
@@ -34,6 +34,32 @@ describe("the Code list", () => {
   it("searches titles, projects and branches, with settled matches showing", () => {
     expect(shape(codeListItems(chats, { query: "login" }))).toEqual(["[Web]", "web-fix"]);
     expect(shape(codeListItems(chats, { query: "api" }))).toEqual(["[API]", "api-new", "old-api", "# Settled (1)", "shipped"]);
+  });
+
+  it("with the computer's projects, shows every project: pinned first, then by latest thread, then empty ones", () => {
+    const projects: PhoneProject[] = [
+      { id: "docs", name: "Docs", pinned: true, repository: true },
+      { id: "api", name: "API", repository: true },
+      { id: "web", name: "Web", repository: true },
+      { id: "empty", name: "Empty", repository: false },
+      { id: "old", name: "Old", archived: true, repository: true },
+      { id: "wt", name: "API (fix)", worktreeOf: "api", branch: "fix", repository: true },
+    ];
+    expect(shape(codeListItems(chats, { projects }))).toEqual([
+      "# Needs you (2)", "approve", "asks",
+      // Pinned with no threads still leads; archived projects and worktrees get no folder.
+      "[Docs]",
+      "[API]", "api-new", "old-api",
+      "[Web]", "web-fix",
+      "[Empty]",
+      "[No project]", "loose",
+      "# Settled (2) closed",
+    ]);
+  });
+
+  it("hides empty folders while searching", () => {
+    const projects: PhoneProject[] = [{ id: "docs", name: "Docs", pinned: true, repository: true }, { id: "web", name: "Web", repository: true }];
+    expect(shape(codeListItems(chats, { query: "login", projects }))).toEqual(["[Web]", "web-fix"]);
   });
 
   it("keeps the folder's project id for its New thread action", () => {

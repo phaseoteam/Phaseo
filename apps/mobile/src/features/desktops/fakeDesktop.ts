@@ -1,7 +1,7 @@
 import {
   checkDirectAuth, directChallenge, encodePairingLink, EnvelopeChannel, generateKeyPair, isEnvelope, okResponse, openPairRequest, errorResponse, parsePhoneFrame,
   randomToken, readRelayOutbound, relayDesktopAddress, relayPairing, sealPairResponse, sharedKey,
-  type DesktopFrame, type PhoneChatDetail, type PhoneEntry, type PhoneFrame, type PhoneModel, type PhoneRequest, type PhoneResponse,
+  type DesktopFrame, type PhoneChatDetail, type PhoneEntry, type PhoneFrame, type PhoneModel, type PhoneProject, type PhoneRequest, type PhoneResponse,
 } from "./protocol";
 import type { FetchLike } from "./reach";
 import type { OpenSocket, SocketLike } from "./transport";
@@ -56,6 +56,15 @@ export class FakeDesktop {
   chats: PhoneChatDetail[] = [
     { id: "c1", title: "Fix the build", mode: "code", status: "completed", updatedAt: "2026-11-01T09:00:00.000Z", unread: false, needsYou: false, project: "Phaseo", projectId: "p1", approvals: [], questions: [] },
     { id: "c2", title: "Release notes", mode: "chat", status: "waiting", updatedAt: "2026-11-01T08:00:00.000Z", unread: true, needsYou: true, attention: "Wants to run a command", approvals: [{ id: "a1", title: "Run pnpm build", description: "pnpm --filter web build" }], questions: [] },
+  ];
+  /** The protocol it speaks; 1 answers like a computer from before list_projects. */
+  protocol = 2;
+  /** Its projects: Blog has no threads yet, Scratch is archived and a worktree folds under Phaseo. */
+  projects: PhoneProject[] = [
+    { id: "p2", name: "Blog", pinned: true, repository: true },
+    { id: "p1", name: "Phaseo", repository: true },
+    { id: "p3", name: "Scratch", archived: true, repository: false },
+    { id: "w1", name: "Phaseo (fix)", worktreeOf: "p1", branch: "fix/login", repository: true },
   ];
   /** What a new thread can start on; null answers list_models as a computer from before it did. */
   models: { models: PhoneModel[]; selected: { model: string; reasoningEffort?: string } } | null = {
@@ -190,7 +199,12 @@ export class FakeDesktop {
     const chat = chatId ? this.chats.find((value) => value.id === chatId) : undefined;
     if (chatId && !chat) return errorResponse(request.id, request.type, "not_found", "This chat no longer exists on this computer.") as PhoneResponse;
     switch (request.type) {
-      case "hello": return okResponse(request, { desktopName: this.desktopName, appVersion: "1.0.0", protocol: 1 });
+      case "hello": {
+        const protocol = Math.min(request.protocol ?? 1, this.protocol);
+        return okResponse(request, { desktopName: this.desktopName, appVersion: "1.0.0", protocol, ...(protocol >= 2 ? { capabilities: [] } : {}) });
+      }
+      case "list_projects":
+        return this.protocol >= 2 ? okResponse(request, { projects: this.projects }) : errorResponse(request.id, request.type, "invalid_frame", "Unknown frame type.") as PhoneResponse;
       case "list_chats": return okResponse(request, { chats: this.chats.map(({ approvals: _approvals, questions: _questions, ...row }) => row) });
       case "read_chat": {
         const all = this.entries.get(request.chatId) ?? [];
