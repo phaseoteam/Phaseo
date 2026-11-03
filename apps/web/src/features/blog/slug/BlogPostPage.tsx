@@ -14,6 +14,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { isAnnouncementPublished } from "@/lib/content/announcementDates";
 import { loadCompiledAnnouncement } from "@/components/announcements/compiledAnnouncements";
 import { blogPostQuery } from "./post.functions";
+import { blogShareImage } from "@/lib/content/blogShareImage";
 import { canPreviewFutureBlogPosts } from "@/lib/flags/blogPreview";
 import { buildMetadata } from "@/lib/seo";
 import { cn } from "@/lib/utils";
@@ -48,11 +49,19 @@ export async function getBlogPostMetadata({ params }: RouteMetadataInput): Promi
 		});
 	}
 
+	const shareImage = blogShareImage(post);
 	return buildMetadata({
 		title: `${post.title} | ${t("title")}`,
 		description: post.description,
 		path,
 		keywords: [t("title"), ...post.tags],
+		...(shareImage
+			? {
+					imagePath: shareImage.path,
+					imageAlt: post.title,
+					imageSize: shareImage.size ?? null,
+				}
+			: {}),
 	});
 }
 

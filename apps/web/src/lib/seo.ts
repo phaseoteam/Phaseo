@@ -57,6 +57,8 @@ export interface BuildMetadataOptions {
 	keywords?: string[];
 	imagePath?: string;
 	imageAlt?: string;
+	// Defaults to 1200x630; null leaves the size out when it isn't known.
+	imageSize?: { width: number; height: number } | null;
 	type?: "website" | "article" | "profile" | "video.other";
 	openGraph?: PageMetadata["openGraph"];
 	twitter?: PageMetadata["twitter"];
@@ -77,6 +79,7 @@ export function buildMetadata({
 	keywords = [],
 	imagePath,
 	imageAlt,
+	imageSize = { width: 1200, height: 630 },
 	type = "website",
 	openGraph: openGraphOverrides,
 	twitter: twitterOverrides,
@@ -107,8 +110,7 @@ export function buildMetadata({
 			images: [
 				{
 					url: imageUrl,
-					width: 1200,
-					height: 630,
+					...(imageSize ?? {}),
 					alt: ogAlt,
 				},
 			],

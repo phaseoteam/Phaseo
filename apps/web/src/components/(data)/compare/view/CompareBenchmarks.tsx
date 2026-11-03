@@ -5,7 +5,7 @@ import { CompareGrid, CompareGroup, CompareRow, CompareSection, MODEL_COLOURS, t
 import { ComparePeers } from "./ComparePeers";
 import { Segmented } from "./ComparePricing";
 import {
-	bestIndices,
+	bestBenchmarkIndices,
 	defaultEffort,
 	ECI_BENCHMARK_ID,
 	effortLevels,
@@ -97,7 +97,7 @@ function EffortBarCard({ benchmark, models, effort }: { benchmark: CompareViewBe
 	const t = useTranslations("Catalogue.compareView");
 	const picks = models.map((model) => pickResult(benchmark, model.id, effort));
 	const scores = picks.map((picked) => (picked.kind === "result" ? picked.result.score : null));
-	const best = bestIndices(scores, benchmark.higherIsBetter ? "higher" : "lower");
+	const best = bestBenchmarkIndices(picks, benchmark.higherIsBetter);
 	const max = Math.max(1, ...scores.filter((value): value is number => value != null));
 	const tested = picks.filter((picked) => picked.kind === "result" && picked.result.effort === effort).length;
 	return (
@@ -144,8 +144,7 @@ export function CompareBenchmarks({ models, benchmarks, peers }: { models: Compa
 
 	const cells = (benchmark: CompareViewBenchmark): CompareCell[] => {
 		const picks = models.map((model) => pickResult(benchmark, model.id, effort));
-		const scores = picks.map((picked) => (picked.kind === "result" ? picked.result.score : null));
-		const best = bestIndices(scores, benchmark.higherIsBetter ? "higher" : "lower");
+		const best = bestBenchmarkIndices(picks, benchmark.higherIsBetter);
 		return picks.map((picked, index): CompareCell => {
 			if (picked.kind !== "result") return { content: picked.kind === "notAtEffort" ? t("notTested") : t("notReported"), text: "", muted: true };
 			return {
