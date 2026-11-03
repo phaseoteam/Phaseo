@@ -286,6 +286,8 @@ export type WorkspaceApi = {
 	harnessUpdateStatus: () => Promise<"codex" | "claude" | "pi" | undefined>;
 	checkAgent: (agentId: string) => Promise<AgentStatus>;
 	mcp: (command: McpCommand) => Promise<WorkspaceOverview>;
+	/** An agent's MCP change: saved now, or (applied false) as soon as no running chat it affects is still running. */
+	mcpWhenIdle: (command: McpCommand) => Promise<{ applied: boolean; workspace: WorkspaceOverview }>;
 	models: (harness: Harness, accountId?: string, projectId?: string) => Promise<ModelOption[]>;
 	/** Refetches a harness catalog now, ignoring the Phaseo disk cache freshness. */
 	refreshModels: (harness: Harness, accountId?: string) => Promise<ModelOption[]>;

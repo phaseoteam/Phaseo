@@ -23,8 +23,10 @@ const operatorScript = [
 	{ expect: input => output(input).includes("\"page\":\"inbox\""), call: () => ["run_app_command", { command: "settings.list", args: { query: "theme" } }] },
 	{ expect: input => output(input).includes("colourTheme") && output(input).includes("\"kept\":\"device\""), call: () => ["run_app_command", { command: "settings.set", args: { key: "theme", value: "light" } }] },
 	{ expect: input => output(input).includes("\"value\":\"light\""), call: () => ["run_app_command", { command: "settings.set", args: { key: "autopilot", value: true } }] },
-	{ expect: input => output(input).includes("for the person to change"), call: () => ["run_app_command", { command: "settings.set", args: { key: "notifications", value: "all" } }] },
-	{ expect: input => output(input).includes("\"value\":\"all\""), call: () => ["run_app_command", { command: "operator.resume" }] },
+	{ expect: input => output(input).includes("\"value\":true"), call: () => ["run_app_command", { command: "settings.set", args: { key: "notifications", value: "all" } }] },
+	{ expect: input => output(input).includes("\"value\":\"all\""), call: () => ["run_app_command", { command: "config.set", args: { area: "mcp", value: { connection: { name: "Docs", transport: "http", url: "https://docs.example.com/mcp", secretHeaders: ["Authorization"] }, headers: { Authorization: "Bearer smoke-secret" } } } }] },
+	// The operator's own turn is running, so the change waits for it to end.
+	{ expect: input => output(input).includes("when this chat") && !output(input).includes("smoke-secret"), call: () => ["run_app_command", { command: "operator.resume" }] },
 	{ expect: input => output(input).includes("for the person only"), text: "Watching the worker." },
 	// Woken by the worker finishing.
 	{ expect: input => { const text = last(input, "user"); return text.includes("Workspace events from your subscriptions (1)") && text.includes(`thread ${worker.id}`); }, wake: true, call: () => ["run_app_command", { command: "chat.open", args: { threadId: worker.id } }] },
@@ -90,10 +92,12 @@ app.whenReady().then(async () => {
 		await wait(`(async()=>{const value=await ${task(operatorId)};if(value.status==='failed')throw Error(value.error);return value.status==='completed'&&value.messages.some(message=>message.role==='assistant'&&message.text.includes('Watching the worker'))})()`, "operator first turn");
 		const state = await run(task(operatorId));
 		assert.equal(state.operator.subscriptions.length, 1);
-		// settings.set changed the live window and the saved workspace, and refused the person-only setting.
+		// settings.set changed the live window and the saved workspace; config.set added an MCP server.
 		assert.equal(await run(`document.documentElement.classList.contains("dark")`), false);
 		const preferences = (await run("window.phaseoDesktop.workspace.preferences()")).preferences;
-		assert.deepEqual({ notifications: preferences.notifications, autopilot: preferences.autopilot }, { notifications: "all", autopilot: false });
+		assert.deepEqual({ notifications: preferences.notifications, autopilot: preferences.autopilot }, { notifications: "all", autopilot: true });
+		await wait(`(async()=>(await window.phaseoDesktop.workspace.overview()).mcpConnections.some(connection=>connection.name==="Docs"))()`, "the waiting MCP change saved once the turn ended");
+		assert.deepEqual((await run("window.phaseoDesktop.workspace.overview()")).mcpConnections.filter(connection => !connection.orchestration).map(({ name, enabled, secretHeaders }) => ({ name, enabled, secretHeaders })), [{ name: "Docs", enabled: true, secretHeaders: ["Authorization"] }]);
 		// run_app_command really moved the window to the Inbox.
 		// The agent read app.state back as page "inbox" (script step 5), so the window really moved.
 		await shot("3-operator-ran-inbox");

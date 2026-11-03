@@ -189,6 +189,10 @@ ipcMain.handle("workspace:mcp", (event, value: unknown) => {
 	if (!senderWindow(event)) throw new Error("Invalid MCP request.");
 	return workspaceRuntime.mcp(validateMcpCommand(value));
 });
+ipcMain.handle("workspace:mcp-when-idle", (event, value: unknown) => {
+	if (!senderWindow(event)) throw new Error("Invalid MCP request.");
+	return workspaceRuntime.mcpWhenIdle(validateMcpCommand(value));
+});
 ipcMain.handle("workspace:terminals", event => {
 	if (!senderWindow(event)) throw new Error("Invalid terminal request.");
 	return terminalService.get();

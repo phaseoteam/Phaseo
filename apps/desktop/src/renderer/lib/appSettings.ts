@@ -13,18 +13,18 @@ const flag = (value: unknown, name: string) => { if (typeof value !== "boolean")
 
 /** Settings kept on this device rather than in the workspace. Add one here when a new device setting appears in Settings. */
 const windowSettings: Record<string, WindowSetting> = {
-	theme: persisted("phaseo.desktop.theme", "system", { label: "Light or dark", page: "appearance", description: "light, dark or system.", type: "enum", values: ["system", "light", "dark"], agent: true }),
-	colourTheme: { label: "Colour theme", page: "appearance", description: "The colour theme, by id; settings.list gives the ids.", type: "enum", values: [], agent: true, read: () => colourThemes().activeId, write: value => chooseColourTheme(choice(value, colourThemes().ids, "colourTheme")) },
-	sendKey: { label: "Send with", page: "general", description: "enter, or mod+enter (Ctrl or ⌘ with Enter).", type: "enum", values: ["enter", "mod+enter"], agent: true, read: currentSendKey, write: value => setSendKey(choice(value, ["enter", "mod+enter"], "sendKey") as "enter" | "mod+enter") },
-	autoOpenPanes: persisted("phaseo.desktop.panes.autoOpen", true, { label: "Open panes automatically", page: "general", description: "Show the diff when a turn changes files, and a linked pull request.", type: "boolean", agent: true }),
-	workingSection: persisted(workingSectionKey, false, { label: "Show a Working section", page: "general", description: "Fold working chats that need nothing into a Working section.", type: "boolean", agent: true }),
-	diffLayout: persisted("phaseo.desktop.diffLayout", "unified", { label: "Diff layout", page: "diff", description: "unified or split.", type: "enum", values: ["unified", "split"], agent: true }),
-	diffWrap: persisted("phaseo.desktop.diffWrap", false, { label: "Wrap long lines in diffs", page: "diff", description: "Wrap long lines in the diff pane.", type: "boolean", agent: true }),
-	diffIgnoreWhitespace: persisted("phaseo.desktop.diffIgnoreWhitespace", false, { label: "Hide whitespace changes", page: "diff", description: "Hide whitespace-only changes in the diff pane.", type: "boolean", agent: true }),
-	fileWrap: persisted("phaseo.desktop.fileWrap", false, { label: "Wrap long lines in files", page: "files", description: "Wrap long lines in the file viewer.", type: "boolean", agent: true }),
+	theme: persisted("phaseo.desktop.theme", "system", { label: "Light or dark", page: "appearance", description: "light, dark or system.", type: "enum", values: ["system", "light", "dark"] }),
+	colourTheme: { label: "Colour theme", page: "appearance", description: "The colour theme, by id; settings.list gives the ids.", type: "enum", values: [], read: () => colourThemes().activeId, write: value => chooseColourTheme(choice(value, colourThemes().ids, "colourTheme")) },
+	sendKey: { label: "Send with", page: "general", description: "enter, or mod+enter (Ctrl or ⌘ with Enter).", type: "enum", values: ["enter", "mod+enter"], read: currentSendKey, write: value => setSendKey(choice(value, ["enter", "mod+enter"], "sendKey") as "enter" | "mod+enter") },
+	autoOpenPanes: persisted("phaseo.desktop.panes.autoOpen", true, { label: "Open panes automatically", page: "general", description: "Show the diff when a turn changes files, and a linked pull request.", type: "boolean" }),
+	workingSection: persisted(workingSectionKey, false, { label: "Show a Working section", page: "general", description: "Fold working chats that need nothing into a Working section.", type: "boolean" }),
+	diffLayout: persisted("phaseo.desktop.diffLayout", "unified", { label: "Diff layout", page: "diff", description: "unified or split.", type: "enum", values: ["unified", "split"] }),
+	diffWrap: persisted("phaseo.desktop.diffWrap", false, { label: "Wrap long lines in diffs", page: "diff", description: "Wrap long lines in the diff pane.", type: "boolean" }),
+	diffIgnoreWhitespace: persisted("phaseo.desktop.diffIgnoreWhitespace", false, { label: "Hide whitespace changes", page: "diff", description: "Hide whitespace-only changes in the diff pane.", type: "boolean" }),
+	fileWrap: persisted("phaseo.desktop.fileWrap", false, { label: "Wrap long lines in files", page: "files", description: "Wrap long lines in the file viewer.", type: "boolean" }),
 };
 
-/** settings.list: every setting, where it is kept, its type, its current value and whether an agent may change it. */
+/** settings.list: every setting, where it is kept, its type, and its current value. */
 export async function listSettings(query?: string) {
 	const api = window.phaseoDesktop?.workspace;
 	const preferences = api ? (await api.preferences()).preferences : undefined;
@@ -36,13 +36,12 @@ export async function listSettings(query?: string) {
 	return { settings: rows.filter(row => words.every(word => `${row.key} ${row.label} ${row.page} ${row.description}`.toLowerCase().includes(word))) };
 }
 
-/** settings.set: checks the agent may change it, then saves it the way the Settings page does. */
-export async function setSetting(key: unknown, value: unknown, caller: "agent" | "person") {
+/** settings.set: saves it the way the Settings page does. */
+export async function setSetting(key: unknown, value: unknown) {
 	if (typeof key !== "string") throw new Error("key must be a setting key from settings.list.");
 	const device = Object.hasOwn(windowSettings, key) ? windowSettings[key] : undefined;
 	const spec = device ?? (isWorkspaceSetting(key) ? workspaceSettings[key] : undefined);
 	if (!spec) throw new Error("Unknown setting; settings.list lists them.");
-	if (caller === "agent" && !spec.agent) throw new Error(`${spec.label} is for the person to change in Settings.`);
 	if (device) {
 		if (device.type === "boolean") flag(value, key); else if (device.type === "enum" && device.values.length) choice(value, device.values, key);
 		device.write(value);

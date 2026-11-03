@@ -1,3 +1,5 @@
+import { configAreaIds } from "./appConfig";
+
 /**
  * Every user-facing app action, in one typed list. The command palette shows presets over it, and agents reach the
  * same commands through list_app_commands and run_app_command, so a new action needs one entry here and one handler.
@@ -26,8 +28,10 @@ export const appCommands = [
 	{ id: "pane.close", title: "Close the right pane", group: "View", description: "Close the right pane.", surface: "renderer", agent: true },
 	{ id: "theme.set", title: "Change theme", group: "View", description: "Use the light, dark or system theme.", surface: "renderer", agent: true, args: [{ name: "theme", type: "enum", values: ["light", "dark", "system"], required: true, description: "light, dark or system." }] },
 	{ id: "toast.show", title: "Show a notification", group: "View", description: "Show a short notification in the window, for something the person should see now.", surface: "renderer", agent: true, args: [{ name: "title", type: "string", required: true, maxLength: 120, description: "One line." }, { name: "detail", type: "string", maxLength: 500, description: "Optional second line." }, { name: "tone", type: "enum", values: ["info", "success", "warning", "error"], description: "Default info." }] },
-	{ id: "settings.list", title: "List settings", group: "View", description: "Every setting with its page, type, allowed values, current value, whether it is kept on this device or in the workspace, and whether you may change it.", surface: "renderer", agent: true, args: [{ name: "query", type: "string", maxLength: 200, description: "Words to narrow the list, such as theme or notifications." }] },
-	{ id: "settings.set", title: "Change a setting", group: "View", description: "Change one setting from settings.list, as the person would in Settings. Settings marked agent: false are the person's to change.", surface: "renderer", agent: true, args: [{ name: "key", type: "string", required: true, maxLength: 100, description: "The setting's key from settings.list." }, { name: "value", type: "json", required: true, description: "The new value, of the setting's type (true or false, one of its values, a number, an object, or null where allowed)." }] },
+	{ id: "settings.list", title: "List settings", group: "View", description: "Every setting with its page, type, allowed values, current value, whether it is kept on this device or in the workspace.", surface: "renderer", agent: true, args: [{ name: "query", type: "string", maxLength: 200, description: "Words to narrow the list, such as theme or notifications." }] },
+	{ id: "settings.set", title: "Change a setting", group: "View", description: "Change one setting from settings.list, as the person would in Settings.", surface: "renderer", agent: true, args: [{ name: "key", type: "string", required: true, maxLength: 100, description: "The setting's key from settings.list." }, { name: "value", type: "json", required: true, description: "The new value, of the setting's type (true or false, one of its values, a number, an object, or null where allowed)." }] },
+	{ id: "config.get", title: "Read configuration", group: "View", description: "Read one area of the app's configuration: projects, instructions, mcp, agents, accounts, keybindings, defaultModel or factory. Without area, lists the areas and what config.set takes for each. Single settings such as the theme are in settings.list.", surface: "renderer", agent: true, args: [{ name: "area", type: "enum", values: configAreaIds, description: "Which area." }] },
+	{ id: "config.set", title: "Change configuration", group: "View", description: "Change one area of the app's configuration, as the person would on its Settings page. config.get without area says what value each area takes.", surface: "renderer", agent: true, args: [{ name: "area", type: "enum", values: configAreaIds, required: true, description: "Which area." }, { name: "value", type: "json", required: true, description: "The change, in the shape config.get describes for the area." }] },
 	{ id: "palette.open", title: "Search chats and commands", group: "Navigate", description: "Open the command palette.", surface: "renderer", agent: true },
 	{ id: "operator.open", title: "Operator", group: "Operator", description: "Open the operator chat, creating it the first time.", surface: "main", agent: true },
 	{ id: "operator.pause", title: "Pause the operator", group: "Operator", description: "Stop the operator and its agents and hold its events until the person resumes it.", surface: "main", agent: true },
@@ -37,8 +41,7 @@ export const appCommands = [
 
 export type AppCommandId = typeof appCommands[number]["id"];
 export type AppCommandArgs = Record<string, unknown>;
-/** caller says who asked, so a window command can refuse what only the person may do (settings marked agent: false). */
-export type AppCommandRequest = { requestId: string; command: AppCommandId; args: AppCommandArgs; caller: "agent" | "person" };
+export type AppCommandRequest = { requestId: string; command: AppCommandId; args: AppCommandArgs };
 export type AppCommandResult = { requestId: string; ok: true; result?: unknown } | { requestId: string; ok: false; error: string };
 /** What app.state reports. */
 export type AppState = { mode: "chat" | "code"; openChat?: { id: string; title: string }; page?: string; rightPane?: string; theme: string; sidebarOpen: boolean };

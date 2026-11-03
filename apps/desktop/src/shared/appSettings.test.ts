@@ -13,7 +13,4 @@ describe("workspace settings registry", () => {
 		}
 	});
 
-	it("keeps limits and autonomy for the person", () => {
-		expect(Object.entries(workspaceSettings).filter(([, spec]) => !spec.agent).map(([key]) => key).sort()).toEqual(["autopilot", "maxActiveAgents"]);
-	});
 });

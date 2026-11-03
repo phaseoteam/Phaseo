@@ -79,6 +79,7 @@ const desktopApi: PhaseoDesktopApi = {
 		harnessUpdateStatus: () => ipcRenderer.invoke("workspace:harness-update-status"),
 		checkAgent: id => ipcRenderer.invoke("workspace:check-agent", id),
 		mcp: command => ipcRenderer.invoke("workspace:mcp", command),
+		mcpWhenIdle: command => ipcRenderer.invoke("workspace:mcp-when-idle", command),
 		models: (harness, accountId, projectId) => ipcRenderer.invoke("workspace:models", harness, accountId, projectId),
 		refreshModels: (harness, accountId) => ipcRenderer.invoke("workspace:refresh-models", harness, accountId),
 		onModelsChange: listener => { const subscription = (_event: Electron.IpcRendererEvent, change: Parameters<typeof listener>[0]) => listener(change); ipcRenderer.on("workspace:models-changed", subscription); return () => ipcRenderer.removeListener("workspace:models-changed", subscription); },

@@ -16,16 +16,16 @@ export class AppControl {
 	list(query?: string) { return { commands: agentAppCommands(query) }; }
 	async run(caller: "agent" | "person", id: unknown, args: unknown): Promise<unknown> {
 		const { command, args: valid } = validateAppCommand(id, args, caller);
-		const result = command.surface === "main" ? await this.options.main(command.id as AppCommandId, valid, caller) : await this.renderer(command.id as AppCommandId, valid, caller);
+		const result = command.surface === "main" ? await this.options.main(command.id as AppCommandId, valid, caller) : await this.renderer(command.id as AppCommandId, valid);
 		return { command: command.id, ...result === undefined ? { done: true } : { result } };
 	}
-	renderer(command: AppCommandId, args: AppCommandArgs, caller: "agent" | "person" = "agent"): Promise<unknown> {
+	renderer(command: AppCommandId, args: AppCommandArgs): Promise<unknown> {
 		const requestId = randomUUID();
 		return new Promise((resolve, reject) => {
 			const timer = setTimeout(() => { this.pending.delete(requestId); reject(new Error("The window did not answer in time.")); }, this.options.timeoutMs ?? 10_000);
 			timer.unref?.();
 			this.pending.set(requestId, { resolve, reject, timer });
-			if (!this.options.send({ requestId, command, args, caller })) { clearTimeout(timer); this.pending.delete(requestId); reject(new Error("The app has no window open.")); }
+			if (!this.options.send({ requestId, command, args })) { clearTimeout(timer); this.pending.delete(requestId); reject(new Error("The app has no window open.")); }
 		});
 	}
 	/** The window's answer; unknown or late answers are ignored. */

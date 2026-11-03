@@ -936,12 +936,34 @@ export class WorkspaceRuntime {
 	private readonly mcpHeaders: McpHeaderSecrets;
 	/** Saved MCP connections with header values filled in for those `projectId` uses, for connecting. Main only. */
 	resolvedMcpConnections(projectId?: string) { return this.mcpHeaders.resolve(this.store.getMcpConnections(), connection => connection.enabled && !connection.archived && (!connection.projectId || connection.projectId === projectId)); }
+	/** Whether a running chat uses the connection as saved or as changed; changing it then could break that turn. */
+	private mcpBusy({ connection }: McpCommand) {
+		const workspace = this.store.getOverview(), previous = workspace.mcpConnections.find(value => value.id === connection.id);
+		return workspace.tasks.some(task => this.executions.has(task.id) && ["phaseo", "codex", "claude", "opencode", "acp", "cursor", "grok"].includes(task.harness) && ((!connection.projectId || task.projectId === connection.projectId) || (previous && (!previous.projectId || task.projectId === previous.projectId))));
+	}
+	/** MCP changes an agent made while chats they affect were running (often its own), by connection; each is saved once those chats are idle. */
+	private readonly pendingMcp = new Map<string, McpCommand>();
+	/** For agents, whose own chat is running when they ask: saves now when no running chat is affected, otherwise as soon as none is. */
+	async mcpWhenIdle(command: McpCommand): Promise<{ applied: boolean; workspace: WorkspaceOverview }> {
+		if (!this.mcpBusy(command)) { this.pendingMcp.delete(command.connection.id); return { applied: true, workspace: await this.mcp(command) }; }
+		if (command.connection.projectId && !this.store.getProjects().some(project => project.id === command.connection.projectId)) throw new Error("Project no longer exists.");
+		const earlier = this.pendingMcp.get(command.connection.id);
+		this.pendingMcp.set(command.connection.id, { ...command, headers: { ...earlier?.headers, ...command.headers } });
+		return { applied: false, workspace: this.store.getOverview() };
+	}
+	private applyPendingMcp() {
+		for (const [id, command] of this.pendingMcp) {
+			if (this.mcpBusy(command)) continue;
+			this.pendingMcp.delete(id);
+			void this.mcp(command).catch(error => console.warn("A waiting MCP change could not be saved:", error instanceof Error ? error.message : error));
+		}
+	}
 	async mcp(command: McpCommand): Promise<WorkspaceOverview> {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		const connection = command.connection; const workspace = this.store.getOverview(); const previous = workspace.mcpConnections.find(value => value.id === connection.id);
 		if (connection.projectId && !workspace.projects.some(project => project.id === connection.projectId)) throw new Error("Project no longer exists.");
 		if (!previous && workspace.mcpConnections.length >= 100) throw new Error("The workspace supports up to 100 MCP connections.");
-		if (workspace.tasks.some(task => this.executions.has(task.id) && ["phaseo", "codex", "claude", "opencode", "acp", "cursor", "grok"].includes(task.harness) && ((!connection.projectId || task.projectId === connection.projectId) || (previous && (!previous.projectId || task.projectId === previous.projectId))))) throw new Error("Stop affected tasks before changing their MCP connections.");
+		if (this.mcpBusy(command)) throw new Error("Stop affected tasks before changing their MCP connections.");
 		const stored = await this.mcpHeaders.save(connection, command.headers, this.store.getMcpConnections().find(value => value.id === connection.id));
 		this.store.saveMcp(stored);
 		// Servers kept warm between turns would otherwise outlive the settings that started them.
@@ -1248,6 +1270,7 @@ export class WorkspaceRuntime {
 		const turn = startSpan("turn.run");
 		const execution = turn.within(() => this.drain(id, turn)).then(() => turn.discard(), error => { turn.end(error); throw error; }).finally(() => {
 			this.executions.delete(id);
+			if (this.pendingMcp.size && !this.closing) this.applyPendingMcp();
 			if (this.settledByTurn.delete(id)) this.settled(id);
 			if (!this.closing && this.store.getTask(id).status === "completed" && this.store.getTask(id).queue.length) this.start(id);
 			else if (!this.closing) { void this.autopilotAfterTurn(id).catch(() => {}); this.operator.afterTurn(id); }
