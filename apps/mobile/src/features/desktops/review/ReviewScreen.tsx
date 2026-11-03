@@ -122,10 +122,12 @@ function Review({ client, desktopId, chatId, initialScope, messageId }: { client
   }, [toggle, onLine, pickedKeys]);
 
   const subtitle = scope === "branch" && diff?.headRef ? (diff.baseRef ? `${diff.headRef} against ${diff.baseRef}` : `${diff.headRef}, no base branch found`) : chat?.title ?? null;
-  const body = !allowed ? (
+  const body = !allowed || error?.code === "forbidden" ? (
     <EmptyState className="flex-1" icon={ShieldOff} title="Reading code is off for this phone" body="Turn on Read code for this phone on the computer, in Settings → Phone." />
+  ) : error?.code === "not_found" ? (
+    <EmptyState className="flex-1" icon={FileDiff} title="Nothing to compare" body={error.message} />
   ) : error ? (
-    <ErrorState className="flex-1" error={new Error(error)} onRetry={reload} />
+    <ErrorState className="flex-1" error={new Error(error.message)} onRetry={reload} />
   ) : !diff ? <SkeletonRows count={6} /> : !diff.repository ? (
     <EmptyState className="flex-1" icon={FileDiff} title="Not a git checkout" body="This thread's folder isn't a git repository, so there are no changes to compare." />
   ) : !diff.files.length ? (

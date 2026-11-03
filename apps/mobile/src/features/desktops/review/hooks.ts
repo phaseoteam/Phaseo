@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ClientEvent, DesktopClient } from "../client";
+import { DesktopRequestError, type ClientEvent, type DesktopClient } from "../client";
 import { useClientEvents, useConnection } from "../connections";
 import type { PhoneChat, PhoneDiffFile, PhoneDiffScope, PhoneResults } from "../protocol";
 import { readsCode } from "./diffLines";
@@ -45,7 +45,9 @@ export function useProjectStatuses(client: DesktopClient | null, projectIds: rea
 }
 const EMPTY: ReadonlyMap<string, GitStatus> = new Map();
 
-type DiffState = { key: string; diff: PhoneResults["read_diff"] | null; error: string | null; loading: boolean };
+/** A failed read: its words, and the computer's code (not_found: nothing to compare; forbidden: reading code is off). */
+export type DiffError = { message: string; code?: string };
+type DiffState = { key: string; diff: PhoneResults["read_diff"] | null; error: DiffError | null; loading: boolean };
 
 /**
  * A thread's changes in one scope: read on opening, on choosing another scope, after a reconnect and when its turn
@@ -63,7 +65,7 @@ export function useThreadDiff(client: DesktopClient, chat: Pick<PhoneChat, "id" 
     if (!chatId || !allowed) return;
     client.request("read_diff", { chatId, scope, ...(scope === "turn" && messageId ? { messageId } : {}) }).then(
       (diff) => setState({ key, diff, error: null, loading: false }),
-      (problem: unknown) => setState({ key, diff: null, error: messageOf(problem), loading: false }),
+      (problem: unknown) => setState({ key, diff: null, error: { message: messageOf(problem), ...(problem instanceof DesktopRequestError ? { code: problem.code } : {}) }, loading: false }),
     );
   }, [client, chatId, scope, messageId, allowed, key]);
   useEffect(read, [read]);
