@@ -40,6 +40,10 @@ const DEFAULT_WEB_FETCH_MAX_CHARS = 12000;
 const MAX_WEB_FETCH_MAX_CHARS = 100000;
 const SERVER_TOOL_FETCH_TIMEOUT_MS = 15000;
 const SERVER_TOOL_DIRECT_FETCH_MAX_REDIRECTS = 5;
+// Direct web fetch reads at most this much of a page; the rest is dropped and
+// the result is marked truncated, since the tool only returns maxChars anyway.
+const SERVER_TOOL_DIRECT_FETCH_MAX_BODY_BYTES = 2 * 1024 * 1024;
+const SERVER_TOOL_DIRECT_FETCH_MAX_ERROR_BYTES = 4096;
 const DEFAULT_EXA_BASE_URL = "https://api.exa.ai";
 const DEFAULT_PARALLEL_BASE_URL = "https://api.parallel.ai";
 const DEFAULT_FIRECRAWL_BASE_URL = "https://api.firecrawl.dev";
@@ -1912,16 +1916,44 @@ function isUrlAllowedByDomainPolicy(
 	return true;
 }
 
+// The timeout signal stays armed after the headers arrive, so it also bounds
+// the time spent reading the body.
 async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
-	const controller = new AbortController();
-	const timeout = setTimeout(() => controller.abort(), SERVER_TOOL_FETCH_TIMEOUT_MS);
+	return fetch(input, {
+		...init,
+		signal: AbortSignal.timeout(SERVER_TOOL_FETCH_TIMEOUT_MS),
+	});
+}
+
+// Reads up to maxBytes of the body as text, then cancels the rest.
+async function readResponseTextPrefix(
+	response: Response,
+	maxBytes: number,
+): Promise<{ text: string; truncated: boolean }> {
+	if (!response.body) return { text: "", truncated: false };
+	const reader = response.body.getReader();
+	const decoder = new TextDecoder();
+	let remaining = maxBytes;
+	let text = "";
+	let truncated = false;
 	try {
-		return await fetch(input, {
-			...init,
-			signal: controller.signal,
-		});
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) break;
+			if (!value?.byteLength) continue;
+			if (value.byteLength > remaining) {
+				text += decoder.decode(value.subarray(0, remaining), { stream: true });
+				truncated = true;
+				await reader.cancel("response_body_limit_reached").catch(() => undefined);
+				break;
+			}
+			text += decoder.decode(value, { stream: true });
+			remaining -= value.byteLength;
+		}
+		text += decoder.decode();
+		return { text, truncated };
 	} finally {
-		clearTimeout(timeout);
+		reader.releaseLock();
 	}
 }
 
@@ -2682,6 +2714,7 @@ async function executeWebFetchToolCall(
 			if (response.status < 300 || response.status >= 400) break;
 			const location = response.headers.get("location");
 			if (!location) break;
+			await response.body?.cancel().catch(() => undefined);
 			const nextUrl = new URL(location, currentUrl).toString();
 			if (!isUrlAllowedByDomainPolicy(nextUrl, allowedDomains, blockedDomains)) {
 				return {
@@ -2716,7 +2749,7 @@ async function executeWebFetchToolCall(
 		}
 
 		if (!response.ok) {
-			const failureText = await response.text();
+			const { text: failureText } = await readResponseTextPrefix(response, SERVER_TOOL_DIRECT_FETCH_MAX_ERROR_BYTES);
 			return {
 				toolResult: {
 					toolCallId: call.id,
@@ -2747,7 +2780,10 @@ async function executeWebFetchToolCall(
 			};
 		}
 
-		const rawText = await response.text();
+		const { text: rawText, truncated: bodyTruncated } = await readResponseTextPrefix(
+			response,
+			SERVER_TOOL_DIRECT_FETCH_MAX_BODY_BYTES,
+		);
 		const normalizedText =
 			contentType?.toLowerCase().includes("html")
 				? htmlToText(rawText)
@@ -2757,7 +2793,7 @@ async function executeWebFetchToolCall(
 				? extractHtmlTitle(rawText)
 				: null;
 		const text = normalizedText.slice(0, maxChars);
-		const truncated = normalizedText.length > text.length;
+		const truncated = bodyTruncated || normalizedText.length > text.length;
 
 		return {
 			toolResult: {

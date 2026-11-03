@@ -129,6 +129,35 @@ describe("webhook endpoint helpers", () => {
 		});
 	});
 
+	it("treats IPv6 tunnel and embedded-IPv4 forms of private addresses as private", () => {
+		for (const url of [
+			"https://[2002:7f00:1::1]/hooks", // 6to4 of 127.0.0.1
+			"https://[2002:a9fe:a9fe::]/hooks", // 6to4 of 169.254.169.254
+			"https://[2002:c0a8:101::1]/hooks", // 6to4 of 192.168.1.1
+			"https://[2001:0:4136:e378:8000:63bf:3fff:fdd2]/hooks", // Teredo
+			"https://[2001::1]/hooks", // Teredo, compressed
+			"https://[fec0::1]/hooks", // site-local
+			"https://[feff::1]/hooks", // site-local, top of range
+			"https://[::ffff:a9fe:a9fe]/hooks", // IPv4-mapped, hex form
+			"https://[::ffff:0:7f00:1]/hooks", // IPv4-translated
+			"https://[64:ff9b::a9fe:a9fe]/hooks", // NAT64 of 169.254.169.254
+			"https://[64:ff9b:1::1]/hooks", // NAT64 local-use
+		]) {
+			expect(validateWebhookEndpointUrl(url), url).toEqual({
+				ok: false,
+				reason: "webhook_url_private_network_not_allowed",
+			});
+		}
+		for (const url of [
+			"https://[2606:4700:4700::1111]/hooks", // public IPv6
+			"https://[2002:808:808::1]/hooks", // 6to4 of 8.8.8.8
+			"https://[2001:4860:4860::8888]/hooks", // 2001::/16 outside Teredo
+			"https://[64:ff9b::808:808]/hooks", // NAT64 of 8.8.8.8
+		]) {
+			expect(validateWebhookEndpointUrl(url), url).toEqual({ ok: true, url });
+		}
+	});
+
 	it("rejects webhook URLs whose DNS answers resolve to private networks", async () => {
 		await expect(validateWebhookEndpointUrlForDelivery("https://customer.example/hooks", {
 			forceDns: true,

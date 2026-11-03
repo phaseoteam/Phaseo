@@ -1,4 +1,4 @@
-"use server";
+import "server-only";
 
 const DEFAULT_API_URL = "http://localhost:8787";
 

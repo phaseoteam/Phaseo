@@ -3,6 +3,7 @@ import { memo, useMemo } from "react";
 import { EnrichedMarkdownText, type MarkdownStyle } from "react-native-enriched-markdown";
 import { useCSSVariable } from "uniwind";
 import { perf } from "@/perf";
+import { isOpenableMarkdownLink } from "./markdownLinks";
 
 /** Native markdown (GitHub flavour, for tables) styled with the app's tokens. */
 export const Markdown = memo(function Markdown({ text, streaming }: { text: string; streaming?: boolean }) {
@@ -33,7 +34,9 @@ export const Markdown = memo(function Markdown({ text, streaming }: { text: stri
       flavor="github"
       streamingAnimation={streaming}
       selectable
-      onLinkPress={({ url }) => void Linking.openURL(url)}
+      onLinkPress={({ url }) => {
+        if (isOpenableMarkdownLink(url)) void Linking.openURL(url);
+      }}
     />
   );
 });
