@@ -27,6 +27,7 @@ import {
 	type ErrorRuleRow,
 	type SourcemapRow,
 } from "@/work/errorTools";
+import { newEmailAlias } from "@/work/emailIntake";
 import { newWorkToken } from "@/work/tokens";
 import { stripPersonalData } from "@/work/triage";
 import { ERROR_GROUP_STATUSES, type ErrorGroupRow, type ErrorProjectRow, type GithubRepoRow, type IntakeFormRow, type WorkItemRow } from "@/work/types";
@@ -49,7 +50,7 @@ import {
 // repositories. Tokens and keys are returned once, on creation; only their SHA-256 hashes and
 // display prefixes are stored. A repository's GitHub token is stored encrypted and never returned.
 
-const INTAKE_FORM_COLUMNS = "id,workspace_id,name,token_prefix,enabled,auto_triage,created_by,created_at,last_used_at";
+const INTAKE_FORM_COLUMNS = "id,workspace_id,name,token_prefix,email_alias,enabled,auto_triage,created_by,created_at,last_used_at";
 const ERROR_PROJECT_COLUMNS = "id,workspace_id,name,key_prefix,enabled,auto_triage,github_repo,created_by,created_at,last_event_at,upload_key_prefix";
 const GITHUB_REPO_COLUMNS = "id,workspace_id,repo,bridge_token_prefix,github_token_ciphertext,sync_issues,created_by,created_at,last_event_at";
 const ERROR_GROUP_SELECT = "*,project:work_error_projects(name),item:work_items(number)";
@@ -84,7 +85,22 @@ accountWorkSettingsRouter.get("/intake-forms", async (c) => {
 	const { data, error } = await context.client.from("work_intake_forms").select(INTAKE_FORM_COLUMNS)
 		.eq("workspace_id", context.workspaceId).order("created_at", { ascending: true }).limit(100);
 	if (error) return unavailable(c);
-	return json(c, { forms: (data ?? []).map((row: any) => formatIntakeForm(row as IntakeFormRow)) });
+	return json(c, { forms: (data ?? []).map((row: any) => formatIntakeForm(row as IntakeFormRow)), emailDomain: c.env.WORK_INTAKE_EMAIL_DOMAIN?.trim().toLowerCase() || null });
+});
+
+/** Gives a form a new email alias (its first, or a replacement when the old address got spam). */
+accountWorkSettingsRouter.post("/intake-forms/:id/email-alias", async (c) => {
+	const body = await readBody(c);
+	const access = await workAccess(c, body.workspaceId);
+	if ("response" in access) return access.response;
+	const { context } = access;
+	const id = pathUuid(c, "id");
+	if (!id) return badRequest(c, "An intake form id is required");
+	const { data, error } = await context.client.from("work_intake_forms").update({ email_alias: newEmailAlias() })
+		.eq("workspace_id", context.workspaceId).eq("id", id).select(INTAKE_FORM_COLUMNS).maybeSingle();
+	if (error) return writeError(c, error);
+	if (!data) return notFound(c, "Intake form not found");
+	return json(c, { form: formatIntakeForm(data as unknown as IntakeFormRow) });
 });
 
 accountWorkSettingsRouter.post("/intake-forms", async (c) => {
@@ -102,6 +118,7 @@ accountWorkSettingsRouter.post("/intake-forms", async (c) => {
 		name: name.value,
 		token_hash: token.hash,
 		token_prefix: token.prefix,
+		email_alias: newEmailAlias(),
 		auto_triage: autoTriage.value ?? true,
 		created_by: context.user.id,
 	}).select(INTAKE_FORM_COLUMNS).maybeSingle();

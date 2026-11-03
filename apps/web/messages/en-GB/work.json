@@ -395,7 +395,11 @@
 			"empty": "No intake forms yet.",
 			"token": "Form token",
 			"html": "HTML form",
-			"curl": "Send with curl"
+			"curl": "Send with curl",
+			"emailAddress": "Email address:",
+			"addEmail": "Add an email address",
+			"newAddress": "New address",
+			"newAddressConfirm": "Give this form a new email address? Mail to the old one will be turned away."
 		},
 		"projects": {
 			"title": "Error projects",

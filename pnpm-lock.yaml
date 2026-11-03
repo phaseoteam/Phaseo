@@ -1099,6 +1099,9 @@ importers:
       js-yaml:
         specifier: ^4.3.2
         version: 4.3.2
+      postal-mime:
+        specifier: 2.7.4
+        version: 2.7.4
       resend:
         specifier: ^6.12.4
         version: 6.17.2
@@ -25014,7 +25017,7 @@ snapshots:
       obug: 2.1.3
       std-env: 4.2.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@26.1.0)(vite@8.1.6(@types/node@26.6.5)(esbuild@0.25.12)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.1))
+      vitest: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.2.0)(@vitest/coverage-v8@4.1.11)(jsdom@26.1.0)(vite@8.1.6(@types/node@26.2.0)(esbuild@0.25.12)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.1))
 
   '@vitest/expect@4.1.11':
     dependencies:

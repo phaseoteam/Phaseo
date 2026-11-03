@@ -4,6 +4,7 @@ CREATE TABLE "public"."work_intake_forms" (
   "name"          text                     NOT NULL,
   "token_hash"    text                     NOT NULL,
   "token_prefix"  text                     NOT NULL,
+  "email_alias"  text,
   "enabled"       boolean                  NOT NULL DEFAULT true,
   "auto_triage"   boolean                  NOT NULL DEFAULT true,
   "created_by"    uuid,
@@ -23,6 +24,12 @@ CREATE INDEX work_intake_forms_created_by_idx ON public.work_intake_forms USING 
   WHERE (created_by IS NOT NULL);
 
 CREATE INDEX work_intake_forms_workspace_id_idx ON public.work_intake_forms USING btree (workspace_id);
+
+CREATE UNIQUE INDEX work_intake_forms_email_alias_key ON public.work_intake_forms USING btree (email_alias)
+  WHERE (email_alias IS NOT NULL);
+
+ALTER TABLE "public"."work_intake_forms"
+  ADD CONSTRAINT "work_intake_forms_email_alias_check" CHECK (((email_alias IS NULL) OR (email_alias ~ '^[a-z0-9]{16,32}$'::text)));
 
 CREATE POLICY "deny_direct_client_access" ON "public"."work_intake_forms"
   AS RESTRICTIVE

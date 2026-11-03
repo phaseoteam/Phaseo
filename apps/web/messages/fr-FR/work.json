@@ -395,7 +395,11 @@
 			"empty": "Aucun formulaire de demande pour l’instant.",
 			"token": "Jeton du formulaire",
 			"html": "Formulaire HTML",
-			"curl": "Envoyer avec curl"
+			"curl": "Envoyer avec curl",
+			"emailAddress": "Adresse e-mail :",
+			"addEmail": "Ajouter une adresse e-mail",
+			"newAddress": "Nouvelle adresse",
+			"newAddressConfirm": "Donner une nouvelle adresse e-mail à ce formulaire ? Les e-mails envoyés à l’ancienne seront refusés."
 		},
 		"projects": {
 			"title": "Projets d’erreurs",

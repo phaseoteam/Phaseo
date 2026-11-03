@@ -395,7 +395,11 @@
 			"empty": "Noch keine Anfrageformulare.",
 			"token": "Formular-Token",
 			"html": "HTML-Formular",
-			"curl": "Mit curl senden"
+			"curl": "Mit curl senden",
+			"emailAddress": "E-Mail-Adresse:",
+			"addEmail": "E-Mail-Adresse hinzufügen",
+			"newAddress": "Neue Adresse",
+			"newAddressConfirm": "Diesem Formular eine neue E-Mail-Adresse geben? Mails an die alte werden abgewiesen."
 		},
 		"projects": {
 			"title": "Fehlerprojekte",

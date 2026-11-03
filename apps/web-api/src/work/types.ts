@@ -164,6 +164,7 @@ export type IntakeFormRow = {
 	name: string;
 	token_hash: string;
 	token_prefix: string;
+	email_alias?: string | null;
 	enabled: boolean;
 	auto_triage: boolean;
 	created_by: string | null;
@@ -477,6 +478,8 @@ export type IntakeForm = {
 	id: string;
 	name: string;
 	tokenPrefix: string;
+	/** The form's email alias: mail to ask-<alias>@<domain> becomes an ask. */
+	emailAlias: string | null;
 	enabled: boolean;
 	autoTriage: boolean;
 	createdAt: string;

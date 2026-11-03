@@ -129,6 +129,8 @@ export type IntakeForm = {
 	id: string;
 	name: string;
 	tokenPrefix: string;
+	/** Mail to ask-<alias>@<email domain> becomes an ask. */
+	emailAlias?: string | null;
 	enabled: boolean;
 	autoTriage: boolean;
 	createdAt: string;

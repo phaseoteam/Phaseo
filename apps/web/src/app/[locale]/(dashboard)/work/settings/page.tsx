@@ -13,7 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function WorkSettingsPage() {
 	const context = await requireWorkPage();
 	const [forms, projects, repos, settings, mine, workProjects] = await Promise.all([
-		loadWork<{ forms: IntakeForm[] }>(context, "intake-forms"),
+		loadWork<{ forms: IntakeForm[]; emailDomain?: string | null }>(context, "intake-forms"),
 		loadWork<{ projects: ErrorProject[] }>(context, "error-projects"),
 		loadWork<{ repos: GithubRepo[] }>(context, "github-repos"),
 		loadWork<WorkSettingsResponse>(context, "settings"),
@@ -31,6 +31,7 @@ export default async function WorkSettingsPage() {
 			canEditSettings={settings.ok ? settings.data?.canEdit !== false : false}
 			mine={mine.ok ? mine.data ?? null : null}
 			workProjects={workProjects.ok ? listFrom<WorkProject>(workProjects.data, "projects") : []}
+			emailDomain={forms.ok ? forms.data?.emailDomain ?? null : null}
 		/>
 	);
 }

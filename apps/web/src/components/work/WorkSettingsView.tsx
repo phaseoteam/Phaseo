@@ -7,6 +7,7 @@ import {
 	createErrorProject,
 	createErrorRule,
 	createErrorUploadKey,
+	createIntakeEmailAlias,
 	createIntakeForm,
 	deleteErrorRule,
 	deleteErrorSourcemap,
@@ -38,7 +39,7 @@ import { WorkImportSection } from "./WorkImport";
 import { WorkIntegrationsSection } from "./WorkIntegrations";
 import { CopyBlock, PriorityIcon, TimeAgo, useRelativeTime, useWorkCopy } from "./WorkBits";
 
-export function WorkSettingsView({ forms, projects, repos, settings = null, canEditSettings = true, mine = null, workProjects = [] }: { forms: IntakeForm[]; projects: ErrorProject[]; repos: GithubRepo[]; settings?: WorkSettings | null; canEditSettings?: boolean; mine?: WorkMemberSettingsResponse | null; workProjects?: WorkProject[] }) {
+export function WorkSettingsView({ forms, projects, repos, settings = null, canEditSettings = true, mine = null, workProjects = [], emailDomain = null }: { forms: IntakeForm[]; projects: ErrorProject[]; repos: GithubRepo[]; settings?: WorkSettings | null; canEditSettings?: boolean; mine?: WorkMemberSettingsResponse | null; workProjects?: WorkProject[]; emailDomain?: string | null }) {
 	const t = useTranslations("Work.settings");
 	return (
 		<div className="space-y-10">
@@ -48,7 +49,7 @@ export function WorkSettingsView({ forms, projects, repos, settings = null, canE
 			</div>
 			{mine ? <MyEmailSection mine={mine} /> : null}
 			<TrackerSection settings={settings ?? DEFAULT_WORK_SETTINGS} canEdit={canEditSettings} />
-			<IntakeFormsSection forms={forms} />
+			<IntakeFormsSection forms={forms} emailDomain={emailDomain} />
 			<ErrorProjectsSection projects={projects} />
 			<GithubReposSection repos={repos} />
 			<WorkImportSection projects={workProjects} />
@@ -106,7 +107,7 @@ function Empty({ children }: { children: ReactNode }) {
 	return <p className="rounded-md border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">{children}</p>;
 }
 
-function IntakeFormsSection({ forms }: { forms: IntakeForm[] }) {
+function IntakeFormsSection({ forms, emailDomain }: { forms: IntakeForm[]; emailDomain: string | null }) {
 	const t = useTranslations("Work.settings");
 	const relative = useRelativeTime();
 	const tCommon = useTranslations("Work.common");
@@ -140,6 +141,17 @@ function IntakeFormsSection({ forms }: { forms: IntakeForm[] }) {
 									<span className="font-mono">{form.tokenPrefix}…</span>
 									<span>{form.lastUsedAt ? t("lastUsed", { time: relative(form.lastUsedAt) }) : t("neverUsed")}</span>
 								</p>
+								{emailDomain ? (
+									form.emailAlias ? (
+										<p className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+											<span className="text-muted-foreground">{t("intake.emailAddress")}</span>
+											<span className="font-mono select-all">{`ask-${form.emailAlias}@${emailDomain}`}</span>
+											<Button type="button" size="xs" variant="ghost" disabled={busy !== null} onClick={() => { if (window.confirm(t("intake.newAddressConfirm"))) void perform("alias", () => createIntakeEmailAlias(form.id)); }}>{t("intake.newAddress")}</Button>
+										</p>
+									) : (
+										<Button type="button" size="xs" variant="outline" className="mt-1" disabled={busy !== null} onClick={() => void perform("alias", () => createIntakeEmailAlias(form.id))}>{t("intake.addEmail")}</Button>
+									)
+								) : null}
 							</div>
 							<ToggleCell label={tCommon("enabled")} checked={form.enabled} disabled={busy !== null} onChange={(enabled) => perform("enabled", () => updateIntakeForm(form.id, { enabled }))} />
 							<ToggleCell label={tCommon("autoTriage")} checked={form.autoTriage} disabled={busy !== null} onChange={(value) => perform("auto", () => updateIntakeForm(form.id, { autoTriage: value }))} />

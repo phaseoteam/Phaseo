@@ -11,6 +11,7 @@ import { scimRouter } from "@/scim/router";
 import { handleProviderCatalogScheduledEvent } from "@/scheduled/provider-catalog";
 import { handleSlackAgentChargesScheduledEvent } from "@/scheduled/slack-agent-charges";
 import { handleWorkScheduledEvent } from "@/scheduled/work";
+import { handleIntakeEmail, type EmailLike } from "@/work/emailIntake";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -32,5 +33,9 @@ export default Object.assign(app, {
 			handleSlackAgentChargesScheduledEvent(event, env),
 			handleWorkScheduledEvent(event, env),
 		]);
+	},
+	/** Mail routed here by Cloudflare Email Routing: work tracker intake addresses (ask-<alias>@WORK_INTAKE_EMAIL_DOMAIN). */
+	async email(message: EmailLike, env: Env, executionCtx: ExecutionContext): Promise<void> {
+		await handleIntakeEmail(message, env, (promise) => executionCtx.waitUntil(promise));
 	},
 });

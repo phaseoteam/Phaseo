@@ -201,6 +201,10 @@ export async function createIntakeForm(input: { name: string; autoTriage: boolea
 	return run(() => send<{ form: IntakeForm; token: string }>("POST", "intake-forms", input));
 }
 
+export async function createIntakeEmailAlias(formId: string) {
+	return run(() => send<{ form: IntakeForm }>("POST", `intake-forms/${id(formId)}/email-alias`));
+}
+
 export async function updateIntakeForm(formId: string, input: { name?: string; enabled?: boolean; autoTriage?: boolean }) {
 	return run(() => send<Record<string, unknown>>("PATCH", `intake-forms/${id(formId)}`, input));
 }

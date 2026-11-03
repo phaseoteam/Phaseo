@@ -395,7 +395,11 @@
 			"empty": "还没有受理表单。",
 			"token": "表单令牌",
 			"html": "HTML 表单",
-			"curl": "用 curl 发送"
+			"curl": "用 curl 发送",
+			"emailAddress": "邮箱地址：",
+			"addEmail": "添加邮箱地址",
+			"newAddress": "新地址",
+			"newAddressConfirm": "要给这个表单换一个新的邮箱地址吗？发往旧地址的邮件将被拒收。"
 		},
 		"projects": {
 			"title": "错误项目",

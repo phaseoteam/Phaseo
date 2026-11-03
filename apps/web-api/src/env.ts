@@ -46,6 +46,8 @@ export type Env = {
 	WORK_EMAIL_ENABLED?: string;
 	/** The address work tracker email is sent from (default noreply@phaseo.app); the display name is the workspace or sender. */
 	WORK_EMAIL_FROM?: string;
+	/** The domain intake forms get email addresses on (ask-<alias>@<domain>), routed to this Worker by Cloudflare Email Routing. Unset: no email intake. */
+	WORK_INTAKE_EMAIL_DOMAIN?: string;
 	RESEND_API_KEY?: string;
 	EXPO_ACCESS_TOKEN?: string;
 	FEEDBACK_REWARD_USD?: string;

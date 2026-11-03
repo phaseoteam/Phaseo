@@ -395,7 +395,11 @@
 			"empty": "Nenhum formulário de entrada ainda.",
 			"token": "Token do formulário",
 			"html": "Formulário HTML",
-			"curl": "Enviar com curl"
+			"curl": "Enviar com curl",
+			"emailAddress": "Endereço de e-mail:",
+			"addEmail": "Adicionar um endereço de e-mail",
+			"newAddress": "Novo endereço",
+			"newAddressConfirm": "Dar a este formulário um novo endereço de e-mail? E-mails para o antigo serão recusados."
 		},
 		"projects": {
 			"title": "Projetos de erros",

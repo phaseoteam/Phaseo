@@ -395,7 +395,11 @@
 			"empty": "受付フォームはまだありません。",
 			"token": "フォームのトークン",
 			"html": "HTML フォーム",
-			"curl": "curl で送信"
+			"curl": "curl で送信",
+			"emailAddress": "メールアドレス:",
+			"addEmail": "メールアドレスを追加",
+			"newAddress": "新しいアドレス",
+			"newAddressConfirm": "このフォームに新しいメールアドレスを割り当てますか？古いアドレス宛てのメールは受け付けられなくなります。"
 		},
 		"projects": {
 			"title": "エラープロジェクト",

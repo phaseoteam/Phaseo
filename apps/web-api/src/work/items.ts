@@ -206,6 +206,7 @@ export function formatIntakeForm(row: IntakeFormRow): IntakeForm {
 		id: row.id,
 		name: row.name,
 		tokenPrefix: row.token_prefix,
+		emailAlias: row.email_alias ?? null,
 		enabled: row.enabled,
 		autoTriage: row.auto_triage,
 		createdAt: row.created_at,
