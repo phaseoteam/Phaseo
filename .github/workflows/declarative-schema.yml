@@ -130,6 +130,7 @@ jobs:
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/oauth-delegated-refresh-tokens.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/oauth-consent-spend-limit.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/client-writable-security-columns.test.mjs
+                  PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/byok-keys-client-secret-columns.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/member-removal-revokes-keys.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/gateway-requests-detail-metadata.test.mjs
             - name: Verify declarative schemas against frozen baseline and forward migrations

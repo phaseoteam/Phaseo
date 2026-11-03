@@ -22,7 +22,7 @@ The allowance depends on the workspace's account standing and rises automaticall
 
 A workspace receives the highest allowance it qualifies for. Changes take effect within a few minutes.
 
-Free-model routes also have a default allowance of **1500 requests per UTC day**, shared across free models for the same user and workspace. Paid-model requests do not consume this daily allowance. An admitted free request counts even if the provider subsequently fails; provider fallbacks within that request count once.
+Free-model routes also have a default allowance of **1500 requests per UTC day**, shared across free models and across every workspace the same user makes requests in. Paid-model requests do not consume this daily allowance. An admitted free request counts even if the provider subsequently fails; provider fallbacks within that request count once.
 
 These limits apply across gateway regions. They can be increased for a specific user and workspace. File operations and job-status polling use the minute allowance; management endpoints do not.
 

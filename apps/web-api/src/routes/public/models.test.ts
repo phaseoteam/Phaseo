@@ -1791,3 +1791,41 @@ describe("public model routes", () => {
 		} } });
 	});
 });
+
+describe("public model query validation", () => {
+	// Every distinct URL misses the edge cache, so free-text values must never reach the database.
+	it.each([
+		["/performance?colo=random-buster-1", "invalid_colo"],
+		["/performance?colo=ab", "invalid_colo"],
+		["/performance?colo=LHR1", "invalid_colo"],
+		["/usage-daily?since=yesterday", "invalid_date"],
+		["/usage-daily?until=2026-02-30", "invalid_date"],
+		["/effective-pricing-daily?since=2026-13-01", "invalid_date"],
+	])("rejects %s before any query", async (path, error) => {
+		const fetchMock = vi.fn(async () => new Response("[]"));
+		vi.stubGlobal("fetch", fetchMock);
+		const response = await app.request(`https://phaseo.app/api/_web/models/openai%2Fgpt-test${path}`, {}, env);
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({ error });
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("passes a valid colo to the performance RPCs", async () => {
+		const fetchMock = vi.fn(async () => new Response("[]"));
+		vi.stubGlobal("fetch", fetchMock);
+		const response = await app.request("https://phaseo.app/api/_web/models/openai%2Fgpt-test/performance?colo=lhr", {}, env);
+		expect(response.status).toBe(200);
+		const metricsCall = fetchMock.mock.calls.find((call: any[]) => String(call[0]).includes("get_v2_model_performance_metrics")) as any[] | undefined;
+		expect(String(metricsCall?.[1]?.body)).toContain('"p_cloudflare_colo":"LHR"');
+	});
+
+	it("keeps accepting ISO days and timestamps for since and until", async () => {
+		const fetchMock = vi.fn(async () => new Response("[]"));
+		vi.stubGlobal("fetch", fetchMock);
+		const response = await app.request("https://phaseo.app/api/_web/models/openai%2Fgpt-test/usage-daily?since=2026-10-01T00:00:00Z&until=2026-10-31", {}, env);
+		expect(response.status).toBe(200);
+		const usageCall = fetchMock.mock.calls.find((call: any[]) => String(call[0]).includes("get_v2_model_usage_daily")) as any[] | undefined;
+		expect(String(usageCall?.[1]?.body)).toContain('"p_since":"2026-10-01"');
+		expect(String(usageCall?.[1]?.body)).toContain('"p_until":"2026-10-31"');
+	});
+});

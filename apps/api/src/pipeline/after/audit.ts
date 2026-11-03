@@ -378,6 +378,7 @@ export async function handleFailureAudit(
         writeOtlp: () => enqueueGatewayOtlpExport({
             requestId: ctx.requestId,
             workspaceId: ctx.workspaceId,
+            zeroDataRetention: ctx.zeroDataRetention === true,
             keyId: ctx.meta.apiKeyId,
 			keyName: ctx.keyEnrichment?.name ?? null,
 			userId: ctx.meta.requestUserId ?? null,
@@ -636,6 +637,7 @@ export async function handleSuccessAudit(
         writeOtlp: () => enqueueGatewayOtlpExport({
             requestId: ctx.requestId,
             workspaceId: ctx.workspaceId,
+            zeroDataRetention: ctx.zeroDataRetention === true,
             keyId: ctx.meta.apiKeyId ?? ctx.keyId ?? null,
 			keyName: ctx.keyEnrichment?.name ?? null,
 			userId: ctx.meta.requestUserId ?? null,

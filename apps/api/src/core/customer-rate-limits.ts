@@ -44,6 +44,19 @@ export function customerScopeKey(scope: CustomerScope): string {
 	return `customer-quota:v1:${scope.workspaceId}:${scope.userId || "workspace"}`;
 }
 
+/**
+ * The free-model daily allowance belongs to the user, across every workspace they use,
+ * so creating workspaces does not multiply it. Requests without a user fall back to the
+ * workspace scope. The per-minute limit stays per workspace and user.
+ */
+export function freeDayScopeKey(scope: CustomerScope): string {
+	return scope.userId ? `customer-quota:v1:user:${scope.userId}` : customerScopeKey(scope);
+}
+
+function quotaScopeKey(scope: CustomerScope, kind: CustomerQuotaKind): string {
+	return kind === "free-day" ? freeDayScopeKey(scope) : customerScopeKey(scope);
+}
+
 export function parseCustomerLimits(value: unknown): CustomerLimits {
 	if (value == null) return { ...DEFAULT_CUSTOMER_LIMITS };
 	if (typeof value !== "object" || Array.isArray(value)) throw new Error("invalid_customer_limits");
@@ -138,7 +151,7 @@ function quotaExceeded(args: { requestId: string; kind: CustomerQuotaKind }, lim
 		reason: args.kind === "minute" ? "customer_requests_per_minute" : "free_requests_per_day",
 		description: args.kind === "minute"
 			? `This user and workspace have reached their limit of ${limit} requests per minute. Retry after ${retryAfterSeconds} seconds.`
-			: `Phaseo free-model daily limit reached. This user and workspace have reached their daily allowance of ${limit} free-model requests, shared across all free models. The allowance resets at 00:00 UTC. Retry after ${retryAfterSeconds} seconds, choose a paid model, or ask your workspace administrator to request a higher limit.`,
+			: `Phaseo free-model daily limit reached. This user has reached their daily allowance of ${limit} free-model requests, shared across all free models. The allowance resets at 00:00 UTC. Retry after ${retryAfterSeconds} seconds, choose a paid model, or ask your workspace administrator to request a higher limit.`,
 	});
 	response.headers.set("Retry-After", String(retryAfterSeconds));
 	return response;
@@ -203,7 +216,7 @@ function checkLocally(args: QuotaArgs): QuotaCheck {
 	// Unit fixtures and local tools may run without Worker bindings.
 	if (!bindings || bindings.CUSTOMER_RATE_LIMITS_ENABLED !== "true") return { decided: null };
 	const now = Date.now();
-	const scopeKey = customerScopeKey(args);
+	const scopeKey = quotaScopeKey(args, args.kind);
 	const admissionKey = `${args.kind}|${scopeKey}|${args.admissionId}`;
 	// A fallback attempt of a request that was already admitted and counted.
 	// (Minute admissions happen once per HTTP request; see customer-quota.ts.)

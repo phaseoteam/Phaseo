@@ -1189,6 +1189,7 @@ export async function handleError({
                 metadata: requestMetadataForObservability,
                 rateLimitPolicyId: isPolicyRejection ? (errorPayload.policy_id as string | undefined) ?? null : null,
                 rateLimitScope: isPolicyRejection ? (errorPayload.limit_scope as string | undefined) ?? null : null,
+                zeroDataRetention,
             })
             : null,
         writeAxiom: () => emitGatewayRequestEvent({

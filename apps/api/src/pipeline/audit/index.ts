@@ -13,6 +13,7 @@ import {
 	stripGatewayRequestUsageColumns,
 } from "../usage-columns";
 import {
+    keyKeepsContentOutOfTelemetry,
     persistGatewayIoLog,
     recordGatewayIoLogZeroDataRetentionSkip,
     requestZeroDataRetention,
@@ -627,6 +628,61 @@ function buildSupaRow(args: {
     };
 }
 
+function attemptsWithoutPayloads(attempts: unknown): unknown {
+    if (!Array.isArray(attempts)) return attempts;
+    return attempts.map((attempt) => {
+        if (!attempt || typeof attempt !== "object" || !("upstream_payload_preview" in attempt)) return attempt;
+        const { upstream_payload_preview: _payload, ...kept } = attempt as Record<string, unknown>;
+        return kept;
+    });
+}
+
+/**
+ * For a key created with never_store_content, or under zero data retention, the stored
+ * attempts and error payload keep their operational detail but not the provider's raw
+ * error body (`upstream_payload_preview`, a truncated copy that can echo the request or
+ * output), as the Axiom event already does. A failed policy read keeps it out too.
+ */
+async function withoutUpstreamPayloadsWhenPrivate<T extends {
+    workspaceId?: string | null;
+    keyId?: string | null;
+    zeroDataRetention?: boolean;
+    requestPayload?: unknown;
+    gatewayResponse?: unknown;
+    providerResponse?: unknown;
+    detailMetadata?: Record<string, unknown> | null;
+    providerAttempts?: Array<Record<string, unknown>> | null;
+    errorPayload?: Record<string, unknown> | null;
+}>(args: T): Promise<T> {
+    const hasAttempts = Array.isArray(args.providerAttempts) && args.providerAttempts.length > 0;
+    const errorPayload = args.errorPayload && typeof args.errorPayload === "object" ? args.errorPayload : null;
+    const hasErrorAttempts = Boolean(
+        errorPayload && (Array.isArray(errorPayload.failure_sample) || Array.isArray(errorPayload.provider_attempts)),
+    );
+    if (!hasAttempts && !hasErrorAttempts) return args;
+    const keepOut =
+        requestZeroDataRetention({
+            zeroDataRetention: args.zeroDataRetention,
+            requestPayload: args.requestPayload,
+            metadata: args.detailMetadata,
+            gatewayResponse: args.gatewayResponse,
+            providerResponse: args.providerResponse,
+        }) ||
+        await keyKeepsContentOutOfTelemetry({ workspaceId: args.workspaceId ?? null, keyId: args.keyId ?? null });
+    if (!keepOut) return args;
+    return {
+        ...args,
+        providerAttempts: attemptsWithoutPayloads(args.providerAttempts) as T["providerAttempts"],
+        errorPayload: errorPayload
+            ? {
+                ...errorPayload,
+                ...("failure_sample" in errorPayload ? { failure_sample: attemptsWithoutPayloads(errorPayload.failure_sample) } : {}),
+                ...("provider_attempts" in errorPayload ? { provider_attempts: attemptsWithoutPayloads(errorPayload.provider_attempts) } : {}),
+            }
+            : args.errorPayload,
+    };
+}
+
 // Strip nested pricing object from usage before storing in DB to avoid duplicating
 // detailed pricing lines (which are stored separately in pricing_lines).
 function stripPricingFromUsage(usage: any): any {
@@ -712,7 +768,7 @@ export async function auditSuccess(input: {
     streamDisconnectAction?: "cancel_upstream" | "drain_upstream";
 }) {
     const detailMetadata: Record<string, unknown> = { ...input.detailMetadata, lifecycle_events: lifecycleMetadata(input.lifecycleEvents) };
-    const args = protectStealthAuditArgs({ ...input, detailMetadata });
+    const args = await withoutUpstreamPayloadsWhenPrivate(protectStealthAuditArgs({ ...input, detailMetadata }));
     const releaseRuntime = ensureRuntimeForBackground();
     try {
         const pricingLines = args.usagePriced?.pricing?.lines ?? [];
@@ -1065,7 +1121,7 @@ type AuditFailureExecute = {
 
 export async function auditFailure(input: AuditFailureBefore | AuditFailureExecute) {
     const detailMetadata: Record<string, unknown> = { ...input.detailMetadata, lifecycle_events: lifecycleMetadata("lifecycleEvents" in input ? input.lifecycleEvents : undefined) };
-    const args = protectStealthAuditArgs({ ...input, detailMetadata });
+    const args = await withoutUpstreamPayloadsWhenPrivate(protectStealthAuditArgs({ ...input, detailMetadata }));
     const releaseRuntime = ensureRuntimeForBackground();
     try {
         if (args.stage === "before") {
