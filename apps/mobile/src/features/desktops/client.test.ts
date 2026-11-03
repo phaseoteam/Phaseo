@@ -6,6 +6,7 @@ import { newThreadModel, threadModelLabel } from "./newThread";
 import { pairDesktop } from "./pairing";
 import type { PhoneChat, PhoneEntry } from "./protocol";
 import { chooseTransport, type SavedDesktop } from "./reach";
+import { usesTerminals } from "./terminal/terminalState";
 
 /** A clock the test drives: retries and timeouts run only when the test says so. */
 function manualClock() {
@@ -104,7 +105,7 @@ describe.each(["direct", "connect"] as const)("over %s", (via) => {
 
   test("lists the computer's projects and hears when they change", async () => {
     const { desktop, client } = await connected();
-    expect(desktop.received[0]).toMatchObject({ type: "hello", protocol: 6 });
+    expect(desktop.received[0]).toMatchObject({ type: "hello", protocol: 7 });
     const { projects } = await client.request("list_projects", {});
     expect(projects.map((project) => project.id)).toEqual(["p2", "p1", "p3", "w1"]);
     const changed = nextEvent(client, "projects_changed");
@@ -140,6 +141,55 @@ describe.each(["direct", "connect"] as const)("over %s", (via) => {
     await expect(client.request("git_action", { projectId: "p1", action: "push" })).rejects.toMatchObject({ code: "rejected", message: "Add a remote before pushing." });
     // A change is never held for a computer that's offline: it would land long after the phone stopped waiting.
     if (via === "connect") expect(desktop.relayed.filter((envelope) => envelope.hold)).toEqual([]);
+    client.stop();
+  });
+
+  test("uses terminals only with Use terminals, never holds typing in the relay, and refuses typing while offline", async () => {
+    const desktop = new FakeDesktop();
+    desktop.protocol = 7;
+    const saved = await pairDesktop(desktop.pairingLink({ connect: true }), deps(desktop));
+    if (via === "connect") desktop.reachable = false;
+    const { client } = clientFor(desktop, saved);
+    client.start();
+    // Off until switched on for this phone: the menu stays hidden and the computer refuses.
+    expect(usesTerminals(await stateReached(client, "connected"))).toBe(false);
+    await expect(client.request("open_terminal", { chatId: "c1" })).rejects.toMatchObject({ code: "forbidden" });
+    desktop.capabilities = ["code", "terminal"];
+    const access = nextEvent(client, "access");
+    desktop.emit({ type: "access", capabilities: desktop.capabilities });
+    await access;
+    expect(usesTerminals(client.state.get())).toBe(true);
+    const { terminal } = await client.request("open_terminal", { chatId: "c1" });
+    desktop.terminalOutput.set(terminal.id, "PS> ");
+    expect(await client.request("attach_terminal", { terminalId: terminal.id })).toMatchObject({ output: "PS> ", terminal: { status: "running" } });
+    const output = nextEvent(client, "terminal_output");
+    desktop.emit({ type: "terminal_output", terminalId: terminal.id, data: "On branch main\r\n" });
+    expect(await output).toEqual({ type: "terminal_output", terminalId: terminal.id, data: "On branch main\r\n" });
+    await client.request("terminal_input", { terminalId: terminal.id, data: "git status\r" }, { live: true });
+    expect(desktop.typed).toEqual([{ terminalId: terminal.id, data: "git status\r" }]);
+    if (via === "connect") expect(desktop.relayed.filter((envelope) => envelope.hold)).toEqual([]);
+    // Dropped: a key pressed now is refused at once, not kept to type when the computer is back.
+    desktop.drop();
+    await stateReached(client, "offline");
+    await expect(client.request("terminal_input", { terminalId: terminal.id, data: "rm -rf build\r" }, { live: true })).rejects.toMatchObject({ code: "disconnected" });
+    desktop.reachable = via === "direct";
+    client.retryNow();
+    await stateReached(client, "connected");
+    expect(desktop.typed).toHaveLength(1);
+    client.stop();
+  });
+
+  test("hides terminals from a computer before protocol 7, which refuses them", async () => {
+    const desktop = new FakeDesktop();
+    desktop.capabilities = ["code", "terminal"];
+    const saved = await pairDesktop(desktop.pairingLink({ connect: true }), deps(desktop));
+    if (via === "connect") desktop.reachable = false;
+    const { client } = clientFor(desktop, saved);
+    client.start();
+    const state = await stateReached(client, "connected");
+    expect(state).toMatchObject({ protocol: 6 });
+    expect(usesTerminals(state)).toBe(false);
+    await expect(client.request("list_terminals", { chatId: "c1" })).rejects.toMatchObject({ code: "invalid_frame" });
     client.stop();
   });
 

@@ -23,8 +23,12 @@ export const desktopPullRequestsHref = (desktopId: string, projectId?: string | 
   `${CODE_HREF}/${segment(desktopId)}/pull-requests${projectId ? `?projectId=${segment(projectId)}${where ? `&where=${segment(where)}` : ""}` : ""}` as Href;
 export const desktopPullRequestHref = (desktopId: string, projectId: string, number: number) => `${CODE_HREF}/${segment(desktopId)}/pull-request?projectId=${segment(projectId)}&number=${number}` as Href;
 
+/** One of a thread's terminals on a computer, headed by its title until the computer answers. */
+export const desktopTerminalHref = (desktopId: string, chatId: string, terminalId: string, title?: string | null) =>
+  `${CODE_HREF}/${segment(desktopId)}/terminal?chatId=${segment(chatId)}&terminalId=${segment(terminalId)}${title ? `&title=${segment(title)}` : ""}` as Href;
+
 /** Screens under a computer that aren't threads. */
-const OTHER_SCREENS = new Set(["new", "review", "files", "git", "pull-requests", "pull-request"]);
+const OTHER_SCREENS = new Set(["new", "review", "files", "git", "pull-requests", "pull-request", "terminal"]);
 
 /** The computer thread a path shows, for the list's selected row; null on any other screen. */
 export function desktopChatInPath(pathname: string): { desktopId: string; chatId: string } | null {
