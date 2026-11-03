@@ -1,6 +1,6 @@
 import { Play, Square } from "lucide-react-native";
 import { useEffect, useRef, useState, type ComponentRef, type ReactNode } from "react";
-import { TextInput, View, type LayoutChangeEvent } from "react-native";
+import { Keyboard, TextInput, View, type LayoutChangeEvent } from "react-native";
 import { useKeyboardState } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { INPUT_TEXT, Text, type Anchor } from "@/components/ui";
@@ -17,13 +17,14 @@ import type { FollowUpAction, SendPresentation } from "./sendPresentation";
 
 /** Space under the composer, inside the bottom inset. */
 const BOTTOM_GUTTER = 6;
-/** The share of the one-line row the text keeps; a long model name truncates first. */
+/** The share of the one-line row the text keeps. One line shows only the model's logo; its name and effort show once the editor grows. */
 const INLINE_EDITOR_MIN_WIDTH = "40%";
 
 // Android draws the shadow from elevation; overflow-hidden clips only the content, not it.
 const FLOATING_BOX = { paddingVertical: 2, elevation: 6, shadowColor: "#000", shadowOpacity: 0.16, shadowRadius: 14, shadowOffset: { width: 0, height: 4 } } as const;
 
-export type ComposerModel = { label: ModelLabel; logos?: ReactNode; onPress?: () => void; readOnlyReason?: string };
+/** The model control; `hint` says what pressing it opens when that's more than the model. */
+export type ComposerModel = { label: ModelLabel; logos?: ReactNode; onPress?: () => void; readOnlyReason?: string; hint?: string };
 
 export type ComposerProps = {
   text: string;
@@ -64,8 +65,8 @@ export type ComposerProps = {
 
 /**
  * The message box for Phaseo chats and Code threads. One line beside its controls (+ for attachments, the text, the
- * model as logos, and send) until the text wraps; then the text takes the full width above them and the model shows
- * its name and effort. It grows to four lines, then scrolls. Focused, the draft's attachments show inside it;
+ * model's logo, and send) until the text wraps; then the text takes the full width above them, and the model shows its name
+ * and effort in the row below. It grows to four lines, then scrolls. Focused, the draft's attachments show inside it;
  * otherwise small thumbnails sit beside the text. With nothing typed, send becomes stop while a turn runs, or resume
  * while the queue is paused; a long press on send offers the other way to send while a turn runs.
  */
@@ -108,6 +109,15 @@ export function Composer(props: ComposerProps) {
     haptic("press");
     props.onSend(action);
   };
+  // The control sits in the box, so it's often pressed mid-message; a sheet that opens before the keyboard has gone
+  // sizes itself to the space above it and stays squashed.
+  const openModel = () => {
+    const open = props.model?.onPress;
+    if (!open) return;
+    if (!keyboardVisible) { open(); return; }
+    const hidden = Keyboard.addListener("keyboardDidHide", () => { hidden.remove(); open(); });
+    Keyboard.dismiss();
+  };
   const pickCommand = (command: ComposerCommand) => {
     if (!trigger) return;
     const { value, cursor: at } = removeTrigger(text, trigger);
@@ -140,7 +150,7 @@ export function Composer(props: ComposerProps) {
             <View className="min-w-0 shrink flex-row items-center" style={expanded ? { flex: 1, justifyContent: "flex-end" } : undefined}>
               {props.model ? (
                 <View className="min-w-0 shrink">
-                  <ComposerModelControl label={props.model.label} logos={props.model.logos} iconOnly={!expanded} onPress={locked ? undefined : props.model.onPress} readOnlyReason={props.model.readOnlyReason} />
+                  <ComposerModelControl iconOnly={!expanded} label={props.model.label} logos={props.model.logos} onPress={locked || !props.model.onPress ? undefined : openModel} readOnlyReason={props.model.readOnlyReason} hint={props.model.hint} />
                 </View>
               ) : null}
               {showStop ? (

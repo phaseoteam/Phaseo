@@ -4,11 +4,11 @@ import { ChevronDown, ChevronRight, CircleAlert, FileDiff, FolderTree, GitBranch
 import { memo, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { ActivityIndicator, Linking, Pressable, View } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
-import { Logo } from "@/components/Logo";
 import { Markdown } from "@/components/Markdown";
-import { Chip, EmptyState, ErrorState, Header, HorizontalScroll, Icon, IconButton, Screen, showActions, SkeletonRows, Text, toast, useToneColor } from "@/components/ui";
+import { EmptyState, ErrorState, Header, Icon, IconButton, Screen, showActions, SkeletonRows, Text, toast, useToneColor } from "@/components/ui";
+import { useChatModelOptions } from "@/features/chat/models";
 import type { ModelLabel } from "@/features/chat/modelSheetRows";
-import { Composer } from "@/features/composer/Composer";
+import { Composer, type ComposerModel } from "@/features/composer/Composer";
 import { ComposerErrorNotice } from "@/features/composer/ComposerNotices";
 import { resolveSendPresentation, type FollowUpAction } from "@/features/composer/sendPresentation";
 import { cn } from "@/lib/cn";
@@ -19,9 +19,9 @@ import { DesktopRequestError, type DesktopClient } from "./client";
 import { ConnectionNotice } from "./CodeThreadList";
 import { clientFor, connectionLabel, useConnection } from "./connections";
 import { openDesktopChat } from "./DesktopConnections";
-import { DesktopModelSheet, ModelChip, PermissionChip } from "./DesktopModelSheet";
+import { DesktopModelSheet, ModeSheet, modelLogo, type ModeControl } from "./DesktopModelSheet";
 import { knownModelsOf, useDesktopChat, useDesktopModels } from "./hooks";
-import { listAgents, threadModel, type ModelChoice, type ModelList } from "./newThread";
+import { choiceLabel, listAgents, permissionLabel, threadModel, type ModelChoice, type ModelList } from "./newThread";
 import { PendingCards } from "./PendingCards";
 import { chooseDesktop } from "./picked";
 import type { PhoneActivity, PhoneChatDetail, PhoneMessage, PhoneQueueAction, PhoneTurnChanges } from "./protocol";
@@ -178,9 +178,7 @@ function ChatView({ client, desktopId, chatId, desktopName }: { client: DesktopC
               desktopId={desktopId}
               chat={chat}
               running={running}
-              model={model}
-              // A Phaseo model id names its lab before the slash; another agent's model shows its initial.
-              logo={model && chat.model ? <Logo id={chat.model.includes("/") ? chat.model.split("/")[0] : null} label={model.model} size={18} /> : null}
+              label={model}
               onStop={() => void stop()}
               onSettings={replaceChat}
               above={<PendingCards client={client} chatId={chatId} approvals={chat.approvals} questions={chat.questions} onSettled={settle} onStop={running ? () => void stop() : null} onFailure={reportFailure} />}
@@ -342,18 +340,23 @@ function QueueControl({ client, chat, running, onEdit }: { client: DesktopClient
   );
 }
 
-const MODES = [{ value: "code", label: "Code" }, { value: "plan", label: "Plan" }] as const;
+const THREAD_MODES = ["code", "plan"] as const;
 
 /**
- * The thread's settings under its composer, as on the new-thread screen: Code or Plan (a Chat stays one), the model
- * (any its own agent offers, with its efforts) and the permissions, which only the computer changes. While a turn
- * runs, or on a computer from before protocol 3, they show but don't change.
+ * The thread's settings, opened from the model in its composer as on the new-thread screen: the model (any its own
+ * agent offers, with its efforts), Code or Plan (a Chat stays one) and the permissions, which only the computer
+ * changes. While a turn runs they don't change; on a computer from before protocol 3 the model shows but doesn't press.
  */
-function ThreadChips({ client, chat, running, onSettings }: { client: DesktopClient; chat: PhoneChatDetail; running: boolean; onSettings(chat: PhoneChatDetail): void }) {
+function useThreadSettings({ client, chat, running, label: thread, onSettings }: { client: DesktopClient; chat: PhoneChatDetail; running: boolean; label: ModelLabel | null; onSettings(chat: PhoneChatDetail): void }): { model: ComposerModel | null; sheets: ReactNode } {
   const connection = useConnection(client);
   const changeable = connection.status === "connected" && organises(connection.protocol) && Boolean(chat.harness);
-  const { list, unavailable } = useDesktopModels(changeable ? client : null, chat.projectId ?? null, chat.mode);
-  const [sheet, setSheet] = useState(false);
+  const { list: loaded } = useDesktopModels(changeable ? client : null, chat.projectId ?? null, chat.mode);
+  // Another mode lists its models again; until it has, the thread keeps the last list, so switching the mode in the
+  // open sheet doesn't close it or drop the effort from the control.
+  const [kept, setKept] = useState<{ chatId: string; list: ModelList } | null>(null);
+  if (loaded && kept?.list !== loaded) setKept({ chatId: chat.id, list: loaded });
+  const list = loaded ?? (changeable && kept?.chatId === chat.id ? kept.list : null);
+  const [sheet, setSheet] = useState<"model" | "mode" | null>(null);
   // Only the thread's own agent: another one would be a handoff to a new thread, which the phone doesn't offer.
   const own: ModelList | null = useMemo(() => (list && chat.harness ? { ...list, agents: listAgents(list).filter((agent) => agent.harness === chat.harness && (agent.accountId ?? "") === (chat.accountId ?? "")) } : null), [list, chat.harness, chat.accountId]);
   const choice: ModelChoice | null = chat.model && chat.harness ? { harness: chat.harness, ...(chat.accountId ? { accountId: chat.accountId } : {}), model: chat.model, effort: chat.reasoningEffort ?? null } : null;
@@ -364,41 +367,52 @@ function ThreadChips({ client, chat, running, onSettings }: { client: DesktopCli
     try { onSettings((await client.request("set_chat", { chatId: chat.id, ...change })).chat); }
     catch (problem) { reportFailure("Couldn't change the thread", problem); }
   };
-  if (!changeable) return chat.permissionMode ? <View className="flex-row pt-2"><PermissionChip mode={chat.permissionMode} /></View> : null;
-  return (
+  const mode: ModeControl | null = changeable && chat.mode !== "chat"
+    ? { value: chat.mode, options: THREAD_MODES, onChange: (value) => { if (value !== chat.mode && value !== "chat") void set({ mode: value }); } }
+    : null;
+  const permission = chat.permissionMode ?? null;
+  const { byId } = useChatModelOptions();
+  if (!thread) return { model: null, sheets: null };
+  // Named as the sheet names it, with the default effort, once the computer lists its models; until then, a Phaseo
+  // model by this phone's catalogue name rather than its id.
+  const catalogued = chat.model ? byId.get(chat.model)?.label : undefined;
+  const label = usable && own && choice ? choiceLabel(own, choice) : catalogued ? { ...thread, model: catalogued } : thread;
+  const logos = chat.model ? modelLogo({ model: chat.model, harness: chat.harness, label: label.model }) : null;
+  const opens = usable ? "model" : mode ? "mode" : null;
+  const model: ComposerModel = opens
+    ? { label, logos, hint: usable ? (mode ? "Choose the model, its effort and the mode" : "Choose the model and its effort") : "Choose the mode", onPress: () => (blocked ? toast(blocked) : setSheet(opens)) }
+    : { label, logos, readOnlyReason: ["Change it on the computer", permission ? `Permissions: ${permissionLabel(permission)}` : null].filter(Boolean).join(". ") };
+  const sheets = (
     <>
-      <HorizontalScroll keyboardShouldPersistTaps="handled" className="grow-0 pt-2" contentContainerClassName="gap-2">
-        {chat.mode !== "chat" ? (
-          <View accessibilityRole="tablist" className="flex-row gap-1">
-            {MODES.map((entry) => <Chip key={entry.value} label={entry.label} selected={chat.mode === entry.value} onPress={() => { if (chat.mode !== entry.value) void set({ mode: entry.value }); }} />)}
-          </View>
+        {usable && own && choice ? (
+          <DesktopModelSheet
+            list={own}
+            choice={choice}
+            mode={mode}
+            permission={permission}
+            open={sheet === "model"}
+            onClose={() => setSheet(null)}
+            onChoose={(next) => {
+              const change = settingsChange(chat, next);
+              if (change) void set(change);
+            }}
+          />
         ) : null}
-        <ModelChip list={usable ? own : null} choice={usable ? choice : null} unavailable={unavailable || Boolean(list && !usable)} unavailableLabel="Change it on the computer" onPress={() => (blocked ? toast(blocked) : setSheet(true))} />
-        {chat.permissionMode ? <PermissionChip mode={chat.permissionMode} /> : null}
-      </HorizontalScroll>
-      {usable && own && choice ? (
-        <DesktopModelSheet
-          list={own}
-          choice={choice}
-          open={sheet}
-          onClose={() => setSheet(false)}
-          onChoose={(next) => {
-            const change = settingsChange(chat, next);
-            if (change) void set(change);
-          }}
-        />
-      ) : null}
+        {mode ? <ModeSheet mode={mode} open={sheet === "mode"} onClose={() => setSheet(null)} /> : null}
     </>
   );
+  return { model, sheets };
 }
 
 /**
  * The thread's floating composer: send, or while a turn runs, steer it (a long press queues the message on the computer
- * instead), with the queue over it and the thread's settings under it. Editing a queued message puts it in the composer,
- * and sending saves it back. Attachments and `/` commands aren't offered, as the phone protocol carries neither.
+ * instead), with the queue over it and the model beside send, which opens the thread's settings. Editing a queued message
+ * puts it in the composer, and sending saves it back. Attachments and `/` commands aren't offered, as the phone protocol
+ * carries neither.
  */
-function DesktopComposer({ client, desktopId, chat, running, model, logo, above, onStop, onSettings }: { client: DesktopClient; desktopId: string; chat: PhoneChatDetail; running: boolean; model: ModelLabel | null; logo: ReactNode; above: ReactNode; onStop(): void; onSettings(chat: PhoneChatDetail): void }) {
+function DesktopComposer({ client, desktopId, chat, running, label, above, onStop, onSettings }: { client: DesktopClient; desktopId: string; chat: PhoneChatDetail; running: boolean; label: ModelLabel | null; above: ReactNode; onStop(): void; onSettings(chat: PhoneChatDetail): void }) {
   const chatId = chat.id;
+  const settings = useThreadSettings({ client, chat, running, label, onSettings });
   // Kept outside the screen so a review comment lands here. A queued message being edited has its own text instead,
   // and the draft comes back when the edit ends (saved, cancelled, or the message sent or removed on the computer).
   const [draft, setDraft] = useChatDraft(desktopId, chatId);
@@ -440,31 +454,33 @@ function DesktopComposer({ client, desktopId, chat, running, model, logo, above,
     }
   };
   return (
-    <Composer
-      floating
-      text={text}
-      onChangeText={setText}
-      placeholder={editing ? "Edit the queued message" : "Ask anything"}
-      onAttach={null}
-      model={model ? { label: model, logos: logo, readOnlyReason: "Change it under the message box" } : null}
-      send={editing ? { ...presentation, label: "Save queued message" } : presentation}
-      editingQueued={Boolean(editing)}
-      sendBlockedReason={sending ? "Sending…" : null}
-      onSend={(action) => void send(action)}
-      onStop={running ? onStop : null}
-      above={(
-        <>
-          {above}
-          <QueueControl client={client} chat={chat} running={running} onEdit={(message) => setEdit({ id: message.id, text: message.text })} />
-          {editing ? (
-            <Pressable accessibilityRole="button" onPress={() => setEdit(null)} className="mb-1.5 self-start rounded-md bg-background px-2 py-1 active:bg-accent">
-              <Text variant="caption" className="font-semibold text-link">Cancel editing</Text>
-            </Pressable>
-          ) : null}
-          {error ? <ComposerErrorNotice message={error} onDismiss={() => setError(null)} /> : null}
-        </>
-      )}
-      below={<ThreadChips client={client} chat={chat} running={running} onSettings={onSettings} />}
-    />
+    <>
+      <Composer
+        floating
+        text={text}
+        onChangeText={setText}
+        placeholder={editing ? "Edit the queued message" : chat.mode === "plan" ? "What should it plan?" : "Ask anything"}
+        onAttach={null}
+        model={settings.model}
+        send={editing ? { ...presentation, label: "Save queued message" } : presentation}
+        editingQueued={Boolean(editing)}
+        sendBlockedReason={sending ? "Sending…" : null}
+        onSend={(action) => void send(action)}
+        onStop={running ? onStop : null}
+        above={(
+          <>
+            {above}
+            <QueueControl client={client} chat={chat} running={running} onEdit={(message) => setEdit({ id: message.id, text: message.text })} />
+            {editing ? (
+              <Pressable accessibilityRole="button" onPress={() => setEdit(null)} className="mb-1.5 self-start rounded-md bg-background px-2 py-1 active:bg-accent">
+                <Text variant="caption" className="font-semibold text-link">Cancel editing</Text>
+              </Pressable>
+            ) : null}
+            {error ? <ComposerErrorNotice message={error} onDismiss={() => setError(null)} /> : null}
+          </>
+        )}
+      />
+      {settings.sheets}
+    </>
   );
 }

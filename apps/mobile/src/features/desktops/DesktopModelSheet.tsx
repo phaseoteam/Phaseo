@@ -2,40 +2,70 @@ import { Lock } from "lucide-react-native";
 import { useCallback, useDeferredValue, useState } from "react";
 import { View } from "react-native";
 import { Logo } from "@/components/Logo";
-import { Chip, Icon, Segmented, Text } from "@/components/ui";
+import { Icon, OptionSheet, Segmented, Text } from "@/components/ui";
 import { ModelSheet, type SheetModel } from "@/features/chat/ModelSheet";
-import { effortRows, modelLabelText, sheetModelDetail } from "@/features/chat/modelSheetRows";
+import { effortRows, sheetModelDetail } from "@/features/chat/modelSheetRows";
 import { useChatModelOptions } from "@/features/chat/models";
-import { agentOf, choiceLabel, modelOf, permissionLabel, sheetTabs, tabOf, threadSheetRows, type ModelChoice, type ModelList, type SheetItem, type SheetTab } from "./newThread";
-import type { PhonePermissionMode } from "./protocol";
+import { agentOf, modelOf, permissionLabel, sheetTabs, tabOf, threadSheetRows, type ModelChoice, type ModelList, type SheetItem, type SheetTab } from "./newThread";
+import type { PhoneChatMode, PhonePermissionMode } from "./protocol";
 
 /** The lab whose logo stands for a coding agent's own models when the computer doesn't name one. */
 const AGENT_LABS: Record<string, string> = { codex: "openai", claude: "anthropic", grok: "xai" };
 
-/** The permissions a thread runs with, which only the computer changes. */
-export function PermissionChip({ mode }: { mode: PhonePermissionMode }) {
+/** The lab logo for a thread's model: the one the computer names, a Phaseo id's prefix, or the agent's maker. */
+export function modelLogo({ organisationId, model, harness, label, size = 18 }: { organisationId?: string | null; model: string; harness?: string | null; label: string; size?: number }) {
+  const lab = organisationId ?? (model.includes("/") ? model.split("/")[0] : null) ?? (harness ? AGENT_LABS[harness] : undefined) ?? null;
+  return <Logo id={lab} label={label} size={size} />;
+}
+
+/** The logo for a new thread's choice. */
+export function choiceLogo(list: ModelList, choice: ModelChoice) {
+  const agent = agentOf(list, choice);
+  return modelLogo({ organisationId: modelOf(list, choice)?.organisationId, model: choice.model, harness: agent?.harness, label: agent?.name ?? choice.model });
+}
+
+export const MODE_LABELS: Record<PhoneChatMode, string> = { chat: "Chat", code: "Code", plan: "Plan" };
+
+/** The thread's mode, changeable in the settings sheet. */
+export type ModeControl = { value: PhoneChatMode; options: readonly PhoneChatMode[]; onChange(mode: PhoneChatMode): void };
+
+/** Mode and permissions, under the chosen model: the mode switches here, the permissions only on the computer. */
+function ThreadSettingsRows({ mode, permission }: { mode?: ModeControl | null; permission?: PhonePermissionMode | null }) {
+  if (!mode && !permission) return null;
   return (
-    <View accessible accessibilityLabel={`Permissions: ${permissionLabel(mode)}. Set on the computer.`} className="h-8 flex-row items-center gap-1.5 rounded-md px-2">
-      <Icon icon={Lock} tone="muted" size={13} />
-      <Text variant="small" className="text-muted-foreground">{permissionLabel(mode)}</Text>
+    <View className="gap-3 px-4 pt-3">
+      {mode ? (
+        <View className="flex-row items-center gap-3">
+          <Text variant="label" className="w-24">Mode</Text>
+          <Segmented<PhoneChatMode> className="flex-1" value={mode.value} options={mode.options.map((value) => ({ value, label: MODE_LABELS[value] }))} onChange={mode.onChange} />
+        </View>
+      ) : null}
+      {permission ? (
+        <View accessible accessibilityLabel={`Permissions: ${permissionLabel(permission)}. Set on the computer.`} className="min-h-8 flex-row items-center gap-3">
+          <Text variant="label" className="w-24">Permissions</Text>
+          <View className="min-w-0 flex-1 flex-row items-center gap-1.5">
+            <Icon icon={Lock} tone="muted" size={13} />
+            <Text variant="small" numberOfLines={1} className="shrink">{permissionLabel(permission)}</Text>
+            <Text variant="caption" numberOfLines={1} className="shrink">· Set on the computer</Text>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }
 
-export function ModelChip({ list, choice, unavailable, onPress, unavailableLabel = "The computer picks the model" }: { list: ModelList | null; choice: ModelChoice | null; unavailable: boolean; onPress(): void; unavailableLabel?: string }) {
-  if (!list || !choice) return <Chip label={unavailable ? unavailableLabel : "Loading models…"} />;
-  const agent = agentOf(list, choice);
-  const model = modelOf(list, choice);
-  const lab = model?.organisationId ?? (agent ? AGENT_LABS[agent.harness] : undefined) ?? null;
-  return <Chip label={modelLabelText(choiceLabel(list, choice))} leading={<Logo id={lab} label={agent?.name ?? choice.model} size={16} bare />} dropdown onPress={onPress} />;
+/** The mode alone, for a thread whose models the computer can't list. */
+export function ModeSheet({ mode, open, onClose }: { mode: ModeControl; open: boolean; onClose(): void }) {
+  return <OptionSheet open={open} title="Mode" value={mode.value} options={mode.options.map((value) => ({ value, label: MODE_LABELS[value] }))} onChange={mode.onChange} onClose={onClose} />;
 }
 
 /**
- * The model sheet for a new thread: Phaseo and On this computer tabs as in the window, the window's favourites first,
- * Phaseo's models by release month (named and priced from this phone's catalogue where it knows them), and each coding
- * agent's models under its name with the older ones folded. The picked model's efforts fold into its row.
+ * The thread's settings, opened from the model in the composer: the chosen model and its effort, the mode (Chat,
+ * Code, Plan) and the permissions, which only the computer changes. Then the models: Phaseo and On this computer tabs
+ * as in the window, the window's favourites first, Phaseo's models by release month (named and priced from this
+ * phone's catalogue where it knows them), and each coding agent's models under its name with the older ones folded.
  */
-export function DesktopModelSheet({ list, choice, onChoose, open, onClose }: { list: ModelList; choice: ModelChoice; onChoose(choice: ModelChoice): void; open: boolean; onClose(): void }) {
+export function DesktopModelSheet({ list, choice, onChoose, open, onClose, mode, permission }: { list: ModelList; choice: ModelChoice; onChoose(choice: ModelChoice): void; open: boolean; onClose(): void; mode?: ModeControl | null; permission?: PhonePermissionMode | null }) {
   const tabs = sheetTabs(list);
   const [tab, setTab] = useState<SheetTab>(() => tabOf(list, choice));
   const active = tabs.includes(tab) ? tab : tabs[0] ?? "local";
@@ -66,6 +96,8 @@ export function DesktopModelSheet({ list, choice, onChoose, open, onClose }: { l
     <ModelSheet<SheetItem>
       open={open}
       onClose={onClose}
+      title={mode || permission ? "Thread settings" : "Model"}
+      settings={<ThreadSettingsRows mode={mode} permission={permission} />}
       query={query}
       onQuery={setQuery}
       controls={tabs.length > 1 ? (
