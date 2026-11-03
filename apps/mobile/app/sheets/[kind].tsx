@@ -13,6 +13,8 @@ import { getChat, getMessage, updateChat } from "@/features/chat/db";
 import { ModelSettingsSheet } from "@/features/chat/ModelSettingsSheet";
 import { editAndResend } from "@/features/chat/runner";
 import { notifyChat, useChats } from "@/features/chat/state";
+import { clientFor } from "@/features/desktops/connections";
+import { changeChat } from "@/features/desktops/organise";
 import { desktopsStore, renameDesktop } from "@/features/desktops/store";
 import { ModelPicker } from "@/features/models/ModelPicker";
 import { draftRuleStore, useRuleNames } from "@/features/notifications/state";
@@ -37,6 +39,7 @@ export default function SheetRoute() {
         : kind === "workspace" ? <WorkspaceSheet />
         : kind === "rename-chat" ? <RenameChatSheet />
         : kind === "rename-desktop" ? <RenameDesktopSheet />
+        : kind === "rename-desktop-chat" ? <RenameDesktopChatSheet />
         : kind === "edit-message" ? <EditMessageSheet />
         : kind === "privacy" ? <PrivacySheet />
         : kind === "pick" ? <PickSheet />
@@ -128,6 +131,31 @@ function RenameDesktopSheet() {
       <View className="flex-row justify-end gap-2 pt-1">
         <Button label="Cancel" variant="outline" size="sm" onPress={() => router.back()} />
         <Button label="Save" size="sm" disabled={!name.trim()} onPress={save} />
+      </View>
+    </View>
+  );
+}
+
+/** Renames a thread on a paired computer; the window's sidebar shows the new title too. */
+function RenameDesktopChatSheet() {
+  const router = useRouter();
+  const { id, desktopId, title } = useLocalSearchParams<{ id: string; desktopId: string; title: string }>();
+  const [name, setName] = useState(title ?? "");
+  const desktop = desktopsStore.get()?.find((entry) => entry.desktopId === desktopId);
+  const save = () => {
+    const next = name.trim().slice(0, 200);
+    if (!next || !desktop) return;
+    router.back();
+    if (next !== title) void changeChat(clientFor(desktop), { id, title: title ?? "" }, { action: "rename", title: next });
+  };
+  return (
+    <View className="gap-3 px-4 pb-4 pt-5">
+      <Text variant="heading">Rename thread</Text>
+      <TextField value={name} onChangeText={setName} autoFocus selectTextOnFocus returnKeyType="done" onSubmitEditing={save} accessibilityLabel="Thread title" />
+      <Text variant="caption">{desktop ? `Renamed on ${desktop.desktopName} too.` : "This computer isn't paired any more."}</Text>
+      <View className="flex-row justify-end gap-2 pt-1">
+        <Button label="Cancel" variant="outline" size="sm" onPress={() => router.back()} />
+        <Button label="Save" size="sm" disabled={!name.trim() || !desktop} onPress={save} />
       </View>
     </View>
   );

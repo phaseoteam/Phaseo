@@ -4,17 +4,21 @@ import { useRouter, type Href } from "expo-router";
 import { Camera, ChevronDown, ChevronRight, CircleAlert, CircleCheck, CircleDotDashed, ClipboardPaste, Folder, GitBranch, Monitor, Plus, ShieldQuestion, SquarePen, type LucideIcon } from "lucide-react-native";
 import { memo, useCallback, useDeferredValue, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, View } from "react-native";
-import { Button, Callout, CALLOUT_TONES, EmptyState, ErrorState, Icon, SkeletonRows, Text, useToneColor } from "@/components/ui";
+import { Button, Callout, CALLOUT_TONES, EmptyState, ErrorState, Icon, pointAnchor, showActions, SkeletonRows, Text, useToneColor, type Anchor } from "@/components/ui";
 import type { IconTone } from "@/components/ui/icon";
 import { cn } from "@/lib/cn";
+import { haptic } from "@/lib/haptics";
 import { formatRelativeDay } from "@/lib/format";
 import type { DesktopClient } from "./client";
 import { codeListItems, codeStatus, type CodeListItem, type CodeStatus } from "./codeList";
 import { clientFor, useConnection } from "./connections";
 import { useDesktopChats, useDesktopProjects } from "./hooks";
+import { changeChat, chooseSnooze, renameChat } from "./organise";
 import type { PhoneChat } from "./protocol";
 import type { SavedDesktop } from "./reach";
 import { desktopChatHref, newDesktopChatHref } from "./routes";
+import { menuEntries, organises, snoozedLabel, type SwipeAction } from "./threadActions";
+import { ThreadRowActions } from "./ThreadRowActions";
 
 const PAIR_LINK = "phaseo://pair?p=";
 
@@ -56,28 +60,56 @@ export function PairPrompt() {
 }
 
 /**
- * A paired computer's threads, laid out like the desktop's sidebar (see codeListItems): needs you first, project
- * folders each with a New thread action, settled threads folded at the foot. `open` shows a thread or a new one.
+ * A paired computer's threads, laid out like the desktop's sidebar (see codeListItems): needs you first, pinned, project
+ * folders each with a New thread action, snoozed and settled threads folded at the foot. `open` shows a thread or a new
+ * one. On a computer that can organise threads (protocol 3), a row swipes left for its quick actions and a long press
+ * opens the rest, each with Undo.
  */
 export function CodeThreadList({ desktop, query, selectedChatId, open }: { desktop: SavedDesktop; query: string; selectedChatId: string | null; open(href: Href): void }) {
   const client = clientFor(desktop);
   const { desktopId } = desktop;
   const state = useConnection(client);
   const { chats, error, reload, loadMore, loadingMore } = useDesktopChats(client);
+  const router = useRouter();
   const [settledOpen, setSettledOpen] = useState(false);
+  const [snoozedOpen, setSnoozedOpen] = useState(false);
+  const organise = state.status === "connected" && organises(state.protocol);
   // Only the loaded threads are searched: the computer has no search to ask.
   const search = useDeferredValue(query);
   const projects = useDesktopProjects(client);
-  const items = useMemo(() => (chats ? codeListItems(chats, { query: search, settledOpen, projects }) : null), [chats, search, settledOpen, projects]);
+  const items = useMemo(() => (chats ? codeListItems(chats, { query: search, settledOpen, snoozedOpen, projects }) : null), [chats, search, settledOpen, snoozedOpen, projects]);
   const openChat = useCallback((chat: PhoneChat) => open(desktopChatHref(desktopId, chat.id)), [open, desktopId]);
   const newThread = useCallback((projectId: string | null) => open(newDesktopChatHref(desktopId, projectId)), [open, desktopId]);
   const toggleSettled = useCallback(() => setSettledOpen((current) => !current), []);
+  const toggleSnoozed = useCallback(() => setSnoozedOpen((current) => !current), []);
+  const swiped = useCallback((chat: PhoneChat, action: SwipeAction) => {
+    if (action.snooze) chooseSnooze(client, chat);
+    else if (action.change) void changeChat(client, chat, action.change);
+  }, [client]);
+  const menu = useCallback((chat: PhoneChat, anchor: Anchor) => showActions({
+    title: chat.title,
+    anchor,
+    actions: menuEntries(chat).map((entry) => ({
+      key: entry.key, label: entry.label, ...(entry.destructive ? { destructive: true } : {}),
+      onPress: () => {
+        if (entry.rename) renameChat(router, desktopId, chat);
+        else if (entry.snooze) chooseSnooze(client, chat, anchor);
+        else if (entry.change) void changeChat(client, chat, entry.change);
+      },
+    })),
+  }), [client, router, desktopId]);
   const renderItem = useCallback(({ item }: { item: CodeListItem }) => {
-    if (item.type === "thread") return <ThreadRow chat={item.chat} showProject={!item.inFolder} selected={item.chat.id === selectedChatId} onOpen={openChat} />;
+    if (item.type === "thread") {
+      return (
+        <ThreadRowActions chat={item.chat} enabled={organise} onAction={(action) => swiped(item.chat, action)}>
+          <ThreadRow chat={item.chat} showProject={!item.inFolder} selected={item.chat.id === selectedChatId} onOpen={openChat} onMenu={organise ? menu : undefined} />
+        </ThreadRowActions>
+      );
+    }
     if (item.type === "folder") return <FolderRow title={item.title} projectId={item.projectId} onNew={newThread} />;
-    return <HeadingRow title={item.title} count={item.count} open={item.open} onToggle={item.toggle ? toggleSettled : undefined} />;
-  }, [openChat, newThread, toggleSettled, selectedChatId]);
-  const extraData = useMemo(() => ({ selectedChatId }), [selectedChatId]);
+    return <HeadingRow title={item.title} count={item.count} open={item.open} warn={item.key === "heading:needs-you"} onToggle={item.toggle === "settled" ? toggleSettled : item.toggle === "snoozed" ? toggleSnoozed : undefined} />;
+  }, [openChat, newThread, toggleSettled, toggleSnoozed, selectedChatId, organise, swiped, menu]);
+  const extraData = useMemo(() => ({ selectedChatId, organise }), [selectedChatId, organise]);
   return (
     <>
       <ConnectionNotice client={client} />
@@ -104,9 +136,9 @@ export function CodeThreadList({ desktop, query, selectedChatId, open }: { deskt
   );
 }
 
-/** "Needs you", and "Settled", which folds: a label and a rule, with the count while folded. */
-function HeadingRow({ title, count, open, onToggle }: { title: string; count: number; open: boolean; onToggle?(): void }) {
-  const label = <Text variant="caption" className={cn("font-semibold", onToggle ? "text-muted-foreground" : "text-warning")}>{open ? title : `${title} (${count})`}</Text>;
+/** "Needs you", "Pinned", and "Snoozed" and "Settled", which fold: a label and a rule, with the count while folded. */
+function HeadingRow({ title, count, open, warn, onToggle }: { title: string; count: number; open: boolean; warn: boolean; onToggle?(): void }) {
+  const label = <Text variant="caption" className={cn("font-semibold", warn ? "text-warning" : "text-muted-foreground")}>{open ? title : `${title} (${count})`}</Text>;
   if (!onToggle) return <View className="mx-2 flex-row items-center gap-2 px-3 pb-1 pt-3">{label}<View className="h-px flex-1 bg-border" /></View>;
   return (
     <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel={`${title}, ${count}`} onPress={onToggle} className="mx-2 mt-2 h-9 flex-row items-center gap-2 rounded-md px-3 active:bg-accent">
@@ -156,16 +188,19 @@ function StatusLabel({ status }: { status: CodeStatus }) {
  * Two lines: the title and when it last changed, then its status in the desktop's words and colours, with the project
  * (outside a folder), the worktree's branch and why it needs you.
  */
-const ThreadRow = memo(function ThreadRow({ chat, showProject, selected, onOpen }: { chat: PhoneChat; showProject: boolean; selected: boolean; onOpen(chat: PhoneChat): void }) {
+const ThreadRow = memo(function ThreadRow({ chat, showProject, selected, onOpen, onMenu }: { chat: PhoneChat; showProject: boolean; selected: boolean; onOpen(chat: PhoneChat): void; onMenu?(chat: PhoneChat, anchor: Anchor): void }) {
   const status = codeStatus(chat);
-  const when = formatRelativeDay(chat.updatedAt);
+  // A snoozed thread says when it comes back instead of when it last changed.
+  const when = chat.snoozedUntil ? snoozedLabel(chat.snoozedUntil) : formatRelativeDay(chat.updatedAt);
   const quiet = !status && !chat.unread;
   const detail = [showProject ? chat.project ?? "No project" : null, chat.needsYou ? chat.attention : null].filter(Boolean).join(" · ");
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={[chat.title, status?.label, showProject ? chat.project : null, chat.attention, chat.branch ? `branch ${chat.branch}` : null, when].filter(Boolean).join(", ")}
+      accessibilityHint={onMenu ? "Long press for more, or swipe left for quick actions" : undefined}
       onPress={() => onOpen(chat)}
+      onLongPress={onMenu ? (event) => { haptic("press"); onMenu(chat, pointAnchor(event)); } : undefined}
       className={cn("mx-2 rounded-md px-3 py-2 active:bg-accent", selected && "bg-accent")}
     >
       <View className="flex-row items-center gap-2">

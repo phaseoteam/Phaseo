@@ -57,8 +57,8 @@ export class FakeDesktop {
     { id: "c1", title: "Fix the build", mode: "code", status: "completed", updatedAt: "2026-11-01T09:00:00.000Z", unread: false, needsYou: false, project: "Phaseo", projectId: "p1", approvals: [], questions: [] },
     { id: "c2", title: "Release notes", mode: "chat", status: "waiting", updatedAt: "2026-11-01T08:00:00.000Z", unread: true, needsYou: true, attention: "Wants to run a command", approvals: [{ id: "a1", title: "Run pnpm build", description: "pnpm --filter web build" }], questions: [] },
   ];
-  /** The protocol it speaks; 1 answers like a computer from before list_projects. */
-  protocol = 2;
+  /** The protocol it speaks; 1 answers like a computer from before list_projects, 2 like one from before update_chat. */
+  protocol = 3;
   /** Its projects: Blog has no threads yet, Scratch is archived and a worktree folds under Phaseo. */
   projects: PhoneProject[] = [
     { id: "p2", name: "Blog", pinned: true, repository: true },
@@ -205,7 +205,25 @@ export class FakeDesktop {
       }
       case "list_projects":
         return this.protocol >= 2 ? okResponse(request, { projects: this.projects }) : errorResponse(request.id, request.type, "invalid_frame", "Unknown frame type.") as PhoneResponse;
-      case "list_chats": return okResponse(request, { chats: this.chats.map(({ approvals: _approvals, questions: _questions, ...row }) => row) });
+      case "list_chats": return okResponse(request, { chats: this.chats.filter((entry) => Boolean(entry.archived) === Boolean(request.archived)).map(({ approvals: _approvals, questions: _questions, queue: _queue, ...row }) => row) });
+      case "update_chat": {
+        if (this.protocol < 3) return errorResponse(request.id, request.type, "invalid_frame", "Unknown frame type.") as PhoneResponse;
+        if (request.action === "settle" && chat!.status === "running") return errorResponse(request.id, request.type, "rejected", "This chat is still running. Stop it before settling.") as PhoneResponse;
+        const flags: Partial<Record<typeof request.action, Partial<PhoneChatDetail>>> = { settle: { settled: true }, unsettle: { settled: undefined }, archive: { archived: true }, unarchive: { archived: undefined }, pin: { pinned: true }, unpin: { pinned: undefined }, wake: { snoozedUntil: undefined }, "mark-unread": { unread: true } };
+        Object.assign(chat!, request.action === "rename" ? { title: request.title } : request.action === "snooze" ? { snoozedUntil: request.until } : flags[request.action]);
+        const { approvals: _approvals, questions: _questions, queue: _queue, ...row } = chat!;
+        return okResponse(request, { chat: JSON.parse(JSON.stringify(row)) as typeof row });
+      }
+      case "set_chat":
+        if (request.mode) chat!.mode = request.mode;
+        if (request.model) { chat!.model = request.model; delete chat!.reasoningEffort; }
+        if (request.reasoningEffort) chat!.reasoningEffort = request.reasoningEffort;
+        if (request.defaultEffort) delete chat!.reasoningEffort;
+        return okResponse(request, { chat: chat! });
+      case "queue":
+        if (!chat!.queue?.some((entry) => entry.id === request.messageId)) return errorResponse(request.id, request.type, "not_found", "That message has already been sent or removed.") as PhoneResponse;
+        chat!.queue = request.action === "remove" || request.action === "steer" ? chat!.queue.filter((entry) => entry.id !== request.messageId) : request.action === "edit" ? chat!.queue.map((entry) => (entry.id === request.messageId ? { ...entry, text: request.text! } : entry)) : chat!.queue;
+        return okResponse(request, { chatId: chat!.id });
       case "read_chat": {
         const all = this.entries.get(request.chatId) ?? [];
         const end = request.before ? all.findIndex((entry) => entry.id === request.before) : all.length;

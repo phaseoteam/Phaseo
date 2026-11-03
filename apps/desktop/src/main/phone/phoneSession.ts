@@ -1,10 +1,11 @@
 import { createHash } from "node:crypto";
 import { errorResponse, okResponse, parsePhoneFrame, phoneLimits, phoneProtocolVersion, PhoneProtocolError, RequestRate, type AttentionKind, type DesktopFrame, type PhoneEntry, type PhoneProject, type PhoneRequest, type PhoneResponse, type PhoneResults } from "@phaseo/phone-protocol";
 import type { ConversationPage, ConversationPageQuery } from "../../shared/conversationPage";
+import type { TurnFileChange } from "../../shared/gitDiff";
 import { validateCommand, type AgentActivity, type Message, type Task, type WorkspaceCommand } from "../../shared/workspace";
 import type { TaskOverview, WorkspaceOverview } from "../../shared/workspaceOverview";
-import type { PhoneModelsInput, PhoneNewChat } from "./phoneHost";
-import { attentionOf, chatListPage, phoneChat, phoneChats, phoneDetail, phoneProjects, readingOrder } from "./phoneChats";
+import type { PhoneModelsInput, PhoneNewChat, PhoneSetChat } from "./phoneHost";
+import { attentionOf, chatListPage, phoneChat, phoneChats, phoneDetail, phoneProjects, queuedChars, readingOrder, topLevelChats, TurnChangesCache, withTurnChanges } from "./phoneChats";
 
 /** What the phone server needs from the app: the same reads and commands the window uses. */
 export type PhoneHost = {
@@ -21,6 +22,10 @@ export type PhoneHost = {
 	models: (input: PhoneModelsInput) => Promise<PhoneResults["list_models"]>;
 	/** Whether a project's folder is a git checkout. Asked only when the project list changes. */
 	isRepository: (directory: string) => boolean;
+	/** Changes a stopped chat's mode, model or effort as the window's settings menu does (phoneHost's phoneSetChat). */
+	setChat: (input: PhoneSetChat) => Promise<void>;
+	/** The files a turn changed between two of the project's snapshots (gitCheckpoints' turnChanges). */
+	turnChanges: (projectId: string, before: string, after: string) => Promise<readonly TurnFileChange[]>;
 };
 export type PhoneDevice = { id: string; name: string };
 export type Attention = { chatId: string; kind: AttentionKind; summary: string };
@@ -60,6 +65,8 @@ export class PhoneSession {
 	/** The list rows (or chat details) the phone has, by chat. */
 	private readonly sentChats = new Map<string, string>();
 	private readonly dirtyChats = new Set<string>();
+	/** Per subscribed chat, entries whose changed files landed after they were sent, with their messages; the next batch resends those outside the latest page. */
+	private readonly landed = new Map<string, Map<string, { entry: PhoneEntry; message: Message }>>();
 	/** The signature of the project list the phone last got; unset until it reads one. */
 	private sentProjects?: string;
 	private readonly dirtyEntries = new Set<string>();
@@ -67,7 +74,7 @@ export class PhoneSession {
 	private lastFlush = 0;
 	private closed = false;
 	private readonly closeListeners: (() => void)[] = [];
-	constructor(readonly device: PhoneDevice, private readonly host: PhoneHost, private readonly send: (frame: DesktopFrame) => void, private readonly rate: RequestRate, private readonly now: () => number = Date.now) {}
+	constructor(readonly device: PhoneDevice, private readonly host: PhoneHost, private readonly send: (frame: DesktopFrame) => void, private readonly rate: RequestRate, private readonly now: () => number = Date.now, private readonly turnChanges = new TurnChangesCache(host.turnChanges)) {}
 
 	/** One frame of text from the phone. Errors are answered, never thrown. */
 	async receive(text: string) {
@@ -104,14 +111,14 @@ export class PhoneSession {
 				return okResponse(request, { projects });
 			}
 			case "list_chats": {
-				const page = chatListPage(this.host.overview(), request.cursor, request.limit ?? phoneLimits.pageSize);
+				const page = chatListPage(this.host.overview(), request.cursor, request.limit ?? phoneLimits.pageSize, request.archived);
 				for (const chat of page.chats) if (!this.subscribed.has(chat.id)) this.sentChats.set(chat.id, signature(chat));
 				return okResponse(request, page);
 			}
 			case "read_chat": {
 				const overview = this.chatOverview(request.chatId);
 				const page = this.host.page({ taskId: request.chatId, kind: "messages", limit: request.limit ?? phoneLimits.pageSize, ...request.before ? { beforeId: request.before } : {} });
-				const ordered = readingOrder(page.entries as Message[], page.activities ?? []), entries = latestFitting(ordered);
+				const ordered = this.decorate(request.chatId, overview.projectId, page.entries as Message[], readingOrder(page.entries as Message[], page.activities ?? [])), entries = latestFitting(ordered);
 				const dropped = ordered.slice(0, ordered.length - entries.length).filter(entry => entry.kind === "message").length;
 				// The latest page is what the phone now has, so later changes are measured from it.
 				if (!request.before && this.subscribed.has(request.chatId)) this.seen.set(request.chatId, new Map(entries.map(entry => [entry.id, signature(entry)])));
@@ -148,10 +155,41 @@ export class PhoneSession {
 			case "list_models":
 				this.checkProject(request.projectId);
 				return okResponse(request, await this.host.models({ ...request.projectId ? { projectId: request.projectId } : {}, ...request.mode ? { mode: request.mode } : {} }));
+			case "update_chat": {
+				const task = this.organisable(request.chatId);
+				const { chatId: id, action } = request;
+				await command(action === "archive" || action === "unarchive" ? { type: "update-task", id, archived: action === "archive" }
+					: action === "pin" || action === "unpin" ? { type: "update-task", id, pinned: action === "pin" }
+					: action === "rename" ? { type: "update-task", id, title: request.title }
+					: action === "snooze" ? { type: "snooze", id, until: request.until }
+					: { type: action, id });
+				const overview = this.host.overview(), after = overview.tasks.find(value => value.id === task.id);
+				if (!after) throw new PhoneProtocolError("not_found", "This chat no longer exists on this computer.");
+				return okResponse(request, { chat: phoneChat(after, overview.projects, this.now()) });
+			}
+			case "set_chat": {
+				this.chatOverview(request.chatId);
+				const { id: _id, type: _type, ...input } = request;
+				await this.host.setChat(input);
+				const overview = this.chatOverview(request.chatId);
+				return okResponse(request, { chat: phoneDetail(this.host.task(request.chatId), overview, this.host.overview().projects) });
+			}
+			case "queue": {
+				this.chatOverview(request.chatId);
+				const { chatId: id, messageId } = request;
+				const queued = this.host.task(id).queue.find(message => message.id === messageId);
+				if (!queued) throw new PhoneProtocolError("not_found", "That message has already been sent or removed.");
+				if (request.action === "edit" && queued.text.length > queuedChars) throw new PhoneProtocolError("rejected", "This message is too long to edit on a phone. Edit it on the computer.");
+				await command(request.action === "remove" ? { type: "queue-remove", id, messageId }
+					: request.action === "edit" ? { type: "queue-edit", id, messageId, text: request.text }
+					: request.action === "steer" ? { type: "steer", id, text: queued.text, queuedId: messageId }
+					: { type: "queue-move", id, messageId, direction: request.action });
+				return okResponse(request, { chatId: id });
+			}
 			case "subscribe": {
 				const listed = new Set(phoneChats(this.host.overview()).map(task => task.id));
 				const chatIds = request.chatIds.filter(id => listed.has(id));
-				for (const id of [...this.subscribed]) if (!chatIds.includes(id)) { this.subscribed.delete(id); this.seen.delete(id); }
+				for (const id of [...this.subscribed]) if (!chatIds.includes(id)) { this.subscribed.delete(id); this.seen.delete(id); this.landed.delete(id); }
 				for (const id of chatIds) if (!this.subscribed.has(id)) { this.subscribed.add(id); if (!this.seen.has(id)) this.seen.set(id, this.latestSignatures(id)); }
 				return okResponse(request, { chatIds });
 			}
@@ -161,6 +199,22 @@ export class PhoneSession {
 	private checkProject(projectId: string | undefined) {
 		if (projectId && !this.host.overview().projects.some(project => project.id === projectId && !project.worktree?.removedAt)) throw new PhoneProtocolError("not_found", "That project isn't on this computer any more.");
 	}
+	/** A chat the phone may organise: top level, archived or not. An agent's or side chat goes with its parent. */
+	private organisable(id: string) {
+		const task = topLevelChats(this.host.overview()).find(value => value.id === id);
+		if (!task) throw new PhoneProtocolError("not_found", "This chat no longer exists on this computer.");
+		return task;
+	}
+	/** Each turn's changed files on its person's message, as far as they've been read; a read that lands sends the chat's entries again. */
+	private decorate(chatId: string, projectId: string | undefined, messages: readonly Message[], entries: PhoneEntry[]) {
+		if (!projectId) return entries;
+		return withTurnChanges(entries, messages, (checkpoint, entry) => this.turnChanges.get(projectId, checkpoint, () => {
+			if (this.closed || !this.subscribed.has(chatId)) return;
+			const message = messages.find(value => value.id === entry.id)!, landed = this.landed.get(chatId) ?? new Map();
+			this.landed.set(chatId, landed.set(entry.id, { entry, message }));
+			this.dirtyEntries.add(chatId); this.schedule();
+		}));
+	}
 	/** A chat the phone may use: listed (top level, not archived). */
 	private chatOverview(id: string) {
 		const task = phoneChats(this.host.overview()).find(value => value.id === id);
@@ -169,17 +223,20 @@ export class PhoneSession {
 	}
 	private latestEntries(id: string) {
 		const page = this.host.page({ taskId: id, kind: "messages", limit: phoneLimits.pageSize });
-		return readingOrder(page.entries as Message[], (page.activities ?? []) as AgentActivity[]);
+		return this.decorate(id, this.host.overview().tasks.find(task => task.id === id)?.projectId, page.entries as Message[], readingOrder(page.entries as Message[], (page.activities ?? []) as AgentActivity[]));
 	}
 	private latestSignatures(id: string) { try { return new Map(this.latestEntries(id).map(entry => [entry.id, signature(entry)])); } catch { return new Map<string, string>(); } }
 
 	/** The app's chats changed: notes what this phone should hear about and sends it within the batch window. */
 	changed(before: ReadonlyMap<string, TaskOverview>, after: WorkspaceOverview) {
 		if (this.closed) return;
-		for (const task of phoneChats(after)) {
+		for (const task of topLevelChats(after)) {
 			const previous = before.get(task.id);
+			// An archived chat (or one restored) reaches only the phones that already had it.
+			if (task.archived && (!previous || previous.archived) && !this.sentChats.has(task.id)) continue;
 			if (this.subscribed.has(task.id) && previous?.revision !== task.revision) this.dirtyEntries.add(task.id);
-			if (!previous || this.sentChats.has(task.id) || this.subscribed.has(task.id)) this.dirtyChats.add(task.id);
+			// New to the list (just started, or restored from the archive), or a row the phone has.
+			if (!previous || (previous.archived && !task.archived) || this.sentChats.has(task.id) || this.subscribed.has(task.id)) this.dirtyChats.add(task.id);
 		}
 		if (this.dirtyChats.size || this.dirtyEntries.size) this.schedule();
 	}
@@ -202,21 +259,25 @@ export class PhoneSession {
 	flush() {
 		if (this.closed) return;
 		this.lastFlush = this.now();
-		const overview = this.host.overview(), chats = new Map(phoneChats(overview).map(task => [task.id, task]));
+		const overview = this.host.overview(), chats = new Map(topLevelChats(overview).map(task => [task.id, task]));
 		for (const id of this.dirtyChats) {
 			const task = chats.get(id);
 			if (!task) continue;
 			try {
-				const chat = this.subscribed.has(id) ? phoneDetail(this.host.task(id), task, overview.projects) : phoneChat(task, overview.projects), mark = signature(chat);
+				const chat = this.subscribed.has(id) && !task.archived ? phoneDetail(this.host.task(id), task, overview.projects) : phoneChat(task, overview.projects, this.now()), mark = signature(chat);
 				if (this.sentChats.get(id) !== mark) { this.sentChats.set(id, mark); this.send({ type: "chat_updated", chat }); }
 			} catch { /* Deleted since; the list drops it on the phone's next read. */ }
 		}
 		this.dirtyChats.clear();
 		for (const id of this.dirtyEntries) {
-			if (!this.subscribed.has(id) || !chats.has(id)) continue;
+			if (!this.subscribed.has(id) || !chats.has(id) || chats.get(id)!.archived) continue;
 			try {
-				const seen = this.seen.get(id) ?? new Map<string, string>(), changed = [];
-				for (const entry of this.latestEntries(id)) { const mark = signature(entry); if (seen.get(entry.id) !== mark) { seen.set(entry.id, mark); changed.push(entry); } }
+				const seen = this.seen.get(id) ?? new Map<string, string>(), changed = [], latest = this.latestEntries(id);
+				// An earlier page the phone loaded isn't read again: only its entries whose changes landed go out.
+				const inLatest = new Set(latest.map(entry => entry.id)), landed = [...this.landed.get(id)?.values() ?? []].filter(value => !inLatest.has(value.entry.id));
+				this.landed.delete(id);
+				const earlier = this.decorate(id, chats.get(id)!.projectId, landed.map(value => value.message), landed.map(value => value.entry)).filter(entry => "changes" in entry);
+				for (const entry of [...earlier, ...latest]) { const mark = signature(entry); if (seen.get(entry.id) !== mark) { seen.set(entry.id, mark); changed.push(entry); } }
 				this.seen.set(id, seen);
 				for (const entries of entryFrames(changed)) this.send({ type: "entries", chatId: id, entries });
 			} catch { /* Deleted since. */ }
@@ -242,17 +303,19 @@ export class PhoneHub {
 	private readonly rates = new Map<string, RequestRate>();
 	private last = new Map<string, TaskOverview>();
 	private projectsKey?: string;
+	private readonly turnChanges: TurnChangesCache;
 	onAttention?: (event: Attention, connected: ReadonlySet<string>) => void;
 	constructor(private readonly host: PhoneHost, private readonly now: () => number = Date.now) {
 		const overview = host.overview();
 		this.last = new Map(overview.tasks.map(task => [task.id, task]));
 		this.projectsKey = signature(overview.projects);
+		this.turnChanges = new TurnChangesCache(host.turnChanges);
 	}
 	open(device: PhoneDevice, send: (frame: DesktopFrame) => void) {
 		// One budget per device, however many sockets it opens.
 		let rate = this.rates.get(device.id);
 		if (!rate) { rate = new RequestRate(this.now); this.rates.set(device.id, rate); }
-		const session = new PhoneSession(device, this.host, send, rate, this.now);
+		const session = new PhoneSession(device, this.host, send, rate, this.now, this.turnChanges);
 		this.sessions.add(session);
 		session.whenClosed(() => this.sessions.delete(session));
 		return session;

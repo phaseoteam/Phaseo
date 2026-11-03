@@ -1,7 +1,8 @@
-import type { AttentionKind, PhoneActivity, PhoneChat, PhoneChatDetail, PhoneEntry, PhoneMessage, PhoneProject } from "@phaseo/phone-protocol";
+import type { AttentionKind, PhoneActivity, PhoneChat, PhoneChatDetail, PhoneEntry, PhoneMessage, PhoneProject, PhoneTurnChanges } from "@phaseo/phone-protocol";
+import type { TurnFileChange } from "../../shared/gitDiff";
 import { isFactoryWorktree } from "../../shared/factory/projects";
 import { isProjectArchived } from "../../shared/projectShelf";
-import { isSettled, isUnread } from "../../shared/threadLifecycle";
+import { isSettled, isSnoozed, isUnread, sidebarSection } from "../../shared/threadLifecycle";
 import type { AgentActivity, Message, Project, Task } from "../../shared/workspace";
 import { overviewOrder, type TaskOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
 
@@ -9,8 +10,10 @@ import { overviewOrder, type TaskOverview, type WorkspaceOverview } from "../../
 const messageChars = 20_000, activityChars = 2_000, requestChars = 20_000;
 const cut = (text: string, max: number) => text.length > max ? { text: `${text.slice(0, max)}…`, truncated: true as const } : { text };
 
-/** The chats a phone lists: top-level and not archived. Agents' and side chats stay with their parent. */
-export const phoneChats = (overview: WorkspaceOverview) => overview.tasks.filter(task => !task.archived && !task.delegation).sort(overviewOrder);
+/** The chats a phone lists: top-level and not archived (or only the archived ones). Agents' and side chats stay with their parent. */
+export const phoneChats = (overview: WorkspaceOverview, archived = false) => overview.tasks.filter(task => task.archived === archived && !task.delegation).sort(overviewOrder);
+/** Every top-level chat, archived ones too: what a phone may organise. */
+export const topLevelChats = (overview: WorkspaceOverview) => overview.tasks.filter(task => !task.delegation);
 
 /**
  * The projects a phone lists, pinned first as the window's pickers order them. Removed worktrees and Factory's
@@ -34,21 +37,23 @@ export function taskEffort(task: Pick<Task, "reasoningEffort" | "modelOptions">)
 	return typeof option === "string" ? option : undefined;
 }
 
-export function phoneChat(task: TaskOverview, projects: readonly Project[]): PhoneChat {
+export function phoneChat(task: TaskOverview, projects: readonly Project[], now = Date.now()): PhoneChat {
 	const own = task.projectId ? projects.find(value => value.id === task.projectId) : undefined;
 	// A worktree's chats sit under the project it came from, as in the window's project folders, with its branch.
 	const project = own?.worktree ? projects.find(value => value.id === own.worktree!.sourceProjectId) ?? own : own;
-	const needsYou = Boolean(task.attentionReason) && task.attentionReason !== "Task completed";
+	// As the window's Inbox counts it: a settled or snoozed chat waits there quietly, unless it raises its hand.
+	const needsYou = Boolean(task.attentionReason) && task.attentionReason !== "Task completed" && !["snoozed", "settled"].includes(sidebarSection(task, now));
 	return {
 		id: task.id, title: task.title, mode: task.mode, status: task.status, updatedAt: task.updatedAt, unread: isUnread(task), needsYou,
 		...needsYou ? { attention: task.attentionReason } : {}, ...project ? { projectId: project.id, project: project.name } : {},
 		...task.model ? { model: task.model } : {}, ...own?.worktree ? { branch: own.worktree.branch } : {}, ...isSettled(task) ? { settled: true as const } : {},
+		...task.pinned ? { pinned: true as const } : {}, ...isSnoozed(task, now) ? { snoozedUntil: task.snoozedUntil } : {}, ...task.archived ? { archived: true as const } : {},
 	};
 }
 
 /** A page of the list, newest first. The cursor is the last chat's position, so chats changing between pages don't repeat a page. */
-export function chatListPage(overview: WorkspaceOverview, cursor: string | undefined, limit: number) {
-	const chats = phoneChats(overview);
+export function chatListPage(overview: WorkspaceOverview, cursor: string | undefined, limit: number, archived = false) {
+	const chats = phoneChats(overview, archived);
 	let start = 0;
 	if (cursor) {
 		const split = cursor.lastIndexOf("|"), updatedAt = cursor.slice(0, split), id = cursor.slice(split + 1);
@@ -60,10 +65,17 @@ export function chatListPage(overview: WorkspaceOverview, cursor: string | undef
 	return { chats: page.map(task => phoneChat(task, overview.projects)), ...last && start + limit < chats.length ? { cursor: `${last.updatedAt}|${last.id}` } : {} };
 }
 
+/** A queued message longer than this reaches the phone cut, so the phone can't edit it without losing its end. */
+export const queuedChars = 2_000;
+
 export function phoneDetail(task: Task, overview: TaskOverview, projects: readonly Project[]): PhoneChatDetail {
 	const effort = taskEffort(task);
+	const pullRequests = (task.pullRequests ?? []).filter(link => link.source !== "stack-dismissed");
 	return {
 		...phoneChat(overview, projects), ...effort ? { reasoningEffort: effort } : {},
+		harness: task.harness, ...task.accountId ? { accountId: task.accountId } : {}, ...task.permissionMode ? { permissionMode: task.permissionMode } : {},
+		queue: (task.queue ?? []).map(message => { const text = cut(message.text, queuedChars); return { id: message.id, text: text.text, ...text.truncated ? { truncated: true as const } : {} }; }),
+		...pullRequests.length ? { pullRequests: pullRequests.map(link => ({ repository: link.repository, number: link.number, url: link.url, ...link.snapshot ? { title: link.snapshot.title, state: link.snapshot.state } : {} })) } : {},
 		approvals: (task.approvals ?? []).map(approval => ({ id: approval.id, title: approval.method, description: cut(approval.description, requestChars).text, ...approval.kind === "plan" ? { plan: true as const } : {} })),
 		questions: (task.questions ?? []).map(request => ({ id: request.id, questions: request.questions.map(question => ({
 			id: question.id, header: question.header, question: question.question, ...question.multiSelect ? { multiSelect: true as const } : {}, ...question.isOther ? { isOther: true as const } : {}, ...question.isSecret ? { isSecret: true as const } : {},
@@ -103,6 +115,54 @@ export function readingOrder(messages: readonly Message[], activities: readonly 
 		if (owner && ids.has(owner)) after.set(owner, [...after.get(owner) ?? [], activity]); else loose.push(activity);
 	}
 	return [...messages.flatMap(message => [message, ...after.get(message.id) ?? []]), ...loose].map(phoneEntry);
+}
+
+/** One turn's changed files in short: how many, and lines added and removed (-1 when every file was binary). */
+export function turnSummary(changes: readonly TurnFileChange[]): PhoneTurnChanges {
+	const text = changes.filter(change => change.additions >= 0);
+	const sum = (key: "additions" | "deletions") => text.length || !changes.length ? text.reduce((total, change) => total + change[key], 0) : -1;
+	return { files: changes.length, additions: sum("additions"), deletions: sum("deletions") };
+}
+
+/**
+ * Each person's message that started a turn with saved snapshots gets that turn's changes, read once per snapshot pair
+ * (entries are re-signed on every flush, and git is not asked each time). `changes` answers from what it has read and
+ * starts reading what it hasn't; a turn that changed nothing gets no row.
+ */
+export function withTurnChanges(entries: PhoneEntry[], messages: readonly Message[], changes: (checkpoint: { before: string; after: string }, entry: PhoneEntry) => PhoneTurnChanges | undefined) {
+	const checkpoints = new Map(messages.flatMap(message => message.role === "user" && message.checkpoint?.after ? [[message.id, { before: message.checkpoint.before, after: message.checkpoint.after }] as const] : []));
+	if (!checkpoints.size) return entries;
+	return entries.map(entry => {
+		const checkpoint = entry.kind === "message" ? checkpoints.get(entry.id) : undefined;
+		const summary = checkpoint && changes(checkpoint, entry);
+		return summary?.files ? { ...entry, changes: summary } as PhoneMessage : entry;
+	});
+}
+
+/**
+ * Turn changes read from git, shared by every phone: each snapshot pair once (a few hundred kept), with the readers
+ * that asked told when it lands, so their next batch carries it.
+ */
+export class TurnChangesCache {
+	private readonly known = new Map<string, PhoneTurnChanges | null>();
+	private readonly waiting = new Map<string, Set<() => void>>();
+	constructor(private readonly read: (projectId: string, before: string, after: string) => Promise<readonly TurnFileChange[]>, private readonly max = 500) {}
+	get(projectId: string, checkpoint: { before: string; after: string }, ready: () => void) {
+		const key = `${projectId}:${checkpoint.before}:${checkpoint.after}`;
+		const value = this.known.get(key);
+		if (value !== undefined || this.known.has(key)) return value ?? undefined;
+		const listeners = this.waiting.get(key);
+		if (listeners) { listeners.add(ready); return undefined; }
+		this.waiting.set(key, new Set([ready]));
+		void this.read(projectId, checkpoint.before, checkpoint.after).then(turnSummary, () => null).then(summary => {
+			// A failed read (a pruned snapshot, a removed project) is remembered as none, so it isn't asked again.
+			if (this.known.size >= this.max) this.known.delete(this.known.keys().next().value!);
+			this.known.set(key, summary);
+			const done = this.waiting.get(key); this.waiting.delete(key);
+			if (summary?.files) for (const listener of done ?? []) listener();
+		});
+		return undefined;
+	}
 }
 
 /** Why a chat now wants the person, for a phone notification; nothing for a chat seen for the first time. */

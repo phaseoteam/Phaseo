@@ -84,6 +84,11 @@ function ToastStack({ toasts }: { toasts: Toast[] }) {
                 {entry.title ? <Text variant="label">{entry.title}</Text> : null}
                 <Text variant="muted" className={entry.title ? "mt-0.5" : "text-foreground"}>{entry.message}</Text>
               </View>
+              {entry.action ? (
+                <Pressable accessibilityRole="button" hitSlop={8} onPress={() => { dismissToast(entry.id); entry.action?.onPress(); }} className="-my-1 rounded-md px-2 py-1 active:bg-accent">
+                  <Text variant="label" className="text-link">{entry.action.label}</Text>
+                </Pressable>
+              ) : null}
               <Pressable accessibilityRole="button" accessibilityLabel="Dismiss" hitSlop={8} onPress={() => dismissToast(entry.id)} className="h-6 w-6 items-center justify-center rounded-md active:bg-accent">
                 <Icon icon={X} tone="muted" size={14} />
               </Pressable>

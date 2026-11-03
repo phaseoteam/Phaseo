@@ -12,7 +12,7 @@ What the Phaseo desktop app and the Phaseo phone app say to each other, shared b
 
 ## Models for a new chat
 
-A phone can't change the model of a chat that exists. For a new one, `list_models` (with the `projectId` the chat will use and its `mode`) answers as the computer's own new-chat picker would:
+For a new chat, `list_models` (with the `projectId` the chat will use and its `mode`) answers as the computer's own new-chat picker would:
 
 - `agents`: every agent the chat could run on. Phaseo (`source: "phaseo"`, with the computer's Phaseo account as `accountId`) when an account can call the gateway, then each coding agent installed and signed in on the computer (`source: "local"`). Grok only outside Chat, and none the project turns off. Each lists its models with their efforts; `legacy` models belong behind "N older". An agent whose models couldn't be read has `error` and no models, and the rest still list.
 - `selected`: the agent, model and effort the chat starts with unasked. In a project (Code or Plan), the project's default model. Otherwise the model the person last chose in the window (their default, else the last picked). Otherwise the Phaseo account's default. With none of these, the picker opens on the first model listed.
@@ -22,6 +22,16 @@ A phone can't change the model of a chat that exists. For a new one, `list_model
 `new_chat` names the agent (`harness`, and `accountId` for Phaseo) with one of its `model` ids and one of that model's effort ids as `reasoningEffort`; the computer refuses anything it didn't list. Without `harness` the model must be the default agent's, and leaving out the model too keeps the computer's choice (refused only when nothing above applies). A computer from before `list_models` answers it with `invalid_frame`, and one from before agents ignores `mode` and sends only `models` and `selected`.
 
 List rows carry `model`, `branch` (the worktree's) and `settled`; `read_chat`'s chat adds `reasoningEffort` when the chat set one. `effortLabel(id)` gives the word both apps show for an effort.
+
+## Organising and changing threads
+
+From version 3 a phone organises threads, changes their settings and edits their queue, through the window's own commands and refusals:
+
+- `update_chat` with an `action`: `settle`, `unsettle`, `wake`, `mark-unread`, `archive`, `unarchive`, `pin`, `unpin`, `rename` (with `title`) or `snooze` (with `until`, an ISO time). It answers with the row as it is now, so the phone can show it and offer the reverse as Undo. Agents' and side chats go with their parent and are refused as `not_found`. The relay holds it for an offline computer, as it holds `send`.
+- `list_chats` with `archived: true` lists the archived threads instead; a phone that had a thread hears `chat_updated` with `archived: true` when it leaves the list. Rows add `pinned` and `snoozedUntil` (only while snoozed).
+- `set_chat` changes a stopped thread's `mode` (Code ⇄ Plan only; a Chat stays one), `model` (one its own agent lists; another agent would be a new thread) or `reasoningEffort` (kept where that agent keeps it: on the chat for Codex and Grok, as a model option for the rest); `defaultEffort: true` clears the effort so the model runs at its own default. Permissions stay the computer's.
+- `read_chat`'s chat adds `queue`, `harness`, `accountId`, `permissionMode` and linked `pullRequests`. `queue` removes, edits (`text`), moves (`up`, `down`) or sends now (`steer`) a queued message.
+- A person's message that started a turn with saved snapshots gets `changes` (files, lines added and removed) once the computer has read them; the message is sent again with it.
 
 ## Versions and projects
 

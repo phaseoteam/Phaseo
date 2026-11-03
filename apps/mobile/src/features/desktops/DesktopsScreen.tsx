@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { Monitor, Plus } from "lucide-react-native";
+import { Archive, Monitor, Plus } from "lucide-react-native";
 import { ScrollView, View } from "react-native";
 import { Button, confirm, EmptyState, Header, IconButton, LoadingState, Row, Screen, Section, Text } from "@/components/ui";
 import { clientFor, connectionLabel, useConnection } from "./connections";
@@ -49,18 +49,21 @@ function DesktopRow({ desktop, last }: { desktop: SavedDesktop; last: boolean })
     if (ok) await forgetDesktop(desktop.desktopId);
   };
   return (
-    <Row
-      icon={Monitor}
-      title={desktop.desktopName}
-      subtitle={connectionLabel(state)}
-      chevron={false}
-      trailing={(
-        <View className="flex-row gap-2">
-          <Button label="Rename" variant="outline" size="sm" onPress={() => router.push({ pathname: "/sheets/[kind]", params: { kind: "rename-desktop", id: desktop.desktopId } })} />
-          <Button label="Remove" variant="destructive" size="sm" onPress={() => void remove()} />
-        </View>
-      )}
-      last={last}
-    />
+    <>
+      <Row
+        icon={Monitor}
+        title={desktop.desktopName}
+        subtitle={connectionLabel(state)}
+        chevron={false}
+        trailing={(
+          <View className="flex-row gap-2">
+            <Button label="Rename" variant="outline" size="sm" onPress={() => router.push({ pathname: "/sheets/[kind]", params: { kind: "rename-desktop", id: desktop.desktopId } })} />
+            <Button label="Remove" variant="destructive" size="sm" onPress={() => void remove()} />
+          </View>
+        )}
+        last={false}
+      />
+      <Row icon={Archive} title="Archived threads" onPress={() => router.push({ pathname: "/desktops/[desktopId]/archived", params: { desktopId: desktop.desktopId } })} last={last} />
+    </>
   );
 }
