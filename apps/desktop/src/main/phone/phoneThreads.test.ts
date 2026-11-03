@@ -158,6 +158,20 @@ describe("phone thread organisation and settings", () => {
 		expect(app.turnReads).toEqual(["t1:t2"]);
 	});
 
+	it("sends an earlier page's changed files once git has read them, though that page isn't the latest", async () => {
+		vi.useFakeTimers();
+		const { app, ask, frames } = connected();
+		app.checkpointFiles.set("t1:t2", [{ path: "src/login.ts", additions: 4, deletions: 1 }]);
+		const old = app.addMessage("chat-1", { role: "user", text: "Fix it", checkpoint: { before: "t1", after: "t2" } });
+		for (let index = 0; index < 60; index++) app.addMessage("chat-1", { role: "assistant", text: `Step ${index}` });
+		await ask({ type: "subscribe", chatIds: ["chat-1"] });
+		const latest = await ask({ type: "read_chat", chatId: "chat-1" });
+		const earlier = await ask({ type: "read_chat", chatId: "chat-1", before: (latest.result!.entries as PhoneMessage[])[0]!.id });
+		expect((earlier.result!.entries as PhoneMessage[]).find(entry => entry.id === old.id)).not.toHaveProperty("changes");
+		await vi.advanceTimersByTimeAsync(250);
+		expect(frames.at(-1)).toEqual({ type: "entries", chatId: "chat-1", entries: [expect.objectContaining({ id: old.id, changes: { files: 1, additions: 4, deletions: 1 } })] });
+	});
+
 	it("sums a turn's lines, with -1 when only binary files changed", () => {
 		expect(turnSummary([])).toEqual({ files: 0, additions: 0, deletions: 0 });
 		expect(turnSummary([{ path: "logo.png", additions: -1, deletions: -1 }])).toEqual({ files: 1, additions: -1, deletions: -1 });

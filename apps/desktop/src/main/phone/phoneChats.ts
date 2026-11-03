@@ -129,12 +129,12 @@ export function turnSummary(changes: readonly TurnFileChange[]): PhoneTurnChange
  * (entries are re-signed on every flush, and git is not asked each time). `changes` answers from what it has read and
  * starts reading what it hasn't; a turn that changed nothing gets no row.
  */
-export function withTurnChanges(entries: PhoneEntry[], messages: readonly Message[], changes: (checkpoint: { before: string; after: string }) => PhoneTurnChanges | undefined) {
+export function withTurnChanges(entries: PhoneEntry[], messages: readonly Message[], changes: (checkpoint: { before: string; after: string }, entry: PhoneEntry) => PhoneTurnChanges | undefined) {
 	const checkpoints = new Map(messages.flatMap(message => message.role === "user" && message.checkpoint?.after ? [[message.id, { before: message.checkpoint.before, after: message.checkpoint.after }] as const] : []));
 	if (!checkpoints.size) return entries;
 	return entries.map(entry => {
 		const checkpoint = entry.kind === "message" ? checkpoints.get(entry.id) : undefined;
-		const summary = checkpoint && changes(checkpoint);
+		const summary = checkpoint && changes(checkpoint, entry);
 		return summary?.files ? { ...entry, changes: summary } as PhoneMessage : entry;
 	});
 }

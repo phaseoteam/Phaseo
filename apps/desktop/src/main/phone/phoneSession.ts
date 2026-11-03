@@ -65,6 +65,8 @@ export class PhoneSession {
 	/** The list rows (or chat details) the phone has, by chat. */
 	private readonly sentChats = new Map<string, string>();
 	private readonly dirtyChats = new Set<string>();
+	/** Per subscribed chat, entries whose changed files landed after they were sent, with their messages; the next batch resends those outside the latest page. */
+	private readonly landed = new Map<string, Map<string, { entry: PhoneEntry; message: Message }>>();
 	/** The signature of the project list the phone last got; unset until it reads one. */
 	private sentProjects?: string;
 	private readonly dirtyEntries = new Set<string>();
@@ -187,7 +189,7 @@ export class PhoneSession {
 			case "subscribe": {
 				const listed = new Set(phoneChats(this.host.overview()).map(task => task.id));
 				const chatIds = request.chatIds.filter(id => listed.has(id));
-				for (const id of [...this.subscribed]) if (!chatIds.includes(id)) { this.subscribed.delete(id); this.seen.delete(id); }
+				for (const id of [...this.subscribed]) if (!chatIds.includes(id)) { this.subscribed.delete(id); this.seen.delete(id); this.landed.delete(id); }
 				for (const id of chatIds) if (!this.subscribed.has(id)) { this.subscribed.add(id); if (!this.seen.has(id)) this.seen.set(id, this.latestSignatures(id)); }
 				return okResponse(request, { chatIds });
 			}
@@ -206,8 +208,10 @@ export class PhoneSession {
 	/** Each turn's changed files on its person's message, as far as they've been read; a read that lands sends the chat's entries again. */
 	private decorate(chatId: string, projectId: string | undefined, messages: readonly Message[], entries: PhoneEntry[]) {
 		if (!projectId) return entries;
-		return withTurnChanges(entries, messages, checkpoint => this.turnChanges.get(projectId, checkpoint, () => {
+		return withTurnChanges(entries, messages, (checkpoint, entry) => this.turnChanges.get(projectId, checkpoint, () => {
 			if (this.closed || !this.subscribed.has(chatId)) return;
+			const message = messages.find(value => value.id === entry.id)!, landed = this.landed.get(chatId) ?? new Map();
+			this.landed.set(chatId, landed.set(entry.id, { entry, message }));
 			this.dirtyEntries.add(chatId); this.schedule();
 		}));
 	}
@@ -268,8 +272,12 @@ export class PhoneSession {
 		for (const id of this.dirtyEntries) {
 			if (!this.subscribed.has(id) || !chats.has(id) || chats.get(id)!.archived) continue;
 			try {
-				const seen = this.seen.get(id) ?? new Map<string, string>(), changed = [];
-				for (const entry of this.latestEntries(id)) { const mark = signature(entry); if (seen.get(entry.id) !== mark) { seen.set(entry.id, mark); changed.push(entry); } }
+				const seen = this.seen.get(id) ?? new Map<string, string>(), changed = [], latest = this.latestEntries(id);
+				// An earlier page the phone loaded isn't read again: only its entries whose changes landed go out.
+				const inLatest = new Set(latest.map(entry => entry.id)), landed = [...this.landed.get(id)?.values() ?? []].filter(value => !inLatest.has(value.entry.id));
+				this.landed.delete(id);
+				const earlier = this.decorate(id, chats.get(id)!.projectId, landed.map(value => value.message), landed.map(value => value.entry)).filter(entry => "changes" in entry);
+				for (const entry of [...earlier, ...latest]) { const mark = signature(entry); if (seen.get(entry.id) !== mark) { seen.set(entry.id, mark); changed.push(entry); } }
 				this.seen.set(id, seen);
 				for (const entries of entryFrames(changed)) this.send({ type: "entries", chatId: id, entries });
 			} catch { /* Deleted since. */ }

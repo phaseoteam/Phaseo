@@ -1,4 +1,4 @@
-import { changesLabel, chatItems, mergeArchived, mergeChat, mergeDetail, settingsChange, workLogSummary } from "./chatState";
+import { changesLabel, chatItems, editingDraft, mergeArchived, mergeChat, mergeDetail, settingsChange, workLogSummary } from "./chatState";
 import { codeListItems } from "./codeList";
 import type { PhoneActivity, PhoneChat, PhoneChatDetail, PhoneEntry } from "./protocol";
 import { menuEntries, reverseOf, snoozeChoices, swipeActions } from "./threadActions";
@@ -106,5 +106,11 @@ describe("a computer thread's screen", () => {
     ];
     expect(chatItems(entries).map((item) => (item.kind === "message" ? item.message.id : item.kind === "changes" ? `changes:${changesLabel(item.changes)}` : "log"))).toEqual(["u1", "log", "a1", "s1", "changes:3 files changed · +12 −4", "u2", "a2"]);
     expect(changesLabel({ files: 1, additions: -1, deletions: -1 })).toBe("1 file changed");
+  });
+
+  it("keeps the unsent draft when editing moves from one queued message to another", () => {
+    const first = { id: "q1", draft: editingDraft(null, "Half-written reply") };
+    // The composer now holds q1's text; opening q2 must not save that as the draft.
+    expect(editingDraft(first, "Queued message one")).toBe("Half-written reply");
   });
 });

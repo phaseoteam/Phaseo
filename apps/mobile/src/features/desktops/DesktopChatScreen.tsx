@@ -12,7 +12,7 @@ import { ComposerErrorNotice } from "@/features/composer/ComposerNotices";
 import { resolveSendPresentation, type FollowUpAction } from "@/features/composer/sendPresentation";
 import { cn } from "@/lib/cn";
 import { haptic } from "@/lib/haptics";
-import { changesLabel, chatItems, chatStatusLabel, settingsChange, workLogSummary, type ChatItem } from "./chatState";
+import { changesLabel, chatItems, chatStatusLabel, editingDraft, settingsChange, workLogSummary, type ChatItem } from "./chatState";
 import { DesktopRequestError, type DesktopClient } from "./client";
 import { ConnectionNotice } from "./CodeThreadList";
 import { clientFor, connectionLabel, useConnection } from "./connections";
@@ -410,7 +410,7 @@ function DesktopComposer({ client, chat, running, model, logo, above, onStop, on
       above={(
         <>
           {above}
-          <QueueControl client={client} chat={chat} running={running} onEdit={(message) => { setEditing({ id: message.id, draft: text }); setText(message.text); }} />
+          <QueueControl client={client} chat={chat} running={running} onEdit={(message) => { setEditing({ id: message.id, draft: editingDraft(editing, text) }); setText(message.text); }} />
           {editing ? (
             <Pressable accessibilityRole="button" onPress={() => { setText(editing.draft); setEditing(null); }} className="mb-1.5 self-start rounded-md bg-background px-2 py-1 active:bg-accent">
               <Text variant="caption" className="font-semibold text-link">Cancel editing</Text>
