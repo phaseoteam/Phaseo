@@ -43,7 +43,7 @@ Phaseo erfasst die Betriebszeiten von Anfragen, die über das Gateway geleitet w
 | **Gateway E2E** | Vom Start der Gateway-Anfrage bis zu ihrem Abschluss. |
 | **Phaseo overhead** | `max(0, Gateway E2E - provider duration)`. |
 | **Effective throughput** | Alle Ausgabetokens geteilt durch die gesamte Anbieterdauer. |
-| **Output speed** | Ausgabetokens nach dem ersten, ohne das Reasoning davor, geteilt durch die Anbieterzeit nach dem TTFT. Wird nicht angezeigt, wenn die ganze Antwort in einem einzigen Netzwerk-Read ankommt. |
+| **Output speed** | Ausgabetokens nach dem ersten, ohne verborgenes Reasoning davor, geteilt durch die Anbieterzeit nach dem TTFT. Wird nicht angezeigt, wenn die ganze Antwort in einem einzigen Netzwerk-Read ankommt. |
 | **TPOT / ITL** | Durchschnittliche Zeit pro Token auf Anfrageebene nach der ersten Ausgabe. |
 
 TTFT, Ausgabegeschwindigkeit, TPOT und ITL setzen eine Streaming-Antwort mit einer ersten inhaltstragenden Ausgabe voraus. Reine Metadaten-Frames im Stream zählen nicht. Nicht gestreamte Antworten können weiterhin zur Anbieterdauer, Gateway E2E und zum effektiven Durchsatz beitragen, ohne einen TTFT zu erfinden.

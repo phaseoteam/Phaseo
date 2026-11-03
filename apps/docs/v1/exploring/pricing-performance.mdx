@@ -44,7 +44,7 @@ Phaseo records operational timing for requests routed through the Gateway.
 | **Gateway E2E** | Gateway request start to completion. |
 | **Phaseo overhead** | `max(0, Gateway E2E - provider duration)`. |
 | **Effective throughput** | All output tokens divided by full provider duration. |
-| **Output speed** | Output tokens after the first, leaving out reasoning done before it, divided by provider time after TTFT. Not shown when the whole answer arrives in one network read. |
+| **Output speed** | Output tokens after the first, leaving out hidden reasoning done before it, divided by provider time after TTFT. Not shown when the whole answer arrives in one network read. |
 | **TPOT / ITL** | Request-level average time per token after the first output. |
 
 TTFT, output speed, TPOT, and ITL require a streaming response with a content-bearing first output. Metadata-only stream frames do not count. Non-streaming responses can still contribute provider duration, Gateway E2E, and effective throughput without an invented TTFT.

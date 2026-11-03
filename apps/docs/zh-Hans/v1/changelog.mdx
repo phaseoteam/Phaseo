@@ -15,7 +15,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">产品</p>
 
 - 模型页面的工具调用和结构化输出成功率只统计 Phaseo 实际校验过的响应；此前，失败的请求被算作有效 JSON，没有数据的时段显示为 100% ([#3475](https://github.com/phaseoteam/Phaseo/pull/3475))。
-- 模型页面的输出速度不计入回答前的推理，回答一次性送达时不显示数值；请参阅[衡量价格与性能](./exploring/pricing-performance.mdx) ([#3465](https://github.com/phaseoteam/Phaseo/pull/3465), [#3476](https://github.com/phaseoteam/Phaseo/pull/3476))。
+- 模型页面的输出速度不计入回答前的隐藏推理，回答一次性送达时不显示数值；请参阅[衡量价格与性能](./exploring/pricing-performance.mdx) ([#3465](https://github.com/phaseoteam/Phaseo/pull/3465), [#3476](https://github.com/phaseoteam/Phaseo/pull/3476))。
 
 </div>
 
@@ -23,7 +23,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">API 与 SDK</p>
 
-- 通过 Google AI Studio 对 Gemini 2.5、3 和 3.1、Gemini 3.5 至 3.8 Flash 以及 Gemma 4 发起的流式请求现在逐个 token 送达；此前要等生成结束，整段回答才一次性送达 ([#3483](https://github.com/phaseoteam/Phaseo/pull/3483))。
+- 通过 Google AI Studio 对 Gemini 2.5、3 和 3.1 文本模型、Gemini 3.5 至 3.8 Flash 以及 Gemma 4 发起的流式请求现在逐个 token 送达；此前要等生成结束，整段回答才一次性送达 ([#3483](https://github.com/phaseoteam/Phaseo/pull/3483))。
 
 </div>
 
