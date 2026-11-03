@@ -982,9 +982,10 @@ function transformResponsesStreamToAnthropic(
 							}));
 							continue;
 						}
+						// reasoning_text.done leaves the thinking block open: the reasoning item's
+						// output_item.done follows and closes it, after adding its signature.
 						if (
 							normalizedEvent === "response.output_text.done" ||
-							normalizedEvent === "response.reasoning_text.done" ||
 							normalizedEvent === "response.output_item.done"
 						) {
 							const item = payload?.item;
