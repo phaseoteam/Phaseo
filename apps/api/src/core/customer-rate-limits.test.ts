@@ -63,14 +63,34 @@ describe("customer quota integration", () => {
 
 		mocks.admit.mockResolvedValue({ allowed: false, limit: 1500, remaining: 0, retryAfterSeconds: 3600 });
 		expect((await guardFreeRouteQuota({ ...args, pricingCard: card("free", "0") }))?.status).toBe(429);
-		// The same user in a freshly created workspace is still out of free requests.
+		// The same user in a freshly created workspace is still out of free requests: the shared counter says so.
 		expect((await guardFreeRouteQuota({ ...args, workspaceId: "new-workspace", admissionId: "next", pricingCard: card("free", "0") }))?.status).toBe(429);
-		expect(mocks.admit).toHaveBeenCalledTimes(1);
-		expect(mocks.getByName).toHaveBeenCalledWith("customer-quota:v1:user:owner");
+		expect(mocks.admit).toHaveBeenCalledTimes(2);
+		expect(mocks.getByName.mock.calls.every(([key]) => key === "customer-quota:v1:user:owner")).toBe(true);
 		// The per-minute limit stays per workspace and user.
 		minute({ workspaceId: "new-workspace" });
 		await settle();
 		expect(mocks.getByName).toHaveBeenLastCalledWith(customerScopeKey({ ...args, workspaceId: "new-workspace" }));
+	});
+
+	it("applies each workspace's own free-model limit to the user's shared count", async () => {
+		mocks.bindings = { ...mocks.bindings, CUSTOMER_RATE_LIMIT_LADDER_ENABLED: "true" };
+		mocks.readLimits.mockImplementation(async (workspaceId: string) => ({ tier: "trusted", requestsPerMinute: 60, freeRequestsPerDay: workspaceId === "raised" ? 9000 : 1500 }));
+		// The counter has 2,000 requests for this user: over 1,500, under 9,000.
+		mocks.admit.mockImplementation(async (_key: string, _kind: string, _id: string, limits: { freeRequestsPerDay?: number }) => (limits.freeRequestsPerDay ?? 0) > 2000
+			? { allowed: true, limit: limits.freeRequestsPerDay, remaining: (limits.freeRequestsPerDay ?? 0) - 2001, retryAfterSeconds: 0 }
+			: { allowed: false, limit: limits.freeRequestsPerDay, remaining: 0, retryAfterSeconds: 3600 });
+		const free = (workspaceId: string, admissionId: string) => guardFreeRouteQuota({ ...args, workspaceId, admissionId, pricingCard: card("free", "0") });
+
+		expect((await free("workspace", "a1"))?.status).toBe(429);
+		// A denial remembered for the 1,500 workspace doesn't block the 9,000 one.
+		expect(await free("raised", "b1")).toBeNull();
+		// And headroom learned from the 9,000 workspace doesn't admit requests in the 1,500 one.
+		expect((await free("workspace", "a2"))?.status).toBe(429);
+		expect(await free("raised", "b2")).toBeNull();
+		await settle();
+		// a2 is refused from the remembered 1,500 denial; b2 is admitted from 9,000 headroom and counted in the background.
+		expect(mocks.admit.mock.calls.map((call) => call[3].freeRequestsPerDay)).toEqual([1500, 9000, 9000]);
 	});
 
 	it("admits synchronously without waiting for the counter", async () => {
