@@ -13,6 +13,14 @@ jest.mock("@/lib/web-api/client", () => ({
 	fetchAccountWebApi: jest.fn(async () => ({ workspaces: [{ id: "ws_1", name: "Team", role: "owner" }] })),
 }));
 jest.mock("@/lib/oauth/apiBaseUrl", () => ({ apiBaseUrl: () => "https://api.example" }));
+const cookieJar = new Map<string, string>();
+jest.mock("next/headers", () => ({
+	cookies: jest.fn(async () => ({
+		get: (name: string) => (cookieJar.has(name) ? { name, value: cookieJar.get(name) } : undefined),
+		set: (name: string, value: string) => { cookieJar.set(name, value); },
+		delete: (name: string) => { cookieJar.delete(name); },
+	})),
+}));
 jest.mock("./WorkspaceSelectField", () => ({
 	WorkspaceSelectField: () => null,
 }));
@@ -20,7 +28,7 @@ jest.mock("./WorkspaceSelectField", () => ({
 import { renderToStaticMarkup } from "react-dom/server";
 import type { ReactElement } from "react";
 import ActivatePage from "./page";
-import { approveDeviceAction, denyDeviceAction } from "./actions";
+import { approveDeviceAction, denyDeviceAction, reviewDeviceAction } from "./actions";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -55,6 +63,7 @@ describe("CLI device activation", () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
 		fetchMock.mockReset();
+		cookieJar.clear();
 		global.fetch = fetchMock as never;
 	});
 
@@ -78,17 +87,35 @@ describe("CLI device activation", () => {
 		await expect(renderPage({ user_code: "ABCD-EFGH" })).rejects.toMatchObject({ url: "/sign-in?returnUrl=%2Factivate" });
 	});
 
-	it("approves only the code the person typed", async () => {
+	it("approves only the code the person typed, after showing what it asks for", async () => {
 		signedIn();
-		fetchMock.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+		await expect(reviewDeviceAction(form({ user_code: " WXYZ-1234 " }))).rejects.toMatchObject({ url: "/activate" });
 
-		await expect(approveDeviceAction(form({ user_code: " WXYZ-1234 ", workspace_id: "ws_1" }))).rejects.toMatchObject({ url: "/activate?approved=1" });
+		fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ client: { name: "Phaseo CLI" }, scopes: ["keys:write", "workspaces:write"] }), { status: 200 }));
+		const html = await renderPage({});
+		expect(JSON.parse(String(fetchMock.mock.calls[0][1].body))).toEqual({ action: "lookup", user_code: "WXYZ-1234" });
+		expect(html).toContain("requestedScopes");
+		expect(html).toContain("keys:write");
+		expect(html).toContain("workspaces:write");
+		expect(html).toContain("WXYZ-1234");
+		expect(html).toContain("phishingWarning");
 
-		expect(JSON.parse(String(fetchMock.mock.calls[0][1].body))).toEqual({ action: "approve", user_code: "WXYZ-1234", workspace_id: "ws_1" });
+		// A code in the submitted form is ignored: only the reviewed code is approved.
+		fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+		await expect(approveDeviceAction(form({ user_code: "EVIL-CODE", workspace_id: "ws_1" }))).rejects.toMatchObject({ url: "/activate?approved=1" });
+		expect(JSON.parse(String(fetchMock.mock.calls[1][1].body))).toEqual({ action: "approve", user_code: "WXYZ-1234", workspace_id: "ws_1" });
+		expect(cookieJar.size).toBe(0);
+	});
+
+	it("cannot approve a code that was never typed on this page", async () => {
+		signedIn();
+		await expect(approveDeviceAction(form({ user_code: "ABCD-EFGH", workspace_id: "ws_1" }))).rejects.toMatchObject({ url: "/activate?error=1" });
+		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
 	it("keeps requiring MFA before approving", async () => {
 		signedIn({ currentLevel: "aal1", nextLevel: "aal2" });
+		cookieJar.set("phaseo_device_code", "WXYZ-1234");
 
 		await expect(approveDeviceAction(form({ user_code: "WXYZ-1234", workspace_id: "ws_1" }))).rejects.toMatchObject({ url: "/activate?error=1" });
 		expect(fetchMock).not.toHaveBeenCalled();
@@ -98,7 +125,8 @@ describe("CLI device activation", () => {
 		signedIn();
 		fetchMock.mockResolvedValue(new Response(JSON.stringify({ error: "expired_token" }), { status: 400 }));
 
-		await expect(denyDeviceAction(form({ user_code: "NOPE-NOPE" }))).rejects.toMatchObject({ url: "/activate?error=1" });
+		cookieJar.set("phaseo_device_code", "NOPE-NOPE");
+		await expect(denyDeviceAction()).rejects.toMatchObject({ url: "/activate?error=1" });
 		await expect(approveDeviceAction(form({ user_code: "", workspace_id: "ws_1" }))).rejects.toMatchObject({ url: "/activate?error=1" });
 		expect(redirect).toHaveBeenCalledWith("/activate?error=1");
 	});
