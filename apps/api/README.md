@@ -110,12 +110,17 @@ neither.
 
 ### PostHog producer
 
-The PostHog destination is an HTTP Webhook on `$exception` events. Its JSON
-body is
+The producer is the PostHog workflow "Production exceptions → Linear Triage"
+(Workflows, not Data pipelines): a trigger on production `$exception` events
+and one Webhook step. The step's JSON body is
 [`observability-incidents.posthog-body.json`](src/routes/internal/observability-incidents.posthog-body.json);
-paste it as the body, keep the existing `Authorization: Bearer …` header, and
-keep any environment filters the destination already has. A contract test fails
-if the template sends a field the bridge does not read.
+paste it as the body and keep the existing `Authorization: Bearer …` header and
+trigger filter. A contract test fails if the template sends a field the bridge
+does not read.
+
+- PostHog links use the literal `https://eu.posthog.com/project/81404` base.
+  `project.url` renders empty in workflow steps, and the bridge rejects the
+  resulting relative `source_url`.
 
 - `fingerprint` is `$exception_fingerprint`, the same key earlier incidents
   used, so existing mappings keep deduplicating. It is not the error group: the
@@ -133,7 +138,7 @@ if the template sends a field the bridge does not read.
   skip a session, and recordings expire. Inputs and Chat (`.ph-mask`) are
   masked by design. The issue text says the replay may be missing.
 
-To check the mapping without creating an issue, run the destination's test in
+To check the mapping without creating an issue, test the Webhook step in
 PostHog against a recent `$exception` event with async functions mocked, so
 nothing is sent. The logged request body should have a
 128-character `fingerprint`, a `source_url` ending in
