@@ -76,6 +76,29 @@ should be selected right now.
 Deranking does not change the provider's availability or Phaseo's integration
 lifecycle. Live health observations also do not rewrite either lifecycle field.
 
+On model pages, a deranked route shows the amber or red warning icon with the
+label `Lower priority`. Phaseo sets these levels by hand, and they stay until
+Phaseo changes them.
+
+## Live routing
+
+Live routing is separate from the statuses above. The gateway sets it
+automatically for each provider, model and endpoint, based on the requests it is
+serving now.
+
+| Icon | State | Meaning | Routing behaviour |
+| --- | --- | --- | --- |
+| Orange lightning bolt, crossed out | `Temporarily limited` | Requests failed several times in a row, or at least half of recent requests failed. | Routable, but other providers are tried first. |
+| Blue refresh arrows | `Recovering` | After a cooldown, Phaseo lets a few requests through to check the provider. | If a batch of them all succeed, routing returns to normal. If half or more fail, the route is limited again with a longer cooldown. |
+
+On model pages the live routing icon appears after the status icon, only while
+one of these states applies. A route can be `Lower priority` and
+`Temporarily limited` at the same time; both icons then show. Hover over an
+icon for details.
+
+Live routing never changes the provider's availability, Phaseo's integration
+status or the hand-set routing health.
+
 ## Examples
 
 A newly released provider offer can be:
@@ -84,11 +107,18 @@ A newly released provider offer can be:
 - Phaseo status: `Implementing`
 - routing health: not applicable because routing is off
 
-A mature but temporarily degraded route can be:
+A mature route that Phaseo has deprioritised by hand can be:
 
 - provider availability: `Available`
 - Phaseo status: `Enabled`
 - routing health: `Deranked L2`
+
+A route whose provider is failing right now can be:
+
+- provider availability: `Available`
+- Phaseo status: `Enabled`
+- routing health: `Active`
+- live routing: `Temporarily limited`
 
 A provider announcement can be:
 

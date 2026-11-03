@@ -65,6 +65,29 @@ La salud del enrutamiento es una tercera señal operativa. Indica cómo se debe 
 
 La degradación de prioridad no cambia la disponibilidad del proveedor ni el ciclo de vida de la integración de Phaseo. Las observaciones de salud en tiempo real tampoco modifican esos estados del ciclo de vida.
 
+En las páginas de modelos, una ruta con prioridad reducida muestra el icono de
+advertencia ámbar o rojo con la etiqueta `Prioridad más baja`. Phaseo establece
+estos niveles manualmente y se mantienen hasta que Phaseo los cambia.
+
+## Enrutamiento en directo
+
+El enrutamiento en directo es independiente de los estados anteriores. El Gateway
+lo establece automáticamente para cada proveedor, modelo y endpoint, según las
+solicitudes que está atendiendo en este momento.
+
+| Icono | Estado | Significado | Comportamiento de enrutamiento |
+| --- | --- | --- | --- |
+| Rayo naranja tachado | `Limitado temporalmente` | Las solicitudes han fallado varias veces seguidas, o al menos la mitad de las solicitudes recientes han fallado. | Enrutable, pero primero se prueban otros proveedores. |
+| Flechas azules de actualización | `En recuperación` | Tras una pausa, Phaseo deja pasar algunas solicitudes para comprobar el proveedor. | Si todas las de un lote funcionan, el enrutamiento vuelve a la normalidad. Si falla la mitad o más, la ruta vuelve a limitarse con una pausa más larga. |
+
+En las páginas de modelos, el icono de enrutamiento en directo aparece después del
+icono de estado, solo mientras se aplica uno de estos estados. Una ruta puede tener
+`Prioridad más baja` y estar `Limitado temporalmente` a la vez; en ese caso se
+muestran ambos iconos. Pasa el cursor sobre un icono para ver los detalles.
+
+El enrutamiento en directo nunca cambia la disponibilidad del proveedor, el estado
+de la integración de Phaseo ni el estado de enrutamiento establecido manualmente.
+
 ## Ejemplos
 
 Una oferta de proveedor recién publicada puede tener estos estados:
@@ -73,11 +96,18 @@ Una oferta de proveedor recién publicada puede tener estos estados:
 - estado de Phaseo: `Implementing`
 - salud del enrutamiento: no corresponde porque el enrutamiento está desactivado
 
-Una ruta estable que está experimentando una degradación temporal puede tener estos estados:
+Una ruta estable a la que Phaseo ha reducido la prioridad manualmente puede tener estos estados:
 
 - disponibilidad del proveedor: `Available`
 - estado de Phaseo: `Enabled`
 - salud del enrutamiento: `Deranked L2`
+
+Una ruta cuyo proveedor está fallando en este momento puede tener estos estados:
+
+- disponibilidad del proveedor: `Available`
+- estado de Phaseo: `Enabled`
+- salud del enrutamiento: `Active`
+- enrutamiento en directo: `Limitado temporalmente`
 
 Un anuncio de un proveedor puede tener estos estados:
 

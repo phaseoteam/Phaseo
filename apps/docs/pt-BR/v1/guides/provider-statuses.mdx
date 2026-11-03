@@ -65,6 +65,29 @@ A saúde do roteamento é um terceiro sinal operacional. Ela indica como uma rot
 
 A redução de prioridade não altera a disponibilidade do provedor nem o ciclo de vida da integração do Phaseo. As observações de saúde em tempo real também não modificam esses campos do ciclo de vida.
 
+Nas páginas de modelos, uma rota rebaixada mostra o ícone de aviso âmbar ou
+vermelho com o rótulo `Prioridade menor`. O Phaseo define esses níveis
+manualmente, e eles permanecem até o Phaseo alterá-los.
+
+## Roteamento em tempo real
+
+O roteamento em tempo real é separado dos status acima. O Gateway o define
+automaticamente para cada provedor, modelo e endpoint, com base nas solicitações
+que está atendendo agora.
+
+| Ícone | Status | Significado | Comportamento de roteamento |
+| --- | --- | --- | --- |
+| Raio laranja riscado | `Temporariamente limitado` | As solicitações falharam várias vezes seguidas, ou pelo menos metade das solicitações recentes falhou. | Roteável, mas outros provedores são tentados primeiro. |
+| Setas azuis de atualização | `Em recuperação` | Após uma pausa, o Phaseo deixa passar algumas solicitações para verificar o provedor. | Se todas as de um lote funcionarem, o roteamento volta ao normal. Se metade ou mais falhar, a rota é limitada de novo, com uma pausa mais longa. |
+
+Nas páginas de modelos, o ícone de roteamento em tempo real aparece depois do ícone
+de status, somente enquanto um desses status se aplica. Uma rota pode ter
+`Prioridade menor` e estar `Temporariamente limitado` ao mesmo tempo; nesse caso,
+os dois ícones aparecem. Passe o cursor sobre um ícone para ver os detalhes.
+
+O roteamento em tempo real nunca altera a disponibilidade do provedor, o status da
+integração do Phaseo nem a saúde do roteamento definida manualmente.
+
 ## Exemplos
 
 Uma oferta de provedor recém-lançada pode ter:
@@ -73,11 +96,18 @@ Uma oferta de provedor recém-lançada pode ter:
 - status do Phaseo: `Implementing`
 - saúde do roteamento: não aplicável porque o roteamento está desativado
 
-Uma rota estabelecida, mas temporariamente degradada, pode ter:
+Uma rota estabelecida que o Phaseo rebaixou manualmente pode ter:
 
 - disponibilidade do provedor: `Available`
 - status do Phaseo: `Enabled`
 - saúde do roteamento: `Deranked L2`
+
+Uma rota cujo provedor está falhando agora pode ter:
+
+- disponibilidade do provedor: `Available`
+- status do Phaseo: `Enabled`
+- saúde do roteamento: `Active`
+- roteamento em tempo real: `Temporariamente limitado`
 
 Um anúncio do provedor pode ter:
 
