@@ -231,11 +231,16 @@ export class PhoneSession {
 			case "list_files": {
 				this.allowed("code");
 				const projectId = this.fileProject(request);
-				return okResponse(request, phoneFileList(await this.host.files(projectId, request.query !== undefined ? { type: "search", query: request.query } : { type: "list", directory: request.directory ?? "" })));
+				const listing = await this.host.files(projectId, request.query !== undefined ? { type: "search", query: request.query } : { type: "list", directory: request.directory ?? "" });
+				// As with git reads: nothing read before Read code was turned off goes out after.
+				this.allowed("code");
+				return okResponse(request, phoneFileList(listing));
 			}
 			case "read_file": {
 				this.allowed("code");
-				return okResponse(request, await this.host.readFile(this.fileProject(request), request.path));
+				const file = await this.host.readFile(this.fileProject(request), request.path);
+				this.allowed("code");
+				return okResponse(request, file);
 			}
 			case "subscribe": {
 				const listed = new Set(phoneChats(this.host.overview()).map(task => task.id));

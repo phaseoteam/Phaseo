@@ -27,11 +27,32 @@ describe("phone files", () => {
 	};
 	const connected = (capabilities: ("code" | "changes" | "terminal")[] = ["code"]) => {
 		const app = fakePhoneHost(), hub = new PhoneHub(app.host), frames: DesktopFrame[] = [];
-		hub.capabilitiesOf = () => capabilities;
+		let allowed = capabilities;
+		hub.capabilitiesOf = () => allowed;
 		const session = hub.open({ id: "dev", name: "Pixel" }, frame => frames.push(frame));
 		const ask = async (request: object) => { await session.receive(JSON.stringify({ id: String(frames.length), ...request })); return frames.at(-1) as PhoneResponse; };
-		return { app, ask };
+		return { app, ask, session, frames, allow: (next: typeof capabilities) => { allowed = next; hub.accessChanged("dev"); } };
 	};
+
+	it("sends nothing a file read found once Read code went off while it ran", async () => {
+		const { root } = project();
+		const { app, session, frames, allow } = connected();
+		app.fileRoots.set("p1", root);
+		const held: (() => void)[] = [], { files, readFile } = app.host;
+		let allHeld!: () => void;
+		const reading = new Promise<void>(resolve => { allHeld = resolve; });
+		const hold = <T>(read: Promise<T>) => new Promise<T>(resolve => { if (held.push(() => resolve(read)) === 2) allHeld(); });
+		app.host.files = (projectId, request) => hold(files(projectId, request));
+		app.host.readFile = (projectId, filename) => hold(readFile(projectId, filename));
+		const requests = [{ id: "list", type: "list_files", projectId: "p1", directory: "src" }, { id: "read", type: "read_file", projectId: "p1", path: "src/usage.ts" }];
+		const pending = requests.map(request => session.receive(JSON.stringify(request)));
+		await reading;
+		allow([]);
+		for (const release of held) release();
+		await Promise.all(pending);
+		for (const { id } of requests) expect(frames.find(frame => "id" in frame && frame.id === id)).toMatchObject({ ok: false, error: { code: "forbidden" } });
+		expect(JSON.stringify(frames)).not.toContain("usage");
+	});
 
 	it("refuses a path outside the project, whether by .., an absolute path or a link that points out", async () => {
 		const { root, outside } = project();
