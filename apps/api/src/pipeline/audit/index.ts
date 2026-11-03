@@ -716,10 +716,13 @@ export async function auditSuccess(input: {
     try {
         const pricingLines = args.usagePriced?.pricing?.lines ?? [];
         const strippedUsage = stripPricingFromUsage(args.usagePriced);
-        // After the client disconnects, the stream is drained without passing frames
-        // through the gateway's rebuild, so the reply it holds may be partial. A partial
-        // reply would fail JSON and argument checks it never really failed: rate nothing.
-        const replyComplete = args.downstreamDisconnected !== true;
+        // The reply the gateway holds can be partial: after a client disconnect the stream
+        // is drained without passing through the rebuild, and a rebuilt stream reply stops
+        // at its size cap (gateway_log_truncated). A partial reply would fail JSON and
+        // argument checks it never really failed, so rate nothing.
+        const replyComplete =
+            args.downstreamDisconnected !== true &&
+            (args.gatewayResponse as { gateway_log_truncated?: unknown } | null | undefined)?.gateway_log_truncated !== true;
         const structuredOutput: StructuredOutputValidation = replyComplete
             ? validateStructuredOutputResponse(args.requestPayload, args.gatewayResponse)
             : { attempted: isStructuredOutputRequest(args.requestPayload), succeeded: false, basis: "unobserved", errorReason: null };

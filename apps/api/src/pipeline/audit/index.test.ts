@@ -206,7 +206,11 @@ describe("audit request detail persistence", () => {
 		expect(event.safe_metadata).toMatchObject({ structured_output_success_basis: "unobserved", structured_output_error_reason: null });
 	});
 
-	it.each([false, true])("rates a streamed reply's JSON and tool calls only if the client stayed (disconnected: %s)", async (disconnected) => {
+	it.each([
+		["complete", false, false],
+		["drained after a disconnect", true, false],
+		["cut at the rebuild size cap", false, true],
+	])("rates a streamed reply's JSON and tool calls only when it is whole (%s)", async (_label, disconnected, truncated) => {
 		const insert = vi.fn(() => ({ select: () => ({ single: async () => ({
 			data: { id: "row", created_at: "2026-11-03T00:00:00Z", workspace_id: "ws" }, error: null,
 		}) }) }));
@@ -222,10 +226,14 @@ describe("audit request detail persistence", () => {
 				output_config: { format: { type: "json_object" } },
 			},
 			// What a drained stream leaves behind: the tool input cut off mid-JSON.
-			gatewayResponse: { type: "message", content: [{ type: "tool_use", name: "get_weather", input: '{"city":' }] },
+			gatewayResponse: {
+				type: "message",
+				content: [{ type: "tool_use", name: "get_weather", input: '{"city":' }],
+				...(truncated ? { gateway_log_truncated: true } : {}),
+			},
 		});
 		const event = rpc.mock.calls.find((call) => call[1]?.p_event)?.[1].p_event;
-		if (disconnected) {
+		if (disconnected || truncated) {
 			expect(event.tool_call_succeeded).toBeNull();
 			expect(event.safe_metadata).toMatchObject({ tool_call_validation: null, structured_output_success_basis: "unobserved", structured_output_error_reason: null });
 		} else {
