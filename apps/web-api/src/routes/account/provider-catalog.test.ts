@@ -111,6 +111,11 @@ describe("provider catalog onboarding", () => {
 	it("only accepts public HTTPS catalog URLs", () => {
 		expect(validateCatalogUrl("http://acme.example/models.json").ok).toBe(false);
 		expect(validateCatalogUrl("https://localhost/models.json").ok).toBe(false);
+		// Ranges and IPv6 forms the old local check missed.
+		for (const host of ["[::ffff:7f00:1]", "100.64.0.1", "198.18.0.1", "[2002:7f00:1::]", "[64:ff9b::a00:1]", "0.1.2.3", "catalog.internal"]) {
+			expect(validateCatalogUrl(`https://${host}/models.json`).ok, host).toBe(false);
+		}
+		expect(validateCatalogUrl("https://[2606:4700::1111]/models.json").ok).toBe(true);
 		expect(validateCatalogUrl("https://acme.example/models.json")).toEqual({
 			ok: true,
 			url: "https://acme.example/models.json",

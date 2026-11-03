@@ -22,11 +22,11 @@ import { agentSelectionPrompt, patchExcerpt, rangeLabel, rangeToDraft } from "./
 import { excerptPatch, letterStopNotes, proseTokens, stopQuestionPrompt, type LetteredNote } from "./pullRequestGuideView";
 import { nextPendingReviewCommentId, pullRequestReviewKey, reviewDrafts } from "./pullRequestReviewStore";
 
-/** Where the reader is in each guide, per guide head, for as long as the app is open (T3's tour progress). */
+/** Where the reader is in each guide, per guide head, for as long as the app is open. */
 const progress = new Map<string, { position: number; seen: Set<number> }>();
 const ATTENTION_LABELS: Record<NonNullable<GuideStop["attention"]>["kind"], string> = { tradeoff: "A trade-off to weigh", contract: "A contract to check", product: "A product call", risk: "A risk to judge", accessibility: "An accessibility call" };
 
-/** T3's GuideProse: the model's inline markdown (code, bold, emphasis) without a full renderer. */
+/** Guide prose: the model's inline markdown (code, bold, emphasis) without a full renderer. */
 export function GuideProse({ text }: { text: string }) {
 	return <>{proseTokens(text).map((token, index) => token.kind === "code" ? <code key={index} className="rounded bg-muted px-1 py-px font-mono text-[0.92em]">{token.text}</code> : token.kind === "strong" ? <strong key={index} className="font-semibold text-foreground">{token.text}</strong> : token.kind === "em" ? <em key={index}>{token.text}</em> : <span key={index}>{token.text}</span>)}</>;
 }
@@ -232,7 +232,7 @@ function GuideTour({ guide, view, projectId, active, banner, onOpenCode, onFinis
 }
 
 /**
- * T3's Guide tab: a maintainer's tour of the pull request, written on request by the title model through your Phaseo
+ * The Guide tab: a maintainer's tour of the pull request, written on request by the title model through your Phaseo
  * account and stored per pull request head, so opening the tab is free. A guide written before the latest push says
  * so and offers Rewrite. `writeRequest` lets the pane's More menu ask for one.
  */

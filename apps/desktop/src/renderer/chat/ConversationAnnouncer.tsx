@@ -4,7 +4,7 @@ import { nextAnnouncement, snapshotOf, type AnnouncementSnapshot } from "./conve
 
 /**
  * The open chat's one polite live region, written straight to the DOM so speaking never re-renders. The conversation
- * itself is not live: a screen reader would read every streamed chunk. Cleared after seven seconds, as T3 does, so
+ * itself is not live: a screen reader would read every streamed chunk. Cleared after seven seconds, so
  * NVDA does not repeat it when focus returns from a dialog.
  */
 export function ConversationAnnouncer({ task }: { task: Task }) {

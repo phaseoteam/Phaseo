@@ -7,7 +7,7 @@ import { errorText, useWorkspace } from "../app/workspace";
 import { SettingsButton, SettingsField, SettingsNote, SettingsPageLayout, SettingsRow, SettingsSection, settingsInput } from "./SettingsLayout";
 import { usagePools, type UsageProvider } from "./usagePools";
 import { ProviderPoolSection } from "./UsageLimits";
-import { checkAllUsage, checkUsageHub, refreshUsageIfStale, setT3Hubs, setUsageError, setUsageHubs, usageAccounts, usageChecking, usageLocals, useUsageLimits, type UsageLocal as Local, type UsageResult as Result } from "./usageLimitsStore";
+import { checkAllUsage, checkUsageHub, refreshUsageIfStale, setImportableHubs, setUsageError, setUsageHubs, usageAccounts, usageChecking, usageLocals, useUsageLimits, type UsageLocal as Local, type UsageResult as Result } from "./usageLimitsStore";
 
 const names: Record<UsageProvider, string> = { codex: "Codex", claude: "Claude Code", cursor: "Cursor", grok: "Grok" };
 
@@ -23,7 +23,7 @@ function useUsageChecks() {
 }
 
 /**
- * Limits pooled per provider across every account Phaseo can read, like T3 Code's Usage page: logins on this
+ * Limits pooled per provider across every account Phaseo can read: logins on this
  * computer, accounts added here, and accounts on usage hubs. The readings are shared with the sidebar's rings.
  */
 export function UsageLimitsPanel() {
@@ -53,13 +53,13 @@ export function UsageLimitsPanel() {
 /** Where the Usage page's limits come from: logins on this computer and usage hubs, with hub setup. */
 export function UsageSettings() {
 	const { api, locals, limits, checkAll, busy } = useUsageChecks();
-	const { statuses, hubs, snapshots, t3Hubs, error } = limits;
+	const { statuses, hubs, snapshots, importableHubs, error } = limits;
 	const { openUsage } = useWorkspace();
 	const checkHub = (hub: UsageHub) => { if (api) void checkUsageHub(api, hub); };
 	return <SettingsPageLayout title="Usage sources" description="Where the Usage page reads your subscription limits and your Claude Code and Codex history from."
 		actions={<><SettingsButton variant="ghost" onClick={() => openUsage("limits")}>Show limits</SettingsButton><SettingsButton variant="ghost" disabled={busy || !api} onClick={checkAll}><RotateCw className={busy ? "animate-spin" : undefined} />{busy ? "Checking…" : "Check again"}</SettingsButton></>}>
-		<Sources locals={locals} statuses={statuses} hubs={hubs} snapshots={snapshots} t3Hubs={t3Hubs} error={error}
-			onCheckHub={checkHub} onHubs={list => { const added = list.filter(hub => !hubs.some(existing => existing.id === hub.id)); setUsageHubs(list); for (const hub of added) checkHub(hub); }} onT3Hubs={setT3Hubs} onError={setUsageError} />
+		<Sources locals={locals} statuses={statuses} hubs={hubs} snapshots={snapshots} importableHubs={importableHubs} error={error}
+			onCheckHub={checkHub} onHubs={list => { const added = list.filter(hub => !hubs.some(existing => existing.id === hub.id)); setUsageHubs(list); for (const hub of added) checkHub(hub); }} onImportableHubs={setImportableHubs} onError={setUsageError} />
 		<Transcripts />
 		<p className="px-0.5 text-xs text-muted-foreground">Phaseo API usage and credits are on your dashboard at phaseo.app.</p>
 	</SettingsPageLayout>;
@@ -86,9 +86,9 @@ function Transcripts() {
 }
 
 /** Where limits come from: logins on this computer and usage hubs, with hub setup. One line each. */
-function Sources({ locals, statuses, hubs, snapshots, t3Hubs, error, onCheckHub, onHubs, onT3Hubs, onError }: {
-	locals: Local[]; statuses: Record<string, Result>; hubs: UsageHub[]; snapshots: Record<string, UsageHubSnapshot | "checking">; t3Hubs: ImportableHub[]; error: string;
-	onCheckHub: (hub: UsageHub) => void; onHubs: (hubs: UsageHub[]) => void; onT3Hubs: (hubs: ImportableHub[]) => void; onError: (error: string) => void;
+function Sources({ locals, statuses, hubs, snapshots, importableHubs, error, onCheckHub, onHubs, onImportableHubs, onError }: {
+	locals: Local[]; statuses: Record<string, Result>; hubs: UsageHub[]; snapshots: Record<string, UsageHubSnapshot | "checking">; importableHubs: ImportableHub[]; error: string;
+	onCheckHub: (hub: UsageHub) => void; onHubs: (hubs: UsageHub[]) => void; onImportableHubs: (hubs: ImportableHub[]) => void; onError: (error: string) => void;
 }) {
 	const { api } = useWorkspace();
 	const [adding, setAdding] = useState(false), [saving, setSaving] = useState(false), [importing, setImporting] = useState(false);
@@ -99,10 +99,10 @@ function Sources({ locals, statuses, hubs, snapshots, t3Hubs, error, onCheckHub,
 		try { onHubs(await api.usageHubs({ type: "add", url, key, ...label.trim() ? { label: label.trim() } : {} })); setAdding(false); setKey(""); setLabel(""); }
 		catch (reason) { onError(errorText(reason)); } finally { setSaving(false); }
 	}
-	async function importT3() {
+	async function importHubs() {
 		if (!api) return; setImporting(true); onError("");
-		try { onHubs(await api.usageHubs({ type: "import-t3" })); onT3Hubs([]); }
-		catch (reason) { onError(errorText(reason)); onT3Hubs(await api.usageHubs({ type: "t3-hubs" }).catch(() => [])); } finally { setImporting(false); }
+		try { onHubs(await api.usageHubs({ type: "import-hubs" })); onImportableHubs([]); }
+		catch (reason) { onError(errorText(reason)); onImportableHubs(await api.usageHubs({ type: "importable-hubs" }).catch(() => [])); } finally { setImporting(false); }
 	}
 	async function remove(hub: UsageHub) {
 		if (!api || !window.confirm(`Remove ${hub.label}? Its management key is deleted from this computer.`)) return;
@@ -117,8 +117,8 @@ function Sources({ locals, statuses, hubs, snapshots, t3Hubs, error, onCheckHub,
 			return <SettingsRow key={hub.id} icon={<Server />} title={hub.label} description={<><span className="font-mono">{hub.url}</span> · <span className={snapshot && snapshot !== "checking" && snapshot.error ? "text-destructive" : undefined}>{summary}</span></>}
 				control={<><SettingsButton variant="ghost" disabled={checking} onClick={() => onCheckHub(hub)}>Check</SettingsButton><SettingsButton variant="danger" onClick={() => void remove(hub)}>Remove</SettingsButton></>} />;
 		})}
-		{t3Hubs.length > 0 && <SettingsRow icon={<Server />} title={t3Hubs.length === 1 ? `T3 Code has a hub: ${t3Hubs[0].label}` : `T3 Code has ${t3Hubs.length} hubs`} description={t3Hubs.map(hub => hub.url).join(", ")}
-			control={<SettingsButton variant="primary" disabled={importing} onClick={() => void importT3()}>{importing ? "Importing…" : "Import from T3 Code"}</SettingsButton>} />}
+		{importableHubs.length > 0 && <SettingsRow icon={<Server />} title={importableHubs.length === 1 ? `Another app on this computer has a hub: ${importableHubs[0].label}` : `Another app on this computer has ${importableHubs.length} hubs`} description={importableHubs.map(hub => hub.url).join(", ")}
+			control={<SettingsButton variant="primary" disabled={importing} onClick={() => void importHubs()}>{importing ? "Importing…" : "Import"}</SettingsButton>} />}
 		{adding && <form aria-label="Add usage hub" className="flex flex-col gap-3 p-4" onSubmit={event => { event.preventDefault(); void add(); }}>
 			<div className="grid grid-cols-3 gap-3">
 				<SettingsField label="Hub address"><input value={url} onChange={event => setUrl(event.target.value)} required placeholder="http://127.0.0.1:8317" className={settingsInput} /></SettingsField>

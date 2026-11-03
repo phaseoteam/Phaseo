@@ -1,7 +1,7 @@
 import type { Harness, ModelOptionValues } from "../../shared/workspace";
 import type { ModelSelection } from "./modelPreferences";
 
-/** The last settings chosen for each model, so picking it again restores them (as T3 Code does). */
+/** The last settings chosen for each model, so picking it again restores them. */
 type Remembered = Pick<ModelSelection, "reasoningEffort" | "serviceTier" | "options">;
 const key = "phaseo.desktop.modelSettings";
 const modelKey = (harness: Harness, model: string) => `${harness}:${model}`;

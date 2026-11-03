@@ -8,8 +8,8 @@ CREATE OR REPLACE FUNCTION public.reorder_v2_byok_key (
   SET search_path TO 'public'
   AS $function$
 declare
-  current_key public.byok_keys%rowtype;
-  adjacent_key public.byok_keys%rowtype;
+  current_key record;
+  adjacent_key record;
 begin
   if p_direction not in ('up', 'down') then
     raise exception using errcode = '22023', message = 'invalid_direction';
@@ -18,14 +18,14 @@ begin
     raise exception using errcode = '42501', message = 'forbidden';
   end if;
 
-  select * into current_key
+  select id, workspace_id, provider_id, routing_mode, sort_order, created_at into current_key
   from public.byok_keys
   where id = p_key_id and workspace_id = p_workspace_id
   for update;
   if not found then return false; end if;
 
   if p_direction = 'up' then
-    select * into adjacent_key
+    select id, sort_order into adjacent_key
     from public.byok_keys
     where workspace_id = current_key.workspace_id
       and provider_id = current_key.provider_id
@@ -35,7 +35,7 @@ begin
     limit 1
     for update;
   else
-    select * into adjacent_key
+    select id, sort_order into adjacent_key
     from public.byok_keys
     where workspace_id = current_key.workspace_id
       and provider_id = current_key.provider_id

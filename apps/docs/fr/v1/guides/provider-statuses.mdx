@@ -65,6 +65,29 @@ L’état de santé du routage est un troisième signal opérationnel. Il indiqu
 
 La rétrogradation ne modifie ni la disponibilité du fournisseur ni le cycle de vie de l’intégration Phaseo. Les observations de santé en temps réel ne modifient pas non plus ces états de cycle de vie.
 
+Sur les pages de modèles, une route rétrogradée affiche l’icône d’avertissement
+orange ou rouge avec le libellé `Priorité réduite`. Phaseo définit ces niveaux
+manuellement, et ils restent en place jusqu’à ce que Phaseo les modifie.
+
+## Routage en direct
+
+Le routage en direct est distinct des états ci-dessus. Le Gateway le définit
+automatiquement pour chaque fournisseur, modèle et endpoint, à partir des requêtes
+qu’il traite en ce moment.
+
+| Icône | État | Signification | Comportement de routage |
+| --- | --- | --- | --- |
+| Éclair orange barré | `Limité temporairement` | Des requêtes ont échoué plusieurs fois de suite, ou au moins la moitié des requêtes récentes ont échoué. | Routable, mais les autres fournisseurs sont essayés en premier. |
+| Flèches bleues d’actualisation | `Rétablissement en cours` | Après un délai, Phaseo laisse passer quelques requêtes pour vérifier le fournisseur. | Si toutes les requêtes d’un lot réussissent, le routage redevient normal. Si la moitié ou plus échouent, la route est de nouveau limitée, avec un délai plus long. |
+
+Sur les pages de modèles, l’icône de routage en direct apparaît après l’icône
+d’état, uniquement tant que l’un de ces états s’applique. Une route peut être à la
+fois en `Priorité réduite` et `Limité temporairement` ; les deux icônes
+s’affichent alors. Survolez une icône pour voir les détails.
+
+Le routage en direct ne modifie jamais la disponibilité du fournisseur, l’état de
+l’intégration Phaseo ni l’état de santé du routage défini manuellement.
+
 ## Exemples
 
 Une offre fournisseur récemment publiée peut présenter les états suivants :
@@ -73,11 +96,18 @@ Une offre fournisseur récemment publiée peut présenter les états suivants :
 - état Phaseo : `Implementing`
 - santé du routage : sans objet, car le routage est désactivé
 
-Une route mature temporairement dégradée peut présenter les états suivants :
+Une route mature dont Phaseo a réduit la priorité manuellement peut présenter les états suivants :
 
 - disponibilité du fournisseur : `Available`
 - état Phaseo : `Enabled`
 - santé du routage : `Deranked L2`
+
+Une route dont le fournisseur échoue en ce moment peut présenter les états suivants :
+
+- disponibilité du fournisseur : `Available`
+- état Phaseo : `Enabled`
+- santé du routage : `Active`
+- routage en direct : `Limité temporairement`
 
 Une annonce d’un fournisseur peut présenter les états suivants :
 

@@ -4,7 +4,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "../components/ui/toolti
 import { Skeleton } from "../components/ui/skeleton";
 import { cn } from "../lib/utils";
 
-/** T3's panel sub-header. */
+/** A panel sub-header. */
 export const SURFACE_HEADER_CLASS = "flex h-10 min-h-10 shrink-0 items-center border-b border-border/60 bg-background px-2";
 
 const iconButton = "inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground outline-none transition-colors hover:bg-accent/60 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-45 aria-pressed:bg-accent aria-pressed:text-foreground [&_svg]:size-3.5 [&_svg]:shrink-0";
@@ -21,7 +21,7 @@ export function RefreshIcon({ refreshing }: { refreshing: boolean }) {
 	return <RefreshCw className={cn(refreshing && "animate-spin [animation-duration:900ms]")} />;
 }
 
-/** Centred quiet text for empty and unavailable states, as T3 shows them. */
+/** Centred quiet text for empty and unavailable states. */
 export function SurfaceMessage({ children, className }: { children: ReactNode; className?: string }) {
 	return <div className={cn("flex min-h-0 flex-1 items-center justify-center px-5 text-center text-xs text-muted-foreground/70", className)}>{children}</div>;
 }
@@ -46,7 +46,7 @@ export function DiffFileHeaderSkeleton({ width }: { width: "short" | "medium" | 
 	</div>;
 }
 
-/** T3's diff loading state: skeleton file headers and code lines. */
+/** The diff loading state: skeleton file headers and code lines. */
 export function DiffLoadingState({ label }: { label: string }) {
 	const line = (width: string) => <div className="flex items-center gap-3"><Skeleton className="h-2.5 w-5 shrink-0" /><Skeleton className={cn("h-2.5", width)} /></div>;
 	return <div className="min-h-0 flex-1 overflow-hidden bg-background" role="status" aria-live="polite" aria-label={label}>
@@ -59,10 +59,10 @@ export function DiffLoadingState({ label }: { label: string }) {
 	</div>;
 }
 
-/** Widths cycle rather than vary at random, so a skeleton looks the same on every pass (T3's ghosts). */
+/** Widths cycle rather than vary at random, so a skeleton looks the same on every pass. */
 const ghostWidths = ["w-3/5", "w-2/5", "w-1/2", "w-2/3", "w-2/5", "w-3/5", "w-1/2", "w-1/3"];
 
-/** Diff file headers standing in for files still loading, as T3's DiffFileLoadingBoundary shows them. */
+/** Diff file headers standing in for files still loading. */
 export function DiffFileHeadersLoading({ label, count = 3 }: { label: string; count?: number }) {
 	const widths = ["medium", "short", "long"] as const;
 	return <div role="status" aria-label={label}>

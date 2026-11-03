@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 
-/** Which key sends a message (T3's send shortcut setting); the other inserts a new line. Kept on this device. */
+/** Which key sends a message (the send shortcut setting); the other inserts a new line. Kept on this device. */
 export type SendKey = "enter" | "mod+enter";
 const storageKey = "phaseo.desktop.sendKey";
 const listeners = new Set<() => void>();

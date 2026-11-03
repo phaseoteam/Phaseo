@@ -23,9 +23,9 @@ export const stage = (setup: WorktreeSetup, id: WorktreeSetupStageId, status: Wo
 };
 
 /**
- * T3's worktree setup after checkout: renames the temporary branch from the first message, then runs the project's
+ * Worktree setup after checkout: renames the temporary branch from the first message, then runs the project's
  * setup actions one at a time, waiting for each. Resolves true when the agent may start. A failed rename keeps the
- * temporary branch (as T3 does); a failed setup action stops the chat until the person resumes it.
+ * temporary branch; a failed setup action stops the chat until the person resumes it.
  */
 export async function runWorktreeSetup(host: WorktreeSetupHost, temporary: string, text: string) {
 	host.update(setup => stage(setup, "branch", "running"));

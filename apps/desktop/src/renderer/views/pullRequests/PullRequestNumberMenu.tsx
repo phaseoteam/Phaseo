@@ -14,7 +14,7 @@ export async function copyPullRequestText(text: string, what: string, onNotice?:
 }
 
 /**
- * T3's right-click on a pull request number (pullRequestLinkContextMenu): Copy link, then Open on GitHub. Everywhere
+ * Right-click on a pull request number: Copy link, then Open on GitHub. Everywhere
  * else the number reads as a link, so without this the platform's edit menu would open over text with nothing to edit.
  */
 export function PullRequestNumberMenu({ url, children, className, onNotice, onCopy }: { url: string; children: ReactNode; className?: string; onNotice?: (message: string, failed?: boolean) => void; /** The caller's own copy, with its own feedback. */ onCopy?: (url: string) => void }) {

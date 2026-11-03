@@ -101,9 +101,18 @@ CREATE POLICY "presets_select_visible" ON "public"."presets"
 CREATE POLICY "presets_update_owned" ON "public"."presets"
   FOR UPDATE
   TO "authenticated"
-  USING ((created_by = ( SELECT auth.uid() AS uid)))
-  WITH CHECK ((created_by = ( SELECT auth.uid() AS uid)));
+  USING (((created_by = ( SELECT auth.uid() AS uid)) AND public.is_workspace_member(workspace_id)))
+  WITH CHECK (((created_by = ( SELECT auth.uid() AS uid)) AND public.is_workspace_member(workspace_id)));
 
-GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."presets" TO "anon", "authenticated", "service_role";
+GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."presets" TO "service_role";
+
+GRANT DELETE, INSERT, UPDATE ON TABLE "public"."presets" TO "anon";
+
+GRANT DELETE, INSERT, UPDATE ON TABLE "public"."presets" TO "authenticated";
+
+-- Every column except the unpublished draft_* edits; the app reads drafts with the service role.
+GRANT SELECT ("active_version_id", "archived_at", "config", "created_at", "created_by", "description", "fork_depth", "id", "name", "root_preset_id", "slug", "source_preset_id", "source_preset_version_id", "updated_at", "upstream_version_id", "versioning_method", "visibility", "workspace_id") ON TABLE "public"."presets" TO "anon";
+
+GRANT SELECT ("active_version_id", "archived_at", "config", "created_at", "created_by", "description", "fork_depth", "id", "name", "root_preset_id", "slug", "source_preset_id", "source_preset_version_id", "updated_at", "upstream_version_id", "versioning_method", "visibility", "workspace_id") ON TABLE "public"."presets" TO "authenticated";
 
 COMMENT ON INDEX "public"."presets_public_workspace_slug_key" IS 'Public preset slugs are unique within their workspace publisher namespace.';

@@ -6,7 +6,7 @@ import type { PullRequest } from "../../../shared/pullRequests";
 import type { PullRequestActor, PullRequestCheck, PullRequestCheckStatus } from "../../../shared/pullRequestView";
 import { compactCount, isConflicting, isWorkflowApproval, pullRequestStateKey, type ChecksRollup, type PullRequestStateKey, type ReviewOutcome } from "./pullRequestLogic";
 
-/** T3 Code's pull request glyphs and colours (pullRequestIcons.tsx), verbatim. */
+/** Pull request glyphs and colours. */
 export const PullRequestGlyph = { pullRequest: GitPullRequestArrow, reopen: GitPullRequestArrow, draft: GitPullRequestDraft, closed: GitPullRequestClosed, merged: GitMerge, conflicting: TriangleAlert, link: Link2, unlink: Unlink2 } as const;
 export type PullRequestStatePresentation = { label: string; toneClassName: string; Icon: LucideIcon };
 export const PULL_REQUEST_STATE_PRESENTATION: Record<PullRequestStateKey, PullRequestStatePresentation> = {
@@ -25,7 +25,7 @@ export function pullRequestStatePresentation(state: "OPEN" | "CLOSED" | "MERGED"
 export { Tip };
 
 const ghostTitleWidths = ["w-3/5", "w-2/5", "w-1/2", "w-2/3", "w-2/5", "w-3/5", "w-1/2"], ghostMetaWidths = ["w-2/5", "w-1/3", "w-2/5", "w-1/4", "w-1/3", "w-2/5", "w-1/3"];
-/** T3's PullRequestListGhost: rows in the list's own shape (glyph, title over meta, time over size), pulsing together. */
+/** Placeholder rows in the list's own shape (glyph, title over meta, time over size), pulsing together. */
 export function PullRequestListGhost({ rows = 7 }: { rows?: number }) {
 	const bar = (className: string) => <span aria-hidden className={cn("block h-3 rounded bg-muted-foreground/15", className)} />;
 	return <div role="status" aria-label="Loading pull requests" className="flex flex-col gap-0.5 motion-safe:animate-pulse">

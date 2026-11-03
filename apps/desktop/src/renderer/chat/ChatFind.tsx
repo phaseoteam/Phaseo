@@ -40,7 +40,7 @@ const registry = () => (globalThis.CSS as unknown as { highlights?: Highlights }
 const clearHighlights = () => { registry()?.delete("chat-find"); registry()?.delete("chat-find-current"); };
 
 /**
- * Mod+F: a find bar over the conversation, after T3's. The main process searches the whole chat, so matches on pages
+ * Mod+F: a find bar over the conversation. The main process searches the whole chat, so matches on pages
  * not loaded yet count too; stepping to one loads its page (`jump`) and opens what folds it (FindTargetContext).
  * Matches are drawn with the CSS Custom Highlight API, so the messages' DOM is never changed.
  */

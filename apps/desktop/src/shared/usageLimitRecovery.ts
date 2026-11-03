@@ -2,7 +2,7 @@ import { formatDateParts, formatTime } from "@phaseo/app-kit/format";
 import type { AccountStatus } from "./workspace";
 
 /**
- * T3's usage-limit recovery. A Claude or Codex turn that stops on a plan limit leaves the chat "limited" with when it
+ * Usage-limit recovery. A Claude or Codex turn that stops on a plan limit leaves the chat "limited" with when it
  * stopped, when the limit resets (from the account's limits, else the error text) and, once asked, when it resumes.
  */
 export type UsageLimitState = { at: string; resetsAt?: string; resumeAt?: string };
@@ -40,4 +40,41 @@ export function resetLabel(iso: string, now = new Date()) {
 	const date = new Date(iso), sameDay = date.toDateString() === now.toDateString();
 	const time = formatTime(date);
 	return sameDay ? time : `${formatDateParts(date, { weekday: "short", day: "numeric", month: "short" })}, ${time}`;
+}
+
+/** Whether a login's limits stop ordinary work now: a window at 100% that has not reset, or a spend control reached. */
+export function outOfUsage(status: Pick<AccountStatus, "usage" | "ordinaryUsageAllowed">, now = Date.now()) {
+	if (status.ordinaryUsageAllowed === false) return true;
+	return (status.usage ?? []).some(bucket => bucket.spendControlReached === true || [bucket.primary, bucket.secondary].some(window => window && window.usedPercent >= 100 && (!window.resetsAt || window.resetsAt * 1000 > now)));
+}
+
+/** A login another chat could continue on, keyed as Settings → Usage keys its readings (the harness for the default login). */
+export type ContinueLogin = { key: string; harness: string; accountId?: string; title: string };
+
+/**
+ * Other logins for the same agent that are signed in and have usage left. Logins not read yet are left out rather than
+ * offered on a guess.
+ */
+export function otherLogins<T extends ContinueLogin>(current: { harness: string; accountId?: string }, logins: T[], statuses: Record<string, Pick<AccountStatus, "authenticated" | "usage" | "ordinaryUsageAllowed"> | undefined>, now = Date.now()) {
+	return logins.filter(login => login.harness === current.harness && (login.accountId ?? "") !== (current.accountId ?? "")
+		&& statuses[login.key]?.authenticated === true && !outOfUsage(statuses[login.key]!, now));
+}
+
+type CatalogModel = { id: string; name: string; default?: boolean; facts?: { inputPrice?: number; outputPrice?: number } };
+const comparable = (id: string) => id.slice(id.lastIndexOf("/") + 1).toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
+/**
+ * The Phaseo model to offer for a limited chat: the same model when the catalogue lists it under the same name, else the
+ * person's own Phaseo choice, else the catalogue's default. The offer names the model, so nothing is substituted unseen.
+ */
+export function phaseoContinuation<T extends CatalogModel>(model: string, catalog: T[], preferred?: string): T | undefined {
+	const wanted = comparable(model);
+	return catalog.find(entry => comparable(entry.id) === wanted) ?? catalog.find(entry => entry.id === preferred) ?? catalog.find(entry => entry.default) ?? catalog[0];
+}
+
+/** "$3/$15 per million tokens" for input and output; undefined when the catalogue lists no price. */
+export function perMillionPrice(facts: CatalogModel["facts"], format: (value: number) => string) {
+	if (facts?.inputPrice === undefined || facts.outputPrice === undefined) return undefined;
+	if (!facts.inputPrice && !facts.outputPrice) return "free";
+	return `${format(facts.inputPrice)}/${format(facts.outputPrice)} per million tokens`;
 }

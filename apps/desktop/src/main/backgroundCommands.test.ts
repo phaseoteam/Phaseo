@@ -52,6 +52,18 @@ describe("BackgroundCommands", () => {
 		expect(commands.read("task", id)).toMatchObject({ running: false, exitCode: 4, output: expect.stringContaining("done") });
 	});
 
+	it("tells the chat when a command starts and ends, and shows its output without moving the agent's read position", async () => {
+		const changes: string[] = [];
+		commands = new BackgroundCommands({ shell: nodeShell }); commands.onChange = taskId => changes.push(taskId);
+		const { id } = await commands.start("task", root, "console.log('first'); console.log('second'); process.exit(0)");
+		expect(changes).toEqual(["task"]);
+		await commands.wait("task", id, 5000);
+		expect(changes).toEqual(["task", "task"]);
+		expect(commands.peek("task", id)).toMatch(/^first\r?\nsecond\r?\n$/);
+		expect(commands.read("task", id).output).toMatch(/^first/);
+		expect(() => commands.peek("other", id)).toThrow("no background command");
+	});
+
 	it("enforces the per-task limit and stops a task's commands", async () => {
 		commands = new BackgroundCommands({ shell: nodeShell });
 		const started = await Promise.all(Array.from({ length: BACKGROUND_LIMIT_PER_TASK }, () => commands.start("busy", root, "setInterval(() => {}, 1000)")));

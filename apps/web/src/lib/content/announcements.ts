@@ -29,6 +29,9 @@ type AnnouncementFrontmatterInput = {
 	pinned?: unknown;
 	coverImage?: unknown;
 	draft?: unknown;
+	seoTitle?: unknown;
+	keywords?: unknown;
+	faq?: unknown;
 };
 
 export type AnnouncementCategory = "announcements" | "guides" | "data";
@@ -49,9 +52,14 @@ export type AnnouncementSummary = {
 	coverImage: string;
 };
 
+export type AnnouncementFaqItem = { question: string; answer: string };
+
 export type AnnouncementPost = AnnouncementSummary & {
 	content: string;
 	contentLocale: string;
+	seoTitle: string | null;
+	keywords: string[];
+	faq: AnnouncementFaqItem[];
 };
 
 type AnnouncementPostLookupOptions = {
@@ -143,6 +151,16 @@ function toTags(value: unknown): string[] {
 	}
 
 	return [];
+}
+
+function toFaq(value: unknown): AnnouncementFaqItem[] {
+	if (!Array.isArray(value)) return [];
+	return value.flatMap((item) => {
+		if (!item || typeof item !== "object") return [];
+		const question = toOptionalString((item as { question?: unknown }).question);
+		const answer = toOptionalString((item as { answer?: unknown }).answer);
+		return question && answer ? [{ question, answer }] : [];
+	});
 }
 
 function isDraft(value: unknown): boolean {
@@ -322,6 +340,9 @@ async function loadAnnouncements(locale?: string): Promise<AnnouncementPost[]> {
 				pinned: isPinned(frontmatter.pinned),
 				coverImage,
 				content,
+				seoTitle: toOptionalString(frontmatter.seoTitle),
+				keywords: toTags(frontmatter.keywords),
+				faq: toFaq(frontmatter.faq),
 			};
 		})
 	);
@@ -341,7 +362,14 @@ export async function getAnnouncementPosts(
 	const posts = await loadAnnouncements(options.locale);
 	return posts
 		.filter((post) => options.includeFuture || isPublishedDate(post.publishedAt))
-		.map(({ content: _content, contentLocale: _contentLocale, ...summary }) => summary);
+		.map(({
+			content: _content,
+			contentLocale: _contentLocale,
+			seoTitle: _seoTitle,
+			keywords: _keywords,
+			faq: _faq,
+			...summary
+		}) => summary);
 }
 
 export async function getAnnouncementPost(

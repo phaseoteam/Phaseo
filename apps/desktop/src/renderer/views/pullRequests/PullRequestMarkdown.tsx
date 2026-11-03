@@ -14,7 +14,7 @@ export function PullRequestMarkdown({ text, projectId, repository, className }: 
 }
 
 const COLLAPSED_HEIGHT = 240;
-/** T3's PullRequestCommentBody: a long report folds to 240px with "Show full comment". */
+/** A comment body: a long report folds to 240px with "Show full comment". */
 export function PullRequestCommentBody(props: ComponentProps<typeof PullRequestMarkdown>) {
 	const [expanded, setExpanded] = useState(false), [overflowing, setOverflowing] = useState(false);
 	const content = useRef<HTMLDivElement>(null), id = useId();
@@ -43,7 +43,7 @@ export function EditButton({ label, onClick, className }: { label: string; onCli
 	</span>;
 }
 
-/** T3's PullRequestMarkdownEditor: Write and Preview, Save on Ctrl or Cmd+Enter, Escape cancels. */
+/** The markdown editor: Write and Preview, Save on Ctrl or Cmd+Enter, Escape cancels. */
 export function MarkdownEditor({ value, label, placeholder, saving, allowEmpty = false, projectId, repository, onSave, onCancel }: { value: string; label: string; placeholder?: string; saving: boolean; allowEmpty?: boolean; projectId: string; repository: string; onSave: (next: string) => void; onCancel: () => void }) {
 	const [draft, setDraft] = useState(value), [preview, setPreview] = useState(false);
 	const empty = !draft.trim(), disabled = saving || (empty && !allowEmpty);

@@ -15,6 +15,7 @@ export async function fetchSettingsOAuthAppDetailInitialData(
 		signedIn: data.signedIn, currentUserId: data.currentUserId,
 		oauthApp: data.oauthApp ? oauthAppDisplay(data.oauthApp) : null,
 		authorizations: data.authorizations.map(oauthAuthorizationDisplay),
+		canViewUsers: data.canViewUsers,
 		recentRequests: data.recentRequests,
 		usageStats: data.usageStats,
 		userDirectory: data.userDirectory,

@@ -194,6 +194,8 @@ export type SettingsOAuthAppsInitialData = {
 
 export type SettingsOAuthAppDetailInitialData = {
 	authorizations: Array<Record<string, unknown>>;
+	/** False for plain members: only owners and admins see who uses the app. */
+	canViewUsers?: boolean;
 	currentUserId: string | null;
 	oauthApp: Record<string, unknown> | null;
 	recentRequests: Array<{
@@ -658,7 +660,15 @@ export type SettingsRateLimitsInitialData = {
 	tier?: SettingsRateLimitTier | null;
 };
 
-export type SettingsWorkloadIdentityProvider = "vercel" | "github_actions";
+export type SettingsWorkloadIdentityProvider =
+	| "vercel"
+	| "github_actions"
+	| "gitlab"
+	| "google_cloud"
+	| "buildkite"
+	| "circleci"
+	| "aws"
+	| "custom";
 
 /** A trust policy from the gateway's /v1/workload-identity/policies (web-api settings-workload-identity). */
 export type SettingsWorkloadIdentityPolicy = {
@@ -666,7 +676,9 @@ export type SettingsWorkloadIdentityPolicy = {
 	name: string;
 	provider: SettingsWorkloadIdentityProvider;
 	issuer: string;
-	/** Vercel team ID or GitHub repository owner ID the token must carry. */
+	/** The claim ownerId is matched against: fixed per platform, chosen for custom issuers. Absent from older responses. */
+	ownerClaim?: string | null;
+	/** The pinned owner the token must carry, such as a Vercel team ID, GitHub owner ID or IAM role ARN. */
 	ownerId: string;
 	/** Exact-match conditions on other token claims, such as project_id or environment. */
 	claimConditions: Record<string, string[]>;

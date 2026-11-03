@@ -15,18 +15,20 @@ import { offerUndo } from "./threadUndo";
 
 export const snoozeTime = (date: Date) => formatDateParts(date, { weekday: date.getDate() === new Date().getDate() ? undefined : "short", hour: "2-digit", minute: "2-digit" });
 
-/** Settle, snooze, pin and read actions for Code chats, with undo and "open the next chat" as in T3 Code. */
+/** Settle, snooze, pin and read actions for Code chats, with undo and "open the next chat". */
+/** The sidebar's project filter: one id, a list of ids, or empty for all projects. */
+type Scope = string | readonly string[];
 export function useThreadActions() {
 	const { overview, command, selectedId, select, setNewChatProjectId } = useWorkspace();
 	const run = (value: Parameters<typeof command>[0]) => command(value);
 	// Parking the open chat opens the next one in the list, or a new chat in the same project.
-	const moveOn = (task: TaskOverview, scope: string) => {
+	const moveOn = (task: TaskOverview, scope: Scope) => {
 		if (task.id !== selectedId) return;
 		const next = nextAfterParking(codeSections(overview.tasks, overview.projects, scope), task.id);
 		if (next) select(next.id); else { setNewChatProjectId(task.projectId ?? ""); select(undefined); }
 	};
 	return {
-		settle: async (task: TaskOverview, scope = "") => {
+		settle: async (task: TaskOverview, scope: Scope = "") => {
 			const blocked = settleBlocker(task); if (blocked) { await run({ type: "settle", id: task.id }); return; }
 			const wasPinned = task.pinned, wasSnoozed = task.snoozedUntil;
 			moveOn(task, scope);
@@ -38,7 +40,7 @@ export function useThreadActions() {
 			});
 		},
 		unsettle: (task: TaskOverview) => run({ type: "unsettle", id: task.id }),
-		snooze: async (task: TaskOverview, until: Date, scope = "") => {
+		snooze: async (task: TaskOverview, until: Date, scope: Scope = "") => {
 			moveOn(task, scope);
 			if (await run({ type: "snooze", id: task.id, until: until.toISOString() })) offerUndo("Snoozed", () => run({ type: "wake", id: task.id }));
 		},
@@ -47,11 +49,11 @@ export function useThreadActions() {
 			if (!await run({ type: "update-task", id: task.id, pinned: !task.pinned })) return;
 			if (task.pinned) offerUndo("Unpinned", () => run({ type: "update-task", id: task.id, pinned: true }));
 		},
-		remove: async (task: TaskOverview, scope = "") => {
+		remove: async (task: TaskOverview, scope: Scope = "") => {
 			moveOn(task, scope);
 			return run({ type: "delete-task", id: task.id });
 		},
-		archive: async (task: TaskOverview, scope = "") => {
+		archive: async (task: TaskOverview, scope: Scope = "") => {
 			moveOn(task, scope);
 			if (await run({ type: "update-task", id: task.id, archived: true })) offerUndo("Archived", () => run({ type: "update-task", id: task.id, archived: false }));
 		},
@@ -70,7 +72,7 @@ export function SnoozeItems({ onSnooze, onCustom }: { onSnooze: (until: Date) =>
 	</>;
 }
 
-/** T3's custom snooze: a date and time, or a duration from now. */
+/** A custom snooze: a date and time, or a duration from now. */
 export function CustomSnoozeDialog({ open, onOpenChange, onSnooze }: { open: boolean; onOpenChange: (open: boolean) => void; onSnooze: (until: Date) => void }) {
 	const [mode, setMode] = useState<"date" | "duration">("date");
 	const local = (date: Date) => new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
@@ -92,8 +94,8 @@ export function CustomSnoozeDialog({ open, onOpenChange, onSnooze }: { open: boo
 	</Dialog>;
 }
 
-/** T3's chat menu, in its order: pin, settle, snooze; rename, tags, unread, project filter, auto-settle; copy; archive. */
-export function ThreadMenuItems({ task, scope, onScope, onRename, onDelete, onCustomSnooze }: { task: TaskOverview; scope?: string; onScope?: (id: string) => void; onRename?: () => void; onDelete?: () => void; onCustomSnooze: () => void }) {
+/** The chat menu, in order: pin, settle, snooze; rename, tags, unread, project filter, auto-settle; copy; archive. */
+export function ThreadMenuItems({ task, scope, onScope, onRename, onDelete, onCustomSnooze }: { task: TaskOverview; scope?: Scope; onScope?: (id: string) => void; onRename?: () => void; onDelete?: () => void; onCustomSnooze: () => void }) {
 	const actions = useThreadActions();
 	const { overview, select, setNewChatProjectId, openProjectSettings } = useWorkspace();
 	const project = overview.projects.find(value => value.id === task.projectId);
@@ -116,7 +118,7 @@ export function ThreadMenuItems({ task, scope, onScope, onRename, onDelete, onCu
 		<DropdownMenuItem onClick={() => void actions.regenerateTitle(task)}><WandSparkles />Regenerate title</DropdownMenuItem>
 		<TagMenu task={task} />
 		<DropdownMenuItem disabled={!task.lastCompletedAt} onClick={() => void actions.markUnread(task)}><Mail />Mark unread</DropdownMenuItem>
-		{onScope && project && <DropdownMenuItem onClick={() => onScope(scope ? "" : project.id)}><Filter />{scope ? "Show all projects" : `Filter by ${project.name}`}</DropdownMenuItem>}
+		{onScope && project && <DropdownMenuItem onClick={() => onScope(scope?.length ? "" : project.id)}><Filter />{scope?.length ? "Show all projects" : `Filter by ${project.name}`}</DropdownMenuItem>}
 		{project && <DropdownMenuItem onClick={() => openProjectSettings(project.id)}><Settings />Project settings</DropdownMenuItem>}
 		<DropdownMenuSub>
 			<DropdownMenuSubTrigger><Sparkles />Auto-settle behaviour</DropdownMenuSubTrigger>
@@ -141,7 +143,7 @@ export function ThreadMenuItems({ task, scope, onScope, onRename, onDelete, onCu
 }
 
 /** Deleting is permanent, so it asks first, naming the chat. */
-export function DeleteChatDialog({ task, scope, open, onOpenChange }: { task: TaskOverview; scope?: string; open: boolean; onOpenChange: (open: boolean) => void }) {
+export function DeleteChatDialog({ task, scope, open, onOpenChange }: { task: TaskOverview; scope?: Scope; open: boolean; onOpenChange: (open: boolean) => void }) {
 	const actions = useThreadActions();
 	const [busy, setBusy] = useState(false);
 	return <Dialog open={open} onOpenChange={onOpenChange}>
@@ -161,8 +163,8 @@ export function RenameInput({ task, onDone, className }: { task: TaskOverview; o
 		className={cn("h-6 min-w-0 flex-1 rounded border border-ring bg-background px-1.5 text-[13px] outline-none", className)} />;
 }
 
-/** T3's menu for several picked chats: each action says how many chats it applies to. */
-export function BulkMenuItems({ tasks, scope, onDone }: { tasks: TaskOverview[]; scope?: string; onDone: () => void }) {
+/** The menu for several picked chats: each action says how many chats it applies to. */
+export function BulkMenuItems({ tasks, scope, onDone }: { tasks: TaskOverview[]; scope?: Scope; onDone: () => void }) {
 	const actions = useThreadActions();
 	const [deleting, setDeleting] = useState(false);
 	const pinned = tasks.filter(task => task.pinned), settleable = tasks.filter(task => !settleBlocker(task) && !isSettled(task));

@@ -18,7 +18,8 @@ function buildStamp() {
 }
 
 export default defineConfig({
-	define: { __PHASEO_BUILD__: JSON.stringify(buildStamp()) },
+	// The update feed is fixed at build time; packaged apps ignore the runtime variable (src/main/updateFeed.ts).
+	define: { __PHASEO_BUILD__: JSON.stringify(buildStamp()), __PHASEO_DESKTOP_UPDATE_URL__: JSON.stringify(process.env.PHASEO_DESKTOP_UPDATE_URL?.trim() ?? "") },
 	build: {
 		outDir: "dist/main",
 		emptyOutDir: true,

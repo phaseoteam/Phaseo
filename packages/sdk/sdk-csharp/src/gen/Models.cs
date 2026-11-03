@@ -9756,6 +9756,9 @@ public sealed class WorkloadIdentityPolicy
 	[JsonPropertyName("name")]
 	public string Name { get; set; }
 
+	[JsonPropertyName("owner_claim")]
+	public string OwnerClaim { get; set; }
+
 	[JsonPropertyName("owner_id")]
 	public string OwnerId { get; set; }
 
@@ -9790,6 +9793,9 @@ public sealed class WorkloadIdentityPolicyInput
 
 	[JsonPropertyName("name")]
 	public string Name { get; set; }
+
+	[JsonPropertyName("owner_claim")]
+	public string? OwnerClaim { get; set; }
 
 	[JsonPropertyName("owner_id")]
 	public string OwnerId { get; set; }

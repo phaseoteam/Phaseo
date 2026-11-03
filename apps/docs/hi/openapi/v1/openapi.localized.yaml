@@ -4970,7 +4970,7 @@ paths:
         - Gateway
       operationId: listWorkloadIdentityPolicies
       summary: भरोसेमंद वर्कलोड पॉलिसी की सूची देखें
-      description: 'वर्कस्पेस की भरोसेमंद वर्कलोड पॉलिसी की सूची देता है: कौन-से Vercel डिप्लॉयमेंट और GitHub Actions वर्कफ़्लो API कुंजी के बजाय अपने OIDC टोकन से गेटवे को कॉल कर सकते हैं। प्रबंधन कुंजियों और OAuth टोकन पर keys:read, या वर्कस्पेस का मालिक या एडमिन आवश्यक है। यह केवल भरोसेमंद वर्कलोड बीटा वाले वर्कस्पेस के लिए उपलब्ध है; दूसरे वर्कस्पेस को 404 मिलता है।'
+      description: 'वर्कस्पेस की भरोसेमंद वर्कलोड पॉलिसी की सूची देता है: कौन-से डिप्लॉयमेंट, CI जॉब और क्लाउड वर्कलोड API कुंजी के बजाय अपने OIDC टोकन से गेटवे को कॉल कर सकते हैं। प्रबंधन कुंजियों और OAuth टोकन पर keys:read, या वर्कस्पेस का मालिक या एडमिन आवश्यक है। यह केवल भरोसेमंद वर्कलोड बीटा वाले वर्कस्पेस के लिए उपलब्ध है; दूसरे वर्कस्पेस को 404 मिलता है।'
       responses:
         '200':
           description: भरोसेमंद वर्कलोड पॉलिसी
@@ -5045,7 +5045,7 @@ paths:
         - Gateway
       operationId: updateWorkloadIdentityPolicy
       summary: भरोसेमंद वर्कलोड पॉलिसी अपडेट करें
-      description: पॉलिसी का नाम, स्थिति, क्लेम शर्तें या टोकन की अधिकतम अवधि बदलता है। प्रदाता, जारीकर्ता और मालिक नहीं बदले जा सकते; इसके बजाय नई पॉलिसी बनाएँ। बदलाव एक मिनट के भीतर गेटवे तक पहुँच जाते हैं। प्रबंधन कुंजियों और OAuth टोकन पर keys:write, या वर्कस्पेस का मालिक या एडमिन आवश्यक है। यह केवल भरोसेमंद वर्कलोड बीटा वाले वर्कस्पेस के लिए उपलब्ध है; दूसरे वर्कस्पेस को 404 मिलता है।
+      description: पॉलिसी का नाम, स्थिति, क्लेम शर्तें या टोकन की अधिकतम अवधि बदलता है। प्रदाता, जारीकर्ता, मालिक का क्लेम और मालिक नहीं बदले जा सकते; इसके बजाय नई पॉलिसी बनाएँ। बदलाव एक मिनट के भीतर गेटवे तक पहुँच जाते हैं। प्रबंधन कुंजियों और OAuth टोकन पर keys:write, या वर्कस्पेस का मालिक या एडमिन आवश्यक है। यह केवल भरोसेमंद वर्कलोड बीटा वाले वर्कस्पेस के लिए उपलब्ध है; दूसरे वर्कस्पेस को 404 मिलता है।
       requestBody:
         required: true
         content:
@@ -23624,7 +23624,13 @@ components:
       enum:
         - vercel
         - github_actions
-      description: वह प्लेटफ़ॉर्म जो OIDC टोकन जारी करता है।
+        - gitlab
+        - google_cloud
+        - buildkite
+        - circleci
+        - aws
+        - custom
+      description: वह प्लेटफ़ॉर्म जो OIDC टोकन जारी करता है। किसी भी दूसरे OIDC जारीकर्ता, जैसे Kubernetes क्लस्टर या सेल्फ़-मैनेज्ड GitLab इंस्टेंस, के लिए custom इस्तेमाल करें।
     WorkloadIdentityPolicy:
       type: object
       description: 'एक भरोसेमंद वर्कलोड: इस जारीकर्ता के टोकन, जो तय मालिक के लिए हों और हर क्लेम शर्त से मेल खाते हों, पॉलिसी की कुंजी के रूप में प्रमाणित होते हैं।'
@@ -23633,6 +23639,7 @@ components:
         - name
         - provider
         - issuer
+        - owner_claim
         - owner_id
         - claim_conditions
         - max_token_lifetime_seconds
@@ -23655,13 +23662,16 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: टोकन जारीकर्ता, जैसे https://oidc.vercel.com/acme या https://token.actions.githubusercontent.com।
+          description: टोकन जारीकर्ता (iss क्लेम), जैसे https://oidc.vercel.com/acme, https://token.actions.githubusercontent.com या https://accounts.google.com।
+        owner_claim:
+          type: string
+          description: 'टोकन का वह क्लेम जिससे owner_id का मिलान होता है। यह हर प्लेटफ़ॉर्म के लिए तय है: vercel के लिए owner_id, github_actions के लिए repository_owner_id, gitlab के लिए project_id, google_cloud और aws के लिए sub, buildkite के लिए organization_id और circleci के लिए oidc.circleci.com/org-id। custom जारीकर्ता वह क्लेम इस्तेमाल करते हैं जो पॉलिसी बनाते समय चुना गया था।'
         owner_id:
           type: string
-          description: तय किया गया Vercel टीम ID (owner_id क्लेम) या GitHub संगठन या उपयोगकर्ता ID (repository_owner_id क्लेम)।
+          description: 'तय मालिक: वह मान जिसके बराबर टोकन का owner_claim होना चाहिए, जैसे Vercel टीम ID, GitHub संगठन या उपयोगकर्ता ID, GitLab प्रोजेक्ट ID, Google सर्विस अकाउंट का यूनीक ID, Buildkite संगठन ID, CircleCI संगठन ID या AWS IAM रोल ARN।'
         claim_conditions:
           type: object
-          description: अतिरिक्त क्लेम जिनसे टोकन का मेल खाना ज़रूरी है, क्लेम के नाम और अनुमत मानों के रूप में, जैसे Vercel के लिए project_id और environment, या GitHub Actions के लिए repository_id और ref। हर क्लेम को अपने किसी एक मान से मेल खाना चाहिए। अधिकतम 15 क्लेम और प्रति क्लेम 20 मान; iss, aud, exp, iat, nbf और jti इस्तेमाल नहीं किए जा सकते, और तय मालिक का क्लेम owner_id से सेट होता है।
+          description: 'अतिरिक्त क्लेम जिनसे टोकन का मेल खाना ज़रूरी है, क्लेम के नाम और अनुमत मानों के रूप में, जैसे GitHub Actions के लिए repository_id और ref, या GitLab के लिए project_path और ref। हर क्लेम को अपने किसी एक मान से मेल खाना चाहिए। अधिकतम 15 क्लेम और प्रति क्लेम 20 मान। क्लेम के नाम में अक्षर, अंक और . _ : / - हो सकते हैं और वे 128 वर्णों तक होते हैं; iss, aud, exp, iat, nbf और jti इस्तेमाल नहीं किए जा सकते, और मालिक का क्लेम owner_id से सेट होता है।'
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23718,14 +23728,19 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: 'Vercel के लिए आवश्यक: https://oidc.vercel.com/ के बाद टीम स्लग, या ग्लोबल जारीकर्ता के लिए https://oidc.vercel.com। GitHub Actions के लिए डिफ़ॉल्ट https://token.actions.githubusercontent.com है।'
+          description: वह जारीकर्ता जिससे टोकन आते हैं। github_actions (डिफ़ॉल्ट https://token.actions.githubusercontent.com; कस्टमाइज़ किए गए एंटरप्राइज़ जारीकर्ता के लिए /<enterprise-slug> जोड़ें), gitlab (https://gitlab.com), google_cloud (https://accounts.google.com) और buildkite (https://agent.buildkite.com) के लिए वैकल्पिक। vercel (https://oidc.vercel.com/<team-slug>, या ग्लोबल जारीकर्ता के लिए https://oidc.vercel.com), circleci (https://oidc.circleci.com/org/<organization-id>), aws (आपके अकाउंट का https://<id>.tokens.sts.global.api.aws जारीकर्ता) और custom (एक सार्वजनिक https URL जो OIDC डिस्कवरी दस्तावेज़ देता हो, ऐसे होस्ट पर जो किसी दूसरे प्लेटफ़ॉर्म का न हो) के लिए आवश्यक।
+        owner_claim:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: टोकन का वह क्लेम जिससे owner_id का मिलान होता है, जैसे sub। custom के लिए आवश्यक। दूसरे प्लेटफ़ॉर्म तय क्लेम इस्तेमाल करते हैं (पॉलिसी पर owner_claim देखें), इसलिए इसे छोड़ दें या वही क्लेम भेजें। इसे बाद में बदला नहीं जा सकता।
         owner_id:
           type: string
           minLength: 1
-          description: तय करने के लिए Vercel टीम ID या GitHub संगठन या उपयोगकर्ता ID।
+          description: 'वह मान जिसके बराबर मालिक का क्लेम होना चाहिए: Vercel टीम ID, GitHub संगठन या उपयोगकर्ता ID, GitLab प्रोजेक्ट ID, Google सर्विस अकाउंट का यूनीक ID (उसका ईमेल नहीं), Buildkite संगठन ID, CircleCI संगठन ID (जो जारीकर्ता में है), AWS IAM रोल ARN, या custom जारीकर्ताओं के लिए owner_claim का वह मान जिस पर भरोसा करना है।'
         claim_conditions:
           type: object
-          description: अतिरिक्त क्लेम जिनसे टोकन का मेल खाना ज़रूरी है, क्लेम के नाम और अनुमत मानों के रूप में, जैसे Vercel के लिए project_id और environment, या GitHub Actions के लिए repository_id और ref। हर क्लेम को अपने किसी एक मान से मेल खाना चाहिए। अधिकतम 15 क्लेम और प्रति क्लेम 20 मान; iss, aud, exp, iat, nbf और jti इस्तेमाल नहीं किए जा सकते, और तय मालिक का क्लेम owner_id से सेट होता है।
+          description: 'अतिरिक्त क्लेम जिनसे टोकन का मेल खाना ज़रूरी है, क्लेम के नाम और अनुमत मानों के रूप में, जैसे GitHub Actions के लिए repository_id और ref, या GitLab के लिए project_path और ref। हर क्लेम को अपने किसी एक मान से मेल खाना चाहिए। अधिकतम 15 क्लेम और प्रति क्लेम 20 मान। क्लेम के नाम में अक्षर, अंक और . _ : / - हो सकते हैं और वे 128 वर्णों तक होते हैं; iss, aud, exp, iat, nbf और jti इस्तेमाल नहीं किए जा सकते, और मालिक का क्लेम owner_id से सेट होता है।'
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23757,7 +23772,7 @@ components:
             - disabled
         claim_conditions:
           type: object
-          description: अतिरिक्त क्लेम जिनसे टोकन का मेल खाना ज़रूरी है, क्लेम के नाम और अनुमत मानों के रूप में, जैसे Vercel के लिए project_id और environment, या GitHub Actions के लिए repository_id और ref। हर क्लेम को अपने किसी एक मान से मेल खाना चाहिए। अधिकतम 15 क्लेम और प्रति क्लेम 20 मान; iss, aud, exp, iat, nbf और jti इस्तेमाल नहीं किए जा सकते, और तय मालिक का क्लेम owner_id से सेट होता है।
+          description: 'अतिरिक्त क्लेम जिनसे टोकन का मेल खाना ज़रूरी है, क्लेम के नाम और अनुमत मानों के रूप में, जैसे GitHub Actions के लिए repository_id और ref, या GitLab के लिए project_path और ref। हर क्लेम को अपने किसी एक मान से मेल खाना चाहिए। अधिकतम 15 क्लेम और प्रति क्लेम 20 मान। क्लेम के नाम में अक्षर, अंक और . _ : / - हो सकते हैं और वे 128 वर्णों तक होते हैं; iss, aud, exp, iat, nbf और jti इस्तेमाल नहीं किए जा सकते, और मालिक का क्लेम owner_id से सेट होता है।'
           maxProperties: 15
           additionalProperties:
             type: array

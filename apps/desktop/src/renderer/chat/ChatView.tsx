@@ -1,13 +1,13 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { TerminalDrawer } from "../views/Terminals";
-import { AlarmClockOff, Archive, Box, CircleCheck, Clock, Undo2, CornerLeftUp, Download, Ellipsis, Gauge, GitBranch, Layers, ListChecks, Paperclip, Pencil, PenLine, Pin, PinOff, Plug, RotateCcw, Settings, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
+import { AlarmClockOff, Archive, Box, CircleCheck, Clock, Undo2, CornerLeftUp, Download, Ellipsis, Gauge, GitBranch, Layers, ListChecks, MessagesSquare, Paperclip, Pencil, PenLine, Pin, PinOff, Plug, RotateCcw, Settings, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { QuestionPanel } from "./QuestionPanel";
 import { IssueDraftPanel } from "./IssueDraftPanel";
 import { useQuestionAnswerer } from "./questionComposer";
 import { shortcut, useCommand } from "../lib/keybindings";
 import { CustomSnoozeDialog, SnoozeItems, useThreadActions } from "../shell/threadActions";
-import { hasWoken, isSettled, isSnoozed, settleBlocker, shortDuration } from "../../shared/threadLifecycle";
+import { hasWoken, isSettled, isSnoozed, isUnread, settleBlocker, shortDuration } from "../../shared/threadLifecycle";
 import type { TaskOverview } from "../../shared/workspaceOverview";
 import { TagEditor } from "../components/Tags";
 import type { AccountStatus, Attachment, Message, Task } from "../../shared/workspace";
@@ -22,12 +22,14 @@ import { AttachmentPreview } from "../components/AttachmentPreview";
 import { StatusDot } from "../shell/Sidebar";
 import { Composer, ToolButton } from "./Composer";
 import { useComposerMenu } from "./ComposerMenu";
-import { useComposerEditor } from "./composerEditor";
+import { ComposerTaskContext, useComposerEditor } from "./composerEditor";
 import { composeMessage, mentionPlainText } from "../lib/mentions";
 import { UsageMeters } from "../settings/UsageMeters";
 import { Conversation } from "./Conversation";
-import { ModelPicker } from "./ModelPicker";
-import { ModelSettings } from "./ModelSettings";
+import { harnessNames } from "./ModelPicker";
+import { ModelControl } from "./ModelSettings";
+import { silenceLabel, silentFor } from "../../shared/inbox";
+import { useNow } from "../lib/useNow";
 import { PermissionMenu, PlanIndicator } from "./NewChat";
 import { openModelPickerEvent, renameChatEvent, useModelSettingActions, type ComposerAction } from "./composerActions";
 import { Requests } from "./Requests";
@@ -48,11 +50,20 @@ import { StashMenu, usePromptHistory, usePromptStash } from "./composerHistory";
 import { recordPrompt } from "./promptHistory";
 import { showToast } from "../components/ui/toast";
 import { ChatNotices } from "./ChatNotices";
+import { BackgroundWork } from "./BackgroundWork";
+import { useSendKey } from "./sendKey";
+import { addPendingSend, dropDeliveredSends, PendingSends } from "./pendingSends";
+import { attachmentsOnlyText } from "./MessageAttachments";
+import { settingsProject } from "../../shared/projectSettings";
+import { isSideChat, parseSideChatCommand } from "../../shared/sideChats";
+import { openSideChat } from "../panels/events";
 
 function ChatHeader({ task, onOpenTerminal }: { task: Task; onOpenTerminal: () => void }) {
 	const { overview, command, select, api, setError, openProjectSettings } = useWorkspace();
 	const project = overview.projects.find(value => value.id === task.projectId);
 	const snapshot = overview.tasks.find(value => value.id === task.id);
+	const now = useNow();
+	const silent = snapshot ? silentFor(snapshot, now) : undefined;
 	const [renaming, setRenaming] = useState(false);
 	const [customSnooze, setCustomSnooze] = useState(false);
 	const threadActions = useThreadActions();
@@ -75,7 +86,7 @@ function ChatHeader({ task, onOpenTerminal }: { task: Task; onOpenTerminal: () =
 		{project && <span className="flex h-6 shrink-0 items-center gap-1.5 rounded-full border border-border px-2.5 text-[11.5px] text-muted-foreground"><ProjectIcon project={project} className="size-3.5" />{project.name}{project.worktree && <span className="font-mono">⎇ {project.worktree.branch}</span>}</span>}
 		<div className="ml-auto flex items-center gap-1.5">
 			{project && !project.worktree?.removedAt && <ProjectScriptsControl project={project} taskId={task.id} onRun={onOpenTerminal} />}
-			{snapshot && (snapshot.status !== "completed" && snapshot.status !== "idle" || snapshot.approvalsCount > 0) && <span className="flex h-6 items-center gap-1.5 rounded-full border border-border px-2.5 text-[11.5px] text-muted-foreground"><StatusDot task={snapshot} />{snapshot.approvalsCount || snapshot.answersCount ? "Needs your input" : snapshot.status === "running" ? "Working" : snapshot.status === "waiting" ? "Waiting" : snapshot.status === "limited" ? "Usage limit reached" : snapshot.status === "interrupted" ? "Interrupted" : snapshot.status === "failed" ? "Failed" : ""}</span>}
+			{snapshot && (snapshot.status !== "completed" && snapshot.status !== "idle" || snapshot.approvalsCount > 0) && <span className="flex h-6 items-center gap-1.5 rounded-full border border-border px-2.5 text-[11.5px] text-muted-foreground"><StatusDot task={snapshot} />{snapshot.approvalsCount || snapshot.answersCount ? "Needs your input" : snapshot.status === "running" ? (silent !== undefined ? `No response from ${harnessNames[snapshot.harness]} · ${silenceLabel(silent)}` : "Working") : snapshot.status === "waiting" ? "Waiting" : snapshot.status === "limited" ? "Usage limit reached" : snapshot.status === "interrupted" ? "Interrupted" : snapshot.status === "failed" ? "Failed" : ""}</span>}
 			<DropdownMenu>
 				<DropdownMenuTrigger render={<button type="button" aria-label="Chat actions" className="grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground" />}><Ellipsis className="size-4" /></DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className="w-52">
@@ -128,7 +139,7 @@ function ChatComposer({ task }: { task: Task }) {
 	const running = ["running", "waiting"].includes(task.status);
 	const code = task.mode !== "chat";
 	const preferences = useWorkspacePreferences();
-	// While the agent waits on a question, the composer is its own-answer field, as in T3 Code.
+	// While the agent waits on a question, the composer is its own-answer field.
 	const answerer = useQuestionAnswerer(task.id);
 	const editor = useComposerEditor({ value: draft.text, onChange: draft.setText, disabled: task.archived, onFiles: files => void upload(files),
 		placeholder: task.archived ? "This chat is archived" : answerer ? "Type your own answer, or leave this blank to use the selected option" : running ? "Queue a follow-up…" : code ? "Ask for a change, or reply to the agent…" : "Reply…" });
@@ -137,10 +148,23 @@ function ChatComposer({ task }: { task: Task }) {
 	const canCompact = ["opencode", "codex", "claude", "pi", "phaseo"].includes(task.harness) && !!task.nativeSessionId && !task.archived && !running;
 	const fork = async () => { const known = new Set(overview.tasks.map(value => value.id)); const state = await command({ type: "fork", id: task.id }); const id = state?.tasks.find(value => !known.has(value.id))?.id; if (id) select(id); };
 	const plan = task.mode === "plan", full = task.permissionMode === "full-access", edits = task.permissionMode === "accept-edits";
+	const sideChats = !isSideChat(task) && !task.archived;
+	/** /side and /btw: a side chat beside this one, shown in the right pane, that leaves this chat's turn alone. */
+	async function startSideChat(text: string) {
+		const known = new Set(overview.tasks.map(value => value.id));
+		const state = await command({ type: "side-chat", id: task.id, text });
+		const id = state?.tasks.find(value => !known.has(value.id))?.id;
+		if (id) openSideChat({ parentId: task.id, id });
+		return Boolean(state);
+	}
 	const actions: ComposerAction[] = [
 		{ id: "archive", label: "Archive", description: "Archive this chat", icon: <Archive />, run: () => void command({ type: "update-task", id: task.id, archived: true }) },
 		...canCompact ? [{ id: "compact", label: "Compact", description: "Summarise earlier messages to free up context", icon: <Layers />, run: () => void command({ type: "send", id: task.id, text: "/compact" }) }] : [],
 		...running ? [] : [{ id: "fork", label: "Fork chat", description: "Continue in a copy of this chat", icon: <GitBranch />, run: () => void fork() }],
+		...sideChats ? [
+			{ id: "side", label: "Side chat", hint: "/side", description: "Ask something beside this chat without interrupting it", icon: <MessagesSquare />, insert: "/side " },
+			{ id: "btw", label: "Btw", hint: "/btw", description: "Same as Side chat", icon: <MessagesSquare />, insert: "/btw " },
+		] : [],
 		{ id: "export", label: "Export", description: "Save this chat as a file", icon: <Download />, options: (["markdown", "json"] as const).map(format => ({ id: `export:${format}`, label: format === "markdown" ? "Markdown" : "JSON", icon: null, run: () => void api?.exportTask(task.id, format).catch(reason => setError(errorText(reason))) })) },
 		{ id: "attach", label: "Attach files", description: "Add files or images to this message", icon: <Paperclip />, run: () => void attach() },
 		{ id: "mcp", label: "MCP", description: "Manage MCP servers", icon: <Plug />, run: () => openSettings("mcp") },
@@ -172,7 +196,7 @@ function ChatComposer({ task }: { task: Task }) {
 	const canSend = !busy && !uploading && !task.archived && (!!answerer || !!message.text || message.attachments.length > 0);
 	usePromptHistory(task, draft);
 	const stash = usePromptStash(task.id, draft);
-	// A queued message being edited in the composer, and the draft it set aside (T3's "Editing in the composer").
+	// A queued message being edited in the composer, and the draft it set aside ("Editing in the composer").
 	const [editing, setEditing] = useState<{ id: string; saved: string }>();
 	useEffect(() => { setEditing(undefined); }, [task.id]);
 	const editQueued = (id: string) => {
@@ -204,25 +228,42 @@ function ChatComposer({ task }: { task: Task }) {
 		finally { setBusy(false); }
 	}
 	useCommand("composer.steer", () => { void steer(); });
+	// While a turn runs, Enter queues; the other send key steers instead. With Mod+Enter as the send key it just sends.
+	const sendKey = useSendKey();
+	useCommand("composer.sendAlternate", () => { if (!running || sendKey !== "enter") return false; void steer(); });
 	useCommand("composer.editQueued", () => { const last = ownQueue(task).at(-1); return last && !editing ? editQueued(last.id) : false; });
 	useCommand("composer.sendAndNewChat", () => { if (!canSend || editing || answerer) return false; void send().then(sent => { if (sent) select(undefined); }); });
 
 	async function send(): Promise<boolean> {
 		if (editing) { await saveEdit(); return false; }
 		if (!canSend) return false;
+		// /side comes before an open question, which would otherwise take the text as its answer.
+		const side = sideChats ? parseSideChatCommand(message.text) : undefined;
+		if (side) {
+			if (message.attachments.length) { setError("Side chats take text only. Remove the attachments, then send it again."); return false; }
+			setBusy(true);
+			try { if (await startSideChat(mentionPlainText(side.prompt))) draft.clear(); } finally { setBusy(false); }
+			return false;
+		}
 		if (answerer) {
 			if (message.attachments.length) { setError("Answers cannot carry attachments. Remove them, or dismiss the question first."); return false; }
 			if (answerer.answer(mentionPlainText(message.text))) draft.clear();
 			return false;
 		}
 		setBusy(true);
+		// The message shows as sent at once; a refused send puts it back in the box, unless something new was typed there.
+		const typed = draft.text, settle = addPendingSend(task.id, message.text || mentionPlainText(typed));
+		draft.clear();
+		const restore = () => { if (!draft.text.trim()) draft.setText(typed); };
+		let delivered = false;
 		try {
 			const prepared = await menu.prepare(message.text);
-			if (await command({ type: "send", id: task.id, text: prepared.text || "Please review the attached files.", attachments: message.attachments,
+			if (await command({ type: "send", id: task.id, text: prepared.text || attachmentsOnlyText, attachments: message.attachments,
 				...(message.threadReferences.length ? { threadReferences: message.threadReferences } : {}), ...(message.githubReferences.length ? { githubReferences: message.githubReferences } : {}), ...(prepared.nativeAction ? { nativeAction: prepared.nativeAction } : {}) })) {
-				rememberModel(selection); recordPrompt(draft.text); draft.clear(); return true;
+				delivered = true; rememberModel(selection); recordPrompt(typed); return true;
 			}
-		} catch (reason) { setError(errorText(reason)); } finally { setBusy(false); }
+			restore();
+		} catch (reason) { restore(); setError(errorText(reason)); } finally { settle(delivered); setBusy(false); }
 		return false;
 	}
 	const attachmentChips = (attachments: Attachment[]) => editor.insert(attachments.map(attachment => ({ kind: "attachment" as const, ref: attachment.id, label: attachment.name })));
@@ -270,7 +311,7 @@ function ChatComposer({ task }: { task: Task }) {
 			<div className="flex items-center gap-2 text-[13px] font-semibold"><Gauge className="size-4 text-muted-foreground" />Usage limits<button type="button" aria-label="Hide usage limits" onClick={() => setLimits(undefined)} className="ml-auto grid size-6 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"><X className="size-3.5" /></button></div>
 			{limits === "loading" ? <p className="text-xs text-muted-foreground">Checking…</p> : "error" in limits ? <p className="text-xs text-destructive">{limits.error}</p> : <UsageMeters status={limits} />}
 		</div>}
-		<Composer editor={editor} onSubmit={() => void send()} canSend={canSend || Boolean(editing)} disabled={task.archived}
+		<ComposerTaskContext value={task.id}><Composer editor={editor} onSubmit={() => void send()} canSend={canSend || Boolean(editing)} disabled={task.archived}
 			chips={editing && <span className="flex w-full items-center gap-2 text-xs text-muted-foreground"><Pencil className="size-3.5" />Editing a queued message<button type="button" onClick={() => stopEditing()} className="ml-auto rounded-md px-1.5 py-0.5 font-medium text-foreground hover:bg-muted">Cancel</button></span>}
 			running={running} onStop={() => void command({ type: "cancel", id: task.id })}
 			menu={task.archived ? undefined : menu}
@@ -284,16 +325,15 @@ function ChatComposer({ task }: { task: Task }) {
 			tools={<>
 				<ToolButton label="Attach files" disabled={uploading || task.archived} onClick={() => void attach()}><Paperclip /></ToolButton>
 				{!task.archived && <StashMenu onRestore={id => stash.restore(id)} />}
-				<ModelPicker selections={[selection]} onChange={values => void changeModel(values[0])} agents={code} disabled={running || task.archived} openEvent={openModelPickerEvent} />
-				<ModelSettings selection={selection} onChange={next => void changeSettings(next)} disabled={running || task.archived} />
+				<ModelControl selections={[selection]} onChange={values => void changeModel(values[0])} onSettings={next => void changeSettings(next)} agents={code} disabled={running || task.archived} openEvent={openModelPickerEvent} hidden={settingsProject(overview.projects, task.projectId)?.settings?.disabledHarnesses} />
 				{code && <PermissionMenu value={task.permissionMode} onChange={permissionMode => void command({ type: "update-task", id: task.id, permissionMode })} />}
 				{code && (preferences.autopilot || task.autopilot) && <AutopilotControl value={task.autopilot ? { capNanos: task.autopilot.capNanos } : undefined} disabled={running || task.archived || !preferences.autopilot} disabledReason={preferences.autopilot ? "Stop the chat to turn on Autopilot." : "Allow Autopilot in Settings → Experimental."} onChange={autopilot => void command({ type: "update-task", id: task.id, autopilot })} />}
 				{plan && <PlanIndicator onClear={running ? undefined : () => void command({ type: "update-task", id: task.id, mode: "code" })} />}
-			</>} />
+			</>} /></ComposerTaskContext>
 	</div>;
 }
 
-/** T3's quiet line after the last message: settled, snoozed or woke, with the way back. */
+/** The quiet line after the last message: settled, snoozed or woke, with the way back. */
 function ThreadStatusLine({ task }: { task: TaskOverview }) {
 	const actions = useThreadActions();
 	const now = Date.now();
@@ -315,15 +355,19 @@ function DelayedStatus({ children }: { children: ReactNode }) {
 export function ChatView({ id }: { id: string }) {
 	const { api, overview, command, select, setOverview } = useWorkspace();
 	const snapshot = overview.tasks.find(task => task.id === id);
-	// T3: Ctrl+J opens a terminal drawer under the chat, remembered per chat.
+	// Ctrl+J opens a terminal drawer under the chat, remembered per chat.
 	const [drawers, setDrawers] = usePersistedState<Record<string, boolean>>("phaseo.desktop.terminalDrawers", {});
 	useCommand("terminal.toggle", () => setDrawers(current => ({ ...current, [id]: !current[id] })));
-	// Having the chat open marks its finished turns read, as T3's visit does. It bypasses command() so it never clears an error on screen.
+	// Having the chat open marks its finished turns read. It bypasses command() so it never clears an error on screen.
 	useEffect(() => {
 		if (api && snapshot && (!snapshot.lastVisitedAt || (snapshot.lastCompletedAt && Date.parse(snapshot.lastCompletedAt) > Date.parse(snapshot.lastVisitedAt)))) void api.command({ type: "visit", id, at: new Date().toISOString() }).then(setOverview, () => undefined);
 	}, [id, snapshot?.lastCompletedAt, snapshot?.lastVisitedAt]);
+	// When you last looked, read as the chat opens (before the visit above moves it on), for "New since your last visit".
+	const [arrival, setArrival] = useState<{ id: string; since?: string }>();
+	if (snapshot && arrival?.id !== id) setArrival({ id, since: isUnread(snapshot) ? snapshot.lastVisitedAt : undefined });
 	const detail = useSelectedTask(api?.task, id, snapshot ? JSON.stringify([snapshot.revision, snapshot.updatedAt]) : undefined);
 	const loaded = detail.task?.id === id ? detail.task : undefined;
+	useEffect(() => { if (loaded) dropDeliveredSends(loaded.id); }, [loaded]);
 	const [preview, setPreview] = useState<string>();
 	const [rewinding, setRewinding] = useState<Message>();
 	// A rewind can remove the messages the conversation's window starts at, so the window starts over.
@@ -343,8 +387,9 @@ export function ChatView({ id }: { id: string }) {
 	};
 	return <div className="flex h-full min-w-0 flex-col">
 		<ChatHeader task={task} onOpenTerminal={() => setDrawers(current => ({ ...current, [task.id]: true }))} />
-		{!loaded ? <DelayedStatus>Loading chat…</DelayedStatus> : <Conversation key={`${task.id}:${epoch}`} task={task} onAttachment={setPreview} onBranch={messageId => void branch(messageId)} onRewind={setRewinding}
+		{!loaded ? <DelayedStatus>Loading chat…</DelayedStatus> : <Conversation key={`${task.id}:${epoch}`} task={task} unreadSince={arrival?.id === task.id ? arrival.since : undefined} onAttachment={setPreview} onBranch={messageId => void branch(messageId)} onRewind={setRewinding}
 				onRegenerate={task.mode === "chat" ? message => void command({ type: "rewind", id: task.id, messageId: message.id, resend: true }).then(state => { if (state) setEpoch(value => value + 1); }) : undefined}>
+			<PendingSends taskId={task.id} projectId={task.projectId} />
 			{snapshot && <ThreadStatusLine task={snapshot} />}
 			<ChatNotices task={task} />
 			{task.error && <div role="alert" className={cn("flex items-center gap-2 text-[13px]", task.status === "interrupted" ? "text-muted-foreground" : "text-destructive")}>
@@ -352,6 +397,7 @@ export function ChatView({ id }: { id: string }) {
 				<Button size="sm" variant="ghost" className="text-foreground" onClick={() => void command({ type: "resume", id: task.id })}><RotateCcw />Resume</Button>
 			</div>}
 			<AgentThreads taskId={task.id} />
+			<BackgroundWork taskId={task.id} />
 			<Requests task={task} />
 			{removed && <p className="text-xs text-muted-foreground">This checkout has been removed. Switch model to continue in another project.</p>}
 		</Conversation>}

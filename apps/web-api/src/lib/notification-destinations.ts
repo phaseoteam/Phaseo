@@ -1,4 +1,5 @@
 import type { Env } from "@/env";
+import { isPrivateOrLocalhostHost } from "@/lib/public-endpoint-url";
 
 export const NOTIFICATION_DESTINATION_TYPES = ["email", "discord", "discord_webhook", "slack", "microsoft_teams", "custom_webhook"] as const;
 export type NotificationDestinationType = typeof NOTIFICATION_DESTINATION_TYPES[number];
@@ -91,7 +92,7 @@ export function validateNotificationTarget(type: NotificationDestinationType, ra
 	try { url = new URL(target); } catch { throw new Error("Enter a valid HTTPS URL"); }
 	if (url.protocol !== "https:" || url.username || url.password) throw new Error("Destination URL must use HTTPS");
 	const hostname = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
-	if (!hostname || hostname === "localhost" || hostname.endsWith(".localhost") || /^(0|10|127|169\.254|192\.168)\./.test(hostname) || /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) || hostname === "::" || hostname === "::1" || /^(fc|fd|fe8|fe9|fea|feb|ff)/.test(hostname)) throw new Error("Destination must not target a private network");
+	if (isPrivateOrLocalhostHost(hostname)) throw new Error("Destination must not target a private network");
 	if ((type === "discord_webhook" && hostname !== "discord.com" && hostname !== "discordapp.com") || (type === "slack" && hostname !== "hooks.slack.com")) throw new Error(`Enter a valid ${type === "slack" ? "Slack" : "Discord"} webhook URL`);
 	url.hash = "";
 	return url.toString();

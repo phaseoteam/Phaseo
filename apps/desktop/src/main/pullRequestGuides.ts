@@ -8,7 +8,7 @@ type Complete = (input: { system: string; user: string; maxTokens: number; timeo
 type Run = { headSha: string; promise: Promise<PullRequestGuide> };
 
 /**
- * T3's review guides, written with the title model through the person's Phaseo account. Writing is explicit and the
+ * Review guides, written with the title model through the person's Phaseo account. Writing is explicit and the
  * result is stored per pull request with the head it was written for, so opening the Guide tab never spends a model
  * call; a push leaves the guide in place and the reader sees it as written before the latest push. A run belongs to
  * the app rather than to the window that asked, so leaving the tab does not stop it.
@@ -16,7 +16,7 @@ type Run = { headSha: string; promise: Promise<PullRequestGuide> };
 export class PullRequestGuides {
 	private readonly runs = new Map<string, Run>();
 	private readonly failures = new Map<string, { headSha: string; error: string }>();
-	/** Called when a run ends, written or failed, so the app can say so wherever the person is (T3's guide run coordinator). */
+	/** Called when a run ends, written or failed, so the app can say so wherever the person is. */
 	onFinished?: (event: { root: string; view: PullRequestView; error?: string }) => void;
 	constructor(private readonly directory: string, private readonly complete: Complete, private readonly diff: (root: string, view: PullRequestView) => Promise<string>) {}
 

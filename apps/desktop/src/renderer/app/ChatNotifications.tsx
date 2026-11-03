@@ -22,7 +22,7 @@ function badgeImage(count: number) {
 }
 
 /**
- * T3's notification coordinator: while Phaseo has focus, a toast says another chat finished or needs you (desktop
+ * Notifications: while Phaseo has focus, a toast says another chat finished or needs you (desktop
  * alerts cover the background), and the dock or taskbar icon counts unread chats. Both follow Settings → Notifications.
  */
 export function ChatNotifications() {

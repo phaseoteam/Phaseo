@@ -65,6 +65,29 @@ Der Routing-Zustand ist ein drittes Betriebssignal. Er gibt an, wie eine aktivie
 
 Eine Zurückstufung verändert weder die Verfügbarkeit des Anbieters noch den Lebenszyklus der Phaseo-Integration. Aktuelle Gesundheitsdaten ändern diese Lebenszyklusfelder ebenfalls nicht.
 
+Auf Modellseiten zeigt eine zurückgestufte Route das gelbe oder rote Warnsymbol
+mit der Bezeichnung `Niedrigere Priorität`. Phaseo legt diese Stufen manuell fest,
+und sie bleiben bestehen, bis Phaseo sie ändert.
+
+## Live-Routing
+
+Live-Routing ist unabhängig von den Status oben. Das Gateway legt es automatisch
+für jeden Anbieter, jedes Modell und jeden Endpunkt fest, basierend auf den
+Anfragen, die es gerade verarbeitet.
+
+| Symbol | Status | Bedeutung | Routing-Verhalten |
+| --- | --- | --- | --- |
+| Orangefarbener, durchgestrichener Blitz | `Vorübergehend eingeschränkt` | Anfragen sind mehrmals hintereinander fehlgeschlagen, oder mindestens die Hälfte der letzten Anfragen ist fehlgeschlagen. | Routbar, aber andere Anbieter werden zuerst versucht. |
+| Blaue Aktualisierungspfeile | `Erholt sich` | Nach einer Wartezeit lässt Phaseo einige Anfragen durch, um den Anbieter zu prüfen. | Sind alle Anfragen eines Durchgangs erfolgreich, kehrt das Routing zum Normalzustand zurück. Schlägt die Hälfte oder mehr fehl, wird die Route erneut eingeschränkt, mit längerer Wartezeit. |
+
+Auf Modellseiten erscheint das Live-Routing-Symbol nach dem Statussymbol, und nur
+solange einer dieser Status gilt. Eine Route kann gleichzeitig
+`Niedrigere Priorität` und `Vorübergehend eingeschränkt` sein; dann werden beide
+Symbole angezeigt. Fahre mit der Maus über ein Symbol, um Details zu sehen.
+
+Live-Routing ändert weder die Verfügbarkeit des Anbieters noch den Status der
+Phaseo-Integration oder den manuell festgelegten Routing-Zustand.
+
 ## Beispiele
 
 Ein neu veröffentlichtes Anbieterangebot kann diese Werte haben:
@@ -73,11 +96,18 @@ Ein neu veröffentlichtes Anbieterangebot kann diese Werte haben:
 - Phaseo-Status: `Implementing`
 - Routing-Zustand: nicht anwendbar, weil Routing deaktiviert ist
 
-Eine etablierte, vorübergehend beeinträchtigte Route kann diese Werte haben:
+Eine etablierte Route, die Phaseo manuell zurückgestuft hat, kann diese Werte haben:
 
 - Verfügbarkeit beim Anbieter: `Available`
 - Phaseo-Status: `Enabled`
 - Routing-Zustand: `Deranked L2`
+
+Eine Route, deren Anbieter gerade Fehler liefert, kann diese Werte haben:
+
+- Verfügbarkeit beim Anbieter: `Available`
+- Phaseo-Status: `Enabled`
+- Routing-Zustand: `Active`
+- Live-Routing: `Vorübergehend eingeschränkt`
 
 Eine Ankündigung des Anbieters kann diese Werte haben:
 

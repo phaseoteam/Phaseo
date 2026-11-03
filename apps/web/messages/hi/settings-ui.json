@@ -1191,6 +1191,8 @@
 		"authorizedUsers": "अधिकृत उपयोगकर्ता",
 		"noAuthorizations": "कोई अधिकृत उपयोगकर्ता नहीं",
 		"authorizationEmpty": "जो उपयोगकर्ता इस एप्लिकेशन को अधिकृत करते हैं वे यहां दिखाई देंगे।",
+		"usersAdminsOnly": "केवल मालिक और एडमिन इस ऐप के उपयोगकर्ता देख सकते हैं",
+		"usersAdminsOnlyDescription": "किसी ऐप को अधिकृत करने वाले लोग आमतौर पर दूसरे वर्कस्पेस के होते हैं, इसलिए केवल इस वर्कस्पेस के मालिक और एडमिन ही देखते हैं कि वे कौन हैं और उनके अनुरोध क्या हैं।",
 		"activityDescription": "हाल की प्राधिकरण और उपयोग गतिविधि.",
 		"noActivity": "अभी तक कोई गतिविधि नहीं",
 		"activityEmpty": "एप्लिकेशन के उपयोग के बाद गतिविधि दिखाई देगी.",
@@ -2530,6 +2532,8 @@
 		"Are you sure you want to leave {workspace}?": "क्या आप वाकई {workspace} छोड़ना चाहते हैं?",
 		"phraseYouCanTRevokeAccessForSomeoneWithAHigherRoleThanYours": "आप अपने से ऊंची भूमिका वाले किसी व्यक्ति की पहुंच रद्द नहीं कर सकते.",
 		"Are you sure you want to revoke access for {member}?": "क्या आप वाकई {member} के लिए पहुंच रद्द करना चाहते हैं?",
+		"phraseMemberKeysWillBeRevoked": "इस वर्कस्पेस में उनके बनाए API कुंजियाँ और प्रबंधन कुंजियाँ रद्द कर दी जाएँगी।",
+		"phraseYourKeysWillBeRevoked": "इस वर्कस्पेस में आपके बनाए API कुंजियाँ और प्रबंधन कुंजियाँ रद्द कर दी जाएँगी।",
 		"phraseUpdatedMemberSSampleRole": "{member} की नमूना भूमिका अपडेट की गई।",
 		"phraseUnableToUpdateTheMemberRoleRightNow": "अभी सदस्य भूमिका अपडेट करने में असमर्थ.",
 		"phraseYouCanTRevokeAccessForMembersWithAHigherRoleThanYours": "आप अपने से ऊंची भूमिका वाले सदस्यों की पहुंच रद्द नहीं कर सकते.",
@@ -6800,17 +6804,17 @@
 	},
 	"trustedWorkloads": {
 		"title": "भरोसेमंद वर्कलोड",
-		"description": "Vercel डिप्लॉयमेंट और GitHub Actions जॉब को API की के बजाय कम समय वाले OIDC टोकन से API कॉल करने दें।",
+		"description": "डिप्लॉयमेंट, CI जॉब और क्लाउड वर्कलोड को API की के बजाय कम समय वाले OIDC टोकन से API कॉल करने दें।",
 		"feedback": "भरोसेमंद वर्कलोड आपके लिए और बेहतर कैसे काम कर सकते हैं?",
 		"selectWorkspace": "भरोसेमंद वर्कलोड मैनेज करने के लिए कोई वर्कस्पेस चुनें।",
 		"unavailable": "इस वर्कस्पेस के लिए भरोसेमंद वर्कलोड अभी उपलब्ध नहीं हैं।",
 		"adminsOnly": "केवल वर्कस्पेस के मालिक और एडमिन भरोसेमंद वर्कलोड देख और बदल सकते हैं।",
-		"howItWorks": "Vercel और GitHub Actions हर डिप्लॉयमेंट या जॉब को एक साइन किया हुआ टोकन देते हैं, जो बताता है कि वह कौन है और कुछ घंटों में खत्म हो जाता है। जब कोई टोकन इनमें से किसी पॉलिसी से मेल खाता है, तो रिक्वेस्ट उस पॉलिसी की की से चलती है, और उस पर API की जैसी ही लिमिट, बजट, लॉग और बिलिंग लागू होती है। कोई सीक्रेट सेव करने की ज़रूरत नहीं है।",
+		"howItWorks": "Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI और AWS हर डिप्लॉयमेंट, जॉब या वर्कलोड को एक साइन किया हुआ टोकन दे सकते हैं, जो बताता है कि वह कौन है और कुछ घंटों में खत्म हो जाता है। आपका अपना OIDC इश्यूअर, जैसे कोई Kubernetes क्लस्टर, भी ऐसा कर सकता है। जब कोई टोकन इनमें से किसी पॉलिसी से मेल खाता है, तो रिक्वेस्ट उस पॉलिसी की की से चलती है, और उस पर API की जैसी ही लिमिट, बजट, लॉग और बिलिंग लागू होती है। कोई सीक्रेट सेव करने की ज़रूरत नहीं है।",
 		"policiesTitle": "ट्रस्ट पॉलिसी",
 		"propagation": "बदलाव लगभग एक मिनट में लागू होते हैं।",
 		"newPolicy": "नई पॉलिसी",
 		"emptyTitle": "अभी कोई भरोसेमंद वर्कलोड नहीं है",
-		"emptyBody": "किसी Vercel प्रोजेक्ट या GitHub रिपॉज़िटरी के लिए पॉलिसी जोड़ें, ताकि वह API की के बिना API कॉल कर सके।",
+		"emptyBody": "किसी प्रोजेक्ट, रिपॉज़िटरी, पाइपलाइन, सर्विस अकाउंट या रोल के लिए पॉलिसी जोड़ें, ताकि वह API की के बिना API कॉल कर सके।",
 		"noConditions": "कोई नहीं",
 		"disabled": "बंद",
 		"enabledLabel": "{name} के टोकन स्वीकार करें",
@@ -6835,15 +6839,28 @@
 		"audienceLabel": "ऑडियंस",
 		"providers": {
 			"vercel": "Vercel",
-			"github_actions": "GitHub Actions"
+			"github_actions": "GitHub Actions",
+			"gitlab": "GitLab",
+			"google_cloud": "Google Cloud",
+			"buildkite": "Buildkite",
+			"circleci": "CircleCI",
+			"aws": "AWS",
+			"custom": "कस्टम OIDC इश्यूअर"
 		},
 		"ownerLabel": {
 			"vercel": "टीम ID",
-			"github_actions": "मालिक ID"
+			"github_actions": "मालिक ID",
+			"gitlab": "प्रोजेक्ट ID",
+			"google_cloud": "सर्विस अकाउंट ID",
+			"buildkite": "ऑर्गनाइज़ेशन ID",
+			"circleci": "ऑर्गनाइज़ेशन ID",
+			"aws": "रोल ARN"
 		},
 		"ownerWide": {
 			"vercel": "इस Vercel टीम के हर प्रोजेक्ट पर भरोसा करती है। सीमित करने के लिए प्रोजेक्ट ID जोड़ें।",
-			"github_actions": "इस मालिक की हर रिपॉज़िटरी पर भरोसा करती है। सीमित करने के लिए रिपॉज़िटरी ID जोड़ें।"
+			"github_actions": "इस मालिक की हर रिपॉज़िटरी पर भरोसा करती है। सीमित करने के लिए रिपॉज़िटरी ID जोड़ें।",
+			"buildkite": "इस Buildkite ऑर्गनाइज़ेशन की हर पाइपलाइन पर भरोसा करती है। सीमित करने के लिए पाइपलाइन स्लग जोड़ें।",
+			"circleci": "इस CircleCI ऑर्गनाइज़ेशन के हर प्रोजेक्ट पर भरोसा करती है। सीमित करने के लिए प्रोजेक्ट ID जोड़ें।"
 		},
 		"environments": {
 			"production": "प्रोडक्शन",
@@ -6866,7 +6883,36 @@
 			"githubIdsHint": "संख्या वाली ID इस्तेमाल करें, जो मालिक या रिपॉज़िटरी का नाम बदलने पर भी नहीं बदलतीं। रिपॉज़िटरी ID वैकल्पिक है, पर इसके बिना मालिक की हर रिपॉज़िटरी पर भरोसा किया जाता है।",
 			"githubRef": "ब्रांच या टैग (वैकल्पिक)",
 			"lifetime": "स्वीकार किया जाने वाला सबसे लंबा टोकन (घंटे)",
-			"lifetimeHint": "इससे ज़्यादा समय के लिए जारी किए गए टोकन अस्वीकार किए जाते हैं। ज़्यादा से ज़्यादा {max} घंटे।"
+			"lifetimeHint": "इससे ज़्यादा समय के लिए जारी किए गए टोकन अस्वीकार किए जाते हैं। ज़्यादा से ज़्यादा {max} घंटे।",
+			"environmentOptional": "एनवायरनमेंट (वैकल्पिक)",
+			"gitlabProjectId": "प्रोजेक्ट ID",
+			"gitlabProjectHint": "GitLab.com पर प्रोजेक्ट के ओवरव्यू पेज पर दिखने वाली संख्या वाली ID। प्रोजेक्ट का नाम बदलने या उसे मूव करने पर भी यह नहीं बदलती। सेल्फ़-मैनेज्ड GitLab के लिए कस्टम OIDC इश्यूअर चुनें।",
+			"gitlabRef": "ब्रांच या टैग (वैकल्पिक)",
+			"gitlabConditionsHint": "ब्रांच या टैग का नाम डालें, जैसे main। प्रोजेक्ट के हर जॉब को स्वीकार करने के लिए दोनों खाली छोड़ें।",
+			"googleServiceAccountId": "सर्विस अकाउंट की यूनिक ID",
+			"googleServiceAccountHint": "Google Cloud कंसोल में सर्विस अकाउंट के डिटेल पेज पर दिखने वाली संख्या वाली यूनिक ID। ईमेल के बजाय इसे इस्तेमाल करें, क्योंकि अकाउंट डिलीट होने पर ईमेल दोबारा इस्तेमाल हो सकता है।",
+			"googleServiceAccountEmail": "सर्विस अकाउंट ईमेल (वैकल्पिक)",
+			"googleEmailHint": "टोकन में ईमेल तभी होता है जब वर्कलोड उसे format=full के साथ मांगता है।",
+			"buildkiteOrganizationId": "ऑर्गनाइज़ेशन ID",
+			"buildkiteOrganizationHint": "ऑर्गनाइज़ेशन का UUID, जो हर Buildkite टोकन के organization_id क्लेम में होता है।",
+			"buildkitePipelineSlug": "पाइपलाइन स्लग (वैकल्पिक)",
+			"buildkitePipelineHint": "इसके बिना ऑर्गनाइज़ेशन की हर पाइपलाइन पर भरोसा किया जाता है।",
+			"circleciOrganizationId": "ऑर्गनाइज़ेशन ID",
+			"circleciOrganizationHint": "यह CircleCI में Organization Settings → Overview में मिलती है।",
+			"circleciProjectId": "प्रोजेक्ट ID (वैकल्पिक)",
+			"circleciProjectHint": "यह Project Settings → Overview में मिलती है। इसके बिना ऑर्गनाइज़ेशन के हर प्रोजेक्ट पर भरोसा किया जाता है।",
+			"awsIssuer": "इश्यूअर URL",
+			"awsIssuerHint": "हर AWS अकाउंट का अपना इश्यूअर होता है। aws iam get-outbound-web-identity-federation-info चलाएं और IssuerIdentifier कॉपी करें।",
+			"awsRoleArn": "IAM रोल ARN",
+			"awsRoleHint": "सिर्फ़ इस रोल के टोकन स्वीकार किए जाते हैं।",
+			"customIssuer": "इश्यूअर URL",
+			"customIssuerHint": "एक पब्लिक https URL, जो /.well-known/openid-configuration देता हो और जिसकी साइनिंग कीज़ उसी होस्ट पर हों।",
+			"customOwnerClaim": "मालिक क्लेम",
+			"customOwnerId": "मालिक वैल्यू",
+			"customOwnerHint": "हर टोकन में यह क्लेम ठीक इसी वैल्यू के साथ होना चाहिए, जैसे Kubernetes सर्विस अकाउंट के लिए sub। ऐसा क्लेम चुनें जिसे कोई और दोबारा इस्तेमाल न कर सके।",
+			"customConditionClaim": "अतिरिक्त क्लेम (वैकल्पिक)",
+			"customConditionValue": "ज़रूरी वैल्यू",
+			"customConditionHint": "टोकन में यह क्लेम भी ठीक इसी वैल्यू के साथ होना चाहिए।"
 		},
 		"problems": {
 			"name": "100 अक्षरों तक का नाम डालें।",
@@ -6875,7 +6921,19 @@
 			"vercelProjectId": "प्रोजेक्ट ID prj_ से शुरू होती है।",
 			"githubOwnerId": "मालिक की संख्या वाली ID डालें।",
 			"githubRepositoryId": "रिपॉज़िटरी की संख्या वाली ID डालें।",
-			"lifetime": "1 से 12 के बीच घंटों की पूरी संख्या डालें।"
+			"lifetime": "1 से 12 के बीच घंटों की पूरी संख्या डालें।",
+			"gitlabProjectId": "प्रोजेक्ट की संख्या वाली ID डालें।",
+			"googleServiceAccountId": "सर्विस अकाउंट की संख्या वाली यूनिक ID डालें।",
+			"googleServiceAccountEmail": "ईमेल पता डालें, जैसे app@project.iam.gserviceaccount.com।",
+			"buildkiteOrganizationId": "ऑर्गनाइज़ेशन का UUID डालें।",
+			"circleciOrganizationId": "ऑर्गनाइज़ेशन ID डालें, जो एक UUID है।",
+			"circleciProjectId": "प्रोजेक्ट ID डालें, जो एक UUID है।",
+			"awsIssuer": "AWS से मिला इश्यूअर डालें। यह .tokens.sts.global.api.aws पर खत्म होता है।",
+			"awsRoleArn": "रोल ARN डालें, जैसे arn:aws:iam::123456789012:role/evals।",
+			"customIssuer": "पोर्ट, क्वेरी या फ़्रैगमेंट के बिना एक पब्लिक https URL डालें।",
+			"customOwnerClaim": "sub जैसा क्लेम नाम डालें। iss, aud, exp, iat, nbf और jti इस्तेमाल नहीं किए जा सकते।",
+			"customOwnerId": "वह वैल्यू डालें जो मालिक क्लेम में होनी चाहिए।",
+			"customCondition": "क्लेम और वैल्यू दोनों डालें, या दोनों खाली छोड़ें। क्लेम मालिक क्लेम से अलग होना चाहिए।"
 		},
 		"errors": {
 			"invalid": "{message}",
@@ -6888,7 +6946,10 @@
 			"deleted": "पॉलिसी हटाई गई",
 			"enabled": "पॉलिसी चालू की गई",
 			"disabled": "पॉलिसी बंद की गई"
-		}
+		},
+		"listPipeline": "पाइपलाइन",
+		"listEmail": "सर्विस अकाउंट ईमेल",
+		"usageCustomHint": "पब्लिक डिस्कवरी वाला कोई भी OIDC इश्यूअर काम करता है। यह उदाहरण किसी Kubernetes पॉड को ऑडियंस के लिए सर्विस अकाउंट टोकन देता है।"
 	},
 	"budgets": {
 		"title": "बजट",

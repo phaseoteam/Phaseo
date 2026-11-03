@@ -137,6 +137,9 @@ describe("workspace durability", () => {
 			task.nativeSessionId = "native"; store.saveTask(task);
 			const fork = store.apply({ type: "fork", id: task.id });
 			expect(fork.parentId).toBe(task.id); expect(fork.nativeSessionId).toBeUndefined();
+			// A fork starts with no spend of its own, so totals across chats count the copied turns once.
+			const spent = store.getTask(task.id); spent.usageTotals = { tokens: 1200, costNanos: 50_000_000 }; store.saveTask(spent);
+			expect(store.apply({ type: "fork", id: task.id }).usageTotals).toEqual({ tokens: 0, costNanos: 0 });
 		} finally { store.close(); }
 	});
 });

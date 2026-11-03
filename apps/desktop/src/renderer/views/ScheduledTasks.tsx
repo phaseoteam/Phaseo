@@ -1,6 +1,6 @@
 import { formatDateParts, formatDateTime } from "@phaseo/app-kit/format";
 import { useEffect, useState } from "react";
-import { CalendarClock, Ellipsis, Pencil, Play, Plus, SquareArrowOutUpRight, Trash2 } from "lucide-react";
+import { CalendarClock, Ellipsis, MessageSquarePlus, Pencil, Play, Plus, SquareArrowOutUpRight, Trash2 } from "lucide-react";
 import type { Mission, MissionCommand, MissionSchedule } from "../../shared/missions";
 import { scheduleLabel } from "../../shared/missions";
 import { errorText, useWorkspace } from "../app/workspace";
@@ -81,6 +81,7 @@ function ScheduledTaskRow({ task, busy, run, onEdit }: { task: Mission; busy: bo
 	const { overview, select } = useWorkspace();
 	const runs = overview.tasks.filter(value => value.missionId === task.id);
 	const running = task.lastStatus === "running";
+	const thread = task.threadTaskId ? overview.tasks.find(value => value.id === task.threadTaskId) : undefined;
 	const next = task.enabled && task.nextRunAt ? `Next ${formatDateParts(task.nextRunAt, { weekday: "short", hour: "2-digit", minute: "2-digit" })}` : task.enabled ? undefined : "Paused";
 	return <article data-scheduled-task={task.id} className="flex flex-col gap-2 px-4 py-3.5">
 		<div className="flex items-center gap-4">
@@ -88,6 +89,7 @@ function ScheduledTaskRow({ task, busy, run, onEdit }: { task: Mission; busy: bo
 			<div className="min-w-0 flex-1">
 				<h3 className="truncate text-[13px] font-semibold">{task.title}</h3>
 				<p className="mt-0.5 text-xs text-muted-foreground">{[scheduleLabel(task.schedule), next, statusText[task.lastStatus]].filter(Boolean).join(" · ")}</p>
+				{task.threadTaskId && <p className="mt-0.5 truncate text-xs text-muted-foreground">Posts in {thread ? <button type="button" className="hover:text-foreground hover:underline" onClick={() => select(thread.id)}>{thread.title}</button> : "a chat that no longer exists"}</p>}
 			</div>
 			<SettingsButton variant="ghost" disabled={busy || running} onClick={() => run({ type: "run", id: task.id })}><Play className="size-3.5" />Run now</SettingsButton>
 			<Switch aria-label={task.enabled ? `Pause ${task.title}` : `Turn on ${task.title}`} checked={task.enabled} disabled={busy} onCheckedChange={enabled => run({ type: "enable", id: task.id, enabled })} />
@@ -95,6 +97,7 @@ function ScheduledTaskRow({ task, busy, run, onEdit }: { task: Mission; busy: bo
 				<DropdownMenuTrigger render={<button type="button" aria-label={`Actions for ${task.title}`} className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground" />}><Ellipsis className="size-4" /></DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className="w-44">
 					<DropdownMenuItem disabled={running} onClick={onEdit}><Pencil />Edit</DropdownMenuItem>
+					{task.threadTaskId && <DropdownMenuItem disabled={running} onClick={() => run({ type: "save", id: task.id, title: task.title, prompt: task.prompt, templateTaskId: task.templateTaskId, threadTaskId: null, schedule: task.schedule })}><MessageSquarePlus />Start a new chat each run</DropdownMenuItem>}
 					{task.lastTaskId && <DropdownMenuItem onClick={() => select(task.lastTaskId)}><SquareArrowOutUpRight />Open latest run</DropdownMenuItem>}
 					<DropdownMenuSeparator />
 					<DropdownMenuItem variant="destructive" disabled={running} onClick={() => run({ type: "delete", id: task.id })}><Trash2 />Delete</DropdownMenuItem>

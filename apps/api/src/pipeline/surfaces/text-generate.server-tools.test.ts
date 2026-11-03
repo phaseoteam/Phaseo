@@ -706,6 +706,184 @@ describe("runTextGeneratePipeline server tools", () => {
 		);
 	});
 
+	it("times a synthetic stream from receipt, with provider time from each round's dispatch", async () => {
+		// Receipt at 0. Round 1 is sent at 1000, first output at 1500, read to the
+		// end at 2000; the tool runs; round 2 is sent at 2500 and done at 3000.
+		let now = 0;
+		const dateNow = vi.spyOn(Date, "now").mockImplementation(() => now);
+		let sharedMeta: any;
+		const syntheticStream = createEmptyStream();
+
+		consumeTextProtocolStreamToIRMock.mockImplementation(async (consumeArgs: any) => {
+			now = 1500;
+			consumeArgs.onEvent?.({ type: "delta_text", channel: "output_text", text: "x" });
+			now = 2000;
+			return {
+			ir: {
+				id: "ir_tool_call_stream",
+				choices: [
+					{
+						message: {
+							role: "assistant",
+							content: [],
+							toolCalls: [
+								{
+									id: "call_datetime",
+									name: "gateway_datetime",
+									arguments: "{\"timezones\":[\"UTC\"]}",
+								},
+							],
+						},
+						finishReason: "tool_calls",
+					},
+				],
+				usage: { inputTokens: 4, outputTokens: 1, totalTokens: 5 },
+			},
+			rawResponse: { id: "raw_stream_tool_call" },
+			usageRaw: null,
+			};
+		});
+
+		buildServerToolContinuationMock
+			.mockImplementationOnce(async () => {
+				// A tool's own provider call (advisor, image) on the shared meta at 2200.
+				sharedMeta.upstreamFetchStartMs = 2200;
+				return {
+				assistantMessage: {
+					role: "assistant",
+					content: [],
+					toolCalls: [
+						{
+							id: "call_datetime",
+							name: "gateway_datetime",
+							arguments: "{\"timezones\":[\"UTC\"]}",
+						},
+					],
+				},
+				toolResults: [
+					{
+						toolCallId: "call_datetime",
+						content: "{\"timezones\":[{\"timezone\":\"UTC\",\"datetime\":\"2026-05-09T12:00:00.000+00:00\"}]}",
+					},
+				],
+				usage: {
+					datetimeRequests: 1,
+					webSearchRequests: 0,
+					webSearchResults: 0,
+					webSearchExtraResults: 0,
+					webFetchRequests: 0,
+					advisorRequests: 0,
+					imageGenerationRequests: 0,
+					applyPatchRequests: 0,
+				},
+			};
+			})
+			.mockResolvedValueOnce(null);
+
+		mergeIRUsageTotalsMock.mockReturnValue({
+			inputTokens: 10,
+			outputTokens: 6,
+			totalTokens: 16,
+		});
+		attachServerToolUsageMock.mockReturnValue({
+			inputTokens: 10,
+			outputTokens: 6,
+			totalTokens: 16,
+			_ext: { serverToolUse: { datetime_requests: 1 } },
+		});
+		attachServerToolUsageToRawUsageMock.mockImplementation((usage: any) => usage);
+
+		doRequestWithIRMock
+			.mockImplementationOnce(async (ctx: any) => {
+				sharedMeta = ctx.meta;
+				ctx.meta.upstreamFetchStartMs = 1000;
+				ctx.meta.selectedUpstreamFetchStartMs = 1000;
+				return { result: {
+					kind: "stream",
+					stream: createEmptyStream(),
+					upstream: new Response(null, { status: 200 }),
+					provider: "openai",
+					generationTimeMs: 1,
+					bill: { cost_cents: 0, currency: "USD", usage: {} },
+					rawResponse: null,
+				} };
+			})
+			.mockImplementationOnce(async (ctx: any) => {
+				now = 3000;
+				ctx.meta.upstreamFetchStartMs ??= 2500;
+				ctx.meta.selectedUpstreamFetchStartMs = 2500;
+				return { result: {
+					kind: "completed",
+					ir: {
+						id: "ir_final_stream",
+						model: "openai/gpt-5.4-nano-2026-03-17",
+						choices: [
+							{
+								message: {
+									role: "assistant",
+									content: [{ type: "text", text: "Current UTC time is 2026-05-09T12:00:00Z." }],
+								},
+								finishReason: "stop",
+							},
+						],
+						usage: { inputTokens: 6, outputTokens: 5, totalTokens: 11 },
+					},
+					upstream: new Response(JSON.stringify({ ok: true }), { status: 200 }),
+					provider: "openai",
+					generationTimeMs: 3,
+					bill: { cost_cents: 0, currency: "USD", usage: {} },
+					rawResponse: {
+						id: "chatcmpl_final_stream",
+						created: 1778073808,
+						model: "openai/gpt-5.4-nano-2026-03-17",
+					},
+				} };
+			});
+
+		encodeProtocolMock.mockReturnValue({
+			id: "chatcmpl_final_stream",
+			created: 1778073808,
+			model: "openai/gpt-5.4-nano-2026-03-17",
+			choices: [{ message: { role: "assistant", content: "Current UTC time is 2026-05-09T12:00:00Z." } }],
+		});
+		buildSyntheticServerToolStreamMock.mockReturnValue(syntheticStream);
+		finalizeRequestMock.mockResolvedValue(
+			new Response(JSON.stringify({ ok: true }), { status: 200 }),
+		);
+
+		const args = createArgs({ stream: true });
+		args.pre.ctx.meta.startedAtMs = 0;
+		try {
+			const response = await runTextGeneratePipeline(args);
+			await response.text();
+		} finally {
+			dateNow.mockRestore();
+		}
+
+		const meta = finalizeRequestMock.mock.calls[0]?.[0].pre.ctx.meta;
+		expect({
+			end_to_end_ms: meta.end_to_end_ms,
+			generation_ms: meta.generation_ms,
+			provider_ttft_ms: meta.provider_ttft_ms,
+			latency_ms: meta.latency_ms,
+			gateway_ttft_ms: meta.gateway_ttft_ms,
+			failover_ms: meta.providerRoundsFailoverMs,
+			speed_window: meta.lastProviderRoundSpeedWindow,
+		}).toEqual({
+			// Before the fix: 1000 ms "total" (from round 2's dispatch only) and no TTFT.
+			end_to_end_ms: 3000,
+			generation_ms: 1500,
+			provider_ttft_ms: 500,
+			latency_ms: 500,
+			// The live sink forwarded round 1's first output at 1500.
+			gateway_ttft_ms: 1500,
+			failover_ms: 0,
+			// Output speed is the last round's. This one was buffered, so no output was
+			// observed and round 1's window must not stand in for it.
+			speed_window: null,
+		});
+	});
+
 	it("executes the managed web search follow-up loop and records search result usage on non-stream requests", async () => {
 		const initialUsage = { inputTokens: 8, outputTokens: 3, totalTokens: 11 };
 		const finalUsage = { inputTokens: 7, outputTokens: 9, totalTokens: 16 };

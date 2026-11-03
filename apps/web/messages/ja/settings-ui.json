@@ -1191,6 +1191,8 @@
 		"authorizedUsers": "承認済みユーザー",
 		"noAuthorizations": "承認済みユーザーはいません。",
 		"authorizationEmpty": "このアプリを承認したユーザーがここに表示されます。",
+		"usersAdminsOnly": "このアプリのユーザーはオーナーと管理者のみが確認できます",
+		"usersAdminsOnlyDescription": "アプリを承認するユーザーは通常ほかのワークスペースに属しているため、そのユーザーとリクエストはこのワークスペースのオーナーと管理者だけが確認できます。",
 		"activityDescription": "最近の認可と利用状況です。",
 		"noActivity": "アクティビティはまだありません。",
 		"activityEmpty": "アプリケーションを使い始めると、ここにアクティビティが表示されます。",
@@ -2530,6 +2532,8 @@
 		"Are you sure you want to leave {workspace}?": "{workspace}から退出してもよろしいですか？",
 		"phraseYouCanTRevokeAccessForSomeoneWithAHigherRoleThanYours": "自分より上位のロールを持つユーザーのアクセス権は取り消せません。",
 		"Are you sure you want to revoke access for {member}?": "{member}のアクセス権を取り消してもよろしいですか？",
+		"phraseMemberKeysWillBeRevoked": "このメンバーがこのワークスペースで作成した APIキーと管理キーは取り消されます。",
+		"phraseYourKeysWillBeRevoked": "このワークスペースであなたが作成した APIキーと管理キーは取り消されます。",
 		"phraseUpdatedMemberSSampleRole": "{member}のサンプルロールを更新しました。",
 		"phraseUnableToUpdateTheMemberRoleRightNow": "現在、メンバーのロールを更新できません。",
 		"phraseYouCanTRevokeAccessForMembersWithAHigherRoleThanYours": "自分より上位のロールを持つメンバーのアクセス権は取り消せません。",
@@ -6800,17 +6804,17 @@
 	},
 	"trustedWorkloads": {
 		"title": "信頼済みワークロード",
-		"description": "Vercel のデプロイや GitHub Actions のジョブが、API キーの代わりに有効期間の短い OIDC トークンで API を呼び出せるようにします。",
+		"description": "デプロイ、CI ジョブ、クラウドのワークロードが、API キーの代わりに有効期間の短い OIDC トークンで API を呼び出せるようにします。",
 		"feedback": "信頼済みワークロードをもっと使いやすくするには？",
 		"selectWorkspace": "信頼済みワークロードを管理するワークスペースを選択してください。",
 		"unavailable": "このワークスペースでは、信頼済みワークロードはまだ利用できません。",
 		"adminsOnly": "信頼済みワークロードを表示・変更できるのは、ワークスペースのオーナーと管理者のみです。",
-		"howItWorks": "Vercel と GitHub Actions は、デプロイやジョブごとに、その身元を示し数時間で失効する署名付きトークンを発行します。トークンがいずれかのポリシーに一致すると、リクエストはそのポリシーのキーとして実行され、API キーと同じ制限、予算、ログ、請求が適用されます。シークレットを保存する必要はありません。",
+		"howItWorks": "Vercel、GitHub Actions、GitLab、Google Cloud、Buildkite、CircleCI、AWS は、デプロイ、ジョブ、ワークロードごとに、その身元を示し数時間で失効する署名付きトークンを発行できます。Kubernetes クラスターなど、自分で運用する OIDC 発行元も同様です。トークンがいずれかのポリシーに一致すると、リクエストはそのポリシーのキーとして実行され、API キーと同じ制限、予算、ログ、請求が適用されます。シークレットを保存する必要はありません。",
 		"policiesTitle": "信頼ポリシー",
 		"propagation": "変更は約 1 分以内に反映されます。",
 		"newPolicy": "新しいポリシー",
 		"emptyTitle": "信頼済みワークロードはまだありません",
-		"emptyBody": "Vercel のプロジェクトや GitHub のリポジトリのポリシーを追加すると、API キーなしで API を呼び出せます。",
+		"emptyBody": "プロジェクト、リポジトリ、パイプライン、サービス アカウント、ロールのポリシーを追加すると、API キーなしで API を呼び出せます。",
 		"noConditions": "なし",
 		"disabled": "オフ",
 		"enabledLabel": "{name} のトークンを受け付ける",
@@ -6835,15 +6839,28 @@
 		"audienceLabel": "オーディエンス",
 		"providers": {
 			"vercel": "Vercel",
-			"github_actions": "GitHub Actions"
+			"github_actions": "GitHub Actions",
+			"gitlab": "GitLab",
+			"google_cloud": "Google Cloud",
+			"buildkite": "Buildkite",
+			"circleci": "CircleCI",
+			"aws": "AWS",
+			"custom": "カスタム OIDC 発行元"
 		},
 		"ownerLabel": {
 			"vercel": "チーム ID",
-			"github_actions": "オーナー ID"
+			"github_actions": "オーナー ID",
+			"gitlab": "プロジェクト ID",
+			"google_cloud": "サービス アカウント ID",
+			"buildkite": "組織 ID",
+			"circleci": "組織 ID",
+			"aws": "ロール ARN"
 		},
 		"ownerWide": {
 			"vercel": "この Vercel チームのすべてのプロジェクトを信頼します。範囲を絞るにはプロジェクト ID を追加してください。",
-			"github_actions": "このオーナーのすべてのリポジトリを信頼します。範囲を絞るにはリポジトリ ID を追加してください。"
+			"github_actions": "このオーナーのすべてのリポジトリを信頼します。範囲を絞るにはリポジトリ ID を追加してください。",
+			"buildkite": "この Buildkite 組織のすべてのパイプラインを信頼します。範囲を絞るにはパイプライン スラッグを追加してください。",
+			"circleci": "この CircleCI 組織のすべてのプロジェクトを信頼します。範囲を絞るにはプロジェクト ID を追加してください。"
 		},
 		"environments": {
 			"production": "本番",
@@ -6866,7 +6883,36 @@
 			"githubIdsHint": "オーナーやリポジトリの名前が変わっても変わらない数値 ID を使ってください。リポジトリ ID は任意ですが、指定しないとオーナーのすべてのリポジトリが信頼されます。",
 			"githubRef": "ブランチまたはタグ（任意）",
 			"lifetime": "受け付ける最長トークン（時間）",
-			"lifetimeHint": "これより長く有効になるよう発行されたトークンは拒否されます。最大 {max} 時間です。"
+			"lifetimeHint": "これより長く有効になるよう発行されたトークンは拒否されます。最大 {max} 時間です。",
+			"environmentOptional": "環境（任意）",
+			"gitlabProjectId": "プロジェクト ID",
+			"gitlabProjectHint": "GitLab.com のプロジェクト概要ページにある数値 ID です。プロジェクトの名前変更や移動があっても変わりません。セルフマネージドの GitLab では「カスタム OIDC 発行元」を選んでください。",
+			"gitlabRef": "ブランチまたはタグ（任意）",
+			"gitlabConditionsHint": "main などのブランチ名またはタグ名を使います。両方を空欄にすると、プロジェクト内のすべてのジョブを受け入れます。",
+			"googleServiceAccountId": "サービス アカウントの一意の ID",
+			"googleServiceAccountHint": "Google Cloud コンソールのサービス アカウント詳細ページにある数値の一意の ID です。アカウントが削除されると再利用される可能性があるメールアドレスではなく、こちらを使ってください。",
+			"googleServiceAccountEmail": "サービス アカウントのメールアドレス（任意）",
+			"googleEmailHint": "ワークロードが format=full でトークンを要求した場合にのみ、トークンにメールアドレスが含まれます。",
+			"buildkiteOrganizationId": "組織 ID",
+			"buildkiteOrganizationHint": "組織の UUID です。すべての Buildkite トークンの organization_id クレームに含まれます。",
+			"buildkitePipelineSlug": "パイプライン スラッグ（任意）",
+			"buildkitePipelineHint": "指定しないと、組織内のすべてのパイプラインが信頼されます。",
+			"circleciOrganizationId": "組織 ID",
+			"circleciOrganizationHint": "CircleCI の Organization Settings → Overview で確認できます。",
+			"circleciProjectId": "プロジェクト ID（任意）",
+			"circleciProjectHint": "Project Settings → Overview で確認できます。指定しないと、組織内のすべてのプロジェクトが信頼されます。",
+			"awsIssuer": "発行元 URL",
+			"awsIssuerHint": "AWS アカウントごとに固有の発行元があります。aws iam get-outbound-web-identity-federation-info を実行し、IssuerIdentifier をコピーしてください。",
+			"awsRoleArn": "IAM ロール ARN",
+			"awsRoleHint": "このロールのトークンのみ受け入れます。",
+			"customIssuer": "発行元 URL",
+			"customIssuerHint": "/.well-known/openid-configuration を公開し、署名鍵を同じホストで提供している公開 https URL です。",
+			"customOwnerClaim": "オーナー クレーム",
+			"customOwnerId": "オーナーの値",
+			"customOwnerHint": "すべてのトークンが、このクレームをこの値のとおりに持っている必要があります。たとえば Kubernetes のサービス アカウントなら sub です。他の誰にも再利用できないクレームを選んでください。",
+			"customConditionClaim": "追加クレーム（任意）",
+			"customConditionValue": "必要な値",
+			"customConditionHint": "トークンはこのクレームもこの値のとおりに持っている必要があります。"
 		},
 		"problems": {
 			"name": "100 文字以内で名前を入力してください。",
@@ -6875,7 +6921,19 @@
 			"vercelProjectId": "プロジェクト ID は prj_ で始まります。",
 			"githubOwnerId": "オーナーの数値 ID を入力してください。",
 			"githubRepositoryId": "リポジトリの数値 ID を入力してください。",
-			"lifetime": "1 から 12 までの整数の時間を入力してください。"
+			"lifetime": "1 から 12 までの整数の時間を入力してください。",
+			"gitlabProjectId": "プロジェクトの数値 ID を入力してください。",
+			"googleServiceAccountId": "サービス アカウントの数値の一意の ID を入力してください。",
+			"googleServiceAccountEmail": "app@project.iam.gserviceaccount.com のようなメールアドレスを入力してください。",
+			"buildkiteOrganizationId": "組織の UUID を入力してください。",
+			"circleciOrganizationId": "組織 ID（UUID）を入力してください。",
+			"circleciProjectId": "プロジェクト ID（UUID）を入力してください。",
+			"awsIssuer": "AWS の発行元を入力してください。末尾は .tokens.sts.global.api.aws です。",
+			"awsRoleArn": "arn:aws:iam::123456789012:role/evals のようなロール ARN を入力してください。",
+			"customIssuer": "ポート、クエリ、フラグメントを含まない公開 https URL を入力してください。",
+			"customOwnerClaim": "sub などのクレーム名を入力してください。iss、aud、exp、iat、nbf、jti は使用できません。",
+			"customOwnerId": "オーナー クレームに必要な値を入力してください。",
+			"customCondition": "クレームと値の両方を入力するか、両方を空欄にしてください。クレームはオーナー クレームと別のものにしてください。"
 		},
 		"errors": {
 			"invalid": "{message}",
@@ -6888,7 +6946,10 @@
 			"deleted": "ポリシーを削除しました",
 			"enabled": "ポリシーをオンにしました",
 			"disabled": "ポリシーをオフにしました"
-		}
+		},
+		"listPipeline": "パイプライン",
+		"listEmail": "サービス アカウントのメールアドレス",
+		"usageCustomHint": "公開ディスカバリーに対応した OIDC 発行元であれば利用できます。この例では、Kubernetes の Pod にオーディエンス用のサービス アカウント トークンを渡します。"
 	},
 	"budgets": {
 		"title": "予算",

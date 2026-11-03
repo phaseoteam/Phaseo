@@ -12,6 +12,7 @@ import { isGatewayIoLoggingFeatureEnabled } from "@core/feature-flags";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { json, withRuntime } from "../../utils";
 import { requireCapability } from "./route-helpers";
+import { detailMetadataWithoutContent } from "@/core/request-content-details";
 
 function canReadGenerationIoLog(auth: AuthSuccess): boolean {
 	if (auth.internal) return true;
@@ -117,8 +118,9 @@ async function handleGeneration(req: Request) {
     }
 
     const ioLog = ioLogData as Record<string, any> | null;
-    const contentsReadable = ioLog?.io_log_status === "stored"
-        && await canReadWorkspaceIoLogContents(supabase, auth);
+    // Also covers the search queries and fetched URLs kept in detail_metadata.
+    const mayReadContents = await canReadWorkspaceIoLogContents(supabase, auth);
+    const contentsReadable = ioLog?.io_log_status === "stored" && mayReadContents;
     let ioLogPayload: Record<string, unknown> | null = null;
     if (contentsReadable && typeof ioLog?.io_log_object_key === "string") {
         try {
@@ -128,10 +130,13 @@ async function handleGeneration(req: Request) {
         }
     }
     const replayRequest = resolveReplayRequest(ioLogPayload?.request_payload);
+    // The internal wallet charge key is for reconciliation, not part of the public generation.
+    const { billing_request_id: _billingRequestId, ...generation } = data as Record<string, unknown>;
 
     return json(
         {
-            ...data,
+            ...generation,
+            detail_metadata: mayReadContents ? generation.detail_metadata : detailMetadataWithoutContent(generation.detail_metadata),
             replay_supported: Boolean(replayRequest),
             replay_request: replayRequest,
 			io_log: ioLog ? {

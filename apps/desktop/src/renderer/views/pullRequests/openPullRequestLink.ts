@@ -11,11 +11,11 @@ export function openPullRequestsInApp(): Promise<boolean> {
 	return preference.value;
 }
 
-/** Whether a click asks for the browser rather than the app: Ctrl or Cmd held, or the middle button (T3). */
+/** Whether a click asks for the browser rather than the app: Ctrl or Cmd held, or the middle button. */
 export const wantsBrowser = (event: Pick<MouseEvent, "ctrlKey" | "metaKey" | "button">) => event.ctrlKey || event.metaKey || event.button === 1;
 
 /**
- * T3's openPullRequestLink: a pull request in the chat's own repository opens in the pane when "Open pull requests in
+ * A pull request link: a pull request in the chat's own repository opens in the pane when "Open pull requests in
  * Phaseo" is on, and a modified or middle click, a pull request elsewhere, or the setting off goes to the browser.
  * `repository` is the chat project's owner/repo, or a pull request number already known to belong to it.
  */

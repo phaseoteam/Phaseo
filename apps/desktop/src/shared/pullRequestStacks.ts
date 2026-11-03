@@ -1,7 +1,7 @@
 import type { PullRequestMergeMethod, TaskPullRequestLink } from "./pullRequestView";
 
 /**
- * Stacked pull requests, after T3 Code. GitHub keeps native stacks (a public preview) that list their layers bottom to
+ * Stacked pull requests. GitHub keeps native stacks (a public preview) that list their layers bottom to
  * top; everything else is chained by matching one pull request's base branch to another's head branch.
  */
 export type PullRequestStackState = "open" | "closed" | "merged";
@@ -22,7 +22,7 @@ const branch = (value: unknown): value is string => typeof value === "string" &&
 const positive = (value: unknown) => Number.isSafeInteger(value) && Number(value) >= 1 && Number(value) <= 2147483647;
 const stackState = (state: unknown, mergedAt: unknown): PullRequestStackState => mergedAt ? "merged" : String(state).toLowerCase() === "closed" ? "closed" : String(state).toLowerCase() === "merged" ? "merged" : "open";
 
-/** The first stack of a `GET /repos/{owner}/{repo}/stacks?pull_request=N` listing (T3's decodePullRequestStacksJson); null for none. */
+/** The first stack of a `GET /repos/{owner}/{repo}/stacks?pull_request=N` listing; null for none. */
 export function parsePullRequestStacks(value: unknown): PullRequestStack | null {
 	const list = Array.isArray(value) ? value : value && typeof value === "object" ? [value] : undefined;
 	if (!list) throw new Error("GitHub returned an unreadable stack.");
@@ -68,7 +68,7 @@ export function validatePullRequestStackAction(value: unknown): PullRequestStack
 }
 
 /**
- * Which layers a stack action touches and whether it may run (T3's runGitHubStackAction and PullRequestStackMenu):
+ * Which layers a stack action touches and whether it may run:
  * merging lands the chosen layer and every unmerged one below it; rebasing moves every unmerged layer, and only
  * from the top. Every touched layer must be open, and for a merge ready for review.
  */
@@ -104,7 +104,7 @@ const isOpenLink = (link: TaskPullRequestLink) => !link.snapshot || link.snapsho
 const activityAt = (link: TaskPullRequestLink) => { const at = Date.parse(link.snapshot?.updatedAt ?? link.linkedAt); return Number.isNaN(at) ? 0 : at; };
 
 /**
- * Groups a chat's links into stacks (T3's resolveThreadPullRequestChains). Native stacks win; the rest chain by base
+ * Groups a chat's links into stacks. Native stacks win; the rest chain by base
  * branch to head branch within one repository. A head name two links share identifies no parent, and a cycle has no
  * top, so those links stay as one-layer chains.
  */
@@ -146,7 +146,7 @@ export function pullRequestChains(links: readonly TaskPullRequestLink[]): PullRe
 	return chains;
 }
 
-/** Chains as indented lines, newest stack first, each read bottom to top beneath its slot (T3's pullRequestListLines). */
+/** Chains as indented lines, newest stack first, each read bottom to top beneath its slot. */
 export function pullRequestListLines(chains: readonly PullRequestChain[]): PullRequestListLine[] {
 	return [...chains].sort((left, right) => Math.max(...right.layers.map(activityAt)) - Math.max(...left.layers.map(activityAt))).flatMap(chain => {
 		const chainKey = linkKey(chain.layers[0]);
@@ -155,7 +155,7 @@ export function pullRequestListLines(chains: readonly PullRequestChain[]): PullR
 }
 
 export type PullRequestBadge = { state: "open" | "closed" | "merged" | "draft" } & ({ kind: "stack"; layers: number } | { kind: "pull-request"; others: number });
-/** What a chat row's badge shows: one state for every link, and a stack count when they form one chain (T3's resolveThreadPullRequestBadge). */
+/** What a chat row's badge shows: one state for every link, and a stack count when they form one chain. */
 export function pullRequestBadge(links: readonly TaskPullRequestLink[] | undefined): PullRequestBadge | null {
 	const visible = visiblePullRequestLinks(links);
 	if (!visible.length) return null;
@@ -165,7 +165,7 @@ export function pullRequestBadge(links: readonly TaskPullRequestLink[] | undefin
 	return { kind: "pull-request", others: visible.length - 1, state };
 }
 
-/** The one pull request a single-slot surface opens: open work first, the highest open layer of a stack (T3's resolveThreadCurrentPullRequest). */
+/** The one pull request a single-slot surface opens: open work first, the highest open layer of a stack. */
 export function currentPullRequest(links: readonly TaskPullRequestLink[] | undefined): TaskPullRequestLink | undefined {
 	const visible = visiblePullRequestLinks(links);
 	if (!visible.length) return;
@@ -181,7 +181,7 @@ export function currentPullRequest(links: readonly TaskPullRequestLink[] | undef
 	return [...visible].sort((left, right) => activityAt(right) - activityAt(left))[0];
 }
 
-/** A pull request whose base is not the repository's default branch builds on another (T3's isStackedPullRequestBase). */
+/** A pull request whose base is not the repository's default branch builds on another. */
 export function isStackedBase(base: string, defaultBranch: string | undefined) {
 	return Boolean(defaultBranch) && base !== defaultBranch;
 }

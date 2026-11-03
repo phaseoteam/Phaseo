@@ -220,7 +220,8 @@ function isLegacyKeyNamespaceRetired(namespace: string, nowMs = Date.now()): boo
 
 /* -------------------- main -------------------- */
 
-export type AuthFailure = { ok: false; reason: string };
+/** `message` is an optional caller-facing explanation returned with the reason. */
+export type AuthFailure = { ok: false; reason: string; message?: string };
 export type AuthSuccess = {
     ok: true;
     workspaceId: string;

@@ -5226,9 +5226,9 @@ paths:
       operationId: listWorkloadIdentityPolicies
       summary: List trusted workload policies
       description: >-
-        Lists the workspace's trusted workload policies: which Vercel
-        deployments and GitHub Actions workflows may call the gateway with their
-        OIDC token instead of an API key. Requires keys:read on management keys
+        Lists the workspace's trusted workload policies: which deployments, CI
+        jobs and cloud workloads may call the gateway with their OIDC token
+        instead of an API key. Requires keys:read on management keys
         and OAuth tokens, or a workspace owner or admin. Available only to
         workspaces in the trusted workloads beta; other workspaces get 404.
       responses:
@@ -5316,11 +5316,11 @@ paths:
       summary: Update a trusted workload policy
       description: >-
         Changes a policy's name, status, claim conditions or maximum token
-        lifetime. The provider, issuer and owner cannot change; create a new
-        policy instead. Changes reach the gateway within a minute. Requires
-        keys:write on management keys and OAuth tokens, or a workspace owner or
-        admin. Available only to workspaces in the trusted workloads beta; other
-        workspaces get 404.
+        lifetime. The provider, issuer, owner claim and owner cannot change;
+        create a new policy instead. Changes reach the gateway within a minute.
+        Requires keys:write on management keys and OAuth tokens, or a workspace
+        owner or admin. Available only to workspaces in the trusted workloads
+        beta; other workspaces get 404.
       requestBody:
         required: true
         content:
@@ -24746,7 +24746,16 @@ components:
       enum:
         - vercel
         - github_actions
-      description: The platform that issues the OIDC tokens.
+        - gitlab
+        - google_cloud
+        - buildkite
+        - circleci
+        - aws
+        - custom
+      description: >-
+        The platform that issues the OIDC tokens. Use custom for any other
+        OIDC issuer, such as a Kubernetes cluster or a self-managed GitLab
+        instance.
     WorkloadIdentityPolicy:
       type: object
       description: >-
@@ -24757,6 +24766,7 @@ components:
         - name
         - provider
         - issuer
+        - owner_claim
         - owner_id
         - claim_conditions
         - max_token_lifetime_seconds
@@ -24780,22 +24790,35 @@ components:
         issuer:
           type: string
           description: >-
-            Token issuer, for example https://oidc.vercel.com/acme or
-            https://token.actions.githubusercontent.com.
+            Token issuer (the iss claim), for example
+            https://oidc.vercel.com/acme, https://token.actions.githubusercontent.com
+            or https://accounts.google.com.
+        owner_claim:
+          type: string
+          description: >-
+            The token claim owner_id is matched against. Fixed for each
+            platform: owner_id for vercel, repository_owner_id for
+            github_actions, project_id for gitlab, sub for google_cloud and aws,
+            organization_id for buildkite and oidc.circleci.com/org-id for
+            circleci. Custom issuers use the claim chosen when the policy was
+            created.
         owner_id:
           type: string
           description: >-
-            The pinned Vercel team ID (owner_id claim) or GitHub organisation or
-            user ID (repository_owner_id claim).
+            The pinned owner: the value the token's owner_claim must equal, such
+            as a Vercel team ID, GitHub organisation or user ID, GitLab project ID,
+            Google service account unique ID, Buildkite organization ID,
+            CircleCI organization ID or AWS IAM role ARN.
         claim_conditions:
           type: object
           description: >-
             Extra claims the token must match, as claim name to allowed values,
-            for example project_id and environment for Vercel, or repository_id
-            and ref for GitHub Actions. Every claim must match one of its
-            values. At most 15 claims and 20 values per claim; iss, aud, exp,
-            iat, nbf and jti cannot be used, and the pinned owner claim is set
-            with owner_id.
+            for example repository_id and ref for GitHub Actions, or
+            project_path and ref for GitLab. Every claim must match one of its
+            values. At most 15 claims and 20 values per claim. Claim names use
+            letters, digits and . _ : / - and are up to 128 characters; iss,
+            aud, exp, iat, nbf and jti cannot be used, and the owner claim is
+            set with owner_id.
           maxProperties: 15
           additionalProperties:
             type: array
@@ -24855,22 +24878,45 @@ components:
         issuer:
           type: string
           description: >-
-            Required for Vercel: https://oidc.vercel.com/ followed by the team
-            slug, or https://oidc.vercel.com for the global issuer. Defaults to
-            https://token.actions.githubusercontent.com for GitHub Actions.
+            The issuer tokens come from. Optional for github_actions (defaults
+            to https://token.actions.githubusercontent.com; add
+            /<enterprise-slug> for a customised enterprise issuer), gitlab
+            (https://gitlab.com), google_cloud (https://accounts.google.com)
+            and buildkite (https://agent.buildkite.com). Required for vercel
+            (https://oidc.vercel.com/<team-slug>, or https://oidc.vercel.com
+            for the global issuer), circleci
+            (https://oidc.circleci.com/org/<organization-id>), aws (your
+            account's https://<id>.tokens.sts.global.api.aws issuer) and custom
+            (a public https URL that serves an OIDC discovery document, on a
+            host that does not belong to one of the other platforms).
+        owner_claim:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: >-
+            The token claim owner_id is matched against, for example sub.
+            Required for custom. Other platforms use a fixed claim (see
+            owner_claim on the policy), so omit it or send that claim. Cannot be
+            changed later.
         owner_id:
           type: string
           minLength: 1
-          description: The Vercel team ID or GitHub organisation or user ID to pin.
+          description: >-
+            The value the owner claim must equal: a Vercel team ID, GitHub
+            organisation or user ID, GitLab project ID, Google service account
+            unique ID (not its email), Buildkite organization ID, CircleCI
+            organization ID (the one in the issuer), AWS IAM role ARN, or for
+            custom issuers the owner_claim value to trust.
         claim_conditions:
           type: object
           description: >-
             Extra claims the token must match, as claim name to allowed values,
-            for example project_id and environment for Vercel, or repository_id
-            and ref for GitHub Actions. Every claim must match one of its
-            values. At most 15 claims and 20 values per claim; iss, aud, exp,
-            iat, nbf and jti cannot be used, and the pinned owner claim is set
-            with owner_id.
+            for example repository_id and ref for GitHub Actions, or
+            project_path and ref for GitLab. Every claim must match one of its
+            values. At most 15 claims and 20 values per claim. Claim names use
+            letters, digits and . _ : / - and are up to 128 characters; iss,
+            aud, exp, iat, nbf and jti cannot be used, and the owner claim is
+            set with owner_id.
           maxProperties: 15
           additionalProperties:
             type: array
@@ -24904,11 +24950,12 @@ components:
           type: object
           description: >-
             Extra claims the token must match, as claim name to allowed values,
-            for example project_id and environment for Vercel, or repository_id
-            and ref for GitHub Actions. Every claim must match one of its
-            values. At most 15 claims and 20 values per claim; iss, aud, exp,
-            iat, nbf and jti cannot be used, and the pinned owner claim is set
-            with owner_id.
+            for example repository_id and ref for GitHub Actions, or
+            project_path and ref for GitLab. Every claim must match one of its
+            values. At most 15 claims and 20 values per claim. Claim names use
+            letters, digits and . _ : / - and are up to 128 characters; iss,
+            aud, exp, iat, nbf and jti cannot be used, and the owner claim is
+            set with owner_id.
           maxProperties: 15
           additionalProperties:
             type: array

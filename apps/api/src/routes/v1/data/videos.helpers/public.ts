@@ -194,17 +194,37 @@ export function buildContentHeaders(
 		contentType?: string | null;
 	},
 ): Headers {
-	const out = new Headers(headers);
-	if (options?.contentType && !out.has("Content-Type")) {
-		out.set("Content-Type", options.contentType);
+	// Signed links serve the provider's bytes from Phaseo's origin, so only transfer headers
+	// pass through and only a video (or still image) type is served as such. Anything else,
+	// such as text/html or image/svg+xml, is an opaque download.
+	const upstream = new Headers(headers);
+	const out = new Headers();
+	for (const name of ["Content-Range", "Accept-Ranges", "ETag", "Last-Modified"]) {
+		const value = upstream.get(name);
+		if (value) out.set(name, value);
 	}
-	if (options?.contentDisposition) {
-		const filename = normalizeText(options.filename) ?? "video.mp4";
-		out.set("Content-Disposition", `${options.contentDisposition}; filename="${filename}"`);
+	const length = upstream.get("Content-Length");
+	if (length && /^\d+$/.test(length) && !upstream.get("Content-Encoding")) out.set("Content-Length", length);
+	const contentType = safeVideoContentType(upstream.get("Content-Type") ?? options?.contentType ?? null);
+	out.set("Content-Type", contentType ?? "application/octet-stream");
+	const disposition = contentType ? options?.contentDisposition : "attachment";
+	if (disposition) {
+		const filename = normalizeText(options?.filename)?.replace(/["\\\r\n]/g, "") || "video.mp4";
+		out.set("Content-Disposition", `${disposition}; filename="${filename}"`);
 	}
 	out.set("Cache-Control", "private, no-store");
 	out.set("X-Content-Type-Options", "nosniff");
+	out.set("Content-Security-Policy", "sandbox; default-src 'none'");
 	return out;
+}
+
+const SAFE_IMAGE_CONTENT_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
+
+/** The media type when it is a video or a PNG, JPEG or WebP image; null otherwise. */
+export function safeVideoContentType(value: string | null | undefined): string | null {
+	const type = (value ?? "").split(";")[0]!.trim().toLowerCase();
+	if (/^video\/[a-z0-9][a-z0-9.+-]{0,63}$/.test(type)) return type;
+	return SAFE_IMAGE_CONTENT_TYPES.has(type) ? type : null;
 }
 
 export function toPublicVideoOutputs(requestUrl: string, id: string, payload: Record<string, unknown>, meta: VideoJobMeta | null) {

@@ -637,10 +637,9 @@ async function handleCreateKey(req: Request) {
 			return json({ error: "bad_request", message: "department_id does not match a department in this workspace" }, 400, { "Cache-Control": "no-store" });
 		}
 		await enforceWorkspaceKeyLimit(workspaceScope.workspaceId, "api");
-		const creatorUserId =
-			auth.value.authMethod === "oauth" && auth.value.userId
-				? auth.value.userId
-				: await resolveWorkspaceOwnerUserId(workspaceScope.workspaceId);
+		// A key minted with a management key belongs to that key's creator, so it is revoked with
+		// their membership; only credentials with no person behind them fall back to the owner.
+		const creatorUserId = auth.value.userId ?? await resolveWorkspaceOwnerUserId(workspaceScope.workspaceId);
 		const pepper = resolveActiveKeyPepper(getBindings());
 		if (!pepper) {
 			return json(

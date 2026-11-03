@@ -1,7 +1,7 @@
 import { EventEmitter } from "node:events";
 import type * as ChildProcessModule from "node:child_process";
 import { PassThrough } from "node:stream";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { tmpdir } from "node:os";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -50,6 +50,19 @@ describe("OpenCode service lifecycle", () => {
 			expect(resolveCommand).toHaveBeenCalledOnce(); expect(mocks.spawn).toHaveBeenCalledOnce();
 			expect(mocks.spawn.mock.lastCall?.[2]).toMatchObject({ windowsHide: true, shell: false, env: { XDG_STATE_HOME: path.join(root, "native", "opencode", "state") } });
 			await service.close(); expect(child.kill).toHaveBeenCalled(); expect(mocks.stop).toHaveBeenCalledWith({ file: path.join(root, "native", "opencode", "state", "opencode", "service.json") });
+		} finally { await service.close(); rmSync(root, { recursive: true, force: true }); }
+	});
+	it("starts a private service for a turn even when a shared one runs, and removes it when closed", async () => {
+		const root = mkdtempSync(path.join(tmpdir(), "phaseo-service-isolated-")); const child = fixture();
+		const own = { url: "http://localhost:5000" };
+		mocks.discover.mockImplementation(async (options?: { file?: string }) => options?.file?.includes(path.join("opencode", "turns")) ? own : endpoint);
+		const service = new OpenCodeService(root, async () => ({ executable: "fixture", prefix: [], version: "2.0.22" }));
+		try {
+			const isolated = await service.isolated(new AbortController().signal); expect(isolated.endpoint).toEqual(own);
+			const state = (mocks.spawn.mock.lastCall?.[2] as { env: { XDG_STATE_HOME: string } }).env.XDG_STATE_HOME;
+			expect(path.dirname(state)).toBe(path.join(root, "native", "opencode", "turns")); expect(mocks.spawn.mock.lastCall?.[1]).toEqual(["serve", "--service", "--hostname", "127.0.0.1", "--port", "0"]);
+			await isolated.close(); expect(child.kill).toHaveBeenCalled(); expect(mocks.stop).toHaveBeenCalledWith({ file: path.join(state, "opencode", "service.json") });
+			expect(existsSync(state)).toBe(false);
 		} finally { await service.close(); rmSync(root, { recursive: true, force: true }); }
 	});
 	it("cancels one startup caller while another can finish", async () => {

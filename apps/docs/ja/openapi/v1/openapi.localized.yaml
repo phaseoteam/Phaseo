@@ -4970,7 +4970,7 @@ paths:
         - Gateway
       operationId: listWorkloadIdentityPolicies
       summary: 信頼済みワークロードのポリシー一覧を取得
-      description: ワークスペースの信頼済みワークロードのポリシーを一覧表示します。API キーの代わりに OIDC トークンでゲートウェイを呼び出せる Vercel のデプロイと GitHub Actions のワークフローが分かります。管理キーと OAuth トークンでは keys:read、またはワークスペースのオーナーか管理者が必要です。信頼済みワークロードのベータに参加しているワークスペースのみ利用でき、それ以外のワークスペースには 404 が返ります。
+      description: ワークスペースの信頼済みワークロードのポリシーを一覧表示します。API キーの代わりに OIDC トークンでゲートウェイを呼び出せるデプロイ、CI ジョブ、クラウドワークロードが分かります。管理キーと OAuth トークンでは keys:read、またはワークスペースのオーナーか管理者が必要です。信頼済みワークロードのベータに参加しているワークスペースのみ利用でき、それ以外のワークスペースには 404 が返ります。
       responses:
         '200':
           description: 信頼済みワークロードのポリシー
@@ -5045,7 +5045,7 @@ paths:
         - Gateway
       operationId: updateWorkloadIdentityPolicy
       summary: 信頼済みワークロードのポリシーを更新
-      description: ポリシーの名前、状態、クレーム条件、トークンの最大有効期間を変更します。プロバイダー、発行者、オーナーは変更できないため、代わりに新しいポリシーを作成してください。変更は 1 分以内にゲートウェイへ反映されます。管理キーと OAuth トークンでは keys:write、またはワークスペースのオーナーか管理者が必要です。信頼済みワークロードのベータに参加しているワークスペースのみ利用でき、それ以外のワークスペースには 404 が返ります。
+      description: ポリシーの名前、状態、クレーム条件、トークンの最大有効期間を変更します。プロバイダー、発行者、オーナーのクレーム、オーナーは変更できないため、代わりに新しいポリシーを作成してください。変更は 1 分以内にゲートウェイへ反映されます。管理キーと OAuth トークンでは keys:write、またはワークスペースのオーナーか管理者が必要です。信頼済みワークロードのベータに参加しているワークスペースのみ利用でき、それ以外のワークスペースには 404 が返ります。
       requestBody:
         required: true
         content:
@@ -23624,7 +23624,13 @@ components:
       enum:
         - vercel
         - github_actions
-      description: OIDC トークンを発行するプラットフォーム。
+        - gitlab
+        - google_cloud
+        - buildkite
+        - circleci
+        - aws
+        - custom
+      description: OIDC トークンを発行するプラットフォーム。Kubernetes クラスターやセルフマネージドの GitLab インスタンスなど、その他の OIDC 発行者には custom を使います。
     WorkloadIdentityPolicy:
       type: object
       description: '信頼済みワークロード: この発行者のトークンのうち、固定したオーナー向けで、すべてのクレーム条件に一致するものが、ポリシーのキーとして認証されます。'
@@ -23633,6 +23639,7 @@ components:
         - name
         - provider
         - issuer
+        - owner_claim
         - owner_id
         - claim_conditions
         - max_token_lifetime_seconds
@@ -23655,13 +23662,16 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: 'トークンの発行者。例: https://oidc.vercel.com/acme、https://token.actions.githubusercontent.com。'
+          description: 'トークンの発行者（iss クレーム）。例: https://oidc.vercel.com/acme、https://token.actions.githubusercontent.com、https://accounts.google.com。'
+        owner_claim:
+          type: string
+          description: 'owner_id と照合するトークンのクレーム。プラットフォームごとに固定です: vercel は owner_id、github_actions は repository_owner_id、gitlab は project_id、google_cloud と aws は sub、buildkite は organization_id、circleci は oidc.circleci.com/org-id。custom の発行者では、ポリシー作成時に選んだクレームを使います。'
         owner_id:
           type: string
-          description: 固定した Vercel のチーム ID（owner_id クレーム）、または GitHub の組織 ID かユーザー ID（repository_owner_id クレーム）。
+          description: 固定したオーナー。トークンの owner_claim が一致すべき値で、Vercel のチーム ID、GitHub の組織 ID かユーザー ID、GitLab のプロジェクト ID、Google サービスアカウントの一意の ID、Buildkite の組織 ID、CircleCI の組織 ID、AWS IAM ロールの ARN などです。
         claim_conditions:
           type: object
-          description: 'トークンが満たす必要のある追加のクレーム。クレーム名と許可する値の組で指定します。例: Vercel では project_id と environment、GitHub Actions では repository_id と ref。各クレームはいずれかの値に一致する必要があります。クレームは最大 15 個、1 クレームあたりの値は最大 20 個です。iss、aud、exp、iat、nbf、jti は使えず、固定したオーナーのクレームは owner_id で設定します。'
+          description: 'トークンが満たす必要のある追加のクレーム。クレーム名と許可する値の組で指定します。例: GitHub Actions では repository_id と ref、GitLab では project_path と ref。各クレームはいずれかの値に一致する必要があります。クレームは最大 15 個、1 クレームあたりの値は最大 20 個です。クレーム名には英字、数字、. _ : / - を使え、最大 128 文字です。iss、aud、exp、iat、nbf、jti は使えず、オーナーのクレームは owner_id で設定します。'
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23718,14 +23728,19 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: 'Vercel では必須: https://oidc.vercel.com/ の後にチームのスラッグを付けるか、グローバル発行者の場合は https://oidc.vercel.com を指定します。GitHub Actions の既定値は https://token.actions.githubusercontent.com です。'
+          description: トークンの発行者。github_actions（既定値は https://token.actions.githubusercontent.com。カスタマイズしたエンタープライズの発行者では /<enterprise-slug> を付けます）、gitlab（https://gitlab.com）、google_cloud（https://accounts.google.com）、buildkite（https://agent.buildkite.com）では省略できます。vercel（https://oidc.vercel.com/<team-slug>、グローバル発行者の場合は https://oidc.vercel.com）、circleci（https://oidc.circleci.com/org/<organization-id>）、aws（アカウントの https://<id>.tokens.sts.global.api.aws 発行者）、custom（OIDC ディスカバリードキュメントを提供する公開 https URL で、他のプラットフォームに属さないホスト）では必須です。
+        owner_claim:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: 'owner_id と照合するトークンのクレーム。例: sub。custom では必須です。その他のプラットフォームは固定のクレームを使うため（ポリシーの owner_claim を参照）、省略するかそのクレームを指定します。後から変更することはできません。'
         owner_id:
           type: string
           minLength: 1
-          description: 固定する Vercel のチーム ID、または GitHub の組織 ID かユーザー ID。
+          description: オーナーのクレームが一致すべき値。Vercel のチーム ID、GitHub の組織 ID かユーザー ID、GitLab のプロジェクト ID、Google サービスアカウントの一意の ID（メールアドレスではありません）、Buildkite の組織 ID、CircleCI の組織 ID（発行者に含まれるもの）、AWS IAM ロールの ARN、または custom の発行者では信頼する owner_claim の値です。
         claim_conditions:
           type: object
-          description: 'トークンが満たす必要のある追加のクレーム。クレーム名と許可する値の組で指定します。例: Vercel では project_id と environment、GitHub Actions では repository_id と ref。各クレームはいずれかの値に一致する必要があります。クレームは最大 15 個、1 クレームあたりの値は最大 20 個です。iss、aud、exp、iat、nbf、jti は使えず、固定したオーナーのクレームは owner_id で設定します。'
+          description: 'トークンが満たす必要のある追加のクレーム。クレーム名と許可する値の組で指定します。例: GitHub Actions では repository_id と ref、GitLab では project_path と ref。各クレームはいずれかの値に一致する必要があります。クレームは最大 15 個、1 クレームあたりの値は最大 20 個です。クレーム名には英字、数字、. _ : / - を使え、最大 128 文字です。iss、aud、exp、iat、nbf、jti は使えず、オーナーのクレームは owner_id で設定します。'
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23757,7 +23772,7 @@ components:
             - disabled
         claim_conditions:
           type: object
-          description: 'トークンが満たす必要のある追加のクレーム。クレーム名と許可する値の組で指定します。例: Vercel では project_id と environment、GitHub Actions では repository_id と ref。各クレームはいずれかの値に一致する必要があります。クレームは最大 15 個、1 クレームあたりの値は最大 20 個です。iss、aud、exp、iat、nbf、jti は使えず、固定したオーナーのクレームは owner_id で設定します。'
+          description: 'トークンが満たす必要のある追加のクレーム。クレーム名と許可する値の組で指定します。例: GitHub Actions では repository_id と ref、GitLab では project_path と ref。各クレームはいずれかの値に一致する必要があります。クレームは最大 15 個、1 クレームあたりの値は最大 20 個です。クレーム名には英字、数字、. _ : / - を使え、最大 128 文字です。iss、aud、exp、iat、nbf、jti は使えず、オーナーのクレームは owner_id で設定します。'
           maxProperties: 15
           additionalProperties:
             type: array

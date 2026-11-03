@@ -1,4 +1,4 @@
-/** Short chat titles written by a model through the person's Phaseo account, as T3 Code names its threads. */
+/** Short chat titles written by a model through the person's Phaseo account. */
 
 /** First line only, without quotes, Markdown or a closing full stop; up to 80 characters. */
 export function cleanTitle(raw: string) {

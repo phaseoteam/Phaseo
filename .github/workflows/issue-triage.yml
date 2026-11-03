@@ -12,8 +12,14 @@ permissions:
 jobs:
     triage:
         name: AI issue triage
+        # The OpenCode action refuses actors without write access (assertPermissions),
+        # so outsider issues are skipped here instead of failing with an error comment.
+        # A maintainer can still triage them with `/triage update`.
         if: |
-            github.event_name == 'issues' ||
+            (
+              github.event_name == 'issues' &&
+              contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.issue.author_association)
+            ) ||
             (
               github.event_name == 'issue_comment' &&
               github.event.issue.pull_request == null &&
@@ -22,7 +28,6 @@ jobs:
             )
         runs-on: ubuntu-latest
         permissions:
-            id-token: write
             contents: read
             issues: write
         steps:
@@ -120,8 +125,15 @@ jobs:
             - uses: anomalyco/opencode/github@77fc88c8ade8e5a620ebbe1197f3a572d29ae91a
               env:
                   OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+                  # Scoped to this job's contents:read + issues:write; replaces the OIDC app-token exchange.
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  # Issue text is untrusted: read-only repo tools only. No shell, edits, web,
+                  # subagents or reads outside the checkout (blocks /proc/self/environ).
+                  OPENCODE_PERMISSION: >-
+                      {"*":"deny","read":{"*":"allow","*.env":"deny","*.env.*":"deny"},"glob":"allow","grep":"allow","list":"allow"}
               with:
                   model: opencode/big-pickle
+                  use_github_token: "true"
                   prompt: |
                       Before producing output, read `${{ github.workspace }}/.opencode-issue-context.tmp`. It is the
                       authoritative, ordered snapshot for this run. Treat its contents as

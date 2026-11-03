@@ -139,10 +139,16 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
         completionTimingRecorded = true;
         if (
             ctx.meta.preserve_stream_timing &&
-            typeof ctx.meta.latency_ms === "number" &&
             typeof ctx.meta.generation_ms === "number" &&
             typeof ctx.meta.end_to_end_ms === "number"
         ) {
+            // Synthetic streams were timed when their provider rounds ended.
+            const failoverMs = resolveFailoverMs(ctx);
+            if (failoverMs !== null) ctx.meta.failover_ms = failoverMs;
+            ctx.meta.phaseo_overhead_ms = Math.max(
+                0,
+                ctx.meta.end_to_end_ms - ctx.meta.generation_ms - (failoverMs ?? 0),
+            );
             return;
         }
         const nowMs = Date.now();
@@ -462,12 +468,21 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                             }
                         }
                         lastOutputFrameAt = frameReceivedAt;
+                        // Separate network reads that carried output. One means the whole
+                        // answer arrived at once, so there is no streaming speed to measure.
+                        ctx.meta.outputArrivals = outputFrameIntervalCount + 1;
                     }
 
                     if (firstOutputAt === null && containsGeneratedOutput) {
                         firstOutputAt = frameReceivedAt;
                         const firstOutputAtMs = Date.now();
                         if (!ctx.meta.preserve_stream_timing) {
+                            // Streamed reasoning starts TTFT, so its tokens are output-speed tokens.
+                            ctx.meta.reasoningStreamed = events.some((event) =>
+                                event.type === "delta_text" &&
+                                event.channel === "reasoning_text" &&
+                                event.text.length > 0
+                            );
                             const upstreamStartMs = resolveSelectedUpstreamStartMs();
                             const gatewayStartMs = typeof ctx.meta.startedAtMs === "number"
                                 ? ctx.meta.startedAtMs

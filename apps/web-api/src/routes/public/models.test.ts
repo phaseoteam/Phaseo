@@ -1774,7 +1774,7 @@ describe("public model routes", () => {
 		]), { status: 200 })));
 
 		const response = await app.request(
-			"https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai",
+			"https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai&model_id=openai%2Fgpt-test",
 			{},
 			env,
 		);
@@ -1789,5 +1789,113 @@ describe("public model routes", () => {
 			halfOpenCount: 1,
 			checkedPairs: 2,
 		} } });
+	});
+
+	it("reports an open breaker past its cooldown as recovering, whatever was stored at opening", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([
+			{ provider_id: "openai", breaker_state: "open", is_deranked: true, open_until_ms: Date.now() - 1_000 },
+		]), { status: 200 })));
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai&model_id=openai%2Fgpt-test",
+			{},
+			env,
+		);
+
+		await expect(response.json()).resolves.toEqual({ providers: { openai: {
+			providerId: "openai",
+			deranked: false,
+			recovering: true,
+			openCount: 0,
+			halfOpenCount: 1,
+			checkedPairs: 1,
+		} } });
+	});
+
+	it("requires a model, so one model's outage never limits a provider on another model", async () => {
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+		const response = await app.request("https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai", {}, env);
+		expect(response.status).toBe(400);
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("fails rather than report a partial status when the rows fill a page", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(Array.from({ length: 1_000 }, () => ({
+			provider_id: "openai", breaker_state: "closed", is_deranked: false, open_until_ms: 0,
+		}))), { status: 200 })));
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai&model_id=openai%2Fgpt-test", {}, env,
+		);
+		expect(response.status).toBe(503);
+		expect(response.headers.get("cache-tag")).toBeNull();
+	});
+
+	it("limits the status to the model page's own model", async () => {
+		const fetchMock = vi.fn(async () => new Response(JSON.stringify([]), { status: 200 }));
+		vi.stubGlobal("fetch", fetchMock);
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai&model_id=moonshotai%2Fkimi-k3",
+			{},
+			env,
+		);
+
+		expect(response.status).toBe(200);
+		const url = new URL(String(fetchMock.mock.calls[0][0]));
+		expect(url.searchParams.get("model_id")).toBe("eq.moonshotai/kimi-k3");
+		expect(url.searchParams.get("provider_id")).toBe("in.(openai)");
+	});
+
+	it("does not cache an empty status when breaker state cannot be read", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ message: "unavailable" }), { status: 500 })));
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai&model_id=openai%2Fgpt-test",
+			{},
+			env,
+		);
+
+		expect(response.status).toBe(503);
+		expect(response.headers.get("cache-tag")).toBeNull();
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBeNull();
+	});
+});
+
+describe("public model query validation", () => {
+	// Every distinct URL misses the edge cache, so free-text values must never reach the database.
+	it.each([
+		["/performance?colo=random-buster-1", "invalid_colo"],
+		["/performance?colo=ab", "invalid_colo"],
+		["/performance?colo=LHR1", "invalid_colo"],
+		["/usage-daily?since=yesterday", "invalid_date"],
+		["/usage-daily?until=2026-02-30", "invalid_date"],
+		["/effective-pricing-daily?since=2026-13-01", "invalid_date"],
+	])("rejects %s before any query", async (path, error) => {
+		const fetchMock = vi.fn(async () => new Response("[]"));
+		vi.stubGlobal("fetch", fetchMock);
+		const response = await app.request(`https://phaseo.app/api/_web/models/openai%2Fgpt-test${path}`, {}, env);
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({ error });
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("passes a valid colo to the performance RPCs", async () => {
+		const fetchMock = vi.fn(async () => new Response("[]"));
+		vi.stubGlobal("fetch", fetchMock);
+		const response = await app.request("https://phaseo.app/api/_web/models/openai%2Fgpt-test/performance?colo=lhr", {}, env);
+		expect(response.status).toBe(200);
+		const metricsCall = fetchMock.mock.calls.find((call: any[]) => String(call[0]).includes("get_v2_model_performance_metrics")) as any[] | undefined;
+		expect(String(metricsCall?.[1]?.body)).toContain('"p_cloudflare_colo":"LHR"');
+	});
+
+	it("keeps accepting ISO days and timestamps for since and until", async () => {
+		const fetchMock = vi.fn(async () => new Response("[]"));
+		vi.stubGlobal("fetch", fetchMock);
+		const response = await app.request("https://phaseo.app/api/_web/models/openai%2Fgpt-test/usage-daily?since=2026-10-01T00:00:00Z&until=2026-10-31", {}, env);
+		expect(response.status).toBe(200);
+		const usageCall = fetchMock.mock.calls.find((call: any[]) => String(call[0]).includes("get_v2_model_usage_daily")) as any[] | undefined;
+		expect(String(usageCall?.[1]?.body)).toContain('"p_since":"2026-10-01"');
+		expect(String(usageCall?.[1]?.body)).toContain('"p_until":"2026-10-31"');
 	});
 });

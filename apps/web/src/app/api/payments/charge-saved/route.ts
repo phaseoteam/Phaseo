@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/utils/supabase/admin";
@@ -7,6 +8,14 @@ const INTERNAL_PAYMENTS_TOKEN = process.env.INTERNAL_PAYMENTS_TOKEN ?? process.e
 const INTERNAL_HEADER = "x-internal-payments-token";
 const TOP_UP_PURPOSES = new Set(["top_up", "top_up_one_off", "auto_top_up", "credits_topup_offsession"]);
 
+// Constant-time comparison. Only the token's length can leak, which says nothing useful about a random secret.
+function tokensMatch(provided: string | null, expected: string): boolean {
+    if (!provided) return false;
+    const left = Buffer.from(provided);
+    const right = Buffer.from(expected);
+    return left.length === right.length && timingSafeEqual(left, right);
+}
+
 function requireInternalCaller(req: NextRequest): NextResponse | null {
     if (!INTERNAL_PAYMENTS_TOKEN) {
         console.error("[payments] INTERNAL_PAYMENTS_TOKEN not configured");
@@ -14,7 +23,7 @@ function requireInternalCaller(req: NextRequest): NextResponse | null {
     }
 
     const provided = req.headers.get(INTERNAL_HEADER);
-    if (provided !== INTERNAL_PAYMENTS_TOKEN) {
+    if (!tokensMatch(provided, INTERNAL_PAYMENTS_TOKEN)) {
         console.warn("[payments] Blocked unauthorised charge-saved invocation", {
             remote: req.headers.get("x-forwarded-for") ?? "unknown",
         });

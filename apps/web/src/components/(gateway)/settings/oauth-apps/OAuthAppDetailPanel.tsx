@@ -71,6 +71,8 @@ interface OAuthAppDetailPanelProps {
 		email: string | null;
 	}>;
 	currentUserId: string;
+	/** False for plain members: only owners and admins see who uses the app. */
+	canViewUsers?: boolean;
 }
 
 interface UserRequestSummary {
@@ -120,6 +122,7 @@ export default function OAuthAppDetailPanel({
 	recentRequests,
 	userDirectory,
 	currentUserId,
+	canViewUsers = true,
 }: OAuthAppDetailPanelProps) {
 	const translate = useTranslations("SettingsUI");
 	const t = (key: string, values?: Record<string, unknown>) =>
@@ -393,247 +396,260 @@ export default function OAuthAppDetailPanel({
 				</CardContent>
 			</Card>
 
-			{/* Recent Authorizations */}
-			<Card>
-				<CardHeader>
-					<CardTitle className="text-lg">{t("strings.Recent Authorizations" as never)}</CardTitle>
-					<CardDescription>
-						{t("oauthDetail.authorizedUsers")}
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					{authorizations.length === 0 ? (
-						<Empty
-							size="compact"
-							className="rounded-lg border border-dashed border-border/80 p-8"
-						>
+			{canViewUsers === false ? (
+				<Card>
+					<CardContent className="pt-6">
+						<Empty size="compact" className="rounded-lg border border-dashed border-border/80 p-8">
 							<EmptyHeader>
 								<EmptyMedia variant="icon">
 									<Users className="h-5 w-5" />
 								</EmptyMedia>
-					<EmptyTitle className="text-base">{t("oauthDetail.noAuthorizations")}</EmptyTitle>
-								<EmptyDescription>
-									{t("oauthDetail.authorizationEmpty")}
-								</EmptyDescription>
+								<EmptyTitle className="text-base">{t("oauthDetail.usersAdminsOnly")}</EmptyTitle>
+								<EmptyDescription>{t("oauthDetail.usersAdminsOnlyDescription")}</EmptyDescription>
 							</EmptyHeader>
 						</Empty>
-					) : (
-						<div className="space-y-2">
-							{authorizations.map((auth) => (
-								<div
-									key={auth.id}
-									className="flex items-center justify-between p-3 border rounded-md"
-								>
-									<div>
+					</CardContent>
+				</Card>
+			) : (
+			<>
+				{/* Recent Authorizations */}
+				<Card>
+					<CardHeader>
+						<CardTitle className="text-lg">{t("strings.Recent Authorizations" as never)}</CardTitle>
+						<CardDescription>
+							{t("oauthDetail.authorizedUsers")}
+						</CardDescription>
+					</CardHeader>
+					<CardContent>
+						{authorizations.length === 0 ? (
+							<Empty
+								size="compact"
+								className="rounded-lg border border-dashed border-border/80 p-8"
+							>
+								<EmptyHeader>
+									<EmptyMedia variant="icon">
+										<Users className="h-5 w-5" />
+									</EmptyMedia>
+						<EmptyTitle className="text-base">{t("oauthDetail.noAuthorizations")}</EmptyTitle>
+									<EmptyDescription>
+										{t("oauthDetail.authorizationEmpty")}
+									</EmptyDescription>
+								</EmptyHeader>
+							</Empty>
+						) : (
+							<div className="space-y-2">
+								{authorizations.map((auth) => (
+									<div
+										key={auth.id}
+										className="flex items-center justify-between p-3 border rounded-md"
+									>
 										<div className="font-medium text-sm">
 											{auth.users?.full_name || auth.users?.email || t("oauthDetail.unknownUser")}
 										</div>
 										<div className="text-xs text-muted-foreground">
-											{auth.teams?.name || t("oauthDetail.unknownWorkspace")}
+											{auth.last_used_at
+												? `Used ${formatDistanceToNow(new Date(auth.last_used_at), {
+														addSuffix: true,
+												  })}`
+													  : t("oauthDetail.neverUsed")}
 										</div>
 									</div>
-									<div className="text-xs text-muted-foreground">
-										{auth.last_used_at
-											? `Used ${formatDistanceToNow(new Date(auth.last_used_at), {
-													addSuffix: true,
-											  })}`
-												  : t("oauthDetail.neverUsed")}
-									</div>
-								</div>
-							))}
-						</div>
-					)}
-				</CardContent>
-			</Card>
-
-			{/* User Activity */}
-			<Card>
-				<CardHeader>
-					<CardTitle className="text-lg">{t("strings.User Activity (Recent)" as never)}</CardTitle>
-					<CardDescription>
-						{t("oauthDetail.activityDescription")}
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					{userSummaries.length === 0 ? (
-						<Empty
-							size="compact"
-							className="rounded-lg border border-dashed border-border/80 p-8"
-						>
-							<EmptyHeader>
-								<EmptyMedia variant="icon">
-									<Users className="h-5 w-5" />
-								</EmptyMedia>
-					<EmptyTitle className="text-base">{t("oauthDetail.noActivity")}</EmptyTitle>
-								<EmptyDescription>
-									{t("oauthDetail.activityEmpty")}
-								</EmptyDescription>
-							</EmptyHeader>
-						</Empty>
-					) : (
-						<div className="rounded-md border">
-							<Table>
-								<TableHeader>
-									<TableRow>
-																												<TableHead>{t("oauthDetail.user")}</TableHead>
-																												<TableHead className="text-right">{t("oauthDetail.requests")}</TableHead>
-																												<TableHead className="text-right">{t("oauthDetail.success")}</TableHead>
-																												<TableHead className="text-right">{t("oauthDetail.errors")}</TableHead>
-																												<TableHead className="text-right">{t("oauthDetail.spend")}</TableHead>
-																												<TableHead className="text-right">{t("oauthDetail.lastUsed")}</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{userSummaries.map((summary) => {
-										const identity = userDirectoryMap.get(summary.userId);
-										const displayName =
-											identity?.full_name || identity?.email || summary.userId;
-										return (
-											<TableRow key={summary.userId}>
-												<TableCell className="min-w-[220px]">
-													<div className="space-y-0.5">
-														<div className="flex items-center gap-2">
-															<div className="text-sm font-medium">{displayName}</div>
-															{summary.userId === currentUserId ? (
-																																					<Badge variant="outline" className="text-[10px]">
-																																							{t("oauthDetail.you")}
-																</Badge>
-															) : null}
-														</div>
-														<div className="text-xs text-muted-foreground font-mono">
-															{summary.userId}
-														</div>
-													</div>
-												</TableCell>
-												<TableCell className="text-right tabular-nums">
-													{summary.requestCount}
-												</TableCell>
-												<TableCell className="text-right tabular-nums text-emerald-600 dark:text-emerald-400">
-													{summary.successCount}
-												</TableCell>
-												<TableCell className="text-right tabular-nums text-red-600 dark:text-red-400">
-													{summary.errorCount}
-												</TableCell>
-												<TableCell className="text-right tabular-nums">
-													{formatCostUsd(summary.totalCostNanos)}
-												</TableCell>
-												<TableCell className="text-right text-muted-foreground">
-													{formatRelative(summary.lastUsedAt)}
-												</TableCell>
-											</TableRow>
-										);
-									})}
-								</TableBody>
-							</Table>
-						</div>
-					)}
-				</CardContent>
-			</Card>
-
-			{/* Recent Request Logs */}
-			<Card>
-				<CardHeader>
-					<CardTitle className="text-lg flex items-center gap-2">
-						<FileClock className="size-5" />
-						{t("oauthDetail.requestLogs")}
-					</CardTitle>
-					<CardDescription>
-						{t("oauthDetail.latestRequests", { count: String(recentRequests.length) })}
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					{recentRequests.length === 0 ? (
-						<Empty
-							size="compact"
-							className="rounded-lg border border-dashed border-border/80 p-8"
-						>
-							<EmptyHeader>
-								<EmptyMedia variant="icon">
-									<FileClock className="h-5 w-5" />
-								</EmptyMedia>
-								<EmptyTitle className="text-base">{t("oauthDetail.logsEmpty")}</EmptyTitle>
-								<EmptyDescription>
-									{t("oauthDetail.logsEmptyDescription")}
-								</EmptyDescription>
-							</EmptyHeader>
-						</Empty>
-					) : (
-						<div className="rounded-md border">
-							<ScrollArea className="max-h-[440px]">
+								))}
+							</div>
+						)}
+					</CardContent>
+				</Card>
+	
+				{/* User Activity */}
+				<Card>
+					<CardHeader>
+						<CardTitle className="text-lg">{t("strings.User Activity (Recent)" as never)}</CardTitle>
+						<CardDescription>
+							{t("oauthDetail.activityDescription")}
+						</CardDescription>
+					</CardHeader>
+					<CardContent>
+						{userSummaries.length === 0 ? (
+							<Empty
+								size="compact"
+								className="rounded-lg border border-dashed border-border/80 p-8"
+							>
+								<EmptyHeader>
+									<EmptyMedia variant="icon">
+										<Users className="h-5 w-5" />
+									</EmptyMedia>
+						<EmptyTitle className="text-base">{t("oauthDetail.noActivity")}</EmptyTitle>
+									<EmptyDescription>
+										{t("oauthDetail.activityEmpty")}
+									</EmptyDescription>
+								</EmptyHeader>
+							</Empty>
+						) : (
+							<div className="rounded-md border">
 								<Table>
 									<TableHeader>
 										<TableRow>
-												<TableHead>{t("oauthDetail.time")}</TableHead>
-												<TableHead>{t("oauthDetail.user")}</TableHead>
-												<TableHead>{t("oauthDetail.endpoint")}</TableHead>
-												<TableHead>{t("oauthDetail.model")}</TableHead>
-												<TableHead>{t("oauthDetail.provider")}</TableHead>
-												<TableHead className="text-right">{t("oauthDetail.status")}</TableHead>
-												<TableHead className="text-right">{t("oauthDetail.cost")}</TableHead>
-												<TableHead className="text-right">{t("oauthDetail.latency")}</TableHead>
+																													<TableHead>{t("oauthDetail.user")}</TableHead>
+																													<TableHead className="text-right">{t("oauthDetail.requests")}</TableHead>
+																													<TableHead className="text-right">{t("oauthDetail.success")}</TableHead>
+																													<TableHead className="text-right">{t("oauthDetail.errors")}</TableHead>
+																													<TableHead className="text-right">{t("oauthDetail.spend")}</TableHead>
+																													<TableHead className="text-right">{t("oauthDetail.lastUsed")}</TableHead>
 										</TableRow>
 									</TableHeader>
 									<TableBody>
-										{recentRequests.map((request) => {
-											const identity = request.oauth_user_id
-												? userDirectoryMap.get(request.oauth_user_id)
-												: null;
-										const userLabel =
-											identity?.email ||
-											request.oauth_user_id ||
-											t("strings.Unknown");
+										{userSummaries.map((summary) => {
+											const identity = userDirectoryMap.get(summary.userId);
+											const displayName =
+												identity?.full_name || identity?.email || summary.userId;
 											return (
-												<TableRow key={`${request.request_id}-${request.created_at}`}>
-													<TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-														{formatRelative(request.created_at)}
+												<TableRow key={summary.userId}>
+													<TableCell className="min-w-[220px]">
+														<div className="space-y-0.5">
+															<div className="flex items-center gap-2">
+																<div className="text-sm font-medium">{displayName}</div>
+																{summary.userId === currentUserId ? (
+																																						<Badge variant="outline" className="text-[10px]">
+																																								{t("oauthDetail.you")}
+																	</Badge>
+																) : null}
+															</div>
+															<div className="text-xs text-muted-foreground font-mono">
+																{summary.userId}
+															</div>
+														</div>
 													</TableCell>
-													<TableCell className="max-w-[220px] truncate text-xs font-mono">
-														{userLabel}
+													<TableCell className="text-right tabular-nums">
+														{summary.requestCount}
 													</TableCell>
-													<TableCell className="max-w-[220px] truncate text-xs">
-														{request.endpoint ?? "--"}
+													<TableCell className="text-right tabular-nums text-emerald-600 dark:text-emerald-400">
+														{summary.successCount}
 													</TableCell>
-													<TableCell className="max-w-[220px] truncate text-xs">
-														{request.model_id ?? "--"}
+													<TableCell className="text-right tabular-nums text-red-600 dark:text-red-400">
+														{summary.errorCount}
 													</TableCell>
-													<TableCell className="max-w-[180px] truncate text-xs">
-														{request.provider ?? "--"}
+													<TableCell className="text-right tabular-nums">
+														{formatCostUsd(summary.totalCostNanos)}
 													</TableCell>
-													<TableCell className="text-right">
-														{request.success ? (
-															<Badge
-																variant="outline"
-																className="gap-1 border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300"
-															>
-																<CheckCircle2 className="h-3 w-3" />
-																200
-															</Badge>
-														) : (
-															<Badge
-																variant="outline"
-																className="gap-1 border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300"
-															>
-																<XCircle className="h-3 w-3" />
-																{request.status_code ?? "ERR"}
-															</Badge>
-														)}
-													</TableCell>
-													<TableCell className="text-right tabular-nums text-xs">
-														{formatCostUsd(request.cost_nanos)}
-													</TableCell>
-													<TableCell className="text-right tabular-nums text-xs text-muted-foreground">
-														{request.latency_ms ? formatLatency(request.latency_ms) : "--"}
+													<TableCell className="text-right text-muted-foreground">
+														{formatRelative(summary.lastUsedAt)}
 													</TableCell>
 												</TableRow>
 											);
 										})}
 									</TableBody>
 								</Table>
-							</ScrollArea>
-						</div>
-					)}
-				</CardContent>
-			</Card>
+							</div>
+						)}
+					</CardContent>
+				</Card>
+	
+				{/* Recent Request Logs */}
+				<Card>
+					<CardHeader>
+						<CardTitle className="text-lg flex items-center gap-2">
+							<FileClock className="size-5" />
+							{t("oauthDetail.requestLogs")}
+						</CardTitle>
+						<CardDescription>
+							{t("oauthDetail.latestRequests", { count: String(recentRequests.length) })}
+						</CardDescription>
+					</CardHeader>
+					<CardContent>
+						{recentRequests.length === 0 ? (
+							<Empty
+								size="compact"
+								className="rounded-lg border border-dashed border-border/80 p-8"
+							>
+								<EmptyHeader>
+									<EmptyMedia variant="icon">
+										<FileClock className="h-5 w-5" />
+									</EmptyMedia>
+									<EmptyTitle className="text-base">{t("oauthDetail.logsEmpty")}</EmptyTitle>
+									<EmptyDescription>
+										{t("oauthDetail.logsEmptyDescription")}
+									</EmptyDescription>
+								</EmptyHeader>
+							</Empty>
+						) : (
+							<div className="rounded-md border">
+								<ScrollArea className="max-h-[440px]">
+									<Table>
+										<TableHeader>
+											<TableRow>
+													<TableHead>{t("oauthDetail.time")}</TableHead>
+													<TableHead>{t("oauthDetail.user")}</TableHead>
+													<TableHead>{t("oauthDetail.endpoint")}</TableHead>
+													<TableHead>{t("oauthDetail.model")}</TableHead>
+													<TableHead>{t("oauthDetail.provider")}</TableHead>
+													<TableHead className="text-right">{t("oauthDetail.status")}</TableHead>
+													<TableHead className="text-right">{t("oauthDetail.cost")}</TableHead>
+													<TableHead className="text-right">{t("oauthDetail.latency")}</TableHead>
+											</TableRow>
+										</TableHeader>
+										<TableBody>
+											{recentRequests.map((request) => {
+												const identity = request.oauth_user_id
+													? userDirectoryMap.get(request.oauth_user_id)
+													: null;
+											const userLabel =
+												identity?.email ||
+												request.oauth_user_id ||
+												t("strings.Unknown");
+												return (
+													<TableRow key={`${request.request_id}-${request.created_at}`}>
+														<TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+															{formatRelative(request.created_at)}
+														</TableCell>
+														<TableCell className="max-w-[220px] truncate text-xs font-mono">
+															{userLabel}
+														</TableCell>
+														<TableCell className="max-w-[220px] truncate text-xs">
+															{request.endpoint ?? "--"}
+														</TableCell>
+														<TableCell className="max-w-[220px] truncate text-xs">
+															{request.model_id ?? "--"}
+														</TableCell>
+														<TableCell className="max-w-[180px] truncate text-xs">
+															{request.provider ?? "--"}
+														</TableCell>
+														<TableCell className="text-right">
+															{request.success ? (
+																<Badge
+																	variant="outline"
+																	className="gap-1 border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300"
+																>
+																	<CheckCircle2 className="h-3 w-3" />
+																	200
+																</Badge>
+															) : (
+																<Badge
+																	variant="outline"
+																	className="gap-1 border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300"
+																>
+																	<XCircle className="h-3 w-3" />
+																	{request.status_code ?? "ERR"}
+																</Badge>
+															)}
+														</TableCell>
+														<TableCell className="text-right tabular-nums text-xs">
+															{formatCostUsd(request.cost_nanos)}
+														</TableCell>
+														<TableCell className="text-right tabular-nums text-xs text-muted-foreground">
+															{request.latency_ms ? formatLatency(request.latency_ms) : "--"}
+														</TableCell>
+													</TableRow>
+												);
+											})}
+										</TableBody>
+									</Table>
+								</ScrollArea>
+							</div>
+						)}
+					</CardContent>
+				</Card>
+			</>
+			)}
 
 			{/* Danger Zone */}
 			<Card className="border-red-200 dark:border-red-900">

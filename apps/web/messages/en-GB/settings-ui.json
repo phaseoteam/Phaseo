@@ -1191,6 +1191,8 @@
 		"authorizedUsers": "Authorized users",
 		"noAuthorizations": "No authorized users",
 		"authorizationEmpty": "Users who authorize this application will appear here.",
+		"usersAdminsOnly": "Only owners and admins can see this app's users",
+		"usersAdminsOnlyDescription": "The people who authorize an app usually belong to other workspaces, so only this workspace's owners and admins see who they are and their requests.",
 		"activityDescription": "Recent authorization and usage activity.",
 		"noActivity": "No activity yet",
 		"activityEmpty": "Activity will appear after the application is used.",
@@ -2530,6 +2532,8 @@
 		"Are you sure you want to leave {workspace}?": "Are you sure you want to leave {workspace}?",
 		"phraseYouCanTRevokeAccessForSomeoneWithAHigherRoleThanYours": "You can't revoke access for someone with a higher role than yours.",
 		"Are you sure you want to revoke access for {member}?": "Are you sure you want to revoke access for {member}?",
+		"phraseMemberKeysWillBeRevoked": "The API keys and management keys they created in this workspace will be revoked.",
+		"phraseYourKeysWillBeRevoked": "The API keys and management keys you created in this workspace will be revoked.",
 		"phraseUpdatedMemberSSampleRole": "Updated {member}'s sample role.",
 		"phraseUnableToUpdateTheMemberRoleRightNow": "Unable to update the member role right now.",
 		"phraseYouCanTRevokeAccessForMembersWithAHigherRoleThanYours": "You can't revoke access for members with a higher role than yours.",
@@ -6800,17 +6804,17 @@
 	},
 	"trustedWorkloads": {
 		"title": "Trusted workloads",
-		"description": "Let Vercel deployments and GitHub Actions jobs call the API with a short-lived OIDC token instead of an API key.",
+		"description": "Let deployments, CI jobs and cloud workloads call the API with a short-lived OIDC token instead of an API key.",
 		"feedback": "How could trusted workloads work better for you?",
 		"selectWorkspace": "Select a workspace to manage trusted workloads.",
 		"unavailable": "Trusted workloads are not available for this workspace yet.",
 		"adminsOnly": "Only workspace owners and admins can see and change trusted workloads.",
-		"howItWorks": "Vercel and GitHub Actions give each deployment or job a signed token that says who it is and expires within hours. When a token matches one of these policies, the request runs as that policy's key, with the same limits, budgets, logs and billing as an API key. Nothing needs to be stored as a secret.",
+		"howItWorks": "Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI and AWS can give each deployment, job or workload a signed token that says who it is and expires within hours, and so can an OIDC issuer you run yourself, such as a Kubernetes cluster. When a token matches one of these policies, the request runs as that policy's key, with the same limits, budgets, logs and billing as an API key. Nothing needs to be stored as a secret.",
 		"policiesTitle": "Trust policies",
 		"propagation": "Changes take effect within about a minute.",
 		"newPolicy": "New policy",
 		"emptyTitle": "No trusted workloads yet",
-		"emptyBody": "Add a policy for a Vercel project or a GitHub repository so it can call the API without an API key.",
+		"emptyBody": "Add a policy for a project, repository, pipeline, service account or role so it can call the API without an API key.",
 		"noConditions": "None",
 		"disabled": "Off",
 		"enabledLabel": "Accept tokens for {name}",
@@ -6835,15 +6839,28 @@
 		"audienceLabel": "Audience",
 		"providers": {
 			"vercel": "Vercel",
-			"github_actions": "GitHub Actions"
+			"github_actions": "GitHub Actions",
+			"gitlab": "GitLab",
+			"google_cloud": "Google Cloud",
+			"buildkite": "Buildkite",
+			"circleci": "CircleCI",
+			"aws": "AWS",
+			"custom": "Custom OIDC issuer"
 		},
 		"ownerLabel": {
 			"vercel": "Team ID",
-			"github_actions": "Owner ID"
+			"github_actions": "Owner ID",
+			"gitlab": "Project ID",
+			"google_cloud": "Service account ID",
+			"buildkite": "Organisation ID",
+			"circleci": "Organisation ID",
+			"aws": "Role ARN"
 		},
 		"ownerWide": {
 			"vercel": "Trusts every project in this Vercel team. Add a project ID to narrow it.",
-			"github_actions": "Trusts every repository this owner has. Add a repository ID to narrow it."
+			"github_actions": "Trusts every repository this owner has. Add a repository ID to narrow it.",
+			"buildkite": "Trusts every pipeline in this Buildkite organisation. Add a pipeline slug to narrow it.",
+			"circleci": "Trusts every project in this CircleCI organisation. Add a project ID to narrow it."
 		},
 		"environments": {
 			"production": "Production",
@@ -6866,7 +6883,36 @@
 			"githubIdsHint": "Use the numeric IDs, which stay the same if the owner or repository is renamed. The repository ID is optional, but without it every repository the owner has is trusted.",
 			"githubRef": "Branch or tag (optional)",
 			"lifetime": "Longest token accepted (hours)",
-			"lifetimeHint": "Tokens that were issued to last longer than this are refused. Up to {max} hours."
+			"lifetimeHint": "Tokens that were issued to last longer than this are refused. Up to {max} hours.",
+			"environmentOptional": "Environment (optional)",
+			"gitlabProjectId": "Project ID",
+			"gitlabProjectHint": "The numeric ID on the project's overview page on GitLab.com. It stays the same if the project is renamed or moved. For self-managed GitLab, choose Custom OIDC issuer.",
+			"gitlabRef": "Branch or tag (optional)",
+			"gitlabConditionsHint": "Use the branch or tag name, such as main. Leave both empty to accept every job in the project.",
+			"googleServiceAccountId": "Service account unique ID",
+			"googleServiceAccountHint": "The numeric unique ID on the service account's details page in the Google Cloud console. Use it rather than the email, which can be reused if the account is deleted.",
+			"googleServiceAccountEmail": "Service account email (optional)",
+			"googleEmailHint": "Tokens only include the email when the workload requests them with format=full.",
+			"buildkiteOrganizationId": "Organisation ID",
+			"buildkiteOrganizationHint": "The organisation's UUID, which every Buildkite token carries in its organization_id claim.",
+			"buildkitePipelineSlug": "Pipeline slug (optional)",
+			"buildkitePipelineHint": "Without it, every pipeline in the organisation is trusted.",
+			"circleciOrganizationId": "Organisation ID",
+			"circleciOrganizationHint": "Find it in CircleCI under Organization Settings → Overview.",
+			"circleciProjectId": "Project ID (optional)",
+			"circleciProjectHint": "Find it under Project Settings → Overview. Without it, every project in the organisation is trusted.",
+			"awsIssuer": "Issuer URL",
+			"awsIssuerHint": "Each AWS account has its own issuer. Run aws iam get-outbound-web-identity-federation-info and copy IssuerIdentifier.",
+			"awsRoleArn": "IAM role ARN",
+			"awsRoleHint": "Only tokens for this role are accepted.",
+			"customIssuer": "Issuer URL",
+			"customIssuerHint": "A public https URL that serves /.well-known/openid-configuration, with its signing keys on the same host.",
+			"customOwnerClaim": "Owner claim",
+			"customOwnerId": "Owner value",
+			"customOwnerHint": "Every token must carry this claim with exactly this value, such as sub for a Kubernetes service account. Choose a claim that nobody else can reuse.",
+			"customConditionClaim": "Extra claim (optional)",
+			"customConditionValue": "Required value",
+			"customConditionHint": "Tokens must also carry this claim with exactly this value."
 		},
 		"problems": {
 			"name": "Enter a name of up to 100 characters.",
@@ -6875,7 +6921,19 @@
 			"vercelProjectId": "Project IDs start with prj_.",
 			"githubOwnerId": "Enter the owner's numeric ID.",
 			"githubRepositoryId": "Enter the repository's numeric ID.",
-			"lifetime": "Enter a whole number of hours from 1 to 12."
+			"lifetime": "Enter a whole number of hours from 1 to 12.",
+			"gitlabProjectId": "Enter the project's numeric ID.",
+			"googleServiceAccountId": "Enter the service account's numeric unique ID.",
+			"googleServiceAccountEmail": "Enter an email address, such as app@project.iam.gserviceaccount.com.",
+			"buildkiteOrganizationId": "Enter the organisation's UUID.",
+			"circleciOrganizationId": "Enter the organisation ID, which is a UUID.",
+			"circleciProjectId": "Enter the project ID, which is a UUID.",
+			"awsIssuer": "Enter the issuer from AWS. It ends in .tokens.sts.global.api.aws.",
+			"awsRoleArn": "Enter a role ARN, such as arn:aws:iam::123456789012:role/evals.",
+			"customIssuer": "Enter a public https URL without a port, query or fragment.",
+			"customOwnerClaim": "Enter a claim name such as sub. iss, aud, exp, iat, nbf and jti can't be used.",
+			"customOwnerId": "Enter the value the owner claim must have.",
+			"customCondition": "Enter both a claim and a value, or leave both empty. The claim must differ from the owner claim."
 		},
 		"errors": {
 			"invalid": "{message}",
@@ -6888,7 +6946,10 @@
 			"deleted": "Policy deleted",
 			"enabled": "Policy turned on",
 			"disabled": "Policy turned off"
-		}
+		},
+		"listPipeline": "Pipeline",
+		"listEmail": "Service account email",
+		"usageCustomHint": "Any OIDC issuer with public discovery works. This example gives a Kubernetes pod a service account token for the audience."
 	},
 	"budgets": {
 		"title": "Budgets",

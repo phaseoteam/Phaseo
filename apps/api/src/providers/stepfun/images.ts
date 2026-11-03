@@ -1,18 +1,19 @@
-import { z } from "zod";
+import * as z from "zod";
+import { lazySchema } from "@core/lazy-schema";
 import { ImagesEditSchema, ImagesGenerationSchema } from "@core/schemas";
 import type { AdapterResult, ProviderExecuteArgs } from "../types";
 import { resolveOpenAITransport } from "../shared/openai-transport";
 import { resolveUploadableFromString } from "../openai/endpoints/uploadable";
 import { upstreamTestHeaders } from "../shared/testing";
 
-const optionsSchema = z.object({
+const optionsSchema = lazySchema(() => z.object({
     steps: z.coerce.number().int().min(1).max(50).optional(),
     cfg_scale: z.coerce.number().min(1).max(10).optional(),
     seed: z.coerce.number().int().min(0).max(2147483647).optional(),
     negative_prompt: z.string().max(512).optional(),
     text_mode: z.boolean().optional(),
     style_reference: z.object({ source_url: z.string().min(1), weight: z.number().positive().max(2).optional() }).optional(),
-}).strict();
+}).strict());
 
 export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     const edit = args.endpoint === "images.edits";

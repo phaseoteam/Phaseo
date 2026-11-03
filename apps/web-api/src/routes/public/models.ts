@@ -140,6 +140,29 @@ function parseBoundedInt(value: string | null, fallback: number, maximum: number
 	return Math.max(0, Math.min(maximum, Math.floor(parsed)));
 }
 
+/** Cloudflare colos are three-letter IATA codes. */
+const CLOUDFLARE_COLO = /^[A-Z]{3}$/;
+
+/**
+ * Public query values passed to database RPCs are validated first: every distinct URL
+ * misses the edge cache, so free text would let anyone run uncached aggregates at will.
+ * Returns undefined when absent and null when invalid.
+ */
+function parseColo(value: string | undefined): string | null | undefined {
+	const colo = value?.trim().toUpperCase();
+	if (!colo) return undefined;
+	return CLOUDFLARE_COLO.test(colo) ? colo : null;
+}
+
+/** A YYYY-MM-DD day (a longer ISO timestamp is cut to its day); undefined when absent, null when invalid. */
+function parseDay(value: string | undefined): string | null | undefined {
+	const day = value?.trim().slice(0, 10);
+	if (!day) return undefined;
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null;
+	const parsed = new Date(`${day}T00:00:00Z`);
+	return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === day ? day : null;
+}
+
 function parsePercentile(value: string | null, fallback = 50) {
 	const parsed = Number(value);
 	if (!Number.isFinite(parsed)) return fallback;
@@ -1031,6 +1054,8 @@ publicModelsRouter.get("/weekly-metrics", async (c) => {
 	}
 });
 
+const PROVIDER_ROUTING_HEALTH_MAX_ROWS = 1_000;
+
 /** Volatile provider circuit-breaker state shared by model provider lists. */
 publicModelsRouter.get("/provider-routing-health", async (c) => {
 	const providerIds = [...new Set(
@@ -1043,29 +1068,36 @@ publicModelsRouter.get("/provider-routing-health", async (c) => {
 		return withPublicCache(c.json({ providers: {} }), sectionPolicy("routingHealth"));
 	}
 	if (providerIds.length > 100) return c.json({ error: "too_many_provider_ids" }, 400);
+	// A model page asks about its own model: another model's outage does not limit this one.
+	const modelId = (c.req.query("model_id") ?? "").trim();
+	if (!modelId || modelId.length > 500) return c.json({ error: "model_id_required" }, 400);
 	const windowHours = Math.max(1, parseBoundedInt(c.req.query("window_hours"), 24, 168));
 	const nowMs = Date.now();
 	const sinceIso = new Date(nowMs - windowHours * 60 * 60 * 1000).toISOString();
 	try {
-		const rows: Array<Record<string, unknown>> = [];
-		for (let offset = 0; offset < 20_000; offset += 1_000) {
-			const { data, error } = await getDataClient(c.env)
-				.from("gateway_provider_health_states")
-				.select("provider_id,breaker_state,is_deranked,open_until_ms,updated_at")
-				.in("provider_id", providerIds)
-				.gte("updated_at", sinceIso)
-				.order("updated_at", { ascending: false })
-				.range(offset, offset + 999);
-			if (error) throw error;
-			rows.push(...((data ?? []) as Array<Record<string, unknown>>));
-			if ((data?.length ?? 0) < 1_000) break;
-		}
+		// The primary key is (provider, model, endpoint), so one model has a row per provider and
+		// endpoint: a few hundred at most. A full page means that bound broke; fail rather than
+		// report a partial set as healthy.
+		const { data, error } = await getDataClient(c.env)
+			.from("gateway_provider_health_states")
+			.select("provider_id,breaker_state,is_deranked,open_until_ms,updated_at")
+			.in("provider_id", providerIds)
+			.eq("model_id", modelId)
+			.gte("updated_at", sinceIso)
+			.limit(PROVIDER_ROUTING_HEALTH_MAX_ROWS);
+		if (error) throw error;
+		const rows = (data ?? []) as Array<Record<string, unknown>>;
+		if (rows.length >= PROVIDER_ROUTING_HEALTH_MAX_ROWS) throw new Error("provider routing health exceeds one page");
 		const providers = Object.fromEntries(providerIds.map((providerId) => {
 			const matches = rows.filter((row) => row.provider_id === providerId);
-			const openCount = matches.filter((row) => row.breaker_state === "open").length;
-			const halfOpenCount = matches.filter((row) => row.breaker_state === "half_open").length;
-			const deranked = matches.some((row) => Boolean(row.is_deranked)
-				|| (row.breaker_state === "open" && Number(row.open_until_ms ?? 0) > nowMs));
+			// Rows change only on breaker transitions, so a stored is_deranked outlives the cooldown.
+			// An open breaker past its cooldown admits recovery probes: it is recovering, not limited.
+			const openNow = (row: Record<string, unknown>) =>
+				row.breaker_state === "open" && Number(row.open_until_ms ?? 0) > nowMs;
+			const openCount = matches.filter(openNow).length;
+			const halfOpenCount = matches.filter((row) => row.breaker_state === "half_open"
+				|| (row.breaker_state === "open" && !openNow(row))).length;
+			const deranked = openCount > 0;
 			return [providerId, {
 				providerId,
 				deranked,
@@ -1078,7 +1110,8 @@ publicModelsRouter.get("/provider-routing-health", async (c) => {
 		return withPublicCache(c.json({ providers }), sectionPolicy("routingHealth"));
 	} catch (error) {
 		console.error("[web-api/models] provider routing health failed", { providerIds, error });
-		return withPublicCache(c.json({ providers: {} }), sectionPolicy("routingHealth"));
+		// Unknown is not healthy: do not cache an empty status for every visitor.
+		return c.json({ error: "provider_routing_health_unavailable" }, 503);
 	}
 });
 
@@ -1375,9 +1408,11 @@ publicModelsRouter.get("/:modelId/usage-daily", async (c) => {
 	try {
 		const days = Math.max(1, Math.min(365, parseBoundedInt(c.req.query("days"), 30, 365))); const now = new Date(); const defaultSince = new Date(now); defaultSince.setUTCDate(defaultSince.getUTCDate() - days);
 		const requestedProviderIds = [...new Set((c.req.query("provider_ids") ?? "").split(",").map((id) => id.trim()).filter(Boolean))]; const client = getDataClient(c.env);
+		const since = parseDay(c.req.query("since")); const until = parseDay(c.req.query("until"));
+		if (since === null || until === null) return c.json({ error: "invalid_date", message: "since and until must be YYYY-MM-DD dates" }, 400);
 		const stealthProviderIds = await stealthProviderIdsForModel(c.env, modelId);
 		const providerIds = internalProviderFilters(requestedProviderIds, stealthProviderIds);
-		const v2 = await client.rpc("get_v2_model_usage_daily", { p_model_slug: modelId, p_provider_ids: requestedProviderIds.length ? providerIds : null, p_since: c.req.query("since")?.slice(0, 10) || defaultSince.toISOString().slice(0, 10), p_until: c.req.query("until")?.slice(0, 10) || now.toISOString().slice(0, 10) });
+		const v2 = await client.rpc("get_v2_model_usage_daily", { p_model_slug: modelId, p_provider_ids: requestedProviderIds.length ? providerIds : null, p_since: since ?? defaultSince.toISOString().slice(0, 10), p_until: until ?? now.toISOString().slice(0, 10) });
 		if (v2.error) throw v2.error;
 		if (!Array.isArray(v2.data)) throw new Error("V2 usage query returned an invalid payload");
 		return withPublicCache(c.json({ rows: (v2.data as Array<Record<string, unknown>>).map((row) => mapUsageDailyRow(row, stealthProviderIds)), source: "v2" }), sectionPolicy("usageDaily", modelId));
@@ -1393,13 +1428,16 @@ publicModelsRouter.get("/:modelId/effective-pricing-daily", async (c) => {
 		defaultSince.setUTCDate(defaultSince.getUTCDate() - days);
 		const requestedProviderIds = [...new Set((c.req.query("provider_ids") ?? "").split(",").map((id) => id.trim()).filter(Boolean))].sort();
 		if (requestedProviderIds.length > 100) return c.json({ error: "too_many_provider_ids" }, 400);
+		const since = parseDay(c.req.query("since"));
+		const until = parseDay(c.req.query("until"));
+		if (since === null || until === null) return c.json({ error: "invalid_date", message: "since and until must be YYYY-MM-DD dates" }, 400);
 		const stealthProviderIds = await stealthProviderIdsForModel(c.env, modelId);
 		const providerIds = internalProviderFilters(requestedProviderIds, stealthProviderIds);
 		const result = await getDataClient(c.env).rpc("get_v2_model_effective_pricing_daily", {
 			p_model_slug: modelId,
 			p_provider_ids: requestedProviderIds.length ? providerIds : null,
-			p_since: c.req.query("since")?.slice(0, 10) || defaultSince.toISOString().slice(0, 10),
-			p_until: c.req.query("until")?.slice(0, 10) || now.toISOString().slice(0, 10),
+			p_since: since ?? defaultSince.toISOString().slice(0, 10),
+			p_until: until ?? now.toISOString().slice(0, 10),
 		});
 		if (result.error) throw result.error;
 		if (!Array.isArray(result.data)) throw new Error("Effective pricing query returned an invalid payload");
@@ -1663,7 +1701,7 @@ publicModelsRouter.get("/:modelId/performance/colos", async (c) => {
 			? (result.data as Array<Record<string, unknown>>).map((row) => ({
 				colo: String(row.cloudflare_colo ?? "").trim().toUpperCase(),
 				requests: Number(row.request_count ?? 0),
-			})).filter((row) => /^[A-Z0-9]{3}$/.test(row.colo) && hasPublicPerformanceSample(row.requests))
+			})).filter((row) => CLOUDFLARE_COLO.test(row.colo) && hasPublicPerformanceSample(row.requests))
 			: [];
 		return withPublicCache(c.json({ modelId, colos }), sectionPolicy("performance", modelId));
 	} catch (error) {
@@ -1675,7 +1713,9 @@ publicModelsRouter.get("/:modelId/performance/colos", async (c) => {
 /** 15-minute cache for the live-ish performance rollup and seven-day hourly provider series. */
 publicModelsRouter.get("/:modelId/performance", async (c) => {
 	const modelId = c.req.param("modelId");
-	const cloudflareColo = c.req.query("colo")?.trim().toUpperCase() || null;
+	const requestedColo = parseColo(c.req.query("colo"));
+	if (requestedColo === null) return c.json({ error: "invalid_colo", message: "colo must be a three-letter Cloudflare colo code" }, 400);
+	const cloudflareColo = requestedColo ?? null;
 	const percentile = parsePercentile(c.req.query("percentile"));
 	const rangeDays = [1, 3, 7].includes(Number(c.req.query("range")))
 		? Number(c.req.query("range"))
@@ -1959,12 +1999,14 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 			const toolCallErrors = Number(value.tool_call_errors ?? 0);
 			const structuredOutputResponses = Number(value.structured_output_responses ?? 0);
 			const structuredOutputErrors = Number(value.structured_output_errors ?? 0);
+			// An hour with no checked tool calls or JSON replies has no rate. Plotting it as
+			// 0% errors would show quiet hours as perfect.
 			const toolCallErrorPct = toolCallResponses > 0
 				? toolCallErrors * 100 / toolCallResponses
-				: requests > 0 ? 0 : null;
+				: null;
 			const structuredOutputErrorPct = structuredOutputResponses > 0
 				? structuredOutputErrors * 100 / structuredOutputResponses
-				: requests > 0 ? 0 : null;
+				: null;
 			return {
 				bucket: value.bucket ?? "",
 				toolCallSuccessPct: toolCallErrorPct == null ? null : 100 - toolCallErrorPct,

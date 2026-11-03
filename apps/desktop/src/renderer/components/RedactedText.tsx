@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { cn } from "../lib/utils";
 
-/** Emails are blurred until clicked, as in T3 Code; click again to hide. */
+/** Emails are blurred until clicked; click again to hide. */
 export function RedactedText({ text, className }: { text: string; className?: string }) {
 	const [shown, setShown] = useState(false);
 	return <button type="button" onClick={event => { event.stopPropagation(); setShown(value => !value); }} title={shown ? "Click to hide" : "Click to reveal"} aria-label={shown ? text : "Hidden email, click to reveal"}

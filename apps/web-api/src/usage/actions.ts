@@ -7,6 +7,8 @@ import type { AccountWorkspaceContext } from "@/routes/account/context";
 import { metadataForIds } from "@/routes/account/settings-usage";
 import { applyRequestLabelFilter, requestLabelFilterFromParams } from "@/usage/requestClassifiers";
 import { canReadIoLogContents, readIoLogContentsAccess } from "@/usage/ioLogContentsAccess";
+import { detailMetadataWithoutContent } from "@/usage/requestContentDetails";
+import { validPageCursor } from "@/lib/pageCursor";
 import {
 	LONG_RUNNING_REQUEST_ENDPOINTS,
 	buildNotInFilter,
@@ -375,13 +377,19 @@ const RESTRICTED_IO_LOG: GatewayIoLog = {
 	payload: null,
 };
 
+/** Whether the signed-in member may read this workspace's stored request contents. */
+async function memberMayReadContents(workspaceId: string): Promise<boolean> {
+	const { account } = current();
+	return canReadIoLogContents(await readIoLogContentsAccess(account.client, workspaceId), account.role);
+}
+
 async function fetchGatewayIoLog(
 	workspaceId: string,
 	requestId: string,
+	mayReadContents: boolean,
 ): Promise<GatewayIoLog | null> {
-	const { account, env } = current();
-	const access = await readIoLogContentsAccess(account.client, workspaceId);
-	if (!canReadIoLogContents(access, account.role)) return RESTRICTED_IO_LOG;
+	const { env } = current();
+	if (!mayReadContents) return RESTRICTED_IO_LOG;
 	const token = String(env.GATEWAY_INTERNAL_TEST_TOKEN ?? "").trim();
 	if (!token) return null;
 
@@ -744,8 +752,11 @@ export async function fetchPaginatedRequests(
 		else query = query.gte(column, value);
 	}
 
-	if (params.cursor?.createdAt && params.cursor.id) {
-		query = query.or(`created_at.lt.${params.cursor.createdAt},and(created_at.eq.${params.cursor.createdAt},id.lt.${params.cursor.id})`);
+	if (params.cursor) {
+		// The cursor comes from the browser and goes into a filter string, so only a timestamp and UUID pass.
+		const cursor = validPageCursor(params.cursor);
+		if (!cursor) throw new Error("Invalid requests cursor");
+		query = query.or(`created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`);
 	}
 	query = query.order("created_at", { ascending: false }).order("id", { ascending: false }).limit(pageSize + 1);
 
@@ -1834,7 +1845,10 @@ export async function investigateGeneration(
 		const appName = request.app_id
 			? appMetadata.get(request.app_id)?.title ?? null
 			: null;
-		const ioLog = await fetchGatewayIoLog(workspaceId, trimmedRequestId);
+		// Search queries and fetched URLs follow the same contents setting as the I/O log.
+		const mayReadContents = await memberMayReadContents(workspaceId);
+		if (!mayReadContents) request.detail_metadata = detailMetadataWithoutContent(request.detail_metadata);
+		const ioLog = await fetchGatewayIoLog(workspaceId, trimmedRequestId, mayReadContents);
 
 		return {
 			success: true,
@@ -1894,7 +1908,10 @@ export async function investigateGeneration(
 			: request.app_id
 			? appMetadata.get(request.app_id)?.title ?? null
 			: null;
-	const ioLog = await fetchGatewayIoLog(workspaceId, trimmedRequestId);
+	// Search queries and fetched URLs follow the same contents setting as the I/O log.
+	const mayReadContents = await memberMayReadContents(workspaceId);
+	if (!mayReadContents) request.detail_metadata = detailMetadataWithoutContent(request.detail_metadata);
+	const ioLog = await fetchGatewayIoLog(workspaceId, trimmedRequestId, mayReadContents);
 
 	return {
 		success: true,

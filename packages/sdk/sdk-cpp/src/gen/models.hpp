@@ -4054,6 +4054,7 @@ struct WorkloadIdentityPolicy {
 	std::optional<std::string> last_used_at;
 	int max_token_lifetime_seconds;
 	std::string name;
+	std::string owner_claim;
 	std::string owner_id;
 	std::any provider;
 	std::any status;
@@ -4069,6 +4070,7 @@ struct WorkloadIdentityPolicyInput {
 	std::string issuer;
 	std::optional<int> max_token_lifetime_seconds;
 	std::string name;
+	std::string owner_claim;
 	std::string owner_id;
 	std::any provider;
 };

@@ -339,6 +339,26 @@ describe("management key routes", () => {
 		});
 	});
 
+	it("credits a key minted with a management key to that key's creator, falling back to the owner", async () => {
+		const keyRow = { id: "key_new", hash: "hash_new", workspace_id: "ws_1", name: "Minted", prefix: "p", status: "active", scopes: "[]", created_by: "user_admin", created_at: "2026-04-28T12:00:00Z" };
+		const create = async () => {
+			const { keysRoutes } = await import("./keys");
+			return keysRoutes.request("https://example.com/", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "Minted" }) });
+		};
+		state.workspaceRows.push({ owner_user_id: "user_1" });
+		state.keyRows.push(keyRow);
+		// Removing user_admin from the workspace revokes the keys they created, including these.
+		state.guardManagementAuthResult = { ok: true, value: { workspaceId: "ws_1", apiKeyId: "mgmt_1", internal: false, userId: "user_admin" } };
+		expect((await create()).status).toBe(201);
+		expect(state.insertPayloads[0]).toMatchObject({ created_by: "user_admin" });
+
+		state.guardManagementAuthResult = { ok: true, value: { workspaceId: "ws_1", apiKeyId: "mgmt_1", internal: false, userId: null } };
+		state.workspaceRows.push({ owner_user_id: "user_1" });
+		state.keyRows.push({ ...keyRow, created_by: "user_1" });
+		expect((await create()).status).toBe(201);
+		expect(state.insertPayloads[1]).toMatchObject({ created_by: "user_1" });
+	});
+
 	it("returns the new secret at the top level as well as in data.key, and keeps it out of the audit event", async () => {
 		state.workspaceRows.push({ owner_user_id: "user_1" });
 		state.keyRows.push({

@@ -22,7 +22,7 @@ export function archivedChats(tasks: readonly TaskOverview[], hidden: ReadonlySe
 }
 
 
-/** T3's archived threads: restore one, or delete it for good (with a moment to undo). */
+/** Archived chats: restore one, or delete it for good (with a moment to undo). */
 export function ArchivedChatsDialog() {
 	const isOpen = useOpen();
 	const { overview, command, select } = useWorkspace();

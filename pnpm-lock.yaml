@@ -138,6 +138,12 @@ importers:
       '@streamparser/json':
         specifier: 0.0.26
         version: 0.0.26
+      '@supabase/auth-js':
+        specifier: 2.110.3
+        version: 2.110.3
+      '@supabase/postgrest-js':
+        specifier: 2.110.3
+        version: 2.110.3
       '@supabase/supabase-js':
         specifier: ^2.106.2
         version: 2.110.3
@@ -153,9 +159,6 @@ importers:
       ink:
         specifier: ^7.1.0
         version: 7.1.0(@types/react@19.3.0)(react-devtools-core@6.1.5)(react@19.3.0)
-      music-metadata:
-        specifier: ^11.15.0
-        version: 11.15.0
       re2js:
         specifier: ^2.8.7
         version: 2.9.0
@@ -187,6 +190,9 @@ importers:
       eslint:
         specifier: ^10.13.0
         version: 10.13.0(jiti@2.7.0)
+      music-metadata:
+        specifier: ^11.15.0
+        version: 11.15.0
       openai:
         specifier: ^6.39.0
         version: 6.46.0(ws@8.21.3)(zod@4.6.7)

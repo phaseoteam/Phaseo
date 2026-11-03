@@ -13,7 +13,7 @@ import { errorMessage, pullRequestStatePresentation } from "./presentation";
 import { useProjectRepository } from "./useProjectRepository";
 
 /**
- * T3's PullRequestThreadDialog, opened from the branch menu: paste a pull request URL, a `gh pr checkout` command or a
+ * The pull request checkout dialog, opened from the branch menu: paste a pull request URL, a `gh pr checkout` command or a
  * number, see which pull request it is, then start a chat on it in this checkout (Local) or a new worktree.
  */
 export function CheckoutPullRequestDialog({ projectId, open, onOpenChange }: { projectId: string; open: boolean; onOpenChange: (open: boolean) => void }) {

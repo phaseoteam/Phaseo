@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 import { getBindingsIfConfigured, getSupabaseAdmin } from "@/runtime/env";
 import { knownCatalogueRevision } from "@core/catalogue-revision";
 import { invalidateTieredL1, tieredReadDetailed, writeTiered } from "@core/tiered-cache";

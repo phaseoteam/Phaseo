@@ -290,6 +290,10 @@ export function validateJsonSchemaValue(
 	schema: Record<string, any>,
 	path = "$",
 	limit = 8,
+	options: {
+		/** Treat a pattern too risky to evaluate as satisfied instead of as an error. */
+		skipUnsafePatterns?: boolean;
+	} = {},
 ): SchemaValidationResult {
 	const errors: string[] = [];
 
@@ -328,8 +332,10 @@ export function validateJsonSchemaValue(
 			}
 			if (typeof candidateSchema.pattern === "string") {
 				if (!isSafeSchemaPattern(candidateSchema.pattern)) {
-					errors.push(`${candidatePath} uses an unsupported or unsafe pattern`);
-					if (errors.length >= limit) return;
+					if (!options.skipUnsafePatterns) {
+						errors.push(`${candidatePath} uses an unsupported or unsafe pattern`);
+						if (errors.length >= limit) return;
+					}
 				} else try {
 					const pattern = compileSchemaPattern(candidateSchema.pattern);
 					if (!pattern.test(candidate)) {

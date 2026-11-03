@@ -67,6 +67,11 @@ CREATE TRIGGER keys_set_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION public.update_key_updated_at();
 
+CREATE TRIGGER protect_key_created_by
+  BEFORE INSERT OR UPDATE OF created_by ON public.keys
+  FOR EACH ROW
+  EXECUTE FUNCTION public.protect_key_created_by();
+
 CREATE TRIGGER protect_key_never_store_content
   BEFORE UPDATE OF never_store_content ON public.keys
   FOR EACH ROW
@@ -104,7 +109,11 @@ CREATE POLICY "keys_update_own_team" ON "public"."keys"
   USING (public.is_workspace_admin(workspace_id))
   WITH CHECK (public.is_workspace_admin(workspace_id));
 
-GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."keys" TO "anon", "authenticated", "service_role";
+GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."keys" TO "service_role";
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."keys" TO "anon";
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."keys" TO "authenticated";
 
 CREATE INDEX keys_created_by_idx ON public.keys USING btree (created_by)
   WHERE (created_by IS NOT NULL);

@@ -116,6 +116,7 @@ import { loadPriceCard } from "../pricing";
 import { stripUsagePricing } from "../usage";
 import { getEffectiveRoutingHints } from "../requestRouting";
 import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
+import { withoutStackFrames } from "@/lib/safe-json";
 import { extractDownstreamRateLimitHeaders } from "../upstream-rate-limit-headers";
 import { guardFreeRouteQuota } from "@core/customer-rate-limits";
 import { chargeRateLimitPolicyTokens, guardRateLimitPolicies } from "@core/rate-limit-policies";
@@ -287,6 +288,15 @@ function shouldRetrySingleProviderStatus(status: number | null | undefined): boo
 	if (!Number.isFinite(code)) return false;
 	if (code === 408 || code === 429) return true;
 	return code >= 500;
+}
+
+/**
+ * A fixed description for an executor that threw instead of returning an upstream
+ * response: the error class only, never its stack or internal detail.
+ */
+export function thrownExecutorErrorDescription(err: unknown): string {
+	const name = err instanceof Error && /^[A-Za-z][A-Za-z0-9_]{0,59}$/.test(err.name) ? err.name : "Error";
+	return `executor_exception:${name}`;
 }
 
 function truncateAttemptText(value: unknown, limit = ATTEMPT_PREVIEW_LIMIT): string | null {
@@ -1565,12 +1575,12 @@ async function attemptProviderWithIR(
 		if (providerRateLimitReservation && upstreamTracker.snapshot().upstreamRequestCount === 0) {
 			await releaseManagedProviderReservation(providerRateLimitReservation);
 		}
+		// The stack stays in the worker log: attempts reach the database, failure_sample
+		// in client error bodies and async job webhooks.
 		console.error(`Executor execution failed for ${candidate.providerId}:`, err);
 		const message = err instanceof Error ? err.message : String(err);
-		const stackPreview = truncateAttemptText(
-			err instanceof Error ? err.stack : null,
-			ATTEMPT_PREVIEW_LIMIT * 3,
-		);
+		const storedMessage = withoutStackFrames(message);
+		const thrownDescription = thrownExecutorErrorDescription(err);
 		attemptErrors.push({
 			...credentialLog,
 			provider: candidate.providerId,
@@ -1581,9 +1591,9 @@ async function attemptProviderWithIR(
 			type: (err as any)?.retryable === true ? "retryable_error" : "error",
 			retryable: (err as any)?.retryable === true,
 			upstream_error_code: typeof (err as any)?.code === "string" ? (err as any).code : null,
-			upstream_error_message: message,
-			upstream_error_description: stackPreview,
-			message,
+			upstream_error_message: storedMessage,
+			upstream_error_description: thrownDescription,
+			message: storedMessage,
 		});
 		recordProviderAttempt(ctx, {
 			...credentialLog,
@@ -1598,8 +1608,8 @@ async function attemptProviderWithIR(
 			duration_ms: Math.round(performance.now() - attemptStartedAt),
 			retryable: (err as any)?.retryable === true,
 			upstream_error_code: typeof (err as any)?.code === "string" ? (err as any).code : null,
-			upstream_error_message: message,
-			upstream_error_description: stackPreview,
+			upstream_error_message: storedMessage,
+			upstream_error_description: thrownDescription,
 			was_probe: isProbe,
 		});
 		const errorHealthImpact = classifyProviderHealthImpact({

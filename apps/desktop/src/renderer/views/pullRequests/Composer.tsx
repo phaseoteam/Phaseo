@@ -26,7 +26,7 @@ export function reviewPlaceholder(verdict: Verdict, comments: number) {
 }
 
 /**
- * T3's floating composer: a comment on the conversation (optionally the one that closes or reopens it) or a review
+ * The floating composer: a comment on the conversation (optionally the one that closes or reopens it) or a review
  * carrying the Code tab's line comments and a verdict. Opening it picks the mode with work waiting in it. Both drafts
  * live in the review store, so they survive closing it, switching tabs and leaving the pane.
  */

@@ -4055,6 +4055,7 @@ pub struct WorkloadIdentityPolicy {
 	pub last_used_at: Option<String>,
 	pub max_token_lifetime_seconds: i64,
 	pub name: String,
+	pub owner_claim: String,
 	pub owner_id: String,
 	pub provider: String,
 	pub status: String,
@@ -4070,6 +4071,7 @@ pub struct WorkloadIdentityPolicyInput {
 	pub issuer: Option<String>,
 	pub max_token_lifetime_seconds: Option<i64>,
 	pub name: String,
+	pub owner_claim: Option<String>,
 	pub owner_id: String,
 	pub provider: String,
 }

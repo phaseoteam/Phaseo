@@ -18,7 +18,7 @@ import { attachmentPrompt } from "./attachmentPrompt";
 
 const recordText = (event: PiRecord, key: string) => typeof event[key] === "string" && (event[key] as string).trim() ? event[key] as string : undefined;
 /**
- * A Pi extension dialog as a question, after T3 Code: select lists its choices; input takes text or an empty value;
+ * A Pi extension dialog as a question: select lists its choices; input takes text or an empty value;
  * editor starts from the extension's prefill in a multi-line field and may be sent empty.
  */
 export function piQuestion(id: string, method: "select" | "input" | "editor", title: string, event: PiRecord): AgentQuestion {

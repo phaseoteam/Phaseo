@@ -17,6 +17,8 @@ describe("provider credential encryption", () => {
 		const { encryptProviderCredential } = await import("./provider-credentials");
 		const { bytesToString, decryptBYOK } = await import("@/pipeline/byok/decrypt");
 		const encrypted = await encryptProviderCredential({ plaintext: "sk-project-secret-value", workspaceId: "workspace_1", providerId: "openai" });
+		// Stored with the row, so the row is never read as legacy (no-AAD) ciphertext.
+		expect(encrypted.enc_aad_version).toBe(1);
 		const plaintext = await decryptBYOK({ ...encrypted, workspace_id: "workspace_1", provider_id: "openai" });
 		expect(bytesToString(plaintext)).toBe("sk-project-secret-value");
 		await expect(decryptBYOK({ ...encrypted, workspace_id: "workspace_2", provider_id: "openai" })).rejects.toThrow();
