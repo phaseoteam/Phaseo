@@ -30,6 +30,15 @@ describe("phone frames", () => {
 		expect(parsePhoneFrame(JSON.stringify({ id: "3", type: "list_models", projectId: "p1", extra: true }))).toEqual({ id: "3", type: "list_models", projectId: "p1" });
 		expect(parsePhoneFrame(JSON.stringify({ id: "4", type: "list_models" }))).toEqual({ id: "4", type: "list_models" });
 	});
+	it("lets a new chat name the agent its model belongs to, and asks for a mode's models", () => {
+		expect(parsePhoneFrame(JSON.stringify({ id: "1", type: "new_chat", text: "Fix it", mode: "plan", model: "gpt-6.1", harness: "codex", accountId: "acc" })))
+			.toEqual({ id: "1", type: "new_chat", text: "Fix it", mode: "plan", model: "gpt-6.1", harness: "codex", accountId: "acc" });
+		expect(refused(JSON.stringify({ id: "2", type: "new_chat", text: "x", mode: "code", harness: "codex" })).message).toContain("model");
+		expect(refused(JSON.stringify({ id: "3", type: "new_chat", text: "x", mode: "code", model: "m", accountId: "acc" })).message).toContain("harness");
+		expect(refused(JSON.stringify({ id: "4", type: "new_chat", text: "x", mode: "code", model: "m", harness: "h".repeat(41) })).message).toContain("harness");
+		expect(parsePhoneFrame(JSON.stringify({ id: "5", type: "list_models", mode: "code" }))).toEqual({ id: "5", type: "list_models", mode: "code" });
+		expect(refused(JSON.stringify({ id: "6", type: "list_models", mode: "admin" })).message).toContain("mode");
+	});
 	it("refuses a model, effort or project that isn't an id", () => {
 		expect(refused(JSON.stringify({ id: "1", type: "new_chat", text: "x", mode: "code", model: "" })).message).toContain("model");
 		expect(refused(JSON.stringify({ id: "1", type: "new_chat", text: "x", mode: "code", reasoningEffort: 3 })).message).toContain("reasoningEffort");

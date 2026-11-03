@@ -39,7 +39,19 @@ export type PhoneQuestionRequest = { id: string; questions: PhoneQuestion[] };
 /** A chat with what it is waiting on, for the chat screen. */
 export type PhoneChatDetail = PhoneChat & { approvals: PhoneApproval[]; questions: PhoneQuestionRequest[]; /** The effort the model runs at, when the chat set one. */ reasoningEffort?: string };
 /** A model a phone may start a chat with: the efforts it offers, in order, and the one it uses unless asked. */
-export type PhoneModel = { id: string; name: string; efforts?: { id: string; label: string }[]; defaultEffort?: string };
+export type PhoneModel = {
+	id: string; name: string; efforts?: { id: string; label: string }[]; defaultEffort?: string;
+	/** From protocol 2: an older model, listed behind "N older"; when it came out; its lab, for the logo; whether it has a fast tier. */
+	legacy?: true; releaseDate?: string; organisationId?: string; fast?: true;
+};
+/**
+ * One agent a new chat can run on, from protocol 2: Phaseo (source "phaseo", with the computer's Phaseo account) or a
+ * coding agent on the computer (source "local"). `error` says why its models couldn't be read; it then has none.
+ */
+export type PhoneAgent = { harness: string; name: string; accountId?: string; agentId?: string; source: "phaseo" | "local"; models: PhoneModel[]; error?: string };
+/** The agent and model a new chat starts with, and the effort when it sets one. */
+export type PhoneModelChoice = { harness?: string; accountId?: string; agentId?: string; model: string; reasoningEffort?: string };
+export type PhonePermissionMode = "supervised" | "accept-edits" | "full-access";
 export type PhoneMessage = { kind: "message"; id: string; role: "user" | "assistant" | "system" | "tool"; text: string; createdAt: string; completedAt?: string; delivery?: "steer" | "subagent"; notice?: string; attachments?: { name: string; kind: string }[]; /** The text was cut for the phone. */ truncated?: true };
 export type PhoneActivity = { kind: "activity"; id: string; type: "tool" | "reasoning" | "plan" | "usage" | "compaction"; title: string; text: string; status?: "running" | "completed" | "failed"; summary?: string; steps?: { text: string; status: string }[]; truncated?: true };
 export type PhoneEntry = PhoneMessage | PhoneActivity;
@@ -57,8 +69,9 @@ export type PhoneRequest =
 	| { id: string; type: "answer_approval"; chatId: string; approvalId: string; decision: "accept" | "decline" }
 	| { id: string; type: "answer_question"; chatId: string; questionId: string; answers: Record<string, string[]> }
 	| { id: string; type: "stop"; chatId: string }
-	| { id: string; type: "new_chat"; text: string; projectId?: string; mode: PhoneChatMode; /** One of list_models' ids; the computer's choice without it. */ model?: string; reasoningEffort?: string }
-	| { id: string; type: "list_models"; projectId?: string }
+	| { id: string; type: "new_chat"; text: string; projectId?: string; mode: PhoneChatMode; /** One of list_models' ids; the computer's choice without it. */ model?: string; reasoningEffort?: string;
+		/** From protocol 2: the agent (one of list_models' agents) the model belongs to; without it, the model is the default agent's. */ harness?: string; accountId?: string; agentId?: string }
+	| { id: string; type: "list_models"; projectId?: string; /** From protocol 2: some agents run only in Code (Grok). */ mode?: PhoneChatMode }
 	| { id: string; type: "list_projects" }
 	| { id: string; type: "subscribe"; chatIds: string[] };
 export type PhoneFrame = PhoneRequest | { id?: string; type: "ping" } | { id?: string; type: "pong" };
@@ -74,7 +87,12 @@ export type PhoneResults = {
 	stop: { chatId: string };
 	new_chat: { chat: PhoneChat };
 	/** The models of the agent a new chat (in that project) would use, and the model and effort it would start with. */
-	list_models: { models: PhoneModel[]; selected: { model: string; reasoningEffort?: string } };
+	/**
+	 * `models` are the selected agent's (all a computer from before protocol 2 sends). From 2, `agents` lists every agent
+	 * the chat could run on, `selected` names its agent, `favourites` are the window's (`harness:model` keys), and
+	 * `permissionMode` is what the chat will run with: the project's default, else the latest chat's. A phone can't change it.
+	 */
+	list_models: { models: PhoneModel[]; selected: PhoneModelChoice; agents?: PhoneAgent[]; favourites?: string[]; permissionMode?: PhonePermissionMode };
 	subscribe: { chatIds: string[] };
 	/** Every project, worktrees and archived ones included, so the phone can fold and hide them as the window does. */
 	list_projects: { projects: PhoneProject[] };
@@ -130,6 +148,11 @@ export function parsePhoneFrame(text: string): PhoneFrame {
 		if (!validId(frame.projectId)) fail("Invalid projectId.");
 		return { projectId: frame.projectId as string };
 	};
+	const optional = (key: string, max = 200) => {
+		if (frame[key] === undefined) return undefined;
+		if (!validId(frame[key], max)) fail(`Invalid ${key}.`);
+		return frame[key] as string;
+	};
 	const text_ = (key: string) => {
 		const value = frame[key];
 		if (typeof value !== "string" || !value.trim()) fail(`${key} is required.`);
@@ -175,12 +198,19 @@ export function parsePhoneFrame(text: string): PhoneFrame {
 			if (frame.mode !== "chat" && frame.mode !== "code" && frame.mode !== "plan") fail("mode must be chat, code or plan.");
 			if (frame.model !== undefined && !validId(frame.model)) fail("Invalid model.");
 			if (frame.reasoningEffort !== undefined && !validId(frame.reasoningEffort, 100)) fail("Invalid reasoningEffort.");
+			const agent = optional("harness", 40), accountId = optional("accountId"), agentId = optional("agentId");
+			if ((accountId || agentId) && !agent) fail("accountId and agentId need a harness.");
+			if (agent && frame.model === undefined) fail("A harness needs its model.");
 			return {
 				id: request, type, text: text_("text"), mode: frame.mode as PhoneChatMode, ...projectId(),
 				...frame.model !== undefined ? { model: frame.model as string } : {}, ...frame.reasoningEffort !== undefined ? { reasoningEffort: frame.reasoningEffort as string } : {},
+				...agent ? { harness: agent } : {}, ...accountId ? { accountId } : {}, ...agentId ? { agentId } : {},
 			};
 		}
-		case "list_models": return { id: request, type, ...projectId() };
+		case "list_models": {
+			if (frame.mode !== undefined && frame.mode !== "chat" && frame.mode !== "code" && frame.mode !== "plan") fail("mode must be chat, code or plan.");
+			return { id: request, type, ...projectId(), ...frame.mode !== undefined ? { mode: frame.mode as PhoneChatMode } : {} };
+		}
 		case "list_projects": return { id: request, type };
 		case "subscribe": {
 			const ids = frame.chatIds;

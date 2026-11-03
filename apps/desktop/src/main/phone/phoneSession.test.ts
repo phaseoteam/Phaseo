@@ -84,7 +84,13 @@ describe("phone session", () => {
 		const { app, session, frames } = connected();
 		app.overview().projects[0]!.settings = { defaultModel: { harness: "codex", model: "gpt-6.1" } };
 		await session.receive(JSON.stringify({ id: "m", type: "list_models", projectId: "p1" }));
-		expect(frames.at(-1)).toMatchObject({ id: "m", ok: true, result: { selected: { model: "gpt-6.1" }, models: [{ id: "gpt-6.1", defaultEffort: "medium" }, { id: "gpt-6.1-mini" }] } });
+		expect(frames.at(-1)).toMatchObject({ id: "m", ok: true, result: { selected: { model: "gpt-6.1" }, models: [{ id: "gpt-6.1", defaultEffort: "medium" }, { id: "gpt-6.1-mini" }, { id: "gpt-5", legacy: true }] } });
+		expect((frames.at(-1) as { result: { agents: { harness: string }[] } }).result.agents.map(agent => agent.harness)).toEqual(["phaseo", "codex", "claude"]);
+
+		// A Plan chat on a Phaseo model, named with its agent.
+		await session.receive(JSON.stringify({ id: "p", type: "new_chat", text: "Plan it", mode: "plan", projectId: "p1", harness: "phaseo", accountId: "phaseo-account", model: "anthropic/claude-sonnet-5" }));
+		const planned = (frames.at(-1) as { result: { chat: { id: string } } }).result.chat.id;
+		expect(app.get(planned)).toMatchObject({ harness: "phaseo", accountId: "phaseo-account", model: "anthropic/claude-sonnet-5", mode: "plan", projectId: "p1" });
 
 		await session.receive(JSON.stringify({ id: "n", type: "new_chat", text: "Ship it", mode: "code", projectId: "p1", model: "gpt-6.1", reasoningEffort: "xhigh" }));
 		const created = frames.at(-1) as Extract<DesktopFrame, { ok: true }>;

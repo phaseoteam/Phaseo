@@ -6,7 +6,8 @@ import { pickerSections,normaliseFavouriteId, type ChatModelOption, type PickerF
  * selected model, and what the composer's model control says.
  */
 export type SheetSection<T> = { key: string; title: string; items: T[] };
-export type SheetRow<T> = { type: "heading"; key: string; title: string } | { type: "model"; key: string; item: T; section: string } | { type: "more"; key: string; hidden: number };
+/** `more` shows the rest ("Show 12 more"), or with its own label toggles a group (a computer agent's older models). `note` is a line of text, such as why an agent's models couldn't be read. */
+export type SheetRow<T> = { type: "heading"; key: string; title: string } | { type: "model"; key: string; item: T; section: string } | { type: "more"; key: string; hidden: number; label?: string } | { type: "note"; key: string; text: string };
 
 /** Rows shown before "Show more"; the pinned sections (favourites, recent) never count towards it. */
 export const SHEET_LIMIT = 30;

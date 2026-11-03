@@ -4,7 +4,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { ChevronDown, CircleCheck, LoaderCircle, RotateCw, SearchIcon, Star, Zap } from "lucide-react";
 import { runnableHarnesses, type Harness, type ModelOption } from "../../shared/workspace";
 import { usablePhaseoAccounts, useWorkspace } from "../app/workspace";
-import type { ModelSelection } from "../lib/modelPreferences";
+import { favouriteModelsKey, mirrorModelPreferences, type ModelSelection } from "../lib/modelPreferences";
 import { refreshModels, useModels } from "../lib/useModels";
 import { useConnectedHarnesses } from "../lib/useConnectedHarnesses";
 import { usePersistedState } from "../lib/persistedState";
@@ -15,7 +15,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popove
 import { Tooltip, TooltipContent, TooltipTrigger } from "../components/ui/tooltip";
 import { ScrollArea } from "../components/ui/scroll-area";
 
-export const harnessNames: Record<Harness, string> = { phaseo: "Phaseo", codex: "Codex", claude: "Claude Code", opencode: "OpenCode", pi: "Pi", cursor: "Cursor", grok: "Grok", antigravity: "Antigravity", acp: "Agent" };
+import { harnessNames } from "../../shared/harnessNames";
+export { harnessNames };
 export const MAX_COMPARE = 4;
 
 export function modelLabel(id: string) {
@@ -129,7 +130,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	const [source, setSource] = useState<Source>("phaseo");
 	const [showOlder, setShowOlder] = useState<Partial<Record<Harness, boolean>>>({});
 	const [filters, setFilters] = usePersistedState("phaseo.desktop.modelFilters", { free: false, new: false });
-	const [favourites, setFavourites] = usePersistedState<string[]>("phaseo.desktop.favouriteModels", []);
+	const [favourites, setFavourites] = usePersistedState<string[]>(favouriteModelsKey, []);
 	const [catalogs, setCatalogs] = useState<Partial<Record<Harness, { entries: Entry[]; loading: boolean; error: string }>>>({});
 	const keepOpen = useRef(false);
 	const connected = useConnectedHarnesses();
@@ -198,6 +199,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	const toggleFavourite = (event: MouseEvent, entry: Entry) => {
 		event.preventDefault(); event.stopPropagation();
 		setFavourites(current => current.includes(entry.key) ? current.filter(value => value !== entry.key) : [...current, entry.key]);
+		mirrorModelPreferences();
 	};
 	const choose = (entry: Entry) => {
 		const selection = selectionOf(entry);

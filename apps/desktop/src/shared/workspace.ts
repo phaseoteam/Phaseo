@@ -1,3 +1,4 @@
+import type { RememberedModels } from "./rememberedModels";
 import type { HtmlRenderActivity } from "./htmlRender";
 import type { Delegation, Launch } from "./orchestration";
 import type { CodeHostKind, CustomCodeHost } from "./codeHosts";
@@ -310,6 +311,10 @@ export type WorkspaceApi = {
 	/** Saves a copy of an attachment where the person chooses; false when they cancel. */
 	saveAttachment: (taskId: string, id: string) => Promise<boolean>;
 	installations: () => Promise<HarnessInstallation[]>;
+	/** Local agents installed and signed in (or listing models), as main checks them for the window and phones; at most a minute old unless forced. */
+	connectedHarnesses: (force?: boolean) => Promise<Harness[]>;
+	/** Mirrors the model a new chat starts with, and the favourites, from the window's storage to main, for phones. */
+	rememberModels: (value: RememberedModels) => Promise<void>;
 	updateHarness: (harness: "codex" | "claude" | "pi") => Promise<void>;
 	cancelHarnessUpdate: () => Promise<void>;
 	harnessUpdateStatus: () => Promise<"codex" | "claude" | "pi" | undefined>;

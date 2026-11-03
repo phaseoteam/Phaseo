@@ -1,5 +1,5 @@
 import { LegendList } from "@legendapp/list/react-native";
-import { Check, ChevronDown, ChevronUp, Search, Star } from "lucide-react-native";
+import { Check, ChevronDown, ChevronUp, CircleAlert, Search, Star } from "lucide-react-native";
 import { useCallback, useState, type ReactNode } from "react";
 import { Pressable, View } from "react-native";
 import { Logo } from "@/components/Logo";
@@ -34,7 +34,8 @@ export function ModelSheet<T>({ open, onClose, title = "Model", query, onQuery, 
   selected?: SheetModel | null;
   selectedId: string | null;
   onPick(item: T): void;
-  onShowMore(): void;
+  /** Called with the row's key. */
+  onShowMore(key: string): void;
   /** Stars and unstars a row's model; without it rows have no star. */
   onToggleFavourite?(item: T): void;
   effort?: { model: string; rows: EffortRow[]; onPick(id: string | null): void } | null;
@@ -44,11 +45,19 @@ export function ModelSheet<T>({ open, onClose, title = "Model", query, onQuery, 
 }) {
   const renderItem = useCallback(({ item }: { item: SheetRow<T> }) => {
     if (item.type === "heading") return <Text accessibilityRole="header" variant="label" className="px-4 pb-1 pt-5 text-muted-foreground">{item.title}</Text>;
+    if (item.type === "note") {
+      return (
+        <View className="mx-2 flex-row items-center gap-2 rounded-md px-2 py-2.5">
+          <Icon icon={CircleAlert} tone="muted" size={16} />
+          <Text variant="caption" className="flex-1">{item.text}</Text>
+        </View>
+      );
+    }
     if (item.type === "more") {
       return (
-        <Pressable accessibilityRole="button" accessibilityLabel={`Show ${item.hidden} more models`} onPress={onShowMore} className="mx-2 mt-1 h-12 flex-row items-center gap-2 rounded-md px-2 active:bg-accent">
+        <Pressable accessibilityRole="button" accessibilityLabel={item.label ?? `Show ${item.hidden} more models`} onPress={() => onShowMore(item.key)} className="mx-2 mt-1 h-12 flex-row items-center gap-2 rounded-md px-2 active:bg-accent">
           <Icon icon={ChevronDown} tone="muted" size={16} />
-          <Text variant="body" className="font-medium">{`Show ${item.hidden.toLocaleString()} more`}</Text>
+          <Text variant="body" className="font-medium">{item.label ?? `Show ${item.hidden.toLocaleString()} more`}</Text>
         </Pressable>
       );
     }

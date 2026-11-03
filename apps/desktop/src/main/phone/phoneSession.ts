@@ -1,8 +1,9 @@
 import { createHash } from "node:crypto";
-import { errorResponse, okResponse, parsePhoneFrame, phoneLimits, phoneProtocolVersion, PhoneProtocolError, RequestRate, type AttentionKind, type DesktopFrame, type PhoneChatMode, type PhoneEntry, type PhoneProject, type PhoneRequest, type PhoneResponse, type PhoneResults } from "@phaseo/phone-protocol";
+import { errorResponse, okResponse, parsePhoneFrame, phoneLimits, phoneProtocolVersion, PhoneProtocolError, RequestRate, type AttentionKind, type DesktopFrame, type PhoneEntry, type PhoneProject, type PhoneRequest, type PhoneResponse, type PhoneResults } from "@phaseo/phone-protocol";
 import type { ConversationPage, ConversationPageQuery } from "../../shared/conversationPage";
 import { validateCommand, type AgentActivity, type Message, type Task, type WorkspaceCommand } from "../../shared/workspace";
 import type { TaskOverview, WorkspaceOverview } from "../../shared/workspaceOverview";
+import type { PhoneModelsInput, PhoneNewChat } from "./phoneHost";
 import { attentionOf, chatListPage, phoneChat, phoneChats, phoneDetail, phoneProjects, readingOrder } from "./phoneChats";
 
 /** What the phone server needs from the app: the same reads and commands the window uses. */
@@ -15,9 +16,9 @@ export type PhoneHost = {
 	page: (query: ConversationPageQuery) => ConversationPage;
 	command: (command: WorkspaceCommand) => Promise<unknown>;
 	/** Starts a chat with the phone's model and effort, else the project's or the app's defaults, and sends its first message; returns its id. */
-	newChat: (input: { text: string; projectId?: string; mode: PhoneChatMode; model?: string; reasoningEffort?: string }) => Promise<string>;
+	newChat: (input: PhoneNewChat) => Promise<string>;
 	/** What a new chat (in that project) could run on, and what it would use unasked (phoneHost's phoneModels). */
-	models: (input: { projectId?: string }) => Promise<PhoneResults["list_models"]>;
+	models: (input: PhoneModelsInput) => Promise<PhoneResults["list_models"]>;
 	/** Whether a project's folder is a git checkout. Asked only when the project list changes. */
 	isRepository: (directory: string) => boolean;
 };
@@ -138,14 +139,15 @@ export class PhoneSession {
 				return okResponse(request, { chatId: request.chatId });
 			case "new_chat": {
 				this.checkProject(request.projectId);
-				const id = await this.host.newChat({ text: request.text, mode: request.mode, ...request.projectId ? { projectId: request.projectId } : {}, ...request.model ? { model: request.model } : {}, ...request.reasoningEffort ? { reasoningEffort: request.reasoningEffort } : {} });
+				const { id: _id, type: _type, ...input } = request;
+				const id = await this.host.newChat(input);
 				const overview = this.host.overview(), task = overview.tasks.find(value => value.id === id);
 				if (!task) throw new Error("The chat was started but could not be read.");
 				return okResponse(request, { chat: phoneChat(task, overview.projects) });
 			}
 			case "list_models":
 				this.checkProject(request.projectId);
-				return okResponse(request, await this.host.models(request.projectId ? { projectId: request.projectId } : {}));
+				return okResponse(request, await this.host.models({ ...request.projectId ? { projectId: request.projectId } : {}, ...request.mode ? { mode: request.mode } : {} }));
 			case "subscribe": {
 				const listed = new Set(phoneChats(this.host.overview()).map(task => task.id));
 				const chatIds = request.chatIds.filter(id => listed.has(id));

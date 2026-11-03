@@ -1,12 +1,14 @@
 import { conversationPageOf } from "../../shared/conversationPage";
-import type { Harness, Message, ModelOption, Project, Task, WorkspaceCommand } from "../../shared/workspace";
+import type { RememberedModels } from "../../shared/rememberedModels";
+import type { Account, Harness, Message, ModelOption, Project, Task, WorkspaceCommand } from "../../shared/workspace";
 import { overviewOrder, taskOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
-import { phoneModels, startPhoneChat } from "./phoneHost";
+import { phoneModels, startPhoneChat, type PhoneModelSources } from "./phoneHost";
 import type { PhoneHost } from "./phoneSession";
 
 /** What each harness offers in the tests: Codex lists efforts on the model, Claude as a Reasoning option. */
 export const fakeModels: Partial<Record<Harness, ModelOption[]>> = {
-	phaseo: [{ id: "phaseo/test", name: "Phaseo test" }],
+	phaseo: [{ id: "phaseo/test", name: "Phaseo test" }, { id: "anthropic/claude-sonnet-5", name: "Claude Sonnet 5", releaseDate: "2026-09-01", organisationId: "anthropic", serviceTiers: [{ id: "fast", name: "Fast", description: "" }] }],
+	grok: [{ id: "grok-5-code", name: "Grok 5 Code" }],
 	codex: [
 		{ id: "gpt-6.1", name: "GPT-6.1", reasoningEfforts: [{ id: "low", description: "" }, { id: "medium", description: "" }, { id: "xhigh", description: "" }], defaultReasoningEffort: "medium" },
 		{ id: "gpt-6.1-mini", name: "GPT-6.1 mini" },
@@ -22,7 +24,10 @@ export function fakePhoneHost() {
 	const commands: WorkspaceCommand[] = [], repositoryChecks: string[] = [];
 	let clock = Date.parse("2026-11-01T10:00:00.000Z");
 	const tick = () => new Date(clock += 1000).toISOString();
-	const overview = (): WorkspaceOverview => ({ version: 1, projects, accounts: [], agents: [], mcpConnections: [], tasks: [...tasks.values()].map(task => taskOverview(task)).sort(overviewOrder) });
+	// A Phaseo account that can call the gateway, and Codex and Claude Code signed in on the computer.
+	const accounts: Account[] = [{ id: "phaseo-account", name: "Phaseo", harness: "phaseo", kind: "api", configured: true }];
+	const agents = { local: ["codex", "claude"] as Harness[], failing: new Set<Harness>(), remembered: { favourites: [] } as RememberedModels, projectModels: {} as Record<string, Partial<Record<Harness, ModelOption[]>>> };
+	const overview = (): WorkspaceOverview => ({ version: 1, projects, accounts, agents: [], mcpConnections: [], tasks: [...tasks.values()].map(task => taskOverview(task)).sort(overviewOrder) });
 	const listeners: ((overview: WorkspaceOverview) => void)[] = [];
 	const changed = () => { const value = overview(); for (const listener of listeners) listener(value); };
 	const get = (id: string) => { const task = tasks.get(id); if (!task) throw new Error("Task no longer exists."); return task; };
@@ -36,7 +41,11 @@ export function fakePhoneHost() {
 		const task = get(taskId), entry: Message = { id: `m${task.messages.length + 1}-${taskId}`, createdAt: tick(), ...message };
 		task.messages.push(entry); touch(task); changed(); return entry;
 	};
-	const discover = async (harness: Harness) => fakeModels[harness] ?? [];
+	const discover = async (harness: Harness, _accountId?: string, projectId?: string) => {
+		if (agents.failing.has(harness)) throw new Error("Not signed in on the computer.");
+		return (projectId ? agents.projectModels[projectId]?.[harness] : undefined) ?? fakeModels[harness] ?? [];
+	};
+	const sources: PhoneModelSources = { discover, localHarnesses: async () => agents.local, remembered: () => agents.remembered, permissionOf: id => get(id).permissionMode };
 	const host: PhoneHost = {
 		desktopName: () => "Test PC", appVersion: "1.2.3", overview,
 		task: id => get(id),
@@ -52,10 +61,10 @@ export function fakePhoneHost() {
 			else if (command.type === "approval") { const task = get(command.id); if (!task.approvals?.some(value => value.id === command.approvalId)) throw new Error("This approval is no longer pending."); task.approvals = task.approvals.filter(value => value.id !== command.approvalId); touch(task); changed(); }
 			return overview();
 		},
-		newChat: input => startPhoneChat(overview, async command => { await host.command(command); return overview(); }, discover, input),
-		models: input => phoneModels(overview(), discover, input),
+		newChat: input => startPhoneChat(overview, async command => { await host.command(command); return overview(); }, sources, input),
+		models: input => phoneModels(overview(), sources, input),
 		// Every test project is a checkout except one in /scratch.
 		isRepository: directory => { repositoryChecks.push(directory); return !directory.startsWith("/scratch"); },
 	};
-	return { host, tasks, projects, repositoryChecks, commands, addTask, addMessage, get, touch, changed, overview, onChange: (listener: (overview: WorkspaceOverview) => void) => listeners.push(listener) };
+	return { host, tasks, projects, accounts, agents, sources, repositoryChecks, commands, addTask, addMessage, get, touch, changed, overview, onChange: (listener: (overview: WorkspaceOverview) => void) => listeners.push(listener) };
 }

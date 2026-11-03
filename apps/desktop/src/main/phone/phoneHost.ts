@@ -1,6 +1,8 @@
-import { effortLabel, type PhoneChatMode, type PhoneModel, type PhoneResults } from "@phaseo/phone-protocol";
-import { settingsProject } from "../../shared/projectSettings";
-import { validateCommand, type Harness, type ModelOption, type WorkspaceCommand } from "../../shared/workspace";
+import { effortLabel, type PhoneAgent, type PhoneChatMode, type PhoneModel, type PhoneResults } from "@phaseo/phone-protocol";
+import { harnessNames } from "../../shared/harnessNames";
+import { settingsProject, type ProjectModelDefault } from "../../shared/projectSettings";
+import { connectedHarnesses, type RememberedModels } from "../../shared/rememberedModels";
+import { runnableHarnesses, validateCommand, type Harness, type ModelOption, type Task, type WorkspaceCommand } from "../../shared/workspace";
 import type { WorkspaceOverview } from "../../shared/workspaceOverview";
 import { effortOptionIds, phoneChats, taskEffort } from "./phoneChats";
 
@@ -8,33 +10,53 @@ type CreateTask = Extract<WorkspaceCommand, { type: "create-task" }>;
 const optionHarnesses = ["phaseo", "claude", "cursor", "pi", "opencode"];
 /** The models a harness offers, as the window's picker reads them. */
 export type DiscoverModels = (harness: Harness, accountId?: string, projectId?: string) => Promise<ModelOption[]>;
-export type PhoneNewChat = { text: string; projectId?: string; mode: PhoneChatMode; model?: string; reasoningEffort?: string };
+export type PhoneNewChat = { text: string; projectId?: string; mode: PhoneChatMode; model?: string; reasoningEffort?: string; harness?: string; accountId?: string; agentId?: string };
+export type PhoneModelsInput = { projectId?: string; mode?: PhoneChatMode };
+
+/** What a phone's new chat needs from the app beyond the overview: the same sources the window's new-chat screen reads. */
+export type PhoneModelSources = {
+	discover: DiscoverModels;
+	/** Local agents installed and signed in (main/connectedHarnesses.ts). */
+	localHarnesses: () => Promise<readonly Harness[]>;
+	/** The window's remembered model and favourites, mirrored to main. */
+	remembered: () => RememberedModels;
+	/** The permissions a chat ran with. */
+	permissionOf: (taskId: string) => Task["permissionMode"];
+};
+type Agent = { harness: Harness; accountId?: string };
 
 /**
- * How a chat the phone starts is set up, since the phone can't choose permissions: the project's default model and
- * permissions when it has them, else the model of the person's latest chat (in that project if there is one).
- * Without either it refuses rather than guess.
+ * The agents a new chat could run on, as the window's model picker lists them: Phaseo when a Phaseo account can call
+ * the gateway, then each connected local agent. Grok runs only as a coding agent, so not in a plain chat. In a project
+ * (Code or Plan), the agents the project turns off are left out.
  */
-export function phoneNewChat(overview: WorkspaceOverview, input: { projectId?: string; mode: PhoneChatMode }): CreateTask {
-	const settings = settingsProject(overview.projects, input.projectId)?.settings, project = input.projectId ? { projectId: input.projectId } : {};
-	const permission = settings?.defaultPermissionMode ? { permissionMode: settings.defaultPermissionMode } : {};
-	const preset = settings?.defaultModel;
-	if (preset) return {
-		type: "create-task", harness: preset.harness, model: preset.model, mode: input.mode, ...project, ...permission, ...preset.accountId ? { accountId: preset.accountId } : {},
-		...["codex", "grok"].includes(preset.harness) && preset.reasoningEffort ? { reasoningEffort: preset.reasoningEffort } : {},
-		...preset.harness === "codex" && preset.serviceTier ? { serviceTier: preset.serviceTier } : {},
-		...optionHarnesses.includes(preset.harness) && preset.options && Object.keys(preset.options).length ? { modelOptions: preset.options } : {},
-	};
-	const chats = phoneChats(overview).filter(task => !settings?.disabledHarnesses?.includes(task.harness));
-	const latest = chats.find(task => input.projectId && task.projectId === input.projectId) ?? chats[0];
-	if (!latest) throw new Error("Start a chat on the computer first, so a phone chat knows which model to use.");
-	return { type: "create-task", harness: latest.harness, model: latest.model, mode: input.mode, ...project, ...permission, ...latest.accountId ? { accountId: latest.accountId } : {}, ...latest.agentId ? { agentId: latest.agentId } : {} };
+export function phoneAgentList(overview: WorkspaceOverview, local: readonly Harness[], input: PhoneModelsInput, now = Date.now()): Agent[] {
+	const connected = connectedHarnesses(local, overview, now);
+	const phaseo = overview.accounts.find(account => account.harness === "phaseo" && account.configured && !account.archived && (!account.oauthExpiresAt || Date.parse(account.oauthExpiresAt) > now));
+	const hidden = input.mode !== "chat" ? settingsProject(overview.projects, input.projectId)?.settings?.disabledHarnesses ?? [] : [];
+	const agents: Agent[] = [
+		...phaseo ? [{ harness: "phaseo" as const, accountId: phaseo.id }] : [],
+		...[...connected].filter(harness => harness !== "phaseo" && harness !== "acp" && runnableHarnesses.includes(harness) && (input.mode !== "chat" || harness !== "grok")).map(harness => ({ harness })),
+	];
+	return agents.filter(agent => !hidden.includes(agent.harness));
 }
 
 /**
- * A model's effort levels as the window's settings menu shows them: Codex and Grok list them on the model, and the
- * others describe a Reasoning (or Thinking) select among the model's options. Null when the model has no levels.
+ * The permissions a phone's chat runs with, since the phone shows them but can't choose: the project's default, else
+ * the latest chat's (in the project if it has one). Undefined leaves the app's own default.
  */
+export function phonePermission(overview: WorkspaceOverview, permissionOf: PhoneModelSources["permissionOf"], projectId?: string): Task["permissionMode"] {
+	const preset = settingsProject(overview.projects, projectId)?.settings?.defaultPermissionMode;
+	if (preset) return preset;
+	const chats = phoneChats(overview);
+	for (const task of [...chats.filter(value => projectId && value.projectId === projectId), ...chats]) {
+		try { const mode = permissionOf(task.id); if (mode) return mode; } catch { /* Deleted since. */ }
+	}
+	return undefined;
+}
+
+/** A model's effort levels as the window's settings menu shows them: Codex and Grok list them on the model, and the
+ * others describe a Reasoning (or Thinking) select among the model's options. Null when the model has no levels. */
 export function modelEfforts(harness: Harness, model: ModelOption) {
 	if (harness === "codex" || harness === "grok") {
 		const efforts = model.reasoningEfforts?.map(effort => ({ id: effort.id, label: effortLabel(effort.id) })) ?? [];
@@ -46,18 +68,108 @@ export function modelEfforts(harness: Harness, model: ModelOption) {
 	return { setting: select.id, efforts: select.options.map(option => ({ id: option.id, label: option.label || effortLabel(option.id) })), defaultEffort: select.options.find(option => option.isDefault)?.id };
 }
 
-/** The models a phone may start a new chat with: those of the agent phoneNewChat picks, and what it would use unasked. */
-export async function phoneModels(overview: WorkspaceOverview, discover: DiscoverModels, input: { projectId?: string }): Promise<PhoneResults["list_models"]> {
-	const base = phoneNewChat(overview, { ...input, mode: "code" });
-	const options = await discover(base.harness, base.accountId, base.projectId).catch(() => []);
-	const models: PhoneModel[] = options.filter(model => !model.legacy || model.id === base.model).map(model => {
-		const efforts = modelEfforts(base.harness, model);
-		return { id: model.id, name: model.name, ...efforts ? { efforts: efforts.efforts, ...efforts.defaultEffort ? { defaultEffort: efforts.defaultEffort } : {} } : {} };
+function phoneModel(harness: Harness, model: ModelOption): PhoneModel {
+	const efforts = modelEfforts(harness, model);
+	return {
+		id: model.id, name: model.name, ...efforts ? { efforts: efforts.efforts, ...efforts.defaultEffort ? { defaultEffort: efforts.defaultEffort } : {} } : {},
+		...model.legacy ? { legacy: true as const } : {}, ...model.releaseDate ? { releaseDate: model.releaseDate } : {}, ...model.organisationId ? { organisationId: model.organisationId } : {},
+		...model.serviceTiers?.length ? { fast: true as const } : {},
+	};
+}
+
+/**
+ * The model a new chat starts with, in the window's order: in a project (Code or Plan) its default model; otherwise the
+ * person's remembered model (their default, else the last one picked); otherwise the Phaseo account's default model
+ * (the catalog's default, else a Sonnet or GPT-6, else the first). Only agents that can run now count. Undefined when
+ * none applies.
+ */
+export function phoneDefaultSelection(overview: WorkspaceOverview, agents: readonly Agent[], remembered: RememberedModels, input: PhoneModelsInput, phaseoModels: readonly ModelOption[]): ProjectModelDefault | undefined {
+	// A Phaseo choice runs on the account that can call the gateway now.
+	const runnable = (selection: ProjectModelDefault | undefined) => {
+		const agent = selection && agents.find(value => value.harness === selection.harness && (value.harness !== "phaseo" || !selection.accountId || selection.accountId === value.accountId));
+		return agent ? { ...selection!, ...agent.accountId ? { accountId: agent.accountId } : {} } : undefined;
+	};
+	const preset = input.mode !== "chat" ? settingsProject(overview.projects, input.projectId)?.settings?.defaultModel : undefined;
+	const chosen = runnable(preset) ?? runnable(remembered.selection);
+	if (chosen) return chosen;
+	const phaseo = agents.find(agent => agent.harness === "phaseo");
+	const model = phaseoModels.find(value => value.default) ?? phaseoModels.find(value => /claude-sonnet|gpt-6\b/i.test(value.id)) ?? phaseoModels[0];
+	return phaseo && model ? { harness: "phaseo", accountId: phaseo.accountId, model: model.id } : undefined;
+}
+
+/** The app's command for a new chat on a chosen model and its settings. */
+function createTask(selection: ProjectModelDefault & { agentId?: string }, input: PhoneModelsInput, permissionMode: Task["permissionMode"]): CreateTask {
+	return {
+		type: "create-task", harness: selection.harness, model: selection.model, mode: input.mode ?? "code",
+		...input.projectId ? { projectId: input.projectId } : {}, ...permissionMode ? { permissionMode } : {},
+		...selection.accountId ? { accountId: selection.accountId } : {}, ...selection.agentId ? { agentId: selection.agentId } : {},
+		...["codex", "grok"].includes(selection.harness) && selection.reasoningEffort ? { reasoningEffort: selection.reasoningEffort } : {},
+		...selection.harness === "codex" && selection.serviceTier ? { serviceTier: selection.serviceTier } : {},
+		...optionHarnesses.includes(selection.harness) && selection.options && Object.keys(selection.options).length ? { modelOptions: selection.options } : {},
+	};
+}
+
+const noDefault = "Pick a model in a chat on the computer first, or sign in to Phaseo there, so a phone chat knows which model to use.";
+const errorText = (reason: unknown) => reason instanceof Error ? reason.message : "Its models couldn't be read.";
+
+/**
+ * Every agent a new chat could run on with its models, read in parallel (an agent that fails gets its error, not a
+ * failed frame), the model and effort it would use unasked, the window's favourites and the permissions it runs with.
+ * `models` repeats the selected agent's models for phones from before agents.
+ */
+export async function phoneModels(overview: WorkspaceOverview, sources: PhoneModelSources, input: PhoneModelsInput): Promise<PhoneResults["list_models"]> {
+	const agents = phoneAgentList(overview, await sources.localHarnesses().catch(() => []), input);
+	const results = await Promise.allSettled(agents.map(agent => sources.discover(agent.harness, agent.accountId, input.projectId)));
+	const listed: PhoneAgent[] = agents.map((agent, index) => {
+		const result = results[index]!;
+		return {
+			harness: agent.harness, name: harnessNames[agent.harness], source: agent.harness === "phaseo" ? "phaseo" : "local", ...agent.accountId ? { accountId: agent.accountId } : {},
+			models: result.status === "fulfilled" ? result.value.map(model => phoneModel(agent.harness, model)) : [],
+			...result.status === "rejected" ? { error: errorText(result.reason) } : {},
+		};
 	});
-	// When the harness can't be asked, the phone still sees the model the chat would use.
-	if (!models.some(model => model.id === base.model)) models.unshift({ id: base.model, name: base.model });
-	const effort = taskEffort(base);
-	return { models, selected: { model: base.model, ...effort ? { reasoningEffort: effort } : {} } };
+	const phaseoIndex = agents.findIndex(agent => agent.harness === "phaseo"), phaseoResult = results[phaseoIndex];
+	const remembered = sources.remembered();
+	// With no default, the picker opens on the first model listed: shown, so the person sees it before sending.
+	const first = listed.find(agent => agent.models.some(model => !model.legacy));
+	const selection = phoneDefaultSelection(overview, agents, remembered, input, phaseoResult?.status === "fulfilled" ? phaseoResult.value : [])
+		?? (first ? { harness: first.harness as Harness, ...first.accountId ? { accountId: first.accountId } : {}, model: first.models.find(model => !model.legacy)!.id } : undefined);
+	if (!selection) throw new Error(noDefault);
+	// Each harness is listed once.
+	const agent = listed.find(value => value.harness === selection.harness)!;
+	// When the agent can't be asked, the phone still sees the model the chat would use.
+	if (!agent.models.some(model => model.id === selection.model)) agent.models.unshift({ id: selection.model, name: selection.model });
+	const effort = taskEffort(createTask(selection, input, undefined));
+	const permissionMode = phonePermission(overview, sources.permissionOf, input.projectId);
+	return {
+		agents: listed, models: agent.models, favourites: remembered.favourites,
+		selected: { harness: agent.harness, ...agent.accountId ? { accountId: agent.accountId } : {}, model: selection.model, ...effort ? { reasoningEffort: effort } : {} },
+		...permissionMode ? { permissionMode } : {},
+	};
+}
+
+/**
+ * The new chat's command: the agent and model the phone picked (one phoneModels listed), else the default selection.
+ * Without either it refuses rather than guess.
+ */
+export async function phoneNewChat(overview: WorkspaceOverview, sources: PhoneModelSources, input: PhoneNewChat): Promise<CreateTask> {
+	const agents = phoneAgentList(overview, await sources.localHarnesses().catch(() => []), input);
+	const permissionMode = phonePermission(overview, sources.permissionOf, input.projectId);
+	const remembered = sources.remembered();
+	// The Phaseo catalog is read only when nothing else decides.
+	const chosen = phoneDefaultSelection(overview, agents, remembered, input, []);
+	if (input.harness) {
+		const agent = agents.find(value => value.harness === input.harness && (input.harness !== "phaseo" || !input.accountId || input.accountId === value.accountId));
+		if (!agent || input.agentId) throw new Error("That agent isn't available on this computer any more.");
+		// The default model keeps its own settings (speed, options); a local agent keeps the sign-in its default uses.
+		if (chosen?.harness === agent.harness && chosen.model === input.model) return createTask(chosen, input, permissionMode);
+		const accountId = agent.accountId ?? (chosen?.harness === agent.harness ? chosen.accountId : undefined);
+		return createTask({ harness: agent.harness, model: input.model!, ...accountId ? { accountId } : {} }, input, permissionMode);
+	}
+	const phaseo = agents.find(agent => agent.harness === "phaseo");
+	const selection = chosen ?? phoneDefaultSelection(overview, agents, remembered, input, phaseo ? await sources.discover("phaseo", phaseo.accountId, input.projectId).catch(() => []) : []);
+	if (!selection) throw new Error(noDefault);
+	return createTask(selection, input, permissionMode);
 }
 
 /**
@@ -79,9 +191,9 @@ export async function withPhoneModel(base: CreateTask, discover: DiscoverModels,
 }
 
 /** Creates the chat through the app's commands, checked as the window's are, and sends its first message. */
-export async function startPhoneChat(overview: () => WorkspaceOverview, command: (value: WorkspaceCommand) => Promise<WorkspaceOverview>, discover: DiscoverModels, input: PhoneNewChat) {
+export async function startPhoneChat(overview: () => WorkspaceOverview, command: (value: WorkspaceCommand) => Promise<WorkspaceOverview>, sources: PhoneModelSources, input: PhoneNewChat) {
 	const known = new Set(overview().tasks.map(task => task.id));
-	const create = await withPhoneModel(phoneNewChat(overview(), input), discover, input);
+	const create = await withPhoneModel(await phoneNewChat(overview(), sources, input), sources.discover, input);
 	const created = await command(validateCommand(create));
 	const id = created.tasks.find(task => !known.has(task.id))?.id;
 	if (!id) throw new Error("The chat could not be started.");
