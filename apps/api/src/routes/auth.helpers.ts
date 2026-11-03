@@ -1,6 +1,6 @@
 // Purpose: Shared OAuth route helper utilities.
 
-import { z } from "zod";
+import * as z from "zod";
 import {
 	DEFAULT_MANAGEMENT_KEY_CAPABILITIES,
 	normalizeScopeList,

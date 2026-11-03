@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 import { AudioSpeechSchema } from "@core/schemas";
 import type { AdapterResult, ProviderExecuteArgs } from "@providers/types";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "@providers/openai-compatible/config";

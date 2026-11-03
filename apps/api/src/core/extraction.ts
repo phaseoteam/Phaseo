@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 
 const instructions = z.string().max(2048).optional();
 const precision = { integer: z.boolean().optional(), decimals: z.number().int().min(0).max(6).optional() };

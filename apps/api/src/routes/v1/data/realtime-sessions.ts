@@ -3,7 +3,7 @@
 // How: Authenticates gateway keys, creates/extends/finalizes realtime sessions.
 
 import { Hono } from "hono";
-import { z } from "zod";
+import * as z from "zod";
 import { getBindings } from "@/runtime/env";
 import type { Env } from "@/runtime/types";
 import { guardAuth, guardContext, guardJson } from "@pipeline/before/guards";

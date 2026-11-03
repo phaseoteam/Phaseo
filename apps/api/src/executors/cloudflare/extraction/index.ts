@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 import { ExtractionsSchema, validateExtractionAnswers } from "@core/extraction";
 import type { IRExtractionRequest, IRExtractionResponse } from "@core/ir";
 import type { Bill, ProviderExecutor } from "@executors/types";

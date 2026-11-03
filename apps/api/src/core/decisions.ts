@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 import { lazySchema } from "./lazy-schema";
 
 export type DecisionValue = string | boolean;

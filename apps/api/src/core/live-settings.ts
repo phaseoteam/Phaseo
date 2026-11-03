@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 
 // https://developers.openai.com/api/reference/resources/live
 export const LIVE_VOICES = ["alloy", "ash", "ballad", "beacon", "bossa", "cedar", "cinder", "coral", "delta", "echo", "gleam", "marin", "meridian", "quartz", "ripple", "sage", "shimmer", "stone", "tempo", "verse", "vesper", "willow"] as const;

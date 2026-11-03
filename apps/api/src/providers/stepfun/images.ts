@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 import { ImagesEditSchema, ImagesGenerationSchema } from "@core/schemas";
 import type { AdapterResult, ProviderExecuteArgs } from "../types";
 import { resolveOpenAITransport } from "../shared/openai-transport";

@@ -1,6 +1,6 @@
 import { expect, it, vi } from "vitest";
 const createClient = vi.hoisted(() => vi.fn(() => ({ marker: Symbol() })));
-vi.mock("@supabase/supabase-js", () => ({ createClient }));
+vi.mock("./supabase-client", () => ({ createClient }));
 
 it("reuses a sessionless client and replaces it immediately on credential or database rotation", async () => {
     vi.resetModules(); createClient.mockClear();

@@ -3,7 +3,7 @@
 // Why: Keeps pre-execution logic centralized and consistent.
 // How: Orchestrates auth, validation, and context loading to build PipelineContext.
 
-import { z } from "zod";
+import * as z from "zod";
 import { getBindings } from "@/runtime/env";
 import { getAutoRoutingFeatureGateName, isAutoRoutingAccessEnabled, isModelSuccessorRedirectAccessEnabled } from "@core/feature-flags";
 import { keyIdIsOAuthClientId } from "@core/request-key";
