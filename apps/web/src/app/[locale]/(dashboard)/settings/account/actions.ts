@@ -13,6 +13,7 @@ import {
 import { createClient as createSupabaseAuthClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 import { normaliseCountryCode } from '@/lib/countryCodes'
+import { revokeOtherSessionsAndGrants } from '@/lib/auth/revokeOtherSessions'
 
 export type PasskeyMutationFailure = {
     code:
@@ -81,7 +82,8 @@ async function hasRecentServerAuthentication(
 
 async function requirePasskeyStepUp(
     supabase: Awaited<ReturnType<typeof createClient>>,
-    currentPassword?: string
+    currentPassword?: string,
+    options: { alwaysVerifyPassword?: boolean } = {}
 ): Promise<
     | { ok: true; user: NonNullable<Awaited<ReturnType<typeof supabase.auth.getUser>>['data']['user']> }
     | { ok: false; result: PasskeyMutationFailure }
@@ -122,7 +124,7 @@ async function requirePasskeyStepUp(
         }
     }
 
-    if (userHasPassword(user)) {
+    if (options.alwaysVerifyPassword || userHasPassword(user)) {
         if (!user.email || !currentPassword) {
             return {
                 ok: false,
@@ -192,9 +194,10 @@ async function requirePasskeyStepUp(
 
 async function requireSensitiveAccountStepUp(
     supabase: Awaited<ReturnType<typeof createClient>>,
-    currentPassword?: string
+    currentPassword?: string,
+    options: { alwaysVerifyPassword?: boolean } = {}
 ) {
-    const stepUp = await requirePasskeyStepUp(supabase, currentPassword)
+    const stepUp = await requirePasskeyStepUp(supabase, currentPassword, options)
     if (!stepUp.ok) throw new Error(stepUp.result.message)
     return stepUp.user
 }
@@ -439,32 +442,17 @@ export async function deleteAccount(confirmation: string, currentPassword?: stri
 
 /**
  * Changes the user's password after verifying their current password.
- * Re-authenticates the user before allowing the password change.
+ * Requires MFA (when enrolled) and the current password, checked without replacing the session,
+ * then signs the user out everywhere else.
  */
 export async function changePasswordAction(
     currentPassword: string,
     newPassword: string
 ) {
     const supabase = await createClient()
-    const { data: authData } = await supabase.auth.getUser()
-    const user = authData.user
-
-    if (!user?.email) {
-        throw new Error('Not authenticated or no email found')
-    }
-
-    // Verify current password by attempting to sign in
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password: currentPassword,
+    const user = await requireSensitiveAccountStepUp(supabase, currentPassword, {
+        alwaysVerifyPassword: true,
     })
-
-    if (signInError) {
-        if (signInError.message?.includes('Invalid login credentials')) {
-            throw new Error('Current password is incorrect')
-        }
-        throw new Error('Failed to verify current password')
-    }
 
     // Update password
     const { error: updateError } = await supabase.auth.updateUser({
@@ -480,6 +468,8 @@ export async function changePasswordAction(
         throw new Error('Failed to update password')
     }
 
+    await revokeOtherSessionsAndGrants(supabase, user.id)
+
     revalidatePath('/settings/account')
     return { success: true }
 }
@@ -492,24 +482,12 @@ export async function changeEmailAction(
     currentPassword: string
 ) {
     const supabase = await createClient()
-    const { data: authData } = await supabase.auth.getUser()
-    const user = authData.user
-
-    if (!user?.email) {
-        throw new Error('Not authenticated or no email found')
-    }
-
-    // Verify current password
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password: currentPassword,
+    // Requires MFA (when enrolled) and the current password, checked without replacing the session.
+    const user = await requireSensitiveAccountStepUp(supabase, currentPassword, {
+        alwaysVerifyPassword: true,
     })
-
-    if (signInError) {
-        if (signInError.message?.includes('Invalid login credentials')) {
-            throw new Error('Current password is incorrect')
-        }
-        throw new Error('Failed to verify current password')
+    if (!user.email) {
+        throw new Error('Not authenticated or no email found')
     }
 
 	const priorEmail = user.email.trim().toLowerCase()
@@ -598,7 +576,7 @@ export async function verifyMFAEnrollmentAction(
         throw new Error('Invalid MFA enrollment response')
     }
     const supabase = await createClient()
-    await requireSensitiveAccountStepUp(supabase, currentPassword)
+    const user = await requireSensitiveAccountStepUp(supabase, currentPassword)
 	const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors()
 	const pendingFactor = factors?.totp?.find((factor) => factor.id === factorId && (factor as any).status === 'unverified')
 	if (factorsError || !pendingFactor) throw new Error('MFA enrollment is not bound to this account')
@@ -642,6 +620,9 @@ export async function verifyMFAEnrollmentAction(
     } catch {
         // Ignore cleanup errors - non-critical
     }
+
+    // Sessions and app grants from before MFA was turned on end; this session is now aal2.
+    await revokeOtherSessionsAndGrants(supabase, user.id)
 
 	revalidatePath('/settings/account')
 	revalidatePath('/settings/account/mfa')
