@@ -43,7 +43,7 @@ Phaseo 会记录经由 Gateway 路由的请求运行时间。
 | **Gateway E2E** | 从 Gateway 请求开始到完成。 |
 | **Phaseo overhead** | `max(0, Gateway E2E - provider duration)`. |
 | **Effective throughput** | 所有输出 token 数除以提供商的完整处理时长。 |
-| **Output speed** | 首个输出之后的输出 token 数除以 TTFT 之后的提供商处理时间。 |
+| **Output speed** | 首个 token 之后的输出 token 数（不含此前的推理）除以 TTFT 之后的提供商耗时。整段回答在一次网络读取中送达时不显示。 |
 | **TPOT / ITL** | 首次输出后每个 token 的请求级平均耗时。 |
 
 TTFT、输出速度、TPOT 和 ITL 需要流式响应，并且首次输出必须包含内容。 仅包含元数据的流帧不计入。 非流式响应仍可用于统计提供商处理时长、Gateway E2E 和有效吞吐量，而不会虚构 TTFT。

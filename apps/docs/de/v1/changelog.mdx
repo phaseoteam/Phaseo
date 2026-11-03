@@ -8,6 +8,27 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"Produkt","api":"API & SDKs","models":"Modelle"}} clearLabel="Zurücksetzen" />
 
+<Update label="3. November 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- Modellseiten zählen den Erfolg von Tool-Aufrufen und strukturierten Ausgaben nur bei Antworten, die Phaseo geprüft hat; vorher zählten fehlgeschlagene Anfragen als gültiges JSON und Stunden ohne Daten erschienen mit 100 % ([#3475](https://github.com/phaseoteam/Phaseo/pull/3475)).
+- Die Ausgabegeschwindigkeit auf Modellseiten lässt das Reasoning vor der Antwort weg und zeigt keinen Wert, wenn die Antwort in einem Stück ankommt; siehe [Preise und Leistung messen](./exploring/pricing-performance.mdx) ([#3465](https://github.com/phaseoteam/Phaseo/pull/3465), [#3476](https://github.com/phaseoteam/Phaseo/pull/3476)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- Gestreamte Anfragen an Gemini 2.5, 3 und 3.1, Gemini 3.5 bis 3.8 Flash und Gemma 4 über Google AI Studio kommen jetzt Token für Token an; vorher kam die ganze Antwort erst am Ende der Generierung ([#3483](https://github.com/phaseoteam/Phaseo/pull/3483)).
+
+</div>
+
+</Update>
+
 <Update label="2. November 2026">
 
 <div data-changelog-category="models">
