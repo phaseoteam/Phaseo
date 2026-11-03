@@ -4,7 +4,7 @@
 import { createFileRoute, notFound, Outlet } from "@tanstack/react-router";
 import { defaultLocale, isPublicLocale } from "@/i18n/locales";
 import { buildLocalizedRootMetadata } from "@/lib/rootMetadata";
-import { metadataToHead } from "@/lib/start/metadataToHead";
+import { metadataToHead, withoutOverriddenOgImage } from "@/lib/start/metadataToHead";
 import { createServerFn } from "@tanstack/react-start";
 import { toSerializableMetadata } from "@/lib/start/metadata";
 
@@ -20,6 +20,6 @@ export const Route = createFileRoute("/{-$locale}")({
 	},
 	loader: async ({ params }) => ({ metadata: await getRootMetadata({ data: params.locale ?? defaultLocale }) }),
 	staleTime: Infinity,
-	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
+	head: ({ loaderData, matches, match }) => withoutOverriddenOgImage(metadataToHead(loaderData?.metadata), matches, match.id),
 	component: Outlet,
 });

@@ -121,6 +121,22 @@ export function metadataToHead(metadata: Meta | undefined | null, options: { roo
 }
 
 /**
+ * A layout's head without its og:image tags when a deeper route sets its own
+ * image. The router keeps a layout tag unless a deeper route sets the same
+ * property, so a page image without a size would otherwise inherit the
+ * default image's 1200x630 (Next replaced openGraph as a whole).
+ */
+export function withoutOverriddenOgImage(head: HeadOutput, matches: ReadonlyArray<{ id: string; loaderData?: unknown }>, matchId: string): HeadOutput {
+	const below = matches.slice(matches.findIndex((match) => match.id === matchId) + 1);
+	const overridden = below.some((match) => {
+		const og = ((match.loaderData as { metadata?: Meta | null } | undefined)?.metadata?.openGraph ?? null) as Meta | null;
+		return asArray(og?.images as unknown).length > 0;
+	});
+	if (!overridden) return head;
+	return { ...head, meta: head.meta.filter((entry) => !entry.property?.startsWith("og:image")) };
+}
+
+/**
  * Metadata a child loader attached with `notFound({ data: { metadata } })`.
  * The router moves a not-found to the nearest route with a notFoundComponent
  * and stops running head() below it, so that boundary applies the metadata.
