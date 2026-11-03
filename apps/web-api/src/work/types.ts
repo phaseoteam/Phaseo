@@ -1,5 +1,5 @@
 // Shared types for the work tracker: database rows (snake_case, as Supabase returns them) and the
-// camelCase shapes the account API returns. Rows match supabase/migrations/20261102113319_work_tracker.sql.
+// camelCase shapes the account API returns. Rows match supabase/migrations/20261103085400_work_tracker.sql.
 
 export const WORK_ITEM_STATES = ["triage", "backlog", "todo", "in_progress", "in_review", "done", "cancelled"] as const;
 export type WorkItemState = (typeof WORK_ITEM_STATES)[number];
