@@ -48,7 +48,12 @@ function TableOfContentsLinks({
 export function BlogTableOfContents({ items }: BlogTableOfContentsProps) {
 	const t = useTranslations("Content.blog");
 	const [activeId, setActiveId] = useState(items[0]?.id ?? "");
+	const [pastFirstHeading, setPastFirstHeading] = useState(false);
 	const desktopListRef = useRef<HTMLDivElement>(null);
+	const mobileDetailsRef = useRef<HTMLDetailsElement>(null);
+	const activeLabel = pastFirstHeading
+		? items.find((item) => item.id === activeId)?.label
+		: undefined;
 
 	useEffect(() => {
 		let frame = 0;
@@ -71,6 +76,7 @@ export function BlogTableOfContents({ items }: BlogTableOfContentsProps) {
 			setActiveId((current) =>
 				current === nextActiveId ? current : nextActiveId,
 			);
+			setPastFirstHeading(headings[0].getBoundingClientRect().top <= 160);
 		};
 
 		const requestUpdate = () => {
@@ -112,16 +118,35 @@ export function BlogTableOfContents({ items }: BlogTableOfContentsProps) {
 
 	return (
 		<>
-			<div className="lg:hidden">
-				<details className="group border-y border-zinc-200 py-4 dark:border-zinc-800">
-					<summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-zinc-950 marker:hidden dark:text-zinc-50 [&::-webkit-details-marker]:hidden">
-						<span>{t("onThisPage")}</span>
+			<div className="sticky top-[var(--site-header-height,3.75rem)] z-30 -mx-4 bg-white px-4 sm:-mx-6 sm:px-6 lg:hidden dark:bg-zinc-950">
+				<details
+					ref={mobileDetailsRef}
+					className="group border-y border-zinc-200 dark:border-zinc-800"
+				>
+					<summary className="flex cursor-pointer list-none items-center justify-between gap-3 py-3 text-sm font-semibold text-zinc-950 marker:hidden dark:text-zinc-50 [&::-webkit-details-marker]:hidden">
+						<span className="min-w-0">
+							{activeLabel ? (
+								<>
+									<span className="sr-only">{t("onThisPage")}: </span>
+									<span className="block truncate">{activeLabel}</span>
+								</>
+							) : (
+								t("onThisPage")
+							)}
+						</span>
 						<ChevronDown
 							aria-hidden="true"
-							className="size-4 text-zinc-500 transition-transform duration-200 group-open:rotate-180 dark:text-zinc-400"
+							className="size-4 shrink-0 text-zinc-500 transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none dark:text-zinc-400"
 						/>
 					</summary>
-					<div className="mt-4">
+					<div
+						className="max-h-[60vh] overflow-y-auto pb-4"
+						onClick={(event) => {
+							if ((event.target as HTMLElement).closest("a") && mobileDetailsRef.current) {
+								mobileDetailsRef.current.open = false;
+							}
+						}}
+					>
 						<TableOfContentsLinks
 							activeId={activeId}
 							items={items}

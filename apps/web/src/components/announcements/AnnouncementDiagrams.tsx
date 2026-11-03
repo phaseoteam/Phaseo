@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { ArrowDown, ArrowRight, CircleCheck, OctagonX } from "lucide-react";
+import { ArrowRight, CircleCheck, OctagonX } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // MDX in posts can't pass arrays or objects (next-mdx-remote blocks JS
@@ -52,12 +52,12 @@ export function Feature({
 
 export function Flow({ title, children }: { title?: string; children: ReactNode }) {
 	return (
-		<figure className="my-8 rounded-md border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/40 sm:p-6">
-			<ol className="grid gap-3 [counter-reset:flow-step] md:auto-cols-fr md:grid-flow-col md:gap-8">
+		<figure className="my-8 md:rounded-md md:border md:border-zinc-200 md:bg-zinc-50 md:p-6 md:dark:border-zinc-800 md:dark:bg-zinc-900/40">
+			<ol className="grid [counter-reset:flow-step] md:auto-cols-fr md:grid-flow-col md:gap-8">
 				{children}
 			</ol>
 			{title ? (
-				<figcaption className="mt-4 text-center text-sm text-zinc-500 dark:text-zinc-400">
+				<figcaption className="mt-4 text-sm text-zinc-500 md:text-center dark:text-zinc-400">
 					{title}
 				</figcaption>
 			) : null}
@@ -79,12 +79,17 @@ export function FlowStep({
 	children?: ReactNode;
 }) {
 	return (
-		<li className="group relative flex flex-col gap-2 rounded-md border border-zinc-200 bg-white p-4 [counter-increment:flow-step] dark:border-zinc-800 dark:bg-zinc-950">
+		// Phones get a numbered timeline; md and up get a row of cards with arrows.
+		<li className="group relative flex flex-col gap-1.5 pb-6 pl-11 [counter-increment:flow-step] last:pb-0 md:gap-2 md:last:pb-4 md:rounded-md md:border md:border-zinc-200 md:bg-white md:p-4 md:dark:border-zinc-800 md:dark:bg-zinc-950">
 			<span
 				aria-hidden="true"
-				className="font-mono text-xs text-zinc-400 before:[content:counter(flow-step,decimal-leading-zero)] dark:text-zinc-500"
+				className="absolute top-0 left-0 flex size-7 items-center justify-center rounded-md border border-zinc-200 bg-white font-mono text-xs text-zinc-500 before:[content:counter(flow-step,decimal-leading-zero)] md:static md:size-auto md:justify-start md:border-0 md:bg-transparent md:text-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400 md:dark:bg-transparent md:dark:text-zinc-500"
 			/>
-			<p className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+			<span
+				aria-hidden="true"
+				className="absolute top-8 bottom-1 left-3.5 w-px bg-zinc-200 group-last:hidden md:hidden dark:bg-zinc-800"
+			/>
+			<p className="pt-1 text-sm font-semibold text-zinc-950 md:pt-0 dark:text-zinc-50">
 				{title}
 			</p>
 			{children ? (
@@ -104,10 +109,6 @@ export function FlowStep({
 					<span>{ok}</span>
 				</p>
 			) : null}
-			<ArrowDown
-				aria-hidden="true"
-				className="absolute -bottom-3 left-1/2 z-10 h-4 w-4 -translate-x-1/2 translate-y-1/2 text-zinc-400 group-last:hidden md:hidden"
-			/>
 			<ArrowRight
 				aria-hidden="true"
 				className="absolute top-1/2 -right-6 hidden h-4 w-4 -translate-y-1/2 text-zinc-400 group-last:hidden md:block"
