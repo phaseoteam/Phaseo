@@ -35,9 +35,21 @@ From version 3 a phone organises threads, changes their settings and edits their
 
 ## Versions and projects
 
-`hello` carries the phone's `phoneProtocolVersion` as `protocol`, and the computer answers with the lower of the two, so a phone from before version 2 (which sends none and refuses a higher answer) is told 1 and keeps working. A phone shows a newer feature only when the answer is high enough; an older computer answers an unknown request with `invalid_frame`. From 2, `hello` also lists `capabilities`, the powers this phone has beyond threads (none yet).
+`hello` carries the phone's `phoneProtocolVersion` as `protocol`, and the computer answers with the lower of the two, so a phone from before version 2 (which sends none and refuses a higher answer) is told 1 and keeps working. A phone shows a newer feature only when the answer is high enough; an older computer answers an unknown request with `invalid_frame`. From 2, `hello` also lists `capabilities`, the powers this phone has beyond threads (see Capabilities and review).
 
 `list_projects` (version 2) returns every project, pinned first in the window's order: `repository` says whether it is a git checkout, archived projects are marked `archived`, and a worktree names its source as `worktreeOf` (its chats list under the source, as rows already say). Removed worktrees and Factory's per-item worktrees are left out. Once a phone has read the list, the computer sends `projects_changed` with the whole list whenever it changes; phones that never asked never get it.
+
+## Capabilities and review
+
+From version 4 each paired phone has three switches on the computer, in Settings → Phone: `code` (on unless turned off, also for phones paired earlier), `changes` and `terminal` (off until turned on). `hello` lists the ones that are on; a phone below 4 is told none, since none of its frames needs one. When the person flips a switch, the computer sends `{ type: "access", capabilities }` to that phone's connections at once, and it checks every request against the switches as they are then. A request without its capability is refused with `forbidden` ("Allow this on the computer: Settings → Phone").
+
+With `code`:
+
+- `git_status { projectId }`: the project folder's branch, upstream (ahead and behind), whether it has a remote, and each changed file's `status` (added, modified, deleted, renamed, untracked, conflicted) and whether some of it is `staged`. No diff text. `repository: false` for a folder that isn't a checkout. The phone asks when its list shows and when a thread in that project ends a turn; nothing polls.
+- `read_diff { scope, chatId | projectId, messageId?, baseRef? }`: `scope` is `uncommitted`, `branch` (against `baseRef`, else the computer's guess of the base) or `turn`. A chat's diff is in the chat's own folder, its worktree's when it has one. A turn needs `chatId`; `messageId` names the person's message that started it (else the latest with snapshots), and the computer reads the snapshots from that message, so a phone never sends tree ids. The answer lists every file with its lines added and removed (-1 for binary) and, while the frame has room, its `patch` (from `diff --git` on). A file past the room, or over `phoneLimits.diffFileBytes` (512 KB) on its own, comes without one; `truncated` says the computer stopped reading a very large diff.
+- `read_diff_file { …same target, path, hash }`: one file of the diff `read_diff` answered with `hash`, its patch cut at the last whole line under 512 KB (`truncated`). Refused as `rejected` once the diff has changed, so two versions are never mixed.
+
+None of these is held by Phaseo Connect for an offline computer. A review comment never reaches the computer as a frame: the phone puts it into the thread's message, which the person sends.
 
 ## Direct connection
 

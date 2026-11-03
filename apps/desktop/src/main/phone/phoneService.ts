@@ -1,12 +1,12 @@
 import { networkInterfaces } from "node:os";
 import { toQR } from "toqr";
 import { connectRelayUrl, encodePairingLink, generateKeyPair, publicKeyOf, tokenHash, type KeyPair } from "@phaseo/phone-protocol";
-import { phoneAddressLabels, validatePhoneSettingsUpdate, type ConnectView, type PhoneAddress, type PhoneAddressKind, type PhonePairingView, type PhoneState } from "../../shared/phone";
+import { phoneAddressLabels, validatePhoneAccessUpdate, validatePhoneSettingsUpdate, type ConnectView, type PhoneAddress, type PhoneAddressKind, type PhonePairingView, type PhoneState } from "../../shared/phone";
 import { formatSpend } from "../../shared/usageAmounts";
 import type { WorkspaceOverview } from "../../shared/workspaceOverview";
 import { connectBillingClient, type ConnectBilling, type ConnectBillingClient } from "./connectBilling";
 import { ConnectClient, type ConnectClientState } from "./connectClient";
-import { PhonePairing, PhoneSettingsFile, type DeviceStore } from "./phoneDevices";
+import { capabilitiesOf, PhonePairing, PhoneSettingsFile, type DeviceStore } from "./phoneDevices";
 import { PhoneServer } from "./phoneServer";
 import { PhoneHub, type PhoneHost } from "./phoneSession";
 import { bindHosts, detectAddresses, disableTailscaleServe, ensureTailscaleServe, probeHttps, readTailscaleStatus, runCommand, tailscaleHttpsUrl, type DetectedAddresses, type NetworkInterfaces, type RunCommand } from "./tailscale";
@@ -60,6 +60,9 @@ export class PhoneService {
 		this.pairing.onPaired = device => { this.connect?.registerDevice(device.id, device.relayTokenHash); this.emit(); };
 		this.pairing.onRemoved = deviceId => { this.hub.closeDevice(deviceId); this.connect?.removeDevice(deviceId); this.emit(); };
 		this.pairing.onCodeExpired = relayDeviceId => this.connect?.removeDevice(relayDeviceId);
+		// Read on every request, so turning a switch off refuses the phone's next one.
+		this.hub.capabilitiesOf = deviceId => { const device = this.pairing.device(deviceId); return device ? capabilitiesOf(device.access) : []; };
+		this.pairing.onAccessChanged = deviceId => { this.hub.accessChanged(deviceId); this.emit(); };
 		this.hub.onAttention = (event, connected) => this.connect?.notifyOffline(event, connected);
 	}
 
@@ -120,7 +123,7 @@ export class PhoneService {
 			...settings.enabled && this.serverErrors.length ? { error: this.serverErrors.join(" ") } : settings.enabled && !this.hosts.length ? { error: "None of the chosen addresses exist on this computer right now." } : {},
 			addresses,
 			tailscale: { installed: Boolean(this.detected.status), httpsAvailable: this.detected.status?.httpsServeEnabled ?? null, serving: settings.tailscaleServe, ...this.detected.status?.magicDnsName ? { dnsName: this.detected.status.magicDnsName } : {} },
-			devices: settings.devices.map(device => ({ id: device.id, name: device.name, pairedAt: device.pairedAt, ...device.lastSeenAt ? { lastSeenAt: device.lastSeenAt } : {}, connected: connected.has(device.id) })),
+			devices: settings.devices.map(device => ({ id: device.id, name: device.name, pairedAt: device.pairedAt, ...device.lastSeenAt ? { lastSeenAt: device.lastSeenAt } : {}, connected: connected.has(device.id), access: device.access })),
 			connect: this.connectView(),
 		};
 	}
@@ -175,6 +178,11 @@ export class PhoneService {
 		const link = encodePairingLink({ v: 1, desktopId: settings.desktopId, desktopName: this.ports.host.desktopName().slice(0, 100), pairingCode: code.pairingCode, desktopPublicKey: identity.publicKey, direct, ...connect ? { connect } : {} });
 		const modules = toQR(link), size = Math.round(Math.sqrt(modules.length));
 		return { link, qr: { size, modules: Array.from(modules, value => value ? "1" : "0").join("") }, expiresAt: code.expiresAt };
+	}
+	setDeviceAccess(id: unknown, access: unknown) {
+		const update = validatePhoneAccessUpdate(id, access);
+		this.pairing.setAccess(update.id, update.access);
+		return this.state();
 	}
 	removeDevice(id: unknown) {
 		if (typeof id !== "string") throw new Error("Invalid phone.");

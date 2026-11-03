@@ -144,6 +144,7 @@ const desktopApi: PhaseoDesktopApi = {
 		updatePhone: update => ipcRenderer.invoke("workspace:phone-update", update),
 		pairPhone: () => ipcRenderer.invoke("workspace:phone-pair"),
 		removePhone: id => ipcRenderer.invoke("workspace:phone-remove", id),
+		setPhoneAccess: (id, access) => ipcRenderer.invoke("workspace:phone-access", id, access),
 		setupPhoneHttps: () => ipcRenderer.invoke("workspace:phone-https"),
 		setPhaseoConnect: enabled => ipcRenderer.invoke("workspace:phone-connect", enabled),
 		refreshPhaseoConnect: () => ipcRenderer.invoke("workspace:phone-connect-refresh"),

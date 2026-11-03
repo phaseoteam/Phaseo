@@ -42,11 +42,14 @@ export function Sheet({ open, onClose, children, size = "fit", className }: { op
         {split ? (
           <DialogFrame onClose={onClose} size={size}>{children}</DialogFrame>
         ) : (
-          <Pressable accessibilityLabel="Close" className="flex-1 justify-end bg-black/40" onPress={onClose}>
-            <Pressable className={cn("max-h-[85%] rounded-t-md border-t border-border bg-popover", className)} style={{ paddingBottom: insets.bottom + 12 }} onPress={() => undefined}>
-              {children}
+          // A sheet with a text box rides up with the keyboard, as the tablet dialog does.
+          <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+            <Pressable accessibilityLabel="Close" className="flex-1 justify-end bg-black/40" onPress={onClose}>
+              <Pressable className={cn("max-h-[85%] rounded-t-md border-t border-border bg-popover", className)} style={{ paddingBottom: insets.bottom + 12 }} onPress={() => undefined}>
+                {children}
+              </Pressable>
             </Pressable>
-          </Pressable>
+          </KeyboardAvoidingView>
         )}
       </OutsideDrawer>
     </Modal>

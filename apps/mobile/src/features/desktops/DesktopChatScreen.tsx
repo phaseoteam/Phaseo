@@ -1,5 +1,6 @@
 import { LegendList } from "@legendapp/list/react-native";
-import { ChevronDown, ChevronRight, CircleAlert, FileDiff, GitPullRequest, ListOrdered, MoreHorizontal, Wrench } from "lucide-react-native";
+import { useRouter } from "expo-router";
+import { ChevronDown, ChevronRight, CircleAlert, FileDiff, GitCompareArrows, GitPullRequest, ListOrdered, MoreHorizontal, Wrench } from "lucide-react-native";
 import { memo, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { ActivityIndicator, Linking, Pressable, View } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
@@ -12,7 +13,8 @@ import { ComposerErrorNotice } from "@/features/composer/ComposerNotices";
 import { resolveSendPresentation, type FollowUpAction } from "@/features/composer/sendPresentation";
 import { cn } from "@/lib/cn";
 import { haptic } from "@/lib/haptics";
-import { changesLabel, chatItems, chatStatusLabel, editingDraft, settingsChange, workLogSummary, type ChatItem } from "./chatState";
+import { useChatDraft } from "./chatDraft";
+import { changesLabel, chatItems, chatStatusLabel, settingsChange, workLogSummary, type ChatItem } from "./chatState";
 import { DesktopRequestError, type DesktopClient } from "./client";
 import { ConnectionNotice } from "./CodeThreadList";
 import { clientFor, connectionLabel, useConnection } from "./connections";
@@ -23,6 +25,8 @@ import { listAgents, threadModel, type ModelChoice, type ModelList } from "./new
 import { PendingCards } from "./PendingCards";
 import { chooseDesktop } from "./picked";
 import type { PhoneActivity, PhoneChatDetail, PhoneMessage, PhoneQueueAction, PhoneTurnChanges } from "./protocol";
+import { readsCode } from "./review/diffLines";
+import { desktopReviewHref } from "./routes";
 import { useDesktop } from "./store";
 import { organises } from "./threadActions";
 
@@ -57,19 +61,23 @@ export function DesktopChatScreen({ desktopId, chatId }: { desktopId: string; ch
       </Screen>
     );
   }
-  return <ChatView client={client} chatId={chatId} desktopName={desktop.desktopName} />;
+  return <ChatView client={client} desktopId={desktopId} chatId={chatId} desktopName={desktop.desktopName} />;
 }
 
 const STATE_WORDS = { open: "Open", closed: "Closed", merged: "Merged" } as const;
 
-function ChatView({ client, chatId, desktopName }: { client: DesktopClient; chatId: string; desktopName: string }) {
+function ChatView({ client, desktopId, chatId, desktopName }: { client: DesktopClient; desktopId: string; chatId: string; desktopName: string }) {
   const connection = useConnection(client);
+  const router = useRouter();
   const { view, error, reload, loadEarlier, loadingEarlier, settle, replaceChat } = useDesktopChat(client, chatId);
   const items = useMemo(() => (view ? chatItems(view.entries) : []), [view]);
   const chat = view?.chat;
   const running = chat?.status === "running";
   const lastId = view?.entries.at(-1)?.id;
   const model = chat ? threadModel(chat, knownModelsOf(client)) : null;
+  // Review shows while the computer lets this phone read code, and goes the moment it's switched off there.
+  const review = readsCode(connection) && Boolean(chat?.projectId);
+  const openReview = useCallback((messageId?: string) => router.push(desktopReviewHref(desktopId, chatId, messageId ? "turn" : "uncommitted", messageId)), [router, desktopId, chatId]);
   // The composer floats over the feed, which scrolls on under it and ends above it.
   const [composerHeight, setComposerHeight] = useState(0);
 
@@ -80,10 +88,11 @@ function ChatView({ client, chatId, desktopName }: { client: DesktopClient; chat
 
   const renderItem = useCallback(({ item }: { item: ChatItem }) => (item.kind === "message"
     ? <MessageRow message={item.message} streaming={running && item.message.id === lastId && item.message.role === "assistant" && !item.message.completedAt} />
-    : item.kind === "changes" ? <ChangesRow changes={item.changes} />
-      : <WorkLog activities={item.activities} />), [running, lastId]);
+    : item.kind === "changes" ? <ChangesRow changes={item.changes} onPress={review ? () => openReview(item.messageId) : null} />
+      : <WorkLog activities={item.activities} />), [running, lastId, review, openReview]);
 
   const pullRequests = chat?.pullRequests ?? [];
+  const reviewButton = review ? <IconButton icon={GitCompareArrows} label="Review changes" onPress={() => openReview()} /> : null;
   const pullRequestMenu = pullRequests.length ? (
     <IconButton
       icon={GitPullRequest}
@@ -108,7 +117,7 @@ function ChatView({ client, chatId, desktopName }: { client: DesktopClient; chat
         back
         title={chat?.title ?? "Thread"}
         subtitle={[chat ? chatStatusLabel(chat) : connectionLabel(connection), chat?.project, desktopName].filter(Boolean).join(" · ")}
-        right={pullRequestMenu}
+        right={reviewButton || pullRequestMenu ? <View className="flex-row">{reviewButton}{pullRequestMenu}</View> : null}
       />
       <ConnectionNotice client={client} />
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
@@ -140,6 +149,7 @@ function ChatView({ client, chatId, desktopName }: { client: DesktopClient; chat
           <View pointerEvents="box-none" style={{ marginTop: -composerHeight }} onLayout={(event) => setComposerHeight(event.nativeEvent.layout.height)}>
             <DesktopComposer
               client={client}
+              desktopId={desktopId}
               chat={chat}
               running={running}
               model={model}
@@ -197,13 +207,20 @@ function Waiting({ label }: { label: string }) {
   );
 }
 
-/** What a finished turn changed in the project, as the window's changed-files row says it. */
-function ChangesRow({ changes }: { changes: PhoneTurnChanges }) {
-  return (
-    <View accessible accessibilityLabel={changesLabel(changes).replace("−", "minus ")} className="mx-4 mt-3 flex-row items-center gap-1.5 self-start">
+/** What a finished turn changed in the project, as the window's changed-files row says it; it opens that turn's review when the phone may read code. */
+function ChangesRow({ changes, onPress }: { changes: PhoneTurnChanges; onPress: (() => void) | null }) {
+  const label = changesLabel(changes);
+  const content = (
+    <>
       <Icon icon={FileDiff} tone="muted" size={13} />
-      <Text variant="caption" className="font-semibold">{changesLabel(changes)}</Text>
-    </View>
+      <Text variant="caption" className={cn("font-semibold", onPress && "text-link")}>{label}</Text>
+    </>
+  );
+  if (!onPress) return <View accessible accessibilityLabel={label.replace("−", "minus ")} className="mx-4 mt-3 flex-row items-center gap-1.5 self-start">{content}</View>;
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={`${label.replace("−", "minus ")}. Review this turn`} onPress={onPress} className="mx-3 mt-2 min-h-8 flex-row items-center gap-1.5 self-start rounded-md px-1 active:bg-accent">
+      {content}
+    </Pressable>
   );
 }
 
@@ -354,12 +371,17 @@ function ThreadChips({ client, chat, running, onSettings }: { client: DesktopCli
  * instead), with the queue over it and the thread's settings under it. Editing a queued message puts it in the composer,
  * and sending saves it back. Attachments and `/` commands aren't offered, as the phone protocol carries neither.
  */
-function DesktopComposer({ client, chat, running, model, logo, above, onStop, onSettings }: { client: DesktopClient; chat: PhoneChatDetail; running: boolean; model: ModelLabel | null; logo: ReactNode; above: ReactNode; onStop(): void; onSettings(chat: PhoneChatDetail): void }) {
+function DesktopComposer({ client, desktopId, chat, running, model, logo, above, onStop, onSettings }: { client: DesktopClient; desktopId: string; chat: PhoneChatDetail; running: boolean; model: ModelLabel | null; logo: ReactNode; above: ReactNode; onStop(): void; onSettings(chat: PhoneChatDetail): void }) {
   const chatId = chat.id;
-  const [text, setText] = useState("");
+  // Kept outside the screen so a review comment lands here. A queued message being edited has its own text instead,
+  // and the draft comes back when the edit ends (saved, cancelled, or the message sent or removed on the computer).
+  const [draft, setDraft] = useChatDraft(desktopId, chatId);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [editing, setEditing] = useState<{ id: string; draft: string } | null>(null);
+  const [edit, setEdit] = useState<{ id: string; text: string } | null>(null);
+  const editing = edit && chat.queue?.some((message) => message.id === edit.id) ? edit : null;
+  const text = editing ? editing.text : draft;
+  const setText = (value: string) => (editing ? setEdit({ ...editing, text: value }) : setDraft(value));
   const presentation = resolveSendPresentation({ editingQueuedMessage: Boolean(editing), running, canSteer: running, followUpBehavior: "steer", deliveryDeferred: false });
   const send = async (action?: FollowUpAction) => {
     const value = text.trim();
@@ -369,14 +391,13 @@ function DesktopComposer({ client, chat, running, model, logo, above, onStop, on
     if (editing) {
       try {
         await client.request("queue", { chatId, messageId: editing.id, action: "edit", text: value });
-        setText(editing.draft);
-        setEditing(null);
+        setEdit(null);
       } catch (problem) { reportFailure("Couldn't save the queued message", problem); }
       finally { setSending(false); }
       return;
     }
     const steer = running && (action ?? presentation.action) === "steer";
-    setText("");
+    setDraft("");
     try {
       await client.request("send", { chatId, text: value, ...(steer ? { steer: true } : {}) });
     } catch (problem) {
@@ -385,15 +406,13 @@ function DesktopComposer({ client, chat, running, model, logo, above, onStop, on
         reportFailure("Couldn't send", problem);
       } else {
         haptic("error");
-        setText((current) => current || value);
+        setDraft((current) => current || value);
         setError(problemText(problem));
       }
     } finally {
       setSending(false);
     }
   };
-  // A queued message that's gone (sent, removed on the computer) ends its edit.
-  if (editing && !chat.queue?.some((message) => message.id === editing.id)) { setEditing(null); setText(editing.draft); }
   return (
     <Composer
       floating
@@ -410,9 +429,9 @@ function DesktopComposer({ client, chat, running, model, logo, above, onStop, on
       above={(
         <>
           {above}
-          <QueueControl client={client} chat={chat} running={running} onEdit={(message) => { setEditing({ id: message.id, draft: editingDraft(editing, text) }); setText(message.text); }} />
+          <QueueControl client={client} chat={chat} running={running} onEdit={(message) => setEdit({ id: message.id, text: message.text })} />
           {editing ? (
-            <Pressable accessibilityRole="button" onPress={() => { setText(editing.draft); setEditing(null); }} className="mb-1.5 self-start rounded-md bg-background px-2 py-1 active:bg-accent">
+            <Pressable accessibilityRole="button" onPress={() => setEdit(null)} className="mb-1.5 self-start rounded-md bg-background px-2 py-1 active:bg-accent">
               <Text variant="caption" className="font-semibold text-link">Cancel editing</Text>
             </Pressable>
           ) : null}

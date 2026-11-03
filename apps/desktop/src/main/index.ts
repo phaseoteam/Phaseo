@@ -56,7 +56,7 @@ import { grokModelCatalog } from "./grokModelCatalog";
 import { SecretVault } from "./secretVault";
 import { windowsCredentialEncryption } from "./windowsCredentialEncryption";
 import { signInNative } from "./accountConnections";
-import { gitReview, listProjectFiles, projectRelativePath, readFilePreview, readProjectFile } from "./projectFiles";
+import { gitReview, gitWorkingStatus, listProjectFiles, projectRelativePath, readFilePreview, readProjectFile } from "./projectFiles";
 import { gitCommits, gitRefs, gitScopedDiff, readScopedDiffContents } from "./gitDiffScopes";
 import { turnChanges } from "./gitCheckpoints";
 import { isTreeId } from "../shared/gitDiff";
@@ -582,6 +582,10 @@ function nativeActionDraft(value: unknown): { id?: string; harness: Harness; acc
 }
 function projectRoot(event: Electron.IpcMainInvokeEvent, id: unknown) {
 	if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid project request.");
+	return projectDirectory(id);
+}
+/** A project's folder, refused while it's removed or not yet available; projectRoot is the window's checked form. */
+function projectDirectory(id: string) {
 	const project = workspaceRuntime.store.getProjects().find(value => value.id === id);
 	if (!project) throw new Error("Project no longer exists.");
 	workspaceRuntime.assertProjectAvailable(project.id);
@@ -677,6 +681,7 @@ ipcMain.handle("workspace:phone", event => { if (!senderWindow(event) || !phoneS
 ipcMain.handle("workspace:phone-update", (event, value: unknown) => { if (!senderWindow(event) || !phoneService || shutdownStarted) throw new Error("Invalid request."); return phoneService.update(value); });
 ipcMain.handle("workspace:phone-pair", event => { if (!senderWindow(event) || !phoneService || shutdownStarted) throw new Error("Invalid request."); return phoneService.pair(); });
 ipcMain.handle("workspace:phone-remove", (event, id: unknown) => { if (!senderWindow(event) || !phoneService) throw new Error("Invalid request."); return phoneService.removeDevice(id); });
+ipcMain.handle("workspace:phone-access", (event, id: unknown, access: unknown) => { if (!senderWindow(event) || !phoneService) throw new Error("Invalid request."); return phoneService.setDeviceAccess(id, access); });
 ipcMain.handle("workspace:phone-https", event => { if (!senderWindow(event) || !phoneService || shutdownStarted) throw new Error("Invalid request."); return phoneService.setupHttps(); });
 ipcMain.handle("workspace:phone-connect", (event, enabled: unknown) => { if (!senderWindow(event) || !phoneService || shutdownStarted) throw new Error("Invalid request."); return phoneService.setConnect(enabled); });
 ipcMain.handle("workspace:phone-connect-refresh", event => { if (!senderWindow(event) || !phoneService) throw new Error("Invalid request."); return phoneService.refreshConnect(true); });
@@ -1356,6 +1361,9 @@ app.whenReady().then(() => {
 				if (!project) throw new Error("Project no longer exists.");
 				return turnChanges(project.directory, before, after);
 			},
+			// The window's Review reads (workspace:git-review, workspace:git-diff) on the same folder checks.
+			gitStatus: async projectId => { const root = projectDirectory(projectId); return existsSync(path.join(root, ".git")) ? await span("git.review", undefined, () => gitWorkingStatus(root)) : null; },
+			diff: (projectId, request) => { const root = projectDirectory(projectId); return span("git.diff", undefined, () => gitScopedDiff(root, request)); },
 		},
 	});
 	void phoneService.start().catch(() => {});

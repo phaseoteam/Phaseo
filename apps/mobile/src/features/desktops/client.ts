@@ -1,11 +1,14 @@
 import { createStore } from "@/lib/store";
-import { phoneProtocolVersion, relayHolds, type DesktopEvent, type DesktopFrame, type PhoneErrorCode, type PhoneRequest, type PhoneResults } from "./protocol";
+import { phoneProtocolVersion, relayHolds, type DesktopEvent, type DesktopFrame, type PhoneCapability, type PhoneErrorCode, type PhoneRequest, type PhoneResults } from "./protocol";
 import { LinkRefused, LinkUnavailable, type DesktopTransport, type Link, type LinkClosed, type TransportKind } from "./transport";
 
 export type ConnectionState =
   | { status: "connecting" }
-  /** protocol is the version both sides speak; frames newer than it are hidden (see phoneProtocolVersion). */
-  | { status: "connected"; via: TransportKind; desktopName: string; protocol: number }
+  /**
+   * protocol is the version both sides speak; frames newer than it are hidden (see phoneProtocolVersion). capabilities
+   * are what the computer lets this phone do beyond threads, updated when the person switches them there.
+   */
+  | { status: "connected"; via: TransportKind; desktopName: string; protocol: number; capabilities: readonly PhoneCapability[] }
   | { status: "offline"; message: string }
   | { status: "refused"; message: string }
   | { status: "stopped" };
@@ -193,7 +196,7 @@ export class DesktopClient {
     if (result.protocol > phoneProtocolVersion) { this.refuse("The computer runs a newer Phaseo. Update this app to use it."); return; }
     this.ready = true;
     this.attempt = 0;
-    this.state.set({ status: "connected", via: transport.kind, desktopName: result.desktopName, protocol: result.protocol });
+    this.state.set({ status: "connected", via: transport.kind, desktopName: result.desktopName, protocol: result.protocol, capabilities: result.capabilities ?? [] });
     if (this.watched.size) link.send({ id: `r${++this.nextId}`, type: "subscribe", chatIds: [...this.watched.keys()] });
     const waiting = this.waiting;
     this.waiting = [];
@@ -217,6 +220,7 @@ export class DesktopClient {
     }
     if (frame.type === "ping") { this.link?.send({ type: "pong", ...(frame.id ? { id: frame.id } : {}) }); return; }
     if (frame.type === "pong") return;
+    if (frame.type === "access") this.state.set((state) => (state.status === "connected" ? { ...state, capabilities: frame.capabilities } : state));
     this.emit(frame);
   }
 

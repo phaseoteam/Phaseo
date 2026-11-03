@@ -4,7 +4,7 @@ import type { Delegation, Launch } from "./orchestration";
 import type { CodeHostKind, CustomCodeHost } from "./codeHosts";
 import type { CodeHostSettings, CodeHostTokenRequest } from "./codeHostSettings";
 import type { CreatedOutsideAgentToken, OutsideAgentAccess, OutsideAgentSettings } from "./outsideAgents";
-import type { PhonePairingView, PhoneSettingsUpdate, PhoneState } from "./phone";
+import type { PhoneAccess, PhonePairingView, PhoneSettingsUpdate, PhoneState } from "./phone";
 import type { IssueDraft, TriagePreparation, TriageProject } from "./triage";
 import type { AutopilotDecision } from "./inbox";
 import type { UsageFolder, UsagePeriod, UsageReport } from "./usageLedger";
@@ -391,6 +391,8 @@ export type WorkspaceApi = {
 	updatePhone: (update: PhoneSettingsUpdate) => Promise<PhoneState>;
 	pairPhone: () => Promise<PhonePairingView>;
 	removePhone: (id: string) => Promise<PhoneState>;
+	/** Switches what one paired phone may do beyond its threads. */
+	setPhoneAccess: (id: string, access: Partial<PhoneAccess>) => Promise<PhoneState>;
 	setupPhoneHttps: () => Promise<PhoneState>;
 	/** Starts or stops Phaseo Connect's monthly charge, then connects or disconnects. */
 	setPhaseoConnect: (enabled: boolean) => Promise<PhoneState>;
