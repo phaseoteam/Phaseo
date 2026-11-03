@@ -1,7 +1,7 @@
 import { LegendList } from "@legendapp/list/react-native";
 import { ChevronDown, ChevronRight, FileDiff, MessageSquarePlus, RefreshCw, ShieldOff } from "lucide-react-native";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, Text as NativeText, View, type TextProps } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button, EmptyState, ErrorState, Header, IconButton, Screen, Segmented, Sheet, SkeletonRows, Text, TextField, toast, useToneColor, Icon } from "@/components/ui";
 import { cn } from "@/lib/cn";
@@ -15,6 +15,13 @@ import type { PhoneDiffFile, PhoneDiffScope } from "../protocol";
 import { useDesktop } from "../store";
 import { appendBlock, diffRows, diffSummary, fileCounts, fileStatusWord, pickedRows, rangeLabel, reviewComment, SCOPES, splitPath, type DiffRow } from "./diffLines";
 import { useThreadDiff } from "./hooks";
+
+/** The app's type has no monospace face; code reads in the platform's, as Markdown's code blocks do. */
+const MONO = { fontFamily: Platform.select({ ios: "Menlo", default: "monospace" }) };
+/** Code text: React Native's own, since the app's Text sets its sans face by class, which wins over a style. */
+function Code({ className, ...props }: TextProps & { className?: string }) {
+  return <NativeText {...props} className={cn("text-[12px] text-muted-foreground", className)} style={MONO} />;
+}
 
 type Item =
   | { kind: "file"; key: string; file: PhoneDiffFile; open: boolean }
@@ -154,7 +161,7 @@ function Review({ client, desktopId, chatId, initialScope, messageId }: { client
       {body}
       {selection && picked.length ? (
         <View className="absolute inset-x-0 bottom-0 flex-row items-center gap-2 border-t border-border bg-background px-4 pt-2" style={{ paddingBottom: insets.bottom + 8 }}>
-          <Text variant="small" numberOfLines={1} className="flex-1 font-mono">{rangeLabel(selection.path, picked)}</Text>
+          <Code numberOfLines={1} className="flex-1 text-foreground">{rangeLabel(selection.path, picked)}</Code>
           <Button label="Cancel" variant="ghost" size="sm" onPress={() => setSelection(null)} />
           <Button label="Comment" icon={MessageSquarePlus} size="sm" onPress={() => setCommenting(true)} />
         </View>
@@ -162,7 +169,7 @@ function Review({ client, desktopId, chatId, initialScope, messageId }: { client
       <Sheet open={commenting} onClose={() => setCommenting(false)}>
         <View className="gap-3 px-4 pt-4">
           <Text variant="heading">Comment</Text>
-          <Text variant="caption" numberOfLines={2} className="font-mono">{selection ? rangeLabel(selection.path, picked) : ""}</Text>
+          <Code numberOfLines={2}>{selection ? rangeLabel(selection.path, picked) : ""}</Code>
           <TextField value={comment} onChangeText={setComment} placeholder="What should change here?" multiline autoFocus className="min-h-24" textAlignVertical="top" />
           <Text variant="caption">{"It goes into this thread's message with the lines it's about. Nothing is sent until you send it."}</Text>
           <Button label="Add to message" disabled={!comment.trim()} onPress={addComment} />
@@ -215,7 +222,7 @@ const LineRow = memo(function LineRow({ path, row, picked, onPress }: { path: st
   if (row.kind === "hunk" || row.kind === "note") {
     return (
       <View className="bg-muted/60 px-4 py-1">
-        <Text variant="caption" numberOfLines={1} className="font-mono">{row.text}</Text>
+        <Code numberOfLines={1}>{row.text}</Code>
       </View>
     );
   }
@@ -231,10 +238,10 @@ const LineRow = memo(function LineRow({ path, row, picked, onPress }: { path: st
       delayLongPress={350}
       className={cn("flex-row", tint)}
     >
-      <Text variant="caption" className="w-9 pr-1 text-right font-mono text-[11px] text-muted-foreground">{number(row.oldLine)}</Text>
-      <Text variant="caption" className="w-9 pr-1 text-right font-mono text-[11px] text-muted-foreground">{number(row.newLine)}</Text>
-      <Text variant="caption" className={cn("w-4 text-center font-mono text-[12px]", row.kind === "add" ? "text-success" : row.kind === "remove" ? "text-destructive" : "text-muted-foreground")}>{sign}</Text>
-      <Text variant="caption" className="flex-1 pr-3 font-mono text-[12px] leading-[18px] text-foreground">{row.text || " "}</Text>
+      <Code className="w-9 pr-1 text-right text-[11px] text-muted-foreground">{number(row.oldLine)}</Code>
+      <Code className="w-9 pr-1 text-right text-[11px] text-muted-foreground">{number(row.newLine)}</Code>
+      <Code className={cn("w-4 text-center text-[12px]", row.kind === "add" ? "text-success" : row.kind === "remove" ? "text-destructive" : "text-muted-foreground")}>{sign}</Code>
+      <Code className="flex-1 pr-3 text-[12px] leading-[18px] text-foreground">{row.text || " "}</Code>
     </Pressable>
   );
 });
