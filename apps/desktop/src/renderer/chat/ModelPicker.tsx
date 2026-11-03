@@ -14,6 +14,8 @@ import { ModelLogo } from "../components/ModelLogo";
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../components/ui/tooltip";
 import { ScrollArea } from "../components/ui/scroll-area";
+import { useCommand } from "../lib/keybindings";
+import { ModelSettingsColumn, SettingsSuffix, useSettingDescriptors } from "./ModelSettings";
 
 export const harnessNames: Record<Harness, string> = { phaseo: "Phaseo", codex: "Codex", claude: "Claude Code", opencode: "OpenCode", pi: "Pi", cursor: "Cursor", grok: "Grok", antigravity: "Antigravity", acp: "Agent" };
 export const MAX_COMPARE = 4;
@@ -118,7 +120,7 @@ type Section = { heading: string; entries: Entry[]; harness?: Harness; older?: n
 type Row = { type: "heading"; key: string; heading: string } | { type: "entry"; key: string; entry: Entry } | { type: "older"; key: string; harness: Harness; older: number };
 const rowHeight = (row: Row) => row.type === "heading" ? 30 : 32;
 
-export function ModelPicker({ selections, onChange, multiple, agents, disabled, className, openEvent }: {
+export function ModelPicker({ selections, onChange, multiple, agents, disabled, className, openEvent, onSettingsChange }: {
 	selections: ModelSelection[];
 	onChange: (selections: ModelSelection[]) => void;
 	/** Ctrl/⌘-click adds models alongside the first, to compare their answers. */
@@ -129,6 +131,8 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	className?: string;
 	/** A window event that opens this picker, sent by the composer's / menu. */
 	openEvent?: string;
+	/** Shows one model's reasoning, speed and context window in the button and as a column in the picker. */
+	onSettingsChange?: (selection: ModelSelection) => void;
 }) {
 	const { overview } = useWorkspace();
 	const [open, setOpen] = useState(false);
@@ -236,6 +240,10 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	const first = selections[0];
 	const openChange = (value: boolean) => { setOpen(value); setQuery(""); if (value) setSource(first ? sourceOf(first.harness) : "phaseo"); };
 	const latestOpen = useRef(openChange); latestOpen.current = openChange;
+	// One model's reasoning, speed and context window sit in the same button and picker, as in T3 Code.
+	const settingsSelection = onSettingsChange && selections.length === 1 ? first : undefined;
+	const descriptors = useSettingDescriptors(settingsSelection);
+	useCommand("modelSettings.toggle", () => latestOpen.current(!open), descriptors.length > 0 && !disabled);
 	useEffect(() => {
 		if (!openEvent || disabled) return;
 		const show = () => latestOpen.current(true);
@@ -244,15 +252,16 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	}, [openEvent, disabled]);
 	return <Popover open={open} onOpenChange={openChange}>
 		{harnesses.filter(harness => open || harness === "phaseo" || selections.some(selection => selection.harness === harness)).map(harness => <Catalog key={harness} harness={harness} accountId={harness === "phaseo" ? phaseoAccount?.id : undefined} onLoad={onLoad} />)}
-		<PopoverTrigger disabled={disabled} render={<button type="button" aria-label="Choose model" title={first && selections.length === 1 ? `${modelName(first)} ${whereItRuns(first.harness)}` : undefined} className={cn("flex h-8 max-w-64 items-center gap-1.5 rounded-lg px-2 text-[13px] font-semibold transition-colors hover:bg-muted disabled:opacity-50 data-popup-open:bg-muted", className)} />}>
+		<PopoverTrigger disabled={disabled} render={<button type="button" aria-label="Choose model" title={first && selections.length === 1 ? `${modelName(first)} ${whereItRuns(first.harness)}` : undefined} className={cn("flex h-8 max-w-80 items-center gap-1.5 rounded-lg px-2 text-[13px] font-semibold transition-colors hover:bg-muted disabled:opacity-50 data-popup-open:bg-muted", className)} />}>
 			{selections.length > 1
 				? <><ModelStack models={selections} /><span className="truncate">{selections.length} models</span></>
-				: first ? <><span className="flex size-5 items-center justify-center [&_img]:size-4 [&_.harness-logo]:size-4"><ModelLogo model={knownModel(first.model) ?? { id: first.model, name: first.model }} harness={first.harness} /></span><span className="truncate">{shortModelName(first)}</span></>
+				: first ? <><span className="flex size-5 items-center justify-center [&_img]:size-4 [&_.harness-logo]:size-4"><ModelLogo model={knownModel(first.model) ?? { id: first.model, name: first.model }} harness={first.harness} /></span><span className="truncate">{shortModelName(first)}</span>{settingsSelection && <SettingsSuffix selection={settingsSelection} descriptors={descriptors} />}</>
 				: <span className="text-muted-foreground">Choose a model</span>}
 			<ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
 		</PopoverTrigger>
 		{/* Stays above or below the button and shrinks to fit below the title bar, rather than sliding sideways over the composer. */}
-			<PopoverContent align="end" side="top" sideOffset={8} collisionAvoidance={{ side: "flip", align: "shift", fallbackAxisSide: "none" }} collisionPadding={{ top: 52, right: 8, bottom: 8, left: 8 }} className="max-h-(--available-height) w-[min(92vw,520px)] gap-0 overflow-hidden rounded-xl p-0">
+			<PopoverContent align="end" side="top" sideOffset={8} collisionAvoidance={{ side: "flip", align: "shift", fallbackAxisSide: "none" }} collisionPadding={{ top: 52, right: 8, bottom: 8, left: 8 }} className={cn("max-h-(--available-height) flex-row gap-0 overflow-hidden rounded-xl p-0", descriptors.length ? "w-[min(94vw,700px)]" : "w-[min(92vw,520px)]")}>
+				<div className="flex min-w-0 flex-1 flex-col">
 				<div className="p-2 pb-1">
 				<div className="flex h-8 items-center gap-2 rounded-lg border border-input bg-input/50 px-2.5">
 					<SearchIcon className="size-4 shrink-0 opacity-50" />
@@ -308,6 +317,10 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 				: "No models found."}</p>}
 			{loading.map(harness => <div key={harness} className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground"><LoaderCircle className="size-3.5 animate-spin" />Loading {harnessNames[harness]} models…</div>)}
 			{errors.map(error => <p key={error} className="px-3 py-2 text-xs text-destructive">{error}</p>)}
+				</div>
+				{settingsSelection && descriptors.length > 0 && <ScrollArea className="w-44 shrink-0 border-l border-border" viewportClassName="max-h-[min(70vh,520px)] px-1.5">
+					<ModelSettingsColumn selection={settingsSelection} descriptors={descriptors} onChange={next => onSettingsChange?.(next)} />
+				</ScrollArea>}
 	</PopoverContent>
 	</Popover>;
 }

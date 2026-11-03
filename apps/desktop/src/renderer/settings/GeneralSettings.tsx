@@ -9,7 +9,6 @@ import { useBackgroundRefresh } from "../lib/useBackgroundRefresh";
 import { Select } from "../components/Select";
 import { Switch } from "../components/ui/switch";
 import { ModelPicker } from "../chat/ModelPicker";
-import { ModelSettings } from "../chat/ModelSettings";
 import { workingSectionKey } from "../shell/codeThreads";
 import { publishWorkspacePreferences, useWorkspacePreferences } from "../lib/workspacePreferences";
 import { mergeMethodLabels } from "../views/pullRequests/pullRequestLogic";
@@ -55,7 +54,7 @@ function DefaultModel() {
 			control={<Select label="New chat model selection" value={fixed ? "fixed" : "recent"} onValueChange={value => { const next = value === "fixed"; setFixed(next); if (next && selection) choose(selection); if (!next) setDefaultModel(undefined); }}
 				options={[{ value: "recent", label: "Last used" }, { value: "fixed", label: "Always the same" }]} />} />
 		{fixed && <SettingsRow title="Default model" description="Used for every new chat until you change it here."
-			control={<>{selection ? <ModelSettings selection={selection} onChange={choose} /> : null}<ModelPicker selections={selection ? [selection] : []} onChange={values => { if (values[0]) choose(values[0]); }} className="border border-border" /></>} />}
+			control={<ModelPicker selections={selection ? [selection] : []} onChange={values => { if (values[0]) choose(values[0]); }} onSettingsChange={choose} className="border border-border" />} />}
 	</>;
 }
 

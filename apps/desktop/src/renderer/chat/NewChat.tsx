@@ -22,7 +22,6 @@ import { triageTitle, withoutPlaybookLink, type TriagePreparation } from "../../
 import { Switch } from "../components/ui/switch";
 import { Button } from "../components/ui/button";
 import { MAX_COMPARE, ModelPicker, knownModel, modelLabel, sameSelection } from "./ModelPicker";
-import { ModelSettings } from "./ModelSettings";
 import { SignInCard } from "./SignInCard";
 import { startChat } from "./startChat";
 import { AutopilotControl, type AutopilotSetting } from "./Autopilot";
@@ -214,8 +213,7 @@ export function NewChat() {
 					</ComposerChip>)}
 				</> : undefined}
 				model={<>
-					<ModelPicker selections={selections} onChange={setSelections} multiple={!code} agents={code} disabled={busy} openEvent={openModelPickerEvent} />
-					{selections.length === 1 && <ModelSettings selection={selections[0]} onChange={next => setSelections([next])} disabled={busy} />}
+					<ModelPicker selections={selections} onChange={setSelections} onSettingsChange={next => setSelections([next])} multiple={!code} agents={code} disabled={busy} openEvent={openModelPickerEvent} />
 				</>}
 				tools={<>
 					{code && <PermissionMenu value={autopilot ? "full-access" : permissionMode} onChange={value => { setPermissionMode(value); if (value !== "full-access") setAutopilot(undefined); }} />}
