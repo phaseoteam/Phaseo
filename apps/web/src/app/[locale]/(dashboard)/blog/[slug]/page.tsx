@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
 import { notFound, redirect } from "next/navigation";
 import { compileMDX } from "next-mdx-remote/rsc";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ChevronDown } from "lucide-react";
 import remarkGfm from "remark-gfm";
 import { BlogTableOfContents } from "@/components/announcements/BlogTableOfContents";
 import { announcementMdxComponents } from "@/components/announcements/announcementMdxComponents";
@@ -243,18 +243,22 @@ export default async function AnnouncementPostPage({
 							>
 								{t("faqTitle")}
 							</h2>
-							<dl className="mt-6 divide-y divide-zinc-200 border-y border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+							<div className="mt-6 divide-y divide-zinc-200 border-y border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
 								{post.faq.map((item) => (
-									<div key={item.question} className="py-5">
-										<dt className="text-base font-semibold text-zinc-950 dark:text-zinc-50">
-											{item.question}
-										</dt>
-										<dd className="mt-2 text-base leading-7 text-zinc-700 dark:text-zinc-300">
+									<details key={item.question} className="group">
+										<summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-base font-semibold text-zinc-950 marker:hidden dark:text-zinc-50 [&::-webkit-details-marker]:hidden">
+											<span>{item.question}</span>
+											<ChevronDown
+												aria-hidden="true"
+												className="size-4 shrink-0 text-zinc-500 transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none dark:text-zinc-400"
+											/>
+										</summary>
+										<p className="pb-5 text-base leading-7 text-zinc-700 dark:text-zinc-300">
 											{item.answer}
-										</dd>
-									</div>
+										</p>
+									</details>
 								))}
-							</dl>
+							</div>
 						</section>
 					) : null}
 					<JsonLdScript id="blog-post-schema" data={structuredData} />

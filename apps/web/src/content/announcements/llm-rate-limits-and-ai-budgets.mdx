@@ -24,13 +24,13 @@ keywords:
   - AI gateway rate limits
 faq:
   - question: "What is LLM rate limiting?"
-    answer: "LLM rate limiting caps how much traffic can reach a model in a given time, usually as requests per minute, tokens per minute or the number of requests in progress at once. It stops one caller from using up shared capacity or budget, and gives everyone else predictable access."
+    answer: "LLM rate limiting caps how much traffic can reach a model in a given time, usually as requests per minute, tokens per minute or the number of requests in progress at once. It stops one caller from using up shared capacity or budget, so other callers' requests still get through."
   - question: "How do I rate limit AI API calls per user of my app?"
     answer: "Create a Phaseo rate limit policy and assign it as the end-user default. Every end user then gets their own allowance, identified by the user field or X-Phaseo-User-Id header on each request. Requests without an end-user ID aren't limited by that policy."
   - question: "What's the difference between requests per minute, tokens per minute and concurrency limits?"
     answer: "Requests per minute counts calls over a rolling minute. Tokens per minute counts input and output tokens over a rolling minute, so it tracks real model load. A concurrency limit caps how many requests can be in progress at the same time, which suits long streams and agents."
   - question: "Can I set a monthly AI budget per team or department?"
-    answer: "Yes, on Self Serve Enterprise workspaces, which include departments. Give a department a daily, weekly or monthly budget. Owners and admins get a push notification at about 80% and at 100%, and once the budget is used up, API-key requests that count toward that department are refused until the period resets."
+    answer: "Yes, on Self Serve Enterprise workspaces, which include departments. Give a department a daily, weekly or monthly budget. Owners and admins get a push notification at about 80% and at 100%, and once the budget is used up, Phaseo refuses API-key requests that count toward that department until the period resets."
   - question: "What happens when a rate limit or budget is reached?"
     answer: "The request returns HTTP 429 with a Retry-After header. A rate limit returns the rate_limit_exceeded error code with the policy and scope that refused it. A department budget returns key_limit_exceeded with the department's name and when the budget resets."
   - question: "Do rate limits add latency to my requests?"
@@ -52,14 +52,14 @@ Rate limits for keys, members, guardrails and end users are available on every w
 
 <FeatureGrid>
   <Feature title="Teams building AI products">One customer running a bulk job shouldn't slow your app for the rest. Give every end user their own allowance, keyed on the user ID you already send.</Feature>
-  <Feature title="Companies rolling out AI by department">Engineering, support and marketing can share one workspace and still each get a fair share, with a shared pool and a budget per department. Included with Self Serve Enterprise.</Feature>
-  <Feature title="Platform teams running agents">A per-key limit with a concurrency cap keeps a runaway agent or batch job away from the capacity your production traffic needs.</Feature>
-  <Feature title="Whoever owns the AI bill">Department budgets block at 100%, not just warn, so a monthly budget is a real ceiling.</Feature>
+  <Feature title="Companies rolling out AI by department">Engineering, support and marketing can share one workspace, and each department gets its own pool of requests and its own budget. Included with Self Serve Enterprise.</Feature>
+  <Feature title="Platform teams running agents">A per-key limit with a concurrency cap stops a runaway agent or batch job from using the capacity your production traffic needs.</Feature>
+  <Feature title="Whoever owns the AI bill">When a department reaches 100% of its budget, Phaseo refuses its requests instead of only sending a warning.</Feature>
 </FeatureGrid>
 
 ## How rate limiting works on Phaseo
 
-Every request passes through the same checks before it reaches a model. If any check says no, the request gets a `429` straight away and never reaches the provider, so it costs nothing.
+Every request passes through the same checks before it reaches a model. If any check fails, Phaseo returns a `429` straight away. The request never reaches the provider, so it costs nothing.
 
 <Flow title="Each request is checked against your limits before it reaches a provider.">
   <FlowStep title="Request arrives" ok="For any model or provider">From your app, an agent or a teammate's key.</FlowStep>
@@ -68,7 +68,7 @@ Every request passes through the same checks before it reaches a model. If any c
   <FlowStep title="Model provider" ok="Response, with rate limit headers">Routing and fallbacks as usual.</FlowStep>
 </Flow>
 
-## Rate limit policies: requests, tokens and concurrency
+## Rate limit policies for requests, tokens and concurrency
 
 A policy is a named set of limits that you can reuse anywhere:
 
@@ -80,7 +80,7 @@ A policy is a named set of limits that you can reuse anywhere:
 
 ### Rate limit per API key, user, team or end user
 
-You assign a policy to whatever it should limit. A department can share a pool of 600 requests a minute while each person in it is held to 60. When several policies apply, each is counted, and the first one used up refuses the request.
+You assign a policy to whatever it should limit. A department can share a pool of 600 requests a minute while each person in it is held to 60. When several policies apply, Phaseo counts the request against each of them, and the first one to run out refuses it.
 
 <FeatureGrid columns="3">
   <Feature title="API key" meta="key">That key on its own.</Feature>
@@ -96,11 +96,11 @@ Fallbacks to another provider within one request count once, and responses serve
 
 Request and token limits are counted in the background by default, so they add no latency. The trade-off is that a sudden burst can briefly go over the limit before the count catches up.
 
-When a limit must hold exactly, mark the policy **strict**. Strict limits are checked before the request is sent, which adds a little latency. If the check can't complete within two seconds, the request is refused rather than let through. Concurrency limits are always exact: a request holds its slot until its response has been sent in full, including the whole of a streamed response.
+When a limit must hold exactly, mark the policy **strict**. Strict limits are checked before the request is sent, which adds a little latency. If the check can't complete within two seconds, Phaseo refuses the request instead of letting it through. Concurrency limits are always exact: a request holds its slot until its response has been sent in full, including the whole of a streamed response.
 
-## AI budgets per department that actually stop spending
+## AI budgets per department that stop spending at 100%
 
-On Self Serve Enterprise workspaces, give a department a daily, weekly or monthly budget, and Phaseo tracks its spend as requests complete. Owners and admins get a push notification at about 80% and again at 100%. Once a budget is used up, that department's API-key requests are refused until the period resets, at midnight UTC, on Mondays or on the 1st of the month.
+On Self Serve Enterprise workspaces, give a department a daily, weekly or monthly budget, and Phaseo tracks its spend as requests complete. Owners and admins get a push notification at about 80% and again at 100%. Once a budget is used up, Phaseo refuses that department's API-key requests until the period resets, at midnight UTC, on Mondays or on the 1st of the month.
 
 A department's spend includes the keys linked to it. Keys that aren't linked to a department count toward the departments of the person who created them, and OAuth requests count toward the departments of the signed-in person.
 
@@ -108,9 +108,9 @@ A department's spend includes the keys linked to it. Keys that aren't linked to 
 
 People often belong to more than one department, especially when departments are synced from your identity provider through SCIM. By default their unlinked keys count toward every department they're in, so each of those departments sees the spend.
 
-To count each person once, switch the workspace to **primary department only** under [Settings → Notifications](https://phaseo.app/settings/notifications). Their spend then goes to their primary department alone. Department budgets and department rate limits follow the same setting, so the numbers agree everywhere. A key linked to a department, or a member's department override, still wins.
+To count each person once, switch the workspace to **primary department only** under [Settings → Notifications](https://phaseo.app/settings/notifications). Their spend then goes to their primary department alone. Department budgets and department rate limits follow the same setting, so the numbers agree everywhere. A key linked to a department, or a member's department override, still takes priority.
 
-## What your application sees: 429 responses and rate limit headers
+## 429 responses and rate limit headers
 
 Responses to requests that a policy covers include the standard rate limit headers, so OpenAI-compatible clients and retry logic work unchanged:
 
@@ -120,7 +120,7 @@ x-ratelimit-remaining-requests: 41
 x-ratelimit-reset-requests: 60s
 ```
 
-A refused request returns `429` with a `Retry-After` header and a body that says exactly which limit was hit:
+A refused request returns `429` with a `Retry-After` header and a body that names the limit that refused it:
 
 ```json
 {
@@ -133,9 +133,9 @@ A refused request returns `429` with a `Retry-After` header and a body that says
 }
 ```
 
-A department budget refusal uses `key_limit_exceeded` with the reason `department_monthly_cost_budget_reached` (or daily or weekly), the department's name and `reset_at`, so you can tell people exactly when they can try again.
+A department budget refusal uses `key_limit_exceeded` with the reason `department_monthly_cost_budget_reached` (or daily or weekly), the department's name and `reset_at`, so you can tell people when they can try again.
 
-## Set up rate limits and budgets in minutes
+## Set up rate limits and budgets in the dashboard or the API
 
 Everything is in the dashboard under [Settings → Rate limits](https://phaseo.app/settings/rate-limits) and [Settings → Budgets](https://phaseo.app/settings/budgets). To manage limits from code, use the management API. For example, a shared pool for a department with a monthly budget on top:
 
@@ -156,7 +156,7 @@ curl https://api.phaseo.app/v1/department-budgets \
   -d '{"department_id": "<department-id>", "interval": "monthly", "limit": 500}'
 ```
 
-Phaseo CLI commands and Terraform resources, so limits can be reviewed and versioned with the rest of your infrastructure, arrive with their next releases.
+Rate limit and budget commands for the Phaseo CLI, and resources for the Terraform provider, come in their next releases. You'll then be able to review and version limits alongside the rest of your infrastructure.
 
 ## Good to know
 
