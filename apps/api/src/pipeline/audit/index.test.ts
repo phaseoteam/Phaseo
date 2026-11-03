@@ -187,6 +187,62 @@ describe("audit request detail persistence", () => {
 		expect(event.safe_metadata.rate_limit).toEqual(expected);
 	});
 
+	it("does not rate the JSON output or tool calls of a failed request", async () => {
+		const insert = vi.fn(() => ({ select: () => ({ single: async () => ({
+			data: { id: "row", created_at: "2026-11-03T00:00:00Z", workspace_id: "ws" }, error: null,
+		}) }) }));
+		const rpc = vi.fn().mockResolvedValue({ data: "fact", error: null });
+		getSupabaseAdminMock.mockReturnValue({ from: () => ({ insert }), rpc });
+		resolveGatewayIoLoggingPolicyMock.mockResolvedValue({ captureEnabled: false });
+		await auditFailure({
+			stage: "execute", requestId: "req", workspaceId: "ws", model: "model", endpoint: "messages",
+			stream: true, statusCode: 502, errorCode: "upstream_error",
+			usage: { output_tool_call_count: 2 },
+			requestPayload: { output_config: { format: { type: "json_schema", schema: { type: "object" } } } },
+		});
+		const event = rpc.mock.calls.find((call) => call[1]?.p_event)?.[1].p_event;
+		// Before: the reason defaulted to "none", which the quality chart read as a valid reply,
+		// and the failure's tool calls counted as invalid.
+		expect(event).toMatchObject({ structured_output_attempted: true, structured_output_succeeded: false, tool_call_succeeded: null });
+		expect(event.safe_metadata).toMatchObject({ structured_output_success_basis: "unobserved", structured_output_error_reason: null });
+	});
+
+	it.each([
+		["complete", false, false],
+		["drained after a disconnect", true, false],
+		["cut at the rebuild size cap", false, true],
+	])("rates a streamed reply's JSON and tool calls only when it is whole (%s)", async (_label, disconnected, truncated) => {
+		const insert = vi.fn(() => ({ select: () => ({ single: async () => ({
+			data: { id: "row", created_at: "2026-11-03T00:00:00Z", workspace_id: "ws" }, error: null,
+		}) }) }));
+		const rpc = vi.fn().mockResolvedValue({ data: "fact", error: null });
+		getSupabaseAdminMock.mockReturnValue({ from: () => ({ insert }), rpc });
+		resolveGatewayIoLoggingPolicyMock.mockResolvedValue({ captureEnabled: false });
+		await auditSuccess({
+			requestId: "req", workspaceId: "ws", provider: "anthropic", model: "model", endpoint: "messages",
+			stream: true, byok: false, usagePriced: { output_tokens: 5 }, totalNanos: 1, currency: "USD",
+			downstreamDisconnected: disconnected,
+			requestPayload: {
+				tools: [{ name: "get_weather", input_schema: { type: "object", properties: { city: { type: "string" } } } }],
+				output_config: { format: { type: "json_object" } },
+			},
+			// What a drained stream leaves behind: the tool input cut off mid-JSON.
+			gatewayResponse: {
+				type: "message",
+				content: [{ type: "tool_use", name: "get_weather", input: '{"city":' }],
+				...(truncated ? { gateway_log_truncated: true } : {}),
+			},
+		});
+		const event = rpc.mock.calls.find((call) => call[1]?.p_event)?.[1].p_event;
+		if (disconnected || truncated) {
+			expect(event.tool_call_succeeded).toBeNull();
+			expect(event.safe_metadata).toMatchObject({ tool_call_validation: null, structured_output_success_basis: "unobserved", structured_output_error_reason: null });
+		} else {
+			expect(event.tool_call_succeeded).toBe(false);
+			expect(event.safe_metadata.tool_call_validation).toMatchObject({ totalCalls: 1, invalidJson: 1 });
+		}
+	});
+
 	it("does not upload when the authoritative request insert fails", async () => {
 		const put = vi.fn();
 		getBindingsMock.mockReturnValue({ GATEWAY_ROUTING_ARCHIVES_BUCKET: { put }, GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED: "true" });
@@ -770,7 +826,8 @@ describe("audit request detail persistence", () => {
 			cost_nanos: 10_000,
 			usage_meters: expect.any(Array),
 			tool_call_count: 1,
-			tool_call_succeeded: true,
+			// The call is known only from usage; with no reply to check, it is not rated.
+			tool_call_succeeded: null,
 			structured_output_attempted: true,
 			structured_output_succeeded: true,
 			service_tier_requested: "priority",

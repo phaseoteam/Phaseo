@@ -25,6 +25,7 @@ import { buildRoutingObservability, toProviderModelId } from "./routing-observab
 import { archiveRoutingMetadata } from "./routing-archive";
 import { lifecycleMetadata } from "../lifecycle";
 import {
+	structuredFormat,
 	validateStructuredOutputResponse,
 	validateToolCallResponses,
 	type StructuredOutputValidation,
@@ -486,8 +487,10 @@ async function upsertV2RequestFact(args: {
                 structured_output_success_basis: args.structuredOutputAttempted
                     ? (args.structuredOutputSuccessBasis ?? "unobserved")
                     : null,
+                // "none" means the output was checked and passed. A failed request or an
+                // unobserved reply has no reason: it was never checked.
                 structured_output_error_reason: args.structuredOutputAttempted
-                    ? (args.structuredOutputErrorReason ?? "none")
+                    ? (args.structuredOutputErrorReason ?? (args.structuredOutputSucceeded ? "none" : null))
                     : null,
                 tool_call_validation: args.toolCallValidation ?? null,
                 downstream_disconnected: args.downstreamDisconnected === true,
@@ -692,11 +695,7 @@ function stripPricingFromUsage(usage: any): any {
 }
 
 function isStructuredOutputRequest(payload: unknown): boolean {
-    if (!payload || typeof payload !== "object" || Array.isArray(payload)) return false;
-    const body = payload as Record<string, any>;
-    const format = body.response_format ?? body.text?.format ?? null;
-    if (!format || typeof format !== "object") return false;
-    return format.type === "json_schema" || format.type === "json_object";
+    return structuredFormat(payload) !== null;
 }
 
 function readToolCallCount(usage: unknown, finishReason?: string | null): number {
@@ -773,8 +772,19 @@ export async function auditSuccess(input: {
     try {
         const pricingLines = args.usagePriced?.pricing?.lines ?? [];
         const strippedUsage = stripPricingFromUsage(args.usagePriced);
-        const structuredOutput = validateStructuredOutputResponse(args.requestPayload, args.gatewayResponse);
-        const toolCallValidation = validateToolCallResponses(args.requestPayload, args.gatewayResponse);
+        // The reply the gateway holds can be partial: after a client disconnect the stream
+        // is drained without passing through the rebuild, and a rebuilt stream reply stops
+        // at its size cap (gateway_log_truncated). A partial reply would fail JSON and
+        // argument checks it never really failed, so rate nothing.
+        const replyComplete =
+            args.downstreamDisconnected !== true &&
+            (args.gatewayResponse as { gateway_log_truncated?: unknown } | null | undefined)?.gateway_log_truncated !== true;
+        const structuredOutput: StructuredOutputValidation = replyComplete
+            ? validateStructuredOutputResponse(args.requestPayload, args.gatewayResponse)
+            : { attempted: isStructuredOutputRequest(args.requestPayload), succeeded: false, basis: "unobserved", errorReason: null };
+        const toolCallValidation: ToolCallValidation = replyComplete
+            ? validateToolCallResponses(args.requestPayload, args.gatewayResponse)
+            : { totalCalls: 0, invalidCalls: 0, invalidJson: 0, schemaMismatch: 0, unknownToolName: 0 };
         const appId = await ensureAppId({
             workspaceId: args.workspaceId,
             appTitle: args.appTitle ?? null,
@@ -930,9 +940,11 @@ export async function auditSuccess(input: {
                         readToolCallCount(strippedUsage, args.finishReason),
                         toolCallValidation.totalCalls,
                     ),
+                    // Only calls the validator saw are rated. Calls known only from usage
+                    // (server tools, a reply the gateway could not read) are not assumed valid.
                     toolCallSucceeded: toolCallValidation.totalCalls > 0
                         ? toolCallValidation.invalidCalls === 0
-                        : readToolCallCount(strippedUsage, args.finishReason) > 0 ? true : null,
+                        : null,
                     toolCallValidation: toolCallValidation.totalCalls > 0 ? toolCallValidation : null,
                     structuredOutputAttempted: structuredOutput.attempted,
                     structuredOutputSucceeded: structuredOutput.succeeded,
@@ -1410,7 +1422,8 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                         clientSource: args.clientSource ?? null,
                         currency: args.currency ?? null,
                         toolCallCount: readToolCallCount(args.usage, null),
-                        toolCallSucceeded: readToolCallCount(args.usage, null) > 0 ? false : null,
+                        // A failed request's tool calls were never checked.
+                        toolCallSucceeded: null,
                         structuredOutputAttempted: isStructuredOutputRequest(args.requestPayload),
                         structuredOutputSucceeded: false,
                         usage: args.usage ?? {},
