@@ -22,11 +22,16 @@ describe("organising a computer's threads", () => {
     expect(swipeActions(chat("a")).map((action) => action.label)).toEqual(["Snooze", "Settle"]);
     expect(swipeActions(chat("a", { snoozedUntil: "2099-01-01T00:00:00Z" })).map((action) => action.label)).toEqual(["Archive", "Wake"]);
     expect(swipeActions(chat("a", { settled: true })).map((action) => action.label)).toEqual(["Unsettle", "Archive"]);
+    // Settling is Code's; a Chat pins or archives, as in the window's Chat sidebar.
+    expect(swipeActions(chat("a", { mode: "chat" })).map((action) => action.label)).toEqual(["Pin", "Archive"]);
+    expect(swipeActions(chat("a", { mode: "chat", pinned: true })).map((action) => action.label)).toEqual(["Unpin", "Archive"]);
   });
 
   it("lists the long-press menu in the window's order, leaving out what doesn't apply", () => {
     expect(menuEntries(chat("a")).map((entry) => entry.label)).toEqual(["Pin", "Rename", "Mark unread", "Snooze…", "Settle", "Archive"]);
     expect(menuEntries(chat("a", { pinned: true, unread: true, settled: true })).map((entry) => entry.label)).toEqual(["Unpin", "Rename", "Snooze…", "Unsettle", "Archive"]);
+    expect(menuEntries(chat("a", { mode: "chat" })).map((entry) => entry.label)).toEqual(["Pin", "Rename", "Mark unread", "Archive"]);
+    expect(menuEntries(chat("a", { mode: "chat", settled: true })).map((entry) => entry.label)).toEqual(["Pin", "Rename", "Mark unread", "Unsettle", "Archive"]);
   });
 
   it("snoozes until the window's times", () => {

@@ -30,10 +30,12 @@ export type SwipeAction = { key: string; label: string; change?: ChatChange; sno
 
 /**
  * Swiping a row left shows two buttons, the main one at the edge, as the window's sidebar offers them: an active thread
- * settles or snoozes, a snoozed one wakes or archives, and a settled one archives or comes back.
+ * settles or snoozes, a snoozed one wakes or archives, and a settled one archives or comes back. Settling and snoozing
+ * are Code's (and Plan's); a Chat pins or archives, as the window's Chat sidebar does.
  */
-export function swipeActions(chat: Pick<PhoneChat, "settled" | "snoozedUntil">): [SwipeAction, SwipeAction] {
+export function swipeActions(chat: Pick<PhoneChat, "mode" | "pinned" | "settled" | "snoozedUntil">): [SwipeAction, SwipeAction] {
   const archive: SwipeAction = { key: "archive", label: "Archive", change: { action: "archive" }, tone: "destructive" };
+  if (chat.mode === "chat") return [chat.pinned ? { key: "unpin", label: "Unpin", change: { action: "unpin" }, tone: "neutral" } : { key: "pin", label: "Pin", change: { action: "pin" }, tone: "neutral" }, archive];
   if (chat.snoozedUntil) return [archive, { key: "wake", label: "Wake", change: { action: "wake" }, tone: "primary" }];
   if (chat.settled) return [{ key: "unsettle", label: "Unsettle", change: { action: "unsettle" }, tone: "neutral" }, archive];
   return [{ key: "snooze", label: "Snooze", snooze: true, tone: "neutral" }, { key: "settle", label: "Settle", change: { action: "settle" }, tone: "primary" }];
@@ -41,13 +43,15 @@ export function swipeActions(chat: Pick<PhoneChat, "settled" | "snoozedUntil">):
 
 /** The long-press menu, in the window's order. Rename and Snooze… open their own choices. */
 export type MenuEntry = { key: string; label: string; change?: ChatChange; rename?: true; snooze?: true; destructive?: true };
-export function menuEntries(chat: Pick<PhoneChat, "pinned" | "settled" | "snoozedUntil" | "unread">): MenuEntry[] {
+export function menuEntries(chat: Pick<PhoneChat, "mode" | "pinned" | "settled" | "snoozedUntil" | "unread">): MenuEntry[] {
+  const lifecycle = chat.mode !== "chat";
   return [
     chat.pinned ? { key: "unpin", label: "Unpin", change: { action: "unpin" } } : { key: "pin", label: "Pin", change: { action: "pin" } },
     { key: "rename", label: "Rename", rename: true },
     ...(chat.unread ? [] : [{ key: "mark-unread", label: "Mark unread", change: { action: "mark-unread" } } satisfies MenuEntry]),
-    chat.snoozedUntil ? { key: "wake", label: "Wake", change: { action: "wake" } } : { key: "snooze", label: "Snooze…", snooze: true },
-    chat.settled ? { key: "unsettle", label: "Unsettle", change: { action: "unsettle" } } : { key: "settle", label: "Settle", change: { action: "settle" } },
+    // A Chat that was settled anyway (from an older phone) can still come back.
+    ...(lifecycle || chat.snoozedUntil ? [chat.snoozedUntil ? { key: "wake", label: "Wake", change: { action: "wake" } } satisfies MenuEntry : { key: "snooze", label: "Snooze…", snooze: true } satisfies MenuEntry] : []),
+    ...(lifecycle || chat.settled ? [chat.settled ? { key: "unsettle", label: "Unsettle", change: { action: "unsettle" } } satisfies MenuEntry : { key: "settle", label: "Settle", change: { action: "settle" } } satisfies MenuEntry] : []),
     { key: "archive", label: "Archive", change: { action: "archive" }, destructive: true },
   ];
 }

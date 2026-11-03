@@ -2,7 +2,7 @@ import type { AttentionKind, PhoneActivity, PhoneChat, PhoneChatDetail, PhoneEnt
 import type { TurnFileChange } from "../../shared/gitDiff";
 import { isFactoryWorktree } from "../../shared/factory/projects";
 import { isProjectArchived } from "../../shared/projectShelf";
-import { isSettled, isSnoozed, isUnread } from "../../shared/threadLifecycle";
+import { isSettled, isSnoozed, isUnread, sidebarSection } from "../../shared/threadLifecycle";
 import type { AgentActivity, Message, Project, Task } from "../../shared/workspace";
 import { overviewOrder, type TaskOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
 
@@ -41,7 +41,8 @@ export function phoneChat(task: TaskOverview, projects: readonly Project[], now 
 	const own = task.projectId ? projects.find(value => value.id === task.projectId) : undefined;
 	// A worktree's chats sit under the project it came from, as in the window's project folders, with its branch.
 	const project = own?.worktree ? projects.find(value => value.id === own.worktree!.sourceProjectId) ?? own : own;
-	const needsYou = Boolean(task.attentionReason) && task.attentionReason !== "Task completed";
+	// As the window's Inbox counts it: a settled or snoozed chat waits there quietly, unless it raises its hand.
+	const needsYou = Boolean(task.attentionReason) && task.attentionReason !== "Task completed" && !["snoozed", "settled"].includes(sidebarSection(task, now));
 	return {
 		id: task.id, title: task.title, mode: task.mode, status: task.status, updatedAt: task.updatedAt, unread: isUnread(task), needsYou,
 		...needsYou ? { attention: task.attentionReason } : {}, ...project ? { projectId: project.id, project: project.name } : {},

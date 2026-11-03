@@ -70,7 +70,7 @@ function ChatView({ client, chatId, desktopName }: { client: DesktopClient; chat
   const running = chat?.status === "running";
   const lastId = view?.entries.at(-1)?.id;
   const model = chat ? threadModel(chat, knownModelsOf(client)) : null;
-  // The composer floats over the feed, which scrolls on under it; the feed ends above it.
+  // The composer floats over the feed, which scrolls on under it and ends above it.
   const [composerHeight, setComposerHeight] = useState(0);
 
   const stop = async () => {
@@ -136,7 +136,8 @@ function ChatView({ client, chatId, desktopName }: { client: DesktopClient; chat
           />
         )}
         {chat ? (
-          <View className="absolute inset-x-0 bottom-0" pointerEvents="box-none" onLayout={(event) => setComposerHeight(event.nativeEvent.layout.height)}>
+          // In the layout (so the keyboard lifts it) but pulled up over the feed by its own height, so the feed scrolls on under it.
+          <View pointerEvents="box-none" style={{ marginTop: -composerHeight }} onLayout={(event) => setComposerHeight(event.nativeEvent.layout.height)}>
             <DesktopComposer
               client={client}
               chat={chat}

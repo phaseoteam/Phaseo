@@ -34,6 +34,14 @@ describe("phone thread organisation and settings", () => {
 		expect(app.commands.slice(-2)).toEqual([{ type: "settle", id: "chat-1" }, { type: "unsettle", id: "chat-1" }]);
 	});
 
+	it("stops counting a settled chat as needing the person, as the window's Inbox does", async () => {
+		const { app, ask } = connected();
+		Object.assign(app.get("chat-1"), { status: "failed", error: "Crashed" });
+		app.touch(app.get("chat-1"));
+		expect((await ask({ type: "list_chats" })).result!.chats).toEqual([expect.objectContaining({ id: "chat-1", needsYou: true })]);
+		expect((await ask({ type: "update_chat", chatId: "chat-1", action: "settle" })).result!.chat).toMatchObject({ settled: true, needsYou: false });
+	});
+
 	it("passes on the window's refusal, and won't touch an agent's chat", async () => {
 		const { app, ask } = connected();
 		app.get("chat-1").status = "running";

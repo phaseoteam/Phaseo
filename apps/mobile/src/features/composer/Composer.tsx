@@ -54,8 +54,8 @@ export type ComposerProps = {
   below?: ReactNode;
   autoFocus?: boolean;
   /**
-   * Floats over the content under it (a thread's feed scrolls behind it): no bar behind the box, which is raised with
-   * a shadow instead. The screen places it and pads its list by its height.
+   * Floats over the content under it (a thread's feed scrolls behind it): the box is raised with a shadow over a
+   * see-through strip that keeps the chips under it readable. The screen places it and pads its list by its height.
    */
   floating?: boolean;
   /** A new value focuses the text box (a suggested prompt was put in it). */
@@ -127,7 +127,7 @@ export function Composer(props: ComposerProps) {
   };
 
   return (
-    <View className={props.floating ? "px-3" : "bg-background px-3"} pointerEvents="box-none" style={{ paddingTop: 6, paddingBottom: (keyboardVisible ? 0 : insets.bottom) + BOTTOM_GUTTER }}>
+    <View className={props.floating ? "bg-background/85 px-3" : "bg-background px-3"} pointerEvents="box-none" style={{ paddingTop: 6, paddingBottom: (keyboardVisible ? 0 : insets.bottom) + BOTTOM_GUTTER }}>
       {props.above}
       {matches.length ? <ComposerCommandPopover commands={matches} onSelect={pickCommand} /> : null}
       <View className="overflow-hidden rounded-md border border-border bg-card" style={props.floating ? FLOATING_BOX : { paddingVertical: 2 }}>

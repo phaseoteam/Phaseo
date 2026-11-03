@@ -198,7 +198,7 @@ const ThreadRow = memo(function ThreadRow({ chat, showProject, selected, onOpen,
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={[chat.title, status?.label, showProject ? chat.project : null, chat.attention, chat.branch ? `branch ${chat.branch}` : null, when].filter(Boolean).join(", ")}
-      accessibilityHint={onMenu ? "Long press for more, or swipe left to settle or snooze" : undefined}
+      accessibilityHint={onMenu ? "Long press for more, or swipe left for quick actions" : undefined}
       onPress={() => onOpen(chat)}
       onLongPress={onMenu ? (event) => { haptic("press"); onMenu(chat, pointAnchor(event)); } : undefined}
       className={cn("mx-2 rounded-md px-3 py-2 active:bg-accent", selected && "bg-accent")}
