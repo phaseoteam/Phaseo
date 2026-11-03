@@ -103,32 +103,51 @@ export function SettingsSuffix({ selection, descriptors }: { selection: ModelSel
 	</span>;
 }
 
+type Choice = { id: string; label: string; description?: string };
+const choicesOf = (descriptor: ModelOptionDescriptor): Choice[] => descriptor.type === "boolean"
+	? speedIds.includes(descriptor.id) ? [{ id: "false", label: "Standard" }, { id: "true", label: "Fast" }] : [{ id: "true", label: "On" }, { id: "false", label: "Off" }]
+	: descriptor.options;
+const pick = (selection: ModelSelection, descriptor: ModelOptionDescriptor, id: string, onChange: (selection: ModelSelection) => void) => {
+	const next = withSetting(selection, descriptor, descriptor.type === "boolean" ? id === "true" : id); rememberSettings(next); onChange(next);
+};
+
 /**
- * The picker's settings column: the model's reasoning levels first, then speed, context window and any other options,
- * one group each. A pick applies at once and leaves the picker open, so several can change together.
+ * The picker's settings column: the model's reasoning levels first, then its context window and any other options,
+ * one group each. Speed has the footer. A pick applies at once and leaves the picker open, so several can change together.
  */
 export function ModelSettingsColumn({ selection, descriptors, onChange }: { selection: ModelSelection; descriptors: ModelOptionDescriptor[]; onChange: (selection: ModelSelection) => void }) {
-	const ordered = [...descriptors.filter(isReasoning), ...descriptors.filter(descriptor => !isReasoning(descriptor))];
-	const change = (descriptor: ModelOptionDescriptor, value: string | boolean) => { const next = withSetting(selection, descriptor, value); rememberSettings(next); onChange(next); };
-	return <div className="flex flex-col gap-2 py-1.5">
+	const rest = descriptors.filter(descriptor => !speedIds.includes(descriptor.id));
+	const ordered = [...rest.filter(isReasoning), ...rest.filter(descriptor => !isReasoning(descriptor))];
+	if (!ordered.length) return <p className="flex h-8 items-center px-2 text-sm text-muted-foreground">No effort levels</p>;
+	return <div className="flex flex-col gap-2">
 		{ordered.map(descriptor => {
-			const value = current(selection, descriptor);
-			const options = descriptor.type === "boolean"
-				? [{ id: "true", label: "On" }, { id: "false", label: "Off" }] as { id: string; label: string; description?: string }[]
-				: descriptor.options;
-			return <div key={descriptor.id} role="radiogroup" aria-label={descriptor.label}>
-				<p className="px-2 pt-1 pb-1 text-xs font-semibold text-muted-foreground">{descriptor.label}</p>
-				{options.map(option => {
-					const selected = String(value) === option.id, tier = speedTier(descriptor, descriptor.type === "boolean" ? option.id === "true" : option.id);
-					return <button key={option.id} type="button" role="radio" aria-checked={selected} title={option.description}
-						onClick={() => change(descriptor, descriptor.type === "boolean" ? option.id === "true" : option.id)}
-						className={cn("flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-[13px] hover:bg-muted", selected && "font-medium")}>
-						<span className="min-w-0 flex-1 truncate">{option.label}</span>
-						{tier && <SpeedGlyph tier={tier} className="text-muted-foreground" />}
-						{selected && <Check className="size-3.5 shrink-0" />}
-					</button>;
-				})}
+			const value = String(current(selection, descriptor));
+			return <div key={descriptor.id} role="radiogroup" aria-label={descriptor.label} className="flex flex-col gap-0.5">
+				<p className="px-2 pb-1.5 text-xs text-muted-foreground/80">{descriptor.label}</p>
+				{choicesOf(descriptor).map(option => <button key={option.id} type="button" role="radio" aria-checked={value === option.id} title={option.description}
+					onClick={() => pick(selection, descriptor, option.id, onChange)}
+					className="flex h-8 w-full shrink-0 items-center gap-2 rounded-sm px-2 text-left text-sm text-foreground outline-none hover:bg-foreground/[0.09] focus-visible:bg-foreground/[0.09]">
+					<span className="min-w-0 flex-1 truncate">{option.label}</span>
+					<Check className={cn("size-3.5 shrink-0", value !== option.id && "invisible")} />
+				</button>)}
 			</div>;
+		})}
+	</div>;
+}
+
+/** The picker's footer: speed as segments, one click away, with Phaseo's marks on the fast ones. */
+export function SpeedSegments({ selection, descriptors, onChange }: { selection: ModelSelection; descriptors: ModelOptionDescriptor[]; onChange: (selection: ModelSelection) => void }) {
+	const descriptor = descriptors.find(value => speedIds.includes(value.id));
+	if (!descriptor) return null;
+	const value = String(current(selection, descriptor));
+	return <div role="radiogroup" aria-label={descriptor.label} className="flex rounded-lg bg-input/40 p-0.5">
+		{choicesOf(descriptor).map(option => {
+			const checked = value === option.id, tier = speedTier(descriptor, descriptor.type === "boolean" ? option.id === "true" : option.id);
+			return <button key={option.id} type="button" role="radio" aria-checked={checked} data-checked={checked || undefined} title={option.description}
+				onClick={() => pick(selection, descriptor, option.id, onChange)}
+				className="flex h-6 cursor-pointer items-center justify-center gap-1 px-2 text-xs text-muted-foreground outline-none first:rounded-l-md last:rounded-r-md hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset data-checked:bg-input/72 data-checked:text-foreground">
+				{tier && <SpeedGlyph tier={tier} />}{option.label}
+			</button>;
 		})}
 	</div>;
 }

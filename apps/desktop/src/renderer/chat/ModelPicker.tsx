@@ -15,7 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popove
 import { Tooltip, TooltipContent, TooltipTrigger } from "../components/ui/tooltip";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { useCommand } from "../lib/keybindings";
-import { ModelSettingsColumn, SettingsSuffix, useSettingDescriptors } from "./ModelSettings";
+import { ModelSettingsColumn, SettingsSuffix, SpeedSegments, speedIds, useSettingDescriptors } from "./ModelSettings";
 
 export const harnessNames: Record<Harness, string> = { phaseo: "Phaseo", codex: "Codex", claude: "Claude Code", opencode: "OpenCode", pi: "Pi", cursor: "Cursor", grok: "Grok", antigravity: "Antigravity", acp: "Agent" };
 export const MAX_COMPARE = 4;
@@ -260,7 +260,8 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 			<ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
 		</PopoverTrigger>
 		{/* Stays above or below the button and shrinks to fit below the title bar, rather than sliding sideways over the composer. */}
-			<PopoverContent align="end" side="top" sideOffset={8} collisionAvoidance={{ side: "flip", align: "shift", fallbackAxisSide: "none" }} collisionPadding={{ top: 52, right: 8, bottom: 8, left: 8 }} className={cn("max-h-(--available-height) flex-row gap-0 overflow-hidden rounded-xl p-0", descriptors.length ? "w-[min(94vw,700px)]" : "w-[min(92vw,520px)]")}>
+			<PopoverContent align="end" side="top" sideOffset={8} collisionAvoidance={{ side: "flip", align: "shift", fallbackAxisSide: "none" }} collisionPadding={{ top: 52, right: 8, bottom: 8, left: 8 }} className={cn("max-h-(--available-height) gap-0 overflow-hidden rounded-xl p-0", descriptors.length ? "w-[min(94vw,700px)]" : "w-[min(92vw,520px)]")}>
+				<div className="flex min-h-0 min-w-0 flex-1">
 				<div className="flex min-w-0 flex-1 flex-col">
 				<div className="p-2 pb-1">
 				<div className="flex h-8 items-center gap-2 rounded-lg border border-input bg-input/50 px-2.5">
@@ -318,9 +319,13 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 			{loading.map(harness => <div key={harness} className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground"><LoaderCircle className="size-3.5 animate-spin" />Loading {harnessNames[harness]} models…</div>)}
 			{errors.map(error => <p key={error} className="px-3 py-2 text-xs text-destructive">{error}</p>)}
 				</div>
-				{settingsSelection && descriptors.length > 0 && <ScrollArea className="w-44 shrink-0 border-l border-border" viewportClassName="max-h-[min(70vh,520px)] px-1.5">
+				{settingsSelection && descriptors.length > 0 && <ScrollArea className="w-48 shrink-0 border-l border-border/70 bg-muted/40" viewportClassName="max-h-[min(60vh,440px)] px-2 pt-3 pb-1.5">
 					<ModelSettingsColumn selection={settingsSelection} descriptors={descriptors} onChange={next => onSettingsChange?.(next)} />
 				</ScrollArea>}
+				</div>
+				{settingsSelection && descriptors.some(descriptor => speedIds.includes(descriptor.id)) && <div className="flex flex-wrap items-center gap-2 border-t border-border/70 bg-muted/40 px-3 py-2">
+					<SpeedSegments selection={settingsSelection} descriptors={descriptors} onChange={next => onSettingsChange?.(next)} />
+				</div>}
 	</PopoverContent>
 	</Popover>;
 }
