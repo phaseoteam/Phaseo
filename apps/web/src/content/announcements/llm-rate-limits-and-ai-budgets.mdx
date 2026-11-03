@@ -38,13 +38,13 @@ faq:
   - question: "Do cached responses or provider fallbacks count toward a rate limit?"
     answer: "Responses served from cache don't count. Fallbacks to another provider within one request count once."
   - question: "Does this work with OpenAI-compatible SDKs?"
-    answer: "Yes. Phaseo sends the standard x-ratelimit-limit, x-ratelimit-remaining and x-ratelimit-reset headers and a Retry-After header on 429 responses, which OpenAI-compatible clients and retry libraries already understand."
+    answer: "Yes. Phaseo sends the standard x-ratelimit-limit-requests, x-ratelimit-remaining-requests and x-ratelimit-reset-requests headers, the matching -tokens headers for token limits, and a Retry-After header on 429 responses, which OpenAI-compatible clients and retry libraries already understand."
 draft: false
 ---
 
 Most teams find out they needed a limit right after something used up the shared capacity. An agent loops overnight, a batch script retries every failure at once, or one heavy user of your app slows things down for everyone else.
 
-Phaseo now has **rate limit policies** and **department budgets**. You decide how many requests, tokens and parallel calls each API key, team member, department or end user gets, and how much each department can spend before its requests stop. It works across the models and providers you call through Phaseo, with no code changes. Nothing is limited until you set it up.
+Phaseo now has **rate limit policies** and **department budgets**. You decide how many requests, tokens and parallel calls each API key, team member, department or end user gets, and how much each department can spend before its requests stop. It works across the models and providers you call through Phaseo. Limits for keys, members and departments need no code changes, and end-user limits need your app to send an end-user ID, if it doesn't already. Nothing is limited until you set it up.
 
 Rate limits for keys, members, guardrails and end users are available on every workspace. Department limits and budgets come with [Self Serve Enterprise](https://phaseo.app/docs/v1/pricing/tiers), alongside SSO, SCIM and directory management.
 
