@@ -120,6 +120,9 @@ const DEFAULT_RETRY_DELAY_MS = 250;
 let gatewayRequestsSupportsErrorPayloadColumn: boolean | null = null;
 let gatewayRequestsSupportsUsageColumns: boolean | null = null;
 let gatewayRequestsSupportsTelemetryColumns: boolean | null = null;
+// The column is added by a migration that deploys before the gateway; this only covers a
+// gateway deployed ahead of it, which must not lose request rows.
+let gatewayRequestsSupportsBillingRequestIdColumn = true;
 
 async function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -215,13 +218,15 @@ async function insertGatewayRequest(row: any) {
         const usageCompatible = gatewayRequestsSupportsUsageColumns === false
             ? stripGatewayRequestUsageColumns(telemetryCompatible)
             : telemetryCompatible;
-        if (gatewayRequestsSupportsErrorPayloadColumn !== false) return usageCompatible;
-        const { error_payload: _omit, ...errorPayloadCompatible } = usageCompatible ?? {};
+        const { billing_request_id: _billingRequestId, ...billingCompatible } = usageCompatible ?? {};
+        const linkCompatible = gatewayRequestsSupportsBillingRequestIdColumn ? usageCompatible : billingCompatible;
+        if (gatewayRequestsSupportsErrorPayloadColumn !== false) return linkCompatible;
+        const { error_payload: _omit, ...errorPayloadCompatible } = linkCompatible ?? {};
         return errorPayloadCompatible;
     };
 
     let lastError: unknown;
-    const maxCompatibilityAttempts = 4;
+    const maxCompatibilityAttempts = 5;
     for (let attempt = 0; attempt < maxCompatibilityAttempts; attempt += 1) {
         try {
             const inserted = await attemptInsert(prepareCompatibleRow(row));
@@ -266,6 +271,13 @@ async function insertGatewayRequest(row: any) {
                 isMissingColumnError(error, "error_payload", "gateway_requests")
             ) {
                 gatewayRequestsSupportsErrorPayloadColumn = false;
+                capabilityChanged = true;
+            }
+            if (
+                gatewayRequestsSupportsBillingRequestIdColumn &&
+                isMissingColumnError(error, "billing_request_id", "gateway_requests")
+            ) {
+                gatewayRequestsSupportsBillingRequestIdColumn = false;
                 capabilityChanged = true;
             }
             if (!capabilityChanged) throw error;
@@ -508,6 +520,7 @@ async function upsertV2RequestFact(args: {
 
 function buildSupaRow(args: {
     requestId: string; workspaceId?: string | null;
+    billingRequestId?: string | null;
     endpoint: Endpoint; model?: string | null; canonicalModel?: string | null; provider?: string | null;
     stream?: boolean; byok?: boolean;
     nativeResponseId?: string | null;
@@ -567,6 +580,9 @@ function buildSupaRow(args: {
     return {
         request_id: args.requestId,
         workspace_id: args.workspaceId ?? null,
+        // gateway_request_charges.request_id for this attempt: the public ID differs, and each
+        // model fallback attempt has its own pair.
+        billing_request_id: args.billingRequestId ?? null,
         app_id: args.appId ?? null,
         endpoint: args.endpoint,
         model_id: args.model ?? null,
@@ -638,6 +654,7 @@ function readToolCallCount(usage: unknown, finishReason?: string | null): number
 
 export async function auditSuccess(input: {
     requestId: string; workspaceId: string;
+    billingRequestId?: string | null;
     provider: string; model: string; requestedModel?: string; endpoint: Endpoint;
     providerApiModelId?: string | null;
     providerModelSlug?: string | null;
@@ -725,6 +742,7 @@ export async function auditSuccess(input: {
         const row = buildSupaRow({
             requestId: args.requestId,
             workspaceId: args.workspaceId,
+            billingRequestId: args.billingRequestId ?? null,
             endpoint: args.endpoint,
             model: args.model,
             canonicalModel: args.requestedModel ?? args.model,
@@ -989,6 +1007,7 @@ type AuditFailureExecute = {
     stage: "execute";
     requestId: string;
     workspaceId: string;
+    billingRequestId?: string | null;
     /** Zero data retention applies to the request, so no content is stored: no I/O log. */
     zeroDataRetention?: boolean;
     endpoint: Endpoint;
@@ -1231,6 +1250,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
         const row = buildSupaRow({
             requestId: args.requestId,
             workspaceId: args.workspaceId,
+            billingRequestId: args.billingRequestId ?? null,
             endpoint: args.endpoint,
             model: args.model,
             canonicalModel: args.requestedModel ?? args.model,

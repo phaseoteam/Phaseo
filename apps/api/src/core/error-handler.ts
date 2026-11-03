@@ -1141,6 +1141,7 @@ export async function handleError({
 			auditArgs.serverToolTrace = ctx.serverToolTrace;
 		}
         auditArgs.stream = ctx?.stream;
+        auditArgs.billingRequestId = ctx?.billingRequestId ?? null;
         auditArgs.provider = providerForAudit;
         auditArgs.providerAttempts = Array.isArray(ctx?.providerAttempts)
             ? ctx.providerAttempts

@@ -291,6 +291,7 @@ export async function handleFailureAudit(
             stage: "execute",
             requestId: ctx.requestId,
             workspaceId: ctx.workspaceId,
+            billingRequestId: ctx.billingRequestId ?? null,
             zeroDataRetention: ctx.zeroDataRetention === true,
             endpoint: ctx.endpoint,
             model: ctx.model,
@@ -544,6 +545,7 @@ export async function handleSuccessAudit(
         writeSupabase: shouldPersistGatewayAudit(ctx) ? () => auditSuccess({
             requestId: ctx.requestId,
             workspaceId: ctx.workspaceId,
+            billingRequestId: ctx.billingRequestId ?? null,
             zeroDataRetention: ctx.zeroDataRetention === true,
             provider: result.provider,
             providerApiModelId: result.apiModelId ?? null,

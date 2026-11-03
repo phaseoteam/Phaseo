@@ -103,7 +103,8 @@ CREATE TABLE "public"."gateway_requests" (
   "attributed_department_id"          uuid,
   "attributed_department_name"        text,
   "attributed_department_color"       text,
-  "attribution_basis"                 text
+  "attribution_basis"                 text,
+  "billing_request_id"                text
 ) PARTITION BY RANGE (created_at);
 
 ALTER TABLE "public"."gateway_requests"
@@ -602,6 +603,8 @@ GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON
 COMMENT ON COLUMN "public"."gateway_requests"."api_model_id" IS 'Concrete provider API model id executed for this request, preserving variants such as :free, -fast, or -flex.';
 
 COMMENT ON COLUMN "public"."gateway_requests"."auth_method" IS 'Authentication method used for the request: api_key (legacy HMAC keys) or oauth (JWT tokens)';
+
+COMMENT ON COLUMN "public"."gateway_requests"."billing_request_id" IS 'Wallet charge key for this attempt: gateway_request_charges.request_id in the same workspace. Null for rows written before it was recorded, requests rejected before execution, and requests billed through wallet reservations.';
 
 COMMENT ON COLUMN "public"."gateway_requests"."detail_metadata" IS 'Request-level routing, provider, guardrail, and plugin diagnostics for observability detail views.';
 
