@@ -8,6 +8,7 @@ import { metadataForIds } from "@/routes/account/settings-usage";
 import { applyRequestLabelFilter, requestLabelFilterFromParams } from "@/usage/requestClassifiers";
 import { canReadIoLogContents, readIoLogContentsAccess } from "@/usage/ioLogContentsAccess";
 import { detailMetadataWithoutContent } from "@/usage/requestContentDetails";
+import { validPageCursor } from "@/lib/pageCursor";
 import {
 	LONG_RUNNING_REQUEST_ENDPOINTS,
 	buildNotInFilter,
@@ -751,8 +752,11 @@ export async function fetchPaginatedRequests(
 		else query = query.gte(column, value);
 	}
 
-	if (params.cursor?.createdAt && params.cursor.id) {
-		query = query.or(`created_at.lt.${params.cursor.createdAt},and(created_at.eq.${params.cursor.createdAt},id.lt.${params.cursor.id})`);
+	if (params.cursor) {
+		// The cursor comes from the browser and goes into a filter string, so only a timestamp and UUID pass.
+		const cursor = validPageCursor(params.cursor);
+		if (!cursor) throw new Error("Invalid requests cursor");
+		query = query.or(`created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`);
 	}
 	query = query.order("created_at", { ascending: false }).order("id", { ascending: false }).limit(pageSize + 1);
 
