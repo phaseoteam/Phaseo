@@ -317,6 +317,11 @@ describe("Phaseo MCP server metadata", () => {
 		await client.connect(clientTransport);
 
 		const result = await client.callTool({ name: "models_list", arguments: { sortBy: "input_price", limit: 2 } });
+		// Hosts that ignore structuredContent read the same data from the second text block.
+		const text = result.content as Array<{ type: string; text: string }>;
+		expect(text).toHaveLength(2);
+		expect(text[0]).toMatchObject({ type: "text", text: "Found 2 matching Phaseo models." });
+		expect(JSON.parse(text[1]!.text)).toEqual(result.structuredContent);
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 		expect((fetchMock.mock.calls[0]?.[0] as Request).url).toBe(
 			"https://api.phaseo.app/v1/models?limit=250",
@@ -535,6 +540,45 @@ describe("Phaseo MCP OAuth discovery", () => {
 		);
 		expect(post.status).toBe(405);
 		expect(post.headers.get("allow")).toBe("GET, HEAD");
+	});
+
+	it("serves the configured Google Connected Apps verification file as JSON", async () => {
+		const path = "https://mcp.phaseo.app/.well-known/google-connected-apps";
+		const missing = await worker.fetch(new Request(path), env, {} as ExecutionContext);
+		expect(missing.status).toBe(404);
+
+		const file = '{"verification":"google-review-token-123"}';
+		const configured = await worker.fetch(
+			new Request(path),
+			{ ...env, GOOGLE_CONNECTED_APPS_VERIFICATION: `  ${file}\n` },
+			{} as ExecutionContext,
+		);
+		expect(configured.status).toBe(200);
+		expect(configured.headers.get("content-type")).toContain("application/json");
+		expect(configured.headers.get("cache-control")).toBe("no-store");
+		expect(await configured.text()).toBe(file);
+
+		const head = await worker.fetch(
+			new Request(path, { method: "HEAD" }),
+			{ ...env, GOOGLE_CONNECTED_APPS_VERIFICATION: file },
+			{} as ExecutionContext,
+		);
+		expect(head.status).toBe(200);
+		expect(await head.text()).toBe("");
+
+		const invalid = await worker.fetch(
+			new Request(path),
+			{ ...env, GOOGLE_CONNECTED_APPS_VERIFICATION: "not json" },
+			{} as ExecutionContext,
+		);
+		expect(invalid.status).toBe(503);
+
+		const post = await worker.fetch(
+			new Request(path, { method: "POST" }),
+			{ ...env, GOOGLE_CONNECTED_APPS_VERIFICATION: file },
+			{} as ExecutionContext,
+		);
+		expect(post.status).toBe(405);
 	});
 
 	it("enforces the body limit even when Content-Length is absent", async () => {

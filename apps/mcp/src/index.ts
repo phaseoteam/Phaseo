@@ -382,6 +382,18 @@ function providerSummary(provider: Awaited<ReturnType<typeof listProviders>>[num
 	};
 }
 
+// The MCP spec asks tools that return structuredContent to repeat it as serialized JSON in a text block. Hosts
+// that do not read structuredContent (Google's Connected Apps, for example) would otherwise see only the summary.
+function toolResult<T extends Record<string, unknown>>(summary: string, structuredContent: T) {
+	return {
+		content: [
+			{ type: "text" as const, text: summary },
+			{ type: "text" as const, text: JSON.stringify(structuredContent) },
+		],
+		structuredContent,
+	};
+}
+
 function errorResult(error: unknown) {
 	const message = error instanceof PhaseoApiError ? error.message : "Phaseo could not complete this request.";
 	return { isError: true as const, content: [{ type: "text" as const, text: message }] };
@@ -623,10 +635,7 @@ function registerControlPlaneReadTools(
 						{ accessToken: authenticatedUser.accessToken },
 						definition.query?.(input) ?? {},
 					);
-					return {
-						content: [{ type: "text" as const, text: `${definition.title} completed.` }],
-						structuredContent: normaliseControlPlaneResult(definition.name, result),
-					};
+					return toolResult(`${definition.title} completed.`, normaliseControlPlaneResult(definition.name, result));
 				} catch (error) {
 					return errorResult(error);
 				}
@@ -704,10 +713,7 @@ export function createServer(
 				const result = sortModels(priceFiltered, sortBy, sortOrder)
 					.slice(0, limit)
 					.map((model) => modelSummary(env, model));
-				return {
-					content: [{ type: "text" as const, text: `Found ${result.length} matching Phaseo model${result.length === 1 ? "" : "s"}.` }],
-					structuredContent: { models: result },
-				};
+				return toolResult(`Found ${result.length} matching Phaseo model${result.length === 1 ? "" : "s"}.`, { models: result });
 			} catch (error) { return errorResult(error); }
 		},
 	);
@@ -729,7 +735,7 @@ export function createServer(
 			try {
 				const model = await getModel(env, modelId, { accessToken: authenticatedUser.accessToken });
 				if (!model) return { isError: true as const, content: [{ type: "text" as const, text: `No Phaseo model exists with ID "${modelId}".` }] };
-				return { content: [{ type: "text" as const, text: `Retrieved ${model.name} from Phaseo.` }], structuredContent: { model: modelSummary(env, model) } };
+				return toolResult(`Retrieved ${model.name} from Phaseo.`, { model: modelSummary(env, model) });
 			} catch (error) { return errorResult(error); }
 		},
 	);
@@ -792,9 +798,9 @@ export function createServer(
 						updatedAt: entry.updated_at,
 					}];
 				}).slice(0, limit);
-				return {
-					content: [{ type: "text" as const, text: `Retrieved ${entries.length} models from ${ranking.name}. Rankings are benchmark-specific; they are not a universal measure of the best model.` }],
-					structuredContent: { benchmark: {
+				return toolResult(
+					`Retrieved ${entries.length} models from ${ranking.name}. Rankings are benchmark-specific; they are not a universal measure of the best model.`,
+					{ benchmark: {
 						id: ranking.benchmark_id,
 						name: ranking.name,
 						focus,
@@ -802,7 +808,7 @@ export function createServer(
 						totalModels: ranking.total_models,
 						entries,
 					} },
-				};
+				);
 			} catch (error) { return errorResult(error); }
 		},
 	);
@@ -820,7 +826,7 @@ export function createServer(
 		async () => {
 			try {
 				const providers = (await listProviders(env, { accessToken: authenticatedUser.accessToken })).map(providerSummary);
-				return { content: [{ type: "text" as const, text: `Phaseo currently lists ${providers.length} providers.` }], structuredContent: { providers } };
+				return toolResult(`Phaseo currently lists ${providers.length} providers.`, { providers });
 			} catch (error) { return errorResult(error); }
 		},
 	);
@@ -891,7 +897,7 @@ export function createServer(
 					inputCostUSD: selected.inputCostUSD, cachedInputCostUSD: selected.cachedInputCostUSD,
 					outputCostUSD: selected.outputCostUSD, totalCostUSD: selected.totalCostUSD, currency: "USD" as const,
 				};
-				return { content: [{ type: "text" as const, text: `Estimated cost for ${model.name} through ${selected.offer.provider.name ?? selected.offer.provider.id}: $${selected.totalCostUSD.toFixed(6)} USD.` }], structuredContent: { estimate } };
+				return toolResult(`Estimated cost for ${model.name} through ${selected.offer.provider.name ?? selected.offer.provider.id}: $${selected.totalCostUSD.toFixed(6)} USD.`, { estimate });
 			} catch (error) { return errorResult(error); }
 		},
 	);
@@ -998,6 +1004,36 @@ function openAiAppsChallenge(env: PhaseoEnv): Response {
 	});
 }
 
+// Google Connected Apps domain verification: the JSON file downloaded from Google Connected Console, served at
+// /.well-known/google-connected-apps on the MCP host with a 200 and no redirect.
+function googleConnectedAppsVerification(env: PhaseoEnv): Response {
+	const file = env.GOOGLE_CONNECTED_APPS_VERIFICATION?.trim() ?? "";
+	if (!file) return new Response("Not found", { status: 404 });
+	let valid = file.length <= 16_384;
+	if (valid) {
+		try {
+			const parsed: unknown = JSON.parse(file);
+			valid = typeof parsed === "object" && parsed !== null && !Array.isArray(parsed);
+		} catch {
+			valid = false;
+		}
+	}
+	if (!valid) return new Response("Verification file is invalid.", { status: 503 });
+	return new Response(file, {
+		status: 200,
+		headers: {
+			"Content-Type": "application/json; charset=utf-8",
+			"Cache-Control": "no-store",
+			"X-Content-Type-Options": "nosniff",
+		},
+	});
+}
+
+const DOMAIN_VERIFICATION_ROUTES: Record<string, (env: PhaseoEnv) => Response> = {
+	"/.well-known/openai-apps-challenge": openAiAppsChallenge,
+	"/.well-known/google-connected-apps": googleConnectedAppsVerification,
+};
+
 function isAllowedMcpOrigin(request: Request): boolean {
 	const value = request.headers.get("origin");
 	if (!value) return true;
@@ -1020,14 +1056,15 @@ export default {
 			return secureResponse(new Response("Origin is not allowed.", { status: 403 }));
 		}
 		if (request.method === "OPTIONS") return secureResponse(new Response(null, { status: 204 }));
-		if (url.pathname === "/.well-known/openai-apps-challenge") {
+		const domainVerification = DOMAIN_VERIFICATION_ROUTES[url.pathname];
+		if (domainVerification) {
 			if (request.method !== "GET" && request.method !== "HEAD") {
 				return secureResponse(new Response("Method not allowed", {
 					status: 405,
 					headers: { Allow: "GET, HEAD" },
 				}));
 			}
-			const challenge = secureResponse(openAiAppsChallenge(env));
+			const challenge = secureResponse(domainVerification(env));
 			return request.method === "HEAD"
 				? new Response(null, { status: challenge.status, headers: challenge.headers })
 				: challenge;
