@@ -15,6 +15,14 @@ export async function revokeOtherSessionsAfterPasswordResetAction() {
 	if (!user) {
 		throw new Error("Not authenticated");
 	}
+	// Only a session opened from the reset email (recovery) or one that passed two-factor may do this:
+	// for an MFA account, a password-only session could otherwise keep disconnecting its CLI and apps.
+	const { data: assurance, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+	if (error || !assurance) throw new Error("Could not check two-factor verification");
+	const fromRecovery = (assurance.currentAuthenticationMethods ?? []).some((entry) => (typeof entry === "string" ? entry : entry.method) === "recovery");
+	if (!fromRecovery && assurance.nextLevel === "aal2" && assurance.currentLevel !== "aal2") {
+		throw new Error("Complete two-factor verification first");
+	}
 	await revokeOtherSessionsAndGrants(supabase, user.id);
 	return { success: true };
 }

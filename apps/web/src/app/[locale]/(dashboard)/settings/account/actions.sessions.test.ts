@@ -34,7 +34,7 @@ const mockCreateClient = createClient as jest.MockedFunction<typeof createClient
 const mockCreateSupabaseAuthClient = createSupabaseAuthClient as jest.MockedFunction<typeof createSupabaseAuthClient>;
 const mockCreateAdminClient = createAdminClient as jest.MockedFunction<typeof createAdminClient>;
 
-function sessionClient(options: { aal?: { currentLevel: string; nextLevel: string } } = {}) {
+function sessionClient(options: { aal?: { currentLevel: string; nextLevel: string; currentAuthenticationMethods?: Array<{ method: string; timestamp: number }> } } = {}) {
 	return {
 		auth: {
 			getUser: jest.fn().mockResolvedValue({
@@ -185,5 +185,29 @@ describe("account credential changes end other sessions", () => {
 		await expect(revokeOtherSessionsAfterPasswordResetAction()).resolves.toEqual({ success: true });
 
 		expectOtherSessionsRevoked(supabase, updates);
+	});
+
+	it("an MFA account's password-only session can't trigger the reset revocation", async () => {
+		const supabase = sessionClient({ aal: { currentLevel: "aal1", nextLevel: "aal2", currentAuthenticationMethods: [{ method: "password", timestamp: 1 }] } });
+		mockCreateClient.mockResolvedValue(supabase as never);
+		const updates = adminClient();
+
+		await expect(revokeOtherSessionsAfterPasswordResetAction()).rejects.toThrow("Complete two-factor verification first");
+		expect(supabase.auth.signOut).not.toHaveBeenCalled();
+		expect(mockCreateAdminClient).not.toHaveBeenCalled();
+		void updates;
+	});
+
+	it("an MFA account may revoke from the reset email's recovery session or after two-factor", async () => {
+		for (const aal of [
+			{ currentLevel: "aal1", nextLevel: "aal2", currentAuthenticationMethods: [{ method: "recovery", timestamp: 1 }] },
+			{ currentLevel: "aal2", nextLevel: "aal2", currentAuthenticationMethods: [{ method: "password", timestamp: 1 }, { method: "totp", timestamp: 2 }] },
+		]) {
+			const supabase = sessionClient({ aal });
+			mockCreateClient.mockResolvedValue(supabase as never);
+			const updates = adminClient();
+			await expect(revokeOtherSessionsAfterPasswordResetAction()).resolves.toEqual({ success: true });
+			expectOtherSessionsRevoked(supabase, updates);
+		}
 	});
 });

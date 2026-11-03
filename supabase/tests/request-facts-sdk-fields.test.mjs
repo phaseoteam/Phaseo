@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
+// Table files carry the MFA policy (require_mfa_for_data_api); these fixtures don't load its helper.
+const MFA_SATISFIED_STUB = "create or replace function public.mfa_satisfied() returns boolean language sql stable as 'select true';";
 const db = new PGlite();
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const migrationPath = '../migrations/20261027224949_store_sdk_client_fields_on_request_facts.sql';
@@ -36,6 +38,7 @@ try {
   await db.exec(migration);
   await db.exec(latestMigration);
   await db.exec(`create function public.is_workspace_member(uuid) returns boolean language sql as 'select false';`);
+  await db.exec(MFA_SATISFIED_STUB);
   await db.exec(await read('../schemas/public/tables/v2_request_routing_decisions.sql'));
   await db.exec(await read('../schemas/public/tables/v2_request_routing_traces.sql'));
   const withRouting = await read('../schemas/public/functions/ingest_v2_gateway_request_with_routing.sql');

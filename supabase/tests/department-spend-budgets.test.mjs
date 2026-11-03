@@ -50,7 +50,8 @@ try {
     const sweepFile = '../schemas/public/functions/sweep_department_budget_alerts.sql';
     const tableFile = '../schemas/public/tables/workspace_department_budgets.sql';
     const sweepDefinition = (await read(sweepFile)).replace(/\r\n/g, '\n');
-    const tableDefinition = (await read(tableFile)).replace(/\r\n/g, '\n');
+    // The MFA policy (require_mfa_for_data_api) was added to the table file by a later migration.
+    const tableDefinition = (await read(tableFile)).replace(/\r\n/g, '\n').replace(/\n*CREATE POLICY "mfa_required_when_enrolled" ON [^;]*;/g, '');
     for (const file of schemaFiles.filter(file => file !== sweepFile && file !== tableFile)) {
         assert.ok((redefinedLast.test(file) ? primaryMigration : redefinedLater.test(file) ? attributionMigration : migration).includes((await read(file)).replace(/\r\n/g, '\n').trim()), `${file} is in the migration`);
     }
