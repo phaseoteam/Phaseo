@@ -2,7 +2,7 @@
 // Why: Shared types/schemas/utilities used across modules.
 // How: Exposes reusable building blocks for the gateway.
 
-import { z } from "zod";
+import * as z from "zod";
 import { lazySchema } from "./lazy-schema";
 import type { Endpoint } from "./types";
 import { NativeDecisionsBodySchema, DecisionProviderOptionsSchema } from "./decisions";

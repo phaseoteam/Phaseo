@@ -3,7 +3,7 @@
 // Why: Keeps pre-execution logic centralized and consistent.
 // How: Implements guard functions that return ok/response tuples.
 
-import { z } from "zod";
+import * as z from "zod";
 import type { Endpoint, RequestBetaOptions, RequestLabel, RequestMeta } from "@core/types";
 import { getEdgeMeta } from "@core/edge";
 import { getBindings } from "@/runtime/env";
