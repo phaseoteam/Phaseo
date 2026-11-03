@@ -280,8 +280,8 @@ function ChatComposer({ task }: { task: Task }) {
 				{task.projectId && <IssueBadge taskId={task.id} links={overview.tasks.find(value => value.id === task.id)?.issues} className="mr-1 h-7 px-1.5 hover:bg-accent/60" />}
 				{/* Only Phaseo's harness reports its window, and /compact is its own. */}
 				<ContextMeter task={task} onCompact={canCompact && task.harness === "phaseo" ? () => void command({ type: "send", id: task.id, text: "/compact" }) : undefined} />
-				<ModelSettings selection={selection} onChange={next => void changeSettings(next)} disabled={running || task.archived} />
 				<ModelPicker selections={[selection]} onChange={values => void changeModel(values[0])} agents={code} disabled={running || task.archived} openEvent={openModelPickerEvent} />
+				<ModelSettings selection={selection} onChange={next => void changeSettings(next)} disabled={running || task.archived} />
 			</>}
 			tools={<>
 				<ToolButton label="Attach files" disabled={uploading || task.archived} onClick={() => void attach()}><Paperclip /></ToolButton>

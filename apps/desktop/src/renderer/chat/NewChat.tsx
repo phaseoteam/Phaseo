@@ -214,8 +214,8 @@ export function NewChat() {
 					</ComposerChip>)}
 				</> : undefined}
 				model={<>
-					{selections.length === 1 && <ModelSettings selection={selections[0]} onChange={next => setSelections([next])} disabled={busy} />}
 					<ModelPicker selections={selections} onChange={setSelections} multiple={!code} agents={code} disabled={busy} openEvent={openModelPickerEvent} />
+					{selections.length === 1 && <ModelSettings selection={selections[0]} onChange={next => setSelections([next])} disabled={busy} />}
 				</>}
 				tools={<>
 					{code && <PermissionMenu value={autopilot ? "full-access" : permissionMode} onChange={value => { setPermissionMode(value); if (value !== "full-access") setAutopilot(undefined); }} />}

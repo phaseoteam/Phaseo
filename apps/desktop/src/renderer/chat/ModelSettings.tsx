@@ -1,6 +1,6 @@
 import { Fragment, useState } from "react";
 import { useCommand } from "../lib/keybindings";
-import { ChevronDown } from "lucide-react";
+import { Brain, ChevronDown } from "lucide-react";
 import type { ModelOption, ModelOptionDescriptor } from "../../shared/workspace";
 import type { ModelSelection } from "../lib/modelPreferences";
 import { rememberSettings } from "../lib/modelSettings";
@@ -72,9 +72,11 @@ export function ModelSettings({ selection, onChange, disabled }: { selection: Mo
 	const label = settingsLabel(selection, descriptors);
 	const change = (descriptor: ModelOptionDescriptor, value: string | boolean) => { const next = withSetting(selection, descriptor, value); rememberSettings(next); onChange(next); };
 
-	return <DropdownMenu open={open} onOpenChange={setOpen}>
+	// Sits after the model, past a thin rule, with a brain: T3 Code's traits control.
+	return <><span aria-hidden className="mx-0.5 h-4 w-px shrink-0 bg-border" /><DropdownMenu open={open} onOpenChange={setOpen}>
 		<DropdownMenuTrigger disabled={disabled} render={<button type="button" aria-label={`Model settings: ${label}`} title={`Model settings (${shortcut("modelSettings.toggle")})`}
-			className="flex h-8 max-w-56 shrink-0 items-center gap-1 rounded-lg px-2 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50 data-popup-open:bg-muted data-popup-open:text-foreground" />}>
+			className="flex h-8 max-w-56 shrink-0 items-center gap-1.5 rounded-lg px-2 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50 data-popup-open:bg-muted data-popup-open:text-foreground" />}>
+			<Brain className="size-4 shrink-0" />
 			<span className="truncate">{label}</span>
 			<ChevronDown className="size-3.5 shrink-0" />
 		</DropdownMenuTrigger>
@@ -97,5 +99,5 @@ export function ModelSettings({ selection, onChange, disabled }: { selection: Mo
 				</DropdownMenuGroup>
 			</Fragment>)}
 		</DropdownMenuContent>
-	</DropdownMenu>;
+	</DropdownMenu></>;
 }
