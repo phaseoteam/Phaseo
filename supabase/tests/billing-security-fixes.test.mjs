@@ -224,6 +224,11 @@ try {
   await applyRefund('pi_ok', 're_ok', usd(10), 'failed');
   await applyRefund('pi_ok', 're_ok', usd(10), 'failed');
   assert.equal(await balance(), usd(15));
+  // Failed is final: stale succeeded or pending events delivered afterwards don't debit again.
+  await applyRefund('pi_ok', 're_ok', usd(10), 'succeeded');
+  await applyRefund('pi_ok', 're_ok', usd(10), 'pending');
+  assert.equal(await balance(), usd(15), 'a succeeded event replayed after the failure does not debit again');
+  assert.equal((await one(`select status from public.credit_ledger where ref_type = 'Stripe_Refund' and ref_id = 're_ok'`)).status, 'Failed');
   // A claim whose Stripe refund was never created is given back.
   await purchase('pi_cancel', { amount: usd(4), before: usd(15) });
   assert.equal((await claim('pi_cancel')).ok, true);

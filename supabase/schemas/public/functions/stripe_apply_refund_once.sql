@@ -122,6 +122,11 @@ begin
     if v_status = 'Pending' and v_row.status in ('Succeeded', 'Failed', 'Canceled') then
         v_status := v_row.status;
     end if;
+    -- Failed and canceled are final for a refund id: a stale succeeded (or
+    -- pending) event delivered after the failure must not debit again.
+    if v_row.status in ('Failed', 'Canceled') then
+        v_status := v_row.status;
+    end if;
 
     -- Rows written before wallet_debited existed count as debited when the
     -- old code recorded a balance change on a succeeded refund.
