@@ -2855,7 +2855,7 @@
 		"pickerHiddenIncompatible": "{count, plural, one {Se oculta # modelo que devuelve otro tipo.} other {Se ocultan # modelos que devuelven otros tipos.}} Búscalos para encontrarlos.",
 		"activityTokens30d": "Tokens, últimos 30 días",
 		"activityPerDay": "Por día",
-		"activityNoTokens": "Solo solicitudes, sin medidores de tokens",
+		"activityNoTokens": "Solo solicitudes, sin tokens registrados",
 		"moreMetersCount": "{count, plural, one {# medidor más} other {# medidores más}}",
 		"priceFrom": "desde {price}",
 		"conditionFields": {

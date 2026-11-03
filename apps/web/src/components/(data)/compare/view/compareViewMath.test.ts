@@ -301,12 +301,14 @@ describe("describeCondition", () => {
 		on: "on",
 		off: "off",
 		tokens: (value: number) => `${value / 1000}K`,
+		number: (value: number) => value.toLocaleString("en-US"),
 		seconds: (value: number) => `${value} sec`,
 	};
 
 	// Shapes taken from production price rules on 3 Nov.
 	it("reads token limits, options and flags the way a reader would write them", () => {
 		expect(describeCondition({ field: "input_tokens", op: "gt", value: 272_000 }, words)).toBe("Input > 272K");
+		expect(describeCondition({ field: "input_tokens", op: "gt", value: 272_001 }, words)).toBe("Input > 272,001");
 		expect(describeCondition({ field: "resolution", op: "eq", value: "1080P" }, words)).toBe("Resolution: 1080p");
 		expect(describeCondition({ field: "mode", op: "ne", value: "v2v" }, words)).toBe("Mode: not v2v");
 		expect(describeCondition({ field: "mode", op: "eq", value: "image_to_video" }, words)).toBe("Mode: image to video");
@@ -332,6 +334,7 @@ describe("parseLegacyCondition", () => {
 		on: "on",
 		off: "off",
 		tokens: (value: number) => `${value / 1000}K`,
+		number: (value: number) => value.toLocaleString("en-US"),
 		seconds: (value: number) => `${value} sec`,
 	};
 	const read = (text: string) => parseLegacyCondition(text)!.map((condition) => describeCondition(condition, words)).join(" · ");

@@ -2855,7 +2855,7 @@
 		"pickerHiddenIncompatible": "{count, plural, other {異なるタイプを返す#件のモデルを非表示にしています。}}検索すると表示されます。",
 		"activityTokens30d": "トークン（過去30日間）",
 		"activityPerDay": "1日あたり",
-		"activityNoTokens": "リクエストのみ（トークン課金なし）",
+		"activityNoTokens": "リクエストのみ（トークンの記録なし）",
 		"moreMetersCount": "{count, plural, other {ほか#件の課金項目}}",
 		"priceFrom": "{price}から",
 		"conditionFields": {

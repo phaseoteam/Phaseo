@@ -2855,7 +2855,7 @@
 		"pickerHiddenIncompatible": "{count, plural, zero {لا توجد نماذج مخفية.} one {نموذج واحد يُرجع نوعًا مختلفًا مخفي.} two {نموذجان يُرجعان أنواعًا مختلفة مخفيان.} few {# نماذج تُرجع أنواعًا مختلفة مخفية.} many {# نموذجًا يُرجع أنواعًا مختلفة مخفي.} other {# نموذج يُرجع أنواعًا مختلفة مخفي.}} ابحث للعثور عليها.",
 		"activityTokens30d": "الرموز، آخر 30 يومًا",
 		"activityPerDay": "يوميًا",
-		"activityNoTokens": "طلبات فقط، بلا عدّادات رموز",
+		"activityNoTokens": "طلبات فقط، لم تُسجَّل أي رموز",
 		"moreMetersCount": "{count, plural, zero {لا عدّادات إضافية} one {عدّاد إضافي واحد} two {عدّادان إضافيان} few {# عدّادات إضافية} many {# عدّادًا إضافيًا} other {# عدّاد إضافي}}",
 		"priceFrom": "من {price}",
 		"conditionFields": {

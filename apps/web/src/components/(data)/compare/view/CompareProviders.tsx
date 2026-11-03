@@ -48,26 +48,30 @@ export function CompareProviders({ models }: { models: CompareViewModel[] }) {
 			route.quantisation,
 			route.tiers.some((tier) => tier !== "standard") ? route.tiers.map(format.tier).join(", ") : null,
 		].filter(Boolean).join(" · ") || undefined;
-		if (route.input != null || route.output != null) {
-			const price = t("routePrice", { input: route.input == null ? "–" : format.usd(route.input), output: route.output == null ? "–" : format.usd(route.output) });
-			return { content: price, text: price, best, sub: details };
-		}
-		const rows = standardRows(model, route);
-		if (!rows.length) return { content: t("notPriced"), text: "", muted: true, sub: details };
 		const priceOf = (row: CompareViewPriceRow) => (row.conditional ? t("priceFrom", { price: format.price(row, { tokenUnit: true }) }) : format.price(row, { tokenUnit: true }));
+		const meterLine = (row: CompareViewPriceRow) => (
+			<span key={row.meter} className="block">
+				{priceOf(row)}
+				<span className="ml-1.5 text-xs font-normal text-muted-foreground">{format.meter(row)}</span>
+			</span>
+		);
+		const tokenPrice = route.input != null || route.output != null
+			? t("routePrice", { input: route.input == null ? "–" : format.usd(route.input), output: route.output == null ? "–" : format.usd(route.output) })
+			: null;
+		// With token prices shown, only the other meters (per image, per second) still need listing.
+		const rows = standardRows(model, route).filter((row) => !tokenPrice || row.unit !== "token");
+		if (!tokenPrice && !rows.length) return { content: t("notPriced"), text: "", muted: true, sub: details };
+		const meterSlots = tokenPrice ? MAX_METERS - 1 : MAX_METERS;
 		return {
-			content: (
+			content: rows.length ? (
 				<span className="block space-y-0.5">
-					{rows.slice(0, MAX_METERS).map((row) => (
-						<span key={row.meter} className="block">
-							{priceOf(row)}
-							<span className="ml-1.5 text-xs font-normal text-muted-foreground">{format.meter(row)}</span>
-						</span>
-					))}
+					{tokenPrice ? <span className="block">{tokenPrice}</span> : null}
+					{rows.slice(0, meterSlots).map(meterLine)}
 				</span>
-			),
-			text: rows.map(priceOf).join(" "),
-			sub: [rows.length > MAX_METERS ? t("moreMetersCount", { count: rows.length - MAX_METERS }) : null, details].filter(Boolean).join(" · ") || undefined,
+			) : tokenPrice,
+			text: [tokenPrice, ...rows.map(priceOf)].filter(Boolean).join(" "),
+			best: Boolean(tokenPrice) && best,
+			sub: [rows.length > meterSlots ? t("moreMetersCount", { count: rows.length - meterSlots }) : null, details].filter(Boolean).join(" · ") || undefined,
 		};
 	};
 

@@ -2855,7 +2855,7 @@
 		"pickerHiddenIncompatible": "{count, plural, one {# Modell mit einem anderen Ausgabetyp ist ausgeblendet.} other {# Modelle mit anderen Ausgabetypen sind ausgeblendet.}} Suche, um sie zu finden.",
 		"activityTokens30d": "Tokens, letzte 30 Tage",
 		"activityPerDay": "Pro Tag",
-		"activityNoTokens": "Nur Anfragen, keine Token-Zähler",
+		"activityNoTokens": "Nur Anfragen, keine Tokens erfasst",
 		"moreMetersCount": "{count, plural, one {# weiterer Zähler} other {# weitere Zähler}}",
 		"priceFrom": "ab {price}",
 		"conditionFields": {

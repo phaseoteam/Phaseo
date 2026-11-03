@@ -78,7 +78,10 @@ export type ConditionWords = {
 	isNot: (field: string, value: string) => string;
 	on: string;
 	off: string;
+	/** Compact token counts ("272K"); used only when they are exact. */
 	tokens: (value: number) => string;
+	/** A plain number ("272,001"). */
+	number: (value: number) => string;
 	seconds: (value: number) => string;
 };
 
@@ -126,7 +129,8 @@ export function describeCondition(condition: CompareViewCondition, words: Condit
 	const field = words.field(condition.field);
 	const timed = /seconds$/.test(condition.field);
 	const counted = /tokens$/.test(condition.field);
-	const number = (value: number) => (counted ? words.tokens(value) : timed ? words.seconds(value) : String(value));
+	// A price boundary is shown exactly: "272K" only when it is 272,000.
+	const number = (value: number) => (counted ? (value % 1_000 === 0 ? words.tokens(value) : words.number(value)) : timed ? words.seconds(value) : String(value));
 	const { op, value } = condition;
 	if (Array.isArray(value)) {
 		const labels = [...new Map(value.map((item) => [optionValue(item).toLowerCase(), typeof item === "number" ? number(item) : optionValue(item)])).values()];

@@ -3,17 +3,17 @@
 
 import * as React from "react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
-import { Archive, ArrowRight, Check, CircleAlert, CircleCheck, CircleDashed, FlaskConical, Plus } from "lucide-react";
+import { Archive, ArrowRight, Check, CircleAlert, CircleCheck, CircleDashed, FlaskConical, Plus, Search } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { getModalityTone } from "@/lib/models/modalityStyles";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tip } from "@/components/ui/tooltip";
+import { InputGroup, InputGroupAddon } from "@/components/ui/input-group";
 import {
 	ModelSelector,
 	ModelSelectorContent,
-	ModelSelectorInput,
 	ModelSelectorTrigger,
 } from "@/components/ai-elements/model-selector";
 import {
@@ -394,8 +394,10 @@ export default function ModelCombobox({
 		setPendingSelection(Array.from(new Set([...current, modelId])).slice(0, MAX_SELECTION));
 	};
 
+	const listboxId = React.useId();
 	const onSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-		if (!selectable.length) return;
+		// Enter and the arrow keys confirm and move between IME candidates (Japanese, Chinese); leave them to the IME.
+		if (event.nativeEvent.isComposing || event.keyCode === 229 || !selectable.length) return;
 		const index = Math.max(0, selectable.findIndex((model) => model.id === resolvedActiveId));
 		const next =
 			event.key === "ArrowDown" ? Math.min(index + 1, selectable.length - 1)
@@ -485,17 +487,34 @@ export default function ModelCombobox({
 				className="top-[8vh] w-[min(92vw,600px)] max-w-none translate-y-0 rounded-md sm:top-[12vh] sm:max-w-none"
 				commandProps={{ shouldFilter: false }}
 			>
-				<ModelSelectorInput
-					autoFocus
-					placeholder={t("searchModels")}
-					value={searchTerm}
-					onValueChange={(value) => {
-						setSearchTerm(value);
-						setActiveId(null);
-					}}
-					onKeyDown={onSearchKeyDown}
-					aria-activedescendant={resolvedActiveId ? getVirtualizedModelCatalogItemId(resolvedActiveId) : undefined}
-				/>
+				{/* A plain input, not cmdk's: cmdk sets its own aria-activedescendant and aria-controls over ours, and the virtualised options aren't cmdk items. */}
+				<div className="p-1 pb-0">
+					<InputGroup className="h-8! bg-input/50">
+						<input
+							autoFocus
+							type="text"
+							role="combobox"
+							aria-expanded
+							aria-autocomplete="list"
+							aria-controls={listboxId}
+							aria-label={t("searchModels")}
+							aria-activedescendant={resolvedActiveId ? getVirtualizedModelCatalogItemId(resolvedActiveId) : undefined}
+							autoComplete="off"
+							spellCheck={false}
+							placeholder={t("searchModels")}
+							value={searchTerm}
+							onChange={(event) => {
+								setSearchTerm(event.target.value);
+								setActiveId(null);
+							}}
+							onKeyDown={onSearchKeyDown}
+							className="h-auto w-full bg-transparent py-3.5 text-sm outline-hidden"
+						/>
+						<InputGroupAddon>
+							<Search aria-hidden className="size-4 shrink-0 opacity-50" />
+						</InputGroupAddon>
+					</InputGroup>
+				</div>
 				<div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2 text-xs text-muted-foreground">
 					<span className="truncate">
 						{replaceTargetModel
@@ -538,6 +557,7 @@ export default function ModelCombobox({
 						renderItem={renderItem}
 						estimateItemSize={48}
 						emptyContent={t("noModelsFound")}
+						listboxId={listboxId}
 					/>
 				)}
 			</ModelSelectorContent>

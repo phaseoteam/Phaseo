@@ -2855,7 +2855,7 @@
 		"pickerHiddenIncompatible": "{count, plural, one {अलग प्रकार लौटाने वाला # मॉडल छिपा है।} other {अलग प्रकार लौटाने वाले # मॉडल छिपे हैं।}} उन्हें ढूँढने के लिए खोजें।",
 		"activityTokens30d": "टोकन, पिछले 30 दिन",
 		"activityPerDay": "प्रति दिन",
-		"activityNoTokens": "केवल अनुरोध, कोई टोकन मीटर नहीं",
+		"activityNoTokens": "केवल अनुरोध, कोई टोकन दर्ज नहीं",
 		"moreMetersCount": "{count, plural, one {# और मीटर} other {# और मीटर}}",
 		"priceFrom": "{price} से",
 		"conditionFields": {

@@ -55,7 +55,8 @@ export function useCompareFormat() {
 			isNot: (field, value) => t("conditionIsNot", { field, value }),
 			on: t("conditionOn"),
 			off: t("conditionOff"),
-			tokens: (value) => compactTokens(value),
+			tokens: (value) => compactTokens(value, 21),
+			number: (value) => format.number(value, { maximumFractionDigits: 0 }),
 			seconds: (value) => new Intl.NumberFormat(numberLocale, { style: "unit", unit: "second", unitDisplay: "short" }).format(value),
 		};
 		return {

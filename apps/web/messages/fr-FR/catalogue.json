@@ -2855,7 +2855,7 @@
 		"pickerHiddenIncompatible": "{count, plural, one {# modèle qui renvoie un autre type est masqué.} other {# modèles qui renvoient d’autres types sont masqués.}} Recherchez-les pour les trouver.",
 		"activityTokens30d": "Jetons, 30 derniers jours",
 		"activityPerDay": "Par jour",
-		"activityNoTokens": "Requêtes uniquement, sans compteur de jetons",
+		"activityNoTokens": "Requêtes uniquement, aucun jeton enregistré",
 		"moreMetersCount": "{count, plural, one {# compteur de plus} other {# compteurs de plus}}",
 		"priceFrom": "à partir de {price}",
 		"conditionFields": {

@@ -2855,7 +2855,7 @@
 		"pickerHiddenIncompatible": "{count, plural, other {已隐藏 # 个返回其他类型的模型。}}搜索即可找到它们。",
 		"activityTokens30d": "Token，过去 30 天",
 		"activityPerDay": "每天",
-		"activityNoTokens": "仅请求，无 token 计费",
+		"activityNoTokens": "仅有请求，未记录 token",
 		"moreMetersCount": "{count, plural, other {另有 # 个计费项}}",
 		"priceFrom": "{price} 起",
 		"conditionFields": {

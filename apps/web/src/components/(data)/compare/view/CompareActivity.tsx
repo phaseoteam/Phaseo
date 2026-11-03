@@ -23,6 +23,9 @@ function Swatch({ className }: { className: string }) {
 	return <span aria-hidden className={cn("inline-block size-2.5 shrink-0 rounded-sm", className)} />;
 }
 
+/** Image, audio and video models can have requests without token meters; their bars count requests. */
+const REQUEST_SERIES = [{ key: "requests", swatch: "bg-muted-foreground/60" }] as const;
+
 /**
  * One bar per day on the model's own scale. Hovering a day, or moving through
  * the days with the arrow keys, shows that day's tokens by type and its requests.
@@ -31,8 +34,14 @@ function ActivityChart({ days, label }: { days: CompareActivityDay[]; label: str
 	const t = useTranslations("Catalogue.compareView");
 	const format = useCompareFormat();
 	const [active, setActive] = useState<number | null>(null);
-	const max = Math.max(...days.map(dayTotal), 1);
+	const byRequests = days.every((entry) => dayTotal(entry) === 0);
+	const bars = byRequests ? REQUEST_SERIES : SERIES;
+	const max = Math.max(...days.map((entry) => (byRequests ? entry.requests : dayTotal(entry))), 1);
 	const day = active == null ? null : days[active];
+	// The bars sit inside role="img", whose content screen readers skip, so the selected day is announced outside it.
+	const spoken = day
+		? [format.date(day.date), ...SERIES.map((series) => `${t(series.label)} ${format.tokens(day[series.key])}`), `${t("activityRequests")} ${format.tokens(day.requests)}`].join(", ")
+		: "";
 	const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
 		const step = event.key === "ArrowLeft" ? -1 : event.key === "ArrowRight" ? 1 : 0;
 		if (!step) return;
@@ -44,7 +53,7 @@ function ActivityChart({ days, label }: { days: CompareActivityDay[]; label: str
 	return (
 		<div className="space-y-1">
 			<div className="flex items-start gap-1.5">
-				<span className="w-9 shrink-0 text-right text-[10px] leading-none text-muted-foreground tabular-nums">{format.compactTokens(max)}</span>
+				<span className="w-9 shrink-0 text-right text-[10px] leading-none text-muted-foreground tabular-nums">{byRequests ? format.tokens(max) : format.compactTokens(max)}</span>
 				<div
 					role="img"
 					aria-label={label}
@@ -61,15 +70,15 @@ function ActivityChart({ days, label }: { days: CompareActivityDay[]; label: str
 							onMouseEnter={() => setActive(index)}
 							className={cn("flex h-full min-w-0 flex-1 flex-col-reverse rounded-t-[2px]", index === active && "bg-muted/60")}
 						>
-							{SERIES.map((series) => {
-								const value = entry[series.key];
-								return value > 0 ? <span key={series.key} className={cn("block w-full", series.swatch)} style={{ height: `${(value / max) * 100}%` }} /> : null;
+							{bars.map((bar) => {
+								const value = entry[bar.key];
+								return value > 0 ? <span key={bar.key} className={cn("block w-full", bar.swatch)} style={{ height: `${(value / max) * 100}%` }} /> : null;
 							})}
 						</div>
 					))}
 					{day ? (
 						<div
-							role="status"
+							aria-hidden
 							className={cn("pointer-events-none absolute bottom-full z-10 mb-2 w-max min-w-40 rounded-md border border-border bg-popover p-2.5 text-xs text-popover-foreground shadow-md", anchor)}
 							style={anchor === "-translate-x-1/2" ? { left: `${((active! + 0.5) / days.length) * 100}%` } : undefined}
 						>
@@ -90,6 +99,7 @@ function ActivityChart({ days, label }: { days: CompareActivityDay[]; label: str
 					) : null}
 				</div>
 			</div>
+			<span role="status" className="sr-only">{spoken}</span>
 			<div className="flex justify-between pl-[2.625rem] text-[10px] text-muted-foreground">
 				<span>{format.shortDate(days[0]!.date)}</span>
 				<span>{format.shortDate(days.at(-1)!.date)}</span>
@@ -145,7 +155,7 @@ export function CompareActivity({ models, usage }: { models: CompareViewModel[];
 					/>
 					<BlockRow
 						label={t("activityPerDay")}
-						cells={models.map((model, index) => (totals[index]! > 0 ? <ActivityChart key={model.id} days={activity[index]!} label={t("activityChart", { name: model.name })} /> : null))}
+						cells={models.map((model, index) => (totals[index]! > 0 || requests[index]! > 0 ? <ActivityChart key={model.id} days={activity[index]!} label={t("activityChart", { name: model.name })} /> : null))}
 					/>
 					{SERIES.map((series) => (
 						<CompareRow

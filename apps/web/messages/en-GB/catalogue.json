@@ -2855,7 +2855,7 @@
 		"pickerHiddenIncompatible": "{count, plural, one {# model that returns a different type is hidden.} other {# models that return different types are hidden.}} Search to find them.",
 		"activityTokens30d": "Tokens, last 30 days",
 		"activityPerDay": "Per day",
-		"activityNoTokens": "Requests only, no token meters",
+		"activityNoTokens": "Requests only, no tokens recorded",
 		"moreMetersCount": "{count, plural, one {# more meter} other {# more meters}}",
 		"priceFrom": "from {price}",
 		"conditionFields": {
