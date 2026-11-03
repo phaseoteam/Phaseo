@@ -67,6 +67,11 @@ CREATE TRIGGER keys_set_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION public.update_key_updated_at();
 
+CREATE TRIGGER protect_key_created_by
+  BEFORE INSERT OR UPDATE OF created_by ON public.keys
+  FOR EACH ROW
+  EXECUTE FUNCTION public.protect_key_created_by();
+
 CREATE TRIGGER protect_key_never_store_content
   BEFORE UPDATE OF never_store_content ON public.keys
   FOR EACH ROW

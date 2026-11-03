@@ -194,6 +194,8 @@ export type SettingsOAuthAppsInitialData = {
 
 export type SettingsOAuthAppDetailInitialData = {
 	authorizations: Array<Record<string, unknown>>;
+	/** False for plain members: only owners and admins see who uses the app. */
+	canViewUsers?: boolean;
 	currentUserId: string | null;
 	oauthApp: Record<string, unknown> | null;
 	recentRequests: Array<{

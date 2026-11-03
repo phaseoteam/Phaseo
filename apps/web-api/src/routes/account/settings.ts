@@ -994,6 +994,17 @@ accountSettingsRouter.get("/oauth-apps", async (c) => {
 	return c.json({ initialTeamId: workspaceId, oauthApps: data ?? [], signedIn: true }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
+/** A user's name and email as their OAuth grant shares them: the name with `profile`, the email with `email` (as userinfo does). */
+export function sharedOAuthIdentity(entry: Record<string, unknown>): { full_name: string | null; email: string | null } {
+	const scopes = Array.isArray(entry.scopes) ? entry.scopes : [];
+	const raw = Array.isArray(entry.users) ? entry.users[0] : entry.users;
+	const profile = raw && typeof raw === "object" ? raw as Record<string, unknown> : {};
+	return {
+		full_name: scopes.includes("profile") && typeof profile.full_name === "string" ? profile.full_name : null,
+		email: scopes.includes("email") && typeof profile.email === "string" ? profile.email : null,
+	};
+}
+
 accountSettingsRouter.get("/oauth-apps/:clientId", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) return c.json({ authorizations: [], currentUserId: null, oauthApp: null, recentRequests: [], signedIn: false, usageStats: [], userDirectory: [] }, 200, PRIVATE_NO_STORE_HEADERS);
@@ -1007,21 +1018,34 @@ accountSettingsRouter.get("/oauth-apps/:clientId", async (c) => {
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const thirtyDaysAgo = new Date();
 	thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 30);
+	// The people who authorized an app usually belong to other workspaces. Only the app's owners and
+	// admins (who manage it) see its users and their requests, and only what each user agreed to share
+	// with the app. Other members see the app and its daily totals.
+	if (!["owner", "admin"].includes(context.role.toLowerCase())) {
+		const usage = await client.from("gateway_requests").select("created_at,success,cost_nanos").eq("oauth_client_id", clientId).eq("auth_method", "oauth").gte("created_at", thirtyDaysAgo.toISOString()).order("created_at", { ascending: true });
+		if (usage.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+		return c.json({ authorizations: [], canViewUsers: false, currentUserId: user.id, oauthApp: appResult.data, recentRequests: [], signedIn: true, usageStats: usage.data ?? [], userDirectory: [] }, 200, PRIVATE_NO_STORE_HEADERS);
+	}
 	const [authorizationsResult, usageResult, recentResult, usersResult] = await Promise.all([
-		client.from("oauth_authorizations").select("*,users:user_id(user_id,full_name,email),teams:workspaces(id,name)").eq("client_id", clientId).is("revoked_at", null).order("last_used_at", { ascending: false, nullsFirst: false }).limit(10),
+		client.from("oauth_authorizations").select("id,user_id,scopes,created_at,last_used_at,users:user_id(user_id,full_name,email)").eq("client_id", clientId).is("revoked_at", null).order("last_used_at", { ascending: false, nullsFirst: false }).limit(10),
 		client.from("gateway_requests").select("created_at,success,cost_nanos").eq("oauth_client_id", clientId).eq("auth_method", "oauth").gte("created_at", thirtyDaysAgo.toISOString()).order("created_at", { ascending: true }),
 		client.from("gateway_requests").select("request_id,created_at,oauth_user_id,endpoint,model_id,provider,success,status_code,error_code,cost_nanos,latency_ms").eq("oauth_client_id", clientId).eq("auth_method", "oauth").order("created_at", { ascending: false }).limit(250),
-		client.from("oauth_authorizations").select("user_id,users:user_id(user_id,full_name,email)").eq("client_id", clientId).order("last_used_at", { ascending: false, nullsFirst: false }),
+		client.from("oauth_authorizations").select("user_id,scopes,users:user_id(user_id,full_name,email)").eq("client_id", clientId).is("revoked_at", null).order("last_used_at", { ascending: false, nullsFirst: false }),
 	]);
 	if ([authorizationsResult, usageResult, recentResult, usersResult].some((result) => result.error)) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const userDirectory = new Map<string, { user_id: string; full_name: string | null; email: string | null }>();
 	for (const entry of usersResult.data ?? []) {
-		const directoryUser = Array.isArray(entry.users) ? entry.users[0] : entry.users;
-		const userId = String(entry.user_id ?? directoryUser?.user_id ?? "").trim();
+		const userId = String(entry.user_id ?? "").trim();
 		if (!userId || userDirectory.has(userId)) continue;
-		userDirectory.set(userId, { user_id: userId, full_name: typeof directoryUser?.full_name === "string" ? directoryUser.full_name : null, email: typeof directoryUser?.email === "string" ? directoryUser.email : null });
+		userDirectory.set(userId, { user_id: userId, ...sharedOAuthIdentity(entry) });
 	}
-	return c.json({ authorizations: authorizationsResult.data ?? [], currentUserId: user.id, oauthApp: appResult.data, recentRequests: recentResult.data ?? [], signedIn: true, usageStats: usageResult.data ?? [], userDirectory: Array.from(userDirectory.values()) }, 200, PRIVATE_NO_STORE_HEADERS);
+	const authorizations = (authorizationsResult.data ?? []).map((entry: Record<string, unknown>) => ({
+		id: entry.id,
+		created_at: entry.created_at ?? null,
+		last_used_at: entry.last_used_at ?? null,
+		users: sharedOAuthIdentity(entry),
+	}));
+	return c.json({ authorizations, canViewUsers: true, currentUserId: user.id, oauthApp: appResult.data, recentRequests: recentResult.data ?? [], signedIn: true, usageStats: usageResult.data ?? [], userDirectory: Array.from(userDirectory.values()) }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountSettingsRouter.get("/management-api-keys", async (c) => {

@@ -65,4 +65,13 @@ CREATE POLICY "management_keys_update_own_team" ON "public"."management_keys"
   USING (public.is_workspace_admin(workspace_id))
   WITH CHECK (public.is_workspace_admin(workspace_id));
 
-GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."management_keys" TO "anon", "authenticated", "service_role";
+CREATE TRIGGER protect_management_key_created_by
+  BEFORE INSERT OR UPDATE OF created_by ON public.management_keys
+  FOR EACH ROW
+  EXECUTE FUNCTION public.protect_key_created_by();
+
+GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."management_keys" TO "service_role";
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."management_keys" TO "anon";
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."management_keys" TO "authenticated";
