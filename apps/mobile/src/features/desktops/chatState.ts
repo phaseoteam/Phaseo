@@ -119,9 +119,6 @@ const statusWords: Record<PhoneChat["status"], string> = {
 };
 export const chatStatusLabel = (chat: PhoneChat) => (chat.needsYou ? chat.attention ?? "Needs you" : statusWords[chat.status]);
 
-/** The unsent draft to restore after editing a queued message: the one saved when the first edit began, not another queued message's text. */
-export const editingDraft = (editing: { draft: string } | null, composer: string) => editing?.draft ?? composer;
-
 /**
  * What picking a model and effort in a thread's sheet asks the computer to change. A new model starts on its own default
  * effort; the default effort (null) clears the thread's own, so the model goes back to following its default.
