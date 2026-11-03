@@ -94,18 +94,30 @@ function modalityCells(models: CompareViewModel[], field: "inputTypes" | "output
 }
 
 /** The route count, then each provider's logo with its name on hover. */
+/** Popular open models have up to 30 routes; past this the rest fold into "+N", which opens the Providers table. */
+const SHOWN_ROUTES = 8;
+
 function RouteList({ count, providers }: { count: string; providers: CompareViewModel["providers"] }) {
+	const t = useTranslations("Catalogue.compareView");
+	const hidden = providers.slice(SHOWN_ROUTES);
 	return (
 		<span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
 			{count}
 			<span className="inline-flex flex-wrap items-center gap-1">
-				{providers.map((provider) => (
+				{providers.slice(0, SHOWN_ROUTES).map((provider) => (
 					<Tip key={provider.id} label={provider.name}>
 						<Link href={`/api-providers/${provider.id}`} aria-label={provider.name} className="rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
 							<ProviderLogo id={provider.logoId ?? provider.id} alt="" size="xxs" />
 						</Link>
 					</Tip>
 				))}
+				{hidden.length ? (
+					<Tip label={hidden.map((provider) => provider.name).join(", ")}>
+						<a href="#providers" className="rounded-md px-1 text-xs text-muted-foreground tabular-nums hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
+							{t("moreCount", { count: hidden.length })}
+						</a>
+					</Tip>
+				) : null}
 			</span>
 		</span>
 	);

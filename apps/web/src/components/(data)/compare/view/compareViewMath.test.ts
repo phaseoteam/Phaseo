@@ -4,6 +4,7 @@ import {
 	distinctDigits,
 	buildVerdicts,
 	defaultEffort,
+	describeCondition,
 	doSameJob,
 	effortLevels,
 	formatUsd,
@@ -287,5 +288,36 @@ describe("buildVerdicts", () => {
 describe("visibleOnPhone", () => {
 	it("shows two models per page", () => {
 		expect([0, 1, 2, 3].map((index) => visibleOnPhone(index, 1))).toEqual([false, false, true, true]);
+	});
+});
+
+describe("describeCondition", () => {
+	const words = {
+		field: (field: string) => ({ input_tokens: "Input", resolution: "Resolution", mode: "Mode", draft: "Draft", seconds: "Duration", audio: "Audio" } as Record<string, string>)[field] ?? field,
+		is: (field: string, value: string) => `${field}: ${value}`,
+		isNot: (field: string, value: string) => `${field}: not ${value}`,
+		on: "on",
+		off: "off",
+		tokens: (value: number) => `${value / 1000}K`,
+		seconds: (value: number) => `${value} sec`,
+	};
+
+	// Shapes taken from production price rules on 3 Nov.
+	it("reads token limits, options and flags the way a reader would write them", () => {
+		expect(describeCondition({ field: "input_tokens", op: "gt", value: 272_000 }, words)).toBe("Input > 272K");
+		expect(describeCondition({ field: "resolution", op: "eq", value: "1080P" }, words)).toBe("Resolution: 1080p");
+		expect(describeCondition({ field: "mode", op: "ne", value: "v2v" }, words)).toBe("Mode: not v2v");
+		expect(describeCondition({ field: "mode", op: "eq", value: "image_to_video" }, words)).toBe("Mode: image to video");
+		expect(describeCondition({ field: "draft", op: "eq", value: 1 }, words)).toBe("Draft: on");
+		expect(describeCondition({ field: "draft", op: "eq", value: 0 }, words)).toBe("Draft: off");
+		expect(describeCondition({ field: "audio", op: "eq", value: false }, words)).toBe("Audio: off");
+		expect(describeCondition({ field: "resolution", op: "eq", value: "fhd" }, words)).toBe("Resolution: FHD");
+	});
+
+	it("keeps one short name for each option in a list", () => {
+		expect(describeCondition({ field: "resolution", op: "in", value: ["480P", "480p", "854x480", "480x854", "854*480"] }, words)).toBe("Resolution: 480p");
+		expect(describeCondition({ field: "resolution", op: "in", value: ["480p", "720p"] }, words)).toBe("Resolution: 480p / 720p");
+		expect(describeCondition({ field: "resolution", op: "in", value: ["1024x1792", "1792x1024"] }, words)).toBe("Resolution: 1024x1792 / 1792x1024");
+		expect(describeCondition({ field: "seconds", op: "in", value: [10] }, words)).toBe("Duration: 10 sec");
 	});
 });

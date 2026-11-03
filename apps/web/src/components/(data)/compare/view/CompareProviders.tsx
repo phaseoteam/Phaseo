@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ProviderLogo } from "../ProviderLogo";
 import { CompareSection, MODEL_COLOURS } from "./CompareGrid";
@@ -28,14 +28,18 @@ function standardRows(model: CompareViewModel, provider: CompareViewProvider): C
 }
 
 const MAX_METERS = 3;
+/** The API sends routes cheapest first; popular open models have 30, so the rest wait behind a toggle. */
+const SHOWN_PROVIDERS = 10;
 
 export function CompareProviders({ models }: { models: CompareViewModel[] }) {
 	const t = useTranslations("Catalogue.compareView");
 	const format = useCompareFormat();
 	// Keyed by id so removing another model keeps the same panel open.
 	const [selectedId, setSelectedId] = useState<string | null>(null);
+	const [showAll, setShowAll] = useState(false);
 	const model = models.find((entry) => entry.id === selectedId) ?? models[0];
 	if (!model) return null;
+	const providers = showAll ? model.providers : model.providers.slice(0, SHOWN_PROVIDERS);
 	const cheapestInput = bestIndices(model.providers.map((provider) => provider.input), "lower");
 	const cheapestOutput = bestIndices(model.providers.map((provider) => provider.output), "lower");
 	const cheapestCache = bestIndices(model.providers.map((provider) => provider.cacheRead), "lower");
@@ -107,7 +111,7 @@ export function CompareProviders({ models }: { models: CompareViewModel[] }) {
 									</tr>
 								</thead>
 								<tbody>
-									{model.providers.map((provider, index) => (
+									{providers.map((provider, index) => (
 										<tr key={provider.id} className="border-b border-border/70 tabular-nums">
 											<th scope="row" className="px-3 py-2 text-left align-top font-normal">
 												<Link href={`/api-providers/${provider.id}`} className="inline-flex items-center gap-2 hover:underline">
@@ -134,7 +138,7 @@ export function CompareProviders({ models }: { models: CompareViewModel[] }) {
 							</table>
 						</div>
 						<ul className="space-y-2 sm:hidden">
-							{model.providers.map((provider, index) => (
+							{providers.map((provider, index) => (
 								<li key={provider.id} className="rounded-md border border-border p-3 text-sm">
 									<Link href={`/api-providers/${provider.id}`} className="flex items-center gap-2 font-medium">
 										<ProviderLogo id={provider.logoId ?? provider.id} alt="" size="xxs" />
@@ -154,6 +158,17 @@ export function CompareProviders({ models }: { models: CompareViewModel[] }) {
 								</li>
 							))}
 						</ul>
+						{model.providers.length > SHOWN_PROVIDERS ? (
+							<button
+								type="button"
+								onClick={() => setShowAll((value) => !value)}
+								aria-expanded={showAll}
+								className="inline-flex h-8 items-center gap-1.5 rounded-md px-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+							>
+								<ChevronDown aria-hidden className={cn("size-3.5 transition-transform", showAll && "rotate-180")} />
+								{showAll ? t("showFewerProviders") : t("showAllProviders", { count: model.providers.length })}
+							</button>
+						) : null}
 						<p className="text-xs text-muted-foreground">{t("providerPriceNote")}</p>
 					</>
 				) : (

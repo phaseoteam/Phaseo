@@ -82,6 +82,15 @@ export type CompareViewPriceRow = {
 	conditional: boolean;
 	/** For conditional rows, e.g. "input tokens ≤ 272K". */
 	condition?: string | null;
+	/** The same condition as data. Absent from web API responses older than it. */
+	conditions?: CompareViewCondition[];
+};
+
+/** One request condition on a price, keyed by the last part of its path ("video_params.resolution" → "resolution"). */
+export type CompareViewCondition = {
+	field: string;
+	op: "eq" | "ne" | "lt" | "lte" | "gt" | "gte" | "in";
+	value: string | number | boolean | Array<string | number>;
 };
 
 export type CompareViewProvider = {

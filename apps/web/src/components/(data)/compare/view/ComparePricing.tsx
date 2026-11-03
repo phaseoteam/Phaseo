@@ -52,6 +52,45 @@ export function Segmented<T extends string>({
 	);
 }
 
+const SHOWN_OPTIONS = 3;
+
+/**
+ * A meter's prices by request option ("Resolution: 480p", "Input > 272K"), cheapest
+ * first, as condition and price columns. Image and video models can have 18 options,
+ * so the rest wait behind a toggle.
+ */
+function PriceOptions({ rows }: { rows: CompareViewPriceRow[] }) {
+	const t = useTranslations("Catalogue.compareView");
+	const format = useCompareFormat();
+	const [open, setOpen] = useState(false);
+	const sorted = [...rows].sort((left, right) => left.price / left.per - right.price / right.per);
+	const shown = open ? sorted : sorted.slice(0, SHOWN_OPTIONS);
+	return (
+		<span className="mt-1 block">
+			<span className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-0.5">
+				{shown.map((row, index) => (
+					<span key={`${row.condition}-${index}`} className="contents">
+						<span className="min-w-0">{format.condition(row)}</span>
+						{/* Same meter as the headline price above, so its unit ("per second", "/ 1M tokens") isn't repeated. */}
+						<span className="text-right text-foreground/80 tabular-nums">{format.usd(row.price)}</span>
+					</span>
+				))}
+			</span>
+			{sorted.length > SHOWN_OPTIONS ? (
+				<button
+					type="button"
+					onClick={() => setOpen((value) => !value)}
+					aria-expanded={open}
+					className="mt-1 inline-flex items-center gap-1 rounded-md text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+				>
+					<ChevronDown aria-hidden className={cn("size-3 transition-transform", open && "rotate-180")} />
+					{open ? t("showFewerPrices") : t("showAllPrices", { count: sorted.length })}
+				</button>
+			) : null}
+		</span>
+	);
+}
+
 type MeterLine = { key: string; label: string; kind: ComparePriceKind; meter?: string };
 
 /** Every price row the chosen tiers have across the models: the main token kinds, then each other meter. */
@@ -128,12 +167,7 @@ export function ComparePricing({ models, tiers }: { models: CompareViewModel[]; 
 				content: priceContent(entry.row),
 				text: `${entry.row.price}/${entry.row.per}`,
 				best: best.has(index),
-				sub: bands.length ? (
-					<span className="mt-0.5 block space-y-0.5">
-						{entry.row.condition ? <span className="block">{t("bandPrice", { condition: entry.row.condition, price: format.price(entry.row) })}</span> : null}
-						{bands.map((band) => <span key={band.condition ?? band.price} className="block">{t("bandPrice", { condition: band.condition ?? "", price: format.price(band) })}</span>)}
-					</span>
-				) : undefined,
+				sub: bands.length ? <PriceOptions rows={entry.row.conditional ? [entry.row, ...bands] : bands} /> : undefined,
 			};
 		});
 	};

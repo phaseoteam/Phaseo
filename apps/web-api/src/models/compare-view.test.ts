@@ -53,7 +53,7 @@ describe("composeCompareView pricing", () => {
 			plans: [],
 		}, NOW).models[0];
 		expect(speech.pricing?.provider).toEqual({ id: "elevenlabs", name: "ElevenLabs", logoId: "elevenlabs", routed: true });
-		expect(speech.pricing!.tiers.standard).toEqual([{ meter: "input_characters", kind: "other", label: null, price: 0.1, per: 1_000, unit: "character", conditional: false, condition: null }]);
+		expect(speech.pricing!.tiers.standard).toEqual([{ meter: "input_characters", kind: "other", label: null, price: 0.1, per: 1_000, unit: "character", conditional: false, condition: null, conditions: [] }]);
 		expect(speech.providers[0]).toMatchObject({ input: null, output: null });
 	});
 
@@ -167,6 +167,17 @@ describe("composeCompareView current routes and prices", () => {
 			[0.06, "mode: not v2v, draft"],
 			[0.08, "resolution: 480p"],
 			[0.17, "no draft"],
+		]);
+	});
+
+	it("sends each condition as data, keeping every value of an \"in\" list", () => {
+		const view = compose([route("live")], [
+			price("live", 0.06, { meter: "output_video_seconds", unit: "second", unit_size: 1, match: [{ path: "video_params.mode", op: "ne", value: "v2v" }, { path: "video_params.draft", op: "eq", value: 1 }] }),
+			price("live", 0.5, { meter: "output_video", unit: "video", unit_size: 1, match: [{ path: "video_params.resolution", op: "in", value: ["480P", "480p", "854x480"] }, { path: "video_params.audio", op: "eq", value: true }] }),
+		]);
+		expect(view.pricing!.tiers.standard.map((row) => [row.condition, row.conditions])).toEqual([
+			["resolution: 480p or 854x480, audio", [{ field: "resolution", op: "in", value: ["480P", "480p", "854x480"] }, { field: "audio", op: "eq", value: true }]],
+			["mode: not v2v, draft", [{ field: "mode", op: "ne", value: "v2v" }, { field: "draft", op: "eq", value: 1 }]],
 		]);
 	});
 

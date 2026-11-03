@@ -52,6 +52,15 @@ export type CompareViewPriceRow = {
 	conditional: boolean;
 	/** Human-readable condition for conditional rows, e.g. "input tokens > 200K". */
 	condition: string | null;
+	/** The same condition as data, so the page can lay it out and translate it. Empty for unconditional rows. */
+	conditions: CompareViewCondition[];
+};
+
+/** One request condition on a price, keyed by the last part of its path ("video_params.resolution" → "resolution"). */
+export type CompareViewCondition = {
+	field: string;
+	op: "eq" | "ne" | "lt" | "lte" | "gt" | "gte" | "in";
+	value: string | number | boolean | Array<string | number>;
 };
 
 export type CompareViewProvider = {
@@ -308,6 +317,7 @@ function describeConditions(match: unknown): string | null {
 		const op = text(condition.op);
 		if (!path || !op) return "";
 		const value = condition.value;
+		if (op === "in" && Array.isArray(value)) return `${path}: ${[...new Set(value.map((item) => text(item).toLowerCase()))].join(" or ")}`;
 		const numeric = number(value);
 		const flag = typeof value === "boolean" ? value : numeric === 1 || numeric === 0 ? numeric === 1 : null;
 		if ((op === "eq" || op === "ne") && flag !== null && !/tokens|seconds|characters/.test(path)) {
@@ -320,6 +330,20 @@ function describeConditions(match: unknown): string | null {
 		return `${path} ${symbol} ${compactNumber(value)}`;
 	}).filter(Boolean);
 	return parts.length ? parts.join(", ") : null;
+}
+
+const CONDITION_OPS = new Set<CompareViewCondition["op"]>(["eq", "ne", "lt", "lte", "gt", "gte", "in"]);
+
+function conditionList(match: unknown): CompareViewCondition[] {
+	return rows(match).flatMap((condition): CompareViewCondition[] => {
+		const field = text(condition.path).split(".").at(-1) ?? "";
+		const op = text(condition.op) as CompareViewCondition["op"];
+		const raw = condition.value;
+		const value = Array.isArray(raw)
+			? raw.filter((item): item is string | number => typeof item === "string" || typeof item === "number")
+			: typeof raw === "string" || typeof raw === "number" || typeof raw === "boolean" ? raw : null;
+		return field && CONDITION_OPS.has(op) && value !== null ? [{ field, op, value }] : [];
+	});
 }
 
 function displayLabel(rule: Row): string | null {
@@ -352,6 +376,7 @@ function tierRows(rules: Row[]): Record<string, CompareViewPriceRow[]> {
 			unit,
 			conditional: hasConditions(rule),
 			condition,
+			conditions: hasConditions(rule) ? conditionList(rule.match) : [],
 		});
 	}
 	const kindOrder: Record<CompareViewPriceRow["kind"], number> = { input: 0, output: 1, cacheRead: 2, cacheWrite5m: 3, cacheWrite1h: 4, cacheWrite: 5, other: 6 };
