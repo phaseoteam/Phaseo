@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { getStripe } from "@/lib/stripe";
 import { createStripeCheckoutResponse } from "@/lib/server/createStripeCheckoutResponse";
+import { rejectCrossOriginRequest } from "@/lib/http/sameOrigin";
 import {
 	creditTopupTokenMatches,
 	isTopupExpired,
@@ -17,6 +18,7 @@ const NO_STORE = { "Cache-Control": "no-store" };
 // Checkout the credits page uses (pay_and_save), tagged with the request. The payment webhook
 // credits the wallet and marks the request paid. POST only.
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+	const crossOrigin = rejectCrossOriginRequest(req); if (crossOrigin) return crossOrigin;
 	const { id } = await params;
 	// JSON only, so a cross-site form post cannot reach the handler without a CORS preflight.
 	if (!req.headers.get("content-type")?.toLowerCase().includes("application/json")) {
