@@ -26,9 +26,23 @@ export async function copyWorktreeIncludes(source: string, worktree: string): Pr
 		const info = await lstat(from).catch(() => undefined);
 		if (!info?.isFile() || existsSync(to)) { skipped.push(relative); continue; }
 		if (copied.length >= MAX_FILES || bytes + info.size > MAX_BYTES) { skipped.push(relative); continue; }
+		// A linked folder on the way would carry the copy outside the worktree, since mkdir and copyFile follow links.
+		if (!await realFoldersOnly(worktree, path.dirname(to))) { skipped.push(relative); continue; }
 		await mkdir(path.dirname(to), { recursive: true });
 		await copyFile(from, to, constants.COPYFILE_EXCL);
 		copied.push(relative); bytes += info.size;
 	}
 	return { copied, skipped };
+}
+
+/** Whether every existing folder from `root` down to `folder` is a real folder, not a link or junction. Missing ones are made as real folders. */
+async function realFoldersOnly(root: string, folder: string) {
+	let current = root;
+	for (const part of path.relative(root, folder).split(path.sep).filter(Boolean)) {
+		current = path.join(current, part);
+		const info = await lstat(current).catch(() => undefined);
+		if (!info) return true;
+		if (info.isSymbolicLink() || !info.isDirectory()) return false;
+	}
+	return true;
 }

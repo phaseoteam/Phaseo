@@ -36,6 +36,13 @@ describe("pull request directory", () => {
 		expect((await listPullRequestDirectory([{ id: "gl", directory: "/gl" }], { state: "merged", text: "", filters: {}, limit: 100 }, read)).entries).toEqual([]);
 	});
 
+	it("keeps requests with the same repository path and number on different hosts", async () => {
+		ports.git.mockImplementation(async (directory: string) => directory === "/gl" ? "git@gitlab.com:team/app.git\n" : "git@github.com:team/app.git\n");
+		hosted.list.mockResolvedValue({ repository: "team/app", requests: [{ number: 7, title: "On GitLab", url: "https://gitlab.com/team/app/-/merge_requests/7", author: "ada", draft: false, head: "x", base: "main", updatedAt: "2026-10-03T00:00:00Z", review: "none", checks: "unknown" }], fetchedAt: "", limitReached: false });
+		const result = await listPullRequestDirectory([{ id: "app", directory: "/app" }, { id: "gl", directory: "/gl" }], { state: "open", text: "", filters: {}, limit: 100 }, vi.fn(async () => page([node()])));
+		expect(result.entries.map(entry => entry.url).sort()).toEqual(["https://github.com/team/app/pull/7", "https://gitlab.com/team/app/-/merge_requests/7"]);
+	});
+
 	it("searches every GitHub project once, files shared repositories under the first, and names projects it cannot read", async () => {
 		const read = vi.fn(async (_cwd: string, args: string[]) => args.some(arg => arg.includes("repo:team/lib")) ? page([node({ number: 3, repository: { nameWithOwner: "team/lib" }, updatedAt: "2026-10-03T00:00:00Z" })]) : page([]));
 		const projects = [{ id: "app", directory: "/app" }, { id: "app-copy", directory: "/app-copy" }, { id: "lib", directory: "/lib" }, { id: "other", directory: "/other" }, { id: "tree", directory: "/app", worktree: {} }];

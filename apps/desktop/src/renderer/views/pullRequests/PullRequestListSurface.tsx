@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import { ContextMenu } from "@base-ui/react/context-menu";
 import { ArrowLeft, ArrowUpRight, Eye, EyeOff, Link as LinkIcon, MoreHorizontal, Plus, RefreshCw } from "lucide-react";
 import type { ProjectPullRequests, PullRequest } from "../../../shared/pullRequests";
-import type { PullRequestLinkSource, TaskPullRequestLink } from "../../../shared/pullRequestView";
+import { parsePullRequestReference, type PullRequestLinkSource, type TaskPullRequestLink } from "../../../shared/pullRequestView";
 import { pullRequestChains, pullRequestListLines, visiblePullRequestLinks, type PullRequestListLine } from "../../../shared/pullRequestStacks";
 import { useWorkspace } from "../../app/workspace";
 import { Button } from "../../components/ui/button";
@@ -233,7 +233,8 @@ export function PullRequestListSurface({ projectId, taskId, onOpen }: { projectI
 				{!project && loading && <PullRequestListGhost />}
 				{project?.projectId === projectId && project.requests.map(request => <ProjectRow key={request.number} projectId={projectId} request={request} linked={linkedNumbers.has(request.number)}
 					onOpen={() => openRequest({ number: request.number, title: request.title, state: "OPEN", draft: request.draft })} onExternal={() => external(request.url)} onCopy={() => copy(request.url)} onNotice={(message, failed) => failed ? setError(message) : flash(message)}
-					onLink={taskId ? () => void run({ type: "link-pull-request", id: taskId, reference: request.url }).then(failure => failure ? setError(failure) : flash(`Linked #${request.number}`)) : undefined} />)}
+					// Chats link GitHub pull requests only, so other hosts' rows don't offer it.
+					onLink={taskId && parsePullRequestReference(request.url)?.repository ? () => void run({ type: "link-pull-request", id: taskId, reference: request.url }).then(failure => failure ? setError(failure) : flash(`Linked #${request.number}`)) : undefined} />)}
 				{project?.projectId === projectId && !project.requests.length && !loading && !error && <p className="px-2 py-2 text-xs text-muted-foreground">No open pull requests.</p>}
 				{project?.projectId === projectId && project.value.nextCursor && <Button size="sm" variant="ghost" className="mt-1 w-full text-xs" disabled={loading} onClick={() => void load(project.value.nextCursor)}>{loading ? "Loading…" : "Load more"}</Button>}
 			</div></ScrollArea>}
