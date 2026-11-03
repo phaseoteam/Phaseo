@@ -1029,7 +1029,7 @@
 		"viaMember": "via {name}",
 		"inheritedHint": "Applies through {name}'s member assignment. Change it in the Members view.",
 		"formerMember": "a former member",
-		"formerMemberHint": "Applies through the member assignment of this key's creator, who has left the workspace. The gateway still enforces it.",
+		"formerMemberHint": "Applies through the member assignment of this key's creator, who has left the workspace. The gateway still enforces it. Untick it here to remove it.",
 		"noLimits": "No limits",
 		"zdrOnly": "ZDR only",
 		"providersAllowed": "{count, plural, one {# provider allowed} other {# providers allowed}}",
@@ -1048,14 +1048,14 @@
 		"clearSelection": "Clear",
 		"saved": "Assignments updated",
 		"saveFailed": "Couldn't update assignments",
+		"savedPartly": "Updated {done} of {count}. The rest weren't changed.",
 		"emptyTitle": "No guardrails to assign",
 		"emptyBody": "Create a guardrail first, then assign it to API keys or members here.",
 		"noKeys": "This workspace has no API keys.",
 		"noMembers": "This workspace has no members.",
 		"noMatches": "Nothing matches your search.",
 		"footnote": "Access, prompt injection and sensitive info show what each row's guardrails add up to. When several apply, the strictest rule wins. Workspace privacy and routing settings apply on top.",
-		"readOnly": "Only workspace owners and admins can change assignments.",
-		"tooMany": "Select at most {count} rows at a time."
+		"readOnly": "Only workspace owners and admins can change assignments."
 	},
 	"broadcastControls": {
 		"optional": "(optional)",

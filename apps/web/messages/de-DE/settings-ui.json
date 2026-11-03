@@ -1029,7 +1029,7 @@
 		"viaMember": "über {name}",
 		"inheritedHint": "Gilt über die Mitgliederzuweisung von {name}. Ändere sie in der Ansicht „Mitglieder“.",
 		"formerMember": "ein ehemaliges Mitglied",
-		"formerMemberHint": "Gilt über die Mitgliederzuweisung der Person, die diesen Schlüssel erstellt und den Workspace verlassen hat. Das Gateway setzt sie weiterhin durch.",
+		"formerMemberHint": "Gilt über die Mitgliederzuweisung der Person, die diesen Schlüssel erstellt und den Workspace verlassen hat. Das Gateway setzt sie weiterhin durch. Entferne hier den Haken, um sie zu entfernen.",
 		"noLimits": "Keine Einschränkungen",
 		"zdrOnly": "Nur ZDR",
 		"providersAllowed": "{count, plural, one {# Anbieter erlaubt} other {# Anbieter erlaubt}}",
@@ -1048,14 +1048,14 @@
 		"clearSelection": "Aufheben",
 		"saved": "Zuweisungen aktualisiert",
 		"saveFailed": "Zuweisungen konnten nicht aktualisiert werden",
+		"savedPartly": "{done} von {count} aktualisiert. Der Rest wurde nicht geändert.",
 		"emptyTitle": "Keine Leitplanken zum Zuweisen",
 		"emptyBody": "Erstelle zuerst eine Leitplanke und weise sie dann hier API-Schlüsseln oder Mitgliedern zu.",
 		"noKeys": "Dieser Arbeitsbereich hat keine API-Schlüssel.",
 		"noMembers": "Dieser Arbeitsbereich hat keine Mitglieder.",
 		"noMatches": "Keine Treffer für deine Suche.",
 		"footnote": "Zugriff, Prompt-Injection und sensible Daten zeigen, was die Leitplanken einer Zeile zusammen ergeben. Gelten mehrere, gewinnt die strengste Regel. Die Datenschutz- und Routing-Einstellungen des Arbeitsbereichs gelten zusätzlich.",
-		"readOnly": "Nur Inhaber und Admins des Arbeitsbereichs können Zuweisungen ändern.",
-		"tooMany": "Wähle höchstens {count} Zeilen auf einmal aus."
+		"readOnly": "Nur Inhaber und Admins des Arbeitsbereichs können Zuweisungen ändern."
 	},
 	"broadcastControls": {
 		"optional": "(optional)",

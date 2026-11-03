@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
-import { fetchAccountWebApi } from "@/lib/web-api/client";
+import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";
 
 export type ProviderRestrictionMode = "none" | "allowlist" | "blocklist";
 export type SensitiveInfoAction = "flag" | "redact" | "block";
@@ -109,11 +109,23 @@ export type GuardrailAssignmentChange = {
 	removeGuardrailIds?: string[];
 };
 
-/** Adds or removes guardrails on many keys or members without touching their other assignments. */
-export async function updateGuardrailAssignments(change: GuardrailAssignmentChange, expectedWorkspaceId?: string) {
+export type GuardrailAssignmentResult = { ok: true } | { ok: false; error: string | null };
+
+/**
+ * Adds or removes guardrails on many keys or members without touching their other assignments.
+ * A refused change comes back as a value, not a throw, so the page can show the server's reason
+ * (a production server action replaces a thrown error's message).
+ */
+export async function updateGuardrailAssignments(change: GuardrailAssignmentChange, expectedWorkspaceId?: string): Promise<GuardrailAssignmentResult> {
 	const context = await account(expectedWorkspaceId);
-	const result = await fetchAccountWebApi<{ success: true }>("/api/account/settings/guardrails/assignments", context.accessToken, { method: "PATCH", body: JSON.stringify({ ...change, workspaceId: context.workspaceId }) });
+	try {
+		await fetchAccountWebApi<{ success: true }>("/api/account/settings/guardrails/assignments", context.accessToken, { method: "PATCH", body: JSON.stringify({ ...change, workspaceId: context.workspaceId }) });
+	} catch (error) {
+		if (!(error instanceof WebApiError)) throw error;
+		// The route words its 400, 404 and 409 reasons for people; 403 and 503 carry internal codes.
+		return { ok: false, error: error.status < 500 && error.status !== 403 && error.detail ? error.detail : null };
+	}
 	refresh();
 	revalidatePath("/settings/keys");
-	return result;
+	return { ok: true };
 }

@@ -1029,7 +1029,7 @@
 		"viaMember": "a través de {name}",
 		"inheritedHint": "Se aplica mediante la asignación de miembro de {name}. Cámbiala en la vista Miembros.",
 		"formerMember": "un antiguo miembro",
-		"formerMemberHint": "Se aplica mediante la asignación de miembro de quien creó esta clave y ya salió del espacio de trabajo. El gateway la sigue aplicando.",
+		"formerMemberHint": "Se aplica mediante la asignación de miembro de quien creó esta clave y ya salió del espacio de trabajo. El gateway la sigue aplicando. Desmárcala aquí para quitarla.",
 		"noLimits": "Sin límites",
 		"zdrOnly": "Solo ZDR",
 		"providersAllowed": "{count, plural, one {# proveedor permitido} other {# proveedores permitidos}}",
@@ -1048,14 +1048,14 @@
 		"clearSelection": "Borrar",
 		"saved": "Asignaciones actualizadas",
 		"saveFailed": "No se pudieron actualizar las asignaciones",
+		"savedPartly": "Se actualizaron {done} de {count}. El resto no cambió.",
 		"emptyTitle": "No hay guardrails que asignar",
 		"emptyBody": "Crea primero un guardrail y luego asígnalo aquí a claves API o miembros.",
 		"noKeys": "Este espacio de trabajo no tiene claves API.",
 		"noMembers": "Este espacio de trabajo no tiene miembros.",
 		"noMatches": "Nada coincide con tu búsqueda.",
 		"footnote": "Acceso, inyección de prompts e información sensible muestran el resultado combinado de los guardrails de cada fila. Si se aplican varios, gana la regla más estricta. La configuración de privacidad y enrutamiento del espacio de trabajo se aplica además.",
-		"readOnly": "Solo los propietarios y administradores del espacio de trabajo pueden cambiar las asignaciones.",
-		"tooMany": "Selecciona como máximo {count} filas a la vez."
+		"readOnly": "Solo los propietarios y administradores del espacio de trabajo pueden cambiar las asignaciones."
 	},
 	"broadcastControls": {
 		"optional": "(opcional)",

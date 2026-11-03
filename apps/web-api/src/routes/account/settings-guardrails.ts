@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { requireAccountWorkspace } from "./context";
+import { MAX_ASSIGNMENT_GUARDRAILS, MAX_ASSIGNMENT_TARGETS } from "./guardrailAssignmentLimits";
 
 type GuardrailPayload = Record<string, any>;
 
@@ -67,21 +68,80 @@ async function adminContext(c: any, workspaceId: unknown) {
 
 export const accountSettingsGuardrailsRouter = new Hono<{ Bindings: Env }>();
 
-async function invalidateWorkspaceKeys(c: any, context: any): Promise<void> {
-	const keys = await context.client.from("keys").select("id").eq("workspace_id", context.workspaceId).neq("status", "deleted");
-	if (keys.error) return;
+const KEY_PAGE_SIZE = 1000;
+
+/** Reads every page of an ordered key query; PostgREST caps one response at 1,000 rows without saying so. */
+async function readKeyIds(page: (from: number, to: number) => PromiseLike<{ data: Array<{ id: unknown }> | null; error: unknown }>): Promise<string[] | null> {
+	const ids: string[] = [];
+	for (let offset = 0; ; offset += KEY_PAGE_SIZE) {
+		const result = await page(offset, offset + KEY_PAGE_SIZE - 1);
+		if (result.error) return null;
+		ids.push(...(result.data ?? []).map((key) => String(key.id)));
+		if ((result.data?.length ?? 0) < KEY_PAGE_SIZE) return ids;
+	}
+}
+
+async function invalidateKeys(c: any, keyIds: string[]): Promise<void> {
 	const origin = String(c.env.GATEWAY_API_ORIGIN ?? "http://localhost:8787").replace(/\/$/, "");
 	const controlKey = c.env.PHASEO_CONTROL_KEY;
 	const controlSecret = c.env.PHASEO_CONTROL_SECRET;
 	if (!controlKey || !controlSecret) return;
-	await Promise.allSettled((keys.data ?? []).map((key: any) => fetch(`${origin}/v1/keys/${encodeURIComponent(String(key.id))}/invalidate`, {
+	await Promise.allSettled([...new Set(keyIds)].map((keyId) => fetch(`${origin}/v1/keys/${encodeURIComponent(keyId)}/invalidate`, {
 		method: "POST",
 		headers: { authorization: `Bearer ${controlKey}`, "x-control-secret": controlSecret },
 	})));
 }
 
+async function invalidateWorkspaceKeys(c: any, context: any): Promise<void> {
+	const keyIds = await readKeyIds((from, to) => context.client.from("keys").select("id")
+		.eq("workspace_id", context.workspaceId).neq("status", "deleted").order("id").range(from, to));
+	if (keyIds) await invalidateKeys(c, keyIds);
+}
+
+/** The keys a change to these members' guardrails reaches: the gateway applies the member guardrails of a key's principal (oauth_user_id, else created_by). */
+async function invalidateMemberKeys(c: any, context: any, userIds: string[]): Promise<void> {
+	const [byOauthUser, byCreator] = await Promise.all([
+		readKeyIds((from, to) => context.client.from("keys").select("id").eq("workspace_id", context.workspaceId)
+			.neq("status", "deleted").in("oauth_user_id", userIds).order("id").range(from, to)),
+		readKeyIds((from, to) => context.client.from("keys").select("id").eq("workspace_id", context.workspaceId)
+			.neq("status", "deleted").in("created_by", userIds).order("id").range(from, to)),
+	]);
+	// A key one of them created for someone else's OAuth grant is refreshed too; an extra refresh is harmless.
+	if (byOauthUser && byCreator) await invalidateKeys(c, [...byOauthUser, ...byCreator]);
+	else await invalidateWorkspaceKeys(c, context);
+}
+
 function scheduleInvalidation(c: any, context: any): void {
 	c.executionCtx.waitUntil(invalidateWorkspaceKeys(c, context));
+}
+
+/** null when every target is valid. */
+type TargetProblem = { status: 409 | 503; error: string } | null;
+
+/** Every key is in this workspace and not deleted. */
+async function checkWorkspaceKeys(context: any, keyIds: string[]): Promise<TargetProblem> {
+	if (!keyIds.length) return null;
+	const keys = await context.client.from("keys").select("id,workspace_id,status").in("id", keyIds);
+	if (keys.error) return { status: 503, error: "guardrail_write_failed" };
+	const valid = new Map<string, any>((keys.data ?? []).map((key: any) => [String(key.id), key]));
+	if (keyIds.some((id) => valid.get(id)?.workspace_id !== context.workspaceId || String(valid.get(id)?.status).toLowerCase() === "deleted")) {
+		return { status: 409, error: "One or more keys do not belong to this workspace" };
+	}
+	return null;
+}
+
+/** Every user is a current member of this workspace. */
+async function checkWorkspaceMembers(context: any, userIds: string[]): Promise<TargetProblem> {
+	if (!userIds.length) return null;
+	const members = await context.client.from("workspace_members").select("user_id").eq("workspace_id", context.workspaceId).in("user_id", userIds);
+	if (members.error) return { status: 503, error: "guardrail_write_failed" };
+	const validIds = new Set((members.data ?? []).map((member: any) => String(member.user_id)));
+	if (userIds.some((id) => !validIds.has(id))) return { status: 409, error: "One or more users do not belong to this workspace" };
+	return null;
+}
+
+function idList(value: unknown): string[] {
+	return Array.isArray(value) ? [...new Set(value.map((id) => String(id ?? "").trim()).filter(Boolean))] : [];
 }
 
 accountSettingsGuardrailsRouter.put("/guardrails/global", async (c) => {
@@ -152,15 +212,11 @@ accountSettingsGuardrailsRouter.put("/guardrails/:guardrailId/keys", async (c) =
 	const context = await adminContext(c, body.workspaceId);
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const guardrailId = c.req.param("guardrailId");
-	const keyIds = Array.isArray(body.keyIds) ? [...new Set(body.keyIds.map(String).filter(Boolean))] : [];
+	const keyIds = idList(body.keyIds);
 	const guardrail = await context.client.from("workspace_guardrails").select("id").eq("id", guardrailId).eq("workspace_id", context.workspaceId).maybeSingle();
 	if (guardrail.error || !guardrail.data) return c.json({ error: "Guardrail not found" }, 404, PRIVATE_NO_STORE_HEADERS);
-	if (keyIds.length) {
-		const keys = await context.client.from("keys").select("id,workspace_id,status").in("id", keyIds);
-		if (keys.error) return c.json({ error: "guardrail_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
-		const valid = new Map((keys.data ?? []).map((key) => [key.id, key]));
-		if (keyIds.some((id) => valid.get(id)?.workspace_id !== context.workspaceId || String(valid.get(id)?.status).toLowerCase() === "deleted")) return c.json({ error: "One or more keys do not belong to this workspace" }, 409, PRIVATE_NO_STORE_HEADERS);
-	}
+	const keyProblem = await checkWorkspaceKeys(context, keyIds);
+	if (keyProblem) return c.json({ error: keyProblem.error }, keyProblem.status, PRIVATE_NO_STORE_HEADERS);
 	const removed = await context.client.from("key_guardrails").delete().eq("guardrail_id", guardrailId);
 	if (removed.error) return c.json({ error: "guardrail_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
 	if (keyIds.length) {
@@ -176,15 +232,11 @@ accountSettingsGuardrailsRouter.put("/guardrails/:guardrailId/members", async (c
 	const context = await adminContext(c, body.workspaceId);
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const guardrailId = c.req.param("guardrailId");
-	const userIds = Array.isArray(body.userIds) ? [...new Set(body.userIds.map(String).filter(Boolean))] : [];
+	const userIds = idList(body.userIds);
 	const guardrail = await context.client.from("workspace_guardrails").select("id").eq("id", guardrailId).eq("workspace_id", context.workspaceId).maybeSingle();
 	if (guardrail.error || !guardrail.data) return c.json({ error: "Guardrail not found" }, 404, PRIVATE_NO_STORE_HEADERS);
-	if (userIds.length) {
-		const members = await context.client.from("workspace_members").select("user_id").eq("workspace_id", context.workspaceId).in("user_id", userIds);
-		if (members.error) return c.json({ error: "guardrail_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
-		const validIds = new Set((members.data ?? []).map((member: any) => String(member.user_id)));
-		if (userIds.some((id) => !validIds.has(id))) return c.json({ error: "One or more users do not belong to this workspace" }, 409, PRIVATE_NO_STORE_HEADERS);
-	}
+	const memberProblem = await checkWorkspaceMembers(context, userIds);
+	if (memberProblem) return c.json({ error: memberProblem.error }, memberProblem.status, PRIVATE_NO_STORE_HEADERS);
 	const removed = await context.client.from("workspace_member_guardrails").delete().eq("workspace_id", context.workspaceId).eq("guardrail_id", guardrailId);
 	if (removed.error) return c.json({ error: "guardrail_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
 	if (userIds.length) {
@@ -195,9 +247,7 @@ accountSettingsGuardrailsRouter.put("/guardrails/:guardrailId/members", async (c
 	return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
-/** Bounded so the `in` filters stay well inside PostgREST's URL limit and one change writes at most a few thousand rows. */
-export const MAX_ASSIGNMENT_TARGETS = 200;
-export const MAX_ASSIGNMENT_GUARDRAILS = 25;
+export { MAX_ASSIGNMENT_GUARDRAILS, MAX_ASSIGNMENT_TARGETS };
 
 export type GuardrailAssignmentChange = {
 	targetType: "key" | "member";
@@ -205,10 +255,6 @@ export type GuardrailAssignmentChange = {
 	addGuardrailIds: string[];
 	removeGuardrailIds: string[];
 };
-
-function idList(value: unknown): string[] {
-	return Array.isArray(value) ? [...new Set(value.map((id) => String(id ?? "").trim()).filter(Boolean))] : [];
-}
 
 /** Reads an add/remove change for many keys or members; unlike the per-guardrail PUTs, it leaves every other assignment as it is. */
 export function parseGuardrailAssignmentChange(body: GuardrailPayload): GuardrailAssignmentChange | { error: string } {
@@ -236,35 +282,21 @@ accountSettingsGuardrailsRouter.patch("/guardrails/assignments", async (c) => {
 	const guardrails = await context.client.from("workspace_guardrails").select("id").eq("workspace_id", context.workspaceId).in("id", guardrailIds);
 	if (guardrails.error) return c.json({ error: "guardrail_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
 	if ((guardrails.data ?? []).length !== guardrailIds.length) return c.json({ error: "Guardrail not found" }, 404, PRIVATE_NO_STORE_HEADERS);
-	if (targetType === "key") {
-		const keys = await context.client.from("keys").select("id,workspace_id,status").in("id", targetIds);
-		if (keys.error) return c.json({ error: "guardrail_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
-		const valid = new Map((keys.data ?? []).map((key) => [key.id, key]));
-		if (targetIds.some((id) => valid.get(id)?.workspace_id !== context.workspaceId || String(valid.get(id)?.status).toLowerCase() === "deleted")) return c.json({ error: "One or more keys do not belong to this workspace" }, 409, PRIVATE_NO_STORE_HEADERS);
-		if (removeGuardrailIds.length) {
-			const removed = await context.client.from("key_guardrails").delete().in("key_id", targetIds).in("guardrail_id", removeGuardrailIds);
-			if (removed.error) return c.json({ error: "guardrail_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
-		}
-		if (addGuardrailIds.length) {
-			const rows = targetIds.flatMap((keyId) => addGuardrailIds.map((guardrailId) => ({ key_id: keyId, guardrail_id: guardrailId })));
-			const added = await context.client.from("key_guardrails").upsert(rows, { onConflict: "key_id,guardrail_id", ignoreDuplicates: true });
-			if (added.error) return c.json({ error: "guardrail_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
-		}
-	} else {
-		const members = await context.client.from("workspace_members").select("user_id").eq("workspace_id", context.workspaceId).in("user_id", targetIds);
-		if (members.error) return c.json({ error: "guardrail_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
-		const validIds = new Set((members.data ?? []).map((member: any) => String(member.user_id)));
-		if (targetIds.some((id) => !validIds.has(id))) return c.json({ error: "One or more users do not belong to this workspace" }, 409, PRIVATE_NO_STORE_HEADERS);
-		if (removeGuardrailIds.length) {
-			const removed = await context.client.from("workspace_member_guardrails").delete().eq("workspace_id", context.workspaceId).in("user_id", targetIds).in("guardrail_id", removeGuardrailIds);
-			if (removed.error) return c.json({ error: "guardrail_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
-		}
-		if (addGuardrailIds.length) {
-			const rows = targetIds.flatMap((userId) => addGuardrailIds.map((guardrailId) => ({ workspace_id: context.workspaceId, user_id: userId, guardrail_id: guardrailId })));
-			const added = await context.client.from("workspace_member_guardrails").upsert(rows, { onConflict: "workspace_id,user_id,guardrail_id", ignoreDuplicates: true });
-			if (added.error) return c.json({ error: "guardrail_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
-		}
-	}
-	scheduleInvalidation(c, context);
+	// Adding needs current members. Removing does not: the gateway keeps applying a former member's
+	// guardrails to the keys they created, and this is the only way to take them off.
+	const problem = targetType === "key"
+		? await checkWorkspaceKeys(context, targetIds)
+		: await checkWorkspaceMembers(context, addGuardrailIds.length ? targetIds : []);
+	if (problem) return c.json({ error: problem.error }, problem.status, PRIVATE_NO_STORE_HEADERS);
+	// One transaction, so a failed change leaves every assignment as it was.
+	const result = await context.client.rpc("apply_guardrail_assignment_change", {
+		p_workspace_id: context.workspaceId,
+		p_target_type: targetType,
+		p_target_ids: targetIds,
+		p_add_guardrail_ids: addGuardrailIds,
+		p_remove_guardrail_ids: removeGuardrailIds,
+	});
+	if (result.error) return c.json({ error: "guardrail_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+	c.executionCtx.waitUntil(targetType === "key" ? invalidateKeys(c, targetIds) : invalidateMemberKeys(c, context, targetIds));
 	return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
 });

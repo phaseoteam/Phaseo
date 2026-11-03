@@ -2,9 +2,11 @@ import type { SettingsGuardrailRow } from "@/lib/fetchers/internal/settingsTypes
 import {
 	applyGuardrailAssignmentChange,
 	buildGuardrailAssignmentRows,
+	chunkAssignmentChange,
 	directAssignmentState,
 	effectiveGuardrailPolicy,
 	matchesAssignmentQuery,
+	withPendingChanges,
 } from "./guardrailAssignments";
 
 function guardrail(id: string, overrides: Partial<SettingsGuardrailRow> = {}): SettingsGuardrailRow {
@@ -60,6 +62,15 @@ describe("effectiveGuardrailPolicy", () => {
 			guardrail("on", { sensitive_info_enabled: false, sensitive_info_rules: [{ id: "email_address", kind: "builtin", enabled: true, action: "redact" }] }),
 		]);
 		expect(policy).toMatchObject({ activeCount: 1, zdrOnly: false, promptInjection: null, sensitiveInfoRuleCount: 0 });
+	});
+
+	it("matches provider aliases to their canonical id before merging, like the gateway", () => {
+		const policy = effectiveGuardrailPolicy([
+			guardrail("a", { provider_restriction_mode: "allowlist", provider_restriction_provider_ids: ["xai", "NovitaAI"] }),
+			guardrail("b", { provider_restriction_mode: "allowlist", provider_restriction_provider_ids: ["spacex-ai", "novita"] }),
+			guardrail("c", { provider_restriction_mode: "blocklist", provider_restriction_provider_ids: ["novita-ai"] }),
+		]);
+		expect(policy).toMatchObject({ providerAllowCount: 1, providerBlockCount: 1 });
 	});
 
 	it("reports an empty allowlist intersection as zero, not as no restriction", () => {
@@ -148,5 +159,41 @@ describe("applyGuardrailAssignmentChange", () => {
 			{ a: ["k1", "k2"], b: ["k3"] },
 			{ targetIds: ["k1", "k3"], addGuardrailIds: ["b", "c"], removeGuardrailIds: ["a"] },
 		)).toEqual({ a: ["k2"], b: ["k3", "k1"], c: ["k1", "k3"] });
+	});
+});
+
+describe("withPendingChanges", () => {
+	const base = { g1: ["k1"], g2: ["k2"] };
+
+	it("applies changes still saving in order, for this target type only", () => {
+		const pending = [
+			{ id: 1, targetType: "key" as const, change: { targetIds: ["k2"], addGuardrailIds: ["g1"] }, savedOn: null },
+			{ id: 2, targetType: "member" as const, change: { targetIds: ["u1"], addGuardrailIds: ["g1"] }, savedOn: null },
+			{ id: 3, targetType: "key" as const, change: { targetIds: ["k1"], removeGuardrailIds: ["g1"] }, savedOn: null },
+		];
+		expect(withPendingChanges(base, "key", pending)).toEqual({ g1: ["k2"], g2: ["k2"] });
+	});
+
+	it("keeps a saved change until fresher data replaces the map it was saved on", () => {
+		const saved = [{ id: 1, targetType: "key" as const, change: { targetIds: ["k2"], addGuardrailIds: ["g1"] }, savedOn: base }];
+		expect(withPendingChanges(base, "key", saved).g1).toEqual(["k1", "k2"]);
+		const refetched = { g1: ["k1", "k2"], g2: ["k2"] };
+		expect(withPendingChanges(refetched, "key", saved)).toBe(refetched);
+	});
+
+	it("keeps a change still saving when another change's refetch arrives", () => {
+		const pending = [{ id: 2, targetType: "key" as const, change: { targetIds: ["k1"], addGuardrailIds: ["g2"] }, savedOn: null }];
+		const refetched = { g1: ["k1", "k2"], g2: ["k2"] };
+		expect(withPendingChanges(refetched, "key", pending).g2).toEqual(["k2", "k1"]);
+	});
+});
+
+describe("chunkAssignmentChange", () => {
+	it("splits targets into changes of at most the limit", () => {
+		const targetIds = Array.from({ length: 450 }, (_, index) => `k${index}`);
+		const chunks = chunkAssignmentChange({ targetIds, addGuardrailIds: ["g1"] }, 200);
+		expect(chunks.map((chunk) => chunk.targetIds.length)).toEqual([200, 200, 50]);
+		expect(chunks.every((chunk) => chunk.addGuardrailIds?.[0] === "g1")).toBe(true);
+		expect(chunks.flatMap((chunk) => chunk.targetIds)).toEqual(targetIds);
 	});
 });

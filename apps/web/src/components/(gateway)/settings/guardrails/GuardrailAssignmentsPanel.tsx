@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronsUpDown, Search, Shield } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
@@ -27,20 +27,19 @@ import type {
 	SettingsGuardrailRow,
 } from "@/lib/fetchers/internal/settingsTypes";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
+import { MAX_ASSIGNMENT_TARGETS } from "./guardrailAssignmentLimits";
 import {
-	applyGuardrailAssignmentChange,
 	buildGuardrailAssignmentRows,
+	chunkAssignmentChange,
 	directAssignmentState,
 	matchesAssignmentQuery,
+	withPendingChanges,
+	type AssignmentChange,
+	type AssignmentTargetType,
 	type EffectiveGuardrailPolicy,
 	type GuardrailAssignmentRow,
+	type PendingAssignmentChange,
 } from "./guardrailAssignments";
-
-/** Matches MAX_ASSIGNMENT_TARGETS in web-api's guardrail routes. */
-const MAX_TARGETS_PER_CHANGE = 200;
-
-type Change = { targetIds: string[]; addGuardrailIds?: string[]; removeGuardrailIds?: string[] };
-type Draft = { base: Record<string, string[]>; map: Record<string, string[]> };
 
 type Props = {
 	workspaceId: string;
@@ -59,12 +58,26 @@ export default function GuardrailAssignmentsPanel(props: Props) {
 	const targetType = view === "members" ? "member" : "key";
 	const [query, setQuery] = useState("");
 	const [selected, setSelected] = useState<Set<string>>(() => new Set());
-	const [pending, setPending] = useState<Set<string>>(() => new Set());
-	// A draft shows a change straight away and is dropped once fresh settings data arrives.
-	const [keyDraft, setKeyDraft] = useState<Draft | null>(null);
-	const [memberDraft, setMemberDraft] = useState<Draft | null>(null);
-	const keyMap = keyDraft?.base === props.guardrailKeyIdsByGuardrailId ? keyDraft.map : props.guardrailKeyIdsByGuardrailId;
-	const memberMap = memberDraft?.base === props.guardrailMemberIdsByGuardrailId ? memberDraft.map : props.guardrailMemberIdsByGuardrailId;
+	// Each change shows straight away and is tracked on its own, so one finishing or failing never
+	// undoes another that is still saving.
+	const [changes, setChanges] = useState<PendingAssignmentChange[]>([]);
+	const nextChangeId = useRef(0);
+	const latest = useRef({ key: props.guardrailKeyIdsByGuardrailId, member: props.guardrailMemberIdsByGuardrailId });
+	latest.current = { key: props.guardrailKeyIdsByGuardrailId, member: props.guardrailMemberIdsByGuardrailId };
+	const keyMap = useMemo(() => withPendingChanges(props.guardrailKeyIdsByGuardrailId, "key", changes), [props.guardrailKeyIdsByGuardrailId, changes]);
+	const memberMap = useMemo(() => withPendingChanges(props.guardrailMemberIdsByGuardrailId, "member", changes), [props.guardrailMemberIdsByGuardrailId, changes]);
+	// A saved change is dropped once fresher data, which includes it, has arrived.
+	useEffect(() => {
+		setChanges((current) => {
+			const next = current.filter((entry) => entry.savedOn === null || entry.savedOn === latest.current[entry.targetType]);
+			return next.length === current.length ? current : next;
+		});
+	}, [props.guardrailKeyIdsByGuardrailId, props.guardrailMemberIdsByGuardrailId, changes]);
+	const pending = useMemo(() => {
+		const ids = new Set<string>();
+		for (const entry of changes) if (entry.savedOn === null && entry.targetType === targetType) for (const id of entry.change.targetIds) ids.add(id);
+		return ids;
+	}, [changes, targetType]);
 
 	const rows = useMemo(() => buildGuardrailAssignmentRows({
 		targetType,
@@ -76,28 +89,46 @@ export default function GuardrailAssignmentsPanel(props: Props) {
 		untitled: t("guardrailsControls.untitled"),
 	}), [targetType, props.keys, props.members, props.guardrails, keyMap, memberMap, t]);
 	const visibleRows = useMemo(() => rows.filter((row) => matchesAssignmentQuery(row, query)), [rows, query]);
-	const selectedRows = useMemo(() => rows.filter((row) => selected.has(row.id)), [rows, selected]);
+	// Bulk actions reach only the selected rows the search shows, never ones it hides.
+	const selectedRows = useMemo(() => visibleRows.filter((row) => selected.has(row.id)), [visibleRows, selected]);
 	const allVisibleSelected = visibleRows.length > 0 && visibleRows.every((row) => selected.has(row.id));
 	const someVisibleSelected = visibleRows.some((row) => selected.has(row.id));
 
-	async function apply(change: Change) {
-		if (change.targetIds.length > MAX_TARGETS_PER_CHANGE) {
-			toast.error(t("guardrailAssignments.tooMany", { count: MAX_TARGETS_PER_CHANGE }));
+	async function apply(change: AssignmentChange, type: AssignmentTargetType = targetType) {
+		const id = nextChangeId.current++;
+		setChanges((current) => [...current, { id, targetType: type, change, savedOn: null }]);
+		// The API takes up to MAX_ASSIGNMENT_TARGETS targets per change, so a larger selection goes in parts.
+		const parts = chunkAssignmentChange(change, MAX_ASSIGNMENT_TARGETS);
+		let done = 0;
+		let reason: string | null = null;
+		let failed = false;
+		// The data the last part was saved against. Taken before the save, so data that arrives
+		// later always includes the change; at worst the change is dropped a refetch early.
+		let savedOn = latest.current[type];
+		try {
+			for (const part of parts) {
+				savedOn = latest.current[type];
+				const result = await write(updateGuardrailAssignments({ targetType: type, ...part }, props.workspaceId));
+				if (!result.ok) {
+					failed = true;
+					reason = result.error;
+					break;
+				}
+				done += part.targetIds.length;
+			}
+		} catch {
+			failed = true;
+		}
+		if (failed) {
+			// Drop only this change; the refetch shows what was saved.
+			setChanges((current) => current.filter((entry) => entry.id !== id));
+			const description = reason ?? undefined;
+			if (done) toast.error(t("guardrailAssignments.savedPartly", { done, count: change.targetIds.length }), { description });
+			else toast.error(t("guardrailAssignments.saveFailed"), { description });
 			return;
 		}
-		const base = targetType === "key" ? props.guardrailKeyIdsByGuardrailId : props.guardrailMemberIdsByGuardrailId;
-		const setDraft = targetType === "key" ? setKeyDraft : setMemberDraft;
-		setDraft((draft) => ({ base, map: applyGuardrailAssignmentChange(draft?.base === base ? draft.map : base, change) }));
-		setPending((current) => new Set([...current, ...change.targetIds]));
-		try {
-			await write(updateGuardrailAssignments({ targetType, ...change }, props.workspaceId));
-			toast.success(t("guardrailAssignments.saved"));
-		} catch {
-			setDraft(null);
-			toast.error(t("guardrailAssignments.saveFailed"));
-		} finally {
-			setPending((current) => new Set([...current].filter((id) => !change.targetIds.includes(id))));
-		}
+		setChanges((current) => current.map((entry) => entry.id === id ? { ...entry, savedOn } : entry));
+		toast.success(t("guardrailAssignments.saved"));
 	}
 
 	if (!props.guardrails.length) {
@@ -112,6 +143,10 @@ export default function GuardrailAssignmentsPanel(props: Props) {
 				</EmptyHeader>
 			</Empty>
 		);
+	}
+
+	function memberPending(memberId: string) {
+		return changes.some((entry) => entry.savedOn === null && entry.targetType === "member" && entry.change.targetIds.includes(memberId));
 	}
 
 	const emptyMessage = rows.length
@@ -219,10 +254,11 @@ export default function GuardrailAssignmentsPanel(props: Props) {
 										row={row}
 										guardrails={props.guardrails}
 										canManage={props.canManageGuardrails}
-										pending={pending.has(row.id)}
+										pending={pending.has(row.id) || (row.inheritedFrom ? memberPending(row.inheritedFrom.id) : false)}
 										onToggle={(guardrailId, checked) => void apply(checked
 											? { targetIds: [row.id], addGuardrailIds: [guardrailId] }
 											: { targetIds: [row.id], removeGuardrailIds: [guardrailId] })}
+										onRemoveFormerMemberGuardrail={(memberId, guardrailId) => void apply({ targetIds: [memberId], removeGuardrailIds: [guardrailId] }, "member")}
 									/>
 								</TableCell>
 								<TableCell className="text-sm">
@@ -264,6 +300,8 @@ function GuardrailsCell(props: {
 	canManage: boolean;
 	pending: boolean;
 	onToggle: (guardrailId: string, checked: boolean) => void;
+	/** Former members are not listed in the Members view, so their guardrails are removed from their keys' rows. */
+	onRemoveFormerMemberGuardrail: (memberId: string, guardrailId: string) => void;
 }) {
 	const t = useTranslations("SettingsUI");
 	const viaMember = t("guardrailAssignments.viaMember", { name: props.row.inheritedFrom?.name ?? t("guardrailAssignments.formerMember") });
@@ -294,6 +332,7 @@ function GuardrailsCell(props: {
 	if (!props.canManage) return chips;
 
 	const inherited = new Set(props.row.guardrails.filter((guardrail) => guardrail.source === "member").map((guardrail) => guardrail.id));
+	const formerMember = props.row.inheritedFrom && props.row.inheritedFrom.name === null ? props.row.inheritedFrom : null;
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
@@ -314,8 +353,10 @@ function GuardrailsCell(props: {
 						<DropdownMenuCheckboxItem
 							key={guardrail.id}
 							checked={direct || onlyInherited}
-							disabled={props.pending || onlyInherited}
-							onCheckedChange={(checked) => props.onToggle(guardrail.id, checked === true)}
+							disabled={props.pending || (onlyInherited && !formerMember)}
+							onCheckedChange={(checked) => onlyInherited && formerMember
+								? props.onRemoveFormerMemberGuardrail(formerMember.id, guardrail.id)
+								: props.onToggle(guardrail.id, checked === true)}
 						>
 							<span className="min-w-0 flex-1 truncate">{guardrail.name?.trim() || t("guardrailsControls.untitled")}</span>
 							{onlyInherited && props.row.inheritedFrom ? (
@@ -355,7 +396,7 @@ function BulkActions(props: {
 	rows: GuardrailAssignmentRow[];
 	guardrails: SettingsGuardrailRow[];
 	busy: boolean;
-	onApply: (change: Change) => Promise<void>;
+	onApply: (change: AssignmentChange) => Promise<void>;
 	onClear: () => void;
 }) {
 	const t = useTranslations("SettingsUI");

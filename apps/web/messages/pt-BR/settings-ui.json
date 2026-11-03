@@ -1029,7 +1029,7 @@
 		"viaMember": "via {name}",
 		"inheritedHint": "Aplica-se pela atribuição de membro de {name}. Altere-a na visualização Membros.",
 		"formerMember": "um ex-membro",
-		"formerMemberHint": "Aplica-se pela atribuição de membro de quem criou esta chave e saiu do workspace. O gateway continua aplicando.",
+		"formerMemberHint": "Aplica-se pela atribuição de membro de quem criou esta chave e saiu do workspace. O gateway continua aplicando. Desmarque aqui para removê-la.",
 		"noLimits": "Sem limites",
 		"zdrOnly": "Somente ZDR",
 		"providersAllowed": "{count, plural, one {# provedor permitido} other {# provedores permitidos}}",
@@ -1048,14 +1048,14 @@
 		"clearSelection": "Limpar",
 		"saved": "Atribuições atualizadas",
 		"saveFailed": "Não foi possível atualizar as atribuições",
+		"savedPartly": "{done} de {count} atualizadas. O restante não foi alterado.",
 		"emptyTitle": "Nenhum guardrail para atribuir",
 		"emptyBody": "Crie um guardrail primeiro e depois atribua-o aqui a chaves de API ou membros.",
 		"noKeys": "Este espaço de trabalho não tem chaves de API.",
 		"noMembers": "Este espaço de trabalho não tem membros.",
 		"noMatches": "Nada corresponde à sua pesquisa.",
 		"footnote": "Acesso, injeção de prompt e informações sensíveis mostram o resultado combinado dos guardrails de cada linha. Quando vários se aplicam, vence a regra mais restritiva. As configurações de privacidade e roteamento do espaço de trabalho também se aplicam.",
-		"readOnly": "Somente proprietários e administradores do espaço de trabalho podem alterar as atribuições.",
-		"tooMany": "Selecione no máximo {count} linhas por vez."
+		"readOnly": "Somente proprietários e administradores do espaço de trabalho podem alterar as atribuições."
 	},
 	"broadcastControls": {
 		"optional": "(opcional)",

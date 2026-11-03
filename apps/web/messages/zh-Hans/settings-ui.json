@@ -1029,7 +1029,7 @@
 		"viaMember": "通过 {name}",
 		"inheritedHint": "通过 {name} 的成员分配生效。请在“成员”视图中更改。",
 		"formerMember": "前成员",
-		"formerMemberHint": "通过此密钥创建者（已离开工作区）的成员分配生效。网关仍会执行它。",
+		"formerMemberHint": "通过此密钥创建者（已离开工作区）的成员分配生效。网关仍会执行它。在此取消勾选即可移除。",
 		"noLimits": "无限制",
 		"zdrOnly": "仅 ZDR",
 		"providersAllowed": "允许 {count} 个提供商",
@@ -1048,14 +1048,14 @@
 		"clearSelection": "清除",
 		"saved": "分配已更新",
 		"saveFailed": "无法更新分配",
+		"savedPartly": "已更新 {count} 项中的 {done} 项，其余未更改。",
 		"emptyTitle": "没有可分配的护栏",
 		"emptyBody": "请先创建护栏，然后在这里将其分配给 API 密钥或成员。",
 		"noKeys": "此工作区没有 API 密钥。",
 		"noMembers": "此工作区没有成员。",
 		"noMatches": "没有与搜索匹配的结果。",
 		"footnote": "访问、提示注入和敏感信息列显示每一行护栏合并后的效果。多个护栏同时适用时，以最严格的规则为准。工作区的隐私和路由设置也会同时生效。",
-		"readOnly": "只有工作区所有者和管理员可以更改分配。",
-		"tooMany": "一次最多选择 {count} 行。"
+		"readOnly": "只有工作区所有者和管理员可以更改分配。"
 	},
 	"broadcastControls": {
 		"optional": "（可选）",

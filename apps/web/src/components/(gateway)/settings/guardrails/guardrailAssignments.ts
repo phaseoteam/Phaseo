@@ -3,6 +3,7 @@ import type {
 	SettingsGuardrailMember,
 	SettingsGuardrailRow,
 } from "@/lib/fetchers/internal/settingsTypes";
+import { normalizeProviderList } from "./providerAliases";
 
 export type GuardrailAction = "flag" | "redact" | "block";
 export type AssignmentTargetType = "key" | "member";
@@ -84,7 +85,8 @@ export function effectiveGuardrailPolicy(guardrails: SettingsGuardrailRow[]): Ef
 	const active = guardrails.filter(isGuardrailActive);
 	for (const guardrail of active) {
 		zdrOnly ||= guardrail.privacy_zdr_only === true;
-		const providerIds = idSet(guardrail.provider_restriction_provider_ids);
+		// The gateway maps provider aliases onto canonical ids before it merges lists (workspacePolicy.ts).
+		const providerIds = idSet(normalizeProviderList(idSet(guardrail.provider_restriction_provider_ids)));
 		const providerMode = restrictionMode(guardrail.provider_restriction_mode);
 		if (providerMode === "allowlist") providerAllow = intersect(providerAllow, providerIds);
 		else if (providerMode === "blocklist") for (const id of providerIds) providerBlock.add(id);
@@ -212,4 +214,37 @@ export function matchesAssignmentQuery(row: GuardrailAssignmentRow, query: strin
 	const q = query.trim().toLowerCase();
 	if (!q) return true;
 	return [row.name, row.detail, ...row.guardrails.map((guardrail) => guardrail.name)].some((value) => value.toLowerCase().includes(q));
+}
+
+export type AssignmentChange = { targetIds: string[]; addGuardrailIds?: string[]; removeGuardrailIds?: string[] };
+
+/**
+ * A change shown before the refetch confirms it. `savedOn` is the assignment map that was current
+ * when the save succeeded: once fresher data replaces that map, the data includes the change.
+ */
+export type PendingAssignmentChange = {
+	id: number;
+	targetType: AssignmentTargetType;
+	change: AssignmentChange;
+	savedOn: Record<string, string[]> | null;
+};
+
+/** The assignment map with the changes still saving, and the saved ones not yet refetched, applied in order. */
+export function withPendingChanges(
+	targetIdsByGuardrailId: Record<string, string[]>,
+	targetType: AssignmentTargetType,
+	pending: PendingAssignmentChange[],
+): Record<string, string[]> {
+	return pending
+		.filter((entry) => entry.targetType === targetType && (entry.savedOn === null || entry.savedOn === targetIdsByGuardrailId))
+		.reduce((map, entry) => applyGuardrailAssignmentChange(map, entry.change), targetIdsByGuardrailId);
+}
+
+/** Splits a change's targets into changes the API accepts. */
+export function chunkAssignmentChange(change: AssignmentChange, maxTargets: number): AssignmentChange[] {
+	const chunks: AssignmentChange[] = [];
+	for (let start = 0; start < change.targetIds.length; start += maxTargets) {
+		chunks.push({ ...change, targetIds: change.targetIds.slice(start, start + maxTargets) });
+	}
+	return chunks;
 }
