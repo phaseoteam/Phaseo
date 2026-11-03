@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { BlogTocItem } from "@/lib/content/blogToc";
 import { useTranslations } from "next-intl";
@@ -139,20 +140,25 @@ export function BlogTableOfContents({ items }: BlogTableOfContentsProps) {
 							className="size-4 shrink-0 text-zinc-500 transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none dark:text-zinc-400"
 						/>
 					</summary>
-					<div
-						className="max-h-[60vh] overflow-y-auto pb-4"
-						onClick={(event) => {
-							if ((event.target as HTMLElement).closest("a") && mobileDetailsRef.current) {
-								mobileDetailsRef.current.open = false;
-							}
-						}}
+					<ScrollArea
+						className="max-h-[60vh]"
+						viewportClassName="max-h-[60vh]"
 					>
-						<TableOfContentsLinks
-							activeId={activeId}
-							items={items}
-							label={t("tableOfContents")}
-						/>
-					</div>
+						<div
+							className="pr-3 pb-4"
+							onClick={(event) => {
+								if ((event.target as HTMLElement).closest("a") && mobileDetailsRef.current) {
+									mobileDetailsRef.current.open = false;
+								}
+							}}
+						>
+							<TableOfContentsLinks
+								activeId={activeId}
+								items={items}
+								label={t("tableOfContents")}
+							/>
+						</div>
+					</ScrollArea>
 				</details>
 			</div>
 
