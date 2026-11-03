@@ -112,10 +112,19 @@ export function phoneDiff(diff: Pick<GitDiffResult, "patch" | "hash" | "truncate
 	return { ...base, files, truncated };
 }
 
-/** One file of a diff, its patch cut at the last whole line under diffFileBytes. */
+/**
+ * One file of a diff, its patch cut at the last whole line under diffFileBytes. The cap counts the patch as the frame
+ * carries it, JSON-escaped: a control character takes six bytes there, so a small patch can still overflow a frame.
+ */
 export function phoneDiffFile(diff: Pick<GitDiffResult, "patch">, path: string): PhoneDiffFile | undefined {
 	const file = splitPatch(diff.patch).find(value => value.path === path);
-	if (!file?.patch || Buffer.byteLength(file.patch) <= phoneLimits.diffFileBytes) return file;
-	const head = Buffer.from(file.patch).subarray(0, phoneLimits.diffFileBytes).toString("utf8");
-	return { ...file, patch: head.slice(0, head.lastIndexOf("\n") + 1), truncated: true };
+	const escaped = (text: string) => bytes(text) - 3;
+	if (!file?.patch || escaped(file.patch) <= phoneLimits.diffFileBytes) return file;
+	let kept = 0, used = 0;
+	for (const line of file.patch.split(/(?<=\n)/)) {
+		used += escaped(line);
+		if (used > phoneLimits.diffFileBytes) break;
+		kept += line.length;
+	}
+	return { ...file, patch: file.patch.slice(0, kept), truncated: true };
 }

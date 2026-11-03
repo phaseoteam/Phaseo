@@ -63,11 +63,21 @@ export function useThreadDiff(client: DesktopClient, chat: Pick<PhoneChat, "id" 
   // State is set only when the answer arrives, never while the effect that asked runs, and only by the latest read:
   // an answer for a segment the person has left would otherwise replace the one they're looking at.
   const latest = useRef(0);
+  // Files asked for on their own, by hash and path, so each is read once per version of the diff. A failure is
+  // forgotten when the diff is read again (Refresh, reconnect, a turn ending), since an unchanged file keeps its hash.
+  const requested = useRef(new Set<string>());
+  const failed = useRef(new Set<string>());
   const read = useCallback(() => {
     const asked = ++latest.current;
     if (!chatId || !allowed) return;
     client.request("read_diff", { chatId, scope, ...(scope === "turn" && messageId ? { messageId } : {}) }).then(
-      (diff) => { if (asked === latest.current) setState({ key, diff, error: null, loading: false }); },
+      (diff) => {
+        if (asked !== latest.current) return;
+        for (const marker of failed.current) requested.current.delete(marker);
+        failed.current.clear();
+        setFiles((existing) => ({ hash: existing.hash, byPath: new Map([...existing.byPath].filter(([, file]) => typeof file !== "string")) }));
+        setState({ key, diff, error: null, loading: false });
+      },
       (problem: unknown) => { if (asked === latest.current) setState({ key, diff: null, error: { message: messageOf(problem), ...(problem instanceof DesktopRequestError ? { code: problem.code } : {}) }, loading: false }); },
     );
   }, [client, chatId, scope, messageId, allowed, key]);
@@ -84,11 +94,17 @@ export function useThreadDiff(client: DesktopClient, chat: Pick<PhoneChat, "id" 
 
   const current: DiffState = state.key === key ? state : { key, diff: null, error: null, loading: true };
   const hash = current.diff?.hash ?? "";
+  /** Reads a file on its own, unless this version of the diff already asked for it. */
   const loadFile = useCallback((path: string) => {
-    if (!chatId || !hash) return;
+    const marker = `${hash}:${path}`;
+    if (!chatId || !hash || requested.current.has(marker)) return;
+    requested.current.add(marker);
     client.request("read_diff_file", { chatId, scope, ...(scope === "turn" && messageId ? { messageId } : {}), path, hash }).then(
       ({ file }) => setFiles((existing) => ({ hash, byPath: new Map(existing.hash === hash ? existing.byPath : []).set(path, file) })),
-      (problem: unknown) => setFiles((existing) => ({ hash, byPath: new Map(existing.hash === hash ? existing.byPath : []).set(path, messageOf(problem)) })),
+      (problem: unknown) => {
+        failed.current.add(marker);
+        setFiles((existing) => ({ hash, byPath: new Map(existing.hash === hash ? existing.byPath : []).set(path, messageOf(problem)) }));
+      },
     );
   }, [client, chatId, scope, messageId, hash]);
   /** A file with its patch as read on its own, or the error reading it. */

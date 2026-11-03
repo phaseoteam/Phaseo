@@ -166,6 +166,20 @@ describe("phone review", () => {
 		expect(await ask({ type: "read_diff_file", scope: "uncommitted", projectId: "p1", path: "huge.txt", hash })).toMatchObject({ ok: false, error: { code: "rejected" } });
 	});
 
+	it("cuts a single patch by its escaped size, so control characters can't push read_diff_file past a frame", async () => {
+		const { ask, app } = connected();
+		// 200 KB on disk, but each \u0001 is six bytes once escaped: about 1.2 MB in the frame.
+		const line = `+${"\u0001".repeat(999)}`;
+		app.patches.set("uncommitted", ["diff --git a/ctl.txt b/ctl.txt", "--- /dev/null", "+++ b/ctl.txt", "@@ -0,0 +1,200 @@", ...Array.from({ length: 200 }, () => line)].join("\n") + "\n");
+		const listed = await ask({ type: "read_diff", scope: "uncommitted", projectId: "p1" });
+		if (!listed.ok || listed.type !== "read_diff") throw new Error("expected a diff");
+		const { hash } = listed.result as Extract<PhoneResponse<"read_diff">, { ok: true }>["result"];
+		const response = await ask({ type: "read_diff_file", scope: "uncommitted", projectId: "p1", path: "ctl.txt", hash });
+		expect(response).toMatchObject({ ok: true, result: { file: { path: "ctl.txt", truncated: true } } });
+		expect(Buffer.byteLength(JSON.stringify(response))).toBeLessThan(phoneLimits.frameBytes - 32 * 1024);
+		expect((response as { result: { file: { patch: string } } }).result.file.patch.endsWith(`${line}\n`)).toBe(true);
+	});
+
 	it("keeps each phone's switches on disk, reading code by default for phones paired before them", () => {
 		const folder = mkdtempSync(path.join(tmpdir(), "phaseo-phone-")); folders.push(folder);
 		writeFileSync(path.join(folder, "phone.json"), JSON.stringify({ enabled: true, desktopId: "desk", devices: [{ id: "old", name: "Pixel", publicKey: "key", relayTokenHash: "hash", pairedAt: "2026-11-01T00:00:00.000Z" }] }));

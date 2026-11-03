@@ -51,4 +51,40 @@ describe("a thread's review", () => {
     await act(async () => answer("branch").reject(new Error("No base branch.")));
     expect(result).toMatchObject({ loading: false, diff: { hash: "uncommitted" }, error: null });
   });
+
+  it("reads a file on its own once per diff, and again after a failure once the diff is read again", async () => {
+    const listed = { path: "huge.txt", status: "added", additions: 7000, deletions: 0 } as const;
+    const fileReads: string[] = [], listeners: ((event: { type: string; reconnect?: boolean }) => void)[] = [];
+    let failNext = 2;
+    const client = {
+      state: createStore<ConnectionState>({ status: "connected", via: "direct", desktopName: "Studio", protocol: 4, capabilities: ["code"] }),
+      request: async (type: string, params: { path?: string }) => {
+        if (type === "read_diff") return { repository: true, files: [listed], hash: "same", truncated: false };
+        fileReads.push(params.path!);
+        if (failNext-- > 0) throw new Error("The connection dropped.");
+        return { file: { ...listed, patch: "+x\n" } };
+      },
+      on: (listener: (typeof listeners)[number]) => { listeners.push(listener); return () => {}; },
+    } as unknown as DesktopClient;
+    let result: ReturnType<typeof useThreadDiff> | undefined;
+    function Probe() { result = useThreadDiff(client, chat, "uncommitted", null); return null; }
+    await act(async () => root.render(<Probe />));
+    await act(async () => result!.loadFile("huge.txt"));
+    await act(async () => result!.loadFile("huge.txt"));
+    expect(fileReads).toHaveLength(1);
+    expect(result!.fileOf(listed)).toBe("The connection dropped.");
+
+    // A reconnect reads the diff again; its hash is unchanged, but the failed file is asked for again.
+    await act(async () => { for (const listener of listeners) listener({ type: "connected", reconnect: true }); });
+    expect(result!.fileOf(listed)).toEqual(listed);
+    await act(async () => result!.loadFile("huge.txt"));
+    expect(fileReads).toHaveLength(2);
+
+    // So does Refresh, and then the read that works is kept.
+    await act(async () => result!.reload());
+    await act(async () => result!.loadFile("huge.txt"));
+    await act(async () => result!.loadFile("huge.txt"));
+    expect(fileReads).toHaveLength(3);
+    expect(result!.fileOf(listed)).toMatchObject({ patch: "+x\n" });
+  });
 });

@@ -1,6 +1,6 @@
 import { LegendList } from "@legendapp/list/react-native";
 import { ChevronDown, ChevronRight, FileDiff, MessageSquarePlus, RefreshCw, ShieldOff } from "lucide-react-native";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Platform, Pressable, Text as NativeText, View, type TextProps } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button, EmptyState, ErrorState, Header, IconButton, Screen, Segmented, Sheet, SkeletonRows, Text, TextField, toast, useToneColor, Icon } from "@/components/ui";
@@ -63,15 +63,9 @@ function Review({ client, desktopId, chatId, initialScope, messageId }: { client
       return next;
     });
   }, []);
-  // An open file the diff had no room for is read on its own, once per version of the diff.
-  const requested = useRef(new Set<string>());
+  // An open file the diff had no room for is read on its own (loadFile asks once per version of the diff).
   useEffect(() => {
-    for (const file of diff?.files ?? []) {
-      const key = `${diff?.hash}:${file.path}`;
-      if (!open.has(file.path) || file.patch || file.binary || requested.current.has(key)) continue;
-      requested.current.add(key);
-      loadFile(file.path);
-    }
+    for (const file of diff?.files ?? []) if (open.has(file.path) && !file.patch && !file.binary) loadFile(file.path);
   }, [diff, open, loadFile]);
 
   const rowsByPath = useMemo(() => {
