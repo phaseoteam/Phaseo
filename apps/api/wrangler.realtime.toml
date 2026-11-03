@@ -9,7 +9,7 @@
 name = "phaseo-realtime"
 main = "src/realtime-worker.ts"
 compatibility_date = "2025-10-01"
-compatibility_flags = ["global_fetch_strictly_public", "web_socket_auto_reply_to_close", "nodejs_als"]
+compatibility_flags = ["global_fetch_strictly_public", "web_socket_auto_reply_to_close", "nodejs_als", "nodejs_compat", "nodejs_compat_do_not_populate_process_env"]
 workers_dev = false
 preview_urls = false
 

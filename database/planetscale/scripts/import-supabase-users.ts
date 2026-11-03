@@ -31,6 +31,8 @@
 //   --dry-run             run every statement in the transaction, print the counts, then roll back
 //   --allow-live          import even though auth.sessions has rows (Better Auth is already serving sign-ins; a
 //                         re-import would overwrite profile fields changed since). Off by default.
+//   --allow-stale-users   commit even though auth.users has rows missing from this export. Without it such a run
+//                         fails, so a user deleted from Supabase since an earlier run can't keep a Better Auth login.
 //   --json                print the summary as JSON
 //
 // Run from the repo root after `pnpm install` (pg comes from apps/web):
@@ -39,8 +41,8 @@
 // Behaviour:
 //   * One transaction. Any error rolls everything back, including the trigger change below.
 //   * Idempotent: users and passkeys upsert on id, accounts on (provider_id, account_id). A re-run updates rows in
-//     place and reports them as "updated". It never deletes: users removed from Supabase since an earlier run are
-//     only counted ("in target, not in export"). Rows owned by a different user are an error, never reassigned.
+//     place and reports them as "updated". It never deletes: users removed from Supabase since an earlier run make
+//     a committing run fail (see --allow-stale-users); a dry run only counts them ("in target, not in export"). Rows owned by a different user are an error, never reassigned.
 //     A credential whose password Better Auth has already rehashed (not bcrypt any more) is left alone.
 //   * The signup trigger. 0002_baseline.sql has `on_auth_user_created_enqueue_welcome` AFTER INSERT ON auth.users,
 //     running public.handle_auth_user_created(), which inserts public.users (user_id). (Its Discord webhook moved to
@@ -495,7 +497,7 @@ function tally(rows: Array<{ inserted: boolean }>): Written {
 export async function importSupabaseUsers(
   client: SqlClient,
   plan: ImportPlan,
-  options: { dryRun?: boolean; allowLive?: boolean } = {},
+  options: { dryRun?: boolean; allowLive?: boolean; allowStaleUsers?: boolean } = {},
 ): Promise<ImportSummary> {
   await client.query("begin");
   try {
@@ -570,9 +572,17 @@ export async function importSupabaseUsers(
     );
     if (signup && after.rows[0]?.tgenabled !== signup.tgenabled) throw new Error("signup trigger was not restored");
 
-    const stale = await client.query("select count(*)::int as n from auth.users where id <> all($1::uuid[])", [
-      plan.users.map((user) => user.id),
-    ]);
+    const stale = await client.query(
+      "select count(*)::int as n, (array_agg(id order by id))[1:10] as sample from auth.users where id <> all($1::uuid[])",
+      [plan.users.map((user) => user.id)],
+    );
+    // A user deleted from Supabase since an earlier run would otherwise keep their Better Auth login.
+    if (!options.dryRun && stale.rows[0].n > 0 && !options.allowStaleUsers) {
+      throw new Error(
+        `${stale.rows[0].n} auth.users row(s) are not in this export (e.g. ${stale.rows[0].sample.join(", ")}). ` +
+          "Remove or ban them first, or pass --allow-stale-users if they were created on Better Auth on purpose.",
+      );
+    }
 
     await client.query(options.dryRun ? "rollback" : "commit");
     return {
@@ -741,7 +751,11 @@ async function main(argv: string[]) {
   const target = new pg.Client(targetConfig(targetUrl));
   await target.connect();
   try {
-    const summary = await importSupabaseUsers(target, plan, { dryRun: has("--dry-run"), allowLive: has("--allow-live") });
+    const summary = await importSupabaseUsers(target, plan, {
+      dryRun: has("--dry-run"),
+      allowLive: has("--allow-live"),
+      allowStaleUsers: has("--allow-stale-users"),
+    });
     if (has("--json")) console.log(JSON.stringify(summary, null, 2));
     else printSummary(summary);
   } finally {

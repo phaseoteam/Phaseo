@@ -452,8 +452,14 @@ describe("import into PlanetScale's auth schema", { skip: server ? false : "no P
     assert.equal(await count("select count(*) as n from public.users"), 1);
   });
 
+  test("a committing re-run refuses users missing from the export, unless --allow-stale-users", async () => {
+    await assert.rejects(importSupabaseUsers(client, plan), /1 auth\.users row\(s\) are not in this export.*--allow-stale-users/);
+    const dry = await importSupabaseUsers(client, plan, { dryRun: true });
+    assert.equal(dry.usersInTargetNotInExport, 1, "a dry run reports them without failing");
+  });
+
   test("a re-run is idempotent", async () => {
-    const summary = await importSupabaseUsers(client, plan);
+    const summary = await importSupabaseUsers(client, plan, { allowStaleUsers: true });
     assert.deepEqual(summary.written.users, { inserted: 0, updated: 6 });
     assert.deepEqual(summary.written.accounts.credential, { inserted: 0, updated: 3 });
     assert.deepEqual(summary.written.passkeys, { inserted: 0, updated: 1 });
@@ -592,7 +598,7 @@ describe("import into PlanetScale's auth schema", { skip: server ? false : "no P
     });
 
     test("a re-import keeps a password Better Auth already rehashed", async () => {
-      await importSupabaseUsers(client, plan, { allowLive: true });
+      await importSupabaseUsers(client, plan, { allowLive: true, allowStaleUsers: true });
       assert.doesNotMatch(await credentialHash(ids.password), /^\$2/);
       const again = await auth.api.signInEmail({ body: { email: "pass@example.com", password: PASSWORD } });
       assert.equal(again.user.id, ids.password);

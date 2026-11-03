@@ -239,7 +239,14 @@ psql "$PLANETSCALE_DIRECT_URL" --single-transaction -v ON_ERROR_STOP=1 \
 psql "$PLANETSCALE_DIRECT_URL" -c "select jobname, schedule, active, username, database from cron.job order by 1"   # 8 rows, all active = f
 ```
 
-1.9 **Workers prerequisite:** the app owners deploy `nodejs_compat` on every `apps/api` config (ENV.md) as a standalone change, and confirm it is healthy for a day.
+1.9 **Workers prerequisite:** every `apps/api` config on this branch carries `nodejs_compat` plus `nodejs_compat_do_not_populate_process_env` (the second keeps `process.env` empty, so the executors' `process.env.*_API_KEY` fallbacks and `persist.ts`'s Stripe key lookup behave as they do without the flag). postgres.js needs them, and the gateway bundles it even under `DATABASE_PROVIDER=supabase`. Ship those flag lines to main as a standalone change first, and confirm it is healthy for a day.
+
+1.9a **Relationship metadata:** `@phaseo/db` resolves `.rpc()` names, embeds and upsert conflict targets from `packages/data/db/src/generated/relationships.json`, which every app bundles. The committed file was generated from 0000–0002 on a local Postgres 17 (322 relations, 446 foreign keys, 441 functions). Regenerate it against the PlanetScale database and commit any difference before phase 3; also after any schema migration later:
+```sh
+node packages/data/db/scripts/generate-relationships.mjs "$PLANETSCALE_DIRECT_URL" > packages/data/db/src/generated/relationships.json
+git diff --stat packages/data/db/src/generated/relationships.json
+```
+A function or table missing from this file returns PGRST202/PGRST200 under `DATABASE_PROVIDER=planetscale`.
 
 1.10 **Hyperdrive configs** `[CF]`: create `phaseo-planetscale`, `phaseo-planetscale-catalogue` and `phaseo-planetscale-shadow` (commands in `hyperdrive-bindings.example.toml`). Creation fails if the credentials don't work, which is a free connectivity test.
 
