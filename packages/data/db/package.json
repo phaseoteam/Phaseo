@@ -1,0 +1,36 @@
+{
+	"name": "@phaseo/db",
+	"description": "PostgREST-compatible data client (supabase-js .from()/.rpc()) over plain Postgres: Hyperdrive (Workers) and pg (Node)",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"sideEffects": false,
+	"exports": {
+		".": "./src/index.ts",
+		"./hyperdrive": "./src/connections/hyperdrive.ts",
+		"./hyperdrive-scope": "./src/connections/hyperdrive-scope.ts",
+		"./jwt": "./src/auth/jwt.ts",
+		"./node": "./src/connections/node.ts",
+		"./relationships.json": "./src/generated/relationships.json"
+	},
+	"scripts": {
+		"typecheck": "tsc --noEmit -p tsconfig.json",
+		"test": "vitest run",
+		"generate:relationships": "node scripts/generate-relationships.mjs",
+		"scan:usage": "node scripts/scan-postgrest-usage.mjs"
+	},
+	"dependencies": {
+		"@supabase/postgrest-js": "2.112.4",
+		"jose": "6.2.12",
+		"pg": "8.23.1",
+		"postgres": "3.4.9"
+	},
+	"devDependencies": {
+		"@electric-sql/pglite": "0.5.8",
+		"@types/node": "26.6.5",
+		"@types/pg": "8.23.1",
+		"@typescript/native": "catalog:",
+		"typescript": "catalog:",
+		"vitest": "4.1.11"
+	}
+}

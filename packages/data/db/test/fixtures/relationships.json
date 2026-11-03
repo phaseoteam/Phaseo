@@ -1,0 +1,260 @@
+{
+	"version": 1,
+	"generatedAt": null,
+	"schemas": ["public", "private", "catalogue_private", "auth"],
+	"tables": {
+		"auth.users": { "kind": "r", "primaryKey": ["id"], "uniques": [["id"]] },
+		"public.api_apps": { "kind": "r", "primaryKey": ["id"], "uniques": [["id"]] },
+		"public.benchmark_results": { "kind": "r", "primaryKey": ["result_id"], "uniques": [["result_id"]] },
+		"public.benchmarks": { "kind": "r", "primaryKey": ["benchmark_id"], "uniques": [["benchmark_id"]] },
+		"public.broadcast_event_receipts": { "kind": "r", "primaryKey": ["event_id"], "uniques": [["event_id"]] },
+		"public.events": { "kind": "r", "primaryKey": ["id"], "uniques": [["id"]] },
+		"public.gateway_requests": { "kind": "r", "primaryKey": ["request_id"], "uniques": [["request_id"]] },
+		"public.labs": { "kind": "r", "primaryKey": ["lab_slug"], "uniques": [["lab_slug"]] },
+		"public.model_details": { "kind": "r", "primaryKey": ["model_slug"], "uniques": [["model_slug"]] },
+		"public.model_tags": { "kind": "r", "primaryKey": ["model_slug", "tag_id"], "uniques": [["model_slug", "tag_id"]] },
+		"public.models": { "kind": "r", "primaryKey": ["model_slug"], "uniques": [["model_slug"]] },
+		"public.notes": { "kind": "r", "primaryKey": ["id"], "uniques": [["id"]] },
+		"public.oauth_authorizations": { "kind": "r", "primaryKey": ["id"], "uniques": [["id"]] },
+		"public.protected_settings": { "kind": "r", "primaryKey": ["id"], "uniques": [["id"]] },
+		"public.settings": { "kind": "r", "primaryKey": [], "uniques": [["workspace_id", "key"]] },
+		"public.tags": { "kind": "r", "primaryKey": ["tag_id"], "uniques": [["tag_id"]] },
+		"public.users": { "kind": "r", "primaryKey": ["user_id"], "uniques": [["email"],["user_id"]] },
+		"public.v2_model_provider_routes": { "kind": "r", "primaryKey": ["provider_model_id"], "uniques": [["provider_model_id"]] },
+		"public.v2_pricing_sku_meters": { "kind": "r", "primaryKey": ["sku_meter_id"], "uniques": [["sku_meter_id"]] },
+		"public.v2_pricing_skus": { "kind": "r", "primaryKey": ["sku_id"], "uniques": [["sku_id"]] },
+		"public.workspace_join_requests": { "kind": "r", "primaryKey": ["id"], "uniques": [["id"]] },
+		"public.workspace_members": { "kind": "r", "primaryKey": ["workspace_id", "user_id"], "uniques": [["workspace_id", "user_id"]] },
+		"public.workspaces": { "kind": "r", "primaryKey": ["id"], "uniques": [["id"],["slug"]] }
+	},
+	"foreignKeys": [
+		{ "name": "benchmark_results_benchmark_id_fkey", "schema": "public", "table": "benchmark_results", "columns": ["benchmark_id"], "refSchema": "public", "refTable": "benchmarks", "refColumns": ["benchmark_id"] },
+		{ "name": "benchmark_results_model_slug_fkey", "schema": "public", "table": "benchmark_results", "columns": ["model_slug"], "refSchema": "public", "refTable": "models", "refColumns": ["model_slug"] },
+		{ "name": "gateway_requests_app_id_fkey", "schema": "public", "table": "gateway_requests", "columns": ["app_id"], "refSchema": "public", "refTable": "api_apps", "refColumns": ["id"] },
+		{ "name": "model_details_model_slug_fkey", "schema": "public", "table": "model_details", "columns": ["model_slug"], "refSchema": "public", "refTable": "models", "refColumns": ["model_slug"] },
+		{ "name": "model_tags_model_slug_fkey", "schema": "public", "table": "model_tags", "columns": ["model_slug"], "refSchema": "public", "refTable": "models", "refColumns": ["model_slug"] },
+		{ "name": "model_tags_tag_id_fkey", "schema": "public", "table": "model_tags", "columns": ["tag_id"], "refSchema": "public", "refTable": "tags", "refColumns": ["tag_id"] },
+		{ "name": "models_lab_slug_fkey", "schema": "public", "table": "models", "columns": ["lab_slug"], "refSchema": "public", "refTable": "labs", "refColumns": ["lab_slug"] },
+		{ "name": "models_previous_model_slug_fkey", "schema": "public", "table": "models", "columns": ["previous_model_slug"], "refSchema": "public", "refTable": "models", "refColumns": ["model_slug"] },
+		{ "name": "oauth_authorizations_user_id_fkey", "schema": "public", "table": "oauth_authorizations", "columns": ["user_id"], "refSchema": "public", "refTable": "users", "refColumns": ["user_id"] },
+		{ "name": "oauth_authorizations_workspace_id_fkey", "schema": "public", "table": "oauth_authorizations", "columns": ["workspace_id"], "refSchema": "public", "refTable": "workspaces", "refColumns": ["id"] },
+		{ "name": "v2_pricing_sku_meters_sku_id_fkey", "schema": "public", "table": "v2_pricing_sku_meters", "columns": ["sku_id"], "refSchema": "public", "refTable": "v2_pricing_skus", "refColumns": ["sku_id"] },
+		{ "name": "v2_pricing_skus_provider_model_id_fkey", "schema": "public", "table": "v2_pricing_skus", "columns": ["provider_model_id"], "refSchema": "public", "refTable": "v2_model_provider_routes", "refColumns": ["provider_model_id"] },
+		{ "name": "workspace_join_requests_decided_by_fkey", "schema": "public", "table": "workspace_join_requests", "columns": ["decided_by"], "refSchema": "public", "refTable": "users", "refColumns": ["user_id"] },
+		{ "name": "workspace_join_requests_requester_user_id_fkey", "schema": "public", "table": "workspace_join_requests", "columns": ["requester_user_id"], "refSchema": "public", "refTable": "users", "refColumns": ["user_id"] },
+		{ "name": "workspace_join_requests_workspace_id_fkey", "schema": "public", "table": "workspace_join_requests", "columns": ["workspace_id"], "refSchema": "public", "refTable": "workspaces", "refColumns": ["id"] },
+		{ "name": "workspace_members_user_id_fkey", "schema": "public", "table": "workspace_members", "columns": ["user_id"], "refSchema": "public", "refTable": "users", "refColumns": ["user_id"] },
+		{ "name": "workspace_members_workspace_id_fkey", "schema": "public", "table": "workspace_members", "columns": ["workspace_id"], "refSchema": "public", "refTable": "workspaces", "refColumns": ["id"] }
+	],
+	"functions": {
+		"public.claim_next_event": [
+			{
+				"args": [
+					{
+						"name": "p_kind",
+						"type": "text",
+						"hasDefault": false
+					}
+				],
+				"returnType": "public.events",
+				"returnsSet": false,
+				"returnKind": "composite",
+				"returnRelation": "public.events",
+				"volatility": "v"
+			}
+		],
+		"public.count_models": [
+			{
+				"args": [
+					{
+						"name": "p_lab",
+						"type": "text",
+						"hasDefault": true
+					}
+				],
+				"returnType": "integer",
+				"returnsSet": false,
+				"returnKind": "scalar",
+				"returnRelation": null,
+				"volatility": "s"
+			}
+		],
+		"public.current_role_name": [
+			{
+				"args": [],
+				"returnType": "text",
+				"returnsSet": false,
+				"returnKind": "scalar",
+				"returnRelation": null,
+				"volatility": "s"
+			}
+		],
+		"public.echo_json": [
+			{
+				"args": [
+					{
+						"name": "p",
+						"type": "jsonb",
+						"hasDefault": false
+					}
+				],
+				"returnType": "jsonb",
+				"returnsSet": false,
+				"returnKind": "scalar",
+				"returnRelation": null,
+				"volatility": "i"
+			}
+		],
+		"public.fail_with": [
+			{
+				"args": [
+					{
+						"name": "p_code",
+						"type": "text",
+						"hasDefault": false
+					}
+				],
+				"returnType": "void",
+				"returnsSet": false,
+				"returnKind": "void",
+				"returnRelation": null,
+				"volatility": "v"
+			}
+		],
+		"public.get_lab_models": [
+			{
+				"args": [
+					{
+						"name": "p_lab",
+						"type": "text",
+						"hasDefault": false
+					}
+				],
+				"returnType": "public.models",
+				"returnsSet": true,
+				"returnKind": "composite",
+				"returnRelation": "public.models",
+				"volatility": "s"
+			}
+		],
+		"public.lab_summary": [
+			{
+				"args": [
+					{
+						"name": "p_lab",
+						"type": "text",
+						"hasDefault": false
+					}
+				],
+				"returnType": "record",
+				"returnsSet": true,
+				"returnKind": "composite",
+				"returnRelation": null,
+				"volatility": "s"
+			}
+		],
+		"public.model_names": [
+			{
+				"args": [],
+				"returnType": "text",
+				"returnsSet": true,
+				"returnKind": "scalar",
+				"returnRelation": null,
+				"volatility": "s"
+			}
+		],
+		"public.overloaded": [
+			{
+				"args": [
+					{
+						"name": "a",
+						"type": "integer",
+						"hasDefault": false
+					}
+				],
+				"returnType": "text",
+				"returnsSet": false,
+				"returnKind": "scalar",
+				"returnRelation": null,
+				"volatility": "i"
+			},
+			{
+				"args": [
+					{
+						"name": "a",
+						"type": "text",
+						"hasDefault": false
+					},
+					{
+						"name": "b",
+						"type": "text",
+						"hasDefault": false
+					}
+				],
+				"returnType": "text",
+				"returnsSet": false,
+				"returnKind": "scalar",
+				"returnRelation": null,
+				"volatility": "i"
+			}
+		],
+		"public.single_lab": [
+			{
+				"args": [
+					{
+						"name": "p_lab",
+						"type": "text",
+						"hasDefault": false
+					}
+				],
+				"returnType": "public.labs",
+				"returnsSet": false,
+				"returnKind": "composite",
+				"returnRelation": "public.labs",
+				"volatility": "s"
+			}
+		],
+		"public.sum_array": [
+			{
+				"args": [
+					{
+						"name": "p_values",
+						"type": "bigint[]",
+						"hasDefault": false
+					}
+				],
+				"returnType": "bigint",
+				"returnsSet": false,
+				"returnKind": "scalar",
+				"returnRelation": null,
+				"volatility": "i"
+			}
+		],
+		"public.touch_models": [
+			{
+				"args": [
+					{
+						"name": "p_slugs",
+						"type": "text[]",
+						"hasDefault": false
+					}
+				],
+				"returnType": "void",
+				"returnsSet": false,
+				"returnKind": "void",
+				"returnRelation": null,
+				"volatility": "v"
+			}
+		],
+		"public.whoami": [
+			{
+				"args": [],
+				"returnType": "uuid",
+				"returnsSet": false,
+				"returnKind": "scalar",
+				"returnRelation": null,
+				"volatility": "s"
+			}
+		]
+	}
+}

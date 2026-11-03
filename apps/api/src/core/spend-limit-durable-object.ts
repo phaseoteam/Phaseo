@@ -23,6 +23,7 @@
 import { DurableObject } from "cloudflare:workers";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { GatewayBindings } from "@/runtime/env.types";
+import { databaseProvider, oneShotPlanetScaleClient } from "@/runtime/database";
 import type { GateCheck } from "@pipeline/before/types";
 import type { LeaseAcquireResult, LeaseReturn, LeaseVector } from "@core/lease-pool";
 import {
@@ -393,14 +394,22 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 
 	/** Reads seed data. Overridden in tests. */
 	protected async loadSeed(workspaceId: string, keyIds: string[], excludeRequestIds: string[]): Promise<SpendLimitSeed> {
+		const args = { p_workspace_id: workspaceId, p_key_ids: keyIds, p_exclude_request_ids: excludeRequestIds };
+		// DATABASE_PROVIDER=planetscale: one Hyperdrive connection per seed read, ended without delaying the reply.
+		if (databaseProvider(this.env) === "planetscale") {
+			const db = oneShotPlanetScaleClient(this.env);
+			try {
+				const { data, error } = await db.client.rpc("gateway_spend_limit_seed", args);
+				if (error) throw new Error(`spend_limit_seed_failed:${error.message ?? "unknown"}`);
+				return data as SpendLimitSeed;
+			} finally {
+				db.close(this.ctx);
+			}
+		}
 		this.supabase ??= createClient(this.env.SUPABASE_URL, this.env.SUPABASE_SERVICE_ROLE_KEY, {
 			auth: { autoRefreshToken: false, persistSession: false },
 		});
-		const { data, error } = await this.supabase.rpc("gateway_spend_limit_seed", {
-			p_workspace_id: workspaceId,
-			p_key_ids: keyIds,
-			p_exclude_request_ids: excludeRequestIds,
-		});
+		const { data, error } = await this.supabase.rpc("gateway_spend_limit_seed", args);
 		if (error) throw new Error(`spend_limit_seed_failed:${error.message ?? "unknown"}`);
 		return data as SpendLimitSeed;
 	}

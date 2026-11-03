@@ -9,6 +9,7 @@ import type { Env } from "@/runtime/types";
 import { v1Router } from "@/routes/v1";
 import { lazyRouter } from "@/routes/lazy";
 import { runWithRequestScope, type GatewayBindings } from "@/runtime/env";
+import { runWithDatabaseScope } from "@/runtime/database";
 import { sendAxiomWideEvent } from "@/observability/axiom";
 import { requestIdFor } from "@/runtime/request-id";
 import { withErrorObject } from "@/core/error-object";
@@ -92,17 +93,25 @@ app.onError((error, c) => {
 	);
 });
 
+// Each invocation runs in a database scope (runtime/database.ts): a straight call under
+// DATABASE_PROVIDER=supabase (the default); under planetscale it owns the invocation's Hyperdrive
+// connection and ends it once the response body and every waitUntil task are done.
 export default {
 	fetch(request: Request, env: GatewayBindings, ctx: ExecutionContext) {
 		markRequestReceived(request);
-		return runWithRequestScope(ctx?.waitUntil?.bind(ctx), () => app.fetch(request, env, ctx));
+		return runWithDatabaseScope(env, ctx, (scopedCtx) =>
+			runWithRequestScope(scopedCtx?.waitUntil?.bind(scopedCtx), () => app.fetch(request, env, scopedCtx)));
 	},
-	async scheduled(event: ScheduledController, env: GatewayBindings) {
-		const { handleScheduledEvent } = await import("@/scheduled");
-		await handleScheduledEvent(event, env);
+	async scheduled(event: ScheduledController, env: GatewayBindings, ctx?: ExecutionContext) {
+		await runWithDatabaseScope(env, ctx, async () => {
+			const { handleScheduledEvent } = await import("@/scheduled");
+			await handleScheduledEvent(event, env);
+		});
 	},
-	async queue(batch: MessageBatch<unknown>, env: GatewayBindings) {
-		const { handleBroadcastQueue } = await import("@/observability/broadcast-queue");
-		await handleBroadcastQueue(batch, env);
+	async queue(batch: MessageBatch<unknown>, env: GatewayBindings, ctx?: ExecutionContext) {
+		await runWithDatabaseScope(env, ctx, async () => {
+			const { handleBroadcastQueue } = await import("@/observability/broadcast-queue");
+			await handleBroadcastQueue(batch, env);
+		});
 	},
 };

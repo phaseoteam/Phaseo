@@ -1,4 +1,8 @@
+import { betterAuthJwtConfigFromEnv, databaseClaims, needsSecondFactor, readBetterAuthIdentity, verifyBetterAuthJwt, type AuthSchemaReader } from "@phaseo/db/jwt";
 import { createClient } from "@supabase/supabase-js";
+import { authProvider } from "@/data/providers";
+import { requireDataScope } from "@/data/scope";
+import { rememberVerifiedClaims } from "@/data/supabase";
 import type { Env } from "@/env";
 
 export type AuthenticatedUser = {
@@ -54,8 +58,63 @@ export function isThirdPartyAppToken(token: string): boolean {
   return !FIRST_PARTY_OAUTH_CLIENT_IDS.has(String(clientId).trim());
 }
 
+const objectOr = (value: unknown): Record<string, unknown> =>
+  value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+
+/**
+ * AUTH_PROVIDER=better-auth: the Bearer value is a Better Auth JWT (jwt plugin; apps get one from
+ * GET /api/auth/token). Its signature, issuer, audience and expiry are checked against the JWKS, then the
+ * session and user rows are read so a signed-out session or a banned user stops working at once rather than
+ * when the 15-minute token expires (what Supabase's getUser gave us).
+ */
+async function requireBetterAuthUser(token: string, env: Env): Promise<AuthenticatedUser | null> {
+  const config = betterAuthJwtConfigFromEnv(env);
+  if (!config) {
+    console.error("[auth] AUTH_PROVIDER=better-auth needs BETTER_AUTH_JWT_ISSUER or BETTER_AUTH_URL");
+    return null;
+  }
+  const verified = await verifyBetterAuthJwt(token, config);
+  if (!verified.ok) {
+    if (verified.reason === "jwks_unavailable") console.error("[auth] Better Auth JWKS unavailable", config.jwksUrl);
+    return null;
+  }
+  const claims = verified.claims;
+  if (isThirdPartyAppToken(token)) return null;
+
+  // Service role on the auth schema: authenticated/anon have no grants there (0001_auth.sql). Typed
+  // structurally: checking the full postgrest-js client type against AuthSchemaReader is too deep for tsc.
+  const authSchema = requireDataScope().db.client({ role: "service_role", schemas: ["auth"] }) as unknown as AuthSchemaReader;
+  const identity = await readBetterAuthIdentity(authSchema, claims);
+  if (!identity) return null;
+  const { user, session } = identity;
+
+  // Same rule as the website (aal.ts): 2FA on (now, or when the token was minted) needs an aal2 session.
+  const aal = session.aal ?? claims.aal;
+  if (needsSecondFactor({
+    two_factor_enabled: Boolean(user.two_factor_enabled || claims.two_factor_enabled),
+    mfa_reenrollment_required: Boolean(user.mfa_reenrollment_required || claims.mfa_reenrollment_required),
+    aal,
+  })) return null;
+
+  rememberVerifiedClaims(token, databaseClaims({ ...claims, aal }));
+  return {
+    id: user.id,
+    email: user.email ?? claims.email ?? null,
+    createdAt: user.created_at,
+    appMetadata: objectOr(user.raw_app_meta_data),
+    // Supabase kept name/avatar in user_metadata; Better Auth has columns. Imported metadata wins.
+    userMetadata: {
+      ...(user.name ? { name: user.name, full_name: user.name } : {}),
+      ...(user.image ? { avatar_url: user.image } : {}),
+      ...objectOr(user.raw_user_meta_data),
+    },
+    factors: user.two_factor_enabled ? [{ id: "better-auth-totp", factor_type: "totp", status: "verified" }] : [],
+  };
+}
+
 export async function requireUser(request: Request, env: Env): Promise<AuthenticatedUser | null> {
   const token = bearerToken(request);
+  if (token && authProvider(env) === "better-auth") return requireBetterAuthUser(token, env);
   const url = (env.SUPABASE_URL ?? env.NEXT_PUBLIC_SUPABASE_URL)?.trim();
   const anonKey = (env.SUPABASE_ANON_KEY ?? env.NEXT_PUBLIC_SUPABASE_ANON_KEY)?.trim();
   if (!token || !url || !anonKey) return null;
@@ -75,6 +134,10 @@ export async function requireUser(request: Request, env: Env): Promise<Authentic
   // direct API calls, so a password-only (aal1) session is treated as signed out here.
   const hasVerifiedFactor = (data.user.factors ?? []).some((factor) => factor.status === "verified");
   if (hasVerifiedFactor && tokenAssuranceLevel(token) !== "aal2") return null;
+
+  // DATABASE_PROVIDER=planetscale with Supabase Auth: getUser has verified this token, so its claims can act
+  // as the user for getAuthenticatedDataClient (no-op under DATABASE_PROVIDER=supabase).
+  rememberVerifiedClaims(token, databaseClaims({ ...(tokenClaims(token) ?? {}), sub: data.user.id }));
 
   return {
     id: data.user.id,

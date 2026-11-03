@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { getSessionUser } from "@/lib/db/session";
 import createMiddleware from "next-intl/middleware";
 import { defaultLocale, isPublicLocale, routing } from "@/i18n/routing";
 import { localizePublicPath } from "@/lib/auth/localized-paths";
@@ -155,27 +155,22 @@ async function canPreviewFutureBlogPost(request: NextRequest): Promise<boolean> 
 		return true;
 	}
 
-	const supabase = createServerClient(
-		process.env.NEXT_PUBLIC_SUPABASE_URL!,
-		process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-		{
-			cookies: {
-				getAll: () => request.cookies.getAll(),
-				setAll: (_cookiesToSet: Array<{ name: string; value: string; options?: CookieOptions }>) => {
-					// The normal session middleware handles cookie refreshes after this gate.
-				},
+	// Supabase Auth or Better Auth by AUTH_PROVIDER; the role read by DATABASE_PROVIDER (src/lib/db/session.ts).
+	const session = await getSessionUser({
+		headers: request.headers,
+		cookies: {
+			getAll: () => request.cookies.getAll(),
+			setAll: () => {
+				// The normal session middleware handles cookie refreshes after this gate.
 			},
-		}
-	);
-
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
+		},
+	});
+	const { user } = session;
 	if (!user) {
 		return false;
 	}
 
-	const { data, error } = await supabase
+	const { data, error } = await session.dataClient()
 		.from("users")
 		.select("role")
 		.eq("user_id", user.id)

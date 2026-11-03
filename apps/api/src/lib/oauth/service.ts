@@ -1,5 +1,7 @@
 import { violatesMcpManagementBinding } from "@/lib/oauth/mcpScopes";
+import { betterAuthJwtConfigFromEnv, readBetterAuthIdentity, verifyBetterAuthJwt } from "@phaseo/db/jwt";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
+import { authProvider, planetScaleAuthSchemaClient } from "@/runtime/database";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import {
 	CAPABILITIES,
@@ -435,12 +437,48 @@ async function fetchUserProfile(userId: string): Promise<{ email?: string | null
 }
 
 /**
+ * AUTH_PROVIDER=better-auth: the person a Better Auth JWT (jwt plugin, `GET /api/auth/token`) belongs to.
+ * Signature, issuer, audience and expiry are checked against the JWKS; the session and user rows are then
+ * read so sign-out and bans apply at once. Same refusals as the Supabase path: tokens issued to third-party
+ * apps (a client_id that isn't Phaseo's) are not the person.
+ */
+async function getBetterAuthActor(accessToken: string): Promise<OAuthActor | null> {
+	const config = betterAuthJwtConfigFromEnv(getBindings());
+	if (!config) {
+		console.error("[oauth] AUTH_PROVIDER=better-auth needs BETTER_AUTH_JWT_ISSUER or BETTER_AUTH_URL");
+		return null;
+	}
+	const verified = await verifyBetterAuthJwt(accessToken, config);
+	if (!verified.ok) {
+		if (verified.reason === "jwks_unavailable") console.error("[oauth] Better Auth JWKS unavailable", config.jwksUrl);
+		return null;
+	}
+	const claims = verified.claims;
+	const clientId = claims.client_id === undefined || claims.client_id === null ? null : String(claims.client_id).trim();
+	if (clientId !== null && !isFirstPartyOAuthClient(clientId)) return null;
+	const identity = await readBetterAuthIdentity(planetScaleAuthSchemaClient(), claims);
+	if (!identity) return null;
+	const { user, session } = identity;
+	const metadata = (user.raw_user_meta_data ?? {}) as Record<string, unknown>;
+	return {
+		userId: user.id,
+		clientId,
+		mfaRequired: Boolean(user.two_factor_enabled || user.mfa_reenrollment_required || claims.two_factor_enabled || claims.mfa_reenrollment_required),
+		assuranceLevel: session.aal ?? claims.aal ?? null,
+		email: user.email ?? claims.email ?? null,
+		name: user.name
+			?? (typeof metadata.full_name === "string" ? metadata.full_name : typeof metadata.name === "string" ? metadata.name : null),
+	};
+}
+
+/**
  * The person a Supabase access token belongs to, for the routes that act as that person: consent approval,
  * device activation, the desktop key and dashboard sessions. The auth provider's OAuth server also issues
  * such tokens to apps, with the app's client_id claim. A third-party app's token is the app acting for the
  * person, not the person, so it is refused here (null, as if signed out); Phaseo's own apps keep theirs.
  */
 export async function getSupabaseActor(accessToken: string): Promise<OAuthActor | null> {
+	if (authProvider(getBindings()) === "better-auth") return getBetterAuthActor(accessToken);
 	const supabase = getSupabaseAdmin();
 	const { data, error } = await supabase.auth.getUser(accessToken);
 	if (error || !data?.user?.id) return null;

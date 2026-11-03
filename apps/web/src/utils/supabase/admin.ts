@@ -1,6 +1,9 @@
 // Offline maintenance scripts and the server-side post-login bootstrap. Other
 // application runtime data access should use apps/web-api.
 import { createClient } from "@supabase/supabase-js";
+// Relative, not @/: scripts/ import this file with tsx, which has no path aliases.
+import { databaseProvider } from "../../lib/db/providers";
+import { createServiceDataClient } from "../../lib/db/server";
 
 const DEFAULT_FETCH_RETRIES = Number(process.env.SUPABASE_FETCH_RETRIES ?? "3");
 const DEFAULT_FETCH_TIMEOUT_MS = Number(process.env.SUPABASE_FETCH_TIMEOUT_MS ?? "20000");
@@ -36,9 +39,21 @@ async function fetchWithRetry(input: RequestInfo | URL, init?: RequestInit): Pro
 	throw lastError instanceof Error ? lastError : new Error("Supabase fetch failed after retries");
 }
 
-export function createAdminClient() {
+function createSupabaseAdminClient(url: string, key: string) {
+	return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false }, global: { fetch: fetchWithRetry } });
+}
+
+type AdminClient = ReturnType<typeof createSupabaseAdminClient>;
+
+/**
+ * Service-role client. DATABASE_PROVIDER=planetscale: @phaseo/db's compat client on the instance's pg pool
+ * (src/lib/db/server.ts), same `.from()`/`.rpc()` API; `.auth.admin.*` throws there and those call sites are
+ * on the Better Auth migration list.
+ */
+export function createAdminClient(): AdminClient {
+	if (databaseProvider() === "planetscale") return createServiceDataClient() as unknown as AdminClient;
 	const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 	const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 	if (!url || !key) throw new Error("Missing Supabase configuration for maintenance script");
-	return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false }, global: { fetch: fetchWithRetry } });
+	return createSupabaseAdminClient(url, key);
 }

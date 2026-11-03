@@ -2,6 +2,19 @@ import type { SlackAgentAdminBinding } from "@/lib/slack-agent-admin";
 
 export type Env = {
   ENV: "development" | "preview" | "staging" | "production";
+	/** "supabase" (default) or "planetscale": where getDataClient/getAuthenticatedDataClient read and write (src/data/providers.ts). */
+	DATABASE_PROVIDER?: string;
+	/** "supabase" (default) or "better-auth": who issues the Bearer tokens requireUser accepts. better-auth needs DATABASE_PROVIDER=planetscale. */
+	AUTH_PROVIDER?: string;
+	/** Hyperdrive binding to PlanetScale (caching disabled), used when DATABASE_PROVIDER=planetscale. */
+	HYPERDRIVE?: Hyperdrive;
+	/** The web origin Better Auth signs JWTs as (its `iss`), e.g. https://phaseo.app. BETTER_AUTH_URL is accepted too. */
+	BETTER_AUTH_JWT_ISSUER?: string;
+	BETTER_AUTH_URL?: string;
+	/** Defaults to <issuer>/api/auth/jwks. */
+	BETTER_AUTH_JWKS_URL?: string;
+	/** Defaults to "phaseo". */
+	BETTER_AUTH_JWT_AUDIENCE?: string;
 	SUPABASE_URL?: string;
 	SUPABASE_ANON_KEY?: string;
 	NEXT_PUBLIC_SUPABASE_URL?: string;

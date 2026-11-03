@@ -1,0 +1,137 @@
+# Hyperdrive bindings for PlanetScale Postgres: example wrangler snippets.
+# Not loaded by anything. Copy the blocks into the wrangler configs at cutover
+# (CUTOVER.md, phases 3 and 4; env names in ENV.md).
+#
+# Two Hyperdrive configs per database, as Cloudflare recommends for mixing fresh
+# and cached reads (https://developers.cloudflare.com/hyperdrive/configuration/query-caching/):
+#
+#   HYPERDRIVE            caching DISABLED. Every read and write: auth, billing, keys,
+#                         read-after-write. The binding name the app code reads
+#                         (apps/api/src/runtime/env.types.ts, apps/web-api/src/env.ts).
+#   HYPERDRIVE_CATALOGUE  caching ENABLED (max_age 60 s, stale_while_revalidate 15 s).
+#                         Public catalogue reads only (models, providers, pricing pages).
+#                         PROPOSED name: no app code reads it yet. It must only carry plain
+#                         single-statement SELECTs: Hyperdrive never caches writes, and does not
+#                         cache queries that call volatile or stable functions (now(),
+#                         set_config(), ...). The compat client's user-scoped path wraps reads in
+#                         a set_config() transaction, so use it with the service-role-style client
+#                         (serviceRoleClaims "writes"), whose reads are single statements.
+#                         Writes do NOT invalidate the cache: never read your own writes through it.
+#
+# Create the configs once per Cloudflare account (they are shared by every Worker that binds them):
+#
+#   npx wrangler hyperdrive create phaseo-planetscale \
+#     --connection-string="postgresql://phaseo_app.<BRANCH_ID>:<PASSWORD>@<HOST>:6432/postgres" \
+#     --caching-disabled --origin-connection-limit 20
+#
+#   npx wrangler hyperdrive create phaseo-planetscale-catalogue \
+#     --connection-string="postgresql://phaseo_catalogue.<BRANCH_ID>:<PASSWORD>@<HOST>:6432/postgres" \
+#     --max-age 60 --swr 15 --origin-connection-limit 5
+#
+#   Phase 3 only (shadow run, read-only role, see CUTOVER.md):
+#   npx wrangler hyperdrive create phaseo-planetscale-shadow \
+#     --connection-string="postgresql://phaseo_shadow.<BRANCH_ID>:<PASSWORD>@<HOST>:6432/postgres" \
+#     --caching-disabled --origin-connection-limit 10
+#
+# Notes:
+#   * Port 6432 is PlanetScale's PgBouncer (transaction mode, survives cluster restarts and
+#     failovers); 5432 is direct. Hyperdrive is a transaction-mode pool too. The recommendation
+#     is 6432 with an origin connection limit (CUTOVER.md decision D10); if prepared statements
+#     misbehave through both poolers, point the config at 5432 with
+#     `wrangler hyperdrive update <id> --origin-port 5432`.
+#   * The PlanetScale username carries the branch id: `<role>.<branch_id>`.
+#   * The connection string is a credential: type it into the shell, never commit it. Hyperdrive
+#     stores it; the Worker only sees a binding.
+#   * TLS: Hyperdrive's `--sslmode` takes require | verify-ca | verify-full. require is what it does
+#     without a flag; verify-full against PlanetScale's publicly trusted certificate is
+#     UNVERIFIED (it may need `--ca-certificate-id` with an uploaded CA).
+#   * Rotating the role password: `wrangler hyperdrive update <id> --origin-password <new>`.
+#   * postgres.js on Workers needs the `nodejs_compat` compatibility flag. apps/web-api has it;
+#     every apps/api config only has `nodejs_als` today and must switch to `nodejs_compat`
+#     (it includes nodejs_als). Do that, and deploy it, BEFORE the cutover (phase 1), so the flag
+#     change is not mixed with the database flip.
+#
+# Local development (`wrangler dev`): Hyperdrive is bypassed; the Worker connects straight to
+# the local connection string, with no pooling and no caching. Prefer the environment variable
+# (it wins over the config field and keeps credentials out of the file):
+#
+#   export CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE="postgres://postgres@127.0.0.1:55433/phaseo_dev"
+#   export CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE_CATALOGUE="postgres://postgres@127.0.0.1:55433/phaseo_dev"
+#
+# or `localConnectionString` in the block, as shown below for a local, password-less database only.
+# `wrangler dev --remote` ignores both and uses the real Hyperdrive config (production data).
+
+# =============================================================================
+# apps/web-api/wrangler.toml   (Worker phaseo-web-api; already has nodejs_compat)
+# =============================================================================
+
+[vars]
+DATABASE_PROVIDER = "planetscale"   # phase 4; "supabase" rolls back
+AUTH_PROVIDER = "supabase"          # "better-auth" after the auth flip (needs DATABASE_PROVIDER=planetscale)
+BETTER_AUTH_JWT_ISSUER = "https://phaseo.app"
+# BETTER_AUTH_JWKS_URL defaults to <issuer>/api/auth/jwks; BETTER_AUTH_JWT_AUDIENCE defaults to "phaseo".
+
+[[hyperdrive]]
+binding = "HYPERDRIVE"
+id = "<phaseo-planetscale config id>"
+localConnectionString = "postgres://postgres@127.0.0.1:55433/phaseo_dev"
+
+[[hyperdrive]]
+binding = "HYPERDRIVE_CATALOGUE"
+id = "<phaseo-planetscale-catalogue config id>"
+localConnectionString = "postgres://postgres@127.0.0.1:55433/phaseo_dev"
+
+# Bindings and vars are not inherited by [env.*]: the PR-preview Worker (env.staging) needs its own.
+# During phase 3 it binds the read-only shadow config; afterwards, whatever staging should use.
+[env.staging.vars]
+ENV = "staging"
+DATABASE_PROVIDER = "planetscale"
+AUTH_PROVIDER = "supabase"
+
+[[env.staging.hyperdrive]]
+binding = "HYPERDRIVE"
+id = "<phaseo-planetscale-shadow config id>"
+
+[[env.staging.hyperdrive]]
+binding = "HYPERDRIVE_CATALOGUE"
+id = "<phaseo-planetscale-catalogue config id>"
+
+# =============================================================================
+# apps/api/wrangler.toml   (Worker phaseo-gateway; repeat in wrangler.eu.toml (phaseo-gateway-eu),
+# wrangler.us.toml (phaseo-gateway-us), wrangler.jobs.toml (phaseo-jobs), wrangler.realtime.toml
+# (phaseo-realtime) and wrangler.staging.toml (phaseo-gateway-staging, shadow config in phase 3))
+# =============================================================================
+
+# Commented out so this file stays valid TOML (one [vars] table per file). In the real
+# wrangler.toml, compatibility_flags is a top-level key above every table.
+#
+# Replace the current flags; nodejs_compat includes what nodejs_als provided.
+# compatibility_flags = ["global_fetch_strictly_public", "web_socket_auto_reply_to_close", "nodejs_compat"]
+#
+# [vars]
+# DATABASE_PROVIDER = "planetscale"
+# AUTH_PROVIDER = "supabase"
+# BETTER_AUTH_JWT_ISSUER = "https://phaseo.app"
+#
+# [[hyperdrive]]
+# binding = "HYPERDRIVE"
+# id = "<phaseo-planetscale config id>"
+# localConnectionString = "postgres://postgres@127.0.0.1:55433/phaseo_dev"
+#
+# [[hyperdrive]]
+# binding = "HYPERDRIVE_CATALOGUE"
+# id = "<phaseo-planetscale-catalogue config id>"
+# localConnectionString = "postgres://postgres@127.0.0.1:55433/phaseo_dev"
+#
+
+# =============================================================================
+# The same in wrangler.jsonc syntax (apps/slack and apps/mcp use jsonc)
+# =============================================================================
+#
+# "compatibility_flags": ["nodejs_compat"],
+# "vars": { "DATABASE_PROVIDER": "planetscale", "AUTH_PROVIDER": "supabase" },
+# "hyperdrive": [
+#   { "binding": "HYPERDRIVE", "id": "<phaseo-planetscale config id>",
+#     "localConnectionString": "postgres://postgres@127.0.0.1:55433/phaseo_dev" },
+#   { "binding": "HYPERDRIVE_CATALOGUE", "id": "<phaseo-planetscale-catalogue config id>" }
+# ]

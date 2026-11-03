@@ -13,6 +13,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@phaseo/db": "workspace:*",
     "@phaseo/sdk": "workspace:*",
     "@supabase/supabase-js": "^2.106.2",
     "ajv": "^8.20.0",
@@ -29,6 +30,7 @@
     "@types/node": "^26.1.2",
     "@typescript/native": "catalog:",
     "eslint": "^10.13.0",
+    "jose": "6.2.12",
     "typescript": "catalog:",
     "typescript-eslint": "8.58.1",
     "vitest": "^4.1.7",

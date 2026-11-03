@@ -1,0 +1,8 @@
+{
+	"version": 1,
+	"generatedAt": null,
+	"schemas": ["public", "private", "catalogue_private", "auth"],
+	"tables": {},
+	"foreignKeys": [],
+	"functions": {}
+}

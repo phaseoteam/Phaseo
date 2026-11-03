@@ -1,7 +1,8 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import type { CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { canUpgradeCookieAuth } from './cookieAuthRequest'
 import { isPublicLocale } from '@/i18n/routing'
+import { getSessionUser } from '@/lib/db/session'
 
 function withoutLocalePrefix(pathname: string): string {
     const segments = pathname.split('/').filter(Boolean)
@@ -12,6 +13,11 @@ function withoutLocalePrefix(pathname: string): string {
 const ACTIVE_WORKSPACE_COOKIE_NAME = 'activeWorkspaceId'
 const ACTIVE_WORKSPACE_COOKIE_MAX_AGE = 60 * 60 * 24 * 30
 
+/**
+ * Session refresh, workspace cookie and auth gates for the proxy. Who is signed in comes from getSessionUser
+ * (src/lib/db/session.ts), which picks Supabase Auth or Better Auth by AUTH_PROVIDER; the default-workspace
+ * read uses that session's data client, which picks Supabase or PlanetScale by DATABASE_PROVIDER.
+ */
 export async function updateSession(request: NextRequest) {
     const forwardedHeaders = new Headers(request.headers)
     const responseHeaders = new Headers()
@@ -23,6 +29,22 @@ export async function updateSession(request: NextRequest) {
     const requestPathname = request.nextUrl.pathname
     const pathname = withoutLocalePrefix(requestPathname)
 
+    const session = await getSessionUser({
+        headers: request.headers,
+        includeMfa: true,
+        cookies: {
+            getAll: () => request.cookies.getAll(),
+            setAll: (cookiesToSet, headers = {}) => {
+                Object.entries(headers).forEach(([name, value]) => responseHeaders.set(name, value))
+                cookiesToSet.forEach((cookie) => {
+                    request.cookies.set(cookie.name, cookie.value)
+                    responseCookies.set(cookie.name, cookie)
+                })
+            },
+        },
+    })
+    const { user } = session
+
     const finishResponse = (response?: NextResponse) => {
         const nextResponse = response ?? NextResponse.next({
             request: { headers: forwardedHeaders },
@@ -31,35 +53,12 @@ export async function updateSession(request: NextRequest) {
             nextResponse.cookies.set(name, value, options)
         })
         responseHeaders.forEach((value, name) => nextResponse.headers.set(name, value))
+        // Better Auth's refreshed session cookie, as Set-Cookie values.
+        session.setCookieHeaders.forEach((value) => nextResponse.headers.append('set-cookie', value))
         return nextResponse
     }
 
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                getAll: () => request.cookies.getAll(),
-                setAll: (cookiesToSet: Array<{ name: string; value: string; options?: CookieOptions }>, headers: Record<string, string> = {}) => {
-                    Object.entries(headers).forEach(([name, value]) => responseHeaders.set(name, value))
-                    cookiesToSet.forEach((cookie) => {
-                        request.cookies.set(cookie.name, cookie.value)
-                        responseCookies.set(cookie.name, cookie)
-                    })
-                },
-            },
-        }
-    )
-
-    const [
-        { data: { user } },
-        { data: { session }, error: sessionError },
-    ] = await Promise.all([
-        supabase.auth.getUser(),
-        supabase.auth.getSession(),
-    ])
-
-    if (!user && !session && !sessionError && request.cookies.has(ACTIVE_WORKSPACE_COOKIE_NAME)) {
+    if (!user && session.signedOut && request.cookies.has(ACTIVE_WORKSPACE_COOKIE_NAME)) {
         request.cookies.delete(ACTIVE_WORKSPACE_COOKIE_NAME)
         responseCookies.set(ACTIVE_WORKSPACE_COOKIE_NAME, {
             name: ACTIVE_WORKSPACE_COOKIE_NAME,
@@ -69,7 +68,7 @@ export async function updateSession(request: NextRequest) {
     }
 
     if (user && !request.cookies.has(ACTIVE_WORKSPACE_COOKIE_NAME)) {
-        const { data: userRow, error } = await supabase
+        const { data: userRow, error } = await session.dataClient()
             .from('users')
             .select('default_workspace_id')
             .eq('user_id', user.id)
@@ -117,11 +116,12 @@ export async function updateSession(request: NextRequest) {
     }
     if (
         isPrivateWebApiRequest &&
-        session?.access_token &&
         canUpgradeCookieAuth(request.headers, request.nextUrl.origin) &&
         !forwardedHeaders.has('authorization')
     ) {
-        forwardedHeaders.set('authorization', `Bearer ${session.access_token}`)
+        // Supabase: the session's access token. Better Auth: a 15-minute JWT the Workers verify via JWKS.
+        const workerToken = await session.workerToken()
+        if (workerToken) forwardedHeaders.set('authorization', `Bearer ${workerToken}`)
     }
 
     // Keep strict auth-gate behavior for settings pages only.
@@ -132,25 +132,11 @@ export async function updateSession(request: NextRequest) {
         return finishResponse(NextResponse.redirect(url))
     }
 
-    if (user) {
-        const [{ data: factorsData }, { data: aalData }] = await Promise.all([
-            supabase.auth.mfa.listFactors(),
-            supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
-        ])
-        const hasVerifiedFactor = Object.values(factorsData ?? {}).some((factors) =>
-            Array.isArray(factors) && factors.some((factor) => factor.status === 'verified')
-        )
-        const mustVerifyMfa =
-            hasVerifiedFactor &&
-            aalData?.currentLevel === 'aal1' &&
-            aalData?.nextLevel === 'aal2'
-
-        if (mustVerifyMfa && pathname !== '/auth/verify-mfa') {
-            const url = request.nextUrl.clone()
-            url.pathname = '/auth/verify-mfa'
-            url.searchParams.set('returnUrl', requestPathname + request.nextUrl.search)
-            return finishResponse(NextResponse.redirect(url))
-        }
+    if (user?.mustVerifyMfa && pathname !== '/auth/verify-mfa') {
+        const url = request.nextUrl.clone()
+        url.pathname = '/auth/verify-mfa'
+        url.searchParams.set('returnUrl', requestPathname + request.nextUrl.search)
+        return finishResponse(NextResponse.redirect(url))
     }
 
     return finishResponse()

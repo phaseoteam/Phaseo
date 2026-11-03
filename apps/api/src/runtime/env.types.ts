@@ -16,6 +16,19 @@ export type GatewayBindings = {
     GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS?: string;
     SUPABASE_URL: string;
     SUPABASE_SERVICE_ROLE_KEY: string;
+	/** "supabase" (default) or "planetscale": what getSupabaseAdmin() talks to (src/runtime/database.ts). */
+	DATABASE_PROVIDER?: string;
+	/** "supabase" (default) or "better-auth": who issues the person tokens getSupabaseActor accepts. better-auth needs planetscale. */
+	AUTH_PROVIDER?: string;
+	/** Hyperdrive binding to PlanetScale (caching disabled), used when DATABASE_PROVIDER=planetscale. */
+	HYPERDRIVE?: Hyperdrive;
+	/** The web origin Better Auth signs JWTs as (`iss`), e.g. https://phaseo.app. BETTER_AUTH_URL is accepted too. */
+	BETTER_AUTH_JWT_ISSUER?: string;
+	BETTER_AUTH_URL?: string;
+	/** Defaults to <issuer>/api/auth/jwks. */
+	BETTER_AUTH_JWKS_URL?: string;
+	/** Defaults to "phaseo". */
+	BETTER_AUTH_JWT_AUDIENCE?: string;
 	GATEWAY_ROUTING_REGION?: "eu" | "us";
     GATEWAY_CACHE: KVNamespace;
     ROUTING_HEALTH?: DurableObjectNamespace<import("@core/routing-health-durable-object").RoutingHealthDurableObject>;

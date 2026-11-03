@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import type { Env } from "@/env";
+import { runWithDataScope } from "@/data/scope";
 import { accountRouter } from "@/routes/account";
 import { internalRouter } from "@/routes/internal";
 import { chatRouter } from "@/routes/chat";
@@ -24,11 +25,20 @@ app.route("/scim/v2", scimRouter);
 
 app.notFound((c) => c.json({ error: "not_found" }, 404));
 
+// Every invocation runs in a database scope: a no-op under DATABASE_PROVIDER=supabase (the default); under
+// planetscale it holds the invocation's Hyperdrive connection and ends it after the work is done.
+const honoFetch = app.fetch;
+
 export default Object.assign(app, {
+	fetch(request: Request, env: Env, executionCtx: ExecutionContext): Promise<Response> {
+		return runWithDataScope(env, executionCtx, (ctx) => honoFetch(request, env, ctx));
+	},
 	async scheduled(event: ScheduledController, env: Env, executionCtx: ExecutionContext): Promise<void> {
-		await Promise.all([
-			handleProviderCatalogScheduledEvent(event, env, executionCtx),
-			handleSlackAgentChargesScheduledEvent(event, env),
-		]);
+		await runWithDataScope(env, executionCtx, async (ctx) => {
+			await Promise.all([
+				handleProviderCatalogScheduledEvent(event, env, ctx),
+				handleSlackAgentChargesScheduledEvent(event, env),
+			]);
+		});
 	},
 });

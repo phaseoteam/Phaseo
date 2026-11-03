@@ -107,9 +107,24 @@ DATA_CONTRIBUTION_CLASSIFIER_CONCURRENCY = "8"
 DATA_CONTRIBUTION_CLASSIFIER_MODEL = "gpt-5-mini"
 DATA_CONTRIBUTION_CLASSIFIER_SERVICE_TIER = "flex"
 DATA_CONTRIBUTION_RETENTION_PRUNE_LIMIT = "1000"
+# PlanetScale + Better Auth (database/planetscale/README.md). Both switches default to "supabase"; rolling
+# back is setting them back (or removing them). AUTH_PROVIDER=better-auth needs DATABASE_PROVIDER=planetscale
+# and the [[hyperdrive]] binding below. Keep the regional (eu/us), jobs and staging configs in step.
+# DATABASE_PROVIDER = "planetscale"
+# AUTH_PROVIDER = "better-auth"
+# The Better Auth JWT `iss` (the web origin); the JWKS defaults to <issuer>/api/auth/jwks, the audience to "phaseo".
+# BETTER_AUTH_JWT_ISSUER = "https://phaseo.app"
 
 [triggers]
 crons = ["* * * * *"]
+
+# PlanetScale (DATABASE_PROVIDER=planetscale): Hyperdrive with caching disabled, since auth, billing and
+# read-after-write need fresh reads. Create it with
+#   wrangler hyperdrive create phaseo-planetscale --connection-string="postgres://…:6432/…" --caching-disabled
+# and paste the id it prints. Every config that runs the gateway code (eu, us, jobs, realtime, staging) needs it.
+# [[hyperdrive]]
+# binding = "HYPERDRIVE"
+# id = "<hyperdrive-config-id>"
 
 [placement]
 mode = "smart"

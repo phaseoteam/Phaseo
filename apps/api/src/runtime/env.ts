@@ -8,6 +8,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@supabase/supabase-js";
 import type { ResponseCacheStore } from "@/core/response-cache";
 
+import { databaseProvider, planetScaleServiceClient } from "./database";
 import { BINDING_KEYS } from "./env.binding-keys";
 import type { GatewayBindings } from "./env.types";
 
@@ -16,7 +17,8 @@ export type { GatewayBindings, GatewayRuntime } from "./env.types";
 type RuntimeState = {
     bindings: GatewayBindings;
     cache: KVNamespace;
-    supabase: SupabaseClient;
+    /** null under DATABASE_PROVIDER=planetscale. */
+    supabase: SupabaseClient | null;
 };
 
 let runtimeState: RuntimeState | null = null;
@@ -65,6 +67,13 @@ export function configureRuntime(env: GatewayBindings) {
 
     const bindings = snapshotBindings(env);
     lastBindingsSnapshot = bindings;
+
+    // DATABASE_PROVIDER=planetscale: no Supabase client; getSupabaseAdmin() hands out the invocation's
+    // PlanetScale client instead (runtime/database.ts).
+    if (databaseProvider(bindings) === "planetscale") {
+        runtimeState = { bindings, cache: bindings.GATEWAY_CACHE, supabase: null };
+        return;
+    }
 
     const globalFetch: typeof fetch = (input, init) => fetch(input, init);
 
@@ -180,8 +189,14 @@ export function getCache(): KVNamespace {
     return ensureRuntime().cache;
 }
 
+/**
+ * The service-role data client. DATABASE_PROVIDER=supabase (default): supabase-js, as before.
+ * planetscale: @phaseo/db's PostgREST-compatible client on this invocation's Hyperdrive connection, typed as
+ * SupabaseClient for the call sites; its `.auth`/`.storage` throw (auth.admin.* sites are on the migration list).
+ */
 export function getSupabaseAdmin(): SupabaseClient {
-    return ensureRuntime().supabase;
+    const state = ensureRuntime();
+    return state.supabase ?? planetScaleServiceClient<SupabaseClient>(state.bindings);
 }
 
 export function getResponseCache(): ResponseCacheStore | null {

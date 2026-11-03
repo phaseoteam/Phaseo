@@ -38,12 +38,27 @@ SPEND_RULE_BLOCKS_ENABLED = "false"
 SPEND_REPORTS_ENABLED = "false"
 # Set by deployment environment; kept out of source configuration.
 # STAGING_GATEWAY_BASE_URL = "https://<staging-gateway>/v1"
+# PlanetScale + Better Auth (database/planetscale/README.md). Both switches default to "supabase"; rolling
+# back is setting them back (or removing them). AUTH_PROVIDER=better-auth needs DATABASE_PROVIDER=planetscale
+# and the [[hyperdrive]] binding below.
+# DATABASE_PROVIDER = "planetscale"
+# AUTH_PROVIDER = "better-auth"
+# The Better Auth JWT `iss` (the web origin); the JWKS defaults to <issuer>/api/auth/jwks, the audience to "phaseo".
+# BETTER_AUTH_JWT_ISSUER = "https://phaseo.app"
 
 # The minute tick activates scheduled releases promptly. Catalog polling remains
 # bounded by each source's next_poll_at, so this does not poll every provider
 # every minute.
 [triggers]
 crons = ["* * * * *"]
+
+# PlanetScale (DATABASE_PROVIDER=planetscale, see [vars]): Hyperdrive with caching disabled, since auth,
+# billing and read-after-write need fresh reads. Create it with
+#   wrangler hyperdrive create phaseo-planetscale --connection-string="postgres://…:6432/…" --caching-disabled
+# and paste the id it prints. Bindings aren't inherited: staging needs its own [[env.staging.hyperdrive]].
+# [[hyperdrive]]
+# binding = "HYPERDRIVE"
+# id = "<hyperdrive-config-id>"
 
 [[r2_buckets]]
 binding = "PROFILE_AVATARS_BUCKET"
