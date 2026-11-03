@@ -55,13 +55,13 @@ Uma rota interna exige o token interno de alta entropia e uma solicitação que 
 
 A saúde do roteamento é um terceiro sinal operacional. Ela indica como uma rota habilitada deve ser selecionada neste momento.
 
-| Status | Significado | Comportamento do roteamento |
-| --- | --- | --- |
-| `Active` | A rota está saudável o bastante para ser selecionada normalmente. | Roteável agora. |
-| `Deranked L1` | A saúde recente reduziu um pouco a prioridade. | Roteável agora. |
-| `Deranked L2` | A saúde recente reduziu claramente a prioridade. | Roteável agora, depois de rotas mais saudáveis. |
-| `Deranked L3` | A saúde recente reduziu bastante a prioridade. | Roteável agora, com prioridade bem menor. |
-| `Disabled` | A chave de roteamento está desligada. | Não é roteada. |
+| Ícone | Status | Significado | Comportamento do roteamento |
+| --- | --- | --- | --- |
+| <Icon icon="circle-check" color="#16a34a" /> | `Active` | A rota está saudável o bastante para ser selecionada normalmente. | Roteável agora. |
+| <Icon icon="triangle-alert" color="#f59e0b" /> | `Deranked L1` | A saúde recente reduziu um pouco a prioridade. | Roteável agora. |
+| <Icon icon="triangle-alert" color="#d97706" /> | `Deranked L2` | A saúde recente reduziu claramente a prioridade. | Roteável agora, depois de rotas mais saudáveis. |
+| <Icon icon="triangle-alert" color="#ef4444" /> | `Deranked L3` | A saúde recente reduziu bastante a prioridade. | Roteável agora, com prioridade bem menor. |
+| <Icon icon="ban" color="#dc2626" /> | `Disabled` | A chave de roteamento está desligada. | Não é roteada. |
 
 A redução de prioridade não altera a disponibilidade do provedor nem o ciclo de vida da integração do Phaseo. As observações de saúde em tempo real também não modificam esses campos do ciclo de vida.
 
@@ -77,8 +77,8 @@ que está atendendo agora.
 
 | Ícone | Status | Significado | Comportamento de roteamento |
 | --- | --- | --- | --- |
-| Raio laranja riscado | `Temporariamente limitado` | As solicitações falharam várias vezes seguidas, ou pelo menos metade das solicitações recentes falhou. | Roteável, mas outros provedores são tentados primeiro. |
-| Setas azuis de atualização | `Em recuperação` | Após uma pausa, o Phaseo deixa passar algumas solicitações para verificar o provedor. | Se todas as de um lote funcionarem, o roteamento volta ao normal. Se metade ou mais falhar, a rota é limitada de novo, com uma pausa mais longa. |
+| <Icon icon="zap-off" color="#ea580c" /> Raio laranja riscado | `Temporariamente limitado` | As solicitações falharam várias vezes seguidas, ou pelo menos metade das solicitações recentes falhou. | Roteável, mas outros provedores são tentados primeiro. |
+| <Icon icon="refresh-cw" color="#0ea5e9" /> Setas azuis de atualização | `Em recuperação` | Após uma pausa, o Phaseo deixa passar algumas solicitações para verificar o provedor. | Se todas as de um lote funcionarem, o roteamento volta ao normal. Se metade ou mais falhar, a rota é limitada de novo, com uma pausa mais longa. |
 
 Nas páginas de modelos, o ícone de roteamento em tempo real aparece depois do ícone
 de status, somente enquanto um desses status se aplica. Uma rota pode ter

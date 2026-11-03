@@ -55,13 +55,13 @@ Una ruta interna requiere el token interno de alta entropía y una solicitud exp
 
 La salud del enrutamiento es una tercera señal operativa. Indica cómo se debe seleccionar una ruta habilitada en este momento.
 
-| Estado | Significado | Comportamiento del enrutamiento |
-| --- | --- | --- |
-| `Active` | La ruta está lo bastante sana para seleccionarse normalmente. | Se puede enrutar ahora. |
-| `Deranked L1` | La salud reciente le asignó una prioridad ligeramente menor. | Se puede enrutar ahora. |
-| `Deranked L2` | La salud reciente redujo claramente su prioridad. | Se puede enrutar ahora, detrás de rutas más sanas. |
-| `Deranked L3` | La salud reciente redujo mucho su prioridad. | Se puede enrutar ahora, con una prioridad muy baja. |
-| `Disabled` | El control de enrutamiento está desactivado. | No se enruta. |
+| Icono | Estado | Significado | Comportamiento del enrutamiento |
+| --- | --- | --- | --- |
+| <Icon icon="circle-check" color="#16a34a" /> | `Active` | La ruta está lo bastante sana para seleccionarse normalmente. | Se puede enrutar ahora. |
+| <Icon icon="triangle-alert" color="#f59e0b" /> | `Deranked L1` | La salud reciente le asignó una prioridad ligeramente menor. | Se puede enrutar ahora. |
+| <Icon icon="triangle-alert" color="#d97706" /> | `Deranked L2` | La salud reciente redujo claramente su prioridad. | Se puede enrutar ahora, detrás de rutas más sanas. |
+| <Icon icon="triangle-alert" color="#ef4444" /> | `Deranked L3` | La salud reciente redujo mucho su prioridad. | Se puede enrutar ahora, con una prioridad muy baja. |
+| <Icon icon="ban" color="#dc2626" /> | `Disabled` | El control de enrutamiento está desactivado. | No se enruta. |
 
 La degradación de prioridad no cambia la disponibilidad del proveedor ni el ciclo de vida de la integración de Phaseo. Las observaciones de salud en tiempo real tampoco modifican esos estados del ciclo de vida.
 
@@ -77,8 +77,8 @@ solicitudes que está atendiendo en este momento.
 
 | Icono | Estado | Significado | Comportamiento de enrutamiento |
 | --- | --- | --- | --- |
-| Rayo naranja tachado | `Limitado temporalmente` | Las solicitudes han fallado varias veces seguidas, o al menos la mitad de las solicitudes recientes han fallado. | Enrutable, pero primero se prueban otros proveedores. |
-| Flechas azules de actualización | `En recuperación` | Tras una pausa, Phaseo deja pasar algunas solicitudes para comprobar el proveedor. | Si todas las de un lote funcionan, el enrutamiento vuelve a la normalidad. Si falla la mitad o más, la ruta vuelve a limitarse con una pausa más larga. |
+| <Icon icon="zap-off" color="#ea580c" /> Rayo naranja tachado | `Limitado temporalmente` | Las solicitudes han fallado varias veces seguidas, o al menos la mitad de las solicitudes recientes han fallado. | Enrutable, pero primero se prueban otros proveedores. |
+| <Icon icon="refresh-cw" color="#0ea5e9" /> Flechas azules de actualización | `En recuperación` | Tras una pausa, Phaseo deja pasar algunas solicitudes para comprobar el proveedor. | Si todas las de un lote funcionan, el enrutamiento vuelve a la normalidad. Si falla la mitad o más, la ruta vuelve a limitarse con una pausa más larga. |
 
 En las páginas de modelos, el icono de enrutamiento en directo aparece después del
 icono de estado, solo mientras se aplica uno de estos estados. Una ruta puede tener

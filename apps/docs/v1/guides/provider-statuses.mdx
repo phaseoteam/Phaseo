@@ -65,13 +65,13 @@ usable and whose Phaseo status is `Testing` or `Enabled`.
 Routing health is a third, operational signal. It answers how an enabled route
 should be selected right now.
 
-| Status | Meaning | Routing behaviour |
-| --- | --- | --- |
-| `Active` | The route is healthy enough to select normally. | Routable now. |
-| `Deranked L1` | Mildly deprioritised by recent health. | Routable now. |
-| `Deranked L2` | Clearly deprioritised by recent health. | Routable now, behind healthier routes. |
-| `Deranked L3` | Heavily deprioritised by recent health. | Routable now, strongly deprioritised. |
-| `Disabled` | The routing switch is off. | Not routed. |
+| Icon | Status | Meaning | Routing behaviour |
+| --- | --- | --- | --- |
+| <Icon icon="circle-check" color="#16a34a" /> | `Active` | The route is healthy enough to select normally. | Routable now. |
+| <Icon icon="triangle-alert" color="#f59e0b" /> | `Deranked L1` | Mildly deprioritised by recent health. | Routable now. |
+| <Icon icon="triangle-alert" color="#d97706" /> | `Deranked L2` | Clearly deprioritised by recent health. | Routable now, behind healthier routes. |
+| <Icon icon="triangle-alert" color="#ef4444" /> | `Deranked L3` | Heavily deprioritised by recent health. | Routable now, strongly deprioritised. |
+| <Icon icon="ban" color="#dc2626" /> | `Disabled` | The routing switch is off. | Not routed. |
 
 Deranking does not change the provider's availability or Phaseo's integration
 lifecycle. Live health observations also do not rewrite either lifecycle field.
@@ -88,8 +88,8 @@ serving now.
 
 | Icon | State | Meaning | Routing behaviour |
 | --- | --- | --- | --- |
-| Orange lightning bolt, crossed out | `Temporarily limited` | Requests failed several times in a row, or at least half of recent requests failed. | Routable, but other providers are tried first. |
-| Blue refresh arrows | `Recovering` | After a cooldown, Phaseo lets a few requests through to check the provider. | If a batch of them all succeed, routing returns to normal. If half or more fail, the route is limited again with a longer cooldown. |
+| <Icon icon="zap-off" color="#ea580c" /> Orange lightning bolt, crossed out | `Temporarily limited` | Requests failed several times in a row, or at least half of recent requests failed. | Routable, but other providers are tried first. |
+| <Icon icon="refresh-cw" color="#0ea5e9" /> Blue refresh arrows | `Recovering` | After a cooldown, Phaseo lets a few requests through to check the provider. | If a batch of them all succeed, routing returns to normal. If half or more fail, the route is limited again with a longer cooldown. |
 
 On model pages the live routing icon appears after the status icon, only while
 one of these states applies. A route can be `Lower priority` and

@@ -55,13 +55,13 @@ Für eine interne Route sind das interne Token mit hoher Entropie und eine Anfra
 
 Der Routing-Zustand ist ein drittes Betriebssignal. Er gibt an, wie eine aktivierte Route jetzt ausgewählt werden sollte.
 
-| Status | Bedeutung | Routing-Verhalten |
-| --- | --- | --- |
-| `Active` | Die Route ist gesund genug für die normale Auswahl. | Jetzt routbar. |
-| `Deranked L1` | Die aktuelle Gesundheit stuft die Route leicht zurück. | Jetzt routbar. |
-| `Deranked L2` | Die aktuelle Gesundheit stuft die Route deutlich zurück. | Jetzt routbar, hinter gesünderen Routen. |
-| `Deranked L3` | Die aktuelle Gesundheit stuft die Route stark zurück. | Jetzt routbar, mit deutlich geringerer Priorität. |
-| `Disabled` | Der Routing-Schalter ist ausgeschaltet. | Wird nicht geroutet. |
+| Symbol | Status | Bedeutung | Routing-Verhalten |
+| --- | --- | --- | --- |
+| <Icon icon="circle-check" color="#16a34a" /> | `Active` | Die Route ist gesund genug für die normale Auswahl. | Jetzt routbar. |
+| <Icon icon="triangle-alert" color="#f59e0b" /> | `Deranked L1` | Die aktuelle Gesundheit stuft die Route leicht zurück. | Jetzt routbar. |
+| <Icon icon="triangle-alert" color="#d97706" /> | `Deranked L2` | Die aktuelle Gesundheit stuft die Route deutlich zurück. | Jetzt routbar, hinter gesünderen Routen. |
+| <Icon icon="triangle-alert" color="#ef4444" /> | `Deranked L3` | Die aktuelle Gesundheit stuft die Route stark zurück. | Jetzt routbar, mit deutlich geringerer Priorität. |
+| <Icon icon="ban" color="#dc2626" /> | `Disabled` | Der Routing-Schalter ist ausgeschaltet. | Wird nicht geroutet. |
 
 Eine Zurückstufung verändert weder die Verfügbarkeit des Anbieters noch den Lebenszyklus der Phaseo-Integration. Aktuelle Gesundheitsdaten ändern diese Lebenszyklusfelder ebenfalls nicht.
 
@@ -77,8 +77,8 @@ Anfragen, die es gerade verarbeitet.
 
 | Symbol | Status | Bedeutung | Routing-Verhalten |
 | --- | --- | --- | --- |
-| Orangefarbener, durchgestrichener Blitz | `Vorübergehend eingeschränkt` | Anfragen sind mehrmals hintereinander fehlgeschlagen, oder mindestens die Hälfte der letzten Anfragen ist fehlgeschlagen. | Routbar, aber andere Anbieter werden zuerst versucht. |
-| Blaue Aktualisierungspfeile | `Erholt sich` | Nach einer Wartezeit lässt Phaseo einige Anfragen durch, um den Anbieter zu prüfen. | Sind alle Anfragen eines Durchgangs erfolgreich, kehrt das Routing zum Normalzustand zurück. Schlägt die Hälfte oder mehr fehl, wird die Route erneut eingeschränkt, mit längerer Wartezeit. |
+| <Icon icon="zap-off" color="#ea580c" /> Orangefarbener, durchgestrichener Blitz | `Vorübergehend eingeschränkt` | Anfragen sind mehrmals hintereinander fehlgeschlagen, oder mindestens die Hälfte der letzten Anfragen ist fehlgeschlagen. | Routbar, aber andere Anbieter werden zuerst versucht. |
+| <Icon icon="refresh-cw" color="#0ea5e9" /> Blaue Aktualisierungspfeile | `Erholt sich` | Nach einer Wartezeit lässt Phaseo einige Anfragen durch, um den Anbieter zu prüfen. | Sind alle Anfragen eines Durchgangs erfolgreich, kehrt das Routing zum Normalzustand zurück. Schlägt die Hälfte oder mehr fehl, wird die Route erneut eingeschränkt, mit längerer Wartezeit. |
 
 Auf Modellseiten erscheint das Live-Routing-Symbol nach dem Statussymbol, und nur
 solange einer dieser Status gilt. Eine Route kann gleichzeitig
