@@ -252,7 +252,9 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	const errors = shown.map(harness => catalogs[harness]?.error ? `${harnessNames[harness]}: ${catalogs[harness]!.error}` : "").filter(Boolean);
 
 	const first = selections[0];
-	const openChange = (value: boolean) => { setOpen(value); setQuery(""); if (value) setGroup(!first ? "phaseo" : first.harness !== "phaseo" ? first.harness : knownModel(first.model)?.organisationId ? `lab:${knownModel(first.model)!.organisationId}` : "phaseo"); };
+	// The picker opens where the chosen model lives: its agent, or its lab (read from the id until the catalogue names it).
+	const firstLab = first?.harness === "phaseo" ? labOf({ model: knownModel(first.model) ?? { id: first.model, name: first.model } } as Entry) : "";
+	const openChange = (value: boolean) => { setOpen(value); setQuery(""); if (value) setGroup(!first ? "phaseo" : first.harness !== "phaseo" ? first.harness : firstLab ? `lab:${firstLab}` : "phaseo"); };
 	const latestOpen = useRef(openChange); latestOpen.current = openChange;
 	// One model's reasoning, speed and context window sit in the same button and picker, as in T3 Code.
 	const settingsSelection = onSettingsChange && selections.length === 1 ? first : undefined;
