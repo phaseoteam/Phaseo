@@ -33,6 +33,19 @@ describe("Claude SDK integration", () => {
   await expect(adapter.run(task, "/project", "/review target", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => { if (condition === "cancelled") await adapter.cancel(); return condition === "declined" ? "decline" : "accept"; } }, undefined, [], { kind: "command", id: "review", name: "review", arguments: "target" })).rejects.toBeInstanceOf(AgentInputRejectedError); await admitted; expect(inputs).toEqual([]); expect(close).toHaveBeenCalledOnce();
  });
 
+	it("keeps the tool's name and input when its result arrives, and shows the result as text", async () => {
+		sdk.query.mockReturnValue(Object.assign((async function* () {
+			yield { type: "assistant", parent_tool_use_id: null, session_id: "native", message: { id: "call", content: [{ type: "tool_use", id: "call", name: "mcp__phaseo__run_app_command", input: { command: "theme.set", args: { theme: "dark" } } }] } };
+			yield { type: "user", parent_tool_use_id: null, session_id: "native", message: { content: [{ type: "tool_result", tool_use_id: "call", content: [{ type: "text", text: "{\"command\":\"theme.set\",\"done\":true}" }], is_error: false }] } };
+			yield { type: "result", subtype: "success", is_error: false, result: "Done" };
+		})(), { close: vi.fn() }));
+		const onActivity = vi.fn();
+		await new ClaudeAdapter().run({ ...task, mode: "code" }, ".", "Dark", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "accept", onActivity });
+		const [call, result] = onActivity.mock.calls.map(([activity]) => activity);
+		expect(call).toMatchObject({ id: "call", title: "mcp__phaseo__run_app_command", status: "running", text: "{\"command\":\"theme.set\",\"args\":{\"theme\":\"dark\"}}" });
+		expect(result).toMatchObject({ id: "call", title: "mcp__phaseo__run_app_command", status: "completed", text: "{\"command\":\"theme.set\",\"args\":{\"theme\":\"dark\"}}\n\n{\"command\":\"theme.set\",\"done\":true}" });
+	});
+
 	it("publishes todo progress only after successful foreground tool results", async () => {
 		sdk.query.mockReturnValue(Object.assign((async function* () {
 			for (const [id, parent, failed] of [["success", null, false], ["failure", null, true], ["child", "delegate", false]] as const) {

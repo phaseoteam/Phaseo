@@ -28,6 +28,8 @@ import { useCommand } from "../lib/keybindings";
 const planOutcomes = { implemented: "Implemented", revised: "Revision requested", declined: "Not implemented" } as const;
 
 const toolLabels: Record<string, string> = { run_command: "Ran", start_background_command: "Started", read_background_output: "Read output", stop_background_command: "Stopped", list_background_commands: "Listed commands", read_file: "Read", view_image: "Viewed", edit_file: "Edited", write_file: "Wrote", delete_file: "Deleted", list_files: "Listed", search_files: "Searched", find_files: "Found files", propose_plan: "Proposed plan", load_tools: "Loaded tools", load_skill: "Loaded skill", ask_user: "Asked" };
+/** An MCP tool without its mcp__server__ prefix, as Claude Code names them. */
+const toolName = (title: string) => title.replace(/^mcp__.+?__/, "");
 function toolIcon(title: string) {
 	if (/command|terminal|bash|shell|run/i.test(title)) return SquareTerminal;
 	if (/write|edit|patch|apply/i.test(title)) return FilePen;
@@ -97,7 +99,7 @@ function ActivityRow({ activity, live }: { activity: AgentActivity; live: boolea
 	const reasoning = activity.type === "reasoning";
 	const running = activity.status === "running" || (reasoning && live);
 	const Icon = reasoning ? Brain : activity.type === "compaction" ? Layers : activity.type === "plan" ? ListChecks : toolIcon(activity.title);
-	const label = reasoning ? (running ? "Thinking" : "Thought") : activity.type === "compaction" ? "Compacted context" : toolLabels[activity.title] ?? activity.title.replaceAll("_", " ");
+	const label = reasoning ? (running ? "Thinking" : "Thought") : activity.type === "compaction" ? "Compacted context" : toolLabels[toolName(activity.title)] ?? toolName(activity.title).replaceAll("_", " ");
 	const summary = reasoning ? "" : activity.text.split("\n")[0];
 	const expandable = !!activity.text && (reasoning || activity.text.length > summary.length || activity.text.length > 80);
 	return <div className="text-[12.5px]">
@@ -115,7 +117,8 @@ function ActivityRow({ activity, live }: { activity: AgentActivity; live: boolea
 function WorkLog({ entries, user, live, complete, task }: { entries: TurnEntry[]; user?: Message; live: boolean; complete: boolean; task: Task }) {
 	const [opened, setOpen] = useState(live);
 	useEffect(() => { setOpen(live); }, [live]);
-	const steps = entries.filter(entry => entry.kind === "activity" ? entry.value.type !== "usage" : true);
+	// A reasoning block the model kept to itself (Claude can return thinking with no text) has nothing to show once it ends.
+	const steps = entries.filter((entry, index) => entry.kind === "activity" ? entry.value.type !== "usage" && !(entry.value.type === "reasoning" && !entry.value.text.trim() && !(live && index === entries.length - 1)) : true);
 	// Find in chat opens the log around its match.
 	const found = useFindTarget(steps.map(entry => entry.value.id)), open = opened || found;
 	if (!steps.length) return null;
@@ -131,7 +134,7 @@ function WorkLog({ entries, user, live, complete, task }: { entries: TurnEntry[]
 				{tools > 0 && <span>· {tools} {tools === 1 ? "step" : "steps"}</span>}
 			</button>
 			{open && <div className="mt-1 ml-[7px] flex flex-col gap-0.5 border-l border-border pl-1.5">{steps.map(entry => entry.kind === "activity"
-				? <ActivityRow key={entry.value.id} activity={entry.value} live={live} />
+				? <ActivityRow key={entry.value.id} activity={entry.value} live={live && entry === steps.at(-1)} />
 				: <div key={entry.value.id} data-conversation-id={`message:${entry.value.id}`} data-selectable data-quote className="px-2 py-1 text-[13px] text-foreground/85"><MessageContent text={entry.value.text} projectId={task.projectId} repairLocalLinks /></div>)}</div>}
 		</div>
 		{!open && plan?.kind === "activity" && <PlanSteps activity={plan.value} />}

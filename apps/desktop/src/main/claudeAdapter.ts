@@ -101,6 +101,8 @@ export class ClaudeAdapter implements AgentAdapter {
 		let messageId = "assistant";
 		const streamed = new Set<string>();
 		const todos = new Map<string, { steps: PlanStep[]; text: string }>();
+		// A result carries only the call's id; its row keeps the tool's name and input from the call.
+		const calls = new Map<string, { name: string; input: string }>();
 		let sessionId = task.nativeSessionId;
 		let compaction: { id: string; title: string } | undefined;
 		let compactBoundary = false; let compactFailed = false; let compactFailure: string | undefined;
@@ -159,7 +161,11 @@ export class ClaudeAdapter implements AgentAdapter {
 				// Every API response, the main agent's and its subagents', counts towards usage.
 				if (message.type === "assistant") { const usage = claudeUsage(message.message.id, message.message.model, message.message.usage); if (usage) callbacks.onUsage?.(usage); }
 				if (message.type === "assistant") for (const block of message.message.content) {
-					if (block.type === "tool_use") callbacks.onActivity?.({ id: block.id, type: "tool", title: block.name, text: JSON.stringify(block.input, null, 2), status: "running" });
+					if (block.type === "tool_use") {
+						const call = { name: block.name, input: JSON.stringify(block.input) ?? "" };
+						calls.set(block.id, call);
+						callbacks.onActivity?.({ id: block.id, type: "tool", title: call.name, text: call.input, status: "running" });
+					}
 					if (block.type === "tool_use" && block.name === "TodoWrite" && !message.parent_tool_use_id) {
 						const steps = parsePlanSteps((block.input as { todos?: unknown } | null)?.todos, "claude");
 						if (steps) todos.set(block.id, { steps, text: JSON.stringify(block.input, null, 2) });
@@ -167,7 +173,11 @@ export class ClaudeAdapter implements AgentAdapter {
 					if (block.type === "thinking") callbacks.onActivity?.({ id: `${message.message.id}:reasoning`, type: "reasoning", title: "Reasoning", text: block.thinking, status: "completed" });
 				}
 				if (message.type === "user" && Array.isArray(message.message.content)) for (const block of message.message.content) {
-					if (block.type === "tool_result") callbacks.onActivity?.({ id: block.tool_use_id, type: "tool", title: "Tool result", text: typeof block.content === "string" ? block.content : JSON.stringify(block.content, null, 2), status: block.is_error ? "failed" : "completed" });
+					if (block.type === "tool_result") {
+						const call = calls.get(block.tool_use_id); calls.delete(block.tool_use_id);
+						const output = typeof block.content === "string" ? block.content : Array.isArray(block.content) ? block.content.map(part => part.type === "text" ? part.text : `[${part.type}]`).join("\n") : JSON.stringify(block.content) ?? "";
+						callbacks.onActivity?.({ id: block.tool_use_id, type: "tool", title: call?.name ?? "Tool result", text: call ? `${call.input}\n\n${output}` : output, status: block.is_error ? "failed" : "completed" });
+					}
 					if (block.type === "tool_result" && !message.parent_tool_use_id) {
 						const plan = todos.get(block.tool_use_id); todos.delete(block.tool_use_id);
 						if (plan && !block.is_error) callbacks.onActivity?.({ id: "todo-plan", type: "plan", title: "Task progress", ...plan });
