@@ -452,6 +452,7 @@ Um token recusado retorna `401` com uma destas mensagens:
 | `workload_identity_not_enabled` | Os workloads confiáveis ainda não estão disponíveis para este espaço de trabalho. | Use uma chave de API por enquanto. |
 | `workload_token_expired` | O token expirou. | Solicite um novo token a cada solicitação ou etapa do job. |
 | `workload_token_lifetime_too_long` | O token foi emitido para durar mais de 12 horas, o máximo que o Phaseo aceita. | Solicite um token de menor duração, como um `expirationSeconds` menor no Kubernetes ou um tempo limite de job menor no GitLab. |
+| `workload_token_too_many_claims` | O token de um emissor personalizado tem mais de 100 valores distintos de claims de nível superior. | Configure o emissor para enviar menos claims ou mova os valores extras para um objeto aninhado. |
 | `workload_token_unsupported_alg` | O token não está assinado com RS256, ES256 ou ES384. | Configure o emissor para usar um deles. |
 | `workload_token_invalid_signature` | A assinatura do token não corresponde às chaves da plataforma. | Envie o token sem alterações, exatamente como a plataforma o emitiu. |
 | `workload_jwks_unavailable` | O Phaseo não conseguiu obter as chaves de assinatura da plataforma. | Tente novamente após uma breve espera. Em um emissor personalizado, verifique se `<issuer>/.well-known/openid-configuration` carrega pela internet pública sem credenciais e se o `jwks_uri` dele fica no mesmo host. |

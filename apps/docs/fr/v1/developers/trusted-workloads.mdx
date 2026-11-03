@@ -452,6 +452,7 @@ Un jeton refusé renvoie `401` avec l'un de ces messages :
 | `workload_identity_not_enabled` | Les workloads de confiance ne sont pas encore disponibles pour cet espace de travail. | Utilisez une clé API pour le moment. |
 | `workload_token_expired` | Le jeton a expiré. | Demandez un nouveau jeton pour chaque requête ou étape du job. |
 | `workload_token_lifetime_too_long` | Le jeton a été émis pour durer plus de 12 heures, le maximum accepté par Phaseo. | Demandez un jeton de plus courte durée, par exemple avec un `expirationSeconds` plus court sur Kubernetes ou un délai d'expiration du job plus court sur GitLab. |
+| `workload_token_too_many_claims` | Le jeton d'un émetteur personnalisé contient plus de 100 valeurs de claims de premier niveau distinctes. | Configurez l'émetteur pour qu'il envoie moins de claims, ou placez les valeurs supplémentaires dans un objet imbriqué. |
 | `workload_token_unsupported_alg` | Le jeton n'est pas signé avec RS256, ES256 ou ES384. | Configurez l'émetteur pour qu'il utilise l'un de ces algorithmes. |
 | `workload_token_invalid_signature` | La signature du jeton ne correspond pas aux clés de la plateforme. | Envoyez le jeton tel que la plateforme l'a émis, sans le modifier. |
 | `workload_jwks_unavailable` | Phaseo n'a pas pu récupérer les clés de signature de la plateforme. | Réessayez après une courte attente. Pour un émetteur personnalisé, vérifiez que `<issuer>/.well-known/openid-configuration` se charge depuis Internet sans identifiants et que son `jwks_uri` est sur le même hôte. |
