@@ -6754,17 +6754,17 @@
 	},
 	"trustedWorkloads": {
 		"title": "أحمال العمل الموثوقة",
-		"description": "اسمح لعمليات النشر على Vercel ومهام GitHub Actions باستدعاء الواجهة البرمجية برمز OIDC قصير الأجل بدلًا من مفتاح API.",
+		"description": "اسمح لعمليات النشر ومهام CI وأحمال العمل السحابية باستدعاء الواجهة البرمجية برمز OIDC قصير الأجل بدلًا من مفتاح API.",
 		"feedback": "كيف يمكن أن تعمل أحمال العمل الموثوقة بشكل أفضل لك؟",
 		"selectWorkspace": "اختر مساحة عمل لإدارة أحمال العمل الموثوقة.",
 		"unavailable": "أحمال العمل الموثوقة غير متاحة لمساحة العمل هذه بعد.",
 		"adminsOnly": "يمكن لمالكي مساحة العمل ومسؤوليها فقط عرض أحمال العمل الموثوقة وتغييرها.",
-		"howItWorks": "يمنح Vercel وGitHub Actions كل عملية نشر أو مهمة رمزًا موقّعًا يحدد هويتها وتنتهي صلاحيته خلال ساعات. عندما يطابق الرمز إحدى هذه السياسات، يُنفَّذ الطلب بمفتاح تلك السياسة، بالحدود والميزانيات والسجلات والفوترة نفسها التي لمفتاح API. لا حاجة إلى تخزين أي سر.",
+		"howItWorks": "يمكن لـ Vercel وGitHub Actions وGitLab وGoogle Cloud وBuildkite وCircleCI وAWS منح كل عملية نشر أو مهمة أو حمل عمل رمزًا موقّعًا يحدد هويته وتنتهي صلاحيته خلال ساعات، وكذلك جهة إصدار OIDC تديرها بنفسك، مثل مجموعة Kubernetes. عندما يطابق الرمز إحدى هذه السياسات، يُنفَّذ الطلب بمفتاح تلك السياسة، بالحدود والميزانيات والسجلات والفوترة نفسها التي لمفتاح API. لا حاجة إلى تخزين أي سر.",
 		"policiesTitle": "سياسات الثقة",
 		"propagation": "تسري التغييرات خلال دقيقة تقريبًا.",
 		"newPolicy": "سياسة جديدة",
 		"emptyTitle": "لا توجد أحمال عمل موثوقة بعد",
-		"emptyBody": "أضف سياسة لمشروع على Vercel أو مستودع على GitHub ليتمكن من استدعاء الواجهة البرمجية دون مفتاح API.",
+		"emptyBody": "أضف سياسة لمشروع أو مستودع أو مسار عمل أو حساب خدمة أو دور ليتمكن من استدعاء الواجهة البرمجية دون مفتاح API.",
 		"noConditions": "لا شيء",
 		"disabled": "متوقفة",
 		"enabledLabel": "قبول الرموز لـ {name}",
@@ -6789,15 +6789,28 @@
 		"audienceLabel": "الجمهور (audience)",
 		"providers": {
 			"vercel": "Vercel",
-			"github_actions": "GitHub Actions"
+			"github_actions": "GitHub Actions",
+			"gitlab": "GitLab",
+			"google_cloud": "Google Cloud",
+			"buildkite": "Buildkite",
+			"circleci": "CircleCI",
+			"aws": "AWS",
+			"custom": "جهة إصدار OIDC مخصصة"
 		},
 		"ownerLabel": {
 			"vercel": "معرّف الفريق",
-			"github_actions": "معرّف المالك"
+			"github_actions": "معرّف المالك",
+			"gitlab": "معرّف المشروع",
+			"google_cloud": "معرّف حساب الخدمة",
+			"buildkite": "معرّف المؤسسة",
+			"circleci": "معرّف المؤسسة",
+			"aws": "ARN الدور"
 		},
 		"ownerWide": {
 			"vercel": "تثق بكل مشروع في فريق Vercel هذا. أضف معرّف مشروع لتضييقها.",
-			"github_actions": "تثق بكل مستودع لدى هذا المالك. أضف معرّف مستودع لتضييقها."
+			"github_actions": "تثق بكل مستودع لدى هذا المالك. أضف معرّف مستودع لتضييقها.",
+			"buildkite": "تثق بكل مسار عمل في مؤسسة Buildkite هذه. أضف الاسم المختصر لمسار عمل لتضييقها.",
+			"circleci": "تثق بكل مشروع في مؤسسة CircleCI هذه. أضف معرّف مشروع لتضييقها."
 		},
 		"environments": {
 			"production": "الإنتاج",
@@ -6820,7 +6833,36 @@
 			"githubIdsHint": "استخدم المعرّفات الرقمية، فهي لا تتغير عند إعادة تسمية المالك أو المستودع. معرّف المستودع اختياري، لكن بدونه يُوثق بكل مستودعات المالك.",
 			"githubRef": "الفرع أو الوسم (اختياري)",
 			"lifetime": "أطول رمز مقبول (بالساعات)",
-			"lifetimeHint": "تُرفض الرموز الصادرة لمدة أطول من ذلك. حتى {max} ساعة."
+			"lifetimeHint": "تُرفض الرموز الصادرة لمدة أطول من ذلك. حتى {max} ساعة.",
+			"environmentOptional": "البيئة (اختياري)",
+			"gitlabProjectId": "معرّف المشروع",
+			"gitlabProjectHint": "المعرّف الرقمي في صفحة نظرة عامة على المشروع في GitLab.com. لا يتغير عند إعادة تسمية المشروع أو نقله. لـ GitLab المُدار ذاتيًا، اختر جهة إصدار OIDC مخصصة.",
+			"gitlabRef": "الفرع أو الوسم (اختياري)",
+			"gitlabConditionsHint": "استخدم اسم الفرع أو الوسم، مثل main. اترك الحقلين فارغين لقبول كل المهام في المشروع.",
+			"googleServiceAccountId": "المعرّف الفريد لحساب الخدمة",
+			"googleServiceAccountHint": "المعرّف الفريد الرقمي في صفحة تفاصيل حساب الخدمة في وحدة تحكم Google Cloud. استخدمه بدلًا من البريد الإلكتروني الذي قد يُعاد استخدامه إذا حُذف الحساب.",
+			"googleServiceAccountEmail": "بريد حساب الخدمة (اختياري)",
+			"googleEmailHint": "لا تتضمن الرموز البريد الإلكتروني إلا إذا طلبها حمل العمل مع format=full.",
+			"buildkiteOrganizationId": "معرّف المؤسسة",
+			"buildkiteOrganizationHint": "معرّف UUID للمؤسسة، ويحمله كل رمز من Buildkite في المطالبة organization_id.",
+			"buildkitePipelineSlug": "الاسم المختصر لمسار العمل (اختياري)",
+			"buildkitePipelineHint": "بدونه يُوثق بكل مسارات العمل في المؤسسة.",
+			"circleciOrganizationId": "معرّف المؤسسة",
+			"circleciOrganizationHint": "تجده في CircleCI ضمن Organization Settings → Overview.",
+			"circleciProjectId": "معرّف المشروع (اختياري)",
+			"circleciProjectHint": "تجده ضمن Project Settings → Overview. بدونه يُوثق بكل مشاريع المؤسسة.",
+			"awsIssuer": "عنوان URL لجهة الإصدار",
+			"awsIssuerHint": "لكل حساب AWS جهة إصدار خاصة به. شغّل aws iam get-outbound-web-identity-federation-info وانسخ IssuerIdentifier.",
+			"awsRoleArn": "ARN دور IAM",
+			"awsRoleHint": "لا تُقبل إلا رموز هذا الدور.",
+			"customIssuer": "عنوان URL لجهة الإصدار",
+			"customIssuerHint": "عنوان https عام يقدّم /.well-known/openid-configuration، ومفاتيح التوقيع الخاصة به على المضيف نفسه.",
+			"customOwnerClaim": "مطالبة المالك",
+			"customOwnerId": "قيمة المالك",
+			"customOwnerHint": "يجب أن يحمل كل رمز هذه المطالبة بهذه القيمة تمامًا، مثل sub لحساب خدمة Kubernetes. اختر مطالبة لا يمكن لأحد غيرك إعادة استخدامها.",
+			"customConditionClaim": "مطالبة إضافية (اختياري)",
+			"customConditionValue": "القيمة المطلوبة",
+			"customConditionHint": "يجب أن تحمل الرموز هذه المطالبة أيضًا بهذه القيمة تمامًا."
 		},
 		"problems": {
 			"name": "أدخل اسمًا من 100 حرف كحد أقصى.",
@@ -6829,7 +6871,19 @@
 			"vercelProjectId": "تبدأ معرّفات المشاريع بـ prj_.",
 			"githubOwnerId": "أدخل المعرّف الرقمي للمالك.",
 			"githubRepositoryId": "أدخل المعرّف الرقمي للمستودع.",
-			"lifetime": "أدخل عددًا صحيحًا من الساعات بين 1 و12."
+			"lifetime": "أدخل عددًا صحيحًا من الساعات بين 1 و12.",
+			"gitlabProjectId": "أدخل المعرّف الرقمي للمشروع.",
+			"googleServiceAccountId": "أدخل المعرّف الفريد الرقمي لحساب الخدمة.",
+			"googleServiceAccountEmail": "أدخل عنوان بريد إلكتروني، مثل app@project.iam.gserviceaccount.com.",
+			"buildkiteOrganizationId": "أدخل معرّف UUID للمؤسسة.",
+			"circleciOrganizationId": "أدخل معرّف المؤسسة، وهو UUID.",
+			"circleciProjectId": "أدخل معرّف المشروع، وهو UUID.",
+			"awsIssuer": "أدخل جهة الإصدار من AWS. تنتهي بـ .tokens.sts.global.api.aws.",
+			"awsRoleArn": "أدخل ARN دور، مثل arn:aws:iam::123456789012:role/evals.",
+			"customIssuer": "أدخل عنوان https عامًا بلا منفذ أو استعلام أو جزء.",
+			"customOwnerClaim": "أدخل اسم مطالبة مثل sub. لا يمكن استخدام iss وaud وexp وiat وnbf وjti.",
+			"customOwnerId": "أدخل القيمة التي يجب أن تحملها مطالبة المالك.",
+			"customCondition": "أدخل المطالبة والقيمة معًا، أو اترك كليهما فارغين. يجب أن تختلف المطالبة عن مطالبة المالك."
 		},
 		"errors": {
 			"invalid": "{message}",
@@ -6842,7 +6896,10 @@
 			"deleted": "تم حذف السياسة",
 			"enabled": "تم تشغيل السياسة",
 			"disabled": "تم إيقاف السياسة"
-		}
+		},
+		"listPipeline": "مسار العمل",
+		"listEmail": "بريد حساب الخدمة",
+		"usageCustomHint": "تعمل أي جهة إصدار OIDC تدعم الاكتشاف العام. يمنح هذا المثال حاوية Kubernetes رمز حساب خدمة للجمهور المحدد."
 	},
 	"budgets": {
 		"title": "الميزانيات",

@@ -4970,7 +4970,7 @@ paths:
         - Gateway
       operationId: listWorkloadIdentityPolicies
       summary: Richtlinien für vertrauenswürdige Workloads auflisten
-      description: 'Listet die Richtlinien für vertrauenswürdige Workloads des Workspace auf: welche Vercel-Deployments und GitHub-Actions-Workflows das Gateway mit ihrem OIDC-Token statt mit einem API-Schlüssel aufrufen dürfen. Erfordert keys:read für Management-Schlüssel und OAuth-Tokens oder einen Workspace-Inhaber oder -Admin. Nur für Workspaces in der Beta für vertrauenswürdige Workloads verfügbar; andere Workspaces erhalten 404.'
+      description: 'Listet die Richtlinien für vertrauenswürdige Workloads des Workspace auf: welche Deployments, CI-Jobs und Cloud-Workloads das Gateway mit ihrem OIDC-Token statt mit einem API-Schlüssel aufrufen dürfen. Erfordert keys:read für Management-Schlüssel und OAuth-Tokens oder einen Workspace-Inhaber oder -Admin. Nur für Workspaces in der Beta für vertrauenswürdige Workloads verfügbar; andere Workspaces erhalten 404.'
       responses:
         '200':
           description: Richtlinien für vertrauenswürdige Workloads
@@ -5045,7 +5045,7 @@ paths:
         - Gateway
       operationId: updateWorkloadIdentityPolicy
       summary: Richtlinie für vertrauenswürdige Workloads aktualisieren
-      description: Ändert Name, Status, Claim-Bedingungen oder maximale Token-Lebensdauer einer Richtlinie. Anbieter, Aussteller und Inhaber lassen sich nicht ändern; erstelle stattdessen eine neue Richtlinie. Änderungen erreichen das Gateway innerhalb einer Minute. Erfordert keys:write für Management-Schlüssel und OAuth-Tokens oder einen Workspace-Inhaber oder -Admin. Nur für Workspaces in der Beta für vertrauenswürdige Workloads verfügbar; andere Workspaces erhalten 404.
+      description: Ändert Name, Status, Claim-Bedingungen oder maximale Token-Lebensdauer einer Richtlinie. Anbieter, Aussteller, Inhaber-Claim und Inhaber lassen sich nicht ändern; erstelle stattdessen eine neue Richtlinie. Änderungen erreichen das Gateway innerhalb einer Minute. Erfordert keys:write für Management-Schlüssel und OAuth-Tokens oder einen Workspace-Inhaber oder -Admin. Nur für Workspaces in der Beta für vertrauenswürdige Workloads verfügbar; andere Workspaces erhalten 404.
       requestBody:
         required: true
         content:
@@ -23624,7 +23624,13 @@ components:
       enum:
         - vercel
         - github_actions
-      description: Die Plattform, die die OIDC-Tokens ausstellt.
+        - gitlab
+        - google_cloud
+        - buildkite
+        - circleci
+        - aws
+        - custom
+      description: Die Plattform, die die OIDC-Tokens ausstellt. Verwende custom für jeden anderen OIDC-Aussteller, etwa einen Kubernetes-Cluster oder eine selbst verwaltete GitLab-Instanz.
     WorkloadIdentityPolicy:
       type: object
       description: 'Ein vertrauenswürdiger Workload: Tokens dieses Ausstellers für den festgelegten Inhaber, die alle Claim-Bedingungen erfüllen, authentifizieren sich mit dem Schlüssel der Richtlinie.'
@@ -23633,6 +23639,7 @@ components:
         - name
         - provider
         - issuer
+        - owner_claim
         - owner_id
         - claim_conditions
         - max_token_lifetime_seconds
@@ -23655,13 +23662,16 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: Token-Aussteller, zum Beispiel https://oidc.vercel.com/acme oder https://token.actions.githubusercontent.com.
+          description: Token-Aussteller (der Claim iss), zum Beispiel https://oidc.vercel.com/acme, https://token.actions.githubusercontent.com oder https://accounts.google.com.
+        owner_claim:
+          type: string
+          description: 'Der Token-Claim, mit dem owner_id verglichen wird. Für jede Plattform fest: owner_id für vercel, repository_owner_id für github_actions, project_id für gitlab, sub für google_cloud und aws, organization_id für buildkite und oidc.circleci.com/org-id für circleci. Custom-Aussteller verwenden den Claim, der beim Erstellen der Richtlinie gewählt wurde.'
         owner_id:
           type: string
-          description: Die festgelegte Vercel-Team-ID (Claim owner_id) oder GitHub-Organisations- bzw. Benutzer-ID (Claim repository_owner_id).
+          description: 'Der festgelegte Inhaber: der Wert, dem der owner_claim des Tokens entsprechen muss, etwa eine Vercel-Team-ID, eine GitHub-Organisations- oder Benutzer-ID, eine GitLab-Projekt-ID, die eindeutige ID eines Google-Dienstkontos, eine Buildkite-Organisations-ID, eine CircleCI-Organisations-ID oder der ARN einer AWS-IAM-Rolle.'
         claim_conditions:
           type: object
-          description: Zusätzliche Claims, die das Token erfüllen muss, als Claim-Name und erlaubte Werte, zum Beispiel project_id und environment für Vercel oder repository_id und ref für GitHub Actions. Jeder Claim muss einem seiner Werte entsprechen. Höchstens 15 Claims und 20 Werte pro Claim; iss, aud, exp, iat, nbf und jti sind nicht erlaubt, und der Claim des festgelegten Inhabers wird über owner_id gesetzt.
+          description: 'Zusätzliche Claims, die das Token erfüllen muss, als Claim-Name und erlaubte Werte, zum Beispiel repository_id und ref für GitHub Actions oder project_path und ref für GitLab. Jeder Claim muss einem seiner Werte entsprechen. Höchstens 15 Claims und 20 Werte pro Claim. Claim-Namen bestehen aus Buchstaben, Ziffern und . _ : / - und haben bis zu 128 Zeichen; iss, aud, exp, iat, nbf und jti sind nicht erlaubt, und der Inhaber-Claim wird über owner_id gesetzt.'
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23718,14 +23728,19 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: 'Für Vercel erforderlich: https://oidc.vercel.com/ gefolgt vom Team-Slug oder https://oidc.vercel.com für den globalen Aussteller. Für GitHub Actions ist der Standardwert https://token.actions.githubusercontent.com.'
+          description: 'Der Aussteller der Tokens. Optional für github_actions (Standard: https://token.actions.githubusercontent.com; für einen angepassten Enterprise-Aussteller /<enterprise-slug> anhängen), gitlab (https://gitlab.com), google_cloud (https://accounts.google.com) und buildkite (https://agent.buildkite.com). Erforderlich für vercel (https://oidc.vercel.com/<team-slug> oder https://oidc.vercel.com für den globalen Aussteller), circleci (https://oidc.circleci.com/org/<organization-id>), aws (der Aussteller https://<id>.tokens.sts.global.api.aws deines Kontos) und custom (eine öffentliche https-URL, die ein OIDC-Discovery-Dokument bereitstellt, auf einem Host, der keiner der anderen Plattformen gehört).'
+        owner_claim:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: Der Token-Claim, mit dem owner_id verglichen wird, zum Beispiel sub. Für custom erforderlich. Andere Plattformen verwenden einen festen Claim (siehe owner_claim in der Richtlinie); lass ihn also weg oder sende diesen Claim. Kann später nicht geändert werden.
         owner_id:
           type: string
           minLength: 1
-          description: Die festzulegende Vercel-Team-ID oder GitHub-Organisations- bzw. Benutzer-ID.
+          description: 'Der Wert, dem der Inhaber-Claim entsprechen muss: eine Vercel-Team-ID, eine GitHub-Organisations- oder Benutzer-ID, eine GitLab-Projekt-ID, die eindeutige ID eines Google-Dienstkontos (nicht seine E-Mail-Adresse), eine Buildkite-Organisations-ID, eine CircleCI-Organisations-ID (die aus dem Aussteller), der ARN einer AWS-IAM-Rolle oder bei custom-Ausstellern der owner_claim-Wert, dem vertraut wird.'
         claim_conditions:
           type: object
-          description: Zusätzliche Claims, die das Token erfüllen muss, als Claim-Name und erlaubte Werte, zum Beispiel project_id und environment für Vercel oder repository_id und ref für GitHub Actions. Jeder Claim muss einem seiner Werte entsprechen. Höchstens 15 Claims und 20 Werte pro Claim; iss, aud, exp, iat, nbf und jti sind nicht erlaubt, und der Claim des festgelegten Inhabers wird über owner_id gesetzt.
+          description: 'Zusätzliche Claims, die das Token erfüllen muss, als Claim-Name und erlaubte Werte, zum Beispiel repository_id und ref für GitHub Actions oder project_path und ref für GitLab. Jeder Claim muss einem seiner Werte entsprechen. Höchstens 15 Claims und 20 Werte pro Claim. Claim-Namen bestehen aus Buchstaben, Ziffern und . _ : / - und haben bis zu 128 Zeichen; iss, aud, exp, iat, nbf und jti sind nicht erlaubt, und der Inhaber-Claim wird über owner_id gesetzt.'
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23757,7 +23772,7 @@ components:
             - disabled
         claim_conditions:
           type: object
-          description: Zusätzliche Claims, die das Token erfüllen muss, als Claim-Name und erlaubte Werte, zum Beispiel project_id und environment für Vercel oder repository_id und ref für GitHub Actions. Jeder Claim muss einem seiner Werte entsprechen. Höchstens 15 Claims und 20 Werte pro Claim; iss, aud, exp, iat, nbf und jti sind nicht erlaubt, und der Claim des festgelegten Inhabers wird über owner_id gesetzt.
+          description: 'Zusätzliche Claims, die das Token erfüllen muss, als Claim-Name und erlaubte Werte, zum Beispiel repository_id und ref für GitHub Actions oder project_path und ref für GitLab. Jeder Claim muss einem seiner Werte entsprechen. Höchstens 15 Claims und 20 Werte pro Claim. Claim-Namen bestehen aus Buchstaben, Ziffern und . _ : / - und haben bis zu 128 Zeichen; iss, aud, exp, iat, nbf und jti sind nicht erlaubt, und der Inhaber-Claim wird über owner_id gesetzt.'
           maxProperties: 15
           additionalProperties:
             type: array

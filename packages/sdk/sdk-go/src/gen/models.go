@@ -5725,6 +5725,7 @@ type WorkloadIdentityPolicy struct {
 	LastUsedAt *string `json:"last_used_at"`
 	MaxTokenLifetimeSeconds int `json:"max_token_lifetime_seconds"`
 	Name string `json:"name"`
+	OwnerClaim string `json:"owner_claim"`
 	OwnerId string `json:"owner_id"`
 	Provider string `json:"provider"`
 	Status string `json:"status"`
@@ -5740,6 +5741,7 @@ type WorkloadIdentityPolicyInput struct {
 	Issuer *string `json:"issuer,omitempty"`
 	MaxTokenLifetimeSeconds *int `json:"max_token_lifetime_seconds,omitempty"`
 	Name string `json:"name"`
+	OwnerClaim *string `json:"owner_claim,omitempty"`
 	OwnerId string `json:"owner_id"`
 	Provider string `json:"provider"`
 }
@@ -5765,6 +5767,12 @@ type WorkloadIdentityProvider string
 const (
 	WorkloadIdentityProviderVercel WorkloadIdentityProvider = "vercel"
 	WorkloadIdentityProviderGithubActions WorkloadIdentityProvider = "github_actions"
+	WorkloadIdentityProviderGitlab WorkloadIdentityProvider = "gitlab"
+	WorkloadIdentityProviderGoogleCloud WorkloadIdentityProvider = "google_cloud"
+	WorkloadIdentityProviderBuildkite WorkloadIdentityProvider = "buildkite"
+	WorkloadIdentityProviderCircleci WorkloadIdentityProvider = "circleci"
+	WorkloadIdentityProviderAws WorkloadIdentityProvider = "aws"
+	WorkloadIdentityProviderCustom WorkloadIdentityProvider = "custom"
 )
 
 

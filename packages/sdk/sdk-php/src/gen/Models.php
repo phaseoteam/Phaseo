@@ -7126,6 +7126,8 @@ class WorkloadIdentityPolicy
 	/** @var string */
 	public $name;
 	/** @var string */
+	public $owner_claim;
+	/** @var string */
 	public $owner_id;
 	/** @var string */
 	public $provider;
@@ -7151,6 +7153,8 @@ class WorkloadIdentityPolicyInput
 	public $max_token_lifetime_seconds;
 	/** @var string */
 	public $name;
+	/** @var string|null */
+	public $owner_claim;
 	/** @var string */
 	public $owner_id;
 	/** @var string */

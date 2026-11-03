@@ -259,7 +259,7 @@ phaseo identity group-mappings delete <id> [--yes] --json
 
 ```bash
 phaseo workload-identity policies list --json
-phaseo workload-identity policies create --name <name> --provider vercel|github_actions --owner-id <id> [--issuer <url>] [--claim-conditions-json <json>] [--max-token-lifetime-seconds <n>] --json
+phaseo workload-identity policies create --name <name> --provider vercel|github_actions|gitlab|google_cloud|buildkite|circleci|aws|custom --owner-id <id> [--issuer <url>] [--owner-claim <claim>] [--claim-conditions-json <json>] [--max-token-lifetime-seconds <n>] --json
 phaseo workload-identity policies get <id> --json
 phaseo workload-identity policies update <id> [--name <name>] [--status active|disabled] [--claim-conditions-json <json>] [--max-token-lifetime-seconds <n>] --json
 phaseo workload-identity policies delete <id> [--yes] --json

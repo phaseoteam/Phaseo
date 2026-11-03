@@ -47,8 +47,14 @@ func trustedWorkloadTestServer(t *testing.T) (*httptest.Server, *[]string) {
 			for key, value := range body {
 				record[key] = value
 			}
-			if record["issuer"] == nil && record["provider"] == "github_actions" {
-				record["issuer"] = "https://token.actions.githubusercontent.com"
+			if record["issuer"] == nil {
+				record["issuer"] = map[string]any{"github_actions": "https://token.actions.githubusercontent.com", "gitlab": "https://gitlab.com", "google_cloud": "https://accounts.google.com", "buildkite": "https://agent.buildkite.com"}[record["provider"].(string)]
+			}
+			if platform, ok := workloadPlatforms[record["provider"].(string)]; ok {
+				if record["owner_claim"] != nil {
+					t.Errorf("owner_claim sent for preset platform %v", record["provider"])
+				}
+				record["owner_claim"] = platform.ownerClaim
 			}
 			records[record["id"].(string)] = record
 			write(http.StatusCreated, record)
@@ -60,7 +66,7 @@ func trustedWorkloadTestServer(t *testing.T) (*httptest.Server, *[]string) {
 				return
 			}
 			if r.Method == http.MethodPatch {
-				for _, field := range []string{"provider", "issuer", "owner_id"} {
+				for _, field := range []string{"provider", "issuer", "owner_claim", "owner_id"} {
 					if _, present := body[field]; present {
 						w.WriteHeader(http.StatusBadRequest)
 						_, _ = w.Write([]byte(`{"error":"bad_request"}`))
@@ -118,6 +124,8 @@ resource "phaseo_trusted_workload" "preview" {
   max_token_lifetime_seconds = 900`),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("phaseo_trusted_workload.deploy", "issuer", "https://token.actions.githubusercontent.com"),
+					resource.TestCheckResourceAttr("phaseo_trusted_workload.deploy", "owner_claim", "repository_owner_id"),
+					resource.TestCheckResourceAttr("phaseo_trusted_workload.preview", "owner_claim", "owner_id"),
 					resource.TestCheckResourceAttr("phaseo_trusted_workload.deploy", "claim_conditions.ref.1", "refs/heads/release"),
 					resource.TestCheckResourceAttr("phaseo_trusted_workload.deploy", "max_token_lifetime_seconds", "900"),
 					resource.TestCheckResourceAttr("phaseo_trusted_workload.deploy", "enabled", "true"),
@@ -168,8 +176,113 @@ resource "phaseo_trusted_workload" "preview" {
 	}
 }
 
-func TestAccTrustedWorkloadRejectsIssuersTheAPIWouldRefuseOrRewrite(t *testing.T) {
-	for _, issuer := range []string{`""`, `" https://token.actions.githubusercontent.com"`, `"\u00a0https://token.actions.githubusercontent.com"`, `"https://example.com"`} {
+func TestTrustedWorkloadIssuerRules(t *testing.T) {
+	for platform, issuers := range map[string][]string{
+		"vercel":         {"https://oidc.vercel.com", "https://oidc.vercel.com/acme"},
+		"github_actions": {"https://token.actions.githubusercontent.com", "https://token.actions.githubusercontent.com/acme-corp"},
+		"gitlab":         {"https://gitlab.com"},
+		"google_cloud":   {"https://accounts.google.com"},
+		"buildkite":      {"https://agent.buildkite.com"},
+		"circleci":       {"https://oidc.circleci.com/org/11111111-2222-3333-4444-555555555555"},
+		"aws":            {"https://11111111-2222-3333-4444-555555555555.tokens.sts.global.api.aws"},
+	} {
+		for _, issuer := range issuers {
+			if !workloadPlatforms[platform].issuer.MatchString(issuer) {
+				t.Errorf("%s should accept %s", platform, issuer)
+			}
+			if isCustomWorkloadIssuer(issuer) {
+				t.Errorf("custom should refuse preset issuer %s", issuer)
+			}
+		}
+	}
+	for _, issuer := range []string{"https://gitlab.example.com", "https://oidc.example.com/", "https://container.googleapis.com/v1/projects/p/locations/l/clusters/c", "https://oidc.eks.us-east-1.amazonaws.com/id/ABC"} {
+		if !isCustomWorkloadIssuer(issuer) {
+			t.Errorf("custom should accept %s", issuer)
+		}
+	}
+	for _, issuer := range []string{"http://oidc.example.com", "https://oidc.example.com:8443", "https://user@oidc.example.com", "https://oidc.example.com?x=1", "https://oidc.example.com#x", "https://10.0.0.1", "https://[::1]", "https://localhost", "https://ci.internal", "https://example", "https://OIDC.example.com", "https://x.tokens.sts.global.api.aws", "https://gitlab.com"} {
+		if isCustomWorkloadIssuer(issuer) {
+			t.Errorf("custom should refuse %s", issuer)
+		}
+	}
+	if workloadPlatforms["circleci"].issuer.MatchString("https://oidc.circleci.com/org/acme") || workloadPlatforms["gitlab"].issuer.MatchString("https://gitlab.com/acme") {
+		t.Error("preset issuers must be exact")
+	}
+}
+
+func TestAccTrustedWorkloadCustomAndDefaultIssuers(t *testing.T) {
+	server, log := trustedWorkloadTestServer(t)
+	defer server.Close()
+	config := fmt.Sprintf(`
+provider "phaseo" {
+  api_key  = "test-management-key"
+  base_url = %q
+}
+resource "phaseo_trusted_workload" "gitlab" {
+  name     = "GitLab deploy"
+  platform = "gitlab"
+  owner_id = "4242"
+  claim_conditions = {
+    ref = ["main"]
+  }
+}
+resource "phaseo_trusted_workload" "cluster" {
+  name        = "Cluster"
+  platform    = "custom"
+  issuer      = "https://oidc.example.com"
+  owner_claim = "sub"
+  owner_id    = "system:serviceaccount:prod:api"
+  claim_conditions = {
+    "kubernetes.io/namespace" = ["prod"]
+  }
+}
+`, server.URL+"/v1")
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testProviderFactories,
+		TerraformVersionChecks:   []tfversion.TerraformVersionCheck{tfversion.SkipBelow(tfversion.Version1_5_0)},
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("phaseo_trusted_workload.gitlab", "issuer", "https://gitlab.com"),
+					resource.TestCheckResourceAttr("phaseo_trusted_workload.gitlab", "owner_claim", "project_id"),
+					resource.TestCheckResourceAttr("phaseo_trusted_workload.cluster", "owner_claim", "sub"),
+					resource.TestCheckResourceAttr("phaseo_trusted_workload.cluster", "claim_conditions.kubernetes.io/namespace.0", "prod"),
+				),
+			},
+			{ResourceName: "phaseo_trusted_workload.cluster", ImportState: true, ImportStateVerify: true},
+		},
+	})
+	var created []string
+	for _, seen := range *log {
+		if strings.HasPrefix(seen, http.MethodPost+" ") {
+			created = append(created, seen)
+		}
+	}
+	if len(created) != 2 || !strings.Contains(strings.Join(created, "\n"), `"owner_claim":"sub"`) {
+		t.Errorf("expected two creates, the custom one with owner_claim, got %v", created)
+	}
+}
+
+func TestAccTrustedWorkloadRejectsConfigTheAPIWouldRefuse(t *testing.T) {
+	for _, tc := range []struct{ body, err string }{
+		{`platform = "github_actions"` + "\n" + `issuer = ""`, `must be an https URL`},
+		{`platform = "github_actions"` + "\n" + `issuer = " https://token.actions.githubusercontent.com"`, `must be an https URL`},
+		{`platform = "github_actions"` + "\n" + `issuer = "\u00a0https://token.actions.githubusercontent.com"`, `must be an https URL`},
+		{`platform = "github_actions"` + "\n" + `issuer = "https://example.com"`, `A github_actions issuer must be`},
+		{`platform = "gitlab"` + "\n" + `issuer = "https://gitlab.example.com"`, `A gitlab issuer must be`},
+		{`platform = "vercel"`, `issuer is required`},
+		{`platform = "aws"`, `issuer is required`},
+		{`platform = "circleci"` + "\n" + `issuer = "https://oidc.circleci.com/org/11111111-2222-3333-4444-555555555555"`, `organization ID in the CircleCI`},
+		{`platform = "custom"` + "\n" + `issuer = "https://oidc.example.com"`, `owner_claim is required`},
+		{`platform = "custom"` + "\n" + `issuer = "https://token.actions.githubusercontent.com"` + "\n" + `owner_claim = "sub"`, `A custom issuer must be`},
+		{`platform = "custom"` + "\n" + `issuer = "https://10.0.0.1"` + "\n" + `owner_claim = "sub"`, `A custom issuer must be`},
+		{`platform = "custom"` + "\n" + `issuer = "https://oidc.example.com:8443"` + "\n" + `owner_claim = "sub"`, `A custom issuer must be`},
+		{`platform = "custom"` + "\n" + `issuer = "https://oidc.example.com"` + "\n" + `owner_claim = "aud"`, `Invalid Attribute Value`},
+		{`platform = "custom"` + "\n" + `issuer = "https://oidc.example.com"` + "\n" + `owner_claim = "sub"` + "\n" + `claim_conditions = { sub = ["x"] }`, `Set sub with owner_id`},
+		{`platform = "google_cloud"` + "\n" + `owner_claim = "email"`, `owner_claim is always "sub"`},
+		{`platform = "sometimes"`, `Invalid Attribute Value Match`},
+	} {
 		resource.Test(t, resource.TestCase{
 			ProtoV6ProviderFactories: testProviderFactories,
 			TerraformVersionChecks:   []tfversion.TerraformVersionCheck{tfversion.SkipBelow(tfversion.Version1_5_0)},
@@ -180,13 +293,12 @@ provider "phaseo" {
   base_url = "https://api.phaseo.test/v1"
 }
 resource "phaseo_trusted_workload" "deploy" {
-  name     = "GitHub deploy"
-  platform = "github_actions"
-  issuer   = %s
+  name     = "Deploy"
   owner_id = "123456"
+  %s
 }
-`, issuer),
-				ExpectError: regexp.MustCompile(`must be https://oidc.vercel.com`),
+`, tc.body),
+				ExpectError: regexp.MustCompile(tc.err),
 			}},
 		})
 	}

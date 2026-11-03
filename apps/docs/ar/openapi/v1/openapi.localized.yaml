@@ -4970,7 +4970,7 @@ paths:
         - Gateway
       operationId: listWorkloadIdentityPolicies
       summary: عرض سياسات أحمال العمل الموثوقة
-      description: 'يعرض سياسات أحمال العمل الموثوقة في مساحة العمل: أي عمليات النشر على Vercel وسير عمل GitHub Actions يمكنها استدعاء البوابة برمز OIDC الخاص بها بدلًا من مفتاح API. يتطلب keys:read على مفاتيح الإدارة ورموز OAuth، أو مالك مساحة العمل أو أحد مسؤوليها. متاح فقط لمساحات العمل المشاركة في المرحلة التجريبية لأحمال العمل الموثوقة؛ وتتلقى مساحات العمل الأخرى 404.'
+      description: 'يعرض سياسات أحمال العمل الموثوقة في مساحة العمل: أي عمليات النشر ومهام CI وأحمال العمل السحابية يمكنها استدعاء البوابة برمز OIDC الخاص بها بدلًا من مفتاح API. يتطلب keys:read على مفاتيح الإدارة ورموز OAuth، أو مالك مساحة العمل أو أحد مسؤوليها. متاح فقط لمساحات العمل المشاركة في المرحلة التجريبية لأحمال العمل الموثوقة؛ وتتلقى مساحات العمل الأخرى 404.'
       responses:
         '200':
           description: سياسات أحمال العمل الموثوقة
@@ -5045,7 +5045,7 @@ paths:
         - Gateway
       operationId: updateWorkloadIdentityPolicy
       summary: تحديث سياسة حمل عمل موثوق
-      description: يغيّر اسم السياسة أو حالتها أو شروط المطالبات أو أقصى مدة لصلاحية الرمز. لا يمكن تغيير المزوّد أو المُصدِر أو المالك؛ أنشئ سياسة جديدة بدلًا من ذلك. تصل التغييرات إلى البوابة خلال دقيقة. يتطلب keys:write على مفاتيح الإدارة ورموز OAuth، أو مالك مساحة العمل أو أحد مسؤوليها. متاح فقط لمساحات العمل المشاركة في المرحلة التجريبية لأحمال العمل الموثوقة؛ وتتلقى مساحات العمل الأخرى 404.
+      description: يغيّر اسم السياسة أو حالتها أو شروط المطالبات أو أقصى مدة لصلاحية الرمز. لا يمكن تغيير المزوّد أو المُصدِر أو مطالبة المالك أو المالك؛ أنشئ سياسة جديدة بدلًا من ذلك. تصل التغييرات إلى البوابة خلال دقيقة. يتطلب keys:write على مفاتيح الإدارة ورموز OAuth، أو مالك مساحة العمل أو أحد مسؤوليها. متاح فقط لمساحات العمل المشاركة في المرحلة التجريبية لأحمال العمل الموثوقة؛ وتتلقى مساحات العمل الأخرى 404.
       requestBody:
         required: true
         content:
@@ -23624,7 +23624,13 @@ components:
       enum:
         - vercel
         - github_actions
-      description: المنصة التي تُصدر رموز OIDC.
+        - gitlab
+        - google_cloud
+        - buildkite
+        - circleci
+        - aws
+        - custom
+      description: المنصة التي تُصدر رموز OIDC. استخدم custom لأي مُصدِر OIDC آخر، مثل عنقود Kubernetes أو نسخة GitLab مُدارة ذاتيًا.
     WorkloadIdentityPolicy:
       type: object
       description: 'حمل عمل موثوق: الرموز الصادرة عن هذا المُصدِر، للمالك المثبَّت والمطابقة لكل شروط المطالبات، تُصادَق بصفتها مفتاح السياسة.'
@@ -23633,6 +23639,7 @@ components:
         - name
         - provider
         - issuer
+        - owner_claim
         - owner_id
         - claim_conditions
         - max_token_lifetime_seconds
@@ -23655,13 +23662,16 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: مُصدِر الرمز، مثل https://oidc.vercel.com/acme أو https://token.actions.githubusercontent.com.
+          description: مُصدِر الرمز (مطالبة iss)، مثل https://oidc.vercel.com/acme أو https://token.actions.githubusercontent.com أو https://accounts.google.com.
+        owner_claim:
+          type: string
+          description: 'مطالبة الرمز التي تُطابَق مع owner_id. وهي ثابتة لكل منصة: owner_id لـ vercel، وrepository_owner_id لـ github_actions، وproject_id لـ gitlab، وsub لـ google_cloud وaws، وorganization_id لـ buildkite، وoidc.circleci.com/org-id لـ circleci. تستخدم المُصدِرات custom المطالبة المختارة عند إنشاء السياسة.'
         owner_id:
           type: string
-          description: معرّف فريق Vercel المثبَّت (مطالبة owner_id) أو معرّف المؤسسة أو المستخدم على GitHub (مطالبة repository_owner_id).
+          description: 'المالك المثبَّت: القيمة التي يجب أن تساويها مطالبة owner_claim في الرمز، مثل معرّف فريق Vercel، أو معرّف المؤسسة أو المستخدم على GitHub، أو معرّف مشروع GitLab، أو المعرّف الفريد لحساب خدمة Google، أو معرّف مؤسسة Buildkite، أو معرّف مؤسسة CircleCI، أو ARN لدور AWS IAM.'
         claim_conditions:
           type: object
-          description: مطالبات إضافية يجب أن يطابقها الرمز، على شكل اسم المطالبة والقيم المسموح بها، مثل project_id وenvironment لـ Vercel، أو repository_id وref لـ GitHub Actions. يجب أن تطابق كل مطالبة إحدى قيمها. بحد أقصى 15 مطالبة و20 قيمة لكل مطالبة؛ لا يمكن استخدام iss وaud وexp وiat وnbf وjti، وتُضبط مطالبة المالك المثبَّت عبر owner_id.
+          description: 'مطالبات إضافية يجب أن يطابقها الرمز، على شكل اسم المطالبة والقيم المسموح بها، مثل repository_id وref لـ GitHub Actions، أو project_path وref لـ GitLab. يجب أن تطابق كل مطالبة إحدى قيمها. بحد أقصى 15 مطالبة و20 قيمة لكل مطالبة. تتكون أسماء المطالبات من أحرف وأرقام و. _ : / - وبطول يصل إلى 128 حرفًا؛ لا يمكن استخدام iss وaud وexp وiat وnbf وjti، وتُضبط مطالبة المالك عبر owner_id.'
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23718,14 +23728,19 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: 'مطلوب لـ Vercel: ‏https://oidc.vercel.com/ متبوعًا بالمعرّف المختصر للفريق، أو https://oidc.vercel.com للمُصدِر العام. القيمة الافتراضية لـ GitHub Actions هي https://token.actions.githubusercontent.com.'
+          description: المُصدِر الذي تأتي منه الرموز. اختياري لـ github_actions (القيمة الافتراضية https://token.actions.githubusercontent.com؛ أضف /<enterprise-slug> لمُصدِر مؤسسي مخصّص)، وgitlab (https://gitlab.com)، وgoogle_cloud (https://accounts.google.com)، وbuildkite (https://agent.buildkite.com). مطلوب لـ vercel (https://oidc.vercel.com/<team-slug>، أو https://oidc.vercel.com للمُصدِر العام)، وcircleci (https://oidc.circleci.com/org/<organization-id>)، وaws (مُصدِر https://<id>.tokens.sts.global.api.aws الخاص بحسابك)، وcustom (عنوان URL عام بـ https يقدّم مستند اكتشاف OIDC، على مضيف لا يتبع أيًا من المنصات الأخرى).
+        owner_claim:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: مطالبة الرمز التي تُطابَق مع owner_id، مثل sub. مطلوبة لـ custom. تستخدم المنصات الأخرى مطالبة ثابتة (راجع owner_claim في السياسة)، لذا احذفها أو أرسل تلك المطالبة. لا يمكن تغييرها لاحقًا.
         owner_id:
           type: string
           minLength: 1
-          description: معرّف فريق Vercel أو معرّف المؤسسة أو المستخدم على GitHub المراد تثبيته.
+          description: 'القيمة التي يجب أن تساويها مطالبة المالك: معرّف فريق Vercel، أو معرّف المؤسسة أو المستخدم على GitHub، أو معرّف مشروع GitLab، أو المعرّف الفريد لحساب خدمة Google (وليس بريده الإلكتروني)، أو معرّف مؤسسة Buildkite، أو معرّف مؤسسة CircleCI (الموجود في المُصدِر)، أو ARN لدور AWS IAM، أو بالنسبة إلى مُصدِرات custom قيمة owner_claim الموثوق بها.'
         claim_conditions:
           type: object
-          description: مطالبات إضافية يجب أن يطابقها الرمز، على شكل اسم المطالبة والقيم المسموح بها، مثل project_id وenvironment لـ Vercel، أو repository_id وref لـ GitHub Actions. يجب أن تطابق كل مطالبة إحدى قيمها. بحد أقصى 15 مطالبة و20 قيمة لكل مطالبة؛ لا يمكن استخدام iss وaud وexp وiat وnbf وjti، وتُضبط مطالبة المالك المثبَّت عبر owner_id.
+          description: 'مطالبات إضافية يجب أن يطابقها الرمز، على شكل اسم المطالبة والقيم المسموح بها، مثل repository_id وref لـ GitHub Actions، أو project_path وref لـ GitLab. يجب أن تطابق كل مطالبة إحدى قيمها. بحد أقصى 15 مطالبة و20 قيمة لكل مطالبة. تتكون أسماء المطالبات من أحرف وأرقام و. _ : / - وبطول يصل إلى 128 حرفًا؛ لا يمكن استخدام iss وaud وexp وiat وnbf وjti، وتُضبط مطالبة المالك عبر owner_id.'
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23757,7 +23772,7 @@ components:
             - disabled
         claim_conditions:
           type: object
-          description: مطالبات إضافية يجب أن يطابقها الرمز، على شكل اسم المطالبة والقيم المسموح بها، مثل project_id وenvironment لـ Vercel، أو repository_id وref لـ GitHub Actions. يجب أن تطابق كل مطالبة إحدى قيمها. بحد أقصى 15 مطالبة و20 قيمة لكل مطالبة؛ لا يمكن استخدام iss وaud وexp وiat وnbf وjti، وتُضبط مطالبة المالك المثبَّت عبر owner_id.
+          description: 'مطالبات إضافية يجب أن يطابقها الرمز، على شكل اسم المطالبة والقيم المسموح بها، مثل repository_id وref لـ GitHub Actions، أو project_path وref لـ GitLab. يجب أن تطابق كل مطالبة إحدى قيمها. بحد أقصى 15 مطالبة و20 قيمة لكل مطالبة. تتكون أسماء المطالبات من أحرف وأرقام و. _ : / - وبطول يصل إلى 128 حرفًا؛ لا يمكن استخدام iss وaud وexp وiat وnbf وjti، وتُضبط مطالبة المالك عبر owner_id.'
           maxProperties: 15
           additionalProperties:
             type: array

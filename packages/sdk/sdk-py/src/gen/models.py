@@ -3615,8 +3615,9 @@ class WorkloadIdentityPolicy(TypedDict):
 	last_used_at: Optional[str]
 	max_token_lifetime_seconds: int
 	name: str
+	owner_claim: str
 	owner_id: str
-	provider: Literal["vercel", "github_actions"]
+	provider: Literal["vercel", "github_actions", "gitlab", "google_cloud", "buildkite", "circleci", "aws", "custom"]
 	status: Literal["active", "disabled"]
 	updated_at: str
 
@@ -3628,8 +3629,9 @@ class WorkloadIdentityPolicyInput(TypedDict):
 	issuer: NotRequired[str]
 	max_token_lifetime_seconds: NotRequired[int]
 	name: str
+	owner_claim: NotRequired[str]
 	owner_id: str
-	provider: Literal["vercel", "github_actions"]
+	provider: Literal["vercel", "github_actions", "gitlab", "google_cloud", "buildkite", "circleci", "aws", "custom"]
 
 class WorkloadIdentityPolicyListResponse(TypedDict):
 	audience: str
@@ -3644,7 +3646,7 @@ class WorkloadIdentityPolicyUpdateInput(TypedDict):
 	name: NotRequired[str]
 	status: NotRequired[Literal["active", "disabled"]]
 
-WorkloadIdentityProvider = Literal["vercel", "github_actions"]
+WorkloadIdentityProvider = Literal["vercel", "github_actions", "gitlab", "google_cloud", "buildkite", "circleci", "aws", "custom"]
 
 class Workspace(TypedDict):
 	created_at: Optional[str]
