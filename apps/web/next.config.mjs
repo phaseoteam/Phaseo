@@ -110,9 +110,10 @@ const nextConfig = {
           // Matches Vercel's default. Browsers ignore it on plain-HTTP (local) responses.
           { key: "Strict-Transport-Security", value: "max-age=63072000" },
           {
-            // Report-only, so it cannot block anything. Enforced policies stay
-            // per-route (see /oauth/consent below).
-            key: "Content-Security-Policy-Report-Only",
+            // Enforced site-wide: no framing by other sites (as X-Frame-Options),
+            // no plugin content, and no <base> tag that could redirect relative
+            // URLs. The site uses none of them. /oauth/consent tightens this below.
+            key: "Content-Security-Policy",
             value: "frame-ancestors 'self'; object-src 'none'; base-uri 'self'",
           },
         ],
