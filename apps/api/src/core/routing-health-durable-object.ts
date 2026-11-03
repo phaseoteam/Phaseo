@@ -148,6 +148,9 @@ export class RoutingHealthDurableObject extends DurableObject<GatewayBindings> {
         if (from !== next.breaker) {
             this.urgentVersion = this.version;
             this.transitions.set(event.provider, { from, at: now });
+            // The caller acts on this breaker state, so it must survive eviction before the alarm.
+            // Transitions are rare; ordinary evidence stays buffered.
+            this.persist();
         }
         this.schedule(this.nextAlarmTime(now));
         return { health: next, version: this.version };
@@ -182,6 +185,7 @@ export class RoutingHealthDurableObject extends DurableObject<GatewayBindings> {
         if (!this.pool) return;
         const urgent = this.urgentVersion > this.published;
         const due = now - this.publishedAt >= (urgent ? HEALTH_URGENT_PUBLISH_GAP_MS : HEALTH_PUBLISH_INTERVAL_MS);
+        let publishError: unknown = null;
         if (this.version > this.published && due) {
             const [endpoint, model] = JSON.parse(this.pool) as [string, string];
             const version = this.version;
@@ -192,18 +196,22 @@ export class RoutingHealthDurableObject extends DurableObject<GatewayBindings> {
                 await this.env.GATEWAY_CACHE.put(healthSnapshotKey(endpoint, model), JSON.stringify(snapshot), {
                     expirationTtl: HEALTH_SNAPSHOT_MAX_AGE_MS / 1000,
                 });
+                // Reports may arrive during KV I/O; they remain unpublished.
+                this.published = version;
+                this.publishedAt = now;
+                this.metadataDirty = true;
             } catch (error) {
                 console.warn("routing_health_publish_failed", { pool: this.pool });
-                this.schedule(now + HEALTH_PUBLISH_INTERVAL_MS);
-                throw error;
+                publishError = error;
             }
-            // Reports may arrive during KV I/O; they remain unpublished.
-            this.published = version;
-            this.publishedAt = now;
-            this.metadataDirty = true;
         }
         this.persist();
+        // Provider status does not depend on KV: record transitions even when the publish failed.
         await this.recordTransitions(now);
+        if (publishError) {
+            this.schedule(now + HEALTH_PUBLISH_INTERVAL_MS);
+            throw publishError;
+        }
         if (this.version > this.published) this.schedule(Math.max(Date.now() + 1000, this.nextAlarmTime(Date.now())));
         else if (this.transitions.size) this.schedule(Date.now() + HEALTH_PUBLISH_INTERVAL_MS);
     }

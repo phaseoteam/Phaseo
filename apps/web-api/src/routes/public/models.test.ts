@@ -1812,6 +1812,22 @@ describe("public model routes", () => {
 		} } });
 	});
 
+	it("limits the status to the model page's own model when model_id is given", async () => {
+		const fetchMock = vi.fn(async () => new Response(JSON.stringify([]), { status: 200 }));
+		vi.stubGlobal("fetch", fetchMock);
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai&model_id=moonshotai%2Fkimi-k3",
+			{},
+			env,
+		);
+
+		expect(response.status).toBe(200);
+		const url = new URL(String(fetchMock.mock.calls[0][0]));
+		expect(url.searchParams.get("model_id")).toBe("eq.moonshotai/kimi-k3");
+		expect(url.searchParams.get("provider_id")).toBe("in.(openai)");
+	});
+
 	it("does not cache an empty status when breaker state cannot be read", async () => {
 		vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ message: "unavailable" }), { status: 500 })));
 

@@ -260,6 +260,36 @@ describe("breaker state history", () => {
 		})]);
 	});
 
+	it("keeps an acknowledged recovery across eviction before the alarm", async () => {
+		const first = await ready(object());
+		const opened = await openBreaker(first);
+		vi.setSystemTime(alarm!);
+		await first.alarm();
+		vi.setSystemTime(opened.breaker_until_ms + 1000);
+		let receipt;
+		for (let index = 0; index < HEALTH_CONSTANTS.HALF_OPEN_MIN_PROBES; index++) {
+			receipt = await first.observe(event({ probe: true, startedAt: Date.now() - 10 }));
+		}
+		expect(receipt?.health.breaker).toBe("closed");
+		// Evicted before the alarm: the closing transition was already durable.
+		const stored = db.prepare("SELECT state FROM providers WHERE provider='alpha'").get() as { state: string };
+		expect(JSON.parse(stored.state).breaker).toBe("closed");
+		const second = await ready(object());
+		vi.setSystemTime(alarm!);
+		await second.alarm();
+		expect(recorded.at(-1)).toEqual([expect.objectContaining({ provider_id: "alpha", breaker_state: "closed", last_reason: "half_open_to_closed" })]);
+	});
+
+	it("records a breaker change even when the KV publication fails", async () => {
+		const health = await ready(object());
+		await openBreaker(health);
+		put.mockRejectedValueOnce(new Error("kv down"));
+		vi.setSystemTime(alarm!);
+		await expect(health.alarm()).rejects.toThrow("kv down");
+		expect(recorded).toEqual([[expect.objectContaining({ provider_id: "alpha", breaker_state: "open", last_reason: "closed_to_open" })]]);
+		expect(alarm).toBe(Date.now() + HEALTH_PUBLISH_INTERVAL_MS);
+	});
+
 	it("keeps a failed write pending across eviction and retries it", async () => {
 		const first = await ready(object());
 		await openBreaker(first);
