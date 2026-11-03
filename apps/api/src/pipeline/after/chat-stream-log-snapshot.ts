@@ -9,10 +9,10 @@
 //      images kept are capped by UTF-8 size so a long stream cannot grow Worker
 //      memory without bound.
 
-const MAX_ACCUMULATED_BYTES = 5 * 1024 * 1024;
+export const MAX_ACCUMULATED_BYTES = 5 * 1024 * 1024;
 
 /** UTF-8 length without encoding the string. */
-function utf8Length(value: string): number {
+export function utf8Length(value: string): number {
 	let bytes = 0;
 	for (let i = 0; i < value.length; i++) {
 		const code = value.charCodeAt(i);
@@ -27,7 +27,7 @@ function utf8Length(value: string): number {
 }
 
 /** The longest prefix that fits in `maxBytes`, never splitting a surrogate pair. */
-function utf8Prefix(value: string, maxBytes: number): string {
+export function utf8Prefix(value: string, maxBytes: number): string {
 	let bytes = 0;
 	let end = 0;
 	while (end < value.length) {

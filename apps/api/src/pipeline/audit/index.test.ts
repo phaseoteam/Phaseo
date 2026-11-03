@@ -186,6 +186,26 @@ describe("audit request detail persistence", () => {
 		expect(event.safe_metadata.rate_limit).toEqual(expected);
 	});
 
+	it("does not rate the JSON output or tool calls of a failed request", async () => {
+		const insert = vi.fn(() => ({ select: () => ({ single: async () => ({
+			data: { id: "row", created_at: "2026-11-03T00:00:00Z", workspace_id: "ws" }, error: null,
+		}) }) }));
+		const rpc = vi.fn().mockResolvedValue({ data: "fact", error: null });
+		getSupabaseAdminMock.mockReturnValue({ from: () => ({ insert }), rpc });
+		resolveGatewayIoLoggingPolicyMock.mockResolvedValue({ captureEnabled: false });
+		await auditFailure({
+			stage: "execute", requestId: "req", workspaceId: "ws", model: "model", endpoint: "messages",
+			stream: true, statusCode: 502, errorCode: "upstream_error",
+			usage: { output_tool_call_count: 2 },
+			requestPayload: { output_config: { format: { type: "json_schema", schema: { type: "object" } } } },
+		});
+		const event = rpc.mock.calls.find((call) => call[1]?.p_event)?.[1].p_event;
+		// Before: the reason defaulted to "none", which the quality chart read as a valid reply,
+		// and the failure's tool calls counted as invalid.
+		expect(event).toMatchObject({ structured_output_attempted: true, structured_output_succeeded: false, tool_call_succeeded: null });
+		expect(event.safe_metadata).toMatchObject({ structured_output_success_basis: "unobserved", structured_output_error_reason: null });
+	});
+
 	it("does not upload when the authoritative request insert fails", async () => {
 		const put = vi.fn();
 		getBindingsMock.mockReturnValue({ GATEWAY_ROUTING_ARCHIVES_BUCKET: { put }, GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED: "true" });
@@ -769,7 +789,8 @@ describe("audit request detail persistence", () => {
 			cost_nanos: 10_000,
 			usage_meters: expect.any(Array),
 			tool_call_count: 1,
-			tool_call_succeeded: true,
+			// The call is known only from usage; with no reply to check, it is not rated.
+			tool_call_succeeded: null,
 			structured_output_attempted: true,
 			structured_output_succeeded: true,
 			service_tier_requested: "priority",

@@ -1959,12 +1959,14 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 			const toolCallErrors = Number(value.tool_call_errors ?? 0);
 			const structuredOutputResponses = Number(value.structured_output_responses ?? 0);
 			const structuredOutputErrors = Number(value.structured_output_errors ?? 0);
+			// An hour with no checked tool calls or JSON replies has no rate. Plotting it as
+			// 0% errors would show quiet hours as perfect.
 			const toolCallErrorPct = toolCallResponses > 0
 				? toolCallErrors * 100 / toolCallResponses
-				: requests > 0 ? 0 : null;
+				: null;
 			const structuredOutputErrorPct = structuredOutputResponses > 0
 				? structuredOutputErrors * 100 / structuredOutputResponses
-				: requests > 0 ? 0 : null;
+				: null;
 			return {
 				bucket: value.bucket ?? "",
 				toolCallSuccessPct: toolCallErrorPct == null ? null : 100 - toolCallErrorPct,

@@ -6,6 +6,7 @@
 import { passthroughWithPricing, passthrough } from "./streaming";
 import { createToolCallKeyResolver, type UnifiedStreamEvent } from "./stream-events";
 import { createChatChunkAccumulator, resolveChatStreamAuditResponse } from "./chat-stream-log-snapshot";
+import { createMessagesEventAccumulator, resolveMessagesStreamAuditResponse } from "./messages-stream-log-snapshot";
 import type { PipelineContext } from "../before/types";
 import type { RequestResult, Bill } from "../execute";
 import type { PriceCard } from "../pricing";
@@ -229,10 +230,13 @@ export async function handleStreamResponse(
     let latestStreamUsageRaw: any = null;
     let latestGatewaySnapshot: any = null;
     const chatChunkAccumulator = ctx.endpoint === "chat.completions" ? createChatChunkAccumulator() : null;
+    const messagesEventAccumulator = ctx.endpoint === "messages" ? createMessagesEventAccumulator() : null;
     const auditGatewayResponse = () =>
         chatChunkAccumulator
             ? resolveChatStreamAuditResponse(latestGatewaySnapshot, chatChunkAccumulator)
-            : latestGatewaySnapshot;
+            : messagesEventAccumulator
+                ? resolveMessagesStreamAuditResponse(latestGatewaySnapshot, messagesEventAccumulator)
+                : latestGatewaySnapshot;
 	let streamFailed = false;
     let appliedStreamResponsePlugins = false;
     const streamedToolCallKeys = new Set<string>();
@@ -398,6 +402,7 @@ export async function handleStreamResponse(
         rewriteFrame: (frame: any) => {
             if (!frame || typeof frame !== "object") return frame;
             chatChunkAccumulator?.add(frame);
+            messagesEventAccumulator?.add(frame);
             const includeMeta = ctx.meta.returnMeta ?? false;
             const next: any = withServedModel({ ...frame }, ctx);
             delete next.provider;
