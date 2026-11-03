@@ -115,7 +115,7 @@ export type PolicyMatchResult =
 	| { ok: false; reason: "workload_identity_no_matching_policy" | "workload_identity_ambiguous" };
 
 export const WORKLOAD_IDENTITY_AMBIGUOUS_MESSAGE =
-	"This token matches trust policies in more than one workspace. Send the x-phaseo-workspace header with the workspace ID to choose one.";
+	"This token matches more than one trust policy. If they are in different workspaces, send the x-phaseo-workspace header with the workspace ID to choose one. If they are in the same workspace, narrow their conditions so only one matches.";
 
 /**
  * Every active policy the token satisfies. `workspaceId` narrows the

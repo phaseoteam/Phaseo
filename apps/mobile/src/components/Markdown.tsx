@@ -34,6 +34,8 @@ export const Markdown = memo(function Markdown({ text, streaming }: { text: stri
       flavor="github"
       streamingAnimation={streaming}
       selectable
+      // The native long-press preview would open links without the scheme check below.
+      enableLinkPreview={false}
       onLinkPress={({ url }) => {
         if (isOpenableMarkdownLink(url)) void Linking.openURL(url);
       }}
