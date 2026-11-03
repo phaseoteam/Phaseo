@@ -2648,7 +2648,7 @@
 		"best": "mejor",
 		"breadcrumb": "Ruta de navegación",
 		"compare": "Comparar",
-		"versus": "frente a",
+		"versus": "vs.",
 		"headerSub": "Elige una ruta y un nivel de servicio debajo de cada modelo. Los precios, la calculadora y las recomendaciones siguen tu elección.",
 		"copyLink": "Copiar enlace",
 		"copied": "Copiado",
@@ -2804,10 +2804,6 @@
 				"title": "Modelos insignia actuales",
 				"description": "Los modelos punteros más nuevos de tres laboratorios"
 			},
-			"pairing": {
-				"title": "GPT 5 frente a Claude Sonnet 4.5",
-				"description": "Una pareja que muchos equipos sopesan"
-			},
 			"anthropic": {
 				"title": "¿Opus o Sonnet?",
 				"description": "Los dos niveles actuales de Anthropic"
@@ -2815,6 +2811,18 @@
 			"openWeights": {
 				"title": "Pesos abiertos",
 				"description": "Modelos que puedes descargar y ejecutar tú mismo"
+			},
+			"video": {
+				"title": "Modelos de vídeo",
+				"description": "Precios por segundo según resolución y modo"
+			},
+			"image": {
+				"title": "Modelos de imagen",
+				"description": "Precios por imagen según tamaño y calidad"
+			},
+			"decisions": {
+				"title": "Modelos de decisión",
+				"description": "Modelos que devuelven una decisión, no texto"
 			}
 		},
 		"badgeOnPhaseo": "En Phaseo",
@@ -2855,7 +2863,7 @@
 		"selected": "Seleccionado",
 		"pickerReturnsOther": "Devuelve {types}, así que no se puede comparar con tu selección",
 		"pickerNoOutputTypes": "Sus tipos de salida no están publicados, así que no se puede emparejar con tu selección",
-		"pickerHiddenIncompatible": "{count, plural, one {Se oculta # modelo que devuelve otro tipo.} other {Se ocultan # modelos que devuelven otros tipos.}} Búscalos para encontrarlos.",
+		"pickerHiddenIncompatible": "{count, plural, one {Se oculta # modelo que devuelve otro tipo.} other {Se ocultan # modelos que devuelven otros tipos.}} Busca para verlos.",
 		"activityTokens30d": "Tokens, últimos 30 días",
 		"activityPerDay": "Por día",
 		"activityNoTokens": "Solo solicitudes, sin tokens registrados",
@@ -2876,7 +2884,7 @@
 			"serviceTier": "Nivel de servicio"
 		},
 		"conditionIs": "{field}: {value}",
-		"conditionIsNot": "{field}: no {value}",
+		"conditionIsNot": "{field}: distinto de {value}",
 		"conditionOn": "sí",
 		"conditionOff": "no",
 		"showAllPrices": "Mostrar los {count} precios",
@@ -2890,7 +2898,8 @@
 		"providersAcrossNote": "Para calcular toda la página con uno de estos proveedores, elígelo debajo del nombre del modelo, arriba.",
 		"routeContext": "contexto de {value}",
 		"otherListingsLabel": "También listado, sin ruta en Phaseo",
-		"noRoutesAny": "Phaseo no enruta ninguno de estos modelos hoy."
+		"noRoutesAny": "Phaseo no enruta ninguno de estos modelos hoy.",
+		"comparedSections": "Cada comparación incluye"
 	},
 	"countries": {
 		"title": "IA por país",

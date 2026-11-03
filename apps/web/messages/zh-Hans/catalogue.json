@@ -2804,10 +2804,6 @@
 				"title": "当前旗舰",
 				"description": "三家实验室的最新顶级模型"
 			},
-			"pairing": {
-				"title": "GPT 5 对比 Claude Sonnet 4.5",
-				"description": "许多团队都会权衡的一组"
-			},
 			"anthropic": {
 				"title": "Opus 还是 Sonnet？",
 				"description": "Anthropic 当前的两个档位"
@@ -2815,6 +2811,18 @@
 			"openWeights": {
 				"title": "开放权重",
 				"description": "你可以下载并自行运行的模型"
+			},
+			"video": {
+				"title": "视频模型",
+				"description": "按分辨率和模式的每秒价格"
+			},
+			"image": {
+				"title": "图像模型",
+				"description": "按尺寸和质量的每张图片价格"
+			},
+			"decisions": {
+				"title": "决策模型",
+				"description": "返回决策而非文本的模型"
 			}
 		},
 		"badgeOnPhaseo": "在 Phaseo 上",
@@ -2890,7 +2898,8 @@
 		"providersAcrossNote": "要按其中某个提供商计算整页价格，请在顶部模型名称下选择它。",
 		"routeContext": "{value} 上下文",
 		"otherListingsLabel": "另有列出，Phaseo 不路由",
-		"noRoutesAny": "Phaseo 目前不路由这些模型中的任何一个。"
+		"noRoutesAny": "Phaseo 目前不路由这些模型中的任何一个。",
+		"comparedSections": "每次比较都包含"
 	},
 	"countries": {
 		"title": "各国 AI",

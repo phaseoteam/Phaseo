@@ -2648,7 +2648,7 @@
 		"best": "meilleur",
 		"breadcrumb": "Fil d’Ariane",
 		"compare": "Comparer",
-		"versus": "contre",
+		"versus": "vs",
 		"headerSub": "Choisissez une route et un niveau de service sous chaque modèle. Les prix, le calculateur et les recommandations suivent votre choix.",
 		"copyLink": "Copier le lien",
 		"copied": "Copié",
@@ -2804,10 +2804,6 @@
 				"title": "Modèles phares actuels",
 				"description": "Les derniers modèles de pointe de trois laboratoires"
 			},
-			"pairing": {
-				"title": "GPT 5 contre Claude Sonnet 4.5",
-				"description": "Un duo que de nombreuses équipes comparent"
-			},
 			"anthropic": {
 				"title": "Opus ou Sonnet ?",
 				"description": "Les deux niveaux actuels d’Anthropic"
@@ -2815,6 +2811,18 @@
 			"openWeights": {
 				"title": "Poids ouverts",
 				"description": "Des modèles à télécharger et exécuter vous-même"
+			},
+			"video": {
+				"title": "Modèles vidéo",
+				"description": "Prix par seconde selon la résolution et le mode"
+			},
+			"image": {
+				"title": "Modèles d’image",
+				"description": "Prix par image selon la taille et la qualité"
+			},
+			"decisions": {
+				"title": "Modèles de décision",
+				"description": "Des modèles qui renvoient une décision, pas du texte"
 			}
 		},
 		"badgeOnPhaseo": "Sur Phaseo",
@@ -2855,7 +2863,7 @@
 		"selected": "Sélectionné",
 		"pickerReturnsOther": "Renvoie {types}, donc impossible à comparer avec votre sélection",
 		"pickerNoOutputTypes": "Ses types de sortie ne sont pas publiés, il ne peut donc pas être associé à votre sélection",
-		"pickerHiddenIncompatible": "{count, plural, one {# modèle qui renvoie un autre type est masqué.} other {# modèles qui renvoient d’autres types sont masqués.}} Recherchez-les pour les trouver.",
+		"pickerHiddenIncompatible": "{count, plural, one {# modèle qui renvoie un autre type est masqué.} other {# modèles qui renvoient d’autres types sont masqués.}} Lancez une recherche pour les afficher.",
 		"activityTokens30d": "Jetons, 30 derniers jours",
 		"activityPerDay": "Par jour",
 		"activityNoTokens": "Requêtes uniquement, aucun jeton enregistré",
@@ -2876,7 +2884,7 @@
 			"serviceTier": "Niveau de service"
 		},
 		"conditionIs": "{field} : {value}",
-		"conditionIsNot": "{field} : pas {value}",
+		"conditionIsNot": "{field} : sauf {value}",
 		"conditionOn": "activé",
 		"conditionOff": "désactivé",
 		"showAllPrices": "Afficher les {count} prix",
@@ -2890,7 +2898,8 @@
 		"providersAcrossNote": "Pour calculer toute la page avec l’un de ces fournisseurs, choisissez-le sous le nom du modèle, en haut.",
 		"routeContext": "contexte de {value}",
 		"otherListingsLabel": "Aussi référencé, non routé",
-		"noRoutesAny": "Phaseo ne route aucun de ces modèles aujourd’hui."
+		"noRoutesAny": "Phaseo ne route aucun de ces modèles aujourd’hui.",
+		"comparedSections": "Chaque comparaison couvre"
 	},
 	"countries": {
 		"title": "L'IA par pays",

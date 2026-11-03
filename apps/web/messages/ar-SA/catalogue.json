@@ -2804,10 +2804,6 @@
 				"title": "النماذج الرائدة الحالية",
 				"description": "أحدث النماذج الأعلى أداءً من ثلاثة مختبرات"
 			},
-			"pairing": {
-				"title": "GPT 5 مقابل Claude Sonnet 4.5",
-				"description": "مقارنة تفكّر فيها فرق كثيرة"
-			},
 			"anthropic": {
 				"title": "Opus أم Sonnet؟",
 				"description": "فئتا Anthropic الحاليتان"
@@ -2815,6 +2811,18 @@
 			"openWeights": {
 				"title": "أوزان مفتوحة",
 				"description": "نماذج يمكنك تنزيلها وتشغيلها بنفسك"
+			},
+			"video": {
+				"title": "نماذج الفيديو",
+				"description": "أسعار كل ثانية حسب الدقة والوضع"
+			},
+			"image": {
+				"title": "نماذج الصور",
+				"description": "أسعار كل صورة حسب الحجم والجودة"
+			},
+			"decisions": {
+				"title": "نماذج القرار",
+				"description": "نماذج تُرجع قرارًا وليس نصًا"
 			}
 		},
 		"badgeOnPhaseo": "على Phaseo",
@@ -2876,7 +2884,7 @@
 			"serviceTier": "مستوى الخدمة"
 		},
 		"conditionIs": "{field}: {value}",
-		"conditionIsNot": "{field}: ليس {value}",
+		"conditionIsNot": "{field}: غير {value}",
 		"conditionOn": "مفعّل",
 		"conditionOff": "غير مفعّل",
 		"showAllPrices": "عرض كل الأسعار ({count})",
@@ -2890,7 +2898,8 @@
 		"providersAcrossNote": "لحساب الصفحة كلها على أحد هؤلاء المزوّدين، اختره أسفل اسم النموذج في الأعلى.",
 		"routeContext": "سياق {value}",
 		"otherListingsLabel": "مُدرج أيضًا، بلا مسار عبر Phaseo",
-		"noRoutesAny": "لا يوجّه Phaseo أيًّا من هذه النماذج اليوم."
+		"noRoutesAny": "لا يوجّه Phaseo أيًّا من هذه النماذج اليوم.",
+		"comparedSections": "تشمل كل مقارنة"
 	},
 	"countries": {
 		"title": "الذكاء الاصطناعي حسب الدولة",

@@ -2804,10 +2804,6 @@
 				"title": "मौजूदा फ़्लैगशिप",
 				"description": "तीन लैब के सबसे नए शीर्ष मॉडल"
 			},
-			"pairing": {
-				"title": "GPT 5 बनाम Claude Sonnet 4.5",
-				"description": "एक जोड़ी जिस पर कई टीमें विचार करती हैं"
-			},
 			"anthropic": {
 				"title": "Opus या Sonnet?",
 				"description": "Anthropic के दो मौजूदा स्तर"
@@ -2815,6 +2811,18 @@
 			"openWeights": {
 				"title": "ओपन वेट्स",
 				"description": "ऐसे मॉडल जिन्हें आप डाउनलोड करके खुद चला सकते हैं"
+			},
+			"video": {
+				"title": "वीडियो मॉडल",
+				"description": "रिज़ॉल्यूशन और मोड के अनुसार प्रति सेकंड कीमत"
+			},
+			"image": {
+				"title": "इमेज मॉडल",
+				"description": "आकार और गुणवत्ता के अनुसार प्रति इमेज कीमत"
+			},
+			"decisions": {
+				"title": "निर्णय मॉडल",
+				"description": "ऐसे मॉडल जो टेक्स्ट नहीं, निर्णय लौटाते हैं"
 			}
 		},
 		"badgeOnPhaseo": "Phaseo पर",
@@ -2890,7 +2898,8 @@
 		"providersAcrossNote": "पूरे पेज की कीमत इनमें से किसी प्रदाता पर देखने के लिए, ऊपर मॉडल के नाम के नीचे उसे चुनें।",
 		"routeContext": "{value} संदर्भ",
 		"otherListingsLabel": "सूची में भी, Phaseo से रूट नहीं",
-		"noRoutesAny": "Phaseo आज इनमें से किसी भी मॉडल को रूट नहीं करता।"
+		"noRoutesAny": "Phaseo आज इनमें से किसी भी मॉडल को रूट नहीं करता।",
+		"comparedSections": "हर तुलना में शामिल है"
 	},
 	"countries": {
 		"title": "देश के अनुसार AI",

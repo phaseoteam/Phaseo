@@ -140,7 +140,9 @@ export function describeCondition(condition: CompareViewCondition, words: Condit
 	const flag = typeof value === "boolean" ? value : !counted && !timed && (value === 0 || value === 1) ? value === 1 : null;
 	if (flag !== null && (op === "eq" || op === "ne")) return words.is(field, (op === "eq") === flag ? words.on : words.off);
 	if (op === "lt" || op === "lte" || op === "gt" || op === "gte") return `${field} ${CONDITION_SYMBOLS[op]} ${typeof value === "number" ? number(value) : optionValue(value)}`;
-	const label = typeof value === "number" ? number(value) : optionValue(value);
+	const raw = typeof value === "number" ? number(value) : optionValue(value);
+	// Region codes ("us", "eu") read as codes.
+	const label = /geo|region/.test(condition.field) && /^[a-z]{2,3}$/i.test(raw) ? raw.toUpperCase() : raw;
 	return op === "ne" ? words.isNot(field, label) : words.is(field, label);
 }
 

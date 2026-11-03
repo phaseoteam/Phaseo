@@ -2804,10 +2804,6 @@
 				"title": "Current flagships",
 				"description": "The newest top models from three labs"
 			},
-			"pairing": {
-				"title": "GPT 5 vs Claude Sonnet 4.5",
-				"description": "A pairing many teams weigh up"
-			},
 			"anthropic": {
 				"title": "Opus or Sonnet?",
 				"description": "Anthropic’s two current tiers"
@@ -2815,6 +2811,18 @@
 			"openWeights": {
 				"title": "Open weights",
 				"description": "Models you can download and run yourself"
+			},
+			"video": {
+				"title": "Video models",
+				"description": "Per-second prices by resolution and mode"
+			},
+			"image": {
+				"title": "Image models",
+				"description": "Per-image prices by size and quality"
+			},
+			"decisions": {
+				"title": "Decision models",
+				"description": "Models that return a decision, not text"
 			}
 		},
 		"badgeOnPhaseo": "On Phaseo",
@@ -2890,7 +2898,8 @@
 		"providersAcrossNote": "To price the whole page on one of these providers, pick it under the model’s name at the top.",
 		"routeContext": "{value} context",
 		"otherListingsLabel": "Also listed, not routed",
-		"noRoutesAny": "Phaseo doesn’t route any of these models today."
+		"noRoutesAny": "Phaseo doesn’t route any of these models today.",
+		"comparedSections": "Every comparison covers"
 	},
 	"countries": {
 		"title": "AI by country",

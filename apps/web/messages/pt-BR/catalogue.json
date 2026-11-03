@@ -2804,10 +2804,6 @@
 				"title": "Modelos principais atuais",
 				"description": "Os modelos de ponta mais recentes de três laboratórios"
 			},
-			"pairing": {
-				"title": "GPT 5 vs. Claude Sonnet 4.5",
-				"description": "Uma dupla que muitas equipes avaliam"
-			},
 			"anthropic": {
 				"title": "Opus ou Sonnet?",
 				"description": "Os dois níveis atuais da Anthropic"
@@ -2815,6 +2811,18 @@
 			"openWeights": {
 				"title": "Pesos abertos",
 				"description": "Modelos que você pode baixar e executar por conta própria"
+			},
+			"video": {
+				"title": "Modelos de vídeo",
+				"description": "Preços por segundo por resolução e modo"
+			},
+			"image": {
+				"title": "Modelos de imagem",
+				"description": "Preços por imagem por tamanho e qualidade"
+			},
+			"decisions": {
+				"title": "Modelos de decisão",
+				"description": "Modelos que retornam uma decisão, não texto"
 			}
 		},
 		"badgeOnPhaseo": "No Phaseo",
@@ -2855,7 +2863,7 @@
 		"selected": "Selecionado",
 		"pickerReturnsOther": "Retorna {types}, então não pode ser comparado com a sua seleção",
 		"pickerNoOutputTypes": "Os tipos de saída não foram publicados, então não pode ser combinado com a sua seleção",
-		"pickerHiddenIncompatible": "{count, plural, one {# modelo que retorna outro tipo está oculto.} other {# modelos que retornam outros tipos estão ocultos.}} Pesquise para encontrá-los.",
+		"pickerHiddenIncompatible": "{count, plural, one {# modelo que retorna outro tipo está oculto.} other {# modelos que retornam outros tipos estão ocultos.}} Pesquise para vê-los.",
 		"activityTokens30d": "Tokens, últimos 30 dias",
 		"activityPerDay": "Por dia",
 		"activityNoTokens": "Somente solicitações, nenhum token registrado",
@@ -2876,7 +2884,7 @@
 			"serviceTier": "Nível de serviço"
 		},
 		"conditionIs": "{field}: {value}",
-		"conditionIsNot": "{field}: não {value}",
+		"conditionIsNot": "{field}: exceto {value}",
 		"conditionOn": "sim",
 		"conditionOff": "não",
 		"showAllPrices": "Mostrar todos os {count} preços",
@@ -2890,7 +2898,8 @@
 		"providersAcrossNote": "Para calcular a página inteira com um desses provedores, escolha-o abaixo do nome do modelo, no topo.",
 		"routeContext": "contexto de {value}",
 		"otherListingsLabel": "Também listado, sem rota no Phaseo",
-		"noRoutesAny": "O Phaseo não roteia nenhum desses modelos hoje."
+		"noRoutesAny": "O Phaseo não roteia nenhum desses modelos hoje.",
+		"comparedSections": "Toda comparação inclui"
 	},
 	"countries": {
 		"title": "IA por país",
