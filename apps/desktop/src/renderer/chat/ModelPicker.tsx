@@ -1,11 +1,11 @@
 import { formatDateParts } from "@phaseo/app-kit/format";
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ChevronDown, CircleCheck, LoaderCircle, RotateCw, SearchIcon, Star } from "lucide-react";
+import { ChevronDown, CircleCheck, LoaderCircle, SearchIcon, Star } from "lucide-react";
 import type { Harness, ModelOption } from "../../shared/workspace";
 import { usablePhaseoAccounts, useWorkspace } from "../app/workspace";
 import type { ModelSelection } from "../lib/modelPreferences";
-import { refreshModels, useModels } from "../lib/useModels";
+import { useModels } from "../lib/useModels";
 import { useConnectedHarnesses } from "../lib/useConnectedHarnesses";
 import { usePersistedState } from "../lib/persistedState";
 import { rememberedSettings } from "../lib/modelSettings";
@@ -232,8 +232,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 		} else if (event.key === "Enter") { event.preventDefault(); activate(rows[activeIndex], event.ctrlKey || event.metaKey); }
 	};
 	const shown = harnesses.filter(harness => sourceOf(harness) === active);
-	const [refreshing, setRefreshing] = useState(false);
-	const refresh = async () => { setRefreshing(true); try { await Promise.all(shown.map(harness => refreshModels(harness, harness === "phaseo" ? phaseoAccount?.id : undefined))); } catch { /* Errors surface through each catalog. */ } finally { setRefreshing(false); } };
+	const toolbar = sources.length > 1 || active === "phaseo" || !!multiple;
 	const loading = shown.filter(harness => !catalogs[harness] || (catalogs[harness]!.loading && !catalogs[harness]!.entries.length));
 	const errors = shown.map(harness => catalogs[harness]?.error ? `${harnessNames[harness]}: ${catalogs[harness]!.error}` : "").filter(Boolean);
 
@@ -263,7 +262,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 			<PopoverContent align="end" side="top" sideOffset={8} collisionAvoidance={{ side: "flip", align: "shift", fallbackAxisSide: "none" }} collisionPadding={{ top: 52, right: 8, bottom: 8, left: 8 }} className={cn("max-h-(--available-height) gap-0 overflow-hidden rounded-xl p-0", descriptors.length ? "w-[min(94vw,700px)]" : "w-[min(92vw,520px)]")}>
 				<div className="flex min-h-0 min-w-0 flex-1">
 				<div className="flex min-w-0 flex-1 flex-col">
-				<div className="p-2 pb-1">
+				<div className={cn("p-2", toolbar ? "pb-1" : "border-b border-border/70")}>
 				<div className="flex h-8 items-center gap-2 rounded-lg border border-input bg-input/50 px-2.5">
 					<SearchIcon className="size-4 shrink-0 opacity-50" />
 					<input autoFocus role="combobox" aria-expanded aria-controls="model-picker-list" aria-autocomplete="list" aria-activedescendant={rows[activeIndex] ? `model-row-${activeIndex}` : undefined}
@@ -271,7 +270,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 						className="w-full bg-transparent text-sm outline-hidden placeholder:text-muted-foreground" />
 				</div>
 			</div>
-			<div className="flex h-10 items-center gap-1.5 border-b border-border px-3 pb-1">
+			{toolbar && <div className="flex h-10 items-center gap-1.5 border-b border-border/70 px-3 pb-1">
 				{sources.length > 1 && <div role="tablist" aria-label="Model source" className="mr-1 flex items-center gap-0.5 rounded-md bg-muted p-0.5">
 					{sources.map(value => <button key={value} type="button" role="tab" aria-selected={active === value} onClick={() => setSource(value)}
 						className={cn("h-6 rounded-[5px] px-2.5 text-xs font-semibold transition-colors", active === value ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>{sourceNames[value]}</button>)}
@@ -281,8 +280,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 					<FilterButton active={filters.new} onClick={() => setFilters(current => ({ ...current, new: !current.new }))}>New</FilterButton>
 				</>}
 				{multiple && <span className="ml-auto text-[11px] text-muted-foreground">{isMac() ? "⌘" : "Ctrl"}-click to compare up to {MAX_COMPARE}</span>}
-				<button type="button" aria-label="Refresh models" title="Refresh models" disabled={refreshing} onClick={() => void refresh()} className={cn("grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-60", !multiple && "ml-auto")}><RotateCw className={cn("size-3.5", refreshing && "animate-spin")} /></button>
-			</div>
+			</div>}
 			{rows.length > 0 && <ScrollArea style={{ height: `min(60vh, 440px, ${virtualizer.getTotalSize() + 12}px)` }} viewportRef={setViewport} viewportClassName="py-1.5 pr-3.5 pl-1.5">
 				<div id="model-picker-list" role="listbox" aria-label="Models" className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
 					{virtualizer.getVirtualItems().map(item => {

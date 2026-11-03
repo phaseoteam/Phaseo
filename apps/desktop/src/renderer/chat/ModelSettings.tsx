@@ -80,13 +80,17 @@ export function settingsSummary(selection: ModelSelection, descriptors: ModelOpt
 	return { effort, speed, flex, context };
 }
 
+/** The web's service tier colours (its tier badges and model filters): Fast violet, Ultrafast fuchsia, Flex sky. */
+const tierText = { fast: "text-violet-600 dark:text-violet-400", ultrafast: "text-fuchsia-600 dark:text-fuchsia-400", flex: "text-sky-600 dark:text-sky-400" } as const;
+const tierBadge = { fast: "bg-violet-100 dark:bg-violet-950", ultrafast: "bg-fuchsia-100 dark:bg-fuchsia-950", flex: "bg-sky-100 dark:bg-sky-950" } as const;
+
 /**
  * Phaseo's speed marks: forward chevrons, two for Fast and three for Ultrafast, drawn on whole pixels so they
- * stay sharp at 1x. Colour follows the text.
+ * stay sharp at 1x, in the tier's colour.
  */
 export function SpeedGlyph({ tier, className }: { tier: SpeedTier; className?: string }) {
 	const count = tier === "ultrafast" ? 3 : 2, width = 4 * count + 3;
-	return <svg aria-hidden width={width} height={10} viewBox={`0 0 ${width} 10`} className={cn("shrink-0", className)} data-speed={tier}>
+	return <svg aria-hidden width={width} height={10} viewBox={`0 0 ${width} 10`} className={cn("shrink-0", tierText[tier], className)} data-speed={tier}>
 		{Array.from({ length: count }, (_, index) => <path key={index} d={`M${1 + index * 4} 1.5 L${4.5 + index * 4} 5 L${1 + index * 4} 8.5`} fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" />)}
 	</svg>;
 }
@@ -98,7 +102,7 @@ export function SettingsSuffix({ selection, descriptors }: { selection: ModelSel
 	return <span className="flex shrink-0 items-center gap-1.5 font-medium text-muted-foreground">
 		{effort && <span className="max-w-24 truncate">{effort}</span>}
 		{speed && <SpeedGlyph tier={speed} />}
-		{flex && <span>Flex</span>}
+		{flex && <span className={tierText.flex}>Flex</span>}
 		{context && <span className="text-xs">{context}</span>}
 	</span>;
 }
@@ -143,9 +147,11 @@ export function SpeedSegments({ selection, descriptors, onChange }: { selection:
 	return <div role="radiogroup" aria-label={descriptor.label} className="flex rounded-lg bg-input/40 p-0.5">
 		{choicesOf(descriptor).map(option => {
 			const checked = value === option.id, tier = speedTier(descriptor, descriptor.type === "boolean" ? option.id === "true" : option.id);
+			// A chosen tier reads like the web's tier badge: its colour on a tint of it.
+			const tone = tier ?? (option.id === "flex" ? "flex" : undefined);
 			return <button key={option.id} type="button" role="radio" aria-checked={checked} data-checked={checked || undefined} title={option.description}
 				onClick={() => pick(selection, descriptor, option.id, onChange)}
-				className="flex h-6 cursor-pointer items-center justify-center gap-1 px-2 text-xs text-muted-foreground outline-none first:rounded-l-md last:rounded-r-md hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset data-checked:bg-input/72 data-checked:text-foreground">
+				className={cn("flex h-6 cursor-pointer items-center justify-center gap-1 px-2 text-xs text-muted-foreground outline-none first:rounded-l-md last:rounded-r-md hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset", checked && (tone ? cn(tierBadge[tone], tierText[tone], "hover:text-current") : "bg-input/72 text-foreground"))}>
 				{tier && <SpeedGlyph tier={tier} />}{option.label}
 			</button>;
 		})}
