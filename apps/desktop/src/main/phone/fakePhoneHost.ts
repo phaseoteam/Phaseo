@@ -4,7 +4,9 @@ import type { RememberedModels } from "../../shared/rememberedModels";
 import type { Account, Harness, Message, ModelOption, Project, Task, WorkspaceCommand } from "../../shared/workspace";
 import { settleBlocker } from "../../shared/threadLifecycle";
 import { overviewOrder, taskOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
-import type { GitDiffRequest, GitDiffResult, TurnFileChange } from "../../shared/gitDiff";
+import type { GitDiffRequest, GitDiffResult, GitRefs, TurnFileChange } from "../../shared/gitDiff";
+import type { PullRequestMergeMethod, PullRequestView } from "../../shared/pullRequestView";
+import type { BranchPullRequest } from "../../shared/pullRequests";
 import type { GitWorkingStatus } from "./phoneReview";
 import { projectTree } from "../projectFileSearch";
 import { phoneFilePreview } from "./phoneFiles";
@@ -35,6 +37,29 @@ export function fakePhoneHost() {
 	/** Each project's folder on disk for file reads, which go through the real tree and preview; and the projects read. */
 	const fileRoots = new Map<string, string>(), fileReads: string[] = [];
 	const fileRoot = (projectId: string) => { fileReads.push(projectId); const root = fileRoots.get(projectId); if (!root) throw new Error("Project no longer exists."); return root; };
+	/**
+	 * The Git and pull request side: every call by kind and project, what each answers, a failure the next one throws
+	 * (in git's own words), and `hold`, which keeps every call waiting until it settles, to switch access off mid-call.
+	 */
+	const git = {
+		calls: [] as { kind: string; projectId: string; value?: unknown }[],
+		refs: { local: ["main", "fix/login"], remote: ["origin/main"], current: "main" } as GitRefs,
+		branchPullRequest: { branch: "main", pullRequest: null } as BranchPullRequest,
+		failure: undefined as string | undefined,
+		commitMessage: "Fix the usage total",
+		pullRequests: new Map<number, PullRequestView>(),
+		mergeMethod: null as PullRequestMergeMethod | null,
+		/** What the window was told a phone did. */
+		notes: [] as { device: string; summary: string; projectId: string }[],
+		hold: undefined as Promise<void> | undefined,
+	};
+	const step = async (kind: string, projectId: string, value?: unknown) => {
+		git.calls.push({ kind, projectId, ...value !== undefined ? { value } : {} });
+		await git.hold;
+		const failure = git.failure; git.failure = undefined;
+		if (failure) throw new Error(failure);
+	};
+	const pullRequestOf = (number: number) => { const view = git.pullRequests.get(number); if (!view) throw new Error("Could not read pull request."); return view; };
 	let clock = Date.parse("2026-11-01T10:00:00.000Z");
 	const tick = () => new Date(clock += 1000).toISOString();
 	// A Phaseo account that can call the gateway, and Codex and Claude Code signed in on the computer.
@@ -94,7 +119,14 @@ export function fakePhoneHost() {
 			else if (command.type === "approval") { const task = get(command.id); if (!task.approvals?.some(value => value.id === command.approvalId)) throw new Error("This approval is no longer pending."); task.approvals = task.approvals.filter(value => value.id !== command.approvalId); touch(task); changed(); }
 			return overview();
 		},
-		newChat: input => startPhoneChat(overview, async command => { await host.command(command); return overview(); }, sources, input),
+		newChat: input => startPhoneChat(overview, async command => { await host.command(command); return overview(); }, sources, input, async (request, create) => {
+			await step("worktree", request.projectId, request);
+			// As startWorktreeChat does: a worktree project from the base, then the chat in it.
+			const id = `wt-${projects.length}`;
+			projects.push({ id, name: `Phaseo · ${id}`, directory: `/work/${id}`, createdAt: tick(), worktree: { sourceProjectId: request.projectId, branch: id, baseCommit: "f".repeat(40) } });
+			await host.command({ ...create, projectId: id });
+			return [...tasks.values()].at(-1)!.id;
+		}),
 		models: input => phoneModels(overview(), sources, input),
 		// Every test project is a checkout except one in /scratch.
 		isRepository: directory => { repositoryChecks.push(directory); return !directory.startsWith("/scratch"); },
@@ -110,6 +142,50 @@ export function fakePhoneHost() {
 		},
 		files: async (projectId, request) => projectTree(fileRoot(projectId), request),
 		readFile: async (projectId, filename) => phoneFilePreview(fileRoot(projectId), filename),
+		branches: async projectId => { await step("branches", projectId); return git.refs; },
+		branchPullRequest: async projectId => { await step("branch-pull-request", projectId); return git.branchPullRequest; },
+		gitCommand: async (projectId, command) => { await step("git", projectId, command); },
+		commitMessage: async projectId => { await step("commit-message", projectId); return git.commitMessage; },
+		createPullRequest: async (projectId, chatId) => { await step("create-pull-request", projectId, chatId); return { repository: "phaseo/phaseo", number: 12, url: "https://github.com/phaseo/phaseo/pull/12", status: "created" }; },
+		pullRequests: async (projectId, cursor) => {
+			await step("pull-requests", projectId, cursor);
+			return { repository: "phaseo/phaseo", requests: [...git.pullRequests.values()], fetchedAt: tick(), limitReached: false };
+		},
+		pullRequest: async (projectId, number) => { await step("pull-request", projectId, number); return pullRequestOf(number); },
+		pullRequestFiles: async (projectId, query) => {
+			await step("pull-request-files", projectId, query);
+			return { repository: "phaseo/phaseo", ...query, total: 2, hasNext: false, limitReached: false, files: [
+				{ filename: "src/usage.ts", status: "modified", additions: 1, deletions: 1, blobOid: "c".repeat(40), patch: "@@ -1 +1 @@\n-a\n+b", preview: "available" },
+				{ filename: "assets/big.json", status: "added", additions: 90_000, deletions: 0, blobOid: "d".repeat(40), preview: "too-large" },
+			] };
+		},
+		pullRequestAction: async (projectId, request) => {
+			await step("pull-request-action", projectId, request);
+			const view = pullRequestOf(request.number);
+			if (view.headOid !== request.headOid) throw new Error("This pull request changed. It has been refreshed; check it and try again.");
+			if (request.action.type === "merge") view.state = "MERGED";
+			if (request.action.type === "close") view.state = "CLOSED";
+			return view;
+		},
+		mergeMethod: () => git.mergeMethod,
+		fromPhone: note => { git.notes.push(note); },
 	};
-	return { host, tasks, projects, accounts, agents, sources, repositoryChecks, checkpointFiles, turnReads, gitStatuses, patches, diffReads, fileRoots, fileReads, commands, addTask, addMessage, get, touch, changed, overview, onChange: (listener: (overview: WorkspaceOverview) => void) => listeners.push(listener) };
+	return { host, tasks, projects, accounts, agents, sources, repositoryChecks, checkpointFiles, turnReads, gitStatuses, patches, diffReads, fileRoots, fileReads, git, commands, addTask, addMessage, get, touch, changed, overview, onChange: (listener: (overview: WorkspaceOverview) => void) => listeners.push(listener) };
+}
+
+/** A pull request as the window's pane reads it, for the phone's tests. */
+export function fakePullRequestView(number: number, change: Partial<PullRequestView> = {}): PullRequestView {
+	const at = "2026-11-01T09:00:00.000Z", actor = { login: "daniel" };
+	return {
+		number, title: "Fix the usage total", url: `https://github.com/phaseo/phaseo/pull/${number}`, author: "daniel", draft: false, head: "fix/usage", base: "main", updatedAt: at,
+		review: "required", checks: "pending", repository: "phaseo/phaseo", body: "Totals were off by one.", state: "OPEN", additions: 3, deletions: 1, changedFiles: 2,
+		headOid: "a".repeat(40), baseOid: "b".repeat(40), mergeable: "MERGEABLE", mergeState: "CLEAN", fetchedAt: at,
+		id: "PR_1", createdAt: at, authorActor: actor, labels: [], reviewers: [{ login: "sam" }], reviews: [{ actor: { login: "sam" }, state: "COMMENTED", submittedAt: at }],
+		checkRuns: [{ name: "build", status: "success" }, { name: "lint", status: "failure", url: "https://github.com/phaseo/phaseo/actions/runs/1" }, { name: "deploy", status: "pending" }],
+		comments: [{ id: "IC_1", kind: "comment", author: { login: "sam" }, body: "Looks right.", createdAt: "2026-11-01T09:30:00.000Z", reactions: [] }], commentCount: 1, commentsTruncated: false,
+		commits: [{ oid: "e".repeat(40), headline: "Fix the usage total", committedAt: "2026-11-01T09:10:00.000Z", authors: [actor] }], commitCount: 1,
+		threads: [], mergeMethods: ["merge", "squash"], viewer: { login: "daniel", canUpdate: true, canMerge: true, canDeleteBranch: true, canEnableAutoMerge: false, canDisableAutoMerge: false },
+		autoMergeAllowed: false, headRefExists: true, behind: false,
+		...change,
+	};
 }

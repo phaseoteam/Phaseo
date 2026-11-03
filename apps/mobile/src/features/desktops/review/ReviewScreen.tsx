@@ -169,7 +169,7 @@ function Review({ client, desktopId, chatId, initialScope, messageId }: { client
   );
 }
 
-const FileRow = memo(function FileRow({ file, open, onToggle }: { file: PhoneDiffFile; open: boolean; onToggle(file: PhoneDiffFile): void }) {
+export const FileRow = memo(function FileRow({ file, open, onToggle }: { file: PhoneDiffFile; open: boolean; onToggle(file: PhoneDiffFile): void }) {
   const { name, folder } = splitPath(file.path);
   const counts = fileCounts(file);
   return (
@@ -195,7 +195,7 @@ const FileRow = memo(function FileRow({ file, open, onToggle }: { file: PhoneDif
   );
 });
 
-function FileNote({ text, loading }: { text: string; loading?: boolean }) {
+export function FileNote({ text, loading }: { text: string; loading?: boolean }) {
   const color = useToneColor("muted");
   return (
     <View className="flex-row items-center gap-2 px-4 py-2">
@@ -207,8 +207,8 @@ function FileNote({ text, loading }: { text: string; loading?: boolean }) {
 
 const number = (value: number | null) => (value === null ? "" : String(value));
 
-/** One numbered line: old and new numbers, then the text, tinted green when added and red when removed. */
-const LineRow = memo(function LineRow({ path, row, picked, onPress }: { path: string; row: DiffRow; picked: boolean; onPress(path: string, row: DiffRow, long: boolean): void }) {
+/** One numbered line: old and new numbers, then the text, tinted green when added and red when removed. Without onPress it's read-only. */
+export const LineRow = memo(function LineRow({ path, row, picked, onPress }: { path: string; row: DiffRow; picked: boolean; onPress?(path: string, row: DiffRow, long: boolean): void }) {
   if (row.kind === "hunk" || row.kind === "note") {
     return (
       <View className="bg-muted/60 px-4 py-1">
@@ -221,10 +221,11 @@ const LineRow = memo(function LineRow({ path, row, picked, onPress }: { path: st
   return (
     <Pressable
       accessibilityLabel={`${row.kind === "add" ? "Added" : row.kind === "remove" ? "Removed" : "Line"} ${row.newLine ?? row.oldLine}: ${row.text}`}
-      accessibilityHint="Long press to comment on this line, then tap another to include the lines between"
+      accessibilityHint={onPress ? "Long press to comment on this line, then tap another to include the lines between" : undefined}
       accessibilityState={{ selected: picked }}
-      onPress={() => onPress(path, row, false)}
-      onLongPress={() => onPress(path, row, true)}
+      disabled={!onPress}
+      onPress={onPress ? () => onPress(path, row, false) : undefined}
+      onLongPress={onPress ? () => onPress(path, row, true) : undefined}
       delayLongPress={350}
       className={cn("flex-row", tint)}
     >

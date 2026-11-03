@@ -57,12 +57,17 @@ export class FakeDesktop {
     { id: "c1", title: "Fix the build", mode: "code", status: "completed", updatedAt: "2026-11-01T09:00:00.000Z", unread: false, needsYou: false, project: "Phaseo", projectId: "p1", approvals: [], questions: [] },
     { id: "c2", title: "Release notes", mode: "chat", status: "waiting", updatedAt: "2026-11-01T08:00:00.000Z", unread: true, needsYou: true, attention: "Wants to run a command", approvals: [{ id: "a1", title: "Run pnpm build", description: "pnpm --filter web build" }], questions: [] },
   ];
-  /** The protocol it speaks; 1 answers like a computer from before list_projects, 2 like one from before update_chat, 3 like one from before git_status. */
-  protocol = 5;
+  /** The protocol it speaks; 1 answers like a computer from before list_projects, 2 like one from before update_chat, 3 like one from before git_status, 5 like one from before git_action. */
+  protocol = 6;
   /** What it lets this phone do beyond threads (sent from protocol 4). */
   capabilities: PhoneCapability[] = ["code"];
   /** The project's files by path, for list_files and read_file; folders are what their paths imply. */
   files: Record<string, PhoneResults["read_file"]> = { "src/usage.ts": { kind: "text", text: "export const usage = 1;\n", size: 24, truncated: false }, "README.md": { kind: "text", text: "# Phaseo\n", size: 9, truncated: false } };
+  /** Its one checkout's git status, which git_action changes as git would. */
+  git: PhoneResults["git_status"] = { repository: true, branch: "main", hasRemote: false, files: [{ path: "src/usage.ts", status: "modified", staged: false }] };
+  branches: PhoneResults["list_branches"] = { current: "main", local: ["main", "fix/login"], remote: [] };
+  /** Pull requests read_pull_request and pr_action answer with, by number. */
+  pullRequests: PhoneResults["read_pull_request"][] = [];
   /** The diff read_diff answers with. */
   diff: PhoneResults["read_diff"] = { repository: true, hash: "a".repeat(64), truncated: false, files: [{ path: "src/usage.ts", status: "modified", additions: 2, deletions: 1, patch: "diff --git a/src/usage.ts b/src/usage.ts\n@@ -1,2 +1,3 @@\n a\n-b\n+c\n+d\n" }] };
   /** Its projects: Blog has no threads yet, Scratch is archived and a worktree folds under Phaseo. */
@@ -212,7 +217,7 @@ export class FakeDesktop {
       case "git_status": case "read_diff": case "read_diff_file": {
         if (this.protocol < 4) return errorResponse(request.id, request.type, "invalid_frame", "Unknown frame type.") as PhoneResponse;
         if (!this.capabilities.includes("code")) return errorResponse(request.id, request.type, "forbidden", "Allow this on the computer: Settings → Phone.") as PhoneResponse;
-        if (request.type === "git_status") return okResponse(request, { repository: true, branch: "main", hasRemote: false, files: [{ path: "src/usage.ts", status: "modified", staged: false }] });
+        if (request.type === "git_status") return okResponse(request, { ...this.git, ...(request.pullRequest && this.protocol >= 6 ? { pullRequest: null } : {}) });
         if (request.type === "read_diff") return okResponse(request, this.diff);
         const file = this.diff.files.find((entry) => entry.path === request.path);
         return file ? okResponse(request, { file }) : errorResponse(request.id, request.type, "not_found", "That file isn't in these changes any more.") as PhoneResponse;
@@ -225,6 +230,8 @@ export class FakeDesktop {
         const names = request.query !== undefined ? paths.filter((path) => path.includes(request.query!)) : [...new Set(paths.filter((path) => path.startsWith(prefix)).map((path) => prefix + path.slice(prefix.length).split("/")[0]))];
         return okResponse(request, { entries: names.map((path) => ({ name: path.slice(path.lastIndexOf("/") + 1), path, directory: !this.files[path] })), truncated: false });
       }
+      case "list_branches": case "git_action": case "commit_message": case "create_pull_request": case "list_pull_requests": case "read_pull_request": case "pull_request_files": case "pr_action":
+        return this.respondGit(request);
       case "list_projects":
         return this.protocol >= 2 ? okResponse(request, { projects: this.projects }) : errorResponse(request.id, request.type, "invalid_frame", "Unknown frame type.") as PhoneResponse;
       case "list_chats": return okResponse(request, { chats: this.chats.filter((entry) => Boolean(entry.archived) === Boolean(request.archived)).map(({ approvals: _approvals, questions: _questions, queue: _queue, ...row }) => row) });
@@ -279,6 +286,37 @@ export class FakeDesktop {
       }
       case "subscribe": return okResponse(request, { chatIds: request.chatIds });
     }
+  }
+
+  /** The Git and pull request frames from protocol 6: reads need code, the rest changes too, as the computer checks them. */
+  private respondGit(request: Extract<PhoneRequest, { projectId?: string }>): PhoneResponse {
+    const refuse = (code: "invalid_frame" | "forbidden" | "rejected" | "not_found", message: string) => errorResponse(request.id, request.type, code, message) as PhoneResponse;
+    if (this.protocol < 6) return refuse("invalid_frame", "Unknown frame type.");
+    const writes = request.type === "git_action" || request.type === "commit_message" || request.type === "create_pull_request" || request.type === "pr_action";
+    if (!this.capabilities.includes("code") || (writes && !this.capabilities.includes("changes"))) return refuse("forbidden", "Allow this on the computer: Settings → Phone.");
+    switch (request.type) {
+      case "list_branches": return okResponse(request, this.branches);
+      case "commit_message": return okResponse(request, { message: "Fix the usage total" });
+      case "git_action":
+        if (request.action === "push" && !this.git.hasRemote) return refuse("rejected", "Add a remote before pushing.");
+        if (request.action === "commit") this.git = { ...this.git, files: [] };
+        if (request.action === "switch-branch" || request.action === "create-branch") this.git = { ...this.git, branch: request.name! };
+        return okResponse(request, this.git);
+      case "create_pull_request": return this.git.hasRemote ? okResponse(request, { repository: "phaseo/phaseo", number: 12, url: "https://github.com/phaseo/phaseo/pull/12", status: "created" }) : refuse("rejected", "Add a remote before pushing.");
+      case "list_pull_requests": return okResponse(request, { repository: "phaseo/phaseo", pullRequests: this.pullRequests, limitReached: false });
+      case "pull_request_files": return okResponse(request, { files: this.diff.files, total: this.diff.files.length, hasNext: false });
+      case "read_pull_request": case "pr_action": {
+        const view = this.pullRequests.find((value) => value.number === request.number);
+        if (!view) return refuse("not_found", "Could not read pull request.");
+        if (request.type === "read_pull_request") return okResponse(request, view);
+        if (view.headOid !== request.headOid) return refuse("rejected", "This pull request changed. It has been refreshed; check it and try again.");
+        if (request.action.type === "merge") view.state = "merged";
+        if (request.action.type === "close") view.state = "closed";
+        if (request.action.type === "reopen") view.state = "open";
+        return okResponse(request, view);
+      }
+    }
+    return refuse("invalid_frame", "Unknown frame type.");
   }
 
   /** Sends an event to every connected phone, as the desktop does when a chat changes. */

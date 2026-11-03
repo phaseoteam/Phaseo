@@ -107,6 +107,38 @@ describe("phone frames", () => {
 		expect(relayHolds({ type: "read_file" })).toBe(false);
 		expect(relayHolds({ type: "list_files" })).toBe(false);
 	});
+	it("checks git actions field by field, and never holds them for an offline computer (protocol 6)", () => {
+		const parse = (value: object) => parsePhoneFrame(JSON.stringify({ id: "1", projectId: "p1", ...value }));
+		expect(parse({ type: "git_action", action: "commit", message: "Fix usage", all: true })).toEqual({ id: "1", type: "git_action", projectId: "p1", action: "commit", message: "Fix usage", all: true });
+		expect(parse({ type: "git_action", action: "switch-branch", name: "fix/login" })).toEqual({ id: "1", type: "git_action", projectId: "p1", action: "switch-branch", name: "fix/login" });
+		expect(parse({ type: "git_action", action: "stage", filename: "src/a.ts" })).toMatchObject({ filename: "src/a.ts" });
+		expect(parse({ type: "git_status", pullRequest: true })).toEqual({ id: "1", type: "git_status", projectId: "p1", pullRequest: true });
+		expect(refused(JSON.stringify({ id: "1", type: "git_action", projectId: "p1", action: "reset" })).message).toContain("action must be one of");
+		expect(refused(JSON.stringify({ id: "1", type: "git_action", projectId: "p1", action: "commit", message: " " })).message).toContain("message");
+		expect(refused(JSON.stringify({ id: "1", type: "git_action", projectId: "p1", action: "push", message: "x" })).message).toContain("push doesn't take message");
+		for (const name of ["-f", "a b", "a..b", "a~1", "@{u}", ""]) expect(refused(JSON.stringify({ id: "1", type: "git_action", projectId: "p1", action: "create-branch", name })).message).toContain("branch name");
+		expect(refused(JSON.stringify({ id: "1", type: "git_action", projectId: "p1", action: "stage", filename: "../x" })).message).toContain("filename");
+		// A worktree from a base branch, only in a project.
+		expect(parsePhoneFrame(JSON.stringify({ id: "1", type: "new_chat", text: "hi", mode: "code", projectId: "p1", workspace: { kind: "worktree", base: "origin/main" } }))).toMatchObject({ workspace: { kind: "worktree", base: "origin/main" } });
+		expect(refused(JSON.stringify({ id: "1", type: "new_chat", text: "hi", mode: "code", workspace: { kind: "worktree", base: "main" } })).message).toContain("projectId");
+		expect(refused(JSON.stringify({ id: "1", type: "new_chat", text: "hi", mode: "code", projectId: "p1", workspace: { kind: "worktree", base: "--orphan" } })).message).toContain("worktree");
+		// A command replayed hours later would surprise the person, and the phone has long stopped waiting for its answer.
+		for (const type of ["git_action", "commit_message", "create_pull_request", "pr_action", "list_branches", "list_pull_requests", "read_pull_request", "pull_request_files"]) expect(relayHolds({ type })).toBe(false);
+	});
+	it("checks pull request frames, allowing only merge, close, reopen, comment and review (protocol 6)", () => {
+		const head = "a".repeat(40);
+		const action = (value: object) => JSON.stringify({ id: "1", type: "pr_action", projectId: "p1", number: 7, headOid: head, action: value });
+		expect(parsePhoneFrame(action({ type: "merge", method: "squash" }))).toEqual({ id: "1", type: "pr_action", projectId: "p1", number: 7, headOid: head, action: { type: "merge", method: "squash" } });
+		expect(parsePhoneFrame(action({ type: "review", event: "approve" }))).toMatchObject({ action: { type: "review", event: "approve", body: "" } });
+		expect(refused(action({ type: "review", event: "request-changes", body: " " })).message).toContain("review");
+		expect(refused(action({ type: "merge", method: "fast-forward" })).message).toContain("method");
+		expect(refused(action({ type: "delete-branch" })).message).toContain("action must be");
+		expect(refused(action({ type: "comment", body: "" })).message).toContain("comment");
+		expect(refused(JSON.stringify({ id: "1", type: "pr_action", projectId: "p1", number: 7, headOid: "abc", action: { type: "close" } })).message).toContain("headOid");
+		expect(refused(JSON.stringify({ id: "1", type: "read_pull_request", projectId: "p1", number: 0 })).message).toContain("number");
+		expect(parsePhoneFrame(JSON.stringify({ id: "1", type: "pull_request_files", projectId: "p1", number: 7, headOid: head, baseOid: "b".repeat(40), page: 2 }))).toMatchObject({ page: 2 });
+		expect(refused(JSON.stringify({ id: "1", type: "pull_request_files", projectId: "p1", number: 7, headOid: head, baseOid: "b".repeat(40), page: 31 })).message).toContain("page");
+	});
 	it("names efforts the same way on both sides", () => {
 		expect(effortLabel("xhigh")).toBe("Extra high");
 		expect(effortLabel("medium")).toBe("Medium");

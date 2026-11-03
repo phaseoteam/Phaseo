@@ -398,6 +398,8 @@ export type WorkspaceApi = {
 	setPhaseoConnect: (enabled: boolean) => Promise<PhoneState>;
 	refreshPhaseoConnect: () => Promise<PhoneState>;
 	onPhoneChanged: (listener: (state: PhoneState) => void) => () => void;
+	/** A paired phone changed code on this computer (committed, pushed, merged…), so the window says so. */
+	onPhoneNote: (listener: (note: { device: string; summary: string; projectId: string; project?: string }) => void) => () => void;
 	saveCodeHostToken: (request: CodeHostTokenRequest) => Promise<CodeHostSettings>;
 	removeCodeHostToken: (kind: CodeHostKind, host: string) => Promise<CodeHostSettings>;
 	saveCodeHostServers: (servers: CustomCodeHost[]) => Promise<CodeHostSettings>;

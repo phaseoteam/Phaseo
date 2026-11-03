@@ -60,6 +60,26 @@ From version 5, also with `code`, and read-only. Both name a `chatId` (the threa
 
 A path is relative to the project with forward slashes. The phone's frame refuses `.`/`..` segments, absolute paths and backslashes, and the computer resolves the real path and refuses anything outside the project, including through a link. Nothing here writes a file. "Add to message" on the phone puts `@path` into the thread's message, which the person sends.
 
+## Git and pull requests
+
+From version 6. Reads need `code`; anything that changes the repository or GitHub needs `changes` as well as `code`, since each answers with what the code looks like after. Each runs the computer window's own command (its Git menu, New worktree and pull request pane), so it is checked the same way, and the window says what the phone did ("Pushed from Daniel's Pixel"). GitHub work uses the computer's own GitHub CLI sign-in; the phone never sees a token. The computer checks the capability again when the work finishes, so nothing read after a switch is turned off goes out.
+
+With `code`:
+
+- `git_status { projectId, pullRequest: true }` adds the branch's pull request (`null` for none, or no GitHub remote). It asks GitHub (cached for 30 s), so folder headings leave it out.
+- `list_branches { projectId }`: `current`, `local` and `remote` branches, newest first.
+- `list_pull_requests { projectId, cursor? }`, `read_pull_request { projectId, number }` and `pull_request_files { projectId, number, headOid, baseOid, page? }`. A pull request's description and each comment are cut at `phoneLimits.pullRequestTextChars` (20,000 characters; `truncated`), its activity is the latest 100 comments, reviews and commits, and `mergeMethod` is the computer's setting (the project's, else the app's) when the repository allows it. Files come as `read_diff` has them; a patch GitHub left out, or that didn't fit the frame, is `truncated` without one.
+
+With `changes` too:
+
+- `git_action { projectId, action }`: `stage` and `unstage` (with `filename`), `commit` (with `message`, `all` to commit everything when nothing is staged, and `push`), `push`, `pull`, `create-branch` and `switch-branch` (with `name`). It answers with the status after. A failure is `rejected` with git's own words, such as "Add a remote before pushing.".
+- `commit_message { projectId }` writes a message from the changes with the computer's title model, on the computer's Phaseo account, as the window's Write message does.
+- `create_pull_request { projectId, chatId? }` creates the branch's pull request (the title model writes it when there is one, else the commits do) and links it to the thread; `opened_existing` says the branch already had one.
+- `pr_action { projectId, number, headOid, action }`: `merge` (with `method`), `close`, `reopen`, `comment` (with `body`) or `review` (`approve`, `request-changes` or `comment`, with `body`; line comments stay on the computer). It is refused once the pull request's head is no longer `headOid`, and answers with the pull request after.
+- `new_chat { …, workspace: { kind: "worktree", base } }` starts the thread in a new worktree from `base`, as the window's New worktree does.
+
+None of these is held by Phaseo Connect for an offline computer: a commit or merge that ran hours later, after the phone gave up waiting, would surprise the person.
+
 ## Direct connection
 
 Direct addresses are plain `http`/`ws` (a Wi-Fi or Tailscale IP has no certificate), so everything secret or private is sealed with the paired keys and no token is sent. `src/direct.ts` describes the handshake.

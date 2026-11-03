@@ -1,6 +1,6 @@
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { Check, ChevronsUpDown, Monitor, Plus, Settings2 } from "lucide-react-native";
+import { Check, ChevronsUpDown, GitPullRequest, Monitor, Plus, Settings2 } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { Icon, Text } from "@/components/ui";
@@ -10,7 +10,9 @@ import type { ConnectionState } from "./client";
 import { clientFor, connectionLabel, useConnection } from "./connections";
 import { useNeedsYouCount } from "./needsYou";
 import { choosePhaseo, chooseDesktop, workspaceDesktop, workspaceStore } from "./picked";
+import { readsGit } from "./git/gitState";
 import type { SavedDesktop } from "./reach";
+import { desktopPullRequestsHref } from "./routes";
 import { useDesktops } from "./store";
 
 const phaseoIcon = require("../../../assets/phaseo-icon.png") as number;
@@ -60,6 +62,7 @@ export function WorkspaceSwitcher() {
         <View className="mt-1 gap-0.5 border-b border-border pb-2">
           <Option selected={!current} label="Phaseo" onPress={() => pick(choosePhaseo)} icon={<PhaseoIcon />} caption={<PhaseoCaption />} />
           {(desktops ?? []).map((desktop) => <DesktopOption key={desktop.desktopId} desktop={desktop} selected={current?.desktopId === desktop.desktopId} onPick={() => pick(() => chooseDesktop(desktop.desktopId))} />)}
+          {current ? <PullRequestsAction desktop={current} onPress={() => { setOpen(false); router.push(desktopPullRequestsHref(current.desktopId)); }} /> : null}
           <Action icon={Plus} label="Pair a computer…" onPress={() => { setOpen(false); router.push("/pair"); }} />
           {desktops?.length ? <Action icon={Settings2} label="Manage computers…" onPress={() => { setOpen(false); router.push("/desktops"); }} /> : null}
         </View>
@@ -124,6 +127,11 @@ function Option({ selected, label, icon, caption, count, onPress }: { selected: 
       {selected ? <Icon icon={Check} size={16} /> : null}
     </Pressable>
   );
+}
+
+/** The chosen computer's pull requests, while it lets this phone read code (protocol 6). */
+function PullRequestsAction({ desktop, onPress }: { desktop: SavedDesktop; onPress(): void }) {
+  return readsGit(useConnection(clientFor(desktop))) ? <Action icon={GitPullRequest} label={`Pull requests on ${desktop.desktopName}`} onPress={onPress} /> : null;
 }
 
 function Action({ icon, label, onPress }: { icon: typeof Plus; label: string; onPress(): void }) {

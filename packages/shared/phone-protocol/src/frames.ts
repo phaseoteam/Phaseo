@@ -7,10 +7,11 @@ import { utf8Length } from "./base64url";
 /**
  * 2 added list_projects, projects_changed and hello's capabilities; 3 added update_chat, set_chat, queue and the
  * archived list; 4 added git_status, read_diff, read_diff_file, the access event and forbidden; 5 added list_files and
- * read_file. A phone gates each newer frame on hello.protocol, since an older computer answers an unknown request with
- * invalid_frame.
+ * read_file; 6 added list_branches, git_action, commit_message, the pull request frames, git_status's pullRequest and
+ * new_chat's workspace. A phone gates each newer frame on hello.protocol, since an older computer answers an unknown
+ * request with invalid_frame.
  */
-export const phoneProtocolVersion = 5;
+export const phoneProtocolVersion = 6;
 export const phoneLimits = {
 	/** Largest frame either side accepts, before or after decryption. */
 	frameBytes: 1024 * 1024,
@@ -28,6 +29,8 @@ export const phoneLimits = {
 	diffFileBytes: 512 * 1024,
 	/** Most of a file read_file sends: text past it is cut at a line, and a larger image isn't sent. */
 	fileBytes: 512 * 1024,
+	/** Most of a pull request's description, and of each comment, read_pull_request sends; the rest is on GitHub. */
+	pullRequestTextChars: 20_000,
 } as const;
 
 export type PhoneChatStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
@@ -77,7 +80,9 @@ export type PhoneEntry = PhoneMessage | PhoneActivity;
 export type PhoneProject = { id: string; name: string; /** The checked-out branch, when the computer read it. */ branch?: string; worktreeOf?: string; pinned?: true; archived?: true; /** A git checkout. */ repository: boolean };
 /**
  * Powers a paired phone has beyond threads, switched on per phone on the computer: `code` reads git status and diffs
- * (from protocol 4) and files (from 5); `changes` and `terminal` are for frames still to come. Empty from a computer before 4.
+ * (from protocol 4), files (from 5) and pull requests (from 6); `changes` commits, pushes, pulls, switches and creates
+ * branches, starts worktrees, and creates, merges, reviews, comments on and closes pull requests (from 6); `terminal`
+ * is for frames still to come. Empty from a computer before 4.
  */
 export type PhoneCapability = "code" | "changes" | "terminal";
 export const phoneCapabilities: readonly PhoneCapability[] = ["code", "changes", "terminal"];
@@ -109,6 +114,37 @@ export type PhoneFilePreview =
 	| { kind: "image"; mimeType: string; dataUrl: string; size: number }
 	| { kind: "too-large"; size: number }
 	| { kind: "unsupported"; size: number };
+/** What git_action does, as the window's Git menu does it; each runs the window's own Git command. */
+export const gitActions = ["stage", "unstage", "commit", "push", "pull", "create-branch", "switch-branch"] as const;
+export type PhoneGitAction = typeof gitActions[number];
+/** The pull request of a checkout's branch, open or not, as git_status { pullRequest: true } reads it. */
+export type PhoneBranchPullRequest = { repository: string; number: number; url: string; title: string; state: "open" | "closed" | "merged"; draft: boolean };
+export type PhoneReviewState = "approved" | "changes-requested" | "required" | "none";
+export type PhoneChecksState = "passing" | "pending" | "failed" | "none" | "unknown";
+/** A pull request row, as the window's list has it. */
+export type PhonePullRequest = { number: number; title: string; url: string; author: string; draft: boolean; head: string; base: string; updatedAt: string; review: PhoneReviewState; checks: PhoneChecksState };
+export type PhoneMergeMethod = "merge" | "squash" | "rebase";
+export const phoneMergeMethods: readonly PhoneMergeMethod[] = ["squash", "merge", "rebase"];
+export type PhonePullRequestCheck = { name: string; status: "passing" | "pending" | "failed" | "skipped" | "neutral"; url?: string };
+export type PhonePullRequestEvent = { id: string; kind: "comment" | "review" | "review-comment" | "commit"; author?: string; body: string; createdAt: string; reviewState?: string; path?: string; truncated?: true };
+/**
+ * A pull request slimmed for a phone: its description and each comment cut at phoneLimits.pullRequestTextChars
+ * (`truncated`), the latest 100 events of its activity, and the merge methods the repository allows with the one the
+ * computer would pick (`mergeMethod`). `headOid` goes back with pr_action, so an action on a branch that moved is refused.
+ */
+export type PhonePullRequestView = PhonePullRequest & {
+	repository: string; state: "open" | "closed" | "merged"; body: string; bodyTruncated?: true; headOid: string; baseOid: string;
+	additions: number; deletions: number; changedFiles: number; mergeable: "mergeable" | "conflicting" | "unknown";
+	checkRuns: PhonePullRequestCheck[]; reviews: { author?: string; state: string; submittedAt: string }[]; reviewers: string[];
+	events: PhonePullRequestEvent[]; eventsTruncated: boolean; mergeMethods: PhoneMergeMethod[]; mergeMethod?: PhoneMergeMethod;
+	viewer: { canMerge: boolean; canUpdate: boolean };
+};
+/** What pr_action does: merge with a method, close or reopen, comment, or a review without line comments. */
+export type PhonePullRequestAction =
+	| { type: "merge"; method: PhoneMergeMethod }
+	| { type: "close" | "reopen" }
+	| { type: "comment"; body: string }
+	| { type: "review"; event: "approve" | "request-changes" | "comment"; body: string };
 export type AttentionKind = "approval" | "question" | "done" | "failed";
 /** What update_chat does, as the window's sidebar menu does it; each has its reverse, so a phone can undo. */
 export const chatActions = ["settle", "unsettle", "wake", "mark-unread", "archive", "unarchive", "pin", "unpin", "rename", "snooze"] as const;
@@ -125,7 +161,8 @@ export type PhoneRequest =
 	| { id: string; type: "answer_question"; chatId: string; questionId: string; answers: Record<string, string[]> }
 	| { id: string; type: "stop"; chatId: string }
 	| { id: string; type: "new_chat"; text: string; projectId?: string; mode: PhoneChatMode; /** One of list_models' ids; the computer's choice without it. */ model?: string; reasoningEffort?: string;
-		/** From protocol 2: the agent (one of list_models' agents) the model belongs to; without it, the model is the default agent's. */ harness?: string; accountId?: string; agentId?: string }
+		/** From protocol 2: the agent (one of list_models' agents) the model belongs to; without it, the model is the default agent's. */ harness?: string; accountId?: string; agentId?: string;
+		/** From protocol 6, with the changes capability: a new worktree from `base` (one of list_branches'), as the window's New worktree does. */ workspace?: { kind: "worktree"; base: string } }
 	| { id: string; type: "list_models"; projectId?: string; /** From protocol 2: some agents run only in Code (Grok). */ mode?: PhoneChatMode }
 	| { id: string; type: "list_projects" }
 	| { id: string; type: "subscribe"; chatIds: string[] }
@@ -136,7 +173,7 @@ export type PhoneRequest =
 	/** From protocol 3: a queued message removed, edited (`text`), moved, or sent into the running turn now. */
 	| { id: string; type: "queue"; chatId: string; messageId: string; action: PhoneQueueAction; text?: string }
 	/** From protocol 4, with the code capability: a project's branch and changed files, without their text. */
-	| { id: string; type: "git_status"; projectId: string }
+	| { id: string; type: "git_status"; projectId: string; /** From protocol 6: also the branch's pull request, which asks GitHub (cached for 30 s). */ pullRequest?: true }
 	/** From protocol 4, with the code capability: a diff split by file (see PhoneDiffTarget). */
 	| ({ id: string; type: "read_diff" } & PhoneDiffTarget)
 	/** One file of the diff read_diff answered with `hash`; refused as rejected once the diff has changed. */
@@ -147,7 +184,25 @@ export type PhoneRequest =
 	 */
 	| ({ id: string; type: "list_files"; directory?: string; query?: string } & PhoneFileTarget)
 	/** From protocol 5, with the code capability: one file to preview, read-only. */
-	| ({ id: string; type: "read_file"; path: string } & PhoneFileTarget);
+	| ({ id: string; type: "read_file"; path: string } & PhoneFileTarget)
+	/** From protocol 6, with the code capability: a project's local and remote branches, newest first. */
+	| { id: string; type: "list_branches"; projectId: string }
+	/**
+	 * From protocol 6, with the changes capability: the window's Git command. stage and unstage take `filename`; commit
+	 * takes `message`, `all` (everything when nothing is staged) and `push`; the branch actions take `name`.
+	 */
+	| { id: string; type: "git_action"; projectId: string; action: PhoneGitAction; filename?: string; message?: string; all?: true; push?: true; name?: string }
+	/** From protocol 6, with the changes capability: a commit message the computer's title model writes from the changes. */
+	| { id: string; type: "commit_message"; projectId: string }
+	/** From protocol 6, with the changes capability: a pull request for the branch, linked to `chatId` when given. */
+	| { id: string; type: "create_pull_request"; projectId: string; chatId?: string }
+	/** From protocol 6, with the code capability: the repository's open pull requests, a page at a time. */
+	| { id: string; type: "list_pull_requests"; projectId: string; cursor?: string }
+	| { id: string; type: "read_pull_request"; projectId: string; number: number }
+	/** One page (from 1) of a pull request's changed files, at the head and base read_pull_request answered with. */
+	| { id: string; type: "pull_request_files"; projectId: string; number: number; headOid: string; baseOid: string; page?: number }
+	/** From protocol 6, with the changes capability; refused once the pull request's head is no longer `headOid`. */
+	| { id: string; type: "pr_action"; projectId: string; number: number; headOid: string; action: PhonePullRequestAction };
 export type PhoneFrame = PhoneRequest | { id?: string; type: "ping" } | { id?: string; type: "pong" };
 
 export type PhoneResults = {
@@ -175,7 +230,8 @@ export type PhoneResults = {
 	set_chat: { chat: PhoneChatDetail };
 	queue: { chatId: string };
 	/** `repository` false: the folder isn't a git checkout, and the rest is empty. */
-	git_status: { repository: boolean; branch: string; upstream?: { name: string; ahead: number; behind: number }; hasRemote: boolean; files: PhoneGitFile[] };
+	/** From protocol 6, `pullRequest` when asked: the branch's (null: none, or no GitHub remote). */
+	git_status: { repository: boolean; branch: string; upstream?: { name: string; ahead: number; behind: number }; hasRemote: boolean; files: PhoneGitFile[]; pullRequest?: PhoneBranchPullRequest | null };
 	/**
 	 * `hash` names this diff for read_diff_file. `truncated`: the computer stopped reading a very large diff, so files
 	 * are missing. headRef and baseRef say what a branch review compared.
@@ -185,6 +241,18 @@ export type PhoneResults = {
 	/** `truncated`: more matched, or the folder holds more, than the computer sends. */
 	list_files: { entries: PhoneFileEntry[]; truncated: boolean };
 	read_file: PhoneFilePreview;
+	list_branches: { current: string; local: string[]; remote: string[] };
+	/** The project's git status after the action. */
+	git_action: PhoneResults["git_status"];
+	commit_message: { message: string };
+	/** `status` opened_existing: the branch already had one, which is now linked. */
+	create_pull_request: { repository: string; number: number; url: string; status: "created" | "opened_existing" };
+	list_pull_requests: { repository: string; pullRequests: PhonePullRequest[]; cursor?: string; limitReached: boolean };
+	read_pull_request: PhonePullRequestView;
+	/** Files as read_diff has them; a patch GitHub didn't send, or that didn't fit, is left out with `truncated`. */
+	pull_request_files: { files: PhoneDiffFile[]; total: number; hasNext: boolean };
+	/** The pull request after the action. */
+	pr_action: PhonePullRequestView;
 };
 /** forbidden (from protocol 4): the phone lacks the capability; the person allows it on the computer. */
 export type PhoneErrorCode = "invalid_frame" | "too_large" | "rate_limited" | "unauthorized" | "not_found" | "rejected" | "forbidden" | "internal";
@@ -206,7 +274,11 @@ export class PhoneProtocolError extends Error {
 	constructor(readonly code: PhoneErrorCode, message: string, readonly id?: string, readonly type?: string) { super(message); this.name = "PhoneProtocolError"; }
 }
 
-const requestTypes = new Set(["hello", "list_chats", "read_chat", "send", "answer_approval", "answer_question", "stop", "new_chat", "list_models", "subscribe", "list_projects", "update_chat", "set_chat", "queue", "git_status", "read_diff", "read_diff_file", "list_files", "read_file"]);
+const requestTypes = new Set(["hello", "list_chats", "read_chat", "send", "answer_approval", "answer_question", "stop", "new_chat", "list_models", "subscribe", "list_projects", "update_chat", "set_chat", "queue", "git_status", "read_diff", "read_diff_file", "list_files", "read_file", "list_branches", "git_action", "commit_message", "create_pull_request", "list_pull_requests", "read_pull_request", "pull_request_files", "pr_action"]);
+/** A branch name as git takes one on the command line: no leading dash, spaces, control characters or ref syntax. */
+const refName = (value: unknown): value is string => typeof value === "string" && value.length > 0 && value.length <= 250 && !value.startsWith("-") && !/[\u0000-\u0020\u007f~^:?*[\\]|\.\.|@\{/.test(value);
+const pullNumber = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) >= 1 && (value as number) <= 2147483647;
+const commitId = (value: unknown): value is string => typeof value === "string" && /^[a-f0-9]{40}$/i.test(value);
 /** A path in a project as a phone names it: forward slashes, not absolute, no `.` or `..` segments ("" is the top). */
 const projectPath = (value: unknown, top = false): value is string => typeof value === "string" && value.length <= 4096 && !/[\u0000-\u001f\\]/.test(value)
 	&& (value === "" ? top : !/^[a-zA-Z]:/.test(value) && value.split("/").every(segment => segment !== "" && segment !== "." && segment !== ".."));
@@ -297,10 +369,14 @@ export function parsePhoneFrame(text: string): PhoneFrame {
 			const agent = optional("harness", 40), accountId = optional("accountId"), agentId = optional("agentId");
 			if ((accountId || agentId) && !agent) fail("accountId and agentId need a harness.");
 			if (agent && frame.model === undefined) fail("A harness needs its model.");
+			const workspace = frame.workspace;
+			if (workspace !== undefined && (!plain(workspace) || workspace.kind !== "worktree" || !refName(workspace.base) || Object.keys(workspace).length !== 2)) fail("workspace must be a worktree with a base branch.");
+			if (workspace !== undefined && frame.projectId === undefined) fail("A worktree needs its projectId.");
 			return {
 				id: request, type, text: text_("text"), mode: frame.mode as PhoneChatMode, ...projectId(),
 				...frame.model !== undefined ? { model: frame.model as string } : {}, ...frame.reasoningEffort !== undefined ? { reasoningEffort: frame.reasoningEffort as string } : {},
 				...agent ? { harness: agent } : {}, ...accountId ? { accountId } : {}, ...agentId ? { agentId } : {},
+				...workspace !== undefined ? { workspace: { kind: "worktree" as const, base: (workspace as { base: string }).base } } : {},
 			};
 		}
 		case "list_models": {
@@ -338,7 +414,75 @@ export function parsePhoneFrame(text: string): PhoneFrame {
 		}
 		case "git_status": {
 			if (!validId(frame.projectId)) fail("projectId is required.");
+			if (frame.pullRequest !== undefined && frame.pullRequest !== true) fail("pullRequest must be true.");
+			return { id: request, type, projectId: frame.projectId as string, ...frame.pullRequest ? { pullRequest: true as const } : {} };
+		}
+		case "list_branches": case "commit_message": {
+			if (!validId(frame.projectId)) fail("projectId is required.");
 			return { id: request, type, projectId: frame.projectId as string };
+		}
+		case "git_action": {
+			if (!validId(frame.projectId)) fail("projectId is required.");
+			const action = frame.action as PhoneGitAction, projectId = frame.projectId as string;
+			if (!gitActions.includes(action)) fail(`action must be one of ${gitActions.join(", ")}.`);
+			const takes: Record<PhoneGitAction, string[]> = { stage: ["filename"], unstage: ["filename"], commit: ["message", "all", "push"], push: [], pull: [], "create-branch": ["name"], "switch-branch": ["name"] };
+			for (const key of ["filename", "message", "all", "push", "name"]) if (frame[key] !== undefined && !takes[action].includes(key)) fail(`${action} doesn't take ${key}.`);
+			if (action === "stage" || action === "unstage") {
+				if (!projectPath(frame.filename)) fail("filename must be a file inside the project, such as src/app.ts.");
+				return { id: request, type, projectId, action, filename: frame.filename as string };
+			}
+			if (action === "commit") {
+				if (typeof frame.message !== "string" || !frame.message.trim() || frame.message.length > 10_000 || frame.message.includes("\0")) fail("commit needs a message of up to 10,000 characters.");
+				if ((frame.all !== undefined && frame.all !== true) || (frame.push !== undefined && frame.push !== true)) fail("all and push must be true.");
+				return { id: request, type, projectId, action, message: frame.message as string, ...frame.all ? { all: true as const } : {}, ...frame.push ? { push: true as const } : {} };
+			}
+			if (action === "create-branch" || action === "switch-branch") {
+				if (!refName(frame.name)) fail("name must be a branch name, such as fix/login.");
+				return { id: request, type, projectId, action, name: frame.name as string };
+			}
+			return { id: request, type, projectId, action };
+		}
+		case "create_pull_request": {
+			if (!validId(frame.projectId)) fail("projectId is required.");
+			const chat = optional("chatId");
+			return { id: request, type, projectId: frame.projectId as string, ...chat ? { chatId: chat } : {} };
+		}
+		case "list_pull_requests": {
+			if (!validId(frame.projectId)) fail("projectId is required.");
+			if (frame.cursor !== undefined && !validId(frame.cursor, 400)) fail("Invalid cursor.");
+			return { id: request, type, projectId: frame.projectId as string, ...frame.cursor !== undefined ? { cursor: frame.cursor as string } : {} };
+		}
+		case "read_pull_request": case "pull_request_files": case "pr_action": {
+			if (!validId(frame.projectId)) fail("projectId is required.");
+			if (!pullNumber(frame.number)) fail("number must be a pull request number.");
+			const base = { id: request, projectId: frame.projectId as string, number: frame.number as number };
+			if (type === "read_pull_request") return { ...base, type };
+			if (!commitId(frame.headOid)) fail("headOid must be a commit id.");
+			if (type === "pull_request_files") {
+				if (!commitId(frame.baseOid)) fail("baseOid must be a commit id.");
+				if (frame.page !== undefined && (!Number.isSafeInteger(frame.page) || (frame.page as number) < 1 || (frame.page as number) > 30)) fail("page must be a whole number from 1 to 30.");
+				return { ...base, type, headOid: frame.headOid as string, baseOid: frame.baseOid as string, ...frame.page !== undefined ? { page: frame.page as number } : {} };
+			}
+			if (!plain(frame.action)) fail("action is required.");
+			const act = frame.action as Record<string, unknown>;
+			const words = (value: unknown, what: string, required: boolean) => {
+				if (typeof value !== "string" || value.length > 65_536 || value.includes("\0") || (required && !value.trim())) fail(`${what} needs text of up to 65,536 characters.`);
+				return value as string;
+			};
+			let action: PhonePullRequestAction;
+			switch (act.type) {
+				case "merge":
+					if (!phoneMergeMethods.includes(act.method as PhoneMergeMethod)) fail("merge needs a method: squash, merge or rebase.");
+					action = { type: "merge", method: act.method as PhoneMergeMethod }; break;
+				case "close": case "reopen": action = { type: act.type }; break;
+				case "comment": action = { type: "comment", body: words(act.body, "A comment", true) }; break;
+				case "review":
+					if (act.event !== "approve" && act.event !== "request-changes" && act.event !== "comment") fail("review needs an event: approve, request-changes or comment.");
+					// GitHub needs words for anything but an approval.
+					action = { type: "review", event: act.event as "approve" | "request-changes" | "comment", body: words(act.body ?? "", "A review", act.event !== "approve") }; break;
+				default: return fail("action must be merge, close, reopen, comment or review.");
+			}
+			return { ...base, type, headOid: frame.headOid as string, action };
 		}
 		case "read_diff": case "read_diff_file": {
 			if (frame.scope !== "uncommitted" && frame.scope !== "branch" && frame.scope !== "turn") fail("scope must be uncommitted, branch or turn.");
