@@ -101,6 +101,13 @@ describe("buildGuardrailAssignmentRows", () => {
 		expect(ci.status).toBe("paused");
 	});
 
+	it("keeps guardrails inherited from a creator who has left the workspace", () => {
+		const [prod] = buildGuardrailAssignmentRows({ ...base, targetType: "key", members: [{ id: "u2", name: "Lee", role: "member" }] });
+		expect(prod.guardrails.map((g) => `${g.id}:${g.source}`)).toEqual(["g-new:direct", "g-old:direct", "g-member:member"]);
+		expect(prod.inheritedFrom).toEqual({ id: "u1", name: null });
+		expect(prod.effective).toMatchObject({ activeCount: 2, zdrOnly: true });
+	});
+
 	it("does not repeat a guardrail assigned both directly and through the member", () => {
 		const [prod] = buildGuardrailAssignmentRows({ ...base, targetType: "key", guardrailKeyIdsByGuardrailId: { "g-member": ["k1"] } });
 		expect(prod.guardrails.map((g) => `${g.id}:${g.source}`)).toEqual(["g-member:direct"]);

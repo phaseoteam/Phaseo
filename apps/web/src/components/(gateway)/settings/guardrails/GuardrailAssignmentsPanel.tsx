@@ -266,6 +266,7 @@ function GuardrailsCell(props: {
 	onToggle: (guardrailId: string, checked: boolean) => void;
 }) {
 	const t = useTranslations("SettingsUI");
+	const viaMember = t("guardrailAssignments.viaMember", { name: props.row.inheritedFrom?.name ?? t("guardrailAssignments.formerMember") });
 	const chips = props.row.guardrails.length ? (
 		<span className="flex min-w-0 flex-wrap items-center gap-1">
 			{props.row.guardrails.map((guardrail) => (
@@ -274,13 +275,15 @@ function GuardrailsCell(props: {
 					variant={guardrail.source === "member" ? "secondary" : "outline"}
 					className={guardrail.enabled ? "max-w-full" : "max-w-full opacity-60"}
 					title={[
-						guardrail.source === "member" && props.row.inheritedFrom ? t("guardrailAssignments.inheritedHint", { name: props.row.inheritedFrom.name }) : null,
+						guardrail.source === "member" && props.row.inheritedFrom
+							? props.row.inheritedFrom.name === null ? t("guardrailAssignments.formerMemberHint") : t("guardrailAssignments.inheritedHint", { name: props.row.inheritedFrom.name })
+							: null,
 						guardrail.enabled ? null : t("guardrailAssignments.offHint"),
 					].filter(Boolean).join(" ") || undefined}
 				>
 					<span className="truncate">{guardrail.name}</span>
 					{guardrail.source === "member" && props.row.inheritedFrom ? (
-						<span className="font-normal text-muted-foreground">{t("guardrailAssignments.viaMember", { name: props.row.inheritedFrom.name })}</span>
+						<span className="font-normal text-muted-foreground">{viaMember}</span>
 					) : null}
 					{guardrail.enabled ? null : <span className="font-normal text-muted-foreground">{t("guardrailAssignments.off")}</span>}
 				</Badge>
@@ -316,7 +319,7 @@ function GuardrailsCell(props: {
 						>
 							<span className="min-w-0 flex-1 truncate">{guardrail.name?.trim() || t("guardrailsControls.untitled")}</span>
 							{onlyInherited && props.row.inheritedFrom ? (
-								<span className="shrink-0 text-xs text-muted-foreground">{t("guardrailAssignments.viaMember", { name: props.row.inheritedFrom.name })}</span>
+								<span className="shrink-0 text-xs text-muted-foreground">{viaMember}</span>
 							) : guardrail.enabled === true ? null : (
 								<span className="shrink-0 text-xs text-muted-foreground">{t("guardrailAssignments.off")}</span>
 							)}

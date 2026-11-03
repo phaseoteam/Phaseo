@@ -1028,6 +1028,8 @@
 		"offHint": "Ce garde-corps est désactivé, le gateway l'ignore donc.",
 		"viaMember": "via {name}",
 		"inheritedHint": "S'applique via l'attribution de membre de {name}. Modifiez-la dans la vue Membres.",
+		"formerMember": "un ancien membre",
+		"formerMemberHint": "S'applique via l'attribution de membre de la personne qui a créé cette clé et a quitté l'espace de travail. Le gateway l'applique toujours.",
 		"noLimits": "Aucune limite",
 		"zdrOnly": "ZDR uniquement",
 		"providersAllowed": "{count, plural, one {# fournisseur autorisé} other {# fournisseurs autorisés}}",

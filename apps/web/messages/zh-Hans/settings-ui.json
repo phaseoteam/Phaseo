@@ -1028,6 +1028,8 @@
 		"offHint": "此护栏已关闭，网关会跳过它。",
 		"viaMember": "通过 {name}",
 		"inheritedHint": "通过 {name} 的成员分配生效。请在“成员”视图中更改。",
+		"formerMember": "前成员",
+		"formerMemberHint": "通过此密钥创建者（已离开工作区）的成员分配生效。网关仍会执行它。",
 		"noLimits": "无限制",
 		"zdrOnly": "仅 ZDR",
 		"providersAllowed": "允许 {count} 个提供商",

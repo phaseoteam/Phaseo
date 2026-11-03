@@ -1028,6 +1028,8 @@
 		"offHint": "This guardrail is off, so the gateway skips it.",
 		"viaMember": "via {name}",
 		"inheritedHint": "Applies through {name}'s member assignment. Change it in the Members view.",
+		"formerMember": "a former member",
+		"formerMemberHint": "Applies through the member assignment of this key's creator, who has left the workspace. The gateway still enforces it.",
 		"noLimits": "No limits",
 		"zdrOnly": "ZDR only",
 		"providersAllowed": "{count, plural, one {# provider allowed} other {# providers allowed}}",

@@ -1028,6 +1028,8 @@
 		"offHint": "Este guardrail está desactivado, así que el gateway lo omite.",
 		"viaMember": "a través de {name}",
 		"inheritedHint": "Se aplica mediante la asignación de miembro de {name}. Cámbiala en la vista Miembros.",
+		"formerMember": "un antiguo miembro",
+		"formerMemberHint": "Se aplica mediante la asignación de miembro de quien creó esta clave y ya salió del espacio de trabajo. El gateway la sigue aplicando.",
 		"noLimits": "Sin límites",
 		"zdrOnly": "Solo ZDR",
 		"providersAllowed": "{count, plural, one {# proveedor permitido} other {# proveedores permitidos}}",

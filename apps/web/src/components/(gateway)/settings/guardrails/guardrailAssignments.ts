@@ -37,7 +37,8 @@ export type GuardrailAssignmentRow = {
 	status: string | null;
 	guardrails: AssignedGuardrail[];
 	directGuardrailIds: string[];
-	inheritedFrom: { id: string; name: string } | null;
+	/** `name` is null when the key's creator has left the workspace; their member guardrails still apply. */
+	inheritedFrom: { id: string; name: string | null } | null;
 	effective: EffectiveGuardrailPolicy;
 };
 
@@ -163,8 +164,10 @@ export function buildGuardrailAssignmentRows(args: {
 
 	return args.keys.map((key) => {
 		const direct = known(byKey.get(key.id) ?? []);
-		const principal = key.principalUserId ? memberById.get(key.principalUserId) ?? null : null;
-		const inherited = principal ? known(byMember.get(principal.id) ?? []).filter((id) => !direct.includes(id)) : [];
+		// The gateway applies the principal's member guardrails whether or not they are still a member,
+		// so look them up by id and use the member list only for the name.
+		const principalId = key.principalUserId ?? null;
+		const inherited = principalId ? known(byMember.get(principalId) ?? []).filter((id) => !direct.includes(id)) : [];
 		const all = [...direct, ...inherited];
 		return {
 			type: "key",
@@ -174,7 +177,7 @@ export function buildGuardrailAssignmentRows(args: {
 			status: key.status,
 			guardrails: [...direct.map((id) => assigned(id, "direct")), ...inherited.map((id) => assigned(id, "member"))],
 			directGuardrailIds: direct,
-			inheritedFrom: principal && inherited.length ? { id: principal.id, name: principal.name } : null,
+			inheritedFrom: principalId && inherited.length ? { id: principalId, name: memberById.get(principalId)?.name ?? null } : null,
 			effective: effectiveGuardrailPolicy(all.map((id) => guardrailById.get(id)!)),
 		};
 	});

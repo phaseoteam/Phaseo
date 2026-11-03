@@ -1028,6 +1028,8 @@
 		"offHint": "このガードレールはオフのため、ゲートウェイは適用しません。",
 		"viaMember": "{name} 経由",
 		"inheritedHint": "{name} のメンバー割り当てによって適用されます。メンバー表示で変更してください。",
+		"formerMember": "元メンバー",
+		"formerMemberHint": "このキーを作成し、ワークスペースを離れたメンバーの割り当てによって適用されます。ゲートウェイは引き続き適用します。",
 		"noLimits": "制限なし",
 		"zdrOnly": "ZDR のみ",
 		"providersAllowed": "{count, plural, other {# 件のプロバイダーを許可}}",

@@ -1028,6 +1028,8 @@
 		"offHint": "Diese Leitplanke ist ausgeschaltet, daher überspringt das Gateway sie.",
 		"viaMember": "über {name}",
 		"inheritedHint": "Gilt über die Mitgliederzuweisung von {name}. Ändere sie in der Ansicht „Mitglieder“.",
+		"formerMember": "ein ehemaliges Mitglied",
+		"formerMemberHint": "Gilt über die Mitgliederzuweisung der Person, die diesen Schlüssel erstellt und den Workspace verlassen hat. Das Gateway setzt sie weiterhin durch.",
 		"noLimits": "Keine Einschränkungen",
 		"zdrOnly": "Nur ZDR",
 		"providersAllowed": "{count, plural, one {# Anbieter erlaubt} other {# Anbieter erlaubt}}",
