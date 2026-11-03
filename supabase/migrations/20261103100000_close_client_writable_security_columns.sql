@@ -1,5 +1,6 @@
 -- Security review 2026-11-02: three tables let signed-in users write columns through PostgREST that the
 -- app's own checks never allow, and anon/authenticated held table privileges PostgREST never needs.
+-- phaseo:allow-destructive-migration reason: the only match is the TRUNCATE privilege named in REVOKE statements below, taken away from anon and authenticated; no table is truncated, nothing is dropped and no data is deleted.
 
 -- 1. OAuth app metadata. The API and web-api write it with the service role only, after checking the
 -- caller is a workspace owner or admin. Direct client writes let any member mark an app first-party or
