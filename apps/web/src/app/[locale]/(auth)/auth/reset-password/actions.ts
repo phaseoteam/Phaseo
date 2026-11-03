@@ -20,7 +20,9 @@ export async function revokeOtherSessionsAfterPasswordResetAction() {
 	const { data: assurance, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 	if (error || !assurance) throw new Error("Could not check two-factor verification");
 	const fromRecovery = (assurance.currentAuthenticationMethods ?? []).some((entry) => (typeof entry === "string" ? entry : entry.method) === "recovery");
-	if (!fromRecovery && assurance.nextLevel === "aal2" && assurance.currentLevel !== "aal2") {
+	// Enrolment comes from the user the server just verified, not the cookie's copy, which a client can edit.
+	const hasVerifiedFactor = (user.factors ?? []).some((factor) => factor.status === "verified");
+	if (!fromRecovery && hasVerifiedFactor && assurance.currentLevel !== "aal2") {
 		throw new Error("Complete two-factor verification first");
 	}
 	await revokeOtherSessionsAndGrants(supabase, user.id);

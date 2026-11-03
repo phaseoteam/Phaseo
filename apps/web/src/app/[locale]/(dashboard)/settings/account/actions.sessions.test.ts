@@ -188,7 +188,12 @@ describe("account credential changes end other sessions", () => {
 	});
 
 	it("an MFA account's password-only session can't trigger the reset revocation", async () => {
-		const supabase = sessionClient({ aal: { currentLevel: "aal1", nextLevel: "aal2", currentAuthenticationMethods: [{ method: "password", timestamp: 1 }] } });
+		// The cookie's copy of the factors was removed, so the SDK reports nextLevel aal1; the server still has a verified factor.
+		const supabase = sessionClient({ aal: { currentLevel: "aal1", nextLevel: "aal1", currentAuthenticationMethods: [{ method: "password", timestamp: 1 }] } });
+		supabase.auth.getUser.mockResolvedValue({
+			data: { user: { id: USER_ID, email: "user@example.com", app_metadata: { provider: "email" }, factors: [{ id: FACTOR_ID, status: "verified" }] } },
+			error: null,
+		});
 		mockCreateClient.mockResolvedValue(supabase as never);
 		const updates = adminClient();
 
@@ -204,6 +209,10 @@ describe("account credential changes end other sessions", () => {
 			{ currentLevel: "aal2", nextLevel: "aal2", currentAuthenticationMethods: [{ method: "password", timestamp: 1 }, { method: "totp", timestamp: 2 }] },
 		]) {
 			const supabase = sessionClient({ aal });
+			supabase.auth.getUser.mockResolvedValue({
+				data: { user: { id: USER_ID, email: "user@example.com", app_metadata: { provider: "email" }, factors: [{ id: FACTOR_ID, status: "verified" }] } },
+				error: null,
+			});
 			mockCreateClient.mockResolvedValue(supabase as never);
 			const updates = adminClient();
 			await expect(revokeOtherSessionsAfterPasswordResetAction()).resolves.toEqual({ success: true });
