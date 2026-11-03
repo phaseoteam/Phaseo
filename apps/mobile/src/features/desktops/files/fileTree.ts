@@ -23,6 +23,9 @@ export function treeRows(folders: ReadonlyMap<string, Folder>, open: ReadonlySet
   return folder.truncated ? [...rows, { kind: "note", key: `cut:${directory}`, depth, text: "More files are here than the phone shows. Search to find one." }] : rows;
 }
 
+/** A folder and every folder above it, top first: "src/lib" gives ["src", "src/lib"]. */
+export const folderChain = (path: string) => path.split("/").map((_, index, parts) => parts.slice(0, index + 1).join("/"));
+
 /** A path's name and the folder it's in ("" at the top). */
 export function splitFilePath(path: string) {
   const slash = path.lastIndexOf("/");

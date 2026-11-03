@@ -49,7 +49,7 @@ function OffNotice() {
 function Tree({ client, desktopId, target, where }: { client: DesktopClient; desktopId: string; target: FilesTarget; where: string | null }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { allowed, folders, open, toggle, reload } = useFileTree(client, target);
+  const { allowed, folders, open, toggle, reveal, reload } = useFileTree(client, target);
   const [query, setQuery] = useState("");
   const search = useDeferredValue(query);
   const found = useFileSearch(client, target, search);
@@ -65,7 +65,7 @@ function Tree({ client, desktopId, target, where }: { client: DesktopClient; des
   const renderRow = useCallback(({ item }: { item: TreeRow }) => (item.kind === "note"
     ? <NoteRow depth={item.depth} text={item.text} loading={item.loading} />
     : <EntryRow entry={item.entry} depth={item.depth} open={item.open} onPress={onEntry} onLongPress={onLong} />), [onEntry, onLong]);
-  const renderFound = useCallback(({ item }: { item: PhoneFileEntry }) => <EntryRow entry={item} depth={0} open={false} showFolder onPress={item.directory ? (entry) => { setQuery(""); if (!open.has(entry.path)) toggle(entry.path); } : openFile} onLongPress={onLong} />, [openFile, onLong, open, toggle]);
+  const renderFound = useCallback(({ item }: { item: PhoneFileEntry }) => <EntryRow entry={item} depth={0} open={false} showFolder onPress={item.directory ? (entry) => { setQuery(""); reveal(entry.path); } : openFile} onLongPress={onLong} />, [openFile, onLong, reveal]);
 
   const body = !allowed ? <OffNotice /> : searching ? (
     found.error ? <ErrorState className="flex-1" error={new Error(found.error.message)} />

@@ -1,4 +1,4 @@
-import { fileLines, fileMention, isMarkdown, readsFiles, sizeLabel, splitFilePath, treeRows, withMention, type Folder } from "./fileTree";
+import { fileLines, fileMention, folderChain, isMarkdown, readsFiles, sizeLabel, splitFilePath, treeRows, withMention, type Folder } from "./fileTree";
 
 const entry = (path: string, directory = false) => ({ name: path.slice(path.lastIndexOf("/") + 1), path, directory });
 
@@ -30,6 +30,19 @@ describe("Files", () => {
     ]);
     expect(treeRows(folders, new Set(), "broken")).toEqual([{ kind: "note", key: "note:broken", depth: 0, text: "That project isn't on this computer any more." }]);
     expect(treeRows(new Map([["", { entries: [], truncated: false }]]), new Set())).toEqual([{ kind: "note", key: "note:", depth: 0, text: "No files" }]);
+  });
+
+  it("opens a folder found by search with the folders above it, so it shows in the tree", () => {
+    expect(folderChain("src/lib/deep")).toEqual(["src", "src/lib", "src/lib/deep"]);
+    expect(folderChain("src")).toEqual(["src"]);
+    const folders = new Map<string, Folder>([
+      ["", { entries: [entry("src", true)], truncated: false }],
+      ["src", { entries: [entry("src/lib", true)], truncated: false }],
+      ["src/lib", { entries: [entry("src/lib/a.ts")], truncated: false }],
+    ]);
+    const shown = (open: Set<string>) => treeRows(folders, open).flatMap((row) => (row.kind === "entry" ? [row.entry.path] : []));
+    expect(shown(new Set(["src/lib"]))).toEqual(["src"]);
+    expect(shown(new Set(folderChain("src/lib")))).toEqual(["src", "src/lib", "src/lib/a.ts"]);
   });
 
   it("adds a file to the message the way the window names it", () => {

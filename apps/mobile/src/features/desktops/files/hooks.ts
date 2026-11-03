@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { DesktopRequestError, type ClientEvent, type DesktopClient } from "../client";
 import { useClientEvents, useConnection } from "../connections";
 import type { PhoneFilePreview, PhoneResults } from "../protocol";
-import { readsFiles, type Folder } from "./fileTree";
+import { folderChain, readsFiles, type Folder } from "./fileTree";
 
 /** Whose folder Files reads: a thread's (its worktree's when it has one) or a project's. */
 export type FilesTarget = { chatId: string } | { projectId: string };
@@ -46,7 +46,13 @@ export function useFileTree(client: DesktopClient, target: FilesTarget) {
     });
     if (!byPath.has(directory)) read(directory);
   }, [byPath, read]);
-  return { allowed: allowed && !forbidden, folders: byPath, open, toggle, reload };
+  /** Opens a folder found by search with every folder above it, so it shows in the tree. */
+  const reveal = useCallback((directory: string) => {
+    const chain = folderChain(directory);
+    setOpen((current) => new Set([...current, ...chain]));
+    for (const folder of chain) if (!byPath.has(folder)) read(folder);
+  }, [byPath, read]);
+  return { allowed: allowed && !forbidden, folders: byPath, open, toggle, reveal, reload };
 }
 const EMPTY: ReadonlyMap<string, Folder> = new Map();
 
