@@ -41,6 +41,7 @@ import {
 	transformChatStreamToResponses,
 	transformResponsesStreamToChat,
 	normalizeTerminalResponsesFrames,
+	cancelledReaders,
 } from "./stream-transforms";
 import {
 	adaptRequestFromUpstreamError,
@@ -982,9 +983,10 @@ function transformResponsesStreamToAnthropic(
 							}));
 							continue;
 						}
+						// reasoning_text.done leaves the thinking block open: the reasoning item's
+						// output_item.done follows and closes it, after adding its signature.
 						if (
 							normalizedEvent === "response.output_text.done" ||
-							normalizedEvent === "response.reasoning_text.done" ||
 							normalizedEvent === "response.output_item.done"
 						) {
 							const item = payload?.item;
@@ -1023,13 +1025,20 @@ function transformResponsesStreamToAnthropic(
 					}
 				}
 			} catch (err) {
-				console.error("openai compat responses->anthropic stream transform failed:", err);
+				// A client cancel ends the read loop early; that is not a failure.
+				if (!cancelledReaders.has(reader)) console.error("openai compat responses->anthropic stream transform failed:", err);
 			} finally {
+				if (cancelledReaders.has(reader)) return;
 				if (messageStarted && !terminalEmitted) {
 					finishMessage({ ...latestResponse, status: "incomplete" });
 				}
 				controller.close();
 			}
+		},
+		// Pass a client cancel on to the stream this one reads, so the upstream stops too.
+		cancel(reason) {
+			cancelledReaders.add(reader);
+		return reader.cancel(reason);
 		},
 	});
 }

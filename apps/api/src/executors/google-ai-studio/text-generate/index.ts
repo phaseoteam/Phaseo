@@ -28,7 +28,7 @@ import {
 	withoutEmptyGeminiTextParts,
 } from "../../google/shared/function-history";
 import { normalizeGoogleModelSlug, resolveGoogleModelCandidates } from "../../google/shared/model";
-import { applyGoogleOutputTokenFallback, applyOpenAIUsageFallback } from "../../google/shared/usage-fallback";
+import { applyGoogleOutputTokenFallback, applyOpenAIUsageFallback, applyStreamedOutputTokenFallback } from "../../google/shared/usage-fallback";
 import {
 	getDefaultGoogleThinkingLevel,
 	getLowestGoogleThinkingLevel,
@@ -1153,10 +1153,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	// fully supported generateContent path for other active models and explicit caches.
 	const modelCandidates = resolveGoogleModelCandidates(requestedModel);
 	let model = modelCandidates[0] || "gemini-2.0-flash-exp";
-	let forceSyntheticStream = Boolean(ir.stream) && (
-		isGeminiImageModelName(model) ||
-		(ir.googleCachedContent === undefined && supportsGoogleInteractions(model))
-	);
+	// Image models are buffered and replayed; text streams from Google as it is generated.
+	let forceSyntheticStream = Boolean(ir.stream) && isGeminiImageModelName(model);
 
 	// Google AI Studio base URL (allow env override for proxy/self-host routing)
 	const baseRoot = String(
@@ -1171,7 +1169,11 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		isInteractionsRequest: boolean,
 		candidateForceSyntheticStream: boolean,
 	) => {
-		if (isInteractionsRequest) return `${baseUrl}/interactions`;
+		if (isInteractionsRequest) {
+			return Boolean(ir.stream) && !candidateForceSyntheticStream
+				? `${baseUrl}/interactions?alt=sse`
+				: `${baseUrl}/interactions`;
+		}
 		return Boolean(ir.stream) && !candidateForceSyntheticStream
 			? `${baseUrl}/models/${encodeURIComponent(candidateModel)}:streamGenerateContent?alt=sse`
 			: `${baseUrl}/models/${encodeURIComponent(candidateModel)}:generateContent`;
@@ -1191,10 +1193,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		const doRequest = async (candidateModel: string) => {
 			const isInteractionsRequest =
 				ir.googleCachedContent === undefined && supportsGoogleInteractions(candidateModel);
-			const candidateForceSyntheticStream = Boolean(ir.stream) && (
-				isGeminiImageModelName(candidateModel) ||
-				isInteractionsRequest
-			);
+			const candidateForceSyntheticStream = Boolean(ir.stream) && isGeminiImageModelName(candidateModel);
 			const requestBody = isInteractionsRequest
 				? await irToGemini(ir, candidateModel, args.upstreamTiming)
 				: await irToLegacyGemini(ir, candidateModel, args.upstreamTiming);
@@ -1348,12 +1347,31 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				} as ExecutorExecuteArgs;
 				const bill: Bill = { cost_cents: 0, currency: "USD" };
 				const usageRecorder = createGeminiStreamUsageRecorder(bill);
+				let sawOutput = false;
 				const transformedStream = transformStream(response.body, streamingArgs, headerServiceTier, {
 					onUsage: usageRecorder.onUsage,
+					onUsableOutput: () => { sawOutput = true; },
 				});
+				// Nothing reaches the client until Google sends real output. A stream that
+				// ends without any is returned as an empty reply, so routing fails over to
+				// another provider instead of the client receiving a blank answer.
+				const heldStream = await holdStreamUntilOutput(transformedStream, () => sawOutput);
+				if (!heldStream) {
+					const usageMeters = usageRecorder.snapshot();
+					if (usageMeters) bill.usage = usageMeters;
+					return {
+						kind: "completed",
+						ir: emptyIRResponse(requestId, model, providerId),
+						upstream: response,
+						bill,
+						keySource: keyInfo.source,
+						byokKeyId: keyInfo.byokId,
+						mappedRequest,
+					};
+				}
 				return {
 					kind: "stream",
-					stream: transformedStream,
+					stream: heldStream,
 					streamAlreadyTransformed: true,
 					bill,
 					upstream: response,
@@ -1588,6 +1606,8 @@ export function postprocess(ir: any, args: ExecutorExecuteArgs): any {
 export type GeminiStreamOptions = {
 	/** Called with each usage report the upstream stream carries (Google's counts are cumulative). */
 	onUsage?: (usage: IRUsage) => void;
+	/** Called once, when the stream first carries output a client can use. */
+	onUsableOutput?: () => void;
 };
 
 /**
@@ -1595,6 +1615,54 @@ export type GeminiStreamOptions = {
  * client protocol's usage fields, so per-modality input (image, audio, video) would
  * otherwise reach pricing as text.
  */
+function emptyIRResponse(requestId: string, model: string, provider: string): IRChatResponse {
+	return {
+		id: requestId,
+		created: Math.floor(Date.now() / 1000),
+		model,
+		provider,
+		choices: [{ index: 0, message: { role: "assistant", content: [] }, finishReason: "stop" }],
+	};
+}
+
+/**
+ * Reads a stream until it has carried usable output, then hands back a stream that
+ * replays what was read and continues live. Null when it ended without any output.
+ */
+export async function holdStreamUntilOutput(
+	stream: ReadableStream<Uint8Array>,
+	hasOutput: () => boolean,
+): Promise<ReadableStream<Uint8Array> | null> {
+	const reader = stream.getReader();
+	const held: Uint8Array[] = [];
+	while (!hasOutput()) {
+		const { done, value } = await reader.read();
+		if (done) {
+			if (hasOutput()) break;
+			reader.releaseLock();
+			return null;
+		}
+		if (value) held.push(value);
+	}
+	return new ReadableStream<Uint8Array>({
+		start(controller) {
+			for (const chunk of held) controller.enqueue(chunk);
+			held.length = 0;
+		},
+		async pull(controller) {
+			const { done, value } = await reader.read();
+			if (done) {
+				controller.close();
+				return;
+			}
+			if (value) controller.enqueue(value);
+		},
+		cancel(reason) {
+			return reader.cancel(reason);
+		},
+	});
+}
+
 export function createGeminiStreamUsageRecorder(bill: Bill): {
 	onUsage: (usage: IRUsage) => void;
 	finalize: () => Promise<Bill | null>;
@@ -1647,6 +1715,7 @@ export function transformStream(
 	let interactionToolCallCount = 0;
 	let interactionSawFunctionCall = false;
 	let sawUsableOutput = false;
+	let streamedOutputChars = 0;
 	const emittedAnnotationKeys = new Set<string>();
 	// reasoning_details entries are numbered across the whole stream, per choice.
 	const reasoningDetailIndexes = new Map<number, number>();
@@ -1684,8 +1753,26 @@ export function transformStream(
 				);
 			});
 		})) {
-			sawUsableOutput = true;
+			if (!sawUsableOutput) {
+				sawUsableOutput = true;
+				try {
+					options?.onUsableOutput?.();
+				} catch {
+					// Observers must never break the client stream.
+				}
+			}
 		}
+		for (const choice of irChunk.choices as any[]) {
+			if (typeof choice.delta?.content === "string") streamedOutputChars += choice.delta.content.length;
+			for (const part of choice.delta?.contentParts ?? []) {
+				if ((part?.type === "text" || part?.type === "reasoning_text") && typeof part.text === "string") {
+					streamedOutputChars += part.text.length;
+				}
+			}
+		}
+		// Google sometimes reports no output tokens for a streamed answer that has text;
+		// estimate them from the streamed text, as for a buffered answer.
+		if (irChunk.usage) applyStreamedOutputTokenFallback(irChunk.usage, streamedOutputChars);
 		if (irChunk.usage && options?.onUsage) {
 			try {
 				options.onUsage(irChunk.usage);
@@ -1750,6 +1837,15 @@ export function transformStream(
 					},
 				} as any);
 				state.emittedName = Boolean(state.name);
+				// Google starts a call with empty arguments ({}) and streams them as
+				// arguments_delta; arguments already on the start event are sent as-is.
+				const startArguments = step.arguments && typeof step.arguments === "object" && Object.keys(step.arguments).length > 0
+					? stringifyToolArguments(step.arguments)
+					: typeof step.arguments === "string" ? step.arguments : "";
+				if (startArguments) {
+					state.argumentsSoFar = startArguments;
+					(irChunk.choices[0] as any).delta.toolCalls[0].arguments = startArguments;
+				}
 				enqueueIRChunk(irChunk, controller);
 				return 1;
 			}
@@ -1784,6 +1880,24 @@ export function transformStream(
 						text,
 					}];
 				}
+			} else if (delta.type === "thought_signature" && typeof delta.signature === "string" && delta.signature) {
+				// The signature closes a thought or function-call step. Sealed so chat clients
+				// can return it and the gateway replays it only to this Gemini model, as on
+				// the generateContent stream.
+				const callId = state?.type === "function_call" ? state.id : undefined;
+				choice.delta.reasoningDetails = [{
+					type: "reasoning.encrypted",
+					...(callId ? { id: callId } : {}),
+					data: sealReasoningState({
+						format: GOOGLE_REASONING_FORMAT,
+						kind: "signature",
+						value: delta.signature,
+						model,
+						provider,
+						...(callId ? { callId } : {}),
+					}),
+					format: GOOGLE_REASONING_FORMAT,
+				}];
 			} else if (delta.type === "arguments_delta") {
 				const argumentsDelta = typeof delta.arguments === "string" ? delta.arguments : "";
 				const toolIndex = state?.toolIndex ?? 0;
@@ -2061,57 +2175,84 @@ export function transformStream(
 		return emitted;
 	};
 
+	let rawText = "";
+	let emittedChunkCount = 0;
+	let finished = false;
+	// Flush what is left once Google's stream ends, then close.
+	const finishStream = (controller: ReadableStreamDefaultController<Uint8Array>) => {
+		finished = true;
+		const trimmed = buf.trim();
+		if (trimmed.length > 0) {
+			const { blocks, remainder } = splitSseBlocks(`${buf}\n\n`);
+			buf = remainder;
+			for (const block of blocks) {
+				const dataStr = block
+					.split(/\n/)
+					.map((line) => line.replace(/\r$/, ""))
+					.filter((line) => line.startsWith("data:"))
+					.map((line) => line.slice(5).trimStart())
+					.join("")
+					.trim();
+				if (!dataStr || dataStr === "[DONE]") continue;
+				let payload: any;
+				try {
+					payload = JSON.parse(dataStr);
+				} catch {
+					continue;
+				}
+				emittedChunkCount += emitPayloadEntries(toPayloadEntries(payload), controller);
+			}
+		}
+		if (emittedChunkCount === 0 && rawText.trim().length > 0) {
+			const normalized = rawText.replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
+			const fallbackPayloads = normalized.startsWith("data:")
+				? normalized
+					.split("\n")
+					.map((line) => line.trim())
+					.filter((line) => line.startsWith("data:"))
+					.map((line) => line.slice(5).trimStart())
+					.filter((line) => line.length > 0 && line !== "[DONE]")
+				: [normalized];
+			for (const payloadStr of fallbackPayloads) {
+				let payload: any;
+				try {
+					payload = JSON.parse(payloadStr);
+				} catch {
+					continue;
+				}
+				emittedChunkCount += emitPayloadEntries(toPayloadEntries(payload), controller);
+			}
+		}
+		if (!sawUsableOutput) {
+			const errorPayload = {
+				error: {
+					code: "google_empty_response",
+					message: "Google returned a successful response without any output.",
+				},
+			};
+			controller.enqueue(encoder.encode(
+				`event: response.failed\ndata: ${JSON.stringify({
+					type: "response.failed",
+						...errorPayload,
+				})}\n\n`,
+			));
+		}
+		controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+		controller.close();
+	};
+	// Reads Google's stream only as the client asks for more, and passes a cancel back
+	// to Google, so a slow or departed client does not leave the upstream running.
 	const openAIStream = new ReadableStream<Uint8Array>({
-		async start(controller) {
-			let rawText = "";
-			let emittedChunkCount = 0;
+		async pull(controller) {
+			if (finished) return;
 			try {
-				while (true) {
+				const emittedBefore = emittedChunkCount;
+				// A pull must enqueue or end the stream, or the waiting read never settles.
+				while (emittedChunkCount === emittedBefore) {
 					const { value, done } = await reader.read();
 					if (done) {
-						const trimmed = buf.trim();
-						if (trimmed.length > 0) {
-							const { blocks, remainder } = splitSseBlocks(`${buf}\n\n`);
-							buf = remainder;
-							for (const block of blocks) {
-								const dataStr = block
-									.split(/\n/)
-									.map((line) => line.replace(/\r$/, ""))
-									.filter((line) => line.startsWith("data:"))
-									.map((line) => line.slice(5).trimStart())
-									.join("")
-									.trim();
-								if (!dataStr || dataStr === "[DONE]") continue;
-								let payload: any;
-								try {
-									payload = JSON.parse(dataStr);
-								} catch {
-									continue;
-								}
-								emittedChunkCount += emitPayloadEntries(toPayloadEntries(payload), controller);
-							}
-						}
-						if (emittedChunkCount === 0 && rawText.trim().length > 0) {
-							const normalized = rawText.replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
-							const fallbackPayloads = normalized.startsWith("data:")
-								? normalized
-									.split("\n")
-									.map((line) => line.trim())
-									.filter((line) => line.startsWith("data:"))
-									.map((line) => line.slice(5).trimStart())
-									.filter((line) => line.length > 0 && line !== "[DONE]")
-								: [normalized];
-							for (const payloadStr of fallbackPayloads) {
-								let payload: any;
-								try {
-									payload = JSON.parse(payloadStr);
-								} catch {
-									continue;
-								}
-								emittedChunkCount += emitPayloadEntries(toPayloadEntries(payload), controller);
-							}
-						}
-						break;
+						finishStream(controller);
+						return;
 					}
 
 					const decoded = decoder.decode(value, { stream: true });
@@ -2141,27 +2282,15 @@ export function transformStream(
 						emittedChunkCount += emitPayloadEntries(toPayloadEntries(payload), controller);
 					}
 				}
-				if (!sawUsableOutput) {
-					const errorPayload = {
-						error: {
-							code: "google_empty_response",
-							message: "Google returned a successful response without any output.",
-						},
-					};
-					controller.enqueue(encoder.encode(
-						`event: response.failed\ndata: ${JSON.stringify({
-							type: "response.failed",
-								...errorPayload,
-						})}\n\n`,
-					));
-				}
-				controller.enqueue(encoder.encode("data: [DONE]\n\n"));
 			} catch (err) {
 				console.error("Gemini stream transform error:", err);
+				finished = true;
 				controller.error(err);
-			} finally {
-				controller.close();
 			}
+		},
+		cancel(reason) {
+			finished = true;
+			return reader.cancel(reason);
 		},
 	});
 
