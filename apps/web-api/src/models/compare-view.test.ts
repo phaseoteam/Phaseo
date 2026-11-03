@@ -12,7 +12,7 @@ const model = (id: string) => view.models.find((item) => item.id === id)!;
 describe("composeCompareView pricing", () => {
 	it("headlines GPT-5 on OpenAI's text rates, not a reseller's $0 image and reasoning meters", () => {
 		const gpt = model("openai/gpt-5");
-		expect(gpt.pricing?.provider).toEqual({ id: "openai", name: "OpenAI", routed: true });
+		expect(gpt.pricing?.provider).toEqual({ id: "openai", name: "OpenAI", logoId: "openai", routed: true });
 		const standard = gpt.pricing!.tiers.standard;
 		expect(standard.find((row) => row.kind === "input")).toMatchObject({ meter: "input_text_tokens", price: 1.25, per: 1_000_000, unit: "token" });
 		expect(standard.find((row) => row.kind === "output")).toMatchObject({ price: 10 });
@@ -52,7 +52,7 @@ describe("composeCompareView pricing", () => {
 			modelPlans: [],
 			plans: [],
 		}, NOW).models[0];
-		expect(speech.pricing?.provider).toEqual({ id: "elevenlabs", name: "ElevenLabs", routed: true });
+		expect(speech.pricing?.provider).toEqual({ id: "elevenlabs", name: "ElevenLabs", logoId: "elevenlabs", routed: true });
 		expect(speech.pricing!.tiers.standard).toEqual([{ meter: "input_characters", kind: "other", label: null, price: 0.1, per: 1_000, unit: "character", conditional: false, condition: null }]);
 		expect(speech.providers[0]).toMatchObject({ input: null, output: null });
 	});
@@ -81,8 +81,8 @@ describe("composeCompareView providers and limits", () => {
 			expect(inputs.length).toBeGreaterThan(0);
 			expect((inputs.find((row) => !row.conditional) ?? inputs[0])?.price).toBe(provider.input);
 		}
-		// anthropic-aws is a disabled "Anthropic" route, so it neither lists twice nor shows as another listing.
-		expect(sonnet.otherListings).toEqual([{ id: "listing-only", name: "Listing Only" }]);
+		// anthropic-aws is the separate Claude Platform for AWS product, disabled here, so it is another listing, not a second "Anthropic".
+		expect(sonnet.otherListings).toEqual([{ id: "anthropic-aws", name: "Claude Platform for AWS" }, { id: "listing-only", name: "Listing Only" }]);
 		const opus = model("anthropic/claude-opus-5.5");
 		expect(opus.providers.filter((provider) => provider.name === "Anthropic")).toEqual([expect.objectContaining({ id: "anthropic", input: 4 })]);
 		expect(opus.otherListings.map((listing) => listing.name)).toEqual(["Amazon Bedrock"]);
@@ -144,6 +144,31 @@ describe("composeCompareView current routes and prices", () => {
 		modelPlans: [],
 		plans: [],
 	}, NOW).models[0];
+
+	it("keeps regional routes apart, named by region, with the parent provider's logo", () => {
+		const regional = (providerId: string, offerLabel: string | null, offerScope: string | null) => route(providerId, {
+			data_api_providers: { api_provider_name: "Anthropic", provider_family_id: "anthropic", offer_label: offerLabel, offer_scope: offerScope, status: "active", routing_status: "active" },
+		});
+		const view = compose([regional("anthropic", null, null), regional("anthropic-us", "US", "regional")], [price("anthropic", 5), price("anthropic-us", 5.5)]);
+		expect(view.providers.map(({ id, name, logoId }) => ({ id, name, logoId }))).toEqual([
+			{ id: "anthropic", name: "Anthropic", logoId: "anthropic" },
+			{ id: "anthropic-us", name: "Anthropic (US)", logoId: "anthropic" },
+		]);
+	});
+
+	it("describes video price conditions as options, not raw parameter paths", () => {
+		const video = { meter: "output_video_seconds", unit: "second", unit_size: 1 };
+		const view = compose([route("live")], [
+			price("live", 0.08, { ...video, match: [{ path: "video_params.resolution", op: "eq", value: "480p" }] }),
+			price("live", 0.06, { ...video, match: [{ path: "video_params.mode", op: "ne", value: "v2v" }, { path: "video_params.draft", op: "eq", value: 1 }] }),
+			price("live", 0.17, { ...video, match: [{ path: "video_params.draft", op: "eq", value: 0 }] }),
+		]);
+		expect(view.pricing!.tiers.standard.map((row) => [row.price, row.condition])).toEqual([
+			[0.06, "mode: not v2v, draft"],
+			[0.08, "resolution: 480p"],
+			[0.17, "no draft"],
+		]);
+	});
 
 	it("needs an active provider with routing on and a capability in its window", () => {
 		const view = compose([

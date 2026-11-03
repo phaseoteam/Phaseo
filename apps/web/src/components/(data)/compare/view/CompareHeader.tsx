@@ -45,8 +45,8 @@ function RoutePickers({
 	const tiers = routeTiers(priced);
 	const listingOnly = current && !current.routed;
 	const routeItems = routes.length
-		? routes.map((route) => ({ value: route.id, label: route.name }))
-		: [{ value: NO_ROUTE, label: current ? t("listedOnly", { provider: current.name }) : t("notPriced") }];
+		? routes.map((route) => ({ value: route.id, label: route.name, logoId: route.logoId as string | null }))
+		: [{ value: NO_ROUTE, label: current ? t("listedOnly", { provider: current.name }) : t("notPriced"), logoId: null }];
 
 	return (
 		<div className="grid grid-cols-1 gap-1.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,auto)]">
@@ -59,14 +59,15 @@ function RoutePickers({
 				}}
 			>
 				<SelectTrigger aria-label={t("routeFor", { name: model.name })} className="h-8 w-full min-w-0 rounded-md bg-background px-2 text-xs">
-					{current ? <ProviderLogo id={current.id} alt="" size="xxs" className="mr-1.5 hidden shrink-0 sm:flex" /> : null}
+					{current ? <ProviderLogo id={current.logoId ?? current.id} alt="" size="xxs" className="mr-1.5 hidden shrink-0 sm:flex" /> : null}
 					<SelectValue className="truncate" />
 				</SelectTrigger>
-				<SelectContent>
+				{/* Opens below the trigger, as wide as its names need (laid over a half-width trigger, names ran under the scrollbar), and shows a scrollbar only when the list overflows. */}
+				<SelectContent alignItemWithTrigger={false} align="start" className="w-auto min-w-(--anchor-width) max-w-[min(20rem,calc(100vw-2rem))] [&_[data-slot=scroll-area]:not([data-has-overflow-y])_[data-slot=scroll-area-scrollbar]]:hidden">
 					{routeItems.map((item) => (
 						<SelectItem key={item.value} value={item.value}>
 							<span className="inline-flex items-center gap-2">
-								{item.value !== NO_ROUTE ? <ProviderLogo id={item.value} alt="" size="xxs" /> : null}
+								{item.logoId ? <ProviderLogo id={item.logoId} alt="" size="xxs" /> : null}
 								{item.label}
 							</span>
 						</SelectItem>
@@ -84,7 +85,7 @@ function RoutePickers({
 				<SelectTrigger aria-label={t("tierFor", { name: model.name })} className="h-8 rounded-md bg-background px-2 text-xs">
 					<SelectValue />
 				</SelectTrigger>
-				<SelectContent>
+				<SelectContent alignItemWithTrigger={false} align="end" className="w-auto min-w-(--anchor-width) [&_[data-slot=scroll-area]:not([data-has-overflow-y])_[data-slot=scroll-area-scrollbar]]:hidden">
 					{(tiers.length ? tiers : [tier]).map((value) => (
 						<SelectItem key={value} value={value}>{format.tier(value)}</SelectItem>
 					))}

@@ -98,9 +98,11 @@ export function ComparePricing({ models, tiers }: { models: CompareViewModel[]; 
 	const { main, other } = meterLines(models, tiers, format.meter, (kind) => t(KIND_LABELS[kind]));
 	const perMillion = t("perMillionTokens");
 
+	// A meter priced only by option (480p, draft) shows its cheapest option as "from".
+	const priceText = (row: CompareViewPriceRow) => (row.conditional ? t("priceFrom", { price: format.price(row) }) : format.price(row));
 	const priceContent = (row: CompareViewPriceRow) => (row.unit === "token"
-		? <>{format.price(row)}<span className="ml-1 text-xs font-normal text-muted-foreground">{perMillion}</span></>
-		: format.price(row));
+		? <>{priceText(row)}<span className="ml-1 text-xs font-normal text-muted-foreground">{perMillion}</span></>
+		: priceText(row));
 
 	const cells = (line: MeterLine): CompareCell[] => {
 		const rows = models.map((model, index) => {
@@ -112,7 +114,9 @@ export function ComparePricing({ models, tiers }: { models: CompareViewModel[]; 
 		});
 		const comparable = rows.map((entry) => (entry.state === "price" ? (entry.row.price / entry.row.per) * (entry.row.unit === "token" ? 1_000_000 : 1) : null));
 		const units = new Set(rows.flatMap((entry) => (entry.state === "price" ? [entry.row.unit] : [])));
-		const best = sameJob && units.size === 1 ? bestIndices(comparable, "lower") : new Set<number>();
+		// A price that only applies under a condition (480p, draft mode) isn't like-for-like with another model's, so neither is marked cheapest.
+		const conditional = rows.some((entry) => entry.state === "price" && entry.row.conditional);
+		const best = sameJob && units.size === 1 && !conditional ? bestIndices(comparable, "lower") : new Set<number>();
 		return rows.map((entry, index): CompareCell => {
 			if (entry.state === "notOffered") return { content: t("notOffered"), text: "", muted: true };
 			if (entry.state === "missing") {
@@ -134,8 +138,9 @@ export function ComparePricing({ models, tiers }: { models: CompareViewModel[]; 
 		});
 	};
 
+	const typicalCosts = models.map((model, index) => requestCost(model, TYPICAL_REQUEST, tiers[index]));
 	const typicalCells = (): CompareCell[] => {
-		const costs = models.map((model, index) => requestCost(model, TYPICAL_REQUEST, tiers[index]));
+		const costs = typicalCosts;
 		const best = bestIndices(costs, "lower");
 		return costs.map((cost, index) => (cost == null
 			? { content: t("notPriced"), text: "", muted: true }
@@ -143,25 +148,27 @@ export function ComparePricing({ models, tiers }: { models: CompareViewModel[]; 
 	};
 
 	const anyPriced = models.some((model) => model.pricing);
+	// Video, image and speech models have no token rows: their per-second or per-image meters are the prices, so they show unfolded.
+	const expanded = showAll || main.length === 0;
 	return (
 		<CompareSection id="pricing" title={t("pricing")} description={sameJob ? t("pricingSubRoute") : t("pricingGroupSourceUnits")}>
 			{anyPriced ? (
 				<CompareGrid label={t("pricing")}>
 					<RouteCaptionRow models={models} tiers={tiers} />
 					{main.map((line) => <CompareRow key={line.key} label={line.label} cells={cells(line)} />)}
-					{sameJob ? (
+					{sameJob && typicalCosts.some((cost) => cost != null) ? (
 						<CompareRow
 							label={t("typicalRequest")}
 							labelSub={t("typicalRequestSub")}
 							cells={typicalCells()}
 						/>
 					) : null}
-					{showAll ? other.map((line) => <CompareRow key={line.key} label={line.label} cells={cells(line)} />) : null}
+					{expanded ? other.map((line) => <CompareRow key={line.key} label={line.label} cells={cells(line)} />) : null}
 				</CompareGrid>
 			) : (
 				<p className="rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">{t("noPricing")}</p>
 			)}
-			{other.length ? (
+			{other.length && main.length ? (
 				<button
 					type="button"
 					onClick={() => setShowAll((value) => !value)}

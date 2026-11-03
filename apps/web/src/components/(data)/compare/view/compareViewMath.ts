@@ -67,10 +67,10 @@ export function applyRoute(model: CompareViewModel, provider: string | null | un
 }
 
 /** Routes a reader can pick: those with their own prices, plus the headline route. */
-export function routeOptions(model: CompareViewModel): Array<{ id: string; name: string }> {
+export function routeOptions(model: CompareViewModel): Array<{ id: string; name: string; logoId: string }> {
 	const headline = model.pricing?.provider;
-	const routes = model.providers.filter((route) => route.pricing || route.id === headline?.id).map((route) => ({ id: route.id, name: route.name }));
-	if (headline && !routes.some((route) => route.id === headline.id)) routes.unshift({ id: headline.id, name: headline.name });
+	const routes = model.providers.filter((route) => route.pricing || route.id === headline?.id).map((route) => ({ id: route.id, name: route.name, logoId: route.logoId ?? route.id }));
+	if (headline && !routes.some((route) => route.id === headline.id)) routes.unshift({ id: headline.id, name: headline.name, logoId: headline.logoId ?? headline.id });
 	return routes;
 }
 

@@ -65,7 +65,8 @@ export type CompareViewModel = {
 };
 
 export type CompareViewPricing = {
-	provider: { id: string; name: string; routed: boolean };
+	/** `logoId` is the provider family; absent from responses cached before it was sent. */
+	provider: { id: string; name: string; logoId?: string; routed: boolean };
 	tiers: Record<string, CompareViewPriceRow[]>;
 };
 
@@ -86,6 +87,8 @@ export type CompareViewPriceRow = {
 export type CompareViewProvider = {
 	id: string;
 	name: string;
+	/** The provider family, so "anthropic-us" shows the Anthropic logo. Absent from older cached responses. */
+	logoId?: string;
 	input: number | null;
 	output: number | null;
 	cacheRead: number | null;
