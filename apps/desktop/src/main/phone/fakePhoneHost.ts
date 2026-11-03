@@ -12,6 +12,14 @@ import { projectTree } from "../projectFileSearch";
 import { phoneFilePreview } from "./phoneFiles";
 import { phoneModels, phoneSetChat, startPhoneChat, type PhoneModelSources } from "./phoneHost";
 import type { PhoneHost } from "./phoneSession";
+import { TerminalService } from "../terminalService";
+import type { WorkspaceStore } from "../workspaceStore";
+import type { TerminalSession } from "../../shared/workspace";
+import type { ThreadServer } from "../../shared/threadServers";
+import { settingsProject, type ProjectScript } from "../../shared/projectSettings";
+
+/** A shell the terminal tests drive: what it was sent, and output and exits it can be made to produce. */
+export type FakePty = { pid: number; writes: string[]; killed: boolean; data: (text: string) => void; exit: (exitCode: number) => void };
 
 /** What each harness offers in the tests: Codex lists efforts on the model, Claude as a Reasoning option. */
 export const fakeModels: Partial<Record<Harness, ModelOption[]>> = {
@@ -50,7 +58,7 @@ export function fakePhoneHost() {
 		pullRequests: new Map<number, PullRequestView>(),
 		mergeMethod: null as PullRequestMergeMethod | null,
 		/** What the window was told a phone did. */
-		notes: [] as { device: string; summary: string; projectId: string }[],
+		notes: [] as { device: string; summary: string; projectId?: string }[],
 		hold: undefined as Promise<void> | undefined,
 	};
 	const step = async (kind: string, projectId: string, value?: unknown) => {
@@ -84,6 +92,30 @@ export function fakePhoneHost() {
 		return (projectId ? agents.projectModels[projectId]?.[harness] : undefined) ?? fakeModels[harness] ?? [];
 	};
 	const sources: PhoneModelSources = { discover, localHarnesses: async () => agents.local, remembered: () => agents.remembered, permissionOf: id => get(id).permissionMode };
+	/**
+	 * The window's real TerminalService over these projects and chats, with shells that don't run: each pty records what
+	 * was typed and outputs or exits when a test says. Projects need a real folder, which the service creates if missing.
+	 */
+	const saved = new Map<string, TerminalSession>();
+	const terminalStore = {
+		getProjects: () => projects, getTask: get,
+		getTerminals: () => [...saved.values()].map(session => ({ ...session })),
+		saveTerminal: (session: TerminalSession) => { saved.set(session.id, { ...session }); },
+		deleteTerminal: (id: string) => { saved.delete(id); },
+	} as unknown as WorkspaceStore;
+	const ptys: FakePty[] = [];
+	const spawn = (() => {
+		let onData: (text: string) => void = () => {}, onExit: (event: { exitCode: number }) => void = () => {};
+		const pty: FakePty = { pid: 1000 + ptys.length, writes: [], killed: false, data: text => onData(text), exit: exitCode => onExit({ exitCode }) };
+		ptys.push(pty);
+		return { pid: pty.pid, write: (text: string) => { pty.writes.push(text); }, resize: () => {}, kill: () => { pty.killed = true; pty.exit(0); }, onData: (listener: typeof onData) => { onData = listener; }, onExit: (listener: typeof onExit) => { onExit = listener; } };
+	}) as unknown as ConstructorParameters<typeof TerminalService>[2];
+	const terminals = {
+		service: new TerminalService(terminalStore, "/scratch/terminals", spawn), ptys,
+		/** The servers each chat runs (Stop takes one off). Scripts live on the project's settings, as the window's do. */
+		servers: new Map<string, ThreadServer[]>(),
+		setScripts: (projectId: string, scripts: ProjectScript[]) => { const project = projects.find(value => value.id === projectId)!; project.settings = { ...project.settings, scripts }; },
+	};
 	const host: PhoneHost = {
 		desktopName: () => "Test PC", appVersion: "1.2.3", overview,
 		task: id => get(id),
@@ -169,8 +201,19 @@ export function fakePhoneHost() {
 		},
 		mergeMethod: () => git.mergeMethod,
 		fromPhone: note => { git.notes.push(note); },
+		terminals: () => terminals.service.get(),
+		terminal: command => terminals.service.command(command),
+		attachTerminal: (id, viewer, listener) => terminals.service.attach(id, viewer, listener),
+		scripts: projectId => settingsProject(projects, projectId)?.settings?.scripts ?? [],
+		servers: async chatId => terminals.servers.get(chatId) ?? [],
+		stopServer: async (chatId, port) => {
+			const servers = terminals.servers.get(chatId) ?? [], server = servers.find(value => value.port === port);
+			if (!server) throw new Error("That server is no longer running from this chat.");
+			terminals.servers.set(chatId, servers.filter(value => value !== server));
+			return server;
+		},
 	};
-	return { host, tasks, projects, accounts, agents, sources, repositoryChecks, checkpointFiles, turnReads, gitStatuses, patches, diffReads, fileRoots, fileReads, git, commands, addTask, addMessage, get, touch, changed, overview, onChange: (listener: (overview: WorkspaceOverview) => void) => listeners.push(listener) };
+	return { host, tasks, projects, accounts, agents, sources, repositoryChecks, checkpointFiles, turnReads, gitStatuses, patches, diffReads, fileRoots, fileReads, git, commands, terminals, addTask, addMessage, get, touch, changed, overview, onChange: (listener: (overview: WorkspaceOverview) => void) => listeners.push(listener) };
 }
 
 /** A pull request as the window's pane reads it, for the phone's tests. */

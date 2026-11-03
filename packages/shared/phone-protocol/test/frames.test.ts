@@ -86,7 +86,7 @@ describe("phone frames", () => {
 		expect(refused(JSON.stringify({ id: "5", type: "read_diff", scope: "uncommitted", chatId: "c", messageId: "m" })).message).toContain("messageId");
 		expect(refused(JSON.stringify({ id: "5", type: "read_diff", scope: "turn", chatId: "c", baseRef: "main" })).message).toContain("baseRef");
 		expect(refused(JSON.stringify({ id: "5", type: "read_diff_file", scope: "uncommitted", chatId: "c", path: "a", hash: "nope" })).message).toContain("hash");
-		expect(refused(JSON.stringify({ id: "5", type: "read_diff_file", scope: "uncommitted", chatId: "c", path: "a b", hash })).message).toContain("path");
+		expect(refused(JSON.stringify({ id: "5", type: "read_diff_file", scope: "uncommitted", chatId: "c", path: "a\u0000b", hash })).message).toContain("path");
 		// The phone keeps only capabilities it knows.
 		expect(parseDesktopFrame(JSON.stringify({ type: "access", capabilities: ["code", "root"] }))).toEqual({ type: "access", capabilities: ["code"] });
 	});
@@ -138,6 +138,24 @@ describe("phone frames", () => {
 		expect(refused(JSON.stringify({ id: "1", type: "read_pull_request", projectId: "p1", number: 0 })).message).toContain("number");
 		expect(parsePhoneFrame(JSON.stringify({ id: "1", type: "pull_request_files", projectId: "p1", number: 7, headOid: head, baseOid: "b".repeat(40), page: 2 }))).toMatchObject({ page: 2 });
 		expect(refused(JSON.stringify({ id: "1", type: "pull_request_files", projectId: "p1", number: 7, headOid: head, baseOid: "b".repeat(40), page: 31 })).message).toContain("page");
+	});
+	it("checks terminal and server frames, letting keys through but not oversized input (protocol 7)", () => {
+		const frame = (value: object) => JSON.stringify({ id: "1", ...value });
+		expect(parsePhoneFrame(frame({ type: "open_terminal", chatId: "c", scriptId: "dev" }))).toEqual({ id: "1", type: "open_terminal", chatId: "c", scriptId: "dev" });
+		expect(parsePhoneFrame(frame({ type: "attach_terminal", terminalId: "t", columns: 40 }))).toEqual({ id: "1", type: "attach_terminal", terminalId: "t" });
+		// Esc, Ctrl+C and arrows are control characters, which input has to carry.
+		expect(parsePhoneFrame(frame({ type: "terminal_input", terminalId: "t", data: "\u001b[A\u0003\r" }))).toEqual({ id: "1", type: "terminal_input", terminalId: "t", data: "\u001b[A\u0003\r" });
+		expect(refused(frame({ type: "terminal_input", terminalId: "t", data: "x".repeat(phoneLimits.terminalInputChars + 1) })).message).toContain("data must be");
+		expect(refused(frame({ type: "terminal_input", terminalId: "t", data: "" })).message).toContain("data must be");
+		expect(refused(frame({ type: "close_terminal" })).message).toContain("terminalId");
+		expect(refused(frame({ type: "list_terminals" })).message).toContain("chatId");
+		expect(parsePhoneFrame(frame({ type: "stop_server", chatId: "c", port: 5173 }))).toEqual({ id: "1", type: "stop_server", chatId: "c", port: 5173 });
+		expect(refused(frame({ type: "stop_server", chatId: "c", port: 70000 })).message).toContain("port");
+		expect(parseDesktopFrame(JSON.stringify({ type: "terminal_output", terminalId: "t", data: "hi" }))).toMatchObject({ type: "terminal_output", data: "hi" });
+		expect(parseDesktopFrame(JSON.stringify({ type: "terminal_updated", terminal: { id: "t", title: "Terminal 1", status: "exited" } }))).toMatchObject({ type: "terminal_updated" });
+		expect(() => parseDesktopFrame(JSON.stringify({ type: "terminal_output", terminalId: "t" }))).toThrow(PhoneProtocolError);
+		// Nothing about a terminal waits in the relay for an offline computer: typed keys would run whenever it came back.
+		for (const type of ["list_terminals", "open_terminal", "attach_terminal", "detach_terminal", "terminal_input", "close_terminal", "list_servers", "stop_server", "terminal_output", "terminal_updated"]) expect(relayHolds({ type })).toBe(false);
 	});
 	it("names efforts the same way on both sides", () => {
 		expect(effortLabel("xhigh")).toBe("Extra high");

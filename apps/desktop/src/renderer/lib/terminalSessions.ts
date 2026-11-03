@@ -59,7 +59,8 @@ export function terminalsFor(values: readonly TerminalSession[], scope: { projec
 	return values.filter(session => !session.ephemeral && session.status === "running" && (session.projectId ?? "") === (scope.projectId ?? "") && (scope.taskId === undefined || session.taskId === scope.taskId))
 		.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
-export const terminalTitle = (session?: Pick<TerminalSession, "title">) => session?.title || "Terminal";
+/** Names the phones in it too ("Terminal 2 · from Daniel's Pixel"), so a terminal someone types in from a phone shows. */
+export const terminalTitle = (session?: Pick<TerminalSession, "title" | "phones">) => `${session?.title || "Terminal"}${session?.phones?.length ? ` · from ${session.phones.join(", ")}` : ""}`;
 
 /** Opens a terminal in a project (and chat), running a project script when one is given, and returns its session. */
 export async function createTerminal(scope: { projectId?: string; taskId?: string; scriptId?: string }): Promise<TerminalSession> {

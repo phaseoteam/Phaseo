@@ -80,6 +80,18 @@ With `changes` too:
 
 None of these is held by Phaseo Connect for an offline computer: a commit or merge that ran hours later, after the phone gave up waiting, would surprise the person.
 
+## Terminals and servers
+
+From version 7, with `terminal` and `code` (a shell reads every file the project has). `terminal` is off for every phone until the person turns it on. Each frame runs the window's own terminal code, and the window's title names the phone on every terminal it watches ("Terminal 2 · from Daniel's Pixel").
+
+- `list_terminals { chatId }`: the thread's terminals (running ones first, then finished transcripts) and the project's scripts. A phone never sees sign-in terminals, a project's own terminals or scratch ones.
+- `open_terminal { chatId, scriptId? }` opens one in the thread's folder (its worktree's when it has one), running a project script when named, as the window's terminal drawer does.
+- `attach_terminal { terminalId }` answers with the latest `phoneLimits.terminalReplayBytes` (64 KB) of output, from the start of a line when one is near the cut (`truncated` when there was more), then sends `terminal_output { terminalId, data, skipped? }` at most every `phoneLimits.entriesBatchMs` (250 ms), each within `phoneLimits.terminalFrameBytes` (256 KB, measured as JSON, since escape codes grow when encoded). Output past that in one batch is dropped from the front and the frame says `skipped`. `terminal_updated { terminal }` follows an exit, after which the terminal is no longer watched. `detach_terminal`, the connection ending, or `terminal` being switched off stops the stream at once.
+- `terminal_input { terminalId, data }` types up to `phoneLimits.terminalInputChars` (16 KB) into a running terminal; a longer paste goes in pieces. `close_terminal { terminalId }` stops its process.
+- `list_servers { chatId }` lists the local web servers the thread's terminals and commands started; `stop_server { chatId, port }` stops one and everything under it, after looking it up again among the thread's own servers.
+
+The phone never resizes a terminal: it wraps at its own width, so the window's terminal keeps its size. Nothing here is held by Phaseo Connect, and the phone refuses at once to type while the computer is unreachable rather than queueing keys: a command typed now must never run hours later.
+
 ## Direct connection
 
 Direct addresses are plain `http`/`ws` (a Wi-Fi or Tailscale IP has no certificate), so everything secret or private is sealed with the paired keys and no token is sent. `src/direct.ts` describes the handshake.

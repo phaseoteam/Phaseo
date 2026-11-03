@@ -8,10 +8,10 @@ import { utf8Length } from "./base64url";
  * 2 added list_projects, projects_changed and hello's capabilities; 3 added update_chat, set_chat, queue and the
  * archived list; 4 added git_status, read_diff, read_diff_file, the access event and forbidden; 5 added list_files and
  * read_file; 6 added list_branches, git_action, commit_message, the pull request frames, git_status's pullRequest and
- * new_chat's workspace. A phone gates each newer frame on hello.protocol, since an older computer answers an unknown
- * request with invalid_frame.
+ * new_chat's workspace; 7 added the terminal and server frames, terminal_output and terminal_updated. A phone gates each
+ * newer frame on hello.protocol, since an older computer answers an unknown request with invalid_frame.
  */
-export const phoneProtocolVersion = 6;
+export const phoneProtocolVersion = 7;
 export const phoneLimits = {
 	/** Largest frame either side accepts, before or after decryption. */
 	frameBytes: 1024 * 1024,
@@ -31,6 +31,12 @@ export const phoneLimits = {
 	fileBytes: 512 * 1024,
 	/** Most of a pull request's description, and of each comment, read_pull_request sends; the rest is on GitHub. */
 	pullRequestTextChars: 20_000,
+	/** Most of a terminal's recent output attach_terminal sends; the window keeps more. */
+	terminalReplayBytes: 64 * 1024,
+	/** Most output one terminal_output frame carries, measured as JSON; anything older in the same batch is skipped. */
+	terminalFrameBytes: 256 * 1024,
+	/** Longest terminal_input; a longer paste goes in pieces. */
+	terminalInputChars: 16 * 1024,
 } as const;
 
 export type PhoneChatStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
@@ -82,7 +88,8 @@ export type PhoneProject = { id: string; name: string; /** The checked-out branc
  * Powers a paired phone has beyond threads, switched on per phone on the computer: `code` reads git status and diffs
  * (from protocol 4), files (from 5) and pull requests (from 6); `changes` commits, pushes, pulls, switches and creates
  * branches, starts worktrees, and creates, merges, reviews, comments on and closes pull requests (from 6); `terminal`
- * is for frames still to come. Empty from a computer before 4.
+ * opens, watches, types in and closes a chat's terminals, runs its project's scripts, and lists and stops the servers
+ * the chat started (from 7). Empty from a computer before 4.
  */
 export type PhoneCapability = "code" | "changes" | "terminal";
 export const phoneCapabilities: readonly PhoneCapability[] = ["code", "changes", "terminal"];
@@ -145,6 +152,12 @@ export type PhonePullRequestAction =
 	| { type: "close" | "reopen" }
 	| { type: "comment"; body: string }
 	| { type: "review"; event: "approve" | "request-changes" | "comment"; body: string };
+/** A chat's terminal on the computer, from protocol 7. `scriptId` names the project script it was opened to run. */
+export type PhoneTerminal = { id: string; title: string; chatId?: string; projectId?: string; scriptId?: string; status: "running" | "exited" | "interrupted"; exitCode?: number; createdAt: string };
+/** A project script a terminal can be opened to run, as the window's Run menu lists it. */
+export type PhoneScript = { id: string; name: string; command: string };
+/** A local web server a chat's terminal or background command started, as the window's Running servers lists it. */
+export type PhoneServer = { port: number; url: string; process?: string; startedBy: string };
 export type AttentionKind = "approval" | "question" | "done" | "failed";
 /** What update_chat does, as the window's sidebar menu does it; each has its reverse, so a phone can undo. */
 export const chatActions = ["settle", "unsettle", "wake", "mark-unread", "archive", "unarchive", "pin", "unpin", "rename", "snooze"] as const;
@@ -202,7 +215,24 @@ export type PhoneRequest =
 	/** One page (from 1) of a pull request's changed files, at the head and base read_pull_request answered with. */
 	| { id: string; type: "pull_request_files"; projectId: string; number: number; headOid: string; baseOid: string; page?: number }
 	/** From protocol 6, with the changes capability; refused once the pull request's head is no longer `headOid`. */
-	| { id: string; type: "pr_action"; projectId: string; number: number; headOid: string; action: PhonePullRequestAction };
+	| { id: string; type: "pr_action"; projectId: string; number: number; headOid: string; action: PhonePullRequestAction }
+	/** From protocol 7, with the terminal capability: the chat's terminals, and its project's scripts. */
+	| { id: string; type: "list_terminals"; chatId: string }
+	/** A new terminal in the chat's folder (its worktree's when it has one), running a project script when one is named. */
+	| { id: string; type: "open_terminal"; chatId: string; scriptId?: string }
+	/**
+	 * Its recent output, then terminal_output events as it writes, until detach_terminal, the connection ends or the
+	 * terminal capability goes. The phone wraps at its own width; it never resizes the window's terminal.
+	 */
+	| { id: string; type: "attach_terminal"; terminalId: string }
+	| { id: string; type: "detach_terminal"; terminalId: string }
+	/** Keys or a paste for a running terminal. Never held by Phaseo Connect: a command typed now must not run hours later. */
+	| { id: string; type: "terminal_input"; terminalId: string; data: string }
+	/** Stops the terminal's process, as the window's close does; terminal_updated follows when it exits. */
+	| { id: string; type: "close_terminal"; terminalId: string }
+	/** From protocol 7, with the terminal capability: the local servers the chat started, and Stop for one by its port. */
+	| { id: string; type: "list_servers"; chatId: string }
+	| { id: string; type: "stop_server"; chatId: string; port: number };
 export type PhoneFrame = PhoneRequest | { id?: string; type: "ping" } | { id?: string; type: "pong" };
 
 export type PhoneResults = {
@@ -253,6 +283,17 @@ export type PhoneResults = {
 	pull_request_files: { files: PhoneDiffFile[]; total: number; hasNext: boolean };
 	/** The pull request after the action. */
 	pr_action: PhonePullRequestView;
+	/** Running terminals first, then finished ones, oldest first within each. */
+	list_terminals: { terminals: PhoneTerminal[]; scripts: PhoneScript[] };
+	open_terminal: { terminal: PhoneTerminal };
+	/** The latest phoneLimits.terminalReplayBytes of output; `truncated` when the terminal had written more. */
+	attach_terminal: { terminal: PhoneTerminal; output: string; truncated: boolean };
+	detach_terminal: { terminalId: string };
+	terminal_input: { terminalId: string };
+	close_terminal: { terminalId: string };
+	list_servers: { servers: PhoneServer[] };
+	/** The chat's servers after the one asked for stopped. */
+	stop_server: { servers: PhoneServer[] };
 };
 /** forbidden (from protocol 4): the phone lacks the capability; the person allows it on the computer. */
 export type PhoneErrorCode = "invalid_frame" | "too_large" | "rate_limited" | "unauthorized" | "not_found" | "rejected" | "forbidden" | "internal";
@@ -267,6 +308,13 @@ export type DesktopEvent =
 	| { type: "projects_changed"; projects: PhoneProject[] }
 	/** From protocol 4: the person changed this phone's capabilities on the computer; they apply at once. */
 	| { type: "access"; capabilities: PhoneCapability[] }
+	/**
+	 * From protocol 7: what an attached terminal wrote, at most every phoneLimits.entriesBatchMs and within
+	 * phoneLimits.terminalFrameBytes. `skipped`: it wrote more than that in one batch, and the older part isn't sent.
+	 */
+	| { type: "terminal_output"; terminalId: string; data: string; skipped?: true }
+	/** An attached terminal exited or was renamed. */
+	| { type: "terminal_updated"; terminal: PhoneTerminal }
 	| { id?: string; type: "ping" } | { id?: string; type: "pong" };
 export type DesktopFrame = PhoneResponse | DesktopEvent;
 
@@ -274,7 +322,7 @@ export class PhoneProtocolError extends Error {
 	constructor(readonly code: PhoneErrorCode, message: string, readonly id?: string, readonly type?: string) { super(message); this.name = "PhoneProtocolError"; }
 }
 
-const requestTypes = new Set(["hello", "list_chats", "read_chat", "send", "answer_approval", "answer_question", "stop", "new_chat", "list_models", "subscribe", "list_projects", "update_chat", "set_chat", "queue", "git_status", "read_diff", "read_diff_file", "list_files", "read_file", "list_branches", "git_action", "commit_message", "create_pull_request", "list_pull_requests", "read_pull_request", "pull_request_files", "pr_action"]);
+const requestTypes = new Set(["hello", "list_chats", "read_chat", "send", "answer_approval", "answer_question", "stop", "new_chat", "list_models", "subscribe", "list_projects", "update_chat", "set_chat", "queue", "git_status", "read_diff", "read_diff_file", "list_files", "read_file", "list_branches", "git_action", "commit_message", "create_pull_request", "list_pull_requests", "read_pull_request", "pull_request_files", "pr_action", "list_terminals", "open_terminal", "attach_terminal", "detach_terminal", "terminal_input", "close_terminal", "list_servers", "stop_server"]);
 /** A branch name as git takes one on the command line: no leading dash, spaces, control characters or ref syntax. */
 const refName = (value: unknown): value is string => typeof value === "string" && value.length > 0 && value.length <= 250 && !value.startsWith("-") && !/[\u0000-\u0020\u007f~^:?*[\\]|\.\.|@\{/.test(value);
 const pullNumber = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) >= 1 && (value as number) <= 2147483647;
@@ -516,6 +564,23 @@ export function parsePhoneFrame(text: string): PhoneFrame {
 			if (typeof frame.query !== "string" || !frame.query.trim() || frame.query.length > 500 || /[\u0000-\u001f]/.test(frame.query)) fail("query must be up to 500 characters.");
 			return { id: request, type, ...fields, query: frame.query as string };
 		}
+		case "list_terminals": case "list_servers": return { id: request, type, chatId: chatId() };
+		case "open_terminal": {
+			const scriptId = optional("scriptId");
+			return { id: request, type, chatId: chatId(), ...scriptId ? { scriptId } : {} };
+		}
+		case "attach_terminal": case "detach_terminal": case "close_terminal": case "terminal_input": {
+			if (!validId(frame.terminalId)) fail("terminalId is required.");
+			const terminalId = frame.terminalId as string;
+			if (type !== "terminal_input") return { id: request, type, terminalId };
+			// Control characters are what a key bar sends (Esc, Ctrl+C), so only the length is checked.
+			if (typeof frame.data !== "string" || !frame.data || frame.data.length > phoneLimits.terminalInputChars) fail(`data must be 1 to ${phoneLimits.terminalInputChars} characters.`);
+			return { id: request, type, terminalId, data: frame.data as string };
+		}
+		case "stop_server": {
+			if (!Number.isSafeInteger(frame.port) || (frame.port as number) < 1 || (frame.port as number) > 65535) fail("port must be from 1 to 65535.");
+			return { id: request, type, chatId: chatId(), port: frame.port as number };
+		}
 		case "subscribe": {
 			const ids = frame.chatIds;
 			if (!Array.isArray(ids) || ids.length > phoneLimits.subscriptions || ids.some(value => !validId(value))) fail(`chatIds must list up to ${phoneLimits.subscriptions} chat ids.`);
@@ -539,6 +604,8 @@ export function parseDesktopFrame(text: string): DesktopFrame {
 		case "attention": if (validId(frame.chatId) && ["approval", "question", "done", "failed"].includes(frame.kind as string) && typeof frame.summary === "string") return frame as unknown as DesktopEvent; break;
 		case "projects_changed": if (Array.isArray(frame.projects)) return frame as unknown as DesktopEvent; break;
 		case "access": if (Array.isArray(frame.capabilities)) return { type: "access", capabilities: frame.capabilities.filter((value): value is PhoneCapability => phoneCapabilities.includes(value as PhoneCapability)) }; break;
+		case "terminal_output": if (validId(frame.terminalId) && typeof frame.data === "string") return frame as unknown as DesktopEvent; break;
+		case "terminal_updated": if (plain(frame.terminal) && validId(frame.terminal.id)) return frame as unknown as DesktopEvent; break;
 		case "ping": case "pong": return { type: frame.type, ...validId(frame.id, 64) ? { id: frame.id as string } : {} };
 	}
 	throw new PhoneProtocolError("invalid_frame", "Unknown or invalid desktop frame.");

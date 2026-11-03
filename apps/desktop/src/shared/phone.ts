@@ -20,7 +20,7 @@ export const phoneAccessDefaults: PhoneAccess = { code: true, changes: false, te
 export const phoneAccessLabels: Record<keyof PhoneAccess, { title: string; description: string }> = {
 	code: { title: "Read code", description: "Git status, changes, files and pull requests in each project and thread." },
 	changes: { title: "Make changes", description: "Commit, push, pull and switch branches, start threads in new worktrees, and create, merge, review and comment on pull requests. Needs Read code. The window notes each change a phone makes." },
-	terminal: { title: "Use terminals", description: "Open terminals and type in them. Not offered on the phone yet." },
+	terminal: { title: "Use terminals", description: "Open terminals in a thread's folder and type in them, run project scripts, and stop servers a thread started. Needs Read code. The window names the phone on each terminal it's in." },
 };
 export type PhoneDeviceView = { id: string; name: string; pairedAt: string; lastSeenAt?: string; connected: boolean; access: PhoneAccess };
 /** Where Phaseo Connect stands. payment-due: switched off until an unpaid month is taken from credits. */
