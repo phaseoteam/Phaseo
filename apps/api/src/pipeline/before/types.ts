@@ -536,6 +536,8 @@ export type ProviderAttemptLog = {
      * Updated before audit when the served stream breaks or the output is empty.
      */
     health_class?: import("@pipeline/execute/attempt-health").AttemptHealthClass;
+    /** Why the attempt got its class (null for a plain success); see attempt-health.ts. */
+    health_reason?: import("@pipeline/execute/attempt-health").AttemptHealthReason | null;
 };
 
 export type WorkspacePolicy = {

@@ -87,5 +87,43 @@ describe("served attempt health at audit", () => {
 			200,
 		);
 		expect(context.providerAttempts.map((attempt: any) => attempt.health_class)).toEqual(["reachability", "call_error"]);
+		expect(context.providerAttempts[1].health_reason).toBe("error_finish");
+	});
+
+	it("makes a 4xx that another provider then served Phaseo's, with the reason", async () => {
+		const context = ctx();
+		context.providerAttempts[0] = {
+			attempt_number: 1,
+			provider: "first",
+			outcome: "upstream_non_2xx",
+			status: 400,
+			key_source: "gateway",
+			upstream_error_message: "Json mode is not supported for this model.",
+			health_class: "customer",
+			health_reason: "invalid_request",
+		};
+		await handleSuccessAudit(
+			context,
+			{
+				kind: "completed",
+				upstream: new Response("{}", { status: 200, headers: { "content-type": "application/json" } }),
+				provider: "second",
+				generationTimeMs: 50,
+				bill: { cost_cents: 0, currency: "USD", usage: null, finish_reason: "stop" },
+				mappedRequest: null,
+				rawResponse: {},
+			} as any,
+			false,
+			{},
+			0,
+			0,
+			"USD",
+			"stop",
+			200,
+		);
+		expect(context.providerAttempts.map((attempt: any) => [attempt.health_class, attempt.health_reason ?? null])).toEqual([
+			["phaseo", "provider_rejected_request_accepted_elsewhere"],
+			["success", null],
+		]);
 	});
 });

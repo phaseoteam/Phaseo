@@ -15,8 +15,10 @@ CREATE TABLE "public"."v2_request_attempts" (
   "created_at"           timestamp with time zone NOT NULL DEFAULT now(),
   "cloudflare_colo"      text,
   "health_class"         text,
+  "health_reason"        text,
   CONSTRAINT "v2_request_attempts_cloudflare_colo_check" CHECK (((cloudflare_colo IS NULL) OR (cloudflare_colo ~ '^[A-Z0-9]{3}$'::text))),
   CONSTRAINT "v2_request_attempts_health_class_check" CHECK (((health_class IS NULL) OR (health_class = ANY (ARRAY['success'::text, 'reachability'::text, 'capacity'::text, 'call_error'::text, 'customer'::text, 'phaseo'::text])))),
+  CONSTRAINT "v2_request_attempts_health_reason_check" CHECK (((health_reason IS NULL) OR (health_reason ~ '^[a-z][a-z0-9_]{0,63}$'::text))),
   CONSTRAINT "v2_request_attempts_key" UNIQUE (request_event_id, attempt_number),
   CONSTRAINT "v2_request_attempts_latency_check" CHECK (((latency_ms IS NULL) OR (latency_ms >= 0))),
   CONSTRAINT "v2_request_attempts_number_check" CHECK ((attempt_number > 0)),
@@ -67,3 +69,5 @@ GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON
 COMMENT ON COLUMN "public"."v2_request_attempts"."cloudflare_colo" IS 'Cloudflare execution colo associated with the gateway request attempt.';
 
 COMMENT ON COLUMN "public"."v2_request_attempts"."health_class" IS 'What the attempt says about its provider: success, reachability, capacity or call_error (provider failures), or customer / phaseo (excluded from provider metrics). Null on rows recorded before the gateway classified attempts.';
+
+COMMENT ON COLUMN "public"."v2_request_attempts"."health_reason" IS 'Why the attempt got its health_class, for example route_model_not_found, provider_rejected_request_accepted_elsewhere, rate_limited or client_cancelled (apps/api/src/pipeline/execute/attempt-health.ts). Null for a plain success and on rows recorded before the gateway sent reasons.';

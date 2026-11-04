@@ -61,8 +61,9 @@ export type ProviderRuntimeStats = {
 
 /**
  * Per attempt: a failed attempt counts against its provider even when the
- * request failed over and succeeded elsewhere. rate = 1 - failures / eligible
- * attempts; attempts caused by the customer or by Phaseo are not eligible.
+ * request failed over and succeeded elsewhere. The rates are a funnel
+ * (reachable of eligible, accepted of reached, completed of accepted);
+ * attempts caused by the customer or by Phaseo are not eligible.
  */
 export type ProviderAttemptHealth = {
 	attempts: number;

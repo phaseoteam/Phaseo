@@ -7,9 +7,9 @@ import { CartesianGrid, Line, LineChart, ResponsiveContainer, XAxis, YAxis } fro
 import type { ModelSuccessPoint } from "@/lib/fetchers/models/getModelPerformance";
 import { useLocale, useTranslations } from "next-intl";
 
-/** The three per-attempt provider metrics, in display order. */
-export const PROVIDER_HEALTH_METRICS = ["reachability", "capacity", "callErrors"] as const;
-export type ProviderHealthMetric = (typeof PROVIDER_HEALTH_METRICS)[number];
+import { attemptFunnel, type AttemptFunnelCounts, PROVIDER_HEALTH_METRICS, type ProviderHealthMetric } from "./attemptFunnel";
+
+export { PROVIDER_HEALTH_METRICS, type ProviderHealthMetric } from "./attemptFunnel";
 
 const PCT_FIELD = {
 	reachability: "reachabilityPct",
@@ -133,10 +133,23 @@ export default function ModelProviderHealthChart({
 		callErrors: t("callErrorsHelp"),
 	};
 	const label = (metric: ProviderHealthMetric) => labels[metric];
-	const failureText = (metric: ProviderHealthMetric, failed: number, count: number) => {
+	const failureText = (metric: ProviderHealthMetric, counts: AttemptFunnelCounts) => {
+		const { failed, of: count } = attemptFunnel(counts)[metric];
 		if (metric === "reachability") return t("reachabilityCount", { failed, count });
 		if (metric === "capacity") return t("capacityCount", { failed, count });
 		return t("callErrorsCount", { failed, count });
+	};
+	const funnelCounts = (point: Pick<ProviderHealthChartPoint, "eligibleAttempts" | `${ProviderHealthMetric}Failures`>): AttemptFunnelCounts => ({
+		eligibleAttempts: point.eligibleAttempts,
+		reachabilityFailures: point.reachabilityFailures,
+		capacityFailures: point.capacityFailures,
+		callErrorFailures: point.callErrorsFailures,
+	});
+	const summaryCounts: AttemptFunnelCounts = {
+		eligibleAttempts: summary.eligibleAttempts,
+		reachabilityFailures: summary.reachability.failures,
+		capacityFailures: summary.capacity.failures,
+		callErrorFailures: summary.callErrors.failures,
 	};
 	const chartConfig: ChartConfig = Object.fromEntries(
 		PROVIDER_HEALTH_METRICS.map((metric) => [metric, { label: label(metric), color: METRIC_STYLE[metric].color }]),
@@ -162,7 +175,7 @@ export default function ModelProviderHealthChart({
 									<TooltipContent className="max-w-64 space-y-1">
 										<p>{help[metric]}</p>
 										<p className="tabular-nums opacity-80">
-											{failureText(metric, summary[metric].failures, summary.eligibleAttempts)}
+											{failureText(metric, summaryCounts)}
 										</p>
 									</TooltipContent>
 								</Tooltip>
@@ -212,7 +225,7 @@ export default function ModelProviderHealthChart({
 															<span className="tabular-nums">{formatRate(point[metric])}</span>
 														</p>
 														<p className="text-xs text-muted-foreground tabular-nums">
-															{failureText(metric, point[`${metric}Failures`], point.eligibleAttempts)}
+															{failureText(metric, funnelCounts(point))}
 														</p>
 													</div>
 												))}
