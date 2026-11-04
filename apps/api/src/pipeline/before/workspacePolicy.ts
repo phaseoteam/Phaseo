@@ -8,7 +8,6 @@ import type {
 	ProviderCandidate,
 	SensitiveInfoAction,
 	SensitiveInfoRule,
-	TeamSettings,
 	WorkspacePolicy,
 } from "./types";
 import { normalizeDynamicRouteConfig, type DynamicRoutePolicy } from "./dynamic-routes";
@@ -92,12 +91,12 @@ const GUARDRAIL_ID_BATCH = 200;
  */
 async function fetchResolvedGuardrailIds(
 	supabase: ReturnType<typeof getSupabaseAdmin>,
-	args: { workspaceId: string; apiKeyId: string },
+	rpcArgs: Record<string, unknown>,
 ): Promise<{ data: string[]; error: null } | { data: null; error: { code?: string; message: string } }> {
 	const ids: string[] = [];
 	for (let from = 0; ; from += RESOLVE_PAGE_SIZE) {
 		const result = await supabase
-			.rpc(RESOLVE_KEY_GUARDRAILS_RPC, { p_workspace_id: args.workspaceId, p_key_id: args.apiKeyId })
+			.rpc(RESOLVE_KEY_GUARDRAILS_RPC, rpcArgs)
 			.order("guardrail_id")
 			.order("source_type")
 			.order("source_id")
@@ -107,6 +106,56 @@ async function fetchResolvedGuardrailIds(
 		ids.push(...guardrailIdsFrom(page));
 		if (page.length < RESOLVE_PAGE_SIZE) return { data: ids, error: null };
 	}
+}
+
+const WORKSPACE_RESTRICTION_COLUMNS =
+	"privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_input_output_logging,privacy_zdr_only,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed,model_restriction_mode,model_restriction_model_ids";
+
+/**
+ * The guardrails that apply to a key, and where the workspace-wide privacy and restriction rules
+ * come from. Once the workspace baseline migration has run, those rules are the workspace baseline
+ * guardrail, which resolve_key_guardrails returns with the rest (`workspaceSettings` is null). The
+ * three-argument call only exists from that migration on, so while it is missing (code deployed
+ * first) the rules are still read from workspace_settings as before, and the guardrails come from
+ * the two-argument call, or the join tables before guardrail levels. A failed read throws, so the
+ * request is refused rather than routed without the workspace's rules.
+ */
+async function fetchKeyGuardrailSources(
+	supabase: ReturnType<typeof getSupabaseAdmin>,
+	args: { workspaceId: string; apiKeyId: string; principalUserId: () => Promise<string> },
+): Promise<{ guardrailIds: string[]; workspaceSettings: WorkspaceSettingsRow | null }> {
+	const withBaseline = await fetchResolvedGuardrailIds(supabase, {
+		p_workspace_id: args.workspaceId,
+		p_key_id: args.apiKeyId,
+		p_include_workspace_baseline: true,
+	});
+	if (!withBaseline.error) return { guardrailIds: withBaseline.data, workspaceSettings: null };
+	if (!isMissingResolveKeyGuardrails(withBaseline.error)) {
+		throw new Error(`key_guardrails_lookup_failed:${withBaseline.error.message}`);
+	}
+
+	const [settingsResult, levelsResult] = await Promise.all([
+		supabase
+			.from("workspace_settings")
+			.select(WORKSPACE_RESTRICTION_COLUMNS)
+			.eq("workspace_id", args.workspaceId)
+			.maybeSingle(),
+		fetchResolvedGuardrailIds(supabase, { p_workspace_id: args.workspaceId, p_key_id: args.apiKeyId }),
+	]);
+	if (settingsResult.error) {
+		throw new Error(`workspace_settings_lookup_failed:${settingsResult.error.message}`);
+	}
+	if (levelsResult.error && !isMissingResolveKeyGuardrails(levelsResult.error)) {
+		throw new Error(`key_guardrails_lookup_failed:${levelsResult.error.message}`);
+	}
+	const guardrailIds = levelsResult.error
+		? await fetchLegacyKeyGuardrailIds(supabase, {
+			workspaceId: args.workspaceId,
+			apiKeyId: args.apiKeyId,
+			principalUserId: await args.principalUserId(),
+		})
+		: levelsResult.data;
+	return { guardrailIds, workspaceSettings: (settingsResult.data ?? null) as WorkspaceSettingsRow | null };
 }
 
 /**
@@ -634,25 +683,32 @@ export async function fetchWorkspacePolicy(args: {
 	}
 
 	const supabase = getSupabaseAdmin();
-	// resolve_key_guardrails returns the enabled guardrails assigned to the workspace, the key's
-	// departments, its principal member (oauth_user_id, else created_by, even after they leave)
-	// and the key itself. Assignment changes and department membership changes queue a workspace
-	// publication (database triggers), whose drain bumps the workspace version token above.
-	const [settingsResult, keyResult, resolvedGuardrailsResult, routeLinkResult] = await Promise.all([
-		supabase
-			.from("workspace_settings")
-			.select(
-				"privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_input_output_logging,privacy_zdr_only,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed,model_restriction_mode,model_restriction_model_ids",
-			)
-			.eq("workspace_id", args.workspaceId)
-			.maybeSingle(),
-		supabase
-			.from("keys")
-			.select("created_by,oauth_user_id,never_store_content")
-			.eq("id", args.apiKeyId)
-			.eq("workspace_id", args.workspaceId)
-			.maybeSingle(),
-		fetchResolvedGuardrailIds(supabase, { workspaceId: args.workspaceId, apiKeyId: args.apiKeyId }),
+	// resolve_key_guardrails returns the enabled guardrails assigned to the workspace (including the
+	// workspace baseline, which holds the Settings, Privacy rules), the key's departments, its
+	// principal member (oauth_user_id, else created_by, even after they leave) and the key itself.
+	// Assignment, guardrail and department membership changes queue a workspace publication
+	// (database triggers), whose drain bumps the workspace version token above.
+	const keyLookup = Promise.resolve(supabase
+		.from("keys")
+		.select("created_by,oauth_user_id,never_store_content")
+		.eq("id", args.apiKeyId)
+		.eq("workspace_id", args.workspaceId)
+		.maybeSingle());
+	const keyRow = async () => {
+		const result = await keyLookup;
+		if (result.error) throw new Error(`key_principal_lookup_failed:${result.error.message}`);
+		return result.data;
+	};
+	const [keyData, sources, routeLinkResult] = await Promise.all([
+		keyRow(),
+		fetchKeyGuardrailSources(supabase, {
+			workspaceId: args.workspaceId,
+			apiKeyId: args.apiKeyId,
+			principalUserId: async () => {
+				const key = await keyRow();
+				return String(key?.oauth_user_id ?? key?.created_by ?? "").trim();
+			},
+		}),
 		supabase
 			.from("gateway_dynamic_route_keys")
 			.select("route_id")
@@ -660,15 +716,6 @@ export async function fetchWorkspacePolicy(args: {
 			.maybeSingle(),
 	]);
 
-	if (settingsResult.error) {
-		throw new Error(`workspace_settings_lookup_failed:${settingsResult.error.message}`);
-	}
-	if (keyResult.error) {
-		throw new Error(`key_principal_lookup_failed:${keyResult.error.message}`);
-	}
-	if (resolvedGuardrailsResult.error && !isMissingResolveKeyGuardrails(resolvedGuardrailsResult.error)) {
-		throw new Error(`key_guardrails_lookup_failed:${resolvedGuardrailsResult.error.message}`);
-	}
 	if (routeLinkResult.error) {
 		if (isOptionalDynamicRouteSchemaUnavailable(routeLinkResult.error)) {
 			console.warn("[fetchWorkspacePolicy] dynamic_route_schema_unavailable", {
@@ -680,13 +727,7 @@ export async function fetchWorkspacePolicy(args: {
 		}
 	}
 
-	const guardrailIds = [...new Set(resolvedGuardrailsResult.error
-		? await fetchLegacyKeyGuardrailIds(supabase, {
-			workspaceId: args.workspaceId,
-			apiKeyId: args.apiKeyId,
-			principalUserId: String(keyResult.data?.oauth_user_id ?? keyResult.data?.created_by ?? "").trim(),
-		})
-		: resolvedGuardrailsResult.data)];
+	const guardrailIds = [...new Set(sources.guardrailIds)];
 
 	let guardrails: GuardrailRow[] = [];
 	// PostgREST returns at most 1,000 rows and long id lists overflow the URL, so read in batches.
@@ -737,10 +778,11 @@ export async function fetchWorkspacePolicy(args: {
 	}
 
 	const policy = buildWorkspacePolicy({
-		globalSettings: (settingsResult.data ?? null) as WorkspaceSettingsRow | null,
+		// Only set before the workspace baseline migration; afterwards the baseline is in `guardrails`.
+		globalSettings: sources.workspaceSettings,
 		guardrails,
 		dynamicRoute,
-		neverStoreContent: keyResult.data?.never_store_content === true,
+		neverStoreContent: keyData?.never_store_content === true,
 	});
 	writeWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken, policy);
 	const raw = JSON.stringify(policy);
@@ -754,7 +796,6 @@ export function applyWorkspacePolicy(args: {
 	resolvedModel: string;
 	body: any;
 	workspacePolicy: WorkspacePolicy | null;
-	teamSettings?: TeamSettings | null;
 }):
 	| {
 			ok: true;
@@ -768,18 +809,13 @@ export function applyWorkspacePolicy(args: {
 	  } {
 	const workspacePolicy = args.workspacePolicy;
 	const hints = extractProviderHints(args.body);
+	// The workspace-wide rules are in workspacePolicy (the workspace baseline guardrail, or the
+	// workspace_settings seed before its migration), combined with the key's other guardrails.
 	const effectivePrivacy = {
-		privacyEnablePaidMayTrain:
-			args.teamSettings?.privacyEnablePaidMayTrain !== false &&
-			workspacePolicy?.privacyEnablePaidMayTrain !== false,
-		privacyEnableFreeMayTrain:
-			args.teamSettings?.privacyEnableFreeMayTrain !== false &&
-			workspacePolicy?.privacyEnableFreeMayTrain !== false,
-		privacyEnableInputOutputLogging:
-			args.teamSettings?.privacyEnableInputOutputLogging !== false &&
-			workspacePolicy?.privacyEnableInputOutputLogging !== false,
-		privacyZdrOnly:
-			Boolean(args.teamSettings?.privacyZdrOnly) || Boolean(workspacePolicy?.privacyZdrOnly),
+		privacyEnablePaidMayTrain: workspacePolicy?.privacyEnablePaidMayTrain !== false,
+		privacyEnableFreeMayTrain: workspacePolicy?.privacyEnableFreeMayTrain !== false,
+		privacyEnableInputOutputLogging: workspacePolicy?.privacyEnableInputOutputLogging !== false,
+		privacyZdrOnly: Boolean(workspacePolicy?.privacyZdrOnly),
 	};
 	const diagnostics: WorkspacePolicyDiagnostics = {
 		resolvedModel: args.resolvedModel,

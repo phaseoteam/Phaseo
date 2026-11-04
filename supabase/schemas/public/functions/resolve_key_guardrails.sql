@@ -69,3 +69,55 @@ REVOKE ALL ON FUNCTION "public"."resolve_key_guardrails"(uuid, uuid) FROM "postg
 GRANT EXECUTE ON FUNCTION "public"."resolve_key_guardrails"(uuid, uuid) TO "postgres";
 
 REVOKE ALL ON FUNCTION "public"."resolve_key_guardrails"(uuid, uuid) FROM PUBLIC, "anon", "authenticated";
+
+CREATE OR REPLACE FUNCTION public.resolve_key_guardrails (
+  p_workspace_id               uuid,
+  p_key_id                     uuid,
+  p_include_workspace_baseline boolean
+)
+  RETURNS TABLE (
+    guardrail_id uuid,
+    source_type  text,
+    source_id    uuid
+  )
+  LANGUAGE sql
+  STABLE
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+  -- resolve_key_guardrails(workspace, key), with or without the workspace baseline (the workspace-wide
+  -- rules from Settings, Privacy, assigned at workspace level). The gateway calls this form: its
+  -- existence tells it the baseline holds those rules, so it stops reading them from workspace_settings.
+  -- Workspace-level guardrails apply even when p_key_id is not a row in keys: an OAuth access token
+  -- authenticates with its client id, and must still get the workspace's rules (zero data retention
+  -- included), as it did when the gateway read them from workspace_settings.
+  with resolved as (
+    select key_level.guardrail_id, key_level.source_type, key_level.source_id
+    from public.resolve_key_guardrails(p_workspace_id, p_key_id) as key_level
+    where key_level.source_type <> 'workspace'
+    union all
+    select a.guardrail_id, a.target_type, a.target_id
+    from public.workspace_guardrail_assignments a
+    where a.workspace_id = p_workspace_id
+      and a.target_type = 'workspace'
+      and a.target_id is null
+  )
+  select resolved.guardrail_id, resolved.source_type, resolved.source_id
+  from resolved
+  join public.workspace_guardrails g
+    on g.id = resolved.guardrail_id
+   and g.workspace_id = p_workspace_id
+   and g.enabled
+  where coalesce(p_include_workspace_baseline, true) or not g.is_workspace_baseline
+  order by resolved.guardrail_id, resolved.source_type, resolved.source_id;
+$function$;
+
+GRANT EXECUTE ON FUNCTION "public"."resolve_key_guardrails"(uuid, uuid, boolean) TO "service_role";
+
+COMMENT ON FUNCTION "public"."resolve_key_guardrails"(uuid, uuid, boolean) IS 'resolve_key_guardrails(workspace, key) with the workspace baseline guardrail included or left out, and the workspace-level guardrails even for an id with no keys row (an OAuth access token''s client id). The gateway calls this form once the baseline holds the workspace-wide rules.';
+
+REVOKE ALL ON FUNCTION "public"."resolve_key_guardrails"(uuid, uuid, boolean) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."resolve_key_guardrails"(uuid, uuid, boolean) TO "postgres";
+
+REVOKE ALL ON FUNCTION "public"."resolve_key_guardrails"(uuid, uuid, boolean) FROM PUBLIC, "anon", "authenticated";

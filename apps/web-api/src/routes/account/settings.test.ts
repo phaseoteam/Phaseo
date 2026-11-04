@@ -107,6 +107,17 @@ function authenticatedFetch(input: RequestInfo | URL): Response {
 			created_at: "2025-01-01T00:00:00Z",
 		}]), { status: 200 });
 	}
+	if (url.includes("workspace_guardrails") && url.includes("is_workspace_baseline=eq.true")) {
+		// The workspace baseline guardrail holds the Settings, Privacy rules; workspace_settings mirrors it.
+		return new Response(JSON.stringify([{
+			id: "baseline-1",
+			privacy_enable_paid_may_train: false,
+			privacy_zdr_only: true,
+			provider_restriction_mode: "none",
+			model_restriction_mode: "allowlist",
+			allowed_api_model_ids: ["gpt-test"],
+		}]), { status: 200 });
+	}
 	if (url.includes("workspace_settings")) {
 		if (url.includes("low_balance_email")) {
 			return new Response(JSON.stringify([{
@@ -487,7 +498,8 @@ describe("account settings routes", () => {
 		await expect(privacy.json()).resolves.toMatchObject({
 			workspaceId: "workspace-1",
 			teamName: "Team One",
-			initialGlobal: { privacy_zdr_only: true },
+			initialGlobal: { privacy_zdr_only: true, privacy_enable_paid_may_train: false, model_restriction_model_ids: ["gpt-test"] },
+			policy: { privacyEnablePaidMayTrain: false, privacyZdrOnly: true, modelRestrictionMode: "allowlist", modelRestrictionModelIds: ["gpt-test"] },
 			providers: [{ id: "openai-eu", name: "OpenAI (EU)" }],
 			activeProviderModels: [{
 				apiModelId: "gpt-test",

@@ -1593,10 +1593,6 @@ export async function fetchGatewayContext(args: {
             betaChannelEnabled: false,
             alphaChannelEnabled: false,
             cacheAwareRoutingEnabled: null,
-            privacyZdrOnly: true,
-            privacyEnablePaidMayTrain: false,
-            privacyEnableFreeMayTrain: false,
-            privacyEnableInputOutputLogging: false,
             ioLoggingEnabled: false,
             ioLoggingIncludeProviderPayloads: false,
             dataContributionEnabled: false,
@@ -1635,7 +1631,7 @@ export async function fetchGatewayContext(args: {
 
             const settingsQuery = (async () => {
                 if (contextBundle) return { data: contextBundle.settings, error: null };
-                const columns = "routing_mode,byok_fallback_enabled,beta_channel_enabled,alpha_channel_enabled,privacy_zdr_only,privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_input_output_logging,io_logging_enabled,io_logging_include_provider_payloads,data_contribution_enabled,data_contribution_policy_version,data_contribution_sample_rate_bps,data_contribution_classifier_sample_rate_bps,data_contribution_discount_bps,response_healing_enabled,response_healing_locked,response_healing_mode";
+                const columns = "routing_mode,byok_fallback_enabled,beta_channel_enabled,alpha_channel_enabled,io_logging_enabled,io_logging_include_provider_payloads,data_contribution_enabled,data_contribution_policy_version,data_contribution_sample_rate_bps,data_contribution_classifier_sample_rate_bps,data_contribution_discount_bps,response_healing_enabled,response_healing_locked,response_healing_mode";
                 const withCacheAwareRouting = await supabase
                     .from("workspace_settings")
                     .select(`${columns},cache_aware_routing_enabled`)
@@ -1711,13 +1707,6 @@ export async function fetchGatewayContext(args: {
                     typeof cacheAwareRoutingEnabled === "boolean"
                         ? cacheAwareRoutingEnabled
                         : null,
-                privacyZdrOnly: settingsResult.data.privacy_zdr_only === true,
-                privacyEnablePaidMayTrain:
-                    settingsResult.data.privacy_enable_paid_may_train === true,
-                privacyEnableFreeMayTrain:
-                    settingsResult.data.privacy_enable_free_may_train === true,
-                privacyEnableInputOutputLogging:
-                    settingsResult.data.privacy_enable_input_output_logging === true,
                 ioLoggingEnabled: settingsResult.data.io_logging_enabled === true,
                 ioLoggingIncludeProviderPayloads:
                     settingsResult.data.io_logging_include_provider_payloads === true,

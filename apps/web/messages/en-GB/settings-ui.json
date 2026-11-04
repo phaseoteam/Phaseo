@@ -1009,7 +1009,10 @@
 		"rules": "rules",
 		"flag": "Flag",
 		"redact": "Redact",
-		"block": "Block"
+		"block": "Block",
+		"workspaceBaseline": "Workspace baseline",
+		"workspaceBaselineDescription": "Applies to every key in the workspace. Edit it under Privacy.",
+		"wholeWorkspace": "Whole workspace"
 	},
 	"guardrailAssignments": {
 		"tabGuardrails": "Guardrails",
@@ -1055,7 +1058,8 @@
 		"noMembers": "This workspace has no members.",
 		"noMatches": "Nothing matches your search.",
 		"footnote": "Access, prompt injection and sensitive info show what each row's guardrails add up to. When several apply, the strictest rule wins. Workspace privacy and routing settings apply on top.",
-		"readOnly": "Only workspace owners and admins can change assignments."
+		"readOnly": "Only workspace owners and admins can change assignments.",
+		"baselineNote": "The workspace baseline applies to every key and member, so it isn't listed here. Edit it under Privacy."
 	},
 	"broadcastControls": {
 		"optional": "(optional)",
@@ -1458,7 +1462,9 @@
 			"selectWorkspace": "Select a workspace to manage guardrails.",
 			"notFound": "Guardrail not found.",
 			"back": "Back to guardrails",
-			"permissions": "Only workspace owners and admins can change guardrails. Assigned policies are enforced automatically for members."
+			"permissions": "Only workspace owners and admins can change guardrails. Assigned policies are enforced automatically for members.",
+			"workspaceBaseline": "This is the workspace baseline. It holds the rules from Settings, Privacy and applies to the whole workspace, so it can't be deleted, turned off or assigned to single keys or members.",
+			"openPrivacy": "Edit it under Privacy"
 		},
 		"keyDelete": {
 			"permanent": "This action is permanent.",

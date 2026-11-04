@@ -27,6 +27,8 @@ const prelude = `
   create function public.is_workspace_admin(uuid) returns boolean language sql as $$ select true $$;
   create function public.is_workspace_member(uuid) returns boolean language sql as $$ select true $$;
   create function public.protect_slack_agent_guardrail() returns trigger language plpgsql as $$ begin return coalesce(new, old); end $$;
+  create function private.protect_workspace_baseline_guardrail() returns trigger language plpgsql as $$ begin return coalesce(new, old); end $$;
+  create function private.sync_workspace_baseline_guardrail() returns trigger language plpgsql as $$ begin return null; end $$;
 `;
 
 async function database(tableSql) {

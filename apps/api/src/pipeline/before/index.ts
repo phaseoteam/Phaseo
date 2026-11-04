@@ -9,7 +9,7 @@ import { getAutoRoutingFeatureGateName, isAutoRoutingAccessEnabled, isModelSucce
 import { keyIdIsOAuthClientId } from "@core/request-key";
 import { schemaFor } from "@core/schemas";
 import type { Endpoint, RequestBetaOptions, RequestMeta } from "@core/types";
-import type { PipelineContext } from "./types";
+import type { PipelineContext, WorkspacePolicy } from "./types";
 import { guardAuth, guardJson, guardZod, guardModel, guardContext, makeMeta, normalizeReturnFlag } from "./guards";
 import { createSpendLimitSlot, releaseSpend, slotAdmission, type SpendLimitSlot } from "@core/spend-limits";
 import { err } from "./http";
@@ -138,11 +138,15 @@ function requiredExecutionParams(endpoint: Endpoint): string[] {
 		: [];
 }
 
+/**
+ * Asks routing for zero data retention when the key's policy requires it: the workspace baseline
+ * guardrail or one of the key's guardrails (the auto router uses the same rule).
+ */
 function applyWorkspacePrivacyRoutingDefaults(
     body: any,
-    teamSettings: PipelineContext["teamSettings"] | null | undefined,
+    workspacePolicy: Pick<WorkspacePolicy, "privacyZdrOnly"> | null | undefined,
 ): any {
-    if (!teamSettings?.privacyZdrOnly) return body;
+    if (!workspacePolicy?.privacyZdrOnly) return body;
     return {
         ...body,
         routing: {
@@ -777,7 +781,6 @@ async function runBeforeRequest(
 					resolvedModel: candidateResolvedModel,
 					body: autoRouterBody,
 					workspacePolicy: policyLoad.value,
-					teamSettings: candidateContext.value.context.teamSettings ?? null,
 				});
 				if (policyResult.ok === false) {
 					return { ok: false as const, reason: policyResult.reason === "model_not_allowed" ? "model_restricted_by_policy" : "no_policy_compliant_providers" };
@@ -1204,7 +1207,7 @@ async function runBeforeRequest(
     mergedBody = serverToolPlugins.body;
     mergedBody = applyWorkspacePrivacyRoutingDefaults(
         mergedBody,
-        context.teamSettings,
+        workspacePolicy,
     );
     const unsupportedRoutingFields = collectUnsupportedRoutingFields(mergedBody);
     if (unsupportedRoutingFields.length > 0) {
@@ -1384,7 +1387,6 @@ async function runBeforeRequest(
         resolvedModel: resolvedModel || model,
         body: mergedBody,
         workspacePolicy,
-        teamSettings: context.teamSettings ?? null,
     });
     if (!workspacePolicyResult.ok) {
         const workspacePolicyFailure = workspacePolicyResult as Extract<
@@ -1575,7 +1577,6 @@ async function runBeforeRequest(
 				resolvedModel: candidate.apiModelId ?? resolvedModel ?? model,
 				body: mergedBody,
 				workspacePolicy,
-				teamSettings: context.teamSettings ?? null,
 			}).ok,
         })
     );

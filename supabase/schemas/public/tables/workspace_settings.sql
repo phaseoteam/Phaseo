@@ -121,6 +121,11 @@ CREATE TRIGGER protect_data_contribution_settings
   FOR EACH ROW
   EXECUTE FUNCTION public.protect_data_contribution_settings();
 
+CREATE TRIGGER sync_workspace_baseline_guardrail
+  AFTER INSERT OR UPDATE OF privacy_enable_paid_may_train, privacy_enable_free_may_train, privacy_enable_free_may_publish_prompts, privacy_enable_input_output_logging, privacy_zdr_only, provider_restriction_mode, provider_restriction_provider_ids, provider_restriction_enforce_allowed, model_restriction_mode, model_restriction_model_ids ON public.workspace_settings
+  FOR EACH ROW
+  EXECUTE FUNCTION private.sync_workspace_baseline_guardrail();
+
 CREATE TRIGGER validate_billing_time_zone
   BEFORE INSERT OR UPDATE OF billing_time_zone ON public.workspace_settings
   FOR EACH ROW

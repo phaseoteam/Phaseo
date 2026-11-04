@@ -81,7 +81,18 @@ const SPENDING_LIMIT_FIELDS = new Set([
 	"byok_fallback_enabled",
 ]);
 
-const WORKSPACE_POLICY_FIELDS = new Set([
+/**
+ * The workspace-wide privacy and restriction rules. They are saved to the workspace baseline guardrail
+ * (save_workspace_baseline_guardrail, which creates it on first use), which the gateway reads with
+ * the key's other guardrails; a trigger copies them to the same workspace_settings columns, which this
+ * route still returns, so the request and response shapes are unchanged.
+ */
+const WORKSPACE_BASELINE_FIELDS = new Set([
+	"privacy_enable_paid_may_train",
+	"privacy_enable_free_may_train",
+	"privacy_enable_free_may_publish_prompts",
+	"privacy_enable_input_output_logging",
+	"privacy_zdr_only",
 	"provider_restriction_mode",
 	"provider_restriction_provider_ids",
 	"provider_restriction_enforce_allowed",
@@ -96,10 +107,6 @@ const GATEWAY_CONTEXT_FIELDS = new Set([
 	"response_healing_mode",
 	"byok_fallback_enabled",
 	"cache_aware_routing_enabled",
-	"privacy_enable_paid_may_train",
-	"privacy_enable_free_may_train",
-	"privacy_enable_input_output_logging",
-	"privacy_zdr_only",
 	"io_logging_enabled",
 	"io_logging_include_provider_payloads",
 ]);
@@ -211,18 +218,30 @@ async function handleUpdateSettings(req: Request) {
 	}
 
 	try {
-		const payload = {
-			workspace_id: auth.value.workspaceId,
-			...patch,
-			updated_at: new Date().toISOString(),
-		};
-		const { data, error } = await getSupabaseAdmin()
-			.from("workspace_settings")
-			.upsert(payload, { onConflict: "workspace_id" })
-			.select(SETTINGS_COLUMNS)
-			.maybeSingle();
+		const supabase = getSupabaseAdmin();
+		const baselinePatch = Object.fromEntries(Object.entries(patch).filter(([field]) => WORKSPACE_BASELINE_FIELDS.has(field)));
+		const settingsPatch = Object.fromEntries(Object.entries(patch).filter(([field]) => !WORKSPACE_BASELINE_FIELDS.has(field)));
+		if (Object.keys(baselinePatch).length) {
+			const saved = await supabase.rpc("save_workspace_baseline_guardrail", {
+				p_workspace_id: auth.value.workspaceId,
+				p_settings: baselinePatch,
+			});
+			if (saved.error) throw new Error(saved.error.message || "Failed to update workspace settings");
+		}
+		const settingsQuery = Object.keys(settingsPatch).length
+			? supabase
+				.from("workspace_settings")
+				.upsert({ workspace_id: auth.value.workspaceId, ...settingsPatch, updated_at: new Date().toISOString() }, { onConflict: "workspace_id" })
+				.select(SETTINGS_COLUMNS)
+				.maybeSingle()
+			: supabase
+				.from("workspace_settings")
+				.select(SETTINGS_COLUMNS)
+				.eq("workspace_id", auth.value.workspaceId)
+				.maybeSingle();
+		const { data, error } = await settingsQuery;
 		if (error) throw new Error(error.message || "Failed to update workspace settings");
-		if (Object.keys(patch).some((field) => WORKSPACE_POLICY_FIELDS.has(field))) {
+		if (Object.keys(baselinePatch).length) {
 			await bumpWorkspacePolicyVersion(auth.value.workspaceId);
 		}
 		if (Object.keys(patch).some((field) => GATEWAY_CONTEXT_FIELDS.has(field))) {

@@ -1009,7 +1009,10 @@
 		"rules": "规则",
 		"flag": "标记",
 		"redact": "脱敏",
-		"block": "阻止"
+		"block": "阻止",
+		"workspaceBaseline": "工作区基础防护规则",
+		"workspaceBaselineDescription": "适用于工作区中的每个密钥。请在“隐私”中编辑。",
+		"wholeWorkspace": "整个工作区"
 	},
 	"guardrailAssignments": {
 		"tabGuardrails": "护栏",
@@ -1055,7 +1058,8 @@
 		"noMembers": "此工作区没有成员。",
 		"noMatches": "没有与搜索匹配的结果。",
 		"footnote": "访问、提示注入和敏感信息列显示每一行护栏合并后的效果。多个护栏同时适用时，以最严格的规则为准。工作区的隐私和路由设置也会同时生效。",
-		"readOnly": "只有工作区所有者和管理员可以更改分配。"
+		"readOnly": "只有工作区所有者和管理员可以更改分配。",
+		"baselineNote": "工作区基础防护规则适用于每个密钥和成员，因此不在此列出。请在“隐私”中编辑。"
 	},
 	"broadcastControls": {
 		"optional": "（可选）",
@@ -1458,7 +1462,9 @@
 			"selectWorkspace": "选择一个工作区以管理防护规则。",
 			"notFound": "未找到防护规则。",
 			"back": "返回防护规则",
-			"permissions": "只有工作区所有者和管理员可以更改防护规则。分配给成员的策略会自动执行。"
+			"permissions": "只有工作区所有者和管理员可以更改防护规则。分配给成员的策略会自动执行。",
+			"workspaceBaseline": "这是工作区基础防护规则。它包含“设置 > 隐私”中的规则，并适用于整个工作区，因此无法删除、关闭，也无法单独分配给某个密钥或成员。",
+			"openPrivacy": "在“隐私”中编辑"
 		},
 		"keyDelete": {
 			"permanent": "此操作无法撤销。",
