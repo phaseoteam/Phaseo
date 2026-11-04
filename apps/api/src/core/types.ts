@@ -97,6 +97,12 @@ export type RequestMeta = {
 	selectedUpstreamFetchStartMs?: number;
     adapterRequestBuildMs?: number;
     timeToUpstreamRequestMs?: number;
+	/**
+	 * The request timer's spans at the first upstream dispatch, taken once. The response
+	 * timeline's routing steps read it, so later rounds (server-tool continuations reuse the
+	 * timer and restart attempt numbering) cannot overwrite what routing_ms describes.
+	 */
+	routingTiming?: Record<string, number>;
 	timeToLatestUpstreamRequestMs?: number;
     upstreamHeadersMs?: number;
 	provider_duration_ms?: number;

@@ -200,6 +200,40 @@ describe("customer quota integration", () => {
 		expect((await guardFreeRouteQuota({ ...args, admissionId: "c", pricingCard: card("free", "0") }))?.status).toBe(429);
 	});
 
+	it("reports where a free admission spent its time: limits read, then the counter, or answered locally", async () => {
+		mocks.bindings.CUSTOMER_RATE_LIMIT_LADDER_ENABLED = "true";
+		mocks.readLimits.mockImplementation(async () => {
+			vi.advanceTimersByTime(30);
+			return { tier: "trusted", requestsPerMinute: 60, freeRequestsPerDay: 1500 };
+		});
+		mocks.admit.mockImplementationOnce(async () => {
+			vi.advanceTimersByTime(525); // a cold Durable Object
+			return { allowed: true, limit: 1500, remaining: 900, retryAfterSeconds: 0 };
+		});
+		const cold: Record<string, unknown> = {};
+		expect(await guardFreeRouteQuota({ ...args, admissionId: "a", pricingCard: card("free", "0"), timing: cold })).toBeNull();
+		expect(cold).toEqual({ limitsMs: 30, counterMs: 525, waitMs: 555 });
+		// Plenty of headroom left: answered in this isolate, nothing awaited.
+		const local: Record<string, unknown> = {};
+		expect(await guardFreeRouteQuota({ ...args, admissionId: "b", pricingCard: card("free", "0"), timing: local })).toBeNull();
+		expect(local).toEqual({ local: true });
+		// Paid models are not timed at all.
+		const paid: Record<string, unknown> = {};
+		await guardFreeRouteQuota({ ...args, admissionId: "c", pricingCard: card("standard", "1"), timing: paid });
+		expect(paid).toEqual({});
+	});
+
+	it("reports the capped wait when the counter does not answer in time", async () => {
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		mocks.admit.mockReturnValue(new Promise(() => {}));
+		const timing: Record<string, unknown> = {};
+		const admitted = guardFreeRouteQuota({ ...args, pricingCard: card("free", "0"), timing });
+		await vi.advanceTimersByTimeAsync(2_000);
+		expect(await admitted).toBeNull();
+		expect(timing.waitMs).toBe(2_000);
+		expect(timing).not.toHaveProperty("counterMs");
+	});
+
 	it("fails open when the counter does not answer in time", async () => {
 		vi.spyOn(console, "warn").mockImplementation(() => {});
 		mocks.admit.mockReturnValue(new Promise(() => {}));

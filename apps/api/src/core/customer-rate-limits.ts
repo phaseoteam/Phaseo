@@ -200,11 +200,27 @@ function countInBackground(bindings: GatewayBindings, scopeKey: string, args: {
 	})());
 }
 
+/**
+ * Where a free-day admission spent its time, filled in by guardFreeRouteQuota for the response
+ * timeline. Each field is set only when that step ran; ms as measured, not rounded.
+ */
+export type FreeQuotaTiming = {
+	/** Answered from this isolate's headroom, with no awaited call. */
+	local?: boolean;
+	/** Reading the workspace's customer limits. */
+	limitsMs?: number;
+	/** The customer rate-limit Durable Object's admit call (after the limits were read). */
+	counterMs?: number;
+	/** The whole awaited admission, capped by FREE_DAY_ADMIT_TIMEOUT_MS. */
+	waitMs?: number;
+};
+
 type QuotaArgs = CustomerScope & {
 	requestId: string;
 	admissionId: string;
 	kind: CustomerQuotaKind;
 	internal?: boolean;
+	timing?: FreeQuotaTiming;
 };
 
 type QuotaCheck =
@@ -263,13 +279,22 @@ async function guardFreeDayQuota(args: QuotaArgs): Promise<Response | null> {
 		known.remaining -= 1;
 		remember(admissions, admissionKey, now + ADMISSION_MEMORY_MS, MAX_ADMISSIONS);
 		countInBackground(bindings, scopeKey, { ...args, localKey, limits: () => customerLimitsFor(bindings, args.workspaceId) });
+		if (args.timing) args.timing.local = true;
 		return null;
 	}
+	const timing = args.timing;
+	const waitStartedAt = performance.now();
 	const counted = await awaitShared((async () => {
+		const limitsStartedAt = performance.now();
 		const limits = await customerLimitsFor(bindings, args.workspaceId);
+		if (timing) timing.limitsMs = performance.now() - limitsStartedAt;
+		const counterStartedAt = performance.now();
 		const stub = bindings.CUSTOMER_RATE_LIMITS!.getByName(scopeKey) as unknown as CustomerStub;
-		return stub.admit(scopeKey, args.kind, args.admissionId, limits);
+		const admission = await stub.admit(scopeKey, args.kind, args.admissionId, limits);
+		if (timing) timing.counterMs = performance.now() - counterStartedAt;
+		return admission;
 	})(), FREE_DAY_ADMIT_TIMEOUT_MS);
+	if (timing) timing.waitMs = performance.now() - waitStartedAt;
 	if (!counted.settled) {
 		console.warn("customer_rate_limit_count_failed", { kind: args.kind, error: "free_day_admit_unavailable" });
 		remember(admissions, admissionKey, Date.now() + ADMISSION_MEMORY_MS, MAX_ADMISSIONS);
@@ -289,6 +314,8 @@ export async function guardFreeRouteQuota(args: CustomerScope & {
 	pricingCard: PriceCard | null | undefined;
 	internal?: boolean;
 	testingMode?: boolean;
+	/** Filled in with where the admission spent its time (response timeline). */
+	timing?: FreeQuotaTiming;
 }): Promise<Response | null> {
 	if (args.testingMode || !isFreePriceCard(args.pricingCard)) return null;
 	return guardFreeDayQuota({ ...args, kind: "free-day" });

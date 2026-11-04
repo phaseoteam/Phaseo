@@ -308,6 +308,8 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
             },
         });
         const beforeMsRaw = timing.timer.end("before_start");
+        // End of "before": the response timeline measures the hand-over to execute from here.
+        timing.timer.mark("before_end");
         const beforeMs = typeof beforeMsRaw === "number"
             ? Math.round(beforeMsRaw * 1000) / 1000
             : null;
@@ -369,6 +371,7 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 					},
 				);
 				const fallbackBeforeMsRaw = fallbackTiming.timer.end("before_start");
+				fallbackTiming.timer.mark("before_end");
 				if (!fallbackPre.ok) {
 					// A fallback that cannot serve this request (unsupported endpoint,
 					// parameter, policy) is recorded and skipped; it never replaces the

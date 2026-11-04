@@ -11,7 +11,7 @@ begin
     or p_metric is null or p_metric not in (
       'text_tokens', 'image_inputs', 'image_outputs', 'audio_tokens', 'audio_seconds',
       'speech_seconds', 'transcription_seconds', 'video_tokens', 'video_seconds',
-      'cached_tokens', 'embedding_tokens', 'rerank_quad_tokens', 'tool_calls', 'users'
+      'cached_tokens', 'embedding_tokens', 'rerank_quad_tokens', 'decision_tokens', 'tool_calls', 'users'
     ) then
     raise exception 'Invalid ranking metric or period';
   end if;

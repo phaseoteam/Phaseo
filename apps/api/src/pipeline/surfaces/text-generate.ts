@@ -984,6 +984,8 @@ async function runTextGeneratePipelineInner(
 
 		// Execute with IR
 		timing.timer.mark("execute_start");
+		// Protocol detection, IR decode and the response-cache lookup, plus anything untimed between them.
+		timing.timer.between("before_to_execute", "before_end", "execute_start");
 		let exec = await doRequestWithIR(pre.ctx, irForExecution, timing);
 		let finalTurnBuffered = !(exec instanceof Response) && exec.result.kind === "completed";
 

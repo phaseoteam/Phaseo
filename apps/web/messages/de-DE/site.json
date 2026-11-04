@@ -2413,7 +2413,7 @@
 			],
 			"retentionIntro": "Wir speichern personenbezogene Daten so lange, wie es vernünftigerweise zur Erfüllung der in dieser Richtlinie beschriebenen Zwecke erforderlich ist, unter anderem:",
 			"retentionReasons": [
-				"Anfragebezogene Metadaten für BYOK-Aufrufe über Gateway werden bis zu 90 Tage gespeichert. Aggregierte Nutzungswerte ohne Inhalte können für Abrechnungs-, Zuverlässigkeits- und Statistikzwecke länger aufbewahrt werden.",
+				"Anfragebezogene Metadaten für BYOK-Aufrufe über Gateway werden bis zu 365 Tage gespeichert. Aggregierte Nutzungswerte ohne Inhalte können für Abrechnungs-, Zuverlässigkeits- und Statistikzwecke länger aufbewahrt werden.",
 				"um dein Konto und kostenpflichtige Funktionen zu betreiben und zu pflegen;",
 				"um rechtliche und regulatorische Pflichten zu erfüllen, etwa durch die Aufbewahrung von Steuer- und Buchhaltungsunterlagen; und",
 				"um Streitigkeiten beizulegen und unsere Vereinbarungen durchzusetzen."

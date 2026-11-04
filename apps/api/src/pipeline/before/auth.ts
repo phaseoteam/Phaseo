@@ -5,6 +5,7 @@
 import { getBindings, getSupabaseAdmin, dispatchBackground, configureRuntime, clearRuntime, ensureRuntimeForBackground, getCache } from "@/runtime/env";
 import { keyVersionToken } from "@/core/kv";
 import { getWorkspacePolicyVersionToken } from "@/pipeline/before/workspacePolicy";
+import { readLocationCache, writeLocationCache } from "@core/tiered-cache";
 import { shouldRecordLastUsed } from "@/core/last-used-throttle";
 import {
 	resolveActiveKeyPepper,
@@ -310,6 +311,7 @@ const keyLookupL1Cache = new Map<string, KeyLookupL1Entry>();
 
 export function __resetAuthCachesForTests(): void {
 	keyLookupL1Cache.clear();
+	keyWorkspaceL1.clear();
 }
 
 function keyLookupL1Key(kid: string, versionToken: string): string {
@@ -388,10 +390,47 @@ async function findMatchingPepperCandidate(args: {
  * workspace bump (control routes, or the publication drain fed by the trigger on
  * `keys`) also refreshes key lookups, whichever path changed the row.
  */
-async function workspaceVersionMatches(row: CachedKeyRow): Promise<boolean> {
+async function workspaceVersionMatches(row: CachedKeyRow, early: EarlyWorkspaceVersion): Promise<boolean> {
     if (!row.workspace_cache_version) return false;
-    const current = await getWorkspacePolicyVersionToken(String(row.workspace_id));
+    const workspaceId = String(row.workspace_id);
+    const started = await early;
+    const current = started && started.workspaceId === workspaceId
+        ? started.version
+        : await getWorkspacePolicyVersionToken(workspaceId);
     return current !== null && current === row.workspace_cache_version;
+}
+
+type EarlyWorkspaceVersion = Promise<{ workspaceId: string; version: string | null } | null>;
+
+/** A key never moves between workspaces, so this location may remember which one it belongs to. */
+function keyWorkspaceKey(kid: string): string {
+    return `gateway:key-workspace:v1:${kid}`;
+}
+
+/**
+ * Starts the workspace version read alongside the key version read when this location
+ * already knows the key's workspace, instead of after the cached row names it.
+ */
+function startWorkspaceVersionRead(kid: string): EarlyWorkspaceVersion {
+    // Isolate memory first, so warm requests skip the location read.
+    const known = keyWorkspaceL1.get(kid);
+    const workspaceId = known ? Promise.resolve(known) : readLocationCache(keyWorkspaceKey(kid));
+    return workspaceId
+        .then(async (id) => (id ? { workspaceId: id, version: await getWorkspacePolicyVersionToken(id) } : null))
+        .catch(() => null);
+}
+
+const keyWorkspaceL1 = new Map<string, string>();
+
+function rememberKeyWorkspace(kid: string, workspaceId: string, location = true): void {
+    keyWorkspaceL1.delete(kid);
+    keyWorkspaceL1.set(kid, workspaceId);
+    while (keyWorkspaceL1.size > KEY_LOOKUP_L1_MAX_ENTRIES) {
+        const oldest = keyWorkspaceL1.keys().next().value;
+        if (oldest === undefined) break;
+        keyWorkspaceL1.delete(oldest);
+    }
+    if (location) writeLocationCache(keyWorkspaceKey(kid), workspaceId, KEY_CACHE_TTL_SECONDS).catch(() => undefined);
 }
 
 function withoutCacheFields(row: CachedKeyRow): KeyRow {
@@ -407,6 +446,7 @@ function withoutCacheFields(row: CachedKeyRow): KeyRow {
 async function getCachedKey(kid: string): Promise<{ versionToken: string | null; value: CachedKeyLookup }> {
     let versionToken: string | null = null;
     try {
+        const earlyWorkspaceVersion = startWorkspaceVersionRead(kid);
         versionToken = await keyVersionToken("kid", kid, {
             useL1Cache: true,
             l1TtlMs: KEY_VERSION_L1_TTL_MS,
@@ -416,10 +456,16 @@ async function getCachedKey(kid: string): Promise<{ versionToken: string | null;
         const l1 = readKeyLookupL1(kid, versionToken);
         if (l1 === "missing") return { versionToken, value: "missing" };
         if (l1 !== null) {
-            return { versionToken, value: (await workspaceVersionMatches(l1)) ? withoutCacheFields(l1) : null };
+            return { versionToken, value: (await workspaceVersionMatches(l1, earlyWorkspaceVersion)) ? withoutCacheFields(l1) : null };
         }
-        const cached = await getCache().get(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, "json");
+        const kvKey = keyCacheKvKey(kid, versionToken);
+        // This location's Workers Cache first (~1-5 ms). KV only keeps a value at the edge for
+        // 60 s, so after a quiet minute its read goes to central storage, about as slow as the
+        // database lookup it replaces (162-181 ms measured on 2026-11-04).
+        const local = await readLocationCache(kvKey);
+        const cached: unknown = local ? JSON.parse(local) : await getCache().get(kvKey, "json");
         if (!cached || typeof cached !== "object") return { versionToken, value: null };
+        if (!local) writeLocationCache(kvKey, JSON.stringify(cached), KEY_CACHE_TTL_SECONDS);
         const marker = cached as { missing?: unknown };
         if (marker.missing === true) {
             writeKeyLookupL1(kid, versionToken, "missing");
@@ -428,13 +474,24 @@ async function getCachedKey(kid: string): Promise<{ versionToken: string | null;
         const row = cached as Partial<CachedKeyRow>;
         if (!row.id || !row.workspace_id || !row.status || !row.hash) return { versionToken, value: null };
         const value = row as CachedKeyRow;
-        if (!(await workspaceVersionMatches(value))) return { versionToken, value: null };
+        if (!(await workspaceVersionMatches(value, earlyWorkspaceVersion))) return { versionToken, value: null };
+        rememberKeyWorkspace(kid, String(value.workspace_id), !local);
         writeKeyLookupL1(kid, versionToken, value);
         return { versionToken, value: withoutCacheFields(value) };
     } catch {
         // Fail open to DB lookup when KV is unavailable.
         return { versionToken, value: null };
     }
+}
+
+/**
+ * The key name embeds the key version, and entries carry the workspace version they were
+ * read under, so neither KV nor a location copy can outlive a change. Rows hold the
+ * peppered HMAC of the secret, never the secret: the same data KV already holds, here on
+ * the gateway's internal cache hostname.
+ */
+function keyCacheKvKey(kid: string, versionToken: string): string {
+    return `${KEY_CACHE_PREFIX}:${kid}:${versionToken}`;
 }
 
 function cacheKey(kid: string, row: KeyRow, versionToken: string | null): void {
@@ -466,9 +523,11 @@ function cacheKey(kid: string, row: KeyRow, versionToken: string | null): void {
             if (error || !current || String(current.workspace_id) !== String(row.workspace_id)) return;
             const entry: CachedKeyRow = { ...current, workspace_cache_version: workspaceVersion };
             writeKeyLookupL1(kid, versionToken, entry);
-            await getCache().put(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, JSON.stringify(entry), {
-                expirationTtl: KEY_CACHE_TTL_SECONDS,
-            });
+            const kvKey = keyCacheKvKey(kid, versionToken);
+            const raw = JSON.stringify(entry);
+            writeLocationCache(kvKey, raw, KEY_CACHE_TTL_SECONDS);
+            rememberKeyWorkspace(kid, String(current.workspace_id));
+            await getCache().put(kvKey, raw, { expirationTtl: KEY_CACHE_TTL_SECONDS });
         } catch {
             // Ignore KV write failures.
         } finally {

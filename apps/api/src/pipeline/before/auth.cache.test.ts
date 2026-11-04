@@ -112,6 +112,18 @@ const runtime = vi.hoisted(() => {
     };
 });
 
+// This location's Workers Cache. It outlives an isolate, which vi.resetModules simulates.
+const location = vi.hoisted(() => ({ store: new Map<string, string>(), reads: [] as string[] }));
+vi.mock("@core/tiered-cache", () => ({
+    readLocationCache: async (key: string) => {
+        location.reads.push(key);
+        return location.store.get(key) ?? null;
+    },
+    writeLocationCache: async (key: string, raw: string) => {
+        location.store.set(key, raw);
+    },
+}));
+
 vi.mock("@/runtime/env", () => ({
     getBindings: () => runtime.bindings,
     getCache: () => runtime.cache as unknown as KVNamespace,
@@ -181,6 +193,8 @@ describe("authenticate hot-path caching", () => {
 
     beforeEach(() => {
         runtime.store.clear();
+        location.store.clear();
+        location.reads.length = 0;
         runtime.backgroundTasks.length = 0;
         runtime.dbRow.value = null;
         runtime.updatePayloads.length = 0;
@@ -352,6 +366,48 @@ describe("authenticate hot-path caching", () => {
         }
         const cached = JSON.parse(runtime.store.get(`gateway:key:ip-policy-v1:${kid}:v0`) ?? "null");
         expect(cached).toMatchObject({ workspace_cache_version: "v9", ip_allowlist: [{ address: "203.0.113.7" }] });
+    });
+
+    it("serves a new isolate's key lookup from this location's cache, without KV or the database", async () => {
+        const kid = "KIDLOCAL01";
+        const secret = "secret_location";
+        runtime.dbRow.value = { id: "key_local", workspace_id: "team_local", status: "active", hash: hashSecret(secret) };
+        const token = `phaseo_v1_sk_${kid}_${secret}`;
+
+        const first = await import("./auth");
+        expect((await first.authenticate(buildRequest(token), { useKvCache: true })).ok).toBe(true);
+        await flushBackground();
+        expect(location.store.has(`gateway:key:ip-policy-v1:${kid}:v0`)).toBe(true);
+        expect(location.store.get(`gateway:key-workspace:v1:${kid}`)).toBe("team_local");
+
+        // A new isolate after a quiet spell: KV's edge copy has gone, this location's has not.
+        vi.resetModules();
+        runtime.maybeSingle.mockClear();
+        runtime.cache.get.mockClear();
+        const second = await import("./auth");
+        expect((await second.authenticate(buildRequest(token), { useKvCache: true })).ok).toBe(true);
+        await flushBackground();
+
+        expect(runtime.maybeSingle).not.toHaveBeenCalled();
+        expect(runtime.cache.get).not.toHaveBeenCalledWith(`gateway:key:ip-policy-v1:${kid}:v0`, expect.anything());
+        // The workspace version was read with the key version, from the remembered workspace.
+        expect(location.reads).toContain(`gateway:key-workspace:v1:${kid}`);
+    });
+
+    it("still refreshes a location copy once its workspace version moves", async () => {
+        const kid = "KIDLOCAL02";
+        const secret = "secret_location_bump";
+        const row: KeyRow = { id: "key_lb", workspace_id: "team_lb", status: "active", hash: hashSecret(secret) };
+        location.store.set(`gateway:key:ip-policy-v1:${kid}:v0`, JSON.stringify({ ...row, workspace_cache_version: "v0" }));
+        location.store.set(`gateway:key-workspace:v1:${kid}`, "team_lb");
+        await runtime.cache.put("gateway:workspace-policy-version:team_lb", "8");
+        runtime.dbRow.value = { ...row, status: "revoked" };
+
+        const { authenticate } = await import("./auth");
+        const result = await authenticate(buildRequest(`phaseo_v1_sk_${kid}_${secret}`), { useKvCache: true });
+        await flushBackground();
+
+        expect(result).toMatchObject({ ok: false, reason: "key_not_found_or_revoked" });
     });
 
     it("skips the key cache when the key version cannot be read", async () => {

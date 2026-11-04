@@ -2413,7 +2413,7 @@
 			],
 			"retentionIntro": "Conservamos los datos personales durante el tiempo razonablemente necesario para cumplir los fines descritos en esta Política, entre ellos:",
 			"retentionReasons": [
-				"Los metadatos de cada solicitud BYOK a Gateway se conservan hasta 90 días. Los totales de uso agregados que no incluyen contenido pueden conservarse durante más tiempo para facturación, fiabilidad y fines estadísticos.",
+				"Los metadatos de cada solicitud BYOK a Gateway se conservan hasta 365 días. Los totales de uso agregados que no incluyen contenido pueden conservarse durante más tiempo para facturación, fiabilidad y fines estadísticos.",
 				"gestionar y mantener tu cuenta y las funciones de pago;",
 				"cumplir nuestras obligaciones legales y normativas, como conservar registros fiscales y contables; y",
 				"resolver disputas y hacer cumplir nuestros acuerdos."
