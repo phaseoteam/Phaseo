@@ -978,6 +978,9 @@ async function handleDeleteKey(req: Request) {
 		if (updateError) {
 			throw new Error(updateError.message || "Failed to delete API key");
 		}
+		// Bump again now the row is written: a request between the first bump and
+		// the update could have cached the still-active row under the new version.
+		await invalidateKeyCache({ id: existing.id, kid: existing.kid ?? null });
 
 		await supabase.from("key_guardrails").delete().eq("key_id", existing.id);
 		await supabase.from("broadcast_destination_keys").delete().eq("key_id", existing.id);

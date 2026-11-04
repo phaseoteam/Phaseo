@@ -21,6 +21,11 @@ CREATE INDEX workspace_budgets_created_by_idx ON public.workspace_budgets USING 
 
 CREATE INDEX workspace_budgets_workspace_id_idx ON public.workspace_budgets USING btree (workspace_id);
 
+CREATE TRIGGER gateway_workspace_publication
+  AFTER INSERT OR DELETE OR UPDATE ON public.workspace_budgets
+  FOR EACH ROW
+  EXECUTE FUNCTION private.capture_gateway_workspace_publication();
+
 CREATE TRIGGER workspace_budgets_lock_change
   BEFORE INSERT OR DELETE OR UPDATE ON public.workspace_budgets
   FOR EACH ROW

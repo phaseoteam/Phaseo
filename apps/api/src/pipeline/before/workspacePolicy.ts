@@ -287,8 +287,11 @@ function writeWorkspacePolicyVersionL1(workspaceId: string, value: number, expir
  * Workspace-wide cache version. Also embedded in request-context cache keys,
  * so a single bump (control routes or the publication outbox drain)
  * invalidates every cached context of the workspace.
+ *
+ * Returns null when the counter cannot be read. Callers must then skip their
+ * caches: entries stored under a guessed version could ignore earlier bumps.
  */
-export async function getWorkspacePolicyVersionToken(workspaceId: string): Promise<string> {
+export async function getWorkspacePolicyVersionToken(workspaceId: string): Promise<string | null> {
 	const cached = readWorkspacePolicyVersionL1(workspaceId);
 	if (cached !== null) return `v${cached}`;
 
@@ -298,7 +301,7 @@ export async function getWorkspacePolicyVersionToken(workspaceId: string): Promi
 		writeWorkspacePolicyVersionL1(workspaceId, shared.value, shared.expiresAt);
 		return `v${shared.value}`;
 	} catch {
-		return "v0";
+		return null;
 	}
 }
 
@@ -311,7 +314,10 @@ export async function bumpWorkspacePolicyVersion(workspaceId: string): Promise<n
 	} catch {
 		current = 0;
 	}
-	const next = current + 1;
+	// The read above can be up to a minute stale, so two bumps from different
+	// locations could both write current + 1 and the second change would never
+	// invalidate anything. A clock-based counter keeps each bump distinct.
+	const next = Math.max(current + 1, Date.now());
 	await getCache().put(workspacePolicyVersionKey(workspaceId), String(next));
 	writeWorkspacePolicyVersionL1(workspaceId, next);
 	rememberSharedVersion(workspacePolicyVersionKey(workspaceId), next);
@@ -661,24 +667,29 @@ export async function fetchWorkspacePolicy(args: {
 		getWorkspacePolicyVersionToken(args.workspaceId),
 		keyVersionToken("id", args.apiKeyId, { useL1Cache: true, l1TtlMs: SHARED_VERSION_TTL_MS }),
 	]);
-	const versionToken = `${workspaceVersionToken}:${apiKeyVersionToken}`;
-	const cached = readWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken);
+	// Without both counters a cached policy could predate a change, so read the source of truth.
+	const versionToken = workspaceVersionToken && apiKeyVersionToken
+		? `${workspaceVersionToken}:${apiKeyVersionToken}`
+		: null;
+	const cached = versionToken ? readWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken) : null;
 	if (cached) return cached;
 
-	const kvKey = workspacePolicyKvKey(args.workspaceId, args.apiKeyId, versionToken);
+	const kvKey = versionToken ? workspacePolicyKvKey(args.workspaceId, args.apiKeyId, versionToken) : null;
 	// The key embeds both version tokens, so a shared copy can never outlive a change.
 	// A fresh isolate reads the location copy (~1-5 ms) before KV (5-300 ms).
-	for (const layer of ["location", "kv"] as const) {
-		try {
-			const raw = layer === "location" ? await readLocationCache(kvKey) : await getCache().get(kvKey, "text");
-			if (!raw) continue;
-			const parsed = JSON.parse(raw);
-			if (!isWorkspacePolicyLike(parsed)) continue;
-			writeWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken, parsed);
-			if (layer === "kv") writeLocationCache(kvKey, raw, WORKSPACE_POLICY_KV_TTL_SECONDS);
-			return cloneWorkspacePolicy(parsed);
-		} catch {
-			// Ignore cache read failures and use the next layer or the source of truth.
+	if (versionToken && kvKey) {
+		for (const layer of ["location", "kv"] as const) {
+			try {
+				const raw = layer === "location" ? await readLocationCache(kvKey) : await getCache().get(kvKey, "text");
+				if (!raw) continue;
+				const parsed = JSON.parse(raw);
+				if (!isWorkspacePolicyLike(parsed)) continue;
+				writeWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken, parsed);
+				if (layer === "kv") writeLocationCache(kvKey, raw, WORKSPACE_POLICY_KV_TTL_SECONDS);
+				return cloneWorkspacePolicy(parsed);
+			} catch {
+				// Ignore cache read failures and use the next layer or the source of truth.
+			}
 		}
 	}
 
@@ -784,10 +795,12 @@ export async function fetchWorkspacePolicy(args: {
 		dynamicRoute,
 		neverStoreContent: keyData?.never_store_content === true,
 	});
-	writeWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken, policy);
-	const raw = JSON.stringify(policy);
-	writeLocationCache(kvKey, raw, WORKSPACE_POLICY_KV_TTL_SECONDS);
-	dispatchBackground(getCache().put(kvKey, raw, { expirationTtl: WORKSPACE_POLICY_KV_TTL_SECONDS }));
+	if (versionToken && kvKey) {
+		writeWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken, policy);
+		const raw = JSON.stringify(policy);
+		writeLocationCache(kvKey, raw, WORKSPACE_POLICY_KV_TTL_SECONDS);
+		dispatchBackground(getCache().put(kvKey, raw, { expirationTtl: WORKSPACE_POLICY_KV_TTL_SECONDS }));
+	}
 	return policy;
 }
 

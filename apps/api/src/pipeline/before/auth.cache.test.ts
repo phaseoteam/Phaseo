@@ -121,6 +121,7 @@ vi.mock("@/runtime/env", () => ({
     },
     configureRuntime: () => undefined,
     clearRuntime: () => undefined,
+    ensureRuntimeForBackground: () => () => undefined,
 }));
 
 function buildRequest(token: string): Request {
@@ -291,7 +292,7 @@ describe("authenticate hot-path caching", () => {
         };
 
         await runtime.cache.put(`gateway:keyver:kid:${kid}`, "7");
-        await runtime.cache.put(`gateway:key:ip-policy-v1:${kid}:v7`, JSON.stringify(row));
+        await runtime.cache.put(`gateway:key:ip-policy-v1:${kid}:v7`, JSON.stringify({ ...row, workspace_cache_version: "v0" }));
 
         const { authenticate } = await import("./auth");
         const first = await authenticate(buildRequest(token), { useKvCache: true });
@@ -301,7 +302,43 @@ describe("authenticate hot-path caching", () => {
         expect(first.ok).toBe(true);
         expect(second.ok).toBe(true);
         expect(runtime.maybeSingle).not.toHaveBeenCalled();
-        expect(runtime.cache.get).toHaveBeenCalledTimes(2);
+        // Key version, cached row and workspace version once; the repeat is served from L1.
+        expect(runtime.cache.get).toHaveBeenCalledTimes(3);
+    });
+
+    it("refreshes a cached key row once its workspace cache version moves", async () => {
+        const kid = "KIDWSBUMP1";
+        const secret = "secret_ws_bump";
+        const row: KeyRow = { id: "key_ws", workspace_id: "team_ws", status: "active", hash: hashSecret(secret) };
+        await runtime.cache.put(`gateway:keyver:kid:${kid}`, "3");
+        // Cached before a workspace bump (version 0), e.g. before a revocation made by SCIM.
+        await runtime.cache.put(`gateway:key:ip-policy-v1:${kid}:v3`, JSON.stringify({ ...row, workspace_cache_version: "v0" }));
+        await runtime.cache.put("gateway:workspace-policy-version:team_ws", "5");
+        runtime.dbRow.value = { ...row, status: "revoked" };
+
+        const { authenticate } = await import("./auth");
+        const result = await authenticate(buildRequest(`phaseo_v1_sk_${kid}_${secret}`), { useKvCache: true });
+        await flushBackground();
+
+        expect(result).toMatchObject({ ok: false, reason: "key_not_found_or_revoked" });
+        expect(runtime.maybeSingle).toHaveBeenCalledTimes(1);
+    });
+
+    it("skips the key cache when the key version cannot be read", async () => {
+        const kid = "KIDKVDOWN1";
+        const secret = "secret_kv_down";
+        const row: KeyRow = { id: "key_down", workspace_id: "team_down", status: "active", hash: hashSecret(secret) };
+        // An entry under version 0 that predates a revocation must not be served while KV fails.
+        await runtime.cache.put(`gateway:key:ip-policy-v1:${kid}:v0`, JSON.stringify({ ...row, workspace_cache_version: "v0" }));
+        runtime.dbRow.value = { ...row, status: "revoked" };
+        runtime.cache.get.mockImplementationOnce(async () => { throw new Error("kv unavailable"); });
+
+        const { authenticate } = await import("./auth");
+        const result = await authenticate(buildRequest(`phaseo_v1_sk_${kid}_${secret}`), { useKvCache: true });
+        await flushBackground();
+
+        expect(result).toMatchObject({ ok: false, reason: "key_not_found_or_revoked" });
+        expect(runtime.cache.put).not.toHaveBeenCalledWith(expect.stringContaining(`${kid}:`), expect.any(String), expect.any(Object));
     });
 
     it("warms auth L1 from DB path and avoids duplicate DB lookups on immediate repeat", async () => {
@@ -326,7 +363,8 @@ describe("authenticate hot-path caching", () => {
         expect(first.ok).toBe(true);
         expect(second.ok).toBe(true);
         expect(runtime.maybeSingle).toHaveBeenCalledTimes(1);
-        expect(runtime.cache.get).toHaveBeenCalledTimes(2);
+        // Key version, cached row (miss) and the workspace version the new entry records.
+        expect(runtime.cache.get).toHaveBeenCalledTimes(3);
     });
 
     it("accepts KEY_PEPPER_PREVIOUS and migrates hash to KEY_PEPPER_ACTIVE", async () => {

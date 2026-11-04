@@ -1189,10 +1189,9 @@ export async function fetchGatewayContext(args: {
     const isPreset = args.model.startsWith("@");
     const useContextBundle = !isPreset && !args.includeTestingMode && !isFreeRouterModel(args.model) &&
         ["responses", "chat.completions", "messages", "text.generate"].includes(args.endpoint) && contextBundleEnabled();
-    const shouldUseCache = !args.disableCache;
-    const needsVersionToken = shouldUseCache;
+    let shouldUseCache = !args.disableCache;
     let versionToken = "v0";
-    if (needsVersionToken) {
+    if (shouldUseCache) {
         const keyVersionStartedAt = performance.now();
         // Key version and workspace version invalidate independently; both are
         // isolate-cached for a few seconds and read in parallel.
@@ -1203,8 +1202,13 @@ export async function fetchGatewayContext(args: {
             }),
             getWorkspacePolicyVersionToken(args.workspaceId),
         ]);
-        versionToken = `${keyVersion}.w${workspaceVersion.replace(/^v/, "")}`;
         telemetry.keyVersionMs = round3(performance.now() - keyVersionStartedAt);
+        if (keyVersion && workspaceVersion) {
+            versionToken = `${keyVersion}.w${workspaceVersion.replace(/^v/, "")}`;
+        } else {
+            // A counter could not be read, so any cached entry may predate a change.
+            shouldUseCache = false;
+        }
     }
     const testingModeCacheSegment = args.internalOnly ? "internal" : args.includeTestingMode ? "testing" : "default";
     const dynamicCacheKey = `${DYNAMIC_CACHE_PREFIX}:${testingModeCacheSegment}:${args.workspaceId}:${args.apiKeyId}:${versionToken}`;

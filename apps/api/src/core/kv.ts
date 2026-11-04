@@ -24,7 +24,7 @@ type KeyVersionL1Entry = {
     expiresAt: number;
 };
 const keyVersionL1Cache = new Map<string, KeyVersionL1Entry>();
-const keyVersionInflight = new Map<string, Promise<number>>();
+const keyVersionInflight = new Map<string, Promise<number | null>>();
 const keyVersionEpochs = new Map<string, number>();
 
 export function __resetKeyVersionL1ForTests(): void {
@@ -128,14 +128,15 @@ export async function deleteKey(key: string): Promise<void> {
     await getCache().delete(key);
 }
 
-export async function getKeyVersion(
+/** The key's cache version, or null when KV could not be read. */
+async function readKeyVersion(
     scope: "kid" | "id",
     value: string,
     options?: {
         useL1Cache?: boolean;
         l1TtlMs?: number;
     }
-): Promise<number> {
+): Promise<number | null> {
     const key = keyVersionKey(scope, value);
     const useL1Cache = options?.useL1Cache ?? false;
     const l1TtlMs = options?.l1TtlMs ?? KEY_VERSION_L1_CACHE_TTL_MS;
@@ -164,8 +165,8 @@ export async function getKeyVersion(
             }
             return normalized;
         } catch {
-            // Fail open: if KV is unavailable, use version 0 to keep requests serving.
-            return 0;
+            // Unknown, not 0: an entry cached under version 0 could predate every bump.
+            return null;
         } finally {
             if (useL1Cache && keyVersionInflight.get(key) === loader) {
                 keyVersionInflight.delete(key);
@@ -176,6 +177,17 @@ export async function getKeyVersion(
         keyVersionInflight.set(key, loader);
     }
     return loader;
+}
+
+export async function getKeyVersion(
+    scope: "kid" | "id",
+    value: string,
+    options?: {
+        useL1Cache?: boolean;
+        l1TtlMs?: number;
+    }
+): Promise<number> {
+    return (await readKeyVersion(scope, value, options)) ?? 0;
 }
 
 export async function setKeyVersion(scope: "kid" | "id", value: string, version: number): Promise<number> {
@@ -191,7 +203,9 @@ export async function setKeyVersion(scope: "kid" | "id", value: string, version:
 
 export async function bumpKeyVersion(scope: "kid" | "id", value: string): Promise<number> {
     const current = await getKeyVersion(scope, value, { useL1Cache: false });
-    const next = current + 1;
+    // Clock-based like setKeyVersion's callers: a failed or stale read must not
+    // move the counter back onto a version that already has cached entries.
+    const next = Math.max(current + 1, Date.now());
     return setKeyVersion(scope, value, next);
 }
 
@@ -202,8 +216,10 @@ export async function keyVersionToken(
         useL1Cache?: boolean;
         l1TtlMs?: number;
     }
-): Promise<string> {
-    const version = await getKeyVersion(scope, value, options);
-    return `v${version}`;
+): Promise<string | null> {
+    // Null when KV could not be read: callers skip their caches for that request
+    // instead of trusting entries stored under a guessed version.
+    const version = await readKeyVersion(scope, value, options);
+    return version === null ? null : `v${version}`;
 }
 
