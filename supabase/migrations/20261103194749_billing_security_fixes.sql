@@ -563,6 +563,10 @@ declare
   v_team_billing_mode text;
   v_redemption_id uuid;
 begin
+  if not public.mfa_satisfied() then
+    raise exception using errcode = '42501', message = 'mfa_required';
+  end if;
+
   if v_user_id is null then
     return query
     select
