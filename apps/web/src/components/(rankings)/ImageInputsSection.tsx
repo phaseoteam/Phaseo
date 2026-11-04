@@ -51,6 +51,7 @@ export async function ImageInputsSection() {
 					leaderboardTitle={t("imageInputLeaderboardTitle")}
 					leaderboardDescription={t("imageInputLeaderboardDescription")}
 					valueUnit={t("usageImagesUnit")}
+					share={{ section: "image-inputs", chartId: "image-inputs", title: t("imageInputs") }}
 				/>
 			) : (
 				<EmptyChartPreview

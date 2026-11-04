@@ -115,6 +115,9 @@ import {
 	subscribeProviderInspector,
 } from "@/components/(data)/model/pricing/providerInspectorSync";
 import { MONEY_LOCALE } from "@/lib/displayPreferences";
+import ModelChartShareButton from "@/components/(data)/model/share/ModelChartShareButton";
+import type { ChartShareRenderSize } from "@/components/share/ChartShareButton";
+import { fromShareDate, readSharedChartState, toShareDate } from "@/lib/share/chartShare";
 
 const dailyAveragePricePer1MCache = new WeakMap<ModelPricingHistoryRule, number>();
 
@@ -725,12 +728,15 @@ function PricingHistoryChart({
 	highlightedSeriesKey,
 	range,
 	expanded,
+	exportSize,
 }: {
 	state: ReturnType<typeof buildPricingHistoryState>;
 	visibleSeriesKeys: string[];
 	highlightedSeriesKey: string | null;
 	range: PricingRange;
 	expanded?: boolean;
+	/** Renders at exactly this size, for a share image. */
+	exportSize?: ChartShareRenderSize;
 }) {
 	const locale = useLocale();
 	const tx = useTranslations();
@@ -738,7 +744,9 @@ function PricingHistoryChart({
 	return (
 		<ChartContainer
 			config={state.chartConfig}
-			className={cn("w-full min-w-0", expanded ? "h-[min(34vh,360px)]" : "h-[300px]")}
+			className={exportSize ? undefined : cn("w-full min-w-0", expanded ? "h-[min(34vh,360px)]" : "h-[300px]")}
+			style={exportSize}
+			initialDimension={exportSize}
 		>
 			<LineChart data={state.chartData} margin={{ top: 12, right: 16, bottom: 4, left: 4 }}>
 				<CartesianGrid vertical={false} className="stroke-muted/70" />
@@ -865,8 +873,23 @@ export default function PricingInsights({
 		) - 1
 		: undefined;
 	const effectivePricingViewportRef = useRef<HTMLDivElement>(null);
+	const pricingHistoryShareRef = useRef<HTMLDivElement>(null);
 	const [effectivePricingTableOverflows, setEffectivePricingTableOverflows] =
 		useState(false);
+
+	// A shared chart link carries the view, meter and range it was shared with.
+	useEffect(() => {
+		const shared = readSharedChartState(window.location.search, "pricing-history");
+		if (!shared) return;
+		const view = shared.get("view");
+		if (view === "effective" || view === "listed") setPricingView(view);
+		const range = shared.get("range");
+		if (range && (RANGE_OPTIONS as string[]).includes(range)) setPricingRange(range as PricingRange);
+		const meter = shared.get("meter");
+		if (meter) setSelectedMeter(meter);
+		const from = fromShareDate(shared.get("from"));
+		if (from) setCustomPricingRange({ from, to: fromShareDate(shared.get("to")) ?? from });
+	}, []);
 
 	useEffect(() => subscribeProviderInspector(setActiveProviderInspectorId), []);
 
@@ -1474,6 +1497,37 @@ export default function PricingInsights({
 							<Download className="size-3.5" />
 							CSV
 						</Button> : null}
+						{!expanded && pricingHistoryState.hasData ? (
+							<ModelChartShareButton
+								targetRef={pricingHistoryShareRef}
+								section="pricing"
+								chartId="pricing-history"
+								title={t("historyTitle")}
+								subtitle={[
+									displayedPricingView === "listed" ? t("list") : t("effective"),
+									formatLocalizedMeterLabel(activeMeter),
+									customPricingRange?.from
+										? `${customPricingRange.from.toLocaleDateString(locale, { day: "numeric", month: "short" })} – ${(customPricingRange.to ?? customPricingRange.from).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" })}`
+										: pricingRange === "7d" ? t("ranges.week") : pricingRange === "30d" ? t("ranges.month") : pricingRange === "90d" ? t("ranges.quarter") : pricingRange === "1y" ? t("ranges.year") : t("all"),
+								].join(" · ")}
+								state={{
+									view: displayedPricingView,
+									meter: activeMeter,
+									range: customPricingRange?.from ? null : pricingRange,
+									from: customPricingRange?.from ? toShareDate(customPricingRange.from) : null,
+									to: customPricingRange?.from ? toShareDate(customPricingRange.to ?? customPricingRange.from) : null,
+								}}
+								renderForShare={(size) => (
+									<PricingHistoryChart state={pricingHistoryState} visibleSeriesKeys={visibleSeriesKeys} highlightedSeriesKey={null} range={pricingRange} exportSize={size} />
+								)}
+								legend={visibleSeriesKeys.flatMap((key) => {
+									const series = pricingHistoryState.chartConfig[key];
+									// Leave out providers with no line in the current view.
+									const hasPoints = pricingHistoryState.chartData.some((row) => Number.isFinite(Number((row as Record<string, unknown>)[key])) && (row as Record<string, unknown>)[key] != null);
+									return series?.color && hasPoints ? [{ label: String(series.label ?? key), color: series.color }] : [];
+								})}
+							/>
+						) : null}
 						{!expanded ? (
 							<Button type="button" variant="outline" size="icon" className="size-8 rounded-md" onClick={() => setIsHistoryExpanded(true)} aria-label={t("expand")}>
 								<Maximize2 className="size-3.5" />
@@ -1483,7 +1537,7 @@ export default function PricingInsights({
 				</div>
 			</div>
 
-			<div className="overflow-hidden rounded-lg border bg-background p-2 sm:p-3">
+			<div ref={expanded ? undefined : pricingHistoryShareRef} className="overflow-hidden rounded-lg border bg-background p-2 sm:p-3">
 			{pricingHistoryState.hasData ? (
 				<PricingHistoryChart state={pricingHistoryState} visibleSeriesKeys={visibleSeriesKeys} highlightedSeriesKey={highlightedSeriesKey} range={pricingRange} expanded={expanded} />
 			) : (

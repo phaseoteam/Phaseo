@@ -481,6 +481,7 @@ async function UniqueUsersSectionServer() {
 				leaderboardTitle={t("uniqueUsersLeaderboardTitle")}
 				leaderboardDescription={t("uniqueUsersLeaderboardDescription")}
 				valueUnit={t("usageUsersUnit")}
+				share={{ section: "unique-users", chartId: "unique-users", title: t("uniqueUsers") }}
 			/>
 		</section>
 	);
@@ -543,6 +544,7 @@ async function MarketShareOrganizationServer() {
                 dimension="organization"
                 metric="tokens"
                 normalizeToPercent
+                share={{ section: "market-share", chartId: "market-share-organisations", title: t("marketShareByOrganisation") }}
             />
             <MarketShareLeaderboard data={entries} maxCollapsed={10} maxExpanded={20} />
         </>
@@ -618,6 +620,7 @@ async function MarketShareProviderServer() {
                 dimension="provider"
                 metric="tokens"
                 normalizeToPercent
+                share={{ section: "market-share", chartId: "market-share-providers", title: t("marketShareByProvider") }}
             />
             <MarketShareLeaderboard data={entries} maxCollapsed={10} maxExpanded={20} />
         </>

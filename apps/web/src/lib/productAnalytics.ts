@@ -68,6 +68,12 @@ export type ProductAnalyticsEventMap = {
 		completed_step_count: number;
 		outcome: "completed" | "skipped";
 	};
+	chart_shared: {
+		campaign: "model_chart" | "rankings_chart";
+		chart_id: string;
+		channel: "x" | "linkedin" | "copy_link" | "native" | "download" | "copy_image";
+		page_path: string;
+	};
 	quickstart_opened: {
 		model_id: string;
 		surface: "model_page";

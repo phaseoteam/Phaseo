@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import ModelChartShareButton from "@/components/(data)/model/share/ModelChartShareButton";
+import type { ChartShareRenderSize } from "@/components/share/ChartShareButton";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { useLocale, useTranslations } from "next-intl";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
@@ -151,17 +153,26 @@ function RequestsActivityShape({
 	);
 }
 
+/** Space under the chart for the series legend row in a share render. */
+const EXPORT_LEGEND_HEIGHT = 52;
+
 export default function ModelActivityChart({
 	modelId,
 	rows: initialRows,
 	showHeading = false,
 	description: suppliedDescription,
-}: ModelActivityChartProps) {
+	exportSize,
+}: ModelActivityChartProps & {
+	/** Renders only the chart and its legend, at exactly this size, for a share image. */
+	exportSize?: ChartShareRenderSize;
+}) {
+	const chartExportSize = exportSize ? { width: exportSize.width, height: exportSize.height - EXPORT_LEGEND_HEIGHT } : undefined;
 	const locale = useLocale();
 	const format = useDisplayFormatters();
 	const formatCompactNumber = format.count;
 	const formatPaceGain = (value: number) => `+${format.count(Number.isFinite(value) ? Math.max(0, value) : 0)}`;
 	const t = useTranslations("Catalogue.models.detail.activityChart");
+	const tShare = useTranslations("Common.ui.chartShare");
 	const description = suppliedDescription ?? t("description");
 	const tokenSeries = useMemo(
 		() => TOKEN_SERIES.map((series) => ({
@@ -193,6 +204,7 @@ export default function ModelActivityChart({
 		defaultValue: "tokens",
 	});
 	const [hoveredSeriesKey, setHoveredSeriesKey] = useState<string | null>(null);
+	const shareRef = useRef<HTMLDivElement>(null);
 	const mode: ActivityMode = modeParam === "requests" ? "requests" : "tokens";
 
 	const { chartData, chartConfig } = useMemo(() => {
@@ -312,8 +324,8 @@ export default function ModelActivityChart({
 	if (rows.length === 0) return null;
 
 	return (
-		<section id="activity" className="scroll-mt-28 space-y-4 border-t border-border/60 pt-6">
-			{showHeading ? (
+		<section id={exportSize ? undefined : "activity"} className={exportSize ? "space-y-4" : "scroll-mt-28 space-y-4 border-t border-border/60 pt-6"}>
+			{showHeading && !exportSize ? (
 				<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 					<div className="space-y-1">
 						<h2 className="text-xl font-semibold tracking-tight">{t("title")}</h2>
@@ -321,24 +333,43 @@ export default function ModelActivityChart({
 							{description}
 						</p>
 					</div>
-					<Select
-						value={mode}
-						onValueChange={(value) => setModeParam(value as ActivityMode)}
-					>
-						<SelectTrigger className="h-8 w-[140px] rounded-lg text-xs sm:mt-0.5">
-							<SelectValue placeholder={t("metric")}>
-								{mode === "requests" ? t("requests") : t("tokens")}
-							</SelectValue>
-						</SelectTrigger>
-						<SelectContent align="end">
-							<SelectItem value="tokens">{t("tokens")}</SelectItem>
-							<SelectItem value="requests">{t("requests")}</SelectItem>
-						</SelectContent>
-					</Select>
+					<div className="flex items-center gap-1.5 sm:mt-0.5">
+						<Select
+							value={mode}
+							onValueChange={(value) => setModeParam(value as ActivityMode)}
+						>
+							<SelectTrigger className="h-8 w-[140px] rounded-lg text-xs">
+								<SelectValue placeholder={t("metric")}>
+									{mode === "requests" ? t("requests") : t("tokens")}
+								</SelectValue>
+							</SelectTrigger>
+							<SelectContent align="end">
+								<SelectItem value="tokens">{t("tokens")}</SelectItem>
+								<SelectItem value="requests">{t("requests")}</SelectItem>
+							</SelectContent>
+						</Select>
+						<ModelChartShareButton
+							targetRef={shareRef}
+							section="activity"
+							chartId="activity"
+							title={t("title")}
+							subtitle={`${tShare("perDay", { unit: mode === "requests" ? t("requests") : t("tokens") })} · ${tShare("last30Days")}`}
+							state={{ activityMetric: mode }}
+							renderForShare={(size) => (
+								<ModelActivityChart modelId={modelId} rows={initialRows} description={suppliedDescription} exportSize={size} />
+							)}
+						/>
+					</div>
 				</div>
 			) : null}
 
-			<ChartContainer config={chartConfig} className="h-[300px] w-full">
+			<div ref={shareRef} className="space-y-4">
+			<ChartContainer
+				config={chartConfig}
+				className={chartExportSize ? undefined : "h-[300px] w-full"}
+				style={chartExportSize}
+				initialDimension={chartExportSize}
+			>
 				<BarChart data={chartData} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
 					<defs>
 						<pattern
@@ -544,6 +575,7 @@ export default function ModelActivityChart({
 						</TooltipContent>
 					</Tooltip>
 				))}
+			</div>
 			</div>
 		</section>
 	);
