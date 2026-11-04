@@ -149,7 +149,7 @@ describe("composeGatewayMetadata", () => {
 		expect(metadata.activeProviders).toHaveLength(1);
 		expect(metadata.activeProviders[0]).toMatchObject({
 			provider_availability_status: "deprecated",
-			capability_status: "degraded",
+			capability_status: "deranked",
 			availability_reason: "provider_deprecated",
 		});
 	});
@@ -175,6 +175,10 @@ describe("composeGatewayMetadata", () => {
 			["route-degraded", "deranked"],
 		]);
 		expect(metadata.inactiveProviders.map((provider) => [provider.api_provider_id, provider.availability_reason])).toEqual([["off-degraded", "inactive"]]);
+		expect(metadata.activeProviders.map((provider) => [provider.api_provider_id, provider.model_routing_status, provider.capability_status]).sort()).toEqual([
+			["cap-degraded", "active", "deranked"],
+			["route-degraded", "deranked", "active"],
+		]);
 	});
 
 	it("retires a deprecated provider route after its effective_to", () => {

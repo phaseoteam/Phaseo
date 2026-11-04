@@ -1498,14 +1498,7 @@ export async function routeProviders(
                 })),
         });
     }
-    // Stable, so each evidence tier keeps the order routing chose within it.
-    const jsonOutputEvidenceLast = <T extends { candidate: ProviderCandidate }>(entries: T[]): T[] =>
-        evidenceRanks.size === 0
-            ? entries
-            : entries
-                .map((entry, index) => ({ entry, index, rank: evidenceRanks.get(entry.candidate) ?? 0 }))
-                .sort((a, b) => a.rank - b.rank || a.index - b.index)
-                .map(({ entry }) => entry);
+    const evidenceRankOf = (entry: { candidate: ProviderCandidate }) => evidenceRanks.get(entry.candidate) ?? 0;
     if (debugEnabled) {
         console.log("[gateway] provider pool", {
             model: ctx.model,
@@ -1794,12 +1787,14 @@ export async function routeProviders(
     });
     // Fallback tiers, each behind the one before: deranked routes (a last resort), candidates at
     // a managed upstream limit (least over first), then open breakers. Weighted order alone cannot
-    // guarantee this: it floors tiny weights. The sort is stable, so each tier keeps its order.
+    // guarantee this: it floors tiny weights. JSON output evidence orders routes within a tier, so
+    // it never lifts a fallback above a healthy route. The sort is stable, so ties keep their order.
     const fallbackTier = (entry: typeof routableScored[number]) =>
         entry.recentOutage ? 3 : entry.providerQuotaOverage > 0 ? 2 : entry.lastResort ? 1 : 0;
     const fallbacksLast = (entries: typeof routableScored) => {
-        if (!entries.some((entry) => fallbackTier(entry) > 0)) return entries;
+        if (!entries.some((entry) => fallbackTier(entry) > 0 || evidenceRankOf(entry) > 0)) return entries;
         return [...entries].sort((a, b) => fallbackTier(a) - fallbackTier(b) ||
+            evidenceRankOf(a) - evidenceRankOf(b) ||
             (fallbackTier(a) === 2 ? a.providerQuotaOverage - b.providerQuotaOverage : 0));
     };
     const weightedOrderWithExternalFallback = (entries: typeof routableScored) => {
@@ -1818,8 +1813,9 @@ export async function routeProviders(
             stickyRecoveryProbeSkipped = true;
             return null;
         }
-        // A last-resort route is a backup only: it is never promoted ahead of the main pool.
-        const mainPool = entries.filter((entry) => !entry.lastResort);
+        // A last-resort route is a backup only, and a JSON request keeps routes that do not list
+        // the format behind those that do: neither is promoted ahead of the main pool.
+        const mainPool = entries.filter((entry) => !entry.lastResort && evidenceRankOf(entry) === 0);
         const recoveryPool = mainPool.some((entry) => !isExternalProvider(entry))
             ? mainPool.filter((entry) => !isExternalProvider(entry))
             : mainPool;
@@ -1878,14 +1874,14 @@ export async function routeProviders(
             (entry) => !orderedSet.has(getRoutingCandidateKey(entry.candidate))
         );
         if (strict || deterministicRequestSort) {
-            const ranked = [...ordered, ...jsonOutputEvidenceLast(fallbacksLast(remaining.sort((a, b) => b.score - a.score)))];
+            const ranked = [...ordered, ...fallbacksLast(remaining.sort((a, b) => b.score - a.score))];
             recordStickyOutcome(ranked, true);
             return {
                 ranked,
 			diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(ranked), false, "explicit_provider_order"),
             };
         }
-        const remainingRanked = jsonOutputEvidenceLast(weightedOrderWithExternalFallback(remaining));
+        const remainingRanked = weightedOrderWithExternalFallback(remaining);
         const ranked = [...ordered, ...remainingRanked];
         recordStickyOutcome(ranked, true);
         return {
@@ -1901,7 +1897,7 @@ export async function routeProviders(
             ...fallbacksLast(external.sort(compareScores)),
         ];
         const recovery = selectRecovery(ranked);
-        const finalRanked = jsonOutputEvidenceLast(recovery ? promote(ranked, recovery) : ranked);
+        const finalRanked = recovery ? promote(ranked, recovery) : ranked;
         recordStickyOutcome(finalRanked, false);
         return {
             ranked: finalRanked,
@@ -1913,14 +1909,13 @@ export async function routeProviders(
     const ranked = weightedOrderWithExternalFallback(routableScored);
     const recovery = selectRecovery(ranked);
     if (recovery) {
-        const recoveredRank = jsonOutputEvidenceLast(promote(ranked, recovery));
+        const recoveredRank = promote(ranked, recovery);
         recordStickyOutcome(recoveredRank, false);
         return { ranked: recoveredRank, diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(recoveredRank), false, "recovery_probe") };
     }
-    const weightedRanked = jsonOutputEvidenceLast(ranked);
-    recordStickyOutcome(weightedRanked, false);
+    recordStickyOutcome(ranked, false);
     return {
-        ranked: weightedRanked,
-		diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(weightedRanked), false, "weighted_order"),
+        ranked,
+		diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(ranked), false, "weighted_order"),
     };
 }

@@ -1717,6 +1717,25 @@ describe("routeProviders JSON output evidence", () => {
 		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual(["together", "tensorix"]);
 	});
 
+	it("keeps a deranked route that lists the format behind healthy routes that do not", async () => {
+		const candidates = [
+			...routes().filter((entry) => entry.providerId !== "together"),
+			{ ...candidate({ providerId: "together", providerRoutingStatus: "deranked", pricingCard: textPricingCard(0.00001, 0) }), capabilityParams: { max_tokens: {}, response_format: {} } },
+		];
+		for (const requestId of ["json-10", "json-11", "json-12", "json-13", "json-14"]) {
+			for (const strict of [false, true]) {
+				const result = await routeProviders(candidates as any, {
+					endpoint: "chat.completions",
+					model: strict ? "inclusionai/ling-3.0-flash:fast" : "inclusionai/ling-3.0-flash",
+					workspaceId: "team_123",
+					requestId,
+					body: { response_format: { type: "json_schema", json_schema: { name: "x", schema: {} } } },
+				} as any);
+				expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual(["siliconflow", "novita", "together"]);
+			}
+		}
+	});
+
 	it("leaves the order alone for requests without a JSON output mode", async () => {
 		for (const requestId of ["text-1", "text-2", "text-3"]) {
 			const plain = await route({}, requestId);
