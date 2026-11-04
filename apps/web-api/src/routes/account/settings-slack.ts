@@ -588,6 +588,7 @@ async function createInstallation(env: Env, context: AccountWorkspaceContext, se
 
 		const guardrail = await client.from("workspace_guardrails").insert({
 			workspace_id: workspaceId,
+			kind: "access",
 			name: GUARDRAIL_NAME,
 			description: GUARDRAIL_DESCRIPTION,
 			enabled: true,
@@ -982,16 +983,20 @@ async function deleteAgentPages(env: Env, installationId: string): Promise<void>
 	}
 }
 
-/** Unlinks the agent's guardrail from its key, and deletes it unless an admin has given it to other keys or members. */
+/** Unlinks the agent's guardrail from its key, and deletes it unless an admin has given it to other keys, members, departments or the workspace. */
 async function removeAgentGuardrail(context: AccountWorkspaceContext, keyId: string, guardrailId: string): Promise<void> {
 	const { client, workspaceId } = context;
 	const unlinked = await client.from("key_guardrails").delete().eq("key_id", keyId).eq("guardrail_id", guardrailId);
 	if (unlinked.error) return;
-	const [keys, members] = await Promise.all([
+	// Key and member links are mirrored into workspace_guardrail_assignments, which also holds the
+	// workspace and department levels; deleting the guardrail would cascade every one of them away.
+	const [keys, members, assignments] = await Promise.all([
 		client.from("key_guardrails").select("key_id", { count: "exact", head: true }).eq("guardrail_id", guardrailId),
 		client.from("workspace_member_guardrails").select("guardrail_id", { count: "exact", head: true }).eq("guardrail_id", guardrailId),
+		client.from("workspace_guardrail_assignments").select("guardrail_id", { count: "exact", head: true }).eq("guardrail_id", guardrailId),
 	]);
-	if (keys.error || members.error || (keys.count ?? 0) > 0 || (members.count ?? 0) > 0) return;
+	if (keys.error || members.error || assignments.error) return;
+	if ((keys.count ?? 0) > 0 || (members.count ?? 0) > 0 || (assignments.count ?? 0) > 0) return;
 	const removed = await client.from("workspace_guardrails").delete().eq("id", guardrailId).eq("workspace_id", workspaceId);
 	if (removed.error) console.error("[slack-agent] uninstall: guardrail not removed", { guardrailId });
 }

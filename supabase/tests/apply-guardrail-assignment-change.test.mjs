@@ -2,11 +2,13 @@
 // removes guardrails on many keys or members in one transaction for the settings Assignments tab.
 // Checks: only the requested pairs change, a failure part-way leaves everything as it was, guardrails
 // and keys from another workspace are refused, a former member's rows can be removed, and only the
-// service role can call it.
+// service role can call it. Workspace and department targets (added by the guardrail levels
+// migration) are covered by guardrail-levels.test.mjs.
 // Install @electric-sql/pglite@0.5.8 in a temporary directory and set PGLITE_MODULE to its
 // dist/index.js file URL. Run: node supabase/tests/apply-guardrail-assignment-change.test.mjs
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
+import { createGuardrailLevelsBase } from './fixtures/guardrail-levels-before.mjs';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
@@ -43,28 +45,13 @@ const memberPairs = async () => (await rows('select workspace_id, user_id, guard
   .map((row) => `${row.workspace_id.slice(-2)}:${row.user_id.slice(-2)}:${row.guardrail_id.slice(-2)}`);
 
 try {
-  await db.exec(`
-    create role anon; create role authenticated; create role service_role bypassrls;
-    create table public.workspaces (id uuid primary key);
-    create table public.users (user_id uuid primary key);
-    create table public.keys (id uuid primary key, workspace_id uuid not null references public.workspaces(id));
-    create table public.workspace_guardrails (id uuid primary key, workspace_id uuid not null references public.workspaces(id));
-    create table public.key_guardrails (
-      key_id uuid not null references public.keys(id) on delete cascade,
-      guardrail_id uuid not null references public.workspace_guardrails(id) on delete cascade,
-      primary key (key_id, guardrail_id));
-    create table public.workspace_member_guardrails (
-      workspace_id uuid not null references public.workspaces(id) on delete cascade,
-      user_id uuid not null references public.users(user_id) on delete cascade,
-      guardrail_id uuid not null references public.workspace_guardrails(id) on delete cascade,
-      primary key (workspace_id, user_id, guardrail_id));
-  `);
+  await createGuardrailLevelsBase(db);
   await db.exec(migration);
   await db.exec(`
     insert into public.workspaces values ('${W1}'), ('${W2}');
     insert into public.users values ('${U1}'), ('${U2}'), ('${ULEFT}');
-    insert into public.keys values ('${K1}', '${W1}'), ('${K2}', '${W1}'), ('${K3}', '${W1}'), ('${KFOREIGN}', '${W2}');
-    insert into public.workspace_guardrails values ('${G1}', '${W1}'), ('${G2}', '${W1}'), ('${GFOREIGN}', '${W2}');
+    insert into public.keys (id, workspace_id, created_by) values ('${K1}', '${W1}', '${U1}'), ('${K2}', '${W1}', '${U1}'), ('${K3}', '${W1}', '${U1}'), ('${KFOREIGN}', '${W2}', '${U1}');
+    insert into public.workspace_guardrails (id, workspace_id) values ('${G1}', '${W1}'), ('${G2}', '${W1}'), ('${GFOREIGN}', '${W2}');
     insert into public.key_guardrails values ('${K1}', '${G2}'), ('${K2}', '${G1}'), ('${K3}', '${G2}');
     insert into public.workspace_member_guardrails values ('${W1}', '${U1}', '${G2}'), ('${W1}', '${ULEFT}', '${G1}'), ('${W2}', '${U1}', '${G2}');
   `);

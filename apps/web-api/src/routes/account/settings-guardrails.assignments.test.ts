@@ -28,17 +28,26 @@ const mocks = vi.hoisted(() => ({
 	fetch: vi.fn(async () => new Response(null, { status: 204 })),
 }));
 
-/** The in-memory apply_guardrail_assignment_change: removals, then additions, all or nothing. */
+/**
+ * The in-memory apply_guardrail_assignment_change: removals, then additions, all or nothing. Key and
+ * member changes go to the legacy tables (the database copies them on); workspace and department
+ * changes go to workspace_guardrail_assignments.
+ */
 function applyChange(args: Record<string, any>): { data: null; error: { message: string } | null } {
 	const before = structuredClone(mocks.db);
 	const writesBefore = mocks.writes.length;
 	const keyTarget = args.p_target_type === "key";
-	const table = keyTarget ? "key_guardrails" : "workspace_member_guardrails";
-	const targetColumn = keyTarget ? "key_id" : "user_id";
-	const scope: Row = keyTarget ? {} : { workspace_id: args.p_workspace_id };
+	const levelTarget = args.p_target_type === "workspace" || args.p_target_type === "department";
+	if (args.p_target_type === "workspace" && args.p_target_ids.length) return { data: null, error: { message: "invalid_guardrail_assignment_target" } };
+	const table = levelTarget ? "workspace_guardrail_assignments" : keyTarget ? "key_guardrails" : "workspace_member_guardrails";
+	const targetColumn = levelTarget ? "target_id" : keyTarget ? "key_id" : "user_id";
+	const scope: Row = levelTarget
+		? { workspace_id: args.p_workspace_id, target_type: args.p_target_type }
+		: keyTarget ? {} : { workspace_id: args.p_workspace_id };
+	const targetIds: unknown[] = args.p_target_type === "workspace" ? [null] : args.p_target_ids;
 	const inScope = (row: Row) => Object.entries(scope).every(([column, value]) => row[column] === value);
 	const rows = mocks.db[table] ?? [];
-	const removed = rows.filter((row) => inScope(row) && args.p_target_ids.includes(row[targetColumn]) && args.p_remove_guardrail_ids.includes(row.guardrail_id));
+	const removed = rows.filter((row) => inScope(row) && targetIds.includes(row[targetColumn]) && args.p_remove_guardrail_ids.includes(row.guardrail_id));
 	if (removed.length) mocks.writes.push({ table, op: "delete" });
 	mocks.db[table] = rows.filter((row) => !removed.includes(row));
 	if (mocks.rpcFailsAfterDelete) {
@@ -46,7 +55,7 @@ function applyChange(args: Record<string, any>): { data: null; error: { message:
 		mocks.writes.length = writesBefore;
 		return { data: null, error: { message: "canceling statement due to statement timeout" } };
 	}
-	for (const targetId of args.p_target_ids) {
+	for (const targetId of targetIds) {
 		for (const guardrailId of args.p_add_guardrail_ids) {
 			if ((mocks.db[table] ?? []).some((row) => inScope(row) && row[targetColumn] === targetId && row.guardrail_id === guardrailId)) continue;
 			mocks.writes.push({ table, op: "insert" });
@@ -140,6 +149,8 @@ beforeEach(() => {
 			{ id: "k-deleted", workspace_id: "ws-1", status: "deleted", created_by: "u-1", oauth_user_id: null },
 			{ id: "k-foreign", workspace_id: "ws-2", status: "active", created_by: "u-1", oauth_user_id: null },
 		],
+		workspace_departments: [{ id: "d-1", workspace_id: "ws-1" }, { id: "d-2", workspace_id: "ws-1" }, { id: "d-foreign", workspace_id: "ws-2" }],
+		workspace_guardrail_assignments: [{ workspace_id: "ws-1", target_type: "department", target_id: "d-2", guardrail_id: "g-2" }],
 		workspace_members: [{ workspace_id: "ws-1", user_id: "u-1" }, { workspace_id: "ws-1", user_id: "u-2" }, { workspace_id: "ws-2", user_id: "u-outsider" }],
 		key_guardrails: [
 			{ key_id: "k-1", guardrail_id: "g-2" },
@@ -249,6 +260,49 @@ describe("PATCH /guardrails/assignments", () => {
 		const response = await patch({ targetType: "key", targetIds: ["k-1"] });
 		expect(response.status).toBe(400);
 		expect(await response.json()).toEqual({ error: "Nothing to change" });
+		expect(mocks.writes).toEqual([]);
+	});
+});
+
+describe("PATCH /guardrails/assignments for workspace and department levels", () => {
+	const levelRows = () => (mocks.db.workspace_guardrail_assignments ?? []).map((row) => `${row.target_type}:${row.target_id ?? "-"}:${row.guardrail_id}`).sort();
+	const activeKeys = ["k-1", "k-2", "k-3", "k-left"];
+
+	it("adds and removes department guardrails and refreshes every key in the workspace", async () => {
+		const response = await patch({ targetType: "department", targetIds: ["d-1", "d-2"], addGuardrailIds: ["g-1"], removeGuardrailIds: ["g-2"] });
+		expect(response.status).toBe(200);
+		expect(levelRows()).toEqual(["department:d-1:g-1", "department:d-2:g-1"]);
+		expect(await invalidated()).toEqual(activeKeys);
+	});
+
+	it("assigns a guardrail to the whole workspace without target ids", async () => {
+		expect((await patch({ targetType: "workspace", addGuardrailIds: ["g-1"] })).status).toBe(200);
+		expect(levelRows()).toEqual(["department:d-2:g-2", "workspace:-:g-1"]);
+		expect(await invalidated()).toEqual(activeKeys);
+		expect((await patch({ targetType: "workspace", targetIds: [], removeGuardrailIds: ["g-1"] })).status).toBe(200);
+		expect(levelRows()).toEqual(["department:d-2:g-2"]);
+	});
+
+	it("rejects target ids on a workspace change", async () => {
+		const response = await patch({ targetType: "workspace", targetIds: ["ws-1"], addGuardrailIds: ["g-1"] });
+		expect(response.status).toBe(400);
+		expect(await response.json()).toEqual({ error: "A workspace change takes no targetIds" });
+		expect(mocks.writes).toEqual([]);
+	});
+
+	it.each([
+		["a department from another workspace", ["d-1", "d-foreign"]],
+		["an unknown department", ["d-missing"]],
+	])("rejects %s without writing", async (_label, targetIds) => {
+		const response = await patch({ targetType: "department", targetIds, addGuardrailIds: ["g-1"] });
+		expect(response.status).toBe(409);
+		expect(await response.json()).toEqual({ error: "One or more departments do not belong to this workspace" });
+		expect(mocks.writes).toEqual([]);
+		expect(mocks.waitUntil).not.toHaveBeenCalled();
+	});
+
+	it("rejects a guardrail from another workspace", async () => {
+		expect((await patch({ targetType: "workspace", addGuardrailIds: ["g-foreign"] })).status).toBe(404);
 		expect(mocks.writes).toEqual([]);
 	});
 });

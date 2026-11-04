@@ -66,6 +66,77 @@ type GuardrailRow = {
 	sensitive_info_rules?: unknown;
 };
 
+const RESOLVE_KEY_GUARDRAILS_RPC = "resolve_key_guardrails";
+
+/** PostgREST (PGRST202) or Postgres (42883) saying resolve_key_guardrails does not exist yet. */
+function isMissingResolveKeyGuardrails(error: unknown): boolean {
+	if (!error || typeof error !== "object") return false;
+	const record = error as Record<string, unknown>;
+	const code = String(record.code ?? "").trim().toUpperCase();
+	const message = String(record.message ?? "").toLowerCase();
+	return (code === "PGRST202" || code === "42883") && message.includes(RESOLVE_KEY_GUARDRAILS_RPC);
+}
+
+function guardrailIdsFrom(rows: unknown): string[] {
+	return Array.isArray(rows)
+		? rows.map((row: any) => String(row?.guardrail_id ?? "").trim()).filter(Boolean)
+		: [];
+}
+
+const RESOLVE_PAGE_SIZE = 1000;
+const GUARDRAIL_ID_BATCH = 200;
+
+/**
+ * Every guardrail id resolve_key_guardrails returns for the key. It returns one row per guardrail
+ * and level, and PostgREST caps a response at 1,000 rows, so this pages until a short page.
+ */
+async function fetchResolvedGuardrailIds(
+	supabase: ReturnType<typeof getSupabaseAdmin>,
+	args: { workspaceId: string; apiKeyId: string },
+): Promise<{ data: string[]; error: null } | { data: null; error: { code?: string; message: string } }> {
+	const ids: string[] = [];
+	for (let from = 0; ; from += RESOLVE_PAGE_SIZE) {
+		const result = await supabase
+			.rpc(RESOLVE_KEY_GUARDRAILS_RPC, { p_workspace_id: args.workspaceId, p_key_id: args.apiKeyId })
+			.order("guardrail_id")
+			.order("source_type")
+			.order("source_id")
+			.range(from, from + RESOLVE_PAGE_SIZE - 1);
+		if (result.error) return { data: null, error: result.error };
+		const page = Array.isArray(result.data) ? result.data : [];
+		ids.push(...guardrailIdsFrom(page));
+		if (page.length < RESOLVE_PAGE_SIZE) return { data: ids, error: null };
+	}
+}
+
+/**
+ * The key and principal-member guardrails, read from the join tables that
+ * resolve_key_guardrails replaces. Only used while that function is not deployed
+ * yet (code released before its migration); remove with the join tables.
+ */
+async function fetchLegacyKeyGuardrailIds(
+	supabase: ReturnType<typeof getSupabaseAdmin>,
+	args: { workspaceId: string; apiKeyId: string; principalUserId: string },
+): Promise<string[]> {
+	const [keyGuardrailsResult, memberGuardrailsResult] = await Promise.all([
+		supabase.from("key_guardrails").select("guardrail_id").eq("key_id", args.apiKeyId),
+		args.principalUserId
+			? supabase
+				.from("workspace_member_guardrails")
+				.select("guardrail_id")
+				.eq("workspace_id", args.workspaceId)
+				.eq("user_id", args.principalUserId)
+			: Promise.resolve({ data: [], error: null }),
+	]);
+	if (keyGuardrailsResult.error) {
+		throw new Error(`key_guardrails_lookup_failed:${keyGuardrailsResult.error.message}`);
+	}
+	if (memberGuardrailsResult.error) {
+		throw new Error(`workspace_member_guardrails_lookup_failed:${memberGuardrailsResult.error.message}`);
+	}
+	return [...guardrailIdsFrom(keyGuardrailsResult.data), ...guardrailIdsFrom(memberGuardrailsResult.data)];
+}
+
 type ProviderHintSet = {
 	only: string[];
 	ignore: string[];
@@ -563,7 +634,11 @@ export async function fetchWorkspacePolicy(args: {
 	}
 
 	const supabase = getSupabaseAdmin();
-	const [settingsResult, keyResult, keyGuardrailsResult, routeLinkResult] = await Promise.all([
+	// resolve_key_guardrails returns the enabled guardrails assigned to the workspace, the key's
+	// departments, its principal member (oauth_user_id, else created_by, even after they leave)
+	// and the key itself. Assignment changes and department membership changes queue a workspace
+	// publication (database triggers), whose drain bumps the workspace version token above.
+	const [settingsResult, keyResult, resolvedGuardrailsResult, routeLinkResult] = await Promise.all([
 		supabase
 			.from("workspace_settings")
 			.select(
@@ -577,10 +652,7 @@ export async function fetchWorkspacePolicy(args: {
 			.eq("id", args.apiKeyId)
 			.eq("workspace_id", args.workspaceId)
 			.maybeSingle(),
-		supabase
-			.from("key_guardrails")
-			.select("guardrail_id")
-			.eq("key_id", args.apiKeyId),
+		fetchResolvedGuardrailIds(supabase, { workspaceId: args.workspaceId, apiKeyId: args.apiKeyId }),
 		supabase
 			.from("gateway_dynamic_route_keys")
 			.select("route_id")
@@ -594,8 +666,8 @@ export async function fetchWorkspacePolicy(args: {
 	if (keyResult.error) {
 		throw new Error(`key_principal_lookup_failed:${keyResult.error.message}`);
 	}
-	if (keyGuardrailsResult.error) {
-		throw new Error(`key_guardrails_lookup_failed:${keyGuardrailsResult.error.message}`);
+	if (resolvedGuardrailsResult.error && !isMissingResolveKeyGuardrails(resolvedGuardrailsResult.error)) {
+		throw new Error(`key_guardrails_lookup_failed:${resolvedGuardrailsResult.error.message}`);
 	}
 	if (routeLinkResult.error) {
 		if (isOptionalDynamicRouteSchemaUnavailable(routeLinkResult.error)) {
@@ -608,28 +680,17 @@ export async function fetchWorkspacePolicy(args: {
 		}
 	}
 
-	const principalUserId = String(keyResult.data?.oauth_user_id ?? keyResult.data?.created_by ?? "").trim();
-	let memberGuardrailIds: string[] = [];
-	if (principalUserId) {
-		const memberGuardrailsResult = await supabase
-			.from("workspace_member_guardrails")
-			.select("guardrail_id")
-			.eq("workspace_id", args.workspaceId)
-			.eq("user_id", principalUserId);
-		if (memberGuardrailsResult.error) {
-			throw new Error(`workspace_member_guardrails_lookup_failed:${memberGuardrailsResult.error.message}`);
-		}
-		memberGuardrailIds = (memberGuardrailsResult.data ?? [])
-			.map((row: any) => String(row?.guardrail_id ?? "").trim())
-			.filter(Boolean);
-	}
-
-	const guardrailIds = [...new Set([...(keyGuardrailsResult.data ?? [])
-		.map((row: any) => String(row?.guardrail_id ?? "").trim())
-		.filter(Boolean), ...memberGuardrailIds])];
+	const guardrailIds = [...new Set(resolvedGuardrailsResult.error
+		? await fetchLegacyKeyGuardrailIds(supabase, {
+			workspaceId: args.workspaceId,
+			apiKeyId: args.apiKeyId,
+			principalUserId: String(keyResult.data?.oauth_user_id ?? keyResult.data?.created_by ?? "").trim(),
+		})
+		: resolvedGuardrailsResult.data)];
 
 	let guardrails: GuardrailRow[] = [];
-	if (guardrailIds.length > 0) {
+	// PostgREST returns at most 1,000 rows and long id lists overflow the URL, so read in batches.
+	for (let index = 0; index < guardrailIds.length; index += GUARDRAIL_ID_BATCH) {
 		const guardrailsResult = await supabase
 			.from("workspace_guardrails")
 			.select(
@@ -637,13 +698,13 @@ export async function fetchWorkspacePolicy(args: {
 			)
 			.eq("workspace_id", args.workspaceId)
 			.eq("enabled", true)
-			.in("id", guardrailIds);
+			.in("id", guardrailIds.slice(index, index + GUARDRAIL_ID_BATCH));
 
 		if (guardrailsResult.error) {
 			throw new Error(`workspace_guardrails_lookup_failed:${guardrailsResult.error.message}`);
 		}
 
-		guardrails = (guardrailsResult.data ?? []) as GuardrailRow[];
+		guardrails.push(...((guardrailsResult.data ?? []) as GuardrailRow[]));
 	}
 
 	let dynamicRoute: DynamicRoutePolicy | null = null;

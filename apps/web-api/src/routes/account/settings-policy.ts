@@ -22,7 +22,7 @@ import {
 } from "./workspace-routing-settings";
 import { successorOverviewFromRows } from "./successor-overview";
 
-const GUARDRAIL_COLUMNS = "id,workspace_id,enabled,name,description,privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_free_may_publish_prompts,privacy_enable_input_output_logging,privacy_zdr_only,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed,model_restriction_mode,allowed_api_model_ids,prompt_injection_enabled,prompt_injection_action,sensitive_info_enabled,sensitive_info_default_action,sensitive_info_rules,created_at,updated_at";
+const GUARDRAIL_COLUMNS = "id,workspace_id,kind,enabled,name,description,privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_free_may_publish_prompts,privacy_enable_input_output_logging,privacy_zdr_only,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed,model_restriction_mode,allowed_api_model_ids,prompt_injection_enabled,prompt_injection_action,sensitive_info_enabled,sensitive_info_default_action,sensitive_info_rules,created_at,updated_at";
 
 function accountPolicyFromRow(row: any) {
 	const mode = (value: unknown) => value === "allowlist" || value === "blocklist" ? value : "none";
@@ -162,16 +162,38 @@ accountSettingsPolicyRouter.get("/chat/effective-policy", async (c) => {
 	if (!workspaceId) return c.json({ guardrails: [], workspace: null, workspaceId: null }, 200, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
-	const [workspaceResult, assignmentsResult] = await Promise.all([
-		context.client.from("workspace_settings").select("provider_restriction_mode,provider_restriction_provider_ids,model_restriction_mode,model_restriction_model_ids").eq("workspace_id", workspaceId).maybeSingle(),
-		context.client.from("workspace_member_guardrails").select("guardrail_id").eq("workspace_id", workspaceId).eq("user_id", context.user.id),
-	]);
-	if (workspaceResult.error || assignmentsResult.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	const guardrailIds = (assignmentsResult.data ?? []).map((row) => String(row.guardrail_id ?? "")).filter(Boolean);
-	const guardrailsResult = guardrailIds.length
-		? await context.client.from("workspace_guardrails").select("id,name,enabled,provider_restriction_mode,provider_restriction_provider_ids,model_restriction_mode,allowed_api_model_ids").eq("workspace_id", workspaceId).eq("enabled", true).in("id", guardrailIds)
-		: { data: [], error: null };
-	if (guardrailsResult.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	// Chat requests use the member's managed key, which has no department of its own, so the
+	// gateway applies the workspace, the member's departments and the member
+	// (resolve_member_guardrails), plus anything assigned to that key directly.
+	let guardrailIds: string[];
+	let workspaceResult;
+	try {
+		const [workspaceRow, memberRows, chatKeyRow] = await Promise.all([
+			context.client.from("workspace_settings").select("provider_restriction_mode,provider_restriction_provider_ids,model_restriction_mode,model_restriction_model_ids").eq("workspace_id", workspaceId).maybeSingle(),
+			readAllPages<{ guardrail_id: string | null }>((from, to) => context.client
+				.rpc("resolve_member_guardrails", { p_workspace_id: workspaceId, p_user_id: context.user.id })
+				.order("guardrail_id").order("source_type").order("source_id").range(from, to)),
+			context.client.from("keys").select("id").eq("workspace_id", workspaceId).eq("created_by", context.user.id).eq("name", "__chat_route_managed_key__").maybeSingle(),
+		]);
+		if (workspaceRow.error || memberRows.error || chatKeyRow.error) throw new Error("settings_unavailable");
+		workspaceResult = workspaceRow;
+		const keyRows = chatKeyRow.data?.id
+			? await readAllPages<{ guardrail_id: string | null }>((from, to) => context.client.from("workspace_guardrail_assignments")
+				.select("guardrail_id").eq("workspace_id", workspaceId).eq("target_type", "key").eq("target_id", chatKeyRow.data!.id)
+				.order("guardrail_id").range(from, to))
+			: { data: [], error: null };
+		if (keyRows.error) throw new Error("settings_unavailable");
+		guardrailIds = [...new Set([...memberRows.data, ...keyRows.data].map((row) => String(row.guardrail_id ?? "")).filter(Boolean))];
+	} catch {
+		return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	}
+	const guardrailRows: unknown[] = [];
+	for (let index = 0; index < guardrailIds.length; index += 200) {
+		const batch = await context.client.from("workspace_guardrails").select("id,name,enabled,provider_restriction_mode,provider_restriction_provider_ids,model_restriction_mode,allowed_api_model_ids").eq("workspace_id", workspaceId).eq("enabled", true).in("id", guardrailIds.slice(index, index + 200));
+		if (batch.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+		guardrailRows.push(...(batch.data ?? []));
+	}
+	const guardrailsResult = { data: guardrailRows };
 	const normalize = (row: any, modelIdsKey = "model_restriction_model_ids") => ({
 		provider: restriction(row?.provider_restriction_mode, row?.provider_restriction_provider_ids),
 		model: restriction(row?.model_restriction_mode, row?.[modelIdsKey]),
@@ -725,9 +747,35 @@ accountSettingsPolicyRouter.delete("/presets/:presetId", async (c) => {
 	const cache = await purgePresetCache(c, id); return c.json({ success: true, cache }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
+type GuardrailAssignmentRow = { guardrail_id: string | null; target_type: string | null; target_id: string | null };
+
+/** Every assignment of these guardrails (workspace_guardrail_assignments: workspace, department, member and key levels). */
+function readGuardrailAssignments(context: AccountWorkspaceContext, workspaceId: string, guardrailIds: string[]) {
+	return readAllPages<GuardrailAssignmentRow>((from, to) => context.client.from("workspace_guardrail_assignments")
+		.select("guardrail_id,target_type,target_id").eq("workspace_id", workspaceId).in("guardrail_id", guardrailIds)
+		.order("guardrail_id").order("target_type").order("target_id").range(from, to));
+}
+
+/** Target ids per guardrail for each level, and the guardrails assigned to the whole workspace. */
+function groupGuardrailAssignments(rows: GuardrailAssignmentRow[]) {
+	const maps = { department: {} as Record<string, string[]>, key: {} as Record<string, string[]>, member: {} as Record<string, string[]> };
+	const workspace: string[] = [];
+	for (const row of rows) {
+		if (!row.guardrail_id) continue;
+		if (row.target_type === "workspace") {
+			workspace.push(row.guardrail_id);
+			continue;
+		}
+		if (!row.target_id || !(row.target_type === "department" || row.target_type === "key" || row.target_type === "member")) continue;
+		const map = maps[row.target_type];
+		(map[row.guardrail_id] ??= []).push(row.target_id);
+	}
+	return { ...maps, workspace };
+}
+
 accountSettingsPolicyRouter.get("/guardrails", async (c) => {
 	const workspaceId = c.req.query("workspaceId")?.trim();
-	if (!workspaceId) return c.json({ activeProviderModels: [], guardrailKeyIdsByGuardrailId: {}, guardrailMemberIdsByGuardrailId: {}, guardrails: [], keys: [], members: [], providers: [], workspaceId: null }, 200, PRIVATE_NO_STORE_HEADERS);
+	if (!workspaceId) return c.json({ activeProviderModels: [], guardrailDepartmentIdsByGuardrailId: {}, guardrailKeyIdsByGuardrailId: {}, guardrailMemberIdsByGuardrailId: {}, guardrails: [], keys: [], members: [], providers: [], workspaceGuardrailIds: [], workspaceId: null }, 200, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	try {
@@ -738,27 +786,18 @@ accountSettingsPolicyRouter.get("/guardrails", async (c) => {
 		if (guardrailsResult.error) throw guardrailsResult.error;
 		const guardrails = guardrailsResult.data ?? [];
 		const ids = guardrails.map((guardrail) => guardrail.id).filter(Boolean);
-		const keyMap = new Map<string, string[]>();
-		const memberMap = new Map<string, string[]>();
-		if (ids.length) {
-			const [keyMappingsResult, memberMappingsResult] = await Promise.all([
-				readAllPages((from, to) => context.client.from("key_guardrails").select("guardrail_id,key_id").in("guardrail_id", ids)
-					.order("guardrail_id").order("key_id").range(from, to)),
-				readAllPages((from, to) => context.client.from("workspace_member_guardrails").select("guardrail_id,user_id").eq("workspace_id", workspaceId).in("guardrail_id", ids)
-					.order("guardrail_id").order("user_id").range(from, to)),
-			]);
-			if (keyMappingsResult.error) throw keyMappingsResult.error;
-			if (memberMappingsResult.error) throw memberMappingsResult.error;
-			for (const row of keyMappingsResult.data ?? []) {
-				if (!row.guardrail_id || !row.key_id) continue;
-				keyMap.set(row.guardrail_id, [...(keyMap.get(row.guardrail_id) ?? []), row.key_id]);
-			}
-			for (const row of memberMappingsResult.data ?? []) {
-				if (!row.guardrail_id || !row.user_id) continue;
-				memberMap.set(row.guardrail_id, [...(memberMap.get(row.guardrail_id) ?? []), row.user_id]);
-			}
-		}
-		return c.json({ ...reference, guardrailKeyIdsByGuardrailId: Object.fromEntries(keyMap), guardrailMemberIdsByGuardrailId: Object.fromEntries(memberMap), guardrails, workspaceId }, 200, PRIVATE_NO_STORE_HEADERS);
+		const assignments = ids.length ? await readGuardrailAssignments(context, workspaceId, ids) : null;
+		if (assignments?.error) throw assignments.error;
+		const byTarget = groupGuardrailAssignments(assignments?.data ?? []);
+		return c.json({
+			...reference,
+			guardrailDepartmentIdsByGuardrailId: byTarget.department,
+			guardrailKeyIdsByGuardrailId: byTarget.key,
+			guardrailMemberIdsByGuardrailId: byTarget.member,
+			guardrails,
+			workspaceGuardrailIds: byTarget.workspace,
+			workspaceId,
+		}, 200, PRIVATE_NO_STORE_HEADERS);
 	} catch {
 		return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}
@@ -768,7 +807,7 @@ accountSettingsPolicyRouter.get("/guardrails/editor", async (c) => {
 	const mode = c.req.query("mode") === "edit" ? "edit" : "create";
 	const guardrailId = c.req.query("guardrailId")?.trim();
 	const workspaceId = c.req.query("workspaceId")?.trim();
-	if (!workspaceId) return c.json({ accountPolicy: accountPolicyFromRow(null), activeProviderModels: [], guardrail: null, initialKeyIds: [], initialMemberIds: [], keys: [], members: [], mode, providers: [], teamName: null, workspaceId: null }, 200, PRIVATE_NO_STORE_HEADERS);
+	if (!workspaceId) return c.json({ accountPolicy: accountPolicyFromRow(null), activeProviderModels: [], guardrail: null, initialDepartmentIds: [], initialKeyIds: [], initialMemberIds: [], initialWorkspaceAssigned: false, keys: [], members: [], mode, providers: [], teamName: null, workspaceId: null }, 200, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	try {
@@ -781,19 +820,21 @@ accountSettingsPolicyRouter.get("/guardrails/editor", async (c) => {
 		]);
 		if (guardrailResult.error) throw guardrailResult.error;
 		if (workspacePolicyResult.error) throw workspacePolicyResult.error;
-		let initialKeyIds: string[] = [];
-		let initialMemberIds: string[] = [];
-		if (mode === "edit" && guardrailResult.data?.id) {
-			const [keyMappingsResult, memberMappingsResult] = await Promise.all([
-				readAllPages((from, to) => context.client.from("key_guardrails").select("key_id").eq("guardrail_id", guardrailResult.data.id).order("key_id").range(from, to)),
-				readAllPages((from, to) => context.client.from("workspace_member_guardrails").select("user_id").eq("workspace_id", workspaceId).eq("guardrail_id", guardrailResult.data.id).order("user_id").range(from, to)),
-			]);
-			if (keyMappingsResult.error) throw keyMappingsResult.error;
-			if (memberMappingsResult.error) throw memberMappingsResult.error;
-			initialKeyIds = (keyMappingsResult.data ?? []).map((row) => row.key_id).filter(Boolean);
-			initialMemberIds = (memberMappingsResult.data ?? []).map((row) => row.user_id).filter(Boolean);
-		}
-		return c.json({ ...reference, accountPolicy: accountPolicyFromRow(workspacePolicyResult.data), guardrail: guardrailResult.data ?? null, initialKeyIds, initialMemberIds, mode, workspaceId }, 200, PRIVATE_NO_STORE_HEADERS);
+		const editedGuardrailId = mode === "edit" ? guardrailResult.data?.id : null;
+		const assignments = editedGuardrailId ? await readGuardrailAssignments(context, workspaceId, [editedGuardrailId]) : null;
+		if (assignments?.error) throw assignments.error;
+		const byTarget = groupGuardrailAssignments(assignments?.data ?? []);
+		return c.json({
+			...reference,
+			accountPolicy: accountPolicyFromRow(workspacePolicyResult.data),
+			guardrail: guardrailResult.data ?? null,
+			initialDepartmentIds: editedGuardrailId ? byTarget.department[editedGuardrailId] ?? [] : [],
+			initialKeyIds: editedGuardrailId ? byTarget.key[editedGuardrailId] ?? [] : [],
+			initialMemberIds: editedGuardrailId ? byTarget.member[editedGuardrailId] ?? [] : [],
+			initialWorkspaceAssigned: editedGuardrailId ? byTarget.workspace.includes(editedGuardrailId) : false,
+			mode,
+			workspaceId,
+		}, 200, PRIVATE_NO_STORE_HEADERS);
 	} catch {
 		return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}

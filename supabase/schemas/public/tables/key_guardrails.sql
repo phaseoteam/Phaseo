@@ -22,6 +22,11 @@ CREATE TRIGGER protect_slack_agent_guardrail
   FOR EACH ROW
   EXECUTE FUNCTION public.protect_slack_agent_guardrail();
 
+CREATE TRIGGER sync_guardrail_assignments
+  AFTER INSERT OR DELETE OR UPDATE ON public.key_guardrails
+  FOR EACH ROW
+  EXECUTE FUNCTION private.sync_guardrail_assignments();
+
 CREATE POLICY "key_guardrails_delete_own_team" ON "public"."key_guardrails"
   FOR DELETE
   TO "authenticated"

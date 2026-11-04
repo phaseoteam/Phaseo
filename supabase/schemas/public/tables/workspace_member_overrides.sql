@@ -28,6 +28,11 @@ CREATE INDEX workspace_member_overrides_updated_by_idx ON public.workspace_membe
 
 CREATE INDEX workspace_member_overrides_user_id_idx ON public.workspace_member_overrides USING btree (user_id);
 
+CREATE TRIGGER gateway_workspace_publication
+  AFTER INSERT OR DELETE OR UPDATE ON public.workspace_member_overrides
+  FOR EACH ROW
+  EXECUTE FUNCTION private.capture_gateway_workspace_publication();
+
 CREATE POLICY "deny_direct_client_access" ON "public"."workspace_member_overrides"
   AS RESTRICTIVE
   FOR ALL

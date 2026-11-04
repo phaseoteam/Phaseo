@@ -62,6 +62,12 @@ CREATE UNIQUE INDEX keys_oauth_delegated_active_idx ON public.keys USING btree (
 CREATE INDEX keys_workspace_id_idx ON public.keys USING btree (workspace_id)
   WHERE (workspace_id IS NOT NULL);
 
+CREATE TRIGGER keys_department_gateway_publication
+  AFTER UPDATE OF department_id ON public.keys
+  FOR EACH ROW
+  WHEN ((old.department_id IS DISTINCT FROM new.department_id))
+  EXECUTE FUNCTION private.capture_gateway_workspace_publication();
+
 CREATE TRIGGER keys_set_updated_at
   BEFORE UPDATE ON public.keys
   FOR EACH ROW

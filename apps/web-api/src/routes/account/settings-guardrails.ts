@@ -61,6 +61,43 @@ export function guardrailRow(payload: GuardrailPayload, includeName = true): Rec
 	return row;
 }
 
+export const GUARDRAIL_KINDS = ["access", "safety", "spend", "rate"] as const;
+export type GuardrailKind = (typeof GUARDRAIL_KINDS)[number];
+
+/** Spend and rate guardrails have no settings yet (they come with later phases), so only these can be written. */
+const WRITABLE_GUARDRAIL_KINDS: ReadonlySet<GuardrailKind> = new Set(["access", "safety"]);
+
+/**
+ * The kind of a guardrail payload that names none: safety when prompt injection or sensitive info is
+ * on and no access setting is (the rule the migration backfilled existing guardrails with), else access.
+ * Lets the current editor, which sends no kind, keep creating guardrails.
+ */
+export function inferGuardrailKind(payload: GuardrailPayload): "access" | "safety" {
+	const restricted = (mode: unknown) => mode === "allowlist" || mode === "blocklist";
+	const accessSetting = payload.privacyEnablePaidMayTrain === false
+		|| payload.privacyEnableFreeMayTrain === false
+		|| payload.privacyEnableFreeMayPublishPrompts === false
+		|| payload.privacyEnableInputOutputLogging === false
+		|| payload.privacyZdrOnly === true
+		|| restricted(payload.providerRestrictionMode)
+		|| payload.providerRestrictionEnforceAllowed === true
+		|| restricted(payload.modelRestrictionMode);
+	const safetySetting = payload.promptInjectionEnabled === true || payload.sensitiveInfoEnabled === true;
+	return safetySetting && !accessSetting ? "safety" : "access";
+}
+
+/**
+ * The kind to write: the payload's own when it names one, else on create the inferred kind and on
+ * update none (an edit without a kind keeps the stored one, so a partial update cannot flip it).
+ */
+export function guardrailKindForWrite(payload: GuardrailPayload, mode: "create" | "update"): { kind: GuardrailKind | null } | { error: string } {
+	if (payload.kind === undefined || payload.kind === null) return { kind: mode === "create" ? inferGuardrailKind(payload) : null };
+	const kind = String(payload.kind).trim().toLowerCase();
+	if (!(GUARDRAIL_KINDS as readonly string[]).includes(kind)) return { error: `kind must be one of ${GUARDRAIL_KINDS.join(", ")}` };
+	if (!WRITABLE_GUARDRAIL_KINDS.has(kind as GuardrailKind)) return { error: "Spend and rate guardrails are not available yet" };
+	return { kind: kind as GuardrailKind };
+}
+
 async function adminContext(c: any, workspaceId: unknown) {
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: String(workspaceId ?? "") });
 	return context && ["owner", "admin"].includes(context.role.toLowerCase()) ? context : null;
@@ -140,6 +177,16 @@ async function checkWorkspaceMembers(context: any, userIds: string[]): Promise<T
 	return null;
 }
 
+/** Every department is in this workspace. */
+async function checkWorkspaceDepartments(context: any, departmentIds: string[]): Promise<TargetProblem> {
+	if (!departmentIds.length) return null;
+	const departments = await context.client.from("workspace_departments").select("id").eq("workspace_id", context.workspaceId).in("id", departmentIds);
+	if (departments.error) return { status: 503, error: "guardrail_write_failed" };
+	const validIds = new Set((departments.data ?? []).map((department: any) => String(department.id)));
+	if (departmentIds.some((id) => !validIds.has(id))) return { status: 409, error: "One or more departments do not belong to this workspace" };
+	return null;
+}
+
 function idList(value: unknown): string[] {
 	return Array.isArray(value) ? [...new Set(value.map((id) => String(id ?? "").trim()).filter(Boolean))] : [];
 }
@@ -177,11 +224,13 @@ accountSettingsGuardrailsRouter.post("/guardrails", async (c) => {
 	const body: GuardrailPayload = await c.req.json<GuardrailPayload>().catch(() => ({}));
 	const context = await adminContext(c, body.workspaceId);
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const kind = guardrailKindForWrite(body, "create");
+	if ("error" in kind) return c.json({ error: kind.error }, 400, PRIVATE_NO_STORE_HEADERS);
 	try {
-		const result = await context.client.from("workspace_guardrails").insert({ workspace_id: context.workspaceId, ...guardrailRow(body) }).select("id").maybeSingle();
+		const result = await context.client.from("workspace_guardrails").insert({ workspace_id: context.workspaceId, ...guardrailRow(body), kind: kind.kind }).select("id,kind").maybeSingle();
 		if (result.error) throw result.error;
 		scheduleInvalidation(c, context);
-		return c.json({ id: result.data?.id }, 200, PRIVATE_NO_STORE_HEADERS);
+		return c.json({ id: result.data?.id, kind: result.data?.kind ?? kind.kind }, 200, PRIVATE_NO_STORE_HEADERS);
 	} catch (error) { return c.json({ error: error instanceof Error ? error.message : "guardrail_write_failed" }, 409, PRIVATE_NO_STORE_HEADERS); }
 });
 
@@ -189,11 +238,14 @@ accountSettingsGuardrailsRouter.put("/guardrails/:guardrailId", async (c) => {
 	const body: GuardrailPayload = await c.req.json<GuardrailPayload>().catch(() => ({}));
 	const context = await adminContext(c, body.workspaceId);
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const kind = guardrailKindForWrite(body, "update");
+	if ("error" in kind) return c.json({ error: kind.error }, 400, PRIVATE_NO_STORE_HEADERS);
 	try {
-		const result = await context.client.from("workspace_guardrails").update(guardrailRow(body)).eq("id", c.req.param("guardrailId")).eq("workspace_id", context.workspaceId);
+		const result = await context.client.from("workspace_guardrails").update({ ...guardrailRow(body), ...(kind.kind ? { kind: kind.kind } : {}) })
+			.eq("id", c.req.param("guardrailId")).eq("workspace_id", context.workspaceId).select("kind");
 		if (result.error) throw result.error;
 		scheduleInvalidation(c, context);
-		return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
+		return c.json({ success: true, kind: result.data?.[0]?.kind ?? kind.kind }, 200, PRIVATE_NO_STORE_HEADERS);
 	} catch (error) { return c.json({ error: error instanceof Error ? error.message : "guardrail_write_failed" }, 409, PRIVATE_NO_STORE_HEADERS); }
 });
 
@@ -249,21 +301,29 @@ accountSettingsGuardrailsRouter.put("/guardrails/:guardrailId/members", async (c
 
 export { MAX_ASSIGNMENT_GUARDRAILS, MAX_ASSIGNMENT_TARGETS };
 
+export const GUARDRAIL_ASSIGNMENT_TARGET_TYPES = ["workspace", "department", "member", "key"] as const;
+
 export type GuardrailAssignmentChange = {
-	targetType: "key" | "member";
+	targetType: (typeof GUARDRAIL_ASSIGNMENT_TARGET_TYPES)[number];
+	/** Always empty for "workspace": the workspace itself is the target. */
 	targetIds: string[];
 	addGuardrailIds: string[];
 	removeGuardrailIds: string[];
 };
 
-/** Reads an add/remove change for many keys or members; unlike the per-guardrail PUTs, it leaves every other assignment as it is. */
+/**
+ * Reads an add/remove change for the whole workspace or many departments, members or keys; unlike the
+ * per-guardrail PUTs, it leaves every other assignment as it is. A workspace change names no targets
+ * (targetIds absent or empty).
+ */
 export function parseGuardrailAssignmentChange(body: GuardrailPayload): GuardrailAssignmentChange | { error: string } {
-	const targetType = body.targetType === "key" || body.targetType === "member" ? body.targetType : null;
-	if (!targetType) return { error: "targetType must be key or member" };
+	const targetType = GUARDRAIL_ASSIGNMENT_TARGET_TYPES.find((type) => type === body.targetType);
+	if (!targetType) return { error: `targetType must be one of ${GUARDRAIL_ASSIGNMENT_TARGET_TYPES.join(", ")}` };
 	const targetIds = idList(body.targetIds);
 	const addGuardrailIds = idList(body.addGuardrailIds);
 	const removeGuardrailIds = idList(body.removeGuardrailIds);
-	if (!targetIds.length) return { error: "Choose at least one target" };
+	if (targetType === "workspace" && targetIds.length) return { error: "A workspace change takes no targetIds" };
+	if (targetType !== "workspace" && !targetIds.length) return { error: "Choose at least one target" };
 	if (targetIds.length > MAX_ASSIGNMENT_TARGETS) return { error: `Change at most ${MAX_ASSIGNMENT_TARGETS} targets at once` };
 	if (!addGuardrailIds.length && !removeGuardrailIds.length) return { error: "Nothing to change" };
 	if (addGuardrailIds.length + removeGuardrailIds.length > MAX_ASSIGNMENT_GUARDRAILS) return { error: `Change at most ${MAX_ASSIGNMENT_GUARDRAILS} guardrails at once` };
@@ -286,7 +346,9 @@ accountSettingsGuardrailsRouter.patch("/guardrails/assignments", async (c) => {
 	// guardrails to the keys they created, and this is the only way to take them off.
 	const problem = targetType === "key"
 		? await checkWorkspaceKeys(context, targetIds)
-		: await checkWorkspaceMembers(context, addGuardrailIds.length ? targetIds : []);
+		: targetType === "member"
+			? await checkWorkspaceMembers(context, addGuardrailIds.length ? targetIds : [])
+			: await checkWorkspaceDepartments(context, targetIds);
 	if (problem) return c.json({ error: problem.error }, problem.status, PRIVATE_NO_STORE_HEADERS);
 	// One transaction, so a failed change leaves every assignment as it was.
 	const result = await context.client.rpc("apply_guardrail_assignment_change", {
@@ -296,7 +358,17 @@ accountSettingsGuardrailsRouter.patch("/guardrails/assignments", async (c) => {
 		p_add_guardrail_ids: addGuardrailIds,
 		p_remove_guardrail_ids: removeGuardrailIds,
 	});
-	if (result.error) return c.json({ error: "guardrail_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
-	c.executionCtx.waitUntil(targetType === "key" ? invalidateKeys(c, targetIds) : invalidateMemberKeys(c, context, targetIds));
+	if (result.error) {
+		const message = String(result.error.message ?? "");
+		if (message.includes("slack_agent_guardrail_protected")) return c.json({ error: "guardrail_protected" }, 409, PRIVATE_NO_STORE_HEADERS);
+		if (message.includes("guardrail_assignment_target_not_found")) return c.json({ error: "One or more targets do not belong to this workspace" }, 409, PRIVATE_NO_STORE_HEADERS);
+		return c.json({ error: "guardrail_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+	}
+	// A workspace or department change reaches keys through their principal's departments, so every
+	// key in the workspace is refreshed. The database also queues a workspace publication for it,
+	// which the gateway drains within about a minute even if these calls fail.
+	c.executionCtx.waitUntil(targetType === "key"
+		? invalidateKeys(c, targetIds)
+		: targetType === "member" ? invalidateMemberKeys(c, context, targetIds) : invalidateWorkspaceKeys(c, context));
 	return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
 });
