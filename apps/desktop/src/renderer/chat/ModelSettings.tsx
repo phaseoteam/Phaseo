@@ -1,4 +1,4 @@
-import { Check, Globe } from "lucide-react";
+import { Check } from "lucide-react";
 import { cn } from "../lib/utils";
 import { Tip } from "../components/ui/tooltip";
 import { Switch } from "../components/ui/switch";
@@ -128,12 +128,19 @@ export function SpeedGlyph({ tier, className }: { tier: SpeedTier; className?: s
 }
 
 /**
- * A region's mark, drawn small enough for a menu row: the US and EU flags, a globe for Global, and the region's code for
+ * A region's mark, drawn small enough for a menu row: the US and EU flags, a globe tile for Global, and the region's code for
  * any other. Flags are simplified (no stars on the US canton) so they stay legible at 14 by 10 pixels.
  */
 export function RegionFlag({ region, className }: { region: string; className?: string }) {
 	const box = cn("h-2.5 w-3.5 shrink-0 overflow-hidden rounded-[2px] ring-1 ring-black/10 dark:ring-white/15", className);
-	if (region === "any") return <Globe aria-hidden className={cn("size-3.5 shrink-0", className)} />;
+	// Global gets a tile of its own, a white globe on blue, so it lines up with the flags beside it.
+	if (region === "any") return <svg aria-hidden viewBox="0 0 14 10" className={box}>
+		<rect width="14" height="10" fill="#1f6feb" />
+		<g fill="none" stroke="#fff" strokeWidth={0.7}>
+			<circle cx="7" cy="5" r="3.4" />
+			<path d="M3.6 5h6.8M7 1.6c1.5 1.7 1.5 5.1 0 6.8M7 1.6c-1.5 1.7-1.5 5.1 0 6.8" />
+		</g>
+	</svg>;
 	if (region === "us") return <svg aria-hidden viewBox="0 0 14 10" className={box}>
 		<rect width="14" height="10" fill="#fff" />
 		{[0, 2, 4, 6, 8].map(y => <rect key={y} y={y * 10 / 9 + 0.0} width="14" height={10 / 9} fill="#b22234" />)}
