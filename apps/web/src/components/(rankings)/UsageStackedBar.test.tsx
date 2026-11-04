@@ -13,6 +13,7 @@ jest.mock("@/lib/fetchers/frontend/fetchRankingSections", () => ({}));
 jest.mock("react", () => ({
 	...jest.requireActual("react"),
 	useEffect: jest.fn(),
+	useRef: jest.fn((initial) => ({ current: initial })),
 	useState: jest.fn((initial) => [typeof initial === "function" ? initial() : initial, jest.fn()]),
 }));
 jest.mock("next/link", () => () => null);
