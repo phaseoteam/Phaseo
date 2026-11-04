@@ -1,5 +1,5 @@
 import { createRoot } from "react-dom/client";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { money, type CardModel, type Model } from "./model";
 import { ModelComparison } from "./ModelComparison";
 import { ModelDetails } from "./ModelDetails";
@@ -678,15 +678,19 @@ function Root() {
 
   const theme: Theme = context?.theme === "dark" ? "dark" : "light";
   const fullscreen = context?.displayMode === "fullscreen";
-  let card = null;
-  let error = "";
-  if (result) {
+  // Parse once per tool result, so host-context renders (theme, display mode) keep
+  // the same models array and never invalidate a search the user started.
+  const { card, error } = useMemo(() => {
+    if (!result) return { card: null, error: "" };
     try {
-      card = cardFor(readResult(result));
+      return { card: cardFor(readResult(result)), error: "" };
     } catch (reason) {
-      error = reason instanceof Error ? reason.message : "Phaseo could not load this data.";
+      return {
+        card: null,
+        error: reason instanceof Error ? reason.message : "Phaseo could not load this data.",
+      };
     }
-  }
+  }, [result]);
   const resultModels = card?.kind === "models" ? card.models : NO_MODELS;
 
   const showExplorer =
