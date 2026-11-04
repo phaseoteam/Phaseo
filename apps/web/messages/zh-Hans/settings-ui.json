@@ -1057,6 +1057,110 @@
 		"footnote": "访问、提示注入和敏感信息列显示每一行护栏合并后的效果。多个护栏同时适用时，以最严格的规则为准。工作区的隐私和路由设置也会同时生效。",
 		"readOnly": "只有工作区所有者和管理员可以更改分配。"
 	},
+	"guardrailWizard": {
+		"title": "新建护栏",
+		"subtitle": "选择要检查的内容并完成设置，然后选择适用对象。",
+		"stepsLabel": "护栏设置步骤",
+		"step": {
+			"start": "作用",
+			"configure": "设置",
+			"assign": "分配",
+			"review": "确认"
+		},
+		"cancel": "取消",
+		"back": "上一步",
+		"continue": "继续",
+		"create": "创建护栏",
+		"creating": "正在创建…",
+		"issue": {
+			"nameRequired": "请先填写名称。",
+			"chooseSection": "请选择一个模板或至少一项检查。",
+			"accessEmpty": "请至少开启一条访问或隐私规则，或移除此项检查。",
+			"providerAllowlistEmpty": "请至少选择一个允许的提供商。空列表会屏蔽所有提供商。",
+			"modelAllowlistEmpty": "请至少选择一个允许的模型。空列表会屏蔽所有模型。",
+			"promptInjectionOff": "请选择如何处理提示注入，或移除此项检查。",
+			"sensitiveInfoOff": "请至少开启一个敏感信息模式，或移除此项检查。"
+		},
+		"nameLabel": "名称",
+		"namePlaceholder": "例如：外包人员策略",
+		"descriptionLabel": "描述（可选）",
+		"descriptionPlaceholder": "适用于谁？",
+		"templatesTitle": "从模板开始",
+		"templatesBody": "模板会自动填写设置，你可以在下一步修改所有内容。",
+		"templateZdr": {
+			"name": "零数据保留",
+			"body": "只路由到不存储提示和输出的端点。"
+		},
+		"templateNoTraining": {
+			"name": "不用提示训练",
+			"body": "跳过可能用你的提示训练或公开提示的端点。"
+		},
+		"templateApprovedProviders": {
+			"name": "仅限已批准的提供商",
+			"body": "只允许你选择的提供商。"
+		},
+		"templateApprovedModels": {
+			"name": "仅限已批准的模型",
+			"body": "只允许你选择的模型。"
+		},
+		"templateBlockPromptInjection": {
+			"name": "阻止提示注入",
+			"body": "在疑似提示注入的请求到达模型前将其拦截。"
+		},
+		"templateRedactPersonalInfo": {
+			"name": "隐去个人信息",
+			"body": "在请求离开 Phaseo 前替换邮箱、电话号码、SSN 和卡号。"
+		},
+		"sectionsTitle": "检查项",
+		"sectionsBody": "选择一项或多项。选择模板会自动勾选。",
+		"sectionAccess": {
+			"name": "访问与隐私",
+			"body": "数据保留、训练，以及可以使用哪些提供商和模型。"
+		},
+		"sectionPromptInjection": {
+			"name": "提示注入",
+			"body": "扫描请求中的提示注入，然后标记、隐去或拦截。"
+		},
+		"sectionSensitiveInfo": {
+			"name": "敏感信息",
+			"body": "查找请求中的个人数据和密钥，然后标记、隐去或拦截。"
+		},
+		"addCheck": "添加检查：",
+		"assignTitle": "“{name}”应适用于谁？",
+		"assignBody": "选择 API 密钥和成员。每一行显示其护栏当前的叠加效果，以及加上这条护栏后的效果。你可以跳过此步，稍后再分配。",
+		"columnNow": "当前",
+		"columnAfter": "加上此护栏后",
+		"assignTotals": "适用于 {keys} 个 API 密钥和 {members} 名成员。",
+		"coveredKeys": "另有 {count} 个 API 密钥通过所选成员受到覆盖。",
+		"assignNone": "尚未应用到任何对象。",
+		"assignMemberHint": "成员的护栏也适用于其创建的 API 密钥。",
+		"notApplied": "未应用",
+		"coveredVia": "通过 {name}",
+		"noTighter": "无变化：当前护栏已覆盖这些规则。",
+		"promptInjectionPart": "提示注入：{action}",
+		"sensitiveInfoPart": "{count} 条敏感信息规则",
+		"reviewWhat": "作用",
+		"reviewModels": "模型",
+		"reviewWho": "适用对象",
+		"change": "修改",
+		"modelsAvailable": "{total} 个模型中仍有 {available} 个可用。",
+		"blocksEverything": "这些规则会屏蔽所有模型，适用密钥发出的请求将会失败。",
+		"appliesTo": "{keys} 个 API 密钥和 {members} 名成员",
+		"appliesToNothing": "暂无。你可以稍后在“分配”标签页中分配。",
+		"turnOnNow": "立即开启",
+		"turnOnNowBody": "关闭时会保存，但网关会跳过它。",
+		"summaryZdr": "只路由到零数据保留的端点",
+		"summaryNoPaidTraining": "跳过可能用提示训练的付费端点",
+		"summaryNoFreeTraining": "跳过可能用提示训练的免费端点",
+		"summaryNoPublishing": "跳过可能公开提示的免费端点",
+		"summaryNoLogging": "跳过记录提示和输出的端点",
+		"summaryProvidersAllowed": "仅允许 {count} 个提供商",
+		"summaryProvidersBlocked": "屏蔽 {count} 个提供商",
+		"summaryModelsAllowed": "仅允许 {count} 个模型",
+		"summaryModelsBlocked": "屏蔽 {count} 个模型",
+		"summaryPromptInjection": "提示注入：{action}",
+		"summarySensitiveInfo": "检查 {count} 个敏感信息模式"
+	},
 	"broadcastControls": {
 		"optional": "（可选）",
 		"noMatchingOptions": "没有匹配的选项。",

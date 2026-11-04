@@ -1057,6 +1057,110 @@
 		"footnote": "Accès, injection de prompt et informations sensibles montrent l'effet combiné des garde-corps de chaque ligne. Quand plusieurs s'appliquent, la règle la plus stricte l'emporte. Les paramètres de confidentialité et de routage de l'espace de travail s'appliquent en plus.",
 		"readOnly": "Seuls les propriétaires et administrateurs de l'espace de travail peuvent modifier les attributions."
 	},
+	"guardrailWizard": {
+		"title": "Nouveau garde-corps",
+		"subtitle": "Choisissez ce qu'il vérifie, configurez-le, puis choisissez à qui il s'applique.",
+		"stepsLabel": "Étapes de configuration du garde-corps",
+		"step": {
+			"start": "Ce qu'il fait",
+			"configure": "Configurer",
+			"assign": "Attribuer",
+			"review": "Vérifier"
+		},
+		"cancel": "Annuler",
+		"back": "Retour",
+		"continue": "Continuer",
+		"create": "Créer le garde-corps",
+		"creating": "Création…",
+		"issue": {
+			"nameRequired": "Ajoutez un nom pour continuer.",
+			"chooseSection": "Choisissez un modèle ou au moins une vérification pour continuer.",
+			"accessEmpty": "Activez au moins une règle d'accès ou de confidentialité, ou retirez cette vérification.",
+			"providerAllowlistEmpty": "Choisissez au moins un fournisseur autorisé. Une liste vide bloque tous les fournisseurs.",
+			"modelAllowlistEmpty": "Choisissez au moins un modèle autorisé. Une liste vide bloque tous les modèles.",
+			"promptInjectionOff": "Choisissez comment traiter l'injection de prompt, ou retirez cette vérification.",
+			"sensitiveInfoOff": "Activez au moins un motif d'informations sensibles, ou retirez cette vérification."
+		},
+		"nameLabel": "Nom",
+		"namePlaceholder": "ex. Règle pour les prestataires",
+		"descriptionLabel": "Description (facultatif)",
+		"descriptionPlaceholder": "À qui est-il destiné ?",
+		"templatesTitle": "Partir d'un modèle",
+		"templatesBody": "Un modèle remplit les paramètres. Vous pourrez tout modifier à l'étape suivante.",
+		"templateZdr": {
+			"name": "Aucune conservation des données",
+			"body": "Router uniquement vers des endpoints qui ne conservent ni prompts ni réponses."
+		},
+		"templateNoTraining": {
+			"name": "Pas d'entraînement sur les prompts",
+			"body": "Ignorer les endpoints susceptibles d'entraîner sur vos prompts ou de les publier."
+		},
+		"templateApprovedProviders": {
+			"name": "Fournisseurs approuvés uniquement",
+			"body": "Autoriser uniquement les fournisseurs que vous choisissez."
+		},
+		"templateApprovedModels": {
+			"name": "Modèles approuvés uniquement",
+			"body": "Autoriser uniquement les modèles que vous choisissez."
+		},
+		"templateBlockPromptInjection": {
+			"name": "Bloquer l'injection de prompt",
+			"body": "Arrêter les requêtes qui ressemblent à une injection de prompt avant qu'elles n'atteignent le modèle."
+		},
+		"templateRedactPersonalInfo": {
+			"name": "Masquer les données personnelles",
+			"body": "Remplacer e-mails, numéros de téléphone, SSN et numéros de carte avant que les requêtes ne quittent Phaseo."
+		},
+		"sectionsTitle": "Vérifications",
+		"sectionsBody": "Choisissez-en une ou plusieurs. Un modèle les coche pour vous.",
+		"sectionAccess": {
+			"name": "Accès et confidentialité",
+			"body": "Conservation des données, entraînement, et fournisseurs et modèles utilisables."
+		},
+		"sectionPromptInjection": {
+			"name": "Injection de prompt",
+			"body": "Analyser les requêtes pour détecter l'injection de prompt, puis les signaler, les masquer ou les bloquer."
+		},
+		"sectionSensitiveInfo": {
+			"name": "Informations sensibles",
+			"body": "Repérer les données personnelles et les secrets dans les requêtes, puis les signaler, les masquer ou les bloquer."
+		},
+		"addCheck": "Ajouter une vérification :",
+		"assignTitle": "À qui « {name} » doit-il s'appliquer ?",
+		"assignBody": "Choisissez des clés d'API et des membres. Chaque ligne montre le résultat de ses garde-corps maintenant et avec celui-ci. Vous pouvez passer cette étape et l'attribuer plus tard.",
+		"columnNow": "Maintenant",
+		"columnAfter": "Avec ce garde-corps",
+		"assignTotals": "S'applique à {keys, plural, one {# clé d'API} other {# clés d'API}} et {members, plural, one {# membre} other {# membres}}.",
+		"coveredKeys": "{count, plural, one {# autre clé d'API est couverte} other {# autres clés d'API sont couvertes}} via les membres sélectionnés.",
+		"assignNone": "N'est encore appliqué à rien.",
+		"assignMemberHint": "Les garde-corps d'un membre s'appliquent aussi aux clés d'API qu'il crée.",
+		"notApplied": "Non appliqué",
+		"coveredVia": "Via {name}",
+		"noTighter": "Aucun changement : ses garde-corps actuels couvrent déjà cela.",
+		"promptInjectionPart": "Injection de prompt : {action}",
+		"sensitiveInfoPart": "{count, plural, one {# règle d'informations sensibles} other {# règles d'informations sensibles}}",
+		"reviewWhat": "Ce qu'il fait",
+		"reviewModels": "Modèles",
+		"reviewWho": "S'applique à",
+		"change": "Modifier",
+		"modelsAvailable": "{available} modèles sur {total} restent utilisables.",
+		"blocksEverything": "Ces règles bloquent tous les modèles : les requêtes des clés concernées échoueront.",
+		"appliesTo": "{keys, plural, one {# clé d'API} other {# clés d'API}} et {members, plural, one {# membre} other {# membres}}",
+		"appliesToNothing": "Rien pour l'instant. Vous pourrez l'attribuer plus tard depuis l'onglet Attributions.",
+		"turnOnNow": "Activer maintenant",
+		"turnOnNowBody": "Désactivé, il est enregistré mais la passerelle l'ignore.",
+		"summaryZdr": "Route uniquement vers des endpoints sans conservation des données",
+		"summaryNoPaidTraining": "Ignore les endpoints payants susceptibles d'entraîner sur les prompts",
+		"summaryNoFreeTraining": "Ignore les endpoints gratuits susceptibles d'entraîner sur les prompts",
+		"summaryNoPublishing": "Ignore les endpoints gratuits susceptibles de publier les prompts",
+		"summaryNoLogging": "Ignore les endpoints qui journalisent prompts et réponses",
+		"summaryProvidersAllowed": "N'autorise que {count, plural, one {# fournisseur} other {# fournisseurs}}",
+		"summaryProvidersBlocked": "Bloque {count, plural, one {# fournisseur} other {# fournisseurs}}",
+		"summaryModelsAllowed": "N'autorise que {count, plural, one {# modèle} other {# modèles}}",
+		"summaryModelsBlocked": "Bloque {count, plural, one {# modèle} other {# modèles}}",
+		"summaryPromptInjection": "Injection de prompt : {action}",
+		"summarySensitiveInfo": "Vérifie {count, plural, one {# motif d'informations sensibles} other {# motifs d'informations sensibles}}"
+	},
 	"broadcastControls": {
 		"optional": "(facultatif)",
 		"noMatchingOptions": "Aucune option correspondante.",

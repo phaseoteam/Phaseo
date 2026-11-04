@@ -1057,6 +1057,110 @@
 		"footnote": "Access, prompt injection and sensitive info show what each row's guardrails add up to. When several apply, the strictest rule wins. Workspace privacy and routing settings apply on top.",
 		"readOnly": "Only workspace owners and admins can change assignments."
 	},
+	"guardrailWizard": {
+		"title": "New guardrail",
+		"subtitle": "Choose what it checks, set it up, then choose who it applies to.",
+		"stepsLabel": "Guardrail setup steps",
+		"step": {
+			"start": "What it does",
+			"configure": "Configure",
+			"assign": "Assign",
+			"review": "Review"
+		},
+		"cancel": "Cancel",
+		"back": "Back",
+		"continue": "Continue",
+		"create": "Create guardrail",
+		"creating": "Creating…",
+		"issue": {
+			"nameRequired": "Add a name to continue.",
+			"chooseSection": "Pick a template or at least one check to continue.",
+			"accessEmpty": "Turn on at least one access or privacy rule, or remove this check.",
+			"providerAllowlistEmpty": "Pick at least one provider to allow. An empty list blocks every provider.",
+			"modelAllowlistEmpty": "Pick at least one model to allow. An empty list blocks every model.",
+			"promptInjectionOff": "Choose how to handle prompt injection, or remove this check.",
+			"sensitiveInfoOff": "Turn on at least one sensitive info pattern, or remove this check."
+		},
+		"nameLabel": "Name",
+		"namePlaceholder": "e.g. Contractor policy",
+		"descriptionLabel": "Description (optional)",
+		"descriptionPlaceholder": "Who is it for?",
+		"templatesTitle": "Start from a template",
+		"templatesBody": "A template fills in the settings. You can change all of them on the next step.",
+		"templateZdr": {
+			"name": "Zero data retention",
+			"body": "Only route to endpoints that don't store prompts or outputs."
+		},
+		"templateNoTraining": {
+			"name": "No training on prompts",
+			"body": "Skip endpoints that may train on or publish your prompts."
+		},
+		"templateApprovedProviders": {
+			"name": "Approved providers only",
+			"body": "Allow only the providers you pick."
+		},
+		"templateApprovedModels": {
+			"name": "Approved models only",
+			"body": "Allow only the models you pick."
+		},
+		"templateBlockPromptInjection": {
+			"name": "Block prompt injection",
+			"body": "Stop requests that look like prompt injection before they reach the model."
+		},
+		"templateRedactPersonalInfo": {
+			"name": "Redact personal info",
+			"body": "Replace emails, phone numbers, SSNs and card numbers before requests leave Phaseo."
+		},
+		"sectionsTitle": "Checks",
+		"sectionsBody": "Pick one or more. Choosing a template ticks these for you.",
+		"sectionAccess": {
+			"name": "Access and privacy",
+			"body": "Data retention, training, and which providers and models can be used."
+		},
+		"sectionPromptInjection": {
+			"name": "Prompt injection",
+			"body": "Scan requests for prompt injection, then flag, redact or block them."
+		},
+		"sectionSensitiveInfo": {
+			"name": "Sensitive info",
+			"body": "Find personal data and secrets in requests, then flag, redact or block them."
+		},
+		"addCheck": "Add a check:",
+		"assignTitle": "Who should “{name}” apply to?",
+		"assignBody": "Pick API keys and members. Each row shows what its guardrails add up to now and with this one. You can skip this and assign it later.",
+		"columnNow": "Now",
+		"columnAfter": "With this guardrail",
+		"assignTotals": "Applies to {keys, plural, one {# API key} other {# API keys}} and {members, plural, one {# member} other {# members}}.",
+		"coveredKeys": "{count, plural, one {# more API key is covered} other {# more API keys are covered}} through the selected members.",
+		"assignNone": "Not applied to anything yet.",
+		"assignMemberHint": "A member's guardrails also apply to the API keys they create.",
+		"notApplied": "Not applied",
+		"coveredVia": "Through {name}",
+		"noTighter": "No change: its current guardrails already cover this.",
+		"promptInjectionPart": "Prompt injection: {action}",
+		"sensitiveInfoPart": "{count, plural, one {# sensitive info rule} other {# sensitive info rules}}",
+		"reviewWhat": "What it does",
+		"reviewModels": "Models",
+		"reviewWho": "Applies to",
+		"change": "Change",
+		"modelsAvailable": "{available} of {total} models can still be used.",
+		"blocksEverything": "These rules block every model, so requests from the keys this applies to will fail.",
+		"appliesTo": "{keys, plural, one {# API key} other {# API keys}} and {members, plural, one {# member} other {# members}}",
+		"appliesToNothing": "Nothing yet. You can assign it later from the Assignments tab.",
+		"turnOnNow": "Turn on now",
+		"turnOnNowBody": "When it's off, it's saved but the gateway skips it.",
+		"summaryZdr": "Only routes to endpoints with zero data retention",
+		"summaryNoPaidTraining": "Skips paid endpoints that may train on prompts",
+		"summaryNoFreeTraining": "Skips free endpoints that may train on prompts",
+		"summaryNoPublishing": "Skips free endpoints that may publish prompts",
+		"summaryNoLogging": "Skips endpoints that log prompts and outputs",
+		"summaryProvidersAllowed": "Allows only {count, plural, one {# provider} other {# providers}}",
+		"summaryProvidersBlocked": "Blocks {count, plural, one {# provider} other {# providers}}",
+		"summaryModelsAllowed": "Allows only {count, plural, one {# model} other {# models}}",
+		"summaryModelsBlocked": "Blocks {count, plural, one {# model} other {# models}}",
+		"summaryPromptInjection": "Prompt injection: {action}",
+		"summarySensitiveInfo": "Checks {count, plural, one {# sensitive info pattern} other {# sensitive info patterns}}"
+	},
 	"broadcastControls": {
 		"optional": "(optional)",
 		"noMatchingOptions": "No matching options.",

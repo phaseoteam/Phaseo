@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ChevronsUpDown, Search, Shield } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
@@ -63,7 +63,10 @@ export default function GuardrailAssignmentsPanel(props: Props) {
 	const [changes, setChanges] = useState<PendingAssignmentChange[]>([]);
 	const nextChangeId = useRef(0);
 	const latest = useRef({ key: props.guardrailKeyIdsByGuardrailId, member: props.guardrailMemberIdsByGuardrailId });
-	latest.current = { key: props.guardrailKeyIdsByGuardrailId, member: props.guardrailMemberIdsByGuardrailId };
+	// Updated before the effect below runs in the same commit, and read again after a save resolves.
+	useLayoutEffect(() => {
+		latest.current = { key: props.guardrailKeyIdsByGuardrailId, member: props.guardrailMemberIdsByGuardrailId };
+	}, [props.guardrailKeyIdsByGuardrailId, props.guardrailMemberIdsByGuardrailId]);
 	const keyMap = useMemo(() => withPendingChanges(props.guardrailKeyIdsByGuardrailId, "key", changes), [props.guardrailKeyIdsByGuardrailId, changes]);
 	const memberMap = useMemo(() => withPendingChanges(props.guardrailMemberIdsByGuardrailId, "member", changes), [props.guardrailMemberIdsByGuardrailId, changes]);
 	// A saved change is dropped once fresher data, which includes it, has arrived.
@@ -372,8 +375,15 @@ function GuardrailsCell(props: {
 	);
 }
 
-function AccessSummary({ effective }: { effective: EffectiveGuardrailPolicy }) {
+export function AccessSummary({ effective }: { effective: EffectiveGuardrailPolicy }) {
 	const t = useTranslations("SettingsUI");
+	const parts = accessSummaryParts(effective, t);
+	if (!parts.length) return <span className="text-muted-foreground">{t("guardrailAssignments.noLimits")}</span>;
+	return <span className="line-clamp-2">{parts.join(" · ")}</span>;
+}
+
+/** The access part of an effective policy as short phrases, e.g. "ZDR only · 3 providers allowed". */
+export function accessSummaryParts(effective: EffectiveGuardrailPolicy, t: ReturnType<typeof useTranslations<"SettingsUI">>): string[] {
 	const parts: string[] = [];
 	if (effective.zdrOnly) parts.push(t("guardrailAssignments.zdrOnly"));
 	if (effective.providerAllowCount !== null) {
@@ -388,8 +398,7 @@ function AccessSummary({ effective }: { effective: EffectiveGuardrailPolicy }) {
 			: t("guardrailAssignments.noModelsAllowed"));
 	}
 	if (effective.modelBlockCount) parts.push(t("guardrailAssignments.modelsBlocked", { count: effective.modelBlockCount }));
-	if (!parts.length) return <span className="text-muted-foreground">{t("guardrailAssignments.noLimits")}</span>;
-	return <span className="line-clamp-2">{parts.join(" · ")}</span>;
+	return parts;
 }
 
 function BulkActions(props: {
