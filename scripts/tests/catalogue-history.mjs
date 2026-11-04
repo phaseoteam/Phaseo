@@ -202,7 +202,7 @@ assert(await proposalStatus('quote-old')==='dismissed','unchanged quotes do not 
 await queueQuote('quote-new',{...queuedSku,meters:[{...draft.meters[0],price_nanos:5000000000}]});
 const latestQuote=(await db.query("select review_v2_catalogue_price_proposal($1,'quote-new',true) result",[actor])).rows[0].result;
 assert(latestQuote.sku.sku_id!==reviewed.sku.sku_id,'latest queued quote remains reviewable');
-await db.exec(readMigration('20261104190000_catalogue_row_history_skip_updated_at_only.sql'));
+await db.exec(readMigration('20261104204200_catalogue_row_history_skip_updated_at_only.sql'));
 const historyCount=async(table)=>(await db.query('select count(*)::int n from v2_catalogue_row_history where table_name=$1',[table])).rows[0].n;
 const resultsBefore=await historyCount('v2_benchmark_results');
 await db.query("update v2_benchmark_results set updated_at=now()+interval '1 hour' where result_id=$1",[bench.result_id]);
