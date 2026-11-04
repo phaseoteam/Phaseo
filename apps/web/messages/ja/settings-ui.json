@@ -1061,6 +1061,110 @@
 		"readOnly": "割り当てを変更できるのはワークスペースのオーナーと管理者だけです。",
 		"baselineNote": "ワークスペースの基本ガードレールはすべてのキーとメンバーに適用されるため、ここには表示されません。プライバシーで編集できます。"
 	},
+	"guardrailWizard": {
+		"title": "新しいガードレール",
+		"subtitle": "チェック内容を選んで設定し、適用先を選びます。",
+		"stepsLabel": "ガードレールの設定手順",
+		"step": {
+			"start": "内容",
+			"configure": "設定",
+			"assign": "割り当て",
+			"review": "確認"
+		},
+		"cancel": "キャンセル",
+		"back": "戻る",
+		"continue": "次へ",
+		"create": "ガードレールを作成",
+		"creating": "作成中…",
+		"issue": {
+			"nameRequired": "続けるには名前を入力してください。",
+			"chooseSection": "続けるにはテンプレートか、チェックを1つ以上選んでください。",
+			"accessEmpty": "アクセスまたはプライバシーのルールを1つ以上オンにするか、このチェックを外してください。",
+			"providerAllowlistEmpty": "許可するプロバイダーを1つ以上選んでください。空のリストはすべてのプロバイダーをブロックします。",
+			"modelAllowlistEmpty": "許可するモデルを1つ以上選んでください。空のリストはすべてのモデルをブロックします。",
+			"promptInjectionOff": "プロンプトインジェクションの扱いを選ぶか、このチェックを外してください。",
+			"sensitiveInfoOff": "機密情報のパターンを1つ以上オンにするか、このチェックを外してください。"
+		},
+		"nameLabel": "名前",
+		"namePlaceholder": "例: 業務委託先向けポリシー",
+		"descriptionLabel": "説明（任意）",
+		"descriptionPlaceholder": "誰向けですか？",
+		"templatesTitle": "テンプレートから始める",
+		"templatesBody": "テンプレートが設定を入力します。次の手順ですべて変更できます。",
+		"templateZdr": {
+			"name": "データ保持ゼロ",
+			"body": "プロンプトや出力を保存しないエンドポイントにのみルーティングします。"
+		},
+		"templateNoTraining": {
+			"name": "プロンプトで学習しない",
+			"body": "プロンプトを学習に使ったり公開したりする可能性のあるエンドポイントを除外します。"
+		},
+		"templateApprovedProviders": {
+			"name": "承認済みプロバイダーのみ",
+			"body": "選んだプロバイダーだけを許可します。"
+		},
+		"templateApprovedModels": {
+			"name": "承認済みモデルのみ",
+			"body": "選んだモデルだけを許可します。"
+		},
+		"templateBlockPromptInjection": {
+			"name": "プロンプトインジェクションをブロック",
+			"body": "プロンプトインジェクションと思われるリクエストを、モデルに届く前に止めます。"
+		},
+		"templateRedactPersonalInfo": {
+			"name": "個人情報をマスク",
+			"body": "リクエストが Phaseo を出る前に、メールアドレス、電話番号、SSN、カード番号を置き換えます。"
+		},
+		"sectionsTitle": "チェック",
+		"sectionsBody": "1つ以上選んでください。テンプレートを選ぶと自動でチェックが入ります。",
+		"sectionAccess": {
+			"name": "アクセスとプライバシー",
+			"body": "データ保持、学習、使用できるプロバイダーとモデル。"
+		},
+		"sectionPromptInjection": {
+			"name": "プロンプトインジェクション",
+			"body": "リクエストのプロンプトインジェクションを検出し、フラグ、マスク、ブロックします。"
+		},
+		"sectionSensitiveInfo": {
+			"name": "機密情報",
+			"body": "リクエスト内の個人データや秘密情報を検出し、フラグ、マスク、ブロックします。"
+		},
+		"addCheck": "チェックを追加:",
+		"assignTitle": "「{name}」の適用先",
+		"assignBody": "API キーとメンバーを選びます。各行に、現在のガードレールの組み合わせと、このガードレールを加えた結果が表示されます。この手順は省略して後で割り当てることもできます。",
+		"columnNow": "現在",
+		"columnAfter": "このガードレールを追加後",
+		"assignTotals": "API キー {keys} 件とメンバー {members} 人に適用されます。",
+		"coveredKeys": "選んだメンバー経由で、さらに API キー {count} 件にも適用されます。",
+		"assignNone": "まだ何にも適用されていません。",
+		"assignMemberHint": "メンバーのガードレールは、そのメンバーが作成した API キーにも適用されます。",
+		"notApplied": "適用なし",
+		"coveredVia": "{name} 経由",
+		"noTighter": "変更なし: 現在のガードレールですでにカバーされています。",
+		"promptInjectionPart": "プロンプトインジェクション: {action}",
+		"sensitiveInfoPart": "機密情報ルール {count} 件",
+		"reviewWhat": "内容",
+		"reviewModels": "モデル",
+		"reviewWho": "適用先",
+		"change": "変更",
+		"modelsAvailable": "{total} 件中 {available} 件のモデルを引き続き使えます。",
+		"blocksEverything": "これらのルールはすべてのモデルをブロックするため、適用先のキーからのリクエストは失敗します。",
+		"appliesTo": "API キー {keys} 件、メンバー {members} 人",
+		"appliesToNothing": "まだありません。後で「割り当て」タブから割り当てられます。",
+		"turnOnNow": "今すぐオンにする",
+		"turnOnNowBody": "オフの場合は保存されますが、ゲートウェイは適用しません。",
+		"summaryZdr": "データ保持ゼロのエンドポイントにのみルーティング",
+		"summaryNoPaidTraining": "プロンプトで学習する可能性のある有料エンドポイントを除外",
+		"summaryNoFreeTraining": "プロンプトで学習する可能性のある無料エンドポイントを除外",
+		"summaryNoPublishing": "プロンプトを公開する可能性のある無料エンドポイントを除外",
+		"summaryNoLogging": "プロンプトと出力を記録するエンドポイントを除外",
+		"summaryProvidersAllowed": "{count} 件のプロバイダーのみ許可",
+		"summaryProvidersBlocked": "{count} 件のプロバイダーをブロック",
+		"summaryModelsAllowed": "{count} 件のモデルのみ許可",
+		"summaryModelsBlocked": "{count} 件のモデルをブロック",
+		"summaryPromptInjection": "プロンプトインジェクション: {action}",
+		"summarySensitiveInfo": "機密情報のパターン {count} 件をチェック"
+	},
 	"broadcastControls": {
 		"optional": "（任意）",
 		"noMatchingOptions": "一致するオプションがありません。",

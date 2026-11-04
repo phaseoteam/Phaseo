@@ -1061,6 +1061,110 @@
 		"readOnly": "Somente proprietários e administradores do espaço de trabalho podem alterar as atribuições.",
 		"baselineNote": "A proteção base do espaço de trabalho vale para todas as chaves e membros, por isso não aparece aqui. Edite em Privacidade."
 	},
+	"guardrailWizard": {
+		"title": "Novo guardrail",
+		"subtitle": "Escolha o que ele verifica, configure e depois escolha a quem se aplica.",
+		"stepsLabel": "Etapas de configuração do guardrail",
+		"step": {
+			"start": "O que faz",
+			"configure": "Configurar",
+			"assign": "Atribuir",
+			"review": "Revisar"
+		},
+		"cancel": "Cancelar",
+		"back": "Voltar",
+		"continue": "Continuar",
+		"create": "Criar guardrail",
+		"creating": "Criando…",
+		"issue": {
+			"nameRequired": "Adicione um nome para continuar.",
+			"chooseSection": "Escolha um modelo pronto ou pelo menos uma verificação para continuar.",
+			"accessEmpty": "Ative pelo menos uma regra de acesso ou privacidade, ou remova esta verificação.",
+			"providerAllowlistEmpty": "Escolha pelo menos um provedor permitido. Uma lista vazia bloqueia todos os provedores.",
+			"modelAllowlistEmpty": "Escolha pelo menos um modelo permitido. Uma lista vazia bloqueia todos os modelos.",
+			"promptInjectionOff": "Escolha como tratar injeção de prompt, ou remova esta verificação.",
+			"sensitiveInfoOff": "Ative pelo menos um padrão de informação sensível, ou remova esta verificação."
+		},
+		"nameLabel": "Nome",
+		"namePlaceholder": "ex.: Política para terceirizados",
+		"descriptionLabel": "Descrição (opcional)",
+		"descriptionPlaceholder": "Para quem é?",
+		"templatesTitle": "Começar com um modelo pronto",
+		"templatesBody": "Um modelo pronto preenche as configurações. Você pode mudar tudo na próxima etapa.",
+		"templateZdr": {
+			"name": "Retenção zero de dados",
+			"body": "Rotear só para endpoints que não guardam prompts nem respostas."
+		},
+		"templateNoTraining": {
+			"name": "Sem treino com prompts",
+			"body": "Ignorar endpoints que podem treinar com seus prompts ou publicá-los."
+		},
+		"templateApprovedProviders": {
+			"name": "Só provedores aprovados",
+			"body": "Permitir só os provedores que você escolher."
+		},
+		"templateApprovedModels": {
+			"name": "Só modelos aprovados",
+			"body": "Permitir só os modelos que você escolher."
+		},
+		"templateBlockPromptInjection": {
+			"name": "Bloquear injeção de prompt",
+			"body": "Barrar solicitações que parecem injeção de prompt antes que cheguem ao modelo."
+		},
+		"templateRedactPersonalInfo": {
+			"name": "Ocultar dados pessoais",
+			"body": "Substituir e-mails, telefones, SSNs e números de cartão antes que as solicitações saiam da Phaseo."
+		},
+		"sectionsTitle": "Verificações",
+		"sectionsBody": "Escolha uma ou mais. Um modelo pronto marca estas para você.",
+		"sectionAccess": {
+			"name": "Acesso e privacidade",
+			"body": "Retenção de dados, treino e quais provedores e modelos podem ser usados."
+		},
+		"sectionPromptInjection": {
+			"name": "Injeção de prompt",
+			"body": "Analisar solicitações em busca de injeção de prompt e sinalizar, ocultar ou bloquear."
+		},
+		"sectionSensitiveInfo": {
+			"name": "Informações sensíveis",
+			"body": "Encontrar dados pessoais e segredos nas solicitações e sinalizar, ocultar ou bloquear."
+		},
+		"addCheck": "Adicionar verificação:",
+		"assignTitle": "A quem “{name}” deve se aplicar?",
+		"assignBody": "Escolha chaves de API e membros. Cada linha mostra o resultado dos guardrails agora e com este. Você pode pular e atribuir depois.",
+		"columnNow": "Agora",
+		"columnAfter": "Com este guardrail",
+		"assignTotals": "Aplica-se a {keys, plural, one {# chave de API} other {# chaves de API}} e {members, plural, one {# membro} other {# membros}}.",
+		"coveredKeys": "{count, plural, one {Mais # chave de API fica coberta} other {Mais # chaves de API ficam cobertas}} pelos membros selecionados.",
+		"assignNone": "Ainda não se aplica a nada.",
+		"assignMemberHint": "Os guardrails de um membro também se aplicam às chaves de API que ele cria.",
+		"notApplied": "Não aplicado",
+		"coveredVia": "Por meio de {name}",
+		"noTighter": "Sem mudança: os guardrails atuais já cobrem isso.",
+		"promptInjectionPart": "Injeção de prompt: {action}",
+		"sensitiveInfoPart": "{count, plural, one {# regra de informação sensível} other {# regras de informação sensível}}",
+		"reviewWhat": "O que faz",
+		"reviewModels": "Modelos",
+		"reviewWho": "Aplica-se a",
+		"change": "Alterar",
+		"modelsAvailable": "{available} de {total} modelos continuam disponíveis.",
+		"blocksEverything": "Estas regras bloqueiam todos os modelos, então as solicitações das chaves afetadas vão falhar.",
+		"appliesTo": "{keys, plural, one {# chave de API} other {# chaves de API}} e {members, plural, one {# membro} other {# membros}}",
+		"appliesToNothing": "Nada ainda. Você pode atribuir depois na aba Atribuições.",
+		"turnOnNow": "Ativar agora",
+		"turnOnNowBody": "Desativado, ele fica salvo, mas o gateway o ignora.",
+		"summaryZdr": "Roteia só para endpoints com retenção zero de dados",
+		"summaryNoPaidTraining": "Ignora endpoints pagos que podem treinar com prompts",
+		"summaryNoFreeTraining": "Ignora endpoints gratuitos que podem treinar com prompts",
+		"summaryNoPublishing": "Ignora endpoints gratuitos que podem publicar prompts",
+		"summaryNoLogging": "Ignora endpoints que registram prompts e respostas",
+		"summaryProvidersAllowed": "Permite só {count, plural, one {# provedor} other {# provedores}}",
+		"summaryProvidersBlocked": "Bloqueia {count, plural, one {# provedor} other {# provedores}}",
+		"summaryModelsAllowed": "Permite só {count, plural, one {# modelo} other {# modelos}}",
+		"summaryModelsBlocked": "Bloqueia {count, plural, one {# modelo} other {# modelos}}",
+		"summaryPromptInjection": "Injeção de prompt: {action}",
+		"summarySensitiveInfo": "Verifica {count, plural, one {# padrão de informação sensível} other {# padrões de informação sensível}}"
+	},
 	"broadcastControls": {
 		"optional": "(opcional)",
 		"noMatchingOptions": "Nenhuma opção correspondente",

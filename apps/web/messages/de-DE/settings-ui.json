@@ -1061,6 +1061,110 @@
 		"readOnly": "Nur Inhaber und Admins des Arbeitsbereichs können Zuweisungen ändern.",
 		"baselineNote": "Die Basisregeln des Arbeitsbereichs gelten für jeden Schlüssel und jedes Mitglied und werden hier deshalb nicht aufgeführt. Bearbeite sie unter Datenschutz."
 	},
+	"guardrailWizard": {
+		"title": "Neue Leitplanke",
+		"subtitle": "Lege fest, was sie prüft, richte sie ein und wähle dann, für wen sie gilt.",
+		"stepsLabel": "Schritte zum Einrichten der Leitplanke",
+		"step": {
+			"start": "Was sie tut",
+			"configure": "Einrichten",
+			"assign": "Zuweisen",
+			"review": "Prüfen"
+		},
+		"cancel": "Abbrechen",
+		"back": "Zurück",
+		"continue": "Weiter",
+		"create": "Leitplanke erstellen",
+		"creating": "Wird erstellt…",
+		"issue": {
+			"nameRequired": "Gib einen Namen ein, um fortzufahren.",
+			"chooseSection": "Wähle eine Vorlage oder mindestens eine Prüfung, um fortzufahren.",
+			"accessEmpty": "Aktiviere mindestens eine Zugriffs- oder Datenschutzregel oder entferne diese Prüfung.",
+			"providerAllowlistEmpty": "Wähle mindestens einen erlaubten Anbieter. Eine leere Liste blockiert alle Anbieter.",
+			"modelAllowlistEmpty": "Wähle mindestens ein erlaubtes Modell. Eine leere Liste blockiert alle Modelle.",
+			"promptInjectionOff": "Lege fest, wie mit Prompt-Injection umgegangen wird, oder entferne diese Prüfung.",
+			"sensitiveInfoOff": "Aktiviere mindestens ein Muster für sensible Daten oder entferne diese Prüfung."
+		},
+		"nameLabel": "Name",
+		"namePlaceholder": "z. B. Richtlinie für Auftragnehmer",
+		"descriptionLabel": "Beschreibung (optional)",
+		"descriptionPlaceholder": "Für wen ist sie gedacht?",
+		"templatesTitle": "Mit einer Vorlage beginnen",
+		"templatesBody": "Eine Vorlage füllt die Einstellungen aus. Im nächsten Schritt kannst du alles ändern.",
+		"templateZdr": {
+			"name": "Keine Datenspeicherung",
+			"body": "Nur an Endpunkte weiterleiten, die Prompts und Ausgaben nicht speichern."
+		},
+		"templateNoTraining": {
+			"name": "Kein Training mit Prompts",
+			"body": "Endpunkte überspringen, die mit deinen Prompts trainieren oder sie veröffentlichen könnten."
+		},
+		"templateApprovedProviders": {
+			"name": "Nur freigegebene Anbieter",
+			"body": "Nur die Anbieter erlauben, die du auswählst."
+		},
+		"templateApprovedModels": {
+			"name": "Nur freigegebene Modelle",
+			"body": "Nur die Modelle erlauben, die du auswählst."
+		},
+		"templateBlockPromptInjection": {
+			"name": "Prompt-Injection blockieren",
+			"body": "Anfragen, die nach Prompt-Injection aussehen, stoppen, bevor sie das Modell erreichen."
+		},
+		"templateRedactPersonalInfo": {
+			"name": "Personenbezogene Daten schwärzen",
+			"body": "E-Mail-Adressen, Telefonnummern, SSNs und Kartennummern ersetzen, bevor Anfragen Phaseo verlassen."
+		},
+		"sectionsTitle": "Prüfungen",
+		"sectionsBody": "Wähle eine oder mehrere. Eine Vorlage setzt die Häkchen für dich.",
+		"sectionAccess": {
+			"name": "Zugriff und Datenschutz",
+			"body": "Datenspeicherung, Training und welche Anbieter und Modelle genutzt werden dürfen."
+		},
+		"sectionPromptInjection": {
+			"name": "Prompt-Injection",
+			"body": "Anfragen auf Prompt-Injection prüfen und sie markieren, schwärzen oder blockieren."
+		},
+		"sectionSensitiveInfo": {
+			"name": "Sensible Daten",
+			"body": "Personenbezogene Daten und Geheimnisse in Anfragen finden und markieren, schwärzen oder blockieren."
+		},
+		"addCheck": "Prüfung hinzufügen:",
+		"assignTitle": "Für wen soll „{name}“ gelten?",
+		"assignBody": "Wähle API-Schlüssel und Mitglieder. Jede Zeile zeigt, was ihre Leitplanken jetzt und mit dieser ergeben. Du kannst das überspringen und sie später zuweisen.",
+		"columnNow": "Jetzt",
+		"columnAfter": "Mit dieser Leitplanke",
+		"assignTotals": "Gilt für {keys, plural, one {# API-Schlüssel} other {# API-Schlüssel}} und {members, plural, one {# Mitglied} other {# Mitglieder}}.",
+		"coveredKeys": "Über die ausgewählten Mitglieder {count, plural, one {ist # weiterer API-Schlüssel} other {sind # weitere API-Schlüssel}} abgedeckt.",
+		"assignNone": "Noch keiner Sache zugewiesen.",
+		"assignMemberHint": "Die Leitplanken eines Mitglieds gelten auch für die API-Schlüssel, die es erstellt.",
+		"notApplied": "Nicht zugewiesen",
+		"coveredVia": "Über {name}",
+		"noTighter": "Keine Änderung: Die bisherigen Leitplanken decken das bereits ab.",
+		"promptInjectionPart": "Prompt-Injection: {action}",
+		"sensitiveInfoPart": "{count, plural, one {# Regel für sensible Daten} other {# Regeln für sensible Daten}}",
+		"reviewWhat": "Was sie tut",
+		"reviewModels": "Modelle",
+		"reviewWho": "Gilt für",
+		"change": "Ändern",
+		"modelsAvailable": "{available} von {total} Modellen können weiter genutzt werden.",
+		"blocksEverything": "Diese Regeln blockieren alle Modelle. Anfragen der betroffenen Schlüssel schlagen dann fehl.",
+		"appliesTo": "{keys, plural, one {# API-Schlüssel} other {# API-Schlüssel}} und {members, plural, one {# Mitglied} other {# Mitglieder}}",
+		"appliesToNothing": "Noch nichts. Du kannst sie später im Tab „Zuweisungen“ zuweisen.",
+		"turnOnNow": "Jetzt aktivieren",
+		"turnOnNowBody": "Ist sie aus, wird sie gespeichert, aber das Gateway überspringt sie.",
+		"summaryZdr": "Leitet nur an Endpunkte ohne Datenspeicherung weiter",
+		"summaryNoPaidTraining": "Überspringt kostenpflichtige Endpunkte, die mit Prompts trainieren könnten",
+		"summaryNoFreeTraining": "Überspringt kostenlose Endpunkte, die mit Prompts trainieren könnten",
+		"summaryNoPublishing": "Überspringt kostenlose Endpunkte, die Prompts veröffentlichen könnten",
+		"summaryNoLogging": "Überspringt Endpunkte, die Prompts und Ausgaben protokollieren",
+		"summaryProvidersAllowed": "Erlaubt nur {count, plural, one {# Anbieter} other {# Anbieter}}",
+		"summaryProvidersBlocked": "Blockiert {count, plural, one {# Anbieter} other {# Anbieter}}",
+		"summaryModelsAllowed": "Erlaubt nur {count, plural, one {# Modell} other {# Modelle}}",
+		"summaryModelsBlocked": "Blockiert {count, plural, one {# Modell} other {# Modelle}}",
+		"summaryPromptInjection": "Prompt-Injection: {action}",
+		"summarySensitiveInfo": "Prüft {count, plural, one {# Muster für sensible Daten} other {# Muster für sensible Daten}}"
+	},
 	"broadcastControls": {
 		"optional": "(optional)",
 		"noMatchingOptions": "Keine passenden Optionen.",
