@@ -223,7 +223,7 @@ export function MarketShareStackedBar(props: MarketShareStackedBarProps) {
 					renderForShare={(size, selection) => <MarketShareStackedBar {...props} share={undefined} exportSize={size} exportSeries={selection} />}
 					series={{
 						items: chartGroups.map((group) => ({ key: group, label: group, color: colourMap[group]?.fill ?? "#a1a1aa" })),
-						otherLabel: "Other",
+						otherLabel: t("usageOtherSeries"),
 						otherColor: "hsl(0 0% 70% / 0.6)",
 						hasOther: rankedGroups.length > TOP_SERIES || sortedGroups.includes("Other"),
 					}}
