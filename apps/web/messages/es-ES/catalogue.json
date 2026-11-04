@@ -1487,7 +1487,20 @@
 			"hourlyAverage": "Últimas 24 horas · media por hora",
 			"routingChartLabel": "Disponibilidad del modelo por hora durante las últimas 24 horas. Phaseo Routing: {uptime}.{comparison}",
 			"routingComparison": " Sin Phaseo Routing: {uptime}.",
-			"routingLabel": "Enrutamiento de Phaseo"
+			"routingLabel": "Enrutamiento de Phaseo",
+			"providerHealthTitle": "Estado del proveedor",
+			"reachabilityLabel": "Accesibilidad",
+			"capacityLabel": "Capacidad",
+			"callErrorsLabel": "Errores de llamada",
+			"reachabilityHelp": "Con qué frecuencia Phaseo obtuvo alguna respuesta del proveedor. Cuentan en contra los fallos de conexión, los tiempos de espera agotados antes de empezar la respuesta y los errores de pasarela (502, 503, 504).",
+			"capacityHelp": "Con qué frecuencia el proveedor aceptó la llamada en lugar de rechazarla por carga. Cuentan en contra los límites de frecuencia en la clave propia de Phaseo y las respuestas de sobrecarga o falta de capacidad.",
+			"callErrorsHelp": "Con qué frecuencia una llamada aceptada por el proveedor terminó sin fallar. Cuentan en contra los errores del servidor, los streams que se cortaron a mitad y las salidas vacías o no válidas.",
+			"reachabilityCount": "{count, plural, =0 {Sin intentos} one {{failed, number} de # intento no pudo llegar al proveedor} other {{failed, number} de # intentos no pudieron llegar al proveedor}}",
+			"capacityCount": "{count, plural, =0 {Sin intentos} one {{failed, number} de # intento fue rechazado por carga} other {{failed, number} de # intentos fueron rechazados por carga}}",
+			"callErrorsCount": "{count, plural, =0 {Sin intentos} one {{failed, number} de # intento falló después de que el proveedor lo aceptara} other {{failed, number} de # intentos fallaron después de que el proveedor los aceptara}}",
+			"attemptHourlyAverage": "Últimas 24 horas · media por hora, por intento al proveedor",
+			"providerHealthChartLabel": "Estado del proveedor por hora en las últimas 24 horas. Accesibilidad: {reachability}. Capacidad: {capacity}. Errores de llamada: {callErrors}.",
+			"attemptBasis": "Últimos 3 días, por intento al proveedor. No se cuentan los errores causados por la solicitud."
 		},
 		"providerInfo": {
 			"dataPolicy": "Política de datos",

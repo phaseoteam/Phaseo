@@ -530,6 +530,11 @@ export type ProviderAttemptLog = {
 	upstream_preflight_count?: number | null;
 	upstream_media_count?: number | null;
     retry_delay_ms?: number | null;
+    /**
+     * What this attempt says about the provider (see pipeline/execute/attempt-health.ts).
+     * Updated before audit when the served stream breaks or the output is empty.
+     */
+    health_class?: import("@pipeline/execute/attempt-health").AttemptHealthClass;
 };
 
 export type WorkspacePolicy = {

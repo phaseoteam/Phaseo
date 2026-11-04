@@ -6,8 +6,10 @@ const MFA_SATISFIED_STUB = "create or replace function public.mfa_satisfied() re
 const db = new PGlite();
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const migrationPath = '../migrations/20261027224949_store_sdk_client_fields_on_request_facts.sql';
-// The newest definition of ingest_v2_gateway_request; it must match the declarative schema.
+// The newest full definition of ingest_v2_gateway_request, then the migration that patches its
+// attempts insert in place. Together they must match the declarative schema.
 const latestMigrationPath = '../migrations/20261104152910_pricing_lines_record_charged_sku_meter.sql';
+const attemptHealthMigrationPath = '../migrations/20261104163425_provider_attempt_health_classes.sql';
 const schemaPath = '../schemas/public/functions/ingest_v2_gateway_request.sql';
 const workspace = '40000000-0000-4000-8000-000000000001';
 const functionBody = (sql) => {
@@ -19,7 +21,6 @@ try {
   const latestMigration = await read(latestMigrationPath);
   const desired = await read(schemaPath);
   assert.ok(migration.includes('\nSET local check_function_bodies = off;\n'));
-  assert.equal(functionBody(latestMigration), functionBody(desired), 'latest migration body must match the declarative schema');
 
   for (const path of ['./fixtures/staged-reporting-before.sql',
     '../migrations/20261009114400_exclude_staged_models_from_public_reporting.sql',
@@ -37,6 +38,10 @@ try {
   `);
   await db.exec(migration);
   await db.exec(latestMigration);
+  await db.exec(await read(attemptHealthMigrationPath));
+  const installed = (await db.query(
+    "select pg_get_functiondef('public.ingest_v2_gateway_request(jsonb)'::regprocedure) def")).rows[0].def;
+  assert.equal(functionBody(installed), functionBody(desired), 'installed ingest body must match the declarative schema');
   await db.exec(`create function public.is_workspace_member(uuid) returns boolean language sql as 'select false';`);
   await db.exec(MFA_SATISFIED_STUB);
   await db.exec(await read('../schemas/public/tables/v2_request_routing_decisions.sql'));

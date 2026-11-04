@@ -55,6 +55,43 @@ export type ProviderRuntimeStats = {
 	errorCodeCounts3d?: Record<string, number>;
 	errorCategoryCounts3d?: Record<string, number>;
 	lastRequestAt?: string | null;
+	/** Per-attempt reachability, capacity and call errors over the window. */
+	attemptHealth3d?: ProviderAttemptHealth | null;
+};
+
+/**
+ * Per attempt: a failed attempt counts against its provider even when the
+ * request failed over and succeeded elsewhere. rate = 1 - failures / eligible
+ * attempts; attempts caused by the customer or by Phaseo are not eligible.
+ */
+export type ProviderAttemptHealth = {
+	attempts: number;
+	eligibleAttempts: number;
+	successAttempts: number;
+	reachabilityFailures: number;
+	capacityFailures: number;
+	callErrorFailures: number;
+	reachabilityPct: number | null;
+	capacityPct: number | null;
+	callErrorPct: number | null;
+	uptimePct: number | null;
+};
+
+export type RpcProviderAttemptHealthRow = {
+	provider_id: string | null;
+	service_tier?: string | null;
+	provider_name?: string | null;
+	attempts?: number | string | null;
+	eligible_attempts?: number | string | null;
+	success_attempts?: number | string | null;
+	reachability_failures?: number | string | null;
+	capacity_failures?: number | string | null;
+	call_error_failures?: number | string | null;
+	reachability_pct?: number | string | null;
+	capacity_pct?: number | string | null;
+	call_error_pct?: number | string | null;
+	uptime_pct?: number | string | null;
+	buckets?: unknown;
 };
 
 export type ProviderRuntimeStatsMap = Record<string, ProviderRuntimeStats>;
@@ -504,8 +541,24 @@ export function fillHourlyPerformanceBuckets(
 	});
 }
 
+function mapAttemptHealth(row: RpcProviderAttemptHealthRow): ProviderAttemptHealth {
+	return {
+		attempts: toInt(row.attempts),
+		eligibleAttempts: toInt(row.eligible_attempts),
+		successAttempts: toInt(row.success_attempts),
+		reachabilityFailures: toInt(row.reachability_failures),
+		capacityFailures: toInt(row.capacity_failures),
+		callErrorFailures: toInt(row.call_error_failures),
+		reachabilityPct: toFiniteNumber(row.reachability_pct),
+		capacityPct: toFiniteNumber(row.capacity_pct),
+		callErrorPct: toFiniteNumber(row.call_error_pct),
+		uptimePct: toFiniteNumber(row.uptime_pct),
+	};
+}
+
 export function mapRpcRuntimeStatsRows(args: {
 	rows: RpcProviderHealthMetricsRow[];
+	attemptHealthRows?: RpcProviderAttemptHealthRow[];
 	providerIds: string[];
 	now?: Date;
 }): ProviderRuntimeStatsMap {
@@ -527,6 +580,17 @@ export function mapRpcRuntimeStatsRows(args: {
 		const serviceTier = normalizeProviderRuntimeServiceTier(row.service_tier);
 		if (!providerId) continue;
 		byProviderTier.set(providerRuntimeStatsKey(providerId, serviceTier), row);
+	}
+	const attemptHealthByKey = new Map<string, RpcProviderAttemptHealthRow>();
+	for (const row of args.attemptHealthRows ?? []) {
+		const providerId = String(row.provider_id ?? "").trim();
+		if (!providerId) continue;
+		const key = providerRuntimeStatsKey(providerId, normalizeProviderRuntimeServiceTier(row.service_tier));
+		attemptHealthByKey.set(key, row);
+		// A provider that only ever failed over has attempts but no served requests.
+		if (!byProviderTier.has(key)) {
+			byProviderTier.set(key, { provider_id: providerId, service_tier: row.service_tier ?? null, provider_name: row.provider_name ?? null } as RpcProviderHealthMetricsRow);
+		}
 	}
 	for (const providerId of args.providerIds) {
 		const standardKey = providerRuntimeStatsKey(providerId);
@@ -609,6 +673,27 @@ export function mapRpcRuntimeStatsRows(args: {
 			}
 		}
 
+		const attemptRow = attemptHealthByKey.get(statsKey);
+		const attemptHealth = attemptRow ? mapAttemptHealth(attemptRow) : null;
+		// Uptime is per attempt when attempt health is available: eligible attempts
+		// that succeeded, so failovers count against the provider that failed.
+		const usesAttemptUptime = attemptHealth != null && attemptHealth.eligibleAttempts > 0;
+		if (usesAttemptUptime && attemptRow && Array.isArray(attemptRow.buckets)) {
+			for (const totals of uptimeDaily3dTotals) {
+				totals.healthRequests = 0;
+				totals.healthSuccessful = 0;
+			}
+			for (const bucket of attemptRow.buckets) {
+				const bucketRecord = toRecord(bucket);
+				const start = new Date(String(bucketRecord?.start ?? ""));
+				if (!Number.isFinite(start.getTime())) continue;
+				const dayOffset = dayOffsetFromUtcMidnight(nowUtcMidnightMs, start);
+				if (dayOffset == null) continue;
+				uptimeDaily3dTotals[dayOffset]!.healthRequests += toInt(bucketRecord?.eligible_attempts);
+				uptimeDaily3dTotals[dayOffset]!.healthSuccessful += toInt(bucketRecord?.success_attempts);
+			}
+		}
+
 		for (const dayOffset of [0, 1, 2] as const) {
 			const bucket = uptimeDaily3dTotals[dayOffset];
 			uptimeDaily3d[dayOffset] = {
@@ -617,8 +702,8 @@ export function mapRpcRuntimeStatsRows(args: {
 					bucket.healthRequests > 0
 						? (bucket.healthSuccessful / bucket.healthRequests) * 100
 						: null,
-				requests: bucket.requests,
-				successful: bucket.successful,
+				requests: usesAttemptUptime ? bucket.healthRequests : bucket.requests,
+				successful: usesAttemptUptime ? bucket.healthSuccessful : bucket.successful,
 			}
 		}
 
@@ -640,7 +725,7 @@ export function mapRpcRuntimeStatsRows(args: {
 				toFiniteNumber(row?.avg_throughput_30m) ??
 				toFiniteNumber(row?.percentile_throughput) ??
 				toFiniteNumber(row?.avg_throughput),
-			uptimePct3d: toFiniteNumber(row?.uptime_pct),
+			uptimePct3d: usesAttemptUptime ? attemptHealth.uptimePct : toFiniteNumber(row?.uptime_pct),
 			requestSuccessPct3d: toFiniteNumber(row?.request_success_pct),
 			inputTokens1h: toInt(row?.input_tokens_1h),
 			outputTokens1h: toInt(row?.output_tokens_1h),
@@ -665,8 +750,8 @@ export function mapRpcRuntimeStatsRows(args: {
 			failed3d: toInt(row?.failed_requests),
 			neutral3d: toInt(row?.neutral_requests),
 			rateLimited3d: toInt(row?.rate_limited_requests),
-			healthRequests3d: toInt(row?.health_requests),
-			healthSuccessful3d: toInt(row?.health_success_requests),
+			healthRequests3d: usesAttemptUptime ? attemptHealth.eligibleAttempts : toInt(row?.health_requests),
+			healthSuccessful3d: usesAttemptUptime ? attemptHealth.successAttempts : toInt(row?.health_success_requests),
 			latencyP50Ms3d: toFiniteNumber(row?.p50_latency_ms),
 			latencyP95Ms3d: toFiniteNumber(row?.p95_latency_ms),
 			avgGenerationMs3d: toFiniteNumber(row?.avg_generation_ms),
@@ -675,6 +760,7 @@ export function mapRpcRuntimeStatsRows(args: {
 			errorCodeCounts3d: toCountRecord(row?.error_code_counts),
 			errorCategoryCounts3d: toCountRecord(row?.error_category_counts),
 			lastRequestAt: row?.last_request_at ?? null,
+			attemptHealth3d: attemptHealth,
 		};
 	}
 
@@ -767,11 +853,11 @@ export async function getModelProviderRuntimeStats(args: {
 		bucket_hours: "1",
 		percentile: String(args.percentile ?? 50),
 	});
-	const payload = await fetchPublicWebApi<{ rows: RpcProviderHealthMetricsRow[] }>(
+	const payload = await fetchPublicWebApi<{ rows: RpcProviderHealthMetricsRow[]; attempt_health?: RpcProviderAttemptHealthRow[] }>(
 		`/api/_web/models/${encodeURIComponent(args.modelId)}/provider-health?${query.toString()}`,
 		{ signal: args.signal },
 	);
-	return mapRpcRuntimeStatsRows({ rows: payload.rows, providerIds });
+	return mapRpcRuntimeStatsRows({ rows: payload.rows, attemptHealthRows: payload.attempt_health ?? [], providerIds });
 }
 
 export async function getModelProviderRuntimeStatsCached(args: {

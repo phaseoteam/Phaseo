@@ -15,6 +15,7 @@ import {
 } from "recharts";
 import type { ModelSuccessPoint } from "@/lib/fetchers/models/getModelPerformance";
 import { useLocale, useTranslations } from "next-intl";
+import ModelProviderHealthChart, { hasProviderAttemptHealth } from "./ModelProviderHealthChart";
 
 function formatBucketLabel(bucket: string, locale: string) {
 	const date = new Date(bucket);
@@ -93,7 +94,16 @@ interface ModelSuccessChartProps {
 	showTitle?: boolean;
 }
 
-export default function ModelSuccessChart({
+export default function ModelSuccessChart(props: ModelSuccessChartProps) {
+	// Per-attempt reachability, capacity and call errors replace the single uptime
+	// line when the data API provides them; older payloads keep the request-level chart.
+	if (hasProviderAttemptHealth(props.successSeries)) {
+		return <ModelProviderHealthChart successSeries={props.successSeries} showTitle={props.showTitle} />;
+	}
+	return <RequestUptimeChart {...props} />;
+}
+
+function RequestUptimeChart({
 	successSeries,
 	showLeastStableProvider = true,
 	showTitle = true,

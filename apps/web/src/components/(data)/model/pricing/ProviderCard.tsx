@@ -82,6 +82,7 @@ import {
 } from "@/components/(data)/model/pricing/pricingHelpers";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import type { PricingRuntimeStats as ProviderRuntimeStats } from "./pricingRuntimeStats";
+import type { ProviderAttemptHealth } from "@/lib/fetchers/models/getModelProviderRuntimeStats";
 import type { ProviderRoutingStatus } from "@/lib/fetchers/models/getModelProviderRoutingHealth";
 import { ProviderLiveRoutingIndicator, useLiveRouting } from "./ProviderLiveRouting";
 import { Logo } from "@/components/Logo";
@@ -277,6 +278,36 @@ function formatUptimeDayLabel(dayOffset: number, locale: string, todayLabel: str
 	);
 }
 
+/**
+ * Reachability, capacity and call errors per provider attempt, with the counts
+ * behind each rate. Customer- and Phaseo-caused attempts are not counted.
+ */
+function AttemptHealthBreakdown({ health }: { health: ProviderAttemptHealth }) {
+	const t = useTranslations("Catalogue.modelDetail.uptime");
+	const locale = useLocale();
+	const metrics = [
+		{ key: "reachability", label: t("reachabilityLabel"), pct: health.reachabilityPct, detail: t("reachabilityCount", { failed: health.reachabilityFailures, count: health.eligibleAttempts }) },
+		{ key: "capacity", label: t("capacityLabel"), pct: health.capacityPct, detail: t("capacityCount", { failed: health.capacityFailures, count: health.eligibleAttempts }) },
+		{ key: "callErrors", label: t("callErrorsLabel"), pct: health.callErrorPct, detail: t("callErrorsCount", { failed: health.callErrorFailures, count: health.eligibleAttempts }) },
+	];
+	return (
+		<dl className="space-y-1.5 border-t border-zinc-200 pt-2.5 dark:border-zinc-800">
+			{metrics.map((metric) => (
+				<div key={metric.key}>
+					<div className="flex items-center justify-between gap-4">
+						<dt className="text-xs text-foreground">{metric.label}</dt>
+						<dd className={cn("text-xs font-medium tabular-nums", uptimeValueClass(metric.pct))}>
+							{formatPercent(metric.pct, locale)}
+						</dd>
+					</div>
+					<p className="text-[11px] text-muted-foreground tabular-nums">{metric.detail}</p>
+				</div>
+			))}
+			<p className="text-[11px] text-muted-foreground">{t("attemptBasis")}</p>
+		</dl>
+	);
+}
+
 function UptimeHoverContent({
 	uptimePct,
 	runtimeStats,
@@ -326,6 +357,7 @@ function UptimeHoverContent({
 					);
 				})}
 			</div>
+			{runtimeStats?.attemptHealth3d ? <AttemptHealthBreakdown health={runtimeStats.attemptHealth3d} /> : null}
 			<UptimeKey className="border-t border-zinc-200 pt-2.5 dark:border-zinc-800" />
 		</div>
 	);

@@ -34,6 +34,7 @@ import { withServedModel } from "./served-model";
 import { logDebugEvent, previewValue } from "../debug";
 import { ensureRuntimeForBackground } from "@/runtime/env";
 import { normalizeFinishReason } from "../audit/normalize-finish-reason";
+import { CLIENT_CLOSED_REQUEST_STATUS, isClientCancelledStream } from "../execute/attempt-health";
 import { applyByokServiceFee } from "../pricing/byok-fee";
 import { applyDataContributionDiscount } from "../pricing/data-contribution-discount";
 import {
@@ -708,6 +709,15 @@ export async function handleStreamResponse(
 					await maybeOpenOnRecentErrors(ctx.endpoint, healthProvider, baseModel);
 				}
 				const reason = info?.aborted ? "incomplete_stream" : "upstream_failure";
+				// `aborted` only means no terminal event arrived. When the client had
+				// already disconnected and the provider reported no error, the stream
+				// ended because the caller left: a customer cancellation, not a
+				// provider stream failure.
+				const clientCancelled = isClientCancelledStream({
+					aborted: info?.aborted === true,
+					downstreamDisconnected: ctx.meta.downstreamDisconnected === true,
+					streamFailed,
+				});
 				await recordManagedProviderTokensOnce({
 					ctx,
 					providerId: result.provider,
@@ -717,6 +727,18 @@ export async function handleStreamResponse(
 				});
 				chargeRateLimitPolicyTokens(ctx, shapedUsage);
 				suppressFailedResponseBilling({ ctx, result, usage: shapedUsage, reason });
+				if (clientCancelled) {
+					await handleFailureAudit(
+						ctx,
+						result,
+						CLIENT_CLOSED_REQUEST_STATUS,
+						"client",
+						"client_closed_request",
+						"The client closed the stream before it completed.",
+						result.rawResponse ?? latestGatewaySnapshot,
+					);
+					return;
+				}
 				await handleFailureAudit(
 					ctx,
 					result,

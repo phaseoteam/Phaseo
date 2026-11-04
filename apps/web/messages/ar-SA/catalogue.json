@@ -1487,7 +1487,20 @@
 			"hourlyAverage": "آخر 24 ساعة · المتوسط لكل ساعة",
 			"routingChartLabel": "وقت تشغيل النموذج لكل ساعة خلال آخر 24 ساعة. Phaseo Routing: {uptime}.{comparison}",
 			"routingComparison": " بدون Phaseo Routing: {uptime}.",
-			"routingLabel": "توجيه Phaseo"
+			"routingLabel": "توجيه Phaseo",
+			"providerHealthTitle": "حالة المزوّد",
+			"reachabilityLabel": "إمكانية الوصول",
+			"capacityLabel": "السعة",
+			"callErrorsLabel": "أخطاء الاستدعاء",
+			"reachabilityHelp": "عدد المرات التي حصلت فيها Phaseo على أي استجابة من المزوّد. تُحتسب ضدها حالات فشل الاتصال، وانتهاء المهلة قبل بدء الاستجابة، وأخطاء البوابة (502 و503 و504).",
+			"capacityHelp": "عدد المرات التي قبل فيها المزوّد الاستدعاء بدلًا من رفضه بسبب الضغط. تُحتسب ضدها حدود المعدل على مفتاح Phaseo نفسه، والاستجابات التي تشير إلى الحمل الزائد أو نفاد السعة.",
+			"callErrorsHelp": "عدد المرات التي انتهى فيها استدعاء قبله المزوّد دون أن يفشل. تُحتسب ضدها أخطاء الخادم، والبث الذي انقطع في منتصفه، والمخرجات الفارغة أو غير الصالحة.",
+			"reachabilityCount": "{count, plural, =0 {لا توجد محاولات} other {{failed, number} من # محاولة لم تصل إلى المزوّد}}",
+			"capacityCount": "{count, plural, =0 {لا توجد محاولات} other {{failed, number} من # محاولة رُفضت بسبب الضغط}}",
+			"callErrorsCount": "{count, plural, =0 {لا توجد محاولات} other {{failed, number} من # محاولة فشلت بعد أن قبلها المزوّد}}",
+			"attemptHourlyAverage": "آخر 24 ساعة · متوسط كل ساعة، لكل محاولة لدى المزوّد",
+			"providerHealthChartLabel": "حالة المزوّد كل ساعة خلال آخر 24 ساعة. إمكانية الوصول: {reachability}. السعة: {capacity}. أخطاء الاستدعاء: {callErrors}.",
+			"attemptBasis": "آخر 3 أيام، لكل محاولة لدى المزوّد. لا تُحتسب الأخطاء الناتجة عن الطلب نفسه."
 		},
 		"providerInfo": {
 			"dataPolicy": "سياسة البيانات",
