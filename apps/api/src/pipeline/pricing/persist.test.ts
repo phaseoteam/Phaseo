@@ -56,6 +56,31 @@ describe("recordUsageAndCharge", () => {
 		process.env.STRIPE_SECRET_KEY = "sk_test_example";
 	});
 
+	it("charges a stepped request's total through gateway_charge_request_total with the same cache handling", async () => {
+		rpcMock.mockResolvedValue({
+			data: { status: "credited", applied: true, already_applied: false, delta_nanos: -100, invalidate_credit_cache: true, available_nanos: 7 },
+			error: null,
+		});
+		const { recordRequestChargeTotal } = await import("./persist");
+
+		await recordRequestChargeTotal({ requestId: "bill_1", workspaceId: "workspace_123", total_nanos: 400, final: true, creditSnapshotBalanceNanos: 9 });
+
+		expect(rpcMock).toHaveBeenCalledWith("gateway_charge_request_total", {
+			p_workspace_id: "workspace_123", p_request_id: "bill_1", p_total_nanos: 400, p_final: true, p_credit_snapshot_balance_nanos: 9,
+		});
+		expect(invalidateGatewayCreditCacheMock).toHaveBeenCalledWith("workspace_123");
+		expect(releaseRuntimeMock).toHaveBeenCalledOnce();
+	});
+
+	it("invalidates and rethrows when the stored-total charge fails", async () => {
+		rpcMock.mockResolvedValue({ data: null, error: new Error("request_charge_amount_mismatch") });
+		const { recordRequestChargeTotal } = await import("./persist");
+
+		await expect(recordRequestChargeTotal({ requestId: "bill_1", workspaceId: "workspace_123", total_nanos: 401, final: true }))
+			.rejects.toThrow("request_charge_amount_mismatch");
+		expect(invalidateGatewayCreditCacheMock).toHaveBeenCalledWith("workspace_123");
+	});
+
 	it("writes back the post-charge balance instead of invalidating when enabled", async () => {
 		creditWriteBack.enabled = true;
 		rpcMock.mockResolvedValue({

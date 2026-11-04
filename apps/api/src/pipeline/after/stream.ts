@@ -374,10 +374,14 @@ export async function handleStreamResponse(
         });
     }
 
+    // Output streamed so far, for settling a stream charged at drain checkpoints.
+    let streamedOutputChars = 0;
     const onStreamEvent = (event: UnifiedStreamEvent) => {
 		if (event.type === "error") {
 			streamFailed = true;
 		}
+		if (event.type === "delta_text") streamedOutputChars += event.text.length;
+		else if (event.type === "delta_tool") streamedOutputChars += event.argumentsDelta?.length ?? 0;
         // Sees the provider's own frame, also when it is re-encoded for the client.
         if (event.type === "start") rememberNativeId(event.payload);
         if (event.type === "delta_tool") {
@@ -395,6 +399,33 @@ export async function handleStreamResponse(
             cachedFinishReason = normalizeFinishReason(event.finishReason, result.provider);
             result.bill.finish_reason = cachedFinishReason;
         }
+    };
+
+    // Prices a drained stream's progress: provider-reported usage where there is any, output
+    // never below the streamed text. Null when there is nothing to charge or no price card.
+    const priceDrainProgress = (progress: { usage: any; outputChars: number }) => {
+        if (!card) return null;
+        const estimated = estimateDrainProgressUsage({
+            usage: authoritativeUsageForFrame() ?? progress.usage,
+            outputChars: progress.outputChars,
+        });
+        if (!estimated) return null;
+        const tier = ctx.teamEnrichment?.tier ?? 'basic';
+        const priced = calculatePricing(
+            withInputModalityTokenMeters(shapeStreamUsageForClient(estimated.usage), estimated.usage),
+            card,
+            ctx.body,
+            tier,
+            ctx.meta
+        );
+        const { totalNanos } = applyDataContributionDiscount({
+            pricedUsage: priced.pricedUsage,
+            totalNanos: priced.totalNanos,
+            enabled: ctx.teamSettings?.dataContributionEnabled === true,
+            isByok: false,
+            discountBps: ctx.teamSettings?.dataContributionDiscountBps,
+        });
+        return { totalNanos, inputReported: estimated.inputReported };
     };
 
     const resp = await passthroughWithPricing({
@@ -589,33 +620,15 @@ export async function handleStreamResponse(
             return next;
         },
         onStreamEvent,
-        // Client gone and the drain still running: charge what was generated so far, in case
-        // the runtime stops the drain before the final usage (see DRAIN_CHECKPOINT_DELAYS_MS).
-        // The final charge then takes only the rest. BYOK requests owe only the service fee.
+        // Client gone and the drain still running: charge an estimate of what was generated so
+        // far, in case the runtime stops the drain before the final usage (see
+        // DRAIN_CHECKPOINT_DELAYS_MS). The final bill then settles the request's total, refunding
+        // any excess. BYOK requests owe only the service fee and are skipped.
         onDrainCheckpoint: (progress) => {
-            if (streamIsByok || !card) return;
-            const estimated = estimateDrainProgressUsage({
-                usage: authoritativeUsageForFrame() ?? progress.usage,
-                outputChars: progress.outputChars,
-                body: ctx.body,
-            });
-            if (!estimated) return;
-            const tier = ctx.teamEnrichment?.tier ?? 'basic';
-            const priced = calculatePricing(
-                withInputModalityTokenMeters(shapeStreamUsageForClient(estimated), estimated),
-                card,
-                ctx.body,
-                tier,
-                ctx.meta
-            );
-            const { totalNanos } = applyDataContributionDiscount({
-                pricedUsage: priced.pricedUsage,
-                totalNanos: priced.totalNanos,
-                enabled: ctx.teamSettings?.dataContributionEnabled === true,
-                isByok: false,
-                discountBps: ctx.teamSettings?.dataContributionDiscountBps,
-            });
-            dispatchBackground(recordProvisionalStreamCharge({ ctx, costNanos: totalNanos, endpoint: ctx.endpoint }));
+            if (streamIsByok) return;
+            const priced = priceDrainProgress(progress);
+            if (!priced) return;
+            dispatchBackground(recordProvisionalStreamCharge({ ctx, costNanos: priced.totalNanos, endpoint: ctx.endpoint }));
         },
         onFinalSnapshot: (snapshot: any) => {
             const payload = snapshot?.response ?? snapshot;
@@ -757,6 +770,20 @@ export async function handleStreamResponse(
 				});
 				chargeRateLimitPolicyTokens(ctx, shapedUsage);
 				suppressFailedResponseBilling({ ctx, result, usage: shapedUsage, reason });
+				// Drain checkpoints charged an estimate: settle the request's total now. A failed
+				// stream is not billed (0: everything is refunded). A stream the client left keeps
+				// what it generated: priced from provider usage when the provider reported any,
+				// otherwise no more than the checkpoints already estimated.
+				const stepMeta = ctx.meta as Record<string, unknown>;
+				if (stepMeta.__chargedInSteps === true) {
+					let finalNanos = 0;
+					if (clientCancelled) {
+						const priced = priceDrainProgress({ usage: effectiveUsageRaw, outputChars: streamedOutputChars });
+						const estimatedNanos = Number(stepMeta.__checkpointTotalNanos) || 0;
+						finalNanos = priced?.inputReported ? priced.totalNanos : Math.min(priced?.totalNanos ?? estimatedNanos, estimatedNanos);
+					}
+					await recordUsageAndChargeOnce({ ctx, costNanos: finalNanos, endpoint: ctx.endpoint });
+				}
 				if (clientCancelled) {
 					await handleFailureAudit(
 						ctx,

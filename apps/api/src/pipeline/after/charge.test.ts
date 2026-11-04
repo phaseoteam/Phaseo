@@ -1,12 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const recordUsageAndChargeMock = vi.hoisted(() => vi.fn(async () => {}));
+const recordUsageAndChargeMock = vi.hoisted(() => vi.fn(async (_args: any) => {}));
+const recordRequestChargeTotalMock = vi.hoisted(() => vi.fn(async (_args: any) => {}));
 
 vi.mock("../pricing/persist", () => ({
 	recordUsageAndCharge: recordUsageAndChargeMock,
+	recordRequestChargeTotal: recordRequestChargeTotalMock,
 }));
 
-import { provisionalChargedNanos, recordProvisionalStreamCharge, recordUsageAndChargeOnce } from "./charge";
+import { recordProvisionalStreamCharge, recordUsageAndChargeOnce, requestChargedInSteps } from "./charge";
 
 describe("recordUsageAndChargeOnce", () => {
     it.each([false, true])("charges admin internal requests only with verified pricing (%s)", async (priced) => {
@@ -161,66 +163,85 @@ describe("recordUsageAndChargeOnce", () => {
 		expect(ctx.meta.__usageChargeRecorded).not.toBe(true);
 	});
 
-	describe("provisional stream charges", () => {
-		const calls = () => recordUsageAndChargeMock.mock.calls.map(([args]: any[]) => [args.requestId, args.cost_nanos]);
+	describe("drain checkpoint charges", () => {
+		// One-off charges and stored-total charges (gateway_charge_request_total), in call order.
+		const calls = () => [
+			...recordUsageAndChargeMock.mock.invocationCallOrder.map((order, i) =>
+				[order, "one_off", recordUsageAndChargeMock.mock.calls[i][0].requestId, recordUsageAndChargeMock.mock.calls[i][0].cost_nanos] as const),
+			...recordRequestChargeTotalMock.mock.invocationCallOrder.map((order, i) => {
+				const args = recordRequestChargeTotalMock.mock.calls[i][0];
+				return [order, args.final ? "final_total" : "checkpoint_total", args.requestId, args.total_nanos] as const;
+			}),
+		].sort((a, b) => a[0] - b[0]).map(([, ...rest]) => rest);
 		const ctxFor = (): any => ({ requestId: "r", billingRequestId: "bill", workspaceId: "ws", meta: {} });
+		beforeEach(() => { recordRequestChargeTotalMock.mockReset().mockResolvedValue(undefined); });
 
-		it("charges increases under their own keys and only the rest at the end", async () => {
+		it("sends running totals under the request's own key, then the final bill as the total", async () => {
 			const ctx = ctxFor();
 			await recordProvisionalStreamCharge({ ctx, costNanos: 100, endpoint: "chat.completions" });
-			await recordProvisionalStreamCharge({ ctx, costNanos: 100, endpoint: "chat.completions" });
 			await recordProvisionalStreamCharge({ ctx, costNanos: 250, endpoint: "chat.completions" });
-			expect(provisionalChargedNanos(ctx)).toBe(250);
+			expect(requestChargedInSteps(ctx)).toBe(true);
 			await recordUsageAndChargeOnce({ ctx, costNanos: 400, endpoint: "chat.completions" });
-			expect(calls()).toEqual([["bill:partial:1", 100], ["bill:partial:2", 150], ["bill", 150]]);
+			expect(calls()).toEqual([["checkpoint_total", "bill", 100], ["checkpoint_total", "bill", 250], ["final_total", "bill", 400]]);
 			// Nothing after the final charge.
 			await recordProvisionalStreamCharge({ ctx, costNanos: 900, endpoint: "chat.completions" });
 			expect(calls()).toHaveLength(3);
 		});
 
-		it("waits for a provisional charge in flight before the final charge", async () => {
-			let release: (() => void) | undefined;
-			recordUsageAndChargeMock.mockImplementationOnce(() => new Promise<void>((resolve) => { release = resolve; }));
+		it("reconciles a checkpoint whose responses were all lost from the stored total, without a second charge", async () => {
+			// The debit may have committed; the gateway only saw errors.
+			recordRequestChargeTotalMock.mockRejectedValueOnce(new Error("lost")).mockRejectedValueOnce(new Error("lost")).mockRejectedValueOnce(new Error("lost"));
 			const ctx = ctxFor();
-			void recordProvisionalStreamCharge({ ctx, costNanos: 100, endpoint: "responses" });
-			// The provisional charge is at the database when the final charge starts.
-			while (!release) await new Promise((resolve) => setImmediate(resolve));
-			const final = recordUsageAndChargeOnce({ ctx, costNanos: 300, endpoint: "responses" });
-			for (let i = 0; i < 10; i += 1) await new Promise((resolve) => setImmediate(resolve));
-			// The final charge is still waiting for the provisional one.
-			expect(calls()).toEqual([["bill:partial:1", 100]]);
-			release!();
-			await final;
-			expect(calls()).toEqual([["bill:partial:1", 100], ["bill", 200]]);
+			await recordProvisionalStreamCharge({ ctx, costNanos: 100, endpoint: "responses" });
+			await recordUsageAndChargeOnce({ ctx, costNanos: 300, endpoint: "responses", throwOnFailure: true });
+			// The final bill is the total (300), never 300 on top of a committed 100.
+			expect(calls()).toEqual([
+				["checkpoint_total", "bill", 100], ["checkpoint_total", "bill", 100], ["checkpoint_total", "bill", 100],
+				["final_total", "bill", 300],
+			]);
+			expect(recordUsageAndChargeMock).not.toHaveBeenCalled();
 		});
 
-		it("drops a provisional charge that has not started when the final charge does", async () => {
-			const ctx = ctxFor();
-			void recordProvisionalStreamCharge({ ctx, costNanos: 100, endpoint: "responses" });
-			await recordUsageAndChargeOnce({ ctx, costNanos: 300, endpoint: "responses" });
-			expect(calls()).toEqual([["bill", 300]]);
-		});
-
-		it("charges nothing more when the provisional charges already cover the final cost", async () => {
+		it("sends a final bill below the estimates, so the database refunds the difference", async () => {
 			const ctx = ctxFor();
 			await recordProvisionalStreamCharge({ ctx, costNanos: 500, endpoint: "responses" });
 			await recordUsageAndChargeOnce({ ctx, costNanos: 400, endpoint: "responses", throwOnFailure: true });
-			expect(calls()).toEqual([["bill:partial:1", 500]]);
+			expect(calls()).toEqual([["checkpoint_total", "bill", 500], ["final_total", "bill", 400]]);
 			expect(ctx.meta.__usageChargeRecorded).toBe(true);
 		});
 
-		it("does not count a failed provisional charge, and never reuses its key with another amount", async () => {
-			recordUsageAndChargeMock.mockRejectedValueOnce(new Error("db")).mockRejectedValueOnce(new Error("db")).mockRejectedValueOnce(new Error("db"));
+		it("sends a waived final bill of 0, so the estimates are refunded", async () => {
 			const ctx = ctxFor();
-			await recordProvisionalStreamCharge({ ctx, costNanos: 100, endpoint: "responses" });
-			expect(provisionalChargedNanos(ctx)).toBe(0);
-			await recordProvisionalStreamCharge({ ctx, costNanos: 200, endpoint: "responses" });
+			await recordProvisionalStreamCharge({ ctx, costNanos: 300, endpoint: "responses" });
+			await recordUsageAndChargeOnce({ ctx, costNanos: 0, endpoint: "responses" });
+			expect(calls()).toEqual([["checkpoint_total", "bill", 300], ["final_total", "bill", 0]]);
+		});
+
+		it("waits for a checkpoint in flight before the final charge", async () => {
+			let release: (() => void) | undefined;
+			recordRequestChargeTotalMock.mockImplementationOnce(() => new Promise<void>((resolve) => { release = resolve; }));
+			const ctx = ctxFor();
+			void recordProvisionalStreamCharge({ ctx, costNanos: 100, endpoint: "responses" });
+			while (!release) await new Promise((resolve) => setImmediate(resolve));
+			const final = recordUsageAndChargeOnce({ ctx, costNanos: 300, endpoint: "responses" });
+			for (let i = 0; i < 10; i += 1) await new Promise((resolve) => setImmediate(resolve));
+			expect(calls()).toEqual([["checkpoint_total", "bill", 100]]);
+			release!();
+			await final;
+			expect(calls()).toEqual([["checkpoint_total", "bill", 100], ["final_total", "bill", 300]]);
+		});
+
+		it("charges a request with no checkpoint once, exactly as before", async () => {
+			const ctx = ctxFor();
+			// Registered but not started before the final charge: dropped, never sent.
+			void recordProvisionalStreamCharge({ ctx, costNanos: 100, endpoint: "responses" });
 			await recordUsageAndChargeOnce({ ctx, costNanos: 300, endpoint: "responses" });
-			expect(calls()).toEqual([
-				["bill:partial:1", 100], ["bill:partial:1", 100], ["bill:partial:1", 100],
-				["bill:partial:2", 200],
-				["bill", 100],
-			]);
+			expect(calls()).toEqual([["one_off", "bill", 300]]);
+			expect(requestChargedInSteps(ctx)).toBe(false);
+			// No checkpoint and nothing to bill: no call at all.
+			const free = ctxFor();
+			await recordUsageAndChargeOnce({ ctx: free, costNanos: 0, endpoint: "responses" });
+			expect(calls()).toHaveLength(1);
 		});
 	});
 });

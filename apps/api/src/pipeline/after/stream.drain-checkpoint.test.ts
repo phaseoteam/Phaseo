@@ -3,10 +3,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // A client that disconnects leaves the upstream draining in waitUntil, which the runtime may
 // stop about 30 s later, before the final usage arrives. These tests run the real stream
 // handler and charge helper; only the database charge call is mocked.
-const chargeRpcMock = vi.hoisted(() => vi.fn(async (_args: any) => ({ applied: true })));
+// One-off charges ("one_off") and stored-total charges ("total", see gateway_charge_request_total).
+const chargeRpcMock = vi.hoisted(() => vi.fn(async (_kind: string, _args: any) => ({ applied: true })));
 const backgroundWork: Promise<unknown>[] = [];
 
-vi.mock("../pricing/persist", () => ({ recordUsageAndCharge: (args: any) => chargeRpcMock(args) }));
+vi.mock("../pricing/persist", () => ({
+	recordUsageAndCharge: (args: any) => chargeRpcMock("one_off", args),
+	recordRequestChargeTotal: (args: any) => chargeRpcMock("total", args),
+}));
 vi.mock("./audit", () => ({
 	handleFailureAudit: vi.fn(async () => undefined),
 	handleSuccessAudit: vi.fn(async () => undefined),
@@ -58,11 +62,18 @@ function controllableUpstream() {
 		controller.enqueue(enc.encode(`data: ${JSON.stringify({ id: "c", object: "chat.completion.chunk", choices: [{ index: 0, delta, finish_reason: null }], ...extra })}\n\n`));
 	return {
 		response: new Response(body, { status: 200, headers: { "Content-Type": "text/event-stream" } }),
-		text: (content: string) => chunk({ content }),
+		text: (content: string, usage?: Record<string, number>) => chunk({ content }, usage ? { usage } : {}),
+		// The upstream closes with no terminal event and no error.
+		cut: () => controller.close(),
 		finish: (usage: Record<string, number>) => {
 			controller.enqueue(enc.encode(`data: ${JSON.stringify({ id: "c", object: "chat.completion.chunk", choices: [{ index: 0, delta: {}, finish_reason: "stop" }] })}\n\n`));
 			controller.enqueue(enc.encode(`data: ${JSON.stringify({ id: "c", object: "chat.completion.chunk", choices: [], usage })}\n\n`));
 			controller.enqueue(enc.encode("data: [DONE]\n\n"));
+			controller.close();
+		},
+		// A provider error mid-stream, then the upstream closes with no terminal event.
+		fail: () => {
+			controller.enqueue(enc.encode(`data: ${JSON.stringify({ error: { message: "overloaded", type: "server_error" } })}\n\n`));
 			controller.close();
 		},
 	};
@@ -79,7 +90,7 @@ function ctx(): any {
 		model: "openai/gpt-5-mini",
 		requestedModel: "openai/gpt-5-mini",
 		stream: true,
-		// 500 characters of prompt text: estimated as 100 input tokens until the provider reports usage.
+		// 500 characters of prompt text: not estimated (a cached prompt costs less than the full rate).
 		body: { model: "openai/gpt-5-mini", stream: true, messages: [{ role: "user", content: "x".repeat(500) }] },
 		rawBody: {},
 		meta: { requestId: "req_drain", apiKeyId: "key_drain", authMethod: "api_key" },
@@ -100,7 +111,9 @@ async function start(c: any, keySource = "gateway") {
 	return { upstream, reader: response.body!.getReader() };
 }
 
-const charges = () => chargeRpcMock.mock.calls.map(([args]) => [args.requestId, args.cost_nanos]);
+const charges = () => chargeRpcMock.mock.calls.map(([kind, args]) => kind === "one_off"
+	? ["one_off", args.requestId, args.cost_nanos]
+	: [args.final ? "final_total" : "checkpoint_total", args.requestId, args.total_nanos]);
 
 describe("a stream the client abandons while the upstream keeps draining", () => {
 	beforeEach(() => {
@@ -120,32 +133,29 @@ describe("a stream the client abandons while the upstream keeps draining", () =>
 		await settle();
 		expect(charges()).toEqual([]);
 
-		// 15 s after the disconnect: 100 input tokens (estimated) + 500 chars = 100 output tokens.
+		// 15 s after the disconnect: no input reported yet, so only 500 chars = 100 output tokens.
 		await vi.advanceTimersByTimeAsync(15_000);
 		await settle();
-		expect(charges()).toEqual([["bill_drain:partial:1", 100 * 1_000 + 100 * 10_000]]);
+		expect(charges()).toEqual([["checkpoint_total", "bill_drain", 100 * 10_000]]);
 
-		// 25 s: 500 more characters; only the increase is charged.
+		// 25 s: 500 more characters; the database charges only the increase over the stored total.
 		upstream.text("z".repeat(500));
 		await settle();
 		await vi.advanceTimersByTimeAsync(10_000);
 		await settle();
 		expect(charges()).toEqual([
-			["bill_drain:partial:1", 1_100_000],
-			["bill_drain:partial:2", 100 * 10_000],
+			["checkpoint_total", "bill_drain", 1_000_000],
+			["checkpoint_total", "bill_drain", 2_000_000],
 		]);
 
-		// The drain finishes: the final charge takes the real cost less what was charged.
+		// The drain finishes: the final bill is sent as the request's total, not a one-off charge.
 		upstream.finish({ prompt_tokens: 120, completion_tokens: 250, total_tokens: 370 });
 		await settle();
-		const finalCost = 120 * 1_000 + 250 * 10_000;
 		expect(charges()).toEqual([
-			["bill_drain:partial:1", 1_100_000],
-			["bill_drain:partial:2", 1_000_000],
-			["bill_drain", finalCost - 2_100_000],
+			["checkpoint_total", "bill_drain", 1_000_000],
+			["checkpoint_total", "bill_drain", 2_000_000],
+			["final_total", "bill_drain", 120 * 1_000 + 250 * 10_000],
 		]);
-		const total = charges().reduce((sum, [, nanos]) => sum + Number(nanos), 0);
-		expect(total).toBe(finalCost);
 	});
 
 	it("charges once, from the final usage, when the drain finishes before the first checkpoint", async () => {
@@ -159,7 +169,7 @@ describe("a stream the client abandons while the upstream keeps draining", () =>
 		await settle();
 		await vi.advanceTimersByTimeAsync(30_000);
 		await settle();
-		expect(charges()).toEqual([["bill_drain", 120 * 1_000 + 250 * 10_000]]);
+		expect(charges()).toEqual([["one_off", "bill_drain", 120 * 1_000 + 250 * 10_000]]);
 	});
 
 	it("makes no provisional charge while the client is still reading", async () => {
@@ -174,7 +184,7 @@ describe("a stream the client abandons while the upstream keeps draining", () =>
 		const rest = (async () => { while (!(await reader.read()).done) { /* drain */ } })();
 		await settle();
 		await rest;
-		expect(charges()).toEqual([["bill_drain", 2_620_000]]);
+		expect(charges()).toEqual([["one_off", "bill_drain", 2_620_000]]);
 	});
 
 	it("makes no provisional charge for a BYOK request", async () => {
@@ -186,5 +196,54 @@ describe("a stream the client abandons while the upstream keeps draining", () =>
 		await vi.advanceTimersByTimeAsync(30_000);
 		await settle();
 		expect(charges()).toEqual([]);
+	});
+
+	it("refunds the checkpoint charges when the upstream then fails", async () => {
+		const c = ctx();
+		const { upstream, reader } = await start(c);
+		upstream.text("y".repeat(500));
+		await reader.read();
+		await reader.cancel();
+		await vi.advanceTimersByTimeAsync(15_000);
+		await settle();
+		expect(charges()).toEqual([["checkpoint_total", "bill_drain", 1_000_000]]);
+		upstream.fail();
+		await settle();
+		// A failed stream is not billed: a final total of 0 gives the estimate back.
+		expect(charges()).toEqual([["checkpoint_total", "bill_drain", 1_000_000], ["final_total", "bill_drain", 0]]);
+	});
+
+	it("settles a stream the client left that then ends early at no more than the checkpoints estimated", async () => {
+		const c = ctx();
+		const { upstream, reader } = await start(c);
+		upstream.text("y".repeat(500));
+		await reader.read();
+		await reader.cancel();
+		await vi.advanceTimersByTimeAsync(15_000);
+		await settle();
+		upstream.text("z".repeat(500));
+		upstream.cut();
+		await settle();
+		// No provider usage: the final total is capped at the 1,000,000 already estimated.
+		expect(charges()).toEqual([["checkpoint_total", "bill_drain", 1_000_000], ["final_total", "bill_drain", 1_000_000]]);
+	});
+
+	it("settles a stream the client left that then ends early from the provider's reported usage", async () => {
+		const c = ctx();
+		const { upstream, reader } = await start(c);
+		upstream.text("y".repeat(500), { prompt_tokens: 120, completion_tokens: 50, total_tokens: 170 });
+		await reader.read();
+		await reader.cancel();
+		await vi.advanceTimersByTimeAsync(15_000);
+		await settle();
+		// Reported input (120) plus the streamed output (100 tokens, above the reported 50).
+		expect(charges()).toEqual([["checkpoint_total", "bill_drain", 120 * 1_000 + 100 * 10_000]]);
+		upstream.text("z".repeat(500));
+		upstream.cut();
+		await settle();
+		expect(charges()).toEqual([
+			["checkpoint_total", "bill_drain", 1_120_000],
+			["final_total", "bill_drain", 120 * 1_000 + 200 * 10_000],
+		]);
 	});
 });
