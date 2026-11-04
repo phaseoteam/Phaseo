@@ -48,7 +48,7 @@ const ROUTING_STEP_SPANS = {
 	spend_rules: "execute_spend_rule_blocks",
 	pricing: "execute_guard_pricing",
 	ranking: "execute_rank_providers",
-	encode: "ir_encode",
+	// Not ir_encode: it times encoding the provider's response, after dispatch.
 } as const;
 
 type RoutingSteps = Partial<Record<keyof typeof ROUTING_STEP_SPANS, number>> & { context_cache?: string };

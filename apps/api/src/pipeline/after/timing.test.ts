@@ -146,6 +146,7 @@ describe("routing steps", () => {
 				execute_rank_providers: 2.36,
 				// After dispatch, or not a routing step: never stored.
 				adapter_roundtrip_ms: 950,
+				ir_encode: 1.5, // response encoding
 				after_calculate_pricing: 3,
 				internal_latency_ms: 40,
 			},
