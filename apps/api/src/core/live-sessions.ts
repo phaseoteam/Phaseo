@@ -157,7 +157,8 @@ export function ingestLiveUsage(current: LiveUsage, event: Record<string, any>):
 		const previous = responses.find((item) => item.id === id);
 		if (previous && (response?.usage?.input_tokens !== previous.usage.input_tokens || response?.usage?.output_tokens !== previous.usage.output_tokens
 			|| response?.usage?.input_tokens_details?.cached_tokens !== previous.usage.cached_read_text_tokens
-			|| (response?.usage?.input_tokens_details?.cache_write_tokens ?? 0) !== Number(previous.usage.cached_write_text_tokens_30m ?? 0) + Number(previous.usage.cached_write_text_tokens_12h ?? 0)
+			|| JSON.stringify(cacheWritesByLifetime(response?.usage?.input_tokens_details))
+				!== JSON.stringify([Number(previous.usage.cached_write_text_tokens_30m ?? 0), Number(previous.usage.cached_write_text_tokens_12h ?? 0)])
 			|| response?.service_tier !== previous.service_tier || response?.model !== previous.model)) throw new Error("live_response_usage_conflict");
 		if (!responses.some((item) => item.id === id)) {
 			const raw = response?.usage;
@@ -169,11 +170,7 @@ export function ingestLiveUsage(current: LiveUsage, event: Record<string, any>):
 				|| !finite(reasoning) || reasoning > raw.output_tokens) throw new Error("live_response_authoritative_usage_invalid");
 			if (raw.total_tokens != null && raw.total_tokens !== raw.input_tokens + raw.output_tokens) throw new Error("live_response_authoritative_usage_invalid");
 			if (JSON.stringify(raw).length > 16384) throw new Error("live_response_usage_limit_exceeded");
-			// OpenAI prices cache writes by lifetime. Live can't ask for the 12-hour cache, so
-			// writes without a breakdown are the default 30-minute writes.
-			const ttl = raw.input_tokens_details.cache_write_tokens_details;
-			const write12h = ttl?.ttl_12h_tokens ?? 0;
-			const write30m = ttl?.ttl_30m_tokens ?? cacheWrite - write12h;
+			const [write30m, write12h] = cacheWritesByLifetime(raw.input_tokens_details);
 			if (![write30m, write12h].every((value) => Number.isSafeInteger(value) && value >= 0) || write30m + write12h !== cacheWrite) {
 				throw new Error("live_response_authoritative_usage_invalid");
 			}
@@ -191,6 +188,13 @@ export function ingestLiveUsage(current: LiveUsage, event: Record<string, any>):
 	}
 	next.live_pending_responses = [...pending];
 	return next;
+}
+
+// OpenAI prices cache writes by lifetime. Live can't ask for the 12-hour cache, so writes
+// without a breakdown are the default 30-minute writes.
+function cacheWritesByLifetime(details: { cache_write_tokens?: number; cache_write_tokens_details?: { ttl_30m_tokens?: number; ttl_12h_tokens?: number } } | undefined): [number, number] {
+	const write12h = details?.cache_write_tokens_details?.ttl_12h_tokens ?? 0;
+	return [details?.cache_write_tokens_details?.ttl_30m_tokens ?? (details?.cache_write_tokens ?? 0) - write12h, write12h];
 }
 
 export function assertLiveFinalUsage(usage: LiveUsage) {

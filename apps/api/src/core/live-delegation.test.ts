@@ -55,6 +55,11 @@ describe("Live delegation configuration", () => {
 		expect(priceLiveUsage(usage, live).live_backend_nanos).toBe(2_752_500);
 		const unsplit = ingestLiveUsage(ingestLiveUsage({}, delegate()), terminal("r1", "d1", "default"));
 		expect(unsplit.live_responses?.[0].usage).toMatchObject({ cached_write_text_tokens_30m: 200 });
+		// A repeat of the same response that moves writes to the other lifetime changes the price.
+		const relabelled = terminal("r1", "d1", "default");
+		Object.assign(relabelled.event.response.usage.input_tokens_details, { cache_write_tokens_details: { ttl_30m_tokens: 0, ttl_12h_tokens: 200 } });
+		expect(() => ingestLiveUsage(unsplit, relabelled)).toThrow("live_response_usage_conflict");
+		expect(() => ingestLiveUsage(unsplit, terminal("r1", "d1", "default"))).not.toThrow();
 	});
 });
 
