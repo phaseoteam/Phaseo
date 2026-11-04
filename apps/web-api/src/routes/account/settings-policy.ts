@@ -162,16 +162,38 @@ accountSettingsPolicyRouter.get("/chat/effective-policy", async (c) => {
 	if (!workspaceId) return c.json({ guardrails: [], workspace: null, workspaceId: null }, 200, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
-	const [workspaceResult, assignmentsResult] = await Promise.all([
-		context.client.from("workspace_settings").select("provider_restriction_mode,provider_restriction_provider_ids,model_restriction_mode,model_restriction_model_ids").eq("workspace_id", workspaceId).maybeSingle(),
-		context.client.from("workspace_guardrail_assignments").select("guardrail_id").eq("workspace_id", workspaceId).eq("target_type", "member").eq("target_id", context.user.id),
-	]);
-	if (workspaceResult.error || assignmentsResult.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	const guardrailIds = (assignmentsResult.data ?? []).map((row) => String(row.guardrail_id ?? "")).filter(Boolean);
-	const guardrailsResult = guardrailIds.length
-		? await context.client.from("workspace_guardrails").select("id,name,enabled,provider_restriction_mode,provider_restriction_provider_ids,model_restriction_mode,allowed_api_model_ids").eq("workspace_id", workspaceId).eq("enabled", true).in("id", guardrailIds)
-		: { data: [], error: null };
-	if (guardrailsResult.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	// Chat requests use the member's managed key, which has no department of its own, so the
+	// gateway applies the workspace, the member's departments and the member
+	// (resolve_member_guardrails), plus anything assigned to that key directly.
+	let guardrailIds: string[];
+	let workspaceResult;
+	try {
+		const [workspaceRow, memberRows, chatKeyRow] = await Promise.all([
+			context.client.from("workspace_settings").select("provider_restriction_mode,provider_restriction_provider_ids,model_restriction_mode,model_restriction_model_ids").eq("workspace_id", workspaceId).maybeSingle(),
+			readAllPages<{ guardrail_id: string | null }>((from, to) => context.client
+				.rpc("resolve_member_guardrails", { p_workspace_id: workspaceId, p_user_id: context.user.id })
+				.order("guardrail_id").order("source_type").order("source_id").range(from, to)),
+			context.client.from("keys").select("id").eq("workspace_id", workspaceId).eq("created_by", context.user.id).eq("name", "__chat_route_managed_key__").maybeSingle(),
+		]);
+		if (workspaceRow.error || memberRows.error || chatKeyRow.error) throw new Error("settings_unavailable");
+		workspaceResult = workspaceRow;
+		const keyRows = chatKeyRow.data?.id
+			? await readAllPages<{ guardrail_id: string | null }>((from, to) => context.client.from("workspace_guardrail_assignments")
+				.select("guardrail_id").eq("workspace_id", workspaceId).eq("target_type", "key").eq("target_id", chatKeyRow.data!.id)
+				.order("guardrail_id").range(from, to))
+			: { data: [], error: null };
+		if (keyRows.error) throw new Error("settings_unavailable");
+		guardrailIds = [...new Set([...memberRows.data, ...keyRows.data].map((row) => String(row.guardrail_id ?? "")).filter(Boolean))];
+	} catch {
+		return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	}
+	const guardrailRows: unknown[] = [];
+	for (let index = 0; index < guardrailIds.length; index += 200) {
+		const batch = await context.client.from("workspace_guardrails").select("id,name,enabled,provider_restriction_mode,provider_restriction_provider_ids,model_restriction_mode,allowed_api_model_ids").eq("workspace_id", workspaceId).eq("enabled", true).in("id", guardrailIds.slice(index, index + 200));
+		if (batch.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+		guardrailRows.push(...(batch.data ?? []));
+	}
+	const guardrailsResult = { data: guardrailRows };
 	const normalize = (row: any, modelIdsKey = "model_restriction_model_ids") => ({
 		provider: restriction(row?.provider_restriction_mode, row?.provider_restriction_provider_ids),
 		model: restriction(row?.model_restriction_mode, row?.[modelIdsKey]),

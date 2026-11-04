@@ -83,6 +83,32 @@ function guardrailIdsFrom(rows: unknown): string[] {
 		: [];
 }
 
+const RESOLVE_PAGE_SIZE = 1000;
+const GUARDRAIL_ID_BATCH = 200;
+
+/**
+ * Every guardrail id resolve_key_guardrails returns for the key. It returns one row per guardrail
+ * and level, and PostgREST caps a response at 1,000 rows, so this pages until a short page.
+ */
+async function fetchResolvedGuardrailIds(
+	supabase: ReturnType<typeof getSupabaseAdmin>,
+	args: { workspaceId: string; apiKeyId: string },
+): Promise<{ data: string[]; error: null } | { data: null; error: { code?: string; message: string } }> {
+	const ids: string[] = [];
+	for (let from = 0; ; from += RESOLVE_PAGE_SIZE) {
+		const result = await supabase
+			.rpc(RESOLVE_KEY_GUARDRAILS_RPC, { p_workspace_id: args.workspaceId, p_key_id: args.apiKeyId })
+			.order("guardrail_id")
+			.order("source_type")
+			.order("source_id")
+			.range(from, from + RESOLVE_PAGE_SIZE - 1);
+		if (result.error) return { data: null, error: result.error };
+		const page = Array.isArray(result.data) ? result.data : [];
+		ids.push(...guardrailIdsFrom(page));
+		if (page.length < RESOLVE_PAGE_SIZE) return { data: ids, error: null };
+	}
+}
+
 /**
  * The key and principal-member guardrails, read from the join tables that
  * resolve_key_guardrails replaces. Only used while that function is not deployed
@@ -626,10 +652,7 @@ export async function fetchWorkspacePolicy(args: {
 			.eq("id", args.apiKeyId)
 			.eq("workspace_id", args.workspaceId)
 			.maybeSingle(),
-		supabase.rpc(RESOLVE_KEY_GUARDRAILS_RPC, {
-			p_workspace_id: args.workspaceId,
-			p_key_id: args.apiKeyId,
-		}),
+		fetchResolvedGuardrailIds(supabase, { workspaceId: args.workspaceId, apiKeyId: args.apiKeyId }),
 		supabase
 			.from("gateway_dynamic_route_keys")
 			.select("route_id")
@@ -663,10 +686,11 @@ export async function fetchWorkspacePolicy(args: {
 			apiKeyId: args.apiKeyId,
 			principalUserId: String(keyResult.data?.oauth_user_id ?? keyResult.data?.created_by ?? "").trim(),
 		})
-		: guardrailIdsFrom(resolvedGuardrailsResult.data))];
+		: resolvedGuardrailsResult.data)];
 
 	let guardrails: GuardrailRow[] = [];
-	if (guardrailIds.length > 0) {
+	// PostgREST returns at most 1,000 rows and long id lists overflow the URL, so read in batches.
+	for (let index = 0; index < guardrailIds.length; index += GUARDRAIL_ID_BATCH) {
 		const guardrailsResult = await supabase
 			.from("workspace_guardrails")
 			.select(
@@ -674,13 +698,13 @@ export async function fetchWorkspacePolicy(args: {
 			)
 			.eq("workspace_id", args.workspaceId)
 			.eq("enabled", true)
-			.in("id", guardrailIds);
+			.in("id", guardrailIds.slice(index, index + GUARDRAIL_ID_BATCH));
 
 		if (guardrailsResult.error) {
 			throw new Error(`workspace_guardrails_lookup_failed:${guardrailsResult.error.message}`);
 		}
 
-		guardrails = (guardrailsResult.data ?? []) as GuardrailRow[];
+		guardrails.push(...((guardrailsResult.data ?? []) as GuardrailRow[]));
 	}
 
 	let dynamicRoute: DynamicRoutePolicy | null = null;
