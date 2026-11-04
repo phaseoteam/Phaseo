@@ -21,14 +21,20 @@ export const modelExplorerToolMeta = {
 };
 
 export function registerModelExplorer(server: McpServer, env: Pick<PhaseoEnv, "PHASEO_WEB_BASE_URL">) {
+  const webOrigin = new URL(env.PHASEO_WEB_BASE_URL).origin;
   const metadata = {
     ui: {
       // Organisation logos load from the website's static logo set.
-      csp: { connectDomains: [], resourceDomains: [new URL(env.PHASEO_WEB_BASE_URL).origin] },
+      csp: { connectDomains: [], resourceDomains: [webOrigin] },
       prefersBorder: false,
     },
+    // ChatGPT still applies its legacy CSP key to widget images; without it the
+    // logos are blocked (seen in ChatGPT on 2026-11-04).
+    "openai/widgetCSP": { connect_domains: [], resource_domains: [webOrigin] },
     "openai/ui": {
+      // With both modes available ChatGPT defaults to fullscreen unless told otherwise.
       availableDisplayModes: ["inline", "fullscreen"],
+      preferredDisplayMode: "inline",
     },
   };
   registerAppResource(

@@ -166,8 +166,10 @@ describe("Phaseo MCP server metadata", () => {
 		expect(view.contents[0]).toMatchObject({
 			mimeType: "text/html;profile=mcp-app",
 			_meta: {
-				"openai/ui": { availableDisplayModes: ["inline", "fullscreen"] },
+				// ChatGPT defaults to fullscreen when both modes are available unless inline is preferred.
+				"openai/ui": { availableDisplayModes: ["inline", "fullscreen"], preferredDisplayMode: "inline" },
 				ui: { csp: { resourceDomains: ["https://phaseo.app"] } },
+				"openai/widgetCSP": { resource_domains: ["https://phaseo.app"] },
 			},
 		});
 		expect((view.contents[0] as { text: string }).text).toContain("<!doctype html>");
