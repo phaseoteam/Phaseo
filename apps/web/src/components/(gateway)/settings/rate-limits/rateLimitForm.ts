@@ -12,7 +12,8 @@ export const MAX_NAME_LENGTH = 100;
 export const MAX_DESCRIPTION_LENGTH = 500;
 const MAX_INT4 = 2_147_483_647;
 
-export const TARGET_TYPES: SettingsRateLimitTargetType[] = ["key", "member", "department", "guardrail", "end_user_default"];
+// Rate limits can no longer be assigned to a guardrail.
+export const TARGET_TYPES: SettingsRateLimitTargetType[] = ["key", "member", "department", "end_user_default"];
 
 export type PolicyDraft = {
 	name: string;
