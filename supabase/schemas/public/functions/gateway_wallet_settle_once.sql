@@ -74,10 +74,13 @@ begin
   end if;
 
   -- The reservation itself is available to this settlement; all other holds
-  -- remain excluded from spendable balance.
-  v_available_for_settlement := coalesce(v_wallet.balance_nanos, 0)
-    - coalesce(v_wallet.reserved_nanos, 0)
-    + v_reservation.amount_nanos;
+  -- remain excluded from spendable balance. The held amount is always
+  -- capturable, even when a post-response charge has taken the wallet into
+  -- overdraft (balance below reserved).
+  v_available_for_settlement := greatest(
+    coalesce(v_wallet.balance_nanos, 0) - coalesce(v_wallet.reserved_nanos, 0) + v_reservation.amount_nanos,
+    v_reservation.amount_nanos
+  );
   if p_actual_nanos > v_available_for_settlement then
     return query select false, false, 'insufficient_balance'::text, p_actual_nanos,
       coalesce(v_wallet.balance_nanos, 0), coalesce(v_wallet.balance_nanos, 0),

@@ -76,7 +76,7 @@ async function updateSettings(req: Request) {
 		const value = body.auto_top_up as Record<string, unknown>; if (typeof value.enabled !== "boolean") return json({ error: "bad_request", message: "auto_top_up.enabled is required" }, 400, NO_STORE);
 		if (value.enabled) { const mfa = await getMfaStatusForAutoTopUp(access.auth); if (isResponse(mfa)) return mfa; mfaEnabled = mfa; }
 		const amount = Number(value.amount_nanos ?? 0); const threshold = Number(value.balance_threshold_nanos ?? 0);
-		if (value.enabled && (!Number.isSafeInteger(amount) || amount < 1_000_000_000 || !Number.isSafeInteger(threshold) || threshold < 0 || !String(value.payment_method_id ?? "").trim())) return json({ error: "bad_request", message: "Enabled auto top-up requires a payment method, non-negative threshold, and amount of at least one credit" }, 400, NO_STORE);
+		if (value.enabled && (!Number.isSafeInteger(amount) || amount < 5_000_000_000 || amount > 1_000_000_000_000_000 || !Number.isSafeInteger(threshold) || threshold < 0 || !String(value.payment_method_id ?? "").trim())) return json({ error: "bad_request", message: "Enabled auto top-up requires a payment method, non-negative threshold, and an amount from 5 to 1,000,000 credits" }, 400, NO_STORE);
 		autoTopUpUpdate = { enabled: value.enabled, balanceThreshold: value.enabled ? threshold : 0, amount: value.enabled ? amount : 0, paymentMethodId: value.enabled ? String(value.payment_method_id).trim() : null, bypassAcknowledged: value.mfa_bypass_acknowledged === true, bypassPhrase: typeof value.mfa_bypass_phrase === "string" ? value.mfa_bypass_phrase : null };
 		changed.push("auto_top_up");
 	}

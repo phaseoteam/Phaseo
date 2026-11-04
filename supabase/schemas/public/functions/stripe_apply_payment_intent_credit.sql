@@ -86,6 +86,8 @@ begin
 
     update public.wallets
     set balance_nanos = balance_nanos + p_amount_nanos,
+        -- A credited auto top-up has settled, so the next low balance may trigger another.
+        auto_top_up_in_flight_until = case when v_kind = 'auto_top_up' then null else auto_top_up_in_flight_until end,
         updated_at = now()
     where workspace_id = p_workspace_id
     returning balance_nanos - p_amount_nanos, balance_nanos

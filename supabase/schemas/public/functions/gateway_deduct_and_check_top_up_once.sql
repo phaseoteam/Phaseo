@@ -136,6 +136,12 @@ begin
   set status = 'applied',
       deducted_status = v_status,
       auto_top_up_required = v_status = 'top_up_required',
+      -- deduct_and_check_top_up returns json, so the record nests it under the function name.
+      overdraft_nanos = case
+        when coalesce(coalesce(v_result_json -> 'deduct_and_check_top_up', v_result_json) ->> 'overdraft_nanos', '') ~ '^[0-9]+$'
+          then (coalesce(v_result_json -> 'deduct_and_check_top_up', v_result_json) ->> 'overdraft_nanos')::bigint
+        else 0::bigint
+      end,
       updated_at = now()
   where workspace_id = p_workspace_id
     and request_id = p_request_id;

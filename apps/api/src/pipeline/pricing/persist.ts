@@ -145,9 +145,10 @@ export async function recordUsageAndCharge(args: {
             // 2. Use the flat 5% top-up fee
             // 3. Credit wallet with net amount after the fee deduction
             const stripe = await getStripe();
-            const minTopUpNanos = 1 * 1_000_000_000;
+            // The Stripe webhook only credits top-ups of $5 or more.
+            const minTopUpNanos = 5 * 1_000_000_000;
             if (chargeResult.auto_top_up_amount_nanos < minTopUpNanos) {
-                console.error("[auto-recharge] Skipped: auto top-up amount below $1", {
+                console.error("[auto-recharge] Skipped: auto top-up amount below $5", {
                     workspaceId: args.workspaceId,
                     amount_nanos: chargeResult.auto_top_up_amount_nanos,
                 });
