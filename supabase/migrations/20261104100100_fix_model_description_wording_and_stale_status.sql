@@ -6,8 +6,8 @@
 --   have passed.
 -- * Marketing claims ("state-of-the-art", "SOTA", "industry-leading",
 --   "world's best") and benchmark boasts.
--- * Aggregator or hosting-provider names (OpenRouter, DigitalOcean, ModelScope,
---   Novita, RunInfra, Crusoe, fal.ai, Pioneer ...) and first-person vendor copy.
+-- * Names of aggregators and hosting providers ("listed by ...", "hosted by ...",
+--   "exposed through ...") and first-person vendor copy.
 -- * Text cut off mid-sentence with "...", scraped markdown, and typos
 --   ("Noul" for yes/no).
 -- Facts in the old text are kept; only the problem wording changes.
