@@ -54,6 +54,9 @@ COMMENT ON COLUMN "public"."workspace_guardrails"."rate_counting" IS 'How a rate
 
 COMMENT ON COLUMN "public"."workspace_guardrails"."rate_fail_closed" IS 'A rate guardrail waits for its counters and rejects the request when they cannot answer, instead of letting it through.';
 
+-- Rate guardrail names are unique in a workspace, ignoring case and spaces at the ends, as policy names
+-- were. Created after the copy below, which carries over names that were already unique.
+
 -- ---- 2. copy the policies
 DO $$
 begin
@@ -127,6 +130,9 @@ begin
   on conflict do nothing;
 end;
 $$;
+
+CREATE UNIQUE INDEX workspace_guardrails_rate_name_idx ON public.workspace_guardrails USING btree (workspace_id, lower(btrim(name)))
+  WHERE (kind = 'rate'::text);
 
 COMMENT ON TABLE "public"."workspace_rate_limit_policies" IS 'Superseded by rate guardrails (workspace_guardrails kind rate), which were copied from this table with the same ids. Nothing reads or writes it; kept until it is dropped.';
 

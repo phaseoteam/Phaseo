@@ -353,7 +353,11 @@ async function handleCreatePolicy(req: Request) {
 			kind: "rate",
 			enabled: true,
 		}).select(GUARDRAIL_COLUMNS).maybeSingle();
-		if (error) throw error;
+		if (error) {
+			// workspace_guardrails_rate_name_idx: another request took the name first.
+			if (error.code === "23505") return conflict(NAME_TAKEN);
+			throw error;
+		}
 		const row = data as GuardrailRow;
 		await publishRateLimitPlan(workspaceId);
 		await auditPolicy(authorization.auth, "created", row);
@@ -398,6 +402,7 @@ async function handleUpdatePolicy(req: Request) {
 		const { data, error } = await getSupabaseAdmin().from("workspace_guardrails").update(fields.value)
 			.eq("workspace_id", workspaceId).eq("kind", "rate").eq("id", id).select(GUARDRAIL_COLUMNS).maybeSingle();
 		if (error) {
+			if (error.code === "23505") return conflict(NAME_TAKEN);
 			if (error.code === "23514") return badRequest("A rate limit policy must keep at least one limit");
 			throw error;
 		}

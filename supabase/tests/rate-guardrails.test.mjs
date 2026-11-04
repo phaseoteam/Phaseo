@@ -176,7 +176,7 @@ try {
   assert.equal((await rows('select count(*)::int as n from public.workspace_rate_limit_policy_assignments'))[0].n, 6);
 
   // 4. Rate guardrails set only rate settings, and only they set rate columns.
-  const insert = (columns) => db.query(`insert into public.workspace_guardrails (id, workspace_id, ${Object.keys(columns).join(', ')}) values (gen_random_uuid(), $1, ${Object.keys(columns).map((_, i) => `$${i + 2}`).join(', ')})`, [W1, ...Object.values(columns)]);
+  const insert = (columns) => db.query(`insert into public.workspace_guardrails (id, workspace_id, name, ${Object.keys(columns).join(', ')}) values (gen_random_uuid(), $1, gen_random_uuid()::text, ${Object.keys(columns).map((_, i) => `$${i + 2}`).join(', ')})`, [W1, ...Object.values(columns)]);
   await insert({ kind: 'rate', rate_requests_per_minute: 1, rate_counting: 'shared' });
   await insert({ kind: 'rate', rate_tokens_per_minute: 1, rate_counting: 'each_end_user', rate_fail_closed: true });
   await assert.rejects(insert({ kind: 'rate', rate_counting: 'shared' }), /rate_kind_check/, 'a rate guardrail needs a limit');
@@ -189,6 +189,15 @@ try {
   await assert.rejects(insert({ kind: 'rate', rate_tokens_per_minute: -1 }), /rate_tokens_per_minute_check/);
   await assert.rejects(insert({ kind: 'rate', rate_concurrent_requests: 0 }), /rate_concurrent_requests_check/);
   await insert({ kind: 'access', privacy_zdr_only: true });
+
+  // Rate guardrail names are unique per workspace, ignoring case and spaces at the ends, as policy names were.
+  const named = (kind, name, workspace = W1) => db.query(`insert into public.workspace_guardrails (id, workspace_id, kind, name, rate_requests_per_minute) values (gen_random_uuid(), $1, $2, $3, ${kind === 'rate' ? 1 : 'null'})`, [workspace, kind, name]);
+  await assert.rejects(named('rate', ' batch KEYS '), /workspace_guardrails_rate_name_idx/, 'a second rate guardrail cannot take the name');
+  await named('rate', 'Batch keys', W2);
+  await named('access', 'Batch keys');
+  for (const text of [normalize(migration), guardrailsTable]) assert(text.includes("CREATE UNIQUE INDEX workspace_guardrails_rate_name_idx ON public.workspace_guardrails USING btree (workspace_id, lower(btrim(name)))\n  WHERE (kind = 'rate'::text);"), 'the name index is declared');
+  const [index] = await rows("select pg_get_indexdef('public.workspace_guardrails_rate_name_idx'::regclass) as definition");
+  assert.equal(index.definition, "CREATE UNIQUE INDEX workspace_guardrails_rate_name_idx ON public.workspace_guardrails USING btree (workspace_id, lower(btrim(name))) WHERE (kind = 'rate'::text)");
 
   // 5. Throttles from an allowance shared by the whole workspace can be recorded.
   await db.query('insert into public.workspace_rate_limit_throttles_minute values ($1)', ['workspace']);

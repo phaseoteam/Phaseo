@@ -50,6 +50,9 @@ ALTER TABLE "public"."workspace_guardrails"
 CREATE UNIQUE INDEX workspace_guardrails_one_baseline_idx ON public.workspace_guardrails USING btree (workspace_id)
   WHERE is_workspace_baseline;
 
+CREATE UNIQUE INDEX workspace_guardrails_rate_name_idx ON public.workspace_guardrails USING btree (workspace_id, lower(btrim(name)))
+  WHERE (kind = 'rate'::text);
+
 CREATE INDEX workspace_guardrails_workspace_id_idx ON public.workspace_guardrails USING btree (workspace_id);
 
 CREATE TRIGGER gateway_workspace_publication
