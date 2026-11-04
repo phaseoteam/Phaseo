@@ -22,6 +22,7 @@ CREATE TABLE "public"."workspace_guardrails" (
   "sensitive_info_rules"                    jsonb                    NOT NULL DEFAULT '[]'::jsonb,
   "model_restriction_mode"                  text                     NOT NULL DEFAULT 'none'::text,
   "kind"                                    text                     NOT NULL DEFAULT 'access'::text,
+  CONSTRAINT "workspace_guardrails_id_workspace_id_key" UNIQUE (id, workspace_id),
   CONSTRAINT "workspace_guardrails_kind_check" CHECK ((kind = ANY (ARRAY['access'::text, 'safety'::text, 'spend'::text, 'rate'::text]))),
   CONSTRAINT "workspace_guardrails_model_restriction_mode_check" CHECK ((model_restriction_mode = ANY (ARRAY['none'::text, 'allowlist'::text, 'blocklist'::text]))),
   CONSTRAINT "workspace_guardrails_pkey" PRIMARY KEY (id),
