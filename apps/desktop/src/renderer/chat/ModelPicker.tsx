@@ -17,7 +17,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "../components/ui/toolti
 import { ScrollArea } from "../components/ui/scroll-area";
 import { useCommand } from "../lib/keybindings";
 import { useModelPopularity } from "../lib/modelPopularity";
-import { ModelSettingsColumn, settingDescriptors, SettingsSuffix, SpeedSegments, speedIds, useSettingDescriptors } from "./ModelSettings";
+import { ModelSettingsColumn, SettingsSuffix, SpeedSegments, speedIds, useSettingDescriptors } from "./ModelSettings";
 
 export const harnessNames: Record<Harness, string> = { phaseo: "Phaseo", codex: "Codex", claude: "Claude Code", opencode: "OpenCode", pi: "Pi", cursor: "Cursor", grok: "Grok", antigravity: "Antigravity", acp: "Agent" };
 export const MAX_COMPARE = 4;
@@ -248,10 +248,9 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 		const selection = selectionOf(entry);
 		if (!multiple || !keepOpen.current) {
 			onChange([selection]); setQuery("");
-			// The picker stays open on the new model's settings when it has some and the chat keeps running in the same place;
-			// a model from another agent starts a new chat, so it closes.
-			const sameHome = !!first && first.harness === selection.harness && (first.accountId ?? "") === (selection.accountId ?? "");
-			if (onSettingsChange && sameHome && settingDescriptors(entry.harness, entry.model).length) setPending(selection);
+			// In a composer the picker stays open on the new model, as in T3 Code, so its settings can follow; Escape or a click
+			// outside closes it. A picker with no settings (a default model in Settings) closes on the pick.
+			if (onSettingsChange) setPending(selection);
 			else setOpen(false);
 			return;
 		}
