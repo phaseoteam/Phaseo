@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { typesUltrathink, useUltrathinkReady } from "./ModelSettings";
 import { BookOpen, Box, Bug, Check, ChevronDown, Code2, FilePen, LoaderCircle, FolderOpen, FolderPlus, Gauge, Lightbulb, ListChecks, PenLine, Plug, Search, ShieldAlert, ShieldCheck, UserRound } from "lucide-react";
 import { isFactoryWorktree } from "../../shared/factory/projects";
 import { ProjectIcon } from "../components/ProjectIcon";
@@ -96,7 +97,8 @@ export function NewChat() {
 		setSelections([{ harness: "phaseo", accountId: phaseoAccount.id, model: model.id }]);
 	}, [selections.length, phaseoAccount, phaseoModels]);
 	const compare = !code && selections.length > 1;
-	const editor = useComposerEditor({ value: draft, onChange: setDraft, disabled: busy, onFiles: files => addImages(files),
+	const ultrathinkReady = useUltrathinkReady(selections.length === 1 ? selections[0] : undefined);
+	const editor = useComposerEditor({ value: draft, onChange: setDraft, disabled: busy, onFiles: files => addImages(files), ultrathink: ultrathinkReady,
 		placeholder: compare ? "Ask every model the same question…" : triaging ? "Describe what went wrong (optional)…" : code ? (project ? `Describe a change to ${project.name}…` : "Choose a project, then describe what to build…") : "Message Phaseo…" });
 	// Native commands depend on one agent, so comparing models offers saved prompts, chats and files only.
 	const plan = planMode === "plan", full = permissionMode === "full-access", edits = permissionMode === "accept-edits";
@@ -205,7 +207,7 @@ export function NewChat() {
 				<h1 className="text-[28px] font-bold tracking-tight">{triaging ? "What went wrong?" : code ? "What should we build?" : greeting()}</h1>
 				{triaging ? <TriageStatus onRetry={() => { if (api) { endTriage(); startTriage(api); } }} /> : code && <div className="mt-4 flex justify-center">{projectMenu}</div>}
 			</div>
-			<Composer size="large" editor={editor} onSubmit={() => void submit()} disabled={busy} canSend={canSend}
+			<Composer size="large" editor={editor} onSubmit={() => void submit()} disabled={busy} canSend={canSend} ultrathink={ultrathinkReady && typesUltrathink(draft)}
 				menu={menu}
 				chips={compare ? <>
 					{compare && selections.map(value => <ComposerChip key={value.harness + value.model} onRemove={() => setSelections(current => current.filter(item => !sameSelection(item, value)))}>

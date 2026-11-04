@@ -1,6 +1,7 @@
 import { Check } from "lucide-react";
 import { cn } from "../lib/utils";
 import { Tip } from "../components/ui/tooltip";
+import { Switch } from "../components/ui/switch";
 import { effortHints } from "../lib/effortHints";
 import { useEffortDisplay } from "../lib/effortDisplay";
 import type { ModelOption, ModelOptionDescriptor } from "../../shared/workspace";
@@ -52,7 +53,7 @@ export function withSetting(selection: ModelSelection, descriptor: ModelOptionDe
 export function settingsLabel(selection: ModelSelection, descriptors: ModelOptionDescriptor[]) {
 	const parts = descriptors.map(descriptor => {
 		const value = current(selection, descriptor);
-		if (descriptor.type === "boolean") return speedIds.includes(descriptor.id) ? (value === true ? "Fast" : "") : `${descriptor.label} ${value ? "On" : "Off"}`;
+		if (descriptor.type === "boolean") return speedIds.includes(descriptor.id) ? (value === true ? "Fast" : "") : descriptor.id === "ultracode" ? (value === true ? "Ultracode" : "") : `${descriptor.label} ${value ? "On" : "Off"}`;
 		const label = descriptor.options.find(option => option.id === value)?.label ?? "";
 		return !speedIds.includes(descriptor.id) || isFast(descriptor, value) || value === "flex" ? label : "";
 	});
@@ -72,36 +73,33 @@ export function speedTier(descriptor: ModelOptionDescriptor, value: string | boo
 
 const isReasoning = (descriptor: ModelOptionDescriptor) => /reason|effort|think/i.test(`${descriptor.id} ${descriptor.label}`);
 
-// Levels that change more than how hard the model thinks keep their name: Ultracode runs workflows, Ultrathink is a prompt.
-const namedLevels = new Set(["ultracode", "ultrathink"]);
 const offLevels = new Set(["none", "off"]);
-export type EffortDots = { count: number; filled: number; named: boolean };
+export type EffortDots = { count: number; filled: number };
 
 /**
- * A reasoning level as dots, like T3 Code's bars: one per ordinary level, filled up to the chosen one, none filled for
- * an off level. A named level fills them all and keeps its name. Undefined when there are too few or too many to count.
+ * A reasoning level as dots, like T3 Code's bars: one per level, filled up to the chosen one, none filled for an off
+ * level. Undefined when there are too few or too many to count.
  */
 export function effortDots(descriptor: ModelOptionDescriptor, value: string | boolean | undefined): EffortDots | undefined {
 	if (descriptor.type !== "select" || typeof value !== "string") return undefined;
-	const levels = descriptor.options.filter(option => !namedLevels.has(option.id));
-	const startsOff = offLevels.has(levels[0]?.id ?? "");
+	const levels = descriptor.options, startsOff = offLevels.has(levels[0]?.id ?? "");
 	const count = levels.length - (startsOff ? 1 : 0);
 	if (count < 2 || count > 7) return undefined;
-	if (namedLevels.has(value)) return { count, filled: count, named: true };
 	const index = levels.findIndex(option => option.id === value);
-	return index < 0 ? undefined : { count, filled: startsOff ? index : index + 1, named: false };
+	return index < 0 ? undefined : { count, filled: startsOff ? index : index + 1 };
 }
 
 /** What the model button shows after the name: the reasoning level and a speed glyph. The context window stays in the picker. */
 export function settingsSummary(selection: ModelSelection, descriptors: ModelOptionDescriptor[]) {
-	let effort: string | undefined, dots: EffortDots | undefined, speed: SpeedTier | undefined;
+	let effort: string | undefined, dots: EffortDots | undefined, speed: SpeedTier | undefined, ultracode = false;
 	for (const descriptor of descriptors) {
 		const value = current(selection, descriptor);
 		const label = descriptor.type === "select" ? descriptor.options.find(option => option.id === value)?.label : `${descriptor.label} ${value ? "On" : "Off"}`;
 		if (speedIds.includes(descriptor.id)) speed ??= speedTier(descriptor, value);
+		else if (descriptor.id === "ultracode") ultracode = value === true;
 		else if (!effort && isReasoning(descriptor)) { effort = label; dots = effortDots(descriptor, value); }
 	}
-	return { effort, dots, speed };
+	return { effort, dots, speed, ultracode };
 }
 
 /** Dots on whole pixels, the chosen ones solid and the rest faint, in the text's colour. */
@@ -129,14 +127,15 @@ export function SpeedGlyph({ tier, className }: { tier: SpeedTier; className?: s
 
 /** The model button's tail: the reasoning level as Appearance asks (its word, dots or both), then the speed glyph. */
 export function SettingsSuffix({ selection, descriptors }: { selection: ModelSelection; descriptors: ModelOptionDescriptor[] }) {
-	const { effort, dots, speed } = settingsSummary(selection, descriptors);
+	const { effort, dots, speed, ultracode } = settingsSummary(selection, descriptors);
 	const [display] = useEffortDisplay();
-	if (!effort && !speed) return null;
-	// Without dots to draw, or for a named level, the word shows whatever the setting.
-	const word = effort && (display !== "dots" || !dots || dots.named);
+	if (!effort && !speed && !ultracode) return null;
+	// Without dots to draw, the word shows whatever the setting.
+	const word = effort && (display !== "dots" || !dots);
 	return <span className="flex shrink-0 items-center gap-1.5 font-medium text-muted-foreground">
 		{dots && display !== "word" && <EffortDotsGlyph dots={dots} />}
 		{word && <span className="max-w-24 truncate">{effort}</span>}
+		{ultracode && <span>· Ultracode</span>}
 		{speed && <SpeedGlyph tier={speed} />}
 	</span>;
 }
@@ -160,6 +159,12 @@ export function ModelSettingsColumn({ selection, descriptors, onChange }: { sele
 	return <div className="flex flex-col gap-2">
 		{ordered.map(descriptor => {
 			const value = String(current(selection, descriptor));
+			if (descriptor.id === "ultracode") return <Tip key={descriptor.id} label="Plans and runs multi-agent workflows on every substantive task, at the chosen level" side="right">
+				<label className="flex h-8 w-full shrink-0 cursor-pointer items-center gap-2 rounded-sm px-2 text-sm text-foreground hover:bg-foreground/[0.09]">
+					<span className="min-w-0 flex-1 truncate">Ultracode</span>
+					<Switch size="sm" aria-label="Ultracode" checked={value === "true"} onCheckedChange={on => pick(selection, descriptor, String(on), onChange)} />
+				</label>
+			</Tip>;
 			return <div key={descriptor.id} role="radiogroup" aria-label={descriptor.label} className="flex flex-col gap-0.5">
 				<p className="px-2 pb-1.5 text-xs text-muted-foreground/80">{descriptor.label}</p>
 				{choicesOf(descriptor).map(option => {
@@ -197,6 +202,16 @@ export function SpeedSegments({ selection, descriptors, onChange }: { selection:
 		})}
 	</div>;
 }
+
+/**
+ * Whether this model takes a typed "ultrathink", as Claude Code does: a Claude Code model with an Extra High level.
+ * That turn runs at Extra High, so the word and the send button show it.
+ */
+export function useUltrathinkReady(selection: ModelSelection | undefined) {
+	const descriptors = useSettingDescriptors(selection?.harness === "claude" ? selection : undefined);
+	return descriptors.some(descriptor => descriptor.id === "effort" && descriptor.type === "select" && descriptor.options.some(option => option.id === "xhigh"));
+}
+export const typesUltrathink = (text: string) => /\bultrathink\b/i.test(text);
 
 /** The settings a model has, for the picker and the composer; empty while the model's list loads. */
 export function useSettingDescriptors(selection: ModelSelection | undefined) {

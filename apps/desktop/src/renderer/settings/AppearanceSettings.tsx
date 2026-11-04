@@ -102,7 +102,7 @@ export function AppearanceSettings() {
 					{modes.map(option => <button key={option.value} type="button" role="radio" aria-checked={mode === option.value} onClick={() => setTheme(option.value)}
 						className={cn("flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-semibold transition-colors [&_svg]:size-3.5", mode === option.value ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>{option.icon}{option.label}</button>)}
 				</div>} />
-			<SettingsRow title="Show reasoning as" description="How the model button shows the reasoning level. Ultracode and Ultrathink always show their names."
+			<SettingsRow title="Show reasoning as" description="How the model button shows the reasoning level."
 				control={<div role="radiogroup" aria-label="Show reasoning as" className="flex items-center gap-0.5 rounded-lg bg-muted p-0.5">
 					{([["word", "Word"], ["dots", "Dots"], ["both", "Both"]] as const).map(([value, label]) => <button key={value} type="button" role="radio" aria-checked={effortDisplay === value} onClick={() => setEffortDisplay(value)}
 						className={cn("flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-semibold transition-colors", effortDisplay === value ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>{label}</button>)}

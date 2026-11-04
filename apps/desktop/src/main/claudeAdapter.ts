@@ -42,8 +42,7 @@ export class ClaudeAdapter implements AgentAdapter {
 		if (nativeAction) text = nativeActionText(nativeAction);
 		const manualCompact = !attachments.length && text.trim() === "/compact";
 		if (manualCompact) text = "/compact";
-		const tuning = claudeRunOptions(task.model, task.modelOptions);
-		if (tuning.promptPrefix && !nativeAction && !text.trimStart().startsWith("/")) text = tuning.promptPrefix + text;
+		const tuning = claudeRunOptions(task.model, task.modelOptions, nativeAction ? "" : text);
 		const images = attachments.filter(attachment => attachment.kind === "image");
 		const content: SDKUserMessage["message"]["content"] = [{ type: "text", text: attachmentPrompt(text, attachments) }, ...images.map(attachment => ({ type: "image" as const, source: { type: "base64" as const, media_type: attachment.mimeType as "image/png" | "image/jpeg" | "image/gif" | "image/webp", data: attachment.dataUrl!.split(",")[1] } }))];
 		// Chat admits only the orchestration server: no built-in tools (tools: []), no other MCP (strictMcpConfig) and canUseTool denies the rest.

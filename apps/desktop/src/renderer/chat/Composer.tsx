@@ -12,7 +12,7 @@ import { keyLabel } from "../../shared/keybindings";
 import { isSendKey, useSendKey } from "./sendKey";
 
 /** The message box: an editor whose files, chats and attachments sit inline as chips. */
-export function Composer({ editor, onSubmit, onStop, disabled, canSend, running, size = "default", chips, tools, model, footer, menu, className }: {
+export function Composer({ editor, onSubmit, onStop, disabled, canSend, running, size = "default", chips, tools, model, footer, menu, className, ultrathink }: {
 	editor: ComposerEditor;
 	onSubmit: () => void;
 	onStop?: () => void;
@@ -28,6 +28,8 @@ export function Composer({ editor, onSubmit, onStop, disabled, canSend, running,
 	/** The `/` and `@` menu, which sees keys before the composer does. */
 	menu?: ComposerMenu;
 	className?: string;
+	/** The draft types "ultrathink" for a model that takes it: the send button shimmers like the word. */
+	ultrathink?: boolean;
 }) {
 	const sendKey = useSendKey();
 	editor.keys.current = event => {
@@ -59,7 +61,7 @@ export function Composer({ editor, onSubmit, onStop, disabled, canSend, running,
 					{model}
 					{running && onStop
 						? <button type="button" aria-label="Stop" title="Stop" onClick={onStop} className="ml-1 grid size-8 shrink-0 place-items-center rounded-full bg-foreground text-background transition-opacity hover:opacity-85"><Square className="size-3 fill-current" /></button>
-						: <button type="submit" aria-label="Send" title={`Send (${sendKey === "enter" ? "Enter" : keyLabel("mod+enter", isMac())})`} disabled={!canSend} className="ml-1 grid size-8 shrink-0 place-items-center rounded-full bg-foreground text-background transition-opacity hover:opacity-85 disabled:opacity-25"><ArrowUp className="size-4" strokeWidth={2.5} /></button>}
+						: <button type="submit" aria-label={ultrathink ? "Send with Ultrathink" : "Send"} title={`${ultrathink ? "Sends with Ultrathink: this turn runs at Extra High" : "Send"} (${sendKey === "enter" ? "Enter" : keyLabel("mod+enter", isMac())})`} disabled={!canSend} className={cn("relative ml-1 grid size-8 shrink-0 place-items-center overflow-hidden rounded-full bg-foreground text-background transition-opacity hover:opacity-85 disabled:opacity-25", ultrathink && "ultrathink-send")}><ArrowUp className="relative size-4" strokeWidth={2.5} /></button>}
 				</div>
 			</div>
 		</form>

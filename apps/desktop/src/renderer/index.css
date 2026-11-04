@@ -320,6 +320,14 @@
 .composer-editor p.is-editor-empty:first-child::before { content: attr(data-placeholder); float: left; height: 0; pointer-events: none; color: color-mix(in oklab, var(--muted-foreground) 80%, transparent); }
 .composer-editor .composer-chip { display: inline; }
 .composer-editor .ProseMirror-selectednode { outline: none; }
+/* A typed "ultrathink": a dithered checker sweeps across the word, and across the send button in step. */
+@keyframes ultrathink-sweep { from { mask-position: -60px 0; } to { mask-position: 160px 0; } }
+@keyframes ultrathink-sweep-send { from { mask-position: -24px 0; } to { mask-position: 56px 0; } }
+.ultrathink-word { position: relative; font-weight: 600; }
+.ultrathink-word::before, .ultrathink-send::before { content: ""; position: absolute; pointer-events: none; border-radius: inherit; mask-repeat: no-repeat; }
+.ultrathink-word::before { inset: -1px -2px; border-radius: 3px; background: repeating-conic-gradient(color-mix(in srgb, currentColor 30%, transparent) 0 25%, transparent 0 50%) 0 0 / 2px 2px; mask-image: linear-gradient(90deg, transparent, #000 40%, #000 60%, transparent); mask-size: 60px 100%; animation: ultrathink-sweep 2.4s linear infinite; }
+.ultrathink-send::before { inset: 0; background: repeating-conic-gradient(var(--background) 0 25%, transparent 0 50%) 0 0 / 2px 2px; opacity: 0.55; mask-image: linear-gradient(90deg, transparent, #000 40%, #000 60%, transparent); mask-size: 24px 100%; animation: ultrathink-sweep-send 2.4s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .ultrathink-word::before, .ultrathink-send::before { animation: none; mask-image: none; } }
 
 /*
  * Scrolling areas use the shadcn ScrollArea. The few that still scroll natively (legacy panels, the terminal,

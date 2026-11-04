@@ -27,18 +27,21 @@ describe("the model button's settings", () => {
 });
 
 describe("the reasoning level as dots", () => {
-	const claude: ModelOptionDescriptor = { id: "effort", label: "Reasoning", type: "select", options: ["low", "medium", "high", "xhigh", "max", "ultracode", "ultrathink"].map(id => ({ id, label: id })) };
+	const claude: ModelOptionDescriptor = { id: "effort", label: "Reasoning", type: "select", options: ["low", "medium", "high", "xhigh", "max"].map(id => ({ id, label: id })) };
 	it("fills one dot per level up to the chosen one", () => {
-		expect(effortDots(claude, "low")).toEqual({ count: 5, filled: 1, named: false });
-		expect(effortDots(claude, "max")).toEqual({ count: 5, filled: 5, named: false });
+		expect(effortDots(claude, "low")).toEqual({ count: 5, filled: 1 });
+		expect(effortDots(claude, "max")).toEqual({ count: 5, filled: 5 });
 	});
-	it("fills them all for a named level, which keeps its name", () => {
-		expect(effortDots(claude, "ultracode")).toEqual({ count: 5, filled: 5, named: true });
+	it("shows Ultracode as a word beside the level, on at any level", () => {
+		const ultracode: ModelOptionDescriptor = { id: "ultracode", label: "Ultracode", type: "boolean", default: false };
+		expect(settingsSummary({ harness: "claude", model: "m", options: { ultracode: true } }, [claude, ultracode])).toMatchObject({ ultracode: true });
+		expect(settingsLabel({ harness: "claude", model: "m", options: { effort: "high", ultracode: true } }, [claude, ultracode])).toBe("high · Ultracode");
+		expect(settingsLabel({ harness: "claude", model: "m", options: { effort: "high" } }, [claude, ultracode])).toBe("high");
 	});
 	it("leaves every dot empty for an off level", () => {
 		const terra: ModelOptionDescriptor = { id: "effort", label: "Reasoning", type: "select", options: ["none", "low", "medium", "high"].map(id => ({ id, label: id })) };
-		expect(effortDots(terra, "none")).toEqual({ count: 3, filled: 0, named: false });
-		expect(effortDots(terra, "high")).toEqual({ count: 3, filled: 3, named: false });
+		expect(effortDots(terra, "none")).toEqual({ count: 3, filled: 0 });
+		expect(effortDots(terra, "high")).toEqual({ count: 3, filled: 3 });
 	});
 	it("draws nothing for a single level or a yes-or-no setting", () => {
 		expect(effortDots({ id: "effort", label: "Reasoning", type: "select", options: [{ id: "high", label: "High" }] }, "high")).toBeUndefined();
