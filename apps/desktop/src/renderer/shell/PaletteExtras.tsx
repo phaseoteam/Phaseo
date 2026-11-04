@@ -18,6 +18,15 @@ export function editorChoices(editors: readonly EditorInstallation[], preferred:
 	return [...available.filter(editor => editor.id === preferred), ...available.filter(editor => editor.id !== preferred)];
 }
 
+/** Mod+O: the project in the favourite editor, or the first one installed. */
+export async function openInFavouriteEditor(projectId: string) {
+	const api = window.phaseoDesktop?.workspace;
+	if (!api) return;
+	const [editor] = editorChoices(await api.editors().catch(() => []), preferredEditor());
+	if (!editor) { showToast("info", "No editor found", "Install an editor, or open the project folder from the command palette."); return; }
+	await api.openProject(projectId, { editor: editor.id }).catch(reason => showToast("error", `Could not open the project in ${editor.name}`, errorText(reason)));
+}
+
 /** Open in…: the chat's project in any installed editor, or its folder; the choice becomes the favourite. */
 export function OpenProjectItems({ projectId, open, run }: { projectId: string; open: boolean; run: (action: () => void) => void }) {
 	const [editors, setEditors] = useState<EditorInstallation[]>([]);

@@ -11,6 +11,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popove
 import { ScrollArea } from "../components/ui/scroll-area";
 
 type CreateTask = Extract<WorkspaceCommand, { type: "create-task" }>;
+/** Each project folder's Local or New worktree choice for the next new chat. */
+export const draftWorkspaceKey = "phaseo.desktop.draftWorkspace";
 export type WorktreeTarget = ReturnType<typeof useWorktreeTarget>;
 
 /**
@@ -18,7 +20,7 @@ export type WorktreeTarget = ReturnType<typeof useWorktreeTarget>;
  * worktree from a base branch for the chat. Kept per project folder.
  */
 export function useWorktreeTarget(api: WorkspaceApi | undefined, projectId: string | undefined, setOverview: (workspace: WorkspaceOverview) => void) {
-	const [modes, setModes] = usePersistedState<Record<string, "local" | "worktree">>("phaseo.desktop.draftWorkspace", {});
+	const [modes, setModes] = usePersistedState<Record<string, "local" | "worktree">>(draftWorkspaceKey, {});
 	const [refs, setRefs] = useState<GitRefs>();
 	const [base, setBase] = useState<string>();
 	useEffect(() => {
@@ -53,7 +55,7 @@ export function WorktreeTargetControls({ target, disabled }: { target: WorktreeT
 	const worktree = target.mode === "worktree";
 	return <>
 		<DropdownMenu>
-			<DropdownMenuTrigger disabled={disabled} render={<button type="button" aria-label="Workspace" title="Where the chat works" className="flex h-8 items-center gap-1.5 rounded-md px-2 text-[12.5px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50 [&_svg]:size-4" />}>
+			<DropdownMenuTrigger disabled={disabled} render={<button type="button" aria-label="Workspace" title="Where the chat works" data-composer-shortcut="composer.workspace" className="flex h-8 items-center gap-1.5 rounded-md px-2 text-[12.5px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50 [&_svg]:size-4" />}>
 				{worktree ? <FolderGit2 /> : <Laptop />}{worktree ? "New worktree" : "Local"}<ChevronDown className="size-3!" />
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="start" side="top" className="w-72">
@@ -78,7 +80,7 @@ function BaseBranchPicker({ refs, value, onChange, disabled }: { refs: GitRefs; 
 	useEffect(() => { setActive(0); }, [query, open]);
 	const choose = (name: string) => { onChange(name); setOpen(false); setQuery(""); };
 	return <Popover open={open} onOpenChange={setOpen}>
-		<PopoverTrigger disabled={disabled} render={<button type="button" aria-label="Base branch" title="The branch the worktree starts from" className="flex h-8 max-w-48 items-center gap-1.5 rounded-md px-2 text-[12.5px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50 data-popup-open:bg-muted [&_svg]:size-4" />}>
+		<PopoverTrigger disabled={disabled} render={<button type="button" aria-label="Base branch" title="The branch the worktree starts from" data-composer-shortcut="composer.branch" className="flex h-8 max-w-48 items-center gap-1.5 rounded-md px-2 text-[12.5px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50 data-popup-open:bg-muted [&_svg]:size-4" />}>
 			<GitBranch /><span className="truncate font-mono text-xs">from {value}</span><ChevronDown className="size-3! shrink-0" />
 		</PopoverTrigger>
 		<PopoverContent align="start" side="top" sideOffset={8} className="w-72 gap-0 overflow-hidden rounded-md p-0">

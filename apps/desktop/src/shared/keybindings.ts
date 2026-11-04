@@ -5,7 +5,8 @@
  */
 export const keybindingCommands = [
 	{ command: "commandPalette.toggle", label: "Search chats and commands", group: "General", keys: ["mod+k"] },
-	{ command: "chat.new", label: "New chat", group: "General", keys: ["mod+n"], when: "!terminalFocused" },
+	{ command: "chat.new", label: "New chat", group: "General", keys: ["mod+n", "mod+shift+o"], when: "!terminalFocused" },
+	{ command: "chat.newLocal", label: "New chat in this project's own checkout (Local)", group: "General", keys: ["mod+shift+n"], when: "!terminalFocused" },
 	{ command: "settings.open", label: "Open settings", group: "General", keys: ["mod+,"] },
 	{ command: "mode.chat", label: "Switch to Chat", group: "General", keys: ["mod+alt+1"] },
 	{ command: "mode.code", label: "Switch to Code", group: "General", keys: ["mod+alt+2"] },
@@ -15,6 +16,8 @@ export const keybindingCommands = [
 	{ command: "chat.newWithoutProject", label: "New chat without a project (in Chat)", group: "General", keys: ["mod+alt+n"], when: "!terminalFocused" },
 	{ command: "usage.open", label: "Open usage", group: "General", keys: ["mod+u"], when: "!terminalFocused" },
 	{ command: "theme.select", label: "Choose a theme", group: "General", keys: ["mod+alt+a"], when: "!terminalFocused" },
+	{ command: "appearance.cycle", label: "Cycle appearance: system, light, dark", group: "General", keys: ["mod+alt+shift+a"], when: "!terminalFocused" },
+	{ command: "themeEditor.toggle", label: "Edit the current theme", group: "General", keys: ["mod+alt+shift+t"] },
 	// Mod+F6 too, as some keyboards give F6 to the system.
 	{ command: "workspace.focusNext", label: "Focus the next part of the window", group: "General", keys: ["f6", "mod+f6"] },
 	{ command: "workspace.focusPrevious", label: "Focus the previous part of the window", group: "General", keys: ["shift+f6", "mod+shift+f6"] },
@@ -25,12 +28,21 @@ export const keybindingCommands = [
 	{ command: "thread.undo", label: "Undo settle, snooze, unpin, archive or delete", group: "Chats", keys: ["mod+z"], when: "!textFocused" },
 	{ command: "modelSettings.toggle", label: "Model settings", group: "Chats", keys: ["mod+shift+e"] },
 	{ command: "modelPicker.toggle", label: "Choose model", group: "Chats", keys: ["mod+shift+m"], when: "!terminalFocused" },
+	{ command: "modelPicker.previousProvider", label: "Previous group in the model picker", group: "Chats", keys: ["mod+shift+arrowup"], when: "modelPickerOpen" },
+	{ command: "modelPicker.nextProvider", label: "Next group in the model picker", group: "Chats", keys: ["mod+shift+arrowdown"], when: "modelPickerOpen" },
+	{ command: "threadPanel.toggle", label: "Chat details", group: "Chats", keys: ["mod+shift+b"], when: "chatOpen && !terminalFocused" },
+	{ command: "editor.openFavorite", label: "Open the project in your favourite editor", group: "Chats", keys: ["mod+o"], when: "!terminalFocused" },
 	{ command: "thread.pin", label: "Pin or unpin chat", group: "Chats", keys: ["mod+shift+p"], when: "chatOpen && !terminalFocused" },
 	// The message box's own keys (composer.* and thread.*QueuedMessage). They run only while it has focus, before the editor acts on them; stash works anywhere in a chat.
 	{ command: "composer.steer", label: "Send into the running turn", group: "Composer", keys: ["mod+shift+enter"], when: "composerFocused" },
 	{ command: "composer.editQueued", label: "Edit the last queued message", group: "Composer", keys: ["alt+arrowup"], when: "composerFocused" },
-	{ command: "composer.sendAlternate", label: "While a turn runs, steer instead of queueing (or queue, when follow-ups steer)", group: "Composer", keys: ["mod+enter"], when: "composerFocused" },
-	{ command: "composer.sendAndNewChat", label: "Send and start a new chat", group: "Composer", keys: ["mod+alt+enter"], when: "composerFocused" },
+	{ command: "composer.sendAlternate", label: "While a turn runs, steer instead of queueing (or queue, when follow-ups steer)", group: "Composer", keys: ["mod+enter"], when: "composerFocused && !draftRoute" },
+	{ command: "composer.sendAndNewChat", label: "Send and start a new chat", group: "Composer", keys: ["mod+alt+enter"], when: "composerFocused && !draftRoute" },
+	{ command: "composer.sendBackground", label: "Start the new chat in the background, staying on New chat", group: "Composer", keys: ["mod+enter", "mod+alt+enter"], when: "composerFocused && draftRoute" },
+	{ command: "composer.mode", label: "Open the permissions control", group: "Composer", keys: ["mod+shift+a"], when: "!terminalFocused" },
+	{ command: "composer.workspace", label: "Open the workspace control (Local or New worktree)", group: "Composer", keys: ["mod+shift+x"], when: "!terminalFocused" },
+	{ command: "composer.branch", label: "Open the base branch control", group: "Composer", keys: ["mod+shift+g"], when: "!terminalFocused" },
+	{ command: "composer.previousWorktree", label: "Start the new chat in the project's latest worktree", group: "Composer", keys: ["mod+shift+l"], when: "!terminalFocused" },
 	{ command: "composer.historyPrevious", label: "Previous prompt (in an empty message box)", group: "Composer", keys: ["arrowup"], when: "composerFocused" },
 	{ command: "composer.historyNext", label: "Next prompt", group: "Composer", keys: ["arrowdown"], when: "composerFocused" },
 	{ command: "composer.stash", label: "Stash the draft, or bring back the last stashed", group: "Composer", keys: ["mod+s"], when: "chatOpen && !terminalFocused" },
@@ -66,6 +78,14 @@ export const keybindingCommands = [
 	{ command: "pullRequest.back", label: "Back to pull requests", group: "Pull requests", keys: ["escape"], when: "!textFocused && !terminalFocused && !browserFocused" },
 	// Mod+F belongs to the Pull requests page's own search while it is open.
 	{ command: "pullRequests.focusSearch", label: "Search pull requests", group: "Pull requests", keys: ["mod+f"], when: "!terminalFocused && !browserFocused" },
+	// The Usage page's own keys; the letters act only when no field has focus.
+	{ command: "usage.cost", label: "Show cost", group: "Usage", keys: ["c"], when: "usagePageOpen && !textFocused" },
+	{ command: "usage.tokens", label: "Show tokens", group: "Usage", keys: ["t"], when: "usagePageOpen && !textFocused" },
+	{ command: "usage.limits", label: "Show limits", group: "Usage", keys: ["l"], when: "usagePageOpen && !textFocused" },
+	{ command: "usage.period.day", label: "Today", group: "Usage", keys: ["mod+shift+1"], when: "usagePageOpen" },
+	{ command: "usage.period.week", label: "Last 7 days", group: "Usage", keys: ["mod+shift+2"], when: "usagePageOpen" },
+	{ command: "usage.period.month", label: "Last 30 days", group: "Usage", keys: ["mod+shift+3"], when: "usagePageOpen" },
+	{ command: "usage.period.quarter", label: "Last 90 days", group: "Usage", keys: ["mod+shift+4"], when: "usagePageOpen" },
 	{ command: "view.zoomIn", label: "Zoom in", group: "View", keys: ["mod+=", "mod++"] },
 	{ command: "view.zoomOut", label: "Zoom out", group: "View", keys: ["mod+-"] },
 	{ command: "view.zoomReset", label: "Actual size", group: "View", keys: ["mod+0"] },
@@ -78,7 +98,7 @@ export type CommandInfo = { command: KeybindingCommand; label: string; group: st
 const commandList: readonly CommandInfo[] = keybindingCommands;
 export type KeybindingEntry = { command: KeybindingCommand; key: string; when?: string };
 export type KeybindingRow = KeybindingEntry & { id: string; label: string; group: string; source: "Default" | "Custom"; defaultKeys: readonly string[]; defaultWhen?: string };
-export const keybindingGroups = ["General", "Chats", "Composer", "Panes", "Browser", "Pull requests", "View", "Project actions"] as const;
+export const keybindingGroups = ["General", "Chats", "Composer", "Panes", "Browser", "Pull requests", "Usage", "View", "Project actions"] as const;
 
 const scriptCommandPattern = /^script\.([A-Za-z0-9_-]{1,200})\.([A-Za-z0-9_-]{1,100})\.run$/;
 export const scriptCommand = (projectId: string, actionId: string): ScriptCommand => `script.${projectId}.${actionId}.run`;
@@ -96,6 +116,9 @@ export const whenVariables = {
 	composerFocused: "The message box has focus",
 	terminalFocused: "A terminal has focus",
 	browserFocused: "A browser page or its address bar has focus",
+	draftRoute: "The New chat page is open",
+	modelPickerOpen: "The model picker is open",
+	usagePageOpen: "The Usage page is open",
 } as const;
 export type WhenContext = Partial<Record<keyof typeof whenVariables, boolean>>;
 
@@ -121,12 +144,14 @@ export function parseKey(value: string) {
 /** What Shift produces on a US layout, mapped back to the key itself. */
 const unshifted: Record<string, string> = { "{": "[", "}": "]", "!": "1", "@": "2", "#": "3", "$": "4", "%": "5", "^": "6", "&": "7", "*": "8", "(": "9", ")": "0", "_": "-", "+": "=", ":": ";", "\"": "'", "<": ",", ">": ".", "?": "/", "|": "\\", "~": "`" };
 
-export function matchesKey(value: string, event: Pick<KeyboardEvent, "key" | "ctrlKey" | "metaKey" | "altKey" | "shiftKey">, mac: boolean) {
+export function matchesKey(value: string, event: Pick<KeyboardEvent, "key" | "ctrlKey" | "metaKey" | "altKey" | "shiftKey"> & { code?: string }, mac: boolean) {
 	const parsed = parseKey(value);
 	if (!parsed) return false;
 	const wantCtrl = parsed.ctrl || (parsed.mod && !mac), wantMeta = parsed.meta || (parsed.mod && mac);
 	if (event.ctrlKey !== wantCtrl || event.metaKey !== wantMeta || event.altKey !== parsed.alt) return false;
 	const key = event.key.toLowerCase();
+	// Shift turns a digit into a symbol ("@" on Shift+2), so a digit with Shift matches its key on the keyboard.
+	if (/^[0-9]$/.test(parsed.key) && parsed.shift && event.shiftKey && event.code === `Digit${parsed.key}`) return true;
 	// Shift changes the character for symbols ("+" is Shift+"=", "{" is Shift+"["), so symbol keys match either form.
 	if (parsed.key.length === 1 && !/[a-z0-9]/.test(parsed.key)) return key === parsed.key ? !parsed.shift || event.shiftKey : event.shiftKey && parsed.shift && unshifted[key] === parsed.key;
 	return event.shiftKey === parsed.shift && (key === parsed.key || (parsed.key === "space" && key === " "));

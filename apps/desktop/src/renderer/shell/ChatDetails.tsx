@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { SquareMenu } from "lucide-react";
+import { shortcut, useCommand } from "../lib/keybindings";
 import { useWorkspace } from "../app/workspace";
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
 import { TooltipProvider } from "../components/ui/tooltip";
@@ -12,10 +14,14 @@ export function ChatDetails() {
 	const { overview, selectedId, newChatProjectId, setNewChatProjectId, setRightPanel, settings, select } = useWorkspace();
 	const task = overview.tasks.find(value => value.id === selectedId);
 	const projectId = task?.projectId ?? (selectedId ? undefined : newChatProjectId || undefined);
+	const [open, setOpen] = useState(false);
+	// Mod+Shift+B opens and closes the card.
+	useCommand("threadPanel.toggle", () => { if (!projectId || settings) return false; setOpen(value => !value); });
 	if (!projectId || settings) return null;
 	const linked = visiblePullRequestLinks(task?.pullRequests);
-	return <Popover>
-		<PopoverTrigger render={<button type="button" aria-label="Chat details" title="Branch, commits and pull requests" className="grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground [-webkit-app-region:no-drag]" />}><SquareMenu className="size-4" /></PopoverTrigger>
+	const keys = shortcut("threadPanel.toggle");
+	return <Popover open={open} onOpenChange={setOpen}>
+		<PopoverTrigger render={<button type="button" aria-label="Chat details" title={`Branch, commits and pull requests${keys ? ` (${keys})` : ""}`} className="grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground [-webkit-app-region:no-drag]" />}><SquareMenu className="size-4" /></PopoverTrigger>
 		<PopoverContent align="end" className="w-[22rem] gap-0 rounded-2xl p-0">
 			<TooltipProvider delay={150}>
 				<div className="px-2 pt-2 pb-2.5"><GitActions projectId={projectId} taskId={task?.id} onProjectCreated={id => { setNewChatProjectId(id); if (selectedId) select(undefined); }} /></div>

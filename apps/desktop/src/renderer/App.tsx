@@ -1,7 +1,11 @@
 import { lazy, Suspense, useEffect } from "react";
 import { projectScopeKey } from "./shell/codeThreads";
 import { projectScopes } from "../shared/projectShelf";
-import { setDynamicCommands, useCommand, useKeybindingDispatcher, useKeybindings } from "./lib/keybindings";
+import { setDynamicCommands, useCommand, useCommands, useKeybindingDispatcher, useKeybindings } from "./lib/keybindings";
+import { readPersistedValue, writePersistedValue } from "./lib/persistedState";
+import { requestThemeEditor } from "./lib/themeEditorRequest";
+import { draftWorkspaceKey } from "./chat/WorktreeTarget";
+import { openInFavouriteEditor } from "./shell/PaletteExtras";
 import { projectActionCommands } from "../shared/projectSettings";
 import { sidebarOrder } from "./lib/sidebarOrder";
 import { X } from "lucide-react";
@@ -29,12 +33,15 @@ import { useDiffColours } from "./lib/workspacePreferences";
 
 /** The app-wide commands behind the keyboard shortcuts (Settings → Keyboard shortcuts). */
 function useShortcuts() {
-	const { setCommandsOpen, select, openSettings, openUsage, setMode, setSidebarOpen, setRightPanel, rightPanel, overview, selectedId, mode, settings } = useWorkspace();
+	const { setCommandsOpen, select, openSettings, openUsage, setMode, setSidebarOpen, setRightPanel, rightPanel, overview, selectedId, mode, settings, usagePage, scheduled, inboxPage, pullRequestsPage, compareId, codeView, theme, setTheme, newChatProjectId, setNewChatProjectId } = useWorkspace();
 	const threadActions = useThreadActions();
 	useKeybindings();
 	// Project actions with shortcuts become commands of their own (Settings → Keyboard shortcuts → Project actions).
 	useEffect(() => setDynamicCommands(projectActionCommands(overview.projects)), [overview.projects]);
-	useKeybindingDispatcher(() => ({ chatMode: mode === "chat", codeMode: mode === "code", chatOpen: Boolean(selectedId) && !settings, paneOpen: Boolean(rightPanel) && !settings, settingsOpen: Boolean(settings) }), typeIntoComposer);
+	// draftRoute: the New chat page is what the main column shows; modelPickerOpen is read when a key is pressed.
+	const draftRoute = !selectedId && !settings && !usagePage && !scheduled && !inboxPage && !pullRequestsPage && !compareId && !(mode === "code" && codeView === "factory");
+	useKeybindingDispatcher(() => ({ chatMode: mode === "chat", codeMode: mode === "code", chatOpen: Boolean(selectedId) && !settings, paneOpen: Boolean(rightPanel) && !settings, settingsOpen: Boolean(settings),
+		usagePageOpen: usagePage && !settings, draftRoute, modelPickerOpen: Boolean(document.getElementById("model-picker-list")) }), typeIntoComposer);
 	useCommand("commandPalette.toggle", () => setCommandsOpen(open => !open));
 	useCommand("chat.new", () => select(undefined));
 	useCommand("settings.open", () => openSettings());
@@ -45,9 +52,29 @@ function useShortcuts() {
 	useCommand("chat.newWithoutProject", () => { setMode("chat"); select(undefined); });
 	useCommand("usage.open", () => openUsage());
 	useCommand("theme.select", () => openSettings("appearance"));
+	// System, then light, then dark, and round again.
+	useCommand("appearance.cycle", () => {
+		const next = theme === "system" ? "light" : theme === "light" ? "dark" : "system";
+		setTheme(next); showToast("info", `Appearance: ${next === "system" ? "System" : next === "light" ? "Light" : "Dark"}`);
+	});
+	useCommand("themeEditor.toggle", () => { openSettings("appearance"); requestThemeEditor(); });
 	useCommand("workspace.focusNext", () => moveRegionFocus(1));
 	useCommand("workspace.focusPrevious", () => moveRegionFocus(-1));
 	const openChat = () => overview.tasks.find(value => value.id === selectedId);
+	// A new Code chat in the open chat's project (or the last one chosen), in the project's own checkout, not a worktree.
+	useCommand("chat.newLocal", () => {
+		const projectId = openChat()?.projectId ?? newChatProjectId, project = overview.projects.find(value => value.id === projectId), root = project?.worktree?.sourceProjectId ?? project?.id;
+		setMode("code");
+		if (root) { setNewChatProjectId(root); writePersistedValue(draftWorkspaceKey, { ...readPersistedValue<Record<string, string>>(draftWorkspaceKey, {}), [root]: "local" }); }
+		select(undefined);
+	});
+	useCommand("editor.openFavorite", () => { const projectId = openChat()?.projectId; if (!projectId) return false; void openInFavouriteEditor(projectId); });
+	// The composer's own controls, marked with data-composer-shortcut; nothing happens when the open composer has no such control.
+	useCommands(["composer.mode", "composer.workspace", "composer.branch"], command => {
+		const control = document.querySelector<HTMLButtonElement>(`main [data-composer-shortcut="${command}"]`);
+		if (!control || control.disabled) return false;
+		control.focus(); control.click();
+	});
 	useCommand("thread.pin", () => { const task = openChat(); if (!task) return false; void threadActions.pin(task); });
 	useCommand("thread.copyReference", () => {
 		const task = openChat(); if (!task) return false;

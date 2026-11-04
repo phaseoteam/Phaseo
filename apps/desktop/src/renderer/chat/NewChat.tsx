@@ -32,6 +32,8 @@ import { useWorkspacePreferences } from "../lib/workspacePreferences";
 import { newChatDraftEvent, newChatDraftKey } from "../lib/newChatDraft";
 import { useWorktreeTarget, WorktreeTargetControls } from "./WorktreeTarget";
 import { OutOfUsageOffer } from "./OutOfUsageOffer";
+import { useCommand } from "../lib/keybindings";
+import { showToast } from "../components/ui/toast";
 
 const suggestions = [
 	{ icon: PenLine, label: "Write", prompt: "Help me write " },
@@ -49,7 +51,7 @@ function greeting() {
 export function PermissionMenu({ value, onChange }: { value: Task["permissionMode"]; onChange: (value: NonNullable<Task["permissionMode"]>) => void }) {
 	const full = value === "full-access", edits = value === "accept-edits";
 	return <DropdownMenu>
-		<DropdownMenuTrigger render={<button type="button" className={cn("flex h-8 items-center gap-1.5 rounded-lg px-2 text-[12.5px] font-medium hover:bg-muted [&_svg]:size-4", full ? "text-warning" : "text-muted-foreground hover:text-foreground")} />}>
+		<DropdownMenuTrigger render={<button type="button" data-composer-shortcut="composer.mode" className={cn("flex h-8 items-center gap-1.5 rounded-lg px-2 text-[12.5px] font-medium hover:bg-muted [&_svg]:size-4", full ? "text-warning" : "text-muted-foreground hover:text-foreground")} />}>
 			{full ? <ShieldAlert /> : <ShieldCheck />}{full ? "Full access" : edits ? "Accept edits" : "Ask first"}<ChevronDown className="size-3!" />
 		</DropdownMenuTrigger>
 		<DropdownMenuContent align="start" side="top" className="w-72">
@@ -167,7 +169,8 @@ export function NewChat() {
 	const needsSignIn = !phaseoAccount && ![...connected].some(harness => harness !== "phaseo");
 	const canSend = !busy && (!!message.text || attached.length > 0) && selections.length > 0 && !turnedOff && (!code || !!project) && (!fanOut || (!!worktree.createInWorktree && !triaging)) && (!triaging || (!!preparation && project?.id === preparation.projectId));
 
-	async function submit() {
+	/** `background` (Mod+Enter on this page) starts the chat but stays here for the next one, as a toast says. */
+	async function submit(background = false) {
 		if (!api || !canSend) return;
 		setBusy(true);
 		const known = new Set(overview.tasks.map(task => task.id));
@@ -178,7 +181,9 @@ export function NewChat() {
 				for (const selection of selections) { const id = await startChat(api, command, known, fanOut ? { selection, mode: planMode, projectId: project?.id, permissionMode, create: worktree.createInWorktree, ...shared } : { selection, mode: "chat", ...shared }); if (id) ids.push(id); }
 				if (ids.length) {
 					const group = { id: crypto.randomUUID(), title: draft.trim().split("\n")[0].slice(0, 80) || (fanOut ? "Code comparison" : "Model comparison"), taskIds: ids, createdAt: new Date().toISOString() };
-					saveCompareGroup(group); setDraft(""); setImages({}); openCompare(group.id, fanOut ? "code" : "chat");
+					saveCompareGroup(group); setDraft(""); setImages({});
+					if (background) showToast("success", "Started in the background", group.title, { label: "Open", onClick: () => openCompare(group.id, fanOut ? "code" : "chat") });
+					else openCompare(group.id, fanOut ? "code" : "chat");
 				}
 			} else {
 				// The playbook is written now, so its diagnostics are as fresh as the message; triage works in the checkout itself, never a new worktree.
@@ -187,12 +192,25 @@ export function NewChat() {
 				if (id) {
 					// Named for the problem, not for the playbook link the message starts with.
 					if (triaging) { endTriage(); void command({ type: "update-task", id, title: triageTitle(prepared.text) }); }
-					setDraft(""); setImages({}); setAutopilot(undefined); select(id);
+					setDraft(""); setImages({}); setAutopilot(undefined);
+					if (background) { showToast("success", "Started in the background", prepared.text.trim().split("\n")[0].slice(0, 80), { label: "Open", onClick: () => select(id) }); editor.focus("end"); }
+					else select(id);
 				}
 			}
 		} catch (reason) { setError(errorText(reason)); }
 		finally { setBusy(false); }
 	}
+
+	useCommand("composer.sendBackground", () => { if (!canSend || busy) return false; void submit(true); });
+	// The project's most recently used worktree, so a new chat can carry on in it.
+	useCommand("composer.previousWorktree", () => {
+		const root = project?.worktree?.sourceProjectId ?? project?.id;
+		if (!code || !root) return false;
+		const lastUsed = (id: string) => Math.max(0, ...overview.tasks.filter(task => task.projectId === id).map(task => Date.parse(task.updatedAt) || 0));
+		const latest = overview.projects.filter(value => value.worktree?.sourceProjectId === root && !value.worktree.removedAt && value.id !== project?.id && !isFactoryWorktree(value)).sort((a, b) => lastUsed(b.id) - lastUsed(a.id))[0];
+		if (!latest) { showToast("info", "No earlier worktree", "This project has no other worktree to carry on in."); return; }
+		setNewChatProjectId(latest.id); editor.focus("end");
+	});
 
 	function addImages(files: File[]) {
 		// Images, PDFs and text upload once the chat exists; the main process checks each then.

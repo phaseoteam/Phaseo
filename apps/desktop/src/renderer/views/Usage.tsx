@@ -14,6 +14,7 @@ import { usePersistedState } from "../lib/persistedState";
 import { cn } from "../lib/utils";
 import { UsageLimitsPanel } from "../settings/UsageSettings";
 import { Group, Row } from "./Inbox";
+import { useCommand } from "../lib/keybindings";
 
 /** Totals as the website's budgets show them: $1.32, $0.51, with four places below a cent. */
 const money = formatSpend;
@@ -239,6 +240,10 @@ type Breakdown = "models" | "chats" | "projects" | "days";
 export function Usage() {
 	const { overview, select, openInbox, usageView: view, setUsageView: setView } = useWorkspace();
 	const [period, setPeriod] = usePersistedState<UsagePeriod>("phaseo.desktop.usagePeriod", "today");
+	// C, T and L switch what the page shows; Mod+Shift+1–4 the period.
+	useCommand("usage.cost", () => setView("cost")); useCommand("usage.tokens", () => setView("tokens")); useCommand("usage.limits", () => setView("limits"));
+	useCommand("usage.period.day", () => setPeriod("today")); useCommand("usage.period.week", () => setPeriod("7d"));
+	useCommand("usage.period.month", () => setPeriod("30d")); useCommand("usage.period.quarter", () => setPeriod("90d"));
 	const [breakdown, setBreakdown] = useState<Breakdown>("models");
 	const { report, stale, error, loading, refresh } = useUsageReport(period);
 	const shown = report ?? stale;

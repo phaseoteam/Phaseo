@@ -36,6 +36,9 @@ export async function saveKeybindings(entries: KeybindingsState["entries"]) {
 }
 
 /** The label of a command's first binding ("Ctrl+K", "⌘K"), or "" when it has none. Re-rendered by useKeybindings in App. */
+/** The key a command runs on now (the person's binding, or its default), such as "mod+1". */
+export function bindingKey(command: KeybindingCommand) { return state.rows.find(value => value.command === command && value.key)?.key; }
+
 export function shortcut(command: KeybindingCommand) {
 	const row = state.rows.find(value => value.command === command && value.key);
 	return row ? keyLabel(row.key, isMac()) : "";
@@ -80,7 +83,7 @@ export function runCommand(command: KeybindingCommand) {
 	return false;
 }
 
-type KeyInput = Pick<KeyboardEvent, "key" | "ctrlKey" | "metaKey" | "altKey" | "shiftKey"> & { repeat?: boolean };
+type KeyInput = Pick<KeyboardEvent, "key" | "ctrlKey" | "metaKey" | "altKey" | "shiftKey"> & { repeat?: boolean; code?: string };
 let whenContext: () => WhenContext = () => ({});
 
 /** Runs the first binding whose keys and condition match and that something handles; true when one did. */

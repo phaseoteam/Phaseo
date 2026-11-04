@@ -3,6 +3,7 @@ import { Check, Copy, Download, Ellipsis, Monitor, Moon, Pencil, Plus, Sun, Tras
 import { useWorkspace } from "../app/workspace";
 import { cn } from "../lib/utils";
 import { themeCss, useThemes } from "../lib/appTheme";
+import { onThemeEditorRequest } from "../lib/themeEditorRequest";
 import { useEffortDisplay } from "../lib/effortDisplay";
 import { PickerGroupsSettings } from "./PickerGroupsSettings";
 import { builtInThemes, importTheme, serializeTheme, shareCode, themeColours, type Theme, type ThemeHalf, type ThemeMode } from "../lib/themes";
@@ -82,6 +83,7 @@ export function AppearanceSettings() {
 	const { themes, active, choose, save, remove } = useThemes();
 	const [effortDisplay, setEffortDisplay] = useEffortDisplay();
 	const [editing, setEditing] = useState<Theme>();
+	useEffect(() => onThemeEditorRequest(() => setEditing(current => current ? undefined : active)), [active]);
 	const [importing, setImporting] = useState(false);
 	const [notice, setNotice] = useState("");
 	// The editor and import panel open below the theme grid, so bring them into view.

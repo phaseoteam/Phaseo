@@ -99,9 +99,10 @@ function ChatRow({ task, indent, showModel, showTime = true, hint }: { task: Tas
 				onKeyDown={event => { event.stopPropagation(); if (event.key === "Enter") event.currentTarget.blur(); if (event.key === "Escape") setRenaming(false); }} />
 			: <span className={cn("min-w-0 flex-1 truncate", unread && "font-semibold text-sidebar-foreground")}>{task.title}</span>}
 		{!renaming && <TagDots tags={task.tags} />}
-		{showModel && busy && <StatusDot task={task} />}
-		{unread && !renaming && <span role="img" aria-label="Unread" title="Unread" className="size-1.5 shrink-0 rounded-[2px] bg-primary" />}
-		{showTime && !renaming && <span className="text-[11px] text-muted-foreground group-hover/row:hidden">{relative(task.updatedAt)}</span>}
+		{/* While the jump shortcuts show, a row's shortcut takes the place of its status and time. */}
+		{hint === undefined && showModel && busy && <StatusDot task={task} />}
+		{hint === undefined && unread && !renaming && <span role="img" aria-label="Unread" title="Unread" className="size-1.5 shrink-0 rounded-[2px] bg-primary" />}
+		{hint === undefined && showTime && !renaming && <span className="text-[11px] text-muted-foreground group-hover/row:hidden">{relative(task.updatedAt)}</span>}
 		{hint !== undefined ? <JumpHint index={hint} /> : !renaming && <RowMenu task={task} onRename={() => setRenaming(true)} />}
 	</div>;
 }

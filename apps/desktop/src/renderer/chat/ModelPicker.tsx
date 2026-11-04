@@ -15,7 +15,7 @@ import { HarnessLogo } from "../components/HarnessLogo";
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../components/ui/tooltip";
 import { ScrollArea } from "../components/ui/scroll-area";
-import { useCommand } from "../lib/keybindings";
+import { isCommandKey, useCommand } from "../lib/keybindings";
 import { useModelPopularity } from "../lib/modelPopularity";
 import { arrangeGroups, moveGroup, usePickerGroups } from "../lib/pickerGroups";
 import { usePointerReorder } from "../lib/pointerReorder";
@@ -276,7 +276,17 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 		if (row?.type === "entry") { keepOpen.current = compare; choose(row.entry); }
 		else if (row?.type === "older") setShowOlder(current => ({ ...current, [row.harness]: !current[row.harness] }));
 	};
+	const stepGroup = (direction: 1 | -1) => {
+		const index = groups.findIndex(value => value.id === active), next = groups[(index + direction + groups.length) % groups.length];
+		if (next) { setGroup(next.id); setQuery(""); }
+	};
+	// The same keys with focus elsewhere in the picker (its group column, a setting).
+	useCommand("modelPicker.nextProvider", () => stepGroup(1), open);
+	useCommand("modelPicker.previousProvider", () => stepGroup(-1), open);
 	const onSearchKey = (event: KeyboardEvent<HTMLInputElement>) => {
+		// Mod+Shift+Up and Down move between groups (as PageUp and PageDown do), before the arrows move through the list.
+		const direction = isCommandKey(event.nativeEvent, ["modelPicker.nextProvider"]) ? 1 : isCommandKey(event.nativeEvent, ["modelPicker.previousProvider"]) ? -1 : 0;
+		if (direction) { event.preventDefault(); stepGroup(direction); return; }
 		if (event.nativeEvent.isComposing) return;
 		if (event.key === "ArrowDown" || event.key === "ArrowUp") {
 			event.preventDefault();
@@ -286,11 +296,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 				setActiveKey(rows[index].key); virtualizer.scrollToIndex(index, { align: "auto" }); break;
 			}
 		} else if (event.key === "Enter") { event.preventDefault(); activate(rows[activeIndex], event.ctrlKey || event.metaKey); }
-		else if (event.key === "PageDown" || event.key === "PageUp") {
-			event.preventDefault();
-			const index = groups.findIndex(value => value.id === active), next = groups[(index + (event.key === "PageDown" ? 1 : -1) + groups.length) % groups.length];
-			if (next) { setGroup(next.id); setQuery(""); }
-		}
+		else if (event.key === "PageDown" || event.key === "PageUp") { event.preventDefault(); stepGroup(event.key === "PageDown" ? 1 : -1); }
 	};
 	const shown = active === "favourites" ? harnesses : harnesses.filter(harness => isPhaseoGroup(active) ? harness === "phaseo" : harness === active);
 	const toolbar = isPhaseoGroup(active) || !!multiple;
@@ -313,6 +319,8 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	const firstEntry = first && firstCatalog.find(value => first.model === "default" ? value.default : value.id === first.model);
 	const firstName = !first ? "" : firstEntry ? (first.harness === "phaseo" ? firstEntry.name : firstEntry.name.replace(/^Claude (?=\S)/, "")) : shortModelName(first);
 	useCommand("modelSettings.toggle", () => latestOpen.current(!open), descriptors.length > 0 && !disabled);
+	// Mod+Shift+M opens the composer's picker; pickers elsewhere (Settings) have no open event and leave it alone.
+	useCommand("modelPicker.toggle", () => latestOpen.current(!open), Boolean(openEvent) && !disabled);
 	useEffect(() => {
 		if (!openEvent || disabled) return;
 		const show = () => latestOpen.current(true);

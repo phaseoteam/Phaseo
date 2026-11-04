@@ -121,6 +121,26 @@ describe("browser shortcuts", () => {
 		expect(shortcuts.filter(item => item.keepPageFocus).map(item => item.key).sort()).toEqual(["mod++", "mod+-", "mod+0", "mod+=", "mod+r"].sort());
 		expect(browserShortcuts([{ command: "browser.reload", key: "f5" }])).toContainEqual({ key: "f5", keepPageFocus: true });
 	});
+	it("starts a new chat in the background from the New chat page, and keeps the alternate send in a chat", () => {
+		const resolve = (key: string, context: Parameters<typeof evaluateWhen>[1]) => keybindingRows([]).filter(row => row.key === key && evaluateWhen(row.when, context)).map(row => row.command);
+		const composer = { composerFocused: true, textFocused: true };
+		expect(resolve("mod+enter", { ...composer, draftRoute: true })).toEqual(["composer.sendBackground"]);
+		expect(resolve("mod+alt+enter", { ...composer, draftRoute: true })).toEqual(["composer.sendBackground"]);
+		expect(resolve("mod+enter", { ...composer, chatOpen: true })).toEqual(["composer.sendAlternate"]);
+		expect(resolve("mod+alt+enter", { ...composer, chatOpen: true })).toEqual(["composer.sendAndNewChat"]);
+		// Shift turns 2 into "@", so a Shift+digit shortcut matches the digit's key.
+		expect(matchesKey("mod+shift+2", { ...press("@", { ctrlKey: true, shiftKey: true }), code: "Digit2" }, false)).toBe(true);
+		expect(matchesKey("mod+shift+2", { ...press("@", { ctrlKey: true, shiftKey: true }), code: "Digit3" }, false)).toBe(false);
+		expect(matchesKey("mod+shift+2", press("2", { ctrlKey: true }), false)).toBe(false);
+		// The Usage page's letter keys stay out of the way of typing, and act only on that page.
+		expect(resolve("c", { usagePageOpen: true })).toEqual(["usage.cost"]);
+		expect(resolve("c", { usagePageOpen: true, textFocused: true })).toEqual([]);
+		expect(resolve("c", {})).toEqual([]);
+		// Both keys open a new chat; the model picker's group keys act only while it is open.
+		expect(resolve("mod+shift+o", {})).toEqual(["chat.new"]);
+		expect(resolve("mod+shift+arrowdown", { modelPickerOpen: true })).toEqual(["modelPicker.nextProvider"]);
+		expect(resolve("mod+shift+arrowdown", {})).toEqual([]);
+	});
 	it("lets page zoom win over app zoom only while the browser has focus", () => {
 		const rows = keybindingRows([]).filter(row => row.key === "mod+=");
 		expect(rows.map(row => row.command)).toEqual(["browser.zoomIn", "view.zoomIn"]);
