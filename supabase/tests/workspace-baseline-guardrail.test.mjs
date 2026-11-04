@@ -165,6 +165,11 @@ try {
   assert.deepEqual(await resolve(W1, K1, true), await resolve(W1, K1), 'with the baseline, the three-argument form returns the same rows');
   assert.deepEqual(await resolve(W1, K1, false), [`${GKEY}@key`], 'it can leave the baseline out');
   assert.deepEqual(await resolve(W2, K2, true), [], 'an unrestricted workspace resolves nothing');
+  // An OAuth access token authenticates with its client id, which is no row in keys.
+  const OAUTH_CLIENT = '0a0a0a0a-0000-4000-8000-00000000c11e';
+  assert.deepEqual(await resolve(W1, OAUTH_CLIENT, true), [`${b1.id}@workspace`], 'an OAuth client id still gets the workspace baseline');
+  assert.deepEqual(await resolve(W1, OAUTH_CLIENT, false), [], 'and nothing else');
+  assert.deepEqual(await resolve(W1, K2, true), [`${b1.id}@workspace`], "another workspace's key gets only this workspace's level, never its own guardrails");
   await db.exec(`update public.workspace_guardrails set name = 'Company rules', description = 'Ours' where id = '${b1.id}'`);
   assert.equal((await baseline(W1)).name, 'Company rules', 'the baseline can be renamed');
 
