@@ -24,6 +24,9 @@ async function unchanged(url: URL, key: string, validators: CatalogPageValidator
 	return true;
 }
 
+/** Latest aliases the picker leaves out: GPT Pro Latest stands for a premium tier, not a line people pick by name. */
+const hiddenLatestAliases = new Set(["openai/gpt-pro-latest"]);
+
 /** openai/gpt-sol-latest reads "GPT Sol Latest"; each word takes its casing from the model's name (DeepSeek, not Deepseek). */
 export function latestName(alias: string, modelName = "") {
 	const named = new Map(modelName.split(/\s+/).map(word => [word.toLowerCase(), word] as const));
@@ -75,7 +78,7 @@ export async function apiModelCatalog(account: Account, key: string, previous?: 
 			models.set(model.id, option);
 			// A "...-latest" alias with no version in it (not gpt-5.2-chat-latest) follows the newest model of its line, so it can be chosen and keep up by itself. One per model:
 			// the alias naming its line (gpt-luna-latest over chat-latest).
-			const aliases = (Array.isArray(model.aliases) ? model.aliases : []).filter((alias): alias is string => typeof alias === "string" && /^[a-z0-9-]+\/[a-z-]+-latest$/.test(alias) && !models.has(alias));
+			const aliases = (Array.isArray(model.aliases) ? model.aliases : []).filter((alias): alias is string => typeof alias === "string" && /^[a-z0-9-]+\/[a-z-]+-latest$/.test(alias) && !hiddenLatestAliases.has(alias) && !models.has(alias));
 			const alias = aliases.find(value => value.slice(value.indexOf("/") + 1).replace(/-latest$/, "").split("-").every(word => option.id.includes(word))) ?? aliases[0];
 			if (alias) models.set(alias, { ...option, id: alias, name: latestName(alias, option.name), description: `Always the newest of this line; now ${option.name}.`, latestOf: model.id });
 		}

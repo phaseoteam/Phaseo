@@ -88,6 +88,12 @@ describe("Latest aliases", () => {
 		const models = await apiModels({ id: "a", name: "API", harness: "phaseo", kind: "api", configured: true, endpoint: "https://api.example.test/v1/" }, "key", fetcher);
 		expect(models.map(value => [value.id, value.name, value.latestOf])).toEqual([["openai/gpt-6-luna", "GPT 6 Luna", undefined], ["openai/gpt-luna-latest", "GPT Luna Latest", "openai/gpt-6-luna"]]);
 	});
+	it("leaves GPT Pro Latest out, keeping the Pro model itself", async () => {
+		const model = { id: "openai/gpt-6-sol-pro", name: "GPT-6 Sol Pro", aliases: ["openai/gpt-pro-latest"], organization: { id: "openai", name: "OpenAI" }, capabilities: { endpoints: ["text.generate"] }, offers: [{ routable: true }], lifecycle: { status: "active" } };
+		const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, offset: 0, total: 1, models: [model] })));
+		const models = await apiModels({ id: "a", name: "API", harness: "phaseo", kind: "api", configured: true, endpoint: "https://api.example.test/v1/" }, "key", fetcher);
+		expect(models.map(value => value.id)).toEqual(["openai/gpt-6-sol-pro"]);
+	});
 	it("takes each word's casing from the model's name", () => {
 		expect(latestName("deepseek/deepseek-flash-latest", "DeepSeek V4.1 Flash 1017")).toBe("DeepSeek Flash Latest");
 	});
