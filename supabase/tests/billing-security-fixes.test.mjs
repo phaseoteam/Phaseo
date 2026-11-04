@@ -77,6 +77,8 @@ const redeem = (user) => asUser(user, () => one('select * from public.redeem_cre
 
 try {
   await db.exec(await read('./fixtures/billing-security-before.sql'));
+  // redeem_credit_code checks MFA first (require_mfa_for_data_api); this fixture's users have no factors.
+  await db.exec("create or replace function public.mfa_satisfied() returns boolean language sql stable as 'select true';");
   await db.query('insert into public.workspaces (id) values ($1)', [ws]);
   await db.query('insert into public.workspace_members values ($1, $2), ($1, $3)', [ws, ownerA, memberB]);
   await db.query('insert into public.wallets (workspace_id) values ($1)', [ws]);

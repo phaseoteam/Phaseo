@@ -24,6 +24,8 @@ const migrations = await readdir(new URL('../migrations/', import.meta.url));
 const migrationName = migrations.find((name) => name.endsWith('_require_mfa_for_data_api.sql'));
 assert(migrationName, 'the migration exists');
 const migration = normalize(await read(`../migrations/${migrationName}`));
+// A protected function changed again by a later migration ships its newest definition there.
+const laterMigrations = await Promise.all(migrations.filter((name) => name > migrationName).map(async (name) => normalize(await read(`../migrations/${name}`))));
 
 // The declarative files describe the same end state.
 const fnSql = normalize(await read('../schemas/public/functions/mfa_satisfied.sql'));
@@ -64,7 +66,7 @@ for (const schema of ['public', 'private']) {
     if (protectedRpcs.includes(name)) {
       rpcSql[name] = create;
       assert(create.includes(name === 'get_workspace_key_usage' ? mfaFilter : `begin\n${mfaCheck}`), `${name} checks MFA first`);
-      assert(migration.includes(create), `the migration ships the schema definition of ${name}`);
+      assert([migration, ...laterMigrations].some((sql) => sql.includes(create)), `the migration ships the schema definition of ${name}`);
     } else {
       assert(unprotectedRpcs.has(`${name}`), `${schema}.${name} is a SECURITY DEFINER function signed-in users can call: decide whether it needs the MFA check`);
     }
