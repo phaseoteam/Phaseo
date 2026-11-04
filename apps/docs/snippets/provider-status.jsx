@@ -66,10 +66,7 @@ export const providerStatusLabels = {
 			meaning: "A breaker's cooldown has ended. Phaseo is letting a few requests through to check that the provider works again.",
 			routing: "Still routable. If a batch of those requests all succeed, routing returns to normal. If half or more fail, the route is limited again with a longer cooldown.",
 		},
-		lower: {
-			meaning: "Phaseo has deprioritised this route by hand. It stays until Phaseo changes it. The colour shows the level: amber, darker amber or red.",
-			routing: "Still available, but requests go to other providers first.",
-		},
+		lower: { meaning: "Phaseo has made this route a last resort by hand. It stays until Phaseo changes it.", routing: "Used only as a backup: tried after every other healthy provider." },
 		limited: {
 			meaning: "Requests to this provider failed several times in a row, or at least half of recent requests failed.",
 			routing: "Still routable, but other providers are tried first until the cooldown ends.",
@@ -105,7 +102,7 @@ export const providerStatusLocales = {
 		states: {
 			active: { meaning: "Die Route ist verfügbar und gesund.", routing: "Wird normal geroutet, nach Preis, Geschwindigkeit und Zuverlässigkeit sortiert." },
 			recovering: { meaning: "Die Wartezeit eines Breakers ist abgelaufen. Phaseo lässt einige Anfragen durch, um zu prüfen, ob der Anbieter wieder funktioniert.", routing: "Weiterhin routbar. Sind alle Anfragen eines Durchgangs erfolgreich, kehrt das Routing zum Normalzustand zurück. Schlägt die Hälfte oder mehr fehl, wird die Route erneut eingeschränkt, mit längerer Wartezeit." },
-			lower: { meaning: "Phaseo hat diese Route manuell zurückgestuft. Das bleibt so, bis Phaseo es ändert. Die Farbe zeigt die Stufe: gelb, dunkelgelb oder rot.", routing: "Weiterhin verfügbar, aber Anfragen gehen zuerst an andere Anbieter." },
+			lower: { meaning: "Phaseo hat diese Route manuell zur letzten Reserve gemacht. Das bleibt so, bis Phaseo es ändert.", routing: "Nur als Reserve: Wird nach allen anderen gesunden Anbietern versucht." },
 			limited: { meaning: "Anfragen an diesen Anbieter sind mehrmals hintereinander fehlgeschlagen, oder mindestens die Hälfte der letzten Anfragen ist fehlgeschlagen.", routing: "Weiterhin routbar, aber andere Anbieter werden zuerst versucht, bis die Wartezeit abläuft." },
 			both: { meaning: "Beides zugleich: Phaseo hatte die Route bereits zurückgestuft, und jetzt schlägt sie zusätzlich fehl.", routing: "Wird nach den anderen Anbietern versucht." },
 			disabled: { meaning: "Die Route ist ausgeschaltet.", routing: "Wird nicht geroutet. Live-Routing-Symbole erscheinen nie bei deaktivierten Routen." },
@@ -130,7 +127,7 @@ export const providerStatusLocales = {
 		states: {
 			active: { meaning: "La ruta está disponible y en buen estado.", routing: "Se enruta con normalidad, ordenada por precio, velocidad y fiabilidad." },
 			recovering: { meaning: "Ha terminado la pausa de un breaker. Phaseo deja pasar algunas solicitudes para comprobar que el proveedor vuelve a funcionar.", routing: "Sigue siendo enrutable. Si todas las de un lote funcionan, el enrutamiento vuelve a la normalidad. Si falla la mitad o más, la ruta vuelve a limitarse con una pausa más larga." },
-			lower: { meaning: "Phaseo ha reducido la prioridad de esta ruta manualmente. Se mantiene hasta que Phaseo la cambie. El color indica el nivel: ámbar, ámbar oscuro o rojo.", routing: "Sigue disponible, pero las solicitudes van primero a otros proveedores." },
+			lower: { meaning: "Phaseo ha convertido esta ruta en un último recurso manualmente. Se mantiene hasta que Phaseo la cambie.", routing: "Solo como respaldo: se prueba después de todos los demás proveedores en buen estado." },
 			limited: { meaning: "Las solicitudes a este proveedor han fallado varias veces seguidas, o al menos la mitad de las solicitudes recientes han fallado.", routing: "Sigue siendo enrutable, pero se prueban primero otros proveedores hasta que termine la pausa." },
 			both: { meaning: "Las dos cosas a la vez: Phaseo ya había reducido la prioridad de la ruta y ahora además está fallando.", routing: "Se prueba después de los demás proveedores." },
 			disabled: { meaning: "La ruta está desactivada.", routing: "No se enruta. Los iconos de enrutamiento en directo nunca aparecen en rutas deshabilitadas." },
@@ -155,7 +152,7 @@ export const providerStatusLocales = {
 		states: {
 			active: { meaning: "La route est disponible et saine.", routing: "Routée normalement, classée selon le prix, la vitesse et la fiabilité." },
 			recovering: { meaning: "Le délai d’un breaker est écoulé. Phaseo laisse passer quelques requêtes pour vérifier que le fournisseur fonctionne de nouveau.", routing: "Toujours routable. Si toutes les requêtes d’un lot réussissent, le routage redevient normal. Si la moitié ou plus échouent, la route est de nouveau limitée, avec un délai plus long." },
-			lower: { meaning: "Phaseo a réduit manuellement la priorité de cette route. Elle reste ainsi jusqu’à ce que Phaseo la modifie. La couleur indique le niveau : orange, orange foncé ou rouge.", routing: "Toujours disponible, mais les requêtes vont d’abord à d’autres fournisseurs." },
+			lower: { meaning: "Phaseo a fait de cette route un dernier recours manuellement. Elle reste ainsi jusqu’à ce que Phaseo la modifie.", routing: "Uniquement en secours : essayée après tous les autres fournisseurs sains." },
 			limited: { meaning: "Les requêtes vers ce fournisseur ont échoué plusieurs fois de suite, ou au moins la moitié des requêtes récentes ont échoué.", routing: "Toujours routable, mais les autres fournisseurs sont essayés en premier jusqu’à la fin du délai." },
 			both: { meaning: "Les deux à la fois : Phaseo avait déjà réduit la priorité de la route, et elle échoue maintenant aussi.", routing: "Essayée après les autres fournisseurs." },
 			disabled: { meaning: "La route est désactivée.", routing: "Pas de routage. Les icônes de routage en direct n’apparaissent jamais sur les routes désactivées." },
@@ -180,7 +177,7 @@ export const providerStatusLocales = {
 		states: {
 			active: { meaning: "A rota está disponível e saudável.", routing: "Roteada normalmente, classificada por preço, velocidade e confiabilidade." },
 			recovering: { meaning: "A pausa de um breaker terminou. O Phaseo está deixando passar algumas solicitações para verificar se o provedor voltou a funcionar.", routing: "Continua roteável. Se todas as de um lote funcionarem, o roteamento volta ao normal. Se metade ou mais falhar, a rota é limitada de novo, com uma pausa mais longa." },
-			lower: { meaning: "O Phaseo rebaixou esta rota manualmente. Isso permanece até o Phaseo mudar. A cor mostra o nível: âmbar, âmbar escuro ou vermelho.", routing: "Continua disponível, mas as solicitações vão primeiro para outros provedores." },
+			lower: { meaning: "O Phaseo tornou esta rota um último recurso manualmente. Isso permanece até o Phaseo mudar.", routing: "Só como reserva: tentada depois de todos os outros provedores saudáveis." },
 			limited: { meaning: "As solicitações para este provedor falharam várias vezes seguidas, ou pelo menos metade das solicitações recentes falhou.", routing: "Continua roteável, mas outros provedores são tentados primeiro até a pausa terminar." },
 			both: { meaning: "As duas coisas ao mesmo tempo: o Phaseo já tinha rebaixado a rota, e agora ela também está falhando.", routing: "Tentada depois dos outros provedores." },
 			disabled: { meaning: "A rota está desligada.", routing: "Não é roteada. Os ícones de roteamento em tempo real nunca aparecem em rotas desativadas." },
@@ -205,7 +202,7 @@ export const providerStatusLocales = {
 		states: {
 			active: { meaning: "ルートは利用可能で正常です。", routing: "価格、速度、信頼性に基づいて通常どおりルーティングされます。" },
 			recovering: { meaning: "ブレーカーの待機時間が終了しました。Phaseo はプロバイダーが再び動作するかを確認するため、少数のリクエストを通しています。", routing: "引き続きルーティング可能です。1回分のリクエストがすべて成功すると、通常のルーティングに戻ります。半数以上が失敗すると、より長い待機時間で再び制限されます。" },
-			lower: { meaning: "Phaseo がこのルートの優先度を手動で下げています。Phaseo が変更するまで維持されます。色はレベルを示します（黄色、濃い黄色、赤）。", routing: "引き続き利用できますが、リクエストは先に他のプロバイダーへ送られます。" },
+			lower: { meaning: "Phaseo がこのルートを手動で最終手段に設定しています。Phaseo が変更するまで維持されます。", routing: "バックアップとしてのみ使われます。他のすべての正常なプロバイダーの後に試されます。" },
 			limited: { meaning: "このプロバイダーへのリクエストが連続して失敗したか、最近のリクエストの半数以上が失敗しました。", routing: "引き続きルーティング可能ですが、待機時間が終わるまで他のプロバイダーが先に試されます。" },
 			both: { meaning: "両方が同時に該当しています。Phaseo がすでに優先度を下げていたルートで、現在エラーも発生しています。", routing: "他のプロバイダーの後に試されます。" },
 			disabled: { meaning: "ルートはオフになっています。", routing: "ルーティングされません。無効なルートにライブルーティングのアイコンが表示されることはありません。" },
@@ -230,7 +227,7 @@ export const providerStatusLocales = {
 		states: {
 			active: { meaning: "该路由可用且状态正常。", routing: "正常路由，按价格、速度和可靠性排序。" },
 			recovering: { meaning: "熔断器的冷却时间已结束。Phaseo 正在放行少量请求，检查该提供商是否已恢复正常。", routing: "仍可路由。如果一批请求全部成功，路由恢复正常。如果一半或更多失败，该路由会再次受限，冷却时间更长。" },
-			lower: { meaning: "Phaseo 已手动降低此路由的优先级，在 Phaseo 更改之前会一直保留。颜色表示级别：黄色、深黄色或红色。", routing: "仍然可用，但请求会先发送给其他提供商。" },
+			lower: { meaning: "Phaseo 已手动将此路由设为最后的备选，在 Phaseo 更改之前会一直保留。", routing: "仅作为备用：在所有其他健康的提供商之后才会尝试。" },
 			limited: { meaning: "发往此提供商的请求连续失败多次，或最近至少一半的请求失败。", routing: "仍可路由，但在冷却时间结束前会先尝试其他提供商。" },
 			both: { meaning: "两者同时存在：Phaseo 已降低此路由的优先级，现在它又在出错。", routing: "在其他提供商之后才会尝试。" },
 			disabled: { meaning: "该路由已关闭。", routing: "不会路由。已停用的路由从不显示实时路由图标。" },
@@ -255,7 +252,7 @@ export const providerStatusLocales = {
 		states: {
 			active: { meaning: "रूट उपलब्ध और ठीक है।", routing: "सामान्य रूप से रूट होता है, कीमत, गति और विश्वसनीयता के आधार पर।" },
 			recovering: { meaning: "ब्रेकर की प्रतीक्षा अवधि खत्म हो गई है। Phaseo यह जाँचने के लिए कुछ अनुरोध आगे भेज रहा है कि प्रदाता फिर से काम कर रहा है या नहीं।", routing: "अब भी रूट किया जा सकता है। अगर एक समूह के सभी अनुरोध सफल होते हैं, तो रूटिंग सामान्य हो जाती है। अगर आधे या ज़्यादा विफल होते हैं, तो रूट फिर से लंबी प्रतीक्षा अवधि के साथ सीमित हो जाता है।" },
-			lower: { meaning: "Phaseo ने इस रूट की प्राथमिकता मैन्युअल रूप से घटाई है। यह तब तक बनी रहती है जब तक Phaseo इसे नहीं बदलता। रंग स्तर दिखाता है: एम्बर, गहरा एम्बर या लाल।", routing: "अब भी उपलब्ध है, लेकिन अनुरोध पहले दूसरे प्रदाताओं को भेजे जाते हैं।" },
+			lower: { meaning: "Phaseo ने इस रूट को मैन्युअल रूप से अंतिम विकल्प बनाया है। यह तब तक बना रहता है जब तक Phaseo इसे नहीं बदलता।", routing: "सिर्फ़ बैकअप के रूप में: बाकी सभी स्वस्थ प्रदाताओं के बाद आज़माया जाता है।" },
 			limited: { meaning: "इस प्रदाता को भेजे गए अनुरोध लगातार कई बार विफल हुए, या हाल के कम से कम आधे अनुरोध विफल हुए।", routing: "अब भी रूट किया जा सकता है, लेकिन प्रतीक्षा अवधि खत्म होने तक पहले दूसरे प्रदाता आज़माए जाते हैं।" },
 			both: { meaning: "दोनों एक साथ: Phaseo ने इस रूट की प्राथमिकता पहले ही घटा दी थी, और अब यह विफल भी हो रहा है।", routing: "दूसरे प्रदाताओं के बाद आज़माया जाता है।" },
 			disabled: { meaning: "रूट बंद है।", routing: "रूट नहीं होता। अक्षम रूट पर लाइव रूटिंग आइकन कभी नहीं दिखते।" },
@@ -280,7 +277,7 @@ export const providerStatusLocales = {
 		states: {
 			active: { meaning: "المسار متاح وسليم.", routing: "يُوجَّه بشكل طبيعي، حسب السعر والسرعة والموثوقية." },
 			recovering: { meaning: "انتهت فترة انتظار القاطع. يسمح Phaseo بمرور بعض الطلبات للتحقق من أن المزوّد يعمل مجددًا.", routing: "لا يزال قابلًا للتوجيه. إذا نجحت جميع طلبات الدفعة، يعود التوجيه إلى وضعه الطبيعي. وإذا فشل النصف أو أكثر، يُقيَّد المسار مجددًا بفترة انتظار أطول." },
-			lower: { meaning: "خفّض Phaseo أولوية هذا المسار يدويًا، ويبقى كذلك حتى يغيّره Phaseo. يدل اللون على المستوى: كهرماني أو كهرماني داكن أو أحمر.", routing: "لا يزال متاحًا، لكن الطلبات تُرسل أولًا إلى مزوّدين آخرين." },
+			lower: { meaning: "جعل Phaseo هذا المسار ملاذًا أخيرًا يدويًا، ويبقى كذلك حتى يغيّره Phaseo.", routing: "كاحتياط فقط: يُجرَّب بعد جميع المزوّدين السليمين الآخرين." },
 			limited: { meaning: "فشلت الطلبات إلى هذا المزوّد عدة مرات متتالية، أو فشل نصف الطلبات الأخيرة على الأقل.", routing: "لا يزال قابلًا للتوجيه، لكن تُجرَّب المزوّدات الأخرى أولًا حتى تنتهي فترة الانتظار." },
 			both: { meaning: "الأمران معًا: كان Phaseo قد خفّض أولوية المسار، وهو الآن يفشل أيضًا.", routing: "يُجرَّب بعد المزوّدين الآخرين." },
 			disabled: { meaning: "المسار متوقف.", routing: "لا يُوجَّه. لا تظهر أيقونات التوجيه المباشر أبدًا على المسارات المعطّلة." },

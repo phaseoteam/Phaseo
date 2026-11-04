@@ -150,7 +150,7 @@ describe("Slack search: models that keep no data", () => {
 		expect(db.queries.map((query) => query.table)).toEqual(["v2_model_provider_routes", "v2_providers", "v2_effective_route_capabilities", "byok_keys"]);
 		// Every provider: a capability can keep no data where its provider doesn't.
 		expect(db.queries[1].query).not.toHaveProperty("zero_data_retention");
-		expect(db.queries[2].query).toMatchObject({ capability_id: 'in.("text.generate","responses")', status: 'in.("active","deranked","deranked_lvl1","deranked_lvl2","deranked_lvl3")' });
+		expect(db.queries[2].query).toMatchObject({ capability_id: 'in.("text.generate","responses")', status: 'in.("active","degraded")' });
 		expect(db.queries[3].query).toMatchObject({ workspace_id: `eq.${WORKSPACE}`, enabled: "eq.true" });
 	});
 

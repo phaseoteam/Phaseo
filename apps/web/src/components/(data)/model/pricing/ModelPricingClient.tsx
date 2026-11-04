@@ -247,11 +247,10 @@ function toggleProviderStatusFilter(
 
 const DEFAULT_ROUTING_ERROR_RATE = 0;
 
+// The gateway tries a deranked route only after every other healthy provider; this sinks it in the estimate.
 function routingStatusMultiplier(status: CanonicalGatewayStatus): number {
     if (status === "active") return 1;
-    if (status === "deranked_lvl1") return 1e-3;
-    if (status === "deranked_lvl2") return 1e-6;
-    if (status === "deranked_lvl3") return 1e-9;
+    if (status === "deranked") return 1e-6;
     return 0;
 }
 
@@ -613,7 +612,7 @@ function ProviderServiceTierInfoIcons({
 					? "statuses.external"
 				: statusKey === "internal_testing"
 					? "statuses.internalTesting"
-					: statusKey.startsWith("deranked_")
+					: statusKey === "deranked"
 						? "statuses.rateLimited"
 						: "statuses.inactive";
 	const statusLabel = tProvider(statusLabelKey as never);
@@ -627,7 +626,7 @@ function ProviderServiceTierInfoIcons({
 					? "statusDescriptions.external"
 				: statusKey === "internal_testing"
 					? "statusDescriptions.internalTesting"
-					: statusKey.startsWith("deranked_")
+					: statusKey === "deranked"
 						? "statusDescriptions.rateLimited"
 						: "statusDescriptions.inactive";
 	const tierPolicy = currentCatalogDataPolicy(provider.provider.service_tier_data_policies?.[plan]) ?? null;

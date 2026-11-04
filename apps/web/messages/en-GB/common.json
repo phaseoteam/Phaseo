@@ -917,9 +917,7 @@
 			"supportedParamsDescription": "Select the request parameters supported by this capability.",
 			"capabilityStatuses": {
 				"active": "Active",
-				"derankedLvl1": "Deranked — level 1",
-				"derankedLvl2": "Deranked — level 2",
-				"derankedLvl3": "Deranked — level 3",
+				"deranked": "Last resort",
 				"disabled": "Disabled"
 			},
 			"pricingRules": "Pricing rules",

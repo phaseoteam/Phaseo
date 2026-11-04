@@ -39,6 +39,7 @@ export interface GatewayModelOffer {
     capability:
       | "active"
       | "coming_soon"
+      | "deranked"
       | "deranked_lvl1"
       | "deranked_lvl2"
       | "deranked_lvl3"
@@ -46,12 +47,14 @@ export interface GatewayModelOffer {
       | "internal_testing";
     model:
       | "active"
+      | "deranked"
       | "deranked_lvl1"
       | "deranked_lvl2"
       | "deranked_lvl3"
       | "disabled";
     provider:
       | "active"
+      | "deranked"
       | "deranked_lvl1"
       | "deranked_lvl2"
       | "deranked_lvl3"
@@ -68,6 +71,7 @@ export interface GatewayModelOffer {
     | "project_limited"
     | "paused"
     | "soft_blocked"
+    | "deranked"
     | "deranked_lvl1"
     | "deranked_lvl2"
     | "deranked_lvl3"

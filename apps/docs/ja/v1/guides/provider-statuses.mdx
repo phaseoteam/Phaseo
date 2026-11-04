@@ -12,14 +12,12 @@ import { ProviderStatusExplorer } from "/snippets/provider-status.jsx";
 
 ## ステータスアイコン
 
-このステータスは Phaseo が手動で設定し、Phaseo が変更するまで維持されます。モデルページでは、3段階の優先度引き下げはすべて `優先度低` と表示されます。
+このステータスは Phaseo が手動で設定し、Phaseo が変更するまで維持されます。優先度が低いルートは最終手段で、Gateway は他のすべての正常なプロバイダーの後にのみ試します。
 
 | アイコン | ステータス | ルーティング |
 | --- | --- | --- |
 | <Icon icon="circle-check" color="#16a34a" /> | `Active` | 通常どおりルーティングされます。 |
-| <Icon icon="triangle-alert" color="#f59e0b" /> | `Deranked L1` | ルーティング可能。他のプロバイダーのすぐ後に試されます。 |
-| <Icon icon="triangle-alert" color="#d97706" /> | `Deranked L2` | ルーティング可能。より健全なプロバイダーの後に試されます。 |
-| <Icon icon="triangle-alert" color="#ef4444" /> | `Deranked L3` | ルーティング可能。他のプロバイダーよりかなり後に試されます。 |
+| <Icon icon="triangle-alert" color="#d97706" /> | `優先度低` | 他のすべての正常なプロバイダーの後に、バックアップとしてのみ使われます。 |
 | <Icon icon="ban" color="#dc2626" /> | `Disabled` | ルーティングされません。 |
 
 ## ライブルーティング

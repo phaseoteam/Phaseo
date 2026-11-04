@@ -12,14 +12,12 @@ En la página de un modelo aparecen hasta dos iconos después del nombre de cada
 
 ## Icono de estado
 
-Phaseo establece este estado manualmente y se mantiene hasta que Phaseo lo cambie. Las páginas de modelos muestran los tres niveles de prioridad reducida como `Prioridad más baja`.
+Phaseo establece este estado manualmente y se mantiene hasta que Phaseo lo cambie. Una ruta con prioridad más baja es un último recurso: el Gateway solo la prueba después de todos los demás proveedores en buen estado.
 
 | Icono | Estado | Enrutamiento |
 | --- | --- | --- |
 | <Icon icon="circle-check" color="#16a34a" /> | `Active` | Se enruta con normalidad. |
-| <Icon icon="triangle-alert" color="#f59e0b" /> | `Deranked L1` | Enrutable, justo detrás de otros proveedores. |
-| <Icon icon="triangle-alert" color="#d97706" /> | `Deranked L2` | Enrutable, detrás de proveedores en mejor estado. |
-| <Icon icon="triangle-alert" color="#ef4444" /> | `Deranked L3` | Enrutable, muy por detrás de otros proveedores. |
+| <Icon icon="triangle-alert" color="#d97706" /> | `Prioridad más baja` | Solo como respaldo, después de todos los demás proveedores en buen estado. |
 | <Icon icon="ban" color="#dc2626" /> | `Disabled` | No se enruta. |
 
 ## Enrutamiento en directo

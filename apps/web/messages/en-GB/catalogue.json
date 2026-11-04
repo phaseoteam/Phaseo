@@ -232,9 +232,7 @@
 			"featureStructuredOutputs": "Structured outputs",
 			"featureWebSearch": "Web search",
 			"featureFree": "Free variant",
-			"statusDeranked1": "Deranked level 1",
-			"statusDeranked2": "Deranked level 2",
-			"statusDeranked3": "Deranked level 3",
+			"statusDeranked": "Lower priority",
 			"statusDisabled": "Disabled",
 			"regionJapan": "Japan",
 			"regionAustralia": "Australia",
@@ -811,17 +809,9 @@
 						"label": "Soft blocked",
 						"description": "Temporarily soft-blocked for routing."
 					},
-					"deranked_lvl1": {
-						"label": "Deranked L1",
-						"description": "Publicly routable, but slightly deprioritised by routing health."
-					},
-					"deranked_lvl2": {
-						"label": "Deranked L2",
-						"description": "Publicly routable, but currently deprioritised by routing health."
-					},
-					"deranked_lvl3": {
-						"label": "Deranked L3",
-						"description": "Publicly routable, but heavily deprioritised by routing health."
+					"deranked": {
+						"label": "Lower priority",
+						"description": "Publicly routable, but used only as a backup when the other providers fail."
 					},
 					"internal_testing": {
 						"label": "Internal testing",
@@ -1105,7 +1095,7 @@
 				"disabled": "Explicitly disabled and not routable.",
 				"comingSoon": "Coming soon, not routable yet.",
 				"internalTesting": "Available for internal testing only.",
-				"rateLimited": "Set by Phaseo. Still available, but requests go to other providers first until Phaseo changes it.",
+				"rateLimited": "Set by Phaseo. Used only as a backup when the other providers fail.",
 				"degraded": "Available with degraded routing health.",
 				"external": "Listed from an external catalogue; not routable through Phaseo."
 			},
@@ -3172,9 +3162,7 @@
 		"providerStatus": {
 			"active": "Active",
 			"coming_soon": "Coming soon",
-			"deranked_lvl1": "Deranked L1",
-			"deranked_lvl2": "Deranked L2",
-			"deranked_lvl3": "Deranked L3",
+			"deranked": "Lower priority",
 			"disabled": "Disabled",
 			"inactive": "Not active",
 			"internal_testing": "Internal testing",

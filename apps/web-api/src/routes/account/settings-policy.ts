@@ -86,7 +86,7 @@ async function loadGuardrailReference(context: AccountWorkspaceContext) {
 				.select("provider_model_id,capability_id,status,metadata")
 				.in("provider_model_id", batch)
 				.or("metadata->data_policy.not.is.null,capability_id.in.(batch,files.upload,files.list,files.retrieve)")
-				.in("status", ["active", "deranked", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3"])
+				.in("status", ["active", "degraded"])
 				.order("provider_model_id").order("capability_id")
 				.range(offset, offset + 499);
 			if (result.error) throw new Error("settings_unavailable");

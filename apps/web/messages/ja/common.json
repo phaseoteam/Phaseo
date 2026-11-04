@@ -917,9 +917,7 @@
 			"supportedParamsDescription": "この機能が対応するリクエストパラメーターを選択します。",
 			"capabilityStatuses": {
 				"active": "有効",
-				"derankedLvl1": "優先度を低下 — レベル 1",
-				"derankedLvl2": "優先度を低下 — レベル 2",
-				"derankedLvl3": "優先度を低下 — レベル 3",
+				"deranked": "最終手段",
 				"disabled": "無効"
 			},
 			"pricingRules": "料金ルール",

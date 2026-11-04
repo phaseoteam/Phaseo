@@ -1732,23 +1732,11 @@ export const PROVIDER_STATUS_META: Record<
 		iconClass: "text-sky-600",
 		description: "Visible to admins only while this provider/model capability is being tested.",
 	},
-	deranked_lvl1: {
-		label: "Deranked L1",
-		icon: AlertTriangle,
-		iconClass: "text-amber-500",
-		description: "Routable, but slightly deprioritized by routing health.",
-	},
-	deranked_lvl2: {
-		label: "Deranked L2",
+	deranked: {
+		label: "Lower priority",
 		icon: AlertTriangle,
 		iconClass: "text-amber-600",
-		description: "Routable, but currently deprioritized by routing health.",
-	},
-	deranked_lvl3: {
-		label: "Deranked L3",
-		icon: AlertTriangle,
-		iconClass: "text-red-500",
-		description: "Routable, but heavily deprioritized by routing health.",
+		description: "Set by Phaseo. Used only as a backup when the other providers fail.",
 	},
 	inactive: {
 		label: "Not Active",
@@ -2120,9 +2108,7 @@ export default function ProviderCard({
 		coming_soon: { label: "statuses.comingSoon", description: "statusDescriptions.comingSoon" },
 		external: { label: "statuses.external", description: "statusDescriptions.external" },
 		internal_testing: { label: "statuses.internalTesting", description: "statusDescriptions.internalTesting" },
-		deranked_lvl1: { label: "statuses.rateLimited", description: "statusDescriptions.rateLimited" },
-		deranked_lvl2: { label: "statuses.rateLimited", description: "statusDescriptions.rateLimited" },
-		deranked_lvl3: { label: "statuses.rateLimited", description: "statusDescriptions.rateLimited" },
+		deranked: { label: "statuses.rateLimited", description: "statusDescriptions.rateLimited" },
 		inactive: { label: "statuses.inactive", description: "statusDescriptions.inactive" },
 		disabled: { label: "statuses.disabled", description: "statusDescriptions.disabled" },
 		not_listed: { label: "statuses.inactive", description: "statusDescriptions.inactive" },

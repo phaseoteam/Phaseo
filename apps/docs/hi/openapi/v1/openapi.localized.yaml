@@ -11412,6 +11412,7 @@ components:
             $ref: '#/components/schemas/GatewayPricingMeter'
     GatewayProviderAvailabilityReason:
       type: string
+      description: प्राथमिकता घटाया गया रूट (`deranked`) सिर्फ़ अंतिम विकल्प के रूप में, बाकी सभी स्वस्थ प्रदाताओं के बाद रूट होता है। `deranked_lvl1`, `deranked_lvl2` और `deranked_lvl3` अब नहीं लौटाए जाते।
       enum:
         - active
         - preview_only
@@ -11421,6 +11422,7 @@ components:
         - project_limited
         - paused
         - soft_blocked
+        - deranked
         - deranked_lvl1
         - deranked_lvl2
         - deranked_lvl3
@@ -11436,17 +11438,21 @@ components:
         - retired
     GatewayRoutingStatus:
       type: string
+      description: प्राथमिकता घटाया गया रूट (`deranked`) सिर्फ़ अंतिम विकल्प के रूप में, बाकी सभी स्वस्थ प्रदाताओं के बाद रूट होता है। `deranked_lvl1`, `deranked_lvl2` और `deranked_lvl3` अब नहीं लौटाए जाते।
       enum:
         - active
+        - deranked
         - deranked_lvl1
         - deranked_lvl2
         - deranked_lvl3
         - disabled
     GatewayCapabilityStatus:
       type: string
+      description: प्राथमिकता घटाया गया रूट (`deranked`) सिर्फ़ अंतिम विकल्प के रूप में, बाकी सभी स्वस्थ प्रदाताओं के बाद रूट होता है। `deranked_lvl1`, `deranked_lvl2` और `deranked_lvl3` अब नहीं लौटाए जाते।
       enum:
         - active
         - coming_soon
+        - deranked
         - deranked_lvl1
         - deranked_lvl2
         - deranked_lvl3
