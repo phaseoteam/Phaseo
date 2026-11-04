@@ -12,7 +12,8 @@ import type { RequestResult, Bill } from "../execute";
 import type { PriceCard } from "../pricing";
 import { calculatePricing } from "./pricing";
 import { handleFailureAudit, handleSuccessAudit } from "./audit";
-import { recordUsageAndChargeOnce } from "./charge";
+import { recordProvisionalStreamCharge, recordUsageAndChargeOnce } from "./charge";
+import { estimateDrainProgressUsage } from "./drain-progress";
 import {
     countRequestMediaInputs,
     shapeUsageForClient,
@@ -32,7 +33,7 @@ import { droppedParamsForClient, twelveHourCacheDroppedFor } from "../execute/un
 import { noteModelSubstitutionServed } from "../before/modelSuccessor";
 import { withServedModel } from "./served-model";
 import { logDebugEvent, previewValue } from "../debug";
-import { ensureRuntimeForBackground } from "@/runtime/env";
+import { dispatchBackground, ensureRuntimeForBackground } from "@/runtime/env";
 import { normalizeFinishReason } from "../audit/normalize-finish-reason";
 import { CLIENT_CLOSED_REQUEST_STATUS, streamHealthSignals } from "../execute/attempt-health";
 import { applyByokServiceFee } from "../pricing/byok-fee";
@@ -588,6 +589,34 @@ export async function handleStreamResponse(
             return next;
         },
         onStreamEvent,
+        // Client gone and the drain still running: charge what was generated so far, in case
+        // the runtime stops the drain before the final usage (see DRAIN_CHECKPOINT_DELAYS_MS).
+        // The final charge then takes only the rest. BYOK requests owe only the service fee.
+        onDrainCheckpoint: (progress) => {
+            if (streamIsByok || !card) return;
+            const estimated = estimateDrainProgressUsage({
+                usage: authoritativeUsageForFrame() ?? progress.usage,
+                outputChars: progress.outputChars,
+                body: ctx.body,
+            });
+            if (!estimated) return;
+            const tier = ctx.teamEnrichment?.tier ?? 'basic';
+            const priced = calculatePricing(
+                withInputModalityTokenMeters(shapeStreamUsageForClient(estimated), estimated),
+                card,
+                ctx.body,
+                tier,
+                ctx.meta
+            );
+            const { totalNanos } = applyDataContributionDiscount({
+                pricedUsage: priced.pricedUsage,
+                totalNanos: priced.totalNanos,
+                enabled: ctx.teamSettings?.dataContributionEnabled === true,
+                isByok: false,
+                discountBps: ctx.teamSettings?.dataContributionDiscountBps,
+            });
+            dispatchBackground(recordProvisionalStreamCharge({ ctx, costNanos: totalNanos, endpoint: ctx.endpoint }));
+        },
         onFinalSnapshot: (snapshot: any) => {
             const payload = snapshot?.response ?? snapshot;
             latestGatewaySnapshot = payload;

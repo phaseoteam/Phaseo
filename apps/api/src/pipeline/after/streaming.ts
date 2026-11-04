@@ -65,6 +65,12 @@ type PassthroughWithPricingOpts = {
      */
     onStreamEvent?: (event: UnifiedStreamEvent) => void | Promise<void>;
     /**
+     * Called at each DRAIN_CHECKPOINT_DELAYS_MS after the client disconnects while the
+     * upstream is still draining, with the usage reported so far and the output streamed so
+     * far, so what was generated can be charged before the runtime may stop the drain.
+     */
+    onDrainCheckpoint?: (progress: { usage: any; outputChars: number }) => void;
+    /**
      * Optional Server-Timing value; if present we'll include it.
      */
     timingHeader?: string;
@@ -90,13 +96,21 @@ function frameMayCarryAccountingState(frame: any): boolean {
     );
 }
 
+/**
+ * Cloudflare keeps waitUntil work alive for about 30 s after the client disconnects. A
+ * drain still running at these points after the disconnect charges its progress, so a
+ * drain cut off at 30 s loses at most the output after the last checkpoint. Drains that
+ * finish sooner are charged once, from their final usage.
+ */
+export const DRAIN_CHECKPOINT_DELAYS_MS = [15_000, 25_000] as const;
+
 /** Re-stream SSE while:
  *  - parsing each "data:" block as JSON
  *  - rewriting frames (e.g., inject gateway id/provider/nativeResponseId)
  *  - detecting the final snapshot frame with `usage` to trigger onFinalUsage
  */
 export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): Promise<Response> {
-    const { upstream, rewriteFrame, onFinalUsage, onFinalSnapshot, onStreamEvent, timingHeader, ctx, provider } = opts;
+    const { upstream, rewriteFrame, onFinalUsage, onFinalSnapshot, onStreamEvent, onDrainCheckpoint, timingHeader, ctx, provider } = opts;
     const cancellationPolicy = getProviderStreamCancellationPolicy(provider);
     const providerMetadata = ctx.providers?.find((candidate) => candidate.providerId === provider);
     ctx.meta.streamCancellationSupport =
@@ -120,10 +134,34 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
     let outputFrameIntervalTotalMs = 0;
     let outputFrameIntervalCount = 0;
     let downstreamClosed = false;
-    void writer.closed.catch(() => {
+    let finalUsageSettled = false;
+    // Progress for drain checkpoints: the usage reported so far and the output streamed so far.
+    let progressUsage: any = null;
+    let streamedOutputChars = 0;
+    const drainCheckpointTimers: Array<ReturnType<typeof setTimeout>> = [];
+    const clearDrainCheckpoints = () => {
+        for (const timer of drainCheckpointTimers.splice(0)) clearTimeout(timer);
+    };
+    const noteDownstreamClosed = () => {
+        if (downstreamClosed) return;
         downstreamClosed = true;
         ctx.meta.downstreamDisconnected = true;
-    });
+        if (!onDrainCheckpoint || finalUsageSettled) return;
+        for (const delayMs of DRAIN_CHECKPOINT_DELAYS_MS) {
+            drainCheckpointTimers.push(setTimeout(() => {
+                if (finalUsageSettled) return;
+                try {
+                    onDrainCheckpoint({ usage: progressUsage, outputChars: streamedOutputChars });
+                } catch (err) {
+                    console.error("passthroughWithPricing drain checkpoint error:", err, {
+                        requestId: ctx.requestId,
+                        workspaceId: ctx.workspaceId,
+                    });
+                }
+            }, delayMs));
+        }
+    };
+    void writer.closed.catch(noteDownstreamClosed);
 
     const resolveSelectedUpstreamStartMs = () => {
         if (typeof ctx.meta.selectedUpstreamFetchStartMs === "number") {
@@ -182,18 +220,17 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
         try {
             await writer.write(enc.encode(line));
         } catch {
-            downstreamClosed = true;
-            ctx.meta.downstreamDisconnected = true;
+            noteDownstreamClosed();
         }
     };
 
-    let finalUsageSettled = false;
     const finalizeUsage = (
         usage: any,
         info: { aborted: boolean; sawFinalUsage: boolean },
     ) => {
         if (finalUsageSettled) return;
         finalUsageSettled = true;
+        clearDrainCheckpoints();
 
         if (!onFinalUsage) return;
 
@@ -312,7 +349,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                             try {
                                 await writer.write(enc.encode(frame.raw + "\n\n"));
                             } catch {
-                                downstreamClosed = true;
+                                noteDownstreamClosed();
                             }
                         }
                         continue;
@@ -359,6 +396,11 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                     if (usageFromEvents) {
                         // Usage accumulates by the protocol of the frame that carried it.
                         lastSeenUsage = accumulateStreamUsage(detectedProtocol ?? ctx.protocol, lastSeenUsage, usageFromEvents);
+                        progressUsage = lastSeenUsage;
+                    }
+                    for (const event of events) {
+                        if (event.type === "delta_text") streamedOutputChars += event.text.length;
+                        else if (event.type === "delta_tool") streamedOutputChars += event.argumentsDelta?.length ?? 0;
                     }
 
                     const finalSnapshotFromEvents =
