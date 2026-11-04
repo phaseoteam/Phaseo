@@ -1,3 +1,4 @@
+// Generated from packages/shared/provider-aliases/index.ts by scripts/sync-guardrail-shared.mjs. Do not edit.
 // Purpose: Normalize provider identifiers used in gateway config and routing hints.
 // Why: Keep request/provider ids aligned with the canonical ids used in catalog-backed routing data.
 // How: Apply strict normalization first, then collapse known brand/legacy aliases onto their canonical provider ids.

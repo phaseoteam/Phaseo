@@ -39,14 +39,28 @@ function accountPolicyFromRow(row: any) {
 	};
 }
 
+const REFERENCE_PAGE_SIZE = 500;
+
+/** Reads every page of an ordered query; PostgREST caps one response without reporting that rows were left out. */
+async function readAllPages<T>(page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>): Promise<{ data: T[]; error: unknown }> {
+	const rows: T[] = [];
+	for (let offset = 0; ; offset += REFERENCE_PAGE_SIZE) {
+		const result = await page(offset, offset + REFERENCE_PAGE_SIZE - 1);
+		if (result.error) return { data: rows, error: result.error };
+		rows.push(...(result.data ?? []));
+		if ((result.data?.length ?? 0) < REFERENCE_PAGE_SIZE) return { data: rows, error: null };
+	}
+}
+
 async function loadGuardrailReference(context: AccountWorkspaceContext) {
 	const [teamResult, keysResult, membersResult, providersResult, modelsResult] = await Promise.all([
 		context.client.from("workspaces").select("id,name").eq("id", context.workspaceId).maybeSingle(),
-		context.client.from("keys").select("id,name,prefix,status,created_at")
+		readAllPages((from, to) => context.client.from("keys").select("id,name,prefix,status,created_at,created_by,oauth_user_id")
 			.eq("workspace_id", context.workspaceId).neq("status", "deleted")
-			.neq("name", "__chat_route_managed_key__").neq("name", SLACK_AGENT_MANAGED_KEY_NAME).order("created_at", { ascending: false }),
-		context.client.from("workspace_members").select("user_id,role,users(display_name)")
-			.eq("workspace_id", context.workspaceId),
+			.neq("name", "__chat_route_managed_key__").neq("name", SLACK_AGENT_MANAGED_KEY_NAME)
+			.order("created_at", { ascending: false }).order("id").range(from, to)),
+		readAllPages((from, to) => context.client.from("workspace_members").select("user_id,role,users(display_name)")
+			.eq("workspace_id", context.workspaceId).order("user_id").range(from, to)),
 		context.client.from("v2_providers")
 			.select("api_provider_id:provider_slug,api_provider_name:name,provider_family_id:provider_family_slug,offer_label,offer_scope,zero_data_retention,data_policy_tier,data_policy_confidence")
 			.eq("routable", true)
@@ -115,7 +129,8 @@ async function loadGuardrailReference(context: AccountWorkspaceContext) {
 				capabilities: capabilitiesByProviderModel.get(String((row as any).provider_model_id)) ?? [],
 			};
 		}),
-		keys: (keysResult.data ?? []).map((key) => ({ id: key.id, name: key.name, prefix: key.prefix, status: key.status })),
+		// The gateway applies the member guardrails of this user to the key, so the assignments view shows them as inherited.
+		keys: (keysResult.data ?? []).map((key) => ({ id: key.id, name: key.name, prefix: key.prefix, status: key.status, principalUserId: key.oauth_user_id ?? key.created_by ?? null })),
 		members: (membersResult.data ?? []).map((member: any) => ({
 			id: member.user_id,
 			name: member.users?.display_name ?? "Workspace member",
@@ -727,8 +742,10 @@ accountSettingsPolicyRouter.get("/guardrails", async (c) => {
 		const memberMap = new Map<string, string[]>();
 		if (ids.length) {
 			const [keyMappingsResult, memberMappingsResult] = await Promise.all([
-				context.client.from("key_guardrails").select("guardrail_id,key_id").in("guardrail_id", ids),
-				context.client.from("workspace_member_guardrails").select("guardrail_id,user_id").eq("workspace_id", workspaceId).in("guardrail_id", ids),
+				readAllPages((from, to) => context.client.from("key_guardrails").select("guardrail_id,key_id").in("guardrail_id", ids)
+					.order("guardrail_id").order("key_id").range(from, to)),
+				readAllPages((from, to) => context.client.from("workspace_member_guardrails").select("guardrail_id,user_id").eq("workspace_id", workspaceId).in("guardrail_id", ids)
+					.order("guardrail_id").order("user_id").range(from, to)),
 			]);
 			if (keyMappingsResult.error) throw keyMappingsResult.error;
 			if (memberMappingsResult.error) throw memberMappingsResult.error;
@@ -768,8 +785,8 @@ accountSettingsPolicyRouter.get("/guardrails/editor", async (c) => {
 		let initialMemberIds: string[] = [];
 		if (mode === "edit" && guardrailResult.data?.id) {
 			const [keyMappingsResult, memberMappingsResult] = await Promise.all([
-				context.client.from("key_guardrails").select("key_id").eq("guardrail_id", guardrailResult.data.id),
-				context.client.from("workspace_member_guardrails").select("user_id").eq("workspace_id", workspaceId).eq("guardrail_id", guardrailResult.data.id),
+				readAllPages((from, to) => context.client.from("key_guardrails").select("key_id").eq("guardrail_id", guardrailResult.data.id).order("key_id").range(from, to)),
+				readAllPages((from, to) => context.client.from("workspace_member_guardrails").select("user_id").eq("workspace_id", workspaceId).eq("guardrail_id", guardrailResult.data.id).order("user_id").range(from, to)),
 			]);
 			if (keyMappingsResult.error) throw keyMappingsResult.error;
 			if (memberMappingsResult.error) throw memberMappingsResult.error;
