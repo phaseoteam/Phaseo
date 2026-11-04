@@ -43,7 +43,7 @@ Phaseo mesure le temps de traitement des requêtes acheminées par la passerelle
 | **Gateway E2E** | Du début de la requête Gateway jusqu’à son achèvement. |
 | **Phaseo overhead** | `max(0, Gateway E2E - provider duration)`. |
 | **Effective throughput** | Nombre total de jetons en sortie divisé par la durée complète du fournisseur. |
-| **Output speed** | Nombre de jetons en sortie après le premier, divisé par le temps du fournisseur après le TTFT. |
+| **Output speed** | Jetons de sortie après le premier, hors raisonnement masqué qui le précède, divisés par le temps du fournisseur après le TTFT. Non affichée quand toute la réponse arrive en une seule lecture réseau. |
 | **TPOT / ITL** | Temps moyen par jeton au niveau de la requête après la première sortie. |
 
 Le TTFT, la vitesse de sortie, le TPOT et l’ITL nécessitent une réponse en streaming dont la première sortie contient du contenu. Les trames du flux contenant uniquement des métadonnées ne sont pas prises en compte. Les réponses qui ne sont pas en streaming peuvent tout de même contribuer à la durée du fournisseur, au Gateway E2E et au débit effectif, sans attribuer un TTFT artificiel.

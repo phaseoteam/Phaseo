@@ -43,7 +43,7 @@ O Phaseo registra os tempos operacionais das solicitações roteadas pelo Gatewa
 | **Gateway E2E** | Do início da solicitação no Gateway até a conclusão. |
 | **Phaseo overhead** | `max(0, Gateway E2E - provider duration)`. |
 | **Effective throughput** | Todos os tokens de saída divididos pela duração total do provedor. |
-| **Output speed** | Tokens de saída após o primeiro divididos pelo tempo do provedor após o TTFT. |
+| **Output speed** | Tokens de saída após o primeiro, sem o raciocínio oculto anterior, divididos pelo tempo do provedor após o TTFT. Não é exibida quando a resposta inteira chega em uma única leitura de rede. |
 | **TPOT / ITL** | Tempo médio por token por solicitação após a primeira saída. |
 
 TTFT, velocidade de saída, TPOT e ITL exigem uma resposta em streaming cuja primeira saída contenha conteúdo. Frames do streaming que contêm apenas metadados não são contabilizados. Respostas sem streaming ainda podem contribuir para a duração do provedor, o Gateway E2E e o throughput efetivo, sem inventar um TTFT.
