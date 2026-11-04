@@ -94,6 +94,11 @@ import {
 import { RoomWorkingIndicator } from "@/components/(chat)/RoomWorkingIndicator";
 import { RoomEmptyState } from "@/components/(chat)/RoomEmptyState";
 import {
+	isLiveTranscriptionModel,
+	useLiveTranscription,
+	type LiveTranscriptionResult,
+} from "@/components/(chat)/rooms/useLiveTranscription";
+import {
 	ArrowUpRight,
 	Check,
 	PanelLeftClose,
@@ -106,6 +111,7 @@ import {
 	FileText,
 	Link2,
 	MessageCircleDashed,
+	Mic,
 	MoreHorizontal,
 	Paperclip,
 	Pencil,
@@ -116,6 +122,7 @@ import {
 	Save,
 	Search,
 	Settings as SettingsIcon,
+	Square,
 	SquarePen,
 	Trash2,
 	X,
@@ -842,10 +849,22 @@ function intersectAudioModeSupport(
 	};
 }
 
+// Live transcription models are realtime models, so their capabilities name no audio mode.
+function audioModeSupportForModel(
+	model: GatewaySupportedModel,
+	liveTranscription: boolean,
+): AudioModeSupport {
+	if (liveTranscription && isLiveTranscriptionModel(model)) {
+		return { speech: false, transcription: true, translation: false, music: false };
+	}
+	return getAudioModeSupportForCapabilities(model.capabilities);
+}
+
 function getModelModeSupport(
 	models: GatewaySupportedModel[],
 	modelId: string,
 	providerId: string | undefined,
+	liveTranscription: boolean,
 ): AudioModeSupport {
 	if (!modelId) return AUDIO_MODE_SUPPORT_FALLBACK;
 	const restrictedProviderId =
@@ -857,9 +876,7 @@ function getModelModeSupport(
 	);
 	if (relevant.length === 0) return AUDIO_MODE_SUPPORT_FALLBACK;
 	return mergeAudioModeSupport(
-		relevant.map((model) =>
-			getAudioModeSupportForCapabilities(model.capabilities),
-		),
+		relevant.map((model) => audioModeSupportForModel(model, liveTranscription)),
 	);
 }
 
@@ -968,6 +985,8 @@ type AudioRoomProps = {
 	roomId?: AudioRoomId;
 	initialMode?: AudioMode;
 	allowedModes?: AudioMode[];
+	/** Offer realtime transcription models, recorded from the microphone, in Transcription mode. */
+	liveTranscription?: boolean;
 };
 
 function modeSupportFromModes(modes: AudioMode[]): AudioModeSupport {
@@ -986,6 +1005,7 @@ export function AudioRoom({
 	roomId = "speech",
 	initialMode = "speech",
 	allowedModes = ["speech"],
+	liveTranscription = false,
 }: AudioRoomProps) {
 	const tCopy = useTranslations("SettingsUI.chatGaps");
 	const t = useTranslations("Product.chatRooms");
@@ -1020,12 +1040,12 @@ export function AudioRoom({
 		() =>
 			allAudioModels.filter((model) => {
 				const support = intersectAudioModeSupport(
-					getAudioModeSupportForCapabilities(model.capabilities),
+					audioModeSupportForModel(model, liveTranscription),
 					roomModeSupport,
 				);
 				return support[mode];
 			}),
-		[allAudioModels, mode, roomModeSupport],
+		[allAudioModels, liveTranscription, mode, roomModeSupport],
 	);
 	const [modelId, setModelId] = useState("");
 	const [temporaryMode, setTemporaryMode] = useState(false);
@@ -1067,8 +1087,8 @@ export function AudioRoom({
 	const selectedProviderId = selectedProfile?.providerId;
 
 	const selectedModeSupport = useMemo(
-		() => getModelModeSupport(allAudioModels, modelId, selectedProviderId),
-		[allAudioModels, modelId, selectedProviderId],
+		() => getModelModeSupport(allAudioModels, modelId, selectedProviderId, liveTranscription),
+		[allAudioModels, liveTranscription, modelId, selectedProviderId],
 	);
 	const effectiveModeSupport = useMemo(
 		() => intersectAudioModeSupport(selectedModeSupport, roomModeSupport),
@@ -1141,9 +1161,10 @@ export function AudioRoom({
 			allAudioModels,
 			dialogModelId ?? "",
 			(dialogProfile?.providerId as string | undefined) ?? "auto",
+			liveTranscription,
 		);
 		return intersectAudioModeSupport(detected, roomModeSupport);
-	}, [allAudioModels, dialogModelId, dialogProfile?.providerId, roomModeSupport]);
+	}, [allAudioModels, dialogModelId, dialogProfile?.providerId, liveTranscription, roomModeSupport]);
 	const updateModelBaseSettings = (partial: Record<string, unknown>) => {
 		if (typeof modelSettingsCompat.updateModelBaseSettings === "function") {
 			modelSettingsCompat.updateModelBaseSettings(partial);
@@ -1579,7 +1600,7 @@ export function AudioRoom({
 			targetModelId === modelId
 				? effectiveModeSupport
 				: intersectAudioModeSupport(
-						getModelModeSupport(allAudioModels, targetModelId, selectedProviderId),
+						getModelModeSupport(allAudioModels, targetModelId, selectedProviderId, liveTranscription),
 						roomModeSupport,
 					);
 		if (
@@ -2076,12 +2097,71 @@ export function AudioRoom({
 				sidebarSlotEl,
 			)
 		: null;
-	const isAudioSourceMode = mode === "transcription" || mode === "translation";
+	const selectedLiveModel =
+		liveTranscription && mode === "transcription"
+			? (filteredModels.find(
+					(model) =>
+						model.modelId === modelId &&
+						isLiveTranscriptionModel(model) &&
+						(!selectedProviderId || selectedProviderId === "auto" || model.providerId === selectedProviderId),
+				) ?? null)
+			: null;
+	const saveLiveTranscription = (result: LiveTranscriptionResult, liveModelId: string, liveProviderId: string) => {
+		const conversationId = activeConversationId ?? createConversationId(roomId);
+		if (!activeConversationId) setActiveConversationId(conversationId);
+		const conversationTitle = temporaryMode
+			? t("temporaryChat")
+			: activeConversation?.title?.trim() || `${t("modeTranscription")} ${format.date(new Date())}`;
+		void addEntry({
+			id: crypto.randomUUID(),
+			createdAt: nowIso(),
+			conversationId,
+			conversationTitle,
+			modelId: liveModelId,
+			providerId: liveProviderId,
+			mode: "transcription",
+			conversationMode: conversationModeById.get(conversationId) ?? "transcription",
+			text: result.text || result.error || t("liveTranscriptionEmpty"),
+			isTemporary: temporaryMode,
+			raw: {
+				live: true,
+				session_id: result.sessionId,
+				audio_seconds: result.audioSeconds,
+				...(result.costUsd !== null ? { total_cost_usd: String(result.costUsd) } : {}),
+			},
+		});
+	};
+	const liveModelRef = useRef<{ modelId: string; providerId: string } | null>(null);
+	const live = useLiveTranscription({
+		onFinished: (result) => {
+			const target = liveModelRef.current;
+			liveModelRef.current = null;
+			if (target) saveLiveTranscription(result, target.modelId, target.providerId);
+		},
+		messages: {
+			microphoneDenied: t("liveTranscriptionMicrophoneDenied"),
+			sessionFailed: (status) => t("liveTranscriptionSessionFailed", { status }),
+			connectionLost: t("liveTranscriptionConnectionLost"),
+		},
+	});
+	const liveActive = live.status !== "idle";
+	const toggleLiveTranscription = () => {
+		if (liveActive) {
+			live.stop();
+			return;
+		}
+		if (!selectedLiveModel || !selectedModelEnabled) return;
+		setError(null);
+		liveModelRef.current = { modelId: selectedLiveModel.modelId, providerId: selectedLiveModel.providerId };
+		void live.start({ provider: selectedLiveModel.providerId, model: selectedLiveModel.modelId });
+	};
+	const isAudioSourceMode = (mode === "transcription" || mode === "translation") && !selectedLiveModel;
 	const audioComposerExpanded = Boolean(
 		error ||
 			(mode === "music" && (showMusicLyricsInput || musicLyricsInput.trim())) ||
 			(isAudioSourceMode &&
-				(showAudioUrlInput || audioUrlInput.trim() || audioFile)),
+				(showAudioUrlInput || audioUrlInput.trim() || audioFile)) ||
+			(selectedLiveModel && (live.text || live.error)),
 	);
 	const hasEligibleModels = filteredModels.length > 0;
 	const emptyStateTitle: string | undefined = modelsLoadFailed
@@ -2525,6 +2605,30 @@ aria-label={sidebarState === "expanded" ? t("collapseSidebar") : t("openSidebar"
 								</div>
 								) : null}
 							</>
+						) : selectedLiveModel ? (
+							<div
+								aria-live="polite"
+								className={cn(
+									"text-sm",
+									audioComposerExpanded
+										? "px-1 py-2"
+										: "order-1 min-h-9 w-full px-2 py-2 sm:order-2 sm:flex-1",
+								)}
+							>
+								{live.text ? (
+									<p className="max-h-40 overflow-y-auto whitespace-pre-wrap text-foreground">{live.text}</p>
+								) : (
+									<span className="text-muted-foreground">
+										{live.status === "connecting"
+											? t("liveTranscriptionConnecting")
+											: live.status === "recording"
+												? t("liveTranscriptionListening")
+												: live.status === "finishing"
+													? t("liveTranscriptionFinishing")
+													: t("liveTranscriptionPrompt")}
+									</span>
+								)}
+							</div>
 						) : (
 							<>
 								<input
@@ -2586,7 +2690,7 @@ aria-label={sidebarState === "expanded" ? t("collapseSidebar") : t("openSidebar"
 								) : null}
 							</>
 						)}
-						{error ? <RoomErrorNotice error={error} className="mb-2" /> : null}
+						{error || live.error ? <RoomErrorNotice error={error ?? live.error ?? ""} className="mb-2" /> : null}
 						<div
 							className={cn(
 								"flex items-center justify-between",
@@ -2625,17 +2729,40 @@ aria-label={sidebarState === "expanded" ? t("collapseSidebar") : t("openSidebar"
 									]}
 								/>
 							) : null}
-							<Button
-								className={cn("ml-auto", !audioComposerExpanded && "order-3")}
-								onClick={() => {
-									void submit();
-								}}
-								disabled={isLoading || !modelId || !selectedModelEnabled}
-							>
-								{isLoading ? (
-									<RoomWorkingIndicator label={t("generating")} />
-								) : t(modeActionKey(mode))}
-							</Button>
+							{selectedLiveModel ? (
+								<Button
+									className={cn("ml-auto gap-2", !audioComposerExpanded && "order-3")}
+									variant={live.status === "recording" ? "destructive" : "default"}
+									onClick={toggleLiveTranscription}
+									disabled={!selectedModelEnabled || live.status === "connecting" || live.status === "finishing"}
+								>
+									{live.status === "connecting" || live.status === "finishing" ? (
+										<RoomWorkingIndicator label={live.status === "connecting" ? t("liveTranscriptionConnecting") : t("liveTranscriptionFinishing")} />
+									) : live.status === "recording" ? (
+										<>
+											<Square className="h-3.5 w-3.5 fill-current" />
+											{t("liveTranscriptionStop")}
+										</>
+									) : (
+										<>
+											<Mic className="h-4 w-4" />
+											{t("liveTranscriptionRecord")}
+										</>
+									)}
+								</Button>
+							) : (
+								<Button
+									className={cn("ml-auto", !audioComposerExpanded && "order-3")}
+									onClick={() => {
+										void submit();
+									}}
+									disabled={isLoading || !modelId || !selectedModelEnabled}
+								>
+									{isLoading ? (
+										<RoomWorkingIndicator label={t("generating")} />
+									) : t(modeActionKey(mode))}
+								</Button>
+							)}
 						</div>
 					</RoomComposerSurface>
 				</div>

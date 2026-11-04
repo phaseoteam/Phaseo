@@ -5,6 +5,7 @@ import { buildMetadata } from "@/lib/seo";
 import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
 import { RoomScaffold } from "@/components/(chat)/RoomScaffold";
 import { AudioRoom } from "@/components/(chat)/rooms/AudioRoom";
+import { realtimeVoiceFlag } from "@/lib/flags";
 
 export async function generateMetadata(): Promise<Metadata> {
 	const t = await getTranslations("Product.chat");
@@ -16,7 +17,8 @@ export default function ChatSpeechToTextPage() {
 }
 
 async function ChatSpeechToTextContent() {
-	const models = await fetchFrontendGatewayModels();
+	// Live transcription runs on the realtime relay, behind the same gate as the Realtime room.
+	const [models, liveTranscription] = await Promise.all([fetchFrontendGatewayModels(), realtimeVoiceFlag()]);
 	return (
 		<RoomScaffold>
 			<AudioRoom
@@ -24,6 +26,7 @@ async function ChatSpeechToTextContent() {
 				roomId="speech-to-text"
 				initialMode="transcription"
 				allowedModes={["transcription"]}
+				liveTranscription={liveTranscription}
 			/>
 		</RoomScaffold>
 	);
