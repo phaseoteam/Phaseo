@@ -128,6 +128,32 @@ export function applyReasoningParams(args: {
 		}
 		return;
 	}
+	if (args.providerId === "particle-ai") {
+		// Particle takes reasoning_effort none, minimal, low, medium, high, xhigh, max
+		// (and ultra); omitting it means high (https://docs.particle.ai/reasoning).
+		const effort = typeof reasoning.effort === "string"
+			? reasoning.effort
+			: reasoning.enabled === false ? "none" : reasoning.enabled === true ? "high" : undefined;
+		if (effort !== undefined) args.request.reasoning_effort = effort;
+		return;
+	}
+	if (args.providerId === "tencent-cloud" && /^(?:tencent\/)?hy\d/i.test(String(args.providerModelSlug ?? args.ir.model ?? ""))) {
+		// TokenHub's Hy models (hy3, hy4, hy4-preview) take reasoning_effort low or high
+		// (default high) and thinking: { type: "disabled" } to turn thinking off.
+		// https://intl.cloud.tencent.com/document/product/1300/80695
+		const rawEffort = typeof reasoning.effort === "string" ? reasoning.effort : undefined;
+		if (reasoning.enabled === false || rawEffort === "none") {
+			args.request.thinking = { type: "disabled" };
+			return;
+		}
+		const effort = rawEffort === "minimal" || rawEffort === "low"
+			? "low"
+			: rawEffort !== undefined || reasoning.enabled === true
+				? "high"
+				: undefined;
+		if (effort !== undefined) args.request.reasoning_effort = effort;
+		return;
+	}
 	if (args.providerId === "thinking-machines") {
 		const effort = typeof reasoning.effort === "string"
 			? reasoning.effort

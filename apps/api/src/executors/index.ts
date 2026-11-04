@@ -141,6 +141,7 @@ import { executor as upstageText } from "./upstage/text-generate";
 import { executor as upstageDecisions } from "./upstage/systemone";
 import { executor as waferText } from "./wafer/text-generate";
 import { executor as tencentCloudText } from "./tencent-cloud/text-generate";
+import { executor as particleAiText } from "./particle-ai/text-generate";
 import { executor as privateModelText } from "./private-model/text-generate";
 import { executor as typesafeDecisions } from "./typesafe/systemone";
 
@@ -321,6 +322,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 		"text.generate": waferText,
 	},
 	"tencent-cloud": { "text.generate": tencentCloudText },
+	"particle-ai": { "text.generate": particleAiText },
 	"alibaba-cloud": {
 		"text.generate": alibabaCloudText,
 		"image.generate": alibabaImage,
