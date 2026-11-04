@@ -34,7 +34,7 @@ import { withServedModel } from "./served-model";
 import { logDebugEvent, previewValue } from "../debug";
 import { ensureRuntimeForBackground } from "@/runtime/env";
 import { normalizeFinishReason } from "../audit/normalize-finish-reason";
-import { CLIENT_CLOSED_REQUEST_STATUS, isClientCancelledStream } from "../execute/attempt-health";
+import { CLIENT_CLOSED_REQUEST_STATUS, streamHealthSignals } from "../execute/attempt-health";
 import { applyByokServiceFee } from "../pricing/byok-fee";
 import { applyDataContributionDiscount } from "../pricing/data-contribution-discount";
 import {
@@ -681,13 +681,23 @@ export async function handleStreamResponse(
 			const healthContext = (result as any).healthContext ?? null;
             const healthProvider = healthContext?.provider ?? result.provider;
 			const isProbe = Boolean(healthContext?.isProbe);
+			// `aborted` only means no terminal event arrived. When the client had
+			// already disconnected and the provider reported no error, the stream
+			// ended because the caller left: a customer cancellation, neutral for
+			// routing. With the client still connected, the provider dropped the
+			// stream: a mid-stream failure that counts against the route.
+			const { clientCancelled, midStreamError } = streamHealthSignals({
+				aborted: info?.aborted === true,
+				downstreamDisconnected: ctx.meta.downstreamDisconnected === true,
+				streamFailed,
+			});
 			const healthImpact = classifyProviderHealthImpact({
 				upstreamStatus: result.upstream.status,
 				credentialSource: result.keySource,
-				aborted: info?.aborted === true,
+				aborted: clientCancelled,
 				// An upstream-completed empty response is a contract issue, not
 				// evidence that the provider is unhealthy.
-				midStreamError: streamFailed,
+				midStreamError,
 				finishReason: cachedFinishReason ?? result.bill.finish_reason ?? null,
 			});
 			if (info?.aborted || streamFailed || healthImpact === "failure") {
@@ -709,15 +719,6 @@ export async function handleStreamResponse(
 					await maybeOpenOnRecentErrors(ctx.endpoint, healthProvider, baseModel);
 				}
 				const reason = info?.aborted ? "incomplete_stream" : "upstream_failure";
-				// `aborted` only means no terminal event arrived. When the client had
-				// already disconnected and the provider reported no error, the stream
-				// ended because the caller left: a customer cancellation, not a
-				// provider stream failure.
-				const clientCancelled = isClientCancelledStream({
-					aborted: info?.aborted === true,
-					downstreamDisconnected: ctx.meta.downstreamDisconnected === true,
-					streamFailed,
-				});
 				await recordManagedProviderTokensOnce({
 					ctx,
 					providerId: result.provider,

@@ -36,15 +36,26 @@ const count = (value: unknown) => {
 
 const round2 = (value: number) => Math.round(value * 100) / 100;
 
-/** rate = 1 - failures / eligible attempts; null when nothing was eligible. */
+/** 1 - failed / of, as a percentage; null when there was nothing to measure. */
+const funnelRate = (failed: number, of: number) => (of > 0 ? round2((1 - failed / of) * 100) : null);
+
+/**
+ * The three rates are a funnel, as on the model page ("Reachable", "Accepted",
+ * "Completed"):
+ * - reachabilityPct: of the eligible attempts, those that reached the provider;
+ * - capacityPct: of those that reached it, those it accepted (not turned away for load);
+ * - callErrorPct: of those it accepted, those that completed without a provider error.
+ * Each is null when its denominator is zero. Matches get_v2_model_provider_attempt_health.
+ */
 export function attemptHealthRates(counts: AttemptHealthCounts): AttemptHealthRates {
 	const eligible = counts.eligibleAttempts;
-	if (eligible <= 0) return { reachabilityPct: null, capacityPct: null, callErrorPct: null, uptimePct: null };
+	const reached = eligible - counts.reachabilityFailures;
+	const accepted = reached - counts.capacityFailures;
 	return {
-		reachabilityPct: round2((1 - counts.reachabilityFailures / eligible) * 100),
-		capacityPct: round2((1 - counts.capacityFailures / eligible) * 100),
-		callErrorPct: round2((1 - counts.callErrorFailures / eligible) * 100),
-		uptimePct: round2((counts.successAttempts / eligible) * 100),
+		reachabilityPct: funnelRate(counts.reachabilityFailures, eligible),
+		capacityPct: funnelRate(counts.capacityFailures, reached),
+		callErrorPct: funnelRate(counts.callErrorFailures, accepted),
+		uptimePct: eligible > 0 ? round2((counts.successAttempts / eligible) * 100) : null,
 	};
 }
 

@@ -207,14 +207,16 @@ describe("provider health RPC fallback", () => {
 			reachability_failures: 2,
 			capacity_failures: 1,
 			call_error_failures: 0,
+			// 1 of 3 reached the provider, which turned it away: nothing was accepted,
+			// so there is no completed rate.
 			reachability_pct: 33.33,
-			capacity_pct: 66.67,
-			call_error_pct: 100,
+			capacity_pct: 0,
+			call_error_pct: null,
 			uptime_pct: 0,
 			buckets: [expect.objectContaining({ start: "2026-08-27T09:00:00.000Z", end: "2026-08-27T10:00:00.000Z", reachability_failures: 2, reachability_pct: 33.33 })],
 		});
 		expect(payload.attempt_health[2]).toMatchObject({ provider_id: "stealth", provider_name: "Stealth" });
-		expect(JSON.stringify(payload)).not.toMatch(/private[- ]provider|customer_excluded|phaseo_excluded/i);
+		expect(JSON.stringify(payload)).not.toMatch(/private[- ]provider|customer_excluded|phaseo_excluded|health_reason/i);
 	});
 
 	it("still serves provider health rows when attempt health fails", async () => {
@@ -1342,7 +1344,9 @@ describe("public model routes", () => {
 		const payload = await response.json() as any;
 
 		expect(response.status).toBe(200);
-		// 20 eligible attempts across providers: 2 unreachable, 1 turned away, 1 failed call.
+		// 20 eligible attempts across providers: 2 couldn't reach the provider (18 of 20
+		// reachable), 1 of those 18 was turned away for capacity, and 1 of the 17
+		// accepted failed afterwards. Each rate is of the step before it.
 		expect(payload.metrics.successSeries[0]).toMatchObject({
 			bucket: "2026-08-27T09:00:00Z",
 			overallSuccessPct: 100,
@@ -1351,8 +1355,8 @@ describe("public model routes", () => {
 			capacityFailures: 1,
 			callErrorFailures: 1,
 			reachabilityPct: 90,
-			capacityPct: 95,
-			callErrorPct: 95,
+			capacityPct: 94.44,
+			callErrorPct: 94.12,
 		});
 		// An hour with no attempts has no rates; the chart shows it as 100%.
 		expect(payload.metrics.successSeries[1]).toMatchObject({ eligibleAttempts: 0, reachabilityPct: null, capacityPct: null, callErrorPct: null });

@@ -5,10 +5,6 @@ const db = new PGlite();
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const migrationPath = '../migrations/20261104163425_provider_attempt_health_classes.sql';
 const workspace = '40000000-0000-4000-8000-000000000002';
-const functionBody = (sql) => {
-  const start = sql.indexOf('$function$') + '$function$'.length;
-  return sql.slice(start, sql.indexOf('$function$', start)).replaceAll('\r\n', '\n');
-};
 const tableSection = (sql, needle) => {
   const line = sql.split(/\r?\n/).find((value) => value.includes(needle));
   assert.ok(line, `missing ${needle}`);
@@ -17,16 +13,12 @@ const tableSection = (sql, needle) => {
 try {
   const migration = await read(migrationPath);
   const desiredTable = await read('../schemas/public/tables/v2_request_attempts.sql');
-  const desiredFunction = await read('../schemas/public/functions/get_v2_model_provider_attempt_health.sql');
   assert.ok(migration.includes('\nSET local check_function_bodies = off;\n'));
   assert.ok(!/\b(drop|truncate)\b|\bdelete\s+from\b/i.test(migration), 'the migration must not be destructive');
-  assert.equal(functionBody(migration.slice(migration.indexOf('CREATE OR REPLACE FUNCTION public.get_v2_model_provider_attempt_health'))),
-    functionBody(desiredFunction), 'migration body must match the declarative function');
+  // The declarative function now matches the follow-up migration
+  // (20261104194200_provider_attempt_health_reasons, see provider-attempt-health-reasons.test.mjs).
   assert.ok(migration.includes(tableSection(desiredTable, 'v2_request_attempts_health_class_check').replace(/,$/, '')),
     'migration check constraint must match the declarative table');
-  for (const statement of desiredFunction.split('\n').filter((line) => /^(GRANT|REVOKE|COMMENT)/.test(line))) {
-    assert.ok(migration.includes(statement), `migration must include: ${statement}`);
-  }
 
   for (const path of ['./fixtures/staged-reporting-before.sql',
     '../migrations/20261009114400_exclude_staged_models_from_public_reporting.sql',

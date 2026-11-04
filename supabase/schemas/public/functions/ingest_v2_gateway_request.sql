@@ -212,7 +212,7 @@ begin
   insert into public.v2_request_attempts (
     request_event_id, attempt_number, provider_model_id, status_code, success,
     error_code, failure_class, upstream_response_id, latency_ms, cloudflare_colo, safe_metadata,
-    health_class
+    health_class, health_reason
   )
   select
     v_request_event_id,
@@ -236,6 +236,11 @@ begin
     case
       when item.value->>'health_class' in ('success', 'reachability', 'capacity', 'call_error', 'customer', 'phaseo')
       then item.value->>'health_class'
+    end,
+    case
+      when item.value->>'health_class' in ('success', 'reachability', 'capacity', 'call_error', 'customer', 'phaseo')
+        and item.value->>'health_reason' ~ '^[a-z][a-z0-9_]{0,63}$'
+      then item.value->>'health_reason'
     end
   from jsonb_array_elements(v_attempts) with ordinality as item(value, ordinality)
   left join lateral (

@@ -5,6 +5,10 @@ const failureAuditMock = vi.fn(async (..._args: any[]) => undefined);
 const backgroundWork: Promise<unknown>[] = [];
 let failureAudited: Promise<void> = Promise.resolve();
 const successAuditMock = vi.fn(async (..._args: any[]) => undefined);
+const { onCallEndMock, maybeOpenOnRecentErrorsMock } = vi.hoisted(() => ({
+	onCallEndMock: vi.fn(async (..._args: any[]) => undefined),
+	maybeOpenOnRecentErrorsMock: vi.fn(async (..._args: any[]) => undefined),
+}));
 
 vi.mock("./audit", () => ({
 	handleFailureAudit: (...args: any[]) => failureAuditMock(...args),
@@ -31,9 +35,9 @@ vi.mock("../execute/health", async () => {
 			if (healthClass === "success") return "success";
 			return PROVIDER_FAILURE_CLASSES.has(healthClass) ? "failure" : "neutral";
 		},
-		onCallEnd: vi.fn(async () => undefined),
+		onCallEnd: (...args: any[]) => onCallEndMock(...args),
 		reportProbeResult: vi.fn(async () => undefined),
-		maybeOpenOnRecentErrors: vi.fn(async () => undefined),
+		maybeOpenOnRecentErrors: (...args: any[]) => maybeOpenOnRecentErrorsMock(...args),
 	};
 });
 
@@ -109,6 +113,8 @@ describe("a stream that ends without a terminal event", () => {
 	beforeEach(() => {
 		failureAuditMock.mockClear();
 		successAuditMock.mockClear();
+		onCallEndMock.mockClear();
+		maybeOpenOnRecentErrorsMock.mockClear();
 		backgroundWork.length = 0;
 		// Resolves when the stream handler writes its failure audit.
 		failureAudited = new Promise<void>((resolve) => {
@@ -125,6 +131,10 @@ describe("a stream that ends without a terminal event", () => {
 		const [, , status, attribution, code] = failureAuditMock.mock.calls[0];
 		expect([status, attribution, code]).toEqual([499, "client", "client_closed_request"]);
 		expect(successAuditMock).not.toHaveBeenCalled();
+		// The caller leaving says nothing about the provider: neutral for routing.
+		expect(onCallEndMock).toHaveBeenCalledTimes(1);
+		expect(onCallEndMock.mock.calls[0][1]).toMatchObject({ ok: false, healthImpact: "neutral" });
+		expect(maybeOpenOnRecentErrorsMock).not.toHaveBeenCalled();
 	});
 
 	it("is a provider stream failure when the client was still reading", async () => {
@@ -132,5 +142,10 @@ describe("a stream that ends without a terminal event", () => {
 		expect(failureAuditMock).toHaveBeenCalledTimes(1);
 		const [, , status, attribution, code] = failureAuditMock.mock.calls[0];
 		expect([status, attribution, code]).toEqual([502, "upstream", "upstream_stream_failure"]);
+		// The provider dropped the stream while the client was reading: a failure
+		// for the routing breaker, which may then open.
+		expect(onCallEndMock).toHaveBeenCalledTimes(1);
+		expect(onCallEndMock.mock.calls[0][1]).toMatchObject({ ok: false, healthImpact: "failure" });
+		expect(maybeOpenOnRecentErrorsMock).toHaveBeenCalledTimes(1);
 	});
 });

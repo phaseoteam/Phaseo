@@ -1,8 +1,57 @@
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import path from "node:path";
+import { createTranslator } from "next-intl";
 import {
 	buildProviderHealthChartData,
 	hasProviderAttemptHealth,
 	summarizeProviderHealth,
 } from "./ModelProviderHealthChart";
+import { attemptFunnel } from "./attemptFunnel";
+
+describe("attempt funnel", () => {
+	test("counts each step's failures out of the attempts that passed the step before", () => {
+		expect(attemptFunnel({ eligibleAttempts: 340, reachabilityFailures: 2, capacityFailures: 5, callErrorFailures: 1 })).toEqual({
+			reachability: { failed: 2, of: 340 },
+			capacity: { failed: 5, of: 338 },
+			callErrors: { failed: 1, of: 333 },
+		});
+		expect(attemptFunnel({ eligibleAttempts: 0, reachabilityFailures: 0, capacityFailures: 0, callErrorFailures: 0 }).callErrors).toEqual({ failed: 0, of: 0 });
+	});
+
+	type Locale = Parameters<typeof createTranslator>[0]["locale"];
+	const translator = (locale: string) => createTranslator({
+		locale: locale as Locale,
+		messages: { Catalogue: JSON.parse(readFileSync(path.resolve(process.cwd(), "messages", locale, "catalogue.json"), "utf8")) },
+		namespace: "Catalogue.modelDetail.uptime",
+	});
+
+	test("reads naturally in the model page copy", () => {
+		const t = translator("en-GB");
+		expect([t("reachabilityLabel"), t("capacityLabel"), t("callErrorsLabel")]).toEqual(["Reachable", "Accepted", "Completed"]);
+		expect(t("reachabilityCount", { failed: 2, count: 340 })).toBe("2 of 340 attempts couldn't reach the provider");
+		expect(t("capacityCount", { failed: 5, count: 338 })).toBe("5 of 338 were turned away because the provider was at capacity");
+		expect(t("capacityCount", { failed: 1, count: 338 })).toBe("1 of 338 was turned away because the provider was at capacity");
+		expect(t("callErrorsCount", { failed: 1, count: 333 })).toBe("1 of 333 failed after the provider accepted it");
+		expect(t("callErrorsCount", { failed: 3, count: 333 })).toBe("3 of 333 failed after the provider accepted them");
+		expect(t("callErrorsCount", { failed: 0, count: 0 })).toBe("No attempts were accepted");
+	});
+
+	test("formats the counts in every locale", () => {
+		const locales = readdirSync(path.resolve(process.cwd(), "messages"))
+			.filter((entry) => existsSync(path.resolve(process.cwd(), "messages", entry, "catalogue.json")));
+		expect(locales.length).toBe(9);
+		for (const locale of locales) {
+			const t = translator(locale);
+			for (const key of ["reachabilityCount", "capacityCount", "callErrorsCount"] as const) {
+				const text = t(key, { failed: 5, count: 338 });
+				// Numbers use the locale's digits (Arabic-Indic in ar-SA).
+				const number = new Intl.NumberFormat(locale);
+				expect(text).toContain(number.format(5));
+				expect(text).toContain(number.format(338));
+			}
+		}
+	});
+});
 
 const now = new Date("2026-08-30T10:42:00.000Z");
 

@@ -28,99 +28,15 @@ CREATE OR REPLACE FUNCTION public.get_v2_model_provider_attempt_health (
   AS $function$
   -- Provider health per ATTEMPT, attributed to the provider each attempt went
   -- to: a failed attempt counts against its provider even when the request
-  -- later succeeded elsewhere. rate_X = 1 - failures_X / eligible_attempts,
-  -- where eligible attempts exclude customer- and Phaseo-caused failures.
+  -- later succeeded elsewhere. Eligible attempts exclude customer- and
+  -- Phaseo-caused failures. The three rates are a funnel:
+  --   reachable = 1 - reachability failures / eligible attempts
+  --   accepted  = 1 - capacity failures / attempts that reached the provider
+  --   completed = 1 - call errors / attempts the provider accepted
   -- customer_excluded / phaseo_excluded are for internal use only.
-  with params as (
-    select
-      model.model_slug,
-      greatest(1, least(coalesce(p_window_days, 3), 90))::integer as window_days,
-      now() as now_ts
-    from public.v2_models model
-    where model.model_slug = lower(trim(p_model_slug))
-      and model.hidden = false
-      and model.status <> 'disabled'
-  ),
-  -- Each attempt's own route must be publicly reportable (not hidden,
-  -- disabled, internal or stealth), not only the route that served. Checked
-  -- once per route rather than once per attempt.
-  visible_routes as materialized (
-    select route.provider_model_id, route.provider_slug
-    from public.v2_model_provider_routes route
-    join params on route.model_slug = params.model_slug
-    where public.public_reporting_route_is_visible(params.model_slug, route.provider_model_id)
-  ),
-  -- Materialized so the plan starts from this model's facts in the window
-  -- (model/time index) and reaches attempts by request id.
-  facts as materialized (
-    select
-      fact.request_event_id,
-      fact.occurred_at,
-      coalesce(fact.service_tier_slug, 'standard') as service_tier,
-      lower(coalesce(fact.error_code, '')) as fact_error_code,
-      nullif(lower(trim(fact.stop_reason)), '') as fact_stop_reason
-    from public.v2_request_facts fact
-    join params on true
-    where coalesce(fact.routed_model_slug, fact.requested_model_slug) = params.model_slug
-      and fact.occurred_at >= params.now_ts - make_interval(days => params.window_days)
-      and fact.public_reporting_allowed
-  ),
-  request_attempts as (
-    select
-      fact.*,
-      attempt.provider_model_id,
-      attempt.health_class as recorded_class,
-      attempt.success,
-      attempt.status_code,
-      attempt.failure_class,
-      lower(coalesce(attempt.safe_metadata->>'key_source', 'gateway')) as key_source,
-      -- The served attempt is the request's last successful one.
-      attempt.success and attempt.attempt_number = max(attempt.attempt_number)
-        filter (where attempt.success) over (partition by attempt.request_event_id) as is_served
-    from facts fact
-    join public.v2_request_attempts attempt on attempt.request_event_id = fact.request_event_id
-  ),
-  attempt_rows as (
-    select route.provider_slug as provider_id, request_attempts.*
-    from request_attempts
-    join visible_routes route on route.provider_model_id = request_attempts.provider_model_id
-  ),
-  classified as (
-    select
-      r.provider_id,
-      r.service_tier,
-      r.occurred_at,
-      -- Rows recorded before the gateway classified attempts (health_class null)
-      -- get a best-effort class from what was persisted. Approximations:
-      --   * no provider error body was stored, so a 503 is always reachability
-      --     (never capacity) and a 403 on the managed key is always phaseo;
-      --   * thrown errors had no transport flag: retryable ones count as
-      --     reachability, others as phaseo;
-      --   * a served stream that broke is a call error, including client
-      --     cancellations recorded as upstream_stream_failure before the
-      --     gateway told the two apart.
-      coalesce(r.recorded_class, case
-        when r.failure_class in ('blocked', 'no_pricing', 'unsupported_executor') then 'phaseo'
-        when r.success then case
-          when r.is_served and r.fact_error_code like 'client:%' then 'customer'
-          when r.is_served and (
-            r.fact_error_code in ('upstream:upstream_stream_failure', 'gateway:google_empty_response', 'gateway:normalization_failed')
-            or r.fact_stop_reason = 'error'
-          ) then 'call_error'
-          else 'success'
-        end
-        when r.key_source = 'byok' and r.status_code in (401, 402, 403, 429) then 'customer'
-        when r.status_code in (429, 529) then 'capacity'
-        when r.status_code = 408 then 'reachability'
-        when r.status_code in (401, 402, 403) then 'phaseo'
-        when r.status_code between 400 and 499 then 'customer'
-        when r.status_code in (502, 503, 504) or r.status_code between 520 and 527 then 'reachability'
-        when r.status_code between 500 and 599 then 'call_error'
-        when r.status_code between 200 and 299 then 'success'
-        when r.failure_class = 'retryable_error' then 'reachability'
-        else 'phaseo'
-      end) as health_class
-    from attempt_rows r
+  with classified as (
+    select attempt.provider_id, attempt.service_tier, attempt.occurred_at, attempt.health_class
+    from public.get_v2_model_provider_attempt_health_rows(p_model_slug, p_window_days) attempt
   ),
   hourly as (
     select
@@ -162,9 +78,12 @@ CREATE OR REPLACE FUNCTION public.get_v2_model_provider_attempt_health (
         'call_error_failures', h.call_error_failures,
         'customer_excluded', h.customer_excluded,
         'phaseo_excluded', h.phaseo_excluded,
-        'reachability_pct', case when h.eligible_attempts > 0 then round((1 - h.reachability_failures::numeric / h.eligible_attempts) * 100, 2) end,
-        'capacity_pct', case when h.eligible_attempts > 0 then round((1 - h.capacity_failures::numeric / h.eligible_attempts) * 100, 2) end,
-        'call_error_pct', case when h.eligible_attempts > 0 then round((1 - h.call_error_failures::numeric / h.eligible_attempts) * 100, 2) end,
+        'reachability_pct', case when h.eligible_attempts > 0
+          then round((1 - h.reachability_failures::numeric / h.eligible_attempts) * 100, 2) end,
+        'capacity_pct', case when h.eligible_attempts - h.reachability_failures > 0
+          then round((1 - h.capacity_failures::numeric / (h.eligible_attempts - h.reachability_failures)) * 100, 2) end,
+        'call_error_pct', case when h.success_attempts + h.call_error_failures > 0
+          then round((1 - h.call_error_failures::numeric / (h.success_attempts + h.call_error_failures)) * 100, 2) end,
         'uptime_pct', case when h.eligible_attempts > 0 then round(h.success_attempts::numeric / h.eligible_attempts * 100, 2) end
       ) order by h.bucket_start) as buckets,
       max(h.last_attempt_at) as last_attempt_at
@@ -183,9 +102,12 @@ CREATE OR REPLACE FUNCTION public.get_v2_model_provider_attempt_health (
     t.call_error_failures,
     t.customer_excluded,
     t.phaseo_excluded,
-    case when t.eligible_attempts > 0 then round((1 - t.reachability_failures::numeric / t.eligible_attempts) * 100, 2) end as reachability_pct,
-    case when t.eligible_attempts > 0 then round((1 - t.capacity_failures::numeric / t.eligible_attempts) * 100, 2) end as capacity_pct,
-    case when t.eligible_attempts > 0 then round((1 - t.call_error_failures::numeric / t.eligible_attempts) * 100, 2) end as call_error_pct,
+    case when t.eligible_attempts > 0
+      then round((1 - t.reachability_failures::numeric / t.eligible_attempts) * 100, 2) end as reachability_pct,
+    case when t.eligible_attempts - t.reachability_failures > 0
+      then round((1 - t.capacity_failures::numeric / (t.eligible_attempts - t.reachability_failures)) * 100, 2) end as capacity_pct,
+    case when t.success_attempts + t.call_error_failures > 0
+      then round((1 - t.call_error_failures::numeric / (t.success_attempts + t.call_error_failures)) * 100, 2) end as call_error_pct,
     case when t.eligible_attempts > 0 then round(t.success_attempts::numeric / t.eligible_attempts * 100, 2) end as uptime_pct,
     t.buckets,
     t.last_attempt_at
@@ -196,7 +118,7 @@ $function$;
 
 GRANT EXECUTE ON FUNCTION "public"."get_v2_model_provider_attempt_health"(text, integer) TO "service_role";
 
-COMMENT ON FUNCTION "public"."get_v2_model_provider_attempt_health"(text, integer) IS 'Per-attempt provider reachability, capacity and call-error rates for a public model, per provider and service tier with hourly buckets. Customer- and Phaseo-caused attempts are excluded from the rates and counted separately for internal use.';
+COMMENT ON FUNCTION "public"."get_v2_model_provider_attempt_health"(text, integer) IS 'Per-attempt provider health for a public model, per provider and service tier with hourly buckets: reachable, accepted (not turned away for capacity, of those that reached the provider) and completed (no call error, of those accepted). Customer- and Phaseo-caused attempts are excluded from the rates and counted separately for internal use.';
 
 REVOKE ALL ON FUNCTION "public"."get_v2_model_provider_attempt_health"(text, integer) FROM "postgres";
 
