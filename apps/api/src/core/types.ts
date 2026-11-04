@@ -135,7 +135,7 @@ export type RequestMeta = {
     streamDisconnectAction?: "cancel_upstream" | "drain_upstream";
     before_ms?: number;           // Gateway preflight ("before" stage) latency
     beforeContextMs?: number;     // Context fetch + enrichment latency inside before
-    beforeContextCacheStatus?: "hit" | "miss" | "bypass" | "credit_refresh";
+    beforeContextCacheStatus?: "hit" | "miss" | "bypass" | "credit_refresh" | "model_miss";
     beforeContextKeyVersionMs?: number;
     beforeContextCacheReadMs?: number;
     beforeContextCreditRefreshMs?: number;
