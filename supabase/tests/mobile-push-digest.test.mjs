@@ -542,7 +542,7 @@ try {
       insert into public.mobile_push_digests (user_id, iso_week, time_zone, week_start, week_cutoff, status, title, body, href, created_at)
         values ('${user(11)}', '2026-W44', 'UTC', '2026-10-26Z', '2026-11-01 18:00Z', 'queued', 'Your Phaseo week', 'A quiet week', '/account/week', '2026-11-04 08:00Z');
       insert into public.mobile_push_deliveries (digest_id, device_id, user_id, status, not_before, created_at)
-        select g.id, d.id, d.user_id, 'pending', now() - interval '1 hour', '2026-11-04 08:00Z'
+        select g.id, d.id, d.user_id, 'pending', '2026-11-04 11:00Z', '2026-11-04 08:00Z'
         from public.mobile_push_digests g join public.mobile_push_devices d on d.user_id = g.user_id where g.user_id = '${user(11)}';
       -- u1's price change from the cap check above is now due, on all three devices.
       update public.mobile_push_deliveries set not_before = now() - interval '30 minutes'
