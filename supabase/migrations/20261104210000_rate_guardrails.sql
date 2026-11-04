@@ -70,12 +70,18 @@ begin
   from public.workspace_rate_limit_policies p
   on conflict (id) do nothing;
 
-  -- A policy on a guardrail gave each key that guardrail covers its own allowance.
+  -- A policy on a guardrail gave each key that guardrail covers its own allowance, while that
+  -- guardrail was enabled. The replacement has a deterministic version 4 id, is enabled when one of
+  -- those guardrails is, and is assigned where the enabled ones are (where all are, when none is).
   insert into public.workspace_guardrails (
     id, workspace_id, name, description, kind, enabled,
     rate_requests_per_minute, rate_tokens_per_minute, rate_concurrent_requests, rate_fail_closed, rate_counting,
     created_at, updated_at)
-  select md5(p.id::text || ':each_key')::uuid, p.workspace_id, left(p.name, 90) || ' (each key)', p.description, 'rate', true,
+  select overlay(overlay(md5(p.id::text || ':each_key') placing '4' from 13) placing '8' from 17)::uuid, p.workspace_id, left(p.name, 90) || ' (each key)', p.description, 'rate',
+    exists (
+      select 1 from public.workspace_rate_limit_policy_assignments a
+      join public.workspace_guardrails source on source.id = a.guardrail_id
+      where a.policy_id = p.id and a.target_type = 'guardrail' and source.enabled),
     p.requests_per_minute, p.tokens_per_minute, p.concurrent_requests, p.fail_closed, 'each_key',
     p.created_at, p.updated_at
   from public.workspace_rate_limit_policies p
@@ -94,11 +100,16 @@ begin
   on conflict do nothing;
 
   insert into public.workspace_guardrail_assignments (workspace_id, guardrail_id, target_type, target_id, created_at, created_by)
-  select a.workspace_id, md5(a.policy_id::text || ':each_key')::uuid, covered.target_type, covered.target_id, a.created_at, a.created_by
+  select a.workspace_id, overlay(overlay(md5(a.policy_id::text || ':each_key') placing '4' from 13) placing '8' from 17)::uuid, covered.target_type, covered.target_id, a.created_at, a.created_by
   from public.workspace_rate_limit_policy_assignments a
+  join public.workspace_guardrails source on source.id = a.guardrail_id
   join public.workspace_guardrail_assignments covered
     on covered.guardrail_id = a.guardrail_id and covered.workspace_id = a.workspace_id
   where a.target_type = 'guardrail'
+    and (source.enabled or not exists (
+      select 1 from public.workspace_rate_limit_policy_assignments other
+      join public.workspace_guardrails other_source on other_source.id = other.guardrail_id
+      where other.policy_id = a.policy_id and other.target_type = 'guardrail' and other_source.enabled))
   on conflict do nothing;
 
   insert into public.key_guardrails (key_id, guardrail_id, created_at)
