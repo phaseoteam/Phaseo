@@ -143,6 +143,33 @@ describe("audit request detail persistence", () => {
 		expect(insert.mock.calls[0][0]).toMatchObject({ request_id: "req_public", billing_request_id: "bill_attempt" });
 	});
 
+	it("sends the SKU meter each pricing line was charged with", async () => {
+		const insert = vi.fn((_row: any) => ({ select: () => ({ single: async () => ({
+			data: { id: "row", created_at: "2026-11-04T00:00:00Z", workspace_id: "ws" }, error: null,
+		}) }) }));
+		const rpc = vi.fn().mockResolvedValue({ data: "fact", error: null });
+		getSupabaseAdminMock.mockReturnValue({ from: () => ({ insert }), rpc });
+		resolveGatewayIoLoggingPolicyMock.mockResolvedValue({ captureEnabled: false });
+		const meterId = "2f1c9a4e-7b3d-4c8e-9a1f-0b2c3d4e5f60";
+		await auditSuccess({
+			requestId: "req", workspaceId: "ws", provider: "openai", model: "openai/gpt-6-luna", endpoint: "responses",
+			stream: false, byok: false, totalNanos: 500, currency: "USD",
+			usagePriced: {
+				output_text_tokens: 1000,
+				pricing: { lines: [
+					{ dimension: "output_text_tokens", quantity: 1000, unit_price_usd: 0.0000005, line_nanos: 500, rule_id: meterId },
+					// A static or fee rule id is not a SKU meter and is not sent.
+					{ dimension: "byok_fee", quantity: 1, unit_price_usd: 0, line_nanos: 0, rule_id: "byok-fee" },
+				] },
+			},
+		} as any);
+		const event = rpc.mock.calls.find((call) => call[1]?.p_event)?.[1].p_event;
+		expect(event.pricing_lines).toEqual([
+			expect.objectContaining({ meter_key: "output_text_tokens", sku_meter_id: meterId }),
+			expect.not.objectContaining({ sku_meter_id: expect.anything() }),
+		]);
+	});
+
 	it("keeps the request row when the database predates the charge key column", async () => {
 		vi.resetModules();
 		const { auditSuccess: freshAuditSuccess } = await import("./index");
