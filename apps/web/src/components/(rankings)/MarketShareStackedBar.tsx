@@ -1,7 +1,9 @@
 "use client";
 import { startOfUTCWeek } from "./time-buckets";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import RankingsChartShareButton, { type RankingsChartShare } from "@/components/(rankings)/RankingsChartShareButton";
+import type { ChartShareRenderSize, ChartShareSeriesSelection } from "@/components/share/ChartShareButton";
 import { useLocale, useTranslations } from "next-intl";
 import { formatCompactAxisTick, formatRoundedCount } from "@/lib/formatRoundedCount";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
@@ -22,6 +24,12 @@ type MarketShareStackedBarProps = {
 	dimension: "organization" | "provider";
 	metric?: "requests" | "tokens";
 	normalizeToPercent?: boolean;
+	/** Adds a share button to the chart. */
+	share?: RankingsChartShare;
+	/** Renders only the chart, at exactly this size, for a share image. */
+	exportSize?: ChartShareRenderSize;
+	/** Groups shown in a share image; the rest is folded into "Other". */
+	exportSeries?: ChartShareSeriesSelection;
 };
 
 type SeriesStyle = Record<string, { label: string; color: string; stroke: string }>;
@@ -38,13 +46,11 @@ function formatPercent(value: number, locale: string, lessThanOneLabel: string) 
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-export function MarketShareStackedBar({
-	data,
-	dimension,
-	metric = "requests",
-	normalizeToPercent = false,
-}: MarketShareStackedBarProps) {
+export function MarketShareStackedBar(props: MarketShareStackedBarProps) {
+	const { data, dimension, metric = "requests", normalizeToPercent = false, share, exportSize, exportSeries } = props;
+	const chartShareRef = useRef<HTMLDivElement>(null);
 	const t = useTranslations("Catalogue.rankings");
+	const tShare = useTranslations("Common.ui.chartShare");
 	const locale = useLocale();
 	const format = useDisplayFormatters();
 	const formatBucketLabel = (value: string, _locale?: string) => format.calendarDate(value, value);
@@ -130,8 +136,11 @@ export function MarketShareStackedBar({
 	}
 
 	const rankedGroups = sortedGroups.filter((group) => group !== "Other");
-	const topGroups = rankedGroups.slice(0, TOP_SERIES);
-	const overflowGroups = rankedGroups.slice(TOP_SERIES);
+	const chartGroups = rankedGroups.slice(0, TOP_SERIES);
+	// A share image can show a subset (or one highlighted group); the rest is folded into "Other" so shares stay true.
+	const exportKeys = exportSeries?.highlight ? [exportSeries.highlight] : exportSeries?.keys ?? null;
+	const topGroups = exportKeys ? chartGroups.filter((group) => exportKeys.includes(group)) : chartGroups;
+	const overflowGroups = rankedGroups.filter((group) => !topGroups.includes(group));
 	const hasOther = overflowGroups.length > 0 || sortedGroups.includes("Other");
 	const groupOrder = hasOther ? [...topGroups, "Other"] : topGroups;
 
@@ -143,7 +152,8 @@ export function MarketShareStackedBar({
 		keyMap.set("Other", "other");
 	}
 
-	const colourMap = assignOrderedSeriesColours(topGroups);
+	// Colours come from the full top list, so a group keeps its colour when a share image shows only some groups.
+	const colourMap = assignOrderedSeriesColours(chartGroups);
 
 	const seriesStyle: SeriesStyle = {};
 	topGroups.forEach((group) => {
@@ -204,11 +214,34 @@ export function MarketShareStackedBar({
 	} as const;
 
 	return (
-		<ChartContainer config={chartConfig} className="h-[360px] w-full">
+		<div ref={chartShareRef} className="relative">
+		{share && !exportSize ? (
+			<div data-share-hide className="absolute right-2 top-0 z-10">
+				<RankingsChartShareButton
+					{...share}
+					targetRef={chartShareRef}
+					renderForShare={(size, selection) => <MarketShareStackedBar {...props} share={undefined} exportSize={size} exportSeries={selection} />}
+					series={{
+						items: chartGroups.map((group) => ({ key: group, label: group, color: colourMap[group]?.fill ?? "#a1a1aa" })),
+						otherLabel: "Other",
+						otherColor: "hsl(0 0% 70% / 0.6)",
+						hasOther: rankedGroups.length > TOP_SERIES || sortedGroups.includes("Other"),
+					}}
+					className="bg-background/90 backdrop-blur-sm"
+					subtitle={`${tShare(normalizeToPercent ? "shareOfPerWeek" : "perWeek", { unit: metric === "tokens" ? t("usageTokensUnit") : metric })} · ${tShare("last52Weeks")}`}
+				/>
+			</div>
+		) : null}
+		<ChartContainer
+			config={chartConfig}
+			className={exportSize ? undefined : "h-[360px] w-full"}
+			style={exportSize}
+			initialDimension={exportSize}
+		>
 			<BarChart
 				data={chartData}
 				barCategoryGap="10%"
-				margin={{ top: 16, right: 12, left: 0, bottom: 32 }}
+				margin={{ top: share && !exportSize ? 42 : 16, right: 12, left: 0, bottom: 32 }}
 			>
 				<CartesianGrid vertical={false} className="stroke-muted" />
 				<XAxis
@@ -325,5 +358,6 @@ export function MarketShareStackedBar({
 				})}
 			</BarChart>
 		</ChartContainer>
+		</div>
 	);
 }

@@ -21,6 +21,7 @@ import ModelDescriptionPanel from "./ModelDescriptionPanel";
 import ModelPageNotice from "./ModelPageNotice";
 import ModelStickyHeader from "./ModelStickyHeader";
 import UnreleasedBadge from "./UnreleasedBadge";
+import { ModelChartShareProvider } from "./share/ModelChartShareContext";
 import { UseModelSheet } from "./UseModelSheet";
 import { toQuickstartGatewayMetadata } from "./quickstart/quickstartGatewayMetadata";
 import ModelStatusBanner from "./overview/ModelStatusBanner";
@@ -297,7 +298,9 @@ export default async function ModelDetailShell({
 					</div>
 				) : null}
 
-				<div className="mt-6 min-h-full">{children}</div>
+				<ModelChartShareProvider value={{ modelId, modelName: `${header.organisation.name}: ${header.name}` }}>
+					<div className="mt-6 min-h-full">{children}</div>
+				</ModelChartShareProvider>
 			</div>
 		</main>
 	);

@@ -84,6 +84,7 @@ export async function ToolCallsSection() {
 					leaderboardTitle={t("toolCallsLeaderboardTitle")}
 					leaderboardDescription={t("toolCallsLeaderboardDescription")}
 					valueUnit={t("toolCallsUnit")}
+					share={{ section: "tool-calls", chartId: "tool-calls", title: t("toolCalls") }}
 				/>
 			) : (
 				<EmptyChartPreview
