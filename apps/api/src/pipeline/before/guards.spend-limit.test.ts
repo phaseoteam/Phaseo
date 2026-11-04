@@ -165,14 +165,23 @@ describe("budget alerts from rejected requests", () => {
 		beforeEach(() => { state.mode = "enforce"; });
 
 		it("records how long the request waited for the coordinator's decision", async () => {
-			state.decide.mockReturnValue(new Promise((resolve) => setTimeout(() => resolve({ outcome: "allowed", admission: null, source: "coordinator", contended: false }), 30)));
+			// A controlled clock: it moves 42 ms only when the decision resolves, so no real time passes.
+			let now = 1_000;
+			const clock = vi.spyOn(performance, "now").mockImplementation(() => now);
+			state.decide.mockImplementation(() => Promise.resolve().then(() => {
+				now += 42;
+				return { outcome: "allowed", admission: null, source: "coordinator", contended: false };
+			}));
 			const context = { ...allowedContext(), contextTelemetry: { cacheStatus: "hit", totalMs: 3 } };
 			vi.mocked(fetchGatewayContext).mockResolvedValue(context);
 
-			await request({ spendLimit: slot() });
+			try {
+				await request({ spendLimit: slot() });
+			} finally {
+				clock.mockRestore();
+			}
 
-			expect(context.contextTelemetry).toHaveProperty("spendLimitMs");
-			expect((context.contextTelemetry as { spendLimitMs?: number }).spendLimitMs).toBeGreaterThanOrEqual(20);
+			expect((context.contextTelemetry as { spendLimitMs?: number }).spendLimitMs).toBe(42);
 		});
 
 		it("records no coordinator wait when enforce mode is off", async () => {
