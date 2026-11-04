@@ -6,13 +6,39 @@ icon: "activity"
 
 import { ProviderStatusExplorer } from "/snippets/provider-status.jsx";
 
-Uma oferta de provedor e modelo tem status separados no provedor de origem e no Phaseo. Isso importa quando o provedor lança um modelo, mas o Phaseo ainda não implementou ou habilitou o endpoint correspondente.
+Na página de um modelo, aparecem até dois ícones depois do nome de cada provedor: um **ícone de status**, definido pelo Phaseo, e um **ícone de roteamento em tempo real**, que só aparece enquanto o Gateway desvia o tráfego de um provedor com falhas.
 
-Você verá esses campos nas páginas de modelos, nos cartões de preços dos provedores e nas telas relacionadas à disponibilidade.
+<ProviderStatusExplorer locale="pt-BR" />
 
-## Disponibilidade do provedor
+## Ícone de status
 
-A disponibilidade do provedor descreve a oferta na origem.
+O Phaseo define este status manualmente, e ele permanece até o Phaseo alterá-lo. As páginas de modelos mostram os três níveis de rebaixamento como `Prioridade menor`.
+
+| Ícone | Status | Roteamento |
+| --- | --- | --- |
+| <Icon icon="circle-check" color="#16a34a" /> | `Active` | Roteado normalmente. |
+| <Icon icon="triangle-alert" color="#f59e0b" /> | `Deranked L1` | Roteável, logo atrás de outros provedores. |
+| <Icon icon="triangle-alert" color="#d97706" /> | `Deranked L2` | Roteável, atrás de provedores mais saudáveis. |
+| <Icon icon="triangle-alert" color="#ef4444" /> | `Deranked L3` | Roteável, bem atrás de outros provedores. |
+| <Icon icon="ban" color="#dc2626" /> | `Disabled` | Não é roteado. |
+
+## Roteamento em tempo real
+
+O Gateway define isso automaticamente para cada provedor, modelo e endpoint, com base nas solicitações que está atendendo agora. Uma rota limitada ou em recuperação continua roteável, mas outros provedores são tentados primeiro.
+
+```mermaid
+flowchart TD
+  ok["Normal"] -->|"Várias falhas seguidas ou metade das solicitações recentes falha"| lim["Temporariamente limitado"]
+  lim -->|"A pausa termina"| rec["Em recuperação"]
+  rec -->|"Todas as solicitações de um lote funcionam"| ok
+  rec -->|"Metade ou mais falha: pausa mais longa"| lim
+```
+
+## Disponibilidade e integração
+
+O card de status também mostra se o provedor oferece o modelo e se o Phaseo o ativou. Uma rota só é pública quando as duas coisas permitem. Por exemplo, um provedor pode oferecer um modelo novo (`Available`) enquanto o Phaseo ainda desenvolve o suporte (`Implementing`).
+
+### Disponibilidade do provedor
 
 | Status | Significado |
 | --- | --- |
@@ -24,11 +50,7 @@ A disponibilidade do provedor descreve a oferta na origem.
 | `Removed` | O provedor deixou de disponibilizar a oferta. |
 | `Unknown` | O Phaseo ainda não verificou a disponibilidade na origem. |
 
-A disponibilidade no provedor não significa que o Phaseo pode rotear a solicitação.
-
-## Status da integração do Phaseo
-
-O status do Phaseo descreve nossa implementação e rollout.
+### Integração do Phaseo
 
 | Status | Significado | Roteamento do Phaseo |
 | --- | --- | --- |
@@ -40,96 +62,11 @@ O status do Phaseo descreve nossa implementação e rollout.
 | `Disabled` | O Phaseo desativou a integração intencionalmente. | Não roteável. |
 | `Blocked` | Uma dependência externa ou ainda não resolvida impede o rollout. | Não roteável. |
 
-Somente integrações `Enabled` podem ter o roteamento público habilitado.
-
-## Acesso interno
-
-O escopo de acesso é separado do status da integração do Phaseo:
-
-| Escopo | Significado |
-| --- | --- |
-| `Public` | Solicitações normais de clientes podem usar a rota quando todas as verificações de roteamento forem aprovadas. |
-| `Internal` | Somente tráfego de teste autenticado do Phaseo pode usar a rota. |
-
-Uma rota interna exige o token interno de alta entropia e uma solicitação que indique explicitamente o modo de teste. Um cliente não pode habilitá-la somente com o cabeçalho de teste. Solicitações normais não consultam o banco de dados em busca de rotas internas; elas usam o cache de contexto padrão existente. Os testes internos usam um segmento de cache separado e consideram apenas rotas explicitamente internas, com uma oferta de origem utilizável e status do Phaseo `Testing` ou `Enabled`.
-
-## Saúde do roteamento
-
-A saúde do roteamento é um terceiro sinal operacional. Ela indica como uma rota habilitada deve ser selecionada neste momento.
-
-| Ícone | Status | Significado | Comportamento do roteamento |
-| --- | --- | --- | --- |
-| <Icon icon="circle-check" color="#16a34a" /> | `Active` | A rota está saudável o bastante para ser selecionada normalmente. | Roteável agora. |
-| <Icon icon="triangle-alert" color="#f59e0b" /> | `Deranked L1` | A saúde recente reduziu um pouco a prioridade. | Roteável agora. |
-| <Icon icon="triangle-alert" color="#d97706" /> | `Deranked L2` | A saúde recente reduziu claramente a prioridade. | Roteável agora, depois de rotas mais saudáveis. |
-| <Icon icon="triangle-alert" color="#ef4444" /> | `Deranked L3` | A saúde recente reduziu bastante a prioridade. | Roteável agora, com prioridade bem menor. |
-| <Icon icon="ban" color="#dc2626" /> | `Disabled` | A chave de roteamento está desligada. | Não é roteada. |
-
-A redução de prioridade não altera a disponibilidade do provedor nem o ciclo de vida da integração do Phaseo. As observações de saúde em tempo real também não modificam esses campos do ciclo de vida.
-
-Nas páginas de modelos, uma rota rebaixada mostra o ícone de aviso âmbar ou
-vermelho com o rótulo `Prioridade menor`. O Phaseo define esses níveis
-manualmente, e eles permanecem até o Phaseo alterá-los.
-
-## Roteamento em tempo real
-
-O roteamento em tempo real é separado dos status acima. O Gateway o define
-automaticamente para cada provedor, modelo e endpoint, com base nas solicitações
-que está atendendo agora.
-
-| Ícone | Status | Significado | Comportamento de roteamento |
-| --- | --- | --- | --- |
-| <Icon icon="zap-off" color="#ea580c" /> Raio laranja riscado | `Temporariamente limitado` | As solicitações falharam várias vezes seguidas, ou pelo menos metade das solicitações recentes falhou. | Roteável, mas outros provedores são tentados primeiro. |
-| <Icon icon="refresh-cw" color="#0ea5e9" /> Setas azuis de atualização | `Em recuperação` | Após uma pausa, o Phaseo deixa passar algumas solicitações para verificar o provedor. | Se todas as de um lote funcionarem, o roteamento volta ao normal. Se metade ou mais falhar, a rota é limitada de novo, com uma pausa mais longa. |
-
-```mermaid
-flowchart TD
-  ok["Normal"] -->|"Várias falhas seguidas ou metade das solicitações recentes falha"| lim["Temporariamente limitado"]
-  lim -->|"A pausa termina"| rec["Em recuperação"]
-  rec -->|"Todas as solicitações de um lote funcionam"| ok
-  rec -->|"Metade ou mais falha: pausa mais longa"| lim
-```
-
-Nas páginas de modelos, o ícone de roteamento em tempo real aparece depois do ícone
-de status, somente enquanto um desses status se aplica. Uma rota pode ter
-`Prioridade menor` e estar `Temporariamente limitado` ao mesmo tempo; nesse caso,
-os dois ícones aparecem. Passe o cursor sobre um ícone para ver os detalhes.
-
-<ProviderStatusExplorer locale="pt-BR" />
-
-O roteamento em tempo real nunca altera a disponibilidade do provedor, o status da
-integração do Phaseo nem a saúde do roteamento definida manualmente.
-
-## Exemplos
-
-Uma oferta de provedor recém-lançada pode ter:
-
-- disponibilidade do provedor: `Available`
-- status do Phaseo: `Implementing`
-- saúde do roteamento: não aplicável porque o roteamento está desativado
-
-Uma rota estabelecida que o Phaseo rebaixou manualmente pode ter:
-
-- disponibilidade do provedor: `Available`
-- status do Phaseo: `Enabled`
-- saúde do roteamento: `Deranked L2`
-
-Uma rota cujo provedor está falhando agora pode ter:
-
-- disponibilidade do provedor: `Available`
-- status do Phaseo: `Enabled`
-- saúde do roteamento: `Active`
-- roteamento em tempo real: `Temporariamente limitado`
-
-Um anúncio do provedor pode ter:
-
-- disponibilidade do provedor: `Coming Soon`
-- status do Phaseo: `Planned`
-- saúde do roteamento: não aplicável
+Só rotas `Enabled` podem ser públicas. Rotas `Internal` atendem apenas o tráfego de teste do próprio Phaseo.
 
 ## Compatibilidade
 
-Campos de API existentes, como `availability_status`, `routing_status`, `is_active_gateway` e `routable`, continuam disponíveis durante o rollout aditivo. Novas integrações devem usar os campos explícitos de provedor e Phaseo.
+`availability_status`, `routing_status`, `is_active_gateway` e `routable` continuam na API para integrações existentes. Integrações novas devem ler os campos separados do provedor e do Phaseo.
 
 ## Páginas relacionadas
 
