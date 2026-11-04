@@ -19,7 +19,11 @@ describe("account policy settings routes", () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = input instanceof Request ? input.url : String(input);
 			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" }), { status: 200 });
-			if (url.includes("workspace_member_guardrails")) return new Response(JSON.stringify([{ guardrail_id: "guardrail-1" }]), { status: 200 });
+			if (url.includes("workspace_guardrail_assignments")) {
+				expect(new URL(url).searchParams.get("target_type")).toBe("eq.member");
+				expect(new URL(url).searchParams.get("target_id")).toBe("eq.user-1");
+				return new Response(JSON.stringify([{ guardrail_id: "guardrail-1" }]), { status: 200 });
+			}
 			if (url.includes("account_guardrail_settings")) return new Response(JSON.stringify([{ provider_restriction_mode: "none", provider_restriction_provider_ids: [], model_restriction_mode: "blocklist", model_restriction_model_ids: ["inclusionai/ling-3.0-flash-sante:free"] }]), { status: 200 });
 			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "member" }]), { status: 200 });
 			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "owner-1" }]), { status: 200 });
@@ -489,7 +493,11 @@ describe("account policy settings routes", () => {
                 return new Response(JSON.stringify([{ provider_model_id: "pm-native", capability_id: "text.generate", metadata: { data_policy: { tier: "private", confidence: "confirmed", zeroDataRetention: true, zdrEligibility: "eligible" } } }]), { status: 200 });
             }
 			if (url.includes("workspace_guardrails")) return new Response(JSON.stringify([{ id: "guardrail-1", workspace_id: "workspace-1", name: "Default", enabled: true }]), { status: 200 });
-			if (url.includes("key_guardrails")) return new Response(JSON.stringify([{ guardrail_id: "guardrail-1", key_id: "key-1" }]), { status: 200 });
+			if (url.includes("workspace_guardrail_assignments")) return new Response(JSON.stringify([
+				{ guardrail_id: "guardrail-1", target_type: "key", target_id: "key-1" },
+				{ guardrail_id: "guardrail-1", target_type: "department", target_id: "department-1" },
+				{ guardrail_id: "guardrail-1", target_type: "workspace", target_id: null },
+			]), { status: 200 });
 			return new Response(JSON.stringify([]), { status: 200 });
 		}));
 		const init = { headers: { authorization: "Bearer session-token" } };
@@ -507,7 +515,14 @@ describe("account policy settings routes", () => {
 		}
 		await expect(routing.json()).resolves.toMatchObject({ routingMode: "latency", responseHealingEnabled: true, responseHealingMode: "strict", teamName: "Team One" });
 		await expect(presets.json()).resolves.toMatchObject({ currentUserId: "user-1", teamsWithPresets: [{ id: "workspace-1", presets: [{ id: "preset-1", hasDraftChanges: true }] }] });
-		await expect(guardrails.json()).resolves.toMatchObject({ guardrails: [{ id: "guardrail-1" }], guardrailKeyIdsByGuardrailId: { "guardrail-1": ["key-1"] }, keys: [{ id: "key-1" }] });
+		await expect(guardrails.json()).resolves.toMatchObject({
+			guardrails: [{ id: "guardrail-1" }],
+			guardrailKeyIdsByGuardrailId: { "guardrail-1": ["key-1"] },
+			guardrailMemberIdsByGuardrailId: {},
+			guardrailDepartmentIdsByGuardrailId: { "guardrail-1": ["department-1"] },
+			workspaceGuardrailIds: ["guardrail-1"],
+			keys: [{ id: "key-1" }],
+		});
 		const editorBody = await editor.json();
         expect(editorBody.activeProviderModels).toEqual(expect.arrayContaining([
             expect.objectContaining({ providerId: "openai", capabilities: [{ id: "text.generate", dataPolicy: { tier: "private", confidence: "confirmed", zeroDataRetention: true, zdrEligibility: "eligible" } }] }),
@@ -516,6 +531,9 @@ describe("account policy settings routes", () => {
 			mode: "edit",
 			guardrail: { id: "guardrail-1" },
 			initialKeyIds: ["key-1"],
+			initialMemberIds: [],
+			initialDepartmentIds: ["department-1"],
+			initialWorkspaceAssigned: true,
 			teamName: "Team One",
 			providers: [
 				{ id: "openai", name: "OpenAI", familyId: "openai", offerLabel: null, offerScope: "global" },
@@ -546,7 +564,7 @@ describe("account policy settings routes", () => {
 			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]), { status: 200 });
 			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ id: "workspace-1", name: "Team One", owner_user_id: "user-1" }]), { status: 200 });
 			if (url.includes("workspace_guardrails")) return new Response(JSON.stringify([{ id: "guardrail-1", workspace_id: "workspace-1", name: "Default", enabled: true }]), { status: 200 });
-			if (url.includes("key_guardrails")) return page(url, (index) => ({ guardrail_id: "guardrail-1", key_id: `key-${index}` }));
+			if (url.includes("workspace_guardrail_assignments")) return page(url, (index) => ({ guardrail_id: "guardrail-1", target_type: "key", target_id: `key-${index}` }));
 			if (url.includes("/keys?")) return page(url, (index) => ({ id: `key-${index}`, name: "Key", prefix: "ph_", status: "active" }));
 			return new Response(JSON.stringify([]), { status: 200 });
 		}));
@@ -559,7 +577,8 @@ describe("account policy settings routes", () => {
 		expect(body.guardrailKeyIdsByGuardrailId["guardrail-1"]).toHaveLength(501);
 		expect(pageRequests).toEqual(expect.arrayContaining([
 			"keys:0:created_at.desc,id.asc", "keys:500:created_at.desc,id.asc",
-			"key_guardrails:0:guardrail_id.asc,key_id.asc", "key_guardrails:500:guardrail_id.asc,key_id.asc",
+			"workspace_guardrail_assignments:0:guardrail_id.asc,target_type.asc,target_id.asc",
+			"workspace_guardrail_assignments:500:guardrail_id.asc,target_type.asc,target_id.asc",
 		]));
 	});
 

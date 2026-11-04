@@ -622,7 +622,7 @@ describe("Slack OAuth callback", () => {
 		// models would have no route; Phaseo's own storage is off through never_store_content.
 		const guardrail = find(requests, "POST", "/workspace_guardrails")[0].body;
 		expect(guardrail).toMatchObject({
-			workspace_id: WORKSPACE, name: "Slack agent", enabled: true,
+			workspace_id: WORKSPACE, kind: "access", name: "Slack agent", enabled: true,
 			description: "Managed by the Slack agent. Slack's API terms do not allow training on Slack data, so training and prompt publishing are off.",
 			privacy_enable_paid_may_train: false, privacy_enable_free_may_train: false,
 			privacy_enable_free_may_publish_prompts: false, privacy_enable_input_output_logging: true,

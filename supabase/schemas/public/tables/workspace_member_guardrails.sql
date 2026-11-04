@@ -21,6 +21,11 @@ CREATE TRIGGER gateway_workspace_publication
   FOR EACH ROW
   EXECUTE FUNCTION private.capture_gateway_workspace_publication();
 
+CREATE TRIGGER sync_guardrail_assignments
+  AFTER INSERT OR DELETE OR UPDATE ON public.workspace_member_guardrails
+  FOR EACH ROW
+  EXECUTE FUNCTION private.sync_guardrail_assignments();
+
 CREATE POLICY "workspace_member_guardrails_delete_admin" ON "public"."workspace_member_guardrails"
   FOR DELETE
   TO PUBLIC

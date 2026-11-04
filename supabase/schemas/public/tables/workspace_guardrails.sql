@@ -21,6 +21,8 @@ CREATE TABLE "public"."workspace_guardrails" (
   "sensitive_info_default_action"           text                     NOT NULL DEFAULT 'redact'::text,
   "sensitive_info_rules"                    jsonb                    NOT NULL DEFAULT '[]'::jsonb,
   "model_restriction_mode"                  text                     NOT NULL DEFAULT 'none'::text,
+  "kind"                                    text                     NOT NULL DEFAULT 'access'::text,
+  CONSTRAINT "workspace_guardrails_kind_check" CHECK ((kind = ANY (ARRAY['access'::text, 'safety'::text, 'spend'::text, 'rate'::text]))),
   CONSTRAINT "workspace_guardrails_model_restriction_mode_check" CHECK ((model_restriction_mode = ANY (ARRAY['none'::text, 'allowlist'::text, 'blocklist'::text]))),
   CONSTRAINT "workspace_guardrails_pkey" PRIMARY KEY (id),
   CONSTRAINT "workspace_guardrails_prompt_injection_action_check" CHECK ((prompt_injection_action = ANY (ARRAY['flag'::text, 'redact'::text, 'block'::text]))),
@@ -66,3 +68,5 @@ CREATE POLICY "team_guardrails_update_own_team" ON "public"."workspace_guardrail
   WITH CHECK (public.is_workspace_admin(workspace_id));
 
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."workspace_guardrails" TO "anon", "authenticated", "service_role";
+
+COMMENT ON COLUMN "public"."workspace_guardrails"."kind" IS 'What the guardrail controls: access (data retention, training, logging, allowed providers and models), safety (prompt injection, sensitive info), spend or rate. One kind per guardrail.';

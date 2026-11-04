@@ -588,6 +588,7 @@ async function createInstallation(env: Env, context: AccountWorkspaceContext, se
 
 		const guardrail = await client.from("workspace_guardrails").insert({
 			workspace_id: workspaceId,
+			kind: "access",
 			name: GUARDRAIL_NAME,
 			description: GUARDRAIL_DESCRIPTION,
 			enabled: true,
