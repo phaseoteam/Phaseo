@@ -77,6 +77,15 @@ const ROUTING_STEP_SPANS = {
 } as const;
 
 /**
+ * The timer spans the routing steps are read from: the snapshot taken at the first upstream
+ * dispatch when there was one (later server-tool rounds reuse the timer and restart attempt
+ * numbering), otherwise the request's latest snapshot.
+ */
+function routingTimingOf(ctx?: PipelineContext | null): Record<string, number> | undefined {
+	return ctx?.meta?.routingTiming ?? ctx?.timing;
+}
+
+/**
  * Contiguous segments from receipt to the first attempt's first fetch. They do not overlap, so
  * routing_ms minus their sum is time no step accounts for (pipeline entry, small gaps).
  */
@@ -95,7 +104,7 @@ const SEQUENTIAL_ROUTING_SPANS = [
  * and the difference would not mean anything.
  */
 export function resolveUnattributedRoutingMs(routingMs: number, ctx?: PipelineContext | null): number | null {
-	const timing = ctx?.timing;
+	const timing = routingTimingOf(ctx);
 	if (!timing) return null;
 	let sum = 0;
 	for (const span of SEQUENTIAL_ROUTING_SPANS) {
@@ -110,7 +119,7 @@ type RoutingSteps = Partial<Record<keyof typeof ROUTING_STEP_SPANS, number>> & {
 
 /** Per-step routing time from the request's timer snapshot, or null when there is none. */
 export function buildRoutingSteps(ctx?: PipelineContext | null): RoutingSteps | null {
-	const timing = ctx?.timing;
+	const timing = routingTimingOf(ctx);
 	if (!timing) return null;
 	const steps: RoutingSteps = {};
 	for (const [key, span] of Object.entries(ROUTING_STEP_SPANS) as Array<[keyof typeof ROUTING_STEP_SPANS, string]>) {

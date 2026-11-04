@@ -1208,6 +1208,8 @@ async function attemptProviderWithIR(
 		// Admission (price card, rate-limit policies, free quota, breaker) and request preparation.
 		timing.timer.record(`${attemptPrefix}_to_executor`, performance.now() - attemptStartedAt);
 		const executorStartedAtEpochMs = Date.now();
+		// Whether this attempt made the request's first dispatch (and so took ctx.meta.routingTiming).
+		let firstDispatchHere = false;
 		const executorResult = await timing.timer.span(`${attemptPrefix}_executor_total`, () =>
 			executeWithRetry(),
 		).finally(() => {
@@ -1222,6 +1224,11 @@ async function attemptProviderWithIR(
 				ctx.meta.upstreamFetchStartMs ??= firstDispatch;
 				if (typeof receivedAt === "number" && Number.isFinite(receivedAt)) {
 					ctx.meta.timeToUpstreamRequestMs ??= Math.max(0, firstDispatch - receivedAt);
+				}
+				// The routing steps describe this first dispatch only; later rounds never replace them.
+				if (!ctx.meta.routingTiming) {
+					ctx.meta.routingTiming = timing.timer.snapshot();
+					firstDispatchHere = true;
 				}
 			}
 		});
@@ -1271,8 +1278,14 @@ async function attemptProviderWithIR(
 			if (typeof executorResult.timing.requestBuildMs === "number") {
 				timing.timer.record(`${attemptPrefix}_request_build`, executorResult.timing.requestBuildMs);
 				ctx.meta.adapterRequestBuildMs = executorResult.timing.requestBuildMs;
+				// Reported after the fetch: add it to the first-dispatch snapshot this attempt took.
+				if (firstDispatchHere && ctx.meta.routingTiming) {
+					ctx.meta.routingTiming[`${attemptPrefix}_request_build`] = Math.max(0, executorResult.timing.requestBuildMs);
+				}
 			}
 			if (typeof executorResult.timing.upstreamFetchStartMs === "number") {
+				// An executor that reports its own dispatch clock: same first-dispatch snapshot.
+				ctx.meta.routingTiming ??= timing.timer.snapshot();
 				ctx.meta.upstreamFetchStartMs ??= executorResult.timing.upstreamFetchStartMs;
 				if (typeof ctx.meta.startedAtMs === "number") {
 					const timeToThisUpstreamRequestMs = Math.max(

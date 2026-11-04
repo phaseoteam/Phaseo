@@ -199,6 +199,43 @@ describe("pre-dispatch step timing after the before phase", () => {
 		expect(timeline.unattributed_ms).toBe(1);
 	});
 
+	it("keeps the first round's steps when a server-tool continuation reuses the timer", async () => {
+		const { ctx, timing } = setUp({ currency: "USD", rules: [{ pricing_plan: "free", price_per_unit: "0", currency: "USD" }] });
+		freeQuotaMock.mockImplementation(async (args: any) => {
+			advance(30); args.timing.limitsMs = 30;
+			advance(525); args.timing.counterMs = 525;
+			return null;
+		});
+		expect((await doRequestWithIR(ctx, { model: "model", prompt: "test" } as any, timing)).ok).toBe(true);
+
+		// The provider generates and the tools run; recordProviderRound clears the round's dispatch.
+		advance(3_000);
+		delete ctx.meta.upstreamFetchStartMs;
+		// The follow-up round: same timer, attempt numbering restarts at 1, a different preparation.
+		freeQuotaMock.mockImplementation(async (args: any) => {
+			advance(7); args.timing.limitsMs = 7;
+			return null;
+		});
+		expect((await doRequestWithIR(ctx, { model: "model", prompt: "follow-up" } as any, timing)).ok).toBe(true);
+		// text-generate snapshots the timer again after the last round.
+		ctx.timing = timing.timer.snapshot();
+
+		// The live timer now holds the second round's figures...
+		expect(ctx.timing.attempt_1_free_quota_limits).toBe(7);
+		// ...but the timeline still describes the first dispatch, which routing_ms measures.
+		const timeline = buildResponseTimeline(ctx);
+		expect(timeline.routing_ms).toBe(629);
+		expect(timeline.unattributed_ms).toBe(1);
+		expect(timeline.steps).toMatchObject({
+			execute_to_attempt: 3,
+			attempt_to_executor: 561,
+			attempt_free_quota: 555,
+			attempt_free_quota_limits: 30,
+			attempt_free_quota_counter: 525,
+			attempt_executor_to_dispatch: 15,
+		});
+	});
+
 	it("records no free-quota parts for a paid model, and only first-attempt steps", async () => {
 		const { ctx, timing } = setUp({ currency: "USD", rules: [{ pricing_plan: "standard", price_per_unit: "1", currency: "USD" }] });
 		freeQuotaMock.mockResolvedValue(null);
