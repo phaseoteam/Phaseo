@@ -57,7 +57,7 @@ export async function loadSpendLimitFootprint(workspaceId: string, keyId: string
 		supabase.from("workspace_department_budgets").select("id").eq("workspace_id", workspaceId).limit(1),
 	]);
 	if (key.error || budgets.error || departments.error) throw new Error("spend_limit_footprint_failed");
-	const row = key.data as Record<string, unknown> | null;
+	const row = key.data as unknown as Record<string, unknown> | null;
 	if (!row) return null;
 	return {
 		// A value that is not a number (unexpected) counts as a limit, so the coordinator decides.
