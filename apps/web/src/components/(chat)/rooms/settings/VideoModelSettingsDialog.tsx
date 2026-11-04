@@ -19,8 +19,10 @@ import type {
 	RoomModelProfile,
 } from "@/components/(chat)/rooms/useRoomModelSettings";
 import {
+	getDefaultVideoRoomParams,
 	getVideoDurationOptions,
 	getVideoModelSchema,
+	type CapabilityParamsById,
 	type VideoRoomParams,
 } from "@/lib/chat/roomModelSettings";
 
@@ -42,6 +44,8 @@ type VideoModelSettingsDialogProps = {
 	onUpdateParams: (partial: Partial<VideoRoomParams>) => void;
 	onAutoAdjustParams?: (message: string) => void;
 	onReset: () => void;
+	/** Video options the catalogue stores for the selected model and provider. */
+	capabilityParamsById?: CapabilityParamsById;
 };
 
 type VideoSettingsFormParams = Pick<VideoRoomParams, "size" | "duration">;
@@ -59,26 +63,36 @@ export function VideoModelSettingsDialog({
 	onUpdateParams,
 	onAutoAdjustParams,
 	onReset,
+	capabilityParamsById,
 }: VideoModelSettingsDialogProps) {
 	const t = useTranslations("Product.chatRooms");
-	const schema = getVideoModelSchema(selectedModelId ?? "");
+	const schema = useMemo(
+		() => getVideoModelSchema(selectedModelId ?? "", capabilityParamsById),
+		[capabilityParamsById, selectedModelId],
+	);
+	const defaults = useMemo(
+		() => getDefaultVideoRoomParams(selectedModelId ?? "", capabilityParamsById),
+		[capabilityParamsById, selectedModelId],
+	);
 	const normalizedSize = useMemo(
 		() =>
 			schema.sizeOptions.includes(settings.params.size)
 				? settings.params.size
-				: (schema.sizeOptions[0] ?? "1280x720"),
-		[schema, settings.params.size],
+				: defaults.size,
+		[defaults.size, schema, settings.params.size],
 	);
 	const durationOptions = useMemo(
-		() => getVideoDurationOptions(selectedModelId ?? "", normalizedSize),
-		[normalizedSize, selectedModelId],
+		() => getVideoDurationOptions(selectedModelId ?? "", normalizedSize, capabilityParamsById),
+		[capabilityParamsById, normalizedSize, selectedModelId],
 	);
 	const normalizedParams = useMemo(() => {
 		const duration = durationOptions.includes(settings.params.duration)
 			? settings.params.duration
-			: (durationOptions[0] ?? schema.durationOptions[0] ?? 5);
+			: durationOptions.includes(defaults.duration)
+				? defaults.duration
+				: (durationOptions[0] ?? schema.durationOptions[0] ?? 5);
 		return { size: normalizedSize, duration } satisfies VideoSettingsFormParams;
-	}, [durationOptions, normalizedSize, schema.durationOptions, settings.params.duration]);
+	}, [defaults.duration, durationOptions, normalizedSize, schema.durationOptions, settings.params.duration]);
 
 	useEffect(() => {
 		const patch: Partial<VideoRoomParams> = {};

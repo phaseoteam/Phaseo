@@ -56,6 +56,8 @@ type VideoModelSchema = {
 	durationOptions: number[];
 	durationOptionsBySize?: Record<string, number[]>;
 	maxCount: number;
+	defaultSize?: string;
+	defaultDuration?: number;
 };
 
 type AudioModelSchema = {
@@ -200,7 +202,73 @@ export function getImageModelSchema(modelId: string): ImageModelSchema {
 	};
 }
 
-export function getVideoModelSchema(modelId: string): VideoModelSchema {
+const VIDEO_CAPABILITY_IDS = ["video.generate", "video.generation", "video.generations"];
+const MAX_RANGE_OPTIONS = 60;
+
+/**
+ * The allowed values of one capability param, as the catalogue stores them in
+ * v2_route_capabilities.params: a list under values, enum or options, or a
+ * numeric min and max with an optional step (default 1).
+ */
+function readParamOptions(spec: unknown): unknown[] {
+	if (!isRecord(spec)) return [];
+	const list = spec.values ?? spec.enum ?? spec.options;
+	if (Array.isArray(list)) return list;
+	const min = Number(spec.min);
+	const max = Number(spec.max);
+	const step = spec.step == null ? 1 : Number(spec.step);
+	if (!Number.isFinite(min) || !Number.isFinite(max) || !(step > 0) || max < min) return [];
+	if ((max - min) / step + 1 > MAX_RANGE_OPTIONS) return [];
+	const values: number[] = [];
+	for (let value = min; value <= max + 1e-9; value += step) values.push(Math.round(value * 1000) / 1000);
+	return values;
+}
+
+function toNumberList(values: unknown[]): number[] {
+	return Array.from(new Set(values.map(Number).filter((value) => Number.isFinite(value) && value > 0)));
+}
+
+/**
+ * Video options stored for a route (size, duration, their defaults and
+ * duration.values_by_size), laid over the built-in schema for the model. Any
+ * part the catalogue leaves out keeps the built-in value.
+ */
+function applyStoredVideoParams(schema: VideoModelSchema, paramsById: CapabilityParamsById): VideoModelSchema {
+	const params = getCapabilityParams(paramsById, VIDEO_CAPABILITY_IDS);
+	if (!isRecord(params)) return schema;
+	const sizeSpec = params.size ?? params.resolution;
+	const durationSpec = params.duration ?? params.seconds ?? params.duration_seconds;
+	// Some rows list a size in two cases (480P and 480p); offer it once.
+	const seenSizes = new Set<string>();
+	const sizes = dedupeStrings(readParamOptions(sizeSpec).filter((value): value is string => typeof value === "string"))
+		.filter((size) => !seenSizes.has(size.toLowerCase()) && Boolean(seenSizes.add(size.toLowerCase())));
+	const durations = toNumberList(readParamOptions(durationSpec));
+	const next: VideoModelSchema = { ...schema };
+	if (sizes.length > 0) {
+		next.sizeOptions = sizes;
+		// Per-size durations written for other sizes no longer apply.
+		next.durationOptionsBySize = undefined;
+	}
+	if (durations.length > 0) next.durationOptions = durations;
+	const bySize = isRecord(durationSpec) ? durationSpec.values_by_size : undefined;
+	if (isRecord(bySize)) {
+		const entries = Object.entries(bySize)
+			.map(([size, values]) => [size, Array.isArray(values) ? toNumberList(values) : []] as const)
+			.filter(([, values]) => values.length > 0);
+		if (entries.length > 0) next.durationOptionsBySize = Object.fromEntries(entries);
+	}
+	const defaultSize = isRecord(sizeSpec) && typeof sizeSpec.default === "string" ? sizeSpec.default : undefined;
+	if (defaultSize && next.sizeOptions.includes(defaultSize)) next.defaultSize = defaultSize;
+	const defaultDuration = isRecord(durationSpec) ? Number(durationSpec.default) : Number.NaN;
+	if (next.durationOptions.includes(defaultDuration)) next.defaultDuration = defaultDuration;
+	return next;
+}
+
+export function getVideoModelSchema(modelId: string, capabilityParamsById?: CapabilityParamsById): VideoModelSchema {
+	return applyStoredVideoParams(getBuiltInVideoModelSchema(modelId), capabilityParamsById);
+}
+
+function getBuiltInVideoModelSchema(modelId: string): VideoModelSchema {
 	if (modelIdIncludes(modelId, ["minimax/hailuo-2.3-fast", "hailuo-2.3-fast"])) {
 		return {
 			sizeOptions: ["768P", "1080P"],
@@ -232,14 +300,6 @@ export function getVideoModelSchema(modelId: string): VideoModelSchema {
 				"768P": [6, 10],
 				"1080P": [6],
 			},
-			maxCount: 1,
-		};
-	}
-	if (modelIdIncludes(modelId, ["gemini-omni"])) {
-		// Gemini Omni: any whole duration from 3 to 10 seconds at every resolution.
-		return {
-			sizeOptions: ["720p", "360p", "1080p", "4k"],
-			durationOptions: [3, 4, 5, 6, 7, 8, 9, 10],
 			maxCount: 1,
 		};
 	}
@@ -334,8 +394,9 @@ function getVideoDurationOptionsForSchema(
 export function getVideoDurationOptions(
 	modelId: string,
 	size?: string | null,
+	capabilityParamsById?: CapabilityParamsById,
 ): number[] {
-	const schema = getVideoModelSchema(modelId);
+	const schema = getVideoModelSchema(modelId, capabilityParamsById);
 	const normalizedSize =
 		typeof size === "string" && schema.sizeOptions.includes(size)
 			? size
@@ -545,12 +606,18 @@ export function getDefaultImageRoomParams(modelId: string): ImageRoomParams {
 	};
 }
 
-export function getDefaultVideoRoomParams(modelId: string): VideoRoomParams {
-	const schema = getVideoModelSchema(modelId);
-	const size = schema.sizeOptions[0] ?? "1280x720";
+export function getDefaultVideoRoomParams(
+	modelId: string,
+	capabilityParamsById?: CapabilityParamsById,
+): VideoRoomParams {
+	const schema = getVideoModelSchema(modelId, capabilityParamsById);
+	const size = schema.defaultSize ?? schema.sizeOptions[0] ?? "1280x720";
 	const durationOptions = getVideoDurationOptionsForSchema(schema, size);
+	const duration = schema.defaultDuration != null && durationOptions.includes(schema.defaultDuration)
+		? schema.defaultDuration
+		: durationOptions[0];
 	return {
-		duration: durationOptions[0] ?? schema.durationOptions[0] ?? 5,
+		duration: duration ?? schema.durationOptions[0] ?? 5,
 		size,
 		n: 1,
 	};
@@ -615,16 +682,20 @@ export function buildImageRequestOptions(
 export function buildVideoRequestOptions(
 	modelId: string,
 	params: VideoRoomParams,
+	capabilityParamsById?: CapabilityParamsById,
 ): Record<string, unknown> {
-	const schema = getVideoModelSchema(modelId);
+	const schema = getVideoModelSchema(modelId, capabilityParamsById);
+	const defaults = getDefaultVideoRoomParams(modelId, capabilityParamsById);
 	const next: Record<string, unknown> = {};
 	const size = schema.sizeOptions.includes(params.size)
 		? params.size
-		: schema.sizeOptions[0] ?? "1280x720";
+		: defaults.size;
 	const durationOptions = getVideoDurationOptionsForSchema(schema, size);
 	const duration = durationOptions.includes(params.duration)
 		? params.duration
-		: durationOptions[0] ?? schema.durationOptions[0] ?? 5;
+		: durationOptions.includes(defaults.duration)
+			? defaults.duration
+			: durationOptions[0] ?? schema.durationOptions[0] ?? 5;
 	const count = Math.max(1, Math.min(schema.maxCount, Math.floor(params.n || 1)));
 	next.duration = duration;
 	next.size = size;

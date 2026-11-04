@@ -92,7 +92,8 @@ describe("Decisions quickstart", () => {
 
 describe("Video quickstart", () => {
 	test.each([
-		["google/gemini-omni-flash", 3, "720p"],
+		// No stored options here: the generic default, which Omni accepts as 720p 16:9.
+		["google/gemini-omni-flash", 5, "1280x720"],
 		["google/veo-3.1", 4, "720p"],
 		["openai/sora-2", 4, "720x1280"],
 		["minimax/hailuo-2.3", 6, "768P"],
