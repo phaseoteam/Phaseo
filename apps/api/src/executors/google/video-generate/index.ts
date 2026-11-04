@@ -38,8 +38,10 @@ import {
 import type { ProviderExecutor } from "../../types";
 
 const GOOGLE_VIDEO_BASE = "https://generativelanguage.googleapis.com";
-// Google gives no input size limit for Omni; inline media over this is refused.
+// Google gives no input size limit for Omni; inline media over these is refused,
+// per file and for the whole request (it is all held in memory as base64).
 const OMNI_MAX_INLINE_MEDIA_BYTES = 20 * 1024 * 1024;
+const OMNI_MAX_TOTAL_INLINE_MEDIA_BYTES = 24 * 1024 * 1024;
 
 type OmniMediaResolution = { ok: true; media: OmniInlineMedia[] } | { ok: false; result: ExecutorResult };
 
@@ -49,6 +51,15 @@ type OmniMediaResolution = { ok: true; media: OmniInlineMedia[] } | { ok: false;
  */
 async function resolveOmniInlineMedia(args: ExecutorExecuteArgs, request: NormalizedGoogleOmniRequest): Promise<OmniMediaResolution> {
 	const media: OmniInlineMedia[] = [];
+	let totalBase64Length = 0;
+	const overTotal = (data: string) => {
+		totalBase64Length += data.length;
+		return totalBase64Length * 0.75 > OMNI_MAX_TOTAL_INLINE_MEDIA_BYTES;
+	};
+	const tooLargeTotal = () => ({
+		ok: false as const,
+		result: mediaInputErrorResult("media_too_large", "Gemini Omni media inputs must total 24 MB or less.", args.requestId),
+	});
 	for (const item of request.media) {
 		const fallbackMimeType = item.kind === "video" ? "video/mp4" : "image/png";
 		const raw = item.source;
@@ -65,6 +76,7 @@ async function resolveOmniInlineMedia(args: ExecutorExecuteArgs, request: Normal
 			if (data.length * 0.75 > OMNI_MAX_INLINE_MEDIA_BYTES) {
 				return { ok: false, result: mediaInputErrorResult("media_too_large", `Gemini Omni ${item.kind} inputs must be 20 MB or smaller.`, args.requestId) };
 			}
+			if (overTotal(data)) return tooLargeTotal();
 			media.push({ kind: item.kind, mimeType: inlineData ? (recordMimeType || fallbackMimeType) : dataUrl!.mimeType, data });
 			continue;
 		}
@@ -87,6 +99,7 @@ async function resolveOmniInlineMedia(args: ExecutorExecuteArgs, request: Normal
 		if (!fetched.mimeType.startsWith(`${item.kind}/`)) {
 			return { ok: false, result: mediaInputErrorResult("unsupported_media_type", `Expected ${item.kind === "image" ? "an image" : "a video"} but got ${fetched.mimeType}: ${shortMediaUrl(value)}`, args.requestId) };
 		}
+		if (overTotal(fetched.data)) return tooLargeTotal();
 		media.push({ kind: item.kind, mimeType: fetched.mimeType, data: fetched.data });
 	}
 	return { ok: true, media };

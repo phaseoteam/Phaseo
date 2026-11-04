@@ -75,6 +75,36 @@ describe("Gemini Omni request", () => {
 		expect(request.resolution).toBe("4k");
 	});
 
+	it("rejects mask images instead of using them as frames", () => {
+		expect(() => normalizeGoogleOmniRequest(ir({ inputReferences: [{ type: "image", role: "mask", url: "https://example.com/m.png" }] })))
+			.toThrow("without masks");
+	});
+
+	it("keeps a native input_reference start image next to structured reference images", () => {
+		const request = normalizeGoogleOmniRequest(ir({
+			inputReference: "https://example.com/start.png",
+			inputReferences: [{ type: "image", role: "reference", url: "https://example.com/ref.png" }],
+		}));
+		expect(request.media.map((item) => [item.role, item.source])).toEqual([
+			["first_frame", "https://example.com/start.png"],
+			["reference", "https://example.com/ref.png"],
+		]);
+	});
+
+	it("does not count a start image twice when both forms carry it", () => {
+		const request = normalizeGoogleOmniRequest(ir({
+			inputReference: "https://example.com/start.png",
+			inputReferences: [{ type: "image", role: "first_frame", url: "https://example.com/start.png" }],
+		}));
+		expect(request.media).toHaveLength(1);
+	});
+
+	it("caps reference images at three", () => {
+		expect(() => normalizeGoogleOmniRequest(ir({
+			inputReferences: [1, 2, 3, 4].map((n) => ({ type: "image" as const, role: "reference" as const, url: `https://example.com/${n}.png` })),
+		}))).toThrow("at most 3 reference images");
+	});
+
 	it("builds a background interaction that returns a Files API URI", () => {
 		const request = normalizeGoogleOmniRequest(ir({ seconds: 4, size: "360p", aspectRatio: "9:16" }));
 		expect(buildGoogleOmniInteractionRequest({ model: "gemini-omni-1.1-flash", prompt: "A red paper boat", request, media: [], seed: 7 })).toEqual({

@@ -33,6 +33,8 @@ export const OMNI_VIDEO_TOKENS_PER_SECOND: Record<OmniResolution, number> = {
 const OMNI_ESTIMATED_THOUGHT_TOKENS = 1000;
 
 export const OMNI_DEFAULT_SECONDS = 8;
+// Google documents no image reference limit; this bounds the inline payload.
+const OMNI_MAX_REFERENCE_IMAGES = 3;
 const OMNI_MIN_SECONDS = 3;
 const OMNI_MAX_SECONDS = 10;
 
@@ -68,8 +70,9 @@ function present(value: unknown): boolean {
 }
 
 export function normalizeGoogleOmniRequest(ir: IRVideoGenerationRequest): NormalizedGoogleOmniRequest {
-	if (ir.inputReferences?.some((reference) => reference.type === "audio" || reference.type === "mask")) {
-		throw new InvalidGoogleVideoRequestError("Gemini Omni accepts image and video inputs only.");
+	if (ir.inputReferences?.some((reference) =>
+		reference.type === "audio" || reference.type === "mask" || reference.role === "mask")) {
+		throw new InvalidGoogleVideoRequestError("Gemini Omni accepts image and video inputs only, without masks.");
 	}
 	if (ir.generateAudio === false) {
 		throw new InvalidGoogleVideoRequestError("Gemini Omni always generates audio; generate_audio cannot be false.");
@@ -96,24 +99,27 @@ export function normalizeGoogleOmniRequest(ir: IRVideoGenerationRequest): Normal
 			media.push({ kind: "image", role: "first_frame", source });
 		}
 	}
-	if (references.length === 0) {
-		for (const source of [ir.inputImage, ir.input?.image, ir.inputReference]) {
-			if (present(source)) media.push({ kind: "image", role: "first_frame", source });
-		}
-		for (const source of [ir.lastFrame, ir.input?.lastFrame]) {
-			if (present(source)) media.push({ kind: "image", role: "last_frame", source });
-		}
-		for (const entry of [...(ir.referenceImages ?? []), ...(ir.input?.referenceImages ?? [])]) {
-			const source = entry?.image ?? entry?.url ?? entry?.uri ?? entry;
-			if (present(source)) media.push({ kind: "image", role: "reference", source });
-		}
-		for (const source of [ir.inputVideo, ir.input?.video]) {
-			if (present(source)) media.push({ kind: "video", role: "source", source });
+	// The legacy fields fill each role the structured references left empty, so a
+	// native input_reference image still counts next to structured reference images.
+	const count = (role: OmniMediaSource["role"]) => media.filter((item) => item.role === role).length;
+	const legacy: Array<[OmniMediaSource["kind"], OmniMediaSource["role"], unknown[]]> = [
+		["image", "first_frame", [ir.inputImage, ir.input?.image, ir.inputReference]],
+		["image", "last_frame", [ir.lastFrame, ir.input?.lastFrame]],
+		["image", "reference", [...(ir.referenceImages ?? []), ...(ir.input?.referenceImages ?? [])]
+			.map((entry) => entry?.image ?? entry?.url ?? entry?.uri ?? entry)],
+		["video", "source", [ir.inputVideo, ir.input?.video]],
+	];
+	for (const [kind, role, sources] of legacy) {
+		if (count(role) > 0) continue;
+		for (const source of sources) {
+			if (present(source)) media.push({ kind, role, source });
 		}
 	}
-	const count = (role: OmniMediaSource["role"]) => media.filter((item) => item.role === role).length;
 	if (count("first_frame") > 1 || count("last_frame") > 1 || count("source") > 1) {
 		throw new InvalidGoogleVideoRequestError("Gemini Omni accepts at most one first frame, last frame, and source video.");
+	}
+	if (count("reference") > OMNI_MAX_REFERENCE_IMAGES) {
+		throw new InvalidGoogleVideoRequestError(`Gemini Omni accepts at most ${OMNI_MAX_REFERENCE_IMAGES} reference images.`);
 	}
 	if (count("last_frame") > 0 && count("first_frame") === 0) {
 		throw new InvalidGoogleVideoRequestError("Gemini Omni last-frame generation requires a first-frame image.");
