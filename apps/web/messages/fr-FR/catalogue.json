@@ -1487,7 +1487,20 @@
 			"hourlyAverage": "Dernières 24 heures · moyenne horaire",
 			"routingChartLabel": "Disponibilité horaire du modèle sur les dernières 24 heures. Phaseo Routing : {uptime}.{comparison}",
 			"routingComparison": " Sans Phaseo Routing : {uptime}.",
-			"routingLabel": "Routage Phaseo"
+			"routingLabel": "Routage Phaseo",
+			"providerHealthTitle": "État du fournisseur",
+			"reachabilityLabel": "Joignabilité",
+			"capacityLabel": "Capacité",
+			"callErrorsLabel": "Erreurs d'appel",
+			"reachabilityHelp": "À quelle fréquence Phaseo a obtenu une réponse du fournisseur. Les échecs de connexion, les délais dépassés avant le début de la réponse et les erreurs de passerelle (502, 503, 504) comptent contre elle.",
+			"capacityHelp": "À quelle fréquence le fournisseur a accepté l'appel au lieu de le refuser pour cause de charge. Les limites de débit sur la clé de Phaseo et les réponses de surcharge ou de capacité épuisée comptent contre elle.",
+			"callErrorsHelp": "À quelle fréquence un appel accepté par le fournisseur s'est terminé sans échec. Les erreurs serveur, les flux interrompus en cours de route et les sorties vides ou invalides comptent contre elle.",
+			"reachabilityCount": "{count, plural, =0 {Aucune tentative} one {{failed, number} tentative sur # n'a pas pu joindre le fournisseur} other {{failed, number} tentatives sur # n'ont pas pu joindre le fournisseur}}",
+			"capacityCount": "{count, plural, =0 {Aucune tentative} one {{failed, number} tentative sur # a été refusée pour cause de charge} other {{failed, number} tentatives sur # ont été refusées pour cause de charge}}",
+			"callErrorsCount": "{count, plural, =0 {Aucune tentative} one {{failed, number} tentative sur # a échoué après son acceptation par le fournisseur} other {{failed, number} tentatives sur # ont échoué après leur acceptation par le fournisseur}}",
+			"attemptHourlyAverage": "Dernières 24 heures · moyenne horaire, par tentative auprès du fournisseur",
+			"providerHealthChartLabel": "État horaire du fournisseur sur les dernières 24 heures. Joignabilité : {reachability}. Capacité : {capacity}. Erreurs d'appel : {callErrors}.",
+			"attemptBasis": "Derniers 3 jours, par tentative auprès du fournisseur. Les erreurs causées par la requête ne sont pas comptées."
 		},
 		"providerInfo": {
 			"dataPolicy": "Politique relative aux données",

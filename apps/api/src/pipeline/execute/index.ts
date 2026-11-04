@@ -49,6 +49,7 @@ import {
 import { getBaseModel, calculateMaxTries, googleFlexMinimumHeadersTimeoutMs, longThinkingMinimumHeadersTimeoutMs } from "./utils";
 import { rankProviders } from "./providers";
 import { resolveProviderExecutor } from "../../executors";
+import { classifyAttemptHealth, classifyAttemptLog } from "./attempt-health";
 import {
 	admitThroughBreaker,
 	classifyProviderHealthImpact,
@@ -494,6 +495,7 @@ function recordProviderAttempt(
 	ctx: PipelineContext,
 	entry: ProviderAttemptLog,
 ): void {
+	entry.health_class ??= classifyAttemptLog(entry);
 	getProviderAttempts(ctx).push(entry);
 	recordProviderResult(ctx, entry);
 }
@@ -1581,6 +1583,18 @@ async function attemptProviderWithIR(
 		const message = err instanceof Error ? err.message : String(err);
 		const storedMessage = withoutStackFrames(message);
 		const thrownDescription = thrownExecutorErrorDescription(err);
+		const thrownErrorCode = typeof (err as any)?.code === "string" ? (err as any).code : null;
+		// A provider fetch that failed (transport error, headers timeout) is
+		// reachability; caller cancellation is the customer's; any other
+		// exception is treated as Phaseo's own until proven otherwise.
+		const thrownFailureOrigin = upstreamTracker?.isProviderTransportFailure?.(err) ? "provider" as const : undefined;
+		const thrownHealthClass = classifyAttemptHealth({
+			credentialSource: credentialLog.key_source,
+			failureOrigin: thrownFailureOrigin,
+			aborted: err instanceof Error && err.name === "AbortError",
+			errorCode: thrownErrorCode,
+			errorMessage: message,
+		});
 		attemptErrors.push({
 			...credentialLog,
 			provider: candidate.providerId,
@@ -1611,11 +1625,12 @@ async function attemptProviderWithIR(
 			upstream_error_message: storedMessage,
 			upstream_error_description: thrownDescription,
 			was_probe: isProbe,
+			health_class: thrownHealthClass,
 		});
 		const errorHealthImpact = classifyProviderHealthImpact({
 			credentialSource: credentialLog.key_source,
-			failureOrigin: upstreamTracker?.isProviderTransportFailure?.(err) ? "provider" : undefined,
-			errorCode: typeof (err as any)?.code === "string" ? (err as any).code : null,
+			failureOrigin: thrownFailureOrigin,
+			errorCode: thrownErrorCode,
 			errorMessage: message,
 		});
 		dispatchProviderHealthBackground(async () => {

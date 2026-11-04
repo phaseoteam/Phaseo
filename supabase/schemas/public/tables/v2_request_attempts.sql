@@ -14,7 +14,9 @@ CREATE TABLE "public"."v2_request_attempts" (
   "safe_metadata"        jsonb                    NOT NULL DEFAULT '{}'::jsonb,
   "created_at"           timestamp with time zone NOT NULL DEFAULT now(),
   "cloudflare_colo"      text,
+  "health_class"         text,
   CONSTRAINT "v2_request_attempts_cloudflare_colo_check" CHECK (((cloudflare_colo IS NULL) OR (cloudflare_colo ~ '^[A-Z0-9]{3}$'::text))),
+  CONSTRAINT "v2_request_attempts_health_class_check" CHECK (((health_class IS NULL) OR (health_class = ANY (ARRAY['success'::text, 'reachability'::text, 'capacity'::text, 'call_error'::text, 'customer'::text, 'phaseo'::text])))),
   CONSTRAINT "v2_request_attempts_key" UNIQUE (request_event_id, attempt_number),
   CONSTRAINT "v2_request_attempts_latency_check" CHECK (((latency_ms IS NULL) OR (latency_ms >= 0))),
   CONSTRAINT "v2_request_attempts_number_check" CHECK ((attempt_number > 0)),
@@ -56,3 +58,5 @@ CREATE POLICY "v2_request_attempts_workspace_select" ON "public"."v2_request_att
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."v2_request_attempts" TO "anon", "authenticated", "service_role";
 
 COMMENT ON COLUMN "public"."v2_request_attempts"."cloudflare_colo" IS 'Cloudflare execution colo associated with the gateway request attempt.';
+
+COMMENT ON COLUMN "public"."v2_request_attempts"."health_class" IS 'What the attempt says about its provider: success, reachability, capacity or call_error (provider failures), or customer / phaseo (excluded from provider metrics). Null on rows recorded before the gateway classified attempts.';

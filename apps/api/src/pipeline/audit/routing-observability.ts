@@ -1,3 +1,6 @@
+import { classifyAttemptLog, isAttemptHealthClass } from "@pipeline/execute/attempt-health";
+import type { ProviderAttemptLog } from "@pipeline/before/types";
+
 export type RoutingInput = {
     provider?: string | null;
     providerApiModelId?: string | null;
@@ -63,6 +66,11 @@ export function buildRoutingObservability(args: RoutingInput) {
             response_kind: typeof attempt.response_kind === "string" ? attempt.response_kind : null,
             retryable: attempt.retryable === true,
             was_probe: attempt.was_probe === true,
+            // Per-attempt provider health class for model pages. Attempts recorded
+            // without one (older callers) are classified from their own fields.
+            health_class: isAttemptHealthClass(attempt.health_class)
+                ? attempt.health_class
+                : classifyAttemptLog(attempt as unknown as ProviderAttemptLog),
         };
     });
     const attemptedKeys = new Set(normalizedAttempts.map((attempt) =>

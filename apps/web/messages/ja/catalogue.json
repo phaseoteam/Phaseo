@@ -1487,7 +1487,20 @@
 			"hourlyAverage": "過去24時間 · 時間別平均",
 			"routingChartLabel": "過去24時間のモデルの時間別稼働率。Phaseo Routing：{uptime}。{comparison}",
 			"routingComparison": " Phaseo Routing なし：{uptime}。",
-			"routingLabel": "Phaseoルーティング"
+			"routingLabel": "Phaseoルーティング",
+			"providerHealthTitle": "プロバイダーの状態",
+			"reachabilityLabel": "到達性",
+			"capacityLabel": "処理能力",
+			"callErrorsLabel": "呼び出しエラー",
+			"reachabilityHelp": "Phaseo がプロバイダーから何らかの応答を得られた割合です。接続エラー、応答開始前のタイムアウト、ゲートウェイエラー（502、503、504）が減点対象です。",
+			"capacityHelp": "プロバイダーが負荷を理由に拒否せず、呼び出しを受け付けた割合です。Phaseo 自身のキーに対するレート制限や、過負荷・容量不足の応答が減点対象です。",
+			"callErrorsHelp": "プロバイダーが受け付けた呼び出しが失敗せずに完了した割合です。サーバーエラー、途中で途切れたストリーム、空または無効な出力が減点対象です。",
+			"reachabilityCount": "{count, plural, =0 {試行なし} other {# 回の試行のうち {failed, number} 回がプロバイダーに到達できませんでした}}",
+			"capacityCount": "{count, plural, =0 {試行なし} other {# 回の試行のうち {failed, number} 回が負荷のため拒否されました}}",
+			"callErrorsCount": "{count, plural, =0 {試行なし} other {# 回の試行のうち {failed, number} 回がプロバイダーの受付後に失敗しました}}",
+			"attemptHourlyAverage": "過去 24 時間 · 1 時間ごとの平均（プロバイダーへの試行単位）",
+			"providerHealthChartLabel": "過去 24 時間のプロバイダーの状態（1 時間ごと）。到達性: {reachability}。処理能力: {capacity}。呼び出しエラー: {callErrors}。",
+			"attemptBasis": "過去 3 日間、プロバイダーへの試行単位。リクエストが原因のエラーは含みません。"
 		},
 		"providerInfo": {
 			"dataPolicy": "データポリシー",

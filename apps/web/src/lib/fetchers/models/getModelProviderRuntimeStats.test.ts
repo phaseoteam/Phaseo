@@ -149,3 +149,77 @@ describe("fillHourlyPerformanceBuckets", () => {
 		});
 	});
 });
+
+describe("per-attempt provider health", () => {
+	const now = new Date("2026-08-30T10:42:00.000Z");
+
+	it("bases uptime on eligible attempts and keeps the three rates", () => {
+		const stats = mapRpcRuntimeStatsRows({
+			now,
+			providerIds: ["flaky"],
+			rows: [
+				{
+					provider_id: "flaky",
+					service_tier: "standard",
+					requests: 4,
+					health_requests: 4,
+					health_success_requests: 4,
+					uptime_pct: 100,
+					buckets: [{ start: "2026-08-30T09:00:00.000Z", requests: 4, health_requests: 4, health_success_requests: 4 }],
+				},
+			] as Parameters<typeof mapRpcRuntimeStatsRows>[0]["rows"],
+			attemptHealthRows: [
+				{
+					provider_id: "flaky",
+					service_tier: "standard",
+					attempts: 11,
+					eligible_attempts: 10,
+					success_attempts: 4,
+					reachability_failures: 3,
+					capacity_failures: 2,
+					call_error_failures: 1,
+					reachability_pct: 70,
+					capacity_pct: 80,
+					call_error_pct: 90,
+					uptime_pct: 40,
+					buckets: [{ start: "2026-08-30T09:00:00.000Z", eligible_attempts: 10, success_attempts: 4 }],
+				},
+			],
+		});
+		const flaky = getProviderRuntimeStats(stats, "flaky");
+		// Requests succeeded after failover; the provider's own attempts did not.
+		expect(flaky).toMatchObject({ uptimePct3d: 40, healthRequests3d: 10, healthSuccessful3d: 4, requests3d: 4 });
+		expect(flaky?.uptimeDaily3d[0]).toEqual({ dayOffset: 0, uptimePct: 40, requests: 10, successful: 4 });
+		expect(flaky?.attemptHealth3d).toEqual({
+			attempts: 11,
+			eligibleAttempts: 10,
+			successAttempts: 4,
+			reachabilityFailures: 3,
+			capacityFailures: 2,
+			callErrorFailures: 1,
+			reachabilityPct: 70,
+			capacityPct: 80,
+			callErrorPct: 90,
+			uptimePct: 40,
+		});
+	});
+
+	it("adds providers that only failed over and keeps request uptime without attempt data", () => {
+		const stats = mapRpcRuntimeStatsRows({
+			now,
+			providerIds: ["served", "failover-only"],
+			rows: [
+				{ provider_id: "served", service_tier: "standard", requests: 2, health_requests: 2, health_success_requests: 2, uptime_pct: 100, buckets: [] },
+			] as Parameters<typeof mapRpcRuntimeStatsRows>[0]["rows"],
+			attemptHealthRows: [
+				{ provider_id: "failover-only", service_tier: "standard", attempts: 2, eligible_attempts: 2, success_attempts: 0, reachability_failures: 2, reachability_pct: 0, capacity_pct: 100, call_error_pct: 100, uptime_pct: 0, buckets: [] },
+			],
+		});
+		expect(getProviderRuntimeStats(stats, "served")).toMatchObject({ uptimePct3d: 100, healthRequests3d: 2, attemptHealth3d: null });
+		expect(getProviderRuntimeStats(stats, "failover-only")).toMatchObject({
+			uptimePct3d: 0,
+			healthRequests3d: 2,
+			attemptHealth3d: expect.objectContaining({ reachabilityFailures: 2, reachabilityPct: 0 }),
+		});
+	});
+});

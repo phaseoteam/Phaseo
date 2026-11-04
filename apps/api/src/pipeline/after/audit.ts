@@ -3,6 +3,7 @@
 // Why: Keeps post-execution side-effects consistent.
 // How: Emits audit events for success/failure requests.
 
+import { isErrorFinishReason, markServedAttemptHealth, servedAttemptHealthForFailure } from "@pipeline/execute/attempt-health";
 import { auditSuccess, auditFailure } from "../audit";
 import { protectStealthAuditArgs } from "../audit/stealth-identity";
 import { isStealthRequest } from "../stealth";
@@ -243,6 +244,11 @@ export async function handleFailureAudit(
     },
 ) {
 	finishStreamingProvider(ctx, "error");
+	// The served attempt was marked successful when headers arrived. A stream that
+	// broke afterwards, or empty/invalid output, is that provider's call error; a
+	// client cancellation is the customer's. Set before anything reads attempts.
+	const servedHealth = servedAttemptHealthForFailure(attribution, errorCode);
+	if (servedHealth) markServedAttemptHealth(ctx.providerAttempts, servedHealth);
 	// Enforce mode: a failed request frees its spend-limit admission (no-op without one).
 	releaseSpend(ctx.spendAdmission);
     const protectedOtlp = protectStealthAuditArgs({
@@ -445,6 +451,7 @@ export async function handleSuccessAudit(
     gatewayResponse?: unknown,
 ) {
 	finishStreamingProvider(ctx);
+	if (isErrorFinishReason(finishReason)) markServedAttemptHealth(ctx.providerAttempts, "call_error");
 	if (ctx.lifecycle && !ctx.lifecycle.events.some((event) => event.type === "response.ready")) {
 		recordLifecycleEvent(ctx, { type: "response.ready", status: statusCode });
 	}

@@ -1487,7 +1487,20 @@
 			"hourlyAverage": "Últimas 24 horas · média por hora",
 			"routingChartLabel": "Disponibilidade horária do modelo nas últimas 24 horas. Phaseo Routing: {uptime}.{comparison}",
 			"routingComparison": " Sem Phaseo Routing: {uptime}.",
-			"routingLabel": "Roteamento da Phaseo"
+			"routingLabel": "Roteamento da Phaseo",
+			"providerHealthTitle": "Saúde do provedor",
+			"reachabilityLabel": "Alcance",
+			"capacityLabel": "Capacidade",
+			"callErrorsLabel": "Erros de chamada",
+			"reachabilityHelp": "Com que frequência a Phaseo conseguiu alguma resposta do provedor. Falhas de conexão, tempos esgotados antes de a resposta começar e erros de gateway (502, 503, 504) contam contra.",
+			"capacityHelp": "Com que frequência o provedor aceitou a chamada em vez de recusá-la por carga. Limites de taxa na chave da própria Phaseo e respostas de sobrecarga ou falta de capacidade contam contra.",
+			"callErrorsHelp": "Com que frequência uma chamada aceita pelo provedor terminou sem falhar. Erros de servidor, streams interrompidos no meio e saídas vazias ou inválidas contam contra.",
+			"reachabilityCount": "{count, plural, =0 {Nenhuma tentativa} one {{failed, number} de # tentativa não alcançou o provedor} other {{failed, number} de # tentativas não alcançaram o provedor}}",
+			"capacityCount": "{count, plural, =0 {Nenhuma tentativa} one {{failed, number} de # tentativa foi recusada por carga} other {{failed, number} de # tentativas foram recusadas por carga}}",
+			"callErrorsCount": "{count, plural, =0 {Nenhuma tentativa} one {{failed, number} de # tentativa falhou depois de o provedor aceitá-la} other {{failed, number} de # tentativas falharam depois de o provedor aceitá-las}}",
+			"attemptHourlyAverage": "Últimas 24 horas · média por hora, por tentativa no provedor",
+			"providerHealthChartLabel": "Saúde do provedor por hora nas últimas 24 horas. Alcance: {reachability}. Capacidade: {capacity}. Erros de chamada: {callErrors}.",
+			"attemptBasis": "Últimos 3 dias, por tentativa no provedor. Erros causados pela solicitação não são contados."
 		},
 		"providerInfo": {
 			"dataPolicy": "Política de dados",

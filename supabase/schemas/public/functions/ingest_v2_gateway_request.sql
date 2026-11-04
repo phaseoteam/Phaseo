@@ -211,7 +211,8 @@ begin
 
   insert into public.v2_request_attempts (
     request_event_id, attempt_number, provider_model_id, status_code, success,
-    error_code, failure_class, upstream_response_id, latency_ms, cloudflare_colo, safe_metadata
+    error_code, failure_class, upstream_response_id, latency_ms, cloudflare_colo, safe_metadata,
+    health_class
   )
   select
     v_request_event_id,
@@ -231,7 +232,11 @@ begin
       'response_kind', nullif(item.value->>'response_kind', ''),
       'retryable', nullif(item.value->>'retryable', '')::boolean,
       'was_probe', coalesce((item.value->>'was_probe')::boolean, false)
-    ))
+    )),
+    case
+      when item.value->>'health_class' in ('success', 'reachability', 'capacity', 'call_error', 'customer', 'phaseo')
+      then item.value->>'health_class'
+    end
   from jsonb_array_elements(v_attempts) with ordinality as item(value, ordinality)
   left join lateral (
     select candidate.provider_model_id
