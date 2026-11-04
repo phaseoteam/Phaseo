@@ -18,12 +18,17 @@ function invoiceBelongsToWorkspace(
 	invoice: Pick<Stripe.Invoice, "customer" | "metadata">,
 	workspaceId: string,
 	workspaceCustomerId: string,
+	customerSharedWithOtherWorkspaces: boolean,
 ): boolean {
+	// An invoice that names a workspace belongs to that workspace only.
+	const metadataWorkspaceId = invoice.metadata?.workspace_id;
+	if (typeof metadataWorkspaceId === "string" && metadataWorkspaceId.trim()) {
+		return metadataWorkspaceId.trim() === workspaceId;
+	}
+	// Without metadata, fall back to the customer only when no other workspace uses it.
 	const customer = invoice.customer;
 	const customerId = typeof customer === "string" ? customer : customer?.id ?? "";
-	if (workspaceCustomerId && customerId === workspaceCustomerId) return true;
-	const metadataWorkspaceId = invoice.metadata?.workspace_id;
-	return typeof metadataWorkspaceId === "string" && metadataWorkspaceId.trim() === workspaceId;
+	return Boolean(workspaceCustomerId) && customerId === workspaceCustomerId && !customerSharedWithOtherWorkspaces;
 }
 
 function isStripeResourceMissing(error: unknown): boolean {
@@ -75,6 +80,16 @@ export async function POST(req: NextRequest) {
 		if (walletErr) throw walletErr;
 		const workspaceCustomerId =
 			typeof wallet?.stripe_customer_id === "string" ? wallet.stripe_customer_id.trim() : "";
+		let customerSharedWithOtherWorkspaces = false;
+		if (workspaceCustomerId) {
+			const { count, error: sharedErr } = await admin
+				.from("wallets")
+				.select("workspace_id", { count: "exact", head: true })
+				.eq("stripe_customer_id", workspaceCustomerId)
+				.neq("workspace_id", workspaceId);
+			if (sharedErr) throw sharedErr;
+			customerSharedWithOtherWorkspaces = (count ?? 0) > 0;
+		}
 
 		const stripe = getStripe();
 		let invoice: Stripe.Invoice;
@@ -86,7 +101,7 @@ export async function POST(req: NextRequest) {
 			}
 			throw err;
 		}
-		if (!invoiceBelongsToWorkspace(invoice, workspaceId, workspaceCustomerId)) {
+		if (!invoiceBelongsToWorkspace(invoice, workspaceId, workspaceCustomerId, customerSharedWithOtherWorkspaces)) {
 			return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
 		}
 
