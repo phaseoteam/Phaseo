@@ -107,11 +107,11 @@ const shellActions = String.raw`
   };
   /** The effort and other settings named after the model on the composer's model button. */
   window.__auditModelSettings = function() { return document.querySelector('main form button[aria-label="Choose model"] [data-model-settings]')?.textContent.trim()??''; };
-  /** Choose one of the model's settings (such as Reasoning: High) in the model picker, then close it. */
+  /** Choose one of the model's settings (such as Reasoning: High, or a speed in the picker's footer) in the model picker, then close it. */
   window.__auditModelSetting = async function(group,label) {
     const trigger=await window.__auditUntil(()=>{const value=document.querySelector('main form button[aria-label="Choose model"]');return value&&!value.disabled&&value;},'model picker');
     if(trigger.getAttribute('aria-expanded')!=='true')trigger.click();
-    const radios=()=>Array.from(document.querySelector('[data-slot="popover-content"] [role="group"][aria-label="Model settings"]')?.querySelectorAll('[role="radiogroup"]')??[]).find(row=>row.getAttribute('aria-label')===group)?.querySelectorAll('[role="radio"]')??[];
+    const radios=()=>Array.from(document.querySelector('[data-slot="popover-content"]')?.querySelectorAll('[role="radiogroup"]')??[]).find(row=>row.getAttribute('aria-label')===group)?.querySelectorAll('[role="radio"]')??[];
     const option=await window.__auditUntil(()=>Array.from(radios()).find(radio=>radio.textContent.trim()===label),'model setting '+group+': '+label);
     option.click();
     await window.__auditUntil(()=>Array.from(radios()).find(radio=>radio.getAttribute('aria-checked')==='true')?.textContent.trim()===label,'model setting chosen '+label);
