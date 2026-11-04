@@ -1,0 +1,90 @@
+name: Gateway Smoke
+
+# Authenticated production gateway check, run by hand after deploys and provider
+# changes. See scripts/gateway-smoke.md. Never scheduled: paid runs spend credits.
+# Pull requests that change the checker only run its offline tests.
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/gateway-smoke.yml'
+      - 'scripts/gateway-smoke.*'
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Why this run (deploy commit, provider change)'
+        required: true
+        type: string
+      paid:
+        description: 'Run the paid checks (credit gating, generations, recorded usage, wallet charge)'
+        required: false
+        default: false
+        type: boolean
+      max_spend_usd:
+        description: 'Budget for the paid checks, in USD (at most 1)'
+        required: false
+        default: '0.01'
+        type: string
+      model:
+        description: 'Model to call (defaults to the GATEWAY_SMOKE_MODEL variable)'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+# The wallet assertion needs the smoke workspace to itself.
+concurrency:
+  group: gateway-smoke-${{ github.event.pull_request.number || 'production' }}
+  cancel-in-progress: false
+
+jobs:
+  checker:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 24
+      - name: Validate checker
+        run: node --test scripts/gateway-smoke.test.mjs
+
+  smoke:
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'phaseoteam/Phaseo'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Holds the smoke credentials; its required reviewers approve every run.
+    environment: gateway-smoke
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 24
+      - name: Validate checker
+        run: node --test scripts/gateway-smoke.test.mjs
+      - name: Run smoke
+        env:
+          RUN_REASON: ${{ inputs.reason }}
+          RUN_PAID: ${{ inputs.paid }}
+          PHASEO_SMOKE_MAX_SPEND_USD: ${{ inputs.max_spend_usd }}
+          PHASEO_SMOKE_MODEL: ${{ inputs.model || vars.GATEWAY_SMOKE_MODEL }}
+          PHASEO_SMOKE_API_KEY: ${{ secrets.GATEWAY_SMOKE_API_KEY }}
+          PHASEO_SMOKE_MANAGEMENT_KEY: ${{ secrets.GATEWAY_SMOKE_MANAGEMENT_KEY }}
+          PHASEO_SMOKE_LOW_CREDIT_API_KEY: ${{ secrets.GATEWAY_SMOKE_LOW_CREDIT_API_KEY }}
+        run: |
+          echo "Reason: $RUN_REASON" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$RUN_PAID" = "true" ]; then
+            node scripts/gateway-smoke.mjs --paid
+          else
+            node scripts/gateway-smoke.mjs
+          fi

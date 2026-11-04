@@ -28,7 +28,7 @@ A failed migration job blocks every CI deploy. To recover a missed or failed rel
 
 ## Confirm a change is live
 
-- **Workers:** wait for the matching `deploy (…)` job, then request the changed endpoint on the live host, for example `https://api.phaseo.app/v1/…`.
+- **Workers:** wait for the matching `deploy (…)` job, then request the changed endpoint on the live host, for example `https://api.phaseo.app/v1/…`. After a gateway deploy or a provider change, also run the "Gateway Smoke" workflow ([gateway-smoke.md](../../scripts/gateway-smoke.md)).
 - **Web:** wait for `deploy (web, Deploy Web)`. `main` gets no `Vercel` status, so do not wait for one. Then load the page on `https://phaseo.app`. Non-default locales have a prefix, such as `/de-DE/`.
 - **Docs:** wait for the `Mintlify Deployment` check on the merge commit, then load `https://phaseo.app/docs/v1/…` (translations under `/docs/<locale>/v1/…`). Add a cache-busting query such as `?cb=1`.
 - **Database:** the migration job log lists the versions it applied. Read the new objects back only if the maintainer approves a read-only query.
