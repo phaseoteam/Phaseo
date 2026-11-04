@@ -98,7 +98,7 @@ How money goes back today:
 
 - **Self-serve refunds:** a customer can refund a whole top-up within 24 hours if the credit from it hasn't been used ([refund route](../../apps/web/src/app/api/stripe/refunds/request/route.ts)). This doesn't help after an incident that consumed credit.
 - **Credit codes:** `/internal/credits` creates a promo code with an amount, a redemption limit and an expiry. Send the code to the affected workspace by email.
-- **Ledger adjustments:** the credit ledger supports `grant`, `refund` and `adjustment` entries ([v2_credit_ledger.sql](../../supabase/schemas/public/tables/v2_credit_ledger.sql)), but there is no admin tool to add one to a single workspace, so use credit codes for now.
+- **Ledger adjustments:** balances live in `wallets` and `credit_ledger` ([credit_ledger.sql](../../supabase/schemas/public/tables/credit_ledger.sql)), but there is no admin tool to add an adjustment entry for a single workspace, so use credit codes for now.
 - **Card refunds** beyond the self-serve window go through the Stripe dashboard.
 
 When Phaseo gives money back:
