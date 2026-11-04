@@ -12,14 +12,12 @@ Sur la page d’un modèle, jusqu’à deux icônes suivent le nom de chaque fou
 
 ## Icône d’état
 
-Phaseo définit cet état manuellement, et il reste en place jusqu’à ce que Phaseo le modifie. Les pages de modèles affichent les trois niveaux de rétrogradation sous le libellé `Priorité réduite`.
+Phaseo définit cet état manuellement, et il reste en place jusqu’à ce que Phaseo le modifie. Une route à priorité réduite est un dernier recours : le Gateway ne l’essaie qu’après tous les autres fournisseurs sains.
 
 | Icône | État | Routage |
 | --- | --- | --- |
 | <Icon icon="circle-check" color="#16a34a" /> | `Active` | Routé normalement. |
-| <Icon icon="triangle-alert" color="#f59e0b" /> | `Deranked L1` | Routable, juste derrière les autres fournisseurs. |
-| <Icon icon="triangle-alert" color="#d97706" /> | `Deranked L2` | Routable, derrière les fournisseurs plus sains. |
-| <Icon icon="triangle-alert" color="#ef4444" /> | `Deranked L3` | Routable, loin derrière les autres fournisseurs. |
+| <Icon icon="triangle-alert" color="#d97706" /> | `Priorité réduite` | Uniquement en secours, après tous les autres fournisseurs sains. |
 | <Icon icon="ban" color="#dc2626" /> | `Disabled` | Pas de routage. |
 
 ## Routage en direct

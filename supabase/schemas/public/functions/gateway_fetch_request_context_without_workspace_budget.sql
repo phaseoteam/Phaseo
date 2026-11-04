@@ -513,7 +513,7 @@ begin
       and coalesce(dm.hidden, false) = false
       and (dm.status is null or lower(dm.status) in ('active', 'available', 'deprecated', 'retired'))
       and c.capability_id = gateway_fetch_request_context_without_workspace_budget.endpoint
-      and c.status in ('active', 'deranked', 'deranked_lvl1', 'deranked_lvl2', 'deranked_lvl3')
+      and c.status in ('active', 'degraded', 'deranked', 'deranked_lvl1', 'deranked_lvl2', 'deranked_lvl3')
       and m.is_active_gateway
       and (
         p.status <> 'external'

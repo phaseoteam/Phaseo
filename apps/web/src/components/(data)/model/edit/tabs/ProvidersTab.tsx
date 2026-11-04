@@ -63,9 +63,7 @@ export interface ProviderCapabilityRow {
   original_capability_id?: string | null
   status:
     | "active"
-    | "deranked_lvl1"
-    | "deranked_lvl2"
-    | "deranked_lvl3"
+    | "deranked"
     | "disabled"
   effective_from: string | null
   effective_to: string | null

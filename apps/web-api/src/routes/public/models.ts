@@ -198,7 +198,9 @@ function toStringList(value: unknown): string[] {
 
 function normaliseGatewayStatus(value: unknown, isActive: unknown): string {
 	const status = String(value ?? "").trim().toLowerCase().replace(/[\s-]+/g, "_");
-	if (status === "disabled" || status === "inactive" || status.startsWith("deranked")) return status;
+	if (status === "disabled" || status === "inactive") return status;
+	// A deranked (last-resort) route is stored as `degraded`; it counts only while routing is on.
+	if (status === "degraded" || status === "de_ranked" || /^deranked(_lvl_?[123])?$/.test(status)) return isActive ? "deranked" : "inactive";
 	if (status && status !== "active") return status;
 	return isActive ? "active" : "inactive";
 }

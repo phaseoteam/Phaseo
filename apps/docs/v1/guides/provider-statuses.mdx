@@ -13,14 +13,12 @@ A model page shows up to two icons after each provider's name: a **status icon**
 
 ## Status icon
 
-Phaseo sets this status by hand, and it stays until Phaseo changes it. Model pages label all three deranked levels `Lower priority`.
+Phaseo sets this status by hand, and it stays until Phaseo changes it. A route with lower priority is a last resort: the gateway tries it only after every other healthy provider.
 
 | Icon | Status | Routing |
 | --- | --- | --- |
 | <Icon icon="circle-check" color="#16a34a" /> | `Active` | Routed normally. |
-| <Icon icon="triangle-alert" color="#f59e0b" /> | `Deranked L1` | Routable, just behind other providers. |
-| <Icon icon="triangle-alert" color="#d97706" /> | `Deranked L2` | Routable, behind healthier providers. |
-| <Icon icon="triangle-alert" color="#ef4444" /> | `Deranked L3` | Routable, well behind other providers. |
+| <Icon icon="triangle-alert" color="#d97706" /> | `Lower priority` | Used only as a backup, after every other healthy provider. |
 | <Icon icon="ban" color="#dc2626" /> | `Disabled` | Not routed. |
 
 ## Live routing

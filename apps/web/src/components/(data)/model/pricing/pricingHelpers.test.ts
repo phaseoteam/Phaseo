@@ -955,7 +955,7 @@ describe("buildProviderSections", () => {
 				model_id: "anthropic/claude-opus-5-fast",
 				provider_model_slug: "claude-opus-5-fast",
 				endpoint: "text.generate",
-				capability_status: "deranked_lvl2",
+				capability_status: "degraded",
 				is_active_gateway: false,
 				input_modalities: "text,image",
 				output_modalities: "text",

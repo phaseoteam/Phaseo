@@ -171,11 +171,10 @@ export type ProviderRolloutStatus =
     | "paused"
     | "soft_blocked";
 
+/** `deranked`: routable only as a last resort, after every other healthy provider. */
 export type RoutingStatus =
     | "active"
-    | "deranked_lvl1"
-    | "deranked_lvl2"
-    | "deranked_lvl3"
+    | "deranked"
     | "disabled";
 
 export type CapabilityRoutingStatus = RoutingStatus | "internal_testing" | "coming_soon";

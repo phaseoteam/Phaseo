@@ -1,8 +1,6 @@
 export type ProviderAuditRoutabilityKey =
 	| "active"
-	| "deranked_lvl1"
-	| "deranked_lvl2"
-	| "deranked_lvl3"
+	| "deranked"
 	| "preview_only"
 	| "internal_testing"
 	| "coming_soon"
@@ -92,29 +90,11 @@ function isExpiredEffectiveWindow(
 	return Number.isFinite(to.getTime()) && now >= to;
 }
 
-function describeDerankedState(level: "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3"): ProviderAuditRoutability {
-	if (level === "deranked_lvl3") {
-		return {
-			key: "deranked_lvl3",
-			label: "Deranked L3",
-			detail: "Routable, but heavily deprioritized by routing health.",
-			availability: "active",
-			isRoutableNow: true,
-		};
-	}
-	if (level === "deranked_lvl2") {
-		return {
-			key: "deranked_lvl2",
-			label: "Deranked L2",
-			detail: "Routable, but currently deprioritized by routing health.",
-			availability: "active",
-			isRoutableNow: true,
-		};
-	}
+function describeDerankedState(_level: "deranked"): ProviderAuditRoutability {
 	return {
-		key: "deranked_lvl1",
-		label: "Deranked L1",
-		detail: "Routable, but slightly deprioritized by routing health.",
+		key: "deranked",
+		label: "Lower priority",
+		detail: "Routable, but used only as a backup when the other providers fail.",
 		availability: "active",
 		isRoutableNow: true,
 	};
@@ -368,17 +348,13 @@ export function classifyProviderAuditRoutability(
 	}
 
 	if (
-		providerRoutingStatus === "deranked_lvl1" ||
-		providerRoutingStatus === "deranked_lvl2" ||
-		providerRoutingStatus === "deranked_lvl3"
+		providerRoutingStatus === "deranked"
 	) {
 		return describeDerankedState(providerRoutingStatus);
 	}
 
 	if (
-		modelRoutingStatus === "deranked_lvl1" ||
-		modelRoutingStatus === "deranked_lvl2" ||
-		modelRoutingStatus === "deranked_lvl3"
+		modelRoutingStatus === "deranked"
 	) {
 		return describeDerankedState(modelRoutingStatus);
 	}
@@ -448,9 +424,7 @@ function chooseAggregateState(states: ProviderAuditRoutability[]): ProviderAudit
 	if (fullyActive) return fullyActive;
 	if (activeStates.length > 0) {
 		return (
-			activeStates.find((state) => state.key === "deranked_lvl3") ??
-			activeStates.find((state) => state.key === "deranked_lvl2") ??
-			activeStates.find((state) => state.key === "deranked_lvl1") ??
+			activeStates.find((state) => state.key === "deranked") ??
 			activeStates[0]
 		);
 	}

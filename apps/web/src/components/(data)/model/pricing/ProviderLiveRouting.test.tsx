@@ -36,7 +36,7 @@ test("shows nothing while routing is normal or the route is not routed", () => {
 });
 
 test("shows an open breaker as temporarily limited, also on a hand-set lower-priority route", () => {
-	for (const statusKey of ["active", "deranked_lvl2"]) {
+	for (const statusKey of ["active", "deranked"]) {
 		const button = indicator(open, statusKey);
 		expect(button.attr("data-live-routing")).toBe("limited");
 		expect(button.attr("aria-label")).toBe("Live routing: Temporarily limited");

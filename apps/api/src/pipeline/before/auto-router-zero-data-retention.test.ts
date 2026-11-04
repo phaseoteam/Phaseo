@@ -163,7 +163,7 @@ describe("auto router and zero data retention", () => {
 		}, plainProvider, "chat.completions", "model/a")).toBe(true);
 		// A deranked capability is still routable.
 		expect(routeOffersZeroDataRetention({
-			data_policies: [policy("text.generate", { zeroDataRetention: true }, { status: "deranked_lvl2" })],
+			data_policies: [policy("text.generate", { zeroDataRetention: true }, { status: "degraded" })],
 		}, plainProvider, "responses", "model/a")).toBe(true);
 	});
 

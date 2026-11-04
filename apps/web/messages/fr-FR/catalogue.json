@@ -232,9 +232,7 @@
 			"featureStructuredOutputs": "Sorties structurées",
 			"featureWebSearch": "Recherche Web",
 			"featureFree": "Variante gratuite",
-			"statusDeranked1": "Déclassement niveau 1",
-			"statusDeranked2": "Déclassement niveau 2",
-			"statusDeranked3": "Déclassement niveau 3",
+			"statusDeranked": "Priorité réduite",
 			"statusDisabled": "Désactivé",
 			"regionJapan": "Japon",
 			"regionAustralia": "Australie",
@@ -811,17 +809,9 @@
 						"label": "Bloqué temporairement",
 						"description": "Le routage est temporairement bloqué."
 					},
-					"deranked_lvl1": {
-						"label": "Priorité réduite L1",
-						"description": "Le routage public est disponible, mais la priorité est légèrement réduite par l’état de santé."
-					},
-					"deranked_lvl2": {
-						"label": "Priorité réduite L2",
-						"description": "Le routage public est disponible, mais la priorité est réduite par l’état de santé."
-					},
-					"deranked_lvl3": {
-						"label": "Priorité réduite L3",
-						"description": "Le routage public est disponible, mais la priorité est fortement réduite par l’état de santé."
+					"deranked": {
+						"label": "Priorité réduite",
+						"description": "Routable publiquement, mais utilisé uniquement en secours lorsque les autres fournisseurs échouent."
 					},
 					"internal_testing": {
 						"label": "Tests internes",
@@ -1105,7 +1095,7 @@
 				"disabled": "Désactivé explicitement et non acheminable.",
 				"comingSoon": "Bientôt disponible, pas encore acheminable.",
 				"internalTesting": "Disponible uniquement pour les tests internes.",
-				"rateLimited": "Défini par Phaseo. Toujours disponible, mais les requêtes vont d’abord à d’autres fournisseurs jusqu’à ce que Phaseo le modifie.",
+				"rateLimited": "Défini par Phaseo. Utilisé uniquement en secours lorsque les autres fournisseurs échouent.",
 				"degraded": "Disponible avec un état de routage dégradé.",
 				"external": "Répertorié dans un catalogue externe ; non routable via Phaseo."
 			},
@@ -3172,9 +3162,7 @@
 		"providerStatus": {
 			"active": "Actif",
 			"coming_soon": "Bientôt disponible",
-			"deranked_lvl1": "Déclassé L1",
-			"deranked_lvl2": "Déclassé L2",
-			"deranked_lvl3": "Déclassé L3",
+			"deranked": "Priorité réduite",
 			"disabled": "Désactivé",
 			"inactive": "Inactif",
 			"internal_testing": "Tests internes",

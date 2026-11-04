@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { routeProviders } from "./routing";
+import { isRecoveryProbeRequest } from "./health.config";
 
 const readHealthManyMock = vi.fn();
 const readStickyRoutingMock = vi.fn();
@@ -82,9 +83,9 @@ function candidate(args: {
 	providerModelSlug?: string | null;
 	providerStatus?: "active" | "beta" | "alpha" | "external" | "not_ready";
 	externalRoutingOverride?: boolean;
-	providerRoutingStatus?: "active" | "deranked" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
-	modelRoutingStatus?: "active" | "deranked" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
-	capabilityStatus?: "active" | "deranked" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled" | "internal_testing";
+	providerRoutingStatus?: "active" | "degraded" | "deranked" | "disabled";
+	modelRoutingStatus?: "active" | "degraded" | "deranked" | "disabled";
+	capabilityStatus?: "active" | "degraded" | "deranked" | "disabled" | "internal_testing";
 	residencyMode?: "unknown" | "provider_managed" | "customer_selectable" | "account_selected" | null;
 	executionRegions?: string[] | null;
 	dataRegions?: string[] | null;
@@ -738,33 +739,69 @@ describe("routeProviders testing mode", () => {
 		}
 	});
 
-	it("applies strong derank multipliers (legacy deranked maps to lvl1)", async () => {
-		const result = await routeProviders(
-			[
-				candidate({ providerId: "openai", capabilityStatus: "active" }),
-				candidate({ providerId: "google-ai-studio", capabilityStatus: "deranked" }),
-				candidate({ providerId: "anthropic", capabilityStatus: "deranked_lvl2" }),
-			],
-			{
-				endpoint: "responses",
-				model: "openai/gpt-4o-mini:fast",
-				workspaceId: "team_123",
-				testingMode: false,
+	it("tries a deranked route only after every healthy provider, however cheap it is", async () => {
+		const candidates = [
+			candidate({ providerId: "openai", providerModelSlug: "gpt", pricingCard: textPricingCard(0.000004, 0) }),
+			// Stored as `degraded` in the catalogue, at the capability and at the route.
+			candidate({ providerId: "google-ai-studio", providerModelSlug: "gemini", capabilityStatus: "degraded", pricingCard: textPricingCard(0.0000001, 0) }),
+			candidate({ providerId: "anthropic", providerModelSlug: "claude", modelRoutingStatus: "degraded", pricingCard: textPricingCard(0.0000001, 0) }),
+			candidate({ providerId: "mistral", providerModelSlug: "mistral", pricingCard: textPricingCard(0.000004, 0) }),
+		];
+		for (const model of ["openai/gpt-4o-mini", "openai/gpt-4o-mini:fast"]) {
+			for (let index = 0; index < 50; index++) {
+				const context = { endpoint: "responses" as const, model, workspaceId: "team_123", requestId: `last-resort-${index}` };
+				const ids = (await routeProviders(candidates, context as any)).ranked.map((entry) => entry.candidate.providerId);
+				expect(new Set(ids.slice(0, 2))).toEqual(new Set(["openai", "mistral"]));
+				expect(new Set(ids.slice(2))).toEqual(new Set(["google-ai-studio", "anthropic"]));
 			}
-		);
-
-		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual([
-			"openai",
-			"google-ai-studio",
-			"anthropic",
-		]);
+		}
 	});
 
-	it("keeps lvl3 candidates reachable when explicitly requested", async () => {
+	it("orders fallbacks: last resort, then providers at their limit, then open breakers", async () => {
+		providerQuotaPressureMock.mockImplementation((providerId) => providerId === "openai" ? 1.5 : 0);
+		readHealthManyMock.mockImplementation((_endpoint: string, _model: string, providerIds: string[]) =>
+			Object.fromEntries(providerIds.map((providerId) => [providerId, providerId === "anthropic"
+				? health(providerId, { breaker: "open", breaker_until_ms: Date.now() + 60_000 })
+				: health(providerId)])));
+		try {
+			const candidates = [
+				candidate({ providerId: "openai", providerModelSlug: "gpt", pricingCard: textPricingCard(0.000001, 0) }),
+				candidate({ providerId: "google-ai-studio", providerModelSlug: "gemini", providerRoutingStatus: "deranked", pricingCard: textPricingCard(0.000001, 0) }),
+				candidate({ providerId: "anthropic", providerModelSlug: "claude", pricingCard: textPricingCard(0.000001, 0) }),
+				candidate({ providerId: "mistral", providerModelSlug: "mistral", pricingCard: textPricingCard(0.000004, 0) }),
+			];
+			for (const requestId of ["tier-1", "tier-2", "tier-3", "tier-4"]) {
+				const context = { endpoint: "responses" as const, model: "openai/gpt-4o-mini", workspaceId: "team_123", requestId };
+				const result = await routeProviders(candidates, context as any);
+				expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual(["mistral", "google-ai-studio", "openai", "anthropic"]);
+			}
+		} finally {
+			providerQuotaPressureMock.mockReset().mockReturnValue(0);
+		}
+	});
+
+	it("never promotes a deranked route ahead of the main pool for a recovery probe", async () => {
+		readHealthManyMock.mockImplementation((_endpoint: string, _model: string, providerIds: string[]) =>
+			Object.fromEntries(providerIds.map((providerId) => [providerId, providerId === "google-ai-studio"
+				? health(providerId, { breaker: "half_open", breaker_until_ms: Date.now() - 1_000 })
+				: health(providerId)])));
+		const probeIds = Array.from({ length: 400 }, (_, index) => `probe-${index}`)
+			.filter((requestId) => isRecoveryProbeRequest("team_123", requestId)).slice(0, 5);
+		expect(probeIds).toHaveLength(5);
+		const route = (status: "active" | "degraded") => Promise.all(probeIds.map(async (requestId) => (await routeProviders([
+			candidate({ providerId: "openai", providerModelSlug: "gpt" }),
+			candidate({ providerId: "google-ai-studio", providerModelSlug: "gemini", capabilityStatus: status }),
+		], { endpoint: "responses", model: "openai/gpt-4o-mini", workspaceId: "team_123", requestId } as any)).ranked[0].candidate.providerId));
+		// The same probe requests do promote the recovering route when it is not deranked.
+		expect(new Set(await route("active"))).toEqual(new Set(["google-ai-studio"]));
+		expect(new Set(await route("degraded"))).toEqual(new Set(["openai"]));
+	});
+
+	it("keeps a deranked route reachable when it is the only one requested", async () => {
 		const result = await routeProviders(
 			[
 				candidate({ providerId: "openai", providerRoutingStatus: "active" }),
-				candidate({ providerId: "google-ai-studio", providerRoutingStatus: "deranked_lvl3" }),
+				candidate({ providerId: "google-ai-studio", providerRoutingStatus: "degraded" }),
 			],
 			{
 				endpoint: "responses",

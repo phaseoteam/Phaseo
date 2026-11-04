@@ -12,14 +12,12 @@ Auf einer Modellseite stehen hinter jedem Anbieternamen bis zu zwei Symbole: ein
 
 ## Statussymbol
 
-Phaseo legt diesen Status manuell fest, und er bleibt bestehen, bis Phaseo ihn ändert. Modellseiten zeigen alle drei Zurückstufungen als `Niedrigere Priorität` an.
+Phaseo legt diesen Status manuell fest, und er bleibt bestehen, bis Phaseo ihn ändert. Eine Route mit niedrigerer Priorität ist eine letzte Reserve: Das Gateway versucht sie erst nach allen anderen gesunden Anbietern.
 
 | Symbol | Status | Routing |
 | --- | --- | --- |
 | <Icon icon="circle-check" color="#16a34a" /> | `Active` | Wird normal geroutet. |
-| <Icon icon="triangle-alert" color="#f59e0b" /> | `Deranked L1` | Routbar, knapp hinter anderen Anbietern. |
-| <Icon icon="triangle-alert" color="#d97706" /> | `Deranked L2` | Routbar, hinter gesünderen Anbietern. |
-| <Icon icon="triangle-alert" color="#ef4444" /> | `Deranked L3` | Routbar, weit hinter anderen Anbietern. |
+| <Icon icon="triangle-alert" color="#d97706" /> | `Niedrigere Priorität` | Nur als Reserve, nach allen anderen gesunden Anbietern. |
 | <Icon icon="ban" color="#dc2626" /> | `Disabled` | Wird nicht geroutet. |
 
 ## Live-Routing

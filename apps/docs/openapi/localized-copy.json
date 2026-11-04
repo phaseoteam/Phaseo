@@ -250,6 +250,42 @@
 					"zh-Hans": "从左上角起，以图像尺寸比例表示的边缘。top 必须小于 bottom；left 必须小于 right。",
 					"ar": "الحواف كنسب من أبعاد الصورة بدءًا من الزاوية العلوية اليسرى. يجب أن تكون top أقل من bottom وleft أقل من right."
 				}
+			},
+			"GatewayProviderAvailabilityReason": {
+				"/description": {
+					"es": "Una ruta con prioridad reducida (`deranked`) solo se enruta como último recurso, después de todos los demás proveedores en buen estado. `deranked_lvl1`, `deranked_lvl2` y `deranked_lvl3` ya no se devuelven.",
+					"fr": "Une route rétrogradée (`deranked`) n’est routée qu’en dernier recours, après tous les autres fournisseurs sains. `deranked_lvl1`, `deranked_lvl2` et `deranked_lvl3` ne sont plus renvoyés.",
+					"de": "Eine zurückgestufte Route (`deranked`) wird nur als letzte Reserve geroutet, nach allen anderen gesunden Anbietern. `deranked_lvl1`, `deranked_lvl2` und `deranked_lvl3` werden nicht mehr zurückgegeben.",
+					"pt-BR": "Uma rota rebaixada (`deranked`) só é roteada como último recurso, depois de todos os outros provedores saudáveis. `deranked_lvl1`, `deranked_lvl2` e `deranked_lvl3` não são mais retornados.",
+					"hi": "प्राथमिकता घटाया गया रूट (`deranked`) सिर्फ़ अंतिम विकल्प के रूप में, बाकी सभी स्वस्थ प्रदाताओं के बाद रूट होता है। `deranked_lvl1`, `deranked_lvl2` और `deranked_lvl3` अब नहीं लौटाए जाते।",
+					"ja": "優先度が下げられたルート（`deranked`）は、他のすべての正常なプロバイダーの後に、最終手段としてのみルーティングされます。`deranked_lvl1`、`deranked_lvl2`、`deranked_lvl3` は返されなくなりました。",
+					"zh-Hans": "降级路由（`deranked`）仅作为最后手段，在所有其他健康的提供商之后才会被路由。不再返回 `deranked_lvl1`、`deranked_lvl2` 和 `deranked_lvl3`。",
+					"ar": "لا يُوجَّه المسار المخفّض الأولوية (`deranked`) إلا كملاذ أخير، بعد جميع المزوّدين السليمين الآخرين. لم تعد القيم `deranked_lvl1` و`deranked_lvl2` و`deranked_lvl3` تُعاد."
+				}
+			},
+			"GatewayRoutingStatus": {
+				"/description": {
+					"es": "Una ruta con prioridad reducida (`deranked`) solo se enruta como último recurso, después de todos los demás proveedores en buen estado. `deranked_lvl1`, `deranked_lvl2` y `deranked_lvl3` ya no se devuelven.",
+					"fr": "Une route rétrogradée (`deranked`) n’est routée qu’en dernier recours, après tous les autres fournisseurs sains. `deranked_lvl1`, `deranked_lvl2` et `deranked_lvl3` ne sont plus renvoyés.",
+					"de": "Eine zurückgestufte Route (`deranked`) wird nur als letzte Reserve geroutet, nach allen anderen gesunden Anbietern. `deranked_lvl1`, `deranked_lvl2` und `deranked_lvl3` werden nicht mehr zurückgegeben.",
+					"pt-BR": "Uma rota rebaixada (`deranked`) só é roteada como último recurso, depois de todos os outros provedores saudáveis. `deranked_lvl1`, `deranked_lvl2` e `deranked_lvl3` não são mais retornados.",
+					"hi": "प्राथमिकता घटाया गया रूट (`deranked`) सिर्फ़ अंतिम विकल्प के रूप में, बाकी सभी स्वस्थ प्रदाताओं के बाद रूट होता है। `deranked_lvl1`, `deranked_lvl2` और `deranked_lvl3` अब नहीं लौटाए जाते।",
+					"ja": "優先度が下げられたルート（`deranked`）は、他のすべての正常なプロバイダーの後に、最終手段としてのみルーティングされます。`deranked_lvl1`、`deranked_lvl2`、`deranked_lvl3` は返されなくなりました。",
+					"zh-Hans": "降级路由（`deranked`）仅作为最后手段，在所有其他健康的提供商之后才会被路由。不再返回 `deranked_lvl1`、`deranked_lvl2` 和 `deranked_lvl3`。",
+					"ar": "لا يُوجَّه المسار المخفّض الأولوية (`deranked`) إلا كملاذ أخير، بعد جميع المزوّدين السليمين الآخرين. لم تعد القيم `deranked_lvl1` و`deranked_lvl2` و`deranked_lvl3` تُعاد."
+				}
+			},
+			"GatewayCapabilityStatus": {
+				"/description": {
+					"es": "Una ruta con prioridad reducida (`deranked`) solo se enruta como último recurso, después de todos los demás proveedores en buen estado. `deranked_lvl1`, `deranked_lvl2` y `deranked_lvl3` ya no se devuelven.",
+					"fr": "Une route rétrogradée (`deranked`) n’est routée qu’en dernier recours, après tous les autres fournisseurs sains. `deranked_lvl1`, `deranked_lvl2` et `deranked_lvl3` ne sont plus renvoyés.",
+					"de": "Eine zurückgestufte Route (`deranked`) wird nur als letzte Reserve geroutet, nach allen anderen gesunden Anbietern. `deranked_lvl1`, `deranked_lvl2` und `deranked_lvl3` werden nicht mehr zurückgegeben.",
+					"pt-BR": "Uma rota rebaixada (`deranked`) só é roteada como último recurso, depois de todos os outros provedores saudáveis. `deranked_lvl1`, `deranked_lvl2` e `deranked_lvl3` não são mais retornados.",
+					"hi": "प्राथमिकता घटाया गया रूट (`deranked`) सिर्फ़ अंतिम विकल्प के रूप में, बाकी सभी स्वस्थ प्रदाताओं के बाद रूट होता है। `deranked_lvl1`, `deranked_lvl2` और `deranked_lvl3` अब नहीं लौटाए जाते।",
+					"ja": "優先度が下げられたルート（`deranked`）は、他のすべての正常なプロバイダーの後に、最終手段としてのみルーティングされます。`deranked_lvl1`、`deranked_lvl2`、`deranked_lvl3` は返されなくなりました。",
+					"zh-Hans": "降级路由（`deranked`）仅作为最后手段，在所有其他健康的提供商之后才会被路由。不再返回 `deranked_lvl1`、`deranked_lvl2` 和 `deranked_lvl3`。",
+					"ar": "لا يُوجَّه المسار المخفّض الأولوية (`deranked`) إلا كملاذ أخير، بعد جميع المزوّدين السليمين الآخرين. لم تعد القيم `deranked_lvl1` و`deranked_lvl2` و`deranked_lvl3` تُعاد."
+				}
 			}
 		}
 	},

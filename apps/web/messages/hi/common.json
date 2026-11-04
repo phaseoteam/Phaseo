@@ -917,9 +917,7 @@
 			"supportedParamsDescription": "इस क्षमता द्वारा समर्थित अनुरोध पैरामीटर चुनें।",
 			"capabilityStatuses": {
 				"active": "सक्रिय",
-				"derankedLvl1": "कम प्राथमिकता — स्तर 1",
-				"derankedLvl2": "कम प्राथमिकता — स्तर 2",
-				"derankedLvl3": "कम प्राथमिकता — स्तर 3",
+				"deranked": "अंतिम विकल्प",
 				"disabled": "अक्षम"
 			},
 			"pricingRules": "मूल्य नियम",

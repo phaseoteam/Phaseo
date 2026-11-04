@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 export type LiveRoutingState = "limited" | "recovering";
 
 // The breaker only acts on routes the gateway actually routes; on any other status it is noise.
-const ROUTED_STATUSES = new Set(["active", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3"]);
+const ROUTED_STATUSES = new Set(["active", "deranked"]);
 
 /**
  * The live breaker state for a provider row, separate from its catalogue status: an open

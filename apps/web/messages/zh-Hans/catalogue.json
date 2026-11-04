@@ -232,9 +232,7 @@
 			"featureStructuredOutputs": "结构化输出",
 			"featureWebSearch": "网页搜索",
 			"featureFree": "免费变体",
-			"statusDeranked1": "降级级别 1",
-			"statusDeranked2": "降级级别 2",
-			"statusDeranked3": "降级级别 3",
+			"statusDeranked": "优先级较低",
 			"statusDisabled": "已停用",
 			"regionJapan": "日本",
 			"regionAustralia": "澳大利亚",
@@ -811,17 +809,9 @@
 						"label": "临时拦截",
 						"description": "路由暂时受到软性限制。"
 					},
-					"deranked_lvl1": {
-						"label": "降级 L1",
-						"description": "可公开路由，但健康策略略微降低了优先级。"
-					},
-					"deranked_lvl2": {
-						"label": "降级 L2",
-						"description": "可公开路由，但健康策略当前降低了优先级。"
-					},
-					"deranked_lvl3": {
-						"label": "降级 L3",
-						"description": "可公开路由，但健康策略大幅降低了优先级。"
+					"deranked": {
+						"label": "优先级较低",
+						"description": "可公开路由，但仅在其他提供商失败时作为备用。"
 					},
 					"internal_testing": {
 						"label": "内部测试",
@@ -1105,7 +1095,7 @@
 				"disabled": "已明确停用，无法路由。",
 				"comingSoon": "即将推出，尚不可路由。",
 				"internalTesting": "仅供内部测试。",
-				"rateLimited": "由 Phaseo 设置。仍然可用，但在 Phaseo 更改之前，请求会先发送给其他提供商。",
+				"rateLimited": "由 Phaseo 设置。仅在其他提供商失败时作为备用。",
 				"degraded": "可用，但路由健康状况已降级。",
 				"external": "列在外部目录中；无法通过 Phaseo 路由。"
 			},
@@ -3172,9 +3162,7 @@
 		"providerStatus": {
 			"active": "已启用",
 			"coming_soon": "即将推出",
-			"deranked_lvl1": "降级 L1",
-			"deranked_lvl2": "降级 L2",
-			"deranked_lvl3": "降级 L3",
+			"deranked": "优先级较低",
 			"disabled": "已停用",
 			"inactive": "未激活",
 			"internal_testing": "内部测试",

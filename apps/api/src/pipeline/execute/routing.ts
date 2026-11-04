@@ -120,12 +120,9 @@ function normalizeCapabilityStatus(value?: string | null): CapabilityStatus {
     return normalizeSharedCapabilityStatus(value);
 }
 
+// A deranked route keeps its score: it is ordered as a last resort by tier, not by weight.
 function routingStatusMultiplier(status: RoutingStatus): number {
-    if (status === "deranked_lvl1") return 1e-3;
-    if (status === "deranked_lvl2") return 1e-6;
-    if (status === "deranked_lvl3") return 1e-9;
-    if (status === "disabled") return 0;
-    return 1;
+    return status === "disabled" ? 0 : 1;
 }
 
 function applyRoutingMode(preset: RoutingPreset, mode: RoutingMode): RoutingPreset {
@@ -1723,6 +1720,8 @@ export async function routeProviders(
             score,
             providerQuotaOverage,
             recentOutage: isRecentOutage(v),
+            lastResort: providerRoutingStatus === "deranked" || modelRoutingStatus === "deranked" ||
+                capabilityStatus === "deranked",
             stickyMatch,
             stickyFailing: stickyMatch && enoughFailureEvidence,
 			scoreFactorValues,
@@ -1793,21 +1792,21 @@ export async function routeProviders(
         primary: entries.filter((entry) => !isExternalProvider(entry)),
         external: entries.filter(isExternalProvider),
     });
-    // Candidates at a managed upstream limit stay routable behind every other candidate except
-    // open breakers, least over their limit first. Weighted order alone cannot guarantee this:
-    // it floors tiny weights. Without a saturated candidate the order is unchanged.
-    const quotaSaturatedLast = (entries: typeof routableScored) => {
-        if (!entries.some((entry) => entry.providerQuotaOverage > 0)) return entries;
-        const tier = (entry: typeof routableScored[number]) =>
-            entry.recentOutage ? 2 : entry.providerQuotaOverage > 0 ? 1 : 0;
-        return [...entries].sort((a, b) => tier(a) - tier(b) ||
-            (tier(a) === 1 ? a.providerQuotaOverage - b.providerQuotaOverage : 0));
+    // Fallback tiers, each behind the one before: deranked routes (a last resort), candidates at
+    // a managed upstream limit (least over first), then open breakers. Weighted order alone cannot
+    // guarantee this: it floors tiny weights. The sort is stable, so each tier keeps its order.
+    const fallbackTier = (entry: typeof routableScored[number]) =>
+        entry.recentOutage ? 3 : entry.providerQuotaOverage > 0 ? 2 : entry.lastResort ? 1 : 0;
+    const fallbacksLast = (entries: typeof routableScored) => {
+        if (!entries.some((entry) => fallbackTier(entry) > 0)) return entries;
+        return [...entries].sort((a, b) => fallbackTier(a) - fallbackTier(b) ||
+            (fallbackTier(a) === 2 ? a.providerQuotaOverage - b.providerQuotaOverage : 0));
     };
     const weightedOrderWithExternalFallback = (entries: typeof routableScored) => {
         const { primary, external } = splitExternalFallback(entries);
         return [
-            ...quotaSaturatedLast(weightedOrder(primary, (entry) => entry.score, rng)),
-            ...quotaSaturatedLast(weightedOrder(external, (entry) => entry.score, rng)),
+            ...fallbacksLast(weightedOrder(primary, (entry) => entry.score, rng)),
+            ...fallbacksLast(weightedOrder(external, (entry) => entry.score, rng)),
         ];
     };
     const explorationRequest = Boolean(ctx.requestId && isRecoveryProbeRequest(ctx.workspaceId, ctx.requestId));
@@ -1819,9 +1818,11 @@ export async function routeProviders(
             stickyRecoveryProbeSkipped = true;
             return null;
         }
-        const recoveryPool = entries.some((entry) => !isExternalProvider(entry))
-            ? entries.filter((entry) => !isExternalProvider(entry))
-            : entries;
+        // A last-resort route is a backup only: it is never promoted ahead of the main pool.
+        const mainPool = entries.filter((entry) => !entry.lastResort);
+        const recoveryPool = mainPool.some((entry) => !isExternalProvider(entry))
+            ? mainPool.filter((entry) => !isExternalProvider(entry))
+            : mainPool;
         const recovering = recoveryPool.filter(e => e.health.breaker === "half_open" ||
             (e.health.breaker === "open" && e.health.breaker_until_ms <= now) ||
             (e.health.breaker === "closed" && Math.max(e.health.err_ewma_10s, e.health.err_ewma_60s) >= 0.1 &&
@@ -1877,7 +1878,7 @@ export async function routeProviders(
             (entry) => !orderedSet.has(getRoutingCandidateKey(entry.candidate))
         );
         if (strict || deterministicRequestSort) {
-            const ranked = [...ordered, ...jsonOutputEvidenceLast(quotaSaturatedLast(remaining.sort((a, b) => b.score - a.score)))];
+            const ranked = [...ordered, ...jsonOutputEvidenceLast(fallbacksLast(remaining.sort((a, b) => b.score - a.score)))];
             recordStickyOutcome(ranked, true);
             return {
                 ranked,
@@ -1896,8 +1897,8 @@ export async function routeProviders(
     if (strict || deterministicRequestSort) {
         const { primary, external } = splitExternalFallback(routableScored);
         const ranked = [
-            ...quotaSaturatedLast(primary.sort(compareScores)),
-            ...quotaSaturatedLast(external.sort(compareScores)),
+            ...fallbacksLast(primary.sort(compareScores)),
+            ...fallbacksLast(external.sort(compareScores)),
         ];
         const recovery = selectRecovery(ranked);
         const finalRanked = jsonOutputEvidenceLast(recovery ? promote(ranked, recovery) : ranked);

@@ -232,9 +232,7 @@
 			"featureStructuredOutputs": "Strukturierte Ausgaben",
 			"featureWebSearch": "Websuche",
 			"featureFree": "Kostenlose Variante",
-			"statusDeranked1": "Herabstufung Stufe 1",
-			"statusDeranked2": "Herabstufung Stufe 2",
-			"statusDeranked3": "Herabstufung Stufe 3",
+			"statusDeranked": "Niedrigere Priorität",
 			"statusDisabled": "Deaktiviert",
 			"regionJapan": "Japan",
 			"regionAustralia": "Australien",
@@ -811,17 +809,9 @@
 						"label": "Vorübergehend blockiert",
 						"description": "Das Routing ist vorübergehend blockiert."
 					},
-					"deranked_lvl1": {
-						"label": "Herabgestuft L1",
-						"description": "Öffentlich routbar, aber durch den Routingstatus leicht zurückgestuft."
-					},
-					"deranked_lvl2": {
-						"label": "Herabgestuft L2",
-						"description": "Öffentlich routbar, aber durch den Routingstatus zurückgestuft."
-					},
-					"deranked_lvl3": {
-						"label": "Herabgestuft L3",
-						"description": "Öffentlich routbar, aber durch den Routingstatus stark zurückgestuft."
+					"deranked": {
+						"label": "Niedrigere Priorität",
+						"description": "Öffentlich routbar, wird aber nur als Reserve genutzt, wenn die anderen Anbieter ausfallen."
 					},
 					"internal_testing": {
 						"label": "Interne Tests",
@@ -1105,7 +1095,7 @@
 				"disabled": "Explizit deaktiviert und nicht routbar.",
 				"comingSoon": "Demnächst verfügbar und noch nicht routbar.",
 				"internalTesting": "Nur für interne Tests verfügbar.",
-				"rateLimited": "Von Phaseo festgelegt. Weiterhin verfügbar, aber Anfragen gehen zuerst an andere Anbieter, bis Phaseo das ändert.",
+				"rateLimited": "Von Phaseo festgelegt. Wird nur als Reserve genutzt, wenn die anderen Anbieter ausfallen.",
 				"degraded": "Verfügbar, aber mit beeinträchtigtem Routingstatus.",
 				"external": "In einem externen Katalog gelistet; über Phaseo nicht routbar."
 			},
@@ -3172,9 +3162,7 @@
 		"providerStatus": {
 			"active": "Aktiv",
 			"coming_soon": "Demnächst verfügbar",
-			"deranked_lvl1": "Herabgestuft L1",
-			"deranked_lvl2": "Herabgestuft L2",
-			"deranked_lvl3": "Herabgestuft L3",
+			"deranked": "Niedrigere Priorität",
 			"disabled": "Deaktiviert",
 			"inactive": "Nicht aktiv",
 			"internal_testing": "Interne Tests",

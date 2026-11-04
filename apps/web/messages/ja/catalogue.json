@@ -232,9 +232,7 @@
 			"featureStructuredOutputs": "構造化出力",
 			"featureWebSearch": "ウェブ検索",
 			"featureFree": "無料版",
-			"statusDeranked1": "ランク低下レベル 1",
-			"statusDeranked2": "ランク低下レベル 2",
-			"statusDeranked3": "ランク低下レベル 3",
+			"statusDeranked": "優先度低",
 			"statusDisabled": "無効",
 			"regionJapan": "日本",
 			"regionAustralia": "オーストラリア",
@@ -811,17 +809,9 @@
 						"label": "一時ブロック",
 						"description": "ルーティングは一時的に制限されています。"
 					},
-					"deranked_lvl1": {
-						"label": "優先度低下 L1",
-						"description": "公開ルーティングに対応していますが、稼働状況により優先度が少し下がっています。"
-					},
-					"deranked_lvl2": {
-						"label": "優先度低下 L2",
-						"description": "公開ルーティングに対応していますが、稼働状況により優先度が下がっています。"
-					},
-					"deranked_lvl3": {
-						"label": "優先度低下 L3",
-						"description": "公開ルーティングに対応していますが、稼働状況により優先度が大きく下がっています。"
+					"deranked": {
+						"label": "優先度低",
+						"description": "公開でルーティング可能ですが、他のプロバイダーが失敗した場合のバックアップとしてのみ使われます。"
 					},
 					"internal_testing": {
 						"label": "内部テスト",
@@ -1105,7 +1095,7 @@
 				"disabled": "明示的に無効化されており、ルーティングできません。",
 				"comingSoon": "近日公開です。現在はルーティングできません。",
 				"internalTesting": "内部テストのみ利用できます。",
-				"rateLimited": "Phaseo が設定しています。引き続き利用できますが、Phaseo が変更するまで、リクエストは先に他のプロバイダーへ送られます。",
+				"rateLimited": "Phaseo が設定しています。他のプロバイダーが失敗した場合のバックアップとしてのみ使われます。",
 				"degraded": "利用可能ですが、ルーティングの健全性が低下しています。",
 				"external": "外部カタログに掲載されています。Phaseo 経由ではルーティングできません。"
 			},
@@ -3172,9 +3162,7 @@
 		"providerStatus": {
 			"active": "有効",
 			"coming_soon": "近日公開",
-			"deranked_lvl1": "ランク低下 L1",
-			"deranked_lvl2": "ランク低下 L2",
-			"deranked_lvl3": "ランク低下 L3",
+			"deranked": "優先度低",
 			"disabled": "無効",
 			"inactive": "非アクティブ",
 			"internal_testing": "内部テスト",
