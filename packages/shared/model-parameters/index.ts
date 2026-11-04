@@ -434,18 +434,23 @@ function matchesValue(selected: unknown, allowed: ParameterValue[]): boolean {
 	return allowed.some((value) => String(value).toLowerCase() === wanted);
 }
 
+/**
+ * The value a rule sees for a parameter: the selection's (under its name or an
+ * alias), else the parameter's default, else what the provider does by default.
+ */
 function selectedValue(specs: ParameterSpecs | undefined, selection: ParameterSelection, name: string): unknown {
 	if (name in selection) return selection[name];
 	for (const [key, value] of Object.entries(selection)) {
 		if (specs?.[key]?.aliases?.includes(name)) return value;
 		if (specs?.[name]?.aliases?.includes(key)) return value;
 	}
-	return undefined;
+	return specs?.[name]?.default ?? specs?.[name]?.provider_default;
 }
 
 /**
  * The spec with every `when` rule that matches the selection applied, last
- * match winning. `specs` resolves aliases in the selection (resolution for size).
+ * match winning. `specs` resolves aliases in the selection (resolution for size)
+ * and supplies defaults for parameters the selection leaves out.
  */
 export function resolveParameterSpec(
 	spec: ParameterSpec,

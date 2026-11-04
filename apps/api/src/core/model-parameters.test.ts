@@ -167,6 +167,17 @@ describe("resolveParameterSpec and parameterOptions", () => {
 		expect(parameterOptions(resolveParameterSpec(specs.voice!, { language: "fr" }, specs))).toEqual([{ value: "ash", label: "Ash" }]);
 	});
 
+	it("uses other parameters' defaults when the selection leaves them out", () => {
+		// gpt-image-1-mini: "partial_images requires stream=true".
+		const image = normalizeParameterSpecs({
+			stream: { type: "boolean", default: false },
+			partial_images: { type: "integer", min: 0, max: 3, when: [{ if: { stream: [false] }, supported: false, message: "Requires stream=true." }] },
+		});
+		expect(resolveParameterSpec(image.partial_images!, {}, image).supported).toBe(false);
+		expect(resolveParameterSpec(image.partial_images!, { stream: true }, image).supported).toBe(true);
+		expect(parameterOptions(resolveParameterSpec(image.partial_images!, {}, image))).toEqual([]);
+	});
+
 	it("offers nothing for free-form, open or very large ranges", () => {
 		expect(parameterOptions(normalizeParameterSpec({ type: "number", min: 1 }))).toEqual([]);
 		expect(parameterOptions(normalizeParameterSpec({ type: "integer", min: 1, max: 1048576 }))).toEqual([]);
