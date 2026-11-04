@@ -1482,6 +1482,7 @@
 			"chartLabel": "पिछले {hours} घंटों में मॉडल की प्रति घंटे उपलब्धता। उपलब्धता: {uptime}। दर्ज अनुरोध: {count}।",
 			"leastStableProviderLabel": "Phaseo Routing के बिना",
 			"tooltipUptime": "अपटाइम:",
+			"tooltipFailedRequests": "{count, plural, =0 {कोई अनुरोध विफल नहीं} other {# में से {failed, number} अनुरोध विफल}}",
 			"tooltipWorstProvider": "Phaseo Routing के बिना:",
 			"hourlyAverage": "पिछले 24 घंटे · प्रति घंटे औसत",
 			"routingChartLabel": "पिछले 24 घंटों में मॉडल की प्रति घंटे उपलब्धता। Phaseo Routing: {uptime}।{comparison}",
@@ -1616,8 +1617,10 @@
 			"viewLicense": "लाइसेंस देखें"
 		},
 		"performance": {
-			"noTelemetry": "पिछले 7 दिनों में Gateway टेलीमेट्री नहीं है",
-			"telemetryHint": "चुने हुए स्थान पर यह मॉडल Gateway ट्रैफ़िक प्रोसेस करेगा, तब प्रति घंटे के चार्ट दिखेंगे।",
+			"noTelemetry": "पिछले 7 दिनों में कोई अनुरोध नहीं",
+			"telemetryHint": "यह मॉडल Phaseo के ज़रिए अनुरोध प्रोसेस करेगा, तब चार्ट दिखेंगे।",
+			"noFilteredTelemetry": "{location} में प्रकाशित करने लायक पर्याप्त ट्रैफ़िक नहीं है",
+			"filteredTelemetryHint": "किसी स्थान के चार्ट तभी दिखते हैं जब उसके पास इतने अनुरोध हों कि किसी एक ग्राहक का ट्रैफ़िक अलग से पहचाना न जा सके। सभी अनुरोध देखने के लिए सभी स्थान चुनें।",
 			"filterByLocation": "API स्थान के अनुसार प्रदर्शन फ़िल्टर करें",
 			"providerPerformance": "प्रदाता का प्रदर्शन",
 			"last24Hours": "पिछले 24 घंटे",

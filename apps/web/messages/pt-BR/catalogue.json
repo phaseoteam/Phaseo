@@ -1482,6 +1482,7 @@
 			"chartLabel": "Disponibilidade horária do modelo nas últimas {hours} horas. Disponibilidade: {uptime}. Solicitações registradas: {count}.",
 			"leastStableProviderLabel": "Sem Phaseo Routing",
 			"tooltipUptime": "Disponibilidade:",
+			"tooltipFailedRequests": "{count, plural, =0 {Nenhuma solicitação com falha} one {Com falha: {failed, number} de # solicitação} other {Com falha: {failed, number} de # solicitações}}",
 			"tooltipWorstProvider": "Sem Phaseo Routing:",
 			"hourlyAverage": "Últimas 24 horas · média por hora",
 			"routingChartLabel": "Disponibilidade horária do modelo nas últimas 24 horas. Phaseo Routing: {uptime}.{comparison}",
@@ -1616,8 +1617,10 @@
 			"viewLicense": "Ver licença"
 		},
 		"performance": {
-			"noTelemetry": "Sem telemetria do Gateway nos últimos 7 dias",
-			"telemetryHint": "Os gráficos por hora aparecerão quando este modelo processar tráfego do Gateway no local selecionado.",
+			"noTelemetry": "Nenhuma solicitação nos últimos 7 dias",
+			"telemetryHint": "Os gráficos aparecerão quando este modelo atender solicitações pelo Phaseo.",
+			"noFilteredTelemetry": "Tráfego insuficiente em {location} para publicar",
+			"filteredTelemetryHint": "Os gráficos de um local só aparecem quando ele tem solicitações suficientes para que o tráfego de nenhum cliente possa ser identificado. Escolha Todos os locais para ver todas as solicitações.",
 			"filterByLocation": "Filtrar desempenho por local da API",
 			"providerPerformance": "Desempenho do provedor",
 			"last24Hours": "Últimas 24 horas",

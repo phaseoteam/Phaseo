@@ -1482,6 +1482,7 @@
 			"chartLabel": "Hourly model uptime over the last {hours} hours. Uptime: {uptime}. Requests recorded: {count}.",
 			"leastStableProviderLabel": "Without Phaseo Routing",
 			"tooltipUptime": "Uptime:",
+			"tooltipFailedRequests": "{count, plural, =0 {No failed requests} one {{failed, number} of # request failed} other {{failed, number} of # requests failed}}",
 			"tooltipWorstProvider": "Without Phaseo Routing:",
 			"hourlyAverage": "Last 24 hours · hourly average",
 			"routingChartLabel": "Hourly model uptime over the last 24 hours. Phaseo Routing: {uptime}.{comparison}",
@@ -1616,8 +1617,10 @@
 			"viewLicense": "View license"
 		},
 		"performance": {
-			"noTelemetry": "No gateway telemetry in the past 7 days",
-			"telemetryHint": "Hourly charts will appear when this model processes gateway traffic in the selected location.",
+			"noTelemetry": "No requests in the past 7 days",
+			"telemetryHint": "Charts will appear after this model serves requests through Phaseo.",
+			"noFilteredTelemetry": "Not enough traffic in {location} to publish",
+			"filteredTelemetryHint": "A location's charts appear only once it has enough requests that no single customer's traffic can be picked out. Choose All locations to see every request.",
 			"filterByLocation": "Filter performance by API location",
 			"providerPerformance": "Provider performance",
 			"last24Hours": "Last 24 hours",

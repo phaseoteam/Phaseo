@@ -1482,6 +1482,7 @@
 			"chartLabel": "Stündliche Modellverfügbarkeit der letzten {hours} Stunden. Verfügbarkeit: {uptime}. Erfasste Anfragen: {count}.",
 			"leastStableProviderLabel": "Ohne Phaseo Routing",
 			"tooltipUptime": "Betriebszeit:",
+			"tooltipFailedRequests": "{count, plural, =0 {Keine fehlgeschlagenen Anfragen} one {{failed, number} von # Anfrage fehlgeschlagen} other {{failed, number} von # Anfragen fehlgeschlagen}}",
 			"tooltipWorstProvider": "Ohne Phaseo Routing:",
 			"hourlyAverage": "Letzte 24 Stunden · stündlicher Durchschnitt",
 			"routingChartLabel": "Stündliche Modellverfügbarkeit in den letzten 24 Stunden. Phaseo Routing: {uptime}.{comparison}",
@@ -1616,8 +1617,10 @@
 			"viewLicense": "Lizenz anzeigen"
 		},
 		"performance": {
-			"noTelemetry": "Keine Gateway-Telemetrie in den letzten 7 Tagen",
-			"telemetryHint": "Stundendiagramme werden angezeigt, sobald dieses Modell Gateway-Datenverkehr am ausgewählten Standort verarbeitet.",
+			"noTelemetry": "Keine Anfragen in den letzten 7 Tagen",
+			"telemetryHint": "Diagramme erscheinen, sobald dieses Modell Anfragen über Phaseo verarbeitet.",
+			"noFilteredTelemetry": "Nicht genug Datenverkehr in {location} für eine Veröffentlichung",
+			"filteredTelemetryHint": "Standortdiagramme erscheinen erst, wenn ein Standort so viele Anfragen hat, dass sich der Datenverkehr einzelner Kunden nicht herauslesen lässt. Wähle „Alle Standorte“, um alle Anfragen zu sehen.",
 			"filterByLocation": "Leistung nach API-Standort filtern",
 			"providerPerformance": "Anbieterleistung",
 			"last24Hours": "Letzte 24 Stunden",
