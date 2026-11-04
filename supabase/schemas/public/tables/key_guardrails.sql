@@ -62,4 +62,11 @@ CREATE POLICY "key_guardrails_update_own_team" ON "public"."key_guardrails"
      JOIN public.workspace_guardrails g ON ((g.id = key_guardrails.guardrail_id)))
   WHERE ((k.id = key_guardrails.key_id) AND (k.workspace_id = g.workspace_id) AND public.is_workspace_admin(k.workspace_id)))));
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."key_guardrails"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."key_guardrails" TO "anon", "authenticated", "service_role";

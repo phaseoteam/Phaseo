@@ -77,6 +77,13 @@ CREATE TRIGGER protect_users_global_role
   FOR EACH ROW
   EXECUTE FUNCTION public.protect_users_global_role();
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."users"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "users: delete self" ON "public"."users"
   FOR DELETE
   TO "authenticated"

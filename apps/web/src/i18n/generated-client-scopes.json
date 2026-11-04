@@ -169,6 +169,7 @@
     "Common.authFlows.passwordReset.requestNew",
     "Common.authFlows.passwordReset.resetting",
     "Common.authFlows.passwordReset.setTitle",
+    "Common.authFlows.passwordReset.signOutOthersFailed",
     "Common.authFlows.passwordReset.submit",
     "Common.authFlows.passwordReset.success",
     "Common.authFlows.passwordReset.title",

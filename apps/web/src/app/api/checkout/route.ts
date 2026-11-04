@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createStripeCheckoutResponse } from "@/lib/server/createStripeCheckoutResponse";
+import { rejectCrossOriginRequest } from "@/lib/http/sameOrigin";
 
 // Legacy compatibility route. The active UI uses /api/checkout/create.
 
 export async function POST(req: NextRequest) {
+	const crossOrigin = rejectCrossOriginRequest(req); if (crossOrigin) return crossOrigin;
 	try {
 		const body = await req.json();
 		const purchaseAmount = Number(body?.purchase_amount_cents);

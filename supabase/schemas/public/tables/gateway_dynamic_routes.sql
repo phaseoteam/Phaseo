@@ -57,6 +57,13 @@ CREATE POLICY "gateway_dynamic_routes_workspace_update" ON "public"."gateway_dyn
   USING (( SELECT public.is_workspace_admin(gateway_dynamic_routes.workspace_id) AS is_workspace_admin))
   WITH CHECK (( SELECT public.is_workspace_admin(gateway_dynamic_routes.workspace_id) AS is_workspace_admin));
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."gateway_dynamic_routes"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."gateway_dynamic_routes" TO "anon", "authenticated", "service_role";
 
 COMMENT ON TABLE "public"."gateway_dynamic_routes" IS 'Dynamic routing identities and their currently deployed immutable configuration snapshots.';

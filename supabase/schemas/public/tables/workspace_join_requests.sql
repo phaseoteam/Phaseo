@@ -43,6 +43,13 @@ CREATE POLICY "join_requests: delete by owner" ON "public"."workspace_join_reque
   TO "authenticated"
   USING (public.is_team_owner(workspace_id));
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."workspace_join_requests"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "team_join_requests_insert" ON "public"."workspace_join_requests"
   FOR INSERT
   TO "authenticated"

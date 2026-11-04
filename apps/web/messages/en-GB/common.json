@@ -456,7 +456,8 @@
 			"uppercase": "Include at least one uppercase Latin letter.",
 			"lowercase": "Include at least one lowercase Latin letter.",
 			"number": "Include at least one number.",
-			"mismatch": "Passwords do not match."
+			"mismatch": "Passwords do not match.",
+			"signOutOthersFailed": "Your password was reset, but we couldn't sign you out on your other devices and apps. Change your password again in account settings to retry."
 		},
 		"mfa": {
 			"title": "Two-factor authentication",
@@ -473,10 +474,13 @@
 			"metaTitle": "Activate Phaseo CLI",
 			"metaDescription": "Approve a device login request for the Phaseo CLI.",
 			"title": "Activate Phaseo CLI",
-			"description": "Approve this request only if the code matches the one shown in your terminal.",
-			"missingCode": "Open the full verification link from your terminal, or add the code with",
+			"description": "Type the code shown in your terminal to sign in to the Phaseo CLI.",
+			"phishingWarning": "Only enter a code from a sign-in you started yourself, in your own terminal. If someone sent you this code or a link to this page, stop: approving it gives them access to your Phaseo account.",
 			"deviceCode": "Device code",
-			"requestedScopes": "Requested scopes",
+			"requestedScopes": "Requested permissions",
+			"reviewDescription": "Check that this is the sign-in you started in your own terminal before you approve it.",
+			"differentCode": "Use a different code",
+			"continue": "Continue",
 			"requestError": "We could not load this device login request. Check the code and try again.",
 			"deny": "Deny",
 			"approve": "Approve CLI",

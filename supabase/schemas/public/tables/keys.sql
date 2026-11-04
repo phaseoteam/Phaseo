@@ -115,6 +115,13 @@ CREATE POLICY "keys_update_own_team" ON "public"."keys"
   USING (public.is_workspace_admin(workspace_id))
   WITH CHECK (public.is_workspace_admin(workspace_id));
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."keys"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."keys" TO "service_role";
 
 GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."keys" TO "anon";

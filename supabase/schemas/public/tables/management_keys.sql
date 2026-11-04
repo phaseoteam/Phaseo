@@ -65,6 +65,13 @@ CREATE POLICY "management_keys_update_own_team" ON "public"."management_keys"
   USING (public.is_workspace_admin(workspace_id))
   WITH CHECK (public.is_workspace_admin(workspace_id));
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."management_keys"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE TRIGGER protect_management_key_created_by
   BEFORE INSERT OR UPDATE OF created_by ON public.management_keys
   FOR EACH ROW

@@ -104,10 +104,13 @@
     "files": [
       "src/app/[locale]/(auth)/activate/page.tsx"
     ],
-    "texts": [
-      "?user_code=XXXX-XXXX"
+    "attributes": [
+      "placeholder"
     ],
-    "reason": "OAuth device-flow query string example."
+    "texts": [
+      "XXXX-XXXX"
+    ],
+    "reason": "OAuth device-flow user code format hint for the code input, the same in every language."
   },
   {
     "files": [

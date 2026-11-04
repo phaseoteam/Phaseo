@@ -25,7 +25,8 @@ const schemaFiles = [
   '../schemas/public/tables/workspace_spend_rule_dirty.sql',
 ];
 // The spend rule blocks migration adds the rules table's lift triggers (its own test checks them).
-const withoutLaterTriggers = (sql) => sql.replace(/\r\n/g, '\n').replace(/CREATE TRIGGER workspace_spend_rules_lift_blocks[^;]*;\n\n/g, '');
+// The MFA policy (require_mfa_for_data_api) was added to the table file by a later migration.
+const withoutLaterTriggers = (sql) => sql.replace(/\r\n/g, '\n').replace(/CREATE TRIGGER workspace_spend_rules_lift_blocks[^;]*;\n\n/g, '').replace(/\n*CREATE POLICY "mfa_required_when_enrolled" ON [^;]*;/g, '');
 for (const file of schemaFiles) assert(normalize(migration).includes(normalize(withoutLaterTriggers(await read(file)))), `${file} is in the migration`);
 
 const id = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;

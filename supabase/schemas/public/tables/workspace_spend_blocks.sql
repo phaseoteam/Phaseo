@@ -47,6 +47,13 @@ CREATE TRIGGER workspace_spend_blocks_set_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION public.set_updated_at_if_changed();
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."workspace_spend_blocks"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "workspace_spend_blocks_select_member" ON "public"."workspace_spend_blocks"
   FOR SELECT
   TO "authenticated"

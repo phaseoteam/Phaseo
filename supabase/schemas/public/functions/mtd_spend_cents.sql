@@ -14,6 +14,10 @@ declare
   v_mtd_nanos bigint := 0;
   v_mtd_cents bigint := 0;
 begin
+  if not public.mfa_satisfied() then
+    raise exception using errcode = '42501', message = 'mfa_required';
+  end if;
+
   if p_workspace_id is null then
     raise exception 'workspace_id_required';
   end if;

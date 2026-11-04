@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";
+import { rejectCrossOriginRequest } from "@/lib/http/sameOrigin";
 
 export async function PUT(
 	request: Request,
 	context: { params: Promise<{ appId: string }> },
 ) {
+	const crossOrigin = rejectCrossOriginRequest(request); if (crossOrigin) return crossOrigin;
 	const [{ appId }, account] = await Promise.all([
 		context.params,
 		getServerAccountContext(),

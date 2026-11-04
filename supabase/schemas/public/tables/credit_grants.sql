@@ -40,4 +40,11 @@ CREATE POLICY "credit_grants_service_all" ON "public"."credit_grants"
   USING (true)
   WITH CHECK (true);
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."credit_grants"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."credit_grants" TO "anon", "authenticated", "service_role";

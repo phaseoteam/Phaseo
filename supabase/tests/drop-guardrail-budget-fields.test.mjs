@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
+// Table files carry the MFA policy (require_mfa_for_data_api); these fixtures don't load its helper.
+const MFA_SATISFIED_STUB = "create or replace function public.mfa_satisfied() returns boolean language sql stable as 'select true';";
 
 // The removed columns, as they were declared before this migration.
 const REMOVED = [
@@ -34,6 +36,7 @@ const prelude = `
 async function database(tableSql) {
   const db = new PGlite();
   await db.exec(prelude);
+  await db.exec(MFA_SATISFIED_STUB);
   await db.exec(tableSql);
   return db;
 }

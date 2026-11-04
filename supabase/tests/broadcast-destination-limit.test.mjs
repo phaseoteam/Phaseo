@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
+// Table files carry the MFA policy (require_mfa_for_data_api); these fixtures don't load its helper.
+const MFA_SATISFIED_STUB = "create or replace function public.mfa_satisfied() returns boolean language sql stable as 'select true';";
 const db = new PGlite();
 const read = path => readFile(new URL(path, import.meta.url), 'utf8');
 const workspace = '10000000-0000-4000-8000-000000000001';
@@ -19,6 +21,7 @@ try {
       create function public.set_updated_at_if_changed() returns trigger language plpgsql as 'begin new.updated_at = now(); return new; end';
     `);
     await db.exec(await read('../schemas/public/functions/enforce_broadcast_destination_limit.sql'));
+    await db.exec(MFA_SATISFIED_STUB);
     await db.exec(await read('../schemas/public/tables/workspace_broadcast_destination_limits.sql'));
     await db.exec(await read('../schemas/public/tables/workspace_broadcast_destinations.sql'));
     await db.query('insert into public.workspaces values($1),($2)', [workspace, other]);

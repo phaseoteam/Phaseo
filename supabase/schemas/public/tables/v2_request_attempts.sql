@@ -46,6 +46,13 @@ CREATE TRIGGER v2_request_attempts_health_refresh
   FOR EACH ROW
   EXECUTE FUNCTION public.refresh_v2_provider_health_for_attempt();
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."v2_request_attempts"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "v2_request_attempts_workspace_select" ON "public"."v2_request_attempts"
   FOR SELECT
   TO "authenticated"

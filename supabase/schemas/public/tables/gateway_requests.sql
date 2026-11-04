@@ -520,6 +520,13 @@ CREATE POLICY "gateway_requests_select_own_team" ON "public"."gateway_requests"
   TO "authenticated"
   USING (public.is_workspace_member(workspace_id));
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."gateway_requests"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "service_role_full_access" ON "public"."gateway_requests_2026_03"
   FOR ALL
   TO "service_role"
