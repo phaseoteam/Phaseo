@@ -2648,7 +2648,7 @@
 		"best": "最良",
 		"breadcrumb": "パンくずリスト",
 		"compare": "比較",
-		"versus": "対",
+		"versus": "vs",
 		"headerSub": "各モデルの下でルートとサービス階層を選んでください。価格、計算ツール、比較結果は選択に合わせて変わります。",
 		"copyLink": "リンクをコピー",
 		"copied": "コピー済み",
@@ -2804,10 +2804,6 @@
 				"title": "現行のフラッグシップ",
 				"description": "3つのラボの最新トップモデル"
 			},
-			"pairing": {
-				"title": "GPT 5 対 Claude Sonnet 4.5",
-				"description": "多くのチームが比較検討する組み合わせ"
-			},
 			"anthropic": {
 				"title": "OpusかSonnetか",
 				"description": "Anthropicの現行2モデル"
@@ -2815,6 +2811,18 @@
 			"openWeights": {
 				"title": "オープンウェイト",
 				"description": "ダウンロードして自分で実行できるモデル"
+			},
+			"video": {
+				"title": "動画モデル",
+				"description": "解像度とモード別の秒単価"
+			},
+			"image": {
+				"title": "画像モデル",
+				"description": "サイズと品質別の画像単価"
+			},
+			"decisions": {
+				"title": "判定モデル",
+				"description": "テキストではなく判定を返すモデル"
 			}
 		},
 		"badgeOnPhaseo": "Phaseo上",
@@ -2890,7 +2898,8 @@
 		"providersAcrossNote": "ページ全体をこれらのプロバイダーのいずれかで計算するには、上部のモデル名の下で選択してください。",
 		"routeContext": "コンテキスト {value}",
 		"otherListingsLabel": "掲載あり（Phaseoのルートなし）",
-		"noRoutesAny": "現在、Phaseoはこれらのモデルをいずれもルーティングしていません。"
+		"noRoutesAny": "現在、Phaseoはこれらのモデルをいずれもルーティングしていません。",
+		"comparedSections": "すべての比較に含まれる項目"
 	},
 	"countries": {
 		"title": "国別AI",

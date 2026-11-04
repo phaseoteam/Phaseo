@@ -316,6 +316,8 @@ describe("describeCondition", () => {
 		expect(describeCondition({ field: "draft", op: "eq", value: 0 }, words)).toBe("Draft: off");
 		expect(describeCondition({ field: "audio", op: "eq", value: false }, words)).toBe("Audio: off");
 		expect(describeCondition({ field: "resolution", op: "eq", value: "fhd" }, words)).toBe("Resolution: FHD");
+		// Claude Opus 5.5's US-only price rows.
+		expect(describeCondition({ field: "inference_geo", op: "eq", value: "us" }, words)).toBe("inference_geo: US");
 	});
 
 	it("keeps one short name for each option in a list", () => {

@@ -55,23 +55,38 @@ export function CompareProviders({ models }: { models: CompareViewModel[] }) {
 				<span className="ml-1.5 text-xs font-normal text-muted-foreground">{format.meter(row)}</span>
 			</span>
 		);
-		const tokenPrice = route.input != null || route.output != null
-			? t("routePrice", { input: route.input == null ? "–" : format.usd(route.input), output: route.output == null ? "–" : format.usd(route.output) })
+		const all = standardRows(model, route);
+		// A route sold only on a paid tier (Venice's Priority) has no standard token price; read its own input and output rows.
+		const perMillion = (row: CompareViewPriceRow | undefined) => (row ? (row.price / row.per) * 1_000_000 : null);
+		const input = route.input ?? perMillion(all.find((row) => row.kind === "input"));
+		const output = route.output ?? perMillion(all.find((row) => row.kind === "output"));
+		const tokenPrice = input != null || output != null
+			? t("routePrice", { input: input == null ? "–" : format.usd(input), output: output == null ? "–" : format.usd(output) })
 			: null;
-		// With token prices shown, only the other meters (per image, per second) still need listing.
-		const rows = standardRows(model, route).filter((row) => !tokenPrice || row.unit !== "token");
-		if (!tokenPrice && !rows.length) return { content: t("notPriced"), text: "", muted: true, sub: details };
-		const meterSlots = tokenPrice ? MAX_METERS - 1 : MAX_METERS;
+		if (tokenPrice) {
+			// Other meters (web search, per image) sit with the details, so the cheaper-model tick marks only the token price.
+			const others = all.filter((row) => row.unit !== "token");
+			const extra = [
+				...others.slice(0, MAX_METERS).map((row) => `${priceOf(row)} ${format.meter(row)}`),
+				others.length > MAX_METERS ? t("moreMetersCount", { count: others.length - MAX_METERS }) : null,
+			].filter(Boolean);
+			return {
+				content: tokenPrice,
+				text: [tokenPrice, ...others.map(priceOf)].join(" "),
+				best,
+				sub: extra.length || details ? (
+					<>
+						{extra.map((line) => <span key={line} className="block">{line}</span>)}
+						{details ? <span className="block">{details}</span> : null}
+					</>
+				) : undefined,
+			};
+		}
+		if (!all.length) return { content: t("notPriced"), text: "", muted: true, sub: details };
 		return {
-			content: rows.length ? (
-				<span className="block space-y-0.5">
-					{tokenPrice ? <span className="block">{tokenPrice}</span> : null}
-					{rows.slice(0, meterSlots).map(meterLine)}
-				</span>
-			) : tokenPrice,
-			text: [tokenPrice, ...rows.map(priceOf)].filter(Boolean).join(" "),
-			best: Boolean(tokenPrice) && best,
-			sub: [rows.length > meterSlots ? t("moreMetersCount", { count: rows.length - meterSlots }) : null, details].filter(Boolean).join(" · ") || undefined,
+			content: <span className="block space-y-0.5">{all.slice(0, MAX_METERS).map(meterLine)}</span>,
+			text: all.map(priceOf).join(" "),
+			sub: [all.length > MAX_METERS ? t("moreMetersCount", { count: all.length - MAX_METERS }) : null, details].filter(Boolean).join(" · ") || undefined,
 		};
 	};
 

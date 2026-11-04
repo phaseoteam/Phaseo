@@ -2648,7 +2648,7 @@
 		"best": "beste",
 		"breadcrumb": "Brotkrümelnavigation",
 		"compare": "Vergleichen",
-		"versus": "gegen",
+		"versus": "vs.",
 		"headerSub": "Wähle unter jedem Modell eine Route und eine Service-Stufe. Preise, Rechner und Empfehlungen folgen deiner Auswahl.",
 		"copyLink": "Link kopieren",
 		"copied": "Kopiert",
@@ -2804,10 +2804,6 @@
 				"title": "Aktuelle Spitzenmodelle",
 				"description": "Die neuesten Topmodelle von drei Laboren"
 			},
-			"pairing": {
-				"title": "GPT 5 gegen Claude Sonnet 4.5",
-				"description": "Eine Paarung, die viele Teams abwägen"
-			},
 			"anthropic": {
 				"title": "Opus oder Sonnet?",
 				"description": "Die zwei aktuellen Stufen von Anthropic"
@@ -2815,6 +2811,18 @@
 			"openWeights": {
 				"title": "Offene Gewichte",
 				"description": "Modelle, die du herunterladen und selbst ausführen kannst"
+			},
+			"video": {
+				"title": "Videomodelle",
+				"description": "Preise pro Sekunde nach Auflösung und Modus"
+			},
+			"image": {
+				"title": "Bildmodelle",
+				"description": "Preise pro Bild nach Größe und Qualität"
+			},
+			"decisions": {
+				"title": "Entscheidungsmodelle",
+				"description": "Modelle, die eine Entscheidung statt Text liefern"
 			}
 		},
 		"badgeOnPhaseo": "Auf Phaseo",
@@ -2855,7 +2863,7 @@
 		"selected": "Ausgewählt",
 		"pickerReturnsOther": "Liefert {types} und lässt sich daher nicht mit deiner Auswahl vergleichen",
 		"pickerNoOutputTypes": "Die Ausgabetypen sind nicht veröffentlicht, daher passt es nicht zu deiner Auswahl",
-		"pickerHiddenIncompatible": "{count, plural, one {# Modell mit einem anderen Ausgabetyp ist ausgeblendet.} other {# Modelle mit anderen Ausgabetypen sind ausgeblendet.}} Suche, um sie zu finden.",
+		"pickerHiddenIncompatible": "{count, plural, one {# Modell mit einem anderen Ausgabetyp ist ausgeblendet.} other {# Modelle mit anderen Ausgabetypen sind ausgeblendet.}} Suche danach, um sie anzuzeigen.",
 		"activityTokens30d": "Tokens, letzte 30 Tage",
 		"activityPerDay": "Pro Tag",
 		"activityNoTokens": "Nur Anfragen, keine Tokens erfasst",
@@ -2890,7 +2898,8 @@
 		"providersAcrossNote": "Um die ganze Seite mit einem dieser Anbieter zu berechnen, wähle ihn oben unter dem Modellnamen.",
 		"routeContext": "{value} Kontext",
 		"otherListingsLabel": "Auch gelistet, nicht über Phaseo geroutet",
-		"noRoutesAny": "Phaseo routet derzeit keines dieser Modelle."
+		"noRoutesAny": "Phaseo routet derzeit keines dieser Modelle.",
+		"comparedSections": "Jeder Vergleich umfasst"
 	},
 	"countries": {
 		"title": "KI nach Ländern",
