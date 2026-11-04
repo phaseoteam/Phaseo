@@ -172,7 +172,7 @@ describe("authenticate hot-path caching", () => {
             await expect(Promise.race([first, new Promise((resolve) => setTimeout(() => resolve("blocked"), 500))])).resolves.toMatchObject({ ok: true });
             expect(runtime.cache.put).toHaveBeenCalledWith(`gateway:key:ip-policy-v1:${kid}:v0`, expect.any(String), expect.any(Object));
             await expect(authenticate(request, { useKvCache: true })).resolves.toMatchObject({ ok: true });
-            expect(runtime.maybeSingle).toHaveBeenCalledTimes(1);
+            expect(runtime.maybeSingle).toHaveBeenCalledTimes(2); // request lookup + the cache fill's re-read
         } finally {
             finishWrite?.();
             await flushBackground();
@@ -215,7 +215,7 @@ describe("authenticate hot-path caching", () => {
         expect((await authenticate(sanitized)).ok).toBe(true);
         expect((await authenticate(sanitized)).ok).toBe(true);
         await flushBackground();
-        expect(runtime.maybeSingle).toHaveBeenCalledTimes(1);
+        expect(runtime.maybeSingle).toHaveBeenCalledTimes(2); // request lookup + the cache fill's re-read
         expect(runtime.updatePayloads).toHaveLength(1);
         const invalid = buildRequest("phaseo_v1_sk_ADMISSION_wrong");
         inheritPreparedAuthentication(request, invalid);
@@ -230,7 +230,7 @@ describe("authenticate hot-path caching", () => {
         expect((await prepareAuthentication(request)).ok).toBe(true);
         runtime.dbRow.value = { ...runtime.dbRow.value, status: "revoked" };
         expect(await authenticate(request, { useKvCache: false })).toEqual({ ok: false, reason: "key_not_found_or_revoked" });
-        expect(runtime.maybeSingle).toHaveBeenCalledTimes(2);
+        expect(runtime.maybeSingle).toHaveBeenCalledTimes(3); // two request lookups + one cache fill's re-read
     });
 
     it("enforces IP restrictions on every request, including a cached key", async () => {
@@ -250,7 +250,7 @@ describe("authenticate hot-path caching", () => {
         denied.headers.set("x-forwarded-for", "203.0.113.10");
         expect(await authenticate(denied, { useKvCache: true })).toEqual({ ok: false, reason: "key_ip_not_allowed" });
         expect(await authenticate(buildRequest(token), { useKvCache: true })).toEqual({ ok: false, reason: "key_ip_not_allowed" });
-        expect(runtime.maybeSingle).toHaveBeenCalledTimes(1);
+        expect(runtime.maybeSingle).toHaveBeenCalledTimes(2); // request lookup + the cache fill's re-read
     });
 
 	it("requires the opaque delegated access token for inference instead of a session JWT", async () => {
@@ -321,7 +321,37 @@ describe("authenticate hot-path caching", () => {
         await flushBackground();
 
         expect(result).toMatchObject({ ok: false, reason: "key_not_found_or_revoked" });
-        expect(runtime.maybeSingle).toHaveBeenCalledTimes(1);
+        expect(runtime.maybeSingle).toHaveBeenCalledTimes(2); // request lookup + the cache fill's re-read
+    });
+
+    it("never caches a row that predates the workspace version it is tagged with", async () => {
+        const kid = "KIDRACE001";
+        const secret = "secret_race";
+        const row: KeyRow = { id: "key_race", workspace_id: "team_race", status: "active", hash: hashSecret(secret) };
+        runtime.dbRow.value = row;
+        // Hold the cache fill's workspace version read until the key has been changed and the
+        // workspace bumped, as a control route or the publication drain would.
+        const versionKey = "gateway:workspace-policy-version:team_race";
+        let release!: () => void;
+        const gate = new Promise<void>((resolve) => { release = resolve; });
+        const realGet = runtime.cache.get.getMockImplementation()!;
+        runtime.cache.get.mockImplementation(async (key: string, type?: any) => {
+            if (key === versionKey) await gate;
+            return realGet(key, type);
+        });
+        try {
+            const { authenticate } = await import("./auth");
+            const first = authenticate(buildRequest(`phaseo_v1_sk_${kid}_${secret}`), { useKvCache: true });
+            await expect(first).resolves.toMatchObject({ ok: true });
+            runtime.dbRow.value = { ...row, ip_allowlist: [{ label: "office", address: "203.0.113.7" }] };
+            runtime.store.set(versionKey, "9");
+            release();
+            await flushBackground();
+        } finally {
+            runtime.cache.get.mockImplementation(realGet);
+        }
+        const cached = JSON.parse(runtime.store.get(`gateway:key:ip-policy-v1:${kid}:v0`) ?? "null");
+        expect(cached).toMatchObject({ workspace_cache_version: "v9", ip_allowlist: [{ address: "203.0.113.7" }] });
     });
 
     it("skips the key cache when the key version cannot be read", async () => {
@@ -362,7 +392,7 @@ describe("authenticate hot-path caching", () => {
 
         expect(first.ok).toBe(true);
         expect(second.ok).toBe(true);
-        expect(runtime.maybeSingle).toHaveBeenCalledTimes(1);
+        expect(runtime.maybeSingle).toHaveBeenCalledTimes(2); // request lookup + the cache fill's re-read
         // Key version, cached row (miss) and the workspace version the new entry records.
         expect(runtime.cache.get).toHaveBeenCalledTimes(3);
     });

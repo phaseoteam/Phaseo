@@ -436,8 +436,8 @@ async function getCachedKey(kid: string): Promise<{ versionToken: string | null;
 function cacheKey(kid: string, row: KeyRow, versionToken: string | null): void {
     if (!versionToken) return;
     // This request already has the authoritative row, so authentication never
-    // waits for the workspace version read or the KV write. The runtime is held
-    // until the write finishes, which can be after the response.
+    // waits for the workspace version read, the re-read or the KV write. The
+    // runtime is held until the write finishes, which can be after the response.
     let release: () => void;
     try {
         release = ensureRuntimeForBackground();
@@ -446,11 +446,21 @@ function cacheKey(kid: string, row: KeyRow, versionToken: string | null): void {
     }
     dispatchBackground((async () => {
         try {
-            // Read after the fetch, so a workspace bump landing in the few
-            // milliseconds between the two could be missed; the TTL bounds that.
+            // The workspace is only known once the row is fetched, so read its version
+            // now and cache a row read AFTER it. Any change that version reflects was
+            // written before its bump, so the re-read includes it; a later change bumps
+            // past it. Tagging the request's earlier row instead could pair a pre-change
+            // row with a post-change version and keep it for the whole cache lifetime.
             const workspaceVersion = await getWorkspacePolicyVersionToken(String(row.workspace_id));
             if (!workspaceVersion) return;
-            const entry: CachedKeyRow = { ...row, workspace_cache_version: workspaceVersion };
+            const { data, error } = await getSupabaseAdmin()
+                .from("keys")
+                .select("*")
+                .eq("kid", kid)
+                .maybeSingle();
+            const current = data as KeyRow | null;
+            if (error || !current || String(current.workspace_id) !== String(row.workspace_id)) return;
+            const entry: CachedKeyRow = { ...current, workspace_cache_version: workspaceVersion };
             writeKeyLookupL1(kid, versionToken, entry);
             await getCache().put(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, JSON.stringify(entry), {
                 expirationTtl: KEY_CACHE_TTL_SECONDS,
