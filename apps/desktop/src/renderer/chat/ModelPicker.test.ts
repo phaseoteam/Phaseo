@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { modelLabel, phaseoLabGroups, shortModelName } from "./ModelPicker";
+import { latestHint, modelLabel, phaseoLabGroups, shortModelName } from "./ModelPicker";
 
 describe("a model's name before any catalogue has named it", () => {
 	it("keeps the version's dot", () => {
@@ -26,6 +26,13 @@ describe("the picker's left column", () => {
 		]);
 		// This week's use comes first: one busy Mistral model outranks OpenAI's two quiet ones.
 		expect(phaseoLabGroups(models, new Map([["mistral/large-4", 900_000], ["openai/gpt-6-luna", 10]])).map(group => group.lab)).toEqual(["mistral", "openai", "anthropic"]);
+	});
+});
+
+describe("a Latest row's hint", () => {
+	it("says what the alias runs now, without the words its name already has", () => {
+		expect(latestHint({ name: "Claude Haiku Latest", latestOf: "Claude Haiku 5.5" })).toBe("5.5");
+		expect(latestHint({ name: "GPT Astra Latest", latestOf: "GPT 6 Astra" })).toBe("6");
 	});
 });
 

@@ -30,8 +30,8 @@ export function modelLabel(id: string) {
 
 /** What a Latest alias runs now, without the words its name already says: "Claude Haiku Latest" now runs "5.5". */
 export function latestHint(model: Pick<ModelOption, "name" | "latestOf">) {
-	const target = knownModel(model.latestOf ?? "")?.name ?? model.latestOf ?? "", said = new Set(model.name.toLowerCase().split(/s+/));
-	return target.split(/s+/).filter(word => !said.has(word.toLowerCase())).join(" ") || target;
+	const target = knownModel(model.latestOf ?? "")?.name ?? model.latestOf ?? "", said = new Set(model.name.toLowerCase().split(/\s+/));
+	return target.split(/\s+/).filter(word => !said.has(word.toLowerCase())).join(" ") || target;
 }
 
 /** The same model with the same settings. */
