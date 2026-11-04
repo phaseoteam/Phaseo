@@ -166,5 +166,6 @@ describe("Model explorer presentation", () => {
         await server.close();
       }
     }
-  });
+    // The first import of the server bundle is slow on a loaded machine.
+  }, 30_000);
 });
