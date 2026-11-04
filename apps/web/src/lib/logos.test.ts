@@ -9,6 +9,17 @@ describe("logos", () => {
 			});
 		}
 	});
+	test("resolves the Ricursive Intelligence mark in both themes", () => {
+		for (const theme of ["light", "dark"] as const) {
+			expect(resolveLogo("ricursive", { theme })).toMatchObject({
+				id: "ricursive",
+				label: "Ricursive Intelligence",
+				src: `/logos/ricursive_${theme}.svg`,
+				variant: theme,
+			});
+		}
+		expect(resolveLogo("ricursiveAI").id).toBe("ricursive");
+	});
 	test("resolves the Base Labs icon in both themes", () => {
 		for (const theme of ["light", "dark"] as const) {
 			expect(resolveLogo("baselabs", { theme })).toMatchObject({
