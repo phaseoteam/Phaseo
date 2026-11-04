@@ -945,6 +945,7 @@ async function runBeforeRequest(
         context_rpc: contextTelemetry?.rpcMs,
         context_enrich: contextTelemetry?.enrichMs,
         context_cache_write: contextTelemetry?.cacheWriteMs,
+        context_spend_limit: contextTelemetry?.spendLimitMs,
     };
     for (const [name, durationMs] of Object.entries(contextTimingSpans)) {
         if (typeof durationMs === "number") timer.record(name, durationMs);

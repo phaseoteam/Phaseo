@@ -164,6 +164,36 @@ describe("budget alerts from rejected requests", () => {
 
 		beforeEach(() => { state.mode = "enforce"; });
 
+		it("records how long the request waited for the coordinator's decision", async () => {
+			// A controlled clock: it moves 42 ms only when the decision resolves, so no real time passes.
+			let now = 1_000;
+			const clock = vi.spyOn(performance, "now").mockImplementation(() => now);
+			state.decide.mockImplementation(() => Promise.resolve().then(() => {
+				now += 42;
+				return { outcome: "allowed", admission: null, source: "coordinator", contended: false };
+			}));
+			const context = { ...allowedContext(), contextTelemetry: { cacheStatus: "hit", totalMs: 3 } };
+			vi.mocked(fetchGatewayContext).mockResolvedValue(context);
+
+			try {
+				await request({ spendLimit: slot() });
+			} finally {
+				clock.mockRestore();
+			}
+
+			expect((context.contextTelemetry as { spendLimitMs?: number }).spendLimitMs).toBe(42);
+		});
+
+		it("records no coordinator wait when enforce mode is off", async () => {
+			state.mode = "off";
+			const context = { ...allowedContext(), contextTelemetry: { cacheStatus: "hit", totalMs: 3 } };
+			vi.mocked(fetchGatewayContext).mockResolvedValue(context);
+
+			await request({ spendLimit: slot() });
+
+			expect(context.contextTelemetry).not.toHaveProperty("spendLimitMs");
+		});
+
 		it("rejects a request the coordinator denies, naming the department", async () => {
 			state.decide.mockReturnValue(departmentDenial);
 			vi.mocked(fetchGatewayContext).mockResolvedValue(allowedContext());

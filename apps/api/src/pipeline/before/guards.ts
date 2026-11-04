@@ -573,7 +573,11 @@ export async function guardContext(args: {
             internal: args.internal,
             slot: args.spendLimit,
         });
+        const spendLimitStartedAt = performance.now();
         const decision = enforced ? await enforced : null;
+        if (enforced && context.contextTelemetry) {
+            context.contextTelemetry.spendLimitMs = Math.round((performance.now() - spendLimitStartedAt) * 1000) / 1000;
+        }
         if (decision?.outcome === "denied") {
             return { ok: false, response: keyLimitExceededResponse(decision.keyLimit, args) };
         }

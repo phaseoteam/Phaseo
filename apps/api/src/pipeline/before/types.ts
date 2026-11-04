@@ -340,6 +340,8 @@ export type ContextFetchTelemetry = {
     rpcMs?: number | null;
     enrichMs?: number | null;
     cacheWriteMs?: number | null;
+    /** Wait for the spend-limit coordinator's decision (enforce mode), set by guardContext. */
+    spendLimitMs?: number | null;
     fallbackRemap?: boolean;
 };
 

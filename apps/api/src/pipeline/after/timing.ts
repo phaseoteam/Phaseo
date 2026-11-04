@@ -32,6 +32,9 @@ const ROUTING_STEP_SPANS = {
 	validate: "guardZod",
 	model: "guardModel",
 	context: "guardContext",
+	context_fetch: "context_total", // loading the context (cache or database), without the spend-limit wait
+	context_preset_access: "context_preset_access",
+	context_private_model: "context_private_model",
 	context_cache_read: "context_cache_read",
 	context_catalog_read: "context_catalog_read",
 	context_key_version: "context_key_version",
@@ -39,6 +42,8 @@ const ROUTING_STEP_SPANS = {
 	context_db: "context_rpc", // the gateway context RPC on a cache miss
 	context_enrich: "context_enrich",
 	context_byok: "context_byok_hydration",
+	context_cache_write: "context_cache_write",
+	context_spend_limit: "context_spend_limit", // waiting for the spend-limit Durable Object (enforce mode)
 	workspace_policy: "fetchWorkspacePolicy",
 	testing_mode: "resolveTestingMode",
 	capabilities: "validateCapabilities",
