@@ -5,7 +5,7 @@ const db = new PGlite();
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const migrationPath = '../migrations/20261027224949_store_sdk_client_fields_on_request_facts.sql';
 // The newest definition of ingest_v2_gateway_request; it must match the declarative schema.
-const latestMigrationPath = '../migrations/20261104101500_pricing_lines_record_charged_sku_meter.sql';
+const latestMigrationPath = '../migrations/20261104152910_pricing_lines_record_charged_sku_meter.sql';
 const schemaPath = '../schemas/public/functions/ingest_v2_gateway_request.sql';
 const workspace = '40000000-0000-4000-8000-000000000001';
 const functionBody = (sql) => {
