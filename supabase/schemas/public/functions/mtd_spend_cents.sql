@@ -53,43 +53,12 @@ begin
 end;
 $function$;
 
-CREATE OR REPLACE FUNCTION public.mtd_spend_cents (
-  p_team  uuid,
-  p_basis text DEFAULT 'top_up'::text
-)
-  RETURNS bigint
-  LANGUAGE plpgsql
-  STABLE
-  SET search_path TO 'public', 'pg_temp'
-  AS $function$declare
-  month_start_utc timestamptz :=
-    (date_trunc('month', (now() at time zone 'Europe/London'))
-     at time zone 'Europe/London');
-  total bigint;
-begin
-  select coalesce(sum(amount_nanos),0)::bigint into total
-  from credit_ledger
-  where team_id = p_team
-    and created_at >= month_start_utc
-    and created_at <  now()
-    and kind in ('top_up','auto_top_up');
-  return total;
-end;$function$;
-
 GRANT EXECUTE ON FUNCTION "public"."mtd_spend_cents"(uuid) TO "authenticated";
 
 GRANT EXECUTE ON FUNCTION "public"."mtd_spend_cents"(uuid) TO "service_role";
 
-GRANT EXECUTE ON FUNCTION "public"."mtd_spend_cents"(uuid, text) TO PUBLIC, "anon", "authenticated";
-
-GRANT EXECUTE ON FUNCTION "public"."mtd_spend_cents"(uuid, text) TO "service_role";
-
 REVOKE ALL ON FUNCTION "public"."mtd_spend_cents"(uuid) FROM "postgres";
 
 GRANT EXECUTE ON FUNCTION "public"."mtd_spend_cents"(uuid) TO "postgres";
-
-REVOKE ALL ON FUNCTION "public"."mtd_spend_cents"(uuid, text) FROM "postgres";
-
-GRANT EXECUTE ON FUNCTION "public"."mtd_spend_cents"(uuid, text) TO "postgres";
 
 REVOKE ALL ON FUNCTION "public"."mtd_spend_cents"(uuid) FROM PUBLIC, "anon";
