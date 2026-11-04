@@ -50,7 +50,8 @@ for (const [file, name] of [
   ['public/tables/workspace_departments.sql', 'sync_guardrail_assignments'],
   ['public/tables/workspace_department_grants.sql', 'gateway_workspace_publication'],
   ['public/tables/workspace_member_overrides.sql', 'gateway_workspace_publication'],
-  ['public/tables/keys.sql', 'keys_department_gateway_publication'],
+  // keys_department_gateway_publication is replaced by the broader trigger in
+  // *_gateway_key_cache_publication.sql (see gateway-key-cache-publication.test.mjs).
 ]) assert(normalize(migration).includes(await triggerIn(file, name)), `${file} trigger ${name} is in ${migrationName}`);
 const guardrailsTable = normalize(await read('../schemas/public/tables/workspace_guardrails.sql'));
 assert(guardrailsTable.includes(`"kind"                                    text                     NOT NULL DEFAULT 'access'::text,`), 'the table file declares kind');

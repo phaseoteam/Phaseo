@@ -183,6 +183,42 @@ describe("fetchWorkspacePolicy guardrail resolution", () => {
 		expect(runtime.rpcCalls).toHaveLength(2);
 	});
 
+	it("gives two bumps that read the same stale counter different versions", async () => {
+		const workspaceId = freshWorkspace();
+		const key = `gateway:workspace-policy-version:${workspaceId}`;
+		runtime.store.set(key, "4");
+		// Both locations read 4 (KV reads can lag by up to a minute), so read + 1 would collide.
+		runtime.cache.get.mockImplementation(async (name: string) => (name === key ? "4" : runtime.store.get(name) ?? null));
+		vi.useFakeTimers({ toFake: ["Date"] });
+		try {
+			vi.setSystemTime(1_800_000_000_000);
+			const first = await bumpWorkspacePolicyVersion(workspaceId);
+			vi.setSystemTime(1_800_000_000_002);
+			const second = await bumpWorkspacePolicyVersion(workspaceId);
+			expect(first).toBe(1_800_000_000_000);
+			expect(second).toBe(1_800_000_000_002);
+		} finally {
+			vi.useRealTimers();
+			runtime.cache.get.mockImplementation(async (name: string) => runtime.store.get(name) ?? null);
+		}
+	});
+
+	it("reads the source of truth and caches nothing when a version counter cannot be read", async () => {
+		const workspaceId = freshWorkspace();
+		runtime.rpc.result = { data: [{ guardrail_id: "g_workspace", source_type: "workspace", source_id: null }], error: null };
+		runtime.tables.workspace_guardrails = { data: [guardrail("g_workspace")], error: null };
+		const kv = await import("@/core/kv");
+		const spy = vi.spyOn(kv, "keyVersionToken").mockResolvedValue(null);
+		try {
+			await fetchWorkspacePolicy({ workspaceId, apiKeyId: "key_1" });
+			await fetchWorkspacePolicy({ workspaceId, apiKeyId: "key_1" });
+		} finally {
+			spy.mockRestore();
+		}
+		expect(runtime.rpcCalls).toHaveLength(2);
+		expect(runtime.cache.put).not.toHaveBeenCalledWith(expect.stringContaining(workspaceId), expect.any(String), expect.any(Object));
+	});
+
 	it("takes the workspace-wide rules from the workspace baseline guardrail, not workspace_settings", async () => {
 		const workspaceId = freshWorkspace();
 		// workspace_settings mirrors the baseline; it must not be read (or applied a second time).
