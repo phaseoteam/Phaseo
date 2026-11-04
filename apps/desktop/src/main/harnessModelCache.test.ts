@@ -49,6 +49,9 @@ describe("local harness model lists", () => {
 	});
 	it("ignores a corrupt file", async () => {
 		const { mkdirSync, writeFileSync } = await import("node:fs"); mkdirSync(path.dirname(file), { recursive: true }); writeFileSync(file, "{");
-		expect(await new HarnessModelCache(file).get("pi", undefined, undefined, async () => first)).toEqual(first);
+		const cache = new HarnessModelCache(file);
+		expect(await cache.get("pi", undefined, undefined, async () => first)).toEqual(first);
+		// The answer is saved in the background; the folder is removed only once that write is done.
+		await cache.flush();
 	});
 });

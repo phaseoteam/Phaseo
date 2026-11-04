@@ -20,7 +20,8 @@ const electron = createRequire(path.join(desktop, "package.json"))("electron");
 const html = readFileSync(path.join(desktop, "dist/renderer/index.html"), "utf8");
 const upfront = [...html.matchAll(/(?:src|href)="\.\/(assets\/[^"]+\.js)"/g)].reduce((sum, [, file]) => sum + statSync(path.join(desktop, "dist/renderer", file)).size, 0);
 const mainBundle = readFileSync(path.join(desktop, "dist/main/index.mjs"), "utf8");
-const eager = deferredPackages.filter(name => new RegExp(`^import [^;]*from "${name.replace(/[/.]/g, "\\$&")}`, "m").test(mainBundle));
+const imports = mainBundle.split("\n").filter(line => line.startsWith("import "));
+const eager = deferredPackages.filter(name => imports.some(line => line.includes(` from "${name}`)));
 
 const profile = mkdtempSync(path.join(tmpdir(), "phaseo-perf-profile-"));
 const env = { ...process.env }; delete env.ELECTRON_RUN_AS_NODE;

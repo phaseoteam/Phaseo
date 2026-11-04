@@ -37,7 +37,8 @@ const gateway = createServer((request, response) => {
 	});
 });
 await new Promise(resolve => gateway.listen(0, "127.0.0.1", resolve));
-const endpoint = `http://127.0.0.1:${gateway.address().port}/v1`;
+// Only the port reaches the window's script, as a number, so no text is built into code.
+const gatewayPort = Number(gateway.address().port);
 
 const at = minutes => new Date(Date.UTC(2026, 9, 16) - minutes * 60_000).toISOString();
 const answer = n => `Here is part ${n}.\n\n1. **Inputs** – what arrives.\n2. **Processing** – retries per provider.\n\n| Step | Cost |\n| --- | --- |\n| Read | $0.002 |\n\n\`\`\`ts\nexport const handle${n} = (request: Request) => route(request, { attempt: ${n} });\n\`\`\`\n\n${"Detail ".repeat(120)}`;
@@ -92,7 +93,7 @@ app.whenReady().then(async () => {
 
 		await until("sidebar shows chats", `!!${row("Very long chat")}`);
 		await until("composer ready", "!!document.querySelector('[contenteditable=true]')");
-		await run(`(async()=>{await window.phaseoDesktop.workspace.command({type:'update-account',id:'perf',endpoint:${JSON.stringify(endpoint)},apiKey:'perf-key'})})()`);
+		await run(`(async()=>{await window.phaseoDesktop.workspace.command({type:'update-account',id:'perf',endpoint:'http://127.0.0.1:'+${gatewayPort}+'/v1',apiKey:'perf-key'})})()`);
 		await pause(1500);
 		const idle = { mainHeapMb: mainHeapMb(), rendererHeapMb: await rendererHeapMb(), domNodes: await domNodes() };
 
