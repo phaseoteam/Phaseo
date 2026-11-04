@@ -980,7 +980,16 @@ async function handleDeleteKey(req: Request) {
 		}
 		// Bump again now the row is written: a request between the first bump and
 		// the update could have cached the still-active row under the new version.
-		await invalidateKeyCache({ id: existing.id, kid: existing.kid ?? null });
+		// The row is already deleted, so a failure here must not skip the cleanup and
+		// audit below; the database trigger on keys still refreshes the gateway.
+		try {
+			await invalidateKeyCache({ id: existing.id, kid: existing.kid ?? null });
+		} catch (error) {
+			console.warn("gateway_key_invalidation_after_delete_failed", {
+				keyId: existing.id,
+				error: error instanceof Error ? error.message : String(error),
+			});
+		}
 
 		await supabase.from("key_guardrails").delete().eq("key_id", existing.id);
 		await supabase.from("broadcast_destination_keys").delete().eq("key_id", existing.id);

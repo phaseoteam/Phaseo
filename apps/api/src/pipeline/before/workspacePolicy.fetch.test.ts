@@ -189,13 +189,16 @@ describe("fetchWorkspacePolicy guardrail resolution", () => {
 		runtime.store.set(key, "4");
 		// Both locations read 4 (KV reads can lag by up to a minute), so read + 1 would collide.
 		runtime.cache.get.mockImplementation(async (name: string) => (name === key ? "4" : runtime.store.get(name) ?? null));
+		vi.useFakeTimers({ toFake: ["Date"] });
 		try {
+			vi.setSystemTime(1_800_000_000_000);
 			const first = await bumpWorkspacePolicyVersion(workspaceId);
-			await new Promise((resolve) => setTimeout(resolve, 2));
+			vi.setSystemTime(1_800_000_000_002);
 			const second = await bumpWorkspacePolicyVersion(workspaceId);
-			expect(first).toBeGreaterThan(4);
-			expect(second).toBeGreaterThan(first);
+			expect(first).toBe(1_800_000_000_000);
+			expect(second).toBe(1_800_000_000_002);
 		} finally {
+			vi.useRealTimers();
 			runtime.cache.get.mockImplementation(async (name: string) => runtime.store.get(name) ?? null);
 		}
 	});
