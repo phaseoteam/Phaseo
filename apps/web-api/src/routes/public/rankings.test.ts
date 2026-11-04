@@ -4,7 +4,7 @@ const env = { ENV: "development" as const, SUPABASE_URL: "https://example.supaba
 afterEach(() => vi.unstubAllGlobals());
 
 describe("public rankings routes", () => {
-	it.each(["text_tokens", "image_outputs", "image_inputs", "embedding_tokens", "rerank_quad_tokens", "audio_tokens", "audio_seconds", "speech_seconds", "transcription_seconds", "video_seconds", "video_tokens", "cached_tokens"])("reads %s from modality rollups", async (metric) => {
+	it.each(["text_tokens", "image_outputs", "image_inputs", "embedding_tokens", "rerank_quad_tokens", "audio_tokens", "audio_seconds", "speech_seconds", "transcription_seconds", "video_seconds", "video_tokens", "cached_tokens", "decision_tokens"])("reads %s from modality rollups", async (metric) => {
 		const fetchMock = vi.fn(async () => new Response(JSON.stringify([{ model_id: "test", tokens: 2.75 }])));
 		vi.stubGlobal("fetch", fetchMock);
 		const response = await app.request(`https://phaseo.app/api/_web/rankings/modality-timeseries?metric=${metric}`, {}, env);

@@ -20,6 +20,7 @@ export function generateStaticParams() {
 		{ modality: "video" },
 		{ modality: "speech" },
 		{ modality: "transcription" },
+		{ modality: "decisions" },
 	];
 }
 

@@ -234,6 +234,7 @@ jobs:
                   node supabase/tests/realtime-billing-hardening.test.mjs
                   node supabase/tests/rankings-rolling-periods.test.mjs
                   node supabase/tests/rankings-distributions.test.mjs
+                  node supabase/tests/decisions-rankings.test.mjs
                   node --test supabase/tests/models-page-cheapest-provider-pricing.test.mjs
                   node supabase/tests/benchmark-direction-default.test.mjs
                   node scripts/tests/workspace-provisioning.mjs

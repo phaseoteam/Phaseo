@@ -2192,7 +2192,8 @@
 			"audio": "音声モデルランキング",
 			"video": "動画モデルランキング",
 			"speech": "音声生成モデルランキング",
-			"transcription": "文字起こしモデルランキング"
+			"transcription": "文字起こしモデルランキング",
+			"decisions": "判断モデルランキング"
 		},
 		"leaderboard": "リーダーボード",
 		"fastestModels": "最速モデル",
@@ -2295,7 +2296,8 @@
 			"video-seconds": "生成動画の秒数",
 			"video-tokens": "動画トークン合計",
 			"speech-seconds": "生成音声の秒数",
-			"transcription-minutes": "文字起こし時間（分）"
+			"transcription-minutes": "文字起こし時間（分）",
+			"decision-volume": "判断トークン"
 		},
 		"usageImagesUnit": "枚",
 		"usageSecondsUnit": "秒",
@@ -2344,7 +2346,8 @@
 			"audio": "音声",
 			"video": "動画",
 			"speech": "音声合成",
-			"transcription": "文字起こし"
+			"transcription": "文字起こし",
+			"decisions": "判断"
 		},
 		"shareLabel": "シェア",
 		"tokensLabel": "トークン",

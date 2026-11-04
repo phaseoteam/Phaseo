@@ -2192,7 +2192,8 @@
 			"audio": "Audio model rankings",
 			"video": "Video model rankings",
 			"speech": "Speech model rankings",
-			"transcription": "Transcription model rankings"
+			"transcription": "Transcription model rankings",
+			"decisions": "Decision model rankings"
 		},
 		"leaderboard": "Leaderboard",
 		"fastestModels": "Fastest Models",
@@ -2295,7 +2296,8 @@
 			"video-seconds": "Video seconds generated",
 			"video-tokens": "Total video tokens",
 			"speech-seconds": "Speech seconds generated",
-			"transcription-minutes": "Minutes transcribed"
+			"transcription-minutes": "Minutes transcribed",
+			"decision-volume": "Decision tokens"
 		},
 		"usageImagesUnit": "images",
 		"usageSecondsUnit": "seconds",
@@ -2344,7 +2346,8 @@
 			"audio": "Audio",
 			"video": "Video",
 			"speech": "Speech",
-			"transcription": "Transcription"
+			"transcription": "Transcription",
+			"decisions": "Decisions"
 		},
 		"shareLabel": "Share",
 		"tokensLabel": "Tokens",

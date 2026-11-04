@@ -2192,7 +2192,8 @@
 			"audio": "Audio-Modell-Rangliste",
 			"video": "Video-Modell-Rangliste",
 			"speech": "Sprachmodell-Rangliste",
-			"transcription": "Transkriptionsmodell-Rangliste"
+			"transcription": "Transkriptionsmodell-Rangliste",
+			"decisions": "Entscheidungsmodell-Rangliste"
 		},
 		"leaderboard": "Rangliste",
 		"fastestModels": "Schnellste Modelle",
@@ -2295,7 +2296,8 @@
 			"video-seconds": "Generierte Videosekunden",
 			"video-tokens": "Video-Tokens insgesamt",
 			"speech-seconds": "Generierte Sprachsekunden",
-			"transcription-minutes": "Transkribierte Minuten"
+			"transcription-minutes": "Transkribierte Minuten",
+			"decision-volume": "Entscheidungs-Tokens"
 		},
 		"usageImagesUnit": "Bilder",
 		"usageSecondsUnit": "Sekunden",
@@ -2344,7 +2346,8 @@
 			"audio": "Audio",
 			"video": "Video",
 			"speech": "Sprachsynthese",
-			"transcription": "Transkription"
+			"transcription": "Transkription",
+			"decisions": "Entscheidungen"
 		},
 		"shareLabel": "Anteil",
 		"tokensLabel": "Tokens",
