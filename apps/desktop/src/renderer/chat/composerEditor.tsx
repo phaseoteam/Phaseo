@@ -170,8 +170,13 @@ export function useComposerEditor({ value, onChange, placeholder, disabled, onFi
 	// Scripts drive the composer like a text field: `value` reads and replaces the draft text.
 	useEffect(() => {
 		if (!editor) return;
-		const dom = editor.view.dom as HTMLElement & { value?: string };
-		Object.defineProperty(dom, "value", { configurable: true, get: () => draftText(editor.state.doc), set: (text: string) => { editor.commands.setContent(draftContent(text), { emitUpdate: true }); editor.commands.focus("end"); } });
+		const define = () => {
+			const dom = editor.view.dom as HTMLElement & { value?: string };
+			Object.defineProperty(dom, "value", { configurable: true, get: () => draftText(editor.state.doc), set: (text: string) => { editor.commands.setContent(draftContent(text), { emitUpdate: true }); editor.commands.focus("end"); } });
+		};
+		// The view mounts with the editor's content element, which can come after the editor itself; reading it sooner throws.
+		if (!editor.isDestroyed) define(); else editor.on("mount", define);
+		return () => { editor.off("mount", define); };
 	}, [editor]);
 
 	// The browser's screenshot and annotate tools hand images and a note to whichever composer is open.
@@ -207,5 +212,7 @@ export function useComposerEditor({ value, onChange, placeholder, disabled, onFi
 		chain.insertContent([...before && !/\s/.test(before) ? [{ type: "text", text: " " }] : [], ...mentions.flatMap(mentionContent)]).run();
 	};
 	insertRef.current = insert;
-	return { editor, keys, focus: position => { editor?.commands.focus(position ?? "end"); }, insert };
+	// A chat view hidden while a page loads gets a fresh editor when it's shown again, and its effects can run first with
+	// the old one, destroyed (no commands) or not yet mounted (no view); focusing either throws.
+	return { editor, keys, focus: position => { if (editor && !editor.isDestroyed) editor.commands.focus(position ?? "end"); }, insert };
 }
