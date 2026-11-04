@@ -7659,8 +7659,10 @@
 		"link": {
 			"metaTitle": "Conectar Slack",
 			"title": "Conecta tu cuenta de Slack",
-			"description": "Esto vincula la cuenta de Slack que abrió esta página con tu cuenta de Phaseo, para que el agente de Phaseo sepa quién eres.",
-			"warning": "Continúa solo si abriste este enlace desde el mensaje del agente de Phaseo en Slack.",
+			"description": "Esto vincula la cuenta de Slack indicada abajo con tu cuenta de Phaseo, para que el agente de Phaseo sepa quién eres.",
+			"account": "Cuenta de Slack: {name} ({id}) en {team}",
+			"accountUnnamed": "Cuenta de Slack: {id} en {team}",
+			"warning": "Continúa solo si esta es tu propia cuenta de Slack. Si alguien te envió este enlace, no lo uses: esa cuenta de Slack actuaría en tu nombre.",
 			"confirm": "Conectar cuenta",
 			"confirming": "Conectando…",
 			"missingToken": "A este enlace le falta su código. Ábrelo de nuevo desde el mensaje del agente de Phaseo en Slack.",
@@ -7671,6 +7673,7 @@
 			"close": "Puedes cerrar esta página y volver a Slack.",
 			"errors": {
 				"expired": "Este enlace ha caducado. Pide uno nuevo al agente de Phaseo en Slack.",
+				"used": "Este enlace ya se ha usado. Pide uno nuevo al agente de Phaseo en Slack.",
 				"invalid": "Este enlace no es válido. Pide uno nuevo al agente de Phaseo en Slack.",
 				"notInstalled": "El agente de Phaseo ya no está instalado en ese espacio de trabajo de Slack.",
 				"wrongWorkspace": "Inicia sesión con una cuenta del espacio de trabajo de Phaseo que añadió el agente a Slack.",

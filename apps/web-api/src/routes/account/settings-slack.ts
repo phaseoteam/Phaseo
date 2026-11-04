@@ -16,6 +16,7 @@ import {
 	SLACK_AGENT_ORIGINAL_BOT_SCOPES,
 	exchangeSlackCode,
 	slackAuthorizeUrl,
+	slackUserProfile,
 	uninstallSlackApp,
 	type SlackAppCredentials,
 	type SlackInstallGrant,
@@ -790,6 +791,14 @@ accountSettingsSlackRouter.get("/slack/oauth/callback", async (c) => {
 	if ((team.data ?? []).some((row: any) => String(row.workspace_id) !== context.workspaceId)) return fail("slack_team_in_use");
 	if ((team.data ?? []).length) return fail("already_installed");
 
+	// Slack named the saved app id for these client credentials, so this workspace owns the app:
+	// it now holds the id, and another workspace can no longer save it.
+	if (settings.slack_app_id) {
+		const verifiedApp = await context.client.from("slack_apps").update({ verified_at: new Date().toISOString() })
+			.eq("id", settings.slack_app_id).eq("workspace_id", context.workspaceId).is("verified_at", null);
+		if (verifiedApp.error) return fail(verifiedApp.error.code === "23505" ? "slack_app_taken" : "install_failed");
+	}
+
 	const created = await createInstallation(env, context, settings, grant);
 	if (created.ok === false) return fail(created.error);
 	await auditSlack(c, context, "installed", { id: created.installationId, name: grant.teamName }, {
@@ -1024,7 +1033,14 @@ accountSettingsSlackRouter.put("/slack/custom-app", bodyLimit({ maxSize: 8 * 102
 		.order("created_at", { ascending: true }).limit(1).maybeSingle();
 	if (existing.error) return json(c, { error: "settings_unavailable" }, 503);
 	const current = existing.data as CustomAppRow | null;
-	if (current && (current.slack_app_id !== slackAppId || current.client_id !== clientId)) {
+	// Saving proves nothing about who owns a Slack app, so it reserves nothing either: only an app
+	// whose install Slack confirmed (verified_at) holds its id, and then nobody else can save it.
+	const taken = await context.client.from("slack_apps").select("id").eq("slack_app_id", slackAppId)
+		.not("verified_at", "is", null).neq("workspace_id", context.workspaceId).limit(1).maybeSingle();
+	if (taken.error) return json(c, { error: "settings_unavailable" }, 503);
+	if (taken.data) return json(c, { error: "slack_app_taken", message: "This Slack app is already connected to another Phaseo workspace" }, 409);
+	const appChanged = Boolean(current && (current.slack_app_id !== slackAppId || current.client_id !== clientId));
+	if (current && appChanged) {
 		// The installed bot belongs to the saved app; only its secrets may change while it is live.
 		const inUse = await context.client.from("slack_installations").select("id").eq("slack_app_id", current.id).neq("status", "uninstalled").limit(1).maybeSingle();
 		if (inUse.error) return json(c, { error: "settings_unavailable" }, 503);
@@ -1032,7 +1048,7 @@ accountSettingsSlackRouter.put("/slack/custom-app", bodyLimit({ maxSize: 8 * 102
 	}
 	const secretsCiphertext = await encryptSlackSecrets(c.env, { client_secret: clientSecret, signing_secret: signingSecret });
 	const saved = current
-		? await context.client.from("slack_apps").update({ slack_app_id: slackAppId, client_id: clientId, secrets_ciphertext: secretsCiphertext })
+		? await context.client.from("slack_apps").update({ slack_app_id: slackAppId, client_id: clientId, secrets_ciphertext: secretsCiphertext, ...(appChanged ? { verified_at: null } : {}) })
 			.eq("id", current.id).eq("workspace_id", context.workspaceId).select(CUSTOM_APP_COLUMNS).maybeSingle()
 		: await context.client.from("slack_apps").insert({
 			workspace_id: context.workspaceId, slack_app_id: slackAppId, client_id: clientId, secrets_ciphertext: secretsCiphertext, created_by: context.user.id,
@@ -1076,33 +1092,103 @@ accountSettingsSlackRouter.delete("/slack/custom-app", async (c) => {
 	return json(c, { id: app.id, deleted: true });
 });
 
-accountSettingsSlackRouter.post("/slack/link", bodyLimit({ maxSize: 8 * 1024 }), async (c) => {
-	const body = await readBody(c);
-	const unknown = Object.keys(body).find((field) => field !== "token");
-	if (unknown) return badRequest(c, `Unknown field: ${unknown}`);
-	if (!c.req.header("authorization")?.startsWith("Bearer ")) return json(c, { error: "unauthorized" }, 401);
-	const verified = await verifySlackToken<{ installation_id?: unknown; slack_user_id?: unknown }>(c.env, "link", body.token);
+type LinkTokenCheck =
+	| { ok: true; installationId: string; slackUserId: string; nonce: string; expiresAt: string; teamName: string | null; secretsCiphertext: string; context: AccountWorkspaceContext }
+	| { ok: false; response: Response };
+
+/**
+ * A link token from the Slack agent, checked for the signed-in user: signed, unexpired, not used
+ * before, for a live installation of a workspace the user belongs to.
+ */
+async function checkLinkToken(c: any, token: unknown): Promise<LinkTokenCheck> {
+	const fail = (response: Response) => ({ ok: false as const, response });
+	if (!c.req.header("authorization")?.startsWith("Bearer ")) return fail(json(c, { error: "unauthorized" }, 401));
+	const verified = await verifySlackToken<{ installation_id?: unknown; slack_user_id?: unknown }>(c.env, "link", token);
 	if (verified.ok === false) {
-		if (verified.reason === "unconfigured") return notConfigured(c);
-		return json(c, verified.reason === "expired"
+		if (verified.reason === "unconfigured") return fail(notConfigured(c));
+		return fail(json(c, verified.reason === "expired"
 			? { error: "link_expired", message: "This link has expired. Ask the Slack agent for a new one" }
-			: { error: "link_invalid", message: "This link is not valid" }, 400);
+			: { error: "link_invalid", message: "This link is not valid" }, 400));
 	}
 	const installationId = verified.payload.installation_id;
 	const slackUserId = verified.payload.slack_user_id;
 	if (typeof installationId !== "string" || !UUID_PATTERN.test(installationId) || typeof slackUserId !== "string" || !SLACK_USER_PATTERN.test(slackUserId)) {
-		return json(c, { error: "link_invalid", message: "This link is not valid" }, 400);
+		return fail(json(c, { error: "link_invalid", message: "This link is not valid" }, 400));
 	}
-	const installation = await getDataClient(c.env).from("slack_installations").select("id,workspace_id,team_name,status")
-		.eq("id", installationId).maybeSingle();
-	if (installation.error) return json(c, { error: "settings_unavailable" }, 503);
+	const client = getDataClient(c.env);
+	const [installation, used] = await Promise.all([
+		client.from("slack_installations").select("id,workspace_id,team_name,status,secrets_ciphertext").eq("id", installationId).maybeSingle(),
+		client.from("slack_link_token_uses").select("nonce").eq("nonce", verified.payload.nonce).maybeSingle(),
+	]);
+	if (installation.error || used.error) return fail(json(c, { error: "settings_unavailable" }, 503));
+	if (used.data) return fail(json(c, { error: "link_used", message: "This link has already been used. Ask the Slack agent for a new one" }, 409));
 	if (!installation.data || installation.data.status === "uninstalled") {
-		return json(c, { error: "not_installed", message: "The Slack agent is no longer installed" }, 404);
+		return fail(json(c, { error: "not_installed", message: "The Slack agent is no longer installed" }, 404));
 	}
 	// Only members of the installation's workspace can link; the agent offers its
 	// usage data to linked members only.
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: String(installation.data.workspace_id) });
-	if (!context) return json(c, { error: "forbidden", message: "Sign in with an account in the Phaseo workspace that installed the Slack agent" }, 403);
+	if (!context) return fail(json(c, { error: "forbidden", message: "Sign in with an account in the Phaseo workspace that installed the Slack agent" }, 403));
+	return {
+		ok: true,
+		installationId,
+		slackUserId,
+		nonce: verified.payload.nonce,
+		expiresAt: new Date(verified.payload.exp * 1000).toISOString(),
+		teamName: installation.data.team_name ?? null,
+		secretsCiphertext: String(installation.data.secrets_ciphertext ?? ""),
+		context,
+	};
+}
+
+/**
+ * What confirming a link would do, shown before the person confirms: which Slack account (named by
+ * Slack, so a forwarded link shows someone else's name) would act as them in which Slack workspace.
+ */
+accountSettingsSlackRouter.post("/slack/link/preview", bodyLimit({ maxSize: 8 * 1024 }), async (c) => {
+	const body = await readBody(c);
+	const unknown = Object.keys(body).find((field) => field !== "token");
+	if (unknown) return badRequest(c, `Unknown field: ${unknown}`);
+	const checked = await checkLinkToken(c, body.token);
+	if (checked.ok === false) return checked.response;
+	let profile = null;
+	try {
+		const secrets = await decryptSlackSecrets(c.env, checked.secretsCiphertext);
+		if (secrets.bot_token) profile = await slackUserProfile({ botToken: secrets.bot_token, userId: checked.slackUserId });
+	} catch {
+		profile = null;
+	}
+	return json(c, {
+		slack_user: {
+			id: checked.slackUserId,
+			handle: profile?.handle ?? null,
+			real_name: profile?.realName ?? null,
+			display_name: profile?.displayName ?? null,
+		},
+		team_name: checked.teamName,
+		workspace_name: checked.context.workspaceName,
+	});
+});
+
+accountSettingsSlackRouter.post("/slack/link", bodyLimit({ maxSize: 8 * 1024 }), async (c) => {
+	const body = await readBody(c);
+	const unknown = Object.keys(body).find((field) => field !== "token");
+	if (unknown) return badRequest(c, `Unknown field: ${unknown}`);
+	const checked = await checkLinkToken(c, body.token);
+	if (checked.ok === false) return checked.response;
+	const { context, installationId, slackUserId } = checked;
+	// Each link works once: the first confirmation records its nonce, and a second one loses here.
+	const consumed = await context.client.from("slack_link_token_uses").insert({
+		nonce: checked.nonce,
+		installation_id: installationId,
+		slack_user_id: slackUserId,
+		user_id: context.user.id,
+		expires_at: checked.expiresAt,
+	});
+	if (consumed.error) {
+		if (consumed.error.code === "23505") return json(c, { error: "link_used", message: "This link has already been used. Ask the Slack agent for a new one" }, 409);
+		return json(c, { error: "settings_write_failed" }, 503);
+	}
 	const linked = await context.client.from("slack_user_links").upsert({
 		installation_id: installationId,
 		slack_user_id: slackUserId,
@@ -1110,11 +1196,11 @@ accountSettingsSlackRouter.post("/slack/link", bodyLimit({ maxSize: 8 * 1024 }),
 		linked_at: new Date().toISOString(),
 	}, { onConflict: "installation_id,slack_user_id" });
 	if (linked.error) return json(c, { error: "settings_write_failed" }, 503);
-	await auditSlack(c, context, "account_linked", { id: slackUserId, name: installation.data.team_name ?? null, type: "slack_user" }, { installation_id: installationId });
+	await auditSlack(c, context, "account_linked", { id: slackUserId, name: checked.teamName, type: "slack_user" }, { installation_id: installationId });
 	return json(c, {
 		linked: true,
 		workspaceId: context.workspaceId,
 		workspace_name: context.workspaceName,
-		team_name: installation.data.team_name ?? null,
+		team_name: checked.teamName,
 	});
 });

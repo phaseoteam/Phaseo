@@ -7,6 +7,7 @@ CREATE TABLE "public"."slack_apps" (
   "created_by"         uuid,
   "created_at"         timestamp with time zone NOT NULL DEFAULT now(),
   "updated_at"         timestamp with time zone NOT NULL DEFAULT now(),
+  "verified_at"        timestamp with time zone,
   CONSTRAINT "slack_apps_client_id_check" CHECK ((client_id ~ '^[0-9]+\.[0-9]+$'::text)),
   CONSTRAINT "slack_apps_created_by_fkey" FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL,
   CONSTRAINT "slack_apps_pkey" PRIMARY KEY (id),
@@ -18,7 +19,10 @@ CREATE TABLE "public"."slack_apps" (
 ALTER TABLE "public"."slack_apps"
   ENABLE ROW LEVEL SECURITY;
 
-CREATE UNIQUE INDEX slack_apps_slack_app_id_idx ON public.slack_apps USING btree (slack_app_id);
+CREATE INDEX slack_apps_slack_app_id_lookup_idx ON public.slack_apps USING btree (slack_app_id);
+
+CREATE UNIQUE INDEX slack_apps_slack_app_id_idx ON public.slack_apps USING btree (slack_app_id)
+  WHERE (verified_at IS NOT NULL);
 
 CREATE UNIQUE INDEX slack_apps_workspace_idx ON public.slack_apps USING btree (workspace_id);
 
@@ -37,6 +41,8 @@ CREATE POLICY "deny_direct_client_access" ON "public"."slack_apps"
 COMMENT ON TABLE "public"."slack_apps" IS 'A company''s own Slack app for the Phaseo Slack agent, created from Phaseo''s manifest, used instead of the hosted app. At most one per workspace. Only the settings API and the Slack Worker read it.';
 
 COMMENT ON COLUMN "public"."slack_apps"."secrets_ciphertext" IS 'AES-GCM encrypted JSON {client_secret, signing_secret}, keyed by SLACK_SECRETS_ENCRYPTION_KEY. Never returned to clients.';
+
+COMMENT ON COLUMN "public"."slack_apps"."verified_at" IS 'When an install through this app succeeded and Slack confirmed its app id, proving the workspace owns it. Only verified apps hold their Slack app id exclusively.';
 
 REVOKE ALL ON TABLE "public"."slack_apps" FROM "service_role";
 

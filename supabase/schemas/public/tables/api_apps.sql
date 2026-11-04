@@ -53,12 +53,12 @@ CREATE INDEX idx_api_apps_public_active ON public.api_apps USING btree (is_publi
 CREATE POLICY "api_apps_delete_own_team" ON "public"."api_apps"
   FOR DELETE
   TO "authenticated"
-  USING (public.is_workspace_member(workspace_id));
+  USING (public.is_workspace_admin(workspace_id));
 
 CREATE POLICY "api_apps_insert_own_team" ON "public"."api_apps"
   FOR INSERT
   TO "authenticated"
-  WITH CHECK (public.is_workspace_member(workspace_id));
+  WITH CHECK (public.is_workspace_admin(workspace_id));
 
 CREATE POLICY "api_apps_select_own_team" ON "public"."api_apps"
   FOR SELECT
@@ -68,8 +68,8 @@ CREATE POLICY "api_apps_select_own_team" ON "public"."api_apps"
 CREATE POLICY "api_apps_update_own_team" ON "public"."api_apps"
   FOR UPDATE
   TO "authenticated"
-  USING (public.is_workspace_member(workspace_id))
-  WITH CHECK (public.is_workspace_member(workspace_id));
+  USING (public.is_workspace_admin(workspace_id))
+  WITH CHECK (public.is_workspace_admin(workspace_id));
 
 CREATE POLICY "mfa_required_when_enrolled" ON "public"."api_apps"
   AS RESTRICTIVE

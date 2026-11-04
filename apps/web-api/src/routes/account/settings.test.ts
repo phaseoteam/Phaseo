@@ -13,7 +13,7 @@ const env = {
 
 afterEach(() => vi.unstubAllGlobals());
 
-it.each(["keys", "management-api-keys"])("omits credential material from the %s response", async (path) => {
+it.each(["keys", "management-api-keys", "management-keys", "management-keys/management-key-1"])("omits credential material from the %s response", async (path) => {
 	vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => authenticatedFetch(input)));
 	const response = await app.request(`https://phaseo.app/api/account/settings/${path}?workspaceId=workspace-1`, { headers: { authorization: `Bearer ${sessionToken}` } }, env);
 	expect(response.status).toBe(200);
@@ -234,7 +234,7 @@ function authenticatedFetch(input: RequestInfo | URL): Response {
 	if (url.includes("management_keys")) {
 		return new Response(JSON.stringify([{
 			id: "management-key-1", workspace_id: "workspace-1", name: "Automation",
-			hash: "do-not-send-credential-hash", encrypted_key: "do-not-send-ciphertext",
+			hash: "do-not-send-credential-hash", encrypted_key: "do-not-send-ciphertext", kid: "do-not-send-kid",
 			created_at: "2026-01-01T00:00:00Z",
 		}]), { status: 200 });
 	}
@@ -716,6 +716,60 @@ describe("account settings routes", () => {
 		const requestedUrls = fetchMock.mock.calls.map(([input]) => input instanceof Request ? input.url : String(input));
 		expect(requestedUrls.some((url) => url.includes("/rpc/merge_v2_gateway_app_history"))).toBe(true);
 		expect(requestedUrls.some((url) => url.includes("/gateway_requests?"))).toBe(false);
+	});
+
+	describe("app editing, publishing and merging", () => {
+		const executionCtx = { waitUntil: vi.fn(), passThroughOnException: vi.fn(), props: {} } as unknown as ExecutionContext;
+		function stubApps(role: string) {
+			const writes: string[] = [];
+			vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+				const url = input instanceof Request ? input.url : String(input);
+				const method = (input instanceof Request ? input.method : init?.method ?? "GET").toUpperCase();
+				if (url.includes("workspace_members") && !url.includes("teams%3Aworkspaces") && !url.includes("select=workspace_id")) return new Response(JSON.stringify([{ role }]), { status: 200 });
+				// The shared fixture makes user-1 the workspace owner; here only the member role decides.
+				if (url.includes("select=owner_user_id")) return new Response(JSON.stringify([{ owner_user_id: "owner-1" }]), { status: 200 });
+				if (url.includes("/rpc/merge_v2_gateway_app_history")) { writes.push("merge"); return new Response(JSON.stringify({ gateway_requests: 1 }), { status: 200 }); }
+				if (url.includes("api_apps")) {
+					if (method === "PATCH") { writes.push(`update:${url}`); return new Response(JSON.stringify({ id: "app-1", is_public: true, is_active: true, image_url: null }), { status: 200 }); }
+					return new Response(JSON.stringify(url.includes("id=in.")
+						? [{ id: "app-1", workspace_id: "workspace-1", title: "One", app_key: "one" }, { id: "app-2", workspace_id: "workspace-1", title: "Two", app_key: "two" }]
+						: [{ id: "app-1", workspace_id: "workspace-1", title: "One", app_key: "one" }]), { status: 200 });
+				}
+				return authenticatedFetch(input);
+			}));
+			return writes;
+		}
+		const put = (body: Record<string, unknown>) => app.request("https://phaseo.app/api/account/settings/apps/app-1", { method: "PUT", headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" }, body: JSON.stringify(body) }, env, executionCtx);
+		const merge = () => app.request("https://phaseo.app/api/account/settings/apps/app-1/merge", { method: "POST", headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" }, body: JSON.stringify({ targetAppId: "app-2" }) }, env, executionCtx);
+
+		it("refuses plain members before writing anything", async () => {
+			const writes = stubApps("member");
+			expect((await put({ is_public: true, title: "Mine", url: "https://mine.example" })).status).toBe(403);
+			expect((await merge()).status).toBe(403);
+			expect(writes).toEqual([]);
+		});
+
+		it("lets admins publish and merge apps", async () => {
+			const writes = stubApps("admin");
+			expect((await put({ is_public: true })).status).toBe(200);
+			expect((await merge()).status).toBe(200);
+			expect(writes.some((write) => write.startsWith("update:"))).toBe(true);
+			expect(writes).toContain("merge");
+		});
+
+		it.each(["javascript:alert(1)", "data:text/html,hi", "not a url"])("rejects the app URL %s", async (url) => {
+			const writes = stubApps("owner");
+			const response = await put({ url });
+			expect(response.status).toBe(400);
+			await expect(response.json()).resolves.toEqual({ error: "invalid_url" });
+			expect(writes).toEqual([]);
+		});
+
+		it("accepts http(s) app URLs as typed and clears an empty one", async () => {
+			stubApps("owner");
+			expect((await put({ url: " https://app.example.com/path " })).status).toBe(200);
+			expect((await put({ url: "" })).status).toBe(200);
+		});
 	});
 
 	it("rejects a workspace that is not accessible to the authenticated user", async () => {

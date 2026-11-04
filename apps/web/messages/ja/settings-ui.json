@@ -7659,8 +7659,10 @@
 		"link": {
 			"metaTitle": "Slack を接続",
 			"title": "Slack アカウントを接続",
-			"description": "このページを開いた Slack アカウントをあなたの Phaseo アカウントと連携し、Phaseo エージェントがあなたを識別できるようにします。",
-			"warning": "Slack の Phaseo エージェントのメッセージからこのリンクを開いた場合だけ続けてください。",
+			"description": "下の Slack アカウントをあなたの Phaseo アカウントと連携し、Phaseo エージェントがあなたを識別できるようにします。",
+			"account": "Slack アカウント: {name}（{id}）、{team}",
+			"accountUnnamed": "Slack アカウント: {id}、{team}",
+			"warning": "これがあなた自身の Slack アカウントである場合だけ続けてください。誰かから送られたリンクの場合は使わないでください。その Slack アカウントがあなたとして操作できるようになります。",
 			"confirm": "アカウントを接続",
 			"confirming": "接続中…",
 			"missingToken": "このリンクにはコードがありません。Slack の Phaseo エージェントのメッセージからもう一度開いてください。",
@@ -7671,6 +7673,7 @@
 			"close": "このページを閉じて Slack に戻ってかまいません。",
 			"errors": {
 				"expired": "このリンクは期限切れです。Slack で Phaseo エージェントに新しいリンクを頼んでください。",
+				"used": "このリンクはすでに使用されています。Slack で Phaseo エージェントに新しいリンクを頼んでください。",
 				"invalid": "このリンクは無効です。Slack で Phaseo エージェントに新しいリンクを頼んでください。",
 				"notInstalled": "その Slack ワークスペースには Phaseo エージェントがインストールされていません。",
 				"wrongWorkspace": "エージェントを Slack に追加した Phaseo ワークスペースのアカウントでサインインしてください。",

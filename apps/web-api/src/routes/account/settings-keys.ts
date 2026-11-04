@@ -11,6 +11,7 @@ import { keyIpAllowlistSchema } from "./keyIpAllowlist";
 import { parseKeyStorageLocations } from "./key-storage-locations";
 import { workspaceUserProfile } from "./workspaceUserProfile";
 import { keyUsageSeries } from "./keyUsageSeries";
+import { keyDisplayData } from "./settings-key-display";
 
 const BASE62 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const CONTROL_SCOPES = ["me:read","models:read","providers:read","pricing:read","credits:read","activity:read","analytics:read","generations:read","feedback:read","feedback:write","workspaces:read","workspaces:write","workspaces:delete","keys:read","keys:write","keys:delete","presets:read","presets:write","presets:delete","settings:read","settings:write","provider_credentials:read","provider_credentials:write","provider_credentials:delete","private_models:read","private_models:write","private_models:delete","guardrails:read","guardrails:write","guardrails:delete","management_keys:read","management_keys:write","management_keys:delete","oauth_clients:read","oauth_clients:write","oauth_clients:delete"] as const;
@@ -299,8 +300,8 @@ accountSettingsKeysRouter.post("/management-keys", async (c) => {
 	} catch (error) { return c.json({ error: error instanceof Error ? error.message : "key_write_failed" }, 409, PRIVATE_NO_STORE_HEADERS); }
 });
 
-accountSettingsKeysRouter.get("/management-keys", async (c) => { const workspaceId = c.req.query("workspaceId")?.trim(); const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId }); if (!context || !["owner", "admin"].includes(context.role.toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS); const result = await context.client.from("management_keys").select("*").eq("workspace_id", context.workspaceId).order("created_at", { ascending: false }); if (result.error) return c.json({ error: "key_read_failed" }, 503, PRIVATE_NO_STORE_HEADERS); return c.json({ keys: result.data ?? [] }, 200, PRIVATE_NO_STORE_HEADERS); });
-accountSettingsKeysRouter.get("/management-keys/:keyId", async (c) => { const loaded = await managementContext(c); if (!loaded) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS); return c.json({ key: loaded.key }, 200, PRIVATE_NO_STORE_HEADERS); });
+accountSettingsKeysRouter.get("/management-keys", async (c) => { const workspaceId = c.req.query("workspaceId")?.trim(); const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId }); if (!context || !["owner", "admin"].includes(context.role.toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS); const result = await context.client.from("management_keys").select("*").eq("workspace_id", context.workspaceId).order("created_at", { ascending: false }); if (result.error) return c.json({ error: "key_read_failed" }, 503, PRIVATE_NO_STORE_HEADERS); return c.json({ keys: (result.data ?? []).map(keyDisplayData) }, 200, PRIVATE_NO_STORE_HEADERS); });
+accountSettingsKeysRouter.get("/management-keys/:keyId", async (c) => { const loaded = await managementContext(c); if (!loaded) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS); return c.json({ key: keyDisplayData(loaded.key) }, 200, PRIVATE_NO_STORE_HEADERS); });
 
 accountSettingsKeysRouter.put("/management-keys/:keyId", async (c) => {
 	const loaded = await managementContext(c); if (!loaded) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS); const body: Record<string, any> = await c.req.json<Record<string, any>>().catch(() => ({})); const update: Record<string, unknown> = {};

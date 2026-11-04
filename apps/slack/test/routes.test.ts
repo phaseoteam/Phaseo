@@ -156,6 +156,30 @@ describe("routes", () => {
 		await expect(settled()).resolves.toEqual(["no_installation"]);
 	});
 
+	it("routes a company app's events by signing secret when another workspace saved the same app id", async () => {
+		const squatterRowId = "99999999-9999-4999-8999-999999999999";
+		world.db.tables.slack_installations = [await installationRow({ slack_app_id: COMPANY_APP_ROW_ID })];
+		// Saved first, by a workspace that doesn't own the Slack app and so has a different signing secret.
+		world.db.tables.slack_apps.push({
+			id: squatterRowId,
+			slack_app_id: COMPANY_APP_ID,
+			client_id: "3333333333.4444444444",
+			verified_at: null,
+			secrets_ciphertext: await encryptSlackSecrets({ SLACK_SECRETS_ENCRYPTION_KEY: TEST_ENCRYPTION_KEY }, { client_secret: "other-client-secret", signing_secret: "squatter-signing-secret" }),
+		}, {
+			id: COMPANY_APP_ROW_ID,
+			slack_app_id: COMPANY_APP_ID,
+			client_id: "1111111111.2222222222",
+			verified_at: "2026-11-04T00:00:00Z",
+			secrets_ciphertext: await encryptSlackSecrets({ SLACK_SECRETS_ENCRYPTION_KEY: TEST_ENCRYPTION_KEY }, { client_secret: "test-client-secret", signing_secret: COMPANY_SIGNING_SECRET }),
+		});
+		const body = JSON.stringify(eventEnvelope(mention(), { api_app_id: COMPANY_APP_ID }));
+		expect((await signed(`/events/${COMPANY_APP_ID}`, body, { secret: COMPANY_SIGNING_SECRET })).status).toBe(200);
+		await expect(settled()).resolves.toEqual(["started"]);
+		expect(world.db.queries.find((query) => query.table === "slack_installations")?.query).toMatchObject({ slack_app_id: `eq.${COMPANY_APP_ROW_ID}` });
+		expect((await signed(`/events/${COMPANY_APP_ID}`, body, { secret: "not-either-secret" })).status).toBe(401);
+	});
+
 	it("looks hosted installations up by team with no app", async () => {
 		await signed("/events", JSON.stringify(eventEnvelope(mention())));
 		await settled();

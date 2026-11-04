@@ -67,11 +67,14 @@ function usageTimeRange(request: Request) {
 	return { from: from.toISOString(), to: now.toISOString() };
 }
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function metadataForIds(context: Awaited<ReturnType<typeof requireAccountWorkspace>>, args: { models?: string[]; providers?: string[]; apps?: string[] }) {
 	if (!context) return { modelMetadataEntries: [], providerNameEntries: [], providerMetadataEntries: [], appMetadataEntries: [], appNameEntries: [] };
 	const modelIds = Array.from(new Set(args.models ?? [])).filter(Boolean);
 	const providerIds = Array.from(new Set(args.providers ?? [])).filter(Boolean);
-	const appIds = Array.from(new Set(args.apps ?? [])).filter(Boolean);
+	// Only UUIDs reach the filter; apps from other workspaces are named only when they are public.
+	const appIds = Array.from(new Set(args.apps ?? [])).filter((id) => typeof id === "string" && UUID_PATTERN.test(id));
 	const routeSelect = "api_model_id:model_slug,model_id:model_slug,provider_model_id,provider_model_slug,provider_slug";
 	const [modelsResult, routesByModelResult, routesByProviderSlugResult, routesByProviderIdResult, providersResult, appsResult] = await Promise.all([
 		modelIds.length ? context.userClient.from("v2_models").select("model_id:model_slug,name,organisation_id:lab_slug,organisation:v2_labs(name,metadata)").in("model_slug", modelIds) : Promise.resolve({ data: [], error: null }),
@@ -79,7 +82,7 @@ export async function metadataForIds(context: Awaited<ReturnType<typeof requireA
 		modelIds.length ? context.userClient.from("v2_model_provider_routes").select(routeSelect).in("provider_model_slug", modelIds) : Promise.resolve({ data: [], error: null }),
 		modelIds.length ? context.userClient.from("v2_model_provider_routes").select(routeSelect).in("provider_model_id", modelIds) : Promise.resolve({ data: [], error: null }),
 		providerIds.length ? context.userClient.from("v2_providers").select("api_provider_id:provider_slug,api_provider_name:name,provider_family_id:provider_family_slug,offer_label,offer_scope,prompt_training_policy,metadata").in("provider_slug", providerIds) : Promise.resolve({ data: [], error: null }),
-		appIds.length ? context.client.from("api_apps").select("id,title,app_key,image_url").in("id", appIds) : Promise.resolve({ data: [], error: null }),
+		appIds.length ? context.client.from("api_apps").select("id,title,app_key,image_url").in("id", appIds).or(`workspace_id.eq.${context.workspaceId},is_public.eq.true`) : Promise.resolve({ data: [], error: null }),
 	]);
 	const routeRows = [
 		...(routesByModelResult.data ?? []),

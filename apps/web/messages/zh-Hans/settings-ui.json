@@ -7659,8 +7659,10 @@
 		"link": {
 			"metaTitle": "连接 Slack",
 			"title": "连接你的 Slack 账户",
-			"description": "这会将打开此页面的 Slack 账户与你的 Phaseo 账户关联，让 Phaseo 智能体知道你是谁。",
-			"warning": "仅当你是从 Slack 中 Phaseo 智能体的消息打开此链接时才继续。",
+			"description": "这会将下方的 Slack 账户与你的 Phaseo 账户关联，让 Phaseo 智能体知道你是谁。",
+			"account": "Slack 账户：{name}（{id}），位于 {team}",
+			"accountUnnamed": "Slack 账户：{id}，位于 {team}",
+			"warning": "仅当这是你自己的 Slack 账户时才继续。如果是别人发给你的链接，请不要使用：否则该 Slack 账户将以你的身份操作。",
 			"confirm": "连接账户",
 			"confirming": "正在连接…",
 			"missingToken": "此链接缺少代码。请从 Slack 中 Phaseo 智能体的消息重新打开。",
@@ -7671,6 +7673,7 @@
 			"close": "你可以关闭此页面并返回 Slack。",
 			"errors": {
 				"expired": "此链接已过期。请在 Slack 中向 Phaseo 智能体索取新链接。",
+				"used": "此链接已被使用。请在 Slack 中向 Phaseo 智能体索取新链接。",
 				"invalid": "此链接无效。请在 Slack 中向 Phaseo 智能体索取新链接。",
 				"notInstalled": "该 Slack 工作区已不再安装 Phaseo 智能体。",
 				"wrongWorkspace": "请使用将智能体添加到 Slack 的 Phaseo 工作区中的账户登录。",

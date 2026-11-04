@@ -216,13 +216,16 @@ accountAuthRouter.post("/test-key", async (c) => {
 	} catch { return c.json({ ok: false, message: "Could not reach the gateway to test this key." }, 502, PRIVATE_NO_STORE_HEADERS); }
 });
 
+/** What a consent screen shows about an app; never its secret hash, owner, workspace or redirect URIs. */
+const OAUTH_CONSENT_APP_COLUMNS = "client_id,name,description,logo_url,homepage_url,privacy_policy_url,terms_of_service_url,allowed_scopes,is_first_party,beta_status,status";
+
 accountAuthRouter.get("/oauth-consent", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const clientId = String(c.req.query("clientId") ?? "").trim();
 	const client = getDataClient(c.env);
 	const [metadata, firstParty, memberships] = await Promise.all([
-		clientId ? client.from("oauth_app_metadata").select("*").eq("client_id", clientId).eq("status", "active").maybeSingle() : Promise.resolve({ data: null, error: null }),
+		clientId ? client.from("oauth_app_metadata").select(OAUTH_CONSENT_APP_COLUMNS).eq("client_id", clientId).eq("status", "active").maybeSingle() : Promise.resolve({ data: null, error: null }),
 		clientId ? client.from("oauth_clients").select("id,name,description,logo_url,homepage_url,redirect_uris,status").eq("id", clientId).eq("status", "active").maybeSingle() : Promise.resolve({ data: null, error: null }),
 		client.from("workspace_members").select("workspace_id,teams:workspaces(id,name)").eq("user_id", user.id),
 	]);

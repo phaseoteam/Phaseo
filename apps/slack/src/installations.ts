@@ -106,19 +106,29 @@ export function hostedApp(env: Env): SlackAppContext | null {
 	};
 }
 
-/** A company's own app by its Slack app id, with its signing secret decrypted. Null if unknown. */
-export async function companyApp(env: Env, db: Db, slackAppId: string): Promise<SlackAppContext | null> {
-	if (!SLACK_APP_ID_PATTERN.test(slackAppId)) return null;
+/** At most this many Phaseo workspaces' rows are tried for one Slack app id. */
+const MAX_COMPANY_APP_CANDIDATES = 5;
+
+/**
+ * The company apps saved under a Slack app id, with their signing secrets decrypted. Saving an app
+ * proves nothing, so several workspaces can save the same id until one installs it (only one can be
+ * verified, see slack_apps.verified_at). The request's signature picks the real one: only the app's
+ * owner knows its signing secret.
+ */
+export async function companyApps(env: Env, db: Db, slackAppId: string): Promise<SlackAppContext[]> {
+	if (!SLACK_APP_ID_PATTERN.test(slackAppId)) return [];
 	const rows = await db.select<{ id: string; slack_app_id: string; secrets_ciphertext: string }>("slack_apps", {
 		select: "id,slack_app_id,secrets_ciphertext",
 		slack_app_id: `eq.${slackAppId}`,
-		limit: "1",
+		order: "verified_at.desc.nullslast,created_at.asc",
+		limit: String(MAX_COMPANY_APP_CANDIDATES),
 	});
-	const row = rows[0];
-	if (!row) return null;
-	const secrets = await decryptSlackSecrets(env, row.secrets_ciphertext);
-	if (!secrets.signing_secret) return null;
-	return { appRowId: row.id, slackAppId: row.slack_app_id, signingSecret: secrets.signing_secret };
+	const apps: SlackAppContext[] = [];
+	for (const row of rows) {
+		const secrets = await decryptSlackSecrets(env, row.secrets_ciphertext);
+		if (secrets.signing_secret) apps.push({ appRowId: row.id, slackAppId: row.slack_app_id, signingSecret: secrets.signing_secret });
+	}
+	return apps;
 }
 
 /** Where an event or interaction says the app is installed. */

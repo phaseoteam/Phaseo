@@ -7659,8 +7659,10 @@
 		"link": {
 			"metaTitle": "ربط Slack",
 			"title": "اربط حسابك في Slack",
-			"description": "يربط هذا حساب Slack الذي فتح هذه الصفحة بحسابك في Phaseo، حتى يعرف وكيل Phaseo هويتك.",
-			"warning": "لا تتابع إلا إذا فتحت هذا الرابط من رسالة وكيل Phaseo في Slack.",
+			"description": "يربط هذا حساب Slack المذكور أدناه بحسابك في Phaseo، حتى يعرف وكيل Phaseo هويتك.",
+			"account": "حساب Slack: {name} ({id}) في {team}",
+			"accountUnnamed": "حساب Slack: {id} في {team}",
+			"warning": "لا تتابع إلا إذا كان هذا حسابك الخاص في Slack. إذا أرسل إليك أحدهم هذا الرابط، فلا تستخدمه: سيتصرف حساب Slack هذا باسمك.",
 			"confirm": "اربط الحساب",
 			"confirming": "جارٍ الربط…",
 			"missingToken": "هذا الرابط ينقصه الرمز. افتحه مرة أخرى من رسالة وكيل Phaseo في Slack.",
@@ -7671,6 +7673,7 @@
 			"close": "يمكنك إغلاق هذه الصفحة والعودة إلى Slack.",
 			"errors": {
 				"expired": "انتهت صلاحية هذا الرابط. اطلب رابطًا جديدًا من وكيل Phaseo في Slack.",
+				"used": "تم استخدام هذا الرابط بالفعل. اطلب رابطًا جديدًا من وكيل Phaseo في Slack.",
 				"invalid": "هذا الرابط غير صالح. اطلب رابطًا جديدًا من وكيل Phaseo في Slack.",
 				"notInstalled": "لم يعد وكيل Phaseo مثبّتًا في مساحة عمل Slack تلك.",
 				"wrongWorkspace": "سجّل الدخول بحساب في مساحة عمل Phaseo التي أضافت الوكيل إلى Slack.",

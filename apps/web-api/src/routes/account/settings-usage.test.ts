@@ -155,6 +155,28 @@ describe("account usage settings routes", () => {
 		]));
 	});
 
+	it("names only this workspace's apps and public apps, and never sends non-UUID ids to the filter", async () => {
+		const appQueries: URL[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = new URL(input instanceof Request ? input.url : String(input));
+			if (url.pathname === "/auth/v1/user") return Response.json({ id: "user-1" });
+			if (url.pathname.endsWith("workspace_members")) return Response.json([{ role: "member" }]);
+			if (url.pathname.endsWith("workspaces")) return Response.json([{ owner_user_id: "owner" }]);
+			if (url.pathname.endsWith("api_apps")) { appQueries.push(url); return Response.json([]); }
+			return Response.json([]);
+		}));
+		const appId = "b0000000-0000-4000-8000-000000000002";
+		const response = await app.request(
+			`https://phaseo.app/api/account/settings/usage/metadata?workspaceId=workspace-1&apps=${appId},x)%2Cis_public.eq.false`,
+			{ headers: { authorization: "Bearer session-token" } },
+			env,
+		);
+		expect(response.status).toBe(200);
+		expect(appQueries).toHaveLength(1);
+		expect(appQueries[0].searchParams.get("id")).toBe(`in.(${appId})`);
+		expect(appQueries[0].searchParams.get("or")).toBe("(workspace_id.eq.workspace-1,is_public.eq.true)");
+	});
+
 	it("scopes ambiguous provider aliases before selecting canonical metadata", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = input instanceof Request ? input.url : String(input);
@@ -439,7 +461,7 @@ describe("account usage settings routes", () => {
 			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", created_at: "2025-01-01" }), { status: 200 });
 			if (url.includes("/rpc/get_private_usage_overview")) {
 				overviewArgs.push(JSON.parse(String(init?.body ?? "{}")));
-				return new Response(JSON.stringify([{ bucket: "2026-07-17T00:00:00+00:00", modelId: "openai/gpt-test", provider: "openai", keyId: "key-1", appId: "app-1", byok: false, requests: 3, successfulRequests: 3, guardrailBlocked: 0, costNanos: 1000, tokens: 12, inputTokens: 10, outputTokens: 2, reasoningTokens: 0, cachedTokens: 0 }]), { status: 200 });
+				return new Response(JSON.stringify([{ bucket: "2026-07-17T00:00:00+00:00", modelId: "openai/gpt-test", provider: "openai", keyId: "key-1", appId: "a0000000-0000-4000-8000-000000000001", byok: false, requests: 3, successfulRequests: 3, guardrailBlocked: 0, costNanos: 1000, tokens: 12, inputTokens: 10, outputTokens: 2, reasoningTokens: 0, cachedTokens: 0 }]), { status: 200 });
 			}
 			if (url.includes("/rpc/get_private_usage_month_days")) {
 				monthUsageArgs = JSON.parse(String(init?.body ?? "{}"));
@@ -454,7 +476,7 @@ describe("account usage settings routes", () => {
 			if (url.includes("/keys")) return new Response(JSON.stringify([{ id: "key-1", name: "Production", prefix: "ph_" }]), { status: 200 });
 			if (url.includes("v2_model_provider_routes")) return new Response(JSON.stringify([]), { status: 200 });
 			if (url.includes("v2_models")) return new Response(JSON.stringify([{ model_id: "openai/gpt-test", name: "GPT Test", organisation_id: "openai", organisation: { name: "OpenAI" } }]), { status: 200 });
-			if (url.includes("api_apps")) return new Response(JSON.stringify([{ id: "app-1", title: "Example App", app_key: "example", image_url: null }]), { status: 200 });
+			if (url.includes("api_apps")) return new Response(JSON.stringify([{ id: "a0000000-0000-4000-8000-000000000001", title: "Example App", app_key: "example", image_url: null }]), { status: 200 });
 			return new Response(JSON.stringify([]), { status: 200 });
 		}));
 		const params = new URLSearchParams({
@@ -478,8 +500,8 @@ describe("account usage settings routes", () => {
 			labelFacets: [{ key: "team", value: "support" }],
 			labelSummary: null,
 			modelMetadataEntries: [["openai/gpt-test", { modelName: "GPT Test" }]],
-			appMetadataEntries: [["app-1", { title: "Example App", imageUrl: null }]],
-			appNameEntries: [["app-1", "Example App"]],
+			appMetadataEntries: [["a0000000-0000-4000-8000-000000000001", { title: "Example App", imageUrl: null }]],
+			appNameEntries: [["a0000000-0000-4000-8000-000000000001", "Example App"]],
 			monthUsage: { days: [
 				{ date: "2026-07-16", costNanos: 3000, requests: 2, successfulRequests: 2, tokens: 40, cachedTokens: 0 },
 				{ date: "2026-07-17", costNanos: 1500, requests: 2, successfulRequests: 1, tokens: 12, cachedTokens: 5 },

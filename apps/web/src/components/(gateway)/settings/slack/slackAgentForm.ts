@@ -485,12 +485,13 @@ export function callbackNotice(params: Pick<URLSearchParams, "get">): { kind: "i
 	return error ? { kind: "error", key: slackErrorKey(error) } : null;
 }
 
-/** SettingsUI.slack.link.errors keys, for POST /slack/link. */
-export type SlackLinkErrorKey = "expired" | "invalid" | "notInstalled" | "wrongWorkspace" | "notAvailable" | "signIn" | "failed";
+/** SettingsUI.slack.link.errors keys, for POST /slack/link and /slack/link/preview. */
+export type SlackLinkErrorKey = "expired" | "used" | "invalid" | "notInstalled" | "wrongWorkspace" | "notAvailable" | "signIn" | "failed";
 
 const LINK_ERROR_KEYS: Record<string, SlackLinkErrorKey> = {
 	unauthorized: "signIn",
 	link_expired: "expired",
+	link_used: "used",
 	link_invalid: "invalid",
 	bad_request: "invalid",
 	not_installed: "notInstalled",

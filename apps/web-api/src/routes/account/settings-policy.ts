@@ -40,6 +40,7 @@ function accountPolicyFromRow(row: any) {
 }
 
 const REFERENCE_PAGE_SIZE = 500;
+const PRESET_DETAIL_COLUMNS = "id,workspace_id,name,description,config,created_by,created_at,updated_at,visibility,source_preset_id,slug,draft_name,draft_slug,draft_description,draft_config,draft_visibility,active_version_id,source_preset_version_id,upstream_version_id,root_preset_id,fork_depth,versioning_method";
 
 /** Reads every page of an ordered query; PostgREST caps one response without reporting that rows were left out. */
 async function readAllPages<T>(page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>): Promise<{ data: T[]; error: unknown }> {
@@ -562,10 +563,12 @@ accountSettingsPolicyRouter.post("/presets", async (c) => {
 accountSettingsPolicyRouter.get("/presets/:presetId", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
-	const client = getDataClient(c.env); const result = await client.from("presets").select("*").eq("id", c.req.param("presetId")).maybeSingle();
+	const client = getDataClient(c.env); const result = await client.from("presets").select(PRESET_DETAIL_COLUMNS).eq("id", c.req.param("presetId")).is("archived_at", null).maybeSingle();
 	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	if (!result.data) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
-	if (result.data.workspace_id) { const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: result.data.workspace_id }); if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS); }
+	if (!result.data?.workspace_id) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
+	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: result.data.workspace_id }); if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	// Private presets are visible to their creator only, as in the list and versions routes.
+	if ((result.data.visibility === "private" || result.data.draft_visibility === "private") && result.data.created_by !== user.id) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 	return c.json({ preset: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 

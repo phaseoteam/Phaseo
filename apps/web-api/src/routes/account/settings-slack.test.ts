@@ -76,6 +76,15 @@ type Fixture = {
 	slackUninstallOk?: boolean;
 	keyById?: Record<string, unknown>;
 	customAppInsertError?: { status: number; body: Record<string, unknown> };
+	/** Another Phaseo workspace has verified the Slack app id being saved. */
+	appTaken?: boolean;
+	/** The error marking a company app verified at install returns. */
+	appVerifyError?: { status: number; body: Record<string, unknown> };
+	/** The link token's nonce was already used. */
+	linkUsed?: boolean;
+	linkUseInsertError?: { status: number; body: Record<string, unknown> };
+	/** Slack's users.info answer. */
+	slackUser?: Record<string, unknown>;
 	/** The internal alert webhook's answer: a status (default 204) or a function. */
 	alert?: number | ((request: Request) => Response | Promise<Response>);
 	/** Statsig's answer for the Auto Routing gate (default: closed), or "error" for a failed check. */
@@ -114,6 +123,7 @@ function database(fixture: Fixture = {}) {
 				return Response.json(fixture.slackAccess ?? grant());
 			}
 			if (path === "/api/apps.uninstall") return Response.json({ ok: fixture.slackUninstallOk ?? true });
+			if (path === "/api/users.info") return Response.json(fixture.slackUser ?? { ok: false, error: "user_not_found" });
 		}
 		if (url.hostname === "gateway-control.test") return Response.json({ ok: true });
 		if (url.hostname === "discord.test") {
@@ -153,6 +163,11 @@ function database(fixture: Fixture = {}) {
 			return rows((fixture.catalogue ?? []).filter((slug) => wanted.includes(slug)).map((model_slug) => ({ model_slug })));
 		}
 		if (path.endsWith("/slack_user_links")) return new Response(null, { status: 201 });
+		if (path.endsWith("/slack_link_token_uses")) {
+			if (request.method === "GET") return rows(fixture.linkUsed ? [{ nonce: "used" }] : []);
+			if (fixture.linkUseInsertError) return Response.json(fixture.linkUseInsertError.body, { status: fixture.linkUseInsertError.status });
+			return new Response(null, { status: 201 });
+		}
 		if (path.endsWith("/workspace_member_guardrails")) return new Response(null, { status: 200, headers: { "content-range": "*/0" } });
 		if (path.endsWith("/workspace_guardrail_assignments")) {
 			return new Response(null, { status: 200, headers: { "content-range": `*/${fixture.guardrailAssignments ?? 0}` } });
@@ -173,8 +188,12 @@ function database(fixture: Fixture = {}) {
 			return rows([{ monthly_limit_cost_nanos: fixture.keyLimitNanos ?? 0, created_by: fixture.keyCreatedBy === undefined ? "user-a" : fixture.keyCreatedBy, kid: KEY_KID }]);
 		}
 		if (path.endsWith("/slack_apps")) {
+			if (request.method === "GET" && url.searchParams.has("verified_at")) return rows(fixture.appTaken ? [{ id: "00000000-0000-4000-8000-0000000000c2" }] : []);
 			if (request.method === "GET") return rows(fixture.customApp ? [fixture.customApp] : []);
 			if (request.method === "DELETE") return new Response(null, { status: 204 });
+			if (request.method === "PATCH" && url.searchParams.has("verified_at") && fixture.appVerifyError) {
+				return Response.json(fixture.appVerifyError.body, { status: fixture.appVerifyError.status });
+			}
 			if (request.method === "POST" && fixture.customAppInsertError) {
 				return Response.json(fixture.customAppInsertError.body, { status: fixture.customAppInsertError.status });
 			}
@@ -739,6 +758,23 @@ describe("Slack OAuth callback", () => {
 		const exchange = requests.find((entry) => entry.url.pathname === "/api/oauth.v2.access")!;
 		expect(exchange.headers.get("authorization")).toBe(`Basic ${btoa("9999.8888:customclientsecret0001")}`);
 		expect(find(requests, "POST", "/slack_installations")[0].body.slack_app_id).toBe(APP_ROW_ID);
+		// Slack named the saved app id, so the workspace now owns it.
+		const verify = find(requests, "PATCH", "/slack_apps")[0];
+		expect(verify.url.searchParams.get("id")).toBe(`eq.${APP_ROW_ID}`);
+		expect(verify.url.searchParams.get("workspace_id")).toBe(`eq.${WORKSPACE}`);
+		expect(verify.url.searchParams.get("verified_at")).toBe("is.null");
+		expect(typeof verify.body.verified_at).toBe("string");
+		// The mismatched install verified nothing.
+		expect(find(mismatch, "PATCH", "/slack_apps")).toHaveLength(0);
+	});
+
+	it("stops an install when another workspace verified the same Slack app first", async () => {
+		const secrets_ciphertext = await encryptSlackSecrets(env as never, { client_secret: "customclientsecret0001", signing_secret: "customsigningsecret001" });
+		const customApp = { id: APP_ROW_ID, slack_app_id: "A0CUSTOM01", client_id: "9999.8888", secrets_ciphertext };
+		const requests = database({ role: "admin", customApp, slackAccess: grant({ app_id: "A0CUSTOM01" }), appVerifyError: { status: 409, body: { code: "23505", message: "duplicate key value violates unique constraint \"slack_apps_slack_app_id_idx\"" } } });
+		const response = await callback({ code: "123.456.abc", state: await installState({ slack_app_id: APP_ROW_ID }) }, "token-a", { SLACK_CLIENT_ID: undefined, SLACK_CLIENT_SECRET: undefined });
+		expect(location(response).searchParams.get("error")).toBe("slack_app_taken");
+		expect(find(requests, "POST", "/slack_installations")).toHaveLength(0);
 	});
 });
 
@@ -1378,6 +1414,31 @@ describe("A workspace's own Slack app", () => {
 		}
 	});
 
+	it("doesn't let saving reserve an app id, but refuses one another workspace has verified", async () => {
+		const requests = database({ role: "admin", customApp: null });
+		expect((await call("/slack/custom-app", { method: "PUT", body: JSON.stringify(app) })).status).toBe(201);
+		const lookup = find(requests, "GET", "/slack_apps").find((entry) => entry.url.searchParams.has("verified_at"))!;
+		expect(lookup.url.searchParams.get("slack_app_id")).toBe("eq.A0CUSTOM01");
+		expect(lookup.url.searchParams.get("verified_at")).toBe("not.is.null");
+		expect(lookup.url.searchParams.get("workspace_id")).toBe(`neq.${WORKSPACE}`);
+
+		const taken = database({ role: "admin", customApp: null, appTaken: true });
+		const response = await call("/slack/custom-app", { method: "PUT", body: JSON.stringify(app) });
+		expect(response.status).toBe(409);
+		expect(((await response.json()) as any).error).toBe("slack_app_taken");
+		expect(find(taken, "POST", "/slack_apps")).toHaveLength(0);
+	});
+
+	it("needs a changed app to be verified again, but keeps verification when only the secrets change", async () => {
+		const saved = { id: APP_ROW_ID, slack_app_id: "A0CUSTOM01", client_id: "9999.8888", created_at: "x", updated_at: "x" };
+		const switched = database({ role: "admin", customApp: saved, appInUse: false });
+		expect((await call("/slack/custom-app", { method: "PUT", body: JSON.stringify({ ...app, slack_app_id: "A0OTHER001" }) })).status).toBe(200);
+		expect(find(switched, "PATCH", "/slack_apps")[0].body).toMatchObject({ slack_app_id: "A0OTHER001", verified_at: null });
+		const rotated = database({ role: "admin", customApp: saved, appInUse: false });
+		expect((await call("/slack/custom-app", { method: "PUT", body: JSON.stringify({ ...app, client_secret: "rotatedclientsecret01" }) })).status).toBe(200);
+		expect(find(rotated, "PATCH", "/slack_apps")[0].body).not.toHaveProperty("verified_at");
+	});
+
 	it("validates the app details", async () => {
 		for (const change of [{ slack_app_id: "B0123" }, { slack_app_id: "a0custom01" }, { client_id: "abc" }, { client_secret: "short" }, { signing_secret: "has spaces in it!!" }, { extra: 1 }]) {
 			database({ role: "admin" });
@@ -1435,6 +1496,60 @@ describe("Linking a Slack person to a Phaseo account", () => {
 		const response = await link(await linkToken());
 		expect(response.status).toBe(403);
 		expect(find(requests, "POST", "/slack_user_links")).toHaveLength(0);
+	});
+
+	it("works once: records the token's nonce before linking, and refuses a used token", async () => {
+		const token = await linkToken();
+		const verified = await verifySlackToken<Record<string, unknown>>(env as never, "link", token);
+		const nonce = verified.ok ? verified.payload.nonce : null;
+		const requests = database({ role: "member", linkInstallation: live });
+		expect((await link(token)).status).toBe(200);
+		const use = find(requests, "POST", "/slack_link_token_uses")[0];
+		expect(use.body).toMatchObject({ nonce, installation_id: INSTALLATION_ID, slack_user_id: "U0PERSON01", user_id: "user-a" });
+		expect(Date.parse(use.body.expires_at)).toBeGreaterThan(Date.now());
+		const order = requests.map((entry) => `${entry.method} ${entry.url.pathname}`);
+		expect(order.indexOf("POST /rest/v1/slack_link_token_uses")).toBeLessThan(order.indexOf("POST /rest/v1/slack_user_links"));
+
+		// Seen before, or confirmed by someone else at the same moment.
+		for (const fixture of [{ linkUsed: true }, { linkUseInsertError: { status: 409, body: { code: "23505", message: "duplicate key value violates unique constraint \"slack_link_token_uses_pkey\"" } } }]) {
+			const again = database({ role: "member", linkInstallation: live, ...fixture });
+			const response = await link(token);
+			expect(response.status).toBe(409);
+			expect(await response.json()).toMatchObject({ error: "link_used" });
+			expect(find(again, "POST", "/slack_user_links")).toHaveLength(0);
+		}
+	});
+
+	it("shows who the link is for, named by Slack, before anything is linked", async () => {
+		const secrets_ciphertext = await encryptSlackSecrets(env as never, { bot_token: BOT_TOKEN, gateway_key: "phaseo_v1_sk_kid_secret" });
+		const requests = database({
+			role: "member", linkInstallation: { ...live, secrets_ciphertext },
+			slackUser: { ok: true, user: { id: "U0PERSON01", name: "mallory", real_name: "Mallory M", profile: { real_name: "Mallory M", display_name: "mal" } } },
+		});
+		const response = await call("/slack/link/preview", { method: "POST", body: JSON.stringify({ token: await linkToken() }) });
+		expect(response.status).toBe(200);
+		const text = await response.text();
+		expect(JSON.parse(text)).toEqual({
+			slack_user: { id: "U0PERSON01", handle: "mallory", real_name: "Mallory M", display_name: "mal" },
+			team_name: "Acme",
+			workspace_name: "Workspace A",
+		});
+		expect(text).not.toContain("xox");
+		const lookup = requests.find((entry) => entry.url.pathname === "/api/users.info")!;
+		expect(lookup.headers.get("authorization")).toBe(`Bearer ${BOT_TOKEN}`);
+		expect(find(requests, "POST", "/slack_user_links")).toHaveLength(0);
+		expect(find(requests, "POST", "/slack_link_token_uses")).toHaveLength(0);
+	});
+
+	it("still shows the Slack user id when Slack can't name them, and previews only for members", async () => {
+		database({ role: "member", linkInstallation: live });
+		const response = await call("/slack/link/preview", { method: "POST", body: JSON.stringify({ token: await linkToken() }) });
+		expect(await response.json()).toMatchObject({ slack_user: { id: "U0PERSON01", handle: null, real_name: null, display_name: null } });
+		const outsider = database({ role: null, linkInstallation: live });
+		expect((await call("/slack/link/preview", { method: "POST", body: JSON.stringify({ token: await linkToken() }) })).status).toBe(403);
+		expect(outsider.some((entry) => entry.url.hostname === "slack.com")).toBe(false);
+		database({ role: "member", linkInstallation: live, linkUsed: true });
+		expect(await (await call("/slack/link/preview", { method: "POST", body: JSON.stringify({ token: await linkToken() }) })).json()).toMatchObject({ error: "link_used" });
 	});
 
 	it("refuses expired, forged and wrong-purpose tokens, and uninstalled agents", async () => {

@@ -386,6 +386,22 @@ describe("account policy settings routes", () => {
 			expect((await request("/versions")).status).toBe(404);
 		});
 
+		it("does not show a teammate's private preset by id, but shows it to its creator and shows team presets", async () => {
+			stubLabels({ role: "admin", visibility: "private", createdBy: "owner-2" });
+			expect((await request("")).status).toBe(404);
+			stubLabels({ role: "member", visibility: "private", createdBy: "user-1" });
+			expect((await request("")).status).toBe(200);
+			stubLabels({ role: "member", visibility: "team" });
+			const inner = globalThis.fetch; const urls: string[] = [];
+			vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => { urls.push(input instanceof Request ? input.url : String(input)); return inner(input, init); }));
+			const response = await request("");
+			expect(response.status).toBe(200);
+			await expect(response.json()).resolves.toMatchObject({ preset: { id: "preset-1", visibility: "team" } });
+			const presetUrl = new URL(urls.find((url) => url.includes("/presets?"))!);
+			expect(presetUrl.searchParams.get("archived_at")).toBe("is.null");
+			expect(presetUrl.searchParams.get("select")).not.toContain("*");
+		});
+
 		it("tells members who did not create the preset that they cannot move labels", async () => {
 			stubLabels({ role: "member" });
 			await expect((await request("/versions")).json()).resolves.toMatchObject({ canManageLabels: false });
