@@ -91,8 +91,13 @@ export default withSettingsResource("guardrails", function GuardrailsContent({ i
 						guardrails={initialData.guardrails}
 						keys={initialData.keys}
 						members={initialData.members}
+						departments={initialData.departments}
+						workspaceGuardrailIds={initialData.workspaceGuardrailIds}
+						guardrailDepartmentIdsByGuardrailId={initialData.guardrailDepartmentIdsByGuardrailId}
 						guardrailKeyIdsByGuardrailId={initialData.guardrailKeyIdsByGuardrailId}
 						guardrailMemberIdsByGuardrailId={initialData.guardrailMemberIdsByGuardrailId}
+						keyDepartmentIds={initialData.keyDepartmentIds}
+						memberDepartmentIds={initialData.memberDepartmentIds}
 					/>
 				</TabsContent>
 			</Tabs>

@@ -2,7 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Boxes, Check, EyeOff, Plus, ScanText, Server, ShieldAlert, ShieldCheck, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";
@@ -294,9 +294,13 @@ export default function GuardrailCreateWizard(props: {
 					</div>
 					<GuardrailWizardAssign
 						draft={draft}
-						keyIds={props.form.keyIds}
-						memberIds={props.form.memberIds}
-						onChange={({ keyIds, memberIds }) => props.onFormChange((form) => ({ ...form, keyIds, memberIds }))}
+						selection={{
+							workspaceAssigned: props.form.workspaceAssigned,
+							departmentIds: props.form.departmentIds,
+							memberIds: props.form.memberIds,
+							keyIds: props.form.keyIds,
+						}}
+						onChange={(selection) => props.onFormChange((form) => ({ ...form, ...selection }))}
 					/>
 				</div>
 			) : null}
@@ -326,9 +330,15 @@ function Review(props: {
 	actionLabel: (action: string) => string;
 }) {
 	const t = useTranslations("SettingsUI.guardrailWizard");
+	const locale = useLocale();
 	const tx = (key: string, values?: Record<string, unknown>) => t(key as never, values as never);
 	const lines = describeGuardrail(props.form, props.sections);
-	const targets = props.form.keyIds.length + props.form.memberIds.length;
+	const levels = [
+		props.form.workspaceAssigned ? t("levelWorkspace") : null,
+		props.form.departmentIds.length ? t("levelDepartments", { count: props.form.departmentIds.length }) : null,
+		props.form.memberIds.length ? t("levelMembers", { count: props.form.memberIds.length }) : null,
+		props.form.keyIds.length ? t("levelKeys", { count: props.form.keyIds.length }) : null,
+	].filter((level): level is string => Boolean(level));
 	const showCoverage = props.sections.includes("access") && props.modelCoverage.total > 0;
 	return (
 		<div className="divide-y rounded-md border">
@@ -354,9 +364,7 @@ function Review(props: {
 			) : null}
 			<ReviewRow title={t("reviewWho")} onEdit={() => props.onEdit("assign")} editLabel={t("change")}>
 				<p className="text-sm">
-					{targets
-						? t("appliesTo", { keys: props.form.keyIds.length, members: props.form.memberIds.length })
-						: t("appliesToNothing")}
+					{levels.length ? new Intl.ListFormat(locale, { style: "long", type: "conjunction" }).format(levels) : t("appliesToNothing")}
 				</p>
 			</ReviewRow>
 			<div className="flex items-center justify-between gap-4 p-4">

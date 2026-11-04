@@ -619,6 +619,49 @@ describe("account policy settings routes", () => {
 		]));
 	});
 
+	describe("departments in the guardrails view", () => {
+		function stub(scopes: () => Response) {
+			vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+				const url = input instanceof Request ? input.url : String(input);
+				if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" }), { status: 200 });
+				if (url.includes("/rpc/guardrail_department_scopes")) return scopes();
+				if (url.includes("workspace_departments")) return new Response(JSON.stringify([{ id: "department-1", name: "Engineering" }, { id: "department-2", name: " " }]), { status: 200 });
+				if (url.includes("workspace_members") && url.includes("teams%3Aworkspaces")) return new Response(JSON.stringify([{ workspace_id: "workspace-1", teams: { id: "workspace-1", name: "Team One" } }]), { status: 200 });
+				if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]), { status: 200 });
+				if (url.includes("/workspaces")) return new Response(JSON.stringify([{ id: "workspace-1", name: "Team One", owner_user_id: "user-1" }]), { status: 200 });
+				return new Response(JSON.stringify([]), { status: 200 });
+			}));
+		}
+		const request = () => app.request("https://phaseo.app/api/account/settings/guardrails?workspaceId=workspace-1", { headers: { authorization: "Bearer session-token" } }, env);
+
+		it("returns the departments and the ones that reach each key and member", async () => {
+			stub(() => new Response(JSON.stringify([
+				{ target_type: "key", target_id: "key-1", department_id: "department-1" },
+				{ target_type: "key", target_id: "key-1", department_id: "department-2" },
+				{ target_type: "member", target_id: "user-1", department_id: "department-1" },
+			]), { status: 200 }));
+			const response = await request();
+			expect(response.status).toBe(200);
+			await expect(response.json()).resolves.toMatchObject({
+				departments: [{ id: "department-1", name: "Engineering" }, { id: "department-2", name: "department-2" }],
+				keyDepartmentIds: { "key-1": ["department-1", "department-2"] },
+				memberDepartmentIds: { "user-1": ["department-1"] },
+			});
+		});
+
+		it("still loads before guardrail_department_scopes is deployed", async () => {
+			stub(() => new Response(JSON.stringify({ code: "PGRST202", message: "Could not find the function public.guardrail_department_scopes(p_workspace_id) in the schema cache" }), { status: 404 }));
+			const response = await request();
+			expect(response.status).toBe(200);
+			await expect(response.json()).resolves.toMatchObject({ keyDepartmentIds: {}, memberDepartmentIds: {}, departments: [{ id: "department-1" }, { id: "department-2" }] });
+		});
+
+		it("fails rather than showing keys without their departments when the scopes cannot be read", async () => {
+			stub(() => new Response(JSON.stringify({ code: "57014", message: "timeout" }), { status: 500 }));
+			expect((await request()).status).toBe(503);
+		});
+	});
+
 	it("replaces dynamic route key assignments through the atomic RPC", async () => {
 		let rpcBody: Record<string, unknown> | null = null;
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {

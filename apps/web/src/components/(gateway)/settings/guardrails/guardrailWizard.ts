@@ -1,13 +1,11 @@
-import type {
-	SettingsGuardrailKey,
-	SettingsGuardrailMember,
-	SettingsGuardrailRow,
-} from "@/lib/fetchers/internal/settingsTypes";
+import type { SettingsGuardrailRow } from "@/lib/fetchers/internal/settingsTypes";
 import {
 	buildGuardrailAssignmentRows,
 	effectiveGuardrailPolicy,
+	type AssignmentRowLabels,
 	type AssignmentTargetType,
 	type EffectiveGuardrailPolicy,
+	type GuardrailAssignmentData,
 	type GuardrailAssignmentRow,
 } from "./guardrailAssignments";
 import type {
@@ -19,7 +17,7 @@ import type {
 import { validateSensitiveInfoRulePayload } from "./sensitiveInfoPreview";
 
 // Pure state for the new-guardrail flow: start (name + what it does), configure (only the chosen
-// sections), assign (keys and members) and review. Kept out of the editor so it can be tested.
+// sections), assign (the whole workspace, departments, members and keys) and review. Kept out of the editor so it can be tested.
 
 export const WIZARD_STEPS = ["start", "configure", "assign", "review"] as const;
 export type WizardStep = (typeof WIZARD_STEPS)[number];
@@ -49,6 +47,9 @@ export type GuardrailWizardForm = {
 	sensitiveInfoRules: SensitiveInfoRulePayload[];
 	keyIds: string[];
 	memberIds: string[];
+	/** Departments and the whole workspace, set only by the new-guardrail flow. */
+	departmentIds: string[];
+	workspaceAssigned: boolean;
 };
 
 export const GUARDRAIL_TEMPLATE_IDS = [
@@ -230,13 +231,16 @@ export function draftGuardrailRow(form: GuardrailWizardForm, id = "draft"): Sett
 
 export type WizardAssignRow = GuardrailAssignmentRow & {
 	selected: boolean;
-	/** Set on a key whose principal member is selected: the gateway applies the guardrail through them. */
-	coveredVia: { id: string; name: string } | null;
+	/** Set on a row a broader selection already covers: the whole workspace, one of its departments or its key's principal member. */
+	coveredVia: { level: "workspace" } | { level: "department" | "member"; id: string; name: string } | null;
 	/** What the row's guardrails add up to with the new one, or null when the new one won't apply to it. */
 	after: EffectiveGuardrailPolicy | null;
 	/** Whether the new guardrail tightens anything for this row. */
 	changes: boolean;
 };
+
+/** Who the new guardrail is assigned to. */
+export type WizardSelection = { workspaceAssigned: boolean; departmentIds: string[]; memberIds: string[]; keyIds: string[] };
 
 /** Whether two policies enforce the same rules; how many guardrails produce them doesn't matter. */
 function sameRules(a: EffectiveGuardrailPolicy, b: EffectiveGuardrailPolicy): boolean {
@@ -245,29 +249,32 @@ function sameRules(a: EffectiveGuardrailPolicy, b: EffectiveGuardrailPolicy): bo
 	return JSON.stringify(left) === JSON.stringify(right);
 }
 
-export function buildWizardAssignRows(args: {
+export function buildWizardAssignRows(args: GuardrailAssignmentData & AssignmentRowLabels & WizardSelection & {
 	targetType: AssignmentTargetType;
-	keys: SettingsGuardrailKey[];
-	members: SettingsGuardrailMember[];
-	guardrails: SettingsGuardrailRow[];
-	guardrailKeyIdsByGuardrailId: Record<string, string[]>;
-	guardrailMemberIdsByGuardrailId: Record<string, string[]>;
 	draft: SettingsGuardrailRow;
-	keyIds: string[];
-	memberIds: string[];
-	untitled: string;
 }): WizardAssignRow[] {
 	const rows = buildGuardrailAssignmentRows(args);
 	const guardrailById = new Map(args.guardrails.map((guardrail) => [guardrail.id, guardrail]));
 	const memberById = new Map(args.members.map((member) => [member.id, member]));
+	const departmentById = new Map((args.departments ?? []).map((department) => [department.id, department]));
 	const principalByKeyId = new Map(args.keys.map((key) => [key.id, key.principalUserId ?? null]));
-	const keyIds = new Set(args.keyIds);
+	const selectedIds = new Set(args.targetType === "key" ? args.keyIds : args.targetType === "member" ? args.memberIds : args.targetType === "department" ? args.departmentIds : []);
+	const departmentIds = new Set(args.departmentIds);
 	const memberIds = new Set(args.memberIds);
+	const coveredBy = (row: GuardrailAssignmentRow): WizardAssignRow["coveredVia"] => {
+		if (args.workspaceAssigned) return { level: "workspace" };
+		if (row.type === "key") {
+			const principalId = principalByKeyId.get(row.id) ?? null;
+			const principal = principalId && memberIds.has(principalId) ? memberById.get(principalId) : undefined;
+			if (principal) return { level: "member", id: principal.id, name: principal.name };
+		}
+		const scopes = row.type === "key" ? args.keyDepartmentIds?.[row.id] : row.type === "member" ? args.memberDepartmentIds?.[row.id] : undefined;
+		const department = (scopes ?? []).map((id) => departmentIds.has(id) ? departmentById.get(id) : undefined).find(Boolean);
+		return department ? { level: "department", id: department.id, name: department.name } : null;
+	};
 	return rows.map((row) => {
-		const selected = row.type === "key" ? keyIds.has(row.id) : memberIds.has(row.id);
-		const principalId = row.type === "key" ? principalByKeyId.get(row.id) ?? null : null;
-		const principal = principalId && memberIds.has(principalId) ? memberById.get(principalId) : undefined;
-		const coveredVia = principal ? { id: principal.id, name: principal.name } : null;
+		const selected = row.type === "workspace" ? args.workspaceAssigned : selectedIds.has(row.id);
+		const coveredVia = row.type === "workspace" ? null : coveredBy(row);
 		if (!selected && !coveredVia) return { ...row, selected, coveredVia, after: null, changes: false };
 		const current = row.guardrails.map((guardrail) => guardrailById.get(guardrail.id)).filter((guardrail): guardrail is SettingsGuardrailRow => Boolean(guardrail));
 		const after = effectiveGuardrailPolicy([...current, args.draft]);

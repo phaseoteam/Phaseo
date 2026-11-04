@@ -773,14 +773,54 @@ function groupGuardrailAssignments(rows: GuardrailAssignmentRow[]) {
 	return { ...maps, workspace };
 }
 
+type DepartmentScopeRow = { target_type: string | null; target_id: string | null; department_id: string | null };
+
+/**
+ * The workspace's departments, and the ones whose guardrails reach each key and member as the gateway
+ * counts them (guardrail_department_scopes), so Settings, Guardrails can show where every guardrail
+ * comes from. Before that function's migration has run, the scopes are empty: department guardrails
+ * still show on the Departments view, just not on the keys and members they reach.
+ */
+async function loadGuardrailDepartments(context: AccountWorkspaceContext, workspaceId: string) {
+	const [departments, scopes] = await Promise.all([
+		readAllPages<{ id: string; name: string | null }>((from, to) => context.client.from("workspace_departments")
+			.select("id,name").eq("workspace_id", workspaceId).order("name").order("id").range(from, to)),
+		readAllPages<DepartmentScopeRow>((from, to) => context.client.rpc("guardrail_department_scopes", { p_workspace_id: workspaceId })
+			.order("target_type").order("target_id").order("department_id").range(from, to)),
+	]);
+	if (departments.error) throw departments.error;
+	const scopesMissing = scopes.error && isMissingRpc(scopes.error, "guardrail_department_scopes");
+	if (scopes.error && !scopesMissing) throw scopes.error;
+	const keyDepartmentIds: Record<string, string[]> = {};
+	const memberDepartmentIds: Record<string, string[]> = {};
+	for (const row of scopesMissing ? [] : scopes.data ?? []) {
+		if (!row.target_id || !row.department_id) continue;
+		const map = row.target_type === "key" ? keyDepartmentIds : row.target_type === "member" ? memberDepartmentIds : null;
+		if (map) (map[row.target_id] ??= []).push(row.department_id);
+	}
+	return {
+		departments: (departments.data ?? []).map((department) => ({ id: department.id, name: department.name?.trim() || department.id })),
+		keyDepartmentIds,
+		memberDepartmentIds,
+	};
+}
+
+/** PostgREST (PGRST202) or Postgres (42883) saying a function does not exist yet. */
+function isMissingRpc(error: unknown, name: string): boolean {
+	const record = (error ?? {}) as { code?: unknown; message?: unknown };
+	const code = String(record.code ?? "").toUpperCase();
+	return (code === "PGRST202" || code === "42883") && String(record.message ?? "").includes(name);
+}
+
 accountSettingsPolicyRouter.get("/guardrails", async (c) => {
 	const workspaceId = c.req.query("workspaceId")?.trim();
-	if (!workspaceId) return c.json({ activeProviderModels: [], guardrailDepartmentIdsByGuardrailId: {}, guardrailKeyIdsByGuardrailId: {}, guardrailMemberIdsByGuardrailId: {}, guardrails: [], keys: [], members: [], providers: [], workspaceGuardrailIds: [], workspaceId: null }, 200, PRIVATE_NO_STORE_HEADERS);
+	if (!workspaceId) return c.json({ activeProviderModels: [], departments: [], guardrailDepartmentIdsByGuardrailId: {}, guardrailKeyIdsByGuardrailId: {}, guardrailMemberIdsByGuardrailId: {}, guardrails: [], keyDepartmentIds: {}, keys: [], memberDepartmentIds: {}, members: [], providers: [], workspaceGuardrailIds: [], workspaceId: null }, 200, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	try {
-		const [reference, guardrailsResult] = await Promise.all([
+		const [reference, departments, guardrailsResult] = await Promise.all([
 			loadGuardrailReference(context),
+			loadGuardrailDepartments(context, workspaceId),
 			context.client.from("workspace_guardrails").select(GUARDRAIL_COLUMNS).eq("workspace_id", workspaceId).order("created_at", { ascending: false }),
 		]);
 		if (guardrailsResult.error) throw guardrailsResult.error;
@@ -791,6 +831,7 @@ accountSettingsPolicyRouter.get("/guardrails", async (c) => {
 		const byTarget = groupGuardrailAssignments(assignments?.data ?? []);
 		return c.json({
 			...reference,
+			...departments,
 			guardrailDepartmentIdsByGuardrailId: byTarget.department,
 			guardrailKeyIdsByGuardrailId: byTarget.key,
 			guardrailMemberIdsByGuardrailId: byTarget.member,

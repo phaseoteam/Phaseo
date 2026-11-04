@@ -35,6 +35,8 @@ function defaults(): GuardrailWizardForm {
 		sensitiveInfoRules: getDefaultSensitiveInfoRules("redact"),
 		keyIds: [],
 		memberIds: [],
+		departmentIds: [],
+		workspaceAssigned: false,
 	};
 }
 
@@ -143,10 +145,11 @@ describe("buildWizardAssignRows", () => {
 		guardrailMemberIdsByGuardrailId: {},
 		untitled: "Untitled",
 	};
+	const none = { workspaceAssigned: false, departmentIds: [] as string[] };
 
 	it("shows the policy with the new guardrail only for the rows it will reach", () => {
 		const draft = draftGuardrailRow({ ...defaults(), name: "ZDR", privacyZdrOnly: true });
-		const [prod, ci] = buildWizardAssignRows({ ...base, targetType: "key", draft, keyIds: ["k2"], memberIds: [] });
+		const [prod, ci] = buildWizardAssignRows({ ...base, ...none, targetType: "key", draft, keyIds: ["k2"], memberIds: [] });
 		expect(prod).toMatchObject({ selected: false, after: null, changes: false });
 		expect(ci).toMatchObject({ selected: true, changes: true });
 		expect(ci.after).toMatchObject({ zdrOnly: true, promptInjection: "flag", activeCount: 2 });
@@ -154,14 +157,14 @@ describe("buildWizardAssignRows", () => {
 
 	it("marks a key as covered when its principal member is selected", () => {
 		const draft = draftGuardrailRow({ ...defaults(), name: "ZDR", privacyZdrOnly: true });
-		const [prod] = buildWizardAssignRows({ ...base, targetType: "key", draft, keyIds: [], memberIds: ["u1"] });
-		expect(prod.coveredVia).toEqual({ id: "u1", name: "Sam" });
+		const [prod] = buildWizardAssignRows({ ...base, ...none, targetType: "key", draft, keyIds: [], memberIds: ["u1"] });
+		expect(prod.coveredVia).toEqual({ level: "member", id: "u1", name: "Sam" });
 		expect(prod.after?.zdrOnly).toBe(true);
 	});
 
 	it("says nothing changes when the row's guardrails are already as strict", () => {
 		const draft = draftGuardrailRow({ ...defaults(), name: "Flag", promptInjectionEnabled: true, promptInjectionAction: "flag" });
-		const [, ci] = buildWizardAssignRows({ ...base, targetType: "key", draft, keyIds: ["k2"], memberIds: [] });
+		const [, ci] = buildWizardAssignRows({ ...base, ...none, targetType: "key", draft, keyIds: ["k2"], memberIds: [] });
 		// One more active guardrail, but the same rules.
 		expect(ci.after).toMatchObject({ promptInjection: "flag", activeCount: 2 });
 		expect(ci.changes).toBe(false);
@@ -169,8 +172,27 @@ describe("buildWizardAssignRows", () => {
 
 	it("does not count a guardrail that is turned off", () => {
 		const draft = draftGuardrailRow({ ...defaults(), name: "ZDR", privacyZdrOnly: true, enabled: false });
-		const [, ci] = buildWizardAssignRows({ ...base, targetType: "key", draft, keyIds: ["k2"], memberIds: [] });
+		const [, ci] = buildWizardAssignRows({ ...base, ...none, targetType: "key", draft, keyIds: ["k2"], memberIds: [] });
 		expect(ci.after).toEqual(ci.effective);
 		expect(ci.changes).toBe(false);
+	});
+
+	it("covers every row when the whole workspace is chosen", () => {
+		const draft = draftGuardrailRow({ ...defaults(), name: "ZDR", privacyZdrOnly: true });
+		const rows = buildWizardAssignRows({ ...base, ...none, workspaceAssigned: true, targetType: "key", draft, keyIds: [], memberIds: [] });
+		expect(rows.map((row) => row.coveredVia)).toEqual([{ level: "workspace" }, { level: "workspace" }]);
+		expect(rows.every((row) => row.after?.zdrOnly)).toBe(true);
+	});
+
+	it("marks keys and members covered through a chosen department", () => {
+		const draft = draftGuardrailRow({ ...defaults(), name: "ZDR", privacyZdrOnly: true });
+		const withDepartments = { ...base, departments: [{ id: "d1", name: "Engineering" }], keyDepartmentIds: { k1: ["d1"] }, memberDepartmentIds: { u1: ["d1"] } };
+		const [prod, ci] = buildWizardAssignRows({ ...withDepartments, ...none, departmentIds: ["d1"], targetType: "key", draft, keyIds: [], memberIds: [] });
+		expect(prod?.coveredVia).toEqual({ level: "department", id: "d1", name: "Engineering" });
+		expect(ci?.coveredVia).toBeNull();
+		const [sam] = buildWizardAssignRows({ ...withDepartments, ...none, departmentIds: ["d1"], targetType: "member", draft, keyIds: [], memberIds: [] });
+		expect(sam?.coveredVia).toEqual({ level: "department", id: "d1", name: "Engineering" });
+		const [engineering] = buildWizardAssignRows({ ...withDepartments, ...none, departmentIds: ["d1"], targetType: "department", draft, keyIds: [], memberIds: [] });
+		expect(engineering).toMatchObject({ selected: true, changes: true });
 	});
 });

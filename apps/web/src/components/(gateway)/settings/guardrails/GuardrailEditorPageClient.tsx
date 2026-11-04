@@ -66,6 +66,7 @@ import {
 	deleteGuardrail,
 	setGuardrailKeys,
 	setGuardrailMembers,
+	updateGuardrailAssignments,
 	type SensitiveInfoAction,
 	type SensitiveInfoCustomRulePayload,
 	type SensitiveInfoRulePayload,
@@ -148,6 +149,21 @@ function normalizeMode(value: unknown): ProviderRestrictionMode {
 	if (raw === "allowlist") return "allowlist";
 	if (raw === "blocklist") return "blocklist";
 	return "none";
+}
+
+/**
+ * Assigns a guardrail the new-guardrail flow just created to the whole workspace and the chosen
+ * departments. Keys and members go through their own saves; a failed level throws, as they do.
+ */
+async function assignWizardLevels(guardrailId: string, levels: { workspaceAssigned: boolean; departmentIds: string[] }) {
+	const changes = [
+		...(levels.workspaceAssigned ? [{ targetType: "workspace" as const, targetIds: [] as string[], addGuardrailIds: [guardrailId] }] : []),
+		...(levels.departmentIds.length ? [{ targetType: "department" as const, targetIds: levels.departmentIds, addGuardrailIds: [guardrailId] }] : []),
+	];
+	for (const change of changes) {
+		const result = await updateGuardrailAssignments(change);
+		if (!result.ok) throw new Error(result.error ?? "guardrail_assignment_failed");
+	}
 }
 
 function uniqStrings(items: string[]): string[] {
@@ -1040,6 +1056,9 @@ export default function GuardrailEditorPageClient(props: {
 
 			keyIds: props.initialKeyIds ?? [],
 			memberIds: props.initialMemberIds ?? [],
+			// Only the new-guardrail flow assigns departments and the whole workspace; editing leaves them as they are.
+			departmentIds: [] as string[],
+			workspaceAssigned: false,
 		};
 	}, [g, props.initialKeyIds, props.initialMemberIds]);
 
@@ -1542,6 +1561,7 @@ export default function GuardrailEditorPageClient(props: {
 					setGuardrailKeys(guardrailId, form.keyIds),
 					setGuardrailMembers(guardrailId, form.memberIds),
 				]);
+				if (props.mode === "create") await assignWizardLevels(guardrailId, form);
 			}
 
 			toast.success(t("credits.Guardrail saved" as never), { id: toastId });
