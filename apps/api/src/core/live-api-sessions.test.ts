@@ -30,7 +30,7 @@ const config: LiveConfig = {
 	voiceCard: LIVE_PRICE_CARD,
 	settings: liveBackendSettingsSchema.parse({ tools: [getTime], parallel_tool_calls: false }),
 	backendCard: { ...LIVE_PRICE_CARD, model: "openai/gpt-5.6-luna", endpoint: "text.generate", rules: [
-		["input_text_tokens", "1"], ["cached_read_text_tokens", "0.1"], ["cached_write_text_tokens", "1.25"], ["output_text_tokens", "10"],
+		["input_text_tokens", "1"], ["cached_read_text_tokens", "0.1"], ["cached_write_text_tokens_30m", "1.25"], ["output_text_tokens", "10"],
 	].map(([meter, price]) => ({ ...LIVE_PRICE_CARD.rules[0], meter: meter as any, unit: "token", unit_size: 1_000_000, price_per_unit: price })) },
 };
 
