@@ -5,7 +5,7 @@
 	"author": "Phaseo",
 	"private": true,
 	"type": "module",
-	"main": "dist/main/index.mjs",
+	"main": "dist/main/start.mjs",
 	"engines": {
 		"node": "^22.13.0 || >=24.0.0"
 	},
