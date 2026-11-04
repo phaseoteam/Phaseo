@@ -2413,7 +2413,7 @@
 			],
 			"retentionIntro": "Nous conservons les données personnelles aussi longtemps que cela est raisonnablement nécessaire pour atteindre les objectifs décrits dans la présente Politique, notamment pour :",
 			"retentionReasons": [
-				"Les métadonnées par requête des appels Gateway BYOK sont conservées jusqu’à 90 jours. Les totaux d’utilisation agrégés sans contenu peuvent être conservés plus longtemps à des fins de facturation, de fiabilité et de statistiques.",
+				"Les métadonnées par requête des appels Gateway BYOK sont conservées jusqu’à 365 jours. Les totaux d’utilisation agrégés sans contenu peuvent être conservés plus longtemps à des fins de facturation, de fiabilité et de statistiques.",
 				"exploiter et maintenir votre compte et les fonctionnalités payantes ;",
 				"respecter nos obligations légales et réglementaires, par exemple en conservant des documents fiscaux et comptables ; et",
 				"résoudre les litiges et faire respecter nos accords."

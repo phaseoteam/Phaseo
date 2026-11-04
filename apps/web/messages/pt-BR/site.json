@@ -2413,7 +2413,7 @@
 			],
 			"retentionIntro": "Mantemos dados pessoais pelo tempo razoavelmente necessário para cumprir as finalidades descritas nesta Política, incluindo:",
 			"retentionReasons": [
-				"Os metadados por solicitação de chamadas BYOK pelo Gateway são mantidos por até 90 dias. Totais agregados de uso, sem conteúdo, podem ser mantidos por mais tempo para cobrança, confiabilidade e fins estatísticos.",
+				"Os metadados por solicitação de chamadas BYOK pelo Gateway são mantidos por até 365 dias. Totais agregados de uso, sem conteúdo, podem ser mantidos por mais tempo para cobrança, confiabilidade e fins estatísticos.",
 				"operar e manter sua conta e quaisquer recursos pagos;",
 				"cumprir obrigações legais e regulatórias, como manter registros fiscais e contábeis; e",
 				"resolver disputas e fazer valer nossos contratos."
