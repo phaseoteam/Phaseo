@@ -14,7 +14,13 @@ const runtime = vi.hoisted(() => {
 	function builder(table: string) {
 		const entry = { table, filters: [] as Array<[string, unknown]> };
 		queries.push(entry);
-		const result = () => Promise.resolve(tables[table] ?? { data: null, error: null });
+		// Like PostgREST, an `in` filter on id only returns the listed rows.
+		const result = () => {
+			const base = tables[table] ?? { data: null, error: null };
+			const ids = entry.filters.find(([column]) => column === "id")?.[1];
+			if (!Array.isArray(ids) || !Array.isArray(base.data)) return Promise.resolve(base);
+			return Promise.resolve({ ...base, data: base.data.filter((row: any) => ids.includes(row.id)) });
+		};
 		const chain: any = {
 			select: () => chain,
 			eq: (column: string, value: unknown) => {
@@ -33,9 +39,17 @@ const runtime = vi.hoisted(() => {
 
 	const supabase = {
 		from: vi.fn((table: string) => builder(table)),
+		// Pages with .range like PostgREST, which returns at most 1,000 rows per response.
 		rpc: vi.fn((name: string, args: Record<string, unknown>) => {
-			rpcCalls.push({ name, args });
-			return Promise.resolve("p_include_workspace_baseline" in args ? rpc.result : rpc.legacyResult);
+			const chain: any = {
+				order: () => chain,
+				range: (from: number, to: number) => {
+					rpcCalls.push({ name, args });
+					const { data, error } = "p_include_workspace_baseline" in args ? rpc.result : rpc.legacyResult;
+					return Promise.resolve({ data: Array.isArray(data) ? data.slice(from, Math.min(to + 1, from + 1000)) : data, error });
+				},
+			};
+			return chain;
 		}),
 	};
 	const cache = {
@@ -124,6 +138,27 @@ describe("fetchWorkspacePolicy guardrail resolution", () => {
 		expect(policy.privacyZdrOnly).toBe(true);
 		expect(policy.providerBlocklist).toEqual(["openai"]);
 		expect(policy.promptInjectionAction).toBe("block");
+	});
+
+	it("reads every page of resolved rows and every guardrail, past 1,000 rows", async () => {
+		const workspaceId = freshWorkspace();
+		// 600 guardrails on both the key and its member: 1,200 rows, more than one response holds.
+		const ids = Array.from({ length: 600 }, (_, index) => `g_${String(index).padStart(3, "0")}`);
+		runtime.rpc.result = {
+			data: ids.flatMap((id) => [
+				{ guardrail_id: id, source_type: "key", source_id: "key_1" },
+				{ guardrail_id: id, source_type: "member", source_id: "user_creator" },
+			]),
+			error: null,
+		};
+		runtime.tables.workspace_guardrails = { data: ids.map((id) => guardrail(id)), error: null };
+
+		const policy = await fetchWorkspacePolicy({ workspaceId, apiKeyId: "key_1" });
+
+		expect(runtime.rpcCalls).toHaveLength(2);
+		expect(policy.activeGuardrailIds).toHaveLength(600);
+		expect(policy.activeGuardrailIds.at(-1)).toBe("g_599");
+		expect(runtime.queries.filter((query) => query.table === "workspace_guardrails")).toHaveLength(3);
 	});
 
 	it("skips the guardrail lookup when nothing applies", async () => {

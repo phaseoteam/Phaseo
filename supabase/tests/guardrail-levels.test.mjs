@@ -23,6 +23,7 @@ const newFiles = [
   'public/tables/workspace_guardrail_assignments.sql',
   'private/functions/sync_guardrail_assignments.sql',
   'public/functions/resolve_key_guardrails.sql',
+  'public/functions/resolve_member_guardrails.sql',
 ];
 const manifest = JSON.parse(await read('../schemas/.pgdelta-export.json'));
 // The schema files as this migration left them: the workspace baseline migration later adds a
@@ -79,6 +80,8 @@ const apply = (workspaceId, targetType, targetIds, add, remove) => db.query(
 const assignments = async () => (await rows(`select workspace_id, guardrail_id, target_type, target_id from public.workspace_guardrail_assignments
   `)).map((row) => `${short(row.workspace_id)}:${row.target_type}:${short(row.target_id)}:${short(row.guardrail_id)}`).sort();
 const resolve = async (workspaceId, keyId) => (await rows('select * from public.resolve_key_guardrails($1, $2)', [workspaceId, keyId]))
+  .map((row) => `${short(row.guardrail_id)}@${row.source_type}:${short(row.source_id)}`);
+const resolveMember = async (workspaceId, userId) => (await rows('select * from public.resolve_member_guardrails($1, $2)', [workspaceId, userId]))
   .map((row) => `${short(row.guardrail_id)}@${row.source_type}:${short(row.source_id)}`);
 const publications = async () => {
   const result = (await rows('select table_name, workspace_id from private.test_publications')).map((row) => `${row.table_name}:${short(row.workspace_id)}`);
@@ -178,6 +181,12 @@ try {
   assert.deepEqual(await resolve(W2, KFOREIGN), ['58@workspace:--']);
   await db.exec(`update public.workspace_guardrails set enabled = false where id = '${GD1}'`);
   assert(!(await resolve(W1, KU1)).some((row) => row.startsWith('52@')), 'a disabled guardrail is left out');
+  // A member's own key with no department (their Chat key) gets what their unlinked keys get, minus key-level rows.
+  for (const [keyId, userId] of [[KU1, U1], [KU2, U2]]) {
+    assert.deepEqual(await resolveMember(W1, userId), (await resolve(W1, keyId)).filter((row) => !row.includes('@key:')),
+      'resolve_member_guardrails matches resolve_key_guardrails for an unlinked key');
+  }
+  assert.deepEqual(await resolveMember(W2, U1), ['58@workspace:--'], 'another workspace only gives its workspace level');
   await db.exec(`update public.workspace_guardrails set enabled = true where id = '${GD1}'`);
   await publications();
 
@@ -247,10 +256,11 @@ try {
   // ---- Service role only.
   const functionGrants = await rows(`select p.proname, has_function_privilege('anon', p.oid, 'execute') anon,
       has_function_privilege('authenticated', p.oid, 'execute') authenticated, has_function_privilege('service_role', p.oid, 'execute') service
-    from pg_proc p where p.proname in ('apply_guardrail_assignment_change', 'resolve_key_guardrails', 'sync_guardrail_assignments') order by 1`);
+    from pg_proc p where p.proname in ('apply_guardrail_assignment_change', 'resolve_key_guardrails', 'resolve_member_guardrails', 'sync_guardrail_assignments') order by 1`);
   assert.deepEqual(functionGrants, [
     { proname: 'apply_guardrail_assignment_change', anon: false, authenticated: false, service: true },
     { proname: 'resolve_key_guardrails', anon: false, authenticated: false, service: true },
+    { proname: 'resolve_member_guardrails', anon: false, authenticated: false, service: true },
     { proname: 'sync_guardrail_assignments', anon: false, authenticated: false, service: false },
   ]);
   const tableGrants = await rows(`select r.rolname,

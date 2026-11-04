@@ -82,6 +82,32 @@ function guardrailIdsFrom(rows: unknown): string[] {
 		: [];
 }
 
+const RESOLVE_PAGE_SIZE = 1000;
+const GUARDRAIL_ID_BATCH = 200;
+
+/**
+ * Every guardrail id resolve_key_guardrails returns for the key. It returns one row per guardrail
+ * and level, and PostgREST caps a response at 1,000 rows, so this pages until a short page.
+ */
+async function fetchResolvedGuardrailIds(
+	supabase: ReturnType<typeof getSupabaseAdmin>,
+	rpcArgs: Record<string, unknown>,
+): Promise<{ data: string[]; error: null } | { data: null; error: { code?: string; message: string } }> {
+	const ids: string[] = [];
+	for (let from = 0; ; from += RESOLVE_PAGE_SIZE) {
+		const result = await supabase
+			.rpc(RESOLVE_KEY_GUARDRAILS_RPC, rpcArgs)
+			.order("guardrail_id")
+			.order("source_type")
+			.order("source_id")
+			.range(from, from + RESOLVE_PAGE_SIZE - 1);
+		if (result.error) return { data: null, error: result.error };
+		const page = Array.isArray(result.data) ? result.data : [];
+		ids.push(...guardrailIdsFrom(page));
+		if (page.length < RESOLVE_PAGE_SIZE) return { data: ids, error: null };
+	}
+}
+
 const WORKSPACE_RESTRICTION_COLUMNS =
 	"privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_input_output_logging,privacy_zdr_only,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed,model_restriction_mode,model_restriction_model_ids";
 
@@ -98,12 +124,12 @@ async function fetchKeyGuardrailSources(
 	supabase: ReturnType<typeof getSupabaseAdmin>,
 	args: { workspaceId: string; apiKeyId: string; principalUserId: () => Promise<string> },
 ): Promise<{ guardrailIds: string[]; workspaceSettings: WorkspaceSettingsRow | null }> {
-	const withBaseline = await supabase.rpc(RESOLVE_KEY_GUARDRAILS_RPC, {
+	const withBaseline = await fetchResolvedGuardrailIds(supabase, {
 		p_workspace_id: args.workspaceId,
 		p_key_id: args.apiKeyId,
 		p_include_workspace_baseline: true,
 	});
-	if (!withBaseline.error) return { guardrailIds: guardrailIdsFrom(withBaseline.data), workspaceSettings: null };
+	if (!withBaseline.error) return { guardrailIds: withBaseline.data, workspaceSettings: null };
 	if (!isMissingResolveKeyGuardrails(withBaseline.error)) {
 		throw new Error(`key_guardrails_lookup_failed:${withBaseline.error.message}`);
 	}
@@ -114,10 +140,7 @@ async function fetchKeyGuardrailSources(
 			.select(WORKSPACE_RESTRICTION_COLUMNS)
 			.eq("workspace_id", args.workspaceId)
 			.maybeSingle(),
-		supabase.rpc(RESOLVE_KEY_GUARDRAILS_RPC, {
-			p_workspace_id: args.workspaceId,
-			p_key_id: args.apiKeyId,
-		}),
+		fetchResolvedGuardrailIds(supabase, { p_workspace_id: args.workspaceId, p_key_id: args.apiKeyId }),
 	]);
 	if (settingsResult.error) {
 		throw new Error(`workspace_settings_lookup_failed:${settingsResult.error.message}`);
@@ -131,7 +154,7 @@ async function fetchKeyGuardrailSources(
 			apiKeyId: args.apiKeyId,
 			principalUserId: await args.principalUserId(),
 		})
-		: guardrailIdsFrom(levelsResult.data);
+		: levelsResult.data;
 	return { guardrailIds, workspaceSettings: (settingsResult.data ?? null) as WorkspaceSettingsRow | null };
 }
 
@@ -707,7 +730,8 @@ export async function fetchWorkspacePolicy(args: {
 	const guardrailIds = [...new Set(sources.guardrailIds)];
 
 	let guardrails: GuardrailRow[] = [];
-	if (guardrailIds.length > 0) {
+	// PostgREST returns at most 1,000 rows and long id lists overflow the URL, so read in batches.
+	for (let index = 0; index < guardrailIds.length; index += GUARDRAIL_ID_BATCH) {
 		const guardrailsResult = await supabase
 			.from("workspace_guardrails")
 			.select(
@@ -715,13 +739,13 @@ export async function fetchWorkspacePolicy(args: {
 			)
 			.eq("workspace_id", args.workspaceId)
 			.eq("enabled", true)
-			.in("id", guardrailIds);
+			.in("id", guardrailIds.slice(index, index + GUARDRAIL_ID_BATCH));
 
 		if (guardrailsResult.error) {
 			throw new Error(`workspace_guardrails_lookup_failed:${guardrailsResult.error.message}`);
 		}
 
-		guardrails = (guardrailsResult.data ?? []) as GuardrailRow[];
+		guardrails.push(...((guardrailsResult.data ?? []) as GuardrailRow[]));
 	}
 
 	let dynamicRoute: DynamicRoutePolicy | null = null;

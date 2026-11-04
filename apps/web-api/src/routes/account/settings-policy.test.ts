@@ -15,30 +15,67 @@ const env = {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("account policy settings routes", () => {
-	it("returns the private effective Chat policy with assigned member guardrails", async () => {
-		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
-			const url = input instanceof Request ? input.url : String(input);
+	it("returns the private effective Chat policy with the guardrails the Chat key inherits and its own", async () => {
+		const rpcBodies: unknown[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const request = input instanceof Request ? input : new Request(input, init);
+			const url = request.url;
 			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" }), { status: 200 });
+			if (url.includes("/rpc/resolve_member_guardrails")) {
+				rpcBodies.push(await request.json());
+				// Workspace and department levels as well as the member, as the gateway applies them.
+				return new Response(JSON.stringify([
+					{ guardrail_id: "guardrail-1", source_type: "member", source_id: "user-1" },
+					{ guardrail_id: "guardrail-2", source_type: "department", source_id: "dep-1" },
+				]), { status: 200 });
+			}
+			if (url.includes("/keys?")) {
+				expect(new URL(url).searchParams.get("name")).toBe("eq.__chat_route_managed_key__");
+				return new Response(JSON.stringify([{ id: "chat-key" }]), { status: 200 });
+			}
 			if (url.includes("workspace_guardrail_assignments")) {
-				expect(new URL(url).searchParams.get("target_type")).toBe("eq.member");
-				expect(new URL(url).searchParams.get("target_id")).toBe("eq.user-1");
-				return new Response(JSON.stringify([{ guardrail_id: "guardrail-1" }]), { status: 200 });
+				expect(new URL(url).searchParams.get("target_type")).toBe("eq.key");
+				expect(new URL(url).searchParams.get("target_id")).toBe("eq.chat-key");
+				return new Response(JSON.stringify([{ guardrail_id: "guardrail-3" }]), { status: 200 });
 			}
 			if (url.includes("account_guardrail_settings")) return new Response(JSON.stringify([{ provider_restriction_mode: "none", provider_restriction_provider_ids: [], model_restriction_mode: "blocklist", model_restriction_model_ids: ["inclusionai/ling-3.0-flash-sante:free"] }]), { status: 200 });
 			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "member" }]), { status: 200 });
 			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "owner-1" }]), { status: 200 });
 			if (url.includes("workspace_settings")) return new Response(JSON.stringify([{ provider_restriction_mode: "blocklist", provider_restriction_provider_ids: ["novita"], model_restriction_mode: "none", model_restriction_model_ids: [] }]), { status: 200 });
-			if (url.includes("workspace_guardrails")) return new Response(JSON.stringify([{ id: "guardrail-1", name: "Team Safety", enabled: true, provider_restriction_mode: "blocklist", provider_restriction_provider_ids: ["openai"], model_restriction_mode: "none", allowed_api_model_ids: [] }]), { status: 200 });
+			if (url.includes("workspace_guardrails")) {
+				expect(new URL(url).searchParams.get("id")).toBe("in.(guardrail-1,guardrail-2,guardrail-3)");
+				return new Response(JSON.stringify([
+					{ id: "guardrail-1", name: "Team Safety", enabled: true, provider_restriction_mode: "blocklist", provider_restriction_provider_ids: ["openai"], model_restriction_mode: "none", allowed_api_model_ids: [] },
+					{ id: "guardrail-2", name: "Engineering", enabled: true, provider_restriction_mode: "none", provider_restriction_provider_ids: [], model_restriction_mode: "blocklist", allowed_api_model_ids: ["model-x"] },
+				]), { status: 200 });
+			}
 			return new Response(JSON.stringify([]), { status: 200 });
 		}));
 
 		const response = await app.request("https://phaseo.app/api/account/settings/chat/effective-policy?workspaceId=workspace-1", { headers: { authorization: "Bearer session-token" } }, env);
 		expect(response.status).toBe(200);
 		expect(response.headers.get("cache-control")).toBe("private, no-store");
+		expect(rpcBodies).toEqual([{ p_workspace_id: "workspace-1", p_user_id: "user-1" }]);
 		await expect(response.json()).resolves.toMatchObject({
 			workspace: { provider: { mode: "blocklist", ids: ["novita"] } },
-			guardrails: [{ id: "guardrail-1", name: "Team Safety", provider: { mode: "blocklist", ids: ["openai"] } }],
+			guardrails: [
+				{ id: "guardrail-1", name: "Team Safety", provider: { mode: "blocklist", ids: ["openai"] } },
+				{ id: "guardrail-2", name: "Engineering", model: { mode: "blocklist", ids: ["model-x"] } },
+			],
 		});
+	});
+
+	it("fails rather than under-reporting when the inherited guardrails can't be read", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = input instanceof Request ? input.url : String(input);
+			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" }), { status: 200 });
+			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "member" }]), { status: 200 });
+			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "owner-1" }]), { status: 200 });
+			if (url.includes("/rpc/resolve_member_guardrails")) return new Response(JSON.stringify({ code: "57014", message: "timeout" }), { status: 500 });
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+		const response = await app.request("https://phaseo.app/api/account/settings/chat/effective-policy?workspaceId=workspace-1", { headers: { authorization: "Bearer session-token" } }, env);
+		expect(response.status).toBe(503);
 	});
 	it("invalidates every active key after response-healing policy changes", async () => {
 		const invalidated: string[] = [];
