@@ -1,11 +1,16 @@
 import { closeMcpClient } from "./closeMcpClient";
 import { McpCallBudget } from "./mcpCallBudget";
-import { ElicitRequestSchema, type Tool } from "@modelcontextprotocol/sdk/types.js";
+import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { respondMcpElicitation } from "./mcpElicitation";
 import type { AgentCallbacks } from "./agentAdapter";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport, getDefaultEnvironment } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import type { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+
+// Loaded with the first MCP connection rather than at launch, as in orchestratorMcp.ts.
+const importClientSdk = () => Promise.all([import("@modelcontextprotocol/sdk/client/index.js"), import("@modelcontextprotocol/sdk/client/stdio.js"), import("@modelcontextprotocol/sdk/client/streamableHttp.js"), import("@modelcontextprotocol/sdk/types.js")]);
+let clientSdk: Awaited<ReturnType<typeof importClientSdk>> | undefined;
+/** Loads the MCP client SDK once; after that, servers start without waiting a tick for it. */
+export async function loadMcpClientSdk() { return clientSdk ??= await importClientSdk(); }
 import { createHash } from "node:crypto";
 import { defineTool, type AgentTool } from "@phaseo/agent-sdk";
 import { nativeMcpName, type McpConnection } from "../shared/mcp";
@@ -48,6 +53,7 @@ function disconnect(server: Server, callbacks?: AgentCallbacks) {
 
 async function startServer(connection: McpConnection, cwd: string, setupSignal: AbortSignal, turn: Server["turn"], track: (client: Client) => void): Promise<Server> {
  const elicit = Boolean(turn.callbacks?.onForm);
+ const [{ Client }, { StdioClientTransport, getDefaultEnvironment }, { StreamableHTTPClientTransport }, { ElicitRequestSchema }] = clientSdk ?? await loadMcpClientSdk();
  const client = new Client({ name: "phaseo-desktop", version: "0.1.0" }, { capabilities: elicit ? { elicitation: { form: {}, url: {} } } : {} }); track(client);
  const server: Server = { connection, client, tools: [], prompts: false, resources: false, budgets: new Set(), waitingForms: 0, turn };
  if (elicit) {

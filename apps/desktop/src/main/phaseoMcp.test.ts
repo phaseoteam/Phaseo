@@ -1,9 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 const ports=vi.hoisted(()=>({clients:[] as {getServerCapabilities:ReturnType<typeof vi.fn>;readResource:ReturnType<typeof vi.fn>;getPrompt:ReturnType<typeof vi.fn>;connect:ReturnType<typeof vi.fn>;listTools:ReturnType<typeof vi.fn>;callTool:ReturnType<typeof vi.fn>;setRequestHandler:ReturnType<typeof vi.fn>;close:ReturnType<typeof vi.fn>}[],transports:[] as unknown[]}));
 vi.mock("@modelcontextprotocol/sdk/client/index.js",()=>({Client:class {getServerCapabilities=vi.fn().mockReturnValue({tools:{}});readResource=vi.fn();getPrompt=vi.fn();setRequestHandler=vi.fn();connect=vi.fn().mockResolvedValue(undefined);listTools=vi.fn().mockResolvedValue({tools:[{name:"search",description:"Find notes",inputSchema:{type:"object"}}]});callTool=vi.fn().mockResolvedValue({content:[{type:"text",text:"Found"}]});close=vi.fn().mockResolvedValue(undefined);constructor(){ports.clients.push(this);}}}));
 vi.mock("@modelcontextprotocol/sdk/client/stdio.js",()=>({getDefaultEnvironment:()=>({PATH:"owned-path"}),StdioClientTransport:class {constructor(parameters:unknown){ports.transports.push(parameters);}}}));
 vi.mock("@modelcontextprotocol/sdk/client/streamableHttp.js",()=>({StreamableHTTPClientTransport:class {terminateSession=vi.fn().mockResolvedValue(undefined);constructor(url:URL){ports.transports.push(url.href);}}}));
-import { connectPhaseoMcp } from "./phaseoMcp";
+import { connectPhaseoMcp, loadMcpClientSdk } from "./phaseoMcp";
+// The app loads the SDK with its first connection; loaded here first, clients exist as soon as a connection starts.
+beforeAll(async () => { await loadMcpClientSdk(); });
 const connection={id:"12345678-1234-1234-1234-123456789abc",name:"Notes",enabled:true,transport:"stdio" as const,executable:"/owned/node",arguments:["/owned/server.mjs"]};
 describe("Phaseo managed MCP",()=>{
  it.each([{ operation: "resource", outcome: "deadline" }, { operation: "resource", outcome: "cancel" }, { operation: "prompt", outcome: "deadline" }, { operation: "prompt", outcome: "cancel" }])("pauses $operation deadlines during human forms and retains $outcome", async ({ operation, outcome }) => {
