@@ -21,6 +21,7 @@ import {
 } from "./models.catalogue";
 import { buildFeedResponse, parseFeedFormat, type FeedItem } from "./models.feeds";
 import { getEndpointMetadata } from "./endpoint-metadata";
+import { normalizeParameterSpecs } from "@core/model-parameters";
 import { getBindingsIfConfigured, getSupabaseAdmin } from "@/runtime/env";
 import { normalizeGatewayRoutingRegion } from "@pipeline/before/deployment-region";
 
@@ -338,7 +339,12 @@ function cloneJsonObject<T>(value: T): T {
     return JSON.parse(JSON.stringify(value ?? {}));
 }
 
-function toModelOffer(model: CatalogueModel, provider: CatalogueModel["providers"][number], regional = false) {
+function toModelOffer(
+    model: CatalogueModel,
+    provider: CatalogueModel["providers"][number],
+    regional = false,
+    includeParameterSpecs = false,
+) {
     return {
         provider: {
             id: provider.api_provider_id,
@@ -360,6 +366,8 @@ function toModelOffer(model: CatalogueModel, provider: CatalogueModel["providers
         capabilities: {
             parameters: [...(provider.params ?? [])],
             parameter_details: cloneJsonObject(provider.params_detail ?? {}),
+            // The same details in one standard shape; opt-in on the list (?include=parameter_specs).
+            ...(includeParameterSpecs ? { parameter_specs: normalizeParameterSpecs(provider.params_detail ?? {}) } : {}),
         },
         // Catalogue objects cached before this field existed lack it; those
         // routes were listed on standard pricing only.
@@ -572,6 +580,7 @@ function toPhaseoModel(
     replacementModelId: string | null,
     variants: ModelVariantLinks,
 	regional = false,
+    includeParameterSpecs = false,
 ) {
     const lifecycleStatus = normalizeLifecycleStatus(model.status, model.deprecation_date, model.retirement_date);
     return {
@@ -621,7 +630,7 @@ function toPhaseoModel(
             inactive_provider_count: model.availability.inactive_provider_count,
         },
         pricing: cloneJsonObject(model.pricing),
-        offers: model.providers.map((provider) => toModelOffer(model, provider, regional)),
+        offers: model.providers.map((provider) => toModelOffer(model, provider, regional, includeParameterSpecs)),
     };
 }
 
@@ -885,6 +894,7 @@ export async function handleModels(req: Request) {
     };
 
     const endpoints = parseMultiValue(url.searchParams, "endpoints");
+    const includeParameterSpecs = parseMultiValue(url.searchParams, "include").includes("parameter_specs");
     const statuses = parseMultiValue(url.searchParams, "status");
     const providerIds = parseMultiValue(url.searchParams, "provider");
     const providerStatuses = parseMultiValue(url.searchParams, "provider_status");
@@ -1008,6 +1018,7 @@ export async function handleModels(req: Request) {
                     model.replacement_model_id ?? replacementByPreviousModel.get(model.model_id) ?? null,
                     variantsByBaseModel.get(model.base_model_id || model.model_id) ?? {},
 					gatewayRegion !== null,
+                    includeParameterSpecs,
                 )
             );
         const privateModels = await fetchWorkspacePrivateCatalogue({
@@ -1238,6 +1249,7 @@ export async function handleModelEndpoints(req: Request) {
                     capabilities: {
                         parameters: [...provider.params],
                         parameter_details: cloneJsonObject(provider.params_detail ?? {}),
+                        parameter_specs: normalizeParameterSpecs(provider.params_detail ?? {}),
                     },
                     routing: {
                         provider: provider.provider_routing_status,

@@ -305,3 +305,18 @@ describe("Video options stored in the catalogue", () => {
 		expect(getDefaultVideoRoomParams("google/gemini-omni-flash")).toEqual({ duration: 5, size: "1280x720", n: 1 });
 	});
 });
+
+describe("Voices stored in the catalogue", () => {
+	test("reads voice lists in any stored spelling, default first", () => {
+		const params = { "audio.speech": { voice: { values: [{ id: "alloy", label: "Alloy" }, "echo"], default: "echo" } } };
+		expect(getAudioModelSchema("openai/gpt-4o-mini-tts", params).voiceOptions).toEqual(["echo", "alloy"]);
+		const listed = { "audio.speech": [{ param_id: "voice", type: "enum", supported_values: ["kore", "puck"] }] };
+		expect(getAudioModelSchema("google/gemini-2.5-flash-tts", listed).voiceOptions).toEqual(["kore", "puck"]);
+	});
+
+	test("keeps the built-in voices when the catalogue lists none", () => {
+		const params = { "audio.speech": ["input", "voice"] };
+		expect(getAudioModelSchema("openai/gpt-4o-mini-tts", params).voiceOptions)
+			.toEqual(getAudioModelSchema("openai/gpt-4o-mini-tts").voiceOptions);
+	});
+});
