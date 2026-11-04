@@ -117,6 +117,7 @@ export function resolveAuditServiceTiers(args: {
     };
 }
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DEFAULT_RETRY_ATTEMPTS = 3;
 const DEFAULT_RETRY_DELAY_MS = 250;
 let gatewayRequestsSupportsErrorPayloadColumn: boolean | null = null;
@@ -408,7 +409,11 @@ async function upsertV2RequestFact(args: {
         const unitPriceUsd = Number(line.unit_price_usd ?? 0);
         const chargedNanos = Number(line.line_nanos ?? 0);
         if (!meterKey || !Number.isFinite(quantity) || quantity < 0 || !Number.isFinite(chargedNanos)) return [];
+        // The SKU meter the engine priced this line with. Database price cards use the
+        // meter id as the rule id; other rule ids (static or fee lines) are not UUIDs.
+        const skuMeterId = typeof line.rule_id === "string" && UUID_PATTERN.test(line.rule_id) ? line.rule_id : null;
         return [{
+            ...(skuMeterId ? { sku_meter_id: skuMeterId } : {}),
             meter_key: meterKey,
             quantity,
             unit: typeof line.unit === "string" ? line.unit : meterKey,
