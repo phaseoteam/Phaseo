@@ -1,6 +1,5 @@
 import path from "node:path";
-import { Agent, Cursor, JsonlLocalAgentStore } from "@cursor/sdk";
-import type { AgentOptions, McpServerConfig, ModelListItem, ModelSelection, Run, SDKAgent } from "@cursor/sdk";
+import type { AgentOptions, JsonlLocalAgentStore, McpServerConfig, ModelListItem, ModelSelection, Run, SDKAgent } from "@cursor/sdk";
 import type { Account, ModelOptionDescriptor, ModelOptionValues, QueuedMessage, Task } from "../shared/workspace";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import { AgentInputRejectedError } from "./agentAdapter";
@@ -61,7 +60,7 @@ export function cursorModelSelection(model: string, values?: ModelOptionValues, 
 }
 async function cursorCatalogModel(apiKey: string, model: string) {
 	const id = model === "default" ? "auto" : model;
-	try { return (await bounded(Cursor.models.list({ apiKey }))).find(item => item.id === id || item.aliases?.includes(id)); }
+	try { const { Cursor } = await import("@cursor/sdk"); return (await bounded(Cursor.models.list({ apiKey }))).find(item => item.id === id || item.aliases?.includes(id)); }
 	catch { return undefined; }
 }
 
@@ -93,6 +92,8 @@ export class CursorAdapter implements AgentAdapter {
 			const guided = !task.nativeSessionId && this.connections.some(connection => connection.orchestration) ? `${orchestrationInstructions}\n\n---\n\n${prompt}` : prompt;
 			const catalog = task.modelOptions && Object.keys(task.modelOptions).length ? await cursorCatalogModel(apiKey, task.model) : undefined;
 			if (this.stopped) throw new Error("Cursor task stopped.");
+			// Loaded on first use, as in cursorAccounts.ts.
+			const { Agent, JsonlLocalAgentStore } = await import("@cursor/sdk");
 			const options = cursorOptions(task, cwd, apiKey, new JsonlLocalAgentStore(path.join(this.directory, "native", "cursor", account.id)), this.connections, catalog);
 			this.agent = task.nativeSessionId ? await Agent.resume(task.nativeSessionId, options) : await Agent.create(options);
 			callbacks.onSession(this.agent.agentId); if (this.stopped) throw new Error("Cursor task stopped.");
