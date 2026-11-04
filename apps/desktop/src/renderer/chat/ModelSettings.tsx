@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Check, Globe } from "lucide-react";
 import { cn } from "../lib/utils";
 import { Tip } from "../components/ui/tooltip";
 import { Switch } from "../components/ui/switch";
@@ -98,7 +98,7 @@ export function settingsSummary(selection: ModelSelection, descriptors: ModelOpt
 		const label = descriptor.type === "select" ? descriptor.options.find(option => option.id === value)?.label : `${descriptor.label} ${value ? "On" : "Off"}`;
 		if (speedIds.includes(descriptor.id)) speed ??= speedTier(descriptor, value);
 		else if (descriptor.id === "ultracode") ultracode = value === true;
-		else if (descriptor.id === "region") region = typeof value === "string" && value !== "any" ? value.toUpperCase() : undefined;
+		else if (descriptor.id === "region") region = typeof value === "string" && value !== "any" ? value : undefined;
 		else if (!effort && isReasoning(descriptor)) { effort = label; dots = effortDots(descriptor, value); }
 	}
 	return { effort, dots, speed, ultracode, region };
@@ -127,6 +127,25 @@ export function SpeedGlyph({ tier, className }: { tier: SpeedTier; className?: s
 	</svg>;
 }
 
+/**
+ * A region's mark, drawn small enough for a menu row: the US and EU flags, a globe for Global, and the region's code for
+ * any other. Flags are simplified (no stars on the US canton) so they stay legible at 14 by 10 pixels.
+ */
+export function RegionFlag({ region, className }: { region: string; className?: string }) {
+	const box = cn("h-2.5 w-3.5 shrink-0 overflow-hidden rounded-[2px] ring-1 ring-black/10 dark:ring-white/15", className);
+	if (region === "any") return <Globe aria-hidden className={cn("size-3.5 shrink-0", className)} />;
+	if (region === "us") return <svg aria-hidden viewBox="0 0 14 10" className={box}>
+		<rect width="14" height="10" fill="#fff" />
+		{[0, 2, 4, 6, 8].map(y => <rect key={y} y={y * 10 / 9 + 0.0} width="14" height={10 / 9} fill="#b22234" />)}
+		<rect width="6" height={50 / 9} fill="#3c3b6e" />
+	</svg>;
+	if (region === "eu") return <svg aria-hidden viewBox="0 0 14 10" className={box}>
+		<rect width="14" height="10" fill="#003399" />
+		{Array.from({ length: 12 }, (_, index) => { const angle = index * Math.PI / 6; return <circle key={index} cx={7 + 3 * Math.sin(angle)} cy={5 - 3 * Math.cos(angle)} r={0.55} fill="#ffcc00" />; })}
+	</svg>;
+	return <span aria-hidden className={cn("rounded-sm border border-border px-1 text-[10px] leading-4", className)}>{region.toUpperCase()}</span>;
+}
+
 /** The model button's tail: the reasoning level as Appearance asks (its word, dots or both), then the speed glyph. */
 export function SettingsSuffix({ selection, descriptors }: { selection: ModelSelection; descriptors: ModelOptionDescriptor[] }) {
 	const { effort, dots, speed, ultracode, region } = settingsSummary(selection, descriptors);
@@ -139,7 +158,7 @@ export function SettingsSuffix({ selection, descriptors }: { selection: ModelSel
 		{word && <span className="max-w-24 truncate">{effort}</span>}
 		{ultracode && <span>· Ultracode</span>}
 		{speed && <SpeedGlyph tier={speed} />}
-		{region && <span className="rounded-sm border border-border px-1 text-[10px] leading-4" title={`Data kept in ${region}`}>{region}</span>}
+		{region && <span className="flex" title={`Data kept in ${descriptors.find(descriptor => descriptor.id === "region")?.type === "select" ? (descriptors.find(descriptor => descriptor.id === "region") as Extract<ModelOptionDescriptor, { type: "select" }>).options.find(option => option.id === region)?.label ?? region.toUpperCase() : region.toUpperCase()}`}><RegionFlag region={region} /></span>}
 	</span>;
 }
 
@@ -175,6 +194,7 @@ export function ModelSettingsColumn({ selection, descriptors, onChange }: { sele
 					const row = <button key={option.id} type="button" role="radio" aria-checked={value === option.id} aria-description={hint}
 						onClick={() => pick(selection, descriptor, option.id, onChange)}
 						className="flex h-8 w-full shrink-0 items-center gap-2 rounded-sm px-2 text-left text-sm text-foreground outline-none hover:bg-foreground/[0.09] focus-visible:bg-foreground/[0.09]">
+						{descriptor.id === "region" && <RegionFlag region={option.id} className="text-muted-foreground" />}
 						<span className="min-w-0 flex-1 truncate">{option.label}</span>
 						<Check className={cn("size-3.5 shrink-0", value !== option.id && "invisible")} />
 					</button>;

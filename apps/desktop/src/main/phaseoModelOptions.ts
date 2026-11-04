@@ -5,6 +5,8 @@ const record = (value: unknown): Record<string, unknown> | undefined => value !=
 const text = (value: unknown) => typeof value === "string" && value.trim() ? value.trim() : undefined;
 const efforts = { none: "None", instant: "Instant", minimal: "Minimal", low: "Low", medium: "Medium", high: "High", xhigh: "Extra High", max: "Max" } as const;
 const tiers = { standard: "Standard", priority: "Fast", ultrafast: "Ultrafast", flex: "Flex" } as const;
+// The regions offered for now; each has a flag in the picker. The gateway matches a region exactly.
+const offeredRegions = new Set(["us", "eu"]);
 const regionNames: Record<string, string> = { us: "United States", eu: "European Union", uk: "United Kingdom", ca: "Canada", apac: "Asia Pacific", ap: "Asia Pacific", jp: "Japan", kr: "South Korea", au: "Australia", sg: "Singapore", in: "India", my: "Malaysia", id: "Indonesia", cn: "China", br: "Brazil", ch: "Switzerland", de: "Germany", fr: "France" };
 type Support = { values: string[]; default?: string };
 
@@ -75,11 +77,11 @@ export function phaseoModelOptions(model: Record<string, unknown>): ModelOptionD
 	// Region keeps a request's data where chosen: the gateway routes only to providers that keep data there (an exact match).
 	const regions = new Map<string, string[]>();
 	for (const offer of routable) for (const region of Array.isArray(record(offer.residency)?.data_regions) ? record(offer.residency)!.data_regions as unknown[] : []) {
-		if (typeof region !== "string" || !/^[a-z]{2,4}$/.test(region) || region === "global") continue;
+		if (typeof region !== "string" || !offeredRegions.has(region)) continue;
 		const name = text(record(offer.provider)?.name) ?? text(record(offer.provider)?.id) ?? "";
 		regions.set(region, [...new Set([...regions.get(region) ?? [], ...name ? [name] : []])]);
 	}
-	if (regions.size) options.push({ id: "region", label: "Region", type: "select", options: [{ id: "any", label: "Any region", description: "Any provider, wherever it keeps data.", isDefault: true },
+	if (regions.size) options.push({ id: "region", label: "Region", type: "select", options: [{ id: "any", label: "Global", description: "Any provider, wherever it keeps data.", isDefault: true },
 		...[...regions].sort(([a], [b]) => (regionNames[a] ?? a).localeCompare(regionNames[b] ?? b)).map(([id, providers]) => ({ id, label: regionNames[id] ?? id.toUpperCase(), description: `Keeps the request's data in ${regionNames[id] ?? id.toUpperCase()}. Only through ${providers.length > 3 ? `${providers.slice(0, 3).join(", ")} and ${providers.length - 3} more` : providers.join(providers.length === 2 ? " and " : ", ")}.` }))] });
 	if (extra.length) options.push({ id: "speed", label: "Speed", type: "select", options: (["flex", "standard", "priority", "ultrafast"] as const).filter(id => id === "standard" || speeds.has(id)).map(id => ({ id, label: tiers[id], description: `${about[id]}${id === "standard" ? "" : servedBy(id)}`, ...(id === "standard" ? { isDefault: true } : {}) })) });
 	return options;
