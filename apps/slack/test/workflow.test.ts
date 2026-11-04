@@ -8,7 +8,7 @@ import { hostedApp, ORIGINAL_BOT_SCOPES, type Installation } from "../src/instal
 import { handleInteraction } from "../src/interactions";
 import { answerValue } from "../src/questions";
 import type { TurnRef } from "../src/turns";
-import { MEMORY_TOOL_IDS, SKILL_TOOL_IDS } from "../src/memory";
+import { MEMORY_TOOL_IDS, SAVED_MEMORY_NOTICE, SKILL_TOOL_IDS } from "../src/memory";
 import { SCHEDULE_TOOL_IDS } from "../src/schedules";
 import { footerModels, runTurn, type StepConfig, type StepRunner, type TurnDeps } from "../src/workflow";
 import {
@@ -242,11 +242,17 @@ describe("AgentTurnWorkflow", () => {
 		await runTurn(deps(agent), await startTurn(), step);
 		expect(world.db.rpcs.find((call) => call.fn === "load_slack_agent_turn_memory")?.args).toEqual({ p_installation_id: INSTALLATION_ID, p_channel_id: "C0CHANNEL1", p_workspace_notes: true });
 		expect(agent.requests[0].prompt).toBe([
+			SAVED_MEMORY_NOTICE,
+			"",
 			"Pinned for the whole Slack workspace, newest first:",
+			'<saved_memory source="pins for the workspace">',
 			"- Our fiscal year starts on 1 April. (id 00000000-0000-4000-8000-0000000000e1)",
+			"</saved_memory>",
 			"",
 			"Saved skills (call use_skill to load one):",
+			'<saved_memory source="saved skills">',
 			"- Weekly report: Summarise the week.",
+			"</saved_memory>",
 			"",
 			"New message from <@U0PERSON01>:",
 			"what did we spend this week?",
@@ -302,8 +308,12 @@ describe("AgentTurnWorkflow", () => {
 		const [request] = agent.requests;
 		expect(request.tools.map((tool) => tool.id)).toEqual([...SKILL_TOOL_IDS, ...SCHEDULE_TOOL_IDS, "ask_question"]);
 		expect(request.prompt).toBe([
+			SAVED_MEMORY_NOTICE,
+			"",
 			"Saved skills (call use_skill to load one):",
+			'<saved_memory source="saved skills">',
 			"- Weekly report: Summarise the week.",
+			"</saved_memory>",
 			"",
 			"New message from <@U0PERSON01>:",
 			"what did we spend this week?",
@@ -319,6 +329,9 @@ describe("AgentTurnWorkflow", () => {
 		// A DM from someone who hasn't linked their account: only the Connect button.
 		await runTurn(deps(agent), await startTurn({ channel: "D0DIRECT01" }), step);
 		expect(toolIds()).toEqual(["connect_phaseo_account"]);
+		// Without the usage tools, the answer can search the web and read pages.
+		expect(agent.requests.at(-1)!.webTools).toBe(true);
+		expect(agent.requests.at(-1)!.instructions).toContain("You can search the web and read web pages");
 		// Linked, but no longer a member of the workspace.
 		world.db.tables.slack_user_links.push({ installation_id: INSTALLATION_ID, slack_user_id: "U0PERSON01", user_id: USER });
 		await runTurn(deps(agent), await startTurn({ channel: "D0DIRECT01" }), step);
@@ -329,6 +342,10 @@ describe("AgentTurnWorkflow", () => {
 		expect(toolIds()).toEqual(["get_spend", "get_credit_balance", "get_key_usage", "find_models"]);
 		expect(agent.requests.at(-1)!.tools.slice(4).map((tool) => tool.id)).toEqual([...MEMORY_TOOL_IDS, ...SCHEDULE_TOOL_IDS, "ask_question"]);
 		expect(agent.requests.at(-1)!.instructions).toContain("You can look up this Phaseo workspace's spend");
+		// With them, no web search or web fetch: a page it read could otherwise send the numbers away in a URL.
+		expect(agent.requests.at(-1)!.webTools).toBe(false);
+		expect(agent.requests.at(-1)!.instructions).toContain("You can't search the web or read web pages in this conversation");
+		expect(agent.requests.at(-1)!.instructions).not.toContain("You can search the web and read web pages");
 		// The same member in a channel: only with dm_and_channels and the channel listed.
 		await runTurn(deps(agent), await startTurn({ channel: "C0FINANCE1" }), step);
 		expect(toolIds()).toEqual([]);
@@ -710,7 +727,7 @@ describe("AgentTurnWorkflow", () => {
 		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
 		expect(agent.requests).toHaveLength(1);
 		expect(world.slack.of("chat.postMessage").map((call) => call.args)).toEqual([
-			{ channel: "C0CHANNEL1", thread_ts: turn.threadTs, markdown_text: `Hello\n\n${markdownFooter(turn, "$0.0123")}` },
+			{ channel: "C0CHANNEL1", thread_ts: turn.threadTs, markdown_text: `Hello\n\n${markdownFooter(turn, "$0.0123")}`, unfurl_links: false, unfurl_media: false },
 		]);
 		expect(world.slack.of("agents.sessions.setStatus").map((call) => call.args.status)).toEqual(["processing", "active"]);
 		expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });

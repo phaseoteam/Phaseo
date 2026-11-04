@@ -19,6 +19,17 @@ const task: Task = { id: "task", title: "Owned", projectId: "project", harness: 
 const account: Account = { id: "account", name: "Owned", harness: "phaseo", kind: "api", configured: true, endpoint: "http://127.0.0.1:1/v1" };
 
 describe("Phaseo project instructions in the actual run loop", () => {
+	it.each([[undefined, true], [true, false]] as const)("loads the checkout's AGENTS.md only for a checkout the person opened (untrusted: %s)", async (untrustedCheckout, loaded) => {
+		const root = mkdtempSync(path.join(tmpdir(), "phaseo-untrusted-instructions-")), global = path.join(root, "instructions"); mkdirSync(global);
+		writeFileSync(path.join(root, "AGENTS.md"), "Repository guidance"); writeFileSync(path.join(global, "AGENTS.md"), "Personal guidance");
+		const store = new WorkspaceStore(path.join(root, "state.sqlite"));
+		try {
+			const generate = vi.fn<(request: AgentModelRequest<unknown>) => Promise<{ message: { role: "assistant"; content: string } }>>(async () => ({ message: { role: "assistant", content: "Done" } }));
+			await new PhaseoCodingAdapter(() => "unused", store, () => ({ generate }), [], global).run({ ...task, ...(untrustedCheckout ? { untrustedCheckout } : {}) }, root, "Hello", { onDelta: () => {}, onSession: () => {}, onApproval: async () => "accept" }, account);
+			const instructions = String(generate.mock.calls[0]![0].instructions);
+			expect(instructions).toContain("Personal guidance"); expect(instructions.includes("Repository guidance")).toBe(loaded);
+		} finally { store.close(); rmSync(root, { recursive: true, force: true }); }
+	});
 	it("defers a file effect requested alongside new skill guidance and runs it once the guidance is in the prompt", async () => {
 		const started = performance.now(), stages: { stage: string; ms: number }[] = []; const mark = (stage: string) => stages.push({ stage, ms: Math.round(performance.now() - started) });
 		const root = mkdtempSync(path.join(tmpdir(), "phaseo-model-skill-effect-")), global = path.join(root, "instructions"), file = path.join(root, "skills", "review", "SKILL.md"); mkdirSync(global); mkdirSync(path.dirname(file), { recursive: true }); writeFileSync(file, "---\nname: review\ndescription: Review changes\n---\nNew model-selected guidance"); const store = new WorkspaceStore(path.join(root, "state.sqlite"));

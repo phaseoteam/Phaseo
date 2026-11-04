@@ -18,6 +18,7 @@ import { publicMcpConnection, type McpConnection } from "../shared/mcp";
 import { defaultPreferences, validatePreferences } from "../shared/preferences";
 import type { WorkspacePreferences } from "../shared/preferences";
 import { agentLimitMessage } from "../shared/orchestration";
+import { assertForkCheckoutSafe } from "./factory/agents";
 import { bringBackBlocker, bringBackText, isSideChat, sideChatOwnMessages, sideChatTitle } from "../shared/sideChats";
 import { MissionStore } from "./missionStore";
 import { validateTaskHistoryQuery, type TaskHistoryPage } from "../shared/taskHistory";
@@ -268,9 +269,11 @@ export class WorkspaceStore {
 			if (existing) { this.db.exec("COMMIT"); return this.getTask(existing.id as string); }
 			const parent = this.getTask(parentId), source = this.getTask(sourceId);
 			if (source.projectId !== parent.projectId || parent.archived || source.archived || parent.status === "interrupted") throw new Error("Handoff requires an available source in the parent's project.");
+			assertForkCheckoutSafe(parent, target.harness);
 			this.assertAgentCapacity(maxActive);
 			const child = this.apply({ type: "handoff", id: sourceId, ...target, projectId: parent.projectId, mode: parent.mode, permissionMode: parent.permissionMode });
 			child.delegation = { parentTaskId: parentId, requestId, kind: "handoff", sourceTaskId: sourceId };
+			if (parent.forkCheckout) child.forkCheckout = true;
 			this.saveTask(child); this.db.exec("COMMIT"); return child;
 		} catch (error) { this.db.exec("ROLLBACK"); throw error; }
 	}
@@ -281,10 +284,13 @@ export class WorkspaceStore {
 			if (existing) { this.db.exec("COMMIT"); return this.getTask(existing.id as string); }
 			const parent = this.getTask(parentId), source = this.getTask(sourceId);
 			if (parent.projectId !== source.projectId || source.archived || parent.archived || parent.status === "interrupted") throw new Error("Forks require an available source in the parent's project.");
+			assertForkCheckoutSafe(parent, source.harness);
 			this.assertAgentCapacity(maxActive);
 			const fork = this.apply({ type: "fork", id: sourceId, messageId });
 			fork.delegation = { parentTaskId: parentId, requestId, kind: "fork", sourceTaskId: sourceId, sourceMessageId: messageId };
 			fork.permissionMode = parent.permissionMode; fork.mode = parent.mode;
+			if (parent.untrustedCheckout) fork.untrustedCheckout = true;
+			if (parent.forkCheckout) fork.forkCheckout = true;
 			this.saveTask(fork); this.db.exec("COMMIT"); return fork;
 		} catch (error) { this.db.exec("ROLLBACK"); throw error; }
 	}
@@ -331,10 +337,14 @@ export class WorkspaceStore {
 		try {
 			const existing = this.statement("SELECT id FROM tasks WHERE json_extract(data, '$.delegation.parentTaskId') = ? AND json_extract(data, '$.delegation.requestId') = ? LIMIT 1").get(delegation.parentTaskId, delegation.requestId);
 			if (existing) { this.db.exec("COMMIT"); return this.getTask(existing.id as string); }
+			const parent = this.getTask(delegation.parentTaskId);
+			assertForkCheckoutSafe(parent, command.harness);
 			this.assertAgentCapacity(maxActive);
 			const child = this.apply(command);
 			child.parentId = delegation.parentTaskId; child.delegation = delegation; child.title = title;
-			const parent = this.getTask(delegation.parentTaskId);
+			// A thread delegated from one working on someone else's checkout works on the same code.
+			if (parent.untrustedCheckout) child.untrustedCheckout = true;
+			if (parent.forkCheckout) child.forkCheckout = true;
 			if (parent.autopilot && this.getPreferences().autopilot && child.permissionMode === "full-access" && child.mode !== "chat") child.autopilot = { capNanos: null, since: new Date().toISOString(), inherited: true };
 			child.queue.push({ id: randomUUID(), text: prompt, createdAt: new Date().toISOString() });
 			this.saveTask(child); this.db.exec("COMMIT"); return child;
@@ -350,8 +360,14 @@ export class WorkspaceStore {
 		try {
 			const existing = this.findLaunchedTask(launch.byTaskId, launch.requestId);
 			if (existing) { this.db.exec("COMMIT"); return existing; }
+			let launcher: Task | undefined;
+			try { launcher = this.getHead(launch.byTaskId).task; } catch { /* The launcher is gone. */ }
+			if (launcher) assertForkCheckoutSafe(launcher, command.harness);
 			this.assertAgentCapacity(maxActive);
 			const task = this.apply(command); task.launch = launch; task.title = title;
+			// A chat launched by one working on someone else's checkout may work on the same code.
+			if (launcher?.untrustedCheckout) task.untrustedCheckout = true;
+			if (launcher?.forkCheckout) task.forkCheckout = true;
 			task.queue.push({ id: randomUUID(), text: prompt, ...(notice ? { notice } : {}), createdAt: new Date().toISOString() });
 			this.saveTask(task); this.db.exec("COMMIT"); return task;
 		} catch (error) { this.db.exec("ROLLBACK"); throw error; }
@@ -856,8 +872,11 @@ export class WorkspaceStore {
 		if (command.type === "handoff") {
 			const source = this.getTask(command.id);
 			if (source.status === "running" || source.status === "waiting") throw new Error("Stop this task before handing it off.");
+			assertForkCheckoutSafe(source, command.harness);
 			const destination = this.apply({ ...command, type: "create-task" }, initialModels);
 			destination.title = `${source.title} (handoff)`; destination.parentId = source.id; destination.handoffFrom = source.harness;
+			if (source.untrustedCheckout) destination.untrustedCheckout = true;
+			if (source.forkCheckout) destination.forkCheckout = true;
 			destination.messages = source.messages; this.saveTask(destination); return destination;
 		}
 		if (command.type === "create-task") {
@@ -872,6 +891,8 @@ export class WorkspaceStore {
 			if (command.harness === "acp" && !this.getAgents().some(agent => agent.id === command.agentId && !agent.archived)) throw new Error("Choose an active connected ACP agent.");
 			const now = new Date().toISOString();
 			const task: Task = { id: randomUUID(), title: "New task", projectId: command.projectId, harness: command.harness, accountId: command.accountId, agentId: command.agentId, model: command.model, mode: command.mode, permissionMode: command.permissionMode, reasoningEffort: command.reasoningEffort, serviceTier: command.serviceTier, modelOptions: command.modelOptions, nativeModels: initialModels, status: "idle", messages: [], queue: [], pinned: false, archived: false, createdAt: now, updatedAt: now };
+			if (command.untrustedCheckout) task.untrustedCheckout = true;
+			if (command.forkCheckout) { assertForkCheckoutSafe(command, command.harness); task.forkCheckout = true; }
 			if (command.autopilot) { this.assertAutopilotAllowed(); if (command.mode === "chat") throw new Error("Autopilot runs Code and Plan chats."); task.permissionMode = "full-access"; task.autopilot = { capNanos: command.autopilot.capNanos, since: now }; }
 			this.saveTask(task); return task;
 		}

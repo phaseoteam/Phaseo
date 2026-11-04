@@ -10,10 +10,11 @@ const guardrailRule = await read('../migrations/20261026223103_slack_agent_guard
 const uninstallFromSlack = await read('../migrations/20261022113514_slack_agent_uninstall_from_slack.sql');
 const migrationName = (await readdir(new URL('../migrations/', import.meta.url))).find((name) => name.endsWith('_slack_agent_memory_and_skills.sql'));
 const migration = await read(`../migrations/${migrationName}`);
+// functions/save_slack_agent_skill.sql has changed since: slack-agent-skill-replace-saver.test.mjs checks it against its migration.
 const declarative = [
   'tables/slack_agent_notes.sql', 'tables/slack_agent_skills.sql', 'functions/save_slack_agent_note.sql', 'functions/search_slack_agent_notes.sql',
   'functions/set_slack_agent_todo_done.sql', 'functions/forget_slack_agent_note.sql', 'functions/load_slack_agent_turn_memory.sql',
-  'functions/save_slack_agent_skill.sql', 'functions/get_slack_agent_skill.sql', 'functions/delete_slack_agent_memory.sql',
+  'functions/get_slack_agent_skill.sql', 'functions/delete_slack_agent_memory.sql',
 ];
 const installationsFile = await read('../schemas/public/tables/slack_installations.sql');
 const WORKSPACE = '10000000-0000-4000-8000-000000000001';

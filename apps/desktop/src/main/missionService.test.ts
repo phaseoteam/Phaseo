@@ -29,6 +29,16 @@ describe("desktop missions", () => {
 			value.advance(60000); value.service.tick(); await vi.waitFor(() => expect(value.execute).toHaveBeenCalledTimes(2)); expect(value.execute.mock.calls[1][0].id).not.toBe(task.id); expect(value.runtime.store.getTask(value.template.id).nativeSessionId).toBe("old-native-session");
 		} finally { await value.close(); }
 	});
+	it("runs a schedule made from a thread on someone else's checkout without the repository's own config", async () => {
+		let ran!: () => void; const executed = new Promise<void>(resolve => { ran = resolve; });
+		const value = fixture(async () => { ran(); }); try {
+			const template = value.runtime.store.getTask(value.template.id); template.untrustedCheckout = true; value.runtime.store.saveTask(template);
+			value.service.command({ type: "run", id: value.mission.id });
+			await executed;
+			expect(value.execute).toHaveBeenCalledOnce();
+			expect(value.execute.mock.calls[0][0]).toMatchObject({ missionId: value.mission.id, untrustedCheckout: true });
+		} finally { await value.close(); }
+	});
 	it("posts each run in its chat when bound to one, skips a busy chat, and can go back to a new chat each run", async () => {
 		const value = fixture(); try {
 			const saved = value.service.command({ type: "save", id: value.mission.id, title: value.mission.title, prompt: value.mission.prompt, templateTaskId: value.template.id, threadTaskId: value.template.id, schedule: value.mission.schedule }).find(mission => mission.id === value.mission.id)!;

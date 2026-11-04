@@ -53,6 +53,13 @@ export type ManagementToolDefinition = {
 	body?: (input: Input) => Record<string, unknown>;
 	/** A secret that the API returns once and never again. */
 	oneTimeSecret?: { label: string; read: (payload: Record<string, unknown>) => unknown };
+	/**
+	 * Creates a credential or key, or a place the workspace's data goes: as hard to take back as a delete (a leaked key,
+	 * traces already sent), so it's marked destructive and clients confirm it like one.
+	 */
+	sensitive?: true;
+	/** Sends the workspace's data to an endpoint outside Phaseo (a webhook URL, an observability destination). */
+	external?: true;
 };
 
 // Fields that hold credentials or their encrypted form. They are removed from
@@ -243,6 +250,7 @@ export const managementTools: ManagementToolDefinition[] = [
 		path: () => "/v1/keys",
 		body: bodyWithout(),
 		oneTimeSecret: { label: "API key", read: (payload) => readSecret(payload, "key") },
+		sensitive: true,
 	},
 	{
 		name: "api_key_update",
@@ -419,6 +427,7 @@ export const managementTools: ManagementToolDefinition[] = [
 		},
 		path: () => "/v1/byok",
 		body: bodyWithout(),
+		sensitive: true,
 	},
 	{
 		name: "provider_key_update",
@@ -659,6 +668,8 @@ export const managementTools: ManagementToolDefinition[] = [
 		path: () => "/v1/webhook-endpoints",
 		body: bodyWithout(),
 		oneTimeSecret: { label: "webhook signing secret", read: (payload) => readSecret(payload, "signing_secret") },
+		sensitive: true,
+		external: true,
 	},
 	{
 		name: "webhook_delete",
@@ -704,6 +715,8 @@ export const managementTools: ManagementToolDefinition[] = [
 		},
 		path: () => "/v1/observability/destinations",
 		body: bodyWithout(),
+		sensitive: true,
+		external: true,
 	},
 	{
 		name: "observability_destination_delete",
@@ -721,10 +734,11 @@ export function managementAnnotations(definition: ManagementToolDefinition) {
 	const readOnly = definition.effect === "read";
 	return {
 		readOnlyHint: readOnly,
-		// Updates replace existing state and deletes remove it; clients should confirm both.
-		destructiveHint: definition.effect === "update" || definition.effect === "delete",
+		// Updates replace existing state and deletes remove it; clients should confirm both, and creates of keys,
+		// credentials and destinations, which can't be taken back either.
+		destructiveHint: definition.effect === "update" || definition.effect === "delete" || definition.sensitive === true,
 		idempotentHint: definition.idempotent ?? definition.effect !== "create",
-		openWorldHint: false,
+		openWorldHint: definition.external === true,
 	};
 }
 
