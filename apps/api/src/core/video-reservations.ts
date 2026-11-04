@@ -129,6 +129,8 @@ export async function reserveVideoGenerationCredits(args: {
 	seconds?: number | null;
 	pricingCard?: PriceCard | null;
 	requestOptions?: Record<string, unknown>;
+	/** Estimated token meters for a model billed by tokens; see computeVideoPricedUsage. */
+	providerUsageMeters?: Record<string, number> | null;
 	isByok?: boolean;
 }): Promise<VideoReservationResult> {
 	const reservationId = `${VIDEO_RESERVATION_PREFIX}${args.videoId}`;
@@ -149,6 +151,7 @@ export async function reserveVideoGenerationCredits(args: {
 		seconds,
 		card: args.pricingCard,
 		model: args.model,
+		providerUsageMeters: args.providerUsageMeters,
 		requestOptions: {
 			...(args.requestOptions ?? {}),
 			...buildVideoPricingRequestOptions({

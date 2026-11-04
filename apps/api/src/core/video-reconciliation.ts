@@ -2,6 +2,7 @@
 // Why: Webhooks are not guaranteed for every provider/state transition.
 // How: Reads pending jobs and checks provider-native status APIs.
 
+import { normalizeGoogleInteractionVideoPayload } from "@providers/google-video/interactions";
 import { getBindings } from "@/runtime/env";
 import {
 	isOpenAICompatProvider,
@@ -492,7 +493,8 @@ async function fetchGoogleAiStudioVideoStatus(job: VideoJobRecord): Promise<Vide
 		}
 		return null;
 	}
-	const json = await res.json().catch(() => null);
+	// Gemini Omni jobs are Interactions; read them as operations.
+	const json = normalizeGoogleInteractionVideoPayload(await res.json().catch(() => null));
 	if (!json || typeof json !== "object") return null;
 
 	const done = Boolean((json as any).done);
@@ -550,6 +552,7 @@ async function fetchGoogleAiStudioVideoStatus(job: VideoJobRecord): Promise<Vide
 			googleOperationName: operationName,
 			...(generatedVideoUri ? { googleVideoUri: generatedVideoUri } : {}),
 			...(generatedVideoMimeType ? { googleVideoMimeType: generatedVideoMimeType } : {}),
+			...((json as any)?.usageMeters ? { googleUsageMeters: (json as any).usageMeters } : {}),
 		},
 		raw: json,
 	};
