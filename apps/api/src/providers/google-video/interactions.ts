@@ -59,6 +59,24 @@ export type NormalizedGoogleOmniRequest = {
 	inputImageCount: number;
 };
 
+const OMNI_RESOLUTION_BY_SHORT_EDGE: Record<number, OmniResolution> = { 360: "360p", 720: "720p", 1080: "1080p", 2160: "4k" };
+
+/**
+ * Accepts Google's names (360p, 720p, 1080p, 4k) and pixel sizes such as
+ * 1280x720 or 720x1280, which OpenAI-style clients and the playground send; a
+ * pixel size also gives the orientation.
+ */
+function parseOmniSize(value: string): { resolution: string; aspectRatio?: "16:9" | "9:16" } {
+	const normalized = value.trim().toLowerCase();
+	const pixels = normalized.match(/^(\d+)\s*[x*×]\s*(\d+)$/);
+	if (!pixels) return { resolution: normalized === "2160p" ? "4k" : normalized };
+	const width = Number(pixels[1]);
+	const height = Number(pixels[2]);
+	const resolution = OMNI_RESOLUTION_BY_SHORT_EDGE[Math.min(width, height)];
+	if (!resolution || width * 9 !== height * 16 && height * 9 !== width * 16) return { resolution: normalized };
+	return { resolution, aspectRatio: width >= height ? "16:9" : "9:16" };
+}
+
 function referenceSource(reference: NonNullable<IRVideoGenerationRequest["inputReferences"]>[number]): unknown {
 	return reference.url ?? reference.raw ?? (reference.data
 		? `data:${reference.mimeType ?? "application/octet-stream"};base64,${reference.data}`
@@ -129,15 +147,16 @@ export function normalizeGoogleOmniRequest(ir: IRVideoGenerationRequest): Normal
 	const order: Record<OmniMediaSource["role"], number> = { first_frame: 0, last_frame: 1, reference: 2, source: 3 };
 	media.sort((a, b) => order[a.role] - order[b.role]);
 
-	const rawResolution = (resolveVideoSize({ size: ir.size, resolution: ir.resolution }) ?? "720p").toLowerCase();
+	const parsedSize = parseOmniSize(resolveVideoSize({ size: ir.size, resolution: ir.resolution }) ?? "720p");
+	const rawResolution = parsedSize.resolution;
 	if (!(OMNI_RESOLUTIONS as readonly string[]).includes(rawResolution)) {
-		throw new InvalidGoogleVideoRequestError("Gemini Omni resolution must be 360p, 720p, 1080p, or 4k.");
+		throw new InvalidGoogleVideoRequestError("Gemini Omni size must be 360p, 720p, 1080p or 4k, or a 16:9 or 9:16 pixel size such as 1280x720.");
 	}
 	const seconds = toGoogleVideoDurationSeconds(ir) ?? OMNI_DEFAULT_SECONDS;
 	if (!Number.isInteger(seconds) || seconds < OMNI_MIN_SECONDS || seconds > OMNI_MAX_SECONDS) {
 		throw new InvalidGoogleVideoRequestError("Gemini Omni duration must be a whole number of seconds from 3 to 10.");
 	}
-	const aspectRatio = ir.aspectRatio ?? ir.ratio ?? "16:9";
+	const aspectRatio = ir.aspectRatio ?? ir.ratio ?? parsedSize.aspectRatio ?? "16:9";
 	if (aspectRatio !== "16:9" && aspectRatio !== "9:16") {
 		throw new InvalidGoogleVideoRequestError("Gemini Omni aspect ratio must be 16:9 or 9:16.");
 	}

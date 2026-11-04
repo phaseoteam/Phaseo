@@ -239,3 +239,15 @@ describe("roomModelSettings", () => {
 		expect(getModerationThreshold({ scoreThreshold: 5 })).toBe(1);
 	});
 });
+
+describe("Gemini Omni video settings", () => {
+	test("offers Google's resolutions and every duration from 3 to 10 seconds", () => {
+		expect(getVideoModelSchema("google/gemini-omni-flash")).toMatchObject({
+			sizeOptions: ["720p", "360p", "1080p", "4k"],
+			durationOptions: [3, 4, 5, 6, 7, 8, 9, 10],
+			maxCount: 1,
+		});
+		expect(buildVideoRequestOptions("google/gemini-omni-flash", { duration: 10, size: "4k", n: 1 }))
+			.toEqual({ duration: 10, size: "4k", n: 1 });
+	});
+});

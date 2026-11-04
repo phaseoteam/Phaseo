@@ -1,3 +1,4 @@
+import { getDefaultVideoRoomParams } from "@/lib/chat/roomModelSettings";
 import type { QuickstartRequestContext } from "./requestContext";
 
 type RoutingMode = "price" | "latency" | "throughput";
@@ -130,13 +131,17 @@ export function buildExamplePayload(
 				image_url: "https://assets.phaseo.app/sample-image.png",
 			};
 		case "video.generations":
-		case "video.generation":
+		case "video.generation": {
+			// The model's own default length and size: the API rejects duration_seconds,
+			// and each video model accepts different durations and sizes.
+			const { duration, size } = getDefaultVideoRoomParams(model);
 			return {
 				model,
 				prompt: "An engineer exploring a real-time operations room, charts updating smoothly, confident tone.",
-				duration_seconds: 6,
-				aspect_ratio: "16:9",
+				duration,
+				size,
 			};
+		}
 		case "music.generate":
 			return {
 				model,

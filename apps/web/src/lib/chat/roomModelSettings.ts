@@ -235,6 +235,14 @@ export function getVideoModelSchema(modelId: string): VideoModelSchema {
 			maxCount: 1,
 		};
 	}
+	if (modelIdIncludes(modelId, ["gemini-omni"])) {
+		// Gemini Omni: any whole duration from 3 to 10 seconds at every resolution.
+		return {
+			sizeOptions: ["720p", "360p", "1080p", "4k"],
+			durationOptions: [3, 4, 5, 6, 7, 8, 9, 10],
+			maxCount: 1,
+		};
+	}
 	if (modelIdIncludes(modelId, ["veo-3.1", "veo-3-1"])) {
 		return {
 			sizeOptions: ["720p", "1080p", "4k"],

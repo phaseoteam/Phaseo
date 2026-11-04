@@ -89,3 +89,16 @@ describe("Decisions quickstart", () => {
 		expect(python).toContain('"false": "The request can follow');
 	});
 });
+
+describe("Video quickstart", () => {
+	test.each([
+		["google/gemini-omni-flash", 3, "720p"],
+		["google/veo-3.1", 4, "720p"],
+		["openai/sora-2", 4, "720x1280"],
+		["minimax/hailuo-2.3", 6, "768P"],
+	])("sends %s a duration and size it accepts, never duration_seconds", (model, duration, size) => {
+		const payload = buildExamplePayload("video.generation", model);
+		expect(payload).toMatchObject({ model, duration, size });
+		expect(payload).not.toHaveProperty("duration_seconds");
+	});
+});
