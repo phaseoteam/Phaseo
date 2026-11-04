@@ -9,7 +9,9 @@
 -- an image output on DeepSeek V3.2, a text output on embedding models, image input
 -- on the text-only MiniMax Text 01 and Qwen3 30B A3B Instruct 2507, and video input
 -- and text output on Qwen-Image-Edit. Kling 2 Master and Kling 3 routes have no
--- input modalities, so text and image input come from the model type.
+-- input modalities, so text and image input come from the model type. Cohere's
+-- routes list text only, but Cohere documents Embed V4 and the four Embed v3
+-- models as accepting text and images, so those five get both.
 --
 -- Gateway routing does not read these columns: request context and modality
 -- filtering use v2_model_provider_routes. They feed the catalogue (/v1/models
@@ -40,11 +42,11 @@ values
   ($d$cohere/command-a-reasoning$d$::text, array['text']::text[], array['text']::text[]),
   ($d$cohere/command-a-translate$d$::text, array['text']::text[], array['text']::text[]),
   ($d$cohere/command-a-vision$d$::text, array['text','image']::text[], array['text']::text[]),
-  ($d$cohere/embed-english-light-v3$d$::text, array['text']::text[], array['embeddings']::text[]),
-  ($d$cohere/embed-english-v3$d$::text, array['text']::text[], array['embeddings']::text[]),
-  ($d$cohere/embed-multilingual-light-v3$d$::text, array['text']::text[], array['embeddings']::text[]),
-  ($d$cohere/embed-multilingual-v3$d$::text, array['text']::text[], array['embeddings']::text[]),
-  ($d$cohere/embed-v4$d$::text, array['text']::text[], array['embeddings']::text[]),
+  ($d$cohere/embed-english-light-v3$d$::text, array['text','image']::text[], array['embeddings']::text[]),
+  ($d$cohere/embed-english-v3$d$::text, array['text','image']::text[], array['embeddings']::text[]),
+  ($d$cohere/embed-multilingual-light-v3$d$::text, array['text','image']::text[], array['embeddings']::text[]),
+  ($d$cohere/embed-multilingual-v3$d$::text, array['text','image']::text[], array['embeddings']::text[]),
+  ($d$cohere/embed-v4$d$::text, array['text','image']::text[], array['embeddings']::text[]),
   ($d$cohere/rerank-english-v3$d$::text, array['text']::text[], null::text[]),
   ($d$cohere/rerank-multilingual-v3$d$::text, array['text']::text[], null::text[]),
   ($d$cohere/rerank-v3.5$d$::text, array['text']::text[], null::text[]),
