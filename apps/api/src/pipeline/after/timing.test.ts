@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { PipelineContext } from "../before/types";
 import {
 	buildResponseTimeline,
+	buildRoutingSteps,
 	resolveBeforeLatencyMs,
 	resolveExecuteTotalLatencyMs,
 	resolveFailoverMs,
@@ -122,6 +123,71 @@ describe("after timing helpers", () => {
 		});
 
 		expect(resolveNonStreamLatencyMs(ctx, 25)).toBeNull();
+	});
+});
+
+describe("routing steps", () => {
+	it("stores each pre-dispatch step from the timer snapshot, rounded to 0.1 ms, with the context cache status", () => {
+		const ctx = buildContext({
+			timing: {
+				admission: 1.234,
+				before_start: 31.26,
+				guardAuth: 4.04,
+				guardJson: 0.31,
+				guardZod: 0.88,
+				guardModel: 0.12,
+				guardContext: 18.75,
+				context_cache_read: 6.5,
+				context_rpc: 11.02,
+				fetchWorkspacePolicy: 7.9,
+				resolveTestingMode: 0.4,
+				execute_guard_candidates: 0.2,
+				execute_guard_pricing: 0.05,
+				execute_rank_providers: 2.36,
+				// After dispatch, or not a routing step: never stored.
+				adapter_roundtrip_ms: 950,
+				after_calculate_pricing: 3,
+				internal_latency_ms: 40,
+			},
+		});
+		ctx.meta.beforeContextCacheStatus = "miss";
+		expect(buildRoutingSteps(ctx)).toEqual({
+			admission: 1.2,
+			before: 31.3,
+			auth: 4,
+			parse: 0.3,
+			validate: 0.9,
+			model: 0.1,
+			context: 18.8,
+			context_cache_read: 6.5,
+			context_db: 11,
+			workspace_policy: 7.9,
+			testing_mode: 0.4,
+			candidates: 0.2,
+			pricing: 0.1,
+			ranking: 2.4,
+			context_cache: "miss",
+		});
+	});
+
+	it("adds the steps to the response timeline next to routing_ms", () => {
+		const ctx = buildContext({ timing: { guardAuth: 2, guardContext: 5 } });
+		ctx.meta.timeToUpstreamRequestMs = 12;
+		ctx.meta.beforeContextCacheStatus = "hit";
+		expect(buildResponseTimeline(ctx)).toEqual({
+			version: 1,
+			routing_ms: 12,
+			failover_ms: null,
+			steps: { auth: 2, context: 5, context_cache: "hit" },
+		});
+	});
+
+	it("leaves the timeline unchanged when there is no snapshot, and skips invalid durations", () => {
+		const ctx = buildContext();
+		expect(buildRoutingSteps(ctx)).toBeNull();
+		expect(buildResponseTimeline(ctx)).not.toHaveProperty("steps");
+		ctx.timing = { guardAuth: Number.NaN, guardContext: -1, adapter_roundtrip_ms: 900 };
+		expect(buildRoutingSteps(ctx)).toBeNull();
 	});
 });
 
