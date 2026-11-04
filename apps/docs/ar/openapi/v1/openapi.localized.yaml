@@ -11839,7 +11839,8 @@ components:
         properties:
           type: object
           additionalProperties:
-            $ref: '#/components/schemas/ParameterSpec'
+            type: object
+            additionalProperties: true
         when:
           type: array
           items:

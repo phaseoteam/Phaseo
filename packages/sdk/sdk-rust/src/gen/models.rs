@@ -1528,6 +1528,7 @@ pub struct FusionToolDefinition {
 pub struct GatewayCapabilities {
 	pub endpoints: Option<Vec<String>>,
 	pub parameter_details: HashMap<String, String>,
+	pub parameter_specs: Option<HashMap<String, String>>,
 	pub parameters: Vec<String>,
 }
 
@@ -2711,6 +2712,79 @@ pub struct OpenAIWebSearchToolDefinition {
 pub type OrganisationId = JsonValue;
 
 pub type OrganisationIdList = JsonValue;
+
+pub struct ParameterDimensions {
+	pub aspect_ratios: Option<Vec<String>>,
+	pub max: Option<f64>,
+	pub max_aspect_ratio: Option<String>,
+	pub max_height: Option<f64>,
+	pub max_pixels: Option<f64>,
+	pub max_width: Option<f64>,
+	pub min: Option<f64>,
+	pub min_pixels: Option<f64>,
+	pub multiple_of: Option<f64>,
+}
+
+pub struct ParameterOption {
+	pub description: Option<String>,
+	pub label: Option<String>,
+	pub value: String,
+}
+
+pub struct ParameterRule {
+	pub default: Option<String>,
+	pub r#if: HashMap<String, String>,
+	pub max: Option<f64>,
+	pub message: Option<String>,
+	pub min: Option<f64>,
+	pub step: Option<f64>,
+	pub supported: Option<bool>,
+	pub values: Option<Vec<String>>,
+}
+
+pub struct ParameterSpec {
+	pub alias_of: Option<String>,
+	pub aliases: Option<Vec<String>>,
+	pub always_on: Option<bool>,
+	pub default: Option<String>,
+	pub dimensions: Option<HashMap<String, String>>,
+	pub extra: Option<HashMap<String, String>>,
+	pub format: Option<String>,
+	pub formats: Option<Vec<String>>,
+	pub item_types: Option<Vec<String>>,
+	pub max: Option<f64>,
+	pub max_file_size_bytes: Option<f64>,
+	pub max_items: Option<f64>,
+	pub max_length: Option<f64>,
+	pub max_tokens: Option<f64>,
+	pub media: Option<String>,
+	pub min: Option<f64>,
+	pub min_items: Option<f64>,
+	pub min_length: Option<f64>,
+	pub multiple_of: Option<f64>,
+	pub notes: Option<String>,
+	pub options: Option<Vec<HashMap<String, String>>>,
+	pub properties: Option<HashMap<String, String>>,
+	pub provider_default: Option<String>,
+	pub required: Option<bool>,
+	pub requires: Option<Vec<String>>,
+	pub source: Option<HashMap<String, String>>,
+	pub step: Option<f64>,
+	pub support_level: Option<String>,
+	pub supported: bool,
+	pub r#type: Option<String>,
+	pub upstream_name: Option<String>,
+	pub upstream_values: Option<Vec<String>>,
+	pub values: Option<Vec<String>>,
+	pub when: Option<Vec<HashMap<String, String>>>,
+}
+
+pub struct ParameterSpecs {
+}
+
+pub type ParameterType = JsonValue;
+
+pub type ParameterValue = JsonValue;
 
 pub type ParseBlock = JsonValue;
 
@@ -3930,6 +4004,7 @@ pub struct VideoModelCapability {
 
 pub struct VideoModelProviderCapability {
 	pub id: Option<String>,
+	pub parameter_specs: Option<HashMap<String, String>>,
 	pub supported_parameters: Option<Vec<String>>,
 	pub supported_parameters_detail: Option<HashMap<String, String>>,
 	pub supported_params: Option<Vec<String>>,
