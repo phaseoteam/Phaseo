@@ -300,7 +300,16 @@ describe("openai text executor HTTP mode", () => {
 	);
 
 	// https://developers.openai.com/api/docs/models/gpt-5.5: none, low, medium, high, xhigh.
-	it.each([["gpt-5.5", "xhigh", "xhigh"], ["gpt-5.5", "none", "none"], ["gpt-5.5-pro", "low", "medium"], ["gpt-5.3-codex", "none", "low"]] as const)(
+	// https://developers.openai.com/api/docs/models/gpt-6.1-terra: none, low, medium, high, xhigh, max.
+	it.each([
+		["gpt-5.5", "xhigh", "xhigh"],
+		["gpt-5.5", "none", "none"],
+		["gpt-5.5-pro", "low", "medium"],
+		["gpt-5.3-codex", "none", "low"],
+		["gpt-6.1-terra", "max", "max"],
+		["gpt-6.1-terra", "xhigh", "xhigh"],
+		["gpt-6.1-terra", "none", "none"],
+	] as const)(
 		"sends %s the documented reasoning effort (%s -> %s)",
 		async (model, effort, expected) => {
 			const mock = installFetchMock([{
@@ -1004,6 +1013,50 @@ describe("openai text executor HTTP mode", () => {
 		expect(mock.calls[0]?.bodyJson?.model).toBe("gpt-6.1-sol");
 		expect(mock.calls[0]?.bodyJson?.reasoning).toMatchObject({
 			effort: "max",
+			mode: "pro",
+		});
+	});
+
+	it.each([
+		["max", "max"],
+		["none", "low"],
+	] as const)("routes GPT-6.1 Terra Pro through Responses with pro reasoning (%s -> %s)", async (effort, expected) => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_terra61_pro",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-6.1-terra",
+				status: "completed",
+				output: [{
+					type: "message",
+					role: "assistant",
+					content: [{ type: "output_text", text: "ok" }],
+				}],
+				usage: { input_tokens: 2, output_tokens: 1, total_tokens: 3 },
+			}, { status: 200 }),
+		}]);
+
+		const result = await executor({
+			...buildArgs({
+				model: "openai/gpt-6.1-terra-pro",
+				reasoning: { effort },
+			}),
+			providerModelSlug: "gpt-6.1-terra-pro",
+			capabilityParams: {
+				request: {
+					allowlist: ["reasoning.effort", "reasoning.mode", "max_tokens"],
+				},
+			},
+		});
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.bodyJson?.model).toBe("gpt-6.1-terra");
+		expect(mock.calls[0]?.bodyJson?.reasoning).toMatchObject({
+			effort: expected,
 			mode: "pro",
 		});
 	});
