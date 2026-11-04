@@ -105,7 +105,7 @@ type Section = { heading: string; entries: Entry[]; harness?: Harness; older?: n
 type Row = { type: "heading"; key: string; heading: string } | { type: "entry"; key: string; entry: Entry } | { type: "older"; key: string; harness: Harness; older: number };
 const rowHeight = (row: Row) => row.type === "heading" ? 30 : 32;
 
-export function ModelPicker({ selections, onChange, multiple, agents, disabled, className, openEvent, settings, hidden }: {
+export function ModelPicker({ selections, onChange, multiple, agents, disabled, className, openEvent, settings, footer, hidden }: {
 	selections: ModelSelection[];
 	onChange: (selections: ModelSelection[]) => void;
 	/** Ctrl/⌘-click adds models alongside the first, to compare their answers. */
@@ -116,8 +116,10 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	className?: string;
 	/** A window event that opens this picker, sent by the composer's / menu. */
 	openEvent?: string;
-	/** The chosen model's effort and other settings: named after the model on the button, and set below the list. */
-	settings?: { label: string; fast: boolean; panel: ReactNode };
+	/** The chosen model's effort and other settings: named after the model on the button, chosen in a column beside the list, with speed in the footer. */
+	settings?: { label: string; fast: boolean; column?: (modelName: string) => ReactNode; speed?: ReactNode };
+	/** The rest of the footer, such as Permissions in Code. */
+	footer?: ReactNode;
 	/** Agents the chat's project turns off. */
 	hidden?: readonly Harness[];
 }) {
@@ -237,19 +239,21 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	}, [openEvent, disabled]);
 	return <Popover open={open} onOpenChange={openChange}>
 		{harnesses.filter(harness => open || harness === "phaseo").map(harness => <Catalog key={harness} harness={harness} accountId={harness === "phaseo" ? phaseoAccount?.id : undefined} onLoad={onLoad} />)}
-		<PopoverTrigger disabled={disabled} render={<button type="button" aria-label="Choose model" className={cn("flex h-8 max-w-64 items-center gap-1.5 rounded-lg px-2 text-[13px] font-semibold transition-colors hover:bg-muted disabled:opacity-50 data-popup-open:bg-muted", className)} />}>
+		<PopoverTrigger disabled={disabled} render={<button type="button" aria-label="Choose model" data-composer-model-trigger className={cn("group flex h-7 max-w-64 min-w-0 shrink items-center gap-1.5 rounded-md px-2 text-[13px] font-medium text-foreground/80 transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50 data-popup-open:bg-muted data-popup-open:text-foreground", className)} />}>
 			{selections.length > 1
 				? <><ModelStack models={selections} /><span className="truncate">{selections.length} models</span></>
-				: first ? <><span className="flex size-5 items-center justify-center [&_img]:size-4 [&_.harness-logo]:size-4"><ModelLogo model={knownModel(first.model) ?? { id: first.model, name: first.model }} harness={first.harness} /></span><span className="truncate">{label(first)}</span>
-					{settings?.label && <span data-model-settings className="shrink-0 font-medium text-muted-foreground">{settings.label}</span>}
+				: first ? <><span className="flex size-4 shrink-0 items-center justify-center [&_img]:size-4 [&_.harness-logo]:size-4"><ModelLogo model={knownModel(first.model) ?? { id: first.model, name: first.model }} harness={first.harness} /></span><span className="truncate">{label(first)}</span>
+					{settings?.label && <span data-model-settings className="-ml-0.5 shrink-0 text-muted-foreground group-hover:text-foreground group-data-popup-open:text-foreground">{settings.label}</span>}
 					{settings?.fast && <Zap aria-label="Fast" className={cn("size-3.5 shrink-0 fill-current", first.harness === "claude" ? "text-[#d97757]" : "text-amber-500")} />}</>
 				: <span className="text-muted-foreground">Choose a model</span>}
-			<ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
 		</PopoverTrigger>
 		{/* Stays above or below the button and shrinks to fit below the title bar, rather than sliding sideways over the composer. */}
-			<PopoverContent align="end" side="top" sideOffset={8} collisionAvoidance={{ side: "flip", align: "shift", fallbackAxisSide: "none" }} collisionPadding={{ top: 52, right: 8, bottom: 8, left: 8 }} className="max-h-(--available-height) w-[min(92vw,520px)] gap-0 overflow-hidden rounded-xl p-0">
+			<PopoverContent align="end" side="top" sideOffset={8} collisionAvoidance={{ side: "flip", align: "shift", fallbackAxisSide: "none" }} collisionPadding={{ top: 52, right: 8, bottom: 8, left: 8 }} className={cn("max-h-(--available-height) gap-0 overflow-hidden rounded-md p-0", settings?.column ? "w-[min(94vw,712px)]" : "w-[min(92vw,520px)]")}>
+			<div role={settings ? "group" : undefined} aria-label={settings ? "Model settings" : undefined} className="flex min-h-0 flex-col">
+			<div className="flex min-h-0">
+			<div className="flex min-w-0 flex-1 flex-col">
 				<div className="p-2 pb-1">
-				<div className="flex h-8 items-center gap-2 rounded-lg border border-input bg-input/50 px-2.5">
+				<div className="flex h-8 items-center gap-2 rounded-md border border-input bg-input/50 px-2.5">
 					<SearchIcon className="size-4 shrink-0 opacity-50" />
 					<input autoFocus role="combobox" aria-expanded aria-controls="model-picker-list" aria-autocomplete="list" aria-activedescendant={rows[activeIndex] ? `model-row-${activeIndex}` : undefined}
 						aria-label="Search models" placeholder="Search models" value={query} onChange={event => setQuery(event.target.value)} onKeyDown={onSearchKey}
@@ -303,7 +307,11 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 				: "No models found."}</p>}
 			{loading.map(harness => <div key={harness} className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground"><LoaderCircle className="size-3.5 animate-spin" />Loading {harnessNames[harness]} models…</div>)}
 			{errors.map(error => <p key={error} className="px-3 py-2 text-xs text-destructive">{error}</p>)}
-			{settings?.panel}
+			</div>
+			{settings?.column && first && <div data-model-picker-effort className="flex min-h-0 w-48 shrink-0 flex-col border-l border-border/70 bg-muted/40">{settings.column(label(first))}</div>}
+			</div>
+			{(settings?.speed || footer) && <div className="flex flex-wrap items-center gap-2 border-t border-border/70 bg-muted/40 px-3 py-2">{settings?.speed}{footer}</div>}
+			</div>
 	</PopoverContent>
 	</Popover>;
 }

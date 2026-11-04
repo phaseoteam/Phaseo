@@ -1,8 +1,8 @@
 import { useRouter } from "expo-router";
 import { Plus, SlidersHorizontal } from "lucide-react-native";
-import { Pressable, ScrollView, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { Logo } from "@/components/Logo";
-import { Icon, Text } from "@/components/ui";
+import { HorizontalScroll, Icon, Text } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { useModelLabels } from "./models";
 import { changedSettingsCount, type ModelSettings } from "./settings";
@@ -42,7 +42,7 @@ export function ModelChipRow({ chatId, models, settings, className }: { chatId: 
   const openSettings = useOpenModelSettings(chatId);
   const openPicker = useOpenModelPicker(chatId);
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" className={cn("grow-0", className)} contentContainerClassName="items-center gap-1.5 px-4">
+    <HorizontalScroll keyboardShouldPersistTaps="handled" className={cn("grow-0", className)} contentContainerClassName="items-center gap-1.5 px-4">
       {models.map((model) => {
         const { label, orgId, orgName } = labels(model, settings[model]);
         const changed = changedSettingsCount(settings[model]) > 0;
@@ -65,6 +65,6 @@ export function ModelChipRow({ chatId, models, settings, className }: { chatId: 
         <Icon icon={Plus} tone="muted" size={16} />
         {models.length < 2 ? <Text variant="small" className="font-medium text-muted-foreground">{models.length ? "Compare" : "Add model"}</Text> : null}
       </Pressable>
-    </ScrollView>
+    </HorizontalScroll>
   );
 }

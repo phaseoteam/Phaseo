@@ -32,3 +32,6 @@ export function useFavourites(options: ChatModelOption[]) {
 export function toggleFavouriteModel(current: string[], modelId: string) {
   favouritesStore.set(toggleFavourite(current, modelId));
 }
+
+/** The filled star's colour in each mode, shared by the model pickers. */
+export const STAR_COLOURS = { light: "#d97706", dark: "#fbbf24" } as const;

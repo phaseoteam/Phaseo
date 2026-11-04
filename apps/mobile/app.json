@@ -40,6 +40,13 @@
         }
       ],
       "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Phaseo uses the camera to scan the code that pairs it with Phaseo on your computer.",
+          "recordAudioAndroid": false
+        }
+      ],
       "expo-sqlite",
       [
         "expo-font",

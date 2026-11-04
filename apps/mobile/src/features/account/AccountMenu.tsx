@@ -3,7 +3,7 @@ import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
 import { useFocusEffect, usePathname, useRouter, type Href } from "expo-router";
 import {
-  Activity, Bell, BookOpen, ChartNoAxesColumn, ExternalLink, FileText, Gauge, HardDrive, Info, KeyRound, LogOut, MessageSquareText, Palette, Plus, Scale,
+  Activity, Bell, BookOpen, ChartNoAxesColumn, ExternalLink, FileText, Gauge, HardDrive, Info, KeyRound, LogOut, MessageSquareText, Monitor, Palette, Plus, Scale,
   Shield, ShieldAlert, ShieldCheck, Sparkles, UserX, Users, Wallet, type LucideIcon,
 } from "lucide-react-native";
 import { useCallback, useRef, useState, type ReactNode } from "react";
@@ -12,6 +12,7 @@ import { Logo } from "@/components/Logo";
 import { useOpenDetail } from "@/components/shell/SplitStack";
 import { Button, confirm, Header, Icon, Row, Screen, Section, Text, toast } from "@/components/ui";
 import { readStorageReport } from "@/features/chat/deviceStorage";
+import { useLayout } from "@/hooks/useLayout";
 import { FULL_VERSION_LABEL, VERSION_LABEL } from "@/lib/appInfo";
 import { formatBytes, formatNumber, formatUsd, nanosToUsd } from "@/lib/format";
 import { haptic } from "@/lib/haptics";
@@ -19,6 +20,7 @@ import { openWeb } from "@/lib/web";
 import { useAppearance } from "@/providers/AppearanceProvider";
 import { useAuth } from "@/providers/AuthProvider";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
+import { profileName } from "./profile";
 import { useBalance, useKeys, useStatus, useTeam, useTwoFactor, useWeekSpend } from "./queries";
 import { StatusDot } from "./StatusScreen";
 import { nextTap, TAPS_TO_OPEN, type TapRun } from "./versionArt";
@@ -51,6 +53,7 @@ export function AccountMenu() {
   const router = useRouter();
   const pathname = usePathname();
   const openDetail = useOpenDetail("/account");
+  const { split } = useLayout();
   const { session, signOut } = useAuth();
   const { workspace, workspaceId, workspaces } = useWorkspace();
   const balance = useBalance(session ? workspaceId : null);
@@ -60,7 +63,7 @@ export function AccountMenu() {
   const twoFactor = useTwoFactor();
   const status = useStatus();
   const [storage, setStorage] = useState<{ chats: number; bytes: number } | null>(null);
-  // Chats change in the Chat tab, so the figure is read again whenever the menu comes back into view.
+  // Chats change in Chat, so the figure is read again whenever the menu comes back into view.
   useFocusEffect(useCallback(() => {
     try {
       const report = readStorageReport();
@@ -92,12 +95,12 @@ export function AccountMenu() {
     const entry = ITEMS[key];
     return <Row key={key} icon={entry.icon} title={entry.title} subtitle={extra.subtitle} value={extra.value} trailing={extra.trailing} selected={pathname === entry.href} onPress={() => openDetail(entry.href)} last={extra.last} />;
   };
-  const name = session ? String(session.user.user_metadata?.full_name ?? session.user.user_metadata?.name ?? session.user.user_metadata?.user_name ?? "").trim() || null : null;
+  const name = session ? profileName(session.user) : null;
   const email = session?.user.email ?? null;
 
   return (
     <Screen>
-      <Header large title="Account" />
+      <Header large sidebar back={!split} title="Account" />
       <ScrollView contentContainerClassName="pb-16">
         {session ? (
           <>
@@ -159,7 +162,9 @@ export function AccountMenu() {
         <Section title="This device">
           {item("notifications")}
           {item("appearance")}
-          {item("chats", { value: storage ? `${formatNumber(storage.chats)} · ${formatBytes(storage.bytes)}` : null, last: true })}
+          {item("chats", { value: storage ? `${formatNumber(storage.chats)} · ${formatBytes(storage.bytes)}` : null })}
+          {/* A full-screen flow of its own (pairing), so it opens above the sidebar on tablets too. */}
+          <Row icon={Monitor} title="Desktops" subtitle="Pair, rename and remove your computers" onPress={() => router.push("/desktops")} last />
         </Section>
         <Section title="Help">
           {item("status", { trailing: status.data ? <View className="max-w-[55%] flex-row items-center gap-1.5"><StatusDot state={status.data.state} /><Text variant="muted" numberOfLines={1}>{status.data.label}</Text></View> : null })}
