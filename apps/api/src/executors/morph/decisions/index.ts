@@ -12,7 +12,8 @@ import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "@p
 import { upstreamTestHeaders } from "@providers/shared/testing";
 
 const MAX_IMAGES = 16;
-const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+// "at most 8,000,000 decoded bytes per image" (https://docs.morphllm.com/api-reference/endpoint/systemone).
+const MAX_IMAGE_BYTES = 8_000_000;
 const DATA_URL = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/]+={0,2})$/i;
 const GENERATION_CONTROLS = ["temperature", "top_p", "max_tokens", "max_output_tokens", "max_completion_tokens", "reasoning", "reasoning_effort", "tools", "tool_choice"];
 
@@ -29,7 +30,7 @@ function decodedBytes(base64: string): number {
 	return Math.floor((base64.length * 3) / 4) - padding;
 }
 
-// Reflex takes inline base64 data URLs only (PNG, JPEG, WebP; at most 16, 8 MB each).
+// Reflex takes inline base64 data URLs only (PNG, JPEG, WebP; at most 16, 8,000,000 bytes each).
 // Remote URLs, audio and video return 422 upstream, so reject them locally.
 function imageUrls(ir: IRDecisionsRequest): string[] | string {
 	const urls = (ir.images ?? []).map(image => typeof image === "string" ? image : `data:${image.content_type};base64,${image.base64}`);
@@ -37,7 +38,7 @@ function imageUrls(ir: IRDecisionsRequest): string[] | string {
 	for (const url of urls) {
 		const match = DATA_URL.exec(url);
 		if (!match) return "Morph Reflex images must be PNG, JPEG, or WebP base64 data URLs; remote image URLs are not accepted.";
-		if (decodedBytes(match[2]!) > MAX_IMAGE_BYTES) return "Morph Reflex accepts images up to 8 MB each.";
+		if (decodedBytes(match[2]!) > MAX_IMAGE_BYTES) return "Morph Reflex accepts images up to 8,000,000 bytes each.";
 	}
 	return urls;
 }
@@ -54,7 +55,7 @@ export const executor: ProviderExecutor = async args => {
 	for (const question of Object.values(ir.questions)) {
 		const count = question.criteria ? Object.keys(question.criteria).length : 0;
 		if (!["noul", "choice", "score"].includes(question.type)) return invalid(args, "Morph Reflex supports noul, choice and score questions.");
-		if (question.type === "choice" && count < 2) return invalid(args, "Morph Reflex choice questions need at least 2 options.");
+		if (question.type === "choice" && count < 1) return invalid(args, "Morph Reflex choice questions need at least 1 option.");
 		if (question.type === "score" && (!Array.isArray(question.criteria) || count < 2 || count > 10)) {
 			return invalid(args, "Morph Reflex score questions need an ordered list of 2 to 10 levels.");
 		}

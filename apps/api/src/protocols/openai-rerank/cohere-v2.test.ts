@@ -41,4 +41,15 @@ describe("Cohere v2 rerank protocol fields", () => {
 		expect(ir.usage?.searchUnits).toBeUndefined();
 		expect(encodeOpenAIRerankResponse(ir).usage.input_tokens).toBe(192);
 	});
+
+	it("treats null search units on a token-billed response as absent", () => {
+		const ir = decodeOpenAIRerankResponse({
+			id: "rerank-v5-null",
+			results: [{ index: 0, relevance_score: 0.5 }],
+			meta: { billed_units: { input_tokens: 50, search_units: null } },
+		}, "cohere/rerank-v5.0-fast");
+
+		expect(ir.usage?.inputTokens).toBe(50);
+		expect(ir.usage?.searchUnits).toBeUndefined();
+	});
 });

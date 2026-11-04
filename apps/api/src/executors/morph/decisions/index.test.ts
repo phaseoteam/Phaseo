@@ -121,6 +121,41 @@ describe("Morph Reflex decisions executor", () => {
 	});
 
 	it.each([
+		["an image of exactly 8,000,000 bytes", 8_000_000, 200],
+		["an image one byte over the limit", 8_000_001, 400],
+	])("applies Morph's image size limit: %s", async (_label, bytes, status) => {
+		const base64 = Buffer.alloc(bytes).toString("base64");
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.morphllm.com/v1/systemone",
+			response: reflexResponse({ input_tokens: 10, output_tokens: 0 }),
+		}]);
+		try {
+			const result = await executor(buildArgs({ images: [`data:image/png;base64,${base64}`] }));
+			expect(result.upstream.status).toBe(status);
+		} finally {
+			mock.restore();
+		}
+	});
+
+	it("accepts a choice question with one option", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.morphllm.com/v1/systemone",
+			response: jsonResponse({
+				model: "reflex",
+				answers: { only: { type: "choice", choice: "a", confidence: 1, probabilities: { a: 1 } } },
+				usage: { input_tokens: 10, output_tokens: 0 },
+			}),
+		}]);
+		try {
+			const result = await executor(buildArgs({ questions: { only: { type: "choice", instructions: "Pick", criteria: { a: "Only option" } } } }));
+			expect(mock.calls).toHaveLength(1);
+			expect(result.upstream.status).toBe(200);
+		} finally {
+			mock.restore();
+		}
+	});
+
+	it.each([
 		["remote image URLs", { images: ["https://example.com/a.png"] }],
 		["more than 16 images", { images: Array.from({ length: 17 }, () => PNG) }],
 		["audio", { audio: [{ type: "audio", data: "AAAA", format: "wav" }] }],
