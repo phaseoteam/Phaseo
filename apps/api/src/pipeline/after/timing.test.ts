@@ -193,6 +193,67 @@ describe("routing steps", () => {
 		});
 	});
 
+	it("stores the first attempt's pre-dispatch steps after the before phase, never a later attempt's", () => {
+		const ctx = buildContext({
+			timing: {
+				before_to_execute: 1.04,
+				protocol_detect: 0.2,
+				response_cache_lookup: 3.33,
+				execute_to_attempt: 2.96,
+				attempt_1_to_executor: 561,
+				attempt_1_load_pricecard: 7,
+				attempt_1_rate_limit_policies: 4,
+				attempt_1_free_customer_quota: 555,
+				attempt_1_free_quota_limits: 30,
+				attempt_1_free_quota_counter: 525,
+				attempt_1_breaker: 2,
+				attempt_1_resolve_executor: 0,
+				attempt_1_normalize_ir: 0.4,
+				attempt_1_prompt_cache_key: 1.26,
+				attempt_1_executor_to_dispatch: 15,
+				attempt_1_request_build: 0.7,
+				// A later attempt, the upstream call itself and the executor total: never stored.
+				attempt_2_breaker: 9,
+				attempt_1_upstream_headers: 800,
+				attempt_1_executor_total: 1200,
+			},
+		});
+		expect(buildRoutingSteps(ctx)).toEqual({
+			before_to_execute: 1,
+			protocol: 0.2,
+			response_cache: 3.3,
+			execute_to_attempt: 3,
+			attempt_to_executor: 561,
+			attempt_price_card: 7,
+			attempt_rate_limit_policies: 4,
+			attempt_free_quota: 555,
+			attempt_free_quota_limits: 30,
+			attempt_free_quota_counter: 525,
+			attempt_breaker: 2,
+			attempt_resolve_executor: 0,
+			attempt_normalize: 0.4,
+			attempt_prompt_cache_key: 1.3,
+			attempt_executor_to_dispatch: 15,
+			attempt_request_build: 0.7,
+		});
+	});
+
+	it("reports routing time no sequential step accounts for, only when the whole chain was timed", () => {
+		const chain = { admission: 2, before_start: 46, before_to_execute: 1, execute_to_attempt: 3, attempt_1_to_executor: 561, attempt_1_executor_to_dispatch: 15 };
+		const ctx = buildContext({ timing: { ...chain, guardContext: 46 } });
+		ctx.meta.timeToUpstreamRequestMs = 629;
+		expect(buildResponseTimeline(ctx)).toMatchObject({ routing_ms: 629, unattributed_ms: 1 });
+		// Never negative when the clocks disagree slightly.
+		ctx.meta.timeToUpstreamRequestMs = 620;
+		expect(buildResponseTimeline(ctx)).toMatchObject({ unattributed_ms: 0 });
+		// The first dispatch came from a later attempt (or a non-text surface): no figure.
+		ctx.timing = { ...chain, attempt_1_executor_to_dispatch: undefined } as never;
+		expect(buildResponseTimeline(ctx)).not.toHaveProperty("unattributed_ms");
+		ctx.timing = { ...chain };
+		ctx.meta.timeToUpstreamRequestMs = undefined;
+		expect(buildResponseTimeline(ctx)).not.toHaveProperty("unattributed_ms");
+	});
+
 	it("leaves the timeline unchanged when there is no snapshot, and skips invalid durations", () => {
 		const ctx = buildContext();
 		expect(buildRoutingSteps(ctx)).toBeNull();
