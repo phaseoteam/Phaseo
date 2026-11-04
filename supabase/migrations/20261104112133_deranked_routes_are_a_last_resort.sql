@@ -1,3 +1,4 @@
+-- phaseo:allow-destructive-migration reason: the only matches are the two existing DELETE statements inside public.mutate_v2_admin_model_graph, which this migration recreates unchanged apart from its derank mapping; they remove a model's details and links only when an admin edits that model. No data is deleted by this migration.
 -- A deranked route or capability (stored as 'degraded') is routable as a last resort instead of
 -- being excluded, the public catalogue reports it as a single 'deranked' status, and the admin
 -- editor's single 'deranked' option is stored as 'degraded'. Grants are unchanged.
