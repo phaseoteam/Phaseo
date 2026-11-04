@@ -101,8 +101,13 @@ export function perMillion(model: CardModel, side: "input" | "output"): number |
   return Number.isFinite(rate) && rate >= 0 ? rate * 1_000_000 : null;
 }
 
+// The lowest input and output prices are found separately, so name a provider only
+// when one provider has both (or only one price is listed).
 export function cheapestProviderName(model: CardModel): string | null {
-  const id = model.inputPriceProviderId ?? model.outputPriceProviderId;
+  const input = model.inputPriceProviderId ?? null;
+  const output = model.outputPriceProviderId ?? null;
+  if (input && output && input !== output) return null;
+  const id = input ?? output;
   if (!id) return null;
   return model.providerSupport?.find((item) => item.providerId === id)?.providerName ?? id;
 }

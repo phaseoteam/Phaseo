@@ -342,5 +342,14 @@ if (click)
       [...frame.contentDocument!.querySelectorAll("button")]
         .find((button) => button.textContent === label)
         ?.click();
+      // &roundtrip=1 returns to inline and back, to check the explorer keeps its state.
+      if (params.get("roundtrip"))
+        setTimeout(() => {
+          bridge.setHostContext({ displayMode: "inline" });
+          setTimeout(() => {
+            bridge.setHostContext({ displayMode: "fullscreen" });
+            frame.style.height = "";
+          }, 1000);
+        }, 1000);
     }, 1500),
   );

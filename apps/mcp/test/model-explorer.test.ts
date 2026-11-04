@@ -58,6 +58,12 @@ describe("Inline cards", () => {
     expect(perMillion({ ...model, outputPricePerMillion: 0.095 }, "output")).toBe(0.095);
     expect(perMillion({ ...model, inputPricePerToken: null }, "input")).toBeNull();
     expect(cheapestProviderName(model)).toBe("IonRouter");
+    expect(cheapestProviderName({ ...model, outputPriceProviderId: "ionrouter" })).toBe("IonRouter");
+    // Input and output minima from different providers: no single "via" label.
+    expect(cheapestProviderName({ ...model, outputPriceProviderId: "other" })).toBeNull();
+    expect(
+      cheapestProviderName({ ...model, inputPriceProviderId: null, outputPriceProviderId: "ionrouter" }),
+    ).toBe("IonRouter");
     expect(modalitySummary(["text", "image"], ["text"])).toBe("Text, Image → Text");
     expect(modalitySummary([], [])).toBeNull();
   });

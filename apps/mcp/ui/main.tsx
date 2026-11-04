@@ -14,15 +14,18 @@ import { SelectField } from "./Select";
 
 type Theme = "light" | "dark";
 
+type CompareSeed = { id: number; models: CardModel[] | null };
+
 function Explorer({
   initialModels,
-  initialCompare,
+  seed,
   theme,
 }: {
   initialModels: CardModel[];
-  initialCompare: CardModel[] | null;
+  seed: CompareSeed;
   theme: Theme;
 }) {
+  const initialCompare = seed.models;
   const { status, context } = useBridge();
   const connected = status === "connected";
   const [models, setModels] = useState<CardModel[]>(initialModels);
@@ -55,6 +58,21 @@ function Explorer({
   const linkRequest = useRef(0);
   const request = useRef(0);
   const detailRequest = useRef(0);
+
+  // The explorer stays mounted across display modes, so "Compare these" on a card
+  // replaces the shortlist here, unless a paid comparison run is still going.
+  const appliedSeed = useRef(seed.id);
+  useEffect(() => {
+    if (seed.id === appliedSeed.current) return;
+    appliedSeed.current = seed.id;
+    if (!seed.models || workflowBusyRef.current) return;
+    ++detailRequest.current;
+    setDetail(null);
+    setEstimates({});
+    setSelected(seed.models);
+    setCompare(seed.models.length > 1);
+    setPage("models");
+  }, [seed]);
 
   // A newer models_list result from the conversation replaces the list.
   useEffect(() => {
@@ -634,7 +652,8 @@ function Root() {
   const { status, context, toolCall, result } = useBridge();
   const [graceOver, setGraceOver] = useState(false);
   const [expandedInline, setExpandedInline] = useState(false);
-  const [compareSeed, setCompareSeed] = useState<CardModel[] | null>(null);
+  const [seed, setSeed] = useState<CompareSeed>({ id: 0, models: null });
+  const [explorerMounted, setExplorerMounted] = useState(false);
   useEffect(() => {
     if (status !== "connected") return;
     // Tool arguments arrive just after connecting; wait briefly before deciding
@@ -656,44 +675,56 @@ function Root() {
   }
   const resultModels = card?.kind === "models" ? card.models : NO_MODELS;
 
-  if (
+  const showExplorer =
     fullscreen ||
     expandedInline ||
     status === "failed" ||
-    (status === "connected" && !toolCall && graceOver)
-  )
-    return (
-      <Explorer
-        initialModels={resultModels}
-        initialCompare={compareSeed}
-        theme={theme}
-      />
-    );
-  if (error)
-    return (
+    (status === "connected" && !toolCall && graceOver);
+  // Once opened, the explorer stays mounted (hidden while the card shows) so leaving
+  // fullscreen keeps its shortlist, prompt and any comparison run still in flight.
+  useEffect(() => {
+    if (showExplorer) setExplorerMounted(true);
+  }, [showExplorer]);
+
+  let inline = null;
+  if (showExplorer) {
+    // The explorer is showing; no card.
+  } else if (error)
+    inline = (
       <section className="card">
         <p role="alert" className="card-error">{error}</p>
       </section>
     );
-  if (!card)
-    return (
+  else if (!card)
+    inline = (
       <section className="card" aria-busy="true">
         <p className="card-empty">Loading Phaseo data…</p>
       </section>
     );
-  if (card.kind === "estimate") return <EstimateCard estimate={card.estimate} />;
-  if (card.kind === "credits") return <CreditsCard credits={card.credits} />;
+  else if (card.kind === "estimate") inline = <EstimateCard estimate={card.estimate} />;
+  else if (card.kind === "credits") inline = <CreditsCard credits={card.credits} />;
+  else
+    inline = (
+      <ModelsCard
+        models={card.models}
+        theme={theme}
+        canExpand={status === "connected"}
+        onExpand={async (compare) => {
+          setSeed((current) => ({ id: current.id + 1, models: compare }));
+          if (canOpenFullscreen(context) && (await openFullscreen())) return;
+          setExpandedInline(true);
+        }}
+      />
+    );
   return (
-    <ModelsCard
-      models={card.models}
-      theme={theme}
-      canExpand={status === "connected"}
-      onExpand={async (compare) => {
-        setCompareSeed(compare);
-        if (canOpenFullscreen(context) && (await openFullscreen())) return;
-        setExpandedInline(true);
-      }}
-    />
+    <>
+      {(explorerMounted || showExplorer) && (
+        <div hidden={!showExplorer}>
+          <Explorer initialModels={resultModels} seed={seed} theme={theme} />
+        </div>
+      )}
+      {inline}
+    </>
   );
 }
 
