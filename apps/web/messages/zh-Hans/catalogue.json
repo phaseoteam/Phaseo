@@ -1482,6 +1482,7 @@
 			"chartLabel": "过去 {hours} 小时的模型每小时可用率。可用率：{uptime}。记录的请求数：{count}。",
 			"leastStableProviderLabel": "不使用 Phaseo Routing",
 			"tooltipUptime": "运行时间：",
+			"tooltipFailedRequests": "{count, plural, =0 {没有失败的请求} other {# 个请求中有 {failed, number} 个失败}}",
 			"tooltipWorstProvider": "不使用 Phaseo Routing:",
 			"hourlyAverage": "过去24小时 · 每小时平均值",
 			"routingChartLabel": "过去24小时的模型每小时可用率。Phaseo Routing：{uptime}。{comparison}",
@@ -1616,8 +1617,10 @@
 			"viewLicense": "查看许可证"
 		},
 		"performance": {
-			"noTelemetry": "过去 7 天没有 Gateway 遥测数据",
-			"telemetryHint": "当此模型在所选位置处理 Gateway 流量后，每小时图表会显示在此处。",
+			"noTelemetry": "过去 7 天没有请求",
+			"telemetryHint": "此模型通过 Phaseo 处理请求后，图表会显示在此处。",
+			"noFilteredTelemetry": "{location} 的流量不足，无法发布",
+			"filteredTelemetryHint": "只有当某个位置的请求足够多、无法从中辨认出任何单个客户的流量时，才会显示该位置的图表。选择“所有位置”可查看全部请求。",
 			"filterByLocation": "按 API 位置筛选性能",
 			"providerPerformance": "提供商性能",
 			"last24Hours": "过去 24 小时",

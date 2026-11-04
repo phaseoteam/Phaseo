@@ -14,32 +14,38 @@ import { normalizeModelLicense } from "@/models/license";
 import { withPublicCache, type PublicCachePolicy } from "@/http/cache";
 
 // Public performance and usage telemetry is aggregated, cached, and excludes
-// raw request timestamps, request content, and request identifiers. App
-// attribution remains opt-in and requires ten requests.
-const PUBLIC_PERFORMANCE_MIN_REQUESTS = 20;
-const PUBLIC_CACHE_TELEMETRY_MIN_REQUESTS = 20;
+// raw request timestamps, request content, and request identifiers. A view of
+// all of a model's traffic publishes at any volume. A location, stream-mode or
+// context filter can narrow a chart to one customer's requests, so filtered
+// views, and the location menu that offers those filters, need 20 requests.
+// App attribution remains opt-in and requires ten requests.
+const PUBLIC_UNFILTERED_MIN_REQUESTS = 1;
+const PUBLIC_FILTERED_MIN_REQUESTS = 20;
 const PUBLIC_APP_ATTRIBUTION_MIN_REQUESTS = 10;
 
-function hasPublicPerformanceSample(value: unknown) {
-	return Number(value ?? 0) >= PUBLIC_PERFORMANCE_MIN_REQUESTS;
+function publicPerformanceMinRequests(filters: { cloudflareColo: string | null; streamMode: string | undefined; contextBucket: string | undefined }) {
+	const filtered = Boolean(filters.cloudflareColo)
+		|| (filters.streamMode ?? "all") !== "all"
+		|| (filters.contextBucket ?? "all") !== "all";
+	return filtered ? PUBLIC_FILTERED_MIN_REQUESTS : PUBLIC_UNFILTERED_MIN_REQUESTS;
 }
 
-function hasPublicCacheTelemetrySample(value: unknown) {
-	return Number(value ?? 0) >= PUBLIC_CACHE_TELEMETRY_MIN_REQUESTS;
+function hasPublicSample(value: unknown, minimumRequests: number) {
+	return Number(value ?? 0) >= minimumRequests;
 }
 
-function suppressSmallPublicPerformanceCohorts(value: Record<string, any>): Record<string, any> {
+function suppressSmallPublicPerformanceCohorts(value: Record<string, any>, minimumRequests: number): Record<string, any> {
 	const keep = (entry: unknown, field = "requests") => {
 		if (!entry || typeof entry !== "object") return false;
 		const row = entry as Record<string, unknown>;
-		return hasPublicPerformanceSample(row[field] ?? row.health_requests ?? row.sample_count);
+		return hasPublicSample(row[field] ?? row.health_requests ?? row.sample_count, minimumRequests);
 	};
 	const last24h = value.last_24h && typeof value.last_24h === "object"
-		&& hasPublicPerformanceSample(value.last_24h.total_requests)
+		&& hasPublicSample(value.last_24h.total_requests, minimumRequests)
 		? value.last_24h
 		: {};
 	const prev24h = value.prev_24h && typeof value.prev_24h === "object"
-		&& hasPublicPerformanceSample(value.prev_24h.total_requests)
+		&& hasPublicSample(value.prev_24h.total_requests, minimumRequests)
 		? value.prev_24h
 		: {};
 	return {
@@ -1480,7 +1486,7 @@ publicModelsRouter.get("/:modelId/provider-health", async (c) => {
 		}
 		if (!healthError && Array.isArray(healthData)) {
 			const rows = (healthData as Array<Record<string, unknown>>)
-				.filter((row) => providerIds.includes(String(row.provider_id ?? "")) && hasPublicPerformanceSample(row.health_requests ?? row.requests))
+				.filter((row) => providerIds.includes(String(row.provider_id ?? "")) && hasPublicSample(row.health_requests ?? row.requests, PUBLIC_UNFILTERED_MIN_REQUESTS))
 				.map(({ last_request_at: _lastRequestAt, error_code_counts: rawErrorCounts, ...row }) => {
 					const providerId = publicProviderId(row.provider_id, stealthProviderIds);
 					const allowedErrorCategories = new Set(["authentication", "payment", "model_unavailable", "server", "stream", "other_provider"]);
@@ -1703,7 +1709,7 @@ publicModelsRouter.get("/:modelId/performance/colos", async (c) => {
 			? (result.data as Array<Record<string, unknown>>).map((row) => ({
 				colo: String(row.cloudflare_colo ?? "").trim().toUpperCase(),
 				requests: Number(row.request_count ?? 0),
-			})).filter((row) => CLOUDFLARE_COLO.test(row.colo) && hasPublicPerformanceSample(row.requests))
+			})).filter((row) => CLOUDFLARE_COLO.test(row.colo) && hasPublicSample(row.requests, PUBLIC_FILTERED_MIN_REQUESTS))
 			: [];
 		return withPublicCache(c.json({ modelId, colos }), sectionPolicy("performance", modelId));
 	} catch (error) {
@@ -1728,6 +1734,8 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 	const contextBucket = ["lte_4k", "4k_16k", "16k_64k", "gt_64k"].includes(c.req.query("context") ?? "")
 		? c.req.query("context")
 		: "all";
+	const minimumRequests = publicPerformanceMinRequests({ cloudflareColo, streamMode, contextBucket });
+	const hasSample = (value: unknown) => hasPublicSample(value, minimumRequests);
 	try {
 		const client = getDataClient(c.env);
 		const includeHealth = !cloudflareColo && streamMode === "all" && contextBucket === "all";
@@ -1768,10 +1776,11 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 		]);
 		let performance: Record<string, any> | null = null;
 		if (!v2.error && v2.data && !Array.isArray(v2.data) && typeof v2.data === "object") {
-			performance = suppressSmallPublicPerformanceCohorts(v2.data as Record<string, any>);
+			performance = suppressSmallPublicPerformanceCohorts(v2.data as Record<string, any>, minimumRequests);
 		} else if (v2.error && !/could not find|does not exist|PGRST202/i.test(v2.error.message ?? "")) {
 			throw v2.error;
 		} else throw v2.error ?? new Error("V2 performance query returned an invalid payload");
+		let providerHealthLoaded = false;
 		if (
 			!cloudflareColo &&
 			streamMode === "all" &&
@@ -1781,14 +1790,15 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 			health.data.length > 0 &&
 			performance
 		) {
+			providerHealthLoaded = true;
 			performance = {
 				...performance,
-				provider_uptime_24h: (health.data as Array<Record<string, unknown>>).filter((row) => hasPublicPerformanceSample(row.health_requests ?? row.requests)).map((row) => {
+				provider_uptime_24h: (health.data as Array<Record<string, unknown>>).filter((row) => hasSample(row.health_requests ?? row.requests)).map((row) => {
 					const provider = publicProviderId(row.provider_id, stealthProviderIds);
 					return {
 					provider, provider_name: provider === "stealth" ? "stealth" : row.provider_name ?? row.provider_id, requests: row.health_requests ?? row.requests,
 					uptime_pct: row.uptime_pct, avg_latency_ms: row.percentile_latency_ms ?? row.avg_latency_ms, avg_generation_ms: null, avg_throughput: row.percentile_throughput ?? row.avg_throughput,
-					uptime_buckets: Array.isArray(row.buckets) ? row.buckets.filter((bucket) => hasPublicPerformanceSample((bucket as Record<string, unknown>).requests ?? (bucket as Record<string, unknown>).health_requests)) : [],
+					uptime_buckets: Array.isArray(row.buckets) ? row.buckets.filter((bucket) => hasSample((bucket as Record<string, unknown>).requests ?? (bucket as Record<string, unknown>).health_requests)) : [],
 					};
 				}),
 			};
@@ -1796,16 +1806,16 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 		if (!performance) return withPublicCache(c.json({ modelId, performance: null, metrics: null, activity: null }), sectionPolicy("performance", modelId));
 		performance = {
 			...performance,
-			prev_24h: hasPublicPerformanceSample(performance.prev_24h?.total_requests)
+			prev_24h: hasSample(performance.prev_24h?.total_requests)
 				? performance.prev_24h
 				: {},
-			last_24h: hasPublicPerformanceSample(performance.last_24h?.total_requests)
+			last_24h: hasSample(performance.last_24h?.total_requests)
 				? performance.last_24h
 				: {},
 			hourly_24h: (performance.hourly_24h ?? []).filter((value: Record<string, unknown>) =>
-				hasPublicPerformanceSample(value.requests)),
+				hasSample(value.requests)),
 			provider_daily_7d: (performance.provider_daily_7d ?? []).filter((value: Record<string, unknown>) =>
-				hasPublicPerformanceSample(value.requests)),
+				hasSample(value.requests)),
 		};
 		const isKnownProvider = (value: Record<string, unknown>) => {
 			const provider = String(value.provider ?? "").trim().toLowerCase();
@@ -1835,7 +1845,7 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 		const providerHourlyRowsUnbounded = !providerHourly.error && Array.isArray(providerHourly.data)
 			? (providerHourly.data as Array<Record<string, unknown>>).filter((value) => {
 				const provider = String(value.provider_id ?? "").trim().toLowerCase();
-				return provider.length > 0 && provider !== "unknown" && hasPublicPerformanceSample(value.requests);
+				return provider.length > 0 && provider !== "unknown" && hasSample(value.requests);
 			})
 			: [];
 		const latestProviderBucket = Math.max(
@@ -1853,7 +1863,7 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 			throw qualityHourly.error;
 		}
 		const qualityHourlyRows = !qualityHourly.error && Array.isArray(qualityHourly.data)
-			? (qualityHourly.data as Array<Record<string, unknown>>).filter((value) => hasPublicPerformanceSample(value.requests))
+			? (qualityHourly.data as Array<Record<string, unknown>>).filter((value) => hasSample(value.requests))
 			: [];
 		const providerSlugs = [...new Set([
 			...(performance.provider_uptime_24h ?? []).map((value: Record<string, unknown>) => String(value.provider ?? "")),
@@ -1876,7 +1886,7 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 		const providerColor = (provider: unknown) => providerColors.get(String(provider ?? "").trim().toLowerCase()) ?? null;
 		const number = (value: unknown) => { const parsed = Number(value); return value == null || !Number.isFinite(parsed) ? null : parsed; };
 		const cacheRate = (requests: unknown, value: unknown) =>
-			hasPublicCacheTelemetrySample(requests) ? number(value) : null;
+			hasSample(requests) ? number(value) : null;
 		const summary = (value: Record<string, unknown> | null | undefined) => ({ avgThroughput: number(value?.avg_throughput), avgOutputSpeed: number(value?.output_speed_tps), avgLatencyMs: number(value?.avg_latency_ms), avgGenerationMs: number(value?.avg_generation_ms), avgPhaseoOverheadMs: number(value?.phaseo_overhead_ms), avgTpotMs: number(value?.tpot_ms), avgItlMs: number(value?.itl_ms), uptimePct: number(value?.uptime_pct), totalRequests: Number(value?.total_requests ?? 0), successfulRequests: Number(value?.successful_requests ?? 0) });
 		const cachedInputMetrics = (cachedInput.data ?? {}) as Record<string, any>;
 		const cachedInputHourly = new Map((cachedInputMetrics.hourly_24h ?? []).map((value: Record<string, unknown>) => [String(value.bucket ?? ""), value]));
@@ -1884,7 +1894,7 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 		const hourly = (performance.hourly_24h ?? []).map((value: Record<string, unknown>) => {
 			const cache = cachedInputHourly.get(String(value.bucket ?? "")) as Record<string, unknown> | undefined;
 			const cacheRequests = Number(cache?.telemetry_requests ?? 0);
-			return { bucket: value.bucket ?? "", avgThroughput: number(value.avg_throughput), avgOutputSpeed: number(value.output_speed_tps), avgLatencyMs: number(value.avg_latency_ms), avgEndToEndMs: number(value.gateway_e2e_ms), avgGenerationMs: number(value.avg_generation_ms), avgPhaseoOverheadMs: number(value.phaseo_overhead_ms), avgTpotMs: number(value.tpot_ms), avgItlMs: number(value.itl_ms), cachedInputPct: cacheRate(cacheRequests, cache?.cached_input_pct), cacheTelemetryRequests: hasPublicCacheTelemetrySample(cacheRequests) ? cacheRequests : 0, requests: Number(value.requests ?? 0), successPct: number(value.success_pct) };
+			return { bucket: value.bucket ?? "", avgThroughput: number(value.avg_throughput), avgOutputSpeed: number(value.output_speed_tps), avgLatencyMs: number(value.avg_latency_ms), avgEndToEndMs: number(value.gateway_e2e_ms), avgGenerationMs: number(value.avg_generation_ms), avgPhaseoOverheadMs: number(value.phaseo_overhead_ms), avgTpotMs: number(value.tpot_ms), avgItlMs: number(value.itl_ms), cachedInputPct: cacheRate(cacheRequests, cache?.cached_input_pct), cacheTelemetryRequests: hasSample(cacheRequests) ? cacheRequests : 0, requests: Number(value.requests ?? 0), successPct: number(value.success_pct) };
 		});
 		const providerPerformance = (performance.provider_uptime_24h ?? []).map((value: Record<string, any>) => { const provider = publicProviderId(value.provider, stealthProviderIds); return { provider, providerName: provider === "stealth" ? "Stealth" : value.provider_name ?? value.provider ?? "", providerColor: providerColor(provider), avgThroughput: number(value.avg_throughput), avgLatencyMs: number(value.avg_latency_ms), avgGenerationMs: number(value.avg_generation_ms), requests: Number(value.requests ?? 0), uptimePct: number(value.uptime_pct), uptimeBuckets: (value.uptime_buckets ?? []).map((bucket: Record<string, unknown>) => {
 			const requests = Number(bucket.health_requests ?? bucket.requests ?? 0);
@@ -1897,7 +1907,7 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 			const publicProvider = publicProviderId(value.provider, stealthProviderIds);
 			const cache = cachedInputProviderDaily.get(`${String(value.day ?? "")}:${publicProvider}`) as Record<string, unknown> | undefined;
 			const cacheRequests = Number(cache?.telemetry_requests ?? 0);
-			return { day: value.day ?? "", provider: value.provider ?? "", providerName: value.provider_name ?? value.provider ?? "", providerColor: providerColor(value.provider), avgThroughput: number(value.avg_throughput), avgOutputSpeed: number(value.output_speed_tps), avgLatencyMs: number(value.avg_latency_ms), avgEndToEndMs: number(value.gateway_e2e_ms), avgGenerationMs: number(value.avg_generation_ms), avgPhaseoOverheadMs: number(value.phaseo_overhead_ms), avgTpotMs: number(value.tpot_ms), avgItlMs: number(value.itl_ms), cachedInputPct: cacheRate(cacheRequests, cache?.cached_input_pct), cachedInputTokens: hasPublicCacheTelemetrySample(cacheRequests) ? number(cache?.cached_input_tokens) : null, effectiveInputTokens: hasPublicCacheTelemetrySample(cacheRequests) ? number(cache?.effective_input_tokens) : null, cacheTelemetryRequests: hasPublicCacheTelemetrySample(cacheRequests) ? cacheRequests : 0, requests: Number(value.requests ?? 0) };
+			return { day: value.day ?? "", provider: value.provider ?? "", providerName: value.provider_name ?? value.provider ?? "", providerColor: providerColor(value.provider), avgThroughput: number(value.avg_throughput), avgOutputSpeed: number(value.output_speed_tps), avgLatencyMs: number(value.avg_latency_ms), avgEndToEndMs: number(value.gateway_e2e_ms), avgGenerationMs: number(value.avg_generation_ms), avgPhaseoOverheadMs: number(value.phaseo_overhead_ms), avgTpotMs: number(value.tpot_ms), avgItlMs: number(value.itl_ms), cachedInputPct: cacheRate(cacheRequests, cache?.cached_input_pct), cachedInputTokens: hasSample(cacheRequests) ? number(cache?.cached_input_tokens) : null, effectiveInputTokens: hasSample(cacheRequests) ? number(cache?.effective_input_tokens) : null, cacheTelemetryRequests: hasSample(cacheRequests) ? cacheRequests : 0, requests: Number(value.requests ?? 0) };
 		});
 		const providerHourly7d = providerHourlyRows.map((value) => {
 			const cacheRequests = Number(value.cache_telemetry_requests ?? 0);
@@ -1916,9 +1926,9 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 				avgTpotMs: number(value.tpot_ms),
 				avgItlMs: number(value.itl_ms),
 				cachedInputPct: cacheRate(cacheRequests, value.cached_input_pct),
-				cachedInputTokens: hasPublicCacheTelemetrySample(cacheRequests) ? number(value.cached_input_tokens) : null,
-				effectiveInputTokens: hasPublicCacheTelemetrySample(cacheRequests) ? number(value.effective_input_tokens) : null,
-				cacheTelemetryRequests: hasPublicCacheTelemetrySample(cacheRequests) ? cacheRequests : 0,
+				cachedInputTokens: hasSample(cacheRequests) ? number(value.cached_input_tokens) : null,
+				effectiveInputTokens: hasSample(cacheRequests) ? number(value.effective_input_tokens) : null,
+				cacheTelemetryRequests: hasSample(cacheRequests) ? cacheRequests : 0,
 				requests: Number(value.requests ?? 0),
 			};
 		}).filter((value) => String(value.provider).trim().length > 0);
@@ -1958,7 +1968,17 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 			const leastReliable = providers.reduce<{ successPct: number; requests: number; successfulRequests: number } | null>((worst, candidate) => !worst || candidate.successPct < worst.successPct ? candidate : worst, null);
 			const eligibleRequests = providers.reduce((sum, provider) => sum + provider.requests, 0);
 			const eligibleSuccesses = providers.reduce((sum, provider) => sum + provider.successfulRequests, 0);
-			return { bucket: value.bucket ?? "", overallSuccessPct: eligibleRequests > 0 ? eligibleSuccesses / eligibleRequests * 100 : number(value.success_pct), worstProviderSuccessPct: leastReliable?.successPct ?? null, worstProviderRequests: leastReliable?.requests ?? 0, providerCount: providers.length, requests: eligibleRequests || Number(value.requests ?? 0) };
+			const point = { bucket: value.bucket ?? "", worstProviderSuccessPct: leastReliable?.successPct ?? null, worstProviderRequests: leastReliable?.requests ?? 0, providerCount: providers.length };
+			// Provider health leaves out requests the customer caused: bad requests,
+			// policy rejections, rate limits and cancellations. The hourly success_pct
+			// counts them as failures, so once health is loaded an hour with only those
+			// has no requests to rate rather than falling back to that rate.
+			if (providerHealthLoaded || eligibleRequests > 0) {
+				return { ...point, overallSuccessPct: eligibleRequests > 0 ? eligibleSuccesses / eligibleRequests * 100 : null, requests: eligibleRequests, failedRequests: Math.max(0, eligibleRequests - eligibleSuccesses) };
+			}
+			const requests = Number(value.requests ?? 0);
+			const successPct = number(value.success_pct);
+			return { ...point, overallSuccessPct: successPct, requests, failedRequests: successPct == null ? 0 : Math.max(0, Math.round(requests * (100 - successPct) / 100)) };
 		});
 		const timeOfDay = (performance.time_of_day_5d ?? []).map((value: Record<string, unknown>) => ({ hour: Number(value.hour ?? 0), avgThroughput: number(value.avg_throughput), avgLatencyMs: number(value.avg_latency_ms), avgGenerationMs: number(value.avg_generation_ms), sampleCount: Number(value.sample_count ?? 0) }));
 		const providerPercentileDaily7d = (Array.isArray(percentileSeries.data) ? percentileSeries.data : []).map((value: Record<string, unknown>) => {
@@ -1991,7 +2011,7 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 				toolCallErrorPct: toolCallSuccessPct == null ? null : 100 - toolCallSuccessPct,
 				structuredOutputSuccessPct,
 				structuredOutputErrorPct: structuredOutputSuccessPct == null ? null : 100 - structuredOutputSuccessPct,
-				cacheHitRatePct: hasPublicCacheTelemetrySample(value.requests) ? number(value.cache_hit_rate_pct) : null,
+				cacheHitRatePct: hasSample(value.requests) ? number(value.cache_hit_rate_pct) : null,
 				requests: Number(value.requests ?? 0),
 			};
 		});
@@ -2033,7 +2053,7 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 			performance,
 			metrics,
 			activity,
-			minimumSampleSize: PUBLIC_PERFORMANCE_MIN_REQUESTS,
+			minimumSampleSize: minimumRequests,
 		}), sectionPolicy("performance", modelId));
 	} catch (error) {
 		console.error("[web-api/models] performance failed", { modelId, error });

@@ -35,6 +35,15 @@ with params as not materialized (
     case when lower(p_context_bucket) in ('lte_4k', '4k_16k', '16k_64k', 'gt_64k') then lower(p_context_bucket) else 'all' end context_bucket,
     now() now_ts
 ),
+threshold as (
+  -- Unfiltered views publish at any volume. A colo, stream or context filter can
+  -- narrow a cohort to one customer's requests, so filtered views need 20.
+  select case
+    when params.cloudflare_colo is null and params.stream_mode = 'all' and params.context_bucket = 'all'
+    then 1 else 20
+  end min_requests
+  from params
+),
 visible_model as (
   select model.model_slug
   from public.v2_models model
@@ -232,14 +241,15 @@ select
   hourly.structured_schema_mismatch_errors,
   hourly.structured_missing_output_errors,
   hourly.cache_telemetry_requests,
-  case when hourly.cache_telemetry_requests >= 20 then hourly.input_tokens else null end,
-  case when hourly.cache_telemetry_requests >= 20 then hourly.cached_read_tokens else null end,
+  case when hourly.cache_telemetry_requests >= threshold.min_requests then hourly.input_tokens else null end,
+  case when hourly.cache_telemetry_requests >= threshold.min_requests then hourly.cached_read_tokens else null end,
   case
-    when hourly.cache_telemetry_requests >= 20 and hourly.input_tokens > 0
+    when hourly.cache_telemetry_requests >= threshold.min_requests and hourly.input_tokens > 0
       then least(100, coalesce(hourly.cached_read_tokens, 0) * 100.0 / hourly.input_tokens)
     else null
   end cache_read_pct
 from hourly
+cross join threshold
 order by hourly.bucket_start;
 $function$;
 

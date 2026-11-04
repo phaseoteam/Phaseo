@@ -1482,6 +1482,7 @@
 			"chartLabel": "توافر النموذج بالساعة خلال آخر {hours} ساعة. التوافر: {uptime}. الطلبات المسجلة: {count}.",
 			"leastStableProviderLabel": "بدون Phaseo Routing",
 			"tooltipUptime": "مدة التشغيل:",
+			"tooltipFailedRequests": "{count, plural, =0 {لا توجد طلبات فاشلة} other {الطلبات الفاشلة: {failed, number} من #}}",
 			"tooltipWorstProvider": "بدون Phaseo Routing:",
 			"hourlyAverage": "آخر 24 ساعة · المتوسط لكل ساعة",
 			"routingChartLabel": "وقت تشغيل النموذج لكل ساعة خلال آخر 24 ساعة. Phaseo Routing: {uptime}.{comparison}",
@@ -1616,8 +1617,10 @@
 			"viewLicense": "عرض الترخيص"
 		},
 		"performance": {
-			"noTelemetry": "لا توجد بيانات قياس عن Gateway خلال آخر 7 أيام",
-			"telemetryHint": "ستظهر الرسوم بالساعة عند معالجة هذا النموذج لحركة Gateway في الموقع المحدد.",
+			"noTelemetry": "لا توجد طلبات خلال آخر 7 أيام",
+			"telemetryHint": "ستظهر الرسوم البيانية بعد أن يخدم هذا النموذج طلبات عبر Phaseo.",
+			"noFilteredTelemetry": "لا توجد حركة كافية في {location} للنشر",
+			"filteredTelemetryHint": "لا تظهر رسوم الموقع إلا بعد أن يتلقى عددًا كافيًا من الطلبات بحيث لا يمكن تمييز حركة أي عميل بمفرده. اختر كل المواقع لرؤية جميع الطلبات.",
 			"filterByLocation": "تصفية الأداء حسب موقع API",
 			"providerPerformance": "أداء المزوّد",
 			"last24Hours": "آخر 24 ساعة",

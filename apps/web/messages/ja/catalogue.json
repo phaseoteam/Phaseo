@@ -1482,6 +1482,7 @@
 			"chartLabel": "過去{hours}時間のモデル稼働率（時間ごと）。稼働率：{uptime}。記録されたリクエスト数：{count}。",
 			"leastStableProviderLabel": "Phaseo Routing なし",
 			"tooltipUptime": "稼働率:",
+			"tooltipFailedRequests": "{count, plural, =0 {失敗したリクエストはありません} other {#件中{failed, number}件のリクエストが失敗}}",
 			"tooltipWorstProvider": "Phaseo Routing なし:",
 			"hourlyAverage": "過去24時間 · 時間別平均",
 			"routingChartLabel": "過去24時間のモデルの時間別稼働率。Phaseo Routing：{uptime}。{comparison}",
@@ -1616,8 +1617,10 @@
 			"viewLicense": "ライセンスを表示"
 		},
 		"performance": {
-			"noTelemetry": "過去7日間にGatewayのテレメトリーはありません",
-			"telemetryHint": "選択した場所でこのモデルがGatewayトラフィックを処理すると、時間ごとのグラフが表示されます。",
+			"noTelemetry": "過去7日間にリクエストはありません",
+			"telemetryHint": "このモデルがPhaseo経由でリクエストを処理すると、グラフが表示されます。",
+			"noFilteredTelemetry": "{location}には公開できるだけのトラフィックがありません",
+			"filteredTelemetryHint": "場所ごとのグラフは、特定の顧客のトラフィックを識別できないほどリクエストが集まった場合にのみ表示されます。すべてのリクエストを見るには「すべての場所」を選択してください。",
 			"filterByLocation": "APIの場所でパフォーマンスを絞り込む",
 			"providerPerformance": "プロバイダーのパフォーマンス",
 			"last24Hours": "過去24時間",
