@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ChevronsUpDown, Search, Shield } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
@@ -22,6 +22,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type {
+	SettingsGuardrailDepartment,
 	SettingsGuardrailKey,
 	SettingsGuardrailMember,
 	SettingsGuardrailRow,
@@ -34,10 +35,13 @@ import {
 	directAssignmentState,
 	matchesAssignmentQuery,
 	withPendingChanges,
+	workspaceAssignmentMap,
+	type AssignedGuardrail,
 	type AssignmentChange,
 	type AssignmentTargetType,
 	type EffectiveGuardrailPolicy,
 	type GuardrailAssignmentRow,
+	type GuardrailSource,
 	type PendingAssignmentChange,
 } from "./guardrailAssignments";
 
@@ -47,55 +51,89 @@ type Props = {
 	guardrails: SettingsGuardrailRow[];
 	keys: SettingsGuardrailKey[];
 	members: SettingsGuardrailMember[];
+	departments?: SettingsGuardrailDepartment[];
+	workspaceGuardrailIds?: string[];
+	guardrailDepartmentIdsByGuardrailId?: Record<string, string[]>;
 	guardrailKeyIdsByGuardrailId: Record<string, string[]>;
 	guardrailMemberIdsByGuardrailId: Record<string, string[]>;
+	keyDepartmentIds?: Record<string, string[]>;
+	memberDepartmentIds?: Record<string, string[]>;
+	/** Saves one change; the server action unless a preview supplies its own. */
+	save?: typeof updateGuardrailAssignments;
 };
+
+const VIEWS = ["workspace", "departments", "members", "keys"] as const;
+type View = (typeof VIEWS)[number];
+const TARGET_TYPE: Record<View, AssignmentTargetType> = { workspace: "workspace", departments: "department", members: "member", keys: "key" };
+const EMPTY: Record<string, string[]> = {};
 
 export default function GuardrailAssignmentsPanel(props: Props) {
 	const t = useTranslations("SettingsUI");
 	const write = useSettingsWrite();
-	// The workspace baseline applies to every key and member, so it is not assigned here.
-	const guardrails = useMemo(() => props.guardrails.filter((guardrail) => !guardrail.is_workspace_baseline), [props.guardrails]);
-	const hasWorkspaceBaseline = guardrails.length !== props.guardrails.length;
-	const [view, setView] = useQueryState("view", parseAsStringLiteral(["keys", "members"] as const).withDefault("keys"));
-	const targetType = view === "members" ? "member" : "key";
+	// The workspace baseline is always on the whole workspace: it shows where it applies, but is never assigned here.
+	const assignable = useMemo(() => props.guardrails.filter((guardrail) => !guardrail.is_workspace_baseline), [props.guardrails]);
+	const [view, setView] = useQueryState("view", parseAsStringLiteral(VIEWS).withDefault("keys"));
+	const targetType = TARGET_TYPE[view];
 	const [query, setQuery] = useState("");
 	const [selected, setSelected] = useState<Set<string>>(() => new Set());
 	// Each change shows straight away and is tracked on its own, so one finishing or failing never
 	// undoes another that is still saving.
 	const [changes, setChanges] = useState<PendingAssignmentChange[]>([]);
 	const nextChangeId = useRef(0);
-	const latest = useRef({ key: props.guardrailKeyIdsByGuardrailId, member: props.guardrailMemberIdsByGuardrailId });
-	latest.current = { key: props.guardrailKeyIdsByGuardrailId, member: props.guardrailMemberIdsByGuardrailId };
-	const keyMap = useMemo(() => withPendingChanges(props.guardrailKeyIdsByGuardrailId, "key", changes), [props.guardrailKeyIdsByGuardrailId, changes]);
-	const memberMap = useMemo(() => withPendingChanges(props.guardrailMemberIdsByGuardrailId, "member", changes), [props.guardrailMemberIdsByGuardrailId, changes]);
+	const workspaceSaved = useMemo(() => workspaceAssignmentMap(props.workspaceGuardrailIds ?? []), [props.workspaceGuardrailIds]);
+	const saved: Record<AssignmentTargetType, Record<string, string[]>> = useMemo(() => ({
+		workspace: workspaceSaved,
+		department: props.guardrailDepartmentIdsByGuardrailId ?? EMPTY,
+		member: props.guardrailMemberIdsByGuardrailId,
+		key: props.guardrailKeyIdsByGuardrailId,
+	}), [workspaceSaved, props.guardrailDepartmentIdsByGuardrailId, props.guardrailMemberIdsByGuardrailId, props.guardrailKeyIdsByGuardrailId]);
+	const latest = useRef(saved);
+	// Updated before the effect below runs in the same commit, and read again after a save resolves.
+	useLayoutEffect(() => {
+		latest.current = saved;
+	}, [saved]);
+	const maps = useMemo(() => ({
+		workspace: withPendingChanges(saved.workspace, "workspace", changes),
+		department: withPendingChanges(saved.department, "department", changes),
+		member: withPendingChanges(saved.member, "member", changes),
+		key: withPendingChanges(saved.key, "key", changes),
+	}), [saved, changes]);
 	// A saved change is dropped once fresher data, which includes it, has arrived.
 	useEffect(() => {
 		setChanges((current) => {
 			const next = current.filter((entry) => entry.savedOn === null || entry.savedOn === latest.current[entry.targetType]);
 			return next.length === current.length ? current : next;
 		});
-	}, [props.guardrailKeyIdsByGuardrailId, props.guardrailMemberIdsByGuardrailId, changes]);
-	const pending = useMemo(() => {
+	}, [saved, changes]);
+	const pendingTargets = useMemo(() => {
 		const ids = new Set<string>();
-		for (const entry of changes) if (entry.savedOn === null && entry.targetType === targetType) for (const id of entry.change.targetIds) ids.add(id);
+		for (const entry of changes) if (entry.savedOn === null) for (const id of entry.change.targetIds) ids.add(`${entry.targetType}:${id}`);
 		return ids;
-	}, [changes, targetType]);
+	}, [changes]);
 
 	const rows = useMemo(() => buildGuardrailAssignmentRows({
 		targetType,
 		keys: props.keys,
 		members: props.members,
-		guardrails,
-		guardrailKeyIdsByGuardrailId: keyMap,
-		guardrailMemberIdsByGuardrailId: memberMap,
+		departments: props.departments,
+		guardrails: props.guardrails,
+		guardrailWorkspaceIdsByGuardrailId: maps.workspace,
+		guardrailDepartmentIdsByGuardrailId: maps.department,
+		guardrailKeyIdsByGuardrailId: maps.key,
+		guardrailMemberIdsByGuardrailId: maps.member,
+		keyDepartmentIds: props.keyDepartmentIds,
+		memberDepartmentIds: props.memberDepartmentIds,
 		untitled: t("guardrailsControls.untitled"),
-	}), [targetType, props.keys, props.members, guardrails, keyMap, memberMap, t]);
+		workspace: { name: t("guardrailAssignments.wholeWorkspace"), detail: t("guardrailAssignments.wholeWorkspaceDetail") },
+		departmentDetail: (counts) => t("guardrailAssignments.departmentReach", counts),
+	}), [targetType, props.keys, props.members, props.departments, props.guardrails, maps, props.keyDepartmentIds, props.memberDepartmentIds, t]);
 	const visibleRows = useMemo(() => rows.filter((row) => matchesAssignmentQuery(row, query)), [rows, query]);
 	// Bulk actions reach only the selected rows the search shows, never ones it hides.
 	const selectedRows = useMemo(() => visibleRows.filter((row) => selected.has(row.id)), [visibleRows, selected]);
 	const allVisibleSelected = visibleRows.length > 0 && visibleRows.every((row) => selected.has(row.id));
 	const someVisibleSelected = visibleRows.some((row) => selected.has(row.id));
+	// One row, so the workspace view has nothing to select or search.
+	const selectable = props.canManageGuardrails && targetType !== "workspace";
 
 	async function apply(change: AssignmentChange, type: AssignmentTargetType = targetType) {
 		const id = nextChangeId.current++;
@@ -111,7 +149,9 @@ export default function GuardrailAssignmentsPanel(props: Props) {
 		try {
 			for (const part of parts) {
 				savedOn = latest.current[type];
-				const result = await write(updateGuardrailAssignments({ targetType: type, ...part }, props.workspaceId));
+				// The workspace is the target itself, so its change names no target ids.
+				const request = type === "workspace" ? { ...part, targetIds: [] } : part;
+				const result = await write((props.save ?? updateGuardrailAssignments)({ targetType: type, ...request }, props.workspaceId));
 				if (!result.ok) {
 					failed = true;
 					reason = result.error;
@@ -134,7 +174,7 @@ export default function GuardrailAssignmentsPanel(props: Props) {
 		toast.success(t("guardrailAssignments.saved"));
 	}
 
-	if (!guardrails.length) {
+	if (!props.guardrails.length) {
 		return (
 			<Empty className="rounded-md border border-dashed border-border/80 p-8">
 				<EmptyHeader>
@@ -148,45 +188,43 @@ export default function GuardrailAssignmentsPanel(props: Props) {
 		);
 	}
 
-	function memberPending(memberId: string) {
-		return changes.some((entry) => entry.savedOn === null && entry.targetType === "member" && entry.change.targetIds.includes(memberId));
-	}
-
 	const emptyMessage = rows.length
 		? t("guardrailAssignments.noMatches")
-		: t(targetType === "key" ? "guardrailAssignments.noKeys" : "guardrailAssignments.noMembers");
+		: t(targetType === "key" ? "guardrailAssignments.noKeys" : targetType === "member" ? "guardrailAssignments.noMembers" : "guardrailAssignments.noDepartments");
+	const counts: Record<View, number | null> = { workspace: null, departments: props.departments?.length ?? 0, members: props.members.length, keys: props.keys.length };
+	const nameColumn = { workspace: "columnWorkspace", department: "columnDepartment", member: "columnMember", key: "columnKey" } as const;
 
 	return (
 		<div className="space-y-3">
 			<div className="flex flex-wrap items-center gap-2">
-				<Tabs value={view} onValueChange={(value) => { setSelected(new Set()); void setView(value === "members" ? "members" : null); }}>
+				<Tabs value={view} onValueChange={(value) => { setSelected(new Set()); setQuery(""); void setView(value === "keys" ? null : value as View); }}>
 					<TabsList>
-						<TabsTrigger value="keys">
-							{t("guardrailAssignments.keysView")}
-							<span className="text-muted-foreground">{props.keys.length}</span>
-						</TabsTrigger>
-						<TabsTrigger value="members">
-							{t("guardrailAssignments.membersView")}
-							<span className="text-muted-foreground">{props.members.length}</span>
-						</TabsTrigger>
+						{VIEWS.map((item) => (
+							<TabsTrigger key={item} value={item}>
+								{t(`guardrailAssignments.${item}View`)}
+								{counts[item] === null ? null : <span className="text-muted-foreground">{counts[item]}</span>}
+							</TabsTrigger>
+						))}
 					</TabsList>
 				</Tabs>
-				<div className="relative min-w-0 flex-1 sm:max-w-xs">
-					<Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-					<Input
-						value={query}
-						onChange={(event) => setQuery(event.target.value)}
-						placeholder={t("guardrailAssignments.search")}
-						aria-label={t("guardrailAssignments.search")}
-						className="h-8 rounded-md pl-8"
-					/>
-				</div>
+				{targetType === "workspace" ? null : (
+					<div className="relative min-w-0 flex-1 sm:max-w-xs">
+						<Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+						<Input
+							value={query}
+							onChange={(event) => setQuery(event.target.value)}
+							placeholder={t("guardrailAssignments.search")}
+							aria-label={t("guardrailAssignments.search")}
+							className="h-8 rounded-md pl-8"
+						/>
+					</div>
+				)}
 				{/* In the toolbar row rather than above the table, so the first selection doesn't move the rows being clicked. */}
-				{props.canManageGuardrails && selectedRows.length ? (
+				{selectable && selectedRows.length ? (
 					<BulkActions
 						rows={selectedRows}
-						guardrails={guardrails}
-						busy={selectedRows.some((row) => pending.has(row.id))}
+						guardrails={assignable}
+						busy={selectedRows.some((row) => pendingTargets.has(`${targetType}:${row.id}`))}
 						onApply={apply}
 						onClear={() => setSelected(new Set())}
 					/>
@@ -194,10 +232,10 @@ export default function GuardrailAssignmentsPanel(props: Props) {
 			</div>
 
 			<div className="overflow-x-auto rounded-md border bg-background">
-				<Table wrapInContainer={false} className="min-w-[880px] table-fixed [&_tr:last-child]:border-b-0 [&_th]:px-3 [&_td]:px-3 [&_td]:align-middle">
+				<Table wrapInContainer={false} className="min-w-[880px] table-fixed [&_tr:last-child]:border-b-0 [&_th]:px-3 [&_td]:px-3 [&_td]:align-top [&_td]:py-3">
 					<TableHeader className="bg-muted/30">
 						<TableRow>
-							{props.canManageGuardrails ? (
+							{selectable ? (
 								<TableHead className="w-10">
 									<Checkbox
 										checked={allVisibleSelected}
@@ -215,19 +253,16 @@ export default function GuardrailAssignmentsPanel(props: Props) {
 									/>
 								</TableHead>
 							) : null}
-							<TableHead className="w-[22%]">
-								{t(targetType === "key" ? "guardrailAssignments.columnKey" : "guardrailAssignments.columnMember")}
-							</TableHead>
-							<TableHead className="w-[30%]">{t("guardrailAssignments.columnGuardrails")}</TableHead>
-							<TableHead className="w-[20%]">{t("guardrailAssignments.columnAccess")}</TableHead>
-							<TableHead className="w-[14%]">{t("guardrailAssignments.columnPromptInjection")}</TableHead>
-							<TableHead className="w-[14%]">{t("guardrailAssignments.columnSensitiveInfo")}</TableHead>
+							<TableHead className="w-[20%]">{t(`guardrailAssignments.${nameColumn[targetType]}`)}</TableHead>
+							<TableHead className="w-[34%]">{t("guardrailAssignments.columnGuardrails")}</TableHead>
+							<TableHead className="w-[23%]">{t("guardrailAssignments.columnAccess")}</TableHead>
+							<TableHead className="w-[23%]">{t("guardrailAssignments.columnSafety")}</TableHead>
 						</TableRow>
 					</TableHeader>
 					<TableBody>
 						{visibleRows.length ? visibleRows.map((row) => (
 							<TableRow key={row.id} data-state={selected.has(row.id) ? "selected" : undefined}>
-								{props.canManageGuardrails ? (
+								{selectable ? (
 									<TableCell>
 										<Checkbox
 											checked={selected.has(row.id)}
@@ -247,7 +282,7 @@ export default function GuardrailAssignmentsPanel(props: Props) {
 											<span className="truncate text-sm font-medium" title={row.name}>{row.name}</span>
 											{row.status && row.status !== "active" ? <Badge variant="outline" className="capitalize">{row.status}</Badge> : null}
 										</div>
-										<div className={row.type === "key" ? "truncate font-mono text-xs text-muted-foreground" : "truncate text-xs capitalize text-muted-foreground"}>
+										<div className={row.type === "key" ? "truncate font-mono text-xs text-muted-foreground" : row.type === "member" ? "truncate text-xs capitalize text-muted-foreground" : "truncate text-xs text-muted-foreground"}>
 											{row.detail}
 										</div>
 									</div>
@@ -255,9 +290,9 @@ export default function GuardrailAssignmentsPanel(props: Props) {
 								<TableCell>
 									<GuardrailsCell
 										row={row}
-										guardrails={guardrails}
+										guardrails={assignable}
 										canManage={props.canManageGuardrails}
-										pending={pending.has(row.id) || (row.inheritedFrom ? memberPending(row.inheritedFrom.id) : false)}
+										pending={pendingTargets.has(`${targetType}:${row.id}`) || (row.inheritedFrom ? pendingTargets.has(`member:${row.inheritedFrom.id}`) : false)}
 										onToggle={(guardrailId, checked) => void apply(checked
 											? { targetIds: [row.id], addGuardrailIds: [guardrailId] }
 											: { targetIds: [row.id], removeGuardrailIds: [guardrailId] })}
@@ -266,21 +301,16 @@ export default function GuardrailAssignmentsPanel(props: Props) {
 								</TableCell>
 								<TableCell className="text-sm">
 									<AccessSummary effective={row.effective} />
+									<FromLine guardrails={row.accessFrom} />
 								</TableCell>
 								<TableCell className="text-sm">
-									{row.effective.promptInjection
-										? t(`guardrailsControls.${row.effective.promptInjection}`)
-										: <span className="text-muted-foreground">{t("guardrailAssignments.off")}</span>}
-								</TableCell>
-								<TableCell className="text-sm">
-									{row.effective.sensitiveInfoRuleCount
-										? t("guardrailAssignments.sensitiveRules", { count: row.effective.sensitiveInfoRuleCount })
-										: <span className="text-muted-foreground">{t("guardrailAssignments.off")}</span>}
+									<SafetySummary effective={row.effective} />
+									<FromLine guardrails={row.safetyFrom} />
 								</TableCell>
 							</TableRow>
 						)) : (
 							<TableRow>
-								<TableCell colSpan={props.canManageGuardrails ? 6 : 5} className="py-8 text-center text-sm text-muted-foreground">
+								<TableCell colSpan={selectable ? 5 : 4} className="py-8 text-center text-sm text-muted-foreground">
 									{emptyMessage}
 								</TableCell>
 							</TableRow>
@@ -290,11 +320,49 @@ export default function GuardrailAssignmentsPanel(props: Props) {
 			</div>
 
 			<p className="text-xs text-muted-foreground">
-				{t("guardrailAssignments.footnote")}
-				{hasWorkspaceBaseline ? ` ${t("guardrailAssignments.baselineNote")}` : null}
+				{t("guardrailAssignments.footnoteLevels")}
 				{props.canManageGuardrails ? null : ` ${t("guardrailAssignments.readOnly")}`}
 			</p>
 		</div>
+	);
+}
+
+/** Where an inherited guardrail comes from, e.g. "Workspace", "Engineering" or "via Sam". */
+export function useSourceLabel() {
+	const t = useTranslations("SettingsUI");
+	return (source: GuardrailSource): string | null => {
+		if (source.level === "workspace") return t("guardrailAssignments.fromWorkspace");
+		if (source.level === "department") return source.name;
+		if (source.level === "member") return t("guardrailAssignments.viaMember", { name: source.name ?? t("guardrailAssignments.formerMember") });
+		return null;
+	};
+}
+
+function sourceHint(t: ReturnType<typeof useTranslations<"SettingsUI">>, source: GuardrailSource): string | null {
+	if (source.level === "workspace") return t("guardrailAssignments.workspaceHint");
+	if (source.level === "department") return t("guardrailAssignments.departmentHint", { name: source.name });
+	if (source.level === "member") return source.name === null ? t("guardrailAssignments.formerMemberHint") : t("guardrailAssignments.inheritedHint", { name: source.name });
+	return null;
+}
+
+function GuardrailChip({ guardrail }: { guardrail: AssignedGuardrail }) {
+	const t = useTranslations("SettingsUI");
+	const sourceLabel = useSourceLabel();
+	const label = sourceLabel(guardrail.source);
+	const hint = [
+		guardrail.baseline ? t("guardrailAssignments.baselineHint") : sourceHint(t, guardrail.source),
+		guardrail.enabled ? null : t("guardrailAssignments.offHint"),
+	].filter(Boolean).join(" ");
+	return (
+		<Badge
+			variant={guardrail.source.level === "direct" ? "outline" : "secondary"}
+			className={guardrail.enabled ? "max-w-full" : "max-w-full opacity-60"}
+			title={hint || undefined}
+		>
+			<span className="truncate">{guardrail.name}</span>
+			{label ? <span className="font-normal text-muted-foreground">{label}</span> : null}
+			{guardrail.enabled ? null : <span className="font-normal text-muted-foreground">{t("guardrailAssignments.off")}</span>}
+		</Badge>
 	);
 }
 
@@ -308,63 +376,47 @@ function GuardrailsCell(props: {
 	onRemoveFormerMemberGuardrail: (memberId: string, guardrailId: string) => void;
 }) {
 	const t = useTranslations("SettingsUI");
-	const viaMember = t("guardrailAssignments.viaMember", { name: props.row.inheritedFrom?.name ?? t("guardrailAssignments.formerMember") });
+	const sourceLabel = useSourceLabel();
 	const chips = props.row.guardrails.length ? (
 		<span className="flex min-w-0 flex-wrap items-center gap-1">
-			{props.row.guardrails.map((guardrail) => (
-				<Badge
-					key={guardrail.id}
-					variant={guardrail.source === "member" ? "secondary" : "outline"}
-					className={guardrail.enabled ? "max-w-full" : "max-w-full opacity-60"}
-					title={[
-						guardrail.source === "member" && props.row.inheritedFrom
-							? props.row.inheritedFrom.name === null ? t("guardrailAssignments.formerMemberHint") : t("guardrailAssignments.inheritedHint", { name: props.row.inheritedFrom.name })
-							: null,
-						guardrail.enabled ? null : t("guardrailAssignments.offHint"),
-					].filter(Boolean).join(" ") || undefined}
-				>
-					<span className="truncate">{guardrail.name}</span>
-					{guardrail.source === "member" && props.row.inheritedFrom ? (
-						<span className="font-normal text-muted-foreground">{viaMember}</span>
-					) : null}
-					{guardrail.enabled ? null : <span className="font-normal text-muted-foreground">{t("guardrailAssignments.off")}</span>}
-				</Badge>
-			))}
+			{props.row.guardrails.map((guardrail) => <GuardrailChip key={guardrail.id} guardrail={guardrail} />)}
 		</span>
 	) : <span className="text-sm text-muted-foreground">{t("guardrailAssignments.none")}</span>;
 
 	if (!props.canManage) return chips;
 
-	const inherited = new Set(props.row.guardrails.filter((guardrail) => guardrail.source === "member").map((guardrail) => guardrail.id));
+	const inheritedById = new Map(props.row.guardrails.filter((guardrail) => guardrail.source.level !== "direct").map((guardrail) => [guardrail.id, guardrail]));
 	const formerMember = props.row.inheritedFrom && props.row.inheritedFrom.name === null ? props.row.inheritedFrom : null;
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
 				<button
 					type="button"
-					className="flex w-full min-w-0 items-center justify-between gap-2 rounded-md px-1.5 py-1 text-left hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+					className="-mx-1.5 -my-1 flex w-[calc(100%+0.75rem)] min-w-0 items-center justify-between gap-2 rounded-md px-1.5 py-1 text-left hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 					aria-label={t("guardrailAssignments.editGuardrails", { name: props.row.name })}
 				>
 					{chips}
 					{props.pending ? <Spinner className="h-3.5 w-3.5 shrink-0" /> : <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
 				</button>
 			</DropdownMenuTrigger>
-			<DropdownMenuContent align="start" className="w-72">
+			<DropdownMenuContent align="start" className="w-80">
 				{props.guardrails.map((guardrail) => {
 					const direct = props.row.directGuardrailIds.includes(guardrail.id);
-					const onlyInherited = !direct && inherited.has(guardrail.id);
+					const inherited = direct ? undefined : inheritedById.get(guardrail.id);
+					// Only a former member's guardrail can be taken off from here: they have no row of their own.
+					const removableHere = inherited?.source.level === "member" && formerMember !== null;
 					return (
 						<DropdownMenuCheckboxItem
 							key={guardrail.id}
-							checked={direct || onlyInherited}
-							disabled={props.pending || (onlyInherited && !formerMember)}
-							onCheckedChange={(checked) => onlyInherited && formerMember
+							checked={direct || Boolean(inherited)}
+							disabled={props.pending || (Boolean(inherited) && !removableHere)}
+							onCheckedChange={(checked) => inherited && removableHere && formerMember
 								? props.onRemoveFormerMemberGuardrail(formerMember.id, guardrail.id)
 								: props.onToggle(guardrail.id, checked === true)}
 						>
 							<span className="min-w-0 flex-1 truncate">{guardrail.name?.trim() || t("guardrailsControls.untitled")}</span>
-							{onlyInherited && props.row.inheritedFrom ? (
-								<span className="shrink-0 text-xs text-muted-foreground">{viaMember}</span>
+							{inherited ? (
+								<span className="shrink-0 text-xs text-muted-foreground">{sourceLabel(inherited.source)}</span>
 							) : guardrail.enabled === true ? null : (
 								<span className="shrink-0 text-xs text-muted-foreground">{t("guardrailAssignments.off")}</span>
 							)}
@@ -376,10 +428,42 @@ function GuardrailsCell(props: {
 	);
 }
 
-function AccessSummary({ effective }: { effective: EffectiveGuardrailPolicy }) {
+/** The guardrails a column's rules come from, e.g. "From Workspace baseline, EU data (Engineering)". */
+function FromLine({ guardrails }: { guardrails: AssignedGuardrail[] }) {
+	const t = useTranslations("SettingsUI");
+	const sourceLabel = useSourceLabel();
+	if (!guardrails.length) return null;
+	const names = guardrails.map((guardrail) => {
+		const label = sourceLabel(guardrail.source);
+		return label ? `${guardrail.name} (${label})` : guardrail.name;
+	});
+	return <p className="mt-1 line-clamp-2 text-xs text-muted-foreground" title={names.join(", ")}>{t("guardrailAssignments.fromGuardrails", { names: names.join(", ") })}</p>;
+}
+
+export function AccessSummary({ effective }: { effective: EffectiveGuardrailPolicy }) {
+	const t = useTranslations("SettingsUI");
+	const parts = accessSummaryParts(effective, t);
+	if (!parts.length) return <span className="text-muted-foreground">{t("guardrailAssignments.noLimits")}</span>;
+	return <span className="line-clamp-2">{parts.join(" · ")}</span>;
+}
+
+function SafetySummary({ effective }: { effective: EffectiveGuardrailPolicy }) {
 	const t = useTranslations("SettingsUI");
 	const parts: string[] = [];
+	if (effective.promptInjection) parts.push(t("guardrailAssignments.promptInjectionPart", { action: t(`guardrailsControls.${effective.promptInjection}`) }));
+	if (effective.sensitiveInfoRuleCount) parts.push(t("guardrailAssignments.sensitiveInfoPart", { count: effective.sensitiveInfoRuleCount }));
+	if (!parts.length) return <span className="text-muted-foreground">{t("guardrailAssignments.off")}</span>;
+	return <span className="line-clamp-2">{parts.join(" · ")}</span>;
+}
+
+/** The access part of an effective policy as short phrases, e.g. "ZDR only · 3 providers allowed". */
+export function accessSummaryParts(effective: EffectiveGuardrailPolicy, t: ReturnType<typeof useTranslations<"SettingsUI">>): string[] {
+	const parts: string[] = [];
 	if (effective.zdrOnly) parts.push(t("guardrailAssignments.zdrOnly"));
+	if (effective.noPaidTraining && effective.noFreeTraining) parts.push(t("guardrailAssignments.noTraining"));
+	else if (effective.noPaidTraining) parts.push(t("guardrailAssignments.noPaidTraining"));
+	else if (effective.noFreeTraining) parts.push(t("guardrailAssignments.noFreeTraining"));
+	if (effective.noLogging) parts.push(t("guardrailAssignments.noLogging"));
 	if (effective.providerAllowCount !== null) {
 		parts.push(effective.providerAllowCount
 			? t("guardrailAssignments.providersAllowed", { count: effective.providerAllowCount })
@@ -392,8 +476,7 @@ function AccessSummary({ effective }: { effective: EffectiveGuardrailPolicy }) {
 			: t("guardrailAssignments.noModelsAllowed"));
 	}
 	if (effective.modelBlockCount) parts.push(t("guardrailAssignments.modelsBlocked", { count: effective.modelBlockCount }));
-	if (!parts.length) return <span className="text-muted-foreground">{t("guardrailAssignments.noLimits")}</span>;
-	return <span className="line-clamp-2">{parts.join(" · ")}</span>;
+	return parts;
 }
 
 function BulkActions(props: {
@@ -455,3 +538,4 @@ function BulkActions(props: {
 		</div>
 	);
 }
+

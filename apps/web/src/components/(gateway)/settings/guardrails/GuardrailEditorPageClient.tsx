@@ -66,6 +66,7 @@ import {
 	deleteGuardrail,
 	setGuardrailKeys,
 	setGuardrailMembers,
+	updateGuardrailAssignments,
 	type SensitiveInfoAction,
 	type SensitiveInfoCustomRulePayload,
 	type SensitiveInfoRulePayload,
@@ -84,6 +85,10 @@ import {
 	normalizeSensitiveInfoAction,
 	validateSensitiveInfoRulePayload,
 } from "./sensitiveInfoPreview";
+import GuardrailCreateWizard from "./GuardrailCreateWizard";
+import { MAX_ASSIGNMENT_TARGETS } from "./guardrailAssignmentLimits";
+import { chunkAssignmentChange } from "./guardrailAssignments";
+import type { WizardSection } from "./guardrailWizard";
 
 const GUARDRAIL_SECTION_IDS = new Set([
 	"access",
@@ -146,6 +151,23 @@ function normalizeMode(value: unknown): ProviderRestrictionMode {
 	if (raw === "allowlist") return "allowlist";
 	if (raw === "blocklist") return "blocklist";
 	return "none";
+}
+
+/**
+ * Assigns a guardrail the new-guardrail flow just created to the whole workspace and the chosen
+ * departments. Keys and members go through their own saves; a failed level throws, as they do.
+ */
+async function assignWizardLevels(guardrailId: string, levels: { workspaceAssigned: boolean; departmentIds: string[] }) {
+	const changes = [
+		...(levels.workspaceAssigned ? [{ targetType: "workspace" as const, targetIds: [] as string[], addGuardrailIds: [guardrailId] }] : []),
+		// The API takes up to MAX_ASSIGNMENT_TARGETS targets per change.
+		...chunkAssignmentChange({ targetIds: levels.departmentIds, addGuardrailIds: [guardrailId] }, MAX_ASSIGNMENT_TARGETS)
+			.map((part) => ({ targetType: "department" as const, ...part })),
+	];
+	for (const change of changes) {
+		const result = await updateGuardrailAssignments(change);
+		if (!result.ok) throw new Error(result.error ?? "guardrail_assignment_failed");
+	}
 }
 
 function uniqStrings(items: string[]): string[] {
@@ -551,6 +573,22 @@ function ToggleRow(props: {
 	);
 }
 
+const SECTION_HEADINGS: Record<"access" | "prompt-injection" | "sensitive-info", (s: (key: string) => string) => { title: string; description: string }> = {
+	access: (s) => ({ title: s("Access"), description: s("phraseControlPrivacyProviderAccessAndModelAccess") }),
+	"prompt-injection": (s) => ({ title: s("Prompt Injection"), description: s("phraseScanUserSuppliedRequestContentForCommonPromptInjectionPatternsBeforeItReachesTheModel") }),
+	"sensitive-info": (s) => ({ title: s("Sensitive Info Detection"), description: s("phraseDetectAndHandleSensitiveDataBeforeRequestsLeavePhaseo") }),
+};
+
+/** Heading for a section in the new-guardrail flow, where the accordion triggers are hidden. */
+function WizardSectionHeading(props: { title: string; description: string }) {
+	return (
+		<div className="mb-5 border-b pb-3">
+			<h2 className="text-base font-semibold">{props.title}</h2>
+			<p className="mt-1 text-sm text-muted-foreground">{props.description}</p>
+		</div>
+	);
+}
+
 function EditorSection(props: {
 	title: string;
 	description: string;
@@ -810,6 +848,10 @@ export default function GuardrailEditorPageClient(props: {
 		[expandedSections],
 	);
 	const activeSection = validExpandedSections[0] ?? null;
+	// Creating a guardrail goes through the step-by-step flow; editing keeps the single page.
+	const isWizard = props.mode === "create";
+	const [wizardSections, setWizardSections] = useState<WizardSection[]>([]);
+	const sectionHidden = (id: WizardSection) => isWizard ? !wizardSections.includes(id) : Boolean(activeSection && activeSection !== id);
 	const activeSectionDetails = activeSection
 		? {
 			access: {
@@ -1018,6 +1060,9 @@ export default function GuardrailEditorPageClient(props: {
 
 			keyIds: props.initialKeyIds ?? [],
 			memberIds: props.initialMemberIds ?? [],
+			// Only the new-guardrail flow assigns departments and the whole workspace; editing leaves them as they are.
+			departmentIds: [] as string[],
+			workspaceAssigned: false,
 		};
 	}, [g, props.initialKeyIds, props.initialMemberIds]);
 
@@ -1332,8 +1377,8 @@ export default function GuardrailEditorPageClient(props: {
 	]);
 
 	useEffect(() => {
-		setForm(initial);
-	}, [initial]);
+		if (props.mode !== "create") setForm(initial);
+	}, [initial, props.mode]);
 
 	function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
 		setForm((prev) => ({ ...prev, [key]: value }));
@@ -1520,6 +1565,7 @@ export default function GuardrailEditorPageClient(props: {
 					setGuardrailKeys(guardrailId, form.keyIds),
 					setGuardrailMembers(guardrailId, form.memberIds),
 				]);
+				if (props.mode === "create") await assignWizardLevels(guardrailId, form);
 			}
 
 			toast.success(t("credits.Guardrail saved" as never), { id: toastId });
@@ -1550,139 +1596,15 @@ export default function GuardrailEditorPageClient(props: {
 		}
 	}
 
-	return (
-		<div className="space-y-6 [&_[data-slot=button]]:!rounded-md [&_[data-slot=select-trigger]]:!rounded-md">
-			<div className="w-full space-y-6">
-				{activeSection ? (
-					<div className="space-y-4 border-b pb-5">
-						<button
-							type="button"
-							onClick={() => void setExpandedSections([])}
-							className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
-						>
-							<ChevronLeft className="h-4 w-4" />
-							<span>{t("strings.Overview" as never)} / {activeSectionDetails?.title}</span>
-						</button>
-						<div>
-							<h1 className="text-2xl font-semibold tracking-tight">{activeSectionDetails?.title}</h1>
-							<p className="mt-1 text-sm text-muted-foreground">{activeSectionDetails?.description}</p>
-						</div>
-					</div>
-				) : null}
-				{!activeSection ? <>
-				<div className="flex flex-wrap items-center justify-between gap-3">
-					<div className="min-w-0 flex-1">
-						<Label htmlFor="guardrail-name" className="sr-only">
-							{t("strings.Guardrail name" as never)}
-						</Label>
-						<Input
-							id="guardrail-name"
-							value={form.name}
-							onChange={(e) => set("name", e.target.value)}
-							placeholder={t("strings.New Guardrail" as never)}
-							className="h-auto rounded-none border-0 bg-transparent px-0 py-0 text-4xl font-semibold leading-tight tracking-tight shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0 md:text-3xl"
-						/>
-					</div>
-					<div className="flex flex-wrap items-center gap-2">
-						<Button asChild type="button" variant="outline" disabled={saving || deleting} className="rounded-md">
-							<Link href={props.backHref}>{t("strings.Cancel" as never)}</Link>
-						</Button>
-						<Button type="button" onClick={onSave} disabled={saving || deleting} className="rounded-md">
-							{saving ? t("strings.phraseSaving" as never) : props.mode === "create" ? t("strings.Create" as never) : t("strings.Save" as never)}
-						</Button>
-						{props.mode === "edit" ? (
-							<Button type="button" variant="destructive" onClick={onDelete} disabled={saving || deleting} className="rounded-md">
-								<Trash2 className="mr-2 h-4 w-4" />
-								{t("strings.Delete" as never)}
-							</Button>
-						) : null}
-					</div>
-				</div>
-
-				<div className="space-y-6">
-						<div className="space-y-5">
-							<div className="space-y-3">
-								<Textarea
-									value={form.description}
-									onChange={(e) => set("description", e.target.value)}
-									placeholder={t("strings.Who is this for? What does it restrict?" as never)}
-									className="min-h-0 h-10 resize-none overflow-hidden rounded-none border-0 bg-transparent px-0 py-2 text-base text-muted-foreground shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0"
-								/>
-							</div>
-							<div className="space-y-4 border-t pt-5">
-								<div>
-									<h2 className="text-sm font-semibold">{t("strings.Status & Assignments" as never)}</h2>
-									<p className="mt-1 text-sm text-muted-foreground">{t("strings.phraseEnableThisGuardrailAndChooseWhoItProtects" as never)}</p>
-								</div>
-								<div className="flex items-center justify-between gap-4 py-2">
-									<div>
-										<p className="text-sm font-medium">{t("strings.Enabled" as never)}</p>
-										<p className="mt-1 text-xs text-muted-foreground">{t("strings.phraseDisabledGuardrailsRemainConfiguredButAreNotEnforced" as never)}</p>
-									</div>
-									<Switch checked={form.enabled} onCheckedChange={(checked) => set("enabled", checked)} />
-								</div>
-								<div className="flex flex-wrap items-center justify-between gap-3">
-									<div>
-										<div className="text-sm font-medium">{t("strings.Apply to members" as never)}</div>
-										<p className="text-xs text-muted-foreground">
-											{t("strings.phraseEnforceThisPolicyOnAPIKeysCreatedForSelectedMembers" as never)}
-										</p>
-									</div>
-									<SelectionCombobox
-										title={t("strings.Select members" as never)}
-										description={t("strings.phraseMembersCannotEditOrRemovePoliciesAssignedByWorkspaceOwnersOrAdmins" as never)}
-										options={memberOptions}
-										selected={form.memberIds}
-										onChange={(next) => set("memberIds", next)}
-										trigger={<Button type="button" variant="outline" size="sm" className="h-8 rounded-md">{form.memberIds.length ? `${form.memberIds.length} ${t("strings.selected" as never)}` : t("strings.Select members" as never)}</Button>}
-									/>
-								</div>
-				<SelectedItemBadges items={selectedMemberItems} empty={t("strings.phraseNoMembersSelectedYet" as never)} onRemove={removeSelectedMember} />
-								<div className="flex flex-wrap items-center justify-between gap-3">
-									<div>
-								<div className="text-sm font-medium">{t("strings.Apply to keys" as never)}</div>
-										<p className="text-xs text-muted-foreground">
-										{t("strings.phraseAttachThisGuardrailDuringCreationInsteadOfAfterTheFact" as never)}
-										</p>
-									</div>
-									<SelectionCombobox
-										title={t("strings.Select keys" as never)}
-										description={t("strings.phraseApplyThisGuardrailToOneOrMoreKeys" as never)}
-										options={keyOptions}
-										selected={form.keyIds}
-										onChange={(next) => set("keyIds", next)}
-										trigger={
-											<Button type="button" variant="outline" size="sm" className="h-8 rounded-md">
-												{form.keyIds.length
-													? `${form.keyIds.length} ${t("strings.selected" as never)}`
-													: t("strings.Select keys" as never)}
-											</Button>
-										}
-									/>
-								</div>
-								<SelectedItemBadges
-									items={selectedKeyItems}
-									empty={t("strings.phraseNoKeysSelectedYet" as never)}
-									onRemove={removeSelectedKey}
-								/>
-							</div>
-						</div>
-
-					</div>
-
-				<div>
-					<h2 className="text-sm font-semibold">{t("strings.Configuration Groups" as never)}</h2>
-					<p className="mt-1 text-sm text-muted-foreground">{t("strings.phraseConfigureAccessSafetyAndSpendingPolicies" as never)}</p>
-				</div>
-				</> : null}
+	const sectionsAccordion = (
 				<Accordion
 					type="multiple"
-					value={validExpandedSections}
-					onValueChange={(sections) => void setExpandedSections(sections.slice(-1))}
-					className={activeSection ? "space-y-0" : "border-y border-border/70 py-1"}
+					value={isWizard ? wizardSections : validExpandedSections}
+					onValueChange={(sections) => { if (!isWizard) void setExpandedSections(sections.slice(-1)); }}
+					className={isWizard ? "space-y-10" : activeSection ? "space-y-0" : "border-y border-border/70 py-1"}
 				>
-					<AccordionItem value="access" className={activeSection && activeSection !== "access" ? "hidden" : "border-0"}>
-						<AccordionTrigger className={activeSection ? "hidden" : "gap-4 px-4 py-4 hover:bg-muted/20 hover:no-underline [&>svg:last-child]:-rotate-90"}>
+					<AccordionItem value="access" className={sectionHidden("access") ? "hidden" : "border-0"}>
+						<AccordionTrigger className={activeSection || isWizard ? "hidden" : "gap-4 px-4 py-4 hover:bg-muted/20 hover:no-underline [&>svg:last-child]:-rotate-90"}>
 							<div className="min-w-0 flex-1 text-left">
 				<div className="text-sm font-medium">{t("strings.Access" as never)}</div>
 								<p className="mt-1 text-sm font-normal text-muted-foreground">
@@ -1694,6 +1616,7 @@ export default function GuardrailEditorPageClient(props: {
 							</span>
 						</AccordionTrigger>
 						<AccordionContent disableAnimation className="pb-2 pt-0">
+							{isWizard ? <WizardSectionHeading {...SECTION_HEADINGS["access"](s)} /> : null}
 							<div className="space-y-4">
 						<EditorSection
 							title={t("strings.Access" as never)}
@@ -1984,8 +1907,8 @@ export default function GuardrailEditorPageClient(props: {
 							</div>
 						</AccordionContent>
 					</AccordionItem>
-					<AccordionItem value="prompt-injection" className={activeSection && activeSection !== "prompt-injection" ? "hidden" : "border-0"}>
-						<AccordionTrigger className={activeSection ? "hidden" : "gap-4 px-4 py-4 hover:bg-muted/20 hover:no-underline [&>svg:last-child]:-rotate-90"}>
+					<AccordionItem value="prompt-injection" className={sectionHidden("prompt-injection") ? "hidden" : "border-0"}>
+						<AccordionTrigger className={activeSection || isWizard ? "hidden" : "gap-4 px-4 py-4 hover:bg-muted/20 hover:no-underline [&>svg:last-child]:-rotate-90"}>
 							<div className="min-w-0 flex-1 text-left">
 							<div className="text-sm font-medium">{t("strings.Prompt Injection" as never)}</div>
 								<p className="mt-1 text-sm font-normal text-muted-foreground">{t("strings.phraseScanRequestContentBeforeRouting" as never)}</p>
@@ -1995,6 +1918,7 @@ export default function GuardrailEditorPageClient(props: {
 							</span>
 						</AccordionTrigger>
 						<AccordionContent disableAnimation className="pb-2 pt-0">
+							{isWizard ? <WizardSectionHeading {...SECTION_HEADINGS["prompt-injection"](s)} /> : null}
 							<div className="space-y-4">
 						<EditorSection
 							title={t("strings.Prompt injection" as never)}
@@ -2030,8 +1954,8 @@ export default function GuardrailEditorPageClient(props: {
 							</div>
 						</AccordionContent>
 					</AccordionItem>
-					<AccordionItem value="sensitive-info" className={activeSection && activeSection !== "sensitive-info" ? "hidden" : "border-0"}>
-						<AccordionTrigger className={activeSection ? "hidden" : "gap-4 px-4 py-4 hover:bg-muted/20 hover:no-underline [&>svg:last-child]:-rotate-90"}>
+					<AccordionItem value="sensitive-info" className={sectionHidden("sensitive-info") ? "hidden" : "border-0"}>
+						<AccordionTrigger className={activeSection || isWizard ? "hidden" : "gap-4 px-4 py-4 hover:bg-muted/20 hover:no-underline [&>svg:last-child]:-rotate-90"}>
 							<div className="min-w-0 flex-1 text-left">
 								<div className="text-sm font-medium">{t("strings.Sensitive Info Detection" as never)}</div>
 								<p className="mt-1 text-sm font-normal text-muted-foreground">{t("strings.phraseDetectAndHandleSensitiveDataBeforeRequestsLeavePhaseo" as never)}</p>
@@ -2041,6 +1965,7 @@ export default function GuardrailEditorPageClient(props: {
 							</span>
 						</AccordionTrigger>
 						<AccordionContent disableAnimation className="pb-2 pt-0">
+							{isWizard ? <WizardSectionHeading {...SECTION_HEADINGS["sensitive-info"](s)} /> : null}
 							<div className="space-y-6">
 						<EditorSection
 							title={t("strings.Sensitive info" as never)}
@@ -2360,6 +2285,153 @@ export default function GuardrailEditorPageClient(props: {
 						</AccordionContent>
 					</AccordionItem>
 				</Accordion>
+	);
+
+	if (isWizard) {
+		return (
+			<div className="[&_[data-slot=select-trigger]]:!rounded-md">
+				<GuardrailCreateWizard
+					form={form}
+					defaults={initial}
+					onFormChange={(update) => setForm((prev) => ({ ...prev, ...update(prev) }))}
+					sections={wizardSections}
+					onSectionsChange={setWizardSections}
+					configure={sectionsAccordion}
+					modelCoverage={{ available: modelCoverageCounts.available, total: modelCoverageCounts.available + modelCoverageCounts.unavailable }}
+					saving={saving}
+					onCreate={() => void onSave()}
+					backHref={props.backHref}
+				/>
+			</div>
+		);
+	}
+
+	return (
+		<div className="space-y-6 [&_[data-slot=button]]:!rounded-md [&_[data-slot=select-trigger]]:!rounded-md">
+			<div className="w-full space-y-6">
+				{activeSection ? (
+					<div className="space-y-4 border-b pb-5">
+						<button
+							type="button"
+							onClick={() => void setExpandedSections([])}
+							className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+						>
+							<ChevronLeft className="h-4 w-4" />
+							<span>{t("strings.Overview" as never)} / {activeSectionDetails?.title}</span>
+						</button>
+						<div>
+							<h1 className="text-2xl font-semibold tracking-tight">{activeSectionDetails?.title}</h1>
+							<p className="mt-1 text-sm text-muted-foreground">{activeSectionDetails?.description}</p>
+						</div>
+					</div>
+				) : null}
+				{!activeSection ? <>
+				<div className="flex flex-wrap items-center justify-between gap-3">
+					<div className="min-w-0 flex-1">
+						<Label htmlFor="guardrail-name" className="sr-only">
+							{t("strings.Guardrail name" as never)}
+						</Label>
+						<Input
+							id="guardrail-name"
+							value={form.name}
+							onChange={(e) => set("name", e.target.value)}
+							placeholder={t("strings.New Guardrail" as never)}
+							className="h-auto rounded-none border-0 bg-transparent px-0 py-0 text-4xl font-semibold leading-tight tracking-tight shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0 md:text-3xl"
+						/>
+					</div>
+					<div className="flex flex-wrap items-center gap-2">
+						<Button asChild type="button" variant="outline" disabled={saving || deleting} className="rounded-md">
+							<Link href={props.backHref}>{t("strings.Cancel" as never)}</Link>
+						</Button>
+						<Button type="button" onClick={onSave} disabled={saving || deleting} className="rounded-md">
+							{saving ? t("strings.phraseSaving" as never) : props.mode === "create" ? t("strings.Create" as never) : t("strings.Save" as never)}
+						</Button>
+						{props.mode === "edit" ? (
+							<Button type="button" variant="destructive" onClick={onDelete} disabled={saving || deleting} className="rounded-md">
+								<Trash2 className="mr-2 h-4 w-4" />
+								{t("strings.Delete" as never)}
+							</Button>
+						) : null}
+					</div>
+				</div>
+
+				<div className="space-y-6">
+						<div className="space-y-5">
+							<div className="space-y-3">
+								<Textarea
+									value={form.description}
+									onChange={(e) => set("description", e.target.value)}
+									placeholder={t("strings.Who is this for? What does it restrict?" as never)}
+									className="min-h-0 h-10 resize-none overflow-hidden rounded-none border-0 bg-transparent px-0 py-2 text-base text-muted-foreground shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0"
+								/>
+							</div>
+							<div className="space-y-4 border-t pt-5">
+								<div>
+									<h2 className="text-sm font-semibold">{t("strings.Status & Assignments" as never)}</h2>
+									<p className="mt-1 text-sm text-muted-foreground">{t("strings.phraseEnableThisGuardrailAndChooseWhoItProtects" as never)}</p>
+								</div>
+								<div className="flex items-center justify-between gap-4 py-2">
+									<div>
+										<p className="text-sm font-medium">{t("strings.Enabled" as never)}</p>
+										<p className="mt-1 text-xs text-muted-foreground">{t("strings.phraseDisabledGuardrailsRemainConfiguredButAreNotEnforced" as never)}</p>
+									</div>
+									<Switch checked={form.enabled} onCheckedChange={(checked) => set("enabled", checked)} />
+								</div>
+								<div className="flex flex-wrap items-center justify-between gap-3">
+									<div>
+										<div className="text-sm font-medium">{t("strings.Apply to members" as never)}</div>
+										<p className="text-xs text-muted-foreground">
+											{t("strings.phraseEnforceThisPolicyOnAPIKeysCreatedForSelectedMembers" as never)}
+										</p>
+									</div>
+									<SelectionCombobox
+										title={t("strings.Select members" as never)}
+										description={t("strings.phraseMembersCannotEditOrRemovePoliciesAssignedByWorkspaceOwnersOrAdmins" as never)}
+										options={memberOptions}
+										selected={form.memberIds}
+										onChange={(next) => set("memberIds", next)}
+										trigger={<Button type="button" variant="outline" size="sm" className="h-8 rounded-md">{form.memberIds.length ? `${form.memberIds.length} ${t("strings.selected" as never)}` : t("strings.Select members" as never)}</Button>}
+									/>
+								</div>
+				<SelectedItemBadges items={selectedMemberItems} empty={t("strings.phraseNoMembersSelectedYet" as never)} onRemove={removeSelectedMember} />
+								<div className="flex flex-wrap items-center justify-between gap-3">
+									<div>
+								<div className="text-sm font-medium">{t("strings.Apply to keys" as never)}</div>
+										<p className="text-xs text-muted-foreground">
+										{t("strings.phraseAttachThisGuardrailDuringCreationInsteadOfAfterTheFact" as never)}
+										</p>
+									</div>
+									<SelectionCombobox
+										title={t("strings.Select keys" as never)}
+										description={t("strings.phraseApplyThisGuardrailToOneOrMoreKeys" as never)}
+										options={keyOptions}
+										selected={form.keyIds}
+										onChange={(next) => set("keyIds", next)}
+										trigger={
+											<Button type="button" variant="outline" size="sm" className="h-8 rounded-md">
+												{form.keyIds.length
+													? `${form.keyIds.length} ${t("strings.selected" as never)}`
+													: t("strings.Select keys" as never)}
+											</Button>
+										}
+									/>
+								</div>
+								<SelectedItemBadges
+									items={selectedKeyItems}
+									empty={t("strings.phraseNoKeysSelectedYet" as never)}
+									onRemove={removeSelectedKey}
+								/>
+							</div>
+						</div>
+
+					</div>
+
+				<div>
+					<h2 className="text-sm font-semibold">{t("strings.Configuration Groups" as never)}</h2>
+					<p className="mt-1 text-sm text-muted-foreground">{t("strings.phraseConfigureAccessSafetyAndSpendingPolicies" as never)}</p>
+				</div>
+				</> : null}
+				{sectionsAccordion}
 
 				{activeSection ? <div className="flex justify-end gap-2 border-t pt-4">
 					<Button asChild type="button" variant="outline" disabled={saving || deleting} className="rounded-md">

@@ -103,7 +103,8 @@ export async function setGuardrailMembers(guardrailId: string, userIds: string[]
 }
 
 export type GuardrailAssignmentChange = {
-	targetType: "key" | "member";
+	targetType: "workspace" | "department" | "member" | "key";
+	/** Empty for "workspace": the workspace itself is the target. */
 	targetIds: string[];
 	addGuardrailIds?: string[];
 	removeGuardrailIds?: string[];
