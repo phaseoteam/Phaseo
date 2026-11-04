@@ -194,7 +194,9 @@ type ProviderHintSet = {
 const WORKSPACE_POLICY_L1_TTL_MS = 30_000;
 const WORKSPACE_POLICY_L1_MAX_ENTRIES = 2_000;
 const WORKSPACE_POLICY_KV_PREFIX = "gateway:workspace-policy:v2";
-const WORKSPACE_POLICY_KV_TTL_SECONDS = 60;
+// The cache key embeds the workspace and key versions, and every source table bumps one of
+// them (control routes or the publication triggers), so a policy can live for a day.
+const WORKSPACE_POLICY_KV_TTL_SECONDS = 86_400;
 const WORKSPACE_POLICY_VERSION_PREFIX = "gateway:workspace-policy-version";
 // Capped by the shared copy's absolute expiry (see shared-version-cache).
 const WORKSPACE_POLICY_VERSION_L1_TTL_MS = SHARED_VERSION_TTL_MS;

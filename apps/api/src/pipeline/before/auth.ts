@@ -22,7 +22,11 @@ import {
 const enc = new TextEncoder();
 // Ignore cache entries created before IP policies were included in key rows.
 const KEY_CACHE_PREFIX = "gateway:key:ip-policy-v1";
-const KEY_CACHE_TTL_SECONDS = 60;
+// A cached row is refreshed by key and workspace version bumps, which every write to a
+// key now triggers (control routes, plus the database trigger on keys). Expiry and the
+// rotated-key grace are checked against the clock on each request, so the row can live
+// for a day: the lifetime only matters for a change that somehow signals nothing.
+const KEY_CACHE_TTL_SECONDS = 86_400;
 // Key mutations advance the version token. These short isolate-local windows
 // remove repeated KV reads while bounding revocation propagation.
 // Capped by the shared copy's absolute expiry (see shared-version-cache).

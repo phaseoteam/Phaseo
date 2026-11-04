@@ -29,6 +29,7 @@ import {
 import { applyExplicitProviderModelRouting } from "./context.provider-offers";
 import { awaitShared } from "@core/shared-wait";
 import {
+	clampDynamicTtl,
 	clampTtl,
 	cloneGatewayContextData,
 	computeAdaptiveTtlForDynamic,
@@ -2060,7 +2061,7 @@ export async function fetchGatewayContext(args: {
             const cacheWriteStartedAt = performance.now();
             try {
                 const split = splitContextForCache(parsed);
-                const dynamicTtl = clampTtl(computeAdaptiveTtlForDynamic(parsed));
+                const dynamicTtl = clampDynamicTtl(computeAdaptiveTtlForDynamic(parsed));
                 const pricingAwareStaticTtl = computeStaticTtl(parsed);
                 const staticTtl = pricingAwareStaticTtl === null
                     ? null
