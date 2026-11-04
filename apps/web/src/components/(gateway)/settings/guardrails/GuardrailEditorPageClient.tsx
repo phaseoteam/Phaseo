@@ -86,6 +86,8 @@ import {
 	validateSensitiveInfoRulePayload,
 } from "./sensitiveInfoPreview";
 import GuardrailCreateWizard from "./GuardrailCreateWizard";
+import { MAX_ASSIGNMENT_TARGETS } from "./guardrailAssignmentLimits";
+import { chunkAssignmentChange } from "./guardrailAssignments";
 import type { WizardSection } from "./guardrailWizard";
 
 const GUARDRAIL_SECTION_IDS = new Set([
@@ -158,7 +160,9 @@ function normalizeMode(value: unknown): ProviderRestrictionMode {
 async function assignWizardLevels(guardrailId: string, levels: { workspaceAssigned: boolean; departmentIds: string[] }) {
 	const changes = [
 		...(levels.workspaceAssigned ? [{ targetType: "workspace" as const, targetIds: [] as string[], addGuardrailIds: [guardrailId] }] : []),
-		...(levels.departmentIds.length ? [{ targetType: "department" as const, targetIds: levels.departmentIds, addGuardrailIds: [guardrailId] }] : []),
+		// The API takes up to MAX_ASSIGNMENT_TARGETS targets per change.
+		...chunkAssignmentChange({ targetIds: levels.departmentIds, addGuardrailIds: [guardrailId] }, MAX_ASSIGNMENT_TARGETS)
+			.map((part) => ({ targetType: "department" as const, ...part })),
 	];
 	for (const change of changes) {
 		const result = await updateGuardrailAssignments(change);

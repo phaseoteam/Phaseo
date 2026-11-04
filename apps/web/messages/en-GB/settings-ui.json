@@ -1071,7 +1071,11 @@
 		"fromGuardrails": "From {names}",
 		"promptInjectionPart": "Prompt injection: {action}",
 		"sensitiveInfoPart": "{count, plural, one {# sensitive info rule} other {# sensitive info rules}}",
-		"footnoteLevels": "Each row shows every guardrail that reaches it: its own, and those from its member, its departments and the whole workspace. When several apply, the strictest rule wins."
+		"footnoteLevels": "Each row shows every guardrail that reaches it: its own, and those from its member, its departments and the whole workspace. When several apply, the strictest rule wins.",
+		"noTraining": "No training",
+		"noPaidTraining": "No training on paid endpoints",
+		"noFreeTraining": "No training on free endpoints",
+		"noLogging": "No logging endpoints"
 	},
 	"guardrailWizard": {
 		"title": "New guardrail",

@@ -1071,7 +1071,11 @@
 		"fromGuardrails": "来自 {names}",
 		"promptInjectionPart": "提示注入：{action}",
 		"sensitiveInfoPart": "{count} 条敏感信息规则",
-		"footnoteLevels": "每一行显示作用于它的所有护栏：它自己的，以及其成员、所属部门和整个工作区的。多条护栏同时生效时，以最严格的规则为准。"
+		"footnoteLevels": "每一行显示作用于它的所有护栏：它自己的，以及其成员、所属部门和整个工作区的。多条护栏同时生效时，以最严格的规则为准。",
+		"noTraining": "不允许训练",
+		"noPaidTraining": "付费端点不允许训练",
+		"noFreeTraining": "免费端点不允许训练",
+		"noLogging": "不使用会记录日志的端点"
 	},
 	"guardrailWizard": {
 		"title": "新建护栏",

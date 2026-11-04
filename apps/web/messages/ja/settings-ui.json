@@ -1071,7 +1071,11 @@
 		"fromGuardrails": "適用元: {names}",
 		"promptInjectionPart": "プロンプトインジェクション: {action}",
 		"sensitiveInfoPart": "機密情報ルール {count} 件",
-		"footnoteLevels": "各行には、その行に適用されるすべてのガードレールが表示されます。行自体のもの、メンバー、部署、ワークスペース全体のものです。複数が適用される場合は、最も厳しいルールが優先されます。"
+		"footnoteLevels": "各行には、その行に適用されるすべてのガードレールが表示されます。行自体のもの、メンバー、部署、ワークスペース全体のものです。複数が適用される場合は、最も厳しいルールが優先されます。",
+		"noTraining": "学習なし",
+		"noPaidTraining": "有料エンドポイントでの学習なし",
+		"noFreeTraining": "無料エンドポイントでの学習なし",
+		"noLogging": "ログを残すエンドポイントなし"
 	},
 	"guardrailWizard": {
 		"title": "新しいガードレール",

@@ -1071,7 +1071,11 @@
 		"fromGuardrails": "Aus {names}",
 		"promptInjectionPart": "Prompt-Injection: {action}",
 		"sensitiveInfoPart": "{count, plural, one {# Regel für sensible Daten} other {# Regeln für sensible Daten}}",
-		"footnoteLevels": "Jede Zeile zeigt alle Leitplanken, die für sie gelten: ihre eigenen und die ihres Mitglieds, ihrer Abteilungen und des ganzen Arbeitsbereichs. Wenn mehrere gelten, gewinnt die strengste Regel."
+		"footnoteLevels": "Jede Zeile zeigt alle Leitplanken, die für sie gelten: ihre eigenen und die ihres Mitglieds, ihrer Abteilungen und des ganzen Arbeitsbereichs. Wenn mehrere gelten, gewinnt die strengste Regel.",
+		"noTraining": "Kein Training",
+		"noPaidTraining": "Kein Training bei kostenpflichtigen Endpunkten",
+		"noFreeTraining": "Kein Training bei kostenlosen Endpunkten",
+		"noLogging": "Keine protokollierenden Endpunkte"
 	},
 	"guardrailWizard": {
 		"title": "Neue Leitplanke",

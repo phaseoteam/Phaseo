@@ -49,6 +49,9 @@ describe("effectiveGuardrailPolicy", () => {
 		expect(policy).toEqual({
 			activeCount: 2,
 			zdrOnly: true,
+			noPaidTraining: false,
+			noFreeTraining: false,
+			noLogging: false,
 			providerAllowCount: 2,
 			providerBlockCount: 0,
 			modelAllowCount: null,
@@ -56,6 +59,15 @@ describe("effectiveGuardrailPolicy", () => {
 			promptInjection: "block",
 			sensitiveInfoRuleCount: 2,
 		});
+	});
+
+	it("counts a training or logging rule from any guardrail, as the gateway does", () => {
+		const policy = effectiveGuardrailPolicy([
+			guardrail("a", { privacy_enable_paid_may_train: false }),
+			guardrail("b", { privacy_enable_free_may_train: true, privacy_enable_input_output_logging: false }),
+			guardrail("off", { enabled: false, privacy_enable_free_may_train: false }),
+		]);
+		expect(policy).toMatchObject({ noPaidTraining: true, noFreeTraining: false, noLogging: true });
 	});
 
 	it("skips guardrails that are off, and sensitive-info rules when the section is off", () => {

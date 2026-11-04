@@ -21,6 +21,10 @@ export const WORKSPACE_TARGET_ID = "workspace";
 export type EffectiveGuardrailPolicy = {
 	activeCount: number;
 	zdrOnly: boolean;
+	/** A guardrail turns off training on paid or free endpoints, or endpoints that log prompts and outputs. */
+	noPaidTraining: boolean;
+	noFreeTraining: boolean;
+	noLogging: boolean;
 	/** null when no guardrail sets an allowlist; otherwise the size of the intersection (0 blocks every provider). */
 	providerAllowCount: number | null;
 	providerBlockCount: number;
@@ -105,9 +109,15 @@ export function effectiveGuardrailPolicy(guardrails: SettingsGuardrailRow[]): Ef
 	const sensitiveRules = new Set<string>();
 	let promptInjection: GuardrailAction | null = null;
 	let zdrOnly = false;
+	let noPaidTraining = false;
+	let noFreeTraining = false;
+	let noLogging = false;
 	const active = guardrails.filter(isGuardrailActive);
 	for (const guardrail of active) {
 		zdrOnly ||= guardrail.privacy_zdr_only === true;
+		noPaidTraining ||= guardrail.privacy_enable_paid_may_train === false;
+		noFreeTraining ||= guardrail.privacy_enable_free_may_train === false;
+		noLogging ||= guardrail.privacy_enable_input_output_logging === false;
 		// The gateway maps provider aliases onto canonical ids before it merges lists (workspacePolicy.ts).
 		const providerIds = idSet(normalizeProviderList(idSet(guardrail.provider_restriction_provider_ids)));
 		const providerMode = restrictionMode(guardrail.provider_restriction_mode);
@@ -133,6 +143,9 @@ export function effectiveGuardrailPolicy(guardrails: SettingsGuardrailRow[]): Ef
 	return {
 		activeCount: active.length,
 		zdrOnly,
+		noPaidTraining,
+		noFreeTraining,
+		noLogging,
 		providerAllowCount: allowedCount(providerAllow, providerBlock),
 		providerBlockCount: providerBlock.size,
 		modelAllowCount: allowedCount(modelAllow, modelBlock),
@@ -159,6 +172,9 @@ export function workspaceAssignmentMap(workspaceGuardrailIds: string[]): Record<
 /** Whether a guardrail sets any access rule the Access column shows. */
 export function setsAccessRules(guardrail: SettingsGuardrailRow): boolean {
 	return guardrail.privacy_zdr_only === true
+		|| guardrail.privacy_enable_paid_may_train === false
+		|| guardrail.privacy_enable_free_may_train === false
+		|| guardrail.privacy_enable_input_output_logging === false
 		|| Boolean(restrictionMode(guardrail.provider_restriction_mode))
 		|| Boolean(restrictionMode(guardrail.model_restriction_mode));
 }

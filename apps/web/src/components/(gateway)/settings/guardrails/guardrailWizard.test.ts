@@ -195,4 +195,11 @@ describe("buildWizardAssignRows", () => {
 		const [engineering] = buildWizardAssignRows({ ...withDepartments, ...none, departmentIds: ["d1"], targetType: "department", draft, keyIds: [], memberIds: [] });
 		expect(engineering).toMatchObject({ selected: true, changes: true });
 	});
+
+	it("counts a no-training guardrail as a change for a row with no training rules", () => {
+		const draft = draftGuardrailRow({ ...defaults(), name: "No training", privacyEnablePaidMayTrain: false, privacyEnableFreeMayTrain: false });
+		const [prod] = buildWizardAssignRows({ ...base, ...none, targetType: "key", draft, keyIds: ["k1"], memberIds: [] });
+		expect(prod?.after).toMatchObject({ noPaidTraining: true, noFreeTraining: true });
+		expect(prod?.changes).toBe(true);
+	});
 });

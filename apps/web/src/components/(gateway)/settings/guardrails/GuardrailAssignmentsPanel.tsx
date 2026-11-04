@@ -460,6 +460,10 @@ function SafetySummary({ effective }: { effective: EffectiveGuardrailPolicy }) {
 export function accessSummaryParts(effective: EffectiveGuardrailPolicy, t: ReturnType<typeof useTranslations<"SettingsUI">>): string[] {
 	const parts: string[] = [];
 	if (effective.zdrOnly) parts.push(t("guardrailAssignments.zdrOnly"));
+	if (effective.noPaidTraining && effective.noFreeTraining) parts.push(t("guardrailAssignments.noTraining"));
+	else if (effective.noPaidTraining) parts.push(t("guardrailAssignments.noPaidTraining"));
+	else if (effective.noFreeTraining) parts.push(t("guardrailAssignments.noFreeTraining"));
+	if (effective.noLogging) parts.push(t("guardrailAssignments.noLogging"));
 	if (effective.providerAllowCount !== null) {
 		parts.push(effective.providerAllowCount
 			? t("guardrailAssignments.providersAllowed", { count: effective.providerAllowCount })

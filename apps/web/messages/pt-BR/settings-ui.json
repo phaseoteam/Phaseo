@@ -1071,7 +1071,11 @@
 		"fromGuardrails": "De {names}",
 		"promptInjectionPart": "Injeção de prompt: {action}",
 		"sensitiveInfoPart": "{count, plural, one {# regra de informação sensível} other {# regras de informação sensível}}",
-		"footnoteLevels": "Cada linha mostra todos os guardrails que chegam a ela: os próprios e os do membro, dos departamentos e de todo o espaço de trabalho. Quando vários se aplicam, vale a regra mais rígida."
+		"footnoteLevels": "Cada linha mostra todos os guardrails que chegam a ela: os próprios e os do membro, dos departamentos e de todo o espaço de trabalho. Quando vários se aplicam, vale a regra mais rígida.",
+		"noTraining": "Sem treinamento",
+		"noPaidTraining": "Sem treinamento em endpoints pagos",
+		"noFreeTraining": "Sem treinamento em endpoints gratuitos",
+		"noLogging": "Sem endpoints que registram"
 	},
 	"guardrailWizard": {
 		"title": "Novo guardrail",

@@ -1071,7 +1071,11 @@
 		"fromGuardrails": "Issu de {names}",
 		"promptInjectionPart": "Injection de prompt : {action}",
 		"sensitiveInfoPart": "{count, plural, one {# règle d'informations sensibles} other {# règles d'informations sensibles}}",
-		"footnoteLevels": "Chaque ligne montre tous les garde-corps qui s'y appliquent : les siens, et ceux de son membre, de ses départements et de tout l'espace de travail. Quand plusieurs s'appliquent, la règle la plus stricte l'emporte."
+		"footnoteLevels": "Chaque ligne montre tous les garde-corps qui s'y appliquent : les siens, et ceux de son membre, de ses départements et de tout l'espace de travail. Quand plusieurs s'appliquent, la règle la plus stricte l'emporte.",
+		"noTraining": "Pas d'entraînement",
+		"noPaidTraining": "Pas d'entraînement sur les endpoints payants",
+		"noFreeTraining": "Pas d'entraînement sur les endpoints gratuits",
+		"noLogging": "Pas d'endpoints qui journalisent"
 	},
 	"guardrailWizard": {
 		"title": "Nouveau garde-corps",
