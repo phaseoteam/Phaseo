@@ -20,8 +20,16 @@
 //            beforeRequest call releaseSpend. An admission that is never settled (a path that
 //            reaches neither) stops holding allowance after SPEND_LEASE.inFlightHoldMs.
 //            Batch, realtime and OAuth requests get no slot and keep the legacy check.
+//            When the request context and a fresh spend-limit footprint (spend-limit-footprint.ts)
+//            both show nothing to enforce (no key cap, not soft-blocked, no workspace or
+//            department budget), the slot is allowed with an unlimited admission and the
+//            coordinator is not called at all. The coordinator records nothing for unlimited
+//            admissions either, and seeds usage from Postgres when a limit appears, so skipping
+//            it loses no spend.
 
 import type { GateCheck } from "@pipeline/before/types";
+import { hasConfiguredKeyLimits } from "@pipeline/before/context.shared";
+import { footprintIsEmpty, readSpendLimitFootprint, type SpendLimitFootprint } from "@core/spend-limit-footprint";
 import { LeasePool, type LeaseTransport } from "@core/lease-pool";
 import type { LeaseAcquireResult, LeaseReturn, LeaseVector } from "@core/lease-pool";
 import { dispatchBackground, getBindingsIfConfigured } from "@/runtime/env";
@@ -49,7 +57,8 @@ export type SpendAdmission = {
 };
 
 export type SpendLimitDecision =
-	| { outcome: "allowed"; keyLimit: GateCheck; admission: SpendAdmission; source: "lease" | "coordinator" }
+	/** source "footprint": nothing to enforce, decided without the coordinator (unlimited admission). */
+	| { outcome: "allowed"; keyLimit: GateCheck; admission: SpendAdmission; source: "lease" | "coordinator" | "footprint" }
 	| {
 		outcome: "denied";
 		/** Same reasons, windows and shape as the request-context key-limit / budget check. */
@@ -376,10 +385,39 @@ export function createSpendLimitSlot(): SpendLimitSlot {
 }
 
 /**
+ * Enforce mode: starts reading the key's spend-limit footprint when enforcedSpendLimit will need a
+ * decision for this slot, so the read overlaps the request-context fetch. Null otherwise. Never
+ * throws or rejects (a failed read resolves to null, which never skips the coordinator).
+ */
+export function startSpendLimitFootprint(args: {
+	workspaceId: string;
+	keyId: string | null | undefined;
+	internal?: boolean;
+	slot?: SpendLimitSlot | null;
+}): Promise<SpendLimitFootprint | null> | null {
+	try {
+		if (!args.slot || args.slot.decision || args.internal || !args.keyId || !KEY_ID.test(args.keyId)) return null;
+		if (currentMode() !== "enforce") return null;
+		return readSpendLimitFootprint(args.workspaceId, args.keyId).catch((error) => {
+			console.warn("spend_limit_footprint_unavailable", { error: error instanceof Error ? error.message : String(error) });
+			return null;
+		});
+	} catch {
+		return null;
+	}
+}
+
+/**
  * Enforce mode, before the request: the coordinator's decision for this request, computed once
  * per slot (admissionId = requestId:attempt). Null (use the legacy key-limit check alone) unless
  * GATEWAY_SPEND_LIMIT_DO_MODE is "enforce" and the request is a non-internal API-key request with
  * a slot. Never throws.
+ *
+ * With `footprint` (from startSpendLimitFootprint) and the request context's `keyLimit`, the
+ * coordinator is skipped when both show nothing to enforce: the context's key-limit check passed
+ * with no configured caps or budgets, and the footprint read (within ENFORCE_WAIT_MS) shows no key
+ * cap, no soft block, no workspace budget and no department budget. Anything else, including a
+ * failed or slow footprint read, asks the coordinator as before.
  */
 export function enforcedSpendLimit(args: {
 	workspaceId: string;
@@ -387,17 +425,44 @@ export function enforcedSpendLimit(args: {
 	requestId: string;
 	internal?: boolean;
 	slot?: SpendLimitSlot | null;
+	footprint?: Promise<SpendLimitFootprint | null> | null;
+	keyLimit?: GateCheck | null;
 }): Promise<SpendLimitDecision> | null {
 	try {
 		if (!args.slot || args.internal || !args.keyId || !KEY_ID.test(args.keyId)) return null;
 		if (args.slot.decision) return args.slot.decision;
 		if (currentMode() !== "enforce") return null;
-		args.slot.decision = boundedDecision(checkSpendLimit({ workspaceId: args.workspaceId, keyId: args.keyId, admissionId: `${args.requestId}:${args.slot.attempt}` }));
+		const scope = { workspaceId: args.workspaceId, keyId: args.keyId, admissionId: `${args.requestId}:${args.slot.attempt}` };
+		const ask = () => boundedDecision(checkSpendLimit(scope));
+		args.slot.decision = args.footprint && contextShowsNoSpendLimits(args.keyLimit)
+			? decideFromFootprint(args.footprint, scope, ask)
+			: ask();
 		return args.slot.decision;
 	} catch (error) {
 		console.warn("spend_limit_enforce_failed", { error: error instanceof Error ? error.message : String(error) });
 		return null;
 	}
+}
+
+/** The context's key-limit check passed and it reports no key cap or workspace budget. */
+function contextShowsNoSpendLimits(keyLimit: GateCheck | null | undefined): boolean {
+	return keyLimit?.ok === true && !hasConfiguredKeyLimits(keyLimit);
+}
+
+async function decideFromFootprint(
+	footprint: Promise<SpendLimitFootprint | null>,
+	scope: { workspaceId: string; keyId: string; admissionId: string },
+	ask: () => Promise<SpendLimitDecision>,
+): Promise<SpendLimitDecision> {
+	const read = await awaitShared(footprint.catch(() => null), ENFORCE_WAIT_MS);
+	if (!read.settled || !footprintIsEmpty(read.value)) return ask();
+	return {
+		outcome: "allowed",
+		keyLimit: { ok: true, reason: null, resetAt: null, now: new Date().toISOString(), buckets: null },
+		// recordSpend and releaseSpend never contact the coordinator for an unlimited admission.
+		admission: { ...scope, leaseId: `${scope.admissionId}:footprint`, fromSlice: true, unlimited: true },
+		source: "footprint",
+	};
 }
 
 /**

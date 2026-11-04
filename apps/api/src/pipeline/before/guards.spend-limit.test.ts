@@ -7,12 +7,15 @@ const state = vi.hoisted(() => ({
 	shadow: vi.fn(),
 	mode: "off" as string,
 	decide: vi.fn(),
+	footprint: vi.fn(),
 }));
 
 // Mirrors enforcedSpendLimit's contract (spend-limits.test.ts covers the real one): a decision
 // only in enforce mode for non-internal requests with a slot, computed once per slot.
 vi.mock("@core/spend-limits", () => ({
 	shadowSpendLimitOnce: state.shadow,
+	startSpendLimitFootprint: (args: { internal?: boolean; slot?: { decision: Promise<unknown> | null } | null }) =>
+		!args.slot || args.slot.decision || args.internal || state.mode !== "enforce" ? null : state.footprint(args),
 	enforcedSpendLimit: (args: { internal?: boolean; slot?: { decision: Promise<unknown> | null } | null }) => {
 		if (!args.slot || args.internal || state.mode !== "enforce") return null;
 		args.slot.decision ??= Promise.resolve(state.decide(args));
@@ -76,6 +79,7 @@ describe("budget alerts from rejected requests", () => {
 		state.shadow.mockReset();
 		state.mode = "off";
 		state.decide.mockReset();
+		state.footprint.mockReset();
 		resetRememberedSpendLimits();
 	});
 
@@ -244,6 +248,33 @@ describe("budget alerts from rejected requests", () => {
 			state.mode = "shadow";
 			await request({ spendLimit: slot() });
 			expect(state.decide).toHaveBeenCalledTimes(1);
+		});
+
+		it("starts the footprint read before loading the context and hands it over with the context's key-limit check", async () => {
+			const order: string[] = [];
+			const footprint = Promise.resolve({ keyLimited: false, softBlocked: false, workspaceBudgets: false, departmentBudgets: false });
+			state.footprint.mockImplementation(() => { order.push("footprint"); return footprint; });
+			state.decide.mockReturnValue({ outcome: "allowed", keyLimit: { ok: true, reason: null, resetAt: null }, admission: {}, source: "footprint" });
+			const context = allowedContext();
+			vi.mocked(fetchGatewayContext).mockImplementation(async () => { order.push("context"); return context; });
+
+			await request({ spendLimit: slot() });
+
+			expect(order).toEqual(["footprint", "context"]);
+			expect(state.footprint).toHaveBeenCalledWith(expect.objectContaining({ workspaceId: "ws_1", keyId: "key_1" }));
+			expect(state.decide).toHaveBeenCalledWith(expect.objectContaining({ footprint, keyLimit: context.keyLimit }));
+		});
+
+		it("reads no footprint once the request's slot is decided, or outside enforce mode", async () => {
+			state.decide.mockReturnValue(departmentDenial);
+			vi.mocked(fetchGatewayContext).mockResolvedValue(allowedContext());
+			const shared = slot();
+			await request({ spendLimit: shared });
+			await request({ spendLimit: shared, model: "anthropic/claude-5" });
+			expect(state.footprint).toHaveBeenCalledTimes(1);
+			state.mode = "shadow";
+			await request({ spendLimit: slot() });
+			expect(state.footprint).toHaveBeenCalledTimes(1);
 		});
 
 		it("decides once per request however many candidate models are checked", async () => {
