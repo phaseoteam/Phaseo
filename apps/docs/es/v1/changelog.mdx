@@ -8,6 +8,26 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"Producto","api":"API y SDK","models":"Modelos"}} clearLabel="Borrar" />
 
+<Update label="3 de noviembre de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- **Beta:** **Ajustes -> Claves de API -> Cargas de trabajo de confianza** permite a propietarios y administradores sustituir las claves de API por tokens OIDC de corta duración de Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI, AWS o de su propio emisor OIDC; consulta [Cargas de trabajo de confianza](./developers/trusted-workloads.mdx) ([#3253](https://github.com/phaseoteam/Phaseo/pull/3253), [#3441](https://github.com/phaseoteam/Phaseo/pull/3441), [#3346](https://github.com/phaseoteam/Phaseo/pull/3346)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API y SDK</p>
+
+- **Beta:** El gateway acepta el token OIDC de una carga de trabajo de confianza en lugar de una clave de API, y las claves de gestión pueden crear y editar políticas de confianza con `/v1/workload-identity/policies`; consulta [Cargas de trabajo de confianza](./developers/trusted-workloads.mdx) ([#3243](https://github.com/phaseoteam/Phaseo/pull/3243), [#3287](https://github.com/phaseoteam/Phaseo/pull/3287), [#3441](https://github.com/phaseoteam/Phaseo/pull/3441)).
+
+</div>
+
+</Update>
+
 <Update label="2 de noviembre de 2026">
 
 <div data-changelog-category="models">

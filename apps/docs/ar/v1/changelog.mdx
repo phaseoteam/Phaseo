@@ -8,6 +8,26 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"المنتج","api":"API وحزم SDK","models":"النماذج"}} clearLabel="مسح" />
 
+<Update label="3 نوفمبر 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- **تجريبي:** يتيح **الإعدادات -> مفاتيح API -> أحمال العمل الموثوقة** للمالكين والمسؤولين استبدال مفاتيح API برموز OIDC قصيرة العمر من Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI, AWS أو من جهة إصدار OIDC خاصة بهم؛ راجع [أحمال العمل الموثوقة](./developers/trusted-workloads.mdx) ([#3253](https://github.com/phaseoteam/Phaseo/pull/3253), [#3441](https://github.com/phaseoteam/Phaseo/pull/3441), [#3346](https://github.com/phaseoteam/Phaseo/pull/3346)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- **تجريبي:** تقبل البوابة رمز OIDC الخاص بحمل عمل موثوق بدلًا من مفتاح API، ويمكن لمفاتيح الإدارة إنشاء سياسات الثقة وتعديلها عبر `/v1/workload-identity/policies`؛ راجع [أحمال العمل الموثوقة](./developers/trusted-workloads.mdx) ([#3243](https://github.com/phaseoteam/Phaseo/pull/3243), [#3287](https://github.com/phaseoteam/Phaseo/pull/3287), [#3441](https://github.com/phaseoteam/Phaseo/pull/3441)).
+
+</div>
+
+</Update>
+
 <Update label="2 نوفمبر 2026">
 
 <div data-changelog-category="models">

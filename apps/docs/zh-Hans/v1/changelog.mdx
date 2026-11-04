@@ -8,6 +8,26 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"产品","api":"API 与 SDK","models":"模型"}} clearLabel="清除" />
 
+<Update label="2026年11月3日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- **测试版：** 所有者和管理员可在 **设置 -> API 密钥 -> 受信任的工作负载** 中，用来自 Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI, AWS 或自有 OIDC 签发方的短期 OIDC 令牌替代 API 密钥；参见[受信任的工作负载](./developers/trusted-workloads.mdx) ([#3253](https://github.com/phaseoteam/Phaseo/pull/3253), [#3441](https://github.com/phaseoteam/Phaseo/pull/3441), [#3346](https://github.com/phaseoteam/Phaseo/pull/3346))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- **测试版：** 网关接受受信任工作负载的 OIDC 令牌来替代 API 密钥，管理密钥可通过 `/v1/workload-identity/policies` 创建和编辑信任策略；参见[受信任的工作负载](./developers/trusted-workloads.mdx) ([#3243](https://github.com/phaseoteam/Phaseo/pull/3243), [#3287](https://github.com/phaseoteam/Phaseo/pull/3287), [#3441](https://github.com/phaseoteam/Phaseo/pull/3441))。
+
+</div>
+
+</Update>
+
 <Update label="2026年11月2日">
 
 <div data-changelog-category="models">

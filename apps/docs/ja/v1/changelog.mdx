@@ -8,6 +8,26 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"製品","api":"API と SDK","models":"モデル"}} clearLabel="クリア" />
 
+<Update label="2026年11月3日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- **ベータ:** **設定 -> APIキー -> 信頼済みワークロード** で、オーナーと管理者は API キーの代わりに Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI, AWS または独自の OIDC 発行者が発行する短期間有効な OIDC トークンを使えます。[信頼済みワークロード](./developers/trusted-workloads.mdx)を参照してください ([#3253](https://github.com/phaseoteam/Phaseo/pull/3253), [#3441](https://github.com/phaseoteam/Phaseo/pull/3441), [#3346](https://github.com/phaseoteam/Phaseo/pull/3346))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- **ベータ:** ゲートウェイは API キーの代わりに信頼済みワークロードの OIDC トークンを受け付け、管理キーは `/v1/workload-identity/policies` で信頼ポリシーを作成・編集できます。[信頼済みワークロード](./developers/trusted-workloads.mdx)を参照してください ([#3243](https://github.com/phaseoteam/Phaseo/pull/3243), [#3287](https://github.com/phaseoteam/Phaseo/pull/3287), [#3441](https://github.com/phaseoteam/Phaseo/pull/3441))。
+
+</div>
+
+</Update>
+
 <Update label="2026年11月2日">
 
 <div data-changelog-category="models">

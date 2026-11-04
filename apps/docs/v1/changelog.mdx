@@ -9,6 +9,26 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"Product","api":"API & SDKs","models":"Models"}} clearLabel="Clear" />
 
+<Update label="November 3, 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Product</p>
+
+- **Beta:** **Settings -> API Keys -> Trusted workloads** lets owners and admins replace API keys with short-lived OIDC tokens from Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI, AWS or their own OIDC issuer; see [Trusted Workloads](./developers/trusted-workloads.mdx) ([#3253](https://github.com/phaseoteam/Phaseo/pull/3253), [#3441](https://github.com/phaseoteam/Phaseo/pull/3441), [#3346](https://github.com/phaseoteam/Phaseo/pull/3346)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- **Beta:** The gateway accepts a trusted workload's OIDC token in place of an API key, and management keys can create and edit trust policies with `/v1/workload-identity/policies`; see [Trusted Workloads](./developers/trusted-workloads.mdx) ([#3243](https://github.com/phaseoteam/Phaseo/pull/3243), [#3287](https://github.com/phaseoteam/Phaseo/pull/3287), [#3441](https://github.com/phaseoteam/Phaseo/pull/3441)).
+
+</div>
+
+</Update>
+
 <Update label="November 2, 2026">
 
 <div data-changelog-category="models">
