@@ -45,7 +45,9 @@ export function transcriptFolders(accounts: readonly Account[], added: readonly 
 export async function transcriptFiles(folder: TranscriptFolder, days = 91, now = Date.now()): Promise<{ path: string; size: number; mtimeMs: number }[]> {
 	const roots = folder.harness === "claude" ? [path.join(folder.directory, "projects")] : [path.join(folder.directory, "sessions"), path.join(folder.directory, "archived_sessions")];
 	const found: { path: string; size: number; mtimeMs: number }[] = [];
-	// A folder at a time, synchronously, yielding between: on Windows an awaited stat per file took twenty times as long.
+	// Synchronously, yielding between folders and every 100 files: on Windows an awaited stat per file took twenty times
+	// as long, and a folder of thousands of transcripts in one go held up the app's main process for a third of a second.
+	let stats = 0;
 	const walk = async (directory: string, depth: number): Promise<void> => {
 		let entries;
 		try { entries = readdirSync(directory, { withFileTypes: true }); } catch { return; }
@@ -55,6 +57,7 @@ export async function transcriptFiles(folder: TranscriptFolder, days = 91, now =
 			if (entry.isDirectory() && depth < 5) folders.push(full);
 			// Codex compresses finished sessions to .jsonl.zst; most of its history is in those.
 			else if (entry.isFile() && (entry.name.endsWith(".jsonl") || entry.name.endsWith(".jsonl.zst"))) {
+				if (++stats % 100 === 0) await new Promise(resolve => setImmediate(resolve));
 				let info;
 				try { info = statSync(full); } catch { continue; }
 				if (info && now - info.mtimeMs < days * 86_400_000) found.push({ path: full, size: info.size, mtimeMs: info.mtimeMs });
