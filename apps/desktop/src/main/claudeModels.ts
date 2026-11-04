@@ -53,7 +53,6 @@ function descriptors(profile: Profile): ModelOptionDescriptor[] {
 	if (profile.effort.length) result.push({ id: "effort", label: "Reasoning", type: "select", options: profile.effort.map(id => ({ id, ...effortLabels[id], ...(id === profile.defaultEffort ? { isDefault: true } : {}) })) });
 	if (profile.ultracode) result.push({ id: "ultracode", label: "Ultracode", type: "boolean", default: false });
 	if (profile.fastMode) result.push({ id: "fastMode", label: "Fast Mode", type: "boolean", default: false });
-	if (profile.contextWindow) result.push({ id: "contextWindow", label: "Context Window", type: "select", options: [{ id: "200k", label: "200k", ...(profile.contextWindow === "200k" ? { isDefault: true } : {}) }, { id: "1m", label: "1M", ...(profile.contextWindow === "1m" ? { isDefault: true } : {}) }] });
 	if (profile.thinking) result.push({ id: "thinking", label: "Thinking", type: "boolean", default: false });
 	return result;
 }
@@ -126,8 +125,8 @@ export function claudeRunOptions(model: string, values: ModelOptionValues | unde
 	const ultrathink = (typesUltrathink(text) || values?.effort === "ultrathink") && levels.includes("xhigh");
 	if (ultrathink && chosen !== "max") chosen = "xhigh";
 	const effort = chosen ? profile?.effortMap?.[chosen] ?? chosen : undefined;
-	const windowOption = offered("contextWindow");
-	const window = windowOption?.type === "select" ? (typeof values?.contextWindow === "string" ? values.contextWindow : windowOption.options.find(option => option.isDefault)?.id) : undefined;
+	// Each model runs at its own context window, 1M where it offers one; it is not a choice.
+	const window = profile?.contextWindow;
 	const settings = {
 		...(offered("fastMode") ? { fastMode: values?.fastMode === true } : {}),
 		...(offered("thinking") && typeof values?.thinking === "boolean" ? { alwaysThinkingEnabled: values.thinking } : {}),

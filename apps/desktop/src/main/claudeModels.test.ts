@@ -16,8 +16,8 @@ describe("claude models", () => {
 			{ id: "claude-fable-5-1", name: "Claude Fable 5.1", description: "Most capable for your hardest and longest-running tasks" },
 			{ id: "claude-haiku-5-5", name: "Claude Haiku 5.5", description: "Fastest for quick answers" },
 		]);
-		expect(models[0].options?.map(option => option.id)).toEqual(["effort", "ultracode", "fastMode", "contextWindow"]);
-		expect(models[1].options?.map(option => option.id)).toEqual(["effort", "ultracode", "contextWindow"]);
+		expect(models[0].options?.map(option => option.id)).toEqual(["effort", "ultracode", "fastMode"]);
+		expect(models[1].options?.map(option => option.id)).toEqual(["effort", "ultracode"]);
 		expect(models[2].options).toEqual([{ id: "effort", label: "Reasoning", type: "select", options: [{ id: "low", label: "Low" }, { id: "medium", label: "Medium", isDefault: true }, { id: "high", label: "High" }] }]);
 		expect(models.find(model => model.id === "claude-sonnet-5-5")).toMatchObject({ legacy: true });
 		expect(models.some(model => model.id === "default")).toBe(false);
@@ -36,7 +36,7 @@ describe("claude models", () => {
 		expect(effort?.type === "select" && effort.options.map(option => option.id)).toEqual(["low", "medium", "high"]);
 		expect(opus.options?.some(option => option.id === "fastMode")).toBe(false);
 		const [unreported] = claudeModelsFor([{ ...reported, supportedEffortLevels: undefined, supportsEffort: undefined, supportsFastMode: undefined }], "2.1.296");
-		expect(unreported.options?.map(option => option.id)).toEqual(["effort", "ultracode", "fastMode", "contextWindow"]);
+		expect(unreported.options?.map(option => option.id)).toEqual(["effort", "ultracode", "fastMode"]);
 	});
 
 	it("keeps an alias it cannot parse", () => {
@@ -50,8 +50,9 @@ describe("claude run options", () => {
 		expect(claudeRunOptions("claude-sonnet-5-5", undefined)).toMatchObject({ model: "claude-sonnet-5-5", settings: undefined });
 	});
 
-	it("passes effort, fast mode and a 200k window", () => {
-		expect(claudeRunOptions("claude-opus-5-5", { effort: "high", fastMode: true, contextWindow: "200k" })).toEqual({ model: "claude-opus-5-5", effort: "high", settings: { fastMode: true } });
+	it("passes effort and fast mode at the model's own window", () => {
+		// A window saved when it was a choice no longer applies: each model runs at its own.
+		expect(claudeRunOptions("claude-opus-5-5", { effort: "high", fastMode: true, contextWindow: "200k" })).toEqual({ model: "claude-opus-5-5[1m]", effort: "high", settings: { fastMode: true } });
 	});
 
 	it("runs Ultracode as a switch at whichever level is chosen, as Claude Code does", () => {

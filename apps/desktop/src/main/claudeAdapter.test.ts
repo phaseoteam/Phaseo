@@ -155,8 +155,8 @@ describe("Claude SDK integration", () => {
 		await new ClaudeAdapter().run({ ...task, model: "claude-opus-5-5", modelOptions: { effort: "high", fastMode: true } }, ".", "Plan it", callbacks);
 		expect(calls[0].options).toMatchObject({ model: "claude-opus-5-5[1m]", effort: "high", settings: { fastMode: true } });
 		// Typed ultrathink raises the turn to Extra High and goes to Claude Code as written, with nothing added.
-		await new ClaudeAdapter().run({ ...task, model: "claude-fable-5-1", modelOptions: { effort: "low", contextWindow: "200k", ultracode: true } }, ".", "ultrathink: plan it", callbacks);
-		expect(calls[1].options).toMatchObject({ model: "claude-fable-5-1", effort: "xhigh", settings: { ultracode: true } });
+		await new ClaudeAdapter().run({ ...task, model: "claude-fable-5-1", modelOptions: { effort: "low", ultracode: true } }, ".", "ultrathink: plan it", callbacks);
+		expect(calls[1].options).toMatchObject({ model: "claude-fable-5-1[1m]", effort: "xhigh", settings: { ultracode: true } });
 		expect(calls[1].prompt).toBe("ultrathink: plan it");
 	});
 });
