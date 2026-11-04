@@ -4,13 +4,41 @@ description: "Diferencias entre la disponibilidad del proveedor, la preparación
 icon: "activity"
 ---
 
-La oferta de un modelo en un proveedor tiene estados independientes para el proveedor y para Phaseo. Esto importa cuando un proveedor publica un modelo que Phaseo todavía no ha implementado o habilitado en el endpoint correspondiente.
+import { ProviderStatusExplorer } from "/snippets/provider-status.jsx";
 
-Verás estos campos en las páginas de modelos, las tarjetas de precios de los proveedores y las vistas de disponibilidad relacionadas.
+En la página de un modelo aparecen hasta dos iconos después del nombre de cada proveedor: un **icono de estado**, que establece Phaseo, y un **icono de enrutamiento en directo**, que solo aparece mientras el Gateway desvía el tráfico de un proveedor que está fallando.
 
-## Disponibilidad del proveedor
+<ProviderStatusExplorer locale="es" />
 
-La disponibilidad del proveedor describe la oferta en el proveedor original.
+## Icono de estado
+
+Phaseo establece este estado manualmente y se mantiene hasta que Phaseo lo cambie. Las páginas de modelos muestran los tres niveles de prioridad reducida como `Prioridad más baja`.
+
+| Icono | Estado | Enrutamiento |
+| --- | --- | --- |
+| <Icon icon="circle-check" color="#16a34a" /> | `Active` | Se enruta con normalidad. |
+| <Icon icon="triangle-alert" color="#f59e0b" /> | `Deranked L1` | Enrutable, justo detrás de otros proveedores. |
+| <Icon icon="triangle-alert" color="#d97706" /> | `Deranked L2` | Enrutable, detrás de proveedores en mejor estado. |
+| <Icon icon="triangle-alert" color="#ef4444" /> | `Deranked L3` | Enrutable, muy por detrás de otros proveedores. |
+| <Icon icon="ban" color="#dc2626" /> | `Disabled` | No se enruta. |
+
+## Enrutamiento en directo
+
+El Gateway lo establece automáticamente para cada proveedor, modelo y endpoint, según las solicitudes que atiende en este momento. Una ruta limitada o en recuperación sigue siendo enrutable, pero se prueban primero otros proveedores.
+
+```mermaid
+flowchart TD
+  ok["Normal"] -->|"Varios fallos seguidos o falla la mitad de las solicitudes recientes"| lim["Limitado temporalmente"]
+  lim -->|"Termina la pausa"| rec["En recuperación"]
+  rec -->|"Todas las solicitudes de un lote funcionan"| ok
+  rec -->|"Falla la mitad o más: pausa más larga"| lim
+```
+
+## Disponibilidad e integración
+
+La tarjeta de estado también muestra si el proveedor ofrece el modelo y si Phaseo lo ha habilitado. Una ruta solo es pública cuando se cumplen ambas cosas. Por ejemplo, un proveedor puede ofrecer un modelo nuevo (`Available`) mientras Phaseo todavía desarrolla la compatibilidad (`Implementing`).
+
+### Disponibilidad del proveedor
 
 | Estado | Significado |
 | --- | --- |
@@ -22,11 +50,7 @@ La disponibilidad del proveedor describe la oferta en el proveedor original.
 | `Removed` | El proveedor ya no ofrece la oferta. |
 | `Unknown` | Phaseo aún no ha verificado la disponibilidad en el proveedor original. |
 
-La disponibilidad del proveedor no significa que Phaseo pueda enrutar la solicitud.
-
-## Estado de integración de Phaseo
-
-El estado de Phaseo describe nuestra implementación y su despliegue.
+### Integración de Phaseo
 
 | Estado | Significado | Enrutamiento de Phaseo |
 | --- | --- | --- |
@@ -38,86 +62,11 @@ El estado de Phaseo describe nuestra implementación y su despliegue.
 | `Disabled` | Phaseo desactivó deliberadamente la integración. | No se puede enrutar. |
 | `Blocked` | Una dependencia externa o sin resolver impide el despliegue. | No se puede enrutar. |
 
-Solo se puede habilitar el enrutamiento público para integraciones con estado `Enabled`.
-
-## Acceso interno
-
-El ámbito de acceso es independiente del estado de integración de Phaseo:
-
-| Ámbito | Significado |
-| --- | --- |
-| `Public` | Las solicitudes normales de clientes pueden usar la ruta si pasan todos los controles de enrutamiento. |
-| `Internal` | Solo el tráfico de pruebas autenticado de Phaseo puede usar la ruta. |
-
-Una ruta interna requiere el token interno de alta entropía y una solicitud explícita en modo de prueba. Un cliente no puede habilitarla usando solo el encabezado de prueba. Las solicitudes normales no consultan la base de datos para buscar rutas internas; utilizan la caché de contexto predeterminada existente. Las pruebas internas usan un segmento de caché independiente y solo consideran rutas marcadas explícitamente como internas, cuya oferta original se pueda usar y cuyo estado de Phaseo sea `Testing` o `Enabled`.
-
-## Estado de salud del enrutamiento
-
-La salud del enrutamiento es una tercera señal operativa. Indica cómo se debe seleccionar una ruta habilitada en este momento.
-
-| Estado | Significado | Comportamiento del enrutamiento |
-| --- | --- | --- |
-| `Active` | La ruta está lo bastante sana para seleccionarse normalmente. | Se puede enrutar ahora. |
-| `Deranked L1` | La salud reciente le asignó una prioridad ligeramente menor. | Se puede enrutar ahora. |
-| `Deranked L2` | La salud reciente redujo claramente su prioridad. | Se puede enrutar ahora, detrás de rutas más sanas. |
-| `Deranked L3` | La salud reciente redujo mucho su prioridad. | Se puede enrutar ahora, con una prioridad muy baja. |
-| `Disabled` | El control de enrutamiento está desactivado. | No se enruta. |
-
-La degradación de prioridad no cambia la disponibilidad del proveedor ni el ciclo de vida de la integración de Phaseo. Las observaciones de salud en tiempo real tampoco modifican esos estados del ciclo de vida.
-
-En las páginas de modelos, una ruta con prioridad reducida muestra el icono de
-advertencia ámbar o rojo con la etiqueta `Prioridad más baja`. Phaseo establece
-estos niveles manualmente y se mantienen hasta que Phaseo los cambia.
-
-## Enrutamiento en directo
-
-El enrutamiento en directo es independiente de los estados anteriores. El Gateway
-lo establece automáticamente para cada proveedor, modelo y endpoint, según las
-solicitudes que está atendiendo en este momento.
-
-| Icono | Estado | Significado | Comportamiento de enrutamiento |
-| --- | --- | --- | --- |
-| Rayo naranja tachado | `Limitado temporalmente` | Las solicitudes han fallado varias veces seguidas, o al menos la mitad de las solicitudes recientes han fallado. | Enrutable, pero primero se prueban otros proveedores. |
-| Flechas azules de actualización | `En recuperación` | Tras una pausa, Phaseo deja pasar algunas solicitudes para comprobar el proveedor. | Si todas las de un lote funcionan, el enrutamiento vuelve a la normalidad. Si falla la mitad o más, la ruta vuelve a limitarse con una pausa más larga. |
-
-En las páginas de modelos, el icono de enrutamiento en directo aparece después del
-icono de estado, solo mientras se aplica uno de estos estados. Una ruta puede tener
-`Prioridad más baja` y estar `Limitado temporalmente` a la vez; en ese caso se
-muestran ambos iconos. Pasa el cursor sobre un icono para ver los detalles.
-
-El enrutamiento en directo nunca cambia la disponibilidad del proveedor, el estado
-de la integración de Phaseo ni el estado de enrutamiento establecido manualmente.
-
-## Ejemplos
-
-Una oferta de proveedor recién publicada puede tener estos estados:
-
-- disponibilidad del proveedor: `Available`
-- estado de Phaseo: `Implementing`
-- salud del enrutamiento: no corresponde porque el enrutamiento está desactivado
-
-Una ruta estable a la que Phaseo ha reducido la prioridad manualmente puede tener estos estados:
-
-- disponibilidad del proveedor: `Available`
-- estado de Phaseo: `Enabled`
-- salud del enrutamiento: `Deranked L2`
-
-Una ruta cuyo proveedor está fallando en este momento puede tener estos estados:
-
-- disponibilidad del proveedor: `Available`
-- estado de Phaseo: `Enabled`
-- salud del enrutamiento: `Active`
-- enrutamiento en directo: `Limitado temporalmente`
-
-Un anuncio de un proveedor puede tener estos estados:
-
-- disponibilidad del proveedor: `Coming Soon`
-- estado de Phaseo: `Planned`
-- salud del enrutamiento: no corresponde
+Solo las rutas `Enabled` pueden ser públicas. Las rutas `Internal` solo atienden el tráfico de prueba de Phaseo.
 
 ## Compatibilidad
 
-Los campos de API existentes, como `availability_status`, `routing_status`, `is_active_gateway` y `routable`, seguirán disponibles durante el despliegue aditivo. Las nuevas integraciones deben usar los campos explícitos del proveedor y de Phaseo.
+`availability_status`, `routing_status`, `is_active_gateway` y `routable` siguen en la API para las integraciones existentes. Las integraciones nuevas deben leer los campos separados del proveedor y de Phaseo.
 
 ## Páginas relacionadas
 

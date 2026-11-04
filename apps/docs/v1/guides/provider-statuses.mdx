@@ -5,16 +5,41 @@ description: "How upstream provider availability, Phaseo integration readiness, 
 icon: "activity"
 ---
 
-A provider/model offer has separate upstream and Phaseo statuses. This matters
-when a provider has released a model but Phaseo has not yet implemented or
-enabled the corresponding endpoint.
+import { ProviderStatusExplorer } from "/snippets/provider-status.jsx";
 
-You will see these fields on model pages, provider pricing cards, and related
-availability UI.
+A model page shows up to two icons after each provider's name: a **status icon** that Phaseo sets, and a **live routing icon** that appears only while the gateway is steering traffic away from a failing provider.
 
-## Provider availability
+<ProviderStatusExplorer />
 
-Provider availability describes the upstream offer.
+## Status icon
+
+Phaseo sets this status by hand, and it stays until Phaseo changes it. Model pages label all three deranked levels `Lower priority`.
+
+| Icon | Status | Routing |
+| --- | --- | --- |
+| <Icon icon="circle-check" color="#16a34a" /> | `Active` | Routed normally. |
+| <Icon icon="triangle-alert" color="#f59e0b" /> | `Deranked L1` | Routable, just behind other providers. |
+| <Icon icon="triangle-alert" color="#d97706" /> | `Deranked L2` | Routable, behind healthier providers. |
+| <Icon icon="triangle-alert" color="#ef4444" /> | `Deranked L3` | Routable, well behind other providers. |
+| <Icon icon="ban" color="#dc2626" /> | `Disabled` | Not routed. |
+
+## Live routing
+
+The gateway sets this automatically for each provider, model and endpoint, from the requests it is serving now. A limited or recovering route stays routable, but other providers are tried first.
+
+```mermaid
+flowchart TD
+  ok["Normal"] -->|"Several failures in a row, or half of recent requests fail"| lim["Temporarily limited"]
+  lim -->|"Cooldown ends"| rec["Recovering"]
+  rec -->|"A batch of requests all succeed"| ok
+  rec -->|"Half or more fail: longer cooldown"| lim
+```
+
+## Availability and integration
+
+The status hover card also shows whether the provider offers the model and whether Phaseo has enabled it. A route is public only when both allow it. For example, a provider can offer a new model (`Available`) while Phaseo is still building support for it (`Implementing`).
+
+### Provider availability
 
 | Status | Meaning |
 | --- | --- |
@@ -26,11 +51,7 @@ Provider availability describes the upstream offer.
 | `Removed` | The provider no longer exposes the offer. |
 | `Unknown` | Phaseo has not verified the upstream availability. |
 
-Provider availability never means that Phaseo can route the request.
-
-## Phaseo integration status
-
-Phaseo status describes our implementation and rollout.
+### Phaseo integration
 
 | Status | Meaning | Phaseo routing |
 | --- | --- | --- |
@@ -42,95 +63,11 @@ Phaseo status describes our implementation and rollout.
 | `Disabled` | Phaseo has intentionally switched the integration off. | Not routable. |
 | `Blocked` | An external or unresolved dependency prevents rollout. | Not routable. |
 
-Only `Enabled` integrations can have public routing enabled.
-
-## Internal access
-
-Access scope is separate from Phaseo integration status:
-
-| Scope | Meaning |
-| --- | --- |
-| `Public` | Ordinary customer requests may use the route when every routing gate passes. |
-| `Internal` | Only authenticated Phaseo testing traffic may use the route. |
-
-An internal route requires the high-entropy internal token and an explicit
-testing-mode request. A customer cannot enable it with the testing header alone.
-Ordinary requests do not perform an internal-route database lookup; they use
-the existing default context cache. Internal testing uses a separate cache
-segment and only considers explicitly internal routes whose upstream offer is
-usable and whose Phaseo status is `Testing` or `Enabled`.
-
-## Routing health
-
-Routing health is a third, operational signal. It answers how an enabled route
-should be selected right now.
-
-| Status | Meaning | Routing behaviour |
-| --- | --- | --- |
-| `Active` | The route is healthy enough to select normally. | Routable now. |
-| `Deranked L1` | Mildly deprioritised by recent health. | Routable now. |
-| `Deranked L2` | Clearly deprioritised by recent health. | Routable now, behind healthier routes. |
-| `Deranked L3` | Heavily deprioritised by recent health. | Routable now, strongly deprioritised. |
-| `Disabled` | The routing switch is off. | Not routed. |
-
-Deranking does not change the provider's availability or Phaseo's integration
-lifecycle. Live health observations also do not rewrite either lifecycle field.
-
-On model pages, a deranked route shows the amber or red warning icon with the
-label `Lower priority`. Phaseo sets these levels by hand, and they stay until
-Phaseo changes them.
-
-## Live routing
-
-Live routing is separate from the statuses above. The gateway sets it
-automatically for each provider, model and endpoint, based on the requests it is
-serving now.
-
-| Icon | State | Meaning | Routing behaviour |
-| --- | --- | --- | --- |
-| Orange lightning bolt, crossed out | `Temporarily limited` | Requests failed several times in a row, or at least half of recent requests failed. | Routable, but other providers are tried first. |
-| Blue refresh arrows | `Recovering` | After a cooldown, Phaseo lets a few requests through to check the provider. | If a batch of them all succeed, routing returns to normal. If half or more fail, the route is limited again with a longer cooldown. |
-
-On model pages the live routing icon appears after the status icon, only while
-one of these states applies. A route can be `Lower priority` and
-`Temporarily limited` at the same time; both icons then show. Hover over an
-icon for details.
-
-Live routing never changes the provider's availability, Phaseo's integration
-status or the hand-set routing health.
-
-## Examples
-
-A newly released provider offer can be:
-
-- provider availability: `Available`
-- Phaseo status: `Implementing`
-- routing health: not applicable because routing is off
-
-A mature route that Phaseo has deprioritised by hand can be:
-
-- provider availability: `Available`
-- Phaseo status: `Enabled`
-- routing health: `Deranked L2`
-
-A route whose provider is failing right now can be:
-
-- provider availability: `Available`
-- Phaseo status: `Enabled`
-- routing health: `Active`
-- live routing: `Temporarily limited`
-
-A provider announcement can be:
-
-- provider availability: `Coming Soon`
-- Phaseo status: `Planned`
-- routing health: not applicable
+Only `Enabled` routes can be public. `Internal` routes serve only Phaseo's own test traffic.
 
 ## Compatibility
 
-Existing API fields such as `availability_status`, `routing_status`,
-`is_active_gateway`, and `routable` remain available during the additive
-rollout. New integrations should use the explicit provider and Phaseo fields.
+`availability_status`, `routing_status`, `is_active_gateway` and `routable` remain in the API for existing integrations. New integrations should read the separate provider and Phaseo fields.
 
 ## Related pages
 
