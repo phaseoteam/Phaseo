@@ -94,7 +94,8 @@ begin
   select balance_nanos,reserved_nanos into before_balance,before_reserved from public.wallets where workspace_id=w;
   insert into public.gateway_wallet_reservations(workspace_id,reservation_id,amount_nanos,status) values(w,rid,100,'reserved');
   update public.wallets set reserved_nanos=reserved_nanos+100 where workspace_id=w;
-  actual:=greatest(before_balance-before_reserved,0)+101;
+  -- One more than the settlement can cover: its hold (100) or the free balance, whichever is more.
+  actual:=greatest(before_balance-before_reserved,100)+1;
   select * into result from public.gateway_wallet_settle_once(w,rid,actual,rid);
   if not result.ok or not result.applied then raise exception 'overdraft settlement was refused'; end if;
   select * into result from public.wallets where workspace_id=w;

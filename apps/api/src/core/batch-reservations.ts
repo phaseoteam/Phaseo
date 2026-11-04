@@ -145,12 +145,17 @@ export function batchOutputCount(body: Record<string, unknown>): number {
 		body.n,
 		body.best_of,
 		(body.generationConfig as any)?.candidateCount,
+		(body.generationConfig as any)?.candidate_count,
 		(body.generation_config as any)?.candidate_count,
 		(body.generation_config as any)?.candidateCount,
 	];
 	let count = 1;
 	for (const value of candidates) {
 		if (value == null) continue;
+		// Only a number or an integer string: Number() would read true as 1 and [2] as 2.
+		if (typeof value !== "number" && !(typeof value === "string" && /^\d+$/.test(value.trim()))) {
+			throw new Error("batch_output_count_invalid");
+		}
 		const parsed = Number(value);
 		if (!Number.isInteger(parsed) || parsed < 1 || parsed > MAX_BATCH_OUTPUT_COUNT) throw new Error("batch_output_count_invalid");
 		count = Math.max(count, parsed);

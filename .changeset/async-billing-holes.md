@@ -2,4 +2,4 @@
 "@phaseo/gateway-api": patch
 ---
 
-Always charge finished batch and video jobs, into overdraft when the hold and balance do not cover the actual cost. Hold batch rows for every requested choice (`n`, `best_of`, `candidateCount`), and reject choice counts above 128. Charge what an abandoned stream has generated 15 and 25 seconds after the client disconnects, so a drain stopped by the runtime is still billed; the final charge takes only the rest.
+Always charge finished batch and video jobs, into overdraft when the hold and balance do not cover the actual cost. Hold batch rows for every requested choice (`n`, `best_of`, `candidateCount`), and reject choice counts that are not whole numbers from 1 to 128. When a client disconnects from a stream that is still generating, charge an estimate of the output streamed so far 15 and 25 seconds after the disconnect (input is counted once the provider reports it; BYOK requests are skipped), so a drain stopped by the runtime is still billed. The final bill settles the request's total and refunds any estimate above it.
