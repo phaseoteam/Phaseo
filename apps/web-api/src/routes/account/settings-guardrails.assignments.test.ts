@@ -24,6 +24,8 @@ const mocks = vi.hoisted(() => ({
 	writes: [] as Array<{ table: string; op: "delete" | "insert" }>,
 	/** Makes the assignment function fail after its removals, as a timeout part-way through would. */
 	rpcFailsAfterDelete: false,
+	/** Makes the assignment function fail as a database trigger refusing the change would. */
+	rpcError: null as { message: string } | null,
 	waitUntil: vi.fn(),
 	fetch: vi.fn(async () => new Response(null, { status: 204 })),
 }));
@@ -69,7 +71,7 @@ function applyChange(args: Record<string, any>): { data: null; error: { message:
 function fakeClient() {
 	return {
 		rpc: async (name: string, args: Record<string, any>) => name === "apply_guardrail_assignment_change"
-			? applyChange(args)
+			? mocks.rpcError ? { data: null, error: mocks.rpcError } : applyChange(args)
 			: { data: null, error: { message: `unknown function ${name}` } },
 		from(table: string) {
 			const filters: Array<(row: Row) => boolean> = [];
@@ -135,6 +137,7 @@ beforeEach(() => {
 	mocks.role = "admin";
 	mocks.signedIn = true;
 	mocks.rpcFailsAfterDelete = false;
+	mocks.rpcError = null;
 	mocks.writes.length = 0;
 	mocks.waitUntil.mockReset();
 	mocks.fetch.mockClear();
@@ -185,6 +188,14 @@ describe("PATCH /guardrails/assignments", () => {
 		expect((await patch({ targetType: "member", targetIds: ["u-1"], addGuardrailIds: ["g-1"], removeGuardrailIds: ["g-2"] })).status).toBe(200);
 		expect((mocks.db.workspace_member_guardrails ?? []).map((row) => `${row.workspace_id}:${row.user_id}:${row.guardrail_id}`).sort())
 			.toEqual(["ws-1:u-1:g-1", "ws-1:u-2:g-2", "ws-1:u-left:g-1", "ws-2:u-1:g-2"]);
+	});
+
+	it("returns 409 when the change would unassign the workspace baseline or assign it elsewhere", async () => {
+		mocks.rpcError = { message: "workspace_baseline_guardrail_protected" };
+		const response = await patch({ targetType: "workspace", removeGuardrailIds: ["g-1"] });
+		expect(response.status).toBe(409);
+		expect(await response.json()).toEqual({ error: "guardrail_protected", reason: "workspace_baseline" });
+		expect(mocks.waitUntil).not.toHaveBeenCalled();
 	});
 
 	it("leaves every assignment as it was when the change fails part-way", async () => {

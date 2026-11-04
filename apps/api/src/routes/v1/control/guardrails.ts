@@ -33,6 +33,14 @@ function guardrailWriteFailed(scope: string, error: unknown): Response {
 			message: "This guardrail keeps Slack data out of training and logs. Uninstall the Slack agent to change or remove it.",
 		}, 409, { "Cache-Control": "no-store" });
 	}
+	// The workspace baseline (the Settings, Privacy rules) stays an enabled access guardrail on the
+	// whole workspace; a database trigger refuses anything else.
+	if (String((error as { message?: unknown } | null)?.message ?? "").includes("workspace_baseline_guardrail_protected")) {
+		return json({
+			error: "guardrail_protected",
+			message: "This is the workspace baseline, which holds the rules set under Settings, Privacy. It applies to the whole workspace and can't be deleted, turned off or assigned elsewhere. Change its rules with PATCH /v1/control/settings.",
+		}, 409, { "Cache-Control": "no-store" });
+	}
 	return internalServerError(scope, error);
 }
 

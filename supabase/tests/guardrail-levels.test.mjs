@@ -25,8 +25,16 @@ const newFiles = [
   'public/functions/resolve_key_guardrails.sql',
 ];
 const manifest = JSON.parse(await read('../schemas/.pgdelta-export.json'));
+// The schema files as this migration left them: the workspace baseline migration later adds a
+// three-argument resolve_key_guardrails (after the two-argument form) and a protection trigger on
+// workspace_guardrail_assignments.
+const phaseAPart = (file, text) => {
+  const later = text.indexOf('\nCREATE OR REPLACE FUNCTION public.resolve_key_guardrails (\n  p_workspace_id               uuid,');
+  const withoutLaterFunction = file === 'public/functions/resolve_key_guardrails.sql' && later > 0 ? text.slice(0, later).trim() : text;
+  return withoutLaterFunction.replace(/CREATE TRIGGER protect_workspace_baseline_guardrail\n[^;]*;\n\n/, '');
+};
 for (const file of [...newFiles, 'public/functions/apply_guardrail_assignment_change.sql']) {
-  assert(normalize(migration).includes(normalize(await read(`../schemas/${file}`))), `${file} is in ${migrationName}`);
+  assert(normalize(migration).includes(phaseAPart(file, normalize(await read(`../schemas/${file}`)))), `${file} is in ${migrationName}`);
   for (const list of ['loadOrder', 'files']) assert(manifest[list].includes(file), `${file} is in the manifest's ${list}`);
 }
 const triggerIn = async (file, name) => {

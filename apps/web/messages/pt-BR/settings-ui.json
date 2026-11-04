@@ -1009,7 +1009,10 @@
 		"rules": "regras",
 		"flag": "Sinalizar",
 		"redact": "Ocultar",
-		"block": "Bloquear"
+		"block": "Bloquear",
+		"workspaceBaseline": "Proteção base do espaço de trabalho",
+		"workspaceBaselineDescription": "Vale para todas as chaves do espaço de trabalho. Edite em Privacidade.",
+		"wholeWorkspace": "Todo o espaço de trabalho"
 	},
 	"guardrailAssignments": {
 		"tabGuardrails": "Guardrails",
@@ -1055,7 +1058,8 @@
 		"noMembers": "Este espaço de trabalho não tem membros.",
 		"noMatches": "Nada corresponde à sua pesquisa.",
 		"footnote": "Acesso, injeção de prompt e informações sensíveis mostram o resultado combinado dos guardrails de cada linha. Quando vários se aplicam, vence a regra mais restritiva. As configurações de privacidade e roteamento do espaço de trabalho também se aplicam.",
-		"readOnly": "Somente proprietários e administradores do espaço de trabalho podem alterar as atribuições."
+		"readOnly": "Somente proprietários e administradores do espaço de trabalho podem alterar as atribuições.",
+		"baselineNote": "A proteção base do espaço de trabalho vale para todas as chaves e membros, por isso não aparece aqui. Edite em Privacidade."
 	},
 	"broadcastControls": {
 		"optional": "(opcional)",
@@ -1458,7 +1462,9 @@
 			"selectWorkspace": "Selecione um espaço de trabalho para gerenciar as proteções.",
 			"notFound": "Proteção não encontrada.",
 			"back": "Voltar para as proteções",
-			"permissions": "Somente proprietários e administradores do espaço de trabalho podem alterar as proteções. As políticas atribuídas são aplicadas automaticamente aos membros."
+			"permissions": "Somente proprietários e administradores do espaço de trabalho podem alterar as proteções. As políticas atribuídas são aplicadas automaticamente aos membros.",
+			"workspaceBaseline": "Esta é a proteção base do espaço de trabalho. Ela guarda as regras de Configurações, Privacidade e vale para todo o espaço de trabalho, então não pode ser excluída, desativada nem atribuída a chaves ou membros específicos.",
+			"openPrivacy": "Editar em Privacidade"
 		},
 		"keyDelete": {
 			"permanent": "Esta ação é permanente.",

@@ -25,6 +25,11 @@ CREATE TRIGGER gateway_workspace_publication
   FOR EACH ROW
   EXECUTE FUNCTION private.capture_gateway_workspace_publication();
 
+CREATE TRIGGER protect_workspace_baseline_guardrail
+  BEFORE INSERT OR DELETE OR UPDATE ON public.workspace_guardrail_assignments
+  FOR EACH ROW
+  EXECUTE FUNCTION private.protect_workspace_baseline_guardrail();
+
 CREATE POLICY "deny_direct_client_access" ON "public"."workspace_guardrail_assignments"
   AS RESTRICTIVE
   FOR ALL

@@ -293,10 +293,6 @@ export type TeamSettings = {
     betaChannelEnabled: boolean | null;
     alphaChannelEnabled?: boolean | null;
     cacheAwareRoutingEnabled?: boolean | null;
-    privacyZdrOnly?: boolean | null;
-    privacyEnablePaidMayTrain?: boolean | null;
-    privacyEnableFreeMayTrain?: boolean | null;
-    privacyEnableInputOutputLogging?: boolean | null;
     /** Explicit consent to persist gateway request/response payloads. */
     ioLoggingEnabled?: boolean;
     ioLoggingIncludeProviderPayloads?: boolean;

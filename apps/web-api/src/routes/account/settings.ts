@@ -349,6 +349,21 @@ accountSettingsRouter.put("/preferences", async (c) => {
 	return c.json({ ok: true, preferences }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
+const WORKSPACE_BASELINE_COLUMNS = "id,privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_free_may_publish_prompts,privacy_enable_input_output_logging,privacy_zdr_only,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed,model_restriction_mode,allowed_api_model_ids";
+
+/** The workspace's baseline guardrail (the Settings, Privacy rules), or null data when it has none yet. */
+async function readWorkspaceBaseline(client: ReturnType<typeof getDataClient>, workspaceId: string): Promise<{ data: Record<string, any> | null; error: unknown }> {
+	const result = await client.from("workspace_guardrails").select(WORKSPACE_BASELINE_COLUMNS)
+		.eq("workspace_id", workspaceId).eq("is_workspace_baseline", true).maybeSingle();
+	return { data: (result.data ?? null) as Record<string, any> | null, error: result.error };
+}
+
+/** The baseline's rules under their workspace_settings names (its model list is allowed_api_model_ids). */
+export function workspaceSettingsFromBaseline(baseline: Record<string, any>): Record<string, unknown> {
+	const { id: _id, allowed_api_model_ids: modelIds, ...rules } = baseline;
+	return { ...rules, model_restriction_model_ids: modelIds ?? [] };
+}
+
 accountSettingsRouter.get("/privacy", async (c) => {
 	const workspaceId = c.req.query("workspaceId")?.trim();
 	if (!workspaceId) {
@@ -377,13 +392,14 @@ accountSettingsRouter.get("/privacy", async (c) => {
 		workspaceId,
 	});
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
-	let [teamResult, settingsResult, providersResult, modelsResult, contributionGatewayResult, ioLogContentsAccess] = await Promise.all([
+	let [teamResult, settingsResult, providersResult, modelsResult, contributionGatewayResult, ioLogContentsAccess, baselineResult] = await Promise.all([
 		context.client.from("workspaces").select("id,name").eq("id", workspaceId).maybeSingle(),
 		context.client.from("workspace_settings").select("privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_free_may_publish_prompts,privacy_enable_input_output_logging,privacy_zdr_only,io_logging_enabled,io_logging_retention_days,io_logging_include_provider_payloads,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed,model_restriction_mode,model_restriction_model_ids,response_healing_enabled,response_healing_locked,response_healing_mode").eq("workspace_id", workspaceId).maybeSingle(),
 		context.client.from("v2_providers").select("api_provider_id:provider_slug,api_provider_name:name,provider_family_id:provider_family_slug,offer_label,offer_scope,routable,routing_enabled,status").eq("routable", true).eq("routing_enabled", true).in("status", ["active", "degraded"]).order("name", { ascending: true }),
 		context.client.from("v2_model_provider_routes").select("provider_id:provider_slug,api_model_id:model_slug,internal_model_id:model_slug,is_active_gateway:routing_enabled").eq("routing_enabled", true).in("status", ["active", "degraded"]),
 		callDataContributionGateway({ env: c.env, request: c.req.raw, workspaceId: context.workspaceId }),
 		readIoLogContentsAccess(context.client, workspaceId),
+		readWorkspaceBaseline(context.client, workspaceId),
 	]);
 	if (settingsResult.error && /model_restriction_(mode|model_ids)/i.test(settingsResult.error.message)) {
 		settingsResult = await context.client.from("workspace_settings")
@@ -391,7 +407,7 @@ accountSettingsRouter.get("/privacy", async (c) => {
 			.eq("workspace_id", workspaceId)
 			.maybeSingle();
 	}
-	for (const result of [teamResult, settingsResult, providersResult, modelsResult]) {
+	for (const result of [teamResult, settingsResult, providersResult, modelsResult, baselineResult]) {
 		if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}
 	const routableProviderIds = new Set((modelsResult.data ?? []).map((row) => String(row.provider_id ?? "")).filter(Boolean));
@@ -409,7 +425,11 @@ accountSettingsRouter.get("/privacy", async (c) => {
 		ids.add(providerId);
 		providerIdsByModel.set(modelId, ids);
 	}
-	const settings = settingsResult.data as Record<string, any> | null;
+	// The page edits the workspace baseline guardrail. A workspace that has never saved restricting
+	// rules has none yet; its workspace_settings columns hold the same (default) values.
+	const settings = (baselineResult.data
+		? { ...settingsResult.data, ...workspaceSettingsFromBaseline(baselineResult.data) }
+		: settingsResult.data) as Record<string, any> | null;
 	const restrictionMode = (value: unknown) => value === "allowlist" || value === "blocklist" ? value : "none";
 	const stringList = (value: unknown) => Array.isArray(value) ? [...new Set(value.map(String).filter(Boolean))] : [];
 	const contributionData = contributionGatewayResult.status === 200
@@ -423,7 +443,7 @@ accountSettingsRouter.get("/privacy", async (c) => {
 		})),
 		initialGlobal: settingsResult.data
 			// null when the setting couldn't be read, so the page doesn't save a guess.
-			? { ...settingsResult.data, io_logging_contents_access: ioLogContentsAccess }
+			? { ...settings, io_logging_contents_access: ioLogContentsAccess }
 			: null,
 		accountPolicy: null,
 		policy: {

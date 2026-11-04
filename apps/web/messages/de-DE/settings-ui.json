@@ -1009,7 +1009,10 @@
 		"rules": "Regeln",
 		"flag": "Markieren",
 		"redact": "Schwärzen",
-		"block": "Blockieren"
+		"block": "Blockieren",
+		"workspaceBaseline": "Basisregeln des Arbeitsbereichs",
+		"workspaceBaselineDescription": "Gilt für jeden Schlüssel im Arbeitsbereich. Bearbeite sie unter Datenschutz.",
+		"wholeWorkspace": "Ganzer Arbeitsbereich"
 	},
 	"guardrailAssignments": {
 		"tabGuardrails": "Leitplanken",
@@ -1055,7 +1058,8 @@
 		"noMembers": "Dieser Arbeitsbereich hat keine Mitglieder.",
 		"noMatches": "Keine Treffer für deine Suche.",
 		"footnote": "Zugriff, Prompt-Injection und sensible Daten zeigen, was die Leitplanken einer Zeile zusammen ergeben. Gelten mehrere, gewinnt die strengste Regel. Die Datenschutz- und Routing-Einstellungen des Arbeitsbereichs gelten zusätzlich.",
-		"readOnly": "Nur Inhaber und Admins des Arbeitsbereichs können Zuweisungen ändern."
+		"readOnly": "Nur Inhaber und Admins des Arbeitsbereichs können Zuweisungen ändern.",
+		"baselineNote": "Die Basisregeln des Arbeitsbereichs gelten für jeden Schlüssel und jedes Mitglied und werden hier deshalb nicht aufgeführt. Bearbeite sie unter Datenschutz."
 	},
 	"broadcastControls": {
 		"optional": "(optional)",
@@ -1458,7 +1462,9 @@
 			"selectWorkspace": "Wähle einen Workspace aus, um Guardrails zu verwalten.",
 			"notFound": "Guardrail nicht gefunden.",
 			"back": "Zurück zu den Guardrails",
-			"permissions": "Nur Workspace-Inhaber und -Administratoren können Guardrails ändern. Zugewiesene Richtlinien werden für Mitglieder automatisch durchgesetzt."
+			"permissions": "Nur Workspace-Inhaber und -Administratoren können Guardrails ändern. Zugewiesene Richtlinien werden für Mitglieder automatisch durchgesetzt.",
+			"workspaceBaseline": "Das sind die Basisregeln des Arbeitsbereichs. Sie enthalten die Regeln aus Einstellungen, Datenschutz und gelten für den ganzen Arbeitsbereich. Sie lassen sich daher nicht löschen, ausschalten oder einzelnen Schlüsseln oder Mitgliedern zuweisen.",
+			"openPrivacy": "Unter Datenschutz bearbeiten"
 		},
 		"keyDelete": {
 			"permanent": "Diese Aktion ist dauerhaft.",

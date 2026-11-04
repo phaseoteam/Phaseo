@@ -1009,7 +1009,10 @@
 		"rules": "normas",
 		"flag": "Marcar",
 		"redact": "Ocultar datos",
-		"block": "Bloquear"
+		"block": "Bloquear",
+		"workspaceBaseline": "Guardrail base del espacio de trabajo",
+		"workspaceBaselineDescription": "Se aplica a todas las claves del espacio de trabajo. Edítalo en Privacidad.",
+		"wholeWorkspace": "Todo el espacio de trabajo"
 	},
 	"guardrailAssignments": {
 		"tabGuardrails": "Guardrails",
@@ -1055,7 +1058,8 @@
 		"noMembers": "Este espacio de trabajo no tiene miembros.",
 		"noMatches": "Nada coincide con tu búsqueda.",
 		"footnote": "Acceso, inyección de prompts e información sensible muestran el resultado combinado de los guardrails de cada fila. Si se aplican varios, gana la regla más estricta. La configuración de privacidad y enrutamiento del espacio de trabajo se aplica además.",
-		"readOnly": "Solo los propietarios y administradores del espacio de trabajo pueden cambiar las asignaciones."
+		"readOnly": "Solo los propietarios y administradores del espacio de trabajo pueden cambiar las asignaciones.",
+		"baselineNote": "El guardrail base del espacio de trabajo se aplica a todas las claves y miembros, así que no aparece aquí. Edítalo en Privacidad."
 	},
 	"broadcastControls": {
 		"optional": "(opcional)",
@@ -1458,7 +1462,9 @@
 			"selectWorkspace": "Selecciona un espacio de trabajo para administrar los guardrails.",
 			"notFound": "No se ha encontrado el guardrail.",
 			"back": "Volver a los guardrails",
-			"permissions": "Solo los propietarios y administradores del espacio de trabajo pueden cambiar los guardrails. Las políticas asignadas se aplican automáticamente a los miembros."
+			"permissions": "Solo los propietarios y administradores del espacio de trabajo pueden cambiar los guardrails. Las políticas asignadas se aplican automáticamente a los miembros.",
+			"workspaceBaseline": "Este es el guardrail base del espacio de trabajo. Contiene las reglas de Configuración, Privacidad y se aplica a todo el espacio de trabajo, así que no se puede eliminar, desactivar ni asignar a claves o miembros concretos.",
+			"openPrivacy": "Editarlo en Privacidad"
 		},
 		"keyDelete": {
 			"permanent": "Esta acción es permanente.",

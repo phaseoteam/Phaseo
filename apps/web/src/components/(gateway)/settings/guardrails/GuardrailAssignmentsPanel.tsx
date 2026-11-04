@@ -54,6 +54,9 @@ type Props = {
 export default function GuardrailAssignmentsPanel(props: Props) {
 	const t = useTranslations("SettingsUI");
 	const write = useSettingsWrite();
+	// The workspace baseline applies to every key and member, so it is not assigned here.
+	const guardrails = useMemo(() => props.guardrails.filter((guardrail) => !guardrail.is_workspace_baseline), [props.guardrails]);
+	const hasWorkspaceBaseline = guardrails.length !== props.guardrails.length;
 	const [view, setView] = useQueryState("view", parseAsStringLiteral(["keys", "members"] as const).withDefault("keys"));
 	const targetType = view === "members" ? "member" : "key";
 	const [query, setQuery] = useState("");
@@ -83,11 +86,11 @@ export default function GuardrailAssignmentsPanel(props: Props) {
 		targetType,
 		keys: props.keys,
 		members: props.members,
-		guardrails: props.guardrails,
+		guardrails,
 		guardrailKeyIdsByGuardrailId: keyMap,
 		guardrailMemberIdsByGuardrailId: memberMap,
 		untitled: t("guardrailsControls.untitled"),
-	}), [targetType, props.keys, props.members, props.guardrails, keyMap, memberMap, t]);
+	}), [targetType, props.keys, props.members, guardrails, keyMap, memberMap, t]);
 	const visibleRows = useMemo(() => rows.filter((row) => matchesAssignmentQuery(row, query)), [rows, query]);
 	// Bulk actions reach only the selected rows the search shows, never ones it hides.
 	const selectedRows = useMemo(() => visibleRows.filter((row) => selected.has(row.id)), [visibleRows, selected]);
@@ -131,7 +134,7 @@ export default function GuardrailAssignmentsPanel(props: Props) {
 		toast.success(t("guardrailAssignments.saved"));
 	}
 
-	if (!props.guardrails.length) {
+	if (!guardrails.length) {
 		return (
 			<Empty className="rounded-md border border-dashed border-border/80 p-8">
 				<EmptyHeader>
@@ -182,7 +185,7 @@ export default function GuardrailAssignmentsPanel(props: Props) {
 				{props.canManageGuardrails && selectedRows.length ? (
 					<BulkActions
 						rows={selectedRows}
-						guardrails={props.guardrails}
+						guardrails={guardrails}
 						busy={selectedRows.some((row) => pending.has(row.id))}
 						onApply={apply}
 						onClear={() => setSelected(new Set())}
@@ -252,7 +255,7 @@ export default function GuardrailAssignmentsPanel(props: Props) {
 								<TableCell>
 									<GuardrailsCell
 										row={row}
-										guardrails={props.guardrails}
+										guardrails={guardrails}
 										canManage={props.canManageGuardrails}
 										pending={pending.has(row.id) || (row.inheritedFrom ? memberPending(row.inheritedFrom.id) : false)}
 										onToggle={(guardrailId, checked) => void apply(checked
@@ -288,6 +291,7 @@ export default function GuardrailAssignmentsPanel(props: Props) {
 
 			<p className="text-xs text-muted-foreground">
 				{t("guardrailAssignments.footnote")}
+				{hasWorkspaceBaseline ? ` ${t("guardrailAssignments.baselineNote")}` : null}
 				{props.canManageGuardrails ? null : ` ${t("guardrailAssignments.readOnly")}`}
 			</p>
 		</div>

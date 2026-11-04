@@ -1009,7 +1009,10 @@
 		"rules": "règles",
 		"flag": "Signaler",
 		"redact": "Masquer les données",
-		"block": "Bloquer"
+		"block": "Bloquer",
+		"workspaceBaseline": "Garde-fou de base de l’espace de travail",
+		"workspaceBaselineDescription": "S’applique à chaque clé de l’espace de travail. Modifiez-le dans Confidentialité.",
+		"wholeWorkspace": "Tout l’espace de travail"
 	},
 	"guardrailAssignments": {
 		"tabGuardrails": "Garde-corps",
@@ -1055,7 +1058,8 @@
 		"noMembers": "Cet espace de travail n'a aucun membre.",
 		"noMatches": "Aucun résultat pour votre recherche.",
 		"footnote": "Accès, injection de prompt et informations sensibles montrent l'effet combiné des garde-corps de chaque ligne. Quand plusieurs s'appliquent, la règle la plus stricte l'emporte. Les paramètres de confidentialité et de routage de l'espace de travail s'appliquent en plus.",
-		"readOnly": "Seuls les propriétaires et administrateurs de l'espace de travail peuvent modifier les attributions."
+		"readOnly": "Seuls les propriétaires et administrateurs de l'espace de travail peuvent modifier les attributions.",
+		"baselineNote": "Le garde-fou de base de l’espace de travail s’applique à chaque clé et à chaque membre, il n’apparaît donc pas ici. Modifiez-le dans Confidentialité."
 	},
 	"broadcastControls": {
 		"optional": "(facultatif)",
@@ -1458,7 +1462,9 @@
 			"selectWorkspace": "Sélectionnez un espace de travail pour gérer les garde-fous.",
 			"notFound": "Garde-fou introuvable.",
 			"back": "Retour aux garde-fous",
-			"permissions": "Seuls les propriétaires et les administrateurs de l’espace de travail peuvent modifier les garde-fous. Les règles attribuées sont appliquées automatiquement aux membres."
+			"permissions": "Seuls les propriétaires et les administrateurs de l’espace de travail peuvent modifier les garde-fous. Les règles attribuées sont appliquées automatiquement aux membres.",
+			"workspaceBaseline": "Voici le garde-fou de base de l’espace de travail. Il contient les règles de Paramètres, Confidentialité et s’applique à tout l’espace de travail : il ne peut donc pas être supprimé, désactivé ni attribué à des clés ou des membres en particulier.",
+			"openPrivacy": "Le modifier dans Confidentialité"
 		},
 		"keyDelete": {
 			"permanent": "Cette action est irréversible.",
