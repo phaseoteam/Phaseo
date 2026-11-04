@@ -17,6 +17,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "../components/ui/toolti
 import { ScrollArea } from "../components/ui/scroll-area";
 import { useCommand } from "../lib/keybindings";
 import { useModelPopularity } from "../lib/modelPopularity";
+import { arrangeGroups, usePickerGroups } from "../lib/pickerGroups";
 import { ModelSettingsColumn, SettingsSuffix, SpeedSegments, speedIds, useSettingDescriptors } from "./ModelSettings";
 
 export const harnessNames: Record<Harness, string> = { phaseo: "Phaseo", codex: "Codex", claude: "Claude Code", opencode: "OpenCode", pi: "Pi", cursor: "Cursor", grok: "Grok", antigravity: "Antigravity", acp: "Agent" };
@@ -181,16 +182,20 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	const onLoad = useCallback((harness: Harness, state: { entries: Entry[]; loading: boolean; error: string }) => setCatalogs(current => ({ ...current, [harness]: state })), []);
 
 	const all = useMemo(() => harnesses.flatMap(harness => catalogs[harness]?.entries ?? []), [harnesses, catalogs]);
-	const visible = useMemo(() => all.filter(entry => entry.harness !== "phaseo" || ((!filters.free || entry.model.id.endsWith(":free")) && (!filters.new || Date.now() - released(entry) <= twoWeeks))), [all, filters]);
+	const [groupPrefs] = usePickerGroups();
+	// A hidden agent or lab takes its models with it, from search too; hiding "All Phaseo models" leaves the labs.
+	const hiddenGroups = useMemo(() => new Set(groupPrefs.hidden), [groupPrefs.hidden]);
+	const visible = useMemo(() => all.filter(entry => !hiddenGroups.has(entry.harness === "phaseo" ? `lab:${labOf(entry)}` : entry.harness)).filter(entry => entry.harness !== "phaseo" || ((!filters.free || entry.model.id.endsWith(":free")) && (!filters.new || Date.now() - released(entry) <= twoWeeks))), [all, filters, hiddenGroups]);
 	const favouriteSet = useMemo(() => new Set(favourites), [favourites]);
 	const popularity = useModelPopularity(open && harnesses.includes("phaseo"));
 	const groups = useMemo((): GroupEntry[] => {
+		// Favourites lead; then the agents, then Phaseo, each block in the order chosen in Settings.
 		return [
 			{ id: "favourites", label: "Favourites" },
-			...harnesses.filter(harness => harness !== "phaseo").map(harness => ({ id: harness, label: harnessNames[harness] })),
-			...harnesses.includes("phaseo") ? [{ id: "phaseo" as const, label: "All Phaseo models" }, ...phaseoLabGroups((catalogs.phaseo?.entries ?? []).map(entry => entry.model), popularity)] : [],
+			...arrangeGroups(harnesses.filter(harness => harness !== "phaseo").map((harness): GroupEntry => ({ id: harness, label: harnessNames[harness] })), groupPrefs),
+			...harnesses.includes("phaseo") ? arrangeGroups([{ id: "phaseo" as const, label: "All Phaseo models" }, ...phaseoLabGroups((catalogs.phaseo?.entries ?? []).map(entry => entry.model), popularity)], groupPrefs) : [],
 		];
-	}, [catalogs.phaseo?.entries, harnesses, popularity]);
+	}, [catalogs.phaseo?.entries, harnesses, popularity, groupPrefs]);
 	const active: Group = groups.some(value => value.id === group) ? group : groups[1]?.id ?? "favourites";
 	const isSelected = (entry: Entry) => selections.some(value => sameSelection(value, { harness: entry.harness, accountId: entry.accountId, model: entry.model.id }));
 
@@ -316,7 +321,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 				<div role="toolbar" aria-orientation="vertical" aria-label="Model groups" className="flex w-11 shrink-0 flex-col gap-1 overflow-y-auto overscroll-contain bg-muted/30 p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
 					{groups.map((value, index) => <Fragment key={value.id}>
 						{/* A rule after favourites, and another where Phaseo's models begin. */}
-						{index > 0 && (value.id === "phaseo" || groups[index - 1].id === "favourites") && <div aria-hidden className="mx-1 border-b border-border/70" />}
+						{index > 0 && (groups[index - 1].id === "favourites" || (isPhaseoGroup(value.id) && !isPhaseoGroup(groups[index - 1].id))) && <div aria-hidden className="mx-1 border-b border-border/70" />}
 						<Tooltip>
 							<TooltipTrigger delay={200} render={<button type="button" aria-label={value.label} aria-pressed={active === value.id} onClick={() => { setGroup(value.id); setQuery(""); }}
 								className={cn("relative flex aspect-square w-full shrink-0 items-center justify-center rounded-md transition-colors hover:bg-foreground/10 [&_img]:size-5 [&_.harness-logo]:size-5", active === value.id && "bg-foreground/10")} />}>
