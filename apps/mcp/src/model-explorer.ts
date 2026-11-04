@@ -4,23 +4,31 @@ import {
   RESOURCE_MIME_TYPE,
 } from "@modelcontextprotocol/ext-apps/server";
 import { modelExplorerHtml } from "./generated/modelExplorerHtml";
+import type { PhaseoEnv } from "./phaseo-api";
 
 export const MODEL_EXPLORER_URI = "ui://phaseo/model-explorer.html";
 
-export const modelExplorerToolMeta = {
+// Tools whose results render as an inline card in the conversation. The card can
+// open the full explorer on request; it never opens it by itself.
+export const modelCardToolMeta = {
   ui: { resourceUri: MODEL_EXPLORER_URI, visibility: ["model", "app"] },
+};
+
+// models_list also backs the explorer's sidebar and thread entry points.
+export const modelExplorerToolMeta = {
+  ...modelCardToolMeta,
   "openai/ui": { entrypoints: [{ type: "global" }, { type: "thread" }] },
 };
 
-export function registerModelExplorer(server: McpServer) {
+export function registerModelExplorer(server: McpServer, env: Pick<PhaseoEnv, "PHASEO_WEB_BASE_URL">) {
   const metadata = {
     ui: {
-      csp: { connectDomains: [], resourceDomains: [] },
+      // Organisation logos load from the website's static logo set.
+      csp: { connectDomains: [], resourceDomains: [new URL(env.PHASEO_WEB_BASE_URL).origin] },
       prefersBorder: false,
     },
     "openai/ui": {
-      availableDisplayModes: ["fullscreen"],
-      preferredDisplayMode: "fullscreen",
+      availableDisplayModes: ["inline", "fullscreen"],
     },
   };
   registerAppResource(

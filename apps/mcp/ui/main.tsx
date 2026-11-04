@@ -1,47 +1,40 @@
-import { App } from "@modelcontextprotocol/ext-apps";
 import { createRoot } from "react-dom/client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { contextSize, pricePerMillion, type Model } from "./model";
+import { money, type CardModel, type Model } from "./model";
 import { ModelComparison } from "./ModelComparison";
 import { ModelDetails } from "./ModelDetails";
-import logoSvg from "../plugin/phaseo/assets/logo_light.svg";
+import { ModelRow } from "./ModelRow";
+import { cardFor, CreditsCard, EstimateCard, ModelsCard } from "./Cards";
+import { bridge, canOpenFullscreen, openFullscreen, readResult, useBridge } from "./bridge";
 import { linkedModels, modelLink, modelContext } from "./integration";
 import { SavedShortlists } from "./SavedShortlists";
 import { UsageDashboard } from "./UsageDashboard";
 import { PromptComparison } from "./PromptComparison";
 import { SelectField } from "./Select";
 
-const bridge = new App(
-  { name: "Phaseo model explorer", version: "0.1.0" },
-  { availableDisplayModes: ["fullscreen"] },
-);
-type Result = {
-  isError?: boolean;
-  structuredContent?: unknown;
-  content?: Array<{ type: string; text?: string }>;
-};
+type Theme = "light" | "dark";
 
-function readResult(result: Result) {
-  if (result.isError)
-    throw new Error(
-      result.content?.find((item) => item.type === "text")?.text ??
-        "Phaseo could not load this data.",
-    );
-  if (!result.structuredContent || typeof result.structuredContent !== "object")
-    throw new Error("Phaseo returned an incomplete result. Try again.");
-  return result.structuredContent as Record<string, unknown>;
-}
-
-function Explorer() {
-  const [models, setModels] = useState<Model[]>([]);
+function Explorer({
+  initialModels,
+  initialCompare,
+  theme,
+}: {
+  initialModels: CardModel[];
+  initialCompare: CardModel[] | null;
+  theme: Theme;
+}) {
+  const { status, context } = useBridge();
+  const connected = status === "connected";
+  const [models, setModels] = useState<CardModel[]>(initialModels);
   const [query, setQuery] = useState("");
   const [modality, setModality] = useState("");
   const [provider, setProvider] = useState("");
-  const [selected, setSelected] = useState<Model[]>([]);
+  const [selected, setSelected] = useState<Model[]>(initialCompare ?? []);
   const [detail, setDetail] = useState<Model | null>(null);
-  const [compare, setCompare] = useState(false);
-  const [busy, setBusy] = useState(true);
-  const [connected, setConnected] = useState(false);
+  const [compare, setCompare] = useState(
+    Boolean(initialCompare && initialCompare.length > 1),
+  );
+  const [busy, setBusy] = useState(initialModels.length === 0);
   const [error, setError] = useState("");
   const [estimates, setEstimates] = useState<Record<string, string>>({});
   const [inputTokens, setInputTokens] = useState("1000");
@@ -63,47 +56,35 @@ function Explorer() {
   const request = useRef(0);
   const detailRequest = useRef(0);
 
+  // A newer models_list result from the conversation replaces the list.
   useEffect(() => {
-    bridge.ontoolresult = (result) => {
-      try {
-        const data = readResult(result);
-        if (Array.isArray(data.models)) setModels(data.models as Model[]);
-        setBusy(false);
-      } catch (reason) {
-        setError(String(reason));
-        setBusy(false);
-      }
-    };
-    bridge.onhostcontextchanged = (context) => {
-      if (context.theme) document.documentElement.dataset.theme = context.theme;
-      const deepLink = context["openai/deepLink"] as
-        { url?: string } | undefined;
-      if (deepLink?.url) void restoreLink(deepLink.url);
-    };
-    void bridge
-      .connect()
-      .then(async () => {
-        setConnected(true);
-        const context = bridge.getHostContext();
-        if (context?.theme)
-          document.documentElement.dataset.theme = context.theme;
-        const deepLink = context?.["openai/deepLink"] as
-          { url?: string } | undefined;
-        if (deepLink?.url) void restoreLink(deepLink.url);
-        if (
-          context?.displayMode !== "fullscreen" &&
-          context?.availableDisplayModes?.includes("fullscreen")
-        ) {
-          await bridge.requestDisplayMode({ mode: "fullscreen" });
-        }
-      })
-      .catch(() => {
-        setBusy(false);
-        setError(
-          "Open the model explorer from the connected Phaseo plugin to load live data.",
-        );
-      });
-  }, []);
+    if (initialModels.length) {
+      setModels(initialModels);
+      setBusy(false);
+    }
+  }, [initialModels]);
+
+  // Opened from the sidebar or thread panel with no result yet: load a first page.
+  const loadedOnce = useRef(false);
+  useEffect(() => {
+    if (!connected || loadedOnce.current) return;
+    loadedOnce.current = true;
+    if (!initialModels.length) void search();
+  }, [connected]);
+
+  const deepLink = (context?.["openai/deepLink"] as { url?: string } | undefined)?.url;
+  useEffect(() => {
+    if (connected && deepLink) void restoreLink(deepLink);
+  }, [connected, deepLink]);
+
+  useEffect(() => {
+    if (status === "failed") {
+      setBusy(false);
+      setError(
+        "Open the model explorer from the connected Phaseo plugin to load live data.",
+      );
+    }
+  }, [status]);
 
   async function restoreLink(path: string) {
     if (workflowBusyRef.current) {
@@ -198,7 +179,7 @@ function Explorer() {
       );
       if (!Array.isArray(data.models))
         throw new Error("Phaseo returned an incomplete model list. Try again.");
-      if (sequence === request.current) setModels(data.models as Model[]);
+      if (sequence === request.current) setModels(data.models as CardModel[]);
     } catch (reason) {
       if (sequence === request.current)
         setError(
@@ -288,7 +269,7 @@ function Explorer() {
             throw new Error("Incomplete cost estimate");
           return [
             model.id,
-            `$${result.totalCostUSD.toFixed(6)}${result.providerId ? ` · ${result.providerId}` : ""}`,
+            `${money(result.totalCostUSD)}${result.providerId ? ` · ${result.providerId}` : ""}`,
           ];
         } catch {
           return [model.id, "Estimate unavailable"];
@@ -304,20 +285,7 @@ function Explorer() {
     setDetail(null);
   };
   return (
-    <main>
-      <header>
-        <span className="brand">
-          <span
-            className="brand-icon"
-            aria-hidden="true"
-            dangerouslySetInnerHTML={{
-              __html: logoSvg.replace('fill="black"', 'fill="currentColor"'),
-            }}
-          />
-          Phaseo
-        </span>
-        <span className="live">Live catalogue</span>
-      </header>
+    <main className="explorer">
       <nav className="explorer-tabs" aria-label="Phaseo views">
         <button
           disabled={workflowBusy}
@@ -349,7 +317,6 @@ function Explorer() {
       </nav>
       <div className="heading">
         <div>
-          <p className="eyebrow">MODEL EXPLORER</p>
           <h1>
             {page === "saved"
               ? "Your shortlists"
@@ -483,7 +450,7 @@ function Explorer() {
                 ? "Loading models…"
                 : `${models.length} ${models.length === 1 ? "result" : "results"} · up to 20 per search`}
             </span>
-            <span>Lowest paid USD / 1M tokens</span>
+            <span>Lowest paid price per 1M tokens</span>
           </div>
           <section aria-label="Models" aria-busy={busy} className="models">
             {!busy && !models.length && (
@@ -495,45 +462,25 @@ function Explorer() {
             {models.map((model) => {
               const checked = selected.some((item) => item.id === model.id);
               return (
-                <article key={model.id} className="model-row">
-                  <label className="select-model">
-                    <input
-                      type="checkbox"
-                      aria-label={`Compare ${model.name}`}
-                      checked={checked}
-                      disabled={
-                        estimating || (!checked && selected.length === 3)
-                      }
-                      onChange={() => toggle(model)}
-                    />
-                  </label>
-                  <button
-                    className="model-name"
-                    onClick={() => void openDetail(model)}
-                  >
-                    <strong>{model.name}</strong>
-                    <span>
-                      {model.provider ?? "Unknown provider"} ·{" "}
-                      {contextSize(model.contextTokens)} context
-                    </span>
-                  </button>
-                  <div className="rates">
-                    <span>
-                      {pricePerMillion(model.inputPricePerToken)}{" "}
-                      <small>in</small>
-                    </span>
-                    <span>
-                      {pricePerMillion(model.outputPricePerToken)}{" "}
-                      <small>out</small>
-                    </span>
-                  </div>
-                  <span className="capability">
-                    {model.hasFreeProvider ? "Free offer · " : ""}
-                    {model.supportsTools
-                      ? "Tools"
-                      : model.inputModalities.join(" / ")}
-                  </span>
-                </article>
+                <ModelRow
+                  key={model.id}
+                  model={model}
+                  theme={theme}
+                  onOpen={() => void openDetail(model)}
+                  leading={
+                    <label className="select-model">
+                      <input
+                        type="checkbox"
+                        aria-label={`Compare ${model.name}`}
+                        checked={checked}
+                        disabled={
+                          estimating || (!checked && selected.length === 3)
+                        }
+                        onChange={() => toggle(model)}
+                      />
+                    </label>
+                  }
+                />
               );
             })}
           </section>
@@ -600,7 +547,6 @@ function Explorer() {
             </button>
           </div>
           <section className="calculator">
-            <p className="eyebrow">WORKLOAD ESTIMATE</p>
             <h2>What would it cost?</h2>
             <form onSubmit={estimate}>
               <label>
@@ -681,4 +627,76 @@ function Explorer() {
   );
 }
 
-createRoot(document.getElementById("root")!).render(<Explorer />);
+// Tool results render as inline cards. The explorer appears in fullscreen, when the
+// user expands a card on a host without fullscreen, or when it was opened from the
+// sidebar or thread panel rather than by a tool call.
+function Root() {
+  const { status, context, toolCall, result } = useBridge();
+  const [graceOver, setGraceOver] = useState(false);
+  const [expandedInline, setExpandedInline] = useState(false);
+  const [compareSeed, setCompareSeed] = useState<CardModel[] | null>(null);
+  useEffect(() => {
+    if (status !== "connected") return;
+    // Tool arguments arrive just after connecting; wait briefly before deciding
+    // this view was opened from an entry point instead.
+    const timer = setTimeout(() => setGraceOver(true), 800);
+    return () => clearTimeout(timer);
+  }, [status]);
+
+  const theme: Theme = context?.theme === "dark" ? "dark" : "light";
+  const fullscreen = context?.displayMode === "fullscreen";
+  let card = null;
+  let error = "";
+  if (result) {
+    try {
+      card = cardFor(readResult(result));
+    } catch (reason) {
+      error = reason instanceof Error ? reason.message : "Phaseo could not load this data.";
+    }
+  }
+  const resultModels = card?.kind === "models" ? card.models : NO_MODELS;
+
+  if (
+    fullscreen ||
+    expandedInline ||
+    status === "failed" ||
+    (status === "connected" && !toolCall && graceOver)
+  )
+    return (
+      <Explorer
+        initialModels={resultModels}
+        initialCompare={compareSeed}
+        theme={theme}
+      />
+    );
+  if (error)
+    return (
+      <section className="card">
+        <p role="alert" className="card-error">{error}</p>
+      </section>
+    );
+  if (!card)
+    return (
+      <section className="card" aria-busy="true">
+        <p className="card-empty">Loading Phaseo data…</p>
+      </section>
+    );
+  if (card.kind === "estimate") return <EstimateCard estimate={card.estimate} />;
+  if (card.kind === "credits") return <CreditsCard credits={card.credits} />;
+  return (
+    <ModelsCard
+      models={card.models}
+      theme={theme}
+      canExpand={status === "connected"}
+      onExpand={async (compare) => {
+        setCompareSeed(compare);
+        if (canOpenFullscreen(context) && (await openFullscreen())) return;
+        setExpandedInline(true);
+      }}
+    />
+  );
+}
+
+const NO_MODELS: CardModel[] = [];
+
+createRoot(document.getElementById("root")!).render(<Root />);

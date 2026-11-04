@@ -165,9 +165,19 @@ describe("Phaseo MCP server metadata", () => {
 		const view = await client.readResource({ uri: "ui://phaseo/model-explorer.html" });
 		expect(view.contents[0]).toMatchObject({
 			mimeType: "text/html;profile=mcp-app",
-			_meta: { "openai/ui": { availableDisplayModes: ["fullscreen"], preferredDisplayMode: "fullscreen" } },
+			_meta: {
+				"openai/ui": { availableDisplayModes: ["inline", "fullscreen"] },
+				ui: { csp: { resourceDomains: ["https://phaseo.app"] } },
+			},
 		});
 		expect((view.contents[0] as { text: string }).text).toContain("<!doctype html>");
+		// Results render inline; the explorer never asks for fullscreen by itself.
+		expect((view.contents[0] as { text: string }).text).not.toContain("Montserrat");
+		for (const name of ["cost_estimate", "credits_get"]) {
+			expect(tools[name]?._meta?.ui).toMatchObject({ resourceUri: "ui://phaseo/model-explorer.html" });
+			expect(tools[name]?._meta?.["openai/ui"]).toBeUndefined();
+		}
+		expect(tools.activity_list?._meta?.ui).toBeUndefined();
 		expect(tools.generation_get?.outputSchema).toMatchObject({
 			type: "object",
 			properties: { generation: { type: "object" } },
@@ -297,7 +307,7 @@ describe("Phaseo MCP server metadata", () => {
 		});
 		const models = [
 			model("lab/cheap", "1", false, null),
-			model("lab/expensive", "5", true, "2026-08-25T00:00:00Z"),
+			{ ...model("lab/expensive", "5", true, "2026-08-25T00:00:00Z"), organization: { id: "openai", name: "OpenAI", color: null } },
 		];
 		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
 			const request = input instanceof Request ? input : new Request(input);
@@ -331,6 +341,8 @@ describe("Phaseo MCP server metadata", () => {
 				id: "lab/cheap",
 				releaseDate: null,
 				modelUrl: "https://preview.phaseo.test/models/lab/cheap",
+				// No website logo for this organisation, so the card falls back to its initial.
+				logo: null,
 				gatewayAvailable: false,
 				gatewayModelId: null,
 				providerSupport: [{
@@ -353,6 +365,10 @@ describe("Phaseo MCP server metadata", () => {
 				outputPriceProviderId: "provider",
 				hasFreeProvider: true,
 				modelUrl: "https://preview.phaseo.test/models/lab/expensive",
+				logo: {
+					light: "https://preview.phaseo.test/logos/openai_light.svg",
+					dark: "https://preview.phaseo.test/logos/openai_dark.svg",
+				},
 				gatewayAvailable: true,
 				gatewayModelId: "lab/expensive",
 				availableProviders: ["provider", "free-provider"],
@@ -401,7 +417,9 @@ describe("Phaseo MCP server metadata", () => {
 		});
 		expect(estimate.structuredContent).toMatchObject({ estimate: {
 			modelId: "lab/expensive",
+			modelName: "lab/expensive",
 			providerId: "provider",
+			providerName: "Provider",
 			isFree: false,
 			inputCostUSD: 5,
 			outputCostUSD: 10,

@@ -3,9 +3,9 @@ import {
   AppBridge,
   PostMessageTransport,
 } from "@modelcontextprotocol/ext-apps/app-bridge";
-import type { Model } from "./model";
+import type { CardModel } from "./model";
 
-const models: Model[] = [
+const models: CardModel[] = [
   {
     id: "example/atlas",
     gatewayAvailable: true,
@@ -20,6 +20,12 @@ const models: Model[] = [
     outputPricePerToken: "0.00001",
     supportsTools: true,
     availableProviders: ["Example Cloud"],
+    inputPriceProviderId: "example-cloud",
+    providerSupport: [{ providerId: "example-cloud", providerName: "Example Cloud" }],
+    logo: {
+      light: "https://phaseo.app/logos/openai_light.svg",
+      dark: "https://phaseo.app/logos/openai_dark.svg",
+    },
   },
   {
     id: "example/spark",
@@ -64,6 +70,8 @@ const models: Model[] = [
     availableProviders: ["Example Edge"],
   },
 ];
+const frame = document.querySelector<HTMLIFrameElement>("iframe")!;
+document.body.dataset.mode = "inline";
 const bridge = new AppBridge(
   null,
   { name: "Phaseo fixture preview", version: "1.0.0" },
@@ -81,11 +89,29 @@ const fixtureQuotes = new Map<
     prompt: string;
   }
 >();
+// ?mode=fullscreen starts in the explorer; the default is an inline card, like a
+// tool result in ChatGPT. ?card=estimate or ?card=credits picks the result shown.
+const params = new URLSearchParams(location.search);
+const startMode = params.get("mode") === "fullscreen" ? "fullscreen" : "inline";
 bridge.setHostContext({
-  theme: "light",
-  displayMode: "fullscreen",
-  availableDisplayModes: ["fullscreen"],
+  theme: params.get("theme") === "dark" ? "dark" : "light",
+  displayMode: startMode,
+  availableDisplayModes: ["inline", "fullscreen"],
 });
+bridge.onrequestdisplaymode = async ({ mode }) => {
+  bridge.setHostContext({ displayMode: mode });
+  document.body.dataset.mode = mode;
+  if (mode === "fullscreen") frame.style.height = "";
+  return { mode };
+};
+bridge.onsizechange = ({ height }) => {
+  if (height && document.body.dataset.mode !== "fullscreen")
+    frame.style.height = height + "px";
+};
+bridge.onopenlink = async ({ url }) => {
+  document.querySelector("#context")!.textContent = `Opened link: ${url}`;
+  return {};
+};
 bridge.oncalltool = async ({ name, arguments: args = {} }) => {
   const permissions = new URLSearchParams(location.search).get("permissions");
   const ok = (data: Record<string, unknown>) => ({
@@ -252,11 +278,39 @@ bridge.oncalltool = async ({ name, arguments: args = {} }) => {
     structuredContent: data,
   };
 };
+const cardResults: Record<string, Record<string, unknown>> = {
+  estimate: {
+    estimate: {
+      modelId: "example/spark",
+      modelName: "Spark",
+      providerId: "example-cloud",
+      providerName: "Example Cloud",
+      isFree: false,
+      inputTokens: 2_000_000,
+      cachedInputTokens: 0,
+      outputTokens: 500_000,
+      inputCostUSD: 0.3,
+      cachedInputCostUSD: 0,
+      outputCostUSD: 0.3,
+      totalCostUSD: 0.6,
+    },
+  },
+  credits: {
+    credits: {
+      balanceNanos: 5_000_000_000,
+      reservedNanos: 0,
+      availableNanos: 5_000_000_000,
+      thirtyDayUsageNanos: 0,
+      thirtyDayRequests: 7,
+    },
+  },
+};
 bridge.oninitialized = async () => {
+  if (startMode === "fullscreen" && params.get("entry") === "panel") return;
   await bridge.sendToolInput({ arguments: {} });
   await bridge.sendToolResult({
     content: [{ type: "text", text: "Preview fixtures" }],
-    structuredContent: { models },
+    structuredContent: cardResults[params.get("card") ?? ""] ?? { models },
   });
 };
 bridge.onupdatemodelcontext = async ({ structuredContent }) => {
@@ -275,8 +329,18 @@ document.querySelector("#theme")!.addEventListener("click", () => {
   dark = !dark;
   bridge.setHostContext({ theme: dark ? "dark" : "light" });
 });
-const frame = document.querySelector<HTMLIFrameElement>("iframe")!;
 await bridge.connect(
   new PostMessageTransport(frame.contentWindow!, frame.contentWindow!),
 );
 frame.src = "/explorer";
+// ?click=compare or ?click=explorer presses that card button after loading.
+const click = params.get("click");
+if (click)
+  frame.addEventListener("load", () =>
+    setTimeout(() => {
+      const label = click === "compare" ? "Compare these" : "Open explorer";
+      [...frame.contentDocument!.querySelectorAll("button")]
+        .find((button) => button.textContent === label)
+        ?.click();
+    }, 1500),
+  );
