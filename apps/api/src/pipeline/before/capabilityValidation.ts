@@ -14,6 +14,7 @@ import {
 } from "./paramCapabilities";
 import { isAlwaysSupportedParam } from "./textParamPolicy";
 import { validateProviderDocsCompliance } from "./providerDocsValidation";
+import { describeParameterValueIssue, parameterValueIssues, type ParameterValueIssue } from "./paramValueSupport";
 import { getEffectiveRoutingHints } from "../requestRouting";
 
 type ValidationResult =
@@ -149,6 +150,59 @@ function preferProvidersByRequestedParams(args: {
 			minUnsupported,
 	);
 	return preferred.length > 0 ? preferred : args.providers;
+}
+
+/**
+ * Narrows candidates by the requested parameter values their stored specs
+ * accept. Routes that accept every value are kept when there are any; when
+ * none do, the pool is kept as it is (stored lists can be incomplete, and the
+ * provider's own validation still applies), unless the request requires its
+ * parameters, which then fails with the allowed values.
+ */
+function filterProvidersByParameterValues(args: {
+	rawBody: any;
+	body: any;
+	providers: ProviderCandidate[];
+	requestId: string;
+	workspaceId: string;
+	model: string;
+}): { ok: true; providers: ProviderCandidate[] } | { ok: false; response: Response } {
+	if (args.providers.length === 0) return { ok: true, providers: args.providers };
+	const issuesByProvider = new Map<ProviderCandidate, ParameterValueIssue[]>();
+	for (const provider of args.providers) issuesByProvider.set(provider, parameterValueIssues(provider, args.rawBody));
+	const accepting = args.providers.filter((provider) => (issuesByProvider.get(provider) ?? []).length === 0);
+	if (accepting.length === args.providers.length) return { ok: true, providers: args.providers };
+	const rejected = args.providers
+		.filter((provider) => (issuesByProvider.get(provider) ?? []).length > 0)
+		.map((provider) => ({ provider: provider.providerId, issues: issuesByProvider.get(provider) ?? [] }));
+	if (accepting.length > 0) return { ok: true, providers: accepting };
+	if (getEffectiveRoutingHints(args.body).requireParameters) {
+		return {
+			ok: false,
+			response: err("validation_error", {
+				details: rejected.flatMap((row) => row.issues.map((issue) => ({
+					message: describeParameterValueIssue(issue),
+					path: issue.param.split("."),
+					keyword: "unsupported_param_value",
+					params: {
+						provider: row.provider,
+						value: issue.value,
+						...(issue.allowed ? { allowed: issue.allowed } : {}),
+						...(issue.min !== undefined ? { min: issue.min } : {}),
+						...(issue.max !== undefined ? { max: issue.max } : {}),
+					},
+				}))),
+				request_id: args.requestId,
+				workspace_id: args.workspaceId,
+			}),
+		};
+	}
+	console.warn("param_value_unsupported_all_candidates", {
+		requestId: args.requestId,
+		model: args.model,
+		rejected: rejected.map((row) => ({ provider: row.provider, issues: row.issues.map(describeParameterValueIssue) })),
+	});
+	return { ok: true, providers: args.providers };
 }
 
 function filterProvidersForRequiredParams(args: {
@@ -492,6 +546,18 @@ export function validateCapabilities(args: {
 		preferredProviders,
 	);
 
+	// Step 1.2: Requested values each route's stored parameter specs accept
+	const valueResult = filterProvidersByParameterValues({
+		rawBody: args.rawBody,
+		body: paramResult.body,
+		providers: preferredProviders,
+		requestId: args.requestId,
+		workspaceId: args.workspaceId,
+		model: args.model,
+	});
+	if (valueResult.ok === false) return { ok: false, response: valueResult.response };
+	pushFilteringStage(filteringStages, "param_values", preferredProviders, valueResult.providers);
+
 	// Step 1.5: Provider docs validation (hard constraints from provider API docs)
 	const docsResult = validateProviderDocsCompliance({
 		endpoint: args.endpoint,
@@ -499,11 +565,11 @@ export function validateCapabilities(args: {
 		requestId: args.requestId,
 		workspaceId: args.workspaceId,
 		model: args.model,
-		providers: preferredProviders,
+		providers: valueResult.providers,
 		requestedParams: paramResult.requestedParams,
 	});
 	if ("response" in docsResult) return { ok: false, response: docsResult.response };
-	pushFilteringStage(filteringStages, "provider_docs", preferredProviders, docsResult.providers);
+	pushFilteringStage(filteringStages, "provider_docs", valueResult.providers, docsResult.providers);
 
 	// Step 2: Response format validation
 	const formatResult = validateResponseFormat({

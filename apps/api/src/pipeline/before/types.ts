@@ -450,6 +450,7 @@ export type ParamRoutingDiagnostics = {
         stage:
             | "param_support"
             | "param_preference"
+            | "param_values"
             | "provider_docs"
             | "response_format"
             | "structured_outputs"
