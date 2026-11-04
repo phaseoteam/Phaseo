@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const failureAuditMock = vi.fn(async (..._args: any[]) => undefined);
+// Background work the stream handler dispatches, so each test can drain it before it ends.
+const backgroundWork: Promise<unknown>[] = [];
+let failureAudited: Promise<void> = Promise.resolve();
 const successAuditMock = vi.fn(async (..._args: any[]) => undefined);
 
 vi.mock("./audit", () => ({
@@ -42,7 +45,7 @@ vi.mock("../execute/sticky-routing", () => ({
 vi.mock("@/runtime/env", () => ({
 	ensureRuntimeForBackground: () => () => {},
 	dispatchBackground: (promise: Promise<unknown>) => {
-		void promise.catch(() => {});
+		backgroundWork.push(promise.catch(() => {}));
 	},
 }));
 
@@ -98,15 +101,22 @@ async function runTruncated(ctx: any) {
 		rawResponse: null,
 	} as any, { rules: [] } as any);
 	await response.text();
-	for (let i = 0; i < 5 && failureAuditMock.mock.calls.length === 0; i++) {
-		await new Promise((resolve) => setTimeout(resolve, 0));
-	}
+	await failureAudited;
+	await Promise.all(backgroundWork);
 }
 
 describe("a stream that ends without a terminal event", () => {
 	beforeEach(() => {
 		failureAuditMock.mockClear();
 		successAuditMock.mockClear();
+		backgroundWork.length = 0;
+		// Resolves when the stream handler writes its failure audit.
+		failureAudited = new Promise<void>((resolve) => {
+			failureAuditMock.mockImplementationOnce(async () => {
+				resolve();
+				return undefined;
+			});
+		});
 	});
 
 	it("is a customer cancellation when the client had already disconnected", async () => {
