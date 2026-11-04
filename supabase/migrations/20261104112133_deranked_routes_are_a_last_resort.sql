@@ -2,7 +2,8 @@
 -- A deranked route or capability (stored as 'degraded') is routable as a last resort instead of
 -- being excluded, the public catalogue reports it as a single 'deranked' status, and the admin
 -- editor's single 'deranked' option is stored as 'degraded'. The routing-candidates query accepts
--- a deranked capability too. Grants are unchanged.
+-- a deranked capability too. Each definition is copied whole from
+-- supabase/schemas, so its existing grants are restated unchanged.
 
 CREATE OR REPLACE FUNCTION public.gateway_fetch_request_context_without_workspace_budget (
   workspace_id uuid,
@@ -646,6 +647,14 @@ end;
 
 $function$;
 
+GRANT EXECUTE ON FUNCTION "public"."gateway_fetch_request_context_without_workspace_budget"(uuid, text, text, uuid) TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."gateway_fetch_request_context_without_workspace_budget"(uuid, text, text, uuid) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."gateway_fetch_request_context_without_workspace_budget"(uuid, text, text, uuid) TO "postgres";
+
+REVOKE ALL ON FUNCTION "public"."gateway_fetch_request_context_without_workspace_budget"(uuid, text, text, uuid) FROM PUBLIC, "anon", "authenticated";
+
 CREATE OR REPLACE FUNCTION public.gateway_fetch_public_catalog_at (
   p_model     text,
   p_endpoints text[],
@@ -780,6 +789,16 @@ begin
 end;
 $function$;
 
+GRANT EXECUTE ON FUNCTION "public"."gateway_fetch_public_catalog_at"(text, text[], timestamp with time zone) TO "service_role";
+
+COMMENT ON FUNCTION "public"."gateway_fetch_public_catalog_at"(text, text[], timestamp with time zone) IS 'Returns a public catalog snapshot evaluated at p_at, with the catalogue revision and next scheduled boundary, for stale-while-revalidate gateway caching.';
+
+REVOKE ALL ON FUNCTION "public"."gateway_fetch_public_catalog_at"(text, text[], timestamp with time zone) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."gateway_fetch_public_catalog_at"(text, text[], timestamp with time zone) TO "postgres";
+
+REVOKE ALL ON FUNCTION "public"."gateway_fetch_public_catalog_at"(text, text[], timestamp with time zone) FROM PUBLIC, "anon", "authenticated";
+
 CREATE OR REPLACE FUNCTION public.get_model_successor_routing (
   p_model_slug text
 )
@@ -855,6 +874,14 @@ begin
     'compatibility', v_compatibility);
 end $function$;
 
+GRANT EXECUTE ON FUNCTION "public"."get_model_successor_routing"(text) TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."get_model_successor_routing"(text) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."get_model_successor_routing"(text) TO "postgres";
+
+REVOKE ALL ON FUNCTION "public"."get_model_successor_routing"(text) FROM PUBLIC, "anon", "authenticated";
+
 CREATE OR REPLACE FUNCTION public.v2_model_has_routable_route (
   p_model_slug text,
   p_at         timestamp with time zone DEFAULT now()
@@ -883,6 +910,14 @@ CREATE OR REPLACE FUNCTION public.v2_model_has_routable_route (
       and (c.effective_to is null or p_at<c.effective_to)
   )
 $function$;
+
+GRANT EXECUTE ON FUNCTION "public"."v2_model_has_routable_route"(text, timestamp with time zone) TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."v2_model_has_routable_route"(text, timestamp with time zone) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."v2_model_has_routable_route"(text, timestamp with time zone) TO "postgres";
+
+REVOKE ALL ON FUNCTION "public"."v2_model_has_routable_route"(text, timestamp with time zone) FROM PUBLIC, "anon", "authenticated";
 
 CREATE OR REPLACE FUNCTION public.mutate_v2_admin_model_graph (
   p_actor_user_id uuid,
@@ -999,6 +1034,14 @@ begin
   values('model',p_model_slug,'database_managed',p_actor_user_id,p_model_slug,now()) on conflict(source_type,source_key) do update set disposition='database_managed',actor_user_id=excluded.actor_user_id,updated_at=now();
   return jsonb_build_object('model',v_after);
 end $function$;
+
+GRANT EXECUTE ON FUNCTION "public"."mutate_v2_admin_model_graph"(uuid, text, jsonb) TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."mutate_v2_admin_model_graph"(uuid, text, jsonb) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."mutate_v2_admin_model_graph"(uuid, text, jsonb) TO "postgres";
+
+REVOKE ALL ON FUNCTION "public"."mutate_v2_admin_model_graph"(uuid, text, jsonb) FROM PUBLIC, "anon", "authenticated";
 
 CREATE OR REPLACE FUNCTION public.get_public_model_catalogue_rows (
   p_include_hidden boolean DEFAULT false
@@ -1236,6 +1279,16 @@ CREATE OR REPLACE FUNCTION public.get_public_model_catalogue_rows (
   order by g.primary_timestamp desc nulls last, g.organisation_name asc nulls last, g.name asc;
 $function$;
 
+GRANT EXECUTE ON FUNCTION "public"."get_public_model_catalogue_rows"(boolean) TO PUBLIC, "anon", "authenticated";
+
+GRANT EXECUTE ON FUNCTION "public"."get_public_model_catalogue_rows"(boolean) TO "service_role";
+
+COMMENT ON FUNCTION "public"."get_public_model_catalogue_rows"(boolean) IS 'Returns one compact public catalogue row per model for /models, aggregating provider-capability rows in Postgres to reduce web origin payload/work.';
+
+REVOKE ALL ON FUNCTION "public"."get_public_model_catalogue_rows"(boolean) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."get_public_model_catalogue_rows"(boolean) TO "postgres";
+
 CREATE OR REPLACE FUNCTION catalogue_private.apply_v2_admin_model_capabilities (
   p_actor_user_id uuid,
   p_model_slug    text,
@@ -1424,6 +1477,14 @@ begin
 end;
 $function$;
 
+GRANT EXECUTE ON FUNCTION "catalogue_private"."apply_v2_admin_model_capabilities"(uuid, text, jsonb) TO "service_role";
+
+REVOKE ALL ON FUNCTION "catalogue_private"."apply_v2_admin_model_capabilities"(uuid, text, jsonb) FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION "catalogue_private"."apply_v2_admin_model_capabilities"(uuid, text, jsonb) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "catalogue_private"."apply_v2_admin_model_capabilities"(uuid, text, jsonb) TO "postgres";
+
 CREATE OR REPLACE FUNCTION public.get_v2_routing_candidates_raw (
   p_model_slug    text,
   p_capability_id text DEFAULT NULL::text,
@@ -1503,3 +1564,15 @@ CREATE OR REPLACE FUNCTION public.get_v2_routing_candidates_raw (
     provider.name,
     route.provider_model_id;
 $function$;
+
+GRANT EXECUTE ON FUNCTION "public"."get_v2_routing_candidates_raw"(text, text, text, text) TO "authenticated";
+
+GRANT EXECUTE ON FUNCTION "public"."get_v2_routing_candidates_raw"(text, text, text, text) TO "service_role";
+
+COMMENT ON FUNCTION "public"."get_v2_routing_candidates_raw"(text, text, text, text) IS 'Internal routing candidate query with provider/model, region, tier, capability, and status gates evaluated in SQL.';
+
+REVOKE ALL ON FUNCTION "public"."get_v2_routing_candidates_raw"(text, text, text, text) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."get_v2_routing_candidates_raw"(text, text, text, text) TO "postgres";
+
+REVOKE ALL ON FUNCTION "public"."get_v2_routing_candidates_raw"(text, text, text, text) FROM PUBLIC, "anon";
