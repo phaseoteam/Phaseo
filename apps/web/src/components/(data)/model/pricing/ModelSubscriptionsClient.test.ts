@@ -2,6 +2,7 @@ import {
 	dedupeSubscriptionPlanPrices,
 	sortSubscriptionPlanPricesForDisplay,
 	getStartingPriceText,
+	resolveSubscriptionOrganisationName,
 	type SubscriptionPrice,
 } from "./ModelSubscriptionsClient";
 
@@ -44,5 +45,16 @@ describe("subscription price normalization", () => {
 		const unknown: SubscriptionPrice = { frequency: "monthly", currency: "USD", price: null };
 		const free: SubscriptionPrice = { ...unknown, price: 0 };
 		expect(dedupeSubscriptionPlanPrices([unknown, free])).toEqual([unknown, free]);
+	});
+});
+
+describe("subscription organisation names", () => {
+	test("keeps a real name that only differs from the id in case", () => {
+		expect(resolveSubscriptionOrganisationName("OpenAI", "openai")).toBe("OpenAI");
+	});
+
+	test("generates a label when the name is missing or just the id", () => {
+		expect(resolveSubscriptionOrganisationName("openai", "openai")).not.toBe("openai");
+		expect(resolveSubscriptionOrganisationName(null, "openai")).toBeTruthy();
 	});
 });

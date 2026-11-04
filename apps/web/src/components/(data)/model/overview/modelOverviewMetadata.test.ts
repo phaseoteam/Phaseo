@@ -77,13 +77,14 @@ describe("model overview metadata", () => {
 		});
 	});
 
-	it("humanizes the model slug when a catalog name is unavailable", async () => {
+	it("leaves out a related model the catalogue cannot find", async () => {
+		// An old slug such as this one would link to a missing page.
 		const lineage = getModelLineageLinks(
 			[],
-			"amazon/nova-lite-1.0",
+			"anthropic/claude-3-5-sonnet-2024-06-21",
 		);
 		const resolved = await resolveModelLineageNames(lineage, async () => null);
 
-		expect(resolved.previous?.modelName).toBe("Nova Lite 1.0");
+		expect(resolved.previous).toBeNull();
 	});
 });
