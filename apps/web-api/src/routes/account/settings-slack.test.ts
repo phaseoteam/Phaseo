@@ -82,6 +82,8 @@ type Fixture = {
 	autoRouting?: boolean | "error";
 	/** Statsig's answer for the slack_agent rollout gate (default: open), or "error" for a failed check. */
 	slackGate?: boolean | "error";
+	/** Rows left in workspace_guardrail_assignments for the agent's guardrail after its key link goes (default 0). */
+	guardrailAssignments?: number;
 	/** The installer's Phaseo role (users.role); "admin" installs outside the rollout. */
 	phaseoRole?: string | null;
 	/** The installer's beta profile (users.beta_opt_in, users.beta_features). */
@@ -152,6 +154,9 @@ function database(fixture: Fixture = {}) {
 		}
 		if (path.endsWith("/slack_user_links")) return new Response(null, { status: 201 });
 		if (path.endsWith("/workspace_member_guardrails")) return new Response(null, { status: 200, headers: { "content-range": "*/0" } });
+		if (path.endsWith("/workspace_guardrail_assignments")) {
+			return new Response(null, { status: 200, headers: { "content-range": `*/${fixture.guardrailAssignments ?? 0}` } });
+		}
 		if (path.endsWith("/key_guardrails")) {
 			if (request.method === "HEAD") return new Response(null, { status: 200, headers: { "content-range": "*/0" } });
 			return new Response(null, { status: request.method === "POST" ? 201 : 204 });
@@ -1193,6 +1198,15 @@ describe("Slack agent uninstall", () => {
 		// The unused agent guardrail goes too.
 		expect(find(requests, "DELETE", "/workspace_guardrails")[0].url.searchParams.get("id")).toBe(`eq.${GUARDRAIL_ID}`);
 		expect(find(requests, "POST", "/workspace_audit_events")[0].body).toMatchObject({ action: "slack_agent.uninstalled", metadata: { slack_uninstalled: true } });
+	});
+
+	it("keeps the agent's guardrail when an admin also applied it to the workspace or a department", async () => {
+		const secrets_ciphertext = await encryptSlackSecrets(env as never, { bot_token: BOT_TOKEN, gateway_key: "k" });
+		const requests = database({ role: "admin", installation: { secrets_ciphertext }, guardrailAssignments: 1 });
+		const response = await call("/slack", { method: "DELETE", body: JSON.stringify({ workspaceId: WORKSPACE }) });
+		expect(response.status).toBe(200);
+		expect(find(requests, "DELETE", "/key_guardrails")).toHaveLength(1);
+		expect(find(requests, "DELETE", "/workspace_guardrails")).toHaveLength(0);
 	});
 
 	it("deletes the agent's shared pages through the Slack Worker, and uninstalls even when that fails", async () => {
