@@ -26,6 +26,14 @@ export function arrangeGroups<T extends { id: string }>(groups: readonly T[], pr
 		.sort((a, b) => (rank.get(a.group.id) ?? Infinity) - (rank.get(b.group.id) ?? Infinity) || a.index - b.index).map(({ group }) => group);
 }
 
+/** Moves one group to `to` within its block (the ids shown, in order); that block's order replaces its old one, the other's is kept. */
+export function moveGroup(prefs: PickerGroupPrefs, block: readonly string[], id: string, to: number): PickerGroupPrefs {
+	const ids = block.filter(value => value !== id);
+	ids.splice(Math.max(0, Math.min(to, ids.length)), 0, id);
+	const mine = new Set(ids);
+	return { ...prefs, order: [...prefs.order.filter(value => !mine.has(value)), ...ids] };
+}
+
 export function usePickerGroups() {
 	const [value, setValue] = usePersistedState<PickerGroupPrefs>(pickerGroupsKey, defaultPickerGroups);
 	let prefs = defaultPickerGroups;

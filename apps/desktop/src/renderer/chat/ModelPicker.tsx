@@ -17,7 +17,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "../components/ui/toolti
 import { ScrollArea } from "../components/ui/scroll-area";
 import { useCommand } from "../lib/keybindings";
 import { useModelPopularity } from "../lib/modelPopularity";
-import { arrangeGroups, usePickerGroups } from "../lib/pickerGroups";
+import { arrangeGroups, moveGroup, usePickerGroups } from "../lib/pickerGroups";
+import { usePointerReorder } from "../lib/pointerReorder";
 import { ModelSettingsColumn, SettingsSuffix, SpeedSegments, speedIds, useSettingDescriptors } from "./ModelSettings";
 
 export const harnessNames: Record<Harness, string> = { phaseo: "Phaseo", codex: "Codex", claude: "Claude Code", opencode: "OpenCode", pi: "Pi", cursor: "Cursor", grok: "Grok", antigravity: "Antigravity", acp: "Agent" };
@@ -182,7 +183,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	const onLoad = useCallback((harness: Harness, state: { entries: Entry[]; loading: boolean; error: string }) => setCatalogs(current => ({ ...current, [harness]: state })), []);
 
 	const all = useMemo(() => harnesses.flatMap(harness => catalogs[harness]?.entries ?? []), [harnesses, catalogs]);
-	const [groupPrefs] = usePickerGroups();
+	const [groupPrefs, setGroupPrefs] = usePickerGroups();
 	// A hidden agent or lab takes its models with it, from search too; hiding "All Phaseo models" leaves the labs.
 	const hiddenGroups = useMemo(() => new Set(groupPrefs.hidden), [groupPrefs.hidden]);
 	const visible = useMemo(() => all.filter(entry => !hiddenGroups.has(entry.harness === "phaseo" ? `lab:${labOf(entry)}` : entry.harness)).filter(entry => entry.harness !== "phaseo" || ((!filters.free || entry.model.id.endsWith(":free")) && (!filters.new || Date.now() - released(entry) <= twoWeeks))), [all, filters, hiddenGroups]);
@@ -197,6 +198,11 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 		];
 	}, [catalogs.phaseo?.entries, harnesses, popularity, groupPrefs]);
 	const active: Group = groups.some(value => value.id === group) ? group : groups[1]?.id ?? "favourites";
+	// Groups drag up and down the column within their block (agents, or Phaseo), as in Settings; favourites stay first.
+	const blockOf = (id: string) => id === "favourites" ? "" : isPhaseoGroup(id as Group) ? "phaseo" : "agents";
+	const column = useRef<HTMLDivElement>(null);
+	const reorder = usePointerReorder({ list: column, threshold: 5, items: id => `[data-reorder-block="${blockOf(id)}"]`,
+		onDrop: (id, to) => setGroupPrefs(moveGroup(groupPrefs, groups.filter(value => blockOf(value.id) === blockOf(id)).map(value => value.id), id, to)) });
 	const isSelected = (entry: Entry) => selections.some(value => sameSelection(value, { harness: entry.harness, accountId: entry.accountId, model: entry.model.id }));
 
 	const normalized = normalize(query);
@@ -318,17 +324,27 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 		{/* Stays above or below the button and shrinks to fit below the title bar, rather than sliding sideways over the composer. */}
 			<PopoverContent align="end" side="top" sideOffset={8} collisionAvoidance={{ side: "flip", align: "shift", fallbackAxisSide: "none" }} collisionPadding={{ top: 52, right: 8, bottom: 8, left: 8 }} className={cn("max-h-(--available-height) gap-0 overflow-hidden rounded-xl p-0", descriptors.length ? "w-[min(94vw,552px)]" : "w-[min(92vw,360px)]")}>
 				<div className="flex h-[min(346px,calc(var(--available-height)-48px))] min-h-0 min-w-0">
-				<div role="toolbar" aria-orientation="vertical" aria-label="Model groups" className="flex w-11 shrink-0 flex-col gap-1 overflow-y-auto overscroll-contain bg-muted/30 p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+				<div ref={column} role="toolbar" aria-orientation="vertical" aria-label="Model groups"
+					// Pressing a group can start a drag; listened for here, as the tooltip wrapping each button keeps its own handlers.
+					onPointerDown={event => { const id = (event.target as HTMLElement).closest<HTMLElement>("[data-reorder-block]")?.dataset.reorderId; if (id) reorder.start(event, id); }}
+					// The logos are images the browser would drag itself, cancelling ours.
+					onDragStart={event => event.preventDefault()} className="flex w-11 shrink-0 flex-col gap-1 overflow-y-auto overscroll-contain bg-muted/30 p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
 					{groups.map((value, index) => <Fragment key={value.id}>
 						{/* A rule after favourites, and another where Phaseo's models begin. */}
 						{index > 0 && (groups[index - 1].id === "favourites" || (isPhaseoGroup(value.id) && !isPhaseoGroup(groups[index - 1].id))) && <div aria-hidden className="mx-1 border-b border-border/70" />}
 						<Tooltip>
-							<TooltipTrigger delay={200} render={<button type="button" aria-label={value.label} aria-pressed={active === value.id} onClick={() => { setGroup(value.id); setQuery(""); }}
-								className={cn("relative flex aspect-square w-full shrink-0 items-center justify-center rounded-md transition-colors hover:bg-foreground/10 [&_img]:size-5 [&_.harness-logo]:size-5", active === value.id && "bg-foreground/10")} />}>
+							<TooltipTrigger delay={200} render={<button type="button" aria-label={value.label} aria-pressed={active === value.id} data-reorder-block={blockOf(value.id) || undefined} data-reorder-id={value.id}
+								onClick={() => { if (reorder.consumeDrag()) return; setGroup(value.id); setQuery(""); }}
+								className={cn("relative flex aspect-square w-full shrink-0 touch-none items-center justify-center rounded-md transition-colors hover:bg-foreground/10 [&_img]:size-5 [&_.harness-logo]:size-5", active === value.id && "bg-foreground/10", reorder.drag?.id === value.id && "opacity-50")} />}>
 								{value.id === "favourites" ? <Star className="size-5 fill-current" />
 									: value.lab ? <ModelLogo model={{ id: `${value.lab}/model`, name: value.label, organisationId: value.lab }} harness="phaseo" />
 									: <HarnessLogo harness={value.id === "phaseo" ? "phaseo" : value.id as Harness} />}
 								{active === value.id && <span aria-hidden className="absolute top-1/2 -right-1 h-5 w-0.75 -translate-y-1/2 rounded-full bg-primary" />}
+								{reorder.drag && blockOf(value.id) === blockOf(reorder.drag.id) && (() => {
+									const block = groups.filter(entry => blockOf(entry.id) === blockOf(value.id)), place = block.findIndex(entry => entry.id === value.id);
+									return place === reorder.drag.over ? <span aria-hidden className="absolute inset-x-0.5 -top-[3.5px] z-10 h-[3px] rounded-full bg-primary" />
+										: place === block.length - 1 && reorder.drag.over === block.length ? <span aria-hidden className="absolute inset-x-0.5 -bottom-[3.5px] z-10 h-[3px] rounded-full bg-primary" /> : null;
+								})()}
 							</TooltipTrigger>
 							<TooltipContent side="left">{value.label}</TooltipContent>
 						</Tooltip>
