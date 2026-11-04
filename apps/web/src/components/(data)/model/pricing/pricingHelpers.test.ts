@@ -195,6 +195,43 @@ describe("buildProviderSections", () => {
 		});
 	});
 
+	test("keeps a model's Decisions prices out of its text prices", () => {
+		// GPT-6 Luna on OpenAI: text at $0.10 / $0.50, Decisions at $0.10 / $0 with
+		// token meters the API declares as text. The table showed output as "Free".
+		const provider = makeProviderPricing();
+		provider.provider_models = [
+			{
+				...provider.provider_models[0],
+				id: "openai:openai/gpt-6-luna:text.generate",
+				model_id: "openai/gpt-6-luna",
+				endpoint: "text.generate",
+			},
+		];
+		const rule = (id: string, meter: string, price: number, capability: string) => ({
+			...provider.pricing_rules[0],
+			id,
+			model_key: `openai:openai/gpt-6-luna:${capability}`,
+			capability_id: capability,
+			modality: "text",
+			meter,
+			price_per_unit: price,
+			match: [],
+		});
+		provider.pricing_rules = [
+			rule("text-input", "input_text_tokens", 0.1, "text.generate"),
+			rule("text-output", "output_text_tokens", 0.5, "text.generate"),
+			// No provider_models entry for decisions.make: the rule's capability must still win.
+			rule("decisions-input", "input_tokens", 0.1, "decisions.make"),
+			rule("decisions-output", "output_tokens", 0, "decisions.make"),
+		] as any;
+
+		const sections = buildProviderSections(provider, "standard", new Date("2026-11-04T12:00:00.000Z"));
+
+		expect(sections.textTokens?.out).toEqual([expect.objectContaining({ per1M: 0.5 })]);
+		expect(sections.decisionTokens?.out).toEqual([expect.objectContaining({ per1M: 0 })]);
+		expect(buildProviderTablePriceSummary(sections, "output").primary).toMatchObject({ label: "text", price: 0.5 });
+	});
+
 	test("normalizes duration summaries to a per-minute rate", () => {
 		const provider = makeProviderPricing();
 		provider.provider_models = [{
