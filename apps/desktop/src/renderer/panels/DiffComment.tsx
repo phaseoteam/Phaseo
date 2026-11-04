@@ -1,8 +1,9 @@
 import { useLayoutEffect, useRef } from "react";
 import { MessageCircle, Trash2 } from "lucide-react";
 import { Button } from "../components/ui/button";
+import { MarkdownTextarea } from "../components/MarkdownTextarea";
 
-/** T3's inline comment: a saved comment is a left-ruled row; a draft is a small form under the lines. */
+/** An inline comment: a saved comment is a left-ruled row; a draft is a small form under the lines. */
 export function DiffComment({ kind, rangeLabel, text, onTextChange, onCancel, onComment, onDelete }: { kind: "draft" | "comment"; rangeLabel: string; text: string; onTextChange?: (text: string) => void; onCancel: () => void; onComment: (text: string) => void; onDelete?: () => void }) {
 	const input = useRef<HTMLTextAreaElement>(null);
 	const trimmed = text.trim();
@@ -19,7 +20,7 @@ export function DiffComment({ kind, rangeLabel, text, onTextChange, onCancel, on
 		</span>}
 	</div>;
 	return <div data-diff-comment className="px-3 py-2 font-sans text-foreground" contentEditable={false} onPointerDown={event => event.stopPropagation()}>
-		<textarea ref={input} rows={2} value={text} placeholder="Add a comment…" aria-label={`Comment on lines ${rangeLabel}`} onChange={event => onTextChange?.(event.target.value)}
+		<MarkdownTextarea ref={input} rows={2} value={text} placeholder="Add a comment…" aria-label={`Comment on lines ${rangeLabel}`} onChange={event => onTextChange?.(event.target.value)}
 			onKeyDown={event => {
 				if (event.key === "Escape") { event.preventDefault(); onCancel(); }
 				if (event.key === "Enter" && (event.metaKey || event.ctrlKey) && trimmed) { event.preventDefault(); onComment(trimmed); }

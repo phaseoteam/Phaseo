@@ -22,11 +22,11 @@ export async function updateBetaPreferences(payload: {
 	});
 	const profile = response.profile;
 
+	// Beta preferences are applied per user on the client (stored profile +
+	// Statsig update + router.refresh in BetaSettingsClient). No public page
+	// renders them on the server, so expiring shared pages here would only let
+	// any signed-in user keep the site uncached.
 	revalidatePath("/settings/beta");
-	revalidatePath("/chat/realtime");
-	revalidatePath("/");
-	revalidatePath("/gateway");
-	revalidatePath("/models");
 
 	return { ok: true, profile };
 }

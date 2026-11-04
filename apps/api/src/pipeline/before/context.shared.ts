@@ -422,11 +422,11 @@ export function normalizeProviderStatus(value: unknown): ProviderRolloutStatus {
 export function normalizeRoutingStatus(value: unknown): RoutingStatus {
 	const status = String(value ?? "").trim().toLowerCase();
 	if (status === "active") return "active";
-	if (status === "deranked" || status === "deranked_lvl1" || status === "deranked-lvl1") {
-		return "deranked_lvl1";
+	// The catalogue stores a deranked route or capability as `degraded`; the former three
+	// levels are read as the single last-resort level.
+	if (status === "degraded" || status === "deranked" || /^deranked[-_]lvl[-_]?[123]$/.test(status)) {
+		return "deranked";
 	}
-	if (status === "deranked_lvl2" || status === "deranked-lvl2") return "deranked_lvl2";
-	if (status === "deranked_lvl3" || status === "deranked-lvl3") return "deranked_lvl3";
 	if (status === "disabled") return "disabled";
 	if (status === "notready" || status === "not_ready" || status === "not ready") {
 		return "disabled";
@@ -451,6 +451,7 @@ export function normalizeCapabilityStatus(value: unknown): CapabilityRoutingStat
 
 export const ROUTABLE_CAPABILITY_STATUSES = [
 	"active",
+	"degraded",
 	"deranked",
 	"deranked_lvl1",
 	"deranked_lvl2",

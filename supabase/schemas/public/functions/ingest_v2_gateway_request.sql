@@ -289,16 +289,31 @@ begin
     greatest(0, coalesce((item.value->>'charged_nanos')::bigint, 0))
   from jsonb_array_elements(v_pricing) as item(value)
   left join lateral (
-    select sku.sku_id, sku_meter.sku_meter_id
-    from public.v2_pricing_skus sku
-    left join public.v2_pricing_sku_meters sku_meter
-      on sku_meter.sku_id = sku.sku_id
-      and sku_meter.meter_key = lower(item.value->>'meter_key')
-    where sku.provider_model_id = v_provider_model_id
-      and sku.status = 'active'
-      and sku.effective_from <= v_occurred_at
-      and (sku.effective_to is null or sku.effective_to > v_occurred_at)
-    order by sku.version desc, sku.effective_from desc
+    -- The SKU meter the gateway priced the line with. A price card can merge SKUs
+    -- from several routes of the same provider, so it is not limited to this route.
+    (
+      select sku_meter.sku_id, sku_meter.sku_meter_id
+      from public.v2_pricing_sku_meters sku_meter
+      where item.value->>'sku_meter_id' ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+        and sku_meter.sku_meter_id = (item.value->>'sku_meter_id')::uuid
+        and sku_meter.meter_key = lower(item.value->>'meter_key')
+    )
+    union all
+    -- Older gateways send no meter id: the newest active SKU on this route that has
+    -- the meter. It can still pick the wrong tier or operation.
+    (
+      select sku.sku_id, sku_meter.sku_meter_id
+      from public.v2_pricing_skus sku
+      join public.v2_pricing_sku_meters sku_meter
+        on sku_meter.sku_id = sku.sku_id
+        and sku_meter.meter_key = lower(item.value->>'meter_key')
+      where sku.provider_model_id = v_provider_model_id
+        and sku.status = 'active'
+        and sku.effective_from <= v_occurred_at
+        and (sku.effective_to is null or sku.effective_to > v_occurred_at)
+      order by sku.version desc, sku.effective_from desc
+      limit 1
+    )
     limit 1
   ) meter on true;
 

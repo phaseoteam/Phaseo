@@ -83,7 +83,7 @@ vi.mock("@/runtime/env", () => {
 				mocks.keys.push({ id: keyId, workspace_id: args.p_workspace_id, kid: `kid${keyId}`, status: "active", key_kind: "workload_identity" });
 				mocks.policies.push({
 					id: policyId, workspace_id: args.p_workspace_id, key_id: keyId, name: args.p_name, provider: args.p_provider,
-					issuer: args.p_issuer, pinned_owner_id: args.p_pinned_owner_id, claim_conditions: args.p_claim_conditions,
+					issuer: args.p_issuer, pinned_claim: args.p_pinned_claim ?? null, pinned_owner_id: args.p_pinned_owner_id, claim_conditions: args.p_claim_conditions,
 					max_token_lifetime_seconds: args.p_max_token_lifetime_seconds, status: "active", created_by: args.p_created_by,
 					created_at: "2026-10-26T00:00:00Z", updated_at: "2026-10-26T00:00:00Z",
 				});
@@ -155,11 +155,63 @@ describe("workload identity policy routes", () => {
 		expect(mocks.rpcCalls[0]).toMatchObject({ p_issuer: "https://token.actions.githubusercontent.com", p_pinned_owner_id: "42" });
 	});
 
+	it("creates policies for the newer presets with their default issuers", async () => {
+		for (const [provider, issuer, ownerClaim, ownerId] of [
+			["gitlab", "https://gitlab.com", "project_id", "4242"],
+			["google_cloud", "https://accounts.google.com", "sub", "104455667788"],
+			["buildkite", "https://agent.buildkite.com", "organization_id", "0190f2c4-org"],
+		] as const) {
+			mocks.rpcCalls.length = 0;
+			const response = await call("POST", "/policies", { name: provider, provider, owner_id: ownerId });
+			expect(response.status, provider).toBe(201);
+			expect(mocks.rpcCalls[0]).toMatchObject({ p_provider: provider, p_issuer: issuer, p_pinned_claim: null, p_pinned_owner_id: ownerId });
+			expect((await response.json() as { data: Row }).data).toMatchObject({ provider, issuer, owner_claim: ownerClaim, owner_id: ownerId });
+		}
+	});
+
+	it("creates a custom issuer policy pinned to the claim it names", async () => {
+		const response = await call("POST", "/policies", {
+			name: "Prod cluster",
+			provider: "custom",
+			issuer: "https://oidc.example.com/clusters/prod",
+			owner_claim: "sub",
+			owner_id: "system:serviceaccount:prod:api",
+		});
+		expect(response.status).toBe(201);
+		expect(mocks.rpcCalls[0]).toMatchObject({ p_provider: "custom", p_pinned_claim: "sub", p_pinned_owner_id: "system:serviceaccount:prod:api" });
+		const { data } = await response.json() as { data: Row };
+		expect(data).toMatchObject({ provider: "custom", owner_claim: "sub", owner_id: "system:serviceaccount:prod:api" });
+		// The pinned claim identifies what is trusted, like the issuer and owner.
+		const update = await call("PATCH", `/policies/${data.id}`, { owner_claim: "email" });
+		expect(update.status).toBe(400);
+	});
+
+	it("rejects invalid policies for the newer providers", async () => {
+		const custom = { name: "Cluster", provider: "custom", issuer: "https://oidc.example.com", owner_claim: "sub", owner_id: "system:serviceaccount:a:b" };
+		const cases: Array<[Record<string, unknown>, string]> = [
+			[{ ...custom, owner_claim: undefined }, "owner_claim is required for custom issuers"],
+			[{ ...custom, issuer: undefined }, "issuer is required for custom"],
+			[{ ...custom, issuer: "https://gitlab.com" }, "issuer must be a public https URL on a host that is not a preset platform's"],
+			[{ ...custom, issuer: "https://10.0.0.8" }, "issuer must be a public https URL on a host that is not a preset platform's"],
+			[{ ...custom, claim_conditions: { sub: ["x"] } }, "set sub with owner_id, not in claim_conditions"],
+			[{ name: "GitLab", provider: "gitlab", owner_claim: "namespace_id", owner_id: "1" }, "owner_claim is always project_id for gitlab"],
+			[{ name: "AWS", provider: "aws", owner_id: "arn:aws:iam::1:role/x" }, "issuer is required for aws"],
+			[{ name: "CircleCI", provider: "circleci", issuer: "https://oidc.circleci.com/org/7d1c3a52-0b1e-4c6f-9a2d-3e4f5a6b7c8d", owner_id: "other" }, 'claim "oidc.circleci.com/org-id" must be the organization ID in the issuer'],
+		];
+		for (const [body, message] of cases) {
+			const response = await call("POST", "/policies", body);
+			expect(response.status, message).toBe(400);
+			const result = await response.json() as { message: string; errors?: string[] };
+			expect([result.message, ...(result.errors ?? [])]).toContain(message);
+		}
+		expect(mocks.rpcCalls).toHaveLength(0);
+	});
+
 	it("rejects invalid policies before writing anything", async () => {
 		const cases: Array<[Record<string, unknown>, string]> = [
 			[{ ...vercelPolicy, owner_id: "" }, 'claim "owner_id" is required for vercel policies'],
 			[{ ...vercelPolicy, issuer: "https://token.actions.githubusercontent.com" }, "issuer is not a vercel issuer"],
-			[{ ...vercelPolicy, provider: "custom" }, "provider must be vercel or github_actions"],
+			[{ ...vercelPolicy, provider: "bitbucket" }, "provider must be one of vercel, github_actions, gitlab, google_cloud, buildkite, circleci, aws, custom"],
 			[{ ...vercelPolicy, claim_conditions: { owner_id: ["team_other"] } }, "set owner_id with owner_id, not in claim_conditions"],
 			[{ ...vercelPolicy, claim_conditions: { aud: ["x"] } }, 'claim "aud" cannot be a condition'],
 			[{ ...vercelPolicy, max_token_lifetime_seconds: 10 }, "maxTokenLifetimeSeconds must be an integer from 60 to 43200"],

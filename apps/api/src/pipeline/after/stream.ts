@@ -6,6 +6,7 @@
 import { passthroughWithPricing, passthrough } from "./streaming";
 import { createToolCallKeyResolver, type UnifiedStreamEvent } from "./stream-events";
 import { createChatChunkAccumulator, resolveChatStreamAuditResponse } from "./chat-stream-log-snapshot";
+import { createMessagesEventAccumulator, resolveMessagesStreamAuditResponse } from "./messages-stream-log-snapshot";
 import type { PipelineContext } from "../before/types";
 import type { RequestResult, Bill } from "../execute";
 import type { PriceCard } from "../pricing";
@@ -49,8 +50,8 @@ import {
 } from "../execute/sticky-routing";
 import { applyResponsePlugins } from "@/plugins/registry";
 import { applySuccessfulResponseBillingPolicy, suppressFailedResponseBilling } from "./billing-policy";
-import { calculateOutputPerformanceMetrics } from "./performance-metrics";
-import { resolveFailoverMs } from "./timing";
+import { calculateOutputPerformanceMetrics, getUsageReasoningTokens } from "./performance-metrics";
+import { resolveFailoverMs, resolveOutputSpeedWindow } from "./timing";
 import { recordManagedProviderTokensOnce } from "@core/provider-rate-limits";
 import { chargeRateLimitPolicyTokens } from "@core/rate-limit-policies";
 import { mergeMessagesStreamUsage } from "@core/usage-normalization";
@@ -139,10 +140,13 @@ function attachStreamTimingMeta(args: {
     const tokensOut = getUsageOutputTokens(usage);
     const calculated = calculateOutputPerformanceMetrics({
         outputTokens: tokensOut,
+        reasoningTokens: ctx.meta.reasoningStreamed ? null : getUsageReasoningTokens(usage),
         providerDurationMs: generationMs,
         providerTtftMs: ctx.meta.provider_ttft_ms ?? null,
         gatewayE2eMs: ctx.meta.end_to_end_ms ?? null,
         failoverMs: resolveFailoverMs(ctx),
+        outputArrivals: ctx.meta.outputArrivals ?? null,
+        speedWindow: resolveOutputSpeedWindow(ctx),
     });
     const throughputTps = calculated.effectiveThroughputTps;
     ctx.meta.throughput_tps = throughputTps ?? undefined;
@@ -227,10 +231,13 @@ export async function handleStreamResponse(
     let latestStreamUsageRaw: any = null;
     let latestGatewaySnapshot: any = null;
     const chatChunkAccumulator = ctx.endpoint === "chat.completions" ? createChatChunkAccumulator() : null;
+    const messagesEventAccumulator = ctx.endpoint === "messages" ? createMessagesEventAccumulator() : null;
     const auditGatewayResponse = () =>
         chatChunkAccumulator
             ? resolveChatStreamAuditResponse(latestGatewaySnapshot, chatChunkAccumulator)
-            : latestGatewaySnapshot;
+            : messagesEventAccumulator
+                ? resolveMessagesStreamAuditResponse(latestGatewaySnapshot, messagesEventAccumulator)
+                : latestGatewaySnapshot;
 	let streamFailed = false;
     let appliedStreamResponsePlugins = false;
     const streamedToolCallKeys = new Set<string>();
@@ -396,6 +403,7 @@ export async function handleStreamResponse(
         rewriteFrame: (frame: any) => {
             if (!frame || typeof frame !== "object") return frame;
             chatChunkAccumulator?.add(frame);
+            messagesEventAccumulator?.add(frame);
             const includeMeta = ctx.meta.returnMeta ?? false;
             const next: any = withServedModel({ ...frame }, ctx);
             delete next.provider;

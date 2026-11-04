@@ -146,6 +146,59 @@ describe("audit content storage under zero data retention", () => {
 		}]);
 	});
 
+	describe("provider error bodies in stored attempts", () => {
+		const PREVIEW = `{"error":{"message":"echo: ${PROMPT}"}}`;
+		const attempt = { provider: "openai", status: 400, upstream_error_message: "bad request", upstream_payload_preview: PREVIEW };
+
+		async function auditWithAttempts(kind: Exclude<Kind, "success">, zdr: Zdr = {}) {
+			await auditFailure({
+				requestId: "req_zdr",
+				workspaceId: "ws_zdr",
+				keyId: "key_zdr",
+				model: "openai/gpt-5-mini",
+				endpoint: "responses",
+				zeroDataRetention: zdr.zeroDataRetention,
+				requestPayload: { model: "openai/gpt-5-mini", input: PROMPT, ...zdr.requestPayload },
+				providerAttempts: [attempt],
+				errorPayload: { reason: "all_candidates_failed", failure_sample: [attempt] },
+				...(kind === "before"
+					? { stage: "before" as const, statusCode: 400, errorCode: "upstream:upstream_error" }
+					: { stage: "execute" as const, stream: false, statusCode: 502, errorCode: "upstream:upstream_error" }),
+			});
+		}
+
+		it.each(["before", "execute"] as const)("keeps them without never-store or ZDR (%s)", async (kind) => {
+			await auditWithAttempts(kind);
+			const row = state.writes.gateway_requests?.[0];
+			expect(row?.provider_attempts?.[0]?.upstream_payload_preview).toBe(PREVIEW);
+			expect(row?.error_payload?.failure_sample?.[0]?.upstream_payload_preview).toBe(PREVIEW);
+		});
+
+		it.each([
+			["before", "a never-store key", { keyNeverStore: true }],
+			["execute", "a never-store key", { keyNeverStore: true }],
+			["execute", "workspace ZDR", { keyZdr: true }],
+			["execute", "the request's ZDR", { requestPayload: { provider: { require_zero_data_retention: true } } }],
+			["execute", "the context's ZDR", { zeroDataRetention: true }],
+		] as Array<["before" | "execute", string, Zdr & { keyNeverStore?: boolean }]>)(
+			"drops them on %s for %s, keeping the rest of the attempt",
+			async (kind, _source, zdr) => {
+				if (zdr.keyNeverStore) state.keyPolicy = { privacyZdrOnly: false, neverStoreContent: true };
+				if (zdr.keyZdr) state.keyPolicy = { privacyZdrOnly: true, neverStoreContent: false };
+
+				await auditWithAttempts(kind, zdr);
+
+				const row = state.writes.gateway_requests?.[0];
+				expect(row?.provider_attempts).toEqual([{ provider: "openai", status: 400, upstream_error_message: "bad request" }]);
+				expect(row?.error_payload).toMatchObject({
+					reason: "all_candidates_failed",
+					failure_sample: [{ provider: "openai", status: 400, upstream_error_message: "bad request" }],
+				});
+				expect(JSON.stringify(row)).not.toContain("echo:");
+			},
+		);
+	});
+
 	it.each(kinds)("still stores no content for a key that never stores content (%s)", async (kind) => {
 		state.keyPolicy = { privacyZdrOnly: false, neverStoreContent: true };
 

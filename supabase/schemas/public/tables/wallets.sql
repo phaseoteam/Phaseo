@@ -17,6 +17,13 @@ ALTER TABLE "public"."wallets"
 
 CREATE INDEX wallets_stripe_customer_id_idx ON public.wallets USING btree (stripe_customer_id);
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."wallets"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "wallets: insert by owner once" ON "public"."wallets"
   FOR INSERT
   TO "authenticated"

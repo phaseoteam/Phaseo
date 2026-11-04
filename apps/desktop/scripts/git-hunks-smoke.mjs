@@ -37,7 +37,7 @@ app.whenReady().then(async () => {
 		if (Object.values(result).some(value => !value) || readFileSync(target, "utf8") !== edited) throw new Error("Hunk workflow failed: " + JSON.stringify(result));
 		const full = await run(`(async()=>{const api=window.phaseoDesktop.workspace,review=await api.gitReview('fixture');return api.gitDiffContents('fixture',{filename:${javascriptLiteral(filename)},staged:false,hash:review.diffHash})})()`);
 		if (full.oldFile.contents !== original || full.newFile.contents !== edited) throw Error('Bridge returned incorrect full file versions');
-		// The Diff is its own pane tab (T3).
+		// The Diff is its own pane tab.
 		const surface = `document.querySelector('aside[aria-label="Tools"] .diff-surface')`;
 		const viewer = `${surface}?.querySelector('diffs-container')`;
 		// A chat in the Fixture project gives the pane its Diff tab.
@@ -49,7 +49,8 @@ app.whenReady().then(async () => {
 		await run(`Array.from(document.querySelectorAll('[role=menuitemradio]')).find(item=>item.textContent.trim()==='Uncommitted').click()`);
 		await wait(`${surface}.dataset.diffScope==='uncommitted'&&Boolean(${viewer}?.shadowRoot?.textContent.includes('First edit'))`);
 		await run(`${surface}.querySelector('[aria-label="Split diff view"]').click()`);
-		await wait(`localStorage.getItem('phaseo.desktop.diffLayout')==='"split"'&&Boolean(${viewer}?.shadowRoot?.querySelector('pre[data-diff-type="split"]'))`);
+		// The layout is a workspace preference (Settings → Diffs), which the toolbar button changes too.
+		await wait(`(async()=>(await window.phaseoDesktop.workspace.preferences()).preferences.chat.diffLayout==='split'&&Boolean(${viewer}?.shadowRoot?.querySelector('pre[data-diff-type="split"]')))()`);
 		await wait(`Boolean(${viewer}?.shadowRoot?.querySelector('[data-expand-index="1"] [data-expand-button]'))`);
 		if (await run(`Boolean(${viewer}.shadowRoot.querySelector('img,script'))`)) throw Error('Diff interpreted source markup');
 		edited = edited.replace('Line 1\n', 'Refreshed context\n'); writeFileSync(target, edited);
@@ -97,7 +98,7 @@ app.whenReady().then(async () => {
 		const details = `(document.querySelector('.git-actions')||document.querySelector('[aria-label="Chat details"]')?.click(),true)`;
 		const stage = `(${details}&&document.querySelector('.git-actions button[aria-label=${JSON.stringify('Stage ' + filename)}]:not(:disabled)'))`;
 		const unstage = `(${details}&&document.querySelector('.git-actions button[aria-label=${JSON.stringify('Unstage ' + filename)}]:not(:disabled)'))`;
-		// Git actions live in the details card in the title bar (T3).
+		// Git actions live in the details card in the title bar.
 		await run(`document.querySelector('.git-actions')||document.querySelector('[aria-label="Chat details"]').click()`);
 		await wait(`Boolean(${stage})`);
 		await run(`${stage}.click()`);

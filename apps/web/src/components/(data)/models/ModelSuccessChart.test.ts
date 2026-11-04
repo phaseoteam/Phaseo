@@ -28,6 +28,7 @@ describe("buildUptimeChartData", () => {
 			worstRequests: 0,
 			bucket: "2026-08-29T11:00:00.000Z",
 			requests: 0,
+			failedRequests: 0,
 		});
 		expect(points[23]).toEqual({
 			time: "10:00",
@@ -36,6 +37,7 @@ describe("buildUptimeChartData", () => {
 			worstRequests: 0,
 			bucket: "2026-08-30T10:00:00.000Z",
 			requests: 0,
+			failedRequests: 0,
 		});
 		expect(points.every((point) => point.overall === 100)).toBe(true);
 	});
@@ -77,5 +79,23 @@ describe("buildUptimeChartData", () => {
 			worst: 97,
 			requests: 12,
 		});
+	});
+
+	test("shows a low-volume hour with a failure as a dip, with its failure count", () => {
+		const points = buildUptimeChartData(
+			[
+				{
+					bucket: "2026-08-30T09:00:00.000Z",
+					overallSuccessPct: 50,
+					worstProviderSuccessPct: 50,
+					requests: 2,
+					failedRequests: 1,
+				},
+			],
+			new Date("2026-08-30T10:42:00.000Z"),
+		);
+
+		expect(points.at(-2)).toMatchObject({ overall: 50, requests: 2, failedRequests: 1 });
+		expect(points.at(-1)).toMatchObject({ overall: 100, requests: 0, failedRequests: 0 });
 	});
 });

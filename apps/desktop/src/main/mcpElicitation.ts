@@ -73,7 +73,7 @@ export async function respondMcpElicitation(request: Request, callbacks: AgentCa
 	try { form = elicitationForm(request); } catch { return { action: "decline" as const }; }
 	const questions = request.mode !== "url" && callbacks.onQuestion ? formQuestions(form, questionTypes, request.message) : undefined;
 	if (questions) {
-		// Dismissing cancels, as in T3 Code; an answer the form rejects falls back to the full form with the reason.
+		// Dismissing cancels; an answer the form rejects falls back to the full form with the reason.
 		const answers = await callbacks.onQuestion!(questions, { origin: request.serverName, signal });
 		if (signal.aborted || !Object.keys(answers).length) return { action: "cancel" as const };
 		const content = formQuestionAnswer(form, answers);
@@ -96,7 +96,7 @@ export type McpApprovalResponse = { action: "accept" | "decline"; content?: Reco
 
 /**
  * Codex (and codex-acp) ask before an MCP tool call with an elicitation marked _meta.codex_approval_kind. It belongs on the approval
- * card, as in T3 Code: Allow, Deny and, where it offers a lasting grant, Always allow. Undefined for real forms or approvals it cannot answer.
+ * card: Allow, Deny and, where it offers a lasting grant, Always allow. Undefined for real forms or approvals it cannot answer.
  */
 export function mcpApprovalRequest(request: Request) {
 	const meta = record(request._meta);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ModelOptionDescriptor } from "../../shared/workspace";
-import { effortDots, settingsLabel, settingsSummary } from "./ModelSettings";
+import { effortDots, settingsLabel, settingsSummary, withSetting } from "./ModelSettings";
 
 const effort: ModelOptionDescriptor = { id: "reasoningEffort", label: "Reasoning", type: "select", options: [{ id: "medium", label: "Medium", isDefault: true }, { id: "high", label: "High" }] };
 const tiers: ModelOptionDescriptor = { id: "serviceTier", label: "Speed", type: "select", options: [{ id: "default", label: "Standard", isDefault: true }, { id: "fast", label: "Fast" }, { id: "ultrafast", label: "Ultrafast" }] };
@@ -20,6 +20,9 @@ describe("the model button's settings", () => {
 	it("shows no speed at the standard speed", () => {
 		expect(settingsSummary({ harness: "codex", model: "m" }, [effort, tiers]).speed).toBeUndefined();
 		expect(settingsLabel({ harness: "codex", model: "m" }, [effort, tiers])).toBe("Medium");
+	});
+	it("stores a default choice as unset, so the chat keeps following the model's default", () => {
+		expect(withSetting({ harness: "codex", model: "gpt", reasoningEffort: "high" }, effort, "medium").reasoningEffort).toBeUndefined();
 	});
 	it("names the speed in words for screen readers", () => {
 		expect(settingsLabel({ harness: "codex", model: "m", reasoningEffort: "high", serviceTier: "ultrafast" }, [effort, tiers])).toBe("High · Ultrafast");

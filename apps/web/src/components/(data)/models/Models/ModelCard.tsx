@@ -80,9 +80,7 @@ const MODALITY_DISPLAY_ORDER = [
 const PROVIDER_STATUS_ORDER = [
 	"active",
 	"coming_soon",
-	"deranked_lvl1",
-	"deranked_lvl2",
-	"deranked_lvl3",
+	"deranked",
 	"internal_testing",
 	"external",
 	"inactive",
@@ -114,20 +112,10 @@ const PROVIDER_STATUS_META: Record<
 		badgeClassName: "bg-violet-500/10 text-violet-600",
 		dotClassName: "bg-violet-500",
 	},
-	deranked_lvl1: {
-		label: "Deranked L1",
-		badgeClassName: "bg-amber-500/10 text-amber-600",
-		dotClassName: "bg-amber-500",
-	},
-	deranked_lvl2: {
-		label: "Deranked L2",
+	deranked: {
+		label: "Lower priority",
 		badgeClassName: "bg-amber-600/10 text-amber-700",
 		dotClassName: "bg-amber-600",
-	},
-	deranked_lvl3: {
-		label: "Deranked L3",
-		badgeClassName: "bg-red-500/10 text-red-600",
-		dotClassName: "bg-red-500",
 	},
 	disabled: {
 		label: "Disabled",
@@ -228,12 +216,8 @@ function normalizeProviderStatus(value: unknown): string {
 	if (!normalized) return "inactive";
 	if (normalized === "not_active") return "inactive";
 	if (normalized === "comingsoon") return "coming_soon";
-	if (normalized === "deranked" || normalized === "de_ranked") {
-		return "deranked_lvl1";
-	}
-	if (normalized === "deranked_lvl_1") return "deranked_lvl1";
-	if (normalized === "deranked_lvl_2") return "deranked_lvl2";
-	if (normalized === "deranked_lvl_3") return "deranked_lvl3";
+	// The catalogue stores a deranked route as `degraded`; the former levels are one level now.
+	if (normalized === "degraded" || normalized === "de_ranked" || /^deranked(_lvl_?[123])?$/.test(normalized)) return "deranked";
 	return normalized;
 }
 

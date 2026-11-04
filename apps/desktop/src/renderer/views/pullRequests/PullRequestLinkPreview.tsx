@@ -38,7 +38,7 @@ function PreviewBody({ projectId, number }: { projectId: string; number: number 
 }
 
 /**
- * T3's PullRequestLinkPreview: hovering a pull request link (in a message, or a `#` chip in the composer) shows its
+ * Hovering a pull request link (in a message, or a `#` chip in the composer) shows its
  * repository, number, state, title and author. Only pull requests in the chat project's repository can be read; others
  * show their address.
  */

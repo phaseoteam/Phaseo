@@ -121,10 +121,22 @@ CREATE TRIGGER protect_data_contribution_settings
   FOR EACH ROW
   EXECUTE FUNCTION public.protect_data_contribution_settings();
 
+CREATE TRIGGER sync_workspace_baseline_guardrail
+  AFTER INSERT OR UPDATE OF privacy_enable_paid_may_train, privacy_enable_free_may_train, privacy_enable_free_may_publish_prompts, privacy_enable_input_output_logging, privacy_zdr_only, provider_restriction_mode, provider_restriction_provider_ids, provider_restriction_enforce_allowed, model_restriction_mode, model_restriction_model_ids ON public.workspace_settings
+  FOR EACH ROW
+  EXECUTE FUNCTION private.sync_workspace_baseline_guardrail();
+
 CREATE TRIGGER validate_billing_time_zone
   BEFORE INSERT OR UPDATE OF billing_time_zone ON public.workspace_settings
   FOR EACH ROW
   EXECUTE FUNCTION public.validate_workspace_billing_time_zone();
+
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."workspace_settings"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
 
 CREATE POLICY "team_settings_insert_own_team" ON "public"."workspace_settings"
   FOR INSERT
@@ -142,7 +154,11 @@ CREATE POLICY "team_settings_update_own_team" ON "public"."workspace_settings"
   USING (public.is_workspace_admin(workspace_id))
   WITH CHECK (public.is_workspace_admin(workspace_id));
 
-GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."workspace_settings" TO "anon", "authenticated", "service_role";
+GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."workspace_settings" TO "service_role";
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."workspace_settings" TO "anon";
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."workspace_settings" TO "authenticated";
 
 COMMENT ON COLUMN "public"."workspace_settings"."auto_routing_allowed_patterns" IS 'Optional glob patterns that narrow the managed phaseo/auto text-model universe.';
 

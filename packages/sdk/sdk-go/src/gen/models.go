@@ -2226,6 +2226,7 @@ type GatewayCapabilityStatus string
 const (
 	GatewayCapabilityStatusActive GatewayCapabilityStatus = "active"
 	GatewayCapabilityStatusComingSoon GatewayCapabilityStatus = "coming_soon"
+	GatewayCapabilityStatusDeranked GatewayCapabilityStatus = "deranked"
 	GatewayCapabilityStatusDerankedLvl1 GatewayCapabilityStatus = "deranked_lvl1"
 	GatewayCapabilityStatusDerankedLvl2 GatewayCapabilityStatus = "deranked_lvl2"
 	GatewayCapabilityStatusDerankedLvl3 GatewayCapabilityStatus = "deranked_lvl3"
@@ -2412,6 +2413,7 @@ const (
 	GatewayProviderAvailabilityReasonProjectLimited GatewayProviderAvailabilityReason = "project_limited"
 	GatewayProviderAvailabilityReasonPaused GatewayProviderAvailabilityReason = "paused"
 	GatewayProviderAvailabilityReasonSoftBlocked GatewayProviderAvailabilityReason = "soft_blocked"
+	GatewayProviderAvailabilityReasonDeranked GatewayProviderAvailabilityReason = "deranked"
 	GatewayProviderAvailabilityReasonDerankedLvl1 GatewayProviderAvailabilityReason = "deranked_lvl1"
 	GatewayProviderAvailabilityReasonDerankedLvl2 GatewayProviderAvailabilityReason = "deranked_lvl2"
 	GatewayProviderAvailabilityReasonDerankedLvl3 GatewayProviderAvailabilityReason = "deranked_lvl3"
@@ -2476,6 +2478,7 @@ type GatewayRoutingStatus string
 
 const (
 	GatewayRoutingStatusActive GatewayRoutingStatus = "active"
+	GatewayRoutingStatusDeranked GatewayRoutingStatus = "deranked"
 	GatewayRoutingStatusDerankedLvl1 GatewayRoutingStatus = "deranked_lvl1"
 	GatewayRoutingStatusDerankedLvl2 GatewayRoutingStatus = "deranked_lvl2"
 	GatewayRoutingStatusDerankedLvl3 GatewayRoutingStatus = "deranked_lvl3"
@@ -5725,6 +5728,7 @@ type WorkloadIdentityPolicy struct {
 	LastUsedAt *string `json:"last_used_at"`
 	MaxTokenLifetimeSeconds int `json:"max_token_lifetime_seconds"`
 	Name string `json:"name"`
+	OwnerClaim string `json:"owner_claim"`
 	OwnerId string `json:"owner_id"`
 	Provider string `json:"provider"`
 	Status string `json:"status"`
@@ -5740,6 +5744,7 @@ type WorkloadIdentityPolicyInput struct {
 	Issuer *string `json:"issuer,omitempty"`
 	MaxTokenLifetimeSeconds *int `json:"max_token_lifetime_seconds,omitempty"`
 	Name string `json:"name"`
+	OwnerClaim *string `json:"owner_claim,omitempty"`
 	OwnerId string `json:"owner_id"`
 	Provider string `json:"provider"`
 }
@@ -5765,6 +5770,12 @@ type WorkloadIdentityProvider string
 const (
 	WorkloadIdentityProviderVercel WorkloadIdentityProvider = "vercel"
 	WorkloadIdentityProviderGithubActions WorkloadIdentityProvider = "github_actions"
+	WorkloadIdentityProviderGitlab WorkloadIdentityProvider = "gitlab"
+	WorkloadIdentityProviderGoogleCloud WorkloadIdentityProvider = "google_cloud"
+	WorkloadIdentityProviderBuildkite WorkloadIdentityProvider = "buildkite"
+	WorkloadIdentityProviderCircleci WorkloadIdentityProvider = "circleci"
+	WorkloadIdentityProviderAws WorkloadIdentityProvider = "aws"
+	WorkloadIdentityProviderCustom WorkloadIdentityProvider = "custom"
 )
 
 

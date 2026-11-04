@@ -1,4 +1,4 @@
-/** T3's Publish repository: a new GitHub repository for a project that has no remote yet. */
+/** Publish repository: a new GitHub repository for a project that has no remote yet. */
 export type PublishRepositoryRequest = { name: string; owner?: string; visibility: "private" | "public"; description?: string };
 export type PublishRepositoryResult = { repository: string; url: string; pushed: boolean };
 
@@ -17,3 +17,7 @@ export function validatePublishRepository(value: unknown): PublishRepositoryRequ
 	if (input.description !== undefined && (typeof input.description !== "string" || input.description.length > 350 || /[\0\r\n]/.test(input.description))) throw new Error("Keep the description to one line of up to 350 characters.");
 	return { name: input.name, visibility: input.visibility, ...(input.owner ? { owner: input.owner as string } : {}), ...(typeof input.description === "string" && input.description.trim() ? { description: input.description.trim() } : {}) };
 }
+
+/** Whether a push from this checkout lands on the repository's default branch, which asks first. */
+export const pushesToDefaultBranch = (branch: string | undefined, current: { branch: string; defaultBranch?: string } | undefined) =>
+	Boolean(branch) && current?.branch === branch && current?.defaultBranch === branch;

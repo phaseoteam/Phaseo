@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const runtime = vi.hoisted(() => ({
 	background: [] as Promise<unknown>[],
 	bindings: null as Record<string, unknown> | null,
+	readFootprint: (..._args: unknown[]): Promise<unknown> => Promise.reject(new Error("footprint read not expected")),
 }));
 
 vi.mock("cloudflare:workers", () => ({
@@ -14,6 +15,11 @@ vi.mock("cloudflare:workers", () => ({
 vi.mock("@/runtime/env", () => ({
 	dispatchBackground: (promise: Promise<unknown>) => { runtime.background.push(promise); },
 	getBindingsIfConfigured: () => runtime.bindings,
+}));
+// spend-limit-footprint.test.ts covers the reads; here each test says what the read returns.
+vi.mock("./spend-limit-footprint", async (importOriginal) => ({
+	...(await importOriginal<typeof import("./spend-limit-footprint")>()),
+	readSpendLimitFootprint: (...args: unknown[]) => runtime.readFootprint(...args),
 }));
 
 import { SpendLimitDurableObject, type SpendLimitSeed } from "./spend-limit-durable-object";
@@ -33,7 +39,9 @@ import {
 	shadowSpendLimit,
 	shadowSpendLimitOnce,
 	slotAdmission,
+	startSpendLimitFootprint,
 } from "./spend-limits";
+import type { SpendLimitFootprint } from "./spend-limit-footprint";
 import { SPEND_LEASE, type SpendDenial, type SpendLeaseMeta } from "./spend-limits.shared";
 
 const WORKSPACE = "workspace-1";
@@ -759,6 +767,130 @@ describe("spend-limit coordinator", () => {
 			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, admissionId: "r" })).toMatchObject({
 				outcome: "denied", keyLimit: { reason: "daily_request_limit_reached" },
 			});
+		});
+	});
+
+	describe("skipping the coordinator when nothing can be limited", () => {
+		const FREE_KEY = "00000000-0000-4000-8000-000000000003";
+		const NONE: SpendLimitFootprint = { keyLimited: false, softBlocked: false, workspaceBudgets: false, departmentBudgets: false };
+		const bucket = (requestsLimit = 0, costLimitNanos = 0) => ({ windowStart: "2026-10-09T00:00:00.000Z", requestsUsed: 0, requestsLimit, costUsedNanos: 0, costLimitNanos });
+		// The request context's key-limit check, as context.ts returns it.
+		const contextKeyLimit = (overrides: Record<string, unknown> = {}) => ({
+			ok: true, reason: null, resetAt: null, now: "2026-10-09T12:00:00.000Z",
+			buckets: { daily: bucket(), weekly: bucket(), monthly: bucket() }, budgets: [], ...overrides,
+		}) as never;
+		let calls: { acquire: number; record: number; release: number };
+
+		beforeEach(() => {
+			database.keys.set(FREE_KEY, { workspaceId: WORKSPACE });
+			runtime.bindings!.GATEWAY_SPEND_LIMIT_DO_MODE = "enforce";
+			calls = { acquire: 0, record: 0, release: 0 };
+			for (const method of ["acquire", "record", "release"] as const) {
+				const original = coordinator[method].bind(coordinator) as (...args: unknown[]) => unknown;
+				(coordinator as unknown as Record<string, unknown>)[method] = (...args: unknown[]) => {
+					calls[method] += 1;
+					return original(...args);
+				};
+			}
+		});
+
+		const decide = (footprint: Promise<SpendLimitFootprint | null> | null, keyLimit = contextKeyLimit(), keyId = FREE_KEY) => {
+			const slot = createSpendLimitSlot();
+			return { slot, decision: enforcedSpendLimit({ workspaceId: WORKSPACE, keyId, requestId: "r1", slot, footprint, keyLimit })! };
+		};
+
+		it("admits without calling the coordinator, before and after the request", async () => {
+			const { slot, decision } = decide(Promise.resolve(NONE));
+			expect(await decision).toMatchObject({ outcome: "allowed", source: "footprint", admission: { unlimited: true, keyId: FREE_KEY } });
+			const admission = await slotAdmission(slot);
+			settleEnforcedSpend({ admission, rowWritten: true, workspaceId: WORKSPACE, keyId: FREE_KEY, billingRequestId: "b1", requestId: "r1", costNanos: 500 });
+			releaseSpend(admission);
+			settleEnforcedSpend({ admission, rowWritten: false, workspaceId: WORKSPACE, keyId: FREE_KEY, billingRequestId: "b2", requestId: "r2", costNanos: 0 });
+			await flush();
+			expect(calls).toEqual({ acquire: 0, record: 0, release: 0 });
+			expect(database.calls).toHaveLength(0);
+		});
+
+		it("does not lose spend when a key cap is added after skipped requests", async () => {
+			// Skipped requests are not recorded (as for the coordinator's own unlimited admissions):
+			// their gateway_requests rows are counted when the coordinator first seeds the capped key.
+			for (let index = 0; index < 3; index += 1) {
+				const { slot, decision } = decide(Promise.resolve(NONE));
+				await decision;
+				settleEnforcedSpend({ admission: await slotAdmission(slot), rowWritten: true, workspaceId: WORKSPACE, keyId: FREE_KEY,
+					billingRequestId: `b${index}`, requestId: `r${index}`, costNanos: 10 });
+				database.rows.push({ requestId: `r${index}`, keyId: FREE_KEY, success: true, cost: 10, createdAt: Date.now() - 1_000 });
+			}
+			await flush();
+			database.keys.set(FREE_KEY, { workspaceId: WORKSPACE, daily: [3, 0] });
+			const { decision } = decide(Promise.resolve({ ...NONE, keyLimited: true }));
+			expect(await decision).toMatchObject({ outcome: "denied", keyLimit: { reason: "daily_request_limit_reached", currentValue: 3 } });
+		});
+
+		it.each([
+			["a key request cap", { keyLimited: true }, () => { database.keys.set(FREE_KEY, { workspaceId: WORKSPACE, daily: [1, 0] }); }, "daily_request_limit_reached"],
+			["a key cost cap", { keyLimited: true }, () => { database.keys.set(FREE_KEY, { workspaceId: WORKSPACE, monthly: [0, 5] }); }, "monthly_cost_limit_reached"],
+			["a soft block", { softBlocked: true }, () => { database.keys.set(FREE_KEY, { workspaceId: WORKSPACE, softBlocked: true }); }, "key_limit_soft_blocked"],
+			["a workspace budget", { workspaceBudgets: true }, () => { database.budgets.push({ id: "wb", interval: "monthly", limit: 5 }); }, "workspace_monthly_cost_budget_reached"],
+			["a department budget", { departmentBudgets: true }, () => {
+				database.departments.push({ id: "db", departmentId: "d1", name: "Engineering", interval: "daily", limit: 5, keyIds: [FREE_KEY] });
+			}, "department_daily_cost_budget_reached"],
+		])("asks the coordinator, which enforces it, when the footprint shows %s", async (_label, footprint, configure, reason) => {
+			configure();
+			database.rows.push({ requestId: "used", keyId: FREE_KEY, success: true, cost: 10, createdAt: Date.now() - 1_000 });
+			// The request context (possibly cached from before the limit was set) shows nothing.
+			const { decision } = decide(Promise.resolve({ ...NONE, ...footprint }));
+			expect(await decision).toMatchObject({ outcome: "denied", keyLimit: { reason } });
+			expect(calls.acquire).toBe(1);
+		});
+
+		it.each([
+			["a key cap", contextKeyLimit({ buckets: { daily: bucket(5), weekly: bucket(), monthly: bucket() } })],
+			["a workspace budget", contextKeyLimit({ budgets: [{ id: "wb", interval: "monthly", limitNanos: 5 }] })],
+			["a failed key-limit check", contextKeyLimit({ ok: false, reason: "daily_request_limit_reached" })],
+			["no key-limit check", null],
+		])("asks the coordinator when the request context shows %s", async (_label, keyLimit) => {
+			const { decision } = decide(Promise.resolve(NONE), keyLimit as never);
+			expect(await decision).toMatchObject({ outcome: "allowed", source: "coordinator" });
+			expect(calls.acquire).toBe(1);
+		});
+
+		it("asks the coordinator when the footprint is unknown, failed or slow", async () => {
+			for (const footprint of [
+				Promise.resolve(null),
+				Promise.reject(new Error("database unavailable")),
+				new Promise<SpendLimitFootprint>(() => {}),
+				null,
+			]) {
+				const { decision } = decide(footprint as Promise<SpendLimitFootprint | null> | null);
+				expect(await decision).toMatchObject({ outcome: "allowed", source: expect.stringMatching(/^(coordinator|lease)$/) });
+				releaseSpend((await decision).admission);
+			}
+			expect(calls.acquire).toBeGreaterThanOrEqual(1);
+		});
+
+		it("starts the footprint read only when the coordinator would be asked", async () => {
+			const reads: unknown[][] = [];
+			runtime.readFootprint = (...args) => { reads.push(args); return Promise.resolve(NONE); };
+			try {
+				expect(await startSpendLimitFootprint({ workspaceId: WORKSPACE, keyId: FREE_KEY, slot: createSpendLimitSlot() })).toEqual(NONE);
+				expect(reads).toEqual([[WORKSPACE, FREE_KEY]]);
+				const decided = createSpendLimitSlot();
+				decided.decision = Promise.resolve({ outcome: "unavailable", keyLimit: null, admission: null, error: "x" });
+				expect(startSpendLimitFootprint({ workspaceId: WORKSPACE, keyId: FREE_KEY, slot: decided })).toBeNull();
+				expect(startSpendLimitFootprint({ workspaceId: WORKSPACE, keyId: FREE_KEY, slot: null })).toBeNull();
+				expect(startSpendLimitFootprint({ workspaceId: WORKSPACE, keyId: FREE_KEY, slot: createSpendLimitSlot(), internal: true })).toBeNull();
+				expect(startSpendLimitFootprint({ workspaceId: WORKSPACE, keyId: "client_app", slot: createSpendLimitSlot() })).toBeNull();
+				runtime.bindings!.GATEWAY_SPEND_LIMIT_DO_MODE = "shadow";
+				expect(startSpendLimitFootprint({ workspaceId: WORKSPACE, keyId: FREE_KEY, slot: createSpendLimitSlot() })).toBeNull();
+				expect(reads).toHaveLength(1);
+				// A failed read resolves to null (never rejects), so the coordinator is asked.
+				runtime.bindings!.GATEWAY_SPEND_LIMIT_DO_MODE = "enforce";
+				runtime.readFootprint = () => Promise.reject(new Error("database unavailable"));
+				expect(await startSpendLimitFootprint({ workspaceId: WORKSPACE, keyId: FREE_KEY, slot: createSpendLimitSlot() })).toBeNull();
+			} finally {
+				runtime.readFootprint = () => Promise.reject(new Error("footprint read not expected"));
+			}
 		});
 	});
 });

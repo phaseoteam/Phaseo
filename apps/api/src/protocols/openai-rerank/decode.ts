@@ -68,15 +68,21 @@ export function decodeOpenAIRerankResponse(
 		normalizeResult(entry, index),
 	);
 	const usageRaw = payload?.usage;
-	const searchUnits = toNumber(payload?.meta?.billed_units?.search_units);
+	// A null count means "not reported", not zero units.
+	const searchUnitsRaw = payload?.meta?.billed_units?.search_units;
+	const searchUnits = searchUnitsRaw == null ? undefined : toNumber(searchUnitsRaw);
+	// Cohere Rerank v5 bills input tokens instead of search units
+	// (https://docs.cohere.com/v2/reference/rerank: meta.billed_units.input_tokens).
+	const billedInputTokensRaw = payload?.meta?.billed_units?.input_tokens ?? payload?.meta?.tokens?.input_tokens;
+	const billedInputTokens = billedInputTokensRaw == null ? undefined : toNumber(billedInputTokensRaw);
 	return {
 		id: payload?.id ?? undefined,
 		nativeId: payload?.id ?? payload?.nativeResponseId ?? undefined,
 		model: payload?.model ?? modelFallback,
 		results,
-		usage: usageRaw || searchUnits !== undefined
+		usage: usageRaw || searchUnits !== undefined || billedInputTokens !== undefined
 			? {
-				inputTokens: toNumber(usageRaw?.input_tokens ?? usageRaw?.prompt_tokens ?? usageRaw?.text_tokens),
+				inputTokens: toNumber(usageRaw?.input_tokens ?? usageRaw?.prompt_tokens ?? usageRaw?.text_tokens) ?? billedInputTokens,
 				outputTokens: toNumber(usageRaw?.output_tokens ?? usageRaw?.completion_tokens),
 				totalTokens: toNumber(usageRaw?.total_tokens),
 				searchUnits,

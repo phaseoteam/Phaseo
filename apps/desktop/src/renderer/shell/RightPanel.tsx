@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState, type DragEvent, type ReactNode } from "react";
 import { ContextMenu } from "@base-ui/react/context-menu";
-import { ChevronLeft, ChevronRight, FileDiff, FileText, Files, GitBranch, GitPullRequestArrow, Globe, Link2, Maximize2, Minimize2, Plus, SquareTerminal, Volume2, VolumeOff, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileDiff, FileText, Files, GitBranch, GitPullRequestArrow, Globe, Link2, Maximize2, MessagesSquare, Minimize2, Plus, SquareTerminal, Volume2, VolumeOff, X } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { Kbd } from "../components/ui/kbd";
@@ -13,7 +13,7 @@ import { AgentThreadsPanel } from "../components/AgentThreadsPanel";
 import { createBrowserTab, ensureBrowserTab, closeBrowserTab, confirmCloseBrowserTabs, onBrowserTabOpened, setBrowserTabMuted, useBrowserTab, useBrowserTabs } from "../lib/browserTabs";
 import { pullRequestStatePresentation } from "../views/pullRequests/presentation";
 import { closeTerminal, createTerminal, terminalTitle, terminalsFor, useTerminalSessions } from "../lib/terminalSessions";
-import { OPEN_PROJECT_FILE_EVENT, OPEN_TURN_DIFF_EVENT, type OpenProjectFileDetail, type OpenTurnDiffDetail } from "../panels/events";
+import { OPEN_PROJECT_FILE_EVENT, OPEN_SIDE_CHAT_EVENT, OPEN_TURN_DIFF_EVENT, type OpenProjectFileDetail, type OpenSideChatDetail, type OpenTurnDiffDetail } from "../panels/events";
 import { OPEN_PULL_REQUEST_EVENT, type OpenPullRequestDetail } from "../views/pullRequests/events";
 import { seedPullRequestTabStatus, usePullRequestTabStatus } from "../views/pullRequests/tabStatus";
 import { useBranchPullRequest } from "../views/pullRequests/useBranchPullRequest";
@@ -25,13 +25,14 @@ import { closePaneTabs, migratePaneState, movePaneTab, openPaneTab, paneKind, pa
 const DiffSurface = lazy(() => import("../panels/DiffSurface").then(module => ({ default: module.DiffSurface })));
 const FileSurface = lazy(() => import("../panels/FileSurface").then(module => ({ default: module.FileSurface })));
 // Each surface loads when its tab is first shown, so none of them hold up the window's first paint.
+const SideChatPane = lazy(() => import("../chat/SideChatPane").then(module => ({ default: module.SideChatPane })));
 const BrowserSurface = lazy(() => import("../views/BrowserSurface").then(module => ({ default: module.BrowserSurface })));
 const PullRequestListSurface = lazy(() => import("../views/pullRequests/PullRequestListSurface").then(module => ({ default: module.PullRequestListSurface })));
 const PullRequestSurface = lazy(() => import("../views/pullRequests/PullRequestSurface").then(module => ({ default: module.PullRequestSurface })));
 const FileBrowserSurface = lazy(() => import("../panels/FileBrowserSurface").then(module => ({ default: module.FileBrowserSurface })));
 const TerminalSurface = lazy(() => import("../views/Terminals").then(module => ({ default: module.TerminalSurface })));
 
-/** T3's "+" menu and empty-pane launcher, in its order, with the letter that opens each and why it may be unavailable. */
+/** The "+" menu and empty-pane launcher, in order, with the letter that opens each and why it may be unavailable. */
 const launchers: { kind: "browser" | "terminal" | "files" | "diff" | "pull" | "pulls" | "agents"; label: string; icon: ReactNode; letter: string; needsProject?: boolean; reason?: string }[] = [
 	{ kind: "browser", label: "Browser", icon: <Globe />, letter: "B" },
 	{ kind: "terminal", label: "Terminal", icon: <SquareTerminal />, letter: "T" },
@@ -49,6 +50,7 @@ function TabFace({ paneKey, context, projectId, dirty }: { paneKey: PaneKey; con
 	const kind = paneKind(paneKey), value = paneValue(paneKey);
 	if (kind === "browser") return <BrowserFace context={context} id={value} />;
 	if (kind === "terminal") return <SquareTerminal />;
+	if (kind === "side") return <MessagesSquare />;
 	if (kind === "pull") return <PullFace projectId={projectId} number={Number(value)} />;
 	if (kind === "file") return <><FileText />{dirty && <span aria-hidden className="absolute -right-0.5 -bottom-0.5 size-1.5 rounded-full bg-current" />}<span className="hidden">{basename(value)}</span></>;
 	const launcher = launchers.find(item => item.kind === kind);
@@ -72,7 +74,9 @@ function PullFace({ projectId, number }: { projectId: string; number: number }) 
 function useTabTitle(paneKey: PaneKey, context: string) {
 	const browserTabs = useBrowserTabs(context);
 	const sessions = useTerminalSessions();
+	const { overview } = useWorkspace();
 	const kind = paneKind(paneKey), value = paneValue(paneKey);
+	if (kind === "side") return overview.tasks.find(task => task.id === value)?.title ?? "Side chat";
 	if (kind === "browser") return browserTabs.find(tab => tab.id === value)?.label ?? "Browser";
 	if (kind === "terminal") return terminalTitle(sessions.find(session => session.id === value));
 	if (kind === "pull") return `#${value}`;
@@ -93,7 +97,7 @@ function SurfaceTab({ paneKey, context, projectId, active, dirty, onSelect, onCl
 			onDragLeave={() => setOver(false)}
 			onDrop={(event: DragEvent) => { setOver(false); const moved = event.dataTransfer.getData(paneTabType); if (moved) { event.preventDefault(); onDropBefore(moved); } }} />}
 			className={cn("group/tab relative flex h-6 max-w-36 shrink-0 cursor-pointer items-center gap-0.5 rounded-md pr-2 pl-1.5 text-xs outline-none [-webkit-app-region:no-drag] focus-visible:ring-2 focus-visible:ring-ring/40", active ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/60 hover:text-foreground", over && "ring-1 ring-primary/50")}>
-			{/* The icon is the close button: it turns into an X on hover (T3). */}
+			{/* The icon is the close button: it turns into an X on hover. */}
 			<button type="button" aria-label={`Close ${title}`} onClick={event => { event.stopPropagation(); onClose(); }} className="group/close relative flex size-4 shrink-0 items-center justify-center rounded-sm hover:bg-muted">
 				<span className="relative flex size-3 items-center justify-center group-hover/tab:hidden group-focus-visible/close:hidden [&_svg]:size-3"><TabFace paneKey={paneKey} context={context} projectId={projectId} dirty={dirty} /></span>
 				<X className="hidden size-3 group-hover/tab:block group-focus-visible/close:block" />
@@ -114,7 +118,7 @@ function SurfaceTab({ paneKey, context, projectId, active, dirty, onSelect, onCl
 	</ContextMenu.Root>;
 }
 
-/** T3's empty pane: the surfaces as rows, each opened by its letter; an unavailable one says why. */
+/** The empty pane: the surfaces as rows, each opened by its letter; an unavailable one says why. */
 function Launcher({ onOpen, unavailable: reason }: { onOpen: (kind: typeof launchers[number]["kind"]) => void; unavailable: (kind: typeof launchers[number]["kind"]) => string | undefined }) {
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
@@ -144,8 +148,8 @@ function Launcher({ onOpen, unavailable: reason }: { onOpen: (kind: typeof launc
 }
 
 export function RightPanel() {
-	const { rightPanel, setRightPanel, selectedId, overview, newChatProjectId, select, commandsOpen, settings, sidebarOpen, api, setError, mode } = useWorkspace();
-	// Tabs, the active one, width and maximise are remembered per chat, as in T3.
+	const { rightPanel, setRightPanel, selectedId, overview, newChatProjectId, select, commandsOpen, settings, sidebarOpen, api, setError, mode, command } = useWorkspace();
+	// Tabs, the active one, width and maximise are remembered per chat.
 	const [states, setStates] = usePersistedState<Record<string, PaneState>>("phaseo.desktop.rightPanelState", {});
 	const [lastWidth, setLastWidth] = usePersistedState("phaseo.desktop.rightPanelWidth", paneWidths.default);
 	const [autoOpen] = usePersistedState("phaseo.desktop.panes.autoOpen", true);
@@ -163,7 +167,7 @@ export function RightPanel() {
 	const projectId = task?.projectId ?? (selectedId ? undefined : newChatProjectId || undefined) ?? "";
 	const sessions = useTerminalSessions();
 	const browserTabs = useBrowserTabs(context);
-	// T3's "Pull request" surface: the chat's current linked pull request in its own repository, or else the pull
+	// The "Pull request" surface: the chat's current linked pull request in its own repository, or else the pull
 	// request for the branch its checkout is on, linked or not. Asked again each time the "+" menu opens.
 	const [launchRead, setLaunchRead] = useState(0);
 	const branchPull = useBranchPullRequest(projectId || undefined, launchRead), ownRepository = useProjectRepository(projectId || undefined);
@@ -177,6 +181,7 @@ export function RightPanel() {
 		if (kind === "browser") return browserTabs.some(tab => tab.id === value);
 		if (kind === "terminal") return value === "" || sessions.some(session => session.id === value && session.status === "running");
 		if (["files", "diff", "pulls", "file", "pull"].includes(kind)) return Boolean(projectId);
+		if (kind === "side") return overview.tasks.some(task => task.id === value && task.delegation?.kind === "side" && task.delegation.parentTaskId === selectedId);
 		return true;
 	};
 	const tabs = state.tabs.filter(exists);
@@ -191,12 +196,14 @@ export function RightPanel() {
 	};
 	const show = (key: PaneKey, background = false) => { touched.current = Date.now(); const next = openPaneTab({ ...state, tabs }, key, background); update(next); announce(next.active); };
 	const close = (keys: PaneKey[]) => {
-		// T3 asks before closing a browser an agent is driving.
+		// Closing a browser an agent is driving asks first.
 		if (!confirmCloseBrowserTabs(context, keys.filter(key => paneKind(key) === "browser").map(paneValue))) return;
 		touched.current = Date.now();
 		for (const key of keys) {
 			if (paneKind(key) === "browser") void closeBrowserTab(context, paneValue(key));
 			if (paneKind(key) === "terminal" && paneValue(key)) void closeTerminal(paneValue(key));
+			// A side chat nothing was sent in goes when its tab closes; one that was used stays in the chat's side chat list.
+			if (paneKind(key) === "side") void command({ type: "delete-task", id: paneValue(key), onlyIfUnused: true });
 		}
 		const next = closePaneTabs({ ...state, tabs }, keys); update(next);
 		if (!next.tabs.filter(exists).length) { requested.current = undefined; setRightPanel(undefined); } else announce(next.active);
@@ -214,7 +221,7 @@ export function RightPanel() {
 	useEffect(() => {
 		if (requested.current === rightPanel) return;
 		requested.current = rightPanel;
-		if (!rightPanel || rightPanel === "restore") return;
+		if (!rightPanel || rightPanel === "restore" || rightPanel === "side") return;
 		if (rightPanel === "browser") { show(`browser:${ensureBrowserTab(context)}`); return; }
 		if (rightPanel === "terminal") {
 			const existing = tabs.find(key => paneKind(key) === "terminal") ?? terminalsFor(sessions, { projectId: projectId || undefined, taskId: selectedId }).map(session => `terminal:${session.id}`)[0];
@@ -226,13 +233,15 @@ export function RightPanel() {
 	// Pages that open a new tab, links from messages, and files opened anywhere join this chat's pane.
 	useEffect(() => onBrowserTabOpened(opened => { if (opened.context === context) { show(`browser:${opened.id}`, opened.background); } }));
 	useEffect(() => {
-		const openLink = (event: Event) => { const url = (event as CustomEvent<unknown>).detail; if (typeof url === "string" && /^https?:\/\//i.test(url)) show(`browser:${createBrowserTab(context, { url })}`); };
+		const openLink = (event: Event) => { const url = (event as CustomEvent<unknown>).detail; if (typeof url === "string" && /^https?:\/\//i.test(url)) { event.preventDefault(); show(`browser:${createBrowserTab(context, { url })}`); } };
 		const openFile = (event: Event) => { const detail = (event as CustomEvent<OpenProjectFileDetail>).detail; if (detail?.path && (!projectId || detail.projectId === projectId)) show(`file:${detail.path}`); };
+		const openSide = (event: Event) => { const detail = (event as CustomEvent<OpenSideChatDetail>).detail; if (detail?.parentId === selectedId) show(`side:${detail.id}`); };
 		const openPull = (event: Event) => { const detail = (event as CustomEvent<OpenPullRequestDetail>).detail; if (!projectId || !detail) return; if ("list" in detail) show("pulls"); else if (Number.isSafeInteger(detail.number) && detail.number > 0) show(`pull:${detail.number}`); };
 		window.addEventListener("phaseo:open-context-link", openLink);
 		window.addEventListener(OPEN_PROJECT_FILE_EVENT, openFile);
 		window.addEventListener(OPEN_PULL_REQUEST_EVENT, openPull);
-		return () => { window.removeEventListener("phaseo:open-context-link", openLink); window.removeEventListener(OPEN_PROJECT_FILE_EVENT, openFile); window.removeEventListener(OPEN_PULL_REQUEST_EVENT, openPull); };
+		window.addEventListener(OPEN_SIDE_CHAT_EVENT, openSide);
+		return () => { window.removeEventListener("phaseo:open-context-link", openLink); window.removeEventListener(OPEN_PROJECT_FILE_EVENT, openFile); window.removeEventListener(OPEN_PULL_REQUEST_EVENT, openPull); window.removeEventListener(OPEN_SIDE_CHAT_EVENT, openSide); };
 	});
 	// Open diff under a turn in the chat shows the Diff pane, which picks that turn.
 	useEffect(() => {
@@ -240,7 +249,7 @@ export function RightPanel() {
 		window.addEventListener(OPEN_TURN_DIFF_EVENT, open);
 		return () => window.removeEventListener(OPEN_TURN_DIFF_EVENT, open);
 	});
-	// T3 opens panes by itself: the Diff when a turn finishes with changes, a pull request when one is linked. It holds back if you used the pane during the turn.
+	// Panes open by themselves: the Diff when a turn finishes with changes, a pull request when one is linked. It holds back if you used the pane during the turn.
 	// Layers a stack read finds are not new work, so they do not open the pane.
 	const opened = task?.pullRequests?.filter(link => link.source !== "stack" && link.source !== "stack-dismissed") ?? [];
 	const status = task?.status, linked = opened.length;
@@ -286,10 +295,11 @@ export function RightPanel() {
 		: kind === "file" ? <Suspense fallback={fallback}><FileSurface key={value} projectId={projectId} path={value} onDirtyChange={isDirty => setDirty(current => current[active] === isDirty ? current : { ...current, [active]: isDirty })} onOpenFile={path => show(`file:${path}`)} /></Suspense>
 		: kind === "diff" ? <Suspense fallback={fallback}><DiffSurface projectId={projectId} taskId={selectedId} onOpenFile={path => show(`file:${path}`)} /></Suspense>
 		: kind === "pulls" ? <Suspense fallback={fallback}><PullRequestListSurface projectId={projectId} taskId={selectedId} onOpen={pull => { seedPullRequestTabStatus(projectId, pull.number, pull); show(`pull:${pull.number}`); }} /></Suspense>
+		: kind === "side" ? <Suspense fallback={fallback}><SideChatPane key={value} id={value} onClose={() => close([active])} /></Suspense>
 		: kind === "pull" ? <Suspense fallback={fallback}><PullRequestSurface key={value} projectId={projectId} number={Number(value)} onBack={() => show("pulls")} /></Suspense>
 		: <AgentThreadsPanel id={selectedId} onOpen={select} />;
 	const finishDrag = () => { drag.current = undefined; setDragging(false); };
-	const pane = <aside aria-label="Tools" data-maximized={state.maximized || undefined}
+	const pane = <aside aria-label="Tools" data-focus-region data-maximized={state.maximized || undefined}
 		style={sheet || state.maximized ? undefined : { ["--pane-width" as string]: `${width}px` }}
 		className={cn("relative flex min-w-0 flex-col border-l border-border bg-background",
 			sheet ? "fixed top-11 right-0 bottom-0 z-40 w-[min(42vw,28rem)] max-w-[28rem] min-w-80 shadow-2xl max-[760px]:w-[min(88vw,24rem)]"
@@ -302,7 +312,7 @@ export function RightPanel() {
 			className="group absolute inset-y-0 -left-1 z-20 w-2 cursor-col-resize outline-none select-none">
 			<span aria-hidden className="pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-transparent transition-colors duration-150 group-hover:bg-border group-focus-visible:bg-ring group-active:bg-primary/60" />
 		</div>}
-		{/* The inner column keeps its width while the pane slides, so nothing reflows mid-animation (T3). */}
+		{/* The inner column keeps its width while the pane slides, so nothing reflows mid-animation. */}
 		<div className={cn("flex min-h-0 flex-1 flex-col", !sheet && !state.maximized && "w-[calc(var(--pane-width)-1px)]")}>
 			<div className="flex h-10 shrink-0 items-center gap-1 border-b border-border/60 pr-2 pl-1" data-right-panel-tabbar>
 				{overflow.left && <button type="button" aria-label="Scroll tabs left" onClick={() => strip.current?.scrollBy({ left: -160, behavior: "smooth" })} className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"><ChevronLeft className="size-3.5" /></button>}
@@ -323,11 +333,11 @@ export function RightPanel() {
 				<Tip label="Close panel" side="bottom"><button type="button" aria-label="Close panel" onClick={() => { requested.current = undefined; setRightPanel(undefined); }} className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"><X className="size-4" /></button></Tip>
 			</div>
 			{!active ? <Launcher onOpen={kindToOpen => void openKind(kindToOpen)} unavailable={unavailable} />
-				: kind === "browser" || kind === "terminal" || kind === "diff" || kind === "file" || kind === "files" || kind === "pull" || kind === "pulls" ? <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{content}</div>
+				: kind === "browser" || kind === "terminal" || kind === "diff" || kind === "file" || kind === "files" || kind === "pull" || kind === "pulls" || kind === "side" ? <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{content}</div>
 				: <ScrollArea className="chat-tools-content legacy-panel min-h-0 flex-1">{content}</ScrollArea>}
 		</div>
 	</aside>;
-	// Below 980 px the pane slides over the chat as a sheet (T3).
+	// Below 980 px the pane slides over the chat as a sheet.
 	return sheet ? <>{<button type="button" aria-label="Close panel" tabIndex={-1} onClick={() => { requested.current = undefined; setRightPanel(undefined); }} className="fixed inset-0 top-11 z-30 bg-black/20" />}{pane}</> : pane;
 }
 

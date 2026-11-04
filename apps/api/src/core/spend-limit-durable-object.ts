@@ -21,7 +21,7 @@
 // until they are settled or expire.
 
 import { DurableObject } from "cloudflare:workers";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createClient, type GatewaySupabaseClient } from "@/runtime/supabase-client";
 import type { GatewayBindings } from "@/runtime/env.types";
 import type { GateCheck } from "@pipeline/before/types";
 import type { LeaseAcquireResult, LeaseReturn, LeaseVector } from "@core/lease-pool";
@@ -183,7 +183,7 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 	private readonly leases = new Map<string, Lease>();
 	private readonly drainUntil = new Map<string, number>();
 	private sweepAt = 0;
-	private supabase: SupabaseClient | null = null;
+	private supabase: GatewaySupabaseClient | null = null;
 
 	constructor(ctx: DurableObjectState, env: GatewayBindings) {
 		super(ctx, env);

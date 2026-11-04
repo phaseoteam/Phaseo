@@ -1,6 +1,4 @@
-// Type-only: the SDK is loaded on demand so the charge path does not evaluate it.
-import type Stripe from "stripe";
-
+import { createStripeRestClient, type StripeRestClient } from "@/lib/stripe/rest";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 
 type OwnerContact = {
@@ -9,12 +7,11 @@ type OwnerContact = {
 	workspaceName: string;
 };
 
-async function stripeClient(): Promise<Stripe> {
+async function stripeClient(): Promise<StripeRestClient> {
 	const bindings = getBindings();
 	const key = bindings.STRIPE_SECRET_KEY ?? bindings.TEST_STRIPE_SECRET_KEY;
 	if (!key?.trim()) throw new Error("missing_stripe_secret_key");
-	const { default: StripeClient } = await import("stripe");
-	return new StripeClient(key, { apiVersion: "2026-04-22.dahlia" as any });
+	return createStripeRestClient(key);
 }
 
 async function resolveOwnerContact(workspaceId: string): Promise<OwnerContact | null> {

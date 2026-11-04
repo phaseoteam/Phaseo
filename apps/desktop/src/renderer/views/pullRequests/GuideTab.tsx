@@ -10,7 +10,6 @@ import { Button } from "../../components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../../components/ui/collapsible";
 import { Kbd } from "../../components/ui/kbd";
 import { ScrollArea } from "../../components/ui/scroll-area";
-import { Textarea } from "../../components/ui/textarea";
 import { showToast } from "../../components/ui/toast";
 import { shortcut, useCommand } from "../../lib/keybindings";
 import { pullRequestPatch } from "../../lib/pullRequestPatch";
@@ -21,12 +20,13 @@ import { DiffStat, errorMessage, Tip } from "./presentation";
 import { agentSelectionPrompt, patchExcerpt, rangeLabel, rangeToDraft } from "./pullRequestDiff";
 import { excerptPatch, letterStopNotes, proseTokens, stopQuestionPrompt, type LetteredNote } from "./pullRequestGuideView";
 import { nextPendingReviewCommentId, pullRequestReviewKey, reviewDrafts } from "./pullRequestReviewStore";
+import { MarkdownTextarea } from "../../components/MarkdownTextarea";
 
-/** Where the reader is in each guide, per guide head, for as long as the app is open (T3's tour progress). */
+/** Where the reader is in each guide, per guide head, for as long as the app is open. */
 const progress = new Map<string, { position: number; seen: Set<number> }>();
 const ATTENTION_LABELS: Record<NonNullable<GuideStop["attention"]>["kind"], string> = { tradeoff: "A trade-off to weigh", contract: "A contract to check", product: "A product call", risk: "A risk to judge", accessibility: "An accessibility call" };
 
-/** T3's GuideProse: the model's inline markdown (code, bold, emphasis) without a full renderer. */
+/** Guide prose: the model's inline markdown (code, bold, emphasis) without a full renderer. */
 export function GuideProse({ text }: { text: string }) {
 	return <>{proseTokens(text).map((token, index) => token.kind === "code" ? <code key={index} className="rounded bg-muted px-1 py-px font-mono text-[0.92em]">{token.text}</code> : token.kind === "strong" ? <strong key={index} className="font-semibold text-foreground">{token.text}</strong> : token.kind === "em" ? <em key={index}>{token.text}</em> : <span key={index}>{token.text}</span>)}</>;
 }
@@ -67,7 +67,7 @@ function ExcerptDraft({ label, canReview, onReview, onAsk, onCancel }: { label: 
 	const [text, setText] = useState("");
 	return <div className="border-y border-border/60 bg-background px-3 py-2 font-sans text-xs whitespace-normal" onPointerDown={event => event.stopPropagation()}>
 		<p className="mb-1.5 truncate font-mono text-muted-foreground">{label}</p>
-		<Textarea autoFocus value={text} rows={3} onChange={event => setText(event.target.value)} placeholder={canReview ? "Leave a comment or ask about these lines" : "Ask about these lines"} aria-label={`Comment on ${label}`} className="min-h-16 text-xs" onKeyDown={event => { if (event.key === "Escape") { event.stopPropagation(); onCancel(); } }} />
+		<MarkdownTextarea ui autoFocus value={text} rows={3} onChange={event => setText(event.target.value)} placeholder={canReview ? "Leave a comment or ask about these lines" : "Ask about these lines"} aria-label={`Comment on ${label}`} className="min-h-16 text-xs" onKeyDown={event => { if (event.key === "Escape") { event.stopPropagation(); onCancel(); } }} />
 		<div className="mt-2 flex flex-wrap justify-end gap-2">
 			<Button size="xs" variant="ghost" onClick={onCancel}>Cancel</Button>
 			<Button size="xs" variant="outline" disabled={!text.trim()} onClick={() => onAsk(text)}>Add to agent</Button>
@@ -232,7 +232,7 @@ function GuideTour({ guide, view, projectId, active, banner, onOpenCode, onFinis
 }
 
 /**
- * T3's Guide tab: a maintainer's tour of the pull request, written on request by the title model through your Phaseo
+ * The Guide tab: a maintainer's tour of the pull request, written on request by the title model through your Phaseo
  * account and stored per pull request head, so opening the tab is free. A guide written before the latest push says
  * so and offers Rewrite. `writeRequest` lets the pane's More menu ask for one.
  */

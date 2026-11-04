@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Message, QueuedMessage, Task } from "../shared/workspace";
 
 /**
- * Rewinds a chat in place to just before one of the person's messages (T3's "Edit from here"): that message and
+ * Rewinds a chat in place to just before one of the person's messages ("Edit from here"): that message and
  * everything after it go, with their turns' steps. Returns the removed message, so it can return to the composer or
  * be sent again. Saving the chat deletes the removed entries from storage.
  *

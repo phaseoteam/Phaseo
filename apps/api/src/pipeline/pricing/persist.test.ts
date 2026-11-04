@@ -6,12 +6,12 @@ const releaseRuntimeMock = vi.fn();
 const enqueueAutoTopUpFailedEmailMock = vi.fn();
 const fromMock = vi.fn(() => makeTableQuery());
 
-vi.mock("stripe", () => ({
-	default: class StripeMock {
-		customers = { retrieve: vi.fn() };
-		paymentMethods = { list: vi.fn() };
-		paymentIntents = { create: vi.fn() };
-	},
+vi.mock("../../lib/stripe/rest", () => ({
+	createStripeRestClient: () => ({
+		customers: { retrieve: vi.fn() },
+		paymentMethods: { list: vi.fn() },
+		paymentIntents: { create: vi.fn() },
+	}),
 }));
 
 function makeTableQuery() {

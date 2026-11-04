@@ -1,0 +1,16 @@
+{
+  "name": "phaseo",
+  "owner": {
+    "name": "Phaseo"
+  },
+  "metadata": {
+    "description": "The Phaseo plugin: skills for building on the Phaseo AI gateway, the Phaseo MCP and the Phaseo Docs MCP."
+  },
+  "plugins": [
+    {
+      "name": "phaseo",
+      "source": "./apps/mcp/plugin/phaseo",
+      "description": "Build on the Phaseo AI gateway: integration, migration, model selection, SDK and CLI skills, plus the Phaseo MCP and the Phaseo Docs MCP."
+    }
+  ]
+}

@@ -17,8 +17,8 @@ export function attachPullRequest(view: Pick<PullRequestView, "number" | "title"
 }
 
 /**
- * T3's pull request hand-offs. Each opens a new Code chat with its task in the composer for the person to read over and
- * send, as T3 does, rather than sending it for them: "Ask a question" and "Explain this PR" in the pull request's
+ * Pull request hand-offs. Each opens a new Code chat with its task in the composer for the person to read over and
+ * send, rather than sending it for them: "Ask a question" and "Explain this PR" in the pull request's
  * project, "Check out", "Fix findings" and "Resolve conflicts" in a new worktree at the pull request's head, and
  * "Check out in this repository" on the project's own checkout, switched to the pull request's branch. One finding
  * goes to the open chat's composer when there is one ("Fix in this chat"), and to a new chat in a worktree otherwise.
@@ -40,7 +40,7 @@ export function usePullRequestHandoff(projectId: string) {
 		if (pending || pendingFinding || !api) return;
 		setPending(kind);
 		try {
-			// T3: with a chat open, "Ask a question" puts the pull request in its composer as a chip instead of starting a chat.
+			// With a chat open, "Ask a question" puts the pull request in its composer as a chip instead of starting a chat.
 			if (kind === "ask") { if (!selectedId || !attachPullRequest(view)) openDraft(projectId, askPullRequestPrompt(view)); }
 			else if (kind === "explain") openDraft(projectId, explainPullRequestPrompt(view));
 			else if (kind === "checkout-here") {

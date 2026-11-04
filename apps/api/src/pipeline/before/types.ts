@@ -171,11 +171,10 @@ export type ProviderRolloutStatus =
     | "paused"
     | "soft_blocked";
 
+/** `deranked`: routable only as a last resort, after every other healthy provider. */
 export type RoutingStatus =
     | "active"
-    | "deranked_lvl1"
-    | "deranked_lvl2"
-    | "deranked_lvl3"
+    | "deranked"
     | "disabled";
 
 export type CapabilityRoutingStatus = RoutingStatus | "internal_testing" | "coming_soon";
@@ -293,10 +292,6 @@ export type TeamSettings = {
     betaChannelEnabled: boolean | null;
     alphaChannelEnabled?: boolean | null;
     cacheAwareRoutingEnabled?: boolean | null;
-    privacyZdrOnly?: boolean | null;
-    privacyEnablePaidMayTrain?: boolean | null;
-    privacyEnableFreeMayTrain?: boolean | null;
-    privacyEnableInputOutputLogging?: boolean | null;
     /** Explicit consent to persist gateway request/response payloads. */
     ioLoggingEnabled?: boolean;
     ioLoggingIncludeProviderPayloads?: boolean;
@@ -340,6 +335,8 @@ export type ContextFetchTelemetry = {
     rpcMs?: number | null;
     enrichMs?: number | null;
     cacheWriteMs?: number | null;
+    /** Wait for the spend-limit coordinator's decision (enforce mode), set by guardContext. */
+    spendLimitMs?: number | null;
     fallbackRemap?: boolean;
 };
 

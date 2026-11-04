@@ -1,6 +1,6 @@
 import type { DecisionsRequest } from "@core/schemas";
 import { LegacyDecisionsSchema } from "@core/schemas";
-import type { z } from "zod";
+import type * as z from "zod";
 import type { IRDecisionQuestion, IRDecisionsRequest } from "@core/ir";
 import { NativeDecisionAnswerSchema, type NativeDecisionQuestion, type NativeDecisionRequest } from "@core/decisions";
 

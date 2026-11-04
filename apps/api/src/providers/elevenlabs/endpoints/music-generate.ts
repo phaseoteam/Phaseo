@@ -8,6 +8,7 @@ import { MusicGenerateSchema, type MusicGenerateRequest } from "@core/schemas";
 import { buildAdapterPayload } from "../../utils";
 import { resolveProviderKey } from "../../keys";
 import { getBindings } from "@/runtime/env";
+import { audioDurationSeconds } from "@/lib/audio/duration";
 import { computeBillAfterProviderCharge } from "@pipeline/pricing/engine";
 
 function toBase64(buffer: ArrayBuffer): string {
@@ -96,14 +97,9 @@ export async function measureMusicDurationSeconds(
 	if (pcm) return bytes.length / (Number(pcm[1]) * 2);
 	const law = /^(?:ulaw|alaw)_(\d+)$/.exec(format);
 	if (law) return bytes.length / Number(law[1]);
-	try {
-		const { parseBuffer } = await import("music-metadata");
-		const parsed = await parseBuffer(bytes, { mimeType: contentType.split(";")[0].trim() || undefined, size: bytes.length }, { duration: true, skipCovers: true });
-		const duration = parsed.format.duration;
-		if (typeof duration === "number" && Number.isFinite(duration) && duration > 0) return duration;
-	} catch {
-		// Fall back to the bitrate below.
-	}
+	const parsed = audioDurationSeconds(bytes);
+	if (parsed !== undefined) return parsed;
+	// Not a format the parser reads: fall back to the bitrate.
 	const bitrate = /^(?:mp3|opus)_\d+_(\d+)$/.exec(format);
 	const kbps = bitrate
 		? Number(bitrate[1])

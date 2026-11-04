@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isPrivateOrLocalhostHost } from "@/lib/public-endpoint-url";
 import { catalogDeclarationsJsonSchema, type CatalogDeclarations } from "./provider-catalog-declarations";
 import { catalogDataPolicyJsonSchema } from "./provider-catalog-data-policy";
 import { normalizeTieredProviderCatalog, type ProviderCatalogTier } from "./provider-catalog-tiers";
@@ -249,15 +250,8 @@ function timestamp(value: unknown): string | null {
 
 function isPrivateHostname(hostname: string): boolean {
 	const host = hostname.trim().toLowerCase().replace(/[\[\]]/g, "");
-	if (host.startsWith("::ffff:")) return isPrivateHostname(host.slice(7));
-	if (!host || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal")) return true;
-	if (host === "::" || host === "::1" || host === "0.0.0.0" || host === "169.254.169.254" || host.startsWith("fc") || host.startsWith("fd") || host.startsWith("fe8") || host.startsWith("fe9") || host.startsWith("fea") || host.startsWith("feb") || host.startsWith("::ffff:127.") || host.startsWith("::ffff:10.") || host.startsWith("::ffff:192.168.")) return true;
-	const octets = host.split(".").map(Number);
-	if (octets.length === 4 && octets.every((octet) => Number.isInteger(octet) && octet >= 0 && octet <= 255)) {
-		const [a, b] = octets;
-		return a === 10 || a === 127 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 169 && b === 254);
-	}
-	return false;
+	if (host.endsWith(".local") || host.endsWith(".internal")) return true;
+	return isPrivateOrLocalhostHost(host);
 }
 
 async function assertPublicDns(hostname: string): Promise<void> {

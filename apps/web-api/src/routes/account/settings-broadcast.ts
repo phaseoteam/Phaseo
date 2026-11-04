@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
+import { isPrivateOrLocalhostHost, validatePublicEndpointUrlForDelivery } from "@/lib/public-endpoint-url";
 import { requireUser } from "@/auth/requireUser";
 import { getDataClient } from "@/data/supabase";
 import { requireAccountWorkspace } from "./context";
@@ -31,11 +32,12 @@ const RULE_CONDITIONS = new Set<string>(BROADCAST_RULE_CONDITIONS);
 const EXECUTABLE_DESTINATIONS = new Set<string>(AVAILABLE_BROADCAST_DESTINATION_IDS);
 
 function object(value: unknown): Record<string, any> { return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, any> : {}; }
-function safeEndpoint(value: string): URL {
+const PRIVATE_ENDPOINT_ERROR = "Private or loopback endpoint addresses are not allowed.";
+// Checks the URL text. fetchBroadcastEndpoint also checks DNS before sending.
+export function safeEndpoint(value: string): URL {
 	let url: URL; try { url = new URL(value); } catch { throw new Error("Endpoint must be a valid absolute URL."); }
 	if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) throw new Error("Endpoint must use http or https without URL credentials.");
-	const host = url.hostname.toLowerCase();
-	if (!host || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || /^(0|10|127|169\.254|192\.168)\./.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host) || host === "::1" || /^(fc|fd|fe80:)/.test(host)) throw new Error("Private or loopback endpoint addresses are not allowed.");
+	if (url.hostname.toLowerCase().endsWith(".local") || isPrivateOrLocalhostHost(url.hostname)) throw new Error(PRIVATE_ENDPOINT_ERROR);
 	return url;
 }
 function headers(config: Record<string, any>): Record<string, string> {
@@ -57,6 +59,10 @@ async function webhookRequest(config: Record<string, any>, payload: unknown, ext
 	};
 }
 export async function fetchBroadcastEndpoint(url: URL, init: RequestInit): Promise<Response> {
+	const validated = await validatePublicEndpointUrlForDelivery(url.toString(), { allowHttp: true });
+	if (validated.ok === false) {
+		throw new Error(validated.reason === "dns_resolution_failed" ? "Endpoint hostname could not be resolved." : PRIVATE_ENDPOINT_ERROR);
+	}
 	const response = await fetch(url, { ...init, redirect: "manual" });
 	if (response.status >= 300 && response.status < 400) {
 		throw new Error("Broadcast destination redirects are not allowed.");

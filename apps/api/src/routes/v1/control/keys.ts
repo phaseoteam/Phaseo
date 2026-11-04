@@ -637,10 +637,9 @@ async function handleCreateKey(req: Request) {
 			return json({ error: "bad_request", message: "department_id does not match a department in this workspace" }, 400, { "Cache-Control": "no-store" });
 		}
 		await enforceWorkspaceKeyLimit(workspaceScope.workspaceId, "api");
-		const creatorUserId =
-			auth.value.authMethod === "oauth" && auth.value.userId
-				? auth.value.userId
-				: await resolveWorkspaceOwnerUserId(workspaceScope.workspaceId);
+		// A key minted with a management key belongs to that key's creator, so it is revoked with
+		// their membership; only credentials with no person behind them fall back to the owner.
+		const creatorUserId = auth.value.userId ?? await resolveWorkspaceOwnerUserId(workspaceScope.workspaceId);
 		const pepper = resolveActiveKeyPepper(getBindings());
 		if (!pepper) {
 			return json(
@@ -978,6 +977,18 @@ async function handleDeleteKey(req: Request) {
 			.eq("workspace_id", auth.value.workspaceId);
 		if (updateError) {
 			throw new Error(updateError.message || "Failed to delete API key");
+		}
+		// Bump again now the row is written: a request between the first bump and
+		// the update could have cached the still-active row under the new version.
+		// The row is already deleted, so a failure here must not skip the cleanup and
+		// audit below; the database trigger on keys still refreshes the gateway.
+		try {
+			await invalidateKeyCache({ id: existing.id, kid: existing.kid ?? null });
+		} catch (error) {
+			console.warn("gateway_key_invalidation_after_delete_failed", {
+				keyId: existing.id,
+				error: error instanceof Error ? error.message : String(error),
+			});
 		}
 
 		await supabase.from("key_guardrails").delete().eq("key_id", existing.id);

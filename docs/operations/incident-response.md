@@ -123,7 +123,7 @@ When Phaseo gives money back:
 | Alerts to Linear | `POST /internal/observability-incidents` on the gateway turns PostHog and Axiom alerts into deduplicated Linear Triage issues (not yet tested end to end with a real alert from either); [observability-incidents.ts](../../apps/api/src/routes/internal/observability-incidents.ts), setup in the [API README](../../apps/api/README.md#observability-incident-triage) |
 | Uptime monitors | Instatus, alerting through incident.io; see [Outage alerts](#outage-alerts) |
 | Public probes | "Phaseo Health Pilot" workflow, run by hand; [health-pilot.yml](../../.github/workflows/health-pilot.yml). It creates no incidents. |
-| Provider routing health | Circuit breaker settings in [health.config.ts](../../apps/api/src/pipeline/execute/health.config.ts); shared state in [routing-health-durable-object.ts](../../apps/api/src/core/routing-health-durable-object.ts) |
+| Provider routing health | Circuit breaker settings in [health.config.ts](../../apps/api/src/pipeline/execute/health.config.ts); shared state in [routing-health-durable-object.ts](../../apps/api/src/core/routing-health-durable-object.ts). Each breaker's last transition (state, reason, open until) is in `gateway_provider_health_states`, which also drives the provider badges on model pages; the live evidence is the KV key `gw:health:v2:<endpoint>:<model>`. Per-attempt outcomes, latency and errors are in `v2_request_attempts`. An open breaker recovers by itself after its cooldown through sampled probe requests; use route switches to take a provider out by hand. |
 | Route switches | `/internal/data/models/edit/<model id>` |
 | Cache purge | `/internal/cache` |
 | Key leak response | `/internal/key-incidents` |

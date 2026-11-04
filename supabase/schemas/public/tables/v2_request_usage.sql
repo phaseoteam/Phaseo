@@ -48,6 +48,13 @@ CREATE TRIGGER v2_request_usage_service_tier
   FOR EACH ROW
   EXECUTE FUNCTION public.set_v2_request_usage_service_tier();
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."v2_request_usage"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "v2_request_usage_workspace_select" ON "public"."v2_request_usage"
   FOR SELECT
   TO "authenticated"

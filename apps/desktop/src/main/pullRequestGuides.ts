@@ -8,7 +8,7 @@ type Complete = (input: { system: string; user: string; maxTokens: number; timeo
 type Run = { headSha: string; promise: Promise<PullRequestGuide> };
 
 /**
- * T3's review guides, written with the title model through the person's Phaseo account. Writing is explicit and the
+ * Review guides, written with the review guide model (else the title model) through the person's Phaseo account. Writing is explicit and the
  * result is stored per pull request with the head it was written for, so opening the Guide tab never spends a model
  * call; a push leaves the guide in place and the reader sees it as written before the latest push. A run belongs to
  * the app rather than to the window that asked, so leaving the tab does not stop it.
@@ -16,9 +16,10 @@ type Run = { headSha: string; promise: Promise<PullRequestGuide> };
 export class PullRequestGuides {
 	private readonly runs = new Map<string, Run>();
 	private readonly failures = new Map<string, { headSha: string; error: string }>();
-	/** Called when a run ends, written or failed, so the app can say so wherever the person is (T3's guide run coordinator). */
+	/** Called when a run ends, written or failed, so the app can say so wherever the person is. */
 	onFinished?: (event: { root: string; view: PullRequestView; error?: string }) => void;
-	constructor(private readonly directory: string, private readonly complete: Complete, private readonly diff: (root: string, view: PullRequestView) => Promise<string>) {}
+	/** `instructions` reads the person's guide preferences when a guide is written. */
+	constructor(private readonly directory: string, private readonly complete: Complete, private readonly diff: (root: string, view: PullRequestView) => Promise<string>, private readonly instructions: () => string = () => "") {}
 
 	private key(view: Pick<PullRequestView, "repository" | "number">) { return `${view.repository.toLowerCase()}#${view.number}`; }
 	private file(view: Pick<PullRequestView, "repository" | "number">) { return path.join(this.directory, `${createHash("sha256").update(this.key(view)).digest("hex").slice(0, 32)}.json`); }
@@ -53,11 +54,11 @@ export class PullRequestGuides {
 		const files = parseUnifiedDiff(await this.diff(root, view));
 		if (!files.length) throw new Error("This pull request has no changed files to tour.");
 		const shown = guideDiffText(files);
-		const prompt = guidePrompt({ number: view.number, title: view.title, body: view.body, base: view.base, head: view.head, diff: shown.text, truncated: shown.truncated });
+		const prompt = guidePrompt({ number: view.number, title: view.title, body: view.body, base: view.base, head: view.head, diff: shown.text, truncated: shown.truncated, instructions: this.instructions() });
 		const { reply, model } = await this.complete({ ...prompt, maxTokens: 8000, timeoutMs: 180_000, label: "The guide model" });
 		if (!reply) throw new Error("The model returned an empty guide.");
 		let raw: unknown;
-		try { raw = parseGuideReply(reply); } catch { throw new Error("The model's guide could not be read. Try again, or choose another title model in Settings → General."); }
+		try { raw = parseGuideReply(reply); } catch { throw new Error("The model's guide could not be read. Try again, or choose another review guide model in Settings → Source control."); }
 		const stops = normaliseGuide(raw, files, shown.shown);
 		const guide: PullRequestGuide = { headSha: view.headOid, generatedAt: new Date().toISOString(), model, stops, ...(shown.truncated ? { truncated: true } : {}) };
 		await mkdir(this.directory, { recursive: true });

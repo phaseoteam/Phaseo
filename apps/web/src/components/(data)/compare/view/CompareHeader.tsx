@@ -44,9 +44,15 @@ function RoutePickers({
 	const current = priced.pricing?.provider;
 	const tiers = routeTiers(priced);
 	const listingOnly = current && !current.routed;
+	// Popular open models have up to 30 routes, listed cheapest first; each shows its token prices so the choice isn't blind.
+	const routePrice = (id: string) => {
+		const route = model.providers.find((entry) => entry.id === id);
+		if (!route || (route.input == null && route.output == null)) return null;
+		return t("routePrice", { input: route.input == null ? "–" : format.usd(route.input), output: route.output == null ? "–" : format.usd(route.output) });
+	};
 	const routeItems = routes.length
-		? routes.map((route) => ({ value: route.id, label: route.name }))
-		: [{ value: NO_ROUTE, label: current ? t("listedOnly", { provider: current.name }) : t("notPriced") }];
+		? routes.map((route) => ({ value: route.id, label: route.name, logoId: route.logoId as string | null, price: routePrice(route.id) }))
+		: [{ value: NO_ROUTE, label: current ? t("listedOnly", { provider: current.name }) : t("notPriced"), logoId: null, price: null }];
 
 	return (
 		<div className="grid grid-cols-1 gap-1.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,auto)]">
@@ -59,15 +65,17 @@ function RoutePickers({
 				}}
 			>
 				<SelectTrigger aria-label={t("routeFor", { name: model.name })} className="h-8 w-full min-w-0 rounded-md bg-background px-2 text-xs">
-					{current ? <ProviderLogo id={current.id} alt="" size="xxs" className="mr-1.5 hidden shrink-0 sm:flex" /> : null}
+					{current ? <ProviderLogo id={current.logoId ?? current.id} alt="" size="xxs" className="mr-1.5 hidden shrink-0 sm:flex" /> : null}
 					<SelectValue className="truncate" />
 				</SelectTrigger>
-				<SelectContent>
+				{/* Opens below the trigger, as wide as its names need (laid over a half-width trigger, names ran under the scrollbar), and shows a scrollbar only when the list overflows. */}
+				<SelectContent alignItemWithTrigger={false} align="start" className="w-auto min-w-(--anchor-width) max-w-[min(24rem,calc(100vw-2rem))] [&_[data-slot=scroll-area]:not([data-has-overflow-y])_[data-slot=scroll-area-scrollbar]]:hidden">
 					{routeItems.map((item) => (
 						<SelectItem key={item.value} value={item.value}>
-							<span className="inline-flex items-center gap-2">
-								{item.value !== NO_ROUTE ? <ProviderLogo id={item.value} alt="" size="xxs" /> : null}
-								{item.label}
+							<span className="flex w-full min-w-0 items-center gap-2">
+								{item.logoId ? <ProviderLogo id={item.logoId} alt="" size="xxs" /> : null}
+								<span className="min-w-0 flex-1 truncate">{item.label}</span>
+								{item.price ? <span className="shrink-0 pl-3 text-xs text-muted-foreground tabular-nums">{item.price}</span> : null}
 							</span>
 						</SelectItem>
 					))}
@@ -84,7 +92,7 @@ function RoutePickers({
 				<SelectTrigger aria-label={t("tierFor", { name: model.name })} className="h-8 rounded-md bg-background px-2 text-xs">
 					<SelectValue />
 				</SelectTrigger>
-				<SelectContent>
+				<SelectContent alignItemWithTrigger={false} align="end" className="w-auto min-w-(--anchor-width) [&_[data-slot=scroll-area]:not([data-has-overflow-y])_[data-slot=scroll-area-scrollbar]]:hidden">
 					{(tiers.length ? tiers : [tier]).map((value) => (
 						<SelectItem key={value} value={value}>{format.tier(value)}</SelectItem>
 					))}
@@ -154,7 +162,7 @@ export function CompareHeader({
 				<div className="flex gap-3">{toggles}</div>
 				<div className="w-32">{addModel}</div>
 			</div>
-			<div className="sticky top-[var(--site-header-height,4rem)] z-20 -mx-4 border-b border-border bg-background/95 px-4 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/85">
+			<div className="sticky top-[calc(var(--site-notice-height,0px)+var(--site-header-height,3.75rem))] z-20 -mx-4 border-b border-border bg-background/95 px-4 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/85">
 				<div role="group" aria-label={t("selectedModels")} style={gridStyle(models.length)} className={cn(GRID_CLASS, "items-stretch gap-y-2")}>
 					<div className="hidden flex-col justify-center gap-0.5 sm:flex">
 						{toggles}
@@ -162,10 +170,11 @@ export function CompareHeader({
 					</div>
 					{models.map((model, index) => (
 						<div key={model.id} className={cn("min-w-0 space-y-1.5 rounded-md border border-border bg-card p-1.5", !visibleOnPhone(index, phonePage) && "hidden sm:block")}>
-							<div className="flex h-8 items-center gap-2 pl-1">
+							<div className="flex min-h-8 items-center gap-2 pl-1">
 								<span aria-hidden className="h-5 w-1 shrink-0 rounded-sm" style={{ background: MODEL_COLOURS[index] }} />
 								<ProviderLogo id={model.lab.id} alt={model.lab.name} size="xxs" className="hidden shrink-0 sm:flex" />
-								<span className="min-w-0 flex-1 truncate text-sm font-semibold" title={model.name}>{model.name}</span>
+								{/* Two lines, not an ellipsis: on a phone half the width can't fit "Claude Opus 5.5". */}
+								<span className="line-clamp-2 min-w-0 flex-1 text-sm leading-tight font-semibold break-words" title={model.name}>{model.name}</span>
 								<Link
 									href={`/models/${model.id}`}
 									className="hidden size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground sm:inline-flex"
@@ -196,7 +205,7 @@ export function CompareHeader({
 						<button type="button" onClick={() => onPhonePageChange(Math.max(0, phonePage - 1))} disabled={phonePage === 0} className="inline-flex h-9 items-center gap-1 rounded-md px-2 disabled:opacity-40">
 							<ChevronLeft className="size-4" />{t("previous")}
 						</button>
-						<span aria-live="polite">{t("modelsRange", { from: phonePage * 2 + 1, to: Math.min(models.length, phonePage * 2 + 2), total: models.length })}</span>
+						<span aria-live="polite">{t("modelsRange", { from: phonePage * 2 + 1, to: Math.min(models.length, phonePage * 2 + 2), count: Math.min(2, models.length - phonePage * 2), total: models.length })}</span>
 						<button type="button" onClick={() => onPhonePageChange(Math.min(pages - 1, phonePage + 1))} disabled={phonePage >= pages - 1} className="inline-flex h-9 items-center gap-1 rounded-md px-2 disabled:opacity-40">
 							{t("next")}<ChevronRight className="size-4" />
 						</button>

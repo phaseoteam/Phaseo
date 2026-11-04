@@ -2,6 +2,7 @@ export type PhaseoEnv = Omit<Cloudflare.Env, "INFERENCE_RUNS"> & {
 	INFERENCE_RUNS?: DurableObjectNamespace;
 	PHASEO_MCP_RESOURCE_SERVER_SECRET: string;
 	OPENAI_APPS_CHALLENGE_TOKEN?: string;
+	GOOGLE_CONNECTED_APPS_VERIFICATION?: string;
 	PHASEO_WEB_BASE_URL: string;
 };
 

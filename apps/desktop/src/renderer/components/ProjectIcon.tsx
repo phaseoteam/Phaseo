@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { ScrollArea } from "./ui/scroll-area";
 import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
 
-/** T3's colours: written out in full so Tailwind keeps every class. */
+/** The icon colours, written out in full so Tailwind keeps every class. */
 export const projectIconColours: { value: ProjectIconColor; label: string; className: string; swatch: string }[] = [
 	{ value: "gray", label: "Grey", className: "text-gray-600 dark:text-gray-400", swatch: "bg-gray-500" },
 	{ value: "red", label: "Red", className: "text-red-600 dark:text-red-400", swatch: "bg-red-500" },
@@ -36,7 +36,7 @@ const colourClass = (color: ProjectIconColor) => projectIconColours.find(value =
 const popularIcons: IconName[] = ["folder-code", "code-xml", "terminal", "globe", "server", "database", "bot", "sparkles", "smartphone", "monitor", "cloud-cog", "package", "book-open", "flask-conical", "shield-check", "rocket", "gamepad-2", "music", "image", "shopping-bag", "git-branch", "workflow", "wrench", "layers"].filter((name): name is IconName => (iconNames as string[]).includes(name));
 export const projectEmojis = [["💻", "Computer"], ["🛠️", "Tools"], ["🚀", "Rocket"], ["🤖", "Robot"], ["✨", "Sparkles"], ["⚡", "Lightning"], ["🌐", "Web"], ["📱", "Mobile"], ["🖥️", "Desktop"], ["⌨️", "Keyboard"], ["⚙️", "Gear"], ["🗄️", "Database"], ["☁️", "Cloud"], ["📦", "Package"], ["📚", "Books"], ["🧪", "Test tube"], ["🔒", "Lock"], ["🎮", "Game"], ["🎵", "Music"], ["🎬", "Film"], ["🖼️", "Picture"], ["🛍️", "Shopping"], ["🔥", "Fire"], ["💡", "Idea"], ["🧩", "Puzzle"], ["📊", "Chart"], ["🧠", "Brain"], ["🦄", "Unicorn"], ["🐙", "Octopus"], ["🌱", "Seedling"]] as const;
 
-/** T3's icon search: popular icons until you type, then up to 60 Lucide icons whose names contain the words. */
+/** Icon search: popular icons until you type, then up to 60 Lucide icons whose names contain the words. */
 export function searchProjectIcons(query: string): string[] {
 	const needle = query.trim().toLowerCase().replaceAll(/\s+/g, "-");
 	return needle ? (iconNames as string[]).filter(name => name.includes(needle)).slice(0, 60) : popularIcons;
@@ -50,7 +50,7 @@ export function firstEmoji(value: string) {
 }
 const label = (name: string) => name.split("-").map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
 
-/** T3's monogram tile: the letters on a tint of their colour. */
+/** A monogram tile: the letters on a tint of their colour. */
 export function ProjectMonogram({ text, color, className }: { text: string; color: ProjectIconColor; className?: string }) {
 	const single = [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(text)].length === 1;
 	return <span aria-hidden className={cn("inline-flex size-4 shrink-0 items-center justify-center", className)}>
@@ -60,7 +60,7 @@ export function ProjectMonogram({ text, color, className }: { text: string; colo
 	</span>;
 }
 
-/** An icon as chosen, or T3's automatic monogram from the name when there is none. */
+/** An icon as chosen, or the automatic monogram from the name when there is none. */
 export function ProjectIconGlyph({ icon, name, className }: { icon?: Icon; name: string; className?: string }) {
 	const automatic = projectIdentity(name);
 	if (icon?.kind === "emoji") return <span aria-hidden className={cn("inline-flex size-4 shrink-0 items-center justify-center leading-none [container-type:size]", className)}><span className="text-[length:85cqh] leading-none">{icon.emoji}</span></span>;
@@ -80,7 +80,7 @@ export function ProjectIcon({ project, className }: { project?: Pick<Project, "i
 
 type Mode = Icon["kind"];
 
-/** T3's Choose project icon dialog: Icons (searchable, with a colour), Emoji, or Monogram. */
+/** The Choose project icon dialog: Icons (searchable, with a colour), Emoji, or Monogram. */
 export function ProjectIconPickerDialog({ current, projectName, open, onOpenChange, onSelect }: { current?: Icon; projectName: string; open: boolean; onOpenChange: (open: boolean) => void; onSelect: (icon: Icon) => void }) {
 	const automatic = projectIdentity(projectName);
 	const [mode, setMode] = useState<Mode>("lucide");

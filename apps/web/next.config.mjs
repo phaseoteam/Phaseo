@@ -107,6 +107,15 @@ const nextConfig = {
             // frames remain blocked and the browser still requires user consent.
             value: "camera=(), microphone=(self), geolocation=(), payment=(self)",
           },
+          // Matches Vercel's default. Browsers ignore it on plain-HTTP (local) responses.
+          { key: "Strict-Transport-Security", value: "max-age=63072000" },
+          {
+            // Enforced site-wide: no framing by other sites (as X-Frame-Options),
+            // no plugin content, and no <base> tag that could redirect relative
+            // URLs. The site uses none of them. /oauth/consent tightens this below.
+            key: "Content-Security-Policy",
+            value: "frame-ancestors 'self'; object-src 'none'; base-uri 'self'",
+          },
         ],
       },
       {

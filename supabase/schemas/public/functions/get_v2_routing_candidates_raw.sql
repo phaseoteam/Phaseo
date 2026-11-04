@@ -64,13 +64,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_routing_candidates_raw (
     )
     and (
       p_capability_id is null
-      or capability.status = 'active'
-      or (
-        capability.status = 'degraded'
-        and route.provider_availability_status = 'deprecated'
-        and route.effective_to is not null
-        and route.effective_to > now()
-      )
+      or capability.status in ('active', 'degraded')
     )
     and (p_service_tier is null or variant.service_tier_slug = lower(p_service_tier))
     and (

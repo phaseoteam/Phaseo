@@ -232,9 +232,7 @@
 			"featureStructuredOutputs": "مخرجات منظّمة",
 			"featureWebSearch": "البحث على الويب",
 			"featureFree": "إصدار مجاني",
-			"statusDeranked1": "خفض الترتيب من المستوى 1",
-			"statusDeranked2": "خفض الترتيب من المستوى 2",
-			"statusDeranked3": "خفض الترتيب من المستوى 3",
+			"statusDeranked": "أولوية أقل",
 			"statusDisabled": "معطّل",
 			"regionJapan": "اليابان",
 			"regionAustralia": "أستراليا",
@@ -811,17 +809,9 @@
 						"label": "محظور مؤقتًا",
 						"description": "التوجيه محظور مؤقتًا."
 					},
-					"deranked_lvl1": {
-						"label": "أولوية منخفضة L1",
-						"description": "متاح للتوجيه العام، لكن أولويته منخفضة قليلًا بناءً على صحة التوجيه."
-					},
-					"deranked_lvl2": {
-						"label": "أولوية منخفضة L2",
-						"description": "متاح للتوجيه العام، لكن أولويته منخفضة حاليًا بناءً على صحة التوجيه."
-					},
-					"deranked_lvl3": {
-						"label": "أولوية منخفضة L3",
-						"description": "متاح للتوجيه العام، لكن أولويته منخفضة جدًا بناءً على صحة التوجيه."
+					"deranked": {
+						"label": "أولوية أقل",
+						"description": "قابل للتوجيه علنًا، لكنه يُستخدم فقط كاحتياط عندما تفشل المزوّدات الأخرى."
 					},
 					"internal_testing": {
 						"label": "اختبار داخلي",
@@ -1081,7 +1071,7 @@
 				"disabled": "معطّل",
 				"comingSoon": "قريبًا",
 				"internalTesting": "اختبار داخلي",
-				"rateLimited": "مقيّد بحد الطلبات",
+				"rateLimited": "أولوية أقل",
 				"degraded": "متدهور",
 				"external": "خارجي"
 			},
@@ -1105,7 +1095,7 @@
 				"disabled": "معطّل صراحةً وغير قابل للتوجيه.",
 				"comingSoon": "قريبًا، وغير قابل للتوجيه بعد.",
 				"internalTesting": "متاح للاختبار الداخلي فقط.",
-				"rateLimited": "قابل للتوجيه، لكن أولوية التوجيه منخفضة جدًا.",
+				"rateLimited": "يحدده Phaseo. يُستخدم فقط كاحتياط عندما تفشل المزوّدات الأخرى.",
 				"degraded": "متاح مع تدهور في صحة التوجيه.",
 				"external": "مدرج من كتالوج خارجي؛ لا يمكن توجيهه عبر Phaseo."
 			},
@@ -1363,9 +1353,12 @@
 			"discountEndsInDaysHours": "ينتهي خلال {days} يوم و{hours} ساعة",
 			"discountEndsInHours": "ينتهي خلال {hours} ساعة",
 			"routingHealthLimited": "مقيّد مؤقتًا",
-			"routingHealthLimitedDescription": "خفّضت حالة التوجيه أولوية هذا المزوّد مؤقتًا (أزواج المسارات المتأثرة: {count}).",
+			"routingHealthLimitedDescription": "فشلت الطلبات إلى هذا المزوّد مرارًا، لذلك يرسل Phaseo الحركة أولًا إلى مزوّدين آخرين (المسارات المتأثرة: {count}).",
 			"routingHealthRecovering": "قيد الاستعادة",
-			"routingHealthRecoveringDescription": "تتحقق حالة التوجيه من الاستعادة (أزواج المسارات في حالة نصف مفتوحة: {count}).",
+			"routingHealthRecoveringDescription": "يسمح Phaseo بمرور بعض الطلبات للتحقق من أن هذا المزوّد يعمل مجددًا (المسارات: {count}).",
+			"routingHealthAutomatic": "يحدث هذا تلقائيًا ويزول بمجرد نجاح الطلبات مجددًا. وهو منفصل عن أيقونة الحالة التي تسبقه، والتي يحددها Phaseo يدويًا.",
+			"liveRouting": "التوجيه المباشر",
+			"liveRoutingStatus": "التوجيه المباشر: {status}",
 			"processing": "المعالجة",
 			"dataCenters": "مراكز البيانات",
 			"unknown": "غير معروف",
@@ -1489,6 +1482,7 @@
 			"chartLabel": "توافر النموذج بالساعة خلال آخر {hours} ساعة. التوافر: {uptime}. الطلبات المسجلة: {count}.",
 			"leastStableProviderLabel": "بدون Phaseo Routing",
 			"tooltipUptime": "مدة التشغيل:",
+			"tooltipFailedRequests": "{count, plural, =0 {لا توجد طلبات فاشلة} other {الطلبات الفاشلة: {failed, number} من #}}",
 			"tooltipWorstProvider": "بدون Phaseo Routing:",
 			"hourlyAverage": "آخر 24 ساعة · المتوسط لكل ساعة",
 			"routingChartLabel": "وقت تشغيل النموذج لكل ساعة خلال آخر 24 ساعة. Phaseo Routing: {uptime}.{comparison}",
@@ -1623,8 +1617,10 @@
 			"viewLicense": "عرض الترخيص"
 		},
 		"performance": {
-			"noTelemetry": "لا توجد بيانات قياس عن Gateway خلال آخر 7 أيام",
-			"telemetryHint": "ستظهر الرسوم بالساعة عند معالجة هذا النموذج لحركة Gateway في الموقع المحدد.",
+			"noTelemetry": "لا توجد طلبات خلال آخر 7 أيام",
+			"telemetryHint": "ستظهر الرسوم البيانية بعد أن يخدم هذا النموذج طلبات عبر Phaseo.",
+			"noFilteredTelemetry": "لا توجد حركة كافية في {location} للنشر",
+			"filteredTelemetryHint": "لا تظهر رسوم الموقع إلا بعد أن يتلقى عددًا كافيًا من الطلبات بحيث لا يمكن تمييز حركة أي عميل بمفرده. اختر كل المواقع لرؤية جميع الطلبات.",
 			"filterByLocation": "تصفية الأداء حسب موقع API",
 			"providerPerformance": "أداء المزوّد",
 			"last24Hours": "آخر 24 ساعة",
@@ -2657,7 +2653,7 @@
 		"differencesOnly": "الاختلافات فقط",
 		"previous": "السابق",
 		"next": "التالي",
-		"modelsRange": "النماذج {from}–{to} من {total}",
+		"modelsRange": "{count, plural, =1 {النموذج {from} من {total}} other {النماذج {from}–{to} من {total}}}",
 		"phoneBestNote": "القيمة المُبرزة هي الأفضل بين كل النماذج المحددة، بما فيها النماذج في الصفحة الأخرى.",
 		"notFound": "{count, plural, zero {لم يُعثر على أي نموذج من الرابط:} one {لم يُعثر على نموذج واحد من الرابط:} two {لم يُعثر على نموذجين من الرابط:} few {لم يُعثر على # نماذج من الرابط:} many {لم يُعثر على # نموذجًا من الرابط:} other {لم يُعثر على # نموذج من الرابط:}}",
 		"atAGlance": "لمحة سريعة",
@@ -2710,7 +2706,8 @@
 		"latency": "زمن الاستجابة p50",
 		"throughput": "الإنتاجية p50",
 		"requests24h": "الطلبات، آخر 24 ساعة",
-		"noTraffic": "لا توجد حركة بعد",
+		"noRecentTraffic": "لا توجد حركة في آخر 5 أيام",
+		"noRequests24h": "لا شيء في آخر 24 ساعة",
 		"window30m": "آخر 30 دقيقة",
 		"window24h": "آخر 24 ساعة",
 		"window5d": "آخر 5 أيام",
@@ -2765,13 +2762,6 @@
 		"perMonth": "شهريًا",
 		"calculatorNote": "تستخدم المسار والمستوى المختارين أسفل كل نموذج على مدى 30 يومًا. يُحتسب الإدخال المخزّن مؤقتًا بسعر قراءة ذاكرة التخزين المؤقت.",
 		"providers": "المزوّدون",
-		"providersSub": "المسارات التي يوفّرها Phaseo اليوم، بأسعار المستوى القياسي لكل 1M رمز",
-		"provider": "المزوّد",
-		"tiers": "المستويات",
-		"providerPriceNote": "أسعار المستوى القياسي. الصف الأول هو أرخص مسار؛ اختر مسارًا آخر أسفل اسم النموذج في الأعلى.",
-		"noRoutesFor": "لا يوجّه Phaseo النموذج {name} حاليًا.",
-		"otherListings": "مُدرج أيضًا ولا يوجّهه Phaseo: {count, plural, zero {لا مزوّدين} one {مزوّد واحد} two {مزوّدان} few {# مزوّدين} many {# مزوّدًا} other {# مزوّد}}",
-		"otherListingsNote": "للاطلاع فقط: قوائم البوابات الأخرى والمسارات التي أوقفها Phaseo أو عطّلها.",
 		"benchmarks": "المعايير",
 		"benchmarksSub": "لا يظهر صف إلا للنتائج التي يُبلغ عنها نموذجان أو أكثر من النماذج المحددة",
 		"benchmarksSubSingle": "كل نتائج المعايير لهذا النموذج",
@@ -2796,7 +2786,7 @@
 		"sharedBenchmarks": "المعايير المشتركة",
 		"singleBenchmarks": "{count, plural, zero {لا توجد معايير أبلغ عنها نموذج واحد فقط} one {معيار واحد أبلغ عنه نموذج واحد فقط} two {معياران أبلغ عنهما نموذج واحد فقط} few {# معايير أبلغ عنها نموذج واحد فقط} many {# معيارًا أبلغ عنها نموذج واحد فقط} other {# معيار أبلغ عنها نموذج واحد فقط}}",
 		"singleBenchmarksLabel": "معايير أبلغ عنها نموذج واحد فقط",
-		"benchmarkSources": "تأتي النتائج المُبلّغ عنها من المختبرات من مواد الإطلاق الخاصة بكل مختبر، وقد تستخدم إعدادات مختلفة. وتأتي النتائج المستقلة من جهات تقييم خارجية.",
+		"benchmarkSources": "تأتي النتائج المُبلّغ عنها من المختبرات من مواد الإطلاق الخاصة بكل مختبر، وقد تستخدم إعدادات مختلفة، لذا لا يُميَّز أي منها بأنه الأفضل. وتأتي النتائج المستقلة من جهات تقييم خارجية.",
 		"emptyTitle": "مقارنة نماذج الذكاء الاصطناعي",
 		"emptyDescription": "الأسعار والحدود والميزات والسرعة المباشرة على Phaseo والمعايير، جنبًا إلى جنب.",
 		"pickFirst": "اختر نموذجًا",
@@ -2807,10 +2797,6 @@
 				"title": "النماذج الرائدة الحالية",
 				"description": "أحدث النماذج الأعلى أداءً من ثلاثة مختبرات"
 			},
-			"pairing": {
-				"title": "GPT 5 مقابل Claude Sonnet 4.5",
-				"description": "مقارنة تفكّر فيها فرق كثيرة"
-			},
 			"anthropic": {
 				"title": "Opus أم Sonnet؟",
 				"description": "فئتا Anthropic الحاليتان"
@@ -2818,6 +2804,18 @@
 			"openWeights": {
 				"title": "أوزان مفتوحة",
 				"description": "نماذج يمكنك تنزيلها وتشغيلها بنفسك"
+			},
+			"video": {
+				"title": "نماذج الفيديو",
+				"description": "أسعار كل ثانية حسب الدقة والوضع"
+			},
+			"image": {
+				"title": "نماذج الصور",
+				"description": "أسعار كل صورة حسب الحجم والجودة"
+			},
+			"decisions": {
+				"title": "نماذج القرار",
+				"description": "نماذج تُرجع قرارًا وليس نصًا"
 			}
 		},
 		"badgeOnPhaseo": "على Phaseo",
@@ -2838,18 +2836,15 @@
 		"pricedOn": "السعر على",
 		"pricingSubRoute": "الأسعار على المسار والمستوى المختارين أسفل كل نموذج",
 		"perMillionTokens": "/ مليون رمز",
-		"bandPrice": "{condition}: {price}",
 		"moreMeters": "{count, plural, zero {لا عدّادات إضافية} one {عرض عدّاد إضافي واحد} two {عرض عدّادين إضافيين} few {عرض # عدّادات إضافية} many {عرض # عدّادًا إضافيًا} other {عرض # عدّاد إضافي}}",
 		"fewerMeters": "عرض عدّادات أقل",
 		"otherCategory": "أخرى",
 		"activity": "النشاط",
 		"activitySub": "الرموز المرسلة عبر Phaseo يوميًا خلال آخر 30 يومًا",
-		"activityTotal": "رمز، آخر 30 يومًا",
 		"activityInput": "الإدخال",
 		"activityOutput": "الإخراج",
 		"activityReasoning": "الاستدلال",
 		"activityRequests": "الطلبات",
-		"activityDay": "{date}: {tokens} رمز، {count, plural, zero {لا طلبات} one {طلب واحد} two {طلبان} few {{requests} طلبات} many {{requests} طلبًا} other {{requests} طلب}}",
 		"activityChart": "الرموز اليومية لـ {name} عبر Phaseo، آخر 30 يومًا",
 		"activityNone": "لا توجد حركة عبر Phaseo خلال آخر 30 يومًا",
 		"activityNoneAll": "لم تحصل أي من هذه النماذج على حركة عبر Phaseo خلال آخر 30 يومًا.",
@@ -2858,7 +2853,46 @@
 		"peerModels": "{count, plural, one {نموذج واحد مصنّف} two {نموذجان مصنّفان} few {# نماذج مصنّفة} many {# نموذجًا مصنّفًا} other {# نموذج مصنّف}}",
 		"headToHead": "مقارنات مباشرة",
 		"pairTitle": "{a} مقابل {b}",
-		"activityRequestsTotal": "طلب، آخر 30 يومًا"
+		"selected": "محدد",
+		"pickerReturnsOther": "يُرجع {types}، لذا لا يمكن مقارنته بتحديدك",
+		"pickerNoOutputTypes": "أنواع المخرجات غير منشورة، لذا لا يمكن مطابقته مع تحديدك",
+		"pickerHiddenIncompatible": "{count, plural, zero {لا توجد نماذج مخفية.} one {نموذج واحد يُرجع نوعًا مختلفًا مخفي.} two {نموذجان يُرجعان أنواعًا مختلفة مخفيان.} few {# نماذج تُرجع أنواعًا مختلفة مخفية.} many {# نموذجًا يُرجع أنواعًا مختلفة مخفي.} other {# نموذج يُرجع أنواعًا مختلفة مخفي.}} ابحث للعثور عليها.",
+		"activityTokens30d": "الرموز، آخر 30 يومًا",
+		"activityPerDay": "يوميًا",
+		"activityNoTokens": "طلبات فقط، لم تُسجَّل أي رموز",
+		"moreMetersCount": "{count, plural, zero {لا عدّادات إضافية} one {عدّاد إضافي واحد} two {عدّادان إضافيان} few {# عدّادات إضافية} many {# عدّادًا إضافيًا} other {# عدّاد إضافي}}",
+		"priceFrom": "من {price}",
+		"conditionFields": {
+			"input": "الإدخال",
+			"duration": "المدة",
+			"inputVideo": "فيديو الإدخال",
+			"resolution": "الدقة",
+			"quality": "الجودة",
+			"aspectRatio": "نسبة العرض إلى الارتفاع",
+			"audio": "الصوت",
+			"mode": "الوضع",
+			"draft": "مسودة",
+			"cacheDuration": "مدة التخزين المؤقت",
+			"region": "المنطقة",
+			"serviceTier": "مستوى الخدمة"
+		},
+		"conditionIs": "{field}: {value}",
+		"conditionIsNot": "{field}: غير {value}",
+		"conditionOn": "مفعّل",
+		"conditionOff": "غير مفعّل",
+		"showAllPrices": "عرض كل الأسعار ({count})",
+		"showFewerPrices": "عرض أسعار أقل",
+		"showAllProviders": "عرض كل المزوّدين ({count})",
+		"showFewerProviders": "عرض مزوّدين أقل",
+		"moreCount": "+{count}",
+		"routePrice": "{input} إدخال · {output} إخراج",
+		"providersAcrossSub": "أين يعمل كل نموذج على Phaseo، مع الأسعار القياسية لكل مليون رمز. يظهر أولًا المزوّدون الذين يقدّمون عددًا أكبر من هذه النماذج.",
+		"providersAcrossSubMeters": "أين يعمل كل نموذج على Phaseo، مع السعر القياسي لكل مسار. يظهر أولًا المزوّدون الذين يقدّمون عددًا أكبر من هذه النماذج.",
+		"providersAcrossNote": "لحساب الصفحة كلها على أحد هؤلاء المزوّدين، اختره أسفل اسم النموذج في الأعلى.",
+		"routeContext": "سياق {value}",
+		"otherListingsLabel": "مُدرج أيضًا، بلا مسار عبر Phaseo",
+		"noRoutesAny": "لا يوجّه Phaseo أيًّا من هذه النماذج اليوم.",
+		"comparedSections": "تشمل كل مقارنة"
 	},
 	"countries": {
 		"title": "الذكاء الاصطناعي حسب الدولة",
@@ -3131,9 +3165,7 @@
 		"providerStatus": {
 			"active": "نشط",
 			"coming_soon": "قريبًا",
-			"deranked_lvl1": "خُفّض تصنيفه L1",
-			"deranked_lvl2": "خُفّض تصنيفه L2",
-			"deranked_lvl3": "خُفّض تصنيفه L3",
+			"deranked": "أولوية أقل",
 			"disabled": "معطّل",
 			"inactive": "غير نشط",
 			"internal_testing": "اختبار داخلي",

@@ -35,6 +35,24 @@ jobs:
             exit 1
           fi
 
+      # author_association MEMBER is anyone in the organisation, including people who can only read. The agent below
+      # runs with an id-token exchanged for a token that can write, so only people who can push here may start it.
+      - name: Require write access for the commenter
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMENTER: ${{ github.event.comment.user.login }}
+        run: |
+          set -euo pipefail
+          permission="$(gh api "repos/${GITHUB_REPOSITORY}/collaborators/${COMMENTER}/permission" --jq '.permission')"
+          case "${permission}" in
+            admin|maintain|write) ;;
+            *)
+              echo "::error::@${COMMENTER} has ${permission:-no} access to ${GITHUB_REPOSITORY}; /oc needs write access."
+              exit 1
+              ;;
+          esac
+
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:

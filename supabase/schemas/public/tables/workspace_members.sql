@@ -50,6 +50,13 @@ CREATE TRIGGER zz_workspace_members_refresh_effective
   FOR EACH ROW
   EXECUTE FUNCTION public.refresh_effective_entitlements_after_directory_change();
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."workspace_members"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "team_members_insert_admin" ON "public"."workspace_members"
   FOR INSERT
   TO "authenticated"
@@ -60,7 +67,11 @@ CREATE POLICY "team_members_select_own_team" ON "public"."workspace_members"
   TO "authenticated"
   USING (public.is_workspace_member(workspace_id));
 
-GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."workspace_members" TO "anon", "authenticated", "service_role";
+GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."workspace_members" TO "service_role";
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."workspace_members" TO "anon";
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."workspace_members" TO "authenticated";
 
 CREATE POLICY "team_members_update_admin" ON "public"."workspace_members"
   FOR UPDATE

@@ -1,6 +1,6 @@
 import { usePersistedState } from "./persistedState";
 
-/** How the model button shows the reasoning level: its word, dots, or both, as T3 Code offers a word or bars. Kept on this device. */
+/** How the model button shows the reasoning level: its word, dots, or both. Kept on this device. */
 export type EffortDisplay = "word" | "dots" | "both";
 export const effortDisplayKey = "phaseo.desktop.effortDisplay";
 export const effortDisplays: readonly EffortDisplay[] = ["word", "dots", "both"];

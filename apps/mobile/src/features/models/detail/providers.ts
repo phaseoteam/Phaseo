@@ -57,7 +57,7 @@ export type ListingCategory = "routable" | "preview" | "inactive" | "external";
 
 export function listingCategory(provider: ProviderPricing, status: CanonicalGatewayStatus): ListingCategory {
   if (normalizeGatewayStatusValue(provider.provider.status) === "external" || status === "external") return "external";
-  if (["active", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3"].includes(status)) return "routable";
+  if (["active", "deranked"].includes(status)) return "routable";
   if (["coming_soon", "internal_testing"].includes(status)) return "preview";
   return "inactive";
 }
@@ -150,9 +150,8 @@ const positive = (value: number | null | undefined) => (value != null && Number.
 
 function statusMultiplier(status: CanonicalGatewayStatus) {
   if (status === "active") return 1;
-  if (status === "deranked_lvl1") return 1e-3;
-  if (status === "deranked_lvl2") return 1e-6;
-  if (status === "deranked_lvl3") return 1e-9;
+  // The gateway tries a deranked route only after every other healthy provider.
+  if (status === "deranked") return 1e-6;
   return 0;
 }
 

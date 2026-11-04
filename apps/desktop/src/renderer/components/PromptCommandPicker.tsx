@@ -7,6 +7,7 @@ import type { NativeAction } from "../../shared/nativeActions";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Plus, Search, X, FileText, ChevronRight, Blocks, Terminal, Paperclip, Upload, SquarePen } from "lucide-react";
 import type { PromptCommand, PromptCommandCatalog, PromptCommandPreview } from "../../shared/promptCommands";
+import { MarkdownTextarea } from "./MarkdownTextarea";
 export function PromptCommandPicker({ projectId, taskId, native, onClose, onInsert, inline = false, composerQuery = "", composerDriven = false, onAttach, onImport, onCreate }: { onImport?: () => void; onCreate?: () => void; onAttach?: () => void; inline?: boolean; composerQuery?: string; composerDriven?: boolean; projectId?: string; taskId: string; native?: "opencode" | "pi" | "claude" | "codex" | "phaseo"; onClose: () => void; onInsert: (text: string, action?: NativeAction, prompt?: McpPromptPreview) => void | Promise<void> }) {
  const [tab, setTab] = useState<"saved" | "native" | "mcp">("saved");
  const api = window.phaseoDesktop?.workspace; const dialog = useRef<HTMLDialogElement>(null); const operation = useRef(0); const pending = useRef(false);
@@ -74,7 +75,7 @@ export function PromptCommandPicker({ projectId, taskId, native, onClose, onInse
    <label>Name<input aria-label="Command name" maxLength={64} required readOnly={hash !== "new"} value={name} onChange={event => setName(event.target.value)} placeholder="review" /></label>
    <label>Scope<Select label="Command scope" disabled={hash !== "new" || busy} value={scope} onValueChange={value => setScope(value as PromptCommand["scope"])} options={[{ value: "global", label: "All chats" }, ...(projectId ? [{ value: "project", label: "This project" }] : [])]} /></label>
    <label>Description<input aria-label="Command description" maxLength={240} value={description} onChange={event => setDescription(event.target.value)} /></label>
-   <label>Template<textarea aria-label="Command template" required maxLength={16384} value={template} onChange={event => setTemplate(event.target.value)} placeholder="Review $ARGUMENTS and explain the findings." /></label>
+   <label>Template<MarkdownTextarea aria-label="Command template" required maxLength={16384} value={template} onChange={event => setTemplate(event.target.value)} placeholder="Review $ARGUMENTS and explain the findings." /></label>
    <small>Use $ARGUMENTS or $1, $2 for arguments.</small><div className="prompt-command-actions"><button type="button" disabled={busy} onClick={() => setEditing(false)}>Cancel</button><button type="submit" className="task-primary" disabled={busy || !name || !template.trim()}>{busy ? "Saving…" : "Save command"}</button></div>
   </form> : preview ? <div className="prompt-command-preview">
    <p className="task-muted">{preview.scope === "project" ? "This project · .phaseo/commands" : "All chats · commands"}/{preview.name}.md</p>

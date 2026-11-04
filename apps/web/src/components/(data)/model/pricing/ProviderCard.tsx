@@ -83,6 +83,7 @@ import {
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import type { PricingRuntimeStats as ProviderRuntimeStats } from "./pricingRuntimeStats";
 import type { ProviderRoutingStatus } from "@/lib/fetchers/models/getModelProviderRoutingHealth";
+import { ProviderLiveRoutingIndicator, useLiveRouting } from "./ProviderLiveRouting";
 import { Logo } from "@/components/Logo";
 import ProviderInfoHoverIcons from "@/components/(data)/model/ProviderInfoHoverIcons";
 import PricingPlanSelect from "@/components/(data)/model/pricing/PricingPlanSelect";
@@ -865,31 +866,6 @@ function renderSecondaryTierSummary(
 			</div>
 		</div>
 	);
-}
-
-function getRoutingHealthSummary(
-	routingStatus: ProviderRoutingStatus | null | undefined,
-	labels: {
-		limited: string;
-		limitedDescription: (count: number) => string;
-		recovering: string;
-		recoveringDescription: (count: number) => string;
-	},
-): { label: string; description: string } | null {
-	if (!routingStatus) return null;
-	if (routingStatus.deranked) {
-		return {
-			label: labels.limited,
-			description: labels.limitedDescription(routingStatus.openCount),
-		};
-	}
-	if (routingStatus.recovering) {
-		return {
-			label: labels.recovering,
-			description: labels.recoveringDescription(routingStatus.halfOpenCount),
-		};
-	}
-	return null;
 }
 
 /** "131,072 tokens": token limits in full in the provider details, in the reader's language. */
@@ -1756,23 +1732,11 @@ export const PROVIDER_STATUS_META: Record<
 		iconClass: "text-sky-600",
 		description: "Visible to admins only while this provider/model capability is being tested.",
 	},
-	deranked_lvl1: {
-		label: "Deranked L1",
-		icon: AlertTriangle,
-		iconClass: "text-amber-500",
-		description: "Routable, but slightly deprioritized by routing health.",
-	},
-	deranked_lvl2: {
-		label: "Deranked L2",
+	deranked: {
+		label: "Lower priority",
 		icon: AlertTriangle,
 		iconClass: "text-amber-600",
-		description: "Routable, but currently deprioritized by routing health.",
-	},
-	deranked_lvl3: {
-		label: "Deranked L3",
-		icon: AlertTriangle,
-		iconClass: "text-red-500",
-		description: "Routable, but heavily deprioritized by routing health.",
+		description: "Set by Phaseo. Used only as a backup when the other providers fail.",
 	},
 	inactive: {
 		label: "Not Active",
@@ -2144,20 +2108,13 @@ export default function ProviderCard({
 		coming_soon: { label: "statuses.comingSoon", description: "statusDescriptions.comingSoon" },
 		external: { label: "statuses.external", description: "statusDescriptions.external" },
 		internal_testing: { label: "statuses.internalTesting", description: "statusDescriptions.internalTesting" },
-		deranked_lvl1: { label: "statuses.rateLimited", description: "statusDescriptions.rateLimited" },
-		deranked_lvl2: { label: "statuses.rateLimited", description: "statusDescriptions.rateLimited" },
-		deranked_lvl3: { label: "statuses.rateLimited", description: "statusDescriptions.rateLimited" },
+		deranked: { label: "statuses.rateLimited", description: "statusDescriptions.rateLimited" },
 		inactive: { label: "statuses.inactive", description: "statusDescriptions.inactive" },
 		disabled: { label: "statuses.disabled", description: "statusDescriptions.disabled" },
 		not_listed: { label: "statuses.inactive", description: "statusDescriptions.inactive" },
 	};
 	const statusLabel = tProvider(statusTranslationKeys[statusKey].label as never);
-	const routingHealthSummary = getRoutingHealthSummary(routingStatus, {
-		limited: tSections("routingHealthLimited"),
-		limitedDescription: (count) => tSections("routingHealthLimitedDescription", { count }),
-		recovering: tSections("routingHealthRecovering"),
-		recoveringDescription: (count) => tSections("routingHealthRecoveringDescription", { count }),
-	});
+	const liveRouting = useLiveRouting(routingStatus, statusKey);
 	const statusDescription = tProvider(statusTranslationKeys[statusKey].description as never);
 	const statusDetail = statusKey === "active" && leavingSoonProviderModel?.effective_to
 		? `${statusDescription} ${tProvider("availabilityEndsOn", { date: formatLeavingDate(leavingSoonProviderModel.effective_to, format.calendarDate) })}`
@@ -3380,12 +3337,6 @@ export default function ProviderCard({
 										<ProviderLifecycleDetails
 											providerModels={tableProviderModelsInScope}
 										/>
-										{routingHealthSummary ? (
-											<div className="mt-2 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
-												<p className="font-semibold">{routingHealthSummary.label}</p>
-												<p>{routingHealthSummary.description}</p>
-											</div>
-										) : null}
 										<div className="mt-2 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
 											<Link
 								href={getLocalizedDocsHref(locale, PROVIDER_STATUSES_DOCS_HREF)}
@@ -3398,6 +3349,12 @@ export default function ProviderCard({
 										</div>
 									</HoverCardContent>
 								</HoverCard>
+								<ProviderLiveRoutingIndicator
+									routingStatus={routingStatus}
+									statusKey={tableStatusKey}
+									docsHref={getLocalizedDocsHref(locale, PROVIDER_STATUSES_DOCS_HREF)}
+									docsLabel={tProvider("learnMoreProviderStatuses")}
+								/>
 								{privacyIgnoredReasons?.length || workspacePolicyBlockedReasons?.length ? (
 									<HoverCard openDelay={120} closeDelay={80}>
 										<HoverCardTrigger asChild>
@@ -3614,12 +3571,6 @@ export default function ProviderCard({
 											<ProviderLifecycleDetails
 												providerModels={providerModelsInScope}
 											/>
-											{routingHealthSummary ? (
-												<div className="mt-2 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
-													<p className="font-semibold">{routingHealthSummary.label}</p>
-													<p>{routingHealthSummary.description}</p>
-												</div>
-											) : null}
 											<div className="mt-2 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
 												<Link
 								href={getLocalizedDocsHref(locale, PROVIDER_STATUSES_DOCS_HREF)}
@@ -3632,6 +3583,13 @@ export default function ProviderCard({
 											</div>
 										</HoverCardContent>
 									</HoverCard>
+									<ProviderLiveRoutingIndicator
+										routingStatus={routingStatus}
+										statusKey={statusKey}
+										docsHref={getLocalizedDocsHref(locale, PROVIDER_STATUSES_DOCS_HREF)}
+										docsLabel={tProvider("learnMoreProviderStatuses")}
+										size="sm"
+									/>
 								</div>
 								<ProviderInspectorSheetDescription className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px]">
 									<button
@@ -3895,9 +3853,9 @@ export default function ProviderCard({
 								onPointHover={handlePerformancePointHover}
 								onPointLeave={handlePerformancePointLeave}
 							/>
-								{routingHealthSummary ? (
-									<Callout tone="warning" title={routingHealthSummary.label}>
-										{routingHealthSummary.description}
+								{liveRouting ? (
+									<Callout tone={liveRouting.state === "limited" ? "warning" : "info"} title={liveRouting.label}>
+										{liveRouting.description} {liveRouting.automatic}
 									</Callout>
 								) : null}
 							</section>
@@ -3921,6 +3879,15 @@ export default function ProviderCard({
 												<span>{statusLabel}</span>
 											</div>
 									</div>
+									{liveRouting ? (
+										<div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4">
+											<div className="text-[11px] text-muted-foreground">{tSections("liveRouting")}</div>
+											<div className="flex items-center justify-end gap-2 text-sm font-medium text-foreground">
+												<liveRouting.icon className={cn("h-3.5 w-3.5", liveRouting.className)} aria-hidden />
+												<span>{liveRouting.label}</span>
+											</div>
+										</div>
+									) : null}
 									<div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
 										<div className="text-[11px] text-muted-foreground">{tSections("providerModelIds")}</div>
 										<div className="flex max-w-[18rem] flex-wrap justify-end gap-1.5">

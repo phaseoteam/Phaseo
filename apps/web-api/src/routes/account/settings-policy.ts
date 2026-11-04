@@ -22,7 +22,7 @@ import {
 } from "./workspace-routing-settings";
 import { successorOverviewFromRows } from "./successor-overview";
 
-const GUARDRAIL_COLUMNS = "id,workspace_id,enabled,name,description,privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_free_may_publish_prompts,privacy_enable_input_output_logging,privacy_zdr_only,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed,model_restriction_mode,allowed_api_model_ids,prompt_injection_enabled,prompt_injection_action,sensitive_info_enabled,sensitive_info_default_action,sensitive_info_rules,created_at,updated_at";
+const GUARDRAIL_COLUMNS = "id,workspace_id,kind,is_workspace_baseline,enabled,name,description,privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_free_may_publish_prompts,privacy_enable_input_output_logging,privacy_zdr_only,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed,model_restriction_mode,allowed_api_model_ids,prompt_injection_enabled,prompt_injection_action,sensitive_info_enabled,sensitive_info_default_action,sensitive_info_rules,created_at,updated_at";
 
 function accountPolicyFromRow(row: any) {
 	const mode = (value: unknown) => value === "allowlist" || value === "blocklist" ? value : "none";
@@ -39,14 +39,28 @@ function accountPolicyFromRow(row: any) {
 	};
 }
 
+const REFERENCE_PAGE_SIZE = 500;
+
+/** Reads every page of an ordered query; PostgREST caps one response without reporting that rows were left out. */
+async function readAllPages<T>(page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>): Promise<{ data: T[]; error: unknown }> {
+	const rows: T[] = [];
+	for (let offset = 0; ; offset += REFERENCE_PAGE_SIZE) {
+		const result = await page(offset, offset + REFERENCE_PAGE_SIZE - 1);
+		if (result.error) return { data: rows, error: result.error };
+		rows.push(...(result.data ?? []));
+		if ((result.data?.length ?? 0) < REFERENCE_PAGE_SIZE) return { data: rows, error: null };
+	}
+}
+
 async function loadGuardrailReference(context: AccountWorkspaceContext) {
 	const [teamResult, keysResult, membersResult, providersResult, modelsResult] = await Promise.all([
 		context.client.from("workspaces").select("id,name").eq("id", context.workspaceId).maybeSingle(),
-		context.client.from("keys").select("id,name,prefix,status,created_at")
+		readAllPages((from, to) => context.client.from("keys").select("id,name,prefix,status,created_at,created_by,oauth_user_id")
 			.eq("workspace_id", context.workspaceId).neq("status", "deleted")
-			.neq("name", "__chat_route_managed_key__").neq("name", SLACK_AGENT_MANAGED_KEY_NAME).order("created_at", { ascending: false }),
-		context.client.from("workspace_members").select("user_id,role,users(display_name)")
-			.eq("workspace_id", context.workspaceId),
+			.neq("name", "__chat_route_managed_key__").neq("name", SLACK_AGENT_MANAGED_KEY_NAME)
+			.order("created_at", { ascending: false }).order("id").range(from, to)),
+		readAllPages((from, to) => context.client.from("workspace_members").select("user_id,role,users(display_name)")
+			.eq("workspace_id", context.workspaceId).order("user_id").range(from, to)),
 		context.client.from("v2_providers")
 			.select("api_provider_id:provider_slug,api_provider_name:name,provider_family_id:provider_family_slug,offer_label,offer_scope,zero_data_retention,data_policy_tier,data_policy_confidence")
 			.eq("routable", true)
@@ -72,7 +86,7 @@ async function loadGuardrailReference(context: AccountWorkspaceContext) {
 				.select("provider_model_id,capability_id,status,metadata")
 				.in("provider_model_id", batch)
 				.or("metadata->data_policy.not.is.null,capability_id.in.(batch,files.upload,files.list,files.retrieve)")
-				.in("status", ["active", "deranked", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3"])
+				.in("status", ["active", "degraded"])
 				.order("provider_model_id").order("capability_id")
 				.range(offset, offset + 499);
 			if (result.error) throw new Error("settings_unavailable");
@@ -115,7 +129,8 @@ async function loadGuardrailReference(context: AccountWorkspaceContext) {
 				capabilities: capabilitiesByProviderModel.get(String((row as any).provider_model_id)) ?? [],
 			};
 		}),
-		keys: (keysResult.data ?? []).map((key) => ({ id: key.id, name: key.name, prefix: key.prefix, status: key.status })),
+		// The gateway applies the member guardrails of this user to the key, so the assignments view shows them as inherited.
+		keys: (keysResult.data ?? []).map((key) => ({ id: key.id, name: key.name, prefix: key.prefix, status: key.status, principalUserId: key.oauth_user_id ?? key.created_by ?? null })),
 		members: (membersResult.data ?? []).map((member: any) => ({
 			id: member.user_id,
 			name: member.users?.display_name ?? "Workspace member",
@@ -147,16 +162,38 @@ accountSettingsPolicyRouter.get("/chat/effective-policy", async (c) => {
 	if (!workspaceId) return c.json({ guardrails: [], workspace: null, workspaceId: null }, 200, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
-	const [workspaceResult, assignmentsResult] = await Promise.all([
-		context.client.from("workspace_settings").select("provider_restriction_mode,provider_restriction_provider_ids,model_restriction_mode,model_restriction_model_ids").eq("workspace_id", workspaceId).maybeSingle(),
-		context.client.from("workspace_member_guardrails").select("guardrail_id").eq("workspace_id", workspaceId).eq("user_id", context.user.id),
-	]);
-	if (workspaceResult.error || assignmentsResult.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	const guardrailIds = (assignmentsResult.data ?? []).map((row) => String(row.guardrail_id ?? "")).filter(Boolean);
-	const guardrailsResult = guardrailIds.length
-		? await context.client.from("workspace_guardrails").select("id,name,enabled,provider_restriction_mode,provider_restriction_provider_ids,model_restriction_mode,allowed_api_model_ids").eq("workspace_id", workspaceId).eq("enabled", true).in("id", guardrailIds)
-		: { data: [], error: null };
-	if (guardrailsResult.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	// Chat requests use the member's managed key, which has no department of its own, so the
+	// gateway applies the workspace, the member's departments and the member
+	// (resolve_member_guardrails), plus anything assigned to that key directly.
+	let guardrailIds: string[];
+	let workspaceResult;
+	try {
+		const [workspaceRow, memberRows, chatKeyRow] = await Promise.all([
+			context.client.from("workspace_settings").select("provider_restriction_mode,provider_restriction_provider_ids,model_restriction_mode,model_restriction_model_ids").eq("workspace_id", workspaceId).maybeSingle(),
+			readAllPages<{ guardrail_id: string | null }>((from, to) => context.client
+				.rpc("resolve_member_guardrails", { p_workspace_id: workspaceId, p_user_id: context.user.id })
+				.order("guardrail_id").order("source_type").order("source_id").range(from, to)),
+			context.client.from("keys").select("id").eq("workspace_id", workspaceId).eq("created_by", context.user.id).eq("name", "__chat_route_managed_key__").maybeSingle(),
+		]);
+		if (workspaceRow.error || memberRows.error || chatKeyRow.error) throw new Error("settings_unavailable");
+		workspaceResult = workspaceRow;
+		const keyRows = chatKeyRow.data?.id
+			? await readAllPages<{ guardrail_id: string | null }>((from, to) => context.client.from("workspace_guardrail_assignments")
+				.select("guardrail_id").eq("workspace_id", workspaceId).eq("target_type", "key").eq("target_id", chatKeyRow.data!.id)
+				.order("guardrail_id").range(from, to))
+			: { data: [], error: null };
+		if (keyRows.error) throw new Error("settings_unavailable");
+		guardrailIds = [...new Set([...memberRows.data, ...keyRows.data].map((row) => String(row.guardrail_id ?? "")).filter(Boolean))];
+	} catch {
+		return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	}
+	const guardrailRows: unknown[] = [];
+	for (let index = 0; index < guardrailIds.length; index += 200) {
+		const batch = await context.client.from("workspace_guardrails").select("id,name,enabled,provider_restriction_mode,provider_restriction_provider_ids,model_restriction_mode,allowed_api_model_ids").eq("workspace_id", workspaceId).eq("enabled", true).in("id", guardrailIds.slice(index, index + 200));
+		if (batch.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+		guardrailRows.push(...(batch.data ?? []));
+	}
+	const guardrailsResult = { data: guardrailRows };
 	const normalize = (row: any, modelIdsKey = "model_restriction_model_ids") => ({
 		provider: restriction(row?.provider_restriction_mode, row?.provider_restriction_provider_ids),
 		model: restriction(row?.model_restriction_mode, row?.[modelIdsKey]),
@@ -710,38 +747,98 @@ accountSettingsPolicyRouter.delete("/presets/:presetId", async (c) => {
 	const cache = await purgePresetCache(c, id); return c.json({ success: true, cache }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
+type GuardrailAssignmentRow = { guardrail_id: string | null; target_type: string | null; target_id: string | null };
+
+/** Every assignment of these guardrails (workspace_guardrail_assignments: workspace, department, member and key levels). */
+function readGuardrailAssignments(context: AccountWorkspaceContext, workspaceId: string, guardrailIds: string[]) {
+	return readAllPages<GuardrailAssignmentRow>((from, to) => context.client.from("workspace_guardrail_assignments")
+		.select("guardrail_id,target_type,target_id").eq("workspace_id", workspaceId).in("guardrail_id", guardrailIds)
+		.order("guardrail_id").order("target_type").order("target_id").range(from, to));
+}
+
+/** Target ids per guardrail for each level, and the guardrails assigned to the whole workspace. */
+function groupGuardrailAssignments(rows: GuardrailAssignmentRow[]) {
+	const maps = { department: {} as Record<string, string[]>, key: {} as Record<string, string[]>, member: {} as Record<string, string[]> };
+	const workspace: string[] = [];
+	for (const row of rows) {
+		if (!row.guardrail_id) continue;
+		if (row.target_type === "workspace") {
+			workspace.push(row.guardrail_id);
+			continue;
+		}
+		if (!row.target_id || !(row.target_type === "department" || row.target_type === "key" || row.target_type === "member")) continue;
+		const map = maps[row.target_type];
+		(map[row.guardrail_id] ??= []).push(row.target_id);
+	}
+	return { ...maps, workspace };
+}
+
+type DepartmentScopeRow = { target_type: string | null; target_id: string | null; department_id: string | null };
+
+/**
+ * The workspace's departments, and the ones whose guardrails reach each key and member as the gateway
+ * counts them (guardrail_department_scopes), so Settings, Guardrails can show where every guardrail
+ * comes from. Before that function's migration has run, the scopes are empty: department guardrails
+ * still show on the Departments view, just not on the keys and members they reach.
+ */
+async function loadGuardrailDepartments(context: AccountWorkspaceContext, workspaceId: string) {
+	const [departments, scopes] = await Promise.all([
+		readAllPages<{ id: string; name: string | null }>((from, to) => context.client.from("workspace_departments")
+			.select("id,name").eq("workspace_id", workspaceId).order("name").order("id").range(from, to)),
+		readAllPages<DepartmentScopeRow>((from, to) => context.client.rpc("guardrail_department_scopes", { p_workspace_id: workspaceId })
+			.order("target_type").order("target_id").order("department_id").range(from, to)),
+	]);
+	if (departments.error) throw departments.error;
+	const scopesMissing = scopes.error && isMissingRpc(scopes.error, "guardrail_department_scopes");
+	if (scopes.error && !scopesMissing) throw scopes.error;
+	const keyDepartmentIds: Record<string, string[]> = {};
+	const memberDepartmentIds: Record<string, string[]> = {};
+	for (const row of scopesMissing ? [] : scopes.data ?? []) {
+		if (!row.target_id || !row.department_id) continue;
+		const map = row.target_type === "key" ? keyDepartmentIds : row.target_type === "member" ? memberDepartmentIds : null;
+		if (map) (map[row.target_id] ??= []).push(row.department_id);
+	}
+	return {
+		departments: (departments.data ?? []).map((department) => ({ id: department.id, name: department.name?.trim() || department.id })),
+		keyDepartmentIds,
+		memberDepartmentIds,
+	};
+}
+
+/** PostgREST (PGRST202) or Postgres (42883) saying a function does not exist yet. */
+function isMissingRpc(error: unknown, name: string): boolean {
+	const record = (error ?? {}) as { code?: unknown; message?: unknown };
+	const code = String(record.code ?? "").toUpperCase();
+	return (code === "PGRST202" || code === "42883") && String(record.message ?? "").includes(name);
+}
+
 accountSettingsPolicyRouter.get("/guardrails", async (c) => {
 	const workspaceId = c.req.query("workspaceId")?.trim();
-	if (!workspaceId) return c.json({ activeProviderModels: [], guardrailKeyIdsByGuardrailId: {}, guardrailMemberIdsByGuardrailId: {}, guardrails: [], keys: [], members: [], providers: [], workspaceId: null }, 200, PRIVATE_NO_STORE_HEADERS);
+	if (!workspaceId) return c.json({ activeProviderModels: [], departments: [], guardrailDepartmentIdsByGuardrailId: {}, guardrailKeyIdsByGuardrailId: {}, guardrailMemberIdsByGuardrailId: {}, guardrails: [], keyDepartmentIds: {}, keys: [], memberDepartmentIds: {}, members: [], providers: [], workspaceGuardrailIds: [], workspaceId: null }, 200, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	try {
-		const [reference, guardrailsResult] = await Promise.all([
+		const [reference, departments, guardrailsResult] = await Promise.all([
 			loadGuardrailReference(context),
+			loadGuardrailDepartments(context, workspaceId),
 			context.client.from("workspace_guardrails").select(GUARDRAIL_COLUMNS).eq("workspace_id", workspaceId).order("created_at", { ascending: false }),
 		]);
 		if (guardrailsResult.error) throw guardrailsResult.error;
 		const guardrails = guardrailsResult.data ?? [];
 		const ids = guardrails.map((guardrail) => guardrail.id).filter(Boolean);
-		const keyMap = new Map<string, string[]>();
-		const memberMap = new Map<string, string[]>();
-		if (ids.length) {
-			const [keyMappingsResult, memberMappingsResult] = await Promise.all([
-				context.client.from("key_guardrails").select("guardrail_id,key_id").in("guardrail_id", ids),
-				context.client.from("workspace_member_guardrails").select("guardrail_id,user_id").eq("workspace_id", workspaceId).in("guardrail_id", ids),
-			]);
-			if (keyMappingsResult.error) throw keyMappingsResult.error;
-			if (memberMappingsResult.error) throw memberMappingsResult.error;
-			for (const row of keyMappingsResult.data ?? []) {
-				if (!row.guardrail_id || !row.key_id) continue;
-				keyMap.set(row.guardrail_id, [...(keyMap.get(row.guardrail_id) ?? []), row.key_id]);
-			}
-			for (const row of memberMappingsResult.data ?? []) {
-				if (!row.guardrail_id || !row.user_id) continue;
-				memberMap.set(row.guardrail_id, [...(memberMap.get(row.guardrail_id) ?? []), row.user_id]);
-			}
-		}
-		return c.json({ ...reference, guardrailKeyIdsByGuardrailId: Object.fromEntries(keyMap), guardrailMemberIdsByGuardrailId: Object.fromEntries(memberMap), guardrails, workspaceId }, 200, PRIVATE_NO_STORE_HEADERS);
+		const assignments = ids.length ? await readGuardrailAssignments(context, workspaceId, ids) : null;
+		if (assignments?.error) throw assignments.error;
+		const byTarget = groupGuardrailAssignments(assignments?.data ?? []);
+		return c.json({
+			...reference,
+			...departments,
+			guardrailDepartmentIdsByGuardrailId: byTarget.department,
+			guardrailKeyIdsByGuardrailId: byTarget.key,
+			guardrailMemberIdsByGuardrailId: byTarget.member,
+			guardrails,
+			workspaceGuardrailIds: byTarget.workspace,
+			workspaceId,
+		}, 200, PRIVATE_NO_STORE_HEADERS);
 	} catch {
 		return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}
@@ -751,7 +848,7 @@ accountSettingsPolicyRouter.get("/guardrails/editor", async (c) => {
 	const mode = c.req.query("mode") === "edit" ? "edit" : "create";
 	const guardrailId = c.req.query("guardrailId")?.trim();
 	const workspaceId = c.req.query("workspaceId")?.trim();
-	if (!workspaceId) return c.json({ accountPolicy: accountPolicyFromRow(null), activeProviderModels: [], guardrail: null, initialKeyIds: [], initialMemberIds: [], keys: [], members: [], mode, providers: [], teamName: null, workspaceId: null }, 200, PRIVATE_NO_STORE_HEADERS);
+	if (!workspaceId) return c.json({ accountPolicy: accountPolicyFromRow(null), activeProviderModels: [], guardrail: null, initialDepartmentIds: [], initialKeyIds: [], initialMemberIds: [], initialWorkspaceAssigned: false, keys: [], members: [], mode, providers: [], teamName: null, workspaceId: null }, 200, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	try {
@@ -764,19 +861,21 @@ accountSettingsPolicyRouter.get("/guardrails/editor", async (c) => {
 		]);
 		if (guardrailResult.error) throw guardrailResult.error;
 		if (workspacePolicyResult.error) throw workspacePolicyResult.error;
-		let initialKeyIds: string[] = [];
-		let initialMemberIds: string[] = [];
-		if (mode === "edit" && guardrailResult.data?.id) {
-			const [keyMappingsResult, memberMappingsResult] = await Promise.all([
-				context.client.from("key_guardrails").select("key_id").eq("guardrail_id", guardrailResult.data.id),
-				context.client.from("workspace_member_guardrails").select("user_id").eq("workspace_id", workspaceId).eq("guardrail_id", guardrailResult.data.id),
-			]);
-			if (keyMappingsResult.error) throw keyMappingsResult.error;
-			if (memberMappingsResult.error) throw memberMappingsResult.error;
-			initialKeyIds = (keyMappingsResult.data ?? []).map((row) => row.key_id).filter(Boolean);
-			initialMemberIds = (memberMappingsResult.data ?? []).map((row) => row.user_id).filter(Boolean);
-		}
-		return c.json({ ...reference, accountPolicy: accountPolicyFromRow(workspacePolicyResult.data), guardrail: guardrailResult.data ?? null, initialKeyIds, initialMemberIds, mode, workspaceId }, 200, PRIVATE_NO_STORE_HEADERS);
+		const editedGuardrailId = mode === "edit" ? guardrailResult.data?.id : null;
+		const assignments = editedGuardrailId ? await readGuardrailAssignments(context, workspaceId, [editedGuardrailId]) : null;
+		if (assignments?.error) throw assignments.error;
+		const byTarget = groupGuardrailAssignments(assignments?.data ?? []);
+		return c.json({
+			...reference,
+			accountPolicy: accountPolicyFromRow(workspacePolicyResult.data),
+			guardrail: guardrailResult.data ?? null,
+			initialDepartmentIds: editedGuardrailId ? byTarget.department[editedGuardrailId] ?? [] : [],
+			initialKeyIds: editedGuardrailId ? byTarget.key[editedGuardrailId] ?? [] : [],
+			initialMemberIds: editedGuardrailId ? byTarget.member[editedGuardrailId] ?? [] : [],
+			initialWorkspaceAssigned: editedGuardrailId ? byTarget.workspace.includes(editedGuardrailId) : false,
+			mode,
+			workspaceId,
+		}, 200, PRIVATE_NO_STORE_HEADERS);
 	} catch {
 		return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}

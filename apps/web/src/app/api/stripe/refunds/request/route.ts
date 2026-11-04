@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { requireActiveTeamStripeCustomer } from "@/lib/server/activeTeamStripe";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { rejectCrossOriginRequest } from "@/lib/http/sameOrigin";
 
 const REFUND_WINDOW_MS = 24 * 60 * 60 * 1000;
 const TOP_UP_KINDS = new Set(["top_up", "top_up_one_off", "auto_top_up"]);
@@ -57,6 +58,7 @@ function refundInfoMessage(status: string): string {
 }
 
 export async function POST(req: NextRequest) {
+    const crossOrigin = rejectCrossOriginRequest(req); if (crossOrigin) return crossOrigin;
     try {
         const body = await req.json();
         const paymentIntentId = parsePaymentIntentId(body);

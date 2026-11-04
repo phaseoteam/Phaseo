@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createStripeCheckoutResponse } from "@/lib/server/createStripeCheckoutResponse";
+import { rejectCrossOriginRequest } from "@/lib/http/sameOrigin";
 
 export async function POST(req: NextRequest) {
+	const crossOrigin = rejectCrossOriginRequest(req); if (crossOrigin) return crossOrigin;
 	try {
 		const { kind, amount_pence, workspace_id, country_code } =
 			await req.json();

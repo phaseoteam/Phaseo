@@ -78,7 +78,7 @@ const offLevels = new Set(["none", "off"]);
 export type EffortDots = { count: number; filled: number };
 
 /**
- * A reasoning level as dots, like T3 Code's bars: one per level, filled up to the chosen one, none filled for an off
+ * A reasoning level as dots: one per level, filled up to the chosen one, none filled for an off
  * level. Undefined when there are too few or too many to count.
  */
 export function effortDots(descriptor: ModelOptionDescriptor, value: string | boolean | undefined): EffortDots | undefined {
@@ -160,7 +160,7 @@ export function SettingsSuffix({ selection, descriptors }: { selection: ModelSel
 	if (!effort && !speed && !ultracode && !region) return null;
 	// Without dots to draw, the word shows whatever the setting.
 	const word = effort && (display !== "dots" || !dots);
-	return <span className="flex shrink-0 items-center gap-1.5 font-medium text-muted-foreground">
+	return <span data-model-settings className="flex shrink-0 items-center gap-1.5 font-medium text-muted-foreground">
 		{dots && display !== "word" && <EffortDotsGlyph dots={dots} />}
 		{word && <span className="max-w-24 truncate">{effort}</span>}
 		{ultracode && <span>· Ultracode</span>}
@@ -185,7 +185,7 @@ export function ModelSettingsColumn({ selection, descriptors, onChange }: { sele
 	const rest = descriptors.filter(descriptor => !speedIds.includes(descriptor.id));
 	const ordered = [...rest.filter(isReasoning), ...rest.filter(descriptor => !isReasoning(descriptor))];
 	if (!ordered.length) return <p className="flex h-8 items-center px-2 text-sm text-muted-foreground">No effort levels</p>;
-	return <div className="flex flex-col gap-2">
+	return <div role="group" aria-label="Model settings" className="flex flex-col gap-2">
 		{ordered.map(descriptor => {
 			const value = String(current(selection, descriptor));
 			if (descriptor.id === "ultracode") return <Tip key={descriptor.id} label="Plans and runs multi-agent workflows on every substantive task, at the chosen level" side="right">

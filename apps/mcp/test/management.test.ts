@@ -132,12 +132,18 @@ describe("Phaseo MCP management scope gating", () => {
 		for (const definition of management.managementTools) {
 			const annotations = tools[definition.name]?.annotations;
 			expect(annotations?.readOnlyHint, definition.name).toBe(definition.effect === "read");
-			expect(annotations?.destructiveHint, definition.name).toBe(definition.effect === "update" || definition.effect === "delete");
-			expect(annotations?.openWorldHint, definition.name).toBe(false);
+			expect(annotations?.destructiveHint, definition.name).toBe(definition.effect === "update" || definition.effect === "delete" || definition.sensitive === true);
+			expect(annotations?.openWorldHint, definition.name).toBe(definition.external === true);
 			expect(tools[definition.name]?._meta?.securitySchemes).toEqual([{ type: "oauth2", scopes: [...definition.scopes] }]);
 		}
 		expect(tools.api_key_delete?.annotations).toMatchObject({ destructiveHint: true, idempotentHint: true });
-		expect(tools.api_key_create?.annotations).toMatchObject({ destructiveHint: false, idempotentHint: false });
+		// Creating a key, a credential or a place the workspace's data goes can't be taken back: clients confirm it like a delete.
+		expect(tools.api_key_create?.annotations).toMatchObject({ destructiveHint: true, idempotentHint: false, openWorldHint: false });
+		expect(tools.provider_key_create?.annotations).toMatchObject({ destructiveHint: true, idempotentHint: false, openWorldHint: false });
+		// Webhooks and observability destinations send the workspace's data outside Phaseo.
+		expect(tools.webhook_create?.annotations).toMatchObject({ destructiveHint: true, idempotentHint: false, openWorldHint: true });
+		expect(tools.observability_destination_create?.annotations).toMatchObject({ destructiveHint: true, idempotentHint: false, openWorldHint: true });
+		expect(tools.budget_create?.annotations).toMatchObject({ destructiveHint: false, openWorldHint: false });
 		expect(tools.api_key_rotate?.annotations).toMatchObject({ destructiveHint: true, idempotentHint: false });
 		expect(tools.preset_version_publish?.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: true, idempotentHint: false });
 		expect(tools.settings_update?.annotations).toMatchObject({ destructiveHint: true, idempotentHint: true });

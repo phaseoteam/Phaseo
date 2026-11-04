@@ -8,6 +8,27 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"製品","api":"API と SDK","models":"モデル"}} clearLabel="クリア" />
 
+<Update label="2026年11月3日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- モデルページのツール呼び出しと構造化出力の成功率は、Phaseo が検証した応答だけで集計されるようになりました。以前は失敗したリクエストが有効な JSON として数えられ、データのない時間帯は 100% と表示されていました ([#3475](https://github.com/phaseoteam/Phaseo/pull/3475))。
+- モデルページの出力速度は回答前の非表示の推論を除外し、回答が一度に届いた場合は値を表示しません。詳しくは [料金と性能を測る](./exploring/pricing-performance.mdx) を参照してください ([#3465](https://github.com/phaseoteam/Phaseo/pull/3465), [#3476](https://github.com/phaseoteam/Phaseo/pull/3476))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- Google AI Studio の Gemini 2.5、3、3.1 のテキストモデル、Gemini 3.5〜3.8 Flash、Gemma 4 へのストリーミングリクエストは、トークンが生成されるそばから届くようになりました。以前は生成が終わってから回答全体がまとめて届いていました ([#3483](https://github.com/phaseoteam/Phaseo/pull/3483))。
+
+</div>
+
+</Update>
+
 <Update label="2026年11月2日">
 
 <div data-changelog-category="models">

@@ -122,6 +122,13 @@ export type RequestMeta = {
     failover_ms?: number;         // First upstream dispatch to the selected one (failed attempts)
     end_to_end_ms?: number;       // Request start to completion when available
     preserve_stream_timing?: boolean; // Internal: stream is synthetic and already has authoritative timing
+    providerRoundsMs?: number;    // Internal: provider time of the rounds read to the end so far (recordProviderRound)
+    providerRoundsFailoverMs?: number; // Internal: failover time of those rounds
+    firstProviderOutputAtMs?: number; // Internal: epoch ms of the first generated output read from a provider
+    outputArrivals?: number;      // Internal: separate network reads that carried output (1 = the answer arrived at once)
+    reasoningStreamed?: boolean;  // Internal: the first generated output was streamed reasoning, so reasoning tokens are inside the output-speed window
+    // Internal: the latest round read to the end, from its first output to its end; null when it had no output.
+    lastProviderRoundSpeedWindow?: { durationMs: number | null; outputTokens: number; reasoningTokens?: number | null; arrivals?: number | null } | null;
     downstreamDisconnected?: boolean; // Client closed the response while the gateway continued draining upstream
     streamCancellationSupport?: "supported" | "unsupported" | "unknown";
     streamProviderBillingOnCancel?: "stops" | "unknown";

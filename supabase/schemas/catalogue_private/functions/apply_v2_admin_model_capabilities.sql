@@ -166,7 +166,7 @@ begin
       v_route_id,
       v_capability_id,
       case
-        when coalesce(v_capability->>'status', '') like 'deranked_%' then 'degraded'
+        when coalesce(v_capability->>'status', '') like 'deranked%' then 'degraded'
         else coalesce(nullif(trim(v_capability->>'status'), ''), 'active')
       end,
       coalesce(v_capability->'params', '{}'::jsonb),

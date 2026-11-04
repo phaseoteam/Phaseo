@@ -5,7 +5,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "../ui/input-group"
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { cn } from "../../lib/utils";
 
-/** A ghost icon button with a tooltip, as in T3 Code's browser chrome. */
+/** A ghost icon button with a tooltip, for the browser chrome. */
 export function BrowserIconButton({ label, tooltip, icon, className, ...props }: { label: string; tooltip?: ReactNode; icon: ReactNode } & Omit<React.ComponentProps<typeof Button>, "children">) {
 	return <Tooltip>
 		<TooltipTrigger render={<Button type="button" variant="ghost" size="icon-xs" aria-label={label} className={cn("text-muted-foreground hover:text-foreground [&_svg:not([class*='size-'])]:size-3.5", className)} {...props} />}>{icon}</TooltipTrigger>
@@ -19,7 +19,7 @@ type Props = {
 	focusNonce: number;
 	onBack: () => void; onForward: () => void; onReload: () => void; onSubmit: (value: string) => void; onOpenInBrowser: () => void;
 	onPick: () => void; picking: boolean;
-	/** Shift-click records the page instead (T3 Code); while recording, a click stops it. */
+	/** Shift-click records the page instead; while recording, a click stops it. */
 	onCapture: (record: boolean) => void; capturing: boolean; recording: boolean;
 	/** Floats the page over the chat, or closes the floating player. */
 	onFloat: () => void; floating: boolean;

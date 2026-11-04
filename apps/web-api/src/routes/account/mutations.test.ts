@@ -40,6 +40,7 @@ describe("account mutation boundaries", () => {
 		["PUT", "/api/account/settings/guardrails/guardrail-1", { workspaceId: "workspace-1", name: "Updated" }],
 		["DELETE", "/api/account/settings/guardrails/guardrail-1", { workspaceId: "workspace-1" }],
 		["PUT", "/api/account/settings/guardrails/guardrail-1/keys", { workspaceId: "workspace-1", keyIds: [] }],
+		["PATCH", "/api/account/settings/guardrails/assignments", { workspaceId: "workspace-1", targetType: "key", targetIds: ["key-1"], addGuardrailIds: ["guardrail-1"] }],
 		["PUT", "/api/account/settings/account/profile", { display_name: "Test" }],
 		["DELETE", "/api/account/settings/account", undefined],
 		["POST", "/api/account/settings/account/recovery-codes", undefined],

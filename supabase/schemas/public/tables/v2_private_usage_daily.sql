@@ -67,6 +67,13 @@ CREATE INDEX v2_private_usage_daily_provider_model_id_idx ON public.v2_private_u
 
 CREATE INDEX v2_private_usage_daily_workspace_date_idx ON public.v2_private_usage_daily USING btree (workspace_id, usage_date DESC);
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."v2_private_usage_daily"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "v2_private_usage_daily_workspace_select" ON "public"."v2_private_usage_daily"
   FOR SELECT
   TO "authenticated"

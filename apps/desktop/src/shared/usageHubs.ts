@@ -10,10 +10,10 @@ export type UsageHubRequest =
 	| { type: "add"; url: string; key: string; label?: string }
 	| { type: "remove"; id: string }
 	| { type: "check"; id: string }
-	/** Hubs set up in T3 Code on this computer that Phaseo doesn't have yet (addresses and names only). */
-	| { type: "t3-hubs" }
+	/** Hubs another app on this computer is set up with that Phaseo doesn't have yet (addresses and names only). */
+	| { type: "importable-hubs" }
 	/** Copies those hubs, keys included, checking each key once. */
-	| { type: "import-t3" };
+	| { type: "import-hubs" };
 export type ImportableHub = { label: string; url: string };
 
 export function validateUsageHubRequest(value: unknown): UsageHubRequest {
@@ -25,7 +25,7 @@ export function validateUsageHubRequest(value: unknown): UsageHubRequest {
 		if (typeof entry !== "string" || !entry.trim() || entry.length > max) throw new Error(`Invalid usage hub ${field}.`);
 		return entry.trim();
 	};
-	if (request.type === "list" || request.type === "t3-hubs" || request.type === "import-t3") return { type: request.type };
+	if (request.type === "list" || request.type === "importable-hubs" || request.type === "import-hubs") return { type: request.type };
 	if (request.type === "add") return { type: "add", url: text("url", 2000)!, key: text("key", 4000)!, ...request.label === undefined || request.label === "" ? {} : { label: text("label", 80, true) } };
 	if (request.type === "remove" || request.type === "check") return { type: request.type, id: text("id", 100)! };
 	throw new Error("Invalid usage hub request.");

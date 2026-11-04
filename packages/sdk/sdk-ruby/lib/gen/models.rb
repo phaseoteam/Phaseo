@@ -5747,6 +5747,8 @@ module Phaseo
     #   @return [Integer]
     # @!attribute [rw] name
     #   @return [String]
+    # @!attribute [rw] owner_claim
+    #   @return [String]
     # @!attribute [rw] owner_id
     #   @return [String]
     # @!attribute [rw] provider
@@ -5755,7 +5757,7 @@ module Phaseo
     #   @return [String]
     # @!attribute [rw] updated_at
     #   @return [String]
-    WorkloadIdentityPolicy = Struct.new(:audience, :claim_conditions, :created_at, :created_by, :id, :issuer, :key_id, :last_used_at, :max_token_lifetime_seconds, :name, :owner_id, :provider, :status, :updated_at, keyword_init: true)
+    WorkloadIdentityPolicy = Struct.new(:audience, :claim_conditions, :created_at, :created_by, :id, :issuer, :key_id, :last_used_at, :max_token_lifetime_seconds, :name, :owner_claim, :owner_id, :provider, :status, :updated_at, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     WorkloadIdentityPolicyDeleteResponse = Struct.new(:data, keyword_init: true)
@@ -5767,11 +5769,13 @@ module Phaseo
     #   @return [Integer, nil]
     # @!attribute [rw] name
     #   @return [String]
+    # @!attribute [rw] owner_claim
+    #   @return [String, nil]
     # @!attribute [rw] owner_id
     #   @return [String]
     # @!attribute [rw] provider
     #   @return [String]
-    WorkloadIdentityPolicyInput = Struct.new(:claim_conditions, :issuer, :max_token_lifetime_seconds, :name, :owner_id, :provider, keyword_init: true)
+    WorkloadIdentityPolicyInput = Struct.new(:claim_conditions, :issuer, :max_token_lifetime_seconds, :name, :owner_claim, :owner_id, :provider, keyword_init: true)
     # @!attribute [rw] audience
     #   @return [String]
     # @!attribute [rw] data

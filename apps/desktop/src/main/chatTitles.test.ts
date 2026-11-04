@@ -19,5 +19,8 @@ describe("chat titles", () => {
 		expect(await generateTitle({ endpoint: "https://api.example/v1/", token: "owned", model: "owned/small", text: "Why does usage drop after I sign in again?", fetcher })).toBe("Usage drops after re-sign-in");
 		expect(fetcher.mock.calls[0][0]).toBe("https://api.example/v1/chat/completions");
 		await expect(generateTitle({ endpoint: "https://api.example/v1", token: "owned", model: "m", text: "Q", fetcher: async () => new Response("no", { status: 402 }) })).rejects.toThrow("402");
+		const seen: string[] = [];
+		await generateTitle({ endpoint: "https://api.example/v1", token: "owned", model: "m", text: "Q", instructions: "Start with the app area.", fetcher: async (_url, init) => { seen.push(JSON.parse(String(init?.body)).messages[0].content); return new Response(JSON.stringify({ choices: [{ message: { content: "Billing: refunds" } }] })); } });
+		expect(seen[0]).toContain("<preferences>\nStart with the app area.\n</preferences>");
 	});
 });

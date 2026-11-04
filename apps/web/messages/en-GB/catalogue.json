@@ -232,9 +232,7 @@
 			"featureStructuredOutputs": "Structured outputs",
 			"featureWebSearch": "Web search",
 			"featureFree": "Free variant",
-			"statusDeranked1": "Deranked level 1",
-			"statusDeranked2": "Deranked level 2",
-			"statusDeranked3": "Deranked level 3",
+			"statusDeranked": "Lower priority",
 			"statusDisabled": "Disabled",
 			"regionJapan": "Japan",
 			"regionAustralia": "Australia",
@@ -811,17 +809,9 @@
 						"label": "Soft blocked",
 						"description": "Temporarily soft-blocked for routing."
 					},
-					"deranked_lvl1": {
-						"label": "Deranked L1",
-						"description": "Publicly routable, but slightly deprioritised by routing health."
-					},
-					"deranked_lvl2": {
-						"label": "Deranked L2",
-						"description": "Publicly routable, but currently deprioritised by routing health."
-					},
-					"deranked_lvl3": {
-						"label": "Deranked L3",
-						"description": "Publicly routable, but heavily deprioritised by routing health."
+					"deranked": {
+						"label": "Lower priority",
+						"description": "Publicly routable, but used only as a backup when the other providers fail."
 					},
 					"internal_testing": {
 						"label": "Internal testing",
@@ -1081,7 +1071,7 @@
 				"disabled": "Disabled",
 				"comingSoon": "Coming soon",
 				"internalTesting": "Internal testing",
-				"rateLimited": "Rate limited",
+				"rateLimited": "Lower priority",
 				"degraded": "Degraded",
 				"external": "External"
 			},
@@ -1105,7 +1095,7 @@
 				"disabled": "Explicitly disabled and not routable.",
 				"comingSoon": "Coming soon, not routable yet.",
 				"internalTesting": "Available for internal testing only.",
-				"rateLimited": "Routable, but heavily deprioritized by routing health.",
+				"rateLimited": "Set by Phaseo. Used only as a backup when the other providers fail.",
 				"degraded": "Available with degraded routing health.",
 				"external": "Listed from an external catalogue; not routable through Phaseo."
 			},
@@ -1363,9 +1353,12 @@
 			"discountEndsInDaysHours": "Ends in {days}d {hours}h",
 			"discountEndsInHours": "Ends in {hours}h",
 			"routingHealthLimited": "Temporarily limited",
-			"routingHealthLimitedDescription": "Routing health has temporarily deprioritised this provider ({count, plural, one {# affected route pair} other {# affected route pairs}}).",
+			"routingHealthLimitedDescription": "Requests to this provider failed repeatedly, so Phaseo is sending traffic to other providers first ({count, plural, one {# route} other {# routes}} affected).",
 			"routingHealthRecovering": "Recovering",
-			"routingHealthRecoveringDescription": "Routing health is checking recovery now ({count, plural, one {# route pair} other {# route pairs}} in a half-open state).",
+			"routingHealthRecoveringDescription": "Phaseo is letting a few requests through to check that this provider works again ({count, plural, one {# route} other {# routes}}).",
+			"routingHealthAutomatic": "This happens automatically and clears once requests succeed again. It is separate from the status icon before it, which Phaseo sets by hand.",
+			"liveRouting": "Live routing",
+			"liveRoutingStatus": "Live routing: {status}",
 			"processing": "Processing",
 			"dataCenters": "Data centres",
 			"unknown": "Unknown",
@@ -1489,6 +1482,7 @@
 			"chartLabel": "Hourly model uptime over the last {hours} hours. Uptime: {uptime}. Requests recorded: {count}.",
 			"leastStableProviderLabel": "Without Phaseo Routing",
 			"tooltipUptime": "Uptime:",
+			"tooltipFailedRequests": "{count, plural, =0 {No failed requests} one {{failed, number} of # request failed} other {{failed, number} of # requests failed}}",
 			"tooltipWorstProvider": "Without Phaseo Routing:",
 			"hourlyAverage": "Last 24 hours · hourly average",
 			"routingChartLabel": "Hourly model uptime over the last 24 hours. Phaseo Routing: {uptime}.{comparison}",
@@ -1623,8 +1617,10 @@
 			"viewLicense": "View license"
 		},
 		"performance": {
-			"noTelemetry": "No gateway telemetry in the past 7 days",
-			"telemetryHint": "Hourly charts will appear when this model processes gateway traffic in the selected location.",
+			"noTelemetry": "No requests in the past 7 days",
+			"telemetryHint": "Charts will appear after this model serves requests through Phaseo.",
+			"noFilteredTelemetry": "Not enough traffic in {location} to publish",
+			"filteredTelemetryHint": "A location's charts appear only once it has enough requests that no single customer's traffic can be picked out. Choose All locations to see every request.",
 			"filterByLocation": "Filter performance by API location",
 			"providerPerformance": "Provider performance",
 			"last24Hours": "Last 24 hours",
@@ -2657,7 +2653,7 @@
 		"differencesOnly": "Differences only",
 		"previous": "Previous",
 		"next": "Next",
-		"modelsRange": "Models {from}–{to} of {total}",
+		"modelsRange": "{count, plural, =1 {Model {from} of {total}} other {Models {from}–{to} of {total}}}",
 		"phoneBestNote": "A highlighted value is the best of every selected model, including those on the other page.",
 		"notFound": "{count, plural, one {One model in the link wasn’t found:} other {# models in the link weren’t found:}}",
 		"atAGlance": "At a glance",
@@ -2710,7 +2706,8 @@
 		"latency": "Latency p50",
 		"throughput": "Throughput p50",
 		"requests24h": "Requests, last 24 hours",
-		"noTraffic": "No traffic yet",
+		"noRecentTraffic": "No traffic in the last 5 days",
+		"noRequests24h": "None in the last 24 hours",
 		"window30m": "last 30 minutes",
 		"window24h": "last 24 hours",
 		"window5d": "last 5 days",
@@ -2765,13 +2762,6 @@
 		"perMonth": "Per month",
 		"calculatorNote": "Uses the route and tier chosen under each model, over 30 days. Cached input is billed at the cache-read rate.",
 		"providers": "Providers",
-		"providersSub": "Routes Phaseo serves today, standard-tier prices per 1M tokens",
-		"provider": "Provider",
-		"tiers": "Tiers",
-		"providerPriceNote": "Standard-tier prices. The first row is the cheapest route; pick another under the model’s name at the top.",
-		"noRoutesFor": "Phaseo doesn’t route {name} today.",
-		"otherListings": "{count, plural, one {Also listed, not routed by Phaseo: # provider} other {Also listed, not routed by Phaseo: # providers}}",
-		"otherListingsNote": "Shown for reference: other gateways’ listings and routes Phaseo has retired or disabled.",
 		"benchmarks": "Benchmarks",
 		"benchmarksSub": "Only results that two or more of the selected models report get a row",
 		"benchmarksSubSingle": "Every benchmark result for this model",
@@ -2796,7 +2786,7 @@
 		"sharedBenchmarks": "Shared benchmarks",
 		"singleBenchmarks": "{count, plural, one {# benchmark reported by one model only} other {# benchmarks reported by one model only}}",
 		"singleBenchmarksLabel": "Benchmarks reported by one model only",
-		"benchmarkSources": "Lab-reported results come from each lab’s own launch materials and may use different settings. Independent results come from third-party evaluators.",
+		"benchmarkSources": "Lab-reported results come from each lab’s own launch materials and may use different settings, so none is marked best. Independent results come from third-party evaluators.",
 		"emptyTitle": "Compare AI models",
 		"emptyDescription": "Prices, limits, features, live speed on Phaseo and benchmarks, side by side.",
 		"pickFirst": "Choose a model",
@@ -2807,10 +2797,6 @@
 				"title": "Current flagships",
 				"description": "The newest top models from three labs"
 			},
-			"pairing": {
-				"title": "GPT 5 vs Claude Sonnet 4.5",
-				"description": "A pairing many teams weigh up"
-			},
 			"anthropic": {
 				"title": "Opus or Sonnet?",
 				"description": "Anthropic’s two current tiers"
@@ -2818,6 +2804,18 @@
 			"openWeights": {
 				"title": "Open weights",
 				"description": "Models you can download and run yourself"
+			},
+			"video": {
+				"title": "Video models",
+				"description": "Per-second prices by resolution and mode"
+			},
+			"image": {
+				"title": "Image models",
+				"description": "Per-image prices by size and quality"
+			},
+			"decisions": {
+				"title": "Decision models",
+				"description": "Models that return a decision, not text"
 			}
 		},
 		"badgeOnPhaseo": "On Phaseo",
@@ -2838,18 +2836,15 @@
 		"pricedOn": "Priced on",
 		"pricingSubRoute": "Prices on the route and tier chosen under each model",
 		"perMillionTokens": "/ 1M tokens",
-		"bandPrice": "{condition}: {price}",
 		"moreMeters": "{count, plural, one {Show # more meter} other {Show # more meters}}",
 		"fewerMeters": "Show fewer meters",
 		"otherCategory": "Other",
 		"activity": "Activity",
 		"activitySub": "Tokens sent through Phaseo each day over the last 30 days",
-		"activityTotal": "tokens, last 30 days",
 		"activityInput": "Input",
 		"activityOutput": "Output",
 		"activityReasoning": "Reasoning",
 		"activityRequests": "Requests",
-		"activityDay": "{date}: {tokens} tokens, {count, plural, one {# request} other {{requests} requests}}",
 		"activityChart": "Daily tokens for {name} through Phaseo, last 30 days",
 		"activityNone": "No traffic through Phaseo in the last 30 days",
 		"activityNoneAll": "None of these models has had traffic through Phaseo in the last 30 days.",
@@ -2858,7 +2853,46 @@
 		"peerModels": "{count, plural, one {# model ranked} other {# models ranked}}",
 		"headToHead": "Head-to-head comparisons",
 		"pairTitle": "{a} vs {b}",
-		"activityRequestsTotal": "requests, last 30 days"
+		"selected": "Selected",
+		"pickerReturnsOther": "Returns {types}, so it can’t be compared with your selection",
+		"pickerNoOutputTypes": "Its output types aren’t published, so it can’t be matched to your selection",
+		"pickerHiddenIncompatible": "{count, plural, one {# model that returns a different type is hidden.} other {# models that return different types are hidden.}} Search to find them.",
+		"activityTokens30d": "Tokens, last 30 days",
+		"activityPerDay": "Per day",
+		"activityNoTokens": "Requests only, no tokens recorded",
+		"moreMetersCount": "{count, plural, one {# more meter} other {# more meters}}",
+		"priceFrom": "from {price}",
+		"conditionFields": {
+			"input": "Input",
+			"duration": "Duration",
+			"inputVideo": "Input video",
+			"resolution": "Resolution",
+			"quality": "Quality",
+			"aspectRatio": "Aspect ratio",
+			"audio": "Audio",
+			"mode": "Mode",
+			"draft": "Draft",
+			"cacheDuration": "Cache duration",
+			"region": "Region",
+			"serviceTier": "Service tier"
+		},
+		"conditionIs": "{field}: {value}",
+		"conditionIsNot": "{field}: not {value}",
+		"conditionOn": "on",
+		"conditionOff": "off",
+		"showAllPrices": "Show all {count} prices",
+		"showFewerPrices": "Show fewer prices",
+		"showAllProviders": "Show all {count} providers",
+		"showFewerProviders": "Show fewer providers",
+		"moreCount": "+{count}",
+		"routePrice": "{input} in · {output} out",
+		"providersAcrossSub": "Where each model runs on Phaseo, with standard-tier prices per 1M tokens. Providers that serve more of these models come first.",
+		"providersAcrossSubMeters": "Where each model runs on Phaseo, with each route’s standard-tier price. Providers that serve more of these models come first.",
+		"providersAcrossNote": "To price the whole page on one of these providers, pick it under the model’s name at the top.",
+		"routeContext": "{value} context",
+		"otherListingsLabel": "Also listed, not routed",
+		"noRoutesAny": "Phaseo doesn’t route any of these models today.",
+		"comparedSections": "Every comparison covers"
 	},
 	"countries": {
 		"title": "AI by country",
@@ -3131,9 +3165,7 @@
 		"providerStatus": {
 			"active": "Active",
 			"coming_soon": "Coming soon",
-			"deranked_lvl1": "Deranked L1",
-			"deranked_lvl2": "Deranked L2",
-			"deranked_lvl3": "Deranked L3",
+			"deranked": "Lower priority",
 			"disabled": "Disabled",
 			"inactive": "Not active",
 			"internal_testing": "Internal testing",

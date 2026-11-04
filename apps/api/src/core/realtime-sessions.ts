@@ -1066,13 +1066,12 @@ async function evaluateActiveRealtimePolicy(
 		resolvedModel: context.resolvedModel || session.model_id,
 		body: { model: context.resolvedModel || session.model_id, provider },
 		workspacePolicy,
-		teamSettings: context.teamSettings ?? null,
 	});
 	if (!policyResult.ok) {
 		return { ok: false, reason: "realtime_workspace_policy_blocked", spendLimit: false };
 	}
 	if (live && !applyWorkspacePolicy({ providers: livePolicyCandidates(candidates), resolvedModel: session.model_id,
-		body: { model: session.model_id, provider }, workspacePolicy, teamSettings: context.teamSettings ?? null }).ok) {
+		body: { model: session.model_id, provider }, workspacePolicy }).ok) {
 		return { ok: false, reason: "realtime_workspace_policy_blocked", spendLimit: false };
 	}
 	if (!provider || !policyResult.providers.some((candidate) => candidate.providerId === provider)) {

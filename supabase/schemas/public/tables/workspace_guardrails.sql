@@ -21,6 +21,11 @@ CREATE TABLE "public"."workspace_guardrails" (
   "sensitive_info_default_action"           text                     NOT NULL DEFAULT 'redact'::text,
   "sensitive_info_rules"                    jsonb                    NOT NULL DEFAULT '[]'::jsonb,
   "model_restriction_mode"                  text                     NOT NULL DEFAULT 'none'::text,
+  "kind"                                    text                     NOT NULL DEFAULT 'access'::text,
+  "is_workspace_baseline"                   boolean                  NOT NULL DEFAULT false,
+  CONSTRAINT "workspace_guardrails_baseline_kind_check" CHECK (((NOT is_workspace_baseline) OR (kind = 'access'::text))),
+  CONSTRAINT "workspace_guardrails_id_workspace_id_key" UNIQUE (id, workspace_id),
+  CONSTRAINT "workspace_guardrails_kind_check" CHECK ((kind = ANY (ARRAY['access'::text, 'safety'::text, 'spend'::text, 'rate'::text]))),
   CONSTRAINT "workspace_guardrails_model_restriction_mode_check" CHECK ((model_restriction_mode = ANY (ARRAY['none'::text, 'allowlist'::text, 'blocklist'::text]))),
   CONSTRAINT "workspace_guardrails_pkey" PRIMARY KEY (id),
   CONSTRAINT "workspace_guardrails_prompt_injection_action_check" CHECK ((prompt_injection_action = ANY (ARRAY['flag'::text, 'redact'::text, 'block'::text]))),
@@ -31,6 +36,9 @@ CREATE TABLE "public"."workspace_guardrails" (
 
 ALTER TABLE "public"."workspace_guardrails"
   ENABLE ROW LEVEL SECURITY;
+
+CREATE UNIQUE INDEX workspace_guardrails_one_baseline_idx ON public.workspace_guardrails USING btree (workspace_id)
+  WHERE is_workspace_baseline;
 
 CREATE INDEX workspace_guardrails_workspace_id_idx ON public.workspace_guardrails USING btree (workspace_id);
 
@@ -43,6 +51,24 @@ CREATE TRIGGER protect_slack_agent_guardrail
   BEFORE DELETE OR UPDATE ON public.workspace_guardrails
   FOR EACH ROW
   EXECUTE FUNCTION public.protect_slack_agent_guardrail();
+
+CREATE TRIGGER protect_workspace_baseline_guardrail
+  BEFORE INSERT OR DELETE OR UPDATE ON public.workspace_guardrails
+  FOR EACH ROW
+  EXECUTE FUNCTION private.protect_workspace_baseline_guardrail();
+
+CREATE TRIGGER sync_workspace_baseline_guardrail
+  AFTER INSERT OR UPDATE ON public.workspace_guardrails
+  FOR EACH ROW
+  WHEN (new.is_workspace_baseline)
+  EXECUTE FUNCTION private.sync_workspace_baseline_guardrail();
+
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."workspace_guardrails"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
 
 CREATE POLICY "team_guardrails_delete_own_team" ON "public"."workspace_guardrails"
   FOR DELETE
@@ -66,3 +92,7 @@ CREATE POLICY "team_guardrails_update_own_team" ON "public"."workspace_guardrail
   WITH CHECK (public.is_workspace_admin(workspace_id));
 
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."workspace_guardrails" TO "anon", "authenticated", "service_role";
+
+COMMENT ON COLUMN "public"."workspace_guardrails"."kind" IS 'What the guardrail controls: access (data retention, training, logging, allowed providers and models), safety (prompt injection, sensitive info), spend or rate. One kind per guardrail.';
+
+COMMENT ON COLUMN "public"."workspace_guardrails"."is_workspace_baseline" IS 'The workspace baseline: the built-in access guardrail holding the workspace-wide rules edited under Settings, Privacy, assigned to the whole workspace. At most one per workspace; created by private.ensure_workspace_baseline_guardrail and protected by private.protect_workspace_baseline_guardrail.';

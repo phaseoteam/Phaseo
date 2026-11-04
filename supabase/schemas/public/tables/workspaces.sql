@@ -58,6 +58,13 @@ CREATE TRIGGER workspaces_prevent_reserved_publisher_handle
   FOR EACH ROW
   EXECUTE FUNCTION public.prevent_reserved_workspace_publisher_handle();
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."workspaces"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "teams: delete if owner" ON "public"."workspaces"
   FOR DELETE
   TO "authenticated"

@@ -2,8 +2,9 @@
 // Why: Keeps stage-specific logic isolated and testable.
 // How: Exposes helpers used by before/execute/after orchestration.
 
-import { getBindings, getSupabaseAdmin, dispatchBackground, configureRuntime, clearRuntime, getCache } from "@/runtime/env";
+import { getBindings, getSupabaseAdmin, dispatchBackground, configureRuntime, clearRuntime, ensureRuntimeForBackground, getCache } from "@/runtime/env";
 import { keyVersionToken } from "@/core/kv";
+import { getWorkspacePolicyVersionToken } from "@/pipeline/before/workspacePolicy";
 import { shouldRecordLastUsed } from "@/core/last-used-throttle";
 import {
 	resolveActiveKeyPepper,
@@ -220,7 +221,8 @@ function isLegacyKeyNamespaceRetired(namespace: string, nowMs = Date.now()): boo
 
 /* -------------------- main -------------------- */
 
-export type AuthFailure = { ok: false; reason: string };
+/** `message` is an optional caller-facing explanation returned with the reason. */
+export type AuthFailure = { ok: false; reason: string; message?: string };
 export type AuthSuccess = {
     ok: true;
     workspaceId: string;
@@ -293,8 +295,9 @@ type KeyRow = {
 	oauth_resource?: string | null;
 };
 
+type CachedKeyRow = KeyRow & { workspace_cache_version?: string };
 type CachedKeyLookup = KeyRow | "missing" | null;
-type KeyLookupL1Value = Exclude<CachedKeyLookup, null>;
+type KeyLookupL1Value = CachedKeyRow | "missing";
 type KeyLookupL1Entry = {
     value: KeyLookupL1Value;
     expiresAt: number;
@@ -376,48 +379,98 @@ async function findMatchingPepperCandidate(args: {
     return null;
 }
 
-async function getCachedKey(kid: string): Promise<CachedKeyLookup> {
-    try {
-        const versionToken = await keyVersionToken("kid", kid, {
-            useL1Cache: true,
-            l1TtlMs: KEY_VERSION_L1_TTL_MS,
-        });
-        const l1 = readKeyLookupL1(kid, versionToken);
-        if (l1 !== null) return l1;
-        const cached = await getCache().get(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, "json");
-        if (!cached || typeof cached !== "object") return null;
-        const marker = cached as { missing?: unknown };
-        if (marker.missing === true) {
-            writeKeyLookupL1(kid, versionToken, "missing");
-            return "missing";
-        }
-        const row = cached as Partial<KeyRow>;
-        if (!row.id || !row.workspace_id || !row.status || !row.hash) return null;
-        const value = row as KeyRow;
-        writeKeyLookupL1(kid, versionToken, value);
-        return value;
-    } catch {
-        // Fail open to DB lookup when KV is unavailable.
-        return null;
-    }
+/**
+ * A cached row is only used while its workspace cache version is unchanged, so a
+ * workspace bump (control routes, or the publication drain fed by the trigger on
+ * `keys`) also refreshes key lookups, whichever path changed the row.
+ */
+async function workspaceVersionMatches(row: CachedKeyRow): Promise<boolean> {
+    if (!row.workspace_cache_version) return false;
+    const current = await getWorkspacePolicyVersionToken(String(row.workspace_id));
+    return current !== null && current === row.workspace_cache_version;
 }
 
-async function cacheKey(kid: string, row: KeyRow) {
+function withoutCacheFields(row: CachedKeyRow): KeyRow {
+    const { workspace_cache_version: _version, ...keyRow } = row;
+    return keyRow as KeyRow;
+}
+
+/**
+ * Returns the key version read for this lookup with the cached row. Rows fetched
+ * later in the request must be cached under this version, not a newer one: a
+ * version read after the fetch could already include a change the row predates.
+ */
+async function getCachedKey(kid: string): Promise<{ versionToken: string | null; value: CachedKeyLookup }> {
     let versionToken: string | null = null;
     try {
         versionToken = await keyVersionToken("kid", kid, {
             useL1Cache: true,
             l1TtlMs: KEY_VERSION_L1_TTL_MS,
         });
-        writeKeyLookupL1(kid, versionToken, row);
-        // This request already has the authoritative row. Keep the versioned
-        // write alive without making authentication wait for KV persistence.
-        dispatchBackground(getCache().put(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, JSON.stringify(row), {
-            expirationTtl: KEY_CACHE_TTL_SECONDS,
-        }).catch(() => undefined));
+        // An unknown version means any cached row may predate a revocation.
+        if (!versionToken) return { versionToken: null, value: null };
+        const l1 = readKeyLookupL1(kid, versionToken);
+        if (l1 === "missing") return { versionToken, value: "missing" };
+        if (l1 !== null) {
+            return { versionToken, value: (await workspaceVersionMatches(l1)) ? withoutCacheFields(l1) : null };
+        }
+        const cached = await getCache().get(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, "json");
+        if (!cached || typeof cached !== "object") return { versionToken, value: null };
+        const marker = cached as { missing?: unknown };
+        if (marker.missing === true) {
+            writeKeyLookupL1(kid, versionToken, "missing");
+            return { versionToken, value: "missing" };
+        }
+        const row = cached as Partial<CachedKeyRow>;
+        if (!row.id || !row.workspace_id || !row.status || !row.hash) return { versionToken, value: null };
+        const value = row as CachedKeyRow;
+        if (!(await workspaceVersionMatches(value))) return { versionToken, value: null };
+        writeKeyLookupL1(kid, versionToken, value);
+        return { versionToken, value: withoutCacheFields(value) };
     } catch {
-        // Ignore KV write failures.
+        // Fail open to DB lookup when KV is unavailable.
+        return { versionToken, value: null };
     }
+}
+
+function cacheKey(kid: string, row: KeyRow, versionToken: string | null): void {
+    if (!versionToken) return;
+    // This request already has the authoritative row, so authentication never
+    // waits for the workspace version read, the re-read or the KV write. The
+    // runtime is held until the write finishes, which can be after the response.
+    let release: () => void;
+    try {
+        release = ensureRuntimeForBackground();
+    } catch {
+        return;
+    }
+    dispatchBackground((async () => {
+        try {
+            // The workspace is only known once the row is fetched, so read its version
+            // now and cache a row read AFTER it. Any change that version reflects was
+            // written before its bump, so the re-read includes it; a later change bumps
+            // past it. Tagging the request's earlier row instead could pair a pre-change
+            // row with a post-change version and keep it for the whole cache lifetime.
+            const workspaceVersion = await getWorkspacePolicyVersionToken(String(row.workspace_id));
+            if (!workspaceVersion) return;
+            const { data, error } = await getSupabaseAdmin()
+                .from("keys")
+                .select("*")
+                .eq("kid", kid)
+                .maybeSingle();
+            const current = data as KeyRow | null;
+            if (error || !current || String(current.workspace_id) !== String(row.workspace_id)) return;
+            const entry: CachedKeyRow = { ...current, workspace_cache_version: workspaceVersion };
+            writeKeyLookupL1(kid, versionToken, entry);
+            await getCache().put(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, JSON.stringify(entry), {
+                expirationTtl: KEY_CACHE_TTL_SECONDS,
+            });
+        } catch {
+            // Ignore KV write failures.
+        } finally {
+            release();
+        }
+    })());
 }
 
 /**
@@ -516,10 +569,12 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
         return data as KeyRow;
     };
 
+    let keyCacheVersion: string | null = null;
     if (useKvCache) {
         const cachedLookup = await getCachedKey(parsed.kid);
-        if (cachedLookup && cachedLookup !== "missing") {
-            keyRow = cachedLookup;
+        keyCacheVersion = cachedLookup.versionToken;
+        if (cachedLookup.value && cachedLookup.value !== "missing") {
+            keyRow = cachedLookup.value;
             keyRowSource = "cache";
         }
     }
@@ -535,7 +590,7 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
         keyRow = freshKeyRow;
         keyRowSource = "db";
         if (useKvCache) {
-            await cacheKey(parsed.kid, keyRow);
+            cacheKey(parsed.kid, keyRow, keyCacheVersion);
         }
     }
 
@@ -547,7 +602,7 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
         keyRow = freshKeyRow;
         keyRowSource = "db";
         if (useKvCache) {
-            await cacheKey(parsed.kid, keyRow);
+            cacheKey(parsed.kid, keyRow, keyCacheVersion);
         }
     }
 
@@ -593,7 +648,7 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
         });
 
         if (useKvCache) {
-            await cacheKey(parsed.kid, keyRow);
+            cacheKey(parsed.kid, keyRow, keyCacheVersion);
         }
     }
 
@@ -709,10 +764,10 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
                     .update(updatePayload)
                     .eq("id", keyRow.id);
                 if (useKvCache && hasHashMigration) {
-                    await cacheKey(parsed.kid, {
+                    cacheKey(parsed.kid, {
                         ...keyRow,
                         hash: String(nextHash),
-                    });
+                    }, keyCacheVersion);
                 }
             } finally {
                 clearRuntime();

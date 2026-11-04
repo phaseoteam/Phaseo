@@ -36,9 +36,7 @@ function getStatusUi(statusKey: ProviderStateKey): {
 				badgeClassName:
 					"border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300",
 			};
-		case "deranked_lvl1":
-		case "deranked_lvl2":
-		case "deranked_lvl3":
+		case "deranked":
 			return {
 				icon: AlertTriangle,
 				badgeClassName:

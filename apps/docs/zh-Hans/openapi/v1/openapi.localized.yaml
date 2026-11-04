@@ -4970,7 +4970,7 @@ paths:
         - Gateway
       operationId: listWorkloadIdentityPolicies
       summary: 列出受信任的工作负载策略
-      description: 列出工作区的受信任的工作负载策略：哪些 Vercel 部署和 GitHub Actions 工作流可以使用其 OIDC 令牌而不是 API 密钥调用网关。管理密钥和 OAuth 令牌需要 keys:read，或由工作区所有者或管理员操作。仅适用于参与受信任的工作负载 Beta 的工作区；其他工作区会收到 404。
+      description: 列出工作区的受信任的工作负载策略：哪些部署、CI 作业和云工作负载可以使用其 OIDC 令牌而不是 API 密钥调用网关。管理密钥和 OAuth 令牌需要 keys:read，或由工作区所有者或管理员操作。仅适用于参与受信任的工作负载 Beta 的工作区；其他工作区会收到 404。
       responses:
         '200':
           description: 受信任的工作负载策略
@@ -5045,7 +5045,7 @@ paths:
         - Gateway
       operationId: updateWorkloadIdentityPolicy
       summary: 更新受信任的工作负载策略
-      description: 更改策略的名称、状态、声明条件或令牌最长有效期。提供方、签发方和所有者无法更改；请改为创建新策略。更改会在一分钟内同步到网关。管理密钥和 OAuth 令牌需要 keys:write，或由工作区所有者或管理员操作。仅适用于参与受信任的工作负载 Beta 的工作区；其他工作区会收到 404。
+      description: 更改策略的名称、状态、声明条件或令牌最长有效期。提供方、签发方、所有者声明和所有者无法更改；请改为创建新策略。更改会在一分钟内同步到网关。管理密钥和 OAuth 令牌需要 keys:write，或由工作区所有者或管理员操作。仅适用于参与受信任的工作负载 Beta 的工作区；其他工作区会收到 404。
       requestBody:
         required: true
         content:
@@ -11412,6 +11412,7 @@ components:
             $ref: '#/components/schemas/GatewayPricingMeter'
     GatewayProviderAvailabilityReason:
       type: string
+      description: 降级路由（`deranked`）仅作为最后手段，在所有其他健康的提供商之后才会被路由。不再返回 `deranked_lvl1`、`deranked_lvl2` 和 `deranked_lvl3`。
       enum:
         - active
         - preview_only
@@ -11421,6 +11422,7 @@ components:
         - project_limited
         - paused
         - soft_blocked
+        - deranked
         - deranked_lvl1
         - deranked_lvl2
         - deranked_lvl3
@@ -11436,17 +11438,21 @@ components:
         - retired
     GatewayRoutingStatus:
       type: string
+      description: 降级路由（`deranked`）仅作为最后手段，在所有其他健康的提供商之后才会被路由。不再返回 `deranked_lvl1`、`deranked_lvl2` 和 `deranked_lvl3`。
       enum:
         - active
+        - deranked
         - deranked_lvl1
         - deranked_lvl2
         - deranked_lvl3
         - disabled
     GatewayCapabilityStatus:
       type: string
+      description: 降级路由（`deranked`）仅作为最后手段，在所有其他健康的提供商之后才会被路由。不再返回 `deranked_lvl1`、`deranked_lvl2` 和 `deranked_lvl3`。
       enum:
         - active
         - coming_soon
+        - deranked
         - deranked_lvl1
         - deranked_lvl2
         - deranked_lvl3
@@ -23624,7 +23630,13 @@ components:
       enum:
         - vercel
         - github_actions
-      description: 签发 OIDC 令牌的平台。
+        - gitlab
+        - google_cloud
+        - buildkite
+        - circleci
+        - aws
+        - custom
+      description: 签发 OIDC 令牌的平台。其他任何 OIDC 签发方（例如 Kubernetes 集群或自托管 GitLab 实例）请使用 custom。
     WorkloadIdentityPolicy:
       type: object
       description: 受信任的工作负载：来自此签发方、面向固定所有者并满足所有声明条件的令牌，将以策略的密钥进行身份验证。
@@ -23633,6 +23645,7 @@ components:
         - name
         - provider
         - issuer
+        - owner_claim
         - owner_id
         - claim_conditions
         - max_token_lifetime_seconds
@@ -23655,13 +23668,16 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: 令牌签发方，例如 https://oidc.vercel.com/acme 或 https://token.actions.githubusercontent.com。
+          description: 令牌签发方（iss 声明），例如 https://oidc.vercel.com/acme、https://token.actions.githubusercontent.com 或 https://accounts.google.com。
+        owner_claim:
+          type: string
+          description: 与 owner_id 进行匹配的令牌声明。每个平台固定不变：vercel 为 owner_id，github_actions 为 repository_owner_id，gitlab 为 project_id，google_cloud 和 aws 为 sub，buildkite 为 organization_id，circleci 为 oidc.circleci.com/org-id。custom 签发方使用创建策略时选定的声明。
         owner_id:
           type: string
-          description: 固定的 Vercel 团队 ID（owner_id 声明），或 GitHub 组织或用户 ID（repository_owner_id 声明）。
+          description: 固定的所有者：令牌的 owner_claim 必须等于的值，例如 Vercel 团队 ID、GitHub 组织或用户 ID、GitLab 项目 ID、Google 服务账号的唯一 ID、Buildkite 组织 ID、CircleCI 组织 ID 或 AWS IAM 角色 ARN。
         claim_conditions:
           type: object
-          description: 令牌必须满足的额外声明，以声明名称和允许值的形式表示，例如 Vercel 的 project_id 和 environment，或 GitHub Actions 的 repository_id 和 ref。每个声明都必须匹配其中一个值。最多 15 个声明，每个声明最多 20 个值；不能使用 iss、aud、exp、iat、nbf 和 jti，固定所有者的声明通过 owner_id 设置。
+          description: '令牌必须满足的额外声明，以声明名称和允许值的形式表示，例如 GitHub Actions 的 repository_id 和 ref，或 GitLab 的 project_path 和 ref。每个声明都必须匹配其中一个值。最多 15 个声明，每个声明最多 20 个值。声明名称可使用字母、数字和 . _ : / -，最长 128 个字符；不能使用 iss、aud、exp、iat、nbf 和 jti，所有者声明通过 owner_id 设置。'
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23718,14 +23734,19 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: Vercel 必填：https://oidc.vercel.com/ 后接团队标识，或使用 https://oidc.vercel.com 作为全局签发方。GitHub Actions 默认为 https://token.actions.githubusercontent.com。
+          description: 令牌的签发方。github_actions（默认为 https://token.actions.githubusercontent.com；自定义企业签发方需加上 /<enterprise-slug>）、gitlab（https://gitlab.com）、google_cloud（https://accounts.google.com）和 buildkite（https://agent.buildkite.com）可省略。vercel（https://oidc.vercel.com/<team-slug>，全局签发方为 https://oidc.vercel.com）、circleci（https://oidc.circleci.com/org/<organization-id>）、aws（你账号的 https://<id>.tokens.sts.global.api.aws 签发方）和 custom（提供 OIDC 发现文档的公共 https URL，且主机不属于其他任何平台）必填。
+        owner_claim:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: 与 owner_id 进行匹配的令牌声明，例如 sub。custom 必填。其他平台使用固定声明（参见策略上的 owner_claim），因此可省略或传入该声明。创建后无法更改。
         owner_id:
           type: string
           minLength: 1
-          description: 要固定的 Vercel 团队 ID，或 GitHub 组织或用户 ID。
+          description: 所有者声明必须等于的值：Vercel 团队 ID、GitHub 组织或用户 ID、GitLab 项目 ID、Google 服务账号的唯一 ID（不是其邮箱）、Buildkite 组织 ID、CircleCI 组织 ID（签发方中的那个）、AWS IAM 角色 ARN，或者对于 custom 签发方，要信任的 owner_claim 值。
         claim_conditions:
           type: object
-          description: 令牌必须满足的额外声明，以声明名称和允许值的形式表示，例如 Vercel 的 project_id 和 environment，或 GitHub Actions 的 repository_id 和 ref。每个声明都必须匹配其中一个值。最多 15 个声明，每个声明最多 20 个值；不能使用 iss、aud、exp、iat、nbf 和 jti，固定所有者的声明通过 owner_id 设置。
+          description: '令牌必须满足的额外声明，以声明名称和允许值的形式表示，例如 GitHub Actions 的 repository_id 和 ref，或 GitLab 的 project_path 和 ref。每个声明都必须匹配其中一个值。最多 15 个声明，每个声明最多 20 个值。声明名称可使用字母、数字和 . _ : / -，最长 128 个字符；不能使用 iss、aud、exp、iat、nbf 和 jti，所有者声明通过 owner_id 设置。'
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23757,7 +23778,7 @@ components:
             - disabled
         claim_conditions:
           type: object
-          description: 令牌必须满足的额外声明，以声明名称和允许值的形式表示，例如 Vercel 的 project_id 和 environment，或 GitHub Actions 的 repository_id 和 ref。每个声明都必须匹配其中一个值。最多 15 个声明，每个声明最多 20 个值；不能使用 iss、aud、exp、iat、nbf 和 jti，固定所有者的声明通过 owner_id 设置。
+          description: '令牌必须满足的额外声明，以声明名称和允许值的形式表示，例如 GitHub Actions 的 repository_id 和 ref，或 GitLab 的 project_path 和 ref。每个声明都必须匹配其中一个值。最多 15 个声明，每个声明最多 20 个值。声明名称可使用字母、数字和 . _ : / -，最长 128 个字符；不能使用 iss、aud、exp、iat、nbf 和 jti，所有者声明通过 owner_id 设置。'
           maxProperties: 15
           additionalProperties:
             type: array

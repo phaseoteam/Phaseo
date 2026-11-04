@@ -323,6 +323,7 @@ const WORKLOAD_POLICY_FIELDS: Field[] = [
 	["name", "name"],
 	["provider", "provider"],
 	["issuer", "issuer"],
+	["owner-claim", "owner_claim"],
 	["owner-id", "owner_id"],
 	["status", "status"],
 	["claim-conditions-json", "claim_conditions", "json"],
@@ -935,14 +936,14 @@ const COMMANDS: Record<string, CommandSpec> = {
 		base: "/workload-identity/policies",
 		noun: "workload identity policy",
 		label: "Policy id",
-		createUsage: "--name <name> --provider vercel|github_actions --owner-id <id> [--issuer <url>] [--claim-conditions-json <json>] [--max-token-lifetime-seconds <n>]",
+		createUsage: "--name <name> --provider vercel|github_actions|gitlab|google_cloud|buildkite|circleci|aws|custom --owner-id <id> [--issuer <url>] [--owner-claim <claim>] [--claim-conditions-json <json>] [--max-token-lifetime-seconds <n>]",
 		updateUsage: "[--name <name>] [--status active|disabled] [--claim-conditions-json <json>] [--max-token-lifetime-seconds <n>]",
 		create: (flags) => {
 			const body = bodyFromFlags(flags, WORKLOAD_POLICY_FIELDS);
 			for (const [flag, key] of [["name", "name"], ["provider", "provider"], ["owner-id", "owner_id"]]) required(body[key] as string | undefined, flag);
 			return body;
 		},
-		update: (flags) => nonEmpty(bodyFromFlags(flags, WORKLOAD_POLICY_FIELDS.filter(([flag]) => !["provider", "issuer", "owner-id"].includes(flag))), "a field to update"),
+		update: (flags) => nonEmpty(bodyFromFlags(flags, WORKLOAD_POLICY_FIELDS.filter(([flag]) => !["provider", "issuer", "owner-claim", "owner-id"].includes(flag))), "a field to update"),
 	})),
 
 	"keys rotate": {

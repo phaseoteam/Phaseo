@@ -51,8 +51,8 @@ const server = createServer(async (request, response) => {
 			const call = step.call?.();
 			item = call ? { type: "function_call", id: `item-${seen.operatorRequests}`, call_id: `call-${seen.operatorRequests}`, name: call[0], arguments: JSON.stringify(call[1]) } : { type: "message", role: "assistant", content: [{ type: "output_text", text: step.text }] };
 		} else {
-			// Ordinary chats get the app command tools but never the operator's.
-			assert.ok(tools.includes("run_app_command") && !tools.includes("subscribe_events"));
+			// Ordinary chats load the app command tools when they need them, and never get the operator's.
+			assert.ok(tools.includes("load_tools") && !tools.includes("run_app_command") && !tools.includes("subscribe_events"));
 			seen.workerRequests++;
 			item = { type: "message", role: "assistant", content: [{ type: "output_text", text: "Worker done." }] };
 		}

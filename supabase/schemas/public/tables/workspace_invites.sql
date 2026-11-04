@@ -37,6 +37,13 @@ CREATE TRIGGER workspace_invites_role_policy_guard
   FOR EACH ROW
   EXECUTE FUNCTION public.enforce_workspace_invite_role_policy();
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."workspace_invites"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "team_invites_delete_own_team" ON "public"."workspace_invites"
   FOR DELETE
   TO "authenticated"

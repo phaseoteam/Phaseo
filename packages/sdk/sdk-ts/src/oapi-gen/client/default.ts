@@ -8173,8 +8173,17 @@ export type CreateWorkloadIdentityPolicyParams = {
     issuer?: string;
     max_token_lifetime_seconds?: number;
     name: string;
+    owner_claim?: string;
     owner_id: string;
-    provider: "vercel" | "github_actions";
+    provider:
+      | "vercel"
+      | "github_actions"
+      | "gitlab"
+      | "google_cloud"
+      | "buildkite"
+      | "circleci"
+      | "aws"
+      | "custom";
   };
 };
 
@@ -8198,8 +8207,17 @@ export async function createWorkloadIdentityPolicy(
     last_used_at: string | null;
     max_token_lifetime_seconds: number;
     name: string;
+    owner_claim: string;
     owner_id: string;
-    provider: "vercel" | "github_actions";
+    provider:
+      | "vercel"
+      | "github_actions"
+      | "gitlab"
+      | "google_cloud"
+      | "buildkite"
+      | "circleci"
+      | "aws"
+      | "custom";
     status: "active" | "disabled";
     updated_at: string;
   };
@@ -8220,8 +8238,17 @@ export async function createWorkloadIdentityPolicy(
       last_used_at: string | null;
       max_token_lifetime_seconds: number;
       name: string;
+      owner_claim: string;
       owner_id: string;
-      provider: "vercel" | "github_actions";
+      provider:
+        | "vercel"
+        | "github_actions"
+        | "gitlab"
+        | "google_cloud"
+        | "buildkite"
+        | "circleci"
+        | "aws"
+        | "custom";
       status: "active" | "disabled";
       updated_at: string;
     };
@@ -13647,8 +13674,17 @@ export async function getWorkloadIdentityPolicy(
     last_used_at: string | null;
     max_token_lifetime_seconds: number;
     name: string;
+    owner_claim: string;
     owner_id: string;
-    provider: "vercel" | "github_actions";
+    provider:
+      | "vercel"
+      | "github_actions"
+      | "gitlab"
+      | "google_cloud"
+      | "buildkite"
+      | "circleci"
+      | "aws"
+      | "custom";
     status: "active" | "disabled";
     updated_at: string;
   };
@@ -13671,8 +13707,17 @@ export async function getWorkloadIdentityPolicy(
       last_used_at: string | null;
       max_token_lifetime_seconds: number;
       name: string;
+      owner_claim: string;
       owner_id: string;
-      provider: "vercel" | "github_actions";
+      provider:
+        | "vercel"
+        | "github_actions"
+        | "gitlab"
+        | "google_cloud"
+        | "buildkite"
+        | "circleci"
+        | "aws"
+        | "custom";
       status: "active" | "disabled";
       updated_at: string;
     };
@@ -17027,6 +17072,7 @@ export async function listModelEndpoints(
       capability:
         | "active"
         | "coming_soon"
+        | "deranked"
         | "deranked_lvl1"
         | "deranked_lvl2"
         | "deranked_lvl3"
@@ -17034,12 +17080,14 @@ export async function listModelEndpoints(
         | "internal_testing";
       model:
         | "active"
+        | "deranked"
         | "deranked_lvl1"
         | "deranked_lvl2"
         | "deranked_lvl3"
         | "disabled";
       provider:
         | "active"
+        | "deranked"
         | "deranked_lvl1"
         | "deranked_lvl2"
         | "deranked_lvl3"
@@ -17055,6 +17103,7 @@ export async function listModelEndpoints(
       | "project_limited"
       | "paused"
       | "soft_blocked"
+      | "deranked"
       | "deranked_lvl1"
       | "deranked_lvl2"
       | "deranked_lvl3"
@@ -17147,6 +17196,7 @@ export async function listModelEndpoints(
         capability:
           | "active"
           | "coming_soon"
+          | "deranked"
           | "deranked_lvl1"
           | "deranked_lvl2"
           | "deranked_lvl3"
@@ -17154,12 +17204,14 @@ export async function listModelEndpoints(
           | "internal_testing";
         model:
           | "active"
+          | "deranked"
           | "deranked_lvl1"
           | "deranked_lvl2"
           | "deranked_lvl3"
           | "disabled";
         provider:
           | "active"
+          | "deranked"
           | "deranked_lvl1"
           | "deranked_lvl2"
           | "deranked_lvl3"
@@ -17175,6 +17227,7 @@ export async function listModelEndpoints(
         | "project_limited"
         | "paused"
         | "soft_blocked"
+        | "deranked"
         | "deranked_lvl1"
         | "deranked_lvl2"
         | "deranked_lvl3"
@@ -17587,6 +17640,7 @@ export async function listModels(
             capability:
               | "active"
               | "coming_soon"
+              | "deranked"
               | "deranked_lvl1"
               | "deranked_lvl2"
               | "deranked_lvl3"
@@ -17594,12 +17648,14 @@ export async function listModels(
               | "internal_testing";
             model:
               | "active"
+              | "deranked"
               | "deranked_lvl1"
               | "deranked_lvl2"
               | "deranked_lvl3"
               | "disabled";
             provider:
               | "active"
+              | "deranked"
               | "deranked_lvl1"
               | "deranked_lvl2"
               | "deranked_lvl3"
@@ -17616,6 +17672,7 @@ export async function listModels(
             | "project_limited"
             | "paused"
             | "soft_blocked"
+            | "deranked"
             | "deranked_lvl1"
             | "deranked_lvl2"
             | "deranked_lvl3"
@@ -17754,6 +17811,7 @@ export async function listModels(
               capability:
                 | "active"
                 | "coming_soon"
+                | "deranked"
                 | "deranked_lvl1"
                 | "deranked_lvl2"
                 | "deranked_lvl3"
@@ -17761,12 +17819,14 @@ export async function listModels(
                 | "internal_testing";
               model:
                 | "active"
+                | "deranked"
                 | "deranked_lvl1"
                 | "deranked_lvl2"
                 | "deranked_lvl3"
                 | "disabled";
               provider:
                 | "active"
+                | "deranked"
                 | "deranked_lvl1"
                 | "deranked_lvl2"
                 | "deranked_lvl3"
@@ -17783,6 +17843,7 @@ export async function listModels(
               | "project_limited"
               | "paused"
               | "soft_blocked"
+              | "deranked"
               | "deranked_lvl1"
               | "deranked_lvl2"
               | "deranked_lvl3"
@@ -19670,6 +19731,7 @@ export async function listTeamModels(
         capability:
           | "active"
           | "coming_soon"
+          | "deranked"
           | "deranked_lvl1"
           | "deranked_lvl2"
           | "deranked_lvl3"
@@ -19677,12 +19739,14 @@ export async function listTeamModels(
           | "internal_testing";
         model:
           | "active"
+          | "deranked"
           | "deranked_lvl1"
           | "deranked_lvl2"
           | "deranked_lvl3"
           | "disabled";
         provider:
           | "active"
+          | "deranked"
           | "deranked_lvl1"
           | "deranked_lvl2"
           | "deranked_lvl3"
@@ -19699,6 +19763,7 @@ export async function listTeamModels(
         | "project_limited"
         | "paused"
         | "soft_blocked"
+        | "deranked"
         | "deranked_lvl1"
         | "deranked_lvl2"
         | "deranked_lvl3"
@@ -19826,6 +19891,7 @@ export async function listTeamModels(
           capability:
             | "active"
             | "coming_soon"
+            | "deranked"
             | "deranked_lvl1"
             | "deranked_lvl2"
             | "deranked_lvl3"
@@ -19833,12 +19899,14 @@ export async function listTeamModels(
             | "internal_testing";
           model:
             | "active"
+            | "deranked"
             | "deranked_lvl1"
             | "deranked_lvl2"
             | "deranked_lvl3"
             | "disabled";
           provider:
             | "active"
+            | "deranked"
             | "deranked_lvl1"
             | "deranked_lvl2"
             | "deranked_lvl3"
@@ -19855,6 +19923,7 @@ export async function listTeamModels(
           | "project_limited"
           | "paused"
           | "soft_blocked"
+          | "deranked"
           | "deranked_lvl1"
           | "deranked_lvl2"
           | "deranked_lvl3"
@@ -20766,7 +20835,7 @@ export type ListWorkloadIdentityPoliciesParams = {
 };
 
 /**
- * Lists the workspace's trusted workload policies: which Vercel deployments and GitHub Actions workflows may call the gateway with their OIDC token instead of an API key. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+ * Lists the workspace's trusted workload policies: which deployments, CI jobs and cloud workloads may call the gateway with their OIDC token instead of an API key. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
  */
 export async function listWorkloadIdentityPolicies(
   client: Client,
@@ -20786,8 +20855,17 @@ export async function listWorkloadIdentityPolicies(
     last_used_at: string | null;
     max_token_lifetime_seconds: number;
     name: string;
+    owner_claim: string;
     owner_id: string;
-    provider: "vercel" | "github_actions";
+    provider:
+      | "vercel"
+      | "github_actions"
+      | "gitlab"
+      | "google_cloud"
+      | "buildkite"
+      | "circleci"
+      | "aws"
+      | "custom";
     status: "active" | "disabled";
     updated_at: string;
   }[];
@@ -20809,8 +20887,17 @@ export async function listWorkloadIdentityPolicies(
       last_used_at: string | null;
       max_token_lifetime_seconds: number;
       name: string;
+      owner_claim: string;
       owner_id: string;
-      provider: "vercel" | "github_actions";
+      provider:
+        | "vercel"
+        | "github_actions"
+        | "gitlab"
+        | "google_cloud"
+        | "buildkite"
+        | "circleci"
+        | "aws"
+        | "custom";
       status: "active" | "disabled";
       updated_at: string;
     }[];
@@ -26990,7 +27077,7 @@ export type UpdateWorkloadIdentityPolicyParams = {
 };
 
 /**
- * Changes a policy's name, status, claim conditions or maximum token lifetime. The provider, issuer and owner cannot change; create a new policy instead. Changes reach the gateway within a minute. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+ * Changes a policy's name, status, claim conditions or maximum token lifetime. The provider, issuer, owner claim and owner cannot change; create a new policy instead. Changes reach the gateway within a minute. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
  */
 export async function updateWorkloadIdentityPolicy(
   client: Client,
@@ -27009,8 +27096,17 @@ export async function updateWorkloadIdentityPolicy(
     last_used_at: string | null;
     max_token_lifetime_seconds: number;
     name: string;
+    owner_claim: string;
     owner_id: string;
-    provider: "vercel" | "github_actions";
+    provider:
+      | "vercel"
+      | "github_actions"
+      | "gitlab"
+      | "google_cloud"
+      | "buildkite"
+      | "circleci"
+      | "aws"
+      | "custom";
     status: "active" | "disabled";
     updated_at: string;
   };
@@ -27033,8 +27129,17 @@ export async function updateWorkloadIdentityPolicy(
       last_used_at: string | null;
       max_token_lifetime_seconds: number;
       name: string;
+      owner_claim: string;
       owner_id: string;
-      provider: "vercel" | "github_actions";
+      provider:
+        | "vercel"
+        | "github_actions"
+        | "gitlab"
+        | "google_cloud"
+        | "buildkite"
+        | "circleci"
+        | "aws"
+        | "custom";
       status: "active" | "disabled";
       updated_at: string;
     };

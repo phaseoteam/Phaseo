@@ -169,6 +169,7 @@
     "Common.authFlows.passwordReset.requestNew",
     "Common.authFlows.passwordReset.resetting",
     "Common.authFlows.passwordReset.setTitle",
+    "Common.authFlows.passwordReset.signOutOthersFailed",
     "Common.authFlows.passwordReset.submit",
     "Common.authFlows.passwordReset.success",
     "Common.authFlows.passwordReset.title",
@@ -943,9 +944,13 @@
     "SettingsUI.identity",
     "SettingsUI.realtimeCopy"
   ],
-  "[\"Catalogue\",\"Common.ui.subscriptionCatalog\",\"Product.chatRooms.aiElements\"]": [
+  "[\"Catalogue\",\"Common.ui.subscriptionCatalog\",\"Product.chat.modelPicker\",\"Product.chatRooms.aiElements\"]": [
     "Catalogue.compare",
     "Catalogue.compareView",
+    "Catalogue.modelDetail.metadata",
+    "Catalogue.models.filtersUi",
+    "Product.chat.modelPicker.noModelsFound",
+    "Product.chat.modelPicker.suggestions",
     "Product.chatRooms.aiElements.close",
     "Product.chatRooms.aiElements.modelSelector",
     "Product.chatRooms.aiElements.providerLogo"

@@ -81,6 +81,7 @@ export function buildUptimeChartData(
 				: null,
 			bucket,
 			requests,
+			failedRequests: point?.failedRequests ?? 0,
 			worstRequests: point?.worstProviderRequests ?? 0,
 		};
 	});
@@ -181,6 +182,12 @@ export default function ModelSuccessChart({
 													{t("tooltipUptime")}
 												</span>{" "}
 												{formatUptime(payload[0].payload.overall)}
+											</p>
+											<p className="text-xs text-muted-foreground tabular-nums">
+												{t("tooltipFailedRequests", {
+													count: payload[0].payload.requests,
+													failed: payload[0].payload.failedRequests,
+												})}
 											</p>
 											{showLeastStableProvider ? (
 												<p className="text-sm">

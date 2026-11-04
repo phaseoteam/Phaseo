@@ -30,6 +30,7 @@ vi.mock("./io-logging", () => ({
 	resolveGatewayIoLoggingPolicy: (...args: any[]) => resolveGatewayIoLoggingPolicyMock(...args),
 	persistGatewayIoLog: (...args: any[]) => persistGatewayIoLogMock(...args),
 	requestZeroDataRetention: () => false,
+	keyKeepsContentOutOfTelemetry: async () => false,
 }));
 
 vi.mock("./upstream-requests", () => ({
@@ -126,6 +127,70 @@ describe("audit request detail persistence", () => {
 		}
 	});
 
+	it.each(["success", "execute failure"])("records the attempt's wallet charge key on %s", async (kind) => {
+		const insert = vi.fn((_row: any) => ({ select: () => ({ single: async () => ({
+			data: { id: "row", created_at: "2026-11-02T00:00:00Z", workspace_id: "ws" }, error: null,
+		}) }) }));
+		getSupabaseAdminMock.mockReturnValue({ from: () => ({ insert }), rpc: vi.fn().mockResolvedValue({ data: "fact", error: null }) });
+		resolveGatewayIoLoggingPolicyMock.mockResolvedValue({ captureEnabled: false });
+		const args = {
+			requestId: "req_public", billingRequestId: "bill_attempt", workspaceId: "ws", provider: "openai",
+			model: "model", endpoint: "responses" as const, stream: false, byok: false,
+			usagePriced: { input_tokens: 10 }, totalNanos: 5000, currency: "USD",
+		};
+		if (kind === "success") await auditSuccess(args);
+		else await auditFailure({ ...args, stage: "execute", statusCode: 502, errorCode: "upstream_error" });
+		expect(insert.mock.calls[0][0]).toMatchObject({ request_id: "req_public", billing_request_id: "bill_attempt" });
+	});
+
+	it("sends the SKU meter each pricing line was charged with", async () => {
+		const insert = vi.fn((_row: any) => ({ select: () => ({ single: async () => ({
+			data: { id: "row", created_at: "2026-11-04T00:00:00Z", workspace_id: "ws" }, error: null,
+		}) }) }));
+		const rpc = vi.fn().mockResolvedValue({ data: "fact", error: null });
+		getSupabaseAdminMock.mockReturnValue({ from: () => ({ insert }), rpc });
+		resolveGatewayIoLoggingPolicyMock.mockResolvedValue({ captureEnabled: false });
+		const meterId = "2f1c9a4e-7b3d-4c8e-9a1f-0b2c3d4e5f60";
+		await auditSuccess({
+			requestId: "req", workspaceId: "ws", provider: "openai", model: "openai/gpt-6-luna", endpoint: "responses",
+			stream: false, byok: false, totalNanos: 500, currency: "USD",
+			usagePriced: {
+				output_text_tokens: 1000,
+				pricing: { lines: [
+					{ dimension: "output_text_tokens", quantity: 1000, unit_price_usd: 0.0000005, line_nanos: 500, rule_id: meterId },
+					// A static or fee rule id is not a SKU meter and is not sent.
+					{ dimension: "byok_fee", quantity: 1, unit_price_usd: 0, line_nanos: 0, rule_id: "byok-fee" },
+				] },
+			},
+		} as any);
+		const event = rpc.mock.calls.find((call) => call[1]?.p_event)?.[1].p_event;
+		expect(event.pricing_lines).toEqual([
+			expect.objectContaining({ meter_key: "output_text_tokens", sku_meter_id: meterId }),
+			expect.not.objectContaining({ sku_meter_id: expect.anything() }),
+		]);
+	});
+
+	it("keeps the request row when the database predates the charge key column", async () => {
+		vi.resetModules();
+		const { auditSuccess: freshAuditSuccess } = await import("./index");
+		const insert = vi.fn((row: any) => ({ select: () => ({ single: async () => ("billing_request_id" in row
+			? { data: null, error: { code: "PGRST204", message: "Could not find the 'billing_request_id' column of 'gateway_requests' in the schema cache" } }
+			: { data: { id: "row", created_at: "2026-11-02T00:00:00Z", workspace_id: "ws" }, error: null }) }) }));
+		getSupabaseAdminMock.mockReturnValue({ from: () => ({ insert }), rpc: vi.fn().mockResolvedValue({ data: "fact", error: null }) });
+		resolveGatewayIoLoggingPolicyMock.mockResolvedValue({ captureEnabled: false });
+		const args = {
+			requestId: "req_public", billingRequestId: "bill_attempt", workspaceId: "ws", provider: "openai",
+			model: "model", endpoint: "responses" as const, stream: false, byok: false,
+			usagePriced: {}, totalNanos: 5000, currency: "USD",
+		};
+		await freshAuditSuccess(args);
+		await freshAuditSuccess({ ...args, requestId: "req_next" });
+		// One rejected insert, then every row is written without the column.
+		expect(insert).toHaveBeenCalledTimes(3);
+		expect(insert.mock.calls[1][0]).toMatchObject({ request_id: "req_public", cost_nanos: 5000 });
+		expect(insert.mock.calls[2][0]).not.toHaveProperty("billing_request_id");
+	});
+
 	it.each([
 		["a requests-per-minute policy rejection", "user:rate_limit_exceeded", "policy_requests_per_minute", { policy_id: "policy-1", limit_scope: "member", limit: "requests" }],
 		["a tokens-per-minute policy rejection", "user:rate_limit_exceeded", "policy_tokens_per_minute", { policy_id: "policy-1", limit_scope: "member", limit: "tokens" }],
@@ -147,6 +212,62 @@ describe("audit request detail persistence", () => {
 		});
 		const event = rpc.mock.calls.find((call) => call[1]?.p_event)?.[1].p_event;
 		expect(event.safe_metadata.rate_limit).toEqual(expected);
+	});
+
+	it("does not rate the JSON output or tool calls of a failed request", async () => {
+		const insert = vi.fn(() => ({ select: () => ({ single: async () => ({
+			data: { id: "row", created_at: "2026-11-03T00:00:00Z", workspace_id: "ws" }, error: null,
+		}) }) }));
+		const rpc = vi.fn().mockResolvedValue({ data: "fact", error: null });
+		getSupabaseAdminMock.mockReturnValue({ from: () => ({ insert }), rpc });
+		resolveGatewayIoLoggingPolicyMock.mockResolvedValue({ captureEnabled: false });
+		await auditFailure({
+			stage: "execute", requestId: "req", workspaceId: "ws", model: "model", endpoint: "messages",
+			stream: true, statusCode: 502, errorCode: "upstream_error",
+			usage: { output_tool_call_count: 2 },
+			requestPayload: { output_config: { format: { type: "json_schema", schema: { type: "object" } } } },
+		});
+		const event = rpc.mock.calls.find((call) => call[1]?.p_event)?.[1].p_event;
+		// Before: the reason defaulted to "none", which the quality chart read as a valid reply,
+		// and the failure's tool calls counted as invalid.
+		expect(event).toMatchObject({ structured_output_attempted: true, structured_output_succeeded: false, tool_call_succeeded: null });
+		expect(event.safe_metadata).toMatchObject({ structured_output_success_basis: "unobserved", structured_output_error_reason: null });
+	});
+
+	it.each([
+		["complete", false, false],
+		["drained after a disconnect", true, false],
+		["cut at the rebuild size cap", false, true],
+	])("rates a streamed reply's JSON and tool calls only when it is whole (%s)", async (_label, disconnected, truncated) => {
+		const insert = vi.fn(() => ({ select: () => ({ single: async () => ({
+			data: { id: "row", created_at: "2026-11-03T00:00:00Z", workspace_id: "ws" }, error: null,
+		}) }) }));
+		const rpc = vi.fn().mockResolvedValue({ data: "fact", error: null });
+		getSupabaseAdminMock.mockReturnValue({ from: () => ({ insert }), rpc });
+		resolveGatewayIoLoggingPolicyMock.mockResolvedValue({ captureEnabled: false });
+		await auditSuccess({
+			requestId: "req", workspaceId: "ws", provider: "anthropic", model: "model", endpoint: "messages",
+			stream: true, byok: false, usagePriced: { output_tokens: 5 }, totalNanos: 1, currency: "USD",
+			downstreamDisconnected: disconnected,
+			requestPayload: {
+				tools: [{ name: "get_weather", input_schema: { type: "object", properties: { city: { type: "string" } } } }],
+				output_config: { format: { type: "json_object" } },
+			},
+			// What a drained stream leaves behind: the tool input cut off mid-JSON.
+			gatewayResponse: {
+				type: "message",
+				content: [{ type: "tool_use", name: "get_weather", input: '{"city":' }],
+				...(truncated ? { gateway_log_truncated: true } : {}),
+			},
+		});
+		const event = rpc.mock.calls.find((call) => call[1]?.p_event)?.[1].p_event;
+		if (disconnected || truncated) {
+			expect(event.tool_call_succeeded).toBeNull();
+			expect(event.safe_metadata).toMatchObject({ tool_call_validation: null, structured_output_success_basis: "unobserved", structured_output_error_reason: null });
+		} else {
+			expect(event.tool_call_succeeded).toBe(false);
+			expect(event.safe_metadata.tool_call_validation).toMatchObject({ totalCalls: 1, invalidJson: 1 });
+		}
 	});
 
 	it("does not upload when the authoritative request insert fails", async () => {
@@ -732,7 +853,8 @@ describe("audit request detail persistence", () => {
 			cost_nanos: 10_000,
 			usage_meters: expect.any(Array),
 			tool_call_count: 1,
-			tool_call_succeeded: true,
+			// The call is known only from usage; with no reply to check, it is not rated.
+			tool_call_succeeded: null,
 			structured_output_attempted: true,
 			structured_output_succeeded: true,
 			service_tier_requested: "priority",

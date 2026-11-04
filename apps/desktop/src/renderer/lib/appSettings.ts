@@ -20,11 +20,9 @@ const windowSettings: Record<string, WindowSetting> = {
 	effortDisplay: persisted(effortDisplayKey, defaultEffortDisplay, { label: "Show reasoning as", page: "appearance", description: "How the model button shows the reasoning level: word, dots or both.", type: "enum", values: effortDisplays }),
 	pickerGroups: { label: "Model picker groups", page: "appearance", description: "Which groups the model picker's left column shows and their order: { order, hidden }, lists of group ids such as codex, claude, phaseo (all Phaseo models) or lab:openai. Ordered ids come first; the rest keep their default order.", type: "object", read: () => readPersistedValue(pickerGroupsKey, defaultPickerGroups), write: value => writePersistedValue(pickerGroupsKey, validPickerGroups(value)) },
 	sendKey: { label: "Send with", page: "general", description: "enter, or mod+enter (Ctrl or ⌘ with Enter).", type: "enum", values: ["enter", "mod+enter"], read: currentSendKey, write: value => setSendKey(choice(value, ["enter", "mod+enter"], "sendKey") as "enter" | "mod+enter") },
-	autoOpenPanes: persisted("phaseo.desktop.panes.autoOpen", true, { label: "Open panes automatically", page: "general", description: "Show the diff when a turn changes files, and a linked pull request.", type: "boolean" }),
-	workingSection: persisted(workingSectionKey, false, { label: "Show a Working section", page: "general", description: "Fold working chats that need nothing into a Working section.", type: "boolean" }),
-	diffLayout: persisted("phaseo.desktop.diffLayout", "unified", { label: "Diff layout", page: "diff", description: "unified or split.", type: "enum", values: ["unified", "split"] }),
-	diffWrap: persisted("phaseo.desktop.diffWrap", false, { label: "Wrap long lines in diffs", page: "diff", description: "Wrap long lines in the diff pane.", type: "boolean" }),
-	diffIgnoreWhitespace: persisted("phaseo.desktop.diffIgnoreWhitespace", false, { label: "Hide whitespace changes", page: "diff", description: "Hide whitespace-only changes in the diff pane.", type: "boolean" }),
+	autoOpenPanes: persisted("phaseo.desktop.panes.autoOpen", true, { label: "Open panes automatically", page: "chat", description: "Show the diff when a turn changes files, and a linked pull request.", type: "boolean" }),
+	workingSection: persisted(workingSectionKey, false, { label: "Show a Working section", page: "threads", description: "Fold working chats that need nothing into a Working section.", type: "boolean" }),
+	diffWrap: persisted("phaseo.desktop.diffWrap", false, { label: "Wrap long lines in diffs", page: "diffs", description: "Wrap long lines in the diff pane.", type: "boolean" }),
 	fileWrap: persisted("phaseo.desktop.fileWrap", false, { label: "Wrap long lines in files", page: "files", description: "Wrap long lines in the file viewer.", type: "boolean" }),
 };
 

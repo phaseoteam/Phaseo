@@ -16,6 +16,10 @@ declare
   v_req public.workspace_join_requests%rowtype;
   v_role public.workspace_role := 'member'::public.workspace_role;
 begin
+  if not public.mfa_satisfied() then
+    raise exception using errcode = '42501', message = 'mfa_required';
+  end if;
+
   if v_user_id is null then
     raise exception using errcode = '42501', message = 'Unauthorized';
   end if;

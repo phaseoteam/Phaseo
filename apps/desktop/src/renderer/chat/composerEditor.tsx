@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { createContext, useContext, useEffect, useRef } from "react";
 import { Extension, Node, mergeAttributes, type Editor, type JSONContent } from "@tiptap/core";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
@@ -9,12 +9,15 @@ import Paragraph from "@tiptap/extension-paragraph";
 import Text from "@tiptap/extension-text";
 import HardBreak from "@tiptap/extension-hard-break";
 import { Placeholder, UndoRedo } from "@tiptap/extensions";
-import { CircleDot, File as FileIcon, Folder, GitPullRequestArrow, ImageIcon, MessageSquare, Paperclip } from "lucide-react";
+import { CircleDot, File as FileIcon, Film, Folder, GitPullRequestArrow, ImageIcon, MessageSquare, Music, Paperclip } from "lucide-react";
 import { PullRequestLinkPreview } from "../views/pullRequests/PullRequestLinkPreview";
 import { chatDragType, mentionToken, parseMentions, type Mention } from "../lib/mentions";
 import { showToast } from "../components/ui/toast";
 import { isMac } from "../lib/shortcuts";
 import { isLargePaste } from "./largePaste";
+import { ComposerMarkdown, refreshComposerMarkdown } from "./composerMarkdown";
+import { useWorkspacePreferences } from "../lib/workspacePreferences";
+import { registerComposer } from "./composerFocusRedirect";
 
 /** The chat a sidebar row carries when dragged, if this drag is one. */
 export function draggedChat(data: DataTransfer | null): Mention | undefined {
@@ -24,12 +27,23 @@ export function draggedChat(data: DataTransfer | null): Mention | undefined {
 import { useWorkspace } from "../app/workspace";
 import { InlineChip } from "../components/InlineChip";
 import { ModelStack } from "./ModelPicker";
+import { useAttachmentUrl } from "./MessageAttachments";
+
+/** The chat whose composer this is, so attached images can show as thumbnails in their chips. */
+export const ComposerTaskContext = createContext<string | undefined>(undefined);
+
+function AttachmentIcon({ id, label }: { id: string; label: string }) {
+	const taskId = useContext(ComposerTaskContext), image = /\.(png|jpe?g|gif|webp)$/i.test(label);
+	const url = useAttachmentUrl(image ? taskId : undefined, id);
+	if (url) return <img src={url} alt="" className="rounded-sm object-cover" />;
+	return image ? <ImageIcon /> : /\.(mp3|m4a|wav|ogg|opus|flac|aac|weba)$/i.test(label) ? <Music /> : /\.(mp4|mov|webm|mkv)$/i.test(label) ? <Film /> : <Paperclip />;
+}
 
 function MentionChip({ node, selected }: NodeViewProps) {
 	const { overview } = useWorkspace();
 	const { kind, ref, label } = node.attrs as Mention;
 	const task = kind === "chat" ? overview.tasks.find(value => value.id === ref) : undefined;
-	const icon = kind === "chat" ? (task ? <ModelStack models={[task]} size="sm" ringClassName="ring-transparent" /> : <MessageSquare />) : kind === "folder" ? <Folder /> : kind === "file" ? <FileIcon /> : kind === "image" ? <ImageIcon /> : <Paperclip />;
+	const icon = kind === "chat" ? (task ? <ModelStack models={[task]} size="sm" ringClassName="ring-transparent" /> : <MessageSquare />) : kind === "folder" ? <Folder /> : kind === "file" ? <FileIcon /> : kind === "image" ? <ImageIcon /> : <AttachmentIcon id={ref} label={label} />;
 	const title = kind === "chat" ? "The agent can read this chat" : kind === "file" || kind === "folder" ? ref : label;
 	// A pull request chip shows the same hover card as a pull request link in a message.
 	if (kind === "pull-request") return <NodeViewWrapper as="span" className="composer-chip" data-mention-kind={kind}><PullRequestLinkPreview url={ref}><InlineChip icon={<GitPullRequestArrow />} selected={selected}>{label}</InlineChip></PullRequestLinkPreview></NodeViewWrapper>;
@@ -105,16 +119,17 @@ export function useComposerEditor({ value, onChange, placeholder, disabled, onFi
 	const keys = useRef<(event: KeyboardEvent) => boolean>(undefined);
 	const pasteInline = useRef(false);
 	const last = useRef(value);
-	const latest = useRef({ onChange, onFiles, placeholder, ultrathink });
-	latest.current = { onChange, onFiles, placeholder, ultrathink };
+	const richText = useWorkspacePreferences().chat.richTextComposer;
+	const latest = useRef({ onChange, onFiles, placeholder, richText, ultrathink });
+	latest.current = { onChange, onFiles, placeholder, richText, ultrathink };
 	const editor = useEditor({
-		extensions: [Document, Paragraph, Text, HardBreak, UndoRedo, MentionNode, UltrathinkWord(() => latest.current.ultrathink), Placeholder.configure({ placeholder: () => latest.current.placeholder })],
+		extensions: [Document, Paragraph, Text, HardBreak, UndoRedo, MentionNode, UltrathinkWord(() => latest.current.ultrathink), Placeholder.configure({ placeholder: () => latest.current.placeholder }), ComposerMarkdown.configure({ enabled: () => latest.current.richText })],
 		content: draftContent(value),
 		editable: !disabled,
 		editorProps: {
 			attributes: { "aria-label": label, "aria-multiline": "true", role: "textbox", spellcheck: "true", class: "composer-editor" },
 			handleKeyDown: (_view, event) => {
-				// Mod+Shift+V pastes as plain text in Chromium; here it also keeps a long paste inline (T3).
+				// Mod+Shift+V pastes as plain text in Chromium; here it also keeps a long paste inline.
 				pasteInline.current = event.key.toLowerCase() === "v" && event.shiftKey && (event.ctrlKey || event.metaKey);
 				return keys.current?.(event) ?? false;
 			},
@@ -124,7 +139,7 @@ export function useComposerEditor({ value, onChange, placeholder, disabled, onFi
 				if (files.length && latest.current.onFiles) { event.preventDefault(); latest.current.onFiles(files); return true; }
 				const text = event.clipboardData?.getData("text/plain");
 				if (!text) return false;
-				// A long paste becomes a text attachment, as T3 folds large pastes, so the message stays readable.
+				// A long paste becomes a text attachment, so the message stays readable.
 				if (latest.current.onFiles && !pasteInline.current && isLargePaste(text)) {
 					event.preventDefault(); latest.current.onFiles([new File([text], "pasted-text.txt", { type: "text/plain" })]);
 					showToast("info", "Long paste attached as pasted-text.txt", `${isMac() ? "⌘⇧V" : "Ctrl+Shift+V"} keeps a long paste in the message.`);
@@ -163,9 +178,12 @@ export function useComposerEditor({ value, onChange, placeholder, disabled, onFi
 		editor.commands.focus("end");
 	}, [editor, value]);
 	useEffect(() => { editor?.setEditable(!disabled); }, [editor, disabled]);
+	useEffect(() => editor ? registerComposer(editor) : undefined, [editor]);
 	// Placeholder text is read when the editor redraws; nudge it when the text changes.
 	useEffect(() => { if (editor && !editor.isDestroyed) editor.view.dispatch(editor.state.tr.setMeta("placeholder", placeholder)); }, [editor, placeholder]);
 	useEffect(() => { if (editor && !editor.isDestroyed) editor.view.dispatch(editor.state.tr.setMeta(ultrathinkKey, ultrathink)); }, [editor, ultrathink]);
+	// Turning rich text on or off in Settings restyles open drafts straight away.
+	useEffect(() => { if (editor && !editor.isDestroyed) editor.view.dispatch(editor.state.tr.setMeta(refreshComposerMarkdown, true)); }, [editor, richText]);
 
 	// Scripts drive the composer like a text field: `value` reads and replaces the draft text.
 	useEffect(() => {

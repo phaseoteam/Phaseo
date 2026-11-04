@@ -2,8 +2,8 @@ import type { ModelOption, ModelOptionDescriptor, ModelOptionValues } from "../s
 
 type Effort = "low" | "medium" | "high" | "xhigh" | "max";
 /**
- * Per-model settings, first from T3 Code's model manifest (2026-10-02). As Claude Code has them, Ultracode is a switch
- * that runs workflows at any level, and Ultrathink is a word typed in a message, not a level.
+ * Per-model settings for each Claude model (as of 2026-10-02). As Claude Code has them, Ultracode is a switch that runs
+ * workflows at any level, and Ultrathink is a word typed in a message, not a level.
  */
 type Profile = { effort: Effort[]; defaultEffort?: Effort; fastMode?: boolean; contextWindow?: "200k" | "1m"; thinking?: boolean; ultracode?: boolean; effortMap?: Partial<Record<Effort, Effort>> };
 
@@ -23,8 +23,7 @@ const profiles: Record<string, Profile> = {
 
 /**
  * Claude models Claude Code can run by exact ID, with the first Claude Code
- * release that accepts each one and its settings profile. Seeded from T3
- * Code's model manifest; the current generation is read from Claude Code itself.
+ * release that accepts each one and its settings profile. The current generation is read from Claude Code itself.
  */
 export const claudeModelManifest: { id: string; name: string; minVersion?: string; profile: string }[] = [
 	{ id: "claude-opus-5-5", name: "Claude Opus 5.5", minVersion: "2.1.280", profile: "opus-5-5" },

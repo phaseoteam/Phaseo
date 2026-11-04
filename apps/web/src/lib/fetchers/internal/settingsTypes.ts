@@ -194,6 +194,8 @@ export type SettingsOAuthAppsInitialData = {
 
 export type SettingsOAuthAppDetailInitialData = {
 	authorizations: Array<Record<string, unknown>>;
+	/** False for plain members: only owners and admins see who uses the app. */
+	canViewUsers?: boolean;
 	currentUserId: string | null;
 	oauthApp: Record<string, unknown> | null;
 	recentRequests: Array<{
@@ -586,11 +588,15 @@ export type SettingsPresetsInitialData = {
 };
 
 export type SettingsGuardrailProviderModel = { providerId: string; apiModelId: string; internalModelId: string | null; internalModelName?: string | null; organisationId?: string | null; organisationName?: string | null; providerPolicy?: { zeroDataRetention: boolean; dataPolicyTier: string; dataPolicyConfidence: string }; capabilities?: Array<{ id: string; dataPolicy: Record<string, unknown> | null }> };
-export type SettingsGuardrailRow = { id: string; enabled?: boolean | null; name?: string | null; description?: string | null; privacy_enable_paid_may_train?: boolean | null; privacy_enable_free_may_train?: boolean | null; privacy_enable_free_may_publish_prompts?: boolean | null; privacy_enable_input_output_logging?: boolean | null; privacy_zdr_only?: boolean | null; provider_restriction_mode?: string | null; provider_restriction_provider_ids?: string[] | null; provider_restriction_enforce_allowed?: boolean | null; model_restriction_mode?: string | null; allowed_api_model_ids?: string[] | null; prompt_injection_enabled?: boolean | null; prompt_injection_action?: string | null; sensitive_info_enabled?: boolean | null; sensitive_info_default_action?: string | null; sensitive_info_rules?: SensitiveInfoRulePayload[] | null };
+export type SettingsGuardrailKind = "access" | "safety" | "spend" | "rate";
+export type SettingsGuardrailRow = { id: string; kind?: SettingsGuardrailKind | null; /** The workspace baseline: the Settings, Privacy rules, on the whole workspace. */ is_workspace_baseline?: boolean | null; enabled?: boolean | null; name?: string | null; description?: string | null; privacy_enable_paid_may_train?: boolean | null; privacy_enable_free_may_train?: boolean | null; privacy_enable_free_may_publish_prompts?: boolean | null; privacy_enable_input_output_logging?: boolean | null; privacy_zdr_only?: boolean | null; provider_restriction_mode?: string | null; provider_restriction_provider_ids?: string[] | null; provider_restriction_enforce_allowed?: boolean | null; model_restriction_mode?: string | null; allowed_api_model_ids?: string[] | null; prompt_injection_enabled?: boolean | null; prompt_injection_action?: string | null; sensitive_info_enabled?: boolean | null; sensitive_info_default_action?: string | null; sensitive_info_rules?: SensitiveInfoRulePayload[] | null };
 export type SettingsGuardrailMember = { id: string; name: string; role: string };
+/** principalUserId is the member whose guardrails the gateway also applies to the key (OAuth user, else creator). */
+export type SettingsGuardrailKey = { id: string; name: string; prefix: string; status: string; principalUserId?: string | null };
+export type SettingsGuardrailDepartment = { id: string; name: string };
 export type SettingsGuardrailProvider = { id: string; name: string; familyId: string; offerLabel: string | null; offerScope: "global" | "regional" | "specialized" | null };
-export type SettingsGuardrailsInitialData = { activeProviderModels: SettingsGuardrailProviderModel[]; canManageGuardrails: boolean; guardrailKeyIdsByGuardrailId: Record<string, string[]>; guardrailMemberIdsByGuardrailId: Record<string, string[]>; guardrails: SettingsGuardrailRow[]; keys: Array<{ id: string; name: string; prefix: string; status: string }>; members: SettingsGuardrailMember[]; providers: SettingsGuardrailProvider[]; workspaceId: string | null };
-export type SettingsGuardrailEditorData = { accountPolicy: AccountPrivacyPolicy; activeProviderModels: SettingsGuardrailProviderModel[]; canManageGuardrails: boolean; guardrail: SettingsGuardrailRow | null; initialKeyIds: string[]; initialMemberIds: string[]; keys: Array<{ id: string; name: string; prefix: string; status: string }>; members: SettingsGuardrailMember[]; mode: "create" | "edit"; providers: SettingsGuardrailProvider[]; teamName: string | null; workspaceId: string | null };
+export type SettingsGuardrailsInitialData = { activeProviderModels: SettingsGuardrailProviderModel[]; canManageGuardrails: boolean; /** The workspace's departments. */ departments?: SettingsGuardrailDepartment[]; /** The departments whose guardrails reach each key and member, as the gateway counts them. */ keyDepartmentIds?: Record<string, string[]>; memberDepartmentIds?: Record<string, string[]>; guardrailDepartmentIdsByGuardrailId?: Record<string, string[]>; guardrailKeyIdsByGuardrailId: Record<string, string[]>; guardrailMemberIdsByGuardrailId: Record<string, string[]>; guardrails: SettingsGuardrailRow[]; keys: SettingsGuardrailKey[]; members: SettingsGuardrailMember[]; providers: SettingsGuardrailProvider[]; workspaceGuardrailIds?: string[]; workspaceId: string | null };
+export type SettingsGuardrailEditorData = { accountPolicy: AccountPrivacyPolicy; activeProviderModels: SettingsGuardrailProviderModel[]; canManageGuardrails: boolean; guardrail: SettingsGuardrailRow | null; initialDepartmentIds?: string[]; initialKeyIds: string[]; initialMemberIds: string[]; initialWorkspaceAssigned?: boolean; keys: Array<{ id: string; name: string; prefix: string; status: string }>; members: SettingsGuardrailMember[]; mode: "create" | "edit"; providers: SettingsGuardrailProvider[]; teamName: string | null; workspaceId: string | null };
 
 /** A request classifier in API units (sample_rate 0 to 1, budget in USD) with this month's spend. */
 export type SettingsClassifier = {
@@ -656,7 +662,15 @@ export type SettingsRateLimitsInitialData = {
 	tier?: SettingsRateLimitTier | null;
 };
 
-export type SettingsWorkloadIdentityProvider = "vercel" | "github_actions";
+export type SettingsWorkloadIdentityProvider =
+	| "vercel"
+	| "github_actions"
+	| "gitlab"
+	| "google_cloud"
+	| "buildkite"
+	| "circleci"
+	| "aws"
+	| "custom";
 
 /** A trust policy from the gateway's /v1/workload-identity/policies (web-api settings-workload-identity). */
 export type SettingsWorkloadIdentityPolicy = {
@@ -664,7 +678,9 @@ export type SettingsWorkloadIdentityPolicy = {
 	name: string;
 	provider: SettingsWorkloadIdentityProvider;
 	issuer: string;
-	/** Vercel team ID or GitHub repository owner ID the token must carry. */
+	/** The claim ownerId is matched against: fixed per platform, chosen for custom issuers. Absent from older responses. */
+	ownerClaim?: string | null;
+	/** The pinned owner the token must carry, such as a Vercel team ID, GitHub owner ID or IAM role ARN. */
 	ownerId: string;
 	/** Exact-match conditions on other token claims, such as project_id or environment. */
 	claimConditions: Record<string, string[]>;

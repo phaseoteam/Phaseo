@@ -512,7 +512,7 @@ export async function fetchFrontendModelProviderRoutingHealth(args: {
 }): Promise<ProviderRoutingStatusMap> {
 	if (args.providerIds.length === 0) return {};
 	const providerIds = [...new Set(args.providerIds)].sort((a, b) => a.localeCompare(b));
-	const query = new URLSearchParams({ provider_ids: providerIds.join(",") });
+	const query = new URLSearchParams({ provider_ids: providerIds.join(","), model_id: args.modelId });
 	if (args.windowHours != null) query.set("window_hours", String(args.windowHours));
 	return (await fetchPublicWebApi<{ providers: ProviderRoutingStatusMap }>(
 		`/api/_web/models/provider-routing-health?${query.toString()}`,

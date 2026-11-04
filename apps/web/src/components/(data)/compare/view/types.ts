@@ -65,7 +65,8 @@ export type CompareViewModel = {
 };
 
 export type CompareViewPricing = {
-	provider: { id: string; name: string; routed: boolean };
+	/** `logoId` is the provider family; absent from responses cached before it was sent. */
+	provider: { id: string; name: string; logoId?: string; routed: boolean };
 	tiers: Record<string, CompareViewPriceRow[]>;
 };
 
@@ -81,11 +82,22 @@ export type CompareViewPriceRow = {
 	conditional: boolean;
 	/** For conditional rows, e.g. "input tokens ≤ 272K". */
 	condition?: string | null;
+	/** The same condition as data. Absent from web API responses older than it. */
+	conditions?: CompareViewCondition[];
+};
+
+/** One request condition on a price, keyed by the last part of its path ("video_params.resolution" → "resolution"). */
+export type CompareViewCondition = {
+	field: string;
+	op: "eq" | "ne" | "lt" | "lte" | "gt" | "gte" | "in";
+	value: string | number | boolean | Array<string | number>;
 };
 
 export type CompareViewProvider = {
 	id: string;
 	name: string;
+	/** The provider family, so "anthropic-us" shows the Anthropic logo. Absent from older cached responses. */
+	logoId?: string;
 	input: number | null;
 	output: number | null;
 	cacheRead: number | null;

@@ -2,7 +2,7 @@ import { formatDateParts } from "@phaseo/app-kit/format";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ChevronDown, CircleCheck, LoaderCircle, SearchIcon, Star } from "lucide-react";
-import type { Harness, ModelOption } from "../../shared/workspace";
+import { runnableHarnesses, type Harness, type ModelOption } from "../../shared/workspace";
 import { usablePhaseoAccounts, useWorkspace } from "../app/workspace";
 import type { ModelSelection } from "../lib/modelPreferences";
 import { useModels } from "../lib/useModels";
@@ -76,7 +76,7 @@ export function ModelStack({ models, size = "md", ringClassName = "bg-card ring-
 
 type Entry = { key: string; harness: Harness; accountId?: string; model: ModelOption };
 /**
- * The picker's left column, as in T3 Code: favourites, then each local agent, then Phaseo's models, all of them
+ * The picker's left column: favourites, then each local agent, then Phaseo's models, all of them
  * and then one lab at a time, so no list mixes where a model runs.
  */
 type Group = "favourites" | "phaseo" | Harness | `lab:${string}`;
@@ -154,7 +154,7 @@ type Section = { heading: string; entries: Entry[]; harness?: Harness; older?: n
 type Row = { type: "heading"; key: string; heading: string } | { type: "entry"; key: string; entry: Entry } | { type: "older"; key: string; harness: Harness; older: number };
 const rowHeight = (row: Row) => row.type === "heading" ? 30 : 32;
 
-export function ModelPicker({ selections, onChange, multiple, agents, disabled, className, openEvent, onSettingsChange }: {
+export function ModelPicker({ selections, onChange, multiple, agents, disabled, className, openEvent, onSettingsChange, hidden }: {
 	selections: ModelSelection[];
 	onChange: (selections: ModelSelection[]) => void;
 	/** Ctrl/⌘-click adds models alongside the first, to compare their answers. */
@@ -167,6 +167,8 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	openEvent?: string;
 	/** Shows one model's reasoning, speed and context window in the button and as a column in the picker. */
 	onSettingsChange?: (selection: ModelSelection) => void;
+	/** Agents the chat's project turns off. */
+	hidden?: readonly Harness[];
 }) {
 	const { overview } = useWorkspace();
 	const [open, setOpen] = useState(false);
@@ -179,7 +181,8 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	const keepOpen = useRef(false);
 	const connected = useConnectedHarnesses();
 	const phaseoAccount = usablePhaseoAccounts(overview)[0];
-	const harnesses = useMemo(() => [...(phaseoAccount ? ["phaseo" as const] : []), ...[...connected].filter(harness => harness !== "phaseo" && harness !== "acp" && (agents || harness !== "grok"))], [connected, agents, phaseoAccount]);
+	const hiddenKey = hidden?.join() ?? "";
+	const harnesses = useMemo(() => [...(phaseoAccount ? ["phaseo" as const] : []), ...[...connected].filter(harness => harness !== "phaseo" && harness !== "acp" && runnableHarnesses.includes(harness) && (agents || harness !== "grok"))].filter(harness => !hiddenKey.split(",").includes(harness)), [connected, agents, phaseoAccount, hiddenKey]);
 	const onLoad = useCallback((harness: Harness, state: { entries: Entry[]; loading: boolean; error: string }) => setCatalogs(current => ({ ...current, [harness]: state })), []);
 
 	const all = useMemo(() => harnesses.flatMap(harness => catalogs[harness]?.entries ?? []), [harnesses, catalogs]);
@@ -259,7 +262,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 		const selection = selectionOf(entry);
 		if (!multiple || !keepOpen.current) {
 			onChange([selection]); setQuery("");
-			// In a composer the picker stays open on the new model, as in T3 Code, so its settings can follow; Escape or a click
+			// In a composer the picker stays open on the new model, so its settings can follow; Escape or a click
 			// outside closes it. A picker with no settings (a default model in Settings) closes on the pick.
 			if (onSettingsChange) setPending(selection);
 			else setOpen(false);
@@ -302,7 +305,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	const firstLab = first?.harness === "phaseo" ? labOf({ model: knownModel(first.model) ?? { id: first.model, name: first.model } } as Entry) : "";
 	const openChange = (value: boolean) => { setOpen(value); setQuery(""); setPending(undefined); if (value) setGroup(!first ? "phaseo" : first.harness !== "phaseo" ? first.harness : firstLab ? `lab:${firstLab}` : "phaseo"); };
 	const latestOpen = useRef(openChange); latestOpen.current = openChange;
-	// One model's reasoning, speed and context window sit in the same button and picker, as in T3 Code.
+	// One model's reasoning, speed and context window sit in the same button and picker.
 	const settingsSelection = onSettingsChange && selections.length === 1 ? pending ?? first : undefined;
 	const descriptors = useSettingDescriptors(settingsSelection);
 	useCommand("modelSettings.toggle", () => latestOpen.current(!open), descriptors.length > 0 && !disabled);

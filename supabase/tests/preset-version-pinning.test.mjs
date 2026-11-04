@@ -40,8 +40,16 @@ try {
     'public/tables/preset_version_labels.sql',
     'public/functions/set_preset_version_label.sql',
     'public/functions/remove_preset_version_label.sql',
-    'public/functions/gateway_fetch_request_context_without_workspace_budget.sql',
   ]) assert.ok(migration.includes(await schema(file)), `migration includes ${file}`);
+  // Later migrations redefine the request context, so the latest one must carry it verbatim.
+  const contextFile = 'public/functions/gateway_fetch_request_context_without_workspace_budget.sql';
+  const contextHeader = 'CREATE OR REPLACE FUNCTION public.gateway_fetch_request_context_without_workspace_budget (';
+  let latestContextMigration = null;
+  for (const file of (await readdir(migrations)).filter((file) => file >= name).sort()) {
+    const source = await readFile(new URL(file, migrations), 'utf8');
+    if (source.includes(contextHeader)) latestContextMigration = source;
+  }
+  assert.ok(latestContextMigration?.includes(await schema(contextFile)), `latest migration includes ${contextFile}`);
   const versionsSchema = await schema('public/tables/preset_versions.sql');
   const uniqueLine = '  CONSTRAINT "preset_versions_preset_id_id_key" UNIQUE (preset_id, id),\n';
   assert.ok(versionsSchema.includes(uniqueLine), 'preset_versions.sql declares the (preset_id, id) key');

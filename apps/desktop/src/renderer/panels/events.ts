@@ -21,9 +21,18 @@ export function onProjectChange(projectId: string, listener: () => void) {
 export const DIFF_SELECTION_KEY = "phaseo.desktop.diffSelection";
 /** Asks the pane to show the Diff at one turn of a chat (the changed-files row under a turn sends it). */
 export const OPEN_TURN_DIFF_EVENT = "phaseo:open-turn-diff";
-export type OpenTurnDiffDetail = { taskId: string; messageId: string };
+/** `path` scrolls the diff to that file once it has loaded. */
+export type OpenTurnDiffDetail = { taskId: string; messageId: string; path?: string };
+/** The file a turn diff was opened at, by chat, for a Diff pane that mounts after the event. */
+export const pendingTurnDiffPaths = new Map<string, string>();
 export function openTurnDiff(detail: OpenTurnDiffDetail) {
 	// Saved first, so a Diff pane that opens now starts at this turn; an open one follows the event.
+	if (detail.path) pendingTurnDiffPaths.set(detail.taskId, detail.path); else pendingTurnDiffPaths.delete(detail.taskId);
 	try { const saved = JSON.parse(localStorage.getItem(DIFF_SELECTION_KEY) ?? "{}") as Record<string, unknown>; localStorage.setItem(DIFF_SELECTION_KEY, JSON.stringify({ ...saved, [detail.taskId]: { kind: "turn", messageId: detail.messageId } })); } catch { /* The open pane still follows the event. */ }
 	window.dispatchEvent(new CustomEvent<OpenTurnDiffDetail>(OPEN_TURN_DIFF_EVENT, { detail }));
 }
+
+/** Asks the pane to show a side chat of the open chat as a tab (after /side, or from the chat's side chat list). */
+export const OPEN_SIDE_CHAT_EVENT = "phaseo:open-side-chat";
+export type OpenSideChatDetail = { parentId: string; id: string };
+export const openSideChat = (detail: OpenSideChatDetail) => window.dispatchEvent(new CustomEvent<OpenSideChatDetail>(OPEN_SIDE_CHAT_EVENT, { detail }));

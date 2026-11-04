@@ -456,7 +456,8 @@
 			"uppercase": "Incluye al menos una letra latina mayúscula.",
 			"lowercase": "Incluye al menos una letra latina minúscula.",
 			"number": "Incluye al menos un número.",
-			"mismatch": "Las contraseñas no coinciden."
+			"mismatch": "Las contraseñas no coinciden.",
+			"signOutOthersFailed": "Se ha restablecido tu contraseña, pero no hemos podido cerrar tu sesión en tus otros dispositivos y aplicaciones. Vuelve a cambiar la contraseña en los ajustes de la cuenta para reintentarlo."
 		},
 		"mfa": {
 			"title": "Autenticación de dos factores",
@@ -473,10 +474,13 @@
 			"metaTitle": "Activar Phaseo CLI",
 			"metaDescription": "Aprueba una solicitud de inicio de sesión del Phaseo CLI.",
 			"title": "Activar Phaseo CLI",
-			"description": "Aprueba esta solicitud solo si el código coincide con el que aparece en tu terminal.",
-			"missingCode": "Abre el enlace de verificación completo desde tu terminal o añade el código con",
+			"description": "Escribe el código que aparece en tu terminal para iniciar sesión en la CLI de Phaseo.",
+			"phishingWarning": "Introduce solo un código de un inicio de sesión que hayas empezado tú, en tu propio terminal. Si alguien te ha enviado este código o un enlace a esta página, detente: aprobarlo le da acceso a tu cuenta de Phaseo.",
 			"deviceCode": "Código del dispositivo",
 			"requestedScopes": "Permisos solicitados",
+			"reviewDescription": "Comprueba que este es el inicio de sesión que empezaste en tu propia terminal antes de aprobarlo.",
+			"differentCode": "Usar otro código",
+			"continue": "Continuar",
 			"requestError": "No se pudo cargar esta solicitud de inicio de sesión del dispositivo. Comprueba el código e inténtalo de nuevo.",
 			"deny": "Denegar",
 			"approve": "Aprobar CLI",
@@ -917,9 +921,7 @@
 			"supportedParamsDescription": "Selecciona los parámetros de solicitud que admite esta capacidad.",
 			"capabilityStatuses": {
 				"active": "Activo",
-				"derankedLvl1": "Con menor prioridad — nivel 1",
-				"derankedLvl2": "Con menor prioridad — nivel 2",
-				"derankedLvl3": "Con menor prioridad — nivel 3",
+				"deranked": "Último recurso",
 				"disabled": "Desactivado"
 			},
 			"pricingRules": "Reglas de precios",

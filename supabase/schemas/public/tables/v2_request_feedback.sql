@@ -21,6 +21,13 @@ CREATE INDEX v2_request_feedback_request_idx ON public.v2_request_feedback USING
 
 CREATE INDEX v2_request_feedback_workspace_time_idx ON public.v2_request_feedback USING btree (workspace_id, created_at DESC);
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."v2_request_feedback"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "v2_request_feedback_workspace_select" ON "public"."v2_request_feedback"
   FOR SELECT
   TO "authenticated"

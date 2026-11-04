@@ -34,7 +34,7 @@ export function snippetParts(snippet: string, query: string) {
 
 const when = (iso?: string) => iso ? formatDateParts(iso, { month: "short", day: "numeric" }) : "";
 
-/** T3's "In messages": chats whose messages match, each with its latest match; choosing one opens it with find on the word. */
+/** "In messages": chats whose messages match, each with its latest match; choosing one opens it with find on the word. */
 export function MessageSearchResults({ query, hits, searching, onOpen }: { query: string; hits: MessageSearchHit[]; searching: boolean; onOpen: (hit: MessageSearchHit) => void }) {
 	if (!hits.length && !searching) return null;
 	return <CommandGroup heading="In messages" forceMount>

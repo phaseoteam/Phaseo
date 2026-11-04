@@ -50,7 +50,8 @@
 		"fromJournal": "Aus dem Journal",
 		"journalDescription": "Produktneuigkeiten, Anleitungen und Versionshinweise.",
 		"viewAllPosts": "Alle Beiträge ansehen",
-		"englishBodyNotice": "Dieser redaktionelle Inhalt ist derzeit auf Englisch verfügbar. Die umgebende Oberfläche ist übersetzt; der Originalartikel wird angezeigt, damit seine Bedeutung erhalten bleibt."
+		"englishBodyNotice": "Dieser redaktionelle Inhalt ist derzeit auf Englisch verfügbar. Die umgebende Oberfläche ist übersetzt; der Originalartikel wird angezeigt, damit seine Bedeutung erhalten bleibt.",
+		"faqTitle": "Häufig gestellte Fragen"
 	},
 	"roadmap": {
 		"title": "Phaseo-Roadmap",

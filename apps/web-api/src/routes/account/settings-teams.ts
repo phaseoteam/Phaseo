@@ -4,6 +4,7 @@ import { getAuthenticatedDataClient, getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { requireAccountWorkspace } from "./context";
+import { invalidateGatewayKey } from "./settings-keys";
 import { getProviderAccountMode } from "./provider-account";
 import { workspaceHasAddon } from "@/billing/workspaceAddons";
 import { requestAwareAvatarUrl } from "./settings-profile-avatar";
@@ -82,6 +83,21 @@ async function inviteAesKey(env: Env) {
 	const bytes = base64ToBytes(env.INVITE_ENCRYPTION_KEY ?? "");
 	if (bytes.length !== 32) throw new Error("invite_encryption_unavailable");
 	return crypto.subtle.importKey("raw", bytesBuffer(bytes), { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+}
+
+const INVITE_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+
+/** A random invite code (12 characters, about 70 bits) without look-alike characters. */
+export function generateInviteCode(length = 12): string {
+	// 228 is the largest multiple of the alphabet size (57) below 256, so every character is equally likely.
+	const limit = Math.floor(256 / INVITE_CODE_ALPHABET.length) * INVITE_CODE_ALPHABET.length;
+	let out = "";
+	while (out.length < length) {
+		for (const byte of crypto.getRandomValues(new Uint8Array(length * 2))) {
+			if (byte < limit && out.length < length) out += INVITE_CODE_ALPHABET[byte % INVITE_CODE_ALPHABET.length];
+		}
+	}
+	return out;
 }
 
 async function encryptInviteToken(env: Env, token: string): Promise<string> {
@@ -291,9 +307,11 @@ accountSettingsTeamsRouter.post("/teams/:workspaceId/invites", async (c) => {
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: c.req.param("workspaceId") });
 	if (!context || !["owner", "admin"].includes(context.role.toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const body: Record<string, unknown> = await c.req.json<Record<string, unknown>>().catch(() => ({}));
-	const token = String(body.token ?? "");
 	const role = ["admin", "member"].includes(String(body.role).toLowerCase()) ? String(body.role).toLowerCase() : "member";
-	if (token.length < 6) return c.json({ error: "invalid_token" }, 400, PRIVATE_NO_STORE_HEADERS);
+	// Like role changes, making someone an admin is the owner's call.
+	if (role === "admin" && !context.isOwner) return c.json({ error: "forbidden", message: "Only the workspace owner can invite admins." }, 403, PRIVATE_NO_STORE_HEADERS);
+	// The server picks the code, so its strength never depends on the client; any token sent is ignored.
+	const token = generateInviteCode();
 	try {
 		const result = await context.client.from("workspace_invites").insert({ workspace_id: context.workspaceId, creator_user_id: user.id, role, token_encrypted: await encryptInviteToken(c.env, token), token_fingerprint: await inviteFingerprint(c.env, token), token_preview: token.length >= 4 ? `${token.slice(0, 2)}...${token.slice(-2)}` : token, expires_at: new Date(Date.now() + Math.max(1, Number(body.expiresInDays) || 7) * 86_400_000).toISOString(), max_uses: typeof body.maxUses === "number" ? Math.max(0, Math.floor(body.maxUses)) : null, key_version: 1 }).select("id").maybeSingle();
 		if (result.error) throw result.error;
@@ -415,10 +433,15 @@ accountSettingsTeamsRouter.delete("/teams/:workspaceId/members/:userId", async (
 	if (workspace.error || target.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	if (workspace.data?.owner_user_id === targetUserId) return c.json({ workspaceId, userId: targetUserId, ok: false, message: "You can't remove the workspace owner." }, 409, PRIVATE_NO_STORE_HEADERS);
 	if (!target.data) return c.json({ workspaceId, userId: targetUserId, ok: false, message: "Workspace member not found." }, 404, PRIVATE_NO_STORE_HEADERS);
+	// The delete trigger revokes the API keys this member created here; note them first so the gateway
+	// drops its cached copies now rather than when they expire.
+	const memberKeys = await context.client.from("keys").select("id").eq("workspace_id", workspaceId).eq("created_by", targetUserId).not("status", "in", "(revoked,compromised,deleted)");
 	const result = await context.client.from("workspace_members").delete().eq("workspace_id", workspaceId).eq("user_id", targetUserId).select("workspace_id,user_id").maybeSingle();
 	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	if (!result.data) return c.json({ workspaceId, userId: targetUserId, ok: false, message: "Workspace member not found." }, 404, PRIVATE_NO_STORE_HEADERS);
-	return c.json({ workspaceId, userId: targetUserId, ok: true }, 200, PRIVATE_NO_STORE_HEADERS);
+	const revokedKeyIds = (memberKeys.data ?? []).map((row: { id: string }) => String(row.id));
+	if (revokedKeyIds.length) c.executionCtx.waitUntil(Promise.all(revokedKeyIds.map((keyId) => invalidateGatewayKey(c.env, keyId))));
+	return c.json({ workspaceId, userId: targetUserId, ok: true, revokedKeys: revokedKeyIds.length }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 for (const decision of ["approve", "reject"] as const) {

@@ -31,6 +31,13 @@ CREATE INDEX v2_credit_ledger_source_idx ON public.v2_credit_ledger USING btree 
 
 CREATE INDEX v2_credit_ledger_workspace_time_idx ON public.v2_credit_ledger USING btree (workspace_id, event_time DESC, entry_id DESC);
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."v2_credit_ledger"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "v2_credit_ledger_workspace_select" ON "public"."v2_credit_ledger"
   FOR SELECT
   TO "authenticated"

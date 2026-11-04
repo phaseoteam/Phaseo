@@ -232,9 +232,7 @@
 			"featureStructuredOutputs": "Strukturierte Ausgaben",
 			"featureWebSearch": "Websuche",
 			"featureFree": "Kostenlose Variante",
-			"statusDeranked1": "Herabstufung Stufe 1",
-			"statusDeranked2": "Herabstufung Stufe 2",
-			"statusDeranked3": "Herabstufung Stufe 3",
+			"statusDeranked": "Niedrigere Priorität",
 			"statusDisabled": "Deaktiviert",
 			"regionJapan": "Japan",
 			"regionAustralia": "Australien",
@@ -811,17 +809,9 @@
 						"label": "Vorübergehend blockiert",
 						"description": "Das Routing ist vorübergehend blockiert."
 					},
-					"deranked_lvl1": {
-						"label": "Herabgestuft L1",
-						"description": "Öffentlich routbar, aber durch den Routingstatus leicht zurückgestuft."
-					},
-					"deranked_lvl2": {
-						"label": "Herabgestuft L2",
-						"description": "Öffentlich routbar, aber durch den Routingstatus zurückgestuft."
-					},
-					"deranked_lvl3": {
-						"label": "Herabgestuft L3",
-						"description": "Öffentlich routbar, aber durch den Routingstatus stark zurückgestuft."
+					"deranked": {
+						"label": "Niedrigere Priorität",
+						"description": "Öffentlich routbar, wird aber nur als Reserve genutzt, wenn die anderen Anbieter ausfallen."
 					},
 					"internal_testing": {
 						"label": "Interne Tests",
@@ -1081,7 +1071,7 @@
 				"disabled": "Deaktiviert",
 				"comingSoon": "Demnächst verfügbar",
 				"internalTesting": "Interner Test",
-				"rateLimited": "Eingeschränkt",
+				"rateLimited": "Niedrigere Priorität",
 				"degraded": "Beeinträchtigt",
 				"external": "Extern"
 			},
@@ -1105,7 +1095,7 @@
 				"disabled": "Explizit deaktiviert und nicht routbar.",
 				"comingSoon": "Demnächst verfügbar und noch nicht routbar.",
 				"internalTesting": "Nur für interne Tests verfügbar.",
-				"rateLimited": "Routbar, wird vom Routingstatus aber stark zurückgestuft.",
+				"rateLimited": "Von Phaseo festgelegt. Wird nur als Reserve genutzt, wenn die anderen Anbieter ausfallen.",
 				"degraded": "Verfügbar, aber mit beeinträchtigtem Routingstatus.",
 				"external": "In einem externen Katalog gelistet; über Phaseo nicht routbar."
 			},
@@ -1363,9 +1353,12 @@
 			"discountEndsInDaysHours": "Endet in {days} T {hours} Std.",
 			"discountEndsInHours": "Endet in {hours} Std.",
 			"routingHealthLimited": "Vorübergehend eingeschränkt",
-			"routingHealthLimitedDescription": "Die Routing-Gesundheit hat diesen Anbieter vorübergehend herabgestuft ({count, plural, one {# betroffenes Routenpaar} other {# betroffene Routenpaare}}).",
+			"routingHealthLimitedDescription": "Anfragen an diesen Anbieter sind wiederholt fehlgeschlagen, daher leitet Phaseo den Traffic zuerst an andere Anbieter ({count, plural, one {# Route} other {# Routen}} betroffen).",
 			"routingHealthRecovering": "Erholt sich",
-			"routingHealthRecoveringDescription": "Die Routing-Gesundheit prüft die Erholung ({count, plural, one {# Routenpaar} other {# Routenpaare}} im halboffenen Zustand).",
+			"routingHealthRecoveringDescription": "Phaseo lässt einige Anfragen durch, um zu prüfen, ob dieser Anbieter wieder funktioniert ({count, plural, one {# Route} other {# Routen}}).",
+			"routingHealthAutomatic": "Das passiert automatisch und endet, sobald Anfragen wieder erfolgreich sind. Es ist unabhängig vom Statussymbol davor, das Phaseo manuell festlegt.",
+			"liveRouting": "Live-Routing",
+			"liveRoutingStatus": "Live-Routing: {status}",
 			"processing": "Verarbeitung",
 			"dataCenters": "Rechenzentren",
 			"unknown": "Unbekannt",
@@ -1489,6 +1482,7 @@
 			"chartLabel": "Stündliche Modellverfügbarkeit der letzten {hours} Stunden. Verfügbarkeit: {uptime}. Erfasste Anfragen: {count}.",
 			"leastStableProviderLabel": "Ohne Phaseo Routing",
 			"tooltipUptime": "Betriebszeit:",
+			"tooltipFailedRequests": "{count, plural, =0 {Keine fehlgeschlagenen Anfragen} one {{failed, number} von # Anfrage fehlgeschlagen} other {{failed, number} von # Anfragen fehlgeschlagen}}",
 			"tooltipWorstProvider": "Ohne Phaseo Routing:",
 			"hourlyAverage": "Letzte 24 Stunden · stündlicher Durchschnitt",
 			"routingChartLabel": "Stündliche Modellverfügbarkeit in den letzten 24 Stunden. Phaseo Routing: {uptime}.{comparison}",
@@ -1623,8 +1617,10 @@
 			"viewLicense": "Lizenz anzeigen"
 		},
 		"performance": {
-			"noTelemetry": "Keine Gateway-Telemetrie in den letzten 7 Tagen",
-			"telemetryHint": "Stundendiagramme werden angezeigt, sobald dieses Modell Gateway-Datenverkehr am ausgewählten Standort verarbeitet.",
+			"noTelemetry": "Keine Anfragen in den letzten 7 Tagen",
+			"telemetryHint": "Diagramme erscheinen, sobald dieses Modell Anfragen über Phaseo verarbeitet.",
+			"noFilteredTelemetry": "Nicht genug Datenverkehr in {location} für eine Veröffentlichung",
+			"filteredTelemetryHint": "Standortdiagramme erscheinen erst, wenn ein Standort so viele Anfragen hat, dass sich der Datenverkehr einzelner Kunden nicht herauslesen lässt. Wähle „Alle Standorte“, um alle Anfragen zu sehen.",
 			"filterByLocation": "Leistung nach API-Standort filtern",
 			"providerPerformance": "Anbieterleistung",
 			"last24Hours": "Letzte 24 Stunden",
@@ -2645,7 +2641,7 @@
 		"best": "beste",
 		"breadcrumb": "Brotkrümelnavigation",
 		"compare": "Vergleichen",
-		"versus": "gegen",
+		"versus": "vs.",
 		"headerSub": "Wähle unter jedem Modell eine Route und eine Service-Stufe. Preise, Rechner und Empfehlungen folgen deiner Auswahl.",
 		"copyLink": "Link kopieren",
 		"copied": "Kopiert",
@@ -2657,7 +2653,7 @@
 		"differencesOnly": "Nur Unterschiede",
 		"previous": "Zurück",
 		"next": "Weiter",
-		"modelsRange": "Modelle {from}–{to} von {total}",
+		"modelsRange": "{count, plural, =1 {Modell {from} von {total}} other {Modelle {from}–{to} von {total}}}",
 		"phoneBestNote": "Ein hervorgehobener Wert ist der beste aller ausgewählten Modelle, auch derer auf der anderen Seite.",
 		"notFound": "{count, plural, one {Ein Modell aus dem Link wurde nicht gefunden:} other {# Modelle aus dem Link wurden nicht gefunden:}}",
 		"atAGlance": "Auf einen Blick",
@@ -2710,7 +2706,8 @@
 		"latency": "Latenz p50",
 		"throughput": "Durchsatz p50",
 		"requests24h": "Anfragen, letzte 24 Stunden",
-		"noTraffic": "Noch kein Verkehr",
+		"noRecentTraffic": "Kein Verkehr in den letzten 5 Tagen",
+		"noRequests24h": "Keine in den letzten 24 Stunden",
 		"window30m": "letzte 30 Minuten",
 		"window24h": "letzte 24 Stunden",
 		"window5d": "letzte 5 Tage",
@@ -2765,13 +2762,6 @@
 		"perMonth": "Pro Monat",
 		"calculatorNote": "Nutzt die unter jedem Modell gewählte Route und Stufe über 30 Tage. Zwischengespeicherte Eingaben werden zum Cache-Lesepreis berechnet.",
 		"providers": "Anbieter",
-		"providersSub": "Routen, die Phaseo heute bedient, Standardpreise pro 1M Tokens",
-		"provider": "Anbieter",
-		"tiers": "Stufen",
-		"providerPriceNote": "Preise der Standardstufe. Die erste Zeile ist die günstigste Route; eine andere wählst du oben unter dem Modellnamen.",
-		"noRoutesFor": "Phaseo routet {name} derzeit nicht.",
-		"otherListings": "{count, plural, one {Ebenfalls gelistet, nicht über Phaseo geroutet: # Anbieter} other {Ebenfalls gelistet, nicht über Phaseo geroutet: # Anbieter}}",
-		"otherListingsNote": "Zur Information: Einträge anderer Gateways und Routen, die Phaseo eingestellt oder deaktiviert hat.",
 		"benchmarks": "Vergleichstests",
 		"benchmarksSub": "Nur Ergebnisse, die mindestens zwei der ausgewählten Modelle angeben, erhalten eine Zeile",
 		"benchmarksSubSingle": "Alle Testergebnisse für dieses Modell",
@@ -2796,7 +2786,7 @@
 		"sharedBenchmarks": "Gemeinsame Vergleichstests",
 		"singleBenchmarks": "{count, plural, one {# Vergleichstest, den nur ein Modell angibt} other {# Vergleichstests, die nur ein Modell angibt}}",
 		"singleBenchmarksLabel": "Vergleichstests, die nur ein Modell angibt",
-		"benchmarkSources": "Laborangaben stammen aus den Veröffentlichungsunterlagen des jeweiligen Labors und können andere Einstellungen nutzen. Unabhängige Ergebnisse stammen von externen Prüfern.",
+		"benchmarkSources": "Laborangaben stammen aus den Veröffentlichungsunterlagen des jeweiligen Labors und können andere Einstellungen nutzen, daher wird keine davon als beste markiert. Unabhängige Ergebnisse stammen von externen Prüfern.",
 		"emptyTitle": "KI-Modelle vergleichen",
 		"emptyDescription": "Preise, Limits, Funktionen, Live-Geschwindigkeit auf Phaseo und Vergleichstests im direkten Vergleich.",
 		"pickFirst": "Modell auswählen",
@@ -2807,10 +2797,6 @@
 				"title": "Aktuelle Spitzenmodelle",
 				"description": "Die neuesten Topmodelle von drei Laboren"
 			},
-			"pairing": {
-				"title": "GPT 5 gegen Claude Sonnet 4.5",
-				"description": "Eine Paarung, die viele Teams abwägen"
-			},
 			"anthropic": {
 				"title": "Opus oder Sonnet?",
 				"description": "Die zwei aktuellen Stufen von Anthropic"
@@ -2818,6 +2804,18 @@
 			"openWeights": {
 				"title": "Offene Gewichte",
 				"description": "Modelle, die du herunterladen und selbst ausführen kannst"
+			},
+			"video": {
+				"title": "Videomodelle",
+				"description": "Preise pro Sekunde nach Auflösung und Modus"
+			},
+			"image": {
+				"title": "Bildmodelle",
+				"description": "Preise pro Bild nach Größe und Qualität"
+			},
+			"decisions": {
+				"title": "Entscheidungsmodelle",
+				"description": "Modelle, die eine Entscheidung statt Text liefern"
 			}
 		},
 		"badgeOnPhaseo": "Auf Phaseo",
@@ -2838,18 +2836,15 @@
 		"pricedOn": "Preis auf",
 		"pricingSubRoute": "Preise auf der Route und Stufe, die unter jedem Modell gewählt sind",
 		"perMillionTokens": "/ 1 Mio. Tokens",
-		"bandPrice": "{condition}: {price}",
 		"moreMeters": "{count, plural, one {# weiteren Zähler zeigen} other {# weitere Zähler zeigen}}",
 		"fewerMeters": "Weniger Zähler zeigen",
 		"otherCategory": "Sonstige",
 		"activity": "Aktivität",
 		"activitySub": "Tokens, die in den letzten 30 Tagen täglich über Phaseo gesendet wurden",
-		"activityTotal": "Tokens, letzte 30 Tage",
 		"activityInput": "Eingabe",
 		"activityOutput": "Ausgabe",
 		"activityReasoning": "Reasoning",
 		"activityRequests": "Anfragen",
-		"activityDay": "{date}: {tokens} Tokens, {count, plural, one {# Anfrage} other {{requests} Anfragen}}",
 		"activityChart": "Tägliche Tokens für {name} über Phaseo, letzte 30 Tage",
 		"activityNone": "Kein Verkehr über Phaseo in den letzten 30 Tagen",
 		"activityNoneAll": "Keines dieser Modelle hatte in den letzten 30 Tagen Verkehr über Phaseo.",
@@ -2858,7 +2853,46 @@
 		"peerModels": "{count, plural, one {# Modell bewertet} other {# Modelle bewertet}}",
 		"headToHead": "Direktvergleiche",
 		"pairTitle": "{a} vs. {b}",
-		"activityRequestsTotal": "Anfragen, letzte 30 Tage"
+		"selected": "Ausgewählt",
+		"pickerReturnsOther": "Liefert {types} und lässt sich daher nicht mit deiner Auswahl vergleichen",
+		"pickerNoOutputTypes": "Die Ausgabetypen sind nicht veröffentlicht, daher passt es nicht zu deiner Auswahl",
+		"pickerHiddenIncompatible": "{count, plural, one {# Modell mit einem anderen Ausgabetyp ist ausgeblendet.} other {# Modelle mit anderen Ausgabetypen sind ausgeblendet.}} Suche danach, um sie anzuzeigen.",
+		"activityTokens30d": "Tokens, letzte 30 Tage",
+		"activityPerDay": "Pro Tag",
+		"activityNoTokens": "Nur Anfragen, keine Tokens erfasst",
+		"moreMetersCount": "{count, plural, one {# weiterer Zähler} other {# weitere Zähler}}",
+		"priceFrom": "ab {price}",
+		"conditionFields": {
+			"input": "Eingabe",
+			"duration": "Dauer",
+			"inputVideo": "Eingabevideo",
+			"resolution": "Auflösung",
+			"quality": "Qualität",
+			"aspectRatio": "Seitenverhältnis",
+			"audio": "Audio",
+			"mode": "Modus",
+			"draft": "Entwurf",
+			"cacheDuration": "Cache-Dauer",
+			"region": "Region",
+			"serviceTier": "Servicestufe"
+		},
+		"conditionIs": "{field}: {value}",
+		"conditionIsNot": "{field}: nicht {value}",
+		"conditionOn": "an",
+		"conditionOff": "aus",
+		"showAllPrices": "Alle {count} Preise anzeigen",
+		"showFewerPrices": "Weniger Preise anzeigen",
+		"showAllProviders": "Alle {count} Anbieter anzeigen",
+		"showFewerProviders": "Weniger Anbieter anzeigen",
+		"moreCount": "+{count}",
+		"routePrice": "{input} Eingabe · {output} Ausgabe",
+		"providersAcrossSub": "Wo jedes Modell auf Phaseo läuft, mit Standardpreisen pro 1 Mio. Tokens. Anbieter, die mehr dieser Modelle bedienen, stehen oben.",
+		"providersAcrossSubMeters": "Wo jedes Modell auf Phaseo läuft, mit dem Standardpreis jeder Route. Anbieter, die mehr dieser Modelle bedienen, stehen oben.",
+		"providersAcrossNote": "Um die ganze Seite mit einem dieser Anbieter zu berechnen, wähle ihn oben unter dem Modellnamen.",
+		"routeContext": "{value} Kontext",
+		"otherListingsLabel": "Auch gelistet, nicht über Phaseo geroutet",
+		"noRoutesAny": "Phaseo routet derzeit keines dieser Modelle.",
+		"comparedSections": "Jeder Vergleich umfasst"
 	},
 	"countries": {
 		"title": "KI nach Ländern",
@@ -3131,9 +3165,7 @@
 		"providerStatus": {
 			"active": "Aktiv",
 			"coming_soon": "Demnächst verfügbar",
-			"deranked_lvl1": "Herabgestuft L1",
-			"deranked_lvl2": "Herabgestuft L2",
-			"deranked_lvl3": "Herabgestuft L3",
+			"deranked": "Niedrigere Priorität",
 			"disabled": "Deaktiviert",
 			"inactive": "Nicht aktiv",
 			"internal_testing": "Interne Tests",

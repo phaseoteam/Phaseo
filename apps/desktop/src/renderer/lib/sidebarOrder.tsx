@@ -6,7 +6,7 @@ let order: string[] = [];
 export function publishSidebarOrder(ids: string[]) { order = ids; }
 export const sidebarOrder = () => order;
 
-/** T3 shows jump numbers on the first nine rows once Ctrl (⌘ on macOS) has been held alone for 200 ms. */
+/** Jump numbers show on the first nine rows once Ctrl (⌘ on macOS) has been held alone for 200 ms. */
 export function useJumpHints() {
 	const [shown, setShown] = useState(false);
 	useEffect(() => {

@@ -2,7 +2,7 @@ import { agentCursorActiveMs } from "../shared/browser";
 
 /**
  * Drawn inside the page, from an isolated world, because the native page always draws above the app's own DOM: the agent's cursor
- * (T3 Code's MousePointer2 with a click ripple) and the zoom pill at the top right. Everything sits in a closed shadow root that
+ * (a MousePointer2 arrow with a click ripple) and the zoom pill at the top right. Everything sits in a closed shadow root that
  * ignores the pointer, and is scaled against the page zoom so it keeps its size.
  */
 const install = `(() => {

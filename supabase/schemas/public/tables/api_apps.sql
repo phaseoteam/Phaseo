@@ -71,4 +71,11 @@ CREATE POLICY "api_apps_update_own_team" ON "public"."api_apps"
   USING (public.is_workspace_member(workspace_id))
   WITH CHECK (public.is_workspace_member(workspace_id));
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."api_apps"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."api_apps" TO "anon", "authenticated", "service_role";

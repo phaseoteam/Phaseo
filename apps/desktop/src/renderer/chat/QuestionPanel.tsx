@@ -8,6 +8,7 @@ import { ScrollArea } from "../components/ui/scroll-area";
 import { cn } from "../lib/utils";
 import { draftAnswer, draftError, draftFor, withOwnAnswer, type QuestionDraft } from "./questionDraft";
 import { registerQuestionAnswerer } from "./questionComposer";
+import { MarkdownTextarea } from "../components/MarkdownTextarea";
 
 export { draftAnswer } from "./questionDraft";
 
@@ -17,7 +18,7 @@ const inputTypes = { number: "number", integer: "number", email: "email", uri: "
 function OwnAnswer({ question, value, disabled, placeholder, label, inputRef, onFocus, onChange, onEnter }: { question: AgentQuestion; value: string; disabled: boolean; placeholder: string; label: string; inputRef: RefObject<HTMLInputElement | HTMLTextAreaElement | null>; onFocus: () => void; onChange: (value: string) => void; onEnter: () => void }) {
 	const input = question.input;
 	const className = "min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-muted-foreground/70";
-	if (input?.kind === "multiline") return <textarea ref={inputRef as RefObject<HTMLTextAreaElement>} aria-label={label} rows={3} disabled={disabled} placeholder={placeholder} value={value} maxLength={input.maxLength ?? 100000}
+	if (input?.kind === "multiline") return <MarkdownTextarea containerClassName="min-w-0 flex-1" ref={inputRef as RefObject<HTMLTextAreaElement>} aria-label={label} rows={3} disabled={disabled} placeholder={placeholder} value={value} maxLength={input.maxLength ?? 100000}
 		onFocus={onFocus} onChange={event => onChange(event.target.value)} className={cn(className, "field-sizing-content max-h-60 min-h-16 resize-none py-1 leading-relaxed")} />;
 	const type = question.isSecret ? "password" : input && input.kind in inputTypes ? inputTypes[input.kind as keyof typeof inputTypes] : "text";
 	return <input ref={inputRef as RefObject<HTMLInputElement>} aria-label={label} type={type} autoComplete="off" disabled={disabled} placeholder={placeholder} value={value}
@@ -27,7 +28,7 @@ function OwnAnswer({ question, value, disabled, placeholder, label, inputRef, on
 }
 
 /**
- * The agent's questions, above the composer as in T3 Code: one question at a time, options as flat numbered rows,
+ * The agent's questions, above the composer: one question at a time, options as flat numbered rows,
  * the person's own answer as the last row (or typed in the composer). 1–9 pick, arrows move, Space toggles, Enter goes on, Esc folds the panel.
  */
 function QuestionRequestPanel({ task, request }: { task: Task; request: QuestionRequest }) {
@@ -77,7 +78,7 @@ function QuestionRequestPanel({ task, request }: { task: Task; request: Question
 		const value = optionValue(option);
 		setHighlight(index); setTouched(false);
 		if (question.multiSelect) { set({ picked: draft.picked.includes(value) ? draft.picked.filter(item => item !== value) : [...draft.picked, value] }); return; }
-		// A single choice moves on by itself after a moment, as in T3; starting text the person edited stays.
+		// A single choice moves on by itself after a moment; starting text the person edited stays.
 		set({ picked: [value], otherOn: false, other: draft.otherOn && question.initialAnswer === undefined ? "" : draft.other });
 		clearTimeout(advance.current);
 		advance.current = setTimeout(() => { if (!last) { setStep(current => current + 1); setHighlight(0); } }, 200);
