@@ -308,6 +308,10 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	// One model's reasoning, speed and context window sit in the same button and picker.
 	const settingsSelection = onSettingsChange && selections.length === 1 ? pending ?? first : undefined;
 	const descriptors = useSettingDescriptors(settingsSelection);
+	// The button names the model from its own harness's catalog, so the name doesn't depend on whether the picker has shown that catalog yet.
+	const { models: firstCatalog } = useModels(first?.harness ?? "phaseo", first?.accountId, undefined, undefined, !!first && first.harness !== "acp");
+	const firstEntry = first && firstCatalog.find(value => first.model === "default" ? value.default : value.id === first.model);
+	const firstName = !first ? "" : firstEntry ? (first.harness === "phaseo" ? firstEntry.name : firstEntry.name.replace(/^Claude (?=\S)/, "")) : shortModelName(first);
 	useCommand("modelSettings.toggle", () => latestOpen.current(!open), descriptors.length > 0 && !disabled);
 	useEffect(() => {
 		if (!openEvent || disabled) return;
@@ -320,7 +324,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 		<PopoverTrigger disabled={disabled} render={<button type="button" aria-label="Choose model" title={first && selections.length === 1 ? `${modelName(first)} ${whereItRuns(first.harness)}` : undefined} className={cn("flex h-8 max-w-80 items-center gap-1.5 rounded-lg px-2 text-[13px] font-semibold transition-colors hover:bg-muted disabled:opacity-50 data-popup-open:bg-muted", className)} />}>
 			{selections.length > 1
 				? <><ModelStack models={selections} /><span className="truncate">{selections.length} models</span></>
-				: first ? <><span className="flex size-5 items-center justify-center [&_img]:size-4 [&_.harness-logo]:size-4"><ModelLogo model={knownModel(first.model) ?? { id: first.model, name: first.model }} harness={first.harness} /></span><span className="truncate">{shortModelName(first)}</span>{settingsSelection && <SettingsSuffix selection={settingsSelection} descriptors={descriptors} />}</>
+				: first ? <><span className="flex size-5 items-center justify-center [&_img]:size-4 [&_.harness-logo]:size-4"><ModelLogo model={knownModel(first.model) ?? { id: first.model, name: first.model }} harness={first.harness} /></span><span className="truncate">{firstName}</span>{settingsSelection && <SettingsSuffix selection={settingsSelection} descriptors={descriptors} />}</>
 				: <span className="text-muted-foreground">Choose a model</span>}
 			<ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
 		</PopoverTrigger>
