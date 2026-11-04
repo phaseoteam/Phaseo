@@ -88,16 +88,20 @@ begin
   select count(*) into n from public.credit_ledger where ref_type='async_job_charge' and ref_id=w::text||':'||rid;
   if n<>1 then raise exception 'video replay duplicated ledger charge'; end if;
 
-  -- A settlement cannot spend credits reserved for other jobs.
-  rid:=prefix||':insufficient';
+  -- A settlement above its hold and the free balance is still charged in full,
+  -- into overdraft, without releasing credits reserved for other jobs.
+  rid:=prefix||':overdraft';
   select balance_nanos,reserved_nanos into before_balance,before_reserved from public.wallets where workspace_id=w;
   insert into public.gateway_wallet_reservations(workspace_id,reservation_id,amount_nanos,status) values(w,rid,100,'reserved');
   update public.wallets set reserved_nanos=reserved_nanos+100 where workspace_id=w;
-  select * into result from public.gateway_wallet_settle_once(w,rid,before_balance-before_reserved+1,rid);
-  if result.ok or result.applied or result.reason<>'insufficient_balance' then raise exception 'overspend was accepted'; end if;
+  actual:=greatest(before_balance-before_reserved,0)+101;
+  select * into result from public.gateway_wallet_settle_once(w,rid,actual,rid);
+  if not result.ok or not result.applied then raise exception 'overdraft settlement was refused'; end if;
   select * into result from public.wallets where workspace_id=w;
-  if result.balance_nanos<>before_balance or result.reserved_nanos<>before_reserved+100 then raise exception 'rejected settlement changed wallet'; end if;
-  if exists(select 1 from public.credit_ledger where ref_type='async_job_charge' and ref_id=w::text||':'||rid) then raise exception 'rejected settlement created a charge'; end if;
+  if result.balance_nanos<>before_balance-actual or result.reserved_nanos<>before_reserved then raise exception 'overdraft settlement debited the wrong amount'; end if;
+  select * into reservation from public.gateway_wallet_reservations where workspace_id=w and reservation_id=rid;
+  if reservation.overdraft_nanos<>1 then raise exception 'overdraft was not recorded'; end if;
+  if (select count(*) from public.credit_ledger where ref_type='async_job_charge' and ref_id=w::text||':'||rid)<>1 then raise exception 'overdraft settlement charge missing'; end if;
 
   -- Force a ledger uniqueness failure and prove the debit/status update rolls back.
   rid:=prefix||':conflict';

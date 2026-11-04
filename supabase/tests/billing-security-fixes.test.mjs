@@ -24,8 +24,9 @@ const migrationName = migrations.find((name) => name.endsWith('_billing_security
 assert(migrationName, 'the migration exists');
 const migration = normalize(await read(`../migrations/${migrationName}`));
 
-// The declarative files describe the same end state.
-for (const fn of ['deduct_and_check_top_up', 'gateway_deduct_and_check_top_up_once', 'gateway_wallet_settle_once',
+// The declarative files describe the same end state. gateway_wallet_settle_once was changed again by
+// the async_settlement_always_charges migration (see async-settlement-overdraft.test.mjs).
+for (const fn of ['deduct_and_check_top_up', 'gateway_deduct_and_check_top_up_once',
   'stripe_apply_payment_intent_credit', 'redeem_credit_code', 'stripe_claim_self_serve_refund',
   'stripe_apply_refund_once', 'stripe_apply_dispute_once']) {
   const sql = normalize(await read(`../schemas/public/functions/${fn}.sql`));

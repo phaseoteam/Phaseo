@@ -16,6 +16,7 @@ CREATE TABLE "public"."gateway_wallet_reservations" (
   "key_id"                uuid,
   "request_count"         integer,
   "key_usage_recorded_at" timestamp with time zone,
+  "overdraft_nanos"       bigint                   NOT NULL DEFAULT 0,
   CONSTRAINT "gateway_wallet_reservations_amount_nanos_check" CHECK ((amount_nanos > 0)),
   CONSTRAINT "gateway_wallet_reservations_capture_amount_check" CHECK (((captured_nanos >= 0) AND (released_nanos >= 0) AND ((captured_nanos + released_nanos) <= amount_nanos))),
   CONSTRAINT "gateway_wallet_reservations_pkey" PRIMARY KEY (workspace_id, reservation_id),
