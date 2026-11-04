@@ -23,6 +23,10 @@ ALTER TABLE "public"."workspace_guardrails"
 ALTER TABLE "public"."workspace_guardrails"
   ADD CONSTRAINT "workspace_guardrails_kind_check" CHECK ((kind = ANY (ARRAY['access'::text, 'safety'::text, 'spend'::text, 'rate'::text])));
 
+-- Assignments reference (id, workspace_id), so a guardrail can only be assigned in its own workspace.
+ALTER TABLE "public"."workspace_guardrails"
+  ADD CONSTRAINT "workspace_guardrails_id_workspace_id_key" UNIQUE (id, workspace_id);
+
 COMMENT ON COLUMN "public"."workspace_guardrails"."kind" IS 'What the guardrail controls: access (data retention, training, logging, allowed providers and models), safety (prompt injection, sensitive info), spend or rate. One kind per guardrail.';
 
 UPDATE public.workspace_guardrails
@@ -47,7 +51,7 @@ CREATE TABLE "public"."workspace_guardrail_assignments" (
   "target_id"    uuid,
   "created_at"   timestamp with time zone NOT NULL DEFAULT now(),
   "created_by"   uuid,
-  CONSTRAINT "workspace_guardrail_assignments_guardrail_id_fkey" FOREIGN KEY (guardrail_id) REFERENCES public.workspace_guardrails(id) ON DELETE CASCADE,
+  CONSTRAINT "workspace_guardrail_assignments_guardrail_workspace_fkey" FOREIGN KEY (guardrail_id, workspace_id) REFERENCES public.workspace_guardrails(id, workspace_id) ON DELETE CASCADE,
   CONSTRAINT "workspace_guardrail_assignments_pkey" PRIMARY KEY (id),
   CONSTRAINT "workspace_guardrail_assignments_target_id_check" CHECK (((target_type = 'workspace'::text) = (target_id IS NULL))),
   CONSTRAINT "workspace_guardrail_assignments_target_type_check" CHECK ((target_type = ANY (ARRAY['workspace'::text, 'department'::text, 'member'::text, 'key'::text]))),

@@ -210,6 +210,15 @@ try {
   await assert.rejects(apply(W1, 'department', [D1, DFOREIGN], [GD1], []), /guardrail_assignment_target_not_found/);
   await assert.rejects(apply(W1, 'department', [KU1], [GD1], []), /guardrail_assignment_target_not_found/, 'a key id is not a department');
   await assert.rejects(apply(W1, 'workspace', [], [GFOREIGN], []), /guardrail_not_found/);
+  // A legacy member row pointing at another workspace's guardrail is refused (and its insert rolled
+  // back) instead of taking that guardrail's member slot from the workspace that owns it.
+  const beforeForeign = await assignments();
+  await assert.rejects(db.query(`insert into public.workspace_member_guardrails (workspace_id, user_id, guardrail_id) values ('${W1}', '${U1}', '${GFOREIGN}')`),
+    /workspace_guardrail_assignments_guardrail_workspace_fkey/);
+  assert.equal((await rows(`select count(*)::int n from public.workspace_member_guardrails where guardrail_id = '${GFOREIGN}'`))[0].n, 0, 'the legacy insert is rolled back');
+  assert.deepEqual(await assignments(), beforeForeign, 'nothing is stored');
+  await assert.rejects(db.query(`insert into public.workspace_guardrail_assignments (workspace_id, guardrail_id, target_type, target_id) values ('${W1}', '${GFOREIGN}', 'department', '${D1}')`),
+    /workspace_guardrail_assignments_guardrail_workspace_fkey/, 'a direct cross-workspace row is refused too');
   await assert.rejects(apply(W1, null, [], [GA], []), /invalid_guardrail_assignment_target/);
 
   // ---- Key and member changes go through the legacy tables and are copied.

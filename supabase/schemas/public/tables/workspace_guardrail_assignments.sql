@@ -6,7 +6,7 @@ CREATE TABLE "public"."workspace_guardrail_assignments" (
   "target_id"    uuid,
   "created_at"   timestamp with time zone NOT NULL DEFAULT now(),
   "created_by"   uuid,
-  CONSTRAINT "workspace_guardrail_assignments_guardrail_id_fkey" FOREIGN KEY (guardrail_id) REFERENCES public.workspace_guardrails(id) ON DELETE CASCADE,
+  CONSTRAINT "workspace_guardrail_assignments_guardrail_workspace_fkey" FOREIGN KEY (guardrail_id, workspace_id) REFERENCES public.workspace_guardrails(id, workspace_id) ON DELETE CASCADE,
   CONSTRAINT "workspace_guardrail_assignments_pkey" PRIMARY KEY (id),
   CONSTRAINT "workspace_guardrail_assignments_target_id_check" CHECK (((target_type = 'workspace'::text) = (target_id IS NULL))),
   CONSTRAINT "workspace_guardrail_assignments_target_type_check" CHECK ((target_type = ANY (ARRAY['workspace'::text, 'department'::text, 'member'::text, 'key'::text]))),

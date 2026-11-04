@@ -24,6 +24,7 @@ CREATE TABLE "public"."workspace_guardrails" (
   "kind"                                    text                     NOT NULL DEFAULT 'access'::text,
   "is_workspace_baseline"                   boolean                  NOT NULL DEFAULT false,
   CONSTRAINT "workspace_guardrails_baseline_kind_check" CHECK (((NOT is_workspace_baseline) OR (kind = 'access'::text))),
+  CONSTRAINT "workspace_guardrails_id_workspace_id_key" UNIQUE (id, workspace_id),
   CONSTRAINT "workspace_guardrails_kind_check" CHECK ((kind = ANY (ARRAY['access'::text, 'safety'::text, 'spend'::text, 'rate'::text]))),
   CONSTRAINT "workspace_guardrails_model_restriction_mode_check" CHECK ((model_restriction_mode = ANY (ARRAY['none'::text, 'allowlist'::text, 'blocklist'::text]))),
   CONSTRAINT "workspace_guardrails_pkey" PRIMARY KEY (id),
