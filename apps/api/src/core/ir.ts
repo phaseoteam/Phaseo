@@ -513,6 +513,8 @@ export type IRRerankResult = {
 	index: number;
 	relevanceScore: number;
 	document?: string | Record<string, any>;
+	/** Cohere Rerank v5 Context Focus spans: `[start, end)` codepoint ranges with a relevance score. */
+	relevantSpans?: Array<{ start: number; end: number; score: number }>;
 };
 
 export type IRRerankResponse = {

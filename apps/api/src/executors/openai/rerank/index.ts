@@ -109,6 +109,14 @@ function buildRequestBody(
 		delete encoded.rank_fields;
 		delete encoded.user;
 		delete encoded.metadata;
+
+		// Context Focus (Rerank v5+): provider_options.cohere.relevant_spans maps to Cohere's
+		// relevant_spans { mode, threshold?, max_spans? } (https://docs.cohere.com/v2/reference/rerank).
+		const cohereOptions = (ir.vendor?.provider_options as Record<string, any> | undefined)?.cohere;
+		const relevantSpans = cohereOptions?.relevant_spans;
+		if (relevantSpans && typeof relevantSpans === "object" && !Array.isArray(relevantSpans)) {
+			encoded.relevant_spans = relevantSpans;
+		}
 	}
 
 	if (isVoyageProvider(args.providerId)) {
@@ -237,6 +245,12 @@ const COHERE_DOCUMENTS_PER_SEARCH_UNIT = 100;
 function cohereRerankMeters(usage: IRRerankResponse["usage"], documentCount: number): Record<string, number> {
 	const meters = usageToMeters(usage);
 	const reported = usage?.searchUnits;
+	// Rerank v5 bills input tokens and reports no search units; its price rows meter
+	// input_text_tokens, so count one request rather than estimating search units.
+	if (reported === undefined && typeof usage?.inputTokens === "number" && usage.inputTokens > 0) {
+		meters.requests = 1;
+		return meters;
+	}
 	const searchUnits = typeof reported === "number" && Number.isFinite(reported) && reported > 0
 		? Math.ceil(reported)
 		: Math.max(1, Math.ceil(documentCount / COHERE_DOCUMENTS_PER_SEARCH_UNIT));
