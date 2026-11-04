@@ -400,8 +400,15 @@ export function enforcedSpendLimit(args: {
 	}
 }
 
-/** Longest a request waits for the coordinator (a cold seed reads Postgres) before the legacy check decides. */
-export const ENFORCE_WAIT_MS = 2_000;
+/**
+ * Longest a request waits for the coordinator before the legacy check decides.
+ * Measured on production (11-04): a warm object answers in 0–24 ms; a cold one (start-up of
+ * this Worker script, a new connection to Supabase, then the seed) took 388 ms, of which the seed
+ * was ~70 ms. 150 ms keeps every warm answer, with room for a workspace whose object is in
+ * another region, and stops cold starts from adding ~300 ms to the request. A request that
+ * falls back is still counted: settleEnforcedSpend records its cost in enforce mode.
+ */
+export const ENFORCE_WAIT_MS = 150;
 
 /**
  * The coordinator's decision, or "unavailable" once ENFORCE_WAIT_MS passes so a stalled object or
