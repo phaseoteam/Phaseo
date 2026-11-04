@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchInternalWebApi } from "@/lib/web-api/client";
-import { purgeCacheScopeAction, revalidatePublicModelCatalogueAction } from "@/features/internal/cache/actions";
+import { purgeCacheScopeAction, revalidateModelScopeAction, revalidatePublicModelCatalogueAction } from "@/features/internal/cache/actions";
+import { revalidateSingleModelAllAction, revalidateSingleModelApiInfoAction, revalidateSingleModelDataAction } from "@/features/internal/data/actions";
 
 vi.mock("@/lib/fetchers/internal/serverAccountContext", () => ({ getServerAccountContext: vi.fn() }));
 vi.mock("@/lib/fetchers/internal/fetchInternalAuthStatus", () => ({ fetchInternalAuthStatus: vi.fn() }));
@@ -84,5 +85,41 @@ describe("complete model page revalidation", () => {
 			if (previousGatewayToken === undefined) delete process.env.GATEWAY_INTERNAL_TEST_TOKEN;
 			else process.env.GATEWAY_INTERNAL_TEST_TOKEN = previousGatewayToken;
 		}
+	});
+});
+
+describe("cache actions admin guard", () => {
+	beforeEach(() => {
+		vi.resetAllMocks();
+		vi.mocked(getServerAccountContext).mockResolvedValue({ accessToken: "test-session" } as Awaited<ReturnType<typeof getServerAccountContext>>);
+	});
+
+	it.each([
+		["anonymous", { signedIn: false, isAdmin: false }],
+		["signed-in non-admin", { signedIn: true, isAdmin: false }],
+	])("rejects a %s model scope revalidation before touching any cache", async (_label, status) => {
+		vi.mocked(fetchInternalAuthStatus).mockResolvedValue(status as Awaited<ReturnType<typeof fetchInternalAuthStatus>>);
+
+		for (const scope of ["data", "api", "all"] as const) {
+			const result = await revalidateModelScopeAction({ data: { modelId: "openai/gpt-6", scope } });
+			expect(result).toEqual({ ok: false, message: "Model (openai/gpt-6) failed: Unauthorized" });
+		}
+
+		expect(revalidateSingleModelDataAction).not.toHaveBeenCalled();
+		expect(revalidateSingleModelApiInfoAction).not.toHaveBeenCalled();
+		expect(revalidateSingleModelAllAction).not.toHaveBeenCalled();
+	});
+
+	it("rejects a non-admin purge before calling the Worker", async () => {
+		vi.mocked(fetchInternalAuthStatus).mockResolvedValue({ signedIn: true, isAdmin: false } as Awaited<ReturnType<typeof fetchInternalAuthStatus>>);
+		await expectActionFailure(() => purgeCacheScopeAction({ data: { scope: "model", targetId: "openai/gpt-6" } }), "Unauthorized");
+		expect(fetchInternalWebApi).not.toHaveBeenCalled();
+	});
+
+	it("runs the model scope revalidation for an admin", async () => {
+		vi.mocked(fetchInternalAuthStatus).mockResolvedValue({ signedIn: true, isAdmin: true } as Awaited<ReturnType<typeof fetchInternalAuthStatus>>);
+		vi.mocked(revalidateSingleModelDataAction).mockResolvedValue({ ok: true, message: "Model data cache revalidated." } as never);
+		await expect(revalidateModelScopeAction({ data: { modelId: "openai/gpt-6", scope: "data" } })).resolves.toEqual({ ok: true, message: "Model data cache revalidated." });
+		expect(revalidateSingleModelDataAction).toHaveBeenCalledWith({ data: "openai/gpt-6" });
 	});
 });

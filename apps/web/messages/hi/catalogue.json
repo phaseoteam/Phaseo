@@ -1081,7 +1081,7 @@
 				"disabled": "अक्षम",
 				"comingSoon": "जल्द आ रहा है",
 				"internalTesting": "आंतरिक परीक्षण",
-				"rateLimited": "सीमित",
+				"rateLimited": "कम प्राथमिकता",
 				"degraded": "घटित",
 				"external": "बाहरी"
 			},
@@ -1105,7 +1105,7 @@
 				"disabled": "स्पष्ट रूप से अक्षम और रूट नहीं किया जा सकता।",
 				"comingSoon": "जल्द आ रहा है; अभी रूट नहीं किया जा सकता।",
 				"internalTesting": "केवल आंतरिक परीक्षण के लिए उपलब्ध।",
-				"rateLimited": "रूट किया जा सकता है, लेकिन रूटिंग स्वास्थ्य के कारण प्राथमिकता कम है।",
+				"rateLimited": "Phaseo द्वारा सेट किया गया। अभी भी उपलब्ध है, लेकिन जब तक Phaseo इसे नहीं बदलता, अनुरोध पहले दूसरे प्रदाताओं को भेजे जाते हैं।",
 				"degraded": "उपलब्ध है, लेकिन रूटिंग स्वास्थ्य घटा हुआ है।",
 				"external": "बाहरी कैटलॉग में सूचीबद्ध; Phaseo के माध्यम से रूट नहीं किया जा सकता।"
 			},
@@ -1363,9 +1363,12 @@
 			"discountEndsInDaysHours": "{days} दिन {hours} घंटे में समाप्त होगी",
 			"discountEndsInHours": "{hours} घंटे में समाप्त होगी",
 			"routingHealthLimited": "अस्थायी रूप से सीमित",
-			"routingHealthLimitedDescription": "रूटिंग स्वास्थ्य ने इस प्रदाता की प्राथमिकता अस्थायी रूप से घटा दी है (प्रभावित रूट जोड़े: {count})।",
+			"routingHealthLimitedDescription": "इस प्रदाता को भेजे गए अनुरोध बार-बार विफल हुए, इसलिए Phaseo ट्रैफ़िक पहले दूसरे प्रदाताओं को भेज रहा है (प्रभावित रूट: {count})।",
 			"routingHealthRecovering": "पुनर्प्राप्त हो रहा है",
-			"routingHealthRecoveringDescription": "रूटिंग स्वास्थ्य पुनर्प्राप्ति की जाँच कर रहा है (हाफ-ओपन स्थिति में रूट जोड़े: {count})।",
+			"routingHealthRecoveringDescription": "Phaseo यह जाँचने के लिए कुछ अनुरोध आगे भेज रहा है कि यह प्रदाता फिर से काम कर रहा है या नहीं (रूट: {count})।",
+			"routingHealthAutomatic": "यह अपने आप होता है और अनुरोध फिर से सफल होते ही हट जाता है। यह इससे पहले वाले स्टेटस आइकन से अलग है, जिसे Phaseo मैन्युअल रूप से सेट करता है।",
+			"liveRouting": "लाइव रूटिंग",
+			"liveRoutingStatus": "लाइव रूटिंग: {status}",
 			"processing": "प्रोसेसिंग",
 			"dataCenters": "डेटा सेंटर",
 			"unknown": "अज्ञात",
@@ -2766,13 +2769,6 @@
 		"perMonth": "प्रति माह",
 		"calculatorNote": "हर मॉडल के नीचे चुने गए रूट और स्तर का उपयोग करता है, 30 दिनों के लिए। कैश किया गया इनपुट कैश-रीड दर पर बिल होता है।",
 		"providers": "प्रदाता",
-		"providersSub": "आज Phaseo पर उपलब्ध रूट, प्रति 1M टोकन मानक स्तर की कीमतें",
-		"provider": "प्रदाता",
-		"tiers": "स्तर",
-		"providerPriceNote": "मानक स्तर की कीमतें। पहली पंक्ति सबसे सस्ता रूट है; दूसरा रूट ऊपर मॉडल के नाम के नीचे चुनें।",
-		"noRoutesFor": "Phaseo अभी {name} को रूट नहीं करता।",
-		"otherListings": "{count, plural, one {अन्य लिस्टिंग, Phaseo से रूट नहीं होतीं: # प्रदाता} other {अन्य लिस्टिंग, Phaseo से रूट नहीं होतीं: # प्रदाता}}",
-		"otherListingsNote": "संदर्भ के लिए: अन्य गेटवे की लिस्टिंग और वे रूट जिन्हें Phaseo ने बंद या निष्क्रिय किया है।",
 		"benchmarks": "बेंचमार्क",
 		"benchmarksSub": "पंक्ति केवल उन परिणामों की है जिन्हें चुने गए दो या अधिक मॉडल रिपोर्ट करते हैं",
 		"benchmarksSubSingle": "इस मॉडल के सभी बेंचमार्क परिणाम",
@@ -2808,10 +2804,6 @@
 				"title": "मौजूदा फ़्लैगशिप",
 				"description": "तीन लैब के सबसे नए शीर्ष मॉडल"
 			},
-			"pairing": {
-				"title": "GPT 5 बनाम Claude Sonnet 4.5",
-				"description": "एक जोड़ी जिस पर कई टीमें विचार करती हैं"
-			},
 			"anthropic": {
 				"title": "Opus या Sonnet?",
 				"description": "Anthropic के दो मौजूदा स्तर"
@@ -2819,6 +2811,18 @@
 			"openWeights": {
 				"title": "ओपन वेट्स",
 				"description": "ऐसे मॉडल जिन्हें आप डाउनलोड करके खुद चला सकते हैं"
+			},
+			"video": {
+				"title": "वीडियो मॉडल",
+				"description": "रिज़ॉल्यूशन और मोड के अनुसार प्रति सेकंड कीमत"
+			},
+			"image": {
+				"title": "इमेज मॉडल",
+				"description": "आकार और गुणवत्ता के अनुसार प्रति इमेज कीमत"
+			},
+			"decisions": {
+				"title": "निर्णय मॉडल",
+				"description": "ऐसे मॉडल जो टेक्स्ट नहीं, निर्णय लौटाते हैं"
 			}
 		},
 		"badgeOnPhaseo": "Phaseo पर",
@@ -2839,18 +2843,15 @@
 		"pricedOn": "कीमत का आधार",
 		"pricingSubRoute": "हर मॉडल के नीचे चुने गए रूट और स्तर पर कीमतें",
 		"perMillionTokens": "/ 10 लाख टोकन",
-		"bandPrice": "{condition}: {price}",
 		"moreMeters": "{count, plural, one {# और मीटर दिखाएँ} other {# और मीटर दिखाएँ}}",
 		"fewerMeters": "कम मीटर दिखाएँ",
 		"otherCategory": "अन्य",
 		"activity": "गतिविधि",
 		"activitySub": "पिछले 30 दिनों में हर दिन Phaseo के ज़रिए भेजे गए टोकन",
-		"activityTotal": "टोकन, पिछले 30 दिन",
 		"activityInput": "इनपुट",
 		"activityOutput": "आउटपुट",
 		"activityReasoning": "रीज़निंग",
 		"activityRequests": "अनुरोध",
-		"activityDay": "{date}: {tokens} टोकन, {count, plural, other {{requests} अनुरोध}}",
 		"activityChart": "Phaseo के ज़रिए {name} के दैनिक टोकन, पिछले 30 दिन",
 		"activityNone": "पिछले 30 दिनों में Phaseo के ज़रिए कोई ट्रैफ़िक नहीं",
 		"activityNoneAll": "पिछले 30 दिनों में इनमें से किसी भी मॉडल पर Phaseo के ज़रिए कोई ट्रैफ़िक नहीं आया।",
@@ -2859,7 +2860,46 @@
 		"peerModels": "{count, plural, one {# मॉडल रैंक किया गया} other {# मॉडल रैंक किए गए}}",
 		"headToHead": "आमने-सामने तुलनाएँ",
 		"pairTitle": "{a} बनाम {b}",
-		"activityRequestsTotal": "अनुरोध, पिछले 30 दिन"
+		"selected": "चुना गया",
+		"pickerReturnsOther": "यह {types} लौटाता है, इसलिए आपके चयन से इसकी तुलना नहीं हो सकती",
+		"pickerNoOutputTypes": "इसके आउटपुट प्रकार प्रकाशित नहीं हैं, इसलिए इसे आपके चयन से मिलाया नहीं जा सकता",
+		"pickerHiddenIncompatible": "{count, plural, one {अलग प्रकार लौटाने वाला # मॉडल छिपा है।} other {अलग प्रकार लौटाने वाले # मॉडल छिपे हैं।}} उन्हें ढूँढने के लिए खोजें।",
+		"activityTokens30d": "टोकन, पिछले 30 दिन",
+		"activityPerDay": "प्रति दिन",
+		"activityNoTokens": "केवल अनुरोध, कोई टोकन दर्ज नहीं",
+		"moreMetersCount": "{count, plural, one {# और मीटर} other {# और मीटर}}",
+		"priceFrom": "{price} से",
+		"conditionFields": {
+			"input": "इनपुट",
+			"duration": "अवधि",
+			"inputVideo": "इनपुट वीडियो",
+			"resolution": "रिज़ॉल्यूशन",
+			"quality": "गुणवत्ता",
+			"aspectRatio": "आस्पेक्ट रेशियो",
+			"audio": "ऑडियो",
+			"mode": "मोड",
+			"draft": "ड्राफ़्ट",
+			"cacheDuration": "कैश अवधि",
+			"region": "क्षेत्र",
+			"serviceTier": "सेवा स्तर"
+		},
+		"conditionIs": "{field}: {value}",
+		"conditionIsNot": "{field}: {value} नहीं",
+		"conditionOn": "चालू",
+		"conditionOff": "बंद",
+		"showAllPrices": "सभी {count} कीमतें दिखाएँ",
+		"showFewerPrices": "कम कीमतें दिखाएँ",
+		"showAllProviders": "सभी {count} प्रदाता दिखाएँ",
+		"showFewerProviders": "कम प्रदाता दिखाएँ",
+		"moreCount": "+{count}",
+		"routePrice": "{input} इनपुट · {output} आउटपुट",
+		"providersAcrossSub": "हर मॉडल Phaseo पर कहाँ चलता है, प्रति 10 लाख टोकन मानक स्तर की कीमत के साथ। इनमें से ज़्यादा मॉडल देने वाले प्रदाता पहले दिखते हैं।",
+		"providersAcrossSubMeters": "हर मॉडल Phaseo पर कहाँ चलता है, हर रूट की मानक स्तर की कीमत के साथ। इनमें से ज़्यादा मॉडल देने वाले प्रदाता पहले दिखते हैं।",
+		"providersAcrossNote": "पूरे पेज की कीमत इनमें से किसी प्रदाता पर देखने के लिए, ऊपर मॉडल के नाम के नीचे उसे चुनें।",
+		"routeContext": "{value} संदर्भ",
+		"otherListingsLabel": "सूची में भी, Phaseo से रूट नहीं",
+		"noRoutesAny": "Phaseo आज इनमें से किसी भी मॉडल को रूट नहीं करता।",
+		"comparedSections": "हर तुलना में शामिल है"
 	},
 	"countries": {
 		"title": "देश के अनुसार AI",

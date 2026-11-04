@@ -50,6 +50,45 @@ export function Segmented<T extends string>({
 	);
 }
 
+const SHOWN_OPTIONS = 3;
+
+/**
+ * A meter's prices by request option ("Resolution: 480p", "Input > 272K"), cheapest
+ * first, as condition and price columns. Image and video models can have 18 options,
+ * so the rest wait behind a toggle.
+ */
+function PriceOptions({ rows }: { rows: CompareViewPriceRow[] }) {
+	const t = useTranslations("Catalogue.compareView");
+	const format = useCompareFormat();
+	const [open, setOpen] = useState(false);
+	const sorted = [...rows].sort((left, right) => left.price / left.per - right.price / right.per);
+	const shown = open ? sorted : sorted.slice(0, SHOWN_OPTIONS);
+	return (
+		<span className="mt-1 block">
+			<span className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-0.5">
+				{shown.map((row, index) => (
+					<span key={`${row.condition}-${index}`} className="contents">
+						<span className="min-w-0">{format.condition(row)}</span>
+						{/* Same meter as the headline price above, so its unit ("per second", "/ 1M tokens") isn't repeated. */}
+						<span className="text-right text-foreground/80 tabular-nums">{format.usd(row.price)}</span>
+					</span>
+				))}
+			</span>
+			{sorted.length > SHOWN_OPTIONS ? (
+				<button
+					type="button"
+					onClick={() => setOpen((value) => !value)}
+					aria-expanded={open}
+					className="mt-1 inline-flex items-center gap-1 rounded-md text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+				>
+					<ChevronDown aria-hidden className={cn("size-3 transition-transform", open && "rotate-180")} />
+					{open ? t("showFewerPrices") : t("showAllPrices", { count: sorted.length })}
+				</button>
+			) : null}
+		</span>
+	);
+}
+
 type MeterLine = { key: string; label: string; kind: ComparePriceKind; meter?: string };
 
 /** Every price row the chosen tiers have across the models: the main token kinds, then each other meter. */
@@ -96,9 +135,11 @@ export function ComparePricing({ models, tiers }: { models: CompareViewModel[]; 
 	const { main, other } = meterLines(models, tiers, format.meter, (kind) => t(KIND_LABELS[kind]));
 	const perMillion = t("perMillionTokens");
 
+	// A meter priced only by option (480p, draft) shows its cheapest option as "from".
+	const priceText = (row: CompareViewPriceRow) => (row.conditional ? t("priceFrom", { price: format.price(row) }) : format.price(row));
 	const priceContent = (row: CompareViewPriceRow) => (row.unit === "token"
-		? <>{format.price(row)}<span className="ml-1 text-xs font-normal text-muted-foreground">{perMillion}</span></>
-		: format.price(row));
+		? <>{priceText(row)}<span className="ml-1 text-xs font-normal text-muted-foreground">{perMillion}</span></>
+		: priceText(row));
 
 	const cells = (line: MeterLine): CompareCell[] => {
 		const rows = models.map((model, index) => {
@@ -110,7 +151,9 @@ export function ComparePricing({ models, tiers }: { models: CompareViewModel[]; 
 		});
 		const comparable = rows.map((entry) => (entry.state === "price" ? (entry.row.price / entry.row.per) * (entry.row.unit === "token" ? 1_000_000 : 1) : null));
 		const units = new Set(rows.flatMap((entry) => (entry.state === "price" ? [entry.row.unit] : [])));
-		const best = sameJob && units.size === 1 ? bestIndices(comparable, "lower") : new Set<number>();
+		// A price that only applies under a condition (480p, draft mode) isn't like-for-like with another model's, so neither is marked cheapest.
+		const conditional = rows.some((entry) => entry.state === "price" && entry.row.conditional);
+		const best = sameJob && units.size === 1 && !conditional ? bestIndices(comparable, "lower") : new Set<number>();
 		return rows.map((entry, index): CompareCell => {
 			if (entry.state === "notOffered") return { content: t("notOffered"), text: "", muted: true };
 			if (entry.state === "missing") {
@@ -122,18 +165,14 @@ export function ComparePricing({ models, tiers }: { models: CompareViewModel[]; 
 				content: priceContent(entry.row),
 				text: `${entry.row.price}/${entry.row.per}`,
 				best: best.has(index),
-				sub: bands.length ? (
-					<span className="mt-0.5 block space-y-0.5">
-						{entry.row.condition ? <span className="block">{t("bandPrice", { condition: entry.row.condition, price: format.price(entry.row) })}</span> : null}
-						{bands.map((band) => <span key={band.condition ?? band.price} className="block">{t("bandPrice", { condition: band.condition ?? "", price: format.price(band) })}</span>)}
-					</span>
-				) : undefined,
+				sub: bands.length ? <PriceOptions rows={entry.row.conditional ? [entry.row, ...bands] : bands} /> : undefined,
 			};
 		});
 	};
 
+	const typicalCosts = models.map((model, index) => requestCost(model, TYPICAL_REQUEST, tiers[index]));
 	const typicalCells = (): CompareCell[] => {
-		const costs = models.map((model, index) => requestCost(model, TYPICAL_REQUEST, tiers[index]));
+		const costs = typicalCosts;
 		const best = bestIndices(costs, "lower");
 		return costs.map((cost, index) => (cost == null
 			? { content: t("notPriced"), text: "", muted: true }
@@ -141,25 +180,27 @@ export function ComparePricing({ models, tiers }: { models: CompareViewModel[]; 
 	};
 
 	const anyPriced = models.some((model) => model.pricing);
+	// Video, image and speech models have no token rows: their per-second or per-image meters are the prices, so they show unfolded.
+	const expanded = showAll || main.length === 0;
 	return (
 		<CompareSection id="pricing" title={t("pricing")} description={sameJob ? t("pricingSubRoute") : t("pricingGroupSourceUnits")}>
 			{anyPriced ? (
 				<CompareGrid label={t("pricing")}>
 					<RouteCaptionRow models={models} tiers={tiers} />
 					{main.map((line) => <CompareRow key={line.key} label={line.label} cells={cells(line)} />)}
-					{sameJob ? (
+					{sameJob && typicalCosts.some((cost) => cost != null) ? (
 						<CompareRow
 							label={t("typicalRequest")}
 							labelSub={t("typicalRequestSub")}
 							cells={typicalCells()}
 						/>
 					) : null}
-					{showAll ? other.map((line) => <CompareRow key={line.key} label={line.label} cells={cells(line)} />) : null}
+					{expanded ? other.map((line) => <CompareRow key={line.key} label={line.label} cells={cells(line)} />) : null}
 				</CompareGrid>
 			) : (
 				<p className="rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">{t("noPricing")}</p>
 			)}
-			{other.length ? (
+			{other.length && main.length ? (
 				<button
 					type="button"
 					onClick={() => setShowAll((value) => !value)}

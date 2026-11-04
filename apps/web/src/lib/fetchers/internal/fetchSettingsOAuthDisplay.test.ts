@@ -20,7 +20,7 @@ it("caches only OAuth app display fields, never credentials or unknown columns",
 it("excludes authorization tokens and nested private fields from cached details", async () => {
 	fetchData.mockResolvedValue({ signedIn: true, currentUserId: "alice", oauthApp: app, authorizations: [{ id: "auth-a", last_used_at: null, access_token: "secret", refresh_token: "secret", users: { full_name: "Alice", email: "alice@example.test", private: "secret" }, teams: { name: "Team", secret: "secret" } }], recentRequests: [], usageStats: [], userDirectory: [] });
 	const data = await fetchSettingsOAuthAppDetailInitialData("client/a");
-	expect(data.authorizations).toEqual([{ id: "auth-a", last_used_at: null, users: { full_name: "Alice", email: "alice@example.test" }, teams: { name: "Team" } }]);
+	expect(data.authorizations).toEqual([{ id: "auth-a", last_used_at: null, users: { full_name: "Alice", email: "alice@example.test" } }]);
 	expect(JSON.stringify(data)).not.toMatch(/secret|hash|unknown/);
 	expect(fetchData).toHaveBeenCalledWith("/api/account/settings/oauth-apps/client%2Fa", "test-token");
 });

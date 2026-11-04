@@ -183,6 +183,7 @@ export const purgeCacheScopeAction = createServerFn({ method: "POST" })
 		targetId?: string;
 	}) => input)
 	.handler(async ({ data: input }): Promise<CachePurgeResult> => {
+		await requireAdmin();
 		const { accessToken } = await getServerAccountContext();
 		if (!accessToken) throw new Error("Your admin session is no longer available. Sign in again.");
 
@@ -353,11 +354,13 @@ export const revalidateModelScopeAction = createServerFn({ method: "POST" })
 	}) => input)
 	.handler(async ({ data: input }): Promise<CacheOpResult> => {
 		const modelId = input.modelId.trim();
-		if (!modelId) {
-			return { ok: false, message: "Model ID is required." };
-		}
 
 		try {
+			await requireAdmin();
+			if (!modelId) {
+				return { ok: false, message: "Model ID is required." };
+			}
+
 			let result: { ok: true; message: string };
 			if (input.scope === "data") {
 				result = await revalidateSingleModelDataAction({ data: modelId });

@@ -1081,7 +1081,7 @@
 				"disabled": "已停用",
 				"comingSoon": "即将推出",
 				"internalTesting": "内部测试",
-				"rateLimited": "受限",
+				"rateLimited": "优先级较低",
 				"degraded": "降级",
 				"external": "外部"
 			},
@@ -1105,7 +1105,7 @@
 				"disabled": "已明确停用，无法路由。",
 				"comingSoon": "即将推出，尚不可路由。",
 				"internalTesting": "仅供内部测试。",
-				"rateLimited": "可以路由，但因路由健康状况而大幅降低优先级。",
+				"rateLimited": "由 Phaseo 设置。仍然可用，但在 Phaseo 更改之前，请求会先发送给其他提供商。",
 				"degraded": "可用，但路由健康状况已降级。",
 				"external": "列在外部目录中；无法通过 Phaseo 路由。"
 			},
@@ -1363,9 +1363,12 @@
 			"discountEndsInDaysHours": "{days} 天 {hours} 小时后结束",
 			"discountEndsInHours": "{hours} 小时后结束",
 			"routingHealthLimited": "暂时受限",
-			"routingHealthLimitedDescription": "路由健康状态已暂时降低此提供商的优先级（受影响的路由对：{count}）。",
+			"routingHealthLimitedDescription": "发往此提供商的请求多次失败，因此 Phaseo 会先将流量发送给其他提供商（受影响的路由：{count}）。",
 			"routingHealthRecovering": "正在恢复",
-			"routingHealthRecoveringDescription": "路由健康状态正在探测恢复情况（半开状态的路由对：{count}）。",
+			"routingHealthRecoveringDescription": "Phaseo 正在放行少量请求，检查此提供商是否已恢复正常（路由：{count}）。",
+			"routingHealthAutomatic": "此状态自动设置，请求恢复成功后会立即清除。它与前面由 Phaseo 手动设置的状态图标是分开的。",
+			"liveRouting": "实时路由",
+			"liveRoutingStatus": "实时路由：{status}",
 			"processing": "处理位置",
 			"dataCenters": "数据中心",
 			"unknown": "未知",
@@ -2766,13 +2769,6 @@
 		"perMonth": "每月",
 		"calculatorNote": "使用每个模型下方所选的路由和层级，按 30 天计算。缓存的输入按缓存读取价格计费。",
 		"providers": "提供商",
-		"providersSub": "Phaseo 目前提供的路由，每 1M token 的标准层级价格",
-		"provider": "提供商",
-		"tiers": "层级",
-		"providerPriceNote": "标准层级价格。第一行是最便宜的路由；可在顶部模型名称下方选择其他路由。",
-		"noRoutesFor": "Phaseo 目前不路由 {name}。",
-		"otherListings": "{count, plural, other {另有列出但未经 Phaseo 路由：# 个提供商}}",
-		"otherListingsNote": "仅供参考：其他网关的列表，以及 Phaseo 已停用或禁用的路由。",
 		"benchmarks": "基准测试",
 		"benchmarksSub": "只有两个或以上已选模型报告的结果才会单独成行",
 		"benchmarksSubSingle": "此模型的所有基准测试结果",
@@ -2808,10 +2804,6 @@
 				"title": "当前旗舰",
 				"description": "三家实验室的最新顶级模型"
 			},
-			"pairing": {
-				"title": "GPT 5 对比 Claude Sonnet 4.5",
-				"description": "许多团队都会权衡的一组"
-			},
 			"anthropic": {
 				"title": "Opus 还是 Sonnet？",
 				"description": "Anthropic 当前的两个档位"
@@ -2819,6 +2811,18 @@
 			"openWeights": {
 				"title": "开放权重",
 				"description": "你可以下载并自行运行的模型"
+			},
+			"video": {
+				"title": "视频模型",
+				"description": "按分辨率和模式的每秒价格"
+			},
+			"image": {
+				"title": "图像模型",
+				"description": "按尺寸和质量的每张图片价格"
+			},
+			"decisions": {
+				"title": "决策模型",
+				"description": "返回决策而非文本的模型"
 			}
 		},
 		"badgeOnPhaseo": "在 Phaseo 上",
@@ -2839,18 +2843,15 @@
 		"pricedOn": "计价依据",
 		"pricingSubRoute": "每个模型下方所选路由和层级的价格",
 		"perMillionTokens": "/ 100 万 token",
-		"bandPrice": "{condition}：{price}",
 		"moreMeters": "{count, plural, other {再显示 # 个计费项}}",
 		"fewerMeters": "收起计费项",
 		"otherCategory": "其他",
 		"activity": "活动",
 		"activitySub": "过去 30 天每天通过 Phaseo 发送的 token",
-		"activityTotal": "token，过去 30 天",
 		"activityInput": "输入",
 		"activityOutput": "输出",
 		"activityReasoning": "推理",
 		"activityRequests": "请求",
-		"activityDay": "{date}：{tokens} token，{count, plural, other {{requests} 个请求}}",
 		"activityChart": "{name} 通过 Phaseo 的每日 token，过去 30 天",
 		"activityNone": "过去 30 天没有通过 Phaseo 的流量",
 		"activityNoneAll": "过去 30 天，这些模型都没有通过 Phaseo 的流量。",
@@ -2859,7 +2860,46 @@
 		"peerModels": "共 {count} 个模型参与排名",
 		"headToHead": "一对一比较",
 		"pairTitle": "{a} vs {b}",
-		"activityRequestsTotal": "个请求，过去 30 天"
+		"selected": "已选择",
+		"pickerReturnsOther": "返回{types}，因此无法与当前选择进行比较",
+		"pickerNoOutputTypes": "未公布输出类型，因此无法与当前选择匹配",
+		"pickerHiddenIncompatible": "{count, plural, other {已隐藏 # 个返回其他类型的模型。}}搜索即可找到它们。",
+		"activityTokens30d": "Token，过去 30 天",
+		"activityPerDay": "每天",
+		"activityNoTokens": "仅有请求，未记录 token",
+		"moreMetersCount": "{count, plural, other {另有 # 个计费项}}",
+		"priceFrom": "{price} 起",
+		"conditionFields": {
+			"input": "输入",
+			"duration": "时长",
+			"inputVideo": "输入视频",
+			"resolution": "分辨率",
+			"quality": "质量",
+			"aspectRatio": "宽高比",
+			"audio": "音频",
+			"mode": "模式",
+			"draft": "草稿",
+			"cacheDuration": "缓存时长",
+			"region": "区域",
+			"serviceTier": "服务层级"
+		},
+		"conditionIs": "{field}：{value}",
+		"conditionIsNot": "{field}：非 {value}",
+		"conditionOn": "开",
+		"conditionOff": "关",
+		"showAllPrices": "显示全部 {count} 个价格",
+		"showFewerPrices": "显示较少价格",
+		"showAllProviders": "显示全部 {count} 个提供商",
+		"showFewerProviders": "显示较少提供商",
+		"moreCount": "+{count}",
+		"routePrice": "输入 {input} · 输出 {output}",
+		"providersAcrossSub": "每个模型在 Phaseo 上的运行位置，以及每百万 token 的标准层级价格。提供更多这些模型的提供商排在前面。",
+		"providersAcrossSubMeters": "每个模型在 Phaseo 上的运行位置，以及每条路由的标准层级价格。提供更多这些模型的提供商排在前面。",
+		"providersAcrossNote": "要按其中某个提供商计算整页价格，请在顶部模型名称下选择它。",
+		"routeContext": "{value} 上下文",
+		"otherListingsLabel": "另有列出，Phaseo 不路由",
+		"noRoutesAny": "Phaseo 目前不路由这些模型中的任何一个。",
+		"comparedSections": "每次比较都包含"
 	},
 	"countries": {
 		"title": "各国 AI",

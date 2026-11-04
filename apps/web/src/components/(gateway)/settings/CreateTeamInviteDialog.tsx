@@ -24,26 +24,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { CopyButton } from "@/components/ui/copy-button";
 
-function generateCode(length = 10) {
-	const alphabet =
-		"ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"; // exclude confusing chars
-	let out = "";
-	const cryptoObj =
-		typeof window !== "undefined" &&
-		(window.crypto || (window as any).msCrypto);
-	if (cryptoObj && cryptoObj.getRandomValues) {
-		const bytes = new Uint8Array(length);
-		cryptoObj.getRandomValues(bytes);
-		for (let i = 0; i < length; i++) {
-			out += alphabet[bytes[i] % alphabet.length];
-		}
-		return out;
-	}
-	for (let i = 0; i < length; i++)
-		out += alphabet[Math.floor(Math.random() * alphabet.length)];
-	return out;
-}
-
 export default function CreateTeamInviteDialog({
 	currentUserId,
 	teams,
@@ -89,15 +69,12 @@ export default function CreateTeamInviteDialog({
 		if (!selectedTeam || !currentUserId) return;
 		setLoading(true);
 		try {
-			// generate a secure 10-char code
-			const code = generateCode(10);
-			// call server action to persist hashed token
-			await createTeamInviteAction(
-				{ data: { workspaceId: selectedTeam, creatorUserId: currentUserId, role, token: code, expiresInDays: expiresIn, maxUses: maxUses ?? null } }
-			).then(() => {
-				setGeneratedCode(code);
-				router.refresh();
-			});
+			// The server generates the code and keeps only its encrypted form and fingerprint.
+			const invite = await createTeamInviteAction(
+				{ data: { workspaceId: selectedTeam, creatorUserId: currentUserId, role, expiresInDays: expiresIn, maxUses: maxUses ?? null } }
+			);
+			setGeneratedCode(invite.token);
+			router.refresh();
 		} catch {
 			toast.error(t("teams.failedCreateInvite"));
 		} finally {

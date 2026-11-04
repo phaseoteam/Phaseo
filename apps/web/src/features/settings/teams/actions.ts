@@ -152,11 +152,10 @@ export const deleteTeamAction = createServerFn({ method: "POST" })
 
 export const createTeamInviteAction = createServerFn({ method: "POST" })
 	.middleware([serverAction])
-	.validator((input: { workspaceId: string; creatorUserId: string; role: string; token: string; expiresInDays?: number; maxUses?: number | null }) => input)
-	.handler(async ({ data: { workspaceId, creatorUserId, role, token, expiresInDays = 7, maxUses } }) => {
+	.validator((input: { workspaceId: string; creatorUserId: string; role: string; expiresInDays?: number; maxUses?: number | null }) => input)
+	.handler(async ({ data: { workspaceId, creatorUserId, role, expiresInDays = 7, maxUses } }) => {
         if (!workspaceId) throw new Error("Missing workspaceId");
         if (!creatorUserId) throw new Error("Missing creatorUserId");
-        if (!token || token.length < 6) throw new Error("Invalid token");
 
         const normalizedRole = String(role || "member").toLowerCase();
         if (!["admin", "member"].includes(normalizedRole)) {
@@ -165,7 +164,7 @@ export const createTeamInviteAction = createServerFn({ method: "POST" })
 
         const { accessToken } = await getServerAccountContext();
     	if (!accessToken) throw new Error("Unauthorized");
-    	return fetchAccountWebApi<{ id?: string; token: string }>(`/api/account/settings/teams/${encodeURIComponent(workspaceId)}/invites`, accessToken, { method: "POST", body: JSON.stringify({ creatorUserId, role: normalizedRole, token, expiresInDays, maxUses }) });
+    	return fetchAccountWebApi<{ id?: string; token: string }>(`/api/account/settings/teams/${encodeURIComponent(workspaceId)}/invites`, accessToken, { method: "POST", body: JSON.stringify({ creatorUserId, role: normalizedRole, expiresInDays, maxUses }) });
     });
 
 export const revealTeamInviteAction = createServerFn({ method: "POST" })

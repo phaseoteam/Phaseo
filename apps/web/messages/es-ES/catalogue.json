@@ -1081,7 +1081,7 @@
 				"disabled": "Deshabilitado",
 				"comingSoon": "Próximamente",
 				"internalTesting": "Pruebas internas",
-				"rateLimited": "Limitado",
+				"rateLimited": "Prioridad más baja",
 				"degraded": "Degradado",
 				"external": "Externo"
 			},
@@ -1105,7 +1105,7 @@
 				"disabled": "Deshabilitado explícitamente y no enrutable.",
 				"comingSoon": "Próximamente; todavía no es enrutable.",
 				"internalTesting": "Disponible solo para pruebas internas.",
-				"rateLimited": "Enrutable, pero con prioridad muy baja según el estado del enrutamiento.",
+				"rateLimited": "Lo establece Phaseo. Sigue disponible, pero las solicitudes van primero a otros proveedores hasta que Phaseo lo cambie.",
 				"degraded": "Disponible con el enrutamiento degradado.",
 				"external": "Incluido en un catálogo externo; no se puede enrutar a través de Phaseo."
 			},
@@ -1363,9 +1363,12 @@
 			"discountEndsInDaysHours": "Termina en {days} d {hours} h",
 			"discountEndsInHours": "Termina en {hours} h",
 			"routingHealthLimited": "Limitado temporalmente",
-			"routingHealthLimitedDescription": "El estado del enrutamiento ha reducido temporalmente la prioridad de este proveedor ({count, plural, one {# ruta afectada} other {# rutas afectadas}}).",
+			"routingHealthLimitedDescription": "Las solicitudes a este proveedor han fallado varias veces, así que Phaseo envía el tráfico primero a otros proveedores ({count, plural, one {# ruta afectada} other {# rutas afectadas}}).",
 			"routingHealthRecovering": "En recuperación",
-			"routingHealthRecoveringDescription": "El estado del enrutamiento está comprobando la recuperación ({count, plural, one {# ruta} other {# rutas}} en estado semiabierto).",
+			"routingHealthRecoveringDescription": "Phaseo deja pasar algunas solicitudes para comprobar que este proveedor vuelve a funcionar ({count, plural, one {# ruta} other {# rutas}}).",
+			"routingHealthAutomatic": "Ocurre automáticamente y desaparece en cuanto las solicitudes vuelven a funcionar. Es independiente del icono de estado anterior, que Phaseo establece manualmente.",
+			"liveRouting": "Enrutamiento en directo",
+			"liveRoutingStatus": "Enrutamiento en directo: {status}",
 			"processing": "Procesamiento",
 			"dataCenters": "Centros de datos",
 			"unknown": "Desconocido",
@@ -2645,7 +2648,7 @@
 		"best": "mejor",
 		"breadcrumb": "Ruta de navegación",
 		"compare": "Comparar",
-		"versus": "frente a",
+		"versus": "vs.",
 		"headerSub": "Elige una ruta y un nivel de servicio debajo de cada modelo. Los precios, la calculadora y las recomendaciones siguen tu elección.",
 		"copyLink": "Copiar enlace",
 		"copied": "Copiado",
@@ -2766,13 +2769,6 @@
 		"perMonth": "Al mes",
 		"calculatorNote": "Usa la ruta y el nivel elegidos debajo de cada modelo, durante 30 días. La entrada en caché se cobra a la tarifa de lectura de caché.",
 		"providers": "Proveedores",
-		"providersSub": "Rutas que Phaseo ofrece hoy, precios del nivel estándar por 1M tokens",
-		"provider": "Proveedor",
-		"tiers": "Niveles",
-		"providerPriceNote": "Precios del nivel estándar. La primera fila es la ruta más barata; elige otra debajo del nombre del modelo, arriba.",
-		"noRoutesFor": "Phaseo no enruta {name} actualmente.",
-		"otherListings": "{count, plural, one {También listado, Phaseo no lo enruta: # proveedor} other {También listado, Phaseo no lo enruta: # proveedores}}",
-		"otherListingsNote": "Se muestra como referencia: listados de otros gateways y rutas que Phaseo ha retirado o desactivado.",
 		"benchmarks": "Benchmarks",
 		"benchmarksSub": "Solo tienen fila los resultados que publican dos o más de los modelos seleccionados",
 		"benchmarksSubSingle": "Todos los resultados de benchmarks de este modelo",
@@ -2808,10 +2804,6 @@
 				"title": "Modelos insignia actuales",
 				"description": "Los modelos punteros más nuevos de tres laboratorios"
 			},
-			"pairing": {
-				"title": "GPT 5 frente a Claude Sonnet 4.5",
-				"description": "Una pareja que muchos equipos sopesan"
-			},
 			"anthropic": {
 				"title": "¿Opus o Sonnet?",
 				"description": "Los dos niveles actuales de Anthropic"
@@ -2819,6 +2811,18 @@
 			"openWeights": {
 				"title": "Pesos abiertos",
 				"description": "Modelos que puedes descargar y ejecutar tú mismo"
+			},
+			"video": {
+				"title": "Modelos de vídeo",
+				"description": "Precios por segundo según resolución y modo"
+			},
+			"image": {
+				"title": "Modelos de imagen",
+				"description": "Precios por imagen según tamaño y calidad"
+			},
+			"decisions": {
+				"title": "Modelos de decisión",
+				"description": "Modelos que devuelven una decisión, no texto"
 			}
 		},
 		"badgeOnPhaseo": "En Phaseo",
@@ -2839,18 +2843,15 @@
 		"pricedOn": "Precio en",
 		"pricingSubRoute": "Precios en la ruta y el nivel elegidos debajo de cada modelo",
 		"perMillionTokens": "/ 1 M de tokens",
-		"bandPrice": "{condition}: {price}",
 		"moreMeters": "{count, plural, one {Mostrar # medidor más} other {Mostrar # medidores más}}",
 		"fewerMeters": "Mostrar menos medidores",
 		"otherCategory": "Otros",
 		"activity": "Actividad",
 		"activitySub": "Tokens enviados cada día a través de Phaseo en los últimos 30 días",
-		"activityTotal": "tokens, últimos 30 días",
 		"activityInput": "Entrada",
 		"activityOutput": "Salida",
 		"activityReasoning": "Razonamiento",
 		"activityRequests": "Solicitudes",
-		"activityDay": "{date}: {tokens} tokens, {count, plural, one {# solicitud} other {{requests} solicitudes}}",
 		"activityChart": "Tokens diarios de {name} a través de Phaseo, últimos 30 días",
 		"activityNone": "Sin tráfico a través de Phaseo en los últimos 30 días",
 		"activityNoneAll": "Ninguno de estos modelos ha tenido tráfico a través de Phaseo en los últimos 30 días.",
@@ -2859,7 +2860,46 @@
 		"peerModels": "{count, plural, one {# modelo clasificado} other {# modelos clasificados}}",
 		"headToHead": "Comparativas directas",
 		"pairTitle": "{a} vs {b}",
-		"activityRequestsTotal": "solicitudes, últimos 30 días"
+		"selected": "Seleccionado",
+		"pickerReturnsOther": "Devuelve {types}, así que no se puede comparar con tu selección",
+		"pickerNoOutputTypes": "Sus tipos de salida no están publicados, así que no se puede emparejar con tu selección",
+		"pickerHiddenIncompatible": "{count, plural, one {Se oculta # modelo que devuelve otro tipo.} other {Se ocultan # modelos que devuelven otros tipos.}} Busca para verlos.",
+		"activityTokens30d": "Tokens, últimos 30 días",
+		"activityPerDay": "Por día",
+		"activityNoTokens": "Solo solicitudes, sin tokens registrados",
+		"moreMetersCount": "{count, plural, one {# medidor más} other {# medidores más}}",
+		"priceFrom": "desde {price}",
+		"conditionFields": {
+			"input": "Entrada",
+			"duration": "Duración",
+			"inputVideo": "Vídeo de entrada",
+			"resolution": "Resolución",
+			"quality": "Calidad",
+			"aspectRatio": "Relación de aspecto",
+			"audio": "Audio",
+			"mode": "Modo",
+			"draft": "Borrador",
+			"cacheDuration": "Duración de la caché",
+			"region": "Región",
+			"serviceTier": "Nivel de servicio"
+		},
+		"conditionIs": "{field}: {value}",
+		"conditionIsNot": "{field}: distinto de {value}",
+		"conditionOn": "sí",
+		"conditionOff": "no",
+		"showAllPrices": "Mostrar los {count} precios",
+		"showFewerPrices": "Mostrar menos precios",
+		"showAllProviders": "Mostrar los {count} proveedores",
+		"showFewerProviders": "Mostrar menos proveedores",
+		"moreCount": "+{count}",
+		"routePrice": "{input} entrada · {output} salida",
+		"providersAcrossSub": "Dónde se ejecuta cada modelo en Phaseo, con precios estándar por 1 M de tokens. Primero aparecen los proveedores que ofrecen más de estos modelos.",
+		"providersAcrossSubMeters": "Dónde se ejecuta cada modelo en Phaseo, con el precio estándar de cada ruta. Primero aparecen los proveedores que ofrecen más de estos modelos.",
+		"providersAcrossNote": "Para calcular toda la página con uno de estos proveedores, elígelo debajo del nombre del modelo, arriba.",
+		"routeContext": "contexto de {value}",
+		"otherListingsLabel": "También listado, sin ruta en Phaseo",
+		"noRoutesAny": "Phaseo no enruta ninguno de estos modelos hoy.",
+		"comparedSections": "Cada comparación incluye"
 	},
 	"countries": {
 		"title": "IA por país",

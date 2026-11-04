@@ -50,7 +50,8 @@
 		"fromJournal": "Dans le journal",
 		"journalDescription": "Actualités produit, guides et notes de version.",
 		"viewAllPosts": "Voir tous les articles",
-		"englishBodyNotice": "Ce contenu éditorial est actuellement disponible en anglais. L’interface est traduite ; l’article original est affiché afin d’en préserver le sens."
+		"englishBodyNotice": "Ce contenu éditorial est actuellement disponible en anglais. L’interface est traduite ; l’article original est affiché afin d’en préserver le sens.",
+		"faqTitle": "Questions fréquentes"
 	},
 	"roadmap": {
 		"title": "Feuille de route Phaseo",

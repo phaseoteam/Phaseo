@@ -50,7 +50,8 @@
 		"fromJournal": "From the journal",
 		"journalDescription": "Product news, guides, and release notes.",
 		"viewAllPosts": "View all posts",
-		"englishBodyNotice": "This editorial content is currently available in English. The surrounding interface is translated; the original article is shown to preserve its meaning."
+		"englishBodyNotice": "This editorial content is currently available in English. The surrounding interface is translated; the original article is shown to preserve its meaning.",
+		"faqTitle": "Frequently asked questions"
 	},
 	"roadmap": {
 		"title": "Phaseo Roadmap",

@@ -63,6 +63,8 @@ type VirtualizedModelCatalogProps<T> = {
 	estimateItemSize?: number;
 	emptyContent?: ReactNode;
 	maxHeightPx?: number;
+	/** Lets a search input point `aria-controls` at the list. */
+	listboxId?: string;
 };
 
 export function VirtualizedModelCatalog<T>({
@@ -76,6 +78,7 @@ export function VirtualizedModelCatalog<T>({
 	estimateItemSize = 36,
 	emptyContent,
 	maxHeightPx,
+	listboxId,
 }: VirtualizedModelCatalogProps<T>) {
 	const t = useTranslations("Product.chat.modelPicker");
 	const [scrollViewport, setScrollViewport] =
@@ -129,6 +132,7 @@ export function VirtualizedModelCatalog<T>({
 			}}
 		>
 			<div
+				id={listboxId}
 				role="listbox"
 				aria-label={t("suggestions")}
 				className="relative w-full"

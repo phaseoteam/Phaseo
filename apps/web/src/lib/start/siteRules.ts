@@ -52,6 +52,12 @@ export const headerRules: HeaderRule[] = [
 			{ key: "X-Frame-Options", value: "SAMEORIGIN" },
 			{ key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
 			{ key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=(), payment=(self)" },
+			// Matches the previous site. Browsers ignore it on plain-HTTP (local) responses.
+			{ key: "Strict-Transport-Security", value: "max-age=63072000" },
+			// Enforced site-wide: no framing by other sites (as X-Frame-Options),
+			// no plugin content, and no <base> tag that could redirect relative
+			// URLs. The site uses none of them. /oauth/consent tightens this below.
+			{ key: "Content-Security-Policy", value: "frame-ancestors 'self'; object-src 'none'; base-uri 'self'" },
 		],
 	},
 	{

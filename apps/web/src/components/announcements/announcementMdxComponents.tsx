@@ -4,6 +4,7 @@ import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
 import AnnouncementCounter from "./AnnouncementCounter";
+import { Feature, FeatureGrid, Flow, FlowStep } from "./AnnouncementDiagrams";
 import CliInstallTabs from "./CliInstallTabs";
 import {
 	AnnouncementGetStartedCta,
@@ -176,8 +177,29 @@ export const announcementMdxComponents = {
 			{...props}
 		/>
 	),
+	table: (props: ComponentPropsWithoutRef<"table">) => (
+		<div className="my-6 overflow-x-auto rounded-md border border-zinc-200 dark:border-zinc-800">
+			<table className="w-full border-collapse text-left text-sm" {...props} />
+		</div>
+	),
+	th: (props: ComponentPropsWithoutRef<"th">) => (
+		<th
+			className="border-b border-zinc-200 bg-zinc-50 px-4 py-2.5 font-semibold text-zinc-950 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-50"
+			{...props}
+		/>
+	),
+	td: (props: ComponentPropsWithoutRef<"td">) => (
+		<td
+			className="border-b border-zinc-200 px-4 py-2.5 align-top leading-6 text-zinc-700 dark:border-zinc-800 dark:text-zinc-300 [tr:last-child_&]:border-b-0"
+			{...props}
+		/>
+	),
 	Callout: AnnouncementCallout,
 	Counter: AnnouncementCounter,
+	FeatureGrid,
+	Feature,
+	Flow,
+	FlowStep,
 	CliInstallTabs,
 	SocialLinks: AnnouncementSocialLinks,
 	GetStartedCta: AnnouncementGetStartedCta,

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { groupModelsByReleaseMonth, searchModels } from "./ModelCombobox";
+import { groupModelsByReleaseMonth, pickerAvailability, searchModels } from "./ModelCombobox";
 import type { CompareModelOption } from "./types";
 
 const model = (id: string, name: string, releaseDate: string | null) =>
@@ -59,5 +59,29 @@ describe("searchModels", () => {
 	it("puts models Phaseo routes first", () => {
 		expect(searchModels(catalogue, "qwen")[0]!.routed).toBe(true);
 		expect(searchModels(catalogue, "  ")).toBe(catalogue);
+	});
+});
+
+describe("pickerAvailability", () => {
+	const typed = (id: string, input: string, output: string) => ({ id, name: id, input_types: input, output_types: output }) as CompareModelOption;
+	const clef = typed("cloudflare/clef", "text,image", "decisions");
+	const elephant = typed("baselabs/elephant-1", "text,image", "decisions");
+	const grok = typed("spacex-ai/grok-imagine-video-1.5", "text,image", "video");
+	const untyped = typed("lab/unknown", "", "");
+
+	it("lets anything join an empty selection", () => {
+		expect(pickerAvailability(grok, null, [])).toEqual({ available: true });
+	});
+
+	it("matches on output type, and says what a mismatched model returns", () => {
+		const required = new Set(["decisions"]);
+		expect(pickerAvailability(elephant, required, [clef.id])).toEqual({ available: true });
+		expect(pickerAvailability(grok, required, [clef.id])).toEqual({ available: false, reason: "returns", returns: ["video"] });
+		expect(pickerAvailability(untyped, required, [clef.id])).toEqual({ available: false, reason: "returns", returns: [] });
+	});
+
+	it("always lets a selected model be removed, and blocks additions to a mixed selection", () => {
+		expect(pickerAvailability(clef, new Set(), [clef.id, grok.id])).toEqual({ available: true });
+		expect(pickerAvailability(elephant, new Set(), [clef.id, grok.id])).toEqual({ available: false, reason: "mixed" });
 	});
 });

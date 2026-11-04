@@ -42,9 +42,15 @@ function RoutePickers({
 	const current = priced.pricing?.provider;
 	const tiers = routeTiers(priced);
 	const listingOnly = current && !current.routed;
+	// Popular open models have up to 30 routes, listed cheapest first; each shows its token prices so the choice isn't blind.
+	const routePrice = (id: string) => {
+		const route = model.providers.find((entry) => entry.id === id);
+		if (!route || (route.input == null && route.output == null)) return null;
+		return t("routePrice", { input: route.input == null ? "–" : format.usd(route.input), output: route.output == null ? "–" : format.usd(route.output) });
+	};
 	const routeItems = routes.length
-		? routes.map((route) => ({ value: route.id, label: route.name }))
-		: [{ value: NO_ROUTE, label: current ? t("listedOnly", { provider: current.name }) : t("notPriced") }];
+		? routes.map((route) => ({ value: route.id, label: route.name, logoId: route.logoId as string | null, price: routePrice(route.id) }))
+		: [{ value: NO_ROUTE, label: current ? t("listedOnly", { provider: current.name }) : t("notPriced"), logoId: null, price: null }];
 
 	return (
 		<div className="grid grid-cols-1 gap-1.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,auto)]">
@@ -57,15 +63,17 @@ function RoutePickers({
 				}}
 			>
 				<SelectTrigger aria-label={t("routeFor", { name: model.name })} className="h-8 w-full min-w-0 rounded-md bg-background px-2 text-xs">
-					{current ? <ProviderLogo id={current.id} alt="" size="xxs" className="mr-1.5 hidden shrink-0 sm:flex" /> : null}
+					{current ? <ProviderLogo id={current.logoId ?? current.id} alt="" size="xxs" className="mr-1.5 hidden shrink-0 sm:flex" /> : null}
 					<SelectValue className="truncate" />
 				</SelectTrigger>
-				<SelectContent>
+				{/* Opens below the trigger, as wide as its names need (laid over a half-width trigger, names ran under the scrollbar), and shows a scrollbar only when the list overflows. */}
+				<SelectContent alignItemWithTrigger={false} align="start" className="w-auto min-w-(--anchor-width) max-w-[min(24rem,calc(100vw-2rem))] [&_[data-slot=scroll-area]:not([data-has-overflow-y])_[data-slot=scroll-area-scrollbar]]:hidden">
 					{routeItems.map((item) => (
 						<SelectItem key={item.value} value={item.value}>
-							<span className="inline-flex items-center gap-2">
-								{item.value !== NO_ROUTE ? <ProviderLogo id={item.value} alt="" size="xxs" /> : null}
-								{item.label}
+							<span className="flex w-full min-w-0 items-center gap-2">
+								{item.logoId ? <ProviderLogo id={item.logoId} alt="" size="xxs" /> : null}
+								<span className="min-w-0 flex-1 truncate">{item.label}</span>
+								{item.price ? <span className="shrink-0 pl-3 text-xs text-muted-foreground tabular-nums">{item.price}</span> : null}
 							</span>
 						</SelectItem>
 					))}
@@ -82,7 +90,7 @@ function RoutePickers({
 				<SelectTrigger aria-label={t("tierFor", { name: model.name })} className="h-8 rounded-md bg-background px-2 text-xs">
 					<SelectValue />
 				</SelectTrigger>
-				<SelectContent>
+				<SelectContent alignItemWithTrigger={false} align="end" className="w-auto min-w-(--anchor-width) [&_[data-slot=scroll-area]:not([data-has-overflow-y])_[data-slot=scroll-area-scrollbar]]:hidden">
 					{(tiers.length ? tiers : [tier]).map((value) => (
 						<SelectItem key={value} value={value}>{format.tier(value)}</SelectItem>
 					))}

@@ -19,6 +19,7 @@ import {
 	type CapabilityStatusOption,
 } from "@/lib/models/editorOptions";
 import { normalizeHttpUrl } from "@/lib/utils/urlSafety";
+import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi, fetchInternalWebApi } from "@/lib/web-api/client";
 import {
@@ -26,6 +27,13 @@ import {
 	revalidateModelDataOnlyTags,
 	revalidateModelDataTags,
 } from "@/lib/cache/revalidateDataTags";
+
+// Every export here is a server function reachable by a direct POST, so check the
+// caller is an admin before any side effect, cache expiry included.
+async function requireAdmin() {
+	const status = await fetchInternalAuthStatus();
+	if (!status.signedIn || !status.isAdmin) throw new Error("Unauthorized");
+}
 
 async function callCatalogMutation(path: `/api/account/models/catalog/${string}`, method: "POST" | "PUT" | "DELETE", body?: unknown) {
 	const { accessToken } = await getServerAccountContext();
@@ -259,6 +267,7 @@ export const createOrganisationAction = createServerFn({ method: "POST" })
 	.middleware([serverMutation])
 	.validator((formData: FormData) => formData)
 	.handler(async ({ data: formData }) => {
+		await requireAdmin();
 		const organisationId = requiredString(formData.get("organisation_id"), "organisation_id");
 		const name = requiredString(formData.get("name"), "name");
 		const socialLinks = normalizeOrganisationLinks(parseJsonField<OrganisationLinkPayload[]>(formData.get("social_links_payload"), "social_links_payload", []));
@@ -270,6 +279,7 @@ export const updateOrganisationAction = createServerFn({ method: "POST" })
 	.middleware([serverMutation])
 	.validator((formData: FormData) => formData)
 	.handler(async ({ data: formData }) => {
+		await requireAdmin();
 		const organisationId = takeTargetId(formData);
 		const socialLinks = normalizeOrganisationLinks(parseJsonField<OrganisationLinkPayload[]>(formData.get("social_links_payload"), "social_links_payload", []));
 		await callCatalogMutation(`/api/account/models/catalog/organisations/${encodeURIComponent(organisationId)}`, "PUT", { name: requiredString(formData.get("name"), "name"), description: optionalString(formData.get("description")), country_code: optionalString(formData.get("country_code")), subdivision_code: optionalString(formData.get("subdivision_code")), colour: optionalString(formData.get("colour")), social_links: socialLinks });
@@ -280,6 +290,7 @@ export const deleteOrganisationAction = createServerFn({ method: "POST" })
 	.middleware([serverMutation])
 	.validator((organisationId: string) => organisationId)
 	.handler(async ({ data: organisationId }) => {
+		await requireAdmin();
 		await callCatalogMutation(`/api/account/models/catalog/organisations/${encodeURIComponent(organisationId)}`, "DELETE");
 	});
 
@@ -299,6 +310,7 @@ export const createAPIProviderAction = createServerFn({ method: "POST" })
 	.middleware([serverMutation])
 	.validator((formData: FormData) => formData)
 	.handler(async ({ data: formData }) => {
+		await requireAdmin();
 		const apiProviderId = requiredString(formData.get("api_provider_id"), "api_provider_id");
 		const apiProviderName = requiredString(formData.get("api_provider_name"), "api_provider_name");
 		const promptTrainingPolicy = normalizeProviderPromptTrainingPolicy(
@@ -347,6 +359,7 @@ export const updateAPIProviderAction = createServerFn({ method: "POST" })
 	.middleware([serverMutation])
 	.validator((formData: FormData) => formData)
 	.handler(async ({ data: formData }) => {
+		await requireAdmin();
 		const apiProviderId = takeTargetId(formData);
 		const promptTrainingPolicy = normalizeProviderPromptTrainingPolicy(
 			formData.get("prompt_training_policy"),
@@ -392,6 +405,7 @@ export const deleteAPIProviderAction = createServerFn({ method: "POST" })
 	.middleware([serverMutation])
 	.validator((apiProviderId: string) => apiProviderId)
 	.handler(async ({ data: apiProviderId }) => {
+		await requireAdmin();
 		await callCatalogMutation(`/api/account/models/catalog/providers/${encodeURIComponent(apiProviderId)}`, "DELETE");
 		await submitIndexNowUrls(
 			getIndexNowProviderUrls(apiProviderId),
@@ -404,6 +418,7 @@ export const createBenchmarkAction = createServerFn({ method: "POST" })
 	.middleware([serverMutation])
 	.validator((formData: FormData) => formData)
 	.handler(async ({ data: formData }) => {
+		await requireAdmin();
 		const id = requiredString(formData.get("id"), "id");
 		const name = requiredString(formData.get("name"), "name");
 		await callCatalogMutation("/api/account/models/catalog/benchmarks", "POST", {
@@ -425,6 +440,7 @@ export const updateBenchmarkAction = createServerFn({ method: "POST" })
 	.middleware([serverMutation])
 	.validator((formData: FormData) => formData)
 	.handler(async ({ data: formData }) => {
+		await requireAdmin();
 		const id = takeTargetId(formData);
 		await callCatalogMutation(`/api/account/models/catalog/benchmarks/${encodeURIComponent(id)}`, "PUT", {
 				name: requiredString(formData.get("name"), "name"),
@@ -444,6 +460,7 @@ export const deleteBenchmarkAction = createServerFn({ method: "POST" })
 	.middleware([serverMutation])
 	.validator((id: string) => id)
 	.handler(async ({ data: id }) => {
+		await requireAdmin();
 		await callCatalogMutation(`/api/account/models/catalog/benchmarks/${encodeURIComponent(id)}`, "DELETE");
 	});
 
@@ -452,6 +469,7 @@ export const createModelAction = createServerFn({ method: "POST" })
 	.middleware([serverMutation])
 	.validator((formData: FormData) => formData)
 	.handler(async ({ data: formData }) => {
+		await requireAdmin();
 		const modelId = requiredString(formData.get("model_id"), "model_id");
 		const name = requiredString(formData.get("name"), "name");
 		const organisationId = requiredString(formData.get("organisation_id"), "organisation_id");
@@ -822,6 +840,7 @@ export const updateModelAction = createServerFn({ method: "POST" })
 	.middleware([serverMutation])
 	.validator((formData: FormData) => formData)
 	.handler(async ({ data: formData }) => {
+		await requireAdmin();
 		const modelId = takeTargetId(formData);
 		const organisationId = requiredString(formData.get("organisation_id"), "organisation_id");
 		const name = requiredString(formData.get("name"), "name");
@@ -839,6 +858,7 @@ export const deleteModelAction = createServerFn({ method: "POST" })
 	.middleware([serverMutation])
 	.validator((modelId: string) => modelId)
 	.handler(async ({ data: modelId }) => {
+		await requireAdmin();
 		await callCatalogMutation(`/api/account/models/catalog/models/${encodeURIComponent(modelId)}`, "DELETE");
 		await refreshSavedModelCaches(modelId);
 		await submitIndexNowUrls(
@@ -860,6 +880,7 @@ export const revalidateSingleModelDataAction = createServerFn({ method: "POST" }
 	.middleware([serverMutation])
 	.validator((modelId: string) => modelId)
 	.handler(async ({ data: modelId }) => {
+		await requireAdmin();
 		revalidateModelDataOnlyTags({ modelId });
 		await revalidateCloudflare(["web-api-models", "web-api-gateway-models", "web-api-model-details", "web-api-model-benchmarks", "web-api-model-timelines", "web-api-model-subscriptions", "web-api-model-notices", "web-api-search"]);
 
@@ -871,6 +892,7 @@ export const revalidateSingleModelApiInfoAction = createServerFn({ method: "POST
 	.middleware([serverMutation])
 	.validator((modelId: string) => modelId)
 	.handler(async ({ data: modelId }) => {
+		await requireAdmin();
 		await revalidateCloudflare(["web-api-models", "web-api-gateway-models", "web-api-model-pricing", "web-api-model-performance", "web-api-model-provider-health", "web-api-provider-routing-health", "web-api-providers"]);
 		revalidateModelApiInfoTags({ modelId });
 
@@ -882,6 +904,7 @@ export const revalidateSingleModelAllAction = createServerFn({ method: "POST" })
 	.middleware([serverMutation])
 	.validator((modelId: string) => modelId)
 	.handler(async ({ data: modelId }) => {
+		await requireAdmin();
 		await revalidateCloudflare(["web-api-models", "web-api-gateway-models", "web-api-model-details", "web-api-model-benchmarks", "web-api-model-timelines", "web-api-model-subscriptions", "web-api-model-pricing", "web-api-model-performance", "web-api-model-notices", "web-api-providers", "web-api-organisations", "web-api-reference-data", "web-api-search"]);
 		revalidateModelDataTags({ modelId });
 
