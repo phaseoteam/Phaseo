@@ -110,8 +110,11 @@ for (const file of (await readdir(tableDir)).sort()) {
   assert(sql.includes(policyFor(table)), `${table} requires MFA for signed-in users`);
   assert(migration.includes(policyFor(table)), `the migration adds the MFA policy to ${table}`);
 }
-assert(protectedTables.length >= 50, `found the signed-in tables (${protectedTables.length})`);
-assert.equal((migration.match(/CREATE POLICY/g) ?? []).length, protectedTables.length, 'the migration covers exactly the signed-in tables');
+assert(protectedTables.length >= 45, `found the signed-in tables (${protectedTables.length})`);
+// Later migrations may drop tables the MFA migration covered, so compare only tables that still exist.
+const existingTables = new Set((await readdir(tableDir)).map((file) => file.replace(/\.sql$/, '')));
+const migrationTables = [...migration.matchAll(/CREATE POLICY "[^"]+" ON "public"\."([^"]+)"/g)].map(([, table]) => table);
+assert.deepEqual(migrationTables.filter((table) => existingTables.has(table)).sort(), [...protectedTables].sort(), 'the migration covers exactly the signed-in tables');
 
 const db = new PGlite();
 const owner = '10000000-0000-4000-8000-000000000001'; // has a verified factor
@@ -200,7 +203,8 @@ try {
   `);
   // The migration touches every signed-in table; the ones this test doesn't exercise exist as stubs.
   const fixtureTables = new Set(['workspaces', 'workspace_members', 'workspace_invites', 'keys', 'workspace_join_requests']);
-  for (const table of protectedTables.filter((t) => !fixtureTables.has(t))) {
+  // Stub every table the migration names, including ones later migrations dropped.
+  for (const table of migrationTables.filter((t) => !fixtureTables.has(t))) {
     await db.exec(`create table public.${table} (id uuid primary key default gen_random_uuid()); alter table public.${table} enable row level security;`);
   }
   // The protected RPCs as production has them before the fix.
@@ -312,7 +316,7 @@ try {
 
   // 6. Every signed-in table has the restrictive policy, for authenticated only.
   const { rows } = await db.query(`select tablename, permissive, roles::text[] as roles, cmd from pg_policies where policyname = $1`, [policyName]);
-  assert.equal(rows.length, protectedTables.length);
+  assert.equal(rows.length, migrationTables.length);
   for (const row of rows) {
     assert.equal(row.permissive, 'RESTRICTIVE');
     assert.deepEqual(row.roles, ['authenticated']);
