@@ -2192,7 +2192,8 @@
 			"audio": "ترتيب نماذج الصوت",
 			"video": "ترتيب نماذج الفيديو",
 			"speech": "ترتيب نماذج الكلام",
-			"transcription": "ترتيب نماذج النسخ الصوتي"
+			"transcription": "ترتيب نماذج النسخ الصوتي",
+			"decisions": "ترتيب نماذج القرارات"
 		},
 		"leaderboard": "لوحة الصدارة",
 		"fastestModels": "أسرع النماذج",
@@ -2295,7 +2296,8 @@
 			"video-seconds": "ثواني الفيديو المُنشأ",
 			"video-tokens": "إجمالي رموز الفيديو",
 			"speech-seconds": "ثواني الكلام المُنشأ",
-			"transcription-minutes": "دقائق التفريغ النصي"
+			"transcription-minutes": "دقائق التفريغ النصي",
+			"decision-volume": "رموز القرارات"
 		},
 		"usageImagesUnit": "صور",
 		"usageSecondsUnit": "ثوانٍ",
@@ -2344,7 +2346,8 @@
 			"audio": "الصوت",
 			"video": "الفيديو",
 			"speech": "الكلام",
-			"transcription": "النسخ الصوتي"
+			"transcription": "النسخ الصوتي",
+			"decisions": "القرارات"
 		},
 		"shareLabel": "الحصة",
 		"tokensLabel": "الرموز",

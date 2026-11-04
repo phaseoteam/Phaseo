@@ -147,6 +147,13 @@ describe("buildV2RequestUsageMeters", () => {
 		expect(meters.filter((meter) => ["speech_seconds", "transcription_seconds"].includes(meter.meter_key))).toHaveLength(1);
 	});
 
+	it("tags decision text tokens so rankings can separate them from text", () => {
+		const meters = buildV2RequestUsageMeters({ endpoint: "decisions", usage: { input_text_tokens: 40, output_text_tokens: 2 } });
+		expect(meters).toContainEqual(expect.objectContaining({ meter_key: "decision_tokens", quantity: 42, modality: "text", unit: "tokens", billable: false }));
+		const chat = buildV2RequestUsageMeters({ endpoint: "chat.completions", usage: { input_text_tokens: 40, output_text_tokens: 2 } });
+		expect(chat.some((meter) => meter.meter_key === "decision_tokens")).toBe(false);
+	});
+
 	it("does not fabricate durations when only speech characters are available", () => {
 		const meters = buildV2RequestUsageMeters({ endpoint: "audio.speech", usage: { input_characters: 100 } });
 		expect(meters.some((meter) => meter.meter_key === "speech_seconds")).toBe(false);

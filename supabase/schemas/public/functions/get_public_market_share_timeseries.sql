@@ -46,12 +46,13 @@ begin
 with meters as (
   select
     meter.rollup_id,
-    coalesce(
+    -- Decisions have their own ranking; keep their tokens out of market share.
+    greatest(coalesce(
       max(meter.quantity) filter (where meter.meter_key = 'total_tokens'),
       sum(meter.quantity) filter (where meter.meter_key in ('input_tokens', 'output_tokens')),
       sum(meter.quantity) filter (where meter.meter_key in ('input_text_tokens', 'output_text_tokens')),
       0
-    )::numeric as total_tokens
+    ) - coalesce(sum(meter.quantity) filter (where meter.meter_key = 'decision_tokens'), 0), 0)::numeric as total_tokens
   from public.v2_public_usage_hourly_meters meter
   join public.reporting_usage_hourly scoped on scoped.rollup_id = meter.rollup_id
   where v_bucket_size = 'hour' and scoped.bucket_start >= v_since
@@ -105,12 +106,13 @@ left join meters on meters.rollup_id = usage.rollup_id
 with meters as (
   select
     meter.rollup_id,
-    coalesce(
+    -- Decisions have their own ranking; keep their tokens out of market share.
+    greatest(coalesce(
       max(meter.quantity) filter (where meter.meter_key = 'total_tokens'),
       sum(meter.quantity) filter (where meter.meter_key in ('input_tokens', 'output_tokens')),
       sum(meter.quantity) filter (where meter.meter_key in ('input_text_tokens', 'output_text_tokens')),
       0
-    )::numeric as total_tokens
+    ) - coalesce(sum(meter.quantity) filter (where meter.meter_key = 'decision_tokens'), 0), 0)::numeric as total_tokens
   from public.v2_public_usage_daily_meters meter
   join public.reporting_usage_daily scoped on scoped.rollup_id = meter.rollup_id
   where v_bucket_size <> 'hour' and scoped.usage_date >= (v_since at time zone 'utc')::date

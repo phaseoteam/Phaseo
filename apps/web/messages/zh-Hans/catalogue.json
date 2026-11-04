@@ -2192,7 +2192,8 @@
 			"audio": "音频模型排行榜",
 			"video": "视频模型排行榜",
 			"speech": "语音模型排行榜",
-			"transcription": "转录模型排行榜"
+			"transcription": "转录模型排行榜",
+			"decisions": "决策模型排行榜"
 		},
 		"leaderboard": "排行榜",
 		"fastestModels": "最快模型",
@@ -2295,7 +2296,8 @@
 			"video-seconds": "生成视频秒数",
 			"video-tokens": "视频 token 总量",
 			"speech-seconds": "生成语音秒数",
-			"transcription-minutes": "转录分钟数"
+			"transcription-minutes": "转录分钟数",
+			"decision-volume": "决策 token 量"
 		},
 		"usageImagesUnit": "张图像",
 		"usageSecondsUnit": "秒",
@@ -2344,7 +2346,8 @@
 			"audio": "音频",
 			"video": "视频",
 			"speech": "语音",
-			"transcription": "转写"
+			"transcription": "转写",
+			"decisions": "决策"
 		},
 		"shareLabel": "占比",
 		"tokensLabel": "Token",

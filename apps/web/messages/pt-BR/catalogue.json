@@ -2192,7 +2192,8 @@
 			"audio": "Classificação de modelos de áudio",
 			"video": "Classificação de modelos de vídeo",
 			"speech": "Classificação de modelos de voz",
-			"transcription": "Classificação de modelos de transcrição"
+			"transcription": "Classificação de modelos de transcrição",
+			"decisions": "Classificação de modelos de decisão"
 		},
 		"leaderboard": "Classificação",
 		"fastestModels": "Modelos mais rápidos",
@@ -2295,7 +2296,8 @@
 			"video-seconds": "Segundos de vídeo gerados",
 			"video-tokens": "Total de tokens de vídeo",
 			"speech-seconds": "Segundos de fala gerados",
-			"transcription-minutes": "Minutos transcritos"
+			"transcription-minutes": "Minutos transcritos",
+			"decision-volume": "Tokens de decisões"
 		},
 		"usageImagesUnit": "imagens",
 		"usageSecondsUnit": "segundos",
@@ -2344,7 +2346,8 @@
 			"audio": "Áudio",
 			"video": "Vídeo",
 			"speech": "Fala",
-			"transcription": "Transcrição"
+			"transcription": "Transcrição",
+			"decisions": "Decisões"
 		},
 		"shareLabel": "Participação",
 		"tokensLabel": "Tokens",

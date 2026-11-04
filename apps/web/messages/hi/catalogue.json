@@ -2192,7 +2192,8 @@
 			"audio": "ऑडियो मॉडल रैंकिंग",
 			"video": "वीडियो मॉडल रैंकिंग",
 			"speech": "स्पीच मॉडल रैंकिंग",
-			"transcription": "ट्रांसक्रिप्शन मॉडल रैंकिंग"
+			"transcription": "ट्रांसक्रिप्शन मॉडल रैंकिंग",
+			"decisions": "निर्णय मॉडल रैंकिंग"
 		},
 		"leaderboard": "लीडरबोर्ड",
 		"fastestModels": "सबसे तेज़ मॉडल",
@@ -2295,7 +2296,8 @@
 			"video-seconds": "जनरेट किए गए वीडियो सेकंड",
 			"video-tokens": "कुल वीडियो टोकन",
 			"speech-seconds": "जनरेट किए गए स्पीच सेकंड",
-			"transcription-minutes": "ट्रांसक्राइब किए गए मिनट"
+			"transcription-minutes": "ट्रांसक्राइब किए गए मिनट",
+			"decision-volume": "निर्णय टोकन"
 		},
 		"usageImagesUnit": "इमेज",
 		"usageSecondsUnit": "सेकंड",
@@ -2344,7 +2346,8 @@
 			"audio": "ऑडियो",
 			"video": "वीडियो",
 			"speech": "वाक्",
-			"transcription": "ट्रांसक्रिप्शन"
+			"transcription": "ट्रांसक्रिप्शन",
+			"decisions": "निर्णय"
 		},
 		"shareLabel": "हिस्सेदारी",
 		"tokensLabel": "टोकन",

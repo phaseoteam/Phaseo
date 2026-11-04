@@ -17,7 +17,8 @@ export type ModalityId =
 	| "audio"
 	| "video"
 	| "speech"
-	| "transcription";
+	| "transcription"
+	| "decisions";
 
 export type ModalityLeaderboardEntry = {
 	key: string;
