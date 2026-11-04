@@ -294,38 +294,7 @@ begin
     (
       select sku_meter.sku_id, sku_meter.sku_meter_id
       from public.v2_pricing_sku_meters sku_meter
-      where item.value->>'sku_meter_id' ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}
-
-  insert into public.v2_analytics_outbox (
-    request_event_id, workspace_id, occurred_at, status, attempt_count,
-    available_at, last_error, updated_at
-  ) values (
-    v_request_event_id, v_workspace_id, v_occurred_at, 'pending', 0,
-    now(), null, now()
-  )
-  on conflict (request_event_id) do update set
-    workspace_id = excluded.workspace_id,
-    occurred_at = excluded.occurred_at,
-    status = 'pending',
-    attempt_count = 0,
-    available_at = now(),
-    last_error = null,
-    updated_at = now();
-
-  return v_request_event_id;
-end;
-$function$;
-
-GRANT EXECUTE ON FUNCTION "public"."ingest_v2_gateway_request"(jsonb) TO "service_role";
-
-COMMENT ON FUNCTION "public"."ingest_v2_gateway_request"(jsonb) IS 'Service-only, idempotent and atomic ingestion of content-free gateway request facts, attempts, usage, pricing, and analytics outbox state.';
-
-REVOKE ALL ON FUNCTION "public"."ingest_v2_gateway_request"(jsonb) FROM "postgres";
-
-GRANT EXECUTE ON FUNCTION "public"."ingest_v2_gateway_request"(jsonb) TO "postgres";
-
-REVOKE ALL ON FUNCTION "public"."ingest_v2_gateway_request"(jsonb) FROM PUBLIC, "anon", "authenticated";
-
+      where item.value->>'sku_meter_id' ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
         and sku_meter.sku_meter_id = (item.value->>'sku_meter_id')::uuid
         and sku_meter.meter_key = lower(item.value->>'meter_key')
     )
