@@ -7,6 +7,7 @@ export function buildResponseTimeline(ctx?: PipelineContext | null) {
 	const value = ctx?.meta.timeToUpstreamRequestMs;
 	const startedAt = ctx?.meta.startedAtMs;
 	const valid = typeof value === "number" && Number.isFinite(value) && value >= 0;
+	const steps = buildRoutingSteps(ctx);
 	return {
 		version: 1,
 		routing_ms: valid ? Math.round(value) : null,
@@ -14,7 +15,56 @@ export function buildResponseTimeline(ctx?: PipelineContext | null) {
 		// Allows retry intervals to exclude preparation already shown as routing.
 		...(valid && typeof startedAt === "number" && Number.isFinite(startedAt)
 			? { first_dispatch_at_ms: startedAt + value } : {}),
+		...(steps ? { steps } : {}),
 	};
+}
+
+/**
+ * Stored name → timer span, for the work done between receipt and the first dispatch. Each value
+ * is that step's own duration in ms. Steps can overlap: context, workspace policy and testing mode
+ * run in parallel, and the context_* steps are parts of `context`. Do not add them up.
+ */
+const ROUTING_STEP_SPANS = {
+	admission: "admission", // receipt to pipeline entry (admission middleware)
+	before: "before_start", // the whole before-request phase
+	auth: "guardAuth",
+	parse: "guardJson",
+	validate: "guardZod",
+	model: "guardModel",
+	context: "guardContext",
+	context_cache_read: "context_cache_read",
+	context_catalog_read: "context_catalog_read",
+	context_key_version: "context_key_version",
+	context_credit_refresh: "context_credit_refresh",
+	context_db: "context_rpc", // the gateway context RPC on a cache miss
+	context_enrich: "context_enrich",
+	context_byok: "context_byok_hydration",
+	workspace_policy: "fetchWorkspacePolicy",
+	testing_mode: "resolveTestingMode",
+	capabilities: "validateCapabilities",
+	decode: "ir_decode",
+	candidates: "execute_guard_candidates",
+	modalities: "execute_filter_modalities",
+	spend_rules: "execute_spend_rule_blocks",
+	pricing: "execute_guard_pricing",
+	ranking: "execute_rank_providers",
+	// Not ir_encode: it times encoding the provider's response, after dispatch.
+} as const;
+
+type RoutingSteps = Partial<Record<keyof typeof ROUTING_STEP_SPANS, number>> & { context_cache?: string };
+
+/** Per-step routing time from the request's timer snapshot, or null when there is none. */
+export function buildRoutingSteps(ctx?: PipelineContext | null): RoutingSteps | null {
+	const timing = ctx?.timing;
+	if (!timing) return null;
+	const steps: RoutingSteps = {};
+	for (const [key, span] of Object.entries(ROUTING_STEP_SPANS) as Array<[keyof typeof ROUTING_STEP_SPANS, string]>) {
+		const ms = timing[span];
+		if (typeof ms === "number" && Number.isFinite(ms) && ms >= 0) steps[key] = Math.round(ms * 10) / 10;
+	}
+	const cache = ctx?.meta?.beforeContextCacheStatus;
+	if (typeof cache === "string") steps.context_cache = cache;
+	return Object.keys(steps).length > 0 ? steps : null;
 }
 
 /** First upstream dispatch to the selected one: time spent on failed provider attempts.
