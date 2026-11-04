@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { branchFromMessage, generatedBranchName, isTemporaryWorktreeBranch, sanitizeBranchFragment, temporaryWorktreeBranch, uniqueBranchName, validateWorktreeChatRequest } from "./worktreeChat";
+import { branchFromMessage, branchNamePrompt, generatedBranchName, isTemporaryWorktreeBranch, sanitizeBranchFragment, temporaryWorktreeBranch, uniqueBranchName, validateWorktreeChatRequest } from "./worktreeChat";
 
 describe("worktree chat branches", () => {
 	it("sanitises branch name fragments", () => {
@@ -21,6 +21,31 @@ describe("worktree chat branches", () => {
 	it("names a branch from the first words of the message without a title model", () => {
 		expect(branchFromMessage("Add dark mode to the settings page, please, and check @src/app.tsx")).toBe("phaseo/add-dark-mode-to-the-settings");
 		expect(branchFromMessage("   ")).toBe("phaseo/update");
+	});
+
+	it("names branches with the chosen prefix and naming mode", () => {
+		const naming = (branchNaming: "static" | "semantic" | "custom", branchPrefix = "phaseo") => ({ branchNaming, branchPrefix, branchInstructions: "Use the issue ID." });
+		expect(generatedBranchName("Fix login", naming("static", "team/db"))).toBe("team/db/fix-login");
+		expect(generatedBranchName("team/db/fix-login", naming("static", "team/db"))).toBe("team/db/fix-login");
+		expect(generatedBranchName("Fix login", naming("static", ""))).toBe("fix-login");
+		expect(generatedBranchName("feat/Add search", naming("semantic"))).toBe("feat/add-search");
+		expect(generatedBranchName("db/PHA-12-fix", naming("custom"))).toBe("db/PHA-12-fix");
+		// Without a model, the first words go under the prefix whatever the mode.
+		expect(branchFromMessage("Add search", naming("semantic", "team"))).toBe("team/add-search");
+		expect(branchFromMessage("Add search", naming("custom", ""))).toBe("add-search");
+		expect(temporaryWorktreeBranch("abcdef0123", "team/db")).toBe("team/db/abcdef01");
+		expect(isTemporaryWorktreeBranch("team/db/abcdef01", "team/db")).toBe(true);
+		expect(temporaryWorktreeBranch("abcdef0123", "")).toBe("worktree-abcdef01");
+		expect(isTemporaryWorktreeBranch("worktree-abcdef01", "")).toBe(true);
+	});
+
+	it("asks for the branch name each naming mode needs", () => {
+		const naming = (branchNaming: "static" | "semantic" | "custom") => ({ branchNaming, branchPrefix: "phaseo", branchInstructions: "Start with db/." });
+		expect(branchNamePrompt("Fix login").system).toContain("without a prefix or namespace");
+		expect(branchNamePrompt("Fix login", naming("semantic")).system).toContain("feat/add-search");
+		const custom = branchNamePrompt("Fix login", naming("custom")).system;
+		expect(custom).toContain("complete branch name"); expect(custom).toContain("<preferences>\nStart with db/.\n</preferences>");
+		expect(branchNamePrompt("Fix login", naming("static")).system).not.toContain("Start with db/.");
 	});
 
 	it("adds a suffix until the name is free", () => {

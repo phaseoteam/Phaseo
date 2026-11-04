@@ -4,6 +4,7 @@ import { useOptionalWorkspace } from "../app/workspace";
 import { knownModel } from "../chat/ModelPicker";
 import { chipLabel, messageChips, type Chip, type FileChip } from "../lib/messageChips";
 import { richLink } from "../lib/richLink";
+import { openWebLink, type LinkClick } from "../lib/openLink";
 import { GitHubMark } from "./GitHubMark";
 import { InlineChip } from "./InlineChip";
 import { ModelLogo } from "./ModelLogo";
@@ -24,9 +25,9 @@ export async function openProjectFile(projectId: string, file: { filename: strin
 	await api.openProject(projectId, { editor: editor.id, ...file });
 }
 
-/** Links open in the in-app browser panel; outside the desktop shell they open a new window. */
-export function openContextLink(href: string) {
-	if (window.phaseoDesktop?.workspace) window.dispatchEvent(new CustomEvent("phaseo:open-context-link", { detail: href }));
+/** Links open where Settings → Browser says: the in-app browser panel or the system browser; outside the desktop shell they open a new window. */
+export function openContextLink(href: string, click?: LinkClick) {
+	if (window.phaseoDesktop?.workspace) void openWebLink(href, click).catch(() => undefined);
 	else window.open(href, "_blank", "noopener,noreferrer");
 }
 
@@ -55,7 +56,7 @@ export function LinkChip({ href, children }: { href: string; children?: ReactNod
 function PageLinkChip({ href, children }: { href: string; children?: ReactNode }) {
 	const link = richLink(href);
 	const pageTitle = useLinkTitle(href);
-	return <InlineChip className="message-rich-link" href={href} title={pageTitle ?? href} icon={link?.github ? <GitHubMark /> : <Globe />} onClick={() => openContextLink(href)}>{children ?? link?.label ?? pageTitle ?? link?.fallback ?? href}</InlineChip>;
+	return <InlineChip className="message-rich-link" href={href} title={pageTitle ?? href} icon={link?.github ? <GitHubMark /> : <Globe />} onClick={event => openContextLink(href, event)}>{children ?? link?.label ?? pageTitle ?? link?.fallback ?? href}</InlineChip>;
 }
 
 /** A file or folder chip that opens in the editor when the message belongs to a project. */

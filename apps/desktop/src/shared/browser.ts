@@ -1,3 +1,5 @@
+import { validBrowserProfileId } from "./browserPreferences";
+
 /** Device presets in Chrome DevTools' default order; sizes are CSS pixels. */
 export const browserViewportPresets = [
 	{ id: "iphone-se", label: "iPhone SE", width: 375, height: 667 },
@@ -56,7 +58,7 @@ export function browserColorScheme(value: unknown): BrowserColorScheme { if (val
 
 export type BrowserOpenTab = { sourceId: string; url: string; background: boolean };
 /** A page an agent opened in one of a chat's tabs, for the window to list among them. */
-export type BrowserAgentTabOpened = { context: string; id: string; url: string; closed?: boolean };
+export type BrowserAgentTabOpened = { context: string; id: string; url: string; closed?: boolean; /** The browser profile the page opened in. */ profile?: string };
 /** Browser tabs per chat. */
 export const browserTabLimit = 20;
 /** A main-frame load that failed, for the "This site can't be reached" page. */
@@ -67,7 +69,8 @@ export type BrowserState = { id: string; url: string; title: string; favicon?: s
 export type BrowserBounds = { x: number; y: number; width: number; height: number };
 /** Where a page shows in the window: its pane tab, or the floating player over the chat. Each slot holds one page. */
 export type BrowserSlot = "pane" | "float";
-export type BrowserCommand = { id: string } & (
+/** profile is the browser profile (Settings → Browser) a page is created in; the "profile" command moves an open page to another. */
+export type BrowserCommand = { id: string; profile?: string } & (
 	| { type: "show"; bounds: BrowserBounds; slot?: BrowserSlot; radius?: number }
 	| { type: "hide"; slot?: BrowserSlot }
 	| { type: "navigate"; url: string }
@@ -76,6 +79,7 @@ export type BrowserCommand = { id: string } & (
 	| { type: "colorScheme"; colorScheme: BrowserColorScheme }
 	| { type: "mute"; muted: boolean }
 	| { type: "clearData"; data: "cookies" | "cache" }
+	| { type: "profile"; profile: string }
 	| { type: "back" | "forward" | "reload" | "hardReload" | "stop" | "close" | "devtools" | "focus" | "popOut" | "popIn" }
 );
 const simpleCommands = ["back", "forward", "reload", "hardReload", "stop", "close", "devtools", "focus", "popOut", "popIn"];
@@ -85,8 +89,14 @@ export function browserCommand(value: unknown): BrowserCommand {
 	if (!value || typeof value !== "object") throw new Error("Invalid browser request.");
 	const input = value as Record<string, unknown>;
 	if (typeof input.id !== "string" || !input.id || input.id.length > 200) throw new Error("Invalid browser context.");
-	const id = input.id;
+	if (input.profile !== undefined && !validBrowserProfileId(input.profile)) throw new Error("Invalid browser profile.");
+	if (input.type === "profile" && input.profile === undefined) throw new Error("Invalid browser profile.");
+	const command = browserCommandBody(input.id, input);
+	return input.profile === undefined ? command : { ...command, profile: input.profile as string };
+}
+function browserCommandBody(id: string, input: Record<string, unknown>): BrowserCommand {
 	switch (input.type) {
+		case "profile": return { id, type: "profile", profile: input.profile as string };
 		case "show": {
 			const bounds = input.bounds as Record<string, unknown> | undefined;
 			if (!bounds || ![bounds.x, bounds.y, bounds.width, bounds.height].every(Number.isFinite) || (bounds.width as number) < 0 || (bounds.height as number) < 0) throw new Error("Invalid browser bounds.");

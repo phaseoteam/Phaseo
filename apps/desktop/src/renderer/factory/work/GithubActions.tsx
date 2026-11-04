@@ -10,6 +10,7 @@ import { Button } from "../../components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../../components/ui/dropdown-menu";
 import { factory, openExternal } from "../lib/useFactory";
 import { cn } from "../../lib/utils";
+import { MarkdownTextarea } from "../../components/MarkdownTextarea";
 
 /** Everything someone does to an issue or pull request on GitHub, done from here as the person gh is signed in as. */
 
@@ -381,7 +382,7 @@ export function CommentBox({ item, login, people = [] }: { item: WorkItem; login
 		event.preventDefault();
 		pasted.add(event.dataTransfer.files);
 	}}>
-		{preview ? <div className="min-h-[86px] px-3 py-2.5">{body ? <Markdown source={text} repo={item.repo} /> : <p className="text-sm text-muted-foreground">Nothing to preview.</p>}</div> : <textarea
+		{preview ? <div className="min-h-[86px] px-3 py-2.5">{body ? <Markdown source={text} repo={item.repo} /> : <p className="text-sm text-muted-foreground">Nothing to preview.</p>}</div> : <MarkdownTextarea
 			ref={area}
 			onPaste={pasted.onPaste}
 			value={text}

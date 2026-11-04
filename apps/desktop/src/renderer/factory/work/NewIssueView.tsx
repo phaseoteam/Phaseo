@@ -13,6 +13,7 @@ import { factory, useFactoryNav } from "../lib/useFactory";
 import { FactoryLink } from "../components/FactoryLink";
 import { cn } from "../../lib/utils";
 import { errorText } from "../components/AddRepo";
+import { MarkdownTextarea } from "../../components/MarkdownTextarea";
 
 const MODES: { value: NewIssueInput["mode"]; label: string; detail: string; icon: typeof Search }[] = [
 	{ value: "triage", label: "Triage it now", detail: "An agent reads the code and writes a plan, then waits for you to start the next stage.", icon: Search },
@@ -66,7 +67,7 @@ export function NewIssueView({ snapshot }: { snapshot: FactorySnapshot }) {
 
 			<label className="mt-6 block">
 				<span className="mb-1.5 block text-sm font-semibold">Details</span>
-				<textarea value={body} onChange={(event) => setBody(event.target.value)} rows={7} placeholder={"Where it happens, the steps to see it, what you expected and what you got.\nPaste errors and logs as they are."} className={cn(field, "resize-y")} />
+				<MarkdownTextarea value={body} onChange={(event) => setBody(event.target.value)} rows={7} placeholder={"Where it happens, the steps to see it, what you expected and what you got.\nPaste errors and logs as they are."} className={cn(field, "resize-y")} />
 			</label>
 
 			<ImagesField images={images} github={snapshot.github} />
@@ -74,7 +75,7 @@ export function NewIssueView({ snapshot }: { snapshot: FactorySnapshot }) {
 			<label className="mt-6 block">
 				<span className="mb-1 flex items-center gap-1.5 text-sm font-semibold"><ListChecks className="size-4 text-muted-foreground" />Done when</span>
 				<span className="mb-1.5 block text-xs text-muted-foreground">One point per line. Fix and Verify have to prove each one with a screenshot, a recording or command output.</span>
-				<textarea value={doneWhen} onChange={(event) => setDoneWhen(event.target.value)} rows={4} placeholder={"The billing page shows $12.50, not US$12.50\nA test covers en-GB formatting"} className={cn(field, "resize-y font-mono text-[13px]")} />
+				<MarkdownTextarea value={doneWhen} onChange={(event) => setDoneWhen(event.target.value)} rows={4} placeholder={"The billing page shows $12.50, not US$12.50\nA test covers en-GB formatting"} className={cn(field, "resize-y font-mono text-[13px]")} />
 			</label>
 
 			<div className="mt-6 grid grid-cols-[1fr_auto] items-end gap-4">

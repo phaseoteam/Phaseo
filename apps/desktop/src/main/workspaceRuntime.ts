@@ -12,6 +12,7 @@ import { usageKind } from "../shared/usageLedger";
 import { autopilotOwner, chatSpend } from "../shared/chatSpend";
 import { answerForm, answerQuestions, autopilotBrief, autopilotModel, judgeTurn, reviewAction, reviewPlan, type AutopilotCall, type TurnVerdict } from "./autopilot";
 import type { AgentForm } from "../shared/agentForms";
+import { agentBrowserToolsEnabled } from "../shared/browserPreferences";
 import { autoSettleRules, settingsProject, settleScriptTarget, worktreeCreateScripts, type ProjectScript, type ProjectUpdate } from "../shared/projectSettings";
 import { runProjectCommand } from "./runProjectCommand";
 import { mkdirSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
@@ -61,13 +62,14 @@ import type { ImportedConversation } from "./taskImport";
 import type { Attachment } from "../shared/workspace";
 import type { McpCommand, McpConnection } from "../shared/mcp";
 import type { TerminalAuthentication, TerminalAuthRequest } from "./terminalAuth";
-import { createGitWorktree, removeGitWorktree } from "./gitWorktrees";
+import { checkoutSubmodules, createGitWorktree, ownedWorktreeRoots, removeGitWorktree, worktreeRoot } from "./gitWorktrees";
 import { captureCheckpoint, checkpointChanges, restoreCheckpoint } from "./gitCheckpoints";
 import { gitBranches, withGitLock } from "./gitOperations";
 import { runWorktreeSetup } from "./worktreeChat";
 import { planWorktreeCleanup } from "./worktreeCleanup";
 import type { WorktreeCleanupReport } from "../shared/worktreeCleanup";
-import { usageLimitError } from "../shared/usageLimitRecovery";
+import { limitRecoveryPlan, usageLimitError } from "../shared/usageLimitRecovery";
+import { compactBeforeExpiryMs, idleCompactionDue, lastTurnEnded, promptCacheMs } from "../shared/idleCompaction";
 import { secretLifetimeMs, secretRef, secretRefPattern, type SecretRequest, type SecretRequestInput, type SecretRequestResult } from "../shared/secretRequests";
 import { branchNamePrompt, temporaryWorktreeBranch, type WorktreeChatRequest } from "../shared/worktreeChat";
 import { grokModelCatalog } from "./grokModelCatalog";
@@ -93,6 +95,8 @@ function createAdapter(harness: Harness, agent?: AgentConnection, openCode?: Ope
 	throw new Error(`${harness} execution is not connected yet. Your message remains queued.`);
 }
 
+/** What a model call from the app writes: a chat title, Git text (commits, pull requests, branch names) or a review guide. */
+export type ModelPurpose = "title" | "git" | "guide";
 export class WorkspaceRuntime {
 	readonly store: WorkspaceStore;
 	readonly attachments: AttachmentService;
@@ -147,6 +151,7 @@ export class WorkspaceRuntime {
 	private readonly secretWaits = new Map<string, { taskId: string; resolve: (status: SecretRequest["status"]) => void }>();
 	/** Scheduled resumes of limited chats, by chat. */
 	private readonly limitTimers = new Map<string, ReturnType<typeof setTimeout>>();
+	private readonly compactionTimers = new Map<string, ReturnType<typeof setTimeout>>();
 	/** New worktree chats whose first turn waits for their setup (shared/worktreeChat.ts). */
 	private readonly worktreeSetups = new Map<string, Promise<void>>();
 	/** Settle cleanups in progress, and the settle each chat's scripts last ran for, so a repeat settle does not run them twice. */
@@ -357,10 +362,14 @@ export class WorkspaceRuntime {
 		const stop = tasks.filter(value => busy(value) && autopilotOwner(tasks, value.id)?.id === owner.id).map(value => value.id);
 		setTimeout(() => { for (const value of stop) void this.command({ type: "cancel", id: value }).catch(() => {}); }, 0);
 	}
-	/** Names a chat with the title model (Settings → General); without one, the first message stays its title. A rename in the meantime wins. */
-	/** The title model (Settings → General) and the Phaseo account it runs through, or which of the two is missing. */
-	titleModelAccount(): { model: string; endpoint: string; secretId: string } | { missing: "model" | "account" } {
-		const model = this.store.getPreferences().titleModel;
+	/**
+	 * The model for a kind of text and the Phaseo account it runs through, or which of the two is missing. Titles use the
+	 * title model (Settings → General); Git text (commits, pull requests, branch names) and review guides use their own
+	 * model from Settings → Source control, falling back to the title model.
+	 */
+	titleModelAccount(purpose: ModelPurpose = "title"): { model: string; endpoint: string; secretId: string } | { missing: "model" | "account" } {
+		const preferences = this.store.getPreferences();
+		const model = (purpose === "git" ? preferences.sourceControl.gitModel : purpose === "guide" ? preferences.sourceControl.reviewGuideModel : null) ?? preferences.titleModel;
 		if (!model) return { missing: "model" };
 		const account = this.phaseoAccount();
 		if (!account || !this.vault) return { missing: "account" };
@@ -371,13 +380,14 @@ export class WorkspaceRuntime {
 		const account = this.store.getAccounts().find(value => value.harness === "phaseo" && value.configured && !value.archived && value.endpoint && (!value.oauthExpiresAt || Date.parse(value.oauthExpiresAt) > Date.now()));
 		return account?.endpoint ? { endpoint: account.endpoint, secretId: account.secretId ?? account.id } : undefined;
 	}
-	/** Runs a prompt on the title model through the person's Phaseo account (pull request guides use it). */
-	async completeWithTitleModel(input: { system: string; user: string; maxTokens: number; timeoutMs: number; signal?: AbortSignal; label: string }) {
-		const access = this.titleModelAccount();
-		if ("missing" in access) throw new Error(access.missing === "model" ? "Choose a model for chat titles in Settings → General first." : "Sign in to Phaseo to use a model here.");
+	/** Runs a prompt on the model for `purpose` through the person's Phaseo account (commit messages, pull request text and guides use it). */
+	async completeWithTitleModel(input: { system: string; user: string; maxTokens: number; timeoutMs: number; signal?: AbortSignal; label: string }, purpose: ModelPurpose = "title") {
+		const access = this.titleModelAccount(purpose);
+		if ("missing" in access) throw new Error(access.missing === "model" ? purpose === "title" ? "Choose a model for chat titles in Settings → General first." : `Choose a model for chat titles in Settings → General, or one for ${purpose === "git" ? "commits and pull requests" : "review guides"} in Settings → Source control, first.` : "Sign in to Phaseo to use a model here.");
 		const reply = await completeChat({ endpoint: access.endpoint, token: await this.vault!.get(access.secretId), model: access.model, ...input });
 		return { reply, model: access.model };
 	}
+	/** Names a chat with the title model (Settings → General); without one, the first message stays its title. A rename in the meantime wins. */
 	private async nameChat(id: string, regenerate: boolean) {
 		const access = this.titleModelAccount();
 		if ("missing" in access) { if (regenerate) throw new Error(access.missing === "model" ? "Choose a model for chat titles in Settings → General first." : "Sign in to Phaseo to name chats with a model."); return; }
@@ -387,7 +397,7 @@ export class WorkspaceRuntime {
 		if (!text) { if (regenerate) throw new Error("This chat has no message to name it from."); return; }
 		const reply = regenerate ? task.messages.findLast(message => message.role === "assistant")?.text : undefined;
 		try {
-			const title = await span("chat.title", { model, regenerate }, async () => generateTitle({ endpoint: access.endpoint, token: await this.vault!.get(access.secretId), model, text: mentionPlainText(text), reply }));
+			const title = await span("chat.title", { model, regenerate }, async () => generateTitle({ endpoint: access.endpoint, token: await this.vault!.get(access.secretId), model, text: mentionPlainText(text), reply, instructions: this.store.getPreferences().sourceControl.titleInstructions }));
 			const current = this.store.getTask(id);
 			if (!title || this.closing || (!regenerate && current.title !== before)) return;
 			current.title = title; this.store.saveTask(current, true); this.broadcast();
@@ -625,7 +635,12 @@ export class WorkspaceRuntime {
 		const tools = { ...this.threads.forThread(parentId), moveToWorktree: (request: WorktreeMove) => this.moveToWorktree(parentId, request), ...this.store.getTask(parentId).harness === "claude" ? { backgroundWait: async (ids: string[], waiting: boolean) => { const work = this.backgroundWork.get(parentId); if (!work) throw new Error("This chat has no running turn."); return work.wait(ids, waiting); } } : {}, ...code ? { requestSecret: (input: SecretRequestInput, signal?: AbortSignal) => this.requestSecret(parentId, input, signal) } : {}, ...this.factoryTools ? { factory: this.factoryTools(parentId) } : {}, ...this.triageProject(parentId) ? { draftIssue: (draft: unknown) => this.draftIssue(parentId, draft) } : {} };
 		const global = this.globalInstructions, instructions = global ? { globalInstructions: { read: () => global.read(), save: (content: string, expectedHash: string) => global.save({ content, expectedHash }) } } : {};
 		const html = this.htmlPreview ? { html: { preview: this.htmlPreview, render: async (request: HtmlRenderRequest) => this.htmlRender(parentId, request) } } : {};
-		return this.browserTools ? { ...tools, ...html, ...instructions, browser: this.browserTools(parentId) } : { ...tools, ...html, ...instructions }; }
+		return this.browserTools && this.agentBrowserTools(parentId) ? { ...tools, ...html, ...instructions, browser: this.browserTools(parentId) } : { ...tools, ...html, ...instructions }; }
+	/** Whether a chat's agent gets the built-in browser's tools (Settings → Browser, or its project's own choice). Off, they are not offered at all. */
+	private agentBrowserTools(chatId: string) {
+		const task = this.store.getTask(chatId);
+		return agentBrowserToolsEnabled(this.store.getPreferences().browser, task.projectId ? settingsProject(this.store.getProjects(), task.projectId)?.settings : undefined);
+	}
 	private readonly moving = new Set<string>();
 	/**
 	 * Moves a chat into a new worktree of its project. The running turn ends where it started; the next one runs in the worktree
@@ -741,16 +756,21 @@ export class WorkspaceRuntime {
 		if (workspace.projects.some(value => value.worktree && !value.worktree.removedAt && workspace.projects.some(source => source.id === value.worktree!.sourceProjectId && sameDirectory(source.directory))) || [...this.worktreeSources.keys()].some(id => workspace.projects.some(value => value.id === id && sameDirectory(value.directory)))) throw new Error("Remove dependent worktrees or wait for creation to finish first.");
 		const source = workspace.projects.find(value => value.id === project.worktree!.sourceProjectId); if (!source || source.worktree?.removedAt) throw new Error("The source project is unavailable.");
 		this.removingWorktrees.add(projectId);
-		const operation = (async () => { await removeGitWorktree(source.directory, path.join(this.directory, "worktrees"), project.directory, () => this.openCode.releaseMcp(project.directory, projectId, workspace.mcpConnections)); project.worktree!.removedAt = new Date().toISOString(); this.store.saveProject(project); this.broadcast(); return this.store.getOverview(); })(); this.worktreeOperations.add(operation);
+		const roots = ownedWorktreeRoots(this.directory, this.store.getPreferences().sourceControl.worktreeDirectory, project.worktree.root);
+		const operation = (async () => { await removeGitWorktree(source.directory, roots, project.directory, () => this.openCode.releaseMcp(project.directory, projectId, workspace.mcpConnections)); project.worktree!.removedAt = new Date().toISOString(); this.store.saveProject(project); this.broadcast(); return this.store.getOverview(); })(); this.worktreeOperations.add(operation);
 		try { return await operation; } finally { this.removingWorktrees.delete(projectId); this.worktreeOperations.delete(operation); }
 	}
 	private async performCreateWorktree(projectId: string, branch: string, base: string, runScripts: boolean) {
 		const source = this.store.getProjects().find(value => value.id === projectId); if (!source) throw new Error("Project no longer exists.");
-		const root = path.join(this.directory, "worktrees"); mkdirSync(root, { recursive: true }); const directory = path.join(realpathSync(root), randomUUID());
+		const { worktreeDirectory, submodules } = this.store.getPreferences().sourceControl;
+		const chosen = worktreeRoot(this.directory, worktreeDirectory);
+		try { mkdirSync(chosen, { recursive: true }); } catch (error) { throw new Error(worktreeDirectory ? `Phaseo can't create worktrees in ${worktreeDirectory}. Choose another folder in Settings → Worktrees.` : "Phaseo can't create its worktrees folder.", { cause: error }); }
+		const root = realpathSync(chosen), directory = path.join(root, randomUUID());
 		const baseCommit = await createGitWorktree(source.directory, directory, branch, base);
-		// Local files such as .env, before any setup script runs; a failed copy leaves the worktree usable without them.
+		// Submodules, then local files such as .env, before any setup script runs; either failing leaves the worktree usable without them.
+		const submoduleCheckout = await checkoutSubmodules(directory, submodules);
 		await copyWorktreeIncludes(source.directory, directory).catch(() => undefined);
-		try { const project = this.store.addProject(directory); project.name = `${source.name} · ${branch}`; project.worktree = { sourceProjectId: source.id, branch, baseCommit }; this.store.saveProject(project); this.broadcast(); if (runScripts) this.startWorktreeScripts(project.id); return { workspace: this.store.getOverview(), projectId: project.id }; }
+		try { const project = this.store.addProject(directory); project.name = `${source.name} · ${branch}`; project.worktree = { sourceProjectId: source.id, branch, baseCommit, ...worktreeDirectory ? { root } : {}, ...submoduleCheckout.error ? { submoduleError: submoduleCheckout.error } : {} }; this.store.saveProject(project); this.broadcast(); if (runScripts) this.startWorktreeScripts(project.id); return { workspace: this.store.getOverview(), projectId: project.id }; }
 		catch (error) { throw new Error(`The worktree was created at ${directory}, but project registration failed. Open that folder to recover it.`, { cause: error }); }
 	}
 	/** Reads the reset time from the account's limits; the limits data is more exact than an error's text. */
@@ -766,12 +786,13 @@ export class WorkspaceRuntime {
 	/** Resume at reset: resumes a limited chat a minute after its limit resets; `cancel` drops that. */
 	private async resumeAtReset(id: string, cancel: boolean) {
 		const task = this.store.getTask(id);
-		if (cancel) { clearTimeout(this.limitTimers.get(id)); this.limitTimers.delete(id); if (task.usageLimit) { task.usageLimit.resumeAt = undefined; this.store.saveTask(task, true); this.broadcast(); } return this.store.getOverview(); }
+		// A cancelled resume stays cancelled: Resume after usage limits does not set it again for this limit.
+		if (cancel) { clearTimeout(this.limitTimers.get(id)); this.limitTimers.delete(id); if (task.usageLimit) { task.usageLimit.resumeAt = task.usageLimit.autoResume = undefined; task.usageLimit.resumeCancelled = true; this.store.saveTask(task, true); this.broadcast(); } return this.store.getOverview(); }
 		if (task.status !== "limited" || !task.usageLimit) throw new Error("This chat is not paused on a usage limit.");
 		if (!task.usageLimit.resetsAt || Date.parse(task.usageLimit.resetsAt) <= Date.now()) await this.readLimitReset(id);
 		const latest = this.store.getTask(id), resetsAt = latest.usageLimit?.resetsAt;
 		if (!latest.usageLimit || !resetsAt) throw new Error("The reset time is not known yet. Check Settings → Usage, or use Continue now.");
-		latest.usageLimit.resumeAt = new Date(Math.max(Date.parse(resetsAt), Date.now()) + 60_000).toISOString();
+		latest.usageLimit.resumeAt = new Date(Math.max(Date.parse(resetsAt), Date.now()) + 60_000).toISOString(); latest.usageLimit.resumeCancelled = latest.usageLimit.autoResume = undefined;
 		this.store.saveTask(latest, true); this.broadcast(); this.armLimitResume(id, latest.usageLimit.resumeAt);
 		return this.store.getOverview();
 	}
@@ -793,7 +814,31 @@ export class WorkspaceRuntime {
 		if (this.closing) return;
 		for (const overview of this.store.getOverview().tasks) {
 			if (overview.status !== "limited") continue;
-			try { const resumeAt = this.store.getTask(overview.id).usageLimit?.resumeAt; if (resumeAt) this.armLimitResume(overview.id, resumeAt); } catch { /* Deleted meanwhile. */ }
+			try { const resumeAt = this.store.getTask(overview.id).usageLimit?.resumeAt; if (resumeAt) this.armLimitResume(overview.id, resumeAt); else this.applyLimitRecovery(overview.id); } catch { /* Deleted meanwhile. */ }
+		}
+	}
+	/** Settings → Threads' usage limit switches for one limited chat: resume it on the same agent and login when the limit resets, and snooze it until then. */
+	private applyLimitRecovery(id: string) {
+		if (this.closing) return;
+		let task; try { task = this.store.getTask(id); } catch { return; }
+		const plan = limitRecoveryPlan(task, this.store.getPreferences().threads);
+		if (!task.usageLimit || (!plan.resumeAt && !plan.snoozeUntil)) return;
+		if (plan.snoozeUntil) { task.snoozedUntil = plan.snoozeUntil; task.snoozedAt = new Date().toISOString(); task.usageLimit.snoozed = true; }
+		if (plan.resumeAt) { task.usageLimit.resumeAt = plan.resumeAt; task.usageLimit.autoResume = true; }
+		this.store.saveTask(task, true); this.broadcast();
+		if (plan.resumeAt) this.armLimitResume(id, plan.resumeAt);
+	}
+	/** After the usage limit switches change: resumes the setting armed are dropped when it is turned off, and limited chats get the new rules. */
+	limitPreferencesChanged() {
+		if (this.closing) return;
+		const { autoResumeLimited } = this.store.getPreferences().threads;
+		for (const overview of this.store.getOverview().tasks) {
+			if (overview.status !== "limited") continue;
+			try {
+				const task = this.store.getTask(overview.id);
+				if (!autoResumeLimited && task.usageLimit?.autoResume) { clearTimeout(this.limitTimers.get(task.id)); this.limitTimers.delete(task.id); task.usageLimit.resumeAt = task.usageLimit.autoResume = undefined; this.store.saveTask(task, true); this.broadcast(); }
+				else this.applyLimitRecovery(task.id);
+			} catch { /* Deleted meanwhile. */ }
 		}
 	}
 	/**
@@ -906,7 +951,8 @@ export class WorkspaceRuntime {
 	 * renamed from the first message and the setup actions run; the chat's first turn waits for both.
 	 */
 	async startWorktreeChat(request: WorktreeChatRequest, create: Extract<WorkspaceCommand, { type: "create-task" }>) {
-		const temporary = temporaryWorktreeBranch(randomUUID().replaceAll("-", ""));
+		const { branchNaming, branchPrefix, branchInstructions } = this.store.getPreferences().sourceControl, naming = { branchNaming, branchPrefix, branchInstructions };
+		const temporary = temporaryWorktreeBranch(randomUUID().replaceAll("-", ""), branchPrefix);
 		const { projectId } = await this.createWorktree(request.projectId, temporary, request.base, false);
 		const known = new Set(this.store.getOverview().tasks.map(task => task.id));
 		const id = (await this.command({ ...create, projectId })).tasks.find(task => !known.has(task.id))?.id;
@@ -925,16 +971,16 @@ export class WorkspaceRuntime {
 				current.worktree = { ...current.worktree!, branch: to }; current.name = `${source?.name ?? current.name.split(" · ")[0]} · ${to}`; this.store.saveProject(current); this.broadcast();
 			},
 			nameBranch: async text => {
-				const access = this.titleModelAccount();
+				const access = this.titleModelAccount("git");
 				if ("missing" in access) return undefined;
-				const prompt = branchNamePrompt(mentionPlainText(text));
+				const prompt = branchNamePrompt(mentionPlainText(text), naming);
 				return (await completeChat({ endpoint: access.endpoint, token: await this.vault!.get(access.secretId), model: access.model, ...prompt, maxTokens: 24, timeoutMs: 20_000 }))?.split("\n").map(line => line.trim()).find(Boolean);
 			},
 			setupScripts: () => worktreeCreateScripts(this.store.getProjects(), projectId),
 			runScript: script => { if (!this.runSetupScript) throw new Error("Terminals are unavailable."); return this.runSetupScript(projectId, script, id); },
 			update: mutate => { if (this.closing) return; try { const current = this.store.getTask(id); if (!current.worktreeSetup) return; mutate(current.worktreeSetup); this.store.saveTask(current, true); this.broadcast(); } catch { /* The chat was deleted during setup. */ } },
 			cancelled,
-		}, temporary, request.text);
+		}, temporary, request.text, naming);
 		const hold = setup.catch(() => false).then(ready => {
 			this.worktreeSetups.delete(id);
 			if (this.closing) return;
@@ -1236,6 +1282,8 @@ export class WorkspaceRuntime {
 			if (this.executions.has(command.id) || latest.status === "running" || latest.status === "waiting" || latest.archived) throw new Error("Wait for this chat to stop before changing its settings.");
 			latest.nativeModels = catalog; this.store.saveTask(latest);
 		}
+		// Compact idle chats when you return: a large chat whose prompt cache has lapsed compacts before the new message.
+		if (command.type === "send" && !command.nativeAction && command.text.trim() !== "/compact" && !this.executions.has(command.id) && idleCompactionDue(this.store.getTask(command.id), this.store.getPreferences().threads.idleCompaction, "return")) this.store.apply({ type: "send", id: command.id, text: "/compact" });
 		const task = this.store.apply(command, initialModels);
 		this.broadcast();
 		if (command.type === "settle") this.settled(task.id);
@@ -1310,6 +1358,21 @@ export class WorkspaceRuntime {
 		}
 		this.broadcast(); return this.store.getOverview();
 	}
+	/** Compact idle chats before the cache expires: one check, in the minute before the finished turn's prompt cache lapses. */
+	private scheduleIdleCompaction(id: string) {
+		clearTimeout(this.compactionTimers.get(id)); this.compactionTimers.delete(id);
+		if (this.closing || this.store.getPreferences().threads.idleCompaction !== "beforeCacheExpires") return;
+		let task; try { task = this.store.getTask(id); } catch { return; }
+		const ended = lastTurnEnded(task);
+		if (ended === undefined) return;
+		const timer = setTimeout(() => {
+			this.compactionTimers.delete(id);
+			if (this.closing || this.executions.has(id)) return;
+			let latest; try { latest = this.store.getTask(id); } catch { return; }
+			if (idleCompactionDue(latest, this.store.getPreferences().threads.idleCompaction, "timer")) void this.command({ type: "send", id, text: "/compact" }).catch(() => {});
+		}, Math.max(0, ended + promptCacheMs - compactBeforeExpiryMs - Date.now()));
+		timer.unref?.(); this.compactionTimers.set(id, timer);
+	}
 	private start(id: string) {
 		// A new worktree chat starts once its setup finishes.
 		if (this.closing || this.executions.has(id) || this.worktreeSetups.has(id)) return;
@@ -1319,7 +1382,7 @@ export class WorkspaceRuntime {
 			this.executions.delete(id);
 			if (this.settledByTurn.delete(id)) this.settled(id);
 			if (!this.closing && this.store.getTask(id).status === "completed" && this.store.getTask(id).queue.length) this.start(id);
-			else if (!this.closing) void this.autopilotAfterTurn(id).catch(() => {});
+			else if (!this.closing) { void this.autopilotAfterTurn(id).catch(() => {}); this.scheduleIdleCompaction(id); }
 		});
 		this.executions.set(id, execution);
 		// Failures outside provider execution must be visible rather than unhandled.
@@ -1545,7 +1608,7 @@ export class WorkspaceRuntime {
 			if (limit) { current.status = "limited"; current.usageLimit = { at: new Date().toISOString(), ...limit.resetsAt ? { resetsAt: new Date(limit.resetsAt).toISOString() } : {} }; }
 			// A message the agent never answered goes back to the queue, so Resume sends it again.
 			if ((error instanceof AgentInputRejectedError || limit) && !current.messages.some(value => value.role === "assistant" && value.id.startsWith(`${message.id}:`))) { current.messages = current.messages.filter(value => value.id !== message.id); if (!current.queue.some(value => value.id === message.id)) current.queue.unshift(message); }
-			if (limit) void this.readLimitReset(id);
+			if (limit) void this.readLimitReset(id).catch(() => {}).then(() => this.applyLimitRecovery(id));
 			current.approvals = []; current.questions = keepMessageQuestions(current.questions); current.forms = []; this.store.saveTask(current);
 		} finally {
 			ended = true; if (this.turnNotes.get(id) === note) this.turnNotes.delete(id); if (background && this.backgroundWork.get(id) === background) this.backgroundWork.delete(id);
@@ -1566,6 +1629,7 @@ export class WorkspaceRuntime {
 	async close() {
 		this.closing = true; this.settleAbort.abort(); clearTimeout(this.broadcastTimer); clearTimeout(this.usageBackfill); clearTimeout(this.flushClock); for (const timer of this.wakeTimers.values()) clearTimeout(timer); this.wakeTimers.clear(); for (const close of this.orchestrationSessions.values()) close(); this.broadcast();
 		for (const timer of this.limitTimers.values()) clearTimeout(timer); this.limitTimers.clear();
+		for (const timer of this.compactionTimers.values()) clearTimeout(timer); this.compactionTimers.clear();
 		// Chats cut off by quitting are offered to continue at the next start.
 		for (const id of this.running.keys()) { const task = this.store.apply({ type: "cancel", id }); task.interruptedByQuit = true; task.error = "Phaseo quit during this turn. Resume to continue."; this.store.saveTask(task); }
 		for (const pending of this.approvals.values()) pending.resolve("decline");

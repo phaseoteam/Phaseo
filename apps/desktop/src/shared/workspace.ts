@@ -48,7 +48,7 @@ export type Harness = typeof harnesses[number];
 /** Harnesses a chat can run on. Antigravity stays a harness so usage history keeps its name, but it has no adapter yet, so it is offered nowhere. */
 export const runnableHarnesses: readonly Harness[] = harnesses.filter(harness => harness !== "antigravity");
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
-export type Project = { id: string; name: string; directory: string; createdAt: string; worktree?: { sourceProjectId: string; branch: string; baseCommit: string; removedAt?: string }; /** Auto-settle overrides and scripts (Project settings). Worktrees use their source project's. */ settings?: ProjectSettings; /** A checkout of the app's own source made by Triage (shared/triage.ts). */ triage?: TriageProject; /** Pinned projects lead the project picker; archived ones, and their chats, leave the sidebar and pickers until unarchived. */ pinned?: boolean; archived?: boolean };
+export type Project = { id: string; name: string; directory: string; createdAt: string; worktree?: { sourceProjectId: string; branch: string; baseCommit: string; removedAt?: string; /** The folder it was made in, so it can be removed after the worktree location changes; absent for older worktrees, made in the default folder. */ root?: string; /** Why Settings → Worktrees → Submodules could not check them out when the worktree was made; shown in the chat's Git section. */ submoduleError?: string }; /** Auto-settle overrides and scripts (Project settings). Worktrees use their source project's. */ settings?: ProjectSettings; /** A checkout of the app's own source made by Triage (shared/triage.ts). */ triage?: TriageProject; /** Pinned projects lead the project picker; archived ones, and their chats, leave the sidebar and pickers until unarchived. */ pinned?: boolean; archived?: boolean };
 export type PhaseoSignInMethod = { provider: "github" | "google" | "gitlab" } | { email: string; password: string };
 export type PhaseoSignInResult = { workspace: WorkspaceOverview; accountId: string } | { secondFactor: true };
 export type Account = { id: string; name: string; harness: Harness; kind: "native" | "api"; endpoint?: string; configDirectory?: string; configured: boolean; archived?: boolean; secretId?: string; oauthExpiresAt?: string; /** For a Phaseo login (not an older OAuth sign-in): the vault entry holding the login, and the Phaseo workspace its key is for. */ sessionSecretId?: string; phaseoWorkspaceId?: string; /** For a Phaseo sign-in, who it belongs to, from its Phaseo profile. */ profile?: { name?: string; givenName?: string; email?: string; picture?: string; checkedAt: string } };
@@ -148,7 +148,7 @@ export type Task = {
 	secretRequests?: SecretRequest[];
 };
 export type Workspace = { version: 1; projects: Project[]; accounts: Account[]; agents: AgentConnection[]; tasks: Task[]; mcpConnections: McpConnection[] };
-export type HarnessInstallation = { harness: Harness; installed: boolean; version?: string; error?: string; maintenance?: { method: "npm" | "native" | "manual"; canUpdate: boolean } };
+export type HarnessInstallation = { harness: Harness; installed: boolean; version?: string; error?: string; /** A newer published version, when Provider update checks is on. */ latestVersion?: string; maintenance?: { method: "npm" | "native" | "manual"; canUpdate: boolean } };
 /** One per-model setting a harness accepts, shown in the composer's settings menu. */
 export type ModelOptionDescriptor =
 	| { id: string; label: string; type: "select"; options: { id: string; label: string; description?: string; isDefault?: boolean }[] }
@@ -260,6 +260,8 @@ export type WorkspaceApi = {
 	get: () => Promise<Workspace>;
 	command: (command: WorkspaceCommand) => Promise<WorkspaceOverview>;
 	chooseProject: () => Promise<WorkspaceOverview>;
+	/** Asks for the folder new worktrees go in, or the one Add project opens in (Settings → Worktrees and Source control); undefined if cancelled. Saving it is up to the page. */
+	chooseSettingsFolder: (purpose: "worktrees" | "add-project") => Promise<string | undefined>;
 	/** Asks for a folder, clones the repository into it and adds the checkout as a project; undefined if cancelled. */
 	cloneProject: (url: string) => Promise<{ workspace: WorkspaceOverview; projectId: string } | undefined>;
 	/** Triage: fetches the running build's source (or reuses it) and adds the checkout as a project. */

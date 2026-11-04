@@ -283,7 +283,8 @@ export function Sidebar() {
 	const writing = factory && factoryRoute.page === "new" && !inboxPage;
 	const [chatViewport, setChatViewport] = useState<HTMLDivElement | null>(null);
 	const fresh = !factory && !selectedId && !compareId && !scheduled && !pullRequestsPage && !inboxPage;
-	if (settings) return <SidebarFrame label="Settings"><SettingsNav /></SidebarFrame>;
+	// The settings list is taller than short windows, so it scrolls like the chat list does.
+	if (settings) return <SidebarFrame label="Settings"><ScrollArea className="min-h-0 flex-1"><SettingsNav /></ScrollArea></SidebarFrame>;
 	return <SidebarFrame label={mode === "chat" ? "Chats" : factory ? "Factory" : "Projects"}>
 		<div className="p-2.5">
 			{factory ? <button type="button" onClick={() => openFactory({ page: "new" })}

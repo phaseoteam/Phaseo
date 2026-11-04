@@ -22,6 +22,7 @@ import { PullRequestNumberMenu } from "./PullRequestNumberMenu";
 import { RowChecksPopover } from "./RowChecksPopover";
 import { StackGlyph, StackPopover } from "./StackMenu";
 import { useProjectRepository } from "./useProjectRepository";
+import { openWebLink } from "../../lib/openLink";
 
 /** The shared row shape: a status column, then number and title over author and branches. */
 export const PULL_REQUEST_ROW_CLASS = "group/pr-row flex w-full items-center gap-2 rounded-md py-1 pr-1 text-left";
@@ -182,7 +183,7 @@ export function PullRequestListSurface({ projectId, taskId, onOpen }: { projectI
 	useBackgroundRefresh(() => { if (selected === undefined) { void load(); refreshLinks(); } });
 
 	const flash = (text: string) => { setNotice(text); window.setTimeout(() => setNotice(current => current === text ? "" : current), 1500); };
-	const external = (url: string) => { void api?.openLink(url).catch(reason => setError(errorMessage(reason))); };
+	const external = (url: string) => { void openWebLink(url).catch(reason => setError(errorMessage(reason))); };
 	const copy = (url: string) => { void navigator.clipboard.writeText(url).then(() => flash("Link copied"), () => flash("Copy failed")); };
 	const run = async (command: Parameters<NonNullable<typeof api>["command"]>[0]) => { if (!api) return "Open the desktop app to link pull requests."; try { setOverview(await api.command(command)); return undefined; } catch (reason) { return errorMessage(reason); } };
 	const openRequest = (request: OpenPullRequest) => { if (onOpen) onOpen(request); else setSelected(request.number); };

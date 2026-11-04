@@ -545,8 +545,8 @@ export class WorkspaceThreads {
 						if (pending) { const task = await pending; void this.discardFiles(files); return { ...summary(task), ...childWorktree(task) }; }
 						{
 							const sourceId = parent.projectId!;
-							// The suffix keeps children with the same title apart, and stays the same when the request is retried.
-							const branch = request.branch ?? `${generatedBranchName(request.title)}-${createHash("sha256").update(key).digest("hex").slice(0, 6)}`;
+							// Under the branch prefix (Settings → Worktrees). The suffix keeps children with the same title apart, and stays the same when the request is retried.
+							const branch = request.branch ?? `${generatedBranchName(request.title, { ...this.host.store.getPreferences().sourceControl, branchNaming: "static" })}-${createHash("sha256").update(key).digest("hex").slice(0, 6)}`;
 							if (harnessDisabled(this.host.store.getProjects(), sourceId, settings.harness)) throw new Error("This agent is turned off for this project. Choose another, or turn it back on in Project settings.");
 							pending = (async () => {
 								this.assertCapacity();

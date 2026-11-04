@@ -1,4 +1,5 @@
 /** Short chat titles written by a model through the person's Phaseo account. */
+import { preferenceLines } from "../shared/sourceControlPreferences";
 
 /** First line only, without quotes, Markdown or a closing full stop; up to 80 characters. */
 export function cleanTitle(raw: string) {
@@ -24,10 +25,11 @@ export async function completeChat({ endpoint, token, model, system, user, maxTo
 	return typeof content === "string" ? content : undefined;
 }
 
-export async function generateTitle({ endpoint, token, model, text, reply, fetcher = fetch, signal }: { endpoint: string; token: string; model: string; text: string; reply?: string; fetcher?: typeof fetch; signal?: AbortSignal }) {
+/** A chat title from the first message (and the reply so far, when regenerating), following the person's title instructions (Settings → Source control). */
+export async function generateTitle({ endpoint, token, model, text, reply, instructions, fetcher = fetch, signal }: { endpoint: string; token: string; model: string; text: string; reply?: string; instructions?: string; fetcher?: typeof fetch; signal?: AbortSignal }) {
 	const content = await completeChat({
 		endpoint, token, model, fetcher, signal, maxTokens: 24, timeoutMs: 20_000,
-		system: "Write a short title, two to six words, for the chat below. Reply with the title only: no quotes, no full stop.",
+		system: ["Write a short title, two to six words, for the chat below. Reply with the title only: no quotes, no full stop.", ...preferenceLines(instructions, "Follow them for the title's wording; the reply is still the title alone.")].join("\n"),
 		user: `${text.slice(0, 4000)}${reply ? `\n\nReply so far:\n${reply.slice(0, 2000)}` : ""}`,
 	});
 	return content === undefined ? undefined : cleanTitle(content);

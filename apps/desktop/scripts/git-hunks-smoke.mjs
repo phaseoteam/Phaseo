@@ -49,7 +49,8 @@ app.whenReady().then(async () => {
 		await run(`Array.from(document.querySelectorAll('[role=menuitemradio]')).find(item=>item.textContent.trim()==='Uncommitted').click()`);
 		await wait(`${surface}.dataset.diffScope==='uncommitted'&&Boolean(${viewer}?.shadowRoot?.textContent.includes('First edit'))`);
 		await run(`${surface}.querySelector('[aria-label="Split diff view"]').click()`);
-		await wait(`localStorage.getItem('phaseo.desktop.diffLayout')==='"split"'&&Boolean(${viewer}?.shadowRoot?.querySelector('pre[data-diff-type="split"]'))`);
+		// The layout is a workspace preference (Settings → Diffs), which the toolbar button changes too.
+		await wait(`(async()=>(await window.phaseoDesktop.workspace.preferences()).preferences.chat.diffLayout==='split'&&Boolean(${viewer}?.shadowRoot?.querySelector('pre[data-diff-type="split"]')))()`);
 		await wait(`Boolean(${viewer}?.shadowRoot?.querySelector('[data-expand-index="1"] [data-expand-button]'))`);
 		if (await run(`Boolean(${viewer}.shadowRoot.querySelector('img,script'))`)) throw Error('Diff interpreted source markup');
 		edited = edited.replace('Line 1\n', 'Refreshed context\n'); writeFileSync(target, edited);

@@ -3,6 +3,7 @@ import type { KeybindingEntry } from "./keybindings";
 import type { BrowserAgentTabOpened, BrowserCapture, BrowserCommand, BrowserKey, BrowserLocalServer, BrowserOpenTab, BrowserPick, BrowserRecording, BrowserState } from "./browser";
 import type { WorkspaceApi } from "./workspace";
 import type { DiagnosticsApi } from "./diagnostics";
+import type { MaintenanceApi } from "./maintenance";
 import type { FactoryApi } from "./factory/types";
 
 export type DesktopRuntimeInfo = {
@@ -48,6 +49,8 @@ export type PhaseoDesktopApi = {
 	browser: (command: BrowserCommand) => Promise<BrowserState | undefined>;
 	onBrowserOpenTab: (listener: (request: BrowserOpenTab) => void) => () => void;
 	onBrowserState: (listener: (state: BrowserState) => void) => () => void;
+	/** Holding the quit shortcut (Settings → Chat → Quitting): shows how long is left, and hides when let go. */
+	onQuitHold: (listener: (state: QuitHoldState) => void) => () => void;
 	/** Screenshot of a tab's page, also copied to the clipboard. */
 	browserCapture: (id: string) => Promise<BrowserCapture>;
 	/** Lets the person click an element on the page; undefined when cancelled. Pass cancel to stop a pick in progress. */
@@ -61,6 +64,8 @@ export type PhaseoDesktopApi = {
 	browserRecordingSave: (mimeType: string, data: Uint8Array) => Promise<BrowserRecording>;
 	/** Shows a saved recording in the file manager. */
 	browserRecordingReveal: (path: string) => Promise<void>;
+	/** Deletes a browser profile's cookies, site storage and cache (Settings → Browser, after the person confirms). */
+	browserProfileClear: (profile: string) => Promise<void>;
 	/** A page an agent opened in one of a chat's browser tabs. */
 	onBrowserAgentTab: (listener: (tab: BrowserAgentTabOpened) => void) => () => void;
 	/** An agent asks the window to start or stop recording a tab; the window answers with browserAgentRecorded. */
@@ -83,6 +88,8 @@ export type PhaseoDesktopApi = {
 	};
 	/** Settings → Diagnostics: the app's processes, their recent resource use and its local trace file. */
 	diagnostics: DiagnosticsApi;
+	/** Settings → Maintenance: storage retention and the licence notices. */
+	maintenance: MaintenanceApi;
 	checkForUpdates: () => Promise<DesktopUpdateState>;
 	installUpdate: () => Promise<void>;
 	onWindowStateChange: (listener: (state: DesktopWindowState) => void) => () => void;
@@ -91,6 +98,9 @@ export type PhaseoDesktopApi = {
 	/** The unread count on the dock or launcher icon; Windows shows `overlay`, a PNG data URL the renderer draws, on the taskbar button. */
 	setBadge: (count: number, overlay?: string) => Promise<void>;
 };
+
+/** A hold of the quit shortcut: started (quits after ms), let go early, or done. */
+export type QuitHoldState = { state: "holding"; ms: number } | { state: "cancelled" } | { state: "quitting" };
 
 export const ALLOWED_EXTERNAL_HOSTS = new Set([
 	"phaseo.app",

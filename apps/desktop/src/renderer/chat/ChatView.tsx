@@ -139,10 +139,11 @@ function ChatComposer({ task }: { task: Task }) {
 	const running = ["running", "waiting"].includes(task.status);
 	const code = task.mode !== "chat";
 	const preferences = useWorkspacePreferences();
+	const followUpSteers = preferences.chat.followUp === "steer";
 	// While the agent waits on a question, the composer is its own-answer field.
 	const answerer = useQuestionAnswerer(task.id);
 	const editor = useComposerEditor({ value: draft.text, onChange: draft.setText, disabled: task.archived, onFiles: files => void upload(files),
-		placeholder: task.archived ? "This chat is archived" : answerer ? "Type your own answer, or leave this blank to use the selected option" : running ? "Queue a follow-up…" : code ? "Ask for a change, or reply to the agent…" : "Reply…" });
+		placeholder: task.archived ? "This chat is archived" : answerer ? "Type your own answer, or leave this blank to use the selected option" : running ? (followUpSteers ? "Steer the running turn…" : "Queue a follow-up…") : code ? "Ask for a change, or reply to the agent…" : "Reply…" });
 	const selection: ModelSelection = { harness: task.harness, model: task.model, accountId: task.accountId, reasoningEffort: task.reasoningEffort, serviceTier: task.serviceTier, options: task.modelOptions };
 	const settingActions = useModelSettingActions(task.archived || running ? undefined : selection, next => void changeSettings(next));
 	const canCompact = ["opencode", "codex", "claude", "pi", "phaseo"].includes(task.harness) && !!task.nativeSessionId && !task.archived && !running;
@@ -228,9 +229,10 @@ function ChatComposer({ task }: { task: Task }) {
 		finally { setBusy(false); }
 	}
 	useCommand("composer.steer", () => { void steer(); });
-	// While a turn runs, Enter queues; the other send key steers instead. With Mod+Enter as the send key it just sends.
+	// While a turn runs, sending queues and the other send key steers, or the other way round when follow-ups steer by default (Settings → Chat). With Mod+Enter as the send key it just sends.
 	const sendKey = useSendKey();
-	useCommand("composer.sendAlternate", () => { if (!running || sendKey !== "enter") return false; void steer(); });
+	useCommand("composer.sendAlternate", () => { if (!running || sendKey !== "enter") return false; void (followUpSteers ? send() : steer()); });
+	const submit = () => { if (running && followUpSteers && !editing && !answerer) void steer(); else void send(); };
 	useCommand("composer.editQueued", () => { const last = ownQueue(task).at(-1); return last && !editing ? editQueued(last.id) : false; });
 	useCommand("composer.sendAndNewChat", () => { if (!canSend || editing || answerer) return false; void send().then(sent => { if (sent) select(undefined); }); });
 
@@ -311,7 +313,7 @@ function ChatComposer({ task }: { task: Task }) {
 			<div className="flex items-center gap-2 text-[13px] font-semibold"><Gauge className="size-4 text-muted-foreground" />Usage limits<button type="button" aria-label="Hide usage limits" onClick={() => setLimits(undefined)} className="ml-auto grid size-6 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"><X className="size-3.5" /></button></div>
 			{limits === "loading" ? <p className="text-xs text-muted-foreground">Checking…</p> : "error" in limits ? <p className="text-xs text-destructive">{limits.error}</p> : <UsageMeters status={limits} />}
 		</div>}
-		<ComposerTaskContext value={task.id}><Composer editor={editor} onSubmit={() => void send()} canSend={canSend || Boolean(editing)} disabled={task.archived}
+		<ComposerTaskContext value={task.id}><Composer editor={editor} onSubmit={submit} canSend={canSend || Boolean(editing)} disabled={task.archived}
 			chips={editing && <span className="flex w-full items-center gap-2 text-xs text-muted-foreground"><Pencil className="size-3.5" />Editing a queued message<button type="button" onClick={() => stopEditing()} className="ml-auto rounded-md px-1.5 py-0.5 font-medium text-foreground hover:bg-muted">Cancel</button></span>}
 			running={running} onStop={() => void command({ type: "cancel", id: task.id })}
 			menu={task.archived ? undefined : menu}
