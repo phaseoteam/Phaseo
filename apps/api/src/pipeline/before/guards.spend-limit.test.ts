@@ -164,6 +164,27 @@ describe("budget alerts from rejected requests", () => {
 
 		beforeEach(() => { state.mode = "enforce"; });
 
+		it("records how long the request waited for the coordinator's decision", async () => {
+			state.decide.mockReturnValue(new Promise((resolve) => setTimeout(() => resolve({ outcome: "allowed", admission: null, source: "coordinator", contended: false }), 30)));
+			const context = { ...allowedContext(), contextTelemetry: { cacheStatus: "hit", totalMs: 3 } };
+			vi.mocked(fetchGatewayContext).mockResolvedValue(context);
+
+			await request({ spendLimit: slot() });
+
+			expect(context.contextTelemetry).toHaveProperty("spendLimitMs");
+			expect((context.contextTelemetry as { spendLimitMs?: number }).spendLimitMs).toBeGreaterThanOrEqual(20);
+		});
+
+		it("records no coordinator wait when enforce mode is off", async () => {
+			state.mode = "off";
+			const context = { ...allowedContext(), contextTelemetry: { cacheStatus: "hit", totalMs: 3 } };
+			vi.mocked(fetchGatewayContext).mockResolvedValue(context);
+
+			await request({ spendLimit: slot() });
+
+			expect(context.contextTelemetry).not.toHaveProperty("spendLimitMs");
+		});
+
 		it("rejects a request the coordinator denies, naming the department", async () => {
 			state.decide.mockReturnValue(departmentDenial);
 			vi.mocked(fetchGatewayContext).mockResolvedValue(allowedContext());
