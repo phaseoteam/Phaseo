@@ -13,6 +13,7 @@ describe("Particle AI reasoning", () => {
 		[{ effort: "none" }, { reasoning_effort: "none" }],
 		[{ effort: "minimal" }, { reasoning_effort: "minimal" }],
 		[{ enabled: false }, { reasoning_effort: "none" }],
+		[{ enabled: false, effort: "high" }, { reasoning_effort: "none" }],
 		[{ enabled: true }, { reasoning_effort: "high" }],
 		[{ summary: "auto" }, {}],
 	])("maps %j to %j", (reasoning, expected) => {

@@ -131,9 +131,12 @@ export function applyReasoningParams(args: {
 	if (args.providerId === "particle-ai") {
 		// Particle takes reasoning_effort none, minimal, low, medium, high, xhigh, max
 		// (and ultra); omitting it means high (https://docs.particle.ai/reasoning).
-		const effort = typeof reasoning.effort === "string"
-			? reasoning.effort
-			: reasoning.enabled === false ? "none" : reasoning.enabled === true ? "high" : undefined;
+		// An explicit enabled: false wins over any effort, so a disable request never bills reasoning.
+		const effort = reasoning.enabled === false
+			? "none"
+			: typeof reasoning.effort === "string"
+				? reasoning.effort
+				: reasoning.enabled === true ? "high" : undefined;
 		if (effort !== undefined) args.request.reasoning_effort = effort;
 		return;
 	}
