@@ -998,9 +998,7 @@ function ModelsDisplayContent({
 			coming_soon: "comingSoon",
 			not_active: "notActive",
 			inactive: "notActive",
-			deranked_lvl1: "statusDeranked1",
-			deranked_lvl2: "statusDeranked2",
-			deranked_lvl3: "statusDeranked3",
+			deranked: "statusDeranked",
 			disabled: "statusDisabled",
 		};
 		const key = keys[String(value ?? "").trim().toLowerCase()];

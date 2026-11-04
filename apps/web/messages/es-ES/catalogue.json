@@ -232,9 +232,7 @@
 			"featureStructuredOutputs": "Salidas estructuradas",
 			"featureWebSearch": "Búsqueda web",
 			"featureFree": "Variante gratuita",
-			"statusDeranked1": "Nivel 1 de degradación",
-			"statusDeranked2": "Nivel 2 de degradación",
-			"statusDeranked3": "Nivel 3 de degradación",
+			"statusDeranked": "Prioridad más baja",
 			"statusDisabled": "Deshabilitado",
 			"regionJapan": "Japón",
 			"regionAustralia": "Australia",
@@ -811,17 +809,9 @@
 						"label": "Bloqueo temporal",
 						"description": "El enrutamiento está bloqueado temporalmente."
 					},
-					"deranked_lvl1": {
-						"label": "Prioridad reducida L1",
-						"description": "Se puede enrutar públicamente, pero la prioridad se reduce ligeramente por el estado de salud."
-					},
-					"deranked_lvl2": {
-						"label": "Prioridad reducida L2",
-						"description": "Se puede enrutar públicamente, pero el estado de salud reduce la prioridad."
-					},
-					"deranked_lvl3": {
-						"label": "Prioridad reducida L3",
-						"description": "Se puede enrutar públicamente, pero el estado de salud reduce mucho la prioridad."
+					"deranked": {
+						"label": "Prioridad más baja",
+						"description": "Enrutable públicamente, pero solo se usa como respaldo cuando fallan los demás proveedores."
 					},
 					"internal_testing": {
 						"label": "Pruebas internas",
@@ -1105,7 +1095,7 @@
 				"disabled": "Deshabilitado explícitamente y no enrutable.",
 				"comingSoon": "Próximamente; todavía no es enrutable.",
 				"internalTesting": "Disponible solo para pruebas internas.",
-				"rateLimited": "Lo establece Phaseo. Sigue disponible, pero las solicitudes van primero a otros proveedores hasta que Phaseo lo cambie.",
+				"rateLimited": "Lo establece Phaseo. Solo se usa como respaldo cuando fallan los demás proveedores.",
 				"degraded": "Disponible con el enrutamiento degradado.",
 				"external": "Incluido en un catálogo externo; no se puede enrutar a través de Phaseo."
 			},
@@ -3172,9 +3162,7 @@
 		"providerStatus": {
 			"active": "Activo",
 			"coming_soon": "Próximamente",
-			"deranked_lvl1": "Rebajado de nivel L1",
-			"deranked_lvl2": "Rebajado de nivel L2",
-			"deranked_lvl3": "Rebajado de nivel L3",
+			"deranked": "Prioridad más baja",
 			"disabled": "Desactivado",
 			"inactive": "Inactivo",
 			"internal_testing": "Pruebas internas",

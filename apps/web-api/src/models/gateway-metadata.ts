@@ -85,9 +85,17 @@ function supportedParameters(value: unknown, result = new Set<string>()): string
 	return [...result].sort();
 }
 
-function publicRouting(value: unknown): boolean {
+/** Routing and capability status; the catalogue stores a deranked (last-resort) route as `degraded`. */
+function routingStatus(value: unknown): string | null {
 	const normalized = status(value);
-	return normalized === null || normalized === "active" || normalized === "deranked_lvl1" || normalized === "deranked_lvl2" || normalized === "deranked_lvl3";
+	return normalized === "degraded" || normalized === "de_ranked" || /^deranked(_lvl_?[123])?$/.test(normalized ?? "")
+		? "deranked"
+		: normalized;
+}
+
+function publicRouting(value: unknown): boolean {
+	const normalized = routingStatus(value);
+	return normalized === null || normalized === "active" || normalized === "deranked";
 }
 
 function providerAvailabilityAllowsRouting(row: Row, now: number): boolean {
@@ -113,9 +121,9 @@ function availability(row: Row, capability: Row, provider: Row | null, now: numb
 	const providerStatus = status(provider?.status);
 	if (providerStatus === "beta" || providerStatus === "alpha") return "coming_soon";
 	if (!row.is_active_gateway || (providerStatus && providerStatus !== "active") || !publicRouting(provider?.routing_status) || !publicRouting(row.routing_status)) return "inactive";
-	const capabilityStatus = status(capability.status);
+	const capabilityStatus = routingStatus(capability.status);
 	if (capabilityStatus === "internal_testing" || capabilityStatus === "coming_soon") return "coming_soon";
-	return capabilityStatus && capabilityStatus !== "active" && !(providerAvailability === "deprecated" && capabilityStatus === "degraded") ? "inactive" : "active";
+	return capabilityStatus && capabilityStatus !== "active" && capabilityStatus !== "deranked" ? "inactive" : "active";
 }
 
 function availabilityReason(row: Row, capability: Row, provider: Row | null, now: number): string {
@@ -132,16 +140,15 @@ function availabilityReason(row: Row, capability: Row, provider: Row | null, now
 	const providerStatus = status(provider?.status);
 	if (providerStatus === "beta" || providerStatus === "alpha") return "preview_only";
 	if (providerStatus && providerStatus !== "active") return ["not_ready", "gated", "access_limited", "region_limited", "project_limited", "paused", "soft_blocked"].includes(providerStatus) ? providerStatus : "provider_inactive";
-	const providerRouting = status(provider?.routing_status);
-	const modelRouting = status(row.routing_status);
+	const providerRouting = routingStatus(provider?.routing_status);
+	const modelRouting = routingStatus(row.routing_status);
 	if (providerRouting === "disabled") return "provider_disabled";
 	if (modelRouting === "disabled") return "model_disabled";
-	if (["deranked_lvl1", "deranked_lvl2", "deranked_lvl3"].includes(providerRouting ?? "")) return providerRouting!;
-	if (["deranked_lvl1", "deranked_lvl2", "deranked_lvl3"].includes(modelRouting ?? "")) return modelRouting!;
-	const capabilityStatus = status(capability.status);
+	const capabilityStatus = routingStatus(capability.status);
 	if (capabilityStatus === "disabled") return "capability_disabled";
 	if (capabilityStatus === "internal_testing") return "internal_testing";
 	if (!row.is_active_gateway) return "inactive";
+	if (providerRouting === "deranked" || modelRouting === "deranked" || capabilityStatus === "deranked") return "deranked";
 	return capabilityStatus === "coming_soon" ? "coming_soon" : capabilityStatus && capabilityStatus !== "active" ? "inactive" : "active";
 }
 
@@ -303,9 +310,9 @@ export function composeGatewayMetadata(modelId: string, source: GatewayMetadataS
 				availability_status: availabilityStatus,
 				availability_reason: availabilityReason(row, cap, provider, now),
 				provider_status: status(provider?.status),
-				provider_routing_status: status(provider?.routing_status),
-				model_routing_status: status(row.routing_status),
-				capability_status: status(cap.status),
+				provider_routing_status: routingStatus(provider?.routing_status),
+				model_routing_status: routingStatus(row.routing_status),
+				capability_status: routingStatus(cap.status),
 				input_modalities: stringList(row.input_modalities).join(","),
 				output_modalities: stringList(row.output_modalities).join(","),
 				max_input_tokens: cap.max_input_tokens ?? null,

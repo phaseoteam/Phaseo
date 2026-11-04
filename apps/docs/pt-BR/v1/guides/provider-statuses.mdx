@@ -12,14 +12,12 @@ Na página de um modelo, aparecem até dois ícones depois do nome de cada prove
 
 ## Ícone de status
 
-O Phaseo define este status manualmente, e ele permanece até o Phaseo alterá-lo. As páginas de modelos mostram os três níveis de rebaixamento como `Prioridade menor`.
+O Phaseo define este status manualmente, e ele permanece até o Phaseo alterá-lo. Uma rota com prioridade menor é um último recurso: o Gateway só a tenta depois de todos os outros provedores saudáveis.
 
 | Ícone | Status | Roteamento |
 | --- | --- | --- |
 | <Icon icon="circle-check" color="#16a34a" /> | `Active` | Roteado normalmente. |
-| <Icon icon="triangle-alert" color="#f59e0b" /> | `Deranked L1` | Roteável, logo atrás de outros provedores. |
-| <Icon icon="triangle-alert" color="#d97706" /> | `Deranked L2` | Roteável, atrás de provedores mais saudáveis. |
-| <Icon icon="triangle-alert" color="#ef4444" /> | `Deranked L3` | Roteável, bem atrás de outros provedores. |
+| <Icon icon="triangle-alert" color="#d97706" /> | `Prioridade menor` | Só como reserva, depois de todos os outros provedores saudáveis. |
 | <Icon icon="ban" color="#dc2626" /> | `Disabled` | Não é roteado. |
 
 ## Roteamento em tempo real

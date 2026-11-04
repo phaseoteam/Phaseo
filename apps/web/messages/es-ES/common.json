@@ -917,9 +917,7 @@
 			"supportedParamsDescription": "Selecciona los parámetros de solicitud que admite esta capacidad.",
 			"capabilityStatuses": {
 				"active": "Activo",
-				"derankedLvl1": "Con menor prioridad — nivel 1",
-				"derankedLvl2": "Con menor prioridad — nivel 2",
-				"derankedLvl3": "Con menor prioridad — nivel 3",
+				"deranked": "Último recurso",
 				"disabled": "Desactivado"
 			},
 			"pricingRules": "Reglas de precios",

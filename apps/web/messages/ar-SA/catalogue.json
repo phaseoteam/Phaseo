@@ -232,9 +232,7 @@
 			"featureStructuredOutputs": "مخرجات منظّمة",
 			"featureWebSearch": "البحث على الويب",
 			"featureFree": "إصدار مجاني",
-			"statusDeranked1": "خفض الترتيب من المستوى 1",
-			"statusDeranked2": "خفض الترتيب من المستوى 2",
-			"statusDeranked3": "خفض الترتيب من المستوى 3",
+			"statusDeranked": "أولوية أقل",
 			"statusDisabled": "معطّل",
 			"regionJapan": "اليابان",
 			"regionAustralia": "أستراليا",
@@ -811,17 +809,9 @@
 						"label": "محظور مؤقتًا",
 						"description": "التوجيه محظور مؤقتًا."
 					},
-					"deranked_lvl1": {
-						"label": "أولوية منخفضة L1",
-						"description": "متاح للتوجيه العام، لكن أولويته منخفضة قليلًا بناءً على صحة التوجيه."
-					},
-					"deranked_lvl2": {
-						"label": "أولوية منخفضة L2",
-						"description": "متاح للتوجيه العام، لكن أولويته منخفضة حاليًا بناءً على صحة التوجيه."
-					},
-					"deranked_lvl3": {
-						"label": "أولوية منخفضة L3",
-						"description": "متاح للتوجيه العام، لكن أولويته منخفضة جدًا بناءً على صحة التوجيه."
+					"deranked": {
+						"label": "أولوية أقل",
+						"description": "قابل للتوجيه علنًا، لكنه يُستخدم فقط كاحتياط عندما تفشل المزوّدات الأخرى."
 					},
 					"internal_testing": {
 						"label": "اختبار داخلي",
@@ -1105,7 +1095,7 @@
 				"disabled": "معطّل صراحةً وغير قابل للتوجيه.",
 				"comingSoon": "قريبًا، وغير قابل للتوجيه بعد.",
 				"internalTesting": "متاح للاختبار الداخلي فقط.",
-				"rateLimited": "يحدده Phaseo. لا يزال متاحًا، لكن الطلبات تُرسل أولًا إلى مزوّدين آخرين حتى يغيّر Phaseo ذلك.",
+				"rateLimited": "يحدده Phaseo. يُستخدم فقط كاحتياط عندما تفشل المزوّدات الأخرى.",
 				"degraded": "متاح مع تدهور في صحة التوجيه.",
 				"external": "مدرج من كتالوج خارجي؛ لا يمكن توجيهه عبر Phaseo."
 			},
@@ -3172,9 +3162,7 @@
 		"providerStatus": {
 			"active": "نشط",
 			"coming_soon": "قريبًا",
-			"deranked_lvl1": "خُفّض تصنيفه L1",
-			"deranked_lvl2": "خُفّض تصنيفه L2",
-			"deranked_lvl3": "خُفّض تصنيفه L3",
+			"deranked": "أولوية أقل",
 			"disabled": "معطّل",
 			"inactive": "غير نشط",
 			"internal_testing": "اختبار داخلي",

@@ -436,7 +436,7 @@ type CatalogResult = { data: Array<Record<string, unknown>> | null; error: { mes
 /** The slice of a Supabase client the catalog lookup needs; the catalog tables are publicly readable. */
 export type ClassifierCatalogClient = { from: (table: string) => any };
 const ROUTE_STATUSES = ["active", "degraded"];
-const CAPABILITY_STATUSES = ["active", "deranked", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3"];
+const CAPABILITY_STATUSES = ["active", "degraded"];
 
 function inWindow(row: Record<string, unknown>, now: number): boolean {
 	const from = typeof row.effective_from === "string" ? Date.parse(row.effective_from) : NaN;

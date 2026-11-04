@@ -917,9 +917,7 @@
 			"supportedParamsDescription": "Wähle die von dieser Funktion unterstützten Anfrageparameter aus.",
 			"capabilityStatuses": {
 				"active": "Aktiv",
-				"derankedLvl1": "Herabgestuft — Stufe 1",
-				"derankedLvl2": "Herabgestuft — Stufe 2",
-				"derankedLvl3": "Herabgestuft — Stufe 3",
+				"deranked": "Nur als Reserve",
 				"disabled": "Deaktiviert"
 			},
 			"pricingRules": "Preisregeln",

@@ -232,9 +232,7 @@
 			"featureStructuredOutputs": "Saídas estruturadas",
 			"featureWebSearch": "Pesquisa na web",
 			"featureFree": "Variante gratuita",
-			"statusDeranked1": "Rebaixamento nível 1",
-			"statusDeranked2": "Rebaixamento nível 2",
-			"statusDeranked3": "Rebaixamento nível 3",
+			"statusDeranked": "Prioridade menor",
 			"statusDisabled": "Desativado",
 			"regionJapan": "Japão",
 			"regionAustralia": "Austrália",
@@ -811,17 +809,9 @@
 						"label": "Bloqueado temporariamente",
 						"description": "O roteamento está bloqueado temporariamente."
 					},
-					"deranked_lvl1": {
-						"label": "Prioridade reduzida L1",
-						"description": "Pode ser roteado publicamente, mas tem prioridade um pouco menor devido à saúde da rota."
-					},
-					"deranked_lvl2": {
-						"label": "Prioridade reduzida L2",
-						"description": "Pode ser roteado publicamente, mas tem prioridade menor devido à saúde da rota."
-					},
-					"deranked_lvl3": {
-						"label": "Prioridade reduzida L3",
-						"description": "Pode ser roteado publicamente, mas tem prioridade muito menor devido à saúde da rota."
+					"deranked": {
+						"label": "Prioridade menor",
+						"description": "Roteável publicamente, mas usado só como reserva quando os outros provedores falham."
 					},
 					"internal_testing": {
 						"label": "Teste interno",
@@ -1105,7 +1095,7 @@
 				"disabled": "Desativado explicitamente e não roteável.",
 				"comingSoon": "Em breve; ainda não é roteável.",
 				"internalTesting": "Disponível somente para testes internos.",
-				"rateLimited": "Definido pelo Phaseo. Continua disponível, mas as solicitações vão primeiro para outros provedores até o Phaseo mudar isso.",
+				"rateLimited": "Definido pelo Phaseo. Usado só como reserva quando os outros provedores falham.",
 				"degraded": "Disponível com a saúde do roteamento degradada.",
 				"external": "Listado em um catálogo externo; não pode ser roteado pelo Phaseo."
 			},
@@ -3172,9 +3162,7 @@
 		"providerStatus": {
 			"active": "Ativo",
 			"coming_soon": "Em breve",
-			"deranked_lvl1": "Rebaixado L1",
-			"deranked_lvl2": "Rebaixado L2",
-			"deranked_lvl3": "Rebaixado L3",
+			"deranked": "Prioridade menor",
 			"disabled": "Desativado",
 			"inactive": "Inativo",
 			"internal_testing": "Teste interno",

@@ -917,9 +917,7 @@
 			"supportedParamsDescription": "اختر معلمات الطلب التي تدعمها هذه الإمكانية.",
 			"capabilityStatuses": {
 				"active": "نشط",
-				"derankedLvl1": "أولوية أقل — المستوى 1",
-				"derankedLvl2": "أولوية أقل — المستوى 2",
-				"derankedLvl3": "أولوية أقل — المستوى 3",
+				"deranked": "ملاذ أخير",
 				"disabled": "معطل"
 			},
 			"pricingRules": "قواعد الأسعار",

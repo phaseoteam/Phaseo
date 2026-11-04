@@ -11412,6 +11412,7 @@ components:
             $ref: '#/components/schemas/GatewayPricingMeter'
     GatewayProviderAvailabilityReason:
       type: string
+      description: 優先度が下げられたルート（`deranked`）は、他のすべての正常なプロバイダーの後に、最終手段としてのみルーティングされます。`deranked_lvl1`、`deranked_lvl2`、`deranked_lvl3` は返されなくなりました。
       enum:
         - active
         - preview_only
@@ -11421,6 +11422,7 @@ components:
         - project_limited
         - paused
         - soft_blocked
+        - deranked
         - deranked_lvl1
         - deranked_lvl2
         - deranked_lvl3
@@ -11436,17 +11438,21 @@ components:
         - retired
     GatewayRoutingStatus:
       type: string
+      description: 優先度が下げられたルート（`deranked`）は、他のすべての正常なプロバイダーの後に、最終手段としてのみルーティングされます。`deranked_lvl1`、`deranked_lvl2`、`deranked_lvl3` は返されなくなりました。
       enum:
         - active
+        - deranked
         - deranked_lvl1
         - deranked_lvl2
         - deranked_lvl3
         - disabled
     GatewayCapabilityStatus:
       type: string
+      description: 優先度が下げられたルート（`deranked`）は、他のすべての正常なプロバイダーの後に、最終手段としてのみルーティングされます。`deranked_lvl1`、`deranked_lvl2`、`deranked_lvl3` は返されなくなりました。
       enum:
         - active
         - coming_soon
+        - deranked
         - deranked_lvl1
         - deranked_lvl2
         - deranked_lvl3

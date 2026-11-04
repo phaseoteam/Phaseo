@@ -917,9 +917,7 @@
 			"supportedParamsDescription": "选择此功能支持的请求参数。",
 			"capabilityStatuses": {
 				"active": "已启用",
-				"derankedLvl1": "降低优先级 — 级别 1",
-				"derankedLvl2": "降低优先级 — 级别 2",
-				"derankedLvl3": "降低优先级 — 级别 3",
+				"deranked": "最后备选",
 				"disabled": "已禁用"
 			},
 			"pricingRules": "价格规则",

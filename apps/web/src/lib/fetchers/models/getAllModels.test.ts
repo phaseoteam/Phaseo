@@ -88,7 +88,7 @@ describe("summarizeMonitorRowsForModel", () => {
 					executionRegions: ["us"],
 				},
 				endpoint: "text.generate",
-				gatewayStatus: "deranked_lvl1",
+				gatewayStatus: "deranked",
 				inputModalities: ["text"],
 				outputModalities: ["text"],
 				context: 128_000,
