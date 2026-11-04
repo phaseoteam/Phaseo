@@ -1235,7 +1235,8 @@ export async function fetchGatewayContext(args: {
     const compositionCacheKey = `${CONTEXT_CACHE_PREFIX}:compose:${testingModeCacheSegment}:${args.workspaceId}:${args.apiKeyId}:${versionToken}:${args.endpoint}:${args.model}`;
     // The model-independent part of the bundle RPC (BYOK metadata, settings, billing mode), so a
     // model this key has not used yet needs only the shared public catalogue, not the RPC. Keyed
-    // like the dynamic entry: any key or workspace version bump replaces it.
+    // like the dynamic entry: any key or workspace version bump replaces it, and like every
+    // other context entry it is neither read nor written when a version cannot be read.
     const workspaceBundleCacheKey = `${WORKSPACE_BUNDLE_CACHE_PREFIX}:${testingModeCacheSegment}:${args.workspaceId}:${args.apiKeyId}:${versionToken}`;
     // Set when the workspace and key data are cached but this model's routes and prices are not.
     let modelMiss: { dynamic: DynamicContextEntry; credit: CreditContextSnapshot; workspace: WorkspaceBundle } | null = null;

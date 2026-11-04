@@ -8,13 +8,21 @@ const state = vi.hoisted(() => ({
     puts: [] as Array<{ key: string; ttl: number | undefined }>,
     background: [] as Promise<unknown>[],
     wallet: { balance_nanos: 9_000_000_000, reserved_nanos: 0 },
+    /** KV reads of keys with these prefixes fail (a version counter that cannot be read). */
+    failingPrefixes: [] as string[],
+    reads: [] as string[],
 }));
 vi.mock("@/runtime/env", () => ({
     getBindingsIfConfigured: () => ({ GATEWAY_CONTEXT_BUNDLE_ENABLED: "true" }),
     getCache: () => ({
-        get: async (key: string | string[]) => Array.isArray(key)
-            ? new Map(key.flatMap(entry => state.store.has(entry) ? [[entry, state.store.get(entry)!] as const] : []))
-            : state.store.get(key) ?? null,
+        get: async (key: string | string[]) => {
+            const keys = Array.isArray(key) ? key : [key];
+            state.reads.push(...keys);
+            if (keys.some(entry => state.failingPrefixes.some(prefix => entry.startsWith(prefix)))) throw new Error("KV unavailable");
+            return Array.isArray(key)
+                ? new Map(key.flatMap(entry => state.store.has(entry) ? [[entry, state.store.get(entry)!] as const] : []))
+                : state.store.get(key) ?? null;
+        },
         put: async (key: string, value: string, options?: { expirationTtl?: number }) => {
             state.puts.push({ key, ttl: options?.expirationTtl });
             state.store.set(key, value);
@@ -83,7 +91,7 @@ async function drain() {
 
 beforeEach(() => {
     vi.resetModules(); vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-11-04T12:00:00Z"));
-    state.store.clear(); state.puts = []; state.background = [];
+    state.store.clear(); state.puts = []; state.background = []; state.failingPrefixes = []; state.reads = [];
     state.store.set(`gateway:keyver:id:${KEY}`, "1");
     keyLimit = { ok: true, reason: null, buckets: null };
     aliases.clear(); resolutionReads.length = 0;
@@ -214,6 +222,41 @@ describe("context for a model the key has not used yet", () => {
         const next = await fetchGatewayContext(call("anthropic/model-b"));
         expect(next.contextTelemetry?.cacheStatus).toBe("miss");
         expect(rpcCalls("gateway_fetch_request_context_bundle")).toHaveLength(2);
+    });
+
+    it("does not reuse the workspace part after a workspace version bump (key or budget change: trigger, drain, bump)", async () => {
+        const { fetchGatewayContext } = await import("./context");
+        await fetchGatewayContext(call("openai/model-a")); await drain();
+        const written = [...state.store.keys()].filter(key => key.startsWith("gateway:workspace-bundle:"));
+        expect(written).toHaveLength(1);
+        // bumpWorkspacePolicyVersion writes a clock-based counter.
+        state.store.set(`gateway:workspace-policy-version:${WORKSPACE}`, String(Date.now()));
+        vi.setSystemTime(Date.now() + 31_000); // past the isolate copy of the workspace version
+        state.reads = [];
+        const next = await fetchGatewayContext(call("anthropic/model-b")); await drain();
+        expect(next.contextTelemetry?.cacheStatus).toBe("miss");
+        expect(rpcCalls("gateway_fetch_request_context_bundle")).toHaveLength(2);
+        expect(state.reads).not.toContain(written[0]);
+        // A fresh entry is written under the new version.
+        expect([...state.store.keys()].filter(key => key.startsWith("gateway:workspace-bundle:"))).toHaveLength(2);
+    });
+
+    it.each([
+        ["key", "gateway:keyver:"],
+        ["workspace", "gateway:workspace-policy-version:"],
+    ])("neither reads nor writes any cached context when the %s version cannot be read", async (_label, prefix) => {
+        const { fetchGatewayContext } = await import("./context");
+        await fetchGatewayContext(call("openai/model-a")); await drain();
+        vi.setSystemTime(Date.now() + 31_000); // past the isolate copies of both versions
+        state.failingPrefixes = [prefix];
+        state.reads = []; state.puts = [];
+        const next = await fetchGatewayContext(call("anthropic/model-b")); await drain();
+        expect(next.contextTelemetry?.cacheStatus).toBe("miss");
+        expect(next.resolvedModel).toBe("anthropic/model-b");
+        // The source of truth decides: the full workspace RPC runs, as on main.
+        expect(rpcCalls("gateway_fetch_request_context_bundle")).toHaveLength(2);
+        expect(state.reads.filter(key => /^gateway:(workspace-bundle|dynamic|static):/.test(key))).toEqual([]);
+        expect(state.puts.filter(entry => /^gateway:(workspace-bundle|dynamic|static):/.test(entry.key))).toEqual([]);
     });
 
     it("never uses it for a key with a spend cap or a workspace budget", async () => {
