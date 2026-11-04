@@ -202,4 +202,22 @@ assert(await proposalStatus('quote-old')==='dismissed','unchanged quotes do not 
 await queueQuote('quote-new',{...queuedSku,meters:[{...draft.meters[0],price_nanos:5000000000}]});
 const latestQuote=(await db.query("select review_v2_catalogue_price_proposal($1,'quote-new',true) result",[actor])).rows[0].result;
 assert(latestQuote.sku.sku_id!==reviewed.sku.sku_id,'latest queued quote remains reviewable');
+await db.exec(readMigration('20261104190000_catalogue_row_history_skip_updated_at_only.sql'));
+const historyCount=async(table)=>(await db.query('select count(*)::int n from v2_catalogue_row_history where table_name=$1',[table])).rows[0].n;
+const resultsBefore=await historyCount('v2_benchmark_results');
+await db.query("update v2_benchmark_results set updated_at=now()+interval '1 hour' where result_id=$1",[bench.result_id]);
+await db.query("insert into v2_benchmark_results(result_id,model_slug,benchmark_id,score,updated_at) select result_id,model_slug,benchmark_id,score,now()+interval '2 hours' from v2_benchmark_results where result_id=$1 on conflict(result_id) do update set score=excluded.score,updated_at=excluded.updated_at",[bench.result_id]);
+assert(await historyCount('v2_benchmark_results')===resultsBefore,'updated_at-only updates and upserts record no history');
+await db.query("update v2_benchmark_results set score='43.1',updated_at=now()+interval '3 hours' where result_id=$1",[bench.result_id]);
+const scoreHistory=(await db.query("select before_state,after_state from v2_catalogue_row_history where table_name='v2_benchmark_results' order by event_id desc limit 1")).rows[0];
+assert(await historyCount('v2_benchmark_results')===resultsBefore+1 && scoreHistory.before_state.score==='42.5' && scoreHistory.after_state.score==='43.1' && scoreHistory.before_state.updated_at!==scoreHistory.after_state.updated_at,'score change still records one row with full before and after state');
+await db.exec(`insert into v2_models(model_slug,lab_slug,name) select 'test/touch-'||n,'test','Touch '||n from generate_series(1,25) n; insert into v2_model_provider_routes(provider_model_id,model_slug,provider_slug,provider_model_slug) select 'test:touch-'||n,'test/touch-'||n,'test','touch-'||n from generate_series(1,25) n;`);
+const touchTransaction=await db.transaction(async(tx)=>{
+  await tx.query("update v2_model_provider_routes set updated_at=now()+interval '1 day' where provider_model_id like 'test:touch-%'");
+  await tx.query("update v2_benchmark_results set score='44.0' where result_id=$1",[bench.result_id]);
+  return (await tx.query('select txid_current()::bigint as id')).rows[0].id;
+});
+// Same sizing as capture_catalogue_notification_events: distinct models per transaction, BASELINE excluded.
+const touchSize=(await db.query("select count(distinct model_slug)::int models,count(*)::int rows from v2_catalogue_row_history where transaction_id=$1 and operation<>'BASELINE'",[touchTransaction])).rows[0];
+assert(touchSize.models===1 && touchSize.rows===1,'updated_at-only route touches no longer count toward bulk transaction sizing');
 await db.close();
