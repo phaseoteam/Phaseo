@@ -55,6 +55,7 @@ export function settingsLabel(selection: ModelSelection, descriptors: ModelOptio
 		const value = current(selection, descriptor);
 		if (descriptor.type === "boolean") return speedIds.includes(descriptor.id) ? (value === true ? "Fast" : "") : descriptor.id === "ultracode" ? (value === true ? "Ultracode" : "") : `${descriptor.label} ${value ? "On" : "Off"}`;
 		const label = descriptor.options.find(option => option.id === value)?.label ?? "";
+		if (descriptor.id === "region") return value === "any" ? "" : label;
 		return !speedIds.includes(descriptor.id) || isFast(descriptor, value) || value === "flex" ? label : "";
 	});
 	return parts.filter(Boolean).join(" · ") || "Normal";
@@ -91,15 +92,16 @@ export function effortDots(descriptor: ModelOptionDescriptor, value: string | bo
 
 /** What the model button shows after the name: the reasoning level and a speed glyph. The context window stays in the picker. */
 export function settingsSummary(selection: ModelSelection, descriptors: ModelOptionDescriptor[]) {
-	let effort: string | undefined, dots: EffortDots | undefined, speed: SpeedTier | undefined, ultracode = false;
+	let effort: string | undefined, dots: EffortDots | undefined, speed: SpeedTier | undefined, ultracode = false, region: string | undefined;
 	for (const descriptor of descriptors) {
 		const value = current(selection, descriptor);
 		const label = descriptor.type === "select" ? descriptor.options.find(option => option.id === value)?.label : `${descriptor.label} ${value ? "On" : "Off"}`;
 		if (speedIds.includes(descriptor.id)) speed ??= speedTier(descriptor, value);
 		else if (descriptor.id === "ultracode") ultracode = value === true;
+		else if (descriptor.id === "region") region = typeof value === "string" && value !== "any" ? value.toUpperCase() : undefined;
 		else if (!effort && isReasoning(descriptor)) { effort = label; dots = effortDots(descriptor, value); }
 	}
-	return { effort, dots, speed, ultracode };
+	return { effort, dots, speed, ultracode, region };
 }
 
 /** Dots on whole pixels, the chosen ones solid and the rest faint, in the text's colour. */
@@ -127,9 +129,9 @@ export function SpeedGlyph({ tier, className }: { tier: SpeedTier; className?: s
 
 /** The model button's tail: the reasoning level as Appearance asks (its word, dots or both), then the speed glyph. */
 export function SettingsSuffix({ selection, descriptors }: { selection: ModelSelection; descriptors: ModelOptionDescriptor[] }) {
-	const { effort, dots, speed, ultracode } = settingsSummary(selection, descriptors);
+	const { effort, dots, speed, ultracode, region } = settingsSummary(selection, descriptors);
 	const [display] = useEffortDisplay();
-	if (!effort && !speed && !ultracode) return null;
+	if (!effort && !speed && !ultracode && !region) return null;
 	// Without dots to draw, the word shows whatever the setting.
 	const word = effort && (display !== "dots" || !dots);
 	return <span className="flex shrink-0 items-center gap-1.5 font-medium text-muted-foreground">
@@ -137,6 +139,7 @@ export function SettingsSuffix({ selection, descriptors }: { selection: ModelSel
 		{word && <span className="max-w-24 truncate">{effort}</span>}
 		{ultracode && <span>· Ultracode</span>}
 		{speed && <SpeedGlyph tier={speed} />}
+		{region && <span className="rounded-sm border border-border px-1 text-[10px] leading-4" title={`Data kept in ${region}`}>{region}</span>}
 	</span>;
 }
 

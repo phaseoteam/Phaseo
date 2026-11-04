@@ -17,7 +17,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "../components/ui/toolti
 import { ScrollArea } from "../components/ui/scroll-area";
 import { useCommand } from "../lib/keybindings";
 import { useModelPopularity } from "../lib/modelPopularity";
-import { ModelSettingsColumn, SettingsSuffix, SpeedSegments, speedIds, useSettingDescriptors } from "./ModelSettings";
+import { ModelSettingsColumn, settingDescriptors, SettingsSuffix, SpeedSegments, speedIds, useSettingDescriptors } from "./ModelSettings";
 
 export const harnessNames: Record<Harness, string> = { phaseo: "Phaseo", codex: "Codex", claude: "Claude Code", opencode: "OpenCode", pi: "Pi", cursor: "Cursor", grok: "Grok", antigravity: "Antigravity", acp: "Agent" };
 export const MAX_COMPARE = 4;
@@ -28,6 +28,15 @@ export function modelLabel(id: string) {
 	return base.replace(/[-_]/g, " ").replace(/\b([a-z])/g, letter => letter.toUpperCase()).replace(/\bGpt\b/g, "GPT");
 }
 
+/** What a Latest alias runs now, without the words its name already says: "Claude Haiku Latest" now runs "5.5". */
+export function latestHint(model: Pick<ModelOption, "name" | "latestOf">) {
+	const target = knownModel(model.latestOf ?? "")?.name ?? model.latestOf ?? "", said = new Set(model.name.toLowerCase().split(/s+/));
+	return target.split(/s+/).filter(word => !said.has(word.toLowerCase())).join(" ") || target;
+}
+
+/** The same model with the same settings. */
+const sameChoice = (a: ModelSelection, b: ModelSelection) => sameSelection(a, b) && (a.reasoningEffort ?? "") === (b.reasoningEffort ?? "") && (a.serviceTier ?? "") === (b.serviceTier ?? "")
+	&& JSON.stringify(Object.entries(a.options ?? {}).sort()) === JSON.stringify(Object.entries(b.options ?? {}).sort());
 export const sameSelection = (a: ModelSelection, b: ModelSelection) => a.harness === b.harness && a.model === b.model && (a.accountId ?? "") === (b.accountId ?? "");
 
 /** Model names are resolved from whichever catalog last listed them. */
@@ -198,12 +207,15 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 		const heading = groups.find(value => value.id === active)?.label ?? "";
 		if (active === "favourites") return here.length ? [{ heading, entries: here }] : [];
 		if (!isPhaseoGroup(active)) {
-			const harness = active as Harness, older = here.filter(entry => entry.model.legacy).length;
-			return here.length ? [{ heading, harness, older, entries: showOlder[harness] ? here : here.filter(entry => !entry.model.legacy) }] : [];
+			const harness = active as Harness, pinned = here.filter(entry => !entry.model.latestOf), latest = here.filter(entry => entry.model.latestOf), older = pinned.filter(entry => entry.model.legacy).length;
+			return [...latest.length ? [{ heading: "Latest", entries: latest }] : [], ...pinned.length ? [{ heading, harness, older, entries: showOlder[harness] ? pinned : pinned.filter(entry => !entry.model.legacy) }] : []];
 		}
 		const result: Section[] = [];
+		// "Latest" aliases lead the group: each follows the newest model of its line.
+		const latest = here.filter(entry => entry.model.latestOf);
+		if (latest.length) result.push({ heading: "Latest", entries: latest });
 		const months = new Map<string, Entry[]>();
-		for (const entry of [...here].sort((a, b) => released(b) - released(a))) {
+		for (const entry of [...here].filter(entry => !entry.model.latestOf).sort((a, b) => released(b) - released(a))) {
 			const time = released(entry);
 			const heading = Number.isFinite(time) ? formatDateParts(time, { month: "long", year: "numeric", timeZone: "UTC" }) : "Other";
 			months.set(heading, [...months.get(heading) ?? [], entry]);
@@ -234,7 +246,15 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	};
 	const choose = (entry: Entry) => {
 		const selection = selectionOf(entry);
-		if (!multiple || !keepOpen.current) { onChange([selection]); setOpen(false); setQuery(""); return; }
+		if (!multiple || !keepOpen.current) {
+			onChange([selection]); setQuery("");
+			// The picker stays open on the new model's settings when it has some and the chat keeps running in the same place;
+			// a model from another agent starts a new chat, so it closes.
+			const sameHome = !!first && first.harness === selection.harness && (first.accountId ?? "") === (selection.accountId ?? "");
+			if (onSettingsChange && sameHome && settingDescriptors(entry.harness, entry.model).length) setPending(selection);
+			else setOpen(false);
+			return;
+		}
 		keepOpen.current = false;
 		if (isSelected(entry)) { if (selections.length > 1) onChange(selections.filter(value => !sameSelection(value, selection))); return; }
 		if (selections.length < MAX_COMPARE) onChange([...selections, selection]);
@@ -253,19 +273,27 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 				setActiveKey(rows[index].key); virtualizer.scrollToIndex(index, { align: "auto" }); break;
 			}
 		} else if (event.key === "Enter") { event.preventDefault(); activate(rows[activeIndex], event.ctrlKey || event.metaKey); }
+		else if (event.key === "PageDown" || event.key === "PageUp") {
+			event.preventDefault();
+			const index = groups.findIndex(value => value.id === active), next = groups[(index + (event.key === "PageDown" ? 1 : -1) + groups.length) % groups.length];
+			if (next) { setGroup(next.id); setQuery(""); }
+		}
 	};
 	const shown = active === "favourites" ? harnesses : harnesses.filter(harness => isPhaseoGroup(active) ? harness === "phaseo" : harness === active);
 	const toolbar = isPhaseoGroup(active) || !!multiple;
 	const loading = shown.filter(harness => !catalogs[harness] || (catalogs[harness]!.loading && !catalogs[harness]!.entries.length));
 	const errors = shown.map(harness => catalogs[harness]?.error ? `${harnessNames[harness]}: ${catalogs[harness]!.error}` : "").filter(Boolean);
 
+	const [pending, setPending] = useState<ModelSelection>();
 	const first = selections[0];
+	// Until the chat reports the model and settings just chosen, the picker shows those, and the next change builds on them.
+	useEffect(() => { if (pending && first && sameChoice(pending, first)) setPending(undefined); }, [pending, first]);
 	// The picker opens where the chosen model lives: its agent, or its lab (read from the id until the catalogue names it).
 	const firstLab = first?.harness === "phaseo" ? labOf({ model: knownModel(first.model) ?? { id: first.model, name: first.model } } as Entry) : "";
-	const openChange = (value: boolean) => { setOpen(value); setQuery(""); if (value) setGroup(!first ? "phaseo" : first.harness !== "phaseo" ? first.harness : firstLab ? `lab:${firstLab}` : "phaseo"); };
+	const openChange = (value: boolean) => { setOpen(value); setQuery(""); setPending(undefined); if (value) setGroup(!first ? "phaseo" : first.harness !== "phaseo" ? first.harness : firstLab ? `lab:${firstLab}` : "phaseo"); };
 	const latestOpen = useRef(openChange); latestOpen.current = openChange;
 	// One model's reasoning, speed and context window sit in the same button and picker, as in T3 Code.
-	const settingsSelection = onSettingsChange && selections.length === 1 ? first : undefined;
+	const settingsSelection = onSettingsChange && selections.length === 1 ? pending ?? first : undefined;
 	const descriptors = useSettingDescriptors(settingsSelection);
 	useCommand("modelSettings.toggle", () => latestOpen.current(!open), descriptors.length > 0 && !disabled);
 	useEffect(() => {
@@ -336,6 +364,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 							className={cn("group/model flex cursor-default items-center gap-2 rounded-md px-2", selected && "bg-foreground/5", highlighted && "bg-muted")}>
 							<span className="flex size-4 shrink-0 items-center justify-center [&_img]:size-4 [&_.harness-logo]:size-4"><ModelLogo model={entry.model} harness={entry.harness} /></span>
 							<span className="min-w-0 truncate text-[13px] font-medium">{entry.model.name.split(":")[0]}</span>
+							{entry.model.latestOf && <span className="min-w-0 shrink truncate text-xs text-muted-foreground/70" title={`Now ${knownModel(entry.model.latestOf)?.name ?? entry.model.latestOf}`}>{latestHint(entry.model)}</span>}
 							{variant && <span className="shrink-0 rounded-sm bg-success/15 px-1.5 text-[10px] font-semibold text-success">{variant === "free" ? "Free" : variant}</span>}
 							{entry.harness !== "phaseo" && (normalized || starred) && <span className="shrink-0 text-[11px] text-muted-foreground">{harnessNames[entry.harness]}</span>}
 							{selected && <CircleCheck className="size-4 shrink-0 text-foreground/70" />}
@@ -354,11 +383,11 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 			{errors.map(error => <p key={error} className="px-3 py-2 text-xs text-destructive">{error}</p>)}
 				</div>
 				{settingsSelection && descriptors.length > 0 && <ScrollArea className="w-48 shrink-0 border-l border-border/70 bg-muted/40" viewportClassName="px-2 pt-3 pb-1.5">
-					<ModelSettingsColumn selection={settingsSelection} descriptors={descriptors} onChange={next => onSettingsChange?.(next)} />
+					<ModelSettingsColumn selection={settingsSelection} descriptors={descriptors} onChange={next => { setPending(next); onSettingsChange?.(next); }} />
 				</ScrollArea>}
 				</div>
 				{settingsSelection && descriptors.some(descriptor => speedIds.includes(descriptor.id)) && <div className="flex flex-wrap items-center gap-2 border-t border-border/70 bg-muted/40 px-3 py-2">
-					<SpeedSegments selection={settingsSelection} descriptors={descriptors} onChange={next => onSettingsChange?.(next)} />
+					<SpeedSegments selection={settingsSelection} descriptors={descriptors} onChange={next => { setPending(next); onSettingsChange?.(next); }} />
 				</div>}
 	</PopoverContent>
 	</Popover>;

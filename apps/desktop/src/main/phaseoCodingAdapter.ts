@@ -42,10 +42,10 @@ export const phaseoAnthropicCache = { enabled: true, options: { anthropic: { cac
 
 /** Gateway client options for a task, carrying its explicit effort and speed choices and a cache key for the chat. */
 export function phaseoGatewayClientOptions(account: Account, key: string, task: Pick<Task, "modelOptions"> & Partial<Pick<Task, "id">>): GatewayAgentClientOptions {
-	const { reasoning, service_tier } = phaseoRequestSettings(task.modelOptions);
+	const { reasoning, service_tier, provider } = phaseoRequestSettings(task.modelOptions);
 	return { clientOptions: { apiKey: key, baseUrl: account.endpoint, timeoutMs: streamTimeoutMs }, includeMeta: true, streamIdleTimeoutMs: streamIdleMs,
 		...(task.id ? { promptCacheKey: `phaseo-desktop:${task.id}` } : {}), ...(phaseoAnthropicCache.enabled ? { providerOptions: phaseoAnthropicCache.options as GatewayAgentClientOptions["providerOptions"] } : {}),
-		...(reasoning ? { reasoning: reasoning as GatewayAgentClientOptions["reasoning"] } : {}), ...(service_tier ? { requestOptions: { service_tier: service_tier as NonNullable<GatewayAgentClientOptions["requestOptions"]>["service_tier"] } } : {}) };
+		...(reasoning ? { reasoning: reasoning as GatewayAgentClientOptions["reasoning"] } : {}), ...(service_tier || provider ? { requestOptions: { ...(service_tier ? { service_tier: service_tier as NonNullable<GatewayAgentClientOptions["requestOptions"]>["service_tier"] } : {}), ...(provider ? { provider } : {}) } } : {}) };
 }
 
 /** What the runtime lends Phaseo turns: model facts for context limits and the long-running command manager. */

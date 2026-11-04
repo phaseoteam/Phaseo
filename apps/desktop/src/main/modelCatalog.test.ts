@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { apiModels, readCodexModels } from "./modelCatalog";
+import { latestName } from "./apiModelCatalog";
 import { apiModelCatalog } from "./apiModelCatalog";
 import type { Account } from "../shared/workspace";
 
@@ -77,5 +78,17 @@ describe("API model catalog", () => {
 	});
 	it("surfaces authentication errors", async () => {
 		await expect(apiModels(account, "secret", vi.fn().mockResolvedValue(new Response("", { status: 401 })))).rejects.toThrow("HTTP 401");
+	});
+});
+
+describe("Latest aliases", () => {
+	it("lists one Latest per model, the alias naming its line, pointing at the model", async () => {
+		const model = { id: "openai/gpt-6-luna", name: "GPT-6 Luna", aliases: ["openai/chat-latest", "openai/gpt-luna-latest", "gpt-6-luna"], organization: { id: "openai", name: "OpenAI" }, capabilities: { endpoints: ["text.generate"] }, offers: [{ routable: true }], lifecycle: { status: "active" } };
+		const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, offset: 0, total: 1, models: [model] })));
+		const models = await apiModels({ id: "a", name: "API", harness: "phaseo", kind: "api", configured: true, endpoint: "https://api.example.test/v1/" }, "key", fetcher);
+		expect(models.map(value => [value.id, value.name, value.latestOf])).toEqual([["openai/gpt-6-luna", "GPT 6 Luna", undefined], ["openai/gpt-luna-latest", "GPT Luna Latest", "openai/gpt-6-luna"]]);
+	});
+	it("takes each word's casing from the model's name", () => {
+		expect(latestName("deepseek/deepseek-flash-latest", "DeepSeek V4.1 Flash 1017")).toBe("DeepSeek Flash Latest");
 	});
 });

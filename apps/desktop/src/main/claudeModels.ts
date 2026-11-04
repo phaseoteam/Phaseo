@@ -63,7 +63,9 @@ function reportedProfile(alias: ClaudeAlias): Profile {
 	return { effort, defaultEffort: effort.includes("medium") ? "medium" : effort[0], fastMode: alias.supportsFastMode };
 }
 
-const profileFor = (id: string) => profiles[claudeModelManifest.find(model => model.id === id)?.profile ?? ""];
+/** Claude Code's own aliases ("opus") and the model each runs now, as it last reported them. */
+const latestAliases = new Map<string, string>();
+const profileFor = (id: string) => profiles[claudeModelManifest.find(model => model.id === (latestAliases.get(id) ?? id))?.profile ?? ""];
 
 /**
  * What Claude Code reports about a model narrows its manifest profile, so the picker offers only levels it accepts:
@@ -89,13 +91,18 @@ export function claudeModelsFor(aliases: ClaudeAlias[], installedVersion?: strin
 	const version = installedVersion?.match(/\d+(?:\.\d+)+/)?.[0];
 	const supported = (minVersion?: string) => !minVersion || (!!version && compareVersions(version, minVersion) >= 0);
 	const withOptions = (model: ModelOption, profile?: Profile): ModelOption => { const options = profile ? descriptors(profile) : []; return options.length ? { ...model, options } : model; };
-	const current: ModelOption[] = [];
+	const current: ModelOption[] = [], latest: ModelOption[] = [];
 	for (const alias of aliases) {
 		if (alias.id === "default") continue;
 		const [described, ...details] = (alias.description ?? "").split(" · ");
 		const match = described?.match(/^(Opus|Sonnet|Fable|Haiku) (\d+(?:\.\d+)?)$/);
 		const id = alias.resolvedModel?.replace(/\[1m\]$/, "") || (match ? `claude-${match[1].toLowerCase()}-${match[2].replace(".", "-")}` : undefined);
 		if (!id) { current.push({ id: alias.id, name: alias.name, description: alias.description }); continue; }
+		if (/^[a-z]+$/.test(alias.id) && alias.id !== id) {
+			latestAliases.set(alias.id, id);
+			const profile = profileFor(id) ? withReported(profileFor(id)!, alias) : reportedProfile(alias);
+			latest.push(withOptions({ id: alias.id, name: `Claude ${alias.id.charAt(0).toUpperCase()}${alias.id.slice(1)} Latest`, description: `Always Claude Code's newest ${alias.id.charAt(0).toUpperCase()}${alias.id.slice(1)}.`, latestOf: id }, profile));
+		}
 		if (current.some(model => model.id === id)) continue;
 		const name = match ? `Claude ${described}` : claudeModelManifest.find(model => model.id === id)?.name ?? alias.name;
 		current.push(withOptions({ id, name, description: match ? details.find(detail => !detail.startsWith("$")) : alias.description }, profileFor(id) ? withReported(profileFor(id)!, alias) : reportedProfile(alias)));
@@ -103,7 +110,7 @@ export function claudeModelsFor(aliases: ClaudeAlias[], installedVersion?: strin
 	const known = new Set(current.map(model => model.id));
 	const older = claudeModelManifest.filter(model => !known.has(model.id) && supported(model.minVersion)).map(model => withOptions({ id: model.id, name: model.name, legacy: true }, profiles[model.profile]));
 	if (!current.length) return older.map(model => ({ ...model, legacy: undefined }));
-	return [...current, ...older];
+	return [...current, ...latest, ...older];
 }
 
 /** Typed in a message, as in Claude Code: that turn runs at Extra High, unless Max is already chosen. */

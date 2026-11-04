@@ -76,3 +76,13 @@ describe("claude run options", () => {
 		expect(claudeRunOptions("claude-haiku-4-5", { thinking: true })).toEqual({ model: "claude-haiku-4-5", effort: undefined, settings: { alwaysThinkingEnabled: true } });
 	});
 });
+
+describe("Claude Code's Latest aliases", () => {
+	it("lists each alias as a Latest model that runs with its model's settings", () => {
+		const models = claudeModelsFor([{ id: "opus", name: "Opus", description: "Opus 5.5 · Best for everyday, complex tasks", resolvedModel: "claude-opus-5-5" }], "2.1.296");
+		const latest = models.find(model => model.id === "opus");
+		expect(latest).toMatchObject({ name: "Claude Opus Latest", latestOf: "claude-opus-5-5" });
+		expect(latest?.options?.map(option => option.id)).toEqual(["effort", "ultracode", "fastMode"]);
+		expect(claudeRunOptions("opus", { effort: "high" })).toMatchObject({ model: "opus[1m]", effort: "high" });
+	});
+});

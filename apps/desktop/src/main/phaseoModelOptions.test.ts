@@ -58,3 +58,18 @@ describe("Phaseo request settings", () => {
 		expect(phaseoRequestSettings(undefined)).toEqual({});
 	});
 });
+
+describe("Region", () => {
+	it("offers the data regions the model's providers keep data in, and asks the gateway for one", () => {
+		const options = phaseoModelOptions({ offers: [
+			{ routable: true, provider: { id: "anthropic", name: "Anthropic" }, residency: { data_regions: ["us"] } },
+			{ routable: true, provider: { id: "azure", name: "Azure" }, residency: { data_regions: ["eu", "global", "eu-west2"] } },
+			{ routable: false, provider: { id: "off", name: "Off" }, residency: { data_regions: ["jp"] } },
+		] });
+		const region = options.find(option => option.id === "region");
+		expect(region?.type === "select" && region.options.map(option => [option.id, option.label])).toEqual([["any", "Any region"], ["eu", "European Union"], ["us", "United States"]]);
+		expect(region?.type === "select" && region.options.find(option => option.id === "eu")?.description).toBe("Keeps the request's data in European Union. Only through Azure.");
+		expect(phaseoRequestSettings({ region: "eu" })).toEqual({ provider: { required_data_region: "eu" } });
+		expect(phaseoRequestSettings({ region: "any" })).toEqual({});
+	});
+});
