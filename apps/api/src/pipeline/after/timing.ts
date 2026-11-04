@@ -8,9 +8,11 @@ export function buildResponseTimeline(ctx?: PipelineContext | null) {
 	const startedAt = ctx?.meta.startedAtMs;
 	const valid = typeof value === "number" && Number.isFinite(value) && value >= 0;
 	const steps = buildRoutingSteps(ctx);
+	const unattributed = valid ? resolveUnattributedRoutingMs(value, ctx) : null;
 	return {
 		version: 1,
 		routing_ms: valid ? Math.round(value) : null,
+		...(unattributed !== null ? { unattributed_ms: unattributed } : {}),
 		failover_ms: resolveFailoverMs(ctx),
 		// Allows retry intervals to exclude preparation already shown as routing.
 		...(valid && typeof startedAt === "number" && Number.isFinite(startedAt)
@@ -54,7 +56,55 @@ const ROUTING_STEP_SPANS = {
 	pricing: "execute_guard_pricing",
 	ranking: "execute_rank_providers",
 	// Not ir_encode: it times encoding the provider's response, after dispatch.
+	// After "before", up to the first upstream fetch (text surfaces). Only the first provider
+	// attempt is shown; a later attempt's preparation is in failover_ms or unattributed_ms.
+	before_to_execute: "before_to_execute", // end of before to execute start: protocol, decode, response cache
+	protocol: "protocol_detect",
+	response_cache: "response_cache_lookup",
+	execute_to_attempt: "execute_to_attempt", // execute start to the first attempt: candidates … ranking, credential plan
+	attempt_to_executor: "attempt_1_to_executor", // first attempt start to its executor call: the attempt_* steps below
+	attempt_price_card: "attempt_1_load_pricecard",
+	attempt_rate_limit_policies: "attempt_1_rate_limit_policies",
+	attempt_free_quota: "attempt_1_free_customer_quota", // free models only
+	attempt_free_quota_limits: "attempt_1_free_quota_limits", // part of attempt_free_quota: customer limits read
+	attempt_free_quota_counter: "attempt_1_free_quota_counter", // part of attempt_free_quota: rate-limit Durable Object
+	attempt_breaker: "attempt_1_breaker",
+	attempt_resolve_executor: "attempt_1_resolve_executor",
+	attempt_normalize: "attempt_1_normalize_ir",
+	attempt_prompt_cache_key: "attempt_1_prompt_cache_key",
+	attempt_executor_to_dispatch: "attempt_1_executor_to_dispatch", // executor call to its first fetch
+	attempt_request_build: "attempt_1_request_build", // part of attempt_executor_to_dispatch, as the executor reports it
 } as const;
+
+/**
+ * Contiguous segments from receipt to the first attempt's first fetch. They do not overlap, so
+ * routing_ms minus their sum is time no step accounts for (pipeline entry, small gaps).
+ */
+const SEQUENTIAL_ROUTING_SPANS = [
+	"admission",
+	"before_start",
+	"before_to_execute",
+	"execute_to_attempt",
+	"attempt_1_to_executor",
+	"attempt_1_executor_to_dispatch",
+] as const;
+
+/**
+ * routing_ms minus the sequential chain, in ms. Null unless every segment was timed, which means
+ * the first dispatch was the first attempt's on a text surface; otherwise the chain is incomplete
+ * and the difference would not mean anything.
+ */
+export function resolveUnattributedRoutingMs(routingMs: number, ctx?: PipelineContext | null): number | null {
+	const timing = ctx?.timing;
+	if (!timing) return null;
+	let sum = 0;
+	for (const span of SEQUENTIAL_ROUTING_SPANS) {
+		const ms = timing[span];
+		if (typeof ms !== "number" || !Number.isFinite(ms) || ms < 0) return null;
+		sum += ms;
+	}
+	return Math.round(Math.max(0, routingMs - sum) * 10) / 10;
+}
 
 type RoutingSteps = Partial<Record<keyof typeof ROUTING_STEP_SPANS, number>> & { context_cache?: string };
 

@@ -119,7 +119,7 @@ import { getEffectiveRoutingHints } from "../requestRouting";
 import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
 import { withoutStackFrames } from "@/lib/safe-json";
 import { extractDownstreamRateLimitHeaders } from "../upstream-rate-limit-headers";
-import { guardFreeRouteQuota } from "@core/customer-rate-limits";
+import { guardFreeRouteQuota, type FreeQuotaTiming } from "@core/customer-rate-limits";
 import { chargeRateLimitPolicyTokens, guardRateLimitPolicies } from "@core/rate-limit-policies";
 import { applySpendRuleBlocks } from "@core/spend-blocks";
 import { shouldRecordLastUsed } from "@core/last-used-throttle";
@@ -869,6 +869,8 @@ async function attemptProviderWithIR(
 	const attemptPrefix = `attempt_${attemptNumber}`;
 	const attemptStartedAtEpochMs = Date.now();
 	const attemptStartedAt = performance.now();
+	// Candidate guards, modality and spend-rule filters, ranking and the credential plan.
+	if (attemptNumber === 1) timing.timer.between("execute_to_attempt", "execute_start");
 
 	// Extract candidate from RoutedCandidate
 	const candidate = routed.candidate;
@@ -908,6 +910,7 @@ async function attemptProviderWithIR(
 	}
 	if (pricingCard && (!pricingCard.currency || pricingCard.currency.toUpperCase() === "USD") &&
 		!pricingCard.rules.some((rule) => rule.currency && rule.currency.toUpperCase() !== "USD")) {
+		const freeQuotaTiming: FreeQuotaTiming = {};
 		const freeQuotaResponse = await timing.timer.span(`${attemptPrefix}_free_customer_quota`, () =>
 			guardFreeRouteQuota({
 				workspaceId: ctx.workspaceId,
@@ -917,8 +920,12 @@ async function attemptProviderWithIR(
 				pricingCard,
 				internal: ctx.internal,
 				testingMode: ctx.testingMode,
+				timing: freeQuotaTiming,
 			}),
 		);
+		// Free-model admission parts: customer limits read, then the counter Durable Object.
+		if (freeQuotaTiming.limitsMs !== undefined) timing.timer.record(`${attemptPrefix}_free_quota_limits`, freeQuotaTiming.limitsMs);
+		if (freeQuotaTiming.counterMs !== undefined) timing.timer.record(`${attemptPrefix}_free_quota_counter`, freeQuotaTiming.counterMs);
 		if (freeQuotaResponse) {
 			recordLifecycleEvent(ctx, { type: "provider.rejected", span_id: lifecycleSpanId, provider: candidate.providerId, model: baseModel, outcome: "quota_rejected", status: freeQuotaResponse.status });
 			return { ok: false, response: freeQuotaResponse };
@@ -1103,11 +1110,11 @@ async function attemptProviderWithIR(
 		// client key for sticky routing inside Phaseo. A session_id only becomes an
 		// upstream key while session affinity is on (routing.session_affinity: false opts out).
 		const upstreamPromptCacheKey = isTextGenerate
-			? await resolveUpstreamPromptCacheKey({
+			? await timing.timer.span(`${attemptPrefix}_prompt_cache_key`, () => resolveUpstreamPromptCacheKey({
 				workspaceId: ctx.workspaceId,
 				promptCacheKey: (ir as IRChatRequest).promptCacheKey,
 				sessionId: resolveSessionAffinityPreference(ctx.rawBody) ? ctx.meta.sessionId : undefined,
-			})
+			}))
 			: null;
 		const tieredIr = isTextGenerate && catalogTier
 			? { ...normalizedIr, serviceTier: catalogTier.upstream ?? undefined }
@@ -1198,6 +1205,9 @@ async function attemptProviderWithIR(
 			throw (lastErr instanceof Error ? lastErr : new Error("executor_retry_exhausted"));
 		};
 
+		// Admission (price card, rate-limit policies, free quota, breaker) and request preparation.
+		timing.timer.record(`${attemptPrefix}_to_executor`, performance.now() - attemptStartedAt);
+		const executorStartedAtEpochMs = Date.now();
 		const executorResult = await timing.timer.span(`${attemptPrefix}_executor_total`, () =>
 			executeWithRetry(),
 		).finally(() => {
@@ -1206,6 +1216,8 @@ async function attemptProviderWithIR(
 			const firstDispatch = upstreamTracker.snapshot().upstreamFetchStartMs;
 			const receivedAt = ctx.meta.startedAtMs;
 			if (typeof firstDispatch === "number" && Number.isFinite(firstDispatch)) {
+				// The executor's own work before its first fetch (request build, credentials, signing).
+				timing.timer.record(`${attemptPrefix}_executor_to_dispatch`, Math.max(0, firstDispatch - executorStartedAtEpochMs));
 				// Failover time is measured from here, including attempts that threw.
 				ctx.meta.upstreamFetchStartMs ??= firstDispatch;
 				if (typeof receivedAt === "number" && Number.isFinite(receivedAt)) {
