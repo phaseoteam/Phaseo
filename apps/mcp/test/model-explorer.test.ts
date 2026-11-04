@@ -1,8 +1,83 @@
 import { describe, expect, it, vi } from "vitest";
-import { pricePerMillion, contextSize } from "../ui/model";
+import {
+  pricePerMillion,
+  contextSize,
+  headlinePrice,
+  money,
+  tokenCount,
+  modalitySummary,
+  perMillion,
+  cheapestProviderName,
+  type CardModel,
+} from "../ui/model";
+import { cardFor } from "../ui/cardData";
 import { linkedModels, modelLink, modelContext } from "../ui/integration";
 
 vi.mock("agents/mcp/server", () => ({ createMcpHandler: vi.fn() }));
+
+describe("Inline cards", () => {
+  const model: CardModel = {
+    id: "openai/gpt-oss-120b",
+    name: "GPT OSS 120B",
+    description: null,
+    provider: "OpenAI",
+    contextTokens: 131_072,
+    inputModalities: ["text"],
+    outputModalities: ["text"],
+    inputPricePerToken: "0.00000002",
+    outputPricePerToken: "0.000000095",
+    supportsTools: true,
+    availableProviders: ["ionrouter"],
+    inputPriceProviderId: "ionrouter",
+    providerSupport: [{ providerId: "ionrouter", providerName: "IonRouter" }],
+  };
+
+  it("formats prices the way the website's model list does", () => {
+    expect(headlinePrice(0.02)).toBe("$0.02");
+    expect(headlinePrice(0.095)).toBe("$0.095");
+    expect(headlinePrice(0.1)).toBe("$0.10");
+    expect(headlinePrice(2)).toBe("$2");
+    expect(headlinePrice(2.5)).toBe("$2.50");
+    expect(headlinePrice(0.000123456)).toBe("$0.000123");
+    expect(headlinePrice(0)).toBe("$0");
+    for (const missing of [null, undefined, Number.NaN, -1])
+      expect(headlinePrice(missing)).toBe("Not listed");
+  });
+
+  it("formats totals in US dollars without hiding sub-cent costs", () => {
+    expect(money(12.5)).toBe("$12.50");
+    expect(money(0.0875)).toBe("$0.09");
+    expect(money(0.00475)).toBe("$0.00475");
+    expect(money(0)).toBe("$0.00");
+    expect(tokenCount(2_000_000)).toBe("2M");
+    expect(tokenCount(500_000)).toBe("500K");
+  });
+
+  it("reads row details from model results", () => {
+    expect(perMillion(model, "input")).toBeCloseTo(0.02);
+    expect(perMillion({ ...model, outputPricePerMillion: 0.095 }, "output")).toBe(0.095);
+    expect(perMillion({ ...model, inputPricePerToken: null }, "input")).toBeNull();
+    expect(cheapestProviderName(model)).toBe("IonRouter");
+    expect(cheapestProviderName({ ...model, outputPriceProviderId: "ionrouter" })).toBe("IonRouter");
+    // Input and output minima from different providers: no single "via" label.
+    expect(cheapestProviderName({ ...model, outputPriceProviderId: "other" })).toBeNull();
+    expect(
+      cheapestProviderName({ ...model, inputPriceProviderId: null, outputPriceProviderId: "ionrouter" }),
+    ).toBe("IonRouter");
+    expect(modalitySummary(["text", "image"], ["text"])).toBe("Text, Image → Text");
+    expect(modalitySummary([], [])).toBeNull();
+  });
+
+  it("picks the card from the tool result's shape", () => {
+    expect(cardFor({ models: [model] })).toEqual({ kind: "models", models: [model] });
+    const estimate = { modelId: "a", providerId: "p", totalCostUSD: 0.09 };
+    expect(cardFor({ estimate })).toMatchObject({ kind: "estimate", estimate });
+    const credits = { availableNanos: 5e9, thirtyDayRequests: 7 };
+    expect(cardFor({ credits })).toMatchObject({ kind: "credits", credits });
+    for (const other of [null, [], {}, { estimate: {} }, { credits: { balance: 1 } }])
+      expect(cardFor(other)).toBeNull();
+  });
+});
 
 describe("Model explorer presentation", () => {
   it("round-trips model and comparison links and rejects invalid routes", () => {
