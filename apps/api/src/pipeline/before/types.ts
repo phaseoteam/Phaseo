@@ -327,7 +327,8 @@ export type ContextFetchTelemetry = {
     presetAccessMs?: number | null;
     privateModelMs?: number | null;
     byokHydrationMs?: number | null;
-    cacheStatus: "hit" | "miss" | "bypass" | "credit_refresh";
+    /** model_miss: workspace and key data came from cache; only the model's routes and prices were loaded. */
+    cacheStatus: "hit" | "miss" | "bypass" | "credit_refresh" | "model_miss";
     totalMs: number;
     keyVersionMs?: number | null;
     cacheReadMs?: number | null;

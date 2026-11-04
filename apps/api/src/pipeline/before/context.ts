@@ -14,7 +14,7 @@ import { normalizePrivateModelBaseUrl } from "@/core/private-models";
 import { routeOutputTokenLimit } from "@core/route-token-limits";
 import { loadPrivateRouteRow } from "./privateModelCache";
 import { getWorkspacePolicyVersionToken } from "./workspacePolicy";
-import { contextBundleEnabled, loadTextContextBundle, type ContextBundle } from "./contextBundle";
+import { contextBundleEnabled, loadTextContextBundle, parseWorkspaceBundle, type ContextBundle, type WorkspaceBundle } from "./contextBundle";
 import { bytesToString, decryptBYOK } from "@pipeline/byok/decrypt";
 import { BYOK_KEYS_PER_PROVIDER_LIMIT, isByokKeyEligible } from "@/core/byok";
 import { contextSchema } from "./schemas";
@@ -80,6 +80,22 @@ const DYNAMIC_CACHE_PREFIX = "gateway:dynamic";
 // Preset payloads include provider/pricing snapshots too, so invalidate them
 // with the static context when catalogue or pricing data changes.
 const PRESET_CACHE_PREFIX = "gateway:preset:v5";
+
+// The bundle RPC's model-independent part (BYOK metadata, settings, billing mode), per workspace,
+// key and version token. Bump with a change to WorkspaceBundle.
+const WORKSPACE_BUNDLE_CACHE_PREFIX = "gateway:workspace-bundle:v1";
+// No longer than the shortest static TTL, so BYOK metadata is never older than it can be today.
+const WORKSPACE_BUNDLE_TTL_S = 300;
+
+type DynamicContextEntry = Parameters<typeof mergeCachedContext>[0]["dynamic"];
+
+/** A cached workspace bundle for this workspace with at least a minute (the KV minimum TTL) left. */
+function usableWorkspaceBundle(value: unknown, workspaceId: string): WorkspaceBundle | null {
+	const bundle = parseWorkspaceBundle(value);
+	if (!bundle || bundle.workspaceId !== workspaceId) return null;
+	const ageS = (Date.now() - bundle.at) / 1000;
+	return ageS >= 0 && ageS <= WORKSPACE_BUNDLE_TTL_S - 60 ? bundle : null;
+}
 
 const PRESET_TTL = 120;      // 2 minutes
 const CONTEXT_INFLIGHT_MAX_ENTRIES = 512;
@@ -1217,6 +1233,13 @@ export async function fetchGatewayContext(args: {
         ? `${PRESET_CACHE_PREFIX}:${testingModeCacheSegment}:${args.workspaceId}:${args.apiKeyId}:${versionToken}:${args.model}:${args.endpoint}`
         : `${STATIC_CACHE_PREFIX}:${testingModeCacheSegment}:${args.workspaceId}:${versionToken}:${args.endpoint}:${args.model}`;
     const compositionCacheKey = `${CONTEXT_CACHE_PREFIX}:compose:${testingModeCacheSegment}:${args.workspaceId}:${args.apiKeyId}:${versionToken}:${args.endpoint}:${args.model}`;
+    // The model-independent part of the bundle RPC (BYOK metadata, settings, billing mode), so a
+    // model this key has not used yet needs only the shared public catalogue, not the RPC. Keyed
+    // like the dynamic entry: any key or workspace version bump replaces it, and like every
+    // other context entry it is neither read nor written when a version cannot be read.
+    const workspaceBundleCacheKey = `${WORKSPACE_BUNDLE_CACHE_PREFIX}:${testingModeCacheSegment}:${args.workspaceId}:${args.apiKeyId}:${versionToken}`;
+    // Set when the workspace and key data are cached but this model's routes and prices are not.
+    let modelMiss: { dynamic: DynamicContextEntry; credit: CreditContextSnapshot; workspace: WorkspaceBundle } | null = null;
 
     // Try split cache first (parallel read of dynamic and static segments).
     if (shouldUseCache) {
@@ -1226,74 +1249,81 @@ export async function fetchGatewayContext(args: {
                 dynamicCacheKey,
                 staticCacheKey,
                 creditCacheKey,
+                ...(useContextBundle && !args.internalOnly ? [workspaceBundleCacheKey] : []),
             ]);
             const dynamicCachedRaw = cachedValues[dynamicCacheKey] ?? null;
             const staticCachedRaw = cachedValues[staticCacheKey] ?? null;
             const creditCachedRaw = cachedValues[creditCacheKey] ?? null;
+            const workspaceBundleRaw = cachedValues[workspaceBundleCacheKey] ?? null;
             telemetry.cacheReadMs = round3(performance.now() - cacheReadStartedAt);
-            if (dynamicCachedRaw && staticCachedRaw) {
-                const dynamicParsed = JSON.parse(dynamicCachedRaw);
-                const staticParsed = JSON.parse(staticCachedRaw);
-                if (
-					isDynamicContextLike(dynamicParsed) &&
-                    dynamicParsed.workspaceId === args.workspaceId && staticParsed.workspaceId === args.workspaceId &&
-					isStaticContextLike(staticParsed) &&
-					!hasConfiguredKeyLimits(dynamicParsed.keyLimit)
-				) {
-					// Request/cost usage changes after every completion. A cached
-					// snapshot can admit subsequent requests past a configured cap,
-					// so only uncapped keys may use the dynamic context snapshot.
-					let cacheStatus: ContextFetchTelemetry["cacheStatus"] = "hit";
-					let creditContext: CreditContextSnapshot | null = null;
-					if (creditCachedRaw) {
-						try {
-							const creditParsed = JSON.parse(creditCachedRaw);
-							creditContext = isCreditContextLike(creditParsed) ? creditParsed : null;
-						} catch {
-							creditContext = null;
-						}
-					}
-					if (!creditContext) {
-						const creditRefreshStartedAt = performance.now();
-						creditContext = await fetchFreshCreditContext({
-							workspaceId: args.workspaceId,
-							endpoint: args.endpoint,
-							teamEnrichment: dynamicParsed.teamEnrichment ?? null,
-						});
-						telemetry.creditRefreshMs = round3(
-							performance.now() - creditRefreshStartedAt,
-						);
-						cacheStatus = "credit_refresh";
-						const creditOnlyContext = mergeCachedContext({
-							dynamic: dynamicParsed,
-							static: staticParsed,
-							credit: creditContext,
-							endpoint: args.endpoint,
-						});
-						const creditTtl = clampTtl(
-							computeCreditSnapshotTtlForContext(creditOnlyContext),
-						);
-						const creditWriteStartedAt = performance.now();
-                        await persistCredit(creditContext, creditTtl);
-						telemetry.cacheWriteMs = round3(performance.now() - creditWriteStartedAt);
-					}
-					creditContext = applyCreditMinimum(creditContext, args.endpoint);
-					telemetry.cacheStatus = cacheStatus;
+            const parseJson = (raw: string | null): unknown => {
+                if (!raw) return null;
+                try { return JSON.parse(raw); } catch { return null; }
+            };
+            const dynamicCandidate = parseJson(dynamicCachedRaw);
+            // Request/cost usage changes after every completion. A cached
+            // snapshot can admit subsequent requests past a configured cap,
+            // so only uncapped keys may use the dynamic context snapshot.
+            const dynamicParsed = isDynamicContextLike(dynamicCandidate) &&
+                dynamicCandidate.workspaceId === args.workspaceId &&
+                !hasConfiguredKeyLimits(dynamicCandidate.keyLimit)
+                ? dynamicCandidate
+                : null;
+            const staticCandidate = parseJson(staticCachedRaw);
+            const staticParsed = isStaticContextLike(staticCandidate) && staticCandidate.workspaceId === args.workspaceId
+                ? staticCandidate
+                : null;
+            const workspaceBundle = dynamicParsed && !staticParsed && useContextBundle && !args.internalOnly
+                ? usableWorkspaceBundle(parseJson(workspaceBundleRaw), args.workspaceId)
+                : null;
+            if (dynamicParsed && (staticParsed || workspaceBundle)) {
+                let cacheStatus: ContextFetchTelemetry["cacheStatus"] = staticParsed ? "hit" : "model_miss";
+                let creditContext: CreditContextSnapshot | null = null;
+                const creditParsed = parseJson(creditCachedRaw);
+                creditContext = isCreditContextLike(creditParsed) ? creditParsed : null;
+                if (!creditContext) {
+                    const creditRefreshStartedAt = performance.now();
+                    creditContext = await fetchFreshCreditContext({
+                        workspaceId: args.workspaceId,
+                        endpoint: args.endpoint,
+                        teamEnrichment: dynamicParsed.teamEnrichment ?? null,
+                    });
+                    telemetry.creditRefreshMs = round3(
+                        performance.now() - creditRefreshStartedAt,
+                    );
+                    if (staticParsed) cacheStatus = "credit_refresh";
+                    const creditOnlyContext = mergeCachedContext({
+                        dynamic: dynamicParsed,
+                        static: staticParsed ?? { workspaceId: args.workspaceId, providers: [], pricing: {} },
+                        credit: creditContext,
+                        endpoint: args.endpoint,
+                    });
+                    const creditTtl = clampTtl(
+                        computeCreditSnapshotTtlForContext(creditOnlyContext),
+                    );
+                    const creditWriteStartedAt = performance.now();
+                    await persistCredit(creditContext, creditTtl);
+                    telemetry.cacheWriteMs = round3(performance.now() - creditWriteStartedAt);
+                }
+                creditContext = applyCreditMinimum(creditContext, args.endpoint);
+                telemetry.cacheStatus = cacheStatus;
+                if (staticParsed) {
                     const merged = mergeCachedContext({
                         dynamic: dynamicParsed,
                         static: staticParsed,
                         credit: creditContext,
                         endpoint: args.endpoint,
                     });
-					return finishContext({
+                    return finishContext({
                         ...merged,
                         contextTelemetry: {
                             ...telemetry,
                             cacheStatus,
                             totalMs: round3(performance.now() - fetchStartedAt),
                         },
-					});
+                    });
                 }
+                modelMiss = { dynamic: dynamicParsed, credit: creditContext, workspace: workspaceBundle! };
             }
         } catch {
             telemetry.cacheReadMs = round3(performance.now() - cacheReadStartedAt);
@@ -1359,7 +1389,7 @@ export async function fetchGatewayContext(args: {
         let contextBundle: ContextBundle | null = null;
         if (textContextCapabilities) {
             if (useContextBundle) {
-                contextBundle = await loadTextContextBundle(args);
+                contextBundle = await loadTextContextBundle({ ...args, workspace: modelMiss?.workspace ?? null });
                 rpcTotalMs += contextBundle.rpcMs;
                 telemetry.catalogReadMs = round3(contextBundle.catalogReadMs);
                 telemetry.catalogCacheStatus = contextBundle.cacheStatus;
@@ -1998,6 +2028,33 @@ export async function fetchGatewayContext(args: {
 		parsed.credit = creditSnapshot.credit;
 		parsed.teamEnrichment = creditSnapshot.teamEnrichment;
 
+        // Model miss: the account fields above are placeholders. Keep only this model's routes
+        // and prices, and take everything else from the cached copies, exactly as a cache hit does.
+        if (modelMiss) {
+            const staticPart = splitContextForCache(parsed).static;
+            if (shouldUseCache) {
+                const cacheWriteStartedAt = performance.now();
+                const pricingAwareStaticTtl = computeStaticTtl(parsed);
+                // Never let the routes outlive the workspace data (BYOK metadata) they were built from.
+                const workspaceRemainingS = Math.floor(WORKSPACE_BUNDLE_TTL_S - (Date.now() - modelMiss.workspace.at) / 1000);
+                if (pricingAwareStaticTtl !== null && workspaceRemainingS >= 60) {
+                    dispatchBackground(cache.put(staticCacheKey, JSON.stringify(staticPart), {
+                        expirationTtl: clampTtl(Math.min(pricingAwareStaticTtl, workspaceRemainingS)),
+                    }).catch(() => undefined));
+                }
+                telemetry.cacheWriteMs = round3(performance.now() - cacheWriteStartedAt);
+            }
+            const merged = mergeCachedContext({
+                dynamic: modelMiss.dynamic,
+                static: staticPart,
+                credit: modelMiss.credit,
+                endpoint: args.endpoint,
+            });
+            telemetry.cacheStatus = "model_miss";
+            telemetry.totalMs = round3(performance.now() - fetchStartedAt);
+            return { ...merged, contextTelemetry: telemetry };
+        }
+
         // Compute adaptive TTLs and write split cache entries.
         if (shouldUseCache) {
             const cacheWriteStartedAt = performance.now();
@@ -2018,6 +2075,12 @@ export async function fetchGatewayContext(args: {
                 if (staticTtl !== null) {
                     backgroundCacheWrites.push(
                         cache.put(staticCacheKey, JSON.stringify(split.static), { expirationTtl: staticTtl }),
+                    );
+                }
+                // Only alongside a dynamic entry: a capped key never uses the model-miss path.
+                if (contextBundle && !contextBundle.workspaceFromCache && !args.internalOnly && !hasConfiguredKeyLimits(parsed.keyLimit)) {
+                    backgroundCacheWrites.push(
+                        cache.put(workspaceBundleCacheKey, JSON.stringify(contextBundle.workspace), { expirationTtl: WORKSPACE_BUNDLE_TTL_S }),
                     );
                 }
                 if (backgroundCacheWrites.length > 0) {

@@ -734,7 +734,7 @@ export function makeMeta(input: {
     providerCapabilitiesBeta?: boolean;
     beta?: RequestBetaOptions;
     beforeContextMs?: number | null;
-    beforeContextCacheStatus?: "hit" | "miss" | "bypass" | "credit_refresh" | null;
+    beforeContextCacheStatus?: "hit" | "miss" | "bypass" | "credit_refresh" | "model_miss" | null;
     beforeContextKeyVersionMs?: number | null;
     beforeContextCacheReadMs?: number | null;
     beforeContextCreditRefreshMs?: number | null;
