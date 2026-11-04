@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { setDynamicCommands, useCommand, useKeybindingDispatcher, useKeybindings } from "./lib/keybindings";
 import { projectActionCommands } from "../shared/projectSettings";
 import { sidebarOrder } from "./lib/sidebarOrder";
@@ -16,17 +16,8 @@ import { BrowserMiniPlayerHost } from "./components/browser/BrowserMiniPlayer";
 import { CommandPalette } from "./shell/CommandPalette";
 import { Toaster } from "./components/ui/toast";
 import { QuitRecoveryOffer } from "./chat/UsageLimitNotice";
-import { SettingsPage } from "./settings/SettingsPage";
-import { ScheduledTasks } from "./views/ScheduledTasks";
-import { Inbox } from "./views/Inbox";
-import { Usage } from "./views/Usage";
-import { PullRequestsPage } from "./views/pullRequests/PullRequestsPage";
 import { ChatNotifications } from "./app/ChatNotifications";
-import { NewChat } from "./chat/NewChat";
-import { ChatView } from "./chat/ChatView";
-import { CompareView } from "./chat/CompareView";
 import { GuideRunNotices } from "./views/pullRequests/GuideRunNotices";
-import { FactoryPage } from "./factory/FactoryPage";
 
 /** The app-wide commands behind the keyboard shortcuts (Settings → Keyboard shortcuts). */
 function useShortcuts() {
@@ -65,6 +56,17 @@ function useShortcuts() {
 	useCommand("view.zoomReset", () => void window.phaseoDesktop?.performAppAction("zoom-reset"));
 }
 
+// Each view loads on its own when first shown, so the sidebar paints without waiting for the code of every page.
+const SettingsPage = lazy(() => import("./settings/SettingsPage").then(module => ({ default: module.SettingsPage })));
+const ScheduledTasks = lazy(() => import("./views/ScheduledTasks").then(module => ({ default: module.ScheduledTasks })));
+const Inbox = lazy(() => import("./views/Inbox").then(module => ({ default: module.Inbox })));
+const Usage = lazy(() => import("./views/Usage").then(module => ({ default: module.Usage })));
+const PullRequestsPage = lazy(() => import("./views/pullRequests/PullRequestsPage").then(module => ({ default: module.PullRequestsPage })));
+const NewChat = lazy(() => import("./chat/NewChat").then(module => ({ default: module.NewChat })));
+const ChatView = lazy(() => import("./chat/ChatView").then(module => ({ default: module.ChatView })));
+const CompareView = lazy(() => import("./chat/CompareView").then(module => ({ default: module.CompareView })));
+const FactoryPage = lazy(() => import("./factory/FactoryPage").then(module => ({ default: module.FactoryPage })));
+
 function Main() {
 	const { selectedId, compareId, compareGroups, settings, scheduled, pullRequestsPage, inboxPage, usagePage, mode, codeView } = useWorkspace();
 	if (settings) return <SettingsPage />;
@@ -98,7 +100,7 @@ function Shell() {
 		<div className="relative flex min-h-0 flex-1">
 			{(sidebarOpen || settings) && <Sidebar />}
 			{/* A maximised pane takes the chat column's place. */}
-			<main className="relative min-w-0 flex-1 bg-background [&:has(~aside[data-maximized])]:hidden"><Main /><BrowserMiniPlayerHost /></main>
+			<main className="relative min-w-0 flex-1 bg-background [&:has(~aside[data-maximized])]:hidden"><Suspense><Main /></Suspense><BrowserMiniPlayerHost /></main>
 			<RightPanel />
 			<ErrorBanner />
 		</div>

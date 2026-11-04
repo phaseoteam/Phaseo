@@ -14,5 +14,8 @@ export default defineConfig({
 	build: {
 		outDir: "dist/renderer",
 		emptyOutDir: true,
+		// Every lab logo is imported up front; inlined, they added ~300 KB to the script the window runs before its first
+		// paint. As files, each loads only when a logo shows.
+		assetsInlineLimit: 0,
 	},
 });

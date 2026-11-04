@@ -10,9 +10,8 @@ import { usePersistedState } from "../lib/persistedState";
 import { useCommand } from "../lib/keybindings";
 import { cn } from "../lib/utils";
 import { AgentThreadsPanel } from "../components/AgentThreadsPanel";
-import { BrowserSurface } from "../views/BrowserSurface";
 import { createBrowserTab, ensureBrowserTab, closeBrowserTab, confirmCloseBrowserTabs, onBrowserTabOpened, setBrowserTabMuted, useBrowserTab, useBrowserTabs } from "../lib/browserTabs";
-import { PullRequestListSurface, PullRequestSurface, pullRequestStatePresentation } from "../views/pullRequests";
+import { pullRequestStatePresentation } from "../views/pullRequests/presentation";
 import { closeTerminal, createTerminal, terminalTitle, terminalsFor, useTerminalSessions } from "../lib/terminalSessions";
 import { OPEN_PROJECT_FILE_EVENT, OPEN_TURN_DIFF_EVENT, type OpenProjectFileDetail, type OpenTurnDiffDetail } from "../panels/events";
 import { OPEN_PULL_REQUEST_EVENT, type OpenPullRequestDetail } from "../views/pullRequests/events";
@@ -25,6 +24,10 @@ import { closePaneTabs, migratePaneState, movePaneTab, openPaneTab, paneKind, pa
 // The diff viewer and editor are large, so they load when first opened.
 const DiffSurface = lazy(() => import("../panels/DiffSurface").then(module => ({ default: module.DiffSurface })));
 const FileSurface = lazy(() => import("../panels/FileSurface").then(module => ({ default: module.FileSurface })));
+// Each surface loads when its tab is first shown, so none of them hold up the window's first paint.
+const BrowserSurface = lazy(() => import("../views/BrowserSurface").then(module => ({ default: module.BrowserSurface })));
+const PullRequestListSurface = lazy(() => import("../views/pullRequests/PullRequestListSurface").then(module => ({ default: module.PullRequestListSurface })));
+const PullRequestSurface = lazy(() => import("../views/pullRequests/PullRequestSurface").then(module => ({ default: module.PullRequestSurface })));
 const FileBrowserSurface = lazy(() => import("../panels/FileBrowserSurface").then(module => ({ default: module.FileBrowserSurface })));
 const TerminalSurface = lazy(() => import("../views/Terminals").then(module => ({ default: module.TerminalSurface })));
 
@@ -277,13 +280,13 @@ export function RightPanel() {
 	const kind = active ? paneKind(active) : undefined, value = active ? paneValue(active) : "";
 	const fallback = <p className="p-4 text-xs text-muted-foreground">Loading…</p>;
 	const content = !active ? null
-		: kind === "browser" ? <BrowserSurface key={value} context={context} tabId={value} covered={commandsOpen || !!settings || menuOpen} />
+		: kind === "browser" ? <Suspense fallback={fallback}><BrowserSurface key={value} context={context} tabId={value} covered={commandsOpen || !!settings || menuOpen} /></Suspense>
 		: kind === "terminal" ? <Suspense fallback={fallback}><TerminalSurface key={value} projectId={projectId} terminalId={value} /></Suspense>
 		: kind === "files" ? <Suspense fallback={fallback}><FileBrowserSurface projectId={projectId} onOpenFile={path => show(`file:${path}`)} /></Suspense>
 		: kind === "file" ? <Suspense fallback={fallback}><FileSurface key={value} projectId={projectId} path={value} onDirtyChange={isDirty => setDirty(current => current[active] === isDirty ? current : { ...current, [active]: isDirty })} onOpenFile={path => show(`file:${path}`)} /></Suspense>
 		: kind === "diff" ? <Suspense fallback={fallback}><DiffSurface projectId={projectId} taskId={selectedId} onOpenFile={path => show(`file:${path}`)} /></Suspense>
-		: kind === "pulls" ? <PullRequestListSurface projectId={projectId} taskId={selectedId} onOpen={pull => { seedPullRequestTabStatus(projectId, pull.number, pull); show(`pull:${pull.number}`); }} />
-		: kind === "pull" ? <PullRequestSurface key={value} projectId={projectId} number={Number(value)} onBack={() => show("pulls")} />
+		: kind === "pulls" ? <Suspense fallback={fallback}><PullRequestListSurface projectId={projectId} taskId={selectedId} onOpen={pull => { seedPullRequestTabStatus(projectId, pull.number, pull); show(`pull:${pull.number}`); }} /></Suspense>
+		: kind === "pull" ? <Suspense fallback={fallback}><PullRequestSurface key={value} projectId={projectId} number={Number(value)} onBack={() => show("pulls")} /></Suspense>
 		: <AgentThreadsPanel id={selectedId} onOpen={select} />;
 	const finishDrag = () => { drag.current = undefined; setDragging(false); };
 	const pane = <aside aria-label="Tools" data-maximized={state.maximized || undefined}

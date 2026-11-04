@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { StatsigClient } from "@statsig/js-client";
 
 const defaults = { browserSuggestions: true };
 const FlagsContext = createContext(defaults);
@@ -10,6 +9,8 @@ export async function loadDesktopFlags() {
 	let id: string;
 	try { id = localStorage.getItem("phaseo.desktop.flags.id") || crypto.randomUUID(); localStorage.setItem("phaseo.desktop.flags.id", id); }
 	catch { id = crypto.randomUUID(); }
+	// Loaded only once flags are fetched, so the client isn't part of what the window loads before it first paints.
+	const { StatsigClient } = await import("@statsig/js-client");
 	const client = new StatsigClient(key, { userID: id, custom: { product: "desktop" } }, {
 		environment: { tier: import.meta.env.MODE }, loggingEnabled: "disabled", includeCurrentPageUrlWithEvents: false,
 		networkConfig: { initializeUrl: "https://featuregates.org/v1/initialize", initializeFallbackUrls: [] },
