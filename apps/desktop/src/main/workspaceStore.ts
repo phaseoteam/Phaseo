@@ -1,5 +1,5 @@
 import { updateNativeActionText } from "../shared/nativeActions";
-import { messageRange, TaskEntries, taskEntriesSchema, type EntryOffsets } from "./taskEntries";
+import { messageRange, TaskEntries, taskEntriesSchema, type EntryKind, type EntryOffsets } from "./taskEntries";
 import { existsSync, renameSync } from "node:fs";
 import { BrowserDownloadStore } from "./browserDownloadStore";
 import { settleBlocker, snoozeBlocker } from "../shared/threadLifecycle";
@@ -41,8 +41,9 @@ const SLOW_STORE_MS = 50;
  */
 const partialEntries = Symbol("partial entries");
 /** On a chat from getTask: whether its conversation is still unread, so saving it writes only the header. */
-const unreadEntries = Symbol("unread entries");
-type PartialTask = Task & { [partialEntries]?: EntryOffsets; [unreadEntries]?: () => boolean };
+const readEntries = Symbol("read entries");
+/** A chat from getTask lists the kinds of entries read so far; saveTask writes only those. */
+type PartialTask = Task & { [partialEntries]?: EntryOffsets; [readEntries]?: () => EntryKind[] };
 
 /** The layout this build writes. A database from another layout is set aside, not converted: there is nothing to keep. */
 const schemaVersion = 4;
@@ -324,12 +325,14 @@ export class WorkspaceStore {
 	 */
 	getTask(id: string): Task {
 		const { task, key } = this.getHead(id);
-		let loaded: { messages: Task["messages"]; activities: NonNullable<Task["activities"]> } | undefined;
-		const load = () => loaded ??= this.entries.load(key, task.revision ?? 0);
-		for (const name of ["messages", "activities"] as const) Object.defineProperty(task, name, { enumerable: true, configurable: true, get: () => load()[name], set: (value: never) => { load()[name] = value; } });
-		Object.defineProperty(task, unreadEntries, { value: () => loaded === undefined });
+		// Each kind loads on its own first use: a turn reads the messages, and a long chat's activities are most of it.
+		const loaded: Partial<Record<EntryKind, unknown[]>> = {}, revision = task.revision ?? 0;
+		for (const name of ["messages", "activities"] as const) Object.defineProperty(task, name, { enumerable: true, configurable: true, get: () => loaded[name] ??= this.entries.load(key, revision, name), set: (value: unknown[]) => { loaded[name] = value; } });
+		Object.defineProperty(task, readEntries, { value: () => (["messages", "activities"] as const).filter(name => loaded[name] !== undefined) });
 		return task;
 	}
+	/** The timeline position after everything in a chat, read from the stored rows rather than by loading them. */
+	nextTimelineOrder(id: string) { return this.entries.nextTimelineOrder(this.getHead(id).key); }
 	/**
 	 * A chat with only its latest turn's messages (from `fromMessageId`) and activities, for streaming. saveTask writes
 	 * such a chat back over that range alone. The whole chat when the message is not found.
@@ -712,12 +715,13 @@ export class WorkspaceStore {
 			// does not read a conversation getTask has not loaded.
 			const fields: Record<string, unknown> = {};
 			for (const name of Object.keys(task)) if (name !== "messages" && name !== "activities" && name !== "revision" && name !== "conversationCounts") fields[name] = (task as unknown as Record<string, unknown>)[name];
-			const head = JSON.stringify(fields), untouched = (task as PartialTask)[unreadEntries]?.() === true;
+			const read = (task as PartialTask)[readEntries]?.(), head = JSON.stringify(fields), untouched = read?.length === 0;
 			const offsets = (task as PartialTask)[partialEntries], summary: Partial<ReturnType<typeof conversationSummary>> = untouched ? {} : conversationSummary(task.messages ?? []);
 			// Entries go first for a chat that exists, so the header's delegation trigger reads its new conversation; a new
 			// chat needs its key first.
 			const existing = this.statement("SELECT key, revision FROM tasks WHERE id = ?").get(task.id) as { key: number; revision: number } | undefined;
-			if (existing && !untouched) this.entries.save(existing.key, task, existing.revision, offsets);
+			// The summary reads the messages, so a chat whose activities alone changed writes its messages too (unchanged ones cost a comparison).
+			if (existing && !untouched) this.entries.save(existing.key, task, existing.revision, offsets, (task as PartialTask)[readEntries]?.());
 			// A tail may not reach back to the last completed turn, and an unread conversation has not changed: their columns keep what they had.
 			const row = this.statement(`INSERT INTO tasks (id, revision, last_user_id, last_user_at, last_completed_at, data) VALUES (?, 1, ?, ?, ?, ?)
 				ON CONFLICT(id) DO UPDATE SET revision = revision + 1, data = excluded.data,

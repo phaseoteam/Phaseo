@@ -10,7 +10,11 @@ type Row = { rowid: number; id: string; role: string | null; timeline_order: num
 /** Where a partial chat's entries start: messages from its turn, activities from that turn's first. */
 export type EntryOffsets = { messages: number; activities: number };
 type Stored = { ids: string[]; data: string[] };
+/** Messages and activities load, cache and save apart: a turn reads its chat's messages, a long chat's activities are most of it. */
+export type EntryKind = "messages" | "activities";
+type Cached = { revision: number; messages?: Stored; activities?: Stored };
 const kinds = [["messages", 0], ["activities", 1]] as const;
+const allKinds: readonly EntryKind[] = ["messages", "activities"];
 const encoder = new TextEncoder();
 /** Tool output is large and never searched, so activities over this many bytes are stored compressed. */
 const compressFrom = 1024;
@@ -61,10 +65,10 @@ function decode(row: Row, data = text(row)): Entry {
 export class TaskEntries {
 	private readonly statements = new Map<string, StatementSync>();
 	/** Each chat's stored entries (ids and encoded data) at a revision, so a save compares strings instead of reading rows. */
-	private readonly saved = new Map<number, { revision: number; messages: Stored; activities: Stored }>();
+	private readonly saved = new Map<number, Cached>();
 	constructor(private readonly db: DatabaseSync) {}
 	private statement(sql: string) { let statement = this.statements.get(sql); if (!statement) this.statements.set(sql, statement = this.db.prepare(sql)); return statement; }
-	private remember(key: number, value: { revision: number; messages: Stored; activities: Stored }) { this.saved.delete(key); this.saved.set(key, value); if (this.saved.size > 32) this.saved.delete(this.saved.keys().next().value!); }
+	private remember(key: number, value: Cached) { this.saved.delete(key); this.saved.set(key, value); if (this.saved.size > 32) this.saved.delete(this.saved.keys().next().value!); }
 	/** Drops what is cached for a chat; a reused key must not inherit it. */
 	forget(key: number) { this.saved.delete(key); }
 	/** The revision the cache now matches, once the header's write has numbered it. */
@@ -79,11 +83,11 @@ export class TaskEntries {
 		return { entries: rows.map((row, index) => decode(row, data[index])), stored: { ids: rows.map(row => row.id), data } };
 	}
 
-	/** Every entry of a chat, in order. */
-	load(key: number, revision: number): { messages: Message[]; activities: AgentActivity[] } {
-		const messages = this.read(key, 0), activities = this.read(key, 1);
-		this.remember(key, { revision, messages: messages.stored, activities: activities.stored });
-		return { messages: messages.entries as Message[], activities: activities.entries as AgentActivity[] };
+	/** Every message, or every activity, of a chat, in order. */
+	load(key: number, revision: number, name: EntryKind): Entry[] {
+		const { entries, stored } = this.read(key, name === "messages" ? 0 : 1), cached = this.saved.get(key);
+		this.remember(key, cached?.revision === revision ? { ...cached, [name]: stored } : { revision, [name]: stored });
+		return entries;
 	}
 
 	/**
@@ -98,34 +102,38 @@ export class TaskEntries {
 		return { messages: this.read(key, 0, offsets.messages).entries as Message[], activities: this.read(key, 1, offsets.activities).entries as AgentActivity[], offsets };
 	}
 
-	/** Writes what changed (from `offsets` on when the chat is a tail), given the revision now stored. Run inside the save's transaction. */
-	save(key: number, task: Task, revision: number | undefined, offsets?: EntryOffsets) {
+	/**
+	 * Writes what changed in `names` (from `offsets` on when the chat is a tail), given the revision now stored; a kind not
+	 * named was not read and keeps its rows. Run inside the save's transaction.
+	 */
+	save(key: number, task: Task, revision: number | undefined, offsets?: EntryOffsets, names: readonly EntryKind[] = allKinds) {
 		// A cache from another revision (another connection saved since) is not trusted.
 		let previous = this.saved.get(key);
 		if (previous && previous.revision !== revision) { this.saved.delete(key); previous = undefined; }
-		if (offsets) {
-			const slice = (stored: Stored, from: number): Stored => ({ ids: stored.ids.slice(from), data: stored.data.slice(from) });
-			const before = previous ? { messages: slice(previous.messages, offsets.messages), activities: slice(previous.activities, offsets.activities) } : { messages: this.read(key, 0, offsets.messages).stored, activities: this.read(key, 1, offsets.activities).stored };
-			const after = this.write(key, task, before, offsets);
-			const join = (head: Stored, from: number, tail: Stored): Stored => ({ ids: [...head.ids.slice(0, from), ...tail.ids], data: [...head.data.slice(0, from), ...tail.data] });
-			if (previous) this.remember(key, { revision: previous.revision, messages: join(previous.messages, offsets.messages, after.messages), activities: join(previous.activities, offsets.activities, after.activities) });
-			return;
-		}
-		const after = this.write(key, task, previous ?? { messages: this.read(key, 0).stored, activities: this.read(key, 1).stored });
-		this.remember(key, { revision: revision ?? 0, ...after });
+		const from = (name: EntryKind) => offsets?.[name] ?? 0;
+		const slice = (stored: Stored, at: number): Stored => ({ ids: stored.ids.slice(at), data: stored.data.slice(at) });
+		const before: Partial<Record<EntryKind, Stored>> = {};
+		for (const name of names) { const cached = previous?.[name]; before[name] = cached ? slice(cached, from(name)) : this.read(key, name === "messages" ? 0 : 1, from(name)).stored; }
+		const after = this.write(key, task, before, offsets);
+		// A tail's write joins the cached head it continues; without one, that kind is read again next time.
+		const join = (name: EntryKind): Stored | undefined => { const written = after[name], cached = previous?.[name]; if (!written) return cached; if (!offsets) return written; return cached && { ids: [...cached.ids.slice(0, from(name)), ...written.ids], data: [...cached.data.slice(0, from(name)), ...written.data] }; };
+		if (offsets && !previous) return;
+		this.remember(key, { revision: previous?.revision ?? revision ?? 0, messages: join("messages"), activities: join("activities") });
 	}
 
-	private write(key: number, task: Task, previous: { messages: Stored; activities: Stored }, offsets: EntryOffsets = { messages: 0, activities: 0 }) {
+	private write(key: number, task: Task, previous: Partial<Record<EntryKind, Stored>>, offsets: EntryOffsets = { messages: 0, activities: 0 }) {
 		// An activity belongs to a turn when its id is `<user message id>:<step>`; a tail finds earlier turns among the stored messages.
-		const users = new Set((task.messages ?? []).filter(message => message.role === "user").map(message => message.id));
-		const isUser = (id: string) => users.has(id) || (offsets.messages > 0 && Boolean(this.statement("SELECT 1 FROM task_entries WHERE task_key = ? AND kind = 0 AND id = ? AND role = 'user'").get(key, id)));
+		let users: Set<string> | undefined;
+		const isUser = (id: string) => (users ??= new Set((task.messages ?? []).filter(message => message.role === "user").map(message => message.id))).has(id) || (offsets.messages > 0 && Boolean(this.statement("SELECT 1 FROM task_entries WHERE task_key = ? AND kind = 0 AND id = ? AND role = 'user'").get(key, id)));
 		const owner = (id: string) => { const prefix = id.slice(0, Math.max(0, id.indexOf(":"))); return prefix && isUser(prefix) ? prefix : null; };
 		// The same entry in the same place rewrites only its data, so no index changes.
 		const update = this.statement("UPDATE task_entries SET timeline_order = ?, bytes = ?, data = ? WHERE rowid = ?");
 		const replace = this.statement("INSERT OR REPLACE INTO task_entries (rowid, task_key, kind, id, owner, timeline_order, role, bytes, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-		const next = { messages: { ids: [] as string[], data: [] as string[] }, activities: { ids: [] as string[], data: [] as string[] } };
+		const next: Partial<Record<EntryKind, Stored>> = {};
 		for (const [name, kind] of kinds) {
-			const entries = (task[name] ?? []) as Entry[], before = previous[name], after = next[name], start = base(key, kind) + offsets[name];
+			const before = previous[name];
+			if (!before) continue;
+			const entries = (task[name] ?? []) as Entry[], after: Stored = next[name] = { ids: [], data: [] }, start = base(key, kind) + offsets[name];
 			for (let index = 0; index < entries.length; index++) {
 				const entry = entries[index], data = encode(entry);
 				after.ids.push(entry.id); after.data.push(data);
@@ -138,6 +146,12 @@ export class TaskEntries {
 			if (before.ids.length > entries.length) this.statement("DELETE FROM task_entries WHERE rowid >= ? AND rowid < ?").run(start + entries.length, base(key, kind) + kindSpan);
 		}
 		return next;
+	}
+
+	/** The timeline position after every entry of a chat (or after their count, if larger), without reading them. */
+	nextTimelineOrder(key: number) {
+		const row = this.statement("SELECT max(timeline_order) AS top, count(*) AS entries FROM task_entries WHERE rowid >= ? AND rowid < ?").get(base(key, 0), base(key, 0) + chatSpan) as { top: number | null; entries: number };
+		return Math.max(row.top ?? 0, row.entries) + 1;
 	}
 
 	/** Positions run from 0 without gaps, so the count is the last rowid's place plus one. */

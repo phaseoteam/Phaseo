@@ -1336,7 +1336,8 @@ export class WorkspaceRuntime {
 		const message = task.queue.shift()!;
 		// The running total of what the chat used through Phaseo starts from its history, then grows as the turn streams.
 		if (!task.usageTotals) task.usageTotals = this.store.phaseoUsageTotals(id);
-		let timelineOrder = [...task.messages, ...(task.activities ?? [])].reduce((maximum, item) => Math.max(maximum, item.timelineOrder ?? 0), task.messages.length + (task.activities?.length ?? 0)) + 1;
+		// From the stored rows: reading every activity to find the last position loaded a long chat's whole history.
+		let timelineOrder = this.store.nextTimelineOrder(id);
 		task.messages.push({ ...message, startedAt: new Date().toISOString(), timelineOrder: timelineOrder++, role: "user", ...(message.sourceTaskId ? { delivery: "subagent" as const } : {}) }); task.status = "running"; task.error = undefined;
 		// Chats starting together (a burst of sends, a scheduled batch) share one chat-list update.
 		this.store.saveTask(task); this.broadcastSoon();
