@@ -1285,15 +1285,12 @@ accountSettingsRouter.get("/credits/onboarding", async (c) => {
 	if (!user || !workspaceId) return c.json(empty, 200, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
-	const [teamResult, profileResult] = await Promise.all([
-		context.client.from("workspaces")
-			.select("name,tier,billing_mode,invoice_onboarding_status")
-			.eq("id", workspaceId).maybeSingle(),
-		context.client.from("workspace_invoice_profiles")
-			.select("enabled,billing_day,payment_terms_days")
-			.eq("workspace_id", workspaceId).maybeSingle(),
-	]);
-	if (teamResult.error || profileResult.error) {
+	// Invoice profiles are no longer stored in Phaseo (Stripe is the source of
+	// truth), so the onboarding form starts from its defaults.
+	const teamResult = await context.client.from("workspaces")
+		.select("name,tier,billing_mode,invoice_onboarding_status")
+		.eq("id", workspaceId).maybeSingle();
+	if (teamResult.error) {
 		return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}
 	if (!teamResult.data) return c.json(empty, 200, PRIVATE_NO_STORE_HEADERS);
@@ -1303,9 +1300,9 @@ accountSettingsRouter.get("/credits/onboarding", async (c) => {
 		canAccessOnboarding: billingMode === "invoice" || onboardingStatus === "pre_invoice",
 		canManageBilling: ["owner", "admin"].includes(context.role.toLowerCase()),
 		currentBillingMode: billingMode,
-		initialBillingDay: Math.min(28, Math.max(1, Number(profileResult.data?.billing_day ?? 1) || 1)),
-		initialPaymentTermsDays: Number(profileResult.data?.payment_terms_days) === 14 ? 14 : 30,
-		invoiceProfileEnabled: Boolean(profileResult.data?.enabled),
+		initialBillingDay: empty.initialBillingDay,
+		initialPaymentTermsDays: empty.initialPaymentTermsDays,
+		invoiceProfileEnabled: false,
 		signedIn: true,
 		signerName,
 		team: {
@@ -1337,19 +1334,8 @@ accountSettingsRouter.get("/credits/transactions", async (c) => {
 	const billingMode = String(teamResult.data?.billing_mode ?? "wallet").toLowerCase() === "invoice" ? "invoice" : "wallet";
 	const isEnterpriseInvoiceMode = teamTier === "enterprise" && billingMode === "invoice";
 	if (isEnterpriseInvoiceMode) {
-		const invoicesResult = await context.client.from("workspace_invoices")
-			.select("id,period_start,period_end,amount_nanos,currency,status,stripe_invoice_id,stripe_invoice_number,due_at,issued_at,paid_at,created_at,updated_at")
-			.eq("workspace_id", workspaceId).order("period_end", { ascending: false }).limit(250);
-		if (invoicesResult.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-		const invoices = (invoicesResult.data ?? []).map((row) => ({
-			...row,
-			id: String(row.id),
-			period_start: String(row.period_start),
-			period_end: String(row.period_end),
-			amount_nanos: Number(row.amount_nanos ?? 0),
-			currency: row.currency ?? "USD",
-			status: String(row.status ?? "draft"),
-		}));
+		// Invoices live in Stripe; Phaseo no longer keeps a copy to list here.
+		const invoices: never[] = [];
 		return c.json({
 			billingMode, invoices, isEnterpriseInvoiceMode, stripeCustomerId: null,
 			teamTier, transactions: [], workspaceId,

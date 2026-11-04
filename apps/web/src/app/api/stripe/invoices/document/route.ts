@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import type Stripe from "stripe";
+
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { createClient } from "@/utils/supabase/server";
@@ -10,6 +12,24 @@ function parseStripeInvoiceId(body: any): string | null {
 	if (!raw) return null;
 	const id = String(raw).trim();
 	return id.startsWith("in_") ? id : null;
+}
+
+function invoiceBelongsToWorkspace(
+	invoice: Pick<Stripe.Invoice, "customer" | "metadata">,
+	workspaceId: string,
+	workspaceCustomerId: string,
+): boolean {
+	const customer = invoice.customer;
+	const customerId = typeof customer === "string" ? customer : customer?.id ?? "";
+	if (workspaceCustomerId && customerId === workspaceCustomerId) return true;
+	const metadataWorkspaceId = invoice.metadata?.workspace_id;
+	return typeof metadataWorkspaceId === "string" && metadataWorkspaceId.trim() === workspaceId;
+}
+
+function isStripeResourceMissing(error: unknown): boolean {
+	if (!error || typeof error !== "object") return false;
+	const candidate = error as { code?: string; raw?: { code?: string } };
+	return candidate.code === "resource_missing" || candidate.raw?.code === "resource_missing";
 }
 
 export async function POST(req: NextRequest) {
@@ -44,21 +64,32 @@ export async function POST(req: NextRequest) {
 			return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 		}
 
+		// Stripe is the source of truth for invoices. Check the invoice belongs to
+		// the active workspace's Stripe customer before handing out its document.
 		const admin = createAdminClient();
-		const { data: invoiceRow, error: invoiceErr } = await admin
-			.from("workspace_invoices")
-			.select("workspace_id,stripe_invoice_id")
+		const { data: wallet, error: walletErr } = await admin
+			.from("wallets")
+			.select("stripe_customer_id")
 			.eq("workspace_id", workspaceId)
-			.eq("stripe_invoice_id", stripeInvoiceId)
 			.maybeSingle();
+		if (walletErr) throw walletErr;
+		const workspaceCustomerId =
+			typeof wallet?.stripe_customer_id === "string" ? wallet.stripe_customer_id.trim() : "";
 
-		if (invoiceErr) throw invoiceErr;
-		if (!invoiceRow) {
+		const stripe = getStripe();
+		let invoice: Stripe.Invoice;
+		try {
+			invoice = await stripe.invoices.retrieve(stripeInvoiceId);
+		} catch (err) {
+			if (isStripeResourceMissing(err)) {
+				return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+			}
+			throw err;
+		}
+		if (!invoiceBelongsToWorkspace(invoice, workspaceId, workspaceCustomerId)) {
 			return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
 		}
 
-		const stripe = getStripe();
-		const invoice = await stripe.invoices.retrieve(stripeInvoiceId);
 		const invoiceUrl = invoice.hosted_invoice_url ?? invoice.invoice_pdf ?? null;
 		if (!invoiceUrl) {
 			return NextResponse.json({ error: "Invoice document unavailable" }, { status: 404 });

@@ -254,25 +254,6 @@ async function buildProfileUsage(
 
 export const accountSettingsProfileRouter = new Hono<{ Bindings: Env }>();
 
-function recoveryCode(): string {
-	const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-	const upperBound = 256 - (256 % alphabet.length);
-	let code = "";
-	while (code.length < 8) {
-		const bytes = crypto.getRandomValues(new Uint8Array(8 - code.length));
-		for (const byte of bytes) {
-			if (byte < upperBound) code += alphabet[byte % alphabet.length];
-		}
-	}
-	return `${code.slice(0, 4)}-${code.slice(4)}`;
-}
-
-async function recoveryHash(code: string): Promise<string> {
-	const normalized = code.replaceAll("-", "").trim().toUpperCase();
-	const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(normalized));
-	return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
 accountSettingsProfileRouter.put("/account/profile", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
@@ -309,48 +290,6 @@ accountSettingsProfileRouter.put("/account/profile", async (c) => {
 	if (result.error?.code === "23505") return c.json({ error: "public_profile_slug_conflict" }, 409, PRIVATE_NO_STORE_HEADERS);
 	if (result.error) return c.json({ error: result.error.message }, 503, PRIVATE_NO_STORE_HEADERS);
 	return c.json({ ok: true }, 200, PRIVATE_NO_STORE_HEADERS);
-});
-
-accountSettingsProfileRouter.post("/account/recovery-codes", async (c) => {
-	const user = await requireUser(c.req.raw, c.env);
-	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
-	const codes = Array.from({ length: 10 }, recoveryCode);
-	const rows = await Promise.all(codes.map(async (code) => ({ user_id: user.id, code_hash: await recoveryHash(code), created_at: new Date().toISOString() })));
-	const client = getDataClient(c.env);
-	const removed = await client.from("user_recovery_codes").delete().eq("user_id", user.id);
-	if (removed.error) return c.json({ error: "recovery_codes_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	const inserted = await client.from("user_recovery_codes").insert(rows);
-	if (inserted.error) return c.json({ error: "recovery_codes_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	return c.json({ recoveryCodes: codes }, 200, PRIVATE_NO_STORE_HEADERS);
-});
-
-accountSettingsProfileRouter.get("/account/recovery-codes", async (c) => {
-	const user = await requireUser(c.req.raw, c.env);
-	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
-	const result = await getDataClient(c.env).from("user_recovery_codes").select("id").eq("user_id", user.id).is("used_at", null);
-	if (result.error) return c.json({ error: "recovery_codes_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	return c.json({ hasRecoveryCodes: Boolean(result.data?.length), unusedCount: result.data?.length ?? 0 }, 200, PRIVATE_NO_STORE_HEADERS);
-});
-
-accountSettingsProfileRouter.delete("/account/recovery-codes", async (c) => {
-	const user = await requireUser(c.req.raw, c.env);
-	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
-	const result = await getDataClient(c.env).from("user_recovery_codes").delete().eq("user_id", user.id);
-	if (result.error) return c.json({ error: "recovery_codes_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
-});
-
-accountSettingsProfileRouter.post("/account/recovery-codes/verify", async (c) => {
-	const user = await requireUser(c.req.raw, c.env);
-	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
-	const body: { code?: string } = await c.req.json<{ code?: string }>().catch(() => ({}));
-	const client = getDataClient(c.env);
-	const found = await client.from("user_recovery_codes").select("id").eq("user_id", user.id).eq("code_hash", await recoveryHash(body.code ?? "")).is("used_at", null).limit(1).maybeSingle();
-	if (found.error) return c.json({ error: "recovery_codes_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	if (!found.data?.id) return c.json({ error: "Invalid or already used recovery code" }, 409, PRIVATE_NO_STORE_HEADERS);
-	const updated = await client.from("user_recovery_codes").update({ used_at: new Date().toISOString() }).eq("id", found.data.id).eq("user_id", user.id);
-	if (updated.error) return c.json({ error: "recovery_codes_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountSettingsProfileRouter.get("/profile", async (c) => {
