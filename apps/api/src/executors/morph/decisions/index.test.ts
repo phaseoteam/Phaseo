@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { ExecutorExecuteArgs } from "@executors/types";
 import { calculatePricing } from "@pipeline/after/pricing";
+import { mergeBillAndPayloadUsage } from "@pipeline/usage";
+import { DecisionsSchema } from "@core/schemas";
+import { decodeDecisionsRequest } from "@protocols/decisions/decode";
+import { encodeDecisionsResponse } from "@protocols/decisions/encode";
 import { installFetchMock, jsonResponse } from "../../../../tests/helpers/mock-fetch";
 import { setupRuntimeFromEnv, teardownTestRuntime } from "../../../../tests/helpers/runtime";
 import { executor } from "./index";
@@ -79,6 +83,38 @@ describe("Morph Reflex decisions executor", () => {
 			} as any;
 			// 200 uncached x $0.042/M + 800 cached x $0.01/M = 8,400 + 8,000 nanos.
 			expect(calculatePricing(usage, card, { model: "morph/reflex" }).totalNanos).toBe(16_400);
+		} finally {
+			mock.restore();
+		}
+	});
+
+	it("keeps the cached split through native-format encoding and usage merge", async () => {
+		const native = decodeDecisionsRequest(DecisionsSchema.parse({
+			model: "morph/reflex", input: "Ticket: the package arrived crushed.",
+			questions: [{ type: "predicate", instructions: "Is this urgent?" }],
+		}));
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.morphllm.com/v1/systemone",
+			response: jsonResponse({
+				model: "reflex",
+				answers: { question_0: { type: "noul", noul: 0.91, confidence: 0.82 } },
+				usage: { input_tokens: 1000, output_tokens: 0, input_tokens_details: { cached_tokens: 800 } },
+			}),
+		}]);
+		try {
+			const result = await executor(buildArgs(native as unknown as Record<string, unknown>));
+			const payload = encodeDecisionsResponse(result.ir as any, native);
+			expect(payload.usage.input_tokens_details.cached_tokens).toBe(800);
+			const merged = mergeBillAndPayloadUsage(result.bill.usage, payload.usage);
+			const card = {
+				provider: "morph", model: "morph/reflex", endpoint: "decisions.make", currency: "USD",
+				effective_from: null, effective_to: null, version: null,
+				rules: [
+					{ id: "in", pricing_plan: "standard", meter: "input_text_tokens", unit: "token", unit_size: 1_000_000, price_per_unit: "0.042", currency: "USD", match: [], priority: 0 },
+					{ id: "cached", pricing_plan: "standard", meter: "cached_read_text_tokens", unit: "token", unit_size: 1_000_000, price_per_unit: "0.01", currency: "USD", match: [], priority: 0 },
+				],
+			} as any;
+			expect(calculatePricing(merged, card, { model: "morph/reflex" }).totalNanos).toBe(16_400);
 		} finally {
 			mock.restore();
 		}

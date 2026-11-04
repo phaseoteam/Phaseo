@@ -4,7 +4,7 @@
 // How: Posts state, questions and inline images to /v1/systemone, validates answers through
 // the shared System One path, and reports cached input so the cached-input rate applies.
 
-import type { IRDecisionsRequest } from "@core/ir";
+import type { IRDecisionsRequest, IRDecisionsResponse } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult, ProviderExecutor } from "@executors/types";
 import { completeSystemOne } from "@executors/_shared/decisions/systemone";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
@@ -81,6 +81,15 @@ export const executor: ProviderExecutor = async args => {
 		const cached = Number(payloadUsage?.input_tokens_details?.cached_tokens);
 		if (Number.isSafeInteger(cached) && cached > 0 && cached <= usage.input_tokens) {
 			usage.input_tokens_details = { cached_tokens: cached };
+			// The native decisions encoder emits cached_tokens: 0 unless nativeUsage carries the
+			// count, and finalization prefers the encoded payload's usage over the bill's.
+			const responseIr = ("ir" in result ? result.ir : undefined) as IRDecisionsResponse | undefined;
+			if (responseIr) {
+				responseIr.nativeUsage = {
+					...(responseIr.nativeUsage ?? {}),
+					input_tokens_details: { cached_tokens: cached, cache_write_tokens: 0 },
+				};
+			}
 		}
 	}
 	return result;

@@ -208,29 +208,20 @@ describe("openai rerank executor", () => {
 		expect(priced.totalNanos).toBe(6_000_000);
 	});
 
-	it("bills Cohere Rerank v5 on billed input tokens and passes Context Focus spans through", async () => {
+	it("bills Cohere Rerank v5 on billed input tokens", async () => {
 		setupRuntimeFromEnv({ COHERE_API_KEY: "test-cohere-key" } as any);
 		const mock = installFetchMock([{
 			match: (url) => url === "https://api.cohere.example/v2/rerank",
 			response: jsonResponse({
 				id: "rerank_v5",
-				results: [{ index: 1, relevance_score: 0.84, relevant_spans: [{ start: 0, end: 12, score: 0.99 }] }, { index: 0, relevance_score: 0.2 }],
+				results: [{ index: 1, relevance_score: 0.84 }, { index: 0, relevance_score: 0.2 }],
 				meta: { api_version: { version: "2" }, billed_units: { input_tokens: 192 } },
 			}),
 		}]);
 		const documents = Array.from({ length: 250 }, (_, index) => `doc ${index}`);
-		const result = await executor(buildArgs({
-			ir: {
-				model: "cohere/rerank-v5.0-pro",
-				documents,
-				vendor: { provider_options: { cohere: { relevant_spans: { mode: "enabled", threshold: 0.1, max_spans: 3 } } } },
-			},
-		}));
+		const result = await executor(buildArgs({ ir: { model: "cohere/rerank-v5.0-pro", documents } }));
 		mock.restore();
 
-		expect(mock.calls[0]?.bodyJson?.relevant_spans).toEqual({ mode: "enabled", threshold: 0.1, max_spans: 3 });
-		expect(mock.calls[0]?.bodyJson?.provider_options).toBeUndefined();
-		expect((result as any).ir?.results?.[0]?.relevantSpans).toEqual([{ start: 0, end: 12, score: 0.99 }]);
 		const usage = (result as any).bill.usage;
 		expect(usage).toMatchObject({ requests: 1, input_text_tokens: 192 });
 		expect(usage.search_units).toBeUndefined();
@@ -241,20 +232,6 @@ describe("openai rerank executor", () => {
 			rules: [{ id: "in", pricing_plan: "standard", meter: "input_text_tokens", unit: "token", unit_size: 1_000_000, price_per_unit: "0.05", currency: "USD", match: [], priority: 0 }],
 		} as any;
 		expect(calculatePricing(usage, card, { model: "cohere/rerank-v5.0-pro" }).totalNanos).toBe(9_600);
-	});
-
-	it("does not send Cohere relevant_spans to other rerank providers", async () => {
-		setupRuntimeFromEnv({ FIREWORKS_API_KEY: "test-fireworks-key" } as any);
-		const mock = installFetchMock([{
-			match: () => true,
-			response: jsonResponse({ id: "rr", results: [{ index: 0, relevance_score: 0.5 }] }),
-		}]);
-		await executor(buildArgs({
-			providerId: "fireworks",
-			ir: { vendor: { provider_options: { cohere: { relevant_spans: { mode: "enabled" } } } } },
-		}));
-		mock.restore();
-		expect(mock.calls[0]?.bodyJson?.relevant_spans).toBeUndefined();
 	});
 
 	it("prefers provider_model_slug when present", async () => {

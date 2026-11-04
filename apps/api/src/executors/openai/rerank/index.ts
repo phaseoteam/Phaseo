@@ -109,14 +109,6 @@ function buildRequestBody(
 		delete encoded.rank_fields;
 		delete encoded.user;
 		delete encoded.metadata;
-
-		// Context Focus (Rerank v5+): provider_options.cohere.relevant_spans maps to Cohere's
-		// relevant_spans { mode, threshold?, max_spans? } (https://docs.cohere.com/v2/reference/rerank).
-		const cohereOptions = (ir.vendor?.provider_options as Record<string, any> | undefined)?.cohere;
-		const relevantSpans = cohereOptions?.relevant_spans;
-		if (relevantSpans && typeof relevantSpans === "object" && !Array.isArray(relevantSpans)) {
-			encoded.relevant_spans = relevantSpans;
-		}
 	}
 
 	if (isVoyageProvider(args.providerId)) {

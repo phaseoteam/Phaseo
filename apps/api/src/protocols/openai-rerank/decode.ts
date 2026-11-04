@@ -28,17 +28,10 @@ function normalizeResult(entry: any, fallbackIndex: number): IRRerankResult {
 		entry?.relevance_score ??
 		entry?.relevanceScore ??
 		entry?.score;
-	const spans = Array.isArray(entry?.relevant_spans)
-		? entry.relevant_spans
-			.map((span: any) => ({ start: toNumber(span?.start), end: toNumber(span?.end), score: toNumber(span?.score) }))
-			.filter((span: { start?: number; end?: number; score?: number }): span is { start: number; end: number; score: number } =>
-				span.start !== undefined && span.end !== undefined && span.score !== undefined)
-		: undefined;
 	return {
 		index: Number.isFinite(Number(indexRaw)) ? Number(indexRaw) : fallbackIndex,
 		relevanceScore: Number.isFinite(Number(relevanceRaw)) ? Number(relevanceRaw) : 0,
 		document: entry?.document ?? entry?.input ?? undefined,
-		...(spans ? { relevantSpans: spans } : {}),
 	};
 }
 
@@ -58,21 +51,10 @@ export function decodeOpenAIRerankRequest(req: RerankRequest): IRRerankRequest {
 		userId: req.user,
 		serviceTier: req.service_tier,
 		metadata: req.metadata,
-		vendor: vendorOptions(req),
+		vendor: req.provider_options
+			? { provider_options: req.provider_options }
+			: undefined,
 	};
-}
-
-// Cohere-native callers send relevant_spans at the top level; keep it as a Cohere
-// provider option so other providers never receive it.
-function vendorOptions(req: RerankRequest): IRRerankRequest["vendor"] {
-	const topLevelSpans = (req as Record<string, unknown>).relevant_spans;
-	const options = req.provider_options as Record<string, any> | undefined;
-	if (!topLevelSpans || typeof topLevelSpans !== "object" || Array.isArray(topLevelSpans)) {
-		return options ? { provider_options: options } : undefined;
-	}
-	const cohere = { ...(options?.cohere ?? {}) };
-	if (cohere.relevant_spans === undefined) cohere.relevant_spans = topLevelSpans;
-	return { provider_options: { ...(options ?? {}), cohere } };
 }
 
 export function decodeOpenAIRerankResponse(

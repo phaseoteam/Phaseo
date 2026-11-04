@@ -33,9 +33,7 @@ export function encodeOpenAIRerankResponse(ir: IRRerankResponse): any {
 		results: (ir.results ?? []).map((entry) => ({
 			index: entry.index,
 			relevance_score: entry.relevanceScore,
-			...(entry.document !== undefined ? { document: entry.document } : {}),
-			...(entry.relevantSpans !== undefined ? { relevant_spans: entry.relevantSpans } : {}),
-		})),
+			...(entry.document !== undefined ? { document: entry.document } : {}),		})),
 		...(ir.usage
 			? {
 				usage: {
