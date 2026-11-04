@@ -29,7 +29,7 @@ import { detectClientAttribution } from "./clientAttribution";
 import { noteSpendLimitReached } from "../notifications/spend-limit-alerts";
 import { hasConfiguredKeyLimits } from "./context.shared";
 import { parsePresetReference } from "./presetReference";
-import { enforcedSpendLimit, shadowSpendLimitOnce, type SpendLimitSlot } from "@core/spend-limits";
+import { enforcedSpendLimit, shadowSpendLimitOnce, startSpendLimitFootprint, type SpendLimitSlot } from "@core/spend-limits";
 export { parseW3cTraceContext } from "@observability/trace-context";
 
 const MIN_CREDIT_AMOUNT = 1.0;
@@ -537,6 +537,13 @@ export async function guardContext(args: {
     onCreditCacheWrite?: (write: Promise<void>) => void;
 }): Promise<GuardResult<{ context: any; providers: any[]; resolvedModel?: string | null; candidateDiagnostics: ProviderCandidateBuildDiagnostics }>> {
     try {
+        // Enforce mode: read whether any spend limit can apply to this key while the context loads.
+        const spendLimitFootprint = startSpendLimitFootprint({
+            workspaceId: args.workspaceId,
+            keyId: args.apiKeyId,
+            internal: args.internal,
+            slot: args.spendLimit,
+        });
         const context = await fetchGatewayContext({
             workspaceId: args.workspaceId,
             model: args.model,
@@ -565,13 +572,16 @@ export async function guardContext(args: {
         }
 
         // Enforce mode only: the spend-limit coordinator (key caps, department and workspace
-        // budgets), decided once per request however many candidate models are checked.
+        // budgets), decided once per request however many candidate models are checked. Skipped
+        // when this context and the footprint both show nothing it could enforce.
         const enforced = enforcedSpendLimit({
             workspaceId: args.workspaceId,
             keyId: args.apiKeyId,
             requestId: args.requestId,
             internal: args.internal,
             slot: args.spendLimit,
+            footprint: spendLimitFootprint,
+            keyLimit: context.keyLimit,
         });
         const spendLimitStartedAt = performance.now();
         const decision = enforced ? await enforced : null;
