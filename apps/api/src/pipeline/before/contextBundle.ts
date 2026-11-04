@@ -245,10 +245,44 @@ function compose(
     };
 }
 
+type AliasRow = { model_slug: string | null };
+type RouteRow = { model_slug: string | null; provider_model_id: string | null; effective_from: string | null; effective_to: string | null };
+
+/**
+ * Resolves the requested model now, with the same rules and tables as the workspace RPC
+ * (private.gateway_context_access): an enabled alias, else the provider-scoped route slug
+ * (`provider/provider_model_slug`) of a routing-enabled route in its effective window (latest
+ * effective_from first, then provider_model_id), else the name itself. Two small indexed reads,
+ * in parallel. Throws on a database error, as the RPC would.
+ */
+export async function resolveRequestedModel(model: string): Promise<string> {
+    const supabase = getSupabaseAdmin();
+    const slash = model.indexOf("/");
+    const [alias, route] = await Promise.all([
+        supabase.from("v2_model_aliases").select("model_slug").eq("alias_slug", model).eq("enabled", true)
+            .not("model_slug", "is", null).limit(1),
+        slash > 0
+            ? supabase.from("v2_model_provider_routes").select("model_slug,provider_model_id,effective_from,effective_to")
+                .eq("provider_slug", model.slice(0, slash)).eq("provider_model_slug", model.slice(slash + 1)).eq("routing_enabled", true)
+            : Promise.resolve({ data: [] as RouteRow[], error: null }),
+    ]);
+    if (alias.error || route.error) throw new Error("gateway_model_resolution_failed");
+    const aliased = ((alias.data ?? []) as unknown as AliasRow[]).find(row => typeof row.model_slug === "string")?.model_slug;
+    if (aliased) return aliased;
+    const now = Date.now();
+    const at = (value: string | null) => (value ? Date.parse(value) : Number.NaN);
+    const routed = ((route.data ?? []) as unknown as RouteRow[])
+        .filter(row => typeof row.model_slug === "string" && !(at(row.effective_from) > now) && !(at(row.effective_to) <= now))
+        .sort((left, right) => (at(right.effective_from) || 0) - (at(left.effective_from) || 0) ||
+            String(left.provider_model_id ?? "").localeCompare(String(right.provider_model_id ?? "")))[0];
+    return routed?.model_slug ?? model;
+}
+
 /**
  * Builds the bundle for a new model from the public catalogue and a cached workspace part, with
- * no workspace RPC. The resolved model is the catalogue's (the RPC path checks that the two agree
- * and reloads the catalogue when they do not; both resolve aliases from the same tables).
+ * no workspace RPC. The model is resolved fresh (resolveRequestedModel), as the RPC does, and the
+ * catalogue snapshot is reloaded when it disagrees, exactly as on the RPC path. An alias edit
+ * therefore reaches this path as soon as it reaches a full load.
  */
 async function composeFromCachedWorkspace(
     args: { workspaceId: string; model: string; endpoint: string; disableCache?: boolean; skipCatalogMemoryCache?: boolean },
@@ -257,26 +291,35 @@ async function composeFromCachedWorkspace(
     const endpoints = publicCatalogEndpoints(args.endpoint);
     const started = performance.now();
     if (args.skipCatalogMemoryCache) invalidateTieredL1(publicCatalogKey(args.model, endpoints));
-    let { entry, loaded } = args.disableCache
-        ? { entry: await fetchCatalogEntry(args.model, endpoints), loaded: true }
-        : await readCatalogEntry(args.model, endpoints);
-    const catalogReadMs = performance.now() - started;
-    let rpcMs = 0;
+    let catalogReadMs = 0;
+    const catalogPromise = (args.disableCache
+        ? fetchCatalogEntry(args.model, endpoints).then(entry => ({ entry, loaded: true }))
+        : readCatalogEntry(args.model, endpoints)
+    ).then(result => {
+        catalogReadMs = performance.now() - started;
+        return result;
+    });
+    const resolveStarted = performance.now();
+    const resolvedPromise = resolveRequestedModel(args.model).then(value => ({ value, ms: performance.now() - resolveStarted }));
+    const [{ entry, loaded }, resolved] = await Promise.all([catalogPromise, resolvedPromise]);
+    let rpcMs = resolved.ms;
     let catalog = entry ? selectCatalogSnapshot(entry) : null;
-    if (!catalog) {
+    let reloaded = loaded;
+    // Same rule as the RPC path: never use another model's routes; reload authoritatively.
+    if (!catalog || catalog.resolvedModel !== resolved.value) {
         const refreshStarted = performance.now();
-        entry = await fetchCatalogEntry(args.model, endpoints);
-        loaded = true;
+        const fresh = await fetchCatalogEntry(args.model, endpoints);
+        reloaded = true;
         rpcMs += performance.now() - refreshStarted;
-        catalog = selectCatalogSnapshot(entry);
-        if (!catalog) throw new Error("gateway_public_catalog_changed_during_request");
-        if (!args.disableCache) await rememberCatalogEntry(args.model, endpoints, entry).catch(() => undefined);
+        catalog = selectCatalogSnapshot(fresh);
+        if (!catalog || catalog.resolvedModel !== resolved.value) throw new Error("gateway_public_catalog_changed_during_request");
+        if (!args.disableCache) await rememberCatalogEntry(args.model, endpoints, fresh).catch(() => undefined);
     }
     // Placeholders only: context.ts replaces every account field with its cached copies.
     const context = {
-        workspace_id: args.workspaceId, resolved_model: catalog.resolvedModel, preset: null,
+        workspace_id: args.workspaceId, resolved_model: resolved.value, preset: null,
         key_ok: { ok: true, reason: null }, key_limit_ok: { ok: true, reason: null }, credit_ok: { ok: true, reason: null },
     };
-    const cacheStatus = args.disableCache ? "bypass" : loaded ? "miss" : "hit";
+    const cacheStatus = args.disableCache ? "bypass" : reloaded ? "miss" : "hit";
     return compose(catalog, context, workspace, { cacheStatus, catalogReadMs, rpcMs, workspaceFromCache: true });
 }

@@ -37,15 +37,16 @@ const call = (model: string, overrides: Record<string, unknown> = {}) =>
     ({ workspaceId: WORKSPACE, apiKeyId: KEY, model, endpoint: "responses", ...overrides });
 
 function snapshot(model: string, at: number) {
-    const provider = model.split("/")[0];
+    const resolved = aliases.get(model) ?? model;
+    const provider = resolved.split("/")[0];
     return {
-        version: 1, model, resolvedModel: model, endpoints: ["text.generate", "responses"],
+        version: 1, model, resolvedModel: resolved, endpoints: ["text.generate", "responses"],
         checkedAt: at, expiresAt: at + 300_000,
         variants: ["text.generate", "responses"].map(endpoint => ({
             endpoint,
             pricing: { [provider]: { provider, model, endpoint, effective_from: null, effective_to: null, currency: "USD", version: "v1", rules: [] } },
             providers: [{
-                provider_id: provider, api_model_id: model, provider_model_slug: "upstream", pricing_key: provider,
+                provider_id: provider, api_model_id: resolved, provider_model_slug: "upstream", pricing_key: provider,
                 model_status: "active", capability_status: "active", input_modalities: ["text"], output_modalities: ["text"],
                 capability_params: {}, supports_endpoint: true, base_weight: 1, byok_meta: [],
             }],
@@ -56,11 +57,14 @@ function snapshot(model: string, at: number) {
     };
 }
 
+// Enabled aliases (alias_slug -> model_slug) as the database holds them now.
+const aliases = new Map<string, string>();
+const resolutionReads: string[] = [];
 let keyLimit: Record<string, unknown> = { ok: true, reason: null, buckets: null };
 function bundle(params: Record<string, any>) {
     return { data: {
         context: {
-            workspace_id: params.workspace_id, resolved_model: params.model,
+            workspace_id: params.workspace_id, resolved_model: aliases.get(params.model) ?? params.model,
             key_ok: { ok: true }, key_limit_ok: keyLimit,
             credit_ok: { ok: true, balance_nanos: 9_000_000_000 },
             team_enrichment: null, key_enrichment: null,
@@ -82,6 +86,7 @@ beforeEach(() => {
     state.store.clear(); state.puts = []; state.background = [];
     state.store.set(`gateway:keyver:id:${KEY}`, "1");
     keyLimit = { ok: true, reason: null, buckets: null };
+    aliases.clear(); resolutionReads.length = 0;
     state.rpc.mockReset().mockImplementation(async (name: string, params: Record<string, any>) => {
         if (name === "gateway_fetch_request_context_bundle") return bundle(params);
         if (name === "gateway_fetch_public_catalog_at") return { data: snapshot(params.p_model, Date.parse(params.p_at)), error: null };
@@ -90,6 +95,21 @@ beforeEach(() => {
     state.from.mockReset().mockImplementation((table: string) => {
         if (table === "wallets") {
             const query: any = { select: () => query, eq: () => query, maybeSingle: async () => ({ data: state.wallet, error: null }) };
+            return query;
+        }
+        if (table === "v2_model_aliases" || table === "v2_model_provider_routes") {
+            // resolveRequestedModel: the alias row read now, and no provider-scoped route rows.
+            resolutionReads.push(table);
+            const filters: Record<string, unknown> = {};
+            const result = () => ({
+                data: table === "v2_model_aliases" && aliases.has(String(filters.alias_slug)) ? [{ model_slug: aliases.get(String(filters.alias_slug)) }] : [],
+                error: null,
+            });
+            const query: any = {
+                select: () => query, not: () => query, limit: () => query,
+                eq: (column: string, value: unknown) => { filters[column] = value; return query; },
+                then: (resolve: (value: unknown) => unknown) => resolve(result()),
+            };
             return query;
         }
         if (table === "byok_keys") {
@@ -130,6 +150,43 @@ describe("context for a model the key has not used yet", () => {
         const third = await fetchGatewayContext(call("anthropic/model-b"));
         expect(third.contextTelemetry?.cacheStatus).toBe("hit");
         expect(rpcCalls("gateway_fetch_request_context_bundle")).toHaveLength(1);
+    });
+
+    it("resolves the model now, so an alias edit is picked up as on a full load even when the catalogue copy is stale", async () => {
+        const { fetchGatewayContext } = await import("./context");
+        state.store.set("gateway:keyver:id:key-b", "7"); // its own version token, so no shared static entry
+        aliases.set("lab/alias", "openai/target-1");
+        // Key A caches the catalogue snapshot for the alias (pointing at target-1).
+        const before = await fetchGatewayContext(call("lab/alias")); await drain();
+        expect(before.resolvedModel).toBe("openai/target-1");
+        // Key B has its workspace data cached but has not used the alias yet.
+        await fetchGatewayContext(call("openai/model-a", { apiKeyId: "key-b" })); await drain();
+
+        // The alias is edited. Nothing invalidates the cached catalogue snapshot yet.
+        aliases.set("lab/alias", "anthropic/target-2");
+        const catalogueReads = rpcCalls("gateway_fetch_public_catalog_at").length;
+        const after = await fetchGatewayContext(call("lab/alias", { apiKeyId: "key-b" })); await drain();
+        expect(after.contextTelemetry?.cacheStatus).toBe("model_miss");
+        expect(after.resolvedModel).toBe("anthropic/target-2");
+        expect(after.providers.map(provider => provider.providerId)).toEqual(["anthropic"]);
+        // The stale snapshot was replaced by an authoritative reload, as on the RPC path.
+        expect(rpcCalls("gateway_fetch_public_catalog_at").length).toBe(catalogueReads + 1);
+        expect(resolutionReads).toContain("v2_model_aliases");
+        // Only the first request of each key ran the workspace RPC.
+        expect(rpcCalls("gateway_fetch_request_context_bundle")).toHaveLength(2);
+    });
+
+    it("fails like the workspace RPC when the model cannot be resolved", async () => {
+        const { fetchGatewayContext } = await import("./context");
+        await fetchGatewayContext(call("openai/model-a")); await drain();
+        const from = state.from.getMockImplementation()!;
+        state.from.mockImplementation((table: string) => {
+            if (table !== "v2_model_aliases") return from(table);
+            const query: any = { select: () => query, eq: () => query, not: () => query, limit: () => query,
+                then: (resolve: (value: unknown) => unknown) => resolve({ data: null, error: { message: "timeout" } }) };
+            return query;
+        });
+        await expect(fetchGatewayContext(call("anthropic/model-b"))).rejects.toThrow("gateway_model_resolution_failed");
     });
 
     it("gives the same context as a full load of that model", async () => {
