@@ -9,8 +9,8 @@ afterAll(teardownTestRuntime);
 
 describe("Wafer ZDR routing", () => {
 	// Every Wafer Serverless request is ZDR (docs.wafer.ai/serverless/zero-data-retention),
-	// so neither offer sends the legacy Wafer-ZDR header.
-	it.each(["wafer-zdr", "wafer"])("sends the same upstream headers for %s", async (providerId) => {
+	// so no Wafer offer sends the legacy Wafer-ZDR header.
+	it.each(["wafer-zdr", "wafer-us", "wafer"])("sends the same upstream headers for %s", async (providerId) => {
 		const executor = resolveProviderExecutor(providerId, "text.generate");
 		expect(executor).toBeTruthy();
 		const mock = installFetchMock([{

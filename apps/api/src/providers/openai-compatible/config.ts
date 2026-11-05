@@ -29,7 +29,8 @@ import { deepInfraMediaUrl } from "../deepinfra/config";
 
 function normalizeCompatProviderId(providerId: string): string {
 	const normalized = normalizeProviderId(providerId);
-	return normalized === "wafer-zdr" ? "wafer" : normalized;
+	// Wafer (ZDR) and Wafer US are offers on the same Wafer account and endpoint.
+	return normalized === "wafer-zdr" || normalized === "wafer-us" ? "wafer" : normalized;
 }
 
 function configError(code: string): Error & { code: string } {

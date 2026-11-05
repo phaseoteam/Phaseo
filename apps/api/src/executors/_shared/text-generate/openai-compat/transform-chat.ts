@@ -96,6 +96,7 @@ export function irToOpenAIChat(
 				providerId === "stepfun" ||
 				providerId === "wafer" ||
 				providerId === "wafer-zdr" ||
+				providerId === "wafer-us" ||
 				providerId === "doubleword" ||
 				// TokenHub asks for historical reasoning_content on tool calls in thinking mode
 				// (https://intl.cloud.tencent.com/document/product/1300/80695).
