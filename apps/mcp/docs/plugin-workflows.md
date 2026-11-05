@@ -31,9 +31,10 @@ No paid provider calls or production deployments are part of local validation.
 Tool results render inline as cards: `models_list` as rows laid out like the
 website's model list, `cost_estimate` as a total with its breakdown, and
 `credits_get` as the balance with 30-day usage. Cards have no tabs or drill-ins and
-at most two actions; "Compare these" and "Open explorer" request fullscreen, which
-the explorer also uses when launched from the sidebar or thread panel. Nothing opens
-fullscreen on its own.
+at most two actions; "Compare these" and "Open explorer" request fullscreen. Nothing
+opens fullscreen on its own. The resource prefers `inline`, and `models_list`
+declares no sidebar or thread entry points: ChatGPT opens entry-point tools
+fullscreen even when the model calls them.
 
 Colours fall back to Phaseo's neutral tokens from `apps/web/src/app/globals.css`
 but take the host's MCP Apps theme variables and font stack when provided. The cards
@@ -45,7 +46,7 @@ Before release:
 - Review and merge PR 2680 after current checks and review threads are clear.
 - Deploy API first, then MCP with the inference receipt migration and bindings.
 - Verify default read-only OAuth and optional gateway:access consent in the real host.
-- Verify light/dark logos, sidebar/thread entrypoints, deep links and attached context.
+- Verify light/dark logos, inline cards, "Open explorer", deep links and attached context.
 - With an explicitly approved spend limit, verify one paid text run and its billing.
 - Publish the prepared private plugin update and verify its installed version.
 
