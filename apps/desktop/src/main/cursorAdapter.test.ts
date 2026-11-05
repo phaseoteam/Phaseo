@@ -29,6 +29,17 @@ describe("Cursor SDK harness", () => {
 		expect(plans[0]).toMatchObject({ id: "run:todos", text: JSON.stringify(result, null, 2), steps: [{ text: "Inspect 世界", status: "completed" }, { text: "Implement", status: "in_progress" }, { text: "Skipped", status: "cancelled" }] });
 		expect(plans[1]).toMatchObject({ id: "run:todos", steps: [] });
 	});
+	it("reports which of the person's MCP servers and tools a finished step called", async () => {
+		const { run, callbacks } = fixture();
+		// Cursor reports MCP calls as its "mcp" tool, with the server and tool in the arguments and the result in its own shape.
+		run.stream.mockImplementation(async function* () {
+			yield { type: "tool_call", call_id: "forecast", name: "mcp", args: { providerIdentifier: "phaseo_0b3c1a2e5d6f4a7b8c9d0e1f2a3b4c5d", toolName: "forecast", args: { city: "Leeds" } }, status: "completed", result: { status: "success", value: { content: [{ text: { text: "Sunny" } }, { image: { data: "QUJD", mimeType: "image/png" } }], isError: false } } } as never;
+			yield { type: "tool_call", call_id: "other", name: "mcp", args: { providerIdentifier: "github", toolName: "search", args: {} }, status: "completed", result: { status: "error", error: "Failed" } } as never;
+		});
+		await new CursorAdapter("/data", () => "key").run(task, "/project", "Forecast", callbacks, account);
+		expect(callbacks.onActivity).toHaveBeenCalledWith(expect.objectContaining({ id: "forecast", mcpCall: { server: "phaseo_0b3c1a2e5d6f4a7b8c9d0e1f2a3b4c5d", tool: "forecast", input: { city: "Leeds" }, result: { content: [{ type: "text", text: "Sunny" }, { type: "image", data: "QUJD", mimeType: "image/png" }] } } }));
+		expect(callbacks.onActivity.mock.calls.map(([activity]) => activity).find(activity => activity.id === "other")).not.toHaveProperty("mcpCall");
+	});
 	it("disables native tools and inherited settings for Chat and limits Plan tools", () => {
 		const options = cursorOptions(task, "/project", "secret", {} as never, []); expect(options.tools).toEqual([]); expect(options.local?.settingSources).toEqual([]); expect(options.mcpServers).toEqual({});
 		const plan = cursorOptions({ ...task, mode: "plan" }, "/project", "secret", {} as never, []); expect(plan.tools).toContain("read"); expect(plan.tools).not.toContain("shell"); expect(plan.tools).not.toContain("task"); expect(plan.local?.settingSources).toEqual([]);

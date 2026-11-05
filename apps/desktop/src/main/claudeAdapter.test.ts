@@ -45,6 +45,17 @@ describe("Claude SDK integration", () => {
 		const [call, result] = onActivity.mock.calls.map(([activity]) => activity);
 		expect(call).toMatchObject({ id: "call", title: "mcp__phaseo__run_app_command", status: "running", text: "{\"command\":\"theme.set\",\"args\":{\"theme\":\"dark\"}}" });
 		expect(result).toMatchObject({ id: "call", title: "mcp__phaseo__run_app_command", status: "completed", text: "{\"command\":\"theme.set\",\"args\":{\"theme\":\"dark\"}}\n\n{\"command\":\"theme.set\",\"done\":true}" });
+		expect(result).not.toHaveProperty("mcpCall");
+	});
+	it("reports which of the person's MCP servers and tools a finished step called", async () => {
+		sdk.query.mockReturnValue(Object.assign((async function* () {
+			yield { type: "assistant", parent_tool_use_id: null, session_id: "native", message: { id: "call", content: [{ type: "tool_use", id: "call", name: "mcp__phaseo_0b3c1a2e5d6f4a7b8c9d0e1f2a3b4c5d__forecast", input: { city: "Leeds" } }] } };
+			yield { type: "user", parent_tool_use_id: null, session_id: "native", message: { content: [{ type: "tool_result", tool_use_id: "call", content: [{ type: "text", text: "Sunny" }], is_error: false }] } };
+			yield { type: "result", subtype: "success", is_error: false, result: "Done" };
+		})(), { close: vi.fn() }));
+		const onActivity = vi.fn();
+		await new ClaudeAdapter().run({ ...task, mode: "code" }, ".", "Forecast", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "accept", onActivity });
+		expect(onActivity.mock.calls.map(([activity]) => activity).find(activity => activity.status === "completed")).toMatchObject({ mcpCall: { server: "phaseo_0b3c1a2e5d6f4a7b8c9d0e1f2a3b4c5d", tool: "forecast", input: { city: "Leeds" } } });
 	});
 	it.each([[true, ["user"]], [undefined, ["user", "project", "local"]]] as const)("loads the repository's own settings, hooks and MCP servers only for a checkout the person opened (untrusted: %s)", async (untrustedCheckout, sources) => {
 		sdk.query.mockReturnValue(Object.assign((async function* () { yield { type: "result", subtype: "success", is_error: false, result: "Done" }; })(), { close: vi.fn() }));

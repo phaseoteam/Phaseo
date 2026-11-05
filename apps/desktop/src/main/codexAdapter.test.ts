@@ -207,6 +207,7 @@ describe("Codex native integration", () => {
 				send({ method: "item/agentMessage/delta", params: { threadId: "other", itemId: "a", delta: "Ignored" } });
 				send({ method: "item/agentMessage/delta", params: { threadId: "native", itemId: "a", delta: "Hello" } });
 				send({ method: "item/completed", params: { threadId: "native", item: { id: "command", type: "commandExecution", command: "git status", aggregatedOutput: "clean", status: "completed" } } });
+				send({ method: "item/completed", params: { threadId: "native", item: { id: "mcp", type: "mcpToolCall", server: "phaseo_0b3c1a2e5d6f4a7b8c9d0e1f2a3b4c5d", tool: "forecast", arguments: { city: "Leeds" }, result: { content: [{ type: "text", text: "Sunny" }] }, status: "completed" } } });
 				send({ method: "item/reasoning/summaryTextDelta", params: { threadId: "native", itemId: "reasoning", delta: "Checking" } });
 				send({ method: "turn/completed", params: { threadId: "native", turn: { id: "turn", status: "completed" } } });
 			}
@@ -218,6 +219,8 @@ describe("Codex native integration", () => {
 		expect(onSession).toHaveBeenCalledWith("native"); expect(child.kill).toHaveBeenCalled();
 		expect(onActivity).toHaveBeenCalledWith(expect.objectContaining({ title: "git status", text: "clean", status: "completed" }));
 		expect(onActivity).toHaveBeenCalledWith(expect.objectContaining({ type: "reasoning", text: "Checking", append: true }));
+		// An MCP App finds its page from the server and tool the step reports.
+		expect(onActivity).toHaveBeenCalledWith(expect.objectContaining({ title: "forecast", mcpCall: { server: "phaseo_0b3c1a2e5d6f4a7b8c9d0e1f2a3b4c5d", tool: "forecast", input: { city: "Leeds" }, result: { content: [{ type: "text", text: "Sunny" }] } } }));
 	});
 	it("uses native forks rather than presenting visible history as a resumed session", async () => {
 		const methods: string[] = [];
