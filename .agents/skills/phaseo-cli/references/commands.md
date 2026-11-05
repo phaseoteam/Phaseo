@@ -129,8 +129,8 @@ phaseo rate-limits policies create --name <name> [--description <text>] [--reque
 phaseo rate-limits policies get <id> --json
 phaseo rate-limits policies update <id> [--name <name>] [--description <text>] [--requests-per-minute <n>] [--tokens-per-minute <n>] [--concurrent-requests <n>] [--fail-closed true|false] --json
 phaseo rate-limits policies delete <id> [--yes] --json
-phaseo rate-limits assignments list [--policy <id>] [--target-type key|member|department|guardrail|end_user_default] [--limit <n>] [--offset <n>] --json
-phaseo rate-limits assignments create --policy <id> --target-type key|member|department|guardrail|end_user_default [--target <id>] --json
+phaseo rate-limits assignments list [--policy <id>] [--target-type key|member|department|end_user_default] [--limit <n>] [--offset <n>] --json
+phaseo rate-limits assignments create --policy <id> --target-type key|member|department|end_user_default [--target <id>] --json
 phaseo rate-limits assignments get <id> --json
 phaseo rate-limits assignments update <id> --policy <id> --json
 phaseo rate-limits assignments delete <id> [--yes] --json

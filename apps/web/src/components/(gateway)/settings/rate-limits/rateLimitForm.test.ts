@@ -60,7 +60,7 @@ describe("rate limit policy form", () => {
 	});
 
 	it("names targets and reports ones that no longer exist", () => {
-		expect(targetName("guardrail", "g1", targets, "Member")).toBe("Contractors");
+		expect(targetName("department", "d1", targets, "Member")).toBe("Engineering");
 		expect(targetName("member", "u2", targets, "Member")).toBe("Member");
 		expect(targetName("key", "gone", targets, "Member")).toBeNull();
 		expect(targetName("end_user_default", null, targets, "Member")).toBeNull();

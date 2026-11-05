@@ -2918,14 +2918,14 @@ class RateLimitAssignment(TypedDict):
 	id: str
 	policy_id: str
 	target_id: Optional[str]
-	target_type: Literal["key", "member", "department", "guardrail", "end_user_default"]
+	target_type: Literal["key", "member", "department", "end_user_default"]
 	updated_at: str
 	workspace_id: str
 
 class RateLimitAssignmentInput(TypedDict):
 	policy_id: str
 	target_id: NotRequired[str]
-	target_type: Literal["key", "member", "department", "guardrail", "end_user_default"]
+	target_type: Literal["key", "member", "department", "end_user_default"]
 
 class RateLimitAssignmentListResponse(TypedDict):
 	data: List[RateLimitAssignment]
@@ -2976,7 +2976,7 @@ class RateLimitPolicyUpdateInput(TypedDict):
 	requests_per_minute: NotRequired[Optional[int]]
 	tokens_per_minute: NotRequired[Optional[int]]
 
-RateLimitTargetType = Literal["key", "member", "department", "guardrail", "end_user_default"]
+RateLimitTargetType = Literal["key", "member", "department", "end_user_default"]
 
 class RateLimitTierResponse(TypedDict):
 	data: Dict[str, Any]

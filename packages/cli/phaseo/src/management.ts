@@ -482,12 +482,12 @@ const COMMANDS: Record<string, CommandSpec> = {
 		base: "/rate-limits/assignments",
 		noun: "rate limit assignment",
 		label: "Rate limit assignment id",
-		listUsage: `[--policy <id>] [--target-type key|member|department|guardrail|end_user_default] ${PAGE}`,
+		listUsage: `[--policy <id>] [--target-type key|member|department|end_user_default] ${PAGE}`,
 		listBuild: (_args, flags) => ({
 			method: "GET",
 			path: appendQuery("/rate-limits/assignments", { policy_id: flagString(flags, "policy"), target_type: flagString(flags, "target-type"), ...pageQuery(flags) }),
 		}),
-		createUsage: "--policy <id> --target-type key|member|department|guardrail|end_user_default [--target <id>]",
+		createUsage: "--policy <id> --target-type key|member|department|end_user_default [--target <id>]",
 		updateUsage: "--policy <id>",
 		create: (flags) => ({
 			policy_id: required(flagString(flags, "policy"), "policy"),

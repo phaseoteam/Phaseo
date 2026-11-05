@@ -5119,7 +5119,7 @@ paths:
             minimum: 1
             maximum: 250
       summary: List rate limit policies
-      description: Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: يسرد سياسات حدود المعدل المسماة لمساحة العمل. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي.
       responses:
         '200':
           description: Rate limit policies
@@ -5139,7 +5139,7 @@ paths:
         - Gateway
       operationId: createRateLimitPolicy
       summary: Create a rate limit policy
-      description: Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: ينشئ سياسة مسماة بحدود للطلبات في الدقيقة أو الرموز في الدقيقة أو الطلبات المتزامنة. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي.
       requestBody:
         required: true
         content:
@@ -5174,7 +5174,7 @@ paths:
         - Gateway
       operationId: getRateLimitPolicy
       summary: Get a rate limit policy
-      description: Returns one rate limit policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: يعيد سياسة حد معدل واحدة. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي.
       responses:
         '200':
           description: Rate limit policy
@@ -5194,7 +5194,7 @@ paths:
         - Gateway
       operationId: updateRateLimitPolicy
       summary: Update a rate limit policy
-      description: Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: يغيّر اسم السياسة أو وصفها أو حدودها أو إعداد الإغلاق عند الفشل. اضبط الحد على null لإزالته؛ يجب أن يبقى حد واحد على الأقل. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي.
       requestBody:
         required: true
         content:
@@ -5220,7 +5220,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitPolicy
       summary: Delete a rate limit policy
-      description: Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: يحذف سياسة وكل تعيين يستخدمها. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي.
       responses:
         '200':
           description: Rate limit policy deleted
@@ -5241,7 +5241,7 @@ paths:
         - Gateway
       operationId: listRateLimitAssignments
       summary: List rate limit assignments
-      description: Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: يسرد أماكن تطبيق سياسات حدود المعدل، مع إمكانية التصفية حسب السياسة أو نوع الهدف. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي.
       parameters:
         - name: policy_id
           in: query
@@ -5292,7 +5292,7 @@ paths:
         - Gateway
       operationId: createRateLimitAssignment
       summary: Assign a rate limit policy
-      description: Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: يطبّق سياسة على مفتاح API واحد أو عضو في مساحة العمل أو قسم، أو يضبط الإعداد الافتراضي لمساحة العمل لكل مستخدم نهائي. يمكن أن يكون لكل هدف سياسة واحدة. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على كل تعيين.
       requestBody:
         required: true
         content:
@@ -5327,7 +5327,7 @@ paths:
         - Gateway
       operationId: getRateLimitAssignment
       summary: Get a rate limit assignment
-      description: Returns one rate limit assignment. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: يعيد تعيين حد معدل واحدًا. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي.
       responses:
         '200':
           description: Rate limit assignment
@@ -5347,7 +5347,7 @@ paths:
         - Gateway
       operationId: updateRateLimitAssignment
       summary: Change an assignment's policy
-      description: Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: يبدّل السياسة المطبقة على هدف التعيين. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي.
       requestBody:
         required: true
         content:
@@ -5373,7 +5373,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitAssignment
       summary: Delete a rate limit assignment
-      description: Removes a policy from its target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: يزيل سياسة من هدفها. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي.
       responses:
         '200':
           description: Rate limit assignment deleted
@@ -24198,12 +24198,11 @@ components:
       additionalProperties: false
     RateLimitTargetType:
       type: string
-      description: What a policy applies to. A department policy is one allowance shared by its members and linked keys. A guardrail policy gives each key and member the guardrail covers its own allowance. end_user_default applies to each end user identified on a request.
+      description: ما تنطبق عليه السياسة. سياسة القسم حصة واحدة يتشاركها أعضاؤه والمفاتيح المرتبطة به. ينطبق end_user_default على كل مستخدم نهائي يُحدَّد في الطلب.
       enum:
         - key
         - member
         - department
-        - guardrail
         - end_user_default
     RateLimitAssignment:
       type: object
@@ -24231,7 +24230,7 @@ components:
           type: string
           format: uuid
           nullable: true
-          description: Id of the key, member (user id), department, or guardrail. Null for end_user_default.
+          description: معرّف المفتاح أو العضو (معرّف المستخدم) أو القسم. null لـ end_user_default.
         created_by:
           type: string
           format: uuid
@@ -24257,7 +24256,7 @@ components:
         target_id:
           type: string
           format: uuid
-          description: Id of the key, member (user id), department, or guardrail. Omit for end_user_default.
+          description: معرّف المفتاح أو العضو (معرّف المستخدم) أو القسم. احذفه لـ end_user_default.
       additionalProperties: false
     RateLimitAssignmentUpdateInput:
       type: object

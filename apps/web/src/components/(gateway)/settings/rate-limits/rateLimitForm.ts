@@ -99,7 +99,6 @@ export function targetOptions(
 			case "key": return data.targets.keys.map((key) => ({ value: key.id, label: key.name || key.prefix, description: key.prefix }));
 			case "member": return data.targets.members.map((member) => ({ value: member.id, label: member.name || unnamedMember, description: member.role }));
 			case "department": return data.targets.departments.map((department) => ({ value: department.id, label: department.name }));
-			case "guardrail": return data.targets.guardrails.map((guardrail) => ({ value: guardrail.id, label: guardrail.name }));
 		}
 	})();
 	return options.filter((option) => !taken.has(option.value));
@@ -122,7 +121,6 @@ export function targetName(
 			return member ? member.name || unnamedMember : null;
 		}
 		case "department": return targets.departments.find((entry) => entry.id === id)?.name ?? null;
-		case "guardrail": return targets.guardrails.find((entry) => entry.id === id)?.name ?? null;
 		case "end_user_default": return null;
 	}
 }

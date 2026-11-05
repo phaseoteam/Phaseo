@@ -12019,6 +12019,136 @@
 			"ja": "parameter_specs を指定すると、各オファーのリクエストパラメーターを標準形式で追加します。",
 			"zh-Hans": "设置为 parameter_specs 可按标准格式附加每个报价的请求参数。",
 			"ar": "اضبطها على parameter_specs لإضافة معلمات الطلب لكل عرض بالصيغة القياسية."
+		},
+		"Applies a policy to one API key, workspace member or department, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for every assignment.": {
+			"es": "Aplica una política a una clave de API, un miembro del espacio de trabajo o un departamento, o define el valor predeterminado del espacio de trabajo para cada usuario final. Cada destino puede tener una política. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en cada asignación.",
+			"fr": "Applique une politique à une clé d’API, à un membre de l’espace de travail ou à un département, ou définit la valeur par défaut de l’espace de travail pour chaque utilisateur final. Chaque cible peut avoir une politique. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests à chaque affectation.",
+			"de": "Wendet eine Richtlinie auf einen API-Schlüssel, ein Workspace-Mitglied oder eine Abteilung an oder legt den Workspace-Standard für jeden Endnutzer fest. Jedes Ziel kann eine Richtlinie haben. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für jede Zuweisung durch.",
+			"pt-BR": "Aplica uma política a uma chave de API, a um membro do workspace ou a um departamento, ou define o padrão do workspace para cada usuário final. Cada destino pode ter uma política. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em cada atribuição.",
+			"hi": "किसी एक API कुंजी, वर्कस्पेस सदस्य या विभाग पर नीति लागू करता है, या हर अंतिम उपयोगकर्ता के लिए वर्कस्पेस का डिफ़ॉल्ट सेट करता है। हर लक्ष्य पर एक नीति हो सकती है। गेटवे हर असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "1 つの API キー、ワークスペースメンバー、または部門にポリシーを適用するか、各エンドユーザーに対するワークスペースのデフォルトを設定します。各対象に設定できるポリシーは 1 つです。ゲートウェイはすべての割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "将策略应用于一个 API 密钥、工作区成员或部门，或为每个最终用户设置工作区默认值。每个目标只能有一个策略。网关会对每个分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "يطبّق سياسة على مفتاح API واحد أو عضو في مساحة العمل أو قسم، أو يضبط الإعداد الافتراضي لمساحة العمل لكل مستخدم نهائي. يمكن أن يكون لكل هدف سياسة واحدة. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على كل تعيين."
+		},
+		"What a policy applies to. A department policy is one allowance shared by its members and linked keys. end_user_default applies to each end user identified on a request.": {
+			"es": "A qué se aplica una política. Una política de departamento es una asignación compartida por sus miembros y las claves vinculadas. end_user_default se aplica a cada usuario final identificado en una solicitud.",
+			"fr": "Ce à quoi une politique s’applique. Une politique de département est une allocation partagée par ses membres et les clés liées. end_user_default s’applique à chaque utilisateur final identifié dans une requête.",
+			"de": "Worauf eine Richtlinie angewendet wird. Eine Abteilungsrichtlinie ist ein gemeinsames Kontingent für ihre Mitglieder und verknüpften Schlüssel. end_user_default gilt für jeden Endnutzer, der in einer Anfrage identifiziert wird.",
+			"pt-BR": "A que uma política se aplica. Uma política de departamento é uma cota compartilhada por seus membros e chaves vinculadas. end_user_default se aplica a cada usuário final identificado em uma solicitação.",
+			"hi": "नीति किस पर लागू होती है। विभाग की नीति एक साझा सीमा है, जिसे उसके सदस्य और जुड़ी कुंजियाँ साझा करते हैं। end_user_default अनुरोध में पहचाने गए हर अंतिम उपयोगकर्ता पर लागू होता है।",
+			"ja": "ポリシーの適用対象です。部門ポリシーは、そのメンバーとリンクされたキーで共有される 1 つの枠です。end_user_default はリクエストで識別された各エンドユーザーに適用されます。",
+			"zh-Hans": "策略的适用对象。部门策略是由其成员和关联密钥共享的一份额度。end_user_default 适用于请求中识别出的每个最终用户。",
+			"ar": "ما تنطبق عليه السياسة. سياسة القسم حصة واحدة يتشاركها أعضاؤه والمفاتيح المرتبطة به. ينطبق end_user_default على كل مستخدم نهائي يُحدَّد في الطلب."
+		},
+		"Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.": {
+			"es": "Enumera las políticas de límite de velocidad con nombre del espacio de trabajo. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en las asignaciones de clave, miembro, departamento y usuario final predeterminado.",
+			"fr": "Liste les politiques de limite de débit nommées de l’espace de travail. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.",
+			"de": "Listet die benannten Rate-Limit-Richtlinien des Workspace auf. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für Zuweisungen an Schlüssel, Mitglieder, Abteilungen und den Endnutzer-Standard durch.",
+			"pt-BR": "Lista as políticas de limite de taxa nomeadas do workspace. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.",
+			"hi": "वर्कस्पेस की नामित रेट लिमिट नीतियों की सूची देता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "ワークスペースの名前付きレート制限ポリシーを一覧表示します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "列出工作区的命名速率限制策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "يسرد سياسات حدود المعدل المسماة لمساحة العمل. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي."
+		},
+		"Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.": {
+			"es": "Crea una política con nombre con límites de solicitudes por minuto, tokens por minuto o solicitudes simultáneas. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en las asignaciones de clave, miembro, departamento y usuario final predeterminado.",
+			"fr": "Crée une politique nommée avec des limites de requêtes par minute, de tokens par minute ou de requêtes simultanées. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.",
+			"de": "Erstellt eine benannte Richtlinie mit Limits für Anfragen pro Minute, Tokens pro Minute oder gleichzeitige Anfragen. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für Zuweisungen an Schlüssel, Mitglieder, Abteilungen und den Endnutzer-Standard durch.",
+			"pt-BR": "Cria uma política nomeada com limites de solicitações por minuto, tokens por minuto ou solicitações simultâneas. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.",
+			"hi": "प्रति मिनट अनुरोध, प्रति मिनट टोकन या समवर्ती अनुरोध सीमाओं के साथ एक नामित नीति बनाता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "1 分あたりのリクエスト数、1 分あたりのトークン数、または同時リクエスト数の制限を持つ名前付きポリシーを作成します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "创建一个带有每分钟请求数、每分钟令牌数或并发请求限制的命名策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "ينشئ سياسة مسماة بحدود للطلبات في الدقيقة أو الرموز في الدقيقة أو الطلبات المتزامنة. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي."
+		},
+		"Returns one rate limit policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.": {
+			"es": "Devuelve una política de límite de velocidad. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en las asignaciones de clave, miembro, departamento y usuario final predeterminado.",
+			"fr": "Renvoie une politique de limite de débit. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.",
+			"de": "Gibt eine Rate-Limit-Richtlinie zurück. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für Zuweisungen an Schlüssel, Mitglieder, Abteilungen und den Endnutzer-Standard durch.",
+			"pt-BR": "Retorna uma política de limite de taxa. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.",
+			"hi": "एक रेट लिमिट नीति लौटाता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "1 つのレート制限ポリシーを返します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "返回一个速率限制策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "يعيد سياسة حد معدل واحدة. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي."
+		},
+		"Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.": {
+			"es": "Cambia el nombre, la descripción, los límites o el ajuste de bloqueo ante fallos de una política. Establece un límite en null para quitarlo; debe quedar al menos un límite. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en las asignaciones de clave, miembro, departamento y usuario final predeterminado.",
+			"fr": "Modifie le nom, la description, les limites ou le réglage de blocage en cas d’échec d’une politique. Définissez une limite sur null pour la supprimer ; au moins une limite doit rester. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.",
+			"de": "Ändert Name, Beschreibung, Limits oder die Fail-Closed-Einstellung einer Richtlinie. Setze ein Limit auf null, um es zu entfernen; mindestens ein Limit muss bleiben. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für Zuweisungen an Schlüssel, Mitglieder, Abteilungen und den Endnutzer-Standard durch.",
+			"pt-BR": "Altera o nome, a descrição, os limites ou a configuração de bloqueio em falha de uma política. Defina um limite como null para removê-lo; pelo menos um limite deve permanecer. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.",
+			"hi": "नीति का नाम, विवरण, सीमाएँ या फ़ेल-क्लोज़्ड सेटिंग बदलता है। किसी सीमा को हटाने के लिए उसे null पर सेट करें; कम से कम एक सीमा बनी रहनी चाहिए। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "ポリシーの名前、説明、制限、またはフェイルクローズ設定を変更します。制限を削除するには null に設定します。少なくとも 1 つの制限が残っている必要があります。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "更改策略的名称、描述、限制或失败关闭设置。将某个限制设为 null 即可移除；至少需要保留一个限制。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "يغيّر اسم السياسة أو وصفها أو حدودها أو إعداد الإغلاق عند الفشل. اضبط الحد على null لإزالته؛ يجب أن يبقى حد واحد على الأقل. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي."
+		},
+		"Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.": {
+			"es": "Elimina una política y todas las asignaciones que la usan. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en las asignaciones de clave, miembro, departamento y usuario final predeterminado.",
+			"fr": "Supprime une politique et toutes les affectations qui l’utilisent. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.",
+			"de": "Löscht eine Richtlinie und jede Zuweisung, die sie verwendet. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für Zuweisungen an Schlüssel, Mitglieder, Abteilungen und den Endnutzer-Standard durch.",
+			"pt-BR": "Exclui uma política e todas as atribuições que a usam. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.",
+			"hi": "एक नीति और उसका उपयोग करने वाले हर असाइनमेंट को हटाता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "ポリシーと、それを使用するすべての割り当てを削除します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "删除一个策略以及使用它的所有分配。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "يحذف سياسة وكل تعيين يستخدمها. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي."
+		},
+		"Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.": {
+			"es": "Enumera dónde se aplican las políticas de límite de velocidad, con filtro opcional por política o tipo de destino. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en las asignaciones de clave, miembro, departamento y usuario final predeterminado.",
+			"fr": "Liste où s’appliquent les politiques de limite de débit, avec un filtre facultatif par politique ou type de cible. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.",
+			"de": "Listet auf, wo Rate-Limit-Richtlinien gelten, optional gefiltert nach Richtlinie oder Zieltyp. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für Zuweisungen an Schlüssel, Mitglieder, Abteilungen und den Endnutzer-Standard durch.",
+			"pt-BR": "Lista onde as políticas de limite de taxa se aplicam, com filtro opcional por política ou tipo de destino. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.",
+			"hi": "बताता है कि रेट लिमिट नीतियाँ कहाँ लागू होती हैं, वैकल्पिक रूप से नीति या लक्ष्य प्रकार के अनुसार फ़िल्टर करके। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "レート制限ポリシーの適用先を一覧表示します。ポリシーまたは対象タイプで絞り込むこともできます。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "列出速率限制策略的适用位置，可按策略或目标类型筛选。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "يسرد أماكن تطبيق سياسات حدود المعدل، مع إمكانية التصفية حسب السياسة أو نوع الهدف. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي."
+		},
+		"Returns one rate limit assignment. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.": {
+			"es": "Devuelve una asignación de límite de velocidad. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en las asignaciones de clave, miembro, departamento y usuario final predeterminado.",
+			"fr": "Renvoie une affectation de limite de débit. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.",
+			"de": "Gibt eine Rate-Limit-Zuweisung zurück. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für Zuweisungen an Schlüssel, Mitglieder, Abteilungen und den Endnutzer-Standard durch.",
+			"pt-BR": "Retorna uma atribuição de limite de taxa. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.",
+			"hi": "एक रेट लिमिट असाइनमेंट लौटाता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "1 つのレート制限の割り当てを返します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "返回一个速率限制分配。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "يعيد تعيين حد معدل واحدًا. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي."
+		},
+		"Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.": {
+			"es": "Cambia la política aplicada al destino de una asignación. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en las asignaciones de clave, miembro, departamento y usuario final predeterminado.",
+			"fr": "Change la politique appliquée à la cible d’une affectation. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.",
+			"de": "Wechselt die Richtlinie, die auf das Ziel einer Zuweisung angewendet wird. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für Zuweisungen an Schlüssel, Mitglieder, Abteilungen und den Endnutzer-Standard durch.",
+			"pt-BR": "Troca a política aplicada ao destino de uma atribuição. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.",
+			"hi": "किसी असाइनमेंट के लक्ष्य पर लागू नीति बदलता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "割り当ての対象に適用されるポリシーを切り替えます。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "切换应用于分配目标的策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "يبدّل السياسة المطبقة على هدف التعيين. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي."
+		},
+		"Removes a policy from its target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.": {
+			"es": "Quita una política de su destino. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en las asignaciones de clave, miembro, departamento y usuario final predeterminado.",
+			"fr": "Retire une politique de sa cible. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.",
+			"de": "Entfernt eine Richtlinie von ihrem Ziel. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für Zuweisungen an Schlüssel, Mitglieder, Abteilungen und den Endnutzer-Standard durch.",
+			"pt-BR": "Remove uma política do seu destino. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.",
+			"hi": "किसी नीति को उसके लक्ष्य से हटाता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "ポリシーを対象から外します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "从目标中移除策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "يزيل سياسة من هدفها. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي."
+		},
+		"Id of the key, member (user id) or department. Null for end_user_default.": {
+			"es": "Id de la clave, el miembro (id de usuario) o el departamento. Null para end_user_default.",
+			"fr": "Id de la clé, du membre (id utilisateur) ou du département. Null pour end_user_default.",
+			"de": "Id des Schlüssels, Mitglieds (Nutzer-Id) oder der Abteilung. Null für end_user_default.",
+			"pt-BR": "Id da chave, do membro (id de usuário) ou do departamento. Null para end_user_default.",
+			"hi": "कुंजी, सदस्य (उपयोगकर्ता id) या विभाग की id। end_user_default के लिए null।",
+			"ja": "キー、メンバー（ユーザー ID）、または部門の ID。end_user_default の場合は null。",
+			"zh-Hans": "密钥、成员（用户 ID）或部门的 ID。end_user_default 时为 null。",
+			"ar": "معرّف المفتاح أو العضو (معرّف المستخدم) أو القسم. null لـ end_user_default."
+		},
+		"Id of the key, member (user id) or department. Omit for end_user_default.": {
+			"es": "Id de la clave, el miembro (id de usuario) o el departamento. Omítelo para end_user_default.",
+			"fr": "Id de la clé, du membre (id utilisateur) ou du département. À omettre pour end_user_default.",
+			"de": "Id des Schlüssels, Mitglieds (Nutzer-Id) oder der Abteilung. Lass es bei end_user_default weg.",
+			"pt-BR": "Id da chave, do membro (id de usuário) ou do departamento. Omita para end_user_default.",
+			"hi": "कुंजी, सदस्य (उपयोगकर्ता id) या विभाग की id। end_user_default के लिए इसे छोड़ दें।",
+			"ja": "キー、メンバー（ユーザー ID）、または部門の ID。end_user_default の場合は省略します。",
+			"zh-Hans": "密钥、成员（用户 ID）或部门的 ID。end_user_default 时省略。",
+			"ar": "معرّف المفتاح أو العضو (معرّف المستخدم) أو القسم. احذفه لـ end_user_default."
 		}
 	},
 	"GET /apps": {

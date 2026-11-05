@@ -630,7 +630,7 @@ export type SettingsClassifiersInitialData = {
 	apps: Array<{ id: string; title: string }>;
 };
 
-export type SettingsRateLimitTargetType = "key" | "member" | "department" | "guardrail" | "end_user_default";
+export type SettingsRateLimitTargetType = "key" | "member" | "department" | "end_user_default";
 
 export type SettingsRateLimitPolicy = {
 	id: string;

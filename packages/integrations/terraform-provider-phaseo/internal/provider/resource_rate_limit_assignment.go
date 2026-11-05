@@ -49,8 +49,8 @@ func (r *rateLimitAssignmentResource) Schema(_ context.Context, _ resource.Schem
 	resp.Schema = schema.Schema{Description: "Applies a rate limit policy to an API key, workspace member, department or guardrail, or sets the default for each end user. Each target can have one policy.", Attributes: map[string]schema.Attribute{
 		"id":          schema.StringAttribute{Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 		"policy_id":   schema.StringAttribute{Required: true, Description: "Changing it switches the target to another policy in place."},
-		"target_type": schema.StringAttribute{Required: true, PlanModifiers: replace, Description: "key, member, department, guardrail or end_user_default.", Validators: []validator.String{stringvalidator.OneOf("key", "member", "department", "guardrail", "end_user_default")}},
-		"target_id":   schema.StringAttribute{Optional: true, PlanModifiers: replace, Description: "The key, user, department or guardrail ID. Omit it for end_user_default."},
+		"target_type": schema.StringAttribute{Required: true, PlanModifiers: replace, Description: "key, member, department or end_user_default.", Validators: []validator.String{stringvalidator.OneOf("key", "member", "department", "end_user_default")}},
+		"target_id":   schema.StringAttribute{Optional: true, PlanModifiers: replace, Description: "The key, user or department ID. Omit it for end_user_default."},
 		"created_at":  schema.StringAttribute{Computed: true},
 		"updated_at":  schema.StringAttribute{Computed: true},
 	}}
