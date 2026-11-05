@@ -75,7 +75,8 @@ export interface ModelCard {
     pricing_summary?:
         | { kind: "free" }
         | { kind: "tokens"; from: boolean; input: number | null; output: number | null; unit: string }
-        | { kind: "usage"; from: boolean; price: number; unit: string }
+        | { kind: "usage"; from: boolean; price: number; unit: string; per_image?: number }
+        | { kind: "provider_cost" }
         | null;
     /** Provider whose prices the headline and details show; null for stealth routes. */
     pricing_provider_id?: string | null;
