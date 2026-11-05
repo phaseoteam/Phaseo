@@ -11,8 +11,8 @@ import { EmptyBox, PageSection } from "./parts";
 import { formatPercentile, hasPerformanceHistory, PERCENTILES, performanceView, RANGE_DAYS, TREND_METRICS, trendSeries, type RangeDays, type TrendMetric } from "./performance";
 import type { SectionId } from "./sections";
 import {
-  attemptFailureShares, failureShareText, formatRate, PROVIDER_HEALTH_METRICS, PROVIDER_HEALTH_STYLE, providerHealthHours, summarizeProviderHealth,
-  summaryFailureShares, UPTIME_COPY, type ProviderHealthMetric,
+  attemptFailureShares, failureShareText, formatRate, PROVIDER_HEALTH_METRICS, PROVIDER_HEALTH_STYLE, providerHealthHours, attemptHeadline,
+  UPTIME_COPY, type ProviderHealthMetric,
 } from "./uptime";
 
 /** The website's wording for a location view below its privacy minimum (#3498). */
@@ -166,8 +166,8 @@ export function UptimeSection({ modelId, onLayoutSection, first }: { modelId: st
 const utcHour = (time: number) => `${String(new Date(time).getUTCHours()).padStart(2, "0")}:00`;
 
 /**
- * Reachable, Accepted and Completed over the last 24 hours: each step's hourly average with the share that failed
- * it, then a line per step. Press and hold the chart to read an hour; a label opens what the step measures.
+ * Reachable, Accepted and Completed over the last 24 hours: each step's share of all attempts with the share that
+ * failed it, then a line per step. Press and hold the chart to read an hour; a label opens what the step measures.
  */
 function ProviderHealthCard({ metrics }: { metrics: ModelPerformance | null }) {
   const [inspected, setInspected] = useState<number | null>(null);
@@ -175,10 +175,10 @@ function ProviderHealthCard({ metrics }: { metrics: ModelPerformance | null }) {
   const series = metrics?.successSeries;
   const totals = metrics?.attemptHealth24h ?? null;
   const hours = useMemo(() => providerHealthHours(series ?? []), [series]);
-  const summary = useMemo(() => summarizeProviderHealth(hours), [hours]);
-  const summaryShares = useMemo(() => summaryFailureShares(summary, totals), [summary, totals]);
+  // The headline is the true 24-hour share of all attempts, not an average of the hourly rates.
+  const headline = useMemo(() => attemptHeadline(totals), [totals]);
   const shown = inspected != null ? hours.find((hour) => Date.parse(hour.bucket) === inspected) : null;
-  const shares = shown ? attemptFailureShares(shown.rates) : summaryShares;
+  const shares = shown ? attemptFailureShares(shown.rates) : headline.shares;
   const label = UPTIME_COPY.labels;
   return (
     <View className="rounded-md border border-border px-4 py-4">
@@ -196,14 +196,14 @@ function ProviderHealthCard({ metrics }: { metrics: ModelPerformance | null }) {
               <Text variant="label">{label[metric]}</Text>
               <Icon icon={Info} tone="muted" size={14} />
               <View className="flex-1" />
-              <Text className="text-[20px] font-bold leading-[26px] tracking-tight">{formatRate(shown ? shown[metric] : summary[metric])}</Text>
+              <Text className="text-[20px] font-bold leading-[26px] tracking-tight">{formatRate(shown ? shown[metric] : headline.rates[metric])}</Text>
             </View>
             <Text variant="caption">{failureShareText(metric, shares[metric], shown ? UPTIME_COPY.noFailuresThisHour : UPTIME_COPY.noFailures)}</Text>
             {help === metric ? <Text variant="caption" className="mt-1 text-foreground">{UPTIME_COPY.help[metric]}</Text> : null}
           </Pressable>
         ))}
       </View>
-      <Text variant="caption" className="mt-2">{shown ? `${utcHour(Date.parse(shown.bucket))} UTC` : UPTIME_COPY.attemptHourlyAverage}</Text>
+      <Text variant="caption" className="mt-2">{shown ? `${utcHour(Date.parse(shown.bucket))} UTC` : UPTIME_COPY.attemptShare24h}</Text>
       <LineChart
         className="mt-3"
         height={110}
@@ -213,7 +213,7 @@ function ProviderHealthCard({ metrics }: { metrics: ModelPerformance | null }) {
         xFormat={utcHour}
         tooltipTitle={(time) => `${formatShortDate(time)}, ${utcHour(time)} UTC`}
         valueFormat={formatRate}
-        accessibilityLabel={`Hourly provider health over the last 24 hours. ${PROVIDER_HEALTH_METRICS.map((metric) => `${label[metric]}: ${formatRate(summary[metric])}`).join(". ")}.`}
+        accessibilityLabel={`Provider health by hour over the last 24 hours. Across all attempts in that time, ${PROVIDER_HEALTH_METRICS.map((metric) => `${label[metric]}: ${formatRate(headline.rates[metric])}`).join(". ")}.`}
         series={PROVIDER_HEALTH_METRICS.map((metric) => ({
           key: metric,
           label: label[metric],
