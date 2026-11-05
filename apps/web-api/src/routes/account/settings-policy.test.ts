@@ -386,6 +386,61 @@ describe("account policy settings routes", () => {
 			expect((await request("/versions")).status).toBe(404);
 		});
 
+		it("keeps a version published while the preset was private from other members after a shared version follows it", async () => {
+			const urls: URL[] = [];
+			const stub = (userId: string) => vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+				const url = new URL(input instanceof Request ? input.url : String(input));
+				urls.push(url);
+				if (url.pathname === "/auth/v1/user") return Response.json({ id: userId, email: "user@example.com", created_at: "2025-01-01" });
+				if (url.pathname.endsWith("workspace_members")) return Response.json([{ role: "admin" }]);
+				if (url.pathname.endsWith("/presets")) return Response.json([{ id: "preset-1", workspace_id: "workspace-1", created_by: "owner-2", visibility: "team", draft_visibility: "team", active_version_id: "version-2" }]);
+				if (url.pathname.endsWith("/preset_versions")) {
+					const versions = [
+						{ id: "version-2", version_number: 2, version_label: "v2", visibility: "team", config: { models: ["openai/shared"] } },
+						{ id: "version-1", version_number: 1, version_label: "v1", visibility: "private", config: { models: ["openai/private"], prompt: { messages: [{ role: "system", content: "Private prompt" }] } } },
+					];
+					return Response.json(url.searchParams.get("visibility") === "neq.private" ? versions.filter((version) => version.visibility !== "private") : versions);
+				}
+				if (url.pathname.endsWith("/preset_version_labels")) return Response.json([{ label: "production", version_id: "version-1", updated_at: "x" }, { label: "staging", version_id: "version-2", updated_at: "x" }]);
+				return Response.json([]);
+			}));
+			stub("user-1");
+			const response = await request("/versions");
+			expect(response.status).toBe(200);
+			const text = await response.text();
+			expect(text).not.toMatch(/version-1|Private prompt|openai\/private|production/);
+			expect(JSON.parse(text)).toMatchObject({ versions: [{ id: "version-2", labels: ["staging"] }], labels: [{ label: "staging", version_id: "version-2" }] });
+			expect(urls.find((url) => url.pathname.endsWith("/preset_versions"))!.searchParams.get("visibility")).toBe("neq.private");
+
+			stub("owner-2");
+			const own = await (await request("/versions")).json() as { versions: Array<{ id: string }>; labels: unknown[] };
+			expect(own.versions.map((version) => version.id)).toEqual(["version-2", "version-1"]);
+			expect(own.labels).toHaveLength(2);
+		});
+
+		it("refuses to archive a preset made private since the read, unless you created it", async () => {
+			const archives: URL[] = [];
+			const stub = (userId: string, archived: unknown[]) => vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+				const request = input instanceof Request ? input : new Request(String(input), init);
+				const url = new URL(request.url);
+				if (url.pathname === "/auth/v1/user") return Response.json({ id: userId, email: "user@example.com", created_at: "2025-01-01" });
+				if (url.pathname.endsWith("workspace_members")) return Response.json([{ role: "admin" }]);
+				if (url.pathname.endsWith("/presets") && request.method === "PATCH") { archives.push(url); return Response.json(archived); }
+				// Read as shared; the creator makes it private before the archive lands.
+				if (url.pathname.endsWith("/presets")) return Response.json([{ name: "@shared", workspace_id: "workspace-1", created_by: "owner-2", visibility: "team" }]);
+				return Response.json([]);
+			}));
+			stub("user-1", []);
+			expect((await request("", { method: "DELETE" })).status).toBe(409);
+			expect(archives[0].searchParams.get("visibility")).toBe("neq.private");
+			stub("user-1", [{ id: "preset-1" }]);
+			expect((await request("", { method: "DELETE" })).status).toBe(200);
+			archives.length = 0;
+			stub("owner-2", [{ id: "preset-1" }]);
+			expect((await request("", { method: "DELETE" })).status).toBe(200);
+			expect(archives[0].searchParams.has("visibility")).toBe(false);
+		});
+
 		it("does not show a teammate's private preset by id, but shows it to its creator and shows team presets", async () => {
 			stubLabels({ role: "admin", visibility: "private", createdBy: "owner-2" });
 			expect((await request("")).status).toBe(404);

@@ -159,9 +159,11 @@ async function auditPreset(auth: ManagementRouteAuth & { workspaceId: string; re
 	});
 }
 
+const PRESET_COLUMNS = "id, workspace_id, name, slug, description, config, visibility, created_by, source_preset_id, source_preset_version_id, upstream_version_id, created_at, updated_at, draft_name, draft_slug, draft_description, draft_config, draft_visibility, active_version_id, versioning_method";
+
 async function findPreset(workspaceId: string, identifier: string): Promise<PresetRow | null> {
 	const supabase = getSupabaseAdmin();
-	const select = "id, workspace_id, name, slug, description, config, visibility, created_by, source_preset_id, source_preset_version_id, upstream_version_id, created_at, updated_at, draft_name, draft_slug, draft_description, draft_config, draft_visibility, active_version_id, versioning_method";
+	const select = PRESET_COLUMNS;
 	const byId = await supabase
 		.from("presets")
 		.select(select)
@@ -413,12 +415,14 @@ async function handleUpdatePreset(req: Request) {
 			.eq("id", existing.id);
 		// Checked again in the write, so a draft made private since the read is not overwritten.
 		if (!creator) update = update.neq("visibility", "private").or("draft_visibility.is.null,draft_visibility.neq.private");
-		const { data: written, error } = await update.select("id");
+		// The row as this authorized write left it: a separate read could see a later change it may not show.
+		const { data: written, error } = await update.select(PRESET_COLUMNS);
 		if (error) throw new Error(error.message || "Failed to update preset");
-		if (!written?.length) return json({ error: "conflict", message: "The preset changed; reload it and try again" }, 409, { "Cache-Control": "no-store" });
-		const updated = await findPreset(auth.value.workspaceId, existing.id);
-		await auditPreset(auth.value, "preset.updated", updated as PresetRow, { changed_fields: Object.keys(body).filter((key) => key !== "config") });
-		return json({ data: formatPreset(withoutOthersPrivateDraft(updated as PresetRow, auth.value.userId)) }, 200, { "Cache-Control": "no-store" });
+		const updated = (written?.[0] ?? null) as PresetRow | null;
+		if (!updated) return json({ error: "conflict", message: "The preset changed; reload it and try again" }, 409, { "Cache-Control": "no-store" });
+		const shownAfterUpdate = withoutOthersPrivateDraft(updated, auth.value.userId);
+		await auditPreset(auth.value, "preset.updated", shownAfterUpdate, { changed_fields: Object.keys(body).filter((key) => key !== "config") });
+		return json({ data: formatPreset(shownAfterUpdate) }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
 		return internalServerError("presets.update", error);
 	}
@@ -441,12 +445,17 @@ async function handleDeletePreset(req: Request) {
 		const confirmation = new URL(req.url).searchParams.get("confirm_name") ?? new URL(req.url).searchParams.get("confirmName");
 		const shown = withoutOthersPrivateDraft(existing, auth.value.userId);
 		if (confirmation !== null && confirmation !== (shown.draft_name ?? shown.name)) return json({ error: "conflict", message: "Preset name confirmation does not match" }, 409, { "Cache-Control": "no-store" });
-		const { error } = await getSupabaseAdmin()
+		let archive = getSupabaseAdmin()
 			.from("presets")
 			.update({ archived_at: new Date().toISOString() })
 			.eq("workspace_id", auth.value.workspaceId)
-			.eq("id", existing.id);
+			.eq("id", existing.id)
+			.is("archived_at", null);
+		// Checked again in the write, so a preset made private since the read stays its creator's to archive.
+		if (!isPresetCreator(existing, auth.value.userId)) archive = archive.neq("visibility", "private");
+		const { data: archived, error } = await archive.select("id");
 		if (error) throw new Error(error.message || "Failed to delete preset");
+		if (!archived?.length) return json({ error: "conflict", message: "The preset changed; reload it and try again" }, 409, { "Cache-Control": "no-store" });
 		await auditPreset(auth.value, "preset.archived", shown);
 		return json({ deleted: true }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
@@ -495,10 +504,14 @@ async function handleListPresetVersions(req: Request) {
 	if (!presetId) return json({ error: "bad_request", message: "Preset id is required" }, 400, { "Cache-Control": "no-store" });
 	try {
 		const preset = await findPreset(auth.value.workspaceId, presetId); if (!preset) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
-		if (preset.visibility === "private" && preset.created_by !== auth.value.userId) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
-		const { data, error } = await getSupabaseAdmin().from("preset_versions").select("id,preset_id,version_number,version_label,versioning_method,name,slug,description,config,visibility,release_notes,created_by,created_at").eq("preset_id", preset.id).order("version_number", { ascending: false });
+		if (!canSeePreset(preset, auth.value.userId)) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
+		// A version published while the preset was private stays its creator's, even after a later version is shared.
+		let versionsQuery = getSupabaseAdmin().from("preset_versions").select("id,preset_id,version_number,version_label,versioning_method,name,slug,description,config,visibility,release_notes,created_by,created_at").eq("preset_id", preset.id);
+		if (!isPresetCreator(preset, auth.value.userId)) versionsQuery = versionsQuery.neq("visibility", "private");
+		const { data, error } = await versionsQuery.order("version_number", { ascending: false });
 		if (error) throw new Error(error.message || "Failed to list preset versions");
-		const labels = await listLabelRows(preset.id);
+		const visibleVersionIds = new Set((data ?? []).map((version: { id: unknown }) => String(version.id)));
+		const labels = (await listLabelRows(preset.id)).filter((row) => visibleVersionIds.has(String(row.version_id)));
 		const labelsByVersion = new Map<string, string[]>();
 		for (const row of labels) labelsByVersion.set(row.version_id, [...(labelsByVersion.get(row.version_id) ?? []), row.label]);
 		return json({ data: (data ?? []).map((version: any) => ({ ...version, labels: labelsByVersion.get(String(version.id)) ?? [] })) }, 200, { "Cache-Control": "no-store" });
@@ -522,15 +535,17 @@ async function listLabelRows(presetId: string): Promise<LabelRow[]> {
 	return (data ?? []) as LabelRow[];
 }
 
-async function formatLabels(presetId: string, rows: LabelRow[]) {
+/** Labels with their versions. hidePrivateVersions drops labels on versions published while the preset was private. */
+async function formatLabels(presetId: string, rows: LabelRow[], hidePrivateVersions = false) {
 	const versionIds = [...new Set(rows.map((row) => row.version_id))];
-	const versions = new Map<string, { version_number: number | null; version_label: string | null }>();
+	const versions = new Map<string, { version_number: number | null; version_label: string | null; visibility: string | null }>();
 	if (versionIds.length) {
-		const { data, error } = await getSupabaseAdmin().from("preset_versions").select("id,version_number,version_label").eq("preset_id", presetId).in("id", versionIds);
+		const { data, error } = await getSupabaseAdmin().from("preset_versions").select("id,version_number,version_label,visibility").eq("preset_id", presetId).in("id", versionIds);
 		if (error) throw new Error(error.message || "Failed to load labelled preset versions");
-		for (const version of (data ?? []) as Array<{ id: string; version_number: number | null; version_label: string | null }>) versions.set(String(version.id), version);
+		for (const version of (data ?? []) as Array<{ id: string; version_number: number | null; version_label: string | null; visibility: string | null }>) versions.set(String(version.id), version);
 	}
-	return rows.map((row) => ({
+	const shown = hidePrivateVersions ? rows.filter((row) => { const version = versions.get(row.version_id); return Boolean(version) && version!.visibility !== "private"; }) : rows;
+	return shown.map((row) => ({
 		label: row.label,
 		version_id: row.version_id,
 		version_number: versions.get(row.version_id)?.version_number ?? null,
@@ -570,8 +585,8 @@ async function handleListPresetLabels(req: Request) {
 	if (!presetId) return json({ error: "bad_request", message: "Preset id is required" }, 400, { "Cache-Control": "no-store" });
 	try {
 		const preset = await findPreset(auth.value.workspaceId, presetId); if (!preset) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
-		if (preset.visibility === "private" && preset.created_by !== auth.value.userId) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
-		return json({ data: await formatLabels(preset.id, await listLabelRows(preset.id)) }, 200, { "Cache-Control": "no-store" });
+		if (!canSeePreset(preset, auth.value.userId)) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
+		return json({ data: await formatLabels(preset.id, await listLabelRows(preset.id), !isPresetCreator(preset, auth.value.userId)) }, 200, { "Cache-Control": "no-store" });
 	} catch (error) { return internalServerError("presets.labels.list", error); }
 }
 

@@ -644,17 +644,23 @@ accountSettingsPolicyRouter.get("/presets/:presetId/versions", async (c) => {
 	const preset = await client.from("presets").select("workspace_id,created_by,visibility,draft_visibility,active_version_id").eq("id", id).is("archived_at", null).maybeSingle();
 	if (preset.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS); if (!preset.data?.workspace_id) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: preset.data.workspace_id }); if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
-	if (preset.data.visibility === "private" && preset.data.created_by !== user.id) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
+	const creator = preset.data.created_by === user.id;
+	if (preset.data.visibility === "private" && !creator) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
+	// A version published while the preset was private stays its creator's, even after a later version is shared.
+	let versionsQuery = client.from("preset_versions").select("id,version_number,version_label,name,slug,description,visibility,release_notes,created_at,config").eq("preset_id", id);
+	if (!creator) versionsQuery = versionsQuery.neq("visibility", "private");
 	const [versions, labels] = await Promise.all([
-		client.from("preset_versions").select("id,version_number,version_label,name,slug,description,visibility,release_notes,created_at,config").eq("preset_id", id).order("version_number", { ascending: false }),
+		versionsQuery.order("version_number", { ascending: false }),
 		client.from("preset_version_labels").select("label,version_id,updated_at").eq("preset_id", id).order("label", { ascending: true }),
 	]);
 	if (versions.error || labels.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	const visibleVersionIds = new Set((versions.data ?? []).map((version) => String(version.id)));
+	const visibleLabels = (labels.data ?? []).filter((row) => visibleVersionIds.has(String(row.version_id)));
 	const labelsByVersion = new Map<string, string[]>();
-	for (const row of labels.data ?? []) labelsByVersion.set(String(row.version_id), [...(labelsByVersion.get(String(row.version_id)) ?? []), String(row.label)]);
+	for (const row of visibleLabels) labelsByVersion.set(String(row.version_id), [...(labelsByVersion.get(String(row.version_id)) ?? []), String(row.label)]);
 	return c.json({
 		versions: (versions.data ?? []).map((version) => ({ ...version, config: presetVersionContent(version.config), labels: labelsByVersion.get(String(version.id)) ?? [] })),
-		labels: labels.data ?? [],
+		labels: visibleLabels,
 		activeVersionId: preset.data.active_version_id ?? null,
 		canManageLabels: canManagePresetLabels(context, user.id, preset.data),
 	}, 200, PRIVATE_NO_STORE_HEADERS);
@@ -765,7 +771,11 @@ accountSettingsPolicyRouter.delete("/presets/:presetId", async (c) => {
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: existing.data.workspace_id }); if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	if (!canWritePreset(context, user.id, existing.data)) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const confirm = c.req.query("confirmName"); if (confirm && confirm !== existing.data.name) return c.json({ error: "confirmation_mismatch" }, 409, PRIVATE_NO_STORE_HEADERS);
-	const result = await client.from("presets").update({ archived_at: new Date().toISOString() }).eq("id", id); if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	let archive = client.from("presets").update({ archived_at: new Date().toISOString() }).eq("id", id).is("archived_at", null);
+	// Checked again in the write, so a preset made private since the read stays its creator's to archive.
+	if (existing.data.created_by !== user.id) archive = archive.neq("visibility", "private");
+	const result = await archive.select("id"); if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	if (!result.data?.length) return c.json({ error: "preset_changed" }, 409, PRIVATE_NO_STORE_HEADERS);
 	const cache = await purgePresetCache(c, id); return c.json({ success: true, cache }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 

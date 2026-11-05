@@ -5,8 +5,12 @@ type Row = Record<string, unknown>;
 const state = vi.hoisted(() => ({
 	userId: "teammate" as string | null,
 	presets: [] as Row[],
+	versions: [] as Row[],
+	labels: [] as Row[],
 	/** Runs just before the next preset update, to change the row between the read and the write. */
 	beforeUpdate: null as null | (() => void),
+	/** Runs just after the next preset update, to change the row before anything reads it again. */
+	afterUpdate: null as null | (() => void),
 }));
 
 const CREATOR = "creator";
@@ -45,19 +49,25 @@ function query(table: string) {
 	builder.neq = (column: string, value: unknown) => { conditions.push((row) => holds(row, `${column}.neq.${value}`)); return builder; };
 	builder.is = (column: string, value: unknown) => { conditions.push((row) => (value === null ? row[column] === null || row[column] === undefined : row[column] === value)); return builder; };
 	builder.or = (expression: string) => { const parts = expression.split(","); conditions.push((row) => parts.some((part) => holds(row, part))); return builder; };
+	builder.in = (column: string, values: unknown[]) => { conditions.push((row) => values.map(String).includes(String(row[column]))); return builder; };
 	builder.order = () => builder;
 	builder.range = () => builder;
 	builder.update = (next: Row) => { operation = "update"; payload = next; return builder; };
-	const matching = () => (table === "presets" ? state.presets : []).filter((row) => conditions.every((check) => check(row)));
+	const rowsOf: Record<string, Row[]> = { presets: state.presets, preset_versions: state.versions, preset_version_labels: state.labels };
+	const matching = () => (rowsOf[table] ?? []).filter((row) => conditions.every((check) => check(row)));
 	function run() {
 		if (table === "workspaces") return { data: { publisher_handle: "team" }, error: null };
-		if (table !== "presets") return { data: null, error: null };
+		if (!rowsOf[table]) return { data: null, error: null };
 		if (operation === "update") {
 			state.beforeUpdate?.();
 			state.beforeUpdate = null;
 			const rows = matching();
 			for (const row of rows) Object.assign(row, payload);
-			return { data: rows.map((row) => ({ id: row.id })), error: null };
+			// RETURNING: the rows as this update left them.
+			const returned = rows.map((row) => ({ ...row }));
+			state.afterUpdate?.();
+			state.afterUpdate = null;
+			return { data: returned, error: null };
 		}
 		const rows = matching();
 		return { data: rows.map((row) => ({ ...row })), error: null, count: head ? rows.length : undefined };
@@ -98,6 +108,15 @@ describe("preset privacy on the management API", () => {
 		state.userId = "teammate";
 		state.presets = [teamPresetWithPrivateDraft(), privatePreset(), teamPreset()];
 		state.beforeUpdate = null;
+		state.afterUpdate = null;
+		state.versions = [
+			{ id: "version_2", preset_id: "team_1", version_number: 2, version_label: "v2", visibility: "team", config: { models: ["openai/published"] } },
+			{ id: "version_1", preset_id: "team_1", version_number: 1, version_label: "v1", visibility: "private", config: { models: ["openai/secret-v1"], prompt: { messages: [{ role: "system", content: "Secret prompt" }] } } },
+		];
+		state.labels = [
+			{ preset_id: "team_1", label: "production", version_id: "version_1", updated_by: CREATOR, created_at: null, updated_at: null },
+			{ preset_id: "team_1", label: "staging", version_id: "version_2", updated_by: CREATOR, created_at: null, updated_at: null },
+		];
 	});
 
 	it("lists a shared preset's private draft to other members as the published preset", async () => {
@@ -141,6 +160,39 @@ describe("preset privacy on the management API", () => {
 		const response = await patch("/team_1", { visibility: "public" });
 		expect(response.status).toBe(409);
 		expect(state.presets.find((row) => row.id === "team_1")).toMatchObject({ draft_visibility: "private", draft_name: "@secret-now" });
+	});
+
+	it("keeps a version published while the preset was private from other members after a shared version follows it", async () => {
+		const versions = await request("/team_1/versions");
+		expect(versions.status).toBe(200);
+		const versionsText = await versions.text();
+		expect(versionsText).not.toMatch(/version_1|secret|production/i);
+		expect(JSON.parse(versionsText).data).toMatchObject([{ id: "version_2", labels: ["staging"] }]);
+		const labels = await request("/team_1/labels");
+		expect(await labels.json()).toEqual({ data: [expect.objectContaining({ label: "staging", version_id: "version_2" })] });
+
+		state.userId = CREATOR;
+		expect(((await (await request("/team_1/versions")).json()) as { data: Row[] }).data.map((version) => version.id)).toEqual(["version_2", "version_1"]);
+		expect(((await (await request("/team_1/labels")).json()) as { data: Row[] }).data).toHaveLength(2);
+	});
+
+	it("returns the row its update wrote, not a later change it may not show", async () => {
+		// The creator makes the preset private right after this admin's update lands.
+		state.afterUpdate = () => Object.assign(state.presets.find((row) => row.id === "team_1")!, { visibility: "private", draft_visibility: "private", draft_name: "@secret-now", draft_config: { models: ["openai/secret-now"] } });
+		const response = await patch("/team_1", { description: "Clearer" });
+		expect(response.status).toBe(200);
+		const text = await response.text();
+		expect(text).not.toMatch(/secret/i);
+		expect(JSON.parse(text).data).toMatchObject({ id: "team_1", name: "@team", description: "Clearer", visibility: "team" });
+	});
+
+	it("refuses to archive a preset made private since the read, unless you created it", async () => {
+		state.beforeUpdate = () => Object.assign(state.presets.find((row) => row.id === "team_1")!, { visibility: "private" });
+		expect((await request("/team_1", { method: "DELETE" })).status).toBe(409);
+		expect(state.presets.find((row) => row.id === "team_1")).toMatchObject({ archived_at: null });
+		state.userId = CREATOR;
+		expect((await request("/team_1", { method: "DELETE" })).status).toBe(200);
+		expect(state.presets.find((row) => row.id === "team_1")!.archived_at).toBeTruthy();
 	});
 
 	it("still lets an admin edit a shared preset", async () => {
