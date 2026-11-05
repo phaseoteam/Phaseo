@@ -1,5 +1,6 @@
 import type { HtmlRenderActivity } from "./htmlRender";
 import type { AcpRegistryAgent, AcpRegistryLaunch } from "./acpRegistry";
+import type { ProviderIncident, ProviderStatusId } from "./providerStatus";
 import type { Delegation, Launch } from "./orchestration";
 import type { CodeHostKind, CustomCodeHost } from "./codeHosts";
 import type { CodeHostSettings, CodeHostTokenRequest } from "./codeHostSettings";
@@ -332,6 +333,9 @@ export type WorkspaceApi = {
 	/** Saves a copy of an attachment where the person chooses; false when they cancel. */
 	saveAttachment: (taskId: string, id: string) => Promise<boolean>;
 	installations: () => Promise<HarnessInstallation[]>;
+	/** Open incidents on the public status pages of Phaseo and the agents' makers, read at most every five minutes. */
+	providerIncidents: () => Promise<ProviderIncident[]>;
+	openStatusPage: (id: ProviderStatusId) => Promise<void>;
 	/** Agents from the public Agent Client Protocol registry this computer can run. */
 	acpRegistry: (fresh?: boolean) => Promise<AcpRegistryAgent[]>;
 	addRegistryAgent: (id: string, kind: AcpRegistryLaunch["kind"]) => Promise<WorkspaceOverview>;

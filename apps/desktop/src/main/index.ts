@@ -40,6 +40,7 @@ import type { DesktopAppAction, DesktopUpdateState, DesktopWindowAction } from "
 import { isAllowedExternalUrl } from "../shared/desktop";
 import { chatLinkScheme, parseChatLink } from "../shared/chatLinks";
 import { prepareLaunch, readRegistry } from "./acpRegistry";
+import { providerIncidents, statusSources } from "./providerStatus";
 import { applyOpenAtLogin, ensureTray, removeTray } from "./trayAndLogin";
 import { validateCommand } from "../shared/workspace";
 import { validateWorktreeChatRequest } from "../shared/worktreeChat";
@@ -1081,6 +1082,9 @@ function harnessInstallations() {
 		} catch (error) { return { harness, installed: false, error: error instanceof Error ? error.message : "Installation is unavailable." }; }
 	}));
 }
+ipcMain.handle("workspace:provider-incidents", event => { if (!senderWindow(event)) throw new Error("Untrusted workspace request."); return providerIncidents(); });
+// Opens a provider's status page by its id; the address comes from the app, never the window.
+ipcMain.handle("workspace:open-status-page", async (event, id: unknown) => { if (!senderWindow(event) || typeof id !== "string" || !Object.hasOwn(statusSources, id)) throw new Error("Unknown status page."); await shell.openExternal(statusSources[id as keyof typeof statusSources].page); });
 ipcMain.handle("workspace:acp-registry", async (event, fresh: unknown) => {
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
 	return readRegistry(fresh === true);
