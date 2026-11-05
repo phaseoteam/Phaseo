@@ -5283,7 +5283,7 @@ paths:
         - Gateway
       operationId: createRateLimitAssignment
       summary: Assign a rate limit policy
-      description: Applies a policy to one API key, workspace member or department, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for every assignment.
+      description: 将策略应用于一个 API 密钥、工作区成员或部门，或为每个最终用户设置工作区默认值。每个目标只能有一个策略。网关会对每个分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       requestBody:
         required: true
         content:
@@ -23994,7 +23994,7 @@ components:
       additionalProperties: false
     RateLimitTargetType:
       type: string
-      description: What a policy applies to. A department policy is one allowance shared by its members and linked keys. end_user_default applies to each end user identified on a request.
+      description: 策略的适用对象。部门策略是由其成员和关联密钥共享的一份额度。end_user_default 适用于请求中识别出的每个最终用户。
       enum:
         - key
         - member

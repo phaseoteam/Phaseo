@@ -11989,6 +11989,26 @@
 			"ja": "支出レポートをオーナーだけでなくワークスペースの管理者にもメールで送ります。既定値は false です。メール内のリンクから誰でも配信を停止できます。",
 			"zh-Hans": "将支出报告也通过邮件发送给工作区管理员，而不仅是所有者。默认为 false。任何人都可以通过邮件中的链接退订。",
 			"ar": "إرسال تقرير الإنفاق بالبريد الإلكتروني إلى مسؤولي مساحة العمل أيضًا، وليس إلى المالكين فقط. القيمة الافتراضية false. يمكن لأي شخص إلغاء الاشتراك من الرابط الموجود في البريد."
+		},
+		"Applies a policy to one API key, workspace member or department, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for every assignment.": {
+			"es": "Aplica una política a una clave de API, un miembro del espacio de trabajo o un departamento, o define el valor predeterminado del espacio de trabajo para cada usuario final. Cada destino puede tener una política. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en cada asignación.",
+			"fr": "Applique une politique à une clé d’API, à un membre de l’espace de travail ou à un département, ou définit la valeur par défaut de l’espace de travail pour chaque utilisateur final. Chaque cible peut avoir une politique. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests à chaque affectation.",
+			"de": "Wendet eine Richtlinie auf einen API-Schlüssel, ein Workspace-Mitglied oder eine Abteilung an oder legt den Workspace-Standard für jeden Endnutzer fest. Jedes Ziel kann eine Richtlinie haben. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für jede Zuweisung durch.",
+			"pt-BR": "Aplica uma política a uma chave de API, a um membro do workspace ou a um departamento, ou define o padrão do workspace para cada usuário final. Cada destino pode ter uma política. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em cada atribuição.",
+			"hi": "किसी एक API कुंजी, वर्कस्पेस सदस्य या विभाग पर नीति लागू करता है, या हर अंतिम उपयोगकर्ता के लिए वर्कस्पेस का डिफ़ॉल्ट सेट करता है। हर लक्ष्य पर एक नीति हो सकती है। गेटवे हर असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "1 つの API キー、ワークスペースメンバー、または部門にポリシーを適用するか、各エンドユーザーに対するワークスペースのデフォルトを設定します。各対象に設定できるポリシーは 1 つです。ゲートウェイはすべての割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "将策略应用于一个 API 密钥、工作区成员或部门，或为每个最终用户设置工作区默认值。每个目标只能有一个策略。网关会对每个分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "يطبّق سياسة على مفتاح API واحد أو عضو في مساحة العمل أو قسم، أو يضبط الإعداد الافتراضي لمساحة العمل لكل مستخدم نهائي. يمكن أن يكون لكل هدف سياسة واحدة. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على كل تعيين."
+		},
+		"What a policy applies to. A department policy is one allowance shared by its members and linked keys. end_user_default applies to each end user identified on a request.": {
+			"es": "A qué se aplica una política. Una política de departamento es una asignación compartida por sus miembros y las claves vinculadas. end_user_default se aplica a cada usuario final identificado en una solicitud.",
+			"fr": "Ce à quoi une politique s’applique. Une politique de département est une allocation partagée par ses membres et les clés liées. end_user_default s’applique à chaque utilisateur final identifié dans une requête.",
+			"de": "Worauf eine Richtlinie angewendet wird. Eine Abteilungsrichtlinie ist ein gemeinsames Kontingent für ihre Mitglieder und verknüpften Schlüssel. end_user_default gilt für jeden Endnutzer, der in einer Anfrage identifiziert wird.",
+			"pt-BR": "A que uma política se aplica. Uma política de departamento é uma cota compartilhada por seus membros e chaves vinculadas. end_user_default se aplica a cada usuário final identificado em uma solicitação.",
+			"hi": "नीति किस पर लागू होती है। विभाग की नीति एक साझा सीमा है, जिसे उसके सदस्य और जुड़ी कुंजियाँ साझा करते हैं। end_user_default अनुरोध में पहचाने गए हर अंतिम उपयोगकर्ता पर लागू होता है।",
+			"ja": "ポリシーの適用対象です。部門ポリシーは、そのメンバーとリンクされたキーで共有される 1 つの枠です。end_user_default はリクエストで識別された各エンドユーザーに適用されます。",
+			"zh-Hans": "策略的适用对象。部门策略是由其成员和关联密钥共享的一份额度。end_user_default 适用于请求中识别出的每个最终用户。",
+			"ar": "ما تنطبق عليه السياسة. سياسة القسم حصة واحدة يتشاركها أعضاؤه والمفاتيح المرتبطة به. ينطبق end_user_default على كل مستخدم نهائي يُحدَّد في الطلب."
 		}
 	},
 	"GET /apps": {
