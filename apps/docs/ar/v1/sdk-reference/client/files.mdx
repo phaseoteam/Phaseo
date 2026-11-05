@@ -1,0 +1,232 @@
+---
+icon: "files"
+title: "الملفات"
+description: "ارفع ملفات إدخال الدفعات واقرأها مجددًا بمعرّفها من أي حزمة Phaseo SDK."
+---
+
+ارفع ملف إدخال دفعة بوصفه نموذجًا متعدد الأجزاء، واحتفظ بقيمة `id` التي يعيدها، ثم اقرأ البيانات الوصفية للملف وبايتاته بذلك المعرّف. تستخدم الأمثلة `client` مُنشأً كما في [التثبيت](./installation).
+
+## رفع ملف
+
+ترفع TypeScript وPython الملف باستخدام دالة في حزمة SDK، وهي ترسل `POST /v1/batches/files`. لا تستطيع حزم SDK الأخرى إرسال بيانات متعددة الأجزاء، لذا ترسل النموذج إلى `POST /v1/files` باستخدام عميل HTTP القياسي.
+
+<CodeGroup>
+
+```typescript TypeScript
+const uploaded = await client.uploadFile({
+  purpose: "batch",
+  file: new Blob(["{}"], { type: "application/json" }),
+  filename: "batch.jsonl",
+});
+```
+
+```python Python
+from pathlib import Path
+
+uploaded = client.upload_file(
+    purpose="batch",
+    file=Path("batch.jsonl"),
+    content_type="application/json",
+)
+```
+
+```go Go
+// لا يتضمن مغلّف Go دالة للرفع، لذا أرسل النموذج باستخدام net/http وmime/multipart.
+var body bytes.Buffer
+form := multipart.NewWriter(&body)
+_ = form.WriteField("purpose", "batch")
+part, _ := form.CreateFormFile("file", "batch.jsonl")
+data, _ := os.ReadFile("batch.jsonl")
+_, _ = part.Write(data)
+_ = form.Close()
+
+req, _ := http.NewRequest("POST", "https://api.phaseo.app/v1/files", &body)
+req.Header.Set("Authorization", "Bearer "+os.Getenv("PHASEO_API_KEY"))
+req.Header.Set("Content-Type", form.FormDataContentType())
+
+resp, err := http.DefaultClient.Do(req) // احتفظ بقيمة id المُعادة
+```
+
+```csharp C#
+// ترسل UploadFile() بيانات JSON، لذا أرسل النموذج باستخدام HttpClient.
+using var http = new HttpClient();
+http.DefaultRequestHeaders.Authorization =
+    new("Bearer", Environment.GetEnvironmentVariable("PHASEO_API_KEY"));
+
+using var form = new MultipartFormDataContent
+{
+    { new StringContent("batch"), "purpose" },
+    { new ByteArrayContent(await File.ReadAllBytesAsync("batch.jsonl")), "file", "batch.jsonl" },
+};
+
+var uploaded = await http.PostAsync("https://api.phaseo.app/v1/files", form);
+Console.WriteLine(await uploaded.Content.ReadAsStringAsync()); // احتفظ بقيمة id المُعادة
+```
+
+```php PHP
+// ترسل uploadFile() بيانات JSON، لذا أرسل النموذج باستخدام Guzzle.
+$http = new GuzzleHttp\Client();
+
+$uploaded = $http->post('https://api.phaseo.app/v1/files', [
+    'headers' => ['Authorization' => 'Bearer ' . getenv('PHASEO_API_KEY')],
+    'multipart' => [
+        ['name' => 'purpose', 'contents' => 'batch'],
+        ['name' => 'file', 'contents' => fopen('batch.jsonl', 'r'), 'filename' => 'batch.jsonl'],
+    ],
+]);
+
+$fileId = json_decode((string) $uploaded->getBody(), true)['id'];
+```
+
+```ruby Ruby
+# ترسل upload_file بيانات JSON، لذا أرسل النموذج باستخدام Net::HTTP.
+require 'net/http'
+require 'json'
+
+uri = URI('https://api.phaseo.app/v1/files')
+request = Net::HTTP::Post.new(uri)
+request['Authorization'] = "Bearer #{ENV.fetch('PHASEO_API_KEY')}"
+request.set_form([['purpose', 'batch'], ['file', File.open('batch.jsonl')]], 'multipart/form-data')
+
+response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |http| http.request(request) }
+file_id = JSON.parse(response.body)['id']
+```
+
+```java Java
+// لا ترمّز دوال JSON المساعدة في حزمة SDK البيانات متعددة الأجزاء، لذا أرسل النموذج باستخدام java.net.http.
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.UUID;
+
+String baseUrl = System.getenv().getOrDefault("PHASEO_BASE_URL", "https://api.phaseo.app/v1")
+    .replaceAll("/+$", "");
+String apiKey = System.getenv("PHASEO_API_KEY");
+String boundary = "phaseo-" + UUID.randomUUID();
+var body = BodyPublishers.concat(
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"purpose\"\r\n\r\nbatch\r\n"),
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"batch.jsonl\"\r\nContent-Type: application/jsonl\r\n\r\n"),
+    BodyPublishers.ofFile(Path.of("batch.jsonl")),
+    BodyPublishers.ofString("\r\n--" + boundary + "--\r\n")
+);
+var request = HttpRequest.newBuilder(URI.create(baseUrl + "/files"))
+    .header("Authorization", "Bearer " + apiKey)
+    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+    .timeout(Duration.ofSeconds(60))
+    .POST(body)
+    .build();
+var response = HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
+if (response.statusCode() < 200 || response.statusCode() >= 300) {
+    throw new IOException("HTTP " + response.statusCode() + ": " + response.body());
+}
+System.out.println(response.body()); // احتفظ بقيمة id المُعادة
+```
+
+</CodeGroup>
+
+### خيارات الرفع
+
+تنطبق هذه الخيارات على دالتي الرفع في TypeScript وPython. في طلبات multipart المباشرة، أرسل `purpose` و`file` بوصفهما حقلي نموذج.
+
+| TypeScript | Python | ملاحظات |
+| --- | --- | --- |
+| `file` | `file` | مطلوب. في TypeScript: `Blob` أو `File` أو `BufferSource` أو سلسلة نصية. في Python: `bytes` أو `Path` أو كائن ملف أو صفّ ملف (tuple) من HTTPX؛ وتؤدي السلسلة النصية العادية إلى `TypeError`. |
+| `purpose` | `purpose` | مثل `batch`. |
+| `filename`، `contentType` | `filename`، `content_type` | اسم الملف المرفوع ونوع وسائطه. في Python، يستخدم `Path` اسم ملفه الخاص. |
+| `model`، `provider` | لا يوجد | في TypeScript فقط. اختر مزوّد الدفعات الذي يخزّن الملف. إذا لم تحدد أيًا منهما، يذهب الملف إلى OpenAI. تذهب عمليات الرفع في Python دائمًا إلى مزوّد الدفعات الافتراضي OpenAI. |
+
+## قراءة ملف مجددًا
+
+<CodeGroup>
+
+```typescript TypeScript
+const file = await client.getFile(uploaded.id);
+const content = await client.getFileContent(uploaded.id); // Uint8Array
+```
+
+```python Python
+file_obj = client.get_file(uploaded["id"])
+file_bytes = client.get_file_content(uploaded["id"])  # bytes
+```
+
+```go Go
+file, err := client.RetrieveFile(context.Background(), "file_123")
+if err != nil {
+  panic(err)
+}
+
+content, err := client.RetrieveFileContent(context.Background(), "file_123") // []byte
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(file)
+fmt.Println(string(content))
+```
+
+```csharp C#
+var file = await client.RetrieveFile("file_123");
+byte[] content = await client.RetrieveFileContent("file_123");
+```
+
+```php PHP
+$file = $client->retrieveFile('file_123');
+$content = $client->retrieveFileContent('file_123');
+```
+
+```ruby Ruby
+file = client.retrieve_file('file_123')
+content = client.retrieve_file_content('file_123')
+```
+
+```java Java
+import java.nio.charset.StandardCharsets;
+
+var file = client.retrieveFile("file_123");
+byte[] content = client.retrieveFileContent("file_123");
+System.out.println(file);
+System.out.println(new String(content, StandardCharsets.UTF_8));
+```
+
+</CodeGroup>
+
+استبدل `file_123` بالمعرّف الذي أعادته عملية الرفع.
+
+| اللغة | البيانات الوصفية | المحتوى | دالة الرفع | السرد |
+| --- | --- | --- | --- | --- |
+| TypeScript | `getFile(id)` | `getFileContent(id)`، من النوع `Uint8Array` | `uploadFile(...)`، متعددة الأجزاء | `listFiles()` |
+| Python | `get_file(id)` | `get_file_content(id)`، من النوع `bytes` | `upload_file(...)`، متعددة الأجزاء | `list_files()` |
+| Go | `RetrieveFile(ctx, id)` | `RetrieveFileContent(ctx, id)`، من النوع `[]byte` | لا توجد | `ListFiles(ctx, query)` |
+| C# | `RetrieveFile(id)` | `RetrieveFileContent(id)`، من النوع `byte[]` | ترسل `UploadFile(request)` بيانات JSON، لذا لا تستطيع الرفع | `ListFiles(query)` |
+| PHP | `retrieveFile($id)` | `retrieveFileContent($id)` | ترسل `uploadFile($payload)` بيانات JSON، لذا لا تستطيع الرفع | `listFiles($params)` |
+| Ruby | `retrieve_file(id)` | `retrieve_file_content(id)` | ترسل `upload_file(payload)` بيانات JSON، لذا لا تستطيع الرفع | `list_files(...)` |
+| Java | `retrieveFile(id)` | `retrieveFileContent(id)`، من النوع `byte[]` | ترسل `uploadFile(request)` بيانات JSON، لذا لا تستطيع الرفع | `listFiles(query)` |
+
+في Python يمكنك أيضًا الوصول إلى هذه العمليات عبر `client.files`: تُرفع `create(params)` الملف مثل `upload_file`، وتسرد `list()` الملفات، وتقرأ `retrieve(id)` البيانات الوصفية، وتقرأ `content(id)` البايتات. لا تتضمن Rust دوال للملفات.
+
+<Note>نقاط نهاية الملفات في مرحلة تجريبية (Beta) وتتطلب تفعيل مزوّد للدفعات.</Note>
+
+## احتفظ بمعرّف الملف: لا يمكنك سرد الملفات
+
+احفظ قيمة `id` لكل ملف مرفوع. تستدعي دوال السرد `GET /v1/files`، الذي يعيد `400` مع الرمز `not_supported` والسبب `file_list_not_supported_with_shared_gateway_key`. العقد الكامل موجود في [مرجع Files API](/ar/v1/api-reference/endpoint/files).
+
+## الاستجابة
+
+`FileObject`، من دالة الرفع ودوال البيانات الوصفية:
+
+```json
+{
+  "id": "file-123",
+  "object": "file",
+  "filename": "data.json",
+  "purpose": "batch",
+  "status": "processed",
+  "created_at": 1677610602,
+  "bytes": 123
+}
+```

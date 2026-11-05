@@ -7,4 +7,4 @@ description: "Create a daily, weekly, monthly, or lifetime workspace spend ceili
 "og:image": "https://phaseo.app/og/dynamic?title=Create%20a%20workspace%20budget&description=Create%20a%20daily%2C%20weekly%2C%20monthly%2C%20or%20lifetime%20workspace%20spend%20ceiling.&pathname=/docs/v1/api-reference/endpoint/budgets-create"
 ---
 
-Requires `budgets:write`. Amounts use USD. A workspace can have one budget for each interval.
+Requires `budgets:write`. Amounts use USD. A workspace can have one budget for each interval; creating a second returns `409` `conflict`.

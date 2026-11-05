@@ -5,39 +5,35 @@ description: "استبدل مسار Cloudflare AI Gateway بـ Phaseo مع ال�
 icon: "/icons/brands/cloudflare.svg"
 ---
 
-استخدم هذا الدليل إذا كان تطبيقك يرسل بالفعل طلبات متوافقة مع OpenAI عبر Cloudflare AI Gateway. بدّل حد البوابة أولًا، ثم أعد إنشاء التوجيه والتخزين المؤقت وقابلية الرصد التي تحتاج إليها حركة مرور الإنتاج فعليًا فقط.
+استبدل عنوان URL لبوابة Cloudflare ومفتاح المزوّد بـ `https://api.phaseo.app/v1` ومفتاح Phaseo، وأزل ترويسات `cf-aig-*`. تبقى حمولة الطلب كما هي.
 
-## ما الذي سيتغير
-
-| الإعداد | قبل | بعد |
+| الإعداد | Cloudflare AI Gateway | Phaseo |
 | --- | --- | --- |
-| عنوان URL لـ Gateway | عنوان Cloudflare مخصص للحساب والبوابة | `https://api.phaseo.app/v1` |
-| المصادقة | بيانات اعتماد Cloudflare والمزوّد | `PHASEO_API_KEY` |
-| سياسة التوجيه | إعداد Cloudflare Gateway | إعدادات التوجيه والإعدادات المسبقة في Phaseo |
-| الاطلاع على الطلبات | تحليلات Cloudflare | نشاط Phaseo وتفاصيل الطلبات |
+| عنوان URL الأساسي | `gateway.ai.cloudflare.com/v1/<account_id>/<gateway_id>/<provider>`، أو `api.cloudflare.com/client/v4/accounts/<account_id>/ai/v1` | `https://api.phaseo.app/v1` |
+| المصادقة | مفتاح المزوّد، إضافة إلى `cf-aig-authorization` أو رمز Cloudflare API | `PHASEO_API_KEY` بوصفه `Authorization: Bearer` |
+| اختيار المزوّد | مسار واحد لكل مزوّد | عنوان URL أساسي واحد؛ يحدد معرّف النموذج النموذجَ ويحدد التوجيه المزوّدَ |
+| ترويسات البوابة | `cf-aig-*` | تُزال، أو تُطابق كما في الجدول أدناه |
+| رؤية الطلبات | تحليلات Cloudflare | سجلات الطلبات وتفاصيل الطلبات في Phaseo |
 
-<Steps>
-<Step title="احصر إعداد البوابة الحالي">
-
-سجّل عنوان Cloudflare Gateway ومسارات المزوّدين والرؤوس المخصصة وقواعد التخزين المؤقت وسلوك إعادة المحاولة والتحليلات التي يعتمد عليها تطبيقك. يساعدك ذلك على فصل السلوك المطلوب عن الإعدادات التي لم تعد بحاجة إلى نقلها.
-
-</Step>
-
-<Step title="استبدل نقطة النهاية وبيانات الاعتماد">
-
-أبقِ محتوى الطلب كما هو قدر الإمكان، وحدّث حد اتصال العميل المتوافق مع OpenAI.
+## تبديل العميل
 
 <CodeGroup>
 ```typescript TypeScript
 import OpenAI from "openai";
 
+// قبل:
+// new OpenAI({
+//   apiKey: process.env.OPENAI_API_KEY,
+//   baseURL: `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayId}/openai`,
+//   defaultHeaders: { "cf-aig-authorization": `Bearer ${process.env.CF_AIG_TOKEN}` },
+// });
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
 });
 
 const response = await client.chat.completions.create({
-  model: "openai/gpt-4.1-mini",
+  model: "openai/gpt-6-astra",
   messages: [{ role: "user", content: "Reply with: migration ready" }],
 });
 ```
@@ -57,39 +53,40 @@ curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4.1-mini",
+    "model": "openai/gpt-6-astra",
     "messages": [{"role": "user", "content": "Reply with: migration ready"}]
   }'
 ```
 </CodeGroup>
 
-</Step>
+ينتقل مسار `/anthropic` إلى إعداد Anthropic SDK الموضح في [الترحيل من Anthropic SDK](./from-anthropic). استدعاءات ربط Workers AI (`env.AI.run(model, input, { gateway })`) ليست عملاء HTTP: استبدلها بـ `fetch` أو OpenAI SDK مع Phaseo، وذلك فقط للنماذج التي يدرجها `GET /v1/models?format=openai`. خزّن `PHASEO_API_KEY` كسرّ Worker، لا في إعدادات `wrangler`.
 
-<Step title="أعد إنشاء التوجيه والإعدادات الافتراضية المشتركة">
+## مطابقة ميزات البوابة
 
-انقل قيود المزوّد الثابتة والقيم الافتراضية للمطالبات ومعلمات التوليد إلى [الإعدادات المسبقة](../guides/presets.mdx). واضبط ترتيب المزوّدين والرجوع الاحتياطي عبر [التوجيه والرجوع الاحتياطي](../guides/routing-and-fallbacks.mdx).
+لا تنتقل إعدادات Cloudflare تلقائيًا. قرّر لكل إعداد ما إذا كان مكانه Phaseo أو التطبيق أو طبقة الحافة.
 
-لا تنتقل إعدادات التخزين المؤقت والتحليلات في Cloudflare تلقائيًا. حدّد صراحةً ما إذا كان كل سلوك يجب أن يكون في Phaseo أو تطبيقك أو طبقة الحافة.
+| Cloudflare AI Gateway | على Phaseo |
+| --- | --- |
+| سلاسل الاحتياط | مصفوفة `models`، أو احتياط المزوّد، أو [المسارات الديناميكية](../guides/routing-and-fallbacks). تعمل النماذج الاحتياطية عند `429` و`500` و`502` و`503` و`504`، ولا تعمل أبدًا عند أخطاء الطلب. |
+| سلاسل النماذج `dynamic/<route>` | مسارات ديناميكية مرتبطة بمفاتيح API؛ أرسل معرّف نموذج حقيقيًا. |
+| `cloudflare/auto` | `phaseo/auto` ([التوجيه التلقائي](../guides/auto-routing)، ألفا)؛ لا يمكن دمجه مع `models`. |
+| التخزين المؤقت (`cf-aig-cache-ttl` و`cf-aig-skip-cache` و`cf-aig-cache-key`) | لا توجد ذاكرة تخزين مؤقت للاستجابات. خزّن مؤقتًا في التطبيق عند الحاجة؛ ولا يزال [التخزين المؤقت للمطالبات](../guides/prompt-caching) يخفّض تكلفة الإدخال. |
+| `cf-aig-metadata` | [تسميات](../guides/request-labels) `X-Phaseo-Metadata`: حتى 32 تسمية، وتطابق المفاتيح `[A-Za-z0-9_.:-]` (64 حرفًا)، والقيم سلاسل نصية حتى 256 حرفًا. حوّل الأرقام والقيم المنطقية. |
+| `cf-aig-collect-log` | سياسة التسجيل لمساحة العمل، أو `provider.require_zero_data_retention`، الذي يقصر التوجيه أيضًا على مزوّدي ZDR. |
+| `cf-aig-request-timeout` و`cf-aig-max-attempts` | لا يوجد تحكم لكل طلب. احتياط المزوّد المدمج إضافة إلى التراجع التدريجي في العميل. |
+| `cf-aig-session-id` | حقل الجسم `session_id`. |
+| `cf-aig-custom-cost` | لا يوجد مقابل. |
+| تحديد المعدّل وحدود الإنفاق | سياسات حدود المعدّل، وحدود المفاتيح، وميزانيات مساحة العمل والمفاتيح والأقسام. راجع [الحدود](../api-reference/limits). |
+| ضوابط الحماية ومنع فقدان البيانات (DLP) | تفحص ضوابط الحماية للمفاتيح والأعضاء الطلبات بحثًا عن حقن المطالبات والمعلومات الشخصية (PII). لا تُفحص الاستجابات؛ استدعِ `/v1/moderations` لسلامة المحتوى. |
+| السجلات والتحليلات | سجلات الطلبات، وتفاصيل الطلبات مع محاولات المزوّدين والتسعير، و[وجهات المراقبة](../guides/integrations/observability). |
+| نماذج Workers AI `@cf/...` | فقط إذا أدرجها `GET /v1/models?format=openai`؛ وإلا فأبقِ تلك الاستدعاءات على Workers AI. |
 
-</Step>
+## الاختبار والنشر
 
-<Step title="تحقّق قبل التحويل">
+اختبر الطلبات غير المتدفقة والمتدفقة والأخطاء والأدوات والمخرجات المنظّمة كما يستخدمها التطبيق، وقارن زمن الاستجابة والمخرجات واستخدام الرموز والتكلفة قبل نقل الحركة تدريجيًا. قبل التحويل، تأكد من أن:
 
-اختبر، حسب الحاجة، الطلبات غير المتدفقة والبث والأخطاء والأدوات والمخرجات المنظّمة. قارن زمن الاستجابة والمخرجات واستخدام الرموز والتكلفة قبل نقل حركة المرور تدريجيًا.
-
-</Step>
-</Steps>
-
-## قائمة التحقق من الترحيل
-
-- أُزيلت عناوين Cloudflare Gateway ورؤوسها الخاصة.
-- تم التحقق من معرّفات نماذج الإنتاج باستخدام `GET /v1/models`.
-- أُعيد إنشاء سلوك التخزين المؤقت المطلوب أو أُلغي عن قصد.
-- يوفر نشاط Phaseo وتفاصيل الطلبات مستوى الاطلاع الذي يحتاج إليه فريقك.
-- يظل التراجع مقتصرًا على تغيير إعداد نقطة النهاية والمفتاح.
-
-## الخطوات التالية
-
-- [الإعدادات المسبقة](../guides/presets.mdx)
-- [التوجيه والرجوع الاحتياطي](../guides/routing-and-fallbacks.mdx)
-- [قابلية الرصد](../guides/integrations/observability.mdx)
+- كل عنوان URL من `gateway.ai.cloudflare.com` و`api.cloudflare.com/.../ai/v1` وكل ترويسة `cf-aig-*` قد أُزيلت؛ فأي مسار متبقٍ يُبقي الحركة على المسار القديم؛
+- معرّفات النماذج الإنتاجية موجودة في `GET /v1/models?format=openai`؛
+- كل سلوك للتخزين المؤقت قد أُعيد إنشاؤه في التطبيق أو أُسقط عمدًا؛
+- سجلات الطلبات تمنح الفريق الرؤية التي يحتاجها؛
+- التراجع لا يزال مجرد تغيير لعنوان URL الأساسي والمفتاح.

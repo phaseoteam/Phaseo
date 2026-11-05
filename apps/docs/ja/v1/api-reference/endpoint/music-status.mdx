@@ -3,12 +3,15 @@ title: "音楽生成結果を取得"
 sidebarTitle: "音楽生成結果を取得"
 badge: "Beta"
 openapi: "/ja/openapi/v1/openapi.localized.yaml GET /music/generate/{music_id}"
-description: "PhaseoのリクエストIDを使って音楽生成結果を取得します。"
+description: "Phaseo のリクエスト ID を使って音楽生成結果を取得します。"
 ---
 
-`POST /music/generate`で作成した音楽結果を取得します。プロバイダー処理が完了している場合は保存済みの正規化結果を返し、ジョブが非同期処理中の場合は上流プロバイダーをポーリングします。
+`nativeResponseId` ではなく、[`POST /v1/music/generate`](./music-generate.mdx) が返した `id` を渡してください。生成が完了している場合、Phaseo は保存された結果を返し、まだ実行中の場合はプロバイダーをポーリングします。
 
-## レスポンスの形式
+```bash
+curl https://api.phaseo.app/v1/music/generate/req_01JY6MUSIC123 \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
 
 ```json
 {
@@ -37,10 +40,4 @@ description: "PhaseoのリクエストIDを使って音楽生成結果を取得�
 }
 ```
 
-## 補足
-
-- `status`の値: `queued`、`in_progress`、`completed`、`failed`。
-- 生成が完了すると`usage`が含まれます。
-- `nativeResponseId`ではなく、`POST /music/generate`が返したPhaseoの`id`を指定してください。
-- プロバイダー固有の状態確認APIと取得APIは、このエンドポイントの内部で処理されます。
-
+`status` は `queued`、`in_progress`、`completed`、`failed` のいずれかです。`usage` は生成が完了すると含まれます。

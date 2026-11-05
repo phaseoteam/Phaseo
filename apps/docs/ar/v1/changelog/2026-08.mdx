@@ -1,6 +1,6 @@
 ---
 title: "أغسطس"
-description: "إصدارات النماذج في Phaseo خلال أغسطس 2026."
+description: "تحديثات منتج Phaseo وتغييرات حزم SDK وإصدارات النماذج في أغسطس 2026."
 ---
 
 import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
@@ -13,7 +13,8 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">المنتج</p>
 
-- يتضمن BYOK الآن 250,000 طلب لكل مساحة عمل في كل شهر UTC دون رسوم من Phaseo، ثم يُحتسب 2.5% من التكلفة المكافئة لدى المزوّد؛ وتُحفظ البيانات الوصفية لكل طلب BYOK لمدة 90 يومًا (365 يومًا اعتبارًا من نوفمبر 2026) ([#2056](https://github.com/phaseoteam/Phaseo/pull/2056)).
+- يتضمن BYOK الآن 250,000 طلب لكل مساحة عمل في كل شهر UTC دون رسوم من Phaseo، ثم يُحتسب 2.5% من التكلفة المكافئة لدى المزوّد ([#2056](https://github.com/phaseoteam/Phaseo/pull/2056)).
+- تُحفظ البيانات الوصفية لطلبات BYOK على مستوى الطلب لمدة 90 يومًا، ولمدة 365 يومًا اعتبارًا من نوفمبر 2026 ([#2056](https://github.com/phaseoteam/Phaseo/pull/2056)).
 
 </div>
 
@@ -152,7 +153,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - [z.AI: GLM 5.3 Flash](https://phaseo.app/models/z-ai/glm-5.3-flash)
 - [Qwen: Qwen 3.8 Flash](https://phaseo.app/models/qwen/qwen3.8-flash)
-- [Stealth: Ox Alpha](https://phaseo.app/models/stealth/ox-alpha) أُوقف بعد أن تبيّن أنه Z.AI GLM-5.3-Flash.
+- [Stealth: Ox Alpha](https://phaseo.app/models/stealth/ox-alpha) تبيّن أنه [z.AI: GLM 5.3 Flash](https://phaseo.app/models/z-ai/glm-5.3-flash).
 
 </div>
 
@@ -205,7 +206,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - يمكن للطلبات تصنيف التطبيق عبر الترويسة `X-App-Categories`، وتدعمها حزمة TypeScript SDK أيضًا؛ راجع [إسناد التطبيق](../guides/app-attribution.mdx) ([#1799](https://github.com/phaseoteam/Phaseo/pull/1799)).
 - تحدد لواحق النماذج `:nitro` و`:cheap` و`:fast` الآن وضع التوجيه حتى لو طلبت حقول الطلب أو الإعدادات المسبقة أو الإعدادات الافتراضية لمساحة العمل وضعًا آخر؛ راجع [التوجيه والبدائل الاحتياطية](../guides/routing-and-fallbacks.mdx) ([#1814](https://github.com/phaseoteam/Phaseo/pull/1814)).
-- يقصر `provider.quantizations` التوجيه الآن على العروض ذات التكميم المطابق، ويعيد معلومات تشخيصية عندما لا يطابق أي عرض؛ راجع [اختيار استراتيجية التكميم](../guides/quantization-selection.mdx) ([#1810](https://github.com/phaseoteam/Phaseo/pull/1810)).
+- يقصر `provider.quantizations` التوجيه الآن على العروض ذات التكميم المطابق، ويعيد معلومات تشخيصية عندما لا يطابق أي عرض؛ راجع [اختيار استراتيجية التكميم](../guides/quantization.mdx) ([#1810](https://github.com/phaseoteam/Phaseo/pull/1810)).
 
 </div>
 

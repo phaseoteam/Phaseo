@@ -1,48 +1,48 @@
 ---
 icon: "server-cog"
 title: "服务器工具"
-description: "让模型在请求期间调用由 Phaseo 托管的工具。"
+description: "让模型在请求期间调用由 Phaseo 运行的工具。"
 ---
 
-服务器工具是 Phaseo 在模型请求期间代为运行的工具。模型决定何时调用，Phaseo 在服务器端执行，并将结果返回模型处理流程。
+在 `tools` 中添加一个 `phaseo:` 工具，模型调用它时由 Phaseo 替你运行：模型请求当前时间、网页搜索或另一个模型的意见，Phaseo 执行调用并把结果送回，模型再完成回答。你不需要编写工具执行器。
 
-如果模型需要当前时间、网页内容、抓取的页面文本或另一个模型的建议，可使用服务器工具，无需自行添加工具执行器。
+```mermaid
+flowchart LR
+  req["带有 phaseo: 工具的请求"] --> model["模型"]
+  model -->|"调用 phaseo: 工具"| run["Phaseo 运行该工具"]
+  run -->|"工具结果"| model
+  model -->|"调用你的函数工具"| you["返回给你的应用"]
+  model -->|"最终回答"| out["响应"]
+```
 
 <Note>
-服务器工具处于测试阶段。随着供应商支持变化，请求格式和结果内容也可能调整。
+服务器工具处于 Beta 阶段。随着提供商支持的变化，请求结构和结果负载可能会发生变化。
 </Note>
 
 ## 可用工具
 
-| 工具 | 类型 | 用途 |
-| --- | --- | --- |
-| 日期和时间 | `phaseo:datetime` | 最多可获取 5 个时区的当前日期和时间 |
-| 网页搜索 | `phaseo:web_search` | 请求期间由模型发起的网页搜索 |
-| 网页抓取 | `phaseo:web_fetch` | 抓取指定 URL 并提取文本 |
-| 顾问 | `phaseo:advisor` | 在生成过程中咨询另一个模型 |
-| 子代理 | `phaseo:subagent` | 将专门任务委派给工作模型 |
-| Fusion | `phaseo:fusion` | 并行分析，再由模型汇总 |
-| 搜索模型 | `phaseo:search_models` | 从实时目录中查找合适的模型 |
-| 图像生成 | `phaseo:image_generation` | 通过模型工具循环生成图像 |
-| 应用补丁 | `phaseo:apply_patch` | 在 Responses API 上生成经过验证的文件补丁 |
+| 工具 | 类型 | 用途 | 端点 |
+| --- | --- | --- | --- |
+| [日期时间](./datetime) | `phaseo:datetime` | 最多 5 个时区的当前日期和时间 | 全部三个 |
+| [网页搜索](./web-search) | `phaseo:web_search` | 在网上搜索最新或有来源的信息 | 全部三个 |
+| [Web Fetch](./web-fetch) | `phaseo:web_fetch` | 读取指定 URL 的文本 | 全部三个 |
+| [Advisor](./advisor) | `phaseo:advisor` | 请另一个模型评审或制定计划 | 全部三个 |
+| [Subagent](./subagent) | `phaseo:subagent` | 把一个独立任务交给工作模型 | 全部三个 |
+| [Fusion](./fusion) | `phaseo:fusion` | 获取多个模型的分析，再得到一份综合结果 | 全部三个 |
+| [模型搜索](./search-models) | `phaseo:search_models` | 在实时 Phaseo 模型目录中查找模型 | 全部三个 |
+| [图像生成](./image-generation) | `phaseo:image_generation` | 在回答时生成图像 | 全部三个 |
+| [应用补丁](./apply-patch) | `phaseo:apply_patch` | 返回经过验证的文件补丁 | 仅 `/v1/responses` |
 
-## 服务器工具的工作方式
+“全部三个”指 `/v1/chat/completions`、`/v1/responses` 和 `/v1/messages`。
 
-1. 将一个或多个服务器工具添加到 `tools` 数组中。
-2. 模型判断是否需要工具，并发出工具调用。
-3. Phaseo 拦截服务器工具调用、执行工具，然后将结果发回模型。
-4. 模型继续处理并生成最终回复。
-
-服务器工具可与自定义函数工具一起使用。Phaseo 只执行服务器工具；常规 `function` 调用仍由你的应用处理。
-
-## 快速开始
+## 发送请求
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "messages": [
       { "role": "user", "content": "What are the latest AI policy updates this week?" }
     ],
@@ -53,11 +53,15 @@ curl https://api.phaseo.app/v1/chat/completions \
   }'
 ```
 
-## 与函数工具结合使用
+每个工具都接受一个可选的 `parameters` 对象，详见各自的页面。`stream: true` 同样可用：Phaseo 自己运行工具轮次，并把最终回答以流式发送给你。
+
+## 混合使用服务器工具和你自己的函数
+
+Phaseo 只运行 `phaseo:` 工具。同一请求中的普通 `function` 工具会照常返回给你的应用，你需要在后续请求中把它的结果发回，做法与[工具调用](../tool-calling)相同。
 
 ```json
 {
-  "model": "openai/gpt-5-nano",
+  "model": "openai/gpt-6-astra",
   "messages": [
     { "role": "user", "content": "Find recent funding news and save the best item." }
   ],
@@ -82,21 +86,17 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-如果模型调用 `phaseo:web_search`，Phaseo 会自动执行该调用。如果它调用 `save_research_item`，你的应用会收到函数调用，并须在后续请求中返回函数结果。
+## 工具循环的限制
 
-## 支持的端点
+| 限制 | 值 | 达到限制时 |
+| --- | --- | --- |
+| 每个请求的服务器工具调用次数 | 请求中的 `max_tool_calls`，默认 `30`，最大 `100` | `400 gateway_server_tool_limit` |
+| 后续轮次 | `8` | `502 gateway_server_tool_error` |
+| 对单个工具的调用次数 | 该工具的 `max_uses` | 工具向模型返回错误结果，模型可以不使用该工具继续 |
 
-服务器工具支持以下接口：
+## 用量和价格
 
-- `/v1/chat/completions`
-- `/v1/responses`
-- `/v1/messages`
-
-支持流式请求。对于由网关管理的服务器工具，Phaseo 可能会展开上游工具调用轮次、执行工具、继续处理流程，并为最终回复输出合成流。
-
-## 用量跟踪
-
-服务器工具用量会记录在 `usage.server_tool_use` 中：
+每个服务器工具都会在 `usage.server_tool_use` 中增加一个计数器，模型的价格卡可以对相应的计价项计费。第二个模型（Advisor、Subagent、Fusion、图像生成）使用的 token 会计入请求的用量，并按该模型的价格计费。
 
 ```json
 {
@@ -106,48 +106,22 @@ curl https://api.phaseo.app/v1/chat/completions \
     "server_tool_use": {
       "datetime_requests": 1,
       "web_search_requests": 2,
-      "web_search_results": 8,
-      "web_fetch_requests": 1,
-      "advisor_requests": 1,
-      "subagent_requests": 1,
-      "fusion_requests": 1,
-      "search_models_requests": 1,
-      "image_generation_requests": 1
+      "web_search_results": 8
     }
   }
 }
 ```
 
-如果模型价格卡中已配置，也可以使用服务器工具计量项进行计费，例如 `server_tool_web_search_requests`、`server_tool_web_search_extra_results`、`server_tool_web_fetch_requests`、`server_tool_advisor_requests`、`server_tool_image_generation_requests`、`native_web_search_requests` 和 `native_web_fetch_requests`。
+| 工具 | 用量计数器 | 计价项 |
+| --- | --- | --- |
+| 日期时间 | `datetime_requests` | 无 |
+| 网页搜索 | `web_search_requests`、`web_search_results`、`web_search_extra_results` | `server_tool_web_search_requests`、`server_tool_web_search_extra_results` |
+| Web Fetch | `web_fetch_requests` | `server_tool_web_fetch_requests` |
+| Advisor | `advisor_requests` | `server_tool_advisor_requests` |
+| Subagent | `subagent_requests` | `server_tool_subagent_requests` |
+| Fusion | `fusion_requests` | `server_tool_fusion_requests` |
+| 模型搜索 | `search_models_requests` | `server_tool_search_models_requests` |
+| 图像生成 | `image_generation_requests` | `server_tool_image_generation_requests` |
+| 应用补丁 | `apply_patch_requests` | `server_tool_apply_patch_requests` |
 
-## 工具页面
-
-<Columns cols={2}>
-  <Card title="日期和时间" icon="clock" href="./datetime.mdx">
-    向模型提供当前日期和时间。
-  </Card>
-  <Card title="网页搜索" icon="search" href="./web-search.mdx">
-    让模型在需要最新信息时搜索网页。
-  </Card>
-  <Card title="网页抓取" icon="file-search" href="./web-fetch.mdx">
-    让模型抓取并阅读指定 URL。
-  </Card>
-  <Card title="顾问" icon="message-square" href="./advisor.mdx">
-    让一个模型在生成过程中向另一个模型寻求建议。
-  </Card>
-  <Card title="子代理" icon="cpu" href="./subagent.mdx">
-    让模型将特定任务委派给工作模型。
-  </Card>
-  <Card title="Fusion" icon="combine" href="./fusion.mdx">
-	并行运行多个模型进行分析，并综合其结果。
-  </Card>
-	<Card title="搜索模型" icon="list-filter" href="./search-models.mdx">
-		让模型在 Phaseo 实时目录中查找合适的模型。
-	</Card>
-  <Card title="图像生成" icon="image" href="./image-generation.mdx">
-    让模型在回答时生成图像。
-  </Card>
-	<Card title="应用补丁" icon="file-diff" href="./apply-patch.mdx">
-		生成经过验证的创建、更新或删除补丁。
-	</Card>
-</Columns>
+当网页搜索或 Web Fetch 以提供商自己的工具运行时（`engine: "native"`），改为按 `native_web_search_requests` 或 `native_web_fetch_requests` 计费。

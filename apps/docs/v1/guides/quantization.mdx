@@ -1,0 +1,128 @@
+---
+icon: "binary"
+title: "Quantization"
+description: "Choose a precision format and quantization method, and route only to providers serving the one you tested."
+"og:image": "https://phaseo.app/og/dynamic?title=Quantization&description=Choose%20a%20precision%20format%20and%20quantization%20method%2C%20and%20route%20only%20to%20providers%20serving%20the%20one%20you%20tested.&pathname=/docs/v1/guides/quantization"
+---
+
+Send `provider.quantizations` to route a request only to providers that serve the model at the precision you tested:
+
+```json
+{
+  "model": "meta/llama-3.3-70b-instruct",
+  "messages": [{ "role": "user", "content": "Hello" }],
+  "provider": {
+    "quantizations": ["FP8"]
+  }
+}
+```
+
+## What quantization changes
+
+Quantization stores a model's weights in a smaller number type. The same model then needs less memory and serves faster, at some cost to output quality. Two things describe a quantized model: the **format** (the number type, such as `FP8` or `INT4`) and the **method** (how the weights were converted to it, such as `AWQ` or `GPTQ`).
+
+Each halving of bits halves the memory the weights need. For a 70B-parameter model, weights alone take roughly:
+
+| Format | Bits per weight | Weights of a 70B model |
+| --- | --- | --- |
+| `FP32` | 32 | ~280 GB |
+| `BF16`, `FP16` | 16 | ~140 GB |
+| `FP8`, `INT8` | 8 | ~70 GB |
+| `FP4`, `INT4` | 4 | ~35 GB |
+
+These figures are arithmetic (parameters × bytes per weight) and leave out activations and the KV cache, which providers also need memory for.
+
+## Compare precision formats
+
+A precision format is the number type a provider uses to store a model's weights. Lower precision uses less memory and serves faster, with a higher risk to output quality.
+
+| Format | Typical usage | Main benefit | Main risk |
+| --- | --- | --- | --- |
+| `FP32` | Baseline/full precision | Maximum numerical stability | Highest memory and compute cost |
+| `BF16` | Training + high-quality inference | Strong quality with better efficiency vs FP32 | Still heavier than 8-bit/4-bit |
+| `FP16` | Common inference/training paths | Good speed and memory reduction | Lower dynamic range than BF16 |
+| `FP8` | Throughput-focused inference/training | Large speed/memory gains | Noticeable quality regressions on difficult prompts |
+| `FP4` | Aggressive efficiency modes | Very high density and low cost | Higher output degradation risk |
+| `INT8` | Widely supported inference quantization | Strong efficiency with moderate quality impact | Calibration/sensitivity issues for some models |
+| `INT4` | Cost-sensitive deployment | Very low memory and high throughput | Bigger quality and robustness tradeoffs |
+
+### BF16 or FP16
+
+Both are 16-bit. `BF16` keeps a larger exponent range, so it is more stable; `FP16` is common and fast but less stable on some workloads. When a provider offers `BF16`, it is the safer choice for quality-critical traffic.
+
+### FP8 and FP4
+
+`FP8` gives a large efficiency gain and keeps usable quality for most tasks. `FP4` goes further, but quality drops more often, especially on nuanced reasoning, long contexts, and strict structured outputs.
+
+### INT8 and INT4
+
+Integer formats are built for inference throughput and memory. How well they hold quality depends on the [quantization method](#compare-quantization-methods), the calibration data, and the model architecture. `INT8` is easier to deploy safely than `INT4`.
+
+### Read a model's label
+
+Providers label variants as `bf16`, `fp16`, `fp8`, `int8`, `q4`, `4bit`, `8bit`, and so on. The naming isn't standard: `4bit` can mean `FP4` or `INT4`. Check the provider's documentation for the exact variant.
+
+## Compare quantization methods
+
+A format such as `INT4` is the precision target; a method such as `AWQ` or `GPTQ` is how the weights were converted to it. `AWQ INT4` and `GPTQ INT4` hit the same target in different ways, so they can behave very differently. The method affects how much accuracy survives, which runtimes can serve the model, memory layout and serving speed, and whether calibration data was needed.
+
+| Method family | Typical purpose | Notes |
+| --- | --- | --- |
+| `AWQ` | Preserve key activation-sensitive weights | Common for practical inference quality/efficiency balance |
+| `GPTQ` | Post-training quantization with error minimization | Popular for compact local inference variants |
+| `GGUF` | Packaging format used by llama.cpp ecosystems | Often combined with different quantization levels (`Q4`, `Q5`, etc.) |
+| `EXL2` | Aggressive low-bit variants in ExLlama ecosystems | High throughput focus with architecture/runtime constraints |
+
+To compare methods for your own workload:
+
+1. Pick the runtime first: the one you can deploy reliably.
+2. Keep only the method families that runtime supports.
+3. Benchmark several methods at the same precision target.
+4. Track failure modes, not just average benchmark scores: structured output correctness, long-context faithfulness, tool call reliability, safety and moderation behavior, and tail latency under load.
+
+## Route to one precision
+
+The `provider.quantizations` filter checks each provider's offer of the model, not just the provider name:
+
+- **Matching ignores case, spaces, `-` and `_`.** Unambiguous aliases also match: `bfloat16` for `BF16`, `float16` for `FP16`, `float8` for `FP8`. A label like `4bit` is not treated as `FP4` or `INT4`.
+- **Offers without quantization metadata never match.**
+- **There's no fallback to another precision.** If no offer matches, the request fails with `400 unsupported_model_or_endpoint`, reason `quantization_not_available`. The error lists the precisions that are available and, under `routing_diagnostics.quantization`, which providers were dropped and why.
+- `routing.quantizations` is accepted as an alternative to `provider.quantizations`.
+
+## Pick a precision
+
+| Workload | Start with |
+| --- | --- |
+| Quality-critical reasoning | `BF16` / `FP16` |
+| Balanced cost and quality | `FP8` / `INT8` |
+| High-throughput, cost-sensitive | `INT4` / `FP4`, after validation |
+
+You don't need one precision for everything. Keep higher precision for customer support and critical decisions, and accept lower precision for high-volume classification or summarization.
+
+<Steps>
+<Step title="Set success criteria">
+
+Set quality thresholds (task accuracy, pass rates, structured output validity), latency and cost targets, and the failure modes you won't accept.
+
+</Step>
+<Step title="Measure a high-precision baseline">
+
+Start with `BF16` or `FP16`. Record output quality, median and tail latency, and token cost. Every lower precision is compared against this.
+
+</Step>
+<Step title="Step down one level at a time">
+
+Try `FP8` or `INT8` next. Move to `FP4` or `INT4` only if you need the extra cost or throughput savings. Don't jump straight to the smallest variant unless you already have evidence it works for your workload.
+
+</Step>
+<Step title="Test with production-like prompts">
+
+Include long prompts, multi-step reasoning, tool calling, and edge cases from support tickets.
+
+</Step>
+<Step title="Roll out and keep watching">
+
+Keep a fallback model or precision in your own client for when no offer matches, monitor quality after rollout, and re-test when the provider's runtime or the model revision changes. Once a precision is chosen, tune [inference parameters](./inference-parameters.mdx) on top of it.
+
+</Step>
+</Steps>

@@ -4,63 +4,43 @@ title: "Cita"
 description: "Cómo reconocer el uso de datos, benchmarks y herramientas de gateway de Phaseo en tu trabajo."
 ---
 
-Phaseo agrega información pública y resultados de benchmarks de proveedores de modelos y proyectos de evaluación.
-Si usas Phaseo para consultar, comparar o supervisar modelos, una mención sencilla ayuda a que otras personas descubran la plataforma.
-
----
-
-## Versión breve
-
-Si Phaseo te resultó útil, incluye un enlace en un lugar apropiado (metodología, nota al pie o agradecimientos):
+Cita el benchmark original como fuente principal y enlaza a Phaseo cuando lo hayas usado para consultar, comparar o supervisar modelos. Basta con un enlace en la metodología, una nota al pie o los agradecimientos:
 
 > Este trabajo utiliza metadatos de modelos y resultados agregados de benchmarks de [Phaseo](https://phaseo.app).
 
----
+## Cita formal
 
-## Cita sugerida (opcional)
+Usa el año en que consultaste los datos.
 
-Si prefieres una referencia más formal, puedes usar:
-
-```text
-Phaseo. (2025). Phaseo: Aggregated benchmarks and gateway for AI models. https://phaseo.app
+<CodeGroup>
+```text APA
+Phaseo. (2026). Phaseo: Aggregated benchmarks and gateway for AI models. https://phaseo.app
 ```
 
-BibTeX (opcional):
-
-```bibtex
-@misc{phaseo-2025,
+```bibtex BibTeX
+@misc{phaseo-2026,
     title  = {Phaseo: Aggregated benchmarks and gateway for AI models},
     author = {{Phaseo Team}},
-    year   = {2025},
+    year   = {2026},
     url    = {https://phaseo.app}
 }
 ```
+</CodeGroup>
 
----
+## Cita puntuaciones de benchmarks
 
-## Datos de benchmarks
+Phaseo no ejecuta benchmarks. Publica las puntuaciones que comunican los autores de benchmarks, los desarrolladores de modelos y los editores de índices, con un enlace a cada fuente (consulta [Metodología de benchmarks](./benchmark-methodology.mdx)).
 
-Phaseo **no ejecuta benchmarks**. Mostramos y normalizamos puntuaciones publicadas por autores de benchmarks y proveedores de modelos.
+Cuando uses una puntuación que encontraste en Phaseo:
 
-Cuando uses resultados de benchmarks consultados mediante Phaseo:
+1. Cita el benchmark original y su artículo como fuente principal.
+2. Si quieres, menciona Phaseo como el sitio donde obtuviste o comparaste la puntuación.
+3. Incluye el nombre del benchmark y la partición (por ejemplo, `MMLU test`), el ID de modelo de Phaseo y el proveedor, la URL de la página de Phaseo o de la llamada a la API, y la fecha de consulta.
 
-1. Cita el benchmark original y el artículo como fuente principal.
-2. Puedes mencionar Phaseo como el sitio donde consultaste o comparaste las puntuaciones.
-3. Incluye:
+> Las puntuaciones del benchmark se obtuvieron mediante Phaseo (partición MMLU test), consultadas el 3 de marzo de 2026. Modelo: `openai/gpt-6-astra`; proveedor: OpenAI.
 
-- Nombre del benchmark y partición (por ejemplo, `MMLU test`).
-- Identificador del modelo y proveedor.
-- URL de la página o API correspondiente de Phaseo.
-- Fecha de consulta.
+## Menciona el Gateway
 
-Ejemplo de texto:
+Si Phaseo fue tu capa de integración y no una fuente de datos, descríbelo como el gateway y enlaza a la [referencia de la API](../api-reference/introduction.mdx):
 
-> Las puntuaciones del benchmark se consultaron en Phaseo (partición MMLU test) el 3 de marzo de 2025. Modelo: `openai-gpt-4o`; proveedor: OpenAI.
-
-## Gateway y herramientas
-
-Al describir integraciones, puedes presentar Phaseo como la capa de gateway y no como una fuente de benchmarks de investigación:
-
-> Usamos Phaseo Gateway para unificar el acceso a los modelos de OpenAI, Anthropic y Google mediante una sola API.
-
-Enlaza directamente la [referencia de la API](../api-reference/introduction.mdx) para que los lectores puedan obtener más información.
+> Usamos Phaseo Gateway para llamar a modelos de OpenAI, Anthropic y Google mediante una sola API.

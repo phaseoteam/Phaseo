@@ -1,0 +1,258 @@
+---
+icon: "circle-check"
+title: "Agent SDK रोकने की शर्तें"
+sidebarTitle: "रोकने की शर्तें"
+description: "एजेंट रन को स्टेप, टोकन, लागत, समय, टूल कॉल या समाप्ति के कारण से सीमित करें।"
+---
+
+रन को मॉडल के नहीं, अपने बजट के हिसाब से ख़त्म करने के लिए एजेंट पर रोकने की शर्तें सेट करें। जो शर्त सबसे पहले मेल खाती है, वह अपना कारण रन के stop reason के रूप में दर्ज करती है और रन को `stopped` स्टेटस के साथ लौटाती है। इससे अलग, स्टेप सीमा हर run या continue कॉल में मॉडल टर्न की सीमा तय करती है। Rust में सिर्फ़ स्टेप सीमा है।
+
+## अंतर्निहित सीमाएँ जोड़ें
+
+<CodeGroup>
+
+```typescript TypeScript
+import {
+  maxCost,
+  maxDuration,
+  maxTokensUsed,
+  stepCountIs,
+} from "@phaseo/agent-sdk";
+
+const agent = createAgent({
+  id: "bounded-research",
+  stopWhen: [
+    stepCountIs(12),
+    maxTokensUsed(40_000),
+    maxCost(2),
+    maxDuration(60_000),
+  ],
+});
+```
+
+```python Python
+from phaseo_agent import create_agent, max_cost, max_duration, max_tokens_used, step_count_is
+
+agent = create_agent({
+    "id": "bounded-research",
+    "stop_when": [
+        step_count_is(12),
+        max_tokens_used(40_000),
+        max_cost(2),
+        max_duration(60_000),
+    ],
+})
+```
+
+```go Go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID:    "bounded-research",
+  Model: "openai/gpt-6-astra",
+  StopWhen: []phaseoagent.StopCondition{
+    phaseoagent.StepCountIs(12),
+    phaseoagent.MaxTokensUsed(40_000),
+    phaseoagent.MaxCost(2.50),
+    phaseoagent.MaxDuration(2 * time.Minute),
+  },
+})
+```
+
+```csharp C#
+var agent = AgentSdk.CreateAgent(new AgentDefinition
+{
+    Id = "bounded-research",
+    Model = "openai/gpt-6-astra",
+    StopWhen = new[]
+    {
+        AgentSdk.StepCountIs(12),
+        AgentSdk.MaxTokensUsed(40_000),
+        AgentSdk.MaxCost(2.50),
+        AgentSdk.MaxDuration(TimeSpan.FromMinutes(2)),
+    },
+});
+```
+
+```php PHP
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "bounded-research",
+    model: "openai/gpt-6-astra",
+    stopWhen: [
+        AgentSdk::stepCountIs(12),
+        AgentSdk::maxTokensUsed(40000),
+        AgentSdk::maxCost(2.50),
+        AgentSdk::maxDuration(120000), // मिलीसेकंड
+    ]
+));
+```
+
+```ruby Ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "bounded-research",
+  model: "openai/gpt-6-astra",
+  stop_when: [
+    PhaseoAgentSdk.step_count_is(12),
+    PhaseoAgentSdk.max_tokens_used(40_000),
+    PhaseoAgentSdk.max_cost(2.50),
+    PhaseoAgentSdk.max_duration(120_000) # मिलीसेकंड
+  ]
+)
+```
+
+```java Java
+// stopWhen 13-argument constructor का 11वाँ argument है।
+var agent = AgentSdk.createAgent(new AgentSdk.AgentDefinition(
+    "bounded-research", "openai/gpt-6-astra", null, null, List.of(), 12,
+    null, null, null, null,
+    List.of(                                    // stopWhen
+        AgentSdk.stepCountIs(12),
+        AgentSdk.maxTokensUsed(40_000),
+        AgentSdk.maxCost(2.50),
+        AgentSdk.maxDuration(Duration.ofMinutes(2))),
+    null, null                                  // outputSchema, requireApproval
+));
+```
+
+```rust Rust
+// Rust 0.2 में रोकने की शर्तें नहीं हैं; रन को स्टेप सीमा से सीमित करें।
+let agent = create_agent(
+    AgentDefinition::new("bounded-research", "openai/gpt-6-astra")
+        .max_steps(6),
+);
+```
+
+</CodeGroup>
+
+टोकन और लागत की सीमाएँ प्रदाता द्वारा बताए गए उपयोग पर निर्भर करती हैं, इसलिए साथ में स्टेप या अवधि की सीमा भी रखें।
+
+## उपलब्ध helpers
+
+| Helper | `camelCase` (TS, PHP, Java) | `snake_case` (Python, Ruby) | `PascalCase` (Go, C#) | कब रोकता है | रोकने का कारण |
+| --- | --- | --- | --- | --- | --- |
+| स्टेप संख्या | `stepCountIs(n)` | `step_count_is(n)` | `StepCountIs(n)` | `n` मॉडल टर्न चल चुके हों | `step_count:n` |
+| टोकन | `maxTokensUsed(n)` | `max_tokens_used(n)` | `MaxTokensUsed(n)` | कुल टोकन `n` तक पहुँचें | `max_tokens:n` |
+| लागत | `maxCost(usd)` | `max_cost(usd)` | `MaxCost(usd)` | बताई गई लागत `usd` तक पहुँचे | `max_cost:usd` |
+| अवधि | `maxDuration(...)` | `max_duration(ms)` | `MaxDuration(...)` | बीता हुआ समय अवधि तक पहुँचे | `max_duration:...` |
+| टूल कॉल | `hasToolCall(name)` | `has_tool_call(name)` | `HasToolCall(name)` | किसी टर्न ने `name` कॉल किया | `tool_call:name` |
+| समाप्ति का कारण | `finishReasonIs(reason)` | `finish_reason_is(reason)` | `FinishReasonIs(reason)` | किसी टर्न ने `reason` बताया | `finish_reason:reason` |
+
+Helpers C#, PHP (`AgentSdk::`) और Java में `AgentSdk` पर, Ruby में `PhaseoAgentSdk` पर होते हैं, और TypeScript, Python और Go में पैकेज functions हैं। अवधि का argument अलग-अलग है:
+
+| भाषा | अवधि argument |
+| --- | --- |
+| TypeScript | मिलीसेकंड |
+| Python | मिलीसेकंड |
+| Go | `time.Duration` |
+| C# | `TimeSpan` |
+| PHP | मिलीसेकंड |
+| Ruby | मिलीसेकंड |
+| Java | `java.time.Duration` |
+
+## शर्तें कब जाँची जाती हैं
+
+भाषाएँ शर्तों को एक ही बिंदु पर नहीं जाँचतीं, और स्टेप सीमा को एक जैसा नहीं मानतीं:
+
+| भाषा | शर्तें कब जाँची जाती हैं | `hasToolCall` और `finishReasonIs` क्या देखते हैं | स्टेप सीमा (डिफ़ॉल्ट) | स्टेप सीमा ख़त्म होने पर |
+| --- | --- | --- | --- | --- |
+| TypeScript | हर पूरे हुए स्टेप के बाद | हर पूरा हुआ स्टेप | `maxSteps` (12) | `Max steps exceeded` फेंकता है |
+| Python | सिर्फ़ उस स्टेप पर जिसमें मॉडल कोई टूल कॉल नहीं करता | वही स्टेप (इसलिए `has_tool_call` कभी मेल नहीं खाता) | `max_steps` (12) | `RuntimeError` raise करता है |
+| Go | हर मॉडल टर्न और उसके टूल के बाद | आख़िरी टर्न | `MaxSteps` (8) | `Max steps exceeded (N)` त्रुटि के साथ विफल होता है |
+| C# | हर मॉडल टर्न और उसके टूल के बाद | आख़िरी टर्न | `MaxSteps` (12) | `InvalidOperationException("Max steps exceeded (N)")` फेंकता है |
+| PHP | हर मॉडल टर्न और उसके टूल के बाद | आख़िरी टर्न | `maxSteps` (12) | `Max steps exceeded (N)` फेंकता है |
+| Ruby | हर मॉडल टर्न और उसके टूल के बाद | आख़िरी टर्न | `max_steps` (12) | `Max steps exceeded (N)` raise करता है |
+| Java | हर मॉडल टर्न और उसके टूल के बाद | आख़िरी टर्न | `maxSteps` (12) | `Max steps exceeded (N)` फेंकता है |
+| Rust | कोई रोकने की शर्त नहीं | | `max_steps` (8) | रन को `stopped` स्टेटस और stop reason `max_steps:N` के साथ लौटाता है |
+
+<Warning>
+Python की रोकने की शर्तें टूल लूप को बीच में नहीं काटतीं। टूल लूप को `max_steps` से सीमित करें। `run()` को दिया गया `stop_when` अनदेखा किया जाता है; इसे definition पर सेट करें।
+</Warning>
+
+## पढ़ें कि रन क्यों रुका
+
+रुका हुआ रन सामान्य रूप से लौटता है, त्रुटि के रूप में नहीं। जाँचें कि रन का स्टेटस `stopped` है, उसका stop reason पढ़ें, फिर उपयोग और आख़िरी स्टेप पढ़ें। अपने ऐप्लिकेशन में तय करें कि कौन-से कारण सफलता माने जाएँ, किन्हें दोबारा आज़माया जा सकता है, या कौन-से उपयोगकर्ता को दिखाने लायक हैं।
+
+| भाषा | स्टेटस और कारण |
+| --- | --- |
+| TypeScript | `result.run.status`, `result.run.stopReason` |
+| Python | `result.run.status`, `result.run.stop_reason` |
+| Go | `result.Run.Status`, `result.Run.StopReason` |
+| C# | `result.Run.Status`, `result.Run.StopReason` |
+| PHP | `$result->run->status`, `$result->run->stopReason` |
+| Ruby | `result.run.status`, `result.run.stop_reason` |
+| Java | `result.run().status()`, `result.run().stopReason()` |
+| Rust | `result.run.status`, `result.run.stop_reason` |
+
+## कस्टम शर्त लिखें
+
+कस्टम शर्त को रन की स्टेट मिलती है और वह रोकने का कारण लौटाती है, या जारी रखने के लिए "नहीं" वाला मान। जब ऑपरेटरों या आपके इंटरफ़ेस को यह बताना हो कि रन क्यों ख़त्म हुआ, तब कारण वाली string लौटाएँ; यह stop reason के रूप में सहेजी जाती है।
+
+<CodeGroup>
+
+```typescript TypeScript
+import type { AgentStopCondition } from "@phaseo/agent-sdk";
+
+const stopAfterRepeatedToolErrors: AgentStopCondition = ({ steps }) => {
+  const failures = steps
+    .flatMap((step) => step.toolResults)
+    .filter((result) => result.error).length;
+  return failures >= 2 ? "repeated_tool_errors" : false;
+};
+
+const agent = createAgent({
+  id: "support-agent",
+  stopWhen: [stepCountIs(10), stopAfterRepeatedToolErrors],
+});
+```
+
+```python Python
+def stop_on_refund(state):
+    if any(call.name == "issue_refund" for call in state["tool_calls"]):
+        return "refund_requested"
+    return False
+```
+
+```go Go
+stopOnRefund := func(state phaseoagent.StopState) (string, bool) {
+  for _, call := range state.ToolCalls {
+    if call.Name == "issue_refund" {
+      return "refund_requested", true
+    }
+  }
+  return "", false
+}
+```
+
+```csharp C#
+Func<StopState, (bool Stop, string Reason)> stopOnRefund =
+    state => (state.ToolCalls.Any(call => call.Name == "issue_refund"), "refund_requested");
+```
+
+```php PHP
+$stopOnRefund = fn (array $state) => in_array(
+    "issue_refund",
+    array_map(fn ($call) => $call->name, $state["tool_calls"]),
+    true
+) ? "refund_requested" : null;
+```
+
+```ruby Ruby
+stop_on_refund = ->(state) {
+  "refund_requested" if state[:tool_calls].any? { |call| call.name == "issue_refund" }
+}
+```
+
+```java Java
+AgentSdk.StopCondition stopOnRefund = state ->
+    state.toolCalls().stream().anyMatch(call -> call.name().equals("issue_refund")) ? "refund_requested" : null;
+```
+
+</CodeGroup>
+
+| भाषा | क्या मिलता है | क्या लौटाता है |
+| --- | --- | --- |
+| TypeScript | `{ steps, usage, elapsedMs }`; हर स्टेप में `stepIndex`, `text`, `toolCalls`, `toolResults`, `usage`, `finishReason` होते हैं | `false`, `true` या कारण वाली string |
+| Python | `step_count`, `usage`, `tool_calls`, `finish_reason`, `elapsed_ms` वाली dict | `False` या कारण वाली string |
+| Go | `StepCount`, `Usage`, `ToolCalls`, `FinishReason`, `Elapsed` वाला `StopState` | `(reason string, stop bool)` |
+| C# | `StepCount`, `Usage`, `ToolCalls`, `FinishReason`, `Elapsed` वाला `StopState` | `(bool Stop, string Reason)` |
+| PHP | `step_count`, `usage`, `tool_calls`, `finish_reason`, `elapsed_ms` वाला array | कारण वाली string, या `null` |
+| Ruby | `:step_count`, `:usage`, `:tool_calls`, `:finish_reason`, `:elapsed_ms` वाला Hash | कारण वाली String, या `nil` |
+| Java | `stepCount()`, `usage()`, `toolCalls()`, `finishReason()`, `elapsed()` वाला `StopState` | कारण वाली string, या `null` |

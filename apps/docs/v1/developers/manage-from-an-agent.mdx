@@ -5,15 +5,17 @@ description: "Map each Phaseo account task to its CLI command, Management API ro
 icon: "bot"
 ---
 
-You can run a Phaseo account from the `phaseo` CLI, the `/v1` Management API or the Phaseo MCP server, without opening the dashboard. Use this page to find the command, route or tool for a task.
+Run a Phaseo account from the `phaseo` CLI, the `/v1` Management API or the Phaseo MCP server instead of the dashboard. The tables below give the command, route and tool for each task.
 
-Some steps always need a person in a browser, by design:
+A person still has to do these steps in a browser:
 
-- **Signing up** for a Phaseo account.
-- **Approving a sign-in**: the browser page that `phaseo login` opens, or the code that `phaseo login --device-code` shows.
-- **Entering a card** the first time credits are bought: with no saved card, `phaseo credits add` returns a checkout link that an owner or admin opens to pay, and the card is saved.
-- **Confirming each top-up**: every `phaseo credits add` with a saved card is confirmed by a workspace owner or admin from an emailed link.
-- **Account security**: password, multi-factor authentication and passkeys.
+| Step | What the person does |
+| --- | --- |
+| Sign up | Creates the Phaseo account. |
+| Approve a sign-in | Approves the page `phaseo login` opens, or enters the code `phaseo login --device-code` shows. |
+| Add the first card | With no saved card, `phaseo credits add` returns a checkout link. An owner or admin opens it and pays, and the card is saved. |
+| Confirm each top-up | With a saved card, an owner or admin confirms every `phaseo credits add` from an emailed link. |
+| Account security | Manages the password, multi-factor authentication and passkeys. |
 
 <Visibility for="agents">
 Rules for agents managing Phaseo:
@@ -42,7 +44,12 @@ phaseo login --scopes billing:write   # opt in once before the first top-up; a p
 phaseo credits add --amount 20 --json
 ```
 
-`phaseo credits add` needs the `billing:write` scope, which no sign-in has by default, and it never charges on its own. With a saved card, Phaseo emails every workspace owner and admin a link to confirm the charge, and the command waits for the result. With no saved card, it returns `next_action: "open_checkout_url"` and a checkout link where an owner or admin pays with a card, which is then saved for later top-ups. No email is sent in that case. See [Credits](../api-reference/endpoint/credits) for the route.
+`phaseo credits add` needs the `billing:write` scope, which no sign-in has by default, and it never charges on its own:
+
+- **With a saved card**, Phaseo emails every workspace owner and admin a link to confirm the charge, and the command waits for the result.
+- **With no saved card**, it returns `next_action: "open_checkout_url"` and a checkout link where an owner or admin pays. The card is saved for later top-ups, and no email is sent.
+
+See [Credits](../api-reference/endpoint/credits) for the route.
 
 ## Choose an interface
 
@@ -123,13 +130,6 @@ Run `phaseo <group> --help` to see the flags your installed CLI accepts. When a 
 | Alert email, Slack or webhook destinations | `phaseo notifications destinations create`, `phaseo notifications routes set <event-kind> --destination-ids <id>` | `POST /v1/notifications/destinations`, `PUT /v1/notifications/routes/{eventKind}` | — |
 | Webhooks for async jobs | `phaseo webhooks create --url <https-url>` | `POST /v1/webhook-endpoints` | `webhook_create` |
 
-## Permissions
+## Fix a 403
 
-A CLI session, management key or MCP connection can only do what its scopes and your workspace role allow. Owner- and admin-only changes still need an owner or admin. If a command returns `403`, check `phaseo whoami --json` for the granted scopes, and sign in again with `phaseo login --scopes <scope,...>` when a scope is missing. `billing:write` is never granted by default.
-
-## Related
-
-- [Phaseo CLI](../guides/integrations/phaseo-cli)
-- [CLI and MCP](./cli-and-mcp)
-- [Management API keys](./management-api-keys)
-- [API reference](../api-reference/introduction)
+A CLI session, management key or MCP connection can only do what its scopes and your workspace role allow, and owner- and admin-only changes still need an owner or admin. If a command returns `403`, check the granted scopes with `phaseo whoami --json`, and sign in again with `phaseo login --scopes <scope,...>` when one is missing. `billing:write` is never granted by default.

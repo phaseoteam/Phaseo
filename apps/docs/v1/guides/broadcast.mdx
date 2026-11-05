@@ -5,9 +5,9 @@ description: "Send a trace of every request to your observability tool, a webhoo
 icon: "radio-tower"
 ---
 
-Broadcast sends a trace of each gateway request to destinations you choose, without changing your code. The trace follows the OpenTelemetry GenAI conventions: one span for the request, and one span for each provider attempt, with the model, provider, token usage, cost, timing, and (unless you turn it off) the prompt and output.
+Add a destination in **Settings → Broadcast** and Phaseo sends it a trace of each gateway request, with no code changes. The trace follows the OpenTelemetry GenAI conventions: one span for the request, and one span for each provider attempt, with the model, provider, token usage, cost, timing, and (unless you turn it off) the prompt and output.
 
-Broadcast is free. Owners and admins manage destinations in **Settings → Broadcast**, or with the [observability destinations API](/v1/api-reference/endpoint/observability-destinations-create) and a [management key](/v1/developers/management-api-keys) with `settings:write`. A workspace can have up to five destinations of each type.
+Broadcast is free. Owners and admins manage destinations in **Settings → Broadcast**, or with the [observability destinations API](/v1/api-reference/endpoint/observability-destinations-create) and a [management key](/v1/developers/management-api-keys) with `settings:write`. A workspace can have up to five destinations of each type. To trace from your own client instead, see [Observability integrations](./integrations/observability.mdx).
 
 ## Add a destination
 
@@ -43,7 +43,7 @@ Put a `metadata` object in the request body to name traces and attach your own f
 
 ```json
 {
-  "model": "openai/gpt-5-nano",
+  "model": "openai/gpt-6-astra",
   "messages": [{ "role": "user", "content": "Summarise this ticket" }],
   "metadata": {
     "trace_id": "ticket-48213",
@@ -65,6 +65,8 @@ Put a `metadata` object in the request body to name traces and attach your own f
 Values can be strings, numbers, or booleans; nested objects are skipped. Phaseo keeps up to 64 keys of at most 64 characters, and cuts values at 512 characters. A W3C `traceparent` header, when present, decides the trace instead of `trace_id` and `parent_span_id`.
 
 Do not put secrets or personal data in `metadata`: it is sent to every destination that has **Request Context** on.
+
+[Request labels](./request-labels.mdx) are sent too, as span attributes named `phaseo.label.<key>`.
 
 ## Webhook deliveries
 
@@ -169,10 +171,3 @@ Deliveries that fail with a timeout, a rate limit, or a server error are retried
 **Settings → Broadcast** shows each destination's health: **Healthy**, **Failing**, **No deliveries yet**, or **Disabled**, with the last error and the last 24 hours of delivered and failed requests.
 
 To be told when a destination stops working, route **Broadcast Alerts** to a [notification destination](./workspace-notifications.mdx). An alert is sent when a destination has failed at least five requests in a row and has delivered nothing for 15 minutes. It is sent once per failing streak, and again only after the destination has recovered and at least six hours have passed.
-
-## Related
-
-- [Observability destinations API](/v1/api-reference/endpoint/observability-destinations-list)
-- [Request labels](./request-labels.mdx), which are sent as `phaseo.label.<key>` attributes
-- [Workspace notifications](./workspace-notifications.mdx)
-- [Observability integrations](./integrations/observability.mdx), for tracing from your own client instead

@@ -1,0 +1,185 @@
+---
+icon: "pencil"
+title: "图片编辑"
+description: "在任意 Phaseo SDK 中调用 /images/edits 编辑图片。"
+---
+
+用提示和图片调用 SDK 的图片编辑方法，即可发送 `POST /v1/images/edits`。图片和遮罩以 URL 或 base64 data URL 的形式传入。要发送文件字节，请使用 Python 的 `AsyncPhaseo`，或在 Java 中使用标准 HTTP 客户端。
+
+<CodeGroup>
+
+```typescript TypeScript
+const edited = await client.generateImageEdit({
+  model: "openai/gpt-image-1",
+  prompt: "Make it sunset",
+  image: "data:image/png;base64,...",
+  mask: "data:image/png;base64,...",
+});
+```
+
+```python Python
+edited = client.generate_image_edit({
+    "model": "openai/gpt-image-1",
+    "prompt": "Make it sunset",
+    "image": "data:image/png;base64,...",
+    "mask": "data:image/png;base64,...",
+})
+```
+
+```go Go
+client, err := phaseo.NewFromEnv()
+if err != nil {
+  panic(err)
+}
+
+resp, err := client.CreateImageEdit(context.Background(), map[string]interface{}{
+  "model":  "openai/gpt-image-1",
+  "prompt": "Make it sunset",
+  "image":  "data:image/png;base64,...",
+  "mask":   "data:image/png;base64,...",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp["data"])
+```
+
+```csharp C#
+using PhaseoSdk;
+
+var client = new Phaseo();
+
+var response = await client.CreateImageEdit(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-image-1",
+    ["prompt"] = "Make it sunset",
+    ["image"] = "data:image/png;base64,...",
+    ["mask"] = "data:image/png;base64,...",
+});
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo();
+
+$response = $client->generateImageEdit([
+    'model' => 'openai/gpt-image-1',
+    'prompt' => 'Make it sunset',
+    'image' => 'data:image/png;base64,...',
+    'mask' => 'data:image/png;base64,...',
+]);
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new
+
+response = client.generate_image_edit(
+  model: 'openai/gpt-image-1',
+  prompt: 'Make it sunset',
+  image: 'data:image/png;base64,...',
+  mask: 'data:image/png;base64,...'
+)
+```
+
+```java Java
+// SDK 的 JSON 辅助方法不编码 multipart 上传，因此用 Java 的标准 HTTP 客户端
+// 发送文件。请把 input.png 放在工作目录中。
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.UUID;
+
+String baseUrl = System.getenv().getOrDefault("PHASEO_BASE_URL", "https://api.phaseo.app/v1")
+    .replaceAll("/+$", "");
+String apiKey = System.getenv("PHASEO_API_KEY");
+String boundary = "phaseo-" + UUID.randomUUID();
+var body = BodyPublishers.concat(
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\nopenai/gpt-image-1\r\n"),
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"prompt\"\r\n\r\nMake it sunset\r\n"),
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"image\"; filename=\"input.png\"\r\nContent-Type: image/png\r\n\r\n"),
+    BodyPublishers.ofFile(Path.of("input.png")),
+    BodyPublishers.ofString("\r\n--" + boundary + "--\r\n")
+);
+var request = HttpRequest.newBuilder(URI.create(baseUrl + "/images/edits"))
+    .header("Authorization", "Bearer " + apiKey)
+    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+    .timeout(Duration.ofSeconds(60))
+    .POST(body)
+    .build();
+var response = HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
+if (response.statusCode() < 200 || response.statusCode() >= 300) {
+    throw new IOException("HTTP " + response.statusCode() + ": " + response.body());
+}
+System.out.println(response.body());
+```
+
+```rust Rust
+let response = client.post("/images/edits", &json!({
+    "model": "openai/gpt-image-1",
+    "prompt": "Make it sunset",
+    "image": "data:image/png;base64,..."
+}))?;
+```
+
+</CodeGroup>
+
+不同 SDK 发送请求的方式不同：
+
+| 语言 | 方法 | 发送内容 | 图片输入 |
+| --- | --- | --- | --- |
+| TypeScript | `client.generateImageEdit(request)` | multipart 表单 | URL 或 base64 data URL。`client.streamImageEdit()` 则流式返回部分图片事件。 |
+| Python | `client.generate_image_edit(request)`（同步） | JSON | 仅 URL 或 base64 data URL。 |
+| Python | `AsyncPhaseo` 上的 `await client.images.edit(request)` | multipart 表单 | URL、data URL、bytes、路径和文件对象。 |
+| Go | `client.CreateImageEdit(ctx, req)` | JSON | URL 或 base64 data URL。 |
+| C# | `client.CreateImageEdit(request)` | JSON | URL 或 base64 data URL。 |
+| PHP | `$client->generateImageEdit($request)`，别名 `createImageEdit()` | JSON | URL 或 base64 data URL。 |
+| Ruby | `client.generate_image_edit(...)`，别名 `create_image_edit` | JSON | URL 或 base64 data URL。 |
+| Java | Java 的 `java.net.http.HttpClient`，如示例所示 | multipart 表单 | 文件字节。SDK 的 JSON 辅助方法（包括 `client.createImageEdit(request)`）不编码 multipart 上传。 |
+| Rust | `client.post("/images/edits", &request)` | JSON | URL 或 base64 data URL。没有图片编辑辅助方法。 |
+
+## 参数
+
+在每个 SDK 中，字段名都是 JSON 正文字段（或 multipart 表单字段）。
+
+| 字段 | 说明 |
+| --- | --- |
+| `image` | 必填。一个 URL 或 base64 data URL，或最多 16 个组成的数组。 |
+| `prompt` | 必填。最多 32,000 个字符。 |
+| `model` | 默认为 `openai/gpt-image-1.5`。 |
+| `mask` | 透明区域标记要编辑的部分。 |
+| `n` | 编辑后图片的数量，`1` 到 `10`。 |
+| `size` | 例如 `1024x1024`、`1024x1792` 或 `1792x1024`。 |
+| `quality` | `standard`、`low`、`medium`、`high`、`xhigh`、`max` 或 `auto`，取决于模型。 |
+| `input_fidelity` | `high` 或 `low`。 |
+| `output_format`、`output_compression`、`background` | 与[图片生成](./images-generations)相同。 |
+| `response_format` | `url` 或 `b64_json`。GPT Image 模型不支持此字段。 |
+| `user` | 终端用户标签。 |
+
+完整的 schema 见[图片编辑 API 参考](../../api-reference/endpoint/images-edits)。
+
+## 响应
+
+`ImagesEditResponse`：
+
+```json
+{
+  "data": [
+    {
+      "url": "https://example.com/edited_image.png"
+    }
+  ]
+}
+```
+
+返回图片字节的模型会把它们放在 `b64_json` 中，而不是 `url`。

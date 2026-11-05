@@ -5,37 +5,38 @@ description: "Connect Roo Code to Phaseo through an OpenAI-compatible profile."
 "og:image": "https://phaseo.app/og/dynamic?title=Roo%20Code&description=Connect%20Roo%20Code%20to%20Phaseo%20through%20an%20OpenAI-compatible%20profile.&pathname=/docs/v1/guides/integrations/roo-code"
 ---
 
-Use the Phaseo CLI to create a dedicated key, then configure Roo Code's provider profile manually. Roo Code keeps credentials in VS Code secret storage, so the final entry happens in the extension UI.
+Run `phaseo roo-code` to create a key, then add an **OpenAI Compatible** profile in Roo Code. Roo Code keeps keys in VS Code's secret storage, so that last step happens in its UI.
 
 ## Set up with the Phaseo CLI
 
 ```bash
 phaseo login
-phaseo roo-code --model anthropic/claude-sonnet-4.6
+phaseo roo-code --model anthropic/claude-sonnet-5.5
 ```
 
-## Configure Roo Code manually
+The CLI creates a `Phaseo CLI: Roo Code API Key` that expires after 90 days and has a $100 monthly spend limit, then prints the values for the next step.
 
-1. Open Roo Code in VS Code.
-2. Open **Settings**, then **Providers**.
-3. Create a provider configuration profile and choose **OpenAI Compatible**.
-4. Enter these values:
+## Configure Roo Code
+
+1. Open Roo Code in VS Code, then **Settings → Providers**.
+2. Create a provider configuration profile and choose **OpenAI Compatible**.
+3. Enter:
 
 | Roo Code field | Value |
 | --- | --- |
 | Base URL | `https://api.phaseo.app/v1` |
-| API Key | Output of `phaseo integrations credential roo-code` |
-| Model | `anthropic/claude-sonnet-4.6` or the model printed by setup |
+| API Key | Output of `phaseo integrations credential roo-code`, or any Phaseo API key |
+| Model | `anthropic/claude-sonnet-5.5`, or the model printed by setup |
 
-5. Save the profile and make it active.
+4. Save the profile and make it active.
 
-Field labels can vary slightly between releases, but the profile needs the endpoint, key, and exact model ID.
+Field labels change slightly between releases; see Roo Code's [model providers](https://docs.roocode.com/providers/) docs if yours differ.
 
-## Verify
+## Check it works
 
-Ask Roo Code to reply with `PHASEO_ROO_OK`, then confirm the request appears in Phaseo activity.
+Ask Roo Code to reply with `PHASEO_ROO_OK`, then confirm the request appears in **Settings → Usage → Logs**.
 
-## Remove
+## Remove Phaseo
 
 Delete the Phaseo profile or switch profiles, then run:
 
@@ -43,24 +44,18 @@ Delete the Phaseo profile or switch profiles, then run:
 phaseo integrations remove roo-code
 ```
 
-The CLI cannot delete values in VS Code's private extension storage, but removal revokes the key.
+This revokes the key. The CLI can't clear VS Code's extension storage.
 
-## Troubleshooting
+## Fix common problems
 
 ### Authentication fails
 
-Retrieve the key again with `phaseo integrations credential roo-code`. Ensure the Base URL ends in `/v1`.
+Copy the key again with `phaseo integrations credential roo-code`, and check that the Base URL ends in `/v1`.
 
-### Roo Code cannot find the model
+### Roo Code can't find the model
 
-Enter the exact Phaseo model ID manually, including its provider prefix.
+Type the exact Phaseo model ID, including its provider prefix.
 
 ### Chat works but tools fail
 
 Switch to a model with tool-calling support.
-
-## Related
-
-- [Roo Code model providers](https://docs.roocode.com/providers/)
-- [Coding Agents](./coding-assistants.mdx)
-- [Models](../../api-reference/endpoint/models.mdx)

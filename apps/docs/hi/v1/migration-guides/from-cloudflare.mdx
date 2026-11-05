@@ -1,43 +1,39 @@
 ---
-title: "Cloudflare AI Gateway से माइग्रेट करें"
+title: "Cloudflare AI Gateway से माइग्रेट करना"
 sidebarTitle: "Cloudflare AI Gateway"
-description: "ऐप के अनुरोध प्रवाह को बनाए रखते हुए Cloudflare AI Gateway route को Phaseo से बदलें।"
+description: "अपने ऐप्लिकेशन का अनुरोध फ़्लो बनाए रखते हुए Cloudflare AI Gateway रूट को Phaseo से बदलें।"
 icon: "/icons/brands/cloudflare.svg"
 ---
 
-अगर आपका ऐप Cloudflare AI Gateway के ज़रिए पहले से OpenAI-संगत अनुरोध भेजता है, तो इस गाइड का उपयोग करें। पहले Gateway सीमा बदलें, फिर केवल वही रूटिंग, कैशिंग और ऑब्ज़र्वेबिलिटी दोबारा बनाएं जिनकी प्रोडक्शन ट्रैफ़िक को सच में ज़रूरत है।
+Cloudflare गेटवे URL और प्रदाता कुंजी को `https://api.phaseo.app/v1` और Phaseo कुंजी से बदलें, और `cf-aig-*` हेडर हटाएं। अनुरोध पेलोड वही रहता है।
 
-## क्या बदलेगा
-
-| सेटिंग | पहले | बाद में |
+| सेटिंग | Cloudflare AI Gateway | Phaseo |
 | --- | --- | --- |
-| Gateway URL | खाते और Gateway के लिए विशिष्ट Cloudflare URL | `https://api.phaseo.app/v1` |
-| प्रमाणीकरण | Cloudflare और प्रदाता क्रेडेंशियल | `PHASEO_API_KEY` |
-| रूटिंग नीति | Cloudflare Gateway कॉन्फ़िगरेशन | Phaseo रूटिंग सेटिंग और presets |
-| अनुरोध दृश्यता | Cloudflare analytics | Phaseo गतिविधि और अनुरोध विवरण |
+| बेस URL | `gateway.ai.cloudflare.com/v1/<account_id>/<gateway_id>/<provider>`, या `api.cloudflare.com/client/v4/accounts/<account_id>/ai/v1` | `https://api.phaseo.app/v1` |
+| प्रमाणीकरण | प्रदाता कुंजी, साथ में `cf-aig-authorization` या Cloudflare API टोकन | `PHASEO_API_KEY`, `Authorization: Bearer` के रूप में |
+| प्रदाता चयन | हर प्रदाता के लिए एक रूट | एक बेस URL; मॉडल ID मॉडल चुनती है और रूटिंग प्रदाता चुनती है |
+| गेटवे हेडर | `cf-aig-*` | हटाए गए, या नीचे की तालिका के अनुसार मैप किए गए |
+| अनुरोध दृश्यता | Cloudflare एनालिटिक्स | Phaseo अनुरोध लॉग और अनुरोध विवरण |
 
-<Steps>
-<Step title="मौजूदा Gateway कॉन्फ़िगरेशन की सूची बनाएं">
-
-Cloudflare Gateway URL, प्रदाता routes, कस्टम हेडर, कैश नियम, retry व्यवहार और ऐप द्वारा उपयोग किए जाने वाले analytics दर्ज करें। इससे ज़रूरी व्यवहार उन सेटिंग से अलग हो जाता है जिन्हें अब माइग्रेट करने की ज़रूरत नहीं है।
-
-</Step>
-
-<Step title="एंडपॉइंट और क्रेडेंशियल बदलें">
-
-जहां संभव हो अनुरोध payload को वैसा ही रखें और OpenAI-संगत क्लाइंट की सीमा अपडेट करें।
+## क्लाइंट बदलें
 
 <CodeGroup>
 ```typescript TypeScript
 import OpenAI from "openai";
 
+// पहले:
+// new OpenAI({
+//   apiKey: process.env.OPENAI_API_KEY,
+//   baseURL: `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayId}/openai`,
+//   defaultHeaders: { "cf-aig-authorization": `Bearer ${process.env.CF_AIG_TOKEN}` },
+// });
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
 });
 
 const response = await client.chat.completions.create({
-  model: "openai/gpt-4.1-mini",
+  model: "openai/gpt-6-astra",
   messages: [{ role: "user", content: "Reply with: migration ready" }],
 });
 ```
@@ -57,39 +53,40 @@ curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4.1-mini",
+    "model": "openai/gpt-6-astra",
     "messages": [{"role": "user", "content": "Reply with: migration ready"}]
   }'
 ```
 </CodeGroup>
 
-</Step>
+`/anthropic` रूट [Anthropic SDK से माइग्रेट करना](./from-anthropic) वाले Anthropic SDK सेटअप पर जाता है। Workers AI बाइंडिंग कॉल (`env.AI.run(model, input, { gateway })`) HTTP क्लाइंट नहीं हैं: उन्हें Phaseo के लिए `fetch` या OpenAI SDK से बदलें, और सिर्फ़ उन मॉडल के लिए जिन्हें `GET /v1/models?format=openai` सूचीबद्ध करता है। `PHASEO_API_KEY` को `wrangler` कॉन्फ़िग में नहीं, Worker सीक्रेट के रूप में रखें।
 
-<Step title="रूटिंग और साझा डिफ़ॉल्ट फिर से बनाएं">
+## गेटवे सुविधाएं मैप करें
 
-स्थिर प्रदाता प्रतिबंध, प्रॉम्प्ट डिफ़ॉल्ट और generation पैरामीटर को [Presets](../guides/presets.mdx) में ले जाएं। प्रदाता क्रम और fallback व्यवहार को [Routing and Fallbacks](../guides/routing-and-fallbacks.mdx) से कॉन्फ़िगर करें।
+Cloudflare सेटिंग अपने आप ट्रांसफ़र नहीं होतीं। हर एक के लिए तय करें कि वह Phaseo में, ऐप्लिकेशन में, या एज लेयर में रहनी चाहिए।
 
-Cloudflare की कैश और analytics सेटिंग अपने आप स्थानांतरित नहीं होतीं। हर व्यवहार के लिए स्पष्ट निर्णय लें कि वह Phaseo, आपके ऐप या edge layer में होना चाहिए।
+| Cloudflare AI Gateway | Phaseo पर |
+| --- | --- |
+| फ़ॉलबैक चेन | `models` ऐरे, प्रदाता फ़ॉलबैक, या [डायनामिक रूट](../guides/routing-and-fallbacks)। मॉडल फ़ॉलबैक `429`, `500`, `502`, `503` और `504` पर चलते हैं, अनुरोध त्रुटियों पर कभी नहीं। |
+| `dynamic/<route>` मॉडल स्ट्रिंग | API कुंजियों से जुड़े डायनामिक रूट; असली मॉडल ID भेजें। |
+| `cloudflare/auto` | `phaseo/auto` ([ऑटो रूटिंग](../guides/auto-routing), अल्फ़ा); `models` के साथ नहीं मिलाया जा सकता। |
+| कैशिंग (`cf-aig-cache-ttl`, `cf-aig-skip-cache`, `cf-aig-cache-key`) | कोई प्रतिक्रिया कैश नहीं। ज़रूरत हो तो ऐप में कैश करें; [प्रॉम्प्ट कैशिंग](../guides/prompt-caching) फिर भी इनपुट लागत घटाती है। |
+| `cf-aig-metadata` | `X-Phaseo-Metadata` [लेबल](../guides/request-labels): अधिकतम 32, कुंजियां `[A-Za-z0-9_.:-]` से मेल खाती हैं (64 अक्षर), मान अधिकतम 256 अक्षरों की स्ट्रिंग। संख्याओं और बूलियन को बदलें। |
+| `cf-aig-collect-log` | वर्कस्पेस लॉगिंग नीति, या `provider.require_zero_data_retention`, जो रूटिंग को ZDR प्रदाताओं तक भी सीमित करता है। |
+| `cf-aig-request-timeout`, `cf-aig-max-attempts` | प्रति-अनुरोध नियंत्रण नहीं। बिल्ट-इन प्रदाता फ़ॉलबैक और साथ में क्लाइंट बैकऑफ़। |
+| `cf-aig-session-id` | `session_id` बॉडी फ़ील्ड। |
+| `cf-aig-custom-cost` | कोई समकक्ष नहीं। |
+| दर सीमा, खर्च सीमा | दर सीमा नीतियां, कुंजी सीमाएं, और वर्कस्पेस, कुंजी और विभाग बजट। देखें [सीमाएं](../api-reference/limits)। |
+| गार्डरेल और DLP | कुंजी और सदस्य गार्डरेल अनुरोधों में प्रॉम्प्ट इंजेक्शन और PII स्कैन करते हैं। प्रतिक्रियाएं स्कैन नहीं होतीं; कंटेंट सुरक्षा के लिए `/v1/moderations` कॉल करें। |
+| लॉग और एनालिटिक्स | अनुरोध लॉग, प्रदाता प्रयासों और मूल्य के साथ अनुरोध विवरण, और [ऑब्ज़र्वेबिलिटी गंतव्य](../guides/integrations/observability)। |
+| Workers AI `@cf/...` मॉडल | सिर्फ़ तब, जब `GET /v1/models?format=openai` उन्हें सूचीबद्ध करे; नहीं तो वे कॉल Workers AI पर ही रखें। |
 
-</Step>
+## टेस्ट करें और रोलआउट करें
 
-<Step title="कटओवर से पहले जांच करें">
+नॉन-स्ट्रीमिंग, स्ट्रीमिंग, त्रुटियां, टूल और संरचित आउटपुट वैसे टेस्ट करें जैसे ऐप उन्हें उपयोग करता है, और ट्रैफ़िक धीरे-धीरे बदलने से पहले लेटेंसी, आउटपुट, टोकन उपयोग और लागत की तुलना करें। कटओवर से पहले:
 
-ज़रूरत के अनुसार non-streaming, streaming, त्रुटियों, टूल और संरचित आउटपुट का परीक्षण करें। ट्रैफ़िक धीरे-धीरे बदलने से पहले latency, output, token उपयोग और लागत की तुलना करें।
-
-</Step>
-</Steps>
-
-## माइग्रेशन चेकलिस्ट
-
-- Cloudflare-विशिष्ट Gateway URL और हेडर हटा दिए गए हैं।
-- प्रोडक्शन मॉडल ID को `GET /v1/models` से सत्यापित किया गया है।
-- ज़रूरी कैश व्यवहार को जानबूझकर फिर से बनाया या बंद किया गया है।
-- Phaseo गतिविधि और अनुरोध विवरण टीम को आवश्यक दृश्यता देते हैं।
-- रोलबैक अब भी केवल endpoint और कुंजी की सेटिंग बदलने तक सीमित है।
-
-## अगले चरण
-
-- [Presets](../guides/presets.mdx)
-- [Routing and Fallbacks](../guides/routing-and-fallbacks.mdx)
-- [ऑब्ज़र्वेबिलिटी](../guides/integrations/observability.mdx)
+- हर `gateway.ai.cloudflare.com` और `api.cloudflare.com/.../ai/v1` URL और हर `cf-aig-*` हेडर हट चुका है; बचा हुआ कोई रूट ट्रैफ़िक को पुराने पथ पर रखता है;
+- प्रोडक्शन मॉडल ID `GET /v1/models?format=openai` में हैं;
+- हर कैश व्यवहार ऐप में दोबारा बनाया गया है या सोच-समझकर हटाया गया है;
+- अनुरोध लॉग टीम को ज़रूरी दृश्यता देते हैं;
+- रोलबैक अब भी सिर्फ़ बेस URL और कुंजी का बदलाव है।

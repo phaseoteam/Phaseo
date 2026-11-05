@@ -1,18 +1,30 @@
 ---
 title: "OpenAI SDK"
 icon: "code"
-description: "Phaseo के साथ आधिकारिक OpenAI SDK का उपयोग करें।"
+description: "आधिकारिक OpenAI SDK को Phaseo के साथ इस्तेमाल करें।"
 ---
 
-अगर आपका ऐप पहले से TypeScript, JavaScript या Python से OpenAI को कॉल करता है, तो इस गाइड का उपयोग करें। केवल API कुंजी, बेस URL और मॉडल ID बदलें।
+आधिकारिक OpenAI SDK को Phaseo पर ले जाने के लिए तीन चीज़ें बदलें: API कुंजी, base URL (`https://api.phaseo.app/v1`) और मॉडल ID।
 
-## TypeScript
+## इंस्टॉल करें
 
-```bash
+<CodeGroup>
+
+```bash TypeScript
 npm install openai
 ```
 
-```ts
+```bash Python
+pip install openai
+```
+
+</CodeGroup>
+
+## क्लाइंट को Phaseo पर ले जाएँ
+
+<CodeGroup>
+
+```ts TypeScript
 import OpenAI from "openai";
 
 const client = new OpenAI({
@@ -21,20 +33,14 @@ const client = new OpenAI({
 });
 
 const response = await client.responses.create({
-	model: "openai/gpt-5-nano",
+	model: "openai/gpt-6-astra",
 	input: "Write one sentence about reliable model routing.",
 });
 
 console.log(response.output_text);
 ```
 
-## Python
-
-```bash
-pip install openai
-```
-
-```python
+```python Python
 import os
 from openai import OpenAI
 
@@ -44,32 +50,30 @@ client = OpenAI(
 )
 
 response = client.responses.create(
-    model="openai/gpt-5-nano",
+    model="openai/gpt-6-astra",
     input="Write one sentence about reliable model routing.",
 )
 
 print(response.output_text)
 ```
 
-## Chat Completions
+</CodeGroup>
 
-पुरानी लाइब्रेरी अभी भी Chat Completions कॉल कर सकती हैं:
+एक वाक्य प्रिंट होने का मतलब है कि कुंजी और base URL काम करते हैं। अनुरोध **सेटिंग्स → उपयोग → लॉग्स** में भी दिखता है।
+
+## Chat Completions इस्तेमाल करें
+
+Chat Completions को कॉल करने वाला कोड उसी क्लाइंट के साथ काम करता है:
 
 ```ts
 const completion = await client.chat.completions.create({
-	model: "openai/gpt-5-nano",
+	model: "openai/gpt-6-astra",
 	messages: [{ role: "user", content: "Reply with only: ok" }],
 });
 ```
 
-## नोट्स
+## ज्ञात सीमाएँ
 
-- Phaseo मॉडल ID का उपयोग करें, जिनमें `openai/`, `anthropic/` या `google/` जैसे प्रदाता prefix शामिल हों।
-- सर्वर टूल Phaseo के टूल नाम उपयोग करते हैं, जैसे `phaseo:web_search`।
-- Anthropic-native क्लाइंट के लिए [Anthropic SDK](./anthropic-sdk.mdx) गाइड देखें।
-
-## संबंधित
-
-- [Responses API](../../api-reference/endpoint/responses.mdx)
-- [Chat Completions](../../api-reference/endpoint/chat-completions.mdx)
-- [सर्वर टूल](../server-tools/index.mdx)
+- प्रदाता प्रीफ़िक्स वाले Phaseo मॉडल ID इस्तेमाल करें: `openai/`, `anthropic/`, `google/` वगैरह। पूरे अनुरोध आकार के लिए [Responses](../../api-reference/endpoint/responses.mdx) और [Chat Completions](../../api-reference/endpoint/chat-completions.mdx) देखें।
+- [सर्वर टूल](../server-tools/index.mdx) Phaseo टूल नाम इस्तेमाल करते हैं, जैसे `phaseo:web_search`।
+- Anthropic-शैली `/v1/messages` क्लाइंट के लिए [Anthropic SDK](./anthropic-sdk.mdx) गाइड देखें।

@@ -6,9 +6,9 @@ description: "Add a private OpenAI-compatible endpoint to your workspace model c
 icon: "lock-keyhole"
 ---
 
-Private Models let your team call a dedicated or self-hosted deployment through the normal Phaseo API. The model appears only to authenticated members of the workspace and can be used anywhere you would use a public model ID.
+Add a dedicated or self-hosted deployment to your workspace, and your team calls it through the normal Phaseo API with a model ID such as `acme/legal-assistant`. Only your workspace can see or call it, and it works anywhere a public model ID does.
 
-Typical sources include dedicated deployments on Baseten, Modal, RunPod, Fireworks, or Together, plus services running vLLM or another OpenAI-compatible server.
+Typical sources are dedicated deployments on Baseten, Modal, RunPod, Fireworks, or Together, and servers running vLLM or another OpenAI-compatible server.
 
 ## Before you start
 
@@ -85,12 +85,20 @@ The calling API key must belong to the same workspace as the private model.
 
 ## How routing works
 
-Private models use the same Phaseo request surface as catalogue models. A standalone workspace model routes only to its configured endpoint. An endpoint attached to a catalogue model joins that model's provider list according to its **Preferred**, **Normal pool**, or **Fallback only** routing policy. Phaseo sends the stored credential as a Bearer token and substitutes the configured upstream model ID.
+A standalone workspace model routes only to its configured endpoint. An endpoint attached to a catalogue model joins that model's provider list according to its routing policy:
 
-A private model does not become a public provider route and is not visible to other workspaces. Enabled private models are included in the authenticated model catalogue and appear under the **Private** filter.
+| Dashboard | API `routing_policy` | Effect |
+| --- | --- | --- |
+| **Preferred** (default) | `preferred` | Your deployment is tried before the model's public providers. |
+| **Normal pool** | `balanced` | Your deployment is ranked alongside the public providers. |
+| **Fallback only** | `fallback` | Your deployment is tried only after the public providers. |
+
+Phaseo sends the stored credential as a Bearer token and substitutes the configured upstream model ID.
+
+A private model never becomes a public provider route and isn't visible to other workspaces. Enabled private models are included in the authenticated model catalogue and appear under the **Private** filter.
 
 <Note>
-After adding or enabling a private deployment on an existing catalogue model, allow 5–10 seconds for the change to propagate through the API layer before testing its routing. During this window, requests may continue to use the model's existing public providers. Requests already in flight are not rerouted.
+After adding, changing or enabling a private deployment, allow up to a minute before testing its routing. Until then, some requests may still use the previous configuration, such as the model's public providers. Requests already in flight are not rerouted.
 </Note>
 
 ## Provider examples

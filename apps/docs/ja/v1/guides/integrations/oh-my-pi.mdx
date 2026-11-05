@@ -1,38 +1,42 @@
 ---
 title: "oh-my-pi"
 icon: "/icons/brands/oh-my-pi.svg"
-description: "Phaseo CLI を使って Phaseo Gateway 経由で oh-my-pi を実行します。"
+description: "Phaseo CLI を使って、Phaseo Gateway 経由で oh-my-pi を実行します。"
 ---
 
-Phaseo CLI は、専用のゲートウェイキーと一時的な OpenAI 互換プロバイダーカタログを使って oh-my-pi を起動できます。
+`phaseo omp` を実行すると、Phaseo 経由で oh-my-pi のセッションを開始できます。すべてのセッションで Phaseo を使い続けるには、`~/.omp/agent/models.yml` に `phaseo` プロバイダーを追加します。
 
-## Phaseo CLI でセットアップ
-
-```bash
-phaseo login
-phaseo omp --model openai/gpt-5.6-terra --
-```
-
-初回の対話実行では、`omp` コマンドが未インストールの場合にインストールを提案します。`--catalog all` で Phaseo のすべての有効なテキスト・チャットモデルを利用可能にできます。`--dry-run --json` では、キーを作成したり oh-my-pi を起動したりせずに、インストールと起動の計画を確認できます。
-
-```bash
-phaseo omp --catalog all --dry-run --json
-```
-
-明示的なコマンド形式は `phaseo run omp ...` です。Phaseo が自身のオプションを先に処理できるよう、oh-my-pi のオプションは `--` の後に指定してください。
-
-## oh-my-pi を手動で設定
-
-すべての oh-my-pi セッションで Phaseo を利用するには、永続的なプロバイダーを設定します。Phaseo キーを作成し、oh-my-pi を起動するシェルでエクスポートして、`~/.omp/agent/models.yml` にプロバイダーを追加してください。
+## Phaseo CLI で oh-my-pi を実行する
 
 ```bash
 phaseo login
+phaseo omp --model openai/gpt-5.6-terra
+```
+
+ランナーは専用のキーを作成し、一時的な `PI_CODING_AGENT_DIR` の下に `models.yml` を書き込み、`--model phaseo/<model>` を付けて `omp` を起動し、oh-my-pi の終了時にそのディレクトリを削除します。`omp` がインストールされていない場合、初回の対話型の実行ではインストールを提案します。oh-my-pi 自体のフラグは `--` の後に指定します。
+
+| フラグ | 効果 |
+| --- | --- |
+| `--model <id>` | 使用するモデル。デフォルトは `openai/gpt-5.6-terra` です。 |
+| `--catalog all` | 選択したモデルだけでなく、Phaseo の有効なテキストモデルをすべて表示します。 |
+| `--dry-run --json` | キーの作成や oh-my-pi の起動を行わずに、インストールと起動の計画を表示します。 |
+| `--skip-install` | インストールの確認をスキップします。 |
+
+`phaseo run omp ...` は同じコマンドの完全な形式です。
+
+## oh-my-pi を手動で設定する
+
+キーを作成し、oh-my-pi を起動するシェルでエクスポートして、設定ディレクトリを作成します。
+
+```bash
 phaseo keys create --name "oh-my-pi Phaseo key" --json
 export PHASEO_OMP_API_KEY="<your Phaseo API key>"
 mkdir -p ~/.omp/agent
 ```
 
-```yaml title="~/.omp/agent/models.yml"
+プロバイダーを追加します。
+
+```yaml ~/.omp/agent/models.yml
 providers:
   phaseo:
     baseUrl: https://api.phaseo.app/v1
@@ -46,31 +50,24 @@ providers:
         maxTokens: 8192
 ```
 
-プロバイダー名付きのモデル ID で oh-my-pi を起動します。
+`apiKey` には環境変数の名前を指定するため、キーは `models.yml` に書き込まれません。必要に応じて `models` の下にエントリを追加します。上記の上限は例です。プロバイダー名を付けたモデル ID で oh-my-pi を起動します。
 
 ```bash
 omp --model phaseo/openai/gpt-5.6-terra
 ```
 
-必要に応じて同じプロバイダーにモデルを追加してください。キーを `models.yml` に直接書き込まず、`apiKey` は環境変数を参照するようにしてください。
+その他の項目については、oh-my-pi の[プロバイダーの設定](https://github.com/can1357/oh-my-pi/blob/main/docs/providers.md)のドキュメントを参照してください。
 
-## 確認
+## 動作を確認する
 
-起動した環境から短いプロンプトを送信し、Phaseo のアクティビティにリクエストが表示されることを確認します。ランナーは一時的な `PI_CODING_AGENT_DIR` 内に `models.yml` を作成し、oh-my-pi の終了時に削除します。
+短いプロンプトを送信し、**設定 → 利用状況 → ログ**にリクエストが表示されることを確認します。
 
-## トラブルシューティング
+## よくある問題を解決する
 
 ### oh-my-pi がインストールされていない
 
-対話型ターミナルでコマンドを実行してインストールを承認するか、oh-my-pi を別途インストールし、`--skip-install` を指定して再実行してください。
+対話型ターミナルでコマンドを実行してインストールを承認するか、oh-my-pi を自分でインストールして `--skip-install` を付けて再実行します。
 
-### モデルが表示されない
+### モデルが一覧に表示されない
 
-`--catalog all` を使うか、`--model` でモデル ID を指定してください。Phaseo ゲートウェイではモデルの自動検出は必須ではありません。
-
-## 関連情報
-
-- [Phaseo CLI](./phaseo-cli)
-- [oh-my-pi のプロバイダー設定](https://github.com/can1357/oh-my-pi/blob/main/docs/providers.md)
-- [モデル](../../api-reference/endpoint/models.mdx)
-- [アクティビティ](../../api-reference/endpoint/activity.mdx)
+`--catalog all` を使うか、`--model` でモデル ID を渡します。Phaseo はモデルの自動検出を必要としません。

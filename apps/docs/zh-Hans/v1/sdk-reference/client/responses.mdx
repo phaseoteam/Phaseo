@@ -1,0 +1,350 @@
+---
+icon: "message-square"
+title: "Responses"
+description: "在任意 Phaseo SDK 中调用 Responses API。"
+---
+
+调用 SDK 的 responses 方法发送 `POST /v1/responses`，获取一个完整的响应。
+
+<CodeGroup>
+
+```typescript TypeScript
+const resp = await client.generateResponse({
+  model: "openai/gpt-6-astra",
+  input: [{ role: "user", content: [{ type: "input_text", text: "Summarise this text" }] }],
+});
+```
+
+```python Python
+resp = client.generate_response({
+    "model": "openai/gpt-6-astra",
+    "input": [{"role": "user", "content": [{"type": "input_text", "text": "Summarise this text"}]}],
+})
+
+print(resp.output_text)
+```
+
+```go Go
+import (
+  "context"
+  "fmt"
+
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client, err := phaseo.NewFromEnv()
+if err != nil {
+  panic(err)
+}
+
+resp, err := client.GenerateResponse(context.Background(), phaseo.ResponsesRequest{
+  Model: "openai/gpt-6-astra",
+  Input: "Reply with: responses endpoint works",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp)
+```
+
+```csharp C#
+using PhaseoSdk;
+
+var client = new Phaseo();
+
+var response = await client.GenerateResponse(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-6-astra",
+    ["input"] = "Summarise this text",
+});
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo();
+
+$response = $client->createResponse([
+    'model' => 'openai/gpt-6-astra',
+    'input' => [
+        [
+            'role' => 'user',
+            'content' => [
+                ['type' => 'input_text', 'text' => 'Summarise this text'],
+            ],
+        ],
+    ],
+]);
+
+echo $response['output'][0]['content'][0]['text'];
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new
+
+resp = client.create_response(
+  model: 'openai/gpt-6-astra',
+  input: [
+    { role: 'user', content: [{ type: 'input_text', text: 'Summarise this text' }] }
+  ]
+)
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+var response = client.createResponse(Map.of(
+    "model", "openai/gpt-6-astra",
+    "input", "Reply with: responses endpoint works"
+));
+System.out.println(response);
+```
+
+```rust Rust
+use phaseo::Phaseo;
+use serde_json::json;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Phaseo::from_env()?;
+    let response = client.responses(&json!({
+        "model": "openai/gpt-6-astra",
+        "input": "Give three concise benefits of model routing.",
+        "max_output_tokens": 200
+    }))?;
+
+    println!("status: {}", response.status);
+    println!("request ID: {:?}", response.request_id);
+    println!("{}", serde_json::to_string_pretty(&response.body)?);
+    Ok(())
+}
+```
+
+</CodeGroup>
+
+| 语言 | 方法 | 说明 |
+| --- | --- | --- |
+| TypeScript | `client.generateResponse(request)` | `client.responses.create(request)` 的作用相同，并在 `stream` 为 true 时切换为流式输出。`client.responses.parse(request, schema)` 用兼容 Zod 的解析器验证已完成的 JSON 响应。 |
+| Python | `client.generate_response(request)` | 提供与 TypeScript 相同的 `responses.create` 和 `responses.parse`；`parse` 接受 Pydantic 模型。 |
+| Go | `client.GenerateResponse(ctx, req)`，别名 `CreateResponse` | 接受 `phaseo.ResponsesRequest`。`Input` 是 `interface{}`：一个字符串，或由输入项组成的切片，例如 `[]map[string]interface{}{{"role": "user", "content": "..."}}`。 |
+| C# | `client.GenerateResponse(request)`，别名 `CreateResponse` | |
+| PHP | `$client->generateResponse($request)`，别名 `createResponse()` | |
+| Ruby | `client.generate_response(...)`，别名 `create_response` | |
+| Java | `client.createResponse(request)` | 接受 `Map` 或 Jackson `JsonNode`。`input` 接受字符串或由输入项组成的列表，例如 `List.of(Map.of("role", "user", "content", "..."))`。 |
+| Rust | `client.responses(&request)` | 接受 `&serde_json::Value`。 |
+
+<span id="stream-the-response"></span>
+## 流式输出响应
+
+<CodeGroup>
+
+```typescript TypeScript
+for await (const chunk of client.streamResponses({
+  model: "openai/gpt-6-astra",
+  input: [{ role: "user", content: [{ type: "input_text", text: "Stream this" }] }],
+})) {
+  if (chunk.text) process.stdout.write(chunk.text);
+}
+```
+
+```python Python
+for chunk in client.stream_responses({
+    "model": "openai/gpt-6-astra",
+    "input": [{"role": "user", "content": [{"type": "input_text", "text": "Stream this"}]}],
+}):
+    if chunk.get("text"):
+        print(chunk["text"], end="", flush=True)
+```
+
+```csharp C#
+await foreach (var line in client.StreamResponse(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-6-astra",
+    ["input"] = "Write a haiku about lighthouses",
+}))
+{
+    if (line.StartsWith("data:")) Console.WriteLine(line[5..].Trim());
+}
+```
+
+```php PHP
+foreach ($client->streamResponse(['model' => 'openai/gpt-6-astra', 'input' => 'Write a haiku']) as $line) {
+    if (str_starts_with($line, 'data:')) {
+        echo trim(substr($line, 5)), PHP_EOL;
+    }
+}
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+var payload = Map.of("model", "openai/gpt-6-astra", "input", "Hello");
+try (var lines = client.streamResponse(payload)) {
+    lines.forEach(System.out::println);
+}
+```
+
+</CodeGroup>
+
+| 语言 | 流式输出方法 | 得到的内容 |
+| --- | --- | --- |
+| TypeScript | `client.streamResponses(request)` | 解析后的事件。把 `{ signal }` 作为第二个参数传入即可取消。`client.streamResponse()` 则产出原始 SSE 行。 |
+| Python | `client.stream_responses(request)` | 解析后的事件。在 `AsyncPhaseo` 上，取消 asyncio 任务即可停止。`client.stream_response()` 则产出原始 SSE 行。 |
+| Go | 无 | 该封装没有流式输出辅助方法；请不要设置 `stream`。 |
+| C# | `client.StreamResponse(request)` | 原始 SSE 行。把 `CancellationToken` 作为第二个参数传入可提前停止。 |
+| PHP | `$client->streamResponse($request)` | 原始 SSE 行。 |
+| Ruby | `client.stream_response(request)` | 原始 SSE 行，以 `Enumerator` 形式返回。 |
+| Java | `client.streamResponse(request)` | 到达即返回的原始 SSE 行，也可通过 `rawClient().requestLines` 获取。请用 try-with-resources 关闭流。 |
+| Rust | 无 | 该客户端没有流式输出辅助方法，也没有异步传输。需要流式输出时，请直接调用 HTTP API。 |
+
+每个解析后的事件（TypeScript 和 Python）保留其原始字段（`type`、`delta` 等），并增加 `text`、`usage` 和推理 token 数（`reasoningTokens` / `reasoning_tokens`）。`text` 只包含新增文本：在 `.done` 事件和 `response.completed` 上它为空，因为这些事件会重复你已经拿到的文本；`.done` 事件的完整文本位于 `fullText` / `full_text` 中。
+
+使用原始 SSE 行时（C#、PHP、Ruby、Java），请把每个 `data:` 行解析为 JSON，并自行处理事件名、事件类型（例如 `response.output_text.delta` 和 `response.completed`）以及完成标记。流式输出方法会为你设置 `stream: true`，所以不要在请求中设置它。
+
+## 读取输出文本
+
+输出是一个由输出项组成的数组。文本位于类型为 `message` 的 `output` 项中，函数调用位于类型为 `function_call` 的项中，token 数位于 `usage` 中。Python 的 `resp.output_text` 会帮你拼接文本。
+
+<CodeGroup>
+
+```python Python
+print(resp.output_text)
+```
+
+```php PHP
+echo $response['output'][0]['content'][0]['text'];
+```
+
+```rust Rust
+use serde_json::Value;
+
+let text = response.body
+    .get("output")
+    .and_then(Value::as_array)
+    .into_iter()
+    .flatten()
+    .filter(|item| item.get("type").and_then(Value::as_str) == Some("message"))
+    .flat_map(|item| {
+        item.get("content")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+    })
+    .find_map(|part| {
+        (part.get("type").and_then(Value::as_str) == Some("output_text"))
+            .then(|| part.get("text").and_then(Value::as_str))
+            .flatten()
+    });
+```
+
+</CodeGroup>
+
+如果一个请求可能返回多条消息、推理项、工具调用或提供商元数据，请保留完整的响应。
+
+| 语言 | 返回类型 |
+| --- | --- |
+| TypeScript | `ResponsesResponse` |
+| Python | `APIResponse` dict，带有 `output_text`、`request_id` 和 `trace_url` |
+| Go | `gen.ResponsesResponse`：文本位于类型为 `message` 的 `OutputItems` 条目中，token 数位于 `Usage` 中 |
+| C# | `Dictionary<string, object>?` |
+| PHP | 数组 |
+| Ruby | Hash |
+| Java | Jackson `JsonNode` |
+| Rust | `PhaseoResponse`；JSON 位于 `body` 中，另有 `status` 和 `request_id` |
+
+## 发送函数工具
+
+请求正文在每个 SDK 中都相同。以 Rust 为例：
+
+```rust Rust
+let response = client.responses(&json!({
+    "model": "openai/gpt-6-astra",
+    "input": "Check the weather in London.",
+    "tools": [{
+        "type": "function",
+        "name": "get_weather",
+        "description": "Get the current weather for a city.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "city": { "type": "string" }
+            },
+            "required": ["city"]
+        }
+    }]
+}))?;
+```
+
+如需带审批和可恢复状态的本地工具循环，请使用 [Agent SDK](../agent/overview)。
+
+## 参数
+
+在每个 SDK 中，字段名都是 JSON 正文字段。Go 的带类型 `phaseo.ResponsesRequest` 使用 PascalCase 结构体字段（`Model`、`Input`）。
+
+| 分组 | 字段 |
+| --- | --- |
+| 必填 | `model`；`input`，为字符串或由输入项（消息、工具调用、工具输出）组成的数组 |
+| 指令和状态 | `instructions`、`previous_response_id`、`store`、`background`、`include`、`truncation` |
+| 采样 | `temperature`（0–2）、`top_p`（0–1），仅在模型支持时生效 |
+| 长度 | `max_output_tokens` |
+| 工具 | `tools`、`tool_choice`、`parallel_tool_calls` |
+| 推理 | `reasoning`（`effort`、`summary`、`max_tokens`） |
+| 输出 | `text`（包括用于结构化输出的 `text.format`）、`stream`、`service_tier`、`metadata`（字符串值） |
+| Gateway | `provider` 路由、`usage`（包含用量）、`meta`（包含网关 meta 块） |
+
+[参数](/zh-Hans/v1/api-reference/parameters)解释了每个字段，[Responses API 参考](../../api-reference/endpoint/responses)提供完整的 schema。
+
+## 响应
+
+`ResponsesResponse`：
+
+```json
+{
+  "id": "resp_123",
+  "object": "response",
+  "created_at": 1677652288,
+  "status": "completed",
+  "model": "openai/gpt-6-astra",
+  "output": [
+    {
+      "type": "message",
+      "id": "msg_123",
+      "status": "completed",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "Hello there, how may I assist you today?"
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "input_tokens": 9,
+    "output_tokens": 12,
+    "total_tokens": 21
+  }
+}
+```
+
+设置 `stream: true` 时，端点会发送带类型的 SSE 事件。文本通过 `response.output_text.delta` 事件到达，最后的 `response.completed` 事件携带完整的响应和用量：
+
+```
+event: response.created
+data: {"type":"response.created","response":{"id":"resp_123","status":"in_progress","model":"openai/gpt-6-astra","output":[]}}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","item_id":"msg_123","output_index":0,"content_index":0,"delta":"Hello"}
+
+event: response.completed
+data: {"type":"response.completed","response":{"id":"resp_123","status":"completed","model":"openai/gpt-6-astra","output":[...],"usage":{"input_tokens":9,"output_tokens":12,"total_tokens":21}}}
+```

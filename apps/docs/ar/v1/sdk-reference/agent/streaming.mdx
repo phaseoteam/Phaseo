@@ -1,0 +1,179 @@
+---
+icon: "radio"
+title: "البث في Agent SDK"
+sidebarTitle: "البث"
+description: "اعرض نص الوكيل واستدلاله ونشاط أدواته أثناء تقدّم التشغيل."
+---
+
+استدعِ دالة البث في الوكيل بدلًا من دالة التشغيل لعرض النص ونشاط الأدوات أثناء تقدّم التشغيل. تشغّل الدالة الحلقة نفسها القابلة للاستئناف فوق بث SSE من Responses في Gateway، وتفعل دالة متابعة البث الشيء نفسه للتشغيل الموقوف مؤقتًا. لا يتوفر البث في Rust.
+
+## بثّ النص
+
+<CodeGroup>
+
+```typescript TypeScript
+const result = agent.stream({ input, client });
+
+for await (const delta of result.getTextStream()) {
+  process.stdout.write(delta);
+}
+
+const completed = await result.getResult();
+console.log(completed.run.status);
+```
+
+```python Python
+stream = agent.stream(input="Research this topic", client=client)
+
+for delta in stream.text_stream():
+    print(delta, end="", flush=True)
+
+completed = stream.result()
+```
+
+```go Go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: input, Client: client})
+
+for delta := range stream.Text() {
+  fmt.Print(delta)
+}
+
+completed, err := stream.Result()
+```
+
+```csharp C#
+var stream = agent.Stream(new RunOptions { Input = input, Client = client });
+
+await foreach (var delta in stream.TextStream())
+{
+    Console.Write(delta);
+}
+
+var completed = await stream.GetResult();
+```
+
+```php PHP
+$stream = $agent->stream(input: $input, client: $client);
+
+foreach ($stream->textStream() as $delta) {
+    echo $delta;
+}
+
+$completed = $stream->getResult();
+```
+
+```ruby Ruby
+stream = agent.stream(input: "Research this topic", client: client)
+
+stream.text_stream.each { |delta| print delta }
+
+completed = stream.result
+```
+
+```java Java
+// textStream() blocks until the run finishes; print live deltas from onEvent instead.
+var options = new AgentSdk.RunOptions(
+    input, AgentSdk.createGatewayAgentClient(), null, null, null, null, null, null,
+    event -> {
+        if (event.type().equals("response.output_text.delta")) {
+            System.out.print(event.details().get("delta"));
+        }
+    },
+    null);
+var completed = agent.stream(options).getResult();
+```
+
+</CodeGroup>
+
+النتيجة النهائية هي نتيجة التشغيل نفسها التي تعيدها دالة التشغيل. وتختلف طريقة عمل البث حسب اللغة:
+
+<Tabs>
+<Tab title="TypeScript">
+
+تعيد `agent.stream()` و`agent.continueStream()` نتيجة بث فورًا. وتُحل `getResult()` عند انتهاء التشغيل.
+
+</Tab>
+<Tab title="Python">
+
+تشغّل `agent.stream(...)` و`agent.continue_stream(...)` الحلقة في خيط في الخلفية وتعيدان `AgentStreamResult` قابلة لإعادة التشغيل. وتنتظر `result()` التشغيل.
+
+</Tab>
+<Tab title="Go">
+
+تبدأ `agent.Stream` و`agent.ContinueStream` التشغيل في goroutine وتعيدان `*StreamResult` فورًا. وتحجب `Result()` حتى ينتهي التشغيل.
+
+</Tab>
+<Tab title="C#">
+
+تبدأ `agent.Stream` و`agent.ContinueStream` التشغيل وتعيدان `AgentStreamResult` فورًا. وتكتمل `GetResult()` عند انتهاء التشغيل.
+
+</Tab>
+<Tab title="PHP">
+
+تعيد `$agent->stream()` و`$agent->continueStream()` القيمة `AgentStreamResult`. لا يوجد في PHP خيط في الخلفية: يتقدّم التشغيل داخل Fiber فقط بينما تسحب شيفرتك الحدث التالي، وتستنزف `getResult()` الأحداث المتبقية. يناسب ذلك نصوص CLI وعمّال الطلبات؛ أما لواجهة مباشرة، فكرّر داخل الطلب الذي يخدم الاستجابة، أو شغّل الوكيل في عامل وادفع الأحداث إلى المتصفح بنفسك.
+
+تأخذ `stream()` فقط `input` و`client` و`context` و`state`؛ استخدم `run()` للخيارات الأخرى.
+
+</Tab>
+<Tab title="Ruby">
+
+تبدأ `agent.stream` و`agent.continue_stream` التشغيل على خيط عامل وتعيدان `StreamResult` فورًا. تنضم `result` إلى الخيط، وتعيد رفع أي خطأ، وتعيد نتيجة التشغيل.
+
+تأخذ `stream` فقط `input:` و`client:` و`context:` و`state:`؛ استخدم `run` للخيارات الأخرى.
+
+</Tab>
+<Tab title="Java">
+
+تبدأ `agent.stream` و`agent.continueStream` التشغيل على خيط خفي (daemon) باسم `phaseo-agent-stream` وتعيدان `StreamResult` فورًا. تعيد `textStream()` و`fullStream()` قوائم وتحجبان حتى ينتهي التشغيل، لذا فإن حلقة على `textStream()` تطبع الإجابة كاملة في النهاية. للتصرف بناءً على الأحداث أثناء سير التشغيل، مرّر مستهلك `onEvent` في `RunOptions`، كما في المثال أعلاه.
+
+</Tab>
+<Tab title="Rust">
+
+لا يتوفر البث في `phaseo-agent` 0.2. استدعِ `run_with_events` أو `continue_with_events` للحصول على أحداث دورة الحياة عبر دالة رد نداء، واقرأ النص من التشغيل المكتمل.
+
+</Tab>
+</Tabs>
+
+## اختر بثًّا
+
+يعيد كل مستهلك تشغيل الأحداث من البداية، لذا يمكن لمُعارض واجهة ومسجّل وشيفرة حفظ أن يقرأوا التشغيل نفسه دون طلب ثانٍ إلى النموذج.
+
+| يُنتج | TypeScript | Python | Go | C# | PHP | Ruby | Java |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| أجزاء نص الإجابة | `getTextStream()` | `text_stream()` | `Text()` | `TextStream()` | `textStream()` | `text_stream` | `textStream()` (قائمة) |
+| أجزاء الاستدلال | `getReasoningStream()` | `reasoning_stream()` | `Events()` مع التصفية | `FullStream()` مع التصفية | `reasoningStream()` | `reasoning_stream` | `fullStream()` مع التصفية |
+| عناصر الخط الزمني | `getItemsStream()` (محددة النوع) | `item_stream()` (قواميس) | `Events()` مع التصفية | `FullStream()` مع التصفية | `itemStream()` | `item_stream` | `fullStream()` مع التصفية |
+| أحداث دورة حياة الأدوات | `getToolStream()` | `tool_stream()` | `Events()` مع التصفية | `FullStream()` مع التصفية | `fullStream()` مع التصفية | `full_stream` مع التصفية | `fullStream()` مع التصفية |
+| كل الأحداث | `getFullStream()`، ثم حدث `result` نهائي | `full_stream()` | `Events()` (قناة) | `FullStream()` (`IAsyncEnumerable`) | `fullStream()` | `full_stream` (`Enumerator`) | `fullStream()` (قائمة، بعد التشغيل) |
+
+تتضمن TypeScript أيضًا `getText()` لانتظار الإجابة كاملة، بحيث يمكن تنفيذ العرض والحفظ جنبًا إلى جنب:
+
+```typescript
+const result = agent.stream({ input, client });
+
+const [text, completed] = await Promise.all([
+  result.getText(),
+  result.getResult(),
+]);
+```
+
+أحداث النموذج هي `response.output_text.delta` و`response.reasoning.delta` و`response.item`؛ وتجد حقولها في صفحة [العناصر](./items). لا تُبث أحداث النموذج إلا عندما يدعم العميل البث، كما تفعل كل عملاء Gateway. مع عميل نموذج آخر (لا ينفّذ `StreamingModelClient` أو `IStreamingModelClient` أو لا يستجيب لـ `stream`)، يظل البث يُطلق أحداث دورة الحياة لكن دون أجزاء نصية.
+
+## بثّ تقدّم الأدوات
+
+تنشر الأدوات التي تبلّغ عن التقدّم أحداث `tool.preliminary_result`، التي تظهر في البث الكامل (وفي بث الأدوات في TypeScript) وتبقى مرتبطة بالخطوة المكتملة. توضح صفحة [الأدوات](./tools#report-progress-and-update-context) كيف تبلّغ كل لغة عن التقدّم.
+
+## ألغِ البث
+
+| اللغة | الاستدعاء | ما يحدث |
+| --- | --- | --- |
+| TypeScript | `cancel()` | يُلغي التشغيل. تتلقى الأدوات المحلية الإلغاء عبر `context.signal`. |
+| Python | `cancel()` | يغلق طلب النموذج النشط؛ ويرفع التشغيل `InterruptedError` |
+| Go | `stream.Cancel()` | يُلغي السياق الممرّر إلى التشغيل، ما يوقف طلب النموذج؛ وتعيد `Result()` خطأً |
+| C# | `stream.Cancel()`، أو إلغاء `RunOptions.CancellationToken` | يُلغي رمزًا مرتبطًا يصل إلى طلب النموذج وإلى `runtime.CancellationToken` لكل أداة؛ وترمي `GetResult()` استثناءً |
+| PHP | `$stream->cancel()` | يرمي `Agent stream cancelled` داخل Fiber، ما يوقف التشغيل عند نقطة التعليق التالية |
+| Ruby | `stream.cancel` | ينهي الخيط العامل، ما يغلق بث HTTP وينهي كل مُعدِّد |
+| Java | `stream.cancel()` | يقاطع الخيط العامل وقراءة HTTP، ويُلغي future النتيجة؛ وترمي `getResult()` استثناءً |
+| Rust | غير مدعوم | عمليات التشغيل متزامنة |
+
+تحتفظ كل خطوة مكتملة بمعرّف الطلب والمزوّد والنموذج وسبب الانتهاء والتحذيرات والاستخدام.

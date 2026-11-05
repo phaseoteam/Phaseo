@@ -1,0 +1,280 @@
+---
+icon: "messages-square"
+title: "चैट कंप्लीशन"
+description: "किसी भी Phaseo SDK से /chat/completions कॉल करें।"
+---
+
+`POST /v1/chat/completions` भेजने और एक पूरी प्रतिक्रिया पाने के लिए SDK का chat मेथड कॉल करें। नए इंटीग्रेशन के लिए [Responses API](./responses) टेक्स्ट, मल्टीमोडल इनपुट, टूल और ज़्यादा समृद्ध आउटपुट आइटम के लिए एक ही अनुरोध ढाँचा देता है।
+
+<CodeGroup>
+
+```typescript TypeScript
+const chat = await client.generateText({
+  model: "openai/gpt-6-astra",
+  messages: [
+    { role: "system", content: "You are helpful." },
+    { role: "user", content: "Write a limerick about lighthouses." },
+  ],
+});
+
+console.log(chat.choices[0].message.content);
+```
+
+```python Python
+chat = client.generate_text({
+    "model": "openai/gpt-6-astra",
+    "messages": [
+        {"role": "system", "content": "You are helpful."},
+        {"role": "user", "content": "Write a limerick about lighthouses."},
+    ],
+})
+
+print(chat["choices"][0]["message"]["content"])
+```
+
+```go Go
+import (
+  "context"
+  "fmt"
+
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client, err := phaseo.NewFromEnv()
+if err != nil {
+  panic(err)
+}
+
+resp, err := client.GenerateText(context.Background(), phaseo.ChatCompletionsRequest{
+  Model: "openai/gpt-6-astra",
+  Messages: []map[string]interface{}{
+    {"role": "user", "content": "Write a one-line haiku."},
+  },
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp["choices"])
+```
+
+```csharp C#
+using PhaseoSdk;
+
+var client = new Phaseo();
+
+var response = await client.GenerateText(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-6-astra",
+    ["messages"] = new[]
+    {
+        new Dictionary<string, object>
+        {
+            ["role"] = "user",
+            ["content"] = "Write a limerick about lighthouses.",
+        },
+    },
+});
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo();
+
+$response = $client->createChatCompletion([
+    'model' => 'openai/gpt-6-astra',
+    'messages' => [[
+        'role' => 'user',
+        'content' => 'Write a limerick about lighthouses.',
+    ]],
+]);
+
+echo $response['choices'][0]['message']['content'];
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new
+
+response = client.create_chat_completion(
+  model: 'openai/gpt-6-astra',
+  messages: [{ role: 'user', content: 'Write a limerick about lighthouses.' }]
+)
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+import java.util.List;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+var response = client.createChatCompletion(Map.of(
+    "model", "openai/gpt-6-astra",
+    "messages", List.of(
+        Map.of("role", "user", "content", "Write a one-line haiku.")
+    )
+));
+System.out.println(response.path("choices").path(0).path("message").path("content").asText());
+```
+
+```rust Rust
+use phaseo::Phaseo;
+use serde_json::json;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Phaseo::from_env()?;
+    let response = client.chat_completions(&json!({
+        "model": "openai/gpt-6-astra",
+        "messages": [
+            {
+                "role": "system",
+                "content": "Answer concisely."
+            },
+            {
+                "role": "user",
+                "content": "What is provider fallback?"
+            }
+        ]
+    }))?;
+
+    let text = response
+        .body
+        .pointer("/choices/0/message/content")
+        .and_then(|value| value.as_str())
+        .unwrap_or("");
+
+    println!("{text}");
+    Ok(())
+}
+```
+
+</CodeGroup>
+
+| भाषा | मेथड | क्या लौटाता है |
+| --- | --- | --- |
+| TypeScript | `client.generateText(request)`; `client.chat.completions.create(request)` भी यही करता है और `stream` true होने पर स्ट्रीमिंग पर चला जाता है | `ChatCompletionsResponse` |
+| Python | `client.generate_text(request)`; साथ ही `client.chat.completions.create(request)` | `APIResponse` dict |
+| Go | `client.GenerateText(ctx, req)`, उपनाम `CreateChatCompletion`; `phaseo.ChatCompletionsRequest` लेता है | `map[string]interface{}` |
+| C# | `client.GenerateText(request)`, उपनाम `CreateChatCompletion` | `Dictionary<string, object>?` |
+| PHP | `$client->generateText($request)`, उपनाम `createChatCompletion()` | Array |
+| Ruby | `client.generate_text(...)`, उपनाम `create_chat_completion` | Hash |
+| Java | `client.createChatCompletion(request)`; `Map` या Jackson `JsonNode` लेता है | Jackson `JsonNode` |
+| Rust | `client.chat_completions(&request)` | `PhaseoResponse`; JSON `body` में होता है |
+
+हर लौटी वैल्यू का ढाँचा Chat Completions जैसा होता है: जवाब `choices[0].message.content` में होता है, साथ में `finish_reason` और `usage` होते हैं।
+
+<span id="stream-the-response"></span>
+## प्रतिक्रिया स्ट्रीम करें
+
+<CodeGroup>
+
+```typescript TypeScript
+for await (const chunk of client.streamChat({
+  model: "openai/gpt-6-astra",
+  messages: [{ role: "user", content: "Stream a story" }],
+})) {
+  if (chunk.text) process.stdout.write(chunk.text);
+}
+```
+
+```python Python
+for chunk in client.stream_chat({
+    "model": "openai/gpt-6-astra",
+    "messages": [{"role": "user", "content": "Stream a story"}],
+}):
+    if chunk.get("text"):
+        print(chunk["text"], end="", flush=True)
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+var payload = Map.of(
+    "model", "openai/gpt-6-astra",
+    "messages", List.of(Map.of("role", "user", "content", "Hello")),
+    "stream", true
+);
+try (var lines = client.rawClient().requestLines(
+    "POST", "/chat/completions", null, null,
+    new ObjectMapper().writeValueAsString(payload)
+)) {
+    lines.forEach(System.out::println);
+}
+```
+
+</CodeGroup>
+
+| भाषा | कैसे स्ट्रीम करें |
+| --- | --- |
+| TypeScript | `client.streamChat(request)` पार्स किए गए chunk देता है; `client.streamText()` कच्ची SSE लाइनें देता है। |
+| Python | `client.stream_chat(request)` पार्स किए गए chunk देता है; `client.stream_text()` कच्ची SSE लाइनें देता है। |
+| Java | `createChatCompletion` एक JSON बॉडी लौटाता है। `stream: true` सेट करें और अनुरोध `rawClient().requestLines` से भेजें, जो SSE लाइनें आते ही लौटाता है; इसे try-with-resources से बंद करें। |
+| Go, C#, PHP, Ruby, Rust | Chat Completions स्ट्रीमिंग का कोई हेल्पर नहीं है; `stream` सेट न करें। C#, PHP और Ruby में [Responses](./responses#stream-the-response) में स्ट्रीमिंग मेथड है। |
+
+हर पार्स किया गया chunk (TypeScript और Python) मूल फ़ील्ड (`choices`, `id`, …) रखता है और `text` (इस chunk से जुड़ा कंटेंट), `usage` और reasoning tokens (`reasoningTokens` / `reasoning_tokens`) जोड़ता है।
+
+## पैरामीटर
+
+हर SDK में फ़ील्ड के नाम JSON बॉडी के फ़ील्ड ही हैं। Go का टाइप किया हुआ `phaseo.ChatCompletionsRequest` PascalCase struct फ़ील्ड (`Model`, `Messages`) इस्तेमाल करता है।
+
+| समूह | फ़ील्ड |
+| --- | --- |
+| ज़रूरी | `model`; `messages`, जिनके रोल `system`, `developer`, `user`, `assistant` या `tool` हों, और कंटेंट स्ट्रिंग या पार्ट के रूप में हो |
+| सैंपलिंग | `temperature` (0–2), `top_p` (0–1), `top_k` (-1 या ज़्यादा), `min_p` (0–1), `seed`, जहाँ मॉडल इन्हें सपोर्ट करता है |
+| लंबाई और पेनल्टी | `max_tokens` या `max_completion_tokens`, `presence_penalty` और `frequency_penalty` (-2 से 2), `repetition_penalty` (0 से ज़्यादा), `stop` (स्ट्रिंग या array) |
+| टूल | `tools`, `tool_choice`, `max_tool_calls`, `parallel_tool_calls` |
+| रीज़निंग | `reasoning` ऑब्जेक्ट या `reasoning_effort` |
+| लॉग प्रोबेबिलिटी | `logprobs`, `top_logprobs` (0–20) |
+| आउटपुट | `response_format`, `n` (1–16), `stream`, `service_tier`, `metadata` (स्ट्रिंग वैल्यू) |
+| गेटवे | `provider` रूटिंग, `usage` (usage शामिल करें), `meta` (गेटवे का meta ब्लॉक शामिल करें) |
+
+[पैरामीटर](/hi/v1/api-reference/parameters) हर फ़ील्ड समझाता है, और [Chat Completions API संदर्भ](../../api-reference/endpoint/chat-completions) में पूरा स्कीमा है।
+
+## प्रतिक्रिया
+
+`ChatCompletionsResponse`:
+
+```json
+{
+  "id": "chatcmpl-123",
+  "object": "chat.completion",
+  "created": 1677652288,
+  "model": "openai/gpt-6-astra",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hello there, how may I assist you today?"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 9,
+    "completion_tokens": 12,
+    "total_tokens": 21
+  }
+}
+```
+
+`stream: true` के साथ, एंडपॉइंट SSE फ़्रेम भेजता है जो `data: [DONE]` पर ख़त्म होते हैं:
+
+```
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"openai/gpt-6-astra","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"openai/gpt-6-astra","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"openai/gpt-6-astra","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":9,"completion_tokens":12,"total_tokens":21}}
+
+data: [DONE]
+```

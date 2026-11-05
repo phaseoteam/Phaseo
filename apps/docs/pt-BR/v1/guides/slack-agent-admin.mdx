@@ -1,0 +1,132 @@
+---
+title: "Administração e cobrança do agente do Slack"
+sidebarTitle: "Administração e cobrança"
+description: "Defina os limites e o teto de gastos do agente do Slack, veja quanto ele custa por mês e confira como ele trata os dados do Slack."
+icon: "user-cog"
+---
+
+import { SlackAgentPricing } from "/snippets/slack-agent-pricing.jsx";
+
+Proprietários e administradores definem os limites e o teto de gastos do agente do Slack em **Configurações → Slack** e pagam um preço mensal pelas pessoas que o usaram, mais os tokens de modelo pelo preço de cada modelo. Para adicionar o agente primeiro, veja [Configurar o agente do Slack](/pt-BR/v1/guides/slack-agent). As configurações de recursos específicos, como pesquisa no Slack, memória, tarefas recorrentes e páginas compartilhadas, ficam junto com esses recursos em [Usar o agente do Slack](/pt-BR/v1/guides/slack-agent-usage).
+
+<span id="limits"></span>
+## Limites
+
+Proprietários e administradores os definem em **Configurações → Slack**:
+
+| Configuração | O que faz | Padrão |
+| --- | --- | --- |
+| **Plano** | Quantas pessoas por mês o agente atende: até 3, 10, 25, 50 ou 100, ou um número que você escolher acima de 100. | Até 3 pessoas |
+| **Quando uma nova pessoa ultrapassaria o plano** | **Recusar** avisa a pessoa nova que o plano está cheio. **Subir de plano automaticamente** deixa o plano crescer com as pessoas que usam o agente, até o **Máximo de pessoas por mês**. | **Recusar** |
+| **Máximo de pessoas por mês** | Um limite fixo de pessoas por mês, seja qual for o plano. Não pode ser menor que o plano. | Sem limite |
+| **Teto de gastos mensal** | O máximo que a cobrança mensal do agente pode atingir. Quando a próxima resposta ultrapassaria esse valor, o agente para de responder até o mês seguinte. Precisa cobrir pelo menos o preço do plano. | Definido na instalação |
+| **Respostas por pessoa por hora** | Impede que uma só pessoa esgote o mês. | 60 |
+| **Limite mensal de gastos com modelos** | Limita o que a chave de API do agente gasta em tokens de modelo a cada mês. | Sem limite |
+
+**Permitir convidados** e **Permitir pessoas de outras empresas** também ficam em **Limites**; veja [Quem pode usar](/pt-BR/v1/guides/slack-agent#who-can-use-it).
+
+A seção **Agente** define o modelo e as **Instruções**: orientações extras que o agente segue em todas as respostas, como o tom ou em que focar, com até 8.000 caracteres.
+
+<span id="limits-on-each-answer"></span>
+### Limites de cada resposta
+
+Cada resposta para depois de 12 etapas ou $0.50 de gasto com modelos, o que acontecer primeiro. Uma etapa é uma chamada ao modelo e as ferramentas que ela executa, como uma pesquisa na web. Os outros modelos que o agente consulta, os modelos de uma comparação e as imagens que o agente cria contam todos para os mesmos $0.50. Quando um limite interrompe uma resposta, o agente avisa, e você pode pedir que ele continue. Esses limites são os mesmos para todos os espaços de trabalho.
+
+## Quanto custa
+
+Você paga pelo número de pessoas que receberam pelo menos uma resposta no mês (UTC). Uma pessoa conta uma vez por mês, não importa quantas respostas receba, e um mês em que ninguém usa o agente não custa nada.
+
+| Pessoas que usaram o agente no mês | Preço por mês |
+| --- | --- |
+| 1 a 3 | $0.99 |
+| 4 a 10 | $2.99 |
+| 11 a 25 | $4.99 |
+| 26 a 50 | $7.99 |
+| 51 a 100 | $14.99 |
+| 101 a 1.000 | Sobe de forma uniforme de $15 a $59, em dólares inteiros. Por exemplo, 200 pessoas custam $20 e 500 pessoas, $35. |
+| Mais de 1.000 | $59, ou $0.045 por pessoa em dólares inteiros quando isso for mais (a partir de cerca de 1.300 pessoas). Por exemplo, 2.000 pessoas custam $90. |
+
+Cada pessoa inclui 300 respostas por mês, compartilhadas em todo o espaço de trabalho. Respostas além disso custam $0.25 a cada 1.000.
+
+Por exemplo, se 8 pessoas recebem 3.000 respostas em um mês, o preço é $2.99 para até 10 pessoas. Elas têm 2.400 respostas incluídas, então as outras 600 respostas custam $0.15, e a cobrança do mês é $3.14. Altere os números para calcular o seu próprio mês:
+
+<SlackAgentPricing locale="pt-BR" />
+
+Os tokens de modelo não fazem parte desse preço. Eles são cobrados pela chave de API do agente como solicitações normais do gateway, ao preço de cada modelo, conforme o agente responde. Limite-os com **Limite mensal de gastos com modelos**.
+
+### Como você é cobrado
+
+- A cobrança do mês é descontada dos seus créditos nas primeiras horas depois que o mês termina e nunca passa do **Teto de gastos mensal**.
+- **Este mês**, em **Configurações → Slack**, mostra as pessoas, as respostas e a cobrança estimada até agora. Cada cobrança aparece em **Cobranças anteriores** e nas suas transações de faturamento como **Agente do Slack**.
+- Se seus créditos não cobrirem a cobrança, ela aguarda créditos, e o status do agente passa a **Pagamento pendente**. Ele para de responder até a cobrança ser paga. O Phaseo tenta de novo a cada hora, então as respostas voltam em cerca de uma hora depois que você adiciona créditos. O valor é definido na primeira tentativa.
+
+## E-mails para proprietários e administradores
+
+Quando o agente recusa pessoas por um motivo que só um proprietário ou administrador pode resolver, o Phaseo envia um e-mail a todos os proprietários e administradores do espaço de trabalho:
+
+| Motivo | Assunto do e-mail | O que fazer |
+| --- | --- | --- |
+| O plano está cheio | Slack agent: someone new was turned away | Escolha um plano maior, ou **Subir de plano automaticamente**. |
+| O **Máximo de pessoas por mês** foi atingido | Slack agent: people limit reached | Aumente ou remova o **Máximo de pessoas por mês**. |
+| O **Teto de gastos mensal** foi atingido | Slack agent: monthly spending cap reached | Aumente o teto, ou aguarde o mês seguinte. |
+| Uma cobrança não foi paga | Slack agent: paused until the charge is paid | Adicione créditos. |
+
+Cada e-mail é enviado no máximo uma vez por mês para cada motivo. Ele não cita nenhum usuário do Slack nem nenhuma mensagem.
+
+Recusas de convidados, de pessoas de outras empresas e pelo limite por hora não são enviadas por e-mail. O registro de atividades do espaço de trabalho guarda, a cada mês, a primeira recusa por plano cheio, pelo **Máximo de pessoas por mês** e pelo **Teto de gastos mensal** e, para convidados, pessoas de outras empresas e o limite por hora, a primeira de cada pessoa. A resposta do agente no Slack nunca diz que um administrador foi avisado.
+
+<span id="data-and-privacy"></span>
+## Dados e privacidade
+
+Os termos da API do Slack não permitem treinar com dados do Slack nem arquivá-los, então o agente é configurado assim:
+
+- **Nenhum conteúdo de mensagem nos registros do Phaseo.** A chave de API do agente nunca guarda o conteúdo das solicitações nem das respostas, seja em registros, caches ou telemetria, independentemente das configurações do seu espaço de trabalho. As solicitações dele continuam aparecendo no seu uso e nos seus registros sem conteúdo, com os [rótulos de solicitação](/pt-BR/v1/guides/request-labels) `app=slack-agent`, `slack_team` e `slack_channel` e o [título do app](/pt-BR/v1/guides/app-attribution) `Phaseo Slack agent`.
+- **Nenhum provedor que treina com prompts.** O [guardrail](/pt-BR/v1/cookbook/guardrails-for-api-keys) **Slack agent** desativa o treinamento com modelos pagos e gratuitos e a publicação de prompts, então provedores que treinam com prompts nunca são usados. Provedores que guardam registros sem treinar com eles podem responder e podem manter o conteúdo das mensagens nesses registros conforme as próprias políticas; os registros, caches e a telemetria do próprio Phaseo continuam sem guardar o conteúdo das mensagens.
+- **Memória de trabalho curta.** Para cada thread, o agente guarda suas respostas recentes, notas curtas sobre as ferramentas que usou, as mensagens que aguardam a vez, os IDs (não o texto) das mensagens recentes da thread para saber de onde ler, a quem já enviou o botão Connect e as perguntas que fez, com as respostas. Tudo isso é excluído 7 dias depois da última atividade da thread.
+- **Memória que você pode ver e excluir.** O agente guarda as notas, notas fixadas, tarefas e habilidades que as pessoas pedem para ele salvar, com as próprias palavras e nunca como cópias de mensagens, junto com o ID do Slack de quem pediu. Elas ficam até alguém excluí-las, passar a data até a qual deviam ser mantidas ou você desinstalar o agente. Proprietários e administradores podem vê-las e excluí-las em **Configurações → Slack** e desativar as notas lá (veja [Memória e habilidades](/pt-BR/v1/guides/slack-agent-usage#memory-and-skills)). Pessoas de outras empresas nunca veem as notas do espaço de trabalho inteiro.
+- **Arquivos compartilhados são lidos, não guardados.** O agente baixa as imagens e os PDFs que lê para uma resposta e os envia ao modelo com as solicitações dessa resposta, com as mesmas regras. Ele nunca os armazena; só os IDs de arquivo do Slack e os nomes ficam com a mensagem até a resposta terminar.
+- **Os resultados da pesquisa no Slack não são guardados.** O que o agente encontra ao [pesquisar no Slack](/pt-BR/v1/guides/slack-agent-usage#searching-slack) vai para o modelo com as solicitações dessa resposta e para nenhum outro lugar: nem para a memória de trabalho dele, nem para os registros dele, nem para o banco de dados do Phaseo, nem enquanto ele espera a sua resposta a uma pergunta. A partir da primeira pesquisa de uma resposta, as solicitações dela vão só para provedores com retenção zero de dados, então os resultados também não ficam nos registros de um provedor. Numa resposta que pesquisou, a memória de trabalho dele guarda só quais ferramentas ele usou e uma nota de que respondeu, não o que pesquisou, o que encontrou nem o que escreveu. A permissão do Slack para pesquisar por você fica com a sua mensagem até a resposta terminar.
+- **Tarefas recorrentes.** Para cada tarefa, o agente guarda o título e a instrução, onde ela publica, o agendamento e o fuso horário, o ID do Slack da pessoa que a configurou e como foi a última execução. Elas ficam até alguém cancelar ou excluir a tarefa, ou você desinstalar o agente. Proprietários e administradores podem vê-las, pausá-las e excluí-las em **Configurações → Slack**.
+- **Páginas compartilhadas até expirarem.** Uma página publicada pelo agente pode incluir o que foi dito no Slack ou o que ele encontrou, mas nunca resultados de uma pesquisa no Slack. As páginas são estáticas, então uma página não consegue executar scripts nem enviar nada para lugar nenhum. O Phaseo guarda a página, o título, o ID do Slack da pessoa que pediu e quantas vezes ela foi aberta até a página expirar (depois de 7, 30 ou 90 dias, como seus administradores escolheram), um proprietário ou administrador excluí-la ou você desinstalar o agente. Qualquer pessoa com o link pode abri-la, ou só membros do seu espaço de trabalho do Slack que fizeram login, conforme a configuração da página. As páginas nunca aparecem nos registros do Phaseo.
+- **Nada arquivado.** O Phaseo não arquiva nada do Slack. Os registros do próprio agente guardam apenas IDs e status do Slack.
+- **Segredos criptografados.** Os tokens de bot e os segredos do seu app do Slack são guardados criptografados e nunca mais são exibidos.
+
+Desinstalar exclui a chave de API, as notas, as habilidades salvas, as tarefas recorrentes e as páginas compartilhadas do agente, e remove o guardrail dele (veja [Pausar ou desinstalar](#pause-or-uninstall)).
+
+<span id="pause-or-uninstall"></span>
+## Pausar ou desinstalar
+
+- **Pausar respostas**, em **Configurações → Slack**, interrompe todas as respostas até você selecionar **Retomar respostas**. Quem escrever para o agente recebe um aviso privado de que ele está pausado. As tarefas recorrentes pulam as execuções que vencem enquanto ele está pausado e continuam no próximo horário depois que você retomar as respostas.
+- **Desinstalar** interrompe o agente na hora, exclui a chave de API, as notas, as habilidades salvas e as tarefas recorrentes dele, remove o guardrail e remove o app do Slack. Se o Slack não confirmar a remoção, o Phaseo avisa você, e você deve remover o app no Slack também. O guardrail continua se você o tiver adicionado a outras chaves ou membros.
+- Desinstalar também exclui as páginas compartilhadas do agente, então os links delas param de funcionar.
+- Remover o app dentro do Slack, ou revogar o token de bot dele, desinstala o agente no Phaseo da mesma forma.
+
+As cobranças anteriores continuam no seu histórico de faturamento. As pessoas que usaram o agente no mês em que você o desinstala ainda são cobradas quando esse mês termina. Você pode adicionar o agente de novo a qualquer momento.
+
+<span id="when-the-agent-cant-answer"></span>
+## Quando o agente não consegue responder
+
+Quando o agente não consegue responder a alguém, ele responde em particular no Slack:
+
+| Resposta no Slack | Por quê | Solução |
+| --- | --- | --- |
+| "The Phaseo agent is paused until this workspace's Phaseo bill is paid." | A cobrança de um mês anterior está aguardando créditos (**Pagamento pendente**). | Adicione créditos. As respostas voltam em cerca de uma hora. |
+| "The Phaseo agent is paused in this Slack workspace." | Um administrador selecionou **Pausar respostas**. | Selecione **Retomar respostas**. |
+| "…has answered as many people this month as this workspace's plan covers…" | O plano está cheio e pessoas novas são recusadas. | Escolha um plano maior, ou **Subir de plano automaticamente**. |
+| "This workspace has reached its Slack agent limit for the month." | O **Máximo de pessoas por mês** foi atingido. | Aumente ou remova o limite. |
+| "…has reached this workspace's monthly spending cap…" | A próxima resposta ultrapassaria o **Teto de gastos mensal**. | Aumente o teto, ou aguarde o mês seguinte. |
+| "You've reached the limit of … answers an hour." | As **Respostas por pessoa por hora** foram atingidas. | Aguarde, ou aumente o limite. |
+| "The Phaseo agent isn't available to guests in this workspace." | **Permitir convidados** está desativado. | Ative, se convidados devem usar o agente. |
+| "The Phaseo agent only answers people in this organization." | **Permitir pessoas de outras empresas** está desativado. | Ative, se essas pessoas devem usar o agente. |
+| "Connect your Phaseo account to use the Phaseo agent here." | O acesso é **Somente contas vinculadas**. | [Vincule a conta do Slack](/pt-BR/v1/guides/slack-agent#link-a-slack-account). |
+| "I'm still working through earlier messages in this thread." | Já há 5 mensagens aguardando nesta thread. | Aguarde essas respostas. |
+| "Sorry, I couldn't check your Slack account just now." | O Slack não respondeu a uma consulta. | Tente de novo em um minuto. |
+| "The model chosen for this agent isn't available to the Slack agent." | O gateway não consegue usar o modelo do agente com a chave dele: **Automático** sem Roteamento Automático, ou nenhum provedor do modelo atende ao guardrail **Slack agent**. | Escolha outro modelo em **Configurações → Slack**. |
+| "…isn't one of the models you can choose here, so I didn't answer." | A mensagem começou com `with …:` e indicou um modelo que não está em **Escolha de modelo**, ou um nome que serve para mais de um modelo permitido. | Use um modelo da lista da resposta, ou tire o `with …:`. |
+| "The model you chose for this message isn't available to the Slack agent." | O gateway não consegue usar o modelo escolhido com a chave do agente, como acima. | Pergunte sem `with …:`, ou troque o modelo em **Escolha de modelo**. |
+| "The model this agent uses can't read the files shared here." | Nenhum provedor do modelo do agente consegue ler as imagens ou os PDFs compartilhados. | Pergunte sem os arquivos, ou escolha em **Configurações → Slack** um modelo que leia imagens. |
+| "I stopped here: after a Slack search, I can only use AI providers that keep no data…" | A resposta pesquisou no Slack, e nenhum provedor do modelo com retenção zero de dados conseguiu responder. | Escolha em **Configurações → Slack** um modelo que não guarde dados. Se a mensagem começou com `with <model>:`, escolha ali um modelo que não guarde dados, ou tire isso para usar o modelo do agente. |
+| "…so I didn't compare them." ou "Name 2 or 3 different models to compare…" | A mensagem começou com `compare …:`, e um modelo não está em **Escolha de modelo**, um nome serve para mais de um modelo permitido, ou ela citou menos de 2 ou mais de 3 modelos diferentes. | Use 2 ou 3 modelos da lista da resposta. |
+| "Comparing models isn't turned on here, so I didn't answer." | A mensagem começou com `compare …:` e citou modelos do catálogo, mas a escolha de modelo está desativada. | Peça a um proprietário ou administrador para ativar **Permitir escolher um modelo por mensagem** em **Escolha de modelo**, ou tire o `compare …:`. |
+
+Se o agente não responder nada, ou se a instalação não terminar, veja [Resolver problemas de configuração](/pt-BR/v1/guides/slack-agent#fix-setup-problems).

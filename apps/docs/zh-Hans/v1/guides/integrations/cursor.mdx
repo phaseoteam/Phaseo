@@ -1,10 +1,10 @@
 ---
 title: "Cursor"
 icon: "/icons/brands/cursor.svg"
-description: "通过 OpenAI API 密钥和 Base URL 覆盖设置将 Cursor 连接到 Phaseo。"
+description: "通过 Cursor 的 OpenAI API 密钥和 Base URL 覆盖设置将其连接到 Phaseo。"
 ---
 
-本指南介绍如何通过 Phaseo 路由受支持的 Cursor 聊天模型。使用 Phaseo CLI 创建和撤销专用密钥，然后在 Cursor 中完成设置；也可使用自己的 Phaseo 密钥并遵循相同的手动设置。
+运行 `phaseo cursor` 创建密钥，然后在 Cursor 中开启 OpenAI API 密钥和 **Override OpenAI Base URL** 设置。这样 Cursor 的聊天模型就会经由 Phaseo；使用 Cursor 自有模型的功能（例如 Tab 补全）可能仍然走 Cursor 的基础设施。
 
 ## 使用 Phaseo CLI 设置
 
@@ -13,75 +13,51 @@ phaseo login
 phaseo cursor --model openai/gpt-5.6-terra
 ```
 
-设置过程会创建一个 90 天后过期、每月支出上限为 100 美元的 `Phaseo CLI: Cursor API Key`，并显示以下设置。密钥过期后，重新运行 `phaseo cursor` 即可获取新密钥。它不会编辑 Cursor 的私有凭据存储。
+CLI 会创建一个 `Phaseo CLI: Cursor API Key`，它 90 天后过期，每月支出上限为 $100，并输出下面的设置。密钥过期后，再次运行 `phaseo cursor` 即可获得新密钥。CLI 不会编辑 Cursor 的凭据存储。
 
 ## 配置 Cursor
 
-1. 打开 **Cursor Settings**。
-2. 选择 **Models**。
-3. 找到 **OpenAI API Key** 部分并启用。
-4. 复制专用密钥：
-
-```bash
-phaseo integrations credential cursor
-```
-
-5. 将密钥粘贴到 Cursor 的 OpenAI API 密钥字段中。
-6. 启用 **Override OpenAI Base URL**。
-7. 输入 `https://api.phaseo.app/v1`，末尾不要加斜杠。
-8. 添加或启用要使用的 Phaseo 模型。
+1. 打开 **Cursor Settings → Models**。
+2. 找到 **OpenAI API Key** 部分并启用它。
+3. 粘贴 `phaseo integrations credential cursor` 输出的密钥，或任意 Phaseo API 密钥。
+4. 启用 **Override OpenAI Base URL**，输入 `https://api.phaseo.app/v1`，末尾不要加斜杠。
+5. 添加或启用你想使用的 Phaseo 模型。
 
 | Cursor 字段 | 值 |
 | --- | --- |
 | OpenAI API Key | `phaseo integrations credential cursor` 的输出 |
 | Override OpenAI Base URL | `https://api.phaseo.app/v1` |
-| Model | Cursor 的 Model 字段支持的 Phaseo 模型 ID |
+| Model | Cursor 接受的 Phaseo 模型 ID |
 
-Cursor 当前的自定义供应商设置是全局的，而非针对单个供应商。模型名称会转发到已配置的端点；启用的 API 密钥和 Base URL 决定请求的发送位置。
+Cursor 的密钥和 Base URL 设置是全局的，而不是按提供商区分：启用的密钥和 Base URL 决定所有 OpenAI 系列请求的去向，模型名称会原样转发。有些版本保存密钥时没有 **Verify** 按钮；这时请新建一个聊天来测试。参阅 Cursor 的 [API 密钥文档](https://docs.cursor.com/settings/api-keys)。
 
-<Warning>
-Cursor 目前会广泛应用 OpenAI Base URL 覆盖设置。如果启用 Phaseo 后 Cursor 托管模型无法使用，请在切回这些模型前关闭该覆盖。Cursor 也可能拒绝与内置模型名称冲突或不符合 OpenAI 系列路由规则的自定义 ID。
-</Warning>
+## 确认可以正常使用
 
-## 验证
+1. 保持密钥和 Base URL 覆盖处于启用状态。
+2. 在 Cursor 的模型选择器中选择该模型，并新建一个聊天。
+3. 让它回复 `PHASEO_CURSOR_OK`。
+4. 确认该请求出现在 **设置 → 用量 → 日志** 中。
 
-1. 保持 Phaseo 密钥和 Base URL 覆盖处于启用状态。
-2. 在 Cursor 的模型选择器中选择已配置的模型。
-3. 开始新的聊天，并让它回复 `PHASEO_CURSOR_OK`。
-4. 确认请求显示在 Phaseo 活动记录或日志中。
+## 移除 Phaseo
 
-Cursor 的标准聊天路径是此处关注的兼容目标。使用 Cursor 专用模型的功能（如 Tab 补全）仍可能使用 Cursor 自身的基础设施。
-
-## 移除
-
-先在 **Cursor Settings → Models** 中停用 OpenAI API 密钥和 Base URL 覆盖，然后撤销 Phaseo 专用密钥：
+在 **Cursor Settings → Models** 中停用 OpenAI API 密钥和 Base URL 覆盖，然后吊销密钥：
 
 ```bash
 phaseo integrations remove cursor
 ```
 
-移除操作无法自动清除 Cursor 的安全凭据存储。如果密钥仍显示为已配置，请在 Cursor 的 Models 设置中删除。
+CLI 无法清除 Cursor 的凭据存储。如果密钥仍显示为已配置，请在 Cursor 的 Models 设置中删除它。
 
-## 故障排查
+## 解决常见问题
 
-### Cursor 托管模型无法使用
+### Cursor 托管的模型无法使用
 
-选择 Cursor 托管模型前，请关闭 **Override OpenAI Base URL**。Cursor 目前不会按模型隔离自定义 Base URL。
+Cursor 会把 Base URL 覆盖应用到所有 OpenAI 系列模型。切换回 Cursor 托管的模型之前，请关闭 **Override OpenAI Base URL**。
 
 ### 模型被拒绝
 
-尝试使用 Cursor 接受的 OpenAI 系列自定义 Phaseo 模型。Cursor 可能拒绝与内置目录冲突的 ID，部分版本也可能不接受带供应商前缀的模型 ID。
+如果模型 ID 与 Cursor 内置目录冲突，或不符合其 OpenAI 系列路由规则，Cursor 可能会拒绝它；有些版本还会拒绝带提供商前缀的 ID。请换一个 Cursor 接受为 OpenAI 系列自定义模型的 Phaseo 模型。
 
-### 未显示 Verify 按钮
+### 认证失败
 
-某些 Cursor 版本会直接保存密钥，不提供单独的 Verify 操作。输入密钥和 Base URL 后，通过新聊天进行测试。
-
-### 身份验证失败
-
-再次运行 `phaseo integrations credential cursor`，替换 Cursor 中保存的值，并确保 Base URL 完全为 `https://api.phaseo.app/v1`。
-
-## 相关内容
-
-- [Cursor API 密钥文档](https://docs.cursor.com/settings/api-keys)
-- [编程智能体](./coding-assistants.mdx)
-- [模型](../../api-reference/endpoint/models.mdx)
+再次运行 `phaseo integrations credential cursor`，在 Cursor 中替换密钥，并检查 Base URL 是否正好是 `https://api.phaseo.app/v1`。

@@ -4,20 +4,22 @@ icon: "route"
 description: "Use o Phaseo por trás do LiteLLM ou roteie chamadas do LiteLLM pelo Phaseo."
 ---
 
-Use o LiteLLM com o Phaseo se você já depende do proxy, dos orçamentos ou do roteador local do LiteLLM, mas quer ter acesso aos modelos, às análises e às ferramentas de servidor do Phaseo.
+Informe ao LiteLLM o modelo `openai/<Phaseo model ID>`, sua chave do Phaseo e `api_base="https://api.phaseo.app/v1"`. Isso funciona em chamadas diretas do LiteLLM e em modelos por trás de um proxy do LiteLLM.
 
-## Chamada direta em Python
+## Instale
 
 ```bash
 pip install litellm
 ```
+
+## Chame o Phaseo pelo LiteLLM
 
 ```python
 import os
 from litellm import completion
 
 response = completion(
-    model="openai/openai/gpt-5-nano",
+    model="openai/openai/gpt-6-astra",
     api_key=os.environ["PHASEO_API_KEY"],
     api_base="https://api.phaseo.app/v1",
     messages=[{"role": "user", "content": "Reply with only: ok"}],
@@ -26,31 +28,24 @@ response = completion(
 print(response.choices[0].message.content)
 ```
 
-O LiteLLM costuma usar o prefixo de provedor `openai/` para endpoints compatíveis com a OpenAI. O ID do modelo no Phaseo continua sendo `openai/gpt-5-nano`, então a string do modelo no LiteLLM pode aparecer como `openai/openai/gpt-5-nano`.
+Se `ok` for impresso, a configuração funciona. O LiteLLM usa o prefixo `openai/` para endpoints compatíveis com OpenAI. O ID do modelo no Phaseo continua sendo `openai/gpt-6-astra`, então a string de modelo do LiteLLM fica `openai/openai/gpt-6-astra`.
 
-## Configuração do proxy
+## Adicione modelos do Phaseo a um proxy do LiteLLM
 
-Use um alias de modelo se não quiser incluir o prefixo de provedor do LiteLLM no código da aplicação:
+Dê um alias a cada modelo para que o código da aplicação não precise do prefixo do LiteLLM:
 
 ```yaml
 model_list:
-  - model_name: phaseo-gpt-5-nano
+  - model_name: phaseo-gpt-6-astra
     litellm_params:
-      model: openai/openai/gpt-5-nano
+      model: openai/openai/gpt-6-astra
       api_key: os.environ/PHASEO_API_KEY
       api_base: https://api.phaseo.app/v1
 ```
 
-Depois, chame o proxy do LiteLLM com `model: "phaseo-gpt-5-nano"`.
+Depois, chame o proxy com `model: "phaseo-gpt-6-astra"`. Os aliases mantêm os nomes dos modelos legíveis em produção.
 
-## Observações
+## Limitações conhecidas
 
-- Em produção, prefira aliases do LiteLLM para manter os nomes dos modelos legíveis.
-- Se você usa ferramentas de servidor do Phaseo, teste a rota exata do LiteLLM, pois algumas camadas de proxy normalizam ou descartam tipos de ferramenta desconhecidos.
-- Defina se o LiteLLM, o Phaseo ou ambos serão o sistema de registro de preços.
-
-## Relacionados
-
-- [SDK da OpenAI](./openai-sdk.mdx)
-- [Ferramentas do servidor](../server-tools/index.mdx)
-- [Preços](../../api-reference/endpoint/pricing-calculate.mdx)
+- Algumas camadas de proxy alteram ou descartam tipos de ferramenta que não conhecem. Se você usa [ferramentas de servidor](../server-tools/index.mdx) do Phaseo, teste a rota exata do LiteLLM.
+- O LiteLLM e o Phaseo registram os gastos. Decida qual deles é a sua fonte oficial de custos; os preços do Phaseo estão na [calculadora de preços](../../api-reference/endpoint/pricing-calculate.mdx).

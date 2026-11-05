@@ -1,73 +1,67 @@
 ---
 title: "Continue"
 icon: "/icons/brands/continue.svg"
-description: "VS Code、JetBrains、Continue CLIのContinueにPhaseoを追加します。"
+description: "VS Code、JetBrains、Continue CLI の Continue に Phaseo を追加します。"
 ---
 
-Phaseo CLIでIDE拡張機能と`cn`コマンドラインで共有するローカルContinue設定を作成するか、同じモデルとシークレットの値を既存のContinue設定に手動で追加してください。
+`phaseo continue` を実行して Phaseo を指す Continue の設定を書き込むか、同じモデルエントリとシークレットを既存の設定に追加します。IDE 拡張機能と `cn` CLI は同じ設定を共有します。
 
-## Phaseo CLIで設定する
+## Phaseo CLI で設定する
 
 ```bash
 phaseo login
-phaseo continue --model anthropic/claude-sonnet-4.6
+phaseo continue --model anthropic/claude-sonnet-5.5
 ```
 
-`~/.continue/config.yaml`と`~/.continue/.env`が未使用の場合、セットアップ時に両方のファイルが作成されます。
+`~/.continue/config.yaml` と `~/.continue/.env` が存在しない場合、セットアップは `Phaseo CLI: Continue API Key`（有効期限 90 日、月額 $100 の利用上限）を作成し、両方のファイルを書き込みます。`--model` を指定しない場合は `anthropic/claude-sonnet-4.6` を使います。
 
-```yaml
+```yaml ~/.continue/config.yaml
+# Managed by Phaseo CLI
 name: Phaseo
 version: 1.0.0
 schema: v1
 models:
-  - name: Phaseo
+  - name: "anthropic/claude-sonnet-5.5 via Phaseo"
     provider: openai
-    model: anthropic/claude-sonnet-4.6
+    model: "anthropic/claude-sonnet-5.5"
     apiBase: https://api.phaseo.app/v1
     apiKey: ${{ secrets.PHASEO_API_KEY }}
     useResponsesApi: false
     roles: [chat, edit, apply]
 ```
 
-キーは`~/.continue/.env`の`PHASEO_API_KEY`として保存されます。`useResponsesApi: false`により、リクエストはPhaseoのChat Completions経路を使います。
+キーは `PHASEO_API_KEY` として `~/.continue/.env` に保存されます。`useResponsesApi: false` により、Continue は Phaseo の Chat Completions エンドポイントを使い続けます。
 
 <Warning>
-Continueのグローバル`.env`は平文です。リポジトリにコミットしないでください。IDE拡張機能は通常のシェル環境変数を引き継がないため、CLIはContinueが定めるシークレットファイルを使います。
+Continue のグローバルな `.env` は平文です。絶対にコミットしないでください。IDE 拡張機能はシェルの環境変数を引き継がないため、CLI は Continue の[ローカルシークレット](https://docs.continue.dev/faqs#managing-local-secrets-and-environment-variables)ファイルを使います。
 </Warning>
 
-いずれかのファイルに既存設定がある場合、上書きせずにセットアップを停止します。モデル項目を統合し、既存の`.env`に`PHASEO_API_KEY=<専用キー>`を追加してください。キーは`phaseo integrations credential continue`で取得できます。
+## Continue を手動で設定する
 
-## 確認する
+どちらかのファイルに独自の設定がすでにある場合、セットアップはファイルを変更せずに停止します。上記のモデルエントリを `config.yaml` に追加し、`phaseo integrations credential continue` の出力または任意の Phaseo API キーを使って、`.env` に `PHASEO_API_KEY=<key>` を追加します。その他の項目については、Continue の [OpenAI プロバイダー](https://docs.continue.dev/customize/model-providers/top-level/openai)のドキュメントを参照してください。
 
-VS CodeまたはJetBrainsでウィンドウを再読み込みし、Continueを開いて**Phaseo**を選び、`PHASEO_CONTINUE_OK`と返答するよう依頼します。
+## 動作を確認する
 
-Continue CLIでは`cn`を実行します。別の保存済み設定が有効な場合は`/config`を使い、同じテストリクエストを送信します。Phaseoのアクティビティに表示されることを確認してください。
+VS Code または JetBrains でウィンドウを再読み込みし、Continue を開いて **Phaseo** を選択し、`PHASEO_CONTINUE_OK` と返答するよう依頼します。CLI では `cn` を実行し（別の設定が有効な場合は `/config` を使います）、同じプロンプトを送信します。**設定 → 利用状況 → ログ**にリクエストが表示されることを確認します。
 
-## 削除する
+## Phaseo を削除する
 
 ```bash
 phaseo integrations remove continue
 ```
 
-削除時にキーを失効し、両方のファイルにPhaseo CLIの所有者マーカーが残っている場合に限り削除します。手動で統合した項目はそのまま残します。
+これによりキーが失効し、両方のファイルが Phaseo CLI のマーカーで始まっている場合にのみ削除されます。自分でマージしたエントリはそのまま残ります。
 
-## トラブルシューティング
+## よくある問題を解決する
 
-### Phaseoが表示されない
+### Phaseo が表示されない
 
-IDEを再読み込みし、`config.yaml`にトップレベル必須項目の`name`、`version`、`schema`があることを確認します。
+IDE を再読み込みし、`config.yaml` にトップレベルの `name`、`version`、`schema` の項目があることを確認します。
 
-### Continueでシークレットがないと表示される
+### Continue がシークレットの不足を報告する
 
-`~/.continue/.env`に`phaseo integrations credential continue`で取得したキーがあることを確認してから、IDEを再起動します。
+`~/.continue/.env` に `phaseo integrations credential continue` で取得したキーがあることを確認し、IDE を再起動します。
 
-### ContinueがResponses APIを呼び出す
+### Continue が Responses API を呼び出す
 
-Phaseoのモデル項目では`useResponsesApi: false`にします。
-
-## 関連項目
-
-- [ContinueのOpenAI互換設定](https://docs.continue.dev/customize/model-providers/top-level/openai)
-- [Continueのローカルシークレット](https://docs.continue.dev/faqs#managing-local-secrets-and-environment-variables)
-- [コーディングエージェント](./coding-assistants.mdx)
-- [モデル](../../api-reference/endpoint/models.mdx)
+Phaseo のモデルエントリで `useResponsesApi: false` を維持します。

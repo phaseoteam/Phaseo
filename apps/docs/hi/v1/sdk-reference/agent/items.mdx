@@ -1,0 +1,246 @@
+---
+icon: "layers"
+title: "Agent SDK आइटम"
+sidebarTitle: "आइटम"
+description: "टेक्स्ट, reasoning, टूल कॉल और नतीजों की एजेंट टाइमलाइन लाइव या रन के बाद रेंडर करें।"
+---
+
+हर स्ट्रीम किए गए इवेंट या आइटम के टाइप पर switch करें, ताकि टेक्स्ट, reasoning, टूल कॉल और प्रगति आते ही रेंडर हो जाएँ, फिर बाद में सहेजे गए रन नतीजे से वही टाइमलाइन फिर से बनाएँ। TypeScript एक टाइप किया गया आइटम union देता है; दूसरी भाषाएँ raw इवेंट को maps, dicts या hashes के रूप में देती हैं।
+
+## स्ट्रीम की गई टाइमलाइन रेंडर करें
+
+<CodeGroup>
+
+```typescript TypeScript
+const stream = agent.stream({ input, client });
+
+for await (const item of stream.getItemsStream()) {
+  switch (item.type) {
+    case "message":
+      renderAssistantMessage(item.content);
+      break;
+    case "reasoning":
+      renderReasoning(item.text);
+      break;
+    case "tool_call":
+      renderToolCall(item.toolCallId, item.name, item.input);
+      break;
+    case "tool_result":
+      renderToolResult(item.toolCallId, item.output);
+      break;
+    case "error":
+      renderError(item.message);
+      break;
+    case "output":
+      renderFinalOutput(item.value);
+      break;
+  }
+}
+```
+
+```python Python
+for item in stream.item_stream():
+    item_type = item.get("type")
+    render_timeline_item(item_type, item)
+```
+
+```go Go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+
+for event := range stream.Events() {
+  switch event.Type {
+  case "response.output_text.delta":
+    fmt.Print(event.Details["delta"])
+  case "response.reasoning.delta":
+    renderReasoning(event.Details["delta"])
+  case "response.item":
+    renderItem(event.Details["item"])
+  case "tool.preliminary_result":
+    renderProgress(event.Details["tool_call_id"], event.Details["result"])
+  default:
+    // एक fallback रखें: नए इवेंट टाइप आ सकते हैं।
+  }
+}
+
+result, err := stream.Result()
+```
+
+```csharp C#
+var stream = agent.Stream(new RunOptions { Input = prompt, Client = client });
+
+await foreach (var item in stream.FullStream())
+{
+    switch (item.Type)
+    {
+        case "response.output_text.delta":
+            Console.Write(item.Details?["delta"]);
+            break;
+        case "response.reasoning.delta":
+            RenderReasoning(item.Details?["delta"]);
+            break;
+        case "response.item":
+            RenderItem(item.Details?["item"]);
+            break;
+        case "tool.preliminary_result":
+            RenderProgress(item.Details?["tool_call_id"], item.Details?["result"]);
+            break;
+        default:
+            break; // एक fallback रखें: नए इवेंट टाइप आ सकते हैं।
+    }
+}
+
+var result = await stream.GetResult();
+```
+
+```php PHP
+$stream = $agent->stream(input: $prompt, client: $client);
+
+foreach ($stream->fullStream() as $event) {
+    match ($event["type"]) {
+        "response.output_text.delta" => print($event["delta"]),
+        "response.reasoning.delta" => renderReasoning($event["delta"]),
+        "response.item" => renderItem($event["item"]),
+        "tool.preliminary_result" => renderProgress($event["tool_call_id"], $event["result"]),
+        default => null, // एक fallback रखें: नए इवेंट टाइप आ सकते हैं।
+    };
+}
+
+$result = $stream->getResult();
+```
+
+```ruby Ruby
+stream = agent.stream(input: prompt, client: client)
+
+stream.full_stream.each do |event|
+  case event[:type]
+  when "response.output_text.delta" then print event[:delta]
+  when "response.reasoning.delta" then render_reasoning(event[:delta])
+  when "response.item" then render_item(event[:item])
+  when "tool.preliminary_result" then render_progress(event[:tool_call_id], event[:result])
+  else nil # एक fallback रखें: नए इवेंट टाइप आ सकते हैं।
+  end
+end
+
+result = stream.result
+```
+
+```java Java
+// इवेंट को onEvent consumer में लाइव संभालें, या रन के बाद stream.fullStream() पर loop करें।
+Consumer<AgentSdk.AgentEvent> render = event -> {
+    switch (event.type()) {
+        case "response.output_text.delta" -> System.out.print(event.details().get("delta"));
+        case "response.reasoning.delta" -> renderReasoning(event.details().get("delta"));
+        case "response.item" -> renderItem(event.details().get("item"));
+        case "tool.preliminary_result" -> renderProgress(event.details().get("tool_call_id"), event.details().get("result"));
+        default -> { } // एक fallback रखें: नए इवेंट टाइप आ सकते हैं।
+    }
+};
+
+var stream = agent.stream(new AgentSdk.RunOptions(
+    prompt, client, null, null, null, null, null, null, render, null));
+var result = stream.getResult();
+```
+
+</CodeGroup>
+
+Rust में स्ट्रीमिंग नहीं है; टाइमलाइन पूरे हुए रन से बनाएँ, जैसा नीचे दिखाया गया है।
+
+## TypeScript आइटम टाइप
+
+`AgentItem<TOutput>` एक discriminated union है, और TypeScript हर आइटम को उसके `type` से narrow करता है:
+
+| `type` | ज़रूरी फ़ील्ड | क्या दर्शाता है |
+| --- | --- | --- |
+| `message` | `role` (हमेशा `assistant`), `content` | असिस्टेंट टेक्स्ट |
+| `reasoning` | `text` | मॉडल द्वारा दिया गया reasoning |
+| `tool_call` | `toolCallId`, `name`, `input` | प्रस्तावित टूल कॉल |
+| `tool_result` | `toolCallId`, `name`, `output` | पूरी हुई टूल कॉल |
+| `error` | `message`, वैकल्पिक टूल विवरण | प्रदाता या टूल त्रुटि |
+| `output` | `value` | पार्स किया गया अंतिम एजेंट आउटपुट |
+
+प्रदाता के आउटपुट से बने आइटम मूल payload को भी `rawProviderItem` में रखते हैं, उस दुर्लभ फ़ील्ड के लिए जो portable टाइप में नहीं होता। प्रोडक्ट लॉजिक portable फ़ील्ड पर बनाएँ, क्योंकि `rawProviderItem` प्रदाता के अनुसार अलग होता है।
+
+## दूसरी भाषाओं में इवेंट टाइप
+
+Go, C#, PHP, Ruby और Java वही इवेंट टाइप देते हैं। Python का `item_stream()` प्रदाता और रनटाइम आइटम को `type` key वाली dicts के रूप में देता है।
+
+| इवेंट टाइप | फ़ील्ड |
+| --- | --- |
+| `response.output_text.delta` | `delta` (string) |
+| `response.reasoning.delta` | `delta` (string) |
+| `response.item` | `item` (प्रदाता का आउटपुट आइटम, बिना टाइप का) |
+| `tool.started`, `tool.completed`, `tool.failed`, `tool.preliminary_result` | `tool_call_id`, `tool_name`, साथ में `output`, `error` या `result` |
+
+फ़ील्ड कहाँ होते हैं, यह भाषा के अनुसार अलग है:
+
+| भाषा | इवेंट का आकार |
+| --- | --- |
+| Python | Dicts; `item.get("type")` पढ़ें |
+| Go | `Type` और `Details map[string]any` वाला `AgentEvent` |
+| C# | `Type` और `object?` मानों वाली `Details` dictionary के साथ `AgentEvent` |
+| PHP | Flat arrays। लाइफ़साइकल इवेंट में `type`, `run_id`, `agent_id`, `timestamp` और `status` होते हैं; मॉडल इवेंट में `type` और ऊपर दिए फ़ील्ड top level पर होते हैं। |
+| Ruby | Symbol keys (`:type`, `:delta` वगैरह) वाले flat Hashes, PHP के arrays की तरह व्यवस्थित |
+| Java | `type()` और `Object` मानों वाले `details()` map के साथ `AgentEvent` |
+
+इनमें से कोई भी टाइप किया गया union नहीं है, इसलिए जिन फ़ील्ड का उपयोग आपका UI करता है उनकी जाँच करें, प्रदाता-विशिष्ट पार्सिंग को एक adapter के पीछे रखें, और अज्ञात टाइप के लिए fallback रखें। Go, C# और Java में मॉडल स्ट्रीम इवेंट में रन ID `"stream"` होता है; असली रन ID के लिए लाइफ़साइकल इवेंट का उपयोग करें। लाइफ़साइकल इवेंट की पूरी सूची [लाइफ़साइकल हुक](./lifecycle-hooks) में है।
+
+## रन के बाद टाइमलाइन फिर से बनाएँ
+
+रन ख़त्म होने के बाद भी इवेंट इतिहास पढ़ा जा सकता है, इसलिए एक consumer रेंडर कर सकता है जबकि दूसरा इवेंट सहेजता है, बिना दूसरे मॉडल अनुरोध के। टिकाऊ टाइमलाइन के लिए, पूरा हुआ रन नतीजा सहेजें:
+
+<Tabs>
+<Tab title="TypeScript">
+
+पूरे हुए नतीजे में स्ट्रीम वाले ही क्रमबद्ध आइटम `items` में होते हैं:
+
+```typescript
+const completed = await stream.getResult();
+
+for (const item of completed.items) {
+  saveTimelineItem(completed.run.id, item);
+}
+```
+
+</Tab>
+<Tab title="Python">
+
+| फ़ील्ड | सामग्री |
+| --- | --- |
+| `run` | टिकाऊ स्टेट: `id`, `status`, `input`, `context`, `pause`, `stop_reason`, `error`, `usage` और `next_turn_params` |
+| `steps` | हर मॉडल टर्न के लिए एक `AgentStepRecord`, जिसमें `request_id`, `native_response_id`, `provider`, `model`, `model_attempts`, `usage`, `finish_reason`, `warnings` और `tool_calls` होते हैं |
+| `messages` | टूल नतीजों सहित पूरी बातचीत |
+| `output` | `parse_output` और `output_schema` के बाद अंतिम आउटपुट |
+| `usage` | `AgentUsageSummary` में कुल योग: इनपुट, आउटपुट, cached और कुल टोकन, और लागत |
+
+</Tab>
+<Tab title="Go">
+
+`result.Messages` में हर मॉडल और टूल मैसेज होता है, और `result.Steps` में हर टर्न की टूल कॉल, अनुरोध ID, प्रदाता, मॉडल और उपयोग होते हैं।
+
+</Tab>
+<Tab title="C#">
+
+`result.Messages` में हर मॉडल और टूल मैसेज होता है, और `result.Steps` में हर टर्न की टूल कॉल, अनुरोध ID, प्रदाता, मॉडल, समाप्ति का कारण, चेतावनियाँ और उपयोग होते हैं।
+
+</Tab>
+<Tab title="PHP">
+
+`$result->messages` में हर मॉडल और टूल मैसेज होता है, और `$result->steps` में हर टर्न की टूल कॉल, अनुरोध ID, प्रदाता, मॉडल, समाप्ति का कारण, चेतावनियाँ और उपयोग होते हैं।
+
+</Tab>
+<Tab title="Ruby">
+
+`result.messages` में हर मॉडल और टूल मैसेज होता है, और `result.steps` में हर टर्न की टूल कॉल, अनुरोध ID, प्रदाता, मॉडल, समाप्ति का कारण, चेतावनियाँ और उपयोग होते हैं।
+
+</Tab>
+<Tab title="Java">
+
+रन ख़त्म होने के बाद `fullStream()` पूरा इवेंट इतिहास लौटाता है। `messages()` में हर मॉडल और टूल मैसेज होता है, और `steps()` में हर टर्न की टूल कॉल, अनुरोध ID, प्रदाता, मॉडल, समाप्ति का कारण, चेतावनियाँ और उपयोग होते हैं।
+
+</Tab>
+<Tab title="Rust">
+
+`RunResult` में `run` (स्टेटस, IDs, प्रभावी मॉडल, स्टेप सीमा, संदर्भ और pause स्टेट), `steps` (हर मॉडल टर्न का अनुरोध ID, प्रदाता, मॉडल, समाप्ति का कारण, टूल कॉल और उपयोग), `messages` (पूरा मॉडल और टूल मैसेज इतिहास), `output` और `usage` होते हैं।
+
+</Tab>
+</Tabs>

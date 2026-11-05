@@ -4,31 +4,50 @@ title: "Sorties structurées"
 description: "Renvoyez du JSON prévisible avec les formats de sortie json_object ou json_schema."
 ---
 
-Les sorties structurées permettent d’imposer un format lisible par machine plutôt qu’un texte libre.
+Envoyez un JSON Schema avec la requête : le modèle renvoie du JSON de cette forme au lieu d’un texte libre. Votre code doit quand même l’analyser et le valider avant de l’utiliser.
 
-## Compatibilité des points de terminaison
+```mermaid
+flowchart LR
+  schema["Requête avec un JSON Schema"] --> model["Le modèle répond"]
+  model --> parse{{"S’analyse et passe votre validateur ?"}}
+  parse -->|"Oui"| use["Utiliser le résultat"]
+  parse -->|"Non, première fois"| retry["Une nouvelle tentative corrective"]
+  retry --> parse
+  parse -->|"Non, encore"| fail["Renvoyer un échec sûr"]
+```
 
-Utilisez les sorties structurées sur :
+## Choisir un format
 
-- `/v1/chat/completions` avec `response_format`
-- `/v1/responses` avec `text.format`
-- `/v1/messages` peut toujours renvoyer du texte JSON, mais n’utilise pas le même contrat `response_format`.
+| `type` | Ce que vous obtenez |
+| --- | --- |
+| `json_schema` | Du JSON qui suit le schéma que vous envoyez. Utilisez-le par défaut. |
+| `json_object` | Un objet JSON valide, sans forme imposée. |
+| `text` | Du texte brut (par défaut). |
 
-## Requête
+L’emplacement du format dépend du point de terminaison :
 
-```bash
+| Point de terminaison | Champ |
+| --- | --- |
+| `/v1/chat/completions` | `response_format` |
+| `/v1/responses` | `text.format` |
+| `/v1/messages` | `output_config.format` (`json_schema` uniquement) |
+
+## Envoyer un schéma
+
+<CodeGroup>
+```bash Chat Completions
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "messages": [
-      { "role": "user", "content": "Return a JSON object with city and weather for London." }
+      { "role": "user", "content": "Return the city and weather for London." }
     ],
     "response_format": {
       "type": "json_schema",
       "json_schema": {
-        "name": "weather_schema",
+        "name": "weather",
         "strict": true,
         "schema": {
           "type": "object",
@@ -44,14 +63,39 @@ curl https://api.phaseo.app/v1/chat/completions \
   }'
 ```
 
-## Réponse
+```bash Responses
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-6-astra",
+    "input": "Return the city and weather for London.",
+    "text": {
+      "format": {
+        "type": "json_schema",
+        "name": "weather",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "city": { "type": "string" },
+            "weather": { "type": "string" }
+          },
+          "required": ["city", "weather"],
+          "additionalProperties": false
+        }
+      }
+    }
+  }'
+```
+</CodeGroup>
+
+Le JSON revient sous forme de chaîne dans le contenu du message :
 
 ```json
 {
-  "id": "chatcmpl_...",
   "choices": [
     {
-      "index": 0,
       "finish_reason": "stop",
       "message": {
         "role": "assistant",
@@ -62,19 +106,14 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-## Remarques sur le contrat
+## Concevoir le schéma
 
-- `response_format.type` doit être `text`, `json_object` ou `json_schema`.
-- Pour `json_schema`, incluez un objet de schéma (`response_format.json_schema.schema` dans les requêtes de type chat ou `text.format.schema` dans celles de type Responses).
-- Validez le JSON sur votre serveur avant de l’utiliser en aval.
+Commencez par un petit objet. Listez chaque champ dans `required`, utilisez `enum` pour les catégories connues et définissez `additionalProperties: false` quand les clés supplémentaires doivent être rejetées. Versionnez le schéma avec votre validateur côté serveur pour qu’ils ne divergent jamais.
 
-## Concevoir votre schéma
-
-Commencez par un petit objet, indiquez explicitement les champs obligatoires et utilisez des énumérations pour les catégories connues. Définissez `additionalProperties: false` pour rejeter les clés supplémentaires. Synchronisez le schéma demandé et le validateur serveur ; gérez leurs versions ensemble.
-
+<span id="validate-the-result"></span>
 ## Valider le résultat
 
-Analysez et validez le résultat complet avant de l’utiliser. Cet exemple TypeScript utilise Zod et correspond au schéma météo ci-dessus :
+Avant l’analyse, vérifiez s’il y a un refus, un contenu manquant ou une réponse tronquée (`finish_reason` différent de `stop`). Validez ensuite l’objet analysé. Ce validateur Zod correspond au schéma ci-dessus :
 
 ```typescript
 import { z } from "zod";
@@ -89,6 +128,6 @@ function parseWeather(content: string) {
 }
 ```
 
-Traitez les refus, le contenu manquant et les réponses tronquées avant l’analyse. Si la validation échoue, limitez les tentatives correctives, puis renvoyez un échec sûr. Les générations répétées peuvent entraîner des frais supplémentaires. Un JSON valide ne prouve ni l’exactitude factuelle des valeurs ni l’autorisation d’une action.
+Si la validation échoue, réessayez une fois avec l’erreur dans le prompt, puis renvoyez un échec sûr. Chaque nouvelle tentative est facturée. Un JSON valide ne prouve ni que les valeurs sont exactes, ni qu’une action est autorisée.
 
-Suivez les échecs de validation par modèle et version du schéma. Revérifiez vos cas d’évaluation quand l’un change. Pour récupérer un JSON mal formé, consultez la [réparation des réponses](../cookbook/response-healing-for-structured-json.mdx).
+Suivez les échecs de validation par modèle et par version du schéma, et relancez vos cas d’évaluation quand l’un ou l’autre change. Pour réparer automatiquement un JSON mal formé, consultez la [réparation des réponses](../cookbook/response-healing-for-structured-json.mdx).

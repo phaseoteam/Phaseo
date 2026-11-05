@@ -1,140 +1,59 @@
 ---
 title: "Benchmarks erkunden"
-description: "Erfahre, wie KI-Modellbenchmarks auf Phaseo gesammelt, vereinheitlicht und visualisiert werden."
+description: "Erfahre, wie Benchmarks für KI-Modelle auf Phaseo gesammelt, vereinheitlicht und visualisiert werden."
 sidebarTitle: "Benchmarks"
 icon: "chart-no-axes-column"
 ---
 
-Benchmarks sind ein zentraler Bestandteil davon, wie Phaseo Modellqualität und Fortschritt misst.
-Sie liefern **objektive, reproduzierbare Messwerte**, mit denen du Modellleistungen über Aufgaben, Bereiche und Anbieter hinweg vergleichen kannst – von Schlussfolgern und Programmierung bis zu Sprachverständnis und Bilderkennung.
+Öffne einen Benchmark unter [Vergleichstests](https://phaseo.app/benchmarks), um Modelle nach ihrer Punktzahl darin zu ordnen, oder öffne eine Modellseite, um jede Punktzahl dieses Modells zu sehen. Phaseo führt keine Benchmarks selbst aus; es sammelt veröffentlichte Punktzahlen und verlinkt jede mit ihrer Quelle.
 
----
+## Was jede Punktzahl erfasst
 
-## Was sind Benchmarks?
+| Feld | Was es dir zeigt |
+| --- | --- |
+| Punktzahl | Der Wert wie veröffentlicht, auf der eigenen Skala des Benchmarks. |
+| Variante | Der Aufbau, wenn er vom Standard abweicht, etwa die Anzahl der Few-Shot-Beispiele oder der Reasoning-Aufwand. |
+| Quelle | Ein Link zum Paper, zur Modellkarte oder zur Ergebnisseite, aus der die Punktzahl stammt. |
+| Selbst gemeldet | Gesetzt, wenn der Entwickler des Modells die Punktzahl selbst veröffentlicht hat. Es ist ein Hinweis, keine Ablehnung. |
 
-Ein **Benchmark** ist ein Datensatz oder eine Auswertung, mit der die Leistung eines Modells bei einer bestimmten Aufgabe getestet wird.
-Indem wir mehrere Modelle mit demselben Datensatz ausführen, können wir ihre relativen Stärken und Schwächen messen.
+Jeder Benchmark hat außerdem eine Kategorie und eine Sortierrichtung. Benchmarks, bei denen niedriger besser ist, etwa Fehlerraten, ordnet Phaseo mit der niedrigsten Punktzahl zuerst.
 
-Häufige Beispiele sind:
+## Punktzahlen vergleichen
 
--   🧠 **MMLU (Massive Multitask Language Understanding)** – prüft Allgemeinwissen und logisches Schlussfolgern.
--   🔢 **GSM8K** – prüft mathematisches Denken und Problemlösungsfähigkeiten.
--   💬 **HellaSwag** – bewertet Alltagswissen und Kontextverständnis.
--   🧮 **ARC-Challenge** – misst wissenschaftliches Denken und Logik.
--   💡 **HumanEval** – bewertet Programmier- und Codegenerierungsfähigkeiten.
+Phaseo rechnet Benchmarks nicht in eine gemeinsame Punktzahl um. Vergleiche Modelle also im selben Benchmark und in derselben Variante, nicht über Benchmarks hinweg. Prüfe die Variante und die Markierung „Selbst gemeldet“, bevor du zwei Zahlen als gleichwertig behandelst: Eine vom Anbieter gemeldete und eine unabhängig gemessene Punktzahl können für dasselbe Modell abweichen.
 
----
+Eine Benchmark-Punktzahl ist nur ein Faktor. Kosten, Latenz, Zuverlässigkeit und wie ein Modell mit deinen eigenen Prompts umgeht, zählen genauso; darum geht es unter [Preise und Leistung](./pricing-performance.mdx).
 
-## So geht Phaseo mit Benchmarks um
+## Was eine Benchmark-Seite zeigt
 
-Phaseo sammelt Benchmark-Daten aus **mehreren öffentlichen Quellen** und **offiziellen Berichten** und bringt sie anschließend in ein einheitliches Format.
+| Bereich | Was er dir zeigt |
+| --- | --- |
+| **Zusammenfassung** | Was der Benchmark misst, mit einem Link dazu. |
+| **Verlauf** | Wie sich die Punktzahlen im Benchmark im Zeitverlauf verändert haben. |
+| **Modellergebnisse** | Die Punktzahl jedes Modells, geordnet in der Sortierrichtung des Benchmarks. |
 
-Der Benchmark-Abschnitt jedes Modells enthält:
-
--   **Punktzahl** – meist als Prozentwert oder auf einer normalisierten Skala angegeben.
--   **Datensatzquelle** – z. B. MMLU, GSM8K usw.
--   **Evaluierungsmethode** – gibt an, wie die Punktzahl ermittelt wurde (offizieller Bericht, Bewertung durch Dritte oder Community-Beitrag).
--   **Zuletzt aktualisiert** – zeigt, wann die Benchmark-Daten zuletzt aktualisiert wurden.
-
----
+Zusammengesetzte Indizes wie der Artificial Analysis Intelligence Index und der Epoch Capabilities Index haben eigene Seiten mit den Ranglisten und Versionen des Herausgebers.
 
 ## Benchmark-Kategorien
 
-Benchmarks werden nach der geprüften Fähigkeit kategorisiert:
+| Kategorie | Beispiele |
+| --- | --- |
+| Allgemein | Artificial Analysis Intelligence Index, Epoch Capabilities Index |
+| Agenten | BrowseComp, BFCL-v3, Toolathlon |
+| Code | SWE-Bench, Aider-Polyglot |
+| Mathematik | AIME 2025, MathVision |
+| Schlussfolgern | HellaSwag, Hallusion Bench |
+| Sprache | BIG-Bench Hard, Winogrande |
+| Multimodal | CharXiv-R, MMBench-V1.1 |
+| Langer Kontext | AA-LCR, OpenAI-MRCR |
 
-| Kategorie                   | Beispiele               | Beschreibung                                                           |
-| -------------------------- | ---------------------- | --------------------------------------------------------------------- |
-| **Schlussfolgern**              | MMLU, GSM8K, ARC       | Prüft allgemeine Logik, mehrstufiges Schlussfolgern und Problemlösung.       |
-| **Sprachverständnis** | HellaSwag, BoolQ, PIQA | Misst Leseverständnis, Allgemeinwissen und Sprachfähigkeit. |
-| **Codegenerierung**        | HumanEval, MBPP        | Bewertet Programmierung und Genauigkeit bei der Codesynthese.                    |
-| **Mathematik und Naturwissenschaften**         | GSM8K, MATH, SciQ      | Konzentriert sich auf numerisches und wissenschaftliches Denken.                        |
-| **Multimodal**             | MathVista, MMMU        | Kombiniert Aufgaben zum Verständnis von Text und Bild.                         |
+Weitere Kategorien sind Audio, Embeddings, Gesundheitswesen, Planung und Kreativität.
 
----
+## Woher die Punktzahlen stammen
 
-## Punktzahlen interpretieren
+- Modellkarten, technische Berichte und Paper des Modellentwicklers.
+- Eigene Ergebnisseiten der Benchmark-Organisatoren.
+- Geplante Importe von Artificial Analysis und Epoch AI.
+- Community-Meldungen über GitHub-Issues, die vor der Veröffentlichung geprüft werden.
 
-| Wertebereich | Interpretation                                                    |
-| ----------- | ----------------------------------------------------------------- |
-| **90-100%** | Außergewöhnlich – nahezu Spitzenleistung.                  |
-| **80-89%**  | Hervorragend – für die meisten Produktionsanwendungen geeignet.                |
-| **60-79%**  | Gut – zuverlässig bei allgemeinen Aufgaben, kann aber bei Sonderfällen Schwierigkeiten haben. |
-| **< 60%**   | In Entwicklung – am besten für Experimente oder Forschung geeignet.         |
-
-Beachte, dass manche Benchmarks **unterschiedliche Bewertungssysteme** verwenden.
-Phaseo normalisiert diese nach Möglichkeit, damit Vergleiche aussagekräftiger sind.
-
----
-
-## Benchmarks auf Phaseo visualisieren
-
-Benchmark-Ergebnisse werden wie folgt visualisiert:
-
--   📊 **Balkendiagramme** zum Vergleich von Modellen innerhalb desselben Datensatzes.
--   📈 **Trenddiagramme** zeigen, wie sich Modelle im Laufe der Zeit verbessern.
--   🧮 **Gesamtpunktzahlen** fassen die Leistung über mehrere Datensätze hinweg zusammen.
-
-Jeder Benchmark-Datensatz auf Phaseo bietet Filter für:
-
--   Modelltyp (Chat, Code, Embeddings usw.)
--   Anbieter
--   Veröffentlichungsjahr
--   Datensatzkategorie
-
-So erkennst du schnell Muster, etwa welche Modellfamilien bei Reasoning- oder Programmieraufgaben führend sind.
-
----
-
-## Datenquellen und Methodik
-
-Phaseo führt Benchmark-Daten aus folgenden Quellen zusammen:
-
--   Offizielle Forschungsarbeiten und Modellberichte.
--   Evaluierungsseiten von Anbietern (OpenAI Evals, Anthropic Reports usw.).
--   Offene Community-Datensätze (z. B. Hugging-Face-Bestenlisten).
--   Direkte Einreichungen von Nutzern über GitHub.
-
-Alle Daten werden vor der Veröffentlichung vereinheitlicht und geprüft.
-Weitere Informationen findest du unter [Forschung und Methodik → Benchmark-Methodik](../research/benchmark-methodology.mdx).
-
----
-
-## Beispiele für Anwendungsfälle
-
-| Ziel                                 | Beispiel                                                              |
-| ------------------------------------ | -------------------------------------------------------------------- |
-| Reasoning-Modelle vergleichen             | „Welches Modell erzielt bei GSM8K die höchste Punktzahl?“                               |
-| Kosten und Leistung gegeneinander abwägen | „Rechtfertigt GPT-4o die höheren Kosten im Vergleich zu Claude 3.5 Sonnet?“ |
-| Jährliche Fortschritte verfolgen                | „Wie stark hat sich die Genauigkeit bei MMLU seit 2022 verbessert?“                    |
-| Benchmarks nach Kategorie untersuchen      | „Welche Modelle sind beim multimodalen Reasoning führend?“                         |
-
----
-
-## Benchmark-Daten beitragen
-
-Erstelle ein GitHub-Issue mit Belegen für neue oder korrigierte Benchmark-Ergebnisse.
-Jede Einreichung wird vor der Aufnahme auf Einheitlichkeit und Genauigkeit geprüft.
-
-<Card
-	title="Benchmark-Daten beitragen"
-	icon="github"
-	href="../research/submitting-scores.mdx"
-	horizontal
->
-	Erfahre, welche Belege ein Benchmark-Issue enthalten sollte.
-</Card>
-
----
-
-## Nächste Schritte
-
-Wenn du die Benchmark-Daten verstanden hast, kannst du die **API-Anbieter** erkunden, über die diese Modelle programmatisch verfügbar sind.
-
-<Card
-	title="API-Anbieter erkunden"
-	icon="network"
-	href="./api-providers.mdx"
-	horizontal
->
-	Sieh dir an, wo und wie Modelle gehostet, bepreist und bereitgestellt werden.
-</Card>
+Die [Benchmark-Methodik](../research/benchmark-methodology.mdx) enthält alle Regeln. Wie du eine Punktzahl hinzufügst oder korrigierst, steht unter [Benchmark-Punktzahlen einreichen](../research/submitting-scores.mdx).

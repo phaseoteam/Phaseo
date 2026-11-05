@@ -1,6 +1,6 @@
 ---
 title: "noviembre"
-description: "noviembre 2026 - Phaseo"
+description: "Novedades de producto y lanzamientos de modelos de Phaseo en noviembre de 2026."
 rss: true
 ---
 
@@ -37,7 +37,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">Producto</p>
 
 - Las páginas de modelos cuentan el éxito de las llamadas a herramientas y de la salida estructurada solo con las respuestas que Phaseo comprobó; antes, las solicitudes fallidas contaban como JSON válido y las horas sin datos aparecían al 100 % ([#3475](https://github.com/phaseoteam/Phaseo/pull/3475)).
-- La velocidad de salida en las páginas de modelos excluye el razonamiento oculto previo a la respuesta y no muestra valor cuando la respuesta llega de una sola vez; consulta [Medir precios y rendimiento](./exploring/pricing-performance.mdx) ([#3465](https://github.com/phaseoteam/Phaseo/pull/3465), [#3476](https://github.com/phaseoteam/Phaseo/pull/3476)).
+- La velocidad de salida en las páginas de modelos excluye el razonamiento oculto previo a la respuesta y no muestra ningún valor cuando la respuesta llega de una sola vez; consulta [Medir precios y rendimiento](./exploring/pricing-performance.mdx) ([#3465](https://github.com/phaseoteam/Phaseo/pull/3465), [#3476](https://github.com/phaseoteam/Phaseo/pull/3476)).
 
 </div>
 
@@ -45,7 +45,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">API y SDK</p>
 
-- Las solicitudes en streaming a los modelos de texto Gemini 2.5, 3 y 3.1, Gemini 3.5 a 3.8 Flash y Gemma 4 en Google AI Studio llegan token a token; antes, la respuesta completa llegaba de una vez al terminar la generación ([#3483](https://github.com/phaseoteam/Phaseo/pull/3483)).
+- Las solicitudes en streaming de Google AI Studio a los modelos de texto Gemini 2.5, 3 y 3.1, Gemini 3.5 a 3.8 Flash y Gemma 4 ahora llegan token a token, no todas de una vez ([#3483](https://github.com/phaseoteam/Phaseo/pull/3483)).
 
 </div>
 

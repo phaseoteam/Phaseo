@@ -1,33 +1,17 @@
 ---
 icon: "search-check"
-title: "Web検索サーバーツール"
-description: "リクエスト中にモデルがWebを検索できるようにします。"
+title: "Web 検索サーバーツール"
+description: "リクエスト中にモデルが Web を検索できるようにします。"
 ---
 
-最新情報や出典に基づく情報が必要な場合は`phaseo:web_search`を使います。モデルが検索のタイミングとクエリを決め、1回のリクエスト中に複数回検索できます。
-
-PhaseoはURL、タイトル、スニペット、ハイライト、必要に応じてページ本文をモデルに返し、根拠のある回答を作成できるようにします。
-
-<Note>
-TinyFish Searchはオプションの管理検索エンジンとして利用できます。対応ルートでは、`engine: "native"`でプロバイダーのネイティブ検索も引き続き使えます。
-</Note>
-
-## 仕組み
-
-1. `{ "type": "phaseo:web_search" }`を`tools`に追加します。
-2. モデルが検索の必要性を判断し、クエリを出力します。
-3. Phaseoが設定された検索エンジンで検索を実行します。
-4. 検索結果がツールのコンテキストとしてモデルに返されます。
-5. モデルが最終回答を作成し、必要であれば再度検索します。
-
-## クイックスタート
+`phaseo:web_search` を追加すると、最新の情報や出典のある情報が必要なときにモデルが Web を検索できるようになります。モデルがクエリを書き、1 回のリクエストで複数回検索できます。Phaseo は URL、タイトル、スニペット、ハイライト、必要に応じてページ本文を返し、モデルはそれに基づいた回答を書きます。
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "messages": [
       { "role": "user", "content": "What were the major AI announcements this week?" }
     ],
@@ -37,7 +21,10 @@ curl https://api.phaseo.app/v1/chat/completions \
   }'
 ```
 
-## 設定
+同じツール定義は、`/v1/responses` と `/v1/messages` の `tools` でも使えます。
+
+<span id="parameters"></span>
+## パラメーター
 
 ```json
 {
@@ -49,7 +36,6 @@ curl https://api.phaseo.app/v1/chat/completions \
     "search_context_size": "medium",
     "max_characters": 2048,
     "allowed_domains": ["arxiv.org", "nature.com"],
-    "excluded_domains": ["reddit.com"],
     "include_highlights": true,
     "include_text": false
   }
@@ -58,90 +44,71 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 | パラメーター | 型 | 既定値 | 説明 |
 | --- | --- | --- | --- |
-| `engine` | string | `exa` | 検索エンジン：`auto`、`native`、`exa`、`parallel`、`firecrawl`、`perplexity`、`tinyfish`。 |
-| `max_results` | integer | `5` | 1回の検索呼び出しで返される結果の最大数。 |
-| `max_total_results` | integer | `10` | サーバーツールループ全体で返される結果の累積最大数。 |
-| `max_uses` | integer | `10` | サーバーツールループ全体での検索呼び出しの最大数。 |
-| `search_context_size` | string | `medium` | ハイライト量を調整できる検索エンジン向けのコンテキストサイズ: `low`、`medium`、`high`。 |
-| `max_characters` | integer | engine default | テキストを含める場合に、結果ごとに含まれるテキストの最大文字数。 |
-| `allowed_domains` | string[] | none | これらのドメインの結果のみを返します。エイリアス: `include_domains`。 |
-| `excluded_domains` | string[] | none | これらのドメインの結果を除外します。エイリアス: `exclude_domains`。 |
-| `include_highlights` | boolean | `true` | 検索エンジンが提供するハイライトやスニペットがあれば含めます。 |
-| `include_text` | boolean | `false` | 検索エンジンが対応している場合、結果のより詳細なテキストを含めます。 |
-| `user_location` | object | none | ローカライズ検索に対応する検索エンジン向けの任意の地域情報。 |
-| `language` | 文字列 | なし | `en`などのTinyFishの言語ヒント。 |
-| `page` | 整数 | `0` | `0`から`10`までのTinyFish結果ページ。 |
+| `engine` | string | `exa` | `auto`、`native`、`exa`、`parallel`、`firecrawl`、`perplexity`、`tinyfish` のいずれか。[エンジンの選択](#choose-an-engine)を参照してください。 |
+| `max_results` | integer | `5` | 検索 1 回あたりの結果数。上限は `25` です。 |
+| `max_total_results` | integer | `25` | リクエスト内のすべての検索を合わせた結果数。上限は `100` です。`max_results` を下回ることはありません。 |
+| `max_uses` | integer | `10` | 1 リクエストあたりの検索回数。上限は `100` です。 |
+| `search_context_size` | string | `medium` | `low`、`medium`、`high` のいずれか。ハイライトのサイズを調整するエンジンで使われます。 |
+| `max_characters` | integer | エンジンの既定値 | 本文を含める場合の、結果 1 件あたりの文字数。 |
+| `allowed_domains` | string[] | なし | これらのドメインのみを検索します。別名: `include_domains`。 |
+| `excluded_domains` | string[] | なし | これらのドメインを除外します。別名: `exclude_domains`。 |
+| `include_highlights` | boolean | `true` | エンジンのハイライトまたはスニペットを含めます。 |
+| `include_text` | boolean | `false` | エンジンが対応している場合、より詳しいページ本文を含めます。 |
+| `user_location` | object | なし | `engine` が `native` のとき、プロバイダー自身の検索に渡す位置情報のヒント。 |
 
-## 検索エンジンの選択
+## モデルが送信する内容
 
-| Engine | 動作 |
+各呼び出しには `query` が含まれます。モデルは `max_results`、`engine`、`search_context_size`、ドメインリスト、`include_text`、`include_highlights`、`max_characters`、および次のローカライズ用ヒントも送信できます。
+
+| 引数 | 説明 |
 | --- | --- |
-| `exa` | Exaの管理型検索。ゲートウェイのランタイムでPhaseoにExaが設定されている必要があります。 |
-| `auto` | 設定済みの管理型デフォルトを使用します。現在はExaです。 |
-| `parallel` | 設定されている場合はParallel検索を使います。 |
-| `firecrawl` | 設定されている場合はFirecrawl検索を使います。 |
-| `perplexity` | 設定されている場合、Perplexity公式のSearch APIを使います。順位付きの結果、`search_context_size`、`user_location.country`に基づく地域検索、許可または除外ドメインに対応しています。 |
-| `tinyfish` | `TINYFISH_API_KEY`が設定されている場合にTinyFish Searchを使います。多言語対応のページ分割されたランキング結果を提供し、`allowed_domains` / `excluded_domains`を検索演算子に変換します。ページ全文は提供しないため、より詳しい内容には`phaseo:web_fetch`を使ってください。 |
-| `native` | リクエストの形式が対応している場合、上流モデルを呼び出す前に、宣言をプロバイダー固有のネイティブWeb検索ツールへ変換します。Chat CompletionsとResponsesでは、Web検索を自ら実行するプロバイダーにのみリクエストを送ります。そのようなプロバイダーがモデルを提供していない場合は、代わりにPhaseoがデフォルトの検索エンジンを実行し、管理型検索として課金します。 |
+| `user_location` | おおよその位置。Perplexity は地域検索に `user_location.country` を使い、TinyFish は国と言語を使います。 |
+| `language` | `en` などの結果の言語コード。ローカライズに対応したエンジンで使われます。 |
+| `page` | 結果ページ `0` から `10`。TinyFish 用です。 |
 
-`engine: "native"`はツールの宣言内でのみ使用してください。モデルが出力済みのゲートウェイ検索呼び出し内で`engine: "native"`を指定すると、上流リクエストの送信前にネイティブツールを選択する必要があるため、Phaseoはツールエラーを返します。
+モデルが送信した値は、その呼び出しに限りツールの既定値を上書きします。`max_results` は引き続き `max_total_results` の残りで制限され、それを使い切ると以降の呼び出しは `max_total_results_reached` を返します。
 
-## TinyFish Search
+<span id="choose-an-engine"></span>
+## エンジンの選択
 
-Phaseo Gatewayの実行環境のシークレットに`TINYFISH_API_KEY`を設定してエンジンを有効にし、ツールのパラメーターで選択します。
+| エンジン | 実行される処理 |
+| --- | --- |
+| `exa` | 管理対象の Exa 検索。既定値です。 |
+| `auto` | 管理対象の既定エンジン。現在は Exa です。 |
+| `parallel` | 管理対象の Parallel 検索。 |
+| `firecrawl` | 管理対象の Firecrawl 検索。 |
+| `perplexity` | Perplexity Search API。ランク付けされた結果、`search_context_size`、`user_location.country` による地域検索に対応します。 |
+| `tinyfish` | TinyFish Search。ローカライズされ、ページ分割されたランク付きの結果を返します。返すのはスニペットで、ページ全文は返しません。モデルにさらに情報が必要な場合は [`phaseo:web_fetch`](./web-fetch) を使ってください。 |
+| `native` | OpenAI の `web_search_preview` や Anthropic の `web_search_20250305` など、プロバイダー自身の Web 検索ツール。 |
 
-```json
-{
-  "type": "phaseo:web_search",
-  "parameters": {
-    "engine": "tinyfish",
-    "language": "en",
-    "page": 0,
-    "max_results": 5,
-    "allowed_domains": ["phaseo.app", "github.com"],
-    "excluded_domains": ["reddit.com"]
-  }
-}
-```
+管理エンジンが有効になっていない場合、呼び出しはモデルに `search_not_configured` を返します。
 
-`language`は言語のヒントを指定し、`page`は`0`から`10`の結果ページを選択します。TinyFishは両方のドメインフィルターリストに対応し、Phaseoが検索演算子に変換します。結果にはURL、タイトル、抜粋・ハイライトが含まれます。モデルに詳しい本文が必要な場合は`phaseo:web_fetch`を使ってください。
+`/v1/chat/completions` または `/v1/responses` で `engine: "native"` を指定すると、リクエストは Web 検索を自前で実行するプロバイダーにのみ送られます。そのモデルを提供するプロバイダーがない場合、Phaseo は代わりに既定エンジンを実行し、管理検索として課金します。`native` はツール定義でのみ指定してください。プロバイダーのツールはリクエスト送信前に選ぶ必要があるため、モデルが呼び出しで `native` を指定すると、その呼び出しは `unsupported_search_engine` を返します。
 
-## ドメインの絞り込み
+## ドメインで絞り込む
 
-回答の情報源を指定した範囲に限定する場合は、`allowed_domains`を使います。
+回答を決まった情報源から得る必要がある場合は `allowed_domains` を、それ以外は制限のない検索から特定のサイトだけを外したい場合は `excluded_domains` を使います。
 
 ```json
 {
   "type": "phaseo:web_search",
-  "parameters": {
-    "allowed_domains": ["phaseo.app", "github.com"]
-  }
+  "parameters": { "allowed_domains": ["phaseo.app", "github.com"] }
 }
 ```
 
-幅広いWeb検索は許可しつつ、特定のドメインを結果から除外する場合は`excluded_domains`を使います。
+リストの扱いはエンジンによって異なります。
 
-PerplexityとFirecrawlでは、1回の検索に`allowed_domains`または`excluded_domains`のどちらかを指定でき、両方は指定できません。Perplexityは1リクエストあたり最大20件のドメインフィルターを受け付け、除外ドメインを拒否リスト形式に変換します。 TinyFishは両方の配列をクエリの`site:`と`-site:`演算子に変換します。
+- **Perplexity** はどちらか一方のリストのみを受け付け、両方は指定できません。ドメインは最大 20 件です。除外ドメインは Perplexity の拒否リスト形式で送られます。
+- **Firecrawl** はどちらか一方のリストのみを受け付け、両方は指定できません。
+- **TinyFish** は両方を受け付け、クエリ内の `site:` と `-site:` 演算子に変換します。
 
-TinyFish Searchは公開プランで無料のため、Phaseoは`engine: "tinyfish"`にプロバイダー利用料を追加しません。通常のPhaseoリクエスト料金とトークン料金は引き続き適用されます。
+## ツールが返す内容
 
-## Responses API
-
-同じツール形式を`/v1/responses`でも使えます。
-
-```json
-{
-  "model": "openai/gpt-5-nano",
-  "input": "Find the latest release notes for Phaseo.",
-  "tools": [
-    { "type": "phaseo:web_search", "parameters": { "max_results": 4 } }
-  ]
-}
-```
+エンジン、クエリ、`results` 配列を含む JSON の結果です。各結果には `title`、`url`、`snippet` または `highlights` があり、ページ本文を要求してエンジンがそれを提供する場合は `text` も含まれます。
 
 ## 使用量と料金
 
-Web検索呼び出しでは次の値が増加します。
+検索ごとに `usage.server_tool_use` に加算されます。
 
 ```json
 {
@@ -155,10 +122,4 @@ Web検索呼び出しでは次の値が増加します。
 }
 ```
 
-管理型検索の料金には`server_tool_web_search_requests`と`server_tool_web_search_extra_results`を使用できます。プロバイダーのネイティブ検索では、モデルの料金カードで設定されている場合に`native_web_search_requests`を使用できます。
-
-## 関連ページ
-
-- [Web Fetch](./web-fetch.mdx)
-- [サーバーツール](./index.mdx)
-- [Web検索とページ取得による根拠の提示](../../cookbook/tool-grounding-with-web-fetch.mdx)
+管理検索は `server_tool_web_search_requests` と `server_tool_web_search_extra_results` で課金されます。ネイティブ検索は、モデルの料金カードに定義がある場合 `native_web_search_requests` で課金されます。TinyFish Search は公開プランでは無料のため、Phaseo は `engine: "tinyfish"` に検索料金を加算しません。ただし、リクエストの通常のトークン料金は適用されます。

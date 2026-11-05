@@ -1,0 +1,483 @@
+---
+icon: "compass"
+title: "Client SDKs"
+sidebarTitle: "Overview"
+description: "Install a Phaseo client SDK and find the method for each Gateway endpoint."
+"og:image": "https://phaseo.app/og/dynamic?title=Client%20SDKs&description=Install%20a%20Phaseo%20client%20SDK%20and%20find%20the%20method%20for%20each%20Gateway%20endpoint.&pathname=/docs/v1/sdk-reference/client/overview"
+---
+
+Install the Phaseo package for your language, create a client with your API key, and call one method per Gateway endpoint. Every SDK reads `PHASEO_API_KEY` when you don't pass a key.
+
+| Language | Package | Registry | Published version |
+| --- | --- | --- | --- |
+| TypeScript | [`@phaseo/sdk`](https://www.npmjs.com/package/@phaseo/sdk) | npm | `3.0.0` |
+| Python | [`phaseo`](https://pypi.org/project/phaseo/) | PyPI | `3.0.0` |
+| Go | [`github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3`](https://pkg.go.dev/github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3) | Go modules | `v3.0.0` |
+| C# | [`Phaseo.Sdk`](https://www.nuget.org/packages/Phaseo.Sdk) | NuGet | `3.0.0` |
+| PHP | [`phaseo/sdk`](https://packagist.org/packages/phaseo/sdk) | Packagist | `v3.0.0` |
+| Ruby | [`phaseo_sdk`](https://rubygems.org/gems/phaseo_sdk) | RubyGems | `3.0.0` |
+| Java | `app.phaseo:phaseo-sdk` | Maven Central (older API); build the current source instead | `3.0.0` |
+| Rust | [`phaseo`](https://crates.io/crates/phaseo) | crates.io | `0.2.0` |
+
+[Installation](./installation) has the install command and requirements for each language. A C++ SDK is not yet released.
+
+<CodeGroup>
+
+```typescript TypeScript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateText({
+  model: "openai/gpt-6-astra",
+  messages: [{ role: "user", content: "Hello, how are you?" }],
+});
+
+console.log(response.choices[0].message.content);
+```
+
+```python Python
+from phaseo import Phaseo
+
+client = Phaseo()  # reads PHASEO_API_KEY
+
+response = client.generate_response(
+    {
+        "model": "openai/gpt-6-astra",
+        "input": "Reply with: python sdk works",
+    }
+)
+
+print(response.output_text, response.request_id, response.trace_url)
+```
+
+```go Go
+import (
+  "context"
+  "fmt"
+
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client, err := phaseo.NewFromEnv() // reads PHASEO_API_KEY
+if err != nil {
+  panic(err)
+}
+
+resp, err := client.GenerateResponse(context.Background(), phaseo.ResponsesRequest{
+  Model: "openai/gpt-6-astra",
+  Input: "Reply with: go sdk works",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp)
+```
+
+```csharp C#
+using PhaseoSdk;
+
+var client = new Phaseo(); // reads PHASEO_API_KEY; or new Phaseo("YOUR_KEY")
+
+var response = await client.GenerateResponse(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-6-astra",
+    ["input"] = "Reply with: csharp sdk works",
+});
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo(); // reads PHASEO_API_KEY; or new Phaseo('YOUR_KEY')
+
+$response = $client->generateResponse([
+    'model' => 'openai/gpt-6-astra',
+    'input' => 'Reply with: php sdk works',
+]);
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new # reads PHASEO_API_KEY; or PhaseoSdk::Phaseo.new(api_key: 'YOUR_KEY')
+
+response = client.generate_response(
+  model: 'openai/gpt-6-astra',
+  input: 'Reply with: ruby sdk works'
+)
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+import java.util.Map;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        var client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+        var response = client.createResponse(Map.of(
+            "model", "openai/gpt-6-astra",
+            "input", "Reply with: Java SDK works"
+        ));
+        System.out.println(response);
+    }
+}
+```
+
+```rust Rust
+use phaseo::Phaseo;
+use serde_json::json;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Phaseo::from_env()?;
+    let response = client.responses(&json!({
+        "model": "openai/gpt-6-astra",
+        "input": "Reply with exactly: Rust SDK works"
+    }))?;
+
+    println!("{}", response.body);
+    Ok(())
+}
+```
+
+</CodeGroup>
+
+## What you send and get back
+
+Request bodies use the API's JSON field names in every SDK. [Usage](./usage) has one example per endpoint.
+
+| Language | Request body | Returns |
+| --- | --- | --- |
+| TypeScript | Typed objects generated from the OpenAPI spec | Typed objects |
+| Python | Dicts; types live in `phaseo.models` | `APIResponse` dicts with `output_text`, `request_id` and `trace_url` |
+| Go | `map[string]interface{}`, or the typed `phaseo.ChatCompletionsRequest` and `phaseo.ResponsesRequest` (PascalCase struct fields such as `Model`, `Messages`, `Input`) | Decoded JSON |
+| C# | `Dictionary<string, object>` | `Dictionary<string, object>?` |
+| PHP | Arrays | Arrays |
+| Ruby | Hashes (keyword arguments) | Hashes |
+| Java | A `Map` or Jackson `JsonNode`; parse JSON strings first | `JsonNode` |
+| Rust | `&serde_json::Value` | `PhaseoResponse` with `status`, `body` and `request_id` |
+
+A missing key fails when you create the client. Python raises `ValueError`, Go's `NewFromEnv()` returns an error, C# and PHP throw `Missing API key. Pass apiKey or set PHASEO_API_KEY.`, Ruby raises `ArgumentError: Missing API key. Pass api_key or set PHASEO_API_KEY.`, and Rust's `Phaseo::from_env()` returns a `PhaseoError`.
+
+## Find the method for each endpoint
+
+A dash means the SDK has no wrapper for that operation. Use the method in the last row, or call the HTTP API directly. "JSON only" means the method can't send a multipart file upload: pass a URL or base64 data URL instead, or send the upload with your language's HTTP client as the endpoint page shows. Most SDKs also have a `create…` alias for each `generate…` method (for example `CreateChatCompletion` in Go and C#, `create_response` in Ruby).
+
+| Operation | TypeScript | Python | Go | C# | PHP | Ruby | Java | Rust |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| [Chat completions](./chat-completions) | `generateText` | `generate_text` | `GenerateText` | `GenerateText` | `generateText` | `generate_text` | `createChatCompletion` | `chat_completions` |
+| Stream chat completions | `streamChat` | `stream_chat` | — | — | — | — | `rawClient().requestLines` | — |
+| [Responses](./responses) | `generateResponse` | `generate_response` | `GenerateResponse` | `GenerateResponse` | `generateResponse` | `generate_response` | `createResponse` | `responses` |
+| Stream responses | `streamResponses` | `stream_responses` | — | `StreamResponse` (raw SSE lines) | `streamResponse` (raw SSE lines) | — | `streamResponse` (raw SSE lines) | — |
+| Anthropic Messages | `generateMessage`, `streamMessages` | `generate_message`, `stream_message` | `CreateAnthropicMessage` | `CreateAnthropicMessage` | `createAnthropicMessage` | `create_anthropic_message` | `createAnthropicMessage` | `post` |
+| [Image generation](./images-generations) | `generateImage`, `streamImage` | `generate_image` | `CreateImage` | `GenerateImage` | `generateImage` | `generate_image` | `createImage` | `post` |
+| [Image edit](./images-edits) | `generateImageEdit`, `streamImageEdit` | `generate_image_edit` | `CreateImageEdit` | `CreateImageEdit` | `generateImageEdit` | `generate_image_edit` | `createImageEdit` (JSON only) | `post` |
+| [Speech](./audio-speech) | `generateSpeech` | `generate_speech` | `CreateSpeech` | `CreateSpeech` | `createSpeech` | `generate_speech` | `rawClient().requestBytes` | — |
+| [Transcription](./audio-transcriptions) | `generateTranscription` | `generate_transcription` | `CreateTranscription` | `CreateTranscription` | `generateTranscription` | `generate_transcription` | — (multipart with `java.net.http`) | — |
+| [Translation](./audio-translations) | `generateTranslation` | `generate_translation` | `CreateTranslation` | `CreateTranslation` | `generateTranslation` | `generate_translation` | — (multipart with `java.net.http`) | — |
+| [Realtime voice](./audio-realtime) | `realtime.connect` | `realtime.connect` (on `AsyncPhaseo`) | `realtime.Connect` | `Realtime.ConnectAsync` | `realtime()->connect` | `realtime.connect` | `realtime.connect` | `realtime().connect` |
+| [Embeddings](./embeddings) | `generateEmbedding` | `generate_embedding` | `GenerateEmbedding` | `CreateEmbedding` | `generateEmbedding` | `generate_embedding` | `createEmbedding` | `post` |
+| [Moderations](./moderations) | `generateModeration` | `generate_moderation` | `GenerateModeration` | `GenerateModeration` | `generateModeration` | `generate_moderation` | `createModeration` | `post` |
+| [Rerank](./rerank) | `rerank.create` | `rerank.create` | — | — | — | — | — | `post` |
+| Video | `videos.*` | `videos.*` | `CreateVideo`, `GetVideo`, `ListVideos`, … | `GenerateVideo`, `GetVideo`, `ListVideos`, … | `generateVideo`, `getVideo`, `listVideos`, … | `generate_video`, `get_video`, `list_videos`, … | `createVideo`, `getVideo`, `listVideos`, … | — |
+| [Upload a file](./files) | `uploadFile` | `upload_file` | — | — | — | — | — | — |
+| [Read files](./files) | `getFile`, `getFileContent`, `listFiles` | `get_file`, `get_file_content`, `list_files` | `RetrieveFile`, `RetrieveFileContent`, `ListFiles` | `RetrieveFile`, `RetrieveFileContent`, `ListFiles` | `retrieveFile`, `retrieveFileContent`, `listFiles` | `retrieve_file`, `retrieve_file_content`, `list_files` | `retrieveFile`, `retrieveFileContent`, `listFiles` | — |
+| Batches | `batches.*` | `batches.*` | `CreateBatch`, `RetrieveBatch`, `CancelBatch` | `CreateBatch`, `RetrieveBatch`, `CancelBatch` | `createBatch`, `retrieveBatch`, `cancelBatch` | `create_batch`, `retrieve_batch`, `cancel_batch` | `createBatch`, `retrieveBatch`, `cancelBatch` | — |
+| Job WebSocket URL | `asyncJobs.websocketUrl` | `async_jobs.websocket_url` | `GetAsyncJobWebSocketURL` | `GetAsyncJobWebSocketUrl` | `getAsyncJobWebSocketUrl` | `get_async_job_websocket_url` | `getAsyncJobWebSocketUrl` | — |
+| [Wait for a job](#wait-for-music-video-or-batches) | `generateAndWait`, `createAndWait`, `wait` | `generate_and_wait`, `create_and_wait`, `wait` | — | — | — | — | — | — |
+| [List models](./models) | `getModels`, `models.list` | `get_models`, `models.list` | `GetModels` | `ListModels` | `listModels` | `list_models` | `listModels` | — |
+| [Check model parameters](./models#check-one-model) | `models.checkParameters` | `models.check_parameters` | `CheckModelParameters` (next release) | `CheckModelParameters` (next release) | `checkModelParameters` (next release) | `check_model_parameters` (next release) | `checkModelParameters` (source build) | `check_model_parameters` (next release) |
+| Validate a model | `models.validate`, `models.getDeprecationInfo` | `models.validate`, `models.get_deprecation_info` | `ValidateModel`, `GetModelDeprecationInfo` | `ValidateModel`, `GetModelDeprecationInfo` | `validateModel`, `getModelDeprecationInfo` | `validate_model`, `get_model_deprecation_info` | `validateModel`, `getModelDeprecationInfo` | — |
+| [Generation lookup](./generation) | `getGeneration` | `get_generation` | `GetGeneration` | `GetGeneration` | `getGeneration` | `get_generation` | `getGeneration` | — |
+| Providers, endpoints and pricing | `listProviders`, `listEndpoints`, `listPricingModels`, `calculatePricing` | `list_providers`, `list_endpoints`, `list_pricing_models`, `calculate_pricing` | `ListProviders`, `ListEndpoints`, `ListPricingModels`, `CalculatePricing` | `ListProviders`, `ListEndpoints`, `ListPricingModels`, `CalculatePricing` | `listProviders`, `listEndpoints`, `listPricingModels`, `calculatePricing` | `list_providers`, `list_endpoints`, `list_pricing_models`, `calculate_pricing` | `listProviders`, `listEndpoints`, `listPricingModels`, `calculatePricing` | — |
+| Credits, activity and analytics | `getCredits`, `getActivity`, `getAnalytics` | `get_credits`, `get_activity`, `get_analytics` | `GetCredits`, `GetActivity`, `GetAnalytics` | `GetCredits`, `GetActivity`, `GetAnalytics` | `getCredits`, `getActivity`, `getAnalytics` | `get_credits`, `get_activity`, `get_analytics` | `getCredits`, `getActivity`, `getAnalytics` | — |
+| Health | `getHealth` | `get_health` | `Health` | `Health`, `Healthz` | `health`, `healthz` | `health`, `healthz` | `healthz` | — |
+| Keys and workspaces | `listApiKeys`, `createApiKey`, `listWorkspaces`, … | `list_api_keys`, `create_api_key`, `list_workspaces`, … | `ListApiKeys`, `CreateApiKey`, `ListWorkspaces`, … | `ListApiKeys`, `CreateApiKey`, `ListWorkspaces`, … | `listApiKeys`, `createApiKey`, `listWorkspaces`, … | `list_api_keys`, `create_api_key`, `list_workspaces`, … | `listApiKeys`, `createApiKey`, `listWorkspaces`, … | — |
+| Any other endpoint | `client.rawClient()` | `client.raw_client()` | `client.Request(ctx, method, path, query, headers, body)`, `client.RawClient()` | — | — | — | `client.request(...)`, `client.rawClient()` | `client.post(path, body)`, `phaseo::operations` |
+
+C#, PHP, Ruby and Java have an upload method, but it sends JSON and can't upload a file; [Files](./files) and [STT](./audio-transcriptions) show the multipart request in each language. Keys and workspaces also have `get`, `update` and `delete` methods and a current-key lookup (`getCurrentApiKey`, `get_current_api_key`, `GetCurrentApiKey`) in every SDK except Rust. TypeScript and Python also cover music, OCR, parse, decisions and extractions.
+
+## Check what each package ships
+
+The published packages predate some features in the SDK source:
+
+| Language | Not in the published package yet |
+| --- | --- |
+| Go | `GetModelEndpointCapabilities`, `CheckModelParameters` and `PreflightRequest` are not in `v3.0.0`; they ship with the next release. |
+| C# | `GetModelEndpointCapabilities`, `CheckModelParameters` and `PreflightRequest` are not in `3.0.0`; they ship with the next release. |
+| PHP | `getModelEndpointCapabilities`, `checkModelParameters` and `preflightRequest` are not in `v3.0.0`; they ship with the next release. |
+| Ruby | `model_endpoint_capabilities`, `check_model_parameters` and `preflight_request` are not in the `3.0.0` gem; they ship with the next release. |
+| Java | The `3.0.0` artifact on Maven Central lacks retry controls, response metadata and parameter checking. Build the pinned source from [Installation](./installation) to get them. |
+| Rust | `Phaseo::model_endpoint_capabilities(...)` and `Phaseo::check_model_parameters(...)` are not in the `0.2.0` crate. The crate is pre-`1.0`, so pin a compatible minor version in production. |
+
+## Configure the client
+
+<Tabs>
+<Tab title="TypeScript">
+
+| Option | What it does |
+| --- | --- |
+| `apiKey` | A key string, or a function that returns a credential for each request (for example a [trusted workload](/v1/developers/trusted-workloads) token). Defaults to `PHASEO_API_KEY`. |
+| `baseUrl` / `region` | `region` is `global`, `eu` or `us`. You can't set both. |
+| `timeoutMs`, `maxRetries`, `signal` | Request controls; see [Request controls and errors](#request-controls-and-errors). |
+| `app` | Your app's `id`, `name`, `url` and up to three `categories`, sent as attribution headers. |
+| `modelLifecycleChecks` | Default `true`: the client looks up each model once (`GET /models`) and refuses models that aren't active. Set `false` to skip the lookup. |
+| `enableDeprecationWarnings`, `warningsAsErrors`, `logger` | Control deprecation warnings for models. |
+| `devtools` | Local DevTools capture. |
+| `headers`, `fetchImpl` | Extra headers and a custom `fetch`. |
+
+</Tab>
+<Tab title="Python">
+
+| Option | What it does |
+| --- | --- |
+| `api_key` | A key string, or a callable that returns a credential for each request (for example a [trusted workload](/v1/developers/trusted-workloads) token). Defaults to `PHASEO_API_KEY`. |
+| `base_url` / `region` | `region` is `global`, `eu` or `us`. You can't set both. |
+| `timeout`, `max_retries` | Request controls; see [Request controls and errors](#request-controls-and-errors). |
+| `app` | A dict with your app's `id`, `name` and `url`, sent as attribution headers. |
+| `enable_deprecation_warnings`, `warnings_as_errors`, `logger` | Control deprecation warnings for models. On `Phaseo` only. |
+| `devtools` | Local DevTools capture. On `Phaseo` only. |
+| `http_client` | An `httpx.Client` (`httpx.AsyncClient` for `AsyncPhaseo`) to send requests through. A client you inject stays yours to close. |
+| `on_request`, `on_response`, `on_retry` | Hooks called for each attempt. |
+
+Use `AsyncPhaseo` for asyncio:
+
+```python Python
+import asyncio
+from phaseo import AsyncPhaseo
+
+async def main():
+    async with AsyncPhaseo() as client:
+        response = await client.responses.create({"model": "openai/gpt-6-astra", "input": "Hello"})
+        print(response.output_text, response.request_id, response.trace_url)
+
+asyncio.run(main())
+```
+
+Use `async for event in client.responses.stream(request)` for parsed text events. Cancelling the asyncio task stops the HTTP request and any polling. `AsyncPhaseo` has resource namespaces for text, images, audio, realtime, music, video, batches, files, models, embeddings, OCR, rerank, parse, moderations, decisions and extractions; use `await client.request(...)` for any other HTTP operation.
+
+</Tab>
+<Tab title="Go">
+
+`phaseo.New(apiKey, baseURL)` takes the key and base URL, for example `phaseo.New(os.Getenv("PHASEO_API_KEY"), "https://api.phaseo.app/v1")`. `phaseo.NewFromEnv()` reads `PHASEO_API_KEY` and returns an error if it's unset. Every method takes a `context.Context` first.
+
+</Tab>
+<Tab title="C#">
+
+`new Phaseo()` reads `PHASEO_API_KEY`; `new Phaseo("YOUR_KEY")` takes the key directly. The client is in the `PhaseoSdk` namespace, and every method is awaitable.
+
+</Tab>
+<Tab title="PHP">
+
+`new Phaseo()` reads `PHASEO_API_KEY`; `new Phaseo('YOUR_KEY')` takes the key directly. The class is `Phaseo\Sdk\Phaseo`.
+
+</Tab>
+<Tab title="Ruby">
+
+`PhaseoSdk::Phaseo.new` reads `PHASEO_API_KEY`; pass `api_key:` to set it directly.
+
+</Tab>
+<Tab title="Java">
+
+`new Phaseo(apiKey)` creates the client. `setTimeout(Duration)` and `setMaxRetries(int)` return the client, so you can chain them:
+
+```java Java
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"))
+    .setTimeout(Duration.ofSeconds(30))
+    .setMaxRetries(2);
+```
+
+</Tab>
+<Tab title="Rust">
+
+The client is synchronous. `Phaseo` redacts the API key and custom header values from its `Debug` output.
+
+| Method | Returns | What it does |
+| --- | --- | --- |
+| `Phaseo::new(api_key)` | `Result<Phaseo, PhaseoError>` | Creates a client with the production base URL. |
+| `Phaseo::from_env()` | `Result<Phaseo, PhaseoError>` | Reads `PHASEO_API_KEY` and the optional `PHASEO_BASE_URL`. |
+| `.with_base_url(url)` | `Result<Phaseo, PhaseoError>` | Replaces the base URL. Remote URLs must use HTTPS; plain HTTP is accepted only when the host is exactly `localhost` or a loopback IP address. |
+| `.with_header(name, value)` | `Phaseo` | Adds a header to every later request. |
+
+</Tab>
+</Tabs>
+
+## Wait for music, video, or batches
+
+The wait helpers are in TypeScript and Python. The other SDKs return the job from the create call; poll it with the get method or open its [job WebSocket URL](#find-the-method-for-each-endpoint).
+
+<CodeGroup>
+
+```typescript TypeScript
+const music = await client.music.generateAndWait(
+  { model: process.env.PHASEO_MUSIC_MODEL!, prompt: "Gentle instrumental piano" },
+  { timeoutMs: 600_000, onPoll: (job) => console.log(job.id, job.status) },
+);
+```
+
+```python Python
+import os
+
+music = client.music.generate_and_wait(
+    {"model": os.environ["PHASEO_MUSIC_MODEL"], "prompt": "Gentle instrumental piano"},
+    timeout=600,
+    on_poll=lambda job: print(job["id"], job["status"]),
+)
+```
+
+</CodeGroup>
+
+Use `videos.generateAndWait` / `videos.generate_and_wait` for video and `batches.createAndWait` / `batches.create_and_wait` for batches. Each helper submits once. If the first response is already complete it returns it without polling; otherwise it polls the same job until it finishes and returns the full response. Failed, cancelled, or expired jobs raise `JobFailedError`, whose `response` holds the details. A completed batch can still contain failed individual requests.
+
+`wait(id, options)` on each resource resumes an existing job and returns any terminal response, including failures. In Python, music also has `create(request)` and `retrieve(id)`.
+
+| TypeScript | Python | Default | Notes |
+| --- | --- | --- | --- |
+| `intervalMs` | `interval` | `5000` ms / `5` seconds | Minimum `250` ms / `0.25` seconds. |
+| `timeoutMs` | `timeout` | `1800000` ms / `1800` seconds (30 minutes) | Starts after the submission returns; the submission request keeps its own timeout. |
+| `signal` | `cancel_event` | none | Stops waiting. In Python, a `threading.Event`. |
+| `onPoll` | `on_poll` | none | Receives the first response and each poll. |
+
+`JobTimeoutError` and `JobCancelledError` keep the job ID and last response (`jobId`/`lastResponse` in TypeScript, `job_id`/`last_response` in Python), so you can resume with `.wait(error.jobId)` or `.wait(error.job_id)`. Stopping a wait doesn't cancel the remote job. In TypeScript it cancels the in-flight poll; the synchronous Python client checks cancellation and the deadline between requests and callbacks, so it can't interrupt an HTTP call that is already in progress. HTTP failures are raised as they are, and submissions are never retried. These helpers poll from your process; they don't add background execution to the gateway.
+
+### Keep a handle across processes
+
+`music.start`, `videos.start` and `batches.start` return a handle with `result()`, `events()` and `cancel()`, plus `toJSON()` (TypeScript) or `to_dict()` (Python). Store the kind and ID it returns and rebuild the handle later with `resume(id)`. `result()` throws on terminal failures. Only video and batch jobs support `cancel()`. On `AsyncPhaseo`, await the methods and iterate events with `async for`.
+
+| Task | TypeScript | Python |
+| --- | --- | --- |
+| Stream video content | `videos.streamContent(id)`, written with `downloadTo(stream, writable)` | `videos.stream_content(id)`, written with the synchronous `download_to(chunks, binary_file)`, which doesn't hold the whole download in memory |
+| Stream batch results | `batchResults(await client.batches.streamResults(id))` parses JSONL one row at a time; `matchBatchResult(row, inputsByCustomId)` pairs each row with its input and keeps per-row errors | `batches.results(id)` |
+| Prepare uploads | `toFile(bytes, filename, contentType)` | Pass bytes, `Path` objects, file objects or HTTPX file tuples |
+
+## Request controls and errors
+
+Retries default to `0` in TypeScript, Python and Java, and apply only to `GET` and `HEAD` requests. Paid submissions, writes and streaming requests are never retried.
+
+<CodeGroup>
+
+```typescript TypeScript
+const fast = client.withOptions({ timeoutMs: 30_000, signal, maxRetries: 2 });
+```
+
+```python Python
+fast = client.with_options(timeout=30, max_retries=2)
+```
+
+```java Java
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"))
+    .setTimeout(Duration.ofSeconds(30))
+    .setMaxRetries(2);
+```
+
+</CodeGroup>
+
+<Tabs>
+<Tab title="TypeScript">
+
+`withOptions(...)` returns a new client with those controls applied to every resource, stream and media call; the original client is unchanged. Retries honour `Retry-After`. `timeoutMs` includes reading the response body.
+
+`responseMetadata(result)` returns the gateway request ID and the dashboard trace URL. HTTP errors are `PhaseoHttpError`, with the HTTP `status`, the API error `code`, `requestId`, `traceUrl`, the retry delay, the body and `headers`.
+
+</Tab>
+<Tab title="Python">
+
+`with_options(...)` returns a new client and also takes `headers=...`; it works on both `Phaseo` and `AsyncPhaseo`. Retries happen before the response is read, up to a maximum of `10`. Timeouts are HTTPX timeouts in seconds, so they bound network inactivity rather than total duration.
+
+JSON responses are `APIResponse` dicts with `output_text`, `request_id` and `trace_url`. HTTP errors are `PhaseoHTTPError`, with `status`, `code`, `request_id`, `trace_url`, the retry delay and the body.
+
+When upgrading from an older release, replace catches of `urllib.error.HTTPError` with `PhaseoHTTPError` (or `httpx.HTTPStatusError`), and connection-error catches with `httpx.TransportError`.
+
+</Tab>
+<Tab title="Java">
+
+HTTP errors are `Client.ApiException` (`app.phaseo.gen.Client`), with `getStatusCode()`, `getRequestId()`, `getResponseBody()` and the headers. `requestWithResponse(...)` returns the data with its `requestId()`.
+
+</Tab>
+<Tab title="Rust">
+
+Every call returns `Result<PhaseoResponse, PhaseoError>`. `PhaseoError` implements `std::error::Error` and `Display`; transport and configuration failures have no `status`.
+
+| Type | Field | Meaning |
+| --- | --- | --- |
+| `PhaseoResponse` | `status: u16` | HTTP status code. |
+| `PhaseoResponse` | `body: serde_json::Value` | Parsed JSON response, or a JSON string when the response wasn't valid JSON. |
+| `PhaseoResponse` | `request_id: Option<String>` | The `x-request-id` response header, when present. |
+| `PhaseoError` | `message: String` | Configuration, transport, or Gateway error message. |
+| `PhaseoError` | `status: Option<u16>` | Gateway HTTP status, when a response was received. |
+| `PhaseoError` | `body: Option<serde_json::Value>` | Parsed Gateway error body, when available. |
+
+</Tab>
+</Tabs>
+
+[Usage](./usage#handle-errors) shows a full error handler in each language.
+
+## Call an endpoint without a wrapper
+
+Each SDK also ships the client generated from the Phaseo OpenAPI spec:
+
+| Language | Generated client |
+| --- | --- |
+| TypeScript | `client.rawClient()`; the generated operations are exported as `operations`. |
+| Python | `client.raw_client()`; the generated operations live in `phaseo.ops`. |
+| Go | `client.RawClient()`, from `src/gen`. `client.Request(ctx, method, path, query, headers, body)` sends any request. |
+| Java | `client.rawClient()`, with `requestLines` for streams and `requestBytes` for binary responses. |
+| Rust | `phaseo::gen` holds the generated client, models and operations, re-exported as `phaseo::client`, `phaseo::models` and `phaseo::operations`. `phaseo::model_ids` has the generated model IDs. `client.post(path, body)` sends JSON to any path under the base URL. See [docs.rs](https://docs.rs/phaseo). |
+
+The generated operations are lower-level than the wrapper methods; prefer the wrapper where one exists.
+
+## Parse output and collect streams
+
+These helpers are in TypeScript and Python. `responses.parse(request, schema)` validates a completed JSON response. In TypeScript, `schema` is a Zod-compatible parser; in Python, a Pydantic model. Set the structured-output format in the request as well; the parser only validates.
+
+`collectStream(client.streamResponses(request))` (TypeScript), or `collect_stream` and `collect_async_stream` (Python), gather the streamed text and usage.
+
+## Check a model before you call it
+
+`checkModelCapabilities` / `check_model_capabilities` (TypeScript and Python) checks advertised capabilities and scalar constraints (`inputTypes`, `outputTypes`, `endpoints`, `parameters`, `parameterValues`, or the snake_case names in Python) on one active provider offer. It never changes the model or drops parameters, and it can't guarantee a live provider will accept the request. Missing metadata is handled differently: TypeScript reports it as unknown, and Python fails the check.
+
+For model pickers and parameter editors, use live endpoint metadata:
+
+<CodeGroup>
+
+```typescript TypeScript
+const support = await client.models.checkParameters(
+  "anthropic/claude-haiku-4.5",
+  { temperature: 0.7, top_p: 0.9 },
+  { endpoint: "responses" },
+);
+```
+
+```python Python
+support = client.models.check_parameters(
+    "anthropic/claude-haiku-4.5",
+    {"temperature": 0.7, "top_p": 0.9},
+    endpoint="responses",
+)
+```
+
+</CodeGroup>
+
+Each parameter comes back as `supported`, `partial`, `unsupported`, or `unknown`, with matching provider routes and constraint issues you can highlight inline. These checks are explicit calls; they don't add a lookup to generation requests. [Models](./models#check-one-model) lists the method in each SDK.
+
+## Test without the network
+
+<Tabs>
+<Tab title="TypeScript">
+
+Import `createMockTransport` and `jobFixtures` from `@phaseo/sdk/testing` and pass the mock's `fetchImpl` to the client. Fixtures are strict and ordered: an unexpected call fails locally and never reaches the network. Call `mock.assertDone()` to check every expected request happened.
+
+</Tab>
+<Tab title="Python">
+
+Pass `phaseo.testing.MockTransport(fixtures)` to an `httpx.Client` or `httpx.AsyncClient` and give that to the Phaseo client as `http_client`. An unexpected request fails locally; call `assert_done()` to check every fixture was used. `phaseo.testing.job_fixtures(path, job_id)` builds the submit-and-poll fixtures for a job. Fixtures don't verify live provider behaviour.
+
+</Tab>
+</Tabs>
+
+## Export code from a room
+
+After you send a request in a Phaseo room, **Get code** exports its model and settings as TypeScript or Python, and **View request** opens its dashboard trace when a request ID is available. Run exported code on your server with `PHASEO_API_KEY` set.

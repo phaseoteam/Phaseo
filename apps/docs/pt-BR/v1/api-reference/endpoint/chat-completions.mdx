@@ -2,41 +2,30 @@
 title: "Criar uma conclusão de chat"
 sidebarTitle: "Criar uma conclusão de chat"
 openapi: "/pt-BR/openapi/v1/openapi.localized.yaml POST /chat/completions"
-description: "Gere conclusões de chat usando o endpoint compatível com a API da OpenAI."
+description: "Gere conclusões de chat com o endpoint de chat compatível com a OpenAI."
 ---
-## Ferramentas do servidor
 
-`/v1/chat/completions` aceita ferramentas de função comuns e estas ferramentas de servidor gerenciadas pelo Gateway:
+## Usar ferramentas de servidor
 
-- `gateway:datetime`
-- `phaseo:web_search`
-- `phaseo:web_fetch`
-- `phaseo:advisor`
-- `phaseo:image_generation`
-
-### Exemplo de data e hora
+Adicione uma ferramenta `phaseo:` a `tools`, ao lado das suas próprias ferramentas de função, e o Phaseo a executa quando o modelo a chama. `/v1/chat/completions` aceita todas as ferramentas de servidor, exceto `phaseo:apply_patch`; o guia [Ferramentas de servidor](../../guides/server-tools) lista todas elas.
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
-    "stream": false,
+    "model": "openai/gpt-6-astra",
     "messages": [
       { "role": "user", "content": "What is the current datetime in Europe/London?" }
     ],
     "tools": [
-      {
-        "type": "gateway:datetime",
-        "parameters": { "timezone": "Europe/London" }
-      }
+      { "type": "phaseo:datetime", "parameters": { "timezones": ["Europe/London"] } }
     ],
     "tool_choice": "auto"
   }'
 ```
 
-Quando uma ferramenta de servidor é usada, os dados de uso incluem:
+Cada chamada de ferramenta de servidor é contabilizada em `usage.server_tool_use`:
 
 ```json
 {
@@ -51,25 +40,25 @@ Quando uma ferramenta de servidor é usada, os dados de uso incluem:
 }
 ```
 
-`phaseo:web_search` adiciona `server_tool_use.web_search_requests`, `server_tool_use.web_search_results` e `server_tool_use.web_search_extra_results`. `phaseo:web_fetch` adiciona `server_tool_use.web_fetch_requests`.
+`phaseo:web_search` adiciona `web_search_requests`, `web_search_results` e `web_search_extra_results`; `phaseo:web_fetch` adiciona `web_fetch_requests`. O tipo antigo `gateway:datetime` continua funcionando.
 
-## Nota sobre streaming
+Com `stream: true`, o Phaseo executa os turnos de ferramenta por conta própria e depois transmite a continuação da resposta para você como um único stream.
 
-`stream: true` também é compatível. Para ferramentas de servidor gerenciadas pelo Gateway, a Phaseo pode materializar o turno de chamada à ferramenta a montante, continuar o ciclo e emitir novamente um fluxo sintético.
+## Raciocínio em loops de ferramentas
 
-## Raciocínio em ciclos de ferramentas
-
-Modelos de raciocínio retornam o raciocínio em dois campos da mensagem do assistente:
+Modelos de raciocínio retornam o raciocínio na mensagem do assistente em dois campos:
 
 - `reasoning_content`: o texto do raciocínio, quando o provedor retorna algum.
-- `reasoning_details`: um array de blocos de raciocínio no formato usado pelo OpenRouter. Cada entrada tem um `type` (`reasoning.text`, `reasoning.summary` ou `reasoning.encrypted`), um `index` e um `format` que indica a família do provedor, por exemplo `anthropic-claude-v1` ou `google-gemini-v1`.
+- `reasoning_details`: uma matriz de blocos de raciocínio. Cada entrada tem um `type` igual a `reasoning.text`, `reasoning.summary` ou `reasoning.encrypted`, um `index` e um `format` que indica a família do provedor, por exemplo `anthropic-claude-v1` ou `google-gemini-v1`.
 
-As entradas podem trazer estado do provedor de que o modelo precisa na próxima etapa de um ciclo de ferramentas:
+As entradas podem carregar o estado do provedor de que o modelo precisa no passo seguinte de um loop de ferramentas:
 
-- Assinaturas de thinking do Claude, em `signature` nas entradas `reasoning.text`.
-- Thinking ocultado do Claude e raciocínio criptografado da OpenAI, em `data` nas entradas `reasoning.encrypted`.
-- Assinaturas de pensamento do Gemini, em `data` nas entradas `reasoning.encrypted` cujo `id` é a chamada de ferramenta a que pertencem.
+| Estado do provedor | Onde fica |
+| --- | --- |
+| Assinaturas de pensamento do Claude | `signature` nas entradas `reasoning.text` |
+| Pensamento redigido do Claude, raciocínio criptografado da OpenAI | `data` nas entradas `reasoning.encrypted` |
+| Assinaturas de pensamento do Gemini | `data` nas entradas `reasoning.encrypted` cujo `id` é a chamada de ferramenta a que pertencem |
 
-Com streaming, um delta de `reasoning_details` chega quando cada bloco de raciocínio termina.
+Durante o streaming, um delta de `reasoning_details` chega assim que cada bloco de raciocínio termina.
 
-Para que o modelo mantenha o raciocínio entre as etapas, envie de volta a mensagem do assistente com o `reasoning_details` inalterado. Os valores de `signature` e `data` são opacos e registram o provedor e o modelo que os geraram. A Phaseo os envia apenas para essa família de provedores e esse modelo, então uma alternativa com outro provedor os descarta em vez de falhar. Modelos Claude no modo de thinking manual precisam receber o thinking de volta para continuar pensando durante um ciclo de ferramentas; se ele faltar, essa etapa é executada sem thinking.
+Para manter o raciocínio do modelo entre os passos, envie de volta a mensagem do assistente com o `reasoning_details` inalterado. Os valores de `signature` e `data` são opacos e registram o provedor e o modelo que os produziram. O Phaseo os envia somente para essa família de provedor e esse modelo, de modo que um fallback para outro provedor os descarta em vez de falhar. Modelos Claude no modo de pensamento manual precisam receber o pensamento de volta para continuar pensando durante um loop de ferramentas; se ele faltar, aquele passo é executado sem pensamento.

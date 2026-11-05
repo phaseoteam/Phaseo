@@ -1,0 +1,149 @@
+---
+icon: "shield-check"
+title: "मॉडरेशन"
+description: "किसी भी Phaseo SDK से POST /v1/moderations के ज़रिए टेक्स्ट और इमेज को सुरक्षा के लिए वर्गीकृत करें।"
+---
+
+टेक्स्ट या इमेज फ़्लैग हुए हैं या नहीं, और किन श्रेणियों में, यह जानने के लिए उन्हें `POST /v1/moderations` पर भेजें। उदाहरण एक `client` इस्तेमाल करते हैं, जो [इंस्टॉलेशन](./installation) में बताए तरीक़े से बनाया गया है।
+
+<CodeGroup>
+
+```typescript TypeScript
+const moderation = await client.generateModeration({
+  model: "openai/omni-moderation",
+  input: "Text to classify",
+});
+
+console.log(moderation.results[0].flagged);
+```
+
+```python Python
+moderation = client.generate_moderation({
+    "model": "openai/omni-moderation",
+    "input": "Text to classify",
+})
+
+print(moderation["results"][0]["flagged"])
+```
+
+```go Go
+resp, err := client.GenerateModeration(context.Background(), map[string]interface{}{
+  "model": "openai/omni-moderation",
+  "input": "Text to classify",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp["results"])
+```
+
+```csharp C#
+var response = await client.GenerateModeration(new Dictionary<string, object>
+{
+    ["model"] = "openai/omni-moderation",
+    ["input"] = "Text to classify",
+});
+```
+
+```php PHP
+$response = $client->generateModeration([
+    'model' => 'openai/omni-moderation',
+    'input' => 'Text to classify',
+]);
+```
+
+```ruby Ruby
+response = client.generate_moderation(
+  model: 'openai/omni-moderation',
+  input: 'Text to classify'
+)
+```
+
+```java Java
+String body = """
+{
+  "model": "openai/omni-moderation",
+  "input": "Text to classify"
+}
+""";
+
+Object response = client.createModeration(new com.fasterxml.jackson.databind.ObjectMapper().readTree(body));
+System.out.println(String.valueOf(response));
+```
+
+```rust Rust
+// अभी कोई moderations मेथड नहीं है: post() किसी भी Phaseo पाथ पर JSON भेजता है।
+let response = client.post("/moderations", &json!({
+    "model": "openai/omni-moderation",
+    "input": "Text to classify"
+}))?;
+
+println!("{}", response.body["results"][0]["flagged"]);
+```
+
+</CodeGroup>
+
+| भाषा | मेथड | क्या लौटाता है |
+| --- | --- | --- |
+| TypeScript | `client.generateModeration(request)` | `ModerationsResponse` |
+| Python | `client.generate_moderation(request)` या `client.moderations.create(request)` | एक dict |
+| Go | `client.GenerateModeration(ctx, req)`, उपनाम `CreateModeration` | `map[string]interface{}` |
+| C# | `client.GenerateModeration(request)`, उपनाम `CreateModeration` | `Dictionary<string, object>?` |
+| PHP | `$client->generateModeration($request)`, उपनाम `createModeration()` | एक array |
+| Ruby | `client.generate_moderation(...)`, उपनाम `create_moderation` | एक Hash |
+| Java | `client.createModeration(jsonNode)` | `Object` |
+| Rust | `client.post("/moderations", &request)` | `PhaseoResponse`, जिसके `body` में JSON होता है |
+
+## पैरामीटर
+
+हर SDK में फ़ील्ड के नाम JSON बॉडी के फ़ील्ड ही हैं।
+
+| फ़ील्ड | नोट |
+| --- | --- |
+| `input` | ज़रूरी। एक स्ट्रिंग, स्ट्रिंग्स का array, या `text` और `image_url` पार्ट का array। |
+| `model` | एक मॉडरेशन मॉडल ID। डिफ़ॉल्ट `openai/omni-moderation` है। |
+| `metadata` | आपका अपना key-value डेटा। |
+| `provider` | प्रदाता रूटिंग की प्राथमिकताएँ। |
+| `meta` | गेटवे का `meta` ब्लॉक शामिल करने के लिए `true` सेट करें। |
+
+पूरा स्कीमा [Moderations API संदर्भ](/hi/v1/api-reference/endpoint/moderations) में है।
+
+## प्रतिक्रिया
+
+`ModerationsResponse`। हर परिणाम में `flagged`, बूलियन का एक `categories` मैप और स्कोर का एक `category_scores` मैप होता है:
+
+```json
+{
+  "results": [
+    {
+      "flagged": false,
+      "categories": {
+        "hate": false,
+        "hate/threatening": false,
+        "harassment": false,
+        "harassment/threatening": false,
+        "self-harm": false,
+        "self-harm/intent": false,
+        "self-harm/instructions": false,
+        "sexual": false,
+        "sexual/minors": false,
+        "violence": false,
+        "violence/graphic": false
+      },
+      "category_scores": {
+        "hate": 0.01,
+        "hate/threatening": 0.0,
+        "harassment": 0.02,
+        "harassment/threatening": 0.0,
+        "self-harm": 0.0,
+        "self-harm/intent": 0.0,
+        "self-harm/instructions": 0.0,
+        "sexual": 0.05,
+        "sexual/minors": 0.0,
+        "violence": 0.01,
+        "violence/graphic": 0.0
+      }
+    }
+  ]
+}
+```

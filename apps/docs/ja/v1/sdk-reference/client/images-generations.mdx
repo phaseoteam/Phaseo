@@ -1,0 +1,157 @@
+---
+icon: "image"
+title: "画像生成"
+description: "どの Phaseo SDK からでも /images/generations で画像を生成します。"
+---
+
+SDK の画像メソッドをモデルとプロンプトを指定して呼び出すと、`POST /v1/images/generations` が送信されます。生成された各画像は、`data` の中の `url` または `b64_json` のエントリとして返ってきます。
+
+<CodeGroup>
+
+```typescript TypeScript
+const image = await client.generateImage({
+  model: "openai/gpt-image-1",
+  prompt: "A lighthouse at golden hour",
+  size: "1024x1024",
+  n: 1,
+});
+```
+
+```python Python
+image = client.generate_image({
+    "model": "openai/gpt-image-1",
+    "prompt": "A lighthouse at golden hour",
+    "size": "1024x1024",
+    "n": 1,
+})
+```
+
+```go Go
+client, err := phaseo.NewFromEnv()
+if err != nil {
+  panic(err)
+}
+
+resp, err := client.CreateImage(context.Background(), map[string]interface{}{
+  "model":  "openai/gpt-image-1",
+  "prompt": "A lighthouse at golden hour",
+  "size":   "1024x1024",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp["data"])
+```
+
+```csharp C#
+using PhaseoSdk;
+
+var client = new Phaseo();
+
+var response = await client.GenerateImage(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-image-1",
+    ["prompt"] = "A lighthouse at golden hour",
+    ["size"] = "1024x1024",
+    ["n"] = 1,
+});
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo();
+
+$response = $client->generateImage([
+    'model' => 'openai/gpt-image-1',
+    'prompt' => 'A lighthouse at golden hour',
+    'size' => '1024x1024',
+    'n' => 1,
+]);
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new
+
+response = client.generate_image(
+  model: 'openai/gpt-image-1',
+  prompt: 'A lighthouse at golden hour',
+  size: '1024x1024',
+  n: 1
+)
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+var response = client.createImage(Map.of(
+    "model", "openai/gpt-image-1",
+    "prompt", "A lighthouse at golden hour"
+));
+System.out.println(response);
+```
+
+```rust Rust
+let response = client.post("/images/generations", &json!({
+    "model": "openai/gpt-image-1",
+    "prompt": "A lighthouse at golden hour",
+    "size": "1024x1024"
+}))?;
+```
+
+</CodeGroup>
+
+| 言語 | メソッド | 注記 |
+| --- | --- | --- |
+| TypeScript | `client.generateImage(request)` | `client.streamImage()` は同じリクエストを `stream: true` で送信し、部分画像のイベントを返します。 |
+| Python | `client.generate_image(request)` | `client.images.generate(request)` も同じ処理を行います。画像のストリーミング用ヘルパーはありません。 |
+| Go | `client.CreateImage(ctx, req)` | `map[string]interface{}` を返します。 |
+| C# | `client.GenerateImage(request)`、別名 `CreateImage` | `Dictionary<string, object>?` を返します。 |
+| PHP | `$client->generateImage($request)`、別名 `createImage()` | 配列を返します。 |
+| Ruby | `client.generate_image(...)`、別名 `create_image` | Hash を返します。 |
+| Java | `client.createImage(request)` | `Map` または Jackson の `JsonNode` を受け取り、`JsonNode` を返します。 |
+| Rust | 画像のヘルパーはありません | `client.post("/images/generations", &request)` が JSON 本文を送信し、`PhaseoResponse` を返します。 |
+
+## パラメーター
+
+どの SDK でも、フィールド名は JSON 本文のフィールドです。
+
+| フィールド | 注記 |
+| --- | --- |
+| `model`、`prompt` | 必須。GPT Image のプロンプトは最大 32,000 文字です。 |
+| `n` | 画像の数。`1`〜`10`。 |
+| `size` | たとえば `1024x1024`、`1024x1792`、`1792x1024`。対応するサイズはモデルによって異なります。 |
+| `aspect_ratio`、`width`、`height` | `size` の代わりに使える、モデル依存の指定方法。 |
+| `quality` | モデルによって異なります。`dall-e-3` では `standard` または `hd`、GPT Image のモデルでは `auto`、`low`、`medium`、`high` です。 |
+| `output_format`、`output_compression` | `png`、`jpeg`、`webp` のいずれか。圧縮（`0`〜`100`）には `jpeg` か `webp` が必要です。 |
+| `background` | `transparent`、`opaque`、`auto` のいずれか。透明にするには `png` か `webp` が必要です。 |
+| `response_format` | `url` または `b64_json`。GPT Image のモデルはこのフィールドを拒否します。 |
+| `style` | モデルによって異なります。たとえば `dall-e-3` の `vivid` や `natural`。GPT Image のモデルはこのフィールドを拒否します。 |
+| `stream`、`partial_images` | 最大 `3` 枚の部分画像をストリーミングします。TypeScript では `streamImage()` を使います。 |
+| `user` | 不正利用の追跡に使うエンドユーザーのタグ。 |
+
+完全なスキーマは [Image generations API リファレンス](../../api-reference/endpoint/images-generations)にあります。
+
+## レスポンス
+
+`ImagesGenerationResponse`：
+
+```json
+{
+  "data": [
+    {
+      "url": "https://example.com/generated_image.png"
+    }
+  ]
+}
+```
+
+画像のバイト列を返すモデルは、`url` の代わりに `b64_json` に入れます。

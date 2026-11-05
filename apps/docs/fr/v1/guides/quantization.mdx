@@ -1,0 +1,129 @@
+---
+icon: "binary"
+title: "Quantification"
+description: "Choisissez un format de précision et une méthode de quantification, et ne routez que vers les fournisseurs qui servent celui que vous avez testé."
+---
+
+Envoyez `provider.quantizations` pour ne router une requête que vers les fournisseurs qui servent le modèle à la précision que vous avez testée :
+
+```json
+{
+  "model": "meta/llama-3.3-70b-instruct",
+  "messages": [{ "role": "user", "content": "Hello" }],
+  "provider": {
+    "quantizations": ["FP8"]
+  }
+}
+```
+
+## Ce que change la quantification
+
+La quantification stocke les poids d’un modèle dans un type numérique plus petit. Le même modèle a alors besoin de moins de mémoire et répond plus vite, au prix d’une certaine baisse de qualité des sorties. Deux éléments décrivent un modèle quantifié : le **format** (le type numérique, tel que `FP8` ou `INT4`) et la **méthode** (la façon dont les poids y ont été convertis, telle que `AWQ` ou `GPTQ`).
+
+Chaque division par deux du nombre de bits divise par deux la mémoire nécessaire aux poids. Pour un modèle de 70 milliards de paramètres, les poids seuls occupent environ :
+
+| Format | Bits par poids | Poids d’un modèle 70B |
+| --- | --- | --- |
+| `FP32` | 32 | ~280 Go |
+| `BF16`, `FP16` | 16 | ~140 Go |
+| `FP8`, `INT8` | 8 | ~70 Go |
+| `FP4`, `INT4` | 4 | ~35 Go |
+
+Ces chiffres sont un simple calcul (paramètres × octets par poids) et n’incluent ni les activations ni le cache KV, pour lesquels les fournisseurs ont aussi besoin de mémoire.
+
+## Comparer les formats de précision
+
+Un format de précision est le type numérique qu’un fournisseur utilise pour stocker les poids d’un modèle. Une précision plus faible consomme moins de mémoire et répond plus vite, avec un risque plus élevé pour la qualité des sorties.
+
+| Format | Usage typique | Principal avantage | Principal risque |
+| --- | --- | --- | --- |
+| `FP32` | Référence / pleine précision | Stabilité numérique maximale | Coût en mémoire et en calcul le plus élevé |
+| `BF16` | Entraînement et inférence de haute qualité | Bonne qualité avec une meilleure efficacité que FP32 | Reste plus lourd que le 8 bits / 4 bits |
+| `FP16` | Chemins d’inférence et d’entraînement courants | Bon gain de vitesse et de mémoire | Plage dynamique plus faible que BF16 |
+| `FP8` | Inférence et entraînement axés sur le débit | Gains importants de vitesse et de mémoire | Régressions de qualité notables sur les prompts difficiles |
+| `FP4` | Modes d’efficacité agressifs | Densité très élevée et faible coût | Risque plus élevé de dégradation des sorties |
+| `INT8` | Quantification d’inférence largement prise en charge | Bonne efficacité avec un impact modéré sur la qualité | Problèmes de calibration ou de sensibilité pour certains modèles |
+| `INT4` | Déploiements sensibles au coût | Mémoire très faible et débit élevé | Compromis plus importants sur la qualité et la robustesse |
+
+### BF16 ou FP16
+
+Les deux sont en 16 bits. `BF16` conserve une plage d’exposants plus large et est donc plus stable ; `FP16` est courant et rapide, mais moins stable sur certaines charges de travail. Lorsqu’un fournisseur propose `BF16`, c’est le choix le plus sûr pour le trafic où la qualité est critique.
+
+### FP8 et FP4
+
+`FP8` apporte un gain d’efficacité important et conserve une qualité exploitable pour la plupart des tâches. `FP4` va plus loin, mais la qualité baisse plus souvent, en particulier sur le raisonnement nuancé, les longs contextes et les sorties structurées strictes.
+
+### INT8 et INT4
+
+Les formats entiers sont conçus pour le débit d’inférence et la mémoire. Leur capacité à préserver la qualité dépend de la [méthode de quantification](#compare-quantization-methods), des données de calibration et de l’architecture du modèle. `INT8` est plus facile à déployer en toute sécurité que `INT4`.
+
+### Lire le libellé d’un modèle
+
+Les fournisseurs libellent les variantes `bf16`, `fp16`, `fp8`, `int8`, `q4`, `4bit`, `8bit`, etc. Cette nomenclature n’est pas standard : `4bit` peut signifier `FP4` ou `INT4`. Consultez la documentation du fournisseur pour connaître la variante exacte.
+
+<span id="compare-quantization-methods"></span>
+## Comparer les méthodes de quantification
+
+Un format tel que `INT4` est la précision cible ; une méthode telle que `AWQ` ou `GPTQ` est la façon dont les poids y ont été convertis. `AWQ INT4` et `GPTQ INT4` atteignent la même cible de manières différentes et peuvent donc se comporter très différemment. La méthode influe sur la part de précision préservée, les environnements d’exécution capables de servir le modèle, l’organisation de la mémoire et la vitesse de service, et sur la nécessité ou non de données de calibration.
+
+| Famille de méthodes | Objectif typique | Remarques |
+| --- | --- | --- |
+| `AWQ` | Préserver les poids clés sensibles aux activations | Courante pour un bon équilibre pratique entre qualité et efficacité d’inférence |
+| `GPTQ` | Quantification après entraînement avec minimisation de l’erreur | Populaire pour les variantes compactes d’inférence locale |
+| `GGUF` | Format de packaging utilisé par les écosystèmes llama.cpp | Souvent combiné à différents niveaux de quantification (`Q4`, `Q5`, etc.) |
+| `EXL2` | Variantes agressives à faible nombre de bits dans les écosystèmes ExLlama | Axée sur un débit élevé, avec des contraintes d’architecture et d’environnement d’exécution |
+
+Pour comparer les méthodes sur votre propre charge de travail :
+
+1. Choisissez d’abord l’environnement d’exécution : celui que vous pouvez déployer de façon fiable.
+2. Ne gardez que les familles de méthodes que cet environnement prend en charge.
+3. Évaluez plusieurs méthodes à la même précision cible.
+4. Suivez les modes de défaillance, pas seulement les scores moyens : validité des sorties structurées, fidélité sur les longs contextes, fiabilité des appels d’outils, comportement de sécurité et de modération, et latence de queue sous charge.
+
+## Router vers une seule précision
+
+Le filtre `provider.quantizations` vérifie chaque offre du modèle chez un fournisseur, pas seulement le nom du fournisseur :
+
+- **La correspondance ignore la casse, les espaces, `-` et `_`.** Les alias non ambigus correspondent aussi : `bfloat16` pour `BF16`, `float16` pour `FP16`, `float8` pour `FP8`. Un libellé tel que `4bit` n’est traité ni comme `FP4` ni comme `INT4`.
+- **Les offres sans métadonnées de quantification ne correspondent jamais.**
+- **Il n’y a pas de repli vers une autre précision.** Si aucune offre ne correspond, la requête échoue avec `400 unsupported_model_or_endpoint`, motif `quantization_not_available`. L’erreur liste les précisions disponibles et, sous `routing_diagnostics.quantization`, les fournisseurs écartés et la raison.
+- `routing.quantizations` est accepté comme alternative à `provider.quantizations`.
+
+<span id="pick-a-precision"></span>
+## Choisir une précision
+
+| Charge de travail | Point de départ |
+| --- | --- |
+| Raisonnement où la qualité est critique | `BF16` / `FP16` |
+| Équilibre entre coût et qualité | `FP8` / `INT8` |
+| Débit élevé, sensible au coût | `INT4` / `FP4`, après validation |
+
+Vous n’avez pas besoin d’une seule précision pour tout. Gardez une précision plus élevée pour le support client et les décisions critiques, et acceptez une précision plus faible pour la classification ou le résumé à grand volume.
+
+<Steps>
+<Step title="Définir les critères de réussite">
+
+Fixez des seuils de qualité (précision sur la tâche, taux de réussite, validité des sorties structurées), des objectifs de latence et de coût, et les modes de défaillance que vous n’accepterez pas.
+
+</Step>
+<Step title="Mesurer une référence en haute précision">
+
+Commencez par `BF16` ou `FP16`. Enregistrez la qualité des sorties, la latence médiane et de queue, et le coût en tokens. Chaque précision plus faible est comparée à cette référence.
+
+</Step>
+<Step title="Descendre d’un niveau à la fois">
+
+Essayez ensuite `FP8` ou `INT8`. Ne passez à `FP4` ou `INT4` que si vous avez besoin des économies supplémentaires de coût ou de débit. Ne sautez pas directement à la plus petite variante, sauf si vous avez déjà la preuve qu’elle fonctionne pour votre charge de travail.
+
+</Step>
+<Step title="Tester avec des prompts proches de la production">
+
+Incluez des prompts longs, du raisonnement en plusieurs étapes, des appels d’outils et des cas limites issus des tickets de support.
+
+</Step>
+<Step title="Déployer et continuer à surveiller">
+
+Gardez dans votre propre client un modèle ou une précision de repli pour le cas où aucune offre ne correspond, surveillez la qualité après le déploiement, et refaites les tests lorsque l’environnement d’exécution du fournisseur ou la révision du modèle change. Une fois la précision choisie, ajustez les [paramètres d’inférence](./inference-parameters.mdx) par-dessus.
+
+</Step>
+</Steps>

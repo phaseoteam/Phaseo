@@ -1,10 +1,10 @@
 ---
 icon: "package"
-title: "Vercel AI SDK"
-description: "Phaseo の AI SDK 7 用プロバイダーを使って、テキストの生成、応答のストリーミング、ツールの利用を行います。"
+title: "AI SDK（Vercel）"
+description: "AI SDK 7 用の Phaseo プロバイダーを使って、テキストの生成、レスポンスのストリーミング、ツールの利用を行います。"
 ---
 
-Phaseo 公式プロバイダーを使うと、Vercel AI SDK 7 経由で Phaseo のモデルを呼び出せます。アプリケーションがすでに `generateText`、`streamText`、または別の AI SDK 関数を使っている場合は、ここから始めてください。
+`@phaseo/ai-sdk-provider` をインストールし、`generateText`、`streamText`、またはその他の Vercel AI SDK 7 関数の `model` に `phaseo(modelId)` を渡します。テキストリクエストは Gateway の `/v1/chat/completions` エンドポイントに送られます。
 
 ## インストール
 
@@ -28,9 +28,9 @@ bun add @phaseo/ai-sdk-provider
 
 </CodeGroup>
 
-バージョン指定のない Phaseo パッケージは npm の `latest` タグに従い、現在の AI SDK 7 対応プロバイダーを選択します。AI SDK 7 をピア依存関係として宣言しているため、ピア依存関係を自動インストールするパッケージマネージャーは、互換性のあるランタイムも自動でインストールします。
+バージョンを指定しないと npm の `latest` タグがインストールされ、これは AI SDK 7 系です。このパッケージは `ai@^7` をピア依存関係として宣言しているため、ピアを自動インストールするパッケージマネージャーでは自動で追加されます。
 
-サーバー環境に `PHASEO_API_KEY` を設定して、最初のリクエストを送信します。
+サーバー環境に `PHASEO_API_KEY` を設定し、最初のリクエストを送信します。デフォルトの `phaseo` エクスポートは、`PHASEO_API_KEY` が設定されていないとエラーをスローします。
 
 ```typescript
 import { phaseo } from "@phaseo/ai-sdk-provider";
@@ -45,7 +45,7 @@ console.log(result.text);
 console.log(result.providerMetadata);
 ```
 
-[Models エンドポイント](../../api-reference/endpoint/models.mdx)から最新のモデル ID を指定してください。
+現在のモデル ID は [Models エンドポイント](../../api-reference/endpoint/models.mdx)から取得してください。
 
 ## テキストをストリーミングする
 
@@ -65,9 +65,9 @@ for await (const chunk of result.textStream) {
 console.log(await result.providerMetadata);
 ```
 
-## アプリケーションの情報を付与する
+## プロバイダーインスタンスを設定する
 
-Phaseo のリクエスト詳細にアプリケーションの情報を含める場合は、プロバイダーのインスタンスを作成します。
+`createPhaseo()` を呼び出して、`apiKey`、`baseURL`、`headers`、またはカスタムの `fetch` を設定します。Phaseo のリクエスト詳細でアプリケーションを識別するためにも使えます。
 
 ```typescript
 import { createPhaseo } from "@phaseo/ai-sdk-provider";
@@ -81,36 +81,44 @@ const phaseo = createPhaseo({
 });
 ```
 
-`PHASEO_BASE_URL` は省略可能です。既定値は `https://api.phaseo.app/v1` です。
+`PHASEO_BASE_URL` は省略可能で、デフォルトは `https://api.phaseo.app/v1` です。
 
-## AI SDK 7 でサポートされる機能
+## モデルの種類を選ぶ
+
+| プロバイダーのメソッド | AI SDK の関数 |
+| --- | --- |
+| `phaseo(modelId)` または `phaseo.languageModel(modelId)` | `generateText`、`streamText` |
+| `phaseo.embeddingModel(modelId)`（別名 `textEmbeddingModel`） | `embed`、`embedMany` |
+| `phaseo.imageModel(modelId)` | `generateImage` |
+| `phaseo.transcriptionModel(modelId)` | `transcribe` |
+| `phaseo.speechModel(modelId)` | `generateSpeech` |
+| `phaseo.rerankingModel(modelId)` | `rerank` |
+
+`rerankingModel` 以外のすべてのメソッドは、2番目の引数としてモデルごとの設定を任意で受け付けます。設定できるのは `temperature`、`topP`、`topK`、`maxTokens`、`frequencyPenalty`、`presencePenalty`、`seed`、`user`、`headers`、`fetch` です。
+
+## サポートしている AI SDK 7 の機能
 
 - テキストの生成とストリーミング
 - 推論の出力と設定
-- 関数ツールとストリーミングされるツール入力
+- 関数ツールと、ストリーミングされるツール入力
 - JSON と JSON Schema の出力
-- テキストファイルと画像ファイルの入力
-- URL 引用のソース
-- Embeddings と画像生成
-- 再ランキング
+- テキストと画像のファイル入力
+- URL の引用元
+- 埋め込みと画像生成
+- リランキング
 - 文字起こしと音声生成
-- プロバイダーメタデータ、使用量、中断シグナル、生のストリームチャンク
+- プロバイダーのメタデータ、使用量、中止シグナル、未加工のストリームチャンク
 
-`rerank()` と `phaseo.rerankingModel(modelId)` を使って再ランキングを実行できます。利用できる機能はモデルやプロバイダーによって異なります。このプロバイダーは現在、管理対象ファイルの参照、スキル、プロバイダー側で実行されるツールの定義・結果・承認応答をサポート対象として案内していません。アプリケーション側で実行する関数ツールは、AI SDK の通常の実行および承認フローを利用できます。
+呼び出しで実際にできることは、モデルとプロバイダーによって異なります。このプロバイダーは、管理されたファイル参照、スキル、プロバイダー側で実行されるツール（その定義、結果、承認レスポンス）には対応していません。アプリケーションが実行する関数ツールには、AI SDK の通常の実行と承認のフローを使います。
 
-## 以前の AI SDK バージョン
+## 以前の AI SDK バージョンを使う
 
-- AI SDK 6: `@phaseo/ai-sdk-provider@ai-sdk-v6` をインストールします。
-- AI SDK 5: `@phaseo/ai-sdk-provider@ai-sdk-v5` をインストールします。
+| AI SDK | インストール |
+| --- | --- |
+| 7 | `@phaseo/ai-sdk-provider`（`latest`） |
+| 6 | `@phaseo/ai-sdk-provider@ai-sdk-v6` |
+| 5 | `@phaseo/ai-sdk-provider@ai-sdk-v5` |
 
-ピア依存関係の自動インストールを無効にしている場合は、対応するメジャーバージョンの `ai` (`ai@^7`、`ai@^6`、または `ai@^5`) を別途インストールしてください。
+ピアの自動インストールが無効な場合は、対応するメジャーバージョンの `ai`（`ai@^7`、`ai@^6`、または `ai@^5`）を自分でインストールしてください。
 
-## 関連ガイド
-
-- [テキストを生成する](./generate-text/index.mdx)
-- [テキストをストリーミングする](./stream-text/index.mdx)
-- [ツール呼び出し](./tool-calling/index.mdx)
-- [構造化出力](./structured-output/index.mdx)
-- [Embeddings](./embeddings/index.mdx)
-- [画像](./images/index.mdx)
-- [音声](./audio/index.mdx)
+このセクションの各ページで、関数ごとの使い方を紹介しています: [テキスト生成](/ja/v1/sdk-reference/sdk/generate-text)、[テキストのストリーミング](/ja/v1/sdk-reference/sdk/stream-text)、[ツール呼び出し](/ja/v1/sdk-reference/sdk/tool-calling)、[構造化出力](/ja/v1/sdk-reference/sdk/structured-output)、[埋め込み](/ja/v1/sdk-reference/sdk/embeddings)、[画像](/ja/v1/sdk-reference/sdk/images)、[音声](/ja/v1/sdk-reference/sdk/audio)。

@@ -1,13 +1,17 @@
 ---
 title: "C++ SDK इंस्टॉलेशन (काम जारी है)"
-description: "स्रोत से विकासाधीन C++ हेडर का उपयोग करें।"
+description: "विकासाधीन C++ हेडर को सोर्स से इस्तेमाल करें।"
 ---
 
-<Note type="warning">C++ SDK पर काम जारी है और इसे अभी तक किसी पैकेज रजिस्ट्री में प्रकाशित नहीं किया गया है।</Note>
+<Note type="warning">C++ SDK पर अभी काम चल रहा है और इसे अभी तक किसी पैकेज रजिस्ट्री पर प्रकाशित नहीं किया गया है।</Note>
 
-## स्थानीय उपयोग
+## लोकल उपयोग
 
-- जनरेट किए गए हेडर यहां उपयोग करें: `packages/sdk/sdk-cpp/src/gen`.
-- इस फ़ोल्डर को अपने बिल्ड सिस्टम के include path में जोड़ें।
-- अभी क्लाइंट केवल हेडर-आधारित है।
+SDK सिर्फ़-हेडर वाला C++17 है। `packages/sdk/sdk-cpp` को अपने CMake बिल्ड में जोड़ें और इंटरफ़ेस टारगेट लिंक करें, या `packages/sdk/sdk-cpp/src` को अपने include पाथ में रखें:
 
+```cmake
+add_subdirectory(path/to/Phaseo/packages/sdk/sdk-cpp)
+target_link_libraries(your_app PRIVATE phaseo::sdk)
+```
+
+फिर `phaseo.hpp` शामिल करें, जो `src/gen` में जनरेट किया गया क्लाइंट ले आता है।

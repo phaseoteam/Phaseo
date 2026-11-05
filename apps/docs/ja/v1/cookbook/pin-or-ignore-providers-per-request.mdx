@@ -1,215 +1,129 @@
 ---
-title: "リクエストごとにプロバイダーを優先または除外する"
-sidebarTitle: "プロバイダーを優先・除外する"
+title: "リクエストごとにプロバイダーを固定または除外する"
 icon: "pin"
-description: "リクエスト単位のプロバイダー設定を使って、優先順を指定したり、候補を絞ったり、プロバイダーを除外したりできます。"
+description: "リクエスト単位のプロバイダー設定を使って、優先順を指定したり、候補を絞ったり、プロバイダーを候補から外したりします。"
 ---
 
-ワークスペース全体のルーティング既定値を変えずに、特定のプロバイダールートを優先したい場合に使います。
+1 件のリクエストに `provider` オブジェクトを追加すると、ワークスペースの既定値やプリセットを変えずに、そのリクエストを処理するプロバイダーを変更できます。完成すると、優先順を指定する、リクエストを許可リストの中に収める、特定のプロバイダーをスキップする、といったことができ、どのプロバイダーが応答したかをレスポンスで確認できます。
 
-## 目的
+これらのリクエストの形は本番環境で使えます。プロバイダーのスラッグは実在する例です。使うモデルを提供しているプロバイダーは、そのモデルのページで確認してください。
 
-- 優先順にプロバイダーを試す。
-- リクエストを承認済みプロバイダーの一部に限定する。
-- プリセットを編集せずに、プロバイダーを一時的に除外する。
+| フィールド | 動作 | 例 |
+| --- | --- | --- |
+| `order` | これらのプロバイダーを先に試し、その後に対象となる残りの候補を試します | `["anthropic-us", "anthropic"]` |
+| `only` | リクエストをこの一覧の中に収めます | `["openai", "openai-eu"]` |
+| `ignore` | このリクエストからこれらのプロバイダーを外します | `["novita"]` |
+| `sort` | 残った候補を `price`、`latency`、`throughput` で順位付けします | `"price"` |
 
-## 1. プロバイダーを指定した順序で試す
+プロバイダーを 1 つだけに限定し、プロバイダー間のフォールバックを無効にするには、代わりにモデル ID の前にプロバイダーを付けます。[1 つのプロバイダーに固定する](../guides/routing-and-fallbacks#pin-one-provider)を参照してください。
 
-優先するルートの順序が決まっている場合は、`provider.order` を使います。
+## 決まった順序でプロバイダーを試す
 
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "anthropic/claude-opus-4.6",
+    "model": "anthropic/claude-sonnet-5.5",
     "input": "Write a concise launch summary.",
     "provider": {
       "order": ["anthropic-us", "anthropic"]
-    }
+    },
+    "meta": true
   }'
 ```
 
-```typescript TypeScript SDK
+```typescript TypeScript
 import Phaseo from "@phaseo/sdk";
 
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-  model: "anthropic/claude-opus-4.6",
+  model: "anthropic/claude-sonnet-5.5",
   input: "Write a concise launch summary.",
   provider: {
     order: ["anthropic-us", "anthropic"],
   },
+  meta: true,
 });
 
-console.log(response.output_text);
+console.log(response.meta?.routing); // { selected_provider: "anthropic-us", ... }
 ```
 
-```python Python SDK
+```python Python
+import os
+
 from phaseo import Phaseo
 
-client = Phaseo(api_key="YOUR_API_KEY")
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
 
 response = client.generate_response(
     {
-        "model": "anthropic/claude-opus-4.6",
+        "model": "anthropic/claude-sonnet-5.5",
         "input": "Write a concise launch summary.",
         "provider": {
             "order": ["anthropic-us", "anthropic"],
         },
+        "meta": True,
     }
 )
 
-print(response.get("output_text"))
+print(response["meta"]["routing"]["selected_provider"])
 ```
 </CodeGroup>
 
-指定したプロバイダーが候補の先頭に並び、その後に他の利用可能な候補が続きます。
+`meta: true` を指定するとレスポンスに `meta.routing.selected_provider` が追加されるため、ログを開かずに結果を確認できます。
 
-## 2. リクエストを固定されたプロバイダー群に限定する
+## リクエストを許可リストの中に収める
 
-リクエストを少数の許可リスト内に限定する必要がある場合は、`provider.only` を使います。
+`only` を送り、必要に応じて `sort` も送ると、その一覧の中で順位付けされます。
 
-<CodeGroup>
-```bash cURL
-curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "openai/gpt-5.4-nano",
-    "input": "Extract the action items.",
-    "provider": {
-      "only": ["openai", "openai-eu"],
-      "sort": "price"
-    }
-  }'
+```json
+{
+  "model": "openai/gpt-5.6-luna",
+  "input": "Extract the action items.",
+  "provider": {
+    "only": ["openai", "openai-eu"],
+    "sort": "price"
+  }
+}
 ```
 
-```typescript TypeScript SDK
-import Phaseo from "@phaseo/sdk";
+一覧のどのプロバイダーもモデルを提供していない場合、リクエストは一覧の外に出ずに失敗します。
 
-const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+## 特定のプロバイダーをスキップする
 
-const response = await client.generateResponse({
-  model: "openai/gpt-5.4-nano",
-  input: "Extract the action items.",
-  provider: {
-    only: ["openai", "openai-eu"],
-    sort: "price",
-  },
-});
+プロバイダーの品質が低下しているときや、別の経路をテストしている間は `ignore` を送ります。
 
-console.log(response.output_text);
+```json
+{
+  "model": "meta/llama-4-maverick",
+  "input": "Summarize the transcript.",
+  "provider": {
+    "ignore": ["novita"]
+  }
+}
 ```
 
-```python Python SDK
-from phaseo import Phaseo
+## 組み合わせる
 
-client = Phaseo(api_key="YOUR_API_KEY")
+候補の範囲には `only`、その中での優先順には `order`、残りには `sort` を使います。次の例はリクエストを Google Vertex に限定し、EU リージョンを最初に試し、その後はレイテンシで順位付けします。
 
-response = client.generate_response(
-    {
-        "model": "openai/gpt-5.4-nano",
-        "input": "Extract the action items.",
-        "provider": {
-            "only": ["openai", "openai-eu"],
-            "sort": "price",
-        },
-    }
-)
-
-print(response.get("output_text"))
-```
-</CodeGroup>
-
-リクエストを指定したプロバイダー群に限定したうえで、その中に選択した順位付け方法を適用します。
-
-## 3. プロバイダーを候補から除外する
-
-リクエスト単位または短期間の展開でプロバイダーを除外する場合は、`provider.ignore` を使います。
-
-<CodeGroup>
-```bash cURL
-curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "meta/llama-4-maverick",
-    "input": "Summarize the transcript.",
-    "provider": {
-      "ignore": ["deepinfra"]
-    }
-  }'
+```json
+{
+  "model": "anthropic/claude-sonnet-5.5",
+  "input": "Summarize the incident in one sentence.",
+  "provider": {
+    "only": ["google-vertex", "google-vertex-eu"],
+    "order": ["google-vertex-eu"],
+    "sort": "latency"
+  }
+}
 ```
 
-```typescript TypeScript SDK
-import Phaseo from "@phaseo/sdk";
+## 送信先を確認する
 
-const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+**設定 → 使用量 → ログ** でリクエストを開き、**ルーティングの可観測性** を展開します。順位付けの前に除外されたプロバイダーとその理由、およびスコア付きの順位付けされた候補が一覧表示されます。各フィールドの説明は[ルーティングの判断を説明する](../guides/routing-and-fallbacks#explain-a-routing-decision)を参照してください。
 
-const response = await client.generateResponse({
-  model: "meta/llama-4-maverick",
-  input: "Summarize the transcript.",
-  provider: {
-    ignore: ["deepinfra"],
-  },
-});
-
-console.log(response.output_text);
-```
-
-```python Python SDK
-from phaseo import Phaseo
-
-client = Phaseo(api_key="YOUR_API_KEY")
-
-response = client.generate_response(
-    {
-        "model": "meta/llama-4-maverick",
-        "input": "Summarize the transcript.",
-        "provider": {
-            "ignore": ["deepinfra"],
-        },
-    }
-)
-
-print(response.get("output_text"))
-```
-</CodeGroup>
-
-次のような場合に便利です。
-
-- あるプロバイダーの状態が悪い
-- 別のプロバイダールートを検証している
-- プリセットを編集せずにルーティング結果を比較したい
-
-## 4. 各設定を慎重に組み合わせる
-
-これらの設定は組み合わせられますが、目的は明確にしてください。
-
-- `order` で優先順位を示す
-- `only` で候補を限定する
-- `ignore` でプロバイダーを除外する
-
-実用的な組み合わせ例:
-
-- `only` でリクエストを `google-vertex` と `google-vertex-eu` に限定する
-- `order` で `google-vertex-eu` を優先する
-- `sort: "latency"` で許可された候補を順位付けする
-
-## 5. これらの設定をプリセットに移すタイミング
-
-同じプロバイダールールが複数のサービスで使われる場合は、リクエストごとに複製せず、プリセットに移します。
-
-次のような場合はリクエスト単位のルーティングを使います。
-
-- 一時的
-- 呼び出し元固有
-- 1 つのユーザーフローに関連する
-
-## 関連ガイド
-
-- [ルーティングとフォールバック](../guides/routing-and-fallbacks.mdx)
-- [プリセットを展開してルーティングをデバッグする](./preset-rollout-and-routing-debug.mdx)
+リクエスト単位のルールは、一時的な上書き、1 つの呼び出し元に固有の上書き、1 つのユーザーフローに結びついた上書きに使います。同じルールが複数のサービスに現れたら、[プリセット](../guides/presets)に移します。プリセットでは、フォールバックが使えるプロバイダーも制限されます。順位付けを比較するには、[プロバイダーを並べ替える](./sort-providers-by-price-latency-or-throughput)を参照してください。

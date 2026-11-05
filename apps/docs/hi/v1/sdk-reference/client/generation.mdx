@@ -1,0 +1,131 @@
+---
+icon: "search-check"
+title: "जनरेशन लुकअप"
+description: "किसी भी Phaseo SDK से /generations के ज़रिए पिछला जनरेशन वापस पाएँ।"
+---
+
+किसी अनुरोध का संग्रहीत रिकॉर्ड `GET /v1/generations?id=<id>` से पाने के लिए SDK के जनरेशन मेथड को अनुरोध ID (जैसे `G-01ABC...`) दें।
+
+<CodeGroup>
+
+```typescript TypeScript
+const record = await client.getGeneration("G-01ABC...");
+```
+
+```python Python
+record = client.get_generation("G-01ABC...")
+
+print(record["model_id"], record["cost_nanos"])
+```
+
+```go Go
+client, err := phaseo.NewFromEnv()
+if err != nil {
+  panic(err)
+}
+
+record, err := client.GetGeneration(context.Background(), "G-01ABC...")
+if err != nil {
+  panic(err)
+}
+fmt.Println(record["status_code"], record["cost_nanos"])
+```
+
+```csharp C#
+using PhaseoSdk;
+
+var client = new Phaseo();
+var record = await client.GetGeneration("G-01ABC...");
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo();
+$record = $client->getGeneration('G-01ABC...');
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new
+record = client.get_generation('G-01ABC...')
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+var record = client.getGeneration("G-01ABC...");
+System.out.println(record);
+```
+
+</CodeGroup>
+
+| भाषा | मेथड | क्या लौटाता है |
+| --- | --- | --- |
+| TypeScript | `client.getGeneration(id)` | रिकॉर्ड ऑब्जेक्ट |
+| Python | `client.get_generation(id)` | `APIResponse` dict |
+| Go | `client.GetGeneration(ctx, id)` | `map[string]interface{}` |
+| C# | `client.GetGeneration(id)` | `Dictionary<string, object>?` |
+| PHP | `$client->getGeneration($id)` | Array |
+| Ruby | `client.get_generation(id)` | Hash |
+| Java | `client.getGeneration(id)` | Jackson `JsonNode` |
+| Rust | कोई हेल्पर नहीं; `client.request("GET", "/generations?id=<id>", None, &RequestOptions::default())` कॉल करें | `PhaseoResponse`, जिसके `body` (एक `serde_json::Value`) में रिकॉर्ड होता है |
+
+लुकअप आपके वर्कस्पेस तक सीमित है। `id` न होने पर `400` (`missing_id`) लौटता है, और जो ID आपके वर्कस्पेस में नहीं है उस पर `404` (`not_found`) लौटता है।
+
+## संग्रहीत अनुरोध को दोबारा चलाएँ
+
+अगर गेटवे ने पूरा अनुरोध संग्रहीत किया है, तो रिकॉर्ड में `replay_supported` true होता है और एक `replay_request` होता है, जिसे आप नियंत्रित तरीक़े से दोबारा चलाने के लिए मूल एंडपॉइंट पर वापस भेज सकते हैं।
+
+## टाइमिंग फ़ील्ड पढ़ें
+
+- `latency_ms`: पहले token, या पहले आउटपुट बाइट या फ़्रेम तक का समय, जब इसे ट्रैक किया जाता है।
+- `generation_ms`: उस बिंदु के बाद जनरेशन का समय, जब इसे ट्रैक किया जाता है।
+
+## प्रतिक्रिया
+
+```json
+{
+  "created_at": "2026-05-05T12:00:00.000Z",
+  "request_id": "G-01ABC123",
+  "team_id": "team-123",
+  "app_id": "app-123",
+  "endpoint": "chat/completions",
+  "model_id": "openai/gpt-6-astra",
+  "provider": "openai",
+  "native_response_id": "chatcmpl-123",
+  "stream": false,
+  "byok": false,
+  "status_code": 200,
+  "success": true,
+  "error_code": null,
+  "error_message": null,
+  "latency_ms": 1500,
+  "generation_ms": 1400,
+  "usage": {
+    "prompt_tokens": 9,
+    "completion_tokens": 9,
+    "total_tokens": 18
+  },
+  "cost_nanos": 1000000,
+  "currency": "USD",
+  "pricing_lines": [],
+  "key_id": "key-123",
+  "throughput": null,
+  "replay_supported": true,
+  "replay_request": {
+    "model": "openai/gpt-6-astra",
+    "messages": [
+      { "role": "user", "content": "Say hello" }
+    ]
+  }
+}
+```
+
+[जनरेशन लुकअप](../../api-reference/endpoint/generation) हर फ़ील्ड की सूची देता है।

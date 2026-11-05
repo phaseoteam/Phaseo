@@ -1,0 +1,86 @@
+---
+icon: "list-ordered"
+title: "ドキュメントのリランク"
+description: "POST /v1/rerank で、候補ドキュメントをクエリとの関連度順に並べ替えます。"
+---
+
+`client.rerank.create()` を呼び出すと、`POST /v1/rerank` で候補ドキュメントをクエリとの関連度順に並べ替えます。メソッド名は TypeScript と Python で同じです。Rust は同じ JSON を `client.post()` で送信します。
+
+<CodeGroup>
+
+```typescript TypeScript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const result = await client.rerank.create({
+  model: "voyage/rerank-2",
+  query: "How do I check whether a model is routable?",
+  documents: [
+    "Call GET /v1/models and use the default availability filter.",
+    "Create an image with POST /v1/images/generations.",
+  ],
+});
+
+console.log(result.results);
+```
+
+```python Python
+from phaseo import Phaseo
+
+client = Phaseo()  # reads PHASEO_API_KEY
+
+result = client.rerank.create({
+    "model": "voyage/rerank-2",
+    "query": "How do I check whether a model is routable?",
+    "documents": [
+        "Call GET /v1/models and use the default availability filter.",
+        "Create an image with POST /v1/images/generations.",
+    ],
+})
+
+print(result["results"])
+```
+
+```rust Rust
+// No rerank method yet: post() sends JSON to any Phaseo path.
+use phaseo::Phaseo;
+use serde_json::json;
+
+let client = Phaseo::from_env()?; // reads PHASEO_API_KEY
+
+let result = client.post("/rerank", &json!({
+    "model": "voyage/rerank-2",
+    "query": "How do I check whether a model is routable?",
+    "documents": [
+        "Call GET /v1/models and use the default availability filter.",
+        "Create an image with POST /v1/images/generations."
+    ]
+}))?;
+
+println!("{}", result.body["results"]);
+```
+
+</CodeGroup>
+
+**Python：** `client.rerank.create()` は、渡した dict を JSON 本文として送信し、JSON レスポンスを返します。型付きの `generate_rerank` ヘルパーはありません。`AsyncPhaseo` では await してください。
+
+Go、C#、PHP、Ruby、Java の SDK にはリランクのメソッドがありません。[Rerank API リファレンス](/ja/v1/api-reference/endpoint/rerank)のとおり、HTTP クライアントで `POST /v1/rerank` を送信してください。
+
+本番環境で使う前に、`GET /v1/models` でモデル ID を確認してください。
+
+## パラメーター
+
+どの SDK でも、フィールド名は JSON 本文のフィールドです。
+
+| フィールド | 注記 |
+| --- | --- |
+| `model`、`query`、`documents` | 必須。`documents` には 1 つ以上の文字列またはオブジェクトを入れます。 |
+| `top_n` | 上位 `n` 件の結果だけを返します。別名として `top_k` も受け付けます。 |
+| `return_documents` | 各結果にドキュメントを含めます。 |
+| `rank_fields` | オブジェクトのドキュメントで、順位付けに使うフィールド。 |
+| `max_chunks_per_doc`、`max_tokens_per_doc` | 長いドキュメント向けの上限（対応するプロバイダーのみ）。 |
+
+## レスポンス
+
+`RerankResponse` には `results` と `usage` があります。各結果には、リスト内でのドキュメントの `index`、その `relevance_score`、そして `return_documents` を設定した場合は `document` が含まれます。

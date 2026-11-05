@@ -4,15 +4,15 @@ title: "Analyser des images de documents"
 description: "Extrayez le texte dans l’ordre, les tableaux, les images et les métadonnées de mise en page des images de documents avec Cohere Parse v5.0."
 ---
 
-Utilisez le point de terminaison Parse lorsque vous avez besoin de plus qu’un OCR simple. Il préserve l’ordre des pages et peut renvoyer du Markdown ou des blocs structurés de texte, d’images et de tableaux.
+Envoyez une image de document à `POST /v1/parse` pour récupérer son texte dans l’ordre de lecture, en Markdown ou sous forme de blocs structurés de texte, d’images et de tableaux. Utilisez l’[OCR](../api-reference/endpoint/ocr.mdx) si vous n’avez besoin que du texte brut.
 
 <Warning>
-  L’API Parse publique de Cohere accepte actuellement uniquement les URL d’images et les URI de données d’image en base64. Convertissez les pages PDF en images avant de les envoyer. Chaque image ne doit pas dépasser 20 Mo, 50 mégapixels ou 200 Mo après décodage.
+  Parse accepte une image par requête, sous forme d’URL `http(s)` ou d’URI base64 `data:image/...`. Les PDF ne sont pas acceptés : convertissez d’abord chaque page en image. Cohere limite chaque image à 20 Mo, 50 mégapixels et 200 Mo une fois décodée.
 </Warning>
 
-## Analyser et renvoyer du Markdown
+## Extraire en Markdown
 
-Le Markdown conserve l’ordre de lecture, intègre les tableaux sous forme de HTML et associe les images détectées à leurs métadonnées sur la page.
+Markdown est la valeur par défaut de `output_format`. Ce format conserve l’ordre de lecture, intègre les tableaux en HTML et relie les images détectées aux métadonnées de la page.
 
 <CodeGroup>
 ```bash cURL
@@ -73,6 +73,8 @@ print(response.json()["pages"][0]["markdown"]["content"])
 
 ## Renvoyer des blocs structurés
 
-Définissez `output_format` sur `blocks` pour recevoir des zones ordonnées de texte, d’images et de tableaux. Les blocs d’image et de tableau incluent, lorsqu’elles sont disponibles, des boîtes englobantes en pixels et normalisées.
+Définissez `output_format` sur `blocks` pour recevoir des zones de texte, d’image et de tableau ordonnées. Les blocs d’image et de tableau incluent des cadres de délimitation en pixels et normalisés lorsqu’ils sont disponibles.
 
-L’utilisation de Parse est facturée par page. La réponse inclut les métadonnées de Cohere et une valeur normalisée `usage.input_pages` lorsque le fournisseur indique les pages facturées. Cohere propose actuellement un accès gratuit à l’API pour l’évaluation, avec des limites de débit, et n’a pas encore publié de tarif de production pour Parse.
+## Facturation de Parse
+
+L’utilisation de Parse est comptabilisée à la page. La réponse inclut les métadonnées de Cohere et une valeur normalisée `usage.input_pages` lorsque le fournisseur indique les pages facturées. Cohere propose actuellement un accès API d’évaluation gratuit et soumis à des limites de débit, et n’a pas publié de tarif de production pour l’API Parse.

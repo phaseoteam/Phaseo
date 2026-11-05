@@ -5,39 +5,30 @@ description: "Sustituye un proxy de LiteLLM por Phaseo y conserva la ruta de sol
 icon: "blocks"
 ---
 
-Usa esta guía si tu aplicación llama a un proxy de LiteLLM a través de un cliente compatible con OpenAI. Cambia primero el límite del proxy y luego asigna con cuidado los alias, las reglas de enrutamiento y los valores predeterminados compartidos.
+Apunta los clientes que llaman a tu proxy de LiteLLM a `https://api.phaseo.app/v1` con una clave de Phaseo y después asigna cada alias `model_name` y cada ajuste del proxy de forma deliberada. Si prefieres conservar LiteLLM y usar Phaseo como su servicio ascendente, consulta [Integración con LiteLLM](../guides/integrations/litellm).
 
-## Qué cambia
-
-| Configuración | Antes | Después |
+| Ajuste | Proxy de LiteLLM | Phaseo |
 | --- | --- | --- |
-| URL base | Tu proxy de LiteLLM | `https://api.phaseo.app/v1` |
-| Clave de API | Clave del proxy de LiteLLM | `PHASEO_API_KEY` |
-| Alias de modelos | Configuración de LiteLLM | ID de modelos de Phaseo o alias de la aplicación |
-| Valores de enrutamiento predeterminados | Configuración de LiteLLM | Preajustes y configuración de enrutamiento de Phaseo |
+| URL base | Tu proxy, a menudo `http://localhost:4000` | `https://api.phaseo.app/v1` |
+| Clave de API | `LITELLM_MASTER_KEY` o una clave virtual | `PHASEO_API_KEY` |
+| Modelo | Alias `model_name` de `config.yaml` | ID de modelo de Phaseo, un preset (`"model": "@slug"`) o una única función de asignación |
+| Enrutamiento y valores predeterminados | `router_settings`, `litellm_settings` | [Presets](../guides/presets) y [Enrutamiento y respaldos](../guides/routing-and-fallbacks) |
 
-<Steps>
-<Step title="Inventaría la configuración del proxy">
-
-Enumera todos los alias de modelos, modelos alternativos, reglas de proveedores, políticas de reintento, presupuestos, callbacks y variables de entorno que usa la implementación actual de LiteLLM. Identifica qué ajustes son políticas compartidas y cuáles pertenecen a una sola aplicación.
-
-</Step>
-
-<Step title="Sustituye el endpoint del proxy">
-
-Conserva el código de solicitudes compatible con OpenAI y cambia la URL base y la clave.
+## Cambia el cliente
 
 <CodeGroup>
 ```typescript TypeScript
 import OpenAI from "openai";
 
+// Antes:
+// new OpenAI({ apiKey: process.env.LITELLM_API_KEY, baseURL: process.env.LITELLM_BASE_URL });
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
 });
 
 const response = await client.chat.completions.create({
-  model: "openai/gpt-4.1-mini",
+  model: "openai/gpt-6-astra",
   messages: [{ role: "user", content: "Reply with: migration ready" }],
 });
 ```
@@ -57,40 +48,41 @@ curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4.1-mini",
+    "model": "openai/gpt-6-astra",
     "messages": [{"role": "user", "content": "Reply with: migration ready"}]
   }'
 ```
 </CodeGroup>
 
-</Step>
+Cada alias necesita una asignación explícita a un ID de `GET /v1/models?format=openai`. Si los llamadores usan alias internos, tradúcelos en una sola función en el límite del cliente en lugar de editar cada solicitud.
 
-<Step title="Asigna los alias y las reglas de enrutamiento">
+## Asigna la configuración del proxy
 
-Verifica cada modelo de producción con `GET /v1/models`. Si los clientes dependen de alias internos, normalízalos en un único límite de la aplicación en lugar de editar cada solicitud.
+Haz inventario de callbacks, presupuestos y reintentos antes de retirar el proxy: dejan de funcionar sin avisar cuando desaparece.
 
-Traslada los prompts, parámetros y restricciones de proveedores reutilizables a [Preajustes](../guides/presets.mdx). Configura la clasificación de proveedores y los modelos alternativos mediante [Enrutamiento y alternativas](../guides/routing-and-fallbacks.mdx).
+| LiteLLM | En Phaseo |
+| --- | --- |
+| `fallbacks` | Matriz `models` o respaldos de rutas dinámicas, que se prueban con `429`, `500`, `502`, `503` y `504`, nunca con errores de la solicitud. |
+| `context_window_fallbacks`, `content_policy_fallbacks` | Sin equivalente: Phaseo nunca recurre a un respaldo ante un `400`. Gestiónalos en la aplicación. |
+| `routing_strategy` | Modo de enrutamiento del espacio de trabajo o `provider.sort` (`price`, `latency`, `throughput`). |
+| Elección de proveedor por despliegue | `provider.order`, `provider.only`, `provider.ignore` o un [ID calificado con proveedor](../guides/provider-qualified-models) como `provider:org/model`, que no recurre a otros proveedores. |
+| Despliegues autoalojados (vLLM y similares) | [Modelos privados](../guides/private-models), que necesitan un endpoint `/chat/completions` público, HTTPS, compatible con OpenAI y con autenticación bearer. |
+| Caché de respuestas (`litellm_settings.cache`) | No hay caché de respuestas. Usa caché en la aplicación si la necesitas; el [almacenamiento en caché de prompts](../guides/prompt-caching) sigue reduciendo el coste de entrada. |
+| Claves virtuales (`max_budget`, `rpm_limit`, `tpm_limit`, `max_parallel_requests`, `models`) | Claves de API con límites de gasto y modelos permitidos, presupuestos y políticas de límites de velocidad para solicitudes por minuto, tokens por minuto y solicitudes simultáneas. Consulta [Límites](../api-reference/limits). |
+| Presupuestos de equipo, `metadata.tags` | Presupuestos de departamento y [etiquetas](../guides/request-labels) `X-Phaseo-Metadata`. Los presupuestos por usuario final solo se corresponden con una política de límites de velocidad por usuario final; no hay tope de gasto por usuario final. |
+| `guardrails` (Presidio, Lakera y similares) | Los guardrails de claves analizan las solicitudes en busca de inyección de prompts y PII. Las respuestas no se analizan. |
+| Callbacks (`success_callback`, Langfuse, Datadog, OpenTelemetry) | [Destinos de observabilidad](../guides/integrations/observability) o trazas en el cliente. El `metadata` del cuerpo se exporta como `phaseo.metadata.<key>`. |
+| Claves de API de proveedores en la configuración | BYOK (`phaseo byok create --provider <id> --name <name> --key-stdin` o `POST /v1/byok`), o créditos de Phaseo. Activa `byok_fallback_enabled` con `phaseo settings update` para recurrir a los créditos. |
 
-</Step>
+Un proxy envía el tráfico de todo un equipo a través del propietario de una sola clave, así que comparte la asignación de solicitudes por minuto de ese usuario, que es de 10 en un espacio de trabajo nuevo. Consulta los [límites del Gateway](../api-reference/limits#gateway-limits) y consigue un límite más alto antes del cambio.
 
-<Step title="Valida los flujos de producción">
+## Prueba y despliega
 
-Prueba el streaming, las herramientas, las salidas estructuradas, los reintentos, el mapeo de errores y cualquier observabilidad basada en callbacks que gestionaba tu implementación de LiteLLM. Compara la latencia, las respuestas, el uso de tokens y el coste antes de trasladar el tráfico gradualmente.
+Prueba el streaming, las herramientas, las salidas estructuradas, los reintentos, la asignación de errores y cualquier telemetría basada en callbacks que gestionara el proxy. Compara latencia, salida, uso de tokens y coste antes de mover el tráfico de forma gradual. Antes del cambio, comprueba que:
 
-</Step>
-</Steps>
-
-## Lista de comprobación de la migración
-
-- Se han identificado las URL, claves y dependencias de despliegue de LiteLLM.
-- Cada modelo y alias de producción tiene una asignación explícita en Phaseo.
-- Los valores predeterminados compartidos se han trasladado a preajustes o a un único límite de la aplicación.
-- El streaming, las herramientas y las salidas estructuradas pasan en staging cuando se utilizan.
-- Los callbacks y datos de telemetría necesarios tienen un reemplazo definido.
-- La reversión sigue limitada a cambiar la configuración del endpoint y la clave.
-
-## Próximos pasos
-
-- [Preajustes](../guides/presets.mdx)
-- [Enrutamiento y alternativas](../guides/routing-and-fallbacks.mdx)
-- [Observabilidad](../guides/integrations/observability.mdx)
+- has identificado cada URL, clave y variable `LITELLM_*` de LiteLLM;
+- cada alias de producción tiene una asignación explícita en Phaseo;
+- los valores predeterminados compartidos están en presets o en una única función de límite;
+- las callbacks y la telemetría necesarias tienen un sustituto;
+- has decidido si LiteLLM, Phaseo o ambos son la referencia del gasto;
+- la reversión sigue siendo solo un cambio de URL base y clave.

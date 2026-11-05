@@ -1,0 +1,124 @@
+---
+icon: "activity"
+title: "Observabilidad"
+description: "Consulta el estado, el uso y el coste de una ejecución del agente, y rastrea cada paso hasta su solicitud al gateway."
+---
+
+Lee el resultado de la ejecución para ver cómo terminó, cuánto costó y qué solicitud al gateway atendió cada turno del modelo. Todos los resultados tienen la salida final, el registro de la ejecución con su estado, el uso acumulado y un registro por paso con el ID de solicitud, el proveedor y el modelo.
+
+<CodeGroup>
+
+```typescript TypeScript
+const result = await agent.run({ input, client });
+
+console.log(result.output);            // valor final
+console.log(result.run.status);        // completed, stopped, waiting_for_human o cancelled
+console.log(result.usage.totalTokens); // sumado en todos los pasos
+console.log(result.usage.cost);        // según lo informa el gateway
+```
+
+```python Python
+result = agent.run(input=prompt, client=client)
+
+print(result.output)              # valor final
+print(result.run.status)          # completed, stopped o waiting_for_human
+print(result.usage.total_tokens)  # sumado en todos los pasos
+print(result.usage.cost)          # según lo informa el gateway
+```
+
+```go Go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+if err != nil {
+  return err
+}
+
+fmt.Println(result.Output)            // valor final
+fmt.Println(result.Run.Status)        // completed, stopped o waiting_for_human
+fmt.Println(result.Usage.TotalTokens) // sumado en todos los pasos
+fmt.Println(result.Usage.Cost)        // según lo informa el gateway
+```
+
+```csharp C#
+var result = await agent.Run(new RunOptions { Input = prompt, Client = client });
+
+Console.WriteLine(result.Output);            // valor final
+Console.WriteLine(result.Run.Status);        // completed, stopped o waiting_for_human
+Console.WriteLine(result.Usage.TotalTokens); // sumado en todos los pasos
+Console.WriteLine(result.Usage.Cost);        // según lo informa el gateway
+```
+
+```php PHP
+$result = $agent->run(input: $prompt, client: $client);
+
+echo $result->output;                 // valor final
+echo $result->run->status;            // completed, stopped o waiting_for_human
+echo $result->usage["total_tokens"];  // sumado en todos los pasos
+echo $result->usage["cost"];          // según lo informa el gateway
+```
+
+```ruby Ruby
+result = agent.run(input: prompt, client: client)
+
+puts result.output               # valor final
+puts result.run.status           # completed, stopped o waiting_for_human
+puts result.usage[:total_tokens] # sumado en todos los pasos
+puts result.usage[:cost]         # según lo informa el gateway
+```
+
+```java Java
+var result = agent.run(options);
+
+System.out.println(result.output());              // valor final
+System.out.println(result.run().status());        // completed, stopped o waiting_for_human
+System.out.println(result.usage().totalTokens()); // sumado en todos los pasos
+System.out.println(result.usage().cost());        // según lo informa el gateway
+```
+
+```rust Rust
+let result = agent.run(&mut client, RunOptions::new("Explain when to use routing presets."))?;
+
+println!("{}", result.output);              // valor final
+println!("{}", result.run.status);          // completed, stopped o waiting_for_human
+println!("{}", result.usage.total_tokens);  // sumado en todos los pasos
+println!("{:?}", result.usage.cost);        // lo proporciona el cliente del modelo
+```
+
+</CodeGroup>
+
+## Consulta el uso y el coste
+
+El uso incluye los tokens de entrada, de salida, en caché y totales, más el coste: `inputTokens`, `outputTokens`, `cachedTokens`, `totalTokens` y `cost` en TypeScript y Java; `input_tokens`, etc., en Python, PHP, Ruby y Rust; `InputTokens`, etc., en Go y C#. Cada paso tiene también su propio uso.
+
+| Lenguaje | Dónde está el uso | Salvedad |
+| --- | --- | --- |
+| TypeScript, Python, Go, C#, Java | `usage` en el resultado | |
+| PHP | `$result->usage`, un array | Un resultado en pausa lo deja vacío; lee `$result->run->usage` |
+| Ruby | `result.usage`, un Hash con claves de tipo símbolo | Un resultado en pausa lo deja sin definir; lee `result.run.usage` |
+| Rust | `result.usage` (`UsageSummary`) | El adaptador de gateway integrado en `0.2` solo rellena `cost` a partir de un campo numérico `meta.cost` o `cost` y no convierte `cost_nanos` ni `cost_cents`. Usa la respuesta del gateway o el registro de la generación para informar del gasto. |
+
+## Comprueba cómo terminó la ejecución
+
+Los estados de ejecución son `queued`, `running`, `waiting_for_tools`, `waiting_for_human`, `completed`, `stopped` y `failed`; TypeScript añade `cancelled`. Un resultado que recibes es `completed`, `stopped` (se cumplió una [condición de parada](./stop-conditions), con el motivo en el motivo de parada de la ejecución), `waiting_for_human` (consulta [Estado y aprobación](./state-and-approval)) o, en TypeScript, `cancelled`. Las ejecuciones fallidas lanzan o devuelven un error en su lugar; consulta [Eventos y errores](./events-and-errors).
+
+## Rastrea un paso hasta su solicitud al gateway
+
+Cada registro de paso relaciona un turno del modelo con la solicitud al gateway que lo atendió. Busca el ID de solicitud en tus registros de Phaseo, o el ID de respuesta nativo con el proveedor upstream.
+
+| Campo del paso | camelCase (TypeScript, PHP, Java) | snake_case (Python, Ruby, Rust) | PascalCase (Go, C#) |
+| --- | --- | --- | --- |
+| ID de la solicitud en el gateway | `requestId` | `request_id` | `RequestID` (Go), `RequestId` (C#) |
+| ID de la respuesta upstream | `nativeResponseId` | `native_response_id` (no en Rust) | `NativeResponseID` (Go), `NativeResponseId` (C#) |
+| Proveedor y modelo | `provider`, `model` | `provider`, `model` | `Provider`, `Model` |
+| Motivo de finalización | `finishReason` | `finish_reason` | `FinishReason` |
+| Intentos, incluidos los reintentos | `modelAttempts` | `model_attempts` | `ModelAttempts` |
+| Llamadas a herramientas | `toolCalls` | `tool_calls` | `ToolCalls` |
+| Error | `error` (TypeScript añade `errorDetails`) | `error` | `Error` |
+| Bloque meta del gateway y advertencias | `responseMeta`, `warnings` | `response_meta`, `warnings` (no en Rust) | `ResponseMeta`, `Warnings` |
+
+Los pasos están en `steps` en el resultado (`Steps` en Go y C#, `steps()` en Java). Los registros de paso de Python son `AgentStepRecord`; los demás los llaman `RunStep`.
+
+## Registra las ejecuciones en producción
+
+Registra el ID de la ejecución, el índice del paso, el ID de solicitud, el ID de respuesta nativo, el proveedor, el modelo, el motivo de finalización, el ID de la llamada a herramienta y el motivo de parada. Los [hooks del ciclo de vida](./lifecycle-hooks) te dan todos ellos a medida que transcurre la ejecución, y los eventos `run.failed` llevan el texto del error en los lenguajes que los envían. No registres prompts sin procesar, entradas de herramientas ni credenciales; ocúltalos antes de que los eventos salgan de tu proceso.
+
+Para tener un registro local de ejecuciones completas durante el desarrollo, usa [DevTools](./devtools) en su lugar.

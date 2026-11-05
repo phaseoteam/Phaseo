@@ -1,103 +1,67 @@
 ---
 title: "Phaseo CLI"
 icon: "terminal"
-description: "公式 Phaseo CLI をインストールし、コーディング環境を設定して、ターミナルから Phaseo を管理します。"
+description: "Phaseo 公式 CLI をインストールし、コーディングハーネスを設定して、ターミナルから Phaseo を管理します。"
 ---
 
-Phaseo CLI は `@phaseo/cli` として配布されています。コーディング環境を Phaseo に接続し、Phaseo コントロールプレーンを操作する公式のターミナルワークフローを提供します。
-
-次の操作をしたい場合に使います。
-
-- ローカルまたはリモートのシェル、エージェント実行環境から Phaseo ユーザーとしてサインインする
-- API キーまたは管理キーを作成・ローテーションする
-- ワークスペース、プリセット、設定、ガードレールを管理する
-- ユーザー作成の OAuth アプリが非公開テスト中の間に、公式 CLI の OAuth を使う
-- モデル、プロバイダー、料金、クレジット、アクティビティ、分析、生成を確認する
+`@phaseo/cli` をインストールして `phaseo login` を実行すると、コーディングエージェントを Phaseo に接続し、キー、ワークスペース、プリセット、設定、ガードレールをターミナルから管理できます。CLI では、モデル、プロバイダー、料金、クレジット、アクティビティ、分析、生成の情報も参照できます。
 
 ## インストール
 
 <CodeGroup>
 
-```bash title="npm"
+```bash npm
 npm install -g @phaseo/cli
 ```
 
-```bash title="pnpm"
+```bash pnpm
 pnpm add -g @phaseo/cli
 ```
 
-```bash title="yarn"
+```bash yarn
 yarn global add @phaseo/cli
 ```
 
-```bash title="bun"
+```bash bun
 bun add -g @phaseo/cli
 ```
 
 </CodeGroup>
 
-## インストール済みバージョンを確認する
+バージョンを確認します。
 
-```bash
-phaseo --version
-phaseo version
-phaseo version --json
-```
+| コマンド | 出力内容 |
+| --- | --- |
+| `phaseo --version` | インストールされているバージョン。 |
+| `phaseo version` | バージョンと、お使いのパッケージマネージャー用の更新コマンド。構造化された出力には `--json` を付けます。 |
 
-- `phaseo --version` はインストール済みのバージョンを表示します。
-- `phaseo version` はバージョンと、現在のパッケージマネージャーに推奨される更新コマンドを表示します。
-- 新しいバージョンが公開されている場合、対話型実行では更新案内も表示されます。
+対話型の実行では、新しいバージョンが公開されたときにヒントも表示されます。
 
-以前の `phaseo` コマンドも互換性エイリアスとして引き続き使用できます。
-
-## サインイン
-
-まず次を実行します。
+## サインインする
 
 ```bash
 phaseo login
 ```
 
-CLI は 2 つの公式フローに対応しています。
+| フロー | フラグ | 用途 |
+| --- | --- | --- |
+| Phaseo でサインイン | `--browser` | 認可コードと PKCE を使うブラウザーの OAuth。 |
+| デバイスコードでサインイン | `--device-code` | SSH、CI、ヘッドレスシェル、エージェント環境。 |
 
-- **Phaseo でサインイン**: 認可コードと PKCE を使ったブラウザー OAuth
-- **デバイスコードでサインイン**: SSH、CI、ヘッドレスシェル、エージェント環境に最適
-
-どちらかの方法を明示的に選ぶこともできます。
-
-```bash
-phaseo login --browser
-phaseo login --device-code
-```
-
-リモート環境や非対話型環境では、デバイスコードが自動的に優先されます。
-
-## ターミナル出力
-
-対話型ターミナルでは Phaseo の色や表示階層が使われ、セットアップ中は一時的なスピナーが表示されます。スピナーは `stderr` に出力され、処理完了時に行を消去します。TTY でない `stderr` と `TERM=dumb` はアニメーションを無効にし、`NO_COLOR` は色を無効にします。`--json` を使うコマンドは常に装飾のない構造化出力を返すため、エージェントや自動化に適しています。ターミナルラッパーが色に対応していても TTY として報告しない場合に限り、`FORCE_COLOR=1` を使用してください。
-
-## 自分のアカウントを確認する
+リモート環境と非対話型の環境では、自動的にデバイスコードが使われます。サインインしているユーザーを、スコープ、有効なワークスペース、その他のワークスペースとともに確認します。
 
 ```bash
 phaseo whoami
 phaseo whoami --json
 ```
 
-現在の Phaseo ユーザー、スコープ、アクティブなワークスペース、利用可能なワークスペースを返します。
-
-## キーを作成する
+## キーを作成してワークスペースを管理する
 
 ```bash
 phaseo keys create --name "Local CLI Key"
 phaseo keys create --name "Agent Sandbox Key" --json
 phaseo keys current
-```
 
-エージェントや自動化で作成したキーを一度だけ未加工の形式で取得する場合は、`--json` を使います。
-
-## ワークスペースとガードレールを管理する
-
-```bash
 phaseo workspaces list
 phaseo workspaces members <workspace-id-or-slug>
 
@@ -105,104 +69,98 @@ phaseo guardrails list
 phaseo guardrails create --name "Production Safety" --body-json '{"enabled":true}'
 ```
 
-CLI は、請求、予算、BYOK、ルーティング、ID 管理を含む Phaseo ダッシュボードの管理作業をターミナルから行えます。各作業のコマンドは[エージェントから Phaseo を管理する](../../developers/manage-from-an-agent)を参照してください。
+エージェントやスクリプトが新しいキーを必要とする場合は `--json` を使います。キーは 1 回しか表示されません。CLI は、請求、予算、BYOK、ルーティング、ID など、ダッシュボードの管理作業に対応しています。各作業のコマンドについては、[エージェントから Phaseo を管理する](../../developers/manage-from-an-agent)を参照してください。
 
-## 対応するコーディング環境を起動する
+## コーディングエージェントを接続する
 
-永続的な連携では製品名を直接使います。
+エージェントの名前をコマンドとして使います。CLI は専用のキーを作成し、エージェントの設定を書き込みます。
 
 ```bash
 phaseo codex
 phaseo claude-code
-phaseo deepseek-harness
 phaseo opencode
+phaseo fx
+phaseo deepseek-harness
 phaseo pi
 phaseo prime-agent
 phaseo openclaw
+phaseo hermes
 phaseo aider
+phaseo continue
+phaseo zed
 phaseo roo-code
 phaseo kilo-code
-phaseo continue
 phaseo cursor
-phaseo zed
 ```
 
-必要に応じて`--model`、`--catalog all|default`、`--dry-run`を使ってください。以前の`phaseo integrations setup <integration>`形式は互換性のため残っていますが、必須ではありません。
+必要に応じて `--model`、`--catalog all|default`、`--dry-run` を使います。`phaseo setup <agent>` と `phaseo integrations setup <agent>` も使えます。
 
-CLIは一時的なプロバイダー設定と専用のPhaseoキーでCline、Kilo Code、oh-my-pi、Muse Code、MiniMax Codeを起動できます。設定とトラブルシューティングについては各連携ガイドを参照してください：[Cline](./cline)、[Kilo Code](./kilo-code)、[oh-my-pi](./oh-my-pi)、[Muse Code](./muse-code)、[MiniMax Code](./minimax-code)。
+終了時に削除される一時的な設定で Cline、Kilo Code、oh-my-pi、Muse Code、MiniMax Code を実行するには、セッションランナーを使います。Phaseo のフラグは `--` の前に、エージェント自体のフラグは `--` の後に指定します。
 
 ```bash
 phaseo cline --model openai/gpt-5.6-terra -- --tui
-phaseo kilo --model openai/gpt-5.6-terra --
-phaseo omp --model openai/gpt-5.6-terra --
-phaseo muse --model meta/muse-spark-1.3 --
-phaseo minimax --model openai/gpt-5.6-terra --
+phaseo kilo --model openai/gpt-5.6-terra
+phaseo omp --model openai/gpt-5.6-terra
+phaseo muse --model meta/muse-spark-1.3
+phaseo minimax --model openai/gpt-5.6-terra
 ```
 
-明示的な形式は`phaseo run <cline|kilo|omp|muse|minimax>`です。Phaseoのオプションは`--`より前、コーディング環境のオプションは後に指定します。`--catalog all`ですべての有効なPhaseoテキスト/チャットモデルを同期できます。認証情報を作成せずにプレビューするには次を使います。
+`phaseo run <cline|kilo|omp|muse|minimax>` は完全な形式です。Phaseo の有効なテキストモデルをすべて表示するには `--catalog all` を、キーを作成せずにプレビューするには `--dry-run --json` を付けます。対話型ターミナルでは、ランナーはインストールされていないエージェントのインストールを提案します（Windows では、MiniMax Code は公式の PowerShell インストーラーを使い、Muse Code は手動でインストールする必要があります）。エージェントを自分で管理している場合は `--skip-install` を使います。
 
-```bash
-phaseo cline --model openai/gpt-5.6-terra --dry-run --json
-```
+すべてのエージェント、各コマンドの動作、ガイドの一覧は[コーディングエージェント](./coding-assistants.mdx)にあります。
 
-Cline、Kilo Code、oh-my-piが未インストールの場合は対話形式でインストールを案内します。Muse CodeとMiniMax Codeはコマンドがない場合に公式インストーラーを使います。WindowsのMiniMax Codeは公式PowerShellインストーラーを使います。環境を個別に管理する場合は`--skip-install`を指定してください。既存のCline、Kilo、oh-my-pi、Muse Code、MiniMax Code設定は上書きされません。
+## CLI でスクリプトを書く
+
+`--json` を付けたコマンドは、色やスピナーのないプレーンな構造化出力を表示します。それ以外の場合、スピナーは `stderr` に出力され、完了すると行が消去されます。
+
+| 変数 | 効果 |
+| --- | --- |
+| `NO_COLOR` | 色をオフにします。 |
+| `TERM=dumb` | アニメーションをオフにします。TTY ではない `stderr` でも同様です。 |
+| `FORCE_COLOR=1` | ターミナルのラッパーが色に対応しているのに TTY を報告しない場合に、色を強制します。 |
+
+## CLI が資格情報を安全に保つ仕組み
+
+- セッションは OS の資格情報ストアに保存されます。`PHASEO_SESSION_BACKEND=file` は、資格情報ストアが使えない場合にのみ設定してください。この設定では、リフレッシュトークンがアクセス権を制限した平文のファイルに保存されます。
+- `phaseo logout` は、ローカルの状態を消去する前に、保存されたリフレッシュトークンを失効させます。
+- 管理用キーには明示的な権限が必要です。推論用のキーは、スコープではなく、ガードレール、ルーティングポリシー、ワークスペースの設定によって制限されます。
+
 ## OAuth アプリ
 
-Phaseo は、公式 CLI、ユーザー作成アプリ、動的に登録された MCP クライアントで共通の OAuth 認可サーバーを使用します。CLI はブラウザーまたはデバイスコードでログインし、ローテーションするリフレッシュトークンを使います。サードパーティーのクライアントは、PKCE 付き認可コード、明示的なスコープとワークスペースの同意、必要に応じた保護リソースへのバインドを使用します。7 日間有効な取り消し可能な委任アクセストークンと、最後の使用から 90 日間有効なローテーションするリフレッシュトークンが発行されます。リフレッシュの仕組みは [OAuth対応のNext.jsワークベンチを構築する](../../cookbook/build-an-oauth-nextjs-workbench) を参照してください。ユーザーが同じアプリを再度承認すると、2 つ目のキーが追加されるのではなく、そのキーが更新されます。
+Phaseo は、CLI、ユーザーが作成したアプリ、動的に登録された MCP クライアントで 1 つの OAuth 認可サーバーを使います。CLI は、ローテーションするリフレッシュトークンとともに、ブラウザーまたはデバイスによるログインを使います。サードパーティのクライアントは、PKCE 付きの認可コード、明示的なスコープとワークスペースの同意、任意の保護リソースのバインディングを使います。クライアントには、7 日間有効な失効可能なアクセストークンと、最後の使用から 90 日間有効なローテーションするリフレッシュトークンが発行されます。リフレッシュの仕組みについては、[OAuth Next.js ワークベンチを構築する](../../cookbook/build-an-oauth-nextjs-workbench)を参照してください。同じアプリを再度承認すると、2 つ目のキーが追加されるのではなく、既存のキーが更新されます。
 
-ホスト版 Phaseo API ではサードパーティー OAuth が有効です。セルフホスト版やプレビュー版では、`PHASEO_THIRD_PARTY_OAUTH_ENABLED` に真の値を設定しない限り無効のままです。`1`、`true`、`yes`、`on` を受け付け、空白を除去した後、大文字と小文字を区別せず判定します。有効にするとユーザー作成 OAuth アプリの管理と動的クライアント登録が可能になるため、リダイレクト URI、同意、クライアントシークレット、レート制限、ワークスペース認可の設定を確認してください。
+ホストされている Phaseo API では、サードパーティの OAuth がオンになっています。セルフホストおよびプレビューの API デプロイでは、`PHASEO_THIRD_PARTY_OAUTH_ENABLED` が真の値（`1`、`true`、`yes`、`on`。大文字と小文字は区別せず、前後の空白は無視）でない限りオフのままです。
 
-```bash title=".env"
+```bash .env
 PHASEO_THIRD_PARTY_OAUTH_ENABLED=true
 ```
 
-```bash title="Docker"
-docker run -e PHASEO_THIRD_PARTY_OAUTH_ENABLED=true phaseo
-```
-
-```yaml title="Kubernetes"
-env:
-  - name: PHASEO_THIRD_PARTY_OAUTH_ENABLED
-    value: "true"
-```
-
-## セキュリティモデル
-
-- CLI セッションでは既定で OS が提供する安全なストレージが必要です。OS の資格情報ストアがない場合に限り、明示的に `PHASEO_SESSION_BACKEND=file` を設定してください。この場合、リフレッシュトークンは権限を制限した平文ファイルに保存されます。
-- `phaseo logout` はローカル状態を消去する前に、保存されたリフレッシュトークンを失効させます。
-- 管理キーには明示的な機能権限が必要です。
-- 通常の推論キーは、独立したスコープモデルではなく、ガードレール、ルーティングポリシー、ワークスペース設定に基づきます。
+オンにすると、ユーザーが作成した OAuth アプリの管理と動的クライアント登録が公開されるため、先にリダイレクト URI、同意、クライアントシークレット、レート制限、ワークスペースの認可の設定を見直してください。
 
 ## 更新する
 
+```bash
+phaseo update
+```
+
+これにより、CLI のインストールに使ったパッケージマネージャーで更新が実行されます。手動で更新するには、次を実行します。
+
 <CodeGroup>
 
-```bash title="npm"
+```bash npm
 npm install -g @phaseo/cli@latest
 ```
 
-```bash title="pnpm"
+```bash pnpm
 pnpm add -g @phaseo/cli@latest
 ```
 
-```bash title="yarn"
+```bash yarn
 yarn global add @phaseo/cli@latest
 ```
 
-```bash title="bun"
+```bash bun
 bun add -g @phaseo/cli@latest
 ```
 
 </CodeGroup>
-
-## 次のステップ
-
-- [管理 API キー](../../developers/management-api-keys.mdx)
-- [認証](../../developers/authentication.mdx)
-- [Codex](./codex.mdx)
-- [Claude Code](./claude-code.mdx)
-- [Cline](./cline)
-- [Kilo Code](./kilo-code)
-- [oh-my-pi](./oh-my-pi)
-- [Muse Code](./muse-code)
-- [MiniMax Code](./minimax-code)

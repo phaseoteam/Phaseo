@@ -5,13 +5,11 @@ description: "Label every request with a model you choose, using your own catego
 icon: "list-tree"
 ---
 
+Define a taxonomy, such as department, audience, or task type, and a model to apply it, and Phaseo labels each finished request with that model's answers. Each answer is stored as a [request label](/v1/guides/request-labels), so you filter and group logs, usage, and analytics by it exactly like labels your code sends. Use a classifier when your code doesn't know the category: who a prompt was written for, what kind of work an agent is doing, or whether a request touches a regulated topic.
+
 <Note>
 Request classifiers are in beta. Owners and admins manage them in **Settings → Classifiers** or with the `/v1/classifiers` management API, using a [management key](/v1/developers/management-api-keys) with the `classifiers:*` scopes.
 </Note>
-
-A classifier describes a taxonomy, such as department, audience, or task type, and names the model that applies it. After each eligible request finishes, Phaseo sends the request to that model, which picks a value for every dimension. Each answer is added to the request as a [request label](/v1/guides/request-labels), so you can filter and group logs, usage, and analytics by it exactly like labels your code sends.
-
-Use classifiers when the category is not known in your code: who a prompt was written for, what kind of work an agent is doing, or whether a request touches a regulated topic.
 
 ## How a request is classified
 
@@ -54,11 +52,11 @@ curl https://api.phaseo.app/v1/classifiers \
 | `dimensions` | 1 to 12 questions. Each `key` becomes the label key; each dimension lists 2 to 50 values (1 with `allow_other`). |
 | `multiple` | Allow more than one value for a dimension. Each value becomes its own label with the same key. |
 | `allow_other` | Let the model answer `other` when nothing fits. |
-| `instructions` | Extra guidance added to the classification prompt. |
+| `instructions` | Extra guidance added to the classification prompt, up to 8,000 characters. |
 | `sample_rate` | Share of eligible requests to classify, from `0.0001` to `1`. |
 | `sample_by` | `request` samples each request. `session` keeps a session in or out together and reuses its answers for an hour, so a long agent run is classified once. |
 | `input_scope` | `prompt` classifies the request. `prompt_and_response` also shows the model the response. |
-| `scope` | Only classify requests from these `key_ids`, `app_ids`, or `models`. |
+| `scope` | Only classify requests from these `key_ids`, `app_ids`, or `models`, up to 50 of each. |
 | `monthly_budget_usd` | Pause the classifier for the rest of the UTC month once it has spent this much. |
 
 A workspace can have up to five classifiers. Changes reach the gateway within about a minute.

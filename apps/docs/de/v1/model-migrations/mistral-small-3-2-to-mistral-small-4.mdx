@@ -1,67 +1,43 @@
 ---
 title: "Mistral Small 4"
-description: "Wichtige Hinweise zu Mistral Small 4, einschließlich Reasoning-Steuerung und vereinheitlichter Antwortfelder."
+description: "Wichtige Hinweise zur Einführung von Mistral Small 4, einschließlich Reasoning-Steuerung und vereinheitlichter Antwortfelder."
 icon: "/icons/brands/mistral.svg"
 ---
 
-# Mistral Small 4
-
-Mit diesem Leitfaden führst du Mistral Small 4 über Phaseo Gateway sicher ein:
-
-- `mistral/mistral-small-4-2026-03-16`
-
-## Neuerungen
-
-- Mistral Small 4 bietet eine Steuerung des Reasoning-Modus über `reasoning_effort`.
-- Gateway sendet für diese Modellroute nur zwei Werte an den Anbieter:
-  - `none` (Reasoning aus)
-  - `high` (Reasoning an)
-- Gateway wandelt Mistral-Denkblöcke in standardisierte Antwortfelder um:
-  - `message.content` für den sichtbaren Antworttext
-  - `message.reasoning_content` und `message.reasoning_details` für Reasoning-Text
-
-## Schnelleinstieg für die Migration
-
-Reasoning ist für diese Route standardmäßig deaktiviert.
-
-Gateway-Zuordnungsregeln:
-
-- Ohne Reasoning-Steuerung sendet Gateway `reasoning_effort: "none"`.
-- Bei `reasoning.enabled: true` sendet Gateway `reasoning_effort: "high"`.
-- Bei `reasoning.effort: "none"` sendet Gateway `reasoning_effort: "none"`.
-- Jeder andere Wert von `reasoning.effort` wird zu `reasoning_effort: "high"`.
-
-Empfohlene Verwendung:
-
-- `reasoning.effort: "none"` für einfache Aufgaben.
-- `reasoning.effort: "high"` für tiefgehendes Reasoning.
-
-Beispiel:
+Ändere das Modell in `mistral/mistral-small-4` und entscheide pro Route, ob Reasoning aktiv ist. Mistral Small 4 hat zwei Reasoning-Modi, aus und hoch, und Phaseo ordnet jeden Effort-Wert einem davon zu.
 
 ```json
 {
-  "model": "mistral/mistral-small-4-2026-03-16",
+  "model": "mistral/mistral-small-4",
   "messages": [
     { "role": "user", "content": "Why is fast inference important?" }
   ],
-  "reasoning": {
-    "effort": "high"
-  }
+  "reasoning": { "effort": "high" }
 }
 ```
 
-## Hinweise zur Antwortverarbeitung
+## Reasoning ein- oder ausschalten
 
-Mistral kann gemischte Inhaltsblöcke für den Assistenten zurückgeben, etwa `thinking` und `text`. Gateway überführt diese in eine stabile Struktur:
+Reasoning ist aus, solange die Anfrage es nicht verlangt. Über die eigene API von Mistral sendet Phaseo `reasoning_effort` wie folgt:
 
-- Die finale, nutzersichtbare Antwort steht in `choices[0].message.content`.
-- Der Reasoning-Text steht in `choices[0].message.reasoning_content`.
+| Anfrage | An Mistral gesendet |
+| --- | --- |
+| Keine Reasoning-Einstellung | `reasoning_effort: "none"` |
+| `reasoning.effort: "none"` oder `reasoning.enabled: false` | `reasoning_effort: "none"` |
+| Jeder andere `reasoning.effort` oder `reasoning.enabled: true` | `reasoning_effort: "high"` |
 
-So bleibt das nachgelagerte Verhalten erhalten, das OpenAI-kompatible Chat-Completion-Felder erwartet.
+Ein flaches `reasoning_effort` in der Anfrage hat Vorrang vor `reasoning.effort`. Verwende `none` für leichte Routen und `high` für tiefes Reasoning; `low` und `medium` verhalten sich genau wie `high`.
 
-## Rollout-Checkliste
+## Antwort und Reasoning lesen
 
-1. Aktualisiere die Modell-ID auf `mistral/mistral-small-4-2026-03-16`.
-2. Prüfe Reasoning-Steuerungen ausschließlich mit `none` und `high`.
-3. Wiederhole Qualitäts- und Schema-Tests für Routen mit hohem Aufwand.
-4. Vergleiche Latenz und Kosten für `none` und `high`, bevor du vollständig umstellst.
+Mistral kann gemischte Inhaltsblöcke zurückgeben, etwa `thinking` gefolgt von `text`. Phaseo teilt sie in Felder im OpenAI-Stil auf, sodass nachgelagerter Code, der Chat Completions liest, weiter funktioniert:
+
+- die Antwort steht in `choices[0].message.content`;
+- der Reasoning-Text steht in `choices[0].message.reasoning_content` und `reasoning_details`.
+
+## Umstellen
+
+1. Ändere die Modell-ID von Mistral Small 3.2 in `mistral/mistral-small-4`.
+2. Teste Reasoning nur mit `none` und `high`.
+3. Führe Tests zu Ausgabequalität und Schema auf den Routen, die `high` verwenden, erneut aus.
+4. Vergleiche Latenz und Kosten für `none` und `high` vor der vollständigen Umstellung.

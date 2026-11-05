@@ -233,23 +233,23 @@ const LANGUAGE_DOCS_BY_VALUE: Partial<Record<string, { label: string; href: stri
 	},
 	"go-sdk": {
 		label: "Go SDK",
-		href: `${DOCS_BASE_URL}/sdk-reference/go/overview`,
+		href: `${DOCS_BASE_URL}/sdk-reference/client/overview`,
 	},
 	"csharp-sdk": {
 		label: "C# SDK",
-		href: `${DOCS_BASE_URL}/sdk-reference/csharp/overview`,
+		href: `${DOCS_BASE_URL}/sdk-reference/client/overview`,
 	},
 	"java-sdk": {
 		label: "Java SDK",
-		href: `${DOCS_BASE_URL}/sdk-reference/java/overview`,
+		href: `${DOCS_BASE_URL}/sdk-reference/client/overview`,
 	},
 	"php-sdk": {
 		label: "PHP SDK",
-		href: `${DOCS_BASE_URL}/sdk-reference/php/overview`,
+		href: `${DOCS_BASE_URL}/sdk-reference/client/overview`,
 	},
 	"ruby-sdk": {
 		label: "Ruby SDK",
-		href: `${DOCS_BASE_URL}/sdk-reference/ruby/overview`,
+		href: `${DOCS_BASE_URL}/sdk-reference/client/overview`,
 	},
 	"ai-sdk": {
 		label: "Vercel AI SDK",
@@ -257,27 +257,27 @@ const LANGUAGE_DOCS_BY_VALUE: Partial<Record<string, { label: string; href: stri
 	},
 	"agent-sdk-ts": {
 		label: "TypeScript Agent SDK",
-		href: `${DOCS_BASE_URL}/sdk-reference/typescript/agent-sdk-overview`,
+		href: `${DOCS_BASE_URL}/sdk-reference/agent/overview`,
 	},
 	"agent-sdk-python": {
 		label: "Python Agent SDK",
-		href: `${DOCS_BASE_URL}/sdk-reference/python/agent-sdk-overview`,
+		href: `${DOCS_BASE_URL}/sdk-reference/agent/overview`,
 	},
 	"agent-sdk-go": {
 		label: "Go Agent SDK",
-		href: `${DOCS_BASE_URL}/sdk-reference/go/agent-sdk-overview`,
+		href: `${DOCS_BASE_URL}/sdk-reference/agent/overview`,
 	},
 	"agent-sdk-csharp": {
 		label: "C# Agent SDK",
-		href: `${DOCS_BASE_URL}/sdk-reference/csharp/agent-sdk-overview`,
+		href: `${DOCS_BASE_URL}/sdk-reference/agent/overview`,
 	},
 	"agent-sdk-php": {
 		label: "PHP Agent SDK",
-		href: `${DOCS_BASE_URL}/sdk-reference/php/agent-sdk-overview`,
+		href: `${DOCS_BASE_URL}/sdk-reference/agent/overview`,
 	},
 	"agent-sdk-ruby": {
 		label: "Ruby Agent SDK",
-		href: `${DOCS_BASE_URL}/sdk-reference/ruby/agent-sdk-overview`,
+		href: `${DOCS_BASE_URL}/sdk-reference/agent/overview`,
 	},
 	"openai-node": {
 		label: "OpenAI-compatible API",

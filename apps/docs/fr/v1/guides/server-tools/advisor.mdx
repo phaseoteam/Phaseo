@@ -1,25 +1,17 @@
 ---
 icon: "compass"
 title: "Outil serveur Advisor"
-description: "Permettez à un modèle de consulter un autre modèle en cours de génération."
+description: "Laissez un modèle en consulter un autre en cours de génération."
 ---
 
-Utilisez `phaseo:advisor` lorsque le modèle principal doit pouvoir demander à un autre modèle une relecture, un plan, une vérification ou un avis spécialisé avant de terminer.
-
-Le modèle principal appelle Advisor comme n’importe quel autre outil. Phaseo exécute le modèle Advisor côté serveur et renvoie son avis comme résultat de l’outil. Le modèle principal rédige ensuite la réponse finale.
-
-<Note>
-Advisor est géré par la passerelle avec les modèles texte pris en charge. Il n’est pas converti en outil Advisor natif d’Anthropic, sauf si le client envoie explicitement le format natif correspondant.
-</Note>
-
-## Démarrage rapide
+Ajoutez `phaseo:advisor` pour que le modèle principal puisse demander à un second modèle une relecture, un plan, une vérification de cohérence ou l’avis d’un spécialiste avant de répondre. Le modèle principal appelle l’Advisor comme n’importe quel outil ; Phaseo exécute le modèle Advisor et renvoie son avis comme résultat de l’outil.
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "messages": [
       { "role": "user", "content": "Design a rate limiter for a distributed API gateway." }
     ],
@@ -36,20 +28,7 @@ curl https://api.phaseo.app/v1/chat/completions \
   }'
 ```
 
-## Choisir le modèle Advisor
-
-Vous pouvez définir le modèle Advisor dans la définition de l’outil :
-
-```json
-{
-  "type": "phaseo:advisor",
-  "parameters": {
-    "model": "anthropic/claude-opus-5"
-  }
-}
-```
-
-Si `parameters.model` est omis, l’appel à l’outil peut fournir `model`. Si aucun des deux n’est défini, Phaseo utilise le modèle de la requête externe.
+Advisor fonctionne avec tout modèle texte pris en charge. Phaseo l’exécute lui-même ; il n’est converti en outil Advisor natif d’Anthropic que si vous envoyez la forme d’outil native d’Anthropic.
 
 ## Paramètres
 
@@ -69,29 +48,22 @@ Si `parameters.model` est omis, l’appel à l’outil peut fournir `model`. Si 
 }
 ```
 
-| Paramètre | Type | Par défaut | Description |
+| Paramètre | Type | Défaut | Description |
 | --- | --- | --- | --- |
-| `name` | string | none | Nom facultatif d’Advisor. Après suppression des espaces de début et de fin, les noms doivent être uniques et peuvent contenir des lettres, des chiffres, des espaces, des tirets bas et des tirets. |
-| `model` | string | outer model | Modèle Advisor à appeler. Si omis, l’appel à l’outil peut fournir `model`. |
-| `instructions` | string | default Advisor behavior | Instructions supplémentaires pour le modèle Advisor. |
-| `forward_transcript` | boolean | `false` | Inclure la transcription actuelle de la conversation dans la requête Advisor. |
-| `max_uses` | integer | `1` | Nombre maximal d’appels à cet Advisor pendant la boucle des outils serveur. |
-| `max_completion_tokens` | integer | `1400` | Nombre maximal de jetons de sortie pour la réponse Advisor. |
-| `max_tokens` | integer | `1400` | Ancien alias de `max_completion_tokens`. |
-| `reasoning` | object | provider default | Configuration de raisonnement transmise à l’appel Advisor si le modèle ou le fournisseur sélectionné la prend en charge. |
-| `temperature` | number | provider default | Température d’échantillonnage de l’appel Advisor. |
+| `name` | string | Aucun | De 1 à 64 lettres, chiffres, espaces, traits de soulignement ou tirets. Requis lorsque vous ajoutez plusieurs Advisors. |
+| `model` | string | Voir ci-dessous | Le modèle Advisor. |
+| `instructions` | string | Instructions intégrées de l’Advisor | Instructions supplémentaires pour l’Advisor. |
+| `forward_transcript` | boolean | `false` | Envoie la conversation en cours à l’Advisor. |
+| `max_uses` | integer | `1` | Nombre d’appels à cet Advisor par requête. |
+| `max_completion_tokens` | integer | `1400` | Tokens de sortie pour chaque réponse de l’Advisor. Les valeurs inférieures à `1024` sont relevées à `1024`. `max_tokens` est accepté comme ancien alias. |
+| `reasoning` | object | Défaut du fournisseur | Réglages de raisonnement, transmis lorsque le modèle Advisor les prend en charge. |
+| `temperature` | number | Défaut du fournisseur | Température d’échantillonnage de l’appel à l’Advisor. |
 
-## Arguments de l’appel d’outil
+Le modèle Advisor est `parameters.model` s’il est défini ; sinon le `model` que le modèle principal envoie dans son appel ; sinon le modèle de la requête elle-même.
 
-Le modèle appelle généralement Advisor avec un `prompt` :
+## Ce que le modèle envoie
 
-```json
-{
-  "prompt": "Review this migration plan and identify the riskiest assumptions."
-}
-```
-
-Si la définition d’Advisor ne fixe pas de modèle, l’appel à l’outil peut également inclure `model` :
+En général un `prompt`. Si l’outil n’impose pas de modèle, l’appel peut aussi en choisir un :
 
 ```json
 {
@@ -100,11 +72,11 @@ Si la définition d’Advisor ne fixe pas de modèle, l’appel à l’outil peu
 }
 ```
 
-Lorsque `forward_transcript` vaut `true`, Phaseo peut exécuter un appel Advisor contenant uniquement la transcription si le modèle ne fournit pas de prompt.
+Avec `forward_transcript: true`, le modèle peut appeler l’Advisor sans prompt, et l’Advisor examine la conversation transmise.
 
-## Plusieurs conseillers
+## Ajouter plusieurs Advisors
 
-Ajoutez une entrée `phaseo:advisor` par conseiller. Chaque conseiller nommé devient un outil interne distinct, par exemple `phaseo_advisor_security_reviewer` ou `phaseo_advisor_architect`.
+Ajoutez une entrée `phaseo:advisor` par Advisor. Chaque Advisor nommé devient un outil distinct pour le modèle, par exemple `phaseo_advisor_security_reviewer`.
 
 ```json
 {
@@ -129,11 +101,9 @@ Ajoutez une entrée `phaseo:advisor` par conseiller. Chaque conseiller nommé de
 }
 ```
 
-Au plus, une seule entrée Advisor peut omettre `name`. Si vous imposez `tool_choice: "phaseo:advisor"` avec plusieurs conseillers, Phaseo associe cet alias au premier conseiller configuré.
+Les noms doivent être uniques après suppression des espaces aux extrémités, sans tenir compte de la casse, et une seule entrée au plus peut omettre `name` ; sinon la requête est refusée. Avec plusieurs Advisors, `tool_choice: "phaseo:advisor"` force le premier.
 
-## Résultat renvoyé par l’outil
-
-Advisor renvoie un objet JSON comme résultat de l’outil :
+## Ce que renvoie l’outil
 
 ```json
 {
@@ -144,35 +114,10 @@ Advisor renvoie un objet JSON comme résultat de l’outil :
 }
 ```
 
-Si la requête Advisor ne peut pas être exécutée, Phaseo renvoie une erreur d’outil telle que `advisor_invalid_request`, `advisor_max_uses_exceeded` ou `advisor_request_failed`.
+Si l’appel ne peut pas s’exécuter, le modèle reçoit à la place un résultat d’erreur : `advisor_invalid_request` (pas de prompt ou pas de modèle), `advisor_max_uses_exceeded` ou `advisor_request_failed`.
 
-## Mémoire de la conversation
-
-Advisor ne conserve aucun état caché entre les requêtes. Si vous renvoyez les messages et résultats d’outils précédents dans la requête suivante, le modèle principal peut consulter l’échange antérieur. Si `forward_transcript` est activé, Advisor peut également voir la transcription transmise pour cette requête.
+L’Advisor ne conserve aucun état entre les requêtes. Si vous rejouez des messages et des résultats d’outils antérieurs, le modèle principal voit les avis précédents ; l’Advisor ne voit la conversation que lorsque `forward_transcript` est activé. Les avis ne sont pas diffusés en streaming, et l’Advisor ne peut pas appeler d’outils lui-même.
 
 ## Utilisation et tarification
 
-Les appels Advisor incrémentent :
-
-```json
-{
-  "usage": {
-    "server_tool_use": {
-      "advisor_requests": 1
-    }
-  }
-}
-```
-
-Les jetons du modèle Advisor sont inclus dans l’utilisation totale et peuvent être facturés aux tarifs du modèle Advisor sélectionné. La tarification des outils serveur peut également utiliser `server_tool_advisor_requests`.
-
-## Limites actuelles
-
-- La diffusion en continu des conseils Advisor n’est pas encore activée.
-- Les appels Advisor ne donnent pas accès à des outils supplémentaires pour le modèle consulté.
-
-## Pages associées
-
-- [Outils serveur](./index.mdx)
-- [Sous-agent](./subagent.mdx)
-- [Appels d’outils](../tool-calling.mdx)
+Chaque appel ajoute 1 à `usage.server_tool_use.advisor_requests` et peut être facturé via `server_tool_advisor_requests`. Les tokens de l’Advisor s’ajoutent à l’utilisation de la requête et sont facturés au tarif du modèle Advisor.

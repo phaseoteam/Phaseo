@@ -4,70 +4,64 @@ icon: "/icons/brands/continue.svg"
 description: "أضف Phaseo إلى Continue في VS Code أو JetBrains أو Continue CLI."
 ---
 
-استخدم Phaseo CLI لإنشاء إعداد Continue محلي تشترك فيه إضافات IDE وواجهة سطر الأوامر `cn`، أو أضف قيم النموذج والسر نفسها يدويًا إلى إعداد Continue الموجود.
+شغّل `phaseo continue` لكتابة إعداد Continue يشير إلى Phaseo، أو أضف إدخال النموذج نفسه والسر إلى إعدادك الحالي. تشترك إضافات بيئات التطوير وواجهة `cn` CLI في الإعداد نفسه.
 
 ## الإعداد باستخدام Phaseo CLI
 
 ```bash
 phaseo login
-phaseo continue --model anthropic/claude-sonnet-4.6
+phaseo continue --model anthropic/claude-sonnet-5.5
 ```
 
-إذا لم يكن `~/.continue/config.yaml` و`~/.continue/.env` مستخدمين، فسينشئ الإعداد الملفين:
+إذا لم يكن `~/.continue/config.yaml` و`~/.continue/.env` موجودين، ينشئ الإعداد مفتاحًا باسم `Phaseo CLI: Continue API Key` (تنتهي صلاحيته بعد 90 يومًا، وحد إنفاقه الشهري $100) ويكتب الملفين. بدون `--model`، يستخدم `anthropic/claude-sonnet-4.6`.
 
-```yaml
+```yaml ~/.continue/config.yaml
+# Managed by Phaseo CLI
 name: Phaseo
 version: 1.0.0
 schema: v1
 models:
-  - name: Phaseo
+  - name: "anthropic/claude-sonnet-5.5 via Phaseo"
     provider: openai
-    model: anthropic/claude-sonnet-4.6
+    model: "anthropic/claude-sonnet-5.5"
     apiBase: https://api.phaseo.app/v1
     apiKey: ${{ secrets.PHASEO_API_KEY }}
     useResponsesApi: false
     roles: [chat, edit, apply]
 ```
 
-يُخزن المفتاح باسم `PHASEO_API_KEY` في `~/.continue/.env`. وتحافظ القيمة `useResponsesApi: false` على توجيه الطلبات عبر مسار Chat Completions في Phaseo.
+يُحفظ المفتاح في `~/.continue/.env` باسم `PHASEO_API_KEY`. يُبقي `useResponsesApi: false` على Continue يستخدم نقطة النهاية Chat Completions في Phaseo.
 
 <Warning>
-ملف `.env` العام في Continue نص عادي. لا ترفعه إلى المستودع مطلقًا. لا ترث إضافات IDE متغيرات بيئة shell العادية، لذا تستخدم CLI ملف الأسرار الموثق في Continue.
+ملف `.env` العام في Continue نص صريح. لا تُدرجه في المستودع أبدًا. لا ترث إضافات بيئات التطوير متغيرات بيئة الصدفة، ولهذا تستخدم CLI ملف [الأسرار المحلية](https://docs.continue.dev/faqs#managing-local-secrets-and-environment-variables) في Continue.
 </Warning>
 
-إذا كان أي من الملفين يحتوي على إعداد مستخدم، فسيتوقف الإعداد دون استبداله. ادمج إدخال النموذج وأضف `PHASEO_API_KEY=<dedicated key>` إلى ملف `.env` الحالي. استرجع المفتاح عبر `phaseo integrations credential continue`.
+## إعداد Continue يدويًا
 
-## التحقق
+إذا كان أي من الملفين يحتوي على إعداداتك الخاصة، يتوقف الإعداد دون تغييره. أضف إدخال النموذج أعلاه إلى `config.yaml`، وأضف `PHASEO_API_KEY=<key>` إلى `.env`، مستخدمًا `phaseo integrations credential continue` أو أي مفتاح API من Phaseo. راجع وثائق [مزوّد OpenAI](https://docs.continue.dev/customize/model-providers/top-level/openai) في Continue لمعرفة الحقول الأخرى.
 
-في VS Code أو JetBrains، أعد تحميل النافذة، وافتح Continue، واختر **Phaseo**، واطلب منه الرد بـ `PHASEO_CONTINUE_OK`.
+## التحقق من أنه يعمل
 
-في Continue CLI، شغّل `cn`. استخدم `/config` إذا كان إعداد محفوظ آخر نشطًا، ثم أرسل طلب الاختبار نفسه. تحقق من ظهوره في نشاط Phaseo.
+في VS Code أو JetBrains، أعد تحميل النافذة، وافتح Continue، واختر **Phaseo**، واطلب منه الرد بـ `PHASEO_CONTINUE_OK`. في CLI، شغّل `cn` (استخدم `/config` إذا كان إعداد آخر نشطًا) وأرسل الموجّه نفسه. تأكد من ظهور الطلب في **الإعدادات → الاستخدام → السجلات**.
 
-## الإزالة
+## إزالة Phaseo
 
 ```bash
 phaseo integrations remove continue
 ```
 
-تلغي الإزالة المفتاح وتحذف الملفين فقط إذا ظلا يحملان علامة الملكية الخاصة بـ Phaseo CLI. وتُترك الإدخالات المدمجة يدويًا دون تغيير.
+يلغي هذا الأمر المفتاح ويحذف الملفين فقط إذا كانا لا يزالان يبدآن بعلامة Phaseo CLI. تبقى الإدخالات التي دمجتها بنفسك كما هي.
 
-## استكشاف الأخطاء وإصلاحها
+## إصلاح المشكلات الشائعة
 
 ### لا يظهر Phaseo
 
-أعد تحميل IDE وتحقق من احتواء `config.yaml` على الحقول العلوية المطلوبة `name` و`version` و`schema`.
+أعد تحميل بيئة التطوير وتأكد من أن `config.yaml` يحتوي على الحقول العليا `name` و`version` و`schema`.
 
-### يشير Continue إلى غياب سر
+### يبلّغ Continue عن سر مفقود
 
-تحقق من احتواء `~/.continue/.env` على المفتاح الذي أعاده `phaseo integrations credential continue`، ثم أعد تشغيل IDE.
+تأكد من أن `~/.continue/.env` يحتوي على المفتاح الناتج عن `phaseo integrations credential continue`، ثم أعد تشغيل بيئة التطوير.
 
 ### يستدعي Continue واجهة Responses API
 
 أبقِ `useResponsesApi: false` في إدخال نموذج Phaseo.
-
-## مواضيع ذات صلة
-
-- [إعداد Continue المتوافق مع OpenAI](https://docs.continue.dev/customize/model-providers/top-level/openai)
-- [الأسرار المحلية في Continue](https://docs.continue.dev/faqs#managing-local-secrets-and-environment-variables)
-- [وكلاء البرمجة](./coding-assistants.mdx)
-- [النماذج](../../api-reference/endpoint/models.mdx)

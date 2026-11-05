@@ -5,83 +5,49 @@ description: "What to know when adopting Claude Opus 4.7, including adaptive thi
 icon: "/icons/brands/anthropic.svg"
 ---
 
-# Anthropic Claude Opus 4.7
+Change the model to `anthropic/claude-opus-4.7`, drop sampling parameters and thinking budgets, and set depth with an effort level. Requests that still carry Opus 4.6 fields don't fail on Phaseo; the gateway rewrites them as shown below.
 
-Use this guide to adopt `anthropic/claude-opus-4.7` safely in production.
+| Opus 4.6 request | What Phaseo sends to Opus 4.7 |
+| --- | --- |
+| `temperature`, `top_p`, `top_k` | Left out. Anthropic would return `400` for non-default values. |
+| `thinking: {"type": "enabled", "budget_tokens": …}` | `thinking: {"type": "adaptive", "display": "summarized"}`; the budget isn't forwarded. |
+| `reasoning.effort` | `output_config.effort`, including `xhigh`. |
+| `reasoning.effort: "none"` or `reasoning.enabled: false` | `thinking: {"type": "disabled"}`. |
+| No reasoning setting | No `thinking` field, so Opus 4.7 doesn't think. |
 
-Claude Opus 4.7 introduces request-shape changes that can hard-fail old 4.6 patterns if left unchanged.
+Opus 4.7 also hides thinking content unless you opt in; Phaseo asks for the summarized display whenever it turns thinking on. Its tokenizer can produce more tokens than Opus 4.6 for the same text.
 
-## What's new
+## Update the request
 
-- New effort level: `xhigh` (Messages API)
-- Extended thinking budgets were removed for Opus 4.7 (`thinking: { type: "enabled", budget_tokens: ... }` now fails)
-- Sampling params are no longer supported on this model when set to non-default values (`temperature`, `top_p`, `top_k`)
-- Thinking content is omitted by default unless you explicitly opt in
-- Updated tokenizer behavior can increase token usage vs Opus 4.6
+1. Set the model ID to `anthropic/claude-opus-4.7`.
+2. Remove `temperature`, `top_p`, and `top_k`, and tune with instructions instead.
+3. Replace thinking budgets with adaptive thinking and an effort level:
 
-## Phaseo gateway compatibility behavior
+```json
+{
+  "model": "anthropic/claude-opus-4.7",
+  "messages": [{ "role": "user", "content": "Refactor this module and explain the risks." }],
+  "reasoning": { "effort": "xhigh" }
+}
+```
 
-To reduce migration breakage, Phaseo accepts legacy Opus 4.6 fields for Opus 4.7 and normalizes them before sending upstream:
+Start at `high` and use `xhigh` for the hardest coding and agentic routes. On `/v1/messages`, send `thinking: {"type": "adaptive"}` with `output_config.effort` instead.
 
-- `temperature`, `top_p`, and `top_k` are accepted but stripped
-- legacy thinking budgets are not forwarded
-- Opus 4.7 thinking is always sent as `thinking: { "type": "adaptive", "display": "summarized" }`
-- `reasoning.effort` is still honored and mapped to `output_config.effort` (`xhigh` supported)
-
-## Migration quickstart
-
-### 1. Update model ID
-
-Set the model ID to `anthropic/claude-opus-4.7`.
-
-### 2. Move to adaptive thinking with summarized display
-
-For Opus 4.7, use:
-
-- `thinking: { "type": "adaptive", "display": "summarized" }`
-
-Avoid legacy extended-thinking budgets on this model.
-
-### 3. Remove sampling controls
-
-Do not send:
-
-- `temperature`
-- `top_p`
-- `top_k`
-
-Prefer prompt and instruction tuning instead.
-
-### 4. Rebaseline effort controls
-
-If you use reasoning controls, retest with:
-
-- `output_config.effort = "high"` as baseline
-- `output_config.effort = "xhigh"` for hardest coding/agentic paths
-
-If you call Phaseo through OpenAI-style payloads, `reasoning.effort` maps to this same `output_config.effort` value for Opus 4.7.
-
-### 5. Recheck token ceilings
-
-Because tokenization changed, audit:
-
-- `max_tokens` / `max_output_tokens`
-- timeout budgets
-- cost controls and alerts
+4. Because the tokenizer changed, audit `max_tokens` and `max_output_tokens`, timeout budgets, and cost alerts.
 
 ## What to test
 
-- strict schema output pass rate with your production prompts
-- long-running tool workflows (tool call count, completion rate, latency)
-- response quality deltas at `high` vs `xhigh`
-- token-cost deltas on your highest-volume prompt classes
+- schema pass rate on your production prompts;
+- long-running tool workflows: tool call count, completion rate, and latency;
+- quality at `high` versus `xhigh`;
+- token cost on your highest-volume prompt classes.
 
-## Safe rollout
+## Roll out
 
-1. Deploy request-shape changes before shifting traffic.
-2. Shadow Opus 4.7 on your production eval suite.
-3. Canary with rollback to Opus 4.6.
-4. Promote once quality, latency, and cost deltas are within target.
+1. Deploy the request-shape changes before shifting traffic.
+2. Shadow Opus 4.7 on your production evaluation suite.
+3. Canary with Opus 4.6 as a fallback in `models`.
+4. Promote once quality, latency, and cost changes are within target.
 
 ## Sources
 

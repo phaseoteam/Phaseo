@@ -14,7 +14,8 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">Product</p>
 
-- BYOK now includes 250,000 requests per workspace each UTC month without a Phaseo fee, then charges 2.5% of the provider-equivalent cost; request-level BYOK metadata is kept for 90 days (365 days from November 2026) ([#2056](https://github.com/phaseoteam/Phaseo/pull/2056)).
+- BYOK now includes 250,000 requests per workspace each UTC month without a Phaseo fee, then charges 2.5% of the provider-equivalent cost ([#2056](https://github.com/phaseoteam/Phaseo/pull/2056)).
+- Request-level BYOK metadata is kept for 90 days, and for 365 days from November 2026 ([#2056](https://github.com/phaseoteam/Phaseo/pull/2056)).
 
 </div>
 
@@ -153,7 +154,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - [z.AI: GLM 5.3 Flash](https://phaseo.app/models/z-ai/glm-5.3-flash)
 - [Qwen: Qwen 3.8 Flash](https://phaseo.app/models/qwen/qwen3.8-flash)
-- [Stealth: Ox Alpha](https://phaseo.app/models/stealth/ox-alpha) was retired after it was revealed as Z.AI GLM-5.3-Flash.
+- [Stealth: Ox Alpha](https://phaseo.app/models/stealth/ox-alpha) is revealed as [z.AI: GLM 5.3 Flash](https://phaseo.app/models/z-ai/glm-5.3-flash).
 
 </div>
 
@@ -206,7 +207,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - Requests can classify an app with the `X-App-Categories` header, which the TypeScript SDK also supports; see [App Attribution](../guides/app-attribution.mdx) ([#1799](https://github.com/phaseoteam/Phaseo/pull/1799)).
 - The `:nitro`, `:cheap` and `:fast` model suffixes now set the routing mode even when request fields, presets or workspace defaults ask for another; see [Routing and Fallbacks](../guides/routing-and-fallbacks.mdx) ([#1814](https://github.com/phaseoteam/Phaseo/pull/1814)).
-- `provider.quantizations` now restricts routing to offers with a matching quantization and returns diagnostics when none match; see [Choosing a Quantization Strategy](../guides/quantization-selection.mdx) ([#1810](https://github.com/phaseoteam/Phaseo/pull/1810)).
+- `provider.quantizations` now restricts routing to offers with a matching quantization and returns diagnostics when none match; see [Choosing a Quantization Strategy](../guides/quantization.mdx) ([#1810](https://github.com/phaseoteam/Phaseo/pull/1810)).
 
 </div>
 

@@ -2,332 +2,179 @@
 title: "Trier les fournisseurs par prix, latence ou débit"
 sidebarTitle: "Trier par prix ou vitesse"
 icon: "arrow-down-up"
-description: "Utilisez le tri des fournisseurs au niveau de la requête pour privilégier la route la moins chère, la plus rapide ou offrant le meilleur débit pour un modèle."
+description: "Utilisez le tri des fournisseurs au niveau de la requête pour privilégier la route la moins chère, la plus rapide ou au meilleur débit pour un modèle."
 ---
 
-Utilisez cette recette lorsque le modèle reste le même, mais que vous souhaitez que le gateway classe différemment les offres des fournisseurs pour une requête.
+Définissez `provider.sort` sur une requête pour classer les fournisseurs d’un même modèle par `price`, `latency` ou `throughput` au lieu du classement équilibré par défaut. À la fin, vous avez la requête dans votre langage, et vous voyez dans la réponse et les journaux quel fournisseur le tri a choisi.
 
-## Objectif
+Les formes de requête sont prêtes pour la production. [Choisir comment les fournisseurs sont classés](../guides/routing-and-fallbacks#choose-how-providers-are-ranked) décrit la valeur par défaut de l’espace de travail, `routing.mode`, et les suffixes de modèle `:cheap`, `:fast` et `:nitro`.
 
-- Privilégiez le fournisseur le moins cher pour une requête.
-- Privilégiez le fournisseur ayant la latence la plus faible pour les parcours interactifs.
-- Privilégiez le fournisseur au débit le plus élevé pour la génération en masse.
+| `sort` | À utiliser pour |
+| --- | --- |
+| `price` | Les traitements par lots et en arrière-plan, quand le coût compte plus que la latence de queue |
+| `latency` | Le chat, les copilotes et les outils avec intervention humaine |
+| `throughput` | La génération à fort volume et les rattrapages avec des sorties longues |
 
-## 1. Ajoutez `provider.sort` à la requête
-
-Pour les requêtes textuelles, définissez le tri souhaité directement dans l’objet `provider`.
+## Envoyer une requête triée
 
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "google/gemini-3.1-flash-lite",
+    "model": "google/gemini-3.5-flash-lite",
     "input": "Give me one release-note bullet for the last deploy.",
-    "provider": {
-      "sort": "price"
-    }
+    "provider": { "sort": "price" },
+    "meta": true
   }'
 ```
 
-```typescript TypeScript SDK
+```typescript TypeScript
 import Phaseo from "@phaseo/sdk";
 
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-  model: "google/gemini-3.1-flash-lite",
+  model: "google/gemini-3.5-flash-lite",
   input: "Give me one release-note bullet for the last deploy.",
-  provider: {
-    sort: "price",
-  },
+  provider: { sort: "price" },
+  meta: true,
 });
 
-console.log(response.output_text);
+console.log(response.meta?.routing);
 ```
 
-```python Python SDK
+```python Python
+import os
+
 from phaseo import Phaseo
 
-client = Phaseo(api_key="YOUR_API_KEY")
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
 
 response = client.generate_response(
     {
-        "model": "google/gemini-3.1-flash-lite",
+        "model": "google/gemini-3.5-flash-lite",
         "input": "Give me one release-note bullet for the last deploy.",
-        "provider": {
-            "sort": "price",
-        },
+        "provider": {"sort": "price"},
+        "meta": True,
     }
 )
 
-print(response.get("output_text"))
+print(response["meta"]["routing"]["selected_provider"])
 ```
 
-```go Go SDK
+```go Go
 package main
 
 import (
   "context"
   "fmt"
+  "os"
 
   phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
 )
 
 func main() {
-  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
+  client := phaseo.New(os.Getenv("PHASEO_API_KEY"), "https://api.phaseo.app/v1")
 
+  meta := true
   response, err := client.GenerateResponse(context.Background(), phaseo.ResponsesRequest{
-    Model: "google/gemini-3.1-flash-lite",
-    Input: "Give me one release-note bullet for the last deploy.",
-    Provider: map[string]interface{}{
-      "sort": "price",
-    },
+    Model:    "google/gemini-3.5-flash-lite",
+    Input:    "Give me one release-note bullet for the last deploy.",
+    Provider: &map[string]interface{}{"sort": "price"},
+    Meta:     &meta,
   })
   if err != nil {
     panic(err)
   }
 
-  fmt.Println(response)
+  fmt.Printf("%+v\n", response.Meta)
 }
 ```
 
-```csharp C# SDK
+```csharp C#
 using PhaseoSdk;
 using System.Collections.Generic;
 
-var client = new Phaseo("YOUR_API_KEY");
+var client = new Phaseo(Environment.GetEnvironmentVariable("PHASEO_API_KEY"));
 
 var response = await client.GenerateResponse(new Dictionary<string, object>
 {
-    ["model"] = "google/gemini-3.1-flash-lite",
+    ["model"] = "google/gemini-3.5-flash-lite",
     ["input"] = "Give me one release-note bullet for the last deploy.",
-    ["provider"] = new Dictionary<string, object>
-    {
-        ["sort"] = "price"
-    }
+    ["provider"] = new Dictionary<string, object> { ["sort"] = "price" },
+    ["meta"] = true
 });
 
-Console.WriteLine(response);
+Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(response?["meta"]));
 ```
 
-```php PHP SDK
+```php PHP
 <?php
 require 'vendor/autoload.php';
 
 use Phaseo\Sdk\Phaseo;
 
-$client = new Phaseo(getenv('PHASEO_API_KEY') ?: 'YOUR_API_KEY');
+$client = new Phaseo(getenv('PHASEO_API_KEY'));
 
 $response = $client->generateResponse([
-    'model' => 'google/gemini-3.1-flash-lite',
+    'model' => 'google/gemini-3.5-flash-lite',
     'input' => 'Give me one release-note bullet for the last deploy.',
-    'provider' => [
-        'sort' => 'price',
-    ],
+    'provider' => ['sort' => 'price'],
+    'meta' => true,
 ]);
 
-print_r($response);
+print_r($response['meta']['routing'] ?? $response);
 ```
 
-```ruby Ruby SDK
-require 'phaseo_sdk'
+```ruby Ruby
+require "phaseo_sdk"
 
-client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY', 'YOUR_API_KEY'))
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
 
 response = client.generate_response(
-  model: 'google/gemini-3.1-flash-lite',
-  input: 'Give me one release-note bullet for the last deploy.',
-  provider: {
-    sort: 'price'
-  }
+  model: "google/gemini-3.5-flash-lite",
+  input: "Give me one release-note bullet for the last deploy.",
+  provider: { sort: "price" },
+  meta: true
 )
 
 puts response
 ```
 </CodeGroup>
 
-Les tris de routage disponibles pour ce workflow sont :
+`meta: true` ajoute `meta.routing.selected_provider`, le fournisseur choisi par le tri.
 
-- `price`
-- `latency`
-- `throughput`
+## Ce que pèse chaque tri
 
-## 2. Choisissez le tri adapté à la charge de travail
+Un tri modifie les poids du score des fournisseurs ; il ne supprime pas les autres signaux, si bien qu’un fournisseur bon marché mais peu fiable peut tout de même perdre :
 
-Utilisez :
+| Tri | Prix | Taux de réussite | Latence médiane | Latence de queue | Débit |
+| --- | --- | --- | --- | --- | --- |
+| `price` | 0.40 | 0.25 | 0.15 | 0.10 | 0.05 |
+| `latency` | 0 | 0.25 | 0.55 | 0.15 | 0.02 |
+| `throughput` | 0 | 0.20 | 0.20 | 0.10 | 0.40 |
 
-- `price` lorsque le coût compte davantage que la latence de queue
-- `latency` pour le chat, les copilotes et les outils avec intervention humaine
-- `throughput` pour la génération à grande échelle ou les traitements de rattrapage
+La latence et le débit proviennent des dernières mesures de Phaseo pour chaque fournisseur.
 
-## 3. Comprenez ce que compare le gateway
+## Trier au sein d’un ensemble approuvé
 
-Lorsque vous indiquez un tri explicite au niveau de la requête, le gateway classe les candidats de façon déterministe au lieu d’utiliser le mélange pondéré équilibré habituel.
+Le tri fonctionne au mieux lorsque le groupe ne contient que des fournisseurs que vous acceptez. Ajoutez `only`, et le tri classe les fournisseurs de cette liste :
 
-Pour les modèles textuels :
-
-- `price` compare les tarifs sur une base commune entre les fournisseurs admissibles
-- si des compteurs de texte communs existent, le gateway privilégie les correspondances entre `input_text_tokens` et `output_text_tokens`
-- `latency` utilise les données de latence les plus récentes des fournisseurs
-- `throughput` utilise les mesures de débit les plus récentes
-
-## 4. Gardez un ensemble de fournisseurs réaliste
-
-Le tri fonctionne mieux lorsque vous réduisez d’abord le nombre de candidats, si nécessaire.
-
-Par exemple, triez uniquement parmi un ensemble approuvé de fournisseurs :
-
-<CodeGroup>
-```bash cURL
-curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "google/gemini-3.1-flash-lite",
-    "input": "Summarize the incident in one sentence.",
-    "provider": {
-      "only": ["google-vertex", "google-vertex-eu"],
-      "sort": "latency"
-    }
-  }'
-```
-
-```typescript TypeScript SDK
-import Phaseo from "@phaseo/sdk";
-
-const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
-
-const response = await client.generateResponse({
-  model: "google/gemini-3.1-flash-lite",
-  input: "Summarize the incident in one sentence.",
-  provider: {
-    only: ["google-vertex", "google-vertex-eu"],
-    sort: "latency",
-  },
-});
-
-console.log(response.output_text);
-```
-
-```python Python SDK
-from phaseo import Phaseo
-
-client = Phaseo(api_key="YOUR_API_KEY")
-
-response = client.generate_response(
-    {
-        "model": "google/gemini-3.1-flash-lite",
-        "input": "Summarize the incident in one sentence.",
-        "provider": {
-            "only": ["google-vertex", "google-vertex-eu"],
-            "sort": "latency",
-        },
-    }
-)
-
-print(response.get("output_text"))
-```
-
-```go Go SDK
-package main
-
-import (
-  "context"
-  "fmt"
-
-  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
-)
-
-func main() {
-  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
-
-  response, err := client.GenerateResponse(context.Background(), phaseo.ResponsesRequest{
-    Model: "google/gemini-3.1-flash-lite",
-    Input: "Summarize the incident in one sentence.",
-    Provider: map[string]interface{}{
-      "only": []string{"google-vertex", "google-vertex-eu"},
-      "sort": "latency",
-    },
-  })
-  if err != nil {
-    panic(err)
+```json
+{
+  "model": "anthropic/claude-sonnet-5.5",
+  "input": "Summarize the incident in one sentence.",
+  "provider": {
+    "only": ["anthropic", "google-vertex"],
+    "sort": "latency"
   }
-
-  fmt.Println(response)
 }
 ```
 
-```csharp C# SDK
-using PhaseoSdk;
-using System.Collections.Generic;
+[Épingler ou ignorer des fournisseurs](./pin-or-ignore-providers-per-request) décrit `only`, `order` et `ignore`.
 
-var client = new Phaseo("YOUR_API_KEY");
+## Vérifier le classement
 
-var response = await client.GenerateResponse(new Dictionary<string, object>
-{
-    ["model"] = "google/gemini-3.1-flash-lite",
-    ["input"] = "Summarize the incident in one sentence.",
-    ["provider"] = new Dictionary<string, object>
-    {
-        ["only"] = new[] { "google-vertex", "google-vertex-eu" },
-        ["sort"] = "latency"
-    }
-});
-
-Console.WriteLine(response);
-```
-
-```php PHP SDK
-<?php
-require 'vendor/autoload.php';
-
-use Phaseo\Sdk\Phaseo;
-
-$client = new Phaseo(getenv('PHASEO_API_KEY') ?: 'YOUR_API_KEY');
-
-$response = $client->generateResponse([
-    'model' => 'google/gemini-3.1-flash-lite',
-    'input' => 'Summarize the incident in one sentence.',
-    'provider' => [
-        'only' => ['google-vertex', 'google-vertex-eu'],
-        'sort' => 'latency',
-    ],
-]);
-
-print_r($response);
-```
-
-```ruby Ruby SDK
-require 'phaseo_sdk'
-
-client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY', 'YOUR_API_KEY'))
-
-response = client.generate_response(
-  model: 'google/gemini-3.1-flash-lite',
-  input: 'Summarize the incident in one sentence.',
-  provider: {
-    only: ['google-vertex', 'google-vertex-eu'],
-    sort: 'latency'
-  }
-)
-
-puts response
-```
-</CodeGroup>
-
-## 5. Vérifiez le résultat du classement
-
-Pour le débogage, examinez la requête dans **Gateway -> Utilisation** et recherchez :
-
-- fournisseurs pris en compte
-- fournisseurs classés
-- les facteurs de score du routage liés au prix, à la latence ou au débit
-
-Cela permet de vérifier facilement si le gateway a effectué le tri attendu.
-
-## Guides associés
-
-- [Routage et solutions de repli](../guides/routing-and-fallbacks.mdx)
-- [Déployer des préréglages et déboguer le routage](./preset-rollout-and-routing-debug.mdx)
+Ouvrez la requête dans **Paramètres → Utilisation → Journaux** et dépliez **Observabilité du routage**. Vous y voyez les fournisseurs envisagés, leur rang, ainsi que les facteurs et poids de chaque score, ce qui permet de confirmer que le tri a fait ce que vous attendiez. Pour appliquer le même tri à de nombreux appelants, placez-le dans un [préréglage](./preset-rollout-and-routing-debug).

@@ -1,6 +1,6 @@
 ---
 title: "8月"
-description: "Phaseo 2026 年 8 月的模型发布。"
+description: "Phaseo 2026年8月的产品更新、SDK 变更和模型发布。"
 ---
 
 import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
@@ -13,7 +13,8 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">产品</p>
 
-- BYOK 现在每个工作区每个 UTC 月包含 250,000 次请求且不收取 Phaseo 费用，超出后按提供商等价成本的 2.5% 收费；BYOK 请求级元数据保留 90 天 (自 2026 年 11 月起为 365 天) ([#2056](https://github.com/phaseoteam/Phaseo/pull/2056))。
+- BYOK 现在每个工作区每个 UTC 月包含 250,000 次请求且不收取 Phaseo 费用，超出后按提供商等价成本的 2.5% 收费 ([#2056](https://github.com/phaseoteam/Phaseo/pull/2056))。
+- BYOK 请求级元数据保留 90 天，自 2026 年 11 月起保留 365 天 ([#2056](https://github.com/phaseoteam/Phaseo/pull/2056))。
 
 </div>
 
@@ -152,7 +153,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - [z.AI: GLM 5.3 Flash](https://phaseo.app/models/z-ai/glm-5.3-flash)
 - [Qwen: Qwen 3.8 Flash](https://phaseo.app/models/qwen/qwen3.8-flash)
-- [Stealth: Ox Alpha](https://phaseo.app/models/stealth/ox-alpha) 因确认其实际为 Z.AI GLM-5.3-Flash 而退役。
+- [Stealth: Ox Alpha](https://phaseo.app/models/stealth/ox-alpha) 已揭晓为 [z.AI: GLM 5.3 Flash](https://phaseo.app/models/z-ai/glm-5.3-flash)。
 
 </div>
 
@@ -205,7 +206,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - 请求可以通过 `X-App-Categories` 请求头为应用分类，TypeScript SDK 也支持该请求头；请参阅[应用归因](../guides/app-attribution.mdx) ([#1799](https://github.com/phaseoteam/Phaseo/pull/1799))。
 - 模型后缀 `:nitro`、`:cheap` 和 `:fast` 现在决定路由模式，即使请求字段、预设或工作区默认值要求其他模式；请参阅[路由与回退](../guides/routing-and-fallbacks.mdx) ([#1814](https://github.com/phaseoteam/Phaseo/pull/1814))。
-- `provider.quantizations` 现在只路由到量化方式匹配的报价，没有匹配时会返回诊断信息；请参阅[选择量化策略](../guides/quantization-selection.mdx) ([#1810](https://github.com/phaseoteam/Phaseo/pull/1810))。
+- `provider.quantizations` 现在只路由到量化方式匹配的报价，没有匹配时会返回诊断信息；请参阅[选择量化策略](../guides/quantization.mdx) ([#1810](https://github.com/phaseoteam/Phaseo/pull/1810))。
 
 </div>
 

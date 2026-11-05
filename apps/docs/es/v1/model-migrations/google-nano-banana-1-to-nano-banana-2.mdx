@@ -4,69 +4,44 @@ description: "Aspectos clave para adoptar Nano Banana 2 en generación y edició
 icon: "/icons/brands/google.svg"
 ---
 
-# Google Nano Banana 2
+Cambia las solicitudes de imágenes a `google/gemini-3.1-flash-image` (Nano Banana 2) y elige la relación de aspecto y el tamaño de salida con `image_config`. Lo primero que se rompe es el código posterior que da por hecho un único tamaño de imagen.
 
-Usa esta guía para incorporar Nano Banana 2 de forma segura a tus flujos de imágenes en producción.
+| | Nano Banana | Nano Banana 2 |
+| --- | --- | --- |
+| ID de modelo de Phaseo | `google/gemini-2.5-flash-image` | `google/gemini-3.1-flash-image` |
+| Estado | Obsoleto; se retira el 15 de marzo de 2027 | Disponible |
 
-Nano Banana 2 no es solo una mejora de calidad. Google lo presenta como un modelo de imágenes listo para producción, con más control sobre el formato, la resolución y la fidelidad de salida.
+Nano Banana 2 añade control explícito sobre la relación de aspecto (`image_config.aspect_ratio`, como `16:9` o `9:16`) y el tamaño de salida, de 512px a 4K (`image_config.image_size`: `0.5K`, `1K`, `2K` o `4K`). Google también informa de una mayor coherencia de los sujetos entre generaciones y ediciones, un mejor seguimiento de instrucciones, una mejor representación y traducción del texto dentro de las imágenes y más fidelidad con una velocidad similar. Su sucesor, `google/gemini-nano-banana-2.1`, también está disponible.
 
-## Novedades
+```json
+{
+  "model": "google/gemini-3.1-flash-image",
+  "messages": [{ "role": "user", "content": "A product photo of a ceramic mug on a walnut desk." }],
+  "modalities": ["image", "text"],
+  "image_config": { "aspect_ratio": "16:9", "image_size": "2K" }
+}
+```
 
-- Nano Banana 2 permite controlar explícitamente la relación de aspecto.
-- Las resoluciones de salida van de `512px` a `4K`.
-- Mejora la consistencia de los sujetos entre generaciones y ediciones.
-- Sigue mejor las instrucciones.
-- Mejora la representación y traducción de texto dentro de las imágenes.
-- Ofrece mayor fidelidad visual y mantiene una generación rápida.
+Los proveedores que no admiten `image_config` lo descartan y lo indican en el encabezado de respuesta `X-Phaseo-Dropped-Params`; consulta [Parámetros](../api-reference/parameters).
 
-## Inicio rápido de la migración
+## Actualiza tu producto
 
-### 1. Vuelve a comprobar las expectativas de salida
-
-Si el código posterior presupone un tamaño, una relación de aspecto o un recorte fijos, actualízalo antes del despliegue. Nano Banana 2 es más flexible, por lo que es más fácil que deje de cumplir supuestos anteriores.
-
-### 2. Actualiza los presets del producto
-
-Revisa:
-
-- presets de relación de aspecto para redes sociales
-- resoluciones predeterminadas
-- flujos de edición y relleno de imagen
-- etiquetas de la interfaz que describen los tamaños disponibles
-
-### 3. Ajusta los prompts para la edición de imágenes
-
-Como sigue mejor las instrucciones, los prompts que especificaban en exceso la composición, el texto o el estilo pueden ser demasiado rígidos. Vuelve a probar con prompts más cortos y compara los resultados.
+1. **Revisa las suposiciones sobre la salida.** Si el código posterior espera un tamaño, una relación de aspecto o un recorte fijos, actualízalo primero.
+2. **Revisa los presets:** relaciones de aspecto para redes sociales, tamaños predeterminados, flujos de edición e inpainting y etiquetas de la interfaz que describen tamaños de imagen.
+3. **Acorta los prompts de edición.** Los prompts que especifican en exceso la composición, el texto o el estilo para compensar el modelo anterior pueden resultar ahora demasiado rígidos. Vuelve a probar versiones más cortas.
 
 ## Qué probar
 
-### Calidad de salida
+- **Calidad de la salida:** relaciones verticales, cuadradas y panorámicas; tamaños pequeños frente a grandes; coherencia de los sujetos entre ediciones; texto, carteles, leyendas y texto traducido en las imágenes.
+- **Flujo de trabajo:** gestión de archivos con tamaños grandes, tiempos de espera agotados en generaciones de alta fidelidad, tasa de aprobación en moderación o revisión humana y redimensionado posterior.
+- **Métricas de producto:** latencia de extremo a extremo, tasa de salidas utilizables, tasa de reintentos y coste por recurso aprobado.
 
-- relaciones de aspecto verticales, cuadradas y panorámicas
-- salidas de resolución baja y alta
-- consistencia de los sujetos en ediciones iterativas
-- texto, letreros, subtítulos y traducciones dentro de imágenes
+## Despliega
 
-### Compatibilidad del flujo de trabajo
-
-- manejo de archivos con resoluciones mayores
-- tiempos de espera en generaciones de mayor fidelidad
-- tasa de aprobación de moderación o revisión humana
-- supuestos de redimensionamiento y procesamiento de recursos posteriores
-
-### Métricas del producto
-
-- latencia de generación de principio a fin
-- tasa de salidas utilizables
-- tasa de reintentos
-- coste por recurso aprobado
-
-## Recomendaciones para el despliegue
-
-1. Divide las pruebas por relación de aspecto y resolución; no lo trates como una única migración.
-2. Valida el flujo de recursos con el mayor tamaño de salida que quieras admitir.
-3. Prueba prompts reales de producción, sobre todo ediciones y solicitudes de texto en imágenes.
-4. Si la interfaz ofrece opciones de imagen, despliega los cambios de presets predeterminados por separado del cambio de modelo.
+1. Prueba por relación de aspecto y tamaño en lugar de como una sola migración.
+2. Valida tu canal de recursos con el mayor tamaño que vayas a admitir.
+3. Toma una muestra de prompts reales de producción, sobre todo ediciones y solicitudes con texto en la imagen.
+4. Si tu interfaz ofrece opciones de imagen, publica los cambios en los presets predeterminados por separado del cambio de modelo.
 
 ## Fuentes
 

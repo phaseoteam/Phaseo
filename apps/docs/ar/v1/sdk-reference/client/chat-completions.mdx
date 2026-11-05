@@ -1,0 +1,280 @@
+---
+icon: "messages-square"
+title: "Chat completions"
+description: "استدعِ /chat/completions من أي حزمة Phaseo SDK."
+---
+
+استدعِ دالة المحادثة في حزمة SDK لإرسال `POST /v1/chat/completions` والحصول على استجابة واحدة مكتملة. للتكاملات الجديدة، توفّر [Responses API](./responses) شكل طلب واحدًا للنصوص، والمدخلات متعددة الوسائط، والأدوات، وعناصر المخرجات الأغنى.
+
+<CodeGroup>
+
+```typescript TypeScript
+const chat = await client.generateText({
+  model: "openai/gpt-6-astra",
+  messages: [
+    { role: "system", content: "You are helpful." },
+    { role: "user", content: "Write a limerick about lighthouses." },
+  ],
+});
+
+console.log(chat.choices[0].message.content);
+```
+
+```python Python
+chat = client.generate_text({
+    "model": "openai/gpt-6-astra",
+    "messages": [
+        {"role": "system", "content": "You are helpful."},
+        {"role": "user", "content": "Write a limerick about lighthouses."},
+    ],
+})
+
+print(chat["choices"][0]["message"]["content"])
+```
+
+```go Go
+import (
+  "context"
+  "fmt"
+
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client, err := phaseo.NewFromEnv()
+if err != nil {
+  panic(err)
+}
+
+resp, err := client.GenerateText(context.Background(), phaseo.ChatCompletionsRequest{
+  Model: "openai/gpt-6-astra",
+  Messages: []map[string]interface{}{
+    {"role": "user", "content": "Write a one-line haiku."},
+  },
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp["choices"])
+```
+
+```csharp C#
+using PhaseoSdk;
+
+var client = new Phaseo();
+
+var response = await client.GenerateText(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-6-astra",
+    ["messages"] = new[]
+    {
+        new Dictionary<string, object>
+        {
+            ["role"] = "user",
+            ["content"] = "Write a limerick about lighthouses.",
+        },
+    },
+});
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo();
+
+$response = $client->createChatCompletion([
+    'model' => 'openai/gpt-6-astra',
+    'messages' => [[
+        'role' => 'user',
+        'content' => 'Write a limerick about lighthouses.',
+    ]],
+]);
+
+echo $response['choices'][0]['message']['content'];
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new
+
+response = client.create_chat_completion(
+  model: 'openai/gpt-6-astra',
+  messages: [{ role: 'user', content: 'Write a limerick about lighthouses.' }]
+)
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+import java.util.List;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+var response = client.createChatCompletion(Map.of(
+    "model", "openai/gpt-6-astra",
+    "messages", List.of(
+        Map.of("role", "user", "content", "Write a one-line haiku.")
+    )
+));
+System.out.println(response.path("choices").path(0).path("message").path("content").asText());
+```
+
+```rust Rust
+use phaseo::Phaseo;
+use serde_json::json;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Phaseo::from_env()?;
+    let response = client.chat_completions(&json!({
+        "model": "openai/gpt-6-astra",
+        "messages": [
+            {
+                "role": "system",
+                "content": "Answer concisely."
+            },
+            {
+                "role": "user",
+                "content": "What is provider fallback?"
+            }
+        ]
+    }))?;
+
+    let text = response
+        .body
+        .pointer("/choices/0/message/content")
+        .and_then(|value| value.as_str())
+        .unwrap_or("");
+
+    println!("{text}");
+    Ok(())
+}
+```
+
+</CodeGroup>
+
+| اللغة | الدالة | القيمة المُعادة |
+| --- | --- | --- |
+| TypeScript | `client.generateText(request)`؛ وتؤدي `client.chat.completions.create(request)` الوظيفة نفسها وتنتقل إلى البث عندما تكون قيمة `stream` هي true | `ChatCompletionsResponse` |
+| Python | `client.generate_text(request)`؛ وكذلك `client.chat.completions.create(request)` | قاموس `APIResponse` |
+| Go | `client.GenerateText(ctx, req)`، والاسم البديل `CreateChatCompletion`؛ وتقبل `phaseo.ChatCompletionsRequest` | `map[string]interface{}` |
+| C# | `client.GenerateText(request)`، والاسم البديل `CreateChatCompletion` | `Dictionary<string, object>?` |
+| PHP | `$client->generateText($request)`، والاسم البديل `createChatCompletion()` | مصفوفة |
+| Ruby | `client.generate_text(...)`، والاسم البديل `create_chat_completion` | Hash |
+| Java | `client.createChatCompletion(request)`؛ وتقبل `Map` أو `JsonNode` من Jackson | `JsonNode` من Jackson |
+| Rust | `client.chat_completions(&request)` | `PhaseoResponse`؛ وبيانات JSON في `body` |
+
+لكل قيمة مُعادة شكل Chat Completions: الرد موجود في `choices[0].message.content`، ومعه `finish_reason` و`usage`.
+
+<span id="stream-the-response"></span>
+## بثّ الاستجابة
+
+<CodeGroup>
+
+```typescript TypeScript
+for await (const chunk of client.streamChat({
+  model: "openai/gpt-6-astra",
+  messages: [{ role: "user", content: "Stream a story" }],
+})) {
+  if (chunk.text) process.stdout.write(chunk.text);
+}
+```
+
+```python Python
+for chunk in client.stream_chat({
+    "model": "openai/gpt-6-astra",
+    "messages": [{"role": "user", "content": "Stream a story"}],
+}):
+    if chunk.get("text"):
+        print(chunk["text"], end="", flush=True)
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+var payload = Map.of(
+    "model", "openai/gpt-6-astra",
+    "messages", List.of(Map.of("role", "user", "content", "Hello")),
+    "stream", true
+);
+try (var lines = client.rawClient().requestLines(
+    "POST", "/chat/completions", null, null,
+    new ObjectMapper().writeValueAsString(payload)
+)) {
+    lines.forEach(System.out::println);
+}
+```
+
+</CodeGroup>
+
+| اللغة | طريقة البث |
+| --- | --- |
+| TypeScript | تُنتج `client.streamChat(request)` أجزاءً محلَّلة؛ وتُنتج `client.streamText()` أسطر SSE الخام. |
+| Python | تُنتج `client.stream_chat(request)` أجزاءً محلَّلة؛ وتُنتج `client.stream_text()` أسطر SSE الخام. |
+| Java | تعيد `createChatCompletion` جسم JSON واحدًا. عيّن `stream: true` وأرسل الطلب باستخدام `rawClient().requestLines`، التي تعيد أسطر SSE فور وصولها؛ وأغلقها باستخدام try-with-resources. |
+| Go وC# وPHP وRuby وRust | لا توجد دالة مساعدة لبث Chat Completions؛ اترك `stream` دون تعيين. في C# وPHP وRuby، تتضمن [Responses](./responses#stream-the-response) دالة للبث. |
+
+يحتفظ كل جزء محلَّل (في TypeScript وPython) بالحقول الأصلية (`choices` و`id` و…) ويضيف `text` (المحتوى الذي أضافه هذا الجزء)، و`usage`، ورموز الاستدلال (`reasoningTokens` / `reasoning_tokens`).
+
+## المعاملات
+
+أسماء الحقول في كل حزمة SDK هي حقول جسم JSON. يستخدم النوع `phaseo.ChatCompletionsRequest` في Go حقول بنية بأسلوب PascalCase (`Model` و`Messages`).
+
+| المجموعة | الحقول |
+| --- | --- |
+| مطلوبة | `model`؛ و`messages` بالأدوار `system` أو `developer` أو `user` أو `assistant` أو `tool`، والمحتوى سلسلة نصية أو أجزاء |
+| أخذ العيّنات | `temperature` (0–2)، و`top_p` (0–1)، و`top_k` (-1 أو أكثر)، و`min_p` (0–1)، و`seed`، حيث يدعمها النموذج |
+| الطول والعقوبات | `max_tokens` أو `max_completion_tokens`، و`presence_penalty` و`frequency_penalty` (من -2 إلى 2)، و`repetition_penalty` (أكبر من 0)، و`stop` (سلسلة نصية أو مصفوفة) |
+| الأدوات | `tools`، `tool_choice`، `max_tool_calls`، `parallel_tool_calls` |
+| الاستدلال | كائن `reasoning` أو `reasoning_effort` |
+| الاحتمالات اللوغاريتمية | `logprobs`، و`top_logprobs` (0–20) |
+| المخرجات | `response_format`، و`n` (1–16)، و`stream`، و`service_tier`، و`metadata` (قيم نصية) |
+| البوابة | توجيه `provider`، و`usage` (تضمين الاستخدام)، و`meta` (تضمين كتلة meta الخاصة بالبوابة) |
+
+تشرح صفحة [المعاملات](/ar/v1/api-reference/parameters) كل حقل، ويحتوي [مرجع Chat Completions API](../../api-reference/endpoint/chat-completions) على المخطط الكامل.
+
+## الاستجابة
+
+`ChatCompletionsResponse`:
+
+```json
+{
+  "id": "chatcmpl-123",
+  "object": "chat.completion",
+  "created": 1677652288,
+  "model": "openai/gpt-6-astra",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hello there, how may I assist you today?"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 9,
+    "completion_tokens": 12,
+    "total_tokens": 21
+  }
+}
+```
+
+مع `stream: true`، ترسل نقطة النهاية إطارات SSE تنتهي بـ `data: [DONE]`:
+
+```
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"openai/gpt-6-astra","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"openai/gpt-6-astra","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"openai/gpt-6-astra","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":9,"completion_tokens":12,"total_tokens":21}}
+
+data: [DONE]
+```

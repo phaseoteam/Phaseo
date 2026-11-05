@@ -1,94 +1,135 @@
 ---
 title: "速率限制"
-description: "处理限流、提供商配额和有次数及时间限制的重试。"
+description: "处理限流、提供商配额和有上限的重试。"
 icon: "gauge"
 ---
 
-请求可能被所选提供商或适用的工作区或密钥策略限流。路由和回退可以减少提供商故障，但请求仍可能返回 `429`。
+收到 `429` 时，读取错误代码和 `reason`，判断是哪项限制拦下了请求，然后等待 `Retry-After` 指定的时间，或者调整该限制。路由和回退可以减少提供商故障，但请求仍可能被提供商、工作区策略或密钥策略限流。
 
-## 网关限制
+| 限制 | 错误代码 | `reason` | 是否自动重置 |
+| --- | --- | --- | --- |
+| [每分钟请求数](#gateway-limits) | `key_limit_exceeded` | `customer_requests_per_minute` | 是，`Retry-After` 以秒为单位 |
+| [免费模型每日请求数](#gateway-limits) | `phaseo_free_model_limit_exceeded` | `free_requests_per_day` | 是，在 00:00 UTC 重置 |
+| [密钥限制或工作区预算](#key-limits-and-budgets) | `key_limit_exceeded` | 达到的限制；以及 `limit_window` 和 `reset_at` | 仅当存在 `Retry-After` 时 |
+| [部门预算](#department-budgets) | `key_limit_exceeded` | `department_daily_cost_budget_reached`（或 `weekly`、`monthly`） | 是，在 `reset_at` 重置 |
+| [设为阻止的支出规则](#key-limits-and-budgets) | `spend_rule_blocked` | | 如果阻止设置了 `reset_at`，则在该时间重置；或者由所有者或管理员解除 |
+| [速率限制策略](#rate-limit-policies) | `rate_limit_exceeded` | `policy_requests_per_minute`、`policy_tokens_per_minute`、`policy_concurrent_requests` 或 `policy_unavailable` | 是，`Retry-After` 以秒为单位 |
+| [提供商](#provider-limits) | `upstream_error` 或 `provider_capacity_exhausted` | | 遵循提供商的 `Retry-After` |
 
-每个工作区中的每位用户都有每分钟请求配额，按滚动一分钟计算。同一用户创建的 API 密钥共享此配额。OAuth 请求按已认证用户计数。没有所有者的密钥共享工作区配额。
+以上所有情况都返回 `429`。如果 Gateway 的配额执行暂时不可用，Gateway 会改为返回 `503` 并附带重试指引。
 
-配额取决于工作区的账户状况，并会随着工作区逐步稳定而自动提高：
+<span id="gateway-limits"></span>
+## Gateway 限制
+
+每个工作区中的每位用户都有一个每分钟请求配额，按滚动的一分钟计算。同一用户创建的 API 密钥共享这一配额。OAuth 请求计入已登录的用户，没有所有者的密钥共享一个工作区配额。
+
+随着工作区逐渐成熟，配额会自动提高。工作区会获得它符合条件的最高一档，变更会在几分钟内生效：
 
 | 工作区 | 每分钟请求数 |
 | --- | --- |
 | 新工作区 | 10 |
 | 创建至少 7 天，或已完成付费充值 | 25 |
-| 创建至少 30 天，且扣除退款后的付费充值至少 50 美元 | 60 |
-| 按发票结算 | 120 |
+| 创建至少 30 天，且扣除退款后的付费充值至少 $50 | 60 |
+| 按发票计费 | 120 |
 
-工作区会获得其符合条件的最高配额。更改会在几分钟内生效。
+免费模型默认还有**每个 UTC 日 1,500 次请求**的配额。它由所有免费模型共享，也由同一用户发送请求的所有工作区共享。付费模型的请求不使用这一配额。已被接受的免费请求即使随后提供商失败也会计数，同一请求内的提供商回退只计一次。
 
-免费模型路由还受**每个 UTC 日 1500 个请求**的配额限制，由所有免费模型以及同一用户发出请求的所有工作区共享。付费模型请求不消耗此每日配额。已获准的免费请求即使随后发生提供商故障，也会计数；同一请求内的回退尝试只计一次。
+这两项限制在所有 Gateway 区域之间通用，并且可以针对特定用户和工作区提高。文件操作和任务状态轮询使用每分钟配额；管理端点不使用。
 
-这些限制在所有网关区域之间统一生效，并可针对特定用户和工作区提高。文件操作和作业状态轮询会消耗每分钟配额；管理端点不会。
+被拒绝的请求会返回 `429`，并附带以秒为单位的 `Retry-After`。请等待这么长时间后再重试。
 
-网关配额耗尽时会返回 `429`，并通过 `Retry-After` 指定等待秒数。错误原因是 `customer_requests_per_minute` 或 `free_requests_per_day`。请等待指定时间后重试。配额检查暂时不可用时，网关会返回 `503` 并提供重试提示。
-
+<span id="key-limits-and-budgets"></span>
 ## 密钥限制和预算
 
-达到 API 密钥的每日、每周或每月请求和支出上限，或工作区的[预算](./endpoint/budgets-list.mdx)时，会返回 `429` 和错误代码 `key_limit_exceeded`。响应正文中的 `reason`、`limit_window` 和 `reset_at` 字段说明触发的是哪个限制以及其周期何时重置。`Retry-After` 给出距离重置的秒数。如果限制不会自动重置（例如终身预算或被临时封禁的密钥），则不会返回该标头；此时请不要重试，而是提高工作区预算；如果是密钥上限，请提高该密钥的上限或改用其他密钥。
+API 密钥的每日、每周或每月请求数和支出限制，以及工作区的[预算](./endpoint/budgets-list.mdx)，一旦达到就会返回 `429` 和 `key_limit_exceeded`。响应体中的 `reason`、`limit_window` 和 `reset_at` 说明是哪项限制以及它的窗口何时重置，`Retry-After` 给出距离重置的秒数。
 
-工作区所有者和管理员也可以在控制台的[设置 → 预算](https://phaseo.app/settings/budgets)中设置、更改和删除预算。该页面显示每项预算目前的支出、已用比例、本周期的预测以及重置时间。每日、每周和每月预算按 UTC 边界重置：午夜、周一 00:00 和每月 1 日。在 CLI 中使用 `phaseo budgets create|update|delete`。
+当限制不会自动重置时，例如终身预算或被软阻止的密钥，不会有 `Retry-After`。不要重试：请提高工作区预算、提高密钥的限制，或改用其他密钥。
 
-部门预算通过 `/v1/department-budgets` API 管理。部门的支出计入的密钥和 OAuth 请求与下文的部门速率限制相同。部门用完每日、每周或每月预算后，计入该部门的 API 密钥请求会返回 `429`，错误代码为 `key_limit_exceeded`，原因为 `department_daily_cost_budget_reached`、`department_weekly_cost_budget_reached` 或 `department_monthly_cost_budget_reached`。响应正文中的 `department_id` 和 `department_name` 字段标明是哪个部门，`reset_at` 和 `Retry-After` 说明其预算何时重置。部门预算不会阻止批处理作业、实时会话和 OAuth 请求。如果预算检查短暂不可用，请求会被放行而不是被拒绝，因此部门可能会在短时间内超出预算。当预算用到约 80% 以及 100% 时，所有者和管理员会收到移动推送通知。这些提醒来自可能延迟最多一小时的用量数据，因此请求可能在 100% 提醒送达之前就被拒绝。
+工作区所有者和管理员可以使用 `phaseo budgets create|update|delete` 管理预算，或在[设置 → 预算](https://phaseo.app/settings/budgets)中管理；该页面显示每个预算目前的支出、已用比例、本周期的预测以及重置时间。每日、每周和每月预算按 UTC 边界重置：午夜、周一 00:00 和每月 1 日。
 
-所有者和管理员也可以在[设置 → 预算](https://phaseo.app/settings/budgets)中管理部门预算，或使用 Terraform 提供程序的 `phaseo_department_budget` 资源。在 CLI 中使用 `phaseo department-budgets`。
+[支出提醒](../guides/spend-alerts.mdx)可以在达到这些限制之前发出警告。设为阻止的支出规则会返回 `429` 和 `spend_rule_blocked`。它是尽力而为的，会在支出超过其限制几分钟后才开始生效，因此需要精确上限时请使用密钥限制和预算。`x-phaseo-spend-warning` 标头表示随后可能会被阻止。
 
-[支出警报](../guides/spend-alerts.mdx)可以在达到这些限额之前发出警告。设置为拦截的支出规则会改为返回带有 `spend_rule_blocked` 错误代码的 `429`；它为尽力而为，在支出超过其限额几分钟后才开始，因此如需精确上限，请使用密钥限额和预算。
+<span id="department-budgets"></span>
+### 部门预算
 
+所有者和管理员可以通过 `phaseo department-budgets`、`/v1/department-budgets` API、[设置 → 预算](https://phaseo.app/settings/budgets)或 Terraform provider 的 `phaseo_department_budget` 资源管理部门预算。部门的支出统计的密钥和 OAuth 请求与[部门速率限制](#rate-limit-policies)相同。
+
+部门用完其每日、每周或每月预算后，计入该部门的 API 密钥请求会返回 `429` 和 `key_limit_exceeded`，reason 为 `department_daily_cost_budget_reached`、`department_weekly_cost_budget_reached` 或 `department_monthly_cost_budget_reached`。响应体中的 `department_id` 和 `department_name` 标识该部门，`reset_at` 和 `Retry-After` 说明其预算何时重置。
+
+- 批处理任务、实时会话和 OAuth 请求不会被部门预算阻止。
+- 如果预算检查暂时不可用，请求会被放行，因此部门可能在短时间内超出预算。
+- 所有者和管理员会在预算用到约 80% 时收到一次移动推送，用到 100% 时再收到一次。这些提醒基于可能延迟最多一小时的用量数据，因此请求可能在 100% 提醒到达之前就已被拒绝。
+
+<span id="rate-limit-policies"></span>
 ## 速率限制策略
 
-工作区管理员可以通过 `/v1/rate-limits` 管理 API 创建命名的速率限制策略，并将其分配给 API 密钥、工作区成员、部门，或作为每个最终用户的默认值。网关会按滚动的一分钟窗口分别执行策略的 `requests_per_minute` 和 `tokens_per_minute`：
+工作区管理员可以创建命名策略，设置 `requests_per_minute`、`tokens_per_minute` 和 `concurrent_requests`，并将其分配给密钥、成员、部门或最终用户。可以通过 `phaseo rate-limits policies` 和 `phaseo rate-limits assignments`、`/v1/rate-limits` API、[设置 → 速率限制](https://phaseo.app/settings/rate-limits)，或 Terraform provider 的 `phaseo_rate_limit_policy` 和 `phaseo_rate_limit_assignment` 资源来管理它们。
 
-- **密钥：**该密钥自己的配额。
-- **成员：**由该成员的密钥和 OAuth 请求共享的一份配额。
-- **部门：**计入该部门的所有请求共享的一份配额。关联到某个部门的密钥只计入该部门。其他密钥计入其创建者所属的所有部门，OAuth 请求计入其用户所属的所有部门。设置了部门覆盖的成员只计入覆盖指定的部门。若要让这些密钥和 OAuth 请求只计入此人的主要部门，请将工作区的部门归属设置为 primary：可在[设置 → 通知](https://phaseo.app/settings/notifications)中设置，也可在 `PATCH /v1/notifications/settings` 中使用 `spend.department_attribution`，或运行 `phaseo notifications settings update --department-attribution primary`。部门预算和支出规则使用同一设置。
-- **最终用户默认值：**每个最终用户各有一份独立配额，通过请求的 `user` 字段或 `X-Phaseo-User-Id` 请求头识别。没有最终用户 ID 的请求不受其限制。
+| 分配给 | 共享同一配额的范围 |
+| --- | --- |
+| 密钥（`key`） | 该密钥的请求。 |
+| 成员（`member`） | 该成员的密钥和 OAuth 请求。 |
+| 部门（`department`） | 计入该部门的所有内容（见下文）。 |
+| 最终用户默认值（`end_user`） | 每个最终用户各自获得一份配额，通过请求的 `user` 字段或 `X-Phaseo-User-Id` 标头识别。没有最终用户 ID 的请求不受限制。 |
 
-所有者和管理员也可以在[设置 → 速率限制](https://phaseo.app/settings/rate-limits)中管理策略及其分配，或使用 Terraform 提供程序的 `phaseo_rate_limit_policy` 和 `phaseo_rate_limit_assignment` 资源。在 CLI 中使用 `phaseo rate-limits policies` 和 `phaseo rate-limits assignments`。
+**哪些内容计入部门。** 关联到某个部门的密钥只计入该部门。其他密钥会计入其创建者所属的每个部门，OAuth 请求会计入其用户所属的每个部门。设置了部门覆盖的成员只计入覆盖后的部门。如果要让这些密钥和 OAuth 请求只计入该成员的主部门，请在[设置 → 通知](https://phaseo.app/settings/notifications)中将部门归属设为主部门，或在 `PATCH /v1/notifications/settings` 中设置 `spend.department_attribution`，或使用 `phaseo notifications settings update --department-attribution primary`。部门预算和支出规则使用同一设置。
 
-当多个策略同时适用时，每个策略都会计数，最先耗尽的策略会拒绝请求。策略限制在上述网关限制之外另行生效。策略变更约在一分钟内生效。在控制台或通过 SCIM 进行的部门成员变更最多可能需要约五分钟才能生效。
+当多个策略同时适用时，每个策略都会计数，最先耗尽的那个会拒绝请求。策略叠加在 [Gateway 限制](#gateway-limits)之上。策略变更约在一分钟内生效；在控制台或通过 SCIM 进行的部门成员变更最多可能需要约五分钟。
 
-`tokens_per_minute` 会在每个请求完成后统计其输入和输出 token，包括消耗了 token 的流式请求和失败请求。某个额度在最近一分钟内的用量一旦达到上限，后续请求就会被拒绝，因此已在处理中的请求可能使用量超出上限。
+### 每分钟请求数和 token 数
 
-被拒绝的请求返回 `429`，包含错误代码 `rate_limit_exceeded`、原因 `policy_requests_per_minute` 或 `policy_tokens_per_minute`、`policy_id` 和 `limit_scope`（`key`、`member`、`department`、`workspace` 或 `end_user`），以及以秒为单位的 `Retry-After`。适用策略的请求的响应会包含最严格的请求数限制的 `x-ratelimit-limit-requests`、`x-ratelimit-remaining-requests` 和 `x-ratelimit-reset-requests`（例如 `60s`），以及最严格的 token 限制的 `x-ratelimit-limit-tokens`、`x-ratelimit-remaining-tokens` 和 `x-ratelimit-reset-tokens`。被拒绝的请求只包含导致拒绝的那个限制的响应头。计数在后台进行，因此 `remaining` 为近似值，且 token 响应头尚未包含当前请求本身的用量。同一请求内的提供商回退只计一次，响应缓存命中不计数。
+两者都按滚动的一分钟计算。`tokens_per_minute` 会在每个请求完成后统计其输入和输出 token，包括流式请求和消耗了 token 的失败请求。当过去一分钟的用量达到限制时，请求就会被拒绝，因此已经在进行中的请求可能使用量超出限制。同一请求内的提供商回退只计一次，响应缓存命中不计数。
 
-`concurrent_requests` 限制可同时处理的请求数量。请求从被接受起占用一个名额，直到其响应完全发送完毕（流式响应则到整个流结束），同一请求内的提供商和模型回退共享这个名额。所有名额都被占用时，请求会被拒绝，原因为 `policy_concurrent_requests`，并附带 `Retry-After: 1`。检查并发限制需要等待策略的计数器，因此会给其覆盖的请求增加少量延迟。释放丢失的名额会在 15 分钟后自动释放。批处理和实时会话不受此限制，视频生成只在启动它的请求处理期间占用名额。
+被拒绝的请求会返回 `429` 和 `rate_limit_exceeded`，reason 为 `policy_requests_per_minute` 或 `policy_tokens_per_minute`，并附带 `policy_id`、`limit_scope`（`key`、`member`、`department`、`workspace` 或 `end_user`）以及以秒为单位的 `Retry-After`。
 
-默认情况下，如果无法检查策略的限制，请求会被放行。设置 `fail_closed` 可使策略变为严格模式。严格策略的请求数和令牌限制会在请求发送前检查，而不是在后台进行，因此结果精确，但会增加延迟；如果两秒内无法完成检查，请求会被拒绝，原因为 `policy_unavailable`。因并发和 `policy_unavailable` 被拒绝的请求不带 `x-ratelimit-*` 响应头。
+策略覆盖的请求的响应会携带限制最严格的那项的标头：
 
+| 标头 | 示例 |
+| --- | --- |
+| `x-ratelimit-limit-requests`、`x-ratelimit-remaining-requests` | `60`、`42` |
+| `x-ratelimit-reset-requests` | `60s` |
+| `x-ratelimit-limit-tokens`、`x-ratelimit-remaining-tokens`、`x-ratelimit-reset-tokens` | 同上，针对 token 限制 |
+
+被拒绝的请求只携带拒绝它的那项限制的标头。计数在后台进行，因此 `remaining` 是近似值，并且 token 标头尚未包含当前请求自身的用量。
+
+### 并发请求
+
+`concurrent_requests` 限制同时进行中的请求数量。请求从被接受起占用一个槽位，直到其响应完全发送完毕（包括整个流式响应）；请求内的提供商和模型回退共享这个槽位。当所有槽位都被占用时，请求会被拒绝，reason 为 `policy_concurrent_requests`，并附带 `Retry-After: 1`。
+
+检查并发限制需要等待策略的计数器，这会增加少量延迟。如果某个槽位的释放丢失，它会在 15 分钟后自动释放。批处理和实时会话不受限制，视频生成只在启动它的请求进行期间占用槽位。
+
+### 严格策略
+
+默认情况下，策略采用失败放行：如果无法检查其限制，请求会被放行。设置 `fail_closed` 可将其设为严格策略。严格策略会在发送请求之前（而不是在后台）检查请求数和 token 限制，这样更精确，但会增加延迟。如果两秒内无法完成检查，请求会被拒绝，reason 为 `policy_unavailable`。
+
+并发拒绝和 `policy_unavailable` 拒绝不携带 `x-ratelimit-*` 标头。
+
+<span id="provider-limits"></span>
 ## 提供商限制
 
-BYOK 请求使用你的提供商账户限制。托管请求使用提供商的共享容量；该容量并非单个工作区的专属配额。
+BYOK 请求使用你自己提供商账户的限制。托管请求使用共享的提供商容量，这并不是分配给你工作区的配额。
 
-当路由到的提供商提供 `Retry-After` 值时，Phaseo 会验证并转发该值。BYOK 响应还可能包含 `X-Phaseo-Upstream-RateLimit-*` 标头。这些配额标头描述的是提供商的共享容量，因此托管请求会省略这些标头。其他上游标头不会被转发。
+当提供商发送 `Retry-After` 时，Phaseo 会在校验后转发它。BYOK 响应还可能包含 `X-Phaseo-Upstream-RateLimit-*` 标头；托管请求会省略这些标头，因为它们描述的是共享容量。其他上游标头不会转发。提供商的 `429` 代码请参阅[错误代码](./errors.mdx#error-codes)。
 
 ## 处理被限流的请求
 
-1. 检查[错误代码](./errors.mdx)，区分提供商的临时限流与需要更改配置的策略或预算限制。
-2. 如果存在 `Retry-After`，请遵循其要求。该值可能是以秒为单位的延迟，也可能是 HTTP 日期；在安排重试前验证该值。
-3. 否则，使用带随机抖动和最大延迟的指数退避。
-4. 同时限制重试次数和总体截止时间。取消已放弃的任务，并在重试前释放每个失败响应的响应体。
-5. 如果限流持续，请降低并发量。
+1. 读取[错误代码](./errors.mdx)，区分临时限流与需要更改配置的限制、预算或策略。
+2. 如果存在 `Retry-After`，请遵守它。它可以是秒数或 HTTP 日期；在安排重试之前先校验它。
+3. 否则，使用带抖动和最大延迟的指数退避。
+4. 用尝试次数和总体截止时间限制重试。取消已放弃的工作，并在重试前释放每个失败响应的正文。
+5. 如果限流持续，请降低并发。
 
-不要自动重试结果不明确的任务提交，也不要重复执行已完成的工具操作。即使客户端未收到响应，请求也可能已到达提供商；重试可能导致重复处理和重复收费。对于已受理的视频或批处理任务，请使用其状态端点，而不要重新提交。
+不要自动重试结果不明确的任务提交，也不要重放已完成的工具操作。即使客户端丢失了响应，请求也可能已经到达提供商，因此重试可能导致重复的工作和费用。对于已被接受的视频或批处理任务，请使用其状态端点，而不是再次提交。
 
-## 监控限流
-
-按端点和模型跟踪 `429` 的发生率，并在请求日志中检查回退频率。将应用日志与[路由设置](../guides/routing-and-fallbacks.mdx)以及 BYOK 流量的提供商账户配额进行对比。
-
-有关工作区的支出和访问控制，请参阅[预算](./endpoint/budgets-list.mdx)和[防护规则](./endpoint/guardrails.mdx)。
+要监控限流，请按端点和模型跟踪 `429` 比率，并在请求日志中查看回退频率。将它们与你的[路由设置](../guides/routing-and-fallbacks.mdx)进行比较；对于 BYOK 流量，还要与你提供商账户的配额进行比较。[护栏](./endpoint/guardrails.mdx)控制哪些密钥可以使用哪些模型和提供商。
 
 <Visibility for="agents">
-面向智能体的速率限制规则（本页摘要）：
+面向代理的速率限制规则，总结自本页：
 
-- Gateway 配额会返回 `429`，原因为 `customer_requests_per_minute` 或 `free_requests_per_day`；请等待 `Retry-After` 指定的秒数。如果配额检查不可用，Gateway 会返回带有重试指引的 `503`。
-- 密钥限制和预算会返回带有 `key_limit_exceeded` 和 `reset_at` 的 `429`。没有 `Retry-After` 时，限制不会自动重置：请提高限制或改用其他密钥，而不是重试。
-- 已用完的部门预算会返回带有 `key_limit_exceeded`、原因 `department_<interval>_cost_budget_reached`、`department_id`、`department_name` 和 `reset_at` 的 `429`；请等待 `Retry-After` 指定的秒数或提高预算。部门预算不会阻止批处理、实时和 OAuth 请求。如果预算检查不可用，请求会被放行。
-- 拦截型支出规则返回带 `spend_rule_blocked` 的 `429`；请等待 `Retry-After`，或请所有者或管理员解除拦截。`x-phaseo-spend-warning` 表示可能即将拦截。
-- 工作区速率限制策略会返回带有 `rate_limit_exceeded`、`policy_id` 和 `limit_scope` 的 `429`。`x-ratelimit-remaining-requests` 是近似值。
-- `Retry-After` 可以是秒数或 HTTP 日期；安排重试前先校验该值。不要重新提交结果不明确的视频或批处理任务，而应查询其状态。
+- Gateway 配额返回 `429`，reason 为 `customer_requests_per_minute`（代码 `key_limit_exceeded`）或 `free_requests_per_day`（代码 `phaseo_free_model_limit_exceeded`）；等待 `Retry-After` 秒。如果配额执行不可用，Gateway 会返回 `503` 并附带重试指引。
+- 密钥限制和预算返回 `429`，带有 `key_limit_exceeded` 和 `reset_at`。如果没有 `Retry-After`，该限制不会自动重置：请提高限制或改用其他密钥，而不是重试。
+- 部门预算用完时返回 `429`，带有 `key_limit_exceeded`、reason `department_<interval>_cost_budget_reached`、`department_id`、`department_name` 和 `reset_at`；等待 `Retry-After` 秒或提高预算。批处理、实时和 OAuth 请求不会被部门预算阻止。如果预算检查不可用，请求会被放行。
+- 设为阻止的支出规则返回 `429` 和 `spend_rule_blocked`；等待 `Retry-After`，或请所有者或管理员解除阻止。`x-phaseo-spend-warning` 表示随后可能会被阻止。
+- 工作区速率限制策略返回 `429`，带有 `rate_limit_exceeded`、`policy_id` 和 `limit_scope`。`x-ratelimit-remaining-requests` 是近似值。
+- `Retry-After` 可以是秒数或 HTTP 日期；在安排重试之前先校验它。切勿重新提交结果不明确的视频或批处理任务；请改为检查其状态。
 </Visibility>

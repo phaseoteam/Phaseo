@@ -1,48 +1,34 @@
 ---
 title: "SKILL.md でコーディングエージェントを設定する"
-sidebarTitle: "SKILL.md でエージェント設定"
 icon: "file-code"
 description: "SDK と SKILL.md ファイルを組み合わせて、ローカルのコーディングエージェントが Phaseo 連携を一貫して利用できるようにします。"
 ---
 
-このガイドは、Gateway SDK を使って社内ツール、CLI、コーディングエージェントのワークフローを構築するチームを対象としています。
+リポジトリに `SKILL.md` を追加して、コーディングエージェントがプロジェクトの想定どおりに Phaseo を呼び出すようにします。ベース URL、キーの変数、エンドポイント、承認済みモデル、ログ記録がそろいます。完成すると、公開されている Phaseo スキル、その上に重ねるプロジェクトスキル 1 つ、スキルが参照する共有クライアントモジュール 1 つがそろいます。
+
+以下のスキルとモジュールは、モデル ID とプリセット名を自分のものに置き換えれば本番環境でそのまま使えます。
+
+<Steps>
+<Step title="公開されている Phaseo スキルをインストールする">
 
 <Visibility for="humans">
-<Note>
-スキルを一から作成せず、再利用可能なものを使う場合は、[`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json) から Phaseo の公開スキルをインストールします。
-
-```bash
-npx skills add https://phaseo.app/docs --agent codex --skill '*'
-```
-
-その後、プロジェクト固有の指示はローカルの `SKILL.md` に記述します。
-</Note>
+公開スキルは Gateway、SDK、プリセット、ルーティング、移行を扱います。[`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json) からインストールします。
 </Visibility>
 
 <Visibility for="agents">
-<Note>
-再利用可能な Phaseo スキルは [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json) にあります。次のコマンドで先にインストールします。
+プロジェクト固有の指示を書く前に、[`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json) から公開されている Phaseo スキルをインストールしてください。
+</Visibility>
 
 ```bash
 npx skills add https://phaseo.app/docs --agent codex --skill '*'
 ```
 
-次に、リポジトリの `SKILL.md` にプロジェクト固有の指示を追加します。
-</Note>
-</Visibility>
+`--agent` はチームが使うエージェントに変更します。自分の `SKILL.md` にはプロジェクト固有のルールだけを書いてください。
 
-基本的な考え方はシンプルです。
-
-- SDK の設定をリポジトリ内に保持する
-- プロジェクトで期待されるリクエスト方法をエージェントに教える `SKILL.md` を追加する
-- セットアップ時にそのファイルを参照するようエージェントへ伝え、リクエストの形式を統一する
-
-## 1. SDK をインストールする
-
-TypeScript または JavaScript の場合：
+</Step>
+<Step title="SDK をインストールする">
 
 <CodeGroup>
-
 ```bash npm
 npm install @phaseo/sdk
 ```
@@ -59,34 +45,17 @@ yarn add @phaseo/sdk
 bun add @phaseo/sdk
 ```
 
-</CodeGroup>
-
-Python の場合：
-
-```bash
+```bash Python
 pip install phaseo
 ```
+</CodeGroup>
 
-## 2. プロジェクト専用のスキルファイルを追加する
+</Step>
+<Step title="共有クライアントを 1 つ追加する">
 
-リポジトリのルート、またはチームで使用しているエージェントスキルの場所に `SKILL.md` を作成します。
+エージェントは、大きなラッパーよりも小さく分かりやすいヘルパーのほうを確実に再利用します。クライアントを 1 つのモジュールに置き、どこからでもそれをインポートします。
 
-```md
-# Phaseo Gateway
-
-- Use `https://api.phaseo.app/v1` as the gateway base URL.
-- Read the API key from `PHASEO_API_KEY`.
-- Prefer the Responses API for new text integrations.
-- Use preset slugs when the repository defines shared request defaults.
-- Log request ids and model ids for debugging.
-- For async video jobs, store the returned id and poll status until terminal.
-```
-
-## 3. 最初の連携は小さく保つ
-
-コーディングエージェントでは、大きなラッパーより小さなリクエスト用ヘルパーのほうが再利用しやすくなります。
-
-```ts
+```ts src/lib/phaseo.ts
 import Phaseo from "@phaseo/sdk";
 
 export const gateway = new Phaseo({
@@ -94,35 +63,48 @@ export const gateway = new Phaseo({
 });
 ```
 
-次に、各インターフェイスに明確な呼び出し経路を 1 つずつ用意します。
+テキスト生成、埋め込み、画像生成、非同期の動画など、使う機能ごとに呼び出し経路を 1 つにしてください。
 
-- テキスト生成
-- 非同期動画
-- 埋め込み
-- 画像生成
+</Step>
+<Step title="プロジェクトスキルを書く">
 
-## 4. スキルに含める内容
+リポジトリのルート、またはエージェントが読み込むスキルフォルダー（例: `.agents/skills/phaseo-project/SKILL.md`）に `SKILL.md` を作成します。エージェントは frontmatter の `name` と `description` を読んで、いつスキルを読み込むかを判断します。
 
-エージェントの時間を最も浪費する疑問に、`SKILL.md` で答えられるようにします。
+```md SKILL.md
+---
+name: phaseo-project
+description: "How this repository calls Phaseo Gateway: client module, endpoint, approved models and presets, logging and async jobs. Use when adding or changing any Phaseo call in this repo."
+---
 
-- 優先するエンドポイントの種類
-- 認証情報を保持する環境変数
-- 許可されているモデル ID またはプリセットのスラッグ
-- リクエスト ID の記録方法
-- 非同期ジョブの追跡方法
+# Phaseo in this repository
 
-## 5. 推奨するリポジトリ構成
+- Import the client from `src/lib/phaseo.ts`. Never create another one.
+- The base URL is `https://api.phaseo.app/v1`. The key is in `PHASEO_API_KEY`; never hard-code it or send it to the browser.
+- Use the Responses API (`POST /v1/responses`) for new text features.
+- Approved models: `openai/gpt-6-astra` for drafts, `anthropic/claude-sonnet-5.5` for reviews. Ask before adding another.
+- Prefer the `@support-triage` preset for support features; pass it as `model`.
+- Log the response `id` and `model` on every call, and `generation_id` from error bodies.
+- For async video jobs, store the returned ID and poll status until it is terminal.
+- Validate any model-generated tool arguments before acting on them.
+```
 
-- SDK ヘルパーをまとめた共有モジュール
-- 連携コードの隣、またはリポジトリのルートに置く `SKILL.md`
-- 主要なエンドポイントごとの短い例
-- リクエストログとエラー処理に関する説明
+</Step>
+</Steps>
 
-人もコーディングエージェントも、同じ運用上の入り口を利用できます。
+## 動作を確認する
 
-## 関連ガイド
+「Phaseo でチケットを要約する」のような小さな Phaseo 機能の追加をエージェントに依頼します。変更が `src/lib/phaseo.ts` をインポートし、`PHASEO_API_KEY` を読み取り、承認済みのモデルまたはプリセットを使い、レスポンス ID をログに記録していれば成功です。そうでない場合は、スキルの `description` が依頼内容と一致していない可能性があります。チームが使うタスクの言葉を書き込んでください。
 
-- [Codex](../guides/integrations/codex.mdx)
-- [AI SDK 連携](../guides/integrations/ai-sdk.mdx)
-- [例](../guides/examples.mdx)
+## スキルに書く内容
 
+エージェントが最も時間を費やす質問にだけ答え、それ以外は書きません。
+
+| 質問 | 回答の例 |
+| --- | --- |
+| どのエンドポイント群を使うか | テキストには Responses、検索には Embeddings |
+| 認証情報はどこにあるか | `PHASEO_API_KEY`、サーバー側のみ |
+| 承認済みのモデル ID やプリセットは何か | `org/model` 形式の短い一覧 |
+| 何をログに記録するか | レスポンスの `id`、`model`、エラー時の `generation_id` |
+| 非同期ジョブをどう追跡するか | ID を保存し、終了状態になるまでポーリングする |
+
+[Codex](../guides/integrations/codex)、[Vercel AI SDK](../guides/integrations/ai-sdk)、[サンプル](../guides/examples)では、各ツールで同じ規約を使う方法を紹介しています。

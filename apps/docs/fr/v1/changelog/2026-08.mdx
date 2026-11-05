@@ -13,7 +13,8 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">Produit</p>
 
-- BYOK inclut désormais 250 000 requêtes par espace de travail et par mois UTC sans frais Phaseo, puis facture 2,5 % du coût équivalent chez le fournisseur ; les métadonnées de chaque requête BYOK sont conservées 90 jours (365 jours à partir de novembre 2026) ([#2056](https://github.com/phaseoteam/Phaseo/pull/2056)).
+- BYOK inclut désormais 250 000 requêtes par espace de travail et par mois UTC sans frais Phaseo, puis facture 2,5 % du coût équivalent chez le fournisseur ([#2056](https://github.com/phaseoteam/Phaseo/pull/2056)).
+- Les métadonnées de chaque requête BYOK sont conservées 90 jours, et 365 jours à partir de novembre 2026 ([#2056](https://github.com/phaseoteam/Phaseo/pull/2056)).
 
 </div>
 
@@ -152,7 +153,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - [z.AI: GLM 5.3 Flash](https://phaseo.app/models/z-ai/glm-5.3-flash)
 - [Qwen: Qwen 3.8 Flash](https://phaseo.app/models/qwen/qwen3.8-flash)
-- [Stealth: Ox Alpha](https://phaseo.app/models/stealth/ox-alpha) a été retiré après qu’il a été révélé comme étant Z.AI GLM-5.3-Flash.
+- [Stealth: Ox Alpha](https://phaseo.app/models/stealth/ox-alpha) est révélé comme étant [z.AI: GLM 5.3 Flash](https://phaseo.app/models/z-ai/glm-5.3-flash).
 
 </div>
 
@@ -205,7 +206,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - Les requêtes peuvent classer une app avec l'en-tête `X-App-Categories`, également pris en charge par le SDK TypeScript ; voir [Attribution de l’application](../guides/app-attribution.mdx) ([#1799](https://github.com/phaseoteam/Phaseo/pull/1799)).
 - Les suffixes de modèle `:nitro`, `:cheap` et `:fast` fixent désormais le mode de routage, même si les champs de la requête, les presets ou les valeurs par défaut de l'espace de travail en demandent un autre ; voir [Routage et solutions de repli](../guides/routing-and-fallbacks.mdx) ([#1814](https://github.com/phaseoteam/Phaseo/pull/1814)).
-- `provider.quantizations` limite désormais le routage aux offres dont la quantification correspond et renvoie des diagnostics quand aucune ne correspond ; voir [Choisir une stratégie de quantification](../guides/quantization-selection.mdx) ([#1810](https://github.com/phaseoteam/Phaseo/pull/1810)).
+- `provider.quantizations` limite désormais le routage aux offres dont la quantification correspond et renvoie des diagnostics quand aucune ne correspond ; voir [Choisir une stratégie de quantification](../guides/quantization.mdx) ([#1810](https://github.com/phaseoteam/Phaseo/pull/1810)).
 
 </div>
 

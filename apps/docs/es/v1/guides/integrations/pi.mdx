@@ -1,47 +1,44 @@
 ---
 title: "Pi"
 icon: "/icons/brands/pi.svg"
-description: "Conecta el catálogo de modelos de Pi instalado a Phaseo Gateway."
+description: "Conecta el catálogo de modelos de una instalación de Pi a Phaseo Gateway."
 ---
 
-## Configurar con la CLI de Phaseo
+Ejecuta `phaseo pi` para añadir a Pi una extensión de proveedor de Phaseo con todos los modelos compatibles de Phaseo.
 
-Estos comandos listos para producción requieren una cuenta de Phaseo; la CLI crea la credencial dedicada del gateway durante el inicio de sesión y la configuración.
+## Configura con la CLI de Phaseo
 
 ```bash
 phaseo login
 phaseo pi
 ```
 
-Primero instala Pi desde su versión oficial. La configuración escribe una extensión de proveedor administrada en `~/.pi/agent/extensions/phaseo.ts`. La extensión muestra todos los modelos de texto activos de Phaseo compatibles con Chat Completions y obtiene su clave de API exclusiva de la CLI de Phaseo en el momento de cada solicitud.
+Si falta Pi, la CLI muestra el comando de instalación oficial y pide confirmación antes de ejecutarlo. Después, la configuración crea una `Phaseo CLI: Pi API Key` (caduca a los 90 días, límite de gasto mensual de $100) y escribe una extensión de proveedor en `~/.pi/agent/extensions/phaseo.ts`. La extensión incluye todos los modelos de texto activos de Phaseo que funcionan con Chat Completions.
 
-Elige un modelo inicial o configura un solo modelo si lo necesitas:
+| Flag | Efecto |
+| --- | --- |
+| `--model <id>` | Establece el modelo inicial. Por defecto, `anthropic/claude-sonnet-4.6`. |
+| `--catalog default` | Añade solo el modelo seleccionado. |
+| `--dry-run` | Muestra los cambios en los archivos sin hacerlos. |
 
-```bash
-phaseo pi --model anthropic/claude-sonnet-4.6
-phaseo pi --catalog default
-```
-
-Usa `--dry-run` para previsualizar los cambios en los archivos.
-
-## Iniciar y verificar
-
-```bash
-pi
-```
-
-Abre `/model`, elige el proveedor `phaseo` y envía una solicitud sencilla. Para quitar solo la extensión administrada y revocar su clave exclusiva, ejecuta:
-
-```bash
-phaseo integrations remove pi
-```
-
-## Acceso manual a las credenciales
-
-La extensión generada utiliza la sintaxis de clave de Pi basada en comandos:
+La extensión obtiene su clave en el momento de la solicitud con la sintaxis de Pi para claves obtenidas mediante un comando, así que no se escribe ninguna clave en texto plano en el archivo:
 
 ```text
 !phaseo integrations credential pi
 ```
 
-La extensión no guarda ninguna clave en texto sin cifrar.
+## Comprueba que funciona
+
+```bash
+pi
+```
+
+Abre `/model`, elige el proveedor `phaseo` y envía un prompt corto. Confirma que la solicitud aparece en **Ajustes → Uso → Registros**.
+
+## Quita Phaseo
+
+```bash
+phaseo integrations remove pi
+```
+
+Esto quita solo la extensión de Phaseo y revoca la clave.

@@ -1,0 +1,246 @@
+---
+icon: "layers"
+title: "Agent SDK 条目"
+sidebarTitle: "条目"
+description: "实时或在运行结束后渲染由文本、推理、工具调用和结果组成的智能体时间线。"
+---
+
+根据每个流式事件或条目的类型分支处理，在文本、推理、工具调用和进度到达时渲染它们，之后再从保存的运行结果重建同一条时间线。TypeScript 产出带类型的条目联合类型；其他语言以映射、字典或哈希的形式产出原始事件。
+
+## 渲染流式时间线
+
+<CodeGroup>
+
+```typescript TypeScript
+const stream = agent.stream({ input, client });
+
+for await (const item of stream.getItemsStream()) {
+  switch (item.type) {
+    case "message":
+      renderAssistantMessage(item.content);
+      break;
+    case "reasoning":
+      renderReasoning(item.text);
+      break;
+    case "tool_call":
+      renderToolCall(item.toolCallId, item.name, item.input);
+      break;
+    case "tool_result":
+      renderToolResult(item.toolCallId, item.output);
+      break;
+    case "error":
+      renderError(item.message);
+      break;
+    case "output":
+      renderFinalOutput(item.value);
+      break;
+  }
+}
+```
+
+```python Python
+for item in stream.item_stream():
+    item_type = item.get("type")
+    render_timeline_item(item_type, item)
+```
+
+```go Go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+
+for event := range stream.Events() {
+  switch event.Type {
+  case "response.output_text.delta":
+    fmt.Print(event.Details["delta"])
+  case "response.reasoning.delta":
+    renderReasoning(event.Details["delta"])
+  case "response.item":
+    renderItem(event.Details["item"])
+  case "tool.preliminary_result":
+    renderProgress(event.Details["tool_call_id"], event.Details["result"])
+  default:
+    // 保留兜底分支：可能会出现新的事件类型。
+  }
+}
+
+result, err := stream.Result()
+```
+
+```csharp C#
+var stream = agent.Stream(new RunOptions { Input = prompt, Client = client });
+
+await foreach (var item in stream.FullStream())
+{
+    switch (item.Type)
+    {
+        case "response.output_text.delta":
+            Console.Write(item.Details?["delta"]);
+            break;
+        case "response.reasoning.delta":
+            RenderReasoning(item.Details?["delta"]);
+            break;
+        case "response.item":
+            RenderItem(item.Details?["item"]);
+            break;
+        case "tool.preliminary_result":
+            RenderProgress(item.Details?["tool_call_id"], item.Details?["result"]);
+            break;
+        default:
+            break; // 保留兜底分支：可能会出现新的事件类型。
+    }
+}
+
+var result = await stream.GetResult();
+```
+
+```php PHP
+$stream = $agent->stream(input: $prompt, client: $client);
+
+foreach ($stream->fullStream() as $event) {
+    match ($event["type"]) {
+        "response.output_text.delta" => print($event["delta"]),
+        "response.reasoning.delta" => renderReasoning($event["delta"]),
+        "response.item" => renderItem($event["item"]),
+        "tool.preliminary_result" => renderProgress($event["tool_call_id"], $event["result"]),
+        default => null, // 保留兜底分支：可能会出现新的事件类型。
+    };
+}
+
+$result = $stream->getResult();
+```
+
+```ruby Ruby
+stream = agent.stream(input: prompt, client: client)
+
+stream.full_stream.each do |event|
+  case event[:type]
+  when "response.output_text.delta" then print event[:delta]
+  when "response.reasoning.delta" then render_reasoning(event[:delta])
+  when "response.item" then render_item(event[:item])
+  when "tool.preliminary_result" then render_progress(event[:tool_call_id], event[:result])
+  else nil # 保留兜底分支：可能会出现新的事件类型。
+  end
+end
+
+result = stream.result
+```
+
+```java Java
+// 在 onEvent 消费者中实时处理事件，或在运行结束后遍历 stream.fullStream()。
+Consumer<AgentSdk.AgentEvent> render = event -> {
+    switch (event.type()) {
+        case "response.output_text.delta" -> System.out.print(event.details().get("delta"));
+        case "response.reasoning.delta" -> renderReasoning(event.details().get("delta"));
+        case "response.item" -> renderItem(event.details().get("item"));
+        case "tool.preliminary_result" -> renderProgress(event.details().get("tool_call_id"), event.details().get("result"));
+        default -> { } // 保留兜底分支：可能会出现新的事件类型。
+    }
+};
+
+var stream = agent.stream(new AgentSdk.RunOptions(
+    prompt, client, null, null, null, null, null, null, render, null));
+var result = stream.getResult();
+```
+
+</CodeGroup>
+
+Rust 没有流式传输；请像下文那样从已完成的运行构建时间线。
+
+## TypeScript 条目类型
+
+`AgentItem<TOutput>` 是一个可辨识联合类型，TypeScript 会根据每个条目的 `type` 收窄它的类型：
+
+| `type` | 重要字段 | 表示 |
+| --- | --- | --- |
+| `message` | `role`（始终为 `assistant`）、`content` | 助手文本 |
+| `reasoning` | `text` | 模型提供的推理 |
+| `tool_call` | `toolCallId`、`name`、`input` | 一次拟进行的工具调用 |
+| `tool_result` | `toolCallId`、`name`、`output` | 一次已完成的工具调用 |
+| `error` | `message`，可选的工具详情 | 提供商错误或工具错误 |
+| `output` | `value` | 解析后的智能体最终输出 |
+
+由提供商输出构建的条目还会在 `rawProviderItem` 中保留原始载荷，以便读取可移植类型中没有的少数字段。请基于可移植字段构建产品逻辑，因为 `rawProviderItem` 因提供商而异。
+
+## 其他语言中的事件类型
+
+Go、C#、PHP、Ruby 和 Java 提供相同的事件类型。Python 的 `item_stream()` 以带 `type` 键的字典形式产出提供商条目和运行时条目。
+
+| 事件类型 | 字段 |
+| --- | --- |
+| `response.output_text.delta` | `delta`（字符串） |
+| `response.reasoning.delta` | `delta`（字符串） |
+| `response.item` | `item`（提供商的输出条目，无类型） |
+| `tool.started`、`tool.completed`、`tool.failed`、`tool.preliminary_result` | `tool_call_id`、`tool_name`，以及 `output`、`error` 或 `result` |
+
+字段所在的位置因语言而异：
+
+| 语言 | 事件形态 |
+| --- | --- |
+| Python | 字典；读取 `item.get("type")` |
+| Go | 带有 `Type` 和 `Details map[string]any` 的 `AgentEvent` |
+| C# | 带有 `Type` 和一个值为 `object?` 的 `Details` 字典的 `AgentEvent` |
+| PHP | 扁平数组。生命周期事件带有 `type`、`run_id`、`agent_id`、`timestamp` 和 `status`；模型事件在顶层带有 `type` 和上面的字段。 |
+| Ruby | 以符号为键（`:type`、`:delta` 等）的扁平 Hash，结构与 PHP 的数组相同 |
+| Java | 带有 `type()` 和一个值为 `Object` 的 `details()` 映射的 `AgentEvent` |
+
+这些都不是带类型的联合类型，所以请校验你的界面用到的字段，把特定于提供商的解析放在一个适配器后面，并保留未知类型的兜底处理。在 Go、C# 和 Java 中，模型流事件携带的运行 ID 是 `"stream"`；要获取真实的运行 ID，请使用生命周期事件。完整的生命周期事件列表见[生命周期钩子](./lifecycle-hooks)。
+
+## 在运行结束后重建时间线
+
+运行结束后，事件历史仍然可读，所以一个消费者可以负责渲染，另一个负责持久化事件，而无需第二次模型请求。如果需要持久的时间线，请保存已完成的运行结果：
+
+<Tabs>
+<Tab title="TypeScript">
+
+已完成的结果在 `items` 中包含与流相同的有序条目：
+
+```typescript
+const completed = await stream.getResult();
+
+for (const item of completed.items) {
+  saveTimelineItem(completed.run.id, item);
+}
+```
+
+</Tab>
+<Tab title="Python">
+
+| 字段 | 内容 |
+| --- | --- |
+| `run` | 持久状态：`id`、`status`、`input`、`context`、`pause`、`stop_reason`、`error`、`usage` 和 `next_turn_params` |
+| `steps` | 每个模型轮次一个 `AgentStepRecord`，包含 `request_id`、`native_response_id`、`provider`、`model`、`model_attempts`、`usage`、`finish_reason`、`warnings` 和 `tool_calls` |
+| `messages` | 完整的对话，包括工具结果 |
+| `output` | 经过 `parse_output` 和 `output_schema` 处理后的最终输出 |
+| `usage` | `AgentUsageSummary` 中的合计：输入、输出、缓存和总 token 数，以及费用 |
+
+</Tab>
+<Tab title="Go">
+
+`result.Messages` 包含所有模型消息和工具消息，`result.Steps` 包含每一轮的工具调用、请求 ID、提供商、模型和用量。
+
+</Tab>
+<Tab title="C#">
+
+`result.Messages` 包含所有模型消息和工具消息，`result.Steps` 包含每一轮的工具调用、请求 ID、提供商、模型、结束原因、警告和用量。
+
+</Tab>
+<Tab title="PHP">
+
+`$result->messages` 包含所有模型消息和工具消息，`$result->steps` 包含每一轮的工具调用、请求 ID、提供商、模型、结束原因、警告和用量。
+
+</Tab>
+<Tab title="Ruby">
+
+`result.messages` 包含所有模型消息和工具消息，`result.steps` 包含每一轮的工具调用、请求 ID、提供商、模型、结束原因、警告和用量。
+
+</Tab>
+<Tab title="Java">
+
+运行结束后，`fullStream()` 返回完整的事件历史。`messages()` 包含所有模型消息和工具消息，`steps()` 包含每一轮的工具调用、请求 ID、提供商、模型、结束原因、警告和用量。
+
+</Tab>
+<Tab title="Rust">
+
+`RunResult` 包含 `run`（状态、ID、实际使用的模型、步数上限、上下文和暂停状态）、`steps`（每个模型轮次的请求 ID、提供商、模型、结束原因、工具调用和用量）、`messages`（完整的模型与工具消息历史）、`output` 和 `usage`。
+
+</Tab>
+</Tabs>

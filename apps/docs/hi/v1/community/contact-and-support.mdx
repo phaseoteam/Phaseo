@@ -1,22 +1,23 @@
 ---
 title: "संपर्क और सहायता"
-description: "Phaseo के लिए सहायता पाने या समस्याएँ रिपोर्ट करने का तरीका।"
+description: "Phaseo के लिए मदद पाने या समस्याएँ रिपोर्ट करने का तरीका।"
 sidebarTitle: "संपर्क और सहायता"
 icon: "messages-square"
 ---
 
-## बग रिपोर्ट करें
+अकाउंट, बिलिंग, API और फ़ीडबैक से जुड़े सवालों के लिए [Phaseo Help Center](https://phaseo.app/help) से शुरुआत करें; टीम हर अनुरोध को सही जगह भेज देती है।
 
-Phaseo Help Center का इस्तेमाल करें और समस्या दोहराने के स्पष्ट चरण, अनुरोध ID और संबंधित logs शामिल करें:
+| आप यह करना चाहते हैं | यहाँ जाएँ |
+| --- | --- |
+| अपने अकाउंट, बिलिंग या किसी विफल अनुरोध में मदद पाना | [Help Center](https://phaseo.app/help) |
+| बग रिपोर्ट करना | [Help Center](https://phaseo.app/help), या GitHub पर [बग रिपोर्ट](https://github.com/phaseoteam/Phaseo/issues/new?template=bug.yml) |
+| कैटलॉग डेटा ठीक करना | [योगदान](../contributing/overview) |
+| सुरक्षा कमज़ोरी रिपोर्ट करना | [GitHub रिपॉज़िटरी](https://github.com/phaseoteam/Phaseo) पर **Security -> Report a vulnerability** के तहत निजी रिपोर्ट, या `security@phaseo.app`। इसे सार्वजनिक रूप से पोस्ट न करें। |
+| समुदाय से पूछना | [Discord](https://discord.gg/aQyywCvgZ5) |
 
-- https://phaseo.app/help
+## बग रिपोर्ट में क्या शामिल करें
 
-## मदद माँगें
-
-अकाउंट, बिलिंग और API समस्या के लिए Phaseo Help Center से शुरुआत करें:
-
-- https://phaseo.app/help
-
-## फ़ीडबैक दें
-
-फ़ीडबैक कहाँ भेजना है, यह पता न हो तो Phaseo Help Center इस्तेमाल करें। टीम इसे सही जगह भेज देगी।
+- अनुरोध ID: प्रतिक्रिया का `id` (`G-...`), त्रुटि का `generation_id`, या `x-request-id` प्रतिक्रिया हेडर।
+- आपने क्या भेजा (API कुंजी हटाकर), और आपको क्या उम्मीद थी।
+- प्रतिक्रिया बॉडी से त्रुटि कोड और संदेश। [त्रुटि संदर्भ](../api-reference/errors) हर कोड का मतलब बताता है।
+- कोई भी संबंधित logs, क्रेडेंशियल और ग्राहक डेटा हटाकर।

@@ -1,23 +1,19 @@
 ---
 icon: "waypoints"
 title: "Muster für Tool-Aufrufe"
-description: "Zuverlässige Tool-Aufruf-Schleifen für Chat-Completions- und Responses-Endpunkte."
+description: "Zuverlässige Tool-Aufruf-Schleifen für die Endpunkte Chat Completions und Responses."
 ---
 
-Nutze diese Muster, damit Tool-Aufruf-Schleifen deterministisch und leicht zu debuggen sind.
+Nachdem das Modell ein Tool aufgerufen hat, sende eine Folgeanfrage, die die Unterhaltung, den Aufruf des Modells und das Ergebnis deines Tools wiederholt. Das Modell schreibt dann seine Antwort oder ruft ein weiteres Tool auf, und du wiederholst den Vorgang. Nutze den Endpunkt, dessen Nachrichtenformat deine App bereits verwendet: `/v1/chat/completions` für Nachrichtenschleifen im OpenAI-Stil, `/v1/responses` für die Responses API, `/v1/messages` für Anthropic-native Apps.
 
-## Muster 1: Chat-Completions-Schleife
+<Tabs>
+<Tab title="Chat Completions">
 
-1. Sende die Nutzernachricht und die Tool-Definitionen.
-2. Wenn `finish_reason` den Wert `tool_calls` hat, führe jeden Tool-Aufruf aus.
-3. Sende die Tool-Ergebnisse als Nachrichten mit `role: "tool"` zurück.
-4. Lies die endgültige Antwort des Assistenten.
-
-### Anfrage (Fortsetzung)
+Wenn `finish_reason` den Wert `tool_calls` hat, führe jeden Aufruf aus und sende dann die Assistant-Nachricht unverändert, gefolgt von einer Nachricht mit `role: "tool"` pro Aufruf, zugeordnet über `tool_call_id`. Sende `tools` erneut mit.
 
 ```json
 {
-  "model": "openai/gpt-5-nano",
+  "model": "openai/gpt-6-astra",
   "messages": [
     { "role": "user", "content": "What is the weather in Seattle?" },
     {
@@ -56,16 +52,14 @@ Nutze diese Muster, damit Tool-Aufruf-Schleifen deterministisch und leicht zu de
 }
 ```
 
-## Muster 2: Responses-Schleife
+</Tab>
+<Tab title="Responses">
 
-Bei `/v1/responses` erscheinen Tool-Aufrufe des Modells als Ausgabe-Elemente vom Typ `function_call`.
-Sende anschließend eine Folgeanfrage mit `function_call_output`-Eingabeelementen.
-
-### Anfrage (Folgeanfrage)
+Aufrufe kommen als Ausgabeelemente vom Typ `function_call` an. Sende das Aufrufelement als Eingabe zurück, gefolgt von einem Element `function_call_output` mit derselben `call_id`.
 
 ```json
 {
-  "model": "openai/gpt-5-nano",
+  "model": "openai/gpt-6-astra",
   "input": [
     {
       "type": "message",
@@ -87,9 +81,7 @@ Sende anschließend eine Folgeanfrage mit `function_call_output`-Eingabeelemente
 }
 ```
 
-## Endpunkt auswählen
+</Tab>
+</Tabs>
 
-- Nutze `/v1/chat/completions`, wenn du bereits OpenAI-ähnliche Nachrichtenabläufe verwendest.
-- Nutze `/v1/responses`, wenn deine Anwendung auf die Responses-API standardisiert ist.
-- Nutze `/v1/messages`, wenn deine Anwendung auf Anthropic ausgelegt ist.
-
+Bevor du einen Aufruf ausführst, validiere seine Argumente; siehe [Sicherheit bei Tool-Aufrufen](./tool-calling-safety).
