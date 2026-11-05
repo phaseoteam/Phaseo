@@ -69,6 +69,8 @@ const gateCheckSchema = z
             limit_metric: z.enum(["requests", "cost", "soft_blocked"]).nullable().optional(),
             current_value: z.coerce.number().nullable().optional(),
             limit_value: z.coerce.number().nullable().optional(),
+            department_id: z.string().nullable().optional(),
+            department_name: z.string().nullable().optional(),
             buckets: z
                 .object({
                     daily: bucketSchema.optional(),
@@ -94,6 +96,7 @@ const gateCheckSchema = z
             limitMetric: value.limit_metric ?? null,
             currentValue: value.current_value ?? null,
             limitValue: value.limit_value ?? null,
+            ...(value.department_id ? { departmentId: value.department_id, departmentName: value.department_name ?? null } : {}),
             buckets: value.buckets ?? null,
             budgets: value.budgets ?? null,
         };

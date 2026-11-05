@@ -36,11 +36,6 @@ CREATE INDEX credit_ledger_source_ref_idx ON public.credit_ledger USING btree (s
 CREATE INDEX credit_ledger_workspace_id_idx ON public.credit_ledger USING btree (workspace_id)
   WHERE (workspace_id IS NOT NULL);
 
-CREATE POLICY "Enable insert for users based on user_id" ON "public"."credit_ledger"
-  FOR INSERT
-  TO "authenticated"
-  WITH CHECK (public.is_workspace_member(workspace_id));
-
 CREATE POLICY "credit_ledger_select_own_team" ON "public"."credit_ledger"
   FOR SELECT
   TO "authenticated"
