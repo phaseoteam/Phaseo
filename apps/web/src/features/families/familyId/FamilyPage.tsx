@@ -26,6 +26,8 @@ import type { RouteMetadataInput } from "@/lib/start/metadata";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useTranslations } from "@/i18n/react";
 import { familyQuery } from "../page.queries";
+import { familyIdFromSplat } from "./familyIdFromSplat";
+export { familyIdFromSplat };
 
 const STATUS_STYLES: Record<string, string> = {
 	Available:
@@ -45,10 +47,6 @@ const STATUS_STYLES: Record<string, string> = {
 	default: "border-border bg-muted/40 text-muted-foreground",
 };
 
-/** The family id from the route's splat: `/families/openai/gpt-5` → `openai/gpt-5`. */
-export function familyIdFromSplat(splat: string | undefined): string {
-	return (splat ?? "").split("/").filter(Boolean).map(decodeURIComponent).join("/");
-}
 
 function getMemberDate(member: FamilyModelItem): Date | null {
 	const value = member.release_date ?? member.announcement_date;

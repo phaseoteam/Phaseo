@@ -4,8 +4,8 @@ import { toSerializableMetadata } from "@/lib/start/metadata";
 import { metadataToHead } from "@/lib/start/metadataToHead";
 import { metadataLoaderData } from "@/lib/start/streamedMetadata";
 import CreditsOnboardingPage, { getCreditsOnboardingMetadata } from "@/features/settings/credits/onboarding/CreditsOnboardingPage";
+import { shouldRedirectFromOnboarding } from "@/features/settings/credits/onboarding/onboardingRedirect";
 import { redirect } from "@/lib/navigation";
-import { shouldRedirectFromOnboarding } from "@/features/settings/credits/onboarding/CreditsOnboardingPage";
 import { creditsOnboardingInitialDataQuery } from "@/features/settings/credits/credits.functions";
 
 const routeMetadata = createServerFn({ method: "GET" }).handler(async () => toSerializableMetadata(await getCreditsOnboardingMetadata()));

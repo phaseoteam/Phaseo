@@ -50,9 +50,25 @@ function unitName(raw: string, quantity: number, t: Translator): string {
 	return raw;
 }
 
+// Labels depend only on the locale and the input, and t.has() is expensive when a key is missing
+// (use-intl throws and catches an Error per miss), so results are kept per locale. Plain strings,
+// so sharing them across requests in a Worker isolate is safe.
+const LABEL_CACHE_LIMIT = 5000;
+const labelCache = new Map<string, string>();
+
 /** Translate known generated presentation copy without modifying catalog IDs or stored labels. */
 export function localizedPricingDisplayLabel(value: string | null | undefined, locale: string, t: Translator): string {
 	if (!value) return "";
+	const cacheKey = locale + "\u0000" + value;
+	const cached = labelCache.get(cacheKey);
+	if (cached !== undefined) return cached;
+	const label = computeLocalizedPricingDisplayLabel(value, locale, t);
+	if (labelCache.size >= LABEL_CACHE_LIMIT) labelCache.clear();
+	labelCache.set(cacheKey, label);
+	return label;
+}
+
+function computeLocalizedPricingDisplayLabel(value: string, locale: string, t: Translator): string {
 	const raw = value.trim();
 	const key = PRICING_DISPLAY_LABEL_KEYS[raw.toLowerCase()];
 	if (key) return t(key as never);

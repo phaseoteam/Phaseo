@@ -6,6 +6,8 @@ import { useTranslations } from "@/i18n/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { redirect } from "@/lib/navigation";
 import { creditsOnboardingInitialDataQuery } from "../credits.functions";
+import { shouldRedirectFromOnboarding } from "./onboardingRedirect";
+export { shouldRedirectFromOnboarding };
 
 export async function getCreditsOnboardingMetadata() {
 	const t = await getTranslations("SettingsUI");
@@ -84,7 +86,3 @@ export default function BillingOnboardingPage() {
 	);
 }
 
-/** Signed-in accounts with a loaded workspace but no onboarding access go back to /settings/credits. */
-export function shouldRedirectFromOnboarding(initialData: { signedIn: boolean; workspaceId: string | null; team: unknown; canAccessOnboarding: boolean }): boolean {
-	return initialData.signedIn && Boolean(initialData.workspaceId) && Boolean(initialData.team) && !initialData.canAccessOnboarding;
-}

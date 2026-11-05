@@ -5,15 +5,8 @@ import type { ObservabilityTab } from "@/components/(gateway)/usage/observabilit
 import { privateUsageScopeQuery } from "./usage.functions";
 import { usageSearchParams, type UsageSearchParams } from "@/lib/query/privateUsage";
 import ObservabilityClient from "./ObservabilityClient";
+export { usageRedirectHref } from "./usageRedirects";
 
-/** Where /settings/usage permanently redirects to (unlocalised; the route adds the locale). */
-export function usageRedirectHref(searchParams: UsageSearchParams): string {
-	const params = usageSearchParams(searchParams);
-	const tab = (params.get("tab") ?? "").toLowerCase();
-	const target = `/settings/usage/${["trends", "explore", "guardrails"].includes(tab) ? tab : "overview"}`;
-	params.delete("tab");
-	return params.size ? `${target}?${params}` : target;
-}
 
 export function ObservabilityPageContent({ initialTab }: { initialTab: ObservabilityTab }) {
 	return <Suspense fallback={<SettingsSectionFallback />}><ObservabilityContent initialTab={initialTab} /></Suspense>;

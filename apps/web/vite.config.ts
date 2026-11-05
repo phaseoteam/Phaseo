@@ -31,10 +31,30 @@ export default defineConfig(({ mode }) => {
 			latin1ServerChunks(),
 			announcementMdx(path.join(src, "content/announcements"), (toc) => createBlogHeadingsPlugin(toc as never)),
 			cloudflare({ viteEnvironment: { name: "ssr" } }),
-			tanstackStart({ srcDirectory: "src", router: { routesDirectory: "routes" } }),
+			tanstackStart({
+				srcDirectory: "src",
+				router: {
+					routesDirectory: "routes",
+					// The router plugin does not split pendingComponent by default, so each route's loading
+					// skeleton (and everything it imports, often the whole page) landed in the client entry.
+					codeSplittingOptions: { defaultBehavior: [["component"], ["pendingComponent"], ["errorComponent"], ["notFoundComponent"]] },
+				},
+			}),
 			viteReact(),
 			tailwindcss(),
 		],
 		server: { port: 3200 },
+		environments: {
+			client: {
+				build: {
+					rolldownOptions: {
+						// The i18n modules and message JSON only declare data and functions. Without this,
+						// tree-shaken imports of them survive as bare side-effect imports, which pulled the
+						// full English settings messages (374 KB) into every page's entry graph.
+						treeshake: { moduleSideEffects: (id: string) => (/[\\/]src[\\/]i18n[\\/][^\\/]+\.tsx?$|[\\/]messages[\\/][^?]+\.json$/.test(id) ? false : undefined) },
+					},
+				},
+			},
+		},
 	};
 });

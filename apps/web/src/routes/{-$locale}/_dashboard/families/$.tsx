@@ -4,7 +4,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { routeMetadataInput, toSerializableMetadata, type RouteMetadataInput } from "@/lib/start/metadata";
 import { metadataToHead } from "@/lib/start/metadataToHead";
 import { metadataLoaderData } from "@/lib/start/streamedMetadata";
-import FamilyPage, { familyIdFromSplat, getFamilyMetadata } from "@/features/families/familyId/FamilyPage";
+import FamilyPage, { getFamilyMetadata } from "@/features/families/familyId/FamilyPage";
+import { familyIdFromSplat } from "@/features/families/familyId/familyIdFromSplat";
 import { familyQuery } from "@/features/families/page.queries";
 import { notFound } from "@/lib/navigation";
 
