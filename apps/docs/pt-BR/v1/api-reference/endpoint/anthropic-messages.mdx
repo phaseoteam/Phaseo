@@ -2,21 +2,20 @@
 title: "Criar uma mensagem"
 sidebarTitle: "Criar uma mensagem (Anthropic)"
 openapi: "/pt-BR/openapi/v1/openapi.localized.yaml POST /messages"
-description: "Endpoint Messages compatível com Anthropic em `/v1/messages`."
+description: "Endpoint Messages compatível com a Anthropic em /v1/messages."
 ---
-`/v1/messages` aceita payloads da API Anthropic Messages e retorna respostas no formato Anthropic.
 
-## Transmissão contínua
+Envie um payload da API Messages da Anthropic para `/v1/messages` e receba de volta uma resposta no formato da Anthropic, para qualquer modelo que o Phaseo roteia. Os campos de uso de ferramentas da Anthropic são aceitos, e o cabeçalho `X-Phaseo-Strictness` controla como os parâmetros não suportados são tratados.
 
-Defina `stream: true` para receber eventos enviados pelo servidor no formato Anthropic (`message_start`, `content_block_*`, `message_delta`, `message_stop`).
+Defina `stream: true` para receber eventos enviados pelo servidor no formato da Anthropic (`message_start`, `content_block_*`, `message_delta`, `message_stop`). O streaming também funciona em loops de ferramentas.
 
 ## Mensagens de sistema no meio da conversa
 
-Adicione uma mensagem com `role: "system"` a `messages` para uma instrução que vale a partir desse ponto da conversa. O campo `system` de nível superior não muda, então um prefixo em cache continua sendo aproveitado.
+Adicione uma mensagem `role: "system"` a `messages` para uma instrução que vale a partir daquele ponto da conversa. O campo `system` de nível superior continua o mesmo, então um prefixo em cache ainda é aproveitado.
 
 ```bash
 curl https://api.phaseo.app/v1/messages \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "anthropic/claude-opus-5.5",
@@ -31,39 +30,47 @@ curl https://api.phaseo.app/v1/messages \
   }'
 ```
 
-- Uma mensagem de sistema aceita uma string ou blocos de texto. Ela deve vir logo após um turno do usuário (ou um turno do assistente que termine em um resultado de ferramenta do servidor) e ser a última mensagem ou ser seguida por um turno do assistente. Outras posições retornam 400.
-- Claude Fable 5 e 5.1, Mythos 5 e 5.1, Opus 4.8, Opus 5 e 5.5, Sonnet 5.5 e Haiku 5.5 a recebem na posição em que foi enviada. Os outros modelos Claude, incluindo o Sonnet 5, e todos os modelos Claude no Microsoft Foundry a recebem como parte do prompt de sistema de nível superior. Os outros provedores a recebem como uma mensagem de sistema, igual a uma enviada para Chat Completions.
-- `clear_at`, `output_config` e os blocos `tool_addition` ou `tool_removal` não são compatíveis.
+Uma mensagem de sistema aceita uma string ou blocos de texto. Ela precisa vir logo depois de um turno do usuário (ou de um turno do assistente que termina com um resultado de ferramenta de servidor) e ser a última mensagem ou ser seguida por um turno do assistente. Outras posições retornam `400`. `clear_at`, `output_config` e blocos `tool_addition` ou `tool_removal` não são suportados.
 
-## Observações
+| Modelo | Como recebe a mensagem de sistema |
+| --- | --- |
+| Claude Fable 5 e 5.1, Mythos 5 e 5.1, Opus 4.8, Opus 5 e 5.5, Sonnet 5.5, Haiku 5.5 | No lugar em que está |
+| Outros modelos Claude, incluindo o Sonnet 5, e todos os modelos Claude no Microsoft Foundry | Mesclada ao prompt de sistema de nível superior |
+| Modelos de outros provedores | Como mensagem de sistema, igual a uma enviada ao Chat Completions |
 
-- Os campos de uso de ferramentas do Anthropic são compatíveis.
-- `stream: true` também funciona em loops de ferramentas. Para ferramentas de servidor gerenciadas pelo Gateway, a Phaseo pode materializar o turno upstream, continuar o loop e emitir novamente um stream sintético.
-- O formato nativo da ferramenta de busca na web do Anthropic também é aceito diretamente em `tools`, por exemplo `type: "web_search_20250305"`.
-- O cabeçalho `X-Phaseo-Strictness` controla o tratamento de parâmetros não compatíveis.
+## Usar ferramentas de servidor
 
-## Ferramentas do servidor
-
-`/v1/messages` também aceita estas ferramentas de servidor gerenciadas pelo Gateway:
-
-- `gateway:datetime`
-- `phaseo:web_search`
-- `phaseo:web_fetch`
-- `phaseo:advisor`
-- `phaseo:image_generation`
-
-A Phaseo converte essas ferramentas para o formato compatível com Anthropic no provedor upstream, executa-as no servidor e continua o loop de ferramentas.
-
-## Busca na web nativa do provedor
-
-Quando um par compatível de modelo/provedor Anthropic oferece busca na web nativa, você também pode enviar diretamente a definição nativa da ferramenta:
+Adicione uma ferramenta `phaseo:` a `tools` e o Phaseo a executa quando o modelo a chama, convertendo-a para o formato de ferramenta da Anthropic no upstream e continuando o loop de ferramentas no servidor. `/v1/messages` aceita todas as ferramentas de servidor, exceto `phaseo:apply_patch`; o guia [Ferramentas de servidor](../../guides/server-tools) lista todas elas.
 
 ```bash
 curl https://api.phaseo.app/v1/messages \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "anthropic/claude-sonnet-4",
+    "model": "anthropic/claude-sonnet-5.5",
+    "max_tokens": 512,
+    "messages": [
+      { "role": "user", "content": "What time is it in America/New_York right now?" }
+    ],
+    "tools": [
+      { "type": "phaseo:datetime", "parameters": { "timezones": ["America/New_York"] } }
+    ],
+    "tool_choice": { "type": "auto" }
+  }'
+```
+
+As chamadas de ferramentas de servidor são contabilizadas em `usage.server_tool_use`. O tipo antigo `gateway:datetime` continua funcionando. Com `stream: true`, o Phaseo executa os turnos de ferramenta por conta própria e depois transmite a continuação da resposta para você como um único stream.
+
+## Usar a pesquisa na web nativa da Anthropic
+
+Quando o modelo e o provedor Anthropic roteados aceitam pesquisa na web nativa, passe diretamente a definição de ferramenta da Anthropic, por exemplo `type: "web_search_20250305"`. O roteamento de provedores ainda filtra pelo suporte a `web_search_options` antes da execução.
+
+```bash
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-5.5",
     "max_tokens": 512,
     "messages": [
       { "role": "user", "content": "Find the latest Anthropic web search guidance." }
@@ -76,33 +83,6 @@ curl https://api.phaseo.app/v1/messages \
         "allowed_domains": ["docs.anthropic.com"]
       }
     ],
-    "tool_choice": { "type": "tool", "name": "web_search" }
-  }'
-```
-
-O roteamento do provedor ainda verifica o suporte a `web_search_options` antes da execução.
-
-### Exemplo de data e hora
-
-```bash
-curl https://api.phaseo.app/v1/messages \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "anthropic/claude-sonnet-4",
-    "max_tokens": 512,
-    "stream": false,
-    "messages": [
-      { "role": "user", "content": "What time is it in America/New_York right now?" }
-    ],
-    "tools": [
-      {
-        "type": "gateway:datetime",
-        "parameters": { "timezone": "America/New_York" }
-      }
-    ],
     "tool_choice": { "type": "auto" }
   }'
 ```
-
-Quando usadas, as chamadas às ferramentas do servidor aparecem nos contadores `usage.server_tool_use.*`.

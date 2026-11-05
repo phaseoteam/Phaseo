@@ -1,0 +1,67 @@
+---
+title: "OpenClaw"
+icon: "/icons/brands/openclaw.svg"
+description: "سجّل Phaseo كمزوّد نماذج في OpenClaw، مع قراءة المفتاح من Phaseo CLI."
+---
+
+شغّل `phaseo openclaw` لتسجيل مزوّد نماذج `phaseo` في OpenClaw مع كل نماذج Phaseo المتوافقة، أو أضف المزوّد باستخدام `openclaw config set` بنفسك.
+
+## الإعداد باستخدام Phaseo CLI
+
+```bash
+phaseo login
+phaseo openclaw --model openai/gpt-6-astra
+```
+
+إذا لم يكن OpenClaw مثبتًا، تعرض CLI أمر التثبيت (`npm install -g openclaw@latest`، أو الحزمة نفسها باستخدام pnpm أو Yarn أو Bun) وتطلب موافقتك قبل تشغيله. ثم يشغّل الإعداد `openclaw config set` مرتين:
+
+- **`secrets.providers.phaseo_cli`**: مزوّد أسرار من نوع exec يشغّل `phaseo integrations credential openclaw` لقراءة المفتاح. لا يُكتب المفتاح أبدًا في إعداد OpenClaw.
+- **`models.providers.phaseo`**: مزوّد بـ Base URL ‏`https://api.phaseo.app/v1`، ونوع API ‏`openai-completions`، والمفتاح مأخوذ من `phaseo_cli`. يسرد كل نماذج النص النشطة في Phaseo التي تعمل مع Chat Completions، مع قيمة `--model` أولًا (`anthropic/claude-sonnet-4.6` بدونها).
+
+المفتاح من نوع `Phaseo CLI: OpenClaw API Key` تنتهي صلاحيته بعد 90 يومًا وله حد إنفاق شهري قدره $100. عندما يطلب OpenClaw المفتاح من CLI بعد انتهاء صلاحيته، تنشئ CLI مفتاحًا جديدًا.
+
+لا يغيّر الإعداد النموذج الافتراضي في OpenClaw. اختر نموذج Phaseo باستخدام `openclaw models set` عندما تكون جاهزًا. استخدم `--catalog default` لتسجيل النموذج المحدد فقط.
+
+## إعداد OpenClaw يدويًا
+
+سجّل مزوّد أسرار يطبع مفتاحك، ثم مزوّد نماذج Phaseo:
+
+```bash
+openclaw config set secrets.providers.phaseo_cli \
+  '{"source":"exec","command":"phaseo","args":["integrations","credential","openclaw"],"jsonOnly":false}' \
+  --strict-json
+
+openclaw config set models.providers.phaseo '{
+  "baseUrl": "https://api.phaseo.app/v1",
+  "apiKey": { "source": "exec", "provider": "phaseo_cli", "id": "value" },
+  "api": "openai-completions",
+  "models": [
+    { "id": "openai/gpt-6-astra", "name": "openai/gpt-6-astra via Phaseo", "reasoning": false, "input": ["text"] }
+  ]
+}' --strict-json
+```
+
+يأخذ كل إدخال في `models` الحقول `id` (معرّف نموذج Phaseo) و`name` و`reasoning` و`input` (`text` و`image`) و`contextWindow` الاختياري. أضف إدخالًا لكل نموذج Phaseo تريد أن يسرده OpenClaw.
+
+## التحقق من أنه يعمل
+
+شغّل `openclaw config get models.providers.phaseo --json` للتأكد من تسجيل المزوّد. اختر نموذج Phaseo باستخدام `openclaw models set`، وأرسل موجّهًا قصيرًا. تأكد من ظهور الطلب في **الإعدادات → الاستخدام → السجلات**.
+
+## إزالة Phaseo
+
+```bash
+phaseo integrations remove openclaw
+```
+
+يلغي هذا الأمر تعيين `models.providers.phaseo` و`secrets.providers.phaseo_cli`، ثم يلغي المفتاح. تبقى إعدادات OpenClaw الأخرى لديك. أعد تشغيل بوابة OpenClaw إذا كانت قيد التشغيل.
+
+## إصلاح المشكلات الشائعة
+
+| المشكلة | الحل |
+| --- | --- |
+| `OpenClaw already defines models.providers.phaseo` | لن يستبدل الإعداد مزوّد `phaseo` موجودًا. احذفه أو أعد تسميته، أو شغّل `phaseo integrations remove openclaw`، ثم أعد الإعداد. |
+| تفشل الطلبات بعد نقل Phaseo CLI أو Node.js أو إعادة تثبيتهما | يحفظ الإعداد المسارات الدقيقة لـ Node.js وCLI في `secrets.providers.phaseo_cli`. شغّل `phaseo integrations remove openclaw`، ثم `phaseo openclaw` مرة أخرى. |
+| `OpenClaw is not installed or is not on PATH` | ثبّت OpenClaw أو أضفه إلى `PATH`، ثم أعد تشغيل الإعداد. |
+| يُرفض نموذج | تحقق من المعرّف الدقيق باستخدام [نقطة نهاية النماذج](../../api-reference/endpoint/models.mdx). |
+
+للوكلاء الأخرى وقيم المزوّد التي يحتاجها كل وكيل، راجع [وكلاء البرمجة](./coding-assistants.mdx).

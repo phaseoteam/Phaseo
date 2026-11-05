@@ -1,42 +1,48 @@
 ---
 icon: "folder-open"
 title: "仓库结构"
-description: "查找 Phaseo 应用代码、文档、SDK 和目录导出。"
+description: "查找 Phaseo 应用代码、文档、SDK 和数据库架构。"
 ---
 
-Phaseo 是 pnpm 和 Turborepo 单体仓库。使用此参考查找代码或文档更改所需文件。目录记录更改请[创建问题](./overview.mdx)。
+Phaseo 是一个 pnpm 和 Turborepo 单体仓库。在下方找到你的代码或文档更改所在的文件夹。目录记录不在仓库中；如需更改，请[创建议题](./overview.mdx)。
 
-## 应用和软件包
+## 应用
 
 | 路径 | 用途 |
 | --- | --- |
-| `apps/web` | Next.js 16 网站、仪表板和内部目录编辑器。 |
-| `apps/web-api` | 公开目录读取和经身份验证的账户及管理 API。 |
-| `apps/api` | 在 Cloudflare Workers 上进行网关路由和提供商执行。 |
+| `apps/web` | Next.js 16 网站、控制台和内部目录编辑器。 |
+| `apps/web-api` | 公开目录读取，以及经身份验证的账户和管理 API。 |
+| `apps/api` | 在 Cloudflare Workers 上运行的 Gateway 路由和提供商执行。 |
 | `apps/docs` | Mintlify 文档；MDX 页面位于 `v1`，导航位于 `docs.json`。 |
-| `packages/sdk` | TypeScript、Python、Go、C#、PHP、Ruby、Java、Rust 和 C++ SDK。 |
-| `supabase/migrations` | 数据库架构和权限迁移。 |
+| `apps/mcp` | 用于模型发现、定价和用量的 Phaseo MCP 服务器。 |
+| `apps/desktop` | Phaseo 桌面应用。 |
+| `apps/mobile` | Phaseo 移动应用（Expo，优先支持 Android）。 |
+| `apps/slack` | 支撑 Phaseo Slack 智能体的 Worker。 |
+
+## 软件包和工具
+
+| 路径 | 用途 |
+| --- | --- |
+| `packages/sdk` | TypeScript、Python、Go、C#、PHP、Ruby、Java、Rust 和 C++ SDK，以及 Agent SDK（`agent-sdk-*`）。 |
+| `packages/cli/phaseo` | `@phaseo/cli` 命令行工具。 |
+| `packages/integrations` | Vercel AI SDK 提供商和 Terraform 提供商。 |
+| `packages/shared` | 应用之间共享的代码，例如 UI、支出规则和路由设置。 |
+| `supabase/schemas` | 声明式数据库定义。 |
+| `supabase/migrations` | 部署架构和权限更改的前向 SQL 迁移。 |
 | `scripts` | 验证、SDK 生成和自动化工具。 |
 | `.github/workflows` | CI、部署和目录同步。 |
 | `.changeset` | 已版本化软件包的发布元数据。 |
 
 ## 目录数据
 
-数据库是模型、提供商、组织、价格、基准测试及相关目录设置的权威来源。管理员通过[内部数据](https://phaseo.app/internal/data)管理记录。公开贡献通过 GitHub 问题进行审核。
+数据库是模型、提供商、组织、定价、基准测试和目录设置的唯一来源。仓库中没有目录 JSON。管理员在[内部数据](https://phaseo.app/internal/data)中管理记录；公开贡献以 GitHub 议题的形式提交。
 
-- 仓库中不包含目录 JSON。旧版 JSON 到数据库导入器已停用。
-
-架构和应用更改仍使用迁移和拉取请求。生成的 SDK 产物应通过对应生成命令更新。
+架构和应用更改仍通过迁移和拉取请求进行。生成的 SDK 文件应使用对应的生成命令更新，不要手动修改。
 
 ## 目录自动化
 
-提供商同步会将建议价格排队等待在[提供商更新](https://phaseo.app/internal/data/imports)中审核。基准测试和模型生命周期任务使用数据库。
+提供商同步会将建议价格排入[提供商更新](https://phaseo.app/internal/data/imports)等待审核。基准测试和模型生命周期任务会读写数据库。
 
-仅存在于目录中的记录不会自动启用网关路由。路由和价格更改需要相应管理员审核。
+目录记录本身不会启用 Gateway 路由。路由和价格更改需要管理员审核。
 
-## 从哪里开始
-
-- [报告模型更新](./editing-a-model.mdx)。
-- [报告组织更新](./editing-an-organisation.mdx)。
-- [提交基准测试分数](../research/submitting-scores.mdx)。
-- [贡献代码或文档](./how-to-contribute.mdx)。
+要开始一项更改，请参阅[贡献代码或文档](./how-to-contribute.mdx)。

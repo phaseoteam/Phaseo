@@ -1,40 +1,28 @@
 ---
-title: "الانتقال من OpenAI SDK"
+title: "الترحيل من OpenAI SDK"
 sidebarTitle: "OpenAI SDK"
-description: "انقل تكامل OpenAI SDK الحالي إلى Phaseo عبر تغيير إعدادات العميل والتحقق من معرّفات النماذج واختبار مسارات العمل التي يستخدمها تطبيقك."
+description: "انقل تكامل OpenAI SDK الحالي إلى Phaseo بتغيير إعدادات العميل، والتحقق من معرّفات النماذج، واختبار مسارات العمل التي يستخدمها تطبيقك."
 icon: "/icons/brands/openai.svg"
 ---
 
-استخدم هذا الدليل لنقل تكامل OpenAI SDK الحالي إلى Phaseo دون إعادة كتابة بقية التطبيق. ابدأ بعنوان URL الأساسي ومفتاح API، وأبقِ الطلب كما هو، ثم تحقّق من كل نموذج ونقطة نهاية قبل تحويل حركة الإنتاج.
+احتفظ بـ OpenAI SDK وغيّر أمرين: عنوان URL الأساسي ومفتاح API. ثم امنح كل نموذج معرّفه في Phaseo، الذي يضيف البادئة `openai/`.
 
-## ما الذي سيتغير
-
-| الإعداد | قبل | بعد |
+| الإعداد | OpenAI | Phaseo |
 | --- | --- | --- |
-| عنوان URL الأساسي | عنوان OpenAI الافتراضي | `https://api.phaseo.app/v1` |
-| مفتاح API | مفتاح OpenAI | `PHASEO_API_KEY` |
-| النموذج | اسم نموذج OpenAI | معرّف نموذج تُرجعه `GET /v1/models` |
-| رمز الطلب | استدعاء SDK الحالي | لا يتغير عادةً |
+| عنوان URL الأساسي | القيمة الافتراضية في SDK (`https://api.openai.com/v1`) | `https://api.phaseo.app/v1` |
+| مفتاح API | `OPENAI_API_KEY` | `PHASEO_API_KEY`، يُرسل بوصفه `Authorization: Bearer` |
+| النموذج | `gpt-4.1-mini` | `openai/gpt-4.1-mini`، أو أي معرّف من `GET /v1/models` |
+| شيفرة الطلب | `chat.completions.create` و`responses.create` | دون تغيير |
 
-<Steps>
-<Step title="إنشاء مفتاح API لـ Phaseo">
+## تبديل العميل
 
-أنشئ مفتاحًا باستخدام `phaseo keys create` في [Phaseo CLI](../guides/integrations/phaseo-cli) أو في [مفاتيح Gateway](https://phaseo.app/settings/keys)، ثم أضفه إلى كل بيئة تشغّل تطبيقك.
-
-```bash
-PHASEO_API_KEY=phaseo_v1_sk_...
-```
-
-</Step>
-
-<Step title="توجيه العميل إلى Phaseo">
-
-أبقِ OpenAI SDK وغيّر بيانات الاعتماد وعنوان URL الأساسي فقط في البداية.
+أنشئ مفتاحًا باستخدام `phaseo keys create` في [Phaseo CLI](../guides/integrations/phaseo-cli) أو في [مفاتيح API](https://phaseo.app/settings/keys)، وأضفه إلى كل بيئة تشغّل التطبيق. ثم مرّره مع عنوان URL الأساسي إلى العميل الحالي:
 
 <CodeGroup>
 ```typescript TypeScript
 import OpenAI from "openai";
 
+// قبل: const client = new OpenAI();
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
@@ -50,6 +38,7 @@ const response = await client.chat.completions.create({
 import os
 from openai import OpenAI
 
+# قبل: client = OpenAI()
 client = OpenAI(
     api_key=os.environ["PHASEO_API_KEY"],
     base_url="https://api.phaseo.app/v1",
@@ -72,39 +61,39 @@ curl https://api.phaseo.app/v1/chat/completions \
 ```
 </CodeGroup>
 
-</Step>
+استخدم اسم متغير جديدًا بدلًا من وضع مفتاح Phaseo في `OPENAI_API_KEY`، وأزل قيم `OPENAI_BASE_URL` القديمة حتى لا يواصل أي عميل آخر في المستودع استدعاء OpenAI. تنتقل عملاء `AzureOpenAI` إلى عميل `OpenAI` العادي؛ وتُطابق أسماء عمليات النشر في Azure مع معرّفات نماذج Phaseo بالطريقة نفسها.
 
-<Step title="التحقق من معرّفات النماذج وتغطية نقاط النهاية">
+## مطابقة معرّفات النماذج
 
-اعرض النماذج المتاحة عبر Phaseo بدل افتراض أن جميع الأسماء المستعارة السابقة ستظل تعمل كما هي.
+اعرض المعرّفات التي يقدّمها Phaseo بتنسيق القائمة الخاص بـ OpenAI، وتحقّق من كل نموذج إنتاجي مقابل `data[].id`:
 
 ```bash
-curl https://api.phaseo.app/v1/models \
+curl "https://api.phaseo.app/v1/models?format=openai" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-تحقّق من كل مسارات الإنتاج التي تعتمد عليها، بما في ذلك البث والأدوات والمخرجات المنظّمة والصور والصوت والملفات والدفعات. استخدم [مرجع API](../api-reference/introduction.mdx) لتأكيد نقطة النهاية المناسبة.
+دون `format=openai`، تكون الاستجابة قائمة `models` المقسّمة إلى صفحات الخاصة بـ Phaseo، ولا تحتوي على مصفوفة `data`. وينطبق الأمر نفسه على `client.models.list()`: مرّر `{ query: { format: "openai" } }` في Node أو `extra_query={"format": "openai"}` في Python. تضم القائمة الافتراضية النماذج التي يمكنك استدعاؤها الآن فقط؛ أضف `availability=all` لتضمين النماذج غير النشطة والقادمة قريبًا.
 
-</Step>
+## ما الذي يعمل بشكل مختلف
 
-<Step title="الاختبار والإطلاق">
+| ميزة OpenAI | على Phaseo |
+| --- | --- |
+| Chat Completions وResponses | أشكال الطلبات نفسها على `/v1/chat/completions` و`/v1/responses`. يعيد الحقل غير المعروف في المستوى الأعلى `400` `unknown_param`. |
+| `previous_response_id` و`conversation` | يعيدان `400`: لا يخزّن Phaseo الاستجابات. أرسل السجل الكامل في `input` مع كل طلب. |
+| التضمينات والإشراف والصور والكلام والنسخ الصوتي | `/v1/embeddings` و`/v1/moderations` و`/v1/images/*` و`/v1/audio/*`. تحقّق من أن النموذج يدعم العملية. |
+| Batch API | `/v1/files` و`/v1/batches`. يحتفظ `/v1/files` بمدخلات الدُفعات فقط؛ ولا يمكنه توفير مدخلات `file_id` لطلبات أخرى. |
+| Realtime | `POST /v1/audio/realtime/sessions`، ثم اتصال WebSocket بعنوان `connect.url` المُعاد. راجع [الصوت في الوقت الفعلي](../guides/realtime-voice). |
+| المطالبات المخزّنة (`prompt: { id: "pmpt_…" }`) | أعد إنشاء المطالبة كإعداد مسبق واستدعها باستخدام `prompt: { id: "@slug", version, variables }`. راجع [قوالب المطالبات](../guides/prompt-templates). |
+| `organization` و`project` وترويسة `OpenAI-Organization` | لا يوجد مقابل. أزلها؛ واستخدم مساحات العمل والمفاتيح في Phaseo. |
+| Assistants وThreads ومخازن المتجهات والضبط الدقيق و`/v1/completions` القديمة | لا توجد نقطة نهاية في Phaseo. أبقِها على OpenAI أو انقلها إلى `/v1/responses`. |
 
-شغّل الطلبات التمثيلية نفسها على الإعدادين القديم والجديد. قارن شكل المخرجات وزمن الاستجابة واستخدام الرموز والأخطاء والتكلفة قبل تحويل الحركة تدريجيًا.
+## الاختبار والنشر
 
-</Step>
-</Steps>
+شغّل المطالبات التمثيلية نفسها على الإعدادين القديم والجديد، وقارن شكل المخرجات وزمن الاستجابة واستخدام الرموز والأخطاء والتكلفة. قبل نقل الحركة، تأكد من أن:
 
-## قائمة التحقق من الترحيل
+- مفتاح Phaseo مضبوط في بيئات التطوير والاختبار المرحلي والإنتاج؛
+- كل معرّف نموذج إنتاجي يظهر في `GET /v1/models?format=openai`؛
+- طلبًا غير متدفق وطلبًا متدفقًا ينجحان في بيئة الاختبار المرحلية، إضافة إلى استدعاءات الأدوات والمخرجات المنظّمة إذا كان التطبيق يستخدمها؛
+- التراجع لا يزال مجرد تغيير لعنوان URL الأساسي والمفتاح.
 
-- تم ضبط مفتاح Phaseo في بيئات التطوير والتهيئة والإنتاج.
-- عنوان URL الأساسي للعميل هو `https://api.phaseo.app/v1`.
-- تظهر جميع معرّفات نماذج الإنتاج في `GET /v1/models`.
-- تنجح الطلبات المتدفقة وغير المتدفقة في بيئة التهيئة.
-- تنجح استدعاءات الأدوات والمخرجات المنظّمة إذا كان تطبيقك يستخدمها.
-- يظل التراجع مقتصرًا على تغيير المفتاح ونقطة النهاية في الإعدادات.
-
-## الخطوات التالية
-
-- [التوجيه والبدائل الاحتياطية](../guides/routing-and-fallbacks.mdx)
-- [النماذج](../exploring/models.mdx)
-- [معالجة الأخطاء](../api-reference/errors.mdx)
+ثم انقل الحركة تدريجيًا. يشرح [التوجيه والاحتياط](../guides/routing-and-fallbacks) النماذج الاحتياطية، ويسرد [معالجة الأخطاء](../api-reference/errors.mdx) أجسام الأخطاء التي قد يراها تطبيقك الآن.

@@ -1,0 +1,232 @@
+---
+icon: "rotate-cw"
+title: "出力と再試行"
+description: "失敗したモデルリクエストを再試行し、最終出力を検証して、すべてのモデルターンに適用する Gateway のデフォルトを設定します。"
+---
+
+実行中に失敗したモデルリクエストを再試行するにはモデルの再試行ポリシーを、最終回答をアプリケーションの他の部分に渡す前に検証済みの値に変えるにはパーサーまたはスキーマを設定します。プロバイダーや厳密なレスポンス形式などの Gateway のデフォルトは、Gateway エージェントクライアントに設定します。
+
+## 失敗したモデルリクエストを再試行する
+
+<CodeGroup>
+
+```typescript TypeScript
+const agent = createAgent({
+  id: "support-agent",
+  modelRetry: {
+    maxRetries: 2,
+    backoffMs: 250,
+  },
+});
+```
+
+```python Python
+from phaseo_agent import AgentModelRetryConfig
+
+retry = AgentModelRetryConfig(max_retries=2, backoff_ms=250)
+# 定義または run() の model_retry として渡します
+```
+
+```go Go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID:    "research-agent",
+  Model: "openai/gpt-6-astra",
+  ModelRetry: phaseoagent.ModelRetryConfig{
+    MaxRetries: 3,
+    Backoff:    500 * time.Millisecond,
+  },
+})
+```
+
+```csharp C#
+var agent = AgentSdk.CreateAgent(new AgentDefinition
+{
+    Id = "research-agent",
+    Model = "openai/gpt-6-astra",
+    ModelRetry = new ModelRetryConfig(MaxRetries: 3, Backoff: TimeSpan.FromMilliseconds(500)),
+});
+```
+
+```php PHP
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "research-agent",
+    model: "openai/gpt-6-astra",
+    modelRetry: ["max_retries" => 3, "backoff_ms" => 500],
+));
+```
+
+```ruby Ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "research-agent",
+  model: "openai/gpt-6-astra",
+  model_retry: { max_retries: 3, backoff_ms: 500 }
+)
+```
+
+```java Java
+// エージェントの modelRetry 引数として渡すか、1回の実行だけなら RunOptions に渡します
+var retry = new AgentSdk.ModelRetryConfig(3, Duration.ofMillis(500)); // maxRetries, backoff
+```
+
+```rust Rust
+use std::time::Duration;
+
+let definition = AgentDefinition::new("resilient-agent", "openai/gpt-6-astra")
+    .model_retries(2, Duration::from_millis(250));
+```
+
+</CodeGroup>
+
+再試行回数は最初のリクエストの後に追加で試みる回数で、デフォルトは `0` です。各ステップは、何回試行したかをモデル試行回数のフィールド（`modelAttempts`、`model_attempts`、`ModelAttempts`）に記録します。再試行されるのはモデルリクエストだけです。ツールのエラーはツール自身のエラー時の方針に従うため、副作用のあるツールの再試行はツールの中に置き、冪等にしてください。
+
+試行の間の待ち時間と、再試行されるエラーは言語によって異なります。
+
+| 言語 | 再試行 `n` の前の待ち時間 | 再試行されるエラー | 1回の実行だけ上書きする方法 |
+| --- | --- | --- | --- |
+| TypeScript | `backoffMs` から指数的に増え、フルジッター付きで `maxBackoffMs` まで。Gateway の `Retry-After` が優先されます | `retryOn(error)`。デフォルトは `agentErrorIsRetryable`。出力のストリーミングが始まった試行は繰り返されません。 | 実行オプション |
+| Python | `backoff_ms × n` | モデルリクエストからのすべての例外 | `run()` の `model_retry` |
+| Go | `Backoff × n`（デフォルトは 250 ms） | モデルリクエストのすべてのエラー | `RunOptions.ModelRetry` |
+| C# | `Backoff × n`（デフォルトは 250 ms） | モデルリクエストのすべてのエラー | `RunOptions.ModelRetry` |
+| PHP | `backoff_ms × n`（デフォルトは 250） | モデルリクエストのすべてのエラー | `run()` の `modelRetry:` |
+| Ruby | `backoff_ms × n`（デフォルトは 250） | モデルリクエストのすべてのエラー | `run` の `model_retry:` |
+| Java | `backoff × n`（`null` の backoff は 250 ms） | モデルリクエストのすべてのエラー | `RunOptions` |
+| Rust | 固定の `Duration` | モデルリクエストのすべてのエラー | なし |
+
+線形の待ち時間で backoff が 500 ms の場合、3回の再試行はそれぞれ 0.5 秒、1 秒、1.5 秒待ちます。
+
+<span id="validate-the-final-output"></span>
+## 最終出力を検証する
+
+モデルがツールを呼び出さずに回答すると、パーサーが最終テキストを値に変換し、スキーマがそれを確認します。どちらかが失敗すると、実行は `Invalid agent output: ...` エラーで失敗するため、不正な出力はエージェントの境界で止まります。バリデーターは決定的で、副作用のないものにしてください。
+
+<CodeGroup>
+
+```typescript TypeScript
+const agent = createAgent<string, { summary: string }>({
+  id: "summary-agent",
+  parseOutput(text) {
+    return JSON.parse(text) as { summary: string };
+  },
+});
+```
+
+```python Python
+import json
+from pydantic import BaseModel
+
+class Ticket(BaseModel):
+    ticket_id: str
+
+agent = create_agent({
+    "id": "ticket-agent",
+    "parse_output": json.loads,
+    "output_schema": Ticket,
+})
+```
+
+```go Go
+ParseOutput: func(text string) (any, error) {
+  var ticket Ticket
+  return ticket, json.Unmarshal([]byte(text), &ticket)
+},
+OutputSchema: validateTicket, // func(any) (any, error)
+```
+
+```csharp C#
+ParseOutput = text => JsonSerializer.Deserialize<Ticket>(text),
+OutputSchema = value => value is Ticket { Id.Length: > 0 } ? value : throw new ArgumentException("Ticket ID is required"),
+```
+
+```php PHP
+parseOutput: fn (string $text) => json_decode($text, true, flags: JSON_THROW_ON_ERROR),
+outputSchema: fn ($value) => isset($value["ticket_id"]) ? $value : throw new InvalidArgumentException("ticket_id is required"),
+```
+
+```ruby Ruby
+parse_output: ->(text) { JSON.parse(text) },
+output_schema: ->(value) { value.key?("ticket_id") ? value : raise("ticket_id is required") }
+```
+
+</CodeGroup>
+
+| 言語 | パーサー | スキーマ | 失敗したとき |
+| --- | --- | --- | --- |
+| TypeScript | `parseOutput(text)` | `outputSchema` | `target: "agent_output"` を持つ `AgentSchemaValidationError` をスロー |
+| Python | `parse_output(text)` | `output_schema`：callable、Pydantic モデル、または `parse` か `safe_parse` を持つオブジェクト | `ValueError` を送出 |
+| Go | `ParseOutput(text) (any, error)` | `OutputSchema func(any) (any, error)` | `Run` がエラー（`invalid agent output: ...`）を返す |
+| C# | `ParseOutput` | `OutputSchema` | 例外が `Run` の外に伝わる |
+| PHP | `parseOutput` の callable | `outputSchema` の callable | 例外が `run()` の外に伝わる |
+| Ruby | `parse_output:` の callable | `output_schema:` の callable | 例外が `run` の外に伝わる |
+| Java | `parseOutput`（`Function<String, Object>`） | `outputSchema`（`Validator`。13引数の `AgentDefinition` コンストラクター） | 例外が `run` の外に伝わる |
+| Rust | なし | なし | 出力は `serde_json::Value` です。アプリケーションで検証してください |
+
+モデルの動作をより厳密にするには、Gateway にも構造化出力を求めます。Gateway エージェントクライアントに JSON Schema のレスポンス形式（必要に応じて response-healing プラグインも）を設定します。
+
+```typescript
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "agent_answer",
+    schema: {
+      type: "object",
+      properties: {
+        summary: { type: "string" },
+      },
+      required: ["summary"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+});
+```
+
+Python、PHP、Ruby は、同じ `response_format`/`responseFormat` と `plugins` オプションを受け付けます。Go、C#、Java にはレスポンス形式のオプションがありません。その他のリクエストフィールド用のクライアントの抜け道（次のセクション）でフィールドを設定してください。
+
+## ルーティングのデフォルトをプリセットに置く
+
+ルーティング、プロンプト、パラメーターのデフォルトをダッシュボードで管理したい場合は、エージェントに `preset`（Go と C# では `Preset`）を設定します。
+
+```typescript
+const agent = createAgent({
+  id: "support-triage-agent",
+  preset: "support-triage",
+});
+```
+
+Rust には `preset` オプションがありません。
+
+<span id="set-gateway-defaults-on-the-client"></span>
+## クライアントに Gateway のデフォルトを設定する
+
+Gateway エージェントクライアント（`createGatewayAgentClient()`、`create_gateway_agent_client()`、`CreateGatewayAgentClient`）は、すべてのモデルターンに適用するリクエストのデフォルトを保持するため、実行のたびに作り直す必要はありません。`model`、`input`、`instructions`、関数ツールは引き続きエージェントが担当します。モデルのデフォルトは、エージェントがモデルを設定していない場合にだけ適用されます。
+
+| 設定 | camelCase（TypeScript、PHP） | snake_case（Python、Ruby） | PascalCase（Go、C#） |
+| --- | --- | --- | --- |
+| コアクライアントを再利用する | `client` | `client` | `Client` |
+| 新しいコアクライアントを設定する | `clientOptions` | `client_options`（Python）、`api_key`、`base_url`（Ruby） | `APIKey`、`BaseURL`、`HTTPClient`、`Headers`（Go）、`ClientOptions`（C#） |
+| デフォルトのモデルまたはプリセット | `model`、`preset` | `model`、`preset` | `Model`、`Preset` |
+| プロバイダーのルーティング | `provider` | `provider` | `Provider` |
+| 推論 | `reasoning` | `reasoning` | `Reasoning` |
+| サンプリングと長さ | `temperature`、`maxOutputTokens` | `temperature`、`max_output_tokens` | `Temperature`、`MaxOutputTokens` |
+| 並列ツール呼び出し | `parallelToolCalls` | `parallel_tool_calls` | `ParallelToolCall`（Go）、`ParallelToolCalls`（C#） |
+| メタデータとエンドユーザー | `metadata`、`user` | `metadata`、`user` | `Metadata`、`User` |
+| 構造化出力 | `responseFormat` | `response_format` | なし |
+| プラグイン | `plugins` | `plugins` | なし |
+| ウェブ検索 | `webSearchOptions` | `web_search_options` | なし |
+| マネージドツールとツール選択 | `gatewayTools`、`toolChoice` | `gateway_tools`、`tool_choice` | `GatewayTools`、`ToolChoice` |
+| プロバイダーのオプションとキャッシュ | `providerOptions`、`promptCacheKey` | `provider_options`、`prompt_cache_key` | `ProviderOptions`、`PromptCacheKey` |
+| Gateway の meta ブロックを返す | `includeMeta` | `include_meta` | `IncludeMeta` |
+| その他の Responses API フィールド | `requestOptions` | `request_options` | `ConfigureRequest`（`func(*gen.ResponsesRequest)`、Go）、`RequestOptions`（C#） |
+| 応答のないストリームを打ち切る | `streamIdleTimeoutMs`（TypeScript のみ。デフォルトはオフで、再試行可能なエラーとして失敗します） | なし | なし |
+
+Java と Rust が受け付けるオプションは少なくなっています。
+
+| 言語 | Gateway クライアントのオプション |
+| --- | --- |
+| Java | `new AgentSdk.GatewayOptions(client, apiKey, baseUrl, model, preset, requestOptions)`。その他の Responses API フィールドはすべて `requestOptions` に入れます。 |
+| Rust | `GatewayAgentClient::new(phaseo_client, model)`、`GatewayAgentClient::from_env(model)`、または `create_gateway_agent_client(model)`。モデル以外のリクエストのデフォルトはありません。 |
+
+各フィールドの説明は [Responses のパラメーター](/ja/v1/api-reference/parameters)ページにあります。結果から使用量、コスト、ステータスを読むには、[オブザーバビリティ](./observability)を参照してください。

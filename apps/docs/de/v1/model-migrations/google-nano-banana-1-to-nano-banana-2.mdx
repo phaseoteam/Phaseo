@@ -4,69 +4,44 @@ description: "Wichtige Hinweise zur Einführung von Nano Banana 2 für die produ
 icon: "/icons/brands/google.svg"
 ---
 
-# Google Nano Banana 2
+Stelle Bildanfragen auf `google/gemini-3.1-flash-image` (Nano Banana 2) um und wähle Seitenverhältnis und Ausgabegröße mit `image_config`. Nachgelagerter Code, der von einer einzigen Bildgröße ausgeht, bricht als Erstes.
 
-Mit diesem Leitfaden führst du Nano Banana 2 sicher in produktiven Bild-Workflows ein.
+| | Nano Banana | Nano Banana 2 |
+| --- | --- | --- |
+| Phaseo-Modell-ID | `google/gemini-2.5-flash-image` | `google/gemini-3.1-flash-image` |
+| Status | Veraltet; wird am 15. März 2027 eingestellt | Verfügbar |
 
-Nano Banana 2 ist nicht nur ein Qualitätsupgrade. Google positioniert das Modell als produktionsreif und bietet mehr Kontrolle über Ausgabeformat, Auflösung und Detailtreue.
+Nano Banana 2 ergänzt eine explizite Steuerung des Seitenverhältnisses (`image_config.aspect_ratio`, etwa `16:9` oder `9:16`) und der Ausgabegröße von 512px bis 4K (`image_config.image_size`: `0.5K`, `1K`, `2K` oder `4K`). Google berichtet außerdem von besserer Motivkonsistenz über Generierungen und Bearbeitungen hinweg, genauerer Befolgung von Anweisungen, besserer Textdarstellung und -übersetzung in Bildern sowie höherer Detailtreue bei ähnlicher Geschwindigkeit. Der Nachfolger `google/gemini-nano-banana-2.1` ist ebenfalls verfügbar.
 
-## Neuerungen
+```json
+{
+  "model": "google/gemini-3.1-flash-image",
+  "messages": [{ "role": "user", "content": "A product photo of a ceramic mug on a walnut desk." }],
+  "modalities": ["image", "text"],
+  "image_config": { "aspect_ratio": "16:9", "image_size": "2K" }
+}
+```
 
-- Nano Banana 2 ermöglicht eine explizite Steuerung des Seitenverhältnisses.
-- Die Ausgabeauflösung reicht von `512px` bis `4K`.
-- Die Konsistenz von Motiven über mehrere Generierungen und Bearbeitungen hinweg wurde verbessert.
-- Anweisungen werden besser befolgt.
-- Textdarstellung und Übersetzung innerhalb von Bildern wurden verbessert.
-- Die visuelle Detailtreue steigt, während die Generierung schnell bleibt.
+Anbieter, die `image_config` nicht annehmen können, verwerfen es und führen es im Antwort-Header `X-Phaseo-Dropped-Params` auf; siehe [Parameter](../api-reference/parameters).
 
-## Schnelleinstieg für die Migration
+## Dein Produkt anpassen
 
-### 1. Ausgabeannahmen erneut prüfen
-
-Wenn nachgelagerter Code eine feste Bildgröße, ein Seitenverhältnis oder ein bestimmtes Zuschneideverhalten voraussetzt, aktualisiere ihn vor dem Rollout. Nano Banana 2 ist flexibler, sodass ältere Annahmen leichter nicht mehr zutreffen.
-
-### 2. Produktvoreinstellungen aktualisieren
-
-Überprüfe:
-
-- Seitenverhältnis-Voreinstellungen für soziale Netzwerke
-- Standardauflösungen
-- Workflows für Bearbeitung und Inpainting
-- UI-Bezeichnungen für verfügbare Bildgrößen
-
-### 3. Prompts für die Bildbearbeitung abstimmen
-
-Da das Modell Anweisungen besser befolgt, können Prompts mit zu genauen Angaben zu Komposition, Text oder Stil unnötig starr sein. Teste kürzere Prompts erneut und vergleiche die Ergebnisse.
+1. **Prüfe Annahmen zur Ausgabe.** Wenn nachgelagerter Code eine feste Größe, ein festes Seitenverhältnis oder einen festen Zuschnitt erwartet, passe ihn zuerst an.
+2. **Überarbeite Voreinstellungen:** Seitenverhältnisse für soziale Netzwerke, Standardgrößen, Bearbeitungs- und Inpainting-Workflows sowie UI-Beschriftungen, die Bildgrößen beschreiben.
+3. **Kürze Bearbeitungs-Prompts.** Prompts, die Komposition, Text oder Stil übergenau vorgeben, um das ältere Modell auszugleichen, können jetzt zu starr sein. Teste kürzere Fassungen erneut.
 
 ## Was du testen solltest
 
-### Ausgabequalität
+- **Ausgabequalität:** Hoch-, Quadrat- und Breitbildformate; kleine gegenüber großen Größen; Motivkonsistenz über Bearbeitungen hinweg; Text, Beschilderung, Bildunterschriften und übersetzter Text in Bildern.
+- **Workflow:** Dateiverarbeitung bei größeren Formaten, Timeouts bei Generierungen mit hoher Detailtreue, Erfolgsquote bei Moderation oder menschlicher Prüfung und nachgelagerte Größenanpassung.
+- **Produktmetriken:** End-to-End-Latenz, Anteil brauchbarer Ausgaben, Wiederholungsrate und Kosten pro freigegebenem Asset.
 
-- Hochformat, Quadrat und Breitbild
-- Ausgaben mit niedriger und hoher Auflösung
-- Motivkonsistenz bei wiederholten Bearbeitungen
-- Text, Beschriftungen und Übersetzungen in Bildern
+## Umstellen
 
-### Workflow-Kompatibilität
-
-- Dateiverarbeitung bei höheren Auflösungen
-- Zeitüberschreitungen bei detailreicheren Generierungen
-- Erfolgsrate von Moderation oder menschlicher Prüfung
-- Annahmen zur nachgelagerten Größenänderung und Asset-Verarbeitung
-
-### Produktmetriken
-
-- Gesamtlatenz der Generierung
-- Anteil brauchbarer Ausgaben
-- Wiederholungsrate
-- Kosten pro freigegebenem Asset
-
-## Rollout-Empfehlungen
-
-1. Teste Seitenverhältnisse und Auflösungen getrennt, statt eine einzige Migration anzunehmen.
-2. Prüfe deine Asset-Pipeline mit der größten geplanten Ausgabegröße.
-3. Teste echte Produktions-Prompts, insbesondere Bearbeitungen und Text in Bildern.
-4. Wenn die UI Bildoptionen anbietet, stelle Änderungen an Standardvoreinstellungen getrennt vom Modellwechsel bereit.
+1. Teste nach Seitenverhältnis und Größe getrennt statt als eine einzige Migration.
+2. Prüfe deine Asset-Pipeline mit der größten Größe, die du unterstützen willst.
+3. Nimm Stichproben aus echten Produktions-Prompts, besonders Bearbeitungen und Anfragen mit Text im Bild.
+4. Wenn deine UI Bildoptionen anbietet, liefere Änderungen an den Standard-Voreinstellungen getrennt vom Modellwechsel aus.
 
 ## Quellen
 

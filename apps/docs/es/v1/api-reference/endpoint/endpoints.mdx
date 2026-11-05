@@ -3,12 +3,15 @@ title: "Listar endpoints"
 sidebarTitle: "Listar endpoints"
 badge: "Beta"
 openapi: "/es/openapi/v1/openapi.localized.yaml GET /endpoints"
-description: "Listar los endpoints de la pasarela respaldados por capacidades, con rutas públicas y cobertura de modelos y proveedores."
+description: "Lista los endpoints del gateway respaldados por capacidades, con sus rutas públicas y su cobertura de modelos y proveedores."
 ---
 
-- `endpoints`: los ID canónicos de los endpoints que expone la API
-- `data`: registros de endpoints con `public_path`, `collection`, `model_count` y `provider_count`
-- `sample_models`: hasta 10 ID de modelos visibles recientes del catálogo público
+La respuesta tiene tres campos:
 
-Usa [Listar las capacidades de endpoints del modelo](./model-endpoints.mdx) cuando necesites detalles de un modelo por proveedor y parámetro.
+- `endpoints`: los IDs canónicos de los endpoints que expone la API actualmente.
+- `data`: un registro por endpoint con `id`, `capability_id`, `public_path`, `collection`, `model_count` y `provider_count`, ordenados por `public_path`.
+- `sample_models`: los 10 primeros IDs de modelos visibles del catálogo público.
 
+La respuesta se guarda en caché durante 30 minutos.
+
+Usa [Listar las capacidades de endpoints del modelo](./model-endpoints) cuando necesites detalles a nivel de proveedor y de parámetro para un modelo.

@@ -1,6 +1,6 @@
 ---
 title: "नवंबर"
-description: "नवंबर 2026 - Phaseo"
+description: "Phaseo में नवंबर 2026 के उत्पाद अपडेट और मॉडल रिलीज़।"
 rss: true
 ---
 
@@ -36,8 +36,8 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">उत्पाद</p>
 
-- मॉडल पेज टूल कॉल और संरचित आउटपुट की सफलता अब सिर्फ़ उन जवाबों से गिनते हैं जिन्हें Phaseo ने जाँचा; पहले विफल अनुरोध मान्य JSON गिने जाते थे और बिना डेटा वाले घंटे 100% दिखते थे ([#3475](https://github.com/phaseoteam/Phaseo/pull/3475))।
-- मॉडल पेज पर आउटपुट गति में जवाब से पहले की छिपी रीज़निंग शामिल नहीं होती, और जवाब एक साथ पहुँचने पर कोई मान नहीं दिखता; देखें [कीमत और प्रदर्शन मापें](./exploring/pricing-performance.mdx) ([#3465](https://github.com/phaseoteam/Phaseo/pull/3465), [#3476](https://github.com/phaseoteam/Phaseo/pull/3476))।
+- मॉडल पेज टूल कॉल और संरचित आउटपुट की सफलता अब सिर्फ़ उन जवाबों से गिनते हैं जिन्हें Phaseo ने जाँचा; पहले विफल अनुरोध मान्य JSON गिने जाते थे और बिना डेटा वाले घंटे 100% दिखाते थे ([#3475](https://github.com/phaseoteam/Phaseo/pull/3475))।
+- मॉडल पेज पर आउटपुट गति में जवाब से पहले की छिपी रीज़निंग शामिल नहीं होती, और जब जवाब एक ही टुकड़े में आता है तो कोई मान नहीं दिखता; देखें [कीमत और प्रदर्शन मापें](./exploring/pricing-performance.mdx) ([#3465](https://github.com/phaseoteam/Phaseo/pull/3465), [#3476](https://github.com/phaseoteam/Phaseo/pull/3476))।
 
 </div>
 
@@ -45,7 +45,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">API और SDK</p>
 
-- Google AI Studio पर Gemini 2.5, 3 और 3.1 टेक्स्ट मॉडल, Gemini 3.5 से 3.8 Flash और Gemma 4 के स्ट्रीमिंग अनुरोध अब टोकन-दर-टोकन पहुँचते हैं; पहले पूरा जवाब जनरेशन खत्म होने पर एक साथ आता था ([#3483](https://github.com/phaseoteam/Phaseo/pull/3483))।
+- Gemini 2.5, 3 और 3.1 टेक्स्ट मॉडल, Gemini 3.5 से 3.8 Flash और Gemma 4 के लिए Google AI Studio के स्ट्रीम किए गए अनुरोध अब एक साथ नहीं, बल्कि टोकन-दर-टोकन पहुँचते हैं ([#3483](https://github.com/phaseoteam/Phaseo/pull/3483))।
 
 </div>
 

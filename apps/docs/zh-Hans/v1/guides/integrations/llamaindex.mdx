@@ -4,7 +4,7 @@ icon: "database"
 description: "在 LlamaIndex RAG 工作流中使用 Phaseo。"
 ---
 
-当 LlamaIndex 应用需要通过 Phaseo 路由生成或嵌入时，可使用本指南。
+用你的 Phaseo 密钥和 `api_base="https://api.phaseo.app/v1"` 创建一个 `OpenAILike` LLM，再把它设为 LlamaIndex 的默认 LLM，你的 RAG 工作流中的生成就会经过 Phaseo。
 
 ## 安装
 
@@ -12,14 +12,14 @@ description: "在 LlamaIndex RAG 工作流中使用 Phaseo。"
 pip install llama-index llama-index-llms-openai-like llama-index-embeddings-openai-like
 ```
 
-## 配置兼容 OpenAI 的 LLM
+## 将 LlamaIndex 指向 Phaseo
 
 ```python
 import os
 from llama_index.llms.openai_like import OpenAILike
 
 llm = OpenAILike(
-    model="openai/gpt-5-nano",
+    model="openai/gpt-6-astra",
     api_key=os.environ["PHASEO_API_KEY"],
     api_base="https://api.phaseo.app/v1",
     is_chat_model=True,
@@ -29,6 +29,8 @@ response = llm.complete("Write one sentence about retrieval quality.")
 print(response)
 ```
 
+输出一句话即说明设置成功。`OpenAILike` 是 LlamaIndex 用于第三方 OpenAI 兼容 API 的类。
+
 ## 在索引中使用
 
 ```python
@@ -37,16 +39,9 @@ from llama_index.core import Settings
 Settings.llm = llm
 ```
 
-然后照常构建或查询索引。
+然后照常构建或查询你的索引。
 
-## 说明
+## 已知限制
 
-- 对于第三方 OpenAI 兼容 API，请使用 `OpenAILike`。
-- 请明确指定生成模型和嵌入模型 ID。不要假设 LlamaIndex 默认值会指向 Phaseo。
-- 如果使用 Phaseo 嵌入，请使用 Phaseo 模型 ID 和相同的 Base URL 设置嵌入模型。
-
-## 相关内容
-
-- [嵌入](../../api-reference/endpoint/embeddings.mdx)
-- [模型](../../api-reference/endpoint/models.mdx)
-- [OpenAI SDK](./openai-sdk.mdx)
+- LlamaIndex 的默认设置不会指向 Phaseo。请显式设置生成模型和嵌入模型。
+- 要使用 Phaseo [嵌入](../../api-reference/endpoint/embeddings.mdx)，请用 Phaseo 模型 ID 和同一个 Base URL 配置嵌入模型。

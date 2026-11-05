@@ -1,126 +1,110 @@
 ---
-title: "केवल EU या ZDR-सक्षम प्रदाताओं को रूट करें"
+title: "सिर्फ़ EU या ZDR-सक्षम प्रदाताओं पर रूट करें"
+sidebarTitle: "EU या ZDR प्रदाताओं पर रूट करें"
 icon: "globe"
-description: "किसी अनुरोध पर डेटा रेज़िडेंसी और शून्य डेटा-रिटेंशन की शर्तें लागू करें, ताकि वह केवल अनुपालन करने वाले प्रदाता ऑफ़र तक रूट हो।"
+description: "अनुरोध-स्तर की रेज़िडेंसी और ज़ीरो-डेटा-रिटेंशन आवश्यकताएँ लागू करें ताकि मॉडल सिर्फ़ अनुपालन करने वाले प्रदाता ऑफ़र पर रूट हो।"
 ---
 
-जब किसी एक अनुरोध के लिए अनुपालन या डेटा प्रबंधन के कारण प्रदाताओं को फ़िल्टर करना हो, लेकिन पूरे workspace की नीति नहीं बदलनी हो, तब यह तरीका अपनाएँ।
+किसी एक अनुरोध के `provider` ऑब्जेक्ट में रेज़िडेंसी और <Tooltip tip="ज़ीरो डेटा रिटेंशन: प्रदाता प्रॉम्प्ट या आउटपुट नहीं रखता।">ZDR</Tooltip> आवश्यकताएँ जोड़ें, और Phaseo बाकी को रैंक करने से पहले हर उस प्रदाता ऑफ़र को हटा देता है जो उन्हें पूरा नहीं करता। अंत में एक वर्कफ़्लो सिर्फ़ EU या ZDR-सक्षम प्रदाताओं पर चलेगा, पूरे वर्कस्पेस की नीति बदले बिना।
 
-## लक्ष्य
+यह अनुरोध प्रोडक्शन के लिए तैयार है। अगर मॉडल का कोई भी प्रदाता हर आवश्यकता पूरी नहीं करता, तो किसी भी प्रदाता को कॉल किए जाने से पहले अनुरोध विफल हो जाता है, इसलिए पहले उपलब्धता जाँचें।
 
-- EU में निष्पादन अनिवार्य करें।
-- EU में डेटा रेज़िडेंसी अनिवार्य करें।
-- शून्य डेटा-रिटेंशन का समर्थन करने वाले प्रदाता अनिवार्य करें।
+| फ़ील्ड | सिर्फ़ ऐसे प्रदाता रखता है जो |
+| --- | --- |
+| `required_execution_region: "eu"` | मॉडल को EU में चलाते हैं |
+| `required_data_region: "eu"` | प्रॉम्प्ट और कम्प्लीशन डेटा को EU में संभालते हैं |
+| `require_zero_data_retention: true` | ज़ीरो-डेटा-रिटेंशन आवश्यकताएँ पूरी करते हैं |
 
-## 1. अनुरोध में रेज़िडेंसी की शर्तें जोड़ें
+## प्रतिबंधित अनुरोध भेजें
 
-प्रदाता की शर्तें सीधे अनुरोध के बॉडी में सेट करें।
+<Steps>
+<Step title="जाँचें कि कोई प्रदाता योग्य है">
+
+मॉडल के पेज पर, प्रदाता कार्ड **OpenAI EU** या **Google Vertex EU** जैसे क्षेत्रीय ऑफ़र, ZDR सपोर्ट, और हर प्रदाता के डेटा-नीति नोट और स्रोत दिखाते हैं। EU के लिए, आप यह भी सूचीबद्ध कर सकते हैं कि EU गेटवे क्या सर्व करता है:
+
+```bash
+curl https://eu.api.phaseo.app/v1/models \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+</Step>
+<Step title="सिर्फ़ ज़रूरी आवश्यकताएँ जोड़ें">
+
+हर आवश्यकता पूल को छोटा करती है, इसलिए अनुरोध किसी महँगे क्षेत्रीय ऑफ़र पर जा सकता है या कोई प्रदाता बचे ही नहीं। सिर्फ़ वही भेजें जो आपकी नीति माँगती है:
 
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "google/gemini-3.1-flash-lite",
+    "model": "openai/gpt-5.6-luna",
     "input": "Summarize the ticket in one line.",
     "provider": {
       "required_execution_region": "eu",
-      "required_data_region": "eu",
-      "require_zero_data_retention": true
-    }
+      "required_data_region": "eu"
+    },
+    "meta": true
   }'
 ```
 
-```typescript TypeScript SDK
+```typescript TypeScript
 import Phaseo from "@phaseo/sdk";
 
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-  model: "google/gemini-3.1-flash-lite",
+  model: "openai/gpt-5.6-luna",
   input: "Summarize the ticket in one line.",
   provider: {
     required_execution_region: "eu",
     required_data_region: "eu",
-    require_zero_data_retention: true,
   },
+  meta: true,
 });
 
-console.log(response.output_text);
+console.log(response.meta?.routing);
 ```
 
-```python Python SDK
+```python Python
+import os
+
 from phaseo import Phaseo
 
-client = Phaseo(api_key="YOUR_API_KEY")
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
 
 response = client.generate_response(
     {
-        "model": "google/gemini-3.1-flash-lite",
+        "model": "openai/gpt-5.6-luna",
         "input": "Summarize the ticket in one line.",
         "provider": {
             "required_execution_region": "eu",
             "required_data_region": "eu",
-            "require_zero_data_retention": True,
         },
+        "meta": True,
     }
 )
 
-print(response.get("output_text"))
+print(response["meta"]["routing"]["selected_provider"])
 ```
 </CodeGroup>
 
-इस प्रवाह के लिए अनुरोध-स्तर पर समर्थित फ़िल्टर:
+ZDR भी ज़रूरी करने के लिए, `"require_zero_data_retention": true` जोड़ें। तीनों के साथ, मॉडल के पास कम से कम एक ऐसा EU प्रदाता होना चाहिए जो ZDR भी पूरा करता हो।
 
-- `required_execution_region`
-- `required_data_region`
-- `require_zero_data_retention`
+</Step>
+<Step title="जाँचें कि यह कहाँ चला">
 
-## 2. नीति के अनुरूप सबसे कम नियम इस्तेमाल करें
+`meta.routing.selected_provider` उस प्रदाता का नाम बताता है जिसने इसे सर्व किया, उदाहरण के लिए `openai-eu`। **सेटिंग्स → उपयोग → लॉग्स** में अनुरोध ज़रूरी क्षेत्र और चुना गया प्रदाता दर्ज करता है।
 
-केवल वही शर्तें अनिवार्य करें जिनकी वर्कलोड को वास्तव में ज़रूरत है।
+</Step>
+</Steps>
 
-उदाहरण:
+## अनुरोध फ़ील्ड, EU गेटवे या वर्कस्पेस सेटिंग्स में से चुनें
 
-- केवल निष्पादन का स्थान:
-  - `required_execution_region: "eu"`
-- केवल डेटा का स्थान:
-  - `required_data_region: "eu"`
-- केवल <Tooltip tip="शून्य डेटा प्रतिधारण: केवल वे प्रदाता जो शून्य डेटा प्रतिधारण की शर्तें पूरी करते हैं।">ZDR</Tooltip>-सक्षम प्रदाता:
-  - `require_zero_data_retention: true`
+| उपयोग करें | कब |
+| --- | --- |
+| `api.phaseo.app` पर ये अनुरोध फ़ील्ड | नियम किसी एक वर्कफ़्लो, ग्राहक या अनुरोध पर लागू होता है। हर एंडपॉइंट और सुविधा उपलब्ध रहती है। |
+| [`eu.api.phaseo.app`](../guides/regional-routing) | किसी सेवा का हर टेक्स्ट अनुरोध EU में ही रहना चाहिए। होस्टनेम क्षेत्र लागू करता है और मीडिया इनपुट, Phaseo सर्वर टूल और प्रदाता-होस्टेड टूल भी अस्वीकार करता है। वहाँ किसी दूसरे क्षेत्र के लिए `required_execution_region` या `required_data_region` भेजने पर `deployment_region_conflict` वजह के साथ `400 validation_error` लौटता है। |
+| **सेटिंग्स → गोपनीयता** | नियम वर्कस्पेस के हर अनुरोध पर लागू होता है। |
 
-## 3. उम्मीदवार प्रदाताओं की संख्या घटने की अपेक्षा रखें
-
-ये फ़िल्टर प्रदाताओं की रैंकिंग से पहले लागू होते हैं, इसलिए कुछ प्रदाता पूरी तरह हट सकते हैं।
-
-इसका अर्थ है:
-
-- अनुरोध किसी महँगे क्षेत्रीय ऑफ़र पर रूट हो सकता है
-- प्रदाताओं की सूची बहुत छोटी हो सकती है
-- यदि उस मॉडल का कोई प्रदाता शर्तें पूरी नहीं करता, तो अनुरोध विफल हो सकता है
-
-## 4. संभव हो तो पहले मॉडल पेज पर जाँचें
-
-अनुरोध को लागू करने से पहले, मॉडल पेज पर प्रदाता कार्ड में ये चीज़ें देखें:
-
-- क्षेत्रीय ऑफ़र, जैसे `OpenAI EU` या `Google Vertex EU`
-- ZDR समर्थन
-- प्रदाताओं की डेटा नीति से जुड़े नोट और स्रोत
-
-इससे उत्पादन ट्रैफ़िक पर शर्त लागू करने से पहले कम से कम एक पात्र प्रदाता की पुष्टि हो जाती है।
-
-## 5. workspace की गोपनीयता सेटिंग को डिफ़ॉल्ट के रूप में इस्तेमाल करें
-
-यदि नीति workspace के सभी अनुरोधों पर लागू होनी चाहिए, तो हर अनुरोध में फ़िल्टर दोहराने के बजाय उसे **सेटिंग -> गोपनीयता** में सेट करें।
-
-अनुरोध फ़ील्ड तब इस्तेमाल करें जब नियम लागू हो:
-
-- किसी वर्कफ़्लो पर
-- किसी ग्राहक पर
-- किसी अनुरोध पर
-
-## संबंधित गाइड
-
-- [रूटिंग और फ़ॉलबैक](../guides/routing-and-fallbacks.mdx)
-- [प्रीसेट](../guides/presets.mdx)
+क्षेत्रीय रूटिंग यह सीमित करती है कि मॉडल कॉल कौन से प्रदाता संभालें। यह अभी शुरू से अंत तक डेटा रेज़िडेंसी की गारंटी नहीं है; [क्षेत्र से बाहर क्या रहता है](../guides/regional-routing#what-stays-outside-the-region) साझा सिस्टम सूचीबद्ध करता है। रेज़िडेंसी नियम के बिना प्रदाताओं को सीमित करने के लिए, [प्रदाता पिन करें या अनदेखा करें](./pin-or-ignore-providers-per-request) देखें।

@@ -1,0 +1,86 @@
+---
+icon: "list-ordered"
+title: "文档重排序"
+description: "使用 POST /v1/rerank 按与查询的相关性对候选文档排序。"
+---
+
+调用 `client.rerank.create()`，通过 `POST /v1/rerank` 按与查询的相关性对候选文档排序。该方法在 TypeScript 和 Python 中名称相同；Rust 使用 `client.post()` 提交同样的 JSON。
+
+<CodeGroup>
+
+```typescript TypeScript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const result = await client.rerank.create({
+  model: "voyage/rerank-2",
+  query: "How do I check whether a model is routable?",
+  documents: [
+    "Call GET /v1/models and use the default availability filter.",
+    "Create an image with POST /v1/images/generations.",
+  ],
+});
+
+console.log(result.results);
+```
+
+```python Python
+from phaseo import Phaseo
+
+client = Phaseo()  # 读取 PHASEO_API_KEY
+
+result = client.rerank.create({
+    "model": "voyage/rerank-2",
+    "query": "How do I check whether a model is routable?",
+    "documents": [
+        "Call GET /v1/models and use the default availability filter.",
+        "Create an image with POST /v1/images/generations.",
+    ],
+})
+
+print(result["results"])
+```
+
+```rust Rust
+// 目前还没有 rerank 方法：post() 可以向任意 Phaseo 路径发送 JSON。
+use phaseo::Phaseo;
+use serde_json::json;
+
+let client = Phaseo::from_env()?; // 读取 PHASEO_API_KEY
+
+let result = client.post("/rerank", &json!({
+    "model": "voyage/rerank-2",
+    "query": "How do I check whether a model is routable?",
+    "documents": [
+        "Call GET /v1/models and use the default availability filter.",
+        "Create an image with POST /v1/images/generations."
+    ]
+}))?;
+
+println!("{}", result.body["results"]);
+```
+
+</CodeGroup>
+
+**Python：** `client.rerank.create()` 把你传入的 dict 作为 JSON 正文提交，并返回 JSON 响应；没有带类型的 `generate_rerank` 辅助方法。在 `AsyncPhaseo` 上，请 await 它。
+
+Go、C#、PHP、Ruby 和 Java SDK 没有 rerank 方法。请用你的 HTTP 客户端发送 `POST /v1/rerank`，参见 [Rerank API 参考](/zh-Hans/v1/api-reference/endpoint/rerank)。
+
+在生产环境中使用模型 ID 之前，请先用 `GET /v1/models` 确认它。
+
+## 参数
+
+在每个 SDK 中，字段名都是 JSON 正文字段。
+
+| 字段 | 说明 |
+| --- | --- |
+| `model`、`query`、`documents` | 必填。`documents` 至少包含一个字符串或对象。 |
+| `top_n` | 只返回最好的 `n` 个结果。也接受别名 `top_k`。 |
+| `return_documents` | 在每个结果中包含对应文档。 |
+| `rank_fields` | 对于对象形式的文档，指定用于排序的字段。 |
+| `max_chunks_per_doc`、`max_tokens_per_doc` | 长文档的限制，仅在支持的提供商上生效。 |
+
+## 响应
+
+`RerankResponse` 包含 `results`，每个结果带有该文档在你的列表中的 `index`、它的 `relevance_score`，以及设置了 `return_documents` 时的 `document`；另外还有 `usage`。

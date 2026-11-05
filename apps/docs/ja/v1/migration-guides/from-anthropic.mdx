@@ -5,27 +5,18 @@ description: "Messages API の使い慣れたワークフローを保ちなが�
 icon: "/icons/brands/anthropic.svg"
 ---
 
-Anthropic SDK のワークフローを維持したまま、リクエストを Phaseo 経由にするには、このガイドを使ってください。まずクライアント設定を変更し、次にモデルIDとアプリケーションが依存する Anthropic 固有の動作を確認します。
+Anthropic SDK と Messages の呼び出しはそのまま使います。クライアントの接続先を `https://api.phaseo.app` にし、Phaseo キーを `authToken` として渡し、各モデルに Phaseo の ID を指定します。
 
-## 変更点
-
-| 設定 | 変更前 | 変更後 |
+| 設定 | Anthropic | Phaseo |
 | --- | --- | --- |
-| ベースURL | Anthropic の既定値 | `https://api.phaseo.app` |
-| APIキー | Anthropic のキー | `PHASEO_API_KEY` |
-| モデル | Anthropic のモデル名 | `GET /v1/models` が返す Phaseo モデルID |
-| Messages 呼び出し | 既存の SDK 呼び出し | 通常は変更なし |
+| ベース URL | SDK の既定値(`https://api.anthropic.com`) | `https://api.phaseo.app`(SDK が `/v1/messages` を付加します) |
+| API キー | `ANTHROPIC_API_KEY`。`x-api-key` として送信 | `PHASEO_API_KEY` を `authToken` / `auth_token` として指定。`Authorization: Bearer` として送信 |
+| モデル | `claude-sonnet-5-5` | `anthropic/claude-sonnet-5.5`、または `GET /v1/models` の任意の ID |
+| Messages の呼び出し | `messages.create` | 変更なし |
 
-<Steps>
-<Step title="Phaseo APIキーを作成する">
+## クライアントを切り替える
 
-[Phaseo CLI](../guides/integrations/phaseo-cli) の `phaseo keys create` または [Gateway Keys](https://phaseo.app/settings/keys)でキーを作成し、アプリケーションから `PHASEO_API_KEY` として利用できるようにします。
-
-</Step>
-
-<Step title="Anthropic クライアントを更新する">
-
-SDK の接続先を Phaseo のルートホスト `https://api.phaseo.app` に変更し、Phaseo のキーを `authToken`（Python では `auth_token`）に設定します。SDK は `/v1/messages` を自動で付加し、キーを `Authorization: Bearer` として送信します。Phaseo を呼び出すようになった環境からは `ANTHROPIC_API_KEY` を削除してください。古いバージョンの SDK が Anthropic のキーも送信するのを防げます。
+[Phaseo CLI](../guides/integrations/phaseo-cli) の `phaseo keys create` または [APIキー](https://phaseo.app/settings/keys)でキーを作成し、アプリから `PHASEO_API_KEY` として使えるようにします。
 
 <CodeGroup>
 ```typescript TypeScript
@@ -38,7 +29,7 @@ const client = new Anthropic({
 });
 
 const response = await client.messages.create({
-  model: "anthropic/claude-sonnet-4.6",
+  model: "anthropic/claude-sonnet-5.5",
   max_tokens: 256,
   messages: [{ role: "user", content: "Reply with: migration ready" }],
 });
@@ -54,7 +45,7 @@ client = anthropic.Anthropic(
 )
 
 response = client.messages.create(
-    model="anthropic/claude-sonnet-4.6",
+    model="anthropic/claude-sonnet-5.5",
     max_tokens=256,
     messages=[{"role": "user", "content": "Reply with: migration ready"}],
 )
@@ -65,39 +56,47 @@ curl https://api.phaseo.app/v1/messages \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "anthropic/claude-sonnet-4.6",
+    "model": "anthropic/claude-sonnet-5.5",
     "max_tokens": 256,
     "messages": [{"role": "user", "content": "Reply with: migration ready"}]
   }'
 ```
 </CodeGroup>
 
-</Step>
+この手順でつまずきやすいのは次の 3 点です。
 
-<Step title="Anthropic 固有の動作を確認する">
+- **ルートホストを使います。** `baseURL: "https://api.phaseo.app/v1"` にすると `/v1/v1/messages` になります。同じリポジトリ内の OpenAI 互換クライアントは引き続き `/v1` を使います。
+- **キーを Bearer トークンとして送ります。** Gateway が読むのは `Authorization: Bearer` のみで、`x-api-key` ヘッダーには `401` `missing_or_invalid_authorization_header` が返ります。`authToken` はどの SDK バージョンでも Bearer を送ります。`apiKey` が Bearer を送るのは `@anthropic-ai/sdk` 1.0 以降と `anthropic` 2.0 以降のみです。
+- **`ANTHROPIC_API_KEY` を削除します。** Phaseo を呼び出すようになった環境から取り除いてください。`apiKey: null` を指定すると古い TypeScript SDK はこれを読まなくなりますが、0.98 より前の Python SDK は `auth_token` を設定していても読み込みます。
 
-アプリケーションで使用する正確なモデルを使って、システムプロンプト、ストリーミング、ツール利用、推論オプション、構造化出力をテストします。古いベータヘッダーやリクエストフィールドは、新しい経路にそのまま持ち込まず削除してください。
+Claude Code のように環境変数で設定するツールでは、`ANTHROPIC_BASE_URL=https://api.phaseo.app`、Phaseo キーを設定した `ANTHROPIC_AUTH_TOKEN`、空の `ANTHROPIC_API_KEY` を使います。
 
-</Step>
+## モデル ID を対応付ける
 
-<Step title="段階的にロールアウトする">
+本番で使うすべてのモデルを、`GET /v1/models?format=openai` の `data[].id` と照合します。Phaseo の ID ではバージョンにドットを使います。`claude-sonnet-5-5` は `anthropic/claude-sonnet-5.5` になります。モデルも変更する場合は、そのモデルの[モデル移行ガイド](../model-migrations)を読んでください。
 
-両方の設定で代表的なプロンプトセットを比較します。本番トラフィックを移行する前に、出力形式、レイテンシ、トークン使用量、エラー、コストを確認してください。
+## 動作が異なる点
 
-</Step>
-</Steps>
+| Anthropic の機能 | Phaseo での扱い |
+| --- | --- |
+| `anthropic-version` ヘッダー | 任意の値を受け付けます。Phaseo は独自のバージョンで Claude を呼び出します。 |
+| `anthropic-beta` ヘッダー | 転送されません。Phaseo はサポートする機能に必要なベータを自動で付加します。`mcp_servers` などのベータ専用のボディフィールドは `400` を返します。 |
+| `temperature`、`top_p`、`top_k` | モデルやルートが受け付けない場合は削除され、`X-Phaseo-Dropped-Params` に記載されます。 |
+| `speed: "fast"` | `400` を返します。`service_tier: "fast"` を使ってください。 |
+| ネイティブの Web 検索・Web 取得ツール | プロバイダーが実行する場合は受け付けます。または Phaseo の `phaseo:web_search` サーバーツールを使います。 |
+| `cache_control` | トップレベルまたはブロック単位でサポートされます。[プロンプトキャッシュ](../guides/prompt-caching)を参照してください。 |
+| `metadata.user_id` | エンドユーザー ID としては使われません。エンドユーザー向けのレート制限ポリシーには `user` または `X-Phaseo-User-Id` ヘッダーを送ってください。 |
+| Message Batches(`/v1/messages/batches`) | このパスはありません。`/v1/batches` は `/v1/messages` の行を別の形式で受け付けます。 |
+| トークンカウント(`/v1/messages/count_tokens`) | 代替はありません。Anthropic に残すか、クライアント側で見積もってください。 |
+| Files API(`client.beta.files`) | 代替はありません。ドキュメントはインラインで送ってください。 |
+| `AnthropicBedrock`、`AnthropicVertex` クライアント | 通常の `Anthropic` クライアントに置き換えます。クラウドの認証とリージョン設定は適用されません。 |
 
-## 移行チェックリスト
+## テストして展開する
 
-- すべてのデプロイ環境で Phaseo キーを設定した。
-- Anthropic クライアントが `https://api.phaseo.app` を使用している。
-- 本番で使うすべてのモデルIDを `GET /v1/models` で確認した。
-- ステージング環境でストリーミングとツール利用のフローが動作する。
-- Anthropic 固有のベータヘッダーとパラメーターを確認した。
-- ロールバックは引き続きキーとエンドポイントの設定変更だけで行える。
+アプリが使うモデル ID そのもので、システムプロンプト、ストリーミング、ツール使用、思考、構造化出力をテストします。次に、代表的なプロンプトセットを両方の構成で実行し、出力の形式、レイテンシー、トークン使用量、エラー、コストを比較します。トラフィックを移す前に、次を確認してください。
 
-## 次のステップ
-
-- [Anthropic モデルの移行](../model-migrations/index.mdx)
-- [モデル](../exploring/models.mdx)
-- [ツール呼び出し](../guides/tool-calling.mdx)
+- すべてのデプロイ環境に Phaseo キーが設定されている
+- 本番のすべてのモデル ID が `GET /v1/models?format=openai` にある
+- ステージングでストリーミングとツール使用のフローが通る
+- 各 `anthropic-beta` ヘッダーとベータ専用フィールドが削除または置き換えられている
+- 切り戻しが引き続きベース URL とキーの変更だけで済む

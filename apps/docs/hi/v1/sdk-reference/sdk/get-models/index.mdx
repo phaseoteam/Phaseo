@@ -1,12 +1,13 @@
 ---
 icon: "search-check"
 title: "मॉडल खोज (AI SDK)"
-description: "AI SDK provider के साथ उपयोग के लिए मौजूदा मॉडल ID कैसे प्राप्त करें।"
+sidebarTitle: "मॉडल खोज"
+description: "AI SDK प्रदाता के साथ उपयोग के लिए लाइव मॉडल IDs कैसे प्राप्त करें।"
 ---
 
-Vercel AI SDK provider में बिल्ट-इन `listModels()` helper नहीं है। मॉडल ID को अद्यतन रखने के लिए इनमें से कोई तरीका अपनाएँ।
+AI SDK प्रदाता में कोई `listModels()` helper नहीं है। मौजूदा मॉडल IDs `GET /v1/models` से पढ़ें, सीधे या TypeScript SDK के ज़रिए, और उन्हें `phaseo(modelId)` में पास करें।
 
-## विकल्प 1: Gateway API से प्राप्त करें
+## Gateway API से प्राप्त करें
 
 ```ts
 const response = await fetch("https://api.phaseo.app/v1/models", {
@@ -34,7 +35,9 @@ const filteredModels = await filteredResponse.json();
 console.log(models, filteredModels);
 ```
 
-## विकल्प 2: आधिकारिक TypeScript SDK का उपयोग करें
+`/v1/models` `provider`, `status`, `organisation`, `endpoints` और `availability` जैसे filters लेता है। [Models एंडपॉइंट](/hi/v1/api-reference/endpoint/models) में ये सभी सूचीबद्ध हैं।
+
+## TypeScript SDK से प्राप्त करें
 
 ```ts
 import Phaseo from "@phaseo/sdk";
@@ -49,23 +52,18 @@ const models = await client.getModels({
 console.log(models);
 ```
 
-## AI SDK के साथ खोजे गए ID का उपयोग
+## खोजी गई ID का उपयोग करें
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 
 const result = await generateText({
-  model: phaseo("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-6-astra"),
   prompt: "Hello from a discovered model ID.",
 });
 
 console.log(result.text);
 ```
 
-## नोट्स
-
-- मॉडल ID का प्रारूप `provider/model` होता है।
-- `/v1/models` में `provider`, `status`, `organisation`, `endpoints` और `availability` जैसे फ़िल्टर उपलब्ध हैं।
-- रूटिंग बदलाव और deprecated मॉडल देखने के लिए उपलब्धता समय-समय पर फिर जाँचें।
-- मॉडल ID को लंबे समय तक कोड में लिखने के बजाय `/v1/models` से चुनें।
+मॉडल IDs `provider/model` रूप में होते हैं। लंबे समय के लिए IDs hard-code करने के बजाय, routing बदलावों और deprecations को पकड़ने के लिए सूची को समय-समय पर फिर से जाँचें।

@@ -4,49 +4,43 @@ icon: "/icons/brands/vercel.svg"
 description: "通过自定义模型连接将 Vercel Labs 的 fx 编程智能体连接到 Phaseo Gateway。"
 ---
 
-[fx](https://fx.sh) 是 Vercel Labs 推出的开源编程智能体。它可以通过命名的自定义连接调用任何 OpenAI 兼容的 Chat Completions 端点，因此 Phaseo 可以作为它的模型网关。fx 可在 macOS 和 Linux 上运行。
+运行 `phaseo fx`，在 Vercel Labs 的开源编程智能体 [fx](https://fx.sh) 中把 Phaseo 添加为自定义连接；或者自己把该连接添加到 `~/.fx/settings.json`。fx 调用 Phaseo 的 Chat Completions 端点，可在 macOS 和 Linux 上运行。
 
-## 1) 配置 fx
-
-使用 Phaseo CLI 添加连接、同步兼容的 Phaseo 模型，并将 Phaseo 设为 fx 的当前供应商：
+## 使用 Phaseo CLI 设置
 
 ```bash
 phaseo login
 phaseo fx --model openai/gpt-5.6-terra
 ```
 
-如果在交互式终端中未安装 fx，Phaseo 会显示官方安装程序命令，并在运行前征求确认。随后，此命令会：
+如果没有安装 fx，CLI 会显示官方安装程序命令，并在运行前征求你的确认。随后 setup 会：
 
-- 将 `phaseo` 连接添加到 `~/.fx/settings.json`，同时保留你的其他设置和连接；
-- 同步最多 256 个兼容的 Phaseo 模型（即 fx 可接受的上限），以及它们的上下文和输出限制；
-- 将 `phaseo` 设为 fx 的当前供应商，并记录之前的供应商，以便移除时恢复；
-- 创建一个 `Phaseo CLI: fx API Key`，该密钥在 90 天后过期，每月支出上限为 100 美元，并将其保存到仅所有者可访问的文件 `~/.config/phaseo/integrations/fx.env` 中。重新运行 `phaseo fx` 即可替换已过期的密钥。
+- 在 `~/.fx/settings.json` 中添加一个 `phaseo` 连接，并保留你的其他设置和连接；
+- 同步最多 256 个兼容的 Phaseo 模型（fx 能接受的上限），以及它们的上下文和输出限制；
+- 把 `phaseo` 设为 fx 当前使用的提供商，并记录之前的提供商，以便移除时恢复；
+- 创建一个 `Phaseo CLI: fx API Key`，它 90 天后过期，每月支出上限为 $100，并保存在只有所有者可访问的文件 `~/.config/phaseo/integrations/fx.env` 中。再次运行 `phaseo fx` 即可替换已过期的密钥。
 
-使用 `--catalog default` 仅配置所选模型，或使用 `--dry-run` 预览文件更改。
+使用 `--catalog default` 可以只添加所选模型，使用 `--dry-run` 可以预览更改。
 
-## 2) 在 shell 中加载密钥
-
-fx 只从环境变量读取自定义连接的密钥，不会从其设置文件中读取。将下面这行添加到 `~/.zshrc` 或 `~/.bashrc` 中（只需添加一次），然后打开新的终端：
+fx 只从环境变量中读取自定义连接的密钥，从不从设置文件中读取。把下面这一行添加到 `~/.zshrc` 或 `~/.bashrc` 中（只需添加一次），然后打开一个新终端：
 
 ```bash
 [ -f "$HOME/.config/phaseo/integrations/fx.env" ] && . "$HOME/.config/phaseo/integrations/fx.env"
 ```
 
-当该文件存在时，这行会设置 `PHASEO_FX_API_KEY`；移除集成后，它不会执行任何操作。
-
-## 3) 启动 fx
+文件存在时，这一行会设置 `PHASEO_FX_API_KEY`；移除集成之后，它什么也不做。然后启动 fx：
 
 ```bash
 fx
 ```
 
-使用 `/model` 切换模型，或使用 `FX_MODEL=<id> fx` 为单次运行指定任意 Phaseo 模型 ID。使用 `fx provider <name>` 切换回其他供应商。
+用 `/model` 切换模型，或者用 `FX_MODEL=<id> fx` 在单次运行中使用任意 Phaseo 模型 ID。用 `fx provider <name>` 切换回其他提供商。
 
-## 手动配置
+## 手动配置 fx
 
-将连接添加到 `~/.fx/settings.json`。fx 不接受在项目的 `.fx.json` 中配置自定义连接。
+把连接添加到 `~/.fx/settings.json`。fx 不接受在项目的 `.fx.json` 中定义自定义连接。
 
-```json
+```json ~/.fx/settings.json
 {
   "provider": "phaseo",
   "providers": {
@@ -63,19 +57,24 @@ fx
 }
 ```
 
-然后导出 `PHASEO_API_KEY` 并运行 `fx`。如果没有 `context_window`，fx 无法判断何时压缩对话，因此请为你使用的模型声明限制。上面的限制仅为示例；请从 [Models 端点](../../api-reference/endpoint/models.mdx)获取实际值。
+导出 `PHASEO_API_KEY` 并运行 `fx`。为你使用的每个模型声明限制：没有 `context_window` 时，fx 无法判断何时压缩对话。上面的限制只是示例；请从 [Models 端点](../../api-reference/endpoint/models.mdx)获取实际值。
 
-## 移除
+## 确认可以正常使用
+
+1. 运行 `fx status --json`，确认当前使用的提供商、端点和模型。
+2. 在进行文件编辑之前，先运行一个简短的提示词，例如 `fx ask "Summarize README.md"`。
+3. 确认该请求出现在 **设置 → 用量 → 日志** 中。
+
+如果 fx 报告缺少凭据，请打开一个新终端，或检查 shell 配置文件中是否有那一行。
+
+## 移除 Phaseo
 
 ```bash
 phaseo integrations remove fx
 ```
 
-此命令会移除 `phaseo` 连接和模型；如果 Phaseo 仍是当前供应商，则恢复之前的 fx 供应商；并删除密钥文件、撤销该密钥。
+此命令会删除 `phaseo` 连接和模型；如果 Phaseo 仍是当前提供商，会恢复你之前的 fx 提供商；还会删除密钥文件并吊销密钥。
 
-## 验证
+## 已知限制
 
-- 运行 `fx status --json`，确认当前供应商、端点和模型。
-- 在进行文件编辑工作之前，先运行一个简单的提示，例如 `fx ask "Summarize README.md"`。
-- 如果 fx 报告缺少凭据，请打开新的终端，或检查 shell 配置文件中是否存在该行。
-- 仅限 AI Gateway 的 fx 功能（例如网关网页搜索和额度检查）无法通过自定义连接使用。
+只能配合 fx 内置托管提供商使用的功能（例如其网页搜索和额度检查）无法通过自定义连接使用。

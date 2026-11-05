@@ -4748,7 +4748,7 @@ paths:
       tags:
         - Gateway
       operationId: createWorkspaceBudget
-      summary: Criar orçamento do espaço de trabalho
+      summary: Criar um orçamento do espaço de trabalho
       description: Cria um limite de gastos aplicado para um intervalo do espaço de trabalho.
       requestBody:
         required: true

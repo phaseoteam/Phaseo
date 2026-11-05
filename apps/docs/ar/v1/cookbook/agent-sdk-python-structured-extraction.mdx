@@ -1,24 +1,61 @@
 ---
 title: "استخراج JSON منظّم باستخدام Python Agent SDK"
-sidebarTitle: "استخراج JSON باستخدام Python"
+sidebarTitle: "استخراج JSON منظّم بلغة Python"
 icon: "file-code"
-description: "استخدم Python Agent SDK في دورة محدودة بأداة محلية تُرجع JSON صارمًا عبر Phaseo Gateway."
+description: "استخدم Python Agent SDK في حلقة محدودة بأداة محلية تُرجع JSON صارمًا عبر Phaseo Gateway."
 ---
 
-استخدم هذه الوصفة عندما يحتاج سير عمل Python إلى:
+شغّل وكيلًا بلغة Python يبحث عن شيء باستخدام أداة محلية واحدة ويُرجع إجابته بصيغة JSON صارمة. في النهاية يكون لديك سكربت واحد تكون فيه `result.output` كائن `PolicySummary` تم التحقق منه يحتوي على `summary` و`recommendation`، لا نصًا حرًا.
 
-- أداة بحث محلية واحدة
-- دورة وكيل محدودة واحدة
-- بنية إخراج JSON صارمة واحدة
+تُرجع الأداة بيانات عيّنة ثابتة، لذا فالسكربت توضيحي؛ استبدلها بعملية البحث الخاصة بك. يناسب ذلك عاملًا بلغة Python يملك تنسيقه الخاص ولديه مجموعة أدوات صغيرة وحتمية.
 
-## 1. جهّز حزم SDK
+## أنشئه
 
-<Note type="warning">لم تُنشر حزمة Python Agent SDK على PyPI بعد. اتبع [تعليمات التثبيت من المصدر](../sdk-reference/python/agent-sdk-installation.mdx).</Note>
+<Steps>
+<Step title="التثبيت">
 
-## 2. عرّف أداة محلية
+<CodeGroup>
+```bash pip
+pip install phaseo-agent-sdk
+```
 
-```python
-from phaseo_agent import AgentTool, define_tool
+```bash uv
+uv add phaseo-agent-sdk
+```
+</CodeGroup>
+
+تثبّت `phaseo-agent-sdk` عميل `phaseo` وPydantic معها.
+
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+</Step>
+<Step title="اكتب الوكيل">
+
+```python extract.py
+import json
+import os
+
+from pydantic import BaseModel, ConfigDict
+
+from phaseo_agent import AgentTool, create_agent, create_gateway_agent_client, define_tool
+
+POLICY_SLUGS = {"presets", "routing", "guardrails"}
+
+
+class PolicySummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    summary: str
+    recommendation: str
+
+
+def check_lookup_input(value):
+    # وسائط يولّدها النموذج: ارفض أي شيء ليس معرّفًا نصيًا معروفًا.
+    if not isinstance(value, dict) or set(value) != {"slug"} or value["slug"] not in POLICY_SLUGS:
+        raise ValueError(f"slug must be one of {sorted(POLICY_SLUGS)}")
+    return value
+
 
 lookup_policy = define_tool(
     AgentTool(
@@ -26,56 +63,76 @@ lookup_policy = define_tool(
         description="Look up one internal policy by slug.",
         parameters={
             "type": "object",
-            "properties": {
-                "slug": {"type": "string"},
-            },
+            "properties": {"slug": {"type": "string", "enum": sorted(POLICY_SLUGS)}},
             "required": ["slug"],
             "additionalProperties": False,
         },
+        input_schema=check_lookup_input,
         execute=lambda input, ctx: {
             "slug": input["slug"],
             "summary": "Presets centralize routing, prompts, and caching defaults.",
         },
     )
 )
-```
-
-## 3. أنشئ الوكيل
-
-```python
-from phaseo_agent import create_agent
 
 agent = create_agent(
     {
         "id": "policy-extractor",
-        "model": "openai/gpt-5.4-nano",
-        "instructions": "Use tools when needed and return concise JSON.",
+        "model": "openai/gpt-6-astra",
+        "instructions": "Use tools when needed and return JSON with summary and recommendation.",
         "tools": [lookup_policy],
-        "parse_output": lambda text: text,
+        "max_steps": 4,
+        "parse_output": json.loads,
+        "output_schema": PolicySummary,
     }
 )
-```
 
-## 4. شغّل الوكيل عبر عميل البوابة
-
-```python
-from phaseo_agent import create_gateway_agent_client
-
-result = agent.run(
-    input="Look up presets and return JSON with keys summary and recommendation.",
-    client=create_gateway_agent_client(),
+# لا يقرأ عميل Python المتغير PHASEO_API_KEY تلقائيًا: مرّره بنفسك.
+client = create_gateway_agent_client(
+    client_options={"api_key": os.environ["PHASEO_API_KEY"]},
+    response_format={
+        "type": "json_schema",
+        "name": "policy_summary",
+        "schema": {
+            "type": "object",
+            "properties": {
+                "summary": {"type": "string"},
+                "recommendation": {"type": "string"},
+            },
+            "required": ["summary", "recommendation"],
+            "additionalProperties": False,
+        },
+    },
+    plugins=[{"id": "response-healing"}],
 )
 
+result = agent.run(input="Look up our presets policy and recommend when to use it.", client=client)
+
+print(result.run.status)
 print(result.output)
 ```
 
-## 5. متى تناسب هذه الوصفة
+| الجزء | وظيفته |
+| --- | --- |
+| `parameters` | مخطط JSON Schema الذي يراه النموذج لوسائط الأداة |
+| `input_schema` | يتحقق من الوسائط قبل تشغيل `execute`؛ ويؤدي الاستدعاء السيئ إلى فشل التشغيل |
+| `response_format` | يطلب من الـ Gateway مخطط JSON Schema هذا في كل دور |
+| `parse_output` و`output_schema` | يحلّلان النص النهائي ويتحققان منه ويحوّلانه إلى `PolicySummary` |
 
-- يتولى عامل Python واحد التنسيق
-- تكون الأدوات محلية وحتمية
-- تريد إخراجًا صارمًا قبل إنشاء طبقة تنسيق أوسع
+</Step>
+<Step title="شغّله">
 
-## مواضيع ذات صلة
+```bash
+python extract.py
+```
 
-- [Python Agent SDK](../sdk-reference/python/agent-sdk.mdx)
-- [إخراج JSON منظّم من Python](./sdk-python-presets-and-json.mdx)
+</Step>
+</Steps>
+
+## تحقّق من نجاحه
+
+- يطبع السكربت `completed`، ثم `PolicySummary` مع تعبئة الحقلين كليهما.
+- في **الإعدادات → الاستخدام → السجلات**، يعرض أول دور للنموذج استدعاء `lookup-policy` مع `{"slug": "presets"}`.
+- تفشل المخرجات التي لا تطابق نموذج `PolicySummary` بالخطأ `Invalid agent output` بدلًا من إرجاع كائن نصف معبّأ.
+
+للحصول على مخرجات منظّمة في طلب واحد دون أدوات، استدعِ [Python SDK مباشرةً](./sdk-python-presets-and-json). يشرح [مرجع Python Agent SDK](../sdk-reference/agent/usage) الحالة والموافقة والبث.

@@ -1,69 +1,40 @@
 ---
 title: "ワークスペース"
-description: "Phaseoの料金プランを変えずに、APIキー、設定、管理アクセスを整理します。"
+description: "Phaseo の料金プランを変えずに、API キー、設定、管理アクセスを整理します。"
 icon: "building-2"
 ---
 
-ワークスペースでは、チーム、製品、環境ごとにAPIキー、ルーティング設定、プリセット、ガードレール、管理アクセスを整理できます。
+チーム、製品、環境ごとにワークスペースを作成すると、API キー、ルーティング設定、プリセット、ガードレール、管理アクセスを分けて管理できます。どのアカウントにも最初から個人用ワークスペースがあり、小規模なインテグレーションならそれで十分です。
 
-ワークスペースはPhaseo標準の従量課金サービスに含まれます。作成や利用に別のプランは必要ありません。
-
-## ワークスペースを作成する場面
-
-次のように分けたい場合は、ワークスペースを個別に作成します。
+ワークスペースを分けると、次のような場合に役立ちます。
 
 - 開発、ステージング、本番環境の認証情報を分離する
 - 製品や顧客プロジェクトを分ける
 - 管理用インテグレーションが必要なリソースだけにアクセスできるようにする
 - 異なるルーティング、プリセット、ガードレールのポリシーを適用する
 
-小規模なインテグレーションなら、デフォルトのワークスペースで十分な場合があります。
+ワークスペースによって料金が変わることはありません。使用量はすべて、[料金と請求](../pricing/tiers)に記載された標準の従量課金で請求されます。追加のワークスペースは、最初にクレジットを入金した後に使えるようになります。それまでは、作成しようとすると `403 workspace_upgrade_required` で失敗します。
 
-## ワークスペースを管理する
+## API でワークスペースを管理する
 
-ワークスペースはPhaseoダッシュボードまたは管理APIから管理できます。
+ワークスペースはダッシュボードまたは管理 API で管理します。API には[管理キー](../developers/management-api-keys)が必要です。通常の Gateway API キーは推論用で、これらのエンドポイントは呼び出せません。
 
-ワークスペースAPIでは[管理APIキー](../developers/management-api-keys.mdx)を使います。標準のGateway APIキーは推論リクエスト用であり、ワークスペース管理エンドポイントは呼び出せません。
+| 操作 | エンドポイント | 権限 |
+| --- | --- | --- |
+| ワークスペースを一覧表示する | [`GET /workspaces`](../api-reference/endpoint/workspaces-list) | `workspaces:read` |
+| ワークスペースを取得する | [`GET /workspaces/{id}`](../api-reference/endpoint/workspaces-get) | `workspaces:read` |
+| ワークスペースを作成する | [`POST /workspaces`](../api-reference/endpoint/workspaces-create) | `workspaces:write` |
+| ワークスペースを更新する | [`PATCH /workspaces/{id}`](../api-reference/endpoint/workspaces-update) | `workspaces:write` |
+| ワークスペースを削除する | [`DELETE /workspaces/{id}`](../api-reference/endpoint/workspaces-delete) | `workspaces:delete` |
 
-| 操作 | エンドポイント |
-| --- | --- |
-| ワークスペースを一覧表示 | [`GET /workspaces`](../api-reference/endpoint/workspaces-list.mdx) |
-| ワークスペースを作成 | [`POST /workspaces`](../api-reference/endpoint/workspaces-create.mdx) |
-| ワークスペースを取得 | [`GET /workspaces/{id}`](../api-reference/endpoint/workspaces-get.mdx) |
-| ワークスペースを更新 | [`PATCH /workspaces/{id}`](../api-reference/endpoint/workspaces-update.mdx) |
-| ワークスペースを削除 | [`DELETE /workspaces/{id}`](../api-reference/endpoint/workspaces-delete.mdx) |
+キーには必要な権限だけを付与してください。Phaseo はワークスペースのメンバーシップとロールも確認するため、権限だけで別のワークスペースにアクセスできることはありません。新しいワークスペースの `slug` は、小文字、数字、ハイフンで 1〜50 文字にする必要があります。
+
+管理キーはサーバー側のシークレットストアに保存してください。ブラウザーのコード、デスクトップのログ、ソース管理、チャットには含めないでください。
 
 <Note>
-ワークスペース管理エンドポイントは現在Betaです。管理オートメーションは再試行しやすくし、後続の変更を適用する前にAPIレスポンスを確認してください。
+ワークスペースのエンドポイントはベータ版です。自動化は再試行しても安全なように作り、後続の変更を行う前に各レスポンスを確認してください。
 </Note>
 
-## 適切なアクセス権を選ぶ
+## ワークスペースの名前を変更する、または削除する
 
-インテグレーションに必要なワークスペース機能だけを付与した管理キーを作成します。
-
-- ワークスペースの一覧表示と確認には`workspaces:read`
-- ワークスペースの作成や更新には`workspaces:write`
-- ワークスペースの削除には`workspaces:delete`
-
-Phaseoはワークスペースのメンバーシップとロールも確認します。機能権限だけでは、別のワークスペースにアクセスできません。
-
-管理キーはサーバー側のシークレットストアに保存してください。ブラウザーコード、デスクトップログ、ソース管理、チャットには含めないでください。
-
-## ワークスペースを削除する
-
-デフォルトのワークスペースは削除できません。他のワークスペースを削除する前に、アクティブなAPIキーを削除するか移動し、存在しないワークスペースにリクエストが向かわないようにしてください。
-
-## 請求
-
-ワークスペースによって料金プランが分かれることはありません。使用量は[料金と請求](../pricing/tiers.mdx)に記載された標準の従量課金で請求されます。
-
-## 次のステップ
-
-<CardGroup cols={2}>
-	<Card title="管理APIキー" icon="key-round" href="../developers/management-api-keys.mdx">
-		ワークスペース管理に必要な権限だけを持つサーバー側の認証情報を作成します。
-	</Card>
-	<Card title="認証" icon="key" href="../developers/authentication.mdx">
-		モデルと生成のリクエストにはGateway APIキーを使います。
-	</Card>
-</CardGroup>
+個人用（デフォルト）ワークスペースは、名前の変更も削除もできません。どちらも `400 bad_request` を返します。ほかのワークスペースを削除する前に、そのアクティブな API キーを削除するか移動し、存在しないワークスペースにリクエストが向かわないようにしてください。

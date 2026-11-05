@@ -1,222 +1,160 @@
 ---
-title: "Crie uma bancada de trabalho OAuth com Next.js"
-sidebarTitle: "Bancada OAuth com Next.js"
+title: "Crie um workbench OAuth com Next.js"
 icon: "key-round"
-description: "Use o exemplo completo de OAuth com Next.js como guia para um aplicativo de gateway autenticado com um proxy unificado."
+description: "Use o exemplo completo de OAuth com Next.js como passo a passo para um aplicativo do Gateway com login e um proxy unificado."
 ---
 
-Use esta página se seu produto precisar de login, acesso ao gateway baseado em sessão e mais de uma rota de chat.
+Deixe as pessoas entrarem com o Phaseo e gastarem os próprios créditos no seu aplicativo: o OAuth 2.1 com PKCE dá ao seu servidor um token de acesso, e um único proxy no servidor o anexa a cada chamada ao Gateway. No fim, você tem um aplicativo local com login, tokens guardados na sessão que se renovam, descoberta de modelos, um fluxo de chat sobre `/responses` e um testador para outros endpoints.
 
-**Objetivo:** Execute a bancada autenticada e envie solicitações à Phaseo por um único proxy protegido no servidor.
+O exemplo é ilustrativo. O `lib/oauth.ts` ainda chama um endpoint de login antigo, que o passo 3 de [Execute](#run-it) corrige, e a lista de permissões do proxy é mais ampla do que um produto precisa.
 
-**Resultado:** Um aplicativo local com login OAuth, tokens associados à sessão, descoberta de modelos, chat e um testador de endpoints.
+Para que um agente de programação crie o mesmo aplicativo do zero, cole este prompt:
 
 <Prompt
-  description="Crie uma **bancada de trabalho autenticada com Next.js**, OAuth e um proxy unificado da Phaseo."
+  description="Crie um **workbench Next.js com login** usando OAuth e um proxy unificado do Phaseo."
   icon="shield-user"
   actions={["copy", "cursor"]}
 >
-{`Você está criando um aplicativo Next.js autenticado sobre o Phaseo Gateway.
+{`You are building a signed-in Next.js app on top of Phaseo Gateway.
 
-Crie um aplicativo no estilo bancada de trabalho com:
-- login com OAuth 2.1 + PKCE
-- armazenamento de tokens associado à sessão
-- uma rota de proxy unificado do gateway no servidor
-- descoberta de modelos
-- um fluxo de chat usando a Responses API
-- um testador genérico para outros endpoints da Phaseo
+Create a workbench-style app with:
+- OAuth 2.1 + PKCE sign-in against https://api.phaseo.app/oauth/authorize and https://api.phaseo.app/oauth/token (discover them from https://api.phaseo.app/.well-known/oauth-authorization-server), requesting the gateway:access scope
+- session-backed token storage in an encrypted, httpOnly cookie
+- one unified gateway proxy route on the server that calls https://api.phaseo.app/v1
+- model discovery
+- one chat flow using the Responses API, sending the whole conversation in input on every turn
+- one generic endpoint tester for additional Phaseo endpoints
 
-Requisitos:
-- Mantenha as credenciais do gateway e os tokens de acesso no servidor.
-- Use uma lista de permissões no proxy por segurança.
-- Ofereça suporte à renovação de tokens.
-- Mantenha a bancada fácil de entender e evite engenharia excessiva.
-- Adicione um README curto com configuração, variáveis de ambiente e etapas de execução.
+Requirements:
+- Keep gateway credentials and access tokens server-side.
+- Use a proxy allowlist of exact paths for safety.
+- Support token refresh. Store the new refresh token from every refresh and drop the old one.
+- Sign out by sending the refresh token to https://api.phaseo.app/oauth/revoke.
+- Keep the workbench understandable rather than over-engineered.
+- Add a short README with setup, env vars, and run steps.
 
-Verificação:
-- execute o aplicativo, se possível
-- verifique o fluxo de login até onde a configuração local permitir
-- verifique pelo menos um caminho de solicitação ao gateway pelo proxy
-- informe exatamente o que foi verificado e o que ainda depende da configuração OAuth externa.`}
+Verification:
+- run the app if possible
+- verify sign-in flow as far as local setup allows
+- verify at least one proxied gateway request path
+- report exactly what you verified and what remains dependent on external OAuth configuration.`}
 </Prompt>
 
-## Projeto de exemplo
+## Como o exemplo é montado
 
-- GitHub: [examples/oauth-client-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/oauth-client-nextjs)
-- Caminho local no repositório: `examples/oauth-client-nextjs`
+```mermaid
+flowchart LR
+  browser["Navegador"] -->|"Entrar"| start["app/api/auth/start"]
+  start -->|"Redirecionamento com desafio PKCE"| authz["Login e consentimento no Phaseo"]
+  authz -->|"Código"| cb["Callback app/auth"]
+  cb -->|"Troca do código"| sess["lib/session.ts: sessão criptografada"]
+  browser -->|"/api/gateway/..."| proxy["app/api/gateway/[...surface]/route.ts"]
+  proxy -->|"Lista de permissões, token Bearer, renovação se expirado"| gw["api.phaseo.app/v1"]
+```
 
-## O que este aplicativo inclui
+O exemplo fica em [examples/oauth-client-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/oauth-client-nextjs):
 
-- login com OAuth 2.1 + PKCE
-- armazenamento e renovação de tokens associados à sessão
-- um proxy unificado para rotas de controle e geração
-- descoberta de modelos
-- um fluxo de chat por `/responses`
-- um testador genérico para outras rotas do gateway
+| Arquivo | Função |
+| --- | --- |
+| `app/page.tsx` | Página inicial de login |
+| `app/dashboard/page.tsx` | Estrutura protegida |
+| `app/dashboard/GatewayWorkbench.tsx` | Carrega as rotas de controle, lista os IDs de modelo, executa o chat sobre `POST /responses` e testa outros endpoints |
+| `app/api/gateway/[...surface]/route.ts` | Proxy genérico: verifica a lista de permissões, adiciona o token Bearer, renova o token quando ele expira e repassa o corpo e o status |
+| `lib/oauth.ts` | PKCE, troca do código e renovação |
+| `lib/session.ts` | Armazenamento criptografado da sessão |
 
-## Quando começar com este exemplo
+Separar o login das chamadas ao Gateway faz com que um problema de login nunca pareça um problema de modelo, e todos os endpoints compartilham um único lugar que trata os tokens.
 
-Use este exemplo quando:
+<span id="run-it"></span>
+## Execute
 
-- usuários finais devem entrar com acesso delegado
-- você precisar de mais do que uma página de chat simples
-- você quiser uma rota segura no servidor para vários endpoints da Phaseo
+Você precisa do Node.js, de um aplicativo OAuth com `http://localhost:3000/auth/callback` (ou o seu próprio callback) como URI de redirecionamento e de um segredo de sessão longo e aleatório. Crie o aplicativo OAuth em **Configurações → Aplicativos OAuth** ou com a [API de clientes OAuth](../api-reference/endpoint/oauth-clients-create).
 
-Não comece por aqui se:
+<Steps>
+<Step title="Instale">
 
-- você só precisar de uma interface de chat simples com chave de API
-- você quiser começar por um script ou CLI
-
-## Arquivos principais
-
-<Tree>
-
-- app/
-  - page.tsx
-  - dashboard/
-    - page.tsx
-    - GatewayWorkbench.tsx
-  - api/
-    - gateway/
-      - [...surface]/
-        - route.ts
-- lib/
-  - oauth.ts
-  - session.ts
-
-</Tree>
-
-## Por que o exemplo foi estruturado assim
-
-### 1. O OAuth fica separado da lógica do gateway
-
-O aplicativo separa:
-
-- lógica de início de autenticação e callback
-- gerenciamento de sessão criptografada
-- renovação de tokens
-
-Isso mantém o código de integração com IA mais simples e facilita a depuração de problemas de login.
-
-### 2. Uma única rota de proxy gerencia as chamadas ao gateway
-
-A rota de proxy catch-all:
-
-- verifica a lista de permissões de endpoints
-- inclui o token bearer atual
-- renova os tokens quando necessário
-- encaminha os corpos das solicitações e respostas
-
-Esse padrão é útil quando você precisa de vários endpoints da Phaseo sem copiar a lógica de autenticação para cada rota.
-
-### 3. O painel também funciona como bancada interna
-
-A página da bancada não serve apenas para chat:
-
-- descobre modelos
-- testa `/responses`
-- também pode testar endpoints que não são de chat
-
-Isso a torna útil para integração, QA e depuração interna antes de criar uma interface mais refinada para os usuários.
-
-## Duração dos tokens
-
-Quando alguém entra, o endpoint de tokens (`https://api.phaseo.app/oauth/token`) retorna dois tokens:
-
-| Token | Duração | Uso |
-| --- | --- | --- |
-| `access_token` | 7 dias (`expires_in`) | Envie como `Authorization: Bearer` nas solicitações ao gateway. Ele gasta créditos no espaço de trabalho que a pessoa escolheu. |
-| `refresh_token` | 90 dias a partir do último uso | Envie com `grant_type=refresh_token` para obter um novo par. |
-
-- Cada atualização retorna um novo token de acesso e um novo token de atualização. Guarde os dois e descarte os antigos: o token de acesso antigo para de funcionar na hora, e o token de atualização antigo não pode ser usado de novo.
-- Você pode atualizar depois que o token de acesso expirar, desde que o token de atualização não tenha expirado.
-- Usar um token de atualização pela segunda vez encerra o login. O Phaseo trata isso como um token vazado e revoga o token de acesso e todos os tokens de atualização desse login, então a pessoa precisa entrar de novo.
-- Uma atualização nunca adiciona escopos. Ela mantém os escopos que a pessoa aprovou, menos os que ela removeu desde então.
-- A atualização falha assim que a pessoa revoga seu aplicativo, revoga ou desativa a chave dele, remove um escopo de que a chave precisa (como `gateway:access`) ou sai do espaço de trabalho. Remover `gateway:access` também revoga a chave, então o token de acesso dela para de funcionar na hora. Conceder o escopo de novo não recupera o token de atualização. Peça para ela entrar de novo.
-- Entrar de novo renova a mesma chave em vez de adicionar outra, enviando ou não `resource=https://api.phaseo.app/v1`. Você recebe um novo token de acesso e um novo token de atualização, os anteriores param de funcionar, e a chave mantém os gastos deste mês. O limite de gastos mensal dela passa a ser o que a pessoa acabou de aprovar. O token de atualização de um login anterior é apenas recusado, e enviá-lo ao endpoint de tokens ou de revogação não encerra o novo login. Se qualquer chave do seu aplicativo para essa pessoa e esse espaço de trabalho estiver pausada, seja qual for o recurso, o endpoint de tokens retorna `invalid_grant` até que alguém reative a chave em **Configurações → Chaves de API**. A renovação só funciona enquanto a chave não estiver revogada: depois de sair da conta ou de qualquer outra revogação, entrar de novo cria uma chave nova, com limites e gastos começando do zero.
-- Para sair, envie o token de atualização para `https://api.phaseo.app/oauth/revoke`. Isso revoga a chave e todos os tokens de atualização do login, inclusive um que uma atualização acabou de emitir.
-- Na tela de consentimento, a pessoa define um limite de gastos mensal para seu aplicativo: $20.00 por padrão, outro valor ou sem limite. Quando a chave o atinge em um mês do calendário, as solicitações ao gateway retornam `429` com `key_limit_exceeded` até o mês seguinte ou até a pessoa aumentar o limite em **Configurações → Chaves de API**. Independentemente dos escopos que tiver, seu aplicativo não pode remover esse limite nem contorná-lo pela API: ele só pode renomear ou excluir chaves de API. Ele não pode criar ou rotacionar chaves, alterar os limites, o status ou a expiração de uma chave, criar chaves de gerenciamento ou workloads confiáveis, adicionar membros, alterar orçamentos, guardrails, limites de taxa ou regras de gastos, nem alterar os limites de preço do espaço de trabalho para roteamento ou o uso de créditos quando o BYOK falha.
-
-## Pré-requisitos
-
-- Node.js e um gerenciador de pacotes compatível
-- um cliente OAuth configurado com a URL de callback local
-- um segredo de sessão forte
-
-## Execute o exemplo
-
-<CodeGroup>
-```bash npm
+```bash
 cd examples/oauth-client-nextjs
 npm install
-cp .env.example .env.local
 ```
 
-```bash pnpm
-cd examples/oauth-client-nextjs
-pnpm install
-cp .env.example .env.local
+</Step>
+<Step title="Crie o .env.local">
+
+O exemplo não tem `.env.example`. Crie o `.env.local` com os nomes que o código lê:
+
+```bash .env.local
+NEXT_PUBLIC_OAUTH_CLIENT_ID=your_client_id
+OAUTH_CLIENT_SECRET=your_client_secret
+# The sample reads this name for the OAuth server's base URL.
+NEXT_PUBLIC_AISTATS_URL=https://api.phaseo.app
+NEXT_PUBLIC_REDIRECT_URI=http://localhost:3000/auth/callback
+SESSION_SECRET=a-long-random-string
+NEXT_PUBLIC_GATEWAY_URL=https://api.phaseo.app
 ```
 
-```bash yarn
-cd examples/oauth-client-nextjs
-yarn install
-cp .env.example .env.local
-```
+Nunca coloque `OAUTH_CLIENT_SECRET` ou `SESSION_SECRET` em uma variável `NEXT_PUBLIC_`.
 
-```bash bun
-cd examples/oauth-client-nextjs
-bun install
-cp .env.example .env.local
-```
-</CodeGroup>
+</Step>
+<Step title="Aponte o exemplo para os endpoints OAuth atuais">
 
-Defina:
+O `lib/oauth.ts` monta `${NEXT_PUBLIC_AISTATS_URL}/auth/v1/oauth/authorize` e `/auth/v1/token` e pede `openid email profile`. O servidor OAuth do Phaseo publica os seus endpoints em `https://api.phaseo.app/.well-known/oauth-authorization-server`:
 
-- `NEXT_PUBLIC_OAUTH_CLIENT_ID`
-- `OAUTH_CLIENT_SECRET`
-- `NEXT_PUBLIC_PHASEO_URL`
-- `NEXT_PUBLIC_REDIRECT_URI`
-- `SESSION_SECRET`
-- `NEXT_PUBLIC_GATEWAY_URL`
+| Uso | URL |
+| --- | --- |
+| Autorização | `https://api.phaseo.app/oauth/authorize` |
+| Token | `https://api.phaseo.app/oauth/token` |
+| Revogação | `https://api.phaseo.app/oauth/revoke` |
 
-Depois execute:
+Troque as três URLs em `lib/oauth.ts` por essas e adicione `gateway:access` a `scope` para que o token possa chamar o Gateway.
 
-<CodeGroup>
-```bash npm
+</Step>
+<Step title="Inicie o servidor de desenvolvimento">
+
+```bash
 npm run dev
 ```
 
-```bash pnpm
-pnpm dev
-```
+Abra `http://localhost:3000`, entre e abra o painel.
 
-```bash yarn
-yarn dev
-```
+</Step>
+</Steps>
 
-```bash bun
-bun run dev
-```
-</CodeGroup>
+## Confira se funcionou
 
-Abra `http://localhost:3000`.
+- O login volta para a sua URL de callback e cria uma sessão.
+- O painel lista os modelos por meio de `/api/gateway/models`.
+- Uma rodada de chat por `/api/gateway/responses` recebe uma resposta, e nenhuma solicitação do navegador carrega o token de acesso.
+- Um caminho fora da lista de permissões do proxy é rejeitado.
 
-## Verifique o resultado
+## Duração dos tokens
 
-- O login retorna ao callback configurado e cria uma sessão.
-- O painel consegue descobrir modelos pelo proxy.
-- Uma solicitação à Responses API é concluída sem expor um token de acesso ao navegador.
-- Um endpoint fora da lista de permissões do proxy é rejeitado.
+O endpoint de token retorna dois tokens:
 
-## Como adaptar o exemplo
+| Token | Duração | Uso |
+| --- | --- | --- |
+| `access_token` | 7 dias (`expires_in`) | Envie como `Authorization: Bearer` nas solicitações ao Gateway. Ele gasta créditos no espaço de trabalho que a pessoa escolheu. |
+| `refresh_token` | 90 dias a partir do último uso | Envie com `grant_type=refresh_token` para obter um novo par. |
 
-- reduza a lista de permissões do proxy aos endpoints de que seu produto realmente precisa
-- mantenha a bancada para uso interno enquanto cria uma interface mais simples para os usuários
-- substitua o testador genérico por fluxos específicos do produto quando a integração estiver estável
+- **Troque a cada renovação.** Cada renovação retorna um novo token de acesso e um novo token de renovação. Guarde os dois e descarte os antigos: o token de acesso antigo para de funcionar na hora, e o token de renovação antigo não pode ser usado de novo.
+- **Renove depois da expiração.** Você pode renovar depois que o token de acesso expirar, desde que o token de renovação não tenha expirado.
+- **Nunca reutilize um token de renovação.** Usá-lo uma segunda vez encerra o login. O Phaseo o trata como um token vazado e revoga o token de acesso e todos os tokens de renovação daquele login, então a pessoa precisa entrar de novo.
+- **Os escopos só diminuem.** Uma renovação nunca adiciona escopos. Ela mantém os escopos que a pessoa aprovou, menos os que ela tiver removido desde então.
+- **Quando a renovação falha.** A renovação falha quando a pessoa revoga o seu aplicativo, revoga ou desativa a chave dele, remove um escopo de que a chave precisa (como `gateway:access`) ou sai do espaço de trabalho. Remover `gateway:access` também revoga a chave, então o token de acesso dela para de funcionar na hora. Conceder o escopo de novo não traz o token de renovação de volta. Mande a pessoa pelo login de novo.
+- **Entrar de novo renova a chave.** O login renova a mesma chave em vez de adicionar outra, enviando ou não `resource=https://api.phaseo.app/v1`. Você recebe um novo token de acesso e um novo token de renovação, os anteriores param de funcionar, e a chave mantém os gastos deste mês. O limite de gastos mensal passa a ser o que a pessoa acabou de aprovar. O token de renovação de um login anterior é simplesmente recusado, e enviá-lo ao endpoint de token ou de revogação não encerra o novo login.
+- **Uma chave pausada bloqueia o login.** Se alguma das chaves do seu aplicativo para aquela pessoa e aquele espaço de trabalho estiver pausada, qualquer que seja o recurso, o endpoint de token retorna `invalid_grant` até alguém reativar a chave em **Configurações → Chaves de API**. A renovação só funciona enquanto a chave não estiver revogada: depois de sair da conta ou de qualquer outra revogação, o login emite uma nova chave, e os limites e gastos dela começam do zero.
+- **Saia da conta com a revogação.** Envie o token de renovação para `https://api.phaseo.app/oauth/revoke`. Isso revoga a chave e todos os tokens de renovação do login, inclusive um que uma renovação tenha emitido um instante antes.
 
-## Guias relacionados
+## Limites de gastos
 
-- [Crie um aplicativo de chat web com Next.js](./build-a-nextjs-web-chat-app.mdx)
-- [Prompts para iniciar um miniaplicativo](./mini-app-starter-prompts.mdx)
-- [Exemplos](../guides/examples.mdx)
+Na tela de consentimento, a pessoa define um limite de gastos mensal para o seu aplicativo: $20.00 por padrão, outro valor ou nenhum limite. Quando a chave gasta esse valor em um mês do calendário, as solicitações ao Gateway retornam `429` com `key_limit_exceeded` até o mês seguinte ou até a pessoa aumentar o limite em **Configurações → Chaves de API**.
+
+Quaisquer que sejam os escopos que tiver, o seu aplicativo não pode remover esse limite nem contorná-lo pela API. Ele só pode renomear ou excluir chaves de API. Ele não pode criar nem rotacionar chaves, mudar os limites, o status ou a expiração de uma chave, criar chaves de gerenciamento ou cargas de trabalho confiáveis, adicionar membros, mudar orçamentos, guardrails, limites de taxa ou regras de gastos, nem mudar os limites de preço do espaço de trabalho para o roteamento ou o fallback do BYOK para créditos.
+
+## Antes de publicar
+
+- **Reduza a lista de permissões.** O `lib/gateway.ts` permite caminhos exatos e também qualquer caminho em `videos/`, `music/generate/`, `control/` e `internal/`. Mantenha só os caminhos exatos que o seu produto chama.
+- **Envie a conversa inteira.** O Gateway não armazena respostas e rejeita `previous_response_id`, então reenvie as rodadas anteriores em `input`.
+- **Substitua o testador.** Mantenha o workbench para QA interno e crie fluxos específicos para os usuários finais.
+
+Para um aplicativo com chave de API e sem login, comece pelo [aplicativo de chat web com Next.js](./build-a-nextjs-web-chat-app).

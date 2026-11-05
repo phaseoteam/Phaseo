@@ -1,104 +1,135 @@
 ---
 title: "تشغيل أدوات الوكيل المحلية بالتوازي"
 icon: "network"
-description: "حدّد تزامن الأدوات المحلية في TypeScript Agent SDK كي يجمع دور واحد من النموذج سياقات مستقلة دون تنفيذ كل استدعاء على التوالي."
+description: "استخدم تزامنًا محدودًا للأدوات المحلية في TypeScript Agent SDK كي يجمع دور واحد من النموذج سياقًا مستقلًا دون تنفيذ كل استدعاء أداة على التوالي."
 ---
 
-استخدم هذه الوصفة عندما يستطيع دور واحد من الوكيل استدعاء عدة أدوات محلية مستقلة بأمان، وتريد تشغيلها بالتوازي مع الحفاظ على ترتيب نتائج محدد.
+اضبط `toolExecution.toolConcurrency` كي يشغّل TypeScript Agent SDK عدة استدعاءات أدوات مستقلة من دور واحد للنموذج في الوقت نفسه بدلًا من تشغيلها واحدًا تلو الآخر. في النهاية يكون لديك وكيل يجمع سياق الوثائق والحالة والحوادث بالتوازي، ويسجّل النتائج مع ذلك بالترتيب الذي طلبها به النموذج.
 
-## متى تستخدم ذلك
+تُرجع الأدوات بيانات عيّنة ثابتة، لذا فالسكربت توضيحي؛ استبدلها بعمليات بحث خاصة بك للقراءة فقط. توجد نسخة جاهزة في `packages/sdk/agent-sdk-ts/examples/parallel-tool-agent.ts`.
 
-استخدم `toolExecution.toolConcurrency` عندما:
+## أنشئه
 
-- يمكن للنموذج إصدار استدعاءات متعددة للأدوات المحلية في دور واحد
-- لا تعتمد هذه الأدوات على نتائج بعضها
-- يهدر التنفيذ المتسلسل وقت العاملين
-- تريد بقاء رسائل نتائج الأدوات المحفوظة بترتيب الاستدعاءات الأصلي
+<Steps>
+<Step title="التثبيت">
 
-لا تستخدم تزامنًا مرتفعًا إذا كانت إحدى الأدوات تعدّل حالة مشتركة أو كانت الأدوات اللاحقة تعتمد على نتائج سابقة.
+```bash
+npm install @phaseo/agent-sdk zod
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
 
-## مثال
+</Step>
+<Step title="اكتب الوكيل">
 
-```ts
-import {
-  createAgent,
-  createGatewayAgentClient,
-  defineTool,
-} from "@phaseo/agent-sdk";
+```ts parallel-agent.ts
+import { z } from "zod";
+import { createAgent, createGatewayAgentClient, defineTool } from "@phaseo/agent-sdk";
 
 const fetchDocs = defineTool({
   id: "fetch-docs",
-  async execute(input: { slug: string }) {
-    return {
-      slug: input.slug,
-      summary: `Docs summary for ${input.slug}`,
-    };
+  description: "Return a short summary of one Phaseo docs page by slug.",
+  parameters: {
+    type: "object",
+    properties: { slug: { type: "string" } },
+    required: ["slug"],
+    additionalProperties: false,
+  },
+  inputSchema: z.object({ slug: z.string().regex(/^[a-z0-9/-]{1,80}$/) }).strict(),
+  parallelSafe: true,
+  timeoutMs: 5_000,
+  async execute({ slug }) {
+    return { slug, summary: `Docs summary for ${slug}` };
   },
 });
 
 const fetchStatus = defineTool({
   id: "fetch-status",
-  async execute(input: { component: string }) {
-    return {
-      component: input.component,
-      status: "operational",
-    };
+  description: "Return the status of one Phaseo component.",
+  parameters: {
+    type: "object",
+    properties: { component: { type: "string", enum: ["gateway", "dashboard", "async-jobs"] } },
+    required: ["component"],
+    additionalProperties: false,
+  },
+  inputSchema: z.object({ component: z.enum(["gateway", "dashboard", "async-jobs"]) }).strict(),
+  parallelSafe: true,
+  timeoutMs: 5_000,
+  async execute({ component }) {
+    return { component, status: "operational" };
   },
 });
 
 const fetchIncidents = defineTool({
   id: "fetch-incidents",
-  async execute(input: { service: string }) {
-    return {
-      service: input.service,
-      openIncidents: 0,
-    };
+  description: "Return the open incident count for one service.",
+  parameters: {
+    type: "object",
+    properties: { service: { type: "string", enum: ["gateway", "dashboard", "async-jobs"] } },
+    required: ["service"],
+    additionalProperties: false,
+  },
+  inputSchema: z.object({ service: z.enum(["gateway", "dashboard", "async-jobs"]) }).strict(),
+  parallelSafe: true,
+  timeoutMs: 5_000,
+  async execute({ service }) {
+    return { service, openIncidents: 0 };
   },
 });
 
 const agent = createAgent({
   id: "parallel-tool-agent",
-  model: "phaseo/free",
+  model: "openai/gpt-6-astra",
   instructions:
     "Use the available tools to gather context, then return one concise operational summary.",
   tools: [fetchDocs, fetchStatus, fetchIncidents],
-  toolExecution: {
-    toolConcurrency: 3,
-  },
+  toolExecution: { toolConcurrency: 3 },
+  maxSteps: 4,
 });
 
 const result = await agent.run({
   input:
-    "Fetch the presets docs, the gateway status component, and the async-jobs incident digest, then summarize the current state.",
+    "Fetch the presets docs, the gateway status, and the async-jobs incident digest, then summarize the current state.",
   client: createGatewayAgentClient({
-    clientOptions: {
-      apiKey: process.env.PHASEO_API_KEY!,
-    },
+    clientOptions: { apiKey: process.env.PHASEO_API_KEY! },
+    parallelToolCalls: true,
   }),
+  onEvent(event) {
+    if (event.type === "tool.started" || event.type === "tool.completed") {
+      console.log(event.type, event.toolName, event.timestamp);
+    }
+  },
 });
+
+console.log(result.output);
 ```
 
-راجع النسخة المضمّنة في `packages/sdk/agent-sdk-ts/examples/parallel-tool-agent.ts`.
+</Step>
+<Step title="شغّله">
 
-## ما يضمنه وقت التشغيل
+```bash
+npx tsx parallel-agent.ts
+```
 
-- يمكن للأدوات المحلية التنفيذ بالتوازي حتى حد `toolConcurrency` المُعدّ
-- تظل أحداث `tool.started` و`tool.completed` تصدر لكل أداة
-- تحافظ رسائل نتائج الأدوات المحفوظة على ترتيب استدعاءات الأدوات الأصلي
-- يظل حفظ نقطة التحقق جاريًا بعد اكتمال مرحلة الأدوات
-- تظل مهلات `timeoutMs` مطبقة على كل أداة
+</Step>
+</Steps>
 
-## إرشادات التشغيل
+## تحقّق من نجاحه
 
-- ابدأ بقيمة تزامن صغيرة مثل `2` أو `3`
-- اجعل الأدوات المحلية قابلة للتكرار مع آثار جانبية محدودة
-- استخدم `timeoutMs` لمنع اعتماد متعطل من استهلاك جميع العاملين
-- أضف `store` فقط عندما يحتاج تطبيقك فعلًا إلى الاستئناف أو التنسيق عن بُعد
+- عندما يطلب النموذج الأدوات الثلاث في دور واحد، تُطبع أسطر `tool.started` الثلاثة قبل أسطر `tool.completed` المقابلة، مع طوابع زمنية متقاربة.
+- تسرد `result.messages` نتائج الأدوات بترتيب استدعاءات النموذج للأدوات، أيًا كان ترتيب انتهائها.
+- ينتهي التشغيل بملخص واحد في `result.output`.
 
-## التحقق
+## ما الذي يعمل معًا
 
-بعد تفعيل هذا النمط:
+| الإعداد | الأثر |
+| --- | --- |
+| `toolExecution.toolConcurrency` | يعمل حتى هذا العدد من استدعاءات الأدوات من دور واحد في آن واحد. القيمة الافتراضية `1`. |
+| `parallelSafe: true` على كل أداة في الدور | يعمل حتى 8 في آن واحد، أو `toolConcurrency` إن كانت أعلى. استخدمه للأدوات التي للقراءة فقط وحدها. |
+| `timeoutMs` على أداة | يفشل ذلك الاستدعاء بعد هذه المدة، كي لا تحجز تبعية عالقة واحدة جميع الخانات. |
+| `parallelToolCalls` على عميل الـ Gateway | يسمح للنموذج بطلب عدة استدعاءات أدوات في دور واحد؛ وما إذا كان يفعل ذلك يعتمد على النموذج. |
 
-- شغّل اختبارات حلقة الوكيل التي تغطي الأدوار متعددة الأدوات
-- تحقق من أن سير العمل ما زال ينتج رسائل نتائج الأدوات بالترتيب
-- تحقق من أن سجلات التشغيل ما زالت تعرض أحداث `tool.started` و`tool.completed` المتوقعة
+لا تزال `tool.started` و`tool.completed` تُطلقان لكل استدعاء، ويحفظ التشغيل نقطة تحقق بعد انتهاء مرحلة الأدوات.
+
+## حافظ على أمانه
+
+استخدم التزامن فقط للأدوات التي لا تعتمد على مخرجات بعضها ولا تغيّر حالة مشتركة. ابدأ بـ `2` أو `3`، واجعل الأدوات متساوية القوى (idempotent) وقليلة الآثار الجانبية، وتحقّق من كل وسيط باستخدام `inputSchema` كما في الأعلى. أضف موصّل `state`، كما في [حلقة الوكيل المستدامة](./agent-sdk-durable-loop)، فقط عندما تحتاج إلى استئناف التشغيلات. قبل الاعتماد عليه، شغّل اختباراتك التي تغطي الأدوار متعددة الأدوات وتحقّق من ترتيب النتائج.

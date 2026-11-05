@@ -1,84 +1,50 @@
 ---
 icon: "clock-3"
 title: "日時サーバーツール"
-description: "1つ以上のタイムゾーンで現在の日付と時刻をモデルに提供します。"
+description: "1 つ以上のタイムゾーンでの現在の日付と時刻をモデルに提供します。"
 ---
 
-現在の日付、曜日、時刻、タイムゾーンが必要なプロンプトでは、`phaseo:datetime`を使います。
-
-ツールを呼び出すタイミングはモデルが判断します。Phaseoは解決済みのタイムゾーンと現在のタイムスタンプをモデルに返し、その後モデルが最終回答を作成します。
-
-## クイックスタート
+`phaseo:datetime` を追加すると、「東京は今日何曜日？」のようにプロンプトが現在の日時に依存する場合に、モデルが現在の日付と時刻を調べられます。呼び出すタイミングはモデルが判断し、Phaseo は指定した各タイムゾーンの時刻を返します。
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "messages": [
       { "role": "user", "content": "What day of the week is it in Tokyo?" }
     ],
     "tools": [
       {
         "type": "phaseo:datetime",
-        "parameters": {
-          "timezones": ["Asia/Tokyo", "UTC"]
-        }
+        "parameters": { "timezones": ["Asia/Tokyo", "UTC"] }
       }
     ]
   }'
 ```
 
-## 設定
-
-```json
-{
-  "type": "phaseo:datetime",
-  "parameters": {
-    "timezones": ["Europe/London", "UTC"]
-  }
-}
-```
+## パラメーター
 
 | パラメーター | 型 | デフォルト | 説明 |
 | --- | --- | --- | --- |
-| `timezones` | string[] | `["UTC"]` | ツール呼び出し1回で返すIANAタイムゾーン名（最大5つ）。例：`["Europe/London", "UTC"]`。 |
+| `timezones` | string[] | `["UTC"]` | `["Europe/London", "UTC"]` のような、最大 5 つの IANA タイムゾーン名。 |
 
-## ツールの結果
+タイムゾーンが 5 つを超える場合や、有効な IANA タイムゾーンではない名前がある場合、リクエストはモデルの実行前に拒否されます。古い種類名の `gateway:datetime` も引き続き受け付けます。
 
-ツールの結果には、要求したタイムゾーンごとに1つのエントリが含まれます。
+## ツールが返す内容
+
+タイムゾーンごとに 1 つのエントリが返ります。
 
 ```json
 {
   "timezones": [
-    {
-      "timezone": "Europe/London",
-      "datetime": "2026-07-03T10:00:00.123+01:00"
-    },
-    {
-      "timezone": "UTC",
-      "datetime": "2026-07-03T09:00:00.123+00:00"
-    }
+    { "timezone": "Europe/London", "datetime": "2026-07-03T10:00:00.123+01:00" },
+    { "timezone": "UTC", "datetime": "2026-07-03T09:00:00.123+00:00" }
   ]
 }
 ```
 
-## 使用量
+## 利用量と料金
 
-Datetimeの呼び出しでは次の値が加算されます。
-
-```json
-{
-  "usage": {
-    "server_tool_use": {
-      "datetime_requests": 1
-    }
-  }
-}
-```
-
-## 関連項目
-
-- [サーバーツール](./index.mdx)
-- [ツール呼び出し](../tool-calling.mdx)
+呼び出しごとに `usage.server_tool_use.datetime_requests` に 1 が加算されます。日時ツールには独自の料金メーターはありません。

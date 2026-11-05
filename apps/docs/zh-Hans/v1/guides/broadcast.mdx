@@ -4,45 +4,47 @@ description: "将每个请求的追踪数据发送到你的可观测性工具、
 icon: "radio-tower"
 ---
 
-Broadcast 会将每个网关请求的追踪数据发送到你选择的目标，无需修改代码。追踪遵循 OpenTelemetry GenAI 约定：请求对应一个 span，每次提供商尝试各对应一个 span，其中包含模型、提供商、token 用量、成本、耗时，以及（除非你关闭）提示词和输出。
+在**设置 → 事件转发**中添加一个目标，Phaseo 就会把每个 Gateway 请求的追踪数据发送给它，无需修改代码。追踪遵循 OpenTelemetry GenAI 约定：请求对应一个 span，每次提供商尝试各对应一个 span，其中包含模型、提供商、token 用量、成本、耗时，以及（除非你关闭）提示词和输出。
 
-Broadcast 免费提供。所有者和管理员可以在 **设置 → Broadcast** 中管理目标，也可以使用[可观测性目标 API](../api-reference/endpoint/observability-destinations-create.mdx) 和带有 `settings:write` 的[管理密钥](../developers/management-api-keys.mdx)进行管理。每个工作区每种类型最多可以有五个目标。
+Broadcast 免费提供。所有者和管理员可以在**设置 → 事件转发**中管理目标，也可以使用[可观测性目标 API](/zh-Hans/v1/api-reference/endpoint/observability-destinations-create) 和带有 `settings:write` 的[管理密钥](/zh-Hans/v1/developers/management-api-keys)进行管理。每个工作区每种类型最多可以有五个目标。如果想改为从你自己的客户端进行追踪，请参阅[可观测性集成](./integrations/observability.mdx)。
 
-## 添加目的地
+## 添加目标
 
-1. 打开 **设置 → Broadcast** 并选择一个目标。
+1. 打开**设置 → 事件转发**并选择一个目标。
 2. 输入它的凭据。凭据在存储前会加密，之后不会再次显示。
-3. 选择要发送的内容（见下方“选择发送的内容”）。
+3. 选择要发送的内容（参见[选择发送的内容](#choose-what-is-sent)）。
 4. 选择**测试连接**。Phaseo 会按照真实投递的方式发送一条示例追踪，因此如果这里失败，显示的是目标自身返回的错误。
 5. 保存。此后完成的请求会在大约一分钟内发送。
 
 | 类别 | 目标 |
 | --- | --- |
-| OpenTelemetry 工具 | Arize AI, Axiom, Braintrust, Comet Opik, Datadog, Dynatrace, Elastic, Grafana Cloud, Honeycomb, Langfuse, LangSmith, New Relic, PostHog, Respan, Sentry, W&B Weave |
+| OpenTelemetry 工具 | Arize AI、Axiom、Braintrust、Comet Opik、Datadog、Dynatrace、Elastic、Grafana Cloud、Honeycomb、Langfuse、LangSmith、New Relic、PostHog、Respan、Sentry、W&B Weave |
 | 任意 OTLP 端点 | OpenTelemetry Collector（OTLP/HTTP，JSON 或 protobuf，可选 gzip） |
 | 你自己的服务 | Webhook |
 | 对象存储 | Amazon S3 及兼容 S3 的存储、Cloudflare R2、Google Cloud Storage |
-| 数据库和数据仓库 | ClickHouse, Google BigQuery, Snowflake |
+| 数据库和数据仓库 | ClickHouse、Google BigQuery、Snowflake |
 
 每个表单只要求填写该工具所需的信息，例如 API 密钥以及项目或区域。所有 OpenTelemetry 工具接收相同的 span；Phaseo 会为每个供应商填写端点、请求头和编码。
 
+<span id="choose-what-is-sent"></span>
 ## 选择发送的内容
 
 每个目标都有自己的设置：
 
-- **隐私模式**会从每条追踪中移除提示词、输出、系统指令和工具定义。使用从不存储内容的 API 密钥发出的请求，无论此设置如何，都不会连同内容一起转发。
-- **生成元数据**、**成本**、**身份**和**请求上下文**各自开启或关闭一组 span 属性。关闭**请求上下文**还会丢弃请求元数据（见下方“添加你自己的追踪上下文”）。
-- **采样率**发送符合条件的请求中的一定比例，取值从 0 到 1。对于每个请求和目标，这一选择是固定的，因此重试的投递不会以不同方式采样。
+- **隐私模式**会从每条追踪中去掉提示词、输出、系统指令和工具定义。使用从不存储内容的 API 密钥发出的请求，无论此设置如何，都不会连同内容一起转发。
+- **生成元数据**、**成本**、**身份**和**请求上下文**各自开启或关闭一组 span 属性。关闭**请求上下文**还会丢弃[请求元数据](#add-your-own-trace-context)。
+- **采样率**发送符合条件的请求中的一定比例，取值从 0 到 1。对于每个请求和目标，这一选择是固定的，因此重试的投递永远不会以不同方式采样。
 - **API 密钥过滤器**包含或排除使用特定密钥发出的请求。
 - **过滤规则**只发送匹配的请求。规则会比较模型、提供商、用户 ID、结束原因、成本或 token 数量等字段，并可以用**且**和**或**进行分组。**匹配正则表达式**使用线性时间引擎：不支持反向引用和环视，过大的模式会在保存时被拒绝。
 
+<span id="add-your-own-trace-context"></span>
 ## 添加你自己的追踪上下文
 
 在请求体中加入 `metadata` 对象，即可为追踪命名并附加你自己的字段。Phaseo 会为 Broadcast 读取它：
 
 ```json
 {
-  "model": "openai/gpt-5-nano",
+  "model": "openai/gpt-6-astra",
   "messages": [{ "role": "user", "content": "Summarise this ticket" }],
   "metadata": {
     "trace_id": "ticket-48213",
@@ -57,13 +59,15 @@ Broadcast 免费提供。所有者和管理员可以在 **设置 → Broadcast**
 | --- | --- |
 | `trace_id` | 请求所属的追踪。32 个字符的十六进制 ID 或 UUID 会按原样使用；其他字符串会被哈希，因此具有相同值的所有请求都会归入同一条追踪。 |
 | `parent_span_id` | 一个 16 个字符的十六进制 span ID，请求会嵌套在它之下。与 `trace_id` 一起使用。 |
-| `trace_name`, `span_name` | 请求 span 的名称。如果两者都设置，以 `span_name` 为准。 |
+| `trace_name`、`span_name` | 请求 span 的名称。如果两者都设置，以 `span_name` 为准。 |
 | `generation_name` | 每次提供商尝试的 span 名称。 |
 | 其他任意键 | 作为名为 `phaseo.metadata.<key>` 的 span 属性发送。 |
 
 值可以是字符串、数字或布尔值；嵌套对象会被跳过。Phaseo 最多保留 64 个键，每个键最多 64 个字符，值会在 512 个字符处截断。如果存在 W3C `traceparent` 请求头，则由它而不是 `trace_id` 和 `parent_span_id` 决定追踪。
 
 不要在 `metadata` 中放入机密或个人数据：它会被发送到每个开启了**请求上下文**的目标。
+
+[请求标签](./request-labels.mdx)也会被发送，作为名为 `phaseo.label.<key>` 的 span 属性。
 
 ## Webhook 投递
 
@@ -76,7 +80,7 @@ x-phaseo-timestamp: 1792569600
 x-phaseo-signature: 5d2a…e41f
 ```
 
-`x-phaseo-signature` 是以你的密钥为键，对时间戳、一个句点（`.`）和未经修改的请求体计算出的 HMAC-SHA256 的十六进制值。这与通知 webhook 的方案相同，因此你可以复用它们的[验证代码](./workspace-notifications.mdx)。Broadcast 投递没有事件 ID 请求头：请根据请求体中的 span ID 去重。
+`x-phaseo-signature` 是以你的密钥为键，对时间戳、一个句点（`.`）和未经修改的请求体计算出的 HMAC-SHA256 的十六进制值。这与通知 webhook 的方案相同，因此你可以复用它们的[验证代码](./workspace-notifications.mdx#verify-webhook-signatures)。Broadcast 投递没有事件 ID 请求头：请根据请求体中的 span ID 去重。
 
 **测试连接**会发送 `{"resourceSpans": []}`，并带有 `X-Test-Connection: true` 请求头。`400` 响应也视为可访问，因此拒绝空导出的接收方仍然可以通过测试。
 
@@ -92,7 +96,7 @@ x-phaseo-signature: 5d2a…e41f
 | `parent_span_id` | 字符串或 null | 父 span；对于请求的 span 为 null。 |
 | `name` | 字符串 | span 名称。 |
 | `kind` | 字符串 | 请求为 `server`，提供商尝试为 `client`。 |
-| `start_time`, `end_time` | 时间戳 | UTC 的 RFC 3339 格式，精确到微秒。 |
+| `start_time`、`end_time` | 时间戳 | UTC 的 RFC 3339 格式，精确到微秒。 |
 | `duration_ms` | 数字 | 结束时间减去开始时间，单位为毫秒。 |
 | `status_code` | 字符串 | `unset`、`ok` 或 `error`。 |
 | `status_message` | 字符串或 null | 错误消息（如有）。 |
@@ -165,13 +169,6 @@ ALTER USER PHASEO_BROADCAST SET RSA_PUBLIC_KEY = 'MIIBIjANBgkqh...';
 
 因超时、速率限制或服务器错误而失败的投递会按退避策略重试，最多尝试八次。其他错误（例如密钥被拒绝或表不存在）不会重试。
 
-**设置 → Broadcast** 会显示每个目标的健康状态：**正常**、**失败**、**尚无投递**或**已停用**，同时显示最近一次错误以及过去 24 小时内投递成功和失败的请求数。
+**设置 → 事件转发**会显示每个目标的健康状态：**正常**、**失败**、**尚无投递**或**已停用**，同时显示最近一次错误以及过去 24 小时内投递成功和失败的请求数。
 
 如需在目标停止工作时收到通知，请将**广播警报**路由到某个[通知目标](./workspace-notifications.mdx)。当某个目标连续至少五个请求失败，并且 15 分钟内没有成功投递任何内容时，就会发送提醒。每段连续失败期间只发送一次，只有在目标恢复且至少过去六小时后才会再次发送。
-
-## 相关内容
-
-- [可观测性目标 API](../api-reference/endpoint/observability-destinations-list.mdx)
-- [请求标签](./request-labels.mdx)，它们会作为 `phaseo.label.<key>` 属性发送
-- [工作区通知](./workspace-notifications.mdx)
-- [可观测性集成](./integrations/observability.mdx)，用于从你自己的客户端进行追踪

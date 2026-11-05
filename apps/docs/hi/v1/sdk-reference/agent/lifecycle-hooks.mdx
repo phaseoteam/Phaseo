@@ -1,0 +1,166 @@
+---
+icon: "radio-tower"
+title: "लाइफ़साइकल हुक"
+description: "इंटरफ़ेस अपडेट करने, ऑडिट रिकॉर्ड लिखने या टेलीमेट्री भेजने के लिए एजेंट रन के हर बिंदु पर एक इवेंट पाएँ।"
+---
+
+किसी रन या continuation को एक इवेंट handler दें, ताकि रन शुरू होने पर, हर मॉडल टर्न के शुरू और ख़त्म होने पर, हर टूल के चलने पर, रन के रुकने पर और रन के ख़त्म होने पर आपको एक इवेंट मिले। इसका उपयोग अपना इंटरफ़ेस अपडेट करने, ऑडिट रिकॉर्ड लिखने या अपनी मौजूदा टेलीमेट्री में डेटा भेजने के लिए करें।
+
+<CodeGroup>
+
+```typescript TypeScript
+const result = await agent.run({
+  input,
+  client,
+  onEvent(event) {
+    console.log(event.type, event.runId);
+  },
+});
+```
+
+```python Python
+def on_event(event):
+    logger.info("%s %s", event["type"], event["run_id"])
+
+result = agent.run(input="Summarise this ticket", client=client, on_event=on_event)
+```
+
+```go Go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{
+  Input:  prompt,
+  Client: client,
+  OnEvent: func(event phaseoagent.AgentEvent) {
+    logger.Info("agent event",
+      "type", event.Type,
+      "run_id", event.RunID,
+      "details", event.Details,
+    )
+  },
+})
+```
+
+```csharp C#
+var result = await agent.Run(new RunOptions
+{
+    Input = prompt,
+    Client = client,
+    OnEvent = value => logger.LogInformation(
+        "{EventType} {RunId} {Details}", value.Type, value.RunId, value.Details),
+});
+```
+
+```php PHP
+$result = $agent->run(
+    input: $prompt,
+    client: $client,
+    onEvent: function (array $event) use ($logger): void {
+        $logger->info("agent event", $event);
+    }
+);
+```
+
+```ruby Ruby
+result = agent.run(
+  input: prompt,
+  client: client,
+  on_event: ->(event) { logger.info("agent event #{event.inspect}") }
+)
+```
+
+```java Java
+var result = agent.run(new AgentSdk.RunOptions(
+    prompt, client, null, null, null, null, null, null,
+    event -> logger.info("{} {} {}", event.type(), event.runId(), event.details()),
+    null));
+```
+
+```rust Rust
+use phaseo_agent::{AgentEvent, RunOptions};
+
+let mut on_event = |event: &AgentEvent| {
+    println!("{} run={} details={}", event.event_type, event.run_id, event.details);
+};
+
+let result = agent.run_with_events(
+    &mut client,
+    RunOptions::new("Check project health"),
+    Some(&mut on_event),
+)?;
+```
+
+</CodeGroup>
+
+## Handler कहाँ जाता है और उसे क्या मिलता है
+
+| भाषा | Handler | इवेंट का आकार |
+| --- | --- | --- |
+| TypeScript | run और continue विकल्पों पर `onEvent` | `type`, `runId`, `agentId`, `timestamp` वाला object, साथ में camelCase में इवेंट फ़ील्ड (`stepIndex`, `toolCallId`) |
+| Python | `run()`, `stream()` या किसी continuation पर `on_event` | `type`, `run_id`, `agent_id`, `timestamp`, `status` वाली dict, साथ में इवेंट keys |
+| Go | `RunOptions` या `ContinueOptions` पर `OnEvent` | `Type`, `RunID`, `AgentID`, `Timestamp`, `Status`, `Details` वाला `AgentEvent` |
+| C# | `RunOptions` या `ContinueOptions` पर `OnEvent` | `Type`, `RunId`, `AgentId`, `Timestamp`, `Status`, `Details` वाला `AgentEvent` |
+| PHP | `run()` या `continueRun()` पर `onEvent` callable | `type`, `run_id`, `agent_id`, `timestamp`, `status` वाला array, जिसमें इवेंट keys top level पर मिला दी जाती हैं |
+| Ruby | `run` या `continue_run` पर `on_event:` | `:type`, `:run_id`, `:agent_id`, `:timestamp`, `:status` वाला Hash, जिसमें इवेंट keys symbols के रूप में मिला दी जाती हैं |
+| Java | `RunOptions` या `ContinueOptions` के `onEvent` argument के रूप में `Consumer<AgentEvent>` | `type()`, `runId()`, `agentId()`, `timestamp()`, `status()`, `details()` वाला `AgentEvent` |
+| Rust | `run_with_events` या `continue_with_events` को दिया गया callback | `event_type`, `run_id`, `agent_id`, `timestamp_ms`, `details` (JSON) वाला `&AgentEvent` |
+
+## रनटाइम कौन-से इवेंट भेजता है
+
+नीचे विवरण keys snake_case में दी गई हैं; TypeScript camelCase रूप का उपयोग करता है।
+
+| इवेंट | कब | विवरण | भाषाएँ |
+| --- | --- | --- | --- |
+| `run.started` | रन शुरू होता है | कोई नहीं | सभी |
+| `run.resumed` | कोई continuation शुरू होता है | `previous_status` | सभी |
+| `step.started` | कोई मॉडल टर्न शुरू होता है | `step_index` | Rust को छोड़कर सभी |
+| `model.requested` | retries सहित हर मॉडल प्रयास | `step_index`, `attempt`, `model` | Rust को छोड़कर सभी |
+| `model.retrying` | retry से पहले | | TypeScript |
+| `model.completed` | मॉडल ने जवाब दिया | `step_index`, `attempt`, `request_id`, `model` | Rust को छोड़कर सभी |
+| `model.failed` | कोई मॉडल अनुरोध विफल हुआ | | TypeScript |
+| `tool.started` | कोई टूल शुरू होता है | `tool_call_id`, `tool_name` | सभी |
+| `tool.preliminary_result` | टूल ने प्रगति बताई | `tool_call_id`, `tool_name`, `result` | Rust को छोड़कर सभी |
+| `tool.completed` | किसी टूल ने नतीजा लौटाया | `tool_call_id`, `tool_name`, `output` | सभी |
+| `tool.failed` | कोई टूल विफल हुआ (ट्रिगर अलग-अलग है; [इवेंट और त्रुटियाँ](./events-and-errors#which-events-fire-when-something-fails) देखें) | `tool_call_id`, `tool_name`, `error` | Rust को छोड़कर सभी |
+| `step.completed`, `step.failed`, `step.cancelled` | कोई स्टेप ख़त्म होता है | `step_index` | TypeScript |
+| `checkpoint.saved` | कोई स्टेप पूरा हुआ | `step_index` | Rust को छोड़कर सभी |
+| `history.repaired` | किसी continuation ने बिना नतीजे वाली टूल कॉल का जवाब दिया | | TypeScript |
+| `run.waiting_for_human` | रन रुका | `step_index`, `pause` | Rust को छोड़कर सभी |
+| `run.completed` | मॉडल ने अंतिम जवाब दिया | `output` | सभी |
+| `run.stopped` | किसी रोकने की शर्त ने रन ख़त्म किया (TypeScript) या स्टेप सीमा पूरी हुई (Rust) | `stop_reason` (TypeScript), `reason` (Rust) | TypeScript, Rust |
+| `run.cancelled` | रन रद्द किया गया | | TypeScript |
+| `run.failed` | रन विफल हुआ (ट्रिगर अलग-अलग है; [इवेंट और त्रुटियाँ](./events-and-errors#which-events-fire-when-something-fails) देखें) | `error` | Rust को छोड़कर सभी |
+| `response.output_text.delta`, `response.reasoning.delta`, `response.item` और दूसरे `response.*` इवेंट | सिर्फ़ स्ट्रीमिंग रन | | Rust को छोड़कर सभी |
+
+Rust `0.2` कुछ इवेंट के लिए अपने नाम उपयोग करता है:
+
+| Rust इवेंट | समकक्ष | विवरण |
+| --- | --- | --- |
+| `model.request.started` | `step.started` और `model.requested`, हर स्टेप पर एक बार भेजा जाता है, हर प्रयास पर नहीं | `step_index` |
+| `model.response.completed` | `model.completed` | `step_index`, `attempts` |
+| `tool.started`, `tool.completed` | वही इवेंट | `tool_call_id`, `name`; `tool.completed` में `is_error` भी होता है |
+| `run.paused` | `run.waiting_for_human` | कोई नहीं |
+| `run.stopped` | स्टेप सीमा पूरी होने पर भेजा जाता है | `reason` |
+
+जो रन किसी [रोकने की शर्त](./stop-conditions) पर ख़त्म होता है, वह TypeScript में `run.stopped` भेजता है और Python, Go, C#, PHP, Ruby या Java में कोई अंतिम इवेंट नहीं भेजता; इसकी जगह रन का स्टेटस पढ़ें। TypeScript में, `step.completed` स्टेप का चेकपॉइंट बनने के बाद भेजा जाता है, इसलिए persistence और टेलीमेट्री consumers इसे एक स्थिर सीमा मान सकते हैं।
+
+## स्ट्रीम इवेंट
+
+स्ट्रीमिंग के साथ, वही लाइफ़साइकल इवेंट मॉडल के `response.*` इवेंट के साथ-साथ आते हैं। TypeScript, Python, Go, C# और Java में handler उन्हें पाता है; PHP और Ruby में वे `fullStream()` / `full_stream` में भी दिखते हैं। Rust में स्ट्रीमिंग नहीं है। [स्ट्रीमिंग](./streaming) में स्ट्रीम consumers के बारे में बताया गया है।
+
+## Handlers को तेज़ रखें
+
+रनटाइम आगे बढ़ने से पहले handler का इंतज़ार करता है, इसलिए जल्दी लौटें और धीमे स्टोरेज या नेटवर्क काम को किसी queue पर भेजें। इवेंट आपके प्रोसेस से बाहर जाने से पहले संवेदनशील टूल इनपुट और आउटपुट redact करें।
+
+| भाषा | Handler कैसे चलता है |
+| --- | --- |
+| TypeScript | रन आगे बढ़ने से पहले await किया जाता है |
+| Python | synchronous रूप से कॉल किया जाता है |
+| Go | Inline; समवर्ती टूल इसे कई goroutines से कॉल करते हैं, इसलिए इसे समवर्ती उपयोग के लिए सुरक्षित बनाएँ |
+| C# | Inline; समवर्ती टूल इसे कई tasks से कॉल करते हैं, इसलिए इसे thread-safe बनाएँ |
+| PHP | Inline |
+| Ruby | Inline; समवर्ती टूल इसे अपने थ्रेड से कॉल करते हैं, इसलिए इसे thread-safe बनाएँ |
+| Java | Inline; समवर्ती टूल इसे पूल थ्रेड से कॉल करते हैं, इसलिए इसे thread-safe बनाएँ |
+| Rust | रन के थ्रेड पर |
+
+## प्रोडक्ट इंटरफ़ेस के लिए इवेंट चुनें
+
+लाइव जवाब टेक्स्ट के लिए `response.output_text.delta`, टूल-कॉल कार्ड और प्रगति संकेतकों के लिए टूल इवेंट, अनुमोदन या इनपुट controls दिखाने के लिए `run.waiting_for_human` (Rust: `run.paused`), और लोडिंग स्टेट बंद करने के लिए अंतिम रन इवेंट का उपयोग करें। डेवलपमेंट के दौरान पूरे रन के स्थानीय रिकॉर्ड के लिए [DevTools](./devtools) का उपयोग करें।

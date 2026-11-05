@@ -6,24 +6,28 @@ icon: "life-buoy"
 
 ## API キーはどこで取得できますか？
 
-[Phaseo CLI](../guides/integrations/phaseo-cli) の `phaseo keys create`、`POST /v1/keys`、または Phaseo ダッシュボードでキーを作成します。[認証](../developers/authentication.mdx)もご覧ください。
+[Phaseo CLI](../guides/integrations/phaseo-cli) で `phaseo keys create` を実行するか、`POST /v1/keys` を呼び出すか、[ダッシュボード](https://phaseo.app/settings/keys)で **設定 -> APIキー** を開きます。[認証](../developers/authentication)をご覧ください。
 
 ## 使用するベース URL は何ですか？
 
-Gateway のベース URL には `https://api.phaseo.app/v1` を使用してください。
+`https://api.phaseo.app/v1` です。キーは `Authorization: Bearer $PHASEO_API_KEY` として送信します。
 
 ## 最初に使うエンドポイントはどれですか？
 
-ほとんどのテキスト処理には `/responses` を使用してください。互換性のため、`/chat/completions` と `/messages` も利用できます。
+ほとんどのテキスト処理には `POST /v1/responses` を使います。`/v1/chat/completions` と `/v1/messages` は既存の連携の形式を受け付けます。最初のリクエストは[クイックスタート](../quickstart)で送れます。
+
+## 支払いなしで Phaseo を試せますか？
+
+はい。`"model": "phaseo/free"` を送ると、クレジットなしで利用可能な無料モデルを使えます。無料モデルは、ユーザーごとに UTC の 1 日あたり 1,500 リクエストまで利用できます。[プラン](../exploring/subscription-plans)をご覧ください。
 
 ## 対応モデルを確認するにはどうすればよいですか？
 
-最新の一覧は [Models エンドポイント](../api-reference/endpoint/models.mdx)で確認できます。
+[`GET /v1/models`](../api-reference/endpoint/models.mdx) を呼び出します。現在呼び出せるモデルが返されます。カタログのみのモデルも含めるには `availability=all` を追加してください。
 
 ## BYOK はどのように機能しますか？
 
-Bring Your Own Key（BYOK）を使うと、Phaseo のルーティングと可観測性を利用しながら、モデルの利用料金をプロバイダーに直接支払えます。UTC の各月に完了した最初の 250,000 件のリクエストには Phaseo のサービス手数料がかかりません。それ以降は、プロバイダー相当額の 2.5% を Phaseo が請求します。[ルーティングとフォールバック](../guides/routing-and-fallbacks.mdx#byok-considerations)をご覧ください。
+Bring Your Own Key（BYOK）では、Phaseo がリクエストをルーティングしてログに記録し、モデルの利用料金はプロバイダーが請求します。ワークスペースごとに UTC の各月に完了した最初の 250,000 件の BYOK リクエストには Phaseo のサービス手数料がかかりません。それ以降は、プロバイダー換算コストの 2.5% を Phaseo が請求します。[BYOK に関する注意点](../guides/routing-and-fallbacks#byok-considerations)をご覧ください。
 
 ## サポートを受けるにはどこに問い合わせればよいですか？
 
-問い合わせ窓口は[お問い合わせとサポート](./contact-and-support.mdx)をご覧ください。
+[お問い合わせとサポート](./contact-and-support)をご覧ください。

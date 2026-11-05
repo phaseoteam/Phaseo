@@ -13,9 +13,9 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">उत्पाद</p>
 
-- **सेटिंग्स -> रूटिंग -> सेवानिवृत्त मॉडल रूटिंग** में **आपके प्रभावित मॉडल** दिखते हैं: आपके वर्कस्पेस ने पिछले 90 दिनों में जो भी मॉडल इस्तेमाल किया और जो सेवानिवृत्त हो रहा है या अब सर्व नहीं होता, उसका विकल्प, कीमत की तुलना, और उसके अनुरोध रीडायरेक्ट होते हैं या नहीं, और नहीं तो क्यों। **प्रतिस्थापन चुनें** से आप किसी मॉडल का अपना विकल्प तय करते हैं; देखें [मॉडल का अप्रचलन और सेवानिवृत्ति](../guides/model-retirement.mdx#see-which-of-your-models-are-affected) ([#3357](https://github.com/phaseoteam/Phaseo/pull/3357))।
+- **सेटिंग्स -> रूटिंग -> सेवानिवृत्त मॉडल रूटिंग** में वे सेवानिवृत्त हो रहे मॉडल दिखते हैं जिन्हें आपके वर्कस्पेस ने पिछले 90 दिनों में इस्तेमाल किया, और **प्रतिस्थापन चुनें** से आप अपना विकल्प तय करते हैं; देखें [मॉडल का अप्रचलन और सेवानिवृत्ति](../guides/model-retirement.mdx#see-which-of-your-models-are-affected) ([#3357](https://github.com/phaseoteam/Phaseo/pull/3357))।
 
-- [सेवा की शर्तें](https://phaseo.app/terms) अब उपयोगकर्ताओं की आयु 18 वर्ष या उससे अधिक होना ज़रूरी करती हैं और बाल यौन शोषण सामग्री को प्रतिबंधित करती हैं; [गोपनीयता नीति](https://phaseo.app/privacy) बताती है कि हम इसका पता कैसे लगाते हैं, इसे कैसे सुरक्षित रखते हैं और इसकी रिपोर्ट कैसे करते हैं ([#3388](https://github.com/phaseoteam/Phaseo/pull/3388))।
+- [सेवा की शर्तें](https://phaseo.app/terms) अब उपयोगकर्ताओं की आयु 18 वर्ष या उससे अधिक होना ज़रूरी करती हैं और बाल यौन शोषण सामग्री को प्रतिबंधित करती हैं; [गोपनीयता नीति](https://phaseo.app/privacy) बताती है कि Phaseo इसका पता कैसे लगाता है, इसे कैसे सुरक्षित रखता है और इसकी रिपोर्ट कैसे करता है ([#3388](https://github.com/phaseoteam/Phaseo/pull/3388))।
 
 </div>
 
@@ -111,7 +111,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">उत्पाद</p>
 
 - हर वर्कस्पेस सेवानिवृत्त मॉडल रूटिंग इस्तेमाल कर सकता है: मालिक और एडमिन इसे **सेटिंग्स -> रूटिंग -> सेवानिवृत्त मॉडल रूटिंग** में चालू करते हैं, और अनुरोध स्वीकृत विकल्प पर जाते हैं; देखें [मॉडल का अप्रचलन और सेवानिवृत्ति](../guides/model-retirement.mdx) ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#2896](https://github.com/phaseoteam/Phaseo/pull/2896))।
-- सेवानिवृत्त मॉडल रूटिंग केवल ऐसा स्वीकृत विकल्प इस्तेमाल करती है जो सेवानिवृत्त मॉडल से महँगा न हो, जब तक मालिक और एडमिन ज़्यादा कीमत की अनुमति न दें; उनका खुद चुना हुआ विकल्प कीमत की परवाह किए बिना इस्तेमाल होता है ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211))।
+- सेवानिवृत्त मॉडल रूटिंग ऐसे स्वीकृत विकल्प को छोड़ देती है जो सेवानिवृत्त मॉडल से महँगा हो, जब तक मालिक और एडमिन इसकी अनुमति न दें; उनके चुने हुए विकल्प किसी भी कीमत पर लागू होते हैं ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211))।
 - पूरा मॉडल कैटलॉग लोड न होने पर भी प्रीसेट सूची और एडिटर खुलते हैं; पहले पेज पर त्रुटि दिखती थी ([#3221](https://github.com/phaseoteam/Phaseo/pull/3221))।
 
 </div>
@@ -349,7 +349,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">API और SDK</p>
 
-- SDK डॉक्स में Java SDK जुड़ा है, जिसे सोर्स से इंस्टॉल किया जाता है; देखें [Java SDK — इंस्टॉलेशन](../sdk-reference/java/installation.mdx) ([#2904](https://github.com/phaseoteam/Phaseo/pull/2904))।
+- SDK डॉक्स में Java SDK जुड़ा है, जिसे सोर्स से इंस्टॉल किया जाता है; देखें [Java SDK — इंस्टॉलेशन](../sdk-reference/client/installation.mdx) ([#2904](https://github.com/phaseoteam/Phaseo/pull/2904))।
 
 </div>
 

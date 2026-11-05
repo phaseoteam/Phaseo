@@ -1,0 +1,67 @@
+---
+title: "OpenClaw"
+icon: "/icons/brands/openclaw.svg"
+description: "Registra Phaseo como proveedor de modelos en OpenClaw, con la clave leída desde la CLI de Phaseo."
+---
+
+Ejecuta `phaseo openclaw` para registrar en OpenClaw un proveedor de modelos `phaseo` con todos los modelos compatibles de Phaseo, o añade tú el proveedor con `openclaw config set`.
+
+## Configura con la CLI de Phaseo
+
+```bash
+phaseo login
+phaseo openclaw --model openai/gpt-6-astra
+```
+
+Si falta OpenClaw, la CLI muestra el comando de instalación (`npm install -g openclaw@latest`, o el mismo paquete con pnpm, Yarn o Bun) y pide confirmación antes de ejecutarlo. Después, la configuración ejecuta `openclaw config set` dos veces:
+
+- **`secrets.providers.phaseo_cli`**: un proveedor de secretos de tipo exec que ejecuta `phaseo integrations credential openclaw` para leer la clave. La clave nunca se escribe en la configuración de OpenClaw.
+- **`models.providers.phaseo`**: un proveedor con la URL base `https://api.phaseo.app/v1`, el tipo de API `openai-completions` y la clave tomada de `phaseo_cli`. Incluye todos los modelos de texto activos de Phaseo que funcionan con Chat Completions, con el valor de `--model` en primer lugar (`anthropic/claude-sonnet-4.6` si no lo indicas).
+
+La clave es una `Phaseo CLI: OpenClaw API Key` que caduca a los 90 días y tiene un límite de gasto mensual de $100. Cuando OpenClaw pide la clave a la CLI después de que haya caducado, la CLI crea una nueva.
+
+La configuración no cambia el modelo predeterminado de OpenClaw. Selecciona el modelo de Phaseo con `openclaw models set` cuando quieras. Usa `--catalog default` para registrar solo el modelo seleccionado.
+
+## Configura OpenClaw manualmente
+
+Registra un proveedor de secretos que muestre tu clave y después el proveedor de modelos de Phaseo:
+
+```bash
+openclaw config set secrets.providers.phaseo_cli \
+  '{"source":"exec","command":"phaseo","args":["integrations","credential","openclaw"],"jsonOnly":false}' \
+  --strict-json
+
+openclaw config set models.providers.phaseo '{
+  "baseUrl": "https://api.phaseo.app/v1",
+  "apiKey": { "source": "exec", "provider": "phaseo_cli", "id": "value" },
+  "api": "openai-completions",
+  "models": [
+    { "id": "openai/gpt-6-astra", "name": "openai/gpt-6-astra via Phaseo", "reasoning": false, "input": ["text"] }
+  ]
+}' --strict-json
+```
+
+Cada entrada de `models` lleva un `id` (el ID del modelo en Phaseo), un `name`, `reasoning`, `input` (`text`, `image`) y un `contextWindow` opcional. Añade una entrada por cada modelo de Phaseo que quieras que muestre OpenClaw.
+
+## Comprueba que funciona
+
+Ejecuta `openclaw config get models.providers.phaseo --json` para confirmar que el proveedor está registrado. Selecciona un modelo de Phaseo con `openclaw models set` y envía un prompt corto. Confirma que la solicitud aparece en **Ajustes → Uso → Registros**.
+
+## Quita Phaseo
+
+```bash
+phaseo integrations remove openclaw
+```
+
+Esto elimina `models.providers.phaseo` y `secrets.providers.phaseo_cli`, y después revoca la clave. El resto de tus ajustes de OpenClaw se mantiene. Reinicia el gateway de OpenClaw si está en ejecución.
+
+## Soluciona problemas habituales
+
+| Problema | Solución |
+| --- | --- |
+| `OpenClaw already defines models.providers.phaseo` | La configuración no sobrescribe un proveedor `phaseo` existente. Quítalo o cámbiale el nombre, o ejecuta `phaseo integrations remove openclaw`, y vuelve a configurar. |
+| Las solicitudes fallan después de mover o reinstalar la CLI de Phaseo o Node.js | La configuración guarda las rutas exactas de Node.js y de la CLI en `secrets.providers.phaseo_cli`. Ejecuta `phaseo integrations remove openclaw` y después vuelve a ejecutar `phaseo openclaw`. |
+| `OpenClaw is not installed or is not on PATH` | Instala OpenClaw o añádelo a `PATH`, y vuelve a ejecutar la configuración. |
+| Se rechaza un modelo | Comprueba el ID exacto con el [endpoint de modelos](../../api-reference/endpoint/models.mdx). |
+
+Para otros agentes y los valores del proveedor que necesita cualquier agente, consulta [Agentes de programación](./coding-assistants.mdx).

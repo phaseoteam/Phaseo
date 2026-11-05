@@ -1,28 +1,27 @@
 ---
 icon: "audio-lines"
-title: "टेक्स्ट-टू-स्पीच / स्पीच-टू-टेक्स्ट (AI SDK)"
-description: "Phaseo प्रदाता के मॉडल से स्पीच-टू-टेक्स्ट (STT) और टेक्स्ट-टू-स्पीच (TTS)।"
+title: "TTS / STT (AI SDK)"
+sidebarTitle: "TTS / STT"
+description: "Phaseo प्रदाता मॉडल के साथ स्पीच-टू-टेक्स्ट (STT) और टेक्स्ट-टू-स्पीच (TTS)।"
 ---
 
-`transcriptionModel` के साथ `experimental_transcribe` और `speechModel` के साथ `experimental_generateSpeech` उपयोग करें।
+स्पीच से टेक्स्ट के लिए `transcribe` में `phaseo.transcriptionModel(modelId)` पास करें, और टेक्स्ट से स्पीच के लिए `generateSpeech` में `phaseo.speechModel(modelId)` पास करें। प्रदाता ऑडियो को multipart form के रूप में `/v1/audio/transcriptions` पर अपलोड करता है और स्पीच अनुरोध `/v1/audio/speech` पर भेजता है।
 
 ```ts
 import { readFileSync, writeFileSync } from "node:fs";
 import { phaseo } from "@phaseo/ai-sdk-provider";
-import { experimental_generateSpeech, experimental_transcribe } from "ai";
+import { generateSpeech, transcribe } from "ai";
 
-const audioInput = readFileSync("./audio.mp3");
-
-const transcription = await experimental_transcribe({
+const transcription = await transcribe({
   model: phaseo.transcriptionModel("openai/whisper-1"),
-  audioData: new Blob([audioInput], { type: "audio/mpeg" }),
+  audio: readFileSync("./audio.mp3"),
 });
 
 console.log(transcription.text);
 console.log(transcription.providerMetadata);
 
-const speech = await experimental_generateSpeech({
-  model: phaseo.speechModel("openai/tts-1"),
+const speech = await generateSpeech({
+  model: phaseo.speechModel("openai/gpt-4o-mini-tts"),
   text: "Hello from Phaseo audio.",
   voice: "alloy",
   outputFormat: "mp3",
@@ -32,9 +31,10 @@ writeFileSync("./speech.mp3", Buffer.from(speech.audio.uint8Array));
 console.log(speech.providerMetadata);
 ```
 
-## नोट्स
+`audio` एक `Buffer`, `Uint8Array`, `ArrayBuffer`, base64 string या `URL` लेता है। AI SDK 7 पुराने `experimental_transcribe` और `experimental_generateSpeech` नाम अब भी aliases के रूप में export करता है।
 
-- AI SDK के मौजूदा ऑडियो हेल्पर अभी प्रायोगिक हैं, इसलिए अपस्ट्रीम में स्थिर API आने पर इनके नाम बदलने की उम्मीद रखें।
-- ऑडियो इनपुट/आउटपुट फ़ॉर्मैट मॉडल के अनुसार अलग होते हैं।
-- लंबी फ़ाइलों के लिए पेलोड का आकार और टाइमआउट सेटिंग्स उपयुक्त रखें।
-- अस्थायी 429/5xx प्रतिक्रियाओं के लिए पुनः प्रयास का लॉजिक चलाएँ।
+## लंबे या विफल हो रहे ऑडियो को संभालें
+
+- समर्थित इनपुट और आउटपुट फ़ॉर्मैट मॉडल पर निर्भर करते हैं।
+- लंबी फ़ाइलों के लिए timeouts बढ़ाएँ, और अपलोड को मॉडल की आकार सीमा के भीतर रखें (ज़्यादातर मॉडल के लिए 25 MB)।
+- अस्थायी `429` और `5xx` प्रतिक्रियाओं पर backoff के साथ रीट्राई करें।

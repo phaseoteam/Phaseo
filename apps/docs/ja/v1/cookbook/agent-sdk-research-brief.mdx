@@ -1,87 +1,71 @@
 ---
-title: "構造化出力と Web 検索を使った調査"
+title: "構造化出力とウェブ検索でリサーチする"
+sidebarTitle: "ウェブ検索でリサーチブリーフを作る"
 icon: "telescope"
-description: "Web 検索を利用し、Agent SDK を通じて厳密な JSON を返す TypeScript エージェントを作成します。"
+description: "Agent SDK を使い、ウェブ検索に基づいて厳密な JSON を返す TypeScript エージェントを作成します。"
 ---
 
-次のようなエージェントワークフローには、このレシピを使います。
+回答する前に Phaseo 経由でウェブを検索し、情報源付きのリサーチブリーフを厳密な JSON で返す TypeScript エージェントを作成します。完成すると、指定した任意のトピックについて検証済みの `{ topic, summary, sources }` オブジェクトを出力するスクリプトが 1 つできます。
 
-- TypeScript Agent SDK を使って実行する
-- 管理された Web 検索を利用する
-- 厳密に構造化された JSON を返す
-- ほぼ有効な不正 JSON を決定的に復元する
+このスクリプトは 1 回だけのリサーチであれば本番環境でそのまま使えます。検索結果は信頼できないウェブコンテンツです。以下のスキーマチェックで不正な形式の出力は止められますが、情報源に基づいて行動する前に内容を確認してください。パッケージ化した版は `packages/sdk/agent-sdk-ts/examples/research-brief-agent.ts` にあります。
 
-## 1. SDK をインストールする
+## 作成する
+
+<Steps>
+<Step title="インストールする">
 
 <CodeGroup>
 ```bash npm
-npm install @phaseo/sdk @phaseo/agent-sdk
+npm install @phaseo/agent-sdk zod
 ```
 
 ```bash pnpm
-pnpm add @phaseo/sdk @phaseo/agent-sdk
+pnpm add @phaseo/agent-sdk zod
 ```
 
 ```bash yarn
-yarn add @phaseo/sdk @phaseo/agent-sdk
+yarn add @phaseo/agent-sdk zod
 ```
 
 ```bash bun
-bun add @phaseo/sdk @phaseo/agent-sdk
+bun add @phaseo/agent-sdk zod
 ```
 </CodeGroup>
 
-## 2. 範囲を限定した出力契約を定義する
-
-最初の調査結果を小さく保つと、運用担当者がログで確認しやすくなります。
-
-```ts
-type ResearchBrief = {
-  topic: string;
-  summary: string;
-  sources: Array<{
-    title: string;
-    url: string;
-  }>;
-};
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
 ```
 
-## 3. エージェントを作成する
+</Step>
+<Step title="エージェントを書く">
 
-`parseOutput` を使うと、ランタイムから生のテキストではなく型付きデータが返ります。
+```ts research-agent.ts
+import { z } from "zod";
+import { createAgent, createGatewayAgentClient } from "@phaseo/agent-sdk";
 
-```ts
-import { createAgent } from "@phaseo/agent-sdk";
+// ログの 1 行で読めるくらいの小ささにします。
+const ResearchBrief = z
+  .object({
+    topic: z.string(),
+    summary: z.string().min(1),
+    sources: z.array(z.object({ title: z.string(), url: z.string().url() }).strict()).min(1),
+  })
+  .strict();
+type ResearchBrief = z.infer<typeof ResearchBrief>;
 
-export const researchBriefAgent = createAgent<string, ResearchBrief>({
+const researchBriefAgent = createAgent<string, ResearchBrief>({
   id: "research-brief-agent",
-  model: "phaseo/free",
+  model: "openai/gpt-6-astra",
   instructions:
-    "Research the user's topic with web search when needed and return a concise JSON brief with cited sources.",
-  parseOutput(text) {
-    return JSON.parse(text) as ResearchBrief;
-  },
+    "Research the user's topic with web search and return a concise JSON brief with cited sources.",
+  maxSteps: 4,
+  parseOutput: (text) => JSON.parse(text),
+  outputSchema: ResearchBrief,
 });
-```
-
-## 4. Gateway アダプターを一度だけ設定する
-
-重要なポイント:
-
-- `responseFormat` で出力スキーマを明示する
-- `plugins` でほぼ有効な JSON の修復を有効にする
-- `gatewayTools` で管理された Web 検索をモデルに公開する
-- ワークフローで常に情報源が必要な場合、`toolChoice` で検索ツールを必須にする
-
-```ts
-import {
-  createGatewayAgentClient,
-} from "@phaseo/agent-sdk";
 
 const client = createGatewayAgentClient({
-  clientOptions: {
-    apiKey: process.env.PHASEO_API_KEY!,
-  },
+  clientOptions: { apiKey: process.env.PHASEO_API_KEY! },
+  // Gateway がモデルに要求する JSON Schema です。
   responseFormat: {
     type: "json_schema",
     name: "research_brief",
@@ -94,10 +78,7 @@ const client = createGatewayAgentClient({
           type: "array",
           items: {
             type: "object",
-            properties: {
-              title: { type: "string" },
-              url: { type: "string" },
-            },
+            properties: { title: { type: "string" }, url: { type: "string" } },
             required: ["title", "url"],
             additionalProperties: false,
           },
@@ -108,18 +89,15 @@ const client = createGatewayAgentClient({
       additionalProperties: false,
     },
   },
+  // ほぼ正しい JSON を修復します。
   plugins: [{ id: "response-healing" }],
-  gatewayTools: [
-    { type: "phaseo:web_search", parameters: { max_results: 5 } },
-  ],
+  // 検索は Phaseo が実行し、クエリはモデルが書きます。
+  gatewayTools: [{ type: "phaseo:web_search", parameters: { max_results: 5 } }],
+  // 回答する前に必ず検索します。
   toolChoice: "phaseo:web_search",
   webSearchOptions: { search_context_size: "high" },
 });
-```
 
-## 5. ワークフローを実行する
-
-```ts
 const result = await researchBriefAgent.run({
   input: "Summarize the latest browser automation support patterns for coding agents.",
   client,
@@ -131,33 +109,34 @@ const result = await researchBriefAgent.run({
 console.log(result.output);
 ```
 
-## 6. ログで確認する内容
+| クライアントオプション | 役割 |
+| --- | --- |
+| `responseFormat` | 出力スキーマを明示的に保ちます |
+| `plugins` | ほぼ正しい JSON のための[レスポンス修復](./response-healing-for-structured-json) |
+| `gatewayTools` | `phaseo:web_search` を追加します。パラメーターは[ウェブ検索ガイド](../guides/server-tools/web-search)に記載されています |
+| `toolChoice` | 常に根拠に基づく必要があるワークフローで、検索を強制します |
+| `webSearchOptions` | 結果の量を調整する検索エンジン向けの検索設定 |
 
-実行が成功したら、リクエスト詳細を開いて次の点を確認します。
+</Step>
+<Step title="実行する">
 
-- `requested native web search tools`、または管理された検索の実行履歴が表示される
-- 検索結果と引用が保存されている
-- 修復が必要だった場合に限り、プラグイン実行に `response-healing` が表示される
-- 最終出力が要求した JSON Schema に一致する
+```bash
+npx tsx research-agent.ts
+```
 
-## 7. このパターンを使う場面
+</Step>
+</Steps>
 
-次のような場合に使います。
+## 動作を確認する
 
-- ローカルツールを深く連携させるより、1回の調査が中心である
-- モデルが回答前に情報源を参照する必要がある
-- 後続の呼び出し元が文章ではなく型付き JSON を必要とする
+スクリプトは、少なくとも 1 つの情報源 URL を含むブリーフを出力します。次に **設定 → 利用状況 → ログ** でリクエストを開き、以下を確認します。
 
-次のような場合は使わないでください。
+- **ウェブ検索の可観測性** に、マネージド検索、結果、引用が表示されます。
+- プラグイン記録では、JSON の修復が必要だった場合にだけ `response-healing` が `applied` と表示されます。
+- レスポンスはスキーマに一致しています。一致しない場合、実行は `AgentSchemaValidationError` で失敗します。
 
-- 使用する URL がすでに決まっていて、`phaseo:web_fetch` で十分である
-- プロバイダー側のツールより、高度なローカルツールが必要である
-- 出力契約が柔軟で、厳密な JSON による複雑さが利点を上回る
+検索が実行されなかった場合については、[ウェブ検索をデバッグする](./web-search-debugging)で説明しています。
 
-## 関連ガイド
+## 別の方法を使う場合
 
-- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
-- [構造化出力](../guides/structured-outputs.mdx)
-- [構造化出力を検証する](../guides/structured-outputs.mdx)
-- [Web 検索リクエストをデバッグする](./web-search-debugging.mdx)
-- [不正な構造化 JSON を復元する](./response-healing-for-structured-json.mdx)
+このパターンは、モデルが自ら根拠を集め、呼び出し側が型付きの JSON を必要とする 1 回だけのリサーチに適しています。URL がすでにわかっている場合は [`phaseo:web_fetch`](./tool-grounding-with-web-fetch) を、ウェブよりも自社のデータが必要な場合は[ローカルツールのエージェント](./agent-sdk-durable-loop)を使ってください。契約が緩く、スキーマを使うと省ける手間よりも増える手間のほうが大きい場合は、プレーンテキストの出力を使ってください。

@@ -1,23 +1,24 @@
 ---
 icon: "blocks"
 title: "Tool-Aufrufe (AI SDK)"
+sidebarTitle: "Tool-Aufrufe"
 description: "Funktions- und Tool-Aufrufe mit Vercel AI SDK und dem Phaseo-Provider."
 ---
 
-Verwende `tools` in `generateText`, um Funktionen mit typisierten Parametern auszuführen.
+Definiere Tools mit dem Helfer `tool()` des AI SDK, übergib sie an `generateText` und setze `stopWhen`, damit das Modell nach der Tool-Ausführung antworten kann.
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
-import { generateText } from "ai";
+import { generateText, stepCountIs, tool } from "ai";
 import { z } from "zod";
 
 const result = await generateText({
-  model: phaseo("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-6-astra"),
   prompt: "What is 17 + 25? Use the calculator tool.",
   tools: {
-    calculator: {
+    calculator: tool({
       description: "Perform basic arithmetic",
-      parameters: z.object({
+      inputSchema: z.object({
         operation: z.enum(["add", "subtract", "multiply", "divide"]),
         a: z.number(),
         b: z.number(),
@@ -28,15 +29,18 @@ const result = await generateText({
         if (operation === "multiply") return a * b;
         return a / b;
       },
-    },
+    }),
   },
+  stopWhen: stepCountIs(2),
 });
 
 console.log(result.text);
 ```
 
-## Hinweise
+Standardmäßig hört `generateText` nach einem Schritt auf. Ist dieser Schritt ein Tool-Aufruf, ist `result.text` leer und das Ergebnis des Tools steht in `result.toolResults`. `stepCountIs(2)` gibt dem Modell einen zweiten Schritt, um mit dem Ergebnis zu antworten.
 
-- Halte Tool-Beschreibungen präzise und Parameter streng.
-- Validiere externe Seiteneffekte innerhalb von `execute`.
-- Ergänze bei nachgelagerten Tool-APIs bei Bedarf Wiederholungen mit exponentiellem Backoff.
+## Sichere Tools schreiben
+
+- Halte Beschreibungen präzise und Eingabeschemas streng; das Modell füllt die Argumente aus.
+- Behandle Argumente als nicht vertrauenswürdige Eingabe. Prüfe sie in `execute`, bevor Nebenwirkungen ausgelöst werden.
+- Baue in `execute` Wiederholungen mit Backoff für nachgelagerte APIs ein, die vorübergehend ausfallen.

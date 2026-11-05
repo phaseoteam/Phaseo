@@ -1,0 +1,157 @@
+---
+icon: "image"
+title: "图片生成"
+description: "在任意 Phaseo SDK 中调用 /images/generations 生成图片。"
+---
+
+用模型和提示调用 SDK 的图片方法，即可发送 `POST /v1/images/generations`。每张生成的图片会作为 `data` 中的一个 `url` 或 `b64_json` 条目返回。
+
+<CodeGroup>
+
+```typescript TypeScript
+const image = await client.generateImage({
+  model: "openai/gpt-image-1",
+  prompt: "A lighthouse at golden hour",
+  size: "1024x1024",
+  n: 1,
+});
+```
+
+```python Python
+image = client.generate_image({
+    "model": "openai/gpt-image-1",
+    "prompt": "A lighthouse at golden hour",
+    "size": "1024x1024",
+    "n": 1,
+})
+```
+
+```go Go
+client, err := phaseo.NewFromEnv()
+if err != nil {
+  panic(err)
+}
+
+resp, err := client.CreateImage(context.Background(), map[string]interface{}{
+  "model":  "openai/gpt-image-1",
+  "prompt": "A lighthouse at golden hour",
+  "size":   "1024x1024",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp["data"])
+```
+
+```csharp C#
+using PhaseoSdk;
+
+var client = new Phaseo();
+
+var response = await client.GenerateImage(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-image-1",
+    ["prompt"] = "A lighthouse at golden hour",
+    ["size"] = "1024x1024",
+    ["n"] = 1,
+});
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo();
+
+$response = $client->generateImage([
+    'model' => 'openai/gpt-image-1',
+    'prompt' => 'A lighthouse at golden hour',
+    'size' => '1024x1024',
+    'n' => 1,
+]);
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new
+
+response = client.generate_image(
+  model: 'openai/gpt-image-1',
+  prompt: 'A lighthouse at golden hour',
+  size: '1024x1024',
+  n: 1
+)
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+var response = client.createImage(Map.of(
+    "model", "openai/gpt-image-1",
+    "prompt", "A lighthouse at golden hour"
+));
+System.out.println(response);
+```
+
+```rust Rust
+let response = client.post("/images/generations", &json!({
+    "model": "openai/gpt-image-1",
+    "prompt": "A lighthouse at golden hour",
+    "size": "1024x1024"
+}))?;
+```
+
+</CodeGroup>
+
+| 语言 | 方法 | 说明 |
+| --- | --- | --- |
+| TypeScript | `client.generateImage(request)` | `client.streamImage()` 以 `stream: true` 发送同样的请求，并产出部分图片事件。 |
+| Python | `client.generate_image(request)` | `client.images.generate(request)` 的作用相同。没有图片流式输出辅助方法。 |
+| Go | `client.CreateImage(ctx, req)` | 返回 `map[string]interface{}`。 |
+| C# | `client.GenerateImage(request)`，别名 `CreateImage` | 返回 `Dictionary<string, object>?`。 |
+| PHP | `$client->generateImage($request)`，别名 `createImage()` | 返回数组。 |
+| Ruby | `client.generate_image(...)`，别名 `create_image` | 返回 Hash。 |
+| Java | `client.createImage(request)` | 接受 `Map` 或 Jackson `JsonNode`；返回 `JsonNode`。 |
+| Rust | 没有图片辅助方法 | `client.post("/images/generations", &request)` 发送 JSON 正文并返回 `PhaseoResponse`。 |
+
+## 参数
+
+在每个 SDK 中，字段名都是 JSON 正文字段。
+
+| 字段 | 说明 |
+| --- | --- |
+| `model`、`prompt` | 必填。GPT Image 的提示最多 32,000 个字符。 |
+| `n` | 图片数量，`1` 到 `10`。 |
+| `size` | 例如 `1024x1024`、`1024x1792` 或 `1792x1024`；支持的尺寸取决于模型。 |
+| `aspect_ratio`、`width`、`height` | 取决于模型，可替代 `size`。 |
+| `quality` | 取决于模型：`dall-e-3` 上为 `standard` 或 `hd`；GPT Image 模型上为 `auto`、`low`、`medium` 或 `high`。 |
+| `output_format`、`output_compression` | `png`、`jpeg` 或 `webp`；压缩（`0` 到 `100`）需要 `jpeg` 或 `webp`。 |
+| `background` | `transparent`、`opaque` 或 `auto`。透明背景需要 `png` 或 `webp`。 |
+| `response_format` | `url` 或 `b64_json`。GPT Image 模型会拒绝此字段。 |
+| `style` | 取决于模型，例如 `dall-e-3` 上的 `vivid` 或 `natural`。GPT Image 模型会拒绝此字段。 |
+| `stream`、`partial_images` | 最多流式返回 `3` 张部分图片，在 TypeScript 中使用 `streamImage()`。 |
+| `user` | 用于滥用追踪的终端用户标签。 |
+
+完整的 schema 见[图片生成 API 参考](../../api-reference/endpoint/images-generations)。
+
+## 响应
+
+`ImagesGenerationResponse`：
+
+```json
+{
+  "data": [
+    {
+      "url": "https://example.com/generated_image.png"
+    }
+  ]
+}
+```
+
+返回图片字节的模型会把它们放在 `b64_json` 中，而不是 `url`。

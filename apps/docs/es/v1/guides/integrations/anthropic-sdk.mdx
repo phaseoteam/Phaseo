@@ -4,15 +4,27 @@ icon: "message-square"
 description: "Usa clientes compatibles con Anthropic junto con Phaseo."
 ---
 
-Usa la API compatible con Anthropic cuando tu aplicación, agente o herramienta de programación espere solicitudes `/v1/messages` al estilo de Claude.
+Dirige el SDK de Anthropic a `https://api.phaseo.app` y pasa tu clave de Phaseo como token de autenticación. Úsalo con aplicaciones, agentes y herramientas de programación que envían solicitudes `/v1/messages` al estilo de Claude; Phaseo las atiende como [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx).
 
-## TypeScript
+## Instalar
 
-```bash
+<CodeGroup>
+
+```bash TypeScript
 npm install @anthropic-ai/sdk
 ```
 
-```ts
+```bash Python
+pip install anthropic
+```
+
+</CodeGroup>
+
+## Dirigir el cliente a Phaseo
+
+<CodeGroup>
+
+```ts TypeScript
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
@@ -22,7 +34,7 @@ const client = new Anthropic({
 });
 
 const message = await client.messages.create({
-	model: "anthropic/claude-sonnet-4.5",
+	model: "anthropic/claude-sonnet-5.5",
 	max_tokens: 512,
 	messages: [{ role: "user", content: "Reply with only: ok" }],
 });
@@ -30,13 +42,7 @@ const message = await client.messages.create({
 console.log(message.content);
 ```
 
-## Python
-
-```bash
-pip install anthropic
-```
-
-```python
+```python Python
 import os
 from anthropic import Anthropic
 
@@ -46,7 +52,7 @@ client = Anthropic(
 )
 
 message = client.messages.create(
-    model="anthropic/claude-sonnet-4.5",
+    model="anthropic/claude-sonnet-5.5",
     max_tokens=512,
     messages=[{"role": "user", "content": "Reply with only: ok"}],
 )
@@ -54,17 +60,18 @@ message = client.messages.create(
 print(message.content)
 ```
 
-## Notas
+</CodeGroup>
 
-- Usa el host raíz `https://api.phaseo.app`; los clientes de Anthropic añaden `/v1/messages`.
-- Pasa la clave como `authToken` (`auth_token` en Python), que envía `Authorization: Bearer` en todas las versiones del SDK. Phaseo no acepta `x-api-key`, que es lo que envía `apiKey` antes de `@anthropic-ai/sdk` 1.0 y `anthropic` 2.0.
-- `apiKey: null` evita que los SDK de TypeScript anteriores envíen también tu `ANTHROPIC_API_KEY`. Los SDK de Python anteriores a 0.98 la envían siempre que está definida, así que actualiza el SDK o elimínala de los entornos que llaman a Phaseo.
-- Consulta [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx) para conocer los detalles del endpoint.
-- Las estructuras nativas de herramientas de Anthropic pueden funcionar cuando Phaseo las admite; para las herramientas de servidor entre proveedores, usa los nombres de herramientas de Phaseo.
-- Si un flujo de trabajo depende de ciclos de herramientas transmitidos en streaming, pruébalo antes de ponerlo en producción, ya que los clientes compatibles con Anthropic aplican reglas más estrictas al orden de los eventos de herramientas.
+Un bloque de texto que contiene `ok` significa que la configuración funciona.
 
-## Relacionado
+| Ajuste | Por qué |
+| --- | --- |
+| `baseURL: "https://api.phaseo.app"` | Usa el host raíz. Los clientes de Anthropic añaden `/v1/messages` por sí mismos. |
+| `authToken` (`auth_token` en Python) | Envía `Authorization: Bearer` en todas las versiones del SDK. Phaseo no acepta `x-api-key`, que es lo que envía `apiKey` antes de `@anthropic-ai/sdk` 1.0 y `anthropic` 2.0. |
+| `apiKey: null` | Evita que los SDK de TypeScript antiguos envíen también tu `ANTHROPIC_API_KEY`. Los SDK de Python anteriores a 0.98 la envían siempre que está definida, así que actualiza o elimínala donde llames a Phaseo. |
 
-- [Claude Code](./claude-code.mdx)
-- [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx)
-- [Llamadas a herramientas](../tool-calling.mdx)
+## Límites conocidos
+
+- Las formas nativas de herramientas de Anthropic funcionan donde Phaseo las admite. Las herramientas del servidor que funcionan con todos los proveedores usan nombres de herramientas de Phaseo; consulta [Llamadas a herramientas](../tool-calling.mdx).
+- Los clientes compatibles con Anthropic son estrictos con el orden de los eventos de herramientas. Prueba los ciclos de herramientas en streaming antes de pasar a producción.
+- Para [Claude Code](./claude-code.mdx), usa su propia guía.

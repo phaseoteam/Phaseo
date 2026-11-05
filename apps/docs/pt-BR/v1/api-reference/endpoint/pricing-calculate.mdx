@@ -3,17 +3,14 @@ title: "Calcular preços"
 sidebarTitle: "Calcular preços"
 badge: "Beta"
 openapi: "/pt-BR/openapi/v1/openapi.localized.yaml POST /pricing/calculate"
-description: "Estimar o custo de um payload de uso específico de provedor, modelo e endpoint."
+description: "Estime o custo de um payload de uso específico de provedor, modelo e endpoint."
 ---
 
-Calcula o preço de um payload de uso com base nas regras de preços ativas do gateway.
+Envie um payload de uso para calcular o preço com base nas regras de preços ativas do gateway para um provedor, um modelo e um endpoint. Os quatro campos são obrigatórios:
 
-Informe:
+- `provider`: o ID do provedor, por exemplo `openai`.
+- `model`: o ID do modelo roteado.
+- `endpoint`: a família de endpoints, por exemplo `responses` ou `chat.completions`.
+- `usage`: o uso a ser precificado, como contagens de tokens ou outras entradas de medição.
 
-- `provider`: ID do provedor, por exemplo `openai`
-- `model`: ID do modelo roteado
-- `endpoint`: família de endpoints, por exemplo `responses` ou `chat.completions`
-- `usage`: o objeto de uso que será precificado, como contagens de tokens ou outras entradas de medição
-
-Use esta rota quando já souber o provedor, o modelo e o endpoint desejados e quiser estimar o custo de um payload específico. Já `GET /pricing/models` lista as informações públicas de preços atuais do catálogo.
-
+Para listar os preços atuais em vez de precificar um payload, use [Listar preços dos modelos](./pricing-models.mdx).

@@ -1,0 +1,441 @@
+---
+icon: "wrench"
+title: "Agent SDK 工具"
+sidebarTitle: "工具"
+description: "为 Phaseo 智能体定义本地工具、需要审批的工具、手动工具和并发工具。"
+---
+
+当智能体需要读取应用数据、调用内部服务或执行某个操作时，就定义一个工具。模型通过 ID 调用工具；SDK 检查参数，在你的进程中运行你的代码，并在下一轮把结果发回。
+
+## 定义工具
+
+<CodeGroup>
+
+```typescript TypeScript
+import { defineTool } from "@phaseo/agent-sdk";
+
+const fetchTicket = defineTool({
+  id: "fetch-ticket",
+  description: "Load one internal support ticket.",
+  parameters: {
+    type: "object",
+    properties: {
+      ticketId: { type: "string" },
+    },
+    required: ["ticketId"],
+    additionalProperties: false,
+  },
+  timeoutMs: 3_000,
+  async execute(input: { ticketId: string }, context) {
+    const response = await fetch(
+      `https://internal.example/tickets/${input.ticketId}`,
+      { signal: context.signal },
+    );
+
+    return response.json();
+  },
+});
+```
+
+```python Python
+import httpx
+from phaseo_agent import AgentTool, define_tool
+
+def fetch_ticket(tool_input, runtime):
+    response = httpx.get(f"https://internal.example/tickets/{tool_input['ticketId']}")
+    return response.json()
+
+fetch_ticket_tool = define_tool(AgentTool(
+    id="fetch-ticket",
+    description="Load one internal support ticket.",
+    parameters={
+        "type": "object",
+        "properties": {"ticketId": {"type": "string"}},
+        "required": ["ticketId"],
+        "additionalProperties": False,
+    },
+    timeout_ms=3_000,
+    execute=fetch_ticket,
+))
+```
+
+```go Go
+search := phaseoagent.DefineTool(phaseoagent.Tool{
+  ID:          "search_tickets",
+  Description: "Search support tickets by keyword",
+  Parameters: map[string]any{
+    "type":       "object",
+    "properties": map[string]any{"query": map[string]any{"type": "string"}},
+    "required":   []string{"query"},
+  },
+  Timeout:     10 * time.Second,
+  InputSchema: validateSearchInput, // func(any) (any, error)
+  Execute: func(input any, runtime phaseoagent.RuntimeContext) (any, error) {
+    return tickets.Search(input.(map[string]any)["query"].(string))
+  },
+})
+```
+
+```csharp C#
+// 构造函数接收 Id、Execute、Description、Parameters 和 Timeout；
+// 其他属性用对象初始化器设置。
+var search = AgentSdk.DefineTool(new Tool(
+    "search_tickets",
+    async (input, runtime) => await tickets.SearchAsync(input, runtime.CancellationToken),
+    "Search support tickets by keyword",
+    new Dictionary<string, object?>
+    {
+        ["type"] = "object",
+        ["properties"] = new Dictionary<string, object?> { ["query"] = new { type = "string" } },
+        ["required"] = new[] { "query" },
+    },
+    TimeSpan.FromSeconds(10))
+{
+    InputSchema = ValidateSearchInput, // Func<object?, object?>
+});
+```
+
+```php PHP
+$search = AgentSdk::defineTool(new Tool(
+    id: "search_tickets",
+    execute: fn (array $input, $runtime) => $tickets->search($input["query"]),
+    description: "Search support tickets by keyword",
+    parameters: [
+        "type" => "object",
+        "properties" => ["query" => ["type" => "string"]],
+        "required" => ["query"],
+    ],
+    timeoutMs: 10000,
+    inputSchema: fn ($input) => is_string($input["query"] ?? null) ? $input : throw new InvalidArgumentException("query is required"),
+));
+```
+
+```ruby Ruby
+search = PhaseoAgentSdk.define_tool(
+  PhaseoAgentSdk::Tool.new(
+    id: "search_tickets",
+    description: "Search support tickets by keyword",
+    parameters: {
+      type: "object",
+      properties: { query: { type: "string" } },
+      required: ["query"]
+    },
+    timeout_ms: 10_000,
+    input_schema: ->(input) { input["query"].is_a?(String) ? input : raise("query is required") },
+    execute: ->(input, runtime) { tickets.search(input["query"]) }
+  )
+)
+```
+
+```java Java
+// Tool 有三个构造函数：(id, execute)；(id, execute, description, parameters, timeout)；
+// 以及下面的完整形式。Validators::requireQuery 代表你自己的校验器。
+var search = AgentSdk.defineTool(new AgentSdk.Tool(
+    "search_tickets",
+    (input, context) -> tickets.search((String) ((Map<?, ?>) input).get("query")),
+    "Search support tickets by keyword",
+    Map.of("type", "object", "properties", Map.of("query", Map.of("type", "string"))),
+    Duration.ofSeconds(10),
+    Validators::requireQuery, // inputSchema: AgentSdk.Validator
+    null, null,             // outputSchema, eventSchema
+    false, null,            // requireApproval, approval
+    null, null,             // onToolCalled, onResponseReceived
+    "fail-run"              // onError
+));
+```
+
+```rust Rust
+use phaseo_agent::Tool;
+use serde_json::json;
+
+let get_status = Tool::new(
+    "get_status",
+    "Get the current service status",
+    json!({
+        "type": "object",
+        "properties": {
+            "service": { "type": "string" }
+        },
+        "required": ["service"]
+    }),
+    |input, _context| {
+        Ok(json!({
+            "service": input["service"],
+            "status": "healthy"
+        }))
+    },
+);
+```
+
+</CodeGroup>
+
+## 工具字段
+
+| 字段 | `camelCase`（TS、PHP、Java） | `snake_case`（Python、Ruby、Rust） | `PascalCase`（Go、C#） | 作用 |
+| --- | --- | --- | --- | --- |
+| 参数 | `parameters` | `parameters` | `Parameters` | 发送给模型的 JSON Schema |
+| 校验器 | `inputSchema`、`outputSchema`、`eventSchema` | `input_schema`、`output_schema`、`event_schema` | `InputSchema`、`OutputSchema`、`EventSchema` | 检查参数、结果和进度值。校验失败会结束运行（TypeScript 中为 `AgentSchemaValidationError`，其他语言为 `Invalid tool input: ...` 或 `Invalid tool output: ...`）。Rust 没有此字段。 |
+| 超时 | `timeoutMs`（TS、PHP）、`timeout`（Java） | `timeout_ms` | `Timeout` | 超过这个时长后让调用失败；见下表。Rust 没有此字段。 |
+| 审批 | `requireApproval` | `require_approval` | `RequireApproval`、`Approval` | 在调用运行前暂停，等待人工处理 |
+| 交互钩子 | `onToolCalled`、`onResponseReceived` | `on_tool_called`、`on_response_received` | `OnToolCalled`、`OnResponseReceived` | 暂停等待人工回答，然后转换该回答。Rust 没有此字段。 |
+| 下一轮覆盖 | `nextTurnParams` | `next_turn_params` | `NextTurn`（Go）、`NextTurnParams`（C#） | 修改下一次模型请求；参见[动态轮次](./dynamic-turns)。Rust 没有此字段。 |
+| 错误策略 | `onError` | `on_error` | `OnError` | `"fail-run"`（默认）或 `"return-to-model"`。Rust 没有此字段。 |
+
+schema 使用各语言的原生校验器：TypeScript 中是函数，或提供 `parse()` 或 `safeParse()` 的对象；Python 中是可调用对象、Pydantic 模型，或提供 `parse` 或 `safe_parse` 的对象；其他语言中是返回该值或抛出异常的函数或可调用对象。
+
+### 超时会怎样
+
+| 语言 | `timeout` 到期时 |
+| --- | --- |
+| TypeScript | 中止 `context.signal`，并把超时视为工具错误 |
+| Python | 抛出 `TimeoutError`，并且总是让运行失败，即使设置了 `return-to-model` 也是如此。线程不会被停止，所以长时间运行的工具应自行检查截止时间。 |
+| Go | 以 `tool <id> timed out` 让调用失败。`Execute` 没有 `context.Context`，所以函数会在它的 goroutine 中继续运行。 |
+| C# | 取消 `runtime.CancellationToken`，并以 `TimeoutException` 让调用失败。请把这个令牌传给你自己的异步调用。 |
+| PHP | 在 `execute` 返回后检查：较慢的调用会以 `Tool <name> timed out after <n>ms` 失败。PHP 无法中断回调。 |
+| Ruby | 用 `Timeout.timeout` 包裹 `execute`，它会中断调用并抛出 `Timeout::Error` |
+| Java | 在单独的线程上运行执行器，以 `TimeoutException` 让调用失败，并中断该线程 |
+| Rust | 没有工具超时 |
+
+调用不在当前工具列表中的工具 ID 会让运行失败（Go 中为 `unknown tool`，C#、PHP、Ruby 和 Java 中为 `Unknown tool '<name>'`，Rust 中为 `AgentError` 形式的 `Unknown tool: <name>`）。在 TypeScript 中设置 `return-to-model` 时，未知工具或无法读取的参数会改为像工具错误一样得到回复。
+
+## 要求审批
+
+把工具的审批标志设为 `true`，或者给它一个按调用逐次决定的函数。如果语言提供智能体级的审批函数，它会作用于每个工具，并覆盖上述两种设置。被拦下的调用会让运行以 `waiting_for_human` 状态暂停；在[状态与审批](./state-and-approval)中按调用 ID 批准或拒绝它。
+
+<CodeGroup>
+
+```typescript TypeScript
+const deploy = defineTool({
+  id: "deploy",
+  description: "Deploy the selected release",
+  requireApproval: (input: { environment: string }) => input.environment === "production",
+  execute: deployRelease,
+});
+```
+
+```python Python
+deploy = define_tool(AgentTool(
+    id="deploy",
+    description="Deploy the selected release",
+    require_approval=lambda tool_input, runtime: tool_input["environment"] == "production",
+    execute=deploy_release,
+))
+```
+
+```go Go
+deploy := phaseoagent.Tool{
+  ID:          "deploy",
+  Description: "Deploy the selected release",
+  Approval: func(input any, runtime phaseoagent.RuntimeContext) (bool, error) {
+    return input.(map[string]any)["environment"] == "production", nil
+  },
+  Execute: deployRelease,
+}
+```
+
+```csharp C#
+var deploy = new Tool("deploy", DeployRelease, "Deploy the selected release")
+{
+    Approval = async (input, runtime) =>
+        ((JsonElement)input!).GetProperty("environment").GetString() == "production",
+};
+```
+
+```php PHP
+$deploy = new Tool(
+    id: "deploy",
+    execute: fn (array $input, $runtime) => $deployments->deploy($input),
+    description: "Deploy the selected release",
+    requireApproval: fn (array $input, $runtime) => ($input["environment"] ?? null) === "production",
+);
+```
+
+```ruby Ruby
+deploy = PhaseoAgentSdk::Tool.new(
+  id: "deploy",
+  description: "Deploy the selected release",
+  require_approval: ->(input, runtime) { input["environment"] == "production" },
+  execute: ->(input, runtime) { deployments.deploy(input) }
+)
+```
+
+```rust Rust
+let deploy = Tool::new(
+    "deploy",
+    "Deploy an application environment",
+    json!({
+        "type": "object",
+        "properties": {
+            "environment": { "type": "string" }
+        },
+        "required": ["environment"]
+    }),
+    |input, _context| {
+        Ok(json!({
+            "environment": input["environment"],
+            "deployed": true
+        }))
+    },
+)
+.require_approval();
+```
+
+</CodeGroup>
+
+| 语言 | 单个工具 | 所有工具 |
+| --- | --- | --- |
+| TypeScript | `requireApproval: true` 或 `(input, context) => boolean` | 智能体上的 `requireApproval: (call, context) => boolean` |
+| Python | `require_approval=True` 或 `(input, runtime) -> bool` | 智能体上的 `"require_approval": (call, runtime) -> bool` |
+| Go | `RequireApproval: true` 或 `Approval` 函数 | `AgentDefinition.RequireApproval(call, runtime)` |
+| C# | `RequireApproval = true` 或 `Approval` 函数 | `AgentDefinition.RequireApproval` |
+| PHP | `requireApproval: true` 或 `fn ($input, $runtime): bool` | `AgentDefinition` 的 `requireApproval`（`fn ($toolCall, $runtime): bool`） |
+| Ruby | `require_approval: true` 或 `->(input, runtime)` | 智能体的 `require_approval:`（`->(tool_call, runtime)`） |
+| Java | `requireApproval` 设为 `true`，或在完整构造函数中传入 `approval` 函数 | `AgentDefinition.requireApproval`（一个 `CallApproval`） |
+| Rust | `.require_approval()`；没有按调用决定的函数 | 无。暂停类型为 `tool_approval`，并且没有拒绝类型：让未获批准的调用保持暂停，或在恢复前应用你自己的拒绝策略。 |
+
+## 把调用交给人或其他系统
+
+手动工具没有执行器：工作由你的应用、队列或其他服务完成。交互式工具会运行一个可以暂停等待人工处理的钩子。两者都会让运行暂停，直到你为该调用 ID 提供工具输出并继续运行；参见[状态与审批](./state-and-approval)。
+
+| 语言 | 手动工具 | 交互式工具：暂停方式 |
+| --- | --- | --- |
+| TypeScript | `execute: false` | 从 `onToolCalled` 返回 `null` |
+| Python | 不设置 `execute` | 从 `on_tool_called` 返回 `None` |
+| Go | 让 `Execute` 保持 nil（待处理 `Kind` 为 `manual`） | 从 `OnToolCalled` 返回 `completed = false`（待处理 `Kind` 为 `hitl`） |
+| C# | 让 `Execute` 保持 null（`manual`） | 从 `OnToolCalled` 返回 `(Completed: false, Output: null)`（`hitl`） |
+| PHP | `execute: null`（`manual`） | 从 `onToolCalled` 返回 `null`（`hitl`） |
+| Ruby | 不设置 `execute`（`manual`） | 从 `on_tool_called` 返回 `nil`（`hitl`） |
+| Java | 把执行器传为 `null`（`manual`） | 从 `onToolCalled` 返回 `new ToolCalledResult(false, null)`（`hitl`） |
+| Rust | `Tool::external(...)`（暂停类型 `external_output`） | 不支持；使用智能体的 `human_review` |
+
+如果交互钩子改为返回一个值，该值会立即成为工具结果。继续运行后，`onResponseReceived`（或该语言的等价物）可以在输出校验器检查之前校验或转换提供的输出。
+
+Rust 外部工具不接收执行器：
+
+```rust
+let ticket_lookup = Tool::external(
+    "ticket_lookup",
+    "Load one support ticket",
+    json!({
+        "type": "object",
+        "properties": {
+            "ticket_id": { "type": "string" }
+        },
+        "required": ["ticket_id"]
+    }),
+);
+```
+
+如果一个模型轮次中同时有自动工具和待处理工具，运行时会先运行自动工具，再返回暂停。
+
+<span id="report-progress-and-update-context"></span>
+## 报告进度并更新上下文
+
+工具可以在工作期间发布初步结果，并为之后的轮次替换应用上下文。进度以 `tool.preliminary_result` 事件的形式出现（参见[流式传输](./streaming)），如果你设置了事件校验器，进度会经过它的检查。
+
+<CodeGroup>
+
+```typescript TypeScript
+const indexRepository = defineTool({
+  id: "index-repository",
+  async *execute(input: { path: string }, context) {
+    yield { phase: "scan" };
+    yield { phase: "embed" };
+    context.setContext({ indexed: true });
+    return { indexed: 248 };
+  },
+});
+```
+
+```python Python
+def index_repository(tool_input, runtime):
+    runtime.emit_progress({"stage": "indexing"})
+    runtime.set_context({"indexed": True})
+    return "done"
+```
+
+```go Go
+Execute: func(input any, runtime phaseoagent.RuntimeContext) (any, error) {
+  _ = runtime.EmitProgress(map[string]any{"stage": "indexing"})
+  runtime.SetContext(map[string]any{"indexed": true})
+  return "done", nil
+},
+```
+
+```csharp C#
+async (input, runtime) =>
+{
+    await runtime.EmitProgress!(new { stage = "indexing" });
+    runtime.SetContext!(new { indexed = true });
+    return "done";
+}
+```
+
+```php PHP
+execute: function (array $input, $runtime) {
+    ($runtime->emitProgress)(["stage" => "indexing"]); // tool.preliminary_result 事件
+    ($runtime->setContext)(["indexed" => true]);       // 之后轮次的上下文
+    return "done";
+},
+```
+
+```ruby Ruby
+execute: ->(input, runtime) {
+  runtime.emit_progress.call(stage: "indexing") # tool.preliminary_result 事件
+  runtime.set_context.call(indexed: true)       # 之后轮次的上下文
+  "done"
+}
+```
+
+```java Java
+(input, context) -> {
+    context.emitProgress().receive(Map.of("stage", "indexing"), context); // tool.preliminary_result 事件
+    context.setContext().accept(Map.of("indexed", true));                 // 之后轮次的上下文
+    return "done";
+}
+```
+
+</CodeGroup>
+
+| 语言 | 进度 | 上下文 | 运行时上下文字段 |
+| --- | --- | --- | --- |
+| TypeScript | 异步生成器：`yield` 进度，`return` 结果；或使用 `context.emitProgress(value)`。进度也会保存在该步骤的 `preliminaryResults` 中。 | `context.setContext(value)` | `runId`、`agentId`、`stepIndex`、`context`、`signal`、`toolCall` |
+| Python | `runtime.emit_progress(value)`，或一个 yield 进度并返回结果的生成器 | `runtime.set_context(value)` | `run_id`、`agent_id`、`step_index`、`context`、`tool_call` |
+| Go | `runtime.EmitProgress(value)` | `runtime.SetContext(value)` | `RunID`、`AgentID`、`StepIndex`、`Context`、`ToolCall` |
+| C# | `await runtime.EmitProgress(value)` | `runtime.SetContext(value)` | `RunId`、`AgentId`、`StepIndex`、`Context`、`CancellationToken`、`ToolCall` |
+| PHP | `($runtime->emitProgress)(value)` | `($runtime->setContext)(value)` | `$runId`、`$agentId`、`$stepIndex`、`$context`、`$toolCall` |
+| Ruby | `runtime.emit_progress.call(value)` | `runtime.set_context.call(value)` | `run_id`、`agent_id`、`step_index`、`context`、`tool_call` |
+| Java | `context.emitProgress().receive(value, context)` | `context.setContext().accept(value)` | `runId`、`agentId`、`stepIndex`、`context`、`toolCall` |
+| Rust | 不支持 | 不支持；上下文按运行设置 | `run_id`、智能体 ID、步骤索引、应用上下文、工具调用 |
+
+## 从工具错误中恢复
+
+默认情况下，工具抛出的错误会让运行失败并被重新抛出。把工具的错误策略设为 `return-to-model`，即可把错误作为工具结果（`{"error": "..."}`）发回，让模型尝试别的办法。对于不安全或无法恢复的失败，请保留默认设置。
+
+| 语言 | 默认 | 设置 `return-to-model` 的方式 |
+| --- | --- | --- |
+| TypeScript | 让运行失败 | 工具上的 `onError`，或为所有工具设置 `toolExecution.onError` |
+| Python | 让运行失败 | `on_error="return-to-model"`。超时仍会让运行失败。 |
+| Go | 让运行失败 | `OnError: "return-to-model"` |
+| C# | 让运行失败 | `OnError = "return-to-model"` |
+| PHP | 让运行失败 | `onError: "return-to-model"` |
+| Ruby | 让运行失败 | `on_error: "return-to-model"` |
+| Java | 让运行失败 | 把 `"return-to-model"` 作为 `onError` 参数 |
+| Rust | 返回给模型 | 始终开启：执行器返回的 `AgentError` 会变成结构化的工具错误消息。未知工具、缺少审批或缺少输出会让继续操作以 `AgentError` 失败。 |
+
+在 TypeScript 中，`toolExecution.maxOutputChars` 限制模型能看到的工具输出长度；更长的输出会保留开头和结尾，中间插入一条说明。
+
+## 并发运行工具
+
+当一个模型轮次调用多个相互独立的工具时，设置并发上限即可同时运行它们。在你设置之前，Go、C#、Ruby 和 Java 一次只运行一个工具。无论完成顺序如何，结果都按模型发出调用的顺序追加。在 Go 和 C# 中，如果多个并发工具都设置了上下文，按调用顺序排在最后的那个生效。
+
+| 语言 | 设置 | 说明 |
+| --- | --- | --- |
+| TypeScript | `toolExecution: { toolConcurrency: 3 }` | 参见[并行工具示例方案](../../cookbook/agent-sdk-parallel-tools) |
+| Python | `tool_execution=AgentToolExecutionConfig(tool_concurrency=3)` | 线程 |
+| Go | `ToolExecution: phaseoagent.ToolExecutionConfig{Concurrency: 4}` | 设置在智能体上，或者为单次运行设置在 `RunOptions` 上 |
+| C# | `ToolExecution = new ToolExecutionConfig(Concurrency: 4)` | 设置在智能体上，或者为单次运行设置在 `RunOptions` 上 |
+| PHP | 不支持 | 接受 `toolExecution`，但不起作用。在单个工具内部用 HTTP 客户端的并发请求启动并行工作，或者把工作放入队列并返回任务 ID。 |
+| Ruby | `tool_execution: { tool_concurrency: 4 }` | 线程；设置在 `create_agent` 上，或者为单次运行设置在 `run` 上 |
+| Java | `new AgentSdk.ToolExecutionConfig(4)` | 固定线程池；小于 1 的值会被提升为 1。设置在智能体上，或者为单次运行设置在 `RunOptions` 中。 |
+| Rust | 不支持 | 工具按模型调用的顺序同步运行 |

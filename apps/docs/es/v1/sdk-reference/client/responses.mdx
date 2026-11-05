@@ -1,0 +1,350 @@
+---
+icon: "message-square"
+title: "Responses"
+description: "Llama a la API de Responses desde cualquier SDK de Phaseo."
+---
+
+Llama al método de responses del SDK para enviar `POST /v1/responses` y recibir una respuesta completa.
+
+<CodeGroup>
+
+```typescript TypeScript
+const resp = await client.generateResponse({
+  model: "openai/gpt-6-astra",
+  input: [{ role: "user", content: [{ type: "input_text", text: "Summarise this text" }] }],
+});
+```
+
+```python Python
+resp = client.generate_response({
+    "model": "openai/gpt-6-astra",
+    "input": [{"role": "user", "content": [{"type": "input_text", "text": "Summarise this text"}]}],
+})
+
+print(resp.output_text)
+```
+
+```go Go
+import (
+  "context"
+  "fmt"
+
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client, err := phaseo.NewFromEnv()
+if err != nil {
+  panic(err)
+}
+
+resp, err := client.GenerateResponse(context.Background(), phaseo.ResponsesRequest{
+  Model: "openai/gpt-6-astra",
+  Input: "Reply with: responses endpoint works",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp)
+```
+
+```csharp C#
+using PhaseoSdk;
+
+var client = new Phaseo();
+
+var response = await client.GenerateResponse(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-6-astra",
+    ["input"] = "Summarise this text",
+});
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo();
+
+$response = $client->createResponse([
+    'model' => 'openai/gpt-6-astra',
+    'input' => [
+        [
+            'role' => 'user',
+            'content' => [
+                ['type' => 'input_text', 'text' => 'Summarise this text'],
+            ],
+        ],
+    ],
+]);
+
+echo $response['output'][0]['content'][0]['text'];
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new
+
+resp = client.create_response(
+  model: 'openai/gpt-6-astra',
+  input: [
+    { role: 'user', content: [{ type: 'input_text', text: 'Summarise this text' }] }
+  ]
+)
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+var response = client.createResponse(Map.of(
+    "model", "openai/gpt-6-astra",
+    "input", "Reply with: responses endpoint works"
+));
+System.out.println(response);
+```
+
+```rust Rust
+use phaseo::Phaseo;
+use serde_json::json;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Phaseo::from_env()?;
+    let response = client.responses(&json!({
+        "model": "openai/gpt-6-astra",
+        "input": "Give three concise benefits of model routing.",
+        "max_output_tokens": 200
+    }))?;
+
+    println!("status: {}", response.status);
+    println!("request ID: {:?}", response.request_id);
+    println!("{}", serde_json::to_string_pretty(&response.body)?);
+    Ok(())
+}
+```
+
+</CodeGroup>
+
+| Lenguaje | Método | Notas |
+| --- | --- | --- |
+| TypeScript | `client.generateResponse(request)` | `client.responses.create(request)` hace lo mismo y pasa a streaming cuando `stream` es true. `client.responses.parse(request, schema)` valida una respuesta JSON completa con un parser compatible con Zod. |
+| Python | `client.generate_response(request)` | Los mismos `responses.create` y `responses.parse` que en TypeScript; `parse` recibe un modelo de Pydantic. |
+| Go | `client.GenerateResponse(ctx, req)`, alias `CreateResponse` | Recibe un `phaseo.ResponsesRequest`. `Input` es un `interface{}`: una cadena o un slice de elementos de entrada como `[]map[string]interface{}{{"role": "user", "content": "..."}}`. |
+| C# | `client.GenerateResponse(request)`, alias `CreateResponse` | |
+| PHP | `$client->generateResponse($request)`, alias `createResponse()` | |
+| Ruby | `client.generate_response(...)`, alias `create_response` | |
+| Java | `client.createResponse(request)` | Recibe un `Map` o un `JsonNode` de Jackson. `input` acepta una cadena o una lista de elementos de entrada como `List.of(Map.of("role", "user", "content", "..."))`. |
+| Rust | `client.responses(&request)` | Recibe un `&serde_json::Value`. |
+
+<span id="stream-the-response"></span>
+## Transmite la respuesta
+
+<CodeGroup>
+
+```typescript TypeScript
+for await (const chunk of client.streamResponses({
+  model: "openai/gpt-6-astra",
+  input: [{ role: "user", content: [{ type: "input_text", text: "Stream this" }] }],
+})) {
+  if (chunk.text) process.stdout.write(chunk.text);
+}
+```
+
+```python Python
+for chunk in client.stream_responses({
+    "model": "openai/gpt-6-astra",
+    "input": [{"role": "user", "content": [{"type": "input_text", "text": "Stream this"}]}],
+}):
+    if chunk.get("text"):
+        print(chunk["text"], end="", flush=True)
+```
+
+```csharp C#
+await foreach (var line in client.StreamResponse(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-6-astra",
+    ["input"] = "Write a haiku about lighthouses",
+}))
+{
+    if (line.StartsWith("data:")) Console.WriteLine(line[5..].Trim());
+}
+```
+
+```php PHP
+foreach ($client->streamResponse(['model' => 'openai/gpt-6-astra', 'input' => 'Write a haiku']) as $line) {
+    if (str_starts_with($line, 'data:')) {
+        echo trim(substr($line, 5)), PHP_EOL;
+    }
+}
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+var payload = Map.of("model", "openai/gpt-6-astra", "input", "Hello");
+try (var lines = client.streamResponse(payload)) {
+    lines.forEach(System.out::println);
+}
+```
+
+</CodeGroup>
+
+| Lenguaje | Método de streaming | Qué recibes |
+| --- | --- | --- |
+| TypeScript | `client.streamResponses(request)` | Eventos ya analizados. Pasa `{ signal }` como segundo argumento para cancelar. `client.streamResponse()` produce en su lugar las líneas SSE sin procesar. |
+| Python | `client.stream_responses(request)` | Eventos ya analizados. En `AsyncPhaseo`, cancela la tarea de asyncio para detenerlo. `client.stream_response()` produce en su lugar las líneas SSE sin procesar. |
+| Go | Ninguno | El wrapper no tiene helper de streaming; no definas `stream`. |
+| C# | `client.StreamResponse(request)` | Líneas SSE sin procesar. Pasa un `CancellationToken` como segundo argumento para detenerlo antes. |
+| PHP | `$client->streamResponse($request)` | Líneas SSE sin procesar. |
+| Ruby | `client.stream_response(request)` | Líneas SSE sin procesar, devueltas como un `Enumerator`. |
+| Java | `client.streamResponse(request)` | Líneas SSE sin procesar a medida que llegan, también desde `rawClient().requestLines`. Cierra el stream con try-with-resources. |
+| Rust | Ninguno | El cliente no tiene helper de streaming ni transporte asíncrono. Llama directamente a la API HTTP cuando necesites streaming. |
+
+Cada evento analizado (TypeScript y Python) conserva sus campos originales (`type`, `delta`, …) y añade `text`, `usage` y los tokens de razonamiento (`reasoningTokens` / `reasoning_tokens`). `text` solo contiene texto nuevo: está vacío en los eventos `.done` y en `response.completed`, que repiten texto que ya tienes, y el texto completo de un evento `.done` está en `fullText` / `full_text`.
+
+Con líneas SSE sin procesar (C#, PHP, Ruby, Java), analiza cada línea `data:` como JSON y gestiona por tu cuenta los nombres de evento, los tipos de evento como `response.output_text.delta` y `response.completed`, y los marcadores de finalización. Los métodos de streaming definen `stream: true` por ti, así que no lo definas en la solicitud.
+
+## Lee el texto de salida
+
+La salida es un array de elementos. El texto está en los elementos de `output` de tipo `message`, las llamadas a funciones en los elementos de tipo `function_call`, y el recuento de tokens en `usage`. `resp.output_text` de Python une el texto por ti.
+
+<CodeGroup>
+
+```python Python
+print(resp.output_text)
+```
+
+```php PHP
+echo $response['output'][0]['content'][0]['text'];
+```
+
+```rust Rust
+use serde_json::Value;
+
+let text = response.body
+    .get("output")
+    .and_then(Value::as_array)
+    .into_iter()
+    .flatten()
+    .filter(|item| item.get("type").and_then(Value::as_str) == Some("message"))
+    .flat_map(|item| {
+        item.get("content")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+    })
+    .find_map(|part| {
+        (part.get("type").and_then(Value::as_str) == Some("output_text"))
+            .then(|| part.get("text").and_then(Value::as_str))
+            .flatten()
+    });
+```
+
+</CodeGroup>
+
+Conserva la respuesta completa cuando una solicitud puede devolver varios mensajes, elementos de razonamiento, llamadas a herramientas o metadatos del proveedor.
+
+| Lenguaje | Tipo devuelto |
+| --- | --- |
+| TypeScript | `ResponsesResponse` |
+| Python | Dict `APIResponse` con `output_text`, `request_id` y `trace_url` |
+| Go | `gen.ResponsesResponse`: el texto está en las entradas de `OutputItems` de tipo `message`, y el recuento de tokens en `Usage` |
+| C# | `Dictionary<string, object>?` |
+| PHP | Array |
+| Ruby | Hash |
+| Java | `JsonNode` de Jackson |
+| Rust | `PhaseoResponse`; el JSON está en `body`, con `status` y `request_id` |
+
+## Envía herramientas de función
+
+El cuerpo de la solicitud es el mismo en todos los SDK. En Rust:
+
+```rust Rust
+let response = client.responses(&json!({
+    "model": "openai/gpt-6-astra",
+    "input": "Check the weather in London.",
+    "tools": [{
+        "type": "function",
+        "name": "get_weather",
+        "description": "Get the current weather for a city.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "city": { "type": "string" }
+            },
+            "required": ["city"]
+        }
+    }]
+}))?;
+```
+
+Para un bucle de herramientas local con aprobaciones y estado reanudable, usa el [Agent SDK](../agent/overview).
+
+## Parámetros
+
+Los nombres de los campos son los del cuerpo JSON en todos los SDK. El tipo `phaseo.ResponsesRequest` de Go usa campos de struct en PascalCase (`Model`, `Input`).
+
+| Grupo | Campos |
+| --- | --- |
+| Obligatorios | `model`; `input` como cadena o como array de elementos de entrada (mensajes, llamadas a herramientas, salidas de herramientas) |
+| Instrucciones y estado | `instructions`, `previous_response_id`, `store`, `background`, `include`, `truncation` |
+| Muestreo | `temperature` (0–2), `top_p` (0–1), si el modelo los admite |
+| Longitud | `max_output_tokens` |
+| Herramientas | `tools`, `tool_choice`, `parallel_tool_calls` |
+| Razonamiento | `reasoning` (`effort`, `summary`, `max_tokens`) |
+| Salida | `text` (incluido `text.format` para la salida estructurada), `stream`, `service_tier`, `metadata` (valores de cadena) |
+| Gateway | Enrutamiento `provider`, `usage` (incluir el uso), `meta` (incluir el bloque meta del gateway) |
+
+[Parámetros](/es/v1/api-reference/parameters) explica cada campo, y la [referencia de la API de Responses](../../api-reference/endpoint/responses) tiene el esquema completo.
+
+## Respuesta
+
+`ResponsesResponse`:
+
+```json
+{
+  "id": "resp_123",
+  "object": "response",
+  "created_at": 1677652288,
+  "status": "completed",
+  "model": "openai/gpt-6-astra",
+  "output": [
+    {
+      "type": "message",
+      "id": "msg_123",
+      "status": "completed",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "Hello there, how may I assist you today?"
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "input_tokens": 9,
+    "output_tokens": 12,
+    "total_tokens": 21
+  }
+}
+```
+
+Con `stream: true`, el endpoint envía eventos SSE tipados. El texto llega en eventos `response.output_text.delta`, y el evento final `response.completed` lleva la respuesta completa con el uso:
+
+```
+event: response.created
+data: {"type":"response.created","response":{"id":"resp_123","status":"in_progress","model":"openai/gpt-6-astra","output":[]}}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","item_id":"msg_123","output_index":0,"content_index":0,"delta":"Hello"}
+
+event: response.completed
+data: {"type":"response.completed","response":{"id":"resp_123","status":"completed","model":"openai/gpt-6-astra","output":[...],"usage":{"input_tokens":9,"output_tokens":12,"total_tokens":21}}}
+```
