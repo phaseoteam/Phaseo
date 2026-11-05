@@ -104,6 +104,9 @@ function createAdapter(harness: Harness, agent?: AgentConnection, openCode?: Ope
 
 /** What a model call from the app writes: a chat title, Git text (commits, pull requests, branch names) or a review guide. */
 export type ModelPurpose = "title" | "git" | "guide";
+/** An MCP App as a chat keeps it: its source is the stored id of the tool step it replaces, which carries the same message prefix. */
+const storedMcpApp = (messageId: string, activity: AgentActivity) => activity.mcpApp ? { mcpApp: { ...activity.mcpApp, ...activity.mcpApp.source ? { source: `${messageId}:${activity.mcpApp.source}` } : {} } } : {};
+
 export class WorkspaceRuntime {
 	readonly store: WorkspaceStore;
 	readonly attachments: AttachmentService;
@@ -305,7 +308,8 @@ export class WorkspaceRuntime {
 		const task = this.store.getTaskTail(id, messageId);
 		task.activities ??= [];
 		const timelineOrder = [...task.messages, ...task.activities].reduce((maximum, item) => Math.max(maximum, item.timelineOrder ?? 0), 0) + 1;
-		const stored = { ...activity, id: `${messageId}:${activity.id}`, timelineOrder };
+		const { mcpCall: _call, ...kept } = activity;
+		const stored = { ...kept, id: `${messageId}:${activity.id}`, timelineOrder, ...storedMcpApp(messageId, activity) };
 		task.activities.push(stored);
 		const usage = activity.type === "usage" && isPhaseoUsageId(stored.id);
 		if (usage) addUsage(task.usageTotals ??= { tokens: 0, costNanos: 0 }, activity.text);
@@ -1626,7 +1630,7 @@ export class WorkspaceRuntime {
 				if (activity.type === "usage" && isPhaseoUsageId(activity.id)) priced = true;
 				if (activity.type === "usage" && isPhaseoUsageId(activity.id)) addUsage(current.usageTotals ??= { tokens: 0, costNanos: 0 }, activity.text, existing?.type === "usage" ? existing.text : undefined);
 				if (existing) { existing.text = activity.append ? existing.text + activity.text : activity.text; existing.status = activity.status; existing.title = activity.title; existing.steps = activity.steps; existing.explanation = activity.explanation; existing.summary = activity.summary; existing.compaction = activity.compaction; existing.nativeAgent = activity.nativeAgent; existing.proposed = activity.proposed; }
-				else current.activities.push({ id: activityId, timelineOrder: order(`activity:${activity.id}`), ...(activity.status === "running" ? { startedAt: new Date().toISOString() } : {}), type: activity.type, title: activity.title, text: activity.text, status: activity.status, steps: activity.steps, explanation: activity.explanation, summary: activity.summary, compaction: activity.compaction, nativeAgent: activity.nativeAgent, ...(activity.proposed ? { proposed: activity.proposed } : {}), ...(activity.htmlRender ? { htmlRender: activity.htmlRender } : {}) });
+				else current.activities.push({ id: activityId, timelineOrder: order(`activity:${activity.id}`), ...(activity.status === "running" ? { startedAt: new Date().toISOString() } : {}), type: activity.type, title: activity.title, text: activity.text, status: activity.status, steps: activity.steps, explanation: activity.explanation, summary: activity.summary, compaction: activity.compaction, nativeAgent: activity.nativeAgent, ...(activity.proposed ? { proposed: activity.proposed } : {}), ...(activity.htmlRender ? { htmlRender: activity.htmlRender } : {}), ...storedMcpApp(message.id, activity) });
 				// The ledger keeps when each request was billed, for the Usage page; a failed write leaves the chat's own record intact.
 				if (activity.type === "usage" && isPhaseoUsageId(activity.id)) try { this.store.recordUsage(current, activityId, current.activities.find(value => value.id === activityId)!.text, Boolean(message.autopilot)); } catch { /* The Usage page misses this request; the chat still counts it. */ }
 			}

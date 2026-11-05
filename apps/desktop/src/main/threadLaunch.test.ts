@@ -160,6 +160,20 @@ describe("html_render", () => {
 	}));
 });
 
+describe("MCP Apps", () => {
+	it("keeps an app shown during a turn with its host details, in place of the tool step it came from", async () => withRuntime(async (runtime, _directory, run) => {
+		runtime.store.saveMcp({ id: "0b3c1a2e-5d6f-4a7b-8c9d-0e1f2a3b4c5d", name: "Weather", enabled: true, transport: "stdio", executable: "node", arguments: [] });
+		(runtime as unknown as { mcpApps: { page: () => Promise<string> } }).mcpApps.page = async () => "<p>Forecast</p>";
+		const id = await caller(runtime, "chat");
+		await runtime.command({ type: "send", id, text: "Forecast" });
+		await vi.waitFor(() => expect(run).toHaveBeenCalledOnce());
+		run.mock.calls[0][3].onActivity?.({ id: "call_1", type: "tool", title: "Weather · forecast", text: "{\"city\":\"Leeds\"}\n\nSunny", status: "completed", mcpCall: { server: "phaseo_0b3c1a2e5d6f4a7b8c9d0e1f2a3b4c5d", tool: "forecast", input: { city: "Leeds" } } });
+		await vi.waitFor(() => expect(runtime.store.getTask(id).activities?.find(activity => activity.htmlRender)).toBeDefined());
+		const activities = runtime.store.getTask(id).activities!, step = activities.find(activity => activity.title === "Weather · forecast" && !activity.htmlRender)!;
+		expect(activities.find(activity => activity.htmlRender)).toMatchObject({ text: "<p>Forecast</p>", mcpApp: { connectionId: "0b3c1a2e-5d6f-4a7b-8c9d-0e1f2a3b4c5d", tool: "forecast", input: { city: "Leeds" }, source: step.id } });
+	}));
+});
+
 describe("answering a child's questions", () => {
 	it("ends the parent's wait, reads the question and answers it as the person would, never secrets", async () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-questions-")), answered: Record<string, string[]>[] = [];
