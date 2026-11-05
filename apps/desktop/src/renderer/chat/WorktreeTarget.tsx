@@ -63,25 +63,25 @@ export function WorktreeTargetControls({ target, disabled }: { target: WorktreeT
 				<DropdownMenuItem onClick={() => target.setMode("worktree")} className="items-start"><FolderGit2 className="mt-0.5" /><span><span className="block font-semibold">New worktree</span><span className="text-xs text-muted-foreground">A separate checkout on a new branch, named from your message.</span></span>{worktree && <Check className="ml-auto" />}</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>
-		{worktree && target.refs && <BaseBranchPicker refs={target.refs} value={target.base} onChange={target.setBase} disabled={disabled} />}
+		{worktree && target.refs && <BranchPicker refs={target.refs} value={target.base} onChange={target.setBase} disabled={disabled} label={`from ${target.base}`} ariaLabel="Base branch" title="The branch the worktree starts from" />}
 	</>;
 }
 
-/** The base branch picker: local branches first, then remote ones, filtered as you type. */
-function BaseBranchPicker({ refs, value, onChange, disabled }: { refs: GitRefs; value: string; onChange: (value: string) => void; disabled?: boolean }) {
+/** A branch picker: local branches first, then remote ones unless localOnly, filtered as you type. */
+export function BranchPicker({ refs, value, onChange, disabled, label, ariaLabel, title, localOnly }: { refs: GitRefs; value: string; onChange: (value: string) => void; disabled?: boolean; label: string; ariaLabel: string; title: string; localOnly?: boolean }) {
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
 	const [active, setActive] = useState(0);
 	const options = useMemo(() => {
-		const all = [...new Set([...refs.current ? [refs.current] : [], ...refs.local, ...refs.remote.filter(name => !name.endsWith("/HEAD"))])];
+		const all = [...new Set([...refs.current ? [refs.current] : [], ...refs.local, ...localOnly ? [] : refs.remote.filter(name => !name.endsWith("/HEAD"))])];
 		const needle = query.trim().toLowerCase();
 		return (needle ? all.filter(name => name.toLowerCase().includes(needle)) : all).slice(0, 200);
 	}, [refs, query]);
 	useEffect(() => { setActive(0); }, [query, open]);
 	const choose = (name: string) => { onChange(name); setOpen(false); setQuery(""); };
 	return <Popover open={open} onOpenChange={setOpen}>
-		<PopoverTrigger disabled={disabled} render={<button type="button" aria-label="Base branch" title="The branch the worktree starts from" data-composer-shortcut="composer.branch" className="flex h-8 max-w-48 items-center gap-1.5 rounded-md px-2 text-[12.5px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50 data-popup-open:bg-muted [&_svg]:size-4" />}>
-			<GitBranch /><span className="truncate font-mono text-xs">from {value}</span><ChevronDown className="size-3! shrink-0" />
+		<PopoverTrigger disabled={disabled} render={<button type="button" aria-label={ariaLabel} title={title} data-composer-shortcut="composer.branch" className="flex h-8 max-w-48 items-center gap-1.5 rounded-md px-2 text-[12.5px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50 data-popup-open:bg-muted [&_svg]:size-4" />}>
+			<GitBranch /><span className="truncate font-mono text-xs">{label}</span><ChevronDown className="size-3! shrink-0" />
 		</PopoverTrigger>
 		<PopoverContent align="start" side="top" sideOffset={8} className="w-72 gap-0 overflow-hidden rounded-md p-0">
 			<div className="p-2 pb-1"><div className="flex h-8 items-center gap-2 rounded-md border border-input bg-input/50 px-2.5">

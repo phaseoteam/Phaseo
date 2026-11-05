@@ -41,7 +41,7 @@ export const keybindingCommands = [
 	{ command: "composer.sendBackground", label: "Start the new chat in the background, staying on New chat", group: "Composer", keys: ["mod+enter", "mod+alt+enter"], when: "composerFocused && draftRoute" },
 	{ command: "composer.mode", label: "Open the permissions control", group: "Composer", keys: ["mod+shift+a"], when: "!terminalFocused" },
 	{ command: "composer.workspace", label: "Open the workspace control (Local or New worktree)", group: "Composer", keys: ["mod+shift+x"], when: "!terminalFocused" },
-	{ command: "composer.branch", label: "Open the base branch control", group: "Composer", keys: ["mod+shift+g"], when: "!terminalFocused" },
+	{ command: "composer.branch", label: "Open the branch control", group: "Composer", keys: ["mod+shift+g"], when: "!terminalFocused" },
 	{ command: "composer.previousWorktree", label: "Start the new chat in the project's latest worktree", group: "Composer", keys: ["mod+shift+l"], when: "!terminalFocused" },
 	{ command: "composer.historyPrevious", label: "Previous prompt (in an empty message box)", group: "Composer", keys: ["arrowup"], when: "composerFocused" },
 	{ command: "composer.historyNext", label: "Next prompt", group: "Composer", keys: ["arrowdown"], when: "composerFocused" },
