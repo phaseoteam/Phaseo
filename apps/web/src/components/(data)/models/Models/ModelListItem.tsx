@@ -356,7 +356,10 @@ function ModelListItemImpl({
 		priceText = t("atProviderCost");
 	} else if (headline?.kind === "usage") {
 		// A documented image-token rate reads as the cost of one image.
-		priceText = headline.per_image !== undefined ? `≈${price(headline.per_image)}` : price(headline.price);
+		// Three significant digits keep a sub-cent estimate exact ($0.0336, not $0.034).
+		priceText = headline.per_image !== undefined
+			? `≈$${format.number(headline.per_image, { maximumSignificantDigits: 3, notation: "standard" })}`
+			: price(headline.price);
 		priceUnit = headline.per_image !== undefined ? null : headline.unit;
 		perImageEstimate = headline.per_image !== undefined;
 	} else if (headline?.kind === "tokens") {

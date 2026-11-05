@@ -540,6 +540,23 @@ describe("normalizeModelsPagePricing", () => {
 		expect(row).toMatchObject({ pricing_provider_id: "google-vertex", lowest_output_price: 0.1344, lowest_standard_output_price_unit: "image" });
 	});
 
+	it("does not call a text-and-image model Free because of a $0 image meter", () => {
+		const row = card([
+			tokens("input_text_tokens", 0.5),
+			tokens("output_text_tokens", 2),
+			tokens("output_image_tokens", 0, { modality: "image" }),
+		], ["text", "image"]);
+		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 0.5, output: 2, unit: "1M tokens" });
+	});
+
+	it("keeps a free per-request provider ahead of a paid per-image one on an image model", () => {
+		const row = card([
+			usage("requests", 0, "request", 1, { provider: "free-host" }),
+			usage("output_image", 0.18, "image", 1, { provider: "venice", modality: "image", direction: "output" }),
+		], ["image"]);
+		expect(row.pricing_summary).toEqual({ kind: "free" });
+	});
+
 	it("shows no per-image estimate where the provider does not document one", () => {
 		const row = normalizeModelsPagePricing({
 			model_id: "openai/gpt-image-2.6-flare",

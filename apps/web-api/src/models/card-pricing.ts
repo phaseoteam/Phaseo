@@ -301,7 +301,9 @@ function summarise(model: Row, rates: Rate[]): { summary: CardPricingSummary | n
 	// also returns text, so the card never shows its text rate as the cost.
 	const media = mediaOutputs.some((item) => item.unit !== "1M tokens")
 		|| (outputs.some((item) => /image|video|audio/.test(item)) && !outputs.includes("text"))
-		|| (outputs.includes("image") && mediaOutputs.some((item) => item.modality === "image"));
+		// A $0 image meter is a placeholder, not the image price, so it never
+		// replaces paid text rates or makes the model look free.
+		|| (outputs.includes("image") && mediaOutputs.some((item) => item.modality === "image" && item.price > 0));
 
 	// Token rates are chosen in their own best tier, so a standard-tier tool
 	// fee cannot displace input/output pricing offered only in other tiers.
@@ -473,8 +475,8 @@ export function normalizeModelsPagePricing(model: Row): Row {
 	const priced = offers
 		.filter((offer): offer is typeof offer & { summary: CardPricingSummary } => offer.summary !== null)
 		.sort((a, b) => Number(coversBilledSide(b.headline)) - Number(coversBilledSide(a.headline))
-			|| Number(pricesImage(b.headline)) - Number(pricesImage(a.headline))
 			|| Number(freeUsage(b)) - Number(freeUsage(a))
+			|| Number(pricesImage(b.headline)) - Number(pricesImage(a.headline))
 			|| (outputPriced ? tokenSides(b.headline) - tokenSides(a.headline) : 0)
 			|| compareOffers(a.summary, b.summary, outputPriced));
 	const chosen = priced[0] ?? { rates: allRates, summary: null, headline: [] };

@@ -722,7 +722,8 @@ function ModelCardImpl({
 				? t("atProviderCost")
 				: headline.kind === "usage"
 				? headline.per_image !== undefined
-					? t("pricePerImageEstimate", { price: headlinePrice(headline.per_image) })
+					// Three significant digits keep a sub-cent estimate exact ($0.0336, not $0.034).
+					? t("pricePerImageEstimate", { price: `$${format.number(headline.per_image, { maximumSignificantDigits: 3, notation: "standard" })}` })
 					: `${headlinePrice(headline.price)} / ${headline.unit}`
 				: headline.input !== null && headline.output !== null
 					? `${t("priceInputOutput", { input: headlinePrice(headline.input), output: headlinePrice(headline.output) })} / ${headline.unit}`
