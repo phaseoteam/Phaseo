@@ -3,6 +3,7 @@ title: "Crear un presupuesto del espacio de trabajo"
 sidebarTitle: "Crear presupuesto"
 badge: "Beta"
 openapi: "/es/openapi/v1/openapi.localized.yaml POST /budgets"
-description: "Crea un límite de gasto diario, semanal, mensual o de por vida para el espacio de trabajo."
+description: "Crea un límite de gasto diario, semanal, mensual o vitalicio para el espacio de trabajo."
 ---
-Requiere `budgets:write`. Los importes se expresan en USD. Cada espacio de trabajo puede tener un presupuesto por intervalo.
+
+Requiere `budgets:write`. Los importes se expresan en USD. Un espacio de trabajo puede tener un presupuesto por intervalo; crear un segundo devuelve `409` `conflict`.

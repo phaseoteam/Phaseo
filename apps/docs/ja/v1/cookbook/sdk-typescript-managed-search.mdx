@@ -1,156 +1,136 @@
 ---
-title: "管理された Web 検索で TypeScript SDK のワークフローに根拠を付ける"
-sidebarTitle: "TypeScript でマネージド検索"
+title: "マネージドウェブ検索で TypeScript SDK のワークフローに根拠を持たせる"
+sidebarTitle: "TypeScript でマネージドウェブ検索"
 icon: "search"
-description: "公式 TypeScript SDK、管理された Web 検索、応答メタデータを組み合わせ、根拠がありデバッグしやすいワークフローを作成します。"
+description: "公式 TypeScript SDK、プリセット、マネージドウェブ検索、レスポンスのメタデータを組み合わせて、根拠がありデバッグしやすいワークフローを作ります。"
 ---
 
-TypeScript または JavaScript のサービスで次の機能を組み合わせる場合は、このレシピを使います。
+TypeScript のリクエスト 1 件に `phaseo:web_search` ツールと JSON Schema を渡すと、モデルは回答の前に検索し、出典付きの概要を返します。完成すると、検証済みの `{ summary, sources }` オブジェクトと、デバッグに必要な ID や検索回数を表示するスクリプトができます。
 
-- プリセットによるルーティングの既定値
-- 管理された `phaseo:web_search` ツール
-- 厳密な応答解析
-- デバッグ用のリクエスト単位のメタデータ
+このスクリプトは、プリセットとドメインを自分のものに置き換えれば本番環境で使えます。検索結果は信頼できないウェブコンテンツです。出力を検証し、その中に含まれる指示には従わないでください。
 
-## 目標
+## 作成する
 
-- 呼び出し元で公式 SDK を使い続ける
-- 生の互換ペイロードを手作業で組み立てない
-- 検索結果、ルーティング、プラグインの動作を調べるのに十分なメタデータを保持する
+<Steps>
+<Step title="プリセットを作成する">
 
-## 1. 共有クライアントから始める
+**設定 → プリセット** で、すべての呼び出し元が共有するモデル、プロバイダーの優先設定、推論の設定、システムプロンプトを持つ `research-brief` を作成します。モデルはツールと JSON Schema の出力に対応している必要があります。
 
-```ts
-import Phaseo from "@phaseo/sdk";
+</Step>
+<Step title="SDK をインストールする">
 
-export const gateway = new Phaseo({
-  apiKey: process.env.PHASEO_API_KEY!,
-});
+```bash
+npm install @phaseo/sdk zod
+export PHASEO_API_KEY="phaseo_v1_sk_..."
 ```
 
-## 2. 安定した既定値をまずプリセットにまとめる
+</Step>
+<Step title="スクリプトを書く">
 
-複数の呼び出し元で共有する値がある場合は、プリセットを作成します。
+```ts research-brief.ts
+import Phaseo from "@phaseo/sdk";
+import { z } from "zod";
 
-- モデルポリシー
-- プロバイダーの優先設定
-- 推論の既定値
-- システムプロンプト
-- 決定的なキャッシュ動作
+const gateway = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
-その後、SDK リクエストには今回の呼び出しで変わる値だけを指定します。
+const Brief = z
+  .object({
+    summary: z.string().min(1),
+    sources: z
+      .array(z.object({ title: z.string(), url: z.string().url() }).strict())
+      .min(1),
+  })
+  .strict();
 
-## 3. 管理された検索ツールで根拠のある出力を求める
-
-```ts
 const response = await gateway.generateResponse({
-  preset: "research-brief",
-  input: "Find the latest public changes to our webhook delivery behavior and summarize them.",
+  model: "@research-brief",
+  input: "Find the latest public changes to Phaseo webhook delivery behavior and summarize them.",
   tools: [
     {
       type: "phaseo:web_search",
       parameters: {
-        query: "site:phaseo.app webhook delivery retries",
+        allowed_domains: ["phaseo.app"],
         max_results: 5,
         include_highlights: true,
       },
     },
   ],
   tool_choice: "phaseo:web_search",
-  response_format: {
-    type: "json_schema",
-    name: "research_brief",
-    schema: {
-      type: "object",
-      required: ["summary", "sources"],
-      properties: {
-        summary: { type: "string" },
-        sources: {
-          type: "array",
-          minItems: 1,
-          items: {
-            type: "object",
-            required: ["title", "url"],
-            properties: {
-              title: { type: "string" },
-              url: { type: "string", format: "uri" },
+  text: {
+    format: {
+      type: "json_schema",
+      name: "research_brief",
+      strict: true,
+      schema: {
+        type: "object",
+        required: ["summary", "sources"],
+        properties: {
+          summary: { type: "string" },
+          sources: {
+            type: "array",
+            minItems: 1,
+            items: {
+              type: "object",
+              required: ["title", "url"],
+              properties: {
+                title: { type: "string" },
+                url: { type: "string", format: "uri" },
+              },
+              additionalProperties: false,
             },
-            additionalProperties: false,
           },
         },
+        additionalProperties: false,
       },
-      additionalProperties: false,
     },
   },
   plugins: [{ id: "response-healing" }],
   meta: true,
 });
-```
 
-これにより、次の内容を利用できます。
+const text = (response.output ?? [])
+  .filter((item) => item.type === "message")
+  .flatMap((item) => item.content ?? [])
+  .filter((part) => part.type === "output_text")
+  .map((part) => part.text ?? "")
+  .join("");
 
-- プリセットで管理されるルーティングとプロンプトの既定値
-- プロバイダーのネイティブ検索対応に依存しない、サーバー管理の検索
-- 後続処理で予測しやすい構造化出力
-- 運用上のデバッグに必要なメタデータ
-
-## 4. 出力を解析し、デバッグ用フィールドを保持する
-
-```ts
-const firstMessage = Array.isArray(response.output)
-  ? response.output.find((item) => item?.type === "message")
-  : null;
-
-const text = Array.isArray(firstMessage?.content)
-  ? firstMessage.content.find((part) => part?.type === "output_text")?.text ?? ""
-  : "";
-
-const payload = JSON.parse(text);
+const brief = Brief.parse(JSON.parse(text));
 
 console.log({
   responseId: response.id,
-  selectedProvider: response.meta?.routing?.selected_provider,
+  model: response.model,
+  routing: response.meta?.routing,
   pluginExecutions: response.meta?.plugin_executions,
   serverToolUse: response.usage?.server_tool_use,
 });
-
-console.log(payload);
+console.log(brief);
 ```
 
-これらのフィールドがあれば、次の内容を確認しやすくなります。
+| フィールド | 動作 |
+| --- | --- |
+| `phaseo:web_search` を含む `tools` | プロバイダーに独自の検索があるかどうかにかかわらず、Phaseo が検索を実行します。クエリはモデルが作成します。 |
+| `allowed_domains` | 結果を自分の情報源に限定します。すべてのパラメーターは[ウェブ検索ガイド](../guides/server-tools/web-search#parameters)にあります。 |
+| `tool_choice: "phaseo:web_search"` | モデルに記憶から答えさせず、検索させます。 |
+| `text.format` | 回答の JSON Schema です。 |
+| `plugins` | ほぼ有効な JSON を修復します。[応答の修復](./response-healing-for-structured-json)を参照してください。 |
+| `meta: true` | `meta.routing` と `meta.plugin_executions` を追加します。 |
 
-- 実際にリクエストを処理したプロバイダー
-- 管理された検索が実行されたか
-- 応答修復が実行されたか
-- ダッシュボードで調査するリクエスト
+</Step>
+<Step title="実行する">
 
-## 5. ログで根拠付けされたリクエストを確認する
+```bash
+npx tsx research-brief.ts
+```
 
-**Gateway -> 使用量** でリクエストを開き、次の情報を確認します。
+</Step>
+</Steps>
 
-- 正規化された検索結果
-- 引用
-- 選択されたプロバイダー
-- プラグインの実行メタデータ
+## 動作を確認する
 
-検索の動作や順位が正しくない場合は、根拠のない上書きを追加せず、ログをもとにプリセットまたはツールのパラメーターを調整してください。
+- `serverToolUse.web_search_requests` が `1` 以上であれば、検索が実行されています。
+- `brief.sources` に `phaseo.app` の URL が一覧表示されます。
+- `routing.selected_provider` にはプロバイダー名が表示され、`pluginExecutions` には修復で何か変更されたかが表示されます。
+- **設定 → 使用量 → ログ** では、リクエストの **ウェブ検索の可観測性** セクションに、マネージド検索、結果、引用が表示されます。
 
-## 6. 探索的なワークフローと決定的なワークフローを分ける
-
-推奨するパターン:
-
-1. 決定的で構造化された調査結果用のプリセット
-2. 探索的なリクエストや温度を高くするリクエスト用の別のプリセット
-
-これにより、次の点を維持できます。
-
-- 応答キャッシュを整理しやすい
-- ルーティングの動作を理解しやすい
-- 検索の多いワークフローを一般的な生成トラフィックから分離できる
-
-## 関連ガイド
-
-- [Web 検索リクエストをデバッグする](./web-search-debugging.mdx)
-- [プリセットを展開してルーティングをデバッグする](./preset-rollout-and-routing-debug.mdx)
-- [構造化 JSON の応答を修復する](./response-healing-for-structured-json.mdx)
-- [TypeScript SDK の概要](../sdk-reference/typescript/overview.mdx)
+結果がおかしい場合は、上書きを追加するのではなく、ログの内容をもとにプリセットやツールのパラメーターを修正してください。よくあるケースは[ウェブ検索をデバッグする](./web-search-debugging)に一覧があります。試行的で temperature の高いリサーチは、この決定的なプリセットとは別のプリセットに分けて、ルーティングを比較しやすくしておきます。

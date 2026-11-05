@@ -5,13 +5,11 @@ description: "Keep prompts in a preset and send only the values that change with
 icon: "braces"
 ---
 
-A prompt template is a list of messages with `{{variables}}`, saved on a [preset](/v1/guides/presets). Your application sends the preset reference and the variable values. Phaseo checks the values, fills in the messages and sends the request to the preset's model.
-
-This keeps prompt text out of application code. You can change the prompt in the dashboard without a deploy, and every caller uses the same wording, tools and response format.
+Save your messages with `{{variables}}` on a [preset](/v1/guides/presets), and your application sends only the preset reference and the variable values. Phaseo checks the values, fills in the messages and sends the request to the preset's model. Changing the prompt in the dashboard needs no deploy, and every caller gets the same wording, tools and response format.
 
 Templates work on `POST /v1/chat/completions`, `POST /v1/responses` and `POST /v1/messages`.
 
-## Quick start
+## Create and call a template
 
 <Steps>
 <Step title="Write the template">
@@ -195,7 +193,7 @@ The request can send each image as an `https` URL, a `data:image/...` URL, or an
 
 ## Tools and response format
 
-A template can include `tools`, `tool_choice` and `response_format`, written in the chat completions shape. Phaseo converts them for the Responses and Messages endpoints.
+A template can include `tools`, `tool_choice` and `response_format`, written in the chat completions shape (see [Tool Calling](./tool-calling.mdx) and [Structured Outputs](./structured-outputs.mdx)). Phaseo converts them for the Responses and Messages endpoints.
 
 The request always wins when both set the same thing:
 
@@ -238,7 +236,7 @@ Saved changes reach requests within about two minutes.
 
 ## Versions and labels
 
-Each time you publish a preset, Phaseo saves an immutable version (see [Presets](/v1/guides/presets#versions-and-marketplace-forks)). Requests run the latest published version unless they pin one. A pinned request uses that version's models, parameters and template together.
+Each time you publish a preset, Phaseo saves an immutable version (see [Presets](/v1/guides/presets#version-and-roll-back)). Requests run the latest published version unless they pin one. A pinned request uses that version's models, parameters and template together.
 
 Pin a version with `prompt.version`:
 
@@ -331,6 +329,7 @@ A pinned version or label that does not exist, or that the key cannot use, retur
 | --- | --- |
 | Messages per template | 64 |
 | Variables per template | 64 |
+| Variable name length | 64 characters |
 | Template text across all messages | 48,000 characters |
 | Section nesting depth | 8 |
 | Section repeats per request | 1,000 |
@@ -343,15 +342,3 @@ A pinned version or label that does not exist, or that the key cannot use, retur
 [Guardrails](/v1/cookbook/guardrails-for-api-keys) check variable values as user content, even when the template puts them into a system message. A guardrail that redacts a value redacts it everywhere the template inserted it, and one that blocks a value blocks the request.
 
 Request metadata records the preset, the variable names and the number of rendered messages. The values themselves are kept only where the request body is kept, under your workspace's normal logging settings.
-
-## Current limitations
-
-- `models` fallbacks cannot be combined with a template. Add fallback models to the preset instead.
-- Templates apply to chat completions, Responses and Messages requests only.
-
-## Related guides
-
-- [Presets](./presets)
-- [Structured Outputs](./structured-outputs)
-- [Tool Calling](./tool-calling)
-- [Multimodality](./multimodality)

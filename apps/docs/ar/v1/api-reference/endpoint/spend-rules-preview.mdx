@@ -1,0 +1,9 @@
+---
+title: "معاينة قاعدة إنفاق"
+sidebarTitle: "معاينة قاعدة"
+badge: "Beta"
+openapi: "/ar/openapi/v1/openapi.localized.yaml GET /spend-rules/{id}/preview"
+description: "يعرض القيمة الحالية لقاعدة الإنفاق وأساسها والحد التالي."
+---
+
+يتطلب `spend_rules:read`. لا يُرسل أي شيء ولا يُسجَّل. تتضمن قواعد التوقع والارتفاع المفاجئ والرصيد كائنها الخاص `forecast` أو `spike` أو `balance`.

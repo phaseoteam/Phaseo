@@ -1,23 +1,19 @@
 ---
 icon: "waypoints"
 title: "टूल कॉलिंग पैटर्न"
-description: "Chat Completions और Responses एंडपॉइंट के लिए भरोसेमंद टूल कॉलिंग चक्र।"
+description: "Chat Completions और Responses एंडपॉइंट के लिए भरोसेमंद टूल-कॉलिंग लूप।"
 ---
 
-टूल कॉलिंग को नियतात्मक और डीबग करने योग्य रखने के लिए ये पैटर्न अपनाएँ।
+मॉडल के किसी टूल को कॉल करने के बाद, एक अगला अनुरोध भेजें जिसमें बातचीत, मॉडल की कॉल और आपके टूल का नतीजा दोहराया गया हो। फिर मॉडल अपना जवाब लिखता है, या कोई दूसरा टूल कॉल करता है और आप यही दोहराते हैं। वह एंडपॉइंट इस्तेमाल करें जिसका मैसेज फ़ॉर्मेट आपका ऐप पहले से इस्तेमाल करता है: OpenAI-शैली के मैसेज लूप के लिए `/v1/chat/completions`, Responses API के लिए `/v1/responses`, और Anthropic-नेटिव ऐप्स के लिए `/v1/messages`।
 
-## पैटर्न 1: Chat Completions चक्र
+<Tabs>
+<Tab title="Chat Completions">
 
-1. उपयोगकर्ता का संदेश और टूल परिभाषाएँ भेजें।
-2. अगर `finish_reason` का मान `tool_calls` हो, तो हर टूल कॉल निष्पादित करें।
-3. टूल आउटपुट को `role: "tool"` संदेशों के रूप में वापस भेजें।
-4. असिस्टेंट का अंतिम उत्तर पढ़ें।
-
-### अनुरोध (आगे की कड़ी)
+जब `finish_reason` `tool_calls` हो, तो हर कॉल चलाएँ, फिर assistant मैसेज बिना बदले भेजें और उसके बाद हर कॉल के लिए एक `role: "tool"` मैसेज, जो `tool_call_id` से मेल खाता हो। `tools` फिर से भेजें।
 
 ```json
 {
-  "model": "openai/gpt-5-nano",
+  "model": "openai/gpt-6-astra",
   "messages": [
     { "role": "user", "content": "What is the weather in Seattle?" },
     {
@@ -56,16 +52,14 @@ description: "Chat Completions और Responses एंडपॉइंट के 
 }
 ```
 
-## पैटर्न 2: Responses चक्र
+</Tab>
+<Tab title="Responses">
 
-`/v1/responses` में मॉडल के टूल कॉल `function_call` प्रकार के आउटपुट आइटम के रूप में दिखते हैं।
-फिर `function_call_output` इनपुट आइटम के साथ अनुवर्ती अनुरोध भेजें।
-
-### अनुरोध (अनुवर्ती)
+कॉल `function_call` प्रकार के आउटपुट आइटम के रूप में आती हैं। कॉल आइटम को इनपुट के रूप में वापस भेजें, उसके बाद उसी `call_id` वाला एक `function_call_output` आइटम।
 
 ```json
 {
-  "model": "openai/gpt-5-nano",
+  "model": "openai/gpt-6-astra",
   "input": [
     {
       "type": "message",
@@ -87,8 +81,7 @@ description: "Chat Completions और Responses एंडपॉइंट के 
 }
 ```
 
-## एंडपॉइंट चुनें
+</Tab>
+</Tabs>
 
-- अगर आप पहले से OpenAI-शैली के संदेश चक्र इस्तेमाल करते हैं, तो `/v1/chat/completions` को प्राथमिकता दें।
-- अगर आपका ऐप Responses API पर मानकीकृत है, तो `/v1/responses` को प्राथमिकता दें।
-- अगर आपका ऐप Anthropic-नेटिव है, तो `/v1/messages` इस्तेमाल करें।
+कोई कॉल चलाने से पहले उसके आर्ग्युमेंट सत्यापित करें; [टूल कॉलिंग की सुरक्षा](./tool-calling-safety) देखें।

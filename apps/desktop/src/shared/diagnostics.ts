@@ -1,4 +1,4 @@
-/** Settings → Diagnostics, after T3 Code's page: the app's process tree, its recent resource use and its local traces. */
+/** Settings → Diagnostics: the app's process tree, its recent resource use and its local traces. */
 
 export type DiagnosticsProcessKind = "main" | "renderer" | "gpu" | "utility" | "agent" | "terminal" | "git" | "mcp" | "process";
 

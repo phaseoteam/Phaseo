@@ -5,27 +5,18 @@ description: "Migrez une intégration du SDK Anthropic vers Phaseo tout en conse
 icon: "/icons/brands/anthropic.svg"
 ---
 
-Utilisez ce guide pour conserver votre flux de travail avec le SDK Anthropic tout en faisant transiter les requêtes par Phaseo. Commencez par modifier la configuration du client, puis vérifiez les identifiants de modèle et les comportements propres à Anthropic dont dépend votre application.
+Conservez le SDK Anthropic et l’appel Messages. Pointez le client vers `https://api.phaseo.app`, passez votre clé Phaseo comme `authToken` et donnez à chaque modèle son identifiant Phaseo.
 
-## Ce qui change
-
-| Paramètre | Avant | Après |
+| Paramètre | Anthropic | Phaseo |
 | --- | --- | --- |
-| URL de base | Valeur par défaut d’Anthropic | `https://api.phaseo.app` |
-| Clé API | Clé Anthropic | `PHASEO_API_KEY` |
-| Modèle | Nom de modèle Anthropic | Identifiant de modèle Phaseo renvoyé par `GET /v1/models` |
-| Appel Messages | Appel SDK existant | Généralement inchangé |
+| URL de base | Valeur par défaut du SDK (`https://api.anthropic.com`) | `https://api.phaseo.app` (le SDK ajoute `/v1/messages`) |
+| Clé API | `ANTHROPIC_API_KEY`, envoyée comme `x-api-key` | `PHASEO_API_KEY` comme `authToken` / `auth_token`, envoyée comme `Authorization: Bearer` |
+| Modèle | `claude-sonnet-5-5` | `anthropic/claude-sonnet-5.5`, ou tout identifiant de `GET /v1/models` |
+| Appel Messages | `messages.create` | Inchangé |
 
-<Steps>
-<Step title="Créez une clé API Phaseo">
+## Changer de client
 
-Créez une clé avec `phaseo keys create` dans la [CLI Phaseo](../guides/integrations/phaseo-cli) ou dans [Clés Gateway](https://phaseo.app/settings/keys) et fournissez-la à votre application sous le nom `PHASEO_API_KEY`.
-
-</Step>
-
-<Step title="Mettez à jour le client Anthropic">
-
-Configurez le SDK avec l’hôte racine de Phaseo, `https://api.phaseo.app`, et transmettez votre clé Phaseo via `authToken` (`auth_token` en Python). Le SDK ajoute lui-même `/v1/messages` et envoie la clé dans `Authorization: Bearer`. Supprimez `ANTHROPIC_API_KEY` des environnements qui appellent désormais Phaseo, afin que les anciennes versions du SDK n’envoient pas aussi votre clé Anthropic.
+Créez une clé avec `phaseo keys create` dans la [CLI Phaseo](../guides/integrations/phaseo-cli) ou dans [Clés API](https://phaseo.app/settings/keys), puis rendez-la disponible pour l’application sous le nom `PHASEO_API_KEY`.
 
 <CodeGroup>
 ```typescript TypeScript
@@ -38,7 +29,7 @@ const client = new Anthropic({
 });
 
 const response = await client.messages.create({
-  model: "anthropic/claude-sonnet-4.6",
+  model: "anthropic/claude-sonnet-5.5",
   max_tokens: 256,
   messages: [{ role: "user", content: "Reply with: migration ready" }],
 });
@@ -54,7 +45,7 @@ client = anthropic.Anthropic(
 )
 
 response = client.messages.create(
-    model="anthropic/claude-sonnet-4.6",
+    model="anthropic/claude-sonnet-5.5",
     max_tokens=256,
     messages=[{"role": "user", "content": "Reply with: migration ready"}],
 )
@@ -65,39 +56,47 @@ curl https://api.phaseo.app/v1/messages \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "anthropic/claude-sonnet-4.6",
+    "model": "anthropic/claude-sonnet-5.5",
     "max_tokens": 256,
     "messages": [{"role": "user", "content": "Reply with: migration ready"}]
   }'
 ```
 </CodeGroup>
 
-</Step>
+Trois détails font le plus souvent échouer cette étape :
 
-<Step title="Vérifiez les comportements propres à Anthropic">
+- **Utilisez l’hôte racine.** `baseURL: "https://api.phaseo.app/v1"` produit `/v1/v1/messages`. Les clients compatibles OpenAI du même dépôt continuent d’utiliser `/v1`.
+- **Envoyez la clé comme jeton bearer.** La passerelle lit uniquement `Authorization: Bearer` ; un en-tête `x-api-key` reçoit `401` `missing_or_invalid_authorization_header`. `authToken` envoie Bearer avec toutes les versions du SDK. `apiKey` ne le fait qu’à partir de `@anthropic-ai/sdk` 1.0 et `anthropic` 2.0.
+- **Supprimez `ANTHROPIC_API_KEY`** des environnements qui appellent désormais Phaseo. `apiKey: null` empêche les anciens SDK TypeScript de la lire, et les SDK Python antérieurs à 0.98 la lisent même lorsque `auth_token` est défini.
 
-Testez les prompts système, le streaming, l’utilisation d’outils, les options de raisonnement et les sorties structurées avec les modèles exacts de votre application. Supprimez les anciens en-têtes bêta ou champs de requête au lieu de les conserver sans vérification dans le nouveau parcours.
+Les outils configurés par variables d’environnement, comme Claude Code, utilisent `ANTHROPIC_BASE_URL=https://api.phaseo.app`, `ANTHROPIC_AUTH_TOKEN` défini sur la clé Phaseo et un `ANTHROPIC_API_KEY` vide.
 
-</Step>
+## Faire correspondre les identifiants de modèle
 
-<Step title="Déployez progressivement">
+Vérifiez chaque modèle de production dans `data[].id` de `GET /v1/models?format=openai`. Les identifiants Phaseo utilisent des points dans la version : `claude-sonnet-5-5` devient `anthropic/claude-sonnet-5.5`. Si le modèle change aussi, lisez le [guide de migration de modèle](../model-migrations) correspondant.
 
-Comparez un ensemble représentatif de prompts avec les deux configurations. Vérifiez la forme des réponses, la latence, l’utilisation des jetons, les erreurs et le coût avant de transférer le trafic de production.
+## Ce qui fonctionne différemment
 
-</Step>
-</Steps>
+| Fonctionnalité Anthropic | Sur Phaseo |
+| --- | --- |
+| En-tête `anthropic-version` | Toute valeur est acceptée ; Phaseo appelle Claude avec sa propre version. |
+| En-têtes `anthropic-beta` | Non transmis. Phaseo ajoute les bêtas dont ses fonctionnalités prises en charge ont besoin ; les champs de corps réservés aux bêtas, comme `mcp_servers`, renvoient `400`. |
+| `temperature`, `top_p`, `top_k` | Supprimés lorsque le modèle ou la route ne les accepte pas, et listés dans `X-Phaseo-Dropped-Params`. |
+| `speed: "fast"` | Renvoie `400`. Utilisez `service_tier: "fast"`. |
+| Outils natifs de recherche Web et de récupération Web | Acceptés lorsque le fournisseur les exécute ; sinon, utilisez l’outil serveur `phaseo:web_search` de Phaseo. |
+| `cache_control` | Pris en charge au niveau supérieur ou par bloc. Consultez [Mise en cache des prompts](../guides/prompt-caching). |
+| `metadata.user_id` | Pas utilisé comme identifiant d’utilisateur final. Envoyez `user` ou l’en-tête `X-Phaseo-User-Id` pour les règles de limite de débit par utilisateur final. |
+| Message Batches (`/v1/messages/batches`) | Ce chemin n’existe pas. `/v1/batches` accepte des lignes `/v1/messages` dans un format différent. |
+| Comptage des jetons (`/v1/messages/count_tokens`) | Pas d’équivalent. Gardez-le sur Anthropic ou faites une estimation côté client. |
+| Files API (`client.beta.files`) | Pas d’équivalent. Envoyez les documents en ligne. |
+| Clients `AnthropicBedrock`, `AnthropicVertex` | Remplacez-les par le client `Anthropic` standard ; l’authentification cloud et les paramètres de région ne s’appliquent pas. |
 
-## Liste de contrôle de la migration
+## Tester et déployer
 
-- La clé Phaseo est configurée dans chaque environnement de déploiement.
-- Le client Anthropic pointe vers `https://api.phaseo.app`.
-- Chaque identifiant de modèle de production a été vérifié avec `GET /v1/models`.
-- Le streaming et les appels d’outils fonctionnent en préproduction.
-- Les en-têtes bêta et paramètres propres à Anthropic ont été examinés.
-- Le retour arrière se limite toujours à modifier la clé et le point de terminaison dans la configuration.
+Testez les prompts système, le streaming, l’utilisation d’outils, le raisonnement et les sorties structurées avec les identifiants de modèle exacts utilisés par l’application. Comparez ensuite un ensemble de prompts représentatifs entre les deux configurations : format de sortie, latence, utilisation des jetons, erreurs et coût. Avant de déplacer le trafic, vérifiez que :
 
-## Étapes suivantes
-
-- [Migrations de modèles Anthropic](../model-migrations/index.mdx)
-- [Modèles](../exploring/models.mdx)
-- [Appels d’outils](../guides/tool-calling.mdx)
+- la clé Phaseo est définie dans chaque environnement de déploiement ;
+- chaque identifiant de modèle de production figure dans `GET /v1/models?format=openai` ;
+- les flux de streaming et d’utilisation d’outils passent en préproduction ;
+- chaque en-tête `anthropic-beta` et chaque champ réservé aux bêtas a été supprimé ou remplacé ;
+- le retour arrière se limite toujours à un changement d’URL de base et de clé.

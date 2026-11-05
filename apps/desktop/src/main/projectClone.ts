@@ -6,7 +6,7 @@ import { promisify } from "node:util";
 const execute = promisify(execFile);
 
 /**
- * A repository address to clone and the folder it clones into, after T3's Clone from a remote URL. Only HTTPS, SSH
+ * A repository address to clone and the folder it clones into, for Clone from a remote URL. Only HTTPS, SSH
  * and `user@host:path` addresses pass: Git's other transports (ext::, file, fd::) can run commands or read local files.
  */
 export function cloneSource(value: unknown): { url: string; name: string } {

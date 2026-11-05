@@ -1,29 +1,28 @@
 ---
 icon: "audio-lines"
 title: "TTS / STT (AI SDK)"
+sidebarTitle: "TTS / STT"
 description: "Speech-to-text (STT) and text-to-speech (TTS) with Phaseo provider models."
 "og:image": "https://phaseo.app/og/dynamic?title=TTS%20/%20STT%20%28AI%20SDK%29&description=Speech-to-text%20%28STT%29%20and%20text-to-speech%20%28TTS%29%20with%20Phaseo%20provider%20models.&pathname=/docs/v1/sdk-reference/sdk/audio"
 ---
 
-Use `experimental_transcribe` with `transcriptionModel`, and `experimental_generateSpeech` with `speechModel`.
+Pass `phaseo.transcriptionModel(modelId)` to `transcribe` for speech to text, and `phaseo.speechModel(modelId)` to `generateSpeech` for text to speech. The provider uploads audio to `/v1/audio/transcriptions` as a multipart form and sends speech requests to `/v1/audio/speech`.
 
 ```ts
 import { readFileSync, writeFileSync } from "node:fs";
 import { phaseo } from "@phaseo/ai-sdk-provider";
-import { experimental_generateSpeech, experimental_transcribe } from "ai";
+import { generateSpeech, transcribe } from "ai";
 
-const audioInput = readFileSync("./audio.mp3");
-
-const transcription = await experimental_transcribe({
+const transcription = await transcribe({
   model: phaseo.transcriptionModel("openai/whisper-1"),
-  audioData: new Blob([audioInput], { type: "audio/mpeg" }),
+  audio: readFileSync("./audio.mp3"),
 });
 
 console.log(transcription.text);
 console.log(transcription.providerMetadata);
 
-const speech = await experimental_generateSpeech({
-  model: phaseo.speechModel("openai/tts-1"),
+const speech = await generateSpeech({
+  model: phaseo.speechModel("openai/gpt-4o-mini-tts"),
   text: "Hello from Phaseo audio.",
   voice: "alloy",
   outputFormat: "mp3",
@@ -33,9 +32,10 @@ writeFileSync("./speech.mp3", Buffer.from(speech.audio.uint8Array));
 console.log(speech.providerMetadata);
 ```
 
-## Notes
+`audio` takes a `Buffer`, `Uint8Array`, `ArrayBuffer`, base64 string or `URL`. AI SDK 7 still exports the older `experimental_transcribe` and `experimental_generateSpeech` names as aliases.
 
-- The current AI SDK audio helpers are still experimental, so expect naming changes when the upstream stable APIs land.
-- Audio input/output formats are model-specific.
-- Keep payload sizes and timeout settings appropriate for long files.
-- Run retry logic for transient 429/5xx responses.
+## Handle long or failing audio
+
+- Supported input and output formats depend on the model.
+- Raise timeouts for long files, and keep uploads within the model's size limit (25 MB for most models).
+- Retry transient `429` and `5xx` responses with backoff.

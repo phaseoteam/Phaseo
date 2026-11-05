@@ -252,7 +252,20 @@ async function previewTestingReadiness(
 	return (routes.data ?? []).some((route: PreviewRouteRow) => previewRouteMatches(preview, route)) ? "ready" : "not_ready";
 }
 
-async function hasPreviewInferenceAccess(
+// Request fields that could send an internal (unbilled, unlimited) preview request to other models
+// or switch on gateway debugging. Preview requests go to the one preview model only.
+const PREVIEW_STRIPPED_FIELDS = ["models", "fallbacks", "fallback_models", "debug", "testing_mode", "testingMode"];
+
+export function previewRequestBody(body: Record<string, unknown> | undefined): Record<string, unknown> {
+	const next: Record<string, unknown> = { ...(body ?? {}) };
+	for (const field of PREVIEW_STRIPPED_FIELDS) delete next[field];
+	if (next.provider && typeof next.provider === "object" && !Array.isArray(next.provider)) {
+		next.provider = { ...(next.provider as Record<string, unknown>), allow_fallbacks: false };
+	}
+	return next;
+}
+
+export async function hasPreviewInferenceAccess(
 	requestBody: Record<string, unknown> | undefined,
 	auth: GatewayKeys,
 	env: Env,
@@ -318,14 +331,29 @@ async function hasPreviewInferenceAccess(
 		};
 	}
 	if (String(role.data?.role ?? "").toLowerCase() !== "admin") {
-		const link = await client
-			.from("provider_account_links")
-			.select("provider_slug")
-			.eq("provider_slug", target.providerSlug)
-			.eq("workspace_id", auth.workspaceId)
-			.in("status", ["pending", "active"])
-			.maybeSingle();
-		if (link.error) {
+		// The internal token skips credit, spend-limit and rate-limit checks, so within the submitting
+		// provider workspace only its owners and admins may test, not every member.
+		const [link, membership, workspace] = await Promise.all([
+			client
+				.from("provider_account_links")
+				.select("provider_slug")
+				.eq("provider_slug", target.providerSlug)
+				.eq("workspace_id", auth.workspaceId)
+				.in("status", ["pending", "active"])
+				.maybeSingle(),
+			client
+				.from("workspace_members")
+				.select("role")
+				.eq("workspace_id", auth.workspaceId)
+				.eq("user_id", auth.userId)
+				.maybeSingle(),
+			client
+				.from("workspaces")
+				.select("owner_user_id")
+				.eq("id", auth.workspaceId)
+				.maybeSingle(),
+		]);
+		if (link.error || membership.error || workspace.error) {
 			return {
 				ok: false,
 				status: 503,
@@ -333,12 +361,15 @@ async function hasPreviewInferenceAccess(
 				message: "Unable to verify internal model permissions.",
 			};
 		}
-		if (!link.data) {
+		const isWorkspaceAdmin =
+			String(workspace.data?.owner_user_id ?? "") === auth.userId ||
+			["owner", "admin"].includes(String(membership.data?.role ?? "").toLowerCase());
+		if (!link.data || !isWorkspaceAdmin) {
 			return {
 				ok: false,
 				status: 403,
 				code: "preview_model_forbidden",
-				message: "Only the submitting provider workspace or a Phaseo administrator can test this model.",
+				message: "Only owners and admins of the submitting provider workspace, or a Phaseo administrator, can test this model.",
 			};
 		}
 	}
@@ -371,11 +402,13 @@ export async function proxyGateway(request: Request, env: Env, waitUntil: (promi
 	const previewHeaders = previewAccess.preview
 		? { "x-phaseo-internal-token": String(env.GATEWAY_INTERNAL_TEST_TOKEN), "x-phaseo-testing-mode": "true" }
 		: {};
+	const requestBody = previewAccess.preview ? previewRequestBody(args.requestBody) : args.requestBody;
+	const debug = args.debug && !previewAccess.preview;
 	try {
 		const upstream = await fetch(`${baseUrl}${args.path}`, {
 			method: args.method ?? "POST",
-			headers: { ...(args.method === "GET" ? {} : { "Content-Type": "application/json" }), ...CANONICAL_CHAT_APP_HEADERS, ...sanitizeAppHeaders(args.appHeaders), ...previewHeaders, Authorization: `Bearer ${auth.apiKey}`, ...(args.debug ? { "x-gateway-debug": "true" } : {}), ...(args.stream ? { Accept: "text/event-stream" } : {}) },
-			...(args.method === "GET" ? {} : { body: JSON.stringify(args.requestBody ?? {}) }),
+			headers: { ...(args.method === "GET" ? {} : { "Content-Type": "application/json" }), ...CANONICAL_CHAT_APP_HEADERS, ...sanitizeAppHeaders(args.appHeaders), ...previewHeaders, Authorization: `Bearer ${auth.apiKey}`, ...(debug ? { "x-gateway-debug": "true" } : {}), ...(args.stream ? { Accept: "text/event-stream" } : {}) },
+			...(args.method === "GET" ? {} : { body: JSON.stringify(requestBody ?? {}) }),
 		});
 		return privateResponse(upstream);
 	} catch {

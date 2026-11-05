@@ -1527,6 +1527,7 @@ struct FusionToolDefinition {
 struct GatewayCapabilities {
 	std::vector<std::string> endpoints;
 	std::map<std::string, std::any> parameter_details;
+	std::map<std::string, std::any> parameter_specs;
 	std::vector<std::string> parameters;
 };
 
@@ -1794,14 +1795,10 @@ struct GenerationResponse {
 struct Guardrail {
 	std::optional<std::vector<std::string>> allowed_api_model_ids;
 	std::optional<std::string> created_at;
-	std::optional<int> daily_limit_cost_nanos;
-	std::optional<int> daily_limit_requests;
 	std::optional<std::string> description;
 	std::optional<bool> enabled;
 	std::string id;
 	std::optional<std::any> model_restriction_mode;
-	std::optional<int> monthly_limit_cost_nanos;
-	std::optional<int> monthly_limit_requests;
 	std::string name;
 	std::optional<bool> privacy_enable_free_may_publish_prompts;
 	std::optional<bool> privacy_enable_free_may_train;
@@ -1817,23 +1814,11 @@ struct Guardrail {
 	std::optional<bool> sensitive_info_enabled;
 	std::optional<std::vector<std::map<std::string, std::any>>> sensitive_info_rules;
 	std::optional<std::string> updated_at;
-	std::optional<int> weekly_limit_cost_nanos;
-	std::optional<int> weekly_limit_requests;
 	std::string workspace_id;
-};
-
-struct GuardrailBudgetInput {
-	std::optional<int> dailyCostNanos;
-	std::optional<int> dailyRequests;
-	std::optional<int> monthlyCostNanos;
-	std::optional<int> monthlyRequests;
-	std::optional<int> weeklyCostNanos;
-	std::optional<int> weeklyRequests;
 };
 
 struct GuardrailCreateRequest {
 	std::vector<std::string> allowedApiModelIds;
-	std::map<std::string, std::any> budgets;
 	std::optional<std::string> description;
 	std::optional<bool> enabled;
 	std::any modelRestrictionMode;
@@ -1915,7 +1900,6 @@ struct GuardrailMemberListResponse {
 
 struct GuardrailPolicyInput {
 	std::vector<std::string> allowedApiModelIds;
-	std::map<std::string, std::any> budgets;
 	std::optional<std::string> description;
 	std::optional<bool> enabled;
 	std::any modelRestrictionMode;
@@ -1945,7 +1929,6 @@ struct GuardrailResponse {
 
 struct GuardrailUpdateRequest {
 	std::vector<std::string> allowedApiModelIds;
-	std::map<std::string, std::any> budgets;
 	std::optional<std::string> description;
 	std::optional<bool> enabled;
 	std::any modelRestrictionMode;
@@ -2728,6 +2711,80 @@ struct OpenAIWebSearchToolDefinition {
 using OrganisationId = std::any;
 
 using OrganisationIdList = std::any;
+
+struct ParameterDimensions {
+	std::vector<std::string> aspect_ratios;
+	std::optional<double> max;
+	std::string max_aspect_ratio;
+	std::optional<double> max_height;
+	std::optional<double> max_pixels;
+	std::optional<double> max_width;
+	std::optional<double> min;
+	std::optional<double> min_pixels;
+	std::optional<double> multiple_of;
+};
+
+struct ParameterOption {
+	std::string description;
+	std::string label;
+	std::any value;
+};
+
+struct ParameterRule {
+	std::any default;
+	std::map<std::string, std::any> if;
+	std::optional<double> max;
+	std::string message;
+	std::optional<double> min;
+	std::optional<double> step;
+	std::optional<bool> supported;
+	std::vector<std::any> values;
+};
+
+struct ParameterSpec {
+	std::string alias_of;
+	std::vector<std::string> aliases;
+	std::optional<bool> always_on;
+	std::any default;
+	std::map<std::string, std::any> dimensions;
+	std::map<std::string, std::any> extra;
+	std::string format;
+	std::vector<std::string> formats;
+	std::vector<std::string> item_types;
+	std::optional<double> max;
+	std::optional<double> max_file_size_bytes;
+	std::optional<double> max_items;
+	std::optional<double> max_length;
+	std::optional<double> max_tokens;
+	std::any media;
+	std::optional<double> min;
+	std::optional<double> min_items;
+	std::optional<double> min_length;
+	std::optional<double> multiple_of;
+	std::string notes;
+	std::optional<bool> open;
+	std::vector<std::map<std::string, std::any>> options;
+	std::map<std::string, std::any> properties;
+	std::any provider_default;
+	std::optional<bool> required;
+	std::vector<std::string> requires;
+	std::map<std::string, std::any> source;
+	std::optional<double> step;
+	std::string support_level;
+	bool supported;
+	std::any type;
+	std::string upstream_name;
+	std::vector<std::any> upstream_values;
+	std::vector<std::any> values;
+	std::vector<std::map<std::string, std::any>> when;
+};
+
+struct ParameterSpecs {
+};
+
+using ParameterType = std::any;
+
+using ParameterValue = std::any;
 
 using ParseBlock = std::any;
 
@@ -3947,6 +4004,7 @@ struct VideoModelCapability {
 
 struct VideoModelProviderCapability {
 	std::string id;
+	std::map<std::string, std::any> parameter_specs;
 	std::vector<std::string> supported_parameters;
 	std::map<std::string, std::any> supported_parameters_detail;
 	std::vector<std::string> supported_params;
@@ -4072,6 +4130,7 @@ struct WorkloadIdentityPolicy {
 	std::optional<std::string> last_used_at;
 	int max_token_lifetime_seconds;
 	std::string name;
+	std::string owner_claim;
 	std::string owner_id;
 	std::any provider;
 	std::any status;
@@ -4087,6 +4146,7 @@ struct WorkloadIdentityPolicyInput {
 	std::string issuer;
 	std::optional<int> max_token_lifetime_seconds;
 	std::string name;
+	std::string owner_claim;
 	std::string owner_id;
 	std::any provider;
 };

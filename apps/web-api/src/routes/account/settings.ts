@@ -349,6 +349,21 @@ accountSettingsRouter.put("/preferences", async (c) => {
 	return c.json({ ok: true, preferences }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
+const WORKSPACE_BASELINE_COLUMNS = "id,privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_free_may_publish_prompts,privacy_enable_input_output_logging,privacy_zdr_only,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed,model_restriction_mode,allowed_api_model_ids";
+
+/** The workspace's baseline guardrail (the Settings, Privacy rules), or null data when it has none yet. */
+async function readWorkspaceBaseline(client: ReturnType<typeof getDataClient>, workspaceId: string): Promise<{ data: Record<string, any> | null; error: unknown }> {
+	const result = await client.from("workspace_guardrails").select(WORKSPACE_BASELINE_COLUMNS)
+		.eq("workspace_id", workspaceId).eq("is_workspace_baseline", true).maybeSingle();
+	return { data: (result.data ?? null) as Record<string, any> | null, error: result.error };
+}
+
+/** The baseline's rules under their workspace_settings names (its model list is allowed_api_model_ids). */
+export function workspaceSettingsFromBaseline(baseline: Record<string, any>): Record<string, unknown> {
+	const { id: _id, allowed_api_model_ids: modelIds, ...rules } = baseline;
+	return { ...rules, model_restriction_model_ids: modelIds ?? [] };
+}
+
 accountSettingsRouter.get("/privacy", async (c) => {
 	const workspaceId = c.req.query("workspaceId")?.trim();
 	if (!workspaceId) {
@@ -377,13 +392,14 @@ accountSettingsRouter.get("/privacy", async (c) => {
 		workspaceId,
 	});
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
-	let [teamResult, settingsResult, providersResult, modelsResult, contributionGatewayResult, ioLogContentsAccess] = await Promise.all([
+	let [teamResult, settingsResult, providersResult, modelsResult, contributionGatewayResult, ioLogContentsAccess, baselineResult] = await Promise.all([
 		context.client.from("workspaces").select("id,name").eq("id", workspaceId).maybeSingle(),
 		context.client.from("workspace_settings").select("privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_free_may_publish_prompts,privacy_enable_input_output_logging,privacy_zdr_only,io_logging_enabled,io_logging_retention_days,io_logging_include_provider_payloads,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed,model_restriction_mode,model_restriction_model_ids,response_healing_enabled,response_healing_locked,response_healing_mode").eq("workspace_id", workspaceId).maybeSingle(),
 		context.client.from("v2_providers").select("api_provider_id:provider_slug,api_provider_name:name,provider_family_id:provider_family_slug,offer_label,offer_scope,routable,routing_enabled,status").eq("routable", true).eq("routing_enabled", true).in("status", ["active", "degraded"]).order("name", { ascending: true }),
 		context.client.from("v2_model_provider_routes").select("provider_id:provider_slug,api_model_id:model_slug,internal_model_id:model_slug,is_active_gateway:routing_enabled").eq("routing_enabled", true).in("status", ["active", "degraded"]),
 		callDataContributionGateway({ env: c.env, request: c.req.raw, workspaceId: context.workspaceId }),
 		readIoLogContentsAccess(context.client, workspaceId),
+		readWorkspaceBaseline(context.client, workspaceId),
 	]);
 	if (settingsResult.error && /model_restriction_(mode|model_ids)/i.test(settingsResult.error.message)) {
 		settingsResult = await context.client.from("workspace_settings")
@@ -391,7 +407,7 @@ accountSettingsRouter.get("/privacy", async (c) => {
 			.eq("workspace_id", workspaceId)
 			.maybeSingle();
 	}
-	for (const result of [teamResult, settingsResult, providersResult, modelsResult]) {
+	for (const result of [teamResult, settingsResult, providersResult, modelsResult, baselineResult]) {
 		if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}
 	const routableProviderIds = new Set((modelsResult.data ?? []).map((row) => String(row.provider_id ?? "")).filter(Boolean));
@@ -409,7 +425,11 @@ accountSettingsRouter.get("/privacy", async (c) => {
 		ids.add(providerId);
 		providerIdsByModel.set(modelId, ids);
 	}
-	const settings = settingsResult.data as Record<string, any> | null;
+	// The page edits the workspace baseline guardrail. A workspace that has never saved restricting
+	// rules has none yet; its workspace_settings columns hold the same (default) values.
+	const settings = (baselineResult.data
+		? { ...settingsResult.data, ...workspaceSettingsFromBaseline(baselineResult.data) }
+		: settingsResult.data) as Record<string, any> | null;
 	const restrictionMode = (value: unknown) => value === "allowlist" || value === "blocklist" ? value : "none";
 	const stringList = (value: unknown) => Array.isArray(value) ? [...new Set(value.map(String).filter(Boolean))] : [];
 	const contributionData = contributionGatewayResult.status === 200
@@ -423,7 +443,7 @@ accountSettingsRouter.get("/privacy", async (c) => {
 		})),
 		initialGlobal: settingsResult.data
 			// null when the setting couldn't be read, so the page doesn't save a guess.
-			? { ...settingsResult.data, io_logging_contents_access: ioLogContentsAccess }
+			? { ...settings, io_logging_contents_access: ioLogContentsAccess }
 			: null,
 		accountPolicy: null,
 		policy: {
@@ -994,6 +1014,17 @@ accountSettingsRouter.get("/oauth-apps", async (c) => {
 	return c.json({ initialTeamId: workspaceId, oauthApps: data ?? [], signedIn: true }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
+/** A user's name and email as their OAuth grant shares them: the name with `profile`, the email with `email` (as userinfo does). */
+export function sharedOAuthIdentity(entry: Record<string, unknown>): { full_name: string | null; email: string | null } {
+	const scopes = Array.isArray(entry.scopes) ? entry.scopes : [];
+	const raw = Array.isArray(entry.users) ? entry.users[0] : entry.users;
+	const profile = raw && typeof raw === "object" ? raw as Record<string, unknown> : {};
+	return {
+		full_name: scopes.includes("profile") && typeof profile.full_name === "string" ? profile.full_name : null,
+		email: scopes.includes("email") && typeof profile.email === "string" ? profile.email : null,
+	};
+}
+
 accountSettingsRouter.get("/oauth-apps/:clientId", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) return c.json({ authorizations: [], currentUserId: null, oauthApp: null, recentRequests: [], signedIn: false, usageStats: [], userDirectory: [] }, 200, PRIVATE_NO_STORE_HEADERS);
@@ -1007,21 +1038,34 @@ accountSettingsRouter.get("/oauth-apps/:clientId", async (c) => {
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const thirtyDaysAgo = new Date();
 	thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 30);
+	// The people who authorized an app usually belong to other workspaces. Only the app's owners and
+	// admins (who manage it) see its users and their requests, and only what each user agreed to share
+	// with the app. Other members see the app and its daily totals.
+	if (!["owner", "admin"].includes(context.role.toLowerCase())) {
+		const usage = await client.from("gateway_requests").select("created_at,success,cost_nanos").eq("oauth_client_id", clientId).eq("auth_method", "oauth").gte("created_at", thirtyDaysAgo.toISOString()).order("created_at", { ascending: true });
+		if (usage.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+		return c.json({ authorizations: [], canViewUsers: false, currentUserId: user.id, oauthApp: appResult.data, recentRequests: [], signedIn: true, usageStats: usage.data ?? [], userDirectory: [] }, 200, PRIVATE_NO_STORE_HEADERS);
+	}
 	const [authorizationsResult, usageResult, recentResult, usersResult] = await Promise.all([
-		client.from("oauth_authorizations").select("*,users:user_id(user_id,full_name,email),teams:workspaces(id,name)").eq("client_id", clientId).is("revoked_at", null).order("last_used_at", { ascending: false, nullsFirst: false }).limit(10),
+		client.from("oauth_authorizations").select("id,user_id,scopes,created_at,last_used_at,users:user_id(user_id,full_name,email)").eq("client_id", clientId).is("revoked_at", null).order("last_used_at", { ascending: false, nullsFirst: false }).limit(10),
 		client.from("gateway_requests").select("created_at,success,cost_nanos").eq("oauth_client_id", clientId).eq("auth_method", "oauth").gte("created_at", thirtyDaysAgo.toISOString()).order("created_at", { ascending: true }),
 		client.from("gateway_requests").select("request_id,created_at,oauth_user_id,endpoint,model_id,provider,success,status_code,error_code,cost_nanos,latency_ms").eq("oauth_client_id", clientId).eq("auth_method", "oauth").order("created_at", { ascending: false }).limit(250),
-		client.from("oauth_authorizations").select("user_id,users:user_id(user_id,full_name,email)").eq("client_id", clientId).order("last_used_at", { ascending: false, nullsFirst: false }),
+		client.from("oauth_authorizations").select("user_id,scopes,users:user_id(user_id,full_name,email)").eq("client_id", clientId).is("revoked_at", null).order("last_used_at", { ascending: false, nullsFirst: false }),
 	]);
 	if ([authorizationsResult, usageResult, recentResult, usersResult].some((result) => result.error)) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const userDirectory = new Map<string, { user_id: string; full_name: string | null; email: string | null }>();
 	for (const entry of usersResult.data ?? []) {
-		const directoryUser = Array.isArray(entry.users) ? entry.users[0] : entry.users;
-		const userId = String(entry.user_id ?? directoryUser?.user_id ?? "").trim();
+		const userId = String(entry.user_id ?? "").trim();
 		if (!userId || userDirectory.has(userId)) continue;
-		userDirectory.set(userId, { user_id: userId, full_name: typeof directoryUser?.full_name === "string" ? directoryUser.full_name : null, email: typeof directoryUser?.email === "string" ? directoryUser.email : null });
+		userDirectory.set(userId, { user_id: userId, ...sharedOAuthIdentity(entry) });
 	}
-	return c.json({ authorizations: authorizationsResult.data ?? [], currentUserId: user.id, oauthApp: appResult.data, recentRequests: recentResult.data ?? [], signedIn: true, usageStats: usageResult.data ?? [], userDirectory: Array.from(userDirectory.values()) }, 200, PRIVATE_NO_STORE_HEADERS);
+	const authorizations = (authorizationsResult.data ?? []).map((entry: Record<string, unknown>) => ({
+		id: entry.id,
+		created_at: entry.created_at ?? null,
+		last_used_at: entry.last_used_at ?? null,
+		users: sharedOAuthIdentity(entry),
+	}));
+	return c.json({ authorizations, canViewUsers: true, currentUserId: user.id, oauthApp: appResult.data, recentRequests: recentResult.data ?? [], signedIn: true, usageStats: usageResult.data ?? [], userDirectory: Array.from(userDirectory.values()) }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountSettingsRouter.get("/management-api-keys", async (c) => {
@@ -1241,15 +1285,12 @@ accountSettingsRouter.get("/credits/onboarding", async (c) => {
 	if (!user || !workspaceId) return c.json(empty, 200, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
-	const [teamResult, profileResult] = await Promise.all([
-		context.client.from("workspaces")
-			.select("name,tier,billing_mode,invoice_onboarding_status")
-			.eq("id", workspaceId).maybeSingle(),
-		context.client.from("workspace_invoice_profiles")
-			.select("enabled,billing_day,payment_terms_days")
-			.eq("workspace_id", workspaceId).maybeSingle(),
-	]);
-	if (teamResult.error || profileResult.error) {
+	// Invoice profiles are no longer stored in Phaseo (Stripe is the source of
+	// truth), so the onboarding form starts from its defaults.
+	const teamResult = await context.client.from("workspaces")
+		.select("name,tier,billing_mode,invoice_onboarding_status")
+		.eq("id", workspaceId).maybeSingle();
+	if (teamResult.error) {
 		return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}
 	if (!teamResult.data) return c.json(empty, 200, PRIVATE_NO_STORE_HEADERS);
@@ -1259,9 +1300,9 @@ accountSettingsRouter.get("/credits/onboarding", async (c) => {
 		canAccessOnboarding: billingMode === "invoice" || onboardingStatus === "pre_invoice",
 		canManageBilling: ["owner", "admin"].includes(context.role.toLowerCase()),
 		currentBillingMode: billingMode,
-		initialBillingDay: Math.min(28, Math.max(1, Number(profileResult.data?.billing_day ?? 1) || 1)),
-		initialPaymentTermsDays: Number(profileResult.data?.payment_terms_days) === 14 ? 14 : 30,
-		invoiceProfileEnabled: Boolean(profileResult.data?.enabled),
+		initialBillingDay: empty.initialBillingDay,
+		initialPaymentTermsDays: empty.initialPaymentTermsDays,
+		invoiceProfileEnabled: false,
 		signedIn: true,
 		signerName,
 		team: {
@@ -1293,19 +1334,8 @@ accountSettingsRouter.get("/credits/transactions", async (c) => {
 	const billingMode = String(teamResult.data?.billing_mode ?? "wallet").toLowerCase() === "invoice" ? "invoice" : "wallet";
 	const isEnterpriseInvoiceMode = teamTier === "enterprise" && billingMode === "invoice";
 	if (isEnterpriseInvoiceMode) {
-		const invoicesResult = await context.client.from("workspace_invoices")
-			.select("id,period_start,period_end,amount_nanos,currency,status,stripe_invoice_id,stripe_invoice_number,due_at,issued_at,paid_at,created_at,updated_at")
-			.eq("workspace_id", workspaceId).order("period_end", { ascending: false }).limit(250);
-		if (invoicesResult.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-		const invoices = (invoicesResult.data ?? []).map((row) => ({
-			...row,
-			id: String(row.id),
-			period_start: String(row.period_start),
-			period_end: String(row.period_end),
-			amount_nanos: Number(row.amount_nanos ?? 0),
-			currency: row.currency ?? "USD",
-			status: String(row.status ?? "draft"),
-		}));
+		// Invoices live in Stripe; Phaseo no longer keeps a copy to list here.
+		const invoices: never[] = [];
 		return c.json({
 			billingMode, invoices, isEnterpriseInvoiceMode, stripeCustomerId: null,
 			teamTier, transactions: [], workspaceId,

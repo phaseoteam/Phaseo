@@ -100,6 +100,15 @@ paths:
             enum:
               - asc
               - desc
+        - name: include
+          in: query
+          description: Set to parameter_specs to add each offer's request parameters in the standard shape.
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - parameter_specs
         - name: endpoints
           in: query
           description: Filter by endpoints
@@ -5226,9 +5235,9 @@ paths:
       operationId: listWorkloadIdentityPolicies
       summary: List trusted workload policies
       description: >-
-        Lists the workspace's trusted workload policies: which Vercel
-        deployments and GitHub Actions workflows may call the gateway with their
-        OIDC token instead of an API key. Requires keys:read on management keys
+        Lists the workspace's trusted workload policies: which deployments, CI
+        jobs and cloud workloads may call the gateway with their OIDC token
+        instead of an API key. Requires keys:read on management keys
         and OAuth tokens, or a workspace owner or admin. Available only to
         workspaces in the trusted workloads beta; other workspaces get 404.
       responses:
@@ -5316,11 +5325,11 @@ paths:
       summary: Update a trusted workload policy
       description: >-
         Changes a policy's name, status, claim conditions or maximum token
-        lifetime. The provider, issuer and owner cannot change; create a new
-        policy instead. Changes reach the gateway within a minute. Requires
-        keys:write on management keys and OAuth tokens, or a workspace owner or
-        admin. Available only to workspaces in the trusted workloads beta; other
-        workspaces get 404.
+        lifetime. The provider, issuer, owner claim and owner cannot change;
+        create a new policy instead. Changes reach the gateway within a minute.
+        Requires keys:write on management keys and OAuth tokens, or a workspace
+        owner or admin. Available only to workspaces in the trusted workloads
+        beta; other workspaces get 404.
       requestBody:
         required: true
         content:
@@ -5393,7 +5402,7 @@ paths:
       description: >-
         Lists the workspace's named rate limit policies. The gateway enforces
         requests_per_minute, tokens_per_minute and concurrent_requests for key,
-        member, department, guardrail and end-user-default assignments.
+        member, department and end-user-default assignments.
       responses:
         '200':
           description: Rate limit policies
@@ -5416,8 +5425,8 @@ paths:
       description: >-
         Creates a named policy with requests per minute, tokens per minute, or
         concurrent request limits. The gateway enforces requests_per_minute,
-        tokens_per_minute and concurrent_requests for key, member, department,
-        guardrail and end-user-default assignments.
+        tokens_per_minute and concurrent_requests for key, member, department
+        and end-user-default assignments.
       requestBody:
         required: true
         content:
@@ -5454,8 +5463,8 @@ paths:
       summary: Get a rate limit policy
       description: >-
         Returns one rate limit policy. The gateway enforces requests_per_minute,
-        tokens_per_minute and concurrent_requests for key, member, department,
-        guardrail and end-user-default assignments.
+        tokens_per_minute and concurrent_requests for key, member, department
+        and end-user-default assignments.
       responses:
         '200':
           description: Rate limit policy
@@ -5479,8 +5488,8 @@ paths:
         Changes a policy's name, description, limits, or fail-closed setting.
         Set a limit to null to remove it; at least one limit must remain. The
         gateway enforces requests_per_minute, tokens_per_minute and
-        concurrent_requests for key, member, department, guardrail and
-        end-user-default assignments.
+        concurrent_requests for key, member, department and end-user-default
+        assignments.
       requestBody:
         required: true
         content:
@@ -5509,7 +5518,7 @@ paths:
       description: >-
         Deletes a policy and every assignment that uses it. The gateway enforces
         requests_per_minute, tokens_per_minute and concurrent_requests for key,
-        member, department, guardrail and end-user-default assignments.
+        member, department and end-user-default assignments.
       responses:
         '200':
           description: Rate limit policy deleted
@@ -5533,8 +5542,8 @@ paths:
       description: >-
         Lists where rate limit policies apply, optionally filtered by policy or
         target type. The gateway enforces requests_per_minute, tokens_per_minute
-        and concurrent_requests for key, member, department, guardrail and
-        end-user-default assignments.
+        and concurrent_requests for key, member, department and end-user-default
+        assignments.
       parameters:
         - name: policy_id
           in: query
@@ -5586,11 +5595,10 @@ paths:
       operationId: createRateLimitAssignment
       summary: Assign a rate limit policy
       description: >-
-        Applies a policy to one API key, workspace member, department, or
-        guardrail, or sets the workspace default for each end user. Each target
-        can have one policy. The gateway enforces requests_per_minute,
-        tokens_per_minute and concurrent_requests for key, member, department,
-        guardrail and end-user-default assignments.
+        Applies a policy to one API key, workspace member or department, or
+        sets the workspace default for each end user. Each target can have one
+        policy. The gateway enforces requests_per_minute, tokens_per_minute and
+        concurrent_requests for every assignment.
       requestBody:
         required: true
         content:
@@ -5628,7 +5636,7 @@ paths:
       description: >-
         Returns one rate limit assignment. The gateway enforces
         requests_per_minute, tokens_per_minute and concurrent_requests for key,
-        member, department, guardrail and end-user-default assignments.
+        member, department and end-user-default assignments.
       responses:
         '200':
           description: Rate limit assignment
@@ -5651,7 +5659,7 @@ paths:
       description: >-
         Switches the policy applied to an assignment's target. The gateway
         enforces requests_per_minute, tokens_per_minute and concurrent_requests
-        for key, member, department, guardrail and end-user-default assignments.
+        for key, member, department and end-user-default assignments.
       requestBody:
         required: true
         content:
@@ -5680,7 +5688,7 @@ paths:
       description: >-
         Removes a policy from its target. The gateway enforces
         requests_per_minute, tokens_per_minute and concurrent_requests for key,
-        member, department, guardrail and end-user-default assignments.
+        member, department and end-user-default assignments.
       responses:
         '200':
           description: Rate limit assignment deleted
@@ -5726,10 +5734,9 @@ paths:
       summary: Create a spend rule
       description: >-
         Creates a spend rule and sets its notification destinations. Every
-        metric is accepted; rules returned with evaluated false are saved and
-        fire from a later release. Blocking is best effort and acts minutes
-        after the threshold; use key limits and workspace budgets for exact
-        caps. A workspace can have 50 spend rules.
+        metric is evaluated. Blocking is best effort and acts minutes after the
+        threshold; use key limits and workspace budgets for exact caps. A
+        workspace can have 50 spend rules.
       requestBody:
         required: true
         content:
@@ -12009,6 +12016,8 @@ components:
             type: string
         parameter_details:
           $ref: '#/components/schemas/SupportedParameterDetails'
+        parameter_specs:
+          $ref: '#/components/schemas/ParameterSpecs'
     GatewayPricingMeter:
       type: object
       nullable: true
@@ -12049,6 +12058,7 @@ components:
             $ref: '#/components/schemas/GatewayPricingMeter'
     GatewayProviderAvailabilityReason:
       type: string
+      description: "A deranked route is routable only as a last resort, after every other healthy provider. `deranked_lvl1`, `deranked_lvl2` and `deranked_lvl3` are no longer returned."
       enum:
         - active
         - preview_only
@@ -12058,6 +12068,7 @@ components:
         - project_limited
         - paused
         - soft_blocked
+        - deranked
         - deranked_lvl1
         - deranked_lvl2
         - deranked_lvl3
@@ -12073,17 +12084,21 @@ components:
         - retired
     GatewayRoutingStatus:
       type: string
+      description: "A deranked route is routable only as a last resort, after every other healthy provider. `deranked_lvl1`, `deranked_lvl2` and `deranked_lvl3` are no longer returned."
       enum:
         - active
+        - deranked
         - deranked_lvl1
         - deranked_lvl2
         - deranked_lvl3
         - disabled
     GatewayCapabilityStatus:
       type: string
+      description: "A deranked route is routable only as a last resort, after every other healthy provider. `deranked_lvl1`, `deranked_lvl2` and `deranked_lvl3` are no longer returned."
       enum:
         - active
         - coming_soon
+        - deranked
         - deranked_lvl1
         - deranked_lvl2
         - deranked_lvl3
@@ -12309,6 +12324,198 @@ components:
           $ref: '#/components/schemas/SupportedParameterDetails'
         supported_parameters_detail:
           $ref: '#/components/schemas/SupportedParameterDetails'
+    ParameterValue:
+      oneOf:
+        - type: string
+        - type: number
+        - type: boolean
+    ParameterOption:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          $ref: '#/components/schemas/ParameterValue'
+        label:
+          type: string
+        description:
+          type: string
+      additionalProperties: true
+    ParameterRule:
+      type: object
+      description: When every parameter in if has one of its listed values, the other fields replace the parameter's own.
+      required:
+        - if
+      properties:
+        if:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: '#/components/schemas/ParameterValue'
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        min:
+          type: number
+        max:
+          type: number
+        step:
+          type: number
+        default:
+          $ref: '#/components/schemas/ParameterValue'
+        supported:
+          type: boolean
+        message:
+          type: string
+    ParameterDimensions:
+      type: object
+      properties:
+        min:
+          type: number
+        max:
+          type: number
+        multiple_of:
+          type: number
+        max_width:
+          type: number
+        max_height:
+          type: number
+        min_pixels:
+          type: number
+        max_pixels:
+          type: number
+        max_aspect_ratio:
+          type: string
+        aspect_ratios:
+          type: array
+          items:
+            type: string
+    ParameterSpec:
+      type: object
+      required:
+        - supported
+      properties:
+        supported:
+          type: boolean
+        type:
+          oneOf:
+            - $ref: '#/components/schemas/ParameterType'
+            - type: array
+              items:
+                $ref: '#/components/schemas/ParameterType'
+        media:
+          type: string
+          enum:
+            - image
+            - audio
+            - video
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        open:
+          type: boolean
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterOption'
+        min:
+          type: number
+        max:
+          type: number
+        step:
+          type: number
+        multiple_of:
+          type: number
+        default:
+          $ref: '#/components/schemas/ParameterValue'
+        provider_default:
+          $ref: '#/components/schemas/ParameterValue'
+        required:
+          type: boolean
+        always_on:
+          type: boolean
+        aliases:
+          type: array
+          items:
+            type: string
+        alias_of:
+          type: string
+        upstream_name:
+          type: string
+        upstream_values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        requires:
+          type: array
+          items:
+            type: string
+        min_length:
+          type: number
+        max_length:
+          type: number
+        max_tokens:
+          type: number
+        min_items:
+          type: number
+        max_items:
+          type: number
+        item_types:
+          type: array
+          items:
+            type: string
+        formats:
+          type: array
+          items:
+            type: string
+        max_file_size_bytes:
+          type: number
+        format:
+          type: string
+        dimensions:
+          $ref: '#/components/schemas/ParameterDimensions'
+        properties:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+        when:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterRule'
+        support_level:
+          type: string
+        notes:
+          type: string
+        source:
+          type: object
+          properties:
+            url:
+              type: string
+            verified_at:
+              type: string
+        extra:
+          type: object
+          additionalProperties: true
+    ParameterType:
+      type: string
+      enum:
+        - string
+        - integer
+        - number
+        - boolean
+        - array
+        - object
+        - file
+    ParameterSpecs:
+      type: object
+      description: >-
+        Every request parameter the provider accepts on this endpoint, in one standard shape whatever way the catalogue stores it.
+      additionalProperties:
+        $ref: '#/components/schemas/ParameterSpec'
     SupportedParameterDetails:
       type: object
       description: >-
@@ -16972,6 +17179,8 @@ components:
           $ref: '#/components/schemas/SupportedParameterDetails'
         supported_parameters_detail:
           $ref: '#/components/schemas/SupportedParameterDetails'
+        parameter_specs:
+          $ref: '#/components/schemas/ParameterSpecs'
     VideoModelCapability:
       type: object
       properties:
@@ -24747,7 +24956,16 @@ components:
       enum:
         - vercel
         - github_actions
-      description: The platform that issues the OIDC tokens.
+        - gitlab
+        - google_cloud
+        - buildkite
+        - circleci
+        - aws
+        - custom
+      description: >-
+        The platform that issues the OIDC tokens. Use custom for any other
+        OIDC issuer, such as a Kubernetes cluster or a self-managed GitLab
+        instance.
     WorkloadIdentityPolicy:
       type: object
       description: >-
@@ -24758,6 +24976,7 @@ components:
         - name
         - provider
         - issuer
+        - owner_claim
         - owner_id
         - claim_conditions
         - max_token_lifetime_seconds
@@ -24781,22 +25000,35 @@ components:
         issuer:
           type: string
           description: >-
-            Token issuer, for example https://oidc.vercel.com/acme or
-            https://token.actions.githubusercontent.com.
+            Token issuer (the iss claim), for example
+            https://oidc.vercel.com/acme, https://token.actions.githubusercontent.com
+            or https://accounts.google.com.
+        owner_claim:
+          type: string
+          description: >-
+            The token claim owner_id is matched against. Fixed for each
+            platform: owner_id for vercel, repository_owner_id for
+            github_actions, project_id for gitlab, sub for google_cloud and aws,
+            organization_id for buildkite and oidc.circleci.com/org-id for
+            circleci. Custom issuers use the claim chosen when the policy was
+            created.
         owner_id:
           type: string
           description: >-
-            The pinned Vercel team ID (owner_id claim) or GitHub organisation or
-            user ID (repository_owner_id claim).
+            The pinned owner: the value the token's owner_claim must equal, such
+            as a Vercel team ID, GitHub organisation or user ID, GitLab project ID,
+            Google service account unique ID, Buildkite organization ID,
+            CircleCI organization ID or AWS IAM role ARN.
         claim_conditions:
           type: object
           description: >-
             Extra claims the token must match, as claim name to allowed values,
-            for example project_id and environment for Vercel, or repository_id
-            and ref for GitHub Actions. Every claim must match one of its
-            values. At most 15 claims and 20 values per claim; iss, aud, exp,
-            iat, nbf and jti cannot be used, and the pinned owner claim is set
-            with owner_id.
+            for example repository_id and ref for GitHub Actions, or
+            project_path and ref for GitLab. Every claim must match one of its
+            values. At most 15 claims and 20 values per claim. Claim names use
+            letters, digits and . _ : / - and are up to 128 characters; iss,
+            aud, exp, iat, nbf and jti cannot be used, and the owner claim is
+            set with owner_id.
           maxProperties: 15
           additionalProperties:
             type: array
@@ -24856,22 +25088,45 @@ components:
         issuer:
           type: string
           description: >-
-            Required for Vercel: https://oidc.vercel.com/ followed by the team
-            slug, or https://oidc.vercel.com for the global issuer. Defaults to
-            https://token.actions.githubusercontent.com for GitHub Actions.
+            The issuer tokens come from. Optional for github_actions (defaults
+            to https://token.actions.githubusercontent.com; add
+            /<enterprise-slug> for a customised enterprise issuer), gitlab
+            (https://gitlab.com), google_cloud (https://accounts.google.com)
+            and buildkite (https://agent.buildkite.com). Required for vercel
+            (https://oidc.vercel.com/<team-slug>, or https://oidc.vercel.com
+            for the global issuer), circleci
+            (https://oidc.circleci.com/org/<organization-id>), aws (your
+            account's https://<id>.tokens.sts.global.api.aws issuer) and custom
+            (a public https URL that serves an OIDC discovery document, on a
+            host that does not belong to one of the other platforms).
+        owner_claim:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: >-
+            The token claim owner_id is matched against, for example sub.
+            Required for custom. Other platforms use a fixed claim (see
+            owner_claim on the policy), so omit it or send that claim. Cannot be
+            changed later.
         owner_id:
           type: string
           minLength: 1
-          description: The Vercel team ID or GitHub organisation or user ID to pin.
+          description: >-
+            The value the owner claim must equal: a Vercel team ID, GitHub
+            organisation or user ID, GitLab project ID, Google service account
+            unique ID (not its email), Buildkite organization ID, CircleCI
+            organization ID (the one in the issuer), AWS IAM role ARN, or for
+            custom issuers the owner_claim value to trust.
         claim_conditions:
           type: object
           description: >-
             Extra claims the token must match, as claim name to allowed values,
-            for example project_id and environment for Vercel, or repository_id
-            and ref for GitHub Actions. Every claim must match one of its
-            values. At most 15 claims and 20 values per claim; iss, aud, exp,
-            iat, nbf and jti cannot be used, and the pinned owner claim is set
-            with owner_id.
+            for example repository_id and ref for GitHub Actions, or
+            project_path and ref for GitLab. Every claim must match one of its
+            values. At most 15 claims and 20 values per claim. Claim names use
+            letters, digits and . _ : / - and are up to 128 characters; iss,
+            aud, exp, iat, nbf and jti cannot be used, and the owner claim is
+            set with owner_id.
           maxProperties: 15
           additionalProperties:
             type: array
@@ -24905,11 +25160,12 @@ components:
           type: object
           description: >-
             Extra claims the token must match, as claim name to allowed values,
-            for example project_id and environment for Vercel, or repository_id
-            and ref for GitHub Actions. Every claim must match one of its
-            values. At most 15 claims and 20 values per claim; iss, aud, exp,
-            iat, nbf and jti cannot be used, and the pinned owner claim is set
-            with owner_id.
+            for example repository_id and ref for GitHub Actions, or
+            project_path and ref for GitLab. Every claim must match one of its
+            values. At most 15 claims and 20 values per claim. Claim names use
+            letters, digits and . _ : / - and are up to 128 characters; iss,
+            aud, exp, iat, nbf and jti cannot be used, and the owner claim is
+            set with owner_id.
           maxProperties: 15
           additionalProperties:
             type: array
@@ -25147,14 +25403,12 @@ components:
       type: string
       description: >-
         What a policy applies to. A department policy is one allowance shared by
-        its members and linked keys. A guardrail policy gives each key and
-        member the guardrail covers its own allowance. end_user_default applies
-        to each end user identified on a request.
+        its members and linked keys. end_user_default applies to each end user
+        identified on a request.
       enum:
         - key
         - member
         - department
-        - guardrail
         - end_user_default
     RateLimitAssignment:
       type: object
@@ -25183,7 +25437,7 @@ components:
           format: uuid
           nullable: true
           description: >-
-            Id of the key, member (user id), department, or guardrail. Null for
+            Id of the key, member (user id) or department. Null for
             end_user_default.
         created_by:
           type: string
@@ -25211,7 +25465,7 @@ components:
           type: string
           format: uuid
           description: >-
-            Id of the key, member (user id), department, or guardrail. Omit for
+            Id of the key, member (user id) or department. Omit for
             end_user_default.
       additionalProperties: false
     RateLimitAssignmentUpdateInput:
@@ -26619,10 +26873,11 @@ components:
     WorkspaceSpendAttribution:
       type: string
       description: >-
-        How spend rules count a person's spend toward departments when their key
-        has no department of its own: all counts it toward every department they
-        belong to; primary counts it toward their primary department only. A
-        key's own department always wins.
+        How spend rules, department budgets and department rate limits count a
+        person's requests toward departments when their key has no department of
+        its own: all counts them toward every department they belong to; primary
+        counts them toward their primary department only. A key's own department
+        and a member's directory override always win.
       enum:
         - all
         - primary
@@ -27696,44 +27951,6 @@ components:
           enum:
             - true
       additionalProperties: false
-    GuardrailBudgetInput:
-      type: object
-      deprecated: true
-      description: >-
-        Deprecated. Guardrails do not enforce request or spend limits; use API
-        key limits or workspace budgets instead.
-      properties:
-        dailyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        dailyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-      additionalProperties: false
     GuardrailPolicyInput:
       type: object
       properties:
@@ -27803,8 +28020,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        budgets:
-          $ref: '#/components/schemas/GuardrailBudgetInput'
       additionalProperties: false
     GuardrailCreateRequest:
       allOf:
@@ -27902,54 +28117,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        daily_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: >-
-            Deprecated. Guardrails do not enforce request or spend limits; use
-            API key limits or workspace budgets instead.
-        weekly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: >-
-            Deprecated. Guardrails do not enforce request or spend limits; use
-            API key limits or workspace budgets instead.
-        monthly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: >-
-            Deprecated. Guardrails do not enforce request or spend limits; use
-            API key limits or workspace budgets instead.
-        daily_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: >-
-            Deprecated. Guardrails do not enforce request or spend limits; use
-            API key limits or workspace budgets instead.
-        weekly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: >-
-            Deprecated. Guardrails do not enforce request or spend limits; use
-            API key limits or workspace budgets instead.
-        monthly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: >-
-            Deprecated. Guardrails do not enforce request or spend limits; use
-            API key limits or workspace budgets instead.
         created_at:
           type: string
           format: date-time
@@ -28061,54 +28228,6 @@ components:
               items:
                 type: object
                 additionalProperties: true
-            daily_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: >-
-                Deprecated. Guardrails do not enforce request or spend limits;
-                use API key limits or workspace budgets instead.
-            weekly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: >-
-                Deprecated. Guardrails do not enforce request or spend limits;
-                use API key limits or workspace budgets instead.
-            monthly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: >-
-                Deprecated. Guardrails do not enforce request or spend limits;
-                use API key limits or workspace budgets instead.
-            daily_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: >-
-                Deprecated. Guardrails do not enforce request or spend limits;
-                use API key limits or workspace budgets instead.
-            weekly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: >-
-                Deprecated. Guardrails do not enforce request or spend limits;
-                use API key limits or workspace budgets instead.
-            monthly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: >-
-                Deprecated. Guardrails do not enforce request or spend limits;
-                use API key limits or workspace budgets instead.
             created_at:
               type: string
               format: date-time

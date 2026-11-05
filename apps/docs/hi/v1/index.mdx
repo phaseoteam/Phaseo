@@ -1,10 +1,10 @@
 ---
 title: "यहाँ से शुरू करें"
-description: "पहला अनुरोध करें, ऐप जोड़ें या आवश्यक संदर्भ खोजें।"
+description: "पहला अनुरोध करें, कोई ऐप्लिकेशन जोड़ें या ज़रूरी संदर्भ खोजें।"
 icon: "house"
 ---
 
-Phaseo से कई प्रदाताओं के मॉडल एक API से कॉल करें, रूटिंग नियंत्रित करें और उपयोग व लागत देखें।
+`https://api.phaseo.app/v1` पर एक ही API से कई प्रदाताओं के मॉडल कॉल करें, तय करें कि हर अनुरोध कैसे रूट हो, और हर अनुरोध का उपयोग और लागत देखें। यह अनुरोध `phaseo/free` का उपयोग करता है, इसलिए यह क्रेडिट जोड़ने से पहले भी काम करता है:
 
 <CodeGroup>
 
@@ -40,19 +40,19 @@ print(response.output_text)
 
 </CodeGroup>
 
-अभी तक API कुंजी नहीं है? [Phaseo CLI](./guides/integrations/phaseo-cli) से `phaseo keys create` चलाएँ या [डैशबोर्ड में एक बनाएँ](https://phaseo.app/hi/settings/keys), फिर [क्विकस्टार्ट](./quickstart.mdx) देखें।
+अभी तक API कुंजी नहीं है? [Phaseo CLI](./guides/integrations/phaseo-cli) से `phaseo keys create` चलाएँ या [डैशबोर्ड में एक बनाएँ](https://phaseo.app/settings/keys), फिर [क्विकस्टार्ट](./quickstart.mdx) देखें।
 
-## अपनी ज़रूरत से शुरू करें
+## जहाँ हैं, वहीं से शुरू करें
 
 <div className="ph-paths not-prose">
 
 [**<Icon icon="rocket" /> पहला अनुरोध करें** कुंजी बनाएँ, अनुरोध भेजें और परिणाम पढ़ें।](./quickstart.mdx)
 
-[**<Icon icon="arrow-right-left" /> ऐप माइग्रेट करें** मौजूदा प्रदाता या गेटवे एकीकरण अपडेट करें।](./migration-guides/index.mdx)
+[**<Icon icon="arrow-right-left" /> ऐप्लिकेशन माइग्रेट करें** किसी मौजूदा प्रदाता या गेटवे इंटीग्रेशन को अपडेट करें।](./migration-guides/index.mdx)
 
-[**<Icon icon="terminal" /> कोडिंग सहायक जोड़ें** Codex, Claude Code, Cursor या अन्य सहायक सेट करें।](./guides/integrations/coding-assistants.mdx)
+[**<Icon icon="terminal" /> कोडिंग असिस्टेंट जोड़ें** Codex, Claude Code, Cursor या कोई दूसरा असिस्टेंट कॉन्फ़िगर करें।](./guides/integrations/coding-assistants.mdx)
 
-[**<Icon icon="bot" /> एजेंट बनाएँ** एजेंट SDK से मॉडल को टूल दें, उसके चरण स्ट्रीम करें और उसकी कार्रवाइयाँ स्वीकृत करें।](./sdk-reference/agent-sdk/overview.mdx)
+[**<Icon icon="bot" /> एजेंट बनाएँ** Agent SDK से मॉडल को टूल दें, उसके चरण स्ट्रीम करें और उसकी कार्रवाइयाँ स्वीकृत करें।](./sdk-reference/agent/overview.mdx)
 
 </div>
 
@@ -60,30 +60,29 @@ print(response.output_text)
 
 <div className="ph-sdks not-prose">
 
-[<Icon icon="https://phaseo.app/docs/icons/languages/typescript.svg" /> TypeScript](./sdk-reference/typescript/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/python.svg" /> Python](./sdk-reference/python/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/go.svg" /> Go](./sdk-reference/go/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/csharp.svg" /> C#](./sdk-reference/csharp/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/php.svg" /> PHP](./sdk-reference/php/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/ruby.svg" /> Ruby](./sdk-reference/ruby/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/rust.svg" /> Rust](./sdk-reference/rust/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/typescript.svg" /> <Icon icon="https://phaseo.app/docs/icons/languages/python.svg" /> TypeScript और Python](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/go.svg" /> Go](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/csharp.svg" /> C#](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/php.svg" /> PHP](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/ruby.svg" /> Ruby](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/rust.svg" /> Rust](./sdk-reference/client/overview.mdx)
 
 </div>
 
-## निर्माण और संचालन
+## बनाएँ और चलाएँ
 
 | काम | दस्तावेज़ |
 | --- | --- |
-| अनुरोध फ़ील्ड या एंडपॉइंट देखना | [API संदर्भ](./api-reference/introduction.mdx) |
-| शुरुआती ऐप चलाना | [उदाहरण](./guides/examples.mdx) |
-| विशिष्ट प्रक्रिया लागू करना | [रेसिपी](./cookbook/index.mdx) |
-| प्रदाता और फ़ॉलबैक चुनना | [रूटिंग](./guides/routing-and-fallbacks.mdx) |
-| वीडियो या बैच काम संसाधित करना | [असिंक्रोनस काम और वेबहुक](./guides/async-video-and-batch.mdx) |
-| विफल अनुरोध की जाँच करना | [त्रुटियाँ और डिबगिंग](./api-reference/errors.mdx) |
+| कोई अनुरोध फ़ील्ड या एंडपॉइंट देखें | [API संदर्भ](./api-reference/introduction.mdx) |
+| कोई शुरुआती ऐप्लिकेशन चलाएँ | [उदाहरण](./guides/examples.mdx) |
+| कोई खास वर्कफ़्लो लागू करें | [कुकबुक](./cookbook/index.mdx) |
+| प्रदाता और फ़ॉलबैक चुनें | [रूटिंग](./guides/routing-and-fallbacks.mdx) |
+| वीडियो या बैच जॉब प्रोसेस करें | [असिंक्रोनस जॉब और वेबहुक](./guides/async-video-and-batch.mdx) |
+| किसी विफल अनुरोध की जाँच करें | [त्रुटियाँ और डिबगिंग](./api-reference/errors.mdx) |
 
 ## मॉडल चुनें
 
-[मॉडल देखें](https://phaseo.app/models) या [तुलना करें](https://phaseo.app/compare)। कैटलॉग में बिना रूट वाले मॉडल भी हो सकते हैं; जोड़ने से पहले Gateway उपलब्धता जाँचें। मॉडल, प्रदाता और बिलिंग के लिए [Phaseo कैसे काम करता है](./developers/introduction.mdx) देखें।
+[मॉडल देखें](https://phaseo.app/models) या [उनकी तुलना करें](https://phaseo.app/compare)। कैटलॉग में वे मॉडल भी दिखते हैं जिन्हें आप अभी कॉल नहीं कर सकते, इसलिए इंटीग्रेट करने से पहले जाँच लें कि मॉडल **Gateway पर सक्रिय** है, या `GET /v1/models` से कॉल किए जा सकने वाले मॉडल की सूची लें। मॉडल, प्रदाता और बिलिंग के लिए [Phaseo कैसे काम करता है](./developers/introduction.mdx) देखें।
 
 ## AI एजेंट के साथ बनाएँ
 
@@ -98,4 +97,4 @@ print(response.output_text)
 6. Explain which files you will change and how you will verify the change before you edit. Never print or commit API keys.`}
 </Prompt>
 
-एजेंट [Docs MCP](./guides/integrations/docs-mcp.mdx) से इन दस्तावेज़ों में खोज भी कर सकते हैं, [क्षमताओं का सार](https://phaseo.app/docs/skill.md) पढ़ सकते हैं या [llms.txt](https://phaseo.app/docs/llms.txt) से शुरू कर सकते हैं।
+एजेंट [Docs MCP](./guides/integrations/docs-mcp.mdx) से इन दस्तावेज़ों में खोज भी कर सकते हैं, [क्षमताओं का सार](https://phaseo.app/docs/skill.md) पढ़ सकते हैं, या [llms.txt](https://phaseo.app/docs/llms.txt) से शुरू कर सकते हैं।

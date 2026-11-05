@@ -1,92 +1,135 @@
 ---
-title: "Anfragelimits"
+title: "Ratenlimits"
 description: "Behandle Drosselung, Anbieterkontingente und begrenzte Wiederholungsversuche."
 icon: "gauge"
 ---
 
-Eine Anfrage kann durch den ausgewählten Anbieter oder eine geltende Arbeitsbereichs- oder Schlüsselrichtlinie gedrosselt werden. Routing und Fallbacks können Anbieterfehler reduzieren, eine Anfrage kann jedoch weiterhin `429` zurückgeben.
+Lies bei einem `429` den Fehlercode und `reason`, um zu erkennen, welches Limit die Anfrage gestoppt hat, und warte dann `Retry-After` ab oder ändere das Limit. Routing und Fallbacks verringern Anbieterfehler, aber eine Anfrage kann trotzdem von einem Anbieter oder durch eine Workspace- oder Schlüsselrichtlinie gedrosselt werden.
 
+| Limit | Fehlercode | `reason` | Setzt sich von selbst zurück |
+| --- | --- | --- | --- |
+| [Anfragen pro Minute](#gateway-limits) | `key_limit_exceeded` | `customer_requests_per_minute` | Ja, `Retry-After` in Sekunden |
+| [Anfragen an kostenlose Modelle pro Tag](#gateway-limits) | `phaseo_free_model_limit_exceeded` | `free_requests_per_day` | Ja, um 00:00 UTC |
+| [Schlüssellimit oder Workspace-Budget](#key-limits-and-budgets) | `key_limit_exceeded` | Das erreichte Limit; `limit_window` und `reset_at` | Nur wenn `Retry-After` vorhanden ist |
+| [Abteilungsbudget](#department-budgets) | `key_limit_exceeded` | `department_daily_cost_budget_reached` (oder `weekly`, `monthly`) | Ja, zu `reset_at` |
+| [Sperrende Ausgabenregel](#key-limits-and-budgets) | `spend_rule_blocked` | | Zu `reset_at`, wenn die Sperre einen Zeitpunkt hat, oder wenn ein Owner oder Admin sie aufhebt |
+| [Ratenlimit-Richtlinie](#rate-limit-policies) | `rate_limit_exceeded` | `policy_requests_per_minute`, `policy_tokens_per_minute`, `policy_concurrent_requests` oder `policy_unavailable` | Ja, `Retry-After` in Sekunden |
+| [Anbieter](#provider-limits) | `upstream_error` oder `provider_capacity_exhausted` | | Folge dem `Retry-After` des Anbieters |
+
+Alle diese Fälle geben `429` zurück. Ist die Kontingentdurchsetzung des Gateways kurzzeitig nicht verfügbar, gibt das Gateway stattdessen `503` mit Hinweisen zur Wiederholung zurück.
+
+<span id="gateway-limits"></span>
 ## Gateway-Limits
 
-Für jeden Benutzer in jedem Arbeitsbereich gilt ein Kontingent an Anfragen pro Minute, gemessen über eine gleitende Minute. API-Schlüssel desselben Benutzers teilen dieses Kontingent. OAuth-Anfragen verwenden den authentifizierten Benutzer. Schlüssel ohne Besitzer teilen ein Arbeitsbereichskontingent.
+Jeder Benutzer hat in jedem Workspace ein Kontingent an Anfragen pro Minute, gemessen über eine gleitende Minute. API-Schlüssel, die derselbe Benutzer erstellt hat, teilen es sich. OAuth-Anfragen zählen für den angemeldeten Benutzer, und Schlüssel ohne Besitzer teilen sich ein Workspace-Kontingent.
 
-Das Kontingent hängt vom Kontostatus des Arbeitsbereichs ab und steigt automatisch, sobald sich der Arbeitsbereich etabliert:
+Das Kontingent steigt automatisch, sobald sich der Workspace etabliert. Ein Workspace erhält die höchste Zeile, für die er sich qualifiziert, und Änderungen werden innerhalb weniger Minuten wirksam:
 
-| Arbeitsbereich | Anfragen pro Minute |
+| Workspace | Anfragen pro Minute |
 | --- | --- |
-| Neuer Arbeitsbereich | 10 |
+| Neuer Workspace | 10 |
 | Mindestens 7 Tage alt oder mit einer bezahlten Aufladung | 25 |
-| Mindestens 30 Tage alt mit mindestens 50 $ bezahlten Aufladungen abzüglich Erstattungen | 60 |
+| Mindestens 30 Tage alt mit mindestens $50 bezahlten Aufladungen, abzüglich Erstattungen | 60 |
 | Abrechnung per Rechnung | 120 |
 
-Ein Arbeitsbereich erhält das höchste Kontingent, für das er sich qualifiziert. Änderungen werden innerhalb weniger Minuten wirksam.
+Für kostenlose Modelle gilt standardmäßig außerdem ein Kontingent von **1.500 Anfragen pro UTC-Tag**. Es gilt gemeinsam für alle kostenlosen Modelle und für jeden Workspace, in dem derselbe Benutzer Anfragen sendet. Anfragen an kostenpflichtige Modelle verbrauchen es nicht. Eine zugelassene kostenlose Anfrage zählt auch dann, wenn der Anbieter danach ausfällt, und Anbieter-Fallbacks innerhalb einer Anfrage zählen einmal.
 
-Für kostenlose Modellrouten gelten zusätzlich **1500 Anfragen pro UTC-Tag**, gemeinsam für alle kostenlosen Modelle desselben Benutzers und Arbeitsbereichs. Bezahlte Modellanfragen verbrauchen dieses Tageskontingent nicht. Eine zugelassene kostenlose Anfrage zählt auch bei einem anschließenden Anbieterfehler; Fallbacks innerhalb dieser Anfrage zählen einmal.
+Beide Limits gelten über alle Gateway-Regionen hinweg und können für einen bestimmten Benutzer und Workspace erhöht werden. Dateioperationen und Statusabfragen für Jobs verbrauchen das Minutenkontingent; Verwaltungs-Endpunkte nicht.
 
-Die Limits gelten über alle Gateway-Regionen hinweg und können für einen bestimmten Benutzer und Arbeitsbereich erhöht werden. Dateioperationen und Statusabfragen für Jobs verbrauchen das Minutenkontingent; Verwaltungsendpunkte nicht.
+Eine abgelehnte Anfrage gibt `429` mit `Retry-After` in Sekunden zurück. Warte so lange, bevor du es erneut versuchst.
 
-Bei ausgeschöpftem Gateway-Kontingent wird `429` mit `Retry-After` in Sekunden zurückgegeben. Der Fehlergrund ist `customer_requests_per_minute` oder `free_requests_per_day`. Warte diese Zeit vor einem erneuten Versuch. Ist die Kontingentprüfung vorübergehend nicht verfügbar, gibt das Gateway `503` mit Wiederholungshinweisen zurück.
-
+<span id="key-limits-and-budgets"></span>
 ## Schlüssellimits und Budgets
 
-Sind die täglichen, wöchentlichen oder monatlichen Anfrage- und Ausgabenlimits eines API-Schlüssels oder die [Budgets](./endpoint/budgets-list.mdx) des Arbeitsbereichs erreicht, wird `429` mit dem Fehlercode `key_limit_exceeded` zurückgegeben. Die Felder `reason`, `limit_window` und `reset_at` im Antworttext nennen das Limit und den Zeitpunkt, zu dem sein Zeitraum zurückgesetzt wird. `Retry-After` gibt die Sekunden bis zu diesem Zurücksetzen an. Der Header fehlt, wenn sich das Limit nicht von selbst zurücksetzt, etwa bei einem Gesamtbudget oder einem vorübergehend gesperrten Schlüssel; erhöhe dann statt eines erneuten Versuchs das Arbeitsbereichsbudget oder, bei einem Schlüssellimit, das Limit des Schlüssels, oder verwende einen anderen Schlüssel.
+Die täglichen, wöchentlichen oder monatlichen Anfrage- und Ausgabenlimits eines API-Schlüssels sowie die [Budgets](./endpoint/budgets-list.mdx) des Workspace geben nach dem Erreichen `429` mit `key_limit_exceeded` zurück. `reason`, `limit_window` und `reset_at` im Body nennen das Limit und den Zeitpunkt, zu dem sein Zeitraum zurückgesetzt wird, und `Retry-After` gibt die Sekunden bis dahin an.
 
-Eigentümer und Administratoren des Arbeitsbereichs können Budgets auch im Dashboard unter [Einstellungen → Budgets](https://phaseo.app/settings/budgets) festlegen, ändern und löschen. Die Seite zeigt für jedes Budget die bisherigen Ausgaben, den genutzten Anteil, eine Hochrechnung für den Zeitraum und den Zeitpunkt des Zurücksetzens. Tages-, Wochen- und Monatsbudgets werden an UTC-Grenzen zurückgesetzt: um Mitternacht, montags um 00:00 und am 1. des Monats. Über die CLI: `phaseo budgets create|update|delete`.
+`Retry-After` fehlt, wenn sich das Limit nicht von selbst zurücksetzt, etwa bei einem Gesamtbudget oder einem weich gesperrten Schlüssel. Versuche es nicht erneut: Erhöhe das Workspace-Budget, erhöhe das Limit des Schlüssels oder verwende einen anderen Schlüssel.
 
-Abteilungsbudgets werden über die API `/v1/department-budgets` verwaltet. Die Ausgaben einer Abteilung umfassen dieselben Schlüssel und OAuth-Anfragen wie die unten beschriebenen Ratenlimits für Abteilungen. Hat eine Abteilung ihr tägliches, wöchentliches oder monatliches Budget aufgebraucht, liefern API-Schlüssel-Anfragen, die ihr zugerechnet werden, `429` mit dem Fehlercode `key_limit_exceeded` und dem Grund `department_daily_cost_budget_reached`, `department_weekly_cost_budget_reached` oder `department_monthly_cost_budget_reached`. Die Felder `department_id` und `department_name` im Antworttext nennen die Abteilung, und `reset_at` und `Retry-After` geben an, wann ihr Budget zurückgesetzt wird. Batch-Jobs, Echtzeitsitzungen und OAuth-Anfragen werden durch Abteilungsbudgets nicht blockiert. Ist die Budgetprüfung kurzzeitig nicht verfügbar, werden Anfragen zugelassen statt abgelehnt, sodass eine Abteilung ihr Budget für kurze Zeit überschreiten kann. Inhaber und Administratoren erhalten eine mobile Push-Benachrichtigung bei etwa 80 % und erneut bei 100 % eines Budgets. Diese Benachrichtigungen beruhen auf Nutzungsdaten, die bis zu einer Stunde verzögert sein können, daher können Anfragen schon abgelehnt werden, bevor die 100-%-Benachrichtigung eintrifft.
+Owner und Admins eines Workspace verwalten Budgets mit `phaseo budgets create|update|delete` oder unter [Einstellungen → Budgets](https://phaseo.app/settings/budgets). Dort siehst du für jedes Budget die bisherigen Ausgaben, den genutzten Anteil, eine Hochrechnung für den Zeitraum und den Zeitpunkt des Zurücksetzens. Tages-, Wochen- und Monatsbudgets werden an UTC-Grenzen zurückgesetzt: um Mitternacht, montags um 00:00 und am 1. des Monats.
 
-Inhaber und Admins können Abteilungsbudgets auch unter [Einstellungen → Budgets](https://phaseo.app/settings/budgets) verwalten oder mit der Ressource `phaseo_department_budget` des Terraform-Providers. Über die CLI: `phaseo department-budgets`.
+[Ausgabenwarnungen](../guides/spend-alerts.mdx) können warnen, bevor diese Limits erreicht sind. Eine sperrende Ausgabenregel gibt `429` mit `spend_rule_blocked` zurück. Sie arbeitet nach bestem Bemühen und greift erst einige Minuten, nachdem die Ausgaben ihr Limit überschritten haben. Für exakte Obergrenzen verwende daher Schlüssellimits und Budgets. Ein `x-phaseo-spend-warning`-Header bedeutet, dass eine Sperre folgen kann.
 
+<span id="department-budgets"></span>
+### Abteilungsbudgets
+
+Owner und Admins verwalten Abteilungsbudgets mit `phaseo department-budgets`, der API `/v1/department-budgets`, unter [Einstellungen → Budgets](https://phaseo.app/settings/budgets) oder mit der Ressource `phaseo_department_budget` des Terraform-Providers. Die Ausgaben einer Abteilung umfassen dieselben Schlüssel und OAuth-Anfragen wie [Ratenlimits für Abteilungen](#rate-limit-policies).
+
+Hat eine Abteilung ihr tägliches, wöchentliches oder monatliches Budget aufgebraucht, geben API-Schlüssel-Anfragen, die ihr zugerechnet werden, `429` mit `key_limit_exceeded` und dem Grund `department_daily_cost_budget_reached`, `department_weekly_cost_budget_reached` oder `department_monthly_cost_budget_reached` zurück. `department_id` und `department_name` im Body nennen die Abteilung, und `reset_at` und `Retry-After` geben an, wann ihr Budget zurückgesetzt wird.
+
+- Batch-Jobs, Echtzeitsitzungen und OAuth-Anfragen werden durch Abteilungsbudgets nicht blockiert.
+- Ist die Budgetprüfung kurzzeitig nicht verfügbar, werden Anfragen zugelassen, sodass eine Abteilung ihr Budget für kurze Zeit überschreiten kann.
+- Owner und Admins erhalten eine mobile Push-Benachrichtigung bei etwa 80 % und erneut bei 100 % eines Budgets. Diese Warnungen beruhen auf Nutzungsdaten, die bis zu einer Stunde verzögert sein können, daher können Anfragen schon abgelehnt werden, bevor die 100-%-Warnung eintrifft.
+
+<span id="rate-limit-policies"></span>
 ## Ratenlimit-Richtlinien
 
-Workspace-Admins können über die Management-API `/v1/rate-limits` benannte Ratenlimit-Richtlinien erstellen und sie API-Schlüsseln, Workspace-Mitgliedern, Abteilungen, Sicherheitsleitplanken oder als Standard für jeden Endnutzer zuweisen. Das Gateway setzt die Werte `requests_per_minute` und `tokens_per_minute` einer Richtlinie durch, jeweils gemessen über eine gleitende Minute:
+Workspace-Admins können benannte Richtlinien erstellen, die `requests_per_minute`, `tokens_per_minute` und `concurrent_requests` festlegen, und sie Schlüsseln, Mitgliedern, Abteilungen oder Endnutzern zuweisen. Verwalte sie mit `phaseo rate-limits policies` und `phaseo rate-limits assignments`, der API `/v1/rate-limits`, unter [Einstellungen → Ratenlimits](https://phaseo.app/settings/rate-limits) oder mit den Ressourcen `phaseo_rate_limit_policy` und `phaseo_rate_limit_assignment` des Terraform-Providers.
 
-- **Schlüssel:** das eigene Kontingent des Schlüssels.
-- **Mitglied:** ein Kontingent, das sich die Schlüssel und OAuth-Anfragen des Mitglieds teilen.
-- **Abteilung:** ein Kontingent, das sich alles teilt, was der Abteilung zugerechnet wird. Ein mit einer Abteilung verknüpfter Schlüssel zählt nur für diese Abteilung. Jeder andere Schlüssel zählt für alle Abteilungen der Person, die ihn erstellt hat, und OAuth-Anfragen zählen für alle Abteilungen ihres Nutzers. Ein Mitglied mit einer Abteilungsüberschreibung zählt nur für die Abteilung der Überschreibung.
-- **Sicherheitsleitplanke:** ein eigenes Kontingent für jeden Schlüssel (oder OAuth-Nutzer), den die Leitplanke abdeckt.
-- **Standard pro Endnutzer:** ein eigenes Kontingent für jeden Endnutzer, erkannt am Feld `user` der Anfrage oder am Header `X-Phaseo-User-Id`. Anfragen ohne Endnutzer-ID werden dadurch nicht begrenzt.
+| Zugewiesen an | Was sich ein Kontingent teilt |
+| --- | --- |
+| Schlüssel (`key`) | Die Anfragen dieses Schlüssels. |
+| Mitglied (`member`) | Die Schlüssel und OAuth-Anfragen des Mitglieds. |
+| Abteilung (`department`) | Alles, was der Abteilung zugerechnet wird (siehe unten). |
+| Standard pro Endnutzer (`end_user`) | Jeder Endnutzer erhält ein eigenes Kontingent, erkannt am Feld `user` der Anfrage oder am Header `X-Phaseo-User-Id`. Anfragen ohne Endnutzer-ID werden nicht begrenzt. |
 
-Inhaber und Admins können Richtlinien und ihre Zuweisungen auch unter [Einstellungen → Ratenlimits](https://phaseo.app/settings/rate-limits) verwalten oder mit den Ressourcen `phaseo_rate_limit_policy` und `phaseo_rate_limit_assignment` des Terraform-Providers. Über die CLI: `phaseo rate-limits policies` und `phaseo rate-limits assignments`.
+**Was einer Abteilung zugerechnet wird.** Ein mit einer Abteilung verknüpfter Schlüssel zählt nur für diese Abteilung. Jeder andere Schlüssel zählt für alle Abteilungen, denen die Person angehört, die ihn erstellt hat, und OAuth-Anfragen zählen für alle Abteilungen ihres Nutzers. Ein Mitglied mit einer Abteilungsüberschreibung zählt nur für die Abteilung der Überschreibung. Damit diese Schlüssel und OAuth-Anfragen nur für die Hauptabteilung der Person zählen, setze die Abteilungszuordnung auf primary: unter [Einstellungen → Benachrichtigungen](https://phaseo.app/settings/notifications), mit `spend.department_attribution` in `PATCH /v1/notifications/settings` oder mit `phaseo notifications settings update --department-attribution primary`. Abteilungsbudgets und Ausgabenregeln verwenden dieselbe Einstellung.
 
-Gelten mehrere Richtlinien, wird jede gezählt, und die erste ausgeschöpfte lehnt die Anfrage ab. Richtlinienlimits gelten zusätzlich zu den Gateway-Limits oben. Änderungen an Richtlinien werden innerhalb von etwa einer Minute wirksam. Änderungen an Abteilungsmitgliedschaften im Dashboard oder über SCIM können bis zu etwa fünf Minuten dauern.
+Gelten mehrere Richtlinien, wird jede gezählt, und die erste ausgeschöpfte lehnt die Anfrage ab. Richtlinien gelten zusätzlich zu den [Gateway-Limits](#gateway-limits). Änderungen an Richtlinien werden innerhalb von etwa einer Minute wirksam; Änderungen an Abteilungsmitgliedschaften im Dashboard oder über SCIM können bis zu etwa fünf Minuten dauern.
 
-`tokens_per_minute` zählt die Eingabe- und Ausgabe-Tokens jeder Anfrage, sobald sie abgeschlossen ist, auch bei gestreamten und fehlgeschlagenen Anfragen, die Tokens verbraucht haben. Eine Anfrage wird abgelehnt, sobald der Verbrauch eines Kontingents in der letzten Minute sein Limit erreicht. Bereits laufende Anfragen können den Verbrauch daher über das Limit bringen.
+### Anfragen und Tokens pro Minute
 
-Eine abgelehnte Anfrage gibt `429` mit dem Fehlercode `rate_limit_exceeded`, dem Grund `policy_requests_per_minute` oder `policy_tokens_per_minute`, der `policy_id` und dem `limit_scope` (`key`, `member`, `department`, `guardrail` oder `end_user`) sowie `Retry-After` in Sekunden zurück. Antworten auf Anfragen, für die eine Richtlinie gilt, enthalten `x-ratelimit-limit-requests`, `x-ratelimit-remaining-requests` und `x-ratelimit-reset-requests` (zum Beispiel `60s`) für das strengste Anfragelimit sowie `x-ratelimit-limit-tokens`, `x-ratelimit-remaining-tokens` und `x-ratelimit-reset-tokens` für das strengste Token-Limit. Eine abgelehnte Anfrage enthält nur die Header des Limits, das sie abgelehnt hat. Gezählt wird im Hintergrund, daher ist `remaining` ein Näherungswert, und die Token-Header enthalten den Verbrauch der aktuellen Anfrage noch nicht. Anbieter-Fallbacks innerhalb einer Anfrage zählen einmal, und Treffer im Antwort-Cache werden nicht gezählt.
+Beide werden über eine gleitende Minute gemessen. `tokens_per_minute` zählt die Eingabe- und Ausgabe-Tokens jeder Anfrage, sobald sie abgeschlossen ist, auch bei gestreamten und fehlgeschlagenen Anfragen, die Tokens verbraucht haben. Eine Anfrage wird abgelehnt, sobald der Verbrauch in der letzten Minute das Limit erreicht; bereits laufende Anfragen können den Verbrauch daher darüber hinaus bringen. Anbieter-Fallbacks innerhalb einer Anfrage zählen einmal, und Treffer im Antwort-Cache werden nicht gezählt.
 
-`concurrent_requests` begrenzt, wie viele Anfragen gleichzeitig laufen können. Eine Anfrage belegt einen Platz ab ihrer Zulassung, bis ihre Antwort vollständig gesendet ist, bei gestreamten Antworten also bis zum Ende des Streams. Anbieter- und Modell-Fallbacks innerhalb einer Anfrage teilen sich diesen Platz. Sind alle Plätze belegt, wird die Anfrage mit dem Grund `policy_concurrent_requests` und `Retry-After: 1` abgelehnt. Die Prüfung eines Gleichzeitigkeitslimits wartet auf den Zähler der Richtlinie und erhöht so die Latenz der betroffenen Anfragen etwas. Ein Platz, dessen Freigabe verloren geht, wird nach 15 Minuten automatisch frei. Batches und Echtzeitsitzungen sind davon nicht betroffen, und eine Videogenerierung belegt nur während der Anfrage, die sie startet, einen Platz.
+Eine abgelehnte Anfrage gibt `429` mit `rate_limit_exceeded`, dem Grund `policy_requests_per_minute` oder `policy_tokens_per_minute`, der `policy_id`, dem `limit_scope` (`key`, `member`, `department`, `workspace` oder `end_user`) und `Retry-After` in Sekunden zurück.
 
-Standardmäßig lässt eine Richtlinie Anfragen zu, wenn ihre Limits nicht geprüft werden können. Setze `fail_closed`, um sie streng zu machen. Bei einer strengen Richtlinie werden Anfrage- und Token-Limits vor dem Senden der Anfrage statt im Hintergrund geprüft. Das macht sie exakt, erhöht aber die Latenz. Können sie nicht innerhalb von zwei Sekunden geprüft werden, wird die Anfrage mit dem Grund `policy_unavailable` abgelehnt. Ablehnungen wegen Gleichzeitigkeit und `policy_unavailable` enthalten keine `x-ratelimit-*`-Header.
+Antworten auf Anfragen, für die eine Richtlinie gilt, enthalten die Header des strengsten Limits:
 
+| Header | Beispiel |
+| --- | --- |
+| `x-ratelimit-limit-requests`, `x-ratelimit-remaining-requests` | `60`, `42` |
+| `x-ratelimit-reset-requests` | `60s` |
+| `x-ratelimit-limit-tokens`, `x-ratelimit-remaining-tokens`, `x-ratelimit-reset-tokens` | Ebenso, für das Token-Limit |
+
+Eine abgelehnte Anfrage enthält nur die Header des Limits, das sie abgelehnt hat. Gezählt wird im Hintergrund, daher ist `remaining` ein Näherungswert, und die Token-Header enthalten den Verbrauch der aktuellen Anfrage noch nicht.
+
+### Gleichzeitige Anfragen
+
+`concurrent_requests` begrenzt, wie viele Anfragen gleichzeitig laufen können. Eine Anfrage belegt einen Platz ab ihrer Zulassung, bis ihre Antwort vollständig gesendet ist, bei gestreamten Antworten also den ganzen Stream lang; Anbieter- und Modell-Fallbacks innerhalb der Anfrage teilen sich diesen Platz. Sind alle Plätze belegt, wird die Anfrage mit dem Grund `policy_concurrent_requests` und `Retry-After: 1` abgelehnt.
+
+Die Prüfung eines Gleichzeitigkeitslimits wartet auf den Zähler der Richtlinie, was etwas Latenz hinzufügt. Ein Platz, dessen Freigabe verloren geht, wird nach 15 Minuten von selbst frei. Batches und Echtzeitsitzungen werden nicht begrenzt, und eine Videogenerierung belegt nur während der Anfrage, die sie startet, einen Platz.
+
+### Strenge Richtlinien
+
+Standardmäßig ist eine Richtlinie offen im Fehlerfall: Können ihre Limits nicht geprüft werden, wird die Anfrage zugelassen. Setze `fail_closed`, um sie streng zu machen. Eine strenge Richtlinie prüft Anfrage- und Token-Limits, bevor die Anfrage gesendet wird, statt im Hintergrund. Das macht sie exakt, erhöht aber die Latenz. Können sie nicht innerhalb von zwei Sekunden geprüft werden, wird die Anfrage mit dem Grund `policy_unavailable` abgelehnt.
+
+Ablehnungen wegen Gleichzeitigkeit und `policy_unavailable` enthalten keine `x-ratelimit-*`-Header.
+
+<span id="provider-limits"></span>
 ## Anbieterlimits
 
-BYOK-Anfragen verwenden die Limits deines Anbieterkontos. Verwaltete Anfragen nutzen gemeinsame Anbieterkapazität; diese Kapazität ist kein individuelles Arbeitsbereichskontingent.
+BYOK-Anfragen verwenden die Limits deines Anbieterkontos. Verwaltete Anfragen nutzen gemeinsame Anbieterkapazität, die kein Kontingent für deinen Workspace ist.
 
-Phaseo leitet einen validierten `Retry-After`-Wert weiter, wenn der Anbieter, an den die Anfrage geroutet wird, einen bereitstellt. BYOK-Antworten können auch `X-Phaseo-Upstream-RateLimit-*`-Header enthalten. Diese Kontingent-Header werden bei verwalteten Anfragen weggelassen, da sie gemeinsame Anbieterkapazität beschreiben. Andere Upstream-Header werden nicht weitergeleitet.
+Phaseo leitet einen validierten `Retry-After`-Wert weiter, wenn der Anbieter einen sendet. BYOK-Antworten können außerdem `X-Phaseo-Upstream-RateLimit-*`-Header enthalten; verwaltete Anfragen lassen sie weg, weil sie gemeinsame Kapazität beschreiben. Andere Upstream-Header werden nicht weitergeleitet. Die `429`-Codes der Anbieter findest du unter [Fehlercodes](./errors.mdx#error-codes).
 
-## Gedrosselte Anfragen behandeln
+## Eine gedrosselte Anfrage behandeln
 
-1. Prüfe den [Fehlercode](./errors.mdx), um vorübergehende Anbieterdrosselung von einer Richtlinien- oder Budgetbeschränkung zu unterscheiden, die Konfigurationsänderungen erfordert.
-2. Beachte `Retry-After`, falls vorhanden. Der Wert kann eine Wartezeit in Sekunden oder ein HTTP-Datum sein; validiere ihn, bevor du einen Wiederholungsversuch planst.
-3. Verwende andernfalls exponentielles Backoff mit zufälliger Streuung und einer maximalen Wartezeit.
-4. Begrenze Wiederholungsversuche sowohl durch eine maximale Anzahl als auch durch eine Gesamtfrist. Brich aufgegebene Arbeit ab und gib jeden fehlgeschlagenen Antwortkörper vor einem erneuten Versuch frei.
+1. Lies den [Fehlercode](./errors.mdx), um vorübergehende Drosselung von einem Limit, Budget oder einer Richtlinie zu unterscheiden, die eine Konfigurationsänderung erfordert.
+2. Beachte `Retry-After`, falls vorhanden. Der Wert kann Sekunden oder ein HTTP-Datum sein; validiere ihn, bevor du einen erneuten Versuch planst.
+3. Verwende andernfalls exponentielles Backoff mit Jitter und einer maximalen Wartezeit.
+4. Begrenze Wiederholungen durch eine maximale Anzahl an Versuchen und eine Gesamtfrist. Brich aufgegebene Arbeit ab und gib jeden fehlgeschlagenen Antwort-Body frei, bevor du es erneut versuchst.
 5. Reduziere die Parallelität, wenn die Drosselung anhält.
 
-Wiederhole eine Jobübermittlung mit unklarem Ergebnis nicht automatisch und führe abgeschlossene Toolaktionen nicht erneut aus. Eine Anfrage kann den Anbieter erreicht haben, auch wenn der Client die Antwort verloren hat; Wiederholungsversuche können Arbeit und Kosten verdoppeln. Verwende für einen angenommenen Video- oder Batch-Job dessen Status-Endpunkt, statt ihn erneut zu übermitteln.
+Wiederhole eine Jobübermittlung mit unklarem Ergebnis nicht automatisch und spiele abgeschlossene Tool-Aktionen nicht erneut ab. Eine Anfrage kann den Anbieter erreicht haben, auch wenn der Client die Antwort verloren hat, daher kann ein erneuter Versuch Arbeit und Kosten verdoppeln. Verwende für einen angenommenen Video- oder Batch-Job dessen Status-Endpunkt, statt ihn erneut zu senden.
 
-## Drosselung überwachen
-
-Erfasse die Häufigkeit von `429` nach Endpunkt und Modell und prüfe die Fallback-Häufigkeit in den Anfrageprotokollen. Vergleiche deine Anwendungsprotokolle mit den [Routing-Einstellungen](../guides/routing-and-fallbacks.mdx) und den Anbieterkontingenten für BYOK-Traffic.
-
-Informationen zu Ausgaben- und Zugriffskontrollen im Arbeitsbereich findest du unter [Budgets](./endpoint/budgets-list.mdx) und [Schutzregeln](./endpoint/guardrails.mdx).
+Um Drosselung zu überwachen, erfasse die `429`-Raten nach Endpunkt und Modell und prüfe die Fallback-Häufigkeit in den Anfrageprotokollen. Vergleiche sie mit deinen [Routing-Einstellungen](../guides/routing-and-fallbacks.mdx) und, bei BYOK-Traffic, mit den Kontingenten deines Anbieterkontos. [Guardrails](./endpoint/guardrails.mdx) steuern, welche Schlüssel welche Modelle und Anbieter nutzen können.
 
 <Visibility for="agents">
-Regeln zu Ratenlimits für Agenten, als Zusammenfassung dieser Seite:
+Regeln zu Ratenlimits für Agents, als Zusammenfassung dieser Seite:
 
-- Gateway-Kontingente liefern `429` mit dem Grund `customer_requests_per_minute` oder `free_requests_per_day`; warte die Sekunden aus `Retry-After` ab. Ist die Kontingentprüfung nicht verfügbar, liefert das Gateway `503` mit Hinweisen zur Wiederholung.
-- Schlüssellimits und Budgets liefern `429` mit `key_limit_exceeded` und einem `reset_at`. Ohne `Retry-After` setzt sich das Limit nicht von selbst zurück: Erhöhe das Limit oder nutze einen anderen Schlüssel, statt es erneut zu versuchen.
-- Ein aufgebrauchtes Abteilungsbudget liefert `429` mit `key_limit_exceeded`, dem Grund `department_<interval>_cost_budget_reached`, `department_id`, `department_name` und `reset_at`; warte die Sekunden aus `Retry-After` ab oder erhöhe das Budget. Batch-, Echtzeit- und OAuth-Anfragen werden durch Abteilungsbudgets nicht blockiert. Ist die Budgetprüfung nicht verfügbar, wird die Anfrage zugelassen.
-- Ratenlimit-Richtlinien des Workspace liefern `429` mit `rate_limit_exceeded`, `policy_id` und `limit_scope`. `x-ratelimit-remaining-requests` ist ein Näherungswert.
-- `Retry-After` kann eine Sekundenzahl oder ein HTTP-Datum sein; prüfe den Wert, bevor du eine Wiederholung planst. Reiche einen unklaren Video- oder Stapelauftrag nie erneut ein, sondern prüfe seinen Status.
+- Gateway-Kontingente geben `429` mit dem Grund `customer_requests_per_minute` (Code `key_limit_exceeded`) oder `free_requests_per_day` (Code `phaseo_free_model_limit_exceeded`) zurück; warte die Sekunden aus `Retry-After` ab. Ist die Kontingentdurchsetzung nicht verfügbar, gibt das Gateway `503` mit Hinweisen zur Wiederholung zurück.
+- Schlüssellimits und Budgets geben `429` mit `key_limit_exceeded` und einem `reset_at` zurück. Ohne `Retry-After` setzt sich das Limit nicht von selbst zurück: Erhöhe das Limit oder nutze einen anderen Schlüssel, statt es erneut zu versuchen.
+- Ein aufgebrauchtes Abteilungsbudget gibt `429` mit `key_limit_exceeded`, dem Grund `department_<interval>_cost_budget_reached`, `department_id`, `department_name` und `reset_at` zurück; warte die Sekunden aus `Retry-After` ab oder erhöhe das Budget. Batch-, Echtzeit- und OAuth-Anfragen werden durch Abteilungsbudgets nicht blockiert. Ist die Budgetprüfung nicht verfügbar, wird die Anfrage zugelassen.
+- Sperrende Ausgabenregeln geben `429` mit `spend_rule_blocked` zurück; warte `Retry-After` ab oder bitte einen Owner oder Admin, die Sperre aufzuheben. `x-phaseo-spend-warning` bedeutet, dass eine Sperre folgen kann.
+- Ratenlimit-Richtlinien des Workspace geben `429` mit `rate_limit_exceeded`, `policy_id` und `limit_scope` zurück. `x-ratelimit-remaining-requests` ist ein Näherungswert.
+- `Retry-After` kann Sekunden oder ein HTTP-Datum sein; validiere den Wert, bevor du einen erneuten Versuch planst. Sende einen unklaren Video- oder Batch-Job nie erneut, sondern prüfe seinen Status.
 </Visibility>

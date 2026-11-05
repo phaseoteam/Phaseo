@@ -1,0 +1,233 @@
+---
+icon: "shuffle"
+title: "Turnos dinámicos del Agent SDK"
+sidebarTitle: "Turnos dinámicos"
+description: "Cambia el modelo, las instrucciones, el muestreo o las herramientas de un agente entre turnos sin volver a crearlo."
+---
+
+Pasa una función en lugar de un valor fijo cuando un turno posterior del modelo deba depender del contexto de la aplicación o de resultados anteriores. El runtime la llama antes de cada solicitud al modelo con el número de turno, el índice del paso, los mensajes y el contexto. Rust no tiene callbacks por turno; [establece el modelo por ejecución](#set-the-model-per-run-in-rust).
+
+## Cambia los ajustes en cada turno
+
+<CodeGroup>
+
+```typescript TypeScript
+type ResearchContext = {
+  fast: boolean;
+};
+
+const agent = createAgent<string, string, ResearchContext>({
+  id: "research-agent",
+  model: ({ context }) =>
+    context?.fast ? "openai/gpt-6-astra" : "openai/gpt-6-astra-pro",
+  instructions: ({ numberOfTurns }) =>
+    `Research turn ${numberOfTurns}. Cite the evidence you use.`,
+});
+```
+
+```python Python
+agent = create_agent({
+    "id": "research-agent",
+    "model": lambda turn: "openai/gpt-6-astra" if (turn["context"] or {}).get("fast") else "openai/gpt-6-astra-pro",
+    "instructions": lambda turn: f"Research turn {turn['number_of_turns']}. Cite the evidence you use.",
+})
+```
+
+```go Go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID:    "support-agent",
+  Model: "openai/gpt-6-astra",
+  DynamicModel: func(turn phaseoagent.TurnContext) string {
+    if turn.StepIndex >= 3 {
+      return "openai/gpt-6-astra-pro"
+    }
+    return "openai/gpt-6-astra"
+  },
+  DynamicInstructions: func(turn phaseoagent.TurnContext) string {
+    return fmt.Sprintf("Resolve the request. Current context: %v", turn.Context)
+  },
+})
+```
+
+```csharp C#
+var agent = AgentSdk.CreateAgent(new AgentDefinition
+{
+    Id = "support-agent",
+    Model = "openai/gpt-6-astra",
+    DynamicModel = turn => turn.StepIndex >= 3 ? "openai/gpt-6-astra-pro" : "openai/gpt-6-astra",
+    DynamicInstructions = turn => $"Resolve the request. Current context: {turn.Context}",
+});
+```
+
+```php PHP
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "support-agent",
+    model: fn (array $turn) => $turn["step_index"] >= 3
+        ? "openai/gpt-6-astra-pro"
+        : "openai/gpt-6-astra",
+    instructions: fn (array $turn) => "Resolve the request. Current context: " . json_encode($turn["context"]),
+));
+```
+
+```ruby Ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "support-agent",
+  model: ->(turn) {
+    turn[:step_index] >= 3 ? "openai/gpt-6-astra-pro" : "openai/gpt-6-astra"
+  },
+  instructions: ->(turn) {
+    "Resolve the request. Current context: #{turn[:context].inspect}"
+  }
+)
+```
+
+```java Java
+// Los callbacks son los seis últimos argumentos del constructor de 19 argumentos.
+var agent = AgentSdk.createAgent(new AgentSdk.AgentDefinition(
+    "support-agent", "openai/gpt-6-astra", null, "Resolve the request.",
+    List.of(), 12, null, null, null, null,
+    List.of(), null, null,                         // stopWhen, outputSchema, requireApproval
+    turn -> turn.stepIndex() >= 3 ? "openai/gpt-6-astra-pro" : "openai/gpt-6-astra", // dynamicModel
+    turn -> "Resolve the request. Current context: " + turn.context(),         // dynamicInstructions
+    null, null, null,                              // temperature, maxOutputTokens, topP
+    null                                           // dynamicTools
+));
+```
+
+</CodeGroup>
+
+### Qué puedes cambiar en cada turno
+
+| Ajuste | TypeScript | Python | Go | C# | PHP | Ruby | Java |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Modelo | `model` | `model` | `DynamicModel` | `DynamicModel` | `model` | `model:` | `dynamicModel` |
+| Instrucciones | `instructions` | `instructions` | `DynamicInstructions` | `DynamicInstructions` | `instructions` | `instructions:` | `dynamicInstructions` |
+| Temperatura | `temperature` | `temperature` | `Temperature` (`*float64`) | `Temperature` (`double?`) | `temperature` | `temperature:` | `temperature` (`Double`) |
+| Top-p | `topP` | `top_p` | `TopP` (`*float64`) | `TopP` (`double?`) | `topP` | `top_p:` | `topP` (`Double`) |
+| Máximo de tokens de salida | `maxOutputTokens` | `max_output_tokens` | `MaxOutputTokens` (`*int`) | `MaxOutputTokens` (`int?`) | `maxOutputTokens` | `max_output_tokens:` | `maxOutputTokens` (`Integer`) |
+| Herramientas ofrecidas | `activeTools` (IDs de herramientas) | No por turno; usa `next_turn_params` | `DynamicTools` (`[]Tool`) | `DynamicTools` (`IReadOnlyList<Tool>`) | `dynamicTools` | `dynamic_tools:` | `dynamicTools` (`List<Tool>`) |
+| Lista de modelos | `models` | No | No | No | No | No | No |
+
+TypeScript, Python, PHP y Ruby aceptan una función en lugar del campo fijo. Go, C# y Java usan campos de callback aparte junto a los campos fijos `Model` e `Instructions`. En TypeScript, las herramientas que se dejan fuera de `activeTools` siguen pudiendo llamarse, así que las llamadas anteriores se siguen resolviendo.
+
+El argumento del turno tiene los mismos cuatro valores en todos los lenguajes:
+
+| Lenguaje | Argumento del turno |
+| --- | --- |
+| TypeScript | Objeto con `numberOfTurns`, `stepIndex`, `messages`, `context` |
+| Python | Dict con `number_of_turns`, `step_index`, `messages`, `context` |
+| Go, C# | `TurnContext` con `NumberOfTurns`, `StepIndex`, `Messages`, `Context` |
+| PHP | Array con `number_of_turns`, `step_index`, `messages`, `context` |
+| Ruby | Hash con `:number_of_turns`, `:step_index`, `:messages`, `:context` |
+| Java | `TurnContext` con `numberOfTurns()`, `stepIndex()`, `messages()`, `context()` |
+
+En Python, un `model` o `preset` que se pasa a `run()` sustituye el modelo de la definición en todos los turnos.
+
+## Actualiza el contexto de la aplicación desde una herramienta
+
+Una herramienta puede sustituir el contexto de la aplicación que leen los turnos posteriores: `context.setContext()` en TypeScript, `runtime.set_context()` en Python y los equivalentes que aparecen en [Herramientas](./tools#report-progress-and-update-context). Mantén el contexto pequeño y serializable si guardas ejecuciones y las continúas más tarde.
+
+```typescript
+const chooseMode = defineTool({
+  id: "choose-mode",
+  async execute(input: { fast: boolean }, context) {
+    context.setContext({ fast: input.fast });
+    return { selected: input.fast ? "fast" : "thorough" };
+  },
+});
+```
+
+## Sustituye solo el siguiente turno
+
+Define parámetros del siguiente turno en una herramienta para cambiar la solicitud que va justo después de ella, sin cambiar la definición del agente. En ese único turno tienen prioridad sobre las funciones por turno.
+
+<CodeGroup>
+
+```typescript TypeScript
+const broadenSearch = defineTool({
+  id: "broaden-search",
+  nextTurnParams: {
+    model: "openai/gpt-6-astra-pro",
+    maxOutputTokens: 2_000,
+  },
+  async execute() {
+    return { broadened: true };
+  },
+});
+```
+
+```python Python
+broaden_search = define_tool(AgentTool(
+    id="broaden-search",
+    next_turn_params={"model": "openai/gpt-6-astra-pro", "max_output_tokens": 2_000},
+    execute=lambda tool_input, runtime: {"broadened": True},
+))
+```
+
+```go Go
+inspect := phaseoagent.Tool{
+  ID:       "inspect_repository",
+  Execute:  inspectRepository,
+  NextTurn: &phaseoagent.NextTurnParams{Model: "openai/gpt-6-astra-pro"},
+}
+```
+
+```csharp C#
+var inspect = new Tool("inspect_repository", InspectRepository)
+{
+    NextTurnParams = new NextTurnParams(Model: "openai/gpt-6-astra-pro"),
+};
+```
+
+```php PHP
+$inspect = new Tool(
+    id: "inspect_repository",
+    execute: fn (array $input, $runtime) => inspectRepository($input),
+    nextTurnParams: ["model" => "openai/gpt-6-astra-pro"],
+);
+```
+
+```ruby Ruby
+inspect_repo = PhaseoAgentSdk::Tool.new(
+  id: "inspect_repository",
+  execute: ->(input, runtime) { inspect_repository(input) },
+  next_turn_params: { model: "openai/gpt-6-astra-pro" }
+)
+```
+
+```java Java
+// Pásalo como último argumento del constructor de la herramienta.
+new AgentSdk.NextTurnParams("openai/gpt-6-astra-pro", null, null, null, null, null)
+```
+
+</CodeGroup>
+
+Los parámetros del siguiente turno aceptan el modelo, las instrucciones, la temperatura, el top-p, el máximo de tokens de salida y las herramientas, con los nombres en el estilo de cada lenguaje. En Python son la única forma de cambiar la lista de herramientas entre turnos.
+
+Si la herramienta espera aprobación, sus sustituciones se guardan con la ejecución en pausa y se aplican al turno que sigue cuando continúas:
+
+| Lenguaje | Se guardan en |
+| --- | --- |
+| TypeScript | Se aplican cuando la llamada aprobada se ejecuta al continuar |
+| Python | `run.next_turn_params` |
+| Go | `Run.NextTurn` |
+| C# | `Run.NextTurn` |
+| PHP | `$result->run->nextTurnParams` |
+| Ruby | `result.run.next_turn_params` |
+| Java | `run().nextTurn()` |
+
+Usa funciones por turno para las reglas que quieras recalcular en cada turno, y parámetros del siguiente turno para un traspaso puntual desde una herramienta concreta.
+
+<span id="set-the-model-per-run-in-rust"></span>
+## Establece el modelo por ejecución en Rust
+
+El `phaseo-agent` 0.2 de Rust no tiene callbacks por turno, actualizaciones de contexto desde herramientas ni parámetros del siguiente turno. Establece el modelo, el límite de pasos y el contexto de la aplicación por ejecución con `RunOptions`:
+
+```rust
+let mut options = RunOptions::new("Explain when to use routing presets.");
+options.model = Some("openai/gpt-6-astra-pro".to_string());
+options.max_steps = Some(4);
+options.context = serde_json::json!({ "workspace": "docs" });
+
+let result = agent.run(&mut client, options)?;
+```

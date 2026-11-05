@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { stat } from "node:fs/promises";
 import path from "node:path";
 import type { GitDiffContents } from "../shared/workspace";
-import { isRefName, isTreeId, validateGitDiffRequest, type GitDiffRequest, type GitDiffResult, type GitRefs } from "../shared/gitDiff";
+import { isRefName, isTreeId, validateGitDiffRequest, type GitCommitSummary, type GitDiffRequest, type GitDiffResult, type GitRefs } from "../shared/gitDiff";
 import { appGitArgs } from "./appGit";
 import { gitFilename } from "./gitHunks";
 import { blobContents, workingContents } from "./gitDiffContents";
@@ -58,6 +58,25 @@ export async function automaticBaseRef(root: string, current: string): Promise<s
 	for (const candidate of ["origin/main", "origin/master", "main", "master"]) if (candidate !== current && await revision(root, candidate)) return candidate;
 }
 
+export const COMMIT_LIST_LIMIT = 100;
+
+/**
+ * The newest commits in the branch comparison (since it left its base), else the newest on HEAD, for reviewing one
+ * commit at a time. An unknown base falls back the same way as the branch diff.
+ */
+export async function gitCommits(root: string, baseRef?: string): Promise<GitCommitSummary[]> {
+	if (!await isRepository(root) || !await revision(root, "HEAD")) return [];
+	if (baseRef !== undefined && !isRefName(baseRef)) throw new Error("Choose a valid branch to compare against.");
+	const current = (await runGit(root, ["branch", "--show-current"])).trim();
+	const base = baseRef && await revision(root, baseRef) ? baseRef : await automaticBaseRef(root, current);
+	const mergeBase = base ? (await runGit(root, ["merge-base", base, "HEAD"]).catch(() => "")).trim() : "";
+	const output = await runGit(root, ["log", "--topo-order", `--max-count=${COMMIT_LIST_LIMIT}`, "--format=%H%x1f%P%x1f%an%x1f%aI%x1f%s%x1e", mergeBase && mergeBase !== (await revision(root, "HEAD")) ? `${mergeBase}..HEAD` : "HEAD"]);
+	return output.split("\x1e").map(entry => entry.trim()).filter(Boolean).map(entry => {
+		const [sha, parents, author, date, subject] = entry.split("\x1f");
+		return { sha, subject: subject ?? "", author: author ?? "", date: date ?? "", merge: (parents ?? "").trim().split(/\s+/).length > 1 };
+	});
+}
+
 /** Patches for untracked files, which `git diff` leaves out, so new files show as additions. */
 async function untrackedPatch(root: string, ignoreWhitespace: boolean) {
 	const files = (await runGit(root, ["ls-files", "--others", "--exclude-standard", "-z"])).split("\0").filter(Boolean);
@@ -85,6 +104,11 @@ export async function gitScopedDiff(root: string, value: unknown): Promise<Scope
 	const whitespace = request.ignoreWhitespace ? ["-w"] : [];
 	let base: string, target: string | undefined, headRef: string | undefined, baseRef: string | undefined;
 	if (request.scope === "turn") { base = request.from; target = request.to; }
+	else if (request.scope === "commit") {
+		target = await revision(root, request.commit);
+		if (!target) throw new Error("This commit is not in the local repository.");
+		base = await revision(root, `${target}^1`) ?? await emptyTree(root);
+	}
 	else {
 		const head = await revision(root, "HEAD");
 		headRef = (await runGit(root, ["branch", "--show-current"])).trim() || "HEAD";

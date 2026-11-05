@@ -6,36 +6,24 @@ description: "Move an existing OpenAI SDK integration to Phaseo by changing the 
 icon: "/icons/brands/openai.svg"
 ---
 
-Use this guide to move an existing OpenAI SDK integration to Phaseo without rewriting the rest of your application. Start with the base URL and API key, keep the request itself unchanged, then verify each model and endpoint before shifting production traffic.
+Keep the OpenAI SDK and change two things: the base URL and the API key. Then give each model its Phaseo ID, which adds the `openai/` prefix.
 
-## What changes
-
-| Setting | Before | After |
+| Setting | OpenAI | Phaseo |
 | --- | --- | --- |
-| Base URL | OpenAI default | `https://api.phaseo.app/v1` |
-| API key | OpenAI key | `PHASEO_API_KEY` |
-| Model | OpenAI model name | A model ID returned by `GET /v1/models` |
-| Request code | Existing SDK call | Usually unchanged |
+| Base URL | SDK default (`https://api.openai.com/v1`) | `https://api.phaseo.app/v1` |
+| API key | `OPENAI_API_KEY` | `PHASEO_API_KEY`, sent as `Authorization: Bearer` |
+| Model | `gpt-4.1-mini` | `openai/gpt-4.1-mini`, or any ID from `GET /v1/models` |
+| Request code | `chat.completions.create`, `responses.create` | Unchanged |
 
-<Steps>
-<Step title="Create a Phaseo API key">
+## Switch the client
 
-Create a key with `phaseo keys create` in the [Phaseo CLI](../guides/integrations/phaseo-cli) or in [Gateway Keys](https://phaseo.app/settings/keys), then add it to every environment that runs your application.
-
-```bash
-PHASEO_API_KEY=phaseo_v1_sk_...
-```
-
-</Step>
-
-<Step title="Point the client at Phaseo">
-
-Keep the OpenAI SDK and change only its credentials and base URL first.
+Create a key with `phaseo keys create` in the [Phaseo CLI](../guides/integrations/phaseo-cli) or in [API Keys](https://phaseo.app/settings/keys), and add it to every environment that runs the app. Then pass it and the base URL to the existing client:
 
 <CodeGroup>
 ```typescript TypeScript
 import OpenAI from "openai";
 
+// Before: const client = new OpenAI();
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
@@ -51,6 +39,7 @@ const response = await client.chat.completions.create({
 import os
 from openai import OpenAI
 
+# Before: client = OpenAI()
 client = OpenAI(
     api_key=os.environ["PHASEO_API_KEY"],
     base_url="https://api.phaseo.app/v1",
@@ -73,39 +62,39 @@ curl https://api.phaseo.app/v1/chat/completions \
 ```
 </CodeGroup>
 
-</Step>
+Use a new variable name rather than putting the Phaseo key in `OPENAI_API_KEY`, and remove stale `OPENAI_BASE_URL` values so no other client in the repo keeps calling OpenAI. `AzureOpenAI` clients move to the plain `OpenAI` client; Azure deployment names map to Phaseo model IDs the same way.
 
-<Step title="Verify model IDs and endpoint coverage">
+## Map model IDs
 
-List the models available through Phaseo instead of assuming every previous alias resolves unchanged.
+List the IDs Phaseo serves in OpenAI's list format and check every production model against `data[].id`:
 
 ```bash
-curl https://api.phaseo.app/v1/models \
+curl "https://api.phaseo.app/v1/models?format=openai" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-Check every production workflow you rely on, including streaming, tools, structured outputs, images, audio, files, or batches. Use the [API Reference](../api-reference/introduction) to confirm the matching endpoint.
+Without `format=openai`, the response is Phaseo's paged `models` list and has no `data` array. The same applies to `client.models.list()`: pass `{ query: { format: "openai" } }` in Node or `extra_query={"format": "openai"}` in Python. The default list holds only models you can call now; add `availability=all` to include inactive and coming-soon ones.
 
-</Step>
+## What works differently
 
-<Step title="Test and roll out">
+| OpenAI feature | On Phaseo |
+| --- | --- |
+| Chat Completions, Responses | Same request shapes at `/v1/chat/completions` and `/v1/responses`. An unknown top-level field returns `400` `unknown_param`. |
+| `previous_response_id`, `conversation` | Return `400`: Phaseo doesn't store responses. Send the full history in `input` on each request. |
+| Embeddings, moderations, images, speech, transcription | `/v1/embeddings`, `/v1/moderations`, `/v1/images/*`, `/v1/audio/*`. Check that the model supports the operation. |
+| Batch API | `/v1/files` and `/v1/batches`. `/v1/files` holds batch input only; it can't supply `file_id` inputs to other requests. |
+| Realtime | `POST /v1/audio/realtime/sessions`, then a WebSocket to the returned `connect.url`. See [Realtime Voice](../guides/realtime-voice). |
+| Stored prompts (`prompt: { id: "pmpt_…" }`) | Recreate the prompt as a preset and call it with `prompt: { id: "@slug", version, variables }`. See [Prompt Templates](../guides/prompt-templates). |
+| `organization`, `project`, `OpenAI-Organization` header | No equivalent. Remove them; use Phaseo workspaces and keys. |
+| Assistants, Threads, vector stores, fine-tuning, legacy `/v1/completions` | No Phaseo endpoint. Keep these on OpenAI or port them to `/v1/responses`. |
 
-Run the same representative prompts against your old and new configurations. Compare output shape, latency, token usage, errors, and cost before moving traffic gradually.
+## Test and roll out
 
-</Step>
-</Steps>
+Run the same representative prompts against the old and new configuration and compare output shape, latency, token usage, errors, and cost. Before moving traffic:
 
-## Migration checklist
+- the Phaseo key is set in development, staging, and production;
+- every production model ID appears in `GET /v1/models?format=openai`;
+- a non-streaming and a streaming request pass in staging, plus tool calls and structured outputs if the app uses them;
+- rollback is still only a base URL and key change.
 
-- The Phaseo key is configured in development, staging, and production.
-- The client base URL is `https://api.phaseo.app/v1`.
-- Every production model ID appears in `GET /v1/models`.
-- Non-streaming and streaming requests pass in staging.
-- Tool calls and structured outputs pass if your application uses them.
-- Rollback remains a configuration-only key and endpoint change.
-
-## Next steps
-
-- [Routing and Fallbacks](../guides/routing-and-fallbacks)
-- [Models](../exploring/models)
-- [Error Handling](../api-reference/errors.mdx)
+Then move traffic gradually. [Routing and Fallbacks](../guides/routing-and-fallbacks) covers fallback models, and [Error Handling](../api-reference/errors.mdx) lists the error bodies your app may now see.

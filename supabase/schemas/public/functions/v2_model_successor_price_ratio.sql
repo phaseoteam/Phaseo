@@ -10,8 +10,11 @@ CREATE OR REPLACE FUNCTION public.v2_model_successor_price_ratio (
   -- Compares standard-tier unit prices meter by meter and returns the largest
   -- ratio. The old model uses its last known prices because its routes no
   -- longer serve: active or deprecated SKUs whatever their end date, or, when
-  -- none are left, the reference prices recorded for it. The successor only
-  -- counts routes that route and SKUs it can bill now. input_tokens and
+  -- none are left, the reference prices recorded for it. When the old model has
+  -- any routing-enabled route, only those count: catalogue-only reseller routes
+  -- it never routed to can list discounted or zero prices it never billed.
+  -- The successor only counts routes that route and SKUs it can bill now.
+  -- input_tokens and
   -- output_tokens are the older names of the text token meters.
   -- A meter only the successor bills is compared the way a redirected request
   -- would be billed:
@@ -40,7 +43,9 @@ CREATE OR REPLACE FUNCTION public.v2_model_successor_price_ratio (
       order by s.sku_code, s.effective_from desc
     ) sku on true
     join public.v2_pricing_sku_meters mt on mt.sku_id=sku.sku_id and mt.billable
-    where r.model_slug=p_from_model_slug or (r.model_slug=p_to_model_slug and r.routing_enabled)
+    where (r.model_slug=p_from_model_slug and (r.routing_enabled or not exists (
+        select 1 from public.v2_model_provider_routes q where q.model_slug=p_from_model_slug and q.routing_enabled)))
+      or (r.model_slug=p_to_model_slug and r.routing_enabled)
     group by 1, 2
   ), old_prices as (
     select meter_key, unit_price from sku_prices where model_slug=p_from_model_slug

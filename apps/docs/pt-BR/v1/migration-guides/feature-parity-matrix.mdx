@@ -1,64 +1,111 @@
 ---
 icon: "list-checks"
 title: "Lista de verificação de recursos para migração"
-sidebarTitle: "Checklist de recursos"
-description: "Confira os recursos do Phaseo que costumam afetar uma migração de gateway."
+description: "Confira os recursos do Phaseo de que uma migração de gateway depende, teste-os e faça o rollout com uma chave reversível."
 ---
 
-# Lista de verificação de recursos para migração
+Encontre cada recurso que a integração com o seu gateway atual usa e faça o que a última coluna indica antes de mover o tráfego. Última revisão em 4 de novembro de 2026.
 
-Use esta lista para identificar quais partes de uma integração de gateway existente podem ser migradas sem alterações e quais precisam de validação explícita. Revisada pela última vez em 23 de agosto de 2026.
+Siga a migração nesta ordem. Ela revela os comportamentos que podem mudar mesmo quando as duas plataformas aceitam a mesma solicitação compatível com OpenAI.
 
-## Compatibilidade das solicitações principais
+```mermaid
+flowchart LR
+  inv["Inventariar a fronteira"] --> cls["Classificar cada recurso"]
+  cls --> test["Testar tráfego representativo"]
+  test --> roll["Fazer o rollout com uma chave reversível"]
+  cls -- "Sem suporte" --> keep["Remover a dependência ou mantê-la no caminho antigo"]
+```
 
-| Recurso | Suporte do Phaseo | Ação de migração |
+## Inventarie a fronteira da integração
+
+Registre cada lugar em que o gateway atual aparece, para que a migração não deixe um segundo caminho de configuração escondido:
+
+- URLs base e variáveis de ambiente de chaves de API;
+- inicialização do SDK e cabeçalhos personalizados;
+- IDs de modelo e modelos de fallback;
+- ordem de provedores, listas de permissão e requisitos de privacidade;
+- código de streaming, chamada de ferramentas e saída estruturada;
+- jobs em lote, arquivos, webhooks e consulta de status assíncrono;
+- atribuição de solicitações e metadados de usuário ou sessão.
+
+## Solicitações
+
+| Recurso | No Phaseo | Antes da virada |
 | --- | --- | --- |
-| Autenticação compatível com OpenAI | Compatível | Altere a URL base e a chave de API e faça uma solicitação autenticada. |
-| Chat Completions | Compatível | Teste solicitações normais, em streaming, com chamadas de ferramentas e saídas estruturadas. |
-| Responses | Compatível | Teste formatos de entrada, eventos de streaming, ferramentas e análise da resposta. |
-| Anthropic Messages | Compatível | Verifique cabeçalhos, prompts de sistema e eventos de streaming específicos da Anthropic. |
-| Identificadores de modelo | IDs do catálogo Phaseo | Valide cada ID de produção com `GET /v1/models`; não presuma que os aliases correspondem. |
-| Endpoints de embeddings, imagem e áudio | Suporte varia por modelo e provedor | Verifique se o modelo oferece suporte à operação necessária antes da migração. |
+| Autenticação | `Authorization: Bearer $PHASEO_API_KEY` | Troque a URL base e a chave e execute uma solicitação autenticada. |
+| Chat Completions | `/v1/chat/completions` | Teste solicitações normais, com streaming, com chamada de ferramentas e com saída estruturada. Campos de nível superior desconhecidos retornam `400`. |
+| Responses | `/v1/responses`, sem estado armazenado | Teste formatos de entrada, eventos de streaming, ferramentas e parsing. `previous_response_id` e `conversation` retornam `400`; envie o histórico completo. |
+| Anthropic Messages | `/v1/messages` no host raiz `https://api.phaseo.app` | Passe a chave como bearer token e revise cada cabeçalho `anthropic-beta`; o Phaseo não os repassa. |
+| IDs de modelo | `<org>/<model>` | Confira cada ID de produção em `GET /v1/models?format=openai`. Não presuma que os aliases coincidem. |
+| Embeddings, imagens, áudio, moderações | Com suporte por modelo e provedor | Confirme que o modelo oferece suporte à operação. |
 
-## Controles de roteamento e políticas
+## Roteamento e políticas
 
-| Recurso | Suporte do Phaseo | Ação de migração |
+| Recurso | No Phaseo | Antes da virada |
 | --- | --- | --- |
-| Ordem dos provedores | `provider.order` | Recrie apenas as regras de ordem ainda necessárias para a carga de trabalho. |
-| Listas de provedores permitidos e ignorados | `provider.only` e `provider.ignore` | Valide os IDs e confirme que pelo menos uma rota continue disponível. |
-| Ordenação por preço, latência ou throughput | `provider.sort` | Inspecione o provedor selecionado no uso do Gateway após o teste. |
-| Retenção zero de dados | `provider.require_zero_data_retention` | Confirme que existe um provedor compatível com o modelo antes de exigir esse recurso. |
-| Execução regional e residência de dados | Campos da solicitação e padrões de privacidade do espaço de trabalho | Teste o roteamento bem-sucedido e o erro quando não houver provedor correspondente. |
-| Prompts e padrões reutilizáveis | Predefinições | Mova a configuração compartilhada para uma predefinição, em vez de duplicá-la em cada cliente. |
+| Fallbacks de modelo | Array `models`, de 1 a 25 entradas | Os fallbacks são acionados em `429`, `500`, `502`, `503` e `504`, nunca em erros da solicitação. |
+| Ordem de provedores | `provider.order` | Recrie apenas a ordem de que a carga de trabalho ainda precisa. |
+| Listas de permissão e de exclusão de provedores | `provider.only`, `provider.ignore` | Confira os IDs dos provedores e se resta pelo menos uma rota. |
+| Ordenação por preço, latência ou throughput | `provider.sort` | Depois de testar, confira o provedor selecionado nos detalhes da solicitação. |
+| Retenção zero de dados | `provider.require_zero_data_retention` (alias `provider.zdr`) | Confirme que o modelo tem um provedor compatível antes de exigir isso. |
+| Execução regional e residência de dados | `provider.required_execution_region`, `provider.required_data_region`, padrões de privacidade do espaço de trabalho | Teste uma rota bem-sucedida e também o erro de nenhum provedor compatível. |
+| Prompts e padrões compartilhados | [Predefinições](../guides/presets) | Leve a configuração compartilhada para uma predefinição em vez de copiá-la para cada chamador. |
 
-## Operações e implantação
+## Operações
 
-| Recurso | Suporte do Phaseo | Ação de migração |
+| Recurso | No Phaseo | Antes da virada |
 | --- | --- | --- |
-| Atribuição de solicitações | ID, nome, URL e categorias do aplicativo | Mantenha os cabeçalhos de atribuição durante a migração e verifique o agrupamento no painel. |
-| Detalhes da solicitação e do provedor | Uso do Gateway e registros de geração | Compare provedor, latência, uso de tokens e preço com prompts representativos. |
-| Lotes e trabalhos assíncronos | APIs de lote, arquivo, vídeo, webhook e websocket | Valide transições de status, cobrança final, cancelamento e recuperação de resultados. |
-| Suporte à reprodução | Registros de geração expõem metadados de reprodução quando disponíveis | Confirme que o endpoint e o payload originais possam ser recuperados para solicitações com falha. |
-| Implantação gradual | Divisão de tráfego no cliente ou na infraestrutura | Mantenha a reversão limitada à troca da URL base e das credenciais até que a migração esteja estável. |
+| Atribuição de app | `X-App-Id`, `X-App-Name`, `HTTP-Referer`, `X-Title`, `X-App-Categories` | Mantenha os cabeçalhos que descrevem a aplicação chamadora; removê-los durante a migração dificulta comparar custo e uso. Confira o agrupamento de apps no painel. Veja [Atribuição de apps](../guides/app-attribution) para os valores de categoria. |
+| Rótulos de custo | Rótulos `X-Phaseo-Metadata` | Mapeie propriedades personalizadas ou tags para rótulos. |
+| Detalhes da solicitação | Logs de solicitações e `GET /v1/generations?id=<request_id>` | Compare provedor, latência, uso de tokens e preço para prompts representativos. |
+| Replay | `replay_request` quando `replay_supported` é `true` | Confirme que o endpoint e o payload de uma solicitação com falha podem ser recuperados. |
+| Jobs em lote e assíncronos | APIs de lote, arquivos, vídeo, webhook e WebSocket | Confira as transições de status, a cobrança final, o cancelamento e a obtenção dos resultados. `/v1/files` guarda apenas entradas de lote. |
+| Limites de taxa | Cota de solicitações por minuto por usuário, a partir de 10 para um espaço de trabalho novo | Um proxy que envia o tráfego de uma equipe pela chave de um único dono pode atingi-la. Veja [Limites](../api-reference/limits). |
+| Rollout gradual | Divisão de tráfego no cliente ou na infraestrutura | Mantenha o rollback como uma troca de URL base e chave até a virada ficar estável. |
 
-## Recursos que exigem validação específica da carga de trabalho
+## Não disponível
 
-Não considere a compatibilidade da API como prova de que estes comportamentos são idênticos:
+Estes recursos não têm equivalente no Phaseo. Mantenha-os no app ou na plataforma antiga:
 
-- seleção automática de provedores e ordem de fallback
-- afinidade do cache de prompts e preços de cache
-- campos de solicitação específicos do provedor
-- metadados disponíveis apenas na resposta
-- limites de taxa e tempo de repetição
-- políticas de retenção, residência e treinamento de dados
-- disponibilidade e preço exatos dos modelos
+- **Cache de respostas.** O Phaseo não armazena respostas em cache. O [cache de prompts](../guides/prompt-caching) ainda reduz o custo de entrada.
+- **Respostas e conversas armazenadas.** Não existe `GET` nem `DELETE /v1/responses/{id}`.
+- **Contagem de tokens** (`/v1/messages/count_tokens`).
+- **OpenAI Assistants, Threads, vector stores, fine-tuning e o legado `/v1/completions`.**
 
-Execute prompts e casos de falha semelhantes aos de produção antes de transferir um volume significativo de tráfego.
+## Classifique cada recurso
 
-## Guias relacionados
+Atribua um status a cada comportamento de produção, usando as tabelas acima e o guia da sua [plataforma de origem](./index#platform-migrations):
 
-- [Guias de migração](./index.mdx)
-- [Revisão de prontidão para migração](./gateway-parity-review.mdx)
-- [Roteamento e fallback](../guides/routing-and-fallbacks.mdx)
-- [Predefinições](../guides/presets.mdx)
-- [Atribuição do aplicativo](../guides/app-attribution.mdx)
+| Status | Significado |
+| --- | --- |
+| Inalterado | O mesmo campo de solicitação e o mesmo comportamento de resposta foram verificados. |
+| Mapeado | O Phaseo dá o mesmo resultado por meio de outro campo ou configuração. |
+| Adaptado | Uma camada de compatibilidade traduz a solicitação ou a resposta. |
+| Sem suporte | Remova a dependência ou mantenha essa carga de trabalho no caminho atual. |
+| Não verificado | O suporte pode existir, mas ainda não há evidência parecida com produção. |
+
+## Valide com o seu próprio tráfego
+
+A compatibilidade da API não faz com que estes itens se comportem igual:
+
+- seleção automática de provedores e ordem de fallback;
+- afinidade do cache de prompts e preço do cache;
+- campos de solicitação específicos do provedor e metadados presentes só na resposta;
+- limites de taxa e tempo entre novas tentativas;
+- políticas de retenção, residência e treinamento de dados;
+- disponibilidade exata e preço dos modelos.
+
+Monte um pequeno conjunto de testes a partir de padrões reais da carga de trabalho, sem copiar dados sensíveis de produção, e execute:
+
+1. uma solicitação normal para cada endpoint em uso;
+2. streaming pelo mesmo caminho de cliente da produção;
+3. chamadas de ferramentas e saídas estruturadas com esquemas realistas;
+4. cada restrição de provedor ou de privacidade;
+5. chaves inválidas, modelos inválidos, limites de taxa e falhas de provedor indisponível;
+6. jobs em lote ou assíncronos passando por sucesso, falha e cancelamento.
+
+Compare a qualidade da saída, a latência, o uso de tokens, o provedor selecionado e o custo final. Registre o ID de cada solicitação para inspecioná-la nos logs de solicitações ou com `GET /v1/generations?id=<request_id>`.
+
+## Faça o rollout com uma chave reversível
+
+Comece pelo tráfego de desenvolvimento e interno. Mova uma pequena parte da produção só depois que o conjunto de testes passar, e mantenha o rollback limitado à URL base e à chave até os resultados se estabilizarem. Não combine a virada com mudanças de prompt, modelo ou roteamento; faça essas mudanças depois que a fronteira do gateway estiver verificada.

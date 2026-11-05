@@ -5,7 +5,7 @@ import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { json, withRuntime } from "@/routes/utils";
-import { isResponse, requireCapability, requireJsonBody, requireOAuthWorkspaceRole } from "./route-helpers";
+import { isResponse, requireCapability, requireJsonBody, requireOAuthWorkspaceRole, rejectThirdPartyOAuthSpendingChange } from "./route-helpers";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 const SSO_DOMAIN_PATTERN = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i;
@@ -16,6 +16,9 @@ async function authorize(req: Request, write: boolean) {
 	if (!auth.ok) return { response: (auth as GuardErr).response };
 	const capability = requireCapability(auth.value, write ? CAPABILITIES.SETTINGS_WRITE : CAPABILITIES.SETTINGS_READ);
 	if (capability) return { response: capability };
+	// Single sign-on and SCIM add members, who can create keys and spend the workspace's credits.
+	const appError = write ? rejectThirdPartyOAuthSpendingChange(auth.value, "Apps that use Sign in with Phaseo can't change single sign-on or SCIM. The person can change them under Settings.") : null;
+	if (appError) return { response: appError };
 	const role = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, write ? ["owner", "admin"] : ["owner", "admin"]);
 	if (role) return { response: role };
 	return { auth: auth.value };

@@ -6,123 +6,106 @@ description: "Apply request-level residency and zero-data-retention requirements
 "og:image": "https://phaseo.app/og/dynamic?title=Route%20only%20to%20EU%20or%20ZDR-capable%20providers&description=Apply%20request-level%20residency%20and%20zero-data-retention%20requirements%20so%20a%20model%20only%20routes%20to%20compliant%20provider%20offers.&pathname=/docs/v1/cookbook/route-only-to-eu-or-zdr-providers"
 ---
 
-Use this recipe when one request needs provider filtering for compliance or data-handling reasons without changing the whole workspace policy.
+Add residency and <Tooltip tip="Zero data retention: the provider doesn't keep prompts or outputs.">ZDR</Tooltip> requirements to the `provider` object of one request, and Phaseo removes every provider offer that doesn't meet them before it ranks the rest. When you're done one workflow runs only on EU or ZDR-capable providers, without changing the policy for the whole workspace.
 
-## Goal
+The request is production-ready. If no provider for the model meets every requirement, the request fails before any provider is called, so check availability first.
 
-- Require EU execution.
-- Require EU data residency.
-- Require zero-data-retention-capable providers.
+| Field | Keeps only providers that |
+| --- | --- |
+| `required_execution_region: "eu"` | Run the model in the EU |
+| `required_data_region: "eu"` | Handle prompt and completion data in the EU |
+| `require_zero_data_retention: true` | Meet zero-data-retention requirements |
 
-## 1. Add the residency requirements to the request
+## Send a restricted request
 
-Set the provider requirements directly on the request body.
+<Steps>
+<Step title="Check a provider qualifies">
+
+On the model's page, the provider cards show regional offers such as **OpenAI EU** or **Google Vertex EU**, ZDR support, and each provider's data-policy notes and sources. For EU, you can also list what the EU gateway serves:
+
+```bash
+curl https://eu.api.phaseo.app/v1/models \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+</Step>
+<Step title="Add only the requirements you need">
+
+Each requirement shrinks the pool, so it can route to a pricier regional offer or leave no provider at all. Send only what your policy demands:
 
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "google/gemini-3.1-flash-lite",
+    "model": "openai/gpt-5.6-luna",
     "input": "Summarize the ticket in one line.",
     "provider": {
       "required_execution_region": "eu",
-      "required_data_region": "eu",
-      "require_zero_data_retention": true
-    }
+      "required_data_region": "eu"
+    },
+    "meta": true
   }'
 ```
 
-```typescript TypeScript SDK
+```typescript TypeScript
 import Phaseo from "@phaseo/sdk";
 
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-  model: "google/gemini-3.1-flash-lite",
+  model: "openai/gpt-5.6-luna",
   input: "Summarize the ticket in one line.",
   provider: {
     required_execution_region: "eu",
     required_data_region: "eu",
-    require_zero_data_retention: true,
   },
+  meta: true,
 });
 
-console.log(response.output_text);
+console.log(response.meta?.routing);
 ```
 
-```python Python SDK
+```python Python
+import os
+
 from phaseo import Phaseo
 
-client = Phaseo(api_key="YOUR_API_KEY")
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
 
 response = client.generate_response(
     {
-        "model": "google/gemini-3.1-flash-lite",
+        "model": "openai/gpt-5.6-luna",
         "input": "Summarize the ticket in one line.",
         "provider": {
             "required_execution_region": "eu",
             "required_data_region": "eu",
-            "require_zero_data_retention": True,
         },
+        "meta": True,
     }
 )
 
-print(response.get("output_text"))
+print(response["meta"]["routing"]["selected_provider"])
 ```
 </CodeGroup>
 
-Supported request-level filters for this flow:
+To also require ZDR, add `"require_zero_data_retention": true`. With all three, a model needs at least one EU provider that also meets ZDR.
 
-- `required_execution_region`
-- `required_data_region`
-- `require_zero_data_retention`
+</Step>
+<Step title="Check where it ran">
 
-## 2. Use the smallest rule set that matches the policy
+`meta.routing.selected_provider` names the provider that served it, for example `openai-eu`. The request in **Settings → Usage → Logs** records the required regions and the selected provider.
 
-Only require what the workload actually needs.
+</Step>
+</Steps>
 
-Examples:
+## Choose request fields, the EU gateway, or workspace settings
 
-- execution locality only:
-  - `required_execution_region: "eu"`
-- data locality only:
-  - `required_data_region: "eu"`
-- <Tooltip tip="Zero data retention: only providers that meet zero-data-retention constraints.">ZDR</Tooltip>-capable providers only:
-  - `require_zero_data_retention: true`
+| Use | When |
+| --- | --- |
+| These request fields on `api.phaseo.app` | The rule applies to one workflow, customer or request. Every endpoint and feature stays available. |
+| [`eu.api.phaseo.app`](../guides/regional-routing) | Every text request from a service must stay in the EU. The hostname enforces the region and also rejects media input, Phaseo server tools and provider-hosted tools. Sending a `required_execution_region` or `required_data_region` for another region there returns `400 validation_error` with reason `deployment_region_conflict`. |
+| **Settings → Privacy** | The rule applies to every request in the workspace. |
 
-## 3. Expect the candidate pool to shrink
-
-These filters are applied before provider ranking, so they can remove providers entirely.
-
-That means:
-
-- the request may route to a more expensive regional offer
-- the provider list may become much smaller
-- the request may fail if no provider for that model satisfies the requirements
-
-## 4. Preflight on the model page when possible
-
-Before shipping the request, use the model page provider cards to inspect:
-
-- regional offers such as `OpenAI EU` or `Google Vertex EU`
-- ZDR support
-- provider data-policy notes and sources
-
-That helps you confirm there is at least one eligible provider before you enforce the requirement in production traffic.
-
-## 5. Use workspace privacy settings for defaults
-
-If the policy should apply to all requests from a workspace, set it in **Settings -> Privacy** instead of copying the same request-level filters everywhere.
-
-Use the request fields when the rule is:
-
-- per workflow
-- per customer
-- per request
-
-## Related guides
-
-- [Routing and Fallbacks](../guides/routing-and-fallbacks.mdx)
-- [Presets](../guides/presets.mdx)
+Regional routing restricts which providers handle the model call. It isn't yet an end-to-end data residency guarantee; [What stays outside the region](../guides/regional-routing#what-stays-outside-the-region) lists the shared systems. To restrict providers without a residency rule, see [Pin or ignore providers](./pin-or-ignore-providers-per-request).

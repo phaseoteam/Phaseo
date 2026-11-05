@@ -6,6 +6,7 @@
 import { passthroughWithPricing, passthrough } from "./streaming";
 import { createToolCallKeyResolver, type UnifiedStreamEvent } from "./stream-events";
 import { createChatChunkAccumulator, resolveChatStreamAuditResponse } from "./chat-stream-log-snapshot";
+import { createMessagesEventAccumulator, resolveMessagesStreamAuditResponse } from "./messages-stream-log-snapshot";
 import type { PipelineContext } from "../before/types";
 import type { RequestResult, Bill } from "../execute";
 import type { PriceCard } from "../pricing";
@@ -33,6 +34,7 @@ import { withServedModel } from "./served-model";
 import { logDebugEvent, previewValue } from "../debug";
 import { ensureRuntimeForBackground } from "@/runtime/env";
 import { normalizeFinishReason } from "../audit/normalize-finish-reason";
+import { CLIENT_CLOSED_REQUEST_STATUS, streamHealthSignals } from "../execute/attempt-health";
 import { applyByokServiceFee } from "../pricing/byok-fee";
 import { applyDataContributionDiscount } from "../pricing/data-contribution-discount";
 import {
@@ -49,8 +51,8 @@ import {
 } from "../execute/sticky-routing";
 import { applyResponsePlugins } from "@/plugins/registry";
 import { applySuccessfulResponseBillingPolicy, suppressFailedResponseBilling } from "./billing-policy";
-import { calculateOutputPerformanceMetrics } from "./performance-metrics";
-import { resolveFailoverMs } from "./timing";
+import { calculateOutputPerformanceMetrics, getUsageReasoningTokens } from "./performance-metrics";
+import { resolveFailoverMs, resolveOutputSpeedWindow } from "./timing";
 import { recordManagedProviderTokensOnce } from "@core/provider-rate-limits";
 import { chargeRateLimitPolicyTokens } from "@core/rate-limit-policies";
 import { mergeMessagesStreamUsage } from "@core/usage-normalization";
@@ -139,10 +141,13 @@ function attachStreamTimingMeta(args: {
     const tokensOut = getUsageOutputTokens(usage);
     const calculated = calculateOutputPerformanceMetrics({
         outputTokens: tokensOut,
+        reasoningTokens: ctx.meta.reasoningStreamed ? null : getUsageReasoningTokens(usage),
         providerDurationMs: generationMs,
         providerTtftMs: ctx.meta.provider_ttft_ms ?? null,
         gatewayE2eMs: ctx.meta.end_to_end_ms ?? null,
         failoverMs: resolveFailoverMs(ctx),
+        outputArrivals: ctx.meta.outputArrivals ?? null,
+        speedWindow: resolveOutputSpeedWindow(ctx),
     });
     const throughputTps = calculated.effectiveThroughputTps;
     ctx.meta.throughput_tps = throughputTps ?? undefined;
@@ -215,16 +220,25 @@ export async function handleStreamResponse(
             : true
     );
     const stickyRoutingModel = getBaseModel(ctx.model);
-    // Cache native ID from first chunk to avoid checking every frame
+    // The provider's response ID, from the first frame that names one. Re-encoded frames
+    // already carry the request ID, which is never the native one.
     let cachedNativeId: string | undefined;
+    const rememberNativeId = (frame: any) => {
+        if (cachedNativeId || !frame || typeof frame !== "object") return;
+        cachedNativeId = [frame.nativeResponseId, frame.response?.nativeResponseId, frame.response?.id, frame.message?.id, frame.id]
+            .find((value) => typeof value === "string" && value.length > 0 && value !== ctx.requestId);
+    };
     let cachedFinishReason: string | null = null;
     let latestStreamUsageRaw: any = null;
     let latestGatewaySnapshot: any = null;
     const chatChunkAccumulator = ctx.endpoint === "chat.completions" ? createChatChunkAccumulator() : null;
+    const messagesEventAccumulator = ctx.endpoint === "messages" ? createMessagesEventAccumulator() : null;
     const auditGatewayResponse = () =>
         chatChunkAccumulator
             ? resolveChatStreamAuditResponse(latestGatewaySnapshot, chatChunkAccumulator)
-            : latestGatewaySnapshot;
+            : messagesEventAccumulator
+                ? resolveMessagesStreamAuditResponse(latestGatewaySnapshot, messagesEventAccumulator)
+                : latestGatewaySnapshot;
 	let streamFailed = false;
     let appliedStreamResponsePlugins = false;
     const streamedToolCallKeys = new Set<string>();
@@ -363,6 +377,8 @@ export async function handleStreamResponse(
 		if (event.type === "error") {
 			streamFailed = true;
 		}
+        // Sees the provider's own frame, also when it is re-encoded for the client.
+        if (event.type === "start") rememberNativeId(event.payload);
         if (event.type === "delta_tool") {
             const key = resolveStreamedToolCallKey(event);
             streamedToolCallKeys.add(key);
@@ -388,23 +404,23 @@ export async function handleStreamResponse(
         rewriteFrame: (frame: any) => {
             if (!frame || typeof frame !== "object") return frame;
             chatChunkAccumulator?.add(frame);
+            messagesEventAccumulator?.add(frame);
             const includeMeta = ctx.meta.returnMeta ?? false;
             const next: any = withServedModel({ ...frame }, ctx);
             delete next.provider;
             delete next.gateway;
 
             if (ctx.endpoint === "chat.completions" || ctx.endpoint === "responses") {
-                // Cache native ID from first chunk that has one
-                if (!cachedNativeId) {
-                    cachedNativeId = typeof next.nativeResponseId === "string"
-                        ? next.nativeResponseId
-                        : (typeof next.id === "string" ? next.id : undefined);
-                }
-                // Use cached native ID for all subsequent frames
-                if (!next.nativeResponseId && cachedNativeId) {
+                rememberNativeId(next);
+                if (ctx.endpoint === "chat.completions" && !next.nativeResponseId && cachedNativeId) {
                     next.nativeResponseId = cachedNativeId;
                 }
                 next.id = ctx.requestId;
+                // Responses events nest the response object; it gets the same IDs as the
+                // buffered body: the request ID, with the provider's as nativeResponseId.
+                if (next.response && typeof next.response === "object") {
+                    next.response = { ...next.response, id: ctx.requestId, nativeResponseId: cachedNativeId };
+                }
             }
 
             if (!includeMeta && "meta" in next) {
@@ -413,6 +429,11 @@ export async function handleStreamResponse(
 
             const isMessagesStream = ctx.endpoint === "messages" || ctx.protocol === "anthropic.messages";
             if (isMessagesStream) accumulateMessagesStreamUsage(next.message?.usage ?? next.usage);
+            // message_start names the message as the buffered body does.
+            if (isMessagesStream && next.message && typeof next.message === "object") {
+                rememberNativeId(next);
+                next.message = { ...next.message, id: ctx.requestId, nativeResponseId: cachedNativeId };
+            }
 
             if (next.usage) {
                 if (ctx.meta.debug) {
@@ -660,13 +681,23 @@ export async function handleStreamResponse(
 			const healthContext = (result as any).healthContext ?? null;
             const healthProvider = healthContext?.provider ?? result.provider;
 			const isProbe = Boolean(healthContext?.isProbe);
+			// `aborted` only means no terminal event arrived. When the client had
+			// already disconnected and the provider reported no error, the stream
+			// ended because the caller left: a customer cancellation, neutral for
+			// routing. With the client still connected, the provider dropped the
+			// stream: a mid-stream failure that counts against the route.
+			const { clientCancelled, midStreamError } = streamHealthSignals({
+				aborted: info?.aborted === true,
+				downstreamDisconnected: ctx.meta.downstreamDisconnected === true,
+				streamFailed,
+			});
 			const healthImpact = classifyProviderHealthImpact({
 				upstreamStatus: result.upstream.status,
 				credentialSource: result.keySource,
-				aborted: info?.aborted === true,
+				aborted: clientCancelled,
 				// An upstream-completed empty response is a contract issue, not
 				// evidence that the provider is unhealthy.
-				midStreamError: streamFailed,
+				midStreamError,
 				finishReason: cachedFinishReason ?? result.bill.finish_reason ?? null,
 			});
 			if (info?.aborted || streamFailed || healthImpact === "failure") {
@@ -697,6 +728,18 @@ export async function handleStreamResponse(
 				});
 				chargeRateLimitPolicyTokens(ctx, shapedUsage);
 				suppressFailedResponseBilling({ ctx, result, usage: shapedUsage, reason });
+				if (clientCancelled) {
+					await handleFailureAudit(
+						ctx,
+						result,
+						CLIENT_CLOSED_REQUEST_STATUS,
+						"client",
+						"client_closed_request",
+						"The client closed the stream before it completed.",
+						result.rawResponse ?? latestGatewaySnapshot,
+					);
+					return;
+				}
 				await handleFailureAudit(
 					ctx,
 					result,

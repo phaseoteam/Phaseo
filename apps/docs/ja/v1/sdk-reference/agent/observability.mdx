@@ -1,0 +1,124 @@
+---
+icon: "activity"
+title: "オブザーバビリティ"
+description: "エージェントの実行のステータス、使用量、コストを読み取り、各ステップを Gateway のリクエストまでたどります。"
+---
+
+実行結果を読むと、実行がどのように終わったか、いくらかかったか、各モデルターンをどの Gateway リクエストが処理したかがわかります。どの結果にも、最終出力、ステータスを含む実行レコード、累計の使用量、そしてリクエスト ID、プロバイダー、モデルを含むステップごとのレコードがあります。
+
+<CodeGroup>
+
+```typescript TypeScript
+const result = await agent.run({ input, client });
+
+console.log(result.output);            // 最終的な値
+console.log(result.run.status);        // completed、stopped、waiting_for_human、cancelled のいずれか
+console.log(result.usage.totalTokens); // 全ステップの合計
+console.log(result.usage.cost);        // Gateway が報告した値
+```
+
+```python Python
+result = agent.run(input=prompt, client=client)
+
+print(result.output)              # 最終的な値
+print(result.run.status)          # completed、stopped、waiting_for_human のいずれか
+print(result.usage.total_tokens)  # 全ステップの合計
+print(result.usage.cost)          # Gateway が報告した値
+```
+
+```go Go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+if err != nil {
+  return err
+}
+
+fmt.Println(result.Output)            // 最終的な値
+fmt.Println(result.Run.Status)        // completed、stopped、waiting_for_human のいずれか
+fmt.Println(result.Usage.TotalTokens) // 全ステップの合計
+fmt.Println(result.Usage.Cost)        // Gateway が報告した値
+```
+
+```csharp C#
+var result = await agent.Run(new RunOptions { Input = prompt, Client = client });
+
+Console.WriteLine(result.Output);            // 最終的な値
+Console.WriteLine(result.Run.Status);        // completed、stopped、waiting_for_human のいずれか
+Console.WriteLine(result.Usage.TotalTokens); // 全ステップの合計
+Console.WriteLine(result.Usage.Cost);        // Gateway が報告した値
+```
+
+```php PHP
+$result = $agent->run(input: $prompt, client: $client);
+
+echo $result->output;                 // 最終的な値
+echo $result->run->status;            // completed、stopped、waiting_for_human のいずれか
+echo $result->usage["total_tokens"];  // 全ステップの合計
+echo $result->usage["cost"];          // Gateway が報告した値
+```
+
+```ruby Ruby
+result = agent.run(input: prompt, client: client)
+
+puts result.output               # 最終的な値
+puts result.run.status           # completed、stopped、waiting_for_human のいずれか
+puts result.usage[:total_tokens] # 全ステップの合計
+puts result.usage[:cost]         # Gateway が報告した値
+```
+
+```java Java
+var result = agent.run(options);
+
+System.out.println(result.output());              // 最終的な値
+System.out.println(result.run().status());        // completed、stopped、waiting_for_human のいずれか
+System.out.println(result.usage().totalTokens()); // 全ステップの合計
+System.out.println(result.usage().cost());        // Gateway が報告した値
+```
+
+```rust Rust
+let result = agent.run(&mut client, RunOptions::new("Explain when to use routing presets."))?;
+
+println!("{}", result.output);              // 最終的な値
+println!("{}", result.run.status);          // completed、stopped、waiting_for_human のいずれか
+println!("{}", result.usage.total_tokens);  // 全ステップの合計
+println!("{:?}", result.usage.cost);        // モデルクライアントが提供した値
+```
+
+</CodeGroup>
+
+## 使用量とコストを読む
+
+使用量には、入力、出力、キャッシュ、合計のトークン数と、コストが含まれます。TypeScript と Java では `inputTokens`、`outputTokens`、`cachedTokens`、`totalTokens`、`cost`、Python、PHP、Ruby、Rust では `input_tokens` など、Go と C# では `InputTokens` などです。各ステップにもそれぞれの使用量があります。
+
+| 言語 | 使用量の場所 | 注意点 |
+| --- | --- | --- |
+| TypeScript、Python、Go、C#、Java | 結果の `usage` | |
+| PHP | `$result->usage`（配列） | 一時停止した結果では空です。`$result->run->usage` を読んでください |
+| Ruby | `result.usage`（シンボルキーのハッシュ） | 一時停止した結果では設定されません。`result.run.usage` を読んでください |
+| Rust | `result.usage`（`UsageSummary`） | 組み込みの `0.2` の Gateway アダプターは、数値の `meta.cost` または `cost` フィールドからのみ `cost` を設定し、`cost_nanos` や `cost_cents` は対応付けません。支出の報告には、Gateway のレスポンスまたは生成レコードを使ってください。 |
+
+## 実行がどのように終わったかを確認する
+
+実行のステータスは `queued`、`running`、`waiting_for_tools`、`waiting_for_human`、`completed`、`stopped`、`failed` で、TypeScript には `cancelled` も加わります。返される結果は、`completed`、`stopped`（[停止条件](./stop-conditions)に一致し、理由は実行の停止理由に入ります）、`waiting_for_human`（[状態と承認](./state-and-approval)を参照）、または TypeScript では `cancelled` のいずれかです。失敗した実行は、代わりにスローするかエラーを返します。[イベントとエラー](./events-and-errors)を参照してください。
+
+## ステップを Gateway のリクエストまでたどる
+
+各ステップのレコードは、1つのモデルターンを、それを処理した Gateway リクエストに結び付けます。リクエスト ID は Phaseo のログで、ネイティブのレスポンス ID はアップストリームのプロバイダーで検索してください。
+
+| ステップのフィールド | camelCase（TypeScript、PHP、Java） | snake_case（Python、Ruby、Rust） | PascalCase（Go、C#） |
+| --- | --- | --- | --- |
+| Gateway のリクエスト ID | `requestId` | `request_id` | `RequestID`（Go）、`RequestId`（C#） |
+| アップストリームのレスポンス ID | `nativeResponseId` | `native_response_id`（Rust にはなし） | `NativeResponseID`（Go）、`NativeResponseId`（C#） |
+| プロバイダーとモデル | `provider`、`model` | `provider`、`model` | `Provider`、`Model` |
+| 終了理由 | `finishReason` | `finish_reason` | `FinishReason` |
+| 再試行を含む試行回数 | `modelAttempts` | `model_attempts` | `ModelAttempts` |
+| ツール呼び出し | `toolCalls` | `tool_calls` | `ToolCalls` |
+| エラー | `error`（TypeScript には `errorDetails` も） | `error` | `Error` |
+| Gateway の meta ブロックと警告 | `responseMeta`、`warnings` | `response_meta`、`warnings`（Rust にはなし） | `ResponseMeta`、`Warnings` |
+
+ステップは結果の `steps`（Go と C# では `Steps`、Java では `steps()`）にあります。Python のステップレコードは `AgentStepRecord`、その他の言語では `RunStep` と呼ばれます。
+
+## 本番環境で実行を記録する
+
+実行 ID、ステップ番号、リクエスト ID、ネイティブのレスポンス ID、プロバイダー、モデル、終了理由、ツール呼び出し ID、停止理由をログに残してください。[ライフサイクルフック](./lifecycle-hooks)は、実行の進行に合わせてこれらすべてを渡し、`run.failed` イベントを送る言語では、そのイベントにエラーのテキストが含まれます。生のプロンプト、ツールの入力、認証情報はログに残さず、イベントがプロセスの外に出る前に伏せてください。
+
+開発中に実行全体をローカルに記録するには、代わりに [DevTools](./devtools) を使ってください。

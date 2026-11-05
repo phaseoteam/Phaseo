@@ -9,7 +9,7 @@ import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { json, withRuntime } from "@/routes/utils";
-import { internalServerError, requireCapability, requireOAuthWorkspaceRole } from "./route-helpers";
+import { internalServerError, requireCapability, requireOAuthWorkspaceRole, rejectThirdPartyOAuthSpendingChange } from "./route-helpers";
 import { resolveAuthorizedWorkspace } from "./workspaces";
 
 const NO_STORE = { "Cache-Control": "no-store" };
@@ -100,10 +100,34 @@ async function actorUserId(auth: ManagementAuth, ownerUserId: string | null): Pr
 	return actor;
 }
 
+/**
+ * Making someone an admin is the owner's call, as in Settings. The OAuth role check only covers
+ * signed-in apps, so this also holds for management keys, which act as the person who created them.
+ */
+async function requireWorkspaceOwner(
+	access: { auth: ManagementAuth; workspace: { id: string; owner_user_id?: string | null } },
+	message: string,
+): Promise<Response | null> {
+	if (access.auth.internal) return null;
+	const userId = String(access.auth.userId ?? "").trim();
+	if (userId && userId === String(access.workspace.owner_user_id ?? "")) return null;
+	if (userId) {
+		const { data, error } = await getSupabaseAdmin().from("workspace_members").select("role")
+			.eq("workspace_id", access.workspace.id).eq("user_id", userId).maybeSingle();
+		if (!error && String((data as { role?: unknown } | null)?.role ?? "").toLowerCase() === "owner") return null;
+	}
+	return json({ error: "forbidden", message }, 403, NO_STORE);
+}
+
 async function handleUpdateMemberRole(req: Request) {
 	try {
 		const access = await authenticateWorkspace(req, CAPABILITIES.WORKSPACES_WRITE, ["owner"]);
 		if ("response" in access) return access.response;
+		// A member can create keys and spend the workspace's credits, so apps can't hand out roles.
+		const appError = rejectThirdPartyOAuthSpendingChange(access.auth, "Apps that use Sign in with Phaseo can't change members' roles. The person can change them under Settings, Members.");
+		if (appError) return appError;
+		const ownerError = await requireWorkspaceOwner(access, "Only the workspace owner can change members' roles.");
+		if (ownerError) return ownerError;
 		const userId = resourceId(new URL(req.url), "members");
 		if (!userId) return json({ error: "bad_request", message: "Member user id is required" }, 400, NO_STORE);
 		const body = await req.json<Record<string, unknown>>().catch(() => null);
@@ -159,10 +183,16 @@ async function handleCreateInvite(req: Request) {
 	try {
 		const access = await authenticateWorkspace(req, CAPABILITIES.WORKSPACES_WRITE, ["owner", "admin"]);
 		if ("response" in access) return access.response;
+		const appError = rejectThirdPartyOAuthSpendingChange(access.auth, "Apps that use Sign in with Phaseo can't invite members. The person can invite people under Settings, Members.");
+		if (appError) return appError;
 		const body = await req.json<Record<string, unknown>>().catch(() => null);
 		if (!body) return json({ error: "invalid_json", message: "Invalid JSON body" }, 400, NO_STORE);
 		const role = String(body.role ?? "member").trim().toLowerCase();
 		if (role !== "admin" && role !== "member") return json({ error: "bad_request", message: "role must be admin or member" }, 400, NO_STORE);
+		if (role === "admin") {
+			const ownerError = await requireWorkspaceOwner(access, "Only the workspace owner can invite admins.");
+			if (ownerError) return ownerError;
+		}
 		const expiresInDays = body.expires_in_days == null ? 7 : Number(body.expires_in_days);
 		if (!Number.isInteger(expiresInDays) || expiresInDays < 1 || expiresInDays > 365) return json({ error: "bad_request", message: "expires_in_days must be an integer between 1 and 365" }, 400, NO_STORE);
 		const maxUses = body.max_uses == null ? null : Number(body.max_uses);
@@ -258,6 +288,10 @@ async function handleDecideJoinRequest(req: Request, decision: "approve" | "reje
 	try {
 		const access = await authenticateWorkspace(req, CAPABILITIES.WORKSPACES_WRITE, ["owner", "admin"]);
 		if ("response" in access) return access.response;
+		const appError = decision === "approve"
+			? rejectThirdPartyOAuthSpendingChange(access.auth, "Apps that use Sign in with Phaseo can't approve join requests. The person can approve them under Settings, Members.")
+			: null;
+		if (appError) return appError;
 		const requestId = resourceId(new URL(req.url), "join-requests");
 		if (!requestId) return json({ error: "bad_request", message: "Join request id is required" }, 400, NO_STORE);
 		const decidedBy = await actorUserId(access.auth, access.workspace.owner_user_id);

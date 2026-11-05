@@ -3,6 +3,7 @@ import useSWR from "swr";
 import type { Harness } from "../../shared/workspace";
 import { emptyOverview } from "../../shared/workspaceOverview";
 import { BACKGROUND_REFRESH_MS } from "./useBackgroundRefresh";
+import { providerHealthMs } from "./providerHealth";
 
 export function useConnectedHarnesses() {
 	const api = window.phaseoDesktop?.workspace;
@@ -24,7 +25,8 @@ export function useConnectedHarnesses() {
 			return undefined;
 		}));
 		return results.filter((value): value is Harness => !!value);
-	}, { dedupingInterval: BACKGROUND_REFRESH_MS, refreshInterval: BACKGROUND_REFRESH_MS, revalidateOnFocus: false });
+		// Re-checked as often as Settings → Agents → Health checks says.
+	}, { dedupingInterval: providerHealthMs() || BACKGROUND_REFRESH_MS, refreshInterval: providerHealthMs(), revalidateOnFocus: false });
 	const connected = new Set<Harness>(data);
 	for (const account of overview.accounts) if (account.configured && !account.archived && (!account.oauthExpiresAt || Date.parse(account.oauthExpiresAt) > Date.now())) connected.add(account.harness);
 	if (overview.agents.some(agent => !agent.archived)) connected.add("acp");

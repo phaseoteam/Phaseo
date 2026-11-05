@@ -1,0 +1,67 @@
+---
+title: "OpenClaw"
+icon: "/icons/brands/openclaw.svg"
+description: "Phaseo को OpenClaw मॉडल प्रदाता के रूप में रजिस्टर करें, जिसकी कुंजी Phaseo CLI से पढ़ी जाती है।"
+---
+
+हर संगत Phaseo मॉडल के साथ OpenClaw में `phaseo` मॉडल प्रदाता रजिस्टर करने के लिए `phaseo openclaw` चलाएँ, या `openclaw config set` से प्रदाता ख़ुद जोड़ें।
+
+## Phaseo CLI से सेट अप करें
+
+```bash
+phaseo login
+phaseo openclaw --model openai/gpt-6-astra
+```
+
+अगर OpenClaw इंस्टॉल नहीं है, तो CLI इंस्टॉल कमांड (`npm install -g openclaw@latest`, या pnpm, Yarn या Bun के साथ वही पैकेज) दिखाता है और उसे चलाने से पहले पूछता है। इसके बाद सेटअप `openclaw config set` दो बार चलाता है:
+
+- **`secrets.providers.phaseo_cli`**: एक exec सीक्रेट प्रदाता जो कुंजी पढ़ने के लिए `phaseo integrations credential openclaw` चलाता है। कुंजी कभी OpenClaw के कॉन्फ़िग में नहीं लिखी जाती।
+- **`models.providers.phaseo`**: base URL `https://api.phaseo.app/v1`, API प्रकार `openai-completions`, और `phaseo_cli` से ली गई कुंजी वाला प्रदाता। यह Chat Completions के साथ काम करने वाले हर सक्रिय Phaseo टेक्स्ट मॉडल की सूची रखता है, जिसमें `--model` का मान सबसे पहले होता है (उसके बिना `anthropic/claude-sonnet-4.6`)।
+
+कुंजी एक `Phaseo CLI: OpenClaw API Key` है जो 90 दिनों में समाप्त होती है और जिसकी मासिक खर्च सीमा $100 है। कुंजी समाप्त होने के बाद जब OpenClaw CLI से कुंजी माँगता है, तो CLI नई कुंजी बना देता है।
+
+सेटअप OpenClaw का डिफ़ॉल्ट मॉडल नहीं बदलता। तैयार होने पर `openclaw models set` से Phaseo मॉडल चुनें। सिर्फ़ चुना गया मॉडल रजिस्टर करने के लिए `--catalog default` इस्तेमाल करें।
+
+## OpenClaw को मैन्युअल रूप से कॉन्फ़िगर करें
+
+एक सीक्रेट प्रदाता रजिस्टर करें जो आपकी कुंजी प्रिंट करे, फिर Phaseo मॉडल प्रदाता:
+
+```bash
+openclaw config set secrets.providers.phaseo_cli \
+  '{"source":"exec","command":"phaseo","args":["integrations","credential","openclaw"],"jsonOnly":false}' \
+  --strict-json
+
+openclaw config set models.providers.phaseo '{
+  "baseUrl": "https://api.phaseo.app/v1",
+  "apiKey": { "source": "exec", "provider": "phaseo_cli", "id": "value" },
+  "api": "openai-completions",
+  "models": [
+    { "id": "openai/gpt-6-astra", "name": "openai/gpt-6-astra via Phaseo", "reasoning": false, "input": ["text"] }
+  ]
+}' --strict-json
+```
+
+`models` की हर एंट्री में एक `id` (Phaseo मॉडल ID), एक `name`, `reasoning`, `input` (`text`, `image`) और वैकल्पिक `contextWindow` होता है। हर उस Phaseo मॉडल के लिए एक एंट्री जोड़ें जिसे आप OpenClaw की सूची में चाहते हैं।
+
+## जाँचें कि यह काम करता है
+
+प्रदाता रजिस्टर होने की पुष्टि के लिए `openclaw config get models.providers.phaseo --json` चलाएँ। `openclaw models set` से एक Phaseo मॉडल चुनें, और एक छोटा प्रॉम्प्ट भेजें। पुष्टि करें कि अनुरोध **सेटिंग्स → उपयोग → लॉग्स** में दिखता है।
+
+## Phaseo हटाएँ
+
+```bash
+phaseo integrations remove openclaw
+```
+
+यह `models.providers.phaseo` और `secrets.providers.phaseo_cli` को अनसेट करता है, फिर कुंजी रद्द करता है। आपकी बाकी OpenClaw सेटिंग्स बनी रहती हैं। अगर OpenClaw गेटवे चल रहा है, तो उसे रीस्टार्ट करें।
+
+## आम समस्याएँ ठीक करें
+
+| समस्या | समाधान |
+| --- | --- |
+| `OpenClaw already defines models.providers.phaseo` | सेटअप मौजूदा `phaseo` प्रदाता को ओवरराइट नहीं करता। उसे हटाएँ या उसका नाम बदलें, या `phaseo integrations remove openclaw` चलाएँ, फिर दोबारा सेट अप करें। |
+| Phaseo CLI या Node.js को दूसरी जगह ले जाने या फिर से इंस्टॉल करने के बाद अनुरोध विफल होते हैं | सेटअप `secrets.providers.phaseo_cli` में Node.js और CLI के सटीक पाथ सेव करता है। `phaseo integrations remove openclaw` चलाएँ, फिर `phaseo openclaw` दोबारा चलाएँ। |
+| `OpenClaw is not installed or is not on PATH` | OpenClaw इंस्टॉल करें या उसे `PATH` में जोड़ें, फिर सेटअप दोबारा चलाएँ। |
+| कोई मॉडल अस्वीकार होता है | [Models एंडपॉइंट](../../api-reference/endpoint/models.mdx) से सटीक ID जाँचें। |
+
+दूसरे एजेंट और हर एजेंट के लिए ज़रूरी प्रदाता मानों के लिए [कोडिंग एजेंट](./coding-assistants.mdx) देखें।

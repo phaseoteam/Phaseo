@@ -136,7 +136,7 @@ function ReadOnlySource({ path, text, wrap, theme, line }: { path: string; text:
 }
 
 /**
- * One project file, after T3's file panel: breadcrumbs, Open in editor, rendered or source view, wrap and the
+ * One project file: breadcrumbs, Open in editor, rendered or source view, wrap and the
  * explorer. Text up to 1 MB is edited in place and saved automatically; `onDirtyChange` reports unsaved edits.
  */
 export function FileSurface({ projectId, path, onDirtyChange, onOpenFile }: { projectId: string; path: string; onDirtyChange?: (dirty: boolean) => void; onOpenFile?: (path: string) => void }) {

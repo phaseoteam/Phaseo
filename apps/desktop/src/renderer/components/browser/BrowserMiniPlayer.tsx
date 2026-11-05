@@ -4,14 +4,14 @@ import type { BrowserState } from "../../../shared/browser";
 import { useWorkspace } from "../../app/workspace";
 import { closeMiniPlayer, miniPlayerCornerRadius, miniPlayerSource, placeMiniPlayer, resizeMiniPlayer, resolveMiniPlayerFrame, clampMiniPlayerPosition, useBrowserSurfaceShown, useMiniPlayer, type MiniPlayerFrame, type MiniPlayerResizeDirection, type MiniPlayerSize, type MiniPlayerState } from "../../lib/browserMiniPlayer";
 import { useBrowserRecording } from "../../lib/browserRecording";
-import { recordBrowserState, revealBrowserTab, useBrowserTab } from "../../lib/browserTabs";
+import { recordBrowserState, revealBrowserTab, useBrowserTab, withBrowserProfile } from "../../lib/browserTabs";
 import { cn } from "../../lib/utils";
 import { overlayOpen } from "../../views/BrowserSurface";
 import { Button } from "../ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { BrowserPoppedOut } from "./BrowserStates";
 
-// Grab zones just outside each edge; the cursor is the only affordance (T3 Code). The native page covers the inside.
+// Grab zones just outside each edge; the cursor is the only affordance. The native page covers the inside.
 const resizeHandles: { direction: MiniPlayerResizeDirection; className: string }[] = [
 	{ direction: "north", className: "inset-x-2 -top-2 h-2 cursor-ns-resize" },
 	{ direction: "south", className: "inset-x-2 -bottom-2 h-2 cursor-ns-resize" },
@@ -26,7 +26,7 @@ const resizeHandles: { direction: MiniPlayerResizeDirection; className: string }
 const tapSlop = 6;
 type Gesture = { pointerId: number; pointerType: string; x: number; y: number; frame: MiniPlayerFrame; direction: MiniPlayerResizeDirection | null; moved: boolean };
 
-/** T3 Code's floating player over the chat, for the chat's floated browser tab. Render it inside the chat column (position: relative). */
+/** The floating player over the chat, for the chat's floated browser tab. Render it inside the chat column (position: relative). */
 export function BrowserMiniPlayerHost() {
 	const { selectedId, settings, scheduled, pullRequestsPage, compareId, compareGroups, commandsOpen } = useWorkspace();
 	const context = selectedId ?? "draft";
@@ -71,7 +71,7 @@ export function BrowserMiniPlayer({ context, player, covered }: { context: strin
 	apply.current = (value?: BrowserState) => {
 		if (value?.id !== tabId) return;
 		setState(value); recordBrowserState(value);
-		if (!restored.current) { restored.current = true; if (!value.configured && !value.url && tab?.url) void api?.browser({ id: tabId, type: "navigate", url: tab.url }).then(next => apply.current(next), () => undefined); }
+		if (!restored.current) { restored.current = true; if (!value.configured && !value.url && tab?.url) void api?.browser(withBrowserProfile({ id: tabId, type: "navigate", url: tab.url })).then(next => apply.current(next), () => undefined); }
 	};
 	useEffect(() => api?.onBrowserState(value => apply.current(value)), [api]);
 	useEffect(() => () => { void api?.browser({ type: "hide", id: tabId, slot: "float" }).catch(() => undefined); }, [api, tabId]);
@@ -86,7 +86,7 @@ export function BrowserMiniPlayer({ context, player, covered }: { context: strin
 			const rect = element.getBoundingClientRect(), signature = [rect.x, rect.y, rect.width, rect.height].join();
 			if (signature === last) return;
 			last = signature;
-			void api.browser({ type: "show", id: tabId, slot: "float", radius: miniPlayerCornerRadius, bounds: { x: rect.x, y: rect.y, width: rect.width, height: rect.height } }).then(value => apply.current(value), () => undefined);
+			void api.browser(withBrowserProfile({ type: "show", id: tabId, slot: "float", radius: miniPlayerCornerRadius, bounds: { x: rect.x, y: rect.y, width: rect.width, height: rect.height } })).then(value => apply.current(value), () => undefined);
 		};
 		const overlays = new MutationObserver(() => { cancelAnimationFrame(pending); pending = requestAnimationFrame(place); });
 		overlays.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden", "data-open", "data-closed"] });

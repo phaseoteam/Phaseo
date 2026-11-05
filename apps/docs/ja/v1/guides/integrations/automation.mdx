@@ -1,14 +1,12 @@
 ---
 title: "ワークフロー自動化"
 icon: "workflow"
-description: "Zapier、n8n、Pipedreamなどの自動化プラットフォームからPhaseoを使います。"
+description: "Zapier、n8n、Pipedream などの自動化プラットフォームから Phaseo を使います。"
 ---
 
-認証付きHTTPリクエストを送信できる自動化製品では、すでにPhaseoを利用できます。今後、マーケットプレイスのネイティブアプリで、より簡単に操作できるようになる可能性があります。
+認証付きの HTTP リクエストを送れる自動化プラットフォームなら、どこからでも Phaseo を呼び出せます。キーをベアラートークンにして `https://api.phaseo.app/v1/responses` に POST する HTTP ステップを追加してください。Zapier、n8n、Pipedream 用のネイティブアプリはありません。
 
-## 共通リクエスト
-
-HTTP、Webhook、コードのいずれかのアクションで次の設定を使います。
+## リクエストを組み立てる
 
 | 設定 | 値 |
 | --- | --- |
@@ -19,45 +17,37 @@ HTTP、Webhook、コードのいずれかのアクションで次の設定を使
 
 ```json
 {
-  "model": "openai/gpt-5-nano",
+  "model": "openai/gpt-6-astra",
   "input": "Summarise the supplied workflow data in one paragraph."
 }
 ```
 
-Phaseo APIキーはプラットフォームの認証情報またはシークレットストアに保存します。共有ワークフロー定義に直接記述しないでください。
+キーは共有のワークフロー定義ではなく、プラットフォームの認証情報ストアやシークレットストアに保存してください。リクエストのすべてのフィールドは [Responses](../../api-reference/endpoint/responses.mdx) を参照してください。
 
 ## Zapier
 
-**Webhooks by Zapier → Custom Request**を使います。
+**Webhooks by Zapier → Custom Request** を使います。
 
-1. `POST`を選択します。
-2. `https://api.phaseo.app/v1/responses`を入力します。
-3. Bearer認証とcontent-typeのヘッダーを追加します。
-4. 前のZapステップのフィールドを`input`に割り当てます。
-5. 機密情報を含まないデータでZapをテストします。
-
-PhaseoのZapierネイティブアプリがあれば、モデル選択、構造化出力アクション、Phaseo専用認証を追加できますが、Zapierの開発者プラットフォームで公開する必要があります。
+1. `POST` を選び、`https://api.phaseo.app/v1/responses` を入力します。
+2. ベアラーと Content-Type のヘッダーを追加します。
+3. 前の Zap ステップのフィールドを `input` にマッピングします。
+4. 機密でないデータで Zap をテストします。
 
 ## n8n
 
-Bearer認証とJSONボディを設定した**HTTP Request**ノードを使います。構造化ワークフローデータを扱う場合は、n8n式で前段の項目を`input`フィールドに割り当てます。
-
-将来、n8nの公式コミュニティノードで、HTTPを手動設定せずにGenerate Response、List Models、Get Model Pricing、Create Embeddingなどを実行できるようになる可能性があります。
+ベアラー認証と JSON ボディを設定した **HTTP Request** ノードを使います。n8n の式で、受け取ったアイテムを `input` にマッピングします。
 
 ## Pipedream
 
-HTTPリクエストまたはNode.jsコードのステップを使います。`PHASEO_API_KEY`はPipedreamのシークレットとして保存し、ステップの環境から読み込みます。
+HTTP リクエストのステップか Node.js のコードステップを使います。`PHASEO_API_KEY` を Pipedream のシークレットとして保存し、ステップの環境から読み取ります。
 
-## 本番環境での推奨事項
+## 動作を確認する
 
-- 自動化ごとに使用するGateway APIキーに支出上限を設定します。
-- 使用専用キーを自動化ごとに発行し、使用状況と失効を個別に管理します。
-- 後続ステップが機械可読なフィールドを必要とする場合は、構造化出力を使います。
-- `429`や再試行可能な`5xx`応答に対するリトライ処理を追加します。
-- モデルステップが再試行されたという理由だけで、冪等でない外部アクションを再実行しないでください。
+ステップを 1 回実行します。`output` 配列を含む `200` レスポンスが返れば、キーと URL は機能しており、リクエストは **設定 → 使用量 → ログ** に表示されます。
 
-## 関連項目
+## 自動化を安全に実行する
 
-- [Responses](../../api-reference/endpoint/responses.mdx)
-- [構造化出力](../structured-outputs.mdx)
-- [エラー処理](../../api-reference/errors.mdx)
+- 自動化ごとに支出上限付きの専用キーを用意し、個別に追跡して取り消せるようにします。
+- 後続のステップが機械可読なフィールドを想定している場合は、[構造化出力](../structured-outputs.mdx)を使います。
+- `429` と復旧可能な `5xx` レスポンスでは再試行します。[エラー](../../api-reference/errors.mdx)を参照してください。
+- モデルのステップが再試行されたからといって、冪等でない外部操作を繰り返さないでください。

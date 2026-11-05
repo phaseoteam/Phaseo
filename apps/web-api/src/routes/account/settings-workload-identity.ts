@@ -32,12 +32,16 @@ function emptyData(workspaceId: string | null, available = false) {
 	return { workspaceId, available, canManage: false, audience: WORKLOAD_IDENTITY_AUDIENCE, policies: [] };
 }
 
+// Keep in step with the gateway's WORKLOAD_IDENTITY_PROVIDERS.
+const PROVIDERS = new Set(["vercel", "github_actions", "gitlab", "google_cloud", "buildkite", "circleci", "aws", "custom"]);
+
 function formatPolicy(row: any) {
 	return {
 		id: String(row.id),
 		name: String(row.name ?? ""),
-		provider: row.provider === "github_actions" ? "github_actions" : "vercel",
+		provider: String(row.provider ?? ""),
 		issuer: String(row.issuer ?? ""),
+		ownerClaim: typeof row.owner_claim === "string" ? row.owner_claim : null,
 		ownerId: String(row.owner_id ?? ""),
 		claimConditions: row.claim_conditions && typeof row.claim_conditions === "object" ? row.claim_conditions as Record<string, string[]> : {},
 		maxTokenLifetimeSeconds: Number(row.max_token_lifetime_seconds) || 0,
@@ -72,7 +76,10 @@ accountSettingsWorkloadIdentityRouter.get("/trusted-workloads", async (c) => {
 		available: true,
 		canManage: true,
 		audience: typeof result.payload?.audience === "string" ? result.payload.audience : WORKLOAD_IDENTITY_AUDIENCE,
-		policies: (Array.isArray(result.payload?.data) ? result.payload.data : []).map(formatPolicy),
+		// A platform this dashboard does not know yet is left out rather than shown as another one.
+		policies: (Array.isArray(result.payload?.data) ? result.payload.data : [])
+			.filter((row: any) => PROVIDERS.has(row?.provider))
+			.map(formatPolicy),
 	});
 });
 

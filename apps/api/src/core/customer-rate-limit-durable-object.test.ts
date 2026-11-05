@@ -212,3 +212,21 @@ describe("concurrency slots", () => {
 		await expect(limiter.releaseConcurrency("other", "request-1")).rejects.toThrow("customer_scope_mismatch");
 	});
 });
+
+describe("releaseFreeDay", () => {
+	it("takes back today's admission once, and ignores unknown ones", async () => {
+		const limiter = object();
+		const limits = { freeRequestsPerDay: 2 };
+		await limiter.admit(key, "free-day", "a", limits);
+		await limiter.admit(key, "free-day", "b", limits);
+		expect(await limiter.admit(key, "free-day", "c", limits)).toMatchObject({ allowed: false });
+		await limiter.releaseFreeDay(key, "b");
+		await limiter.releaseFreeDay(key, "b");
+		await limiter.releaseFreeDay(key, "unknown");
+		expect(await limiter.admit(key, "free-day", "c", limits)).toMatchObject({ allowed: true, remaining: 0 });
+		expect(await limiter.admit(key, "free-day", "d", limits)).toMatchObject({ allowed: false });
+		// It survives a restart: the released row is gone from storage.
+		expect(await object().admit(key, "free-day", "d", limits)).toMatchObject({ allowed: false });
+	});
+});
+

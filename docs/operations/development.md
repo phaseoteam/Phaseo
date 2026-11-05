@@ -71,7 +71,7 @@ Worktrees share the main clone's object store. Never run `git fetch --depth=<n>`
 
 [CI](../../.github/workflows/ci.yml) runs repository checks (shared registry copies, skills, a few catalogue and SQL tests, and type-checks for desktop, mobile and perf-upstream), OpenAPI lint, SDK generation for all nine languages, SDK package builds, lifecycle and Agent SDK tests, the CLI package and the Devtools build. The Apps jobs cover the gateway (`validate:api`, which is ESLint, `tsc` and a Wrangler dry run, plus one Vitest file, the provider simulator tests and the pricing simulator), docs validation, the web app (localisation checks, a full `pnpm --filter @phaseo/web build`, `pnpm --filter @phaseo/web typecheck` and three Vitest files), and the Web API, MCP and Slack agent Workers (lint or type-check, tests and a dry-run build). The gateway AIMock matrix is its own job. Migrations get policy checks and the declarative schema workflow, and desktop changes get the "Desktop workspace" workflow.
 
-CI does not run most gateway or web unit tests: it runs one of 816 gateway `src` test files and three of 429 web Jest files, and it has no web ESLint or Playwright step. The TypeScript and Python SDK test suites (`pnpm test:sdk-ts`, `pnpm test:sdk-py`) do not run in CI either. Run the tests for the code you touched. Do not run the repo-wide `pnpm lint`, `pnpm typecheck`, `pnpm build`, `pnpm test:all` or `pnpm precommit`.
+CI does not run most gateway unit tests: it runs one of 816 gateway `src` test files. It does run the whole web Vitest suite and web ESLint, but no Playwright. The TypeScript and Python SDK test suites (`pnpm test:sdk-ts`, `pnpm test:sdk-py`) do not run in CI either. Run the tests for the code you touched. Do not run the repo-wide `pnpm lint`, `pnpm typecheck`, `pnpm build`, `pnpm test:all` or `pnpm precommit`.
 
 ## Run scoped checks
 
@@ -163,7 +163,7 @@ node <tmp>/node_modules/mint/index.js validate
 
 ## Windows
 
-- Some gateway `src` tests and web Jest suites fail on Windows on `main` too. Before blaming your change, commit it, run `git checkout origin/main -- <dir>`, run the same tests, then restore with `git checkout HEAD -- <dir>`.
+- Some gateway `src` tests and web Vitest suites fail on Windows on `main` too. Before blaming your change, commit it, run `git checkout origin/main -- <dir>`, run the same tests, then restore with `git checkout HEAD -- <dir>`.
 - `sed -i` in Git Bash rewrites CRLF files as LF. Check a file with `git ls-files --eol <path>` and edit CRLF files with a tool that keeps line endings.
 
 ## Keep resource use down

@@ -4,22 +4,12 @@ description: "Aspectos clave para adoptar Claude Opus 5 en tareas de razonamient
 icon: "/icons/brands/anthropic.svg"
 ---
 
-# Anthropic Claude Opus 5
-
-Usa esta guía para incorporar `anthropic/claude-opus-5` de forma segura en producción.
-
-Claude Opus 5 es el modelo Opus actual para razonamiento complejo, programación agentiva de larga duración y flujos de alta autonomía. Mantiene el precio de Opus 4.8 y admite una ventana de contexto de 1 millón de tokens y hasta 128 000 tokens de salida.
-
-## Inicio rápido de la migración
-
-1. Cambia el ID del modelo a `anthropic/claude-opus-5` sin modificar el resto de la solicitud.
-2. Vuelve a ejecutar las evaluaciones de prompts, herramientas y salidas estructuradas de producción.
-3. Establece nuevas referencias de latencia, uso de tokens y coste por tarea para cargas de contexto largo y alto esfuerzo.
-4. Prueba el modelo gradualmente con Claude Opus 4.8 como alternativa antes de cambiar la ruta predeterminada.
+Cambia el modelo a `anthropic/claude-opus-5` y mantén Claude Opus 4.8 como respaldo mientras lo evalúas. El precio es el mismo que el de Opus 4.8, así que la diferencia de coste viene del uso de tokens.
 
 ```json
 {
   "model": "anthropic/claude-opus-5",
+  "models": ["anthropic/claude-opus-4.8"],
   "messages": [
     {
       "role": "user",
@@ -29,45 +19,38 @@ Claude Opus 5 es el modelo Opus actual para razonamiento complejo, programación
 }
 ```
 
-## Novedades
+| | Claude Opus 4.8 | Claude Opus 5 |
+| --- | --- | --- |
+| ID de modelo de Phaseo | `anthropic/claude-opus-4.8` | `anthropic/claude-opus-5` |
+| Ventana de contexto | 1M tokens | 1M tokens |
+| Salida máxima | 128K tokens | 128K tokens |
+| Precio por 1M de tokens (entrada / salida) | $5.00 / $25.00 | $5.00 / $25.00 |
+| Pensamiento cuando la solicitud no define razonamiento | Desactivado | Adaptativo |
 
-- El ID de modelo de Phaseo es `anthropic/claude-opus-5`.
-- La ventana de contexto es de 1 millón de tokens.
-- La salida máxima es de 128 000 tokens.
-- Está pensado para razonamiento, programación y flujos autónomos con herramientas de mayor duración.
-- El precio se mantiene alineado con Claude Opus 4.8.
+Los precios son los del nivel estándar de Anthropic según el catálogo; consulta la página del modelo para ver otros niveles y proveedores.
+
+## Cómo envía Phaseo la solicitud
+
+Opus 5 usa la misma estructura de solicitud que Opus 4.7 y 4.8:
+
+- **Los parámetros de muestreo se omiten.** `temperature`, `top_p` y `top_k` no se envían al modelo.
+- **Cualquier ajuste de razonamiento activa el pensamiento adaptativo.** Phaseo envía `thinking: {"type": "adaptive", "display": "summarized"}`, y `reasoning.effort` pasa a ser `output_config.effort`. Los presupuestos de pensamiento no se reenvían.
+- **`reasoning.effort: "none"` o `reasoning.enabled: false` desactiva el pensamiento** (`thinking: {"type": "disabled"}`).
+- **Sin ajuste de razonamiento, Phaseo no envía ningún campo `thinking`,** así que se aplica el valor predeterminado de Opus 5, el pensamiento adaptativo. Opus 4.8 solo piensa cuando se le pide, así que la misma solicitud puede usar más tokens de salida en Opus 5.
 
 ## Qué probar
 
-### Prompts y resultados
+- **Prompts y salidas:** seguimiento de instrucciones en tus prompts de sistema más largos, tasas de validación del esquema, longitud de las respuestas y momento en que se detienen, y prompts ajustados para Opus 4.8.
+- **Herramientas y agentes:** selección de herramientas y argumentos, recuperación tras errores de herramientas o resultados parciales, tasa de finalización en tareas de largo recorrido y límites de permisos en flujos con mucha autonomía.
+- **Operaciones:** latencia y uso de tokens en cada nivel de esfuerzo que expongas, uso de contexto en documentos largos y trazas de agentes, coste por tarea completada con éxito y respaldo cuando la ruta principal agota el tiempo de espera o falla.
 
-- Seguimiento de instrucciones con tus prompts de sistema más largos.
-- Tasas de éxito de salida estructurada y esquemas.
-- Longitud de las respuestas y comportamiento al detenerse.
-- Regresiones en prompts ajustados específicamente para Claude Opus 4.8.
+## Despliega
 
-### Herramientas y agentes
-
-- Selección de herramientas y calidad de sus argumentos.
-- Recuperación tras errores de herramientas o resultados parciales.
-- Tasa de finalización de tareas de larga duración.
-- Límites de permisos y aprobación en flujos de alta autonomía.
-
-### Operaciones
-
-- Latencia y uso de tokens en cada nivel de esfuerzo disponible.
-- Uso de la ventana de contexto con documentos extensos y trazas de agentes.
-- Coste por tarea completada correctamente.
-- Comportamiento alternativo cuando la ruta principal agota el tiempo de espera o falla.
-
-## Despliegue seguro
-
-1. Mantén Claude Opus 4.8 como alternativa durante la evaluación.
-2. Ejecuta en paralelo tráfico de producción representativo antes de responder a solicitudes de usuarios.
-3. Prueba gradualmente cada tipo de carga, en lugar de cambiar todas las rutas Opus a la vez.
-4. Promueve el modelo solo cuando cumpla tus objetivos de calidad, latencia, coste y seguridad de herramientas.
+1. Ejecuta en modo sombra tráfico de producción representativo antes de atender a usuarios.
+2. Haz un canary por carga de trabajo en lugar de mover todas las rutas de Opus a la vez.
+3. Promuévelo solo cuando las comprobaciones de calidad, latencia, coste y seguridad de las herramientas cumplan tus objetivos.
 
 ## Fuentes
 
 - [Anuncio de Claude Opus 5](https://www.anthropic.com/news/claude-opus-5)
-- [Ficha del sistema Claude Opus 5](https://www.anthropic.com/claude-opus-5-system-card)
+- [Tarjeta del sistema de Claude Opus 5](https://www.anthropic.com/claude-opus-5-system-card)

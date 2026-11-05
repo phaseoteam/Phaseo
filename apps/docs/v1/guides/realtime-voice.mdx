@@ -5,11 +5,21 @@ description: "Run a realtime voice call through the Phaseo relay, end it cleanly
 icon: "phone"
 ---
 
+Create a session from your server, connect your client to the Phaseo relay over a WebSocket, and stream microphone audio to a provider's realtime model. The relay forwards the provider's own events unchanged, meters the call as it runs, and adds three events of its own: `session.warning` while the call runs, `session.end` to hang up, and `session.ended` with the final bill.
+
 <Note>
 Realtime voice is in beta and access is gated per workspace.
 </Note>
 
-A realtime session is a voice call between your client and a provider's realtime model, relayed by Phaseo so it can be metered and billed. The relay forwards the provider's own events unchanged and adds three of its own: `session.end`, `session.warning` and `session.ended`.
+```mermaid
+flowchart LR
+  create["POST /v1/audio/realtime/sessions"] --> connect["Open WebSocket to connect.url"]
+  connect --> ready["relay.connected"]
+  ready --> talk["Stream client.audio, receive provider events"]
+  talk -->|"session.warning"| talk
+  talk -->|"You send session.end, or a limit is hit"| ended["session.ended with usage and cost"]
+  ended --> closed["Socket closes with 1000"]
+```
 
 ## Start a session
 
@@ -22,11 +32,20 @@ curl https://api.phaseo.app/v1/audio/realtime/sessions \
   -d '{"model": "openai/gpt-realtime-2", "voice": "marin"}'
 ```
 
-The response includes `client_secret`, `connect.url`, `max_duration_seconds` and `idle_timeout_seconds` (always `null` for API sessions). Open a WebSocket to `connect.url` on `api.phaseo.app` with the WebSocket subprotocols `statsync-realtime` and `rtsec.<client_secret>`. The relay selects `statsync-realtime`; browsers and most WebSocket libraries fail the handshake if you offer only `rtsec.<client_secret>`, because no protocol is selected. The relay sends `relay.connected` once the provider is ready, then accepts microphone audio as `{"type": "client.audio", "audio": "<base64 PCM16>"}`: 24 kHz for OpenAI, xAI and ElevenLabs, 16 kHz for Google and Mistral.
+The response includes `client_secret`, `connect.url`, `max_duration_seconds` and `idle_timeout_seconds` (always `null` for API sessions).
+
+Open a WebSocket to `connect.url` on `api.phaseo.app` and offer two subprotocols: `statsync-realtime` and `rtsec.<client_secret>`. The relay selects `statsync-realtime`. If you offer only `rtsec.<client_secret>`, browsers and most WebSocket libraries fail the handshake because no protocol is selected.
+
+The relay sends `relay.connected` once the provider is ready. Then send microphone audio as `{"type": "client.audio", "audio": "<base64 PCM16>"}` at the provider's sample rate:
+
+| Provider | Input audio |
+| --- | --- |
+| OpenAI, xAI, ElevenLabs, GPT Live | 24 kHz PCM16 |
+| Google, Mistral | 16 kHz PCM16 |
 
 Phaseo holds $5 of credit when the session starts and extends the hold as the call runs.
 
-The [TypeScript](/v1/sdk-reference/typescript/audio-realtime) and [Python](/v1/sdk-reference/python/audio-realtime) SDKs do all of this for you: `client.realtime.connect()` creates the session and opens the socket, and `session.end()` returns `session.ended`. The other SDKs have the same small client; each package README has an example.
+The [TypeScript and Python SDKs](/v1/sdk-reference/client/audio-realtime) do all of this for you: `client.realtime.connect()` creates the session and opens the socket, and `session.end()` returns `session.ended`. The other SDKs have the same small client; each package README has an example.
 
 | SDK | Connect | WebSocket library |
 | --- | --- | --- |
@@ -131,7 +150,7 @@ The relay then:
 
 Closing the socket without `session.end` also ends the call and bills it the same way, but your client won't receive `session.ended`.
 
-## session.ended
+## Read the final bill: `session.ended`
 
 The relay sends `session.ended` on every ending: one you requested, one the provider started and one the gateway started. It's sent while your socket is still open, just before the relay closes it.
 
@@ -162,7 +181,7 @@ The relay sends `session.ended` on every ending: one you requested, one the prov
 | `reason` | A stable reason code. See [reason codes](#reason-codes). |
 | `initiated_by` | `client`, `gateway` or `provider`. |
 | `duration_seconds` | Time since the relay connected. |
-| `usage` | The billed meters: token counts by modality and, for xAI and GPT Live, `audio_seconds`. |
+| `usage` | The usage the call is billed on: token counts by modality, including cache reads and writes; `audio_seconds`, the call's audio duration, which is what xAI, ElevenLabs, Mistral and GPT Live's voice are billed on (on token-billed calls it is shown for information only); and `native_web_search_requests` for GPT Live web searches. When `billing_status` is `pending` or `unresolved`, it is the usage known so far, and `final_bill` returns the final meters. |
 | `cost.estimated` | `true` when part of the usage was estimated from metered audio because the provider's usage for an interrupted turn never arrived. `estimate_basis` says why. |
 | `cost.debt_nanos` | The part of the cost charged as overdraft beyond your holds and free balance. |
 | `cost.uncollected_nanos` | Cost beyond the overdraft cap that wasn't charged. |
@@ -199,7 +218,7 @@ If settlement is still being retried, `billing_status` is `pending` and `cost` s
 
 New codes may be added, so treat an unknown `reason` like `gateway_error`.
 
-## session.warning
+## Handle warnings: `session.warning`
 
 Warnings tell you what's coming without ending the call. Each code is sent at most once per threshold.
 
@@ -209,7 +228,7 @@ Warnings tell you what's coming without ending the call. Each code is sent at mo
 
 | `code` | Extra fields | When |
 | --- | --- | --- |
-| `max_duration_approaching` | `seconds_remaining`, `expires_at` | 2 minutes and 30 seconds before the provider's session limit. |
+| `max_duration_approaching` | `seconds_remaining`, `expires_at` | 2 minutes before the provider's session limit, and again 30 seconds before. |
 | `provider_closing` | `seconds_remaining`, and `threshold: "input_idle"` for the idle case | Google will close the connection: after a `goAway` the relay couldn't resume from, or (`input_idle`) because no audio has arrived for 2 minutes. |
 | `funds_low` | `remaining_usd` | The credit hold couldn't be extended. The call continues on your free balance. |
 | `overdraft_in_use` | `remaining_usd`, `overdraft_used_usd` | Your free balance is used up and the call is running on overdraft. Sent again when less than $0.25 of the cap is left. |
@@ -218,9 +237,9 @@ Warnings tell you what's coming without ending the call. Each code is sent at mo
 
 `remaining_usd` is what the call can still spend before it ends, including the overdraft.
 
-## Limits
+## When a call ends on its own
 
-API sessions are never ended for being idle, and spend limits only warn. A call ends on its own only when one of these happens:
+API sessions are never ended by Phaseo for being idle, and spend limits only warn. A call ends on its own only when one of these happens:
 
 | Limit | Value |
 | --- | --- |

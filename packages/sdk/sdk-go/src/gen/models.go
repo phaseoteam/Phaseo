@@ -2218,6 +2218,7 @@ type FusionToolDefinition struct {
 type GatewayCapabilities struct {
 	Endpoints *[]string `json:"endpoints,omitempty"`
 	ParameterDetails map[string]interface{} `json:"parameter_details"`
+	ParameterSpecs *map[string]interface{} `json:"parameter_specs,omitempty"`
 	Parameters []string `json:"parameters"`
 }
 
@@ -2533,14 +2534,10 @@ type GenerationResponse struct {
 type Guardrail struct {
 	AllowedApiModelIds *[]string `json:"allowed_api_model_ids,omitempty"`
 	CreatedAt *string `json:"created_at,omitempty"`
-	DailyLimitCostNanos *int `json:"daily_limit_cost_nanos,omitempty"`
-	DailyLimitRequests *int `json:"daily_limit_requests,omitempty"`
 	Description *string `json:"description,omitempty"`
 	Enabled *bool `json:"enabled,omitempty"`
 	Id string `json:"id"`
 	ModelRestrictionMode *string `json:"model_restriction_mode,omitempty"`
-	MonthlyLimitCostNanos *int `json:"monthly_limit_cost_nanos,omitempty"`
-	MonthlyLimitRequests *int `json:"monthly_limit_requests,omitempty"`
 	Name string `json:"name"`
 	PrivacyEnableFreeMayPublishPrompts *bool `json:"privacy_enable_free_may_publish_prompts,omitempty"`
 	PrivacyEnableFreeMayTrain *bool `json:"privacy_enable_free_may_train,omitempty"`
@@ -2556,23 +2553,11 @@ type Guardrail struct {
 	SensitiveInfoEnabled *bool `json:"sensitive_info_enabled,omitempty"`
 	SensitiveInfoRules *[]map[string]interface{} `json:"sensitive_info_rules,omitempty"`
 	UpdatedAt *string `json:"updated_at,omitempty"`
-	WeeklyLimitCostNanos *int `json:"weekly_limit_cost_nanos,omitempty"`
-	WeeklyLimitRequests *int `json:"weekly_limit_requests,omitempty"`
 	WorkspaceId string `json:"workspace_id"`
-}
-
-type GuardrailBudgetInput struct {
-	DailyCostNanos *int `json:"dailyCostNanos,omitempty"`
-	DailyRequests *int `json:"dailyRequests,omitempty"`
-	MonthlyCostNanos *int `json:"monthlyCostNanos,omitempty"`
-	MonthlyRequests *int `json:"monthlyRequests,omitempty"`
-	WeeklyCostNanos *int `json:"weeklyCostNanos,omitempty"`
-	WeeklyRequests *int `json:"weeklyRequests,omitempty"`
 }
 
 type GuardrailCreateRequest struct {
 	AllowedApiModelIds *[]string `json:"allowedApiModelIds,omitempty"`
-	Budgets *map[string]interface{} `json:"budgets,omitempty"`
 	Description *string `json:"description,omitempty"`
 	Enabled *bool `json:"enabled,omitempty"`
 	ModelRestrictionMode *string `json:"modelRestrictionMode,omitempty"`
@@ -2654,7 +2639,6 @@ type GuardrailMemberListResponse struct {
 
 type GuardrailPolicyInput struct {
 	AllowedApiModelIds *[]string `json:"allowedApiModelIds,omitempty"`
-	Budgets *map[string]interface{} `json:"budgets,omitempty"`
 	Description *string `json:"description,omitempty"`
 	Enabled *bool `json:"enabled,omitempty"`
 	ModelRestrictionMode *string `json:"modelRestrictionMode,omitempty"`
@@ -2684,7 +2668,6 @@ type GuardrailResponse struct {
 
 type GuardrailUpdateRequest struct {
 	AllowedApiModelIds *[]string `json:"allowedApiModelIds,omitempty"`
-	Budgets *map[string]interface{} `json:"budgets,omitempty"`
 	Description *string `json:"description,omitempty"`
 	Enabled *bool `json:"enabled,omitempty"`
 	ModelRestrictionMode *string `json:"modelRestrictionMode,omitempty"`
@@ -4306,6 +4289,91 @@ const (
 
 type OrganisationIdList = []string
 
+type ParameterDimensions struct {
+	AspectRatios *[]string `json:"aspect_ratios,omitempty"`
+	Max *float64 `json:"max,omitempty"`
+	MaxAspectRatio *string `json:"max_aspect_ratio,omitempty"`
+	MaxHeight *float64 `json:"max_height,omitempty"`
+	MaxPixels *float64 `json:"max_pixels,omitempty"`
+	MaxWidth *float64 `json:"max_width,omitempty"`
+	Min *float64 `json:"min,omitempty"`
+	MinPixels *float64 `json:"min_pixels,omitempty"`
+	MultipleOf *float64 `json:"multiple_of,omitempty"`
+}
+
+type ParameterOption struct {
+	Description *string `json:"description,omitempty"`
+	Label *string `json:"label,omitempty"`
+	Value interface{} `json:"value"`
+}
+
+type ParameterRule struct {
+	Default interface{} `json:"default,omitempty"`
+	If map[string]interface{} `json:"if"`
+	Max *float64 `json:"max,omitempty"`
+	Message *string `json:"message,omitempty"`
+	Min *float64 `json:"min,omitempty"`
+	Step *float64 `json:"step,omitempty"`
+	Supported *bool `json:"supported,omitempty"`
+	Values *[]interface{} `json:"values,omitempty"`
+}
+
+type ParameterSpec struct {
+	AliasOf *string `json:"alias_of,omitempty"`
+	Aliases *[]string `json:"aliases,omitempty"`
+	AlwaysOn *bool `json:"always_on,omitempty"`
+	Default interface{} `json:"default,omitempty"`
+	Dimensions *map[string]interface{} `json:"dimensions,omitempty"`
+	Extra *map[string]interface{} `json:"extra,omitempty"`
+	Format *string `json:"format,omitempty"`
+	Formats *[]string `json:"formats,omitempty"`
+	ItemTypes *[]string `json:"item_types,omitempty"`
+	Max *float64 `json:"max,omitempty"`
+	MaxFileSizeBytes *float64 `json:"max_file_size_bytes,omitempty"`
+	MaxItems *float64 `json:"max_items,omitempty"`
+	MaxLength *float64 `json:"max_length,omitempty"`
+	MaxTokens *float64 `json:"max_tokens,omitempty"`
+	Media *string `json:"media,omitempty"`
+	Min *float64 `json:"min,omitempty"`
+	MinItems *float64 `json:"min_items,omitempty"`
+	MinLength *float64 `json:"min_length,omitempty"`
+	MultipleOf *float64 `json:"multiple_of,omitempty"`
+	Notes *string `json:"notes,omitempty"`
+	Open *bool `json:"open,omitempty"`
+	Options *[]map[string]interface{} `json:"options,omitempty"`
+	Properties *map[string]interface{} `json:"properties,omitempty"`
+	ProviderDefault interface{} `json:"provider_default,omitempty"`
+	Required *bool `json:"required,omitempty"`
+	Requires *[]string `json:"requires,omitempty"`
+	Source *map[string]interface{} `json:"source,omitempty"`
+	Step *float64 `json:"step,omitempty"`
+	SupportLevel *string `json:"support_level,omitempty"`
+	Supported bool `json:"supported"`
+	Type interface{} `json:"type,omitempty"`
+	UpstreamName *string `json:"upstream_name,omitempty"`
+	UpstreamValues *[]interface{} `json:"upstream_values,omitempty"`
+	Values *[]interface{} `json:"values,omitempty"`
+	When *[]map[string]interface{} `json:"when,omitempty"`
+}
+
+type ParameterSpecs struct {
+}
+
+type ParameterType string
+
+const (
+	ParameterTypeString ParameterType = "string"
+	ParameterTypeInteger ParameterType = "integer"
+	ParameterTypeNumber ParameterType = "number"
+	ParameterTypeBoolean ParameterType = "boolean"
+	ParameterTypeArray ParameterType = "array"
+	ParameterTypeObject ParameterType = "object"
+	ParameterTypeFile ParameterType = "file"
+)
+
+
+type ParameterValue = interface{}
+
 type ParseBlock = interface{}
 
 type ParseBoundingBox struct {
@@ -4889,7 +4957,6 @@ const (
 	RateLimitTargetTypeKey RateLimitTargetType = "key"
 	RateLimitTargetTypeMember RateLimitTargetType = "member"
 	RateLimitTargetTypeDepartment RateLimitTargetType = "department"
-	RateLimitTargetTypeGuardrail RateLimitTargetType = "guardrail"
 	RateLimitTargetTypeEndUserDefault RateLimitTargetType = "end_user_default"
 )
 
@@ -5596,6 +5663,7 @@ type VideoModelCapability struct {
 
 type VideoModelProviderCapability struct {
 	Id *string `json:"id,omitempty"`
+	ParameterSpecs *map[string]interface{} `json:"parameter_specs,omitempty"`
 	SupportedParameters *[]string `json:"supported_parameters,omitempty"`
 	SupportedParametersDetail *map[string]interface{} `json:"supported_parameters_detail,omitempty"`
 	SupportedParams *[]string `json:"supported_params,omitempty"`
@@ -5746,6 +5814,7 @@ type WorkloadIdentityPolicy struct {
 	LastUsedAt *string `json:"last_used_at"`
 	MaxTokenLifetimeSeconds int `json:"max_token_lifetime_seconds"`
 	Name string `json:"name"`
+	OwnerClaim string `json:"owner_claim"`
 	OwnerId string `json:"owner_id"`
 	Provider string `json:"provider"`
 	Status string `json:"status"`
@@ -5761,6 +5830,7 @@ type WorkloadIdentityPolicyInput struct {
 	Issuer *string `json:"issuer,omitempty"`
 	MaxTokenLifetimeSeconds *int `json:"max_token_lifetime_seconds,omitempty"`
 	Name string `json:"name"`
+	OwnerClaim *string `json:"owner_claim,omitempty"`
 	OwnerId string `json:"owner_id"`
 	Provider string `json:"provider"`
 }
@@ -5786,6 +5856,12 @@ type WorkloadIdentityProvider string
 const (
 	WorkloadIdentityProviderVercel WorkloadIdentityProvider = "vercel"
 	WorkloadIdentityProviderGithubActions WorkloadIdentityProvider = "github_actions"
+	WorkloadIdentityProviderGitlab WorkloadIdentityProvider = "gitlab"
+	WorkloadIdentityProviderGoogleCloud WorkloadIdentityProvider = "google_cloud"
+	WorkloadIdentityProviderBuildkite WorkloadIdentityProvider = "buildkite"
+	WorkloadIdentityProviderCircleci WorkloadIdentityProvider = "circleci"
+	WorkloadIdentityProviderAws WorkloadIdentityProvider = "aws"
+	WorkloadIdentityProviderCustom WorkloadIdentityProvider = "custom"
 )
 
 

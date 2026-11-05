@@ -242,6 +242,14 @@ export type PostAbilities = { charts: boolean; images: boolean };
 export type SearchOffer = { availability: SearchAvailability; asker: string; inChannel: boolean; zdr?: ZeroRetentionNote };
 
 /**
+ * Whether an answer gets the gateway's web search and web fetch. Not when it has the usage tools: what they read (spend,
+ * keys, models) could leave in a search query or a URL a fetched page asks for, the way a Slack search's results could.
+ */
+export function webToolsFor(offered: Pick<Offered, "usageTools">): boolean {
+	return !offered.usageTools;
+}
+
+/**
  * posts: what it can post in the thread; schedules: what the turn may do with recurring tasks (scheduleMode), and a
  * scheduled run can't ask questions; search: whether it can search Slack; pages: whether it can publish shared pages.
  */
@@ -250,7 +258,8 @@ export function buildInstructions(installation: Pick<Installation, "instructions
 		"You are the Phaseo agent, an assistant in Slack for a team that uses Phaseo, an AI gateway.",
 		`Today is ${new Date(now).toISOString().slice(0, 10)} (UTC).`,
 		"Write for Slack: be brief, use short paragraphs, and use Markdown lists or tables when they help. Show money in US dollars, like $12.50.",
-		"You can search the web and read web pages with your web search and web fetch tools.",
+		// Not with the usage tools: a page it reads could otherwise send the workspace's numbers away in a URL (webToolsFor).
+		...(webToolsFor(offered) ? ["You can search the web and read web pages with your web search and web fetch tools."] : ["You can't search the web or read web pages in this conversation, because you can see this workspace's Phaseo usage here."]),
 		...(schedules === "run" ? [] : ["When you can't sensibly go on without the person choosing between a few options or approving something, call ask_question: they answer with a button, and you continue from their answer. Don't use it for anything you can decide or answer yourself."]),
 		...memoryInstructions(access, external),
 		...(schedules ? scheduleInstructions(schedules) : []),
@@ -633,6 +642,7 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 		otherCostUsd: () => consultedUsd() + toolUsd,
 		signal: controller.signal,
 		zeroDataRetention,
+		webTools: webToolsFor(load),
 		...(parts.length ? { attachments: parts } : {}),
 		...(paused ? { resume: resumeWith(answerLines(files)) } : {}),
 	});
@@ -812,7 +822,7 @@ async function postQuestion(deps: TurnDeps, turn: TurnRef, coordinator: DurableO
 		if (!(await updateQuestionMessage(slack, questionTarget(turn), drafted))) throw new SlackPostError("update", "question");
 	} else {
 		const message = questionMessage(drafted, turn.slackUserId, turn.threadTs, turn.turnId);
-		const posted = await slack.call<{ ts?: string }>("chat.postMessage", { channel: turn.channel, thread_ts: turn.threadTs, text: message.text, blocks: message.blocks });
+		const posted = await slack.call<{ ts?: string }>("chat.postMessage", { channel: turn.channel, thread_ts: turn.threadTs, text: message.text, blocks: message.blocks, unfurl_links: false, unfurl_media: false });
 		if (posted.ok === false || typeof posted.data.ts !== "string") throw new SlackPostError("postMessage", posted.ok === false ? posted.error : "ts_missing");
 		ts = posted.data.ts;
 	}

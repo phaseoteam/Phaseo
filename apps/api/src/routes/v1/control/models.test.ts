@@ -380,6 +380,19 @@ describe("handleModels", () => {
         });
     });
 
+    it("adds standard parameter specs to offers only when asked", async () => {
+        const plain = await (await handleModels(new Request("https://api.example.com/"), "shared")).json() as any;
+        expect(plain.models[0].offers[0].capabilities).not.toHaveProperty("parameter_specs");
+        const withSpecs = await (await handleModels(
+            new Request("https://api.example.com/?include=parameter_specs"),
+            "shared",
+        )).json() as any;
+        // Stored as { range: [0, 2] }.
+        expect(withSpecs.models[0].offers[0].capabilities.parameter_specs).toEqual({
+            temperature: expect.objectContaining({ supported: true, min: 0, max: 2 }),
+        });
+    });
+
     it("prefers an explicit recommended successor over inferred lineage", async () => {
         fetchCatalogueMock.mockResolvedValue([
             buildCatalogueModel({ model_id: "openai/gpt-old", replacement_model_id: "openai/gpt-alternate" }),
@@ -1000,7 +1013,11 @@ describe("handleModels", () => {
                 }),
             }),
             expect.objectContaining({ endpoint: "images.generations", collection: "images" }),
-            expect.objectContaining({ endpoint: "video.generation", collection: "video" }),
+            expect.objectContaining({
+                endpoint: "video.generation",
+                collection: "video",
+                capabilities: expect.objectContaining({ parameter_specs: { duration: { supported: true } } }),
+            }),
             expect.objectContaining({ endpoint: "audio.speech", collection: "audio" }),
         ]));
     });

@@ -1,0 +1,67 @@
+---
+title: "OpenClaw"
+icon: "/icons/brands/openclaw.svg"
+description: "Registriere Phaseo als Modellanbieter in OpenClaw, wobei der Schlüssel aus der Phaseo CLI gelesen wird."
+---
+
+Führe `phaseo openclaw` aus, um in OpenClaw einen `phaseo`-Modellanbieter mit jedem kompatiblen Phaseo-Modell zu registrieren, oder füge den Anbieter selbst mit `openclaw config set` hinzu.
+
+## Mit der Phaseo CLI einrichten
+
+```bash
+phaseo login
+phaseo openclaw --model openai/gpt-6-astra
+```
+
+Fehlt OpenClaw, zeigt die CLI den Installationsbefehl an (`npm install -g openclaw@latest` oder dasselbe Paket mit pnpm, Yarn oder Bun) und fragt nach, bevor sie ihn ausführt. Danach führt die Einrichtung `openclaw config set` zweimal aus:
+
+- **`secrets.providers.phaseo_cli`**: ein Exec-Secret-Provider, der `phaseo integrations credential openclaw` ausführt, um den Schlüssel zu lesen. Der Schlüssel wird nie in die Konfiguration von OpenClaw geschrieben.
+- **`models.providers.phaseo`**: ein Anbieter mit der Base URL `https://api.phaseo.app/v1`, dem API-Typ `openai-completions` und dem Schlüssel aus `phaseo_cli`. Er listet jedes aktive Phaseo-Textmodell auf, das mit Chat Completions funktioniert, mit dem Wert von `--model` an erster Stelle (ohne ihn `anthropic/claude-sonnet-4.6`).
+
+Der Schlüssel ist ein `Phaseo CLI: OpenClaw API Key`, der nach 90 Tagen abläuft und ein monatliches Ausgabenlimit von $100 hat. Fragt OpenClaw die CLI nach dem Ablauf nach dem Schlüssel, erstellt die CLI einen neuen.
+
+Die Einrichtung ändert das Standardmodell von OpenClaw nicht. Wähle das Phaseo-Modell mit `openclaw models set`, wenn du so weit bist. Mit `--catalog default` wird nur das ausgewählte Modell registriert.
+
+## OpenClaw manuell konfigurieren
+
+Registriere einen Secret-Provider, der deinen Schlüssel ausgibt, und dann den Phaseo-Modellanbieter:
+
+```bash
+openclaw config set secrets.providers.phaseo_cli \
+  '{"source":"exec","command":"phaseo","args":["integrations","credential","openclaw"],"jsonOnly":false}' \
+  --strict-json
+
+openclaw config set models.providers.phaseo '{
+  "baseUrl": "https://api.phaseo.app/v1",
+  "apiKey": { "source": "exec", "provider": "phaseo_cli", "id": "value" },
+  "api": "openai-completions",
+  "models": [
+    { "id": "openai/gpt-6-astra", "name": "openai/gpt-6-astra via Phaseo", "reasoning": false, "input": ["text"] }
+  ]
+}' --strict-json
+```
+
+Jeder Eintrag in `models` nimmt eine `id` (die Phaseo-Modell-ID), einen `name`, `reasoning`, `input` (`text`, `image`) und optional ein `contextWindow`. Füge einen Eintrag für jedes Phaseo-Modell hinzu, das OpenClaw auflisten soll.
+
+## Prüfen, ob es funktioniert
+
+Führe `openclaw config get models.providers.phaseo --json` aus, um zu bestätigen, dass der Anbieter registriert ist. Wähle ein Phaseo-Modell mit `openclaw models set` und sende einen kurzen Prompt. Prüfe, ob die Anfrage unter **Einstellungen → Nutzung → Protokolle** erscheint.
+
+## Phaseo entfernen
+
+```bash
+phaseo integrations remove openclaw
+```
+
+Damit werden `models.providers.phaseo` und `secrets.providers.phaseo_cli` entfernt und anschließend der Schlüssel widerrufen. Deine anderen OpenClaw-Einstellungen bleiben erhalten. Starte das OpenClaw-Gateway neu, falls es läuft.
+
+## Häufige Probleme beheben
+
+| Problem | Lösung |
+| --- | --- |
+| `OpenClaw already defines models.providers.phaseo` | Die Einrichtung überschreibt keinen bestehenden `phaseo`-Anbieter. Entferne oder benenne ihn um, oder führe `phaseo integrations remove openclaw` aus, und richte dann erneut ein. |
+| Anfragen schlagen fehl, nachdem du die Phaseo CLI oder Node.js verschoben oder neu installiert hast | Die Einrichtung speichert die genauen Pfade zu Node.js und zur CLI in `secrets.providers.phaseo_cli`. Führe `phaseo integrations remove openclaw` und dann erneut `phaseo openclaw` aus. |
+| `OpenClaw is not installed or is not on PATH` | Installiere OpenClaw oder füge es zu `PATH` hinzu und führe die Einrichtung erneut aus. |
+| Ein Modell wird abgelehnt | Prüfe die exakte ID mit dem [Models-Endpunkt](../../api-reference/endpoint/models.mdx). |
+
+Andere Agents und die Anbieterwerte, die jeder Agent braucht, findest du unter [Coding-Agents](./coding-assistants.mdx).

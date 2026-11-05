@@ -185,9 +185,9 @@ The `createSpeech` wrapper expects JSON and cannot decode binary audio. Use
 
 The JSON helpers `uploadFile`, `createTranscription`, `createTranslation`, and
 `createImageEdit` do not encode multipart file uploads. Use Java's standard HTTP
-client for file bytes, following the [multipart upload example](https://phaseo.app/docs/v1/sdk-reference/java/files).
+client for file bytes, following the [multipart upload example](https://phaseo.app/docs/v1/sdk-reference/client/files).
 
-See the [Java SDK guide](https://phaseo.app/docs/v1/sdk-reference/java/overview)
+See the [Java SDK guide](https://phaseo.app/docs/v1/sdk-reference/client/overview)
 for complete examples.
 
 ## Environment variables

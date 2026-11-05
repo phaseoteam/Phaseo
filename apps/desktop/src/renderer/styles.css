@@ -788,7 +788,7 @@ button { color: inherit; }
 .chat-setup-options > .task-setup { padding-top: 8px; }
 .model-select-popup .desktop-select-item > span { overflow: hidden; text-overflow: ellipsis; }
 
-/* T3 layout structure, with the website's semantic palette and typography. */
+/* App layout structure, with the website's semantic palette and typography. */
 .chat-sidebar-controls { display: flex; align-items: center; gap: 2px; margin-bottom: 4px; }
 .chat-sidebar-controls .task-search { flex: 1; min-width: 0; margin: 0; gap: 6px; padding-left: 6px; }
 .chat-sidebar-controls .task-search input, .settings-navigation .task-search input { border: 0; background: transparent; padding: 4px 0; font-size: 12px; }

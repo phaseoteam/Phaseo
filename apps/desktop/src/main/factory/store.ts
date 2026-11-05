@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { copyFile, mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { TRUSTED_BOTS, activityMessage, checksActivity, heldBackLine, mayPush, sortActivity, stallAction, stallLimits, stallNudge, stallNudgeLine, stallSummary, type GithubActivity } from "../../shared/factory/activity";
 import { autopilotFits, lastRun, linkedItem, pullsFor, stageAgent, withItemEffort } from "../../shared/factory/actions";
 import { INPUTS_FOLDER, attachRef, attachable, attachmentKey, attachmentsFor, imageProblem, isAttachmentName, supportsAttach } from "../../shared/factory/attachments";
 import { DEMO_AGENTS, DEMO_SETTINGS, demoAttachment, demoItems, demoNotes, demoProof, demoRepos, demoRuns } from "../../shared/factory/demo";
@@ -12,8 +13,9 @@ import { TRIAGE_THRESHOLD, similarIssues } from "../../shared/factory/similar";
 import { ASKS_REPORTER, STAGES, ciBrief, conflictBrief, currentStage, emptyStages, findingsBrief, staleChecks, issueBody, replyPrompt, stageLabel, stagePrompt, stagesFor } from "../../shared/factory/stages";
 import type { AgentProfile, CheckRun, FactorySettings, GithubChange, ImageUpload, PullFiles, RepoLabel, IssueComment, Mentionable, MergeState, NotePatch, TimelineEntry, RepoNote, RepoStatus, FactorySnapshot, ItemAction, LogLine, NewIssueInput, Run, RunOutcome, RunReport, SimilarItem, StageId, StageStatus, StartRunInput, WorkItem } from "../../shared/factory/types";
 import { localClones } from "./clones";
-import { MAX_ATTACH, SEARCH_LIMIT, allComments, changesSince, checkoutRepo, closeAsDuplicate, closeItem, comment, commentsSince, allChecks, lineComment, pullFiles, replyToThread, resolveThread, assignable, deleteComment, editComment, editItem, editPeopleOrLabels, repoLabels, rerunFailed, updateBranch, createIssue, createPullRequest, failedLog, ghVersion, githubLogin, importOpen, itemTimeline, mentionable, readItem, linkWork, markDraft, markReady, mergePull, mergeState, openCounts, pullChecks, reopenItem, reviewPull } from "./github";
+import { MAX_ATTACH, SEARCH_LIMIT, activitySince, allComments, canPush, changesSince, checkoutRepo, closeAsDuplicate, closeItem, comment, commentsSince, allChecks, lineComment, pullFiles, replyToThread, resolveThread, assignable, deleteComment, editComment, editItem, editPeopleOrLabels, repoLabels, rerunFailed, updateBranch, createIssue, createPullRequest, failedLog, ghVersion, githubLogin, importOpen, itemTimeline, mentionable, readItem, linkWork, markDraft, markReady, mergePull, mergeState, openCounts, pullChecks, reopenItem, reviewPull } from "./github";
 import { changedFiles, git, prepareProof, prepareWorktree, proofDir } from "./worktrees";
+import { assertForkSafe } from "./agents";
 import type { AgentProcess, StageRunner, StageWorkspace } from "./runner";
 
 /** What Factory adds on top of GitHub, saved per item. GitHub stays the source of truth for the rest. */
@@ -98,8 +100,10 @@ const AUTO_CONTINUE = 2;
 
 /** How long Factory waits before carrying on a run whose agent crashed: long enough for a blip to pass. */
 const CRASH_PAUSE = [10_000, 45_000];
-const CONTINUE_AFTER_QUIT = "Phaseo closed while you were working on this, and has started again. Carry on from where you stopped: check what's already done in the worktree first, then finish the stage.";
-const CONTINUE_AFTER_CRASH = (why: string) => `Your last attempt stopped unexpectedly (${why}). Carry on from where you stopped: check what's already done in the worktree first, then finish the stage.`;
+/** Before redoing anything, the agent checks what's done: in the worktree, and on GitHub, so nothing is posted or pushed twice. */
+const CHECK_FIRST = "check what's already done first: in the worktree (files, commits) and on GitHub (comments, pushes, pull requests). Don't repeat anything that already happened outside the worktree. Then finish the stage.";
+const CONTINUE_AFTER_QUIT = `Phaseo closed while you were working on this, and has started again. Carry on from where you stopped: ${CHECK_FIRST}`;
+const CONTINUE_AFTER_CRASH = (why: string) => `Your last attempt stopped unexpectedly (${why}). Carry on from where you stopped: ${CHECK_FIRST}`;
 
 const MAX_SAVED_RUNS = 200;
 const MAX_LOG_LINES = 2_000;
@@ -107,6 +111,10 @@ const MAX_LOG_LINES = 2_000;
 const STALE_AFTER = 30_000;
 /** While a pull request's checks are running, they're read this often. */
 const CI_POLL = 30_000;
+/** How often running runs are looked at for stalls. */
+const STALL_POLL = 60_000;
+/** How long GitHub's answer to "can this person push here?" is kept. */
+const PUSH_ACCESS_FOR = 10 * 60_000;
 
 export class FactoryStore {
 	private snapshot: FactorySnapshot;
@@ -132,6 +140,15 @@ export class FactoryStore {
 	private pollTimer: NodeJS.Timeout | null = null;
 	private checkTimer: NodeJS.Timeout | null = null;
 	private checking = false;
+	private stallTimer: NodeJS.Timeout | null = null;
+	/** Runs Factory stopped because they stalled, with why: they end as failed, for a person to look at. */
+	private stalled = new Map<string, string>();
+	/** Runs whose GitHub activity is being read now. */
+	private hearing = new Set<string>();
+	/** When each running run's thread last showed its agent at work. */
+	private movedAt = new Map<string, number>();
+	/** Whether each person can push to each repository, by "repo:login", and when GitHub said so. */
+	private pushAccess = new Map<string, { at: number; can: boolean }>();
 	/** The agents as the desktop's accounts offer them, before the efforts chosen in Settings. */
 	private discovered: AgentProfile[] = [];
 	private readonly createdAt = Date.now();
@@ -187,6 +204,7 @@ export class FactoryStore {
 		}
 		this.rebuildItems();
 		this.schedulePoll();
+		this.stallTimer = setInterval(() => this.checkStalls(), STALL_POLL);
 	}
 
 	/**
@@ -277,6 +295,7 @@ export class FactoryStore {
 		for (const answer of this.answers.splice(0)) this.reporterAnswered(answer.itemId, answer.why);
 		this.drainQueue();
 		void this.watchChecks();
+		void this.passOnActivity();
 		return this.snapshot;
 	}
 
@@ -518,6 +537,7 @@ export class FactoryStore {
 	private async launch(input: StartRunInput, options: LaunchOptions): Promise<Run> {
 		const item = this.item(input.itemId);
 		const agent = withItemEffort(this.agent(input.agentId), item);
+		assertForkSafe(item, agent.harness);
 		const full = this.demo ? undefined : this.deps.capacity?.();
 		if (full) throw new Error(full);
 		const busy = this.worktreeBusy(item);
@@ -573,6 +593,7 @@ export class FactoryStore {
 				handlers: {
 					log: (line) => this.log(run.id, line),
 					session: (threadId) => this.patchRun(run.id, (current) => ({ ...current, sessionId: threadId, threadId })),
+					progress: () => this.movedAt.set(run.id, Date.now()),
 					finish: (result) => this.finishRun(run.id, result),
 				},
 			});
@@ -639,8 +660,12 @@ export class FactoryStore {
 		// Quitting stops the threads; their runs were already saved as interrupted, to carry on at the next start.
 		if (this.closing) return;
 		this.sessions.delete(runId);
+		this.movedAt.delete(runId);
 		const stopped = this.stopping.delete(runId);
-		const result = stopped ? { ...ended, status: "cancelled" as const, summary: "Stopped" } : ended;
+		const stall = this.stalled.get(runId);
+		this.stalled.delete(runId);
+		// Stopped by Factory for stalling: it failed, so the stage asks a person, rather than reading as stopped by you.
+		const result = stall && stopped ? { ...ended, status: "failed" as const, summary: stall, crashed: false } : stopped ? { ...ended, status: "cancelled" as const, summary: "Stopped" } : ended;
 		const run = this.snapshot.runs.find((candidate) => candidate.id === runId);
 		if (!run || run.status !== "running") return;
 		// The agent's process died without a report: carry the work on after a pause, rather than fail the stage.
@@ -832,7 +857,10 @@ export class FactoryStore {
 				const before = this.snapshot.items.find((candidate) => candidate.id === pull.id)?.ci;
 				if (!ci || !this.snapshot.items.some((candidate) => candidate.id === pull.id)) return;
 				this.patchItem(pull.id, (current) => ({ ...current, ci }));
-				if (ci.state === "failed" && before?.state !== "failed") this.markFlawed(pull.id, `GitHub checks failed: ${ci.failed.map((check) => check.name).join(", ")}`);
+				if (ci.state === "failed" && before?.state !== "failed") {
+					this.markFlawed(pull.id, `GitHub checks failed: ${ci.failed.map((check) => check.name).join(", ")}`);
+					void this.passOnChecks(pull.id, ci.failed);
+				}
 			}));
 		} finally {
 			this.checking = false;
@@ -895,9 +923,11 @@ export class FactoryStore {
 				if (item.kind !== "pull" || !failed.length) throw new Error("No failed checks to fix");
 				const agentId = item.stages.fix.agentId ?? agentForStage(item, "fix", playbook);
 				if (!agentId) throw new Error("Assign an agent first");
-				const logs = this.demo ? [] : await Promise.all(failed.map((check) => failedLog(item.repo, check.link)));
+				// A fork's workflows run the fork's code, so its logs are held back unread, as they are while a stage runs.
+				const logs = this.demo || item.fork ? [] : await Promise.all(failed.map((check) => failedLog(item.repo, check.link)));
 				this.patchItem(itemId, (current) => ({ ...current, revisions: (current.revisions ?? 0) + 1 }));
-				await this.launch({ itemId, stage: "fix", agentId }, { brief: ciBrief(failed.map((check, index) => ({ ...check, log: logs[index] }))) });
+				const run = await this.launch({ itemId, stage: "fix", agentId }, { brief: ciBrief(failed.map((check, index) => ({ ...check, log: logs[index] }))) });
+				if (item.fork) this.log(run.id, { at: Date.now(), kind: "info", text: "Didn't pass on the failed checks' logs: this pull request comes from a fork, whose workflows run the fork's code, so their logs don't direct agents. The agent runs the checks itself." });
 				return;
 			}
 			case "fix-conflicts": {
@@ -1312,6 +1342,110 @@ export class FactoryStore {
 	}
 
 
+	/**
+	 * Runs going: what's new on GitHub on their issue or pull request, and on the pull request that fixes the issue,
+	 * goes to the agent. GitHub is only asked when one of them changed since the last read.
+	 */
+	private async passOnActivity(): Promise<void> {
+		if (this.demo || this.snapshot.settings.passOnActivity === false) return;
+		await Promise.all(this.snapshot.runs.map(async (run) => {
+			if (run.status !== "running" || !this.sessions.has(run.id) || this.hearing.has(run.id)) return;
+			const item = this.snapshot.items.find((candidate) => candidate.id === run.itemId);
+			if (!item) return;
+			const items = [item, linkedItem(item, this.snapshot.items)].filter((candidate): candidate is WorkItem => !!candidate);
+			if (!items.some((candidate) => candidate.updatedAt > (run.heardAt ?? run.startedAt))) return;
+			this.hearing.add(run.id);
+			const readAt = Date.now();
+			try {
+				// Everything since the run started, every time: what it already heard is skipped by id.
+				const found = (await Promise.all(items.map(async (candidate) => this.withPushAccess(candidate.repo, await activitySince(candidate.repo, candidate.kind, candidate.number, run.startedAt))))).flat();
+				this.patchRun(run.id, (current) => ({ ...current, heardAt: readAt }));
+				this.passOn(run.id, found);
+			} catch {
+				// Read again at the next check.
+			} finally {
+				this.hearing.delete(run.id);
+			}
+		}));
+	}
+
+	/**
+	 * Marks which authors GitHub says can push to the repository. Asked once per person and repository for a while;
+	 * when GitHub can't say, the comment is held back.
+	 */
+	private async withPushAccess(repo: string, activity: GithubActivity[]): Promise<GithubActivity[]> {
+		const now = Date.now();
+		return Promise.all(activity.map(async (entry) => {
+			if (!mayPush(entry)) return entry;
+			const key = `${repo}:${entry.author.toLowerCase()}`;
+			let known = this.pushAccess.get(key);
+			if (!known || now - known.at > PUSH_ACCESS_FOR) {
+				known = { at: now, can: await canPush(repo, entry.author).catch(() => false) };
+				this.pushAccess.set(key, known);
+			}
+			return { ...entry, canPush: known.can };
+		}));
+	}
+
+	/** A pull request's checks just failed: the agent working on it, or on the issue it fixes, hears why. */
+	private async passOnChecks(pullId: string, failed: { name: string; link?: string }[]): Promise<void> {
+		const pull = this.snapshot.items.find((candidate) => candidate.id === pullId);
+		if (this.snapshot.settings.passOnActivity === false) return;
+		const run = this.snapshot.runs.find((candidate) => {
+			if (candidate.status !== "running" || !this.sessions.has(candidate.id)) return false;
+			const item = this.snapshot.items.find((entry) => entry.id === candidate.itemId);
+			return candidate.itemId === pullId || (!!item && linkedItem(item, this.snapshot.items)?.id === pullId);
+		});
+		if (!pull || !run) return;
+		// The logs of the first few: enough to see what broke without flooding the agent. A fork's are held back unread.
+		const read = pull.fork ? failed.slice(0, 3) : await Promise.all(failed.slice(0, 3).map(async (check) => ({ ...check, log: await failedLog(pull.repo, check.link).catch(() => undefined) })));
+		this.passOn(run.id, [checksActivity(pull.head ?? String(pull.updatedAt), [...read, ...failed.slice(3)], Date.now(), pull.number, Boolean(pull.fork))]);
+	}
+
+	/** Hands new activity to a running agent. Comments from people who can't direct agents are held back and noted. */
+	private passOn(runId: string, activity: GithubActivity[]) {
+		const run = this.snapshot.runs.find((candidate) => candidate.id === runId);
+		const session = this.sessions.get(runId);
+		if (!run || run.status !== "running" || !session) return;
+		const { pass, hold } = sortActivity(activity, run.heard ?? [], this.snapshot.settings.trustedBots ?? TRUSTED_BOTS);
+		if (!pass.length && !hold.length) return;
+		this.patchRun(runId, (current) => ({ ...current, heard: [...(current.heard ?? []), ...pass.map((entry) => entry.id), ...hold.map((entry) => entry.id)] }));
+		const held = heldBackLine(hold);
+		if (held) this.log(runId, { at: Date.now(), kind: "info", text: held });
+		if (!pass.length) return;
+		const from = [...new Set(pass.map((entry) => (entry.kind === "checks" ? "failed checks" : `@${entry.author}`)))].join(", ");
+		this.log(runId, { at: Date.now(), kind: "info", text: `Passed on ${pass.length === 1 ? "an update" : `${pass.length} updates`} from GitHub to the agent (${from})` });
+		const text = activityMessage(pass);
+		if (!session.send(text)) this.patchRun(runId, (current) => ({ ...current, pending: [...(current.pending ?? []), text] }));
+	}
+
+	/** Runs that show nothing for a long while: the agent is told first; if still nothing, the run stops and waits for a person. */
+	private checkStalls() {
+		const now = Date.now();
+		for (const run of this.snapshot.runs) {
+			const session = this.sessions.get(run.id);
+			if (run.status !== "running" || !session || this.stalled.has(run.id)) continue;
+			// Waiting on a person isn't stalling: the clock starts again once they answer.
+			if (session.waiting?.()) {
+				this.movedAt.set(run.id, now);
+				continue;
+			}
+			const movedAt = this.movedAt.get(run.id);
+			const limits = stallLimits(this.snapshot.settings);
+			const action = stallAction(run, now, movedAt, limits);
+			if (action === "nudge") {
+				this.patchRun(run.id, (current) => ({ ...current, nudgedAt: now }));
+				this.log(run.id, { at: now, kind: "info", text: stallNudgeLine(limits.after) });
+				session.send(stallNudge(limits.after));
+			} else if (action === "stop") {
+				const why = stallSummary(run, now, movedAt);
+				this.stalled.set(run.id, why);
+				this.log(run.id, { at: now, kind: "error", text: why });
+				this.cancelRun(run.id);
+			}
+		}
+	}
+
 	/** Start queued stages once a slot frees up. */
 	private drainQueue() {
 		// At startup interrupted runs go first: the queue only fills the slots they leave.
@@ -1441,6 +1575,7 @@ export class FactoryStore {
 		if (this.demoTimer) clearInterval(this.demoTimer);
 		if (this.pollTimer) clearInterval(this.pollTimer);
 		if (this.checkTimer) clearTimeout(this.checkTimer);
+		if (this.stallTimer) clearInterval(this.stallTimer);
 	}
 
 	/** Settings, runs and notes, and the item cache when it changed, in one transaction. */

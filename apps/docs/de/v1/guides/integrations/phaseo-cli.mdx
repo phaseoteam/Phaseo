@@ -1,103 +1,67 @@
 ---
-title: "Phaseo-CLI"
+title: "Phaseo CLI"
 icon: "terminal"
-description: "Installiere die offizielle Phaseo-CLI, konfiguriere Programmierumgebungen und verwalte Phaseo im Terminal."
+description: "Installiere die offizielle Phaseo CLI, konfiguriere Coding-Harnesses und verwalte Phaseo im Terminal."
 ---
 
-Die Phaseo-CLI wird als `@phaseo/cli` veröffentlicht. Sie verbindet Programmierumgebungen mit Phaseo und bietet einen offiziellen Terminal-Workflow für die Phaseo-Steuerungsebene.
+Installiere `@phaseo/cli` und führe `phaseo login` aus, um Coding-Agents mit Phaseo zu verbinden und Schlüssel, Workspaces, Presets, Einstellungen und Guardrails im Terminal zu verwalten. Die CLI liest außerdem Modelle, Anbieter, Preise, Guthaben, Aktivität, Analysen und Generierungen.
 
-Verwende sie, wenn du Folgendes tun möchtest:
-
-- dich als Phaseo-Benutzer in einer lokalen oder entfernten Shell oder einer Agentenlaufzeit anzumelden
-- API-Schlüssel oder Verwaltungsschlüssel zu erstellen und zu rotieren
-- Workspaces, Presets, Einstellungen und Guardrails zu verwalten
-- den OAuth-Flow der offiziellen CLI zu nutzen, während benutzereigene OAuth-Apps noch privat getestet werden
-- Modelle, Anbieter, Preise, Guthaben, Aktivitäten, Analysen und Generierungen einzusehen
-
-## Installation
+## Installieren
 
 <CodeGroup>
 
-```bash title="npm"
+```bash npm
 npm install -g @phaseo/cli
 ```
 
-```bash title="pnpm"
+```bash pnpm
 pnpm add -g @phaseo/cli
 ```
 
-```bash title="yarn"
+```bash yarn
 yarn global add @phaseo/cli
 ```
 
-```bash title="bun"
+```bash bun
 bun add -g @phaseo/cli
 ```
 
 </CodeGroup>
 
-## Installierte Version prüfen
+Prüfe die Version:
 
-```bash
-phaseo --version
-phaseo version
-phaseo version --json
-```
+| Befehl | Gibt aus |
+| --- | --- |
+| `phaseo --version` | Die installierte Version. |
+| `phaseo version` | Die Version und den Update-Befehl für deinen Paketmanager. Ergänze `--json` für strukturierte Ausgabe. |
 
-- `phaseo --version` zeigt die installierte Version an.
-- `phaseo version` zeigt die Version und den empfohlenen Aktualisierungsbefehl für den aktuellen Paketmanager an.
-- Interaktive Aufrufe zeigen außerdem einen Aktualisierungshinweis an, wenn eine neuere Version veröffentlicht wurde.
-
-Der ältere Befehl `phaseo` bleibt als Kompatibilitätsalias verfügbar.
+Interaktive Läufe zeigen außerdem einen Hinweis, wenn eine neuere Version veröffentlicht wurde.
 
 ## Anmelden
-
-Beginne mit:
 
 ```bash
 phaseo login
 ```
 
-Die CLI unterstützt zwei offizielle Anmeldeabläufe:
+| Ablauf | Flag | Wofür |
+| --- | --- | --- |
+| Mit Phaseo anmelden | `--browser` | Browser-OAuth mit Autorisierungscode und PKCE. |
+| Mit Gerätecode anmelden | `--device-code` | SSH, CI, Shells ohne Oberfläche und Agent-Umgebungen. |
 
-- **Mit Phaseo anmelden**: Browser-OAuth mit Authorization Code und PKCE
-- **Mit Gerätecode anmelden**: ideal für SSH, CI, Headless-Shells und Agentenumgebungen
-
-Du kannst einen der beiden Wege erzwingen:
-
-```bash
-phaseo login --browser
-phaseo login --device-code
-```
-
-Remote und nicht interaktive Umgebungen bevorzugen automatisch den Gerätecode.
-
-## Terminalausgabe
-
-Interaktive Terminals verwenden Phaseos Farben und visuelle Hierarchie und zeigen während der Einrichtung kurzlebige Spinner an. Spinner schreiben auf `stderr` und löschen ihre Zeile nach Abschluss. Ein `stderr` ohne TTY und `TERM=dumb` deaktivieren Animationen; `NO_COLOR` deaktiviert Farben. Befehle mit `--json` liefern immer unverzierten strukturierten Output für Agenten und Automatisierung. Verwende `FORCE_COLOR=1` nur, wenn ein Terminal-Wrapper Farben unterstützt, sich aber nicht als TTY meldet.
-
-## Identität bestätigen
+Entfernte und nicht interaktive Umgebungen nutzen automatisch den Gerätecode. So prüfst du, als wer du angemeldet bist, mit deinen Scopes, dem aktiven Workspace und deinen anderen Workspaces:
 
 ```bash
 phaseo whoami
 phaseo whoami --json
 ```
 
-Der Befehl gibt deinen aktuellen Phaseo-Benutzer, Scopes, den aktiven Workspace und verfügbare Workspaces zurück.
-
-## Schlüssel erstellen
+## Schlüssel erstellen und deinen Workspace verwalten
 
 ```bash
 phaseo keys create --name "Local CLI Key"
 phaseo keys create --name "Agent Sandbox Key" --json
 phaseo keys current
-```
 
-Verwende `--json`, wenn ein Agent oder eine Automatisierung den neu erstellten Schlüssel einmalig im Rohformat benötigt.
-
-## Workspaces und Guardrails verwalten
-
-```bash
 phaseo workspaces list
 phaseo workspaces members <workspace-id-or-slug>
 
@@ -105,104 +69,98 @@ phaseo guardrails list
 phaseo guardrails create --name "Production Safety" --body-json '{"enabled":true}'
 ```
 
-Die CLI deckt die Verwaltungsaufgaben des Phaseo-Dashboards im Terminal ab, darunter Abrechnung, Budgets, BYOK, Routing und Identität. Unter [Phaseo über einen Agent verwalten](../../developers/manage-from-an-agent) findest du für jede Aufgabe einen Befehl.
+Nutze `--json`, wenn ein Agent oder Skript den neuen Schlüssel braucht. Er wird nur einmal angezeigt. Die CLI deckt die Verwaltungsaufgaben des Dashboards ab, darunter Abrechnung, Budgets, BYOK, Routing und Identität. Den Befehl für jede Aufgabe findest du unter [Phaseo aus einem Agent verwalten](../../developers/manage-from-an-agent).
 
-## Unterstützte Programmierumgebungen starten
+## Einen Coding-Agent verbinden
 
-Dauerhafte Integrationen verwenden direkt den Produktnamen:
+Verwende den Namen des Agents als Befehl. Die CLI erstellt einen eigenen Schlüssel und schreibt die Konfiguration des Agents:
 
 ```bash
 phaseo codex
 phaseo claude-code
-phaseo deepseek-harness
 phaseo opencode
+phaseo fx
+phaseo deepseek-harness
 phaseo pi
 phaseo prime-agent
 phaseo openclaw
+phaseo hermes
 phaseo aider
+phaseo continue
+phaseo zed
 phaseo roo-code
 phaseo kilo-code
-phaseo continue
 phaseo cursor
-phaseo zed
 ```
 
-Verwende bei Bedarf `--model`, `--catalog all|default` oder `--dry-run`. Die ältere Form `phaseo integrations setup <integration>` bleibt aus Kompatibilitätsgründen verfügbar, ist aber nicht erforderlich.
+Nutze bei Bedarf `--model`, `--catalog all|default` oder `--dry-run`. `phaseo setup <agent>` und `phaseo integrations setup <agent>` funktionieren ebenfalls.
 
-Die CLI startet Cline, Kilo Code, oh-my-pi, Muse Code und MiniMax Code mit temporärer Anbieterkonfiguration und eigenem Phaseo-Schlüssel. Jedes Werkzeug hat eine Anleitung mit Einrichtung und Fehlerbehebung: [Cline](./cline), [Kilo Code](./kilo-code), [oh-my-pi](./oh-my-pi), [Muse Code](./muse-code) und [MiniMax Code](./minimax-code).
+Um Cline, Kilo Code, oh-my-pi, Muse Code oder MiniMax Code mit temporären Einstellungen auszuführen, die beim Beenden gelöscht werden, nutze den Sitzungs-Runner. Phaseo-Flags stehen vor `--`, die eigenen Flags des Agents dahinter:
 
 ```bash
 phaseo cline --model openai/gpt-5.6-terra -- --tui
-phaseo kilo --model openai/gpt-5.6-terra --
-phaseo omp --model openai/gpt-5.6-terra --
-phaseo muse --model meta/muse-spark-1.3 --
-phaseo minimax --model openai/gpt-5.6-terra --
+phaseo kilo --model openai/gpt-5.6-terra
+phaseo omp --model openai/gpt-5.6-terra
+phaseo muse --model meta/muse-spark-1.3
+phaseo minimax --model openai/gpt-5.6-terra
 ```
 
-Verwende `phaseo run <cline|kilo|omp|muse|minimax>` für die explizite Form. Phaseo-Optionen stehen vor `--`, Werkzeugoptionen danach. Mit `--catalog all` synchronisierst du alle aktiven Phaseo-Text-/Chatmodelle; eine Vorschau ohne Zugangsdaten zu erstellen erhältst du mit:
+`phaseo run <cline|kilo|omp|muse|minimax>` ist die Langform. Ergänze `--catalog all`, um jedes aktive Phaseo-Textmodell aufzulisten, oder `--dry-run --json` für eine Vorschau, ohne einen Schlüssel zu erstellen. Die Runner bieten in einem interaktiven Terminal an, einen fehlenden Agent zu installieren (MiniMax Code nutzt unter Windows seinen offiziellen PowerShell-Installer; Muse Code muss unter Windows von Hand installiert werden). Nutze `--skip-install`, wenn du den Agent selbst verwaltest.
 
-```bash
-phaseo cline --model openai/gpt-5.6-terra --dry-run --json
-```
+[Coding-Agents](./coding-assistants.mdx) listet jeden Agent auf, was sein Befehl tut und seine Anleitung.
 
-Fehlende Installationen von Cline, Kilo Code und oh-my-pi werden interaktiv angeboten. Muse Code und MiniMax Code verwenden ihre offiziellen Installationsprogramme, wenn der Befehl fehlt. Unter Windows nutzt MiniMax Code den offiziellen PowerShell-Installer; verwende `--skip-install`, wenn du die Werkzeuge separat verwaltest. Bestehende Konfigurationen von Cline, Kilo, oh-my-pi, Muse Code oder MiniMax Code werden nicht überschrieben.
+## Skripte mit der CLI schreiben
+
+Befehle mit `--json` geben schlichte strukturierte Ausgabe ohne Farbe oder Spinner aus. Sonst gehen Spinner nach `stderr` und leeren ihre Zeile, wenn sie fertig sind.
+
+| Variable | Wirkung |
+| --- | --- |
+| `NO_COLOR` | Schaltet Farbe aus. |
+| `TERM=dumb` | Schaltet Animationen aus. Ein `stderr` ohne TTY bewirkt dasselbe. |
+| `FORCE_COLOR=1` | Erzwingt Farbe, wenn ein Terminal-Wrapper sie unterstützt, aber kein TTY meldet. |
+
+## So schützt die CLI Anmeldeinformationen
+
+- Sitzungen werden im Anmeldeinformationsspeicher des Betriebssystems abgelegt. Setze `PHASEO_SESSION_BACKEND=file` nur, wenn kein Anmeldeinformationsspeicher verfügbar ist. Dann liegen Refresh-Tokens in einer Klartextdatei mit eingeschränkten Berechtigungen.
+- `phaseo logout` widerruft das gespeicherte Refresh-Token, bevor der lokale Zustand gelöscht wird.
+- Verwaltungsschlüssel brauchen ausdrückliche Berechtigungen. Inferenzschlüssel werden durch Guardrails, Routing-Richtlinien und Workspace-Einstellungen begrenzt statt durch Scopes.
+
 ## OAuth-Apps
 
-Phaseo verwendet einen OAuth-Autorisierungsserver für die offizielle CLI, benutzererstellte Anwendungen und dynamisch registrierte MCP-Clients. Die CLI nutzt die Anmeldung per Browser oder Gerätecode mit rotierenden Refresh-Tokens. Drittanbieter-Clients verwenden den Authorization-Code-Flow mit PKCE, expliziten Scopes und Workspace-Einwilligung, widerrufbare delegierte Zugriffstokens und optional eine Bindung an geschützte Ressourcen.
+Phaseo nutzt einen einzigen OAuth-Autorisierungsserver für die CLI, von Nutzern erstellte Apps und dynamisch registrierte MCP-Clients. Die CLI nutzt Browser- oder Geräteanmeldung mit rotierenden Refresh-Tokens. Drittanbieter-Clients nutzen den Autorisierungscode mit PKCE, ausdrückliche Scopes und Workspace-Zustimmung sowie optional eine Bindung an eine geschützte Ressource. Sie erhalten ein widerrufbares Zugriffstoken, das 7 Tage gilt, und ein rotierendes Refresh-Token, das 90 Tage ab seiner letzten Nutzung gilt. Wie die Erneuerung funktioniert, zeigt [Eine OAuth-Next.js-Workbench bauen](../../cookbook/build-an-oauth-nextjs-workbench). Wird dieselbe App erneut genehmigt, wird ihr Schlüssel erneuert, statt einen zweiten hinzuzufügen.
 
-Die gehostete Phaseo-API aktiviert OAuth für Drittanbieter. Bei selbst gehosteten oder Vorschau-Deployments der API bleibt es deaktiviert, sofern `PHASEO_THIRD_PARTY_OAUTH_ENABLED` nicht auf einen Wahrheitswert gesetzt wird. Akzeptiert werden `1`, `true`, `yes` und `on`, ohne Beachtung der Groß-/Kleinschreibung und nach Entfernen von Leerzeichen. Die Aktivierung ermöglicht die Verwaltung benutzererstellter OAuth-Apps und die dynamische Client-Registrierung. Prüfe deshalb Redirect-URIs, Einwilligung, Client-Secrets, Rate-Limits und Workspace-Autorisierung sorgfältig.
+Bei der gehosteten Phaseo API ist Drittanbieter-OAuth aktiviert. Selbst gehostete und Vorschau-Deployments der API lassen es deaktiviert, sofern `PHASEO_THIRD_PARTY_OAUTH_ENABLED` nicht wahr ist: `1`, `true`, `yes` oder `on`, ohne Beachtung der Groß- und Kleinschreibung und umgebender Leerzeichen.
 
-```bash title=".env"
+```bash .env
 PHASEO_THIRD_PARTY_OAUTH_ENABLED=true
 ```
 
-```bash title="Docker"
-docker run -e PHASEO_THIRD_PARTY_OAUTH_ENABLED=true phaseo
-```
-
-```yaml title="Kubernetes"
-env:
-  - name: PHASEO_THIRD_PARTY_OAUTH_ENABLED
-    value: "true"
-```
-
-## Sicherheitsmodell
-
-- CLI-Sitzungen erfordern standardmäßig einen sicheren, vom Betriebssystem bereitgestellten Speicher. Setze `PHASEO_SESSION_BACKEND=file` nur ausdrücklich, wenn kein Credential Store des Betriebssystems verfügbar ist; Refresh-Tokens werden dann in einer Klartextdatei mit eingeschränkten Dateirechten gespeichert.
-- `phaseo logout` widerruft das gespeicherte Refresh-Token, bevor der lokale Zustand gelöscht wird.
-- Verwaltungsschlüssel erfordern ausdrücklich festgelegte Fähigkeiten.
-- Normale Inferenzschlüssel beruhen auf Guardrails, Routing-Richtlinien und Workspace-Einstellungen statt auf einem eigenen Scope-Modell.
+Das Aktivieren macht die Verwaltung nutzererstellter OAuth-Apps und die dynamische Client-Registrierung verfügbar. Prüfe also vorher deine Einstellungen für Weiterleitungs-URIs, Zustimmung, Client-Secrets, Ratenlimits und Workspace-Autorisierung.
 
 ## Aktualisieren
 
+```bash
+phaseo update
+```
+
+Damit wird das Update mit dem Paketmanager ausgeführt, mit dem du die CLI installiert hast. So aktualisierst du von Hand:
+
 <CodeGroup>
 
-```bash title="npm"
+```bash npm
 npm install -g @phaseo/cli@latest
 ```
 
-```bash title="pnpm"
+```bash pnpm
 pnpm add -g @phaseo/cli@latest
 ```
 
-```bash title="yarn"
+```bash yarn
 yarn global add @phaseo/cli@latest
 ```
 
-```bash title="bun"
+```bash bun
 bun add -g @phaseo/cli@latest
 ```
 
 </CodeGroup>
-
-## Nächste Schritte
-
-- [API-Verwaltungsschlüssel](../../developers/management-api-keys.mdx)
-- [Authentifizierung](../../developers/authentication.mdx)
-- [Codex](./codex.mdx)
-- [Claude Code](./claude-code.mdx)
-- [Cline](./cline)
-- [Kilo Code](./kilo-code)
-- [oh-my-pi](./oh-my-pi)
-- [Muse Code](./muse-code)
-- [MiniMax Code](./minimax-code)

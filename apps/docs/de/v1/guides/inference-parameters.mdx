@@ -1,39 +1,84 @@
 ---
 icon: "sliders-horizontal"
 title: "Inferenzparameter"
-description: "Wie zentrale Anfrageparameter Qualität, Determinismus, Latenz und Kosten beeinflussen."
+description: "Wie Sampling, Strafen und Ausgabelimits Qualität, Determinismus, Latenz und Kosten beeinflussen."
 ---
 
-Quantisierung ist eine Hälfte des Modellverhaltens.  
-Inferenzparameter sind die andere Hälfte.
+Setze `temperature`, `top_p` und ein Ausgabelimit bei jeder Anfrage, um Vielfalt gegen Wiederholbarkeit und Länge gegen Kosten abzuwägen. Die [Quantisierung](./quantization.mdx) des Modells legt die Qualitätsobergrenze fest; diese Parameter entscheiden, wie das Modell innerhalb dieser Grenze jedes nächste Token wählt.
 
-## Zentrale Parameter
+```json
+{
+  "model": "openai/gpt-6-astra",
+  "messages": [{ "role": "user", "content": "Extract the invoice total as JSON." }],
+  "temperature": 0.1,
+  "top_p": 1,
+  "max_tokens": 200
+}
+```
 
-| Parameter | Steuerung | Typische Auswirkung |
+Diese Seite erklärt, was jede Steuerung bewirkt und wo du anfängst. Typ, zulässige Werte und Standardwert jedes Felds auf jedem Endpunkt findest du in der [Parameterreferenz](../api-reference/parameters.mdx).
+
+## Zufälligkeit steuern
+
+| Parameter | Was er bewirkt | Hinweise |
 | --- | --- | --- |
-| `temperature` | Zufälligkeit bei der Token-Auswahl | Höher bedeutet kreativere, variablere Antworten; niedriger bedeutet mehr Determinismus |
-| `top_p` | Grenzwert für Nucleus-Sampling | Niedriger ergibt sicherere und stärker fokussierte Ausgaben |
-| `top_k` | Größe des Kandidatenpools (sofern unterstützt) | Niedriger ergibt engere und besser vorhersehbare Ausgaben |
-| `max_tokens` / `max_output_tokens` | Maximale Länge der generierten Ausgabe | Begrenzt Kosten und Latenz, kann Antworten aber abschneiden |
-| `stop` | Explizite Stoppsequenzen | Verbessert die Ausgabeformatierung und die Zuverlässigkeit der Auswertung |
-| `seed` | Zufalls-Seed (sofern unterstützt) | Verbessert die Reproduzierbarkeit beim Debuggen und Testen |
+| `temperature` | Skaliert die gesamte Zufälligkeit. Höher ist abwechslungsreicher, niedriger deterministischer. | Meist der erste Wert, den du abstimmst. |
+| `top_p` | Sampelt nur aus den wahrscheinlichsten Tokens, deren Wahrscheinlichkeiten zusammen `top_p` ergeben. Niedriger ergibt sicherere, fokussiertere Ausgaben. | Oft mit einer moderaten Temperatur kombiniert. |
+| `top_k` | Sampelt nur aus den `k` wahrscheinlichsten Tokens. Niedriger ergibt engere, besser vorhersehbare Ausgaben. | Nicht bei jedem Anbieter verfügbar. |
+| `seed` | Legt den Zufalls-Seed fest, sodass Durchläufe beim Debuggen und Testen besser wiederholbar sind. | Nur wo der Anbieter es unterstützt. |
 
-## Zu beachtende Wechselwirkungen
+`temperature` und `top_p` verändern beide die Zufälligkeit, also stimme jeweils nur einen ab. Ein mit wenigen Bits quantisiertes Modell mit hoher Zufälligkeit kann die Ausgabe merklich instabiler machen.
 
-- Sowohl `temperature` als auch `top_p` beeinflussen die Zufälligkeit. Ändere beim Abstimmen jeweils nur einen Wert.
-- Aggressive Quantisierung mit wenigen Bits und hohe Zufälligkeit können die Instabilität der Ausgabe verstärken.
-- Ein niedriger Wert für `max_tokens` kann wie ein Modellfehler wirken, obwohl die Antwort nur abgeschnitten wurde.
+## Wiederholungen reduzieren
 
-## Empfohlene Ausgangswerte
+| Parameter | Was er bewirkt | Hinweise |
+| --- | --- | --- |
+| `frequency_penalty` | Bestraft wiederholte Tokens und Phrasen. | Reduziert repetitive Schleifen. |
+| `presence_penalty` | Fördert neue Tokens und Themen. | Nützlich für eine breitere Erkundung. |
+| `repetition_penalty` | Bestraft wiederholten Text. | Dasselbe Ziel wie die Strafen oben; die genaue Wirkung hängt von Anbieter und Modell ab. |
 
-- `temperature`: `0.2` bis `0.7`, je nach gewünschter Kreativität
-- `top_p`: `0.9` bis `1.0`
-- `max_tokens`: passend zur erwarteten Ausgabelänge statt als pauschal sehr hoher Wert
+## Die Ausgabe begrenzen und beenden
 
-## Abstimmungsablauf
+Das Ausgabelimit ist `max_tokens` bei Chat Completions und Anthropic Messages und `max_output_tokens` bei Responses. Es begrenzt Kosten und Latenz; ist es zu niedrig, wird die Antwort abgeschnitten. Eine Antwort, die vorzeitig mit `finish_reason: "length"` endet, hat das Ausgabelimit erreicht; das ist kein Modellfehler.
 
-1. Lege zuerst die Quantisierung fest.
-2. Fixiere einen Evaluierungssatz.
-3. Variiere jeweils nur einen Parameter.
-4. Vergleiche Qualität, Latenz und Token-Verbrauch.
-5. Verwende getrennte Presets für unterschiedliche Endpoints und Anwendungsfälle.
+`stop` nimmt Sequenzen an, die die Ausgabe beenden, wodurch sich die Ausgabe leichter eingrenzen und auswerten lässt. Die Felder jedes Endpunkts findest du unter [Ausgabelänge und Stoppen](../api-reference/parameters.mdx#output-length-and-stopping).
+
+## Wenn ein Anbieter einen Parameter nicht unterstützt
+
+Nicht jeder Anbieter unterstützt `top_k`, `seed`, `stop` oder die Strafen. Unterstützt der Anbieter, der die Anfrage bedient, einen davon nicht, verwirft Phaseo diesen Parameter, statt die Anfrage abzulehnen, und listet ihn im Antwort-Header `X-Phaseo-Dropped-Params` auf. Ausgabelimits werden nie verworfen. Die vollständige Liste findest du unter [Nicht unterstützte Parameter](../api-reference/parameters.mdx#unsupported-parameters).
+
+## Mit diesen Werten beginnen
+
+| Aufgabe | Beginne mit |
+| --- | --- |
+| Extraktion, Klassifizierung, JSON | `temperature` `0.0` bis `0.2`, enges Sampling |
+| Allgemeine Assistentenantworten | `temperature` `0.3` bis `0.7`, `top_p` `0.9` bis `1.0` |
+| Kreatives Schreiben | Höhere `temperature` und breiteres Sampling, mit genauerer Bewertung |
+
+Bemiss `max_tokens` an der Ausgabe, die du für jede Aufgabe erwartest, statt einen großen Wert für alles zu nutzen. Stimme jede Aufgabe einzeln ab, statt ein Profil für alles zu verwenden. Erhöhe bei kreativen Aufgaben die Zufälligkeit schrittweise und prüfe die Ausgabe von Hand.
+
+## Eine schlechte Einstellung erkennen
+
+| Symptom | Wahrscheinliche Ursache |
+| --- | --- |
+| Widersprüchliche Fakten, instabile strukturierte Ausgabe | Zu zufällig |
+| Repetitive oder fade Antworten | Zu deterministisch |
+| Holprige Formulierungen, Abschweifen vom Thema | Strafen zu hoch |
+| Antwort abgeschnitten, `finish_reason: "length"` | Ausgabelimit zu niedrig |
+
+## Parameter abstimmen
+
+<Steps>
+<Step title="Zuerst Modell und Quantisierung wählen">
+Siehe [Quantisierung](./quantization.mdx#pick-a-precision).
+</Step>
+<Step title="Einen Evaluierungssatz festlegen">
+Verwende für jeden Durchlauf dieselben Prompts, damit die Ergebnisse vergleichbar sind.
+</Step>
+<Step title="Jeweils nur einen Parameter ändern">
+Vergleiche Qualität, Latenz und Token-Nutzung für jeden Wert.
+</Step>
+<Step title="Das Ergebnis pro Aufgabe speichern">
+Behalte getrennte [Voreinstellungen](./presets.mdx) für jeden Endpunkt oder Anwendungsfall, damit Aufrufer die abgestimmten Standardwerte übernehmen.
+</Step>
+</Steps>

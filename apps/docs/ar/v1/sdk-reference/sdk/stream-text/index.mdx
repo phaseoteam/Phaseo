@@ -1,17 +1,18 @@
 ---
 icon: "radio"
-title: "بث النصوص (AI SDK)"
-description: "أنشئ النصوص عبر البث باستخدام Vercel AI SDK وPhaseo."
+title: "بث النص (AI SDK)"
+sidebarTitle: "بث النص"
+description: "توليد النص مع البث باستخدام Vercel AI SDK وPhaseo."
 ---
 
-استخدم `streamText` عندما تريد استلام الرموز الجزئية فور وصولها.
+استدعِ `streamText` مع `phaseo(modelId)` واقرأ `textStream` لتحصل على النص فور وصوله. تعود `streamText` فورًا؛ اقرأ `providerMetadata` بعد انتهاء البث.
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { streamText } from "ai";
 
 const result = streamText({
-  model: phaseo("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-6-astra"),
   prompt: "Explain SSE streaming in plain language.",
 });
 
@@ -22,14 +23,14 @@ for await (const chunk of result.textStream) {
 console.log(await result.providerMetadata);
 ```
 
-## البث باستخدام الرسائل
+## البث من سجل المحادثة
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { streamText } from "ai";
 
 const result = streamText({
-  model: phaseo("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-6-astra"),
   messages: [
     { role: "user", content: "Write a five-step rollout plan for a gateway migration." },
   ],
@@ -44,8 +45,19 @@ console.log(text);
 console.log(await result.providerMetadata);
 ```
 
-## نصائح للإنتاج
+## إيقاف بث متروك
 
-- فضّل البث للاستجابات الطويلة والواجهات التفاعلية.
-- عالج الإلغاء والمهلة في بيئة التشغيل للتدفقات المهجورة.
-- حدّث معرّفات النماذج عبر `/v1/models` لتجنّب الأسماء المستعارة القديمة.
+مرّر `abortSignal` إلى `streamText` وألغِه عندما يغادر المستخدم أو تنقضي مهلة، حتى لا يستمر الطلب في العمل:
+
+```ts
+const controller = new AbortController();
+setTimeout(() => controller.abort(), 60_000);
+
+const result = streamText({
+  model: phaseo("openai/gpt-6-astra"),
+  prompt: "Write a long report.",
+  abortSignal: controller.signal,
+});
+```
+
+اقرأ معرّفات النماذج من `/v1/models` بدلًا من تثبيتها في الشيفرة؛ راجع [اكتشاف النماذج](/ar/v1/sdk-reference/sdk/get-models).

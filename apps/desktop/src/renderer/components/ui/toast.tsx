@@ -4,7 +4,7 @@ import { CircleAlert, CircleCheck, Info, LoaderCircle, TriangleAlert, X } from "
 import { cn } from "../../lib/utils"
 
 /**
- * One app-wide toast stack, after T3 Code's: `toastManager.add({ type, title, description })` from anywhere, with an
+ * One app-wide toast stack: `toastManager.add({ type, title, description })` from anywhere, with an
  * optional `actionProps` button. Errors stay until dismissed; everything else leaves on its own.
  */
 export const toastManager = Toast.createToastManager()

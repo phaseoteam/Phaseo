@@ -4,13 +4,23 @@ description: "Führe einen Echtzeit-Sprachanruf über das Phaseo-Relay, beende i
 icon: "phone"
 ---
 
+Erstelle eine Sitzung auf deinem Server, verbinde deinen Client per WebSocket mit dem Phaseo-Relay und streame Mikrofon-Audio an das Echtzeitmodell eines Anbieters. Das Relay leitet die Events des Anbieters unverändert weiter, misst den Anruf, während er läuft, und fügt drei eigene Events hinzu: `session.warning` während des Anrufs, `session.end` zum Auflegen und `session.ended` mit der endgültigen Abrechnung.
+
 <Note>
-Echtzeit-Sprache ist in der Beta, und der Zugriff wird pro Workspace freigeschaltet.
+Echtzeit-Sprache ist in der Beta, und der Zugriff wird pro Arbeitsbereich freigeschaltet.
 </Note>
 
-Eine Echtzeitsitzung ist ein Sprachanruf zwischen deinem Client und dem Echtzeitmodell eines Anbieters, den Phaseo weiterleitet, damit er gemessen und abgerechnet werden kann. Das Relay leitet die Events des Anbieters unverändert weiter und fügt drei eigene hinzu: `session.end`, `session.warning` und `session.ended`.
+```mermaid
+flowchart LR
+  create["POST /v1/audio/realtime/sessions"] --> connect["WebSocket zu connect.url öffnen"]
+  connect --> ready["relay.connected"]
+  ready --> talk["client.audio streamen, Anbieter-Events empfangen"]
+  talk -->|"session.warning"| talk
+  talk -->|"Du sendest session.end, oder ein Limit wird erreicht"| ended["session.ended mit Nutzung und Kosten"]
+  ended --> closed["Socket schließt mit 1000"]
+```
 
-## Sitzung starten
+## Eine Sitzung starten
 
 Erstelle die Sitzung auf deinem Server:
 
@@ -21,11 +31,20 @@ curl https://api.phaseo.app/v1/audio/realtime/sessions \
   -d '{"model": "openai/gpt-realtime-2", "voice": "marin"}'
 ```
 
-Die Antwort enthält `client_secret`, `connect.url`, `max_duration_seconds` und `idle_timeout_seconds` (bei API-Sitzungen immer `null`). Öffne einen WebSocket zu `connect.url` auf `api.phaseo.app` mit den WebSocket-Subprotokollen `statsync-realtime` und `rtsec.<client_secret>`. Das Relay wählt `statsync-realtime` aus; Browser und die meisten WebSocket-Bibliotheken lassen den Handshake scheitern, wenn du nur `rtsec.<client_secret>` anbietest, weil dann kein Protokoll ausgewählt wird. Das Relay sendet `relay.connected`, sobald der Anbieter bereit ist, und nimmt danach Mikrofon-Audio als `{"type": "client.audio", "audio": "<base64 PCM16>"}` an: 24 kHz für OpenAI, xAI und ElevenLabs, 16 kHz für Google und Mistral.
+Die Antwort enthält `client_secret`, `connect.url`, `max_duration_seconds` und `idle_timeout_seconds` (bei API-Sitzungen immer `null`).
+
+Öffne einen WebSocket zu `connect.url` auf `api.phaseo.app` und biete zwei Subprotokolle an: `statsync-realtime` und `rtsec.<client_secret>`. Das Relay wählt `statsync-realtime` aus. Bietest du nur `rtsec.<client_secret>` an, lassen Browser und die meisten WebSocket-Bibliotheken den Handshake scheitern, weil kein Protokoll ausgewählt wird.
+
+Das Relay sendet `relay.connected`, sobald der Anbieter bereit ist. Sende dann Mikrofon-Audio als `{"type": "client.audio", "audio": "<base64 PCM16>"}` mit der Abtastrate des Anbieters:
+
+| Anbieter | Eingabe-Audio |
+| --- | --- |
+| OpenAI, xAI, ElevenLabs, GPT Live | 24 kHz PCM16 |
+| Google, Mistral | 16 kHz PCM16 |
 
 Phaseo reserviert beim Start der Sitzung $5 Guthaben und erweitert die Reservierung, während der Anruf läuft.
 
-Die SDKs für [TypeScript](/de/v1/sdk-reference/typescript/audio-realtime) und [Python](/de/v1/sdk-reference/python/audio-realtime) erledigen das alles für dich: `client.realtime.connect()` erstellt die Sitzung und öffnet den Socket, und `session.end()` gibt `session.ended` zurück. Die anderen SDKs haben denselben kleinen Client; die README jedes Pakets enthält ein Beispiel.
+Die [SDKs für TypeScript und Python](/de/v1/sdk-reference/client/audio-realtime) erledigen das alles für dich: `client.realtime.connect()` erstellt die Sitzung und öffnet den Socket, und `session.end()` gibt `session.ended` zurück. Die anderen SDKs haben denselben kleinen Client; die README jedes Pakets enthält ein Beispiel.
 
 | SDK | Verbinden | WebSocket-Bibliothek |
 | --- | --- | --- |
@@ -42,7 +61,7 @@ Das C++ SDK hat keinen Echtzeit-Client.
 
 Streame während des gesamten Anrufs Mikrofon-Audio, auch Stille. Google schließt eine Verbindung, die etwa 150 Sekunden lang kein Audio empfängt (Close-Code `1008`), und der Anruf endet dann mit `provider_closed`. Das Relay sendet nach 2 Minuten ohne Audio eine `provider_closing`-Warnung mit `threshold: "input_idle"`. Stille zwischen den Turns gehört zu keinem Turn und wird daher nicht abgerechnet.
 
-Google ersetzt außerdem jede Verbindung nach etwa 10 Minuten. Das Relay verlegt den Anruf mit der Sitzungswiederaufnahme von Google auf eine neue Verbindung, hält deinen Socket offen und sendet `{"type": "relay.provider_reconnected", "reconnects": 1}`, wenn der Wechsel abgeschlossen ist. Audio, das du während des Wechsels sendest (meist weniger als eine Sekunde), wird zurückgehalten und weitergegeben. Die wiederaufgenommene Verbindung verarbeitet die bisherige Unterhaltung erneut, und Google rechnet diese beim nächsten Turn noch einmal als Eingabe-Token ab. Ein langer Anruf kostet daher nach jedem Wechsel pro Turn etwas mehr. All das ist in `usage` und in der Abrechnung enthalten. Das Relay warnt nur dann mit `provider_closing`, wenn es die Verbindung nicht wiederaufnehmen kann, und der Anruf endet dann, wenn Google die Verbindung schließt.
+Google ersetzt außerdem jede Verbindung nach etwa 10 Minuten. Das Relay verlegt den Anruf mit der Sitzungswiederaufnahme von Google auf eine neue Verbindung, hält deinen Socket offen und sendet `{"type": "relay.provider_reconnected", "reconnects": 1}`, wenn der Wechsel abgeschlossen ist. Audio, das du während des Wechsels sendest (meist weniger als eine Sekunde), wird zurückgehalten und weitergegeben. Die wiederaufgenommene Verbindung verarbeitet die bisherige Unterhaltung erneut, und Google rechnet diese beim nächsten Turn noch einmal als Eingabe-Token ab, sodass ein langer Anruf nach jedem Wechsel pro Turn etwas mehr kostet. All das ist in `usage` und in der Abrechnung enthalten. Das Relay warnt nur dann mit `provider_closing`, wenn es die Verbindung nicht wiederaufnehmen kann, und der Anruf endet dann, wenn Google die Verbindung schließt.
 
 ### GPT-Live-Sitzungen
 
@@ -103,9 +122,9 @@ Verbinde dich auf dieselbe Weise und streame 16-kHz-PCM16 als `client.audio`. Mi
 
 Wenn du `session.end` sendest, beendet das Relay Mistrals Audiostream und wartet bis zu 10 Sekunden auf `transcription.done` mit dem vollständigen Transkript, bevor es abrechnet und `session.ended` sendet. Bereits gesendetes Audio wird verwendet; nichts wird verworfen.
 
-Streaming-Transkription wird pro Minute gesendeten Audios abgerechnet (0,008 $ pro Minute für Voxtral Mini Transcribe Realtime 3), gemessen vom Relay. Mistrals eigene Zählung in `transcription.done` ist der Mindestbetrag. Für eine vorhandene Aufnahme verwende stattdessen [Audio-Transkriptionen](/de/v1/api-reference/endpoint/audio-transcriptions).
+Streaming-Transkription wird pro Minute gesendeten Audios abgerechnet ($0.008 pro Minute für Voxtral Mini Transcribe Realtime 3), gemessen vom Relay. Mistrals eigene Zählung in `transcription.done` ist der Mindestbetrag. Für eine vorhandene Aufnahme verwende stattdessen [Audio-Transkriptionen](/de/v1/api-reference/endpoint/audio-transcriptions).
 
-## Sitzung beenden
+## Eine Sitzung beenden
 
 Sende `session.end`, wenn der Anrufer auflegt:
 
@@ -130,7 +149,7 @@ Das Relay dann:
 
 Wenn du den Socket ohne `session.end` schließt, endet der Anruf ebenfalls und wird genauso abgerechnet, aber dein Client erhält kein `session.ended`.
 
-## session.ended
+## Die endgültige Abrechnung lesen: `session.ended`
 
 Das Relay sendet `session.ended` bei jedem Ende: wenn du es angefordert hast, wenn der Anbieter es ausgelöst hat und wenn das Gateway es ausgelöst hat. Es wird gesendet, solange dein Socket noch offen ist, kurz bevor das Relay ihn schließt.
 
@@ -161,7 +180,7 @@ Das Relay sendet `session.ended` bei jedem Ende: wenn du es angefordert hast, we
 | `reason` | Ein stabiler Grundcode. Siehe [Grundcodes](#reason-codes). |
 | `initiated_by` | `client`, `gateway` oder `provider`. |
 | `duration_seconds` | Zeit seit der Verbindung des Relays. |
-| `usage` | Die abgerechneten Messgrößen: Token-Anzahlen nach Modalität und, bei xAI und GPT Live, `audio_seconds`. |
+| `usage` | Die Nutzung, nach der der Anruf abgerechnet wird: Token-Anzahlen nach Modalität, einschließlich Cache-Lese- und Schreibvorgängen; `audio_seconds`, die Audiodauer des Anrufs, nach der xAI, ElevenLabs, Mistral und die Stimme von GPT Live abgerechnet werden (bei nach Token abgerechneten Anrufen nur zur Information); und `native_web_search_requests` für Websuchen von GPT Live. Ist `billing_status` `pending` oder `unresolved`, enthält es die bisher bekannte Nutzung; `final_bill` liefert die endgültigen Messgrößen. |
 | `cost.estimated` | `true`, wenn ein Teil der Nutzung anhand des gemessenen Audios geschätzt wurde, weil die Nutzungsdaten des Anbieters für einen unterbrochenen Turn nie ankamen. `estimate_basis` nennt den Grund. |
 | `cost.debt_nanos` | Der Teil der Kosten, der als Überziehung über deine Reservierungen und dein freies Guthaben hinaus berechnet wurde. |
 | `cost.uncollected_nanos` | Kosten über dem Überziehungslimit, die nicht berechnet wurden. |
@@ -175,7 +194,6 @@ Wird die Abrechnung noch erneut versucht, ist `billing_status` `pending`, und `c
 ```
 
 <span id="reason-codes"></span>
-
 ### Grundcodes
 
 | `reason` | `initiated_by` | Wann |
@@ -190,17 +208,17 @@ Wird die Abrechnung noch erneut versucht, ist `billing_status` `pending`, und `c
 | `key_revoked` | gateway | Der API-Schlüssel wurde während des Anrufs widerrufen oder gelöscht. |
 | `key_expired` | gateway | Der API-Schlüssel ist während des Anrufs abgelaufen. |
 | `key_blocked` | gateway | Der API-Schlüssel wurde während des Anrufs pausiert. |
-| `workspace_disabled` | gateway | Der Workspace existiert nicht mehr. |
-| `policy_blocked` | gateway | Eine Änderung einer Workspace-Richtlinie hat das Modell blockiert oder den Anbieter aus der Liste der erlaubten Anbieter entfernt und war 30 Sekunden nach der `policy_blocked`-Warnung noch in Kraft. |
+| `workspace_disabled` | gateway | Der Arbeitsbereich existiert nicht mehr. |
+| `policy_blocked` | gateway | Eine Änderung einer Arbeitsbereichsrichtlinie hat das Modell blockiert oder den Anbieter aus der Liste der erlaubten Anbieter entfernt und war 30 Sekunden nach der `policy_blocked`-Warnung noch in Kraft. |
 | `input_rejected` | gateway | Das Relay hat Client-Audio abgelehnt: zu groß, schneller als Echtzeit, oder der Anbieter ist in Rückstand geraten. |
 | `session_reconciled` | gateway | Das Relay hat seinen Zustand verloren, und die Sitzung wurde durch den Abgleich geschlossen. |
 | `gateway_error` | gateway | Phaseo konnte die Events des Anbieters nicht verarbeiten oder die Nutzung nicht erfassen. |
 | `idle_timeout` | gateway | Nur im Playground: fünf Minuten ohne Audio. |
-| `spend_limit_reached` | gateway | Nur im Playground: Ein Ausgabenlimit des Schlüssels oder ein Workspace-Budget wurde erreicht. |
+| `spend_limit_reached` | gateway | Nur im Playground: Ein Ausgabenlimit des Schlüssels oder ein Budget des Arbeitsbereichs wurde erreicht. |
 
 Es können neue Codes hinzukommen. Behandle einen unbekannten `reason` deshalb wie `gateway_error`.
 
-## session.warning
+## Warnungen behandeln: `session.warning`
 
 Warnungen sagen dir, was bevorsteht, ohne den Anruf zu beenden. Jeder Code wird pro Schwellenwert höchstens einmal gesendet.
 
@@ -210,18 +228,18 @@ Warnungen sagen dir, was bevorsteht, ohne den Anruf zu beenden. Jeder Code wird 
 
 | `code` | Zusätzliche Felder | Wann |
 | --- | --- | --- |
-| `max_duration_approaching` | `seconds_remaining`, `expires_at` | 2 Minuten und 30 Sekunden vor dem Sitzungslimit des Anbieters. |
+| `max_duration_approaching` | `seconds_remaining`, `expires_at` | 2 Minuten vor dem Sitzungslimit des Anbieters und erneut 30 Sekunden davor. |
 | `provider_closing` | `seconds_remaining` und im Leerlauffall `threshold: "input_idle"` | Google wird die Verbindung schließen: nach einem `goAway`, nach dem das Relay die Verbindung nicht wiederaufnehmen konnte, oder (`input_idle`), weil seit 2 Minuten kein Audio angekommen ist. |
 | `funds_low` | `remaining_usd` | Die Guthabenreservierung konnte nicht erweitert werden. Der Anruf läuft mit deinem freien Guthaben weiter. |
 | `overdraft_in_use` | `remaining_usd`, `overdraft_used_usd` | Dein freies Guthaben ist aufgebraucht, und der Anruf läuft auf Überziehung. Wird erneut gesendet, wenn weniger als $0.25 des Limits übrig sind. |
-| `spend_limit_exceeded` | `limit` (`key` oder `workspace_budget`) | Ein Ausgabenlimit des Schlüssels oder ein Workspace-Budget wurde erreicht. Der Anruf läuft weiter; neue Anfragen werden abgelehnt. |
-| `policy_blocked` | `status`, dazu `seconds_remaining` und `ends_at`, wenn `status` den Wert `ending` hat | Eine Workspace-Richtlinie blockiert den Anruf jetzt, oder sein Anbieter wurde aus der Liste der erlaubten Anbieter entfernt. Der Anruf endet nach 30 Sekunden, sofern die Änderung nicht rückgängig gemacht wird; in diesem Fall kommt eine zweite Warnung mit `status: "cleared"` an. |
+| `spend_limit_exceeded` | `limit` (`key` oder `workspace_budget`) | Ein Ausgabenlimit des Schlüssels oder ein Budget des Arbeitsbereichs wurde erreicht. Der Anruf läuft weiter; neue Anfragen werden abgelehnt. |
+| `policy_blocked` | `status`, dazu `seconds_remaining` und `ends_at`, wenn `status` den Wert `ending` hat | Eine Arbeitsbereichsrichtlinie blockiert den Anruf jetzt, oder sein Anbieter wurde aus der Liste der erlaubten Anbieter entfernt. Der Anruf endet nach 30 Sekunden, sofern die Änderung nicht rückgängig gemacht wird; in diesem Fall kommt eine zweite Warnung mit `status: "cleared"` an. |
 
 `remaining_usd` ist der Betrag, den der Anruf noch ausgeben kann, bevor er endet, einschließlich der Überziehung.
 
-## Limits
+## Wann ein Anruf von selbst endet
 
-API-Sitzungen werden nie wegen Inaktivität beendet, und Ausgabenlimits lösen nur Warnungen aus. Ein Anruf endet nur dann von selbst, wenn einer dieser Fälle eintritt:
+Phaseo beendet API-Sitzungen nie wegen Inaktivität, und Ausgabenlimits lösen nur Warnungen aus. Ein Anruf endet nur dann von selbst, wenn einer dieser Fälle eintritt:
 
 | Limit | Wert |
 | --- | --- |
@@ -232,7 +250,7 @@ API-Sitzungen werden nie wegen Inaktivität beendet, und Ausgabenlimits lösen n
 | ElevenLabs Realtime | 30 Minuten |
 | Mistral-Streaming-Transkription | 60 Minuten |
 | Überziehungslimit | $1 über deine Reservierungen und dein freies Guthaben hinaus |
-| Verlorener Zugriff | Der Schlüssel wird widerrufen, läuft ab oder wird pausiert, oder der Workspace wird entfernt. Wird innerhalb von etwa einer Minute erkannt, danach endet der Anruf ohne Karenzzeit. |
+| Verlorener Zugriff | Der Schlüssel wird widerrufen, läuft ab oder wird pausiert, oder der Arbeitsbereich wird entfernt. Wird innerhalb von etwa einer Minute erkannt, danach endet der Anruf ohne Karenzzeit. |
 | Richtlinienänderung | 30 Sekunden nach einer `policy_blocked`-Warnung, wenn die Richtlinie den Anruf weiterhin blockiert |
 
 Sitzungslimits zählen ab der Verbindung des Relays, nicht ab der Erstellung der Sitzung.

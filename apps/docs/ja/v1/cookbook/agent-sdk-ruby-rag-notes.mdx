@@ -1,64 +1,92 @@
 ---
-title: "Ruby Agent SDKで社内メモを要約する"
+title: "Ruby Agent SDK で社内メモを要約する"
+sidebarTitle: "Ruby で社内メモを要約する"
 icon: "notebook-tabs"
-description: "Ruby Agent SDKでローカルメモを検索し、Phaseo Gateway経由で範囲を絞った要約を返します。"
+description: "Ruby Agent SDK を使い、ローカルのメモを検索して、Phaseo Gateway 経由で範囲を限定した要約を 1 つ返します。"
 ---
 
-オーケストレーションを別のシステムに任せず、Rubyサービス内に小さな社内メモアシスタントを作る場合に、このレシピを使います。
+ローカルツールで社内メモを検索し、短い段落 1 つで回答する Ruby エージェントを、オーケストレーションを別のシステムに任せずに実行します。完成すると、プリセットに関するメモを要約するスクリプトが 1 つできます。
 
-## 1. SDKを準備する
+ツールは固定のサンプルデータを返すため、このスクリプトは例示用です。実際には独自のメモストアでの検索に置き換えてください。データをすでに管理しており、ツールの入力が単純で決定的な Ruby アプリに適しています。
 
-<Note type="warning">Ruby Agent SDKパッケージはまだRubyGemsで公開されていません。[ソースからのインストール手順](../sdk-reference/ruby/agent-sdk-installation.mdx)に従ってください。</Note>
+## 作成する
 
-## 2. メモ検索ツールを定義する
+<Steps>
+<Step title="インストールする">
 
-```ruby
+```bash
+gem install phaseo_agent_sdk
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+または、`Gemfile` に `gem "phaseo_agent_sdk"` を追加します。`phaseo_sdk` も一緒にインストールされ、Ruby 3.2 以降が必要です。[Ruby Agent SDK のインストール](../sdk-reference/agent/installation)をご覧ください。
+
+</Step>
+<Step title="エージェントを書く">
+
+```ruby notes.rb
+require "phaseo_agent_sdk"
+
+TOPICS = %w[presets routing guardrails].freeze
+
 lookup_note = PhaseoAgentSdk.define_tool(
   PhaseoAgentSdk::Tool.new(
     id: "lookup-note",
     description: "Look up one internal note by topic.",
     parameters: {
       type: "object",
-      properties: {
-        topic: { type: "string" },
-      },
+      properties: { topic: { type: "string", enum: TOPICS } },
       required: ["topic"],
+      additionalProperties: false
     },
+    # 引数はモデルから来ます。既知のトピックだけが execute に届きます。
+    input_schema: lambda do |input|
+      raise ArgumentError, "topic must be one of #{TOPICS.join(', ')}" unless input.is_a?(Hash) && TOPICS.include?(input["topic"])
+
+      input
+    end,
     execute: lambda do |input, _context|
       {
         topic: input["topic"],
-        summary: "Presets centralize routing defaults so app code stays smaller.",
+        summary: "Presets centralize routing defaults so app code stays smaller."
       }
     end
   )
 )
-```
 
-## 3. エージェントを作成して実行する
-
-```ruby
 agent = PhaseoAgentSdk.create_agent(
   id: "notes-agent",
-  model: "openai/gpt-5.4-nano",
+  model: "openai/gpt-6-astra",
   instructions: "Use tools when helpful and answer in one short paragraph.",
-  tools: [lookup_note]
+  tools: [lookup_note],
+  max_steps: 4
 )
 
+# PHASEO_API_KEY を環境変数から読み取ります。
 result = agent.run(
   input: "Summarize our note about presets.",
   client: PhaseoAgentSdk.create_gateway_agent_client
 )
 
+puts result.run.status
 puts result.output
 ```
 
-## このレシピが適する場面
+</Step>
+<Step title="実行する">
 
-- ツール入力が単純かつ決定的である
-- Rubyアプリがすでにデータソースを管理している
-- 範囲を絞ったワークフローに使いやすいローカルツールのパターンが必要
+```bash
+ruby notes.rb
+```
 
-## 関連項目
+</Step>
+</Steps>
 
-- [Ruby Agent SDK](../sdk-reference/ruby/agent-sdk.mdx)
-- [永続化できるエージェントループを作成する](./agent-sdk-durable-loop.mdx)
+## 動作を確認する
+
+- スクリプトは `completed` を出力し、続いてプリセットに関する段落を 1 つ出力します。
+- **設定 → 利用状況 → ログ** では、最初のモデルターンに `{"topic": "presets"}` を指定した `lookup-note` の呼び出しが表示されます。
+
+## 本番環境の前に
+
+ツールは読み取り専用にし、`max_steps` はジョブが許す範囲でできるだけ小さくしてください（デフォルトは `12`）。メモストアが大きい場合は、ドキュメント全体ではなく一致した箇所だけを返し、各モデルターンを小さく保ってください。実行を保存して後で再開するには、[永続化可能なループ](./agent-sdk-durable-loop)をご覧ください。Ruby SDK の `state:` オプションも同じように動作します。状態、承認、ストリーミングについては [Ruby Agent SDK リファレンス](../sdk-reference/agent/usage)で説明しています。

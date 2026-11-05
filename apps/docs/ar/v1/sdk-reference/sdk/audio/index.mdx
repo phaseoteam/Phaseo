@@ -1,28 +1,27 @@
 ---
 icon: "audio-lines"
 title: "تحويل النص إلى كلام / الكلام إلى نص (AI SDK)"
+sidebarTitle: "TTS / STT"
 description: "تحويل الكلام إلى نص (STT) وتحويل النص إلى كلام (TTS) باستخدام نماذج مزوّد Phaseo."
 ---
 
-استخدم `experimental_transcribe` مع `transcriptionModel`، و`experimental_generateSpeech` مع `speechModel`.
+مرّر `phaseo.transcriptionModel(modelId)` إلى `transcribe` لتحويل الكلام إلى نص، و`phaseo.speechModel(modelId)` إلى `generateSpeech` لتحويل النص إلى كلام. يرفع المزوّد الصوت إلى `/v1/audio/transcriptions` بصيغة نموذج multipart، ويرسل طلبات الكلام إلى `/v1/audio/speech`.
 
 ```ts
 import { readFileSync, writeFileSync } from "node:fs";
 import { phaseo } from "@phaseo/ai-sdk-provider";
-import { experimental_generateSpeech, experimental_transcribe } from "ai";
+import { generateSpeech, transcribe } from "ai";
 
-const audioInput = readFileSync("./audio.mp3");
-
-const transcription = await experimental_transcribe({
+const transcription = await transcribe({
   model: phaseo.transcriptionModel("openai/whisper-1"),
-  audioData: new Blob([audioInput], { type: "audio/mpeg" }),
+  audio: readFileSync("./audio.mp3"),
 });
 
 console.log(transcription.text);
 console.log(transcription.providerMetadata);
 
-const speech = await experimental_generateSpeech({
-  model: phaseo.speechModel("openai/tts-1"),
+const speech = await generateSpeech({
+  model: phaseo.speechModel("openai/gpt-4o-mini-tts"),
   text: "Hello from Phaseo audio.",
   voice: "alloy",
   outputFormat: "mp3",
@@ -32,9 +31,10 @@ writeFileSync("./speech.mp3", Buffer.from(speech.audio.uint8Array));
 console.log(speech.providerMetadata);
 ```
 
-## ملاحظات
+يقبل `audio` قيمة من نوع `Buffer` أو `Uint8Array` أو `ArrayBuffer` أو سلسلة base64 أو `URL`. لا يزال AI SDK 7 يصدّر الاسمين الأقدم `experimental_transcribe` و`experimental_generateSpeech` بوصفهما اسمين بديلين.
 
-- ما تزال مساعدات الصوت الحالية في AI SDK تجريبية، لذا قد تتغير أسماؤها عند صدور واجهات API مستقرة من المشروع الأصلي.
-- تختلف صيغ إدخال الصوت وإخراجه باختلاف النموذج.
-- اضبط أحجام البيانات ومهل الانتظار بما يناسب الملفات الطويلة.
-- أعد المحاولة عند تلقي استجابات `429` و`5xx` مؤقتة.
+## التعامل مع الصوت الطويل أو الطلبات الفاشلة
+
+- تعتمد صيغ الإدخال والإخراج المدعومة على النموذج.
+- ارفع مهلات الانتظار للملفات الطويلة، وأبقِ عمليات الرفع ضمن حد الحجم الخاص بالنموذج (25 MB لمعظم النماذج).
+- أعِد محاولة استجابات `429` و`5xx` المؤقتة مع تراجع تدريجي.

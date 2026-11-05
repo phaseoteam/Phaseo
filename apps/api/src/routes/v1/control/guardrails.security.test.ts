@@ -35,7 +35,9 @@ function buildSupabaseMock() {
 							return {
 								eq: (nextColumn: string, nextValue: unknown) => {
 									filters.push({ column: nextColumn, value: nextValue });
-									return {
+									const single = {
+										// Rate guardrails are left out (.neq("kind", "rate")); none are in these fixtures.
+										neq: () => single,
 										maybeSingle: async () => {
 											const index = state.guardrailRows.findIndex((row) => rowMatchesFilters(row, filters));
 											return {
@@ -44,6 +46,7 @@ function buildSupabaseMock() {
 											};
 										},
 									};
+									return single;
 								},
 							};
 						},
@@ -175,6 +178,21 @@ describe("guardrail management security", () => {
 
 		expect(response.status).toBe(409);
 		expect(await response.json()).toMatchObject({ error: "guardrail_protected" });
+		expect(state.policyVersionBumps).toEqual([]);
+		expect(state.audit).not.toHaveBeenCalled();
+	});
+
+	it("returns 409 for the workspace baseline guardrail", async () => {
+		state.guardrailRows.push({ id: "gr_baseline", workspace_id: "ws_attacker", name: "Workspace baseline" });
+		state.keyGuardrailDeleteError = { message: "workspace_baseline_guardrail_protected" };
+
+		const { guardrailsRoutes } = await import("./guardrails");
+		const response = await guardrailsRoutes.request("https://example.com/gr_baseline", { method: "DELETE" });
+		const body = await response.json();
+
+		expect(response.status).toBe(409);
+		expect(body).toMatchObject({ error: "guardrail_protected" });
+		expect(body.message).toContain("workspace baseline");
 		expect(state.policyVersionBumps).toEqual([]);
 		expect(state.audit).not.toHaveBeenCalled();
 	});

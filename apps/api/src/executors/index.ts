@@ -108,6 +108,7 @@ import { executor as scaledownText } from "./scaledown/text-generate";
 import { executor as scaledownDecisions } from "./scaledown/decisions";
 import { executor as avianText } from "./avian/text-generate";
 import { executor as morphText } from "./morph/text-generate";
+import { executor as morphDecisions } from "./morph/decisions";
 import { executor as morpheusText } from "./morpheus/text-generate";
 import { executor as nebiusTokenFactoryText } from "./nebius-token-factory/text-generate";
 import { executor as nebiusTokenFactoryEuText } from "./nebius-token-factory-eu-north-1/text-generate";
@@ -115,6 +116,7 @@ import { executor as nebiusTokenFactoryUsText } from "./nebius-token-factory-us-
 import { executor as nvidiaText } from "./nvidia/text-generate";
 import { executor as parasailText } from "./parasail/text-generate";
 import { executor as phalaText } from "./phala/text-generate";
+import { executor as phalaDecisions } from "./phala/decisions";
 import { executor as poolsideText } from "./poolside/text-generate";
 import { executor as relaceText } from "./relace/text-generate";
 import { executor as sambanovaText } from "./sambanova/text-generate";
@@ -141,6 +143,7 @@ import { executor as upstageText } from "./upstage/text-generate";
 import { executor as upstageDecisions } from "./upstage/systemone";
 import { executor as waferText } from "./wafer/text-generate";
 import { executor as tencentCloudText } from "./tencent-cloud/text-generate";
+import { executor as particleAiText } from "./particle-ai/text-generate";
 import { executor as privateModelText } from "./private-model/text-generate";
 import { executor as typesafeDecisions } from "./typesafe/systemone";
 
@@ -317,10 +320,14 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	wafer: {
 		"text.generate": waferText,
 	},
+	"wafer-us": {
+		"text.generate": waferText,
+	},
 	"wafer-zdr": {
 		"text.generate": waferText,
 	},
 	"tencent-cloud": { "text.generate": tencentCloudText },
+	"particle-ai": { "text.generate": particleAiText },
 	"alibaba-cloud": {
 		"text.generate": alibabaCloudText,
 		"image.generate": alibabaImage,
@@ -432,14 +439,14 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	alibaba: { "text.generate": alibabaText, embeddings: openaiEmbeddings, "video.generate": alibabaVideo },
 	qwen: { "text.generate": qwenText, embeddings: openaiEmbeddings, "video.generate": alibabaVideo },
 	modelscope: { "text.generate": modelscopeText, "image.generate": modelscopeImage, "image.edit": modelscopeImage },
-	morph: { "text.generate": morphText },
+	morph: { "text.generate": morphText, "decisions.make": morphDecisions },
 	morpheus: { "text.generate": morpheusText, embeddings: openaiEmbeddings, "audio.speech": nonTextAdapterExecutor },
 	"nebius-token-factory": { "text.generate": nebiusTokenFactoryText, embeddings: openaiEmbeddings, rerank: openaiRerank },
 	"nebius-token-factory-eu-north-1": { "text.generate": nebiusTokenFactoryEuText, embeddings: openaiEmbeddings },
 	"nebius-token-factory-us-central-1": { "text.generate": nebiusTokenFactoryUsText },
 	nvidia: { "text.generate": nvidiaText },
 	parasail: { "text.generate": parasailText, embeddings: openaiEmbeddings },
-	phala: { "text.generate": phalaText, embeddings: openaiEmbeddings },
+	phala: { "text.generate": phalaText, embeddings: openaiEmbeddings, "decisions.make": phalaDecisions },
 	poolside: { "text.generate": poolsideText },
 	runway: { "video.generate": runwayVideo },
 	runwayml: { "video.generate": runwayVideo },

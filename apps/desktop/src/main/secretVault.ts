@@ -2,7 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync, renameSync, rmSync } from "node
 import path from "node:path";
 import { span, type ActiveSpan } from "./diagnostics/tracer";
 
-export type CredentialEncryption = { available: () => boolean; encrypt: (value: string) => Buffer | Promise<Buffer>; decrypt: (value: Buffer) => string | Promise<string> };
+export type CredentialEncryption = { available: () => boolean | Promise<boolean>; encrypt: (value: string) => Buffer | Promise<Buffer>; decrypt: (value: Buffer) => string | Promise<string> };
 export class SecretVault {
 	/**
 	 * Decrypted values by credential, with the encrypted bytes they came from. Every chat run reads its account's key,
@@ -10,13 +10,13 @@ export class SecretVault {
 	 */
 	private readonly decrypted = new Map<string, { encrypted: Buffer; value: Promise<string> }>();
 	constructor(private readonly directory: string, private readonly encryption: CredentialEncryption) { mkdirSync(directory, { recursive: true }); }
-	available() { return this.encryption.available(); }
+	async available() { return await this.encryption.available(); }
 	private filename(id: string) {
 		if (!/^[a-zA-Z0-9-]+$/.test(id)) throw new Error("Invalid credential identifier.");
 		return path.join(this.directory, `${id}.credential`);
 	}
 	async set(id: string, value: string) {
-		if (!this.encryption.available()) throw new Error("Secure credential storage is unavailable on this device.");
+		if (!await this.encryption.available()) throw new Error("Secure credential storage is unavailable on this device.");
 		const filename = this.filename(id);
 		const encrypted = await this.encryption.encrypt(value);
 		writeFileSync(`${filename}.tmp`, encrypted, { mode: 0o600 });
@@ -25,7 +25,7 @@ export class SecretVault {
 	}
 	get(id: string): Promise<string> { return span("credentials.read", undefined, active => this.read(id, active)); }
 	private async read(id: string, active: ActiveSpan) {
-		if (!this.encryption.available()) throw new Error("Secure credential storage is unavailable on this device.");
+		if (!await this.encryption.available()) throw new Error("Secure credential storage is unavailable on this device.");
 		// The file is read every time, so a credential changed elsewhere is decrypted again.
 		const encrypted = readFileSync(this.filename(id)), cached = this.decrypted.get(id);
 		active.setAttributes({ cached: Boolean(cached?.encrypted.equals(encrypted)) });

@@ -1,0 +1,287 @@
+---
+icon: "package"
+title: "Agent SDK のインストール"
+sidebarTitle: "インストール"
+description: "Phaseo Agent SDK をインストールし、その Gateway クライアントが使う API キーを設定します。"
+---
+
+使用する言語の Agent SDK パッケージをインストールし、`PHASEO_API_KEY` を設定してから、[使い方](./usage)で最初のエージェントを作成します。各パッケージは、その言語の Phaseo コアクライアントを依存関係として一緒にインストールします。
+
+<Steps>
+<Step title="パッケージをインストールする">
+
+<Tabs>
+<Tab title="TypeScript">
+
+TypeScript または JavaScript のプロジェクトに [`@phaseo/agent-sdk`](https://www.npmjs.com/package/@phaseo/agent-sdk) 0.3.0 をインストールします。`@phaseo/sdk` も一緒にインストールされます。
+
+<CodeGroup>
+
+```bash npm
+npm install @phaseo/agent-sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/agent-sdk
+```
+
+```bash yarn
+yarn add @phaseo/agent-sdk
+```
+
+```bash bun
+bun add @phaseo/agent-sdk
+```
+
+</CodeGroup>
+
+</Tab>
+<Tab title="Python">
+
+Python 3.10 以降の環境に [`phaseo-agent-sdk`](https://pypi.org/project/phaseo-agent-sdk/) 0.3.0 をインストールします。コアの `phaseo` クライアント（3.x）も一緒にインストールされ、パッケージは `phaseo_agent` モジュールとしてインストールされます。
+
+<CodeGroup>
+
+```bash pip
+pip install phaseo-agent-sdk
+```
+
+```bash uv
+uv add phaseo-agent-sdk
+```
+
+</CodeGroup>
+
+</Tab>
+<Tab title="Go">
+
+Go 1.24 以降で [`agent-sdk-go`](https://pkg.go.dev/github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go) `v0.3.0` を追加します。Go はコアクライアント `github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3` を依存関係として追加します。
+
+```bash
+go get github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go@latest
+```
+
+エージェントパッケージを `phaseoagent` としてインポートします。
+
+```go
+import phaseoagent "github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go"
+```
+
+</Tab>
+<Tab title="C#">
+
+NuGet から [`Phaseo.AgentSdk`](https://www.nuget.org/packages/Phaseo.AgentSdk) 0.3.0 を追加します。.NET 8 以降が必要です。NuGet は `Phaseo.Sdk` を依存関係として追加します。
+
+```bash
+dotnet add package Phaseo.AgentSdk
+```
+
+エージェントの型は `PhaseoAgentSdk` 名前空間にあります。
+
+```csharp
+using PhaseoAgentSdk;
+```
+
+</Tab>
+<Tab title="PHP">
+
+Composer で [`phaseo/agent-sdk`](https://packagist.org/packages/phaseo/agent-sdk) `v0.3.0` を追加します。PHP 8.1 以降が必要です。Composer は `phaseo/sdk`（`^3.0.0`）を依存関係として追加します。
+
+```bash
+composer require phaseo/agent-sdk
+```
+
+エージェントのクラスは `Phaseo\AgentSdk` 名前空間にあります。
+
+```php
+use Phaseo\AgentSdk\AgentDefinition;
+use Phaseo\AgentSdk\AgentSdk;
+use Phaseo\AgentSdk\Tool;
+```
+
+</Tab>
+<Tab title="Ruby">
+
+RubyGems または Bundler で [`phaseo_agent_sdk`](https://rubygems.org/gems/phaseo_agent_sdk) 0.3.0 を追加します。Ruby 3.2 以降が必要です。RubyGems は `phaseo_sdk`（`>= 3.0.0, < 4.0.0`）を依存関係として追加します。
+
+<CodeGroup>
+
+```bash gem
+gem install phaseo_agent_sdk
+```
+
+```ruby Gemfile
+gem "phaseo_agent_sdk"
+```
+
+</CodeGroup>
+
+次のようにエージェントモジュールを読み込みます。
+
+```ruby
+require "phaseo_agent_sdk"
+```
+
+</Tab>
+<Tab title="Java">
+
+Maven Central から `app.phaseo:phaseo-agent-sdk` 0.3.0 を追加します。Java 17 以降が必要です。ビルドは `app.phaseo:phaseo-sdk` 3.0.0 と Jackson を依存関係として追加します。すべての型は `app.phaseo.agent.AgentSdk` 内のネストされたレコードです。
+
+<CodeGroup>
+
+```xml Maven
+<dependency>
+  <groupId>app.phaseo</groupId>
+  <artifactId>phaseo-agent-sdk</artifactId>
+  <version>0.3.0</version>
+</dependency>
+```
+
+```kotlin Gradle
+implementation("app.phaseo:phaseo-agent-sdk:0.3.0")
+```
+
+</CodeGroup>
+
+代わりにソースからビルドする場合は、次のようにします。
+
+```bash
+git clone https://github.com/phaseoteam/Phaseo.git
+cd Phaseo
+mvn -f packages/sdk/agent-sdk-java/pom.xml package
+```
+
+</Tab>
+<Tab title="Rust">
+
+Rust 1.86 以降で、crates.io にある [`phaseo-agent`](https://crates.io/crates/phaseo-agent) と `phaseo` クライアント（どちらも 0.2.0）を追加します。他の言語と異なり、コアクライアントは自分で追加します。
+
+<CodeGroup>
+
+```toml Cargo.toml
+[dependencies]
+phaseo = "0.2"
+phaseo-agent = "0.2"
+serde_json = "1"
+```
+
+```bash cargo
+cargo add phaseo@0.2 phaseo-agent@0.2 serde_json
+```
+
+</CodeGroup>
+
+</Tab>
+</Tabs>
+
+</Step>
+<Step title="API キーを設定する">
+
+[API キー](https://phaseo.app/settings/keys)でキーを作成し、エクスポートします。
+
+<CodeGroup>
+
+```bash macOS と Linux
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+```powershell Windows
+$env:PHASEO_API_KEY = "phaseo_v1_sk_..."
+```
+
+</CodeGroup>
+
+ほとんどの Gateway クライアントは環境変数からキーを読み取りますが、Python のクライアントは読み取りません。TypeScript、Python、Java は `PHASEO_BASE_URL` を無視します。
+
+| 言語 | Gateway クライアント | `PHASEO_API_KEY` を読み取る | `PHASEO_BASE_URL` を読み取る | コードで渡す方法 |
+| --- | --- | --- | --- | --- |
+| TypeScript | `createGatewayAgentClient()` | はい | いいえ | `clientOptions.apiKey`、`clientOptions.baseUrl` |
+| Python | `create_gateway_agent_client()` | いいえ。キーがないと `ValueError` を送出 | いいえ | `client_options={"api_key": ...}` または `client=Phaseo()` |
+| Go | `CreateGatewayAgentClient(...)` | はい（`APIKey` が空の場合） | はい（`BaseURL` が空の場合） | `GatewayAgentClientOptions.APIKey`、`.BaseURL` |
+| C# | `AgentSdk.CreateGatewayAgentClient()` | はい | はい | `GatewayAgentClientOptions.ClientOptions` の `apiKey`、`baseUrl` |
+| PHP | `AgentSdk::createGatewayAgentClient()` | はい | はい | `GatewayAgentClientOptions::$clientOptions` の `api_key`、`base_url` |
+| Ruby | `PhaseoAgentSdk.create_gateway_agent_client` | はい | はい | `api_key:`、`base_url:` |
+| Java | `AgentSdk.createGatewayAgentClient()` | はい | いいえ | `new AgentSdk.GatewayOptions(null, apiKey, baseUrl, null, null, null)` |
+| Rust | `create_gateway_agent_client(model)`、`GatewayAgentClient::from_env(model)` | はい | はい（`phaseo` クライアント経由） | `GatewayAgentClient::new(client, model)` |
+
+デフォルトのベース URL は `https://api.phaseo.app/v1` です。
+
+</Step>
+<Step title="インストールを確認する">
+
+モデルを呼び出さずにエージェントを作成します。これがコンパイルされて実行できれば、パッケージはインストールされています。
+
+<CodeGroup>
+
+```typescript TypeScript
+import { createAgent } from "@phaseo/agent-sdk";
+
+createAgent({ id: "verification-agent", model: "openai/gpt-6-astra" });
+console.log("Phaseo Agent SDK installed");
+```
+
+```python Python
+from phaseo_agent import create_agent
+
+create_agent({"id": "verification-agent", "model": "openai/gpt-6-astra"})
+print("Phaseo Agent SDK installed")
+```
+
+```go Go
+package main
+
+import (
+  "fmt"
+
+  phaseoagent "github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go"
+)
+
+func main() {
+  phaseoagent.CreateAgent(phaseoagent.AgentDefinition{ID: "verification-agent", Model: "openai/gpt-6-astra"})
+  fmt.Println("Phaseo Agent SDK installed")
+}
+```
+
+```csharp C#
+using PhaseoAgentSdk;
+
+AgentSdk.CreateAgent(new AgentDefinition { Id = "verification-agent", Model = "openai/gpt-6-astra" });
+Console.WriteLine("Phaseo Agent SDK installed");
+```
+
+```php PHP
+<?php
+require "vendor/autoload.php";
+
+use Phaseo\AgentSdk\AgentDefinition;
+use Phaseo\AgentSdk\AgentSdk;
+
+AgentSdk::createAgent(new AgentDefinition(id: "verification-agent", model: "openai/gpt-6-astra"));
+echo "Phaseo Agent SDK installed" . PHP_EOL;
+```
+
+```ruby Ruby
+require "phaseo_agent_sdk"
+
+PhaseoAgentSdk.create_agent(id: "verification-agent", model: "openai/gpt-6-astra")
+puts "Phaseo Agent SDK installed"
+```
+
+```rust Rust
+use phaseo_agent::{create_agent, AgentDefinition};
+
+fn main() {
+    let _agent = create_agent(AgentDefinition::new(
+        "verification-agent",
+        "openai/gpt-6-astra",
+    ));
+    println!("Phaseo Rust Agent SDK installed");
+}
+```
+
+</CodeGroup>
+
+Java には短い書き方がありません。`AgentDefinition` は位置引数のレコードで、全体は[使い方](./usage)に示しています。
+
+</Step>
+</Steps>

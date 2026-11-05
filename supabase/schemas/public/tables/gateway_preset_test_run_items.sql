@@ -43,6 +43,13 @@ CREATE POLICY "gateway_preset_test_run_items_select_workspace" ON "public"."gate
   TO "authenticated"
   USING (public.is_workspace_member(workspace_id));
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."gateway_preset_test_run_items"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."gateway_preset_test_run_items" TO "authenticated", "service_role";
 
 REVOKE ALL ON TABLE "public"."gateway_preset_test_run_items" FROM "anon";

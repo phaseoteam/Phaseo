@@ -282,6 +282,8 @@ export type GatewayBindings = {
     TENSORIX_BASE_URL?: string;
     TENCENT_CLOUD_TOKENHUB_API_KEY?: string;
     TENCENT_CLOUD_TOKENHUB_BASE_URL?: string;
+    PARTICLE_AI_API_KEY?: string;
+    PARTICLE_AI_BASE_URL?: string;
     TINKER_API_KEY?: string;
     TINKER_BASE_URL?: string;
     VENICE_API_KEY?: string;

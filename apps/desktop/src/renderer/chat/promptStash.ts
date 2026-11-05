@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { parseMentions, mentionToken } from "../lib/mentions";
 
-/** T3's prompt stash: drafts parked with Mod+S, kept on this device and brought back from the composer. */
+/** The prompt stash: drafts parked with Mod+S, kept on this device and brought back from the composer. */
 export type StashedPrompt = { id: string; text: string; taskId?: string; createdAt: string };
 const storageKey = "phaseo.desktop.promptStash", limit = 20;
 const listeners = new Set<() => void>();

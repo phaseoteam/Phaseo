@@ -57,7 +57,7 @@ CREATE POLICY "deny_direct_client_access" ON "public"."workspace_rate_limit_poli
   USING (false)
   WITH CHECK (false);
 
-COMMENT ON TABLE "public"."workspace_rate_limit_policy_assignments" IS 'Where a rate limit policy applies: one API key, one workspace member, one department (a shared allowance), one guardrail (a separate allowance for each key and member it covers), or the workspace default for each end user. Each target has at most one policy.';
+COMMENT ON TABLE "public"."workspace_rate_limit_policy_assignments" IS 'Superseded by workspace_guardrail_assignments of rate guardrails, which were copied from this table with the same ids. Nothing reads or writes it; kept until it is dropped.';
 
 REVOKE ALL ON TABLE "public"."workspace_rate_limit_policy_assignments" FROM "service_role";
 

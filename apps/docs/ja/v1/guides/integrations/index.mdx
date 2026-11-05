@@ -1,122 +1,113 @@
 ---
 title: "連携"
-description: "Phaseoを主要なSDK、フレームワーク、エージェント、オブザーバビリティツールに接続します。"
+description: "Phaseo を主要な SDK、フレームワーク、エージェント、可観測性ツールに接続します。"
 icon: "compass"
 ---
 
-多くの連携では、OpenAIまたはAnthropic互換クライアントの接続先をPhaseoに設定し、Phaseo APIキーを使います。すでに利用しているツールのガイドから始めてください。
+OpenAI 互換または Anthropic 互換のクライアントを Phaseo の Base URL に向け、Phaseo の API キーを渡せば、`openai/gpt-6-astra` などの Phaseo のモデル ID をそのまま使えます。各ガイドでは、まずツールを設定し、次に動作の確認方法と、動作しない機能を説明します。
 
-## ベースURL
+| クライアントの形式 | Base URL | キーの入力先 |
+| --- | --- | --- |
+| OpenAI 互換 | `https://api.phaseo.app/v1` | API キーの項目。`Authorization: Bearer` として送信されます |
+| Anthropic 互換（`/v1/messages` を自動で付加） | `https://api.phaseo.app` | 認証トークンの項目。`Authorization: Bearer` として送信されます |
 
-| クライアント形式 | ベースURL |
-| --- | --- |
-| OpenAI互換クライアント | `https://api.phaseo.app/v1` |
-| Anthropic互換クライアント | `https://api.phaseo.app` |
+モデル ID は [Models エンドポイント](../../api-reference/endpoint/models.mdx)から取得します。OpenAI 形式の新しいアプリには [Responses](../../api-reference/endpoint/responses.mdx) を使います。古いライブラリは [Chat Completions](../../api-reference/endpoint/chat-completions.mdx) を使うのが最も安全です。`PHASEO_API_KEY` を一度設定してツールが求める変数に割り当て、エージェントのトラフィックを移行する前にストリーミングとツール呼び出しをテストしてください。
 
-[Modelsエンドポイント](../../api-reference/endpoint/models.mdx)のモデルIDを使います。新しいOpenAI形式のアプリでは[Responses](../../api-reference/endpoint/responses.mdx)を推奨します。古いライブラリでは、通常[Chat Completions](../../api-reference/endpoint/chat-completions.mdx)が最も安全です。
+## コーディングエージェント
 
-## SDKと直接クライアント
+ほとんどのコーディングエージェントは、[Phaseo CLI](./phaseo-cli.mdx) のコマンド 1 つで設定できます。各エージェントのコマンドは[コーディングエージェント](./coding-assistants.mdx)に一覧があります。
+
+<Columns cols={3}>
+	<Card title="Claude Code" icon="/icons/brands/claude-code.svg" href="./claude-code" />
+	<Card title="Codex" icon="/icons/brands/codex.svg" href="./codex" />
+	<Card title="Cursor" icon="/icons/brands/cursor.svg" href="./cursor" />
+	<Card title="OpenCode" icon="/icons/brands/opencode.svg" href="./opencode" />
+	<Card title="Cline" icon="/icons/brands/cline.svg" href="./cline" />
+	<Card title="Roo Code" icon="/icons/brands/roo-code.svg" href="./roo-code" />
+	<Card title="Kilo Code" icon="/icons/brands/kilo.svg" href="./kilo-code" />
+	<Card title="Continue" icon="/icons/brands/continue.svg" href="./continue" />
+	<Card title="Aider" icon="/icons/brands/aider.png" href="./aider" />
+	<Card title="Zed" icon="/icons/brands/zed.svg" href="./zed" />
+	<Card title="fx" icon="/icons/brands/vercel.svg" href="./fx" />
+	<Card title="DeepSeek Harness" icon="/icons/brands/deepseek.svg" href="./deepseek-harness" />
+	<Card title="Pi" icon="/icons/brands/pi.svg" href="./pi" />
+	<Card title="oh-my-pi" icon="/icons/brands/oh-my-pi.svg" href="./oh-my-pi" />
+	<Card title="Prime Agent" icon="/icons/brands/prime-agent.svg" href="./prime-agent" />
+	<Card title="MiniMax Code" icon="/icons/brands/minimax.svg" href="./minimax-code" />
+	<Card title="Muse Code" icon="/icons/brands/meta.svg" href="./muse-code" />
+	<Card title="すべてのコーディングエージェント" icon="bot" href="./coding-assistants" />
+</Columns>
+
+## SDK と直接クライアント
 
 <Columns cols={2}>
-	<Card title="OpenAI SDK" icon="code" href="./openai-sdk.mdx">
-		PhaseoのベースURLを使って、OpenAI公式クライアントを利用します。
+	<Card title="OpenAI SDK" icon="code" href="./openai-sdk">
+		Phaseo の Base URL を使う OpenAI 公式クライアント。
 	</Card>
-	<Card title="Anthropic SDK" icon="message-square" href="./anthropic-sdk.mdx">
-		`/v1/messages`経由でAnthropic互換クライアントを使います。
+	<Card title="Anthropic SDK" icon="message-square" href="./anthropic-sdk">
+		`/v1/messages` を通じた Anthropic 互換クライアント。
 	</Card>
-	<Card title="AI SDK" icon="bolt" href="./ai-sdk.mdx">
-		Vercel AI SDK向けのPhaseo公式プロバイダーを使います。
+	<Card title="AI SDK" icon="bolt" href="./ai-sdk">
+		Vercel AI SDK 用の Phaseo 公式プロバイダー。
 	</Card>
-	<Card title="LiteLLM" icon="route" href="./litellm.mdx">
-		LiteLLMのトラフィックをPhaseo経由にするか、LiteLLMプロキシの背後でPhaseoを公開します。
+	<Card title="LiteLLM" icon="route" href="./litellm">
+		LiteLLM から直接、またはプロキシ経由で Phaseo を呼び出します。
 	</Card>
 </Columns>
 
-## アプリ・エージェントフレームワーク
+## アプリとエージェントのフレームワーク
 
 <Columns cols={2}>
-	<Card title="LangChain" icon="link" href="./langchain.mdx">
-		`ChatOpenAI`とPhaseoのベースURLを使ってLangChain Pythonを利用します。
+	<Card title="LangChain" icon="link" href="./langchain">
+		`ChatOpenAI` と Phaseo の Base URL を使う LangChain Python。
 	</Card>
-	<Card title="LlamaIndex" icon="database" href="./llamaindex.mdx">
-		RAGやインデックス作成のワークフローにPhaseoを使います。
+	<Card title="LlamaIndex" icon="database" href="./llamaindex">
+		RAG とインデックス作成のワークフローで Phaseo のモデルを使います。
 	</Card>
-	<Card title="PydanticAI" icon="braces" href="./pydanticai.mdx">
-		型付けされたPythonエージェントをPhaseo上に構築します。
+	<Card title="PydanticAI" icon="braces" href="./pydanticai">
+		Phaseo のモデルで動く型付きの Python エージェント。
 	</Card>
-	<Card title="Mastra" icon="workflow" href="./mastra.mdx">
-		MastraのエージェントやワークフローにPhaseoを使います。
+	<Card title="Mastra" icon="workflow" href="./mastra">
+		Mastra のエージェントとワークフローで Phaseo のモデルを使います。
 	</Card>
-	<Card title="TanStack AI" icon="layers" href="./tanstack-ai.mdx">
-		TanStack AIのOpenAI互換アダプターを接続します。
+	<Card title="eve" icon="bot" href="./eve">
+		Phaseo AI SDK プロバイダーを通じた eve エージェント。
 	</Card>
-	<Card title="Effect AI SDK" icon="function-square" href="./effect-ai.mdx">
-		Effectを使ったTypeScriptアプリケーションからPhaseoを利用します。
+	<Card title="TanStack AI" icon="layers" href="./tanstack-ai">
+		TanStack AI の OpenAI 互換アダプター。
+	</Card>
+	<Card title="Effect AI SDK" icon="square-function" href="./effect-ai">
+		Effect の TypeScript アプリケーションから Phaseo を使います。
 	</Card>
 </Columns>
 
 ## プラットフォームと運用
 
 <Columns cols={2}>
-	<Card title="LiveKit" icon="radio" href="./livekit.mdx">
-		LiveKit Agentsや音声アプリケーションでPhaseoモデルを使います。
+	<Card title="LiveKit" icon="radio" href="./livekit">
+		LiveKit Agents と音声アプリで Phaseo のモデルを使います。
 	</Card>
-	<Card title="Replit" icon="box" href="./replit.mdx">
-		Phaseoを使ってReplitアプリを構築・デプロイします。
+	<Card title="Replit" icon="box" href="./replit">
+		キーを Replit Secrets に保存した Replit のアプリとデプロイ。
 	</Card>
-	<Card title="ワークフロー自動化" icon="workflow" href="./automation.mdx">
-		Zapier、n8n、PipedreamなどのプラットフォームからPhaseoを呼び出します。
+	<Card title="ワークフロー自動化" icon="workflow" href="./automation">
+		Zapier、n8n、Pipedream などのプラットフォームの HTTP ステップ。
 	</Card>
-	<Card title="Infisical" icon="key-round" href="./infisical.mdx">
-		対象を限定し、停止時間なしでPhaseo APIキーをローテーションできるようにします。
+	<Card title="Infisical" icon="key-round" href="./infisical">
+		スコープを絞った管理用キーによる、ダウンタイムのない API キーのローテーション。
+	</Card>
+	<Card title="可観測性" icon="activity" href="./observability">
+		Langfuse、LangSmith、OpenTelemetry でリクエストをトレースします。
 	</Card>
 </Columns>
 
-## コーディングエージェントと可観測性
+## Phaseo のツール
 
 <Columns cols={2}>
-	<Card title="コーディングエージェント" icon="bot" href="./coding-assistants">
-		Cursor、VS Code、Continue、Aider、Cline、Roo Code、Kilo CodeなどでPhaseo CLIまたは手動のプロバイダー設定を使います。
+	<Card title="Phaseo CLI" icon="terminal" href="./phaseo-cli">
+		コーディングエージェントを設定し、ターミナルから Phaseo を管理します。
 	</Card>
-	<Card title="Claude Code" icon="/icons/brands/claude-code.svg" href="./claude-code">
-		Claude互換のコーディングワークフローをPhaseo経由にします。
-	</Card>
-	<Card title="Codex" icon="/icons/brands/codex.svg" href="./codex">
-		CodexのプロバイダーとしてPhaseoを使います。
-	</Card>
-	<Card title="DeepSeek Harness" icon="/icons/brands/deepseek.svg" href="./deepseek-harness">
-		DeepSeek HarnessにカスタムのOpenAI互換プロバイダーとしてPhaseoを追加します。
-	</Card>
-	<Card title="OpenCode" icon="/icons/brands/opencode.svg" href="./opencode">
-		カスタムPhaseoプロバイダーを使ってOpenCodeを設定します。
-	</Card>
-	<Card title="Pi" icon="/icons/brands/pi.svg" href="./pi">
-		Phaseoのモデルカタログ全体をPiに追加します。
-	</Card>
-	<Card title="oh-my-pi" icon="/icons/brands/oh-my-pi.svg" href="./oh-my-pi">
-		分離されたプロバイダーカタログでPhaseo経由のoh-my-piを実行します。
-	</Card>
-	<Card title="MiniMax Code" icon="/icons/brands/minimax.svg" href="./minimax-code">
-		一時的なプロバイダー設定でPhaseo経由のMiniMax Codeを実行します。
-	</Card>
-	<Card title="Muse Code" icon="/icons/brands/meta.svg" href="./muse-code">
-		一時的なプロバイダー設定でPhaseo経由のMuse Codeを実行します。
-	</Card>
-	<Card title="Prime Agent" icon="/icons/brands/prime-agent.svg" href="./prime-agent">
-		Phaseo経由で長時間の作業を行うようPrime Agentを設定します。
-	</Card>
-	<Card title="オブザーバビリティ" icon="activity" href="./observability.mdx">
-		PhaseoのトラフィックをLangfuse、LangSmith、OpenTelemetryなどのツール経由で送信します。
-	</Card>
-	<Card title="Docs MCP" icon="plug-zap" href="./docs-mcp.mdx">
-		コーディングエージェントに最新のPhaseoドキュメントを追加します。
+	<Card title="Docs MCP" icon="plug-zap" href="./docs-mcp">
+		コーディングエージェントに最新の Phaseo ドキュメントを提供します。
 	</Card>
 </Columns>
-
-## 推奨設定
-
-- `PHASEO_API_KEY`を一度設定し、クライアントが想定する環境変数に割り当てます。
-- `openai/gpt-5-nano`のようなモデルIDは変更しません。
-- OpenAI互換ライブラリには`https://api.phaseo.app/v1`を使います。ツールがルートホストを明示的に求める場合は除きます。
-- `/v1/messages`を追加するAnthropic互換SDKやツールには`https://api.phaseo.app`を使います。
-- エージェントのトラフィックを切り替える前に、ステージング環境でストリーミングとツール呼び出しをテストします。

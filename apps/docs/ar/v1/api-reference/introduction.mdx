@@ -5,61 +5,62 @@ description: "عنوان URL الأساسي والمصادقة وعائلات ن
 icon: "map"
 ---
 
-استخدم هذه الصفحة للعثور على مسار API الصحيح قبل فتح مرجع نقطة النهاية. تشترك جميع نقاط نهاية Phaseo Gateway في عنوان URL أساسي واحد وتستخدم مصادقة Bearer.
+أرسل كل طلب إلى `https://api.phaseo.app/v1` مع مفتاحك في ترويسة `Authorization: Bearer`. ابحث أدناه عن نقطة النهاية المناسبة لمهمتك، ثم افتح صفحتها المرجعية.
 
-## اختيار المسار
+## اعثر على نقطة النهاية المناسبة
 
 | إذا أردت | ابدأ من |
 | --- | --- |
-| إرسال طلبك الأول | [البدء السريع](../quickstart.mdx) |
+| إرسال طلبك الأول | [البدء السريع](../quickstart) |
 | توليد النص أو استخدام الأدوات | [`POST /responses`](./endpoint/responses) |
 | اتخاذ قرارات ذات أنواع محددة | [`POST /decisions`](./endpoint/decisions) |
 | الإبقاء على تكامل موجود متوافق مع OpenAI | [`POST /chat/completions`](./endpoint/chat-completions) |
 | تصفح النماذج والمزوّدين | [`GET /models`](./endpoint/models) و[`GET /providers`](./endpoint/providers) |
-| إنشاء الموسيقى أو إدارة الملفات | [`POST /music/generations`](./endpoint/music-generate) و[`POST /files`](./endpoint/files) |
+| إنشاء الموسيقى أو إدارة الملفات | [`POST /music/generate`](./endpoint/music-generate) و[`POST /files`](./endpoint/files) |
 | توليد فيديو (تجريبي) | [`POST /videos`](./endpoint/video-create) |
 | إرسال دفعة أو تنزيل النتائج (تجريبي) | [`POST /batches`](./endpoint/batches-create) و[`GET /batches/{batch_id}/results`](./endpoint/batches-results) |
 
 ## عنوان URL الأساسي
 
-عنوان URL الأساسي للإنتاج:
-
 ```http
 https://api.phaseo.app/v1
 ```
 
-جميع مسارات نقاط النهاية في هذا المرجع نسبية إلى عنوان `/v1` الأساسي.
+كل مسار نقطة نهاية في هذا المرجع نسبي إلى عنوان URL الأساسي هذا.
 
 ## OpenAPI
 
-استخدم ملف OpenAPI لاستيراد API إلى Postman أو Hoppscotch أو مولّد SDK.
+استورد ملف OpenAPI إلى Postman أو Hoppscotch أو مولّد SDK.
 
 <Card
-  title="OpenAPI الخاص بـ Phaseo Gateway"
-  icon="list-bullet"
+	title="OpenAPI الخاص بـ Phaseo Gateway"
+	icon="list-bullet"
 	href="https://github.com/phaseoteam/Phaseo/blob/main/apps/docs/openapi/v1/openapi.yaml"
 >
-  عرض ملف المواصفات
+	عرض ملف المواصفات
 </Card>
 
-يستخدم التوثيق وSDKs المواصفة نفسها. نقاط نهاية Video وBatch وDecisions موسومة بأنها **تجريبية**؛ وقد يلزم وصول معاينة لمساحة العمل.
+يستخدم التوثيق وحزم SDK هذه المواصفة نفسها. نقاط نهاية Video وBatch وDecisions موسومة بأنها **تجريبية**؛ وقد يلزم وصول معاينة لمساحة العمل.
 
 ## المصادقة
 
-استخدم مفتاح API قياسيًا للبوابة للاستدلال ومفتاح API للإدارة بالأذونات المناسبة للمهام الإدارية. راجع [المصادقة](../developers/authentication.mdx) و[مفاتيح API للإدارة](../developers/management-api-keys.mdx).
+| بيانات الاعتماد | التنسيق | ما تستدعيه |
+| --- | --- | --- |
+| [مفتاح Gateway API](../developers/authentication.mdx) | `phaseo_v1_sk_<kid>_<secret>` | نقاط نهاية الاستدلال |
+| [مفتاح API للإدارة](../developers/management-api-keys.mdx) | `phaseo_v1_mk_<kid>_<secret>` | نقاط نهاية الإدارة، في حدود أذونات المفتاح |
 
 ```http
 Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
 ```
 
-عند فشل المصادقة، تعيد API الرمز `401`.
+إذا فشلت المصادقة، تُرجع API الرمز `401`.
 
 ## موارد API
 
 | المورد | وظيفته |
 | --- | --- |
-| الاستدلال | ولّد نصوصًا وصورًا وصوتًا وتضمينات؛ واتخذ قرارات وأعد الترتيب وراجع المحتوى أو حلّله. ابدأ بـ[Responses](./endpoint/responses.mdx) أو[Decisions](./endpoint/decisions.mdx). |
-| المهام غير المتزامنة والملفات | أرسل مهام [فيديو](./endpoint/video-create.mdx) أو[دفعات](./endpoint/batches-create.mdx)، وانقل الملفات واضبط الويب هوك. |
+| الاستدلال | ولّد نصوصًا وصورًا وصوتًا وتضمينات؛ واتخذ قرارات وأعد الترتيب وراجع المحتوى أو حلّله. ابدأ بـ[Responses](./endpoint/responses.mdx) أو [Decisions](./endpoint/decisions.mdx). |
+| المهام غير المتزامنة والملفات | أرسل مهام [فيديو](./endpoint/video-create.mdx) أو [دفعات](./endpoint/batches-create.mdx)، وانقل الملفات واضبط الويب هوك. |
 | النماذج والتسعير | اكتشف [النماذج](./endpoint/models.mdx) وعروض المزوّدين و[التكاليف التقديرية](./endpoint/pricing-calculate.mdx). |
 | التوجيه والسياسات | اضبط الإعدادات المسبقة وبيانات اعتماد المزوّدين والنماذج الخاصة و[ضوابط الحماية](./endpoint/guardrails.mdx). |
 | الاستخدام والمراقبة | افحص [السجلات](./endpoint/logs-list.mdx) والنشاط والتحليلات والتقييمات وحالة الخدمة. |
@@ -67,6 +68,4 @@ Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
 
 ## الفوترة وحدود المعدل
 
-- تعامل مع تقييد المزوّد وسياسات الوصول المعمول بها باستخدام [دليل حدود الطلبات](./limits.mdx).
-- تتطلب الطلبات المدفوعة رصيدًا كافيًا في المحفظة لاجتياز فحص الرصيد المسبق.
-- لا تتطلب النماذج المجانية التي تحمل `:free` رصيدًا مودعًا.
+تحتاج الطلبات المدفوعة إلى رصيد كافٍ في المحفظة لاجتياز فحص الرصيد قبل تنفيذها. لا تحتاج النماذج التي ينتهي معرّفها بـ `:free` إلى رصيد مودع. قد يُقيَّد معدل الطلبات من جانب مزوّد أو بحدود مساحة العمل والمفتاح؛ راجع [حدود المعدل](./limits.mdx).

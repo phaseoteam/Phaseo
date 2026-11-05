@@ -25,6 +25,8 @@ if (stage) {
   await installControlActions(owner);
   const run = code => owner.webContents.executeJavaScript(code);
   const wait = async code => { for (let i = 0; i < 600; i++) { const value = await run(code); if (value) return value; await new Promise(resolve => setTimeout(resolve, 25)); } throw Error('Batch recovery did not settle: ' + code); };
+  // This covers the chat a crash stopped waiting for the person to resume it, so it turns off continuing chats after a restart.
+  if (stage === 'prepare') await run(`(async()=>{const api=window.phaseoDesktop.workspace,{preferences}=await api.preferences();await api.savePreferences({...preferences,threads:{...preferences.threads,continueAfterRestart:false}});})()`);
   let id;
   if (stage === 'prepare') {
    id = await run(`(async()=>{const api=window.phaseoDesktop.workspace;const state=await api.command({type:'add-account',name:'Owned batch recovery',kind:'api',harness:'phaseo',endpoint:${javascriptLiteral(endpoint)},apiKey:'owned-unused'});const accountId=state.accounts.find(account=>account.name==='Owned batch recovery').id;await api.mcp({type:'save',connection:{id:'12345678-1234-1234-1234-123456789abc',name:'Owned batch',enabled:true,transport:'http',url:${javascriptLiteral(endpoint.replace(/\/v1$/, '/mcp'))}}});const created=await api.command({type:'create-task',harness:'phaseo',accountId,model:'owned',mode:${javascriptLiteral(mode)}});const id=created.tasks[0].id;await api.command({type:'send',id,text:'Perform two owned effects'});return id})()`);

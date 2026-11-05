@@ -1,9 +1,16 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
+// Table files carry the MFA policy (require_mfa_for_data_api); these fixtures don't load its helper.
+const MFA_SATISFIED_STUB = "create or replace function public.mfa_satisfied() returns boolean language sql stable as 'select true';";
 const db = new PGlite();
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const migrationPath = '../migrations/20261027224949_store_sdk_client_fields_on_request_facts.sql';
+// The newest full definition of ingest_v2_gateway_request, then the migration that patches its
+// attempts insert in place. Together they must match the declarative schema.
+const latestMigrationPath = '../migrations/20261104152910_pricing_lines_record_charged_sku_meter.sql';
+const attemptHealthMigrationPath = '../migrations/20261104163425_provider_attempt_health_classes.sql';
+const attemptReasonMigrationPath = '../migrations/20261104194200_provider_attempt_health_reasons.sql';
 const schemaPath = '../schemas/public/functions/ingest_v2_gateway_request.sql';
 const workspace = '40000000-0000-4000-8000-000000000001';
 const functionBody = (sql) => {
@@ -12,9 +19,9 @@ const functionBody = (sql) => {
 };
 try {
   const migration = await read(migrationPath);
+  const latestMigration = await read(latestMigrationPath);
   const desired = await read(schemaPath);
   assert.ok(migration.includes('\nSET local check_function_bodies = off;\n'));
-  assert.equal(functionBody(migration), functionBody(desired), 'migration body must match the declarative schema');
 
   for (const path of ['./fixtures/staged-reporting-before.sql',
     '../migrations/20261009114400_exclude_staged_models_from_public_reporting.sql',
@@ -31,7 +38,14 @@ try {
       ('fixture:model','fixture/model','fixture','model','active',true,'public','enabled',false,'available','2026-10-01');
   `);
   await db.exec(migration);
+  await db.exec(latestMigration);
+  await db.exec(await read(attemptHealthMigrationPath));
+  await db.exec(await read(attemptReasonMigrationPath));
+  const installed = (await db.query(
+    "select pg_get_functiondef('public.ingest_v2_gateway_request(jsonb)'::regprocedure) def")).rows[0].def;
+  assert.equal(functionBody(installed), functionBody(desired), 'installed ingest body must match the declarative schema');
   await db.exec(`create function public.is_workspace_member(uuid) returns boolean language sql as 'select false';`);
+  await db.exec(MFA_SATISFIED_STUB);
   await db.exec(await read('../schemas/public/tables/v2_request_routing_decisions.sql'));
   await db.exec(await read('../schemas/public/tables/v2_request_routing_traces.sql'));
   const withRouting = await read('../schemas/public/functions/ingest_v2_gateway_request_with_routing.sql');
@@ -83,5 +97,46 @@ try {
   assert.deepEqual(await fields('routed'), {
     sdk_name: 'phaseo-agent-typescript', sdk_version: '0.3.0', client_version: '0.3.0' });
 
+  // Pricing lines record the SKU meter the gateway charged with, not the newest SKU on the route.
+  const standardSku = '50000000-0000-4000-8000-000000000001';
+  const batchSku = '50000000-0000-4000-8000-000000000002';
+  const standardMeter = '60000000-0000-4000-8000-000000000001';
+  const batchMeter = '60000000-0000-4000-8000-000000000002';
+  await db.exec(`
+    insert into v2_pricing_skus(sku_id,provider_model_id,version,operation,status,effective_from,service_tier_slug) values
+      ('${standardSku}','fixture:model',1,'text.generate','active','2026-01-01','standard'),
+      ('${batchSku}','fixture:model',2,'text.generate','active','2026-01-01','batch');
+    insert into v2_pricing_sku_meters(sku_meter_id,sku_id,meter_key) values
+      ('${standardMeter}','${standardSku}','output_tokens'),
+      ('${batchMeter}','${batchSku}','output_tokens');
+  `);
+  const line = (overrides = {}) => ({ meter_key: 'output_tokens', quantity: 10, unit: 'token',
+    unit_price_nanos: 500, charged_nanos: 5000, ...overrides });
+  const recordedMeters = async (id) => (await db.query(
+    `select pricing.meter_key, pricing.sku_id::text, pricing.sku_meter_id::text
+       from v2_request_pricing_lines pricing
+       join v2_request_facts fact using (request_event_id)
+      where fact.workspace_id=$1 and fact.request_id=$2 order by pricing.meter_key`,
+    [workspace, id])).rows;
+
+  await ingest('ingest_v2_gateway_request', event('charged-meter', {
+    pricing_lines: [line({ sku_meter_id: standardMeter })] }));
+  assert.deepEqual(await recordedMeters('charged-meter'), [
+    { meter_key: 'output_tokens', sku_id: standardSku, sku_meter_id: standardMeter }]);
+
+  // Older gateways send no meter id, and a malformed or mismatched id is ignored: fall back to
+  // the newest active SKU on the route that has the meter.
+  for (const [id, overrides] of [['no-meter', {}], ['bad-meter', { sku_meter_id: 'rule-fee' }],
+    ['other-meter-key', { sku_meter_id: standardMeter, meter_key: 'input_tokens' }]]) {
+    await ingest('ingest_v2_gateway_request', event(id, { pricing_lines: [line(overrides)] }));
+  }
+  assert.deepEqual(await recordedMeters('no-meter'), [
+    { meter_key: 'output_tokens', sku_id: batchSku, sku_meter_id: batchMeter }]);
+  assert.deepEqual(await recordedMeters('bad-meter'), [
+    { meter_key: 'output_tokens', sku_id: batchSku, sku_meter_id: batchMeter }]);
+  assert.deepEqual(await recordedMeters('other-meter-key'), [
+    { meter_key: 'input_tokens', sku_id: null, sku_meter_id: null }]);
+
   console.log('SDK name, SDK version and client version are stored on v2_request_facts');
+  console.log('Pricing lines record the charged SKU meter, falling back to the newest SKU with the meter');
 } finally { await db.close(); }

@@ -51,6 +51,19 @@ describe("OpenAI image generation schema", () => {
 		}).success).toBe(true);
 	});
 
+	it.each([
+		["openai/gpt-image-2.5-flare", "xhigh"],
+		["openai/gpt-image-2.6-flare", "xhigh"],
+		["openai/gpt-image-2.6-sunburst", "max"],
+	])("accepts the 2.5-and-later quality levels on %s (%s)", (model, quality) => {
+		expect(ImagesGenerationSchema.safeParse({ model, prompt: "A lighthouse in a storm", quality }).success).toBe(true);
+	});
+
+	it("applies the GPT Image 2 size rules to 2.6 as well", () => {
+		expect(ImagesGenerationSchema.safeParse({ model: "openai/gpt-image-2.6-flare", prompt: "A", size: "1025x1024" }).success).toBe(false);
+		expect(ImagesGenerationSchema.safeParse({ model: "openai/gpt-image-2.6-flare", prompt: "A", size: "2048x1152" }).success).toBe(true);
+	});
+
 	it("rejects GPT Image 2.5-only quality levels for earlier GPT Image models", () => {
 		expect(ImagesGenerationSchema.safeParse({
 			model: "openai/gpt-image-2",

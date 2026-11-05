@@ -121,5 +121,6 @@ Run the cases against Haiku, Sonnet and Opus (or the Codex default model) before
 - `phaseo-product-docs`: product-facing rewrite workflow for docs, cookbook pages and guides
 - `phaseo-release-spotlight`: monthly recap and release spotlight writing workflow
 - `phaseo-changelog`: combined, product, SDK and data changelog writing workflow
+- `phaseo-issue-artifacts`: short GitHub issue bodies with a self-contained HTML plan or root-cause page attached via `gh issue artifact create`
 - `realtime-maintenance`: announced maintenance windows for deploying the `phaseo-realtime` voice relay without ending live calls
 - `seo-audit`, `supabase-postgres-best-practices`, `yeet`: general development helpers

@@ -118,7 +118,7 @@ describe("provider health RPC fallback", () => {
 		})).toBe(false);
 	});
 
-	it("suppresses a one-request stealth aggregate", async () => {
+	it("publishes a one-request stealth aggregate only under the stealth identity", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
 			if (url.includes("v2_model_provider_routes")) {
@@ -146,8 +146,122 @@ describe("provider health RPC fallback", () => {
 		);
 		const payload = await response.json() as any;
 
+		// Provider health has no location, stream or context filter, so it
+		// publishes at any volume; the stealth route keeps its masked identity.
 		expect(response.status).toBe(200);
-		expect(payload.rows).toEqual([]);
+		expect(payload.rows).toEqual([
+			expect.objectContaining({
+				provider_id: "stealth",
+				provider_name: "Stealth",
+				health_requests: 1,
+				uptime_pct: 100,
+				error_category_counts: {},
+			}),
+		]);
+		expect(JSON.stringify(payload)).not.toMatch(/private[- ]provider|last_request_at/i);
+	});
+
+	it("reports per-attempt health beside the rows, including providers that only failed over", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("v2_model_provider_routes")) {
+				return new Response(JSON.stringify([{ provider_slug: "private-provider", is_stealth: true }]));
+			}
+			if (url.includes("get_v2_model_provider_tier_health_metrics")) {
+				return new Response(JSON.stringify([{ provider_id: "served", service_tier: "standard", provider_name: "Served", health_requests: 5, uptime_pct: 100 }]));
+			}
+			if (url.includes("get_v2_model_provider_attempt_health")) {
+				return new Response(JSON.stringify([
+					{ provider_id: "served", service_tier: "standard", provider_name: "Served", attempts: 5, eligible_attempts: 5, success_attempts: 5,
+						reachability_failures: 0, capacity_failures: 0, call_error_failures: 0, customer_excluded: 0, phaseo_excluded: 0, buckets: [] },
+					// Never served a request, so the per-request rows above have nothing for it.
+					{ provider_id: "failover-only", service_tier: "standard", provider_name: "Failover Only", attempts: 4, eligible_attempts: 3, success_attempts: 0,
+						reachability_failures: 2, capacity_failures: 1, call_error_failures: 0, customer_excluded: 1, phaseo_excluded: 0,
+						buckets: [{ start: "2026-08-27T09:20:00Z", attempts: 4, eligible_attempts: 3, success_attempts: 0, reachability_failures: 2, capacity_failures: 1, call_error_failures: 0, customer_excluded: 1, phaseo_excluded: 0 }] },
+					{ provider_id: "private-provider", service_tier: "standard", provider_name: "Private Provider", attempts: 1, eligible_attempts: 1, success_attempts: 1,
+						reachability_failures: 0, capacity_failures: 0, call_error_failures: 0, customer_excluded: 0, phaseo_excluded: 0, buckets: [] },
+					{ provider_id: "not-requested", service_tier: "standard", provider_name: "Other", attempts: 9, eligible_attempts: 9, success_attempts: 9,
+						reachability_failures: 0, capacity_failures: 0, call_error_failures: 0, customer_excluded: 0, phaseo_excluded: 0, buckets: [] },
+				]));
+			}
+			return new Response(JSON.stringify([]));
+		}));
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/test%2Fmodel/provider-health?provider_ids=served,failover-only,stealth",
+			{},
+			env,
+		);
+		const payload = await response.json() as any;
+
+		expect(response.status).toBe(200);
+		expect(payload.rows).toEqual([expect.objectContaining({ provider_id: "served", uptime_pct: 100 })]);
+		expect(payload.attempt_health.map((row: any) => row.provider_id)).toEqual(["served", "failover-only", "stealth"]);
+		// Rates only: the attempt and failure counts behind them reveal traffic volume.
+		expect(payload.attempt_health[1]).toEqual({
+			provider_id: "failover-only",
+			service_tier: "standard",
+			provider_name: "Failover Only",
+			// 1 of 3 reached the provider, which turned it away: nothing was accepted,
+			// so there is no completed rate.
+			reachability_pct: 33.33,
+			capacity_pct: 0,
+			call_error_pct: null,
+			uptime_pct: 0,
+			buckets: [{ start: "2026-08-27T09:00:00.000Z", end: "2026-08-27T10:00:00.000Z", reachability_pct: 33.33, capacity_pct: 0, call_error_pct: null, uptime_pct: 0 }],
+			days: [{ start: "2026-08-27T00:00:00.000Z", end: "2026-08-28T00:00:00.000Z", reachability_pct: 33.33, capacity_pct: 0, call_error_pct: null, uptime_pct: 0 }],
+		});
+		expect(payload.attempt_health[2]).toMatchObject({ provider_id: "stealth", provider_name: "Stealth" });
+		expect(JSON.stringify(payload)).not.toMatch(/private[- ]provider|customer_excluded|phaseo_excluded|health_reason/i);
+		expect(JSON.stringify(payload.attempt_health)).not.toMatch(/"attempts"|eligible_attempts|success_attempts|_failures/);
+	});
+
+	it("rates each UTC day of attempt health from that day's attempts", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("get_v2_model_provider_tier_health_metrics")) {
+				return new Response(JSON.stringify([{ provider_id: "flaky", service_tier: "standard", health_requests: 5, uptime_pct: 100 }]));
+			}
+			if (url.includes("get_v2_model_provider_attempt_health")) {
+				const bucket = (start: string, eligible: number, success: number) => ({
+					start, attempts: eligible, eligible_attempts: eligible, success_attempts: success,
+					reachability_failures: eligible - success, capacity_failures: 0, call_error_failures: 0,
+				});
+				return new Response(JSON.stringify([{
+					provider_id: "flaky", service_tier: "standard", provider_name: "Flaky", attempts: 14, eligible_attempts: 14, success_attempts: 11,
+					reachability_failures: 3, capacity_failures: 0, call_error_failures: 0,
+					// Day one: 1 of 4 and 9 of 9 succeeded (10 of 13 = 76.92%, not the 62.5% hourly mean).
+					buckets: [bucket("2026-08-26T22:00:00Z", 4, 1), bucket("2026-08-26T23:00:00Z", 9, 9), bucket("2026-08-27T00:00:00Z", 1, 1)],
+				}]));
+			}
+			return new Response(JSON.stringify([]));
+		}));
+		const response = await app.request("https://phaseo.app/api/_web/models/test%2Fmodel/provider-health?provider_ids=flaky", {}, env);
+		const payload = await response.json() as any;
+		expect(response.status).toBe(200);
+		expect(payload.attempt_health[0].days).toEqual([
+			expect.objectContaining({ start: "2026-08-26T00:00:00.000Z", end: "2026-08-27T00:00:00.000Z", uptime_pct: 76.92, reachability_pct: 76.92 }),
+			expect.objectContaining({ start: "2026-08-27T00:00:00.000Z", uptime_pct: 100 }),
+		]);
+	});
+
+	it("still serves provider health rows when attempt health fails", async () => {
+		vi.spyOn(console, "error").mockImplementation(() => {});
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("get_v2_model_provider_tier_health_metrics")) {
+				return new Response(JSON.stringify([{ provider_id: "served", service_tier: "standard", health_requests: 5, uptime_pct: 100 }]));
+			}
+			if (url.includes("get_v2_model_provider_attempt_health")) {
+				return new Response(JSON.stringify({ code: "57014", message: "canceling statement due to statement timeout" }), { status: 500 });
+			}
+			return new Response(JSON.stringify([]));
+		}));
+		const response = await app.request("https://phaseo.app/api/_web/models/test%2Fmodel/provider-health?provider_ids=served", {}, env);
+		const payload = await response.json() as any;
+		expect(response.status).toBe(200);
+		expect(payload.rows).toHaveLength(1);
+		expect(payload.attempt_health).toEqual([]);
 	});
 });
 
@@ -926,7 +1040,7 @@ describe("public model routes", () => {
 		expect(catalogue.headers.get("cache-control")).toBe("public, max-age=0");
 		expect(catalogue.headers.get("cache-tag")).toBe("web-api-models,web-api-gateway-models,web-api-models-v2");
 		expect(benchmarks.status).toBe(200);
-		expect(benchmarks.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=3600, stale-while-revalidate=3600, stale-if-error=86400");
+		expect(benchmarks.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=21600, stale-while-revalidate=64800, stale-if-error=86400");
 		expect(benchmarks.headers.get("cache-control")).toBe("public, max-age=0");
 		expect(benchmarks.headers.get("cache-tag")).toContain("web-api-model-info-openai2Fgpt-test");
 		await expect(benchmarks.json()).resolves.toMatchObject({ highlights: [{ benchmarkId: "mmlu", score: 85, scoreDisplay: "85%", rank: 2 }] });
@@ -996,8 +1110,8 @@ describe("public model routes", () => {
 		}] });
 	});
 
-	it("suppresses performance, quality, and cache series below the public cohort minimum", async () => {
-		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+	const stubLowVolumePerformance = () => {
+		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
 			if (url.includes("/rpc/get_v2_model_quality_hourly_v1")) {
 				return new Response(JSON.stringify([{
@@ -1081,7 +1195,13 @@ describe("public model routes", () => {
 				}), { status: 200 });
 			}
 			return new Response(JSON.stringify([]), { status: 200 });
-		}));
+		});
+		vi.stubGlobal("fetch", fetchMock);
+		return fetchMock;
+	};
+
+	it("publishes one-request performance, quality, and cache series when no filter is applied", async () => {
+		stubLowVolumePerformance();
 
 		const response = await app.request(
 			"https://phaseo.app/api/_web/models/test%2Flow-volume/performance?range=1",
@@ -1091,14 +1211,219 @@ describe("public model routes", () => {
 		const payload = await response.json() as any;
 
 		expect(response.status).toBe(200);
-		expect(payload.minimumSampleSize).toBe(20);
+		expect(payload.minimumSampleSize).toBe(1);
 		expect(payload.metrics.rangeDays).toBe(1);
+		expect(payload.metrics.summary).toMatchObject({ totalRequests: 1, successfulRequests: 1, avgLatencyMs: 240 });
+		expect(payload.metrics.hourly).toEqual([expect.objectContaining({ bucket: "2026-08-27T09:00:00Z", requests: 1 })]);
+		expect(payload.metrics.successSeries).toEqual([
+			expect.objectContaining({ bucket: "2026-08-27T09:00:00Z", overallSuccessPct: 100, requests: 1 }),
+		]);
+		expect(payload.metrics.successSeries[0]).not.toHaveProperty("failedRequests");
+		expect(payload.metrics.providerPerformance).toEqual([expect.objectContaining({ provider: "test-provider", requests: 1 })]);
+		expect(payload.metrics.providerHourly7d).toEqual([
+			expect.objectContaining({ provider: "test-provider", requests: 1, cacheTelemetryRequests: 20 }),
+		]);
+		expect(payload.metrics.qualitySeries).toEqual([
+			expect.objectContaining({ bucket: "2026-08-27T09:00:00Z", toolCallErrorPct: 100, structuredOutputErrorPct: 0, cacheHitRatePct: 60 }),
+		]);
+	});
+
+	it("keeps the cohort minimum when a location filter is applied", async () => {
+		const fetchMock = stubLowVolumePerformance();
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/test%2Flow-volume/performance?range=1&colo=LHR",
+			{},
+			env,
+		);
+		const payload = await response.json() as any;
+
+		expect(response.status).toBe(200);
+		expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("get_v2_model_provider_health_metrics"))).toBe(false);
+		expect(payload.minimumSampleSize).toBe(20);
 		expect(payload.metrics.summary).toMatchObject({ totalRequests: 0, successfulRequests: 0, avgLatencyMs: null });
 		expect(payload.metrics.hourly).toEqual([]);
 		expect(payload.metrics.successSeries).toEqual([]);
 		expect(payload.metrics.providerPerformance).toEqual([]);
 		expect(payload.metrics.providerHourly7d).toEqual([]);
 		expect(payload.metrics.qualitySeries).toEqual([]);
+	});
+
+	it.each([
+		["stream mode", "stream=stream"],
+		["context size", "context=lte_4k"],
+	])("keeps the cohort minimum when a %s filter is applied", async (_filter, query) => {
+		stubLowVolumePerformance();
+
+		const response = await app.request(
+			`https://phaseo.app/api/_web/models/test%2Flow-volume/performance?range=1&${query}`,
+			{},
+			env,
+		);
+		const payload = await response.json() as any;
+
+		expect(response.status).toBe(200);
+		expect(payload.minimumSampleSize).toBe(20);
+		expect(payload.metrics.hourly).toEqual([]);
+		expect(payload.metrics.providerHourly7d).toEqual([]);
+		expect(payload.metrics.qualitySeries).toEqual([]);
+	});
+
+	it("shows failed hours as uptime dips and leaves customer-caused errors out", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("/rpc/get_v2_model_provider_health_metrics")) {
+				return new Response(JSON.stringify([{
+					provider_id: "test-provider",
+					provider_name: "Test Provider",
+					requests: 9,
+					health_requests: 4,
+					health_success_requests: 3,
+					uptime_pct: 75,
+					buckets: [{
+						start: "2026-08-27T09:00:00Z",
+						end: "2026-08-27T10:00:00Z",
+						requests: 4,
+						health_requests: 4,
+						health_success_requests: 3,
+						uptime_pct: 75,
+					}, {
+						// Five bad requests from the customer: no request counts toward uptime.
+						start: "2026-08-27T10:00:00Z",
+						end: "2026-08-27T11:00:00Z",
+						requests: 5,
+						health_requests: 0,
+						health_success_requests: 0,
+						uptime_pct: null,
+					}],
+				}]), { status: 200 });
+			}
+			if (url.includes("/rpc/get_v2_model_performance_metrics")) {
+				return new Response(JSON.stringify({
+					last_24h: { total_requests: 9, successful_requests: 3 },
+					hourly_24h: [
+						{ bucket: "2026-08-27T09:00:00Z", requests: 4, success_pct: 75 },
+						{ bucket: "2026-08-27T10:00:00Z", requests: 5, success_pct: 0 },
+					],
+					provider_uptime_24h: [],
+					provider_daily_7d: [],
+				}), { status: 200 });
+			}
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/test%2Fmodel/performance",
+			{},
+			env,
+		);
+		const payload = await response.json() as any;
+
+		expect(response.status).toBe(200);
+		expect(payload.metrics.successSeries).toEqual([
+			expect.objectContaining({ bucket: "2026-08-27T09:00:00Z", overallSuccessPct: 75, requests: 4 }),
+			expect.objectContaining({ bucket: "2026-08-27T10:00:00Z", overallSuccessPct: null, requests: 0 }),
+		]);
+		// The rate is published; the failure count behind it is not.
+		expect(JSON.stringify(payload.metrics.successSeries)).not.toMatch(/failedRequests/);
+	});
+
+	it("adds per-attempt reachability, capacity and call errors to the uptime series and providers", async () => {
+		const attemptBucket = (start: string, counts: Record<string, number>) => ({
+			start, end: "ignored", attempts: 0, eligible_attempts: 0, success_attempts: 0,
+			reachability_failures: 0, capacity_failures: 0, call_error_failures: 0, customer_excluded: 0, phaseo_excluded: 0, ...counts,
+		});
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("/rpc/get_v2_model_provider_attempt_health")) {
+				return new Response(JSON.stringify([
+					// Failed over twice: those attempts count against this provider.
+					{ provider_id: "flaky", service_tier: "standard", provider_name: "Flaky", attempts: 10, eligible_attempts: 9, success_attempts: 6,
+						reachability_failures: 2, capacity_failures: 1, call_error_failures: 0, customer_excluded: 1, phaseo_excluded: 0,
+						buckets: [attemptBucket("2026-08-27T09:00:00Z", { attempts: 10, eligible_attempts: 9, success_attempts: 6, reachability_failures: 2, capacity_failures: 1, customer_excluded: 1 })] },
+					{ provider_id: "flaky", service_tier: "priority", provider_name: "Flaky", attempts: 1, eligible_attempts: 1, success_attempts: 0,
+						reachability_failures: 0, capacity_failures: 0, call_error_failures: 1, customer_excluded: 0, phaseo_excluded: 0,
+						buckets: [attemptBucket("2026-08-27T09:00:00Z", { attempts: 1, eligible_attempts: 1, call_error_failures: 1 })] },
+					{ provider_id: "steady", service_tier: "standard", provider_name: "Steady", attempts: 10, eligible_attempts: 10, success_attempts: 10,
+						reachability_failures: 0, capacity_failures: 0, call_error_failures: 0, customer_excluded: 0, phaseo_excluded: 3,
+						buckets: [attemptBucket("2026-08-27T09:00:00Z", { attempts: 13, eligible_attempts: 10, success_attempts: 10, phaseo_excluded: 3 })] },
+				]), { status: 200 });
+			}
+			if (url.includes("/rpc/get_v2_model_provider_health_metrics")) {
+				return new Response(JSON.stringify([{
+					provider_id: "steady", provider_name: "Steady", requests: 10, health_requests: 10, health_success_requests: 10, uptime_pct: 100,
+					buckets: [{ start: "2026-08-27T09:00:00Z", end: "2026-08-27T10:00:00Z", requests: 10, health_requests: 10, health_success_requests: 10, uptime_pct: 100 }],
+				}]), { status: 200 });
+			}
+			if (url.includes("/rpc/get_v2_model_performance_metrics")) {
+				return new Response(JSON.stringify({
+					last_24h: { total_requests: 10, successful_requests: 10 },
+					hourly_24h: [
+						{ bucket: "2026-08-27T09:00:00Z", requests: 10, success_pct: 100 },
+						{ bucket: "2026-08-27T10:00:00Z", requests: 2, success_pct: 0 },
+					],
+					provider_uptime_24h: [],
+					provider_daily_7d: [],
+				}), { status: 200 });
+			}
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+
+		const response = await app.request("https://phaseo.app/api/_web/models/test%2Fmodel/performance", {}, env);
+		const payload = await response.json() as any;
+
+		expect(response.status).toBe(200);
+		// 20 eligible attempts across providers: 2 couldn't reach the provider (18 of 20
+		// reachable), 1 of those 18 was turned away for capacity, and 1 of the 17
+		// accepted failed afterwards. Each rate is of the step before it.
+		expect(payload.metrics.successSeries[0]).toMatchObject({
+			bucket: "2026-08-27T09:00:00Z",
+			overallSuccessPct: 100,
+			reachabilityPct: 90,
+			capacityPct: 94.44,
+			callErrorPct: 94.12,
+		});
+		// An hour with no attempts has no rates; the chart shows it as 100%.
+		expect(payload.metrics.successSeries[1]).toMatchObject({ reachabilityPct: null, capacityPct: null, callErrorPct: null });
+		// The chart's 24 hours as shares of all their attempts (the tooltips use these),
+		// not an average of hourly rates that the idle hour would dilute.
+		expect(payload.metrics.attemptHealth24h).toEqual({ reachabilityPct: 90, capacityPct: 94.44, callErrorPct: 94.12, uptimePct: expect.any(Number) });
+		expect(payload.metrics.providerPerformance).toEqual([
+			expect.objectContaining({
+				provider: "steady",
+				attemptHealth: { reachabilityPct: 100, capacityPct: 100, callErrorPct: 100, uptimePct: 100 },
+			}),
+		]);
+		expect(JSON.stringify(payload)).not.toMatch(/customer_excluded|phaseo_excluded|customerExcluded|phaseoExcluded/);
+		// Rates only: attempt and failure counts reveal traffic volume.
+		expect(JSON.stringify(payload)).not.toMatch(/eligibleAttempts|successAttempts|reachabilityFailures|capacityFailures|callErrorFailures|"attempts"/);
+		expect(JSON.stringify(payload.metrics.successSeries)).not.toMatch(/failedRequests/);
+	});
+
+	it("keeps request-level uptime when the attempt health RPC is not deployed", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("/rpc/get_v2_model_provider_attempt_health")) {
+				return new Response(JSON.stringify({ code: "PGRST202", message: "Could not find the function public.get_v2_model_provider_attempt_health" }), { status: 404 });
+			}
+			if (url.includes("/rpc/get_v2_model_performance_metrics")) {
+				return new Response(JSON.stringify({
+					last_24h: { total_requests: 4, successful_requests: 4 },
+					hourly_24h: [{ bucket: "2026-08-27T09:00:00Z", requests: 4, success_pct: 100 }],
+					provider_uptime_24h: [],
+					provider_daily_7d: [],
+				}), { status: 200 });
+			}
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+		const response = await app.request("https://phaseo.app/api/_web/models/test%2Fmodel/performance", {}, env);
+		const payload = await response.json() as any;
+		expect(response.status).toBe(200);
+		expect(payload.metrics.successSeries).toEqual([
+			expect.objectContaining({ bucket: "2026-08-27T09:00:00Z", overallSuccessPct: 100, requests: 4 }),
+		]);
+		expect(payload.metrics.successSeries[0]).not.toHaveProperty("reachabilityPct");
+		expect(payload.metrics).not.toHaveProperty("attemptHealth24h");
 	});
 
 	it("never exposes a synthetic unknown provider in performance data", async () => {
@@ -1191,7 +1516,7 @@ describe("public model routes", () => {
 		}),
 		]);
 		expect(payload.metrics.providerHourly7d).toEqual([
-			expect.objectContaining({ provider: "poolside", requests: 20, cachedInputPct: null, cacheTelemetryRequests: 0 }),
+			expect.objectContaining({ provider: "poolside", requests: 20, cachedInputPct: 80, cacheTelemetryRequests: 19 }),
 		]);
 		expect(payload.metrics.providerHourly7d).toEqual([
 			expect.objectContaining({ provider: "poolside", requests: 20 }),
@@ -1608,6 +1933,7 @@ describe("public model routes", () => {
 		]);
 
 		expect(timeline.status).toBe(200);
+		expect(timeline.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=21600, stale-while-revalidate=64800, stale-if-error=86400");
 		expect(timeline.headers.get("cache-tag")).toContain("web-api-model-timelines");
 		expect(timeline.headers.get("cache-tag")).toContain("web-api-model-openai2Fgpt-test");
 		expect(await timeline.json()).toMatchObject({
@@ -1773,7 +2099,7 @@ describe("public model routes", () => {
 		]), { status: 200 })));
 
 		const response = await app.request(
-			"https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai",
+			"https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai&model_id=openai%2Fgpt-test",
 			{},
 			env,
 		);
@@ -1788,5 +2114,113 @@ describe("public model routes", () => {
 			halfOpenCount: 1,
 			checkedPairs: 2,
 		} } });
+	});
+
+	it("reports an open breaker past its cooldown as recovering, whatever was stored at opening", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([
+			{ provider_id: "openai", breaker_state: "open", is_deranked: true, open_until_ms: Date.now() - 1_000 },
+		]), { status: 200 })));
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai&model_id=openai%2Fgpt-test",
+			{},
+			env,
+		);
+
+		await expect(response.json()).resolves.toEqual({ providers: { openai: {
+			providerId: "openai",
+			deranked: false,
+			recovering: true,
+			openCount: 0,
+			halfOpenCount: 1,
+			checkedPairs: 1,
+		} } });
+	});
+
+	it("requires a model, so one model's outage never limits a provider on another model", async () => {
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+		const response = await app.request("https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai", {}, env);
+		expect(response.status).toBe(400);
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("fails rather than report a partial status when the rows fill a page", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(Array.from({ length: 1_000 }, () => ({
+			provider_id: "openai", breaker_state: "closed", is_deranked: false, open_until_ms: 0,
+		}))), { status: 200 })));
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai&model_id=openai%2Fgpt-test", {}, env,
+		);
+		expect(response.status).toBe(503);
+		expect(response.headers.get("cache-tag")).toBeNull();
+	});
+
+	it("limits the status to the model page's own model", async () => {
+		const fetchMock = vi.fn(async () => new Response(JSON.stringify([]), { status: 200 }));
+		vi.stubGlobal("fetch", fetchMock);
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai&model_id=moonshotai%2Fkimi-k3",
+			{},
+			env,
+		);
+
+		expect(response.status).toBe(200);
+		const url = new URL(String(fetchMock.mock.calls[0][0]));
+		expect(url.searchParams.get("model_id")).toBe("eq.moonshotai/kimi-k3");
+		expect(url.searchParams.get("provider_id")).toBe("in.(openai)");
+	});
+
+	it("does not cache an empty status when breaker state cannot be read", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ message: "unavailable" }), { status: 500 })));
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai&model_id=openai%2Fgpt-test",
+			{},
+			env,
+		);
+
+		expect(response.status).toBe(503);
+		expect(response.headers.get("cache-tag")).toBeNull();
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBeNull();
+	});
+});
+
+describe("public model query validation", () => {
+	// Every distinct URL misses the edge cache, so free-text values must never reach the database.
+	it.each([
+		["/performance?colo=random-buster-1", "invalid_colo"],
+		["/performance?colo=ab", "invalid_colo"],
+		["/performance?colo=LHR1", "invalid_colo"],
+		["/usage-daily?since=yesterday", "invalid_date"],
+		["/usage-daily?until=2026-02-30", "invalid_date"],
+		["/effective-pricing-daily?since=2026-13-01", "invalid_date"],
+	])("rejects %s before any query", async (path, error) => {
+		const fetchMock = vi.fn(async () => new Response("[]"));
+		vi.stubGlobal("fetch", fetchMock);
+		const response = await app.request(`https://phaseo.app/api/_web/models/openai%2Fgpt-test${path}`, {}, env);
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({ error });
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("passes a valid colo to the performance RPCs", async () => {
+		const fetchMock = vi.fn(async () => new Response("[]"));
+		vi.stubGlobal("fetch", fetchMock);
+		const response = await app.request("https://phaseo.app/api/_web/models/openai%2Fgpt-test/performance?colo=lhr", {}, env);
+		expect(response.status).toBe(200);
+		const metricsCall = fetchMock.mock.calls.find((call: any[]) => String(call[0]).includes("get_v2_model_performance_metrics")) as any[] | undefined;
+		expect(String(metricsCall?.[1]?.body)).toContain('"p_cloudflare_colo":"LHR"');
+	});
+
+	it("keeps accepting ISO days and timestamps for since and until", async () => {
+		const fetchMock = vi.fn(async () => new Response("[]"));
+		vi.stubGlobal("fetch", fetchMock);
+		const response = await app.request("https://phaseo.app/api/_web/models/openai%2Fgpt-test/usage-daily?since=2026-10-01T00:00:00Z&until=2026-10-31", {}, env);
+		expect(response.status).toBe(200);
+		const usageCall = fetchMock.mock.calls.find((call: any[]) => String(call[0]).includes("get_v2_model_usage_daily")) as any[] | undefined;
+		expect(String(usageCall?.[1]?.body)).toContain('"p_since":"2026-10-01"');
+		expect(String(usageCall?.[1]?.body)).toContain('"p_until":"2026-10-31"');
 	});
 });

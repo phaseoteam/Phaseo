@@ -3,7 +3,7 @@
 // Why: Keeps pre-execution logic centralized and consistent.
 // How: Implements guard functions that return ok/response tuples.
 
-import { z } from "zod";
+import * as z from "zod";
 import type { Endpoint, RequestBetaOptions, RequestLabel, RequestMeta } from "@core/types";
 import { getEdgeMeta } from "@core/edge";
 import { getBindings } from "@/runtime/env";
@@ -29,7 +29,7 @@ import { detectClientAttribution } from "./clientAttribution";
 import { noteSpendLimitReached } from "../notifications/spend-limit-alerts";
 import { hasConfiguredKeyLimits } from "./context.shared";
 import { parsePresetReference } from "./presetReference";
-import { enforcedSpendLimit, shadowSpendLimitOnce, type SpendLimitSlot } from "@core/spend-limits";
+import { enforcedSpendLimit, shadowSpendLimitOnce, startSpendLimitFootprint, type SpendLimitSlot } from "@core/spend-limits";
 export { parseW3cTraceContext } from "@observability/trace-context";
 
 const MIN_CREDIT_AMOUNT = 1.0;
@@ -387,8 +387,8 @@ export async function guardAuth(req: Request, options: GuardAuthOptions = {}): P
         allowOAuthJwt: options.allowOAuthJwt,
     });
     if (!auth.ok) {
-        const reason = (auth as AuthFailure).reason;
-        return { ok: false, response: err("unauthorised", { reason, request_id: requestId }) };
+        const { reason, message } = auth as AuthFailure;
+        return { ok: false, response: err("unauthorised", { reason, ...(message ? { message } : {}), request_id: requestId }) };
     }
     return {
         ok: true,
@@ -426,8 +426,8 @@ export async function guardManagementAuth(req: Request, options: GuardAuthOption
     const requestId = requestIdFor(req);
     const auth = await authenticateManagement(req, { useKvCache: options.useKvCache });
     if (!auth.ok) {
-        const reason = (auth as AuthFailure).reason;
-        return { ok: false, response: err("unauthorised", { reason, request_id: requestId }) };
+        const { reason, message } = auth as AuthFailure;
+        return { ok: false, response: err("unauthorised", { reason, ...(message ? { message } : {}), request_id: requestId }) };
     }
     return {
         ok: true,
@@ -537,6 +537,13 @@ export async function guardContext(args: {
     onCreditCacheWrite?: (write: Promise<void>) => void;
 }): Promise<GuardResult<{ context: any; providers: any[]; resolvedModel?: string | null; candidateDiagnostics: ProviderCandidateBuildDiagnostics }>> {
     try {
+        // Enforce mode: read whether any spend limit can apply to this key while the context loads.
+        const spendLimitFootprint = startSpendLimitFootprint({
+            workspaceId: args.workspaceId,
+            keyId: args.apiKeyId,
+            internal: args.internal,
+            slot: args.spendLimit,
+        });
         const context = await fetchGatewayContext({
             workspaceId: args.workspaceId,
             model: args.model,
@@ -565,15 +572,22 @@ export async function guardContext(args: {
         }
 
         // Enforce mode only: the spend-limit coordinator (key caps, department and workspace
-        // budgets), decided once per request however many candidate models are checked.
+        // budgets), decided once per request however many candidate models are checked. Skipped
+        // when this context and the footprint both show nothing it could enforce.
         const enforced = enforcedSpendLimit({
             workspaceId: args.workspaceId,
             keyId: args.apiKeyId,
             requestId: args.requestId,
             internal: args.internal,
             slot: args.spendLimit,
+            footprint: spendLimitFootprint,
+            keyLimit: context.keyLimit,
         });
+        const spendLimitStartedAt = performance.now();
         const decision = enforced ? await enforced : null;
+        if (enforced && context.contextTelemetry) {
+            context.contextTelemetry.spendLimitMs = Math.round((performance.now() - spendLimitStartedAt) * 1000) / 1000;
+        }
         if (decision?.outcome === "denied") {
             return { ok: false, response: keyLimitExceededResponse(decision.keyLimit, args) };
         }
@@ -720,7 +734,7 @@ export function makeMeta(input: {
     providerCapabilitiesBeta?: boolean;
     beta?: RequestBetaOptions;
     beforeContextMs?: number | null;
-    beforeContextCacheStatus?: "hit" | "miss" | "bypass" | "credit_refresh" | null;
+    beforeContextCacheStatus?: "hit" | "miss" | "bypass" | "credit_refresh" | "model_miss" | null;
     beforeContextKeyVersionMs?: number | null;
     beforeContextCacheReadMs?: number | null;
     beforeContextCreditRefreshMs?: number | null;

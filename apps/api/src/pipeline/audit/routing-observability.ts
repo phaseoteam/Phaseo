@@ -1,3 +1,17 @@
+import { classifyAttemptLogDetail, isAttemptHealthClass, isAttemptHealthReason } from "@pipeline/execute/attempt-health";
+import type { ProviderAttemptLog } from "@pipeline/before/types";
+
+function attemptHealthFields(attempt: Record<string, any>) {
+    if (isAttemptHealthClass(attempt.health_class)) {
+        return {
+            health_class: attempt.health_class,
+            health_reason: isAttemptHealthReason(attempt.health_reason) ? attempt.health_reason : null,
+        };
+    }
+    const detail = classifyAttemptLogDetail(attempt as unknown as ProviderAttemptLog);
+    return { health_class: detail.healthClass, health_reason: detail.reason };
+}
+
 export type RoutingInput = {
     provider?: string | null;
     providerApiModelId?: string | null;
@@ -63,6 +77,9 @@ export function buildRoutingObservability(args: RoutingInput) {
             response_kind: typeof attempt.response_kind === "string" ? attempt.response_kind : null,
             retryable: attempt.retryable === true,
             was_probe: attempt.was_probe === true,
+            // Per-attempt provider health class and reason for model pages. Attempts
+            // recorded without a class (older callers) are classified from their own fields.
+            ...attemptHealthFields(attempt),
         };
     });
     const attemptedKeys = new Set(normalizedAttempts.map((attempt) =>

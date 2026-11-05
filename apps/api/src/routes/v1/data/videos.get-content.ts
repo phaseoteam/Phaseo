@@ -1,3 +1,4 @@
+import { normalizeGoogleInteractionVideoPayload } from "@providers/google-video/interactions";
 import { setVideoJobStatus, type VideoJobMeta, type VideoJobRecord } from "@core/video-jobs";
 import { guardAuth } from "@pipeline/before/guards";
 import { err } from "@pipeline/before/http";
@@ -414,7 +415,8 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {
 				},
 			});
 		}
-		const json = await res.clone().json().catch(() => null);
+		// Gemini Omni jobs are Interactions; read them as operations.
+		const json: any = normalizeGoogleInteractionVideoPayload(await res.clone().json().catch(() => null));
 		const generatedVideo = extractGoogleGeneratedVideoPayload(json, requestedIndex);
 		const providerId = videoMeta?.provider ?? "google-ai-studio";
 		const model = inferGoogleModelFromOperation(operationName) ?? videoMeta?.model ?? null;
@@ -477,6 +479,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {
 				googleOperationName: operationName,
 				...(generatedVideo.uri ? { googleVideoUri: generatedVideo.uri } : {}),
 				...(generatedVideo.mimeType ? { googleVideoMimeType: generatedVideo.mimeType } : {}),
+				...(json?.usageMeters ? { googleUsageMeters: json.usageMeters } : {}),
 			},
 		});
 		const uri = generatedVideo.uri;

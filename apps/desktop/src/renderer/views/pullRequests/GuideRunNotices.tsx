@@ -9,7 +9,7 @@ import { requestPullRequestTab } from "./tabRequest";
 const readingGuide = (number: number) => Array.from(document.querySelectorAll(`[data-pull-request="${number}"] nav[aria-label="Review tour"]`)).some(element => (element as HTMLElement).checkVisibility?.({ visibilityProperty: true }) ?? true);
 
 /**
- * T3's PullRequestGuideRunCoordinator: when a review guide run ends, a toast says "Review guide ready" or "Review guide
+ * When a review guide run ends, a toast says "Review guide ready" or "Review guide
  * failed" with "Open guide", unless the person is reading that guide. When the window is not in front, the main process
  * shows a desktop notification instead, and clicking it opens the guide.
  */

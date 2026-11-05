@@ -1,117 +1,99 @@
 ---
 title: "Migrar desde LLM Gateway"
 sidebarTitle: "LLM Gateway"
-description: "Migra de LLMGateway a Phaseo Gateway con un cambio de endpoint compatible con OpenAI, verificación de modelos y validación gradual."
+description: "Migra de LLMGateway a Phaseo Gateway con un cambio de endpoint compatible con OpenAI, verificación de los ID de modelo y un despliegue gradual validado."
 icon: "/icons/brands/llmgateway.svg"
 ---
 
-Si tu aplicación ya usa LLM Gateway mediante un cliente compatible con OpenAI, normalmente puedes conservar las solicitudes y empezar sustituyendo únicamente el límite del gateway.
+Cambia la URL base y la clave, conserva las cargas útiles de las solicitudes y asigna cada ID de modelo: el prefijo de LLM Gateway indica el proveedor que sirve el modelo, mientras que el de Phaseo indica quién creó el modelo.
 
-## Qué cambia
-
-| Configuración | Antes | Después |
+| Ajuste | LLM Gateway | Phaseo |
 | --- | --- | --- |
 | URL base | `https://api.llmgateway.io/v1` | `https://api.phaseo.app/v1` |
-| Clave de API | `LLM_GATEWAY_API_KEY` | `PHASEO_API_KEY` |
-| Alias de modelos | Alias actuales del gateway | Verifícalos con `GET /v1/models` o normalízalos en un único límite |
-| Contenido de la solicitud | Solicitud compatible con OpenAI actual | Consérvalo sin cambios en la primera fase |
+| Clientes de estilo Anthropic | `ANTHROPIC_BASE_URL=https://api.llmgateway.io` | `https://api.phaseo.app`; consulta [Migrar desde el SDK de Anthropic](./from-anthropic) |
+| Clave de API | `LLM_GATEWAY_API_KEY` (`llmgtwy_…`) | `PHASEO_API_KEY` |
+| ID de modelos | `gpt-4o`, `<provider>/<model>`, `auto` | `<org>/<model>` de `GET /v1/models?format=openai` |
+| Carga útil de la solicitud | Compatible con OpenAI | Sin cambios |
 
-## Antes de empezar
-
-- La configuración actual del endpoint y la clave de API de LLM Gateway.
-- `PHASEO_API_KEY` en los entornos local, staging y producción.
-- Una muestra de referencia de calidad de respuesta, latencia y tasa de errores.
-
-## 1) Inventaría los puntos de integración
-
-Identifica los archivos exactos que crean y configuran el cliente de LLM Gateway.
-
-- Busca dónde se usan las variables de entorno `LLM_GATEWAY_*`.
-- Localiza todas las referencias a la URL base en la configuración de ejecución.
-- Registra los ID de modelos activos y sus cadenas de alternativas.
-- Anota los valores predeterminados de prompts compartidos, la lógica de permitir o bloquear proveedores y los preajustes de parámetros que deberían trasladarse a los preajustes de Gateway.
-
-## 2) Cambia el endpoint y las credenciales
-
-Primero conserva el contenido de las solicitudes. Empieza cambiando únicamente el endpoint y la clave para reducir el riesgo.
+## Cambia el cliente
 
 <CodeGroup>
 ```typescript TypeScript
-// Before
 import OpenAI from "openai";
 
-const before = new OpenAI({
-  apiKey: process.env.LLM_GATEWAY_API_KEY,
-  baseURL: "https://api.llmgateway.io/v1",
-});
-```
-
-```typescript TypeScript
-// After
-import OpenAI from "openai";
-
-const after = new OpenAI({
+// Antes:
+// new OpenAI({ apiKey: process.env.LLM_GATEWAY_API_KEY, baseURL: "https://api.llmgateway.io/v1" });
+const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
 });
 ```
 
+```python Python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+```
+
 ```bash cURL
-curl -s "https://api.phaseo.app/v1/chat/completions" \
+curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4.1-mini",
-    "messages": [{"role":"user","content":"Hello"}]
+    "model": "openai/gpt-6-astra",
+    "messages": [{"role": "user", "content": "Hello"}]
   }'
 ```
 </CodeGroup>
 
-## 3) Valida la compatibilidad de los modelos
+Asigna o elimina cada variable `LLM_GATEWAY_*`, también en los ajustes de CI y de hosting. Si la aplicación usa `@llmgateway/ai-sdk-provider`, cambia a `@phaseo/ai-sdk-provider` como en [Migrar desde Vercel AI Gateway](./from-vercel).
 
-Consulta el catálogo de modelos de Phaseo y verifica cada modelo utilizado en producción.
+## Asigna los ID de modelos
 
-Si la configuración actual usa alias sin prefijo, como `gpt-4o`, normalízalos en un único límite en lugar de cambiarlos en cada cliente.
-
-Si la capa del gateway también centraliza los valores predeterminados de las solicitudes o las restricciones de proveedores, asigna ese comportamiento a [Preajustes](../guides/presets.mdx) y [Enrutamiento y alternativas](../guides/routing-and-fallbacks.mdx) durante la migración, en vez de volver a implementarlo para cada cliente.
+Lista los ID de Phaseo y comprueba cada modelo de producción con ellos:
 
 ```bash
-curl -s "https://api.phaseo.app/v1/models" \
-  -H "Authorization: Bearer $PHASEO_API_KEY" | jq '.data | length'
+curl -s "https://api.phaseo.app/v1/models?format=openai" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" | jq -r '.data[].id'
 ```
 
-## 4) Lista de comprobación de la migración de LLMGateway
+`alibaba/<model>` en LLM Gateway no es un ID de Phaseo. Asigna cada ID al formato `<org>/<model>` de Phaseo y conserva la fijación de proveedor con `provider.only` o con un ID `provider:org/model`. Traduce los alias sin prefijo, como `gpt-4o`, en una sola función en el límite del cliente en lugar de en cada punto de llamada.
 
-- Se han asignado o eliminado todas las variables `LLM_GATEWAY_*`.
-- La URL base se ha actualizado a `https://api.phaseo.app/v1`.
-- `PHASEO_API_KEY` está configurada en todos los entornos de despliegue.
-- Los ID de modelos de producción se han verificado con `/v1/models`.
-- En staging se han validado una solicitud sin streaming y otra con streaming.
-- Se ha vuelto a comprobar el tratamiento de errores para claves y modelos no válidos.
-- Los valores predeterminados compartidos de prompts y enrutamiento se han trasladado a preajustes cuando corresponde.
-- Se han vuelto a comprobar las consultas de generación mediante `GET /v1/generations?id=<request_id>` para poder reproducir solicitudes fallidas desde el contenido almacenado de `replay_request` cuando `replay_supported=true`.
+## Asigna las funciones del gateway
 
-## 5) Valida y despliega
+| LLM Gateway | En Phaseo |
+| --- | --- |
+| Enrutador `auto` | `phaseo/auto` ([Enrutamiento automático](../guides/auto-routing), alfa); no se puede combinar con `models`. |
+| Cadenas de respaldo | Matriz `models` o rutas dinámicas, que se prueban con `429`, `500`, `502`, `503` y `504`, nunca con errores de la solicitud. |
+| `X-No-Fallback` | `provider.allow_fallbacks: false`, o un ID `provider:org/model`. |
+| Lógica de proveedores permitidos y denegados | `provider.only`, `provider.ignore` o [Presets](../guides/presets). Mantén al menos un proveedor apto. |
+| Encabezados `X-LLMGateway-<Key>` | [Etiquetas](../guides/request-labels) `X-Phaseo-Metadata`, hasta 32. |
+| Encabezados de sesión (`x-session-id`) | Campo del cuerpo `session_id`; Phaseo ignora los encabezados de sesión. |
+| `X-Source` | `HTTP-Referer` o `X-App-Name`. Consulta [Atribución de aplicaciones](../guides/app-attribution). |
+| Caché de respuestas | No hay caché de respuestas. |
+| Claves de proveedores | BYOK (`phaseo byok create` o `POST /v1/byok`), o créditos de Phaseo. Recurrir a los créditos se controla con el ajuste del espacio de trabajo `byok_fallback_enabled`. |
+| Registros de solicitudes | Registros de solicitudes, destinos de observabilidad y `GET /v1/generations?id=<request_id>`. Cuando `replay_supported` es `true`, repite una solicitud fallida a partir de su carga útil `replay_request`. |
 
-1. Ejecuta tu conjunto de prompts de referencia y compara calidad, latencia y coste con la línea base.
-2. Confirma que puedes recuperar las solicitudes fallidas de staging mediante el contenido de reproducción devuelto por `GET /v1/generations`.
-3. Despliega con una bandera canary y aumenta el tráfico desde un porcentaje bajo hasta el total cuando los resultados sean estables.
-4. Observa las métricas de producción durante al menos un ciclo de lanzamiento antes de retirar la configuración anterior.
+## Prueba y despliega
 
-## Comandos de validación
+Ejecuta tus prompts de referencia en ambos gateways y compara calidad, latencia y coste. Comprueba primero los endpoints:
 
 ```bash
 curl -s "https://api.phaseo.app/v1/health"
-curl -s "https://api.phaseo.app/v1/models" -H "Authorization: Bearer $PHASEO_API_KEY"
+curl -s "https://api.phaseo.app/v1/models?format=openai" -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-Después:
+Antes de mover tráfico, comprueba que:
 
-- Ejecuta en staging una solicitud sin streaming y otra con streaming.
-- Reproduce tus prompts de referencia y compara los resultados con la línea base.
+- `PHASEO_API_KEY` está definida en todos los entornos;
+- cada ID de modelo de producción está asignado y aparece en la lista;
+- una solicitud sin streaming y otra con streaming funcionan en staging;
+- se gestionan los errores de clave no válida y de modelo no válido; sus cuerpos pueden ser distintos de los de LLM Gateway;
+- una solicitud fallida en staging se puede recuperar con `GET /v1/generations`;
+- los valores predeterminados compartidos de prompts y enrutamiento están en presets cuando corresponde.
 
-## Próximos pasos
-
-- [Migrar desde OpenRouter](./from-openrouter.mdx)
-- [Migrar desde Vercel AI Gateway](./from-vercel.mdx)
-- [Inicio rápido](../quickstart.mdx)
+Publica detrás de una marca canary, pasa de una pequeña parte del tráfico a todo él cuando sea estable y vigila las métricas de producción durante al menos un ciclo de publicación antes de eliminar la configuración anterior.

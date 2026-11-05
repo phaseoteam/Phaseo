@@ -35,7 +35,7 @@ begin
       and exists (
         select 1 from public.v2_route_capabilities c
         where c.provider_model_id=r.provider_model_id
-          and c.status in ('active','deranked','deranked_lvl1','deranked_lvl2','deranked_lvl3')
+          and c.status in ('active','degraded','deranked','deranked_lvl1','deranked_lvl2','deranked_lvl3')
           and (c.effective_from is null or c.effective_from<=now())
           and (c.effective_to is null or now()<c.effective_to));
     v_served := public.v2_model_has_routable_route(v_successor.model_slug);

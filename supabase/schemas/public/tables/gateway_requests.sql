@@ -103,7 +103,8 @@ CREATE TABLE "public"."gateway_requests" (
   "attributed_department_id"          uuid,
   "attributed_department_name"        text,
   "attributed_department_color"       text,
-  "attribution_basis"                 text
+  "attribution_basis"                 text,
+  "billing_request_id"                text
 ) PARTITION BY RANGE (created_at);
 
 ALTER TABLE "public"."gateway_requests"
@@ -519,6 +520,13 @@ CREATE POLICY "gateway_requests_select_own_team" ON "public"."gateway_requests"
   TO "authenticated"
   USING (public.is_workspace_member(workspace_id));
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."gateway_requests"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "service_role_full_access" ON "public"."gateway_requests_2026_03"
   FOR ALL
   TO "service_role"
@@ -581,7 +589,13 @@ CREATE POLICY "service_role_full_access" ON "public"."gateway_requests_default"
   USING (true)
   WITH CHECK (true);
 
-GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."gateway_requests" TO "anon", "authenticated", "service_role";
+GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."gateway_requests" TO "service_role";
+
+-- Clients read every column except detail_metadata (search queries, results and fetched URLs); the apps read it
+-- with the service role and apply the workspace contents setting. New columns need a grant here to be client-readable.
+GRANT SELECT ("api_model_id", "app_id", "attributed_access_role", "attributed_department_color", "attributed_department_id", "attributed_department_name", "attributed_user_id", "attribution_basis", "auth_method", "billing_request_id", "byok", "canonical_model_id", "client_source_detection", "client_source_id", "client_source_kind", "client_source_name", "client_source_version", "cost_nanos", "created_at", "currency", "end_user_id", "endpoint", "error_code", "error_message", "error_payload", "finish_reason", "gateway_ttft_ms", "generation_ms", "id", "is_free_variant", "itl_ms", "key_id", "latency_ms", "location", "model_id", "native_response_id", "oauth_client_id", "oauth_user_id", "output_speed_tps", "phaseo_overhead_ms", "pricing_lines", "pricing_plan", "provider", "provider_attempts", "provider_ttft_ms", "realtime_session_id", "request_id", "requested_model_id", "routed_model_id", "session_id", "status_code", "stream", "success", "throughput", "tpot_ms", "trace_data", "usage", "usage_audio_inputs", "usage_audio_outputs", "usage_audio_seconds", "usage_cached_read_audio_tokens", "usage_cached_read_image_tokens", "usage_cached_read_text_tokens", "usage_cached_read_tokens", "usage_cached_read_video_tokens", "usage_cached_write_audio_tokens", "usage_cached_write_image_tokens", "usage_cached_write_text_tokens", "usage_cached_write_text_tokens_1h", "usage_cached_write_text_tokens_5m", "usage_cached_write_tokens", "usage_cached_write_video_tokens", "usage_embedding_quad_tokens", "usage_embedding_tokens", "usage_image_inputs", "usage_image_megapixels", "usage_image_outputs", "usage_input_audio_tokens", "usage_input_characters", "usage_input_image_tokens", "usage_input_quad_tokens", "usage_input_text_tokens", "usage_input_tokens", "usage_input_video_tokens", "usage_moderation_quad_tokens", "usage_normalized_at", "usage_ocr_quad_tokens", "usage_output_audio_tokens", "usage_output_characters", "usage_output_image_tokens", "usage_output_quad_tokens", "usage_output_text_tokens", "usage_output_tokens", "usage_output_video_tokens", "usage_reasoning_tokens", "usage_rerank_quad_tokens", "usage_text_quad_tokens", "usage_total_characters", "usage_total_quad_tokens", "usage_total_tokens", "usage_video_inputs", "usage_video_outputs", "usage_video_pixel_seconds", "usage_video_seconds", "workspace_id") ON TABLE "public"."gateway_requests" TO "anon";
+
+GRANT SELECT ("api_model_id", "app_id", "attributed_access_role", "attributed_department_color", "attributed_department_id", "attributed_department_name", "attributed_user_id", "attribution_basis", "auth_method", "billing_request_id", "byok", "canonical_model_id", "client_source_detection", "client_source_id", "client_source_kind", "client_source_name", "client_source_version", "cost_nanos", "created_at", "currency", "end_user_id", "endpoint", "error_code", "error_message", "error_payload", "finish_reason", "gateway_ttft_ms", "generation_ms", "id", "is_free_variant", "itl_ms", "key_id", "latency_ms", "location", "model_id", "native_response_id", "oauth_client_id", "oauth_user_id", "output_speed_tps", "phaseo_overhead_ms", "pricing_lines", "pricing_plan", "provider", "provider_attempts", "provider_ttft_ms", "realtime_session_id", "request_id", "requested_model_id", "routed_model_id", "session_id", "status_code", "stream", "success", "throughput", "tpot_ms", "trace_data", "usage", "usage_audio_inputs", "usage_audio_outputs", "usage_audio_seconds", "usage_cached_read_audio_tokens", "usage_cached_read_image_tokens", "usage_cached_read_text_tokens", "usage_cached_read_tokens", "usage_cached_read_video_tokens", "usage_cached_write_audio_tokens", "usage_cached_write_image_tokens", "usage_cached_write_text_tokens", "usage_cached_write_text_tokens_1h", "usage_cached_write_text_tokens_5m", "usage_cached_write_tokens", "usage_cached_write_video_tokens", "usage_embedding_quad_tokens", "usage_embedding_tokens", "usage_image_inputs", "usage_image_megapixels", "usage_image_outputs", "usage_input_audio_tokens", "usage_input_characters", "usage_input_image_tokens", "usage_input_quad_tokens", "usage_input_text_tokens", "usage_input_tokens", "usage_input_video_tokens", "usage_moderation_quad_tokens", "usage_normalized_at", "usage_ocr_quad_tokens", "usage_output_audio_tokens", "usage_output_characters", "usage_output_image_tokens", "usage_output_quad_tokens", "usage_output_text_tokens", "usage_output_tokens", "usage_output_video_tokens", "usage_reasoning_tokens", "usage_rerank_quad_tokens", "usage_text_quad_tokens", "usage_total_characters", "usage_total_quad_tokens", "usage_total_tokens", "usage_video_inputs", "usage_video_outputs", "usage_video_pixel_seconds", "usage_video_seconds", "workspace_id") ON TABLE "public"."gateway_requests" TO "authenticated";
 
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."gateway_requests_2026_03" TO "service_role";
 
@@ -602,6 +616,8 @@ GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON
 COMMENT ON COLUMN "public"."gateway_requests"."api_model_id" IS 'Concrete provider API model id executed for this request, preserving variants such as :free, -fast, or -flex.';
 
 COMMENT ON COLUMN "public"."gateway_requests"."auth_method" IS 'Authentication method used for the request: api_key (legacy HMAC keys) or oauth (JWT tokens)';
+
+COMMENT ON COLUMN "public"."gateway_requests"."billing_request_id" IS 'Wallet charge key for this attempt: gateway_request_charges.request_id in the same workspace. Null for rows written before it was recorded, requests rejected before execution, and requests billed through wallet reservations.';
 
 COMMENT ON COLUMN "public"."gateway_requests"."detail_metadata" IS 'Request-level routing, provider, guardrail, and plugin diagnostics for observability detail views.';
 

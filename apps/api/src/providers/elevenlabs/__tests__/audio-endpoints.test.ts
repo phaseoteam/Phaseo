@@ -185,7 +185,50 @@ describe("ElevenLabs audio endpoints", () => {
 		mock.restore();
 
 		expect(result.upstream.status).toBe(200);
-		expect(capturedUrl).toContain("output_format=pcm_44100");
+		// A WAV file, not headerless PCM.
+		expect(capturedUrl).toContain("output_format=wav_44100");
+	});
+
+	it.each([
+		["pcm", "pcm_44100"],
+		["mp3", "mp3_44100_128"],
+	])("maps response_format %s to %s", async (responseFormat, outputFormat) => {
+		let capturedUrl = "";
+		const mock = installFetchMock([{
+			match: (url) => url.includes("/v1/text-to-speech/"),
+			response: new Response("AUDIO", { status: 200 }),
+			onRequest: (call) => { capturedUrl = call.url; },
+		}]);
+		await execSpeech({
+			endpoint: "audio.speech", model: "eleven-labs/eleven-v3",
+			body: { model: "eleven-labs/eleven-v3", input: "Hi", voice: "rachel", response_format: responseFormat },
+			meta: REQUEST_META, workspaceId: "team_test", providerId: "elevenlabs", byokMeta: [], pricingCard: PRICING_CARD,
+			providerModelSlug: null, stream: false,
+		} as any);
+		mock.restore();
+		expect(capturedUrl).toContain(`output_format=${outputFormat}`);
+	});
+
+	it("accepts any library or cloned voice ID on every model, and rejects malformed ones", async () => {
+		const voice = "NfUrCNRReUL9RXS9upG1";
+		let called = 0;
+		const mock = installFetchMock([{
+			match: (url) => url.includes(`/v1/text-to-speech/${voice}`),
+			response: new Response("AUDIO", { status: 200 }),
+			onRequest: () => { called += 1; },
+		}]);
+		const run = (voiceValue: string) => execSpeech({
+			endpoint: "audio.speech", model: "eleven-labs/eleven-flash-v2.5",
+			body: { model: "eleven-labs/eleven-flash-v2.5", input: "Hi", voice: voiceValue },
+			meta: REQUEST_META, workspaceId: "team_test", providerId: "elevenlabs", byokMeta: [], pricingCard: PRICING_CARD,
+			providerModelSlug: null, stream: false,
+		} as any);
+		expect((await run(voice)).upstream.status).toBe(200);
+		const bad = await run("not a voice");
+		mock.restore();
+		expect(called).toBe(1);
+		expect(bad.upstream.status).toBe(400);
+		expect((await bad.upstream.json()).error.message).toContain("20-character ElevenLabs voice ID");
 	});
 
 	it("maps OAI audio input schema and elevenlabs extensions into ElevenLabs TTS request", async () => {

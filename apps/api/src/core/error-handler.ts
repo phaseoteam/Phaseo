@@ -1141,6 +1141,7 @@ export async function handleError({
 			auditArgs.serverToolTrace = ctx.serverToolTrace;
 		}
         auditArgs.stream = ctx?.stream;
+        auditArgs.billingRequestId = ctx?.billingRequestId ?? null;
         auditArgs.provider = providerForAudit;
         auditArgs.providerAttempts = Array.isArray(ctx?.providerAttempts)
             ? ctx.providerAttempts
@@ -1188,6 +1189,7 @@ export async function handleError({
                 metadata: requestMetadataForObservability,
                 rateLimitPolicyId: isPolicyRejection ? (errorPayload.policy_id as string | undefined) ?? null : null,
                 rateLimitScope: isPolicyRejection ? (errorPayload.limit_scope as string | undefined) ?? null : null,
+                zeroDataRetention,
             })
             : null,
         writeAxiom: () => emitGatewayRequestEvent({

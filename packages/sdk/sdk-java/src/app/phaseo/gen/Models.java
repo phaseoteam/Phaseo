@@ -1537,6 +1537,7 @@ public final class Models {
 	public static class GatewayCapabilities {
 		public java.util.List<String> endpoints;
 		public Object parameter_details;
+		public Object parameter_specs;
 		public java.util.List<String> parameters;
 	}
 
@@ -1810,14 +1811,10 @@ public final class Models {
 	public static class Guardrail {
 		public java.util.List<String> allowed_api_model_ids;
 		public String created_at;
-		public Integer daily_limit_cost_nanos;
-		public Integer daily_limit_requests;
 		public String description;
 		public Boolean enabled;
 		public String id;
 		public Object model_restriction_mode;
-		public Integer monthly_limit_cost_nanos;
-		public Integer monthly_limit_requests;
 		public String name;
 		public Boolean privacy_enable_free_may_publish_prompts;
 		public Boolean privacy_enable_free_may_train;
@@ -1833,23 +1830,11 @@ public final class Models {
 		public Boolean sensitive_info_enabled;
 		public java.util.List<Object> sensitive_info_rules;
 		public String updated_at;
-		public Integer weekly_limit_cost_nanos;
-		public Integer weekly_limit_requests;
 		public String workspace_id;
-	}
-
-	public static class GuardrailBudgetInput {
-		public Integer dailyCostNanos;
-		public Integer dailyRequests;
-		public Integer monthlyCostNanos;
-		public Integer monthlyRequests;
-		public Integer weeklyCostNanos;
-		public Integer weeklyRequests;
 	}
 
 	public static class GuardrailCreateRequest {
 		public java.util.List<String> allowedApiModelIds;
-		public Object budgets;
 		public String description;
 		public Boolean enabled;
 		public Object modelRestrictionMode;
@@ -1931,7 +1916,6 @@ public final class Models {
 
 	public static class GuardrailPolicyInput {
 		public java.util.List<String> allowedApiModelIds;
-		public Object budgets;
 		public String description;
 		public Boolean enabled;
 		public Object modelRestrictionMode;
@@ -1961,7 +1945,6 @@ public final class Models {
 
 	public static class GuardrailUpdateRequest {
 		public java.util.List<String> allowedApiModelIds;
-		public Object budgets;
 		public String description;
 		public Boolean enabled;
 		public Object modelRestrictionMode;
@@ -2750,6 +2733,82 @@ public final class Models {
 	}
 
 	public static class OrganisationIdList {
+	}
+
+	public static class ParameterDimensions {
+		public java.util.List<String> aspect_ratios;
+		public Double max;
+		public String max_aspect_ratio;
+		public Double max_height;
+		public Double max_pixels;
+		public Double max_width;
+		public Double min;
+		public Double min_pixels;
+		public Double multiple_of;
+	}
+
+	public static class ParameterOption {
+		public String description;
+		public String label;
+		public Object value;
+	}
+
+	public static class ParameterRule {
+		public Object default_;
+		public Object if_;
+		public Double max;
+		public String message;
+		public Double min;
+		public Double step;
+		public Boolean supported;
+		public java.util.List<Object> values;
+	}
+
+	public static class ParameterSpec {
+		public String alias_of;
+		public java.util.List<String> aliases;
+		public Boolean always_on;
+		public Object default_;
+		public Object dimensions;
+		public Object extra;
+		public String format;
+		public java.util.List<String> formats;
+		public java.util.List<String> item_types;
+		public Double max;
+		public Double max_file_size_bytes;
+		public Double max_items;
+		public Double max_length;
+		public Double max_tokens;
+		public Object media;
+		public Double min;
+		public Double min_items;
+		public Double min_length;
+		public Double multiple_of;
+		public String notes;
+		public Boolean open;
+		public java.util.List<Object> options;
+		public Object properties;
+		public Object provider_default;
+		public Boolean required;
+		public java.util.List<String> requires;
+		public Object source;
+		public Double step;
+		public String support_level;
+		public Boolean supported;
+		public Object type;
+		public String upstream_name;
+		public java.util.List<Object> upstream_values;
+		public java.util.List<Object> values;
+		public java.util.List<Object> when;
+	}
+
+	public static class ParameterSpecs {
+	}
+
+	public static class ParameterType {
+	}
+
+	public static class ParameterValue {
 	}
 
 	public static class ParseBlock {
@@ -3987,6 +4046,7 @@ public final class Models {
 
 	public static class VideoModelProviderCapability {
 		public String id;
+		public Object parameter_specs;
 		public java.util.List<String> supported_parameters;
 		public Object supported_parameters_detail;
 		public java.util.List<String> supported_params;
@@ -4113,6 +4173,7 @@ public final class Models {
 		public String last_used_at;
 		public Integer max_token_lifetime_seconds;
 		public String name;
+		public String owner_claim;
 		public String owner_id;
 		public Object provider;
 		public Object status;
@@ -4128,6 +4189,7 @@ public final class Models {
 		public String issuer;
 		public Integer max_token_lifetime_seconds;
 		public String name;
+		public String owner_claim;
 		public String owner_id;
 		public Object provider;
 	}

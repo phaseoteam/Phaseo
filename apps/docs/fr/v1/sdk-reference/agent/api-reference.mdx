@@ -1,0 +1,307 @@
+---
+icon: "braces"
+title: "Référence de l’API"
+description: "Retrouvez chaque fonction, méthode, option et type de résultat du SDK Agent, avec son nom dans chaque langage."
+---
+
+Cherchez une fonction ou un type du SDK Agent selon ce qu’il fait, puis trouvez son nom dans votre langage. [Utilisation](./usage) montre comment les éléments s’assemblent. TypeScript sert de conception de référence ; quand un langage n’a pas une fonctionnalité, sa cellule l’indique.
+
+| Langage | Package | Importer depuis | Source |
+| --- | --- | --- | --- |
+| TypeScript | `@phaseo/agent-sdk` | `@phaseo/agent-sdk` | `packages/sdk/agent-sdk-ts` |
+| Python | `phaseo-agent-sdk` | `phaseo_agent` | `packages/sdk/agent-sdk-py` |
+| Go | `github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go` | package `phaseoagent` | `packages/sdk/agent-sdk-go/agent.go` |
+| C# | `Phaseo.AgentSdk` (NuGet) | espace de noms `PhaseoAgentSdk`, classe statique `AgentSdk` | `packages/sdk/agent-sdk-csharp/AgentSdk.cs` |
+| PHP | `phaseo/agent-sdk` (Composer) | espace de noms `Phaseo\AgentSdk`, classe `AgentSdk` | `packages/sdk/agent-sdk-php/src/AgentSdk.php` |
+| Ruby | `phaseo_agent_sdk` (gem) | module `PhaseoAgentSdk` | `packages/sdk/agent-sdk-ruby/lib/phaseo_agent_sdk.rb` |
+| Java | `app.phaseo:phaseo-agent-sdk` (Maven) | records imbriqués dans `app.phaseo.agent.AgentSdk` | `packages/sdk/agent-sdk-java/src/main/java/app/phaseo/agent/AgentSdk.java` |
+| Rust | `phaseo-agent` `0.2` (crates.io, [docs.rs](https://docs.rs/phaseo-agent/0.2.0/phaseo_agent/)) | `phaseo_agent` | `packages/sdk/agent-sdk-rust` |
+
+## Créer un agent
+
+Crée un agent à partir d’une définition. La limite d’étapes de la définition s’applique à chaque appel run ou continue.
+
+| Langage | Nom | Limite d’étapes par défaut |
+| --- | --- | --- |
+| TypeScript | `createAgent(definition)` | 12 |
+| Python | `create_agent(definition)`, à partir d’un dict ou d’une `AgentDefinition` | 12 |
+| Go | `CreateAgent(AgentDefinition) *Agent` | 8 |
+| C# | `AgentSdk.CreateAgent(AgentDefinition)` | 12 |
+| PHP | `AgentSdk::createAgent(AgentDefinition)` | 12 |
+| Ruby | `PhaseoAgentSdk.create_agent(definition)`, à partir d’une `AgentDefinition` ou de champs en arguments nommés | 12 |
+| Java | `AgentSdk.createAgent(AgentDefinition)` | 12 (un `maxSteps` inférieur à 1 devient 12) |
+| Rust | `create_agent(AgentDefinition::new(id, model))` | 8 (les valeurs sont ramenées à au moins 1) |
+
+### Champs de la définition
+
+Rust construit la définition avec des méthodes plutôt qu’avec des champs : `AgentDefinition::new(id, model)`, puis `.instructions(text)`, `.tool(tool)` (une fois par outil), `.max_steps(limit)`, `.model_retries(count, backoff)` et `.human_review(callback)`. L’`AgentDefinition` de Java est un record avec des constructeurs à 10, 13 et 19 arguments.
+
+| Champ | camelCase (TypeScript, PHP, Java) | snake_case (Python, Ruby) | PascalCase (Go, C#) | Absent de |
+| --- | --- | --- | --- | --- |
+| ID de l’agent (obligatoire) | `id` | `id` | `ID` (Go), `Id` (C#) | |
+| Modèle ou préréglage | `model`, `preset` | `model`, `preset` | `Model`, `Preset` | Rust n’a pas de `preset` |
+| Liste de modèles (seul le premier est utilisé, quand `model` n’est pas défini ; pas de repli) | `models` | | | Tous sauf TypeScript |
+| Instructions | `instructions` | `instructions` | `Instructions` | |
+| Outils | `tools` | `tools` | `Tools` | |
+| Outils proposés à une étape | `activeTools` | | | Tous sauf TypeScript |
+| Réécrire l’historique avant chaque requête au modèle | `prepareMessages` | | | Tous sauf TypeScript |
+| Limite d’étapes et conditions d’arrêt | `maxSteps`, `stopWhen` | `max_steps`, `stop_when` | `MaxSteps`, `StopWhen` | Rust n’a pas de `stop_when` |
+| Nouvelles tentatives du modèle et concurrence des outils | `modelRetry`, `toolExecution` | `model_retry`, `tool_execution` | `ModelRetry`, `ToolExecution` | Rust n’a pas de concurrence des outils |
+| Échantillonnage et longueur | `temperature`, `maxOutputTokens`, `topP` | `temperature`, `max_output_tokens`, `top_p` | | Go, C#, Java, Rust |
+| Analyser et valider la sortie finale | `parseOutput`, `outputSchema` | `parse_output`, `output_schema` | `ParseOutput`, `OutputSchema` | Rust |
+| Approbation pour chaque appel d’outil | `requireApproval` | `require_approval` | `RequireApproval` | Rust (l’approbation se fait par outil) |
+| Revue après chaque réponse du modèle | `humanReview` | `human_review` | `HumanReview` | |
+| Changer les outils ou les réglages entre les tours | `dynamicTools` (PHP) et les callbacks de [tours dynamiques](./dynamic-turns) | `dynamic_tools` (Ruby) | Les callbacks de tours dynamiques | Rust |
+
+En TypeScript, `model`, `instructions` et les valeurs d’échantillonnage peuvent être fixes ou dynamiques.
+
+## Définir un outil
+
+| Langage | Nom | Remarques |
+| --- | --- | --- |
+| TypeScript | `defineTool(definition)`, alias `tool(definition)` | Local, manuel (`execute: false`), soumis à approbation ou produisant de la progression |
+| Python | `define_tool(AgentTool)`, alias `tool(AgentTool)` | Omettez `execute` pour un outil manuel |
+| Go | `DefineTool(Tool) Tool` | Renvoie le même `Tool` |
+| C# | `AgentSdk.DefineTool(Tool)` | Renvoie le même `Tool` |
+| PHP | `AgentSdk::defineTool(Tool)` | Renvoie le même `Tool` |
+| Ruby | `PhaseoAgentSdk.define_tool(Tool)` | Renvoie le même `Tool` |
+| Java | `AgentSdk.defineTool(Tool)` | Renvoie le même `Tool` |
+| Rust | `Tool::new(id, description, parameters, executor)`, `Tool::external(id, description, parameters)`, `.require_approval()` ; `define_tool(tool)` renvoie l’outil | L’exécuteur est `Fn(serde_json::Value, &RuntimeContext) -> Result<serde_json::Value, AgentError> + Send + Sync + 'static` |
+
+[Outils](./tools) liste tous les champs d’un outil.
+
+## Se connecter à Phaseo Gateway
+
+| Langage | Nom | Renvoie |
+| --- | --- | --- |
+| TypeScript | `createGatewayAgentClient(options)` | Un client gateway d’agent |
+| Python | `create_gateway_agent_client(**options)` | Un client gateway d’agent |
+| Go | `CreateGatewayAgentClient(GatewayAgentClientOptions)` | `(*GatewayAgentClient, error)` |
+| C# | `AgentSdk.CreateGatewayAgentClient(GatewayAgentClientOptions? options = null)` | `GatewayAgentClient` ; lève une exception s’il n’y a pas de clé API |
+| PHP | `AgentSdk::createGatewayAgentClient(?GatewayAgentClientOptions)` | `GatewayAgentClient` ; lève une exception s’il n’y a pas de clé API |
+| Ruby | `PhaseoAgentSdk.create_gateway_agent_client(**options)` | `GatewayAgentClient` ; lève une exception s’il n’y a pas de clé API |
+| Java | `AgentSdk.createGatewayAgentClient()`, `createGatewayAgentClient(GatewayOptions)` | `ModelClient` / `StreamingModelClient` ; lève une exception s’il n’y a pas de clé API |
+| Rust | `create_gateway_agent_client(model)` (identique à `GatewayAgentClient::from_env(model)`), `GatewayAgentClient::new(phaseo_client, model)` | `GatewayAgentClient`, qui envoie `POST /responses` et normalise le texte de sortie, les appels de fonction, les métadonnées de requête et l’utilisation |
+
+[Sorties et nouvelles tentatives](./run-controls#set-gateway-defaults-on-the-client) liste les options du client dans chaque langage.
+
+## Capturer les exécutions en local
+
+| Langage | Nom | Renvoie |
+| --- | --- | --- |
+| TypeScript | `createAgentDevtools(options)` | Une configuration DevTools |
+| Python | `create_agent_devtools(**options)` | Une configuration DevTools |
+| Go | `CreateAgentDevtools(directory)` | `*DevtoolsConfig` |
+| C# | `AgentSdk.CreateAgentDevtools(string directory = ".phaseo-devtools")` | `AgentDevtoolsConfig` |
+| PHP | `AgentSdk::createAgentDevtools(string $directory = ".phaseo-devtools")` | `DevtoolsConfig` |
+| Ruby | `PhaseoAgentSdk.create_agent_devtools(directory: ".phaseo-devtools", enabled: true)` | `DevtoolsConfig` |
+| Java | `AgentSdk.createAgentDevtools(String directory)` | `DevtoolsConfig` |
+| Rust | Aucun | |
+
+Voir [DevTools](./devtools).
+
+## Conditions d’arrêt
+
+| Condition | camelCase (TypeScript, PHP, Java) | snake_case (Python, Ruby) | PascalCase (Go, C#) |
+| --- | --- | --- | --- |
+| Nombre d’étapes | `stepCountIs` | `step_count_is` | `StepCountIs` |
+| Tokens utilisés | `maxTokensUsed` | `max_tokens_used` | `MaxTokensUsed` |
+| Coût | `maxCost` | `max_cost` | `MaxCost` |
+| Temps écoulé | `maxDuration` (millisecondes en TypeScript et PHP ; une `Duration` en Java) | `max_duration` (millisecondes) | `MaxDuration` (une `time.Duration` en Go ; un `TimeSpan` en C#) |
+| Un outil a été appelé | `hasToolCall` | `has_tool_call` | `HasToolCall` |
+| Raison de fin | `finishReasonIs` | `finish_reason_is` | `FinishReasonIs` |
+
+Go et Java renvoient une `StopCondition` ; C# renvoie une `Func<StopState, (bool Stop, string Reason)>` ; PHP renvoie un `callable` ; Ruby renvoie une lambda. Rust n’a pas de conditions d’arrêt, seulement la limite d’étapes. Voir [Conditions d’arrêt](./stop-conditions).
+
+## Exécuter et reprendre
+
+| Rôle | TypeScript | Python | Go | C# | PHP | Ruby | Java | Rust |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Exécuter | `run(options)` | `run(...)` | `Run(ctx, RunOptions)` | `Run(RunOptions)` | `run(...)` | `run(...)` | `run(RunOptions)` | `run(&mut client, options)`, `run_with_events(&mut client, options, callback)` |
+| Exécuter en streaming | `stream(options)` | `stream(...)` | `Stream(ctx, RunOptions)` | `Stream(RunOptions)` | `stream(...)` | `stream(...)` | `stream(RunOptions)` | Aucun |
+| Reprendre | `continueRun(options)` | `continue_run(...)` | `Continue(ctx, ContinueOptions)` | `ContinueRun(ContinueOptions)` | `continueRun(...)`, `continueRunById(...)` | `continue_run(...)` | `continueRun(ContinueOptions)` | `continue_run(&mut client, options)`, `continue_with_events(...)` |
+| Reprendre en streaming | `continueStream(options)` | `continue_stream(...)` | `ContinueStream(ctx, ContinueOptions)` | `ContinueStream(ContinueOptions)` | `continueStream(...)` | `continue_stream(...)` | `continueStream(ContinueOptions)` | Aucun |
+
+Run et continue renvoient un résultat d’exécution : une `Promise<AgentRunResult>` en TypeScript, `(RunResult, error)` en Go, `Task<RunResult>` en C#, `Result<RunResult, AgentError>` en Rust, et directement le résultat d’exécution ailleurs. Les méthodes de streaming renvoient immédiatement un résultat de flux.
+
+### Options d’exécution
+
+PHP et Ruby les prennent en arguments nommés ; le `RunOptions` de Java est un record positionnel dans l’ordre `input, client, context, model, preset, maxSteps, modelRetry, toolExecution, onEvent, devtools`, puis un `state` facultatif.
+
+| Option | camelCase (TypeScript, PHP, Java) | snake_case (Python, Ruby, Rust) | PascalCase (Go, C#) | Absent de |
+| --- | --- | --- | --- | --- |
+| Entrée | `input` | `input` | `Input` | |
+| Conversation complète au lieu de l’entrée | `messages` | | | Tous sauf TypeScript |
+| Client de modèle | `client` | `client` | `Client` | Rust le passe comme argument séparé |
+| Contexte applicatif | `context` | `context` | `Context` | |
+| Surcharges du modèle, du préréglage et de la limite d’étapes | `model`, `preset`, `maxSteps` | `model`, `preset`, `max_steps` | `Model`, `Preset`, `MaxSteps` | Rust n’a que `model` et `max_steps` |
+| Surcharges des nouvelles tentatives et de la concurrence des outils | `modelRetry`, `toolExecution` | `model_retry`, `tool_execution` | `ModelRetry`, `ToolExecution` | Rust |
+| Surcharges d’échantillonnage | `temperature`, `maxOutputTokens`, `topP` (TypeScript) | | | Tous sauf TypeScript |
+| Annulation | `signal` (TypeScript) | | `CancellationToken` (C#) | Go utilise `ctx` ; les autres annulent via le flux |
+| Gestionnaire d’événements | `onEvent` | `on_event` | `OnEvent` | Rust utilise `run_with_events` |
+| Capture locale | `devtools` | `devtools` | `Devtools` | Rust |
+| Accesseur d’état | `state` | `state` | `State` | Rust |
+| Ajouter des messages avant la prochaine requête au modèle | `takeMessages` (TypeScript) | | | Tous sauf TypeScript |
+
+Le `run()` de Python accepte aussi `stop_when` mais l’ignore ; définissez les conditions d’arrêt sur la définition. Le `stream()` de PHP et le `stream` de Ruby ne prennent que `input`, `client`, `context` et `state`. Rust crée les valeurs par défaut avec `RunOptions::new(input)`.
+
+### Options de reprise
+
+Les options de reprise acceptent les surcharges d’exécution ci-dessus, plus :
+
+| Option | camelCase (TypeScript, PHP, Java) | snake_case (Python, Ruby, Rust) | PascalCase (Go, C#) | Absent de |
+| --- | --- | --- | --- | --- |
+| L’exécution enregistrée | `run` | `run` (Rust : `result`) | `Run` | |
+| Charger l’exécution par ID via `state` | `runId` | `run_id` | `RunID` (Go), `RunId` (C#) | Rust ; PHP utilise `continueRunById($runId, $state, $client, ...)` |
+| Saisie humaine | `humanInput` | `human_input` | `HumanInput` | |
+| Messages humains structurés | `humanMessages` (TypeScript) | | | Tous sauf TypeScript |
+| Approbations | `approvals` (alias TypeScript `approveToolCalls`) | `approvals` | `Approvals` | |
+| Rejets | `rejections` (alias TypeScript `rejectToolCalls`) | `rejections` | `Rejections` | Rust |
+| Sorties d’outils | `toolOutputs` | `tool_outputs` | `ToolOutputs` | |
+
+L’ordre du `ContinueOptions` de Java est `run, client, context, model, preset, maxSteps, humanInput, modelRetry, toolExecution, onEvent, devtools`, puis `approvals, rejections, toolOutputs`, puis `runId, state`. En plus de cette forme à 16 arguments, il existe des constructeurs qui ne prennent que les 11 ou les 14 premiers arguments ; les autres valent par défaut des listes vides ou `null`. Rust crée les valeurs par défaut avec `ContinueOptions::new(result)`.
+
+## Résultat de flux
+
+| Rôle | TypeScript | Python | Go | C# | PHP | Ruby | Java |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Résultat terminé | `getResult()`, ou `await` sur le flux | `result()` | `Result()` | `GetResult()` | `getResult()` | `result` | `getResult()` |
+| Texte final complet | `getText()` | | | | | | |
+| Deltas de texte | `getTextStream()` | `text_stream()` | `Text()` | `TextStream()` | `textStream()` | `text_stream` | `textStream()` |
+| Deltas de raisonnement | `getReasoningStream()` | `reasoning_stream()` | | | `reasoningStream()` | `reasoning_stream` | |
+| Éléments | `getItemsStream()` | `item_stream()` | | | `itemStream()` | `item_stream` | |
+| Événements d’outils | `getToolStream()` | `tool_stream()` | | | | | |
+| Tous les événements | `getFullStream()` | `full_stream()` | `Events()` | `FullStream()` | `fullStream()` | `full_stream` | `fullStream()` |
+| Annuler | `cancel(reason?)` | `cancel()` | `Cancel()` | `Cancel()` | `cancel()` | `cancel` | `cancel()` |
+
+Les consommateurs rejouent depuis le début ; plusieurs peuvent donc lire la même exécution. Leur comportement diffère :
+
+| Langage | Type de résultat de flux | Comportement |
+| --- | --- | --- |
+| TypeScript | `AgentStreamResult` | `getFullStream()` se termine par un événement `result` |
+| Python | `AgentStreamResult` | S’exécute dans un thread en arrière-plan ; `result()` bloque jusqu’à la fin |
+| Go | `*StreamResult` | `Text()` et `Events()` sont des channels ; `Cancel()` annule le contexte de l’exécution |
+| C# | `AgentStreamResult` | Consommateurs `IAsyncEnumerable` ; `Cancel()` annule le jeton lié de l’exécution |
+| PHP | `AgentStreamResult` | S’exécute dans une Fiber ; `$result` contient le `RunResult` une fois le flux consommé, sinon `null` |
+| Ruby | `StreamResult` | S’exécute dans un thread de travail ; `result` attend sa fin et `cancel` le tue |
+| Java | `StreamResult` | `textStream()` et `fullStream()` renvoient une `List` après la fin de l’exécution ; `cancel()` interrompt le thread de travail |
+| Rust | Aucun | Pas de streaming en `0.2` |
+
+## Résultat d’exécution
+
+| Champ | camelCase (TypeScript, PHP, Java) | snake_case (Python, Ruby, Rust) | PascalCase (Go, C#) |
+| --- | --- | --- | --- |
+| Enregistrement de l’exécution | `run` | `run` | `Run` |
+| Enregistrements des étapes | `steps` | `steps` | `Steps` |
+| Sortie finale | `output` | `output` | `Output` |
+| Conversation complète | `messages` | `messages` | `Messages` |
+| Utilisation cumulée | `usage` | `usage` | `Usage` |
+
+Le type est `AgentRunResult` en TypeScript et Python et `RunResult` ailleurs. TypeScript ajoute `stepResults` (résultats d’étapes normalisés) et `items` (messages, raisonnement, activité des outils, erreurs et sortie finale, dans l’ordre ; voir [Éléments](./items)). En Rust, `output` est une `serde_json::Value`, et `RunResult`, `RunRecord`, `RunStep`, `Message`, `ToolCall`, `HumanPause`, `PendingToolCall`, `ToolDecision`, `ToolOutput` et `UsageSummary` se sérialisent avec Serde.
+
+### Enregistrement de l’exécution
+
+| Champ | camelCase (TypeScript, PHP, Java) | snake_case (Python, Ruby, Rust) | PascalCase (Go, C#) |
+| --- | --- | --- | --- |
+| ID | `id`, `agentId` | `id`, `agent_id` | `ID`/`Id`, `AgentID`/`AgentId` |
+| Statut | `status` | `status` | `Status` |
+| Entrée, contexte et messages | `input`, `context`, `messages` | `input`, `context`, `messages` | `Input`, `Context`, `Messages` |
+| Étapes effectuées | `stepCount` | `step_count` | `StepCount` |
+| Résultat et erreur | `result`, `error` | `result`, `error` | `Result`, `Error` |
+| Pause | `pause` | `pause` | `Pause` |
+| Raison d’arrêt | `stopReason` | `stop_reason` | `StopReason` |
+| Utilisation | `usage` | `usage` | `Usage` |
+| Surcharges du tour suivant | `nextTurn` (Java), `nextTurnParams` (PHP) | `next_turn_params` (Ruby) | `NextTurn` |
+| Horodatages | `createdAt`, `updatedAt` | `created_at`, `updated_at` | `CreatedAt`, `UpdatedAt` |
+
+Le `RunRecord` de Rust stocke aussi le modèle effectif et la limite d’étapes. TypeScript ajoute `errorDetails` avec les détails des erreurs du gateway.
+
+Les statuts d’exécution sont `queued`, `running`, `waiting_for_tools`, `waiting_for_human`, `completed`, `stopped` et `failed`. TypeScript ajoute `cancelled`.
+
+### Enregistrement d’étape
+
+| Champ | camelCase (TypeScript, PHP, Java) | snake_case (Python, Ruby, Rust) | PascalCase (Go, C#) |
+| --- | --- | --- | --- |
+| Index et statut | `index`, `status` | `index`, `status` | `Index`, `Status` |
+| Appels d’outils | `toolCalls` | `tool_calls` | `ToolCalls` |
+| ID de requête gateway | `requestId` | `request_id` | `RequestID`/`RequestId` |
+| ID de réponse en amont | `nativeResponseId` | `native_response_id` (pas en Rust) | `NativeResponseID`/`NativeResponseId` |
+| Fournisseur et modèle | `provider`, `model` | `provider`, `model` | `Provider`, `Model` |
+| Tentatives auprès du modèle | `modelAttempts` | `model_attempts` | `ModelAttempts` |
+| Utilisation | `usage` | `usage` | `Usage` |
+| Bloc meta du gateway | `responseMeta` | `response_meta` (pas en Rust) | `ResponseMeta` |
+| Erreur | `error` | `error` | `Error` |
+| Raison de fin | `finishReason` | `finish_reason` | `FinishReason` |
+| Avertissements | `warnings` | `warnings` (pas en Rust) | `Warnings` |
+
+Le type est `RunStep` partout sauf en TypeScript et Python (`AgentStepRecord`).
+
+### Récapitulatif de l’utilisation
+
+`inputTokens`, `outputTokens`, `cachedTokens`, `totalTokens`, `cost` (TypeScript, Java) ; `input_tokens`, `output_tokens`, `cached_tokens`, `total_tokens`, `cost` (clés Python, PHP et Ruby, Rust) ; `InputTokens`, `OutputTokens`, `CachedTokens`, `TotalTokens`, `Cost` (Go, C#). Le type est `AgentUsageSummary` en TypeScript et Python et `UsageSummary` en Go, C#, Java et Rust. PHP et Ruby utilisent un tableau ou un Hash. Voir [Observabilité](./observability) pour les mises en garde sur `cost`.
+
+## Pauses et décisions
+
+| Type | TypeScript | Python | Go, C#, PHP, Ruby, Java, Rust | Champs |
+| --- | --- | --- | --- | --- |
+| Approuver ou rejeter un appel | `{ toolCallId, reason? }` | `AgentToolDecision` | `ToolDecision` | ID d’appel d’outil et raison facultative |
+| Fournir un résultat d’outil | `{ toolCallId, output }` | `AgentToolOutput` | `ToolOutput` | ID d’appel d’outil et sortie |
+| Demander une revue | `{ reason, payload }` | `AgentHumanReviewRequest` | `HumanReviewRequest` | `reason`, `payload` facultatif |
+| Entrée du callback de revue | | `AgentHumanReviewContext` | `HumanReviewContext` | ID d’exécution et d’agent, index de l’étape, messages, réponse du modèle, sortie analysée (Rust : contexte applicatif au lieu de la sortie analysée) |
+| La pause | `run.pause` | `AgentHumanPause` | `HumanPause` | `reason`, `payload`, `kind`, appels d’outils en attente |
+| Un appel en attente | | | `PendingToolCall` | `call` et `kind` (`approval`, `manual` ou `hitl`) ; Rust ajoute une `reason` lisible |
+
+Les noms de champs suivent le style de chaque langage : `toolCallId` (TypeScript, PHP, Java), `tool_call_id` (Python, Ruby, Rust), `ToolCallID` (Go) et `ToolCallId` (C#). Le `ToolDecision` de Rust ne sert qu’à l’approbation. Voir [État et approbation](./state-and-approval).
+
+## Contexte d’exécution passé aux outils
+
+| Champ | camelCase (TypeScript, PHP, Java) | snake_case (Python, Ruby, Rust) | PascalCase (Go, C#) | Absent de |
+| --- | --- | --- | --- | --- |
+| ID et étape | `runId`, `agentId`, `stepIndex` | `run_id`, `agent_id`, `step_index` | `RunID`/`RunId`, `AgentID`/`AgentId`, `StepIndex` | |
+| Contexte applicatif | `context` | `context` | `Context` | |
+| L’appel en cours d’exécution | `toolCall` | `tool_call` | `ToolCall` | |
+| Signaler la progression | `emitProgress` | `emit_progress` | `EmitProgress` | Rust |
+| Mettre à jour le contexte applicatif | `setContext` | `set_context` | `SetContext` | Rust |
+| Annulation | `signal` (TypeScript) | | `CancellationToken` (C#) | Tous les autres |
+
+## Accesseur d’état
+
+| Langage | Nom | Méthodes |
+| --- | --- | --- |
+| TypeScript | `AgentStateAccessor` | `load(runId)` et `save(result)`, toutes deux asynchrones |
+| Python | `AgentStateAccessor` (protocole) | `load(run_id)` et `save(result)` |
+| Go | `StateAccessor` (interface) | `Load(ctx, runID)` et `Save(ctx, result)` |
+| C# | `IStateAccessor` | `Load(runId, ct)` et `Save(result, ct)` |
+| PHP | `StateAccessor` (interface) | `load(string $runId): ?RunResult` et `save(RunResult $result): void` |
+| Ruby | N’importe quel objet | `load(run_id)` et `save(result)` |
+| Java | `StateAccessor` | `load(runId)` et `save(result)` |
+| Rust | Aucun | Sérialisez vous-même `RunResult` |
+
+## Clients de modèle
+
+Implémentez un client de modèle pour envoyer les tours du modèle par un autre transport, ou pour encapsuler le client gateway.
+
+| Langage | Interface | Méthodes |
+| --- | --- | --- |
+| Go | `ModelClient`, `StreamingModelClient` | `Generate(ctx, ModelRequest)` ; `Stream(ctx, ModelRequest)` |
+| C# | `IModelClient`, `IStreamingModelClient` | `Generate(ModelRequest)` ; `Stream(ModelRequest)` |
+| PHP | `ModelClient`, `StreamingModelClient` (interfaces) | `generate(ModelRequest)` ; `stream(ModelRequest)` |
+| Java | `ModelClient`, `StreamingModelClient` | `generate(ModelRequest)` ; `stream(ModelRequest)` |
+| Rust | `ModelClient` (trait) | `fn generate(&mut self, request: &ModelRequest) -> Result<ModelResponse, AgentError>` |
+
+En Rust, `ModelRequest` contient l’ID de l’agent, le modèle effectif, les instructions, les messages courants, les spécifications des outils (`ToolSpec` : `id`, `description`, `parameters` en JSON Schema) et le contexte applicatif. `ModelResponse` contient `message`, `usage`, `request_id`, `provider`, `model` et `finish_reason`. `Message` a `role`, `content`, `tool_calls`, `tool_call_id`, `name` et `is_error`, avec les constructeurs `Message::user(content)` et `Message::assistant(content)` ; `ToolCall` a `id`, `name` et `input` en JSON.
+
+## Événements et erreurs
+
+| Langage | Type d’événement | Types d’erreurs |
+| --- | --- | --- |
+| TypeScript | Objets d’événement avec `type` | `AgentGatewayError` (`isAgentGatewayError()`), `AgentStreamError`, `AgentSchemaValidationError` |
+| Python | Dicts avec `"type"` | Exceptions intégrées et `phaseo.PhaseoHTTPError` |
+| Go | `AgentEvent` | Valeurs `error` |
+| C# | `AgentEvent` | Exceptions |
+| PHP | Tableaux avec `"type"` | `RuntimeException` |
+| Ruby | Hashes avec `:type` | Exceptions |
+| Java | `AgentEvent` | Exceptions |
+| Rust | `AgentEvent` (`event_type`, `run_id`, `agent_id`, `timestamp_ms`, `details`) | `AgentError` (`AgentError::new(...)`, `message()` ; implémente `std::error::Error` et `Display`) |
+
+TypeScript exporte aussi `agentErrorIsRetryable()`, `agentRetryAfterMs()` et `agentErrorIsContextOverflow()` pour classer les erreurs, `repairToolHistory(messages)` pour répondre aux appels d’outils restés sans résultat et supprimer les résultats qui ne répondent à aucun appel, et `truncateToolOutput(text, limit)` pour garder le début et la fin d’un texte long avec un avis indiquant ce qui a été coupé. Voir [Hooks de cycle de vie](./lifecycle-hooks) et [Événements et erreurs](./events-and-errors).

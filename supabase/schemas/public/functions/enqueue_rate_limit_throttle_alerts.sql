@@ -49,13 +49,15 @@ begin
       jsonb_agg(
         jsonb_build_object(
           'policy_id', ranked.policy_id,
-          'policy_name', policy.name,
+          'policy_name', coalesce(guardrail.name, policy.name),
           'limit_scope', ranked.limit_scope,
           'throttled_requests', ranked.throttled_requests
         )
         order by ranked.position
       ) filter (where ranked.position <= 5) as policies
     from ranked
+    -- Rate guardrails kept the ids of the policies they replaced; older throttles may name a policy only.
+    left join public.workspace_guardrails guardrail on guardrail.id = ranked.policy_id
     left join public.workspace_rate_limit_policies policy on policy.id = ranked.policy_id
     group by ranked.workspace_id
   )

@@ -1,133 +1,125 @@
 ---
-title: "Python SDK でプリセットを使い、構造化 JSON を送信する"
+title: "Python SDK でプリセットを使った構造化 JSON を実装する"
 sidebarTitle: "Python でプリセットと JSON"
 icon: "braces"
 description: "公式 Python SDK でプリセット、構造化出力、リクエスト単位のデバッグを使い、生の HTTP 呼び出しに切り替えずに実装します。"
 ---
 
-Python サービスで、各リクエストにプロンプト、ルーティング、パラメーター設定を繰り返し記述するのではなく、ダッシュボードで管理する既定値を使う場合は、このレシピを利用してください。
+Python から JSON Schema 付きでダッシュボードのプリセットを呼び出し、回答を検証して、デバッグに必要な ID をログに記録します。完成すると、`"model": "@release-summary"` を送り、`{"summary": ..., "risk_level": ...}` を受け取り、そのリクエストのプロバイダーとプラグインの詳細を表示するスクリプトが 1 つできます。
 
-## 目標
+このスクリプトは、プリセットとスキーマを自分のものに置き換えれば本番環境で使えます。検証の手順は残してください。修復が直すのは構文であり、内容ではありません。
 
-- Python の呼び出しコードを小さく保つ
-- モデルをコードに固定せず、プリセットの slug でルーティングする
-- 厳密な構造化出力を要求する
-- ルーティングやプラグインの動作をデバッグできるだけの応答メタデータを保持する
+## 作成する
 
-## 1. 共有クライアントから始める
+<Steps>
+<Step title="プリセットを作成する">
 
-```python
+**設定 → プリセット** で、すべての呼び出し元が共有するシステムプロンプト、モデルまたは許可するモデル、プロバイダーの優先設定、推論の設定、`temperature` を持つ `release-summary` を作成します。こうすると、Python のコードは変化する部分だけを送ればよくなります。プリセットがリクエストとどう統合されるかは[プリセット](../guides/presets)で説明しています。
+
+</Step>
+<Step title="SDK をインストールする">
+
+```bash
+pip install phaseo
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+</Step>
+<Step title="スクリプトを書く">
+
+```python release_summary.py
+import json
 import os
 
 from phaseo import Phaseo
 
+# クライアントを 1 つ作成して再利用します。
 gateway = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
-```
 
-リクエストごとにクライアントを作らず、共有してください。
+SCHEMA = {
+    "type": "object",
+    "properties": {
+        "summary": {"type": "string"},
+        "risk_level": {"type": "string", "enum": ["low", "medium", "high"]},
+    },
+    "required": ["summary", "risk_level"],
+    "additionalProperties": False,
+}
 
-## 2. 安定した既定値をプリセットに移す
 
-次の設定を複数の呼び出し元で安定させるには、**ダッシュボード -> 設定 -> プリセット**でプリセットを作成します。
+def output_text(response: dict) -> str:
+    return "".join(
+        part.get("text", "")
+        for item in response.get("output", [])
+        if item.get("type") == "message"
+        for part in item.get("content", [])
+        if part.get("type") == "output_text"
+    )
 
-- システムプロンプト
-- モデルまたは許可モデルのリスト
-- プロバイダーの優先設定
-- 推論の設定
-- 温度やその他の生成パラメーター
-- 決定的な再実行が重要な場合の応答キャッシュポリシー
 
-プリセットを作成したら、Python 側の呼び出しコードは簡潔に保てます。
+def validate(payload: dict) -> dict:
+    if set(payload) != {"summary", "risk_level"}:
+        raise ValueError(f"unexpected keys: {sorted(payload)}")
+    if not isinstance(payload["summary"], str) or not payload["summary"]:
+        raise ValueError("summary must be a non-empty string")
+    if payload["risk_level"] not in ("low", "medium", "high"):
+        raise ValueError("risk_level must be low, medium or high")
+    return payload
 
-## 3. 厳密な JSON 形式を要求する
 
-```python
 response = gateway.generate_response(
     {
-        "preset": "release-summary",
+        "model": "@release-summary",
         "input": "Summarize the last 24 hours of deployment activity.",
-        "response_format": {
-            "type": "json_schema",
-            "name": "release_summary",
-            "schema": {
-                "type": "object",
-                "required": ["summary", "risk_level"],
-                "properties": {
-                    "summary": {"type": "string"},
-                    "risk_level": {
-                        "type": "string",
-                        "enum": ["low", "medium", "high"],
-                    },
-                },
-                "additionalProperties": False,
-            },
+        "text": {
+            "format": {
+                "type": "json_schema",
+                "name": "release_summary",
+                "strict": True,
+                "schema": SCHEMA,
+            }
         },
         "plugins": [{"id": "response-healing"}],
         "meta": True,
     }
 )
-```
 
-この形式が効果的な理由:
+if response.get("status") != "completed":
+    raise RuntimeError(f"response {response.get('id')} ended as {response.get('status')}")
 
-- `preset` を使うと、ルーティングとプロンプトの既定値をアプリケーションコードの外で管理できます。
-- `response_format` で契約を明示できます。
-- ワークフローで許可されていれば、`plugins` でほぼ有効な不正 JSON を復元できます。
-- `meta` でルーティングとプラグイン実行の情報を保持し、デバッグに役立てられます。
-
-## 4. JSON を解析し、運用上の ID を記録する
-
-```python
-import json
-
-message_text = ""
-for item in response.get("output", []):
-    if item.get("type") != "message":
-        continue
-    for part in item.get("content", []):
-        if part.get("type") == "output_text":
-            message_text = part.get("text", "")
-            break
-
-payload = json.loads(message_text)
+payload = validate(json.loads(output_text(response)))
+meta = response.get("meta", {})
 
 print("response_id:", response.get("id"))
-print("selected_provider:", response.get("meta", {}).get("routing", {}).get("selected_provider"))
-print("plugin_executions:", response.get("meta", {}).get("plugin_executions"))
+print("model:", response.get("model"))
+print("selected_provider:", meta.get("routing", {}).get("selected_provider"))
+print("plugin_executions:", meta.get("plugin_executions"))
 print(payload)
 ```
 
-Python のワーカーでは、通常これだけでアプリケーションログの1行を次の情報に関連付けられます。
+| フィールド | 動作 |
+| --- | --- |
+| `"model": "@release-summary"` | プリセットを使います。別の `preset` フィールドはありません。 |
+| `text.format` | この JSON Schema を要求します。Chat Completions では `response_format` に入れます。[構造化出力](../guides/structured-outputs)を参照してください。 |
+| `plugins` | ほぼ有効な JSON を修復します。[応答の修復](./response-healing-for-structured-json)を参照してください。 |
+| `meta: true` | レスポンスに `meta.routing` と `meta.plugin_executions` を追加します。 |
 
-- ダッシュボードのリクエスト詳細ダイアログ
-- ルーティング診断
-- プラグインの実行メタデータ
+</Step>
+<Step title="実行する">
 
-## 5. 上書き設定を追加する前にデバッグする
+```bash
+python release_summary.py
+```
 
-想定と異なるプロバイダーにルーティングされた場合:
+</Step>
+</Steps>
 
-1. **Gateway -> 使用量** でリクエストを開きます。
-2. ルーティング診断と候補プロバイダーを確認します。
-3. 構造化 JSON を使った場合は、プラグイン実行メタデータを確認します。
-4. ログで実際の動作を確認してからプリセットを変更します。
+## 動作を確認する
 
-多数のリクエスト単位の上書きを追加して、1件のリクエストを無理に修正しないでください。通常、プリセットを使う意味がなくなります。
+スクリプトは、レスポンス ID、応答したモデルとプロバイダー、プラグインの記録、そして `summary` と `low`・`medium`・`high` のいずれかを持つ dict を表示します。**設定 → 使用量 → ログ** でレスポンス ID を検索すると、同じリクエストをルーティングの詳細とともに確認できます。
 
-## 6. 再利用する場合はキャッシュとの互換性を保つ
+プリセットで許可されていないモデルは、`validation_error`（キーワード `preset_model_not_allowed`）で失敗します。`validate()` からの `ValueError` は、JSON は解析できたものの内容が誤っていたことを意味します。再試行を追加するのではなく、スキーマやプロンプトを厳しくしてください。
 
-プリセットで応答キャッシュを有効にしている場合:
+## 上書きする前にデバッグする
 
-- プロンプトの文言を安定させる
-- 応答スキーマを安定させる
-- リクエストごとの不要なプロバイダー上書きを避ける
-- 頻繁に変わるツールリストを避ける
-
-呼び出し元ごとに本当に異なる動作が必要なら、共有ワークフローのキャッシュ再利用性を下げず、別のプリセットを使ってください。
-
-## 関連ガイド
-
-- [プリセットを展開してルーティングをデバッグする](./preset-rollout-and-routing-debug.mdx)
-- [プリセットで応答キャッシュを使う](./response-caching-with-presets.mdx)
-- [構造化 JSON の応答を修復する](./response-healing-for-structured-json.mdx)
-- [Python SDK の概要](../sdk-reference/python/overview.mdx)
+リクエストが想定と異なるルーティングをした場合は、ログでリクエストを開き、**ルーティングの可観測性** とプラグインの記録を読み、何が起きたかがログで分かってからプリセットを変更してください。1 件のリクエストにインラインの上書きを重ねると、プリセットを使う意味がなくなります。ある呼び出し元に本当に別の動作が必要なら、その呼び出し元専用のプリセットを用意してください。

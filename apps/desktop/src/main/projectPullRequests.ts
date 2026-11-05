@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { git } from "./gitProcess";
 import { resolveNativeCommand } from "./nativeProcess";
+import { codeHostProvider } from "./codeHosts";
 import type { ProjectPullRequests, PullRequest, PullRequestDetails } from "../shared/pullRequests";
 
 const execute = promisify(execFile);
@@ -50,6 +51,8 @@ export async function projectPullRequests(root: string, cursor?: unknown): Promi
 	if (cursor !== undefined && (typeof cursor !== "string" || !cursor.length || cursor.length > 2048 || /[^\x20-\x7e]/.test(cursor))) throw new Error("Invalid pull-request page cursor.");
 	let remote: string;
 	try { remote = await git(root, ["remote", "get-url", "origin"]); } catch { throw new Error("Choose a Git repository with an origin remote."); }
+	const other = await codeHostProvider(root, remote);
+	if (other) return other.list(cursor as string | undefined);
 	const repository = githubRepository(remote);
 	let command: Awaited<ReturnType<typeof resolveNativeCommand>>;
 	try { command = await resolveNativeCommand("gh"); } catch { throw new Error("Install GitHub CLI and sign in with gh auth login."); }
@@ -94,6 +97,7 @@ export function parsePullRequestDetails(repository: string, number: number, valu
 export async function projectPullRequest(root: string, number: unknown): Promise<PullRequestDetails> {
  if (!Number.isSafeInteger(number) || Number(number) < 1 || Number(number) > 2147483647) throw new Error("Invalid pull-request number.");
  let remote: string; try { remote = await git(root,["remote","get-url","origin"]); } catch { throw new Error("Choose a Git repository with an origin remote."); }
+ const other = await codeHostProvider(root, remote); if (other) return other.view(Number(number));
  const repository = githubRepository(remote); const [owner,name] = repository.split("/");
  let command: Awaited<ReturnType<typeof resolveNativeCommand>>; try { command = await resolveNativeCommand("gh"); } catch { throw new Error("Install GitHub CLI and sign in with gh auth login."); }
  let output: string;

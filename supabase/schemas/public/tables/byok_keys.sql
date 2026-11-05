@@ -78,7 +78,24 @@ CREATE POLICY "byok_keys_update_workspace_admin" ON "public"."byok_keys"
   USING (public.is_workspace_admin(workspace_id))
   WITH CHECK (public.is_workspace_admin(workspace_id));
 
-GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."byok_keys" TO "anon", "authenticated", "service_role";
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."byok_keys"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
+GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."byok_keys" TO "service_role";
+
+GRANT DELETE ON TABLE "public"."byok_keys" TO "authenticated";
+
+-- Clients never read the ciphertext or write the encryption columns; the API and web-api do that with the service role.
+
+GRANT SELECT ("allowed_api_key_ids", "allowed_model_slugs", "always_use", "created_at", "created_by", "enabled", "error_message", "fingerprint_sha256", "id", "key_version", "last_used_at", "last_verified_at", "name", "prefix", "provider_id", "routing_mode", "sort_order", "suffix", "verification_status", "workspace_id") ON TABLE "public"."byok_keys" TO "authenticated";
+
+GRANT INSERT ("allowed_api_key_ids", "allowed_model_slugs", "always_use", "created_at", "created_by", "enabled", "error_message", "id", "last_used_at", "last_verified_at", "name", "prefix", "provider_id", "routing_mode", "sort_order", "suffix", "verification_status", "workspace_id") ON TABLE "public"."byok_keys" TO "authenticated";
+
+GRANT UPDATE ("allowed_api_key_ids", "allowed_model_slugs", "always_use", "created_at", "created_by", "enabled", "error_message", "id", "last_used_at", "last_verified_at", "name", "prefix", "provider_id", "routing_mode", "sort_order", "suffix", "verification_status", "workspace_id") ON TABLE "public"."byok_keys" TO "authenticated";
 
 COMMENT ON COLUMN "public"."byok_keys"."allowed_api_key_ids" IS 'Null or empty allows every workspace API key; otherwise only requests authenticated by a listed API key may use this credential.';
 

@@ -2,7 +2,7 @@
 // Why: Shared types/schemas/utilities used across modules.
 // How: Exposes reusable building blocks for the gateway.
 
-import { z } from "zod";
+import * as z from "zod";
 import { lazySchema } from "./lazy-schema";
 import type { Endpoint } from "./types";
 import { NativeDecisionsBodySchema, DecisionProviderOptionsSchema } from "./decisions";
@@ -1308,8 +1308,17 @@ function validateMiniMaxImageRequest(
     });
 }
 
+/** The GPT Image version in a model id (gpt-image-2.6-flare → [2, 6]), or null. */
+function gptImageVersion(model: string | undefined): [number, number] | null {
+    const match = model?.match(/^gpt-image-(\d+)(?:\.(\d+))?(?:$|-)/);
+    return match ? [Number(match[1]), Number(match[2] ?? 0)] : null;
+}
+
+/** GPT Image 2.5 and later, which add the xhigh and max quality levels. */
 function isGptImage25Model(model: string | undefined): boolean {
-    return model === "gpt-image-latest" || (model != null && /^gpt-image-2\.5(?:$|-)/.test(model));
+    if (model === "gpt-image-latest") return true;
+    const version = gptImageVersion(model);
+    return version != null && (version[0] > 2 || (version[0] === 2 && version[1] >= 5));
 }
 
 function validateGptImage2Size(
@@ -1317,7 +1326,9 @@ function validateGptImage2Size(
     model: string | undefined,
     ctx: z.RefinementCtx,
 ): void {
-    if (!model || (!/^gpt-image-2(?:\.5)?(?:$|-)/.test(model) && model !== "gpt-image-latest")) return;
+    // GPT Image 2 and later share the 2.x size rules.
+    const version = gptImageVersion(model);
+    if (!model || ((version == null || version[0] < 2) && model !== "gpt-image-latest")) return;
     if (!request.size || request.size === "auto") return;
     const dimensions = /^(\d+)x(\d+)$/i.exec(request.size);
     if (!dimensions) {

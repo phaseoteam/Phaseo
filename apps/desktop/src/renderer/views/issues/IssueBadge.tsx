@@ -5,6 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/pop
 import { toastManager } from "../../components/ui/toast";
 import { cn } from "../../lib/utils";
 import { issueStatePresentation } from "./presentation";
+import { openWebLink } from "../../lib/openLink";
 
 const errorMessage = (reason: unknown) => reason instanceof Error ? reason.message.replace(/^Error invoking remote method '[^']+': (?:Error: )?/, "") : String(reason);
 
@@ -24,7 +25,7 @@ export function issueBadgePresentation(links: TaskIssueLink[]) {
 export function IssueBadge({ taskId, links, className }: { taskId: string; links?: TaskIssueLink[]; className?: string }) {
 	const presentation = issueBadgePresentation(links ?? []);
 	if (!presentation || !links) return null;
-	const open = (event: MouseEvent<HTMLElement>, url: string) => { event.preventDefault(); event.stopPropagation(); void window.phaseoDesktop?.workspace.openLink(url); };
+	const open = (event: MouseEvent<HTMLElement>, url: string) => { event.preventDefault(); event.stopPropagation(); void openWebLink(url, event).catch(() => undefined); };
 	const unlink = (event: MouseEvent<HTMLElement>, link: TaskIssueLink) => {
 		event.preventDefault(); event.stopPropagation();
 		void window.phaseoDesktop?.workspace.command({ type: "unlink-issue", id: taskId, repository: link.repository, number: link.number }).catch(reason => toastManager.add({ type: "error", title: "Could not unlink the issue", description: errorMessage(reason) }));

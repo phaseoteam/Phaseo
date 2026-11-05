@@ -10,7 +10,7 @@ O gerenciamento de proteções requer uma chave de API de gerenciamento. Operaç
 
 Use proteções para aplicar controles de privacidade, restrições de provedores e modelos, tratamento de injeção de prompt e políticas de informações sensíveis. Uma proteção pode ser atribuída a chaves de API, a membros do espaço de trabalho ou a ambos.
 
-As proteções não aplicam limites de requisições nem de gastos. A entrada `budgets` e os campos `*_limit_requests` e `*_limit_cost_nanos` são aceitos e retornados por compatibilidade, mas não têm efeito. Use os [limites da chave de API](./keys-update.mdx) ou os [orçamentos do espaço de trabalho](./budgets-list.mdx).
+As proteções não limitam requisições nem gastos. Use os [limites da chave de API](./keys-update.mdx), os [orçamentos do espaço de trabalho](./budgets-list.mdx) ou os [alertas de gastos](../../guides/spend-alerts.mdx). A entrada `budgets` e os campos `*_limit_requests` e `*_limit_cost_nanos` foram removidos das proteções; um cliente que ainda os envie não é recusado, e eles são ignorados.
 
 Alterações bem-sucedidas atualizam o estado das políticas do espaço de trabalho e aparecem no registro de auditoria.
 

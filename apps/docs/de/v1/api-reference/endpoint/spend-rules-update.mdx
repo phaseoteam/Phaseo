@@ -1,0 +1,9 @@
+---
+title: "Ausgabenregel aktualisieren"
+sidebarTitle: "Regel aktualisieren"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml PATCH /spend-rules/{id}"
+description: "Ändert die Felder, Ziele oder die Aktion einer Ausgabenregel."
+---
+
+Erfordert `spend_rules:write`. Die gesendeten Felder werden mit der gespeicherten Regel zusammengeführt, und die ganze Regel wird erneut geprüft. `destination_ids` ersetzt die Ziele der Regel; lass es weg, um sie zu behalten. Wenn du Aktion, Geltungsbereich, Zeitraum oder Basis einer sperrenden Regel änderst, wird ihre aktive Sperre aufgehoben.

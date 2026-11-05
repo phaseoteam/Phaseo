@@ -150,6 +150,9 @@ export async function encryptProviderCredential(args: { plaintext: string; works
 		enc_iv: `\\x${bytesToHex(iv)}`,
 		enc_tag: `\\x${bytesToHex(tag)}`,
 		key_version: version,
+		// The ciphertext is bound to workspace|provider|version, so decryption must never
+		// take the legacy no-AAD path for it.
+		enc_aad_version: 1 as const,
 		fingerprint_sha256: bytesToHex(new Uint8Array(fingerprint)),
 		prefix: args.plaintext.slice(0, 6),
 		suffix: args.plaintext.slice(-4),

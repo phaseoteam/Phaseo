@@ -1,33 +1,33 @@
 ---
 title: "OpenCode"
 icon: "/icons/brands/opencode.svg"
-description: "通过自定义的 OpenAI 兼容供应商将 OpenCode 连接到 Phaseo Gateway。"
+description: "通过自定义 OpenAI 兼容提供商将 OpenCode 连接到 Phaseo Gateway。"
 ---
 
-OpenCode 可通过自定义的 OpenAI 兼容供应商调用 Phaseo。如果希望 OpenCode 的模型选择、用量和路由都使用同一个 Phaseo API 密钥，请采用此配置。
+运行 `phaseo opencode`，为 OpenCode 添加一个包含所有兼容 Phaseo 模型的 Phaseo 提供商；或者自己在 `opencode.json` 中添加 `phaseo` 提供商。
 
-## 1) 配置 OpenCode
-
-从官方版本安装 OpenCode，然后使用 Phaseo CLI 添加全局供应商、同步所有兼容的 Phaseo 模型，并将专用密钥保存到 OpenCode 的凭据存储中：
+## 使用 Phaseo CLI 设置
 
 ```bash
+phaseo login
 phaseo opencode --model openai/gpt-5.6-terra
 ```
 
-此命令会创建一个 90 天后过期、每月支出上限为 100 美元的 `Phaseo CLI: OpenCode API Key`（密钥过期后重新运行 `phaseo opencode` 即可替换），保留 OpenCode 的其他设置和凭据，并支持 `--dry-run`。如果存在全局 `opencode.jsonc`，则更新该文件；否则使用 `~/.config/opencode/opencode.json`。
+如果没有安装 OpenCode，CLI 会显示官方安装命令，并在运行前征求你的确认。随后 setup 会：
 
-使用 `--catalog default` 仅配置所选模型。
+- 添加一个全局 `phaseo` 提供商，包含所有支持 Chat Completions 的活跃 Phaseo 文本模型。如果存在全局 `opencode.jsonc`，就更新它，否则更新 `~/.config/opencode/opencode.json`，并保留你的其他设置；
+- 创建一个 `Phaseo CLI: OpenCode API Key`，它 90 天后过期，每月支出上限为 $100，并保存在 OpenCode 的凭据存储中。CLI 会在操作系统凭据存储中保留自己的副本。再次运行 `phaseo opencode` 即可替换已过期的密钥。
 
-CLI 还会在操作系统凭据存储中保留自己的副本；运行 `phaseo integrations remove opencode` 时会撤销该密钥。
+使用 `--catalog default` 可以只添加所选模型，使用 `--dry-run` 可以预览更改。
 
-## 手动配置
+## 手动配置 OpenCode
 
-在项目中或 OpenCode 的全局配置中创建或更新 `opencode.json`：
+把提供商添加到项目中的 `opencode.json`，或你的全局 OpenCode 配置中：
 
-```json
+```json opencode.json
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "phaseo/openai/gpt-5.5",
+  "model": "phaseo/openai/gpt-6-astra",
   "provider": {
     "phaseo": {
       "npm": "@ai-sdk/openai-compatible",
@@ -37,39 +37,34 @@ CLI 还会在操作系统凭据存储中保留自己的副本；运行 `phaseo i
         "apiKey": "{env:PHASEO_API_KEY}"
       },
       "models": {
-        "openai/gpt-5.5": {
-          "name": "GPT-5.5"
-        },
-        "openai/gpt-5.4-mini": {
-          "name": "GPT-5.4 Mini"
-        },
-        "anthropic/claude-sonnet-4.5": {
-          "name": "Claude Sonnet 4.5"
-        }
+        "openai/gpt-6-astra": { "name": "GPT-6 Astra" },
+        "openai/gpt-5.4-mini": { "name": "GPT-5.4 Mini" },
+        "anthropic/claude-sonnet-5.5": { "name": "Claude Sonnet 5.5" }
       }
     }
   }
 }
 ```
 
-根据你想在 OpenCode 中使用的 Phaseo 模型 ID，在 `models` 对象中添加或移除模型。
+导出 `PHASEO_API_KEY`，并在 `models` 中添加或删除条目，以选择 OpenCode 列出哪些 Phaseo 模型。
 
-## 2) 启动 OpenCode
+## 确认可以正常使用
 
-编辑配置后重启 OpenCode，然后在 `/models` 中选择 Phaseo 模型。
+重启 OpenCode，从 `/models` 中选择一个 Phaseo 模型，在开始文件编辑工作之前先发送一条简短的提示词。确认该请求出现在 **设置 → 用量 → 日志** 中。
 
-之后如需仅移除 Phaseo 供应商，请运行：
+## 移除 Phaseo
 
 ```bash
 phaseo integrations remove opencode
 ```
 
-## 验证
+此命令只删除 Phaseo 提供商及其存储的凭据，然后吊销密钥。
 
-- 在使用文件编辑工作流之前，先发送一个简单的提示。
-- 如果模型被拒绝，请通过 [Models 端点](../../api-reference/endpoint/models.mdx)确认准确 ID。
-- 如果身份验证失败，请重新运行 `phaseo opencode` 并检查 `opencode auth list`。
+## 解决常见问题
 
-## 添加文档上下文
+| 问题 | 解决方法 |
+| --- | --- |
+| 模型被拒绝 | 用 [Models 端点](../../api-reference/endpoint/models.mdx)核对准确的 ID。 |
+| 认证失败 | 重新运行 `phaseo opencode`，并检查 `opencode auth list`。 |
 
-如需让 OpenCode 在会话期间读取 Phaseo 文档，也请添加 [Docs MCP](./docs-mcp.mdx) 服务器。
+要让 OpenCode 在会话中读取 Phaseo 文档，请添加 [Docs MCP](./docs-mcp.mdx) 服务器。

@@ -1,122 +1,113 @@
 ---
 title: "集成"
-description: "将 Phaseo 连接到常用 SDK、框架、Agent 和可观测性工具。"
+description: "将 Phaseo 连接到常用的 SDK、框架、智能体和可观测性工具。"
 icon: "compass"
 ---
 
-大多数集成只需将 OpenAI 或 Anthropic 兼容客户端指向 Phaseo，并使用 Phaseo API 密钥。请从你正在使用的工具指南开始。
+把 OpenAI 兼容或 Anthropic 兼容的客户端指向 Phaseo 的 Base URL，提供一个 Phaseo API 密钥，并直接使用 `openai/gpt-6-astra` 这样的 Phaseo 模型 ID。每篇指南都会先完成工具的设置，再说明如何确认可以正常使用，以及哪些功能不可用。
 
-## 基础 URL
+| 客户端类型 | Base URL | 密钥填写位置 |
+| --- | --- | --- |
+| OpenAI 兼容 | `https://api.phaseo.app/v1` | API 密钥字段，以 `Authorization: Bearer` 发送 |
+| Anthropic 兼容（会自动加上 `/v1/messages`） | `https://api.phaseo.app` | 认证令牌字段，以 `Authorization: Bearer` 发送 |
 
-| 客户端类型 | 基础 URL |
-| --- | --- |
-| OpenAI 兼容客户端 | `https://api.phaseo.app/v1` |
-| Anthropic 兼容客户端 | `https://api.phaseo.app` |
+从 [Models 端点](../../api-reference/endpoint/models.mdx)获取模型 ID。新的 OpenAI 风格应用请使用 [Responses](../../api-reference/endpoint/responses.mdx)；较旧的库使用 [Chat Completions](../../api-reference/endpoint/chat-completions.mdx) 最稳妥。设置一次 `PHASEO_API_KEY`，再把它映射到工具所需的变量；在把智能体流量迁移过来之前，先测试流式传输和工具调用。
 
-请使用 [Models 端点](../../api-reference/endpoint/models.mdx)中的模型 ID。新的 OpenAI 风格应用优先使用 [Responses](../../api-reference/endpoint/responses.mdx)。对于较旧的库，[Chat Completions](../../api-reference/endpoint/chat-completions.mdx) 通常是最稳妥的选择。
+## 编程智能体
+
+大多数编程智能体只需一条 [Phaseo CLI](./phaseo-cli.mdx) 命令即可设置。[编程智能体](./coding-assistants.mdx)列出了每个智能体对应的命令。
+
+<Columns cols={3}>
+	<Card title="Claude Code" icon="/icons/brands/claude-code.svg" href="./claude-code" />
+	<Card title="Codex" icon="/icons/brands/codex.svg" href="./codex" />
+	<Card title="Cursor" icon="/icons/brands/cursor.svg" href="./cursor" />
+	<Card title="OpenCode" icon="/icons/brands/opencode.svg" href="./opencode" />
+	<Card title="Cline" icon="/icons/brands/cline.svg" href="./cline" />
+	<Card title="Roo Code" icon="/icons/brands/roo-code.svg" href="./roo-code" />
+	<Card title="Kilo Code" icon="/icons/brands/kilo.svg" href="./kilo-code" />
+	<Card title="Continue" icon="/icons/brands/continue.svg" href="./continue" />
+	<Card title="Aider" icon="/icons/brands/aider.png" href="./aider" />
+	<Card title="Zed" icon="/icons/brands/zed.svg" href="./zed" />
+	<Card title="fx" icon="/icons/brands/vercel.svg" href="./fx" />
+	<Card title="DeepSeek Harness" icon="/icons/brands/deepseek.svg" href="./deepseek-harness" />
+	<Card title="Pi" icon="/icons/brands/pi.svg" href="./pi" />
+	<Card title="oh-my-pi" icon="/icons/brands/oh-my-pi.svg" href="./oh-my-pi" />
+	<Card title="Prime Agent" icon="/icons/brands/prime-agent.svg" href="./prime-agent" />
+	<Card title="MiniMax Code" icon="/icons/brands/minimax.svg" href="./minimax-code" />
+	<Card title="Muse Code" icon="/icons/brands/meta.svg" href="./muse-code" />
+	<Card title="所有编程智能体" icon="bot" href="./coding-assistants" />
+</Columns>
 
 ## SDK 和直连客户端
 
 <Columns cols={2}>
-	<Card title="OpenAI SDK" icon="code" href="./openai-sdk.mdx">
-		使用 Phaseo 基础 URL 调用 OpenAI 官方客户端。
+	<Card title="OpenAI SDK" icon="code" href="./openai-sdk">
+		使用 Phaseo Base URL 的官方 OpenAI 客户端。
 	</Card>
-	<Card title="Anthropic SDK" icon="message-square" href="./anthropic-sdk.mdx">
-		通过 `/v1/messages` 使用 Anthropic 兼容客户端。
+	<Card title="Anthropic SDK" icon="message-square" href="./anthropic-sdk">
+		通过 `/v1/messages` 使用的 Anthropic 兼容客户端。
 	</Card>
-	<Card title="AI SDK" icon="bolt" href="./ai-sdk.mdx">
-		使用 Vercel AI SDK 的 Phaseo 官方供应商。
+	<Card title="AI SDK" icon="bolt" href="./ai-sdk">
+		适用于 Vercel AI SDK 的 Phaseo 官方提供商。
 	</Card>
-	<Card title="LiteLLM" icon="route" href="./litellm.mdx">
-		通过 Phaseo 路由 LiteLLM 流量，或在 LiteLLM 代理后接入 Phaseo。
+	<Card title="LiteLLM" icon="route" href="./litellm">
+		直接或通过 LiteLLM 代理调用 Phaseo。
 	</Card>
 </Columns>
 
-## 应用和 Agent 框架
+## 应用和智能体框架
 
 <Columns cols={2}>
-	<Card title="LangChain" icon="link" href="./langchain.mdx">
-		使用 `ChatOpenAI` 和 Phaseo 基础 URL 接入 LangChain Python。
+	<Card title="LangChain" icon="link" href="./langchain">
+		通过 `ChatOpenAI` 和 Phaseo Base URL 使用 LangChain Python。
 	</Card>
-	<Card title="LlamaIndex" icon="database" href="./llamaindex.mdx">
-		使用 Phaseo 构建 RAG 和索引工作流。
+	<Card title="LlamaIndex" icon="database" href="./llamaindex">
+		在 RAG 和索引工作流中使用 Phaseo 模型。
 	</Card>
-	<Card title="PydanticAI" icon="braces" href="./pydanticai.mdx">
-		使用 Phaseo 构建类型化 Python Agent。
+	<Card title="PydanticAI" icon="braces" href="./pydanticai">
+		基于 Phaseo 模型的类型化 Python 智能体。
 	</Card>
-	<Card title="Mastra" icon="workflow" href="./mastra.mdx">
-		在 Mastra Agent 和工作流中使用 Phaseo。
+	<Card title="Mastra" icon="workflow" href="./mastra">
+		在 Mastra 智能体和工作流中使用 Phaseo 模型。
 	</Card>
-	<Card title="TanStack AI" icon="layers" href="./tanstack-ai.mdx">
-		连接 TanStack AI 的 OpenAI 兼容适配器。
+	<Card title="eve" icon="bot" href="./eve">
+		通过 Phaseo AI SDK 提供商运行 eve 智能体。
 	</Card>
-	<Card title="Effect AI SDK" icon="function-square" href="./effect-ai.mdx">
+	<Card title="TanStack AI" icon="layers" href="./tanstack-ai">
+		TanStack AI 的 OpenAI 兼容适配器。
+	</Card>
+	<Card title="Effect AI SDK" icon="square-function" href="./effect-ai">
 		在 Effect TypeScript 应用中使用 Phaseo。
 	</Card>
 </Columns>
 
-## 平台与运维
+## 平台和运维
 
 <Columns cols={2}>
-	<Card title="LiveKit" icon="radio" href="./livekit.mdx">
+	<Card title="LiveKit" icon="radio" href="./livekit">
 		在 LiveKit Agents 和语音应用中使用 Phaseo 模型。
 	</Card>
-	<Card title="Replit" icon="box" href="./replit.mdx">
-		使用 Phaseo 构建并部署 Replit 应用。
+	<Card title="Replit" icon="box" href="./replit">
+		在 Replit 应用和部署中使用，密钥保存在 Replit Secrets 中。
 	</Card>
-	<Card title="工作流自动化" icon="workflow" href="./automation.mdx">
-		通过 Zapier、n8n、Pipedream 等平台调用 Phaseo。
+	<Card title="工作流自动化" icon="workflow" href="./automation">
+		Zapier、n8n、Pipedream 等平台中的 HTTP 步骤。
 	</Card>
-	<Card title="Infisical" icon="key-round" href="./infisical.mdx">
-		准备好进行范围明确、零停机的 Phaseo API 密钥轮换。
+	<Card title="Infisical" icon="key-round" href="./infisical">
+		使用限定范围的管理密钥实现零停机 API 密钥轮换。
+	</Card>
+	<Card title="可观测性" icon="activity" href="./observability">
+		使用 Langfuse、LangSmith 或 OpenTelemetry 追踪请求。
 	</Card>
 </Columns>
 
-## 编程智能体与可观测性
+## Phaseo 工具
 
 <Columns cols={2}>
-	<Card title="编程智能体" icon="bot" href="./coding-assistants">
-		在 Cursor、VS Code、Continue、Aider、Cline、Roo Code、Kilo Code 等工具中使用 Phaseo CLI 或手动提供商设置。
+	<Card title="Phaseo CLI" icon="terminal" href="./phaseo-cli">
+		在终端中设置编程智能体并管理 Phaseo。
 	</Card>
-	<Card title="Claude Code" icon="/icons/brands/claude-code.svg" href="./claude-code">
-		通过 Phaseo 路由兼容 Claude 的编程工作流。
-	</Card>
-	<Card title="Codex" icon="/icons/brands/codex.svg" href="./codex">
-		将 Phaseo 用作 Codex 供应商。
-	</Card>
-	<Card title="DeepSeek Harness" icon="/icons/brands/deepseek.svg" href="./deepseek-harness">
-		在 DeepSeek Harness 中将 Phaseo 添加为自定义 OpenAI 兼容供应商。
-	</Card>
-	<Card title="OpenCode" icon="/icons/brands/opencode.svg" href="./opencode">
-		使用自定义 Phaseo 供应商配置 OpenCode。
-	</Card>
-	<Card title="Pi" icon="/icons/brands/pi.svg" href="./pi">
-		在 Pi 中配置完整的 Phaseo 模型目录。
-	</Card>
-	<Card title="oh-my-pi" icon="/icons/brands/oh-my-pi.svg" href="./oh-my-pi">
-		通过 Phaseo 运行 oh-my-pi，并使用隔离的提供商目录。
-	</Card>
-	<Card title="MiniMax Code" icon="/icons/brands/minimax.svg" href="./minimax-code">
-		通过 Phaseo 运行 MiniMax Code，并使用临时提供商配置。
-	</Card>
-	<Card title="Muse Code" icon="/icons/brands/meta.svg" href="./muse-code">
-		通过 Phaseo 运行 Muse Code，并使用临时提供商配置。
-	</Card>
-	<Card title="Prime Agent" icon="/icons/brands/prime-agent.svg" href="./prime-agent">
-		配置 Prime Agent，通过 Phaseo 执行长时间任务。
-	</Card>
-	<Card title="可观测性" icon="activity" href="./observability.mdx">
-		通过 Langfuse、LangSmith、OpenTelemetry 等工具处理 Phaseo 流量。
-	</Card>
-	<Card title="Docs MCP" icon="plug-zap" href="./docs-mcp.mdx">
-		为编程智能体添加最新的 Phaseo 文档。
+	<Card title="Docs MCP" icon="plug-zap" href="./docs-mcp">
+		让编程智能体读取最新的 Phaseo 文档。
 	</Card>
 </Columns>
-
-## 推荐默认值
-
-- 一次性设置 `PHASEO_API_KEY`，并将其映射到客户端所需的环境变量。
-- 保持模型 ID 不变，例如 `openai/gpt-5-nano`。
-- 对于 OpenAI 兼容库，请使用 `https://api.phaseo.app/v1`，除非工具明确要求根主机。
-- 对于会追加 `/v1/messages` 的 Anthropic 兼容 SDK 和工具，请使用 `https://api.phaseo.app`。
-- 在迁移 Agent 流量前，先在预发布环境测试流式传输和工具调用。

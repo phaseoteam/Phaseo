@@ -1,56 +1,27 @@
 ---
 title: "Codex"
 icon: "/icons/brands/codex.svg"
-description: "Codex CLI, Codex App और Codex IDE एक्सटेंशन के लिए Phaseo Gateway को कस्टम प्रदाता के रूप में उपयोग करें।"
+description: "Codex CLI, Codex App और Codex IDE एक्सटेंशन के लिए Phaseo Gateway को कस्टम प्रदाता के रूप में इस्तेमाल करें।"
 ---
 
-Codex `config.toml` के ज़रिए कस्टम मॉडल प्रदाताओं का समर्थन करता है, इसलिए आप वही CLI, ऐप या IDE वर्कफ़्लो बनाए रखते हुए Codex के अनुरोध Phaseo के माध्यम से रूट कर सकते हैं।
+Codex में Phaseo प्रोफ़ाइल जोड़ने के लिए `phaseo codex` चलाएँ, या `config.toml` में ख़ुद `phaseo` प्रदाता जोड़ें। यही कॉन्फ़िग Codex CLI, Codex App और Codex IDE एक्सटेंशन में काम करता है।
 
-यदि आप यह भी चाहते हैं कि Codex काम करते समय Phaseo के मौजूदा दस्तावेज़ पढ़े, तो [Docs MCP](./docs-mcp.mdx) सर्वर भी जोड़ें।
-
-<Visibility for="humans">
-<Note>
-प्रदाता को जोड़ने के साथ-साथ दोबारा इस्तेमाल किए जा सकने वाले एजेंट सेटअप में भी मदद चाहिए? [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json) से Phaseo की सार्वजनिक स्किल इंस्टॉल करें:
-
-```bash
-npx skills add https://phaseo.app/docs --agent codex --skill '*'
-```
-</Note>
-</Visibility>
-
-<Visibility for="agents">
-<Note>
-दोबारा इस्तेमाल की जा सकने वाली Phaseo स्किल [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json) से उपलब्ध हैं। Codex में इंस्टॉल करने के लिए यह उपयोग करें:
-
-```bash
-npx skills add https://phaseo.app/docs --agent codex --skill '*'
-```
-</Note>
-</Visibility>
-
-## Phaseo CLI से सेटअप
+## Phaseo CLI से सेट अप करें
 
 ```bash
 phaseo login
 phaseo codex --model openai/gpt-5.6-terra
-```
-
-पहले Codex को उसकी आधिकारिक रिलीज़ से इंस्टॉल करें। सेटअप एक `Phaseo CLI: Codex API Key` बनाता है, जो 90 दिनों बाद समाप्त हो जाती है और जिसकी मासिक खर्च सीमा $100 है, उसे OS के क्रेडेंशियल स्टोर में रखता है और एक समर्पित Phaseo प्रोफ़ाइल लिखता है। Codex यह कुंजी CLI हेल्पर के ज़रिए लेता है, जो पुरानी कुंजी समाप्त होने पर नई कुंजी बनाता है, इसलिए `config.toml` में सादे टेक्स्ट में कोई कुंजी नहीं लिखी जाती।
-
-Codex को इस तरह शुरू करें:
-
-```bash
 codex --profile phaseo
 ```
 
-वही Phaseo CLI प्रक्रिया अलग अस्थायी प्रदाता कॉन्फ़िगरेशन से [Cline](./cline), [Kilo Code](./kilo-code), [oh-my-pi](./oh-my-pi), [Muse Code](./muse-code) और [MiniMax Code](./minimax-code) भी लॉन्च करती है।
+अगर Codex इंस्टॉल नहीं है, तो CLI आधिकारिक इंस्टॉल कमांड दिखाता है और उसे चलाने से पहले पूछता है। इसके बाद सेटअप एक `Phaseo CLI: Codex API Key` बनाता है जो 90 दिनों में समाप्त होती है और जिसकी मासिक खर्च सीमा $100 है, उसे OS क्रेडेंशियल स्टोर में रखता है, और प्रोफ़ाइल `~/.codex/phaseo.config.toml` (या `CODEX_HOME` के अंदर) में लिखता है। Codex कुंजी CLI से लेता है, जो पुरानी कुंजी समाप्त होने पर नई बना देता है, इसलिए कॉन्फ़िग में कोई सादा-टेक्स्ट कुंजी नहीं लिखी जाती। `--model` के बिना प्रोफ़ाइल `openai/gpt-5.6-terra` इस्तेमाल करती है।
 
-## मैन्युअल कॉन्फ़िगरेशन
+## Codex को मैन्युअल रूप से कॉन्फ़िगर करें
 
-`~/.codex/config.toml` में अपना उपयोगकर्ता कॉन्फ़िगरेशन बनाएँ या अपडेट करें। किसी भरोसेमंद प्रोजेक्ट के लिए आप यही सेटिंग्स रिपॉज़िटरी के भीतर `.codex/config.toml` में भी रख सकते हैं।
+इसे `~/.codex/config.toml` में, या किसी भरोसेमंद प्रोजेक्ट की `.codex/config.toml` में जोड़ें:
 
 ```toml
-model = "openai/gpt-5.5"
+model = "openai/gpt-6-astra"
 model_provider = "phaseo"
 
 [model_providers.phaseo]
@@ -60,17 +31,34 @@ env_key = "PHASEO_API_KEY"
 wire_api = "responses"
 ```
 
-कस्टम प्रदाताओं के लिए Codex फ़िलहाल Responses वायर प्रोटोकॉल का उपयोग करता है। `wire_api = "responses"` बनाए रखें, या इसे छोड़कर डिफ़ॉल्ट का उपयोग करें।
+फिर `PHASEO_API_KEY` एक्सपोर्ट करें और Codex शुरू करें। Codex के कस्टम प्रदाता Responses वायर प्रोटोकॉल इस्तेमाल करते हैं, जो डिफ़ॉल्ट है, इसलिए आप `wire_api` छोड़ भी सकते हैं। IDE एक्सटेंशन में फ़ाइल **Codex Settings → Open config.toml** से खोलें।
 
-Codex App और IDE एक्सटेंशन कॉन्फ़िगरेशन की समान परतें साझा करते हैं। IDE एक्सटेंशन में `Codex Settings > Open config.toml` से कॉन्फ़िगरेशन खोलें।
+## जाँचें कि यह काम करता है
 
-## सत्यापन
+एक छोटा प्रॉम्प्ट भेजें और पुष्टि करें कि अनुरोध **सेटिंग्स → उपयोग → लॉग्स** में दिखता है। Codex [Responses](../../api-reference/endpoint/responses.mdx) को कॉल करता है, इसलिए मॉडल को वह एंडपॉइंट सपोर्ट करना चाहिए।
 
-- शुरू करने से पहले [मॉडल सूची](../../api-reference/endpoint/models.mdx) में पुष्टि करें कि आपकी मॉडल ID मौजूद है।
-- Codex-शैली के डिफ़ॉल्ट प्रवाह के लिए [Responses](../../api-reference/endpoint/responses.mdx) का उपयोग करें।
+## Phaseo हटाएँ
 
-## समस्या निवारण
+```bash
+phaseo integrations remove codex
+```
 
-- `401 Unauthorized`: `phaseo whoami` चलाएँ, फिर `phaseo codex` दोबारा चलाएँ।
-- `model_not_found`: [मॉडल सूची](../../api-reference/endpoint/models.mdx) से मौजूदा ID लें और `model` अपडेट करें।
-- प्रदाता-विशिष्ट समस्याएँ: फ़ेलओवर व्यवहार के लिए [रूटिंग और फ़ॉलबैक](../routing-and-fallbacks.mdx) देखें।
+अगर `phaseo.config.toml` Phaseo ने बनाई थी, तो यह उसे मिटा देता है और कुंजी रद्द कर देता है। मैन्युअल सेटअप में `config.toml` से `phaseo` प्रदाता हटा दें।
+
+## आम समस्याएँ ठीक करें
+
+| त्रुटि | समाधान |
+| --- | --- |
+| `401 Unauthorized` | `phaseo whoami` चलाएँ, फिर `phaseo codex` दोबारा चलाएँ। |
+| `model_not_found` | [मॉडल](../../api-reference/endpoint/models.mdx) से मौजूदा ID लें और `model` अपडेट करें। |
+| कोई प्रदाता विफल होता है | फ़ेलओवर के लिए [रूटिंग और फ़ॉलबैक](../routing-and-fallbacks.mdx) देखें। |
+
+## Phaseo स्किल और दस्तावेज़ जोड़ें
+
+काम करते समय Codex को Phaseo के लाइव दस्तावेज़ पढ़ने देने के लिए [Docs MCP](./docs-mcp.mdx) सर्वर जोड़ें। Codex के लिए सार्वजनिक [Phaseo स्किल](https://phaseo.app/docs/.well-known/agent-skills/index.json) इंस्टॉल करने के लिए:
+
+```bash
+npx skills add https://phaseo.app/docs --agent codex --skill '*'
+```
+
+यही CLI वर्कफ़्लो [Cline](./cline.mdx), [Kilo Code](./kilo-code.mdx), [oh-my-pi](./oh-my-pi.mdx), [Muse Code](./muse-code.mdx) और [MiniMax Code](./minimax-code.mdx) को अस्थायी सेटिंग्स के साथ लॉन्च करता है।

@@ -41,6 +41,11 @@ CREATE UNIQUE INDEX workspace_departments_directory_source_idx ON public.workspa
 
 CREATE INDEX workspace_departments_workspace_idx ON public.workspace_departments USING btree (workspace_id);
 
+CREATE TRIGGER sync_guardrail_assignments
+  AFTER DELETE ON public.workspace_departments
+  FOR EACH ROW
+  EXECUTE FUNCTION private.sync_guardrail_assignments();
+
 CREATE TRIGGER workspace_departments_reconcile
   AFTER UPDATE OF name ON public.workspace_departments
   FOR EACH ROW

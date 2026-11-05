@@ -18,6 +18,7 @@ CREATE TABLE "public"."credit_ledger" (
   "refund_claimed_by_user_id" uuid,
   "before_reserved_nanos"     bigint,
   "after_reserved_nanos"      bigint,
+  "wallet_debited"            boolean,
   CONSTRAINT "credit_ledger_pkey" PRIMARY KEY (id),
   CONSTRAINT "credit_ledger_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES private.usage_workspace_identity(workspace_id) ON DELETE RESTRICT
 );
@@ -44,6 +45,13 @@ CREATE POLICY "credit_ledger_select_own_team" ON "public"."credit_ledger"
   FOR SELECT
   TO "authenticated"
   USING (public.is_workspace_member(workspace_id));
+
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."credit_ledger"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
 
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."credit_ledger" TO "service_role";
 

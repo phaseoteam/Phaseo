@@ -51,6 +51,13 @@ CREATE POLICY "gateway_dynamic_route_versions_workspace_update" ON "public"."gat
    FROM public.gateway_dynamic_routes route
   WHERE ((route.id = gateway_dynamic_route_versions.route_id) AND ( SELECT public.is_workspace_admin(route.workspace_id) AS is_workspace_admin)))));
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."gateway_dynamic_route_versions"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."gateway_dynamic_route_versions" TO "anon", "authenticated", "service_role";
 
 COMMENT ON TABLE "public"."gateway_dynamic_route_versions" IS 'Immutable dynamic route drafts and deployment history.';

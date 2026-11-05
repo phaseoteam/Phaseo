@@ -98,7 +98,7 @@ How money goes back today:
 
 - **Self-serve refunds:** a customer can refund a whole top-up within 24 hours if the credit from it hasn't been used ([refund route](../../apps/web/src/routes/api/stripe/refunds/request/index.ts)). This doesn't help after an incident that consumed credit.
 - **Credit codes:** `/internal/credits` creates a promo code with an amount, a redemption limit and an expiry. Send the code to the affected workspace by email.
-- **Ledger adjustments:** the credit ledger supports `grant`, `refund` and `adjustment` entries ([v2_credit_ledger.sql](../../supabase/schemas/public/tables/v2_credit_ledger.sql)), but there is no admin tool to add one to a single workspace, so use credit codes for now.
+- **Ledger adjustments:** balances live in `wallets` and `credit_ledger` ([credit_ledger.sql](../../supabase/schemas/public/tables/credit_ledger.sql)), but there is no admin tool to add an adjustment entry for a single workspace, so use credit codes for now.
 - **Card refunds** beyond the self-serve window go through the Stripe dashboard.
 
 When Phaseo gives money back:
@@ -123,7 +123,7 @@ When Phaseo gives money back:
 | Alerts to Linear | `POST /internal/observability-incidents` on the gateway turns PostHog and Axiom alerts into deduplicated Linear Triage issues (not yet tested end to end with a real alert from either); [observability-incidents.ts](../../apps/api/src/routes/internal/observability-incidents.ts), setup in the [API README](../../apps/api/README.md#observability-incident-triage) |
 | Uptime monitors | Instatus, alerting through incident.io; see [Outage alerts](#outage-alerts) |
 | Public probes | "Phaseo Health Pilot" workflow, run by hand; [health-pilot.yml](../../.github/workflows/health-pilot.yml). It creates no incidents. |
-| Provider routing health | Circuit breaker settings in [health.config.ts](../../apps/api/src/pipeline/execute/health.config.ts); shared state in [routing-health-durable-object.ts](../../apps/api/src/core/routing-health-durable-object.ts) |
+| Provider routing health | Circuit breaker settings in [health.config.ts](../../apps/api/src/pipeline/execute/health.config.ts); shared state in [routing-health-durable-object.ts](../../apps/api/src/core/routing-health-durable-object.ts). Each breaker's last transition (state, reason, open until) is in `gateway_provider_health_states`, which also drives the provider badges on model pages; the live evidence is the KV key `gw:health:v2:<endpoint>:<model>`. Per-attempt outcomes, latency and errors are in `v2_request_attempts`. An open breaker recovers by itself after its cooldown through sampled probe requests; use route switches to take a provider out by hand. |
 | Route switches | `/internal/data/models/edit/<model id>` |
 | Cache purge | `/internal/cache` |
 | Key leak response | `/internal/key-incidents` |

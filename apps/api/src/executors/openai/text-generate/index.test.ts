@@ -300,7 +300,16 @@ describe("openai text executor HTTP mode", () => {
 	);
 
 	// https://developers.openai.com/api/docs/models/gpt-5.5: none, low, medium, high, xhigh.
-	it.each([["gpt-5.5", "xhigh", "xhigh"], ["gpt-5.5", "none", "none"], ["gpt-5.5-pro", "low", "medium"], ["gpt-5.3-codex", "none", "low"]] as const)(
+	// https://developers.openai.com/api/docs/models/gpt-6.1-terra: none, low, medium, high, xhigh, max.
+	it.each([
+		["gpt-5.5", "xhigh", "xhigh"],
+		["gpt-5.5", "none", "none"],
+		["gpt-5.5-pro", "low", "medium"],
+		["gpt-5.3-codex", "none", "low"],
+		["gpt-6.1-terra", "max", "max"],
+		["gpt-6.1-terra", "xhigh", "xhigh"],
+		["gpt-6.1-terra", "none", "none"],
+	] as const)(
 		"sends %s the documented reasoning effort (%s -> %s)",
 		async (model, effort, expected) => {
 			const mock = installFetchMock([{
@@ -353,6 +362,36 @@ describe("openai text executor HTTP mode", () => {
 			expect(body).not.toHaveProperty(field);
 		}
 		expect(body.include).toContain("message.output_text.logprobs");
+	});
+
+	it.each([
+		["include_usage only", { include_usage: true }, undefined],
+		["include_usage with include_obfuscation", { include_usage: true, include_obfuscation: false }, { include_obfuscation: false }],
+	] as const)("drops Chat's stream_options.include_usage from a request rerouted to Responses (%s)", async (_label, streamOptions, expected) => {
+		// Streaming Chat clients (OpenAI SDK, AI SDK) send include_usage; with reasoning_effort the
+		// request goes to /v1/responses, which rejects it as an unknown parameter.
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_stream_options",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-5.5",
+				status: "completed",
+				output: [],
+				usage: { input_tokens: 4, output_tokens: 1, total_tokens: 5 },
+			}),
+		}]);
+
+		await executor({
+			...buildArgs({ model: "openai/gpt-5.5", reasoning: { effort: "low" }, streamOptions } as any),
+			providerModelSlug: "gpt-5.5",
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+		});
+		mock.restore();
+
+		expect(mock.calls[0]?.bodyJson?.stream_options).toEqual(expected);
 	});
 
 	it.each([
@@ -974,6 +1013,50 @@ describe("openai text executor HTTP mode", () => {
 		expect(mock.calls[0]?.bodyJson?.model).toBe("gpt-6.1-sol");
 		expect(mock.calls[0]?.bodyJson?.reasoning).toMatchObject({
 			effort: "max",
+			mode: "pro",
+		});
+	});
+
+	it.each([
+		["max", "max"],
+		["none", "low"],
+	] as const)("routes GPT-6.1 Terra Pro through Responses with pro reasoning (%s -> %s)", async (effort, expected) => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_terra61_pro",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-6.1-terra",
+				status: "completed",
+				output: [{
+					type: "message",
+					role: "assistant",
+					content: [{ type: "output_text", text: "ok" }],
+				}],
+				usage: { input_tokens: 2, output_tokens: 1, total_tokens: 3 },
+			}, { status: 200 }),
+		}]);
+
+		const result = await executor({
+			...buildArgs({
+				model: "openai/gpt-6.1-terra-pro",
+				reasoning: { effort },
+			}),
+			providerModelSlug: "gpt-6.1-terra-pro",
+			capabilityParams: {
+				request: {
+					allowlist: ["reasoning.effort", "reasoning.mode", "max_tokens"],
+				},
+			},
+		});
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.bodyJson?.model).toBe("gpt-6.1-terra");
+		expect(mock.calls[0]?.bodyJson?.reasoning).toMatchObject({
+			effort: expected,
 			mode: "pro",
 		});
 	});

@@ -6,22 +6,33 @@ sidebarTitle: "Plans"
 icon: "tags"
 ---
 
-Phaseo offers free access and pay-as-you-go model usage. Teams that need identity and directory controls can add a separate monthly Enterprise subscription. All prices below are in USD.
+Start free, pay as you go for paid models, or bring your own provider keys. Add the Enterprise subscription only if you need identity and directory controls. All prices are in USD.
 
 ## Choose how to use Phaseo
 
 | Option | Phaseo charges | What it covers |
 | --- | --- | --- |
-| Free access | No subscription or top-up for supported free models | Free-model usage, public catalog data, SDKs, and integrations |
+| Free access | Nothing | Free-model requests, public catalog data, SDKs and integrations |
 | Pay As You Go | Model usage at catalog prices, plus a 5% credit purchase fee ($1 minimum) | Paid-model requests using prepaid workspace credits |
-| Bring your own key (BYOK) | When monthly usage is available, the first 250,000 completed requests per workspace each UTC calendar month have no Phaseo service fee; then 2.5% of provider-equivalent cost. If both the monthly counter and fallback read are unavailable, that request pays the 2.5% fee | Phaseo routing and observability using your provider credentials; the provider bills model usage directly |
-| Self Serve Enterprise | Monthly workspace subscription starting at $29, plus model usage and credit purchase fees | SSO, SCIM, directory management, departments, and priority email support |
+| Bring your own key (BYOK) | No fee for the first 250,000 completed requests per workspace each UTC month, then 2.5% of provider-equivalent cost | Phaseo routing and observability using your provider credentials; the provider bills model usage directly |
+| Self Serve Enterprise | Monthly workspace subscription from $29, plus model usage and credit purchase fees | SSO, SCIM, directory management, departments and priority email support |
 
-Pay As You Go has no monthly subscription, contract, or minimum monthly spend. The credit purchase fee applies when you buy credits; managed requests then consume those credits at the listed model prices.
+Pay As You Go has no monthly subscription, contract or minimum monthly spend. The fee is charged when you buy credits; requests then use those credits at the listed model prices. [Pricing and billing](../pricing/tiers.mdx) has worked top-up examples.
 
-Free-model access is subject to request allowances. The default Gateway limit is 25 requests per rolling minute per user and workspace, with an additional 1,500 free-model requests per UTC day. Provider quotas also apply. See [Rate limits](../api-reference/limits.mdx) for scope and retry behavior.
+## Default request limits
 
-For BYOK setup and billing details, see [Routing and fallbacks](../guides/routing-and-fallbacks.mdx). A fee-free BYOK request still incurs any usage charge from your provider.
+Free models have a daily allowance on top of the Gateway's default per-minute limit:
+
+| Limit | Default | Scope |
+| --- | --- | --- |
+| Requests per minute, all models | 25 | Per user in each workspace, rolling minute |
+| Free-model requests per day | 1,500 | Per user, shared across all your workspaces and all free models; resets at 00:00 UTC |
+
+Requests over the daily allowance fail with `phaseo_free_model_limit_exceeded`. Provider quotas also apply. See [Rate limits](../api-reference/limits.mdx) for scope and retry behavior.
+
+## BYOK fees
+
+A BYOK request still incurs your provider's usage charge, even when Phaseo charges no fee. If Phaseo can't read the workspace's monthly request count (both the counter and its fallback read fail), that request pays the 2.5% fee. Set up keys and fallback rules in [Routing and fallbacks](../guides/routing-and-fallbacks.mdx#byok-considerations).
 
 ## Enterprise member pricing
 
@@ -36,16 +47,14 @@ The entry subscription includes up to 100 workspace members, including smaller t
 | 50,000 | $1,099 |
 | 100,000 | $1,999 |
 
-Open [Pricing](https://phaseo.app/pricing) to choose an allowance and view the quote for your member count. Self-service availability depends on your workspace's rollout access. Contact the [Help Center](https://phaseo.app/help) for invoicing, procurement, or custom commercial requirements.
+Allowances between these points are priced on a straight line between the two nearest rows. Open [Pricing](https://phaseo.app/pricing) to choose an allowance and see the quote for your member count. Self-service availability depends on your workspace's rollout access.
 
-Members count while they belong to the workspace, whether or not they sign in. Below 100,000 members, new memberships are blocked when they would exceed the selected allowance. Self-service allowance changes are not currently available, so choose capacity for expected growth before subscribing.
+**How members count.** Members count while they belong to the workspace, whether or not they sign in. Below 100,000 members, new memberships are blocked when they would exceed the selected allowance. You can't change the allowance yourself after subscribing, so choose capacity for expected growth. At the 100,000-member allowance, each additional unique member costs $0.02 per subscription billing period, including members removed during that period.
 
-At the 100,000-member allowance, additional unique members cost $0.02 per member per subscription billing period, including members removed during that period.
-
-Enterprise does not include model credits or waive the standard 5% credit purchase fee ($1 minimum). See [Pricing and billing](../pricing/tiers.mdx) for billing examples and member allowances.
+Enterprise doesn't include model credits or waive the 5% credit purchase fee ($1 minimum). For invoicing, procurement or custom commercial terms, contact the [Help Center](https://phaseo.app/help).
 
 ## Provider subscription plans
 
-The [subscription plan catalog](https://phaseo.app/subscription-plans) lists subscriptions sold by model providers. Those offers have their own prices, included models, limits, and billing terms. A provider subscription does not automatically add Phaseo credits or enable a Gateway route.
+The [subscription plan catalog](https://phaseo.app/subscription-plans) lists subscriptions sold by model providers. Those offers have their own prices, included models, limits and billing terms. A provider subscription doesn't add Phaseo credits or enable a Gateway route.
 
-Check the provider's terms and the model's active Gateway routes before choosing a plan. Use [Pricing and performance](./pricing-performance.mdx) to compare model usage costs and available performance data.
+Check the provider's terms and the model's active Gateway routes before choosing a plan. Use [Pricing and performance](./pricing-performance.mdx) to compare model usage costs and performance data.

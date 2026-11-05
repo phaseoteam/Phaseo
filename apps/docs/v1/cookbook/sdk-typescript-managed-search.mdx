@@ -6,152 +6,132 @@ description: "Use the official TypeScript SDK with presets, managed web search, 
 "og:image": "https://phaseo.app/og/dynamic?title=Ground%20one%20TypeScript%20SDK%20workflow%20with%20managed%20web%20search&description=Use%20the%20official%20TypeScript%20SDK%20with%20presets%2C%20managed%20web%20search%2C%20and%20response%20metadata%20so%20one%20workflow%20stays%20grounded%20and%20debuggable.&pathname=/docs/v1/cookbook/sdk-typescript-managed-search"
 ---
 
-Use this recipe when a TypeScript or JavaScript service should combine:
+Give one TypeScript request the `phaseo:web_search` tool and a JSON Schema, so the model searches before it answers and returns a brief with its sources. When you're done you have a script that prints a validated `{ summary, sources }` object plus the IDs and search counters you need to debug it.
 
-- preset-driven routing defaults
-- managed `phaseo:web_search`
-- strict response parsing
-- request-level metadata for debugging
+The script is production-ready once you replace the preset and domain with your own. Search results are untrusted web content: validate the output and don't follow instructions found in it.
 
-## Goal
+## Build it
 
-- keep the caller on the official SDK
-- avoid rebuilding raw compatibility payloads by hand
-- preserve enough metadata to debug search results, routing, and plugin behavior
+<Steps>
+<Step title="Create a preset">
 
-## 1. Start with one shared client
+Create `research-brief` in **Settings → Presets** with the model, provider preferences, reasoning settings and system prompt every caller should share. The model must support tools and JSON Schema output.
 
-```ts
-import Phaseo from "@phaseo/sdk";
+</Step>
+<Step title="Install the SDK">
 
-export const gateway = new Phaseo({
-  apiKey: process.env.PHASEO_API_KEY!,
-});
+```bash
+npm install @phaseo/sdk zod
+export PHASEO_API_KEY="phaseo_v1_sk_..."
 ```
 
-## 2. Put stable defaults in a preset first
+</Step>
+<Step title="Write the script">
 
-Create a preset when multiple callers should share:
+```ts research-brief.ts
+import Phaseo from "@phaseo/sdk";
+import { z } from "zod";
 
-- model policy
-- provider preferences
-- reasoning defaults
-- system prompt
-- deterministic caching behavior
+const gateway = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
-Then keep the SDK request focused on what varies for the one call.
+const Brief = z
+  .object({
+    summary: z.string().min(1),
+    sources: z
+      .array(z.object({ title: z.string(), url: z.string().url() }).strict())
+      .min(1),
+  })
+  .strict();
 
-## 3. Ask for grounded output through the managed search tool
-
-```ts
 const response = await gateway.generateResponse({
-  preset: "research-brief",
-  input: "Find the latest public changes to our webhook delivery behavior and summarize them.",
+  model: "@research-brief",
+  input: "Find the latest public changes to Phaseo webhook delivery behavior and summarize them.",
   tools: [
     {
       type: "phaseo:web_search",
       parameters: {
-        query: "site:phaseo.app webhook delivery retries",
+        allowed_domains: ["phaseo.app"],
         max_results: 5,
         include_highlights: true,
       },
     },
   ],
   tool_choice: "phaseo:web_search",
-  response_format: {
-    type: "json_schema",
-    name: "research_brief",
-    schema: {
-      type: "object",
-      required: ["summary", "sources"],
-      properties: {
-        summary: { type: "string" },
-        sources: {
-          type: "array",
-          minItems: 1,
-          items: {
-            type: "object",
-            required: ["title", "url"],
-            properties: {
-              title: { type: "string" },
-              url: { type: "string", format: "uri" },
+  text: {
+    format: {
+      type: "json_schema",
+      name: "research_brief",
+      strict: true,
+      schema: {
+        type: "object",
+        required: ["summary", "sources"],
+        properties: {
+          summary: { type: "string" },
+          sources: {
+            type: "array",
+            minItems: 1,
+            items: {
+              type: "object",
+              required: ["title", "url"],
+              properties: {
+                title: { type: "string" },
+                url: { type: "string", format: "uri" },
+              },
+              additionalProperties: false,
             },
-            additionalProperties: false,
           },
         },
+        additionalProperties: false,
       },
-      additionalProperties: false,
     },
   },
   plugins: [{ id: "response-healing" }],
   meta: true,
 });
-```
 
-This gives you:
+const text = (response.output ?? [])
+  .filter((item) => item.type === "message")
+  .flatMap((item) => item.content ?? [])
+  .filter((part) => part.type === "output_text")
+  .map((part) => part.text ?? "")
+  .join("");
 
-- preset-managed routing and prompt defaults
-- server-managed search that works without depending on provider-native search support
-- structured output for predictable downstream parsing
-- metadata needed for operational debugging
-
-## 4. Parse the output and keep the debug fields
-
-```ts
-const firstMessage = Array.isArray(response.output)
-  ? response.output.find((item) => item?.type === "message")
-  : null;
-
-const text = Array.isArray(firstMessage?.content)
-  ? firstMessage.content.find((part) => part?.type === "output_text")?.text ?? ""
-  : "";
-
-const payload = JSON.parse(text);
+const brief = Brief.parse(JSON.parse(text));
 
 console.log({
   responseId: response.id,
-  selectedProvider: response.meta?.routing?.selected_provider,
+  model: response.model,
+  routing: response.meta?.routing,
   pluginExecutions: response.meta?.plugin_executions,
   serverToolUse: response.usage?.server_tool_use,
 });
-
-console.log(payload);
+console.log(brief);
 ```
 
-These fields make it much easier to answer:
+| Field | Does |
+| --- | --- |
+| `tools` with `phaseo:web_search` | Phaseo runs the search, whether or not the provider has its own search. The model writes the query. |
+| `allowed_domains` | Limits results to your own sources. Every parameter is in the [web search guide](../guides/server-tools/web-search#parameters). |
+| `tool_choice: "phaseo:web_search"` | Makes the model search instead of answering from memory. |
+| `text.format` | The JSON Schema for the answer. |
+| `plugins` | Repairs near-valid JSON; see [response healing](./response-healing-for-structured-json). |
+| `meta: true` | Adds `meta.routing` and `meta.plugin_executions`. |
 
-- which provider actually served the request
-- whether managed search ran
-- whether response healing ran
-- which request to inspect in the dashboard
+</Step>
+<Step title="Run it">
 
-## 5. Verify the grounded request in logs
+```bash
+npx tsx research-brief.ts
+```
 
-Open the request in **Gateway -> Usage** and inspect:
+</Step>
+</Steps>
 
-- normalized search results
-- citations
-- provider selection
-- plugin execution metadata
+## Check it worked
 
-If the search behavior or ranking looks wrong, fix the preset or tool parameters from evidence in logs rather than adding blind overrides.
+- `serverToolUse.web_search_requests` is at least `1`, so the search ran.
+- `brief.sources` lists `phaseo.app` URLs.
+- `routing.selected_provider` names the provider, and `pluginExecutions` shows whether healing changed anything.
+- In **Settings → Usage → Logs**, the request's **Web search observability** section shows the managed searches, results and citations.
 
-## 6. Split exploratory and deterministic workflows
-
-Recommended pattern:
-
-1. one preset for deterministic structured research outputs
-2. another preset for exploratory or higher-temperature requests
-
-That keeps:
-
-- response caching cleaner
-- routing behavior easier to reason about
-- search-heavy workflows separate from general-purpose generation traffic
-
-## Related
-
-- [Debug web search requests](./web-search-debugging.mdx)
-- [Roll out presets and debug routing](./preset-rollout-and-routing-debug.mdx)
-- [Use response healing for structured JSON](./response-healing-for-structured-json.mdx)
-- [TypeScript SDK Overview](../sdk-reference/typescript/overview.mdx)
+If results look wrong, fix the preset or tool parameters from what the logs show rather than adding overrides. [Debug web search](./web-search-debugging) lists the common cases. Keep exploratory, higher-temperature research in a separate preset from this deterministic one, so their routing stays easy to compare.

@@ -37,6 +37,45 @@ describe("data contribution sampling", () => {
 		expect(result.redactionCount).toBeGreaterThanOrEqual(6);
 	});
 
+	it("never retains media bytes, whatever their size or provider format", () => {
+		const tinyPng = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+		const longBase64 = "A".repeat(4096);
+		const result = sanitizeDataContributionPayload({
+			messages: [{
+				role: "user",
+				content: [
+					{ type: "image_url", image_url: { url: `data:image/png;base64,${tinyPng}` } },
+					{ type: "image", source: { type: "base64", media_type: "image/png", data: tinyPng } },
+					{ inline_data: { mime_type: "image/png", data: tinyPng } },
+					{ type: "input_audio", input_audio: { data: tinyPng, format: "wav" } },
+					{ type: "text", text: `See ![x](data:image/png;base64,${tinyPng}) here` },
+				],
+			}],
+			data: [{ b64_json: tinyPng }],
+			output: [{ type: "image_generation_call", result: longBase64 }],
+		});
+		expect(result.value).toEqual({
+			messages: [{
+				role: "user",
+				content: [
+					{ type: "image_url", image_url: { url: "[REDACTED_DATA_URL]" } },
+					{ type: "image", source: { type: "base64", media_type: "image/png", data: "[REDACTED_BASE64]" } },
+					{ inline_data: { mime_type: "image/png", data: "[REDACTED_BASE64]" } },
+					{ type: "input_audio", input_audio: { data: "[REDACTED_BASE64]", format: "wav" } },
+					{ type: "text", text: "See ![x]([REDACTED_DATA_URL]) here" },
+				],
+			}],
+			data: [{ b64_json: "[REDACTED_BASE64]" }],
+			output: [{ type: "image_generation_call", result: "[REDACTED_BASE64]" }],
+		});
+		expect(JSON.stringify(result.value)).not.toContain(tinyPng);
+	});
+
+	it("keeps ordinary text that only looks like an identifier", () => {
+		const result = sanitizeDataContributionPayload({ data: "hello", id: "chatcmpl-abc123", text: "short base64 aGVsbG8=" });
+		expect(result.value).toEqual({ data: "hello", id: "chatcmpl-abc123", text: "short base64 aGVsbG8=" });
+	});
+
 	it("retains every request while queueing only the independent classifier sample", () => {
 		expect(dataContributionQueueStatus(999, 1000)).toBe("pending");
 		expect(dataContributionQueueStatus(1000, 1000)).toBe("retained");

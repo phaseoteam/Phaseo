@@ -20,7 +20,7 @@ const money = formatSpend;
 const tokens = (count: number) => formatRoundedCount(count, "en-US");
 const percent = (part: number, whole: number) => whole ? `${Math.round(part / whole * 100)}%` : "0%";
 
-/** Each harness keeps one colour on every chart, as on T3 Code's Usage page; Codex is the foreground, as its logo is. */
+/** Each harness keeps one colour on every chart; Codex is the foreground, as its logo is. */
 const harnessColours: Partial<Record<string, string>> = { phaseo: "#0a84c6", claude: "#d97757", codex: "var(--foreground)", cursor: "#8b8b8b", opencode: "#5b9bbd", grok: "color-mix(in srgb, var(--foreground) 72%, transparent)", antigravity: "#8c7bd1", pi: "#9a8f5e" };
 const colour = (harness: string) => harnessColours[harness] ?? "var(--muted-foreground)";
 const harnessName = (harness: string) => harnessNames[harness as Harness] ?? harness;
@@ -61,7 +61,7 @@ function paceText(today: number, pace: TodayPace) {
 	return `${money(Math.abs(difference))} ${difference > 0 ? "more" : "less"} than usual by now${share !== undefined ? ` (${difference > 0 ? "+" : "−"}${share}%)` : ""}.`;
 }
 
-/** A small set of choices, one picked, like T3 Code's toggles. */
+/** A small set of choices, one picked. */
 function Choice<Id extends string>({ label, options, value, onChange, disabled }: { label: string; options: { id: Id; label: string }[]; value: Id; onChange: (id: Id) => void; disabled?: boolean }) {
 	return <div role="radiogroup" aria-label={label} aria-disabled={disabled || undefined} className={cn("flex shrink-0 items-center gap-0.5 rounded-md bg-muted/70 p-0.5", disabled && "opacity-50")}>
 		{options.map(option => <button key={option.id} type="button" role="radio" aria-checked={option.id === value} disabled={disabled} onClick={() => onChange(option.id)}
@@ -162,7 +162,7 @@ function bucketLabels(report: UsageReport) {
 
 /**
  * Cost or tokens per day (per hour today) with one line per harness, overlaid rather than stacked so each harness reads
- * on its own, as on T3 Code's Usage page. Today's line stops at the current hour.
+ * on its own. Today's line stops at the current hour.
  */
 function HarnessChart({ report, metric, now }: { report: UsageReport; metric: "cost" | "tokens"; now: Date }) {
 	const [hover, setHover] = useState<number>();
@@ -206,7 +206,7 @@ function HarnessChart({ report, metric, now }: { report: UsageReport; metric: "c
 	</figure>;
 }
 
-/** A bar split into parts with a legend underneath, like T3 Code's share bars. */
+/** A bar split into parts with a legend underneath. */
 function ShareBar({ label, parts, format }: { label: string; parts: { name: string; amount: number; tone: string }[]; format: (amount: number) => string }) {
 	const total = parts.reduce((sum, part) => sum + part.amount, 0), shown = parts.filter(part => part.amount > 0);
 	return <div className="flex flex-col gap-2">
@@ -233,7 +233,7 @@ function Share({ name, harness, amount, largest, detail, onOpen, parts }: { name
 type Breakdown = "models" | "chats" | "projects" | "days";
 
 /**
- * Usage: T3 Code's Usage page joined with Phaseo's Today. Cost and tokens across every harness for today or the last
+ * Usage, joined with Phaseo's Today. Cost and tokens across every harness for today or the last
  * 7, 30 or 90 days, with what Phaseo charged kept apart from what Claude Code and Codex would cost at API prices; today's
  * pace against the usual; what got done; where it went; and the subscription limits.
  */

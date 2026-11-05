@@ -1,84 +1,50 @@
 ---
 icon: "clock-3"
-title: "Datum-und-Uhrzeit-Serverwerkzeug"
-description: "Stelle Modellen das aktuelle Datum und die Uhrzeit in einer oder mehreren Zeitzonen bereit."
+title: "Server-Tool Datetime"
+description: "Gib Modellen das aktuelle Datum und die aktuelle Uhrzeit in einer oder mehreren Zeitzonen."
 ---
 
-Verwende `phaseo:datetime`, wenn eine Anfrage vom aktuellen Datum, Wochentag, der Uhrzeit oder Zeitzone abhängt.
-
-Das Modell entscheidet, wann es das Tool aufruft. Phaseo gibt die aufgelösten Zeitzonen und aktuellen Zeitstempel an das Modell zurück, das anschließend die endgültige Antwort formuliert.
-
-## Schnellstart
+Füge `phaseo:datetime` hinzu, damit das Modell das aktuelle Datum und die Uhrzeit nachschlagen kann, wenn ein Prompt davon abhängt, etwa „Welcher Tag ist in Tokio?“. Das Modell entscheidet, wann es das Tool aufruft. Phaseo gibt die Uhrzeit in jeder Zeitzone zurück, die du angegeben hast.
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "messages": [
       { "role": "user", "content": "What day of the week is it in Tokyo?" }
     ],
     "tools": [
       {
         "type": "phaseo:datetime",
-        "parameters": {
-          "timezones": ["Asia/Tokyo", "UTC"]
-        }
+        "parameters": { "timezones": ["Asia/Tokyo", "UTC"] }
       }
     ]
   }'
 ```
 
-## Konfiguration
+## Parameter
 
-```json
-{
-  "type": "phaseo:datetime",
-  "parameters": {
-    "timezones": ["Europe/London", "UTC"]
-  }
-}
-```
-
-| Parameter | Typ | Standardwert | Beschreibung |
+| Parameter | Typ | Standard | Beschreibung |
 | --- | --- | --- | --- |
-| `timezones` | string[] | `["UTC"]` | Bis zu 5 IANA-Zeitzonennamen, die bei einem Tool-Aufruf zurückgegeben werden, z. B. `["Europe/London", "UTC"]`. |
+| `timezones` | string[] | `["UTC"]` | Bis zu 5 IANA-Zeitzonennamen, etwa `["Europe/London", "UTC"]`. |
 
-## Tool-Ergebnis
+Mehr als 5 Zeitzonen oder ein Name, der keine gültige IANA-Zeitzone ist, führen zur Ablehnung der Anfrage, bevor das Modell läuft. Der ältere Typname `gateway:datetime` wird weiterhin akzeptiert.
 
-Das Tool-Ergebnis enthält einen Eintrag für jede angefragte Zeitzone.
+## Was das Tool zurückgibt
+
+Ein Eintrag pro Zeitzone:
 
 ```json
 {
   "timezones": [
-    {
-      "timezone": "Europe/London",
-      "datetime": "2026-07-03T10:00:00.123+01:00"
-    },
-    {
-      "timezone": "UTC",
-      "datetime": "2026-07-03T09:00:00.123+00:00"
-    }
+    { "timezone": "Europe/London", "datetime": "2026-07-03T10:00:00.123+01:00" },
+    { "timezone": "UTC", "datetime": "2026-07-03T09:00:00.123+00:00" }
   ]
 }
 ```
 
-## Nutzung
+## Nutzung und Preise
 
-Datetime-Aufrufe erhöhen:
-
-```json
-{
-  "usage": {
-    "server_tool_use": {
-      "datetime_requests": 1
-    }
-  }
-}
-```
-
-## Verwandte Seiten
-
-- [Server-Tools](./index.mdx)
-- [Tool-Aufrufe](../tool-calling.mdx)
+Jeder Aufruf erhöht `usage.server_tool_use.datetime_requests` um 1. Datetime hat keinen eigenen Preiszähler.

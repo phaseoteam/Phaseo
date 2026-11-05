@@ -13,12 +13,6 @@ CREATE TABLE "public"."workspace_guardrails" (
   "provider_restriction_provider_ids"       text[]                   NOT NULL DEFAULT '{}'::text[],
   "provider_restriction_enforce_allowed"    boolean                  NOT NULL DEFAULT false,
   "allowed_api_model_ids"                   text[]                   NOT NULL DEFAULT '{}'::text[],
-  "daily_limit_requests"                    bigint                   NOT NULL DEFAULT 0,
-  "weekly_limit_requests"                   bigint                   NOT NULL DEFAULT 0,
-  "monthly_limit_requests"                  bigint                   NOT NULL DEFAULT 0,
-  "daily_limit_cost_nanos"                  bigint                   NOT NULL DEFAULT 0,
-  "weekly_limit_cost_nanos"                 bigint                   NOT NULL DEFAULT 0,
-  "monthly_limit_cost_nanos"                bigint                   NOT NULL DEFAULT 0,
   "created_at"                              timestamp with time zone NOT NULL DEFAULT (now() AT TIME ZONE 'utc'::text),
   "updated_at"                              timestamp with time zone NOT NULL DEFAULT (now() AT TIME ZONE 'utc'::text),
   "prompt_injection_enabled"                boolean                  NOT NULL DEFAULT false,
@@ -27,16 +21,37 @@ CREATE TABLE "public"."workspace_guardrails" (
   "sensitive_info_default_action"           text                     NOT NULL DEFAULT 'redact'::text,
   "sensitive_info_rules"                    jsonb                    NOT NULL DEFAULT '[]'::jsonb,
   "model_restriction_mode"                  text                     NOT NULL DEFAULT 'none'::text,
+  "kind"                                    text                     NOT NULL DEFAULT 'access'::text,
+  "is_workspace_baseline"                   boolean                  NOT NULL DEFAULT false,
+  "rate_requests_per_minute"                integer,
+  "rate_tokens_per_minute"                  bigint,
+  "rate_concurrent_requests"                integer,
+  "rate_fail_closed"                        boolean                  NOT NULL DEFAULT false,
+  "rate_counting"                           text,
+  CONSTRAINT "workspace_guardrails_baseline_kind_check" CHECK (((NOT is_workspace_baseline) OR (kind = 'access'::text))),
+  CONSTRAINT "workspace_guardrails_id_workspace_id_key" UNIQUE (id, workspace_id),
+  CONSTRAINT "workspace_guardrails_kind_check" CHECK ((kind = ANY (ARRAY['access'::text, 'safety'::text, 'spend'::text, 'rate'::text]))),
   CONSTRAINT "workspace_guardrails_model_restriction_mode_check" CHECK ((model_restriction_mode = ANY (ARRAY['none'::text, 'allowlist'::text, 'blocklist'::text]))),
   CONSTRAINT "workspace_guardrails_pkey" PRIMARY KEY (id),
   CONSTRAINT "workspace_guardrails_prompt_injection_action_check" CHECK ((prompt_injection_action = ANY (ARRAY['flag'::text, 'redact'::text, 'block'::text]))),
   CONSTRAINT "workspace_guardrails_provider_restriction_mode_check" CHECK ((provider_restriction_mode = ANY (ARRAY['none'::text, 'allowlist'::text, 'blocklist'::text]))),
+  CONSTRAINT "workspace_guardrails_rate_concurrent_requests_check" CHECK (((rate_concurrent_requests IS NULL) OR (rate_concurrent_requests > 0))),
+  CONSTRAINT "workspace_guardrails_rate_counting_check" CHECK (((rate_counting IS NULL) OR (rate_counting = ANY (ARRAY['shared'::text, 'each_key'::text, 'each_end_user'::text])))),
+  CONSTRAINT "workspace_guardrails_rate_kind_check" CHECK ((((kind = 'rate'::text) AND (num_nonnulls(rate_requests_per_minute, rate_tokens_per_minute, rate_concurrent_requests) > 0) AND privacy_enable_paid_may_train AND privacy_enable_free_may_train AND privacy_enable_free_may_publish_prompts AND privacy_enable_input_output_logging AND (NOT privacy_zdr_only) AND (provider_restriction_mode = 'none'::text) AND (model_restriction_mode = 'none'::text) AND (NOT prompt_injection_enabled) AND (NOT sensitive_info_enabled)) OR ((kind <> 'rate'::text) AND (num_nonnulls(rate_requests_per_minute, rate_tokens_per_minute, rate_concurrent_requests, rate_counting) = 0) AND (NOT rate_fail_closed)))),
+  CONSTRAINT "workspace_guardrails_rate_requests_per_minute_check" CHECK (((rate_requests_per_minute IS NULL) OR (rate_requests_per_minute > 0))),
+  CONSTRAINT "workspace_guardrails_rate_tokens_per_minute_check" CHECK (((rate_tokens_per_minute IS NULL) OR (rate_tokens_per_minute > 0))),
   CONSTRAINT "workspace_guardrails_sensitive_info_default_action_check" CHECK ((sensitive_info_default_action = ANY (ARRAY['flag'::text, 'redact'::text, 'block'::text]))),
   CONSTRAINT "workspace_guardrails_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
 );
 
 ALTER TABLE "public"."workspace_guardrails"
   ENABLE ROW LEVEL SECURITY;
+
+CREATE UNIQUE INDEX workspace_guardrails_one_baseline_idx ON public.workspace_guardrails USING btree (workspace_id)
+  WHERE is_workspace_baseline;
+
+CREATE UNIQUE INDEX workspace_guardrails_rate_name_idx ON public.workspace_guardrails USING btree (workspace_id, lower(btrim(name)))
+  WHERE (kind = 'rate'::text);
 
 CREATE INDEX workspace_guardrails_workspace_id_idx ON public.workspace_guardrails USING btree (workspace_id);
 
@@ -49,6 +64,24 @@ CREATE TRIGGER protect_slack_agent_guardrail
   BEFORE DELETE OR UPDATE ON public.workspace_guardrails
   FOR EACH ROW
   EXECUTE FUNCTION public.protect_slack_agent_guardrail();
+
+CREATE TRIGGER protect_workspace_baseline_guardrail
+  BEFORE INSERT OR DELETE OR UPDATE ON public.workspace_guardrails
+  FOR EACH ROW
+  EXECUTE FUNCTION private.protect_workspace_baseline_guardrail();
+
+CREATE TRIGGER sync_workspace_baseline_guardrail
+  AFTER INSERT OR UPDATE ON public.workspace_guardrails
+  FOR EACH ROW
+  WHEN (new.is_workspace_baseline)
+  EXECUTE FUNCTION private.sync_workspace_baseline_guardrail();
+
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."workspace_guardrails"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
 
 CREATE POLICY "team_guardrails_delete_own_team" ON "public"."workspace_guardrails"
   FOR DELETE
@@ -72,3 +105,11 @@ CREATE POLICY "team_guardrails_update_own_team" ON "public"."workspace_guardrail
   WITH CHECK (public.is_workspace_admin(workspace_id));
 
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."workspace_guardrails" TO "anon", "authenticated", "service_role";
+
+COMMENT ON COLUMN "public"."workspace_guardrails"."kind" IS 'What the guardrail controls: access (data retention, training, logging, allowed providers and models), safety (prompt injection, sensitive info), spend or rate. One kind per guardrail.';
+
+COMMENT ON COLUMN "public"."workspace_guardrails"."is_workspace_baseline" IS 'The workspace baseline: the built-in access guardrail holding the workspace-wide rules edited under Settings, Privacy, assigned to the whole workspace. At most one per workspace; created by private.ensure_workspace_baseline_guardrail and protected by private.protect_workspace_baseline_guardrail.';
+
+COMMENT ON COLUMN "public"."workspace_guardrails"."rate_counting" IS 'How a rate guardrail counts: shared (one allowance for everything it is assigned to), each_key (one per key or OAuth user it covers) or each_end_user (one per end user). NULL for rate guardrails made through the rate limits API: one allowance per key, member or department it is assigned to, and per end user at workspace level.';
+
+COMMENT ON COLUMN "public"."workspace_guardrails"."rate_fail_closed" IS 'A rate guardrail waits for its counters and rejects the request when they cannot answer, instead of letting it through.';

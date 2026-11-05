@@ -3,7 +3,7 @@ import { reviewNodeId } from "./pullRequestThreads";
 import { newPullRequestWatch, validatePullRequestWatch, type PullRequestWatchState } from "./pullRequestWatch";
 import { validateSavedStack, type PullRequestStackState } from "./pullRequestStacks";
 
-/** Everything one pull request pane shows, read in one GitHub request (after T3 Code's detail view). */
+/** Everything one pull request pane shows, read in one GitHub request. */
 export type PullRequestActor = { login: string; avatarUrl?: string; bot?: boolean };
 export type PullRequestCheckStatus = "pending" | "action-required" | "success" | "failure" | "cancelled" | "skipped" | "neutral";
 /** `required` is the base branch's protection asking for this check. */
@@ -160,7 +160,7 @@ export function validatePullRequestActionRequest(value: unknown): PullRequestAct
 /** A linked pull request as the chat remembers it: the last state any pane read, so lists draw without asking GitHub. */
 export type PullRequestLinkSnapshot = { title: string; state: "open" | "closed" | "merged"; draft: boolean; mergeable: PullRequestDetails["mergeable"]; checks: PullRequest["checks"]; review: PullRequest["review"]; additions: number; deletions: number; author: string; head: string; base: string; updatedAt: string; authorAvatarUrl?: string; changedFiles?: number; /** When this state was last read from GitHub. */ syncedAt?: string };
 /**
- * Who made the link, after T3: the person, the agent, a pull request this chat created, or a layer found in a native
+ * Who made the link: the person, the agent, a pull request this chat created, or a layer found in a native
  * stack. "stack-dismissed" is a layer the person removed, kept so the next stack read does not add it back.
  */
 export type PullRequestLinkSource = "manual" | "created" | "agent" | "stack" | "stack-dismissed";
@@ -195,7 +195,7 @@ export function sameSnapshot(left: PullRequestLinkSnapshot | undefined, right: P
 	const strip = (snapshot: PullRequestLinkSnapshot) => { const copy = { ...snapshot }; delete copy.syncedAt; return copy; };
 	return JSON.stringify(strip(left)) === JSON.stringify(strip(right));
 }
-/** What finds a chat by its linked pull requests in the command palette (T3's threadPullRequestSearchTerms): #N, owner/repo#N, the URL and the title. */
+/** What finds a chat by its linked pull requests in the command palette: #N, owner/repo#N, the URL and the title. */
 export function pullRequestSearchTerms(links: readonly TaskPullRequestLink[] | undefined) {
 	return (links ?? []).flatMap(link => [`#${link.number}`, `${link.repository}#${link.number}`, link.url, link.snapshot?.title ?? ""]).filter(Boolean).join(" ");
 }

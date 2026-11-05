@@ -17,6 +17,7 @@ import {
 	isResponse,
 	internalServerError,
 	parsePathId,
+	rejectThirdPartyOAuthSpendingChange,
 	requireCapability,
 	requireJsonBody,
 	requireOAuthWorkspaceRole,
@@ -61,6 +62,10 @@ function formatPrivateModel(row: Record<string, any>) {
 	};
 }
 
+// A private model sends requests to its base_url, so an app that signs in with Phaseo must not add, change or
+// remove one, whatever scopes the person consented to.
+const PRIVATE_MODEL_APP_REFUSAL = "Apps that use Sign in with Phaseo can't add, change or remove private models, because requests are sent to their endpoints. The person can change them under Settings.";
+
 async function authorize(req: Request, capability: string) {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) return { response: (auth as GuardErr).response };
@@ -68,6 +73,8 @@ async function authorize(req: Request, capability: string) {
 	if (scopeError) return { response: scopeError };
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return { response: roleError };
+	const appError = capability === CAPABILITIES.PRIVATE_MODELS_READ ? null : rejectThirdPartyOAuthSpendingChange(auth.value, PRIVATE_MODEL_APP_REFUSAL);
+	if (appError) return { response: appError };
 	return { auth: auth.value };
 }
 
@@ -101,12 +108,12 @@ async function resolveModelIdentity(workspaceId: string, reference: unknown) {
 	const namespace = await getWorkspaceNamespace(workspaceId);
 	const value = String(reference ?? "").trim().toLowerCase();
 	if (value.includes("/")) {
-		const { data, error } = await getSupabaseAdmin().from("models").select("model_id").eq("model_id", value).maybeSingle();
+		const { data, error } = await getSupabaseAdmin().from("v2_models").select("model_id:model_slug").eq("model_slug", value).maybeSingle();
 		if (error || !data) throw new Error("slug must be an existing catalogue model ID or a short model slug");
 		return { model_id: value, catalog_model_id: value, local_slug: value.split("/").at(-1) };
 	}
 	const localModelId = buildPrivateModelId(namespace, value);
-	const { data } = await getSupabaseAdmin().from("models").select("model_id").like("model_id", `%/${value}`).limit(2);
+	const { data } = await getSupabaseAdmin().from("v2_models").select("model_id:model_slug").like("model_slug", `%/${value}`).limit(2);
 	if (data?.length === 1) return { model_id: data[0].model_id, catalog_model_id: data[0].model_id, local_slug: value };
 	return { model_id: localModelId, catalog_model_id: null, local_slug: value };
 }

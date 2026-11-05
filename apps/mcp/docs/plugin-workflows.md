@@ -28,13 +28,18 @@ No paid provider calls or production deployments are part of local validation.
 
 ## Visual design and release checks
 
-The explorer follows Phaseo's default light/dark tokens in
-`apps/web/src/styles/globals.css`: neutral surfaces, blue accents, Montserrat,
-6px controls and 10px panels. Montserrat's Latin variable WOFF2 is bundled inline
-from @fontsource-variable/montserrat 5.3.0, with its SIL OFL license in ui/assets
-and a readable Font license disclosure in the delivered HTML.
-The actual Phaseo mark appears in the header and the monochrome host entrypoint;
-the plugin manifest retains light/dark listing and composer logos.
+Tool results render inline as cards: `models_list` as rows laid out like the
+website's model list, `cost_estimate` as a total with its breakdown, and
+`credits_get` as the balance with 30-day usage. Cards have no tabs or drill-ins and
+at most two actions; "Compare these" and "Open explorer" request fullscreen, which
+the explorer also uses when launched from the sidebar or thread panel. Nothing opens
+fullscreen on its own.
+
+Colours fall back to Phaseo's neutral tokens from `apps/web/src/styles/globals.css`
+but take the host's MCP Apps theme variables and font stack when provided. The cards
+bundle no font and show no Phaseo logo, as OpenAI's app guidelines ask; the host
+shows the app name and icon. Organisation logos load from the website's logo set
+(`@phaseo/app-kit/logos`), so the resource CSP allows the website origin for images.
 
 Before release:
 - Review and merge PR 2680 after current checks and review threads are clear.

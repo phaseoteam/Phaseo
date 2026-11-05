@@ -1354,6 +1354,7 @@ class FusionToolDefinition(TypedDict):
 class GatewayCapabilities(TypedDict):
 	endpoints: NotRequired[List[str]]
 	parameter_details: SupportedParameterDetails
+	parameter_specs: NotRequired[ParameterSpecs]
 	parameters: List[str]
 
 GatewayCapabilityStatus = Literal["active", "coming_soon", "deranked", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3", "disabled", "internal_testing"]
@@ -1597,14 +1598,10 @@ class GenerationResponse(TypedDict):
 class Guardrail(TypedDict):
 	allowed_api_model_ids: NotRequired[Optional[List[str]]]
 	created_at: NotRequired[Optional[str]]
-	daily_limit_cost_nanos: NotRequired[Optional[int]]
-	daily_limit_requests: NotRequired[Optional[int]]
 	description: NotRequired[Optional[str]]
 	enabled: NotRequired[Optional[bool]]
 	id: str
 	model_restriction_mode: NotRequired[Optional[Literal["none", "allowlist", "blocklist"]]]
-	monthly_limit_cost_nanos: NotRequired[Optional[int]]
-	monthly_limit_requests: NotRequired[Optional[int]]
 	name: str
 	privacy_enable_free_may_publish_prompts: NotRequired[Optional[bool]]
 	privacy_enable_free_may_train: NotRequired[Optional[bool]]
@@ -1620,21 +1617,10 @@ class Guardrail(TypedDict):
 	sensitive_info_enabled: NotRequired[Optional[bool]]
 	sensitive_info_rules: NotRequired[Optional[List[OcrResponse]]]
 	updated_at: NotRequired[Optional[str]]
-	weekly_limit_cost_nanos: NotRequired[Optional[int]]
-	weekly_limit_requests: NotRequired[Optional[int]]
 	workspace_id: str
-
-class GuardrailBudgetInput(TypedDict):
-	dailyCostNanos: NotRequired[Optional[int]]
-	dailyRequests: NotRequired[Optional[int]]
-	monthlyCostNanos: NotRequired[Optional[int]]
-	monthlyRequests: NotRequired[Optional[int]]
-	weeklyCostNanos: NotRequired[Optional[int]]
-	weeklyRequests: NotRequired[Optional[int]]
 
 class GuardrailCreateRequest(TypedDict):
 	allowedApiModelIds: NotRequired[List[str]]
-	budgets: NotRequired[GuardrailBudgetInput]
 	description: NotRequired[Optional[str]]
 	enabled: NotRequired[bool]
 	modelRestrictionMode: NotRequired[Literal["none", "allowlist", "blocklist"]]
@@ -1703,7 +1689,6 @@ class GuardrailMemberListResponse(TypedDict):
 
 class GuardrailPolicyInput(TypedDict):
 	allowedApiModelIds: NotRequired[List[str]]
-	budgets: NotRequired[GuardrailBudgetInput]
 	description: NotRequired[Optional[str]]
 	enabled: NotRequired[bool]
 	modelRestrictionMode: NotRequired[Literal["none", "allowlist", "blocklist"]]
@@ -1730,7 +1715,6 @@ class GuardrailResponse(TypedDict):
 
 class GuardrailUpdateRequest(TypedDict):
 	allowedApiModelIds: NotRequired[List[str]]
-	budgets: NotRequired[GuardrailBudgetInput]
 	description: NotRequired[Optional[str]]
 	enabled: NotRequired[bool]
 	modelRestrictionMode: NotRequired[Literal["none", "allowlist", "blocklist"]]
@@ -2433,6 +2417,77 @@ OrganisationId = Literal["01-ai", "adept", "ai21", "aion-labs", "aisingapore", "
 
 OrganisationIdList = List[Literal["01-ai", "adept", "ai21", "aion-labs", "aisingapore", "alibaba", "allenai", "amazon", "anthracite-org", "anthropic", "arcee-ai", "baai", "baichuan", "baidu", "bigcode", "black-forest-labs", "bytedance", "bytedance-seed", "cogito", "cognitivecomputations", "cohere", "crofai", "cursor", "cyfragovpl", "databricks", "dealignai", "decart", "deepseek", "dots-studio", "early-access", "eleven-labs", "essential-ai", "fastino", "fish-audio", "github", "google", "gryphe", "hexgrad", "ibm", "ibm-granite", "inception", "inclusionai", "inference-net", "inflection", "intfloat", "jetbrains", "kblab", "kling", "kuaishou", "kwaipilot", "kwaivgi", "lg", "lightricks", "liquid-ai", "mancer", "medaibase", "meituan", "meta", "microsoft", "mindai", "minimax", "mistral", "mistralai", "moonshotai", "morph", "naver-hyperclova", "near-ai", "nex-agi", "nous", "nousresearch", "novasearch", "nvidia", "openai", "openbmb", "opencompass", "opengvlab", "orcarouter", "ornith", "perceptron", "perplexity", "phala", "pixverse", "poe", "poolside", "prime-intellect", "prism-ml", "qwen", "reka", "relace", "runway", "sakana", "sao10k", "sapiens-ai", "sentence-transformers", "sference", "shanghai-ai-laboratory", "shengshu-ai", "snowflake", "sourceful", "spacex-ai", "speakleash", "stability-ai", "stealth", "stepfun", "suno", "tencent", "thedrummer", "thinking-machines", "undi95", "upstage", "venice", "vercel", "villanova-ai", "voyage", "windsurf", "writer", "xai", "xgenerationlab", "xiaomi", "z-ai", "zyphra"]]
 
+class ParameterDimensions(TypedDict):
+	aspect_ratios: NotRequired[List[str]]
+	max: NotRequired[float]
+	max_aspect_ratio: NotRequired[str]
+	max_height: NotRequired[float]
+	max_pixels: NotRequired[float]
+	max_width: NotRequired[float]
+	min: NotRequired[float]
+	min_pixels: NotRequired[float]
+	multiple_of: NotRequired[float]
+
+class ParameterOption(TypedDict):
+	description: NotRequired[str]
+	label: NotRequired[str]
+	value: Union[str, float, bool]
+
+ParameterRule = TypedDict("ParameterRule", {
+	"default": NotRequired[Union[str, float, bool]],
+	"if": Dict[str, Any],
+	"max": NotRequired[float],
+	"message": NotRequired[str],
+	"min": NotRequired[float],
+	"step": NotRequired[float],
+	"supported": NotRequired[bool],
+	"values": NotRequired[List[Union[str, float, bool]]],
+})
+
+class ParameterSpec(TypedDict):
+	alias_of: NotRequired[str]
+	aliases: NotRequired[List[str]]
+	always_on: NotRequired[bool]
+	default: NotRequired[Union[str, float, bool]]
+	dimensions: NotRequired[ParameterDimensions]
+	extra: NotRequired[OcrResponse]
+	format: NotRequired[str]
+	formats: NotRequired[List[str]]
+	item_types: NotRequired[List[str]]
+	max: NotRequired[float]
+	max_file_size_bytes: NotRequired[float]
+	max_items: NotRequired[float]
+	max_length: NotRequired[float]
+	max_tokens: NotRequired[float]
+	media: NotRequired[Literal["image", "audio", "video"]]
+	min: NotRequired[float]
+	min_items: NotRequired[float]
+	min_length: NotRequired[float]
+	multiple_of: NotRequired[float]
+	notes: NotRequired[str]
+	open: NotRequired[bool]
+	options: NotRequired[List[ParameterOption]]
+	properties: NotRequired[SupportedParameterDetails]
+	provider_default: NotRequired[Union[str, float, bool]]
+	required: NotRequired[bool]
+	requires: NotRequired[List[str]]
+	source: NotRequired[Dict[str, Any]]
+	step: NotRequired[float]
+	support_level: NotRequired[str]
+	supported: bool
+	type: NotRequired[Union[Literal["string", "integer", "number", "boolean", "array", "object", "file"], List[Literal["string", "integer", "number", "boolean", "array", "object", "file"]]]]
+	upstream_name: NotRequired[str]
+	upstream_values: NotRequired[List[Union[str, float, bool]]]
+	values: NotRequired[List[Union[str, float, bool]]]
+	when: NotRequired[List[ParameterRule]]
+
+class ParameterSpecs(TypedDict):
+	pass
+
+ParameterType = Literal["string", "integer", "number", "boolean", "array", "object", "file"]
+
+ParameterValue = Union[str, float, bool]
+
 ParseBlock = Union[Dict[str, Any], Dict[str, Any], Dict[str, Any]]
 
 class ParseBoundingBox(TypedDict):
@@ -2863,14 +2918,14 @@ class RateLimitAssignment(TypedDict):
 	id: str
 	policy_id: str
 	target_id: Optional[str]
-	target_type: Literal["key", "member", "department", "guardrail", "end_user_default"]
+	target_type: Literal["key", "member", "department", "end_user_default"]
 	updated_at: str
 	workspace_id: str
 
 class RateLimitAssignmentInput(TypedDict):
 	policy_id: str
 	target_id: NotRequired[str]
-	target_type: Literal["key", "member", "department", "guardrail", "end_user_default"]
+	target_type: Literal["key", "member", "department", "end_user_default"]
 
 class RateLimitAssignmentListResponse(TypedDict):
 	data: List[RateLimitAssignment]
@@ -2921,7 +2976,7 @@ class RateLimitPolicyUpdateInput(TypedDict):
 	requests_per_minute: NotRequired[Optional[int]]
 	tokens_per_minute: NotRequired[Optional[int]]
 
-RateLimitTargetType = Literal["key", "member", "department", "guardrail", "end_user_default"]
+RateLimitTargetType = Literal["key", "member", "department", "end_user_default"]
 
 class RateLimitTierResponse(TypedDict):
 	data: Dict[str, Any]
@@ -3521,6 +3576,7 @@ class VideoModelCapability(TypedDict):
 
 class VideoModelProviderCapability(TypedDict):
 	id: NotRequired[str]
+	parameter_specs: NotRequired[ParameterSpecs]
 	supported_parameters: NotRequired[List[str]]
 	supported_parameters_detail: NotRequired[SupportedParameterDetails]
 	supported_params: NotRequired[List[str]]
@@ -3632,8 +3688,9 @@ class WorkloadIdentityPolicy(TypedDict):
 	last_used_at: Optional[str]
 	max_token_lifetime_seconds: int
 	name: str
+	owner_claim: str
 	owner_id: str
-	provider: Literal["vercel", "github_actions"]
+	provider: Literal["vercel", "github_actions", "gitlab", "google_cloud", "buildkite", "circleci", "aws", "custom"]
 	status: Literal["active", "disabled"]
 	updated_at: str
 
@@ -3645,8 +3702,9 @@ class WorkloadIdentityPolicyInput(TypedDict):
 	issuer: NotRequired[str]
 	max_token_lifetime_seconds: NotRequired[int]
 	name: str
+	owner_claim: NotRequired[str]
 	owner_id: str
-	provider: Literal["vercel", "github_actions"]
+	provider: Literal["vercel", "github_actions", "gitlab", "google_cloud", "buildkite", "circleci", "aws", "custom"]
 
 class WorkloadIdentityPolicyListResponse(TypedDict):
 	audience: str
@@ -3661,7 +3719,7 @@ class WorkloadIdentityPolicyUpdateInput(TypedDict):
 	name: NotRequired[str]
 	status: NotRequired[Literal["active", "disabled"]]
 
-WorkloadIdentityProvider = Literal["vercel", "github_actions"]
+WorkloadIdentityProvider = Literal["vercel", "github_actions", "gitlab", "google_cloud", "buildkite", "circleci", "aws", "custom"]
 
 class Workspace(TypedDict):
 	created_at: Optional[str]
@@ -4247,4 +4305,4 @@ class WorkspaceUpdateRequest(TypedDict):
 	name: NotRequired[str]
 	slug: NotRequired[str]
 
-models___all__ = ["ActivityEntry", "ActivityResponse", "AnalyticsAccessTokenRequiredResponse", "AnalyticsNotImplementedResponse", "AnalyticsResponse", "AnthropicContentBlock", "AnthropicMessage", "AnthropicMessagesRequest", "AnthropicMessagesResponse", "AnthropicSystemMessage", "AnthropicSystemTextBlock", "AnthropicTool", "AnthropicUsage", "ApiKey", "ApiKeyCreateRequest", "ApiKeyIpAllowlist", "ApiKeyLimitBucket", "ApiKeyLimitInputBucket", "ApiKeyLimitInputWindows", "ApiKeyLimitWindows", "ApiKeyListResponse", "ApiKeyResponse", "ApiKeyRotateRequest", "ApiKeyRotateResponse", "ApiKeyScopeValue", "ApiKeyStorageLocations", "ApiKeyUpdateRequest", "ApiKeyUsageBucket", "ApiKeyUsageWindows", "ApiKeyWithValue", "ApiKeyWithValueResponse", "AsyncJobWebSocketClientEvent", "AsyncJobWebSocketServerEvent", "AsyncJobWebSocketUpgradeRequiredResponse", "AsyncWebhookDeliveryAttempt", "AsyncWebhookDeliverySummary", "AsyncWebhookPublicState", "AudioContentPart", "AudioSpeechRequest", "AudioTranscriptionRequest", "AudioTranscriptionResponse", "AudioTranslationRequest", "AudioTranslationResponse", "AuthorizedApp", "AuthorizedAppListResponse", "AuthorizedAppRevokedResponse", "AuthorizedAppScopesRequest", "AuthorizedAppScopesResponse", "AutoRoutingSettings", "AutoRoutingSettingsResponse", "AutoRoutingSettingsUpdateRequest", "BatchBillingSummary", "BatchListResponse", "BatchModelCapability", "BatchModelProviderCapability", "BatchModelsResponse", "BatchProviderCapability", "BatchRequest", "BatchRequestCounts", "BatchRequestItem", "BatchRequestRow", "BatchResponse", "BenchmarkId", "CacheControl", "CacheWriteTokensDetails", "ChatAudioOutputPart", "ChatChoice", "ChatCompletionsRequest", "ChatCompletionsResponse", "ChatImageOutputPart", "ChatMessage", "ChatReasoningDetail", "ChatResponseMessage", "Classifier", "ClassifierCreateInput", "ClassifierDeleteResponse", "ClassifierDimension", "ClassifierInputScope", "ClassifierListResponse", "ClassifierResponse", "ClassifierSampleBy", "ClassifierScope", "ClassifierTestRequest", "ClassifierTestResponse", "ClassifierUpdateInput", "ClassifierValue", "CreditsResponse", "CreditTopup", "CreditTopupCreateRequest", "CreditTopupResponse", "DataContributionCategories", "DataContributionClassifier", "DataContributionClassifierCreateRequest", "DataContributionClassifierDeleteResponse", "DataContributionClassifierInput", "DataContributionClassifierResponse", "DataContributionClassifierUpdateRequest", "DataContributionConsentRequest", "DataContributionConsentResponse", "DataContributionOverviewResponse", "DataModel", "DataModelOrganisation", "DebugOptions", "DecisionAudioSource", "DecisionBox", "DecisionBoxAnswer", "DecisionBoxQuestion", "DecisionChoiceAnswer", "DecisionChoiceQuestion", "DecisionCreateRequest", "DecisionCreateResponse", "DecisionImage", "DecisionInputAudio", "DecisionInputImage", "DecisionInputMessage", "DecisionInputText", "DecisionInputVideo", "DecisionInstructions", "DecisionNoulQuestion", "DecisionPredicateAnswer", "DecisionPredicateQuestion", "DecisionProviderOptions", "DecisionRefusalAnswer", "DecisionScoreAnswer", "DecisionScoreQuestion", "DecisionsRequest", "DecisionsResponse", "DecisionsUsage", "DeletedResponse", "DepartmentBudget", "DepartmentBudgetInput", "DepartmentBudgetInterval", "DepartmentBudgetListResponse", "DepartmentBudgetResponse", "DepartmentBudgetUpdateInput", "DynamicRoute", "DynamicRouteAction", "DynamicRouteCondition", "DynamicRouteConfig", "DynamicRouteCreateRequest", "DynamicRouteDeleteResponse", "DynamicRouteDeployResponse", "DynamicRouteEdge", "DynamicRouteKeysResponse", "DynamicRouteKeysUpdateRequest", "DynamicRouteListResponse", "DynamicRouteNode", "DynamicRouteResponse", "DynamicRouteRule", "DynamicRouteUpdateRequest", "DynamicRouteVersion", "Embedding", "EmbeddingsMultimodalInput", "EmbeddingsRequest", "EmbeddingsResponse", "EndpointCatalogueEntry", "EndpointCatalogueResponse", "ErrorFailureSampleItem", "ErrorObject", "ErrorProviderCandidateDiagnostics", "ErrorProviderEnablementDiagnostics", "ErrorProviderFailureDiagnostics", "ErrorResponse", "ErrorRoutingDiagnostics", "ErrorUpstreamError", "ExtractionAnswer", "ExtractionDateField", "ExtractionDatetimeField", "ExtractionDurationField", "ExtractionField", "ExtractionImage", "ExtractionListAnswer", "ExtractionListField", "ExtractionNumberAnswer", "ExtractionNumberField", "ExtractionRequest", "ExtractionResponse", "ExtractionStringAnswer", "ExtractionTextField", "ExtractionTimeField", "ExtractionUsage", "FileContentPart", "FileResponse", "FileUploadRequest", "FunctionToolDefinition", "FusionToolDefinition", "GatewayCapabilities", "GatewayCapabilityStatus", "GatewayDatetimeToolDefinition", "GatewayFeedback", "GatewayFeedbackCreateRequest", "GatewayFeedbackListResponse", "GatewayFeedbackResponse", "GatewayFeedbackSummaryResponse", "GatewayFeedbackSummaryRow", "GatewayModalities", "GatewayModelLifecycle", "GatewayModelLimits", "GatewayModelOffer", "GatewayModelOrganization", "GatewayModelsResponse", "GatewayObservabilityEvent", "GatewayObservabilityEventCreateRequest", "GatewayObservabilityEventListResponse", "GatewayObservabilityEventResponse", "GatewayPlugin", "GatewayPricing", "GatewayPricingMeter", "GatewayProviderAvailabilityReason", "GatewayRequestLog", "GatewayRequestLogListResponse", "GatewayRequestLogResponse", "GatewayRoutingStatus", "GatewayWebFetchToolDefinition", "GatewayWebSearchToolDefinition", "GenerationResponse", "Guardrail", "GuardrailBudgetInput", "GuardrailCreateRequest", "GuardrailDeleteResponse", "GuardrailDetailResponse", "GuardrailKeyAddResponse", "GuardrailKeyAssignment", "GuardrailKeyIdsReplaceRequest", "GuardrailKeyIdsRequest", "GuardrailKeyListResponse", "GuardrailKeySetResponse", "GuardrailListResponse", "GuardrailMemberAddResponse", "GuardrailMemberAssignment", "GuardrailMemberListResponse", "GuardrailPolicyInput", "GuardrailRemoveResponse", "GuardrailResponse", "GuardrailUpdateRequest", "GuardrailUserIdsRequest", "Image", "ImageConfig", "ImageContentPart", "ImageModerationInput", "ImagesEditRequest", "ImagesEditResponse", "ImagesGenerationRequest", "ImagesGenerationResponse", "InputTokensDetails", "InvalidRequestResponse", "KeyInvalidateResponse", "KnownModelId", "LeakedKeyReportRequest", "LeakedKeyReportResponse", "LegacyDecisionBoxQuestion", "LegacyDecisionsRequest", "LegacyDecisionsResponse", "ListFilesResponse", "ManagementKeyCollectionResponse", "ManagementKeyCreateRequest", "ManagementKeyCreateResponse", "ManagementKeyDeleteResponse", "ManagementKeyDetailResponse", "ManagementKeyListResponse", "ManagementKeyRuntime", "ManagementKeyRuntimeCreated", "ManagementKeyRuntimeCreateRequest", "ManagementKeyRuntimeCreateResponse", "ManagementKeyRuntimeDeleteResponse", "ManagementKeyRuntimeResponse", "ManagementKeyRuntimeUpdateRequest", "ManagementKeyUpdateRequest", "ManagementKeyUpdateResponse", "MeResponse", "MessageContentPart", "Model", "ModelAvailability", "ModelEndpointCapability", "ModelEndpointsResponse", "ModelFallbacks", "ModelId", "ModelLifecycle", "ModelProviderAvailability", "ModerationCategories", "ModerationCategoryScores", "ModerationResult", "ModerationsRequest", "ModerationsResponse", "MusicGenerateRequest", "MusicGenerateResponse", "MyJoinRequest", "MyJoinRequestCreatedResponse", "MyJoinRequestListResponse", "NotImplementedResponse", "OAuthClient", "OAuthClientCreateRequest", "OAuthClientCreateResponse", "OAuthClientDeleteResponse", "OAuthClientInput", "OAuthClientListResponse", "OAuthClientSecretResponse", "OAuthClientUpdateRequest", "ObservabilityDestination", "ObservabilityDestinationCreateRequest", "ObservabilityDestinationListResponse", "ObservabilityDestinationPolicyInput", "ObservabilityDestinationResponse", "ObservabilityDestinationTestRequest", "ObservabilityDestinationTestResponse", "ObservabilityDestinationType", "ObservabilityDestinationUpdateRequest", "ObservabilityKeyFilter", "ObservabilityLoggingPolicy", "ObservabilityLoggingPolicyResponse", "ObservabilityLoggingPolicyUpdateRequest", "ObservabilityRule", "ObservabilityRuleGroup", "OcrRequest", "OcrResponse", "OpenAIDecisionChoiceQuestion", "OpenAIDecisionScoreQuestion", "OpenAIDecisionsRequest", "OpenAIDecisionsResponse", "OpenAIModel", "OpenAIModelsResponse", "OpenAIReasoningConfig", "OpenAIWebSearchToolDefinition", "OrganisationId", "OrganisationIdList", "ParseBlock", "ParseBoundingBox", "ParseImage", "ParsePage", "ParseRequest", "ParseResponse", "Preset", "PresetConfig", "PresetCreateRequest", "PresetCreateResponse", "PresetForkRequest", "PresetLabel", "PresetLabelDeleteResponse", "PresetLabelListResponse", "PresetLabelResponse", "PresetLabelSetRequest", "PresetListResponse", "PresetPromptTemplate", "PresetPromptTemplateMessage", "PresetPromptVariable", "PresetPublisher", "PresetPublisherResponse", "PresetPublisherUpdateRequest", "PresetResponse", "PresetTestRun", "PresetTestRunCreateRequest", "PresetTestRunDetailResponse", "PresetTestRunListResponse", "PresetTestRunResponse", "PresetTestRunUpdateRequest", "PresetUpdateRequest", "PresetUpstreamApplyRequest", "PresetUpstreamApplyResponse", "PresetVersion", "PresetVersioningMethod", "PresetVersionListResponse", "PresetVersionPublishRequest", "PresetVersionResponse", "PresetVisibility", "PrivateModel", "PrivateModelCreateRequest", "PrivateModelDeleteResponse", "PrivateModelListResponse", "PrivateModelResponse", "PrivateModelUpdateRequest", "PromptCacheBreakpoint", "PromptCacheOptions", "PromptTemplateReference", "Provider", "ProviderCredential", "ProviderCredentialCreateRequest", "ProviderCredentialDeleteResponse", "ProviderCredentialListResponse", "ProviderCredentialReorderRequest", "ProviderCredentialReorderResponse", "ProviderCredentialResponse", "ProviderCredentialRoutingMode", "ProviderCredentialUpdateRequest", "ProviderOptions", "ProviderRoutingOptions", "ProvisioningKey", "ProvisioningKeyDetail", "ProvisioningKeyWithValue", "RateLimitAssignment", "RateLimitAssignmentInput", "RateLimitAssignmentListResponse", "RateLimitAssignmentResponse", "RateLimitAssignmentUpdateInput", "RateLimitDeleteResponse", "RateLimitPolicy", "RateLimitPolicyInput", "RateLimitPolicyListResponse", "RateLimitPolicyResponse", "RateLimitPolicyUpdateInput", "RateLimitTargetType", "RateLimitTierResponse", "ReasoningConfig", "RerankDocument", "RerankRequest", "RerankResponse", "RerankResult", "ResponseHealingPlugin", "ResponsesInputItem", "ResponsesOutputAudioPart", "ResponsesOutputContentPart", "ResponsesOutputImagePart", "ResponsesOutputItem", "ResponsesOutputTextPart", "ResponsesReasoningSummaryPart", "ResponsesReasoningTextPart", "ResponsesRequest", "ResponsesResponse", "SearchModelsToolDefinition", "ServerToolUsage", "SpendBlock", "SpendBlockLiftReason", "SpendBlockListResponse", "SpendBlockResponse", "SpendRule", "SpendRuleAction", "SpendRuleDeleteResponse", "SpendRuleHistory", "SpendRuleHistoryResponse", "SpendRuleInput", "SpendRuleListResponse", "SpendRuleMetric", "SpendRulePeriod", "SpendRulePreview", "SpendRulePreviewResponse", "SpendRuleResponse", "SpendRuleScope", "SpendRuleTestResponse", "SpendRuleTestResult", "SpendRuleUpdateInput", "SubagentToolDefinition", "SuccessorReplacement", "SuccessorReplacementListResponse", "SuccessorReplacementRemovedResponse", "SuccessorReplacementResponse", "SuccessorReplacementRow", "SupportedParameterDetails", "SystemOneChoiceQuestion", "SystemOneInstructions", "SystemOneNoulQuestion", "SystemOneRequest", "SystemOneResponse", "SystemOneScoreQuestion", "SystemOneUsage", "TextContentPart", "TextGenerateTool", "TextModerationInput", "TextToolChoice", "ToolCall", "ToolCallContentPart", "UpdatedResponse", "Usage", "UsageCostDetails", "UserProfile", "UserProfileResponse", "UserProfileUpdateRequest", "VideoBillingSummary", "VideoContentPart", "VideoDeleteResponse", "VideoGenerationRequest", "VideoGenerationResponse", "VideoInputReference", "VideoListResponse", "VideoModelCapability", "VideoModelProviderCapability", "VideoModelsResponse", "VideoOutput", "VideoOutputConfig", "WebFetchPlugin", "WebhookEndpoint", "WebhookEndpointCreateRequest", "WebhookEndpointDeleteResponse", "WebhookEndpointEvent", "WebhookEndpointInput", "WebhookEndpointListResponse", "WebhookEndpointSecretResponse", "WebhookEndpointTestResponse", "WebhookEndpointUpdateRequest", "WebSearchPlugin", "WorkloadIdentityPolicy", "WorkloadIdentityPolicyDeleteResponse", "WorkloadIdentityPolicyInput", "WorkloadIdentityPolicyListResponse", "WorkloadIdentityPolicyResponse", "WorkloadIdentityPolicyUpdateInput", "WorkloadIdentityProvider", "Workspace", "WorkspaceActivityEntry", "WorkspaceActivityResponse", "WorkspaceApp", "WorkspaceAppListResponse", "WorkspaceAppMergeRequest", "WorkspaceAppMergeResponse", "WorkspaceAppResponse", "WorkspaceAppUpdateRequest", "WorkspaceAssignableRole", "WorkspaceAuditEvent", "WorkspaceAuditEventActor", "WorkspaceAuditEventLimits", "WorkspaceAuditEventListResponse", "WorkspaceAuditEventMetadata", "WorkspaceAutoTopUpSettings", "WorkspaceAutoTopUpUpdate", "WorkspaceBillingTimeZone", "WorkspaceBudget", "WorkspaceBudgetDeleteResponse", "WorkspaceBudgetInput", "WorkspaceBudgetInterval", "WorkspaceBudgetListResponse", "WorkspaceBudgetResponse", "WorkspaceBudgetUpdateInput", "WorkspaceCreateRequest", "WorkspaceDepartment", "WorkspaceDepartmentCreateRequest", "WorkspaceDepartmentInput", "WorkspaceDepartmentListResponse", "WorkspaceDepartmentMember", "WorkspaceDepartmentMemberRequest", "WorkspaceDepartmentMemberResponse", "WorkspaceDepartmentResponse", "WorkspaceDepartmentUpdateRequest", "WorkspaceDirectoryMember", "WorkspaceDirectoryMemberUpdateRequest", "WorkspaceDirectoryResponse", "WorkspaceGroupMapping", "WorkspaceGroupMappingCreateRequest", "WorkspaceGroupMappingListResponse", "WorkspaceGroupMappingResponse", "WorkspaceGroupMappingUpdateRequest", "WorkspaceInvite", "WorkspaceInviteAcceptRequest", "WorkspaceInviteCreateRequest", "WorkspaceInviteCreateResponse", "WorkspaceInviteListResponse", "WorkspaceJoinRequest", "WorkspaceJoinRequestListResponse", "WorkspaceJoinRequestResponse", "WorkspaceJoinRequestStatus", "WorkspaceListResponse", "WorkspaceLowBalanceEmailSettings", "WorkspaceLowBalanceEmailUpdate", "WorkspaceMember", "WorkspaceMemberAddResponse", "WorkspaceMemberBulkRequest", "WorkspaceMemberListResponse", "WorkspaceMemberRemoveRequest", "WorkspaceMemberRemoveResponse", "WorkspaceMemberResponse", "WorkspaceMemberRoleUpdateRequest", "WorkspaceModelSuccessorPricePolicy", "WorkspaceNotificationDestination", "WorkspaceNotificationDestinationCreateRequest", "WorkspaceNotificationDestinationListResponse", "WorkspaceNotificationDestinationResponse", "WorkspaceNotificationDestinationTestRequest", "WorkspaceNotificationDestinationType", "WorkspaceNotificationEmailPreferences", "WorkspaceNotificationEmailPreferencesUpdate", "WorkspaceNotificationEventKind", "WorkspaceNotificationRoute", "WorkspaceNotificationRouteMap", "WorkspaceNotificationRouteResponse", "WorkspaceNotificationRoutesResponse", "WorkspaceNotificationRouteUpdateRequest", "WorkspaceNotificationSettings", "WorkspaceNotificationSettingsResponse", "WorkspaceNotificationSettingsUpdateRequest", "WorkspaceNotificationTestResponse", "WorkspaceProviderRestrictionMode", "WorkspaceResponse", "WorkspaceRole", "WorkspaceRoutingMode", "WorkspaceScimAuditResponse", "WorkspaceScimEndpoint", "WorkspaceScimEndpointResponse", "WorkspaceScimEvent", "WorkspaceScimResponse", "WorkspaceScimToken", "WorkspaceScimTokenCreateRequest", "WorkspaceScimTokenCreateResponse", "WorkspaceScimUpdateRequest", "WorkspaceSettings", "WorkspaceSettingsResponse", "WorkspaceSettingsUpdateRequest", "WorkspaceSpendAttribution", "WorkspaceSpendReportCadence", "WorkspaceSpendReportIncludeAdmins", "WorkspaceSpendSettings", "WorkspaceSpendSettingsUpdate", "WorkspaceSsoResponse", "WorkspaceSsoSettings", "WorkspaceSsoUpdateRequest", "WorkspaceUpdateRequest"]
+models___all__ = ["ActivityEntry", "ActivityResponse", "AnalyticsAccessTokenRequiredResponse", "AnalyticsNotImplementedResponse", "AnalyticsResponse", "AnthropicContentBlock", "AnthropicMessage", "AnthropicMessagesRequest", "AnthropicMessagesResponse", "AnthropicSystemMessage", "AnthropicSystemTextBlock", "AnthropicTool", "AnthropicUsage", "ApiKey", "ApiKeyCreateRequest", "ApiKeyIpAllowlist", "ApiKeyLimitBucket", "ApiKeyLimitInputBucket", "ApiKeyLimitInputWindows", "ApiKeyLimitWindows", "ApiKeyListResponse", "ApiKeyResponse", "ApiKeyRotateRequest", "ApiKeyRotateResponse", "ApiKeyScopeValue", "ApiKeyStorageLocations", "ApiKeyUpdateRequest", "ApiKeyUsageBucket", "ApiKeyUsageWindows", "ApiKeyWithValue", "ApiKeyWithValueResponse", "AsyncJobWebSocketClientEvent", "AsyncJobWebSocketServerEvent", "AsyncJobWebSocketUpgradeRequiredResponse", "AsyncWebhookDeliveryAttempt", "AsyncWebhookDeliverySummary", "AsyncWebhookPublicState", "AudioContentPart", "AudioSpeechRequest", "AudioTranscriptionRequest", "AudioTranscriptionResponse", "AudioTranslationRequest", "AudioTranslationResponse", "AuthorizedApp", "AuthorizedAppListResponse", "AuthorizedAppRevokedResponse", "AuthorizedAppScopesRequest", "AuthorizedAppScopesResponse", "AutoRoutingSettings", "AutoRoutingSettingsResponse", "AutoRoutingSettingsUpdateRequest", "BatchBillingSummary", "BatchListResponse", "BatchModelCapability", "BatchModelProviderCapability", "BatchModelsResponse", "BatchProviderCapability", "BatchRequest", "BatchRequestCounts", "BatchRequestItem", "BatchRequestRow", "BatchResponse", "BenchmarkId", "CacheControl", "CacheWriteTokensDetails", "ChatAudioOutputPart", "ChatChoice", "ChatCompletionsRequest", "ChatCompletionsResponse", "ChatImageOutputPart", "ChatMessage", "ChatReasoningDetail", "ChatResponseMessage", "Classifier", "ClassifierCreateInput", "ClassifierDeleteResponse", "ClassifierDimension", "ClassifierInputScope", "ClassifierListResponse", "ClassifierResponse", "ClassifierSampleBy", "ClassifierScope", "ClassifierTestRequest", "ClassifierTestResponse", "ClassifierUpdateInput", "ClassifierValue", "CreditsResponse", "CreditTopup", "CreditTopupCreateRequest", "CreditTopupResponse", "DataContributionCategories", "DataContributionClassifier", "DataContributionClassifierCreateRequest", "DataContributionClassifierDeleteResponse", "DataContributionClassifierInput", "DataContributionClassifierResponse", "DataContributionClassifierUpdateRequest", "DataContributionConsentRequest", "DataContributionConsentResponse", "DataContributionOverviewResponse", "DataModel", "DataModelOrganisation", "DebugOptions", "DecisionAudioSource", "DecisionBox", "DecisionBoxAnswer", "DecisionBoxQuestion", "DecisionChoiceAnswer", "DecisionChoiceQuestion", "DecisionCreateRequest", "DecisionCreateResponse", "DecisionImage", "DecisionInputAudio", "DecisionInputImage", "DecisionInputMessage", "DecisionInputText", "DecisionInputVideo", "DecisionInstructions", "DecisionNoulQuestion", "DecisionPredicateAnswer", "DecisionPredicateQuestion", "DecisionProviderOptions", "DecisionRefusalAnswer", "DecisionScoreAnswer", "DecisionScoreQuestion", "DecisionsRequest", "DecisionsResponse", "DecisionsUsage", "DeletedResponse", "DepartmentBudget", "DepartmentBudgetInput", "DepartmentBudgetInterval", "DepartmentBudgetListResponse", "DepartmentBudgetResponse", "DepartmentBudgetUpdateInput", "DynamicRoute", "DynamicRouteAction", "DynamicRouteCondition", "DynamicRouteConfig", "DynamicRouteCreateRequest", "DynamicRouteDeleteResponse", "DynamicRouteDeployResponse", "DynamicRouteEdge", "DynamicRouteKeysResponse", "DynamicRouteKeysUpdateRequest", "DynamicRouteListResponse", "DynamicRouteNode", "DynamicRouteResponse", "DynamicRouteRule", "DynamicRouteUpdateRequest", "DynamicRouteVersion", "Embedding", "EmbeddingsMultimodalInput", "EmbeddingsRequest", "EmbeddingsResponse", "EndpointCatalogueEntry", "EndpointCatalogueResponse", "ErrorFailureSampleItem", "ErrorObject", "ErrorProviderCandidateDiagnostics", "ErrorProviderEnablementDiagnostics", "ErrorProviderFailureDiagnostics", "ErrorResponse", "ErrorRoutingDiagnostics", "ErrorUpstreamError", "ExtractionAnswer", "ExtractionDateField", "ExtractionDatetimeField", "ExtractionDurationField", "ExtractionField", "ExtractionImage", "ExtractionListAnswer", "ExtractionListField", "ExtractionNumberAnswer", "ExtractionNumberField", "ExtractionRequest", "ExtractionResponse", "ExtractionStringAnswer", "ExtractionTextField", "ExtractionTimeField", "ExtractionUsage", "FileContentPart", "FileResponse", "FileUploadRequest", "FunctionToolDefinition", "FusionToolDefinition", "GatewayCapabilities", "GatewayCapabilityStatus", "GatewayDatetimeToolDefinition", "GatewayFeedback", "GatewayFeedbackCreateRequest", "GatewayFeedbackListResponse", "GatewayFeedbackResponse", "GatewayFeedbackSummaryResponse", "GatewayFeedbackSummaryRow", "GatewayModalities", "GatewayModelLifecycle", "GatewayModelLimits", "GatewayModelOffer", "GatewayModelOrganization", "GatewayModelsResponse", "GatewayObservabilityEvent", "GatewayObservabilityEventCreateRequest", "GatewayObservabilityEventListResponse", "GatewayObservabilityEventResponse", "GatewayPlugin", "GatewayPricing", "GatewayPricingMeter", "GatewayProviderAvailabilityReason", "GatewayRequestLog", "GatewayRequestLogListResponse", "GatewayRequestLogResponse", "GatewayRoutingStatus", "GatewayWebFetchToolDefinition", "GatewayWebSearchToolDefinition", "GenerationResponse", "Guardrail", "GuardrailCreateRequest", "GuardrailDeleteResponse", "GuardrailDetailResponse", "GuardrailKeyAddResponse", "GuardrailKeyAssignment", "GuardrailKeyIdsReplaceRequest", "GuardrailKeyIdsRequest", "GuardrailKeyListResponse", "GuardrailKeySetResponse", "GuardrailListResponse", "GuardrailMemberAddResponse", "GuardrailMemberAssignment", "GuardrailMemberListResponse", "GuardrailPolicyInput", "GuardrailRemoveResponse", "GuardrailResponse", "GuardrailUpdateRequest", "GuardrailUserIdsRequest", "Image", "ImageConfig", "ImageContentPart", "ImageModerationInput", "ImagesEditRequest", "ImagesEditResponse", "ImagesGenerationRequest", "ImagesGenerationResponse", "InputTokensDetails", "InvalidRequestResponse", "KeyInvalidateResponse", "KnownModelId", "LeakedKeyReportRequest", "LeakedKeyReportResponse", "LegacyDecisionBoxQuestion", "LegacyDecisionsRequest", "LegacyDecisionsResponse", "ListFilesResponse", "ManagementKeyCollectionResponse", "ManagementKeyCreateRequest", "ManagementKeyCreateResponse", "ManagementKeyDeleteResponse", "ManagementKeyDetailResponse", "ManagementKeyListResponse", "ManagementKeyRuntime", "ManagementKeyRuntimeCreated", "ManagementKeyRuntimeCreateRequest", "ManagementKeyRuntimeCreateResponse", "ManagementKeyRuntimeDeleteResponse", "ManagementKeyRuntimeResponse", "ManagementKeyRuntimeUpdateRequest", "ManagementKeyUpdateRequest", "ManagementKeyUpdateResponse", "MeResponse", "MessageContentPart", "Model", "ModelAvailability", "ModelEndpointCapability", "ModelEndpointsResponse", "ModelFallbacks", "ModelId", "ModelLifecycle", "ModelProviderAvailability", "ModerationCategories", "ModerationCategoryScores", "ModerationResult", "ModerationsRequest", "ModerationsResponse", "MusicGenerateRequest", "MusicGenerateResponse", "MyJoinRequest", "MyJoinRequestCreatedResponse", "MyJoinRequestListResponse", "NotImplementedResponse", "OAuthClient", "OAuthClientCreateRequest", "OAuthClientCreateResponse", "OAuthClientDeleteResponse", "OAuthClientInput", "OAuthClientListResponse", "OAuthClientSecretResponse", "OAuthClientUpdateRequest", "ObservabilityDestination", "ObservabilityDestinationCreateRequest", "ObservabilityDestinationListResponse", "ObservabilityDestinationPolicyInput", "ObservabilityDestinationResponse", "ObservabilityDestinationTestRequest", "ObservabilityDestinationTestResponse", "ObservabilityDestinationType", "ObservabilityDestinationUpdateRequest", "ObservabilityKeyFilter", "ObservabilityLoggingPolicy", "ObservabilityLoggingPolicyResponse", "ObservabilityLoggingPolicyUpdateRequest", "ObservabilityRule", "ObservabilityRuleGroup", "OcrRequest", "OcrResponse", "OpenAIDecisionChoiceQuestion", "OpenAIDecisionScoreQuestion", "OpenAIDecisionsRequest", "OpenAIDecisionsResponse", "OpenAIModel", "OpenAIModelsResponse", "OpenAIReasoningConfig", "OpenAIWebSearchToolDefinition", "OrganisationId", "OrganisationIdList", "ParameterDimensions", "ParameterOption", "ParameterRule", "ParameterSpec", "ParameterSpecs", "ParameterType", "ParameterValue", "ParseBlock", "ParseBoundingBox", "ParseImage", "ParsePage", "ParseRequest", "ParseResponse", "Preset", "PresetConfig", "PresetCreateRequest", "PresetCreateResponse", "PresetForkRequest", "PresetLabel", "PresetLabelDeleteResponse", "PresetLabelListResponse", "PresetLabelResponse", "PresetLabelSetRequest", "PresetListResponse", "PresetPromptTemplate", "PresetPromptTemplateMessage", "PresetPromptVariable", "PresetPublisher", "PresetPublisherResponse", "PresetPublisherUpdateRequest", "PresetResponse", "PresetTestRun", "PresetTestRunCreateRequest", "PresetTestRunDetailResponse", "PresetTestRunListResponse", "PresetTestRunResponse", "PresetTestRunUpdateRequest", "PresetUpdateRequest", "PresetUpstreamApplyRequest", "PresetUpstreamApplyResponse", "PresetVersion", "PresetVersioningMethod", "PresetVersionListResponse", "PresetVersionPublishRequest", "PresetVersionResponse", "PresetVisibility", "PrivateModel", "PrivateModelCreateRequest", "PrivateModelDeleteResponse", "PrivateModelListResponse", "PrivateModelResponse", "PrivateModelUpdateRequest", "PromptCacheBreakpoint", "PromptCacheOptions", "PromptTemplateReference", "Provider", "ProviderCredential", "ProviderCredentialCreateRequest", "ProviderCredentialDeleteResponse", "ProviderCredentialListResponse", "ProviderCredentialReorderRequest", "ProviderCredentialReorderResponse", "ProviderCredentialResponse", "ProviderCredentialRoutingMode", "ProviderCredentialUpdateRequest", "ProviderOptions", "ProviderRoutingOptions", "ProvisioningKey", "ProvisioningKeyDetail", "ProvisioningKeyWithValue", "RateLimitAssignment", "RateLimitAssignmentInput", "RateLimitAssignmentListResponse", "RateLimitAssignmentResponse", "RateLimitAssignmentUpdateInput", "RateLimitDeleteResponse", "RateLimitPolicy", "RateLimitPolicyInput", "RateLimitPolicyListResponse", "RateLimitPolicyResponse", "RateLimitPolicyUpdateInput", "RateLimitTargetType", "RateLimitTierResponse", "ReasoningConfig", "RerankDocument", "RerankRequest", "RerankResponse", "RerankResult", "ResponseHealingPlugin", "ResponsesInputItem", "ResponsesOutputAudioPart", "ResponsesOutputContentPart", "ResponsesOutputImagePart", "ResponsesOutputItem", "ResponsesOutputTextPart", "ResponsesReasoningSummaryPart", "ResponsesReasoningTextPart", "ResponsesRequest", "ResponsesResponse", "SearchModelsToolDefinition", "ServerToolUsage", "SpendBlock", "SpendBlockLiftReason", "SpendBlockListResponse", "SpendBlockResponse", "SpendRule", "SpendRuleAction", "SpendRuleDeleteResponse", "SpendRuleHistory", "SpendRuleHistoryResponse", "SpendRuleInput", "SpendRuleListResponse", "SpendRuleMetric", "SpendRulePeriod", "SpendRulePreview", "SpendRulePreviewResponse", "SpendRuleResponse", "SpendRuleScope", "SpendRuleTestResponse", "SpendRuleTestResult", "SpendRuleUpdateInput", "SubagentToolDefinition", "SuccessorReplacement", "SuccessorReplacementListResponse", "SuccessorReplacementRemovedResponse", "SuccessorReplacementResponse", "SuccessorReplacementRow", "SupportedParameterDetails", "SystemOneChoiceQuestion", "SystemOneInstructions", "SystemOneNoulQuestion", "SystemOneRequest", "SystemOneResponse", "SystemOneScoreQuestion", "SystemOneUsage", "TextContentPart", "TextGenerateTool", "TextModerationInput", "TextToolChoice", "ToolCall", "ToolCallContentPart", "UpdatedResponse", "Usage", "UsageCostDetails", "UserProfile", "UserProfileResponse", "UserProfileUpdateRequest", "VideoBillingSummary", "VideoContentPart", "VideoDeleteResponse", "VideoGenerationRequest", "VideoGenerationResponse", "VideoInputReference", "VideoListResponse", "VideoModelCapability", "VideoModelProviderCapability", "VideoModelsResponse", "VideoOutput", "VideoOutputConfig", "WebFetchPlugin", "WebhookEndpoint", "WebhookEndpointCreateRequest", "WebhookEndpointDeleteResponse", "WebhookEndpointEvent", "WebhookEndpointInput", "WebhookEndpointListResponse", "WebhookEndpointSecretResponse", "WebhookEndpointTestResponse", "WebhookEndpointUpdateRequest", "WebSearchPlugin", "WorkloadIdentityPolicy", "WorkloadIdentityPolicyDeleteResponse", "WorkloadIdentityPolicyInput", "WorkloadIdentityPolicyListResponse", "WorkloadIdentityPolicyResponse", "WorkloadIdentityPolicyUpdateInput", "WorkloadIdentityProvider", "Workspace", "WorkspaceActivityEntry", "WorkspaceActivityResponse", "WorkspaceApp", "WorkspaceAppListResponse", "WorkspaceAppMergeRequest", "WorkspaceAppMergeResponse", "WorkspaceAppResponse", "WorkspaceAppUpdateRequest", "WorkspaceAssignableRole", "WorkspaceAuditEvent", "WorkspaceAuditEventActor", "WorkspaceAuditEventLimits", "WorkspaceAuditEventListResponse", "WorkspaceAuditEventMetadata", "WorkspaceAutoTopUpSettings", "WorkspaceAutoTopUpUpdate", "WorkspaceBillingTimeZone", "WorkspaceBudget", "WorkspaceBudgetDeleteResponse", "WorkspaceBudgetInput", "WorkspaceBudgetInterval", "WorkspaceBudgetListResponse", "WorkspaceBudgetResponse", "WorkspaceBudgetUpdateInput", "WorkspaceCreateRequest", "WorkspaceDepartment", "WorkspaceDepartmentCreateRequest", "WorkspaceDepartmentInput", "WorkspaceDepartmentListResponse", "WorkspaceDepartmentMember", "WorkspaceDepartmentMemberRequest", "WorkspaceDepartmentMemberResponse", "WorkspaceDepartmentResponse", "WorkspaceDepartmentUpdateRequest", "WorkspaceDirectoryMember", "WorkspaceDirectoryMemberUpdateRequest", "WorkspaceDirectoryResponse", "WorkspaceGroupMapping", "WorkspaceGroupMappingCreateRequest", "WorkspaceGroupMappingListResponse", "WorkspaceGroupMappingResponse", "WorkspaceGroupMappingUpdateRequest", "WorkspaceInvite", "WorkspaceInviteAcceptRequest", "WorkspaceInviteCreateRequest", "WorkspaceInviteCreateResponse", "WorkspaceInviteListResponse", "WorkspaceJoinRequest", "WorkspaceJoinRequestListResponse", "WorkspaceJoinRequestResponse", "WorkspaceJoinRequestStatus", "WorkspaceListResponse", "WorkspaceLowBalanceEmailSettings", "WorkspaceLowBalanceEmailUpdate", "WorkspaceMember", "WorkspaceMemberAddResponse", "WorkspaceMemberBulkRequest", "WorkspaceMemberListResponse", "WorkspaceMemberRemoveRequest", "WorkspaceMemberRemoveResponse", "WorkspaceMemberResponse", "WorkspaceMemberRoleUpdateRequest", "WorkspaceModelSuccessorPricePolicy", "WorkspaceNotificationDestination", "WorkspaceNotificationDestinationCreateRequest", "WorkspaceNotificationDestinationListResponse", "WorkspaceNotificationDestinationResponse", "WorkspaceNotificationDestinationTestRequest", "WorkspaceNotificationDestinationType", "WorkspaceNotificationEmailPreferences", "WorkspaceNotificationEmailPreferencesUpdate", "WorkspaceNotificationEventKind", "WorkspaceNotificationRoute", "WorkspaceNotificationRouteMap", "WorkspaceNotificationRouteResponse", "WorkspaceNotificationRoutesResponse", "WorkspaceNotificationRouteUpdateRequest", "WorkspaceNotificationSettings", "WorkspaceNotificationSettingsResponse", "WorkspaceNotificationSettingsUpdateRequest", "WorkspaceNotificationTestResponse", "WorkspaceProviderRestrictionMode", "WorkspaceResponse", "WorkspaceRole", "WorkspaceRoutingMode", "WorkspaceScimAuditResponse", "WorkspaceScimEndpoint", "WorkspaceScimEndpointResponse", "WorkspaceScimEvent", "WorkspaceScimResponse", "WorkspaceScimToken", "WorkspaceScimTokenCreateRequest", "WorkspaceScimTokenCreateResponse", "WorkspaceScimUpdateRequest", "WorkspaceSettings", "WorkspaceSettingsResponse", "WorkspaceSettingsUpdateRequest", "WorkspaceSpendAttribution", "WorkspaceSpendReportCadence", "WorkspaceSpendReportIncludeAdmins", "WorkspaceSpendSettings", "WorkspaceSpendSettingsUpdate", "WorkspaceSsoResponse", "WorkspaceSsoSettings", "WorkspaceSsoUpdateRequest", "WorkspaceUpdateRequest"]

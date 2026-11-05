@@ -62,7 +62,7 @@ function ImportTheme({ onImport, onCancel }: { onImport: (theme: Theme) => void;
 	const file = useRef<HTMLInputElement>(null);
 	const attempt = (value: string) => { try { onImport(importTheme(value)); } catch (reason) { setError(reason instanceof Error ? reason.message : String(reason)); } };
 	return <div className="flex flex-col gap-3 rounded-lg bg-muted/40 p-4">
-		<SettingsField label="Share code or theme JSON" hint="Phaseo themes, T3 Code themes and VS Code colour themes all work.">
+		<SettingsField label="Share code or theme JSON" hint="Phaseo themes, VS Code colour themes and themes with a canvas and accent colour all work.">
 			<textarea aria-label="Theme to import" rows={4} value={text} onChange={event => { setText(event.target.value); setError(""); }} placeholder="phaseo-theme:…" className={cn(settingsInput, "h-auto resize-y py-2 font-mono text-[11.5px]")} />
 		</SettingsField>
 		{error && <p className="text-xs text-destructive" role="alert">{error}</p>}

@@ -1,14 +1,10 @@
 ---
-title: "त्रुटियाँ और डीबगिंग"
-description: "Phaseo की त्रुटियों को समझें और अनुरोध, प्रदाता तथा रूटिंग की आम समस्याएँ जल्दी हल करें।"
+title: "त्रुटियां और डीबगिंग"
+description: "Phaseo की त्रुटि प्रतिक्रियाओं को समझें और अनुरोध, प्रदाता तथा रूटिंग की आम समस्याएं जल्दी हल करें।"
 icon: "bug"
 ---
 
-इस पेज का उपयोग यह समझने के लिए करें कि Phaseo की त्रुटि का क्या अर्थ है और आगे क्या करना है।
-
-हर त्रुटि प्रतिक्रिया एक ही JSON प्रारूप का उपयोग करती है, ताकि आपका ऐप मॉडल और प्रदाता के बीच होने वाली विफलताओं को एकसमान ढंग से संभाल सके। `error` फ़ील्ड एक ऑब्जेक्ट है जिसमें `code`, `message` और `type` होते हैं, यानी वही रूप जिसे OpenAI-संगत SDK पढ़ते हैं, इसलिए उनके अपवादों में गेटवे का संदेश आता है।
-
-## त्रुटि प्रतिक्रिया का उदाहरण
+संदेश के टेक्स्ट के आधार पर नहीं, बल्कि `error.code` और HTTP स्थिति के आधार पर ब्रांच करें। हर एंडपॉइंट पर Phaseo की हर त्रुटि की JSON बॉडी एक जैसी होती है, और उसका `error` ऑब्जेक्ट (`code`, `message`, `type`, `param`) वही रूप है जिसे OpenAI-संगत SDK पढ़ते हैं, इसलिए उनके exceptions में Phaseo का संदेश आता है।
 
 ```json
 {
@@ -68,129 +64,128 @@ icon: "bug"
 }
 ```
 
-## वे फ़ील्ड जो हमेशा मिलेंगे
+## हर त्रुटि के फ़ील्ड
 
-- `generation_id`: स्थिर request ID जिसे आप support के साथ साझा कर सकते हैं।
-- `status_code`: HTTP स्थिति कोड से मेल खाता है।
-- `error`: विफलता का वर्णन करने वाला ऑब्जेक्ट:
-  - `error.code`: मशीन-पठनीय त्रुटि कोड, जैसे `validation_error`।
-  - `error.message`: जो हुआ उसकी सरल भाषा में व्याख्या।
-  - `error.type`: त्रुटि का प्रकार (नीचे त्रुटि प्रकार वाला खंड देखें)।
-  - `error.param`: अनुरोध का वह पैरामीटर जिससे त्रुटि हुई, यदि गेटवे को पता हो, अन्यथा `null`।
-  - `error.metadata` (वैकल्पिक): संरचित विवरण, जैसे विफल प्रदाता, उप-कारण, विफल स्टेटस या `retry_after_seconds`। यही मान शीर्ष स्तर पर भी लौटाए जाते हैं।
-- `code`: `error.code` वाला ही कोड। पहले के रिस्पॉन्स यह कोड `error` में स्ट्रिंग के रूप में लौटाते थे; यदि आपका क्लाइंट वहाँ स्ट्रिंग की अपेक्षा करता था, तो `code` पढ़ें।
-- `message`: `error.message` वाला ही टेक्स्ट।
-- `error_type`: उच्च-स्तरीय वर्ग, आम तौर पर `user` या `system`।
-- `error_origin`: बताता है कि समस्या मुख्य रूप से अनुरोध भेजने वाले, Phaseo या अपस्ट्रीम प्रदाता की वजह से हुई।
-- `description`: क्या हुआ इसका सरल विवरण।
-- `details` (वैकल्पिक): अनुरोध सत्यापन में समस्या होने पर उससे जुड़ी संरचित जानकारी।
+| फ़ील्ड | सामग्री |
+| --- | --- |
+| `error.code` | मशीन द्वारा पढ़ा जा सकने वाला कोड, जैसे `validation_error`। [त्रुटि कोड](#error-codes) देखें। |
+| `error.message` | सरल भाषा में स्पष्टीकरण। |
+| `error.type` | त्रुटि वर्ग, HTTP स्थिति से तय। [त्रुटि प्रकार](#error-types) देखें। |
+| `error.param` | त्रुटि पैदा करने वाला अनुरोध फ़ील्ड, जब Phaseo उसे जानता हो; वरना `null`। |
+| `error.metadata` | वैकल्पिक। संरचित विवरण, जैसे `reason`, `failed_providers`, `failed_statuses` या `retry_after_seconds`। यही मान शीर्ष स्तर पर भी होते हैं। |
+| `code` | `error.code` जैसा ही। पुरानी प्रतिक्रियाएं यह string `error` के रूप में लौटाती थीं; अगर आपका क्लाइंट वहां string की अपेक्षा करता है, तो `code` पढ़ें। |
+| `message`, `description` | `error.message` वाला ही टेक्स्ट। |
+| `generation_id` | लॉग करने और सपोर्ट के साथ साझा करने के लिए अनुरोध ID। |
+| `status_code` | HTTP स्थिति। |
+| `error_type` | `user` या `system`। |
+| `error_origin` | समस्या कहां से आई: कॉलर (`user`), Phaseo (`gateway`) या कोई प्रदाता (`upstream`)। |
+| `details` | वैकल्पिक। अनुरोध बॉडी अमान्य होने पर सत्यापन विवरण। |
 
-## अन्य फ़ील्ड जो दिख सकते हैं
+कुछ त्रुटियां और संदर्भ जोड़ती हैं:
 
-कुछ त्रुटियाँ समस्या जल्दी ठीक करने में मदद के लिए अतिरिक्त विवरण देती हैं:
+| फ़ील्ड | यह कब दिखता है |
+| --- | --- |
+| `reason` | एक खास उप-कारण, जैसे `all_candidates_failed` या `no_provider_pricing`। |
+| `provider_failure_diagnostics` | किसी प्रदाता तक पहुंचा गया और वह विफल हुआ। [जब कोई प्रदाता विफल हो](#when-a-provider-fails) देखें। |
+| `upstream_error`, `failure_sample` | पहली प्रदाता विफलता का यथासंभव सारांश। |
+| `failed_providers`, `failed_statuses`, `attempt_count` | कौन-से प्रदाता आज़माए गए और उन्होंने क्या लौटाया। |
+| `provider_candidate_diagnostics`, `provider_enablement`, `routing_diagnostics` | कोई प्रदाता इस एंडपॉइंट पर मॉडल नहीं दे सका। [जब कोई मॉडल या एंडपॉइंट उपलब्ध न हो](#when-a-model-or-endpoint-is-not-available) देखें। |
 
-- `reason`: अधिक विशिष्ट कारण, जैसे `all_candidates_failed` या `pricing_not_configured`।
-- `provider_candidate_diagnostics` और `provider_enablement`: बताते हैं कि माँगे गए एंडपॉइंट पर मॉडल का उपयोग क्यों नहीं हो सका।
-- `routing_diagnostics`: बताता है कि रूटिंग या उपलब्धता-जाँच ने विकल्पों को कैसे सीमित किया।
-- `provider_failure_diagnostics`: क्रेडेंशियल अनुपलब्ध होने, पहुँच न मिलने, क्षेत्रीय प्रतिबंधों, दर सीमाओं और प्रदाता की ओर से हुई अन्य विफलताओं के संकेत देता है।
-- `upstream_error` और `failure_sample`: यदि अनुरोध किसी प्रदाता तक पहुँचा हो, तो पहली प्रदाता विफलता का उपलब्ध जानकारी पर आधारित सारांश।
-- `failed_providers`, `failed_statuses` और `attempt_count`: दोबारा प्रयास और विफलता के बाद दूसरे प्रदाता पर जाने का अतिरिक्त संदर्भ।
-
+<span id="error-types"></span>
 ## त्रुटि प्रकार
 
-`error.type` OpenAI के [प्रलेखित त्रुटि प्रकारों](https://platform.openai.com/docs/guides/error-codes) का पालन करता है और HTTP स्टेटस से तय होता है:
+`error.type` OpenAI के [दस्तावेज़ित त्रुटि प्रकारों](https://platform.openai.com/docs/guides/error-codes) का पालन करता है और HTTP स्थिति से तय होता है:
 
 | स्थिति | `error.type` |
 | --- | --- |
-| `400`, `409`, `410`, `413`, `422` और अन्य 4xx | `invalid_request_error` |
 | `401` | `authentication_error` |
 | `402` | `insufficient_quota` |
 | `403` | `permission_error` |
 | `404` | `not_found_error` |
 | `429` | `rate_limit_error` |
+| `408`, `500`, `502` और अन्य 5xx | `server_error` |
 | `503` | `service_unavailable` |
 | `529` | `overloaded` |
-| `500`, `502` और अन्य 5xx | `server_error` |
+| `400`, `409`, `410`, `413`, `422` और अन्य 4xx | `invalid_request_error` |
 
-`/v1/messages` की त्रुटियाँ भी यही बॉडी इस्तेमाल करती हैं, इसलिए Anthropic SDK को भी `error.type` और `error.message` मिलते हैं।
+`/v1/messages` पर त्रुटियां वही बॉडी इस्तेमाल करती हैं, इसलिए Anthropic SDK को भी `error.type` और `error.message` मिलते हैं।
 
-## स्थिति श्रेणी संबंधी मार्गदर्शन
+<span id="error-codes"></span>
+## त्रुटि कोड
 
-| स्थिति | अर्थ | सुझाया गया कदम |
-| --- | --- | --- |
-| `400-499` | अनुरोध, प्रमाणीकरण या अनुमति की समस्या | दोबारा प्रयास से पहले अनुरोध या क्रेडेंशियल ठीक करें। |
-| `429` | प्रदाता या रूट स्तर पर अनुरोधों की दर सीमित होना | बढ़ते अंतराल के साथ दोबारा प्रयास करें और `Retry-After` का सम्मान करें। |
-| `500-599` | Phaseo या अपस्ट्रीम प्रदाता की विफलता | यादृच्छिक अंतर वाले बढ़ते विलंब के साथ दोबारा प्रयास करें और अनुरोध ID लॉग करें। |
-
-## आम त्रुटि कोड
-
-| `error.code` | HTTP स्थिति | `error.type` | विवरण |
+| `error.code` | स्थिति | अर्थ | क्या करें |
 | --- | --- | --- | --- |
-| `unauthorised` | `401` | `authentication_error` | API कुंजी मौजूद नहीं है या अमान्य है। |
-| `guardrail_blocked` | `403` | `permission_error` | वर्कस्पेस की किसी गार्डरेल या एक्सेस नीति ने अनुरोध रोक दिया। |
-| `not_found` | `404` | `not_found_error` | एंडपॉइंट या संसाधन नहीं मिला। |
-| `model_retired` | `410` | `invalid_request_error` | मॉडल सेवानिवृत्त हो चुका है और अब कोई प्रदाता उसे उपलब्ध नहीं कराता। `replacement_model` पर स्विच करें। |
-| `insufficient_funds` | `402` | `insufficient_quota` | वर्कस्पेस में अनुरोध के लिए पर्याप्त क्रेडिट नहीं हैं। |
-| `key_limit_exceeded` | `429` | `rate_limit_error` | API कुंजी अपनी किसी सीमा तक पहुँच गई। |
-| `phaseo_free_model_limit_exceeded` | `429` | `rate_limit_error` | Phaseo के मुफ़्त मॉडलों का साझा दैनिक कोटा समाप्त हो गया है (डिफ़ॉल्ट रूप से 1,500 अनुरोध)। `Retry-After` का पालन करें, 00:00 UTC पर रीसेट होने तक प्रतीक्षा करें या सशुल्क मॉडल चुनें। |
-| `rate_limit_exceeded` | `429` | `rate_limit_error` | वर्कस्पेस की एक [दर सीमा नीति](./limits.mdx) समाप्त हो गई है। `policy_id` और `limit_scope` से उसकी पहचान होती है। `Retry-After` का पालन करें, या किसी वर्कस्पेस एडमिन से नीति बदलने को कहें। |
-| `validation_error` | `400` | `invalid_request_error` | पैरामीटर या अनुरोध का मुख्य भाग अमान्य है। `error.param` पहले अमान्य फ़ील्ड का नाम बताता है। |
-| `upstream_error` | `429` | `rate_limit_error` | अनुरोध के लिए आज़माए गए हर प्रदाता ने उस पर दर सीमा लगाई। `Retry-After` का पालन करें; BYOK अनुरोधों में `X-Phaseo-Upstream-RateLimit-*` हेडर भी होते हैं। |
-| `upstream_error` | `502` | `server_error` | अपस्ट्रीम मॉडल प्रदाता ने सही जवाब नहीं दिया। |
-| `upstream_stream_failure` | `502` | `server_error` | बिना स्ट्रीमिंग वाला अनुरोध, जिसका प्रदाता जनरेशन शुरू होने के बाद विफल हो गया। कोई आंशिक आउटपुट नहीं लौटाया जाता और अनुरोध का शुल्क नहीं लिया जाता। |
-| `gateway_error` | `500` | `server_error` | Phaseo में अनपेक्षित समस्या हुई। |
+| `validation_error` | `400` | कोई पैरामीटर या अनुरोध बॉडी अमान्य है। `error.param` पहले अमान्य फ़ील्ड का नाम बताता है। | अनुरोध ठीक करें। |
+| `invalid_json` | `400` | बॉडी मान्य JSON नहीं है। | अनुरोध ठीक करें। |
+| `model_required` | `400` | अनुरोध में `model` नहीं है। | `model` जोड़ें। |
+| `unsupported_model_or_endpoint` | `400` | कोई प्रदाता इस एंडपॉइंट पर यह मॉडल नहीं दे सकता। | [नीचे](#when-a-model-or-endpoint-is-not-available) देखें। |
+| `unsupported_modalities` | `400` | कोई रूट अनुरोध के इनपुट या आउटपुट प्रकार स्वीकार नहीं करता। | मॉडल या इनपुट बदलें। |
+| `byok_credentials_required` | `400` | यह रूट सिर्फ़ आपकी अपनी प्रदाता कुंजी से चलता है। | एक योग्य [प्रदाता कुंजी](./endpoint/provider-credentials-create.mdx) जोड़ें। |
+| `upstream_error` | `400`, `413` या `422` | हर प्रदाता ने अनुरोध को एक ही स्थिति के साथ अस्वीकार किया (कारण `upstream_rejected_request`)। | अनुरोध ठीक करें; दोबारा कोशिश करने से मदद नहीं मिलेगी। |
+| `unauthorised` | `401` | कुंजी नहीं है या अमान्य है। `reason` बताता है क्यों। | `Authorization` हेडर जांचें। |
+| `insufficient_funds` | `402` | वर्कस्पेस में पर्याप्त क्रेडिट नहीं हैं। | क्रेडिट जोड़ें। |
+| `pricing_not_configured` | `402` | इस मॉडल के किसी प्रदाता की कीमत तय नहीं है (कारण `no_provider_pricing`)। | दूसरा मॉडल चुनें। |
+| `guardrail_blocked` | `403` | किसी गार्डरेल या पहुंच नीति ने अनुरोध को रोक दिया। | अनुरोध या गार्डरेल बदलें। |
+| `model_region_unavailable` | `403` | कोई प्रदाता आवश्यक क्षेत्र में, या कॉलर के स्थान से, मॉडल नहीं देता। | क्षेत्र की आवश्यकता ढीली करें या दूसरा मॉडल चुनें। |
+| `not_found` | `404` | एंडपॉइंट या संसाधन मौजूद नहीं है। | पथ और ID जांचें। |
+| `not_ready` | `409` | किसी जॉब के परिणाम अभी तैयार नहीं हैं। | जॉब की स्थिति पोल करें। |
+| `model_retired` | `410` | मॉडल सेवानिवृत्त है और कोई प्रदाता उसे नहीं देता। | `replacement_model` पर जाएं। [नीचे](#when-a-model-is-retired) देखें। |
+| `payload_too_large` | `413` | बॉडी उससे बड़ी है जितनी एंडपॉइंट स्वीकार करता है। `max_bytes` सीमा बताता है। | छोटी बॉडी भेजें या फ़ाइल अपलोड करें। |
+| `key_limit_exceeded` | `429` | कोई कुंजी सीमा, बजट या प्रति-मिनट Gateway सीमा पूरी हो गई। | [अनुरोध सीमाएँ](./limits.mdx#key-limits-and-budgets) देखें। |
+| `phaseo_free_model_limit_exceeded` | `429` | मुफ़्त मॉडलों का दैनिक कोटा (डिफ़ॉल्ट रूप से 1,500 अनुरोध) खत्म हो गया। | `Retry-After` का पालन करें, 00:00 UTC रीसेट का इंतज़ार करें, या सशुल्क मॉडल इस्तेमाल करें। |
+| `rate_limit_exceeded` | `429` | वर्कस्पेस की कोई [रेट लिमिट नीति](./limits.mdx#rate-limit-policies) समाप्त हो गई। `policy_id` और `limit_scope` उसकी पहचान बताते हैं। | `Retry-After` का पालन करें, या किसी एडमिन से नीति बदलने को कहें। |
+| `spend_rule_blocked` | `429` | ब्लॉक करने पर सेट किया गया कोई [खर्च नियम](../guides/spend-alerts.mdx) सक्रिय है। | `Retry-After` का पालन करें, या किसी मालिक या एडमिन से ब्लॉक हटाने को कहें। |
+| `upstream_error` | `429` | आज़माए गए हर प्रदाता ने अनुरोध को रेट लिमिट किया। | `Retry-After` का पालन करें। BYOK अनुरोधों में `X-Phaseo-Upstream-RateLimit-*` हेडर भी होते हैं। |
+| `provider_capacity_exhausted` | `429` | हर योग्य प्रदाता की क्षमता भरी हुई है (कारण `all_candidates_rate_limited`)। | मौजूद हो तो `Retry-After` का पालन करें, वरना बैकऑफ़ करें। |
+| `gateway_error` | `500` | Phaseo के अंदर कुछ विफल हुआ। | बैकऑफ़ के साथ दोबारा कोशिश करें। |
+| `not_implemented_yet` | `501` | यह ऑपरेशन अभी उपलब्ध नहीं है। | दोबारा कोशिश न करें। |
+| `upstream_error` | `502` | प्रदाता सही प्रतिक्रिया देने में विफल रहा। | बैकऑफ़ के साथ दोबारा कोशिश करें। |
+| `upstream_stream_failure` | `502` | बिना स्ट्रीमिंग वाला अनुरोध, जिसका प्रदाता जनरेट करना शुरू करने के बाद विफल हो गया। कोई आंशिक आउटपुट नहीं लौटाया जाता और अनुरोध का शुल्क नहीं लिया जाता। | दोबारा कोशिश करें। |
+| `provider_payment_required` | `502` | प्रदाता के पास Phaseo के खाते पर ध्यान देने की ज़रूरत है। | बाद में दोबारा कोशिश करें या इसकी रिपोर्ट करें। |
 
-## प्रदाता विफल होने पर
+## सही त्रुटियों पर दोबारा कोशिश करें
 
-यदि Phaseo किसी प्रदाता तक पहुँचा, लेकिन अनुरोध फिर भी विफल हुआ, तो आपको ये फ़ील्ड दिख सकते हैं:
+| स्थिति | दोबारा कोशिश करें? |
+| --- | --- |
+| `429` को छोड़कर `400`–`499` | नहीं। पहले अनुरोध, कुंजी या पहुंच ठीक करें। |
+| `429` | हां। `Retry-After` (सेकंड या HTTP तारीख) का इंतज़ार करें, वरना jitter के साथ exponential backoff इस्तेमाल करें। `Retry-After` के बिना `key_limit_exceeded` त्रुटि अपने आप रीसेट नहीं होती, इसलिए उस पर दोबारा कोशिश न करें। |
+| `500`–`599` | सिर्फ़ तब जब ऑपरेशन दोहराना सुरक्षित हो। अस्पष्ट सबमिशन ने पहले ही कोई जॉब या शुल्क बना दिया हो सकता है; उसे दोबारा सबमिट करने के बजाय स्वीकृत जॉब खोजें। |
 
-- `provider_failure_diagnostics.category`
-- `provider_failure_diagnostics.hint`
-- `provider_failure_diagnostics.provider`
+प्रयासों की एक सीमा और एक कुल समय-सीमा तय करें। रेट लिमिट हेडर के लिए [अनुरोध सीमाएँ](./limits.mdx) देखें।
 
-मौजूदा श्रेणियाँ:
+<span id="when-a-provider-fails"></span>
+## जब कोई प्रदाता विफल हो
 
-- `credentials_not_configured`
-- `credentials_invalid_or_forbidden`
-- `provider_access_missing`
-- `region_or_project_restriction`
-- `model_unavailable_for_endpoint`
-- `rate_limited`
-- `server_error`
+जब Phaseo किसी प्रदाता तक पहुंचा और अनुरोध फिर भी विफल हुआ, तो `provider_failure_diagnostics` में एक `category`, एक `hint` और `provider` होता है। श्रेणियां:
 
-इन फ़ील्डों का उद्देश्य पूरा डीबग मोड चालू किए बिना समस्या ठीक करने में मदद करना है।
+| `category` | अर्थ |
+| --- | --- |
+| `credentials_not_configured` | इस रूट के लिए कोई क्रेडेंशियल सेट नहीं है। |
+| `credentials_invalid_or_forbidden` | क्रेडेंशियल अस्वीकार कर दिया गया। |
+| `provider_access_missing` | प्रदाता खाते के पास मॉडल या फ़ीचर की पहुंच नहीं है। |
+| `region_or_project_restriction` | प्रदाता ने क्षेत्र या प्रोजेक्ट के कारण मना किया। |
+| `model_unavailable_for_endpoint` | प्रदाता इस एंडपॉइंट पर मॉडल उपलब्ध नहीं कराता। |
+| `rate_limited` | प्रदाता ने अनुरोध को रेट लिमिट किया। |
+| `server_error` | प्रदाता विफल हुआ या उसका समय समाप्त हो गया। |
 
-## मॉडल या एंडपॉइंट उपलब्ध न हो
+<span id="when-a-model-or-endpoint-is-not-available"></span>
+## जब कोई मॉडल या एंडपॉइंट उपलब्ध न हो
 
-`unsupported_model_or_endpoint` response में Phaseo ये दे सकता है:
+`unsupported_model_or_endpoint` त्रुटियों में `provider_candidate_diagnostics`, `provider_enablement`, `missing_pricing_providers` और `routing_diagnostics` हो सकते हैं। ये मिलकर बताते हैं कि मॉडल अभी सक्रिय नहीं है, मॉडल एंडपॉइंट का समर्थन नहीं करता, कीमत मौजूद नहीं है, या रोलआउट प्रतिबंध है।
 
-- `provider_candidate_diagnostics`
-- `provider_enablement`
-- `missing_pricing_providers`
-- `routing_diagnostics`
-
-इनसे आप अंतर समझ सकते हैं:
-
-- ज्ञात मॉडल जो अभी सक्रिय नहीं है
-- ऐसा मॉडल जो माँगे गए एंडपॉइंट का समर्थन नहीं करता
-- कीमत का डेटा मौजूद नहीं
-- क्रमिक रिलीज़ या आंतरिक उपलब्धता की पाबंदी
-
-आम फ़ील्ड:
-
-- `provider_candidate_diagnostics.totalProviders`: एंडपॉइंट फ़िल्टरिंग से पहले मॉडल के लिए ज्ञात प्रदाताओं की संख्या।
-- `provider_candidate_diagnostics.supportsEndpointCount`: माँगे गए एंडपॉइंट का समर्थन करने वाले प्रदाताओं की संख्या।
-- `provider_candidate_diagnostics.candidateCount`: अडैप्टर-जाँच के बाद बचे प्रदाताओं की संख्या।
-- `provider_candidate_diagnostics.droppedUnsupportedEndpoint`: एंडपॉइंट का समर्थन न होने के कारण हटाए गए प्रदाता।
-- `provider_candidate_diagnostics.droppedMissingAdapter`: उस एंडपॉइंट के लिए Gateway अडैप्टर उपलब्ध न होने के कारण हटाए गए प्रदाता/एंडपॉइंट जोड़े।
-- `provider_enablement.capability`: लागू की जा रही क्षमता-पाबंदी, जैसे `video_generation`।
-- `provider_enablement.providersBefore` / `provider_enablement.providersAfter`: क्षमता या सुविधा सक्रिय करने के आधार पर फ़िल्टर करने से पहले और बाद के प्रदाता।
-- `provider_enablement.dropped[].reason`: मशीन-पठनीय कारण, जैसे `pricing_missing`।
-- `routing_diagnostics.filterStages[].stage`: रूटिंग चरण, जैसे क्षमता, क्रमिक रिलीज़ या रूटिंग-स्थिति के आधार पर फ़िल्टर करना।
-- `routing_diagnostics.filterStages[].beforeCount` / `routing_diagnostics.filterStages[].afterCount`: हर चरण से पहले और बाद में प्रदाताओं की संख्या।
-- `routing_diagnostics.filterStages[].droppedProviders[].reason`: मशीन-पठनीय कारण, जैसे क्रमिक रिलीज़ या रूटिंग प्रतिबंध।
-
-### उदाहरण
+| फ़ील्ड | अर्थ |
+| --- | --- |
+| `provider_candidate_diagnostics.totalProviders` | एंडपॉइंट फ़िल्टरिंग से पहले मॉडल के लिए ज्ञात प्रदाता। |
+| `provider_candidate_diagnostics.supportsEndpointCount` | मांगे गए एंडपॉइंट का समर्थन करने वाले प्रदाता। |
+| `provider_candidate_diagnostics.candidateCount` | एडेप्टर जांच के बाद बचे प्रदाता। |
+| `provider_candidate_diagnostics.droppedUnsupportedEndpoint` | एंडपॉइंट का समर्थन न करने के कारण हटाए गए प्रदाता। |
+| `provider_candidate_diagnostics.droppedMissingAdapter` | प्रदाता और एंडपॉइंट के जोड़े जिन्हें इसलिए हटाया गया क्योंकि Phaseo के पास अभी उस एंडपॉइंट का एडेप्टर नहीं है। |
+| `provider_enablement.capability` | लागू की जा रही क्षमता, जैसे `video_generation`। |
+| `provider_enablement.providersBefore`, `providersAfter` | क्षमता फ़िल्टरिंग से पहले और बाद के प्रदाता। |
+| `provider_enablement.dropped[].reason` | किसी प्रदाता को क्यों हटाया गया, जैसे `pricing_missing`। |
+| `routing_diagnostics.filterStages[].stage` | रूटिंग का एक चरण, जैसे क्षमता, रोलआउट या रूटिंग-स्थिति फ़िल्टरिंग। |
+| `routing_diagnostics.filterStages[].beforeCount`, `afterCount` | उस चरण से पहले और बाद के प्रदाता। |
+| `routing_diagnostics.filterStages[].droppedProviders[].reason` | उस चरण पर किसी प्रदाता को क्यों हटाया गया। |
 
 ```json
 {
@@ -248,7 +243,7 @@ icon: "bug"
 <span id="when-a-model-is-retired"></span>
 ## जब कोई मॉडल सेवानिवृत्त हो
 
-सेवानिवृत्त मॉडल तब तक उपलब्ध रहता है जब तक कोई प्रदाता उसे उपलब्ध कराता है। जब कोई भी प्रदाता उसे उपलब्ध नहीं कराता, तो उसके अनुरोध `410` और `model_retired` त्रुटि के साथ विफल होते हैं:
+सेवानिवृत्त मॉडल तब तक दिया जाता है जब तक कोई प्रदाता उसे देता है। जब कोई नहीं देता, तो अनुरोध `410` और `model_retired` के साथ विफल होते हैं:
 
 ```json
 {
@@ -273,15 +268,42 @@ icon: "bug"
 }
 ```
 
-- `model`: वह मॉडल जिसका आपने अनुरोध किया।
-- `retired_at`: मॉडल कब सेवानिवृत्त हुआ, या कोई तारीख दर्ज न होने पर `null`।
-- `replacement_model`: सुझाया गया प्रतिस्थापन, या कोई प्रतिस्थापन न होने पर `null`।
+`model` वह मॉडल है जो आपने मांगा, `retired_at` वह समय है जब इसे सेवानिवृत्त किया गया (या `null`), और `replacement_model` सुझाया गया विकल्प है (या `null`)।
 
-दोबारा प्रयास करने से मदद नहीं मिलती। अपने अनुरोध में मॉडल ID अपडेट करें। माइग्रेशन के दौरान इन अनुरोधों को पूरा करते रहने के लिए, प्रतिस्थापन को अपने अनुरोध की `models` सूची में जोड़ें या वर्कस्पेस के लिए सेवानिवृत्त मॉडल रूटिंग चालू करें। [मॉडल का अप्रचलन और सेवानिवृत्ति](../guides/model-retirement.mdx) देखें।
+दोबारा कोशिश करने से मदद नहीं मिलती; मॉडल ID बदलें। माइग्रेशन के दौरान इन अनुरोधों को चालू रखने के लिए, विकल्प को अनुरोध की `models` सूची में जोड़ें या वर्कस्पेस के लिए सेवानिवृत्त मॉडल रूटिंग चालू करें। [मॉडल का पदावनयन और सेवानिवृत्ति](../guides/model-retirement.mdx) देखें।
 
-## वैकल्पिक डीबग मोड
+## स्ट्रीम के दौरान त्रुटियां
 
-समस्या की जाँच को नियंत्रित रखने के लिए अधिकांश अनुरोध स्कीमा `debug` ऑब्जेक्ट का समर्थन करते हैं:
+अगर कोई अनुरोध स्ट्रीमिंग शुरू होने से पहले विफल होता है, तो आपको ऊपर वाली JSON त्रुटि बॉडी मिलती है। अगर वह स्ट्रीम के बीच में विफल होता है, तो स्ट्रीम सामान्य समाप्ति के बजाय एंडपॉइंट के विफलता इवेंट के साथ खत्म होती है:
+
+| एंडपॉइंट | विफलता इवेंट |
+| --- | --- |
+| Chat Completions | एक `error` फ़्रेम |
+| Responses | `response.failed` (या `error`) |
+| Messages | एक `error` इवेंट |
+
+आंशिक आउटपुट को अधूरा मानें और दोबारा कोशिश का विकल्प दें। Chat Completions के `error` फ़्रेम में वही त्रुटि ऑब्जेक्ट होता है, जिसमें `error.type` कोड से तय होता है:
+
+```json
+{
+  "object": "error",
+  "message": "The upstream stream ended before the response completed.",
+  "code": "upstream_stream_failure",
+  "error": {
+    "code": "upstream_stream_failure",
+    "message": "The upstream stream ended before the response completed.",
+    "type": "server_error",
+    "param": null
+  }
+}
+```
+
+बिना स्ट्रीमिंग वाला अनुरोध, जिसका प्रदाता बीच में विफल हो जाता है, आंशिक प्रतिक्रिया नहीं, बल्कि `upstream_stream_failure` के साथ `502` लौटाता है। [स्ट्रीमिंग](../guides/streaming.mdx) देखें।
+
+<span id="debug-a-request"></span>
+## किसी अनुरोध को डीबग करें
+
+रूटिंग ट्रेस और अपस्ट्रीम पेलोड पाने के लिए एक `debug` ऑब्जेक्ट भेजें:
 
 ```json
 {
@@ -295,86 +317,18 @@ icon: "bug"
 }
 ```
 
-उपलब्ध फ़ील्ड:
+`trace_level` `summary` या `full` होता है। डीबग पेलोड में आपके अनुरोध की सामग्री हो सकती है, इसलिए इन्हें सिर्फ़ डेवलपमेंट या कड़े नियंत्रण वाले वातावरण में इस्तेमाल करें। [`debug`](./parameters.mdx#parameter-debug) देखें।
 
-- `enabled`
-- `return_upstream_request`
-- `return_upstream_response`
-- `trace`
-- `trace_level` (`summary` या `full`)
-
-Debug mode केवल development या कड़ाई से नियंत्रित environments में उपयोग करें।
-
-## पुनः प्रयास की रणनीति
-
-- **429 को छोड़कर 400-श्रेणी की त्रुटियाँ:** पुनः प्रयास से पहले अनुरोध, क्रेडेंशियल या पहुँच नीति ठीक करें।
-- **429:** Exponential backoff लागू करें और `Retry-After` header का पालन करें।
-- **500-श्रेणी की त्रुटियाँ:** सीमित पुनः प्रयास केवल तभी करें जब ऑपरेशन दोहराना सुरक्षित हो। अनिश्चित परिणाम वाले सबमिशन से जॉब बन चुका हो सकता है या शुल्क लग चुका हो सकता है; स्वीकार किए गए जॉब को दोबारा भेजने के बजाय उसकी जानकारी प्राप्त करें।
-
-प्रयासों की सीमा और कुल समय सीमा तय करें तथा बैकऑफ़ विलंब में यादृच्छिक बदलाव जोड़ें। प्रतिक्रिया हेडर और पुनः प्रयास संभालने के लिए [अनुरोध सीमाएँ](./limits.mdx) देखें।
-
-## स्ट्रीमिंग के लिए खास बातें
-
-- Streaming शुरू होने से पहले request विफल हो, तो standard JSON error payload मिलता है।
-- स्ट्रीम के बीच में विफलता हो, तो स्ट्रीम सामान्य समाप्ति के बजाय एंडपॉइंट के विफलता इवेंट पर खत्म होती है: Chat Completions पर `error` फ़्रेम, Responses पर `response.failed` (या `error`), और Messages पर `error` इवेंट। आंशिक स्ट्रीम को अधूरा मानें और पुनः प्रयास का विकल्प दें।
-- Chat Completions का `error` फ़्रेम भी यही त्रुटि ऑब्जेक्ट रखता है, और `error.type` कोड से तय होता है:
-
-  ```json
-  {
-    "object": "error",
-    "message": "The upstream stream ended before the response completed.",
-    "code": "upstream_stream_failure",
-    "error": {
-      "code": "upstream_stream_failure",
-      "message": "The upstream stream ended before the response completed.",
-      "type": "server_error",
-      "param": null
-    }
-  }
-  ```
-- बिना स्ट्रीमिंग वाले अनुरोध का प्रदाता बीच में विफल हो, तो आंशिक प्रतिक्रिया के बजाय `upstream_stream_failure` के साथ `502` लौटता है।
-- हमेशा `generation_id` और endpoint/model metadata रिकॉर्ड करें।
-
-## समस्या हल करने के सुझाव
-
-- चल रही घटनाओं के लिए [Gateway status page](https://status.phaseo.app) देखें।
-- Request payload को endpoint docs से मिलाकर देखें।
-- Support से संपर्क करते समय `generation_id` साझा करें।
-
-## संबंधित संसाधन
-
-<Columns cols={2}>
-	<Card
-		title="प्रमाणीकरण"
-		icon="key"
-		href="../developers/authentication.mdx"
-	>
-		Bearer API keys से authenticate करें।
-	</Card>
-	<Card
-		title="सीमाएँ"
-		icon="gauge"
-		href="./limits.mdx"
-	>
-		Provider की throttling और retries संभालें।
-	</Card>
-	<Card
-		title="स्ट्रीमिंग"
-		icon="radio"
-		href="../guides/streaming.mdx"
-	>
-		Production flows में SSE को सुरक्षित रूप से उपयोग करें।
-	</Card>
-</Columns>
+जब कोई अनुरोध विफल हो, तो घटनाओं के लिए [स्टेटस पेज](https://status.phaseo.app) देखें, अपने पेलोड की तुलना एंडपॉइंट के संदर्भ पेज से करें, और एंडपॉइंट और मॉडल के साथ `generation_id` लॉग करें। [सपोर्ट](https://phaseo.app/help) से संपर्क करते समय `generation_id` शामिल करें।
 
 <Visibility for="agents">
-एजेंट के लिए त्रुटि-प्रबंधन नियम, इस पेज का सार:
+एजेंट के लिए त्रुटि-संभाल नियम, इस पेज का सारांश:
 
-- `error.code` (जो शीर्ष स्तर पर `code` के रूप में भी आता है), `error.type` और `status_code` के आधार पर निर्णय लें, संदेश के टेक्स्ट के आधार पर नहीं। हर विफलता के साथ `generation_id` लॉग करें।
-- `400`, `401`, `403` और `404`: पहले अनुरोध, कुंजी या एक्सेस ठीक करें। वही अनुरोध बिना बदलाव के दोबारा न भेजें।
-- `model_retired` वाला `410`: अगर `replacement_model` `null` न हो, तो उस पर स्विच करें; नहीं तो `GET /v1/models` से नया मॉडल चुनें।
-- `429`: अगर `Retry-After` मौजूद हो (सेकंड या HTTP तारीख), तो दोबारा प्रयास से पहले उतनी प्रतीक्षा करें; नहीं तो जिटर वाला एक्सपोनेंशियल बैकऑफ़ इस्तेमाल करें। `Retry-After` के बिना `key_limit_exceeded` त्रुटि अपने आप रीसेट नहीं होती, इसलिए उसे दोबारा न आज़माएँ।
-- `500` से `599`: तभी दोबारा प्रयास करें जब कॉल दोहराना सुरक्षित हो, और प्रयासों की सीमा, कुल समय-सीमा और जिटर वाले एक्सपोनेंशियल बैकऑफ़ के साथ करें। असिंक्रोनस जॉब के लिए उसे दोबारा सबमिट करने के बजाय स्वीकार की गई जॉब देखें।
-- डीबग पेलोड को संवेदनशील मानें और स्थायी लॉग में लिखने से पहले उन्हें छिपाएँ।
-- परखे हुए रीट्राई और त्रुटि-पार्सिंग पैटर्न के लिए `phaseo-gateway` स्किल इंस्टॉल करें: `npx skills add https://phaseo.app/docs --skill phaseo-gateway`।
+- संदेश के टेक्स्ट पर नहीं, बल्कि `error.code` (जो शीर्ष-स्तर `code` के रूप में भी लौटता है), `error.type` और `status_code` पर ब्रांच करें। हर विफलता के साथ `generation_id` लॉग करें।
+- `400`, `401`, `403` और `404`: पहले अनुरोध, कुंजी या पहुंच ठीक करें। वही अनुरोध बिना बदले दोबारा न भेजें।
+- `model_retired` के साथ `410`: जब `replacement_model` `null` न हो, तो उस पर जाएं; वरना `GET /v1/models` से नया मॉडल चुनें।
+- `429`: जब `Retry-After` मौजूद हो (सेकंड या HTTP तारीख), तो दोबारा कोशिश से पहले उतना इंतज़ार करें; वरना jitter वाला exponential backoff इस्तेमाल करें। `Retry-After` के बिना `key_limit_exceeded` त्रुटि अपने आप रीसेट नहीं होती, इसलिए उस पर दोबारा कोशिश न करें।
+- `500` से `599`: सिर्फ़ तब दोबारा कोशिश करें जब कॉल दोहराना सुरक्षित हो, प्रयासों की सीमा, कुल समय-सीमा और jitter वाले exponential backoff के साथ। एसिंक जॉब के लिए, उसे दोबारा सबमिट करने के बजाय स्वीकृत जॉब खोजें।
+- डीबग पेलोड को संवेदनशील मानें और स्थायी लॉग में लिखने से पहले उन्हें रिडैक्ट करें।
+- परखे हुए retry और error-parsing पैटर्न के लिए `phaseo-gateway` skill इंस्टॉल करें: `npx skills add https://phaseo.app/docs --skill phaseo-gateway`।
 </Visibility>

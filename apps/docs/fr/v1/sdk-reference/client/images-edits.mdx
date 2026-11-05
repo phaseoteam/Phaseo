@@ -1,0 +1,185 @@
+---
+icon: "pencil"
+title: "Retouches d’images"
+description: "Retouchez des images avec /images/edits depuis n’importe quel SDK Phaseo."
+---
+
+Appelez la méthode de retouche d’image du SDK avec un prompt et une image pour envoyer `POST /v1/images/edits`. Passez l’image et le masque sous forme d’URL ou de data URL base64. Pour envoyer les octets d’un fichier, utilisez `AsyncPhaseo` en Python ou, en Java, le client HTTP standard.
+
+<CodeGroup>
+
+```typescript TypeScript
+const edited = await client.generateImageEdit({
+  model: "openai/gpt-image-1",
+  prompt: "Make it sunset",
+  image: "data:image/png;base64,...",
+  mask: "data:image/png;base64,...",
+});
+```
+
+```python Python
+edited = client.generate_image_edit({
+    "model": "openai/gpt-image-1",
+    "prompt": "Make it sunset",
+    "image": "data:image/png;base64,...",
+    "mask": "data:image/png;base64,...",
+})
+```
+
+```go Go
+client, err := phaseo.NewFromEnv()
+if err != nil {
+  panic(err)
+}
+
+resp, err := client.CreateImageEdit(context.Background(), map[string]interface{}{
+  "model":  "openai/gpt-image-1",
+  "prompt": "Make it sunset",
+  "image":  "data:image/png;base64,...",
+  "mask":   "data:image/png;base64,...",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp["data"])
+```
+
+```csharp C#
+using PhaseoSdk;
+
+var client = new Phaseo();
+
+var response = await client.CreateImageEdit(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-image-1",
+    ["prompt"] = "Make it sunset",
+    ["image"] = "data:image/png;base64,...",
+    ["mask"] = "data:image/png;base64,...",
+});
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo();
+
+$response = $client->generateImageEdit([
+    'model' => 'openai/gpt-image-1',
+    'prompt' => 'Make it sunset',
+    'image' => 'data:image/png;base64,...',
+    'mask' => 'data:image/png;base64,...',
+]);
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new
+
+response = client.generate_image_edit(
+  model: 'openai/gpt-image-1',
+  prompt: 'Make it sunset',
+  image: 'data:image/png;base64,...',
+  mask: 'data:image/png;base64,...'
+)
+```
+
+```java Java
+// Les assistants JSON du SDK n’encodent pas les envois multipart : envoyez donc le fichier
+// avec le client HTTP standard de Java. Placez input.png dans le répertoire de travail.
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.UUID;
+
+String baseUrl = System.getenv().getOrDefault("PHASEO_BASE_URL", "https://api.phaseo.app/v1")
+    .replaceAll("/+$", "");
+String apiKey = System.getenv("PHASEO_API_KEY");
+String boundary = "phaseo-" + UUID.randomUUID();
+var body = BodyPublishers.concat(
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\nopenai/gpt-image-1\r\n"),
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"prompt\"\r\n\r\nMake it sunset\r\n"),
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"image\"; filename=\"input.png\"\r\nContent-Type: image/png\r\n\r\n"),
+    BodyPublishers.ofFile(Path.of("input.png")),
+    BodyPublishers.ofString("\r\n--" + boundary + "--\r\n")
+);
+var request = HttpRequest.newBuilder(URI.create(baseUrl + "/images/edits"))
+    .header("Authorization", "Bearer " + apiKey)
+    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+    .timeout(Duration.ofSeconds(60))
+    .POST(body)
+    .build();
+var response = HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
+if (response.statusCode() < 200 || response.statusCode() >= 300) {
+    throw new IOException("HTTP " + response.statusCode() + ": " + response.body());
+}
+System.out.println(response.body());
+```
+
+```rust Rust
+let response = client.post("/images/edits", &json!({
+    "model": "openai/gpt-image-1",
+    "prompt": "Make it sunset",
+    "image": "data:image/png;base64,..."
+}))?;
+```
+
+</CodeGroup>
+
+La façon d’envoyer la requête dépend du SDK :
+
+| Langage | Méthode | Envoie | Image en entrée |
+| --- | --- | --- | --- |
+| TypeScript | `client.generateImageEdit(request)` | Un formulaire multipart | URL ou data URL base64. `client.streamImageEdit()` diffuse à la place des événements d’images partielles. |
+| Python | `client.generate_image_edit(request)` (synchrone) | JSON | URL ou data URL base64 uniquement. |
+| Python | `await client.images.edit(request)` sur `AsyncPhaseo` | Un formulaire multipart | URL, data URL, octets, chemins et objets fichier. |
+| Go | `client.CreateImageEdit(ctx, req)` | JSON | URL ou data URL base64. |
+| C# | `client.CreateImageEdit(request)` | JSON | URL ou data URL base64. |
+| PHP | `$client->generateImageEdit($request)`, alias `createImageEdit()` | JSON | URL ou data URL base64. |
+| Ruby | `client.generate_image_edit(...)`, alias `create_image_edit` | JSON | URL ou data URL base64. |
+| Java | `java.net.http.HttpClient` de Java, comme dans l’exemple | Un formulaire multipart | Octets du fichier. Les assistants JSON du SDK, y compris `client.createImageEdit(request)`, n’encodent pas les envois multipart. |
+| Rust | `client.post("/images/edits", &request)` | JSON | URL ou data URL base64. Il n’y a pas d’assistant de retouche d’image. |
+
+## Paramètres
+
+Les noms de champs sont ceux du corps JSON (ou du formulaire multipart), dans tous les SDK.
+
+| Champ | Remarques |
+| --- | --- |
+| `image` | Obligatoire. Une URL ou une data URL base64, ou un tableau de 16 au maximum. |
+| `prompt` | Obligatoire. Jusqu’à 32 000 caractères. |
+| `model` | Par défaut : `openai/gpt-image-1.5`. |
+| `mask` | Les zones transparentes délimitent la région à retoucher. |
+| `n` | Nombre d’images retouchées, de `1` à `10`. |
+| `size` | Par exemple `1024x1024`, `1024x1792` ou `1792x1024`. |
+| `quality` | `standard`, `low`, `medium`, `high`, `xhigh`, `max` ou `auto`, selon le modèle. |
+| `input_fidelity` | `high` ou `low`. |
+| `output_format`, `output_compression`, `background` | Comme pour la [génération d’images](./images-generations). |
+| `response_format` | `url` ou `b64_json`. Les modèles GPT Image ne prennent pas en charge ce champ. |
+| `user` | Étiquette de l’utilisateur final. |
+
+Le schéma complet se trouve dans la [référence de l’API de retouche d’images](../../api-reference/endpoint/images-edits).
+
+## Réponse
+
+`ImagesEditResponse` :
+
+```json
+{
+  "data": [
+    {
+      "url": "https://example.com/edited_image.png"
+    }
+  ]
+}
+```
+
+Les modèles qui renvoient les octets de l’image les placent dans `b64_json` au lieu de `url`.

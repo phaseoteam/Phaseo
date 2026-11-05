@@ -7,6 +7,7 @@ const state = vi.hoisted(() => ({
 	insertedInvite: null as Record<string, unknown> | null,
 	auditEvents: [] as Array<Record<string, unknown>>,
 	rpcArgs: null as { name: string; args: Record<string, unknown> } | null,
+	actorUserId: "user_actor",
 }));
 
 function mockSupabase() {
@@ -78,7 +79,7 @@ vi.mock("@/pipeline/before/guards", () => ({
 			apiKeyId: "management_1",
 			apiKeyRef: null,
 			apiKeyKid: null,
-			userId: "user_actor",
+			userId: state.actorUserId,
 			requestId: "request_trace_1",
 		},
 	})),
@@ -87,6 +88,7 @@ vi.mock("@/pipeline/before/guards", () => ({
 vi.mock("./route-helpers", () => ({
 	requireCapability: () => null,
 	requireOAuthWorkspaceRole: async () => null,
+	rejectThirdPartyOAuthSpendingChange: () => null,
 	internalServerError: (_operation: string, error: unknown) => new Response(JSON.stringify({ error: String(error) }), { status: 500 }),
 }));
 
@@ -115,10 +117,12 @@ describe("workspace membership management", () => {
 		state.insertedInvite = null;
 		state.auditEvents.length = 0;
 		state.rpcArgs = null;
+		state.actorUserId = "user_actor";
 		vi.resetModules();
 	});
 
 	it("updates a non-owner member role and records an audit event", async () => {
+		state.actorUserId = "user_owner";
 		state.member = { workspace_id: "workspace_1", user_id: "user_member", role: "admin", joined_at: null };
 		const { workspaceMembershipRoutes } = await import("./workspace-membership");
 		const response = await workspaceMembershipRoutes.request("https://example.com/workspace_1/members/user_member", {
@@ -135,7 +139,34 @@ describe("workspace membership management", () => {
 		});
 	});
 
+	it("lets only the workspace owner change roles or invite admins, whatever the credential", async () => {
+		// user_actor is an admin using a management key they created.
+		state.member = { workspace_id: "workspace_1", user_id: "user_actor", role: "admin", joined_at: null };
+		const { workspaceMembershipRoutes } = await import("./workspace-membership");
+		const roleChange = await workspaceMembershipRoutes.request("https://example.com/workspace_1/members/user_member", {
+			method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ role: "admin" }),
+		});
+		expect(roleChange.status).toBe(403);
+		const adminInvite = await workspaceMembershipRoutes.request("https://example.com/workspace_1/invites", {
+			method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ role: "admin" }),
+		});
+		expect(adminInvite.status).toBe(403);
+		expect(await adminInvite.json()).toMatchObject({ message: "Only the workspace owner can invite admins." });
+		expect(state.insertedInvite).toBeNull();
+		expect(state.auditEvents).toHaveLength(0);
+
+		// A member that holds the owner role (not the recorded owner) may.
+		state.member = { workspace_id: "workspace_1", user_id: "user_actor", role: "owner", joined_at: null };
+		state.invite = { id: "invite_2", workspace_id: "workspace_1", role: "admin" };
+		const ownerInvite = await workspaceMembershipRoutes.request("https://example.com/workspace_1/invites", {
+			method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ role: "admin" }),
+		});
+		expect(ownerInvite.status).toBe(201);
+		expect(state.insertedInvite).toMatchObject({ role: "admin" });
+	});
+
 	it("does not allow changing the workspace owner role", async () => {
+		state.actorUserId = "user_owner";
 		const { workspaceMembershipRoutes } = await import("./workspace-membership");
 		const response = await workspaceMembershipRoutes.request("https://example.com/workspace_1/members/user_owner", {
 			method: "PATCH",

@@ -250,6 +250,42 @@
 					"zh-Hans": "从左上角起，以图像尺寸比例表示的边缘。top 必须小于 bottom；left 必须小于 right。",
 					"ar": "الحواف كنسب من أبعاد الصورة بدءًا من الزاوية العلوية اليسرى. يجب أن تكون top أقل من bottom وleft أقل من right."
 				}
+			},
+			"GatewayProviderAvailabilityReason": {
+				"/description": {
+					"es": "Una ruta con prioridad reducida (`deranked`) solo se enruta como último recurso, después de todos los demás proveedores en buen estado. `deranked_lvl1`, `deranked_lvl2` y `deranked_lvl3` ya no se devuelven.",
+					"fr": "Une route rétrogradée (`deranked`) n’est routée qu’en dernier recours, après tous les autres fournisseurs sains. `deranked_lvl1`, `deranked_lvl2` et `deranked_lvl3` ne sont plus renvoyés.",
+					"de": "Eine zurückgestufte Route (`deranked`) wird nur als letzte Reserve geroutet, nach allen anderen gesunden Anbietern. `deranked_lvl1`, `deranked_lvl2` und `deranked_lvl3` werden nicht mehr zurückgegeben.",
+					"pt-BR": "Uma rota rebaixada (`deranked`) só é roteada como último recurso, depois de todos os outros provedores saudáveis. `deranked_lvl1`, `deranked_lvl2` e `deranked_lvl3` não são mais retornados.",
+					"hi": "प्राथमिकता घटाया गया रूट (`deranked`) सिर्फ़ अंतिम विकल्प के रूप में, बाकी सभी स्वस्थ प्रदाताओं के बाद रूट होता है। `deranked_lvl1`, `deranked_lvl2` और `deranked_lvl3` अब नहीं लौटाए जाते।",
+					"ja": "優先度が下げられたルート（`deranked`）は、他のすべての正常なプロバイダーの後に、最終手段としてのみルーティングされます。`deranked_lvl1`、`deranked_lvl2`、`deranked_lvl3` は返されなくなりました。",
+					"zh-Hans": "降级路由（`deranked`）仅作为最后手段，在所有其他健康的提供商之后才会被路由。不再返回 `deranked_lvl1`、`deranked_lvl2` 和 `deranked_lvl3`。",
+					"ar": "لا يُوجَّه المسار المخفّض الأولوية (`deranked`) إلا كملاذ أخير، بعد جميع المزوّدين السليمين الآخرين. لم تعد القيم `deranked_lvl1` و`deranked_lvl2` و`deranked_lvl3` تُعاد."
+				}
+			},
+			"GatewayRoutingStatus": {
+				"/description": {
+					"es": "Una ruta con prioridad reducida (`deranked`) solo se enruta como último recurso, después de todos los demás proveedores en buen estado. `deranked_lvl1`, `deranked_lvl2` y `deranked_lvl3` ya no se devuelven.",
+					"fr": "Une route rétrogradée (`deranked`) n’est routée qu’en dernier recours, après tous les autres fournisseurs sains. `deranked_lvl1`, `deranked_lvl2` et `deranked_lvl3` ne sont plus renvoyés.",
+					"de": "Eine zurückgestufte Route (`deranked`) wird nur als letzte Reserve geroutet, nach allen anderen gesunden Anbietern. `deranked_lvl1`, `deranked_lvl2` und `deranked_lvl3` werden nicht mehr zurückgegeben.",
+					"pt-BR": "Uma rota rebaixada (`deranked`) só é roteada como último recurso, depois de todos os outros provedores saudáveis. `deranked_lvl1`, `deranked_lvl2` e `deranked_lvl3` não são mais retornados.",
+					"hi": "प्राथमिकता घटाया गया रूट (`deranked`) सिर्फ़ अंतिम विकल्प के रूप में, बाकी सभी स्वस्थ प्रदाताओं के बाद रूट होता है। `deranked_lvl1`, `deranked_lvl2` और `deranked_lvl3` अब नहीं लौटाए जाते।",
+					"ja": "優先度が下げられたルート（`deranked`）は、他のすべての正常なプロバイダーの後に、最終手段としてのみルーティングされます。`deranked_lvl1`、`deranked_lvl2`、`deranked_lvl3` は返されなくなりました。",
+					"zh-Hans": "降级路由（`deranked`）仅作为最后手段，在所有其他健康的提供商之后才会被路由。不再返回 `deranked_lvl1`、`deranked_lvl2` 和 `deranked_lvl3`。",
+					"ar": "لا يُوجَّه المسار المخفّض الأولوية (`deranked`) إلا كملاذ أخير، بعد جميع المزوّدين السليمين الآخرين. لم تعد القيم `deranked_lvl1` و`deranked_lvl2` و`deranked_lvl3` تُعاد."
+				}
+			},
+			"GatewayCapabilityStatus": {
+				"/description": {
+					"es": "Una ruta con prioridad reducida (`deranked`) solo se enruta como último recurso, después de todos los demás proveedores en buen estado. `deranked_lvl1`, `deranked_lvl2` y `deranked_lvl3` ya no se devuelven.",
+					"fr": "Une route rétrogradée (`deranked`) n’est routée qu’en dernier recours, après tous les autres fournisseurs sains. `deranked_lvl1`, `deranked_lvl2` et `deranked_lvl3` ne sont plus renvoyés.",
+					"de": "Eine zurückgestufte Route (`deranked`) wird nur als letzte Reserve geroutet, nach allen anderen gesunden Anbietern. `deranked_lvl1`, `deranked_lvl2` und `deranked_lvl3` werden nicht mehr zurückgegeben.",
+					"pt-BR": "Uma rota rebaixada (`deranked`) só é roteada como último recurso, depois de todos os outros provedores saudáveis. `deranked_lvl1`, `deranked_lvl2` e `deranked_lvl3` não são mais retornados.",
+					"hi": "प्राथमिकता घटाया गया रूट (`deranked`) सिर्फ़ अंतिम विकल्प के रूप में, बाकी सभी स्वस्थ प्रदाताओं के बाद रूट होता है। `deranked_lvl1`, `deranked_lvl2` और `deranked_lvl3` अब नहीं लौटाए जाते।",
+					"ja": "優先度が下げられたルート（`deranked`）は、他のすべての正常なプロバイダーの後に、最終手段としてのみルーティングされます。`deranked_lvl1`、`deranked_lvl2`、`deranked_lvl3` は返されなくなりました。",
+					"zh-Hans": "降级路由（`deranked`）仅作为最后手段，在所有其他健康的提供商之后才会被路由。不再返回 `deranked_lvl1`、`deranked_lvl2` 和 `deranked_lvl3`。",
+					"ar": "لا يُوجَّه المسار المخفّض الأولوية (`deranked`) إلا كملاذ أخير، بعد جميع المزوّدين السليمين الآخرين. لم تعد القيم `deranked_lvl1` و`deranked_lvl2` و`deranked_lvl3` تُعاد."
+				}
 			}
 		}
 	},
@@ -8184,16 +8220,6 @@
 			"zh-Hans": "此密钥所属的部门，用于部门速率限制和预算。Null 表示该密钥仅计入整个工作区的限制。",
 			"ar": "القسم الذي ينتمي إليه هذا المفتاح لأغراض حدود المعدل وميزانيات القسم. تعني القيمة null أن المفتاح يُحتسب فقط ضمن حدود مساحة العمل بأكملها."
 		},
-		"Deprecated. Guardrails do not enforce request or spend limits; use API key limits or workspace budgets instead.": {
-			"es": "Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.",
-			"fr": "Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.",
-			"de": "Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.",
-			"pt-BR": "Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.",
-			"hi": "अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।",
-			"ja": "非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。",
-			"zh-Hans": "已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。",
-			"ar": "مهمل. لا تفرض حواجز الحماية حدودًا على الطلبات أو الإنفاق؛ استخدم بدلًا من ذلك حدود مفاتيح API أو ميزانيات مساحة العمل."
-		},
 		"ETag from an earlier JSON or OpenAI-format response for the same URL. If it still matches, the response is 304 Not Modified with no body. Accepts a comma-separated list, weak (W/) validators, and *.": {
 			"es": "ETag de una respuesta anterior en formato JSON u OpenAI para la misma URL. Si todavía coincide, la respuesta es 304 Not Modified sin cuerpo. Acepta una lista separada por comas, validadores débiles (W/) y *.",
 			"fr": "ETag d’une réponse précédente au format JSON ou OpenAI pour la même URL. S’il correspond toujours, la réponse est 304 Not Modified, sans corps. Accepte une liste séparée par des virgules, des validateurs faibles (W/) et *.",
@@ -8974,15 +9000,15 @@
 			"zh-Hans": "以 12 小时保留时长写入缓存的输入 token，按输入价格的 2.5 倍计费。",
 			"ar": "رموز الإدخال المكتوبة في التخزين المؤقت لمدة 12 ساعة، وتُحتسب بـ 2.5x سعر الإدخال."
 		},
-		"How spend rules count a person's spend toward departments when their key has no department of its own: all counts it toward every department they belong to; primary counts it toward their primary department only. A key's own department always wins.": {
-			"es": "Cómo cuentan las reglas de gasto el gasto de una persona en los departamentos cuando su clave no tiene departamento propio: all lo cuenta en todos los departamentos a los que pertenece; primary solo en su departamento principal. El departamento propio de una clave siempre prevalece.",
-			"fr": "Comment les règles de dépenses imputent les dépenses d’une personne aux services lorsque sa clé n’a pas de service propre : all les impute à tous les services dont elle fait partie ; primary uniquement à son service principal. Le service propre d’une clé l’emporte toujours.",
-			"de": "Wie Ausgabenregeln die Ausgaben einer Person Abteilungen zurechnen, wenn ihr Schlüssel keine eigene Abteilung hat: all rechnet sie jeder Abteilung zu, der die Person angehört; primary nur ihrer Hauptabteilung. Die eigene Abteilung eines Schlüssels hat immer Vorrang.",
-			"pt-BR": "Como as regras de gastos atribuem o gasto de uma pessoa aos departamentos quando a chave dela não tem departamento próprio: all atribui a todos os departamentos dos quais ela faz parte; primary apenas ao departamento principal. O departamento próprio de uma chave sempre prevalece.",
-			"hi": "जब किसी व्यक्ति की कुंजी का अपना कोई विभाग नहीं होता, तब खर्च नियम उसके खर्च को विभागों में कैसे गिनते हैं: all उसे उन सभी विभागों में गिनता है जिनका वह सदस्य है; primary केवल उसके प्राथमिक विभाग में। कुंजी का अपना विभाग हमेशा प्राथमिकता पाता है।",
-			"ja": "キーに部門が設定されていない場合に、支出ルールが個人の支出をどの部門に計上するか。all は所属するすべての部門に、primary は主部門のみに計上します。キー自体の部門が常に優先されます。",
-			"zh-Hans": "当某人的密钥没有自己的部门时，支出规则如何将其支出计入部门：all 计入其所属的所有部门；primary 仅计入其主要部门。密钥自身的部门始终优先。",
-			"ar": "كيف تحتسب قواعد الإنفاق إنفاق الشخص ضمن الأقسام عندما لا يكون لمفتاحه قسم خاص به: all تحتسبه في كل الأقسام التي ينتمي إليها؛ وprimary في قسمه الأساسي فقط. ويُقدَّم دائمًا القسم الخاص بالمفتاح."
+		"How spend rules, department budgets and department rate limits count a person's requests toward departments when their key has no department of its own: all counts them toward every department they belong to; primary counts them toward their primary department only. A key's own department and a member's directory override always win.": {
+			"es": "Cómo cuentan las reglas de gasto, los presupuestos de departamento y los límites de frecuencia de departamento las solicitudes de una persona en los departamentos cuando su clave no tiene departamento propio: all las cuenta en todos los departamentos a los que pertenece; primary solo en su departamento principal. El departamento propio de una clave y la anulación de directorio de un miembro siempre prevalecen.",
+			"fr": "Comment les règles de dépenses, les budgets de service et les limites de débit de service imputent les requêtes d’une personne aux services lorsque sa clé n’a pas de service propre : all les impute à tous les services dont elle fait partie ; primary uniquement à son service principal. Le service propre d’une clé et le remplacement d’annuaire d’un membre l’emportent toujours.",
+			"de": "Wie Ausgabenregeln, Abteilungsbudgets und Abteilungs-Ratenlimits die Anfragen einer Person Abteilungen zurechnen, wenn ihr Schlüssel keine eigene Abteilung hat: all rechnet sie jeder Abteilung zu, der die Person angehört; primary nur ihrer Hauptabteilung. Die eigene Abteilung eines Schlüssels und die Verzeichnisüberschreibung eines Mitglieds haben immer Vorrang.",
+			"pt-BR": "Como as regras de gastos, os orçamentos de departamento e os limites de taxa de departamento atribuem as solicitações de uma pessoa aos departamentos quando a chave dela não tem departamento próprio: all atribui a todos os departamentos dos quais ela faz parte; primary apenas ao departamento principal. O departamento próprio de uma chave e a substituição de diretório de um membro sempre prevalecem.",
+			"hi": "जब किसी व्यक्ति की कुंजी का अपना कोई विभाग नहीं होता, तब खर्च नियम, विभाग बजट और विभाग दर सीमाएँ उसके अनुरोधों को विभागों में कैसे गिनते हैं: all उन्हें उन सभी विभागों में गिनता है जिनका वह सदस्य है; primary केवल उसके प्राथमिक विभाग में। कुंजी का अपना विभाग और सदस्य का डायरेक्टरी ओवरराइड हमेशा प्राथमिकता पाते हैं।",
+			"ja": "キーに部門が設定されていない場合に、支出ルール、部門予算、部門レート制限が個人のリクエストをどの部門に計上するか。all は所属するすべての部門に、primary は主部門のみに計上します。キー自体の部門とメンバーのディレクトリ上書きが常に優先されます。",
+			"zh-Hans": "当某人的密钥没有自己的部门时，支出规则、部门预算和部门速率限制如何将其请求计入部门：all 计入其所属的所有部门；primary 仅计入其主要部门。密钥自身的部门和成员的目录覆盖始终优先。",
+			"ar": "كيف تحتسب قواعد الإنفاق وميزانيات الأقسام وحدود معدل الأقسام طلبات الشخص ضمن الأقسام عندما لا يكون لمفتاحه قسم خاص به: all تحتسبها في كل الأقسام التي ينتمي إليها؛ وprimary في قسمه الأساسي فقط. ويُقدَّم دائمًا القسم الخاص بالمفتاح وتجاوز الدليل الخاص بالعضو."
 		},
 		"IANA time zone for the calendar periods of spend rules that have no time zone of their own, and for spend reports. Defaults to UTC. Enforced key limits and workspace budgets always use UTC.": {
 			"es": "Zona horaria IANA para los periodos naturales de las reglas de gasto que no tienen zona horaria propia y para los informes de gasto. El valor predeterminado es UTC. Los límites de clave y los presupuestos del espacio de trabajo que se aplican siempre usan UTC.",
@@ -9144,15 +9170,15 @@
 			"zh-Hans": "创建支出规则",
 			"ar": "إنشاء قاعدة إنفاق"
 		},
-		"Creates a spend rule and sets its notification destinations. Every metric is accepted; rules returned with evaluated false are saved and fire from a later release. Blocking is best effort and acts minutes after the threshold; use key limits and workspace budgets for exact caps. A workspace can have 50 spend rules.": {
-			"es": "Crea una regla de gasto y define sus destinos de notificación. Se acepta cualquier métrica; las reglas que se devuelven con evaluated en false se guardan y empezarán a activarse en una versión posterior. El bloqueo se aplica en la medida de lo posible y actúa minutos después del umbral; usa los límites de clave y los presupuestos del espacio de trabajo para topes exactos. Un espacio de trabajo puede tener 50 reglas de gasto.",
-			"fr": "Crée une règle de dépenses et définit ses destinations de notification. Toutes les métriques sont acceptées ; les règles renvoyées avec evaluated à false sont enregistrées et se déclencheront à partir d’une version ultérieure. Le blocage est appliqué au mieux et intervient quelques minutes après le seuil ; utilisez les limites de clé et les budgets d’espace de travail pour des plafonds exacts. Un espace de travail peut avoir 50 règles de dépenses.",
-			"de": "Erstellt eine Ausgabenregel und legt ihre Benachrichtigungsziele fest. Jede Metrik wird akzeptiert; Regeln, die mit evaluated false zurückgegeben werden, werden gespeichert und lösen erst ab einer späteren Version aus. Das Sperren erfolgt nach bestem Bemühen und greift Minuten nach dem Schwellenwert; für exakte Obergrenzen Schlüssellimits und Workspace-Budgets verwenden. Ein Workspace kann 50 Ausgabenregeln haben.",
-			"pt-BR": "Cria uma regra de gastos e define seus destinos de notificação. Qualquer métrica é aceita; regras retornadas com evaluated false são salvas e passarão a disparar em uma versão futura. O bloqueio é feito com o melhor esforço e age minutos após o limite; use limites de chave e orçamentos do workspace para tetos exatos. Um workspace pode ter 50 regras de gastos.",
-			"hi": "एक खर्च नियम बनाता है और उसके सूचना गंतव्य सेट करता है। हर मीट्रिक स्वीकार की जाती है; evaluated false के साथ लौटाए गए नियम सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे। ब्लॉक करना सर्वोत्तम प्रयास पर आधारित है और सीमा के कुछ मिनट बाद लागू होता है; सटीक सीमाओं के लिए कुंजी सीमाएँ और वर्कस्पेस बजट इस्तेमाल करें। एक वर्कस्पेस में 50 खर्च नियम हो सकते हैं।",
-			"ja": "支出ルールを作成し、通知先を設定します。どの指標も受け付けます。evaluated が false で返されるルールは保存され、今後のリリースから発火します。ブロックはベストエフォートで、しきい値の数分後に作動します。正確な上限にはキーの上限とワークスペース予算を使ってください。ワークスペースあたり 50 件まで作成できます。",
-			"zh-Hans": "创建支出规则并设置其通知目标。接受所有指标；返回 evaluated 为 false 的规则会被保存，并将在后续版本中开始触发。拦截为尽力而为，会在达到阈值几分钟后生效；如需精确上限，请使用密钥限额和工作区预算。每个工作区最多可有 50 条支出规则。",
-			"ar": "ينشئ قاعدة إنفاق ويحدد وجهات إشعاراتها. تُقبل كل المقاييس؛ القواعد التي تُعاد مع evaluated بقيمة false تُحفظ وتبدأ بالعمل في إصدار لاحق. الحظر يتم بأفضل جهد ويعمل بعد بلوغ الحد ببضع دقائق؛ استخدم حدود المفاتيح وميزانيات مساحة العمل لحدود دقيقة. يمكن أن تحتوي مساحة العمل على 50 قاعدة إنفاق."
+		"Creates a spend rule and sets its notification destinations. Every metric is evaluated. Blocking is best effort and acts minutes after the threshold; use key limits and workspace budgets for exact caps. A workspace can have 50 spend rules.": {
+			"es": "Crea una regla de gasto y define sus destinos de notificación. Se evalúan todas las métricas. El bloqueo se aplica en la medida de lo posible y actúa minutos después del umbral; usa los límites de clave y los presupuestos del espacio de trabajo para topes exactos. Un espacio de trabajo puede tener 50 reglas de gasto.",
+			"fr": "Crée une règle de dépenses et définit ses destinations de notification. Toutes les métriques sont évaluées. Le blocage est appliqué au mieux et intervient quelques minutes après le seuil ; utilisez les limites de clé et les budgets d’espace de travail pour des plafonds exacts. Un espace de travail peut avoir 50 règles de dépenses.",
+			"de": "Erstellt eine Ausgabenregel und legt ihre Benachrichtigungsziele fest. Jede Metrik wird ausgewertet. Das Sperren erfolgt nach bestem Bemühen und greift Minuten nach dem Schwellenwert; für exakte Obergrenzen Schlüssellimits und Workspace-Budgets verwenden. Ein Workspace kann 50 Ausgabenregeln haben.",
+			"pt-BR": "Cria uma regra de gastos e define seus destinos de notificação. Todas as métricas são avaliadas. O bloqueio é feito com o melhor esforço e age minutos após o limite; use limites de chave e orçamentos do workspace para tetos exatos. Um workspace pode ter 50 regras de gastos.",
+			"hi": "एक खर्च नियम बनाता है और उसके सूचना गंतव्य सेट करता है। हर मीट्रिक का मूल्यांकन किया जाता है। ब्लॉक करना सर्वोत्तम प्रयास पर आधारित है और सीमा के कुछ मिनट बाद लागू होता है; सटीक सीमाओं के लिए कुंजी सीमाएँ और वर्कस्पेस बजट इस्तेमाल करें। एक वर्कस्पेस में 50 खर्च नियम हो सकते हैं।",
+			"ja": "支出ルールを作成し、通知先を設定します。すべての指標が評価されます。ブロックはベストエフォートで、しきい値の数分後に作動します。正確な上限にはキーの上限とワークスペース予算を使ってください。ワークスペースあたり 50 件まで作成できます。",
+			"zh-Hans": "创建支出规则并设置其通知目标。所有指标都会被评估。拦截为尽力而为，会在达到阈值几分钟后生效；如需精确上限，请使用密钥限额和工作区预算。每个工作区最多可有 50 条支出规则。",
+			"ar": "ينشئ قاعدة إنفاق ويحدد وجهات إشعاراتها. تُقيَّم كل المقاييس. الحظر يتم بأفضل جهد ويعمل بعد بلوغ الحد ببضع دقائق؛ استخدم حدود المفاتيح وميزانيات مساحة العمل لحدود دقيقة. يمكن أن تحتوي مساحة العمل على 50 قاعدة إنفاق."
 		},
 		"Spend rule created": {
 			"es": "Regla de gasto creada",
@@ -11404,15 +11430,15 @@
 			"zh-Hans": "列出受信任的工作负载策略",
 			"ar": "عرض سياسات أحمال العمل الموثوقة"
 		},
-		"Lists the workspace's trusted workload policies: which Vercel deployments and GitHub Actions workflows may call the gateway with their OIDC token instead of an API key. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.": {
-			"es": "Lista las políticas de cargas de trabajo de confianza del espacio de trabajo: qué despliegues de Vercel y flujos de trabajo de GitHub Actions pueden llamar al gateway con su token OIDC en lugar de una clave de API. Requiere keys:read en claves de administración y tokens OAuth, o un propietario o administrador del espacio de trabajo. Solo está disponible para los espacios de trabajo de la beta de cargas de trabajo de confianza; los demás reciben 404.",
-			"fr": "Liste les règles de workloads de confiance de l’espace de travail : les déploiements Vercel et les workflows GitHub Actions autorisés à appeler la passerelle avec leur jeton OIDC au lieu d’une clé API. Nécessite keys:read sur les clés de gestion et les jetons OAuth, ou un propriétaire ou un administrateur de l’espace de travail. Disponible uniquement pour les espaces de travail de la bêta des workloads de confiance ; les autres reçoivent 404.",
-			"de": "Listet die Richtlinien für vertrauenswürdige Workloads des Workspace auf: welche Vercel-Deployments und GitHub-Actions-Workflows das Gateway mit ihrem OIDC-Token statt mit einem API-Schlüssel aufrufen dürfen. Erfordert keys:read für Management-Schlüssel und OAuth-Tokens oder einen Workspace-Inhaber oder -Admin. Nur für Workspaces in der Beta für vertrauenswürdige Workloads verfügbar; andere Workspaces erhalten 404.",
-			"pt-BR": "Lista as políticas de workloads confiáveis do espaço de trabalho: quais implantações da Vercel e workflows do GitHub Actions podem chamar o gateway com o token OIDC em vez de uma chave de API. Requer keys:read em chaves de gerenciamento e tokens OAuth, ou um proprietário ou administrador do espaço de trabalho. Disponível apenas para espaços de trabalho no beta de workloads confiáveis; os demais recebem 404.",
-			"hi": "वर्कस्पेस की भरोसेमंद वर्कलोड पॉलिसी की सूची देता है: कौन-से Vercel डिप्लॉयमेंट और GitHub Actions वर्कफ़्लो API कुंजी के बजाय अपने OIDC टोकन से गेटवे को कॉल कर सकते हैं। प्रबंधन कुंजियों और OAuth टोकन पर keys:read, या वर्कस्पेस का मालिक या एडमिन आवश्यक है। यह केवल भरोसेमंद वर्कलोड बीटा वाले वर्कस्पेस के लिए उपलब्ध है; दूसरे वर्कस्पेस को 404 मिलता है।",
-			"ja": "ワークスペースの信頼済みワークロードのポリシーを一覧表示します。API キーの代わりに OIDC トークンでゲートウェイを呼び出せる Vercel のデプロイと GitHub Actions のワークフローが分かります。管理キーと OAuth トークンでは keys:read、またはワークスペースのオーナーか管理者が必要です。信頼済みワークロードのベータに参加しているワークスペースのみ利用でき、それ以外のワークスペースには 404 が返ります。",
-			"zh-Hans": "列出工作区的受信任的工作负载策略：哪些 Vercel 部署和 GitHub Actions 工作流可以使用其 OIDC 令牌而不是 API 密钥调用网关。管理密钥和 OAuth 令牌需要 keys:read，或由工作区所有者或管理员操作。仅适用于参与受信任的工作负载 Beta 的工作区；其他工作区会收到 404。",
-			"ar": "يعرض سياسات أحمال العمل الموثوقة في مساحة العمل: أي عمليات النشر على Vercel وسير عمل GitHub Actions يمكنها استدعاء البوابة برمز OIDC الخاص بها بدلًا من مفتاح API. يتطلب keys:read على مفاتيح الإدارة ورموز OAuth، أو مالك مساحة العمل أو أحد مسؤوليها. متاح فقط لمساحات العمل المشاركة في المرحلة التجريبية لأحمال العمل الموثوقة؛ وتتلقى مساحات العمل الأخرى 404."
+		"Lists the workspace's trusted workload policies: which deployments, CI jobs and cloud workloads may call the gateway with their OIDC token instead of an API key. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.": {
+			"es": "Lista las políticas de cargas de trabajo de confianza del espacio de trabajo: qué despliegues, trabajos de CI y cargas de trabajo en la nube pueden llamar al gateway con su token OIDC en lugar de una clave de API. Requiere keys:read en claves de administración y tokens OAuth, o un propietario o administrador del espacio de trabajo. Solo está disponible para los espacios de trabajo de la beta de cargas de trabajo de confianza; los demás reciben 404.",
+			"fr": "Liste les règles de workloads de confiance de l’espace de travail : les déploiements, jobs de CI et workloads cloud autorisés à appeler la passerelle avec leur jeton OIDC au lieu d’une clé API. Nécessite keys:read sur les clés de gestion et les jetons OAuth, ou un propriétaire ou un administrateur de l’espace de travail. Disponible uniquement pour les espaces de travail de la bêta des workloads de confiance ; les autres reçoivent 404.",
+			"de": "Listet die Richtlinien für vertrauenswürdige Workloads des Workspace auf: welche Deployments, CI-Jobs und Cloud-Workloads das Gateway mit ihrem OIDC-Token statt mit einem API-Schlüssel aufrufen dürfen. Erfordert keys:read für Management-Schlüssel und OAuth-Tokens oder einen Workspace-Inhaber oder -Admin. Nur für Workspaces in der Beta für vertrauenswürdige Workloads verfügbar; andere Workspaces erhalten 404.",
+			"pt-BR": "Lista as políticas de workloads confiáveis do espaço de trabalho: quais implantações, jobs de CI e workloads na nuvem podem chamar o gateway com o token OIDC em vez de uma chave de API. Requer keys:read em chaves de gerenciamento e tokens OAuth, ou um proprietário ou administrador do espaço de trabalho. Disponível apenas para espaços de trabalho no beta de workloads confiáveis; os demais recebem 404.",
+			"hi": "वर्कस्पेस की भरोसेमंद वर्कलोड पॉलिसी की सूची देता है: कौन-से डिप्लॉयमेंट, CI जॉब और क्लाउड वर्कलोड API कुंजी के बजाय अपने OIDC टोकन से गेटवे को कॉल कर सकते हैं। प्रबंधन कुंजियों और OAuth टोकन पर keys:read, या वर्कस्पेस का मालिक या एडमिन आवश्यक है। यह केवल भरोसेमंद वर्कलोड बीटा वाले वर्कस्पेस के लिए उपलब्ध है; दूसरे वर्कस्पेस को 404 मिलता है।",
+			"ja": "ワークスペースの信頼済みワークロードのポリシーを一覧表示します。API キーの代わりに OIDC トークンでゲートウェイを呼び出せるデプロイ、CI ジョブ、クラウドワークロードが分かります。管理キーと OAuth トークンでは keys:read、またはワークスペースのオーナーか管理者が必要です。信頼済みワークロードのベータに参加しているワークスペースのみ利用でき、それ以外のワークスペースには 404 が返ります。",
+			"zh-Hans": "列出工作区的受信任的工作负载策略：哪些部署、CI 作业和云工作负载可以使用其 OIDC 令牌而不是 API 密钥调用网关。管理密钥和 OAuth 令牌需要 keys:read，或由工作区所有者或管理员操作。仅适用于参与受信任的工作负载 Beta 的工作区；其他工作区会收到 404。",
+			"ar": "يعرض سياسات أحمال العمل الموثوقة في مساحة العمل: أي عمليات النشر ومهام CI وأحمال العمل السحابية يمكنها استدعاء البوابة برمز OIDC الخاص بها بدلًا من مفتاح API. يتطلب keys:read على مفاتيح الإدارة ورموز OAuth، أو مالك مساحة العمل أو أحد مسؤوليها. متاح فقط لمساحات العمل المشاركة في المرحلة التجريبية لأحمال العمل الموثوقة؛ وتتلقى مساحات العمل الأخرى 404."
 		},
 		"Trusted workload policies": {
 			"es": "Políticas de cargas de trabajo de confianza",
@@ -11434,45 +11460,55 @@
 			"zh-Hans": "受信任的工作负载：来自此签发方、面向固定所有者并满足所有声明条件的令牌，将以策略的密钥进行身份验证。",
 			"ar": "حمل عمل موثوق: الرموز الصادرة عن هذا المُصدِر، للمالك المثبَّت والمطابقة لكل شروط المطالبات، تُصادَق بصفتها مفتاح السياسة."
 		},
-		"The platform that issues the OIDC tokens.": {
-			"es": "La plataforma que emite los tokens OIDC.",
-			"fr": "La plateforme qui émet les jetons OIDC.",
-			"de": "Die Plattform, die die OIDC-Tokens ausstellt.",
-			"pt-BR": "A plataforma que emite os tokens OIDC.",
-			"hi": "वह प्लेटफ़ॉर्म जो OIDC टोकन जारी करता है।",
-			"ja": "OIDC トークンを発行するプラットフォーム。",
-			"zh-Hans": "签发 OIDC 令牌的平台。",
-			"ar": "المنصة التي تُصدر رموز OIDC."
+		"The platform that issues the OIDC tokens. Use custom for any other OIDC issuer, such as a Kubernetes cluster or a self-managed GitLab instance.": {
+			"es": "La plataforma que emite los tokens OIDC. Usa custom para cualquier otro emisor OIDC, como un clúster de Kubernetes o una instancia autogestionada de GitLab.",
+			"fr": "La plateforme qui émet les jetons OIDC. Utilisez custom pour tout autre émetteur OIDC, comme un cluster Kubernetes ou une instance GitLab autogérée.",
+			"de": "Die Plattform, die die OIDC-Tokens ausstellt. Verwende custom für jeden anderen OIDC-Aussteller, etwa einen Kubernetes-Cluster oder eine selbst verwaltete GitLab-Instanz.",
+			"pt-BR": "A plataforma que emite os tokens OIDC. Use custom para qualquer outro emissor OIDC, como um cluster Kubernetes ou uma instância autogerenciada do GitLab.",
+			"hi": "वह प्लेटफ़ॉर्म जो OIDC टोकन जारी करता है। किसी भी दूसरे OIDC जारीकर्ता, जैसे Kubernetes क्लस्टर या सेल्फ़-मैनेज्ड GitLab इंस्टेंस, के लिए custom इस्तेमाल करें।",
+			"ja": "OIDC トークンを発行するプラットフォーム。Kubernetes クラスターやセルフマネージドの GitLab インスタンスなど、その他の OIDC 発行者には custom を使います。",
+			"zh-Hans": "签发 OIDC 令牌的平台。其他任何 OIDC 签发方（例如 Kubernetes 集群或自托管 GitLab 实例）请使用 custom。",
+			"ar": "المنصة التي تُصدر رموز OIDC. استخدم custom لأي مُصدِر OIDC آخر، مثل عنقود Kubernetes أو نسخة GitLab مُدارة ذاتيًا."
 		},
-		"Token issuer, for example https://oidc.vercel.com/acme or https://token.actions.githubusercontent.com.": {
-			"es": "Emisor del token, por ejemplo https://oidc.vercel.com/acme o https://token.actions.githubusercontent.com.",
-			"fr": "Émetteur du jeton, par exemple https://oidc.vercel.com/acme ou https://token.actions.githubusercontent.com.",
-			"de": "Token-Aussteller, zum Beispiel https://oidc.vercel.com/acme oder https://token.actions.githubusercontent.com.",
-			"pt-BR": "Emissor do token, por exemplo https://oidc.vercel.com/acme ou https://token.actions.githubusercontent.com.",
-			"hi": "टोकन जारीकर्ता, जैसे https://oidc.vercel.com/acme या https://token.actions.githubusercontent.com।",
-			"ja": "トークンの発行者。例: https://oidc.vercel.com/acme、https://token.actions.githubusercontent.com。",
-			"zh-Hans": "令牌签发方，例如 https://oidc.vercel.com/acme 或 https://token.actions.githubusercontent.com。",
-			"ar": "مُصدِر الرمز، مثل https://oidc.vercel.com/acme أو https://token.actions.githubusercontent.com."
+		"Token issuer (the iss claim), for example https://oidc.vercel.com/acme, https://token.actions.githubusercontent.com or https://accounts.google.com.": {
+			"es": "Emisor del token (el claim iss), por ejemplo https://oidc.vercel.com/acme, https://token.actions.githubusercontent.com o https://accounts.google.com.",
+			"fr": "Émetteur du jeton (le claim iss), par exemple https://oidc.vercel.com/acme, https://token.actions.githubusercontent.com ou https://accounts.google.com.",
+			"de": "Token-Aussteller (der Claim iss), zum Beispiel https://oidc.vercel.com/acme, https://token.actions.githubusercontent.com oder https://accounts.google.com.",
+			"pt-BR": "Emissor do token (o claim iss), por exemplo https://oidc.vercel.com/acme, https://token.actions.githubusercontent.com ou https://accounts.google.com.",
+			"hi": "टोकन जारीकर्ता (iss क्लेम), जैसे https://oidc.vercel.com/acme, https://token.actions.githubusercontent.com या https://accounts.google.com।",
+			"ja": "トークンの発行者（iss クレーム）。例: https://oidc.vercel.com/acme、https://token.actions.githubusercontent.com、https://accounts.google.com。",
+			"zh-Hans": "令牌签发方（iss 声明），例如 https://oidc.vercel.com/acme、https://token.actions.githubusercontent.com 或 https://accounts.google.com。",
+			"ar": "مُصدِر الرمز (مطالبة iss)، مثل https://oidc.vercel.com/acme أو https://token.actions.githubusercontent.com أو https://accounts.google.com."
 		},
-		"The pinned Vercel team ID (owner_id claim) or GitHub organisation or user ID (repository_owner_id claim).": {
-			"es": "El ID del equipo de Vercel fijado (claim owner_id) o el ID de la organización o el usuario de GitHub (claim repository_owner_id).",
-			"fr": "L’ID de l’équipe Vercel épinglée (claim owner_id) ou l’ID de l’organisation ou de l’utilisateur GitHub (claim repository_owner_id).",
-			"de": "Die festgelegte Vercel-Team-ID (Claim owner_id) oder GitHub-Organisations- bzw. Benutzer-ID (Claim repository_owner_id).",
-			"pt-BR": "O ID da equipe da Vercel fixado (claim owner_id) ou o ID da organização ou do usuário do GitHub (claim repository_owner_id).",
-			"hi": "तय किया गया Vercel टीम ID (owner_id क्लेम) या GitHub संगठन या उपयोगकर्ता ID (repository_owner_id क्लेम)।",
-			"ja": "固定した Vercel のチーム ID（owner_id クレーム）、または GitHub の組織 ID かユーザー ID（repository_owner_id クレーム）。",
-			"zh-Hans": "固定的 Vercel 团队 ID（owner_id 声明），或 GitHub 组织或用户 ID（repository_owner_id 声明）。",
-			"ar": "معرّف فريق Vercel المثبَّت (مطالبة owner_id) أو معرّف المؤسسة أو المستخدم على GitHub (مطالبة repository_owner_id)."
+		"The token claim owner_id is matched against. Fixed for each platform: owner_id for vercel, repository_owner_id for github_actions, project_id for gitlab, sub for google_cloud and aws, organization_id for buildkite and oidc.circleci.com/org-id for circleci. Custom issuers use the claim chosen when the policy was created.": {
+			"es": "El claim del token con el que se compara owner_id. Es fijo para cada plataforma: owner_id para vercel, repository_owner_id para github_actions, project_id para gitlab, sub para google_cloud y aws, organization_id para buildkite y oidc.circleci.com/org-id para circleci. Los emisores custom usan el claim elegido al crear la política.",
+			"fr": "Le claim du jeton auquel owner_id est comparé. Il est fixe pour chaque plateforme : owner_id pour vercel, repository_owner_id pour github_actions, project_id pour gitlab, sub pour google_cloud et aws, organization_id pour buildkite et oidc.circleci.com/org-id pour circleci. Les émetteurs custom utilisent le claim choisi à la création de la règle.",
+			"de": "Der Token-Claim, mit dem owner_id verglichen wird. Für jede Plattform fest: owner_id für vercel, repository_owner_id für github_actions, project_id für gitlab, sub für google_cloud und aws, organization_id für buildkite und oidc.circleci.com/org-id für circleci. Custom-Aussteller verwenden den Claim, der beim Erstellen der Richtlinie gewählt wurde.",
+			"pt-BR": "O claim do token com o qual owner_id é comparado. É fixo para cada plataforma: owner_id para vercel, repository_owner_id para github_actions, project_id para gitlab, sub para google_cloud e aws, organization_id para buildkite e oidc.circleci.com/org-id para circleci. Emissores custom usam o claim escolhido ao criar a política.",
+			"hi": "टोकन का वह क्लेम जिससे owner_id का मिलान होता है। यह हर प्लेटफ़ॉर्म के लिए तय है: vercel के लिए owner_id, github_actions के लिए repository_owner_id, gitlab के लिए project_id, google_cloud और aws के लिए sub, buildkite के लिए organization_id और circleci के लिए oidc.circleci.com/org-id। custom जारीकर्ता वह क्लेम इस्तेमाल करते हैं जो पॉलिसी बनाते समय चुना गया था।",
+			"ja": "owner_id と照合するトークンのクレーム。プラットフォームごとに固定です: vercel は owner_id、github_actions は repository_owner_id、gitlab は project_id、google_cloud と aws は sub、buildkite は organization_id、circleci は oidc.circleci.com/org-id。custom の発行者では、ポリシー作成時に選んだクレームを使います。",
+			"zh-Hans": "与 owner_id 进行匹配的令牌声明。每个平台固定不变：vercel 为 owner_id，github_actions 为 repository_owner_id，gitlab 为 project_id，google_cloud 和 aws 为 sub，buildkite 为 organization_id，circleci 为 oidc.circleci.com/org-id。custom 签发方使用创建策略时选定的声明。",
+			"ar": "مطالبة الرمز التي تُطابَق مع owner_id. وهي ثابتة لكل منصة: owner_id لـ vercel، وrepository_owner_id لـ github_actions، وproject_id لـ gitlab، وsub لـ google_cloud وaws، وorganization_id لـ buildkite، وoidc.circleci.com/org-id لـ circleci. تستخدم المُصدِرات custom المطالبة المختارة عند إنشاء السياسة."
 		},
-		"Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.": {
-			"es": "Claims adicionales que debe cumplir el token, como nombre del claim y valores permitidos; por ejemplo, project_id y environment para Vercel, o repository_id y ref para GitHub Actions. Cada claim debe coincidir con uno de sus valores. Como máximo 15 claims y 20 valores por claim; no se pueden usar iss, aud, exp, iat, nbf ni jti, y el claim del propietario fijado se establece con owner_id.",
-			"fr": "Claims supplémentaires que le jeton doit satisfaire, sous la forme nom du claim et valeurs autorisées, par exemple project_id et environment pour Vercel, ou repository_id et ref pour GitHub Actions. Chaque claim doit correspondre à l’une de ses valeurs. 15 claims au maximum et 20 valeurs par claim ; iss, aud, exp, iat, nbf et jti ne peuvent pas être utilisés, et le claim du propriétaire épinglé est défini avec owner_id.",
-			"de": "Zusätzliche Claims, die das Token erfüllen muss, als Claim-Name und erlaubte Werte, zum Beispiel project_id und environment für Vercel oder repository_id und ref für GitHub Actions. Jeder Claim muss einem seiner Werte entsprechen. Höchstens 15 Claims und 20 Werte pro Claim; iss, aud, exp, iat, nbf und jti sind nicht erlaubt, und der Claim des festgelegten Inhabers wird über owner_id gesetzt.",
-			"pt-BR": "Claims adicionais que o token deve atender, como nome do claim e valores permitidos, por exemplo project_id e environment para a Vercel, ou repository_id e ref para o GitHub Actions. Cada claim deve corresponder a um de seus valores. No máximo 15 claims e 20 valores por claim; iss, aud, exp, iat, nbf e jti não podem ser usados, e o claim do proprietário fixado é definido com owner_id.",
-			"hi": "अतिरिक्त क्लेम जिनसे टोकन का मेल खाना ज़रूरी है, क्लेम के नाम और अनुमत मानों के रूप में, जैसे Vercel के लिए project_id और environment, या GitHub Actions के लिए repository_id और ref। हर क्लेम को अपने किसी एक मान से मेल खाना चाहिए। अधिकतम 15 क्लेम और प्रति क्लेम 20 मान; iss, aud, exp, iat, nbf और jti इस्तेमाल नहीं किए जा सकते, और तय मालिक का क्लेम owner_id से सेट होता है।",
-			"ja": "トークンが満たす必要のある追加のクレーム。クレーム名と許可する値の組で指定します。例: Vercel では project_id と environment、GitHub Actions では repository_id と ref。各クレームはいずれかの値に一致する必要があります。クレームは最大 15 個、1 クレームあたりの値は最大 20 個です。iss、aud、exp、iat、nbf、jti は使えず、固定したオーナーのクレームは owner_id で設定します。",
-			"zh-Hans": "令牌必须满足的额外声明，以声明名称和允许值的形式表示，例如 Vercel 的 project_id 和 environment，或 GitHub Actions 的 repository_id 和 ref。每个声明都必须匹配其中一个值。最多 15 个声明，每个声明最多 20 个值；不能使用 iss、aud、exp、iat、nbf 和 jti，固定所有者的声明通过 owner_id 设置。",
-			"ar": "مطالبات إضافية يجب أن يطابقها الرمز، على شكل اسم المطالبة والقيم المسموح بها، مثل project_id وenvironment لـ Vercel، أو repository_id وref لـ GitHub Actions. يجب أن تطابق كل مطالبة إحدى قيمها. بحد أقصى 15 مطالبة و20 قيمة لكل مطالبة؛ لا يمكن استخدام iss وaud وexp وiat وnbf وjti، وتُضبط مطالبة المالك المثبَّت عبر owner_id."
+		"The pinned owner: the value the token's owner_claim must equal, such as a Vercel team ID, GitHub organisation or user ID, GitLab project ID, Google service account unique ID, Buildkite organization ID, CircleCI organization ID or AWS IAM role ARN.": {
+			"es": "El propietario fijado: el valor que debe tener el owner_claim del token, como un ID de equipo de Vercel, un ID de organización o usuario de GitHub, un ID de proyecto de GitLab, el ID único de una cuenta de servicio de Google, un ID de organización de Buildkite, un ID de organización de CircleCI o el ARN de un rol de IAM de AWS.",
+			"fr": "Le propriétaire épinglé : la valeur que doit avoir le owner_claim du jeton, par exemple un ID d’équipe Vercel, un ID d’organisation ou d’utilisateur GitHub, un ID de projet GitLab, l’ID unique d’un compte de service Google, un ID d’organisation Buildkite, un ID d’organisation CircleCI ou l’ARN d’un rôle IAM AWS.",
+			"de": "Der festgelegte Inhaber: der Wert, dem der owner_claim des Tokens entsprechen muss, etwa eine Vercel-Team-ID, eine GitHub-Organisations- oder Benutzer-ID, eine GitLab-Projekt-ID, die eindeutige ID eines Google-Dienstkontos, eine Buildkite-Organisations-ID, eine CircleCI-Organisations-ID oder der ARN einer AWS-IAM-Rolle.",
+			"pt-BR": "O proprietário fixado: o valor que o owner_claim do token deve ter, como um ID de equipe da Vercel, um ID de organização ou usuário do GitHub, um ID de projeto do GitLab, o ID exclusivo de uma conta de serviço do Google, um ID de organização do Buildkite, um ID de organização do CircleCI ou o ARN de uma função do IAM da AWS.",
+			"hi": "तय मालिक: वह मान जिसके बराबर टोकन का owner_claim होना चाहिए, जैसे Vercel टीम ID, GitHub संगठन या उपयोगकर्ता ID, GitLab प्रोजेक्ट ID, Google सर्विस अकाउंट का यूनीक ID, Buildkite संगठन ID, CircleCI संगठन ID या AWS IAM रोल ARN।",
+			"ja": "固定したオーナー。トークンの owner_claim が一致すべき値で、Vercel のチーム ID、GitHub の組織 ID かユーザー ID、GitLab のプロジェクト ID、Google サービスアカウントの一意の ID、Buildkite の組織 ID、CircleCI の組織 ID、AWS IAM ロールの ARN などです。",
+			"zh-Hans": "固定的所有者：令牌的 owner_claim 必须等于的值，例如 Vercel 团队 ID、GitHub 组织或用户 ID、GitLab 项目 ID、Google 服务账号的唯一 ID、Buildkite 组织 ID、CircleCI 组织 ID 或 AWS IAM 角色 ARN。",
+			"ar": "المالك المثبَّت: القيمة التي يجب أن تساويها مطالبة owner_claim في الرمز، مثل معرّف فريق Vercel، أو معرّف المؤسسة أو المستخدم على GitHub، أو معرّف مشروع GitLab، أو المعرّف الفريد لحساب خدمة Google، أو معرّف مؤسسة Buildkite، أو معرّف مؤسسة CircleCI، أو ARN لدور AWS IAM."
+		},
+		"Extra claims the token must match, as claim name to allowed values, for example repository_id and ref for GitHub Actions, or project_path and ref for GitLab. Every claim must match one of its values. At most 15 claims and 20 values per claim. Claim names use letters, digits and . _ : / - and are up to 128 characters; iss, aud, exp, iat, nbf and jti cannot be used, and the owner claim is set with owner_id.": {
+			"es": "Claims adicionales que debe cumplir el token, como nombre del claim y valores permitidos; por ejemplo, repository_id y ref para GitHub Actions, o project_path y ref para GitLab. Cada claim debe coincidir con uno de sus valores. Como máximo 15 claims y 20 valores por claim. Los nombres de claim usan letras, dígitos y . _ : / - y tienen hasta 128 caracteres; no se pueden usar iss, aud, exp, iat, nbf ni jti, y el claim del propietario se establece con owner_id.",
+			"fr": "Claims supplémentaires que le jeton doit satisfaire, sous la forme nom du claim et valeurs autorisées, par exemple repository_id et ref pour GitHub Actions, ou project_path et ref pour GitLab. Chaque claim doit correspondre à l’une de ses valeurs. 15 claims au maximum et 20 valeurs par claim. Les noms de claim utilisent des lettres, des chiffres et . _ : / - et comptent jusqu’à 128 caractères ; iss, aud, exp, iat, nbf et jti ne peuvent pas être utilisés, et le claim du propriétaire est défini avec owner_id.",
+			"de": "Zusätzliche Claims, die das Token erfüllen muss, als Claim-Name und erlaubte Werte, zum Beispiel repository_id und ref für GitHub Actions oder project_path und ref für GitLab. Jeder Claim muss einem seiner Werte entsprechen. Höchstens 15 Claims und 20 Werte pro Claim. Claim-Namen bestehen aus Buchstaben, Ziffern und . _ : / - und haben bis zu 128 Zeichen; iss, aud, exp, iat, nbf und jti sind nicht erlaubt, und der Inhaber-Claim wird über owner_id gesetzt.",
+			"pt-BR": "Claims adicionais que o token deve atender, como nome do claim e valores permitidos, por exemplo repository_id e ref para o GitHub Actions, ou project_path e ref para o GitLab. Cada claim deve corresponder a um de seus valores. No máximo 15 claims e 20 valores por claim. Os nomes de claim usam letras, dígitos e . _ : / - e têm até 128 caracteres; iss, aud, exp, iat, nbf e jti não podem ser usados, e o claim do proprietário é definido com owner_id.",
+			"hi": "अतिरिक्त क्लेम जिनसे टोकन का मेल खाना ज़रूरी है, क्लेम के नाम और अनुमत मानों के रूप में, जैसे GitHub Actions के लिए repository_id और ref, या GitLab के लिए project_path और ref। हर क्लेम को अपने किसी एक मान से मेल खाना चाहिए। अधिकतम 15 क्लेम और प्रति क्लेम 20 मान। क्लेम के नाम में अक्षर, अंक और . _ : / - हो सकते हैं और वे 128 वर्णों तक होते हैं; iss, aud, exp, iat, nbf और jti इस्तेमाल नहीं किए जा सकते, और मालिक का क्लेम owner_id से सेट होता है।",
+			"ja": "トークンが満たす必要のある追加のクレーム。クレーム名と許可する値の組で指定します。例: GitHub Actions では repository_id と ref、GitLab では project_path と ref。各クレームはいずれかの値に一致する必要があります。クレームは最大 15 個、1 クレームあたりの値は最大 20 個です。クレーム名には英字、数字、. _ : / - を使え、最大 128 文字です。iss、aud、exp、iat、nbf、jti は使えず、オーナーのクレームは owner_id で設定します。",
+			"zh-Hans": "令牌必须满足的额外声明，以声明名称和允许值的形式表示，例如 GitHub Actions 的 repository_id 和 ref，或 GitLab 的 project_path 和 ref。每个声明都必须匹配其中一个值。最多 15 个声明，每个声明最多 20 个值。声明名称可使用字母、数字和 . _ : / -，最长 128 个字符；不能使用 iss、aud、exp、iat、nbf 和 jti，所有者声明通过 owner_id 设置。",
+			"ar": "مطالبات إضافية يجب أن يطابقها الرمز، على شكل اسم المطالبة والقيم المسموح بها، مثل repository_id وref لـ GitHub Actions، أو project_path وref لـ GitLab. يجب أن تطابق كل مطالبة إحدى قيمها. بحد أقصى 15 مطالبة و20 قيمة لكل مطالبة. تتكون أسماء المطالبات من أحرف وأرقام و. _ : / - وبطول يصل إلى 128 حرفًا؛ لا يمكن استخدام iss وaud وexp وiat وnbf وjti، وتُضبط مطالبة المالك عبر owner_id."
 		},
 		"Longest token lifetime (exp minus iat or nbf) the policy accepts.": {
 			"es": "Duración máxima del token (exp menos iat o nbf) que acepta la política.",
@@ -11524,25 +11560,35 @@
 			"zh-Hans": "创建一条策略及其无密钥机密的密钥。令牌必须面向受众 https://api.phaseo.app 签发，并匹配固定的所有者和所有声明条件。每个工作区最多可有 50 条策略；超出时返回 409 limit_reached。管理密钥和 OAuth 令牌需要 keys:write，或由工作区所有者或管理员操作。仅适用于参与受信任的工作负载 Beta 的工作区；其他工作区会收到 404。",
 			"ar": "ينشئ سياسة ومفتاحها الخالي من الأسرار. يجب إصدار الرموز للجمهور https://api.phaseo.app وأن تطابق المالك المثبَّت وكل شروط المطالبات. يمكن أن تضم مساحة العمل ما يصل إلى 50 سياسة؛ وما يزيد على ذلك يُرجع 409 limit_reached. يتطلب keys:write على مفاتيح الإدارة ورموز OAuth، أو مالك مساحة العمل أو أحد مسؤوليها. متاح فقط لمساحات العمل المشاركة في المرحلة التجريبية لأحمال العمل الموثوقة؛ وتتلقى مساحات العمل الأخرى 404."
 		},
-		"Required for Vercel: https://oidc.vercel.com/ followed by the team slug, or https://oidc.vercel.com for the global issuer. Defaults to https://token.actions.githubusercontent.com for GitHub Actions.": {
-			"es": "Obligatorio para Vercel: https://oidc.vercel.com/ seguido del slug del equipo, o https://oidc.vercel.com para el emisor global. Para GitHub Actions, el valor predeterminado es https://token.actions.githubusercontent.com.",
-			"fr": "Obligatoire pour Vercel : https://oidc.vercel.com/ suivi du slug de l’équipe, ou https://oidc.vercel.com pour l’émetteur global. Pour GitHub Actions, la valeur par défaut est https://token.actions.githubusercontent.com.",
-			"de": "Für Vercel erforderlich: https://oidc.vercel.com/ gefolgt vom Team-Slug oder https://oidc.vercel.com für den globalen Aussteller. Für GitHub Actions ist der Standardwert https://token.actions.githubusercontent.com.",
-			"pt-BR": "Obrigatório para a Vercel: https://oidc.vercel.com/ seguido do slug da equipe, ou https://oidc.vercel.com para o emissor global. Para o GitHub Actions, o padrão é https://token.actions.githubusercontent.com.",
-			"hi": "Vercel के लिए आवश्यक: https://oidc.vercel.com/ के बाद टीम स्लग, या ग्लोबल जारीकर्ता के लिए https://oidc.vercel.com। GitHub Actions के लिए डिफ़ॉल्ट https://token.actions.githubusercontent.com है।",
-			"ja": "Vercel では必須: https://oidc.vercel.com/ の後にチームのスラッグを付けるか、グローバル発行者の場合は https://oidc.vercel.com を指定します。GitHub Actions の既定値は https://token.actions.githubusercontent.com です。",
-			"zh-Hans": "Vercel 必填：https://oidc.vercel.com/ 后接团队标识，或使用 https://oidc.vercel.com 作为全局签发方。GitHub Actions 默认为 https://token.actions.githubusercontent.com。",
-			"ar": "مطلوب لـ Vercel: ‏https://oidc.vercel.com/ متبوعًا بالمعرّف المختصر للفريق، أو https://oidc.vercel.com للمُصدِر العام. القيمة الافتراضية لـ GitHub Actions هي https://token.actions.githubusercontent.com."
+		"The issuer tokens come from. Optional for github_actions (defaults to https://token.actions.githubusercontent.com; add /<enterprise-slug> for a customised enterprise issuer), gitlab (https://gitlab.com), google_cloud (https://accounts.google.com) and buildkite (https://agent.buildkite.com). Required for vercel (https://oidc.vercel.com/<team-slug>, or https://oidc.vercel.com for the global issuer), circleci (https://oidc.circleci.com/org/<organization-id>), aws (your account's https://<id>.tokens.sts.global.api.aws issuer) and custom (a public https URL that serves an OIDC discovery document, on a host that does not belong to one of the other platforms).": {
+			"es": "El emisor de los tokens. Opcional para github_actions (de forma predeterminada https://token.actions.githubusercontent.com; añade /<enterprise-slug> para un emisor de empresa personalizado), gitlab (https://gitlab.com), google_cloud (https://accounts.google.com) y buildkite (https://agent.buildkite.com). Obligatorio para vercel (https://oidc.vercel.com/<team-slug>, o https://oidc.vercel.com para el emisor global), circleci (https://oidc.circleci.com/org/<organization-id>), aws (el emisor https://<id>.tokens.sts.global.api.aws de tu cuenta) y custom (una URL https pública que sirva un documento de descubrimiento OIDC, en un host que no pertenezca a ninguna de las otras plataformas).",
+			"fr": "L’émetteur des jetons. Facultatif pour github_actions (https://token.actions.githubusercontent.com par défaut ; ajoutez /<enterprise-slug> pour un émetteur d’entreprise personnalisé), gitlab (https://gitlab.com), google_cloud (https://accounts.google.com) et buildkite (https://agent.buildkite.com). Obligatoire pour vercel (https://oidc.vercel.com/<team-slug>, ou https://oidc.vercel.com pour l’émetteur global), circleci (https://oidc.circleci.com/org/<organization-id>), aws (l’émetteur https://<id>.tokens.sts.global.api.aws de votre compte) et custom (une URL https publique qui sert un document de découverte OIDC, sur un hôte qui n’appartient à aucune des autres plateformes).",
+			"de": "Der Aussteller der Tokens. Optional für github_actions (Standard: https://token.actions.githubusercontent.com; für einen angepassten Enterprise-Aussteller /<enterprise-slug> anhängen), gitlab (https://gitlab.com), google_cloud (https://accounts.google.com) und buildkite (https://agent.buildkite.com). Erforderlich für vercel (https://oidc.vercel.com/<team-slug> oder https://oidc.vercel.com für den globalen Aussteller), circleci (https://oidc.circleci.com/org/<organization-id>), aws (der Aussteller https://<id>.tokens.sts.global.api.aws deines Kontos) und custom (eine öffentliche https-URL, die ein OIDC-Discovery-Dokument bereitstellt, auf einem Host, der keiner der anderen Plattformen gehört).",
+			"pt-BR": "O emissor dos tokens. Opcional para github_actions (padrão https://token.actions.githubusercontent.com; adicione /<enterprise-slug> para um emissor enterprise personalizado), gitlab (https://gitlab.com), google_cloud (https://accounts.google.com) e buildkite (https://agent.buildkite.com). Obrigatório para vercel (https://oidc.vercel.com/<team-slug>, ou https://oidc.vercel.com para o emissor global), circleci (https://oidc.circleci.com/org/<organization-id>), aws (o emissor https://<id>.tokens.sts.global.api.aws da sua conta) e custom (uma URL https pública que serve um documento de descoberta OIDC, em um host que não pertence a nenhuma das outras plataformas).",
+			"hi": "वह जारीकर्ता जिससे टोकन आते हैं। github_actions (डिफ़ॉल्ट https://token.actions.githubusercontent.com; कस्टमाइज़ किए गए एंटरप्राइज़ जारीकर्ता के लिए /<enterprise-slug> जोड़ें), gitlab (https://gitlab.com), google_cloud (https://accounts.google.com) और buildkite (https://agent.buildkite.com) के लिए वैकल्पिक। vercel (https://oidc.vercel.com/<team-slug>, या ग्लोबल जारीकर्ता के लिए https://oidc.vercel.com), circleci (https://oidc.circleci.com/org/<organization-id>), aws (आपके अकाउंट का https://<id>.tokens.sts.global.api.aws जारीकर्ता) और custom (एक सार्वजनिक https URL जो OIDC डिस्कवरी दस्तावेज़ देता हो, ऐसे होस्ट पर जो किसी दूसरे प्लेटफ़ॉर्म का न हो) के लिए आवश्यक।",
+			"ja": "トークンの発行者。github_actions（既定値は https://token.actions.githubusercontent.com。カスタマイズしたエンタープライズの発行者では /<enterprise-slug> を付けます）、gitlab（https://gitlab.com）、google_cloud（https://accounts.google.com）、buildkite（https://agent.buildkite.com）では省略できます。vercel（https://oidc.vercel.com/<team-slug>、グローバル発行者の場合は https://oidc.vercel.com）、circleci（https://oidc.circleci.com/org/<organization-id>）、aws（アカウントの https://<id>.tokens.sts.global.api.aws 発行者）、custom（OIDC ディスカバリードキュメントを提供する公開 https URL で、他のプラットフォームに属さないホスト）では必須です。",
+			"zh-Hans": "令牌的签发方。github_actions（默认为 https://token.actions.githubusercontent.com；自定义企业签发方需加上 /<enterprise-slug>）、gitlab（https://gitlab.com）、google_cloud（https://accounts.google.com）和 buildkite（https://agent.buildkite.com）可省略。vercel（https://oidc.vercel.com/<team-slug>，全局签发方为 https://oidc.vercel.com）、circleci（https://oidc.circleci.com/org/<organization-id>）、aws（你账号的 https://<id>.tokens.sts.global.api.aws 签发方）和 custom（提供 OIDC 发现文档的公共 https URL，且主机不属于其他任何平台）必填。",
+			"ar": "المُصدِر الذي تأتي منه الرموز. اختياري لـ github_actions (القيمة الافتراضية https://token.actions.githubusercontent.com؛ أضف /<enterprise-slug> لمُصدِر مؤسسي مخصّص)، وgitlab (https://gitlab.com)، وgoogle_cloud (https://accounts.google.com)، وbuildkite (https://agent.buildkite.com). مطلوب لـ vercel (https://oidc.vercel.com/<team-slug>، أو https://oidc.vercel.com للمُصدِر العام)، وcircleci (https://oidc.circleci.com/org/<organization-id>)، وaws (مُصدِر https://<id>.tokens.sts.global.api.aws الخاص بحسابك)، وcustom (عنوان URL عام بـ https يقدّم مستند اكتشاف OIDC، على مضيف لا يتبع أيًا من المنصات الأخرى)."
 		},
-		"The Vercel team ID or GitHub organisation or user ID to pin.": {
-			"es": "El ID del equipo de Vercel o de la organización o el usuario de GitHub que se fija.",
-			"fr": "L’ID de l’équipe Vercel ou de l’organisation ou de l’utilisateur GitHub à épingler.",
-			"de": "Die festzulegende Vercel-Team-ID oder GitHub-Organisations- bzw. Benutzer-ID.",
-			"pt-BR": "O ID da equipe da Vercel ou da organização ou do usuário do GitHub a fixar.",
-			"hi": "तय करने के लिए Vercel टीम ID या GitHub संगठन या उपयोगकर्ता ID।",
-			"ja": "固定する Vercel のチーム ID、または GitHub の組織 ID かユーザー ID。",
-			"zh-Hans": "要固定的 Vercel 团队 ID，或 GitHub 组织或用户 ID。",
-			"ar": "معرّف فريق Vercel أو معرّف المؤسسة أو المستخدم على GitHub المراد تثبيته."
+		"The token claim owner_id is matched against, for example sub. Required for custom. Other platforms use a fixed claim (see owner_claim on the policy), so omit it or send that claim. Cannot be changed later.": {
+			"es": "El claim del token con el que se compara owner_id, por ejemplo sub. Obligatorio para custom. Las demás plataformas usan un claim fijo (consulta owner_claim en la política), así que omítelo o envía ese claim. No se puede cambiar después.",
+			"fr": "Le claim du jeton auquel owner_id est comparé, par exemple sub. Obligatoire pour custom. Les autres plateformes utilisent un claim fixe (voir owner_claim dans la règle) : omettez-le ou envoyez ce claim. Il ne peut pas être modifié ensuite.",
+			"de": "Der Token-Claim, mit dem owner_id verglichen wird, zum Beispiel sub. Für custom erforderlich. Andere Plattformen verwenden einen festen Claim (siehe owner_claim in der Richtlinie); lass ihn also weg oder sende diesen Claim. Kann später nicht geändert werden.",
+			"pt-BR": "O claim do token com o qual owner_id é comparado, por exemplo sub. Obrigatório para custom. As outras plataformas usam um claim fixo (veja owner_claim na política), então omita-o ou envie esse claim. Não pode ser alterado depois.",
+			"hi": "टोकन का वह क्लेम जिससे owner_id का मिलान होता है, जैसे sub। custom के लिए आवश्यक। दूसरे प्लेटफ़ॉर्म तय क्लेम इस्तेमाल करते हैं (पॉलिसी पर owner_claim देखें), इसलिए इसे छोड़ दें या वही क्लेम भेजें। इसे बाद में बदला नहीं जा सकता।",
+			"ja": "owner_id と照合するトークンのクレーム。例: sub。custom では必須です。その他のプラットフォームは固定のクレームを使うため（ポリシーの owner_claim を参照）、省略するかそのクレームを指定します。後から変更することはできません。",
+			"zh-Hans": "与 owner_id 进行匹配的令牌声明，例如 sub。custom 必填。其他平台使用固定声明（参见策略上的 owner_claim），因此可省略或传入该声明。创建后无法更改。",
+			"ar": "مطالبة الرمز التي تُطابَق مع owner_id، مثل sub. مطلوبة لـ custom. تستخدم المنصات الأخرى مطالبة ثابتة (راجع owner_claim في السياسة)، لذا احذفها أو أرسل تلك المطالبة. لا يمكن تغييرها لاحقًا."
+		},
+		"The value the owner claim must equal: a Vercel team ID, GitHub organisation or user ID, GitLab project ID, Google service account unique ID (not its email), Buildkite organization ID, CircleCI organization ID (the one in the issuer), AWS IAM role ARN, or for custom issuers the owner_claim value to trust.": {
+			"es": "El valor que debe tener el claim del propietario: un ID de equipo de Vercel, un ID de organización o usuario de GitHub, un ID de proyecto de GitLab, el ID único de una cuenta de servicio de Google (no su correo electrónico), un ID de organización de Buildkite, un ID de organización de CircleCI (el que aparece en el emisor), el ARN de un rol de IAM de AWS o, para emisores custom, el valor de owner_claim en el que se confía.",
+			"fr": "La valeur que doit avoir le claim du propriétaire : un ID d’équipe Vercel, un ID d’organisation ou d’utilisateur GitHub, un ID de projet GitLab, l’ID unique d’un compte de service Google (pas son adresse e-mail), un ID d’organisation Buildkite, un ID d’organisation CircleCI (celui de l’émetteur), l’ARN d’un rôle IAM AWS ou, pour les émetteurs custom, la valeur de owner_claim à approuver.",
+			"de": "Der Wert, dem der Inhaber-Claim entsprechen muss: eine Vercel-Team-ID, eine GitHub-Organisations- oder Benutzer-ID, eine GitLab-Projekt-ID, die eindeutige ID eines Google-Dienstkontos (nicht seine E-Mail-Adresse), eine Buildkite-Organisations-ID, eine CircleCI-Organisations-ID (die aus dem Aussteller), der ARN einer AWS-IAM-Rolle oder bei custom-Ausstellern der owner_claim-Wert, dem vertraut wird.",
+			"pt-BR": "O valor que o claim do proprietário deve ter: um ID de equipe da Vercel, um ID de organização ou usuário do GitHub, um ID de projeto do GitLab, o ID exclusivo de uma conta de serviço do Google (não o e-mail), um ID de organização do Buildkite, um ID de organização do CircleCI (o que está no emissor), o ARN de uma função do IAM da AWS ou, para emissores custom, o valor de owner_claim a confiar.",
+			"hi": "वह मान जिसके बराबर मालिक का क्लेम होना चाहिए: Vercel टीम ID, GitHub संगठन या उपयोगकर्ता ID, GitLab प्रोजेक्ट ID, Google सर्विस अकाउंट का यूनीक ID (उसका ईमेल नहीं), Buildkite संगठन ID, CircleCI संगठन ID (जो जारीकर्ता में है), AWS IAM रोल ARN, या custom जारीकर्ताओं के लिए owner_claim का वह मान जिस पर भरोसा करना है।",
+			"ja": "オーナーのクレームが一致すべき値。Vercel のチーム ID、GitHub の組織 ID かユーザー ID、GitLab のプロジェクト ID、Google サービスアカウントの一意の ID（メールアドレスではありません）、Buildkite の組織 ID、CircleCI の組織 ID（発行者に含まれるもの）、AWS IAM ロールの ARN、または custom の発行者では信頼する owner_claim の値です。",
+			"zh-Hans": "所有者声明必须等于的值：Vercel 团队 ID、GitHub 组织或用户 ID、GitLab 项目 ID、Google 服务账号的唯一 ID（不是其邮箱）、Buildkite 组织 ID、CircleCI 组织 ID（签发方中的那个）、AWS IAM 角色 ARN，或者对于 custom 签发方，要信任的 owner_claim 值。",
+			"ar": "القيمة التي يجب أن تساويها مطالبة المالك: معرّف فريق Vercel، أو معرّف المؤسسة أو المستخدم على GitHub، أو معرّف مشروع GitLab، أو المعرّف الفريد لحساب خدمة Google (وليس بريده الإلكتروني)، أو معرّف مؤسسة Buildkite، أو معرّف مؤسسة CircleCI (الموجود في المُصدِر)، أو ARN لدور AWS IAM، أو بالنسبة إلى مُصدِرات custom قيمة owner_claim الموثوق بها."
 		},
 		"Trusted workload policy created": {
 			"es": "Política de carga de trabajo de confianza creada",
@@ -11604,15 +11650,15 @@
 			"zh-Hans": "更新受信任的工作负载策略",
 			"ar": "تحديث سياسة حمل عمل موثوق"
 		},
-		"Changes a policy's name, status, claim conditions or maximum token lifetime. The provider, issuer and owner cannot change; create a new policy instead. Changes reach the gateway within a minute. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.": {
-			"es": "Cambia el nombre, el estado, las condiciones de claims o la duración máxima del token de una política. El proveedor, el emisor y el propietario no se pueden cambiar; en su lugar, crea una política nueva. Los cambios llegan al gateway en menos de un minuto. Requiere keys:write en claves de administración y tokens OAuth, o un propietario o administrador del espacio de trabajo. Solo está disponible para los espacios de trabajo de la beta de cargas de trabajo de confianza; los demás reciben 404.",
-			"fr": "Modifie le nom, l’état, les conditions sur les claims ou la durée de vie maximale du jeton d’une règle. Le fournisseur, l’émetteur et le propriétaire ne peuvent pas changer ; créez plutôt une nouvelle règle. Les modifications atteignent la passerelle en moins d’une minute. Nécessite keys:write sur les clés de gestion et les jetons OAuth, ou un propriétaire ou un administrateur de l’espace de travail. Disponible uniquement pour les espaces de travail de la bêta des workloads de confiance ; les autres reçoivent 404.",
-			"de": "Ändert Name, Status, Claim-Bedingungen oder maximale Token-Lebensdauer einer Richtlinie. Anbieter, Aussteller und Inhaber lassen sich nicht ändern; erstelle stattdessen eine neue Richtlinie. Änderungen erreichen das Gateway innerhalb einer Minute. Erfordert keys:write für Management-Schlüssel und OAuth-Tokens oder einen Workspace-Inhaber oder -Admin. Nur für Workspaces in der Beta für vertrauenswürdige Workloads verfügbar; andere Workspaces erhalten 404.",
-			"pt-BR": "Altera o nome, o status, as condições de claims ou a duração máxima do token de uma política. O provedor, o emissor e o proprietário não podem mudar; crie uma nova política em vez disso. As alterações chegam ao gateway em até um minuto. Requer keys:write em chaves de gerenciamento e tokens OAuth, ou um proprietário ou administrador do espaço de trabalho. Disponível apenas para espaços de trabalho no beta de workloads confiáveis; os demais recebem 404.",
-			"hi": "पॉलिसी का नाम, स्थिति, क्लेम शर्तें या टोकन की अधिकतम अवधि बदलता है। प्रदाता, जारीकर्ता और मालिक नहीं बदले जा सकते; इसके बजाय नई पॉलिसी बनाएँ। बदलाव एक मिनट के भीतर गेटवे तक पहुँच जाते हैं। प्रबंधन कुंजियों और OAuth टोकन पर keys:write, या वर्कस्पेस का मालिक या एडमिन आवश्यक है। यह केवल भरोसेमंद वर्कलोड बीटा वाले वर्कस्पेस के लिए उपलब्ध है; दूसरे वर्कस्पेस को 404 मिलता है।",
-			"ja": "ポリシーの名前、状態、クレーム条件、トークンの最大有効期間を変更します。プロバイダー、発行者、オーナーは変更できないため、代わりに新しいポリシーを作成してください。変更は 1 分以内にゲートウェイへ反映されます。管理キーと OAuth トークンでは keys:write、またはワークスペースのオーナーか管理者が必要です。信頼済みワークロードのベータに参加しているワークスペースのみ利用でき、それ以外のワークスペースには 404 が返ります。",
-			"zh-Hans": "更改策略的名称、状态、声明条件或令牌最长有效期。提供方、签发方和所有者无法更改；请改为创建新策略。更改会在一分钟内同步到网关。管理密钥和 OAuth 令牌需要 keys:write，或由工作区所有者或管理员操作。仅适用于参与受信任的工作负载 Beta 的工作区；其他工作区会收到 404。",
-			"ar": "يغيّر اسم السياسة أو حالتها أو شروط المطالبات أو أقصى مدة لصلاحية الرمز. لا يمكن تغيير المزوّد أو المُصدِر أو المالك؛ أنشئ سياسة جديدة بدلًا من ذلك. تصل التغييرات إلى البوابة خلال دقيقة. يتطلب keys:write على مفاتيح الإدارة ورموز OAuth، أو مالك مساحة العمل أو أحد مسؤوليها. متاح فقط لمساحات العمل المشاركة في المرحلة التجريبية لأحمال العمل الموثوقة؛ وتتلقى مساحات العمل الأخرى 404."
+		"Changes a policy's name, status, claim conditions or maximum token lifetime. The provider, issuer, owner claim and owner cannot change; create a new policy instead. Changes reach the gateway within a minute. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.": {
+			"es": "Cambia el nombre, el estado, las condiciones de claims o la duración máxima del token de una política. El proveedor, el emisor, el claim del propietario y el propietario no se pueden cambiar; en su lugar, crea una política nueva. Los cambios llegan al gateway en menos de un minuto. Requiere keys:write en claves de administración y tokens OAuth, o un propietario o administrador del espacio de trabajo. Solo está disponible para los espacios de trabajo de la beta de cargas de trabajo de confianza; los demás reciben 404.",
+			"fr": "Modifie le nom, l’état, les conditions sur les claims ou la durée de vie maximale du jeton d’une règle. Le fournisseur, l’émetteur, le claim du propriétaire et le propriétaire ne peuvent pas changer ; créez plutôt une nouvelle règle. Les modifications atteignent la passerelle en moins d’une minute. Nécessite keys:write sur les clés de gestion et les jetons OAuth, ou un propriétaire ou un administrateur de l’espace de travail. Disponible uniquement pour les espaces de travail de la bêta des workloads de confiance ; les autres reçoivent 404.",
+			"de": "Ändert Name, Status, Claim-Bedingungen oder maximale Token-Lebensdauer einer Richtlinie. Anbieter, Aussteller, Inhaber-Claim und Inhaber lassen sich nicht ändern; erstelle stattdessen eine neue Richtlinie. Änderungen erreichen das Gateway innerhalb einer Minute. Erfordert keys:write für Management-Schlüssel und OAuth-Tokens oder einen Workspace-Inhaber oder -Admin. Nur für Workspaces in der Beta für vertrauenswürdige Workloads verfügbar; andere Workspaces erhalten 404.",
+			"pt-BR": "Altera o nome, o status, as condições de claims ou a duração máxima do token de uma política. O provedor, o emissor, o claim do proprietário e o proprietário não podem mudar; crie uma nova política em vez disso. As alterações chegam ao gateway em até um minuto. Requer keys:write em chaves de gerenciamento e tokens OAuth, ou um proprietário ou administrador do espaço de trabalho. Disponível apenas para espaços de trabalho no beta de workloads confiáveis; os demais recebem 404.",
+			"hi": "पॉलिसी का नाम, स्थिति, क्लेम शर्तें या टोकन की अधिकतम अवधि बदलता है। प्रदाता, जारीकर्ता, मालिक का क्लेम और मालिक नहीं बदले जा सकते; इसके बजाय नई पॉलिसी बनाएँ। बदलाव एक मिनट के भीतर गेटवे तक पहुँच जाते हैं। प्रबंधन कुंजियों और OAuth टोकन पर keys:write, या वर्कस्पेस का मालिक या एडमिन आवश्यक है। यह केवल भरोसेमंद वर्कलोड बीटा वाले वर्कस्पेस के लिए उपलब्ध है; दूसरे वर्कस्पेस को 404 मिलता है।",
+			"ja": "ポリシーの名前、状態、クレーム条件、トークンの最大有効期間を変更します。プロバイダー、発行者、オーナーのクレーム、オーナーは変更できないため、代わりに新しいポリシーを作成してください。変更は 1 分以内にゲートウェイへ反映されます。管理キーと OAuth トークンでは keys:write、またはワークスペースのオーナーか管理者が必要です。信頼済みワークロードのベータに参加しているワークスペースのみ利用でき、それ以外のワークスペースには 404 が返ります。",
+			"zh-Hans": "更改策略的名称、状态、声明条件或令牌最长有效期。提供方、签发方、所有者声明和所有者无法更改；请改为创建新策略。更改会在一分钟内同步到网关。管理密钥和 OAuth 令牌需要 keys:write，或由工作区所有者或管理员操作。仅适用于参与受信任的工作负载 Beta 的工作区；其他工作区会收到 404。",
+			"ar": "يغيّر اسم السياسة أو حالتها أو شروط المطالبات أو أقصى مدة لصلاحية الرمز. لا يمكن تغيير المزوّد أو المُصدِر أو مطالبة المالك أو المالك؛ أنشئ سياسة جديدة بدلًا من ذلك. تصل التغييرات إلى البوابة خلال دقيقة. يتطلب keys:write على مفاتيح الإدارة ورموز OAuth، أو مالك مساحة العمل أو أحد مسؤوليها. متاح فقط لمساحات العمل المشاركة في المرحلة التجريبية لأحمال العمل الموثوقة؛ وتتلقى مساحات العمل الأخرى 404."
 		},
 		"Trusted workload policy updated": {
 			"es": "Política de carga de trabajo de confianza actualizada",
@@ -11943,6 +11989,166 @@
 			"ja": "支出レポートをオーナーだけでなくワークスペースの管理者にもメールで送ります。既定値は false です。メール内のリンクから誰でも配信を停止できます。",
 			"zh-Hans": "将支出报告也通过邮件发送给工作区管理员，而不仅是所有者。默认为 false。任何人都可以通过邮件中的链接退订。",
 			"ar": "إرسال تقرير الإنفاق بالبريد الإلكتروني إلى مسؤولي مساحة العمل أيضًا، وليس إلى المالكين فقط. القيمة الافتراضية false. يمكن لأي شخص إلغاء الاشتراك من الرابط الموجود في البريد."
+		},
+		"Every request parameter the provider accepts on this endpoint, in one standard shape whatever way the catalogue stores it.": {
+			"es": "Todos los parámetros de solicitud que el proveedor acepta en este endpoint, con una forma estándar sin importar cómo los guarde el catálogo.",
+			"fr": "Tous les paramètres de requête que le fournisseur accepte sur cet endpoint, dans une forme standard quelle que soit la façon dont le catalogue les stocke.",
+			"de": "Alle Anfrageparameter, die der Anbieter an diesem Endpunkt akzeptiert, in einer einheitlichen Form, unabhängig davon, wie der Katalog sie speichert.",
+			"pt-BR": "Todos os parâmetros de requisição que o provedor aceita neste endpoint, em um formato padrão, seja qual for a forma como o catálogo os armazena.",
+			"hi": "इस एंडपॉइंट पर प्रदाता जो भी अनुरोध पैरामीटर स्वीकार करता है, वे सभी एक मानक रूप में, चाहे कैटलॉग उन्हें किसी भी तरह संग्रहीत करे।",
+			"ja": "このエンドポイントでプロバイダーが受け付けるすべてのリクエストパラメーター。カタログでの保存形式にかかわらず、1 つの標準形式で返します。",
+			"zh-Hans": "提供商在此端点接受的所有请求参数，无论目录以何种方式存储，均以统一的标准格式返回。",
+			"ar": "جميع معلمات الطلب التي يقبلها المزوّد على نقطة النهاية هذه، بصيغة قياسية واحدة أيًّا كانت طريقة تخزينها في الكتالوج."
+		},
+		"When every parameter in if has one of its listed values, the other fields replace the parameter's own.": {
+			"es": "Cuando cada parámetro de if tiene uno de sus valores indicados, los demás campos sustituyen a los del propio parámetro.",
+			"fr": "Lorsque chaque paramètre de if a l’une des valeurs indiquées, les autres champs remplacent ceux du paramètre.",
+			"de": "Wenn jeder Parameter in if einen seiner aufgeführten Werte hat, ersetzen die übrigen Felder die des Parameters selbst.",
+			"pt-BR": "Quando cada parâmetro em if tem um dos valores listados, os demais campos substituem os do próprio parâmetro.",
+			"hi": "जब if में हर पैरामीटर का मान उसके सूचीबद्ध मानों में से एक होता है, तो बाकी फ़ील्ड पैरामीटर के अपने फ़ील्ड की जगह लेते हैं।",
+			"ja": "if 内のすべてのパラメーターが列挙された値のいずれかである場合、その他のフィールドがパラメーター自身の値を置き換えます。",
+			"zh-Hans": "当 if 中的每个参数都取其所列值之一时，其余字段将替换该参数自身的字段。",
+			"ar": "عندما تكون لكل معلمة في if إحدى قيمها المدرجة، تحلّ الحقول الأخرى محل حقول المعلمة نفسها."
+		},
+		"Set to parameter_specs to add each offer's request parameters in the standard shape.": {
+			"es": "Usa parameter_specs para añadir los parámetros de solicitud de cada oferta con la forma estándar.",
+			"fr": "Indiquez parameter_specs pour ajouter les paramètres de requête de chaque offre dans la forme standard.",
+			"de": "Auf parameter_specs setzen, um die Anfrageparameter jedes Angebots in der einheitlichen Form hinzuzufügen.",
+			"pt-BR": "Defina como parameter_specs para incluir os parâmetros de requisição de cada oferta no formato padrão.",
+			"hi": "हर ऑफ़र के अनुरोध पैरामीटर मानक रूप में जोड़ने के लिए parameter_specs सेट करें।",
+			"ja": "parameter_specs を指定すると、各オファーのリクエストパラメーターを標準形式で追加します。",
+			"zh-Hans": "设置为 parameter_specs 可按标准格式附加每个报价的请求参数。",
+			"ar": "اضبطها على parameter_specs لإضافة معلمات الطلب لكل عرض بالصيغة القياسية."
+		},
+		"Applies a policy to one API key, workspace member or department, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for every assignment.": {
+			"es": "Aplica una política a una clave de API, un miembro del espacio de trabajo o un departamento, o define el valor predeterminado del espacio de trabajo para cada usuario final. Cada destino puede tener una política. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en cada asignación.",
+			"fr": "Applique une politique à une clé d’API, à un membre de l’espace de travail ou à un département, ou définit la valeur par défaut de l’espace de travail pour chaque utilisateur final. Chaque cible peut avoir une politique. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests à chaque affectation.",
+			"de": "Wendet eine Richtlinie auf einen API-Schlüssel, ein Workspace-Mitglied oder eine Abteilung an oder legt den Workspace-Standard für jeden Endnutzer fest. Jedes Ziel kann eine Richtlinie haben. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für jede Zuweisung durch.",
+			"pt-BR": "Aplica uma política a uma chave de API, a um membro do workspace ou a um departamento, ou define o padrão do workspace para cada usuário final. Cada destino pode ter uma política. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em cada atribuição.",
+			"hi": "किसी एक API कुंजी, वर्कस्पेस सदस्य या विभाग पर नीति लागू करता है, या हर अंतिम उपयोगकर्ता के लिए वर्कस्पेस का डिफ़ॉल्ट सेट करता है। हर लक्ष्य पर एक नीति हो सकती है। गेटवे हर असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "1 つの API キー、ワークスペースメンバー、または部門にポリシーを適用するか、各エンドユーザーに対するワークスペースのデフォルトを設定します。各対象に設定できるポリシーは 1 つです。ゲートウェイはすべての割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "将策略应用于一个 API 密钥、工作区成员或部门，或为每个最终用户设置工作区默认值。每个目标只能有一个策略。网关会对每个分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "يطبّق سياسة على مفتاح API واحد أو عضو في مساحة العمل أو قسم، أو يضبط الإعداد الافتراضي لمساحة العمل لكل مستخدم نهائي. يمكن أن يكون لكل هدف سياسة واحدة. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على كل تعيين."
+		},
+		"What a policy applies to. A department policy is one allowance shared by its members and linked keys. end_user_default applies to each end user identified on a request.": {
+			"es": "A qué se aplica una política. Una política de departamento es una asignación compartida por sus miembros y las claves vinculadas. end_user_default se aplica a cada usuario final identificado en una solicitud.",
+			"fr": "Ce à quoi une politique s’applique. Une politique de département est une allocation partagée par ses membres et les clés liées. end_user_default s’applique à chaque utilisateur final identifié dans une requête.",
+			"de": "Worauf eine Richtlinie angewendet wird. Eine Abteilungsrichtlinie ist ein gemeinsames Kontingent für ihre Mitglieder und verknüpften Schlüssel. end_user_default gilt für jeden Endnutzer, der in einer Anfrage identifiziert wird.",
+			"pt-BR": "A que uma política se aplica. Uma política de departamento é uma cota compartilhada por seus membros e chaves vinculadas. end_user_default se aplica a cada usuário final identificado em uma solicitação.",
+			"hi": "नीति किस पर लागू होती है। विभाग की नीति एक साझा सीमा है, जिसे उसके सदस्य और जुड़ी कुंजियाँ साझा करते हैं। end_user_default अनुरोध में पहचाने गए हर अंतिम उपयोगकर्ता पर लागू होता है।",
+			"ja": "ポリシーの適用対象です。部門ポリシーは、そのメンバーとリンクされたキーで共有される 1 つの枠です。end_user_default はリクエストで識別された各エンドユーザーに適用されます。",
+			"zh-Hans": "策略的适用对象。部门策略是由其成员和关联密钥共享的一份额度。end_user_default 适用于请求中识别出的每个最终用户。",
+			"ar": "ما تنطبق عليه السياسة. سياسة القسم حصة واحدة يتشاركها أعضاؤه والمفاتيح المرتبطة به. ينطبق end_user_default على كل مستخدم نهائي يُحدَّد في الطلب."
+		},
+		"Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.": {
+			"es": "Enumera las políticas de límite de velocidad con nombre del espacio de trabajo. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en las asignaciones de clave, miembro, departamento y usuario final predeterminado.",
+			"fr": "Liste les politiques de limite de débit nommées de l’espace de travail. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.",
+			"de": "Listet die benannten Rate-Limit-Richtlinien des Workspace auf. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für Zuweisungen an Schlüssel, Mitglieder, Abteilungen und den Endnutzer-Standard durch.",
+			"pt-BR": "Lista as políticas de limite de taxa nomeadas do workspace. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.",
+			"hi": "वर्कस्पेस की नामित रेट लिमिट नीतियों की सूची देता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "ワークスペースの名前付きレート制限ポリシーを一覧表示します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "列出工作区的命名速率限制策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "يسرد سياسات حدود المعدل المسماة لمساحة العمل. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي."
+		},
+		"Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.": {
+			"es": "Crea una política con nombre con límites de solicitudes por minuto, tokens por minuto o solicitudes simultáneas. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en las asignaciones de clave, miembro, departamento y usuario final predeterminado.",
+			"fr": "Crée une politique nommée avec des limites de requêtes par minute, de tokens par minute ou de requêtes simultanées. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.",
+			"de": "Erstellt eine benannte Richtlinie mit Limits für Anfragen pro Minute, Tokens pro Minute oder gleichzeitige Anfragen. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für Zuweisungen an Schlüssel, Mitglieder, Abteilungen und den Endnutzer-Standard durch.",
+			"pt-BR": "Cria uma política nomeada com limites de solicitações por minuto, tokens por minuto ou solicitações simultâneas. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.",
+			"hi": "प्रति मिनट अनुरोध, प्रति मिनट टोकन या समवर्ती अनुरोध सीमाओं के साथ एक नामित नीति बनाता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "1 分あたりのリクエスト数、1 分あたりのトークン数、または同時リクエスト数の制限を持つ名前付きポリシーを作成します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "创建一个带有每分钟请求数、每分钟令牌数或并发请求限制的命名策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "ينشئ سياسة مسماة بحدود للطلبات في الدقيقة أو الرموز في الدقيقة أو الطلبات المتزامنة. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي."
+		},
+		"Returns one rate limit policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.": {
+			"es": "Devuelve una política de límite de velocidad. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en las asignaciones de clave, miembro, departamento y usuario final predeterminado.",
+			"fr": "Renvoie une politique de limite de débit. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.",
+			"de": "Gibt eine Rate-Limit-Richtlinie zurück. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für Zuweisungen an Schlüssel, Mitglieder, Abteilungen und den Endnutzer-Standard durch.",
+			"pt-BR": "Retorna uma política de limite de taxa. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.",
+			"hi": "एक रेट लिमिट नीति लौटाता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "1 つのレート制限ポリシーを返します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "返回一个速率限制策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "يعيد سياسة حد معدل واحدة. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي."
+		},
+		"Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.": {
+			"es": "Cambia el nombre, la descripción, los límites o el ajuste de bloqueo ante fallos de una política. Establece un límite en null para quitarlo; debe quedar al menos un límite. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en las asignaciones de clave, miembro, departamento y usuario final predeterminado.",
+			"fr": "Modifie le nom, la description, les limites ou le réglage de blocage en cas d’échec d’une politique. Définissez une limite sur null pour la supprimer ; au moins une limite doit rester. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.",
+			"de": "Ändert Name, Beschreibung, Limits oder die Fail-Closed-Einstellung einer Richtlinie. Setze ein Limit auf null, um es zu entfernen; mindestens ein Limit muss bleiben. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für Zuweisungen an Schlüssel, Mitglieder, Abteilungen und den Endnutzer-Standard durch.",
+			"pt-BR": "Altera o nome, a descrição, os limites ou a configuração de bloqueio em falha de uma política. Defina um limite como null para removê-lo; pelo menos um limite deve permanecer. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.",
+			"hi": "नीति का नाम, विवरण, सीमाएँ या फ़ेल-क्लोज़्ड सेटिंग बदलता है। किसी सीमा को हटाने के लिए उसे null पर सेट करें; कम से कम एक सीमा बनी रहनी चाहिए। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "ポリシーの名前、説明、制限、またはフェイルクローズ設定を変更します。制限を削除するには null に設定します。少なくとも 1 つの制限が残っている必要があります。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "更改策略的名称、描述、限制或失败关闭设置。将某个限制设为 null 即可移除；至少需要保留一个限制。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "يغيّر اسم السياسة أو وصفها أو حدودها أو إعداد الإغلاق عند الفشل. اضبط الحد على null لإزالته؛ يجب أن يبقى حد واحد على الأقل. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي."
+		},
+		"Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.": {
+			"es": "Elimina una política y todas las asignaciones que la usan. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en las asignaciones de clave, miembro, departamento y usuario final predeterminado.",
+			"fr": "Supprime une politique et toutes les affectations qui l’utilisent. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.",
+			"de": "Löscht eine Richtlinie und jede Zuweisung, die sie verwendet. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für Zuweisungen an Schlüssel, Mitglieder, Abteilungen und den Endnutzer-Standard durch.",
+			"pt-BR": "Exclui uma política e todas as atribuições que a usam. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.",
+			"hi": "एक नीति और उसका उपयोग करने वाले हर असाइनमेंट को हटाता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "ポリシーと、それを使用するすべての割り当てを削除します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "删除一个策略以及使用它的所有分配。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "يحذف سياسة وكل تعيين يستخدمها. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي."
+		},
+		"Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.": {
+			"es": "Enumera dónde se aplican las políticas de límite de velocidad, con filtro opcional por política o tipo de destino. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en las asignaciones de clave, miembro, departamento y usuario final predeterminado.",
+			"fr": "Liste où s’appliquent les politiques de limite de débit, avec un filtre facultatif par politique ou type de cible. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.",
+			"de": "Listet auf, wo Rate-Limit-Richtlinien gelten, optional gefiltert nach Richtlinie oder Zieltyp. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für Zuweisungen an Schlüssel, Mitglieder, Abteilungen und den Endnutzer-Standard durch.",
+			"pt-BR": "Lista onde as políticas de limite de taxa se aplicam, com filtro opcional por política ou tipo de destino. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.",
+			"hi": "बताता है कि रेट लिमिट नीतियाँ कहाँ लागू होती हैं, वैकल्पिक रूप से नीति या लक्ष्य प्रकार के अनुसार फ़िल्टर करके। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "レート制限ポリシーの適用先を一覧表示します。ポリシーまたは対象タイプで絞り込むこともできます。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "列出速率限制策略的适用位置，可按策略或目标类型筛选。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "يسرد أماكن تطبيق سياسات حدود المعدل، مع إمكانية التصفية حسب السياسة أو نوع الهدف. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي."
+		},
+		"Returns one rate limit assignment. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.": {
+			"es": "Devuelve una asignación de límite de velocidad. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en las asignaciones de clave, miembro, departamento y usuario final predeterminado.",
+			"fr": "Renvoie une affectation de limite de débit. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.",
+			"de": "Gibt eine Rate-Limit-Zuweisung zurück. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für Zuweisungen an Schlüssel, Mitglieder, Abteilungen und den Endnutzer-Standard durch.",
+			"pt-BR": "Retorna uma atribuição de limite de taxa. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.",
+			"hi": "एक रेट लिमिट असाइनमेंट लौटाता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "1 つのレート制限の割り当てを返します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "返回一个速率限制分配。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "يعيد تعيين حد معدل واحدًا. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي."
+		},
+		"Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.": {
+			"es": "Cambia la política aplicada al destino de una asignación. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en las asignaciones de clave, miembro, departamento y usuario final predeterminado.",
+			"fr": "Change la politique appliquée à la cible d’une affectation. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.",
+			"de": "Wechselt die Richtlinie, die auf das Ziel einer Zuweisung angewendet wird. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für Zuweisungen an Schlüssel, Mitglieder, Abteilungen und den Endnutzer-Standard durch.",
+			"pt-BR": "Troca a política aplicada ao destino de uma atribuição. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.",
+			"hi": "किसी असाइनमेंट के लक्ष्य पर लागू नीति बदलता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "割り当ての対象に適用されるポリシーを切り替えます。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "切换应用于分配目标的策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "يبدّل السياسة المطبقة على هدف التعيين. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي."
+		},
+		"Removes a policy from its target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.": {
+			"es": "Quita una política de su destino. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en las asignaciones de clave, miembro, departamento y usuario final predeterminado.",
+			"fr": "Retire une politique de sa cible. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.",
+			"de": "Entfernt eine Richtlinie von ihrem Ziel. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für Zuweisungen an Schlüssel, Mitglieder, Abteilungen und den Endnutzer-Standard durch.",
+			"pt-BR": "Remove uma política do seu destino. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.",
+			"hi": "किसी नीति को उसके लक्ष्य से हटाता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "ポリシーを対象から外します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "从目标中移除策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "يزيل سياسة من هدفها. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي."
+		},
+		"Id of the key, member (user id) or department. Null for end_user_default.": {
+			"es": "Id de la clave, el miembro (id de usuario) o el departamento. Null para end_user_default.",
+			"fr": "Id de la clé, du membre (id utilisateur) ou du département. Null pour end_user_default.",
+			"de": "Id des Schlüssels, Mitglieds (Nutzer-Id) oder der Abteilung. Null für end_user_default.",
+			"pt-BR": "Id da chave, do membro (id de usuário) ou do departamento. Null para end_user_default.",
+			"hi": "कुंजी, सदस्य (उपयोगकर्ता id) या विभाग की id। end_user_default के लिए null।",
+			"ja": "キー、メンバー（ユーザー ID）、または部門の ID。end_user_default の場合は null。",
+			"zh-Hans": "密钥、成员（用户 ID）或部门的 ID。end_user_default 时为 null。",
+			"ar": "معرّف المفتاح أو العضو (معرّف المستخدم) أو القسم. null لـ end_user_default."
+		},
+		"Id of the key, member (user id) or department. Omit for end_user_default.": {
+			"es": "Id de la clave, el miembro (id de usuario) o el departamento. Omítelo para end_user_default.",
+			"fr": "Id de la clé, du membre (id utilisateur) ou du département. À omettre pour end_user_default.",
+			"de": "Id des Schlüssels, Mitglieds (Nutzer-Id) oder der Abteilung. Lass es bei end_user_default weg.",
+			"pt-BR": "Id da chave, do membro (id de usuário) ou do departamento. Omita para end_user_default.",
+			"hi": "कुंजी, सदस्य (उपयोगकर्ता id) या विभाग की id। end_user_default के लिए इसे छोड़ दें।",
+			"ja": "キー、メンバー（ユーザー ID）、または部門の ID。end_user_default の場合は省略します。",
+			"zh-Hans": "密钥、成员（用户 ID）或部门的 ID。end_user_default 时省略。",
+			"ar": "معرّف المفتاح أو العضو (معرّف المستخدم) أو القسم. احذفه لـ end_user_default."
 		}
 	},
 	"GET /apps": {

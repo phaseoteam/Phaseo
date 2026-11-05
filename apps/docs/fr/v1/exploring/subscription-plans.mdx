@@ -5,46 +5,56 @@ sidebarTitle: "Offres"
 icon: "tags"
 ---
 
-Phaseo propose un accès gratuit et une facturation des modèles à l’usage. Les équipes qui ont besoin de contrôles d’identité et d’annuaire peuvent ajouter un abonnement mensuel Enterprise distinct. Tous les prix ci-dessous sont en USD.
+Commencez gratuitement, payez à l’usage pour les modèles payants, ou apportez vos propres clés de fournisseur. N’ajoutez l’abonnement Enterprise que si vous avez besoin de contrôles d’identité et d’annuaire. Tous les prix sont en USD.
 
-## Choisir comment utiliser Phaseo
+## Choisir votre façon d’utiliser Phaseo
 
-| Option | Frais Phaseo | Ce qu’elle couvre |
+| Option | Ce que Phaseo facture | Ce qui est couvert |
 | --- | --- | --- |
-| Accès gratuit | Aucun abonnement ni recharge pour les modèles gratuits pris en charge | Modèles gratuits, données publiques du catalogue, SDK et intégrations |
-| Pay As You Go | Utilisation aux prix du catalogue, plus 5 % de frais d’achat de crédits (minimum de $1) | Requêtes aux modèles payants avec les crédits prépayés de l’espace de travail |
-| Votre propre clé (BYOK) | Lorsque l’utilisation mensuelle est disponible, les 250,000 premières requêtes terminées par espace de travail chaque mois civil UTC sont sans frais de service Phaseo ; ensuite, 2.5 % du coût équivalent du fournisseur. Si le compteur mensuel et la lecture de secours sont tous deux indisponibles, cette requête est soumise aux frais de 2.5 % | Routage et observabilité Phaseo avec vos identifiants ; le fournisseur facture directement l’utilisation du modèle |
-| Self Serve Enterprise | Abonnement mensuel à partir de $29, plus utilisation des modèles et frais d’achat de crédits | SSO, SCIM, gestion de l’annuaire, départements et assistance prioritaire par e-mail |
+| Accès gratuit | Rien | Requêtes aux modèles gratuits, données publiques du catalogue, SDK et intégrations |
+| Pay As You Go | L’utilisation des modèles aux prix du catalogue, plus 5 % de frais d’achat de crédits (minimum de $1) | Requêtes aux modèles payants avec les crédits prépayés de l’espace de travail |
+| Votre propre clé (BYOK) | Aucuns frais pour les 250 000 premières requêtes terminées par espace de travail chaque mois UTC, puis 2.5 % du coût équivalent chez le fournisseur | Routage et observabilité Phaseo avec vos identifiants de fournisseur ; le fournisseur facture directement l’utilisation des modèles |
+| Self Serve Enterprise | Abonnement mensuel de l’espace de travail à partir de $29, plus l’utilisation des modèles et les frais d’achat de crédits | SSO, SCIM, gestion de l’annuaire, départements et assistance prioritaire par e-mail |
 
-Pay As You Go n’impose ni abonnement mensuel, ni contrat, ni dépense mensuelle minimale. Les frais s’appliquent à l’achat de crédits ; les requêtes gérées consomment ensuite ces crédits aux prix affichés des modèles.
+Pay As You Go n’a ni abonnement mensuel, ni contrat, ni dépense mensuelle minimale. Les frais sont prélevés lorsque vous achetez des crédits ; les requêtes utilisent ensuite ces crédits aux prix affichés des modèles. [Tarifs et facturation](../pricing/tiers.mdx) donne des exemples de rechargement détaillés.
 
-L’accès aux modèles gratuits est soumis à des quotas. La limite par défaut du Gateway est de 25 requêtes par minute glissante, par utilisateur et espace de travail, plus 1,500 requêtes aux modèles gratuits par jour UTC. Les quotas du fournisseur s’appliquent également. Consultez les [Limites de débit](../api-reference/limits.mdx) pour leur portée et les règles de nouvelle tentative.
+## Limites de requêtes par défaut
 
-Pour configurer BYOK et comprendre sa facturation, consultez [Routage et basculement](../guides/routing-and-fallbacks.mdx). Une requête BYOK sans frais Phaseo reste soumise aux frais d’utilisation du fournisseur.
+Les modèles gratuits ont un quota quotidien en plus de la limite par minute par défaut du Gateway :
 
-## Tarification Enterprise par membre
+| Limite | Par défaut | Portée |
+| --- | --- | --- |
+| Requêtes par minute, tous modèles confondus | 25 | Par utilisateur dans chaque espace de travail, sur une minute glissante |
+| Requêtes aux modèles gratuits par jour | 1 500 | Par utilisateur, partagées entre tous vos espaces de travail et tous les modèles gratuits ; réinitialisation à 00:00 UTC |
 
-L’abonnement d’entrée inclut jusqu’à 100 membres, y compris pour les petites équipes. Les capacités supérieures sont tarifées selon le nombre de membres ; ces prix sont des références, pas des niveaux de fonctionnalités distincts :
+Les requêtes au-delà du quota quotidien échouent avec `phaseo_free_model_limit_exceeded`. Les quotas des fournisseurs s’appliquent également. Consultez [Limites de débit](../api-reference/limits.mdx) pour la portée et le comportement des nouvelles tentatives.
 
-| Membres inclus | Abonnement mensuel |
+## Frais BYOK
+
+Une requête BYOK entraîne toujours les frais d’utilisation de votre fournisseur, même lorsque Phaseo ne facture aucuns frais. Si Phaseo ne peut pas lire le nombre mensuel de requêtes de l’espace de travail (le compteur et sa lecture de secours échouent tous les deux), cette requête paie les frais de 2.5 %. Configurez les clés et les règles de secours dans [Routage et solutions de repli](../guides/routing-and-fallbacks.mdx#byok-considerations).
+
+<span id="enterprise-member-pricing"></span>
+## Prix Enterprise selon le nombre de membres
+
+L’abonnement d’entrée inclut jusqu’à 100 membres de l’espace de travail, y compris pour les petites équipes. Les capacités supérieures sont tarifées selon le nombre de membres ; ce sont des prix de référence, pas des niveaux de fonctionnalités distincts :
+
+| Membres de l’espace de travail inclus | Abonnement mensuel |
 | ---: | ---: |
 | 100 | $29 |
-| 1,000 | $79 |
-| 10,000 | $299 |
-| 25,000 | $599 |
-| 50,000 | $1,099 |
-| 100,000 | $1,999 |
+| 1 000 | $79 |
+| 10 000 | $299 |
+| 25 000 | $599 |
+| 50 000 | $1,099 |
+| 100 000 | $1,999 |
 
-Ouvrez [Tarifs](https://phaseo.app/pricing) pour choisir une capacité et afficher le devis correspondant. La disponibilité du libre-service dépend de l’accès de votre espace de travail au déploiement. Contactez le [Centre d’aide](https://phaseo.app/help) pour la facturation, les achats ou des conditions commerciales personnalisées.
+Les capacités situées entre ces paliers sont tarifées de façon linéaire entre les deux lignes les plus proches. Ouvrez [Tarifs](https://phaseo.app/pricing) pour choisir une capacité et voir le devis correspondant à votre nombre de membres. La disponibilité en libre-service dépend de l’accès de votre espace de travail au déploiement.
 
-Les membres sont comptés tant qu’ils appartiennent à l’espace de travail, même sans connexion. En dessous de 100,000 membres, les nouvelles adhésions sont bloquées si elles dépassent la capacité choisie. Les changements de capacité en libre-service ne sont pas disponibles actuellement ; prévoyez votre croissance avant de vous abonner.
+**Comment les membres sont comptés.** Les membres sont comptés tant qu’ils appartiennent à l’espace de travail, qu’ils se connectent ou non. En dessous de 100 000 membres, les nouvelles adhésions sont bloquées si elles dépassent la capacité choisie. Vous ne pouvez pas modifier vous-même la capacité après l’abonnement : choisissez-la en fonction de la croissance prévue. Avec la capacité de 100 000 membres, chaque membre unique supplémentaire coûte $0.02 par période de facturation de l’abonnement, y compris les membres supprimés pendant cette période.
 
-Avec la capacité de 100,000 membres, chaque membre unique supplémentaire coûte $0.02 par période de facturation de l’abonnement, y compris les membres supprimés pendant cette période.
-
-Enterprise n’inclut pas de crédits pour les modèles et ne supprime pas les frais standard de 5 % à l’achat de crédits (minimum de $1). Consultez [Tarifs et facturation](../pricing/tiers.mdx) pour les exemples et les capacités.
+Enterprise n’inclut pas de crédits pour les modèles et ne supprime pas les frais d’achat de crédits de 5 % (minimum de $1). Pour la facturation sur facture, les achats ou des conditions commerciales personnalisées, contactez le [Centre d’aide](https://phaseo.app/help).
 
 ## Abonnements des fournisseurs
 
-Le [catalogue d’abonnements](https://phaseo.app/subscription-plans) présente les offres vendues par les fournisseurs de modèles. Elles ont leurs propres prix, modèles inclus, limites et conditions de facturation. Un abonnement fournisseur n’ajoute pas automatiquement de crédits Phaseo et n’active pas de route Gateway.
+Le [catalogue des forfaits d’abonnement](https://phaseo.app/subscription-plans) répertorie les abonnements vendus par les fournisseurs de modèles. Ces offres ont leurs propres prix, modèles inclus, limites et conditions de facturation. Un abonnement de fournisseur n’ajoute pas de crédits Phaseo et n’active pas de route sur le Gateway.
 
-Vérifiez les conditions du fournisseur et les routes Gateway actives du modèle avant de choisir une offre. Consultez [Tarifs et performances](./pricing-performance.mdx) pour comparer les coûts d’utilisation et les données de performance disponibles.
+Vérifiez les conditions du fournisseur et les routes actives du modèle sur le Gateway avant de choisir une offre. Utilisez [Prix et performances](./pricing-performance.mdx) pour comparer les coûts d’utilisation et les données de performance des modèles.

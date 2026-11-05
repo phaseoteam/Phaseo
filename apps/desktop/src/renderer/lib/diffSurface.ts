@@ -2,10 +2,11 @@ import type { FileDiffMetadata, SelectedLineRange } from "@pierre/diffs";
 import type { Message } from "../../shared/workspace";
 
 /** What the diff surface shows. A turn is named by the message that started it. */
-export type DiffSelection = { kind: "branch"; baseRef?: string } | { kind: "uncommitted" } | { kind: "turn"; messageId?: string };
+/** A commit keeps its subject so the label reads before the list loads. */
+export type DiffSelection = { kind: "branch"; baseRef?: string } | { kind: "uncommitted" } | { kind: "turn"; messageId?: string } | { kind: "commit"; sha: string; subject?: string };
 export type DiffTurn = { messageId: string; number: number; completedAt?: string; from: string; to: string };
 
-/** Turns with both snapshots, newest first. Numbers count every turn the chat has run, as T3 does. */
+/** Turns with both snapshots, newest first. Numbers count every turn the chat has run. */
 export function diffTurns(messages: readonly Pick<Message, "id" | "role" | "startedAt" | "completedAt" | "checkpoint" | "delivery">[]): DiffTurn[] {
 	const turns: DiffTurn[] = [];
 	let number = 0;
@@ -23,12 +24,14 @@ export const selectedTurn = (selection: DiffSelection, turns: readonly DiffTurn[
 export function scopeLabel(selection: DiffSelection, turns: readonly DiffTurn[]) {
 	if (selection.kind === "branch") return "Changes";
 	if (selection.kind === "uncommitted") return "Uncommitted";
+	if (selection.kind === "commit") return `Commit ${selection.sha.slice(0, 7)}`;
 	const turn = selectedTurn(selection, turns);
 	return !turn || turn === turns[0] ? "Latest turn" : `Turn ${turn.number}`;
 }
 /** Comments and collapsed files belong to one view: a comment on "Changes" does not appear on "Turn 2". */
 export function sectionOf(selection: DiffSelection, turns: readonly DiffTurn[]) {
 	const turn = selectedTurn(selection, turns);
+	if (selection.kind === "commit") return { id: `commit:${selection.sha}`, title: `Commit ${selection.sha.slice(0, 7)}` };
 	return turn ? { id: `turn:${turn.messageId}`, title: `Turn ${turn.number}` } : selection.kind === "uncommitted" ? { id: "uncommitted", title: "Uncommitted" } : { id: "branch", title: "Changes" };
 }
 
@@ -42,7 +45,7 @@ export function diffLineStat(files: readonly Pick<FileDiffMetadata, "hunks">[]) 
 	return { additions, deletions };
 }
 
-/** T3's chevron colour per change type. */
+/** The chevron colour per change type. */
 export function changeTone(type: FileDiffMetadata["type"]) {
 	return type === "new" ? "text-success" : type === "deleted" ? "text-destructive" : type === "change" || type === "rename-pure" || type === "rename-changed" ? "text-warning" : "text-muted-foreground/80";
 }

@@ -1,0 +1,100 @@
+---
+icon: "chart-spline"
+title: "DevTools"
+description: "Grave cada execução e continuação do agente em um arquivo local enquanto você desenvolve."
+---
+
+Passe uma configuração do DevTools a uma execução ou continuação durante o desenvolvimento para anexar uma linha JSON por execução a `generations.jsonl` em um diretório local. Cada linha guarda a entrada, as etapas, a atividade das ferramentas, a saída, o uso e os IDs das requisições do gateway da execução. Nada é capturado a menos que você ative a captura.
+
+<CodeGroup>
+
+```typescript TypeScript
+import { createAgentDevtools } from "@phaseo/agent-sdk";
+
+const result = await agent.run({
+  input,
+  client,
+  devtools: createAgentDevtools(),
+});
+```
+
+```python Python
+from phaseo_agent import create_agent_devtools
+
+result = agent.run(input="Summarise this ticket", client=client, devtools=create_agent_devtools())
+```
+
+```go Go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{
+  Input:    prompt,
+  Client:   client,
+  Devtools: phaseoagent.CreateAgentDevtools(".phaseo-devtools"),
+})
+```
+
+```csharp C#
+var result = await agent.Run(new RunOptions
+{
+    Input = prompt,
+    Client = client,
+    Devtools = AgentSdk.CreateAgentDevtools(".phaseo-devtools"),
+});
+```
+
+```php PHP
+$result = $agent->run(
+    input: $prompt,
+    client: $client,
+    devtools: AgentSdk::createAgentDevtools(".phaseo-devtools")
+);
+```
+
+```ruby Ruby
+result = agent.run(
+  input: prompt,
+  client: client,
+  devtools: PhaseoAgentSdk.create_agent_devtools(directory: ".phaseo-devtools")
+)
+```
+
+```java Java
+var result = agent.run(new AgentSdk.RunOptions(
+    prompt, client, null, null, null, null, null, null, null,
+    AgentSdk.createAgentDevtools(".phaseo-devtools")));
+```
+
+</CodeGroup>
+
+<Note>
+O Rust `0.2` não tem captura do DevTools. Use os [hooks do ciclo de vida](./lifecycle-hooks) com `run_with_events` e grave os eventos você mesmo.
+</Note>
+
+| Linguagem | Criar uma configuração | Passar como | Escolher o diretório |
+| --- | --- | --- | --- |
+| TypeScript | `createAgentDevtools()` | `devtools` nas opções de execução e de continuação | `createAgentDevtools({ directory: ".local/agent-runs" })` |
+| Python | `create_agent_devtools()` | `devtools=` em `run()`, `stream()` ou em uma continuação | `create_agent_devtools(directory=".local/agent-runs")` |
+| Go | `CreateAgentDevtools(directory)` | `Devtools` em `RunOptions` ou `ContinueOptions` | O argumento `directory` |
+| C# | `AgentSdk.CreateAgentDevtools(directory)` | `Devtools` em `RunOptions` ou `ContinueOptions` | O argumento `directory` (padrão `.phaseo-devtools`) |
+| PHP | `AgentSdk::createAgentDevtools($directory)` | `devtools:` em `run()` ou `continueRun()` | O argumento `$directory` (padrão `.phaseo-devtools`) |
+| Ruby | `PhaseoAgentSdk.create_agent_devtools(directory:, enabled:)` | `devtools:` em `run` ou `continue_run` | `directory:` (padrão `.phaseo-devtools`) |
+| Java | `AgentSdk.createAgentDevtools(directory)` | O argumento `devtools` de `RunOptions` ou `ContinueOptions` | O argumento `directory` |
+
+## Ative a captura pelo ambiente
+
+Sem uma configuração do DevTools, a captura é ativada quando `PHASEO_DEVTOOLS=true`. Os arquivos vão para `PHASEO_DEVTOOLS_DIR` ou, se ele não estiver definido, para `.phaseo-devtools` no diretório de trabalho. Isso funciona da mesma forma em todas as linguagens que têm DevTools.
+
+## O que é gravado
+
+| Arquivo | Conteúdo |
+| --- | --- |
+| `generations.jsonl` | Uma entrada por execução e uma por continuação |
+| `metadata.json` | ID da sessão, horário de início e o nome do SDK (`"sdk": "typescript"`, `"python"`, `"go"`, `"csharp"`, `"php"`, `"ruby"` ou `"java"`), gravado uma vez |
+| `assets/images`, `assets/audio`, `assets/video` | Criados vazios para o visualizador do DevTools |
+
+O `type` de cada entrada é `agent.run` para uma execução e `agent.continue` para uma continuação. `agent.continue` é um tipo de entrada, não um nome de método: é o que uma chamada a `continueRun()` (TypeScript, PHP, Java), `continue_run()` (Python, Ruby), `Continue` (Go) ou `ContinueRun` (C#) grava.
+
+Uma entrada guarda os IDs da execução e do agente, a contagem de ferramentas e o resultado completo da execução: status, mensagens, etapas com modelo, provedor e IDs das requisições do gateway, atividade das ferramentas, uso e saída. Uma execução que falha recebe uma entrada com o erro (`error.message` no Go e no Java; detalhes estruturados da falha no TypeScript). No Java, os erros de gravação são ignorados, então a captura nunca faz uma execução falhar.
+
+<Warning>
+As entradas guardam prompts, mensagens, contexto do aplicativo, entradas e saídas de ferramentas em texto simples. Mantenha o diretório fora do controle de versão e das imagens de produção, e não o use como armazenamento de auditoria. Para telemetria de produção, use os [hooks do ciclo de vida](./lifecycle-hooks).
+</Warning>

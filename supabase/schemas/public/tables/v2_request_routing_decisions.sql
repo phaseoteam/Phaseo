@@ -42,6 +42,13 @@ CREATE INDEX v2_request_routing_decisions_excluded_idx ON public.v2_request_rout
 CREATE INDEX v2_request_routing_decisions_route_idx ON public.v2_request_routing_decisions USING btree (provider_model_id, created_at DESC)
   WHERE (provider_model_id IS NOT NULL);
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."v2_request_routing_decisions"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "v2_request_routing_decisions_workspace_select" ON "public"."v2_request_routing_decisions"
   FOR SELECT
   TO "authenticated"

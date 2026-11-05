@@ -108,7 +108,7 @@ describe("self-serve rate limit raise routes", () => {
 	it("requires the rate limit scopes for OAuth tokens", async () => {
 		mocks.session = null;
 		mocks.oauthRole = "owner";
-		mocks.management = { workspaceId: WS, authMethod: "oauth", userId: "user-1", oauthScopes: ["rate_limits:read"] };
+		mocks.management = { workspaceId: WS, authMethod: "oauth", oauthClientId: "phaseo_cli", userId: "user-1", oauthScopes: ["rate_limits:read"] };
 		expect((await handleGetRateLimitTier(request())).status).toBe(200);
 		const response = await handleRaiseRateLimitTier(request("POST"));
 		expect(response.status).toBe(403);
@@ -118,7 +118,7 @@ describe("self-serve rate limit raise routes", () => {
 
 	it("lets the workspace owner raise with an OAuth token, and refuses admins and members", async () => {
 		mocks.session = null;
-		mocks.management = { workspaceId: WS, authMethod: "oauth", userId: "user-1", oauthScopes: ["rate_limits:read", "rate_limits:write"] };
+		mocks.management = { workspaceId: WS, authMethod: "oauth", oauthClientId: "phaseo_cli", userId: "user-1", oauthScopes: ["rate_limits:read", "rate_limits:write"] };
 		mocks.oauthRole = "member";
 		expect((await handleGetRateLimitTier(request())).status).toBe(403);
 		mocks.oauthRole = "admin";

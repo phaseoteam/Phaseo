@@ -7,7 +7,8 @@ import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { deliverNotificationTest, type NotificationTestKind } from "@/pipeline/notifications/notification-delivery";
 import { json, withRuntime } from "@/routes/utils";
 import { parseIanaTimeZone } from "@/lib/time-zones";
-import { isResponse, requireCapability, requireJsonBody, requireOAuthWorkspaceRole } from "./route-helpers";
+import { publishRateLimitPlan } from "@core/rate-limit-policies";
+import { isResponse, rejectThirdPartyOAuthSpendingChange, requireCapability, requireJsonBody, requireOAuthWorkspaceRole } from "./route-helpers";
 import { encryptNotificationTarget, isSignedNotificationDestinationType, issueNotificationSigningSecret, notificationTargetPreview, NOTIFICATION_DESTINATION_TYPES, toPublicNotificationDestination, validateNotificationTarget, type NotificationDestinationType } from "./notification-target";
 
 const NO_STORE = { "Cache-Control": "no-store" };
@@ -15,11 +16,15 @@ const NO_STORE = { "Cache-Control": "no-store" };
 export const EVENT_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "rate_limit_throttled", "broadcast_destination_failing", "spend_alert", "spend_blocked", "spend_report"] as const;
 export function isNotificationEventKind(value: unknown): value is (typeof EVENT_KINDS)[number] { return typeof value === "string" && (EVENT_KINDS as readonly string[]).includes(value); }
 const NOTIFICATION_TEST_KINDS = ["notification_test", "model_deprecation"] as const;
+// Destinations and routes decide where workspace events are sent, so an app that signs in with Phaseo must not
+// change any notification setting, whatever scopes the person consented to.
+const NOTIFICATION_APP_REFUSAL = "Apps that use Sign in with Phaseo can't change notification settings, destinations or routes, because they decide where workspace events are sent. The person can change them under Settings, Notifications.";
 
 async function authorize(req: Request, write: boolean) {
 	const auth = await guardManagementAuth(req, { useKvCache: false }); if (!auth.ok) return { response: (auth as GuardErr).response };
 	const capability = requireCapability(auth.value, write ? CAPABILITIES.SETTINGS_WRITE : CAPABILITIES.SETTINGS_READ); if (capability) return { response: capability };
 	const role = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]); if (role) return { response: role };
+	const appError = write ? rejectThirdPartyOAuthSpendingChange(auth.value, NOTIFICATION_APP_REFUSAL) : null; if (appError) return { response: appError };
 	return { auth: auth.value };
 }
 async function audit(auth: any, action: string, targetType: string, targetId: string, metadata?: Record<string, unknown>) { await recordWorkspaceAuditEvent(getSupabaseAdmin(), { workspaceId: auth.workspaceId, actorUserId: auth.userId, action, targetType, targetId, metadata, requestId: auth.requestId }); }
@@ -75,7 +80,7 @@ async function updateSettings(req: Request) {
 		const value = body.auto_top_up as Record<string, unknown>; if (typeof value.enabled !== "boolean") return json({ error: "bad_request", message: "auto_top_up.enabled is required" }, 400, NO_STORE);
 		if (value.enabled) { const mfa = await getMfaStatusForAutoTopUp(access.auth); if (isResponse(mfa)) return mfa; mfaEnabled = mfa; }
 		const amount = Number(value.amount_nanos ?? 0); const threshold = Number(value.balance_threshold_nanos ?? 0);
-		if (value.enabled && (!Number.isSafeInteger(amount) || amount < 1_000_000_000 || !Number.isSafeInteger(threshold) || threshold < 0 || !String(value.payment_method_id ?? "").trim())) return json({ error: "bad_request", message: "Enabled auto top-up requires a payment method, non-negative threshold, and amount of at least one credit" }, 400, NO_STORE);
+		if (value.enabled && (!Number.isSafeInteger(amount) || amount < 5_000_000_000 || amount > 1_000_000_000_000_000 || !Number.isSafeInteger(threshold) || threshold < 0 || !String(value.payment_method_id ?? "").trim())) return json({ error: "bad_request", message: "Enabled auto top-up requires a payment method, non-negative threshold, and an amount from 5 to 1,000,000 credits" }, 400, NO_STORE);
 		autoTopUpUpdate = { enabled: value.enabled, balanceThreshold: value.enabled ? threshold : 0, amount: value.enabled ? amount : 0, paymentMethodId: value.enabled ? String(value.payment_method_id).trim() : null, bypassAcknowledged: value.mfa_bypass_acknowledged === true, bypassPhrase: typeof value.mfa_bypass_phrase === "string" ? value.mfa_bypass_phrase : null };
 		changed.push("auto_top_up");
 	}
@@ -103,6 +108,8 @@ async function updateSettings(req: Request) {
 		}
 	}
 	if (Object.keys(settingsUpdate).length > 2) { const result = await client.from("workspace_settings").upsert(settingsUpdate, { onConflict: "workspace_id" }); if (result.error) return result.error.message?.includes("invalid_time_zone") ? json({ error: "bad_request", message: "spend.billing_time_zone must be an IANA time zone such as Europe/London" }, 400, NO_STORE) : json({ error: "notification_settings_update_failed" }, 503, NO_STORE); }
+	// Department rate limits read the attribution from the published plan.
+	if ("department_spend_attribution" in settingsUpdate) await publishRateLimitPlan(access.auth.workspaceId);
 	await audit(access.auth, "notifications.settings.updated", "workspace_notification_settings", access.auth.workspaceId, { sections: changed }); return getSettings(req);
 }
 

@@ -1,23 +1,24 @@
 ---
 icon: "blocks"
 title: "استدعاء الأدوات (AI SDK)"
+sidebarTitle: "استدعاء الأدوات"
 description: "استدعاء الدوال والأدوات باستخدام Vercel AI SDK ومزوّد Phaseo."
 ---
 
-استخدم `tools` في `generateText` لتنفيذ الدوال بمعلمات محددة الأنواع.
+عرّف الأدوات بالمساعد `tool()` في AI SDK، ومرّرها إلى `generateText`، واضبط `stopWhen` كي يتمكن النموذج من الإجابة بعد تشغيل الأداة.
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
-import { generateText } from "ai";
+import { generateText, stepCountIs, tool } from "ai";
 import { z } from "zod";
 
 const result = await generateText({
-  model: phaseo("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-6-astra"),
   prompt: "What is 17 + 25? Use the calculator tool.",
   tools: {
-    calculator: {
+    calculator: tool({
       description: "Perform basic arithmetic",
-      parameters: z.object({
+      inputSchema: z.object({
         operation: z.enum(["add", "subtract", "multiply", "divide"]),
         a: z.number(),
         b: z.number(),
@@ -28,15 +29,18 @@ const result = await generateText({
         if (operation === "multiply") return a * b;
         return a / b;
       },
-    },
+    }),
   },
+  stopWhen: stepCountIs(2),
 });
 
 console.log(result.text);
 ```
 
-## ملاحظات
+تتوقف `generateText` افتراضيًا بعد خطوة واحدة. إذا كانت تلك الخطوة استدعاء أداة، يكون `result.text` فارغًا وتكون نتيجة الأداة في `result.toolResults`. يمنح `stepCountIs(2)` النموذج خطوة ثانية ليجيب باستخدام النتيجة.
 
-- اجعل أوصاف الأدوات دقيقة ومعلماتها صارمة.
-- تحقّق من الآثار الجانبية الخارجية داخل `execute`.
-- أضف إعادة المحاولة والانتظار التصاعدي لواجهات أدوات المراحل اللاحقة عند الحاجة.
+## كتابة أدوات آمنة
+
+- اجعل الأوصاف دقيقة ومخططات الإدخال صارمة؛ فالنموذج هو من يملأ الوسائط.
+- عامِل الوسائط على أنها مدخلات غير موثوقة. تحقّق منها داخل `execute` قبل أي أثر جانبي.
+- أضف إعادات المحاولة والتراجع التدريجي داخل `execute` لواجهات API اللاحقة التي تفشل مؤقتًا.

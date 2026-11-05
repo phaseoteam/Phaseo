@@ -89,6 +89,15 @@ paths:
             enum:
               - asc
               - desc
+        - name: include
+          in: query
+          description: 设置为 parameter_specs 可按标准格式附加每个报价的请求参数。
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - parameter_specs
         - name: endpoints
           in: query
           description: 按端点筛选
@@ -4970,7 +4979,7 @@ paths:
         - Gateway
       operationId: listWorkloadIdentityPolicies
       summary: 列出受信任的工作负载策略
-      description: 列出工作区的受信任的工作负载策略：哪些 Vercel 部署和 GitHub Actions 工作流可以使用其 OIDC 令牌而不是 API 密钥调用网关。管理密钥和 OAuth 令牌需要 keys:read，或由工作区所有者或管理员操作。仅适用于参与受信任的工作负载 Beta 的工作区；其他工作区会收到 404。
+      description: 列出工作区的受信任的工作负载策略：哪些部署、CI 作业和云工作负载可以使用其 OIDC 令牌而不是 API 密钥调用网关。管理密钥和 OAuth 令牌需要 keys:read，或由工作区所有者或管理员操作。仅适用于参与受信任的工作负载 Beta 的工作区；其他工作区会收到 404。
       responses:
         '200':
           description: 受信任的工作负载策略
@@ -5045,7 +5054,7 @@ paths:
         - Gateway
       operationId: updateWorkloadIdentityPolicy
       summary: 更新受信任的工作负载策略
-      description: 更改策略的名称、状态、声明条件或令牌最长有效期。提供方、签发方和所有者无法更改；请改为创建新策略。更改会在一分钟内同步到网关。管理密钥和 OAuth 令牌需要 keys:write，或由工作区所有者或管理员操作。仅适用于参与受信任的工作负载 Beta 的工作区；其他工作区会收到 404。
+      description: 更改策略的名称、状态、声明条件或令牌最长有效期。提供方、签发方、所有者声明和所有者无法更改；请改为创建新策略。更改会在一分钟内同步到网关。管理密钥和 OAuth 令牌需要 keys:write，或由工作区所有者或管理员操作。仅适用于参与受信任的工作负载 Beta 的工作区；其他工作区会收到 404。
       requestBody:
         required: true
         content:
@@ -5110,7 +5119,7 @@ paths:
             minimum: 1
             maximum: 250
       summary: List rate limit policies
-      description: Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 列出工作区的命名速率限制策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       responses:
         '200':
           description: Rate limit policies
@@ -5130,7 +5139,7 @@ paths:
         - Gateway
       operationId: createRateLimitPolicy
       summary: Create a rate limit policy
-      description: Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 创建一个带有每分钟请求数、每分钟令牌数或并发请求限制的命名策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       requestBody:
         required: true
         content:
@@ -5165,7 +5174,7 @@ paths:
         - Gateway
       operationId: getRateLimitPolicy
       summary: Get a rate limit policy
-      description: Returns one rate limit policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 返回一个速率限制策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       responses:
         '200':
           description: Rate limit policy
@@ -5185,7 +5194,7 @@ paths:
         - Gateway
       operationId: updateRateLimitPolicy
       summary: Update a rate limit policy
-      description: Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 更改策略的名称、描述、限制或失败关闭设置。将某个限制设为 null 即可移除；至少需要保留一个限制。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       requestBody:
         required: true
         content:
@@ -5211,7 +5220,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitPolicy
       summary: Delete a rate limit policy
-      description: Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 删除一个策略以及使用它的所有分配。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       responses:
         '200':
           description: Rate limit policy deleted
@@ -5232,7 +5241,7 @@ paths:
         - Gateway
       operationId: listRateLimitAssignments
       summary: List rate limit assignments
-      description: Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 列出速率限制策略的适用位置，可按策略或目标类型筛选。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       parameters:
         - name: policy_id
           in: query
@@ -5283,7 +5292,7 @@ paths:
         - Gateway
       operationId: createRateLimitAssignment
       summary: Assign a rate limit policy
-      description: Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 将策略应用于一个 API 密钥、工作区成员或部门，或为每个最终用户设置工作区默认值。每个目标只能有一个策略。网关会对每个分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       requestBody:
         required: true
         content:
@@ -5318,7 +5327,7 @@ paths:
         - Gateway
       operationId: getRateLimitAssignment
       summary: Get a rate limit assignment
-      description: Returns one rate limit assignment. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 返回一个速率限制分配。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       responses:
         '200':
           description: Rate limit assignment
@@ -5338,7 +5347,7 @@ paths:
         - Gateway
       operationId: updateRateLimitAssignment
       summary: Change an assignment's policy
-      description: Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 切换应用于分配目标的策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       requestBody:
         required: true
         content:
@@ -5364,7 +5373,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitAssignment
       summary: Delete a rate limit assignment
-      description: Removes a policy from its target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 从目标中移除策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       responses:
         '200':
           description: Rate limit assignment deleted
@@ -5405,7 +5414,7 @@ paths:
         - Gateway
       operationId: createSpendRule
       summary: 创建支出规则
-      description: 创建支出规则并设置其通知目标。接受所有指标；返回 evaluated 为 false 的规则会被保存，并将在后续版本中开始触发。拦截为尽力而为，会在达到阈值几分钟后生效；如需精确上限，请使用密钥限额和工作区预算。每个工作区最多可有 50 条支出规则。
+      description: 创建支出规则并设置其通知目标。所有指标都会被评估。拦截为尽力而为，会在达到阈值几分钟后生效；如需精确上限，请使用密钥限额和工作区预算。每个工作区最多可有 50 条支出规则。
       requestBody:
         required: true
         content:
@@ -11372,6 +11381,8 @@ components:
             type: string
         parameter_details:
           $ref: '#/components/schemas/SupportedParameterDetails'
+        parameter_specs:
+          $ref: '#/components/schemas/ParameterSpecs'
     GatewayPricingMeter:
       type: object
       nullable: true
@@ -11412,6 +11423,7 @@ components:
             $ref: '#/components/schemas/GatewayPricingMeter'
     GatewayProviderAvailabilityReason:
       type: string
+      description: 降级路由（`deranked`）仅作为最后手段，在所有其他健康的提供商之后才会被路由。不再返回 `deranked_lvl1`、`deranked_lvl2` 和 `deranked_lvl3`。
       enum:
         - active
         - preview_only
@@ -11421,6 +11433,7 @@ components:
         - project_limited
         - paused
         - soft_blocked
+        - deranked
         - deranked_lvl1
         - deranked_lvl2
         - deranked_lvl3
@@ -11436,17 +11449,21 @@ components:
         - retired
     GatewayRoutingStatus:
       type: string
+      description: 降级路由（`deranked`）仅作为最后手段，在所有其他健康的提供商之后才会被路由。不再返回 `deranked_lvl1`、`deranked_lvl2` 和 `deranked_lvl3`。
       enum:
         - active
+        - deranked
         - deranked_lvl1
         - deranked_lvl2
         - deranked_lvl3
         - disabled
     GatewayCapabilityStatus:
       type: string
+      description: 降级路由（`deranked`）仅作为最后手段，在所有其他健康的提供商之后才会被路由。不再返回 `deranked_lvl1`、`deranked_lvl2` 和 `deranked_lvl3`。
       enum:
         - active
         - coming_soon
+        - deranked
         - deranked_lvl1
         - deranked_lvl2
         - deranked_lvl3
@@ -11668,6 +11685,197 @@ components:
           $ref: '#/components/schemas/SupportedParameterDetails'
         supported_parameters_detail:
           $ref: '#/components/schemas/SupportedParameterDetails'
+    ParameterValue:
+      oneOf:
+        - type: string
+        - type: number
+        - type: boolean
+    ParameterOption:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          $ref: '#/components/schemas/ParameterValue'
+        label:
+          type: string
+        description:
+          type: string
+      additionalProperties: true
+    ParameterRule:
+      type: object
+      description: 当 if 中的每个参数都取其所列值之一时，其余字段将替换该参数自身的字段。
+      required:
+        - if
+      properties:
+        if:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: '#/components/schemas/ParameterValue'
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        min:
+          type: number
+        max:
+          type: number
+        step:
+          type: number
+        default:
+          $ref: '#/components/schemas/ParameterValue'
+        supported:
+          type: boolean
+        message:
+          type: string
+    ParameterDimensions:
+      type: object
+      properties:
+        min:
+          type: number
+        max:
+          type: number
+        multiple_of:
+          type: number
+        max_width:
+          type: number
+        max_height:
+          type: number
+        min_pixels:
+          type: number
+        max_pixels:
+          type: number
+        max_aspect_ratio:
+          type: string
+        aspect_ratios:
+          type: array
+          items:
+            type: string
+    ParameterSpec:
+      type: object
+      required:
+        - supported
+      properties:
+        supported:
+          type: boolean
+        type:
+          oneOf:
+            - $ref: '#/components/schemas/ParameterType'
+            - type: array
+              items:
+                $ref: '#/components/schemas/ParameterType'
+        media:
+          type: string
+          enum:
+            - image
+            - audio
+            - video
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        open:
+          type: boolean
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterOption'
+        min:
+          type: number
+        max:
+          type: number
+        step:
+          type: number
+        multiple_of:
+          type: number
+        default:
+          $ref: '#/components/schemas/ParameterValue'
+        provider_default:
+          $ref: '#/components/schemas/ParameterValue'
+        required:
+          type: boolean
+        always_on:
+          type: boolean
+        aliases:
+          type: array
+          items:
+            type: string
+        alias_of:
+          type: string
+        upstream_name:
+          type: string
+        upstream_values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        requires:
+          type: array
+          items:
+            type: string
+        min_length:
+          type: number
+        max_length:
+          type: number
+        max_tokens:
+          type: number
+        min_items:
+          type: number
+        max_items:
+          type: number
+        item_types:
+          type: array
+          items:
+            type: string
+        formats:
+          type: array
+          items:
+            type: string
+        max_file_size_bytes:
+          type: number
+        format:
+          type: string
+        dimensions:
+          $ref: '#/components/schemas/ParameterDimensions'
+        properties:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+        when:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterRule'
+        support_level:
+          type: string
+        notes:
+          type: string
+        source:
+          type: object
+          properties:
+            url:
+              type: string
+            verified_at:
+              type: string
+        extra:
+          type: object
+          additionalProperties: true
+    ParameterType:
+      type: string
+      enum:
+        - string
+        - integer
+        - number
+        - boolean
+        - array
+        - object
+        - file
+    ParameterSpecs:
+      type: object
+      description: 提供商在此端点接受的所有请求参数，无论目录以何种方式存储，均以统一的标准格式返回。
+      additionalProperties:
+        $ref: '#/components/schemas/ParameterSpec'
     SupportedParameterDetails:
       type: object
       description: 按参数名称列出的请求参数结构化约束和提供商支持情况。
@@ -16008,6 +16216,8 @@ components:
           $ref: '#/components/schemas/SupportedParameterDetails'
         supported_parameters_detail:
           $ref: '#/components/schemas/SupportedParameterDetails'
+        parameter_specs:
+          $ref: '#/components/schemas/ParameterSpecs'
     VideoModelCapability:
       type: object
       properties:
@@ -23624,7 +23834,13 @@ components:
       enum:
         - vercel
         - github_actions
-      description: 签发 OIDC 令牌的平台。
+        - gitlab
+        - google_cloud
+        - buildkite
+        - circleci
+        - aws
+        - custom
+      description: 签发 OIDC 令牌的平台。其他任何 OIDC 签发方（例如 Kubernetes 集群或自托管 GitLab 实例）请使用 custom。
     WorkloadIdentityPolicy:
       type: object
       description: 受信任的工作负载：来自此签发方、面向固定所有者并满足所有声明条件的令牌，将以策略的密钥进行身份验证。
@@ -23633,6 +23849,7 @@ components:
         - name
         - provider
         - issuer
+        - owner_claim
         - owner_id
         - claim_conditions
         - max_token_lifetime_seconds
@@ -23655,13 +23872,16 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: 令牌签发方，例如 https://oidc.vercel.com/acme 或 https://token.actions.githubusercontent.com。
+          description: 令牌签发方（iss 声明），例如 https://oidc.vercel.com/acme、https://token.actions.githubusercontent.com 或 https://accounts.google.com。
+        owner_claim:
+          type: string
+          description: 与 owner_id 进行匹配的令牌声明。每个平台固定不变：vercel 为 owner_id，github_actions 为 repository_owner_id，gitlab 为 project_id，google_cloud 和 aws 为 sub，buildkite 为 organization_id，circleci 为 oidc.circleci.com/org-id。custom 签发方使用创建策略时选定的声明。
         owner_id:
           type: string
-          description: 固定的 Vercel 团队 ID（owner_id 声明），或 GitHub 组织或用户 ID（repository_owner_id 声明）。
+          description: 固定的所有者：令牌的 owner_claim 必须等于的值，例如 Vercel 团队 ID、GitHub 组织或用户 ID、GitLab 项目 ID、Google 服务账号的唯一 ID、Buildkite 组织 ID、CircleCI 组织 ID 或 AWS IAM 角色 ARN。
         claim_conditions:
           type: object
-          description: 令牌必须满足的额外声明，以声明名称和允许值的形式表示，例如 Vercel 的 project_id 和 environment，或 GitHub Actions 的 repository_id 和 ref。每个声明都必须匹配其中一个值。最多 15 个声明，每个声明最多 20 个值；不能使用 iss、aud、exp、iat、nbf 和 jti，固定所有者的声明通过 owner_id 设置。
+          description: '令牌必须满足的额外声明，以声明名称和允许值的形式表示，例如 GitHub Actions 的 repository_id 和 ref，或 GitLab 的 project_path 和 ref。每个声明都必须匹配其中一个值。最多 15 个声明，每个声明最多 20 个值。声明名称可使用字母、数字和 . _ : / -，最长 128 个字符；不能使用 iss、aud、exp、iat、nbf 和 jti，所有者声明通过 owner_id 设置。'
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23718,14 +23938,19 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: Vercel 必填：https://oidc.vercel.com/ 后接团队标识，或使用 https://oidc.vercel.com 作为全局签发方。GitHub Actions 默认为 https://token.actions.githubusercontent.com。
+          description: 令牌的签发方。github_actions（默认为 https://token.actions.githubusercontent.com；自定义企业签发方需加上 /<enterprise-slug>）、gitlab（https://gitlab.com）、google_cloud（https://accounts.google.com）和 buildkite（https://agent.buildkite.com）可省略。vercel（https://oidc.vercel.com/<team-slug>，全局签发方为 https://oidc.vercel.com）、circleci（https://oidc.circleci.com/org/<organization-id>）、aws（你账号的 https://<id>.tokens.sts.global.api.aws 签发方）和 custom（提供 OIDC 发现文档的公共 https URL，且主机不属于其他任何平台）必填。
+        owner_claim:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: 与 owner_id 进行匹配的令牌声明，例如 sub。custom 必填。其他平台使用固定声明（参见策略上的 owner_claim），因此可省略或传入该声明。创建后无法更改。
         owner_id:
           type: string
           minLength: 1
-          description: 要固定的 Vercel 团队 ID，或 GitHub 组织或用户 ID。
+          description: 所有者声明必须等于的值：Vercel 团队 ID、GitHub 组织或用户 ID、GitLab 项目 ID、Google 服务账号的唯一 ID（不是其邮箱）、Buildkite 组织 ID、CircleCI 组织 ID（签发方中的那个）、AWS IAM 角色 ARN，或者对于 custom 签发方，要信任的 owner_claim 值。
         claim_conditions:
           type: object
-          description: 令牌必须满足的额外声明，以声明名称和允许值的形式表示，例如 Vercel 的 project_id 和 environment，或 GitHub Actions 的 repository_id 和 ref。每个声明都必须匹配其中一个值。最多 15 个声明，每个声明最多 20 个值；不能使用 iss、aud、exp、iat、nbf 和 jti，固定所有者的声明通过 owner_id 设置。
+          description: '令牌必须满足的额外声明，以声明名称和允许值的形式表示，例如 GitHub Actions 的 repository_id 和 ref，或 GitLab 的 project_path 和 ref。每个声明都必须匹配其中一个值。最多 15 个声明，每个声明最多 20 个值。声明名称可使用字母、数字和 . _ : / -，最长 128 个字符；不能使用 iss、aud、exp、iat、nbf 和 jti，所有者声明通过 owner_id 设置。'
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23757,7 +23982,7 @@ components:
             - disabled
         claim_conditions:
           type: object
-          description: 令牌必须满足的额外声明，以声明名称和允许值的形式表示，例如 Vercel 的 project_id 和 environment，或 GitHub Actions 的 repository_id 和 ref。每个声明都必须匹配其中一个值。最多 15 个声明，每个声明最多 20 个值；不能使用 iss、aud、exp、iat、nbf 和 jti，固定所有者的声明通过 owner_id 设置。
+          description: '令牌必须满足的额外声明，以声明名称和允许值的形式表示，例如 GitHub Actions 的 repository_id 和 ref，或 GitLab 的 project_path 和 ref。每个声明都必须匹配其中一个值。最多 15 个声明，每个声明最多 20 个值。声明名称可使用字母、数字和 . _ : / -，最长 128 个字符；不能使用 iss、aud、exp、iat、nbf 和 jti，所有者声明通过 owner_id 设置。'
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23973,12 +24198,11 @@ components:
       additionalProperties: false
     RateLimitTargetType:
       type: string
-      description: What a policy applies to. A department policy is one allowance shared by its members and linked keys. A guardrail policy gives each key and member the guardrail covers its own allowance. end_user_default applies to each end user identified on a request.
+      description: 策略的适用对象。部门策略是由其成员和关联密钥共享的一份额度。end_user_default 适用于请求中识别出的每个最终用户。
       enum:
         - key
         - member
         - department
-        - guardrail
         - end_user_default
     RateLimitAssignment:
       type: object
@@ -24006,7 +24230,7 @@ components:
           type: string
           format: uuid
           nullable: true
-          description: Id of the key, member (user id), department, or guardrail. Null for end_user_default.
+          description: 密钥、成员（用户 ID）或部门的 ID。end_user_default 时为 null。
         created_by:
           type: string
           format: uuid
@@ -24032,7 +24256,7 @@ components:
         target_id:
           type: string
           format: uuid
-          description: Id of the key, member (user id), department, or guardrail. Omit for end_user_default.
+          description: 密钥、成员（用户 ID）或部门的 ID。end_user_default 时省略。
       additionalProperties: false
     RateLimitAssignmentUpdateInput:
       type: object
@@ -25323,7 +25547,7 @@ components:
       additionalProperties: false
     WorkspaceSpendAttribution:
       type: string
-      description: 当某人的密钥没有自己的部门时，支出规则如何将其支出计入部门：all 计入其所属的所有部门；primary 仅计入其主要部门。密钥自身的部门始终优先。
+      description: 当某人的密钥没有自己的部门时，支出规则、部门预算和部门速率限制如何将其请求计入部门：all 计入其所属的所有部门；primary 仅计入其主要部门。密钥自身的部门和成员的目录覆盖始终优先。
       enum:
         - all
         - primary
@@ -26379,42 +26603,6 @@ components:
           enum:
             - true
       additionalProperties: false
-    GuardrailBudgetInput:
-      type: object
-      deprecated: true
-      description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-      properties:
-        dailyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        dailyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-      additionalProperties: false
     GuardrailPolicyInput:
       type: object
       properties:
@@ -26484,8 +26672,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        budgets:
-          $ref: '#/components/schemas/GuardrailBudgetInput'
       additionalProperties: false
     GuardrailCreateRequest:
       allOf:
@@ -26583,42 +26769,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        daily_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-        weekly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-        monthly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-        daily_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-        weekly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-        monthly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
         created_at:
           type: string
           format: date-time
@@ -26730,42 +26880,6 @@ components:
               items:
                 type: object
                 additionalProperties: true
-            daily_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-            weekly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-            monthly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-            daily_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-            weekly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-            monthly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
             created_at:
               type: string
               format: date-time

@@ -450,6 +450,10 @@ describe("videosRoutes collection endpoints", () => {
 									aliases: ["size"],
 								},
 							},
+							parameter_specs: {
+								duration: { supported: true, type: "integer", values: [4, 8, 12], aliases: ["duration_seconds"] },
+								resolution: { supported: true, type: "string", values: ["720p", "1080p"], default: "720p", aliases: ["size"] },
+							},
 						},
 						{
 							id: "byteplus",
@@ -482,6 +486,10 @@ describe("videosRoutes collection endpoints", () => {
 									default: "720p",
 									providers: ["byteplus"],
 								},
+							},
+							parameter_specs: {
+								duration: { supported: true, type: "integer", values: [5, 10] },
+								resolution: { supported: true, type: "string", values: ["480p", "720p"], default: "720p" },
 							},
 						},
 					],

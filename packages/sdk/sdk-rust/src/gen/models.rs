@@ -1528,6 +1528,7 @@ pub struct FusionToolDefinition {
 pub struct GatewayCapabilities {
 	pub endpoints: Option<Vec<String>>,
 	pub parameter_details: HashMap<String, String>,
+	pub parameter_specs: Option<HashMap<String, String>>,
 	pub parameters: Vec<String>,
 }
 
@@ -1795,14 +1796,10 @@ pub struct GenerationResponse {
 pub struct Guardrail {
 	pub allowed_api_model_ids: Option<Option<Vec<String>>>,
 	pub created_at: Option<Option<String>>,
-	pub daily_limit_cost_nanos: Option<Option<i64>>,
-	pub daily_limit_requests: Option<Option<i64>>,
 	pub description: Option<Option<String>>,
 	pub enabled: Option<Option<bool>>,
 	pub id: String,
 	pub model_restriction_mode: Option<Option<String>>,
-	pub monthly_limit_cost_nanos: Option<Option<i64>>,
-	pub monthly_limit_requests: Option<Option<i64>>,
 	pub name: String,
 	pub privacy_enable_free_may_publish_prompts: Option<Option<bool>>,
 	pub privacy_enable_free_may_train: Option<Option<bool>>,
@@ -1818,23 +1815,11 @@ pub struct Guardrail {
 	pub sensitive_info_enabled: Option<Option<bool>>,
 	pub sensitive_info_rules: Option<Option<Vec<HashMap<String, String>>>>,
 	pub updated_at: Option<Option<String>>,
-	pub weekly_limit_cost_nanos: Option<Option<i64>>,
-	pub weekly_limit_requests: Option<Option<i64>>,
 	pub workspace_id: String,
-}
-
-pub struct GuardrailBudgetInput {
-	pub dailyCostNanos: Option<Option<i64>>,
-	pub dailyRequests: Option<Option<i64>>,
-	pub monthlyCostNanos: Option<Option<i64>>,
-	pub monthlyRequests: Option<Option<i64>>,
-	pub weeklyCostNanos: Option<Option<i64>>,
-	pub weeklyRequests: Option<Option<i64>>,
 }
 
 pub struct GuardrailCreateRequest {
 	pub allowedApiModelIds: Option<Vec<String>>,
-	pub budgets: Option<HashMap<String, String>>,
 	pub description: Option<Option<String>>,
 	pub enabled: Option<bool>,
 	pub modelRestrictionMode: Option<String>,
@@ -1916,7 +1901,6 @@ pub struct GuardrailMemberListResponse {
 
 pub struct GuardrailPolicyInput {
 	pub allowedApiModelIds: Option<Vec<String>>,
-	pub budgets: Option<HashMap<String, String>>,
 	pub description: Option<Option<String>>,
 	pub enabled: Option<bool>,
 	pub modelRestrictionMode: Option<String>,
@@ -1946,7 +1930,6 @@ pub struct GuardrailResponse {
 
 pub struct GuardrailUpdateRequest {
 	pub allowedApiModelIds: Option<Vec<String>>,
-	pub budgets: Option<HashMap<String, String>>,
 	pub description: Option<Option<String>>,
 	pub enabled: Option<bool>,
 	pub modelRestrictionMode: Option<String>,
@@ -2729,6 +2712,80 @@ pub struct OpenAIWebSearchToolDefinition {
 pub type OrganisationId = JsonValue;
 
 pub type OrganisationIdList = JsonValue;
+
+pub struct ParameterDimensions {
+	pub aspect_ratios: Option<Vec<String>>,
+	pub max: Option<f64>,
+	pub max_aspect_ratio: Option<String>,
+	pub max_height: Option<f64>,
+	pub max_pixels: Option<f64>,
+	pub max_width: Option<f64>,
+	pub min: Option<f64>,
+	pub min_pixels: Option<f64>,
+	pub multiple_of: Option<f64>,
+}
+
+pub struct ParameterOption {
+	pub description: Option<String>,
+	pub label: Option<String>,
+	pub value: String,
+}
+
+pub struct ParameterRule {
+	pub default: Option<String>,
+	pub r#if: HashMap<String, String>,
+	pub max: Option<f64>,
+	pub message: Option<String>,
+	pub min: Option<f64>,
+	pub step: Option<f64>,
+	pub supported: Option<bool>,
+	pub values: Option<Vec<String>>,
+}
+
+pub struct ParameterSpec {
+	pub alias_of: Option<String>,
+	pub aliases: Option<Vec<String>>,
+	pub always_on: Option<bool>,
+	pub default: Option<String>,
+	pub dimensions: Option<HashMap<String, String>>,
+	pub extra: Option<HashMap<String, String>>,
+	pub format: Option<String>,
+	pub formats: Option<Vec<String>>,
+	pub item_types: Option<Vec<String>>,
+	pub max: Option<f64>,
+	pub max_file_size_bytes: Option<f64>,
+	pub max_items: Option<f64>,
+	pub max_length: Option<f64>,
+	pub max_tokens: Option<f64>,
+	pub media: Option<String>,
+	pub min: Option<f64>,
+	pub min_items: Option<f64>,
+	pub min_length: Option<f64>,
+	pub multiple_of: Option<f64>,
+	pub notes: Option<String>,
+	pub open: Option<bool>,
+	pub options: Option<Vec<HashMap<String, String>>>,
+	pub properties: Option<HashMap<String, String>>,
+	pub provider_default: Option<String>,
+	pub required: Option<bool>,
+	pub requires: Option<Vec<String>>,
+	pub source: Option<HashMap<String, String>>,
+	pub step: Option<f64>,
+	pub support_level: Option<String>,
+	pub supported: bool,
+	pub r#type: Option<String>,
+	pub upstream_name: Option<String>,
+	pub upstream_values: Option<Vec<String>>,
+	pub values: Option<Vec<String>>,
+	pub when: Option<Vec<HashMap<String, String>>>,
+}
+
+pub struct ParameterSpecs {
+}
+
+pub type ParameterType = JsonValue;
+
+pub type ParameterValue = JsonValue;
 
 pub type ParseBlock = JsonValue;
 
@@ -3948,6 +4005,7 @@ pub struct VideoModelCapability {
 
 pub struct VideoModelProviderCapability {
 	pub id: Option<String>,
+	pub parameter_specs: Option<HashMap<String, String>>,
 	pub supported_parameters: Option<Vec<String>>,
 	pub supported_parameters_detail: Option<HashMap<String, String>>,
 	pub supported_params: Option<Vec<String>>,
@@ -4073,6 +4131,7 @@ pub struct WorkloadIdentityPolicy {
 	pub last_used_at: Option<String>,
 	pub max_token_lifetime_seconds: i64,
 	pub name: String,
+	pub owner_claim: String,
 	pub owner_id: String,
 	pub provider: String,
 	pub status: String,
@@ -4088,6 +4147,7 @@ pub struct WorkloadIdentityPolicyInput {
 	pub issuer: Option<String>,
 	pub max_token_lifetime_seconds: Option<i64>,
 	pub name: String,
+	pub owner_claim: Option<String>,
 	pub owner_id: String,
 	pub provider: String,
 }

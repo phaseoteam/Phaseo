@@ -5,30 +5,43 @@ description: "Save reusable Gateway configurations for your team."
 icon: "sliders-horizontal"
 ---
 
-Presets are reusable configurations that help teams standardize prompts, model preferences, and routing defaults. They are managed with the `phaseo presets` CLI commands, the `/v1/presets` API or the Phaseo dashboard, and can be shared across a team.
+import { PresetMergeExplorer } from "/snippets/preset-merge.jsx";
 
-## Quick start
+A preset stores the model, system prompt, parameters, and provider rules for one job under a name such as `@support-triage`. Callers send that name as the `model` and only the input; the Gateway fills in the rest before it picks a provider.
+
+Toggle the request fields to see which value wins:
+
+<PresetMergeExplorer />
+
+The rules are:
+
+- **Parameters fill gaps.** A preset's default parameters apply only to fields the request leaves out. A value in the request always wins.
+- **System prompts stack.** The preset's prompt goes first. If the request has its own system prompt or `instructions`, it follows after a blank line.
+- **Provider settings in the request win.** Fields such as `provider.order` or `provider.max_price` in the request replace the preset's value for that field.
+- **Allow lists narrow, never widen.** The preset's provider allow and ignore lists are applied before provider selection, so they also limit which providers a fallback can use. A model outside the preset's allowed models fails with a `validation_error` whose detail keyword is `preset_model_not_allowed`; it isn't rerouted.
+
+## Create and use a preset
 
 <Steps>
-<Step title="Create a preset">
+<Step title="Create the preset">
 
-Open **Dashboard -> Settings -> Presets** and create a preset with a clear slug, such as `release-summary`. Add only the defaults that should be shared across callers. From the CLI, run `phaseo presets create --name @release-summary --model <model-id>`.
+Open **Dashboard -> Settings -> Presets** and create a preset with a slug such as `support-triage`. Add only the defaults every caller should share.
+
+From the CLI: `phaseo presets create --name @support-triage --model <model-id>`.
 
 </Step>
 
-<Step title="Reference the preset in a request">
-
-Keep the caller focused on the user input while the preset supplies stable prompt, parameter, and routing defaults.
+<Step title="Call it by name">
 
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
-	  -d '{
-	    "model": "@release-summary",
-	    "input": "Generate a release summary for the last 24 hours."
-	  }'
+  -d '{
+    "model": "@support-triage",
+    "input": "Customer says the invoice total is wrong."
+  }'
 ```
 
 ```typescript TypeScript
@@ -37,8 +50,8 @@ import Phaseo from "@phaseo/sdk";
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-	  model: "@release-summary",
-	  input: "Generate a release summary for the last 24 hours.",
+  model: "@support-triage",
+  input: "Customer says the invoice total is wrong.",
 });
 ```
 
@@ -48,96 +61,67 @@ from phaseo import Phaseo
 client = Phaseo(api_key="YOUR_API_KEY")
 
 response = client.generate_response({
-	    "model": "@release-summary",
-	    "input": "Generate a release summary for the last 24 hours.",
+    "model": "@support-triage",
+    "input": "Customer says the invoice total is wrong.",
 })
 ```
 </CodeGroup>
 
 </Step>
 
-<Step title="Check the routing result">
+<Step title="Check what was applied">
 
-Open the request in **Gateway -> Usage** to confirm which defaults were applied and which provider served it.
+Open the request in **Gateway -> Usage** to see which preset defaults were applied and which provider served it.
 
 </Step>
 </Steps>
 
-## What a preset can include
+## What a preset can hold
 
-- A system prompt to prepend to every request.
-- A [prompt template](./prompt-templates): messages with `{{variables}}` that each request fills in.
-- Allowed models or model families.
-- Provider allow/ignore lists for routing preferences.
-- Default parameters (temperature, top_p, max_tokens, and similar settings).
-- Optional reasoning defaults for supported models.
+| Setting | Effect |
+| --- | --- |
+| Model | Used when the request is sent with the preset's name. |
+| Allowed models | Model IDs or patterns such as `anthropic/*`. Other models are rejected. |
+| System prompt | Prepended to every request. |
+| [Prompt template](./prompt-templates) | Messages with `{{variables}}` that each request fills in. |
+| Default parameters | `temperature`, `top_p`, `max_tokens`, reasoning settings and similar. |
+| Provider rules | Allow and ignore lists, provider order, regions, price ceilings. |
 
-Preset names are prefixed with `@` to keep them easy to recognize.
+Keep caller-specific logic in your application and use separate presets when workflows need different prompts, routing, or caching.
 
-Invoke a preset through the request's `model` field, or through `prompt.id` when the preset has a [prompt template](./prompt-templates). Phaseo does not expose a separate `preset` request field.
+## Name a preset
 
-- Private and workspace presets use `@{slug}` and resolve inside the API key's workspace.
-- Public presets use `@{username}/{slug}` and can resolve from any workspace. For example, `@octavia/release-summary`.
+Send a preset through the `model` field, or through `prompt.id` when it has a [prompt template](./prompt-templates). There is no separate `preset` field.
 
-Public publishing requires an enabled public profile and username. Public slug conflicts are scoped to that publisher, so two publishers may use the same slug without ambiguity. Usernames are globally unique. Slugs are normalised to lower case and support letters, numbers, hyphens, underscores, periods, and colons.
+| Form | Resolves in |
+| --- | --- |
+| `@support-triage` | The API key's workspace (private and workspace presets). |
+| `@octavia/support-triage` | Any workspace (public presets, published by user `octavia`). |
+| `@support-triage@v3` | That published version. |
+| `@support-triage@production` | Whichever version the `production` label points at. |
 
-## Versions and marketplace forks
+Publishing a public preset needs an enabled public profile and a username. Usernames are unique across Phaseo; slugs only need to be unique for one publisher. Slugs are lower-cased and may contain letters, numbers, `-`, `_`, `.`, and `:`.
 
-Saving changes updates a private draft. Use **Publish new version** when those changes are ready; Phaseo creates an immutable numbered release while retaining every earlier version for review.
+## Version and roll back
 
-Preset owners can choose how release labels are displayed:
+Saving edits a private draft. **Publish new version** turns the draft into an immutable, numbered release and keeps every earlier one.
 
-- **Sequential:** `v1`, `v2`, `v3`.
-- **Semantic Versioning:** explicit SemVer labels such as `1.2.0`, `2.0.0-beta.1`, or `1.4.2+build.7`.
-- **Date versioning:** `YYYY.MM.DD`, with a numeric suffix when multiple releases are published on the same date, such as `2026.08.02.2`.
+Choose how release labels look:
 
-Phaseo maintains a separate monotonic release number internally, so chronology, upstream comparisons, and lineage remain deterministic regardless of the selected public label format.
+| Format | Example |
+| --- | --- |
+| Sequential | `v1`, `v2`, `v3` |
+| Semantic Versioning | `1.2.0`, `2.0.0-beta.1`, `1.4.2+build.7` |
+| Date | `2026.08.02`, then `2026.08.02.2` for a second release that day |
 
-Marketplace copies remain pinned to the exact upstream version they copied. When the publisher releases an update, the copied preset shows an update notice. Applying it updates the copy's draft only, so the workspace owner can review and explicitly publish it without an upstream author changing production behaviour.
+Point a named label such as `production` at a version, and move it back to an earlier version to roll back. See [Versions and labels](/v1/guides/prompt-templates#versions-and-labels).
 
-Phaseo retains both the immediate source and the complete ancestry of every fork. Marketplace pages can therefore distinguish direct forks from all descendants, even when a preset has been copied and republished several times.
+From the CLI: `phaseo presets versions create` and `phaseo presets labels set`, or the `/v1/presets` API.
 
-Requests can pin a published version by its label, such as `@support-triage@v3`, or by a named label such as `production` that you point at a version. Moving a label back to an earlier version is a rollback. See [Versions and labels](/v1/guides/prompt-templates#versions-and-labels).
+## Fork a marketplace preset
 
-## How preset merging works
+A copy of a marketplace preset stays pinned to the version you copied. When the publisher releases an update, your copy shows a notice. Applying it changes only your draft, so nothing reaches production until you publish it yourself.
 
-When a request resolves with a preset in gateway context, the preset is applied before provider routing:
+Phaseo records each fork's source and full ancestry, so a marketplace page can show direct forks separately from all descendants.
 
-- Default parameters only fill fields that are missing in the request body. They do not overwrite values already provided by the caller.
-- If the request already has a system message, the preset prompt is prepended. If the request uses an Anthropic-style `system` field, the preset prompt is prepended there instead.
-- Provider allow/ignore lists are applied before provider selection, so they narrow the fallback pool instead of acting as a cosmetic label.
-- Requests outside the preset's allowed model list are rejected early instead of being silently rerouted.
-
-This makes presets the main public surface for reusable request defaults and lightweight compatibility transforms without forcing every caller to duplicate the same prompt or parameter logic.
-
-## Current public preset surface
-
-The dashboard preset flow is intentionally scoped to a stable, explicit subset of request shaping:
-
-- system prompt injection
-- prompt templates with typed variables
-- model allowlists
-- provider allow/ignore routing constraints
-- decoding and generation defaults
-- reasoning defaults
-
-If you need more complex caller-specific transforms, keep them in one application boundary layer and let presets carry the reusable team-wide defaults.
-
-## Manage presets
-
-Create and manage presets in **Dashboard -> Settings -> Presets**, or with `phaseo presets create|update`, `phaseo presets versions create` and `phaseo presets labels set` (the `/v1/presets` API). Use separate slugs when workflows need meaningfully different prompt, routing, or caching behavior.
-
-## When to use presets
-
-- Standardize system prompts across multiple services.
-- Constrain routing to approved providers for compliance.
-- Keep default parameters consistent across environments.
-- Give migration projects one durable place to carry prompt, routing, and parameter defaults while the application code stays mostly unchanged.
-
-## Related guides
-
-- [Prompt Templates](./prompt-templates)
-- [Collect Feedback for Presets](./preset-feedback)
-- [Routing and Fallbacks](./routing-and-fallbacks)
-- [Inference Parameters](./inference-parameters)
-- [Feature Parity Matrix](../migration-guides/feature-parity-matrix)
+To collect ratings on a preset's answers, see [Collect Feedback for Presets](./preset-feedback).

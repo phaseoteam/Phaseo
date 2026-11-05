@@ -1,10 +1,10 @@
 ---
 title: "Comece aqui"
-description: "Faça sua primeira solicitação, conecte um aplicativo ou encontre a referência necessária."
+description: "Faça sua primeira solicitação, conecte um aplicativo ou encontre a referência de que você precisa."
 icon: "house"
 ---
 
-Use o Phaseo para chamar modelos de vários provedores por uma API, controlar o roteamento e acompanhar uso e custos.
+Chame modelos de vários provedores por uma única API em `https://api.phaseo.app/v1`, escolha como cada solicitação é roteada e acompanhe o uso e o custo por solicitação. Esta solicitação usa `phaseo/free`, então funciona antes de você adicionar créditos:
 
 <CodeGroup>
 
@@ -18,7 +18,7 @@ curl https://api.phaseo.app/v1/responses \
 ```typescript TypeScript
 import Phaseo, { outputText } from "@phaseo/sdk";
 
-const client = new Phaseo(); // reads PHASEO_API_KEY
+const client = new Phaseo(); // lê PHASEO_API_KEY
 
 const response = await client.generateResponse({
   model: "phaseo/free",
@@ -31,7 +31,7 @@ console.log(outputText(response));
 ```python Python
 from phaseo import Phaseo
 
-client = Phaseo()  # reads PHASEO_API_KEY
+client = Phaseo()  # lê PHASEO_API_KEY
 
 response = client.responses.create({"model": "phaseo/free", "input": "Hello"})
 
@@ -40,7 +40,7 @@ print(response.output_text)
 
 </CodeGroup>
 
-Ainda não tem uma chave de API? Execute `phaseo keys create` com a [CLI da Phaseo](./guides/integrations/phaseo-cli) ou [crie uma no painel](https://phaseo.app/pt-BR/settings/keys) e depois siga o [início rápido](./quickstart.mdx).
+Ainda não tem uma chave de API? Execute `phaseo keys create` com a [CLI do Phaseo](./guides/integrations/phaseo-cli) ou [crie uma no painel](https://phaseo.app/settings/keys) e depois siga o [início rápido](./quickstart.mdx).
 
 ## Comece de onde você está
 
@@ -48,11 +48,11 @@ Ainda não tem uma chave de API? Execute `phaseo keys create` com a [CLI da Phas
 
 [**<Icon icon="rocket" /> Faça sua primeira solicitação** Crie uma chave, envie uma solicitação e leia o resultado.](./quickstart.mdx)
 
-[**<Icon icon="arrow-right-left" /> Migre um aplicativo** Atualize uma integração existente de provedor ou gateway.](./migration-guides/index.mdx)
+[**<Icon icon="arrow-right-left" /> Migre um aplicativo** Atualize uma integração existente com um provedor ou gateway.](./migration-guides/index.mdx)
 
-[**<Icon icon="terminal" /> Conecte um assistente de programação** Configure Codex, Claude Code, Cursor ou outro assistente.](./guides/integrations/coding-assistants.mdx)
+[**<Icon icon="terminal" /> Conecte um assistente de programação** Configure o Codex, o Claude Code, o Cursor ou outro assistente.](./guides/integrations/coding-assistants.mdx)
 
-[**<Icon icon="bot" /> Crie um agente** Dê ferramentas a um modelo, transmita cada etapa e aprove as ações dele com o SDK de agentes.](./sdk-reference/agent-sdk/overview.mdx)
+[**<Icon icon="bot" /> Crie um agente** Dê ferramentas a um modelo, transmita as etapas dele e aprove as ações dele com o SDK de agentes.](./sdk-reference/agent/overview.mdx)
 
 </div>
 
@@ -60,13 +60,12 @@ Ainda não tem uma chave de API? Execute `phaseo keys create` com a [CLI da Phas
 
 <div className="ph-sdks not-prose">
 
-[<Icon icon="https://phaseo.app/docs/icons/languages/typescript.svg" /> TypeScript](./sdk-reference/typescript/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/python.svg" /> Python](./sdk-reference/python/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/go.svg" /> Go](./sdk-reference/go/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/csharp.svg" /> C#](./sdk-reference/csharp/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/php.svg" /> PHP](./sdk-reference/php/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/ruby.svg" /> Ruby](./sdk-reference/ruby/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/rust.svg" /> Rust](./sdk-reference/rust/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/typescript.svg" /> <Icon icon="https://phaseo.app/docs/icons/languages/python.svg" /> TypeScript e Python](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/go.svg" /> Go](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/csharp.svg" /> C#](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/php.svg" /> PHP](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/ruby.svg" /> Ruby](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/rust.svg" /> Rust](./sdk-reference/client/overview.mdx)
 
 </div>
 
@@ -74,7 +73,7 @@ Ainda não tem uma chave de API? Execute `phaseo keys create` com a [CLI da Phas
 
 | Tarefa | Documentação |
 | --- | --- |
-| Consultar um campo ou endpoint de solicitação | [Referência da API](./api-reference/introduction.mdx) |
+| Consultar um campo de solicitação ou um endpoint | [Referência da API](./api-reference/introduction.mdx) |
 | Executar um aplicativo inicial | [Exemplos](./guides/examples.mdx) |
 | Implementar um fluxo de trabalho específico | [Receitas](./cookbook/index.mdx) |
 | Escolher provedores e alternativas | [Roteamento](./guides/routing-and-fallbacks.mdx) |
@@ -83,11 +82,11 @@ Ainda não tem uma chave de API? Execute `phaseo keys create` com a [CLI da Phas
 
 ## Escolha um modelo
 
-[Explore modelos](https://phaseo.app/models) ou [compare-os](https://phaseo.app/compare). O catálogo pode incluir modelos sem rotas disponíveis; confira a disponibilidade no Gateway antes de integrar. Veja [Como o Phaseo funciona](./developers/introduction.mdx) para modelos, provedores e cobrança.
+[Explore os modelos](https://phaseo.app/models) ou [compare-os](https://phaseo.app/compare). O catálogo também lista modelos que você ainda não pode chamar, então confira se o modelo está **Ativo no Gateway** antes de integrá-lo ou liste os modelos que podem ser chamados com `GET /v1/models`. Veja [Como o Phaseo funciona](./developers/introduction.mdx) para saber sobre modelos, provedores e cobrança.
 
 ## Crie com um agente de IA
 
-<Prompt description="Dê ao seu agente de programação (Cursor, Claude Code, Codex e outros) tudo o que ele precisa para adicionar a Phaseo ao seu projeto." icon="bot" actions={["copy", "cursor"]}>
+<Prompt description="Dê ao seu agente de programação (Cursor, Claude Code, Codex e outros) tudo o que ele precisa para adicionar o Phaseo ao seu projeto." icon="bot" actions={["copy", "cursor"]}>
 {`Add Phaseo Gateway to this project.
 
 1. Install the Phaseo skills: npx skills add https://phaseo.app/docs
@@ -98,4 +97,4 @@ Ainda não tem uma chave de API? Execute `phaseo keys create` com a [CLI da Phas
 6. Explain which files you will change and how you will verify the change before you edit. Never print or commit API keys.`}
 </Prompt>
 
-Os agentes também podem pesquisar nesta documentação com o [Docs MCP](./guides/integrations/docs-mcp.mdx), ler o [resumo de recursos](https://phaseo.app/docs/skill.md) ou começar pelo [llms.txt](https://phaseo.app/docs/llms.txt).
+Os agentes também podem pesquisar nesta documentação pelo [Docs MCP](./guides/integrations/docs-mcp.mdx), ler o [resumo de recursos](https://phaseo.app/docs/skill.md) ou começar pelo [llms.txt](https://phaseo.app/docs/llms.txt).

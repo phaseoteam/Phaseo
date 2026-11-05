@@ -89,6 +89,15 @@ paths:
             enum:
               - asc
               - desc
+        - name: include
+          in: query
+          description: parameter_specs を指定すると、各オファーのリクエストパラメーターを標準形式で追加します。
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - parameter_specs
         - name: endpoints
           in: query
           description: エンドポイントで絞り込む
@@ -4970,7 +4979,7 @@ paths:
         - Gateway
       operationId: listWorkloadIdentityPolicies
       summary: 信頼済みワークロードのポリシー一覧を取得
-      description: ワークスペースの信頼済みワークロードのポリシーを一覧表示します。API キーの代わりに OIDC トークンでゲートウェイを呼び出せる Vercel のデプロイと GitHub Actions のワークフローが分かります。管理キーと OAuth トークンでは keys:read、またはワークスペースのオーナーか管理者が必要です。信頼済みワークロードのベータに参加しているワークスペースのみ利用でき、それ以外のワークスペースには 404 が返ります。
+      description: ワークスペースの信頼済みワークロードのポリシーを一覧表示します。API キーの代わりに OIDC トークンでゲートウェイを呼び出せるデプロイ、CI ジョブ、クラウドワークロードが分かります。管理キーと OAuth トークンでは keys:read、またはワークスペースのオーナーか管理者が必要です。信頼済みワークロードのベータに参加しているワークスペースのみ利用でき、それ以外のワークスペースには 404 が返ります。
       responses:
         '200':
           description: 信頼済みワークロードのポリシー
@@ -5045,7 +5054,7 @@ paths:
         - Gateway
       operationId: updateWorkloadIdentityPolicy
       summary: 信頼済みワークロードのポリシーを更新
-      description: ポリシーの名前、状態、クレーム条件、トークンの最大有効期間を変更します。プロバイダー、発行者、オーナーは変更できないため、代わりに新しいポリシーを作成してください。変更は 1 分以内にゲートウェイへ反映されます。管理キーと OAuth トークンでは keys:write、またはワークスペースのオーナーか管理者が必要です。信頼済みワークロードのベータに参加しているワークスペースのみ利用でき、それ以外のワークスペースには 404 が返ります。
+      description: ポリシーの名前、状態、クレーム条件、トークンの最大有効期間を変更します。プロバイダー、発行者、オーナーのクレーム、オーナーは変更できないため、代わりに新しいポリシーを作成してください。変更は 1 分以内にゲートウェイへ反映されます。管理キーと OAuth トークンでは keys:write、またはワークスペースのオーナーか管理者が必要です。信頼済みワークロードのベータに参加しているワークスペースのみ利用でき、それ以外のワークスペースには 404 が返ります。
       requestBody:
         required: true
         content:
@@ -5110,7 +5119,7 @@ paths:
             minimum: 1
             maximum: 250
       summary: List rate limit policies
-      description: Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: ワークスペースの名前付きレート制限ポリシーを一覧表示します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。
       responses:
         '200':
           description: Rate limit policies
@@ -5130,7 +5139,7 @@ paths:
         - Gateway
       operationId: createRateLimitPolicy
       summary: Create a rate limit policy
-      description: Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 1 分あたりのリクエスト数、1 分あたりのトークン数、または同時リクエスト数の制限を持つ名前付きポリシーを作成します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。
       requestBody:
         required: true
         content:
@@ -5165,7 +5174,7 @@ paths:
         - Gateway
       operationId: getRateLimitPolicy
       summary: Get a rate limit policy
-      description: Returns one rate limit policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 1 つのレート制限ポリシーを返します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。
       responses:
         '200':
           description: Rate limit policy
@@ -5185,7 +5194,7 @@ paths:
         - Gateway
       operationId: updateRateLimitPolicy
       summary: Update a rate limit policy
-      description: Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: ポリシーの名前、説明、制限、またはフェイルクローズ設定を変更します。制限を削除するには null に設定します。少なくとも 1 つの制限が残っている必要があります。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。
       requestBody:
         required: true
         content:
@@ -5211,7 +5220,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitPolicy
       summary: Delete a rate limit policy
-      description: Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: ポリシーと、それを使用するすべての割り当てを削除します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。
       responses:
         '200':
           description: Rate limit policy deleted
@@ -5232,7 +5241,7 @@ paths:
         - Gateway
       operationId: listRateLimitAssignments
       summary: List rate limit assignments
-      description: Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: レート制限ポリシーの適用先を一覧表示します。ポリシーまたは対象タイプで絞り込むこともできます。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。
       parameters:
         - name: policy_id
           in: query
@@ -5283,7 +5292,7 @@ paths:
         - Gateway
       operationId: createRateLimitAssignment
       summary: Assign a rate limit policy
-      description: Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 1 つの API キー、ワークスペースメンバー、または部門にポリシーを適用するか、各エンドユーザーに対するワークスペースのデフォルトを設定します。各対象に設定できるポリシーは 1 つです。ゲートウェイはすべての割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。
       requestBody:
         required: true
         content:
@@ -5318,7 +5327,7 @@ paths:
         - Gateway
       operationId: getRateLimitAssignment
       summary: Get a rate limit assignment
-      description: Returns one rate limit assignment. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 1 つのレート制限の割り当てを返します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。
       responses:
         '200':
           description: Rate limit assignment
@@ -5338,7 +5347,7 @@ paths:
         - Gateway
       operationId: updateRateLimitAssignment
       summary: Change an assignment's policy
-      description: Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 割り当ての対象に適用されるポリシーを切り替えます。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。
       requestBody:
         required: true
         content:
@@ -5364,7 +5373,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitAssignment
       summary: Delete a rate limit assignment
-      description: Removes a policy from its target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: ポリシーを対象から外します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。
       responses:
         '200':
           description: Rate limit assignment deleted
@@ -5405,7 +5414,7 @@ paths:
         - Gateway
       operationId: createSpendRule
       summary: 支出ルールを作成
-      description: 支出ルールを作成し、通知先を設定します。どの指標も受け付けます。evaluated が false で返されるルールは保存され、今後のリリースから発火します。ブロックはベストエフォートで、しきい値の数分後に作動します。正確な上限にはキーの上限とワークスペース予算を使ってください。ワークスペースあたり 50 件まで作成できます。
+      description: 支出ルールを作成し、通知先を設定します。すべての指標が評価されます。ブロックはベストエフォートで、しきい値の数分後に作動します。正確な上限にはキーの上限とワークスペース予算を使ってください。ワークスペースあたり 50 件まで作成できます。
       requestBody:
         required: true
         content:
@@ -11372,6 +11381,8 @@ components:
             type: string
         parameter_details:
           $ref: '#/components/schemas/SupportedParameterDetails'
+        parameter_specs:
+          $ref: '#/components/schemas/ParameterSpecs'
     GatewayPricingMeter:
       type: object
       nullable: true
@@ -11412,6 +11423,7 @@ components:
             $ref: '#/components/schemas/GatewayPricingMeter'
     GatewayProviderAvailabilityReason:
       type: string
+      description: 優先度が下げられたルート（`deranked`）は、他のすべての正常なプロバイダーの後に、最終手段としてのみルーティングされます。`deranked_lvl1`、`deranked_lvl2`、`deranked_lvl3` は返されなくなりました。
       enum:
         - active
         - preview_only
@@ -11421,6 +11433,7 @@ components:
         - project_limited
         - paused
         - soft_blocked
+        - deranked
         - deranked_lvl1
         - deranked_lvl2
         - deranked_lvl3
@@ -11436,17 +11449,21 @@ components:
         - retired
     GatewayRoutingStatus:
       type: string
+      description: 優先度が下げられたルート（`deranked`）は、他のすべての正常なプロバイダーの後に、最終手段としてのみルーティングされます。`deranked_lvl1`、`deranked_lvl2`、`deranked_lvl3` は返されなくなりました。
       enum:
         - active
+        - deranked
         - deranked_lvl1
         - deranked_lvl2
         - deranked_lvl3
         - disabled
     GatewayCapabilityStatus:
       type: string
+      description: 優先度が下げられたルート（`deranked`）は、他のすべての正常なプロバイダーの後に、最終手段としてのみルーティングされます。`deranked_lvl1`、`deranked_lvl2`、`deranked_lvl3` は返されなくなりました。
       enum:
         - active
         - coming_soon
+        - deranked
         - deranked_lvl1
         - deranked_lvl2
         - deranked_lvl3
@@ -11668,6 +11685,197 @@ components:
           $ref: '#/components/schemas/SupportedParameterDetails'
         supported_parameters_detail:
           $ref: '#/components/schemas/SupportedParameterDetails'
+    ParameterValue:
+      oneOf:
+        - type: string
+        - type: number
+        - type: boolean
+    ParameterOption:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          $ref: '#/components/schemas/ParameterValue'
+        label:
+          type: string
+        description:
+          type: string
+      additionalProperties: true
+    ParameterRule:
+      type: object
+      description: if 内のすべてのパラメーターが列挙された値のいずれかである場合、その他のフィールドがパラメーター自身の値を置き換えます。
+      required:
+        - if
+      properties:
+        if:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: '#/components/schemas/ParameterValue'
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        min:
+          type: number
+        max:
+          type: number
+        step:
+          type: number
+        default:
+          $ref: '#/components/schemas/ParameterValue'
+        supported:
+          type: boolean
+        message:
+          type: string
+    ParameterDimensions:
+      type: object
+      properties:
+        min:
+          type: number
+        max:
+          type: number
+        multiple_of:
+          type: number
+        max_width:
+          type: number
+        max_height:
+          type: number
+        min_pixels:
+          type: number
+        max_pixels:
+          type: number
+        max_aspect_ratio:
+          type: string
+        aspect_ratios:
+          type: array
+          items:
+            type: string
+    ParameterSpec:
+      type: object
+      required:
+        - supported
+      properties:
+        supported:
+          type: boolean
+        type:
+          oneOf:
+            - $ref: '#/components/schemas/ParameterType'
+            - type: array
+              items:
+                $ref: '#/components/schemas/ParameterType'
+        media:
+          type: string
+          enum:
+            - image
+            - audio
+            - video
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        open:
+          type: boolean
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterOption'
+        min:
+          type: number
+        max:
+          type: number
+        step:
+          type: number
+        multiple_of:
+          type: number
+        default:
+          $ref: '#/components/schemas/ParameterValue'
+        provider_default:
+          $ref: '#/components/schemas/ParameterValue'
+        required:
+          type: boolean
+        always_on:
+          type: boolean
+        aliases:
+          type: array
+          items:
+            type: string
+        alias_of:
+          type: string
+        upstream_name:
+          type: string
+        upstream_values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        requires:
+          type: array
+          items:
+            type: string
+        min_length:
+          type: number
+        max_length:
+          type: number
+        max_tokens:
+          type: number
+        min_items:
+          type: number
+        max_items:
+          type: number
+        item_types:
+          type: array
+          items:
+            type: string
+        formats:
+          type: array
+          items:
+            type: string
+        max_file_size_bytes:
+          type: number
+        format:
+          type: string
+        dimensions:
+          $ref: '#/components/schemas/ParameterDimensions'
+        properties:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+        when:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterRule'
+        support_level:
+          type: string
+        notes:
+          type: string
+        source:
+          type: object
+          properties:
+            url:
+              type: string
+            verified_at:
+              type: string
+        extra:
+          type: object
+          additionalProperties: true
+    ParameterType:
+      type: string
+      enum:
+        - string
+        - integer
+        - number
+        - boolean
+        - array
+        - object
+        - file
+    ParameterSpecs:
+      type: object
+      description: このエンドポイントでプロバイダーが受け付けるすべてのリクエストパラメーター。カタログでの保存形式にかかわらず、1 つの標準形式で返します。
+      additionalProperties:
+        $ref: '#/components/schemas/ParameterSpec'
     SupportedParameterDetails:
       type: object
       description: リクエストパラメーターに関する構造化された制約とプロバイダー対応状況を、パラメーター名ごとに示します。
@@ -16008,6 +16216,8 @@ components:
           $ref: '#/components/schemas/SupportedParameterDetails'
         supported_parameters_detail:
           $ref: '#/components/schemas/SupportedParameterDetails'
+        parameter_specs:
+          $ref: '#/components/schemas/ParameterSpecs'
     VideoModelCapability:
       type: object
       properties:
@@ -23624,7 +23834,13 @@ components:
       enum:
         - vercel
         - github_actions
-      description: OIDC トークンを発行するプラットフォーム。
+        - gitlab
+        - google_cloud
+        - buildkite
+        - circleci
+        - aws
+        - custom
+      description: OIDC トークンを発行するプラットフォーム。Kubernetes クラスターやセルフマネージドの GitLab インスタンスなど、その他の OIDC 発行者には custom を使います。
     WorkloadIdentityPolicy:
       type: object
       description: '信頼済みワークロード: この発行者のトークンのうち、固定したオーナー向けで、すべてのクレーム条件に一致するものが、ポリシーのキーとして認証されます。'
@@ -23633,6 +23849,7 @@ components:
         - name
         - provider
         - issuer
+        - owner_claim
         - owner_id
         - claim_conditions
         - max_token_lifetime_seconds
@@ -23655,13 +23872,16 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: 'トークンの発行者。例: https://oidc.vercel.com/acme、https://token.actions.githubusercontent.com。'
+          description: 'トークンの発行者（iss クレーム）。例: https://oidc.vercel.com/acme、https://token.actions.githubusercontent.com、https://accounts.google.com。'
+        owner_claim:
+          type: string
+          description: 'owner_id と照合するトークンのクレーム。プラットフォームごとに固定です: vercel は owner_id、github_actions は repository_owner_id、gitlab は project_id、google_cloud と aws は sub、buildkite は organization_id、circleci は oidc.circleci.com/org-id。custom の発行者では、ポリシー作成時に選んだクレームを使います。'
         owner_id:
           type: string
-          description: 固定した Vercel のチーム ID（owner_id クレーム）、または GitHub の組織 ID かユーザー ID（repository_owner_id クレーム）。
+          description: 固定したオーナー。トークンの owner_claim が一致すべき値で、Vercel のチーム ID、GitHub の組織 ID かユーザー ID、GitLab のプロジェクト ID、Google サービスアカウントの一意の ID、Buildkite の組織 ID、CircleCI の組織 ID、AWS IAM ロールの ARN などです。
         claim_conditions:
           type: object
-          description: 'トークンが満たす必要のある追加のクレーム。クレーム名と許可する値の組で指定します。例: Vercel では project_id と environment、GitHub Actions では repository_id と ref。各クレームはいずれかの値に一致する必要があります。クレームは最大 15 個、1 クレームあたりの値は最大 20 個です。iss、aud、exp、iat、nbf、jti は使えず、固定したオーナーのクレームは owner_id で設定します。'
+          description: 'トークンが満たす必要のある追加のクレーム。クレーム名と許可する値の組で指定します。例: GitHub Actions では repository_id と ref、GitLab では project_path と ref。各クレームはいずれかの値に一致する必要があります。クレームは最大 15 個、1 クレームあたりの値は最大 20 個です。クレーム名には英字、数字、. _ : / - を使え、最大 128 文字です。iss、aud、exp、iat、nbf、jti は使えず、オーナーのクレームは owner_id で設定します。'
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23718,14 +23938,19 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: 'Vercel では必須: https://oidc.vercel.com/ の後にチームのスラッグを付けるか、グローバル発行者の場合は https://oidc.vercel.com を指定します。GitHub Actions の既定値は https://token.actions.githubusercontent.com です。'
+          description: トークンの発行者。github_actions（既定値は https://token.actions.githubusercontent.com。カスタマイズしたエンタープライズの発行者では /<enterprise-slug> を付けます）、gitlab（https://gitlab.com）、google_cloud（https://accounts.google.com）、buildkite（https://agent.buildkite.com）では省略できます。vercel（https://oidc.vercel.com/<team-slug>、グローバル発行者の場合は https://oidc.vercel.com）、circleci（https://oidc.circleci.com/org/<organization-id>）、aws（アカウントの https://<id>.tokens.sts.global.api.aws 発行者）、custom（OIDC ディスカバリードキュメントを提供する公開 https URL で、他のプラットフォームに属さないホスト）では必須です。
+        owner_claim:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: 'owner_id と照合するトークンのクレーム。例: sub。custom では必須です。その他のプラットフォームは固定のクレームを使うため（ポリシーの owner_claim を参照）、省略するかそのクレームを指定します。後から変更することはできません。'
         owner_id:
           type: string
           minLength: 1
-          description: 固定する Vercel のチーム ID、または GitHub の組織 ID かユーザー ID。
+          description: オーナーのクレームが一致すべき値。Vercel のチーム ID、GitHub の組織 ID かユーザー ID、GitLab のプロジェクト ID、Google サービスアカウントの一意の ID（メールアドレスではありません）、Buildkite の組織 ID、CircleCI の組織 ID（発行者に含まれるもの）、AWS IAM ロールの ARN、または custom の発行者では信頼する owner_claim の値です。
         claim_conditions:
           type: object
-          description: 'トークンが満たす必要のある追加のクレーム。クレーム名と許可する値の組で指定します。例: Vercel では project_id と environment、GitHub Actions では repository_id と ref。各クレームはいずれかの値に一致する必要があります。クレームは最大 15 個、1 クレームあたりの値は最大 20 個です。iss、aud、exp、iat、nbf、jti は使えず、固定したオーナーのクレームは owner_id で設定します。'
+          description: 'トークンが満たす必要のある追加のクレーム。クレーム名と許可する値の組で指定します。例: GitHub Actions では repository_id と ref、GitLab では project_path と ref。各クレームはいずれかの値に一致する必要があります。クレームは最大 15 個、1 クレームあたりの値は最大 20 個です。クレーム名には英字、数字、. _ : / - を使え、最大 128 文字です。iss、aud、exp、iat、nbf、jti は使えず、オーナーのクレームは owner_id で設定します。'
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23757,7 +23982,7 @@ components:
             - disabled
         claim_conditions:
           type: object
-          description: 'トークンが満たす必要のある追加のクレーム。クレーム名と許可する値の組で指定します。例: Vercel では project_id と environment、GitHub Actions では repository_id と ref。各クレームはいずれかの値に一致する必要があります。クレームは最大 15 個、1 クレームあたりの値は最大 20 個です。iss、aud、exp、iat、nbf、jti は使えず、固定したオーナーのクレームは owner_id で設定します。'
+          description: 'トークンが満たす必要のある追加のクレーム。クレーム名と許可する値の組で指定します。例: GitHub Actions では repository_id と ref、GitLab では project_path と ref。各クレームはいずれかの値に一致する必要があります。クレームは最大 15 個、1 クレームあたりの値は最大 20 個です。クレーム名には英字、数字、. _ : / - を使え、最大 128 文字です。iss、aud、exp、iat、nbf、jti は使えず、オーナーのクレームは owner_id で設定します。'
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23973,12 +24198,11 @@ components:
       additionalProperties: false
     RateLimitTargetType:
       type: string
-      description: What a policy applies to. A department policy is one allowance shared by its members and linked keys. A guardrail policy gives each key and member the guardrail covers its own allowance. end_user_default applies to each end user identified on a request.
+      description: ポリシーの適用対象です。部門ポリシーは、そのメンバーとリンクされたキーで共有される 1 つの枠です。end_user_default はリクエストで識別された各エンドユーザーに適用されます。
       enum:
         - key
         - member
         - department
-        - guardrail
         - end_user_default
     RateLimitAssignment:
       type: object
@@ -24006,7 +24230,7 @@ components:
           type: string
           format: uuid
           nullable: true
-          description: Id of the key, member (user id), department, or guardrail. Null for end_user_default.
+          description: キー、メンバー（ユーザー ID）、または部門の ID。end_user_default の場合は null。
         created_by:
           type: string
           format: uuid
@@ -24032,7 +24256,7 @@ components:
         target_id:
           type: string
           format: uuid
-          description: Id of the key, member (user id), department, or guardrail. Omit for end_user_default.
+          description: キー、メンバー（ユーザー ID）、または部門の ID。end_user_default の場合は省略します。
       additionalProperties: false
     RateLimitAssignmentUpdateInput:
       type: object
@@ -25323,7 +25547,7 @@ components:
       additionalProperties: false
     WorkspaceSpendAttribution:
       type: string
-      description: キーに部門が設定されていない場合に、支出ルールが個人の支出をどの部門に計上するか。all は所属するすべての部門に、primary は主部門のみに計上します。キー自体の部門が常に優先されます。
+      description: キーに部門が設定されていない場合に、支出ルール、部門予算、部門レート制限が個人のリクエストをどの部門に計上するか。all は所属するすべての部門に、primary は主部門のみに計上します。キー自体の部門とメンバーのディレクトリ上書きが常に優先されます。
       enum:
         - all
         - primary
@@ -26379,42 +26603,6 @@ components:
           enum:
             - true
       additionalProperties: false
-    GuardrailBudgetInput:
-      type: object
-      deprecated: true
-      description: 非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。
-      properties:
-        dailyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        dailyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-      additionalProperties: false
     GuardrailPolicyInput:
       type: object
       properties:
@@ -26484,8 +26672,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        budgets:
-          $ref: '#/components/schemas/GuardrailBudgetInput'
       additionalProperties: false
     GuardrailCreateRequest:
       allOf:
@@ -26583,42 +26769,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        daily_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。
-        weekly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。
-        monthly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。
-        daily_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。
-        weekly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。
-        monthly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。
         created_at:
           type: string
           format: date-time
@@ -26730,42 +26880,6 @@ components:
               items:
                 type: object
                 additionalProperties: true
-            daily_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。
-            weekly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。
-            monthly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。
-            daily_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。
-            weekly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。
-            monthly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。
             created_at:
               type: string
               format: date-time

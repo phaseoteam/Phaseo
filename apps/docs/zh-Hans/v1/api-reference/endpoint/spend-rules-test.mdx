@@ -1,0 +1,9 @@
+---
+title: "发送测试支出警报"
+sidebarTitle: "发送测试"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /spend-rules/{id}/test"
+description: "发送支出规则此时会发送的提醒，并标记为 TEST。"
+---
+
+需要 `spend_rules:write`。测试会发送到规则的通知目标；规则没有目标时，发送到 **支出警报** 路由。不会记录任何内容。每个工作区每分钟可发送五次测试，超出后返回带 `Retry-After` 的 `429`。

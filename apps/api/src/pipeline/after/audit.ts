@@ -3,6 +3,12 @@
 // Why: Keeps post-execution side-effects consistent.
 // How: Emits audit events for success/failure requests.
 
+import {
+	isErrorFinishReason,
+	markServedAttemptHealth,
+	reclassifyAttemptsAcceptedElsewhere,
+	servedAttemptHealthForFailure,
+} from "@pipeline/execute/attempt-health";
 import { auditSuccess, auditFailure } from "../audit";
 import { protectStealthAuditArgs } from "../audit/stealth-identity";
 import { isStealthRequest } from "../stealth";
@@ -28,13 +34,15 @@ import {
 	resolveFailoverMs,
 	resolveExecuteTotalLatencyMs,
 	resolveNonStreamLatencyMs,
+	resolveOutputSpeedWindow,
 } from "./timing";
-import { calculateOutputPerformanceMetrics } from "./performance-metrics";
+import { calculateOutputPerformanceMetrics, getUsageReasoningTokens } from "./performance-metrics";
 import {
 	normalizeDataContributionPolicy,
 	persistDataContribution,
 } from "../classification/data-contribution";
 import { currentDataContributionDiscountNanos } from "../pricing/data-contribution-discount";
+import { searchObservabilityWithoutContent, webFetchObservabilityWithoutContent } from "@/core/request-content-details";
 
 /**
  * Search and fetch details for the request log. A key that never stores content
@@ -42,20 +50,11 @@ import { currentDataContributionDiscountNanos } from "../pricing/data-contributi
  * URLs, which all come from what was asked.
  */
 function searchObservabilityForLog(ctx: PipelineContext, value: unknown): unknown {
-	if (ctx.neverStoreContent !== true || !value || typeof value !== "object") return value;
-	const search = value as Record<string, unknown>;
-	return { ...search, results: [], citations: [], nativeSearches: [], managedSearches: [] };
+	return ctx.neverStoreContent === true ? searchObservabilityWithoutContent(value) : value;
 }
 
 function webFetchObservabilityForLog(ctx: PipelineContext, value: unknown): unknown {
-	if (ctx.neverStoreContent !== true || !value || typeof value !== "object") return value;
-	const fetches = (value as { fetches?: unknown }).fetches;
-	return {
-		...(value as Record<string, unknown>),
-		fetches: Array.isArray(fetches)
-			? fetches.map((entry) => ({ ...(entry as Record<string, unknown>), url: null, finalUrl: null, title: null }))
-			: fetches,
-	};
+	return ctx.neverStoreContent === true ? webFetchObservabilityWithoutContent(value) : value;
 }
 
 /** Which preset version served the request, and the ref it pinned, if any. */
@@ -250,6 +249,14 @@ export async function handleFailureAudit(
     },
 ) {
 	finishStreamingProvider(ctx, "error");
+	// The served attempt was marked successful when headers arrived. A stream that
+	// broke afterwards, or empty/invalid output, is that provider's call error; a
+	// client cancellation is the customer's. Set before anything reads attempts.
+	const servedHealth = servedAttemptHealthForFailure(attribution, errorCode);
+	if (servedHealth) markServedAttemptHealth(ctx.providerAttempts, servedHealth);
+	// A provider accepted the request, even if the response then failed: earlier
+	// 4xx rejections on other routes were Phaseo's routing or mapping problem.
+	reclassifyAttemptsAcceptedElsewhere(ctx.providerAttempts);
 	// Enforce mode: a failed request frees its spend-limit admission (no-op without one).
 	releaseSpend(ctx.spendAdmission);
     const protectedOtlp = protectStealthAuditArgs({
@@ -290,6 +297,7 @@ export async function handleFailureAudit(
             stage: "execute",
             requestId: ctx.requestId,
             workspaceId: ctx.workspaceId,
+            billingRequestId: ctx.billingRequestId ?? null,
             zeroDataRetention: ctx.zeroDataRetention === true,
             endpoint: ctx.endpoint,
             model: ctx.model,
@@ -384,6 +392,7 @@ export async function handleFailureAudit(
         writeOtlp: () => enqueueGatewayOtlpExport({
             requestId: ctx.requestId,
             workspaceId: ctx.workspaceId,
+            zeroDataRetention: ctx.zeroDataRetention === true,
             keyId: ctx.meta.apiKeyId,
 			keyName: ctx.keyEnrichment?.name ?? null,
 			userId: ctx.meta.requestUserId ?? null,
@@ -450,6 +459,8 @@ export async function handleSuccessAudit(
     gatewayResponse?: unknown,
 ) {
 	finishStreamingProvider(ctx);
+	if (isErrorFinishReason(finishReason)) markServedAttemptHealth(ctx.providerAttempts, { healthClass: "call_error", reason: "error_finish" });
+	reclassifyAttemptsAcceptedElsewhere(ctx.providerAttempts);
 	if (ctx.lifecycle && !ctx.lifecycle.events.some((event) => event.type === "response.ready")) {
 		recordLifecycleEvent(ctx, { type: "response.ready", status: statusCode });
 	}
@@ -493,10 +504,13 @@ export async function handleSuccessAudit(
         : null;
     const outputPerformance = calculateOutputPerformanceMetrics({
         outputTokens,
+        reasoningTokens: ctx.meta.reasoningStreamed ? null : getUsageReasoningTokens(usageWithMultimodal),
         providerDurationMs: generationMs,
         providerTtftMs,
         gatewayE2eMs: endToEndMs,
         failoverMs: resolveFailoverMs(ctx),
+        outputArrivals: ctx.meta.outputArrivals ?? null,
+        speedWindow: isStream ? resolveOutputSpeedWindow(ctx) : undefined,
     });
     // Throughput is API-owned: output tokens divided by the full provider duration in seconds.
     ctx.meta.throughput_tps = outputPerformance.effectiveThroughputTps ?? undefined;
@@ -541,6 +555,7 @@ export async function handleSuccessAudit(
         writeSupabase: shouldPersistGatewayAudit(ctx) ? () => auditSuccess({
             requestId: ctx.requestId,
             workspaceId: ctx.workspaceId,
+            billingRequestId: ctx.billingRequestId ?? null,
             zeroDataRetention: ctx.zeroDataRetention === true,
             provider: result.provider,
             providerApiModelId: result.apiModelId ?? null,
@@ -639,6 +654,7 @@ export async function handleSuccessAudit(
         writeOtlp: () => enqueueGatewayOtlpExport({
             requestId: ctx.requestId,
             workspaceId: ctx.workspaceId,
+            zeroDataRetention: ctx.zeroDataRetention === true,
             keyId: ctx.meta.apiKeyId ?? ctx.keyId ?? null,
 			keyName: ctx.keyEnrichment?.name ?? null,
 			userId: ctx.meta.requestUserId ?? null,

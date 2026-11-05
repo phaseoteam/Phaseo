@@ -5,7 +5,11 @@ import { json } from "@/routes/utils";
 
 // The dashboard calls a few control routes through web-api with the signed-in
 // user's Supabase session and an x-phaseo-workspace-id header, instead of a
-// management key. Routes check the returned role themselves.
+// management key. Routes check the returned role themselves. A token the auth
+// provider issued to a third-party app is not a session (getSupabaseActor
+// refuses it), so it falls back to management authentication as that app,
+// where its consented scopes and the app guard apply. Phaseo's own apps keep
+// their client ID on the session.
 
 export type DashboardSession = { auth: AuthSuccess; role: string };
 
@@ -51,6 +55,7 @@ export async function authenticateDashboardSession(req: Request, scopes: string[
 			userId: actor.userId,
 			internal: false,
 			authMethod: "oauth",
+			oauthClientId: actor.clientId ?? null,
 			oauthScopes: scopes,
 			scopes,
 		},

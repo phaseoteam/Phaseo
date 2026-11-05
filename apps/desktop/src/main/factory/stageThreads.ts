@@ -5,7 +5,7 @@ import type { AgentProfile, LogLine, Run, WorkItem } from "../../shared/factory/
 import type { AgentActivity, Message, Task, WorkspaceCommand } from "../../shared/workspace";
 import type { WorkspaceOverview } from "../../shared/workspaceOverview";
 import type { WorkspaceStore } from "../workspaceStore";
-import { effortSettings } from "./agents";
+import { assertForkSafe, effortSettings } from "./agents";
 import type { AgentProcess, RunHandlers, StageStart, StageWorkspace } from "./runner";
 import type { FactoryThreads } from "./store";
 import { changedFiles, collectProof, git } from "./worktrees";
@@ -21,7 +21,7 @@ type CreateTask = Extract<WorkspaceCommand, { type: "create-task" }>;
 
 /** What Factory needs from the desktop's runtime (WorkspaceRuntime), so tests can pass a real one or their own. */
 export interface StageThreadHost {
-	readonly store: Pick<WorkspaceStore, "getTask" | "getTaskTail" | "getOverview" | "getProjects" | "addProject" | "saveProject">;
+	readonly store: Pick<WorkspaceStore, "getTask" | "getTaskTail" | "getOverview" | "getProjects" | "addProject" | "saveProject" | "saveTask">;
 	command(command: WorkspaceCommand): Promise<WorkspaceOverview>;
 	/** A thread made for Factory, not started. */
 	createThread(command: CreateTask, title: string): Task;
@@ -56,11 +56,16 @@ interface Watch {
 	queuedAt: number;
 	stopping: boolean;
 	ending: boolean;
+	/** What the agent had done at the last look (see RunHandlers.progress). */
+	progress?: string;
 	/** The thread's usage when the run started, so a thread carried on counts only this run's. */
 	baseUsage: { tokens: number; costNanos: number };
 }
 
 const same = (a: string, b: string) => path.relative(path.resolve(a), path.resolve(b)) === "";
+/** A pull request from a fork: its threads run only on harnesses kept from loading the fork's own config. */
+const fromFork = (item: WorkItem) => item.kind === "pull" && Boolean(item.fork);
+const forkCheckout = (item: WorkItem) => (fromFork(item) ? { forkCheckout: true as const } : {});
 const firstLine = (text: string) => text.split(/\r?\n/).map((line) => line.trim()).find(Boolean) ?? "";
 
 /** A finished activity as a log line; reasoning and usage stay in the thread. */
@@ -98,16 +103,23 @@ export class StageThreads implements FactoryThreads {
 	private async makeParent(item: WorkItem, agent: AgentProfile | undefined, workspace: StageWorkspace | undefined): Promise<string> {
 		const known = this.parents.get(item.id);
 		if (known) {
+			let parent: Task | undefined;
 			try {
-				this.host.store.getTask(known);
-				return known;
+				parent = this.host.store.getTask(known);
 			} catch {
 				// Deleted: the item gets a new one.
 			}
+			if (parent) {
+				// Made before Factory's threads stopped loading the repository's own settings: it stops now too. One made before
+				// fork threads were flagged keeps to fork-safe harnesses from now on, as do threads made under it.
+				if (!parent.untrustedCheckout || (fromFork(item) && !parent.forkCheckout)) { parent.untrustedCheckout = true; if (fromFork(item)) parent.forkCheckout = true; this.host.store.saveTask(parent); }
+				return known;
+			}
 		}
 		if (!agent) throw new Error("Connect an account in Settings → Accounts first: Factory's agents run on the desktop's accounts.");
+		assertForkSafe(item, agent.harness);
 		const projectId = workspace ? await this.worktreeProject(workspace) : undefined;
-		const thread = this.host.createThread({ type: "create-task", harness: agent.harness, accountId: agent.accountId, model: agent.model, mode: "code", permissionMode: "full-access", projectId }, `#${item.number} ${item.title}`.slice(0, 100));
+		const thread = this.host.createThread({ type: "create-task", harness: agent.harness, accountId: agent.accountId, model: agent.model, mode: "code", permissionMode: "full-access", untrustedCheckout: true, ...forkCheckout(item), projectId }, `#${item.number} ${item.title}`.slice(0, 100));
 		this.parents.set(item.id, thread.id);
 		await this.linkItem(thread.id, item);
 		return thread.id;
@@ -153,6 +165,8 @@ export class StageThreads implements FactoryThreads {
 			// A reply, or carrying on after an interruption: the same conversation goes on.
 			threadId = previous.id;
 			baseUsage = previous.usageTotals ?? baseUsage;
+			// Made before fork threads were flagged: the turn it carries on with keeps to fork-safe harnesses.
+			if (fromFork(item) && !previous.forkCheckout) { previous.forkCheckout = true; this.host.store.saveTask(previous); }
 			// The effort may have changed since the thread last ran: the carried-on turn uses the one chosen now.
 			const effort = effortSettings(agent);
 			if (effort.reasoningEffort || effort.modelOptions) await this.host.command({ type: "update-task", id: threadId, ...(effort.reasoningEffort ? { reasoningEffort: effort.reasoningEffort } : {}), ...(effort.modelOptions ? { modelOptions: { ...previous.modelOptions, ...effort.modelOptions } } : {}) });
@@ -160,7 +174,7 @@ export class StageThreads implements FactoryThreads {
 			startId = this.host.store.getTask(threadId).queue.findLast((message) => message.text === prompt)?.id
 				?? this.host.store.getTask(threadId).messages.findLast((message) => message.role === "user" && message.text === prompt)?.id;
 		} else {
-			const child = this.host.startStageThread(parentId, { type: "create-task", harness: agent.harness, accountId: agent.accountId, model: agent.model, mode: "code", permissionMode: "full-access", projectId, ...effortSettings(agent) }, input.runId, prompt, title);
+			const child = this.host.startStageThread(parentId, { type: "create-task", harness: agent.harness, accountId: agent.accountId, model: agent.model, mode: "code", permissionMode: "full-access", untrustedCheckout: true, ...forkCheckout(item), projectId, ...effortSettings(agent) }, input.runId, prompt, title);
 			threadId = child.id;
 			startId = child.queue[0]?.id ?? child.messages.find((message) => message.role === "user")?.id;
 		}
@@ -175,6 +189,13 @@ export class StageThreads implements FactoryThreads {
 			send: (text) => {
 				void this.deliver(threadId, text);
 				return true;
+			},
+			waiting: () => {
+				try {
+					return this.host.store.getTask(threadId).status === "waiting";
+				} catch {
+					return false;
+				}
 			},
 			stop: () => {
 				watch.stopping = true;
@@ -193,6 +214,8 @@ export class StageThreads implements FactoryThreads {
 			const task = this.host.store.getTask(threadId);
 			if (task.archived || task.harness !== agent.harness || (task.accountId ?? undefined) !== (agent.accountId ?? undefined) || task.model !== agent.model) return undefined;
 			if (task.status === "running" || task.status === "waiting") return undefined;
+			// A thread from before Factory stopped loading the repository's own settings starts afresh instead.
+			if (!task.untrustedCheckout) return undefined;
 			return task;
 		} catch {
 			return undefined;
@@ -258,6 +281,11 @@ export class StageThreads implements FactoryThreads {
 			...messages.filter((message) => message.role === "assistant").map((message) => ({ order: message.timelineOrder ?? 0, message })),
 			...(task.activities ?? []).map((activity) => ({ order: activity.timelineOrder ?? 0, activity })),
 		].sort((a, b) => a.order - b.order);
+		// Tools starting and ending, and answers growing, are the agent at work; a message steered into the thread isn't.
+		const progress = entries.map((entry) => ("message" in entry ? `m${entry.message.text.length}` : `a${entry.activity.status}`)).join(",");
+		// The first sight of the agent at work counts too; an empty thread is only where it starts from.
+		if (progress && progress !== watch.progress) watch.handlers.progress?.();
+		watch.progress = progress;
 		entries.forEach((entry, index) => {
 			const key = "message" in entry ? `m:${entry.message.id}` : `a:${entry.activity.id}`;
 			if (watch.logged.has(key)) return;

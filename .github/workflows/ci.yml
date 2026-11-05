@@ -199,8 +199,12 @@ jobs:
               run: pnpm run validate:spend-rules
             - name: Validate shared workspace routing settings
               run: pnpm run validate:workspace-routing-settings
+            - name: Validate shared guardrail modules
+              run: pnpm run validate:guardrail-shared
             - name: Validate shared key IP allowlist validation
               run: pnpm run validate:key-ip-allowlist
+            - name: Validate shared model parameter specs
+              run: pnpm run validate:model-parameters
             - name: Validate shared theme tokens
               run: pnpm run validate:theme-tokens
 
@@ -232,6 +236,7 @@ jobs:
                   node supabase/tests/realtime-billing-hardening.test.mjs
                   node supabase/tests/rankings-rolling-periods.test.mjs
                   node supabase/tests/rankings-distributions.test.mjs
+                  node supabase/tests/decisions-rankings.test.mjs
                   node --test supabase/tests/models-page-cheapest-provider-pricing.test.mjs
                   node supabase/tests/benchmark-direction-default.test.mjs
                   node scripts/tests/workspace-provisioning.mjs
@@ -857,9 +862,8 @@ jobs:
                   node-version: ${{ env.NODE_VERSION }}
 
             # ---------- WEB (Cloudflare Workers) ----------
-            # The website is the phaseo-web Worker (apps/web/wrangler.jsonc). Until the
-            # phaseo.app route in that file is enabled at cutover, merging deploys it to
-            # workers.dev only and production traffic is unaffected.
+            # The website is the phaseo-web Worker (apps/web/wrangler.jsonc), which
+            # serves phaseo.app through the route in that file.
 
             - name: Restore lockfile (guard setup-node cache mutation)
               run: git checkout -- pnpm-lock.yaml

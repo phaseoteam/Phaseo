@@ -4,13 +4,11 @@ icon: "workflow"
 description: "Usa Phaseo desde Zapier, n8n, Pipedream y otras plataformas de automatización."
 ---
 
-Phaseo ya funciona en productos de automatización que pueden enviar solicitudes HTTP autenticadas. Más adelante, las aplicaciones nativas de los marketplaces podrán ofrecer una experiencia más guiada.
+Llama a Phaseo desde cualquier plataforma de automatización que pueda enviar una solicitud HTTP autenticada: añade un paso HTTP que haga POST a `https://api.phaseo.app/v1/responses` con tu clave como token bearer. Phaseo no tiene una aplicación nativa para Zapier, n8n ni Pipedream.
 
-## Solicitud compartida
+## Crear la solicitud
 
-Usa estos ajustes en una acción HTTP, webhook o de código:
-
-| Configuración | Valor |
+| Ajuste | Valor |
 | --- | --- |
 | Método | `POST` |
 | URL | `https://api.phaseo.app/v1/responses` |
@@ -19,45 +17,37 @@ Usa estos ajustes en una acción HTTP, webhook o de código:
 
 ```json
 {
-  "model": "openai/gpt-5-nano",
+  "model": "openai/gpt-6-astra",
   "input": "Summarise the supplied workflow data in one paragraph."
 }
 ```
 
-Guarda la clave de API de Phaseo en el almacén de credenciales o secretos de la plataforma. No la incluyas directamente en una definición de flujo de trabajo compartida.
+Guarda la clave en el almacén de credenciales o secretos de la plataforma, no en una definición de flujo de trabajo compartida. Consulta [Responses](../../api-reference/endpoint/responses.mdx) para ver todos los campos de la solicitud.
 
 ## Zapier
 
 Usa **Webhooks by Zapier → Custom Request**:
 
-1. Selecciona `POST`.
-2. Introduce `https://api.phaseo.app/v1/responses`.
-3. Añade los encabezados bearer y content-type.
-4. Asigna los campos de pasos anteriores de Zap a `input`.
-5. Prueba el Zap con datos no sensibles.
-
-Una aplicación nativa de Phaseo para Zapier añadiría selección de modelos, acciones de salida estructurada y autenticación específica de Phaseo, pero habría que publicarla mediante la plataforma para desarrolladores de Zapier.
+1. Selecciona `POST` e introduce `https://api.phaseo.app/v1/responses`.
+2. Añade los encabezados de bearer y de tipo de contenido.
+3. Asigna a `input` campos de pasos anteriores del Zap.
+4. Prueba el Zap con datos no sensibles.
 
 ## n8n
 
-Usa el nodo **HTTP Request** con autenticación bearer y un cuerpo JSON. Para datos de flujo de trabajo estructurados, asigna el elemento anterior al campo `input` con una expresión de n8n.
-
-Más adelante, un nodo comunitario oficial de n8n podría ofrecer acciones como Generate Response, List Models, Get Model Pricing y Create Embedding sin configurar HTTP manualmente.
+Usa el nodo **HTTP Request** con autenticación bearer y un cuerpo JSON. Asigna el elemento de entrada a `input` con una expresión de n8n.
 
 ## Pipedream
 
 Usa un paso de solicitud HTTP o un paso de código Node.js. Guarda `PHASEO_API_KEY` como secreto de Pipedream y léelo desde el entorno del paso.
 
-## Recomendaciones para producción
+## Comprobar que funciona
 
-- Establece un límite de gasto para la clave de Gateway API que use cada automatización.
-- Asigna una clave propia a cada automatización para mantener aislados el uso y la revocación.
-- Usa salidas estructuradas cuando los pasos posteriores esperen campos legibles por máquina.
-- Añade gestión de reintentos para respuestas `429` y errores `5xx` recuperables.
-- No repitas acciones externas no idempotentes solo porque se haya reintentado un paso del modelo.
+Ejecuta el paso una vez. Una respuesta `200` con un array `output` significa que la clave y la URL funcionan, y la solicitud aparece en **Ajustes → Uso → Registros**.
 
-## Relacionado
+## Ejecutar automatizaciones de forma segura
 
-- [Respuestas](../../api-reference/endpoint/responses.mdx)
-- [Salidas estructuradas](../structured-outputs.mdx)
-- [Gestión de errores](../../api-reference/errors.mdx)
+- Da a cada automatización su propia clave con un límite de gasto, para poder seguirla y revocarla por separado.
+- Usa [salidas estructuradas](../structured-outputs.mdx) cuando los pasos posteriores esperen campos legibles por máquina.
+- Reintenta ante respuestas `429` y `5xx` recuperables; consulta [Errores](../../api-reference/errors.mdx).
+- No repitas acciones externas que no sean idempotentes solo porque se reintentó un paso del modelo.

@@ -17,8 +17,8 @@ Use this skill when the work is specifically about configuring or validating gat
 
 2. Apply guardrails in the right order:
 - create or update the workspace guardrail
-- attach it to the target API key
-- verify the key-level surface reflects the attachment
+- attach it to the target API key, or to a member so it covers every key that member owns
+- verify on Settings → Guardrails → Assignments, which shows each key's direct and member-inherited guardrails and what they add up to
 
 3. Prefer low-risk rollout defaults:
 - start with one key

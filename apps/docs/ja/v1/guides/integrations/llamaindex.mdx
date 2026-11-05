@@ -1,10 +1,10 @@
 ---
 title: "LlamaIndex"
 icon: "database"
-description: "LlamaIndexのRAGワークフローでPhaseoを使います。"
+description: "LlamaIndex の RAG ワークフローで Phaseo を使います。"
 ---
 
-LlamaIndexアプリの生成処理や埋め込み処理をPhaseo経由でルーティングする場合に、このガイドを使います。
+Phaseo のキーと `api_base="https://api.phaseo.app/v1"` で `OpenAILike` の LLM を作成し、LlamaIndex のデフォルトに設定すると、RAG ワークフローの生成が Phaseo を経由します。
 
 ## インストール
 
@@ -12,14 +12,14 @@ LlamaIndexアプリの生成処理や埋め込み処理をPhaseo経由でルー�
 pip install llama-index llama-index-llms-openai-like llama-index-embeddings-openai-like
 ```
 
-## OpenAI互換LLMを設定する
+## LlamaIndex を Phaseo に向ける
 
 ```python
 import os
 from llama_index.llms.openai_like import OpenAILike
 
 llm = OpenAILike(
-    model="openai/gpt-5-nano",
+    model="openai/gpt-6-astra",
     api_key=os.environ["PHASEO_API_KEY"],
     api_base="https://api.phaseo.app/v1",
     is_chat_model=True,
@@ -28,6 +28,8 @@ llm = OpenAILike(
 response = llm.complete("Write one sentence about retrieval quality.")
 print(response)
 ```
+
+文が 1 つ出力されれば、設定は正しく動作しています。`OpenAILike` は、サードパーティの OpenAI 互換 API 用の LlamaIndex のクラスです。
 
 ## インデックスで使う
 
@@ -39,14 +41,7 @@ Settings.llm = llm
 
 その後、通常どおりインデックスを構築またはクエリします。
 
-## 注意事項
+## 既知の制限
 
-- サードパーティのOpenAI互換APIには`OpenAILike`を使います。
-- 生成モデルと埋め込みモデルのIDは明示します。LlamaIndexのデフォルトがPhaseoを指すとは限りません。
-- Phaseoの埋め込みを使う場合は、PhaseoモデルIDと同じBase URLで埋め込みモデルを設定します。
-
-## 関連項目
-
-- [埋め込み](../../api-reference/endpoint/embeddings.mdx)
-- [モデル](../../api-reference/endpoint/models.mdx)
-- [OpenAI SDK](./openai-sdk.mdx)
+- LlamaIndex のデフォルトは Phaseo を向いていません。生成モデルと埋め込みモデルを明示的に設定してください。
+- Phaseo の[埋め込み](../../api-reference/endpoint/embeddings.mdx)を使うには、Phaseo のモデル ID と同じ Base URL で埋め込みモデルを設定します。

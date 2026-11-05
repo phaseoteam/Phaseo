@@ -212,17 +212,16 @@ describe("applyWorkspacePolicy", () => {
 			],
 			resolvedModel: "test/model",
 			body: {},
-			workspacePolicy: null,
-			teamSettings: {
-				routingMode: null,
-				byokFallbackEnabled: null,
-				betaChannelEnabled: false,
-				privacyEnableInputOutputLogging: false,
-				privacyEnablePaidMayTrain: true,
-				privacyEnableFreeMayTrain: true,
-				privacyZdrOnly: false,
-				billingMode: "wallet",
-			},
+			// The workspace-wide rules arrive as the workspace baseline guardrail.
+			workspacePolicy: buildWorkspacePolicy({
+				guardrails: [{
+					id: "g_workspace_baseline",
+					privacy_enable_input_output_logging: false,
+					privacy_enable_paid_may_train: true,
+					privacy_enable_free_may_train: true,
+					privacy_zdr_only: false,
+				}],
+			}),
 		});
 
 		expect(result.ok).toBe(true);
@@ -261,17 +260,16 @@ describe("applyWorkspacePolicy", () => {
 			],
 			resolvedModel: "test/model",
 			body: {},
-			workspacePolicy: null,
-			teamSettings: {
-				routingMode: null,
-				byokFallbackEnabled: null,
-				betaChannelEnabled: false,
-				privacyEnableInputOutputLogging: true,
-				privacyEnablePaidMayTrain: false,
-				privacyEnableFreeMayTrain: true,
-				privacyZdrOnly: false,
-				billingMode: "wallet",
-			},
+			// The workspace-wide rules arrive as the workspace baseline guardrail.
+			workspacePolicy: buildWorkspacePolicy({
+				guardrails: [{
+					id: "g_workspace_baseline",
+					privacy_enable_input_output_logging: true,
+					privacy_enable_paid_may_train: false,
+					privacy_enable_free_may_train: true,
+					privacy_zdr_only: false,
+				}],
+			}),
 		});
 
 		expect(result.ok).toBe(true);
@@ -299,17 +297,16 @@ describe("applyWorkspacePolicy", () => {
 			],
 			resolvedModel: "test/model",
 			body: {},
-			workspacePolicy: null,
-			teamSettings: {
-				routingMode: null,
-				byokFallbackEnabled: false,
-				betaChannelEnabled: false,
-				privacyEnableInputOutputLogging: false,
-				privacyEnablePaidMayTrain: false,
-				privacyEnableFreeMayTrain: false,
-				privacyZdrOnly: false,
-				billingMode: "wallet",
-			},
+			// The workspace-wide rules arrive as the workspace baseline guardrail.
+			workspacePolicy: buildWorkspacePolicy({
+				guardrails: [{
+					id: "g_workspace_baseline",
+					privacy_enable_input_output_logging: false,
+					privacy_enable_paid_may_train: false,
+					privacy_enable_free_may_train: false,
+					privacy_zdr_only: false,
+				}],
+			}),
 		});
 
 		expect(result.ok).toBe(false);

@@ -1,60 +1,31 @@
 ---
-title: "ドキュメント MCP"
+title: "Docs MCP"
 icon: "plug-zap"
-description: "Phaseo ドキュメント MCP サーバーを Codex、Claude Code、Cursor、または VS Code に接続します。"
+description: "Phaseo ドキュメントの MCP サーバーを Codex、Claude Code、Cursor、VS Code に接続します。"
 ---
 
-コーディングエージェントが古い学習データではなく最新のドキュメントを使って Phaseo の質問に回答できるよう、Phaseo ドキュメント MCP サーバーに接続します。
-
-この MCP サーバーは読み取り専用です。エージェントが作業中にドキュメントを検索し、ページ全体を読めるようにします。
-
-## サーバー URL
-
-`https://phaseo.app/docs/mcp`
-
-## 利用できる機能
-
-- Phaseo ドキュメント全体を対象とした最新の検索
-- エージェントが詳細を必要とするときに取得できるページ全文
-- ホストされている機能概要 [skill.md](https://phaseo.app/docs/skill.md)へのアクセス
+`https://phaseo.app/docs/mcp` を MCP サーバーとしてコーディングエージェントに追加すると、エージェントは学習データではなく最新のドキュメントをもとに Phaseo に関する質問に答えます。サーバーは読み取り専用です。エージェントはドキュメントの検索、ページ全体の読み取り、ホストされている [skill.md](https://phaseo.app/docs/skill.md) の機能概要の読み取りができます。
 
 ## Codex
 
-サーバーを追加します:
-
 ```bash
 codex mcp add phaseoDocs --url https://phaseo.app/docs/mcp
-```
-
-接続を確認します:
-
-```bash
 codex mcp list
 ```
 
 ## Claude Code
 
-現在のプロジェクトにサーバーを追加します:
+現在のプロジェクトにサーバーを追加するか、`--scope user` を付けてすべてのプロジェクトで使えるようにします。
 
 ```bash
 claude mcp add --transport http phaseo-docs https://phaseo.app/docs/mcp
-```
-
-すべてのプロジェクトで使えるようにします:
-
-```bash
 claude mcp add --transport http --scope user phaseo-docs https://phaseo.app/docs/mcp
-```
-
-接続を確認します:
-
-```bash
 claude mcp list
 ```
 
 ## Cursor
 
-ドキュメントのコンテキストメニューから Cursor に MCP サーバーをインストールするか、手動で追加します:
+任意のドキュメントページのコンテキストメニューからインストールするか、Cursor の MCP 設定に追加します。
 
 ```json
 {
@@ -66,25 +37,9 @@ claude mcp list
 }
 ```
 
-## OpenCode
-
-Phaseo ドキュメントサーバーを `opencode.json` に追加します:
-
-```json
-{
-  "$schema": "https://opencode.ai/config.json",
-  "mcp": {
-    "phaseoDocs": {
-      "type": "remote",
-      "url": "https://phaseo.app/docs/mcp"
-    }
-  }
-}
-```
-
 ## VS Code
 
-ドキュメントのコンテキストメニューから VS Code に MCP サーバーをインストールするか、手動で追加します:
+任意のドキュメントページのコンテキストメニューからインストールするか、VS Code の MCP 設定に追加します。
 
 ```json
 {
@@ -97,24 +52,28 @@ Phaseo ドキュメントサーバーを `opencode.json` に追加します:
 }
 ```
 
-## 使う場面
+## OpenCode
 
-エージェントに次のことをさせたい場合は Docs MCP を使います。
+`opencode.json` に追加します。
 
-- コードを書く前に最新のリクエスト形式を調べる
-- モデルまたはプロバイダーがエンドポイントに対応しているか確認する
-- ルーティング、プリセット、ガードレール、または非同期ジョブの動作を確認する
-- エディターを離れずにドキュメントから例を取得する
+```json opencode.json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "phaseoDocs": {
+      "type": "remote",
+      "url": "https://phaseo.app/docs/mcp"
+    }
+  }
+}
+```
 
-## プロンプトの例
+## 動作を確認する
 
-- `Phaseo ドキュメントで Responses のリクエスト形式を調べ、最小限の例を示してください。`
-- `このリクエストを変更する前に、Phaseo Docs MCP サーバーで provider.sort の動作を確認してください。`
-- `Phaseo のガードレールに関するドキュメントを探し、プロバイダーのルーティングに影響する部分を要約してください。`
+ドキュメントでしか答えられない質問をエージェントに尋ね、Phaseo のドキュメントサーバーを呼び出すことを確認します。
 
-## 関連ガイド
+- `Look up the Responses request format in the Phaseo docs and give me a minimal example.`
+- `Use the Phaseo docs MCP server to check how provider.sort works before you change this request.`
+- `Find the guardrails docs in Phaseo and summarize the parts that affect provider routing.`
 
-- [Codex](./codex.mdx)
-- [Claude Code](./claude-code.mdx)
-- [クイックスタート](../../quickstart.mdx)
-- [API リファレンス](../../api-reference/introduction.mdx)
+エージェントはこのサーバーを使って、リクエストの形式、モデルやプロバイダーが対応するエンドポイント、ルーティング、プリセット、ガードレール、非同期ジョブの動作を確認します。ドキュメントサーバーは Phaseo をモデルゲートウェイにするものではありません。その方法については[コーディングエージェント](./coding-assistants.mdx)を参照してください。

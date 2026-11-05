@@ -9,6 +9,7 @@ import { showToast } from "../components/ui/toast";
 import { extractTerminalLinks, projectPath, splitPosition, terminalContext } from "../lib/terminalLinks";
 import { localUrlsIn } from "../../shared/browser";
 import { openInChatBrowser } from "../lib/actionPreview";
+import { openLink as openTerminalLink, openSystemLink, type LinkClick } from "../lib/openLink";
 import { Tip } from "../components/ui/tooltip";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
@@ -26,7 +27,7 @@ export { createTerminal, closeTerminal, terminalsFor, terminalTitle, useTerminal
 export const TERMINAL_DRAWER_HEIGHT = { default: 280, minimum: 180, maximumRatio: 0.75 };
 const maxDrawerHeight = () => Math.max(TERMINAL_DRAWER_HEIGHT.minimum, Math.floor(window.innerHeight * TERMINAL_DRAWER_HEIGHT.maximumRatio));
 export const clampDrawerHeight = (height: number, maximum = maxDrawerHeight()) => Math.min(Math.max(Math.round(Number.isFinite(height) ? height : TERMINAL_DRAWER_HEIGHT.default), TERMINAL_DRAWER_HEIGHT.minimum), maximum);
-const terminalKeys = ["terminal.split", "terminal.splitVertical", "terminal.new", "terminal.close", "terminal.toggle"] as const;
+const terminalKeys = ["terminal.split", "terminal.splitVertical", "terminal.new", "terminal.close", "terminal.toggle", "workspace.focusNext", "workspace.focusPrevious"] as const;
 
 function readColours() {
 	const style = getComputedStyle(document.documentElement);
@@ -52,12 +53,15 @@ function TerminalView({ session, api, focus, onFocus, onError }: { session: Term
 		const { path, line } = splitPosition(text), relative = projectPath(path, current.current.cwd, directory, window.phaseoDesktop?.platform === "win32");
 		return relative ? () => openProjectFile({ projectId, path: relative, ...line ? { line } : {} }) : undefined;
 	};
-	const openLink = (url: string, external: boolean) => {
+	const reportError = (reason: unknown) => report.current(reason instanceof Error ? reason.message : String(reason));
+	/** A clicked address opens where Settings → Browser says (Ctrl or Cmd-click: the other one); the preview offer always uses the chat's browser. */
+	const openLink = (url: string, click?: LinkClick) => {
 		const taskId = current.current.taskId;
-		if (!taskId || external) { void window.phaseoDesktop?.openExternal(url).catch(reason => report.current(String(reason))); return; }
-		try { openInChatBrowser(taskId, url); } catch (reason) { report.current(reason instanceof Error ? reason.message : String(reason)); }
+		const inApp = taskId ? () => { try { openInChatBrowser(taskId, url); } catch (reason) { reportError(reason); } } : undefined;
+		if (click) { void openTerminalLink(url, click, inApp).catch(reportError); return; }
+		if (inApp) inApp(); else void openSystemLink(url).catch(reportError);
 	};
-	// An action's terminal offers the local address its server prints, as T3's dev-script previews do.
+	// An action's terminal offers the local address its server prints, for previewing a dev server.
 	const offers = Boolean(session.scriptId && session.taskId);
 	const [localUrl, setLocalUrl] = useState(() => offers ? localUrlsIn(terminalOutput(session.id)).at(-1) : undefined);
 	const [dismissed, setDismissed] = useState<string>();
@@ -78,20 +82,20 @@ function TerminalView({ session, api, focus, onFocus, onError }: { session: Term
 		// The app's terminal shortcuts reach the app, not the shell.
 		terminal.attachCustomKeyEventHandler(event => !(event.type === "keydown" && isCommandKey(event, terminalKeys)));
 		const input = terminal.onData(data => { if (current.current.status === "running") void api.terminal({ type: "write", id: current.current.id, data }).catch(reason => report.current(String(reason))); });
-		// T3's terminal links: a web address opens in the chat's browser (Ctrl or Cmd-click: the system browser); a
+		// Terminal links: a web address opens where Settings → Browser says (Ctrl or Cmd-click: the other one); a
 		// project file path, with its line, opens in the Files pane.
 		const links = terminal.registerLinkProvider({ provideLinks(line, callback) {
 			const text = terminal.buffer.active.getLine(line - 1)?.translateToString(true) ?? "";
 			const found = extractTerminalLinks(text).flatMap(link => {
 				const range = { start: { x: link.start + 1, y: line }, end: { x: link.end, y: line } };
-				if (link.kind === "url") return [{ text: link.text, range, activate: (event: MouseEvent, target: string) => openLink(target, event.ctrlKey || event.metaKey) }];
+				if (link.kind === "url") return [{ text: link.text, range, activate: (event: MouseEvent, target: string) => openLink(target, event) }];
 				const open = fileLink(link.text);
 				return open ? [{ text: link.text, range, activate: () => open() }] : [];
 			});
 			callback(found.length ? found : undefined);
 		} });
 		const selected = terminal.onSelectionChange(() => setSelection(terminal.getSelection()));
-		// T3's Jump to latest: offered while the reader has scrolled up from the newest output.
+		// Jump to latest: offered while the reader has scrolled up from the newest output.
 		const position = () => { const buffer = terminal.buffer.active; setScrolledUp(buffer.viewportY < buffer.baseY); };
 		const scrolled = terminal.onScroll(position), written = terminal.onWriteParsed(position);
 		const unsubscribe = api.onTerminalEvent(event => { if (event.sessionId === current.current.id && event.data) { terminal.write(event.data); scan.current(event.data); } });
@@ -113,7 +117,7 @@ function TerminalView({ session, api, focus, onFocus, onError }: { session: Term
 	const offer = localUrl && localUrl !== dismissed && session.status === "running" ? localUrl : undefined;
 	const copy = () => { const text = terminalRef.current?.getSelection(); if (text) void navigator.clipboard.writeText(text).catch(() => report.current("The clipboard refused the copy.")); };
 	const paste = () => void navigator.clipboard.readText().then(text => { if (text && current.current.status === "running") terminalRef.current?.paste(text); terminalRef.current?.focus(); }, () => report.current("The clipboard could not be read. Press Ctrl+V instead."));
-	// T3's Add to chat: the selected output goes into the open composer as a quoted block.
+	// Add to chat: the selected output goes into the open composer as a quoted block.
 	const addToChat = () => { const text = terminalRef.current?.getSelection(); if (!text?.trim()) return; if (!attachToComposer({ text: terminalContext(terminalTitle(current.current), text) })) showToast("info", "Open a chat to add terminal output to it."); };
 	return <div className="terminal-view relative h-full w-full overflow-hidden bg-background p-1" onPointerDown={onFocus} onFocusCapture={onFocus}>
 		<ContextMenu.Root>
@@ -132,13 +136,13 @@ function TerminalView({ session, api, focus, onFocus, onError }: { session: Term
 		{offer && <div role="status" aria-label="Local server" className="absolute right-2 bottom-2 z-10 flex max-w-[calc(100%-1rem)] items-center gap-1.5 rounded-md border border-border/60 bg-background py-0.5 pr-0.5 pl-2 text-xs">
 			<Globe className="size-3.5 shrink-0 text-muted-foreground" />
 			<span className="min-w-0 truncate font-mono text-muted-foreground">{offer.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
-			<button type="button" onClick={() => { openLink(offer, false); setDismissed(offer); }} className="h-6 shrink-0 rounded-md px-2 font-medium text-foreground hover:bg-accent/60">Open in browser</button>
+			<button type="button" onClick={() => { openLink(offer); setDismissed(offer); }} className="h-6 shrink-0 rounded-md px-2 font-medium text-foreground hover:bg-accent/60">Open in browser</button>
 			<Tip label="Dismiss"><button type="button" aria-label="Dismiss" onClick={() => setDismissed(offer)} className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent/60 hover:text-foreground"><X className="size-3.5" /></button></Tip>
 		</div>}
 	</div>;
 }
 
-/** T3's terminal action: an icon with its label shown on hover. */
+/** A terminal action: an icon with its label shown on hover. */
 function TerminalAction({ label, disabled, onClick, className, children }: { label: string; disabled?: boolean; onClick: () => void; className: string; children: ReactNode }) {
 	return <Popover>
 		<PopoverTrigger openOnHover delay={300} render={<button type="button" aria-label={label} aria-disabled={disabled} onClick={disabled ? undefined : onClick} className={cn(className, disabled && "cursor-not-allowed opacity-45")} />}>{children}</PopoverTrigger>
@@ -157,7 +161,7 @@ type WorkspaceProps = {
 	children?: ReactNode;
 };
 
-/** T3's terminal layout: one terminal full-bleed, splits up to four, a list on the right once there are more. */
+/** The terminal layout: one terminal full-bleed, splits up to four, a list on the right once there are more. */
 function TerminalWorkspace({ layoutKey, scope, adopt = [], mode, emptyText, children }: WorkspaceProps) {
 	const api = window.phaseoDesktop?.workspace;
 	const sessions = useTerminalSessions();
@@ -176,7 +180,7 @@ function TerminalWorkspace({ layoutKey, scope, adopt = [], mode, emptyText, chil
 		// adopt is fixed for a surface.
 	}), [layoutKey, setLayouts]);
 
-	// T3 closes a terminal when its process exits, and its transcript goes with it.
+	// A terminal closes when its process exits, and its transcript goes with it.
 	useEffect(() => onTerminalExit(session => {
 		if (!layoutTerminalIds(layouts[layoutKey] ?? emptyLayout()).includes(session.id) && !adopt.includes(session.id)) return;
 		save(value => removeTerminal(value, session.id));
@@ -295,7 +299,7 @@ export function TerminalSurface({ projectId, terminalId }: { projectId: string; 
 	return <TerminalWorkspace layoutKey={`tab:${terminalId}`} scope={{ ...(projectId ? { projectId } : {}), ...(origin?.taskId ? { taskId: origin.taskId } : {}) }} adopt={adopt} mode="panel" emptyText="No terminal sessions for this chat yet." />;
 }
 
-/** The chat's terminal drawer, after T3: under the chat, 280 px by default, resizable between 180 px and 75% of the window. */
+/** The chat's terminal drawer: under the chat, 280 px by default, resizable between 180 px and 75% of the window. */
 export function TerminalDrawer({ projectId, taskId }: { projectId?: string; taskId: string }) {
 	const [heights, setHeights] = usePersistedState<Record<string, number>>("phaseo.desktop.terminalDrawerHeight", {});
 	const preferred = heights[taskId] ?? TERMINAL_DRAWER_HEIGHT.default;

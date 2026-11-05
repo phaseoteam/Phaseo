@@ -4,26 +4,14 @@ title: "أداة الخادم Web Fetch"
 description: "اسمح للنماذج بجلب عناوين URL محددة وقراءتها أثناء الطلب."
 ---
 
-استخدم `phaseo:web_fetch` عندما يحتاج النموذج إلى قراءة عنوان URL معروف، مثل صفحة توثيق أو مقالة أو سجل تغييرات أو مصدر نصي شبيه بملف PDF.
-
-يقرر النموذج متى يجلب الصفحة، ويقدّم عنوان URL، ثم يتلقى نصًا محدودًا من الصفحة ضمن سياق الأداة.
-
-## آلية العمل
-
-1. أضف `{ "type": "phaseo:web_fetch" }` إلى `tools`.
-2. يقرر النموذج ما إذا كان يحتاج إلى جلب عنوان URL.
-3. تجلب Phaseo المحتوى وتستخرجه باستخدام المحرك المحدد.
-4. يُعاد إلى النموذج النص المستخرج والعنوان وعنوان URL وبيانات الاقتطاع الوصفية.
-5. يكتب النموذج الرد النهائي ويمكنه جلب عناوين URL أخرى عند الحاجة.
-
-## بدء سريع
+أضف `phaseo:web_fetch` ليتمكن النموذج من قراءة عنوان URL معروف، مثل صفحة توثيق أو مقالة أو سجل تغييرات. يقدّم النموذج `url`، فيجلب Phaseo الصفحة ويعيد نصها مقتطعًا ضمن حد للحجم، ويمكن للنموذج جلب صفحات أخرى قبل أن يجيب.
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "messages": [
       { "role": "user", "content": "Summarize https://phaseo.app/docs/v1/guides/tool-calling" }
     ],
@@ -33,7 +21,8 @@ curl https://api.phaseo.app/v1/chat/completions \
   }'
 ```
 
-## الإعداد
+<span id="parameters"></span>
+## المعاملات
 
 ```json
 {
@@ -49,31 +38,38 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 | المعامل | النوع | القيمة الافتراضية | الوصف |
 | --- | --- | --- | --- |
-| `engine` | string | يعتمد على الواجهة | محرك الجلب: `auto` أو `native` أو `direct` أو `exa` أو `parallel` أو `firecrawl`. |
-| `max_chars` | integer | `12000` | الحد الأقصى لعدد الأحرف المستخرجة التي تُعاد إلى النموذج. |
-| `max_content_tokens` | integer | لا شيء | اسم بديل بوحدة الرموز يُستخدم عند عدم تحديد `max_chars`. |
-| `max_uses` | integer | `10` | الحد الأقصى لمرات الجلب خلال حلقة أداة الخادم. |
-| `allowed_domains` | string[] | لا شيء | السماح بالجلب من هذه النطاقات فقط. |
-| `blocked_domains` | string[] | لا شيء | رفض الجلب من هذه النطاقات. الاسم البديل: `excluded_domains`. |
+| `engine` | string | `direct` | `auto` أو `native` أو `direct` أو `exa` أو `parallel` أو `firecrawl`. راجع [اختيار المحرك](#choose-an-engine). |
+| `max_chars` | integer | `12000` | عدد أحرف نص الصفحة المُعادة إلى النموذج، حتى `100000`. |
+| `max_content_tokens` | integer | لا شيء | يُستخدم بدلًا من `max_chars` عند حذف `max_chars`. وهو أيضًا حد الحجم لمحرك `native`. |
+| `max_uses` | integer | `10` | عدد استدعاءات الجلب لكل طلب، حتى `100`. |
+| `allowed_domains` | string[] | لا شيء | الجلب من هذه النطاقات فقط. يمكن للنموذج تضييق هذه القائمة في استدعاء ما، لكن لا يمكنه توسيعها. |
+| `blocked_domains` | string[] | لا شيء | عدم الجلب من هذه النطاقات أبدًا. الاسم البديل: `excluded_domains`. |
 
+## ما يرسله النموذج
+
+يحتوي كل استدعاء على `url`. ويمكن للنموذج أيضًا إرسال `engine` و`max_chars` و`max_content_tokens` وقوائم النطاقات.
+
+<span id="choose-an-engine"></span>
 ## اختيار المحرك
 
-| المحرك | السلوك |
+| المحرك | ما الذي يعمل |
 | --- | --- |
-| `auto` | يستخدم جلب Anthropic الأصلي على `/v1/messages`؛ وإلا يستخدم Exa إذا كان معدًا؛ وإلا يستخدم جلب Gateway المباشر. |
-| `direct` | يجلب مباشرة من بيئة تشغيل Gateway ويستخرج نصًا محدودًا. |
-| `exa` | يستخدم استخراج محتوى Exa عند إعداده. |
-| `parallel` | يستخدم Parallel Extract عند إعداده. |
-| `firecrawl` | يستخدم Firecrawl Scrape عند إعداده. |
-| `native` | يتحول إلى `web_fetch_20260209` الأصلي من Anthropic على `/v1/messages`. ينبغي للواجهات الأخرى استخدام `direct` أو محرك مُدار. |
+| `auto` | الجلب الأصلي من Anthropic على `/v1/messages`. على نقاط النهاية الأخرى، Exa عندما يكون مفعّلًا، وإلا `direct`. |
+| `direct` | يجلب Phaseo الصفحة بنفسه ويحوّل HTML إلى نص عادي. |
+| `exa` | استخراج المحتوى من Exa. |
+| `parallel` | Parallel Extract. |
+| `firecrawl` | Firecrawl Scrape. |
+| `native` | أداة `web_fetch_20260209` من Anthropic، على `/v1/messages` فقط. على نقاط النهاية الأخرى يُرفض الطلب؛ استخدم `direct` أو محركًا مُدارًا. |
 
-لا تُدعم إلا عناوين URL من نوع HTTP(S). يقبل الجلب المباشر من Gateway أنواع المحتوى النصية ويحوّل HTML إلى نص عادي قبل إعادته إلى النموذج.
+إذا لم يكن المحرك المُدار مفعّلًا، يعيد الاستدعاء `fetch_not_configured` إلى النموذج.
 
-## جلب Anthropic الأصلي
+لا تعمل إلا عناوين URL من نوع HTTP(S). يقبل `direct` أنواع المحتوى النصية فقط، مثل HTML والنص العادي وJSON، ويعيد `unsupported_content_type` لأي نوع آخر. ويتبع حتى 5 عمليات إعادة توجيه ويتحقق من كل واحدة منها مقابل قوائم النطاقات لديك.
+
+### جلب Anthropic الأصلي
 
 ```json
 {
-  "model": "claude-sonnet-4.6",
+  "model": "anthropic/claude-sonnet-4.6",
   "max_tokens": 1024,
   "messages": [
     { "role": "user", "content": "Read the docs page and summarize the limits." }
@@ -92,9 +88,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-## نتيجة الأداة
-
-يعيد الجلب المُدار نتيجة JSON للأداة تتضمن حقولًا مثل:
+## ما تعيده الأداة
 
 ```json
 {
@@ -111,26 +105,8 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-تحقق من `truncated` قبل افتراض أن النموذج تلقى الصفحة كاملة.
+تحقق من `truncated` قبل افتراض أن النموذج رأى الصفحة كاملة. للاطلاع على مثال عملي، راجع [إسناد الأدوات باستخدام Web Fetch](../../cookbook/tool-grounding-with-web-fetch).
 
 ## الاستخدام والتسعير
 
-تزيد استدعاءات Web Fetch العداد التالي:
-
-```json
-{
-  "usage": {
-    "server_tool_use": {
-      "web_fetch_requests": 1
-    }
-  }
-}
-```
-
-قد يعتمد تسعير الجلب المُدار على `server_tool_web_fetch_requests`. وقد يستخدم جلب الموفّر الأصلي `native_web_fetch_requests` عندما تحدد بطاقة سعر النموذج هذا المقياس.
-
-## أدلة ذات صلة
-
-- [البحث على الويب](./web-search.mdx)
-- [أدوات الخادم](./index.mdx)
-- [إسناد الإجابات باستخدام Web Fetch](../../cookbook/tool-grounding-with-web-fetch.mdx)
+تضيف كل عملية جلب 1 إلى `usage.server_tool_use.web_fetch_requests`. يُحتسب الجلب المُدار عبر `server_tool_web_fetch_requests`. ويُحتسب الجلب الأصلي عبر `native_web_fetch_requests` حيث تحدده بطاقة سعر النموذج.

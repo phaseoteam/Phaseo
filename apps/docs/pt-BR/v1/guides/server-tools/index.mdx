@@ -1,48 +1,48 @@
 ---
 icon: "server-cog"
-title: "Ferramentas do servidor"
-description: "Permita que os modelos chamem ferramentas operadas pelo Phaseo durante uma solicitação."
+title: "Ferramentas de servidor"
+description: "Deixe os modelos chamarem ferramentas operadas pelo Phaseo durante uma solicitação."
 ---
 
-Ferramentas de servidor são executadas pelo Phaseo durante uma solicitação ao modelo. O modelo decide quando chamá-las; o Phaseo as executa no servidor e devolve o resultado ao ciclo do modelo.
+Adicione uma ferramenta `phaseo:` a `tools` e o Phaseo a executa para você quando o modelo a chama: o modelo pede a hora atual, uma pesquisa na web ou a opinião de um segundo modelo, o Phaseo executa a chamada, devolve o resultado e o modelo termina a resposta. Você não precisa escrever um executor de ferramentas.
 
-Use ferramentas de servidor quando o modelo precisar da hora atual, de contexto da Web, do texto de uma página ou da orientação de outro modelo, sem criar seu próprio executor de ferramentas.
+```mermaid
+flowchart LR
+  req["Sua solicitação com ferramentas phaseo:"] --> model["Modelo"]
+  model -->|"Chama uma ferramenta phaseo:"| run["O Phaseo executa a ferramenta"]
+  run -->|"Resultado da ferramenta"| model
+  model -->|"Chama sua ferramenta de função"| you["Devolvido ao seu app"]
+  model -->|"Resposta final"| out["Resposta"]
+```
 
 <Note>
-As ferramentas de servidor estão em beta. Os formatos das solicitações e os dados retornados podem mudar conforme evolui o suporte dos provedores.
+As ferramentas de servidor estão em beta. Os formatos das solicitações e os dados dos resultados podem mudar conforme o suporte dos provedores muda.
 </Note>
 
 ## Ferramentas disponíveis
 
-| Ferramenta | Tipo | Uso |
-| --- | --- | --- |
-| Data e hora | `phaseo:datetime` | Data e hora atuais em até 5 fusos horários |
-| Busca na Web | `phaseo:web_search` | Buscas na Web iniciadas pelo modelo durante uma solicitação |
-| Busca de páginas da Web | `phaseo:web_fetch` | Busca e extração de texto de URLs específicas |
-| Advisor | `phaseo:advisor` | Consulta a outro modelo durante a geração |
-| Subagente | `phaseo:subagent` | Delegação de uma tarefa específica a um modelo auxiliar |
-| Fusão | `phaseo:fusion` | Análise paralela seguida da síntese do modelo |
-| Buscar modelos | `phaseo:search_models` | Busca de modelos adequados no catálogo atualizado |
-| Geração de imagens | `phaseo:image_generation` | Criação de imagens pelo ciclo de ferramentas do modelo |
-| Aplicar patch | `phaseo:apply_patch` | Geração de patches de arquivos validados na Responses API |
+| Ferramenta | Tipo | Use para | Endpoints |
+| --- | --- | --- | --- |
+| [Datetime](./datetime) | `phaseo:datetime` | Data e hora atuais em até 5 fusos horários | Os três |
+| [Web Search](./web-search) | `phaseo:web_search` | Pesquisar na web informações atuais ou com fontes | Os três |
+| [Web Fetch](./web-fetch) | `phaseo:web_fetch` | Ler o texto de uma URL específica | Os três |
+| [Advisor](./advisor) | `phaseo:advisor` | Pedir a outro modelo uma revisão ou um plano | Os três |
+| [Subagent](./subagent) | `phaseo:subagent` | Repassar uma tarefa autocontida a um modelo trabalhador | Os três |
+| [Fusion](./fusion) | `phaseo:fusion` | Obter a análise de vários modelos e depois uma síntese | Os três |
+| [Search Models](./search-models) | `phaseo:search_models` | Encontrar um modelo no catálogo atual do Phaseo | Os três |
+| [Geração de imagens](./image-generation) | `phaseo:image_generation` | Criar uma imagem durante a resposta | Os três |
+| [Aplicar patch](./apply-patch) | `phaseo:apply_patch` | Retornar patches de arquivos validados | Só `/v1/responses` |
 
-## Como funcionam as ferramentas de servidor
+"Os três" significa `/v1/chat/completions`, `/v1/responses` e `/v1/messages`.
 
-1. Adicione uma ou mais ferramentas de servidor ao array `tools`.
-2. O modelo decide se precisa de uma ferramenta e emite uma chamada de ferramenta.
-3. O Phaseo intercepta a chamada da ferramenta de servidor, executa-a e envia o resultado de volta ao modelo.
-4. O modelo continua e redige a resposta final.
-
-As ferramentas de servidor podem ser usadas com suas próprias ferramentas de função. O Phaseo executa apenas as ferramentas de servidor; sua aplicação continua tratando as chamadas `function` comuns.
-
-## Início rápido
+## Envie uma solicitação
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "messages": [
       { "role": "user", "content": "What are the latest AI policy updates this week?" }
     ],
@@ -53,11 +53,15 @@ curl https://api.phaseo.app/v1/chat/completions \
   }'
 ```
 
-## Combinação com ferramentas de função
+Cada ferramenta recebe um objeto `parameters` opcional, descrito na página dela. `stream: true` também funciona: o Phaseo executa os turnos das ferramentas e transmite a resposta final para você por streaming.
+
+## Combine ferramentas de servidor com suas próprias funções
+
+O Phaseo só executa as ferramentas `phaseo:`. Uma ferramenta `function` comum na mesma solicitação é devolvida ao seu app normalmente, e você envia o resultado dela em uma solicitação seguinte, como em [Chamadas de ferramentas](../tool-calling).
 
 ```json
 {
-  "model": "openai/gpt-5-nano",
+  "model": "openai/gpt-6-astra",
   "messages": [
     { "role": "user", "content": "Find recent funding news and save the best item." }
   ],
@@ -82,21 +86,17 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-Se o modelo chamar `phaseo:web_search`, o Phaseo executará essa chamada automaticamente. Se chamar `save_research_item`, sua aplicação receberá a chamada da função e deverá retornar o resultado em uma solicitação seguinte.
+## Limites do loop de ferramentas
 
-## Endpoints compatíveis
+| Limite | Valor | Quando é atingido |
+| --- | --- | --- |
+| Chamadas a ferramentas de servidor por solicitação | `max_tool_calls` na solicitação, padrão `30`, máximo `100` | `400 gateway_server_tool_limit` |
+| Turnos de continuação | `8` | `502 gateway_server_tool_error` |
+| Chamadas a uma ferramenta | O `max_uses` dessa ferramenta | A ferramenta devolve um resultado de erro ao modelo, que pode continuar sem ela |
 
-As ferramentas de servidor são compatíveis com:
+## Uso e preços
 
-- `/v1/chat/completions`
-- `/v1/responses`
-- `/v1/messages`
-
-Solicitações em streaming são compatíveis. Para ferramentas de servidor gerenciadas pelo gateway, o Phaseo pode materializar o turno de chamada da ferramenta upstream, executá-la, continuar o ciclo e emitir um stream sintético com a resposta final.
-
-## Acompanhamento de uso
-
-O uso das ferramentas de servidor é informado em `usage.server_tool_use`:
+Cada ferramenta de servidor soma um contador a `usage.server_tool_use`, e a tabela de preços de um modelo pode cobrar o medidor correspondente. Os tokens usados por um segundo modelo (Advisor, Subagent, Fusion, Geração de imagens) são somados ao uso da solicitação e cobrados com os preços desse modelo.
 
 ```json
 {
@@ -106,48 +106,22 @@ O uso das ferramentas de servidor é informado em `usage.server_tool_use`:
     "server_tool_use": {
       "datetime_requests": 1,
       "web_search_requests": 2,
-      "web_search_results": 8,
-      "web_fetch_requests": 1,
-      "advisor_requests": 1,
-      "subagent_requests": 1,
-      "fusion_requests": 1,
-      "search_models_requests": 1,
-      "image_generation_requests": 1
+      "web_search_results": 8
     }
   }
 }
 ```
 
-A precificação também pode usar medidores de ferramentas de servidor como `server_tool_web_search_requests`, `server_tool_web_search_extra_results`, `server_tool_web_fetch_requests`, `server_tool_advisor_requests`, `server_tool_image_generation_requests`, `native_web_search_requests` e `native_web_fetch_requests` quando configurados nos cartões de preços dos modelos.
+| Ferramenta | Contador de uso | Medidor de preço |
+| --- | --- | --- |
+| Datetime | `datetime_requests` | Nenhum |
+| Web Search | `web_search_requests`, `web_search_results`, `web_search_extra_results` | `server_tool_web_search_requests`, `server_tool_web_search_extra_results` |
+| Web Fetch | `web_fetch_requests` | `server_tool_web_fetch_requests` |
+| Advisor | `advisor_requests` | `server_tool_advisor_requests` |
+| Subagent | `subagent_requests` | `server_tool_subagent_requests` |
+| Fusion | `fusion_requests` | `server_tool_fusion_requests` |
+| Search Models | `search_models_requests` | `server_tool_search_models_requests` |
+| Geração de imagens | `image_generation_requests` | `server_tool_image_generation_requests` |
+| Aplicar patch | `apply_patch_requests` | `server_tool_apply_patch_requests` |
 
-## Páginas de ferramentas
-
-<Columns cols={2}>
-  <Card title="Data e hora" icon="clock" href="./datetime.mdx">
-    Forneça ao modelo a data e a hora atuais.
-  </Card>
-  <Card title="Busca na Web" icon="search" href="./web-search.mdx">
-    Permita que o modelo pesquise na Web quando precisar de informações atuais.
-  </Card>
-  <Card title="Busca de páginas da Web" icon="file-search" href="./web-fetch.mdx">
-    Permita que o modelo busque e leia URLs específicas.
-  </Card>
-  <Card title="Advisor" icon="message-square" href="./advisor.mdx">
-    Permita que um modelo consulte outro durante a geração.
-  </Card>
-  <Card title="Subagente" icon="cpu" href="./subagent.mdx">
-    Permita que o modelo delegue tarefas específicas a um modelo auxiliar.
-  </Card>
-  <Card title="Fusão" icon="combine" href="./fusion.mdx">
-	Execute análises paralelas com vários modelos e sintetize os resultados.
-  </Card>
-	<Card title="Buscar modelos" icon="list-filter" href="./search-models.mdx">
-		Permita que o modelo procure um modelo adequado no catálogo atualizado do Phaseo.
-	</Card>
-  <Card title="Geração de imagens" icon="image" href="./image-generation.mdx">
-    Permita que o modelo crie imagens enquanto responde.
-  </Card>
-	<Card title="Aplicar patch" icon="file-diff" href="./apply-patch.mdx">
-		Gere um patch validado para criar, atualizar ou excluir arquivos.
-	</Card>
-</Columns>
+Quando a Web Search ou a Web Fetch é executada como ferramenta própria do provedor (`engine: "native"`), a cobrança usa `native_web_search_requests` ou `native_web_fetch_requests`.

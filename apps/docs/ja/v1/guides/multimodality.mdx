@@ -1,27 +1,24 @@
 ---
 title: "マルチモーダル"
-description: "ゲートウェイ経由でテキスト、画像、音声、動画などのモダリティを利用します。"
+description: "Gateway 経由でテキスト、画像、音声、動画などのモダリティを利用します。"
 icon: "shapes"
 ---
 
-ゲートウェイは統一APIを通じて複数のモダリティを提供します。エンドポイントごとに機能が異なり、モデルの対応状況はプロバイダーによって変わります。
+欲しい出力に合ったエンドポイントを選び、次にそのエンドポイントに対応したモデルを選びます。同じモデル名が複数のエンドポイントに表示されることがあり、プロバイダーの対応状況はエンドポイントごとに異なります。
 
-## モダリティとエンドポイント
-
-| モダリティ | 主なエンドポイント | 備考 |
+| モダリティ | エンドポイント | 内容 |
 | --- | --- | --- |
-| テキスト | `/v1/responses`、`/v1/chat/completions`、`/v1/messages` | 構造化出力と会話形式の出力。 |
-| 画像 | `/v1/images/generations`、`/v1/images/edits` | テキストからの画像生成と画像編集。 |
-| 音声（TTS/STT/翻訳） | `/v1/audio/speech`、`/v1/audio/transcriptions`、`/v1/audio/translations` | 音声合成、文字起こし、音声翻訳。 |
-| 動画 | `/v1/videos`、`/v1/videos/{video_id}`、`/v1/videos/{video_id}/content`、`/v1/videos/{video_id}`（DELETE） | 非同期の動画ジョブを作成し、状態を確認し、内容を取得して、ジョブを削除します。 |
-| 音楽 | `/v1/music/generate` | 対応プロバイダーを使った音楽生成。 |
-| OCR | `/v1/ocr` | 対応している場合に画像からテキストを抽出します。 |
+| テキスト | `/v1/responses`、`/v1/chat/completions`、`/v1/messages` | 会話形式および構造化されたテキスト出力。 |
+| 画像 | [`/v1/images/generations`](../api-reference/endpoint/images-generations.mdx)、[`/v1/images/edits`](../api-reference/endpoint/images-edits.mdx) | テキストからの画像生成と画像編集。 |
+| 音声 | [`/v1/audio/speech`](../api-reference/endpoint/audio-speech.mdx)、[`/v1/audio/transcriptions`](../api-reference/endpoint/audio-transcriptions.mdx)、[`/v1/audio/translations`](../api-reference/endpoint/audio-translations.mdx) | 音声合成、文字起こし、音声の翻訳。 |
+| リアルタイム音声 | `/v1/audio/realtime/sessions` | ライブの音声通話。[リアルタイム音声](./realtime-voice.mdx)を参照してください。 |
+| 動画 | [`POST /v1/videos`](../api-reference/endpoint/video-create.mdx)、`GET /v1/videos/{video_id}`、`GET /v1/videos/{video_id}/content`、`DELETE /v1/videos/{video_id}` | 非同期の動画ジョブを作成し、状態をポーリングし、内容を取得して、ジョブを削除します。[動画とバッチジョブ](./async-video-and-batch.mdx)を参照してください。 |
+| 音楽 | [`/v1/music/generate`](../api-reference/endpoint/music-generate.mdx) | 対応プロバイダーでの音楽生成。 |
+| OCR | [`/v1/ocr`](../api-reference/endpoint/ocr.mdx) | 画像からのテキスト抽出。 |
+| ドキュメント解析 | [`/v1/parse`](../api-reference/endpoint/parse.mdx) | ドキュメント画像から、順序付きのテキスト、表、レイアウトを取得します。[ドキュメント画像を解析する](./document-parsing.mdx)を参照してください。 |
 
-## モデルの対応状況を確認する
+## エンドポイントに対応するモデルを確認する
 
-[モデルエンドポイント](../api-reference/endpoint/models.mdx)で利用可能なモデルと対応エンドポイントを確認できます。プロバイダーの対応状況は[プロバイダーエンドポイント](../api-reference/endpoint/providers.mdx)で確認できます。
+[モデルエンドポイント](../api-reference/endpoint/models.mdx)を呼び出します。各モデルには対応する `endpoints` が一覧表示され、`GET /v1/models/{author}/{slug}/endpoints` では 1 つのモデルのプロバイダールートごとに、モダリティと対応パラメーターが表示されます。プロバイダーの対応範囲は[プロバイダーエンドポイント](../api-reference/endpoint/providers.mdx)で確認できます。
 
-## ベストプラクティス
-
-- モデル名が複数のモダリティで共通でも、必要なモダリティに合ったエンドポイントを選びます。
-- リリース前に[APIリファレンス](../api-reference/introduction.mdx)に沿ってペイロードを検証します。
+リリース前に、そのエンドポイントの[API リファレンス](../api-reference/introduction)と照らしてリクエストボディを確認してください。

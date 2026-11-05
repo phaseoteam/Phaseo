@@ -4,9 +4,7 @@ icon: "/icons/brands/claude-code.svg"
 description: "通过 Anthropic 兼容 API 将 Claude Code 连接到 Phaseo Gateway。"
 ---
 
-Claude Code 支持通过环境变量配置第三方 LLM 网关。Phaseo 在 `/v1/messages` 提供 Anthropic 兼容接口，因此无需更改提示词即可将 Claude Code 指向 Phaseo。
-
-如果希望 Claude Code 在会话期间读取最新的 Phaseo 文档，也请添加 [Docs MCP](./docs-mcp.mdx) 服务器。
+运行 `phaseo claude-code`，让 Claude Code 的请求经过 Phaseo；或者自己设置三个环境变量。Claude Code 调用 Anthropic 风格的 `/v1/messages`，Phaseo 以 [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx) 的形式处理它们，因此你的提示词无需改动。
 
 ## 使用 Phaseo CLI 设置
 
@@ -16,39 +14,48 @@ phaseo claude-code
 claude
 ```
 
-首先从官方渠道安装 Claude Code。设置过程会创建一个 90 天后过期、每月支出上限为 100 美元的 `Phaseo CLI: Claude Code API Key`，将其存储在操作系统凭据库中，并配置 Claude Code 的网关和 API 密钥助手。旧密钥过期时，助手会自动创建新密钥。不会将明文密钥写入 Claude Code 设置。
+如果没有安装 Claude Code，CLI 会显示官方安装命令，并在运行前征求你的同意。然后设置会：
 
-## 手动配置
+- 创建一个 `Phaseo CLI: Claude Code API Key`，它在 90 天后过期，每月支出上限为 $100，并保存在操作系统的凭据存储中；
+- 在 `~/.claude/settings.json` 中设置 `ANTHROPIC_BASE_URL` 和 `apiKeyHelper`。该助手从 CLI 获取密钥，并在旧密钥过期时创建新密钥，因此不会有明文密钥写入 Claude Code 设置。
 
-```bash
+如果 `settings.json` 中已经有不同的 `ANTHROPIC_BASE_URL`、不同的 `apiKeyHelper`，或非空的 `ANTHROPIC_API_KEY` 或 `ANTHROPIC_AUTH_TOKEN`，设置会停止，不做任何更改。Claude Code 不支持 `--model`；请改为设置 `ANTHROPIC_MODEL`（见下文）。
+
+## 手动配置 Claude Code
+
+在你启动 Claude Code 的 shell 中设置以下变量：
+
+<CodeGroup>
+
+```bash bash
 export ANTHROPIC_BASE_URL="https://api.phaseo.app"
 export ANTHROPIC_AUTH_TOKEN="your_phaseo_api_key"
 export ANTHROPIC_API_KEY=""
 ```
 
-```powershell
+```powershell PowerShell
 $env:ANTHROPIC_BASE_URL = "https://api.phaseo.app"
 $env:ANTHROPIC_AUTH_TOKEN = "your_phaseo_api_key"
 $env:ANTHROPIC_API_KEY = ""
 ```
 
-## 选择模型（可选）
+</CodeGroup>
 
-如需固定默认模型，请设置 `ANTHROPIC_MODEL`。请使用 [模型](../../api-reference/endpoint/models.mdx) 中列出的模型 ID。
+Claude Code 会把 `ANTHROPIC_AUTH_TOKEN` 作为 `Authorization` 请求头发送，Phaseo 接受这种方式。要固定默认模型，请把 `ANTHROPIC_MODEL` 设为 [Models](../../api-reference/endpoint/models.mdx) 中的某个 Phaseo 模型 ID。
 
-## 启动 Claude Code
+## 检查是否可用
+
+运行 `claude`，发送一个简短的提示词，并确认请求出现在 **设置 → 使用情况 → 日志** 中。
+
+## 移除 Phaseo
 
 ```bash
-claude
+phaseo integrations remove claude-code
 ```
 
-## 端点映射
+这会移除 Phaseo 添加到 `settings.json` 的基础 URL、密钥助手和空的凭据变量，然后撤销密钥。如果是手动设置的，请取消设置这三个环境变量。
 
-- Claude Code 会调用 Anthropic 风格的端点（`/v1/messages`）。
-- Phaseo 通过 [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx) 处理这些请求。
+## 已知限制
 
-## 兼容性说明
-
-- `ANTHROPIC_AUTH_TOKEN` 会作为 `Authorization` 请求头发送，Phaseo 支持此方式。
-- 如需让 Claude Code 始终使用同一个默认模型，也可以将 `ANTHROPIC_MODEL` 设置为 Phaseo 模型 ID。
-- 当前限制：Anthropic Messages 中的流式传输与工具调用可能返回 `400 invalid_request`。如果工作流依赖流式工具循环，请在大规模上线前测试此路径。
+- 在让整个团队迁移之前，先用你的工作流测试流式工具循环。
+- 如果希望 Claude Code 在会话中读取 Phaseo 文档，请添加 [Docs MCP](./docs-mcp.mdx) 服务器。

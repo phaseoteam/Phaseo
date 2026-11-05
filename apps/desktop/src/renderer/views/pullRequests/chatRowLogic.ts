@@ -2,7 +2,7 @@ import type { PullRequestCheck, PullRequestView } from "../../../shared/pullRequ
 
 export type ChatRowAction = "resolve" | "ready" | "fix" | "merge";
 /**
- * The one next step a chat's pull request row offers (T3's resolveThreadPanelPullRequestAction), ranked by what
+ * The one next step a chat's pull request row offers, ranked by what
  * unblocks the merge next: conflicts, then a draft, then failing checks, then Merge once checks pass. Running
  * checks offer nothing, since a merge mid-run would race the runs that gate it.
  */
@@ -21,7 +21,7 @@ export function checksState(checks: readonly PullRequestCheck[]): "none" | "fail
 	if (checks.some(check => check.status === "pending" || check.status === "action-required")) return "pending";
 	return "passing";
 }
-/** Every live facet of the checks, "7 of 16 running · 1 failed" (T3's describePullRequestChecks). */
+/** Every live facet of the checks, "7 of 16 running · 1 failed". */
 export function describeChecks(checks: readonly PullRequestCheck[]) {
 	if (!checks.length) return "No checks reported";
 	const count = (status: PullRequestCheck["status"]) => checks.filter(check => check.status === status).length;
@@ -33,7 +33,7 @@ export function describeChecks(checks: readonly PullRequestCheck[]) {
 	if (!parts.length) return passed === checks.length ? "All checks passed" : `${passed} of ${checks.length} passing`;
 	return parts.join(" · ");
 }
-/** The task a "Resolve" hand-off starts with (T3's buildResolveConflictsPrompt). */
+/** The task a "Resolve" hand-off starts with. */
 export function resolveConflictsPrompt(view: Pick<PullRequestView, "number" | "url" | "head" | "base">) {
 	return `Resolve the merge conflicts in pull request #${view.number} (${view.url}). This worktree is checked out at ${view.head}. Merge or rebase ${view.base} into it, resolve every conflict, run the project's checks, then push the branch so the pull request can merge.`;
 }

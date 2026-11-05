@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
+// Table files carry the MFA policy (require_mfa_for_data_api); these fixtures don't load its helper.
+const MFA_SATISFIED_STUB = "create or replace function public.mfa_satisfied() returns boolean language sql stable as 'select true';";
 
 const db = new PGlite();
 const id = (prefix, n) => `${prefix}0000000-0000-4000-8000-0000000000${String(n).padStart(2, '0')}`;
@@ -64,6 +66,7 @@ try {
     create unique index email_outbox_dedupe_key_unique on public.email_outbox (dedupe_key);
   `);
   await db.exec(await read('../schemas/public/functions/enforce_broadcast_destination_limit.sql'));
+  await db.exec(MFA_SATISFIED_STUB);
   await db.exec(await read('../schemas/public/tables/workspace_broadcast_destination_limits.sql'));
   await db.exec(await read('../schemas/public/tables/workspace_broadcast_destinations.sql'));
   // Health as #3102's migration creates it, without alerted_at.

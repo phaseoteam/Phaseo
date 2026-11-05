@@ -1,0 +1,441 @@
+---
+icon: "wrench"
+title: "أدوات Agent SDK"
+sidebarTitle: "الأدوات"
+description: "عرّف أدوات محلية ومشروطة بالموافقة ويدوية ومتزامنة لوكيل Phaseo."
+---
+
+عرّف أداة عندما يحتاج الوكيل إلى قراءة بيانات التطبيق، أو استدعاء خدمة داخلية، أو تنفيذ إجراء. يستدعي النموذج الأداة بمعرّفها؛ فتتحقق الحزمة من الوسائط، وتشغّل شيفرتك داخل عمليتك، وتعيد النتيجة في الدور التالي.
+
+## عرّف أداة
+
+<CodeGroup>
+
+```typescript TypeScript
+import { defineTool } from "@phaseo/agent-sdk";
+
+const fetchTicket = defineTool({
+  id: "fetch-ticket",
+  description: "Load one internal support ticket.",
+  parameters: {
+    type: "object",
+    properties: {
+      ticketId: { type: "string" },
+    },
+    required: ["ticketId"],
+    additionalProperties: false,
+  },
+  timeoutMs: 3_000,
+  async execute(input: { ticketId: string }, context) {
+    const response = await fetch(
+      `https://internal.example/tickets/${input.ticketId}`,
+      { signal: context.signal },
+    );
+
+    return response.json();
+  },
+});
+```
+
+```python Python
+import httpx
+from phaseo_agent import AgentTool, define_tool
+
+def fetch_ticket(tool_input, runtime):
+    response = httpx.get(f"https://internal.example/tickets/{tool_input['ticketId']}")
+    return response.json()
+
+fetch_ticket_tool = define_tool(AgentTool(
+    id="fetch-ticket",
+    description="Load one internal support ticket.",
+    parameters={
+        "type": "object",
+        "properties": {"ticketId": {"type": "string"}},
+        "required": ["ticketId"],
+        "additionalProperties": False,
+    },
+    timeout_ms=3_000,
+    execute=fetch_ticket,
+))
+```
+
+```go Go
+search := phaseoagent.DefineTool(phaseoagent.Tool{
+  ID:          "search_tickets",
+  Description: "Search support tickets by keyword",
+  Parameters: map[string]any{
+    "type":       "object",
+    "properties": map[string]any{"query": map[string]any{"type": "string"}},
+    "required":   []string{"query"},
+  },
+  Timeout:     10 * time.Second,
+  InputSchema: validateSearchInput, // func(any) (any, error)
+  Execute: func(input any, runtime phaseoagent.RuntimeContext) (any, error) {
+    return tickets.Search(input.(map[string]any)["query"].(string))
+  },
+})
+```
+
+```csharp C#
+// The constructor takes Id, Execute, Description, Parameters, and Timeout;
+// set the other properties with an initializer.
+var search = AgentSdk.DefineTool(new Tool(
+    "search_tickets",
+    async (input, runtime) => await tickets.SearchAsync(input, runtime.CancellationToken),
+    "Search support tickets by keyword",
+    new Dictionary<string, object?>
+    {
+        ["type"] = "object",
+        ["properties"] = new Dictionary<string, object?> { ["query"] = new { type = "string" } },
+        ["required"] = new[] { "query" },
+    },
+    TimeSpan.FromSeconds(10))
+{
+    InputSchema = ValidateSearchInput, // Func<object?, object?>
+});
+```
+
+```php PHP
+$search = AgentSdk::defineTool(new Tool(
+    id: "search_tickets",
+    execute: fn (array $input, $runtime) => $tickets->search($input["query"]),
+    description: "Search support tickets by keyword",
+    parameters: [
+        "type" => "object",
+        "properties" => ["query" => ["type" => "string"]],
+        "required" => ["query"],
+    ],
+    timeoutMs: 10000,
+    inputSchema: fn ($input) => is_string($input["query"] ?? null) ? $input : throw new InvalidArgumentException("query is required"),
+));
+```
+
+```ruby Ruby
+search = PhaseoAgentSdk.define_tool(
+  PhaseoAgentSdk::Tool.new(
+    id: "search_tickets",
+    description: "Search support tickets by keyword",
+    parameters: {
+      type: "object",
+      properties: { query: { type: "string" } },
+      required: ["query"]
+    },
+    timeout_ms: 10_000,
+    input_schema: ->(input) { input["query"].is_a?(String) ? input : raise("query is required") },
+    execute: ->(input, runtime) { tickets.search(input["query"]) }
+  )
+)
+```
+
+```java Java
+// Tool has three constructors: (id, execute); (id, execute, description, parameters, timeout);
+// and the full form below. Validators::requireQuery stands in for your own validator.
+var search = AgentSdk.defineTool(new AgentSdk.Tool(
+    "search_tickets",
+    (input, context) -> tickets.search((String) ((Map<?, ?>) input).get("query")),
+    "Search support tickets by keyword",
+    Map.of("type", "object", "properties", Map.of("query", Map.of("type", "string"))),
+    Duration.ofSeconds(10),
+    Validators::requireQuery, // inputSchema: AgentSdk.Validator
+    null, null,             // outputSchema, eventSchema
+    false, null,            // requireApproval, approval
+    null, null,             // onToolCalled, onResponseReceived
+    "fail-run"              // onError
+));
+```
+
+```rust Rust
+use phaseo_agent::Tool;
+use serde_json::json;
+
+let get_status = Tool::new(
+    "get_status",
+    "Get the current service status",
+    json!({
+        "type": "object",
+        "properties": {
+            "service": { "type": "string" }
+        },
+        "required": ["service"]
+    }),
+    |input, _context| {
+        Ok(json!({
+            "service": input["service"],
+            "status": "healthy"
+        }))
+    },
+);
+```
+
+</CodeGroup>
+
+## حقول الأداة
+
+| الحقل | `camelCase` (TS، PHP، Java) | `snake_case` (Python، Ruby، Rust) | `PascalCase` (Go، C#) | ما يفعله |
+| --- | --- | --- | --- | --- |
+| المعاملات | `parameters` | `parameters` | `Parameters` | JSON Schema الذي يُرسل إلى النموذج |
+| المدقّقات | `inputSchema`، `outputSchema`، `eventSchema` | `input_schema`، `output_schema`، `event_schema` | `InputSchema`، `OutputSchema`، `EventSchema` | تتحقق من الوسائط والنتائج وقيم التقدّم. ينهي الفشل التشغيل (`AgentSchemaValidationError` في TypeScript، و`Invalid tool input: ...` أو `Invalid tool output: ...` في غيرها). لا توجد في Rust. |
+| المهلة | `timeoutMs` (TS، PHP)، `timeout` (Java) | `timeout_ms` | `Timeout` | تُفشل الاستدعاء بعد هذه المدة؛ راجع الجدول أدناه. لا توجد في Rust. |
+| الموافقة | `requireApproval` | `require_approval` | `RequireApproval`، `Approval` | التوقف بانتظار شخص قبل تنفيذ الاستدعاء |
+| الخطافات التفاعلية | `onToolCalled`، `onResponseReceived` | `on_tool_called`، `on_response_received` | `OnToolCalled`، `OnResponseReceived` | التوقف بانتظار إجابة شخص، ثم تحويلها. لا توجد في Rust. |
+| تجاوزات الدور التالي | `nextTurnParams` | `next_turn_params` | `NextTurn` (Go)، `NextTurnParams` (C#) | تغيير طلب النموذج التالي؛ راجع [الأدوار الديناميكية](./dynamic-turns). لا توجد في Rust. |
+| سياسة الخطأ | `onError` | `on_error` | `OnError` | `"fail-run"` (الافتراضي) أو `"return-to-model"`. لا توجد في Rust. |
+
+تأخذ المخططات المدقّق الأصلي لكل لغة: في TypeScript دالة أو كائن يتضمن `parse()` أو `safeParse()`؛ وفي Python دالة قابلة للاستدعاء أو نموذج Pydantic أو كائن يتضمن `parse` أو `safe_parse`؛ وفي غيرهما دالة أو كائن قابل للاستدعاء يعيد القيمة أو يرمي استثناءً.
+
+### ما الذي تفعله المهلة
+
+| اللغة | عند انتهاء `timeout` |
+| --- | --- |
+| TypeScript | تُلغي `context.signal` وتتعامل مع المهلة كخطأ أداة |
+| Python | ترفع `TimeoutError` وتُفشل التشغيل دائمًا، حتى مع `return-to-model`. لا يتوقف الخيط، لذا ينبغي للأدوات طويلة التشغيل أن تفحص مهلتها الخاصة. |
+| Go | تُفشل الاستدعاء بالخطأ `tool <id> timed out`. لا تملك `Execute` قيمة `context.Context`، لذا تستمر الدالة في العمل داخل goroutine الخاصة بها. |
+| C# | تُلغي `runtime.CancellationToken` وتُفشل الاستدعاء بالاستثناء `TimeoutException`. مرّر الرمز إلى استدعاءاتك غير المتزامنة. |
+| PHP | تُفحص بعد عودة `execute`: يفشل الاستدعاء الأبطأ بالخطأ `Tool <name> timed out after <n>ms`. لا تستطيع PHP مقاطعة دالة رد النداء. |
+| Ruby | تغلّف `execute` داخل `Timeout.timeout`، التي تقاطع الاستدعاء وترفع `Timeout::Error` |
+| Java | تشغّل المنفّذ على خيط خاص به، وتُفشل الاستدعاء بالاستثناء `TimeoutException`، وتقاطع ذلك الخيط |
+| Rust | لا توجد مهلة للأدوات |
+
+يؤدي استدعاء معرّف أداة غير موجود في قائمة الأدوات الحالية إلى فشل التشغيل (`unknown tool` في Go، و`Unknown tool '<name>'` في C# وPHP وRuby وJava، و`Unknown tool: <name>` بوصفه `AgentError` في Rust). في TypeScript مع `return-to-model`، يُجاب عن الأداة غير المعروفة أو الوسائط غير القابلة للقراءة كخطأ أداة بدلًا من ذلك.
+
+## اشترط الموافقة
+
+اضبط علم الموافقة للأداة على `true`، أو امنحها دالة تقرر لكل استدعاء. أما دالة الموافقة على مستوى الوكيل، حيث تتوفر في اللغة، فتنطبق على كل الأدوات وتتجاوز كليهما. يوقف الاستدعاء المشروط التشغيل مؤقتًا بالحالة `waiting_for_human`؛ وافق عليه أو ارفضه بمعرّف الاستدعاء كما في [الحالة والموافقة](./state-and-approval).
+
+<CodeGroup>
+
+```typescript TypeScript
+const deploy = defineTool({
+  id: "deploy",
+  description: "Deploy the selected release",
+  requireApproval: (input: { environment: string }) => input.environment === "production",
+  execute: deployRelease,
+});
+```
+
+```python Python
+deploy = define_tool(AgentTool(
+    id="deploy",
+    description="Deploy the selected release",
+    require_approval=lambda tool_input, runtime: tool_input["environment"] == "production",
+    execute=deploy_release,
+))
+```
+
+```go Go
+deploy := phaseoagent.Tool{
+  ID:          "deploy",
+  Description: "Deploy the selected release",
+  Approval: func(input any, runtime phaseoagent.RuntimeContext) (bool, error) {
+    return input.(map[string]any)["environment"] == "production", nil
+  },
+  Execute: deployRelease,
+}
+```
+
+```csharp C#
+var deploy = new Tool("deploy", DeployRelease, "Deploy the selected release")
+{
+    Approval = async (input, runtime) =>
+        ((JsonElement)input!).GetProperty("environment").GetString() == "production",
+};
+```
+
+```php PHP
+$deploy = new Tool(
+    id: "deploy",
+    execute: fn (array $input, $runtime) => $deployments->deploy($input),
+    description: "Deploy the selected release",
+    requireApproval: fn (array $input, $runtime) => ($input["environment"] ?? null) === "production",
+);
+```
+
+```ruby Ruby
+deploy = PhaseoAgentSdk::Tool.new(
+  id: "deploy",
+  description: "Deploy the selected release",
+  require_approval: ->(input, runtime) { input["environment"] == "production" },
+  execute: ->(input, runtime) { deployments.deploy(input) }
+)
+```
+
+```rust Rust
+let deploy = Tool::new(
+    "deploy",
+    "Deploy an application environment",
+    json!({
+        "type": "object",
+        "properties": {
+            "environment": { "type": "string" }
+        },
+        "required": ["environment"]
+    }),
+    |input, _context| {
+        Ok(json!({
+            "environment": input["environment"],
+            "deployed": true
+        }))
+    },
+)
+.require_approval();
+```
+
+</CodeGroup>
+
+| اللغة | لكل أداة | لكل الأدوات |
+| --- | --- | --- |
+| TypeScript | `requireApproval: true` أو `(input, context) => boolean` | `requireApproval: (call, context) => boolean` على الوكيل |
+| Python | `require_approval=True` أو `(input, runtime) -> bool` | `"require_approval": (call, runtime) -> bool` على الوكيل |
+| Go | `RequireApproval: true` أو دالة `Approval` | `AgentDefinition.RequireApproval(call, runtime)` |
+| C# | `RequireApproval = true` أو دالة `Approval` | `AgentDefinition.RequireApproval` |
+| PHP | `requireApproval: true` أو `fn ($input, $runtime): bool` | `requireApproval` في `AgentDefinition` (`fn ($toolCall, $runtime): bool`) |
+| Ruby | `require_approval: true` أو `->(input, runtime)` | `require_approval:` على الوكيل (`->(tool_call, runtime)`) |
+| Java | `requireApproval` بالقيمة `true` أو دالة `approval` في المُنشئ الكامل | `AgentDefinition.requireApproval` (من النوع `CallApproval`) |
+| Rust | `.require_approval()`؛ لا توجد دالة لكل استدعاء | لا يوجد. نوع التوقف `tool_approval`، ولا يوجد نوع للرفض: اترك الاستدعاء غير الموافَق عليه موقوفًا مؤقتًا أو طبّق سياسة الرفض الخاصة بك قبل الاستئناف. |
+
+## سلّم استدعاءً إلى شخص أو نظام آخر
+
+لا تملك الأداة اليدوية منفّذًا: يتولى تطبيقك أو طابور أو خدمة أخرى العمل. أما الأداة التفاعلية فتشغّل خطافًا يمكنه التوقف بانتظار شخص. كلاهما يوقف التشغيل مؤقتًا حتى تتابعه بمخرجات أداة لمعرّف الاستدعاء؛ راجع [الحالة والموافقة](./state-and-approval).
+
+| اللغة | أداة يدوية | أداة تفاعلية: التوقف عبر |
+| --- | --- | --- |
+| TypeScript | `execute: false` | إعادة `null` من `onToolCalled` |
+| Python | اترك `execute` دون ضبط | إعادة `None` من `on_tool_called` |
+| Go | اترك `Execute` بقيمة nil (يكون `Kind` المعلّق `manual`) | إعادة `completed = false` من `OnToolCalled` (يكون `Kind` المعلّق `hitl`) |
+| C# | اترك `Execute` بقيمة null (`manual`) | إعادة `(Completed: false, Output: null)` من `OnToolCalled` (`hitl`) |
+| PHP | `execute: null` (`manual`) | إعادة `null` من `onToolCalled` (`hitl`) |
+| Ruby | اترك `execute` دون ضبط (`manual`) | إعادة `nil` من `on_tool_called` (`hitl`) |
+| Java | مرّر `null` بوصفه المنفّذ (`manual`) | إعادة `new ToolCalledResult(false, null)` من `onToolCalled` (`hitl`) |
+| Rust | `Tool::external(...)` (نوع التوقف `external_output`) | غير مدعوم؛ استخدم `human_review` على الوكيل |
+
+إذا أعاد الخطاف التفاعلي قيمة بدلًا من ذلك، تصبح نتيجة الأداة فورًا. بعد المتابعة، يمكن لـ `onResponseReceived` (أو ما يعادله في اللغة) التحقق من المخرجات المقدَّمة أو تحويلها قبل أن يفحصها مدقّق المخرجات.
+
+لا تأخذ الأداة الخارجية في Rust منفّذًا:
+
+```rust
+let ticket_lookup = Tool::external(
+    "ticket_lookup",
+    "Load one support ticket",
+    json!({
+        "type": "object",
+        "properties": {
+            "ticket_id": { "type": "string" }
+        },
+        "required": ["ticket_id"]
+    }),
+);
+```
+
+إذا جمع دور واحد للنموذج بين أدوات تلقائية وأخرى معلّقة، يشغّل وقت التشغيل الأدوات التلقائية قبل أن يعيد التوقف المؤقت.
+
+<span id="report-progress-and-update-context"></span>
+## أبلغ عن التقدّم وحدّث السياق
+
+يمكن للأداة نشر نتائج أولية أثناء عملها واستبدال سياق التطبيق للأدوار اللاحقة. يظهر التقدّم بوصفه أحداث `tool.preliminary_result` (راجع [البث](./streaming))، ويُفحص بمدقّق الأحداث عندما تضبطه.
+
+<CodeGroup>
+
+```typescript TypeScript
+const indexRepository = defineTool({
+  id: "index-repository",
+  async *execute(input: { path: string }, context) {
+    yield { phase: "scan" };
+    yield { phase: "embed" };
+    context.setContext({ indexed: true });
+    return { indexed: 248 };
+  },
+});
+```
+
+```python Python
+def index_repository(tool_input, runtime):
+    runtime.emit_progress({"stage": "indexing"})
+    runtime.set_context({"indexed": True})
+    return "done"
+```
+
+```go Go
+Execute: func(input any, runtime phaseoagent.RuntimeContext) (any, error) {
+  _ = runtime.EmitProgress(map[string]any{"stage": "indexing"})
+  runtime.SetContext(map[string]any{"indexed": true})
+  return "done", nil
+},
+```
+
+```csharp C#
+async (input, runtime) =>
+{
+    await runtime.EmitProgress!(new { stage = "indexing" });
+    runtime.SetContext!(new { indexed = true });
+    return "done";
+}
+```
+
+```php PHP
+execute: function (array $input, $runtime) {
+    ($runtime->emitProgress)(["stage" => "indexing"]); // tool.preliminary_result event
+    ($runtime->setContext)(["indexed" => true]);       // context for later turns
+    return "done";
+},
+```
+
+```ruby Ruby
+execute: ->(input, runtime) {
+  runtime.emit_progress.call(stage: "indexing") # tool.preliminary_result event
+  runtime.set_context.call(indexed: true)       # context for later turns
+  "done"
+}
+```
+
+```java Java
+(input, context) -> {
+    context.emitProgress().receive(Map.of("stage", "indexing"), context); // tool.preliminary_result event
+    context.setContext().accept(Map.of("indexed", true));                 // context for later turns
+    return "done";
+}
+```
+
+</CodeGroup>
+
+| اللغة | التقدّم | السياق | حقول سياق وقت التشغيل |
+| --- | --- | --- | --- |
+| TypeScript | مولّد غير متزامن: `yield` للتقدّم و`return` للنتيجة؛ أو `context.emitProgress(value)`. ويُحفظ أيضًا في `preliminaryResults` للخطوة. | `context.setContext(value)` | `runId`، `agentId`، `stepIndex`، `context`، `signal`، `toolCall` |
+| Python | `runtime.emit_progress(value)`، أو مولّد ينتج التقدّم ويعيد النتيجة | `runtime.set_context(value)` | `run_id`، `agent_id`، `step_index`، `context`، `tool_call` |
+| Go | `runtime.EmitProgress(value)` | `runtime.SetContext(value)` | `RunID`، `AgentID`، `StepIndex`، `Context`، `ToolCall` |
+| C# | `await runtime.EmitProgress(value)` | `runtime.SetContext(value)` | `RunId`، `AgentId`، `StepIndex`، `Context`، `CancellationToken`، `ToolCall` |
+| PHP | `($runtime->emitProgress)(value)` | `($runtime->setContext)(value)` | `$runId`، `$agentId`، `$stepIndex`، `$context`، `$toolCall` |
+| Ruby | `runtime.emit_progress.call(value)` | `runtime.set_context.call(value)` | `run_id`، `agent_id`، `step_index`، `context`، `tool_call` |
+| Java | `context.emitProgress().receive(value, context)` | `context.setContext().accept(value)` | `runId`، `agentId`، `stepIndex`، `context`، `toolCall` |
+| Rust | غير مدعوم | غير مدعوم؛ يُضبط السياق لكل تشغيل | `run_id`، ومعرّف الوكيل، وفهرس الخطوة، وسياق التطبيق، واستدعاء الأداة |
+
+## تعافَ من أخطاء الأدوات
+
+افتراضيًا، يُفشل الخطأ الصادر من أداة التشغيل ويُعاد رميه. اضبط سياسة الخطأ للأداة على `return-to-model` لإعادة الخطأ بوصفه نتيجة الأداة (`{"error": "..."}`) كي يتمكن النموذج من تجربة شيء آخر. أبقِ القيمة الافتراضية للإخفاقات غير الآمنة أو غير القابلة للاستعادة.
+
+| اللغة | الافتراضي | اضبط `return-to-model` عبر |
+| --- | --- | --- |
+| TypeScript | إفشال التشغيل | `onError` على أداة، أو `toolExecution.onError` لكل الأدوات |
+| Python | إفشال التشغيل | `on_error="return-to-model"`. تظل المهلة تُفشل التشغيل. |
+| Go | إفشال التشغيل | `OnError: "return-to-model"` |
+| C# | إفشال التشغيل | `OnError = "return-to-model"` |
+| PHP | إفشال التشغيل | `onError: "return-to-model"` |
+| Ruby | إفشال التشغيل | `on_error: "return-to-model"` |
+| Java | إفشال التشغيل | `"return-to-model"` بوصفه الوسيط `onError` |
+| Rust | الإعادة إلى النموذج | مفعّل دائمًا: يصبح `AgentError` الصادر من منفّذ رسالة خطأ منظَّمة للأداة. تؤدي الأداة غير المعروفة أو غياب الموافقة أو المخرجات إلى فشل المتابعة بالخطأ `AgentError`. |
+
+في TypeScript، تحدّ `toolExecution.maxOutputChars` مقدار ما يراه النموذج من مخرجات الأداة؛ وتحتفظ المخرجات الأطول ببدايتها ونهايتها حول إشعار.
+
+## شغّل الأدوات بالتزامن
+
+عندما يستدعي دور واحد للنموذج عدة أدوات مستقلة، اضبط حدًّا للتزامن لتشغيلها في الوقت نفسه. تشغّل Go وC# وRuby وJava الأدوات واحدة تلو الأخرى حتى تفعل ذلك. تُلحق النتائج بترتيب استدعاءات النموذج، أيًّا كان ترتيب انتهائها. في Go وC#، إذا ضبطت عدة أدوات متزامنة السياق، فإن الأخيرة في ترتيب الاستدعاء هي التي تسود.
+
+| اللغة | الإعداد | ملاحظات |
+| --- | --- | --- |
+| TypeScript | `toolExecution: { toolConcurrency: 3 }` | راجع [وصفة الأدوات المتوازية](../../cookbook/agent-sdk-parallel-tools) |
+| Python | `tool_execution=AgentToolExecutionConfig(tool_concurrency=3)` | خيوط |
+| Go | `ToolExecution: phaseoagent.ToolExecutionConfig{Concurrency: 4}` | على الوكيل، أو على `RunOptions` لتشغيل واحد |
+| C# | `ToolExecution = new ToolExecutionConfig(Concurrency: 4)` | على الوكيل، أو على `RunOptions` لتشغيل واحد |
+| PHP | غير مدعوم | يُقبل `toolExecution` لكن دون أي أثر. ابدأ العمل المتوازي من داخل أداة واحدة باستخدام الطلبات المتزامنة في عميل HTTP لديك، أو ضعه في طابور وأعِد معرّف المهمة. |
+| Ruby | `tool_execution: { tool_concurrency: 4 }` | خيوط؛ على `create_agent`، أو على `run` لتشغيل واحد |
+| Java | `new AgentSdk.ToolExecutionConfig(4)` | مجمّع خيوط ثابت؛ تُرفع القيم الأقل من 1 إلى 1. على الوكيل، أو في `RunOptions` لتشغيل واحد. |
+| Rust | غير مدعوم | تعمل الأدوات بشكل متزامن بترتيب استدعاء النموذج لها |

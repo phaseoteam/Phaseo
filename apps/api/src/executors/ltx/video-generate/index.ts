@@ -98,8 +98,8 @@ function buildRequest(ir: IRVideoGenerationRequest, model: string) {
 	if (isLegacy && !["1920x1080", "2560x1440", "3840x2160"].includes(resolution)) throw new InvalidLtxVideoRequestError("Deprecated LTX-2 models support landscape output only.");
 	if (isLegacy && ![25, 50].includes(fps)) throw new InvalidLtxVideoRequestError("Deprecated LTX-2 models require 25 or 50 fps.");
 	if (isLegacy && lastFrame) throw new InvalidLtxVideoRequestError("Deprecated LTX-2 models do not support last-frame conditioning.");
-	if (model === "ltx-2-5-pro" && isHighResolution) throw new InvalidLtxVideoRequestError("LTX-2.5 Pro supports resolutions up to 1080p.");
-	if (model === "ltx-2-5-pro" && fps === 48) throw new InvalidLtxVideoRequestError("LTX-2.5 Pro supports 24, 25, or 50 fps.");
+	// LTX-2.5 Pro takes 1440p, 4K and 48 fps as well (docs.ltx.video, checked 2026-11-05);
+	// every resolution is priced.
 	if (!isFast && duration !== null && duration > 10) throw new InvalidLtxVideoRequestError("LTX Pro duration must be 6, 8, or 10 seconds.");
 	if (isFast && duration !== null && duration > 10 && (isHighResolution || fps === 48 || fps === 50)) {
 		throw new InvalidLtxVideoRequestError("LTX Fast durations above 10 seconds require 720p or 1080p at 24 or 25 fps.");

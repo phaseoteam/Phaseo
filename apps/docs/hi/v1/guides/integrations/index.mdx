@@ -1,122 +1,113 @@
 ---
-title: "एकीकरण"
+title: "इंटीग्रेशन"
 description: "Phaseo को लोकप्रिय SDK, फ़्रेमवर्क, एजेंट और ऑब्ज़र्वेबिलिटी टूल से जोड़ें।"
 icon: "compass"
 ---
 
-ज़्यादातर इंटीग्रेशन में किसी OpenAI-संगत या Anthropic-संगत क्लाइंट को Phaseo पर निर्देशित किया जाता है और Phaseo API कुंजी इस्तेमाल की जाती है। आप जो टूल पहले से इस्तेमाल करते हैं, उसकी गाइड से शुरुआत करें।
+किसी OpenAI-संगत या Anthropic-संगत क्लाइंट को Phaseo के base URL पर ले जाएँ, उसे एक Phaseo API कुंजी दें, और `openai/gpt-6-astra` जैसे Phaseo मॉडल ID बिना बदलाव के इस्तेमाल करें। हर गाइड पहले टूल सेट अप करती है, फिर दिखाती है कि कैसे जाँचें कि वह काम करता है और क्या काम नहीं करता।
 
-## बेस URL
+| क्लाइंट शैली | Base URL | कुंजी कहाँ जाती है |
+| --- | --- | --- |
+| OpenAI-संगत | `https://api.phaseo.app/v1` | API कुंजी फ़ील्ड में, `Authorization: Bearer` के रूप में भेजी जाती है |
+| Anthropic-संगत (`/v1/messages` ख़ुद जोड़ता है) | `https://api.phaseo.app` | ऑथ टोकन फ़ील्ड में, `Authorization: Bearer` के रूप में भेजी जाती है |
 
-| क्लाइंट का प्रकार | बेस URL |
-| --- | --- |
-| OpenAI-संगत क्लाइंट | `https://api.phaseo.app/v1` |
-| Anthropic-संगत क्लाइंट | `https://api.phaseo.app` |
+मॉडल ID [Models एंडपॉइंट](../../api-reference/endpoint/models.mdx) से लें। नए OpenAI-शैली ऐप के लिए [Responses](../../api-reference/endpoint/responses.mdx) इस्तेमाल करें; पुरानी लाइब्रेरी [Chat Completions](../../api-reference/endpoint/chat-completions.mdx) पर सबसे सुरक्षित रहती हैं। `PHASEO_API_KEY` एक बार सेट करें और उसे उस वेरिएबल से मैप करें जिसकी टूल को ज़रूरत है, और एजेंट ट्रैफ़िक ले जाने से पहले स्ट्रीमिंग और टूल कॉलिंग की जाँच करें।
 
-मॉडल ID [मॉडल एंडपॉइंट](../../api-reference/endpoint/models.mdx) से लें। नए OpenAI-शैली वाले ऐप्स के लिए [Responses](../../api-reference/endpoint/responses.mdx) को प्राथमिकता दें। पुरानी लाइब्रेरी के लिए आम तौर पर [Chat Completions](../../api-reference/endpoint/chat-completions.mdx) सबसे सुरक्षित विकल्प है।
+## कोडिंग एजेंट
 
-## SDK और सीधे क्लाइंट
+ज़्यादातर कोडिंग एजेंट एक [Phaseo CLI](./phaseo-cli.mdx) कमांड से सेट अप हो सकते हैं। [कोडिंग एजेंट](./coding-assistants.mdx) हर एक की कमांड बताता है।
+
+<Columns cols={3}>
+	<Card title="Claude Code" icon="/icons/brands/claude-code.svg" href="./claude-code" />
+	<Card title="Codex" icon="/icons/brands/codex.svg" href="./codex" />
+	<Card title="Cursor" icon="/icons/brands/cursor.svg" href="./cursor" />
+	<Card title="OpenCode" icon="/icons/brands/opencode.svg" href="./opencode" />
+	<Card title="Cline" icon="/icons/brands/cline.svg" href="./cline" />
+	<Card title="Roo Code" icon="/icons/brands/roo-code.svg" href="./roo-code" />
+	<Card title="Kilo Code" icon="/icons/brands/kilo.svg" href="./kilo-code" />
+	<Card title="Continue" icon="/icons/brands/continue.svg" href="./continue" />
+	<Card title="Aider" icon="/icons/brands/aider.png" href="./aider" />
+	<Card title="Zed" icon="/icons/brands/zed.svg" href="./zed" />
+	<Card title="fx" icon="/icons/brands/vercel.svg" href="./fx" />
+	<Card title="DeepSeek Harness" icon="/icons/brands/deepseek.svg" href="./deepseek-harness" />
+	<Card title="Pi" icon="/icons/brands/pi.svg" href="./pi" />
+	<Card title="oh-my-pi" icon="/icons/brands/oh-my-pi.svg" href="./oh-my-pi" />
+	<Card title="Prime Agent" icon="/icons/brands/prime-agent.svg" href="./prime-agent" />
+	<Card title="MiniMax Code" icon="/icons/brands/minimax.svg" href="./minimax-code" />
+	<Card title="Muse Code" icon="/icons/brands/meta.svg" href="./muse-code" />
+	<Card title="सभी कोडिंग एजेंट" icon="bot" href="./coding-assistants" />
+</Columns>
+
+## SDK और डायरेक्ट क्लाइंट
 
 <Columns cols={2}>
-	<Card title="OpenAI SDK" icon="code" href="./openai-sdk.mdx">
-		Phaseo बेस URL के साथ आधिकारिक OpenAI क्लाइंट इस्तेमाल करें।
+	<Card title="OpenAI SDK" icon="code" href="./openai-sdk">
+		Phaseo base URL के साथ आधिकारिक OpenAI क्लाइंट।
 	</Card>
-	<Card title="Anthropic SDK" icon="message-square" href="./anthropic-sdk.mdx">
-		`/v1/messages` के ज़रिए Anthropic-संगत क्लाइंट इस्तेमाल करें।
+	<Card title="Anthropic SDK" icon="message-square" href="./anthropic-sdk">
+		`/v1/messages` के ज़रिए Anthropic-संगत क्लाइंट।
 	</Card>
-	<Card title="AI SDK" icon="bolt" href="./ai-sdk.mdx">
-		Vercel AI SDK के लिए Phaseo का अपना प्रदाता इस्तेमाल करें।
+	<Card title="AI SDK" icon="bolt" href="./ai-sdk">
+		Vercel AI SDK के लिए Phaseo का अपना प्रदाता।
 	</Card>
-	<Card title="LiteLLM" icon="route" href="./litellm.mdx">
-		LiteLLM ट्रैफ़िक को Phaseo के ज़रिए रूट करें या LiteLLM प्रॉक्सी के पीछे Phaseo उपलब्ध कराएँ।
+	<Card title="LiteLLM" icon="route" href="./litellm">
+		LiteLLM से सीधे या उसके प्रॉक्सी के पीछे से Phaseo कॉल करें।
 	</Card>
 </Columns>
 
 ## ऐप और एजेंट फ़्रेमवर्क
 
 <Columns cols={2}>
-	<Card title="LangChain" icon="link" href="./langchain.mdx">
-		`ChatOpenAI` और Phaseo बेस URL के साथ LangChain Python इस्तेमाल करें।
+	<Card title="LangChain" icon="link" href="./langchain">
+		`ChatOpenAI` और Phaseo base URL के साथ LangChain Python।
 	</Card>
-	<Card title="LlamaIndex" icon="database" href="./llamaindex.mdx">
-		RAG और इंडेक्सिंग वर्कफ़्लो के लिए Phaseo इस्तेमाल करें।
+	<Card title="LlamaIndex" icon="database" href="./llamaindex">
+		RAG और इंडेक्सिंग वर्कफ़्लो में Phaseo मॉडल।
 	</Card>
-	<Card title="PydanticAI" icon="braces" href="./pydanticai.mdx">
-		Phaseo के साथ टाइप्ड Python एजेंट बनाएँ।
+	<Card title="PydanticAI" icon="braces" href="./pydanticai">
+		Phaseo मॉडल पर टाइप्ड Python एजेंट।
 	</Card>
-	<Card title="Mastra" icon="workflow" href="./mastra.mdx">
-		Mastra एजेंट और वर्कफ़्लो में Phaseo इस्तेमाल करें।
+	<Card title="Mastra" icon="workflow" href="./mastra">
+		Mastra एजेंट और वर्कफ़्लो में Phaseo मॉडल।
 	</Card>
-	<Card title="TanStack AI" icon="layers" href="./tanstack-ai.mdx">
-		TanStack AI का OpenAI-संगत अडैप्टर जोड़ें।
+	<Card title="eve" icon="bot" href="./eve">
+		Phaseo AI SDK प्रदाता के ज़रिए eve एजेंट।
 	</Card>
-	<Card title="Effect AI SDK" icon="function-square" href="./effect-ai.mdx">
-		Effect TypeScript ऐप्लिकेशन से Phaseo इस्तेमाल करें।
+	<Card title="TanStack AI" icon="layers" href="./tanstack-ai">
+		TanStack AI का OpenAI-संगत एडैप्टर।
+	</Card>
+	<Card title="Effect AI SDK" icon="square-function" href="./effect-ai">
+		Effect TypeScript ऐप्लिकेशन से Phaseo।
 	</Card>
 </Columns>
 
-## प्लेटफ़ॉर्म और संचालन
+## प्लेटफ़ॉर्म और ऑपरेशन
 
 <Columns cols={2}>
-	<Card title="LiveKit" icon="radio" href="./livekit.mdx">
-		LiveKit Agents और वॉइस ऐप्लिकेशन में Phaseo मॉडल इस्तेमाल करें।
+	<Card title="LiveKit" icon="radio" href="./livekit">
+		LiveKit Agents और वॉइस ऐप में Phaseo मॉडल।
 	</Card>
-	<Card title="Replit" icon="box" href="./replit.mdx">
-		Phaseo के साथ Replit ऐप्लिकेशन बनाएँ और डिप्लॉय करें।
+	<Card title="Replit" icon="box" href="./replit">
+		Replit Secrets में कुंजी के साथ Replit ऐप और डिप्लॉयमेंट।
 	</Card>
-	<Card title="वर्कफ़्लो ऑटोमेशन" icon="workflow" href="./automation.mdx">
-		Zapier, n8n, Pipedream और ऐसे ही प्लेटफ़ॉर्म से Phaseo को कॉल करें।
+	<Card title="वर्कफ़्लो ऑटोमेशन" icon="workflow" href="./automation">
+		Zapier, n8n, Pipedream और इसी तरह के प्लेटफ़ॉर्म में HTTP चरण।
 	</Card>
-	<Card title="Infisical" icon="key-round" href="./infisical.mdx">
-		सीमित दायरे में, सेवा रोके बिना Phaseo API कुंजी रोटेशन तैयार करें।
+	<Card title="Infisical" icon="key-round" href="./infisical">
+		सीमित दायरे वाली प्रबंधन कुंजी के साथ बिना डाउनटाइम के API कुंजी रोटेशन।
+	</Card>
+	<Card title="ऑब्ज़र्वेबिलिटी" icon="activity" href="./observability">
+		Langfuse, LangSmith या OpenTelemetry से अनुरोध ट्रेस करें।
 	</Card>
 </Columns>
 
-## कोडिंग एजेंट और ऑब्ज़र्वेबिलिटी
+## Phaseo टूल
 
 <Columns cols={2}>
-	<Card title="कोडिंग एजेंट" icon="bot" href="./coding-assistants">
-		Cursor, VS Code, Continue, Aider, Cline, Roo Code, Kilo Code और संबंधित टूल के साथ Phaseo CLI या मैन्युअल प्रदाता सेटिंग इस्तेमाल करें।
+	<Card title="Phaseo CLI" icon="terminal" href="./phaseo-cli">
+		टर्मिनल से कोडिंग एजेंट सेट अप करें और Phaseo प्रबंधित करें।
 	</Card>
-	<Card title="Claude Code" icon="/icons/brands/claude-code.svg" href="./claude-code">
-		Claude-संगत कोडिंग वर्कफ़्लो को Phaseo के ज़रिए रूट करें।
-	</Card>
-	<Card title="Codex" icon="/icons/brands/codex.svg" href="./codex">
-		Phaseo को Codex प्रदाता के रूप में इस्तेमाल करें।
-	</Card>
-	<Card title="DeepSeek Harness" icon="/icons/brands/deepseek.svg" href="./deepseek-harness">
-		DeepSeek Harness में Phaseo को कस्टम OpenAI-संगत प्रदाता के रूप में जोड़ें।
-	</Card>
-	<Card title="OpenCode" icon="/icons/brands/opencode.svg" href="./opencode">
-		कस्टम Phaseo प्रदाता के साथ OpenCode कॉन्फ़िगर करें।
-	</Card>
-	<Card title="Pi" icon="/icons/brands/pi.svg" href="./pi">
-		पूरे Phaseo मॉडल कैटलॉग के साथ Pi इंस्टॉल करें।
-	</Card>
-	<Card title="oh-my-pi" icon="/icons/brands/oh-my-pi.svg" href="./oh-my-pi">
-		अलग प्रदाता कैटलॉग के साथ Phaseo से oh-my-pi चलाएँ।
-	</Card>
-	<Card title="MiniMax Code" icon="/icons/brands/minimax.svg" href="./minimax-code">
-		अस्थायी प्रदाता कॉन्फ़िगरेशन के साथ Phaseo से MiniMax Code चलाएँ।
-	</Card>
-	<Card title="Muse Code" icon="/icons/brands/meta.svg" href="./muse-code">
-		अस्थायी प्रदाता कॉन्फ़िगरेशन के साथ Phaseo से Muse Code चलाएँ।
-	</Card>
-	<Card title="Prime Agent" icon="/icons/brands/prime-agent.svg" href="./prime-agent">
-		Phaseo के ज़रिए लंबे समय तक चलने वाले काम के लिए Prime Agent कॉन्फ़िगर करें।
-	</Card>
-	<Card title="ऑब्ज़र्वेबिलिटी" icon="activity" href="./observability.mdx">
-		Phaseo ट्रैफ़िक को Langfuse, LangSmith, OpenTelemetry या ऐसे ही टूल से होकर भेजें।
-	</Card>
-	<Card title="दस्तावेज़ MCP" icon="plug-zap" href="./docs-mcp.mdx">
-		कोडिंग एजेंट में नवीनतम Phaseo दस्तावेज़ जोड़ें।
+	<Card title="Docs MCP" icon="plug-zap" href="./docs-mcp">
+		कोडिंग एजेंट को लाइव Phaseo दस्तावेज़ दें।
 	</Card>
 </Columns>
-
-## उपयोगी डिफ़ॉल्ट
-
-- `PHASEO_API_KEY` एक बार सेट करें और उसे उस एनवायरनमेंट वैरिएबल से मैप करें जिसकी क्लाइंट अपेक्षा करता है।
-- मॉडल ID को बिना बदले रखें, जैसे `openai/gpt-5-nano`।
-- OpenAI-संगत लाइब्रेरी के लिए `https://api.phaseo.app/v1` इस्तेमाल करें, जब तक टूल स्पष्ट रूप से रूट होस्ट न माँगे।
-- Anthropic-संगत SDK और `/v1/messages` जोड़ने वाले टूल के लिए `https://api.phaseo.app` इस्तेमाल करें।
-- एजेंट ट्रैफ़िक को Phaseo पर लाने से पहले स्टेजिंग में स्ट्रीमिंग और टूल कॉलिंग जाँचें।

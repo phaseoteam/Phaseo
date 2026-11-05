@@ -1,69 +1,40 @@
 ---
 title: "Espaces de travail"
-description: "Organisez les clés API, les paramètres et les accès administratifs sans modifier votre formule tarifaire Phaseo."
+description: "Organisez les clés API, les paramètres et les accès administratifs sans changer de formule tarifaire Phaseo."
 icon: "building-2"
 ---
 
-Les espaces de travail regroupent les clés API, les paramètres de routage, les préréglages, les garde-fous et les accès administratifs d’une équipe, d’un produit ou d’un environnement.
+Créez un espace de travail par équipe, produit ou environnement pour séparer ses clés API, ses paramètres de routage, ses préréglages, ses garde-fous et ses accès administrateur. Chaque compte commence avec un espace de travail personnel, qui suffit pour une petite intégration.
 
-Les espaces de travail sont inclus dans le service standard à l’usage de Phaseo. Aucun forfait distinct n’est nécessaire pour les créer ou les utiliser.
-
-## Quand créer un espace de travail
-
-Utilisez des espaces de travail distincts si vous souhaitez :
+Des espaces de travail séparés sont utiles quand vous voulez :
 
 - isoler les identifiants de développement, de préproduction et de production
-- séparer différents produits ou projets clients
-- limiter les intégrations administratives aux ressources dont elles ont besoin
-- appliquer différentes règles de routage, de préréglage ou de garde-fous
+- séparer des produits ou des projets clients
+- donner à une intégration d’administration l’accès aux seules ressources dont elle a besoin
+- appliquer des règles différentes de routage, de préréglage ou de garde-fou
 
-Pour une petite intégration, l’espace de travail par défaut peut suffire.
+Les espaces de travail ne changent pas vos tarifs : toute l’utilisation reste facturée à l’usage selon la formule standard, décrite dans [Tarifs et facturation](../pricing/tiers). Les espaces de travail supplémentaires se débloquent après votre premier dépôt de crédits ; d’ici là, la création échoue avec `403 workspace_upgrade_required`.
 
-## Gérer les espaces de travail
+## Gérer les espaces de travail depuis l’API
 
-Vous pouvez gérer les espaces de travail depuis le tableau de bord Phaseo ou via l’API de gestion.
+Gérez les espaces de travail dans le tableau de bord ou avec l’API de gestion. L’API a besoin d’une [clé de gestion](../developers/management-api-keys) ; les clés API ordinaires du Gateway servent à l’inférence et ne peuvent pas appeler ces points de terminaison.
 
-L’API des espaces de travail utilise des [clés API de gestion](../developers/management-api-keys.mdx). Les clés Gateway standard servent aux requêtes d’inférence et ne peuvent pas appeler les points de terminaison d’administration des espaces de travail.
+| Tâche | Point de terminaison | Capacité |
+| --- | --- | --- |
+| Lister les espaces de travail | [`GET /workspaces`](../api-reference/endpoint/workspaces-list) | `workspaces:read` |
+| Lire un espace de travail | [`GET /workspaces/{id}`](../api-reference/endpoint/workspaces-get) | `workspaces:read` |
+| Créer un espace de travail | [`POST /workspaces`](../api-reference/endpoint/workspaces-create) | `workspaces:write` |
+| Modifier un espace de travail | [`PATCH /workspaces/{id}`](../api-reference/endpoint/workspaces-update) | `workspaces:write` |
+| Supprimer un espace de travail | [`DELETE /workspaces/{id}`](../api-reference/endpoint/workspaces-delete) | `workspaces:delete` |
 
-| Tâche | Point de terminaison |
-| --- | --- |
-| Lister les espaces de travail | [`GET /workspaces`](../api-reference/endpoint/workspaces-list.mdx) |
-| Créer un espace de travail | [`POST /workspaces`](../api-reference/endpoint/workspaces-create.mdx) |
-| Lire un espace de travail | [`GET /workspaces/{id}`](../api-reference/endpoint/workspaces-get.mdx) |
-| Mettre à jour un espace de travail | [`PATCH /workspaces/{id}`](../api-reference/endpoint/workspaces-update.mdx) |
-| Supprimer un espace de travail | [`DELETE /workspaces/{id}`](../api-reference/endpoint/workspaces-delete.mdx) |
+Ne donnez à la clé que les capacités dont elle a besoin. Phaseo vérifie aussi l’appartenance à l’espace de travail et le rôle : une capacité seule ne donne donc jamais accès à un autre espace de travail. Le `slug` d’un nouvel espace de travail doit comporter de 1 à 50 lettres minuscules, chiffres ou tirets.
+
+Conservez les clés de gestion dans un stockage de secrets côté serveur, jamais dans du code navigateur, des journaux d’application de bureau, un gestionnaire de versions ou une discussion.
 
 <Note>
-Les points de terminaison de gestion des espaces de travail sont actuellement marqués Beta. Facilitez les nouvelles tentatives de l’automatisation administrative et vérifiez les réponses de l’API avant d’appliquer d’autres modifications.
+Les points de terminaison des espaces de travail sont en bêta. Faites en sorte que votre automatisation puisse être relancée sans risque, et vérifiez chaque réponse avant d’effectuer une modification suivante.
 </Note>
 
-## Choisir le bon niveau d’accès
+## Renommer ou supprimer un espace de travail
 
-Créez une clé de gestion limitée aux capacités sur les espaces de travail nécessaires à votre intégration :
-
-- `workspaces:read` pour lister et consulter les espaces de travail
-- `workspaces:write` pour créer ou modifier les espaces de travail
-- `workspaces:delete` pour supprimer les espaces de travail
-
-Phaseo vérifie également l’appartenance à l’espace de travail et les rôles. Une capacité ne donne pas, à elle seule, accès à un autre espace de travail.
-
-Stockez les clés de gestion dans le coffre de secrets côté serveur. Ne les exposez pas dans le code du navigateur, les journaux de bureau, le contrôle de version ou les conversations.
-
-## Supprimer un espace de travail
-
-L’espace de travail par défaut ne peut pas être supprimé. Avant d’en supprimer un autre, retirez ou déplacez ses clés API actives afin que les requêtes ne ciblent pas un espace de travail qui n’existe plus.
-
-## Facturation
-
-Les espaces de travail ne créent pas de niveaux tarifaires distincts. L’utilisation reste facturée selon le modèle standard à l’usage décrit dans [Tarification et facturation](../pricing/tiers.mdx).
-
-## Étapes suivantes
-
-<CardGroup cols={2}>
-	<Card title="Clés API de gestion" icon="key-round" href="../developers/management-api-keys.mdx">
-		Créez un identifiant côté serveur avec des autorisations limitées pour gérer les espaces de travail.
-	</Card>
-	<Card title="Authentification" icon="key" href="../developers/authentication.mdx">
-		Utilisez les clés API Gateway pour les requêtes de modèle et de génération.
-	</Card>
-</CardGroup>
+L’espace de travail personnel (par défaut) ne peut être ni renommé ni supprimé ; les deux renvoient `400 bad_request`. Avant de supprimer un autre espace de travail, supprimez ou déplacez ses clés API actives pour qu’aucune requête ne vise un espace de travail qui n’existe plus.

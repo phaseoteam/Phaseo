@@ -12,7 +12,7 @@ import { keyLabel } from "../../shared/keybindings";
 import { isSendKey, useSendKey } from "./sendKey";
 
 /** The message box: an editor whose files, chats and attachments sit inline as chips. */
-export function Composer({ editor, onSubmit, onStop, disabled, canSend, running, size = "default", chips, tools, model, footer, menu, className }: {
+export function Composer({ editor, onSubmit, onStop, disabled, canSend, running, size = "default", chips, tools, model, footer, menu, className, shortcuts = true }: {
 	editor: ComposerEditor;
 	onSubmit: () => void;
 	onStop?: () => void;
@@ -28,13 +28,17 @@ export function Composer({ editor, onSubmit, onStop, disabled, canSend, running,
 	/** The `/` and `@` menu, which sees keys before the composer does. */
 	menu?: ComposerMenu;
 	className?: string;
+	/** false for a second message box beside the chat (a side chat): the composer shortcuts belong to the chat's own box. */
+	shortcuts?: boolean;
 }) {
 	const sendKey = useSendKey();
 	editor.keys.current = event => {
 		if (menu?.onKeyDown(event)) return true;
+		// The composer's own shortcuts (history, steer, stash) come before sending and the editor's keys; one that
+		// declines (Mod+Enter steers only while a turn runs) leaves the key to them.
+		if (shortcuts && !event.isComposing && dispatchComposerKey(event)) return true;
 		if (isSendKey(event, sendKey, isMac())) { if (canSend) onSubmit(); return true; }
-		// The composer's own shortcuts (history, steer, stash) come before the editor's keys.
-		return !event.isComposing && dispatchComposerKey(event);
+		return false;
 	};
 	// The editor is the combobox for the menu; its list is announced through these attributes.
 	const dom = editor.editor && !editor.editor.isDestroyed ? editor.editor.view.dom : undefined;
@@ -45,7 +49,7 @@ export function Composer({ editor, onSubmit, onStop, disabled, canSend, running,
 	});
 	return <div className={cn("relative w-full", className)}>
 		{menu?.menu}
-		<form onSubmit={event => { event.preventDefault(); if (canSend) onSubmit(); }}
+		<form data-focus-region onSubmit={event => { event.preventDefault(); if (canSend) onSubmit(); }}
 			onClick={event => { if (event.target === event.currentTarget) editor.focus(); }}
 			// Chats dragged from the sidebar can be dropped anywhere on the composer; drops on the text are handled by the editor.
 			onDragOver={event => { if (event.dataTransfer.types.includes(chatDragType) && !disabled) { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; } }}

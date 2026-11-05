@@ -4,19 +4,42 @@ title: "Workspace-Auditprotokoll"
 description: "Prüfe sicherheitsrelevante administrative Änderungen im Workspace."
 ---
 
-Workspace-Eigentümer und -Administratoren können Änderungen am Lebenszyklus von Schlüsseln unter **Einstellungen → Workspace → Aktivität** prüfen. Die Ereignisse beziehen sich auf den aktiven Workspace und sind vom neuesten zum ältesten sortiert.
+Öffne **Einstellungen → Arbeitsbereich → Aktivität**, um zu sehen, wer im aktiven Workspace wann einen Schlüssel, ein Mitglied oder eine andere administrative Einstellung geändert hat. Die Ereignisse sind vom neuesten zum ältesten sortiert. Nur Workspace-Inhaber und -Administratoren können das Protokoll lesen.
 
-Die erste Version protokolliert folgende Vorgänge:
+Request- und Generierungsprotokolle zeigen, welcher Datenverkehr ausgeführt wurde. Das Auditprotokoll zeigt, wer die Einstellungen drumherum geändert hat.
 
-- Erstellen, Umbenennen, Pausieren, Fortsetzen, Ändern von Limits, Rotieren und Löschen von API-Schlüsseln
-- Erstellen und Löschen von Verwaltungsschlüsseln sowie Umbenennen, Pausieren, Fortsetzen und Ändern von Zugriffsvorlagen, Limits und Ablaufdatum
+## Was protokolliert wird
 
-Jedes Ereignis enthält den Akteur, die Aktion, das Ziel, einen Zeitstempel und ausgewählte sichere Änderungsmetadaten. Audit-Ereignisse können nur angefügt werden. Phaseo speichert in diesem Protokoll weder Schlüssel im Klartext noch Anmeldedaten-Hashes, Autorisierungsheader, vollständige Berechtigungslisten oder Request-Bodies.
+| Bereich | Beispielaktionen |
+| --- | --- |
+| API-Schlüssel | `api_key.created`, `api_key.updated`, `api_key.paused`, `api_key.resumed`, `api_key.rotated`, `api_key.deleted` |
+| Verwaltungsschlüssel | `management_key.created`, `management_key.updated`, `management_key.deleted` |
+| Mitglieder und Einladungen | `workspace.member.added`, `workspace.member.role_updated`, `workspace.member.removed`, `workspace.invite.created` |
+| Anbieterschlüssel (BYOK) | `provider_credential.created`, `provider_credential.updated`, `provider_credential.reordered`, `provider_credential.deleted` |
+| Routing und Presets | `routing.policy.updated`, `routing.dynamic_route.deployed`, `preset.version.published` |
+| Budgets und Ausgaben | `workspace_budget.updated`, `spend_block.lifted`, `rate_limit_raise.requested` |
+| Guardrails | `guardrail.created`, `guardrail.updated`, `guardrail.keys.added` |
+| Identität | `identity.sso.updated`, `identity.scim_token.created`, `identity.group_mapping.updated` |
+| Integrationen | `observability.destination.created`, `notifications.destination.created`, `webhook_endpoint.secret_rotated`, `oauth_authorization.revoked` |
 
-Nur Workspace-Eigentümer und -Administratoren haben Zugriff auf das Auditprotokoll. Normale Mitglieder können die Ereignisse nicht lesen, und die zugrunde liegende Tabelle ist für authentifizierte Datenbankclients nicht zugänglich.
+Jedes Ereignis enthält den Akteur, die Aktion, den Zieltyp, die ID und den Namen des Ziels, einen Zeitstempel, die Request-ID und eine kleine Auswahl an Änderungsmetadaten. Ereignisse können nur angefügt werden.
 
-Rufe zur Automatisierung `GET /v1/audit-events` mit einem Verwaltungsschlüssel auf, der über `activity:read` verfügt. Verwende den zurückgegebenen `next_cursor`, um ältere Ereignisse ohne Lücken zwischen Zeitstempeln abzurufen.
+Das Protokoll speichert nie Schlüssel im Klartext, Anmeldedaten-Hashes, Autorisierungsheader, vollständige Berechtigungslisten oder Request-Bodies. Metadatenfelder, deren Namen auf ein Secret, ein Token, einen Hash, Anmeldedaten, einen Scope oder einen Wert hinweisen, werden entfernt, bevor das Ereignis geschrieben wird.
 
-<Note>
-  Request- und Generierungsprotokolle zeigen, welcher Datenverkehr ausgeführt wurde. Das Workspace-Auditprotokoll zeigt, wer wann eine administrative Einstellung geändert hat.
-</Note>
+## Ereignisse über die API lesen
+
+Rufe `GET /v1/audit-events` mit einem [Verwaltungsschlüssel](../developers/management-api-keys.mdx) auf, der `activity:read` hat. Ein OAuth-Token braucht ebenfalls `activity:read`, und sein Benutzer muss Inhaber oder Administrator des Workspace sein.
+
+```bash
+curl "https://api.phaseo.app/v1/audit-events?limit=50" \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY"
+```
+
+| Query-Parameter | Bedeutung |
+| --- | --- |
+| `limit` | Ereignisse pro Seite, 1 bis 100. Standard `50`. |
+| `cursor` | Der `next_cursor` der vorherigen Seite. Beim Blättern per Cursor werden nie Ereignisse mit demselben Zeitstempel übersprungen. |
+| `action` | Nur eine Aktion zurückgeben, etwa `api_key.rotated`. |
+| `target_type` | Nur einen Zieltyp zurückgeben, etwa `api_key`. |
+
+Die Antwort enthält `data`, `has_more` und `next_cursor`. Jedes Ereignis enthält ein Objekt `actor` mit `display_name` und `email` des Mitglieds.

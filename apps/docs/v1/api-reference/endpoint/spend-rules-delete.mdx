@@ -1,0 +1,10 @@
+---
+title: "Delete a spend rule"
+sidebarTitle: "Delete rule"
+badge: "Beta"
+openapi: "/openapi/v1/openapi.yaml DELETE /spend-rules/{id}"
+description: "Delete a spend rule and lift any block it started."
+"og:image": "https://phaseo.app/og/dynamic?title=Delete%20a%20spend%20rule&description=Delete%20a%20spend%20rule%20and%20lift%20any%20block%20it%20started.&pathname=/docs/v1/api-reference/endpoint/spend-rules-delete"
+---
+
+Requires `spend_rules:delete`. The rule stops being evaluated and no longer counts toward the 50-rule limit. Its active block, if any, is lifted.

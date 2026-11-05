@@ -3,6 +3,7 @@ import { cn } from "../../lib/utils";
 import { Select } from "../../components/Select";
 import { Switch } from "../../components/ui/switch";
 import { SettingsPageLayout, SettingsRow, SettingsSection, settingsInput } from "../../settings/SettingsLayout";
+import { MarkdownTextarea } from "../../components/MarkdownTextarea";
 
 /** Factory's settings pages, in the desktop settings layout: a page title, then titled groups of rows. */
 
@@ -33,7 +34,7 @@ export function Field({ value, placeholder, onSave, mono, secret, className }: {
 export function TextBox({ value, placeholder, onSave, rows = 6, className }: { value: string; placeholder?: string; onSave: (value: string) => void; rows?: number; className?: string }) {
 	const [draft, setDraft] = useState(value);
 	useEffect(() => setDraft(value), [value]);
-	return <textarea value={draft} placeholder={placeholder} rows={rows} onChange={(event) => setDraft(event.target.value)} onBlur={() => draft !== value && onSave(draft)} className={cn("block w-full resize-y rounded-md border border-input bg-background/40 px-3 py-2 text-[13px] leading-relaxed outline-none placeholder:text-muted-foreground/70 focus:border-ring focus:ring-2 focus:ring-ring/20", className)} />;
+	return <MarkdownTextarea value={draft} placeholder={placeholder} rows={rows} onChange={(event) => setDraft(event.target.value)} onBlur={() => draft !== value && onSave(draft)} className={cn("block w-full resize-y rounded-md border border-input bg-background/40 px-3 py-2 text-[13px] leading-relaxed outline-none placeholder:text-muted-foreground/70 focus:border-ring focus:ring-2 focus:ring-ring/20", className)} />;
 }
 
 export function Choice<T extends string | number>({ value, options, onChange, label = "Choose" }: { value: T; options: { value: T; label: string }[]; onChange: (value: T) => void; label?: string }) {

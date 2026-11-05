@@ -5,39 +5,43 @@ description: "Send workspace alerts to email, chat channels, or an HTTPS webhook
 icon: "bell-ring"
 ---
 
-Use notification destinations to send enabled workspace alerts to the tools your team already monitors. Destinations are shared by the workspace and can be tested before you rely on them for operational alerts.
+Add a destination in **Settings → Notifications** to send your workspace's alerts to email, Slack, Discord, Microsoft Teams, or your own HTTPS webhook. Destinations belong to the workspace, and you can send a test before relying on one.
 
-## Add a destination
-
-1. Open **Gateway → Settings → Notifications**.
-2. Select **Add destination**.
-3. Enter a name and choose one or more channels.
-4. Add the destination details and optional mentions.
-5. Select **Send test** for each configured channel.
-6. Create the destinations after every test succeeds.
-
-From the CLI, run `phaseo notifications destinations create`, check it with `phaseo notifications destinations test <id>`, then choose which alerts it receives with `phaseo notifications routes set <event-kind> --destination-ids <id>`.
-
-Custom webhooks get a signing secret when you create them. Copy it from the dialog that opens; it is shown only once.
-
-Phaseo supports:
-
-- email addresses and distribution lists
-- Discord channels through a bot token
-- Discord webhooks
-- Slack incoming webhooks
-- Microsoft Teams workflow URLs
-- custom HTTPS webhooks
+| Destination | What you provide | Mentions |
+| --- | --- | --- |
+| Email | Addresses or distribution lists | None |
+| Slack | An incoming webhook URL | User IDs and user-group IDs |
+| Discord | A channel and bot token, or a webhook URL | User IDs and role IDs |
+| Microsoft Teams | A workflow URL | Microsoft 365 email addresses or Entra object IDs |
+| Custom webhook | An HTTPS URL | None; deliveries are [signed](#verify-webhook-signatures) |
 
 Credentials and webhook URLs are encrypted before storage. Keep channel credentials scoped to notification delivery and rotate them if they are exposed.
 
+## Add a destination
+
+<Steps>
+<Step title="Create it">
+Open **Settings → Notifications**, select **Add destination**, enter a name, and choose one or more channels. Add the destination details and any mentions.
+</Step>
+<Step title="Test each channel">
+Select **Send test** for each channel, then create the destinations once every test succeeds.
+</Step>
+<Step title="Save the signing secret">
+A custom webhook gets a signing secret when you create it. Copy it from the dialog that opens; it is shown only once.
+</Step>
+</Steps>
+
+From the CLI, run `phaseo notifications destinations create`, check it with `phaseo notifications destinations test <id>`, then choose which alerts it receives with `phaseo notifications routes set <event-kind> --destination-ids <id>`.
+
+Use mentions sparingly: send high-volume alerts to a monitored channel rather than paging a broad group.
+
 ## Enable product alerts
 
-The notifications page lists the alert types available to your workspace. Enable **Model Deprecation Alerts** to receive notice before a model used by the workspace is retired.
+The notifications page lists the alert types available to your workspace. Destinations receive an alert in addition to any built-in recipients shown in the dashboard.
+
+**Model Deprecation Alerts** give notice before a model the workspace uses is retired.
 
 **Model replacement notices** are sent when [retired model routing](./model-retirement.mdx#route-requests-to-a-replacement-automatically) is on and a replacement model answers the workspace's requests for a model no provider serves any more. One notice is sent per model and replacement, the first time a replacement answers successfully. The workspace owner is always emailed; choose destinations to send the notice to your team as well.
-
-Alerts are delivered to the configured destinations in addition to any built-in recipient behavior shown in the dashboard.
 
 ## Spend reports
 
@@ -47,23 +51,15 @@ Each report shows spend and the change from the period before, the top keys, mod
 
 The same settings are `spend.report_cadence` and `spend.report_include_admins` in the [notification settings API](../api-reference/endpoint/notifications-settings-update.mdx).
 
+For alerts on spend, budgets, forecasts, spikes and low balance, and for blocking requests once spend passes a limit, see [Spend alerts](./spend-alerts.mdx).
+
 <Note>Spend report emails are being rolled out. Until they are switched on, your choice is saved but no report is sent.</Note>
 
-## Mentions
+## Keep destinations working
 
-Optional mention fields let an alert notify specific recipients:
+Use **Send test** beside an existing destination after you rotate credentials or change its channel. Remove destinations nobody monitors, so alerts don't look delivered when they land in an abandoned channel.
 
-- Discord accepts user IDs and role IDs.
-- Slack accepts user IDs and user-group IDs.
-- Microsoft Teams accepts Microsoft 365 email addresses or Entra object IDs.
-
-Use mentions sparingly. A high-volume workspace alert should normally go to a monitored channel rather than paging a broad group.
-
-## Test and remove destinations
-
-Use **Send test** beside an existing destination after rotating credentials or changing channel configuration. Remove destinations that are no longer monitored so alerts do not appear delivered to an abandoned channel.
-
-Custom webhooks must use HTTPS and should validate the request before processing it. Return a successful response promptly and move slower work to a background job.
+A custom webhook receiver should verify each request before processing it, return a success response promptly, and move slower work to a background job.
 
 ## Verify webhook signatures
 
