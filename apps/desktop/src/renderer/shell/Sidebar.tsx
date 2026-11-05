@@ -26,6 +26,7 @@ import { isUnread } from "../../shared/threadLifecycle";
 import { ArchivedChatsDialog, archivedChats, openArchivedChats } from "./ArchivedChats";
 import { TagChip, TagDots, TagMenu } from "../components/Tags";
 import { tagsInUse } from "../../shared/tags";
+import { clampSidebarWidth, sidebarSurface, sidebarWidths, useSidebarWidth } from "../lib/sidebarWidth";
 
 // Settings and Factory bring their own pages; they load when first opened, not before the chat list shows.
 const SettingsNav = lazy(() => import("../settings/SettingsPage").then(module => ({ default: module.SettingsNav })));
@@ -257,13 +258,12 @@ function PullRequestsLink() {
 	</button>;
 }
 
-const sidebarWidths = { min: 200, max: 480, default: 256 };
-
-/** The sidebar's frame: its width is dragged from the right edge and remembered. */
+/** The sidebar's frame: its width is dragged from the right edge and remembered for Chat, Code and Factory apart. */
 function SidebarFrame({ label, children }: { label: string; children: ReactNode }) {
-	const [width, setWidth] = usePersistedState("phaseo.desktop.sidebarWidth", sidebarWidths.default);
+	const { mode, codeView } = useWorkspace();
+	const [width, setWidth] = useSidebarWidth(sidebarSurface(mode, codeView));
 	const [dragging, setDragging] = useState(false);
-	const clamp = (value: number) => Math.round(Math.min(sidebarWidths.max, Math.max(sidebarWidths.min, value)));
+	const clamp = clampSidebarWidth;
 	return <aside aria-label={label} data-focus-region style={{ width: clamp(width) }} className="relative flex shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
 		{children}
 		<div role="separator" aria-orientation="vertical" aria-label="Resize sidebar" aria-valuemin={sidebarWidths.min} aria-valuemax={sidebarWidths.max} aria-valuenow={clamp(width)} tabIndex={0} title="Drag to resize, double-click to reset"

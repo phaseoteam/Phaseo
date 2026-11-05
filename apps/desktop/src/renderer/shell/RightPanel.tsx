@@ -20,6 +20,7 @@ import { useBranchPullRequest } from "../views/pullRequests/useBranchPullRequest
 import { useProjectRepository } from "../views/pullRequests/useProjectRepository";
 import { currentPullRequest } from "../../shared/pullRequestStacks";
 import { closePaneTabs, migratePaneState, movePaneTab, openPaneTab, paneKind, paneValue, paneWidths, reopenPaneTab, type PaneKey, type PaneState } from "./paneTabs";
+import { readSidebarWidth, sidebarSurface } from "../lib/sidebarWidth";
 
 // The diff viewer and editor are large, so they load when first opened.
 const DiffSurface = lazy(() => import("../panels/DiffSurface").then(module => ({ default: module.DiffSurface })));
@@ -148,7 +149,7 @@ function Launcher({ onOpen, unavailable: reason }: { onOpen: (kind: typeof launc
 }
 
 export function RightPanel() {
-	const { rightPanel, setRightPanel, selectedId, overview, newChatProjectId, select, commandsOpen, settings, sidebarOpen, api, setError, mode, command } = useWorkspace();
+	const { rightPanel, setRightPanel, selectedId, overview, newChatProjectId, select, commandsOpen, settings, sidebarOpen, api, setError, mode, codeView, command } = useWorkspace();
 	// Tabs, the active one, width and maximise are remembered per chat.
 	const [states, setStates] = usePersistedState<Record<string, PaneState>>("phaseo.desktop.rightPanelState", {});
 	const [lastWidth, setLastWidth] = usePersistedState("phaseo.desktop.rightPanelWidth", paneWidths.default);
@@ -281,7 +282,7 @@ export function RightPanel() {
 	useCommand("preview.toggle", () => { const browser = tabs.find(key => paneKind(key) === "browser"); if (rightPanel && active && paneKind(active) === "browser") { requested.current = undefined; setRightPanel(undefined); } else if (browser) show(browser); else void openKind("browser"); });
 
 	if (!rightPanel || settings) return null;
-	const sidebar = sidebarOpen ? Number(localStorage.getItem("phaseo.desktop.sidebarWidth") ?? 256) || 256 : 0;
+	const sidebar = sidebarOpen ? readSidebarWidth(sidebarSurface(mode, codeView)) : 0;
 	const sheet = viewport <= 980;
 	const widest = Math.max(paneWidths.minimum, Math.min(Math.floor(viewport * 0.7), viewport - sidebar - paneWidths.minimum));
 	const width = Math.max(paneWidths.minimum, Math.min(widest, state.width ?? (Number.isFinite(lastWidth) ? lastWidth : paneWidths.default)));
