@@ -129,11 +129,12 @@ begin
         return;
     end if;
 
+    -- Every charged request is usage, successful or not: a stream the client
+    -- left can keep its charge on an unsuccessful (499) row.
     select coalesce(sum(gr.cost_nanos), 0)::bigint
     into v_usage_nanos
     from public.gateway_requests gr
     where gr.workspace_id = p_team_id
-      and gr.success is true
       and gr.cost_nanos > 0
       and gr.created_at >= v_purchase.event_time;
 

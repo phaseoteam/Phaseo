@@ -24,10 +24,11 @@ const migrationName = migrations.find((name) => name.endsWith('_billing_security
 assert(migrationName, 'the migration exists');
 const migration = normalize(await read(`../migrations/${migrationName}`));
 
-// The declarative files describe the same end state. gateway_wallet_settle_once was changed again by
-// the async_settlement_always_charges migration (see async-settlement-overdraft.test.mjs).
+// The declarative files describe the same end state. Changed again later: gateway_wallet_settle_once
+// by async_settlement_always_charges (see async-settlement-overdraft.test.mjs) and
+// stripe_claim_self_serve_refund by refund_claim_counts_charged_failures (see refund-claim-charged-failures.test.mjs).
 for (const fn of ['deduct_and_check_top_up', 'gateway_deduct_and_check_top_up_once',
-  'stripe_apply_payment_intent_credit', 'redeem_credit_code', 'stripe_claim_self_serve_refund',
+  'stripe_apply_payment_intent_credit', 'redeem_credit_code',
   'stripe_apply_refund_once', 'stripe_apply_dispute_once']) {
   const sql = normalize(await read(`../schemas/public/functions/${fn}.sql`));
   const body = sql.slice(sql.indexOf('$function$'), sql.lastIndexOf('$function$') + 10);
