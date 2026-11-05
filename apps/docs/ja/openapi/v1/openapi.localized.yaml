@@ -15531,6 +15531,7 @@ components:
           maximum: 3
         output_format:
           type: string
+          description: 出力形式。gif と svg には GPT Image 2.6 モデルが必要で、stream と partial_images は使えません。svg には svg.model と n=1 も必要です。
           enum:
             - png
             - jpeg
@@ -15568,6 +15569,7 @@ components:
           maximum: 2000
         svg:
           type: object
+          description: output_format が svg の場合は必須です。svg.model は参照画像から SVG を書く OpenAI のテキストモデルです。そのトークンは画像の料金に加えて、そのモデルのテキスト料金で課金され、推論トークンは出力として数えられます。
           required:
             - model
           properties:
@@ -15648,6 +15650,7 @@ components:
           type: string
         markup:
           type: string
+          description: 最初の画像に重ねる透明な PNG の注釈レイヤー。ファイルのアップロード、URL、base64 文字列のいずれかで指定します。GPT Image 2.5 以降が必要で、mask とは併用できません。
         complexity:
           type: string
           enum:

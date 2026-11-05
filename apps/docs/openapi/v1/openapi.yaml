@@ -16433,6 +16433,7 @@ components:
           maximum: 3
         output_format:
           type: string
+          description: "Output format. gif and svg need a GPT Image 2.6 model and do not support stream or partial_images. svg also needs svg.model and n=1."
           enum:
             - png
             - jpeg
@@ -16470,6 +16471,7 @@ components:
           maximum: 2000
         svg:
           type: object
+          description: "Required when output_format is svg. svg.model is the OpenAI text model that writes the SVG from the reference image. Its tokens are billed at that model's text prices, with reasoning tokens counted as output, in addition to the image cost."
           required:
             - model
           properties:
@@ -16550,6 +16552,7 @@ components:
           type: string
         markup:
           type: string
+          description: "Transparent PNG annotation layer over the first image, as a file upload, URL or base64 string. Needs GPT Image 2.5 or later and cannot be combined with mask."
         complexity:
           type: string
           enum:

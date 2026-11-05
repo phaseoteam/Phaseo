@@ -182,5 +182,7 @@ describe("GPT Image 2.6 generation options", () => {
 		expect(issues({ model: "openai/gpt-image-2.5-flare", output_format: "gif" })).toContain("output_format");
 		expect(issues({ model: "openai/gpt-image-1", output_format: "svg", svg: { model: "gpt-5-nano" } })).toEqual(expect.arrayContaining(["svg", "output_format"]));
 		expect(issues({ model: "black-forest-labs/flux-2-pro", complexity: "low" })).toContain("complexity");
+		expect(issues({ model: "black-forest-labs/flux-2-pro", output_format: "svg" })).toContain("output_format");
+		expect(issues({ model: "black-forest-labs/flux-2-pro", output_format: "gif" })).toContain("output_format");
 	});
 });

@@ -15531,6 +15531,7 @@ components:
           maximum: 3
         output_format:
           type: string
+          description: تنسيق الإخراج. يتطلب gif وsvg نموذج GPT Image 2.6 ولا يدعمان stream أو partial_images. ويتطلب svg أيضًا svg.model وn=1.
           enum:
             - png
             - jpeg
@@ -15568,6 +15569,7 @@ components:
           maximum: 2000
         svg:
           type: object
+          description: مطلوب عندما تكون قيمة output_format هي svg. يحدد svg.model نموذج النص من OpenAI الذي يكتب ملف SVG من الصورة المرجعية. تُحتسب رموزه بأسعار النص لذلك النموذج، مع احتساب رموز الاستدلال كمخرجات، إضافةً إلى تكلفة الصورة.
           required:
             - model
           properties:
@@ -15648,6 +15650,7 @@ components:
           type: string
         markup:
           type: string
+          description: طبقة تعليقات توضيحية بتنسيق PNG شفاف فوق الصورة الأولى، كملف مرفوع أو عنوان URL أو سلسلة base64. تتطلب GPT Image 2.5 أو أحدث، ولا يمكن دمجها مع mask.
         complexity:
           type: string
           enum:

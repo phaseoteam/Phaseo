@@ -15531,6 +15531,7 @@ components:
           maximum: 3
         output_format:
           type: string
+          description: 输出格式。gif 和 svg 需要 GPT Image 2.6 模型，且不支持 stream 或 partial_images。svg 还需要 svg.model 和 n=1。
           enum:
             - png
             - jpeg
@@ -15568,6 +15569,7 @@ components:
           maximum: 2000
         svg:
           type: object
+          description: 当 output_format 为 svg 时必填。svg.model 是根据参考图像编写 SVG 的 OpenAI 文本模型。其 token 按该模型的文本价格计费，推理 token 计为输出，并在图像费用之外另行收取。
           required:
             - model
           properties:
@@ -15648,6 +15650,7 @@ components:
           type: string
         markup:
           type: string
+          description: 覆盖在第一张图像上的透明 PNG 标注层，可以是上传的文件、URL 或 base64 字符串。需要 GPT Image 2.5 或更高版本，且不能与 mask 同时使用。
         complexity:
           type: string
           enum:

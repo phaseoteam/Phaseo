@@ -1471,6 +1471,9 @@ export const ImagesGenerationSchema = lazySchema(() => z.object({
                 ctx.addIssue({ code: z.ZodIssueCode.custom, path: [field], message: `${field} is only supported by GPT Image 2.6 models` });
             }
         }
+        if (request.output_format === "gif" || request.output_format === "svg") {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["output_format"], message: `${request.output_format} output is only supported by GPT Image 2.6 models` });
+        }
         return;
     }
     validateGptImage26Generation(request, model, ctx);
