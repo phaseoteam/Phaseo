@@ -45,7 +45,8 @@ describe("Gemini Omni request", () => {
 		[{ seconds: 2 }, "3 to 10"],
 		[{ seconds: 11 }, "3 to 10"],
 		[{ seconds: 4.5 }, "whole number"],
-		[{ size: "480p" }, "360p, 720p, 1080p, or 4k"],
+		[{ size: "480p" }, "360p, 720p, 1080p or 4k"],
+		[{ size: "1024x1024" }, "360p, 720p, 1080p or 4k"],
 		[{ aspectRatio: "1:1" }, "16:9 or 9:16"],
 		[{ negativePrompt: "blur" }, "negative prompts"],
 		[{ generateAudio: false }, "always generates audio"],
@@ -55,6 +56,22 @@ describe("Gemini Omni request", () => {
 	] as const)("rejects %j", (fields, message) => {
 		expect(() => normalizeGoogleOmniRequest(ir(fields as any))).toThrow(InvalidGoogleVideoRequestError);
 		expect(() => normalizeGoogleOmniRequest(ir(fields as any))).toThrow(message);
+	});
+
+	it.each([
+		["1280x720", "720p", "16:9"],
+		["720x1280", "720p", "9:16"],
+		["1920x1080", "1080p", "16:9"],
+		["640x360", "360p", "16:9"],
+		["3840x2160", "4k", "16:9"],
+		["4K", "4k", "16:9"],
+		["2160p", "4k", "16:9"],
+	])("reads size %s as %s %s", (size, resolution, aspectRatio) => {
+		expect(normalizeGoogleOmniRequest(ir({ size }))).toMatchObject({ resolution, aspectRatio });
+	});
+
+	it("keeps an explicit aspect ratio over the pixel orientation", () => {
+		expect(normalizeGoogleOmniRequest(ir({ size: "1280x720", aspectRatio: "9:16" })).aspectRatio).toBe("9:16");
 	});
 
 	it("orders first frame, last frame, references, then source video", () => {
