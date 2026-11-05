@@ -11,6 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
 import { factory, openExternal } from "../lib/useFactory";
 import { cn } from "../../lib/utils";
 import { MarkdownTextarea } from "../../components/MarkdownTextarea";
+import { IconSwap } from "../../components/IconSwap";
 
 /** Everything someone does to an issue or pull request on GitHub, done from here as the person gh is signed in as. */
 
@@ -291,7 +292,7 @@ export function ChecksBox({ item }: { item: WorkItem }) {
 				<SummaryIcon.icon className={cn("size-4 shrink-0", SummaryIcon.className)} />
 				<span className="font-medium">{checks.length === 1 ? "1 check" : `${checks.length} checks`}</span>
 				<span className="truncate text-muted-foreground">{summary}</span>
-				{shown ? <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" /> : <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />}
+				<IconSwap show={shown ? "chevronDown" : "chevronRight"}>{{ chevronDown: <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />, chevronRight: <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" /> }}</IconSwap>
 			</button>
 			{rerunnable.length > 0 && <Button variant="outline" size="sm" disabled={!!busy} onClick={() => void change("rerun", { kind: "rerun-checks", links: rerunnable }).then((ok) => ok && setTick((count) => count + 1))}>
 				<RotateCcw className="size-3.5" />{busy === "rerun" ? "Starting…" : failed.length === 1 ? "Re-run the failed check" : "Re-run failed checks"}

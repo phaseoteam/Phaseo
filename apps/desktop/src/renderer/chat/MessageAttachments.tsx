@@ -5,6 +5,7 @@ import { ImageViewer } from "../components/ImageViewer";
 import { showToast } from "../components/ui/toast";
 import { formatBytes } from "../lib/filePreview";
 import { cn } from "../lib/utils";
+import { IconSwap } from "../components/IconSwap";
 
 /** What a message sends when it carries only attachments; the chat shows the attachments without it. */
 export const attachmentsOnlyText = "Please review the attached files.";
@@ -57,7 +58,7 @@ async function saveAttachment(taskId: string, attachment: Attachment) {
 
 function MediaState({ failed, label, className }: { failed: boolean; label: string; className?: string }) {
 	return <span role={failed ? "img" : "status"} aria-label={failed ? `${label} could not be loaded` : `Loading ${label}`} className={cn("grid place-items-center rounded-md bg-muted text-muted-foreground", className)}>
-		{failed ? <ImageOff className="size-4" /> : <LoaderCircle className="size-4 animate-spin" />}
+		<IconSwap show={failed ? "imageOff" : "loaderCircle"}>{{ imageOff: <ImageOff className="size-4" />, loaderCircle: <LoaderCircle className="size-4 animate-spin" /> }}</IconSwap>
 	</span>;
 }
 

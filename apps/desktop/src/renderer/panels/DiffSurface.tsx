@@ -17,6 +17,7 @@ import { DiffFileTree } from "./DiffFileTree";
 import { DIFF_SELECTION_KEY, OPEN_TURN_DIFF_EVENT, onProjectChange, openProjectFile, pendingTurnDiffPaths, type OpenTurnDiffDetail } from "./events";
 import { DiffLoadingState, ipcError, RefreshIcon, SURFACE_HEADER_CLASS, SurfaceMessage, SurfaceNotice, ToolbarButton, useThemeType } from "./surfaceChrome";
 import { ResizableAside } from "./ResizableAside";
+import { IconSwap } from "../components/IconSwap";
 
 type Loaded = { key: string; result: GitDiffResult };
 const AUTOMATIC = "";
@@ -43,7 +44,7 @@ function CopyPathButton({ path }: { path: string }) {
 	const [copied, setCopied] = useState(false);
 	useEffect(() => { if (!copied) return; const timer = setTimeout(() => setCopied(false), 1500); return () => clearTimeout(timer); }, [copied]);
 	return <ToolbarButton size="sm" label={copied ? "Copied" : "Copy path"} className="size-5" onClick={() => void navigator.clipboard.writeText(path).then(() => setCopied(true), () => undefined)}>
-		{copied ? <Check className="size-3! text-success" /> : <Copy className="size-3!" />}
+		<IconSwap show={copied ? "check" : "copy"}>{{ check: <Check className="size-3! text-success" />, copy: <Copy className="size-3!" /> }}</IconSwap>
 	</ToolbarButton>;
 }
 
@@ -254,7 +255,7 @@ export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: stri
 				<span className="text-success">+{stat.additions}</span><span className="text-destructive">−{stat.deletions}</span>
 			</span>}
 			{selection.kind !== "turn" && selection.kind !== "commit" && <ToolbarButton label={loading ? "Refreshing diff" : "Refresh diff"} onClick={() => setRefresh(value => value + 1)}><RefreshIcon refreshing={loading} /></ToolbarButton>}
-			{files.length > 0 && <ToolbarButton label={everyCollapsed ? "Expand all files" : "Collapse all files"} onClick={() => setKeys(toggleAll(keys, collapsedKeys))}>{everyCollapsed ? <ChevronsUpDown /> : <ChevronsDownUp />}</ToolbarButton>}
+			{files.length > 0 && <ToolbarButton label={everyCollapsed ? "Expand all files" : "Collapse all files"} onClick={() => setKeys(toggleAll(keys, collapsedKeys))}><IconSwap show={everyCollapsed ? "chevronsUpDown" : "chevronsDownUp"}>{{ chevronsUpDown: <ChevronsUpDown />, chevronsDownUp: <ChevronsDownUp /> }}</IconSwap></ToolbarButton>}
 			<div role="radiogroup" aria-label="Diff layout" className="flex shrink-0 items-center rounded-md bg-muted/70 p-0.5">
 				{([["unified", "Stacked diff view", <Rows3 key="u" />], ["split", "Split diff view", <Columns2 key="s" />]] as const).map(([value, name, icon]) =>
 					<button key={value} type="button" role="radio" aria-checked={layout === value} aria-label={name} title={name} onClick={() => setLayout(value)}
@@ -291,7 +292,7 @@ export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: stri
 			<DiffCodeView key={`${scopeKey}:${section.id}`} viewerRef={viewer} className="h-full min-h-0 overflow-auto" files={files} commentTarget={taskId ?? `project:${projectId}`} sectionId={section.id} sectionTitle={section.title}
 				layout={layout} wrap={wrap} theme={theme} loadDiffFiles={loadDiffFiles}
 				renderHeaderPrefix={file => <ToolbarButton size="sm" className="-ms-0.5 size-5" label={file.collapsed ? `Expand ${file.filePath}` : `Collapse ${file.filePath}`} onClick={() => setKeys(toggleOne(collapsedKeys, file.fileKey))}>
-					{file.collapsed ? <ChevronRight className={cn("size-4!", changeTone(file.fileDiff.type))} /> : <ChevronDown className={cn("size-4!", changeTone(file.fileDiff.type))} />}
+					<IconSwap show={file.collapsed ? "chevronRight" : "chevronDown"}>{{ chevronRight: <ChevronRight className={cn("size-4!", changeTone(file.fileDiff.type))} />, chevronDown: <ChevronDown className={cn("size-4!", changeTone(file.fileDiff.type))} /> }}</IconSwap>
 				</ToolbarButton>}
 				renderHeaderSuffix={file => <CopyPathButton path={file.filePath} />} />
 		</div>

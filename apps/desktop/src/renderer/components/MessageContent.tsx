@@ -22,6 +22,7 @@ import { repairFileLinks } from "./repairFileLinks";
 import type { PluggableList } from "unified";
 import { tableCsv, tableMarkdown, tableRows } from "./markdownTable";
 import { ImageViewer, type GalleryImage } from "./ImageViewer";
+import { IconSwap } from "./IconSwap";
 
 const MathTypeset = lazy(() => import("./MathTypeset"));
 const MermaidDiagram = lazy(() => import("./MermaidDiagram"));
@@ -136,7 +137,7 @@ export function CodeBlock({ children, text: source, language: sourceLanguage, ac
 			<span className="message-code-buttons">
 				{actions}
 				{!body && <CodeAction label={wrap ? "Scroll long lines" : "Wrap long lines"} pressed={wrap} onClick={() => setWrap(value => !value)}><WrapText size={14} /></CodeAction>}
-				<button type="button" onClick={() => void copy()} disabled={copying} aria-label={status === "copied" ? "Copied" : "Copy code"}>{status === "copied" ? <Check size={14} /> : <Copy size={14} />}{status === "copied" ? "Copied" : "Copy code"}</button>
+				<button type="button" onClick={() => void copy()} disabled={copying} aria-label={status === "copied" ? "Copied" : "Copy code"}><IconSwap show={status === "copied" ? "check" : "copy"}>{{ check: <Check size={14} />, copy: <Copy size={14} /> }}</IconSwap>{status === "copied" ? "Copied" : "Copy code"}</button>
 			</span>
 		</div>
 		{body ?? <ScrollArea scrollBarOrientation="horizontal"><pre data-wrap={wrap ? "" : undefined}>{tokens ? <code>{tokens.map((line, index) => <span key={index}>{index > 0 ? "\n" : ""}{line.map((token, tokenIndex) => <span className="code-token" key={tokenIndex} style={{ "--code-light": token.light, "--code-dark": token.dark } as CSSProperties}>{token.content}</span>)}</span>)}</code> : children ?? <code>{text}</code>}</pre></ScrollArea>}
@@ -154,7 +155,7 @@ function MermaidBlock({ text, children }: { text: string; children: ReactNode })
 	return <>
 		<CodeBlock text={text} language="mermaid" actions={<>
 			{diagram && current?.svg && <CodeAction label="Expand diagram" onClick={() => setViewer({ src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(current.svg!)}`, alt: "Diagram" })}><Expand size={14} /></CodeAction>}
-			{!current?.error && <CodeAction label={showCode ? "Show diagram" : "Show code"} onClick={() => setShowCode(value => !value)}>{showCode ? <Workflow size={14} /> : <Code2 size={14} />}</CodeAction>}
+			{!current?.error && <CodeAction label={showCode ? "Show diagram" : "Show code"} onClick={() => setShowCode(value => !value)}><IconSwap show={showCode ? "workflow" : "code2"}>{{ workflow: <Workflow size={14} />, code2: <Code2 size={14} /> }}</IconSwap></CodeAction>}
 		</>} body={diagram ? <div className="message-diagram-frame">
 			<Suspense fallback={null}>
 				<MermaidDiagram source={text} dark={dark} onRendered={svg => setResult({ source: text, svg })} onFailure={error => setResult({ source: text, error })} />

@@ -18,6 +18,7 @@ import { RowChecksPopover } from "./RowChecksPopover";
 import { useBranchPullRequest } from "./useBranchPullRequest";
 import { usePullRequestHandoff } from "./usePullRequestHandoff";
 import { useProjectRepository } from "./useProjectRepository";
+import { IconSwap } from "../../components/IconSwap";
 
 type RowTarget = { repository: string; number: number; url: string; title?: string; state?: "open" | "closed" | "merged"; draft?: boolean; link?: TaskPullRequestLink };
 const ROW_CLASS = "flex h-7 w-full min-w-0 items-center gap-2 rounded-md px-2 text-left text-xs hover:bg-accent/60 outline-none focus-visible:ring-2 focus-visible:ring-ring/40";
@@ -134,6 +135,6 @@ export function ChatPullRequestRows({ projectId, taskId }: { projectId: string; 
 		{current ? <ChatPullRequestRow key={`${current.repository}#${current.number}`} projectId={projectId} target={target(current)} openable={same(current)} onStopWatching={stopWatching(current)} />
 			: branchPull && <ChatPullRequestRow key={`branch:${branchPull.number}`} projectId={projectId} target={{ repository: branchPull.repository, number: branchPull.number, url: branchPull.url, title: branchPull.title, state: branchPull.state === "MERGED" ? "merged" : branchPull.state === "CLOSED" ? "closed" : "open", draft: branchPull.draft }} openable={same(branchPull)} />}
 		{expanded && rest.map(link => <ChatPullRequestRow key={`${link.repository}#${link.number}`} projectId={projectId} target={target(link)} openable={same(link)} onStopWatching={stopWatching(link)} />)}
-		{rest.length > 0 && <button type="button" onClick={() => setExpanded(!expanded)} className={cn(ROW_CLASS, "text-muted-foreground")}>{expanded ? <Minus aria-hidden className="size-4 shrink-0" /> : <Plus aria-hidden className="size-4 shrink-0" />}{expanded ? "Show less" : `Show ${rest.length} more`}</button>}
+		{rest.length > 0 && <button type="button" onClick={() => setExpanded(!expanded)} className={cn(ROW_CLASS, "text-muted-foreground")}><IconSwap show={expanded ? "minus" : "plus"}>{{ minus: <Minus aria-hidden className="size-4 shrink-0" />, plus: <Plus aria-hidden className="size-4 shrink-0" /> }}</IconSwap>{expanded ? "Show less" : `Show ${rest.length} more`}</button>}
 	</div>;
 }

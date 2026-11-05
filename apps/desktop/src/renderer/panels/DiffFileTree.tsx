@@ -3,6 +3,7 @@ import { ChevronRight, FileText, Folder, FolderOpen } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { changeTone, type DiffTreeNode } from "../lib/diffSurface";
 import { cn } from "../lib/utils";
+import { IconSwap } from "../components/IconSwap";
 
 /** The changed files as a tree beside the diff; choosing one scrolls the diff to it. */
 export function DiffFileTree({ label, nodes, selectedPath, onSelect }: { label: string; nodes: DiffTreeNode[]; selectedPath?: string; onSelect: (path: string) => void }) {
@@ -15,7 +16,7 @@ export function DiffFileTree({ label, nodes, selectedPath, onSelect }: { label: 
 			return <li key={`d:${node.path}`} role="treeitem" aria-expanded={open} aria-selected={false}>
 				<button type="button" onClick={() => toggle(node.path)} style={indent} className="flex h-6 w-full items-center gap-1 rounded-md pr-2 text-left text-xs text-muted-foreground hover:bg-accent/60 hover:text-foreground">
 					<ChevronRight className={cn("size-3 shrink-0 transition-transform", open && "rotate-90")} />
-					{open ? <FolderOpen className="size-3.5 shrink-0" /> : <Folder className="size-3.5 shrink-0" />}
+					<IconSwap show={open ? "folderOpen" : "folder"}>{{ folderOpen: <FolderOpen className="size-3.5 shrink-0" />, folder: <Folder className="size-3.5 shrink-0" /> }}</IconSwap>
 					<span className="min-w-0 flex-1 truncate">{node.name}</span>
 				</button>
 				{open && <ul role="group">{node.children.map(child => row(child, depth + 1))}</ul>}

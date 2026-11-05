@@ -14,6 +14,7 @@ import { Check, Copy } from "lucide-react";
 import type { DesktopRuntimeInfo, DesktopUpdateState } from "../../shared/desktop";
 import { checkForUpdates, useUpdateState, versionText } from "../lib/updateState";
 import { MarkdownTextarea } from "../components/MarkdownTextarea";
+import { IconSwap } from "../components/IconSwap";
 
 /** Workspace preferences, loaded once and saved one change at a time. */
 export function usePreferences() {
@@ -69,7 +70,7 @@ function About() {
 	const copy = async () => { if (!info) return; await navigator.clipboard.writeText(`Phaseo ${versionText(info)}`); setCopied(true); setTimeout(() => setCopied(false), 1500); };
 	return <SettingsSection title="About" label="About Phaseo">
 		<SettingsRow title="Version" description={info ? `Phaseo ${versionText(info)}` : "Loading…"}
-			control={<SettingsButton disabled={!info} onClick={() => void copy()} title="Copy the version">{copied ? <Check /> : <Copy />}{copied ? "Copied" : "Copy"}</SettingsButton>} />
+			control={<SettingsButton disabled={!info} onClick={() => void copy()} title="Copy the version"><IconSwap show={copied ? "check" : "copy"}>{{ check: <Check />, copy: <Copy /> }}</IconSwap>{copied ? "Copied" : "Copy"}</SettingsButton>} />
 		<SettingsRow title="Acknowledgements" description="Many of Phaseo's desktop features were inspired by T3 Code, and some code is adapted from it under the MIT licence. Copyright (c) 2026 T3 Tools Inc."
 			control={<SettingsButton onClick={() => void window.phaseoDesktop?.openExternal("https://github.com/pingdotgg/t3code")}>Open on GitHub</SettingsButton>} />
 		<SettingsRow title="Open source licences" description={noticesError || "The licences of the open source software Phaseo is built with."}

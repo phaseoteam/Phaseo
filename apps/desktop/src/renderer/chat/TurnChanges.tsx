@@ -5,6 +5,7 @@ import type { Message } from "../../shared/workspace";
 import { openTurnDiff } from "../panels/events";
 import { cn } from "../lib/utils";
 import { changedFilesTree, changedFolders, changesSummary, type ChangedNode } from "./changedFiles";
+import { IconSwap } from "../components/IconSwap";
 
 /** Turn summaries by snapshot pair: a turn's files never change, so each is read once per session. */
 const cache = new Map<string, Promise<TurnFileChange[]>>();
@@ -46,7 +47,7 @@ export function TurnChanges({ taskId, projectId, message }: { taskId: string; pr
 			return <li key={`d:${node.path}`} role="treeitem" aria-expanded={expanded} aria-selected={false}>
 				<button type="button" onClick={() => toggle(node.path)} style={indent} className="flex h-6 w-full min-w-0 items-center gap-1.5 rounded-md pr-1.5 text-left hover:bg-muted hover:text-foreground">
 					<ChevronRight aria-hidden className={cn("size-3 shrink-0 transition-transform", expanded && "rotate-90")} />
-					{expanded ? <FolderOpen aria-hidden className="size-3.5 shrink-0" /> : <Folder aria-hidden className="size-3.5 shrink-0" />}
+					<IconSwap show={expanded ? "folderOpen" : "folder"}>{{ folderOpen: <FolderOpen aria-hidden className="size-3.5 shrink-0" />, folder: <Folder aria-hidden className="size-3.5 shrink-0" /> }}</IconSwap>
 					<span className="min-w-0 flex-1 truncate">{node.name}</span>
 					<Counts node={node} />
 				</button>
@@ -71,7 +72,7 @@ export function TurnChanges({ taskId, projectId, message }: { taskId: string; pr
 			</button>
 			<Counts node={summary} />
 			{open && folders.length > 0 && <button type="button" onClick={() => setClosed(anyClosed ? new Set() : new Set(folders))} aria-label={anyClosed ? "Expand all folders" : "Collapse all folders"} title={anyClosed ? "Expand all folders" : "Collapse all folders"}
-				className="grid size-6 shrink-0 place-items-center rounded-md hover:bg-muted hover:text-foreground">{anyClosed ? <ChevronsUpDown className="size-3.5" /> : <ChevronsDownUp className="size-3.5" />}</button>}
+				className="grid size-6 shrink-0 place-items-center rounded-md hover:bg-muted hover:text-foreground"><IconSwap show={anyClosed ? "chevronsUpDown" : "chevronsDownUp"}>{{ chevronsUpDown: <ChevronsUpDown className="size-3.5" />, chevronsDownUp: <ChevronsDownUp className="size-3.5" /> }}</IconSwap></button>}
 			<button type="button" onClick={() => openTurnDiff({ taskId, messageId: message.id })} className="shrink-0 rounded-md px-1.5 py-0.5 font-medium text-foreground/85 hover:bg-muted hover:text-foreground">Open diff</button>
 		</div>
 		{open && <ul role="tree" aria-label={`Files changed in this turn: ${summary.files}`} className="ml-[7px] border-l border-border pl-1">{tree.map(node => row(node, 0))}</ul>}

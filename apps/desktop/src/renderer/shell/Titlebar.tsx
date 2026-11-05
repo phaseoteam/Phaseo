@@ -10,6 +10,7 @@ import { BrandMark } from "./BrandMark";
 import { Kbd } from "../components/ui/kbd";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import type { ThemePreference } from "../types";
+import { IconSwap } from "../components/IconSwap";
 
 export function IconButton({ label, onClick, disabled, active, children, className }: { label: string; onClick?: () => void; disabled?: boolean; active?: boolean; children: ReactNode; className?: string }) {
 	return <button type="button" aria-label={label} title={label} disabled={disabled} aria-pressed={active} onClick={onClick}
@@ -103,7 +104,7 @@ function WindowControls() {
 	const control = "no-drag grid h-full w-11 place-items-center text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground [&_svg]:size-4";
 	return <div className="-mr-2 ml-1 flex h-full">
 		<button type="button" aria-label="Minimise" className={control} onClick={() => void desktop?.performWindowAction("minimize")}><Minus /></button>
-		<button type="button" aria-label={state.isMaximized ? "Restore" : "Maximise"} className={control} onClick={() => void desktop?.performWindowAction("toggle-maximize")}>{state.isMaximized ? <Restore className="size-3.5!" /> : <Square className="size-3.5!" />}</button>
+		<button type="button" aria-label={state.isMaximized ? "Restore" : "Maximise"} className={control} onClick={() => void desktop?.performWindowAction("toggle-maximize")}><IconSwap show={state.isMaximized ? "restore" : "square"}>{{ restore: <Restore className="size-3.5!" />, square: <Square className="size-3.5!" /> }}</IconSwap></button>
 		<button type="button" aria-label="Close" className={cn(control, "hover:bg-red-600 hover:text-white")} onClick={() => void desktop?.performWindowAction("close")}><X /></button>
 	</div>;
 }

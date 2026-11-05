@@ -32,6 +32,7 @@ import { usePullRequestHandoff } from "./usePullRequestHandoff";
 import { PullRequestNumberMenu } from "./PullRequestNumberMenu";
 import { lastMergeMethodKey, resolvePullRequestMergeMethod, useDefaultMergeMethod } from "./mergeMethod";
 import { openWebLink } from "../../lib/openLink";
+import { IconSwap } from "../../components/IconSwap";
 
 type Tab = "summary" | "guide" | "timeline" | "code";
 const tabs: { value: Tab; label: string }[] = [{ value: "summary", label: "Summary" }, { value: "guide", label: "Guide" }, { value: "timeline", label: "Timeline" }, { value: "code", label: "Code" }];
@@ -157,7 +158,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 	}
 
 	const menu = <DropdownMenu onOpenChange={next => { if (next) readGuideState(); }}>
-		<Tip label={pull.refreshing ? "Refreshing pull request" : "More pull request actions"}><DropdownMenuTrigger render={<Button size="icon-xs" variant="ghost" className="text-muted-foreground" aria-label={pull.refreshing ? "Refreshing pull request" : "More pull request actions"} />}>{pull.refreshing ? <RefreshCw className="size-3.5 animate-spin" /> : <MoreHorizontal className="size-4" />}</DropdownMenuTrigger></Tip>
+		<Tip label={pull.refreshing ? "Refreshing pull request" : "More pull request actions"}><DropdownMenuTrigger render={<Button size="icon-xs" variant="ghost" className="text-muted-foreground" aria-label={pull.refreshing ? "Refreshing pull request" : "More pull request actions"} />}><IconSwap show={pull.refreshing ? "refreshCw" : "moreHorizontal"}>{{ refreshCw: <RefreshCw className="size-3.5 animate-spin" />, moreHorizontal: <MoreHorizontal className="size-4" /> }}</IconSwap></DropdownMenuTrigger></Tip>
 		<DropdownMenuContent align="end" className="w-56">
 			<DropdownMenuItem disabled={pull.refreshing} onClick={() => void pull.refresh()}><RefreshCw className={cn("size-3.5", pull.refreshing && "animate-spin")} />Refresh</DropdownMenuItem>
 			<DropdownMenuItem disabled={handoff.pending !== undefined} onClick={() => void handoff.run("ask", view)}><MessageCircleQuestion className="mt-1 size-3.5 shrink-0 self-start" /><span className="flex min-w-0 flex-col"><span>Ask a question</span><span className="text-xs text-muted-foreground">Opens a chat that knows which pull request you mean.</span></span></DropdownMenuItem>

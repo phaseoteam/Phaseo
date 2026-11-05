@@ -68,7 +68,8 @@ describe("send key and steering", () => {
 	});
 	it("says plainly when a harness cannot take a message mid-turn", () => {
 		expect(steerBlocker({ harness: "codex", status: "running" })).toBeUndefined();
-		expect(steerBlocker({ harness: "claude", status: "running" })).toBe("Claude Code can't take messages mid-turn, so queued messages send when the turn finishes.");
+		expect(steerBlocker({ harness: "claude", status: "running" })).toBeUndefined();
+		expect(steerBlocker({ harness: "acp", status: "running" })).toMatch(/can't take messages mid-turn, so queued messages send when the turn finishes.$/);
 		expect(steerBlocker({ harness: "codex", status: "completed" })).toContain("turn has finished");
 		expect(ownQueue({ queue: [{ id: "a", text: "Mine", createdAt: "" }, { id: "b", text: "PR", createdAt: "", notice: { kind: "pull-request", summary: "x", outcome: "updated" } }, { id: "c", text: "Agent", createdAt: "", sourceTaskId: "t" }] }).map(item => item.id)).toEqual(["a"]);
 	});

@@ -3,6 +3,7 @@ import { Eye, EyeOff, KeyRound } from "lucide-react";
 import type { Task } from "../../shared/workspace";
 import type { SecretRequest } from "../../shared/secretRequests";
 import { errorText, useWorkspace } from "../app/workspace";
+import { IconSwap } from "../components/IconSwap";
 
 /**
  * The secret request: the agent's label and reason, a masked field and Save or Don't share. The value
@@ -33,7 +34,7 @@ function SecretRequestForm({ taskId, request }: { taskId: string; request: Secre
 			<div className="relative min-w-0 flex-1">
 				<input autoFocus type={shown ? "text" : "password"} autoComplete="off" spellCheck={false} aria-label={request.label} placeholder={request.placeholder ?? "Paste the secret"} value={value} onChange={event => setValue(event.target.value)} disabled={busy}
 					className="h-8 w-full rounded-md border border-input bg-transparent py-1 pr-8 pl-2.5 font-mono text-xs outline-none placeholder:font-sans placeholder:text-muted-foreground focus:border-ring" />
-				<button type="button" aria-label={shown ? "Hide the secret" : "Show the secret"} onClick={() => setShown(current => !current)} className="absolute top-1 right-1 grid size-6 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground">{shown ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}</button>
+				<button type="button" aria-label={shown ? "Hide the secret" : "Show the secret"} onClick={() => setShown(current => !current)} className="absolute top-1 right-1 grid size-6 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"><IconSwap show={shown ? "eyeOff" : "eye"}>{{ eyeOff: <EyeOff className="size-3.5" />, eye: <Eye className="size-3.5" /> }}</IconSwap></button>
 			</div>
 			<button type="submit" disabled={busy || !value} className="h-8 shrink-0 rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/85 disabled:opacity-50">Save</button>
 			<button type="button" disabled={busy} onClick={() => void answer(null)} className="h-8 shrink-0 rounded-md px-2.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50">Don't share</button>

@@ -6,6 +6,7 @@ import { shortcut } from "../lib/keybindings";
 import { mentionPlainText } from "../lib/mentions";
 import { cn } from "../lib/utils";
 import { harnessNames } from "./ModelPicker";
+import { IconSwap } from "../components/IconSwap";
 
 /** Harnesses whose adapters take a message mid-turn (`steer` in main/*Adapter.ts). The rest wait for the turn to end. */
 const steerable: ReadonlySet<Harness> = new Set(["claude", "codex", "cursor", "opencode", "phaseo", "pi"]);
@@ -40,7 +41,7 @@ export function QueuePanel({ task, editingId, onEdit, onSteer }: { task: Task; e
 	const blocker = steerBlocker(task), steerKey = shortcut("composer.steer"), firstOwn = ownQueue(task)[0];
 	return <section aria-label={`${queue.length} queued message${queue.length === 1 ? "" : "s"}`} className="mb-2 flex flex-col gap-0.5 px-1">
 		{steering.map(message => <div key={message.id} className="flex items-center gap-2 py-0.5 text-[13px]">
-			{message.status === "sending" ? <LoaderCircle aria-hidden className="size-3.5 shrink-0 animate-spin text-muted-foreground" /> : <CornerDownRight aria-hidden className="size-3.5 shrink-0 text-warning" />}
+			<IconSwap show={message.status === "sending" ? "loaderCircle" : "cornerDownRight"}>{{ loaderCircle: <LoaderCircle aria-hidden className="size-3.5 shrink-0 animate-spin text-muted-foreground" />, cornerDownRight: <CornerDownRight aria-hidden className="size-3.5 shrink-0 text-warning" /> }}</IconSwap>
 			<span className="min-w-0 flex-1 truncate" title={mentionPlainText(message.text)}>{mentionPlainText(message.text)}</span>
 			{message.status === "sending" ? <span className="shrink-0 text-xs text-muted-foreground">Sending into the turn…</span> : <>
 				<span className="max-w-64 shrink truncate text-xs text-muted-foreground" title={message.error}>{message.status === "rejected" ? "Not taken" : "Delivery not confirmed"}{message.error ? `: ${message.error}` : ""}</span>

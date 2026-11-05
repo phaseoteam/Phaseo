@@ -6,6 +6,7 @@ import { cn } from "../lib/utils";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { onProjectChange } from "./events";
 import { FileTreeLoading, ipcError, RefreshIcon, SURFACE_HEADER_CLASS, ToolbarButton } from "./surfaceChrome";
+import { IconSwap } from "../components/IconSwap";
 
 const parentOf = (path: string) => path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
 
@@ -104,7 +105,7 @@ export function FileBrowserSurface({ projectId, onOpenFile, selectedPath, classN
 			<input type="search" value={query} aria-label={`Search ${projectName} files`} placeholder="Search files" spellCheck={false}
 				onChange={event => setQuery(event.target.value)} onKeyDown={event => { if (event.key === "Escape") { setQuery(""); event.currentTarget.blur(); } }}
 				className="h-7 min-w-0 flex-1 rounded-md bg-transparent px-2 text-xs outline-none placeholder:text-muted-foreground/80 hover:bg-accent/40 focus:bg-accent/40" />
-			{loaded && (children.get("") ?? []).some(entry => entry.directory) && <ToolbarButton size="sm" label={expandedAll || expanded.size ? "Collapse all folders" : "Expand all folders"} onClick={() => void toggleAll()}>{expandedAll || expanded.size ? <ChevronsDownUp /> : <ChevronsUpDown />}</ToolbarButton>}
+			{loaded && (children.get("") ?? []).some(entry => entry.directory) && <ToolbarButton size="sm" label={expandedAll || expanded.size ? "Collapse all folders" : "Expand all folders"} onClick={() => void toggleAll()}><IconSwap show={expandedAll || expanded.size ? "chevronsDownUp" : "chevronsUpDown"}>{{ chevronsDownUp: <ChevronsDownUp />, chevronsUpDown: <ChevronsUpDown /> }}</IconSwap></ToolbarButton>}
 		</div>
 		{error && <button type="button" onClick={() => void reload(true)} className="p-4 text-left text-xs leading-relaxed text-destructive">{error} Click to retry.</button>}
 		{results?.truncated && <div className="px-3 py-1 text-xs text-muted-foreground">More matches available. Refine your search.</div>}

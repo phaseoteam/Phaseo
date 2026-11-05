@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from "react";
 import { EditorContent } from "@tiptap/react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { ArrowUp, Square } from "lucide-react";
+import { IconSwap } from "../components/IconSwap";
 import { cn } from "../lib/utils";
 import { chatDragType } from "../lib/mentions";
 import type { ComposerMenu } from "./ComposerMenu";
@@ -66,9 +67,11 @@ export function Composer({ editor, onSubmit, onStop, disabled, canSend, running,
 				{tools}
 				<div className="ml-auto flex min-w-0 items-center gap-1">
 					{model}
-					{running && onStop
-						? <button type="button" aria-label="Stop" title="Stop" onClick={onStop} className="press-squish ml-1 grid size-8 shrink-0 place-items-center rounded-full bg-foreground text-background transition-opacity hover:opacity-85"><Square className="size-3 fill-current" /></button>
-						: <button type="submit" aria-label={ultrathink ? "Send with Ultrathink" : "Send"} title={`${ultrathink ? "Sends with Ultrathink: this turn runs at Extra High" : "Send"} (${sendKey === "enter" ? "Enter" : keyLabel("mod+enter", isMac())})`} disabled={!canSend} className={cn("hover-lift press-squish relative ml-1 grid size-8 shrink-0 place-items-center overflow-hidden rounded-full bg-foreground text-background transition-opacity hover:opacity-85 disabled:opacity-25", ultrathink && "ultrathink-send")}><ArrowUp className="relative size-4" strokeWidth={2.5} /></button>}
+					{(() => { const stops = Boolean(running && onStop); return <button type={stops ? "button" : "submit"} onClick={stops ? onStop : undefined} disabled={!stops && !canSend}
+						aria-label={stops ? "Stop" : ultrathink ? "Send with Ultrathink" : "Send"} title={stops ? "Stop" : `${ultrathink ? "Sends with Ultrathink: this turn runs at Extra High" : "Send"} (${sendKey === "enter" ? "Enter" : keyLabel("mod+enter", isMac())})`}
+						className={cn("hover-lift press-squish relative ml-1 grid size-8 shrink-0 place-items-center overflow-hidden rounded-full bg-foreground text-background transition-opacity hover:opacity-85 disabled:opacity-25", !stops && ultrathink && "ultrathink-send")}>
+						<IconSwap show={stops ? "stop" : "send"} className="relative">{{ send: <ArrowUp className="size-4" strokeWidth={2.5} />, stop: <Square className="size-3 fill-current" /> }}</IconSwap>
+					</button>; })()}
 				</div>
 			</div>
 		</form>

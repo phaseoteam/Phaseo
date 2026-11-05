@@ -8,6 +8,7 @@ import { factory, openExternal } from "../lib/useFactory";
 import { cn } from "../../lib/utils";
 import { CommentEntry } from "./Timeline";
 import { MarkdownTextarea } from "../../components/MarkdownTextarea";
+import { IconSwap } from "../../components/IconSwap";
 
 /** Past this many changed lines a file starts folded, so a big pull request opens quickly. */
 const FOLD_OVER = 400;
@@ -89,7 +90,7 @@ function ThreadView({ thread, item, onChanged }: { thread: ReviewThread; item: W
 	return <div className="my-2 rounded-md border bg-card font-sans">
 		<div className="flex items-center gap-2 border-b px-3 py-1.5 text-xs text-muted-foreground">
 			<button type="button" onClick={() => setOpen(!open)} className="flex min-w-0 flex-1 items-center gap-1.5 text-left hover:text-foreground">
-				{open ? <ChevronDown className="size-3.5 shrink-0" /> : <ChevronRight className="size-3.5 shrink-0" />}
+				<IconSwap show={open ? "chevronDown" : "chevronRight"}>{{ chevronDown: <ChevronDown className="size-3.5 shrink-0" />, chevronRight: <ChevronRight className="size-3.5 shrink-0" /> }}</IconSwap>
 				<span className="truncate">{thread.resolved ? "Resolved" : thread.outdated ? "Outdated" : "Conversation"}: {thread.comments.length} {thread.comments.length === 1 ? "comment" : "comments"}{!open && first ? `, ${first.author}: ${first.body.slice(0, 80)}` : ""}</span>
 			</button>
 			{thread.canResolve && <Button variant="outline" size="sm" className="h-6 px-2 text-2xs" disabled={busy} onClick={() => void resolve()}>
@@ -133,7 +134,7 @@ function FileDiff({ file, threads, item, head, onChanged }: { file: PullFile; th
 	};
 	return <section className="overflow-hidden rounded-md border">
 		<button type="button" onClick={() => setOpen(!open)} className="flex w-full items-center gap-2 border-b bg-muted/40 px-3 py-2 text-left text-sm hover:bg-muted/70">
-			{open ? <ChevronDown className="size-4 shrink-0 text-muted-foreground" /> : <ChevronRight className="size-4 shrink-0 text-muted-foreground" />}
+			<IconSwap show={open ? "chevronDown" : "chevronRight"}>{{ chevronDown: <ChevronDown className="size-4 shrink-0 text-muted-foreground" />, chevronRight: <ChevronRight className="size-4 shrink-0 text-muted-foreground" /> }}</IconSwap>
 			<FileCode2 className="size-4 shrink-0 text-muted-foreground" />
 			<span className="min-w-0 truncate font-mono text-xs">{name}</span>
 			{file.status !== "modified" && <span className="shrink-0 rounded-[4px] border px-1.5 text-2xs text-muted-foreground">{file.status}</span>}

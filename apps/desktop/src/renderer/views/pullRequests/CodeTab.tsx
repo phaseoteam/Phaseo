@@ -27,6 +27,7 @@ import { Reactions } from "./SummaryTab";
 import type { PullRequestHandoff } from "./usePullRequestHandoff";
 import { usePullRequestFilesViewed } from "./usePullRequestFilesViewed";
 import { MarkdownTextarea } from "../../components/MarkdownTextarea";
+import { IconSwap } from "../../components/IconSwap";
 
 const statusLetter: Record<string, { letter: string; tone: string }> = { added: { letter: "A", tone: "text-emerald-600 dark:text-emerald-400" }, removed: { letter: "D", tone: "text-red-600 dark:text-red-400" }, renamed: { letter: "R", tone: "text-info" }, copied: { letter: "C", tone: "text-info" } };
 const fileAnchor = (path: string) => `pr-file-${encodeURIComponent(path)}`;
@@ -63,7 +64,7 @@ export function ReviewThread({ thread, view, projectId, pending, onAction, hando
 	const finding = { kind: "thread" as const, thread }, fixing = handoff?.pendingFinding === findingKey(finding);
 	return <div className="border-y border-border/60 bg-background px-3 py-2 font-sans text-xs whitespace-normal" data-thread-id={thread.id} onPointerDown={event => event.stopPropagation()}>
 		<div className="flex items-center gap-2 text-muted-foreground">
-			{thread.resolved ? <CircleCheck aria-hidden className="size-3.5 shrink-0 text-success" /> : <Circle aria-hidden className="size-3.5 shrink-0" />}
+			<IconSwap show={thread.resolved ? "circleCheck" : "circle"}>{{ circleCheck: <CircleCheck aria-hidden className="size-3.5 shrink-0 text-success" />, circle: <Circle aria-hidden className="size-3.5 shrink-0" /> }}</IconSwap>
 			<button type="button" className="min-w-0 truncate text-left hover:text-foreground" aria-expanded={open} onClick={() => setOpen(!open)}>{thread.resolved ? "Resolved" : "Open"} · {thread.totalComments} {thread.totalComments === 1 ? "comment" : "comments"}</button>
 			{thread.outdated && <span className="shrink-0">outdated</span>}
 			<span className="ml-auto flex shrink-0 items-center gap-1">
@@ -235,7 +236,7 @@ export function CodeTab({ view, projectId, pending, onAction, onOpen, handoff, c
 				{layoutGroup}
 				<ToolbarToggle label={wrap ? "Disable line wrapping" : "Enable line wrapping"} pressed={wrap} onPressedChange={setWrap}><TextWrap /></ToolbarToggle>
 			</div>
-			{files.length > 0 && <Tip label={allCollapsed ? "Expand all files" : "Collapse all files"}><Button size="icon-sm" variant="ghost" className="text-muted-foreground [&_svg]:size-3.5" aria-label={allCollapsed ? "Expand all files" : "Collapse all files"} onClick={() => setCollapsed(Object.fromEntries(files.map(file => [file.filename, !allCollapsed])))}>{allCollapsed ? <ChevronsUpDown /> : <ChevronsDownUp />}</Button></Tip>}
+			{files.length > 0 && <Tip label={allCollapsed ? "Expand all files" : "Collapse all files"}><Button size="icon-sm" variant="ghost" className="text-muted-foreground [&_svg]:size-3.5" aria-label={allCollapsed ? "Expand all files" : "Collapse all files"} onClick={() => setCollapsed(Object.fromEntries(files.map(file => [file.filename, !allCollapsed])))}><IconSwap show={allCollapsed ? "chevronsUpDown" : "chevronsDownUp"}>{{ chevronsUpDown: <ChevronsUpDown />, chevronsDownUp: <ChevronsDownUp /> }}</IconSwap></Button></Tip>}
 			{files.length > 0 && <ToolbarToggle label={treeOpen ? "Hide file tree" : "Show file tree"} pressed={treeOpen} onPressedChange={setTreeOpen}><FolderTree /></ToolbarToggle>}
 		</div>
 	</div>;

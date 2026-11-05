@@ -8,6 +8,7 @@ import { parseReviewPatch } from "./diffRendering";
 import { useTextCopy } from "./useTextCopy";
 import type { DiffViewProps } from "./DiffView";
 import { useBackgroundRefresh } from "../lib/useBackgroundRefresh";
+import { IconSwap } from "./IconSwap";
 
 export function DiffRenderer({ contents, patch, layout, copyText = patch, hideHeader = false, hideActions = false, wrap = true, annotations, renderAnnotation, context, onRefresh, lineSelection }: DiffViewProps) {
 	const selectable = Boolean(lineSelection);
@@ -47,7 +48,7 @@ export function DiffRenderer({ contents, patch, layout, copyText = patch, hideHe
 	const fallback = <CodeBlock text={copyText} language="diff" />;
 	if (!files) return fallback;
 	return <div className="review-diff" data-layout={layout}>
-		{!hideActions && <div className="message-code-actions"><span aria-live="polite">{status === "failed" ? "Copy failed" : layout === "split" ? "Before / After" : "Unified diff"}</span><button type="button" onClick={() => void copy()} disabled={copying} aria-label={status === "copied" ? "Copied" : "Copy code"}>{status === "copied" ? <Check size={14} /> : <Copy size={14} />}{status === "copied" ? "Copied" : "Copy code"}</button></div>}
+		{!hideActions && <div className="message-code-actions"><span aria-live="polite">{status === "failed" ? "Copy failed" : layout === "split" ? "Before / After" : "Unified diff"}</span><button type="button" onClick={() => void copy()} disabled={copying} aria-label={status === "copied" ? "Copied" : "Copy code"}><IconSwap show={status === "copied" ? "check" : "copy"}>{{ check: <Check size={14} />, copy: <Copy size={14} /> }}</IconSwap>{status === "copied" ? "Copied" : "Copy code"}</button></div>}
 		{contextLoading > 0 && <p className="review-diff-feedback" role="status">Loading context…</p>}
 		{contextError && <div className="review-diff-feedback"><span role="alert">{contextError}</span></div>}
 		<div className="review-diff-content" tabIndex={0} aria-label={layout === "split" ? "Side-by-side changes" : "Unified changes"}>{files.map((file, index) => <FileDiff key={`${index}:${file.name}`} fileDiff={file} options={options} {...(annotations && renderAnnotation ? { lineAnnotations: annotations, renderAnnotation } : {})} {...(lineSelection ? { selectedLines: lineSelection.selected } : {})} />)}</div>

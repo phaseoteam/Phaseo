@@ -21,6 +21,7 @@ import { useProjectRepository } from "../views/pullRequests/useProjectRepository
 import { currentPullRequest } from "../../shared/pullRequestStacks";
 import { closePaneTabs, migratePaneState, movePaneTab, openPaneTab, paneKind, paneValue, paneWidths, reopenPaneTab, type PaneKey, type PaneState } from "./paneTabs";
 import { readSidebarWidth, sidebarSurface } from "../lib/sidebarWidth";
+import { IconSwap } from "../components/IconSwap";
 
 // The diff viewer and editor are large, so they load when first opened.
 const DiffSurface = lazy(() => import("../panels/DiffSurface").then(module => ({ default: module.DiffSurface })));
@@ -103,7 +104,7 @@ function SurfaceTab({ paneKey, context, projectId, active, dirty, onSelect, onCl
 				<span className="relative flex size-3 items-center justify-center group-hover/tab:hidden group-focus-visible/close:hidden [&_svg]:size-3"><TabFace paneKey={paneKey} context={context} projectId={projectId} dirty={dirty} /></span>
 				<X className="hidden size-3 group-hover/tab:block group-focus-visible/close:block" />
 			</button>
-			{browser && (browser.audible || browser.muted) && <button type="button" aria-label={browser.muted ? "Unmute tab" : "Mute tab"} onClick={event => { event.stopPropagation(); void setBrowserTabMuted(browser.id, !browser.muted); }} className="grid size-4 shrink-0 place-items-center rounded-sm hover:bg-muted">{browser.muted ? <VolumeOff className="size-3" /> : <Volume2 className="size-3" />}</button>}
+			{browser && (browser.audible || browser.muted) && <button type="button" aria-label={browser.muted ? "Unmute tab" : "Mute tab"} onClick={event => { event.stopPropagation(); void setBrowserTabMuted(browser.id, !browser.muted); }} className="grid size-4 shrink-0 place-items-center rounded-sm hover:bg-muted"><IconSwap show={browser.muted ? "volumeOff" : "volume2"}>{{ volumeOff: <VolumeOff className="size-3" />, volume2: <Volume2 className="size-3" /> }}</IconSwap></button>}
 			<Tip label={title} side="bottom" delay={600}><span className="truncate">{title}</span></Tip>
 		</ContextMenu.Trigger>
 		<DropdownMenuContent className="w-48">
@@ -330,7 +331,7 @@ export function RightPanel() {
 				</ScrollArea>
 				{overflow.right && <button type="button" aria-label="Scroll tabs right" onClick={() => strip.current?.scrollBy({ left: 160, behavior: "smooth" })} className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"><ChevronRight className="size-3.5" /></button>}
 				{tabs.length > 0 && !sheet && <Tip label={state.maximized ? "Restore panel" : "Maximize panel"} side="bottom"><button type="button" aria-label={state.maximized ? "Restore panel" : "Maximize panel"} aria-pressed={!!state.maximized} onClick={() => update({ ...state, maximized: !state.maximized })}
-					className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground">{state.maximized ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}</button></Tip>}
+					className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"><IconSwap show={state.maximized ? "minimize2" : "maximize2"}>{{ minimize2: <Minimize2 className="size-4" />, maximize2: <Maximize2 className="size-4" /> }}</IconSwap></button></Tip>}
 				<Tip label="Close panel" side="bottom"><button type="button" aria-label="Close panel" onClick={() => { requested.current = undefined; setRightPanel(undefined); }} className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"><X className="size-4" /></button></Tip>
 			</div>
 			{!active ? <Launcher onOpen={kindToOpen => void openKind(kindToOpen)} unavailable={unavailable} />

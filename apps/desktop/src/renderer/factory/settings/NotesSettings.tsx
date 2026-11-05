@@ -11,6 +11,7 @@ import { since } from "../lib/format";
 import { factory, useNow } from "../lib/useFactory";
 import { cn } from "../../lib/utils";
 import { MarkdownTextarea } from "../../components/MarkdownTextarea";
+import { IconSwap } from "../../components/IconSwap";
 
 /** Flagged notes first, for a decision; then pinned; then the ones that held up most. */
 function order(notes: RepoNote[]): RepoNote[] {
@@ -93,7 +94,7 @@ function NoteRow({ note, place, home, agent, now }: { note: RepoNote; place: str
 					? <Button variant="ghost" size="icon-xs" aria-label="Cancel" onMouseDown={(event) => event.preventDefault()} onClick={() => { setDraft(note.text); setEditing(false); }}><X className="size-3.5" /></Button>
 					: <Tip label="Edit"><Button variant="ghost" size="icon-xs" aria-label="Edit note" className="text-muted-foreground" onClick={() => { setDraft(note.text); setEditing(true); }}><Pencil className="size-3.5" /></Button></Tip>}
 				{moveTo && <Tip label={moveTo === COMPUTER ? "Move to this computer: every repository's runs get it" : `Move to ${moveTo}`}><Button variant="ghost" size="icon-xs" aria-label="Move note" className="text-muted-foreground" onClick={() => update({ moveTo })}><ArrowRightLeft className="size-3.5" /></Button></Tip>}
-				<Tip label={note.pinned ? "Unpin" : "Pin: every run gets it"}><Button variant="ghost" size="icon-xs" aria-label={note.pinned ? "Unpin note" : "Pin note"} className="text-muted-foreground" onClick={() => update({ pinned: !note.pinned })}>{note.pinned ? <PinOff className="size-3.5" /> : <Pin className="size-3.5" />}</Button></Tip>
+				<Tip label={note.pinned ? "Unpin" : "Pin: every run gets it"}><Button variant="ghost" size="icon-xs" aria-label={note.pinned ? "Unpin note" : "Pin note"} className="text-muted-foreground" onClick={() => update({ pinned: !note.pinned })}><IconSwap show={note.pinned ? "pinOff" : "pin"}>{{ pinOff: <PinOff className="size-3.5" />, pin: <Pin className="size-3.5" /> }}</IconSwap></Button></Tip>
 				<Tip label="Remove"><Button variant="ghost" size="icon-xs" aria-label="Remove note" className="text-muted-foreground" onClick={() => void factory().removeNote(place, note.id)}><Trash2 className="size-3.5" /></Button></Tip>
 			</div>
 		</div>

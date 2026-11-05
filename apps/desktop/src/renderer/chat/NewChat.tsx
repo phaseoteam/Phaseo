@@ -37,6 +37,7 @@ import { OutOfUsageOffer } from "./OutOfUsageOffer";
 import { useCommand } from "../lib/keybindings";
 import { PermissionChoice, usePermissionShortcut } from "./PermissionChoice";
 import { showToast } from "../components/ui/toast";
+import { IconSwap } from "../components/IconSwap";
 
 const suggestions = [
 	{ icon: PenLine, label: "Write", prompt: "Help me write " },
@@ -55,7 +56,7 @@ export function PermissionMenu({ value, onChange }: { value: Task["permissionMod
 	const full = value === "full-access", edits = value === "accept-edits";
 	return <DropdownMenu>
 		<DropdownMenuTrigger render={<button type="button" data-composer-shortcut="composer.mode" className={cn("flex h-8 items-center gap-1.5 rounded-lg px-2 text-[12.5px] font-medium hover:bg-muted [&_svg]:size-4", full ? "text-warning" : "text-muted-foreground hover:text-foreground")} />}>
-			{full ? <ShieldAlert /> : <ShieldCheck />}{full ? "Full access" : edits ? "Accept edits" : "Ask first"}<ChevronDown className="size-3!" />
+			<IconSwap show={full ? "shieldAlert" : "shieldCheck"}>{{ shieldAlert: <ShieldAlert />, shieldCheck: <ShieldCheck /> }}</IconSwap>{full ? "Full access" : edits ? "Accept edits" : "Ask first"}<ChevronDown className="size-3!" />
 		</DropdownMenuTrigger>
 		<DropdownMenuContent align="start" side="top" className="w-72">
 			<DropdownMenuItem onClick={() => onChange("supervised")} className="items-start"><ShieldCheck className="mt-0.5" /><span><span className="block font-semibold">Ask first</span><span className="text-xs text-muted-foreground">Approve commands and file changes before they run.</span></span>{!full && !edits && <Check className="ml-auto" />}</DropdownMenuItem>

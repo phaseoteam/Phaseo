@@ -5,6 +5,7 @@ import { browserDeviceToolbarHeight, browserViewportLimits, browserViewportPrese
 import { cn } from "../../lib/utils";
 import { ScrollArea } from "../ui/scroll-area";
 import { BrowserIconButton } from "./BrowserChromeRow";
+import { IconSwap } from "../IconSwap";
 
 type Device = Extract<BrowserViewport, { mode: "device" }>;
 const responsive = "responsive";
@@ -83,7 +84,7 @@ export function BrowserDeviceToolbar({ viewport, width, aspectLocked, onAspectLo
 			<input type="number" inputMode="numeric" min={browserViewportLimits.min} max={browserViewportLimits.max} value={shown.height} aria-label="Viewport height" aria-invalid={!custom} className={numberClass} onChange={event => edit("height", event.target.value)} />
 			<button type="submit" hidden />
 		</form>
-		<BrowserIconButton label={aspectLocked ? "Unlock viewport aspect ratio" : "Lock viewport aspect ratio"} tooltip={aspectLocked ? "Unlock aspect ratio" : "Lock aspect ratio"} aria-pressed={aspectLocked} variant={aspectLocked ? "secondary" : "ghost"} icon={aspectLocked ? <Link2 /> : <Unlink2 />} disabled={!custom} onPointerDown={event => event.preventDefault()} onClick={() => onAspectLock(!aspectLocked)} />
+		<BrowserIconButton label={aspectLocked ? "Unlock viewport aspect ratio" : "Lock viewport aspect ratio"} tooltip={aspectLocked ? "Unlock aspect ratio" : "Lock aspect ratio"} aria-pressed={aspectLocked} variant={aspectLocked ? "secondary" : "ghost"} icon={<IconSwap show={aspectLocked ? "link2" : "unlink2"}>{{ link2: <Link2 />, unlink2: <Unlink2 /> }}</IconSwap>} disabled={!custom} onPointerDown={event => event.preventDefault()} onClick={() => onAspectLock(!aspectLocked)} />
 		<BrowserIconButton label="Rotate viewport" icon={<ScreenRotationIcon />} onClick={rotate} />
 		<span className="ml-auto flex">
 			<BrowserIconButton label="Close device toolbar" icon={<X />} onClick={() => onChange({ mode: "fill" })} />

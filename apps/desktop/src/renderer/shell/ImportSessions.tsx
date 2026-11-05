@@ -9,6 +9,7 @@ import { ScrollArea } from "../components/ui/scroll-area";
 import { showToast } from "../components/ui/toast";
 import { SettingsButton } from "../settings/SettingsLayout";
 import { harnessNames } from "../chat/ModelPicker";
+import { IconSwap } from "../components/IconSwap";
 
 let importOpen = false;
 const listeners = new Set<() => void>();
@@ -73,7 +74,7 @@ export function ImportSessionsDialog() {
 			<DialogFooter>
 				{available.length > 0 && <SettingsButton variant="ghost" disabled={busy} onClick={() => setChosen(allChosen ? new Set() : new Set(available.map(key)))}>{allChosen ? "Clear" : "Select all"}</SettingsButton>}
 				<SettingsButton variant="ghost" disabled={busy} onClick={close}>Cancel</SettingsButton>
-				<SettingsButton variant="primary" disabled={busy || !chosen.size} onClick={() => void run()}>{busy ? <LoaderCircle className="size-3.5 animate-spin" /> : <History className="size-3.5" />}{chosen.size ? `Import ${chosen.size}` : "Import"}</SettingsButton>
+				<SettingsButton variant="primary" disabled={busy || !chosen.size} onClick={() => void run()}><IconSwap show={busy ? "loaderCircle" : "history"}>{{ loaderCircle: <LoaderCircle className="size-3.5 animate-spin" />, history: <History className="size-3.5" /> }}</IconSwap>{chosen.size ? `Import ${chosen.size}` : "Import"}</SettingsButton>
 			</DialogFooter>
 		</DialogContent>
 	</Dialog>;

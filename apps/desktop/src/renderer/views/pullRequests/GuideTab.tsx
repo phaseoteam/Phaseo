@@ -21,6 +21,7 @@ import { agentSelectionPrompt, patchExcerpt, rangeLabel, rangeToDraft } from "./
 import { excerptPatch, letterStopNotes, proseTokens, stopQuestionPrompt, type LetteredNote } from "./pullRequestGuideView";
 import { nextPendingReviewCommentId, pullRequestReviewKey, reviewDrafts } from "./pullRequestReviewStore";
 import { MarkdownTextarea } from "../../components/MarkdownTextarea";
+import { IconSwap } from "../../components/IconSwap";
 
 /** Where the reader is in each guide, per guide head, for as long as the app is open. */
 const progress = new Map<string, { position: number; seen: Set<number> }>();
@@ -257,7 +258,7 @@ export function GuideTab({ view, projectId, active, onOpenCode, onFinishReview, 
 	useEffect(() => { if (writeRequest !== answered.current) { answered.current = writeRequest; void write(); } }, [writeRequest, write]);
 	const guide = result?.guide ?? null;
 	const failure = result?.error ?? (loadError || undefined);
-	const writeButton = (label: string) => <Button size="xs" variant="outline" disabled={running} onClick={() => void write()}>{running ? <LoaderCircle aria-hidden className="size-3.5 animate-spin" /> : <BookOpen aria-hidden className="size-3.5" />}{running ? "Reading the change…" : label}</Button>;
+	const writeButton = (label: string) => <Button size="xs" variant="outline" disabled={running} onClick={() => void write()}><IconSwap show={running ? "loaderCircle" : "bookOpen"}>{{ loaderCircle: <LoaderCircle aria-hidden className="size-3.5 animate-spin" />, bookOpen: <BookOpen aria-hidden className="size-3.5" /> }}</IconSwap>{running ? "Reading the change…" : label}</Button>;
 	if (!guide) {
 		if (!result && !loadError) return <div className="flex min-h-48 items-center justify-center"><LoaderCircle aria-label="Loading" className="size-4 animate-spin text-muted-foreground" /></div>;
 		return <div className="flex min-h-48 flex-col items-center justify-center gap-2 px-4 py-10 text-center">

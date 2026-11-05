@@ -9,6 +9,7 @@ import { cn } from "../lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
 import { ScrollArea } from "../components/ui/scroll-area";
+import { IconSwap } from "../components/IconSwap";
 
 type CreateTask = Extract<WorkspaceCommand, { type: "create-task" }>;
 /** Each project folder's Local or New worktree choice for the next new chat. */
@@ -56,7 +57,7 @@ export function WorktreeTargetControls({ target, disabled }: { target: WorktreeT
 	return <>
 		<DropdownMenu>
 			<DropdownMenuTrigger disabled={disabled} render={<button type="button" aria-label="Workspace" title="Where the chat works" data-composer-shortcut="composer.workspace" className="flex h-8 items-center gap-1.5 rounded-md px-2 text-[12.5px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50 [&_svg]:size-4" />}>
-				{worktree ? <FolderGit2 /> : <Laptop />}{worktree ? "New worktree" : "Local"}<ChevronDown className="size-3!" />
+				<IconSwap show={worktree ? "folderGit2" : "laptop"}>{{ folderGit2: <FolderGit2 />, laptop: <Laptop /> }}</IconSwap>{worktree ? "New worktree" : "Local"}<ChevronDown className="size-3!" />
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="start" side="top" className="w-72">
 				<DropdownMenuItem onClick={() => target.setMode("local")} className="items-start"><Laptop className="mt-0.5" /><span><span className="block font-semibold">Local</span><span className="text-xs text-muted-foreground">Work in the project's own checkout.</span></span>{!worktree && <Check className="ml-auto" />}</DropdownMenuItem>
