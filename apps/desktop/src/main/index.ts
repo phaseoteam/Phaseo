@@ -39,6 +39,7 @@ import { fileURLToPath } from "node:url";
 import type { DesktopAppAction, DesktopUpdateState, DesktopWindowAction } from "../shared/desktop";
 import { isAllowedExternalUrl } from "../shared/desktop";
 import { chatLinkScheme, parseChatLink } from "../shared/chatLinks";
+import { prepareLaunch, readRegistry } from "./acpRegistry";
 import { validateCommand } from "../shared/workspace";
 import { validateWorktreeChatRequest } from "../shared/worktreeChat";
 import { validatePublishRepository } from "../shared/gitWorkflow";
@@ -1077,6 +1078,18 @@ function harnessInstallations() {
 		} catch (error) { return { harness, installed: false, error: error instanceof Error ? error.message : "Installation is unavailable." }; }
 	}));
 }
+ipcMain.handle("workspace:acp-registry", async (event, fresh: unknown) => {
+	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
+	return readRegistry(fresh === true);
+});
+// Adds a registry agent by its id and one of its launch ways, as listed; a binary is downloaded and checked first.
+ipcMain.handle("workspace:acp-registry-add", async (event, id: unknown, kind: unknown) => {
+	if (!senderWindow(event) || typeof id !== "string" || !["binary", "npx", "uvx"].includes(kind as string)) throw new Error("Invalid agent request.");
+	const agent = (await readRegistry()).find(value => value.id === id), launch = agent?.launches.find(value => value.kind === kind);
+	if (!agent || !launch) throw new Error("That agent is no longer in the registry for this computer.");
+	const prepared = await prepareLaunch(agent, launch, path.join(app.getPath("userData"), "acp-agents"));
+	return workspaceRuntime.command({ type: "add-agent", name: agent.name, executable: prepared.executable, arguments: prepared.arguments, ...(Object.keys(prepared.environment).length ? { environment: prepared.environment } : {}) });
+});
 ipcMain.handle("workspace:installations", async event => {
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
 	return harnessInstallations();

@@ -37,7 +37,7 @@ export class AcpAdapter implements AgentAdapter {
 	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, _account?: Account, attachments: AttachmentContent[] = []) {
 		if (this.cancelled) throw new Error("Task stopped.");
 		this.grok = task.harness === "grok";
-		const child = this.child = spawn(this.agent.executable, this.agent.arguments, { cwd, windowsHide: true, shell: false, stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, ELECTRON_RUN_AS_NODE: "1", ...this.environment } }); child.stderr.resume();
+		const child = this.child = spawn(this.agent.executable, this.agent.arguments, { cwd, windowsHide: true, shell: false, stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, ELECTRON_RUN_AS_NODE: "1", ...this.agent.environment, ...this.environment } }); child.stderr.resume();
 		let receiving = false; let promptSubmitted = false; let modesViaConfig = false; let nativeModes: ReturnType<typeof acpModes> = [];
 		const tools = new Map<string, ToolCallUpdate>();
 		const completion = new GrokCompletion();

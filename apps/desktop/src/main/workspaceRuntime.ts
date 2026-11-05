@@ -1179,15 +1179,16 @@ export class WorkspaceRuntime {
 			}
 		}
 		if (command.type === "add-agent") {
-			this.store.saveAgent({ id: randomUUID(), name: command.name, executable: command.executable, arguments: command.arguments });
+			this.store.saveAgent({ id: randomUUID(), name: command.name, executable: command.executable, arguments: command.arguments, ...(command.environment && Object.keys(command.environment).length ? { environment: command.environment } : {}) });
 			this.broadcast(); return this.store.getOverview();
 		}
 		if (command.type === "update-agent") {
 			const agent = this.store.getAgents().find(value => value.id === command.id); if (!agent) throw new Error("Agent no longer exists.");
-			if ((command.executable !== undefined || command.arguments !== undefined) && this.store.getOverview().tasks.some(task => task.agentId === agent.id && this.running.has(task.id))) throw new Error("Stop this agent's running tasks before changing its command.");
+			if ((command.executable !== undefined || command.arguments !== undefined || command.environment !== undefined) && this.store.getOverview().tasks.some(task => task.agentId === agent.id && this.running.has(task.id))) throw new Error("Stop this agent's running tasks before changing its command.");
 			if (command.name !== undefined) agent.name = command.name;
 			if (command.executable !== undefined) agent.executable = command.executable;
 			if (command.arguments !== undefined) agent.arguments = command.arguments;
+			if (command.environment !== undefined) { if (Object.keys(command.environment).length) agent.environment = command.environment; else delete agent.environment; }
 			if (command.archived !== undefined) agent.archived = command.archived;
 			this.store.saveAgent(agent); this.broadcast(); return this.store.getOverview();
 		}

@@ -11,6 +11,7 @@ import { providerHealthOptions } from "../../shared/threadPreferences";
 import { Bot, RotateCw } from "lucide-react";
 import { cn } from "../lib/utils";
 import { HarnessLogo } from "../components/HarnessLogo";
+import { AgentRegistry } from "../settings/AgentRegistry";
 import { SettingsButton, SettingsField, SettingsNote, SettingsPageLayout, SettingsRow, SettingsSection, settingsInput } from "../settings/SettingsLayout";
 
 const harnessNames: Partial<Record<HarnessInstallation["harness"], string>> = { codex: "Codex", claude: "Claude Code", opencode: "OpenCode", pi: "Pi", cursor: "Cursor", grok: "Grok" };
@@ -132,6 +133,7 @@ export function Agents() {
 			</article>)}
 			{!visibleAgents.length && <SettingsNote>{showArchived ? "No archived agents." : "No ACP agents connected yet."}</SettingsNote>}
 		</SettingsSection>
+		<AgentRegistry connected={workspace.agents.filter(agent => !agent.archived).map(agent => agent.name)} onAdded={setWorkspace} />
 		<SettingsSection title={editing ? "Edit agent" : "Connect an agent"} className="connection-editor">
 			<form ref={form} aria-label="Agent connection" className="flex flex-col gap-3 p-4" onSubmit={event => { event.preventDefault(); void add(); }}>
 				{editorError && <p className="text-xs text-destructive" role="alert">{editorError}</p>}

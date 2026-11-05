@@ -1,4 +1,5 @@
 import type { HtmlRenderActivity } from "./htmlRender";
+import type { AcpRegistryAgent, AcpRegistryLaunch } from "./acpRegistry";
 import type { Delegation, Launch } from "./orchestration";
 import type { CodeHostKind, CustomCodeHost } from "./codeHosts";
 import type { CodeHostSettings, CodeHostTokenRequest } from "./codeHostSettings";
@@ -53,7 +54,8 @@ export type Project = { id: string; name: string; directory: string; createdAt: 
 export type PhaseoSignInMethod = { provider: "github" | "google" | "gitlab" } | { email: string; password: string };
 export type PhaseoSignInResult = { workspace: WorkspaceOverview; accountId: string } | { secondFactor: true };
 export type Account = { id: string; name: string; harness: Harness; kind: "native" | "api"; endpoint?: string; configDirectory?: string; configured: boolean; archived?: boolean; secretId?: string; oauthExpiresAt?: string; /** For a Phaseo login (not an older OAuth sign-in): the vault entry holding the login, and the Phaseo workspace its key is for. */ sessionSecretId?: string; phaseoWorkspaceId?: string; /** For a Phaseo sign-in, who it belongs to, from its Phaseo profile. */ profile?: { name?: string; givenName?: string; email?: string; picture?: string; checkedAt: string } };
-export type AgentConnection = { id: string; name: string; executable: string; arguments: string[]; archived?: boolean };
+/** environment: variables the agent starts with, such as a registry agent's settings or a secret reference (op://…). */
+export type AgentConnection = { id: string; name: string; executable: string; arguments: string[]; environment?: Record<string, string>; archived?: boolean };
 export type AgentStatus = { checkedAt: string; name?: string; version?: string; protocolVersion: number; capabilities: string[]; authMethods: string[] };
 export type BackgroundCommandView = { id: string; command: string; directory: string; running: boolean; durationMs: number; output: string };
 export type Attachment = { id: string; taskId: string; name: string; kind: "text" | "image" | "audio" | "video"; mimeType: string; size: number; pages?: number };
@@ -218,8 +220,8 @@ export type WorkspaceCommand =
 	| { type: "watch-issue"; id: string; repository: string; number: number; watching: boolean }
 	| { type: "add-account"; name: string; harness: "codex" | "claude" | "phaseo" | "cursor" | "grok"; kind: "native" | "api"; endpoint?: string; apiKey?: string }
 	| { type: "update-account"; id: string; name?: string; endpoint?: string; apiKey?: string; archived?: boolean }
-	| { type: "add-agent"; name: string; executable: string; arguments: string[] }
-	| { type: "update-agent"; id: string; name?: string; executable?: string; arguments?: string[]; archived?: boolean }
+	| { type: "add-agent"; name: string; executable: string; arguments: string[]; environment?: Record<string, string> }
+	| { type: "update-agent"; id: string; name?: string; executable?: string; arguments?: string[]; environment?: Record<string, string>; archived?: boolean }
 	| { type: "create-task"; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"]; permissionMode?: Task["permissionMode"]; reasoningEffort?: string; serviceTier?: string; modelOptions?: ModelOptionValues; autopilot?: { capNanos: number | null }; untrustedCheckout?: true; forkCheckout?: true }
 	| { type: "handoff"; id: string; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"]; permissionMode?: Task["permissionMode"]; reasoningEffort?: string; serviceTier?: string; modelOptions?: ModelOptionValues }
 	| { type: "update-task"; id: string; title?: string; pinned?: boolean; archived?: boolean; tags?: string[]; model?: string; mode?: Task["mode"]; permissionMode?: Task["permissionMode"]; serviceTier?: string; reasoningEffort?: string; nativeMode?: string; modelOptions?: ModelOptionValues; /** Turns Autopilot on with a spend cap, or off with null. */ autopilot?: { capNanos: number | null } | null }
@@ -330,6 +332,9 @@ export type WorkspaceApi = {
 	/** Saves a copy of an attachment where the person chooses; false when they cancel. */
 	saveAttachment: (taskId: string, id: string) => Promise<boolean>;
 	installations: () => Promise<HarnessInstallation[]>;
+	/** Agents from the public Agent Client Protocol registry this computer can run. */
+	acpRegistry: (fresh?: boolean) => Promise<AcpRegistryAgent[]>;
+	addRegistryAgent: (id: string, kind: AcpRegistryLaunch["kind"]) => Promise<WorkspaceOverview>;
 	updateHarness: (harness: "codex" | "claude" | "pi") => Promise<void>;
 	cancelHarnessUpdate: () => Promise<void>;
 	harnessUpdateStatus: () => Promise<"codex" | "claude" | "pi" | undefined>;
@@ -462,6 +467,13 @@ function validAutopilot(value: unknown) {
 	const cap = (value as { capNanos?: unknown }).capNanos;
 	return cap === null || (typeof cap === "number" && Number.isInteger(cap) && cap >= autopilotCap.minimumNanos && cap <= autopilotCap.maximumNanos);
 }
+/** Up to 50 variables with ordinary names; values are plain text or a secret reference resolved at launch. */
+export function validateAgentEnvironment(value: unknown) {
+	if (value === undefined) return;
+	if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid agent environment.");
+	const entries = Object.entries(value as Record<string, unknown>);
+	if (entries.length > 50 || entries.some(([name, text]) => !/^[A-Za-z_][A-Za-z0-9_]{0,127}$/.test(name) || typeof text !== "string" || text.length > 10000 || text.includes("\0"))) throw new Error("Invalid agent environment.");
+}
 export function validateCommand(value: unknown): WorkspaceCommand {
 	if (!value || typeof value !== "object") throw new Error("Invalid workspace command.");
 	const command = value as Record<string, unknown>;
@@ -473,6 +485,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 	if (command.type === "add-agent") {
 		string("name", true, 100); string("executable");
 		if (!Array.isArray(command.arguments) || command.arguments.length > 100 || command.arguments.some(value => typeof value !== "string" || value.includes("\0") || value.length > 10000)) throw new Error("Invalid agent arguments.");
+		validateAgentEnvironment(command.environment);
 	} else if (command.type === "add-account") {
 		string("name", true, 100);
 		if (!["codex", "claude", "phaseo", "cursor", "grok"].includes(command.harness as string)) throw new Error("Invalid account harness.");
@@ -507,6 +520,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 			case "update-agent":
 				string("name", false, 100); string("executable", false);
 				if (command.arguments !== undefined && (!Array.isArray(command.arguments) || command.arguments.length > 100 || command.arguments.some(value => typeof value !== "string" || value.includes("\0") || value.length > 10000))) throw new Error("Invalid agent arguments.");
+				validateAgentEnvironment(command.environment);
 				if (command.archived !== undefined && typeof command.archived !== "boolean") throw new Error("Invalid archived state.");
 				break;
 			case "update-task":
