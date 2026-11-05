@@ -104,3 +104,15 @@ describe("validateCapabilities with parameter values", () => {
 		expect(result.ok && result.providers.map((provider) => provider.providerId)).toEqual(["google-vertex", "deepinfra"]);
 	});
 });
+
+describe("providerParamSupportStatus with explicit unsupported markers", () => {
+	it("treats false and supported:false as unsupported, and a listed name as supported", async () => {
+		const { providerParamSupportStatus } = await import("./paramCapabilities");
+		const candidate = (capabilityParams: Record<string, unknown>) => ({ providerId: "google-ai-studio", capabilityParams } as any);
+		expect(providerParamSupportStatus(candidate({ seed: { supported: false, notes: "Not forwarded." } }), "seed")).toBe("unsupported");
+		expect(providerParamSupportStatus(candidate({ logprobs: false }), "logprobs")).toBe("unsupported");
+		expect(providerParamSupportStatus(candidate({ reasoning_effort: { support_level: "unsupported" } }), "reasoning_effort")).toBe("unsupported");
+		expect(providerParamSupportStatus(candidate({ seed: true }), "seed")).toBe("supported");
+		expect(providerParamSupportStatus(candidate({ seed: { type: "integer" } }), "seed")).toBe("supported");
+	});
+});

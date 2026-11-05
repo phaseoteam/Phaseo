@@ -127,6 +127,34 @@ describe("normalizeParameterSpec", () => {
 	});
 });
 
+describe("the standard shape reads back unchanged", () => {
+	const samples: unknown[] = [
+		{ type: "image_or_array", formats: ["png", "jpg"], required: true, max_items: 16, max_file_size_mb: 50 },
+		{ type: "number", maps_to: "voice_settings.speed", gateway_max: 4, gateway_min: 0.25 },
+		{ type: "string", values: ["auto", "1024x1024"], max_width: 3840, max_pixels: 8294400, dimension_multiple_of: 16, aspect_ratio_values: ["1:1"] },
+		{ max: 8, min: 4, step: 2, type: "number", aliases: ["seconds"], values_by_size: { "4k": [8] } },
+		{ type: "enum", values: ["url", "b64_json"], provider_values: ["url", "base64"], provider_default: "url" },
+		{ values: [{ id: "alloy", label: "Alloy" }, "echo"], default: "alloy", source_url: "https://example.com", verified_on: "2026-11-04" },
+		{ effort: { default_value: "max", supported_values: ["low", "max"] }, alias_for: "reasoning_effort", provider_catalog: { name: "fast" } },
+		{ type: "file", media: "audio", max_file_size_bytes: 1024, upstream_name: "file" },
+		{ values: ["alloy", "echo"], options: [{ value: "alloy", label: "Alloy" }, { value: "echo", label: "Echo" }] },
+	];
+	it.each(samples.map((sample) => [JSON.stringify(sample).slice(0, 60), sample]))("%s", (_label, sample) => {
+		const once = normalizeParameterSpec(sample);
+		expect(normalizeParameterSpec(once)).toEqual(once);
+	});
+
+	it("keeps repeated upstream values paired with values", () => {
+		// ElevenLabs: wav and pcm both map to pcm_44100.
+		expect(normalizeParameterSpec({ values: ["mp3", "wav", "pcm"], upstream_values: ["mp3_44100_128", "pcm_44100", "pcm_44100"] }).upstream_values)
+			.toEqual(["mp3_44100_128", "pcm_44100", "pcm_44100"]);
+	});
+
+	it("keeps labels given as a separate options list", () => {
+		expect(normalizeParameterSpec({ values: ["alloy"], options: [{ value: "alloy", label: "Alloy" }] }).options).toEqual([{ value: "alloy", label: "Alloy" }]);
+	});
+});
+
 describe("normalizeParameterSpecs", () => {
 	it("reads every container form", () => {
 		expect(normalizeParameterSpecs(["input", "voice"])).toEqual({ input: { supported: true }, voice: { supported: true } });

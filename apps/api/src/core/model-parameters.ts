@@ -133,6 +133,8 @@ const CONSUMED_KEYS = new Set([
 	"support_level", "notes", "source_url", "verified_at", "verified_on", "param_id", "name", "id",
 	// Added by the catalogue when it merges providers; internal ids, not part of the spec.
 	"providers",
+	// The standard shape's own fields, so a normalised spec reads back unchanged.
+	"media", "upstream_name", "upstream_values", "alias_of", "max_file_size_bytes", "dimensions", "source", "extra",
 	...NESTED_KEYS,
 ]);
 /** Range sizes parameterOptions will spell out as a list. */
@@ -198,6 +200,12 @@ function readValueList(list: unknown): { values: ParameterValue[]; options?: Par
 	return rich ? { values, options } : { values };
 }
 
+function readPairedList(list: unknown): ParameterValue[] | undefined {
+	if (!Array.isArray(list)) return undefined;
+	const values = list.filter(isValue);
+	return values.length ? values : undefined;
+}
+
 function inferType(values: ParameterValue[]): ParameterType | undefined {
 	if (values.every((value) => typeof value === "boolean")) return "boolean";
 	if (values.every((value) => typeof value === "number")) {
@@ -208,7 +216,10 @@ function inferType(values: ParameterValue[]): ParameterType | undefined {
 }
 
 function readType(raw: unknown, values: ParameterValue[] | undefined): Pick<ParameterSpec, "type" | "media"> {
-	const name = text(raw)?.toLowerCase();
+	// The standard shape stores several accepted types as a list.
+	const name = Array.isArray(raw)
+		? raw.map((entry) => text(entry)?.toLowerCase()).filter(Boolean).join("_or_")
+		: text(raw)?.toLowerCase();
 	const inferred = values ? inferType(values) : undefined;
 	if (!name || name === "enum") return inferred ? { type: inferred } : {};
 	const parts = name.split("_or_");
@@ -228,16 +239,25 @@ function readType(raw: unknown, values: ParameterValue[] | undefined): Pick<Para
 }
 
 function readSource(raw: Record<string, unknown>): ParameterSpec["source"] {
-	const url = text(raw.source_url);
-	const verified = text(raw.verified_at) ?? text(raw.verified_on);
+	const own = isRecord(raw.source) ? raw.source : {};
+	const url = text(own.url) ?? text(raw.source_url);
+	const verified = text(own.verified_at) ?? text(raw.verified_at) ?? text(raw.verified_on);
 	if (!url && !verified) return undefined;
 	return { ...(url ? { url } : {}), ...(verified ? { verified_at: verified } : {}) };
 }
 
 function readDimensions(raw: Record<string, unknown>): ParameterDimensions | undefined {
 	const dimensions: ParameterDimensions = {};
-	const set = <K extends keyof ParameterDimensions>(key: K, value: ParameterDimensions[K] | undefined) => {
+	// The standard shape keeps them in one object; older rows spread them out.
+	const own = isRecord(raw.dimensions) ? raw.dimensions : {};
+	const ownSet = <K extends keyof ParameterDimensions>(key: K, value: ParameterDimensions[K] | undefined) => {
 		if (value !== undefined) dimensions[key] = value;
+	};
+	for (const key of ["min", "max", "multiple_of", "max_width", "max_height", "min_pixels", "max_pixels"] as const) ownSet(key, finite(own[key]));
+	ownSet("max_aspect_ratio", text(own.max_aspect_ratio));
+	ownSet("aspect_ratios", stringList(own.aspect_ratios));
+	const set = <K extends keyof ParameterDimensions>(key: K, value: ParameterDimensions[K] | undefined) => {
+		if (value !== undefined && dimensions[key] === undefined) dimensions[key] = value;
 	};
 	set("min", finite(raw.dimension_min));
 	set("max", finite(raw.dimension_max));
@@ -310,8 +330,12 @@ export function normalizeParameterSpec(raw: unknown): ParameterSpec {
 	};
 	if (list) {
 		spec.values = list.values;
-		if (list.options) spec.options = list.options;
+		// Labels can come with the list itself or as a separate options list.
+		const options = list.options ?? (Array.isArray(raw.options) && raw.values !== undefined ? readValueList(raw.options)?.options : undefined);
+		if (options) spec.options = options;
 	}
+	const media = text(raw.media)?.toLowerCase();
+	if (media && MEDIA.has(media)) spec.media = media as ParameterSpec["media"];
 	// Legacy: { "range": [0, 2] }.
 	const range = Array.isArray(raw.range) && raw.range.length === 2 ? raw.range : [];
 	const min = firstDefined(finite(raw.gateway_min), finite(raw.min), finite(range[0]), finite(raw.provider_min));
@@ -330,11 +354,12 @@ export function normalizeParameterSpec(raw: unknown): ParameterSpec {
 	if (raw.always_on === true) spec.always_on = true;
 	const aliases = stringList(raw.aliases);
 	if (aliases) spec.aliases = aliases;
-	const aliasOf = text(raw.alias_for);
+	const aliasOf = text(raw.alias_of) ?? text(raw.alias_for);
 	if (aliasOf) spec.alias_of = aliasOf;
-	const upstream = text(raw.maps_to) ?? text(raw.upstream_parameter) ?? text(raw.provider_param);
+	const upstream = text(raw.upstream_name) ?? text(raw.maps_to) ?? text(raw.upstream_parameter) ?? text(raw.provider_param);
 	if (upstream) spec.upstream_name = upstream;
-	const upstreamValues = readValueList(raw.provider_values)?.values;
+	// Paired with values by position, so repeats stay (wav and pcm can both be pcm_44100).
+	const upstreamValues = readPairedList(raw.upstream_values) ?? readPairedList(raw.provider_values);
 	if (upstreamValues) spec.upstream_values = upstreamValues;
 	const requires = stringList(raw.requires);
 	if (requires) spec.requires = requires;
@@ -349,7 +374,7 @@ export function normalizeParameterSpec(raw: unknown): ParameterSpec {
 	const formats = stringList(raw.formats);
 	if (formats) spec.formats = formats;
 	const megabytes = finite(raw.max_file_size_mb);
-	const bytes = firstDefined(finite(raw.max_bytes), megabytes === undefined ? undefined : megabytes * 1024 * 1024);
+	const bytes = firstDefined(finite(raw.max_file_size_bytes), finite(raw.max_bytes), megabytes === undefined ? undefined : megabytes * 1024 * 1024);
 	if (bytes !== undefined) spec.max_file_size_bytes = bytes;
 	const format = text(raw.format);
 	if (format) spec.format = format;
@@ -371,7 +396,10 @@ export function normalizeParameterSpec(raw: unknown): ParameterSpec {
 	if (notes) spec.notes = notes;
 	const source = readSource(raw);
 	if (source) spec.source = source;
-	const extra = Object.fromEntries(Object.entries(raw).filter(([key, value]) => !CONSUMED_KEYS.has(key) && value != null));
+	const extra = {
+		...(isRecord(raw.extra) ? raw.extra : {}),
+		...Object.fromEntries(Object.entries(raw).filter(([key, value]) => !CONSUMED_KEYS.has(key) && value != null)),
+	};
 	if (Object.keys(extra).length) spec.extra = extra;
 	return spec;
 }
