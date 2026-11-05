@@ -696,7 +696,7 @@
 	},
 	"profileShare": {
 		"titleSuffix": "Phaseo-Sharekarte",
-		"description": "Eine kompakte Momentaufnahme aus der persönlichen Workspace-Aktivität.",
+		"description": "Eine kompakte Momentaufnahme aus der Aktivität im persönlichen Arbeitsbereich.",
 		"shareCard": "Sharekarte von {name}",
 		"downloadImage": "Bild herunterladen",
 		"openPhaseo": "Phaseo öffnen",
@@ -804,7 +804,7 @@
 		"setupHeading": "Einrichtungsschritte",
 		"fromZeroHeading": "Vom Start bis zum ersten Aufruf",
 		"step1Title": "API-Schlüssel erstellen oder kopieren",
-		"step1Description": "Verwende einen serverseitigen Workspace-Schlüssel und stelle ihn deiner Laufzeitumgebung unter folgendem Namen bereit:",
+		"step1Description": "Verwende einen serverseitigen Schlüssel des Arbeitsbereichs und stelle ihn deiner Laufzeitumgebung unter folgendem Namen bereit:",
 		"apiKeys": "API-Schlüssel",
 		"step2Title": "Endpoint und Modell auswählen",
 		"step2Description": "Die Endpoint-Auswahl aktualisiert Pfad, Payload und unterstützte Beispielmodelle gemeinsam.",
@@ -1365,13 +1365,13 @@
 				},
 				"supabase": {
 					"purpose": "Authentifizierung und primäre relationale Datenbank",
-					"data": "Konto-, Workspace-, Konfigurations-, Abrechnungsreferenz-, Anfrage-, Nutzungs-, Sicherheits- und Supportmetadaten",
+					"data": "Konto-, Arbeitsbereichs-, Konfigurations-, Abrechnungsreferenz-, Anfrage-, Nutzungs-, Sicherheits- und Supportmetadaten",
 					"location": "AWS eu-west-2 (London), anhand des Produktionsprojekts am 30. August 2026 bestätigt",
 					"condition": "Kernbetrieb"
 				},
 				"upstash": {
 					"purpose": "Redis-basierter Antwort-Cache und zugehörige Routingdaten",
-					"data": "Workspace-bezogene Cache-Schlüssel, Modellausgaben, Antwortmetadaten sowie kurzlebige Routing- und Cache-Einträge",
+					"data": "Arbeitsbereichsbezogene Cache-Schlüssel, Modellausgaben, Antwortmetadaten sowie kurzlebige Routing- und Cache-Einträge",
 					"location": "Die Region der Produktionsdatenbank muss noch sachlich bestätigt werden",
 					"condition": "Wenn die Redis-Anbindung aktiviert ist"
 				},
@@ -1410,7 +1410,7 @@
 				},
 				"statsig": {
 					"role": "Funktionsschalter und Experimente",
-					"data": "Stabile Kennungen für Nutzer, Workspace, Umgebung und Funktionsauswertung; gegebenenfalls authentifizierte E-Mail-Adresse"
+					"data": "Stabile Kennungen für Nutzer, Arbeitsbereich, Umgebung und Funktionsauswertung; gegebenenfalls authentifizierte E-Mail-Adresse"
 				},
 				"googleAnalytics": {
 					"role": "Website-Analyse mit Einwilligung",
@@ -1426,7 +1426,7 @@
 				},
 				"axiom": {
 					"role": "Betriebsüberwachung, wenn der Produktionsschlüssel aktiviert ist",
-					"data": "Workspace- und Anfrage-Telemetrie; bei entsprechender Konfiguration stichprobenartige, nach bestem Bemühen bereinigte Anfragedetails"
+					"data": "Arbeitsbereichs- und Anfrage-Telemetrie; bei entsprechender Konfiguration stichprobenartige, nach bestem Bemühen bereinigte Anfragedetails"
 				},
 				"mintlify": {
 					"role": "Hosting der Dokumentation",
@@ -1574,7 +1574,7 @@
 				"deletion": [
 					"Während der Laufzeit der Vereinbarung kann der Kunde unterstützte Kundendaten mithilfe der verfügbaren Produktfunktionen abrufen oder löschen.",
 					"Nach Ende der Dienste gibt Phaseo personenbezogene Kundendaten nach Wahl des Kunden zurück oder löscht sie und vorhandene Kopien, sofern keine gesetzliche Aufbewahrungspflicht besteht. Der Kunde teilt seine Wahl vor Beendigung oder binnen 30 Tagen danach mit. Ohne Wahl löscht Phaseo die Daten.",
-					"Phaseo löscht personenbezogene Kundendaten ohne unangemessene Verzögerung und spätestens 30 Tage nach der maßgeblichen Weisung oder dem Beendigungsdatum aus aktiven Systemen. Der Self-Service-Ablauf entfernt das Auth-Konto und aktive Datenbankeinträge, löscht verknüpfte Stripe-Kundenprofile und reiht private R2-Objekte sowie Gateway-KV-Einträge zur wiederholbaren planmäßigen Löschung ein. Abschlussprotokolle enthalten keine Nutzer- oder Workspace-Kennung.",
+					"Phaseo löscht personenbezogene Kundendaten ohne unangemessene Verzögerung und spätestens 30 Tage nach der maßgeblichen Weisung oder dem Beendigungsdatum aus aktiven Systemen. Der Self-Service-Ablauf entfernt das Auth-Konto und aktive Datenbankeinträge, löscht verknüpfte Stripe-Kundenprofile und reiht private R2-Objekte sowie Gateway-KV-Einträge zur wiederholbaren planmäßigen Löschung ein. Abschlussprotokolle enthalten keine Nutzer- oder Arbeitsbereichskennung.",
 					"Sicherungskopien bleiben geschützt und von der normalen Nutzung getrennt, bis sie im Sicherungszyklus gelöscht werden. Das Supabase-Produktionsprojekt hat derzeit tägliche Wiederherstellungspunkte für sieben Tage; die Wiederherstellung zu einem bestimmten Zeitpunkt ist deaktiviert. Phaseo prüft diesen Zeitraum vor Unterzeichnung und nach Änderungen des Sicherungsplans erneut.",
 					"Die Löschung durch Phaseo betrifft keine Daten eines unabhängigen Verantwortlichen oder eines vom Kunden bestimmten Empfängers. Der Kunde muss diese Stellen gesondert anweisen."
 				],
@@ -1615,7 +1615,7 @@
 					},
 					{
 						"label": "Arten personenbezogener Daten",
-						"value": "Inhalte von Prompts, Nachrichten, Dokumenten, Bildern, Audio, Video, Tools und Modellausgaben; Kennungen; Konto- und Workspace-Referenzen; Geräte-, IP-, grobe Standort-, Authentifizierungs-, Routing-, Anbieter-, Nutzungs-, Kosten-, Latenz-, Fehler-, Sicherheits- und Supportmetadaten."
+						"value": "Inhalte von Prompts, Nachrichten, Dokumenten, Bildern, Audio, Video, Tools und Modellausgaben; Kennungen; Konto- und Arbeitsbereichsreferenzen; Geräte-, IP-, grobe Standort-, Authentifizierungs-, Routing-, Anbieter-, Nutzungs-, Kosten-, Latenz-, Fehler-, Sicherheits- und Supportmetadaten."
 					},
 					{
 						"label": "Sensible Daten",
@@ -1634,7 +1634,7 @@
 					"HTTPS für die öffentliche Bereitstellung des Dienstes und Verbindungen von Phaseo zu KI-Anbietern.",
 					"AES-256-GCM-Verschlüsselung vor der Speicherung von Zugangsdaten für eigene Anbieter des Kunden. Unterstützte Webhook- und Benachrichtigungsgeheimnisse werden ebenfalls verschlüsselt gespeichert.",
 					"Einweg-Ableitung mit Schlüssel oder Passwort für API-, Verwaltungs- und OAuth-Geheimnisse.",
-					"Workspace-Rollen, Datenbankzugriffsrichtlinien, beschränkte API- und OAuth-Berechtigungen, Einwilligungsdialoge und Widerrufskontrollen.",
+					"Arbeitsbereichsrollen, Datenbankzugriffsrichtlinien, beschränkte API- und OAuth-Berechtigungen, Einwilligungsdialoge und Widerrufskontrollen.",
 					"Ratenbegrenzungen für sensible Authentifizierungs- und Echtzeit-Routen sowie strukturierte Prüfung an Anfrage- und Konfigurationsgrenzen.",
 					"Protokolle verwalteter Infrastruktur, Anfragemetadaten, Anbietersignale zum Systemzustand und öffentliche Vorfallstatusseite.",
 					"Versionsverwaltung, Abhängigkeits-Lockdateien, automatisches Linting, Typprüfung, gezielte Tests und vertrauliche Meldung von Schwachstellen."
@@ -1831,7 +1831,7 @@
 				"region-privacy-routing": "Ja, sofern passende Anbieterangebote verfügbar sind. Anfragen können erforderliche Ausführungs- und Datenregionen oder Zero-Data-Retention-Unterstützung festlegen. Phaseo gibt einen Fehler zurück, statt unbemerkt eine Route zu verwenden, die diese Anforderungen nicht erfüllt.",
 				"model-pricing-changes": "Phaseo verfolgt Modelllebenszyklen und Anbieter-Verfügbarkeit im Katalog. Bei der Bearbeitung gilt der aktuelle Katalogpreis. Für kontrollierte Migrationen zwischen Modellversionen nutze exakte Modell-IDs, Verfügbarkeitsdaten und Fallback-Voreinstellungen.",
 				"openai-anthropic-migration": "Ja. Phaseo bietet OpenAI-kompatible Chat Completions und Responses APIs, eine Anthropic-kompatible Messages API, SDK-Kompatibilität und Migrationsleitfäden. Bei den meisten Integrationen werden zuerst Basis-URL, API-Schlüssel und Modell-ID geändert.",
-				"tools-structured-output": "Tool-Aufrufe, Schemas für strukturierte Ausgaben, Server-Tools und optionale Antwortkorrektur sind verfügbar, wenn das gewählte Modell und der Endpunkt sie unterstützen. Modelldaten zu Funktionen findest du im Katalog und in der Data API.",
+				"tools-structured-output": "Tool-Aufrufe, Schemas für strukturierte Ausgaben, Server-Tools und optionale Antwortreparatur sind verfügbar, wenn das gewählte Modell und der Endpunkt sie unterstützen. Modelldaten zu Funktionen findest du im Katalog und in der Data API.",
 				"multimodal-endpoints": "Phaseo unterstützt Text, Bilder, Video, Audio, Sprache, Transkription, Musik, Embeddings, Moderation, Reranking, OCR und Echtzeitabläufe mit unterstützten Modellen und Anbietern. Verfügbarkeit und Abrechnungseinheiten unterscheiden sich je Modell.",
 				"training-data": "Nein. Phaseo verwendet Gateway-Prompts oder -Antworten nicht, um eigene Modelle zu trainieren. Anfragen werden an den ausführenden Anbieter gesendet; dessen Daten- und Trainingsrichtlinien gelten weiter, sofern deine Routing-Anforderungen den Anbieter nicht ausschließen.",
 				"request-logging": "Phaseo speichert Betriebs- und Abrechnungsmetadaten wie Modell, Anbieter, Tokenanzahl, Latenz und Fehler. Rohe Prompts und Antworten werden standardmäßig nicht dauerhaft gespeichert. Wenn I/O-Protokollierung im Arbeitsbereich aktiviert ist, richtet sich die Aufbewahrung nach den dortigen Datenschutz- und Speicherfristeinstellungen.",
@@ -1878,8 +1878,8 @@
 				"preferred-provider-selection": "Bevorzugten Anbieter auswählen",
 				"routing-presets-fallbacks-and-service-tiers": "Routing-Voreinstellungen, Fallbacks und Service-Tiers",
 				"routing-is-limited-to-supported-free-model-routes": "Routing ist auf unterstützte kostenlose Modellrouten beschränkt.",
-				"response-healing": "Antwortkorrektur",
-				"repairs-supported-structured-responses": "Korrigiert unterstützte strukturierte Antworten.",
+				"response-healing": "Antwortreparatur",
+				"repairs-supported-structured-responses": "Repariert unterstützte strukturierte Antworten.",
 				"guardrails": "Schutzmechanismen",
 				"any-underlying-model-usage-is-billed-normally": "Die Nutzung eines zugrunde liegenden Modells wird normal abgerechnet.",
 				"asynchronous-jobs": "Asynchrone Jobs",
@@ -2003,7 +2003,7 @@
 				"project-apis": "Projekt-APIs",
 				"provider-dependent": "Anbieterabhängig",
 				"provider-performance-data": "Leistungsdaten des Anbieters",
-				"public-guardrails-include-budgets-allowlists-zdr-prompt-injection-and-sensitive-data-policies": "Öffentliche Guardrails umfassen Budgets, Zulassungslisten, ZDR, Prompt-Injection-Schutz und Richtlinien für sensible Daten.",
+				"public-guardrails-include-budgets-allowlists-zdr-prompt-injection-and-sensitive-data-policies": "Öffentliche Leitplanken umfassen Budgets, Zulassungslisten, ZDR, Prompt-Injection-Schutz und Richtlinien für sensible Daten.",
 				"repairs-malformed-structured-json-on-supported-non-streaming-requests": "Repariert fehlerhaftes strukturiertes JSON in unterstützten Anfragen ohne Streaming.",
 				"speech-and-transcription-are-publicly-documented": "Sprachgenerierung und Transkription sind öffentlich dokumentiert.",
 				"speech-generation-is-publicly-documented": "Sprachgenerierung ist öffentlich dokumentiert.",
@@ -2034,9 +2034,9 @@
 			"byokServiceFee": "{freeRequests, number} Anfragen pro Monat enthalten, danach {serviceFee, number}% der gleichwertigen Anbieterkosten"
 		},
 		"paygHeadlinePreview": "Standardmäßig nutzungsabhängig zahlen.",
-		"paygBodyPreview": "Kaufe Guthaben nach Bedarf und zahle für deine Nutzung. Enterprise-Funktionen für Identität, Governance und bevorzugten Support sind für berechtigte Workspaces als Vorschau verfügbar. Für Kostenschätzungen pro Modell nutze den",
+		"paygBodyPreview": "Kaufe Guthaben nach Bedarf und zahle für deine Nutzung. Enterprise-Funktionen für Identität, Governance und bevorzugten Support sind für berechtigte Arbeitsbereiche als Vorschau verfügbar. Für Kostenschätzungen pro Modell nutze den",
 		"enterprisePreview": "Enterprise-Vorschau",
-		"enterprisePreviewBody": "Identität, Governance und bevorzugter Support werden für berechtigte Workspaces vorbereitet.",
+		"enterprisePreviewBody": "Identität, Governance und bevorzugter Support werden für berechtigte Arbeitsbereiche vorbereitet.",
 		"pricesPublicPreview": "Öffentliche Preise",
 		"pricesPublicPreviewBody": "Vergleiche Modellnutzungspreise im Katalog und Rechner."
 	},
@@ -2329,7 +2329,7 @@
 			],
 			"cookieControl": "Du kannst Cookies in den Browsereinstellungen verwalten. Wenn du bestimmte Arten blockierst, kann das deine Nutzung beeinträchtigen oder Funktionen verhindern.",
 			"analyticsIntro": "Wir können Analyse- und Fehlerverfolgungstools von Drittanbietern wie Google Analytics, PostHog oder vergleichbare Dienste einsetzen, um zu verstehen, wie Phaseo genutzt wird und wo wir das Produkt verbessern können.",
-			"analyticsDetails": "Diese Tools erfassen beispielsweise besuchte Seiten, ausgeführte Aktionen, Geräte- und Browserdaten sowie einen ungefähren Standort wie das Land. Wir konfigurieren sie so, dass keine Rohprompts, Outputs oder anderen besonders sensiblen Inhalte gespeichert werden, die über Gateway gesendet werden. Wenn du angemeldet bist und Analyse-Cookies akzeptiert hast, verknüpfen wir diese Ereignisse, Sitzungsaufzeichnungen und Umfrageantworten mit den IDs deines Phaseo-Kontos und Workspaces, aber nicht mit deinem Namen oder deiner E-Mail-Adresse. Sitzungsaufzeichnungen maskieren Formulareingaben und blenden API-Schlüssel und andere auf dem Bildschirm angezeigte Geheimnisse aus.",
+			"analyticsDetails": "Diese Tools erfassen beispielsweise besuchte Seiten, ausgeführte Aktionen, Geräte- und Browserdaten sowie einen ungefähren Standort wie das Land. Wir konfigurieren sie so, dass keine Rohprompts, Outputs oder anderen besonders sensiblen Inhalte gespeichert werden, die über Gateway gesendet werden. Wenn du angemeldet bist und Analyse-Cookies akzeptiert hast, verknüpfen wir diese Ereignisse, Sitzungsaufzeichnungen und Umfrageantworten mit den IDs deines Phaseo-Kontos und Arbeitsbereichs, aber nicht mit deinem Namen oder deiner E-Mail-Adresse. Sitzungsaufzeichnungen maskieren Formulareingaben und blenden API-Schlüssel und andere auf dem Bildschirm angezeigte Geheimnisse aus.",
 			"legalBasesIntro": "Wir verwenden personenbezogene Daten für die folgenden Zwecke und auf Grundlage der folgenden Rechtsgrundlagen (für Nutzerinnen und Nutzer im Vereinigten Königreich und in der EU):",
 			"legalBasesItems": [
 				{
@@ -2650,7 +2650,7 @@
 		"copy018": "Einheitliche Antwortschemas.",
 		"copy019": "Einheitliche API",
 		"copy020": "Zuverlässigkeit durch Design.",
-		"copy021": "Zustandsabhängiges Routing, automatische Ausfallsicherung und Schutzregeln sichern den Produktionsverkehr, wenn ein Anbieter beeinträchtigt ist.",
+		"copy021": "Zustandsabhängiges Routing, automatische Ausfallsicherung und Leitplanken sichern den Produktionsverkehr, wenn ein Anbieter beeinträchtigt ist.",
 		"copy022": "Zustandsüberwachung in Echtzeit",
 		"copy023": "Automatisches Failover-Routing",
 		"copy024": "Circuit-Breaker-Muster",

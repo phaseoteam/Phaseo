@@ -1034,7 +1034,7 @@
 					},
 					{
 						"title": "Contribution de données",
-						"description": "Une acceptation explicite peut enregistrer les prompts et réponses réussis, hors BYOK, dans un Cloudflare R2 privé pendant 30 jours au maximum. Phaseo applique une rédaction au mieux, mais les clients ne doivent pas la considérer comme une garantie. Un échantillon configuré est envoyé à OpenAI, avec le stockage API désactivé, pour classifier les tâches de manière asynchrone."
+						"description": "Une acceptation explicite peut enregistrer les prompts et réponses réussis, hors BYOK, dans un Cloudflare R2 privé pendant 30 jours au maximum. Phaseo applique un masquage au mieux, mais les clients ne doivent pas le considérer comme une garantie. Un échantillon configuré est envoyé à OpenAI, avec le stockage API désactivé, pour classifier les tâches de manière asynchrone."
 					},
 					{
 						"title": "Exports d’observabilité et notifications",
@@ -2281,7 +2281,7 @@
 			"gatewayStorageItems": [
 				"Nous ne stockons pas durablement le texte brut des prompts ni le texte intégral des Outputs des modèles dans notre base de données principale ou nos outils d’analyse.",
 				"Les Outputs textuels éligibles qui ne sont pas diffusés en streaming peuvent être conservés dans un cache de réponses propre à l’espace de travail pendant cinq minutes par défaut. Un preset configuré peut fixer une durée comprise entre 30 secondes et 24 heures. La requête contribue à une empreinte unidirectionnelle de clé de cache ; l’enregistrement conserve l’Output et les métadonnées de réponse, pas le corps brut de la requête.",
-				"Si vous activez la journalisation privée des entrées-sorties, nous pouvons conserver les Inputs, les Outputs et les charges utiles facultatives du fournisseur pendant 90, 180 ou 365 jours. Si vous choisissez de contribuer des données, nous pouvons appliquer une rédaction raisonnable et conserver les Inputs et Outputs éligibles pendant 30 jours au maximum. Ces fonctions sont distinctes de la conservation par le fournisseur.",
+				"Si vous activez la journalisation privée des entrées-sorties, nous pouvons conserver les Inputs, les Outputs et les charges utiles facultatives du fournisseur pendant 90, 180 ou 365 jours. Si vous choisissez de contribuer des données, nous pouvons appliquer un masquage raisonnable et conserver les Inputs et Outputs éligibles pendant 30 jours au maximum. Ces fonctions sont distinctes de la conservation par le fournisseur.",
 				"Nous envoyons le contenu nécessaire de la requête au fournisseur tiers concerné afin qu’il génère un Output. Ces fournisseurs peuvent enregistrer ou stocker les données selon leurs propres politiques."
 			],
 			"sensitiveDataWarning": "Puisque vous contrôlez ce que vous envoyez, évitez d’inclure des données personnelles sensibles dans les prompts ou les Outputs, sauf si cela est strictement nécessaire et si les pratiques de confidentialité des fournisseurs concernés vous conviennent.",

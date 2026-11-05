@@ -53,8 +53,8 @@
 	"spendReports": {
 		"metaTitle": "E-Mails mit Ausgabenberichten",
 		"title": "Ausgabenberichte per E-Mail für {workspace}",
-		"subscribedBody": "Du erhältst den Ausgabenbericht dieses Workspace per E-Mail. Die Abmeldung stoppt nur diese Berichte: Berichte anderer Workspaces, Warnungen sowie Konto- und Abrechnungs-E-Mails kommen weiterhin.",
-		"unsubscribedBody": "Du erhältst den Ausgabenbericht dieses Workspace nicht mehr per E-Mail. Inhaber und Admins sehen die Ausgaben weiterhin auf der Nutzungsseite.",
+		"subscribedBody": "Du erhältst den Ausgabenbericht dieses Arbeitsbereichs per E-Mail. Die Abmeldung stoppt nur diese Berichte: Berichte anderer Arbeitsbereiche, Warnungen sowie Konto- und Abrechnungs-E-Mails kommen weiterhin.",
+		"unsubscribedBody": "Du erhältst den Ausgabenbericht dieses Arbeitsbereichs nicht mehr per E-Mail. Inhaber und Admins sehen die Ausgaben weiterhin auf der Nutzungsseite.",
 		"unsubscribe": "Abmelden",
 		"unsubscribing": "Wird abgemeldet…",
 		"subscribe": "Wieder anmelden",
