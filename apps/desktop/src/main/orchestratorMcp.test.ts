@@ -56,7 +56,7 @@ describe("orchestration MCP transport", () => {
 			await client.connect(new StreamableHTTPClientTransport(new URL(session.connection.url), { requestInit: { headers: session.connection.headers } }));
 			const tools = (await client.listTools()).tools;
 			expect(tools.find(tool => tool.name === "launch_thread")?.inputSchema).toMatchObject({ required: ["requestId", "title", "prompt"], properties: { workspace: { properties: { strategy: { enum: ["same", "none", "project", "worktree", "existing_worktree"] } } } } });
-			expect(tools.find(tool => tool.name === "schedule_task")?.inputSchema).toMatchObject({ properties: { schedule: { properties: { type: { enum: ["interval", "daily"] } } } } });
+			expect(tools.find(tool => tool.name === "schedule_task")?.inputSchema).toMatchObject({ properties: { schedule: { properties: { type: { enum: ["interval", "daily", "once"] }, at: { format: "date-time" } } } } });
 			expect(await client.callTool({ name: "organize_thread", arguments: { id: "owned", action: "pin" } })).not.toMatchObject({ isError: true });
 			expect(approve).not.toHaveBeenCalled();
 			expect(await client.callTool({ name: "organize_thread", arguments: { id: "owned", action: "archive" } })).toMatchObject({ isError: true });

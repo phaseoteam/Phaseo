@@ -20,15 +20,27 @@ const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const statusText: Record<Mission["lastStatus"], string> = { never: "Not run yet", running: "Running", completed: "Last run completed", failed: "Last run failed", interrupted: "Last run interrupted", limited: "Last run hit a usage limit" };
 
 
-type Draft = { id?: string; title: string; prompt: string; templateTaskId: string; repeat: MissionSchedule["type"]; every: number; unit: "minutes" | "hours"; time: string; weekdays: number[] };
-const emptyDraft: Draft = { title: "", prompt: "", templateTaskId: "", repeat: "daily", every: 1, unit: "hours", time: "09:00", weekdays: [] };
+/** date is local YYYY-MM-DD, for a one-time task. */
+type Draft = { id?: string; title: string; prompt: string; templateTaskId: string; repeat: MissionSchedule["type"]; every: number; unit: "minutes" | "hours"; time: string; date: string; weekdays: number[] };
+const pad = (value: number) => String(value).padStart(2, "0");
+const localDate = (date: Date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+const tomorrow = () => { const date = new Date(); date.setDate(date.getDate() + 1); return localDate(date); };
+const newDraft = (): Draft => ({ title: "", prompt: "", templateTaskId: "", repeat: "daily", every: 1, unit: "hours", time: "09:00", date: tomorrow(), weekdays: [] });
 
 function draftFrom(task: Mission): Draft {
 	const { schedule } = task;
 	const hours = schedule.type === "interval" && schedule.minutes % 60 === 0;
+	const at = schedule.type === "once" ? new Date(schedule.at) : undefined;
 	return { id: task.id, title: task.title, prompt: task.prompt, templateTaskId: task.templateTaskId, repeat: schedule.type,
 		every: schedule.type === "interval" ? (hours ? schedule.minutes / 60 : schedule.minutes) : 1, unit: schedule.type === "interval" && !hours ? "minutes" : "hours",
-		time: schedule.type === "daily" ? schedule.time : "09:00", weekdays: schedule.type === "daily" ? schedule.weekdays : [] };
+		time: schedule.type === "daily" ? schedule.time : at ? `${pad(at.getHours())}:${pad(at.getMinutes())}` : "09:00", date: at ? localDate(at) : tomorrow(), weekdays: schedule.type === "daily" ? schedule.weekdays : [] };
+}
+
+function scheduleFrom(draft: Draft): MissionSchedule {
+	if (draft.repeat === "interval") return { type: "interval", minutes: draft.unit === "hours" ? draft.every * 60 : draft.every };
+	// A date and time without a zone is read as local time.
+	if (draft.repeat === "once") return { type: "once", at: new Date(`${draft.date}T${draft.time}`).toISOString() };
+	return { type: "daily", time: draft.time, weekdays: draft.weekdays };
 }
 
 function ScheduledTaskForm({ draft, setDraft, busy, onSubmit, onCancel }: { draft: Draft; setDraft: (draft: Draft) => void; busy: boolean; onSubmit: () => void; onCancel: () => void }) {
@@ -43,7 +55,8 @@ function ScheduledTaskForm({ draft, setDraft, busy, onSubmit, onCancel }: { draf
 			<Select label="Run like" value={draft.templateTaskId} onValueChange={templateTaskId => set({ templateTaskId })} options={[{ value: "", label: "Choose a chat" }, ...templates.map(task => ({ value: task.id, label: [task.title, modelName(task), project(task.projectId)].filter(Boolean).join(" · ") }))]} />
 		</SettingsField>
 		<div className="flex flex-wrap items-end gap-3">
-			<SettingsField label="Repeat"><Select label="Repeat" value={draft.repeat} onValueChange={repeat => set({ repeat: repeat as Draft["repeat"] })} options={[{ value: "daily", label: "At a time of day" }, { value: "interval", label: "Every few minutes or hours" }]} /></SettingsField>
+			<SettingsField label="Repeat"><Select label="Repeat" value={draft.repeat} onValueChange={repeat => set({ repeat: repeat as Draft["repeat"] })} options={[{ value: "daily", label: "At a time of day" }, { value: "interval", label: "Every few minutes or hours" }, { value: "once", label: "Once, on a date" }]} /></SettingsField>
+			{draft.repeat === "once" && <SettingsField label="Date"><input aria-label="Date" type="date" required min={localDate(new Date())} value={draft.date} onChange={event => set({ date: event.target.value })} className={cn(settingsInput, "h-9 w-40")} /></SettingsField>}
 			{draft.repeat === "interval"
 				? <>
 					<SettingsField label="Every"><input aria-label="Every" type="number" required min={1} max={draft.unit === "hours" ? 168 : 10080} value={draft.every} onChange={event => set({ every: Number(event.target.value) })} className={cn(settingsInput, "h-9 w-20")} /></SettingsField>
@@ -72,7 +85,9 @@ function ScheduledTaskRow({ task, busy, run, onEdit }: { task: Mission; busy: bo
 	const runs = overview.tasks.filter(value => value.missionId === task.id);
 	const running = task.lastStatus === "running";
 	const thread = task.threadTaskId ? overview.tasks.find(value => value.id === task.threadTaskId) : undefined;
-	const next = task.enabled && task.nextRunAt ? `Next ${formatDateParts(task.nextRunAt, { weekday: "short", hour: "2-digit", minute: "2-digit" })}` : task.enabled ? undefined : "Paused";
+	// A one-time task whose moment has passed has nothing left to run or turn on; edit it to choose a new time.
+	const spent = task.schedule.type === "once" && Date.parse(task.schedule.at) <= Date.now();
+	const next = task.enabled && task.nextRunAt ? `Next ${formatDateParts(task.nextRunAt, { weekday: "short", hour: "2-digit", minute: "2-digit" })}` : task.enabled || spent ? undefined : "Paused";
 	return <article data-scheduled-task={task.id} className="flex flex-col gap-2 px-4 py-3.5">
 		<div className="flex items-center gap-4">
 			<span className="grid size-8 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground"><CalendarClock className="size-4" /></span>
@@ -82,7 +97,7 @@ function ScheduledTaskRow({ task, busy, run, onEdit }: { task: Mission; busy: bo
 				{task.threadTaskId && <p className="mt-0.5 truncate text-xs text-muted-foreground">Posts in {thread ? <button type="button" className="hover:text-foreground hover:underline" onClick={() => select(thread.id)}>{thread.title}</button> : "a chat that no longer exists"}</p>}
 			</div>
 			<SettingsButton variant="ghost" disabled={busy || running} onClick={() => run({ type: "run", id: task.id })}><Play className="size-3.5" />Run now</SettingsButton>
-			<Switch aria-label={task.enabled ? `Pause ${task.title}` : `Turn on ${task.title}`} checked={task.enabled} disabled={busy} onCheckedChange={enabled => run({ type: "enable", id: task.id, enabled })} />
+			<Switch aria-label={task.enabled ? `Pause ${task.title}` : `Turn on ${task.title}`} checked={task.enabled} disabled={busy || (spent && !task.enabled)} onCheckedChange={enabled => run({ type: "enable", id: task.id, enabled })} />
 			<DropdownMenu>
 				<DropdownMenuTrigger render={<button type="button" aria-label={`Actions for ${task.title}`} className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground" />}><Ellipsis className="size-4" /></DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className="w-44">
@@ -118,21 +133,19 @@ export function ScheduledTasks() {
 	}
 	function save() {
 		if (!draft) return;
-		const minutes = draft.unit === "hours" ? draft.every * 60 : draft.every;
-		const schedule: MissionSchedule = draft.repeat === "interval" ? { type: "interval", minutes } : { type: "daily", time: draft.time, weekdays: draft.weekdays };
-		void run({ type: "save", ...(draft.id ? { id: draft.id } : {}), title: draft.title, prompt: draft.prompt, templateTaskId: draft.templateTaskId, schedule }).then(saved => { if (saved) setDraft(undefined); });
+		void run({ type: "save", ...(draft.id ? { id: draft.id } : {}), title: draft.title, prompt: draft.prompt, templateTaskId: draft.templateTaskId, schedule: scheduleFrom(draft) }).then(saved => { if (saved) setDraft(undefined); });
 	}
 	const form = draft && <ScheduledTaskForm draft={draft} setDraft={setDraft} busy={busy} onSubmit={save} onCancel={() => setDraft(undefined)} />;
 	return <ScrollArea className="h-full">
 		<SettingsPageLayout title="Scheduled tasks" description="Chats that start themselves on a schedule while Phaseo is open. Missed runs are skipped."
-			actions={!draft && <SettingsButton variant="primary" onClick={() => setDraft(emptyDraft)}><Plus className="size-3.5" />New scheduled task</SettingsButton>}>
+			actions={!draft && <SettingsButton variant="primary" onClick={() => setDraft(newDraft())}><Plus className="size-3.5" />New scheduled task</SettingsButton>}>
 			{error && <SettingsNote tone="error" role="alert">{error}</SettingsNote>}
 			{draft && !draft.id && <SettingsSection title="New scheduled task">{form}</SettingsSection>}
 			{(tasks.length > 0 || !draft) && <SettingsSection title={tasks.length ? "Your scheduled tasks" : "No scheduled tasks yet"} label="Your scheduled tasks" description={tasks.length ? undefined : "Agents can also schedule tasks for you from a chat."}>
 				{tasks.length ? tasks.map(task => draft?.id === task.id
 					? <div key={task.id}><h3 className="px-4 pt-3.5 text-[13px] font-semibold">Edit {task.title}</h3>{form}</div>
 					: <ScheduledTaskRow key={task.id} task={task} busy={busy} run={value => void run(value)} onEdit={() => setDraft(draftFrom(task))} />)
-					: <button type="button" onClick={() => setDraft(emptyDraft)} className="flex items-center gap-2 px-4 py-3.5 text-left text-[13px] text-muted-foreground hover:bg-muted/40 hover:text-foreground"><Plus className="size-4" />Schedule a chat to run every morning, every hour, or on chosen days</button>}
+					: <button type="button" onClick={() => setDraft(newDraft())} className="flex items-center gap-2 px-4 py-3.5 text-left text-[13px] text-muted-foreground hover:bg-muted/40 hover:text-foreground"><Plus className="size-4" />Schedule a chat to run every morning, every hour, or on chosen days</button>}
 			</SettingsSection>}
 		</SettingsPageLayout>
 	</ScrollArea>;
