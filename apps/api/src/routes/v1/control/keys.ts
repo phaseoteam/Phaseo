@@ -1156,7 +1156,9 @@ async function handleInvalidateKey(req: Request) {
 		}
 
 		await invalidateKeyCache({ id: data.id, kid: data.kid ?? null });
-		await invalidatePrivateRoutes(data.workspace_id);
+		// Key-level: drop this isolate's copy only. Private-model edits bump the workspace version through
+		// the trigger on workspace_private_models, and a bump here would clear every cached context.
+		await invalidatePrivateRoutes(data.workspace_id, { bumpVersion: false });
 		if (auth.ok) await auditApiKey(auth.value, "api_key.cache_invalidated", { id: data.id, name: null, prefix: null });
 
 		return json(
