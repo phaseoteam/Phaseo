@@ -1,12 +1,10 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import { useMemo, useState, useTransition } from "react";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { toast } from "sonner";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { BarChart3, Database, Percent, Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +28,7 @@ import {
 	deleteDataContributionClassifier,
 	setDataContributionClassifierEnabled,
 	updateDataContributionConsent,
-} from "@/app/(dashboard)/settings/privacy/actions";
+} from "@/features/settings/privacy/actions";
 
 const DEFAULT_CATEGORIES = JSON.stringify({
 	product: ["support", "sales", "onboarding"],
@@ -66,7 +64,7 @@ export function DataContributionSettingsCard({ initial }: { initial: DataContrib
 	function changeConsent(next: boolean) {
 		startTransition(async () => {
 			try {
-				await updateDataContributionConsent(next);
+				await updateDataContributionConsent({ data: next });
 				setEnabled(next);
 				setConfirmOpen(false);
 				 toast.success(next ? s("Data contribution enabled") : s("Data contribution disabled"));
@@ -81,7 +79,7 @@ export function DataContributionSettingsCard({ initial }: { initial: DataContrib
 		startTransition(async () => {
 			try {
 				const parsed = JSON.parse(categories) as Record<string, string[]>;
-				await createDataContributionClassifier({ name, instructions, categories: parsed, serviceTier: "flex" });
+				await createDataContributionClassifier({ data: { name, instructions, categories: parsed, serviceTier: "flex" } });
 				setCreateOpen(false);
 				setName("");
 				 toast.success(s("Classifier created"));
@@ -156,8 +154,8 @@ export function DataContributionSettingsCard({ initial }: { initial: DataContrib
 							<div key={classifier.id} className="flex items-start justify-between gap-4 p-3">
 								<div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="text-sm font-medium">{classifier.name}</span><Badge variant="outline">{classifier.kind === "phaseo_task" ? t("contributionCopy.starter") : t("contributionCopy.custom")}</Badge><Badge variant="secondary">{classifier.service_tier}</Badge></div><p className="mt-1 text-xs text-muted-foreground">{t("contributionCopy.labelCount" as never, { count: Object.values(classifier.categories).flat().length } as never)} · {classifier.model}</p></div>
 								<div className="flex items-center gap-2">
-									<Switch checked={classifier.enabled} disabled={pending || classifier.kind === "phaseo_task"} onCheckedChange={(next) => startTransition(async () => { await setDataContributionClassifierEnabled(classifier.id, next); router.refresh(); })} />
-									{classifier.kind === "custom" ? <Button size="icon" variant="ghost" disabled={pending} aria-label={t("identity.deleteClassifier" as never, { name: classifier.name } as never)} onClick={() => startTransition(async () => { await deleteDataContributionClassifier(classifier.id); toast.success(s("Classifier deleted")); router.refresh(); })}><Trash2 className="size-4" /></Button> : null}
+									<Switch checked={classifier.enabled} disabled={pending || classifier.kind === "phaseo_task"} onCheckedChange={(next) => startTransition(async () => { await setDataContributionClassifierEnabled({ data: { id: classifier.id, enabled: next } }); router.refresh(); })} />
+									{classifier.kind === "custom" ? <Button size="icon" variant="ghost" disabled={pending} aria-label={t("identity.deleteClassifier" as never, { name: classifier.name } as never)} onClick={() => startTransition(async () => { await deleteDataContributionClassifier({ data: classifier.id }); toast.success(s("Classifier deleted")); router.refresh(); })}><Trash2 className="size-4" /></Button> : null}
 								</div>
 							</div>
 						))}

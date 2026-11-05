@@ -1,8 +1,6 @@
-"use client";
-
 import { Maximize2 } from "lucide-react";
 import { useRef, type ReactNode } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import ModelChartShareButton from "@/components/(data)/model/share/ModelChartShareButton";
 import type { ChartShareRenderSize } from "@/components/share/ChartShareButton";
 import type {

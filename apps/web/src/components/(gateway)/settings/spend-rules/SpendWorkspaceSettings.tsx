@@ -1,12 +1,10 @@
-"use client";
-
 import { useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
-import { setBillingTimeZone, setDepartmentSpendAttribution, setSpendReportSettings } from "@/app/(dashboard)/settings/credits/actions";
+import { setBillingTimeZone, setDepartmentSpendAttribution, setSpendReportSettings } from "@/features/settings/credits/actions";
 import type { SpendReportCadence } from "@/lib/fetchers/internal/settingsTypes";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { OptionTiles } from "./spendAlertsUi";
@@ -44,7 +42,7 @@ export function SpendWorkspaceSettings({ billingTimeZone, departmentSpendAttribu
 		if (next === zone) return;
 		const previous = zone;
 		setZone(next);
-		toast.promise(write(setBillingTimeZone(next)).catch((error) => { setZone(previous); throw error; }), {
+		toast.promise(write(setBillingTimeZone({ data: next })).catch((error) => { setZone(previous); throw error; }), {
 			loading: t("saving"),
 			success: t("saved"),
 			error: t("saveFailed"),
@@ -55,7 +53,7 @@ export function SpendWorkspaceSettings({ billingTimeZone, departmentSpendAttribu
 		if (next === attribution) return;
 		const previous = attribution;
 		setAttribution(next);
-		toast.promise(write(setDepartmentSpendAttribution(next)).catch((error) => { setAttribution(previous); throw error; }), {
+		toast.promise(write(setDepartmentSpendAttribution({ data: next })).catch((error) => { setAttribution(previous); throw error; }), {
 			loading: t("saving"),
 			success: t("saved"),
 			error: t("saveFailed"),
@@ -66,7 +64,7 @@ export function SpendWorkspaceSettings({ billingTimeZone, departmentSpendAttribu
 		if (next === cadence) return;
 		const previous = cadence;
 		setCadence(next);
-		toast.promise(write(setSpendReportSettings({ cadence: next })).catch((error) => { setCadence(previous); throw error; }), {
+		toast.promise(write(setSpendReportSettings({ data: { cadence: next } })).catch((error) => { setCadence(previous); throw error; }), {
 			loading: t("saving"),
 			success: t("saved"),
 			error: t("saveFailed"),
@@ -76,7 +74,7 @@ export function SpendWorkspaceSettings({ billingTimeZone, departmentSpendAttribu
 	function saveIncludeAdmins(next: boolean) {
 		if (next === includeAdmins) return;
 		setIncludeAdmins(next);
-		toast.promise(write(setSpendReportSettings({ includeAdmins: next })).catch((error) => { setIncludeAdmins(!next); throw error; }), {
+		toast.promise(write(setSpendReportSettings({ data: { includeAdmins: next } })).catch((error) => { setIncludeAdmins(!next); throw error; }), {
 			loading: t("saving"),
 			success: t("saved"),
 			error: t("saveFailed"),

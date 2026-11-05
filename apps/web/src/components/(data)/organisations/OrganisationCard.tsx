@@ -1,12 +1,12 @@
 import { Card, CardContent } from "@/components/ui/card";
-import Link from "next/link";
+import Link from "@/components/link";
 import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import type { OrganisationCard as OrganisationTypeCard } from "@/lib/fetchers/organisations/getAllOrganisations";
-import Image from "next/image";
+import Image from "@/components/image";
 import { Logo } from "@/components/Logo";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { formatLocation } from "@/lib/locations";
 
 export default function OrganisationCard({

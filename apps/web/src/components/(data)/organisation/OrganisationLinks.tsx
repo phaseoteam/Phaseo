@@ -1,6 +1,6 @@
-import Link from "next/link";
-import Image from "next/image";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import Image from "@/components/image";
+import { useTranslations } from "@/i18n/react";
 import { ExternalLink, Globe } from "lucide-react";
 import type { OrganisationOverview as OrganisationOverviewType } from "@/lib/fetchers/organisations/types";
 import { normalizeHttpUrl } from "@/lib/utils/urlSafety";

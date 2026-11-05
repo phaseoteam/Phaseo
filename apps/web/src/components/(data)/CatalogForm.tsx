@@ -1,11 +1,9 @@
-"use client";
-
 import { useState, type FormEvent, type ReactNode } from "react";
 import { toast } from "sonner";
 import { UnsavedChangesGuard } from "./UnsavedChangesGuard";
 import { useCatalogFormChanges } from "./useCatalogFormChanges";
 import { Link } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Loader2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 

@@ -1,8 +1,6 @@
-"use client";
-
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { ChevronRight, ExternalLink, Trash2 } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
 import {
 	AlertDialog,
@@ -19,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { deleteSlackAgentPage, loadSlackAgentPages, updateSlackAgent } from "@/app/(dashboard)/settings/slack/actions";
+import { deleteSlackAgentPage, loadSlackAgentPages, updateSlackAgent } from "@/features/settings/slack/actions";
 import { cn } from "@/lib/utils";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { Choice, Notice, SlackError, SwitchField } from "./SlackAgentFields";
@@ -82,7 +80,7 @@ export function SlackPagesSection({ settings: saved }: { settings: SlackAgentSet
 	function change(patch: Record<string, unknown>, toastText = t("pages.saved")) {
 		setSaveError(null);
 		startSaving(async () => {
-			const result = await write(updateSlackAgent(patch));
+			const result = await write(updateSlackAgent({ data: patch }));
 			if (!result.ok) {
 				setSaveError({ key: slackErrorKey(result.code, result.status), message: result.message });
 				return;
@@ -229,7 +227,7 @@ function DeletePage({ page, onDeleted }: { page: SlackAgentPage; onDeleted: (id:
 
 	function remove() {
 		startDeleting(async () => {
-			const result = await deleteSlackAgentPage(page.id);
+			const result = await deleteSlackAgentPage({ data: page.id });
 			if (!result.ok) {
 				const failure = toError(result);
 				// Already gone: the list catches up.

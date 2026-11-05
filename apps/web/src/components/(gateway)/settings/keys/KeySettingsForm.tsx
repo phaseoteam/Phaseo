@@ -1,6 +1,4 @@
-"use client";
-
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import React, { useMemo, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
@@ -9,7 +7,7 @@ import { toast } from "sonner";
 import {
 	updateApiKeyAction,
 	type KeyLimitPayload,
-} from "@/app/(dashboard)/settings/keys/actions";
+} from "@/features/settings/keys/actions";
 import { Button } from "@/components/ui/button";
 
 import {
@@ -164,7 +162,7 @@ export default function KeySettingsForm({ k }: { k: any }) {
 
 		setSaving(true);
 		try {
-			const promise = updateApiKeyAction(k.id, { ...(enabled !== isKeyEnabled(k) ? { paused: !enabled } : {}), ...(JSON.stringify(ipAllowlist) !== JSON.stringify(k.ip_allowlist ?? []) ? { ipAllowlist } : {}), ...(JSON.stringify(storageLocations) !== JSON.stringify(k.storage_locations ?? []) ? { storageLocations } : {}), limits: limitPayload });
+			const promise = updateApiKeyAction({ data: { id: k.id, updates: { ...(enabled !== isKeyEnabled(k) ? { paused: !enabled } : {}), ...(JSON.stringify(ipAllowlist) !== JSON.stringify(k.ip_allowlist ?? []) ? { ipAllowlist } : {}), ...(JSON.stringify(storageLocations) !== JSON.stringify(k.storage_locations ?? []) ? { storageLocations } : {}), limits: limitPayload } } });
 			toast.promise(promise, {
 					loading: t("strings.phraseSavingKey"),
 					success: t("strings.Key updated"),

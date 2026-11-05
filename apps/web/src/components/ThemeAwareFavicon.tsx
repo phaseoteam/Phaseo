@@ -1,7 +1,5 @@
-"use client";
-
 import { useLayoutEffect } from "react";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/theme/ThemeProvider";
 
 const FAVICON_BASE_URL = "/api/favicon";
 

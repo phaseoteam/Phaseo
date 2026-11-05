@@ -35,7 +35,7 @@ at most two actions; "Compare these" and "Open explorer" request fullscreen, whi
 the explorer also uses when launched from the sidebar or thread panel. Nothing opens
 fullscreen on its own.
 
-Colours fall back to Phaseo's neutral tokens from `apps/web/src/app/globals.css`
+Colours fall back to Phaseo's neutral tokens from `apps/web/src/styles/globals.css`
 but take the host's MCP Apps theme variables and font stack when provided. The cards
 bundle no font and show no Phaseo logo, as OpenAI's app guidelines ask; the host
 shows the app name and icon. Organisation logos load from the website's logo set

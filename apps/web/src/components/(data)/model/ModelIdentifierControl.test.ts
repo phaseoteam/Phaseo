@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { resolveModelIdentifierOptions } from "./ModelIdentifierControl";
 
 describe("model identifier options", () => {

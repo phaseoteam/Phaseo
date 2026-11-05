@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState } from "react";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import {
@@ -16,7 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
 import { AlertTriangle, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 interface RegenerateSecretDialogProps {
@@ -42,10 +40,10 @@ export default function RegenerateSecretDialog({
 
 		try {
 			const { regenerateClientSecretAction } = await import(
-				"@/app/(dashboard)/settings/oauth-apps/actions"
+				"@/features/settings/oauth-apps/actions"
 			);
 
-			const result = await write(regenerateClientSecretAction(clientId));
+			const result = await write(regenerateClientSecretAction({ data: clientId }));
 
 			if (result.error) {
 				setError(localizedSettingsError(result.error, t, "Failed to regenerate secret"));

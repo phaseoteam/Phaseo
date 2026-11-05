@@ -1,10 +1,9 @@
-"use client";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import * as React from "react";
 import { z } from "zod";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +25,7 @@ import {
 	updateTeamAction,
 	deleteTeamAction,
 	updateWorkspacePublisherHandleAction,
-} from "@/app/(dashboard)/settings/teams/actions";
+} from "@/features/settings/teams/actions";
 import WorkspaceIdentitySettings from "./WorkspaceIdentitySettings";
 import type { TeamSsoSettingsRow } from "@/lib/auth/teamSsoSettings";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
@@ -148,12 +147,12 @@ export default function TeamSettingsPanel({
 					const initialName = initial.teamName.trim();
 
 					if (!isPersonalTeam && normalizedName !== initialName) {
-						await updateTeamAction(workspaceId, normalizedName);
+						await updateTeamAction({ data: { workspaceId, name: normalizedName } });
 						void invalidateSettings();
 					}
 					const normalizedPublisherHandle = settings.publisherHandle.trim().toLowerCase();
 					if (normalizedPublisherHandle !== initial.publisherHandle.trim()) {
-						await updateWorkspacePublisherHandleAction(workspaceId, normalizedPublisherHandle);
+						await updateWorkspacePublisherHandleAction({ data: { workspaceId, handle: normalizedPublisherHandle } });
 						void invalidateSettings();
 					}
 					const normalized = { teamName: normalizedName, publisherHandle: normalizedPublisherHandle };
@@ -211,7 +210,7 @@ export default function TeamSettingsPanel({
 		}
 		setDeleting(true);
 		try {
-			await toast.promise(deleteTeamAction(workspaceId).then((result) => { void invalidateSettings(); return result; }), {
+			await toast.promise(deleteTeamAction({ data: workspaceId }).then((result) => { void invalidateSettings(); return result; }), {
 				loading: t("workspace.deletingWorkspace"),
 				success: t("workspace.workspaceDeleted"),
 				error: () => t("workspace.deleteError"),

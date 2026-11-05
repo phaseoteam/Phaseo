@@ -1,6 +1,7 @@
+import { describe, expect, it, test } from "vitest";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
-import { createTranslator } from "next-intl";
+import { createTranslator } from "@/i18n/react";
 import { buildProviderHealthChartData } from "./ModelProviderHealthChart";
 import { attemptFailureShares, attemptHeadline, formatFailureShare } from "./attemptFunnel";
 

@@ -1,0 +1,49 @@
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { serverRouteHandler } from "@/lib/testing/serverRoute";
+import { Route } from "./index";
+import { isAdminViewer } from "@/lib/auth/getViewerRole";
+import { fetchAdminModelSource } from "@/lib/fetchers/internal/fetchAdminModelSource";
+
+vi.mock("@/lib/auth/getViewerRole", () => ({ isAdminViewer: vi.fn() }));
+vi.mock("@/lib/fetchers/internal/fetchAdminModelSource", () => ({ fetchAdminModelSource: vi.fn() }));
+
+const admin = vi.mocked(isAdminViewer);
+const fetchSource = vi.mocked(fetchAdminModelSource);
+const GET = serverRouteHandler(Route, "GET");
+const context = { params: Promise.resolve({ modelId: "internal/revalidation-test" }) };
+
+describe("hidden model preview API", () => {
+	beforeEach(() => vi.clearAllMocks());
+
+	it("returns 404 without fetching data for non-admins", async () => {
+		admin.mockResolvedValue(false);
+		const response = await GET(new Request("https://phaseo.app/api/internal/model-preview/test"), context);
+		expect(response.status).toBe(404);
+		expect(fetchSource).not.toHaveBeenCalled();
+		expect(response.headers.get("cache-control")).toBe("private, no-store");
+	});
+
+	it("returns only preview fields to admins", async () => {
+		admin.mockResolvedValue(true);
+		fetchSource.mockResolvedValue({
+			requestedModelId: "internal/revalidation-test", canonicalApiId: "internal/revalidation-test", internalModelId: "internal/revalidation-test",
+			model: { model_id: "internal/revalidation-test", name: "Test model", hidden: true, secret: "never-return" },
+			providerRows: [], pricingRules: [], subscriptionPlans: [], aliases: [],
+		});
+		const response = await GET(new Request("https://phaseo.app/api/internal/model-preview/test"), context);
+		expect(response.status).toBe(200);
+		expect(await response.json()).toEqual({ modelId: "internal/revalidation-test", name: "Test model", status: null, providers: [] });
+		expect(response.headers.get("cache-control")).toBe("private, no-store");
+	});
+
+	it("does not serve visible models through the admin preview endpoint", async () => {
+		admin.mockResolvedValue(true);
+		fetchSource.mockResolvedValue({
+			requestedModelId: "public/model", canonicalApiId: "public/model", internalModelId: "public/model",
+			model: { model_id: "public/model", name: "Public model", hidden: false },
+			providerRows: [], pricingRules: [], subscriptionPlans: [], aliases: [],
+		});
+		const response = await GET(new Request("https://phaseo.app/api/internal/model-preview/test"), context);
+		expect(response.status).toBe(404);
+	});
+});

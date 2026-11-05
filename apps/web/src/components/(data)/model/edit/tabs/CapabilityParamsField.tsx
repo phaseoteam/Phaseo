@@ -1,7 +1,5 @@
-"use client"
-
 import { useEffect, useMemo, useState } from "react"
-import { useTranslations } from "next-intl"
+import { useTranslations } from "@/i18n/react"
 import { Textarea } from "@/components/ui/textarea"
 import {
   describeStoredParams,

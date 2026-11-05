@@ -1,5 +1,3 @@
-"use client";
-
 // Purpose: Show a preset's published versions and the labels that point at them
 // Why: Requests can pin "@slug@production"; moving the label changes what they
 //      run, so choosing an earlier version for it is the rollback
@@ -10,7 +8,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronRight, Info, Loader2, Play, Plus, Tag, X } from "lucide-react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "@/i18n/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";
@@ -33,7 +31,7 @@ import {
 	setPresetVersionLabelAction,
 	type PresetVersionSummary,
 	type PresetVersionsWithLabels,
-} from "@/app/(dashboard)/settings/presets/actions";
+} from "@/features/settings/presets/actions";
 import { cn } from "@/lib/utils";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { buildPromptTemplate, draftFromTemplate, renderPromptPreview } from "./PresetPromptTemplateEditor";
@@ -88,7 +86,7 @@ export function usePresetVersions(presetId: string | null) {
 	const reload = useCallback(async () => {
 		if (!presetId) return;
 		try {
-			setState({ status: "ready", data: await listPresetVersionsAction(presetId) });
+			setState({ status: "ready", data: await listPresetVersionsAction({ data: presetId }) });
 		} catch {
 			setState({ status: "failed" });
 		}
@@ -96,7 +94,7 @@ export function usePresetVersions(presetId: string | null) {
 	useEffect(() => {
 		if (!presetId) return;
 		let cancelled = false;
-		listPresetVersionsAction(presetId).then(
+		listPresetVersionsAction({ data: presetId }).then(
 			(data) => { if (!cancelled) setState({ status: "ready", data }); },
 			() => { if (!cancelled) setState({ status: "failed" }); },
 		);
@@ -148,7 +146,7 @@ export function PresetVersionLabels({
 	async function moveLabel(label: string, version: PresetVersionSummary) {
 		setBusy(`label:${label}`);
 		try {
-			const result = await write(setPresetVersionLabelAction(presetId, label, version.id));
+			const result = await write(setPresetVersionLabelAction({ data: { id: presetId, label, versionId: version.id } }));
 			if (!result.ok) {
 				show({ tone: "error", text: errorMessage(result.error) });
 				return false;
@@ -167,7 +165,7 @@ export function PresetVersionLabels({
 	async function removeLabel(label: string) {
 		setBusy(`remove:${label}`);
 		try {
-			const result = await write(removePresetVersionLabelAction(presetId, label));
+			const result = await write(removePresetVersionLabelAction({ data: { id: presetId, label } }));
 			if (!result.ok && result.error !== "label_not_found") {
 				show({ tone: "error", text: errorMessage(result.error) });
 				return;

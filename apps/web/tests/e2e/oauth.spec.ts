@@ -7,7 +7,7 @@
 import { test, expect, type Page } from '@playwright/test';
 
 // Test configuration
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3100';
 const TEST_USER_EMAIL = process.env.TEST_USER_EMAIL || 'oauth-e2e@example.com';
 const TEST_USER_PASSWORD = process.env.TEST_USER_PASSWORD || 'test-password-123';
 

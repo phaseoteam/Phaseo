@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import type { DeprecationWarning } from "@/lib/fetchers/usage/types";
 import {
 	DEPRECATION_NOTICE_REFRESH_MS,

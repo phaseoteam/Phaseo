@@ -8,11 +8,11 @@ import {
 	Video,
 	type LucideIcon,
 } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { type CSSProperties, type MouseEvent } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { cn } from "@/lib/utils";
 import type { APIProviderCard as APIProviderCardType } from "@/lib/fetchers/api-providers/providerDataTypes";
 import { Logo } from "@/components/Logo";

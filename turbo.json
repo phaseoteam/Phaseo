@@ -4,11 +4,11 @@
 		"dev": { "cache": false, "persistent": true },
 		"build": {
 			"dependsOn": ["^build"],
-			"outputs": [".next/**", "dist/**", "build/**", ".mint/**"]
+			"outputs": ["dist/**", "build/**", ".mint/**"]
 		},
 		"@phaseo/web#build": {
 			"dependsOn": ["^build"],
-			"outputs": [".next/**", "dist/**", "build/**", ".mint/**", "public/_i18n/**"],
+			"outputs": ["dist/**", "src/routeTree.gen.ts"],
 			"inputs": [
 				"$TURBO_DEFAULT$",
 				"apps/api/openapi.openai.yml",
@@ -20,14 +20,12 @@
 		"clean": { "cache": false }
 	},
 	"globalEnv": [
-		"NEXT_PUBLIC_WEBSITE_URL",
+		"PUBLIC_*",
+		"PHASEO_BUILD_ID",
 		"NEXT_PUBLIC_SUPABASE_URL",
 		"NEXT_PUBLIC_SUPABASE_ANON_KEY",
 		"TAWK_PROPERTY_ID",
 		"TAWK_WIDGET_ID",
-		"NEXT_PUBLIC_TAWK_PROPERTY_ID",
-		"NEXT_PUBLIC_TAWK_WIDGET_ID",
-		"NEXT_PUBLIC_STAGING_GATEWAY_BASE_URL",
 		"STAGING_GATEWAY_BASE_URL",
 		"EXPO_PUBLIC_SUPABASE_URL",
 		"EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY",

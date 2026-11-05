@@ -14,7 +14,7 @@ import type {
 	RateCounting,
 	SensitiveInfoAction,
 	SensitiveInfoRulePayload,
-} from "@/app/(dashboard)/settings/guardrails/actions";
+} from "@/features/settings/guardrails/actions";
 import { validateSensitiveInfoRulePayload } from "./sensitiveInfoPreview";
 
 // Pure state for the new-guardrail flow: start (name + what it does), configure (only the chosen

@@ -1,9 +1,7 @@
-"use client";
-
 import { MessageScroller } from "@shadcn/react/message-scroller";
 import { Link } from "@/i18n/navigation";
-import { useLocale, useTranslations } from "next-intl";
-import { useSearchParams } from "next/navigation";
+import { useLocale, useTranslations } from "@/i18n/react";
+import { useSearchParams } from "@/lib/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
 	ArrowDown,

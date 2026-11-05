@@ -1,5 +1,3 @@
-"use client"
-
 import { useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react"
 import { Link } from "@/i18n/navigation"
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery"

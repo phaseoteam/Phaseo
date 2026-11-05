@@ -1,6 +1,4 @@
-"use client";
-
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { useState, useTransition, useEffect } from "react";
 import {
 	Dialog,
@@ -24,7 +22,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { X, Plus, Trash2, Loader2 } from "lucide-react";
 import type { AuditModelData } from "@/lib/fetchers/models/table-view/getAuditModels";
-import { updateModel } from "@/app/(dashboard)/internal/audit/actions";
+import { updateModel } from "@/features/internal/audit/actions";
 import {
 	updateModelDetails,
 	updateModelLinks,
@@ -32,8 +30,8 @@ import {
 	updateModelOrganization,
 	deleteModel,
 	fetchOrganisations,
-} from "@/app/(dashboard)/internal/audit/actions-advanced";
-import { useRouter } from "next/navigation";
+} from "@/features/internal/audit/actions-advanced";
+import { useRouter } from "@/lib/navigation";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -155,7 +153,7 @@ export function UnifiedModelEditor({
 
 		setError(null);
 		startTransition(async () => {
-			const result = await updateModel({
+			const result = await updateModel({ data: {
 				modelId: model.modelId,
 				name,
 				releaseDate: releaseDate || null,
@@ -164,7 +162,7 @@ export function UnifiedModelEditor({
 				hidden,
 				inputTypes,
 				outputTypes,
-			});
+			} });
 
 			if (result.success) {
 				router.refresh();
@@ -180,10 +178,10 @@ export function UnifiedModelEditor({
 
 		setError(null);
 		startTransition(async () => {
-			const result = await updateModelDetails({
+			const result = await updateModelDetails({ data: {
 				modelId: model.modelId,
 				details,
-			});
+			} });
 
 			if (result.success) {
 				router.refresh();
@@ -199,10 +197,10 @@ export function UnifiedModelEditor({
 
 		setError(null);
 		startTransition(async () => {
-			const result = await updateModelLinks({
+			const result = await updateModelLinks({ data: {
 				modelId: model.modelId,
 				links,
-			});
+			} });
 
 			if (result.success) {
 				router.refresh();
@@ -218,10 +216,10 @@ export function UnifiedModelEditor({
 
 		setError(null);
 		startTransition(async () => {
-			const result = await updateModelAliases({
+			const result = await updateModelAliases({ data: {
 				modelId: model.modelId,
 				aliases,
-			});
+			} });
 
 			if (result.success) {
 				router.refresh();
@@ -237,10 +235,10 @@ export function UnifiedModelEditor({
 
 		setError(null);
 		startTransition(async () => {
-			const result = await updateModelOrganization({
+			const result = await updateModelOrganization({ data: {
 				modelId: model.modelId,
 				organisationId: selectedOrg || null,
-			});
+			} });
 
 			if (result.success) {
 				router.refresh();
@@ -256,7 +254,7 @@ export function UnifiedModelEditor({
 
 		setError(null);
 		startTransition(async () => {
-			const result = await deleteModel(model.modelId);
+			const result = await deleteModel({ data: model.modelId });
 
 			if (result.success) {
 				setShowDeleteConfirm(false);

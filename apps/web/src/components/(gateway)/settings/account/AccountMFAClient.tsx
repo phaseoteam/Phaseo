@@ -1,16 +1,14 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 import {
 	unenrollMFAAction,
 	cleanupUnverifiedMFAAction,
-} from "@/app/(dashboard)/settings/account/actions";
+} from "@/features/settings/account/actions";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 import { MFAEnrollmentFlow } from "./MFAEnrollmentFlow";
@@ -55,7 +53,7 @@ export default function AccountMFAClient({
 
 		setDisablingMFA(true);
 		try {
-			await toast.promise(unenrollMFAAction(mfaFactorId), {
+			await toast.promise(unenrollMFAAction({ data: mfaFactorId }), {
 				loading: s("phraseDisablingMFA"),
 				success: s("Two-factor authentication disabled"),
 				error: (error: unknown) =>

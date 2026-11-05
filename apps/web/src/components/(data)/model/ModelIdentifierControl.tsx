@@ -1,9 +1,7 @@
-"use client";
-
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Copy } from "lucide-react";
 import { useRouter } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import {
 	DropdownMenu,
 	DropdownMenuContent,

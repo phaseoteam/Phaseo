@@ -1,6 +1,4 @@
-"use client";
-
-import Link from "next/link";
+import Link from "@/components/link";
 import { ArrowUpRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNoticeStackHeight } from "@/components/layout/useNoticeStackHeight";

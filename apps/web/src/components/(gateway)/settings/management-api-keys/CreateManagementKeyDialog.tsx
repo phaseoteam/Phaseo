@@ -1,4 +1,3 @@
-"use client";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 import React, { useState } from "react";
 import {
@@ -14,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Plus, ShieldAlert } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { createManagementKeyAction } from "@/app/(dashboard)/settings/management-api-keys/actions";
+import { createManagementKeyAction } from "@/features/settings/management-api-keys/actions";
 import {
 	DropdownMenu,
 	DropdownMenuTrigger,
@@ -24,7 +23,7 @@ import {
 import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { SecretRevealActions } from "../keys/SecretRevealActions";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 const KEY_TEMPLATES = [
@@ -119,13 +118,13 @@ export default function CreateManagementKeyDialog({
 		}
 		try {
 			setLoading(true);
-			const res: any = await createManagementKeyAction({
+			const res: any = await createManagementKeyAction({ data: {
 				name,
 				creatorUserId: currentUserId as string,
 				workspaceId: selectedWorkspaceId,
 				template,
 				expiresAt,
-			});
+			} });
 			setPlainKey(res?.plaintext ?? null);
 			void invalidateSettings();
 		} catch (err: unknown) {

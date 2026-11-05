@@ -3,10 +3,9 @@
 // Why: Helps users visualize model efficiency
 // How: Uses Recharts ScatterChart with cost and latency/throughput axes
 
-"use client";
 
-import Link from "next/link";
-import { useLocale, useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
     ScatterChart,

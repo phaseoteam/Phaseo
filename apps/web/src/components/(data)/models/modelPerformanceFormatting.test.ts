@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { formatProviderDuration } from "@/components/(data)/models/modelPerformanceFormatting";
 
 describe("formatProviderDuration", () => {

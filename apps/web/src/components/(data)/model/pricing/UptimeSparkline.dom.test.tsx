@@ -1,19 +1,20 @@
-/** @jest-environment jsdom */
+/** @vitest-environment jsdom */
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import catalogue from "../../../../../messages/en-GB/catalogue.json";
 import { UptimeSparkline, type UptimeTrendPoint } from "./ProviderCard";
 
 // ESM-only and unused by the sparkline.
-jest.mock("@number-flow/react", () => ({ __esModule: true, default: () => null }));
+vi.mock("@number-flow/react", () => ({ __esModule: true, default: () => null }));
 
 let root: Root;
 let container: HTMLDivElement;
 
 beforeEach(() => {
 	// Fake timers: the hover card's open delay is advanced, never waited on.
-	jest.useFakeTimers();
+	vi.useFakeTimers();
 	Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 	container = document.createElement("div");
 	document.body.appendChild(container);
@@ -23,7 +24,7 @@ beforeEach(() => {
 afterEach(() => {
 	act(() => root.unmount());
 	container.remove();
-	jest.useRealTimers();
+	vi.useRealTimers();
 });
 
 const points: UptimeTrendPoint[] = [
@@ -34,15 +35,15 @@ const points: UptimeTrendPoint[] = [
 
 function render(interactive = true) {
 	act(() => root.render(
-		<NextIntlClientProvider timeZone="UTC" locale="en-GB" messages={{ Catalogue: catalogue }}>
+		<AppIntlProvider timeZone="UTC" locale="en-GB" messages={{ Catalogue: catalogue }}>
 			<UptimeSparkline points={points} interactive={interactive} />
-		</NextIntlClientProvider>,
+		</AppIntlProvider>,
 	));
 }
 
 /** Runs every pending timer (open delays, positioning) and the updates they schedule. */
 async function settle() {
-	await act(async () => { await jest.runAllTimersAsync(); });
+	await act(async () => { await vi.runAllTimersAsync(); });
 }
 
 const bars = () => Array.from(container.querySelectorAll("button"));
@@ -86,9 +87,9 @@ it("draws plain bars, without buttons, inside another control", () => {
 
 it("draws nothing for a provider with no traffic in the 3 days", () => {
 	act(() => root.render(
-		<NextIntlClientProvider timeZone="UTC" locale="en-GB" messages={{ Catalogue: catalogue }}>
+		<AppIntlProvider timeZone="UTC" locale="en-GB" messages={{ Catalogue: catalogue }}>
 			<UptimeSparkline points={points.map((point) => ({ ...point, value: null, noTraffic: true }))} />
-		</NextIntlClientProvider>,
+		</AppIntlProvider>,
 	));
 	expect(container.innerHTML).toBe("");
 });

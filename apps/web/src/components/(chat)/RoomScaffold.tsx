@@ -1,5 +1,3 @@
-"use client";
-
 import { type ReactNode } from "react";
 import { ChatRoomSwitcher } from "@/components/(chat)/ChatRoomSwitcher";
 import {

@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import type { SettingsGuardrailRow } from "@/lib/fetchers/internal/settingsTypes";
 import {
 	applyGuardrailAssignmentChange,

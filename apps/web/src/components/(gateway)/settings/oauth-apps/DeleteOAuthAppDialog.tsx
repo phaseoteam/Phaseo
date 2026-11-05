@@ -1,7 +1,5 @@
-"use client";
-
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import {
 	Dialog,
@@ -18,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 interface DeleteOAuthAppDialogProps {
@@ -49,10 +47,10 @@ export default function DeleteOAuthAppDialog({
 
 		try {
 			const { deleteOAuthAppAction } = await import(
-				"@/app/(dashboard)/settings/oauth-apps/actions"
+				"@/features/settings/oauth-apps/actions"
 			);
 
-			const result = await write(deleteOAuthAppAction(clientId));
+			const result = await write(deleteOAuthAppAction({ data: clientId }));
 
 			if (result.error) {
 				setError(localizedSettingsError(result.error, t, "Failed to delete OAuth app"));

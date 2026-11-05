@@ -1,0 +1,19 @@
+/*
+ * Self-hosted variable fonts (Fontsource). Montserrat is the default family;
+ * the script-specific families are only selected by the locale that needs
+ * them (globals.css picks one per `data-font` on <html>), and each @font-face
+ * uses unicode-range, so an English page never downloads them.
+ */
+@import "@fontsource-variable/montserrat";
+@import "@fontsource-variable/noto-sans-arabic";
+@import "@fontsource-variable/noto-sans-devanagari";
+@import "@fontsource-variable/noto-sans-jp";
+@import "@fontsource-variable/noto-sans-sc";
+
+:root {
+	--font-montserrat: "Montserrat Variable", ui-sans-serif, system-ui, sans-serif;
+	--font-noto-sans-arabic: "Noto Sans Arabic Variable", ui-sans-serif, system-ui, sans-serif;
+	--font-noto-sans-devanagari: "Noto Sans Devanagari Variable", ui-sans-serif, system-ui, sans-serif;
+	--font-noto-sans-japanese: "Noto Sans JP Variable", ui-sans-serif, system-ui, sans-serif;
+	--font-noto-sans-simplified-chinese: "Noto Sans SC Variable", ui-sans-serif, system-ui, sans-serif;
+}

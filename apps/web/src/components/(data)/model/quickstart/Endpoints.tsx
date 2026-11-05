@@ -1,4 +1,5 @@
 // src/components/gateway/Endpoints.tsx
+import { useTranslations } from "@/i18n/react";
 import {
 	Card,
 	CardContent,
@@ -10,11 +11,10 @@ import CodeBlock from "@/components/(data)/model/quickstart/CodeBlock";
 import { BASE_URL } from "./config";
 import { Server } from "lucide-react";
 import PathCell from "./PathCell";
-import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import Link from "@/components/link";
 
-export default async function Endpoints() {
-	const t = await getTranslations("Catalogue.models.detail.quickstart");
+export default function Endpoints() {
+	const t = useTranslations("Catalogue.models.detail.quickstart");
 	const modelsExample = `curl -s ${BASE_URL}/api/models \\
   -H "Authorization: Bearer $PHASEO_API_KEY" | jq '.[0:5]'`;
 

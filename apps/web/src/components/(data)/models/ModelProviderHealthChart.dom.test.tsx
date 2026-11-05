@@ -1,18 +1,19 @@
-/** @jest-environment jsdom */
+/** @vitest-environment jsdom */
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import catalogue from "../../../../messages/en-GB/catalogue.json";
 import ModelProviderHealthChart from "./ModelProviderHealthChart";
 
 // The line chart needs layout jsdom does not have; the headline and its explanations are what is tested.
-jest.mock("recharts", () => {
+vi.mock("recharts", () => {
 	const Pass = ({ children }: { children?: ReactNode }) => <div>{children}</div>;
 	const Nothing = () => null;
 	return { CartesianGrid: Nothing, Line: Nothing, LineChart: Pass, ResponsiveContainer: Pass, XAxis: Nothing, YAxis: Nothing };
 });
-jest.mock("@/components/ui/chart", () => ({
+vi.mock("@/components/ui/chart", () => ({
 	ChartContainer: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
 	ChartTooltip: () => null,
 }));
@@ -21,7 +22,7 @@ let root: Root;
 let container: HTMLDivElement;
 
 beforeEach(() => {
-	jest.useFakeTimers();
+	vi.useFakeTimers();
 	Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 	container = document.createElement("div");
 	document.body.appendChild(container);
@@ -31,18 +32,18 @@ beforeEach(() => {
 afterEach(() => {
 	act(() => root.unmount());
 	container.remove();
-	jest.useRealTimers();
+	vi.useRealTimers();
 });
 
 function render(totals: Parameters<typeof ModelProviderHealthChart>[0]["totals"]) {
 	act(() => root.render(
-		<NextIntlClientProvider timeZone="UTC" locale="en-GB" messages={{ Catalogue: catalogue }}>
+		<AppIntlProvider timeZone="UTC" locale="en-GB" messages={{ Catalogue: catalogue }}>
 			{/* One hour at 33.3% completed among idle hours: the hourly average would read about 97%. */}
 			<ModelProviderHealthChart
 				successSeries={[{ bucket: new Date().toISOString(), overallSuccessPct: null, worstProviderSuccessPct: null, requests: 0, reachabilityPct: 100, capacityPct: 100, callErrorPct: 33.3 }]}
 				totals={totals}
 			/>
-		</NextIntlClientProvider>,
+		</AppIntlProvider>,
 	));
 }
 
@@ -59,7 +60,7 @@ const labelButton = (label: string) => {
 
 /** Runs every pending timer (popover open, positioning) and the updates they schedule. */
 async function settle() {
-	await act(async () => { await jest.runAllTimersAsync(); });
+	await act(async () => { await vi.runAllTimersAsync(); });
 }
 
 it("shows the true 24-hour shares from attemptHealth24h, with the matching caption", () => {

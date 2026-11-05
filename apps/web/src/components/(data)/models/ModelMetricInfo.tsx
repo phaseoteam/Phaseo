@@ -1,5 +1,3 @@
-"use client";
-
 import type { ReactNode } from "react";
 import { CircleHelp } from "lucide-react";
 import {

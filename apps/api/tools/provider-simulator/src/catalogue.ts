@@ -131,11 +131,11 @@ export function catalogueCredentials(): { url: string; key: string; role: "servi
 		}
 		return null;
 	};
-	const url = pick("SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_URL");
+	const url = pick("SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_URL", "PUBLIC_SUPABASE_URL");
 	if (!url) return null;
 	const serviceKey = pick("SUPABASE_SERVICE_ROLE_KEY");
 	if (serviceKey) return { url, key: serviceKey, role: "service_role" };
-	const anonKey = pick("SUPABASE_ANON_KEY", "NEXT_PUBLIC_SUPABASE_ANON_KEY");
+	const anonKey = pick("SUPABASE_ANON_KEY", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "PUBLIC_SUPABASE_ANON_KEY");
 	return anonKey ? { url, key: anonKey, role: "anon" } : null;
 }
 

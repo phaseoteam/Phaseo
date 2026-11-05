@@ -1,5 +1,4 @@
-import "server-only";
-import { redirect } from "next/navigation";
+import { redirect } from "@/lib/navigation";
 import { getServerAccountContext } from "./serverAccountContext";
 import { resolveAccessibleWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { toAccountQueryScope } from "@/lib/query/queryKeys";

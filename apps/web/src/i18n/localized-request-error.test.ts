@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { LocalizedRequestError, localizedRequestErrorMessage } from "./localized-request-error";
 
 describe("request error presentation", () => {

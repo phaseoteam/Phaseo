@@ -1,3 +1,4 @@
+import { describe, expect, test } from "vitest";
 import { describeStoredParams, isParamEnabled, parseStoredParams, setParamEnabled } from "./capabilityParamsEdit";
 
 const VEO = {

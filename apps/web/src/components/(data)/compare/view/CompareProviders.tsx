@@ -1,8 +1,6 @@
-"use client";
-
 import { useState } from "react";
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useTranslations } from "@/i18n/react";
 import { ChevronDown } from "lucide-react";
 import { Tip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";

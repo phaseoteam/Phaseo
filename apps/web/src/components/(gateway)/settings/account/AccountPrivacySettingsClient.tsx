@@ -1,12 +1,10 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
-import Link from "next/link";
+import Link from "@/components/link";
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { AlertCircle, CheckCircle2, Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -17,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Logo } from "@/components/Logo";
-import { updateGlobalGuardrailsSettings } from "@/app/(dashboard)/settings/guardrails/actions";
+import { updateGlobalGuardrailsSettings } from "@/features/settings/guardrails/actions";
 import type { AccountPrivacyPolicy, SettingsAccountPrivacyInitialData } from "@/lib/fetchers/internal/settingsTypes";
 import { formatProviderOfferDisplayName, formatProviderOfferVariantLabel, resolveProviderLogoId } from "@/lib/providers/providerOffers";
 
@@ -95,7 +93,7 @@ export default function AccountPrivacySettingsClient({
 		let cancelled = false;
 		const timer = window.setTimeout(async () => {
 			try {
-				await updateGlobalGuardrailsSettings(policy, workspaceId);
+				await updateGlobalGuardrailsSettings({ data: { payload: policy, expectedWorkspaceId: workspaceId } });
 				void invalidateSettings();
 				if (cancelled) return;
 				lastSavedPolicy.current = serialized;
@@ -116,12 +114,12 @@ export default function AccountPrivacySettingsClient({
 		let cancelled = false;
 		const timer = window.setTimeout(async () => {
 			try {
-				await updateGlobalGuardrailsSettings({
+				await updateGlobalGuardrailsSettings({ data: { payload: {
 					ioLoggingEnabled: logStorage.enabled,
 					ioLoggingRetentionDays: logStorage.retentionDays,
 					ioLoggingIncludeProviderPayloads: logStorage.includeProviderPayloads,
 					ioLoggingContentsAccess: logStorage.contentsAccess ?? undefined,
-				}, workspaceId);
+				}, expectedWorkspaceId: workspaceId } });
 				void invalidateSettings();
 				if (cancelled) return;
 				lastSavedLogStorage.current = serialized;

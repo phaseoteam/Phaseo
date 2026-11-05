@@ -1,32 +1,32 @@
+import { it, expect, beforeEach, vi } from "vitest";
 import { fetchSettingsPresetFeedback } from "./fetchSettingsPresetFeedback";
 import { requireAuthenticatedUser, requireWorkspaceMembership } from "@/utils/serverActionAuth";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 
-jest.mock("server-only", () => ({}));
-jest.mock("@/utils/serverActionAuth", () => ({ requireAuthenticatedUser: jest.fn(), requireWorkspaceMembership: jest.fn() }));
-jest.mock("@/utils/workspaceCookie", () => ({ getWorkspaceIdFromCookie: jest.fn() }));
+vi.mock("@/utils/serverActionAuth", () => ({ requireAuthenticatedUser: vi.fn(), requireWorkspaceMembership: vi.fn() }));
+vi.mock("@/utils/workspaceCookie", () => ({ getWorkspaceIdFromCookie: vi.fn() }));
 
 const filters = { fromIso: "2026-09-01T00:00:00.000Z", toIso: "2026-09-02T00:00:00.000Z", rating: "all", metadataKey: "", metadataValue: "" };
 function query(data: unknown[]) {
-	const builder = { select: jest.fn(), eq: jest.fn(), order: jest.fn(), in: jest.fn(), gte: jest.fn(), lte: jest.fn(), range: jest.fn(), is: jest.fn(), contains: jest.fn(), then: jest.fn() };
+	const builder = { select: vi.fn(), eq: vi.fn(), order: vi.fn(), in: vi.fn(), gte: vi.fn(), lte: vi.fn(), range: vi.fn(), is: vi.fn(), contains: vi.fn(), then: vi.fn() };
 	for (const [name, fn] of Object.entries(builder)) if (name !== "then") fn.mockReturnValue(builder);
 	builder.then.mockImplementation((resolve) => Promise.resolve({ data, error: null }).then(resolve));
 	return builder;
 }
-const from = jest.fn();
+const from = vi.fn();
 beforeEach(() => {
-	jest.clearAllMocks();
-	jest.mocked(requireAuthenticatedUser).mockResolvedValue({ user: { id: "alice" }, supabase: { from } } as never);
-	jest.mocked(requireWorkspaceMembership).mockResolvedValue(undefined as never);
-	jest.mocked(getWorkspaceIdFromCookie).mockResolvedValue("workspace-a");
+	vi.clearAllMocks();
+	vi.mocked(requireAuthenticatedUser).mockResolvedValue({ user: { id: "alice" }, supabase: { from } } as never);
+	vi.mocked(requireWorkspaceMembership).mockResolvedValue(undefined as never);
+	vi.mocked(getWorkspaceIdFromCookie).mockResolvedValue("workspace-a");
 });
 it("requires fresh authentication before reading feedback", async () => {
-	jest.mocked(requireAuthenticatedUser).mockRejectedValue(new Error("expired"));
+	vi.mocked(requireAuthenticatedUser).mockRejectedValue(new Error("expired"));
 	await expect(fetchSettingsPresetFeedback(JSON.stringify(filters))).rejects.toMatchObject({ status: 401 });
 	expect(from).not.toHaveBeenCalled();
 });
 it("requires membership before querying either table", async () => {
-	jest.mocked(requireWorkspaceMembership).mockRejectedValue(new Error("revoked"));
+	vi.mocked(requireWorkspaceMembership).mockRejectedValue(new Error("revoked"));
 	await expect(fetchSettingsPresetFeedback(JSON.stringify(filters))).rejects.toMatchObject({ status: 403 });
 	expect(from).not.toHaveBeenCalled();
 });

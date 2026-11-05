@@ -1,5 +1,3 @@
-"use client";
-
 import { formatLatency } from "@phaseo/app-kit/format";
 import { currentCatalogDataPolicy } from "@/lib/providers/catalogDataPolicy";
 import { GroupedInputPrice } from "./GroupedInputPrice";
@@ -12,7 +10,7 @@ import { ProviderRoutingHelp } from "./ProviderRoutingHelp";
 import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { resolveScopedZdr } from "@/components/(data)/model/pricing/zdr";
 import { Link } from "@/i18n/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { getLocalizedDocsHref } from "@/lib/docs";
 import { motion, useReducedMotion } from "motion/react";
 import NumberFlow from "@number-flow/react";

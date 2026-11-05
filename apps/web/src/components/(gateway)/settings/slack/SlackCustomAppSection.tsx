@@ -1,9 +1,7 @@
-"use client";
-
 import { useState, useTransition } from "react";
 import { ChevronRight, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -20,7 +18,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { CopyButton } from "@/components/ui/copy-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { removeSlackCustomApp, saveSlackCustomApp } from "@/app/(dashboard)/settings/slack/actions";
+import { removeSlackCustomApp, saveSlackCustomApp } from "@/features/settings/slack/actions";
 import { cn } from "@/lib/utils";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { Notice, SlackError } from "./SlackAgentFields";
@@ -57,7 +55,7 @@ export function SlackCustomAppSection({ view }: { view: SlackAgentManagerView })
 			return;
 		}
 		startSaving(async () => {
-			const result = await write(saveSlackCustomApp(built.value));
+			const result = await write(saveSlackCustomApp({ data: built.value }));
 			if (!result.ok) {
 				setError({ key: slackErrorKey(result.code, result.status), message: result.message });
 				return;

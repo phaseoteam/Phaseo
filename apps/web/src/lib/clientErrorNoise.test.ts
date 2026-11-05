@@ -1,7 +1,8 @@
+import { describe, it, expect } from "vitest";
 import type { ClientErrorPayload } from "@/lib/clientErrorReporting";
 import { matchClientErrorNoise } from "./clientErrorNoise";
 
-const OWN_FRAME = "https://phaseo.app/_next/static/immutable/chunks/22r301xfhkkb9.js:1:120";
+const OWN_FRAME = "https://phaseo.app/assets/router-Dpty0Bl7.js:1:120";
 
 function windowError(overrides: Partial<ClientErrorPayload> & { filename?: string | null } = {}): ClientErrorPayload {
 	const { filename = null, ...rest } = overrides;
@@ -74,7 +75,7 @@ describe("matchClientErrorNoise", () => {
 			expect(matchClientErrorNoise(windowError({
 				message: "AbortSignal.any is not a function. (In 'AbortSignal.any([t.signal,r])', 'AbortSignal.any' is undefined)",
 				stack: `a@${OWN_FRAME}`,
-				filename: "https://phaseo.app/_next/static/immutable/chunks/22r301xfhkkb9.js",
+				filename: "https://phaseo.app/assets/router-Dpty0Bl7.js",
 			}))).toBeNull();
 		});
 
@@ -88,7 +89,7 @@ describe("matchClientErrorNoise", () => {
 		it("\"Script error.\" that still has a source or stack", () => {
 			expect(matchClientErrorNoise(windowError({
 				message: "Script error.",
-				filename: "https://phaseo.app/_next/static/chunks/app.js",
+				filename: "https://phaseo.app/assets/index-Caq45TiO.js",
 			}))).toBeNull();
 			expect(matchClientErrorNoise(windowError({ message: "Script error.", stack: `x@${OWN_FRAME}` }))).toBeNull();
 		});

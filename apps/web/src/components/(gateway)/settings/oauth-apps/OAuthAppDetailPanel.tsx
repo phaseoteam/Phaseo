@@ -1,5 +1,3 @@
-"use client";
-
 import { formatLatency } from "@phaseo/app-kit/format";
 import React, { useMemo, useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -39,13 +37,13 @@ import {
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import RegenerateSecretDialog from "./RegenerateSecretDialog";
 import RedirectUriManager from "./RedirectUriManager";
 import DeleteOAuthAppDialog from "./DeleteOAuthAppDialog";
 import OAuthScopeSelector from "./OAuthScopeSelector";
 import { normalizeOAuthScopes } from "@/lib/oauth/scopes";
-import { updateOAuthAppScopesAction } from "@/app/(dashboard)/settings/oauth-apps/actions";
+import { updateOAuthAppScopesAction } from "@/features/settings/oauth-apps/actions";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 interface OAuthAppDetailPanelProps {
@@ -196,7 +194,7 @@ export default function OAuthAppDetailPanel({
 	const saveScopes = async () => {
 		setSavingScopes(true);
 		try {
-			const result = await write(updateOAuthAppScopesAction(oauthApp.client_id, allowedScopes));
+			const result = await write(updateOAuthAppScopesAction({ data: { clientId: oauthApp.client_id, allowedScopes } }));
 			if (result.error) throw new Error(result.error);
 		toast.success(t("strings.OAuth scopes updated" as never));
 		} catch (error: unknown) {

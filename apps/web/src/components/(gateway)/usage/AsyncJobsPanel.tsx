@@ -1,13 +1,11 @@
-"use client";
-
 import { formatLatency } from "@phaseo/app-kit/format";
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import * as React from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import ConfigurableLogTable from "./ConfigurableLogTable";
 import { JOB_COLUMNS } from "./logColumns";
-import dynamic from "next/dynamic";
+import dynamic from "@/lib/dynamic";
 import {
         fetchAppMetadata,
 	fetchAsyncJobDetail,
@@ -22,7 +20,7 @@ import {
 	type InvestigateGenerationResult,
 	type ProviderMetadataEntry,
 	type RequestRow,
-} from "@/app/(dashboard)/gateway/usage/server-actions";
+} from "@/features/gateway/usage/server-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -79,7 +77,7 @@ import {
 	getModelMetadataEntry,
 	type ModelMetadataMap,
 } from "./model-display";
-import Link from "next/link";
+import Link from "@/components/link";
 import {
         DetailKeyValueGrid,
         DetailMetricTile,
@@ -1829,14 +1827,14 @@ export default function AsyncJobsPanel({
 		return (async () => {
 			setIsRefreshing(true);
 			try {
-				const next = await fetchRecentAsyncJobs({
+				const next = await fetchRecentAsyncJobs({ data: {
 					limit: refreshLimit,
 					includeWithoutWebhook,
 					timeRange,
 					kind: kindFilter,
 					status: statusFilter,
 					provider: providerFilter,
-				});
+				} });
 				setJobs(next);
 
 				const missingProviderIds = collectJobProviderIds(next).filter(
@@ -1850,13 +1848,13 @@ export default function AsyncJobsPanel({
 				);
 				const [nextProviderNames, nextModelMetadata, nextAppMetadata] = await Promise.all([
 					missingProviderIds.length > 0
-						? fetchProviderNames(missingProviderIds)
+						? fetchProviderNames({ data: missingProviderIds })
 						: Promise.resolve(new Map<string, string>()),
 					missingModelIds.length > 0
-						? fetchModelMetadata(missingModelIds)
+						? fetchModelMetadata({ data: missingModelIds })
 						: Promise.resolve(new Map<string, { organisationId: string; organisationName: string; modelName?: string }>()),
 					missingAppIds.length > 0
-						? fetchAppMetadata(missingAppIds)
+						? fetchAppMetadata({ data: missingAppIds })
 						: Promise.resolve(new Map<string, AppMetadata>()),
 				]);
 				if (nextProviderNames.size > 0) {
@@ -1901,10 +1899,10 @@ export default function AsyncJobsPanel({
 		}
 		setSelectedJob(null);
 		startLoadingDetail(async () => {
-			const detail = await fetchAsyncJobDetail({
+			const detail = await fetchAsyncJobDetail({ data: {
 				kind: job.kind,
 				internalId: job.internal_id,
-			});
+			} });
 			if (detail) {
 				detailCacheRef.current.set(cacheKey, detail);
 			}
@@ -1932,7 +1930,7 @@ export default function AsyncJobsPanel({
 		setRequestDetailProviderNames(new Map());
 		setRequestDetailProviderMetadata(new Map());
 		startLoadingRequestDetail(async () => {
-			const response = await investigateGeneration(trimmedRequestId);
+			const response = await investigateGeneration({ data: trimmedRequestId });
 			if (!response.success || !response.data) {
 				setRequestDetailOpen(false);
 				return;

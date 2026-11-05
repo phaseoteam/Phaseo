@@ -1,4 +1,3 @@
-import "server-only";
 
 const EPOCH_ECI_DATA_URL = "https://epoch.ai/data/eci_scores.csv";
 
@@ -27,7 +26,7 @@ function parseCsv(input: string) {
 
 export async function fetchEpochConfidenceIntervals() {
 	try {
-		const response = await fetch(EPOCH_ECI_DATA_URL, { next: { revalidate: 86_400 }, headers: { "user-agent": "Phaseo benchmark display (https://phaseo.app)" } });
+		const response = await fetch(EPOCH_ECI_DATA_URL, { cf: { cacheTtl: 86_400, cacheEverything: true }, headers: { "user-agent": "Phaseo benchmark display (https://phaseo.app)" } });
 		if (!response.ok) return {};
 		const [headers = [], ...rows] = parseCsv(await response.text());
 		const nameIndex = headers.indexOf("Display name");

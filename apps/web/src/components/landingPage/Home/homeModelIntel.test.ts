@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import {
 	BETA_OPEN_MODEL_INTEL,

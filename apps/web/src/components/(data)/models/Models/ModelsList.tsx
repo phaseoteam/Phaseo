@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { useWindowVirtualizer, type VirtualItem } from "@tanstack/react-virtual";
 import { ModelListItem } from "@/components/(data)/models/Models/ModelListItem";
 import type { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";

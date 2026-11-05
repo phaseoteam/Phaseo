@@ -1,5 +1,3 @@
-"use client";
-
 import { formatLatency, formatTps } from "@phaseo/app-kit/format";
 import { currentCatalogDataPolicy } from "@/lib/providers/catalogDataPolicy";
 import { GroupedInputPrice } from "./GroupedInputPrice";
@@ -18,8 +16,8 @@ import { fetchPublicWebApi } from "@/lib/web-api/client";
 import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
 import { webQueryKeys } from "@/lib/query/queryKeys";
 import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useTranslations } from "@/i18n/react";
 import { parseAsString, useQueryStates } from "nuqs";
 import {
     ArrowDown,

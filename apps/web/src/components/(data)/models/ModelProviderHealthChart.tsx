@@ -1,10 +1,8 @@
-"use client";
-
 import type { ChartConfig } from "@/components/ui/chart";
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import type { ModelSuccessPoint } from "@/lib/fetchers/models/getModelPerformance";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 
 import { ModelMetricInfo } from "./ModelMetricInfo";
 import {

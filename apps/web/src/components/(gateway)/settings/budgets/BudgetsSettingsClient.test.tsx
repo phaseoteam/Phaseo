@@ -1,5 +1,6 @@
+import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import settingsMessages from "../../../../../messages/en-GB/settings-ui.json";
 import commonMessages from "../../../../../messages/en-GB/common.json";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
@@ -7,17 +8,17 @@ import { DEFAULT_DISPLAY_PREFERENCES, formatDisplayDateParts, formatDisplayNumbe
 import type { SettingsBudgetsInitialData, SettingsWorkspaceBudget } from "@/lib/fetchers/internal/settingsTypes";
 import BudgetsSettingsClient, { nextBudgetReset } from "./BudgetsSettingsClient";
 
-jest.mock("@/components/providers/DisplayPreferencesProvider", () => ({ useDisplayFormatters: jest.fn() }));
-jest.mock("@/app/(dashboard)/settings/budgets/actions", () => ({
-	createWorkspaceBudget: jest.fn(),
-	updateWorkspaceBudget: jest.fn(),
-	deleteWorkspaceBudget: jest.fn(),
+vi.mock("@/components/providers/DisplayPreferencesProvider", () => ({ useDisplayFormatters: vi.fn() }));
+vi.mock("@/features/settings/budgets/actions", () => ({
+	createWorkspaceBudget: vi.fn(),
+	updateWorkspaceBudget: vi.fn(),
+	deleteWorkspaceBudget: vi.fn(),
 }));
-jest.mock("../PrivateSettingsQuery", () => ({
+vi.mock("../PrivateSettingsQuery", () => ({
 	useSettingsWrite: () => (operation: Promise<unknown>) => operation,
 	useInvalidatePrivateSettings: () => async () => undefined,
 }));
-jest.mock("@/i18n/navigation", () => ({
+vi.mock("@/i18n/navigation", () => ({
 	Link: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => <a href={href} {...props}>{children}</a>,
 }));
 
@@ -35,17 +36,17 @@ function budget(overrides: Partial<SettingsWorkspaceBudget>): SettingsWorkspaceB
 
 function render(data: Partial<SettingsBudgetsInitialData>, renderBudgetActions?: (budget: SettingsWorkspaceBudget) => React.ReactNode) {
 	const preferences = { ...DEFAULT_DISPLAY_PREFERENCES, locale: "en-US", timeZone: "UTC" };
-	jest.mocked(useDisplayFormatters).mockReturnValue({
+	vi.mocked(useDisplayFormatters).mockReturnValue({
 		number: (value, options) => formatDisplayNumber(value, preferences, options),
 		dateParts: (value, options, fallback) => formatDisplayDateParts(value, preferences, options, fallback),
 	} as ReturnType<typeof useDisplayFormatters>);
 	return renderToStaticMarkup(
-		<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages, Common: commonMessages }}>
+		<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages, Common: commonMessages }}>
 			<BudgetsSettingsClient
 				data={{ workspaceId: "w1", canManageBudgets: true, observedAt: OBSERVED_AT, budgets: [], ...data }}
 				renderBudgetActions={renderBudgetActions}
 			/>
-		</NextIntlClientProvider>,
+		</AppIntlProvider>,
 	);
 }
 

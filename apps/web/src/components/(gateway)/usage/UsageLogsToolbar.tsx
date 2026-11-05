@@ -1,9 +1,7 @@
-"use client";
-
 import * as React from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "@/lib/navigation";
 import {
 	CalendarDays,
 	Check,
@@ -14,7 +12,7 @@ import {
 import { DateRange } from "react-day-picker";
 import { toast } from "sonner";
 
-import { revalidateUsage } from "@/app/(dashboard)/gateway/usage/actions";
+import { revalidateUsage } from "@/features/gateway/usage/actions";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
@@ -398,7 +396,7 @@ export default function UsageLogsToolbar({
 						return;
 					}
 					if (showToast) {
-						const result = await revalidateUsage("logs");
+						const result = await revalidateUsage({ data: "logs" });
 						if (!result.ok) {
 							throw new Error(
 								localizedSettingsError(

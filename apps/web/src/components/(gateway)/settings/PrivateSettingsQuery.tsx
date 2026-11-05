@@ -1,9 +1,7 @@
-"use client";
-
 import { Fragment, createContext, useContext, useCallback, useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "@/i18n/react";
+import { useRouter, useSearchParams } from "@/lib/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";
 import { privateSettingsOptions } from "@/lib/query/privateSettings";
@@ -11,7 +9,7 @@ import { invalidateAccountQueries } from "@/lib/query/invalidation";
 import type { AccountQueryScope } from "@/lib/query/queryKeys";
 import SettingsSectionFallback from "./SettingsSectionFallback";
 import { Button } from "@/components/ui/button";
-import { readCachedSettings, type SettingsResource, type SettingsResourceData } from "@/app/(dashboard)/settings/cachedSettingsActions";
+import { readCachedSettings, type SettingsResource, type SettingsResourceData } from "@/features/settings/cachedSettingsActions";
 
 const SettingsScopeContext = createContext<AccountQueryScope | null>(null);
 

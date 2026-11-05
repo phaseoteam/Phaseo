@@ -1,12 +1,10 @@
-"use client";
-
 import { IntentLink as Link } from "@/components/navigation/IntentLink";
 import { useEffect, useState } from "react";
 import { MessageSquare, Scale } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import { decisionModelCapabilities } from "@/lib/models/modelCapabilities";
 import { UseModelSheet } from "./UseModelSheet";

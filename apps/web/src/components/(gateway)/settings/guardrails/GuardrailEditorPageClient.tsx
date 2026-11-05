@@ -1,16 +1,15 @@
-"use client";
 import { capabilityPrivacyDecision } from "./capabilityPrivacyDecision";
 
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
-import Link from "next/link";
+import Link from "@/components/link";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { parseAsArrayOf, parseAsString, useQueryState } from "nuqs";
 import { toast } from "sonner";
 import { localizedSettingsError } from "@/i18n/error-messages";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Logo } from "@/components/Logo";
 import {
 	formatProviderOfferVariantLabel,
@@ -73,7 +72,7 @@ import {
 	updateGuardrail,
 	type PromptInjectionAction,
 	type ProviderRestrictionMode,
-} from "@/app/(dashboard)/settings/guardrails/actions";
+} from "@/features/settings/guardrails/actions";
 import {
 	buildGuardrailRestrictionPreview,
 	describeProviderRestrictionMode,
@@ -90,7 +89,7 @@ import { MAX_ASSIGNMENT_TARGETS } from "./guardrailAssignmentLimits";
 import { chunkAssignmentChange } from "./guardrailAssignments";
 import { rateIssue, rateLimits, wizardKind, type WizardSection } from "./guardrailWizard";
 import RateGuardrailSection from "./RateGuardrailSection";
-import type { RateCounting } from "@/app/(dashboard)/settings/guardrails/actions";
+import type { RateCounting } from "@/features/settings/guardrails/actions";
 
 const GUARDRAIL_SECTION_IDS = new Set([
 	"access",
@@ -176,7 +175,7 @@ async function assignWizardLevels(guardrailId: string, levels: { workspaceAssign
 			.map((part) => ({ targetType: "department" as const, ...part })),
 	];
 	for (const change of changes) {
-		const result = await updateGuardrailAssignments(change);
+		const result = await updateGuardrailAssignments({ data: { change } });
 		if (!result.ok) throw new Error(result.error ?? "guardrail_assignment_failed");
 	}
 }
@@ -1556,7 +1555,7 @@ export default function GuardrailEditorPageClient(props: {
 		try {
 			let guardrailId = props.guardrailId;
 			if (props.mode === "create") {
-				const created = await createGuardrail({
+				const created = await createGuardrail({ data: {
 					kind: wizardKind(wizardSections),
 					...rateFields,
 					enabled: form.enabled,
@@ -1577,10 +1576,10 @@ export default function GuardrailEditorPageClient(props: {
 					sensitiveInfoEnabled: form.sensitiveInfoEnabled,
 					sensitiveInfoDefaultAction: form.sensitiveInfoDefaultAction,
 					sensitiveInfoRules: form.sensitiveInfoRules,
-				});
+				} });
 				guardrailId = created.id ?? null;
 			} else if (props.mode === "edit" && props.guardrailId) {
-				await updateGuardrail(props.guardrailId, {
+				await updateGuardrail({ data: { id: props.guardrailId, payload: {
 					...rateFields,
 					enabled: form.enabled,
 					name: form.name,
@@ -1600,13 +1599,13 @@ export default function GuardrailEditorPageClient(props: {
 					sensitiveInfoEnabled: form.sensitiveInfoEnabled,
 					sensitiveInfoDefaultAction: form.sensitiveInfoDefaultAction,
 					sensitiveInfoRules: form.sensitiveInfoRules,
-				});
+				} } });
 			}
 
 			if (guardrailId) {
 				await Promise.all([
-					setGuardrailKeys(guardrailId, form.keyIds),
-					setGuardrailMembers(guardrailId, form.memberIds),
+					setGuardrailKeys({ data: { guardrailId, keyIds: form.keyIds } }),
+					setGuardrailMembers({ data: { guardrailId, userIds: form.memberIds } }),
 				]);
 				if (props.mode === "create") await assignWizardLevels(guardrailId, form);
 			}
@@ -1627,7 +1626,7 @@ export default function GuardrailEditorPageClient(props: {
 		setDeleting(true);
 		const toastId = toast.loading(t("strings.phraseDeletingGuardrail" as never));
 		try {
-			await deleteGuardrail(props.guardrailId);
+			await deleteGuardrail({ data: props.guardrailId });
 			toast.success(t("credits.Guardrail deleted" as never), { id: toastId });
 			router.push(props.backHref);
 			router.refresh();

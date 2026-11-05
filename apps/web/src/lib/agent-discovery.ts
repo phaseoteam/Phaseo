@@ -14,10 +14,10 @@ export function normalizeGatewayApiBaseUrl(value: string): string {
 }
 
 export const DOCS_BASE_URL = normalizeUrl(
-	process.env.NEXT_PUBLIC_DOCS_URL ?? DEFAULT_DOCS_BASE_URL,
+	process.env.PUBLIC_DOCS_URL ?? DEFAULT_DOCS_BASE_URL,
 );
 export const API_BASE_URL = normalizeGatewayApiBaseUrl(
-	process.env.NEXT_PUBLIC_GATEWAY_API_URL ?? DEFAULT_GATEWAY_API_BASE_URL,
+	process.env.PUBLIC_GATEWAY_API_URL ?? DEFAULT_GATEWAY_API_BASE_URL,
 );
 export const API_ORIGIN = new URL(API_BASE_URL).origin;
 export const API_HEALTH_URL = `${API_BASE_URL}/health`;

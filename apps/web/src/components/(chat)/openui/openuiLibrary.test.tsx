@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { createParser, createStreamingParser } from "@openuidev/react-lang";
 import { openuiLibrary, isValidOpenUIResult } from "./openuiLibrary";
 import {

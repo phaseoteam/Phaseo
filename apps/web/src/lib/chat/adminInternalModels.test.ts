@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { adminHiddenModelsToChatModels, adminSourceToChatModels } from "./adminInternalModels";
 import type { AdminModelSource } from "@/lib/fetchers/internal/fetchAdminModelSource";
 
