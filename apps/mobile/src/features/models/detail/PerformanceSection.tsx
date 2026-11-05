@@ -1,15 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
-import { Activity, BarChart3, CalendarDays, Globe2 } from "lucide-react-native";
+import { Activity, BarChart3, CalendarDays, Globe2, Info } from "lucide-react-native";
 import { useMemo, useRef, useState } from "react";
 import { useCSSVariable } from "uniwind";
-import { View } from "react-native";
+import { Pressable, View } from "react-native";
 import { LegendItem, LineChart } from "@/components/charts";
-import { Button, OptionSheet, Text, useMenu, useToneColor, type ViewRef } from "@/components/ui";
+import { Button, Icon, OptionSheet, Text, useMenu, useToneColor, type ViewRef } from "@/components/ui";
 import { getModelPerformance, getModelPerformanceColos, type ModelPerformance } from "@/lib/api/models";
 import { formatSeconds, formatShortDate, formatSpeed } from "@/lib/format";
 import { EmptyBox, PageSection } from "./parts";
 import { averageUptime, formatPercentile, hasPerformanceHistory, PERCENTILES, performanceView, RANGE_DAYS, showsLeastStableProvider, TREND_METRICS, trendSeries, uptimeHours, type RangeDays, type TrendMetric } from "./performance";
 import type { SectionId } from "./sections";
+import {
+  attemptFailureShares, failureShareText, formatRate, hasProviderAttemptHealth, PROVIDER_HEALTH_METRICS, PROVIDER_HEALTH_STYLE, providerHealthHours, requestFailureText, summarizeProviderHealth,
+  summaryFailureShares, UPTIME_COPY, type ProviderHealthMetric,
+} from "./uptime";
+
+/** The website's wording for a location view below its privacy minimum (#3498). */
+const FILTERED_TELEMETRY_HINT = "A location's charts appear only once it has enough requests that no single customer's traffic can be picked out. Choose All locations to see every request.";
 
 /**
  * Providers without a brand colour use the chart tokens, as the website's trend charts do, strongest
@@ -61,7 +68,8 @@ export function PerformanceSection({ modelId, onLayoutSection, first }: { modelI
   if (metrics.isLoading || data === undefined || (data === null && !colo)) return null;
   const view = data ? performanceView(data, range) : null;
   const telemetry = hasPerformanceHistory(data);
-  const locations = (colos.data ?? []).filter((entry) => entry.requests > 0);
+  // Request counts only filter the list; they're never shown (they reveal traffic volume).
+  const locations = (colos.data ?? []).filter((entry) => entry.requests == null || entry.requests > 0);
   return (
     <PageSection
       id="performance"
@@ -82,10 +90,13 @@ export function PerformanceSection({ modelId, onLayoutSection, first }: { modelI
           {TREND_METRICS.map((definition) => (
             <TrendCard key={definition.metric} metric={definition.metric} label={definition.label} view={view} />
           ))}
-          {!data?.hourly.some((point) => point.requests > 0) ? <Text variant="caption">Hourly charts appear once enough requests are recorded; low-volume periods are hidden.</Text> : null}
+          {/* All-traffic views publish at any volume; a location's hours need enough requests to publish. */}
+          {colo && !data?.hourly.some((point) => point.requests > 0) ? <Text variant="caption">{FILTERED_TELEMETRY_HINT}</Text> : null}
         </View>
+      ) : colo ? (
+        <EmptyBox icon={Activity} title={`Not enough traffic in ${colo} to publish`} body={FILTERED_TELEMETRY_HINT} />
       ) : (
-        <EmptyBox icon={Activity} title="No gateway telemetry in the past 7 days" body="Hourly charts will appear when this model processes gateway traffic in the selected location." />
+        <EmptyBox icon={Activity} title="No requests in the past 7 days" body="Charts will appear after this model serves requests through Phaseo." />
       )}
       <OptionSheet open={rangeMenu.open} anchor={rangeMenu.anchor} title="Time range" value={String(range)} options={RANGE_DAYS.map((days) => ({ value: String(days), label: `${days} ${days === 1 ? "day" : "days"}` }))} onChange={(value) => setRange(Number(value) as RangeDays)} onClose={rangeMenu.close} />
       <OptionSheet open={percentileMenu.open} anchor={percentileMenu.anchor} title="Select performance percentile" value={String(percentile)} options={PERCENTILES.map((value) => ({ value: String(value), label: formatPercentile(value) }))} onChange={(value) => setPercentile(Number(value))} onClose={percentileMenu.close} />
@@ -94,7 +105,7 @@ export function PerformanceSection({ modelId, onLayoutSection, first }: { modelI
         anchor={locationMenu.anchor}
         title="API execution location"
         value={colo ?? "all"}
-        options={[{ value: "all", label: "All locations" }, ...locations.map((entry) => ({ value: entry.colo, label: entry.colo, description: `${entry.requests.toLocaleString("en-GB")} requests` }))]}
+        options={[{ value: "all", label: "All locations" }, ...locations.map((entry) => ({ value: entry.colo, label: entry.colo }))]}
         onChange={(value) => setColo(value === "all" ? null : value)}
         onClose={locationMenu.close}
       />
@@ -137,18 +148,82 @@ function TrendCard({ metric, label, view }: { metric: TrendMetric; label: string
   );
 }
 
-/** "Model uptime": the 24-hour average, an hourly line and the Phaseo routing figure. */
+/**
+ * "Model uptime". Per provider attempt (Reachable, Accepted, Completed) when the data API publishes those rates, as
+ * the website's ModelSuccessChart does; otherwise the older request-level uptime line. Percentages only.
+ */
 export function UptimeSection({ modelId, onLayoutSection, first }: { modelId: string; onLayoutSection: (id: SectionId, y: number) => void; first?: boolean }) {
   const metrics = usePerformance(modelId);
+  const data = metrics.data ?? null;
   return (
     <PageSection id="uptime" first={first} onLayoutSection={onLayoutSection} title="Model uptime" description="Uptime trend for this model over the last 24 hours.">
-      <UptimeCard metrics={metrics.data ?? null} />
+      {data && hasProviderAttemptHealth(data.successSeries) ? <ProviderHealthCard metrics={data} /> : <UptimeCard metrics={data} />}
     </PageSection>
   );
 }
 
 /** The uptime buckets are UTC hours (uptimeHours), so their labels are too, as on the website. */
 const utcHour = (time: number) => `${String(new Date(time).getUTCHours()).padStart(2, "0")}:00`;
+
+/**
+ * Reachable, Accepted and Completed over the last 24 hours: each step's hourly average with the share that failed
+ * it, then a line per step. Press and hold the chart to read an hour; a label opens what the step measures.
+ */
+function ProviderHealthCard({ metrics }: { metrics: ModelPerformance }) {
+  const [inspected, setInspected] = useState<number | null>(null);
+  const [help, setHelp] = useState<ProviderHealthMetric | null>(null);
+  const hours = useMemo(() => providerHealthHours(metrics.successSeries), [metrics.successSeries]);
+  const summary = useMemo(() => summarizeProviderHealth(hours), [hours]);
+  const summaryShares = useMemo(() => summaryFailureShares(summary, metrics.attemptHealth24h), [summary, metrics.attemptHealth24h]);
+  const shown = inspected != null ? hours.find((hour) => Date.parse(hour.bucket) === inspected) : null;
+  const shares = shown ? attemptFailureShares(shown.rates) : summaryShares;
+  const label = UPTIME_COPY.labels;
+  return (
+    <View className="rounded-md border border-border px-4 py-4">
+      <View className="gap-2">
+        {PROVIDER_HEALTH_METRICS.map((metric) => (
+          <Pressable
+            key={metric}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: help === metric }}
+            accessibilityHint={`Explains what ${label[metric]} measures`}
+            onPress={() => setHelp(help === metric ? null : metric)}
+          >
+            <View className="flex-row items-center gap-2">
+              <LegendItem colour={PROVIDER_HEALTH_STYLE[metric].colour} dash={PROVIDER_HEALTH_STYLE[metric].dash} label="" />
+              <Text variant="label">{label[metric]}</Text>
+              <Icon icon={Info} tone="muted" size={14} />
+              <View className="flex-1" />
+              <Text className="text-[20px] font-bold leading-[26px] tracking-tight">{formatRate(shown ? shown[metric] : summary[metric])}</Text>
+            </View>
+            <Text variant="caption">{failureShareText(metric, shares[metric], shown ? UPTIME_COPY.noFailuresThisHour : UPTIME_COPY.noFailures)}</Text>
+            {help === metric ? <Text variant="caption" className="mt-1 text-foreground">{UPTIME_COPY.help[metric]}</Text> : null}
+          </Pressable>
+        ))}
+      </View>
+      <Text variant="caption" className="mt-2">{shown ? `${utcHour(Date.parse(shown.bucket))} UTC` : UPTIME_COPY.attemptHourlyAverage}</Text>
+      <LineChart
+        className="mt-3"
+        height={110}
+        yMax={100}
+        showYAxis={false}
+        xTicks={4}
+        xFormat={utcHour}
+        tooltipTitle={(time) => `${formatShortDate(time)}, ${utcHour(time)} UTC`}
+        valueFormat={formatRate}
+        accessibilityLabel={`Hourly provider health over the last 24 hours. ${PROVIDER_HEALTH_METRICS.map((metric) => `${label[metric]}: ${formatRate(summary[metric])}`).join(". ")}.`}
+        series={PROVIDER_HEALTH_METRICS.map((metric) => ({
+          key: metric,
+          label: label[metric],
+          colour: PROVIDER_HEALTH_STYLE[metric].colour,
+          dash: PROVIDER_HEALTH_STYLE[metric].dash,
+          points: hours.map((hour) => ({ x: Date.parse(hour.bucket), y: hour[metric] })),
+        }))}
+        onInspect={setInspected}
+      />
+    </View>
+  );
+}
 
 function UptimeCard({ metrics }: { metrics: ModelPerformance | null }) {
   const success = useToneColor("success");
@@ -163,7 +238,7 @@ function UptimeCard({ metrics }: { metrics: ModelPerformance | null }) {
   return (
     <View className="rounded-md border border-border px-4 py-4">
       <Text className="text-[24px] font-bold leading-[30px] tracking-tight" style={{ color: success }}>{format(shown ? shown.overall : average)}</Text>
-      <Text variant="caption" className="mt-0.5">{shown ? `${utcHour(Date.parse(shown.bucket))} UTC · ${shown.requests.toLocaleString("en-GB")} requests` : "Last 24 hours · hourly average"}</Text>
+      <Text variant="caption" className="mt-0.5">{shown ? [`${utcHour(Date.parse(shown.bucket))} UTC`, requestFailureText(shown.overall)].filter(Boolean).join(" · ") : UPTIME_COPY.hourlyAverage}</Text>
       <LineChart
         className="mt-3"
         height={110}
