@@ -37,6 +37,17 @@ export const OMNI_DEFAULT_SECONDS = 8;
 const OMNI_MAX_REFERENCE_IMAGES = 3;
 const OMNI_MIN_SECONDS = 3;
 const OMNI_MAX_SECONDS = 10;
+// Omni 1.2 Flash raised the limit to 15 seconds (Google's 2026-11-05 GA post).
+const OMNI_1_2_MAX_SECONDS = 15;
+
+/** Longest clip an Omni model accepts: 15 seconds from version 1.2, 10 before. */
+export function googleOmniMaxSeconds(model: string | undefined): number {
+	const version = /^gemini-omni-(\d+)\.(\d+)/i.exec((model ?? "").trim().replace(/^models\//i, ""));
+	if (!version) return OMNI_MAX_SECONDS;
+	const major = Number(version[1]);
+	const minor = Number(version[2]);
+	return major > 1 || (major === 1 && minor >= 2) ? OMNI_1_2_MAX_SECONDS : OMNI_MAX_SECONDS;
+}
 
 export function isGoogleOmniVideoModel(model: string): boolean {
 	return /^gemini-omni(?:-|$)/i.test(model.trim().replace(/^models\//i, ""));
@@ -87,7 +98,10 @@ function present(value: unknown): boolean {
 	return value !== undefined && value !== null && value !== "";
 }
 
-export function normalizeGoogleOmniRequest(ir: IRVideoGenerationRequest): NormalizedGoogleOmniRequest {
+export function normalizeGoogleOmniRequest(
+	ir: IRVideoGenerationRequest,
+	model: string | undefined = ir.model,
+): NormalizedGoogleOmniRequest {
 	if (ir.inputReferences?.some((reference) =>
 		reference.type === "audio" || reference.type === "mask" || reference.role === "mask")) {
 		throw new InvalidGoogleVideoRequestError("Gemini Omni accepts image and video inputs only, without masks.");
@@ -153,8 +167,9 @@ export function normalizeGoogleOmniRequest(ir: IRVideoGenerationRequest): Normal
 		throw new InvalidGoogleVideoRequestError("Gemini Omni size must be 360p, 720p, 1080p or 4k, or a 16:9 or 9:16 pixel size such as 1280x720.");
 	}
 	const seconds = toGoogleVideoDurationSeconds(ir) ?? OMNI_DEFAULT_SECONDS;
-	if (!Number.isInteger(seconds) || seconds < OMNI_MIN_SECONDS || seconds > OMNI_MAX_SECONDS) {
-		throw new InvalidGoogleVideoRequestError("Gemini Omni duration must be a whole number of seconds from 3 to 10.");
+	const maxSeconds = googleOmniMaxSeconds(model);
+	if (!Number.isInteger(seconds) || seconds < OMNI_MIN_SECONDS || seconds > maxSeconds) {
+		throw new InvalidGoogleVideoRequestError(`Gemini Omni duration must be a whole number of seconds from ${OMNI_MIN_SECONDS} to ${maxSeconds}.`);
 	}
 	const aspectRatio = ir.aspectRatio ?? ir.ratio ?? parsedSize.aspectRatio ?? "16:9";
 	if (aspectRatio !== "16:9" && aspectRatio !== "9:16") {
