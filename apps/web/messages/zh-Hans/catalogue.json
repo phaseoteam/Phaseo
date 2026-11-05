@@ -155,7 +155,7 @@
 		"tableTitle": "模型表格视图",
 		"filtersUi": {
 			"gatewayStatus": "Gateway 状态",
-			"activeGateway": "Gateway 上活跃",
+			"activeGateway": "Gateway 已启用",
 			"comingSoon": "即将推出",
 			"notActive": "未活跃",
 			"inputModalities": "输入模态",
@@ -1477,19 +1477,10 @@
 			"submittedPrices": "提供商当前提交的价格显示在上方的提供商表中。"
 		},
 		"uptime": {
-			"title": "平均可用率",
 			"last24Hours": "过去 24 小时",
 			"noRequests": "未观察到请求",
 			"perHour": "每小时可用率",
-			"leastStableProviderLabel": "不使用 Phaseo Routing",
-			"tooltipUptime": "运行时间：",
-			"failedShareRequests": "{percent} 的请求失败",
 			"noFailuresThisHour": "这一小时没有失败",
-			"tooltipWorstProvider": "不使用 Phaseo Routing:",
-			"hourlyAverage": "过去24小时 · 每小时平均值",
-			"routingChartLabel": "过去24小时的模型每小时可用率。Phaseo Routing：{uptime}。{comparison}",
-			"routingComparison": " 不使用 Phaseo Routing：{uptime}。",
-			"routingLabel": "Phaseo 路由",
 			"providerHealthTitle": "提供商状态",
 			"reachabilityLabel": "可达",
 			"capacityLabel": "已接受",

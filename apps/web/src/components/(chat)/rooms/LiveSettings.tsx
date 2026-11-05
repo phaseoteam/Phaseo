@@ -85,7 +85,9 @@ export function LiveSettings({ value, onChange }: { value: LiveSettingsValue; on
 }
 
 export type LiveUsageView = {
-	input_tokens?: number; cached_read_text_tokens?: number; cached_write_text_tokens?: number;
+	input_tokens?: number; cached_read_text_tokens?: number;
+	// Cache writes are split by lifetime; calls before that split reported one total.
+	cached_write_text_tokens?: number; cached_write_text_tokens_30m?: number; cached_write_text_tokens_12h?: number;
 	output_tokens?: number; output_reasoning_tokens?: number; native_web_search_requests?: number;
 	live_responses?: Array<{ id: string; delegation_id?: string; status: string; model?: string; service_tier?: string;
 		usage: Record<string, number> }>;
@@ -107,7 +109,7 @@ export function LiveUsageDetails({ usage, pending }: { usage?: LiveUsageView; pe
 		<ScrollArea className="border-t" viewportClassName="max-h-64 overscroll-contain" viewportProps={{ role: "region", "aria-label": tCopy("delegationUsageDetails"), tabIndex: 0 }}>
 		<div className="px-4 py-3">
 		<dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
-			{[[tCopy("copyInputTokens"), usage.input_tokens], [tCopy("copyCacheReads"), usage.cached_read_text_tokens], [tCopy("copyCacheWrites"), usage.cached_write_text_tokens],
+			{[[tCopy("copyInputTokens"), usage.input_tokens], [tCopy("copyCacheReads"), usage.cached_read_text_tokens], [tCopy("copyCacheWrites"), (usage.cached_write_text_tokens ?? 0) + (usage.cached_write_text_tokens_30m ?? 0) + (usage.cached_write_text_tokens_12h ?? 0)],
 				[tCopy("copyOutputTokens"), usage.output_tokens], [tCopy("reasoningIncluded"), usage.output_reasoning_tokens], [tCopy("webSearches"), usage.native_web_search_requests]]
 				.map(([label, count]) => <div key={label}><dt className="text-muted-foreground">{label}</dt><dd className="mt-1 font-medium tabular-nums">{Number(count ?? 0).toLocaleString(locale)}</dd></div>)}
 		</dl>

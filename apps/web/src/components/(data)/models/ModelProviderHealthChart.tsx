@@ -29,11 +29,6 @@ export type ProviderHealthChartPoint = {
 	rates: { reachabilityPct: number | null; capacityPct: number | null; callErrorPct: number | null };
 } & Record<ProviderHealthMetric, number | null>;
 
-/** True when the series carries per-attempt provider health (newer web-api). */
-export function hasProviderAttemptHealth(successSeries: ModelSuccessPoint[]): boolean {
-	return successSeries.some((point) => point.reachabilityPct !== undefined);
-}
-
 function toHourlyBucket(value: Date | string) {
 	const date = new Date(value);
 	date.setUTCMinutes(0, 0, 0);
@@ -50,8 +45,9 @@ const finite = (value: number | null | undefined): number | null =>
 	value != null && Number.isFinite(value) ? value : null;
 
 /**
- * An hour with no eligible attempts (no reachable rate) shows as 100%, like the
- * request-level chart. A later step nothing reached stays empty.
+ * An hour with no eligible attempts (no reachable rate) shows as 100%: an hour
+ * without data, a series without attempt rates, or an empty series all read
+ * 100%. A later step nothing reached stays empty.
  */
 function displayedRate(value: number | null | undefined, hadAttempts: boolean): number | null {
 	const rate = finite(value);
@@ -90,7 +86,7 @@ export function buildProviderHealthChartData(
 
 export type ProviderHealthSummary = Record<ProviderHealthMetric, { averagePct: number | null }>;
 
-/** Hourly averages over the 24 hours shown, as the request-level chart. */
+/** Hourly averages over the 24 hours shown, empty hours counting as 100%. */
 export function summarizeProviderHealth(points: ProviderHealthChartPoint[]): ProviderHealthSummary {
 	const average = (values: Array<number | null>) => {
 		const valid = values.filter((value): value is number => value != null && Number.isFinite(value));
@@ -106,8 +102,9 @@ export function summarizeProviderHealth(points: ProviderHealthChartPoint[]): Pro
 /**
  * The 24-hour failure share of each step. Uses the rates web-api computes from
  * all attempts in those hours when present: an average of hourly rates would
- * understate failures when traffic is uneven (idle hours count as 100%). Older
- * cached responses without them fall back to the averages shown beside it.
+ * understate failures when traffic is uneven (idle hours count as 100%).
+ * Without them (no attempts in the window) it falls back to the averages shown
+ * beside it, which then read 100% and "No failures".
  */
 export function summaryFailureShares(
 	summary: ProviderHealthSummary,

@@ -4,7 +4,7 @@ import { renderToStaticMarkup as renderMarkup } from "react-dom/server";
 import { AppIntlProvider } from "@/i18n/react";
 import { englishSettingsUiMessages } from "@/i18n/default-messages";
 import { nestDottedMessageKeys } from "@/i18n/message-overlays";
-import { DEFAULT_LIVE_SETTINGS, LIVE_VOICE_OPTIONS, LiveSettings, LiveUsageDetails } from "./LiveSettings";
+import { DEFAULT_LIVE_SETTINGS, LIVE_VOICE_OPTIONS, LiveSettings, LiveUsageDetails, type LiveUsageView } from "./LiveSettings";
 
 function renderToStaticMarkup(children: ReactNode) {
 	return renderMarkup(<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: nestDottedMessageKeys(englishSettingsUiMessages) }}>{children}</AppIntlProvider>);
@@ -42,6 +42,11 @@ describe("Live settings and usage", () => {
 		expect(html).toContain("Changes apply to the next session");
 		expect(html).toContain("$0.01 per call");
 		expect(html).toContain('max="32768"');
+	});
+	it("shows cache writes from both lifetimes, and from calls that reported one total", () => {
+		const cacheWrites = (usage: LiveUsageView) => renderToStaticMarkup(<LiveUsageDetails usage={usage} />).match(/Cache writes<\/dt><dd[^>]*>([^<]*)</)?.[1];
+		expect(cacheWrites({ cached_write_text_tokens_30m: 5041, cached_write_text_tokens_12h: 9 })).toBe("5,050");
+		expect(cacheWrites({ cached_write_text_tokens: 50 })).toBe("50");
 	});
 	it("renders separately reported cache/reasoning/tool usage and delegated response status", () => {
 		const html = renderToStaticMarkup(<LiveUsageDetails pending={1} usage={{ input_tokens: 1234, output_tokens: 250, output_reasoning_tokens: 100,

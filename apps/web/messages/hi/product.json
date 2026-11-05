@@ -1175,6 +1175,8 @@
 		"speechDefaults": "वाणी के डिफ़ॉल्ट",
 		"voice": "आवाज़",
 		"selectVoice": "आवाज़ चुनें",
+		"customVoiceId": "कस्टम वॉइस ID",
+		"customVoiceIdPlaceholder": "अपनी वॉइस लाइब्रेरी से वॉइस ID पेस्ट करें",
 		"format": "फ़ॉर्मेट",
 		"speed": "गति",
 		"transcriptionDefaults": "ट्रांसक्रिप्शन के डिफ़ॉल्ट",

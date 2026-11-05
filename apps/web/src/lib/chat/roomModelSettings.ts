@@ -1,3 +1,10 @@
+import {
+	normalizeParameterSpecs,
+	parameterOptions,
+	resolveParameterSpec,
+	type ParameterSpec,
+} from "@/lib/models/modelParameters";
+
 export type AudioMode = "speech" | "transcription" | "translation" | "music";
 export const CHAT_AUDIO_SPEECH_FORMAT = "mp3";
 
@@ -62,6 +69,10 @@ type VideoModelSchema = {
 
 type AudioModelSchema = {
 	voiceOptions: string[];
+	/** Display names for voice ids, when the catalogue gives them. */
+	voiceLabels?: Record<string, string>;
+	/** Any voice id is accepted (ElevenLabs voice libraries); voiceOptions are suggestions. */
+	customVoice?: boolean;
 	formatOptions: string[];
 	supportsSpeechSpeed: boolean;
 	supportsLanguageHint: boolean;
@@ -86,9 +97,6 @@ function modelIdIncludes(modelId: string, hints: string[]) {
 	return hints.some((hint) => normalized.includes(hint));
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
 
 function dedupeStrings(values: string[]): string[] {
 	return Array.from(
@@ -96,30 +104,19 @@ function dedupeStrings(values: string[]): string[] {
 	);
 }
 
+/** Voice ids (default first is applied by the caller) from a route's stored params. */
+function readVoiceSpec(params: unknown): ParameterSpec | undefined {
+	const specs = normalizeParameterSpecs(params);
+	return specs.voice ?? specs.voices;
+}
+
 function readVoiceIdsFromParams(params: unknown): string[] {
-	if (!isRecord(params)) return [];
-	const voice = params.voice ?? params.voices;
-	const source = isRecord(voice)
-		? voice.values ?? voice.options ?? voice.enum
-		: voice;
-	if (!Array.isArray(source)) return [];
-	return dedupeStrings(
-		source
-			.map((entry) => {
-				if (typeof entry === "string") return entry;
-				if (!isRecord(entry)) return "";
-				const id = entry.id ?? entry.value ?? entry.voice_id ?? entry.voiceId;
-				return typeof id === "string" ? id : "";
-			})
-			.filter(Boolean),
-	);
+	return dedupeStrings(parameterOptions(readVoiceSpec(params)).map((option) => String(option.value)));
 }
 
 function readDefaultVoiceFromParams(params: unknown): string | null {
-	if (!isRecord(params)) return null;
-	const voice = params.voice ?? params.voices;
-	const source = isRecord(voice) ? voice.default ?? voice.default_voice : null;
-	return typeof source === "string" && source.trim() ? source.trim() : null;
+	const value = readVoiceSpec(params)?.default;
+	return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
 function getCapabilityParams(
@@ -140,6 +137,12 @@ function applyVoiceParams(
 ): AudioModelSchema {
 	const voiceOptions = readVoiceIdsFromParams(params);
 	if (voiceOptions.length === 0) return schema;
+	const voiceSpec = readVoiceSpec(params);
+	const voiceLabels = Object.fromEntries(
+		parameterOptions(voiceSpec)
+			.filter((option) => typeof option.label === "string" && option.label.trim())
+			.map((option) => [String(option.value), String(option.label)]),
+	);
 	const defaultVoice = readDefaultVoiceFromParams(params);
 	const orderedVoiceOptions =
 		defaultVoice && voiceOptions.includes(defaultVoice)
@@ -148,6 +151,8 @@ function applyVoiceParams(
 	return {
 		...schema,
 		voiceOptions: orderedVoiceOptions,
+		...(Object.keys(voiceLabels).length > 0 ? { voiceLabels } : {}),
+		...(voiceSpec?.open ? { customVoice: true } : {}),
 	};
 }
 
@@ -203,46 +208,25 @@ export function getImageModelSchema(modelId: string): ImageModelSchema {
 }
 
 const VIDEO_CAPABILITY_IDS = ["video.generate", "video.generation", "video.generations"];
-const MAX_RANGE_OPTIONS = 60;
 
 /**
- * The allowed values of one capability param, as the catalogue stores them in
- * v2_route_capabilities.params: a list under values, enum or options, or a
- * numeric min and max with an optional step (default 1).
- */
-function readParamOptions(spec: unknown): unknown[] {
-	if (!isRecord(spec)) return [];
-	const list = spec.values ?? spec.enum ?? spec.options;
-	if (Array.isArray(list)) return list;
-	const min = Number(spec.min);
-	const max = Number(spec.max);
-	const step = spec.step == null ? 1 : Number(spec.step);
-	if (!Number.isFinite(min) || !Number.isFinite(max) || !(step > 0) || max < min) return [];
-	if ((max - min) / step + 1 > MAX_RANGE_OPTIONS) return [];
-	const values: number[] = [];
-	for (let value = min; value <= max + 1e-9; value += step) values.push(Math.round(value * 1000) / 1000);
-	return values;
-}
-
-function toNumberList(values: unknown[]): number[] {
-	return Array.from(new Set(values.map(Number).filter((value) => Number.isFinite(value) && value > 0)));
-}
-
-/**
- * Video options stored for a route (size, duration, their defaults and
- * duration.values_by_size), laid over the built-in schema for the model. Any
- * part the catalogue leaves out keeps the built-in value.
+ * Video options stored for a route (size and duration lists or ranges, their
+ * defaults, and duration rules that depend on the size), laid over the built-in
+ * schema for the model. Any part the catalogue leaves out keeps the built-in value.
  */
 function applyStoredVideoParams(schema: VideoModelSchema, paramsById: CapabilityParamsById): VideoModelSchema {
 	const params = getCapabilityParams(paramsById, VIDEO_CAPABILITY_IDS);
-	if (!isRecord(params)) return schema;
-	const sizeSpec = params.size ?? params.resolution;
-	const durationSpec = params.duration ?? params.seconds ?? params.duration_seconds;
+	if (!params) return schema;
+	const specs = normalizeParameterSpecs(params);
+	const sizeSpec = specs.size ?? specs.resolution;
+	const durationSpec = specs.duration ?? specs.seconds ?? specs.duration_seconds;
 	// Some rows list a size in two cases (480P and 480p); offer it once.
 	const seenSizes = new Set<string>();
-	const sizes = dedupeStrings(readParamOptions(sizeSpec).filter((value): value is string => typeof value === "string"))
+	const sizes = dedupeStrings(parameterOptions(sizeSpec).map((option) => option.value).filter((value): value is string => typeof value === "string"))
 		.filter((size) => !seenSizes.has(size.toLowerCase()) && Boolean(seenSizes.add(size.toLowerCase())));
-	const durations = toNumberList(readParamOptions(durationSpec));
+	const durationsFor = (spec: ParameterSpec | undefined) =>
+		Array.from(new Set(parameterOptions(spec).map((option) => Number(option.value)).filter((value) => Number.isFinite(value) && value > 0)));
+	const durations = durationsFor(durationSpec);
 	const next: VideoModelSchema = { ...schema };
 	if (sizes.length > 0) {
 		next.sizeOptions = sizes;
@@ -250,16 +234,17 @@ function applyStoredVideoParams(schema: VideoModelSchema, paramsById: Capability
 		next.durationOptionsBySize = undefined;
 	}
 	if (durations.length > 0) next.durationOptions = durations;
-	const bySize = isRecord(durationSpec) ? durationSpec.values_by_size : undefined;
-	if (isRecord(bySize)) {
-		const entries = Object.entries(bySize)
-			.map(([size, values]) => [size, Array.isArray(values) ? toNumberList(values) : []] as const)
-			.filter(([, values]) => values.length > 0);
-		if (entries.length > 0) next.durationOptionsBySize = Object.fromEntries(entries);
+	if (durationSpec?.when?.length) {
+		const bySize: Record<string, number[]> = {};
+		for (const size of next.sizeOptions) {
+			const options = durationsFor(resolveParameterSpec(durationSpec, { size }, specs));
+			if (options.length > 0 && options.join() !== next.durationOptions.join()) bySize[size] = options;
+		}
+		if (Object.keys(bySize).length > 0) next.durationOptionsBySize = bySize;
 	}
-	const defaultSize = isRecord(sizeSpec) && typeof sizeSpec.default === "string" ? sizeSpec.default : undefined;
+	const defaultSize = typeof sizeSpec?.default === "string" ? sizeSpec.default : undefined;
 	if (defaultSize && next.sizeOptions.includes(defaultSize)) next.defaultSize = defaultSize;
-	const defaultDuration = isRecord(durationSpec) ? Number(durationSpec.default) : Number.NaN;
+	const defaultDuration = Number(durationSpec?.default);
 	if (next.durationOptions.includes(defaultDuration)) next.defaultDuration = defaultDuration;
 	return next;
 }
@@ -712,8 +697,8 @@ export function buildAudioRequestOptions(
 	const schema = getAudioModelSchema(modelId, capabilityParamsById);
 	if (mode === "speech") {
 		const next: Record<string, unknown> = {};
-		if (schema.voiceOptions.includes(params.speechVoice)) {
-			next.voice = params.speechVoice;
+		if (schema.voiceOptions.includes(params.speechVoice) || (schema.customVoice && params.speechVoice.trim())) {
+			next.voice = params.speechVoice.trim();
 		}
 		const normalizedSpeechFormat = schema.formatOptions.includes(CHAT_AUDIO_SPEECH_FORMAT)
 			? CHAT_AUDIO_SPEECH_FORMAT

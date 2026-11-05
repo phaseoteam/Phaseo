@@ -4,7 +4,6 @@ import path from "node:path";
 import { createTranslator } from "@/i18n/react";
 import {
 	buildProviderHealthChartData,
-	hasProviderAttemptHealth,
 	summarizeProviderHealth,
 	summaryFailureShares,
 } from "./ModelProviderHealthChart";
@@ -51,7 +50,6 @@ describe("attempt failure shares", () => {
 		expect(t("reachabilityFailureShare", { percent: "0.6%" })).toBe("0.6% of attempts couldn't reach the provider");
 		expect(t("capacityFailureShare", { percent: "1.5%" })).toBe("1.5% of attempts that reached the provider were turned away because it was at capacity");
 		expect(t("callErrorsFailureShare", { percent: "0.3%" })).toBe("0.3% of accepted attempts failed after the provider accepted them");
-		expect(t("failedShareRequests", { percent: "50.0%" })).toBe("50.0% of requests failed");
 		expect(t("noFailuresThisHour")).toBe("No failures this hour");
 		expect(t("noFailures")).toBe("No failures");
 		expect(t("capacityUnmeasured")).toBe("No attempts reached the provider");
@@ -65,11 +63,16 @@ describe("attempt failure shares", () => {
 		for (const locale of locales) {
 			const t = translator(locale);
 			const percent = formatFailureShare(0.6, locale);
-			for (const key of ["reachabilityFailureShare", "capacityFailureShare", "callErrorsFailureShare", "failedShareRequests"] as const) {
+			for (const key of ["reachabilityFailureShare", "capacityFailureShare", "callErrorsFailureShare"] as const) {
 				expect(t(key, { percent })).toContain(percent);
 			}
 			const uptime = JSON.parse(readFileSync(path.resolve(process.cwd(), "messages", locale, "catalogue.json"), "utf8")).modelDetail.uptime;
-			for (const removed of ["reachabilityCount", "capacityCount", "callErrorsCount", "tooltipFailedRequests", "requestsObserved", "chartLabel"]) {
+			// Count copy, and the copy of the request-level uptime chart the three metrics replaced.
+			for (const removed of [
+				"reachabilityCount", "capacityCount", "callErrorsCount", "tooltipFailedRequests", "requestsObserved", "chartLabel",
+				"title", "leastStableProviderLabel", "tooltipUptime", "failedShareRequests", "tooltipWorstProvider",
+				"hourlyAverage", "routingChartLabel", "routingComparison", "routingLabel",
+			]) {
 				expect(uptime).not.toHaveProperty(removed);
 			}
 			// No message in the uptime section takes a count any more.
@@ -81,9 +84,34 @@ describe("attempt failure shares", () => {
 const now = new Date("2026-08-30T10:42:00.000Z");
 
 describe("provider health chart data", () => {
-	test("uses attempt health only when the data API sends it", () => {
-		expect(hasProviderAttemptHealth([{ bucket: "2026-08-30T09:00:00Z", overallSuccessPct: 100, worstProviderSuccessPct: 100, requests: 3 }])).toBe(false);
-		expect(hasProviderAttemptHealth([{ bucket: "2026-08-30T09:00:00Z", overallSuccessPct: 100, worstProviderSuccessPct: 100, requests: 3, reachabilityPct: null, capacityPct: null, callErrorPct: null }])).toBe(true);
+	const allAt100 = (points: ReturnType<typeof buildProviderHealthChartData>) =>
+		points.every((point) => point.reachability === 100 && point.capacity === 100 && point.callErrors === 100);
+
+	test("an empty series (no traffic in 24 hours) shows all three metrics at 100% with no failures", () => {
+		const points = buildProviderHealthChartData([], now);
+		expect(points).toHaveLength(24);
+		expect(points[0]).toMatchObject({ time: "11:00", bucket: "2026-08-29T11:00:00.000Z" });
+		expect(points.at(-1)).toMatchObject({ time: "10:00", bucket: "2026-08-30T10:00:00.000Z" });
+		expect(allAt100(points)).toBe(true);
+		const summary = summarizeProviderHealth(points);
+		expect(summary).toEqual({ reachability: { averagePct: 100 }, capacity: { averagePct: 100 }, callErrors: { averagePct: 100 } });
+		const noFailures = { reachability: { kind: "none" }, capacity: { kind: "none" }, callErrors: { kind: "none" } };
+		// Headline tooltips read "No failures" with or without web-api's 24-hour totals.
+		expect(summaryFailureShares(summary)).toEqual(noFailures);
+		expect(summaryFailureShares(summary, null)).toEqual(noFailures);
+		expect(summaryFailureShares(summary, { reachabilityPct: null, capacityPct: null, callErrorPct: null })).toEqual(noFailures);
+	});
+
+	test("a series without attempt rates (none published) shows 100%, not the request-level uptime", () => {
+		const points = buildProviderHealthChartData([
+			{ bucket: "2026-08-30T09:00:00Z", overallSuccessPct: 50, worstProviderSuccessPct: 25, worstProviderRequests: 4, providerCount: 2, requests: 8 },
+			{ bucket: "2026-08-30T10:00:00Z", overallSuccessPct: null, worstProviderSuccessPct: null, requests: 0 },
+		], now);
+		expect(points).toHaveLength(24);
+		expect(allAt100(points)).toBe(true);
+		const summary = summarizeProviderHealth(points);
+		expect(summary.reachability.averagePct).toBe(100);
+		expect(summaryFailureShares(summary)).toEqual({ reachability: { kind: "none" }, capacity: { kind: "none" }, callErrors: { kind: "none" } });
 	});
 
 	test("shows hours without eligible attempts as 100%", () => {
@@ -123,10 +151,10 @@ describe("provider health chart data", () => {
 			callErrors: 100,
 		});
 		const summary = summarizeProviderHealth(points);
-		// Hourly average over 24 hours, empty hours at 100%, like the request-level chart.
+		// Hourly average over 24 hours, empty hours at 100%.
 		expect(summary.capacity.averagePct).toBeCloseTo((23 * 100 + 95) / 24, 6);
 		expect(summary.callErrors.averagePct).toBe(100);
-		// Without web-api's 24-hour totals (an older cached response), the averages are used.
+		// Without web-api's 24-hour totals, the averages are used.
 		const shares = summaryFailureShares(summary);
 		expect(shares.capacity).toEqual({ kind: "failed", pct: expect.closeTo(5 / 24, 6) });
 		expect(shares.callErrors).toEqual({ kind: "none" });
