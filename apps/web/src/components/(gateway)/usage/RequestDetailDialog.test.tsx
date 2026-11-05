@@ -169,6 +169,11 @@ describe("formatRequestPricingLine", () => {
 		}, formatNumber)).toBe("SVG author (openai/gpt-5-nano) | output_text_tokens=8,199 | $0.003279600 | 3,279,600 nanos");
 	});
 
+	it("uses the translated SVG author label", () => {
+		expect(formatRequestPricingLine({ model: "openai/gpt-5-nano", component: "svg_author", dimension: "input_text_tokens", quantity: 1860 }, formatNumber, { svgAuthor: "SVG-Autor" }))
+			.toBe("SVG-Autor (openai/gpt-5-nano) | input_text_tokens=1,860");
+	});
+
 	it("keeps the older units and cost_usd shape", () => {
 		expect(formatRequestPricingLine({ provider: "openai", dimension: "requests", units: 1, cost_usd: 0.01 }, formatNumber))
 			.toBe("openai | requests=1 | $0.010000");

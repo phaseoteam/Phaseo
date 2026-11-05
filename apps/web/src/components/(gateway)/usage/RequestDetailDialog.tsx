@@ -93,6 +93,7 @@ type ProviderAttemptRow = RequestRow["provider_attempts"][number];
 export function formatRequestPricingLine(
 	line: RequestRow["pricing_lines"][number],
 	formatNumber: (value: number) => string,
+	labels: { svgAuthor: string } = { svgAuthor: "SVG author" },
 ): string {
 	if (line == null) return "null";
 	if (
@@ -145,7 +146,7 @@ export function formatRequestPricingLine(
 			: null;
 	const component =
 		line.component === "svg_author"
-			? `SVG author${lineModel ? ` (${lineModel})` : ""}`
+			? `${labels.svgAuthor}${lineModel ? ` (${lineModel})` : ""}`
 			: typeof line.component === "string" && line.component.trim().length > 0
 				? `${line.component.trim()}${lineModel ? ` (${lineModel})` : ""}`
 				: null;
@@ -2818,7 +2819,7 @@ export default function RequestDetailDialog({
 											className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2"
 										>
 											<code className="whitespace-pre-wrap break-words font-mono text-xs">
-												{formatRequestPricingLine(line, (value) => format.number(value, { notation: "standard" }))}
+												{formatRequestPricingLine(line, (value) => format.number(value, { notation: "standard" }), { svgAuthor: s("SVG author") })}
 											</code>
 										</div>
 									))}
