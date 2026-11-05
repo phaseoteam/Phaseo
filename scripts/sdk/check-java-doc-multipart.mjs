@@ -30,7 +30,9 @@ for (const [index, test] of cases.entries()) {
     assert.ok(code, `Missing multipart example in ${file}`);
     snippets.push(code);
   }
-  assert.ok(snippets.every(code => code === snippets[0]), `${test.page}: translated examples must match English`);
+  // Translated pages may translate `// ` comments; the code itself must match English.
+  const withoutComments = code => code.replace(/[ \t]*\/\/ .*$/gm, "").replace(/^\n+/gm, "");
+  assert.ok(snippets.every(code => withoutComments(code) === withoutComments(snippets[0])), `${test.page}: translated examples must match English`);
   const code = snippets[0];
   assert.ok(code.includes('System.getenv().getOrDefault("PHASEO_BASE_URL", "https://api.phaseo.app/v1")'));
   const imports = code.split("\n").filter(line => line.startsWith("import "));
