@@ -3927,6 +3927,8 @@ module Phaseo
     #   @return [Float, nil]
     # @!attribute [rw] notes
     #   @return [String, nil]
+    # @!attribute [rw] open
+    #   @return [Boolean, nil]
     # @!attribute [rw] options
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] properties
@@ -3955,7 +3957,7 @@ module Phaseo
     #   @return [Array<String, Float, Boolean>, nil]
     # @!attribute [rw] when
     #   @return [Array<Hash{String => Object}>, nil]
-    ParameterSpec = Struct.new(:alias_of, :aliases, :always_on, :default, :dimensions, :extra, :format, :formats, :item_types, :max, :max_file_size_bytes, :max_items, :max_length, :max_tokens, :media, :min, :min_items, :min_length, :multiple_of, :notes, :options, :properties, :provider_default, :required, :requires, :source, :step, :support_level, :supported, :type, :upstream_name, :upstream_values, :values, :when, keyword_init: true)
+    ParameterSpec = Struct.new(:alias_of, :aliases, :always_on, :default, :dimensions, :extra, :format, :formats, :item_types, :max, :max_file_size_bytes, :max_items, :max_length, :max_tokens, :media, :min, :min_items, :min_length, :multiple_of, :notes, :open, :options, :properties, :provider_default, :required, :requires, :source, :step, :support_level, :supported, :type, :upstream_name, :upstream_values, :values, :when, keyword_init: true)
     ParameterSpecs = Struct.new(:_unused, keyword_init: true)
     ParameterType = Object
     ParameterValue = Object

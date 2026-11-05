@@ -1,5 +1,7 @@
 "use client"
 
+import { isParamEnabled, setParamEnabled, type StoredCapabilityParams } from "@/lib/models/capabilityParamsEdit"
+import { CapabilityParamsField } from "./CapabilityParamsField"
 import { useLocale, useTranslations } from "next-intl"
 import { Link } from "@/i18n/navigation"
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react"
@@ -67,7 +69,8 @@ export interface ProviderCapabilityRow {
     | "disabled"
   effective_from: string | null
   effective_to: string | null
-  params: Record<string, boolean>
+  /** As stored (any container form); edit only through capabilityParamsEdit. */
+  params: StoredCapabilityParams
 }
 
 interface ProvidersTabProps {
@@ -340,9 +343,9 @@ export default function ProvidersTab({
           status: normalizeCapabilityStatus(capability.status),
           effective_from: capability.effective_from ?? null,
           effective_to: capability.effective_to ?? null,
-          params: Object.fromEntries(
-            Object.entries(rawParams).map(([key, value]) => [key, Boolean(value)])
-          ),
+          // Kept exactly as stored: flattening to booleans here used to erase
+          // every detailed spec and turn lists into {"0": true, …} on save.
+          params: rawParams,
         }]
       })
       setProviderCapabilities(dedupeCapabilities(mappedCapabilities))
@@ -785,7 +788,7 @@ export default function ProvidersTab({
                       >
                         <div className="flex flex-wrap gap-2">
                           {PARAMETER_FLAGS.map((param) => {
-                            const enabled = Boolean(capability.params[param])
+                            const enabled = isParamEnabled(capability.params, param)
                             return (
                               <Button
                                 key={`${capability.id}-${param}`}
@@ -795,10 +798,7 @@ export default function ProvidersTab({
                                 onClick={() =>
                                   updateCapability(capability.id, (row) => ({
                                     ...row,
-                                    params: {
-                                      ...row.params,
-                                      [param]: !enabled,
-                                    },
+                                    params: setParamEnabled(row.params, param, !enabled),
                                   }))
                                 }
                                 className={cn(
@@ -811,6 +811,18 @@ export default function ProvidersTab({
                             )
                           })}
                         </div>
+                      </FieldRow>
+
+                      <FieldRow
+                        label={tEditor("parameterSpecs")}
+                        description={tEditor("parameterSpecsDescription")}
+                      >
+                        <CapabilityParamsField
+                          params={capability.params}
+                          onChange={(params) =>
+                            updateCapability(capability.id, (row) => ({ ...row, params }))
+                          }
+                        />
                       </FieldRow>
 
                     </fieldset></AccordionContent></AccordionItem>

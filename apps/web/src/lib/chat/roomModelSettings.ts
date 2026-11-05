@@ -69,6 +69,10 @@ type VideoModelSchema = {
 
 type AudioModelSchema = {
 	voiceOptions: string[];
+	/** Display names for voice ids, when the catalogue gives them. */
+	voiceLabels?: Record<string, string>;
+	/** Any voice id is accepted (ElevenLabs voice libraries); voiceOptions are suggestions. */
+	customVoice?: boolean;
 	formatOptions: string[];
 	supportsSpeechSpeed: boolean;
 	supportsLanguageHint: boolean;
@@ -133,6 +137,12 @@ function applyVoiceParams(
 ): AudioModelSchema {
 	const voiceOptions = readVoiceIdsFromParams(params);
 	if (voiceOptions.length === 0) return schema;
+	const voiceSpec = readVoiceSpec(params);
+	const voiceLabels = Object.fromEntries(
+		parameterOptions(voiceSpec)
+			.filter((option) => typeof option.label === "string" && option.label.trim())
+			.map((option) => [String(option.value), String(option.label)]),
+	);
 	const defaultVoice = readDefaultVoiceFromParams(params);
 	const orderedVoiceOptions =
 		defaultVoice && voiceOptions.includes(defaultVoice)
@@ -141,6 +151,8 @@ function applyVoiceParams(
 	return {
 		...schema,
 		voiceOptions: orderedVoiceOptions,
+		...(Object.keys(voiceLabels).length > 0 ? { voiceLabels } : {}),
+		...(voiceSpec?.open ? { customVoice: true } : {}),
 	};
 }
 
@@ -685,8 +697,8 @@ export function buildAudioRequestOptions(
 	const schema = getAudioModelSchema(modelId, capabilityParamsById);
 	if (mode === "speech") {
 		const next: Record<string, unknown> = {};
-		if (schema.voiceOptions.includes(params.speechVoice)) {
-			next.voice = params.speechVoice;
+		if (schema.voiceOptions.includes(params.speechVoice) || (schema.customVoice && params.speechVoice.trim())) {
+			next.voice = params.speechVoice.trim();
 		}
 		const normalizedSpeechFormat = schema.formatOptions.includes(CHAT_AUDIO_SPEECH_FORMAT)
 			? CHAT_AUDIO_SPEECH_FORMAT

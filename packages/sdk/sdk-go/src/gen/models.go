@@ -4339,6 +4339,7 @@ type ParameterSpec struct {
 	MinLength *float64 `json:"min_length,omitempty"`
 	MultipleOf *float64 `json:"multiple_of,omitempty"`
 	Notes *string `json:"notes,omitempty"`
+	Open *bool `json:"open,omitempty"`
 	Options *[]map[string]interface{} `json:"options,omitempty"`
 	Properties *map[string]interface{} `json:"properties,omitempty"`
 	ProviderDefault interface{} `json:"provider_default,omitempty"`

@@ -39,6 +39,7 @@ export interface GatewayCapabilities {
       min_length?: number;
       multiple_of?: number;
       notes?: string;
+      open?: boolean;
       options?: {
         description?: string;
         label?: string;

@@ -2785,6 +2785,7 @@ public final class Models {
 		public Double min_length;
 		public Double multiple_of;
 		public String notes;
+		public Boolean open;
 		public java.util.List<Object> options;
 		public Object properties;
 		public Object provider_default;

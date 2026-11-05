@@ -320,3 +320,25 @@ describe("Voices stored in the catalogue", () => {
 			.toEqual(getAudioModelSchema("openai/gpt-4o-mini-tts").voiceOptions);
 	});
 });
+
+describe("Open voice lists", () => {
+	const eleven = {
+		"audio.speech": {
+			voice: { values: ["21m00Tcm4TlvDq8ikWAM", "pNInz6obpgDQGcFmaJgB"], options: [{ value: "21m00Tcm4TlvDq8ikWAM", label: "Rachel" }, { value: "pNInz6obpgDQGcFmaJgB", label: "Adam" }], open: true },
+		},
+	};
+
+	test("labels voices and allows any voice id", () => {
+		const schema = getAudioModelSchema("eleven-labs/eleven-v3", eleven);
+		expect(schema.voiceLabels).toEqual({ "21m00Tcm4TlvDq8ikWAM": "Rachel", pNInz6obpgDQGcFmaJgB: "Adam" });
+		expect(schema.customVoice).toBe(true);
+		const params = { ...getDefaultAudioRoomParams("eleven-labs/eleven-v3", eleven), speechVoice: "NfUrCNRReUL9RXS9upG1" };
+		expect(buildAudioRequestOptions("speech", "eleven-labs/eleven-v3", params, eleven).voice).toBe("NfUrCNRReUL9RXS9upG1");
+	});
+
+	test("drops a voice a closed list does not have", () => {
+		const closed = { "audio.speech": { voice: { values: ["alloy", "echo"] } } };
+		const params = { ...getDefaultAudioRoomParams("openai/gpt-4o-mini-tts", closed), speechVoice: "nova" };
+		expect(buildAudioRequestOptions("speech", "openai/gpt-4o-mini-tts", params, closed).voice).toBeUndefined();
+	});
+});

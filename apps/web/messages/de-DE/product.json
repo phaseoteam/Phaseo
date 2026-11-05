@@ -1175,6 +1175,8 @@
 		"speechDefaults": "Spracheinstellungen",
 		"voice": "Stimme",
 		"selectVoice": "Stimme auswählen",
+		"customVoiceId": "Eigene Stimmen-ID",
+		"customVoiceIdPlaceholder": "Füge eine Stimmen-ID aus deiner Stimmenbibliothek ein",
 		"format": "Format",
 		"speed": "Geschwindigkeit",
 		"transcriptionDefaults": "Transkriptionsstandards",
