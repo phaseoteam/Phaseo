@@ -821,7 +821,8 @@ accountSettingsPolicyRouter.get("/guardrails", async (c) => {
 		const [reference, departments, guardrailsResult] = await Promise.all([
 			loadGuardrailReference(context),
 			loadGuardrailDepartments(context, workspaceId),
-			context.client.from("workspace_guardrails").select(GUARDRAIL_COLUMNS).eq("workspace_id", workspaceId).order("created_at", { ascending: false }),
+			// Rate guardrails are managed under Settings, Rate limits for now.
+			context.client.from("workspace_guardrails").select(GUARDRAIL_COLUMNS).eq("workspace_id", workspaceId).neq("kind", "rate").order("created_at", { ascending: false }),
 		]);
 		if (guardrailsResult.error) throw guardrailsResult.error;
 		const guardrails = guardrailsResult.data ?? [];
@@ -855,7 +856,7 @@ accountSettingsPolicyRouter.get("/guardrails/editor", async (c) => {
 		const [reference, guardrailResult, workspacePolicyResult] = await Promise.all([
 			loadGuardrailReference(context),
 			mode === "edit" && guardrailId
-				? context.client.from("workspace_guardrails").select(GUARDRAIL_COLUMNS).eq("workspace_id", workspaceId).eq("id", guardrailId).maybeSingle()
+				? context.client.from("workspace_guardrails").select(GUARDRAIL_COLUMNS).eq("workspace_id", workspaceId).eq("id", guardrailId).neq("kind", "rate").maybeSingle()
 				: Promise.resolve({ data: null, error: null }),
 			context.client.from("workspace_settings").select("privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_input_output_logging,privacy_zdr_only,provider_restriction_mode,provider_restriction_provider_ids,model_restriction_mode,model_restriction_model_ids").eq("workspace_id", workspaceId).maybeSingle(),
 		]);

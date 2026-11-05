@@ -35,7 +35,9 @@ function buildSupabaseMock() {
 							return {
 								eq: (nextColumn: string, nextValue: unknown) => {
 									filters.push({ column: nextColumn, value: nextValue });
-									return {
+									const single = {
+										// Rate guardrails are left out (.neq("kind", "rate")); none are in these fixtures.
+										neq: () => single,
 										maybeSingle: async () => {
 											const index = state.guardrailRows.findIndex((row) => rowMatchesFilters(row, filters));
 											return {
@@ -44,6 +46,7 @@ function buildSupabaseMock() {
 											};
 										},
 									};
+									return single;
 								},
 							};
 						},

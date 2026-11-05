@@ -170,6 +170,8 @@ async function findGuardrail(workspaceId: string, id: string): Promise<Guardrail
 		.select(selectColumns())
 		.eq("workspace_id", workspaceId)
 		.eq("id", id)
+		// Rate guardrails are managed through /v1/rate-limits.
+		.neq("kind", "rate")
 		.maybeSingle();
 	if (error) throw new Error(error.message || "Failed to fetch guardrail");
 	return (data as unknown as GuardrailRow | null) ?? null;
@@ -301,6 +303,8 @@ async function handleListGuardrails(req: Request) {
 			.from("workspace_guardrails")
 			.select(selectColumns(), { count: "exact" })
 			.eq("workspace_id", auth.value.workspaceId)
+			// Rate guardrails are managed through /v1/rate-limits.
+			.neq("kind", "rate")
 			.order("created_at", { ascending: false })
 			.range(offset, offset + limit - 1);
 		if (error) throw new Error(error.message || "Failed to list guardrails");
@@ -395,6 +399,7 @@ async function handleUpdateGuardrail(req: Request) {
 			.update({ ...patch, updated_at: new Date().toISOString() })
 			.eq("workspace_id", auth.value.workspaceId)
 			.eq("id", id)
+			.neq("kind", "rate")
 			.select(selectColumns())
 			.maybeSingle();
 		if (error) throw new Error(error.message || "Failed to update guardrail");
