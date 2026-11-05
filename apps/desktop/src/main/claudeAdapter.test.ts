@@ -10,6 +10,8 @@ import { nativeMcpName, type McpConnection } from "../shared/mcp";
 import { orchestrationInstructions } from "../shared/orchestration";
 
 const task: Task = { id: "task", title: "Task", harness: "claude", model: "default", mode: "chat", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
+/** The first message's text, whether the adapter passed a string or its input stream. */
+const firstText = async (prompt: unknown) => typeof prompt === "string" ? prompt : ((await (prompt as AsyncIterable<{ message: { content: { type: string; text?: string }[] } }>)[Symbol.asyncIterator]().next()).value?.message.content.find((part: { type: string; text?: string }) => part.type === "text")?.text);
 describe("Claude SDK integration", () => {
 	it("observes native agents without treating background shell jobs as agents", async () => {
 		sdk.query.mockReturnValue(Object.assign((async function* () {
@@ -89,7 +91,7 @@ describe("Claude SDK integration", () => {
 	});
 	it.each(["chat", "code"] as const)("applies managed MCP connections with native tool permissions (%s)", async mode => {
 		const server: McpConnection = { id: "00000000-0000-4000-8000-000000000001", name: "Fixture", enabled: true, transport: "stdio", executable: process.execPath, arguments: ["fixture.mjs"] }; const onApproval = vi.fn(async () => "decline" as const);
-		sdk.query.mockImplementation(({ prompt, options }) => Object.assign((async function* () { if (typeof prompt !== "string") for await (const message of prompt) expect(message.message.content).toEqual([{type:"text",text:"Use tools"}]); expect(options.mcpServers).toEqual(mode === "chat" ? {} : { [nativeMcpName(server)]: { command: process.execPath, args: ["fixture.mjs"], env: { ELECTRON_RUN_AS_NODE: "1" } } }); const decision = await options.canUseTool(`mcp__${nativeMcpName(server)}__fixture`, {}); expect(decision.behavior).toBe("deny"); if (mode === "chat") { expect(options.strictMcpConfig).toBe(true); expect(onApproval).not.toHaveBeenCalled(); } else expect(onApproval).toHaveBeenCalledOnce(); yield {type:"result",subtype:"success",is_error:false,result:"Done"}; })(), { close: vi.fn(), mcpServerStatus: async () => [{ name: nativeMcpName(server), status: "connected" }] }));
+		sdk.query.mockImplementation(({ prompt, options }) => Object.assign((async function* () { if (typeof prompt !== "string") for (const message of [(await prompt[Symbol.asyncIterator]().next()).value]) expect(message.message.content).toEqual([{type:"text",text:"Use tools"}]); expect(options.mcpServers).toEqual(mode === "chat" ? {} : { [nativeMcpName(server)]: { command: process.execPath, args: ["fixture.mjs"], env: { ELECTRON_RUN_AS_NODE: "1" } } }); const decision = await options.canUseTool(`mcp__${nativeMcpName(server)}__fixture`, {}); expect(decision.behavior).toBe("deny"); if (mode === "chat") { expect(options.strictMcpConfig).toBe(true); expect(onApproval).not.toHaveBeenCalled(); } else expect(onApproval).toHaveBeenCalledOnce(); yield {type:"result",subtype:"success",is_error:false,result:"Done"}; })(), { close: vi.fn(), mcpServerStatus: async () => [{ name: nativeMcpName(server), status: "connected" }] }));
 		await new ClaudeAdapter([server]).run({ ...task, mode }, ".", "Use tools", { onDelta: vi.fn(), onSession: vi.fn(), onApproval });
 	});
 	it.each(["chat", "code"] as const)("admits the orchestration server with shared guidance and its own approvals (%s)", async mode => {
@@ -97,7 +99,7 @@ describe("Claude SDK integration", () => {
 		const orchestration: McpConnection = { id: "00000000-0000-4000-8000-000000000002", name: "Phaseo orchestration", enabled: true, orchestration: true, transport: "http", url: "http://127.0.0.1:1/mcp", headers: { Authorization: "Bearer owned" } };
 		const onApproval = vi.fn(async () => "decline" as const);
 		sdk.query.mockImplementation(({ prompt, options }) => Object.assign((async function* () {
-			if (typeof prompt !== "string") for await (const message of prompt) void message;
+			if (typeof prompt !== "string") for (const message of [(await prompt[Symbol.asyncIterator]().next()).value]) void message;
 			expect(Object.keys(options.mcpServers)).toEqual(mode === "chat" ? [nativeMcpName(orchestration)] : [nativeMcpName(user), nativeMcpName(orchestration)]);
 			expect(options.systemPrompt).toContain(orchestrationInstructions);
 			if (mode === "chat") expect(options).toMatchObject({ tools: ["AskUserQuestion"], strictMcpConfig: true });
@@ -113,9 +115,33 @@ describe("Claude SDK integration", () => {
 		sdk.query.mockImplementation(({prompt})=>{input=prompt;return Object.assign((async function*(){yield {type:"result",subtype:"success",is_error:false,result:"Unexpected"};})(),{close,mcpServerStatus:async()=>[{name:nativeMcpName(server),status:"failed",error:"token=secret"}]});});
 		await expect(new ClaudeAdapter([server]).run({...task,mode:"code"},".","Do not send",{onDelta:vi.fn(),onSession:vi.fn(),onApproval:async()=>"decline"})).rejects.toThrow("could not connect"); expect(close).toHaveBeenCalled(); const submitted=[]; for await(const message of input!) submitted.push(message); expect(submitted).toEqual([]);
 	});
+	it("takes a steered message mid-turn and keeps its input open until nothing is queued", async () => {
+		const received: { message: { content: { text?: string }[] }; priority?: string }[] = [];
+		let steered!: () => void; const steerArrived = new Promise<void>(resolve => { steered = resolve; });
+		let readSecond!: () => void; const secondRead = new Promise<void>(resolve => { readSecond = resolve; });
+		sdk.query.mockImplementation(({ prompt }) => Object.assign((async function* () {
+			const input = prompt[Symbol.asyncIterator]();
+			received.push((await input.next()).value);
+			yield { type: "assistant", parent_tool_use_id: null, session_id: "native", message: { id: "a", content: [{ type: "text", text: "Working" }] } };
+			steered();
+			received.push((await input.next()).value); readSecond();
+			// Claude reports the steered send as still queued, so its own turn and result follow.
+			yield { type: "result", subtype: "success", is_error: false, result: "First", queued_turn_count: 1 };
+			yield { type: "result", subtype: "success", is_error: false, result: "Second", queued_turn_count: 0 };
+			received.push((await input.next()).value);
+		})(), { close: vi.fn() }));
+		const adapter = new ClaudeAdapter();
+		const run = adapter.run(task, ".", "Plan the release", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" });
+		await steerArrived;
+		await adapter.steer({ id: "steer", text: "Also check the changelog", createdAt: "" }, []);
+		await secondRead; await run;
+		expect(received.map(message => message?.message.content[0].text)).toEqual(["Plan the release", "Also check the changelog", undefined]);
+		expect(received[1].priority).toBe("next");
+		await expect(adapter.steer({ id: "late", text: "Too late", createdAt: "" }, [])).rejects.toThrow("not running a turn");
+	});
 	it("passes image bytes through a structured native user message", async () => {
 		const received: unknown[] = [];
-		sdk.query.mockImplementation(({ prompt }) => Object.assign((async function* () { for await (const message of prompt) received.push(message); yield { type: "result", subtype: "success", is_error: false, result: "Done" }; })(), { close: vi.fn() }));
+		sdk.query.mockImplementation(({ prompt }) => Object.assign((async function* () { for (const message of [(await prompt[Symbol.asyncIterator]().next()).value]) received.push(message); yield { type: "result", subtype: "success", is_error: false, result: "Done" }; })(), { close: vi.fn() }));
 		await new ClaudeAdapter().run(task, ".", "Describe", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" }, undefined, [{ id: "image", taskId: "task", name: "image.png", kind: "image", mimeType: "image/png", size: 3, filePath: "/image", dataUrl: "data:image/png;base64,YWJj" }]);
 		expect(received).toEqual([expect.objectContaining({ type: "user", message: { role: "user", content: [{ type: "text", text: "Describe" }, { type: "image", source: { type: "base64", media_type: "image/png", data: "YWJj" } }] } })]);
 	});
@@ -174,7 +200,7 @@ describe("Claude SDK integration", () => {
 		// Typed ultrathink raises the turn to Extra High and goes to Claude Code as written, with nothing added.
 		await new ClaudeAdapter().run({ ...task, model: "claude-fable-5-1", modelOptions: { effort: "low", ultracode: true } }, ".", "ultrathink: plan it", callbacks);
 		expect(calls[1].options).toMatchObject({ model: "claude-fable-5-1[1m]", effort: "xhigh", settings: { ultracode: true } });
-		expect(calls[1].prompt).toBe("ultrathink: plan it");
+		expect(await firstText(calls[1].prompt)).toBe("ultrathink: plan it");
 	});
 	it("keeps its input open while a background task it waits on runs, and takes the answer it gives when the task ends", async () => {
 		const orchestration: McpConnection = { id: "00000000-0000-4000-8000-000000000002", name: "Phaseo orchestration", enabled: true, orchestration: true, transport: "http", url: "http://127.0.0.1:1/mcp" };

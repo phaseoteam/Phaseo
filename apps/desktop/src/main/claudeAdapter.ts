@@ -4,7 +4,7 @@ import { nativeActionText, type NativeAction } from "../shared/nativeActions";
 import { parsePlanSteps, type PlanStep } from "../shared/planSteps";
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import type { SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
-import type { Account, AgentQuestion, Task } from "../shared/workspace";
+import type { Account, AgentQuestion, QueuedMessage, Task } from "../shared/workspace";
 import { nativeAccountEnvironment } from "./nativeAccountEnvironment";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import { resolveNativeCommand } from "./nativeProcess";
@@ -54,11 +54,30 @@ export class ClaudeAdapter implements AgentAdapter {
 		const orchestration = managedMcp.find(server => server.orchestration), orchestrationTool = orchestration ? `mcp__${nativeMcpName(orchestration)}__` : undefined;
 		// Claude ends its background shells when its input closes, so a turn waiting on one (background_wait) keeps the input open until they finish.
 		const background = orchestrationTool ? callbacks.background : undefined;
-		let release!: () => void; const held = background ? new Promise<void>(resolve => { release = resolve; }) : Promise.resolve();
-		if (!background) release = () => undefined;
+		// The input stays open for the turn, so messages steered in meanwhile reach Claude (it folds them in at its next step).
+		// It closes once a result leaves nothing queued and any awaited background work is done.
+		const steering: SDKUserMessage[] = []; let inputDone = false, wakeInput: (() => void) | undefined;
+		const wake = () => { const resolve = wakeInput; wakeInput = undefined; resolve?.(); };
+		const release = () => { inputDone = true; wake(); };
+		signal.addEventListener("abort", wake, { once: true });
 		let cleanup: (() => void) | undefined;
-		async function* prompt(): AsyncGenerator<SDKUserMessage> { await gate; if (promptAllowed && !signal.aborted) { yield { type: "user", message: { role: "user", content }, parent_tool_use_id: null, session_id: "" }; await Promise.race([held, new Promise(resolve => signal.addEventListener("abort", resolve, { once: true }))]); } }
-		const execution = query({ prompt: images.length || gated ? prompt() : attachmentPrompt(text, attachments), options: {
+		async function* prompt(): AsyncGenerator<SDKUserMessage> {
+			await gate; if (!promptAllowed || signal.aborted) return;
+			yield { type: "user", message: { role: "user", content }, parent_tool_use_id: null, session_id: "" };
+			for (;;) {
+				const next = steering.shift();
+				if (next) { yield next; continue; }
+				if (inputDone || signal.aborted) return;
+				await new Promise<void>(resolve => { wakeInput = resolve; });
+			}
+		}
+		// /compact goes as a bare command; a compaction takes no steering.
+		const streamInput = !manualCompact;
+		if (streamInput) this.steerTurn = message => {
+			if (inputDone || signal.aborted) throw new Error("This turn has finished; the message waits in the queue.");
+			steering.push(message); wake();
+		};
+		const execution = query({ prompt: streamInput ? prompt() : text, options: {
 			cwd,
 			mcpServers: Object.fromEntries(managedMcp.map(server => [nativeMcpName(server), server.transport === "stdio" ? { command: server.executable, args: server.arguments, env: { ELECTRON_RUN_AS_NODE: "1" } } : { type: "http" as const, url: server.url, ...(server.headers ? { headers: server.headers } : {}) }])),
 			...(task.mode === "chat" ? { strictMcpConfig: true } : {}),
@@ -213,14 +232,23 @@ ${claudeBackgroundGuide}` } : {}),
 						compaction = undefined;
 					}
 					completed = true; answered = true;
-					if (!background?.pending) release();
+					// A steered message still queued gets its own turn and result; the input stays open for it.
+					if (!background?.pending && !message.queued_turn_count && !steering.length) release();
 				}
 			}
 			if (!completed) throw new Error("Claude stopped before completing the turn.");
 		} finally {
+			this.steerTurn = undefined;
 			cleanup?.(); execution.close(); releasePrompt?.();
 			if (compaction) callbacks.onActivity?.({ ...compaction, type: "compaction", title: "Compaction completion unconfirmed", text: "The native stream ended without confirming compaction completion.", status: "failed" });
 		}
 	}
 	async cancel() { this.controller.abort(); }
+	private steerTurn?: (message: SDKUserMessage) => void;
+	/** Sends a message into the running turn; Claude takes it at its next step, as its own CLI does with a message typed mid-turn. */
+	async steer(message: QueuedMessage, attachments: AttachmentContent[]) {
+		if (!this.steerTurn) throw new Error("Claude is not running a turn to steer.");
+		const images = attachments.filter(attachment => attachment.kind === "image");
+		this.steerTurn({ type: "user", message: { role: "user", content: [{ type: "text", text: attachmentPrompt(message.text, attachments) }, ...images.map(attachment => ({ type: "image" as const, source: { type: "base64" as const, media_type: attachment.mimeType as "image/png" | "image/jpeg" | "image/gif" | "image/webp", data: attachment.dataUrl!.split(",")[1] } }))] }, parent_tool_use_id: null, session_id: "", priority: "next" });
+	}
 }

@@ -8,7 +8,7 @@ import { cn } from "../lib/utils";
 import { harnessNames } from "./ModelPicker";
 
 /** Harnesses whose adapters take a message mid-turn (`steer` in main/*Adapter.ts). The rest wait for the turn to end. */
-const steerable: ReadonlySet<Harness> = new Set(["codex", "cursor", "opencode", "phaseo", "pi"]);
+const steerable: ReadonlySet<Harness> = new Set(["claude", "codex", "cursor", "opencode", "phaseo", "pi"]);
 const live = (task: Pick<Task, "status">) => task.status === "running" || task.status === "waiting";
 /** Why a message cannot go into the running turn now, or undefined when it can. */
 export function steerBlocker(task: Pick<Task, "harness" | "status">) {

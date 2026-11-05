@@ -21,6 +21,8 @@ function fixture(messages: Record<string, unknown>[], hold = false) {
 	sdk.query.mockImplementation(({ options }) => Object.assign((async function* () { for (const message of messages) yield message; if (hold && !options.abortController.signal.aborted) await new Promise<void>(resolve => options.abortController.signal.addEventListener("abort", () => resolve(), { once: true })); })(), { close }));
 	return close;
 }
+/** The first message's text, whether the adapter passed a string or its input stream. */
+const firstText = async (prompt: unknown) => typeof prompt === "string" ? prompt : ((await (prompt as AsyncIterable<{ message: { content: { type: string; text?: string }[] } }>)[Symbol.asyncIterator]().next()).value?.message.content.find((part: { type: string; text?: string }) => part.type === "text")?.text);
 describe("Claude native compaction", () => {
 	it("normalizes bare manual commands and retains exact boundary metadata", async () => {
 		fixture([status, boundary, success]); const callbacks = sink();
@@ -69,8 +71,8 @@ describe("Claude native compaction", () => {
 		await expect(new ClaudeAdapter().run(task, ".", "/compact", callbacks)).rejects.toThrow("Owned provider failure"); expect(callbacks.onActivity).toHaveBeenCalledTimes(2); expect(callbacks.onActivity.mock.lastCall?.[0]).toMatchObject({ id: "compaction:started", status: "failed", text: "Owned provider failure" });
 	});
 	it("retains ordinary commands and attached input on their existing path", async () => {
-		fixture([success]); const callbacks = sink(); await new ClaudeAdapter().run(task, ".", "Explain /compact", callbacks); expect(sdk.query.mock.calls[0][0].prompt).toBe("Explain /compact"); expect(callbacks.onActivity).not.toHaveBeenCalled();
-		fixture([success]); await new ClaudeAdapter().run(task, ".", "/compact", sink(), undefined, [{ id: "file", taskId: "owned", name: "notes.txt", kind: "text", mimeType: "text/plain", size: 5, filePath: "owned.txt", text: "Notes" }]); expect(sdk.query.mock.calls.at(-1)?.[0].prompt).toContain("Notes");
+		fixture([success]); const callbacks = sink(); await new ClaudeAdapter().run(task, ".", "Explain /compact", callbacks); expect(await firstText(sdk.query.mock.calls[0][0].prompt)).toBe("Explain /compact"); expect(callbacks.onActivity).not.toHaveBeenCalled();
+		fixture([success]); await new ClaudeAdapter().run(task, ".", "/compact", sink(), undefined, [{ id: "file", taskId: "owned", name: "notes.txt", kind: "text", mimeType: "text/plain", size: 5, filePath: "owned.txt", text: "Notes" }]); expect(await firstText(sdk.query.mock.calls.at(-1)?.[0].prompt)).toContain("Notes");
 	});
 	it.each([false, true])("marks unfinished compaction after stream termination or Stop (%s)", async stop => {
 		const close = fixture([status], stop); const callbacks = sink(); const adapter = new ClaudeAdapter(); const run = adapter.run(task, ".", "/compact", callbacks); const rejected = expect(run).rejects.toThrow("before completing");
