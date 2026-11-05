@@ -490,15 +490,18 @@ function SpendSummary({ effective }: { effective: EffectiveGuardrailPolicy }) {
 	return <span className="line-clamp-2">{parts.join(" · ")}</span>;
 }
 
-/** The lowest spend limits that reach a row and whether any blocks, e.g. "$25.00 a day · Blocks at the limit". */
+/**
+ * Whether any spend guardrail blocks, then the lowest limit of each period that reaches a row, e.g.
+ * "Blocks · $25.00 a day · $500.00 a month". Blocking comes first so a clamped cell never hides it.
+ */
 export function spendSummaryParts(effective: EffectiveGuardrailPolicy, t: ReturnType<typeof useTranslations<"SettingsUI">>): string[] {
-	const parts: string[] = [];
+	const limits: string[] = [];
 	for (const period of ["daily", "weekly", "monthly"] as const) {
 		const limit = effective.spendLimits[period];
-		if (limit != null) parts.push(t(`guardrailAssignments.spend.${period}` as never, { amount: formatUsd(limit) } as never));
+		if (limit != null) limits.push(t(`guardrailAssignments.spend.${period}` as never, { amount: formatUsd(limit) } as never));
 	}
-	if (parts.length) parts.push(t(effective.spendBlocks ? "guardrailAssignments.spendBlocks" : "guardrailAssignments.spendNotifies"));
-	return parts;
+	if (!limits.length) return [];
+	return [t(effective.spendBlocks ? "guardrailAssignments.spendBlocks" : "guardrailAssignments.spendNotifies"), ...limits];
 }
 
 /** The access part of an effective policy as short phrases, e.g. "ZDR only · 3 providers allowed". */
