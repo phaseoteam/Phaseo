@@ -6,6 +6,7 @@ import { themeCss, useThemes } from "../lib/appTheme";
 import { onThemeEditorRequest } from "../lib/themeEditorRequest";
 import { useEffortDisplay } from "../lib/effortDisplay";
 import { PickerGroupsSettings } from "./PickerGroupsSettings";
+import { CustomModelsSettings } from "./CustomModelsSettings";
 import { builtInThemes, importTheme, serializeTheme, shareCode, themeColours, type Theme, type ThemeHalf, type ThemeMode } from "../lib/themes";
 import type { ThemePreference } from "../types";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
@@ -112,6 +113,7 @@ export function AppearanceSettings() {
 				</div>} />
 		</SettingsSection>
 		<PickerGroupsSettings />
+		<CustomModelsSettings />
 		<SettingsSection title="Theme" description="Each theme has a light and a dark side, so it works with any mode."
 			action={<div className="flex gap-1.5"><SettingsButton variant="ghost" onClick={() => { setImporting(true); setEditing(undefined); }}><Upload />Import</SettingsButton><SettingsButton onClick={() => { setEditing(newTheme()); setImporting(false); }}><Plus />New theme</SettingsButton></div>}>
 			<div className="grid grid-cols-3 gap-3 p-4" role="radiogroup" aria-label="Colour theme">
