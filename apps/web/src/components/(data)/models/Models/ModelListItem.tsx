@@ -340,6 +340,7 @@ function ModelListItemImpl({
 	const price = (value: number) => formatHeadlinePrice(value, format.number);
 	let priceText: string | null = null;
 	let priceUnit: string | null = null;
+	let perImageEstimate = false;
 	// Token prices also stack as labelled input and output rows on desktop.
 	let priceRows: Array<{ label: string; value: string }> = [];
 	const tokenRows = (input: number | null, output: number | null) =>
@@ -349,9 +350,16 @@ function ModelListItemImpl({
 		].filter((row): row is { label: string; value: string } => row !== null);
 	if (headline?.kind === "free") {
 		priceText = t("free");
+	} else if (headline?.kind === "provider_cost") {
+		priceText = t("atProviderCost");
 	} else if (headline?.kind === "usage") {
-		priceText = price(headline.price);
-		priceUnit = headline.unit;
+		// A documented image-token rate reads as the cost of one image.
+		// Three significant digits keep a sub-cent estimate exact ($0.0336, not $0.034).
+		priceText = headline.per_image !== undefined
+			? `≈$${format.number(headline.per_image, { maximumSignificantDigits: 3, notation: "standard" })}`
+			: price(headline.price);
+		priceUnit = headline.per_image !== undefined ? null : headline.unit;
+		perImageEstimate = headline.per_image !== undefined;
 	} else if (headline?.kind === "tokens") {
 		priceText =
 			headline.input !== null && headline.output !== null
@@ -364,7 +372,7 @@ function ModelListItemImpl({
 		priceUnit = priceText ? headline.unit : null;
 		priceRows = tokenRows(headline.input, headline.output);
 	}
-	let priceIsFrom = headline && headline.kind !== "free" ? headline.from : false;
+	let priceIsFrom = headline && "from" in headline ? headline.from : false;
 	// Rows without an API headline fall back to the catalogue's lowest prices;
 	// with none at all the price is left out rather than replaced by a link.
 	if (!priceText) {
@@ -398,7 +406,9 @@ function ModelListItemImpl({
 			priceIsFrom = true;
 		}
 	}
-	const priceUnitText = priceUnit
+	const priceUnitText = perImageEstimate
+		? t("listPricePerImageEstimate")
+		: priceUnit
 		? priceIsFrom
 			? t("listPriceFromPerUnit", { unit: priceUnit })
 			: t("listPricePerUnit", { unit: priceUnit })
