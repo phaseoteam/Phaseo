@@ -8,7 +8,7 @@ const renderToStaticMarkup = (node: React.ReactNode) => renderMarkup(<AppIntlPro
 import React from "react";
 
 import type { RequestRow } from "@/features/gateway/usage/server-actions";
-import RequestDetailDialog from "./RequestDetailDialog";
+import RequestDetailDialog, { formatRequestPricingLine } from "./RequestDetailDialog";
 import { RouteRequestDetailErrorDialog } from "./RouteRequestDetailDialog";
 
 const router = {
@@ -143,5 +143,39 @@ describe("RequestDetailDialog", () => {
 		expect(markup).toContain("Request details unavailable");
 		expect(markup).toContain("Try again");
 		expect(markup).toContain("Back to request logs");
+	});
+});
+
+describe("formatRequestPricingLine", () => {
+	const formatNumber = (value: number) => value.toLocaleString("en-US");
+
+	it("shows the quantity and cost stored on gateway request lines", () => {
+		expect(formatRequestPricingLine({
+			dimension: "output_image_tokens",
+			quantity: 824,
+			line_cost_usd: "0.024720000",
+			line_nanos: 24720000,
+		}, formatNumber)).toBe("output_image_tokens=824 | $0.024720000 | 24,720,000 nanos");
+	});
+
+	it("names the SVG author model on its lines", () => {
+		expect(formatRequestPricingLine({
+			model: "openai/gpt-5-nano",
+			component: "svg_author",
+			dimension: "output_text_tokens",
+			quantity: 8199,
+			line_cost_usd: "0.003279600",
+			line_nanos: 3279600,
+		}, formatNumber)).toBe("SVG author (openai/gpt-5-nano) | output_text_tokens=8,199 | $0.003279600 | 3,279,600 nanos");
+	});
+
+	it("uses the translated SVG author label", () => {
+		expect(formatRequestPricingLine({ model: "openai/gpt-5-nano", component: "svg_author", dimension: "input_text_tokens", quantity: 1860 }, formatNumber, { svgAuthor: "SVG-Autor" }))
+			.toBe("SVG-Autor (openai/gpt-5-nano) | input_text_tokens=1,860");
+	});
+
+	it("keeps the older units and cost_usd shape", () => {
+		expect(formatRequestPricingLine({ provider: "openai", dimension: "requests", units: 1, cost_usd: 0.01 }, formatNumber))
+			.toBe("openai | requests=1 | $0.010000");
 	});
 });

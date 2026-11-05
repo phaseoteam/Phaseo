@@ -90,9 +90,10 @@ interface RequestDetailDialogProps {
 
 type ProviderAttemptRow = RequestRow["provider_attempts"][number];
 
-function formatRequestPricingLine(
+export function formatRequestPricingLine(
 	line: RequestRow["pricing_lines"][number],
 	formatNumber: (value: number) => string,
+	labels: { svgAuthor: string } = { svgAuthor: "SVG author" },
 ): string {
 	if (line == null) return "null";
 	if (
@@ -114,28 +115,46 @@ function formatRequestPricingLine(
 		typeof line.dimension === "string" && line.dimension.trim().length > 0
 			? line.dimension.trim()
 			: null;
+	// Gateway request lines store quantity, line_cost_usd and line_nanos; older
+	// line shapes use units, cost_usd and cost_nanos.
+	const rawUnits = line.units ?? line.quantity;
 	const units =
-		typeof line.units === "number"
-			? line.units
-			: typeof line.units === "string" && line.units.trim().length > 0
-				? line.units.trim()
+		typeof rawUnits === "number"
+			? formatNumber(rawUnits)
+			: typeof rawUnits === "string" && rawUnits.trim().length > 0
+				? rawUnits.trim()
 				: null;
+	const rawCostUsd = line.cost_usd ?? line.line_cost_usd;
 	const costUsd =
-		typeof line.cost_usd === "number"
-			? line.cost_usd.toFixed(6)
-			: typeof line.cost_usd === "string" && line.cost_usd.trim().length > 0
-				? line.cost_usd.trim()
+		typeof rawCostUsd === "number"
+			? rawCostUsd.toFixed(6)
+			: typeof rawCostUsd === "string" && rawCostUsd.trim().length > 0
+				? rawCostUsd.trim()
 				: null;
+	const rawCostNanos = line.cost_nanos ?? line.line_nanos;
 	const costNanos =
-		typeof line.cost_nanos === "number"
-			? formatNumber(line.cost_nanos)
-			: typeof line.cost_nanos === "string" && line.cost_nanos.trim().length > 0
-				? line.cost_nanos.trim()
+		typeof rawCostNanos === "number"
+			? formatNumber(rawCostNanos)
+			: typeof rawCostNanos === "string" && rawCostNanos.trim().length > 0
+				? rawCostNanos.trim()
+				: null;
+	// Lines priced for another model in the same request, such as the model that
+	// writes GPT Image SVG output, name that model.
+	const lineModel =
+		typeof line.model === "string" && line.model.trim().length > 0
+			? line.model.trim()
+			: null;
+	const component =
+		line.component === "svg_author"
+			? `${labels.svgAuthor}${lineModel ? ` (${lineModel})` : ""}`
+			: typeof line.component === "string" && line.component.trim().length > 0
+				? `${line.component.trim()}${lineModel ? ` (${lineModel})` : ""}`
 				: null;
 
 	const parts = [
 		provider,
 		endpoint,
+		component,
 		dimension ? `${dimension}${units != null ? `=${units}` : ""}` : null,
 		costUsd ? `$${costUsd}` : null,
 		costNanos ? `${costNanos} nanos` : null,
@@ -2800,7 +2819,7 @@ export default function RequestDetailDialog({
 											className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2"
 										>
 											<code className="whitespace-pre-wrap break-words font-mono text-xs">
-												{formatRequestPricingLine(line, (value) => format.number(value, { notation: "standard" }))}
+												{formatRequestPricingLine(line, (value) => format.number(value, { notation: "standard" }), { svgAuthor: s("SVG author") })}
 											</code>
 										</div>
 									))}
