@@ -9,7 +9,8 @@ import { configAreaIds } from "./appConfig";
 export type AppCommandArgument = { name: string; type: "string" | "boolean" | "enum" | "json"; values?: readonly string[]; required?: boolean; maxLength?: number; description: string };
 export type AppCommand = { id: string; title: string; group: "Navigate" | "View" | "Chats" | "Operator"; description: string; surface: "renderer" | "main"; agent: boolean; args?: readonly AppCommandArgument[] };
 
-const pages = ["general", "appearance", "notifications", "accounts", "usage", "agents", "mcp", "keyboard", "diagnostics", "experimental"] as const;
+// Every Settings page an agent can open; a project's settings need its id, so they open from the project instead.
+const pages = ["general", "appearance", "chat", "diffs", "threads", "browser", "source-control", "worktrees", "maintenance", "notifications", "accounts", "usage", "agents", "mcp", "code-hosts", "outside-agents", "keyboard", "diagnostics", "experimental"] as const;
 const panes = ["changes", "files", "diff", "terminal", "browser", "agents", "pulls"] as const;
 
 export const appCommands = [
