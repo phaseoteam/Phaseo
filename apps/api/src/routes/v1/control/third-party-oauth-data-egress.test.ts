@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { PUBLIC_NATIVE_CLIENT_REFUSAL } from "./route-helpers";
 
 // Observability destinations, the I/O logging policy, privacy and retention settings, provider keys (BYOK),
 // private models, request classifiers, data contribution, webhook endpoints and notification destinations
@@ -122,19 +123,7 @@ const WRITES: Call[] = [
 	{ label: "add a data contribution classifier", module: "data-contribution", method: "POST", path: "/classifiers", body: { name: "Mine" } },
 ];
 
-const READS: Call[] = [
-	{ label: "list observability destinations", module: "observability", method: "GET", path: "/destinations" },
-	{ label: "read the I/O logging policy", module: "observability", method: "GET", path: "/logging-policy" },
-	{ label: "list provider keys", module: "provider-credentials", method: "GET", path: "/" },
-	{ label: "list webhook endpoints", module: "webhook-endpoints", method: "GET", path: "/" },
-	{ label: "read settings", module: "settings", method: "GET", path: "/" },
-	{ label: "change only the routing mode", module: "settings", method: "PATCH", path: "/", body: { routing_mode: "price" } },
-	{ label: "tighten privacy (zero data retention on, I/O logging off)", module: "settings", method: "PATCH", path: "/", body: { privacyZdrOnly: true, io_logging_enabled: false, privacy_enable_paid_may_train: false } },
-	{ label: "list notification destinations", module: "notifications", method: "GET", path: "/destinations" },
-	{ label: "list notification routes", module: "notifications", method: "GET", path: "/routes" },
-	{ label: "list private models", module: "private-models", method: "GET", path: "/" },
-	{ label: "list request classifiers", module: "classifiers", method: "GET", path: "/" },
-];
+// Reads, and the same writes by management keys and dashboard sessions, are in third-party-oauth-data-egress.allowed.test.ts.
 
 async function call({ module, method, path, body }: Call) {
 	const loaders: Record<Module, () => Promise<{ request: (url: string, init: RequestInit, env: object) => Response | Promise<Response> }>> = {
@@ -171,21 +160,12 @@ describe("apps that sign in with Phaseo cannot redirect workspace data", () => {
 		expect(state.writes.filter((write) => !write.startsWith("data_contribution_consent_events."))).toEqual([]);
 	});
 
-	it.each(READS)("a third-party app can still $label", async (request) => {
-		state.auth = oauthCaller("acme_reporting_app");
-		const { text } = await call(request);
-		expect(text).not.toContain("Apps that use Sign in with Phaseo can't");
-	});
-
-	it.each(WRITES)("Phaseo's own CLI is not refused when it tries to $label", async (request) => {
-		state.auth = oauthCaller("phaseo_cli");
-		const { text } = await call(request);
-		expect(text).not.toContain("Apps that use Sign in with Phaseo can't");
-	});
-
-	it.each(WRITES)("a management key is not refused when it tries to $label", async (request) => {
-		state.auth = { ok: true, value: { ...oauthCaller("").value, authMethod: "api_key", oauthClientId: null, apiKeyRef: "kid_mgmt" } };
-		const { text } = await call(request);
-		expect(text).not.toContain("Apps that use Sign in with Phaseo can't");
+	it.each(WRITES.flatMap((request) => ["phaseo_cli", "phaseo_desktop"].map((clientId) => ({ ...request, clientId }))))("a $clientId sign-in cannot $label either", async (request) => {
+		// Their client IDs are public: anyone can start their sign-in, so they get no exemption.
+		state.auth = oauthCaller(request.clientId);
+		const { status, text } = await call(request);
+		expect(status).toBe(403);
+		expect(JSON.parse(text)).toMatchObject({ error: "forbidden", message: PUBLIC_NATIVE_CLIENT_REFUSAL });
+		expect(state.writes.filter((write) => !write.startsWith("data_contribution_consent_events."))).toEqual([]);
 	});
 });

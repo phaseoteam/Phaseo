@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { PUBLIC_NATIVE_CLIENT_REFUSAL } from "./route-helpers";
 
 vi.mock("@/lib/audit/workspaceAudit", () => ({ recordWorkspaceAuditEvent: vi.fn(async () => true) }));
 
@@ -399,7 +400,8 @@ describe("management key routes", () => {
 				apiKeyId: "oauth_1",
 				internal: false,
 				authMethod: "oauth",
-				oauthClientId: "phaseo_cli",
+				oauthClientId: null,
+				apiKeyRef: "dashboard",
 				userId: "user_member",
 				scopes: ["keys:write"],
 			} as any,
@@ -555,23 +557,38 @@ describe("management key routes", () => {
 			expect(state.updatePayloads).toEqual([{ name: "Renamed" }]);
 		});
 
-		it("leaves Phaseo's own CLI and desktop app able to create keys and change limits", async () => {
-			state.guardManagementAuthResult = oauthAuth("phaseo_cli");
+		it("refuses CLI and desktop sign-ins too, because their client IDs are public", async () => {
+			for (const clientId of ["phaseo_cli", "aistats_cli", "phaseo_desktop"]) {
+				state.guardManagementAuthResult = oauthAuth(clientId);
+				state.membershipRows.push({ role: "owner" });
+				const created = await request("https://example.com/", "POST", { name: "From the CLI" });
+				expect(created.status, clientId).toBe(403);
+				expect(await created.json(), clientId).toMatchObject({ error: "forbidden", message: PUBLIC_NATIVE_CLIENT_REFUSAL });
+
+				state.guardManagementAuthResult = oauthAuth(clientId);
+				state.membershipRows.push({ role: "owner" });
+				state.keyRows.push({ ...personKey });
+				const changed = await request("https://example.com/hash_person", "PATCH", { limit: null });
+				expect(changed.status, clientId).toBe(403);
+				expect(await changed.json(), clientId).toMatchObject({ message: PUBLIC_NATIVE_CLIENT_REFUSAL });
+			}
+			expect(state.insertPayloads).toEqual([]);
+			expect(state.updatePayloads).toEqual([]);
+		});
+
+		it("leaves the person's dashboard session able to create keys and change limits", async () => {
+			const dashboard = { ok: true, value: { ...oauthAuth("").value, oauthClientId: null, apiKeyRef: "dashboard" } } as GuardOk;
+			state.guardManagementAuthResult = dashboard;
 			state.membershipRows.push({ role: "owner" });
-			state.keyRows.push({ ...personKey, id: "key_new", hash: "hash_new", name: "From the CLI" });
-			expect((await request("https://example.com/", "POST", { name: "From the CLI" })).status).toBe(201);
+			state.keyRows.push({ ...personKey, id: "key_new", hash: "hash_new", name: "From the dashboard" });
+			expect((await request("https://example.com/", "POST", { name: "From the dashboard" })).status).toBe(201);
 			expect(state.insertPayloads).toHaveLength(1);
 
-			for (const clientId of ["phaseo_cli", "phaseo_desktop"]) {
-				state.guardManagementAuthResult = oauthAuth(clientId);
-				state.membershipRows.push({ role: "admin" });
-				state.keyRows.push({ ...personKey }, { ...personKey, monthly_limit_cost_nanos: 0 });
-				expect((await request("https://example.com/hash_person", "PATCH", { limit: null })).status, clientId).toBe(200);
-			}
-			expect(state.updatePayloads).toEqual([
-				{ daily_limit_cost_nanos: 0, weekly_limit_cost_nanos: 0, monthly_limit_cost_nanos: 0 },
-				{ daily_limit_cost_nanos: 0, weekly_limit_cost_nanos: 0, monthly_limit_cost_nanos: 0 },
-			]);
+			state.guardManagementAuthResult = dashboard;
+			state.membershipRows.push({ role: "admin" });
+			state.keyRows.push({ ...personKey }, { ...personKey, monthly_limit_cost_nanos: 0 });
+			expect((await request("https://example.com/hash_person", "PATCH", { limit: null })).status).toBe(200);
+			expect(state.updatePayloads).toEqual([{ daily_limit_cost_nanos: 0, weekly_limit_cost_nanos: 0, monthly_limit_cost_nanos: 0 }]);
 		});
 
 		it("leaves API keys and other management tokens as they were", async () => {

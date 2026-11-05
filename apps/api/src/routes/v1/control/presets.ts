@@ -9,9 +9,11 @@ import { compilePromptTemplate } from "@core/prompt-templates";
 import {
 	type ManagementRouteAuth,
 	internalServerError,
+	rejectThirdPartyOAuthSpendingChange,
 	requireCapability,
 	requireOAuthWorkspaceRole,
 } from "./route-helpers";
+import { PRESET_CONTENT_APP_REFUSAL, widensPresetContentPolicy } from "./preset-content-policy";
 
 type PresetRow = {
 	id: string;
@@ -118,6 +120,21 @@ function canSeePreset(row: PresetRow, userId: string | null | undefined) {
 function withoutOthersPrivateDraft(row: PresetRow, userId: string | null | undefined): PresetRow {
 	if (row.draft_visibility !== "private" || isPresetCreator(row, userId)) return row;
 	return { ...row, draft_name: row.name, draft_slug: row.slug, draft_description: row.description, draft_config: row.config, draft_visibility: row.visibility };
+}
+
+/**
+ * A 403 when an app that signs in with Phaseo (or a CLI or desktop sign-in) would make the preset's live
+ * config keep more request content or send it further than `before` does (null for a new preset), or null.
+ */
+function presetContentPolicyError(auth: ManagementRouteAuth, before: unknown | null, after: unknown): Response | null {
+	if (!widensPresetContentPolicy(before, after)) return null;
+	return rejectThirdPartyOAuthSpendingChange(auth, PRESET_CONTENT_APP_REFUSAL);
+}
+
+async function presetVersionConfig(presetId: string, versionId: string): Promise<{ found: boolean; config: unknown }> {
+	const { data, error } = await getSupabaseAdmin().from("preset_versions").select("config").eq("preset_id", presetId).eq("id", versionId).maybeSingle();
+	if (error) throw new Error(error.message || "Failed to load preset version");
+	return { found: Boolean(data), config: data?.config ?? null };
 }
 
 function formatPreset(row: PresetRow) {
@@ -255,6 +272,7 @@ async function handleCreatePreset(req: Request) {
 		const config = boundedConfig(body.config);
 		if (!config) return json({ error: "bad_request", message: "config must be a bounded object" }, 400, { "Cache-Control": "no-store" });
 		const templateError = promptTemplateError(config); if (templateError) return templateError;
+		const contentError = presetContentPolicyError(auth.value, null, config); if (contentError) return contentError;
 		const slugQuery = getSupabaseAdmin().from("presets").select("id").eq("workspace_id", auth.value.workspaceId).eq("slug", slug);
 		const { data: slugDuplicate, error: slugError } = await slugQuery.maybeSingle();
 		if (slugError) throw new Error(slugError.message || "Failed to check preset slug");
@@ -374,6 +392,7 @@ async function handleUpdatePreset(req: Request) {
 				: boundedConfig({ ...normalizeConfig(existing.draft_config ?? existing.config), ...normalizeConfig(body.config) });
 			if (!nextConfig) return json({ error: "bad_request", message: "config must be a bounded object" }, 400, { "Cache-Control": "no-store" });
 			const templateError = promptTemplateError(nextConfig); if (templateError) return templateError;
+			const contentError = presetContentPolicyError(auth.value, existing.config ?? null, nextConfig); if (contentError) return contentError;
 			updatePayload.draft_config = nextConfig;
 		}
 		if (body.visibility !== undefined) updatePayload.draft_visibility = normalizeVisibility(body.visibility);
@@ -467,6 +486,7 @@ async function handlePublishPresetVersion(req: Request) {
 			|| preset.draft_visibility !== preset.visibility;
 		if (!hasDraftChanges) return json({ error: "conflict", message: "No draft changes to publish" }, 409, { "Cache-Control": "no-store" });
 		const templateError = promptTemplateError(preset.draft_config ?? preset.config); if (templateError) return templateError;
+		const contentError = presetContentPolicyError(auth.value, preset.config ?? null, preset.draft_config ?? preset.config); if (contentError) return contentError;
 		const result = await getSupabaseAdmin().rpc("publish_preset_version", { target_preset_id: preset.id, actor_user_id: auth.value.userId, notes: String(body.release_notes ?? "").slice(0, 1000), requested_label: body.version_label ? String(body.version_label).slice(0, 100) : null });
 		if (result.error) {
 			const message = result.error.message ?? "";
@@ -634,6 +654,11 @@ async function handleSetPresetLabel(req: Request) {
 			if (!target.data) return json({ error: "preset_version_not_found", message: versionRef ? `Version "${versionRef}" of this preset was not found` : "Preset version not found" }, 404, { "Cache-Control": "no-store" });
 		}
 		const previous = (await listLabelRows(preset.id)).find((row) => row.label === label) ?? null;
+		const target = await presetVersionConfig(preset.id, targetVersionId);
+		if (target.found) {
+			const before = previous?.version_id ? (await presetVersionConfig(preset.id, previous.version_id)).config : preset.config ?? null;
+			const contentError = presetContentPolicyError(auth.value, before, target.config); if (contentError) return contentError;
+		}
 		const result = await getSupabaseAdmin().rpc("set_preset_version_label", { p_preset_id: preset.id, p_label: label, p_version_id: targetVersionId, actor_user_id: auth.value.userId });
 		if (result.error) {
 			const mapped = labelRpcError(result.error.message ?? ""); if (mapped) return mapped;
@@ -702,6 +727,7 @@ async function handleForkPreset(req: Request) {
 			nextSlug = `${baseSlug}-copy${attempt ? `-${attempt + 1}` : ""}`;
 		}
 		const config = boundedConfig(snapshot.config); if (!config) return json({ error: "conflict", message: "Source preset configuration is too large" }, 409, { "Cache-Control": "no-store" });
+		const contentError = presetContentPolicyError(auth.value, null, config); if (contentError) return contentError;
 		const created = await client.from("presets").insert({ workspace_id: auth.value.workspaceId, name, slug: nextSlug, description: snapshot.description ?? null, config, visibility: "private", created_by: auth.value.userId ?? null, source_preset_id: sourceId, source_preset_version_id: snapshot.id, upstream_version_id: snapshot.id }).select("id, workspace_id, name, slug, description, config, visibility, created_by, source_preset_id, source_preset_version_id, upstream_version_id, created_at, updated_at, draft_name, draft_slug, draft_description, draft_config, draft_visibility, active_version_id, versioning_method").maybeSingle();
 		if (created.error || !created.data) throw new Error(created.error?.message || "Failed to fork preset");
 		await auditPreset(auth.value, "preset.forked", created.data as PresetRow, { source_preset_id: sourceId, source_version_id: snapshot.id ?? null });
@@ -720,6 +746,12 @@ async function handleApplyUpstream(req: Request) {
 	try {
 		const preset = await findPreset(auth.value.workspaceId, presetId, auth.value.userId);
 		if (!preset || !canSeePreset(preset, auth.value.userId)) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
+		if (preset.source_preset_id) {
+			const upstream = await presetVersionConfig(preset.source_preset_id, versionId);
+			if (upstream.found) {
+				const contentError = presetContentPolicyError(auth.value, preset.config ?? null, upstream.config); if (contentError) return contentError;
+			}
+		}
 		const result = await getSupabaseAdmin().rpc("apply_preset_upstream_version", { target_preset_id: preset.id, target_version_id: versionId, actor_user_id: auth.value.userId });
 		if (result.error) {
 			const message = result.error.message ?? "";
