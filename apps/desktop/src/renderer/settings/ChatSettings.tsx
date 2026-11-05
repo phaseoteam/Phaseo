@@ -6,7 +6,10 @@ import { Select } from "../components/Select";
 import { Switch } from "../components/ui/switch";
 import { quitConfirmations, type ChatPreferences } from "../../shared/chatPreferences";
 import { usePreferences } from "./GeneralSettings";
-import { SettingsNote, SettingsPageLayout, SettingsRow, SettingsSection } from "./SettingsLayout";
+import { SettingsNote, SettingsPageLayout, SettingsRow, SettingsSection, settingsInput } from "./SettingsLayout";
+import { useState } from "react";
+import { cn } from "../lib/utils";
+import { defaultDictationModel, dictationModelKey } from "../chat/DictationButton";
 
 /** Search words for Settings → Chat. */
 export const chatSettingsKeywords = "chat message box composer send enter shortcut new line follow-up follow up queue steer running turn rich text markdown format hold quit ctrl+q cmd+qting bold italic plain text quit quitting confirm close window exit ask before quitting working chats";
@@ -36,6 +39,7 @@ export function ChatSettings() {
 					options={[{ value: "queue", label: "Queue (default)" }, { value: "steer", label: "Steer" }]} />} />
 			<SettingsRow title="Rich text" description="Show Markdown formatting, such as bold, headings and code, as you type: in message boxes, comments, issues, instructions and other places you write Markdown. Off keeps the text plain; the characters you type are the same either way."
 				control={<Switch aria-label="Rich text in the message box" disabled={disabled} checked={chat.richTextComposer} onCheckedChange={richTextComposer => change({ richTextComposer })} />} />
+			<DictationModelRow />
 		</SettingsSection>
 		<SettingsSection title="Quitting" label="Quitting">
 			<SettingsRow title="Protect against quitting" description={`Quitting stops chats that are still working; they continue the next time Phaseo opens (Settings → Maintenance). Holding means ${isMac() ? "⌘Q" : "Ctrl+Q"} quits only once held for a second, and other ways of quitting${isMac() ? "" : ", such as closing the last window,"} ask while chats are working.`}
@@ -78,4 +82,12 @@ export function DiffSettings() {
 		</SettingsSection>
 		{error && <SettingsNote tone="error" role="alert">{error}</SettingsNote>}
 	</SettingsPageLayout>;
+}
+
+/** The Phaseo model the composer's microphone uses; saved when the field is left. */
+function DictationModelRow() {
+	const [model, setModel] = usePersistedState(dictationModelKey, defaultDictationModel);
+	const [text, setText] = useState(model);
+	return <SettingsRow title="Dictation model" description={`The Phaseo model that turns speech into text when you use the microphone in the composer (${shortcut("composer.dictate") || "the microphone button"}). Each recording is billed to your Phaseo account at the model's price.`}
+		control={<input aria-label="Dictation model" value={text} spellCheck={false} onChange={event => setText(event.target.value)} onBlur={() => setModel(text.trim() || defaultDictationModel)} onKeyDown={event => { if (event.key === "Enter") event.currentTarget.blur(); }} className={cn(settingsInput, "w-64 font-mono text-xs")} />} />;
 }

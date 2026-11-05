@@ -333,6 +333,8 @@ export type WorkspaceApi = {
 	/** Saves a copy of an attachment where the person chooses; false when they cancel. */
 	saveAttachment: (taskId: string, id: string) => Promise<boolean>;
 	installations: () => Promise<HarnessInstallation[]>;
+	/** Dictation: audio from the composer, transcribed by a Phaseo model through the signed-in account. */
+	transcribe: (audio: Uint8Array, mimeType: string, model: string) => Promise<string>;
 	/** Open incidents on the public status pages of Phaseo and the agents' makers, read at most every five minutes. */
 	providerIncidents: () => Promise<ProviderIncident[]>;
 	openStatusPage: (id: ProviderStatusId) => Promise<void>;

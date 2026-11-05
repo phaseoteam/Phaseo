@@ -45,6 +45,8 @@ module.exports = {
 		appCategoryType: "public.app-category.developer-tools",
 		// phaseo://chat/<id> links open the chat (src/shared/chatLinks.ts).
 		protocols: [{ name: "Phaseo chat link", schemes: ["phaseo"] }],
+		// Dictation in the composer records from the microphone.
+		extendInfo: { NSMicrophoneUsageDescription: "Phaseo records from the microphone only while you dictate a message." },
 		name: "Phaseo",
 		ignore: [
 			/^\/node_modules(?:\/|$)/,

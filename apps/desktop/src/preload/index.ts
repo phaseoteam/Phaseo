@@ -92,6 +92,7 @@ const desktopApi: PhaseoDesktopApi = {
 		onBackgroundChange: listener => { const subscription = (_event: Electron.IpcRendererEvent, taskId: string) => listener(taskId); ipcRenderer.on("workspace:background-changed", subscription); return () => ipcRenderer.removeListener("workspace:background-changed", subscription); },
 		saveAttachment: (taskId, id) => ipcRenderer.invoke("workspace:save-attachment", taskId, id),
 		installations: () => ipcRenderer.invoke("workspace:installations"),
+		transcribe: (audio, mimeType, model) => ipcRenderer.invoke("workspace:transcribe", audio, mimeType, model),
 		providerIncidents: () => ipcRenderer.invoke("workspace:provider-incidents"),
 		openStatusPage: id => ipcRenderer.invoke("workspace:open-status-page", id),
 		acpRegistry: fresh => ipcRenderer.invoke("workspace:acp-registry", fresh ?? false),

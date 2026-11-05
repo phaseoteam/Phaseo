@@ -1083,6 +1083,11 @@ function harnessInstallations() {
 		} catch (error) { return { harness, installed: false, error: error instanceof Error ? error.message : "Installation is unavailable." }; }
 	}));
 }
+// Dictation from the composer: at most 25 MB of audio, transcribed through the person's Phaseo account.
+ipcMain.handle("workspace:transcribe", async (event, audio: unknown, mimeType: unknown, model: unknown) => {
+	if (!senderWindow(event) || !(audio instanceof Uint8Array) || audio.byteLength > 25 * 1024 * 1024 || typeof mimeType !== "string" || !/^audio\/[\w.+-]+(;\s*codecs=[\w.,-]+)?$/.test(mimeType) || typeof model !== "string" || !/^[\w.-]+\/[\w.:-]+$/.test(model)) throw new Error("Invalid dictation request.");
+	return workspaceRuntime.transcribe(audio, mimeType, model);
+});
 ipcMain.handle("workspace:provider-incidents", event => { if (!senderWindow(event)) throw new Error("Untrusted workspace request."); return providerIncidents(); });
 // Opens a provider's status page by its id; the address comes from the app, never the window.
 ipcMain.handle("workspace:open-status-page", async (event, id: unknown) => { if (!senderWindow(event) || typeof id !== "string" || !Object.hasOwn(statusSources, id)) throw new Error("Unknown status page."); await shell.openExternal(statusSources[id as keyof typeof statusSources].page); });

@@ -11,6 +11,7 @@ import { isMac } from "../lib/shortcuts";
 import { keyLabel } from "../../shared/keybindings";
 import { isSendKey, useSendKey } from "./sendKey";
 import { CodeBlockMenu } from "./CodeBlockMenu";
+import { DictationButton } from "./DictationButton";
 import { useWorkspacePreferences } from "../lib/workspacePreferences";
 
 /** The message box: an editor whose files, chats and attachments sit inline as chips. */
@@ -63,6 +64,7 @@ export function Composer({ editor, onSubmit, onStop, disabled, canSend, running,
 			<ScrollArea className="max-h-60" viewportClassName="max-h-60"><EditorContent editor={editor.editor} className={cn("composer-editor-host px-4 pt-3.5 pb-1 leading-relaxed", size === "large" ? "min-h-[72px] text-[15px]" : "min-h-11 text-[14px]", disabled && "opacity-60")} /></ScrollArea>
 			<div className="flex items-center gap-1 px-2 pt-1 pb-2">
 				{tools}
+				<DictationButton editor={editor} disabled={disabled} active={shortcuts} />
 				<CodeBlockMenu editor={editor} disabled={disabled} />
 				<RichTextToggle />
 				<div className="ml-auto flex min-w-0 items-center gap-1">
