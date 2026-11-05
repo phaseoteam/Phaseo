@@ -16,6 +16,7 @@ import { DiffCodeView, type DiffViewFile, type DiffViewHandle } from "./DiffCode
 import { DiffFileTree } from "./DiffFileTree";
 import { DIFF_SELECTION_KEY, OPEN_TURN_DIFF_EVENT, onProjectChange, openProjectFile, pendingTurnDiffPaths, type OpenTurnDiffDetail } from "./events";
 import { DiffLoadingState, ipcError, RefreshIcon, SURFACE_HEADER_CLASS, SurfaceMessage, SurfaceNotice, ToolbarButton, useThemeType } from "./surfaceChrome";
+import { ResizableAside } from "./ResizableAside";
 
 type Loaded = { key: string; result: GitDiffResult };
 const AUTOMATIC = "";
@@ -294,7 +295,7 @@ export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: stri
 				</ToolbarButton>}
 				renderHeaderSuffix={file => <CopyPathButton path={file.filePath} />} />
 		</div>
-		{treeOpen && <aside className="flex w-[min(16rem,40%)] min-w-40 shrink-0 border-l border-border/60"><DiffFileTree label={`${section.title} files`} nodes={tree} selectedPath={selectedPath} onSelect={reveal} /></aside>}
+		{treeOpen && <ResizableAside storageKey="phaseo.desktop.diffTreeWidth" defaultWidth={256} min={160} maxShare={0.6} label="Resize the changed files list"><DiffFileTree label={`${section.title} files`} nodes={tree} selectedPath={selectedPath} onSelect={reveal} /></ResizableAside>}
 	</div>;
 
 	return <div className="diff-surface flex h-full min-h-0 min-w-0 flex-col bg-background" data-diff-scope={selection.kind}>

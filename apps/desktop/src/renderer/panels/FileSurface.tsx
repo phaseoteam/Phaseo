@@ -18,6 +18,7 @@ import { FileBrowserSurface } from "./FileBrowserSurface";
 import { useRevealLine } from "./revealLine";
 import { announceProjectChange, onProjectChange, openProjectFile } from "./events";
 import { ipcError, SurfaceError, SurfaceMessage, SurfaceNotice, ToolbarButton, useThemeType } from "./surfaceChrome";
+import { ResizableAside } from "./ResizableAside";
 
 /** One header row for every file surface: crumbs on the left, icon-only actions on the right. */
 const FILE_SURFACE_HEADER_CLASS = "flex h-10 min-h-10 shrink-0 items-center gap-2 border-b border-border/60 bg-background px-3";
@@ -228,7 +229,7 @@ export function FileSurface({ projectId, path, onDirtyChange, onOpenFile }: { pr
 		</div>}
 		<div className="flex min-h-0 flex-1 overflow-hidden">
 			<div ref={bodyRef} className="flex min-w-0 flex-1 flex-col overflow-hidden">{body}</div>
-			{explorerOpen && <aside className="flex min-h-0 w-[min(22rem,46%)] min-w-64 shrink-0 border-l border-border/60 bg-background"><FileBrowserSurface projectId={projectId} selectedPath={path} onOpenFile={open} /></aside>}
+			{explorerOpen && <ResizableAside storageKey="phaseo.desktop.fileExplorerWidth" defaultWidth={352} min={200} maxShare={0.7} label="Resize the file explorer"><FileBrowserSurface projectId={projectId} selectedPath={path} onOpenFile={open} /></ResizableAside>}
 		</div>
 	</div>;
 }
