@@ -336,6 +336,11 @@ export type WorkspaceApi = {
 	/** Saves a copy of an attachment where the person chooses; false when they cancel. */
 	saveAttachment: (taskId: string, id: string) => Promise<boolean>;
 	installations: () => Promise<HarnessInstallation[]>;
+	/** MCP Apps: a tool on the app's own server, and running it for the app once the person allowed it. */
+	mcpAppTool: (taskId: string, activityId: string, name: string) => Promise<{ name: string; title?: string; description?: string; readOnly: boolean }>;
+	mcpAppCall: (taskId: string, activityId: string, name: string, input: Record<string, unknown>) => Promise<unknown>;
+	/** Opens a link a page or an app opened (http or https) in the system's browser. */
+	openPageLink: (url: string) => Promise<boolean>;
 	/** Open incidents on the public status pages of Phaseo and the agents' makers, read at most every five minutes. */
 	providerIncidents: () => Promise<ProviderIncident[]>;
 	openStatusPage: (id: ProviderStatusId) => Promise<void>;

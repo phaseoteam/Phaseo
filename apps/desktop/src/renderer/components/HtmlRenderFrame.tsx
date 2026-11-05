@@ -2,50 +2,83 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSPro
 import { Maximize2 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "./ui/dialog";
 import { htmlRenderLimits, htmlRenderUrl, type HtmlRenderActivity } from "../../shared/htmlRender";
-import { mcpAppReply, type McpAppCall } from "./mcpAppHost";
+import { mcpAppReply, type McpAppCall, type McpAppHostActions } from "./mcpAppHost";
+import { askConsent } from "./ConsentDialog";
+import { showToast } from "./ui/toast";
+import { setAppContext } from "../lib/mcpAppContext";
 
 const watchTheme = (listener: () => void) => { const observer = new MutationObserver(listener); observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] }); return () => observer.disconnect(); };
 const useDark = () => useSyncExternalStore(watchTheme, () => document.documentElement.classList.contains("dark"), () => true);
 
-/** One frame of the page: scripts run, but on no origin of the app's, with no popups, forms or top navigation. */
-function Frame({ src, title, className, style, onHeight, mcpApp, theme }: { src: string; title: string; className: string; style?: CSSProperties; onHeight?: (height: number) => void; mcpApp?: McpAppCall; theme: "light" | "dark" }) {
-	const frame = useRef<HTMLIFrameElement>(null);
+/** Where an MCP App page lives, so its requests reach its own server and its own chat. */
+export type McpAppPlace = { taskId: string; activityId: string };
+
+/** The person is using this frame: it has focus, which only a click or key in it gives. Pages act only then. */
+const using = (frame: HtmlIFrameElement | null) => Boolean(frame && document.activeElement === frame);
+type HtmlIFrameElement = HTMLIFrameElement;
+
+/**
+ * One frame of the page: scripts run, but on no origin of the app's, with no popups, forms or top navigation. Links the
+ * person clicks open in the browser; an MCP App also gets its host.
+ */
+function Frame({ src, title, className, style, onHeight, mcpApp, place, theme, onFullscreen }: { src: string; title: string; className: string; style?: CSSProperties; onHeight?: (height: number) => void; mcpApp?: McpAppCall; place?: McpAppPlace; theme: "light" | "dark"; onFullscreen?: (on: boolean) => boolean }) {
+	const frame = useRef<HtmlIFrameElement>(null);
 	useEffect(() => {
-		if (!onHeight && !mcpApp) return;
-		// Only this frame's own window may size it or talk to it.
+		const api = window.phaseoDesktop?.workspace;
+		const host: McpAppHostActions | undefined = mcpApp && place && api ? {
+			theme,
+			callTool: async (name, input) => {
+				const tool = await api.mcpAppTool(place.taskId, place.activityId, name);
+				if (!tool.readOnly && !await askConsent({ title: `Let ${title} run ${tool.title ?? tool.name}?`, description: tool.description ?? "The app wants to run a tool on its own MCP server.", detail: JSON.stringify(input, null, 2), confirm: "Run it" })) throw new Error("The person did not allow this tool.");
+				return api.mcpAppCall(place.taskId, place.activityId, name, input);
+			},
+			sendMessage: async body => {
+				if (!await askConsent({ title: `Send this message from ${title}?`, description: "The app wants to post it in this chat as you.", detail: body, confirm: "Send" })) return false;
+				return Boolean(await api.command({ type: "send", id: place.taskId, text: body }));
+			},
+			setContext: body => setAppContext(place.taskId, place.activityId, title, body),
+			openLink: async url => using(frame.current) && api.openPageLink(url),
+			requestFullscreen: on => onFullscreen?.(on && using(frame.current)) ? "fullscreen" : "inline",
+		} : undefined;
 		const listen = (event: MessageEvent) => {
 			const target = frame.current?.contentWindow;
 			if (!target || event.source !== target) return;
-			const value = (event.data as { phaseoHtmlHeight?: unknown } | null)?.phaseoHtmlHeight;
+			const data = event.data as { phaseoHtmlHeight?: unknown; phaseoOpenLink?: unknown } | null;
+			const value = data?.phaseoHtmlHeight;
 			if (typeof value === "number" && Number.isFinite(value) && value > 0) { onHeight?.(Math.ceil(value)); return; }
-			if (!mcpApp) return;
-			const { replies, height } = mcpAppReply(event.data as never, mcpApp, theme);
-			for (const reply of replies) target.postMessage(reply, "*");
-			if (height) onHeight?.(height);
+			// A link the person clicked in the page (the page reports it; it cannot navigate itself).
+			if (typeof data?.phaseoOpenLink === "string") { if (using(frame.current)) void api?.openPageLink(data.phaseoOpenLink).then(opened => { if (!opened) showToast("error", "Only web links open from a page"); }); return; }
+			if (!host) return;
+			void mcpAppReply(event.data as never, mcpApp!, host).then(({ replies, height }) => {
+				for (const reply of replies) frame.current?.contentWindow?.postMessage(reply, "*");
+				if (height) onHeight?.(height);
+			});
 		};
 		window.addEventListener("message", listen);
 		return () => window.removeEventListener("message", listen);
-	}, [onHeight, mcpApp, theme]);
+	}, [onHeight, mcpApp, place, theme, title, onFullscreen]);
 	return <iframe ref={frame} src={src} title={title} sandbox="allow-scripts" referrerPolicy="no-referrer" className={className} style={style} />;
 }
 
-/** A page an agent showed with html_render, above its reply and sized to the page; it opens full screen. */
-export function HtmlRenderFrame({ html, render, mcpApp }: { html: string; render: HtmlRenderActivity; mcpApp?: McpAppCall }) {
+/** A page an agent showed with html_render, or an MCP App, sized to the page; it opens full screen. */
+export function HtmlRenderFrame({ html, render, mcpApp, place }: { html: string; render: HtmlRenderActivity; mcpApp?: McpAppCall; place?: McpAppPlace }) {
 	const dark = useDark();
 	const src = useMemo(() => htmlRenderUrl(html, dark ? "dark" : "light"), [html, dark]);
 	const [reported, setReported] = useState<number>();
 	const [expanded, setExpanded] = useState(false);
 	// The page's own height wins over the agent's estimate, within a bound so a page that grows with its frame stops.
 	const height = Math.min(reported ?? render.height, htmlRenderLimits.maxHeight * 4);
-	return <figure className="group/html relative m-0" aria-label={render.title}>
-		<Frame src={src} title={render.title} className="block w-full border-0 bg-transparent" style={{ height }} onHeight={setReported} mcpApp={mcpApp} theme={dark ? "dark" : "light"} />
-		<button type="button" aria-label={`Open ${render.title} full screen`} title="Open full screen" onClick={() => setExpanded(true)} className="absolute top-2 right-2 rounded-md bg-background/80 p-1 text-muted-foreground opacity-0 transition-opacity group-hover/html:opacity-100 focus-visible:opacity-100 hover:text-foreground">
+	const theme = dark ? "dark" : "light";
+	const fullscreen = useMemo(() => (on: boolean) => { setExpanded(on); return on; }, []);
+	return <figure className="group/html relative m-0" aria-label={render.title} data-html-page={mcpApp ? "app" : "page"}>
+		<Frame src={src} title={render.title} className="block w-full border-0 bg-transparent" style={{ height }} onHeight={setReported} mcpApp={mcpApp} place={place} theme={theme} onFullscreen={fullscreen} />
+		<button type="button" aria-label={`Open ${render.title} full screen`} title="Open full screen" onClick={() => setExpanded(true)} className="absolute top-2 right-2 rounded-md bg-background/80 p-1 text-muted-foreground opacity-0 transition-opacity group-hover/html:opacity-100 hover:text-foreground focus-visible:opacity-100">
 			<Maximize2 className="size-3.5" />
 		</button>
 		<Dialog open={expanded} onOpenChange={setExpanded}>
 			<DialogContent className="flex h-[90vh] max-w-[95vw] flex-col gap-2 p-3 sm:max-w-[95vw]">
 				<DialogTitle className="text-[13px] font-medium">{render.title}</DialogTitle>
-				{expanded && <Frame src={src} title={render.title} className="min-h-0 w-full flex-1 border-0 bg-background" mcpApp={mcpApp} theme={dark ? "dark" : "light"} />}
+				{expanded && <Frame src={src} title={render.title} className="min-h-0 w-full flex-1 border-0 bg-background" mcpApp={mcpApp} place={place} theme={theme} />}
 			</DialogContent>
 		</Dialog>
 	</figure>;

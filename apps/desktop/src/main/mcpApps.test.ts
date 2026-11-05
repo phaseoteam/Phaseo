@@ -3,7 +3,7 @@ import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { McpConnection } from "../shared/mcp";
 import { McpAppPages, mcpCallOf, mcpToolOf } from "./mcpApps";
 import { mcpAppReply } from "../renderer/components/mcpAppHost";
@@ -20,12 +20,22 @@ describe("MCP Apps", () => {
 		expect(mcpCallOf({ text: "{\"city\":\"Leeds\"}\n\n{\"high\":14}" })).toEqual({ input: { city: "Leeds" }, result: { content: [{ type: "text", text: "{\"high\":14}" }], structuredContent: { high: 14 } } });
 	});
 
-	it("answers the page's handshake, then gives it the call, and declines acting for the person", () => {
+	it("answers the page's handshake, gives it the call, and acts for it only through the host", async () => {
 		const call = { input: { city: "Leeds" }, result: { content: [] } };
-		expect(mcpAppReply({ jsonrpc: "2.0", id: 1, method: "ui/initialize" }, call, "dark").replies[0]).toMatchObject({ id: 1, result: { hostContext: { theme: "dark" } } });
-		expect(mcpAppReply({ jsonrpc: "2.0", method: "ui/notifications/initialized" }, call, "dark").replies.map(reply => (reply as { method: string }).method)).toEqual(["ui/notifications/tool-input", "ui/notifications/tool-result"]);
-		expect(mcpAppReply({ jsonrpc: "2.0", method: "ui/notifications/size-changed", params: { height: 412.4 } }, call, "light").height).toBe(413);
-		expect(mcpAppReply({ jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "delete_everything" } }, call, "light").replies[0]).toMatchObject({ id: 2, error: { code: -32601 } });
+		const host = { theme: "dark" as const, callTool: vi.fn(async () => ({ content: [{ type: "text", text: "Rain" }] })), sendMessage: vi.fn(async () => false), setContext: vi.fn(), openLink: vi.fn(async () => true), requestFullscreen: vi.fn(() => "inline" as const) };
+		expect((await mcpAppReply({ jsonrpc: "2.0", id: 1, method: "ui/initialize" }, call, host)).replies[0]).toMatchObject({ id: 1, result: { hostContext: { theme: "dark" }, hostCapabilities: { serverTools: {} } } });
+		expect((await mcpAppReply({ jsonrpc: "2.0", method: "ui/notifications/initialized" }, call, host)).replies.map(reply => (reply as { method: string }).method)).toEqual(["ui/notifications/tool-input", "ui/notifications/tool-result"]);
+		expect((await mcpAppReply({ jsonrpc: "2.0", method: "ui/notifications/size-changed", params: { height: 412.4 } }, call, host)).height).toBe(413);
+		expect((await mcpAppReply({ jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "forecast", arguments: { city: "York" } } }, call, host)).replies[0]).toMatchObject({ id: 2, result: { content: [{ text: "Rain" }] } });
+		expect(host.callTool).toHaveBeenCalledWith("forecast", { city: "York" });
+		host.callTool.mockRejectedValueOnce(new Error("The person did not allow this tool."));
+		expect((await mcpAppReply({ jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "delete_everything" } }, call, host)).replies[0]).toMatchObject({ id: 3, error: { message: "The person did not allow this tool." } });
+		expect((await mcpAppReply({ jsonrpc: "2.0", id: 4, method: "ui/message", params: { role: "user", content: [{ type: "text", text: "Book it" }] } }, call, host)).replies[0]).toMatchObject({ id: 4, error: {} });
+		expect(host.sendMessage).toHaveBeenCalledWith("Book it");
+		await mcpAppReply({ jsonrpc: "2.0", id: 5, method: "ui/update-model-context", params: { content: [{ type: "text", text: "Picked York" }] } }, call, host);
+		expect(host.setContext).toHaveBeenCalledWith("Picked York");
+		expect((await mcpAppReply({ jsonrpc: "2.0", id: 6, method: "ui/request-display-mode", params: { mode: "fullscreen" } }, call, host)).replies[0]).toMatchObject({ result: { mode: "inline" } });
+		expect((await mcpAppReply({ jsonrpc: "2.0", id: 7, method: "sampling/createMessage" }, call, host)).replies[0]).toMatchObject({ error: { code: -32601 } });
 	});
 
 	it("reads the ui:// page a tool names from its server, once", async () => {
@@ -45,6 +55,9 @@ await app.connect(new StdioServerTransport());
 			const weather = connection("Weather", { arguments: [script] });
 			expect(await pages.page(weather, "forecast")).toBe("<!doctype html><p>Forecast</p>");
 			expect(await pages.page(weather, "plain")).toBeUndefined();
+			expect(await pages.tool(weather, "forecast")).toMatchObject({ name: "forecast", readOnly: false });
+			expect(await pages.call(weather, "plain", {})).toMatchObject({ content: [{ type: "text", text: "Plain" }] });
+			await expect(pages.call(weather, "missing", {})).rejects.toThrow("no tool called missing");
 		} finally { rmSync(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); }
 	}, 60_000);
 });

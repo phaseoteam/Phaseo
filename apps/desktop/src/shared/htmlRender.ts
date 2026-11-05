@@ -53,11 +53,13 @@ export function htmlRenderBaseSheet(appearance: HtmlAppearance) {
 }
 /** Reports the page's height to the chat, which fits the frame to it. */
 export const htmlRenderHeightScript = `<script>(()=>{const send=()=>parent.postMessage({phaseoHtmlHeight:Math.ceil(document.documentElement.getBoundingClientRect().height)},"*");new ResizeObserver(send).observe(document.documentElement);addEventListener("load",send);})()</script>`;
-/** The page as served: the base sheet first, so the page's own styles win, and the height reporter last. */
+/** A web link the person clicks goes to the chat, which opens it in the browser; the sandbox lets the page navigate nowhere. */
+export const htmlRenderLinkScript = `<script>document.addEventListener("click",event=>{const link=event.target instanceof Element?event.target.closest("a[href]"):null;if(!link)return;const url=new URL(link.getAttribute("href"),location.href);if(url.protocol!=="https:"&&url.protocol!=="http:")return;event.preventDefault();parent.postMessage({phaseoOpenLink:url.href},"*")},true)</script>`;
+/** The page as served: the base sheet first, so the page's own styles win, then the height reporter and link handler. */
 export function htmlRenderDocument(page: string, appearance: HtmlAppearance) {
 	const head = /<head[^>]*>/i.exec(page);
 	const withSheet = head ? page.slice(0, head.index + head[0].length) + htmlRenderBaseSheet(appearance) + page.slice(head.index + head[0].length) : htmlRenderBaseSheet(appearance) + page;
-	return withSheet + htmlRenderHeightScript;
+	return withSheet + htmlRenderHeightScript + htmlRenderLinkScript;
 }
 /** No requests leave the page except loading scripts, styles, fonts and images over https; CSP sandbox keeps it off the app's origin even when opened directly. */
 export const htmlRenderPolicy = "default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' https:; style-src 'unsafe-inline' https:; img-src data: blob: https:; font-src data: https:; media-src data: blob: https:; connect-src 'none'; form-action 'none'; base-uri 'none'; sandbox allow-scripts";

@@ -37,6 +37,7 @@ import { ChildRequests, Requests } from "./Requests";
 import { ChatBranchPicker } from "./ChatBranchPicker";
 import { ChatLineage } from "./ChatLineage";
 import { PromptLengthNotice } from "./PromptLengthNotice";
+import { takeAppContext } from "../lib/mcpAppContext";
 import { promptLengthProblem } from "../../shared/promptLength";
 import { AgentThreads } from "./AgentThreads";
 import { ChatSpend } from "./ChatSpend";
@@ -285,7 +286,9 @@ function ChatComposer({ task }: { task: Task }) {
 		let delivered = false;
 		try {
 			const prepared = await menu.prepare(message.text);
-			if (await command({ type: "send", id: task.id, text: prepared.text || attachmentsOnlyText, attachments: message.attachments,
+			// What MCP Apps in this chat noted about what the person did in them goes with the message, where it can be seen.
+			const appContext = prepared.nativeAction ? "" : takeAppContext(task.id);
+			if (await command({ type: "send", id: task.id, text: (prepared.text || attachmentsOnlyText) + appContext, attachments: message.attachments,
 				...(message.threadReferences.length ? { threadReferences: message.threadReferences } : {}), ...(message.githubReferences.length ? { githubReferences: message.githubReferences } : {}), ...(prepared.nativeAction ? { nativeAction: prepared.nativeAction } : {}) })) {
 				delivered = true; rememberModel(selection); recordPrompt(typed); return true;
 			}

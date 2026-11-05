@@ -1083,7 +1083,26 @@ export class WorkspaceRuntime {
 		const html = await this.mcpApps.page(match.connection, match.tool).catch(() => undefined);
 		if (!html || this.closing) return;
 		const title = `${match.connection.name} · ${match.tool}`;
-		note({ id: `${activity.id}:app`, type: "tool", title, text: html, status: "completed", htmlRender: { title, height: 360 }, mcpApp: mcpCallOf(activity) });
+		note({ id: `${activity.id}:app`, type: "tool", title, text: html, status: "completed", htmlRender: { title, height: 360 }, mcpApp: { ...mcpCallOf(activity), connectionId: match.connection.id, tool: match.tool, source: activity.id } });
+	}
+	/** The MCP server behind an app page on a chat's turn, for the page's own tool calls. */
+	private mcpAppServer(taskId: string, activityId: string) {
+		const app = (this.store.getTask(taskId).activities ?? []).find(activity => activity.id === activityId)?.mcpApp;
+		const connection = app?.connectionId ? this.store.getMcpConnections().find(value => value.id === app.connectionId && value.enabled && !value.archived) : undefined;
+		if (!connection) throw new Error("This app's MCP server is no longer set up. Check Settings → MCP servers.");
+		return connection;
+	}
+	/** What a tool on an app's own server is, so the window can ask the person before the app runs it. */
+	async mcpAppTool(taskId: string, activityId: string, name: string) {
+		const tool = await this.mcpApps.tool(this.mcpAppServer(taskId, activityId), name);
+		if (!tool) throw new Error(`The app's server has no tool called ${name}.`);
+		return tool;
+	}
+	/** Runs a tool of an app's own server for the app; the window asked the person first unless the tool is read-only. */
+	async mcpAppCall(taskId: string, activityId: string, name: string, input: Record<string, unknown>) {
+		const result = await this.mcpApps.call(this.mcpAppServer(taskId, activityId), name, input);
+		if (JSON.stringify(result).length > 1_000_000) throw new Error("The tool's result is over 1 MB.");
+		return result;
 	}
 	/** MCP header values, kept in the vault by connection (see McpHeaderSecrets). */
 	private readonly mcpHeaders: McpHeaderSecrets;

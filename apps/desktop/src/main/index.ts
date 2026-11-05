@@ -1083,6 +1083,23 @@ function harnessInstallations() {
 		} catch (error) { return { harness, installed: false, error: error instanceof Error ? error.message : "Installation is unavailable." }; }
 	}));
 }
+// MCP Apps: a page's calls to its own server's tools. The window asked the person first unless the tool is read-only.
+const appIds = (taskId: unknown, activityId: unknown, name: unknown) => typeof taskId === "string" && taskId.length <= 100 && typeof activityId === "string" && activityId.length <= 300 && typeof name === "string" && name.length > 0 && name.length <= 200;
+ipcMain.handle("workspace:mcp-app-tool", async (event, taskId: unknown, activityId: unknown, name: unknown) => {
+	if (!senderWindow(event) || !appIds(taskId, activityId, name)) throw new Error("Invalid app request.");
+	return workspaceRuntime.mcpAppTool(taskId as string, activityId as string, name as string);
+});
+ipcMain.handle("workspace:mcp-app-call", async (event, taskId: unknown, activityId: unknown, name: unknown, input: unknown) => {
+	if (!senderWindow(event) || !appIds(taskId, activityId, name) || !input || typeof input !== "object" || Array.isArray(input) || JSON.stringify(input).length > 1_000_000) throw new Error("Invalid app request.");
+	return workspaceRuntime.mcpAppCall(taskId as string, activityId as string, name as string, input as Record<string, unknown>);
+});
+// A link a page or an app opened: http and https only, in the system's browser.
+ipcMain.handle("workspace:open-page-link", async (event, url: unknown) => {
+	if (!senderWindow(event) || typeof url !== "string" || url.length > 4000) return false;
+	let parsed: URL; try { parsed = new URL(url); } catch { return false; }
+	if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;
+	await shell.openExternal(parsed.href); return true;
+});
 ipcMain.handle("workspace:provider-incidents", event => { if (!senderWindow(event)) throw new Error("Untrusted workspace request."); return providerIncidents(); });
 // Opens a provider's status page by its id; the address comes from the app, never the window.
 ipcMain.handle("workspace:open-status-page", async (event, id: unknown) => { if (!senderWindow(event) || typeof id !== "string" || !Object.hasOwn(statusSources, id)) throw new Error("Unknown status page."); await shell.openExternal(statusSources[id as keyof typeof statusSources].page); });

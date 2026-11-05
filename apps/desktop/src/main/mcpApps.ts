@@ -38,19 +38,24 @@ export function mcpCallOf(activity: Pick<AgentActivity, "text" | "mcpCall">) {
 }
 
 type Lookup = (connection: McpConnection) => Promise<McpConnection>;
-const uiUri = (tool: { _meta?: Record<string, unknown> }) => {
-	const meta = tool._meta ?? {}, nested = (meta.ui as { resourceUri?: unknown } | undefined)?.resourceUri, flat = meta["ui/resourceUri"];
-	const uri = typeof nested === "string" ? nested : typeof flat === "string" ? flat : undefined;
-	return uri?.startsWith("ui://") ? uri : undefined;
+type ToolEntry = { name: string; title?: string; description?: string; readOnly: boolean; uri?: string; appOnly: boolean };
+const uiMeta = (tool: { _meta?: Record<string, unknown> }) => {
+	const meta = tool._meta ?? {}, ui = (meta.ui ?? {}) as { resourceUri?: unknown; visibility?: unknown }, flat = meta["ui/resourceUri"];
+	const uri = typeof ui.resourceUri === "string" ? ui.resourceUri : typeof flat === "string" ? flat : undefined;
+	const visibility = Array.isArray(ui.visibility) ? ui.visibility as unknown[] : undefined;
+	return { uri: uri?.startsWith("ui://") ? uri : undefined, appOnly: Boolean(visibility && visibility.includes("app") && !visibility.includes("model")) };
 };
 
+/** What an app's own server says a tool is, for asking the person before it runs. */
+export type McpAppTool = Pick<ToolEntry, "name" | "title" | "description" | "readOnly">;
+
 /**
- * MCP Apps: a tool may name a ui:// page its server serves. Each server's tool list is read once per configuration, with
- * its own short-lived client (the agent's connection belongs to the agent), and each page once; nothing runs on the page
- * here, it is only fetched for the chat's sandboxed frame.
+ * MCP Apps: a tool may name a ui:// page its server serves, and that page may call the server's tools. Each server's tool
+ * list is read once per configuration, with the app's own short-lived client (the agent's connection belongs to the
+ * agent), and each page once; the page itself runs only in the chat's sandboxed frame.
  */
 export class McpAppPages {
-	private readonly tools = new Map<string, Promise<Map<string, string>>>();
+	private readonly tools = new Map<string, Promise<Map<string, ToolEntry>>>();
 	private readonly pages = new Map<string, Promise<string | undefined>>();
 	constructor(private readonly withSecrets: Lookup) {}
 	private key = (connection: McpConnection) => createHash("sha256").update(JSON.stringify(connection)).digest("hex");
@@ -66,26 +71,34 @@ export class McpAppPages {
 		try { return await use(client); } finally { await client.close().catch(() => undefined); }
 	}
 
-	/** The page a tool names, or undefined when it names none or the server can't give it. */
-	async page(connection: McpConnection, tool: string): Promise<string | undefined> {
+	/** The server's tools, read once per configuration; a server that can't be read has none. */
+	private toolsOf(connection: McpConnection) {
 		const key = this.key(connection);
 		let tools = this.tools.get(key);
 		if (!tools) {
 			tools = this.session(connection, async client => {
-				const found = new Map<string, string>();
+				const found = new Map<string, ToolEntry>();
 				if (!client.getServerCapabilities()?.tools) return found;
 				for (let cursor: string | undefined, pages = 0; pages < 20; pages++) {
 					const page = await client.listTools(cursor ? { cursor } : {}, { timeout: 30_000 });
-					for (const entry of page.tools) { const uri = uiUri(entry as { _meta?: Record<string, unknown> }); if (uri) found.set(entry.name, uri); }
+					for (const entry of page.tools) {
+						const { uri, appOnly } = uiMeta(entry as { _meta?: Record<string, unknown> });
+						found.set(entry.name, { name: entry.name, ...entry.title ? { title: entry.title } : {}, ...entry.description ? { description: entry.description.slice(0, 500) } : {}, readOnly: entry.annotations?.readOnlyHint === true, ...uri ? { uri } : {}, appOnly });
+					}
 					cursor = page.nextCursor; if (!cursor) break;
 				}
 				return found;
-			}).catch(() => new Map<string, string>());
+			}).catch(() => new Map<string, ToolEntry>());
 			this.tools.set(key, tools);
 		}
-		const uri = (await tools).get(tool);
+		return tools;
+	}
+
+	/** The page a tool names, or undefined when it names none or the server can't give it. */
+	async page(connection: McpConnection, tool: string): Promise<string | undefined> {
+		const uri = (await this.toolsOf(connection)).get(tool)?.uri;
 		if (!uri) return undefined;
-		const pageKey = `${key}:${uri}`;
+		const pageKey = `${this.key(connection)}:${uri}`;
 		let html = this.pages.get(pageKey);
 		if (!html) {
 			html = this.session(connection, async client => {
@@ -98,6 +111,18 @@ export class McpAppPages {
 		return html;
 	}
 
-	/** Forgets a connection's tools and pages after its settings change. */
+	/** What a tool on the app's own server is, or undefined when the server has no such tool. */
+	async tool(connection: McpConnection, name: string): Promise<McpAppTool | undefined> {
+		const entry = (await this.toolsOf(connection)).get(name);
+		return entry ? { name: entry.name, ...entry.title ? { title: entry.title } : {}, ...entry.description ? { description: entry.description } : {}, readOnly: entry.readOnly } : undefined;
+	}
+
+	/** Runs a tool of the app's own server for the app, once the person allowed it (or it is read-only). */
+	async call(connection: McpConnection, name: string, input: Record<string, unknown>) {
+		if (!await this.tool(connection, name)) throw new Error(`The app's server has no tool called ${name}.`);
+		return this.session(connection, client => client.callTool({ name, arguments: input }, undefined, { timeout: 120_000 }));
+	}
+
+	/** Forgets the servers' tools and pages after MCP settings change. */
 	forget() { this.tools.clear(); this.pages.clear(); }
 }

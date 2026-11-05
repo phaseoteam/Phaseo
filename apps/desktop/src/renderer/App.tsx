@@ -33,6 +33,7 @@ import { saveChatPreferences, useDiffColours, useWorkspacePreferences } from "./
 import { useAppFonts } from "./lib/appFonts";
 import { useAnimations } from "./lib/animations";
 import { useSlowRequestToasts } from "./lib/slowRequestToasts";
+import { ConsentHost } from "./components/ConsentDialog";
 
 /** The app-wide commands behind the keyboard shortcuts (Settings → Keyboard shortcuts). */
 function useShortcuts() {
@@ -160,6 +161,7 @@ function Shell() {
 			<ErrorBanner />
 		</div>
 		<CommandPalette />
+		<ConsentHost />
 		{firstRunPending && <Suspense><FirstRun /></Suspense>}
 		<HistoryNavigation />
 		<Toaster />
