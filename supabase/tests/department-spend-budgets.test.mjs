@@ -53,7 +53,9 @@ try {
     // The MFA policy (require_mfa_for_data_api) was added to the table file by a later migration.
     const tableDefinition = (await read(tableFile)).replace(/\r\n/g, '\n').replace(/\n*CREATE POLICY "mfa_required_when_enrolled" ON [^;]*;/g, '');
     for (const file of schemaFiles.filter(file => file !== sweepFile && file !== tableFile)) {
-        assert.ok((redefinedLast.test(file) ? primaryMigration : redefinedLater.test(file) ? attributionMigration : migration).includes((await read(file)).replace(/\r\n/g, '\n').trim()), `${file} is in the migration`);
+        // workspace_department_budget_status was last replaced by 20261104233604_budget_enforcement_money_hygiene.
+        const holds = await read('../migrations/20261104233604_budget_enforcement_money_hygiene.sql');
+        assert.ok((redefinedLast.test(file) ? primaryMigration : redefinedLater.test(file) ? holds : migration).includes((await read(file)).replace(/\r\n/g, '\n').trim()), `${file} is in the migration`);
     }
     // The table is created by the first migration; the later one only replaces its comment.
     assert.ok(migration.includes(tableDefinition.replace(COMMENT_LINE, migration.match(COMMENT_LINE)[0]).trim()), 'the table is in the migration');
@@ -121,6 +123,8 @@ try {
     await db.exec(attributionMigration);
     await db.exec(blockMigration);
     await db.exec(primaryMigration);
+    // The current status function (it also counts charged async requests that did not succeed).
+    await db.exec(await read('../schemas/public/functions/workspace_department_budget_status.sql'));
     assert.match((await one(`select obj_description('public.workspace_department_budgets'::regclass, 'pg_class') c`)).c, /Budgets block the department's API-key requests/);
 
     // Acme: Engineering and Sales. u2 is in both; u3 is granted Sales but a directory override
@@ -152,7 +156,7 @@ try {
     await db.exec(`
       insert into public.gateway_requests (workspace_id, key_id, endpoint, success, cost_nanos, created_at) values
         ('${ACME}', '${KEY.u3}', 'batch', true, ${4 * DOLLAR}, '2026-10-10T00:00:00Z'),
-        ('${ACME}', '${KEY.u3}', 'batch', false, ${100 * DOLLAR}, '2026-10-10T00:00:00Z'),
+        ('${ACME}', '${KEY.u3}', 'batch', false, 0, '2026-10-10T00:00:00Z'),
         ('${ACME}', '${KEY.u3}', 'chat.completions', true, ${100 * DOLLAR}, '2026-10-10T00:00:00Z');
     `);
 
@@ -169,7 +173,8 @@ try {
 
     // Engineering this month: u2 $35 (all of u2's unlinked spend), u3 $20 + a $4 batch (moved to
     // Engineering by the override), the OAuth user $25. Not u4 (override with no department), not
-    // the Sales-linked key, not September, not a failed batch, and not a synchronous request from
+    // the Sales-linked key, not September, not a failed batch that was not charged (a charged one
+    // counts: budget-enforcement-money-hygiene), and not a synchronous request from
     // gateway_requests (the rollup already has those).
     const acme = await status(ACME);
     const byName = Object.fromEntries(acme.map(b => [`${b.department_name}:${b.interval}`, b]));

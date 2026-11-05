@@ -21,18 +21,25 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
   -- time) bounds the history read; active holds are returned whenever they were made.
   --
   -- * Requests: every gateway_requests row with a positive cost, whether or not it succeeded (a
-  --   cancelled or failed request can still be charged), except excluded request ids and the
-  --   batch_hold_usage rows of a hold that is still active, which the hold itself counts.
+  --   cancelled or failed request can still be charged), read as two disjoint parts so each uses
+  --   its partial index, except excluded request ids and the batch_hold_usage rows of a hold that
+  --   is still active, which the hold itself counts.
   -- * Active holds (held or reserved), in every period until they end: video and free-model
   --   holds less the cost already audited for them, other holds (batch, realtime) less what was
   --   captured or released. Realtime holds carry no key; their session does.
   -- * Captured video and free-model holds made in the period, less the cost audited for them, so
   --   a capture counts before (or without) its request row and once after it lands.
+  -- * Stepped stream charges (gateway_charge_request_total, is_final false) whose gateway_requests
+  --   row has not landed: money already taken for a stream whose worker may have stopped before
+  --   writing it. Active from the charge's created_at in every period until the request row
+  --   (billing_request_id) lands, which then counts instead. The charge row records no key, so
+  --   these count toward workspace budgets (p_key_ids NULL) only.
   select request.key_id, request.created_at, false, request.cost_nanos
   from public.gateway_requests request
   where request.workspace_id = p_workspace_id
     and (p_key_ids is null or request.key_id = any (p_key_ids))
-    and coalesce(request.cost_nanos, 0) > 0
+    and request.success is true
+    and request.cost_nanos > 0
     and (p_since is null or request.created_at >= p_since)
     and not (request.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
     and not (request.request_id like 'batch_hold_usage:%' and exists (
@@ -42,6 +49,16 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
         and hold.status in ('held', 'reserved')
         and starts_with(request.request_id, 'batch_hold_usage:' || hold.reservation_id || ':')
     ))
+  union all
+  -- Charged requests that did not succeed (gateway_requests_charged_unsuccessful_cost_idx).
+  select request.key_id, request.created_at, false, request.cost_nanos
+  from public.gateway_requests request
+  where request.workspace_id = p_workspace_id
+    and (p_key_ids is null or request.key_id = any (p_key_ids))
+    and request.success is not true
+    and request.cost_nanos > 0
+    and (p_since is null or request.created_at >= p_since)
+    and not (request.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
   union all
   select coalesce(reservation.key_id, session.key_id), reservation.created_at,
     reservation.status in ('held', 'reserved'),
@@ -73,10 +90,24 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
     and (reservation.status in ('held', 'reserved')
       or (reservation.status = 'captured'
         and (reservation.reservation_id like 'video_hold:%' or reservation.reservation_id like 'free_model_hold:%')
-        and (p_since is null or reservation.created_at >= p_since)));
+        and (p_since is null or reservation.created_at >= p_since)))
+  union all
+  select null::uuid, charge.created_at, true, charge.cost_nanos
+  from public.gateway_request_charges charge
+  where p_key_ids is null
+    and charge.workspace_id = p_workspace_id
+    and charge.is_final is false
+    and charge.status = 'applied'
+    and charge.cost_nanos > 0
+    and not (charge.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
+    and not exists (
+      select 1 from public.gateway_requests request
+      where request.workspace_id = charge.workspace_id
+        and request.billing_request_id = charge.request_id
+    );
 $function$;
 
-COMMENT ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[]) IS 'Spend items counted toward workspace and department budgets: positive-cost requests, active holds in every period, and captured video and free-model holds less their audited cost, with each hold''s batch_hold_usage rows counted once.';
+COMMENT ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[]) IS 'Spend items counted toward workspace and department budgets: positive-cost requests, active holds in every period, captured video and free-model holds less their audited cost (each hold''s batch_hold_usage rows counted once), and stepped stream charges whose request row has not landed (workspace only).';
 
 REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[]) FROM PUBLIC;
 

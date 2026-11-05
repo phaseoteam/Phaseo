@@ -8,6 +8,16 @@ export const MIGRATION_FILE = '20261104233604_budget_enforcement_money_hygiene.s
 export const readSchema = (path) => readFile(new URL(path, schemasUrl), 'utf8');
 export const readMigration = () => readFile(new URL(`../../migrations/${MIGRATION_FILE}`, import.meta.url), 'utf8');
 
+// The request-context callees, reduced to what the wrappers need (the key-limit accounting in
+// the real ones is tested by gateway-spend-limit-seed and key-weekly-accounting).
+const CONTEXT_STUBS = `
+  create or replace function public.gateway_fetch_request_context_without_workspace_budget(workspace_id uuid, model text, endpoint text, api_key_id uuid)
+    returns jsonb language sql as $$ select jsonb_build_object('workspace_id', workspace_id, 'key_ok', jsonb_build_object('ok', true),
+      'key_limit_ok', jsonb_build_object('ok', true), 'credit_ok', jsonb_build_object('ok', true), 'providers', '[]'::jsonb, 'pricing', '{}'::jsonb) $$;
+  create or replace function private.gateway_context_access(workspace_id uuid, model text, endpoint text, api_key_id uuid)
+    returns jsonb language sql as $$ select jsonb_build_object('workspace_id', workspace_id, 'key_limit_ok', jsonb_build_object('ok', true)) $$;
+`;
+
 const STUBS = `
   create role anon; create role authenticated; create role service_role bypassrls;
   grant usage on schema public to anon, authenticated, service_role;
@@ -31,7 +41,7 @@ const STUBS = `
     primary key (workspace_id, reservation_id));
   create table public.gateway_requests (id uuid default gen_random_uuid(), workspace_id uuid, request_id text,
     endpoint text, model_id text, provider text, status_code integer, success boolean, usage jsonb, cost_nanos bigint,
-    currency text, key_id uuid, detail_metadata jsonb, created_at timestamptz default now());
+    currency text, key_id uuid, detail_metadata jsonb, billing_request_id text, created_at timestamptz default now());
   create table public.workspace_budgets (id uuid primary key default gen_random_uuid(), workspace_id uuid not null,
     interval text not null, limit_nanos bigint not null, created_by uuid, created_at timestamptz default now(),
     updated_at timestamptz default now());
@@ -61,7 +71,9 @@ const STUBS = `
     request_id text, meta jsonb not null default '{}'::jsonb, billed_at timestamptz);
   create table public.gateway_request_charges (workspace_id uuid not null, request_id text not null, cost_nanos bigint,
     status text, deducted_status text, error_message text, auto_top_up_required boolean, overdraft_nanos bigint,
-    created_at timestamptz, updated_at timestamptz, primary key (workspace_id, request_id));
+    created_at timestamptz default now(), updated_at timestamptz default now(),
+    is_final boolean not null default true, -- added by fix/async-billing-20261104 (stepped stream charges)
+    primary key (workspace_id, request_id));
   create table public.credit_ledger (id uuid primary key default gen_random_uuid(), workspace_id uuid, amount_nanos bigint);
   alter table public.credit_ledger enable row level security;
   create policy "Enable insert for users based on user_id" on public.credit_ledger for insert to authenticated
@@ -71,12 +83,9 @@ const STUBS = `
   grant delete, select on public.wallets to anon;
   create function public.wallet_apply_delta(p_workspace_id uuid, p_delta_nanos bigint)
     returns table (before_balance_nanos bigint, after_balance_nanos bigint) language sql as $$ select 0::bigint, 0::bigint $$;
+  create table public.v2_private_usage_15m (workspace_id uuid, bucket_start timestamptz, key_id uuid, cost_nanos bigint);
+  ${CONTEXT_STUBS}
   -- Callees the migration leaves alone, reduced to what the wrappers need from them.
-  create function public.gateway_fetch_request_context_without_workspace_budget(workspace_id uuid, model text, endpoint text, api_key_id uuid)
-    returns jsonb language sql as $$ select jsonb_build_object('workspace_id', workspace_id, 'key_ok', jsonb_build_object('ok', true),
-      'key_limit_ok', jsonb_build_object('ok', true), 'credit_ok', jsonb_build_object('ok', true), 'providers', '[]'::jsonb, 'pricing', '{}'::jsonb) $$;
-  create function private.gateway_context_access(workspace_id uuid, model text, endpoint text, api_key_id uuid)
-    returns jsonb language sql as $$ select jsonb_build_object('workspace_id', workspace_id, 'key_limit_ok', jsonb_build_object('ok', true)) $$;
   create function public.gateway_realtime_create_with_hold_without_workspace_budget(
     p_workspace_id uuid, p_session_id text, p_key_id uuid, p_user_id text, p_source text, p_provider text, p_model_id text,
     p_provider_model_id text, p_voice text, p_expires_at timestamptz, p_reservation_prefix text, p_reservation_id text,
@@ -101,6 +110,12 @@ const CALLEES = [
   'public/functions/gateway_wallet_reserve_once_without_workspace_budget.sql',
   'public/functions/gateway_deduct_and_check_top_up_once.sql',
 ];
+
+/** Applies the migration, then puts the request-context callee stubs back for the wrapper tests. */
+export async function applyMigration(db, migration) {
+  await db.exec(migration);
+  await db.exec(CONTEXT_STUBS);
+}
 
 /** A database in the state the migration finds in production (the migration itself is not applied). */
 export async function createBudgetDatabase(PGlite) {

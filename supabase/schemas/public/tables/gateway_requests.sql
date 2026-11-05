@@ -360,6 +360,9 @@ CREATE INDEX gateway_requests_auth_method_idx ON ONLY public.gateway_requests US
 CREATE INDEX gateway_requests_finish_reason_created_idx ON ONLY public.gateway_requests USING btree (finish_reason, created_at DESC)
   WHERE (finish_reason IS NOT NULL);
 
+CREATE INDEX gateway_requests_charged_unsuccessful_cost_idx ON ONLY public.gateway_requests USING btree (workspace_id, created_at) INCLUDE (key_id, cost_nanos)
+  WHERE ((success IS NOT TRUE) AND (cost_nanos > 0));
+
 CREATE INDEX gateway_requests_key_id_idx ON ONLY public.gateway_requests USING btree (key_id)
   WHERE (key_id IS NOT NULL);
 

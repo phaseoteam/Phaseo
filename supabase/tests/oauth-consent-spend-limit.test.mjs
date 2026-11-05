@@ -129,8 +129,8 @@ try {
 
   // The gateway's existing per-key check enforces it.
   await spend(capped.id, 19_990_000_000);
-  await spend(capped.id, 50_000_000_000, false);
-  assert.equal((await keyLimit(capped.id)).ok, true, 'under the limit (failed requests cost nothing)');
+  await spend(capped.id, 0, false);
+  assert.equal((await keyLimit(capped.id)).ok, true, 'under the limit (a failed request that was not charged costs nothing)');
   await spend(capped.id, 10_000_000);
   const reached = await keyLimit(capped.id);
   assert.equal(reached.ok, false);

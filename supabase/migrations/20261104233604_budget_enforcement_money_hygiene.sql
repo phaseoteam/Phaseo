@@ -7,6 +7,15 @@
 --    gateway_workspace_budget_status uses it, and private.department_budget_usage applies it to
 --    each department's keys for both gateway_department_budget_status and gateway_spend_limit_seed
 --    (the SpendLimit Durable Object).
+--    Charged requests that did not succeed (a cancelled stream that was billed) also count
+--    toward key-limit cost in the request context (private.gateway_context_access,
+--    gateway_fetch_request_context_without_workspace_budget), the seed's key usage, hold
+--    admission (gateway_wallet_reserve_once_without_workspace_budget) and the department alert
+--    sweep (workspace_department_budget_status); request counts stay successful requests only.
+--    A small partial index, gateway_requests_charged_unsuccessful_cost_idx, serves those rows.
+--    Stepped stream charges (gateway_request_charges.is_final false, from
+--    fix/async-billing-20261104) whose request row has not landed count toward workspace budgets
+--    until it does. This migration therefore needs that change applied first.
 -- 2. gateway_department_budget_status gates batch and video holds (gateway_wallet_reserve_once),
 --    realtime sessions (gateway_realtime_create_with_hold, gateway_realtime_extend_hold_once) and
 --    the request-context fallback (gateway_fetch_request_context, gateway_fetch_request_context_bundle),
@@ -46,18 +55,25 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
   -- time) bounds the history read; active holds are returned whenever they were made.
   --
   -- * Requests: every gateway_requests row with a positive cost, whether or not it succeeded (a
-  --   cancelled or failed request can still be charged), except excluded request ids and the
-  --   batch_hold_usage rows of a hold that is still active, which the hold itself counts.
+  --   cancelled or failed request can still be charged), read as two disjoint parts so each uses
+  --   its partial index, except excluded request ids and the batch_hold_usage rows of a hold that
+  --   is still active, which the hold itself counts.
   -- * Active holds (held or reserved), in every period until they end: video and free-model
   --   holds less the cost already audited for them, other holds (batch, realtime) less what was
   --   captured or released. Realtime holds carry no key; their session does.
   -- * Captured video and free-model holds made in the period, less the cost audited for them, so
   --   a capture counts before (or without) its request row and once after it lands.
+  -- * Stepped stream charges (gateway_charge_request_total, is_final false) whose gateway_requests
+  --   row has not landed: money already taken for a stream whose worker may have stopped before
+  --   writing it. Active from the charge's created_at in every period until the request row
+  --   (billing_request_id) lands, which then counts instead. The charge row records no key, so
+  --   these count toward workspace budgets (p_key_ids NULL) only.
   select request.key_id, request.created_at, false, request.cost_nanos
   from public.gateway_requests request
   where request.workspace_id = p_workspace_id
     and (p_key_ids is null or request.key_id = any (p_key_ids))
-    and coalesce(request.cost_nanos, 0) > 0
+    and request.success is true
+    and request.cost_nanos > 0
     and (p_since is null or request.created_at >= p_since)
     and not (request.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
     and not (request.request_id like 'batch_hold_usage:%' and exists (
@@ -67,6 +83,16 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
         and hold.status in ('held', 'reserved')
         and starts_with(request.request_id, 'batch_hold_usage:' || hold.reservation_id || ':')
     ))
+  union all
+  -- Charged requests that did not succeed (gateway_requests_charged_unsuccessful_cost_idx).
+  select request.key_id, request.created_at, false, request.cost_nanos
+  from public.gateway_requests request
+  where request.workspace_id = p_workspace_id
+    and (p_key_ids is null or request.key_id = any (p_key_ids))
+    and request.success is not true
+    and request.cost_nanos > 0
+    and (p_since is null or request.created_at >= p_since)
+    and not (request.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
   union all
   select coalesce(reservation.key_id, session.key_id), reservation.created_at,
     reservation.status in ('held', 'reserved'),
@@ -98,10 +124,24 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
     and (reservation.status in ('held', 'reserved')
       or (reservation.status = 'captured'
         and (reservation.reservation_id like 'video_hold:%' or reservation.reservation_id like 'free_model_hold:%')
-        and (p_since is null or reservation.created_at >= p_since)));
+        and (p_since is null or reservation.created_at >= p_since)))
+  union all
+  select null::uuid, charge.created_at, true, charge.cost_nanos
+  from public.gateway_request_charges charge
+  where p_key_ids is null
+    and charge.workspace_id = p_workspace_id
+    and charge.is_final is false
+    and charge.status = 'applied'
+    and charge.cost_nanos > 0
+    and not (charge.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
+    and not exists (
+      select 1 from public.gateway_requests request
+      where request.workspace_id = charge.workspace_id
+        and request.billing_request_id = charge.request_id
+    );
 $function$;
 
-COMMENT ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[]) IS 'Spend items counted toward workspace and department budgets: positive-cost requests, active holds in every period, and captured video and free-model holds less their audited cost, with each hold''s batch_hold_usage rows counted once.';
+COMMENT ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[]) IS 'Spend items counted toward workspace and department budgets: positive-cost requests, active holds in every period, captured video and free-model holds less their audited cost (each hold''s batch_hold_usage rows counted once), and stepped stream charges whose request row has not landed (workspace only).';
 
 REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[]) FROM PUBLIC;
 
@@ -436,18 +476,32 @@ begin
   ), usage as (
     select
       gr.key_id,
-      count(*) filter (where gr.created_at >= day_start)                                  as used_day_reqs,
-      count(*) filter (where gr.created_at >= week_start)                                 as used_wk_reqs,
-      count(*) filter (where gr.created_at >= month_start)                                as used_mo_reqs,
+      count(*) filter (where gr.served and gr.created_at >= day_start)                    as used_day_reqs,
+      count(*) filter (where gr.served and gr.created_at >= week_start)                   as used_wk_reqs,
+      count(*) filter (where gr.served and gr.created_at >= month_start)                  as used_mo_reqs,
       coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= day_start), 0)::bigint   as used_day_cost,
       coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= week_start), 0)::bigint  as used_wk_cost,
       coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= month_start), 0)::bigint as used_mo_cost
-    from public.gateway_requests gr
-    where gr.key_id = any(array(select key_rows.id from key_rows where key_rows.limited))
-      and gr.workspace_id = p_workspace_id
-      and gr.success is true
-      and gr.created_at >= least(week_start, month_start)
-      and not (gr.request_id = any(v_exclude))
+    -- Successful requests count as requests and cost; charged requests that did not succeed
+    -- count toward cost only.
+    from (
+      select served.key_id, served.created_at, served.cost_nanos, true as served
+      from public.gateway_requests served
+      where served.key_id = any(array(select key_rows.id from key_rows where key_rows.limited))
+        and served.workspace_id = p_workspace_id
+        and served.success is true
+        and served.created_at >= least(week_start, month_start)
+        and not (served.request_id = any(v_exclude))
+      union all
+      select charged.key_id, charged.created_at, charged.cost_nanos, false
+      from public.gateway_requests charged
+      where charged.workspace_id = p_workspace_id
+        and charged.key_id = any(array(select key_rows.id from key_rows where key_rows.limited))
+        and charged.success is not true
+        and charged.cost_nanos > 0
+        and charged.created_at >= least(week_start, month_start)
+        and not (charged.request_id = any(v_exclude))
+    ) gr
     group by gr.key_id
   )
   select coalesce(jsonb_agg(jsonb_build_object(
@@ -529,6 +583,1515 @@ REVOKE ALL ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[])
 GRANT EXECUTE ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[]) TO "postgres";
 
 REVOKE ALL ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[]) FROM PUBLIC, "anon", "authenticated";
+
+CREATE OR REPLACE FUNCTION public.workspace_department_budget_status (
+  p_workspace_id uuid,
+  p_now          timestamp with time zone DEFAULT now()
+)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  STABLE
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+-- Each department budget in the workspace with its spend so far in the current UTC period, as
+-- a JSON array ordered by department and period. A department's spend is the cost of the API
+-- keys private.department_budget_key_departments gives it: keys linked to it, plus, for keys not
+-- linked to any department, the keys its members created and their OAuth requests. Spend comes from v2_private_usage_15m, which is rebuilt hourly and so lags, plus
+-- async jobs and realtime sessions from gateway_requests, which the rollup leaves out.
+declare
+  v_result jsonb;
+begin
+  if p_workspace_id is null or p_now is null then
+    raise exception 'invalid_department_budget_status_arguments';
+  end if;
+
+  with budgets as (
+    select b.*, p.period_start, p.reset_at
+    from public.workspace_department_budgets b
+    cross join lateral private.spend_limit_period(b.interval, p_now) p
+    where b.workspace_id = p_workspace_id
+  ),
+  key_departments as (
+    select kd.key_id, kd.department_id
+    from private.department_budget_key_departments(p_workspace_id) kd
+  ),
+  spend as (
+    select u.key_id, u.bucket_start as at, u.cost_nanos
+    from public.v2_private_usage_15m u
+    where u.workspace_id = p_workspace_id
+      and u.bucket_start >= (select min(b.period_start) from budgets b)
+      and u.bucket_start <= p_now
+      and u.key_id in (select kd.key_id from key_departments kd)
+    union all
+    select r.key_id, r.created_at, coalesce(r.cost_nanos, 0)
+    from public.gateway_requests r
+    where r.success is true
+      and r.endpoint = any (array['video.generation', 'batch', 'music.generate', 'audio.realtime'])
+      and r.workspace_id = p_workspace_id
+      and r.created_at >= (select min(b.period_start) from budgets b)
+      and r.created_at <= p_now
+      and r.key_id in (select kd.key_id from key_departments kd)
+    union all
+    -- Async requests that did not succeed but were charged.
+    select r.key_id, r.created_at, r.cost_nanos
+    from public.gateway_requests r
+    where r.success is not true
+      and r.cost_nanos > 0
+      and r.endpoint = any (array['video.generation', 'batch', 'music.generate', 'audio.realtime'])
+      and r.workspace_id = p_workspace_id
+      and r.created_at >= (select min(b.period_start) from budgets b)
+      and r.created_at <= p_now
+      and r.key_id in (select kd.key_id from key_departments kd)
+  ),
+  usage as (
+    select b.id, coalesce(sum(s.cost_nanos), 0)::numeric as used_nanos
+    from budgets b
+    left join key_departments kd on kd.department_id = b.department_id
+    left join spend s on s.key_id = kd.key_id and s.at >= b.period_start
+    group by b.id
+  )
+  select coalesce(jsonb_agg(jsonb_build_object(
+    'id', b.id,
+    'workspace_id', b.workspace_id,
+    'department_id', b.department_id,
+    'department_name', d.name,
+    'interval', b.interval,
+    'limit_nanos', b.limit_nanos,
+    'usage_nanos', u.used_nanos,
+    'remaining_nanos', greatest(b.limit_nanos - u.used_nanos, 0),
+    'exceeded', u.used_nanos >= b.limit_nanos,
+    'window_start', b.period_start,
+    'reset_at', b.reset_at,
+    'created_by', b.created_by,
+    'created_at', b.created_at,
+    'updated_at', b.updated_at
+  ) order by d.name, b.department_id, case b.interval when 'daily' then 1 when 'weekly' then 2 else 3 end), '[]'::jsonb)
+  into v_result
+  from budgets b
+  join usage u on u.id = b.id
+  join public.workspace_departments d on d.id = b.department_id;
+
+  return v_result;
+end;
+$function$;
+
+GRANT EXECUTE ON FUNCTION "public"."workspace_department_budget_status"(uuid, timestamp with time zone) TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."workspace_department_budget_status"(uuid, timestamp with time zone) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."workspace_department_budget_status"(uuid, timestamp with time zone) TO "postgres";
+
+REVOKE ALL ON FUNCTION "public"."workspace_department_budget_status"(uuid, timestamp with time zone) FROM PUBLIC, "anon", "authenticated";
+
+CREATE OR REPLACE FUNCTION private.gateway_context_access (
+  workspace_id uuid,
+  model        text,
+  endpoint     text,
+  api_key_id   uuid
+)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SET search_path TO ''
+  AS $function$
+declare
+  credit_status       jsonb;
+  key_status          jsonb;
+  key_limit_status    jsonb;
+  min_balance_nanos bigint := case when endpoint like 'video.%' or endpoint like 'batch%' then 1000000000 else 100000000 end; -- 1.00 USD
+
+  providers           jsonb;
+  pricing             jsonb;
+  preset_data         jsonb := null;
+
+  -- key row fields
+  v_key_active        boolean;
+  v_key_team_ok       boolean;
+  v_soft_blocked      boolean;
+
+  v_day_req_limit     bigint;
+  v_wk_req_limit      bigint;
+  v_mo_req_limit      bigint;
+  v_day_cost_limit    bigint;
+  v_wk_cost_limit     bigint;
+  v_mo_cost_limit     bigint;
+
+  now_utc             timestamptz := (now() at time zone 'utc');
+  day_start           timestamptz := date_trunc('day',  now_utc);
+  week_start          timestamptz := date_trunc('week', now_utc);   -- Monday 00:00 UTC
+  month_start         timestamptz := date_trunc('month', now_utc);
+
+  used_day_reqs       bigint;
+  used_wk_reqs        bigint;
+  used_mo_reqs        bigint;
+  used_day_cost       bigint;
+  used_wk_cost        bigint;
+  used_mo_cost        bigint;
+
+  within_limits       boolean := true;
+  limit_reason        text := null;
+  limit_window        text := null;
+  limit_metric        text := null;
+  current_value       bigint := null;
+  limit_value         bigint := null;
+  limit_reset_at      timestamptz := null;
+
+  -- Preset handling
+  is_preset           boolean := false;
+  preset_name         text := null;
+  preset_publisher    text := null;
+
+  -- Resolve model from alias if exists
+  resolved_model      text := gateway_context_access.model;
+  base_model          text;
+
+  team_enrichment     jsonb;
+  key_enrichment      jsonb;
+
+  -- Team aggregates
+  team_total_requests bigint;
+  team_total_spend_nanos bigint;
+  team_spend_24h_nanos bigint;
+  team_spend_7d_nanos bigint;
+  team_spend_30d_nanos bigint;
+  team_requests_1h bigint;
+  team_requests_24h bigint;
+  team_created_at timestamptz;
+  team_tier text;
+  team_balance_nanos bigint;
+  team_reserved_nanos bigint;
+
+  -- Key aggregates
+  key_name text;
+  key_created_at timestamptz;
+  key_total_requests bigint;
+  key_total_spend_nanos bigint;
+begin
+  base_model := gateway_context_access.model;
+  -- hard requirement: key must be provided
+  if gateway_context_access.api_key_id is null then
+    raise exception using errcode = '22023', message = 'missing_api_key', detail = 'api_key_id is required';
+  end if;
+
+  -- Check if model is a preset (starts with @)
+  if base_model like '@%' then
+    is_preset := true;
+    preset_name := substring(base_model from 2); -- Remove @ prefix
+
+    -- Fetch preset configuration. Qualified references resolve a
+    -- public publisher globally; unqualified references remain workspace-local.
+    if position('/' in preset_name) > 0 then
+      preset_publisher := split_part(preset_name, '/', 1);
+      preset_name := substring(preset_name from position('/' in preset_name) + 1);
+      select jsonb_build_object(
+        'id', p.id, 'name', p.name, 'slug', p.slug, 'description', p.description,
+        'config', p.config, 'visibility', p.visibility, 'publisher', w.publisher_handle
+      ) into preset_data
+      from public.presets p
+      join public.workspaces w on w.id = p.workspace_id
+      where p.archived_at is null and lower(p.slug) = lower(preset_name)
+        and p.visibility = 'public'
+        and true
+        and (lower(w.publisher_handle) = lower(preset_publisher) or exists (select 1 from public.workspace_publisher_handle_aliases alias where alias.workspace_id = w.id and alias.handle = lower(preset_publisher)))
+      limit 1;
+    else
+      select jsonb_build_object(
+        'id', p.id, 'name', p.name,
+        'slug', coalesce(nullif(p.slug, ''), regexp_replace(p.name, '^@', '')),
+        'description', p.description, 'config', p.config, 'visibility', p.visibility
+      ) into preset_data
+      from public.presets p
+      where p.archived_at is null and lower(coalesce(nullif(p.slug, ''), regexp_replace(p.name, '^@', ''))) = lower(preset_name)
+        and p.workspace_id = gateway_context_access.workspace_id
+        and (
+          p.visibility in ('public', 'team')
+          or p.created_by = (
+            select ak.created_by from public.keys ak
+            where ak.id = gateway_context_access.api_key_id
+              and ak.workspace_id = gateway_context_access.workspace_id
+              and ak.status = 'active'
+          )
+        )
+      limit 1;
+    end if;
+
+    if preset_data is null then
+      raise exception using
+        errcode = '22023',
+        message = 'preset_not_found',
+        detail = format('Preset "%s" not found or not accessible', preset_name);
+    end if;
+
+    -- Extract model from preset config (fallback to default/default_model/model/first models entry)
+    base_model := coalesce(
+      preset_data->'config'->>'defaultModel',
+      preset_data->'config'->>'default_model',
+      preset_data->'config'->>'model',
+      preset_data->'config'->'models'->>0,
+      preset_data->'config'->'allowedModels'->>0,
+      preset_data->'config'->'allowed_models'->>0
+    );
+
+    if base_model is null then
+      raise exception using
+        errcode = '22023',
+        message = 'preset_no_model',
+        detail = format('Preset "%s" has no model configured', preset_name);
+    end if;
+  end if;
+
+  -- Resolve alias/model indirection:
+  -- 1) explicit alias table (`v2_model_aliases`)
+  -- 2) provider-scoped slug form (`provider/provider_model_slug`)
+  resolved_model := coalesce(
+    (
+      select a.api_model_id
+      from (select alias_slug, model_slug as api_model_id, enabled as is_enabled from public.v2_model_aliases) a
+      where a.alias_slug = base_model
+        and a.is_enabled = true
+        and a.api_model_id is not null
+      limit 1
+    ),
+    (
+      select m.api_model_id
+      from (select provider_model_id as provider_api_model_id, provider_slug as provider_id, model_slug as api_model_id, model_slug as model_id, provider_model_slug, routing_enabled as is_active_gateway, status as routing_status, input_modalities, output_modalities, context_length, max_output_tokens, effective_from, effective_to, created_at, updated_at from public.v2_model_provider_routes) m
+      where position('/' in base_model) > 0
+        and m.provider_id = split_part(base_model, '/', 1)
+        and m.provider_model_slug = regexp_replace(base_model, '^[^/]+/', '')
+        and m.is_active_gateway
+        and (m.effective_from is null or m.effective_from <= now() at time zone 'utc')
+        and (m.effective_to   is null or (now() at time zone 'utc') < m.effective_to)
+      order by coalesce(m.effective_from, to_timestamp(0)) desc, m.provider_api_model_id
+      limit 1
+    ),
+    base_model
+  );
+
+  -- validate key row, status, and team
+  select
+    (k.status = 'active'),
+    (k.workspace_id = gateway_context_access.workspace_id),
+    k.soft_blocked,
+    k.daily_limit_requests,   k.weekly_limit_requests,   k.monthly_limit_requests,
+    k.daily_limit_cost_nanos, k.weekly_limit_cost_nanos, k.monthly_limit_cost_nanos
+  into
+    v_key_active,
+    v_key_team_ok,
+    v_soft_blocked,
+    v_day_req_limit, v_wk_req_limit, v_mo_req_limit,
+    v_day_cost_limit, v_wk_cost_limit, v_mo_cost_limit
+  from public.keys k
+  where k.id = gateway_context_access.api_key_id
+  limit 1;
+
+  if v_key_active is null then
+    raise exception using errcode = '22023', message = 'api_key_not_found', detail = 'key id does not exist';
+  end if;
+  if not v_key_team_ok then
+    raise exception using errcode = '22023', message = 'api_key_wrong_team', detail = 'key does not belong to provided workspace_id';
+  end if;
+  if not v_key_active then
+    raise exception using errcode = '22023', message = 'api_key_inactive', detail = 'key status is not active';
+  end if;
+
+  key_status := jsonb_build_object('ok', true, 'mode', 'first_party');
+
+  -- credit check
+  credit_status :=
+    coalesce((
+      select case
+        when greatest(coalesce(w.balance_nanos, 0)::bigint - coalesce(w.reserved_nanos, 0)::bigint, 0) >= min_balance_nanos then
+          jsonb_build_object(
+            'ok', true,
+            'balance_nanos', greatest(coalesce(w.balance_nanos, 0)::bigint - coalesce(w.reserved_nanos, 0)::bigint, 0),
+            'raw_balance_nanos', coalesce(w.balance_nanos, 0)::bigint,
+            'reserved_nanos', coalesce(w.reserved_nanos, 0)::bigint,
+            'available_nanos', greatest(coalesce(w.balance_nanos, 0)::bigint - coalesce(w.reserved_nanos, 0)::bigint, 0)
+          )
+        else
+          jsonb_build_object(
+            'ok', false,
+            'reason', 'insufficient_funds',
+            'balance_nanos', greatest(coalesce(w.balance_nanos, 0)::bigint - coalesce(w.reserved_nanos, 0)::bigint, 0),
+            'raw_balance_nanos', coalesce(w.balance_nanos, 0)::bigint,
+            'reserved_nanos', coalesce(w.reserved_nanos, 0)::bigint,
+            'available_nanos', greatest(coalesce(w.balance_nanos, 0)::bigint - coalesce(w.reserved_nanos, 0)::bigint, 0)
+          )
+      end
+      from public.wallets w
+      where w.workspace_id = gateway_context_access.workspace_id
+      limit 1
+    ), jsonb_build_object('ok', false, 'reason', 'wallet_missing'));
+
+  -- per-key limits (requests + cost)
+  -- Unlimited keys need no history read. Unknown telemetry stays NULL.
+  if greatest(v_day_req_limit, v_wk_req_limit, v_mo_req_limit,
+      v_day_cost_limit, v_wk_cost_limit, v_mo_cost_limit) > 0 then
+  select
+    count(*) filter (where gr.served and gr.created_at >= day_start)                    as used_day_reqs,
+    count(*) filter (where gr.served and gr.created_at >= week_start)                   as used_wk_reqs,
+    count(*) filter (where gr.served and gr.created_at >= month_start)                  as used_mo_reqs,
+    coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= day_start), 0)::bigint   as used_day_cost,
+    coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= week_start), 0)::bigint  as used_wk_cost,
+    coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= month_start), 0)::bigint as used_mo_cost
+  into
+    used_day_reqs, used_wk_reqs, used_mo_reqs,
+    used_day_cost, used_wk_cost, used_mo_cost
+  -- Successful requests count as requests and cost. A request that did not succeed but was
+  -- charged (a cancelled stream that was billed) counts toward cost only.
+  from (
+    select served.created_at, served.cost_nanos, true as served
+    from public.gateway_requests served
+    where served.key_id = gateway_context_access.api_key_id
+      and served.workspace_id = gateway_context_access.workspace_id
+      and served.success is true
+      and served.created_at >= least(week_start, month_start)
+    union all
+    select charged.created_at, charged.cost_nanos, false
+    from public.gateway_requests charged
+    where charged.workspace_id = gateway_context_access.workspace_id
+      and charged.key_id = gateway_context_access.api_key_id
+      and charged.success is not true
+      and charged.cost_nanos > 0
+      and charged.created_at >= least(week_start, month_start)
+  ) gr;
+  end if;
+
+  if v_soft_blocked then
+    within_limits := false;
+    limit_reason := 'key_limit_soft_blocked';
+    limit_metric := 'soft_blocked';
+  end if;
+  if within_limits and v_day_req_limit > 0 and used_day_reqs >= v_day_req_limit then
+    within_limits := false;
+    limit_reason := 'daily_request_limit_reached';
+    limit_window := 'daily';
+    limit_metric := 'requests';
+    current_value := used_day_reqs;
+    limit_value := v_day_req_limit;
+    limit_reset_at := day_start + interval '1 day';
+  end if;
+  if within_limits and v_wk_req_limit > 0 and used_wk_reqs >= v_wk_req_limit then
+    within_limits := false;
+    limit_reason := 'weekly_request_limit_reached';
+    limit_window := 'weekly';
+    limit_metric := 'requests';
+    current_value := used_wk_reqs;
+    limit_value := v_wk_req_limit;
+    limit_reset_at := week_start + interval '1 week';
+  end if;
+  if within_limits and v_mo_req_limit > 0 and used_mo_reqs >= v_mo_req_limit then
+    within_limits := false;
+    limit_reason := 'monthly_request_limit_reached';
+    limit_window := 'monthly';
+    limit_metric := 'requests';
+    current_value := used_mo_reqs;
+    limit_value := v_mo_req_limit;
+    limit_reset_at := month_start + interval '1 month';
+  end if;
+  if within_limits and v_day_cost_limit > 0 and used_day_cost >= v_day_cost_limit then
+    within_limits := false;
+    limit_reason := 'daily_cost_limit_reached';
+    limit_window := 'daily';
+    limit_metric := 'cost';
+    current_value := used_day_cost;
+    limit_value := v_day_cost_limit;
+    limit_reset_at := day_start + interval '1 day';
+  end if;
+  if within_limits and v_wk_cost_limit > 0 and used_wk_cost >= v_wk_cost_limit then
+    within_limits := false;
+    limit_reason := 'weekly_cost_limit_reached';
+    limit_window := 'weekly';
+    limit_metric := 'cost';
+    current_value := used_wk_cost;
+    limit_value := v_wk_cost_limit;
+    limit_reset_at := week_start + interval '1 week';
+  end if;
+  if within_limits and v_mo_cost_limit > 0 and used_mo_cost >= v_mo_cost_limit then
+    within_limits := false;
+    limit_reason := 'monthly_cost_limit_reached';
+    limit_window := 'monthly';
+    limit_metric := 'cost';
+    current_value := used_mo_cost;
+    limit_value := v_mo_cost_limit;
+    limit_reset_at := month_start + interval '1 month';
+  end if;
+
+  key_limit_status :=
+    jsonb_build_object(
+      'ok', within_limits,
+      'reason', limit_reason,
+      'limit_window', limit_window,
+      'limit_metric', limit_metric,
+      'current_value', current_value,
+      'limit_value', limit_value,
+      'reset_at', to_jsonb(limit_reset_at),
+      'now', to_jsonb(now_utc),
+      'buckets', jsonb_build_object(
+        'daily', jsonb_build_object(
+          'window_start', to_jsonb(day_start),
+          'requests_used', used_day_reqs,
+          'requests_limit', v_day_req_limit,
+          'cost_used_nanos', used_day_cost,
+          'cost_limit_nanos', v_day_cost_limit
+        ),
+        'weekly', jsonb_build_object(
+          'window_start', to_jsonb(week_start),
+          'requests_used', used_wk_reqs,
+          'requests_limit', v_wk_req_limit,
+          'cost_used_nanos', used_wk_cost,
+          'cost_limit_nanos', v_wk_cost_limit
+        ),
+        'monthly', jsonb_build_object(
+          'window_start', to_jsonb(month_start),
+          'requests_used', used_mo_reqs,
+          'requests_limit', v_mo_req_limit,
+          'cost_used_nanos', used_mo_cost,
+          'cost_limit_nanos', v_mo_cost_limit
+        )
+      )
+    );
+
+  -- ============================================================================
+  -- TEAM & KEY ENRICHMENT (Wide Event Context for Observability)
+  -- Purpose: Gather user/team context for comprehensive logging (loggingsucks.com pattern)
+  -- ============================================================================
+  -- Team metadata & wallet
+  select
+    t.created_at,
+    coalesce(t.tier, 'basic'),
+    greatest(coalesce(w.balance_nanos, 0)::bigint - coalesce(w.reserved_nanos, 0)::bigint, 0),
+    coalesce(w.reserved_nanos, 0)::bigint
+  into
+    team_created_at,
+    team_tier,
+    team_balance_nanos,
+    team_reserved_nanos
+  from public.workspaces t
+  left join public.wallets w on w.workspace_id = t.id
+  where t.id = gateway_context_access.workspace_id
+  limit 1;
+
+  -- Historical analytics belong in reporting, not request admission.
+  -- Leave their enrichment fields NULL instead of scanning lifetime logs.
+
+  -- Calculate tier using calendar-month qualification + lock-window grace.
+  -- Function maintains team tier/counters in database when state changes.
+  team_tier := public.calculate_tier_with_grace(gateway_context_access.workspace_id, team_spend_30d_nanos);
+
+  team_enrichment := jsonb_build_object(
+    'tier', team_tier,
+    'created_at', to_jsonb(team_created_at),
+    'account_age_days', extract(epoch from (now_utc - team_created_at)) / 86400,
+    'balance_nanos', team_balance_nanos,
+    'available_nanos', team_balance_nanos,
+    'reserved_nanos', team_reserved_nanos,
+    'balance_usd', round((team_balance_nanos::numeric / 1000000000.0)::numeric, 2),
+    'balance_is_low', team_balance_nanos < min_balance_nanos,
+    'total_requests', team_total_requests,
+    'total_spend_nanos', team_total_spend_nanos,
+    'total_spend_usd', round((team_total_spend_nanos::numeric / 1000000000.0)::numeric, 2),
+    'spend_24h_nanos', team_spend_24h_nanos,
+    'spend_24h_usd', round((team_spend_24h_nanos::numeric / 1000000000.0)::numeric, 4),
+    'spend_7d_nanos', team_spend_7d_nanos,
+    'spend_7d_usd', round((team_spend_7d_nanos::numeric / 1000000000.0)::numeric, 2),
+    'spend_30d_nanos', team_spend_30d_nanos,
+    'spend_30d_usd', round((team_spend_30d_nanos::numeric / 1000000000.0)::numeric, 2),
+    'requests_1h', team_requests_1h,
+    'requests_24h', team_requests_24h
+  );
+
+  -- Key metadata & aggregates
+  select
+    k.name,
+    k.created_at
+  into
+    key_name,
+    key_created_at
+  from public.keys k
+  where k.id = gateway_context_access.api_key_id
+  limit 1;
+
+  -- Lifetime key analytics are not required to authenticate or enforce limits.
+
+  key_enrichment := jsonb_build_object(
+    'name', key_name,
+    'created_at', to_jsonb(key_created_at),
+    'key_age_days', extract(epoch from (now_utc - key_created_at)) / 86400,
+    'total_requests', key_total_requests,
+    'total_spend_nanos', key_total_spend_nanos,
+    'total_spend_usd', round((key_total_spend_nanos::numeric / 1000000000.0)::numeric, 2),
+    'requests_today', used_day_reqs,
+    'spend_today_nanos', used_day_cost,
+    'spend_today_usd', round((used_day_cost::numeric / 1000000000.0)::numeric, 4),
+    'daily_limit_pct', case
+      when v_day_req_limit > 0 then round((used_day_reqs::numeric / v_day_req_limit::numeric * 100)::numeric, 1)
+      else null
+    end
+  );
+
+  providers := '[]'::jsonb;
+  pricing := '{}'::jsonb;
+
+  return jsonb_build_object(
+    'workspace_id', gateway_context_access.workspace_id,
+    'resolved_model', resolved_model,
+    'preset', preset_data,
+    'key_ok', key_status,
+    'key_limit_ok', key_limit_status,
+    'credit_ok', credit_status,
+    'providers', providers,
+    'pricing', pricing,
+    'team_enrichment', team_enrichment,
+    'key_enrichment', key_enrichment
+  );
+end;
+
+$function$;
+
+GRANT EXECUTE ON FUNCTION "private"."gateway_context_access"(uuid, text, text, uuid) TO "service_role";
+
+REVOKE ALL ON FUNCTION "private"."gateway_context_access"(uuid, text, text, uuid) FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION "private"."gateway_context_access"(uuid, text, text, uuid) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "private"."gateway_context_access"(uuid, text, text, uuid) TO "postgres";
+
+CREATE OR REPLACE FUNCTION public.gateway_fetch_request_context_without_workspace_budget (
+  workspace_id uuid,
+  model        text,
+  endpoint     text,
+  api_key_id   uuid
+)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO 'public'
+  AS $function$
+declare
+  credit_status       jsonb;
+  key_status          jsonb;
+  key_limit_status    jsonb;
+  min_balance_nanos bigint := case when endpoint like 'video.%' or endpoint like 'batch%' then 1000000000 else 100000000 end; -- 1.00 USD
+
+  providers           jsonb;
+  pricing             jsonb;
+  preset_data         jsonb := null;
+
+  -- key row fields
+  v_key_active        boolean;
+  v_key_team_ok       boolean;
+  v_soft_blocked      boolean;
+
+  v_day_req_limit     bigint;
+  v_wk_req_limit      bigint;
+  v_mo_req_limit      bigint;
+  v_day_cost_limit    bigint;
+  v_wk_cost_limit     bigint;
+  v_mo_cost_limit     bigint;
+
+  now_utc             timestamptz := (now() at time zone 'utc');
+  day_start           timestamptz := date_trunc('day',  now_utc);
+  week_start          timestamptz := date_trunc('week', now_utc);   -- Monday 00:00 UTC
+  month_start         timestamptz := date_trunc('month', now_utc);
+
+  used_day_reqs       bigint;
+  used_wk_reqs        bigint;
+  used_mo_reqs        bigint;
+  used_day_cost       bigint;
+  used_wk_cost        bigint;
+  used_mo_cost        bigint;
+
+  within_limits       boolean := true;
+  limit_reason        text := null;
+  limit_window        text := null;
+  limit_metric        text := null;
+  current_value       bigint := null;
+  limit_value         bigint := null;
+  limit_reset_at      timestamptz := null;
+
+  -- Preset handling
+  is_preset           boolean := false;
+  preset_name         text := null;
+  preset_publisher    text := null;
+  preset_ref          text := null;
+  pinned_version      jsonb := null;
+
+  -- Resolve model from alias if exists
+  resolved_model      text := gateway_fetch_request_context_without_workspace_budget.model;
+  base_model          text;
+
+  team_enrichment     jsonb;
+  key_enrichment      jsonb;
+
+  -- Team aggregates
+  team_total_requests bigint;
+  team_total_spend_nanos bigint;
+  team_spend_24h_nanos bigint;
+  team_spend_7d_nanos bigint;
+  team_spend_30d_nanos bigint;
+  team_requests_1h bigint;
+  team_requests_24h bigint;
+  team_created_at timestamptz;
+  team_tier text;
+  team_balance_nanos bigint;
+  team_reserved_nanos bigint;
+
+  -- Key aggregates
+  key_name text;
+  key_created_at timestamptz;
+  key_total_requests bigint;
+  key_total_spend_nanos bigint;
+begin
+  base_model := gateway_fetch_request_context_without_workspace_budget.model;
+  -- hard requirement: key must be provided
+  if gateway_fetch_request_context_without_workspace_budget.api_key_id is null then
+    raise exception using errcode = '22023', message = 'missing_api_key', detail = 'api_key_id is required';
+  end if;
+
+  -- Check if model is a preset (starts with @)
+  if base_model like '@%' then
+    is_preset := true;
+    preset_name := substring(base_model from 2); -- Remove @ prefix
+    -- "@slug@ref" and "@handle/slug@ref" pin a published version: its label
+    -- (v3, 1.2.0, 2026.10.27) or a named label such as production.
+    if position('@' in preset_name) > 0 then
+      preset_ref := substring(preset_name from position('@' in preset_name) + 1);
+      preset_name := substring(preset_name from 1 for position('@' in preset_name) - 1);
+    end if;
+
+    -- Fetch preset configuration. Qualified references resolve a
+    -- public publisher globally; unqualified references remain workspace-local.
+    if position('/' in preset_name) > 0 then
+      preset_publisher := split_part(preset_name, '/', 1);
+      preset_name := substring(preset_name from position('/' in preset_name) + 1);
+      select jsonb_build_object(
+        'id', p.id, 'name', p.name, 'slug', p.slug, 'description', p.description,
+        'config', p.config, 'visibility', p.visibility, 'publisher', w.publisher_handle,
+        'version_id', p.active_version_id,
+        'version_label', (select v.version_label from public.preset_versions v where v.id = p.active_version_id)
+      ) into preset_data
+      from public.presets p
+      join public.workspaces w on w.id = p.workspace_id
+      where p.archived_at is null and lower(p.slug) = lower(preset_name)
+        and p.visibility = 'public'
+        and true
+        and (lower(w.publisher_handle) = lower(preset_publisher) or exists (select 1 from public.workspace_publisher_handle_aliases alias where alias.workspace_id = w.id and alias.handle = lower(preset_publisher)))
+      limit 1;
+    else
+      select jsonb_build_object(
+        'id', p.id, 'name', p.name,
+        'slug', coalesce(nullif(p.slug, ''), regexp_replace(p.name, '^@', '')),
+        'description', p.description, 'config', p.config, 'visibility', p.visibility,
+        'version_id', p.active_version_id,
+        'version_label', (select v.version_label from public.preset_versions v where v.id = p.active_version_id)
+      ) into preset_data
+      from public.presets p
+      where p.archived_at is null and lower(coalesce(nullif(p.slug, ''), regexp_replace(p.name, '^@', ''))) = lower(preset_name)
+        and p.workspace_id = gateway_fetch_request_context_without_workspace_budget.workspace_id
+        and (
+          p.visibility in ('public', 'team')
+          or p.created_by = (
+            select ak.created_by from public.keys ak
+            where ak.id = gateway_fetch_request_context_without_workspace_budget.api_key_id
+              and ak.workspace_id = gateway_fetch_request_context_without_workspace_budget.workspace_id
+              and ak.status = 'active'
+          )
+        )
+      limit 1;
+    end if;
+
+    if preset_data is null then
+      raise exception using
+        errcode = '22023',
+        message = 'preset_not_found',
+        detail = format('Preset "%s" not found or not accessible', preset_name);
+    end if;
+
+    if preset_ref is not null then
+      -- An exact version label (v3, 1.2.0, 2026.10.27) wins; otherwise a named
+      -- label points at a version. Labels never look like version labels.
+      -- Public references reach public versions only; workspace references
+      -- apply the preset access rule to the pinned version's visibility.
+      select jsonb_build_object(
+        'name', v.name, 'slug', v.slug, 'description', v.description,
+        'config', v.config, 'visibility', v.visibility,
+        'version_id', v.id, 'version_label', v.version_label, 'ref', preset_ref
+      ) into pinned_version
+      from public.preset_versions v
+      where v.preset_id = (preset_data->>'id')::uuid
+        and v.id = coalesce(
+          (select exact.id from public.preset_versions exact
+            where exact.preset_id = v.preset_id and exact.version_label = preset_ref),
+          (select l.version_id from public.preset_version_labels l
+            where l.preset_id = v.preset_id and l.label = lower(preset_ref))
+        )
+        and case
+          when preset_publisher is not null then v.visibility = 'public'
+          else v.visibility in ('public', 'team') or exists (
+            select 1 from public.presets p
+            join public.keys ak on ak.created_by = p.created_by
+            where p.id = v.preset_id
+              and ak.id = gateway_fetch_request_context_without_workspace_budget.api_key_id
+              and ak.workspace_id = gateway_fetch_request_context_without_workspace_budget.workspace_id
+              and ak.status = 'active'
+          )
+        end;
+      if pinned_version is null then
+        raise exception using
+          errcode = '22023',
+          message = 'preset_version_not_found',
+          detail = format('Version "%s" of preset "%s" not found', preset_ref, preset_name);
+      end if;
+      preset_data := preset_data || pinned_version;
+    end if;
+
+    -- Extract model from preset config (fallback to default/default_model/model/first models entry)
+    base_model := coalesce(
+      preset_data->'config'->>'defaultModel',
+      preset_data->'config'->>'default_model',
+      preset_data->'config'->>'model',
+      preset_data->'config'->'models'->>0,
+      preset_data->'config'->'allowedModels'->>0,
+      preset_data->'config'->'allowed_models'->>0
+    );
+
+    if base_model is null then
+      raise exception using
+        errcode = '22023',
+        message = 'preset_no_model',
+        detail = format('Preset "%s" has no model configured', preset_name);
+    end if;
+  end if;
+
+  -- Resolve alias/model indirection:
+  -- 1) explicit alias table (`v2_model_aliases`)
+  -- 2) provider-scoped slug form (`provider/provider_model_slug`)
+  resolved_model := coalesce(
+    (
+      select a.api_model_id
+      from (select alias_slug, model_slug as api_model_id, enabled as is_enabled from public.v2_model_aliases) a
+      where a.alias_slug = base_model
+        and a.is_enabled = true
+        and a.api_model_id is not null
+      limit 1
+    ),
+    (
+      select m.api_model_id
+      from (select provider_model_id as provider_api_model_id, provider_slug as provider_id, model_slug as api_model_id, model_slug as model_id, provider_model_slug, routing_enabled as is_active_gateway, status as routing_status, input_modalities, output_modalities, context_length, max_output_tokens, effective_from, effective_to, created_at, updated_at, metadata from public.v2_model_provider_routes) m
+      where position('/' in base_model) > 0
+        and m.provider_id = split_part(base_model, '/', 1)
+        and m.provider_model_slug = regexp_replace(base_model, '^[^/]+/', '')
+        and m.is_active_gateway
+        and (m.effective_from is null or m.effective_from <= now() at time zone 'utc')
+        and (m.effective_to   is null or (now() at time zone 'utc') < m.effective_to)
+      order by coalesce(m.effective_from, to_timestamp(0)) desc, m.provider_api_model_id
+      limit 1
+    ),
+    base_model
+  );
+
+  -- validate key row, status, and team
+  select
+    (k.status = 'active'),
+    (k.workspace_id = gateway_fetch_request_context_without_workspace_budget.workspace_id),
+    k.soft_blocked,
+    k.daily_limit_requests,   k.weekly_limit_requests,   k.monthly_limit_requests,
+    k.daily_limit_cost_nanos, k.weekly_limit_cost_nanos, k.monthly_limit_cost_nanos
+  into
+    v_key_active,
+    v_key_team_ok,
+    v_soft_blocked,
+    v_day_req_limit, v_wk_req_limit, v_mo_req_limit,
+    v_day_cost_limit, v_wk_cost_limit, v_mo_cost_limit
+  from public.keys k
+  where k.id = gateway_fetch_request_context_without_workspace_budget.api_key_id
+  limit 1;
+
+  if v_key_active is null then
+    raise exception using errcode = '22023', message = 'api_key_not_found', detail = 'key id does not exist';
+  end if;
+  if not v_key_team_ok then
+    raise exception using errcode = '22023', message = 'api_key_wrong_team', detail = 'key does not belong to provided workspace_id';
+  end if;
+  if not v_key_active then
+    raise exception using errcode = '22023', message = 'api_key_inactive', detail = 'key status is not active';
+  end if;
+
+  key_status := jsonb_build_object('ok', true, 'mode', 'first_party');
+
+  -- credit check
+  credit_status :=
+    coalesce((
+      select case
+        when greatest(coalesce(w.balance_nanos, 0)::bigint - coalesce(w.reserved_nanos, 0)::bigint, 0) >= min_balance_nanos then
+          jsonb_build_object(
+            'ok', true,
+            'balance_nanos', greatest(coalesce(w.balance_nanos, 0)::bigint - coalesce(w.reserved_nanos, 0)::bigint, 0),
+            'raw_balance_nanos', coalesce(w.balance_nanos, 0)::bigint,
+            'reserved_nanos', coalesce(w.reserved_nanos, 0)::bigint,
+            'available_nanos', greatest(coalesce(w.balance_nanos, 0)::bigint - coalesce(w.reserved_nanos, 0)::bigint, 0)
+          )
+        else
+          jsonb_build_object(
+            'ok', false,
+            'reason', 'insufficient_funds',
+            'balance_nanos', greatest(coalesce(w.balance_nanos, 0)::bigint - coalesce(w.reserved_nanos, 0)::bigint, 0),
+            'raw_balance_nanos', coalesce(w.balance_nanos, 0)::bigint,
+            'reserved_nanos', coalesce(w.reserved_nanos, 0)::bigint,
+            'available_nanos', greatest(coalesce(w.balance_nanos, 0)::bigint - coalesce(w.reserved_nanos, 0)::bigint, 0)
+          )
+      end
+      from public.wallets w
+      where w.workspace_id = gateway_fetch_request_context_without_workspace_budget.workspace_id
+      limit 1
+    ), jsonb_build_object('ok', false, 'reason', 'wallet_missing'));
+
+  -- per-key limits (requests + cost)
+  -- Unlimited keys need no history read. Unknown telemetry stays NULL.
+  if greatest(v_day_req_limit, v_wk_req_limit, v_mo_req_limit,
+      v_day_cost_limit, v_wk_cost_limit, v_mo_cost_limit) > 0 then
+  select
+    count(*) filter (where gr.served and gr.created_at >= day_start)                    as used_day_reqs,
+    count(*) filter (where gr.served and gr.created_at >= week_start)                   as used_wk_reqs,
+    count(*) filter (where gr.served and gr.created_at >= month_start)                  as used_mo_reqs,
+    coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= day_start), 0)::bigint   as used_day_cost,
+    coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= week_start), 0)::bigint  as used_wk_cost,
+    coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= month_start), 0)::bigint as used_mo_cost
+  into
+    used_day_reqs, used_wk_reqs, used_mo_reqs,
+    used_day_cost, used_wk_cost, used_mo_cost
+  -- Successful requests count as requests and cost. A request that did not succeed but was
+  -- charged (a cancelled stream that was billed) counts toward cost only.
+  from (
+    select served.created_at, served.cost_nanos, true as served
+    from public.gateway_requests served
+    where served.key_id = gateway_fetch_request_context_without_workspace_budget.api_key_id
+      and served.workspace_id = gateway_fetch_request_context_without_workspace_budget.workspace_id
+      and served.success is true
+      and served.created_at >= least(week_start, month_start)
+    union all
+    select charged.created_at, charged.cost_nanos, false
+    from public.gateway_requests charged
+    where charged.workspace_id = gateway_fetch_request_context_without_workspace_budget.workspace_id
+      and charged.key_id = gateway_fetch_request_context_without_workspace_budget.api_key_id
+      and charged.success is not true
+      and charged.cost_nanos > 0
+      and charged.created_at >= least(week_start, month_start)
+  ) gr;
+  end if;
+
+  if v_soft_blocked then
+    within_limits := false;
+    limit_reason := 'key_limit_soft_blocked';
+    limit_metric := 'soft_blocked';
+  end if;
+  if within_limits and v_day_req_limit > 0 and used_day_reqs >= v_day_req_limit then
+    within_limits := false;
+    limit_reason := 'daily_request_limit_reached';
+    limit_window := 'daily';
+    limit_metric := 'requests';
+    current_value := used_day_reqs;
+    limit_value := v_day_req_limit;
+    limit_reset_at := day_start + interval '1 day';
+  end if;
+  if within_limits and v_wk_req_limit > 0 and used_wk_reqs >= v_wk_req_limit then
+    within_limits := false;
+    limit_reason := 'weekly_request_limit_reached';
+    limit_window := 'weekly';
+    limit_metric := 'requests';
+    current_value := used_wk_reqs;
+    limit_value := v_wk_req_limit;
+    limit_reset_at := week_start + interval '1 week';
+  end if;
+  if within_limits and v_mo_req_limit > 0 and used_mo_reqs >= v_mo_req_limit then
+    within_limits := false;
+    limit_reason := 'monthly_request_limit_reached';
+    limit_window := 'monthly';
+    limit_metric := 'requests';
+    current_value := used_mo_reqs;
+    limit_value := v_mo_req_limit;
+    limit_reset_at := month_start + interval '1 month';
+  end if;
+  if within_limits and v_day_cost_limit > 0 and used_day_cost >= v_day_cost_limit then
+    within_limits := false;
+    limit_reason := 'daily_cost_limit_reached';
+    limit_window := 'daily';
+    limit_metric := 'cost';
+    current_value := used_day_cost;
+    limit_value := v_day_cost_limit;
+    limit_reset_at := day_start + interval '1 day';
+  end if;
+  if within_limits and v_wk_cost_limit > 0 and used_wk_cost >= v_wk_cost_limit then
+    within_limits := false;
+    limit_reason := 'weekly_cost_limit_reached';
+    limit_window := 'weekly';
+    limit_metric := 'cost';
+    current_value := used_wk_cost;
+    limit_value := v_wk_cost_limit;
+    limit_reset_at := week_start + interval '1 week';
+  end if;
+  if within_limits and v_mo_cost_limit > 0 and used_mo_cost >= v_mo_cost_limit then
+    within_limits := false;
+    limit_reason := 'monthly_cost_limit_reached';
+    limit_window := 'monthly';
+    limit_metric := 'cost';
+    current_value := used_mo_cost;
+    limit_value := v_mo_cost_limit;
+    limit_reset_at := month_start + interval '1 month';
+  end if;
+
+  key_limit_status :=
+    jsonb_build_object(
+      'ok', within_limits,
+      'reason', limit_reason,
+      'limit_window', limit_window,
+      'limit_metric', limit_metric,
+      'current_value', current_value,
+      'limit_value', limit_value,
+      'reset_at', to_jsonb(limit_reset_at),
+      'now', to_jsonb(now_utc),
+      'buckets', jsonb_build_object(
+        'daily', jsonb_build_object(
+          'window_start', to_jsonb(day_start),
+          'requests_used', used_day_reqs,
+          'requests_limit', v_day_req_limit,
+          'cost_used_nanos', used_day_cost,
+          'cost_limit_nanos', v_day_cost_limit
+        ),
+        'weekly', jsonb_build_object(
+          'window_start', to_jsonb(week_start),
+          'requests_used', used_wk_reqs,
+          'requests_limit', v_wk_req_limit,
+          'cost_used_nanos', used_wk_cost,
+          'cost_limit_nanos', v_wk_cost_limit
+        ),
+        'monthly', jsonb_build_object(
+          'window_start', to_jsonb(month_start),
+          'requests_used', used_mo_reqs,
+          'requests_limit', v_mo_req_limit,
+          'cost_used_nanos', used_mo_cost,
+          'cost_limit_nanos', v_mo_cost_limit
+        )
+      )
+    );
+
+  -- ============================================================================
+  -- TEAM & KEY ENRICHMENT (Wide Event Context for Observability)
+  -- Purpose: Gather user/team context for comprehensive logging (loggingsucks.com pattern)
+  -- ============================================================================
+  -- Team metadata & wallet
+  select
+    t.created_at,
+    coalesce(t.tier, 'basic'),
+    greatest(coalesce(w.balance_nanos, 0)::bigint - coalesce(w.reserved_nanos, 0)::bigint, 0),
+    coalesce(w.reserved_nanos, 0)::bigint
+  into
+    team_created_at,
+    team_tier,
+    team_balance_nanos,
+    team_reserved_nanos
+  from public.workspaces t
+  left join public.wallets w on w.workspace_id = t.id
+  where t.id = gateway_fetch_request_context_without_workspace_budget.workspace_id
+  limit 1;
+
+  -- Historical analytics belong in reporting, not request admission.
+  -- Leave their enrichment fields NULL instead of scanning lifetime logs.
+
+  -- Calculate tier using calendar-month qualification + lock-window grace.
+  -- Function maintains team tier/counters in database when state changes.
+  team_tier := calculate_tier_with_grace(gateway_fetch_request_context_without_workspace_budget.workspace_id, team_spend_30d_nanos);
+
+  team_enrichment := jsonb_build_object(
+    'tier', team_tier,
+    'created_at', to_jsonb(team_created_at),
+    'account_age_days', extract(epoch from (now_utc - team_created_at)) / 86400,
+    'balance_nanos', team_balance_nanos,
+    'available_nanos', team_balance_nanos,
+    'reserved_nanos', team_reserved_nanos,
+    'balance_usd', round((team_balance_nanos::numeric / 1000000000.0)::numeric, 2),
+    'balance_is_low', team_balance_nanos < min_balance_nanos,
+    'total_requests', team_total_requests,
+    'total_spend_nanos', team_total_spend_nanos,
+    'total_spend_usd', round((team_total_spend_nanos::numeric / 1000000000.0)::numeric, 2),
+    'spend_24h_nanos', team_spend_24h_nanos,
+    'spend_24h_usd', round((team_spend_24h_nanos::numeric / 1000000000.0)::numeric, 4),
+    'spend_7d_nanos', team_spend_7d_nanos,
+    'spend_7d_usd', round((team_spend_7d_nanos::numeric / 1000000000.0)::numeric, 2),
+    'spend_30d_nanos', team_spend_30d_nanos,
+    'spend_30d_usd', round((team_spend_30d_nanos::numeric / 1000000000.0)::numeric, 2),
+    'requests_1h', team_requests_1h,
+    'requests_24h', team_requests_24h
+  );
+
+  -- Key metadata & aggregates
+  select
+    k.name,
+    k.created_at
+  into
+    key_name,
+    key_created_at
+  from public.keys k
+  where k.id = gateway_fetch_request_context_without_workspace_budget.api_key_id
+  limit 1;
+
+  -- Lifetime key analytics are not required to authenticate or enforce limits.
+
+  key_enrichment := jsonb_build_object(
+    'name', key_name,
+    'created_at', to_jsonb(key_created_at),
+    'key_age_days', extract(epoch from (now_utc - key_created_at)) / 86400,
+    'total_requests', key_total_requests,
+    'total_spend_nanos', key_total_spend_nanos,
+    'total_spend_usd', round((key_total_spend_nanos::numeric / 1000000000.0)::numeric, 2),
+    'requests_today', used_day_reqs,
+    'spend_today_nanos', used_day_cost,
+    'spend_today_usd', round((used_day_cost::numeric / 1000000000.0)::numeric, 4),
+    'daily_limit_pct', case
+      when v_day_req_limit > 0 then round((used_day_reqs::numeric / v_day_req_limit::numeric * 100)::numeric, 1)
+      else null
+    end
+  );
+
+  -- provider candidates (BYOK) + pricing, fully qualifying params
+  with provider_rows as (
+    select distinct on (m.provider_api_model_id)
+      m.provider_api_model_id,
+      m.provider_id,
+      m.api_model_id,
+      m.provider_model_slug, coalesce((select route.metadata -> 'availability' from public.v2_model_provider_routes route where route.provider_model_id = m.provider_api_model_id and jsonb_typeof(route.metadata -> 'availability') = 'object' and (route.metadata -> 'availability' ->> 'mode') in ('allowlist', 'blocklist') and jsonb_typeof(route.metadata -> 'availability' -> 'countries') = 'array'), p.metadata -> 'availability') as availability,
+      m.routing_status as model_status,
+      coalesce((m.metadata->>'external_routing_override')::boolean, false) as external_routing_override,
+      m.input_modalities,
+      m.output_modalities,
+      p.prompt_training_policy,
+      p.data_policy_tier,
+      p.data_policy_confidence,
+      p.data_policy_contract_mode,
+	  p.data_policy_variant,
+      c.status as capability_status,
+      coalesce(c.params,'{}'::jsonb) || jsonb_strip_nulls(jsonb_build_object('data_policy',public.resolve_catalog_data_policy(m.provider_api_model_id,c.capability_id))) as capability_params,
+      c.max_input_tokens,
+      c.max_output_tokens
+    from (select provider_model_id as provider_api_model_id, provider_slug as provider_id, model_slug as api_model_id, model_slug as model_id, provider_model_slug, routing_enabled as is_active_gateway, status as routing_status, input_modalities, output_modalities, context_length, max_output_tokens, effective_from, effective_to, created_at, updated_at, metadata from public.v2_model_provider_routes) m
+    join (select model_slug as model_id, lab_slug as organisation_id, name, description, status, hidden, announced_at as announcement_date, released_at as release_date, deprecated_at as deprecation_date, retired_at as retirement_date, previous_model_slug as previous_model_id, input_modalities as input_types, output_modalities as output_types, metadata, created_at, updated_at from public.v2_models) dm
+      on dm.model_id = coalesce(m.model_id, m.api_model_id)
+    join public.v2_providers p
+      on p.provider_slug = m.provider_id
+    join (select provider_model_id as provider_api_model_id, capability_id, status, params, max_input_tokens, max_output_tokens, effective_from, effective_to, created_at, updated_at from public.v2_route_capabilities) c
+      on c.provider_api_model_id = m.provider_api_model_id
+    where m.api_model_id = resolved_model
+      and coalesce(dm.hidden, false) = false
+      and (dm.status is null or lower(dm.status) in ('active', 'available', 'deprecated', 'retired'))
+      and c.capability_id = gateway_fetch_request_context_without_workspace_budget.endpoint
+      and c.status in ('active', 'degraded', 'deranked', 'deranked_lvl1', 'deranked_lvl2', 'deranked_lvl3')
+      and m.is_active_gateway
+      and (
+        p.status <> 'external'
+        or coalesce((m.metadata->>'external_routing_override')::boolean, false)
+      )
+      and (m.effective_from is null or m.effective_from <= now() at time zone 'utc')
+      and (m.effective_to   is null or (now() at time zone 'utc') < m.effective_to)
+    order by m.provider_api_model_id, coalesce(c.updated_at, c.created_at) desc
+  )
+  select
+    coalesce(
+      jsonb_agg(
+        jsonb_build_object(
+          'provider_id', pr.provider_id,
+          'api_model_id', pr.api_model_id,
+          'pricing_key', pr.provider_id,
+          'provider_model_slug', pr.provider_model_slug, 'availability', pr.availability,
+          'model_status', pr.model_status,
+          'external_routing_override', pr.external_routing_override,
+          'input_modalities', pr.input_modalities,
+          'output_modalities', pr.output_modalities,
+          'prompt_training_policy', coalesce(pr.prompt_training_policy, 'unknown'),
+          'data_policy_tier', coalesce(pr.data_policy_tier, 'unknown'),
+          'data_policy_confidence', coalesce(pr.data_policy_confidence, 'unknown'),
+          'data_policy_contract_mode', coalesce(pr.data_policy_contract_mode, 'none'),
+		  'data_policy_variant', coalesce(pr.data_policy_variant, 'standard'),
+          'capability_status', pr.capability_status,
+          'capability_params', coalesce(pr.capability_params, '{}'::jsonb),
+          'max_input_tokens', pr.max_input_tokens,
+          'max_output_tokens', pr.max_output_tokens,
+          'supports_endpoint', true,
+          'base_weight', 1,
+          'byok_meta', coalesce((
+            select jsonb_agg(
+              jsonb_build_object(
+                'provider_id', bk.provider_id,
+                'id', bk.id,
+                'name', bk.name,
+                'fingerprint_sha256', bk.fingerprint_sha256,
+                'key_version', bk.key_version,
+                'always_use', bk.always_use
+              )
+            )
+            from public.byok_keys bk
+            where bk.workspace_id    = gateway_fetch_request_context_without_workspace_budget.workspace_id
+              and bk.provider_id = pr.provider_id
+              and bk.enabled     = true
+          ), '[]'::jsonb)
+        )
+      ), '[]'::jsonb
+    ) as provider_payload,
+    coalesce(
+      jsonb_object_agg(
+        pr.provider_id,
+        (
+          with rules as (
+            select r.*
+            from (select meter.sku_meter_id::text as rule_id, route.provider_slug as provider_id, route.model_slug as api_model_id, route.provider_slug || ':' || route.model_slug || ':' || sku.operation as model_key, sku.operation as capability_id, coalesce(sku.service_tier_slug, 'standard') as pricing_plan, meter.meter_key as meter, meter.unit, meter.unit_quantity as unit_size, meter.price_nanos / 1000000000.0 as price_per_unit, coalesce(nullif(meter.metadata->>'included_quantity', '')::numeric, nullif(sku.metadata->>'included_quantity', '')::numeric, 0) as included_quantity, sku.currency, coalesce(nullif(meter.metadata->>'priority', '')::integer, meter.meter_order, 100) as priority, sku.effective_from, sku.effective_to, coalesce(sku.metadata->'match', meter.metadata->'match', '[]'::jsonb) as match, coalesce(sku.metadata->>'billing_timestamp_basis', 'request_start') as billing_timestamp_basis, coalesce(sku.metadata->'time_windows', '[]'::jsonb) as time_windows, greatest(sku.updated_at, meter.updated_at) as updated_at from public.v2_pricing_skus sku join public.v2_model_provider_routes route on route.provider_model_id = sku.provider_model_id join public.v2_pricing_sku_meters meter on meter.sku_id = sku.sku_id where sku.status = 'active' and meter.billable) r
+            -- TODO: Redesign pricing selection to key on provider_api_model_id or
+            -- explicit variant metadata so provider-only SKUs (for example CrofAI
+            -- precision tiers) can share a parent internal model without forcing
+            -- distinct api_model_id values just to preserve pricing separation.
+            where r.model_key =
+              pr.provider_id || ':' || resolved_model || ':' || gateway_fetch_request_context_without_workspace_budget.endpoint
+              and r.capability_id = gateway_fetch_request_context_without_workspace_budget.endpoint
+              and (r.effective_from is null or r.effective_from <= now() at time zone 'utc')
+              and (r.effective_to   is null or (now() at time zone 'utc') < r.effective_to)
+          ),
+          ordered_rules as (
+            select
+              jsonb_agg(
+                jsonb_build_object(
+                  'id', r.rule_id,
+                  'pricing_plan', r.pricing_plan,
+                  'meter', r.meter,
+                  'unit', r.unit,
+                  'unit_size', r.unit_size,
+                  'price_per_unit', r.price_per_unit,
+                  'included_quantity', r.included_quantity,
+                  'currency', r.currency,
+                  'match', r.match,
+                  'priority', r.priority,
+                  'billing_timestamp_basis', coalesce(r.billing_timestamp_basis, 'request_start'),
+                  'time_windows', coalesce(r.time_windows, '[]'::jsonb)
+                )
+                order by r.priority desc, coalesce(r.effective_from, now() at time zone 'utc') desc
+              ) as items,
+              max(r.updated_at) as version_ts,
+              min(r.effective_from) as effective_from,
+              min(r.effective_to) as effective_to
+            from rules r
+          )
+          select jsonb_build_object(
+            'provider', pr.provider_id,
+            'model', resolved_model,
+            'endpoint', gateway_fetch_request_context_without_workspace_budget.endpoint,
+            'effective_from', to_jsonb(o.effective_from),
+            'effective_to',   to_jsonb(o.effective_to),
+            'currency', 'USD',
+            'version', to_jsonb(o.version_ts),
+            'rules', coalesce(o.items, '[]'::jsonb)
+          )
+          from ordered_rules o
+        )
+      ),
+      '{}'::jsonb
+    ) as pricing_payload
+  into providers, pricing
+  from provider_rows pr;
+
+  return jsonb_build_object(
+    'workspace_id', gateway_fetch_request_context_without_workspace_budget.workspace_id,
+    'resolved_model', resolved_model,
+    'preset', preset_data,
+    'key_ok', key_status,
+    'key_limit_ok', key_limit_status,
+    'credit_ok', credit_status,
+    'providers', providers,
+    'pricing', pricing,
+    'team_enrichment', team_enrichment,
+    'key_enrichment', key_enrichment
+  );
+end;
+
+$function$;
+
+GRANT EXECUTE ON FUNCTION "public"."gateway_fetch_request_context_without_workspace_budget"(uuid, text, text, uuid) TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."gateway_fetch_request_context_without_workspace_budget"(uuid, text, text, uuid) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."gateway_fetch_request_context_without_workspace_budget"(uuid, text, text, uuid) TO "postgres";
+
+REVOKE ALL ON FUNCTION "public"."gateway_fetch_request_context_without_workspace_budget"(uuid, text, text, uuid) FROM PUBLIC, "anon", "authenticated";
+
+CREATE OR REPLACE FUNCTION public.gateway_wallet_reserve_once_without_workspace_budget (
+  p_workspace_id   uuid,
+  p_reservation_id text,
+  p_amount_nanos   bigint,
+  p_hold_ref_id    text    DEFAULT NULL::text,
+  p_key_id         uuid    DEFAULT NULL::uuid,
+  p_request_count  integer DEFAULT NULL::integer
+)
+  RETURNS TABLE (
+    ok                    boolean,
+    applied               boolean,
+    reason                text,
+    amount_nanos          bigint,
+    before_balance_nanos  bigint,
+    after_balance_nanos   bigint,
+    before_reserved_nanos bigint,
+    after_reserved_nanos  bigint
+  )
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+declare
+  v_wallet public.wallets%rowtype;
+  v_existing public.gateway_wallet_reservations%rowtype;
+  v_key public.keys%rowtype;
+  v_available bigint;
+  v_before_balance bigint;
+  v_before_reserved bigint;
+  v_day_start timestamptz := (date_trunc('day', now() at time zone 'utc') at time zone 'utc');
+  v_week_start timestamptz := (date_trunc('week', now() at time zone 'utc') at time zone 'utc');
+  v_month_start timestamptz := (date_trunc('month', now() at time zone 'utc') at time zone 'utc');
+  v_day_requests bigint := 0;
+  v_week_requests bigint := 0;
+  v_month_requests bigint := 0;
+  v_day_cost bigint := 0;
+  v_week_cost bigint := 0;
+  v_month_cost bigint := 0;
+  v_requested_count integer := greatest(0, coalesce(p_request_count, 0));
+  v_video_exposure record;
+begin
+  if p_workspace_id is null or coalesce(trim(p_reservation_id), '') = '' then
+    raise exception 'invalid_reservation_identity';
+  end if;
+  if p_amount_nanos is null or p_amount_nanos <= 0 then
+    raise exception 'invalid_reservation_amount';
+  end if;
+  if p_key_id is not null and v_requested_count <= 0 then
+    raise exception 'batch_request_count_required';
+  end if;
+  if v_requested_count > 10000 then
+    raise exception 'batch_request_limit_exceeded';
+  end if;
+
+  select * into v_existing
+  from public.gateway_wallet_reservations
+  where workspace_id = p_workspace_id and reservation_id = p_reservation_id
+  for update;
+  if found then
+    select * into v_wallet from public.wallets
+    where workspace_id = p_workspace_id for update;
+    if not found then
+      return query select false, false, 'wallet_not_found'::text, p_amount_nanos,
+        null::bigint, null::bigint, null::bigint, null::bigint;
+      return;
+    end if;
+    if v_existing.amount_nanos <> p_amount_nanos
+      or v_existing.key_id is distinct from p_key_id
+      or coalesce(v_existing.request_count, 0) <> v_requested_count then
+      raise exception 'reservation_identity_mismatch';
+    end if;
+    if v_existing.status in ('held', 'reserved') then
+      return query select true, false, 'already_reserved'::text, v_existing.amount_nanos,
+        coalesce(v_wallet.balance_nanos, 0), coalesce(v_wallet.balance_nanos, 0),
+        coalesce(v_wallet.reserved_nanos, 0), coalesce(v_wallet.reserved_nanos, 0);
+      return;
+    end if;
+    return query select false, false, 'reservation_not_active'::text, v_existing.amount_nanos,
+      coalesce(v_wallet.balance_nanos, 0), coalesce(v_wallet.balance_nanos, 0),
+      coalesce(v_wallet.reserved_nanos, 0), coalesce(v_wallet.reserved_nanos, 0);
+    return;
+  end if;
+
+  if p_key_id is not null then
+    select * into v_key from public.keys where id = p_key_id for update;
+    if not found then
+      return query select false, false, 'key_not_found'::text, p_amount_nanos,
+        null::bigint, null::bigint, null::bigint, null::bigint;
+      return;
+    end if;
+    if v_key.workspace_id <> p_workspace_id then
+      return query select false, false, 'key_wrong_workspace'::text, p_amount_nanos,
+        null::bigint, null::bigint, null::bigint, null::bigint;
+      return;
+    end if;
+    if v_key.status <> 'active' or (v_key.expires_at is not null and v_key.expires_at <= now()) then
+      return query select false, false, 'key_not_active'::text, p_amount_nanos,
+        null::bigint, null::bigint, null::bigint, null::bigint;
+      return;
+    end if;
+    if coalesce(v_key.soft_blocked, false) then
+      return query select false, false, 'key_limit_soft_blocked'::text, p_amount_nanos,
+        null::bigint, null::bigint, null::bigint, null::bigint;
+      return;
+    end if;
+
+    -- Successful requests count as requests and cost; charged requests that did not succeed
+    -- count toward cost only.
+    select
+      count(*) filter (where usage.served and usage.created_at >= v_day_start),
+      count(*) filter (where usage.served and usage.created_at >= v_week_start),
+      count(*) filter (where usage.served and usage.created_at >= v_month_start),
+      coalesce(sum(usage.cost_nanos) filter (where usage.created_at >= v_day_start), 0),
+      coalesce(sum(usage.cost_nanos) filter (where usage.created_at >= v_week_start), 0),
+      coalesce(sum(usage.cost_nanos) filter (where usage.created_at >= v_month_start), 0)
+    into v_day_requests, v_week_requests, v_month_requests,
+      v_day_cost, v_week_cost, v_month_cost
+    from (
+      select served.created_at, served.cost_nanos, true as served
+      from public.gateway_requests served
+      where served.workspace_id = p_workspace_id and served.key_id = p_key_id and served.success is true
+      union all
+      select charged.created_at, charged.cost_nanos, false
+      from public.gateway_requests charged
+      where charged.workspace_id = p_workspace_id and charged.key_id = p_key_id
+        and charged.success is not true and charged.cost_nanos > 0
+    ) usage;
+
+    -- Video create audit rows have zero cost until completion. Count the unpaid
+    -- portion of each reservation under the same key lock as admission. Captured
+    -- reservations bridge the gap until the final request audit is persisted.
+    -- Active holds remain exposure across budget-window boundaries.
+    with exposure as (
+      select r.created_at, r.status in ('held', 'reserved') as active,
+        greatest(0, (case when r.status = 'captured'
+          then coalesce(r.settled_amount_nanos, r.amount_nanos)
+          else r.amount_nanos end) - coalesce(a.cost, 0)) as cost,
+        case when coalesce(a.requests, 0) = 0 then 1 else 0 end as requests
+      from public.gateway_wallet_reservations r
+      left join lateral (
+        select sum(gr.cost_nanos) as cost, count(*) as requests
+        from public.gateway_requests gr
+        where gr.workspace_id = r.workspace_id and gr.key_id = r.key_id
+          and gr.request_id = r.hold_ref_id
+          and (r.reservation_id not like 'free_model_hold:%' or
+            gr.detail_metadata->>'free_model_fee_request_id' = substr(r.reservation_id, 17))
+          and (gr.success is true or gr.cost_nanos > 0)
+      ) a on true
+      where r.workspace_id = p_workspace_id and r.key_id = p_key_id
+        and (r.reservation_id like 'video_hold:%' or r.reservation_id like 'free_model_hold:%')
+        and r.status in ('held', 'reserved', 'captured')
+        and (r.status in ('held', 'reserved') or r.created_at >= least(v_day_start, v_week_start, v_month_start))
+    )
+    select
+      coalesce(sum(cost) filter (where active or created_at >= v_day_start), 0) as day_cost,
+      coalesce(sum(cost) filter (where active or created_at >= v_week_start), 0) as week_cost,
+      coalesce(sum(cost) filter (where active or created_at >= v_month_start), 0) as month_cost,
+      coalesce(sum(requests) filter (where active or created_at >= v_day_start), 0) as day_requests,
+      coalesce(sum(requests) filter (where active or created_at >= v_week_start), 0) as week_requests,
+      coalesce(sum(requests) filter (where active or created_at >= v_month_start), 0) as month_requests
+    into v_video_exposure from exposure;
+    v_day_cost := v_day_cost + v_video_exposure.day_cost;
+    v_week_cost := v_week_cost + v_video_exposure.week_cost;
+    v_month_cost := v_month_cost + v_video_exposure.month_cost;
+    v_day_requests := v_day_requests + v_video_exposure.day_requests;
+    v_week_requests := v_week_requests + v_video_exposure.week_requests;
+    v_month_requests := v_month_requests + v_video_exposure.month_requests;
+
+    if coalesce(v_key.daily_limit_requests, 0) > 0
+      and v_day_requests + v_requested_count > v_key.daily_limit_requests then
+      return query select false, false, 'daily_request_limit_reached'::text, p_amount_nanos,
+        null::bigint, null::bigint, null::bigint, null::bigint;
+      return;
+    end if;
+    if coalesce(v_key.weekly_limit_requests, 0) > 0
+      and v_week_requests + v_requested_count > v_key.weekly_limit_requests then
+      return query select false, false, 'weekly_request_limit_reached'::text, p_amount_nanos,
+        null::bigint, null::bigint, null::bigint, null::bigint;
+      return;
+    end if;
+    if coalesce(v_key.monthly_limit_requests, 0) > 0
+      and v_month_requests + v_requested_count > v_key.monthly_limit_requests then
+      return query select false, false, 'monthly_request_limit_reached'::text, p_amount_nanos,
+        null::bigint, null::bigint, null::bigint, null::bigint;
+      return;
+    end if;
+    if coalesce(v_key.daily_limit_cost_nanos, 0) > 0
+      and v_day_cost + p_amount_nanos > v_key.daily_limit_cost_nanos then
+      return query select false, false, 'daily_cost_limit_reached'::text, p_amount_nanos,
+        null::bigint, null::bigint, null::bigint, null::bigint;
+      return;
+    end if;
+    if coalesce(v_key.weekly_limit_cost_nanos, 0) > 0
+      and v_week_cost + p_amount_nanos > v_key.weekly_limit_cost_nanos then
+      return query select false, false, 'weekly_cost_limit_reached'::text, p_amount_nanos,
+        null::bigint, null::bigint, null::bigint, null::bigint;
+      return;
+    end if;
+    if coalesce(v_key.monthly_limit_cost_nanos, 0) > 0
+      and v_month_cost + p_amount_nanos > v_key.monthly_limit_cost_nanos then
+      return query select false, false, 'monthly_cost_limit_reached'::text, p_amount_nanos,
+        null::bigint, null::bigint, null::bigint, null::bigint;
+      return;
+    end if;
+  end if;
+
+  select * into v_wallet from public.wallets
+  where workspace_id = p_workspace_id for update;
+  if not found then
+    return query select false, false, 'wallet_not_found'::text, p_amount_nanos,
+      null::bigint, null::bigint, null::bigint, null::bigint;
+    return;
+  end if;
+  v_available := coalesce(v_wallet.balance_nanos, 0) - coalesce(v_wallet.reserved_nanos, 0);
+  if v_available < p_amount_nanos then
+    return query select false, false, 'insufficient_balance'::text, p_amount_nanos,
+      coalesce(v_wallet.balance_nanos, 0), coalesce(v_wallet.balance_nanos, 0),
+      coalesce(v_wallet.reserved_nanos, 0), coalesce(v_wallet.reserved_nanos, 0);
+    return;
+  end if;
+
+  insert into public.gateway_wallet_reservations (
+    reservation_id, workspace_id, amount_nanos, status, hold_ref_id,
+    key_id, request_count, created_at, updated_at
+  ) values (
+    p_reservation_id, p_workspace_id, p_amount_nanos, 'reserved',
+    nullif(trim(coalesce(p_hold_ref_id, '')), ''), p_key_id,
+    nullif(v_requested_count, 0), now(), now()
+  );
+
+  v_before_balance := coalesce(v_wallet.balance_nanos, 0);
+  v_before_reserved := coalesce(v_wallet.reserved_nanos, 0);
+  update public.wallets
+  set reserved_nanos = v_before_reserved + p_amount_nanos, updated_at = now()
+  where workspace_id = p_workspace_id
+  returning * into v_wallet;
+
+  if p_key_id is not null and p_reservation_id not like 'video_hold:%' and p_reservation_id not like 'free_model_hold:%' then
+    insert into public.gateway_requests (
+      workspace_id, request_id, endpoint, model_id, provider,
+      status_code, success, usage, cost_nanos, currency, key_id
+    )
+    select
+      p_workspace_id,
+      'batch_hold_usage:' || p_reservation_id || ':' || item::text,
+      'batch',
+      'batch/reserved',
+      null,
+      202,
+      true,
+      jsonb_build_object('batch_reserved', true),
+      (p_amount_nanos / v_requested_count)
+        + case when item <= (p_amount_nanos % v_requested_count) then 1 else 0 end,
+      'USD',
+      p_key_id
+    from generate_series(1, v_requested_count) as item
+    ;
+  end if;
+
+  return query select true, true, null::text, p_amount_nanos,
+    v_before_balance, coalesce(v_wallet.balance_nanos, 0),
+    v_before_reserved, coalesce(v_wallet.reserved_nanos, 0);
+end;
+$function$;
+
+GRANT EXECUTE ON FUNCTION "public"."gateway_wallet_reserve_once_without_workspace_budget"(uuid, text, bigint, text, uuid, integer) TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."gateway_wallet_reserve_once_without_workspace_budget"(uuid, text, bigint, text, uuid, integer) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."gateway_wallet_reserve_once_without_workspace_budget"(uuid, text, bigint, text, uuid, integer) TO "postgres";
+
+REVOKE ALL ON FUNCTION "public"."gateway_wallet_reserve_once_without_workspace_budget"(uuid, text, bigint, text, uuid, integer) FROM PUBLIC, "anon", "authenticated";
 
 CREATE OR REPLACE FUNCTION public.gateway_wallet_reserve_once (
   p_workspace_id   uuid,
@@ -1016,6 +2579,10 @@ REVOKE ALL ON FUNCTION "public"."gateway_wallet_release_stale_orphan_batch_reser
 GRANT EXECUTE ON FUNCTION "public"."gateway_wallet_release_stale_orphan_batch_reservations"(integer, integer) TO "postgres";
 
 REVOKE ALL ON FUNCTION "public"."gateway_wallet_release_stale_orphan_batch_reservations"(integer, integer) FROM PUBLIC, "anon", "authenticated";
+
+-- Partial and small (charged requests that did not succeed); built on every partition.
+CREATE INDEX IF NOT EXISTS gateway_requests_charged_unsuccessful_cost_idx ON public.gateway_requests USING btree (workspace_id, created_at) INCLUDE (key_id, cost_nanos)
+  WHERE ((success IS NOT TRUE) AND (cost_nanos > 0));
 
 DROP FUNCTION IF EXISTS public.wallet_apply_delta(uuid, bigint);
 

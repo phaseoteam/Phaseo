@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { createBudgetDatabase, readMigration, readSchema } from './fixtures/budget-enforcement-db.mjs';
+import { applyMigration, createBudgetDatabase, readMigration, readSchema } from './fixtures/budget-enforcement-db.mjs';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 
 // Migration 20261104233604_budget_enforcement_money_hygiene against production shapes (see the
@@ -15,6 +15,10 @@ const functionFiles = [
   'public/functions/gateway_department_budget_status.sql',
   'public/functions/gateway_workspace_budget_status.sql',
   'public/functions/gateway_spend_limit_seed.sql',
+  'public/functions/workspace_department_budget_status.sql',
+  'private/functions/gateway_context_access.sql',
+  'public/functions/gateway_fetch_request_context_without_workspace_budget.sql',
+  'public/functions/gateway_wallet_reserve_once_without_workspace_budget.sql',
   'public/functions/gateway_wallet_reserve_once.sql',
   'public/functions/gateway_realtime_create_with_hold.sql',
   'public/functions/gateway_realtime_extend_hold_once.sql',
@@ -35,7 +39,7 @@ const ENG = id('4', 1);
 const ROLL = id('4', 2);
 const CAP = id('4', 3);
 const MEMBER = id('2', 1);
-const KEY = { linked: id('3', 1), member: id('3', 2), outside: id('3', 3), batch: id('3', 4), roll: id('3', 5), cap: id('3', 6) };
+const KEY = { linked: id('3', 1), member: id('3', 2), outside: id('3', 3), batch: id('3', 4), roll: id('3', 5), cap: id('3', 6), limited: id('3', 7) };
 // Before every current period: the earlier of this week's Monday and the 1st, less a day.
 const BEFORE_PERIODS = `(least(date_trunc('week', now() at time zone 'utc'), date_trunc('month', now() at time zone 'utc')) at time zone 'utc' - interval '1 day')`;
 
@@ -126,17 +130,17 @@ try {
   });
   await check('the migration applies over workspaces with 180- and 365-day retention, setting them to 90', async () => {
     try {
-      await db.exec(migration);
+      await applyMigration(db, migration);
     } catch (error) {
       // Clear the way so the remaining checks still run against this migration.
       await db.query(`update public.workspace_settings set io_logging_retention_days = 90`);
-      await db.exec(migration);
+      await applyMigration(db, migration);
       throw error;
     }
     const days = await rows(`select io_logging_retention_days as days from public.workspace_settings order by workspace_id`);
     assert.deepEqual(days.map((row) => row.days), [90, 90, 90]);
   });
-  await db.exec(migration); // replays cleanly
+  await applyMigration(db, migration); // replays cleanly
 
   await check('the migration releases no hold itself', async () => {
     const held = await rows(`select reservation_id from public.gateway_wallet_reservations where workspace_id = $1 and status in ('held', 'reserved') order by 1`, [WS_REAP]);
@@ -247,16 +251,56 @@ try {
     assert.equal(Number((await workspaceStatus(WS_CAP)).budgets[0].usage_nanos), 3 * DOLLAR);
     assert.equal(Number((await seed(WS_CAP, [KEY.cap])).department_budgets[0].usage_nanos), 3 * DOLLAR);
   });
-  await check('a charged request that did not succeed counts toward both budgets; a free failure does not', async () => {
+  await check('a charged request that did not succeed counts toward both budgets and the seed; a free failure does not', async () => {
     await request(WS_CAP, 'stream-cancelled', KEY.cap, DOLLAR, false);
     await request(WS_CAP, 'failed-free', KEY.cap, 0, false);
     assert.equal(Number((await departmentStatus(WS_CAP, KEY.cap)).department_budgets[0].usage_nanos), 4 * DOLLAR);
     assert.equal(Number((await workspaceStatus(WS_CAP)).budgets[0].usage_nanos), 4 * DOLLAR);
     assert.equal(Number((await seed(WS_CAP, [KEY.cap])).department_budgets[0].usage_nanos), 4 * DOLLAR);
   });
+  await check('a charged request that did not succeed counts toward key caps on holds; a free failure does not', async () => {
+    await db.query(`insert into public.keys (id, workspace_id, daily_limit_cost_nanos) values ($1, $2, $3)`, [KEY.limited, WS_CAP, 2 * DOLLAR]);
+    await request(WS_CAP, 'limited-cancelled', KEY.limited, 1.5 * DOLLAR, false);
+    await request(WS_CAP, 'limited-failed-free', KEY.limited, 0, false);
+    const refused = await reserve(WS_CAP, 'video_hold:limited-1', DOLLAR, KEY.limited, 1);
+    assert.equal(refused.reason, 'daily_cost_limit_reached');
+    const fits = await reserve(WS_CAP, 'video_hold:limited-2', 0.4 * DOLLAR, KEY.limited, 1);
+    assert.equal(fits.ok, true);
+  });
+  await check('the department alert sweep counts a charged async request that did not succeed', async () => {
+    await db.query(`insert into public.gateway_requests (workspace_id, request_id, key_id, success, cost_nanos, endpoint) values
+      ($1, 'video-charged-failed', $2, false, $3, 'video.generation'), ($1, 'video-free-failed', $2, false, 0, 'video.generation')`, [WS_CAP, KEY.cap, 2 * DOLLAR]);
+    const alert = await asService(async () => (await one(`select public.workspace_department_budget_status($1) as r`, [WS_CAP])).r);
+    assert.equal(Number(alert[0].usage_nanos), 2 * DOLLAR);
+    await db.query(`delete from public.gateway_requests where request_id in ('video-charged-failed', 'video-free-failed')`);
+  });
+  await check('a stepped stream charge whose request row never landed counts toward the workspace budget, once', async () => {
+    const before = Number((await workspaceStatus(WS_ROLL)).budgets[0].usage_nanos);
+    // Charged in steps before every current period; the worker stopped before writing the request row.
+    await db.exec(`insert into public.gateway_request_charges (workspace_id, request_id, cost_nanos, status, is_final, created_at) values
+      ('${WS_ROLL}', 'billing-abandoned', ${DOLLAR}, 'applied', false, ${BEFORE_PERIODS}),
+      ('${WS_ROLL}', 'billing-final', ${DOLLAR}, 'applied', true, now()),
+      ('${WS_ROLL}', 'billing-applying', ${DOLLAR}, 'applying', false, now()),
+      ('${WS_ROLL}', 'billing-landed', ${DOLLAR}, 'applied', false, now())`);
+    await db.query(`insert into public.gateway_requests (workspace_id, request_id, billing_request_id, key_id, success, cost_nanos) values
+      ($1, 'stream-landed', 'billing-landed', $2, false, $3)`, [WS_ROLL, KEY.roll, 1.25 * DOLLAR]);
+    // Every period counts the abandoned charge ($1) and the landed request ($1.25), not its charge row.
+    assert.deepEqual(byInterval((await workspaceStatus(WS_ROLL)).budgets), {
+      daily: before + 2.25 * DOLLAR, weekly: before + 2.25 * DOLLAR, monthly: before + 2.25 * DOLLAR,
+    });
+    // Its request row lands: counted through the row instead.
+    await db.query(`insert into public.gateway_requests (workspace_id, request_id, billing_request_id, key_id, success, cost_nanos, created_at) values
+      ($1, 'stream-abandoned', 'billing-abandoned', $2, false, $3, now())`, [WS_ROLL, KEY.roll, 1.5 * DOLLAR]);
+    assert.equal(Number((await workspaceStatus(WS_ROLL)).budgets[0].usage_nanos), before + 2.75 * DOLLAR);
+  });
   await check('the seed leaves out request ids the coordinator already counts', async () => {
     const seeded = await asService(async () => (await one(`select public.gateway_spend_limit_seed($1, $2::uuid[], array['stream-cancelled']) as r`, [WS_CAP, [KEY.cap]])).r);
     assert.equal(Number(seeded.department_budgets[0].usage_nanos), 3 * DOLLAR);
+  });
+
+  await check('a small partial index serves charged requests that did not succeed', async () => {
+    const { def } = await one(`select pg_get_indexdef('public.gateway_requests_charged_unsuccessful_cost_idx'::regclass) as def`);
+    assert.match(def, /\(workspace_id, created_at\) INCLUDE \(key_id, cost_nanos\) WHERE \(\(success IS NOT TRUE\) AND \(cost_nanos > 0\)\)/);
   });
 
   // The advisory lock serializes holds and budget writes; no budget row lock after it.

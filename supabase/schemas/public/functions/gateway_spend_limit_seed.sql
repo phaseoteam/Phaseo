@@ -48,18 +48,32 @@ begin
   ), usage as (
     select
       gr.key_id,
-      count(*) filter (where gr.created_at >= day_start)                                  as used_day_reqs,
-      count(*) filter (where gr.created_at >= week_start)                                 as used_wk_reqs,
-      count(*) filter (where gr.created_at >= month_start)                                as used_mo_reqs,
+      count(*) filter (where gr.served and gr.created_at >= day_start)                    as used_day_reqs,
+      count(*) filter (where gr.served and gr.created_at >= week_start)                   as used_wk_reqs,
+      count(*) filter (where gr.served and gr.created_at >= month_start)                  as used_mo_reqs,
       coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= day_start), 0)::bigint   as used_day_cost,
       coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= week_start), 0)::bigint  as used_wk_cost,
       coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= month_start), 0)::bigint as used_mo_cost
-    from public.gateway_requests gr
-    where gr.key_id = any(array(select key_rows.id from key_rows where key_rows.limited))
-      and gr.workspace_id = p_workspace_id
-      and gr.success is true
-      and gr.created_at >= least(week_start, month_start)
-      and not (gr.request_id = any(v_exclude))
+    -- Successful requests count as requests and cost; charged requests that did not succeed
+    -- count toward cost only.
+    from (
+      select served.key_id, served.created_at, served.cost_nanos, true as served
+      from public.gateway_requests served
+      where served.key_id = any(array(select key_rows.id from key_rows where key_rows.limited))
+        and served.workspace_id = p_workspace_id
+        and served.success is true
+        and served.created_at >= least(week_start, month_start)
+        and not (served.request_id = any(v_exclude))
+      union all
+      select charged.key_id, charged.created_at, charged.cost_nanos, false
+      from public.gateway_requests charged
+      where charged.workspace_id = p_workspace_id
+        and charged.key_id = any(array(select key_rows.id from key_rows where key_rows.limited))
+        and charged.success is not true
+        and charged.cost_nanos > 0
+        and charged.created_at >= least(week_start, month_start)
+        and not (charged.request_id = any(v_exclude))
+    ) gr
     group by gr.key_id
   )
   select coalesce(jsonb_agg(jsonb_build_object(
