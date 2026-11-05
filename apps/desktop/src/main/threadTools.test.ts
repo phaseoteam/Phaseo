@@ -1,12 +1,16 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { WorkspaceRuntime } from "./workspaceRuntime";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
-import { validateDelegate, validatePullRequestTarget } from "./threadTools";
+import { threadTools, validateDelegate, validatePullRequestTarget } from "./threadTools";
+import type { ThreadTools } from "../shared/orchestration";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+
+// The app loads the MCP server SDK with the first agent connection; loaded here first, a delegation's waits measure the delegation alone.
+beforeAll(async () => { await Promise.all([import("@modelcontextprotocol/sdk/server/index.js"), import("@modelcontextprotocol/sdk/server/streamableHttp.js"), import("@modelcontextprotocol/sdk/types.js")]); });
 
 describe("scoped desktop orchestration", () => {
 	it("persists native lifecycle updates as one read-only observation", async () => {
@@ -235,5 +239,25 @@ describe("pull request tool targets", () => {
 		expect(validatePullRequestTarget({ repository: "o/r", number: 2 })).toEqual({ repository: "o/r", number: 2 });
 		expect(() => validatePullRequestTarget({ repository: "o/r" })).toThrow("Pass either url");
 		expect(() => validatePullRequestTarget({ number: 1.5 })).toThrow("Invalid number");
+	});
+});
+
+describe("pull request links in bulk", () => {
+	const entry = (number: number, state: "open" | "closed" | "merged", isDraft = false) => ({ repository: "acme/app", number, url: `https://github.com/acme/app/pull/${number}`, source: "agent", watching: false, state, title: null, headBranch: null, baseBranch: null, isDraft, stack: null });
+	const tools = (service: Record<string, unknown>) => threadTools(service as unknown as ThreadTools);
+	const run = (list: ReturnType<typeof threadTools>, id: string, input: unknown) => (list.find(tool => tool.id === id)!.execute as (input: unknown) => Promise<unknown>)(input);
+	it("links each pull request and reports a failure without stopping the rest", async () => {
+		const pullRequest = vi.fn(async (_id: string | undefined, _action: string, target: { number?: number }) => { if (target.number === 2) throw new Error("Not found"); return { linked: true }; });
+		const result = await run(tools({ pullRequest }), "link_pull_requests", { pullRequests: [{ repository: "acme/app", number: 1 }, { repository: "acme/app", number: 2 }, { url: "https://github.com/acme/app/pull/3" }] }) as { results: { error?: string }[] };
+		expect(pullRequest).toHaveBeenCalledTimes(3);
+		expect(result.results.map(value => value.error ?? "ok")).toEqual(["ok", "Not found", "ok"]);
+	});
+	it("unlinks only the states asked for, telling drafts from open ones", async () => {
+		const pullRequest = vi.fn(async () => ({}));
+		const pullRequestList = vi.fn(async () => ({ pullRequests: [entry(1, "merged"), entry(2, "open"), entry(3, "open", true), entry(4, "closed")], chains: [] }));
+		const result = await run(tools({ pullRequest, pullRequestList }), "unlink_pull_requests", { states: ["merged", "draft"] }) as { unlinked: { number: number }[] };
+		expect(result.unlinked.map(value => value.number)).toEqual([1, 3]);
+		expect(pullRequest.mock.calls.map(call => call.slice(1))).toEqual([["unlink", { repository: "acme/app", number: 1 }], ["unlink", { repository: "acme/app", number: 3 }]]);
+		await expect(run(tools({ pullRequest, pullRequestList }), "unlink_pull_requests", { states: ["everything"] })).rejects.toThrow("Pass states");
 	});
 });
