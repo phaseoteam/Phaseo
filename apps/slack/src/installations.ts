@@ -106,22 +106,32 @@ export function hostedApp(env: Env): SlackAppContext | null {
 	};
 }
 
-/** At most this many Phaseo workspaces' rows are tried for one Slack app id. */
-const MAX_COMPANY_APP_CANDIDATES = 5;
+/**
+ * At most this many unverified rows are tried for one Slack app id. Each needs its own Phaseo
+ * workspace (one app per workspace), so squatters can't cheaply push the genuine row out.
+ */
+const MAX_UNVERIFIED_COMPANY_APPS = 100;
 
 /**
  * The company apps saved under a Slack app id, with their signing secrets decrypted. Saving an app
  * proves nothing, so several workspaces can save the same id until one installs it (only one can be
  * verified, see slack_apps.verified_at). The request's signature picks the real one: only the app's
  * owner knows its signing secret.
+ * - A verified app holds its id alone: only its row is tried, so nobody else receives its events.
+ * - Before that, every unverified row is tried (up to MAX_UNVERIFIED_COMPANY_APPS), so the owner's
+ *   URL verification works however many rows were saved before theirs.
  */
 export async function companyApps(env: Env, db: Db, slackAppId: string): Promise<SlackAppContext[]> {
 	if (!SLACK_APP_ID_PATTERN.test(slackAppId)) return [];
-	const rows = await db.select<{ id: string; slack_app_id: string; secrets_ciphertext: string }>("slack_apps", {
-		select: "id,slack_app_id,secrets_ciphertext",
+	const select = "id,slack_app_id,secrets_ciphertext";
+	type Row = { id: string; slack_app_id: string; secrets_ciphertext: string };
+	const verified = await db.select<Row>("slack_apps", { select, slack_app_id: `eq.${slackAppId}`, verified_at: "not.is.null", limit: "1" });
+	const rows = verified.length ? verified : await db.select<Row>("slack_apps", {
+		select,
 		slack_app_id: `eq.${slackAppId}`,
-		order: "verified_at.desc.nullslast,created_at.asc",
-		limit: String(MAX_COMPANY_APP_CANDIDATES),
+		verified_at: "is.null",
+		order: "created_at.asc",
+		limit: String(MAX_UNVERIFIED_COMPANY_APPS),
 	});
 	const apps: SlackAppContext[] = [];
 	for (const row of rows) {

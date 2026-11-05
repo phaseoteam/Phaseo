@@ -429,9 +429,10 @@ accountSettingsPolicyRouter.get("/presets", async (c) => {
 		if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 		const presetsResult = await context.client.from("presets").select("*").eq("workspace_id", workspaceId).is("archived_at", null).or(`visibility.neq.private,created_by.eq.${user.id}`);
 		if (presetsResult.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-		presets = await withPresetLifecycle(context.client, presetsResult.data ?? []).catch((error) => {
+		const rows = withoutOthersPrivateDrafts(presetsResult.data ?? [], user.id);
+		presets = await withPresetLifecycle(context.client, rows).catch((error) => {
 			console.warn("preset_lifecycle_enrichment_failed", error);
-			return presetLifecycleFallback(presetsResult.data ?? []);
+			return presetLifecycleFallback(rows);
 		});
 		presets = presets.map((preset: any) => ({ ...preset, canPublish: canWritePreset(context, user.id, { ...preset, visibility: preset.published_visibility ?? preset.visibility }) }));
 		if (!teams.some((team) => team.id === workspaceId)) {
@@ -472,6 +473,15 @@ function presetHasDraftChanges(row: any) {
 		|| JSON.stringify(row.draft_config) !== JSON.stringify(row.config)
 		|| row.draft_visibility !== row.visibility;
 }
+/**
+ * A private draft is its creator's alone, as in the detail and versions routes: anyone else sees the
+ * published preset, with the draft fields replaced by the published ones before anything is serialised.
+ */
+function withoutOthersPrivateDrafts(rows: any[], userId: string) {
+	return rows.map((row) => row.draft_visibility === "private" && row.created_by !== userId
+		? { ...row, draft_name: row.name, draft_slug: row.slug, draft_description: row.description, draft_config: row.config, draft_visibility: row.visibility }
+		: row);
+}
 function draftDescription(row: any) { return row.draft_description === undefined ? row.description : row.draft_description; }
 async function withPresetLifecycle(client: ReturnType<typeof getDataClient>, rows: any[]) {
 	const sourceIds = [...new Set(rows.map((row) => String(row.source_preset_id ?? "")).filter(Boolean))];
@@ -501,9 +511,10 @@ accountSettingsPolicyRouter.get("/presets/list", async (c) => {
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const result = await context.client.from("presets").select("*").eq("workspace_id", workspaceId).is("archived_at", null).or(`visibility.neq.private,created_by.eq.${context.user.id}`).order("created_at", { ascending: false });
 	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	const presets = await withPresetLifecycle(context.client, result.data ?? []).catch((error) => {
+	const rows = withoutOthersPrivateDrafts(result.data ?? [], context.user.id);
+	const presets = await withPresetLifecycle(context.client, rows).catch((error) => {
 		console.warn("preset_lifecycle_enrichment_failed", error);
-		return presetLifecycleFallback(result.data ?? []);
+		return presetLifecycleFallback(rows);
 	});
 	for (const preset of presets) preset.canPublish = canWritePreset(context, context.user.id, { ...preset, visibility: preset.published_visibility ?? preset.visibility });
 	return c.json({ presets }, 200, PRIVATE_NO_STORE_HEADERS);

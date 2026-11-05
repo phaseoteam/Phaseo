@@ -180,6 +180,29 @@ describe("routes", () => {
 		expect((await signed(`/events/${COMPANY_APP_ID}`, body, { secret: "not-either-secret" })).status).toBe(401);
 	});
 
+	it("answers the owner's URL verification however many squatters saved the app id first, and keeps them off a verified app", async () => {
+		const secrets = (signing: string) => encryptSlackSecrets({ SLACK_SECRETS_ENCRYPTION_KEY: TEST_ENCRYPTION_KEY }, { client_secret: "client-secret", signing_secret: signing });
+		for (let index = 1; index <= 5; index += 1) {
+			world.db.tables.slack_apps.push({
+				id: `99999999-9999-4999-8999-99999999999${index}`, slack_app_id: COMPANY_APP_ID, client_id: `${index}.${index}`,
+				verified_at: null, created_at: `2026-11-0${index}T00:00:00Z`, secrets_ciphertext: await secrets(`squatter-signing-secret-${index}`),
+			});
+		}
+		world.db.tables.slack_apps.push({
+			id: COMPANY_APP_ROW_ID, slack_app_id: COMPANY_APP_ID, client_id: "1111111111.2222222222",
+			verified_at: null, created_at: "2026-11-09T00:00:00Z", secrets_ciphertext: await secrets(COMPANY_SIGNING_SECRET),
+		});
+		const challenge = JSON.stringify({ type: "url_verification", challenge: "owner-challenge", token: "x" });
+		const response = await signed(`/events/${COMPANY_APP_ID}`, challenge, { secret: COMPANY_SIGNING_SECRET });
+		expect(response.status).toBe(200);
+		await expect(response.json()).resolves.toEqual({ challenge: "owner-challenge" });
+
+		// Once the owner's install verifies the app, only its secret signs for the id.
+		world.db.tables.slack_apps.find((row) => row.id === COMPANY_APP_ROW_ID)!.verified_at = "2026-11-10T00:00:00Z";
+		expect((await signed(`/events/${COMPANY_APP_ID}`, challenge, { secret: "squatter-signing-secret-1" })).status).toBe(401);
+		expect((await signed(`/events/${COMPANY_APP_ID}`, challenge, { secret: COMPANY_SIGNING_SECRET })).status).toBe(200);
+	});
+
 	it("looks hosted installations up by team with no app", async () => {
 		await signed("/events", JSON.stringify(eventEnvelope(mention())));
 		await settled();

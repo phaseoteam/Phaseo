@@ -792,11 +792,23 @@ accountSettingsSlackRouter.get("/slack/oauth/callback", async (c) => {
 	if ((team.data ?? []).length) return fail("already_installed");
 
 	// Slack named the saved app id for these client credentials, so this workspace owns the app:
-	// it now holds the id, and another workspace can no longer save it.
-	if (settings.slack_app_id) {
+	// it now holds the id, and another workspace can no longer save it. The update only matches the
+	// exact app id and client id this exchange used, so a row changed during the install (say, to
+	// someone else's app id) is not verified and the install stops.
+	if (settings.slack_app_id && credentials.slackAppId) {
+		const appRow = () => context.client.from("slack_apps").select("id").eq("id", settings.slack_app_id!).eq("workspace_id", context.workspaceId)
+			.eq("slack_app_id", credentials!.slackAppId!).eq("client_id", credentials!.clientId);
 		const verifiedApp = await context.client.from("slack_apps").update({ verified_at: new Date().toISOString() })
-			.eq("id", settings.slack_app_id).eq("workspace_id", context.workspaceId).is("verified_at", null);
+			.eq("id", settings.slack_app_id).eq("workspace_id", context.workspaceId)
+			.eq("slack_app_id", credentials.slackAppId).eq("client_id", credentials.clientId)
+			.is("verified_at", null).select("id");
 		if (verifiedApp.error) return fail(verifiedApp.error.code === "23505" ? "slack_app_taken" : "install_failed");
+		if (!verifiedApp.data?.length) {
+			// Nothing to verify is fine only when this same app was verified before (a reinstall).
+			const verifiedBefore = await appRow().not("verified_at", "is", null).maybeSingle();
+			if (verifiedBefore.error) return fail("install_failed");
+			if (!verifiedBefore.data) return fail("conflict");
+		}
 	}
 
 	const created = await createInstallation(env, context, settings, grant);

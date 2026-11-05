@@ -472,6 +472,46 @@ describe("account policy settings routes", () => {
 		expect(requestedUrls.some((url) => url.includes("/preset_versions"))).toBe(false);
 	});
 
+	describe("a teammate's private draft of a team preset", () => {
+		const row = {
+			id: "preset-1", workspace_id: "workspace-1", created_by: "owner-2", source_preset_id: "source-1",
+			name: "Published", slug: "published", description: "Published description", config: { models: ["openai/published"] }, visibility: "team",
+			draft_name: "Secret draft", draft_slug: "secret-draft", draft_description: "Secret description", draft_config: { models: ["openai/secret"] }, draft_visibility: "private",
+		};
+		function stubList({ userId = "user-1", lifecycleFails = false } = {}) {
+			vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+				const url = input instanceof Request ? input.url : String(input);
+				if (url.includes("/auth/v1/user")) return Response.json({ id: userId, email: "user@example.com", created_at: "2025-01-01" });
+				if (url.includes("workspace_members") && url.includes("teams")) return Response.json([{ workspace_id: "workspace-1", teams: { id: "workspace-1", name: "Team" } }]);
+				if (url.includes("workspace_members")) return Response.json([{ role: "admin" }]);
+				if (url.includes("/presets") && url.includes("workspace_id=eq.workspace-1")) return Response.json([row]);
+				// The upstream lookup: failing it exercises the fallback serialisation.
+				if (url.includes("/presets") && url.includes("id=in.")) return lifecycleFails ? Response.json({ message: "boom" }, { status: 500 }) : Response.json([]);
+				return Response.json([]);
+			}));
+		}
+		const list = () => app.request("https://phaseo.app/api/account/settings/presets/list?workspaceId=workspace-1", { headers: { authorization: "Bearer session-token" } }, env);
+		const page = () => app.request("https://phaseo.app/api/account/settings/presets?workspaceId=workspace-1", { headers: { authorization: "Bearer session-token" } }, env);
+
+		it.each([false, true])("shows other members only the published preset in both lists (lifecycle lookup fails: %s)", async (lifecycleFails) => {
+			for (const read of [list, page]) {
+				stubList({ lifecycleFails });
+				const response = await read();
+				expect(response.status).toBe(200);
+				const text = await response.text();
+				expect(text).not.toMatch(/secret/i);
+				const body = JSON.parse(text);
+				const preset = body.presets?.[0] ?? body.teamsWithPresets?.[0]?.presets?.[0];
+				expect(preset).toMatchObject({ id: "preset-1", name: "Published", config: { models: ["openai/published"] }, visibility: "team", hasDraftChanges: false });
+			}
+		});
+
+		it("still shows the creator their draft", async () => {
+			stubList({ userId: "owner-2" });
+			await expect((await list()).json()).resolves.toMatchObject({ presets: [{ id: "preset-1", name: "Secret draft", config: { models: ["openai/secret"] }, visibility: "private", hasDraftChanges: true }] });
+		});
+	});
+
 	it("continues to advertise public versions from a public source preset", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = input instanceof Request ? input.url : String(input);

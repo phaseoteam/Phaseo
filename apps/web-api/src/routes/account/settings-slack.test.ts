@@ -188,11 +188,21 @@ function database(fixture: Fixture = {}) {
 			return rows([{ monthly_limit_cost_nanos: fixture.keyLimitNanos ?? 0, created_by: fixture.keyCreatedBy === undefined ? "user-a" : fixture.keyCreatedBy, kid: KEY_KID }]);
 		}
 		if (path.endsWith("/slack_apps")) {
+			// The saved row, as the filters on a verification read or write would match it now.
+			const app = fixture.customApp as Record<string, unknown> | null | undefined;
+			const matchesApp = () => Boolean(app) && ["id", "slack_app_id", "client_id"].every((field) => {
+				const filter = url.searchParams.get(field);
+				return filter === null || filter === `eq.${app![field]}`;
+			});
+			if (request.method === "GET" && url.searchParams.get("verified_at") === "not.is.null" && url.searchParams.has("id")) {
+				return rows(matchesApp() && app!.verified_at ? [{ id: app!.id }] : []);
+			}
 			if (request.method === "GET" && url.searchParams.has("verified_at")) return rows(fixture.appTaken ? [{ id: "00000000-0000-4000-8000-0000000000c2" }] : []);
 			if (request.method === "GET") return rows(fixture.customApp ? [fixture.customApp] : []);
 			if (request.method === "DELETE") return new Response(null, { status: 204 });
-			if (request.method === "PATCH" && url.searchParams.has("verified_at") && fixture.appVerifyError) {
-				return Response.json(fixture.appVerifyError.body, { status: fixture.appVerifyError.status });
+			if (request.method === "PATCH" && url.searchParams.has("verified_at")) {
+				if (fixture.appVerifyError) return Response.json(fixture.appVerifyError.body, { status: fixture.appVerifyError.status });
+				return rows(matchesApp() && !app!.verified_at ? [{ id: app!.id }] : []);
 			}
 			if (request.method === "POST" && fixture.customAppInsertError) {
 				return Response.json(fixture.customAppInsertError.body, { status: fixture.customAppInsertError.status });
@@ -766,6 +776,32 @@ describe("Slack OAuth callback", () => {
 		expect(typeof verify.body.verified_at).toBe("string");
 		// The mismatched install verified nothing.
 		expect(find(mismatch, "PATCH", "/slack_apps")).toHaveLength(0);
+	});
+
+	it("verifies only the app id and client id the exchange used, so a save during the install verifies nothing", async () => {
+		const secrets_ciphertext = await encryptSlackSecrets(env as never, { client_secret: "customclientsecret0001", signing_secret: "customsigningsecret001" });
+		const customApp: Record<string, unknown> = { id: APP_ROW_ID, slack_app_id: "A0CUSTOM01", client_id: "9999.8888", secrets_ciphertext, verified_at: null };
+		const requests = database({
+			role: "admin", customApp,
+			// Slack answers for the genuine app; meanwhile the admin saves someone else's app id on the row.
+			slackAccess: () => { customApp.slack_app_id = "A0VICTIM01"; return Response.json(grant({ app_id: "A0CUSTOM01" })); },
+		});
+		const response = await callback({ code: "123.456.abc", state: await installState({ slack_app_id: APP_ROW_ID }) }, "token-a", { SLACK_CLIENT_ID: undefined, SLACK_CLIENT_SECRET: undefined });
+		expect(location(response).searchParams.get("error")).toBe("conflict");
+		const verify = find(requests, "PATCH", "/slack_apps")[0];
+		expect(verify.url.searchParams.get("slack_app_id")).toBe("eq.A0CUSTOM01");
+		expect(verify.url.searchParams.get("client_id")).toBe("eq.9999.8888");
+		expect(customApp.verified_at).toBeNull();
+		expect(find(requests, "POST", "/slack_installations")).toHaveLength(0);
+	});
+
+	it("reinstalls through an app this workspace already verified", async () => {
+		const secrets_ciphertext = await encryptSlackSecrets(env as never, { client_secret: "customclientsecret0001", signing_secret: "customsigningsecret001" });
+		const customApp = { id: APP_ROW_ID, slack_app_id: "A0CUSTOM01", client_id: "9999.8888", secrets_ciphertext, verified_at: "2026-11-01T00:00:00Z" };
+		const requests = database({ role: "admin", customApp, slackAccess: grant({ app_id: "A0CUSTOM01" }) });
+		const response = await callback({ code: "123.456.abc", state: await installState({ slack_app_id: APP_ROW_ID }) }, "token-a", { SLACK_CLIENT_ID: undefined, SLACK_CLIENT_SECRET: undefined });
+		expect(location(response).searchParams.get("installed")).toBe("1");
+		expect(find(requests, "POST", "/slack_installations")).toHaveLength(1);
 	});
 
 	it("stops an install when another workspace verified the same Slack app first", async () => {
