@@ -639,6 +639,47 @@ describe("beforeRequest pricing loss-prevention", () => {
 		},
 	);
 
+	it("reports an invalid svg.model before a policy block on the image model", async () => {
+		const provider = providerWithPricingRules(1);
+		const body = { model: "openai/gpt-image-2.6-flare", prompt: "An apple icon", output_format: "svg", svg: { model: "openai/not-a-real-model" } };
+		guardJsonMock.mockResolvedValue({ ok: true, value: body });
+		guardZodMock.mockReturnValue({ ok: true, value: body });
+		guardModelMock.mockReturnValue({ ok: true, value: { body, model: body.model, stream: false } });
+		resolveCapabilityFromEndpointMock.mockReturnValue("image.generate");
+		guardContextMock.mockResolvedValue({
+			ok: true,
+			value: {
+				context: {
+					pricing: { openai: provider.pricingCard },
+					key: { ok: true, reason: null, resetAt: null },
+					keyLimit: { ok: true, reason: null, resetAt: null },
+					credit: { ok: true, reason: null, resetAt: null },
+					teamSettings: { billingMode: "wallet" },
+				},
+				providers: [provider],
+				resolvedModel: "openai/gpt-image-2.6-flare",
+				candidateDiagnostics: { totalProviders: 1, supportsEndpointCount: 1, droppedUnsupportedEndpoint: [], droppedMissingAdapter: [], candidateCount: 1 },
+			},
+		});
+		applyWorkspacePolicyMock.mockReturnValue({
+			ok: false,
+			reason: "model_not_allowed",
+			diagnostics: { resolvedModel: body.model, allowedApiModels: [], providerAllowlist: [], providerBlocklist: [], requestProviderOnly: [], requestProviderIgnore: [], activeGuardrailIds: ["gr_block"], beforeCount: 1, afterCount: 0 },
+		});
+
+		const req = new Request("https://gateway.local/v1/images/generations", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify(body),
+		});
+		const result = await beforeRequest(req, "images.generations", new Timer(), null);
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(400);
+		expect((await result.response.json()).reason).toBe("invalid_svg_model");
+		expect(applyWorkspacePolicyMock).not.toHaveBeenCalled();
+	});
+
 	it("rejects request when workspace policy filters out all providers", async () => {
 		const provider = providerWithPricingRules(1);
 		guardContextMock.mockResolvedValue({

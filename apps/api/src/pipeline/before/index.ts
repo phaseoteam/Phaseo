@@ -1383,6 +1383,32 @@ async function runBeforeRequest(
     }
     presetFilteredProviders = providerQualifiedCandidates.providers;
 
+    const requestedSvgAuthor = endpoint === "images.generations" && mergedBody?.output_format === "svg" && typeof mergedBody?.svg?.model === "string"
+        ? mergedBody.svg.model as string
+        : null;
+    const svgAuthorModel = requestedSvgAuthor ? normalizeSvgAuthorModel(requestedSvgAuthor) : null;
+    // The author must be an OpenAI text model with a Phaseo price, or its tokens could not be billed.
+    // Checked here so the caller gets a plain validation error, not a provider failure.
+    if (requestedSvgAuthor && (!svgAuthorModel || !(await resolveSvgAuthor(requestedSvgAuthor)))) {
+        const description = `svg.model "${requestedSvgAuthor}" is not an OpenAI text model with Phaseo pricing. Use an OpenAI model id such as openai/gpt-5-nano.`;
+        return {
+            ok: false,
+            response: err("validation_error", {
+                reason: "invalid_svg_model",
+                description,
+                error_type: "user",
+                error_origin: "user",
+                details: [{
+                    message: description,
+                    path: ["svg", "model"],
+                    keyword: "invalid_svg_model",
+                    params: { model: requestedSvgAuthor },
+                }],
+                request_id: requestId,
+                workspace_id: workspaceId,
+            }),
+        };
+    }
     const workspacePolicyResult = applyWorkspacePolicy({
         providers: presetFilteredProviders,
         resolvedModel: resolvedModel || model,
@@ -1459,32 +1485,6 @@ async function runBeforeRequest(
 
     // GPT Image SVG output also runs, and bills, the text model named in svg.model. Hold it to
     // the same workspace and key model rules as the image model, on the OpenAI routes that run it.
-    const requestedSvgAuthor = endpoint === "images.generations" && mergedBody?.output_format === "svg" && typeof mergedBody?.svg?.model === "string"
-        ? mergedBody.svg.model as string
-        : null;
-    const svgAuthorModel = requestedSvgAuthor ? normalizeSvgAuthorModel(requestedSvgAuthor) : null;
-    // The author must be an OpenAI text model with a Phaseo price, or its tokens could not be billed.
-    // Checked here so the caller gets a plain validation error, not a provider failure.
-    if (requestedSvgAuthor && (!svgAuthorModel || !(await resolveSvgAuthor(requestedSvgAuthor)))) {
-        const description = `svg.model "${requestedSvgAuthor}" is not an OpenAI text model with Phaseo pricing. Use an OpenAI model id such as openai/gpt-5-nano.`;
-        return {
-            ok: false,
-            response: err("validation_error", {
-                reason: "invalid_svg_model",
-                description,
-                error_type: "user",
-                error_origin: "user",
-                details: [{
-                    message: description,
-                    path: ["svg", "model"],
-                    keyword: "invalid_svg_model",
-                    params: { model: requestedSvgAuthor },
-                }],
-                request_id: requestId,
-                workspace_id: workspaceId,
-            }),
-        };
-    }
     if (svgAuthorModel) {
         const authorPolicy = applyWorkspacePolicy({
             providers: presetFilteredProviders
