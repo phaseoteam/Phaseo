@@ -5941,13 +5941,12 @@ export type CreateRateLimitAssignmentParams = {
   body?: {
     policy_id: string;
     target_id?: string;
-    target_type:
-      "key" | "member" | "department" | "guardrail" | "end_user_default";
+    target_type: "key" | "member" | "department" | "end_user_default";
   };
 };
 
 /**
- * Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+ * Applies a policy to one API key, workspace member or department, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for every assignment.
  */
 export async function createRateLimitAssignment(
   client: Client,
@@ -5959,8 +5958,7 @@ export async function createRateLimitAssignment(
     id: string;
     policy_id: string;
     target_id: string | null;
-    target_type:
-      "key" | "member" | "department" | "guardrail" | "end_user_default";
+    target_type: "key" | "member" | "department" | "end_user_default";
     updated_at: string;
     workspace_id: string;
   };
@@ -5974,8 +5972,7 @@ export async function createRateLimitAssignment(
       id: string;
       policy_id: string;
       target_id: string | null;
-      target_type:
-        "key" | "member" | "department" | "guardrail" | "end_user_default";
+      target_type: "key" | "member" | "department" | "end_user_default";
       updated_at: string;
       workspace_id: string;
     };
@@ -12744,8 +12741,7 @@ export async function getRateLimitAssignment(
     id: string;
     policy_id: string;
     target_id: string | null;
-    target_type:
-      "key" | "member" | "department" | "guardrail" | "end_user_default";
+    target_type: "key" | "member" | "department" | "end_user_default";
     updated_at: string;
     workspace_id: string;
   };
@@ -12761,8 +12757,7 @@ export async function getRateLimitAssignment(
       id: string;
       policy_id: string;
       target_id: string | null;
-      target_type:
-        "key" | "member" | "department" | "guardrail" | "end_user_default";
+      target_type: "key" | "member" | "department" | "end_user_default";
       updated_at: string;
       workspace_id: string;
     };
@@ -18924,8 +18919,7 @@ export type ListRateLimitAssignmentsParams = {
     limit?: number;
     offset?: number;
     policy_id?: string;
-    target_type?:
-      "key" | "member" | "department" | "guardrail" | "end_user_default";
+    target_type?: "key" | "member" | "department" | "end_user_default";
   };
   headers?: Record<string, never>;
   body?: never;
@@ -18944,8 +18938,7 @@ export async function listRateLimitAssignments(
     id: string;
     policy_id: string;
     target_id: string | null;
-    target_type:
-      "key" | "member" | "department" | "guardrail" | "end_user_default";
+    target_type: "key" | "member" | "department" | "end_user_default";
     updated_at: string;
     workspace_id: string;
   }[];
@@ -18960,8 +18953,7 @@ export async function listRateLimitAssignments(
       id: string;
       policy_id: string;
       target_id: string | null;
-      target_type:
-        "key" | "member" | "department" | "guardrail" | "end_user_default";
+      target_type: "key" | "member" | "department" | "end_user_default";
       updated_at: string;
       workspace_id: string;
     }[];
@@ -26709,8 +26701,7 @@ export async function updateRateLimitAssignment(
     id: string;
     policy_id: string;
     target_id: string | null;
-    target_type:
-      "key" | "member" | "department" | "guardrail" | "end_user_default";
+    target_type: "key" | "member" | "department" | "end_user_default";
     updated_at: string;
     workspace_id: string;
   };
@@ -26726,8 +26717,7 @@ export async function updateRateLimitAssignment(
       id: string;
       policy_id: string;
       target_id: string | null;
-      target_type:
-        "key" | "member" | "department" | "guardrail" | "end_user_default";
+      target_type: "key" | "member" | "department" | "end_user_default";
       updated_at: string;
       workspace_id: string;
     };

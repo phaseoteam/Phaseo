@@ -4871,7 +4871,6 @@ const (
 	RateLimitTargetTypeKey RateLimitTargetType = "key"
 	RateLimitTargetTypeMember RateLimitTargetType = "member"
 	RateLimitTargetTypeDepartment RateLimitTargetType = "department"
-	RateLimitTargetTypeGuardrail RateLimitTargetType = "guardrail"
 	RateLimitTargetTypeEndUserDefault RateLimitTargetType = "end_user_default"
 )
 
