@@ -27,11 +27,14 @@ begin
   if coalesce((v_context->'key_limit_ok'->>'ok')::boolean,true) and not coalesce((v_budget->>'ok')::boolean,true) then
     v_context := jsonb_set(v_context,'{key_limit_ok}',v_budget,true);
   end if;
-  -- Department budgets, for when the SpendLimit Durable Object cannot decide.
+  -- Department budgets, for when the SpendLimit Durable Object cannot decide. Budgets that apply
+  -- are returned even below their limit, so Workers never reuse this admission snapshot.
   if coalesce((v_context->'key_limit_ok'->>'ok')::boolean,true) then
     v_department := public.gateway_department_budget_status(workspace_id,api_key_id,0);
     if not coalesce((v_department->>'ok')::boolean,true) then
       v_context := jsonb_set(v_context,'{key_limit_ok}',v_department,true);
+    elsif jsonb_array_length(coalesce(v_department->'department_budgets','[]'::jsonb))>0 then
+      v_context := jsonb_set(v_context,'{key_limit_ok,department_budgets}',v_department->'department_budgets',true);
     end if;
   end if;
   -- Return configured workspace budgets even when below their limit, so Workers

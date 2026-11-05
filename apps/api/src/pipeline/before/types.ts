@@ -72,6 +72,18 @@ export type GateCheck = {
         windowStart: string | null;
         resetAt: string | null;
     }> | null;
+    /** Department budgets the key counts toward (gateway_department_budget_status), even below their limit. */
+    departmentBudgets?: Array<{
+        id: string;
+        departmentId: string;
+        departmentName: string | null;
+        interval: "daily" | "weekly" | "monthly";
+        limitNanos: number;
+        usageNanos: number;
+        exceeded: boolean;
+        windowStart: string | null;
+        resetAt: string | null;
+    }> | null;
 };
 
 /**

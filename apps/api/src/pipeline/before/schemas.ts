@@ -56,6 +56,28 @@ const workspaceBudgetStatusSchema = z.object({
     resetAt: budget.reset_at ?? null,
 }));
 
+const departmentBudgetStatusSchema = z.object({
+    id: z.string(),
+    department_id: z.string(),
+    department_name: z.string().nullable().optional(),
+    interval: z.enum(["daily", "weekly", "monthly"]),
+    limit_nanos: z.coerce.number(),
+    usage_nanos: z.coerce.number(),
+    exceeded: z.boolean(),
+    window_start: z.string().nullable().optional(),
+    reset_at: z.string().nullable().optional(),
+}).transform((budget) => ({
+    id: budget.id,
+    departmentId: budget.department_id,
+    departmentName: budget.department_name ?? null,
+    interval: budget.interval,
+    limitNanos: budget.limit_nanos,
+    usageNanos: budget.usage_nanos,
+    exceeded: budget.exceeded,
+    windowStart: budget.window_start ?? null,
+    resetAt: budget.reset_at ?? null,
+}));
+
 const gateCheckSchema = z
     .union([
         z.boolean(),
@@ -80,6 +102,8 @@ const gateCheckSchema = z
                 .nullable()
                 .optional(),
             budgets: z.array(workspaceBudgetStatusSchema).nullable().optional(),
+            // Entries are read one by one so a malformed one never fails the whole context.
+            department_budgets: z.array(z.unknown()).nullable().optional(),
         }),
     ])
     .transform<GateCheck>((value) => {
@@ -99,6 +123,14 @@ const gateCheckSchema = z
             ...(value.department_id ? { departmentId: value.department_id, departmentName: value.department_name ?? null } : {}),
             buckets: value.buckets ?? null,
             budgets: value.budgets ?? null,
+            ...(value.department_budgets?.length
+                ? {
+                    departmentBudgets: value.department_budgets.flatMap((budget) => {
+                        const parsed = departmentBudgetStatusSchema.safeParse(budget);
+                        return parsed.success ? [parsed.data] : [];
+                    }),
+                }
+                : {}),
         };
     });
 

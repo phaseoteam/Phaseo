@@ -59,4 +59,6 @@ CREATE POLICY "mfa_required_when_enrolled" ON "public"."gateway_wallet_reservati
 
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."gateway_wallet_reservations" TO "service_role";
 
-GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."gateway_wallet_reservations" TO "anon", "authenticated";
+GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."gateway_wallet_reservations" TO "anon";
+
+GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."gateway_wallet_reservations" TO "authenticated";

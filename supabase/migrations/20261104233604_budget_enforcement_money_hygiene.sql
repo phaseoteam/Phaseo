@@ -1,22 +1,177 @@
 -- phaseo:allow-destructive-migration reason: TRUNCATE appears only in a REVOKE that removes it from anon and authenticated on gateway_wallet_reservations; no table or row is removed.
 --
 -- Budget enforcement and money hygiene:
--- 1. public.gateway_department_budget_status: department budgets (completed spend plus unpaid holds
---    of the department's keys) for batch and video holds (gateway_wallet_reserve_once), realtime
---    sessions (gateway_realtime_create_with_hold, gateway_realtime_extend_hold_once) and the
---    request-context fallback (gateway_fetch_request_context, gateway_fetch_request_context_bundle).
--- 2. gateway_workspace_budget_status counts a reserved batch hold once, not also its
---    batch_hold_usage rows.
+-- 1. One budget usage calculation, private.budget_spend_items: positive-cost requests (whether or
+--    not they succeeded), active holds in every period until they end, and captured video and
+--    free-model holds less the cost audited for them, with each batch hold counted once.
+--    gateway_workspace_budget_status uses it, and private.department_budget_usage applies it to
+--    each department's keys for both gateway_department_budget_status and gateway_spend_limit_seed
+--    (the SpendLimit Durable Object).
+-- 2. gateway_department_budget_status gates batch and video holds (gateway_wallet_reserve_once),
+--    realtime sessions (gateway_realtime_create_with_hold, gateway_realtime_extend_hold_once) and
+--    the request-context fallback (gateway_fetch_request_context, gateway_fetch_request_context_bundle),
+--    which also return the budgets that apply below their limit so the gateway does not cache them.
 -- 3. gateway_wallet_reserve_once no longer row-locks workspace_budgets after the workspace
 --    advisory lock (lock_workspace_budget_change takes them in the other order).
 -- 4. deduct_and_check_top_up raises wallet_not_found instead of returning it, so the charge is not
 --    recorded as applied.
 -- 5. Drops public.wallet_apply_delta (no callers) and the credit_ledger INSERT policy for
 --    authenticated, and revokes client writes on gateway_wallet_reservations and anon DELETE on wallets.
--- 6. I/O log retention is held at 90 days until extended retention is billed.
+-- 6. I/O log retention is held at 90 days until extended retention is billed: longer settings are
+--    set to 90 (with a NOTICE giving the count) before the check is added.
 -- 7. The stale-hold reaper also releases video holds whose operation is missing, failed or cancelled,
 --    or completed and billed, a day after the hold. This migration releases nothing itself.
 
+
+CREATE OR REPLACE FUNCTION private.budget_spend_items (
+  p_workspace_id        uuid,
+  p_since               timestamp with time zone,
+  p_key_ids             uuid[] DEFAULT NULL::uuid[],
+  p_exclude_request_ids text[] DEFAULT '{}'::text[]
+)
+  RETURNS TABLE (
+    key_id uuid,
+    at     timestamp with time zone,
+    active boolean,
+    nanos  bigint
+  )
+  LANGUAGE sql
+  STABLE
+  SET search_path TO ''
+  AS $function$
+  -- The spend that counts toward workspace and department budgets, one row per item, shared by
+  -- gateway_workspace_budget_status and private.department_budget_usage (and so the spend-limit
+  -- seed). A budget's usage is the sum of nanos over rows that are active or at/after its period
+  -- start. p_key_ids limits the rows to those keys (NULL: the whole workspace). p_since (NULL: all
+  -- time) bounds the history read; active holds are returned whenever they were made.
+  --
+  -- * Requests: every gateway_requests row with a positive cost, whether or not it succeeded (a
+  --   cancelled or failed request can still be charged), except excluded request ids and the
+  --   batch_hold_usage rows of a hold that is still active, which the hold itself counts.
+  -- * Active holds (held or reserved), in every period until they end: video and free-model
+  --   holds less the cost already audited for them, other holds (batch, realtime) less what was
+  --   captured or released. Realtime holds carry no key; their session does.
+  -- * Captured video and free-model holds made in the period, less the cost audited for them, so
+  --   a capture counts before (or without) its request row and once after it lands.
+  select request.key_id, request.created_at, false, request.cost_nanos
+  from public.gateway_requests request
+  where request.workspace_id = p_workspace_id
+    and (p_key_ids is null or request.key_id = any (p_key_ids))
+    and coalesce(request.cost_nanos, 0) > 0
+    and (p_since is null or request.created_at >= p_since)
+    and not (request.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
+    and not (request.request_id like 'batch_hold_usage:%' and exists (
+      select 1 from public.gateway_wallet_reservations hold
+      where hold.workspace_id = request.workspace_id
+        and hold.key_id = request.key_id
+        and hold.status in ('held', 'reserved')
+        and starts_with(request.request_id, 'batch_hold_usage:' || hold.reservation_id || ':')
+    ))
+  union all
+  select coalesce(reservation.key_id, session.key_id), reservation.created_at,
+    reservation.status in ('held', 'reserved'),
+    case
+      when reservation.reservation_id like 'video_hold:%' or reservation.reservation_id like 'free_model_hold:%' then
+        greatest(0, (case when reservation.status = 'captured'
+          then coalesce(reservation.settled_amount_nanos, reservation.amount_nanos)
+          else reservation.amount_nanos end) - coalesce(audit.cost, 0))
+      else greatest(0, reservation.amount_nanos - coalesce(reservation.captured_nanos, 0) - coalesce(reservation.released_nanos, 0))
+    end
+  from public.gateway_wallet_reservations reservation
+  left join public.gateway_realtime_sessions session
+    on reservation.key_id is null
+    and session.workspace_id = reservation.workspace_id
+    and session.session_id = reservation.hold_ref_id
+  left join lateral (
+    select sum(request.cost_nanos) as cost
+    from public.gateway_requests request
+    where (reservation.reservation_id like 'video_hold:%' or reservation.reservation_id like 'free_model_hold:%')
+      and request.workspace_id = reservation.workspace_id
+      and request.key_id = reservation.key_id
+      and request.request_id = reservation.hold_ref_id
+      and coalesce(request.cost_nanos, 0) > 0
+      and (reservation.reservation_id not like 'free_model_hold:%'
+        or request.detail_metadata->>'free_model_fee_request_id' = substr(reservation.reservation_id, 17))
+  ) audit on true
+  where reservation.workspace_id = p_workspace_id
+    and (p_key_ids is null or coalesce(reservation.key_id, session.key_id) = any (p_key_ids))
+    and (reservation.status in ('held', 'reserved')
+      or (reservation.status = 'captured'
+        and (reservation.reservation_id like 'video_hold:%' or reservation.reservation_id like 'free_model_hold:%')
+        and (p_since is null or reservation.created_at >= p_since)));
+$function$;
+
+COMMENT ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[]) IS 'Spend items counted toward workspace and department budgets: positive-cost requests, active holds in every period, and captured video and free-model holds less their audited cost, with each hold''s batch_hold_usage rows counted once.';
+
+REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[]) FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[]) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[]) TO "postgres";
+
+CREATE OR REPLACE FUNCTION private.department_budget_usage (
+  p_workspace_id        uuid,
+  p_key_id              uuid   DEFAULT NULL::uuid,
+  p_exclude_request_ids text[] DEFAULT '{}'::text[]
+)
+  RETURNS TABLE (
+    id              uuid,
+    department_id   uuid,
+    department_name text,
+    budget_interval text,
+    limit_nanos     bigint,
+    period_start    timestamp with time zone,
+    reset_at        timestamp with time zone,
+    usage_nanos     bigint,
+    key_ids         uuid[]
+  )
+  LANGUAGE sql
+  STABLE
+  SET search_path TO ''
+  AS $function$
+  -- Each department budget of the workspace (only the departments p_key_id counts toward, when
+  -- given) with its usage this UTC period: the private.budget_spend_items of the department's keys
+  -- (private.department_budget_key_departments), less excluded request ids. The one department
+  -- usage calculation behind gateway_department_budget_status (admission) and
+  -- gateway_spend_limit_seed (the SpendLimit Durable Object).
+  with department_keys as materialized (
+    select kd.key_id, kd.department_id
+    from private.department_budget_key_departments(p_workspace_id) kd
+  ), budgets as materialized (
+    select b.id, b.department_id, d.name, b.interval, b.limit_nanos, p.period_start, p.reset_at
+    from public.workspace_department_budgets b
+    join public.workspace_departments d on d.id = b.department_id
+    cross join lateral private.spend_limit_period(b.interval, now()) p
+    where b.workspace_id = p_workspace_id
+      and (p_key_id is null or b.department_id in (
+        select dk.department_id from department_keys dk where dk.key_id = p_key_id))
+  ), items as materialized (
+    select item.key_id, item.at, item.active, item.nanos
+    from private.budget_spend_items(
+      p_workspace_id,
+      (select min(budgets.period_start) from budgets),
+      array(select distinct dk.key_id from department_keys dk where dk.department_id in (select budgets.department_id from budgets)),
+      p_exclude_request_ids
+    ) item
+  )
+  select budgets.id, budgets.department_id, budgets.name, budgets.interval, budgets.limit_nanos,
+    budgets.period_start, budgets.reset_at,
+    coalesce((
+      select sum(items.nanos) from items
+      where items.key_id in (select dk.key_id from department_keys dk where dk.department_id = budgets.department_id)
+        and (items.active or items.at >= budgets.period_start)
+    ), 0)::bigint,
+    array(select dk.key_id from department_keys dk where dk.department_id = budgets.department_id order by dk.key_id)
+  from budgets;
+$function$;
+
+COMMENT ON FUNCTION "private"."department_budget_usage"(uuid, uuid, text[]) IS 'Department budgets of a workspace with their usage this UTC period (private.budget_spend_items of the department''s keys) and keys; shared by gateway_department_budget_status and gateway_spend_limit_seed.';
+
+REVOKE ALL ON FUNCTION "private"."department_budget_usage"(uuid, uuid, text[]) FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION "private"."department_budget_usage"(uuid, uuid, text[]) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "private"."department_budget_usage"(uuid, uuid, text[]) TO "postgres";
 
 CREATE OR REPLACE FUNCTION public.gateway_department_budget_status (
   p_workspace_id           uuid,
@@ -29,14 +184,13 @@ CREATE OR REPLACE FUNCTION public.gateway_department_budget_status (
   SECURITY DEFINER
   SET search_path TO ''
   AS $function$
--- Admission check for the department budgets that p_key_id counts toward
--- (private.department_budget_key_departments), the sibling of gateway_workspace_budget_status.
--- A budget blocks once its usage reaches the limit, or, with p_requested_amount_nanos > 0, when
--- usage plus the request would exceed it. Usage this UTC period is the successful
--- gateway_requests rows of the department's keys plus their unpaid wallet holds, counted as
--- gateway_workspace_budget_status counts them: batch_hold_usage rows of a hold that is still
--- reserved count once, as the hold. The SpendLimit Durable Object enforces the same budgets for
--- ordinary requests; this covers batch, video and realtime holds and the request-context fallback.
+-- Admission check for the department budgets that p_key_id counts toward, the sibling of
+-- gateway_workspace_budget_status. A budget blocks once its usage reaches the limit, or, with
+-- p_requested_amount_nanos > 0, when usage plus the request would exceed it. Usage comes from
+-- private.department_budget_usage, the same calculation gateway_spend_limit_seed gives the
+-- SpendLimit Durable Object: positive-cost requests of the department's keys this UTC period plus
+-- their outstanding holds. Used for batch, video and realtime holds and the request-context
+-- fallback; department_budgets lists the budgets that apply even when none is reached.
 declare
   v_now timestamptz := now();
   v_result jsonb;
@@ -54,88 +208,24 @@ begin
     return jsonb_build_object('ok', true, 'reason', null, 'now', to_jsonb(v_now), 'department_budgets', '[]'::jsonb);
   end if;
 
-  with department_keys as (
-    select kd.key_id, kd.department_id
-    from private.department_budget_key_departments(p_workspace_id) kd
-  ), budgets as (
-    select b.id, b.department_id, d.name as department_name, b.interval, b.limit_nanos, p.period_start, p.reset_at
-    from public.workspace_department_budgets b
-    join public.workspace_departments d on d.id = b.department_id
-    cross join lateral private.spend_limit_period(b.interval, v_now) p
-    where b.workspace_id = p_workspace_id
-      and b.department_id in (select dk.department_id from department_keys dk where dk.key_id = p_key_id)
-  ), budget_keys as (
-    select distinct dk.key_id
-    from department_keys dk
-    where dk.department_id in (select budgets.department_id from budgets)
-  ), spend as (
-    select request.key_id, request.created_at as at, false as always, coalesce(request.cost_nanos, 0) as nanos
-    from public.gateway_requests request
-    where request.workspace_id = p_workspace_id
-      and request.key_id in (select budget_keys.key_id from budget_keys)
-      and request.success is true
-      and request.created_at >= (select min(budgets.period_start) from budgets)
-      and not (request.request_id like 'batch_hold_usage:%' and exists (
-        select 1 from public.gateway_wallet_reservations hold
-        where hold.workspace_id = request.workspace_id
-          and hold.key_id = request.key_id
-          and hold.status = 'reserved'
-          and starts_with(request.request_id, 'batch_hold_usage:' || hold.reservation_id || ':')
-      ))
-    union all
-    -- Realtime holds carry no key; their session does.
-    select coalesce(reservation.key_id, session.key_id), reservation.created_at,
-      reservation.reservation_id like 'free_model_hold:%' and reservation.status in ('held', 'reserved'),
-      case
-        when reservation.reservation_id like 'free_model_hold:%' then
-          greatest(0, (case when reservation.status = 'captured'
-            then coalesce(reservation.settled_amount_nanos, reservation.amount_nanos)
-            else reservation.amount_nanos end) - coalesce(free_audit.cost, 0))
-        else greatest(0, reservation.amount_nanos - coalesce(reservation.captured_nanos, 0) - coalesce(reservation.released_nanos, 0))
-      end
-    from public.gateway_wallet_reservations reservation
-    left join public.gateway_realtime_sessions session
-      on reservation.key_id is null
-      and session.workspace_id = reservation.workspace_id
-      and session.session_id = reservation.hold_ref_id
-    left join lateral (
-      select sum(request.cost_nanos) as cost from public.gateway_requests request
-      where reservation.reservation_id like 'free_model_hold:%'
-        and request.workspace_id = reservation.workspace_id
-        and request.key_id = reservation.key_id
-        and request.request_id = reservation.hold_ref_id
-        and request.detail_metadata->>'free_model_fee_request_id' = substr(reservation.reservation_id, 17) and request.success is true
-    ) free_audit on true
-    where reservation.workspace_id = p_workspace_id
-      and coalesce(reservation.key_id, session.key_id) in (select budget_keys.key_id from budget_keys)
-      and (reservation.status = 'reserved' or (reservation.reservation_id like 'free_model_hold:%'
-        and reservation.status in ('held', 'reserved', 'captured')))
-  ), usage as (
-    select budgets.id, coalesce(sum(spend.nanos), 0)::bigint as usage_nanos
-    from budgets
-    left join department_keys dk on dk.department_id = budgets.department_id
-    left join spend on spend.key_id = dk.key_id and (spend.always or spend.at >= budgets.period_start)
-    group by budgets.id
-  )
   select coalesce(jsonb_agg(jsonb_build_object(
-    'id', budgets.id,
-    'department_id', budgets.department_id,
-    'department_name', budgets.department_name,
-    'interval', budgets.interval,
-    'limit_nanos', budgets.limit_nanos,
+    'id', usage.id,
+    'department_id', usage.department_id,
+    'department_name', usage.department_name,
+    'interval', usage.budget_interval,
+    'limit_nanos', usage.limit_nanos,
     'usage_nanos', usage.usage_nanos,
-    'remaining_nanos', greatest(budgets.limit_nanos - usage.usage_nanos, 0),
+    'remaining_nanos', greatest(usage.limit_nanos - usage.usage_nanos, 0),
     'exceeded', case
-      when coalesce(p_requested_amount_nanos, 0) > 0 then usage.usage_nanos + p_requested_amount_nanos > budgets.limit_nanos
-      else usage.usage_nanos >= budgets.limit_nanos
+      when coalesce(p_requested_amount_nanos, 0) > 0 then usage.usage_nanos + p_requested_amount_nanos > usage.limit_nanos
+      else usage.usage_nanos >= usage.limit_nanos
     end,
-    'window_start', budgets.period_start,
-    'reset_at', budgets.reset_at
-  ) order by case budgets.interval when 'daily' then 1 when 'weekly' then 2 else 3 end,
-    budgets.department_name, budgets.department_id), '[]'::jsonb)
+    'window_start', usage.period_start,
+    'reset_at', usage.reset_at
+  ) order by case usage.budget_interval when 'daily' then 1 when 'weekly' then 2 else 3 end,
+    usage.department_name, usage.department_id), '[]'::jsonb)
   into v_result
-  from budgets
-  join usage on usage.id = budgets.id;
+  from private.department_budget_usage(p_workspace_id, p_key_id, '{}'::text[]) usage;
 
   select budget into v_exceeded
   from jsonb_array_elements(v_result) with ordinality as item(budget, position)
@@ -165,7 +255,7 @@ $function$;
 
 GRANT EXECUTE ON FUNCTION "public"."gateway_department_budget_status"(uuid, uuid, bigint) TO "service_role";
 
-COMMENT ON FUNCTION "public"."gateway_department_budget_status"(uuid, uuid, bigint) IS 'Admission check for the department budgets an API key counts toward: completed spend plus unpaid wallet holds of the department''s keys this UTC period, with the same result shape as gateway_workspace_budget_status and department_<window>_cost_budget_reached reasons.';
+COMMENT ON FUNCTION "public"."gateway_department_budget_status"(uuid, uuid, bigint) IS 'Admission check for the department budgets an API key counts toward (private.department_budget_usage: positive-cost requests plus outstanding holds this UTC period), with department_<window>_cost_budget_reached reasons and the applying budgets in department_budgets.';
 
 REVOKE ALL ON FUNCTION "public"."gateway_department_budget_status"(uuid, uuid, bigint) FROM "postgres";
 
@@ -217,63 +307,23 @@ begin
       end as reset_at
     from public.workspace_budgets budget
     where budget.workspace_id = p_workspace_id
-  ), counted_requests as (
-    -- The batch_hold_usage rows of a hold that is still reserved are that hold's amount, which
-    -- reservation_usage already counts.
-    select request.created_at, request.cost_nanos
-    from public.gateway_requests request
-    where request.workspace_id = p_workspace_id
-      and request.success is true
-      and not (request.request_id like 'batch_hold_usage:%' and exists (
-        select 1 from public.gateway_wallet_reservations hold
-        where hold.workspace_id = request.workspace_id
-          and hold.key_id = request.key_id
-          and hold.status = 'reserved'
-          and starts_with(request.request_id, 'batch_hold_usage:' || hold.reservation_id || ':')
-      ))
-  ), request_usage as (
-    select
-      configured.id,
-      coalesce(sum(request.cost_nanos) filter (
-        where configured.window_start is null or request.created_at >= configured.window_start
-      ), 0)::bigint as completed_nanos
-    from configured
-    left join counted_requests request on true
-    group by configured.id
-  ), reservation_usage as (
-    select
-      configured.id,
-      coalesce(sum(case
-        when reservation.reservation_id like 'free_model_hold:%' then
-          case when reservation.status in ('held', 'reserved') or
-            (reservation.status = 'captured' and (configured.window_start is null or reservation.created_at >= configured.window_start))
-          then greatest(0, (case when reservation.status = 'captured'
-            then coalesce(reservation.settled_amount_nanos, reservation.amount_nanos)
-            else reservation.amount_nanos end) - coalesce(free_audit.cost, 0))
-          else 0 end
-        when reservation.status = 'reserved' and
-          (configured.window_start is null or reservation.created_at >= configured.window_start)
-        then greatest(0, reservation.amount_nanos - coalesce(reservation.captured_nanos, 0) - coalesce(reservation.released_nanos, 0))
-        else 0 end), 0)::bigint as held_nanos
-    from configured
-    left join public.gateway_wallet_reservations reservation
-      on reservation.workspace_id = configured.workspace_id
-    left join lateral (
-      select sum(request.cost_nanos) as cost from public.gateway_requests request
-      where reservation.reservation_id like 'free_model_hold:%'
-        and request.workspace_id = reservation.workspace_id
-        and request.key_id = reservation.key_id
-        and request.request_id = reservation.hold_ref_id
-        and request.detail_metadata->>'free_model_fee_request_id' = substr(reservation.reservation_id, 17) and request.success is true
-    ) free_audit on true
-    group by configured.id
+  ), items as materialized (
+    -- private.budget_spend_items, as for department budgets: positive-cost requests, active holds
+    -- in every period, captured video and free-model holds less their audited cost.
+    select item.at, item.active, item.nanos
+    from private.budget_spend_items(
+      p_workspace_id,
+      (select case when bool_or(configured.window_start is null) then null else min(configured.window_start) end from configured)
+    ) item
+    where exists (select 1 from configured)
   ), usage_rows as (
     select
       configured.*,
-      request_usage.completed_nanos + reservation_usage.held_nanos as usage_nanos
+      coalesce((
+        select sum(items.nanos) from items
+        where items.active or configured.window_start is null or items.at >= configured.window_start
+      ), 0)::bigint as usage_nanos
     from configured
-    join request_usage using (id)
-    join reservation_usage using (id)
   ), normalized as (
     select *,
       usage_nanos + coalesce(p_requested_amount_nanos, 0) as projected_usage_nanos,
@@ -335,6 +385,150 @@ REVOKE ALL ON FUNCTION "public"."gateway_workspace_budget_status"(uuid, bigint) 
 GRANT EXECUTE ON FUNCTION "public"."gateway_workspace_budget_status"(uuid, bigint) TO "postgres";
 
 REVOKE ALL ON FUNCTION "public"."gateway_workspace_budget_status"(uuid, bigint) FROM PUBLIC, "anon", "authenticated";
+
+CREATE OR REPLACE FUNCTION public.gateway_spend_limit_seed (
+  p_workspace_id        uuid,
+  p_key_ids             uuid[],
+  p_exclude_request_ids text[] DEFAULT '{}'::text[]
+)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  STABLE
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+declare
+  -- Windows and filters must stay identical to the key-limit accounting in
+  -- public.gateway_fetch_request_context_without_workspace_budget.
+  now_utc     timestamptz := (now() at time zone 'utc');
+  day_start   timestamptz := date_trunc('day',  now_utc);
+  week_start  timestamptz := date_trunc('week', now_utc);   -- Monday 00:00 UTC
+  month_start timestamptz := date_trunc('month', now_utc);
+  v_key_ids   uuid[] := coalesce(p_key_ids, '{}'::uuid[]);
+  v_exclude   text[] := coalesce(p_exclude_request_ids, '{}'::text[]);
+  v_keys      jsonb;
+  v_excluded  jsonb := '[]'::jsonb;
+  v_departments jsonb := '[]'::jsonb;
+begin
+  if p_workspace_id is null then
+    raise exception using errcode = '22023', message = 'workspace_id_required';
+  end if;
+  if cardinality(v_key_ids) > 100 then
+    raise exception using errcode = '22023', message = 'too_many_key_ids';
+  end if;
+  if cardinality(v_exclude) > 5000 then
+    raise exception using errcode = '22023', message = 'too_many_excluded_request_ids';
+  end if;
+
+  with key_rows as (
+    select
+      k.id,
+      k.status,
+      coalesce(k.soft_blocked, false) as soft_blocked,
+      k.daily_limit_requests,   k.weekly_limit_requests,   k.monthly_limit_requests,
+      k.daily_limit_cost_nanos, k.weekly_limit_cost_nanos, k.monthly_limit_cost_nanos,
+      -- Unlimited keys need no history read, as in the context function.
+      coalesce(greatest(k.daily_limit_requests, k.weekly_limit_requests, k.monthly_limit_requests,
+        k.daily_limit_cost_nanos, k.weekly_limit_cost_nanos, k.monthly_limit_cost_nanos) > 0, false) as limited
+    from public.keys k
+    where k.id = any(v_key_ids)
+      and k.workspace_id = p_workspace_id
+  ), usage as (
+    select
+      gr.key_id,
+      count(*) filter (where gr.created_at >= day_start)                                  as used_day_reqs,
+      count(*) filter (where gr.created_at >= week_start)                                 as used_wk_reqs,
+      count(*) filter (where gr.created_at >= month_start)                                as used_mo_reqs,
+      coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= day_start), 0)::bigint   as used_day_cost,
+      coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= week_start), 0)::bigint  as used_wk_cost,
+      coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= month_start), 0)::bigint as used_mo_cost
+    from public.gateway_requests gr
+    where gr.key_id = any(array(select key_rows.id from key_rows where key_rows.limited))
+      and gr.workspace_id = p_workspace_id
+      and gr.success is true
+      and gr.created_at >= least(week_start, month_start)
+      and not (gr.request_id = any(v_exclude))
+    group by gr.key_id
+  )
+  select coalesce(jsonb_agg(jsonb_build_object(
+    'key_id', key_rows.id,
+    'active', key_rows.status = 'active',
+    'soft_blocked', key_rows.soft_blocked,
+    'limited', key_rows.limited,
+    'limits', jsonb_build_object(
+      'daily',   jsonb_build_object('requests', key_rows.daily_limit_requests,   'cost_nanos', key_rows.daily_limit_cost_nanos),
+      'weekly',  jsonb_build_object('requests', key_rows.weekly_limit_requests,  'cost_nanos', key_rows.weekly_limit_cost_nanos),
+      'monthly', jsonb_build_object('requests', key_rows.monthly_limit_requests, 'cost_nanos', key_rows.monthly_limit_cost_nanos)
+    ),
+    'used', case when key_rows.limited then jsonb_build_object(
+      'daily',   jsonb_build_object('requests', coalesce(usage.used_day_reqs, 0), 'cost_nanos', coalesce(usage.used_day_cost, 0)),
+      'weekly',  jsonb_build_object('requests', coalesce(usage.used_wk_reqs, 0),  'cost_nanos', coalesce(usage.used_wk_cost, 0)),
+      'monthly', jsonb_build_object('requests', coalesce(usage.used_mo_reqs, 0),  'cost_nanos', coalesce(usage.used_mo_cost, 0))
+    ) else null end
+  ) order by key_rows.id), '[]'::jsonb)
+  into v_keys
+  from key_rows
+  left join usage on usage.key_id = key_rows.id;
+
+  -- Department budgets with their usage this UTC period and every key that counts toward each
+  -- department, from private.department_budget_usage, the calculation gateway_department_budget_status
+  -- admits holds with: positive-cost requests of the department's keys (less excluded request ids)
+  -- plus their outstanding batch, video and realtime holds.
+  if exists (select 1 from public.workspace_department_budgets b where b.workspace_id = p_workspace_id) then
+    select coalesce(jsonb_agg(jsonb_build_object(
+      'id', usage.id,
+      'department_id', usage.department_id,
+      'department_name', usage.department_name,
+      'interval', usage.budget_interval,
+      'limit_nanos', usage.limit_nanos,
+      'usage_nanos', usage.usage_nanos,
+      'window_start', usage.period_start,
+      'reset_at', usage.reset_at,
+      'key_ids', to_jsonb(usage.key_ids)
+    ) order by usage.department_id, usage.budget_interval), '[]'::jsonb)
+    into v_departments
+    from private.department_budget_usage(p_workspace_id, null, v_exclude) usage;
+  end if;
+
+  -- Excluded requests that are already persisted, so the caller can stop
+  -- tracking them separately and count the stored row instead.
+  if cardinality(v_exclude) > 0 then
+    select coalesce(jsonb_agg(jsonb_build_object(
+      'request_id', gr.request_id,
+      'key_id', gr.key_id,
+      'success', gr.success,
+      'cost_nanos', coalesce(gr.cost_nanos, 0),
+      'created_at', gr.created_at
+    ) order by gr.request_id, gr.created_at), '[]'::jsonb)
+    into v_excluded
+    from public.gateway_requests gr
+    where gr.workspace_id = p_workspace_id
+      and gr.request_id = any(v_exclude)
+      and gr.created_at >= least(week_start, month_start) - interval '1 day';
+  end if;
+
+  return jsonb_build_object(
+    'now', to_jsonb(now_utc),
+    'day_start', to_jsonb(day_start),
+    'week_start', to_jsonb(week_start),
+    'month_start', to_jsonb(month_start),
+    'keys', v_keys,
+    'budget_status', public.gateway_workspace_budget_status(p_workspace_id, 0),
+    'excluded_rows', v_excluded,
+    'department_budgets', v_departments
+  );
+end;
+$function$;
+
+GRANT EXECUTE ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[]) TO "service_role";
+
+COMMENT ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[]) IS 'Seeds the gateway spend-limit coordinator: per-key day/week/month usage with the request-context windows and filters (excluding already-recorded request ids), plus workspace budget status and department budgets with their usage and keys.';
+
+REVOKE ALL ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[]) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[]) TO "postgres";
+
+REVOKE ALL ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[]) FROM PUBLIC, "anon", "authenticated";
 
 CREATE OR REPLACE FUNCTION public.gateway_wallet_reserve_once (
   p_workspace_id   uuid,
@@ -557,11 +751,14 @@ begin
     and not coalesce((v_budget_status->>'ok')::boolean, true) then
     v_context := jsonb_set(v_context, '{key_limit_ok}', v_budget_status, true);
   end if;
-  -- Department budgets, for when the SpendLimit Durable Object cannot decide.
+  -- Department budgets, for when the SpendLimit Durable Object cannot decide. Budgets that apply
+  -- are returned even below their limit, so the gateway never caches this admission.
   if coalesce((v_context->'key_limit_ok'->>'ok')::boolean, true) then
     v_budget_status := public.gateway_department_budget_status(workspace_id, api_key_id, 0);
     if not coalesce((v_budget_status->>'ok')::boolean, true) then
       v_context := jsonb_set(v_context, '{key_limit_ok}', v_budget_status, true);
+    elsif jsonb_array_length(coalesce(v_budget_status->'department_budgets', '[]'::jsonb)) > 0 then
+      v_context := jsonb_set(v_context, '{key_limit_ok,department_budgets}', v_budget_status->'department_budgets', true);
     end if;
   end if;
   return v_context;
@@ -607,11 +804,14 @@ begin
   if coalesce((v_context->'key_limit_ok'->>'ok')::boolean,true) and not coalesce((v_budget->>'ok')::boolean,true) then
     v_context := jsonb_set(v_context,'{key_limit_ok}',v_budget,true);
   end if;
-  -- Department budgets, for when the SpendLimit Durable Object cannot decide.
+  -- Department budgets, for when the SpendLimit Durable Object cannot decide. Budgets that apply
+  -- are returned even below their limit, so Workers never reuse this admission snapshot.
   if coalesce((v_context->'key_limit_ok'->>'ok')::boolean,true) then
     v_department := public.gateway_department_budget_status(workspace_id,api_key_id,0);
     if not coalesce((v_department->>'ok')::boolean,true) then
       v_context := jsonb_set(v_context,'{key_limit_ok}',v_department,true);
+    elsif jsonb_array_length(coalesce(v_department->'department_budgets','[]'::jsonb))>0 then
+      v_context := jsonb_set(v_context,'{key_limit_ok,department_budgets}',v_department->'department_budgets',true);
     end if;
   end if;
   -- Return configured workspace budgets even when below their limit, so Workers
@@ -824,6 +1024,18 @@ DROP POLICY IF EXISTS "Enable insert for users based on user_id" ON public.credi
 REVOKE DELETE ON TABLE public.wallets FROM anon;
 
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON TABLE public.gateway_wallet_reservations FROM anon, authenticated;
+
+DO $normalize$
+declare
+  v_count integer;
+begin
+  update public.workspace_settings
+  set io_logging_retention_days = 90
+  where io_logging_retention_days is distinct from 90;
+  get diagnostics v_count = row_count;
+  raise notice 'io_logging_retention_days set to 90 on % workspace_settings row(s)', v_count;
+end
+$normalize$;
 
 ALTER TABLE public.workspace_settings
   DROP CONSTRAINT IF EXISTS workspace_settings_io_logging_retention_days_check,
