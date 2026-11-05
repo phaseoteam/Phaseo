@@ -2763,6 +2763,7 @@ pub struct ParameterSpec {
 	pub min_length: Option<f64>,
 	pub multiple_of: Option<f64>,
 	pub notes: Option<String>,
+	pub open: Option<bool>,
 	pub options: Option<Vec<HashMap<String, String>>>,
 	pub properties: Option<HashMap<String, String>>,
 	pub provider_default: Option<String>,

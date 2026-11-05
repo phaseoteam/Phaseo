@@ -2762,6 +2762,7 @@ struct ParameterSpec {
 	std::optional<double> min_length;
 	std::optional<double> multiple_of;
 	std::string notes;
+	std::optional<bool> open;
 	std::vector<std::map<std::string, std::any>> options;
 	std::map<std::string, std::any> properties;
 	std::any provider_default;

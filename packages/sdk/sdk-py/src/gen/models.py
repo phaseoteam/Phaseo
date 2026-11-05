@@ -2465,6 +2465,7 @@ class ParameterSpec(TypedDict):
 	min_length: NotRequired[float]
 	multiple_of: NotRequired[float]
 	notes: NotRequired[str]
+	open: NotRequired[bool]
 	options: NotRequired[List[ParameterOption]]
 	properties: NotRequired[SupportedParameterDetails]
 	provider_default: NotRequired[Union[str, float, bool]]

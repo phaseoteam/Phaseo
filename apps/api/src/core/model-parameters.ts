@@ -66,8 +66,13 @@ export type ParameterSpec = {
 	type?: ParameterType | ParameterType[];
 	/** For file parameters: what kind of file (image, audio, video). */
 	media?: "image" | "audio" | "video";
-	/** The only values accepted. */
+	/** The values accepted; with `open`, the common ones. */
 	values?: ParameterValue[];
+	/**
+	 * Other values are accepted as well: `values` lists suggestions (ElevenLabs'
+	 * default voices, when any voice in the account's library works).
+	 */
+	open?: boolean;
 	/** Values with display details, in the same order as `values`. */
 	options?: ParameterOption[];
 	min?: number;
@@ -134,7 +139,7 @@ const CONSUMED_KEYS = new Set([
 	// Added by the catalogue when it merges providers; internal ids, not part of the spec.
 	"providers",
 	// The standard shape's own fields, so a normalised spec reads back unchanged.
-	"media", "upstream_name", "upstream_values", "alias_of", "max_file_size_bytes", "dimensions", "source", "extra",
+	"media", "upstream_name", "upstream_values", "alias_of", "max_file_size_bytes", "dimensions", "source", "extra", "open",
 	...NESTED_KEYS,
 ]);
 /** Range sizes parameterOptions will spell out as a list. */
@@ -334,6 +339,7 @@ export function normalizeParameterSpec(raw: unknown): ParameterSpec {
 		const options = list.options ?? (Array.isArray(raw.options) && raw.values !== undefined ? readValueList(raw.options)?.options : undefined);
 		if (options) spec.options = options;
 	}
+	if (raw.open === true) spec.open = true;
 	const media = text(raw.media)?.toLowerCase();
 	if (media && MEDIA.has(media)) spec.media = media as ParameterSpec["media"];
 	// Legacy: { "range": [0, 2] }.

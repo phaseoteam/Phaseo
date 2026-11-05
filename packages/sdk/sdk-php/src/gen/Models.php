@@ -4861,6 +4861,8 @@ class ParameterSpec
 	public $multiple_of;
 	/** @var string|null */
 	public $notes;
+	/** @var bool|null */
+	public $open;
 	/** @var array|null */
 	public $options;
 	/** @var array<string, mixed>|null */

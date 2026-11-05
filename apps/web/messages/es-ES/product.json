@@ -1175,6 +1175,8 @@
 		"speechDefaults": "Valores predeterminados de voz",
 		"voice": "Voz",
 		"selectVoice": "Selecciona una voz",
+		"customVoiceId": "ID de voz personalizada",
+		"customVoiceIdPlaceholder": "Pega un ID de voz de tu biblioteca de voces",
 		"format": "Formato",
 		"speed": "Velocidad",
 		"transcriptionDefaults": "Valores predeterminados de transcripción",

@@ -1175,6 +1175,8 @@
 		"speechDefaults": "Speech defaults",
 		"voice": "Voice",
 		"selectVoice": "Select voice",
+		"customVoiceId": "Custom voice ID",
+		"customVoiceIdPlaceholder": "Paste a voice ID from your voice library",
 		"format": "Format",
 		"speed": "Speed",
 		"transcriptionDefaults": "Transcription defaults",

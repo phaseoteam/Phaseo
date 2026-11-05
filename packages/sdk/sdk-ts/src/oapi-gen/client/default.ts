@@ -17058,6 +17058,7 @@ export async function listModelEndpoints(
           min_length?: number;
           multiple_of?: number;
           notes?: string;
+          open?: boolean;
           options?: {
             description?: string;
             label?: string;
@@ -17271,6 +17272,7 @@ export async function listModelEndpoints(
             min_length?: number;
             multiple_of?: number;
             notes?: string;
+            open?: boolean;
             options?: {
               description?: string;
               label?: string;
@@ -17791,6 +17793,7 @@ export async function listModels(
               min_length?: number;
               multiple_of?: number;
               notes?: string;
+              open?: boolean;
               options?: {
                 description?: string;
                 label?: string;
@@ -17909,6 +17912,7 @@ export async function listModels(
                 min_length?: number;
                 multiple_of?: number;
                 notes?: string;
+                open?: boolean;
                 options?: {
                   description?: string;
                   label?: string;
@@ -18140,6 +18144,7 @@ export async function listModels(
                 min_length?: number;
                 multiple_of?: number;
                 notes?: string;
+                open?: boolean;
                 options?: {
                   description?: string;
                   label?: string;
@@ -18258,6 +18263,7 @@ export async function listModels(
                   min_length?: number;
                   multiple_of?: number;
                   notes?: string;
+                  open?: boolean;
                   options?: {
                     description?: string;
                     label?: string;
@@ -20238,6 +20244,7 @@ export async function listTeamModels(
           min_length?: number;
           multiple_of?: number;
           notes?: string;
+          open?: boolean;
           options?: {
             description?: string;
             label?: string;
@@ -20356,6 +20363,7 @@ export async function listTeamModels(
             min_length?: number;
             multiple_of?: number;
             notes?: string;
+            open?: boolean;
             options?: {
               description?: string;
               label?: string;
@@ -20576,6 +20584,7 @@ export async function listTeamModels(
             min_length?: number;
             multiple_of?: number;
             notes?: string;
+            open?: boolean;
             options?: {
               description?: string;
               label?: string;
@@ -20694,6 +20703,7 @@ export async function listTeamModels(
               min_length?: number;
               multiple_of?: number;
               notes?: string;
+              open?: boolean;
               options?: {
                 description?: string;
                 label?: string;
@@ -20926,6 +20936,7 @@ export async function listVideoModels(
           min_length?: number;
           multiple_of?: number;
           notes?: string;
+          open?: boolean;
           options?: {
             description?: string;
             label?: string;
@@ -21057,6 +21068,7 @@ export async function listVideoModels(
             min_length?: number;
             multiple_of?: number;
             notes?: string;
+            open?: boolean;
             options?: {
               description?: string;
               label?: string;
@@ -21207,6 +21219,7 @@ export async function listVideoModelsAlias(
           min_length?: number;
           multiple_of?: number;
           notes?: string;
+          open?: boolean;
           options?: {
             description?: string;
             label?: string;
@@ -21338,6 +21351,7 @@ export async function listVideoModelsAlias(
             min_length?: number;
             multiple_of?: number;
             notes?: string;
+            open?: boolean;
             options?: {
               description?: string;
               label?: string;

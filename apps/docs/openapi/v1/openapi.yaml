@@ -12416,6 +12416,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ParameterValue'
+        open:
+          type: boolean
         options:
           type: array
           items:

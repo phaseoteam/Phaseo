@@ -19,10 +19,12 @@ import type { ProviderCandidate } from "./types";
 export type ParameterValueIssue = {
 	param: string;
 	value: ParameterValue;
-	reason: "not_allowed" | "below_min" | "above_max" | "off_step" | "unsupported_here";
+	reason: "not_allowed" | "below_min" | "above_max" | "off_step" | "unsupported_here" | "file_too_large";
 	allowed?: ParameterValue[];
 	min?: number;
 	max?: number;
+	/** For file_too_large: the route's limit in bytes. */
+	max_bytes?: number;
 	message?: string;
 };
 
@@ -64,8 +66,18 @@ function sameValue(requested: ParameterValue, allowed: ParameterValue, numeric: 
 	return String(requested).trim().toLowerCase() === String(allowed).trim().toLowerCase();
 }
 
+/** A file the request carries (multipart File/Blob), as its size in bytes. */
+function fileSize(value: unknown): number | null {
+	if (!value || typeof value !== "object") return null;
+	const size = (value as { size?: unknown }).size;
+	const isBlobLike = typeof (value as { arrayBuffer?: unknown }).arrayBuffer === "function";
+	return isBlobLike && typeof size === "number" && Number.isFinite(size) ? size : null;
+}
+
 function checkValue(param: string, value: ParameterValue, spec: ParameterSpec): ParameterValueIssue | null {
 	const numeric = isNumericSpec(spec);
+	// An open list names common values; any other value is accepted too.
+	if (spec.values?.length && spec.open) return null;
 	if (spec.values?.length) {
 		if (spec.values.some((allowed) => sameValue(value, allowed, numeric))) return null;
 		return { param, value, reason: "not_allowed", allowed: spec.values };
@@ -104,7 +116,15 @@ export function parameterValueIssues(
 	const issues: ParameterValueIssue[] = [];
 	for (const [name, spec] of Object.entries(specs)) {
 		const requested = requestedValue(rawBody, name, spec);
-		if (!requested || !isScalar(requested.value)) continue;
+		if (!requested) continue;
+		const bytes = fileSize(requested.value);
+		if (bytes !== null) {
+			if (spec.max_file_size_bytes !== undefined && bytes > spec.max_file_size_bytes) {
+				issues.push({ param: requested.field, value: bytes, reason: "file_too_large", max_bytes: spec.max_file_size_bytes });
+			}
+			continue;
+		}
+		if (!isScalar(requested.value)) continue;
 		const resolved = resolveParameterSpec(spec, rawBody, specs);
 		if (!resolved.supported) {
 			// An explicitly unsupported parameter is the name check's job; only a
@@ -134,5 +154,7 @@ export function describeParameterValueIssue(issue: ParameterValueIssue): string 
 			return `${issue.param}=${value} is not one of the allowed steps between ${issue.min} and ${issue.max}.`;
 		case "unsupported_here":
 			return issue.message ?? `${issue.param} cannot be sent with the other values in this request.`;
+		case "file_too_large":
+			return `${issue.param} is ${Math.ceil(Number(issue.value) / 1048576)} MB; this provider takes at most ${Math.floor((issue.max_bytes ?? 0) / 1048576)} MB.`;
 	}
 }

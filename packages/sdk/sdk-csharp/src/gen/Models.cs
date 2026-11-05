@@ -6662,6 +6662,9 @@ public sealed class ParameterSpec
 	[JsonPropertyName("notes")]
 	public string? Notes { get; set; }
 
+	[JsonPropertyName("open")]
+	public bool? Open { get; set; }
+
 	[JsonPropertyName("options")]
 	public List<Dictionary<string, object>>? Options { get; set; }
 

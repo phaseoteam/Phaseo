@@ -138,6 +138,7 @@ describe("the standard shape reads back unchanged", () => {
 		{ effort: { default_value: "max", supported_values: ["low", "max"] }, alias_for: "reasoning_effort", provider_catalog: { name: "fast" } },
 		{ type: "file", media: "audio", max_file_size_bytes: 1024, upstream_name: "file" },
 		{ values: ["alloy", "echo"], options: [{ value: "alloy", label: "Alloy" }, { value: "echo", label: "Echo" }] },
+		{ values: ["21m00Tcm4TlvDq8ikWAM"], options: [{ value: "21m00Tcm4TlvDq8ikWAM", label: "Rachel" }], open: true, notes: "Any library voice ID works." },
 	];
 	it.each(samples.map((sample) => [JSON.stringify(sample).slice(0, 60), sample]))("%s", (_label, sample) => {
 		const once = normalizeParameterSpec(sample);

@@ -116,3 +116,23 @@ describe("providerParamSupportStatus with explicit unsupported markers", () => {
 		expect(providerParamSupportStatus(candidate({ seed: { type: "integer" } }), "seed")).toBe("supported");
 	});
 });
+
+describe("open value lists and file sizes", () => {
+	it("accepts values outside an open list", () => {
+		const eleven = route({ voice: { values: ["21m00Tcm4TlvDq8ikWAM", "pNInz6obpgDQGcFmaJgB"], open: true } });
+		expect(parameterValueIssues(eleven, { voice: "NfUrCNRReUL9RXS9upG1" })).toEqual([]);
+		const closed = route({ voice: { values: ["alloy", "echo"] } });
+		expect(parameterValueIssues(closed, { voice: "nova" })[0]).toMatchObject({ reason: "not_allowed" });
+	});
+
+	it("routes an upload by each provider's file size limit", () => {
+		const file = new File([new Uint8Array(30 * 1024 * 1024)], "a.mp3", { type: "audio/mpeg" });
+		const groq = route({ file: { type: "file", max_file_size_bytes: 26214400 } });
+		const together = route({ file: { type: "file", max_file_size_bytes: 83886080 } });
+		const [issue] = parameterValueIssues(groq, { file });
+		expect(issue).toMatchObject({ param: "file", reason: "file_too_large", value: 31457280, max_bytes: 26214400 });
+		expect(describeParameterValueIssue(issue!)).toBe("file is 30 MB; this provider takes at most 25 MB.");
+		expect(parameterValueIssues(together, { file })).toEqual([]);
+		expect(parameterValueIssues(route({ file: { type: "file" } }), { file })).toEqual([]);
+	});
+});
