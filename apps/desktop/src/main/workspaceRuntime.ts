@@ -44,6 +44,7 @@ import { AgentInputRejectedError, type AgentAdapter, type AgentCallbacks } from 
 import type { Harness } from "../shared/workspace";
 import type { SecretVault } from "./secretVault";
 import { McpHeaderSecrets } from "./mcpHeaders";
+import { McpAppPages, mcpCallOf, mcpToolOf } from "./mcpApps";
 import { PhaseoAdapter } from "./phaseoAdapter";
 import { PhaseoCodingAdapter, type PhaseoExtras } from "./phaseoCodingAdapter";
 import { closePhaseoMcpConnection } from "./phaseoMcp";
@@ -190,6 +191,7 @@ export class WorkspaceRuntime {
 		this.store = new WorkspaceStore(path.join(directory, "workspace.sqlite"));
 		// MCP header values move to the vault; until they can, they stay in settings and are still never broadcast.
 		this.mcpHeaders = new McpHeaderSecrets(vault); void this.mcpHeaders.migrate(this.store).catch(() => {});
+		this.mcpApps = new McpAppPages(async connection => (await this.mcpHeaders.resolve([connection]))[0]);
 		this.attachments = new AttachmentService(path.join(directory, "attachments"), this.store);
 		this.openCode = new OpenCodeService(directory);
 		const modelDiscovery = () => this.discoverThreadModels, installationDiscovery = () => this.discoverInstallations, missions = () => this.missionCommand, guides = () => this.pullRequestGuideTools;
@@ -1082,6 +1084,23 @@ export class WorkspaceRuntime {
 		this.maintainingHarnesses.add(harness);
 		return () => { this.maintainingHarnesses.delete(harness); };
 	}
+	/** Pages MCP tools name for MCP Apps, fetched once per server configuration. */
+	private readonly mcpApps: McpAppPages;
+	private readonly shownMcpApps = new Set<string>();
+	/**
+	 * MCP Apps: when a finished step was a tool of one of the person's MCP servers that names a ui:// page, the page goes on
+	 * the turn like an html_render page, with the call's input and result for it to show.
+	 */
+	private async showMcpApp(activity: AgentActivity, note: (activity: AgentActivity) => void) {
+		if (activity.type !== "tool" || activity.status !== "completed" || activity.htmlRender || this.shownMcpApps.has(activity.id)) return;
+		const match = mcpToolOf(activity, this.store.getMcpConnections().filter(connection => connection.enabled && !connection.archived));
+		if (!match) return;
+		this.shownMcpApps.add(activity.id);
+		const html = await this.mcpApps.page(match.connection, match.tool).catch(() => undefined);
+		if (!html || this.closing) return;
+		const title = `${match.connection.name} · ${match.tool}`;
+		note({ id: `${activity.id}:app`, type: "tool", title, text: html, status: "completed", htmlRender: { title, height: 360 }, mcpApp: mcpCallOf(activity) });
+	}
 	/** MCP header values, kept in the vault by connection (see McpHeaderSecrets). */
 	private readonly mcpHeaders: McpHeaderSecrets;
 	/** Saved MCP connections with header values filled in for those `projectId` uses, for connecting. Main only. */
@@ -1607,7 +1626,7 @@ export class WorkspaceRuntime {
 		const scheduleFlush = () => this.queueStreamFlush(id, flushDelay, () => { try { flush(); } catch (error) { streamError = error; void adapter.cancel().catch(() => {}); } });
 		// Autopilot can note something after the turn has ended (its answer let the turn finish); that goes on the finished turn.
 		let ended = false;
-		const note = (activity: AgentActivity) => { if (ended) { this.appendActivity(id, message.id, activity); return; } order(`activity:${activity.id}`); activities.push(activity); scheduleFlush(); };
+		const note = (activity: AgentActivity) => { if (ended) { this.appendActivity(id, message.id, activity); return; } order(`activity:${activity.id}`); activities.push(activity); scheduleFlush(); void this.showMcpApp(activity, note); };
 		this.turnNotes.set(id, note);
 		const background = task.harness === "claude" ? new BackgroundWork() : undefined;
 		if (background) this.backgroundWork.set(id, background);

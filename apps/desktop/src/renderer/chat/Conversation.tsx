@@ -227,7 +227,7 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 	// Proposed plans stand on their own in the turn rather than inside the work log.
 	const plans = entries.flatMap(entry => entry.kind === "activity" && entry.value.proposed ? [entry.value] : []);
 	// Pages an agent showed with html_render stand above the reply, like plans.
-	const pages = entries.flatMap(entry => entry.kind === "activity" && entry.value.htmlRender ? [{ id: entry.value.id, html: entry.value.text, render: entry.value.htmlRender }] : []);
+	const pages = entries.flatMap(entry => entry.kind === "activity" && entry.value.htmlRender ? [{ id: entry.value.id, html: entry.value.text, render: entry.value.htmlRender, mcpApp: entry.value.mcpApp }] : []);
 	const work = entries.filter(entry => entry !== final && !(entry.kind === "message" && entry.value.delivery === "subagent") && !(entry.kind === "activity" && (entry.value.proposed || entry.value.htmlRender)));
 	const delegated = entries.filter(entry => entry.kind === "message" && entry.value.delivery === "subagent");
 	// The timeline omits usage reports, so read them from the turn's activities.
@@ -246,7 +246,7 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 			{plans.map(plan => <ProposedPlan key={plan.id} markdown={plan.text} projectId={task.projectId} status={plan.proposed?.outcome ? planOutcomes[plan.proposed.outcome] : undefined}>
 				{plan.proposed?.feedback && <p data-selectable className="mt-2 border-l-2 border-border pl-3 text-[13px] whitespace-pre-wrap text-muted-foreground">{plan.proposed.feedback}</p>}
 			</ProposedPlan>)}
-			{pages.map(page => <HtmlRenderFrame key={page.id} html={page.html} render={page.render} />)}
+			{pages.map(page => <HtmlRenderFrame key={page.id} html={page.html} render={page.render} mcpApp={page.mcpApp} />)}
 			{live && !finalText && !work.some(entry => entry.kind === "message" || entry.value.type !== "usage") && <div className="flex items-center gap-1.5 py-1 text-[13px] text-muted-foreground"><LoaderCircle className="size-3.5 animate-spin text-primary" /><span className="animate-pulse font-medium">Working</span><Elapsed since={user?.startedAt} /></div>}
 			{delegated.map(entry => <details key={entry.value.id} className="rounded-xl border border-border px-3 py-2 text-[13px]"><summary className="cursor-pointer font-medium text-muted-foreground">Agent result</summary><MessageContent text={entry.value.text} projectId={task.projectId} /></details>)}
 			{final?.kind === "message" && finalText && <div data-selectable data-quote data-conversation-id={`message:${final.value.id}`} className="text-[14px] leading-relaxed"><MessageContent text={finalText} projectId={task.projectId} repairLocalLinks /></div>}
