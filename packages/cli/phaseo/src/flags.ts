@@ -17,6 +17,26 @@ export function flagNumber(flags: Flags, key: string): number | undefined {
 	return parsed;
 }
 
+const WORKSPACE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Turns `--workspace <id-or-slug>` into a workspace id, or undefined when the flag is absent. An id is used
+ * as given. A slug is looked up among the signed-in person's workspaces (`loadWorkspaces`, from /me), so the
+ * API only ever receives ids.
+ */
+export async function resolveWorkspaceFlag(
+	flags: Flags,
+	loadWorkspaces: () => Promise<Array<{ id?: unknown; slug?: unknown }>>,
+): Promise<string | undefined> {
+	if (flags.workspace === true) throw new Error("--workspace needs a workspace id or slug");
+	const wanted = flagString(flags, "workspace")?.trim();
+	if (!wanted) return undefined;
+	if (WORKSPACE_ID_PATTERN.test(wanted)) return wanted;
+	const match = (await loadWorkspaces()).find((workspace) => workspace?.slug === wanted);
+	if (!match?.id) throw new Error(`None of your workspaces has the slug ${wanted}. Run phaseo whoami to list them.`);
+	return String(match.id);
+}
+
 export function appendQuery(path: string, params: Record<string, string | number | boolean | undefined>): string {
 	const [base, existingQuery] = path.split("?", 2);
 	const query = new URLSearchParams(existingQuery ?? "");
