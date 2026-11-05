@@ -13,7 +13,7 @@ export function serveHtmlRenders() {
 	const handler = (request: Request) => {
 		const page = htmlRenderFromUrl(request.url);
 		if (!page) return new Response("Not found", { status: 404 });
-		return new Response(htmlRenderDocument(page.page, page.appearance), { headers: { "content-type": "text/html; charset=utf-8", "content-security-policy": htmlRenderPolicy, "x-content-type-options": "nosniff", "cache-control": "no-store" } });
+		return new Response(htmlRenderDocument(page.page, page.appearance, page.theme), { headers: { "content-type": "text/html; charset=utf-8", "content-security-policy": htmlRenderPolicy, "x-content-type-options": "nosniff", "cache-control": "no-store" } });
 	};
 	protocol.handle(htmlRenderScheme, handler);
 	session.fromPartition(previewPartition).protocol.handle(htmlRenderScheme, handler);

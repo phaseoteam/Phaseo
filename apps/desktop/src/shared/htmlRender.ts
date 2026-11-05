@@ -46,19 +46,28 @@ const palettes: Record<HtmlAppearance, Record<string, string>> = {
 	dark: { background: "#101112", foreground: "#ececec", "muted-foreground": "#9a9a9e", border: "#2a2b2e", primary: "#6d8cff", "chart-1": "#6d8cff", "chart-2": "#3fbf8f", "chart-3": "#f0a43c", "chart-4": "#e2637a", "chart-5": "#a77cf0", "chart-6": "#47b6d6" },
 	light: { background: "#ffffff", foreground: "#18181b", "muted-foreground": "#6b6b73", border: "#e4e4e7", primary: "#3657e0", "chart-1": "#3657e0", "chart-2": "#1f9d6e", "chart-3": "#c97a12", "chart-4": "#cc3d58", "chart-5": "#7c4fd6", "chart-6": "#1c8db0" },
 };
+/** The window's theme colours a page takes on, so pages match a custom theme. */
+export const htmlThemeKeys = ["background", "foreground", "muted-foreground", "border", "primary", "card", "muted", "accent"] as const;
+export type HtmlTheme = Partial<Record<typeof htmlThemeKeys[number], string>>;
+/** A plain colour, so a theme value can never end the declaration or load anything. */
+const colour = /^(#[0-9a-f]{3,8}|(rgb|rgba|hsl|hsla|oklch|oklab|lab|lch|color)\([0-9a-z.,%/ +-]{1,80}\))$/i;
+export function validHtmlTheme(value: unknown): HtmlTheme {
+	if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+	return Object.fromEntries(Object.entries(value as Record<string, unknown>).filter(([key, entry]) => (htmlThemeKeys as readonly string[]).includes(key) && typeof entry === "string" && colour.test(entry.trim())).map(([key, entry]) => [key, (entry as string).trim()]));
+}
 /** The theme the page's variables come from, and the frame's 8px gutter so focus rings and shadows are not clipped. */
-export function htmlRenderBaseSheet(appearance: HtmlAppearance) {
-	const variables = Object.entries(palettes[appearance]).map(([name, value]) => `--${name}:${value}`).join(";");
+export function htmlRenderBaseSheet(appearance: HtmlAppearance, theme: HtmlTheme = {}) {
+	const variables = Object.entries({ ...palettes[appearance], ...validHtmlTheme(theme) }).map(([name, value]) => `--${name}:${value}`).join(";");
 	return `<style>:root{color-scheme:${appearance};${variables};--radius:6px;--font-sans:system-ui,-apple-system,"Segoe UI",sans-serif;--font-mono:ui-monospace,"Cascadia Code",Consolas,monospace}html{padding:8px;background:transparent;color:var(--foreground);font:14px/1.5 var(--font-sans)}body{margin:0}</style>`;
 }
-/** Reports the page's height to the chat, which fits the frame to it. */
-export const htmlRenderHeightScript = `<script>(()=>{const send=()=>parent.postMessage({phaseoHtmlHeight:Math.ceil(document.documentElement.getBoundingClientRect().height)},"*");new ResizeObserver(send).observe(document.documentElement);addEventListener("load",send);})()</script>`;
+/** Reports the page's height to the chat, which fits the frame to it, and takes the zoom the chat's controls set. */
+export const htmlRenderHeightScript = `<script>(()=>{const send=()=>parent.postMessage({phaseoHtmlHeight:Math.ceil(document.documentElement.getBoundingClientRect().height)},"*");new ResizeObserver(send).observe(document.documentElement);addEventListener("load",send);addEventListener("message",event=>{const zoom=event.source===parent&&event.data?event.data.phaseoHtmlZoom:undefined;if(typeof zoom==="number"&&zoom>=0.25&&zoom<=4){document.documentElement.style.zoom=String(zoom);send();}});})()</script>`;
 /** A web link the person clicks goes to the chat, which opens it in the browser; the sandbox lets the page navigate nowhere. */
 export const htmlRenderLinkScript = `<script>document.addEventListener("click",event=>{const link=event.target instanceof Element?event.target.closest("a[href]"):null;if(!link)return;const url=new URL(link.getAttribute("href"),location.href);if(url.protocol!=="https:"&&url.protocol!=="http:")return;event.preventDefault();parent.postMessage({phaseoOpenLink:url.href},"*")},true)</script>`;
 /** The page as served: the base sheet first, so the page's own styles win, then the height reporter and link handler. */
-export function htmlRenderDocument(page: string, appearance: HtmlAppearance) {
-	const head = /<head[^>]*>/i.exec(page);
-	const withSheet = head ? page.slice(0, head.index + head[0].length) + htmlRenderBaseSheet(appearance) + page.slice(head.index + head[0].length) : htmlRenderBaseSheet(appearance) + page;
+export function htmlRenderDocument(page: string, appearance: HtmlAppearance, theme: HtmlTheme = {}) {
+	const head = /<head[^>]*>/i.exec(page), sheet = htmlRenderBaseSheet(appearance, theme);
+	const withSheet = head ? page.slice(0, head.index + head[0].length) + sheet + page.slice(head.index + head[0].length) : sheet + page;
 	return withSheet + htmlRenderHeightScript + htmlRenderLinkScript;
 }
 /** No requests leave the page except loading scripts, styles, fonts and images over https; CSP sandbox keeps it off the app's origin even when opened directly. */
@@ -67,10 +76,12 @@ export const htmlRenderPolicy = "default-src 'none'; script-src 'unsafe-inline' 
 const toBase64Url = (text: string) => { const bytes = new TextEncoder().encode(text); let binary = ""; for (let index = 0; index < bytes.length; index += 0x8000) binary += String.fromCharCode(...bytes.subarray(index, index + 0x8000)); return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); };
 const fromBase64Url = (value: string) => new TextDecoder().decode(Uint8Array.from(atob(value.replace(/-/g, "+").replace(/_/g, "/")), character => character.charCodeAt(0)));
 /** The page travels in the address, so serving it needs no store and the frame shows exactly what the chat holds. */
-export const htmlRenderUrl = (page: string, appearance: HtmlAppearance) => `${htmlRenderScheme}://page/${appearance}?h=${toBase64Url(page)}`;
-export function htmlRenderFromUrl(url: string): { page: string; appearance: HtmlAppearance } | undefined {
+export const htmlRenderUrl = (page: string, appearance: HtmlAppearance, theme?: HtmlTheme) => `${htmlRenderScheme}://page/${appearance}?h=${toBase64Url(page)}${theme && Object.keys(theme).length ? `&t=${toBase64Url(JSON.stringify(theme))}` : ""}`;
+export function htmlRenderFromUrl(url: string): { page: string; appearance: HtmlAppearance; theme: HtmlTheme } | undefined {
 	let parsed: URL; try { parsed = new URL(url); } catch { return undefined; }
-	const appearance = parsed.pathname.replace(/^\//, ""), encoded = parsed.searchParams.get("h");
+	const appearance = parsed.pathname.replace(/^\//, ""), encoded = parsed.searchParams.get("h"), themed = parsed.searchParams.get("t");
 	if (parsed.protocol !== `${htmlRenderScheme}:` || (appearance !== "dark" && appearance !== "light") || !encoded || encoded.length > Math.ceil(htmlRenderLimits.bytes * 4 / 3) + 4) return undefined;
-	try { return { page: fromBase64Url(encoded), appearance }; } catch { return undefined; }
+	let theme: HtmlTheme = {};
+	if (themed && themed.length <= 4000) try { theme = validHtmlTheme(JSON.parse(fromBase64Url(themed))); } catch { /* The app's own palette. */ }
+	try { return { page: fromBase64Url(encoded), appearance, theme }; } catch { return undefined; }
 }

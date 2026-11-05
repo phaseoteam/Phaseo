@@ -18,7 +18,7 @@ describe("agent HTML pages", () => {
 		const url = htmlRenderUrl(page, "light");
 		expect(url.startsWith("phaseo-html://page/light?h=")).toBe(true);
 		expect(url.split("?h=")[1]).not.toMatch(/[+/=]/);
-		expect(htmlRenderFromUrl(url)).toEqual({ page, appearance: "light" });
+		expect(htmlRenderFromUrl(url)).toEqual({ page, appearance: "light", theme: {} });
 		for (const bad of ["https://page/dark?h=AAAA", "phaseo-html://page/sepia?h=AAAA", "phaseo-html://page/dark", "nonsense"]) expect(htmlRenderFromUrl(bad)).toBeUndefined();
 	});
 	it("puts the theme before the page's own styles and keeps the page off the app's origin", () => {
