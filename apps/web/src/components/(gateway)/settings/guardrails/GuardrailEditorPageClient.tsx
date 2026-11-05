@@ -88,13 +88,18 @@ import {
 import GuardrailCreateWizard from "./GuardrailCreateWizard";
 import { MAX_ASSIGNMENT_TARGETS } from "./guardrailAssignmentLimits";
 import { chunkAssignmentChange } from "./guardrailAssignments";
-import type { WizardSection } from "./guardrailWizard";
+import { rateIssue, rateLimits, wizardKind, type WizardSection } from "./guardrailWizard";
+import RateGuardrailSection from "./RateGuardrailSection";
+import type { RateCounting } from "@/app/(dashboard)/settings/guardrails/actions";
 
 const GUARDRAIL_SECTION_IDS = new Set([
 	"access",
 	"prompt-injection",
 	"sensitive-info",
+	"rate",
 ]);
+
+const RATE_COUNTINGS: readonly string[] = ["shared", "each_key", "each_end_user"];
 const expandedSectionsParser = parseAsArrayOf(parseAsString)
 	.withDefault([])
 	.withOptions({ shallow: true, clearOnDefault: true, history: "replace" });
@@ -144,6 +149,12 @@ type GuardrailRow = {
 	sensitive_info_enabled?: boolean | null;
 	sensitive_info_default_action?: string | null;
 	sensitive_info_rules?: SensitiveInfoRulePayload[] | null;
+	kind?: string | null;
+	rate_requests_per_minute?: number | null;
+	rate_tokens_per_minute?: number | null;
+	rate_concurrent_requests?: number | null;
+	rate_fail_closed?: boolean | null;
+	rate_counting?: string | null;
 };
 
 function normalizeMode(value: unknown): ProviderRestrictionMode {
@@ -573,7 +584,8 @@ function ToggleRow(props: {
 	);
 }
 
-const SECTION_HEADINGS: Record<"access" | "prompt-injection" | "sensitive-info", (s: (key: string) => string) => { title: string; description: string }> = {
+const SECTION_HEADINGS: Record<"access" | "prompt-injection" | "sensitive-info" | "rate", (s: (key: string) => string, rate: (key: string) => string) => { title: string; description: string }> = {
+	rate: (_s, rate) => ({ title: rate("title"), description: rate("description") }),
 	access: (s) => ({ title: s("Access"), description: s("phraseControlPrivacyProviderAccessAndModelAccess") }),
 	"prompt-injection": (s) => ({ title: s("Prompt Injection"), description: s("phraseScanUserSuppliedRequestContentForCommonPromptInjectionPatternsBeforeItReachesTheModel") }),
 	"sensitive-info": (s) => ({ title: s("Sensitive Info Detection"), description: s("phraseDetectAndHandleSensitiveDataBeforeRequestsLeavePhaseo") }),
@@ -851,7 +863,13 @@ export default function GuardrailEditorPageClient(props: {
 	// Creating a guardrail goes through the step-by-step flow; editing keeps the single page.
 	const isWizard = props.mode === "create";
 	const [wizardSections, setWizardSections] = useState<WizardSection[]>([]);
-	const sectionHidden = (id: WizardSection) => isWizard ? !wizardSections.includes(id) : Boolean(activeSection && activeSection !== id);
+	const tRate = useTranslations("SettingsUI.rateGuardrail");
+	const rateCopy = (key: string) => tRate(key as never);
+	// One kind per guardrail: a rate guardrail shows only its rate section, and other kinds never show it.
+	const editingRate = !isWizard && props.initialGuardrail?.kind === "rate";
+	const sectionHidden = (id: WizardSection) => isWizard
+		? !wizardSections.includes(id)
+		: (id === "rate") !== editingRate || Boolean(activeSection && activeSection !== id);
 	const activeSectionDetails = activeSection
 		? {
 			access: {
@@ -866,7 +884,8 @@ export default function GuardrailEditorPageClient(props: {
 				title: s("Sensitive Info Detection"),
 				description: s("phraseDetectAndHandleSensitiveDataBeforeRequestsLeavePhaseo"),
 			},
-		}[activeSection]
+			rate: { title: rateCopy("title"), description: rateCopy("description") },
+		}[activeSection as "access" | "prompt-injection" | "sensitive-info" | "rate"]
 		: null;
 	const g = props.initialGuardrail;
 
@@ -1057,6 +1076,11 @@ export default function GuardrailEditorPageClient(props: {
 				normalizeSensitiveInfoAction(g?.sensitive_info_default_action),
 			),
 			sensitiveInfoPreviewInput: "",
+			rateRequestsPerMinute: g?.rate_requests_per_minute == null ? "" : String(g.rate_requests_per_minute),
+			rateTokensPerMinute: g?.rate_tokens_per_minute == null ? "" : String(g.rate_tokens_per_minute),
+			rateConcurrentRequests: g?.rate_concurrent_requests == null ? "" : String(g.rate_concurrent_requests),
+			rateFailClosed: Boolean(g?.rate_fail_closed ?? false),
+			rateCounting: (RATE_COUNTINGS.includes(String(g?.rate_counting)) ? g?.rate_counting : null) as RateCounting | null,
 
 			keyIds: props.initialKeyIds ?? [],
 			memberIds: props.initialMemberIds ?? [],
@@ -1509,6 +1533,22 @@ export default function GuardrailEditorPageClient(props: {
 			toast.error(firstSensitiveInfoIssue);
 			return;
 		}
+		const savingRate = isWizard ? wizardSections.includes("rate") : editingRate;
+		// Saving a guardrail made through the rate limits API keeps its counting unless one is chosen.
+		const rateProblem = savingRate ? rateIssue(form, { legacyCounting: editingRate && !props.initialGuardrail?.rate_counting }) : null;
+		if (rateProblem) {
+			toast.error(tRate(`issue.${String(rateProblem)}` as never));
+			return;
+		}
+		const limits = savingRate ? rateLimits(form) : null;
+		// A rate guardrail saves only its rate settings; the table refuses any other rule on it.
+		const rateFields = limits ? {
+			rateRequestsPerMinute: limits.requestsPerMinute,
+			rateTokensPerMinute: limits.tokensPerMinute,
+			rateConcurrentRequests: limits.concurrentRequests,
+			rateFailClosed: form.rateFailClosed,
+			...(form.rateCounting ? { rateCounting: form.rateCounting } : {}),
+		} : {};
 		setSaving(true);
 		const toastId = toast.loading(
 			props.mode === "create" ? t("strings.phraseCreatingGuardrail" as never) : t("strings.phraseSavingGuardrail" as never),
@@ -1517,6 +1557,8 @@ export default function GuardrailEditorPageClient(props: {
 			let guardrailId = props.guardrailId;
 			if (props.mode === "create") {
 				const created = await createGuardrail({
+					kind: wizardKind(wizardSections),
+					...rateFields,
 					enabled: form.enabled,
 					name: form.name,
 					description: form.description || null,
@@ -1539,6 +1581,7 @@ export default function GuardrailEditorPageClient(props: {
 				guardrailId = created.id ?? null;
 			} else if (props.mode === "edit" && props.guardrailId) {
 				await updateGuardrail(props.guardrailId, {
+					...rateFields,
 					enabled: form.enabled,
 					name: form.name,
 					description: form.description || null,
@@ -1616,7 +1659,7 @@ export default function GuardrailEditorPageClient(props: {
 							</span>
 						</AccordionTrigger>
 						<AccordionContent disableAnimation className="pb-2 pt-0">
-							{isWizard ? <WizardSectionHeading {...SECTION_HEADINGS["access"](s)} /> : null}
+							{isWizard ? <WizardSectionHeading {...SECTION_HEADINGS["access"](s, rateCopy)} /> : null}
 							<div className="space-y-4">
 						<EditorSection
 							title={t("strings.Access" as never)}
@@ -1918,7 +1961,7 @@ export default function GuardrailEditorPageClient(props: {
 							</span>
 						</AccordionTrigger>
 						<AccordionContent disableAnimation className="pb-2 pt-0">
-							{isWizard ? <WizardSectionHeading {...SECTION_HEADINGS["prompt-injection"](s)} /> : null}
+							{isWizard ? <WizardSectionHeading {...SECTION_HEADINGS["prompt-injection"](s, rateCopy)} /> : null}
 							<div className="space-y-4">
 						<EditorSection
 							title={t("strings.Prompt injection" as never)}
@@ -1965,7 +2008,7 @@ export default function GuardrailEditorPageClient(props: {
 							</span>
 						</AccordionTrigger>
 						<AccordionContent disableAnimation className="pb-2 pt-0">
-							{isWizard ? <WizardSectionHeading {...SECTION_HEADINGS["sensitive-info"](s)} /> : null}
+							{isWizard ? <WizardSectionHeading {...SECTION_HEADINGS["sensitive-info"](s, rateCopy)} /> : null}
 							<div className="space-y-6">
 						<EditorSection
 							title={t("strings.Sensitive info" as never)}
@@ -2282,6 +2325,22 @@ export default function GuardrailEditorPageClient(props: {
 							</div>
 						</EditorSection>
 							</div>
+						</AccordionContent>
+					</AccordionItem>
+					<AccordionItem value="rate" className={sectionHidden("rate") ? "hidden" : "border-0"}>
+						<AccordionTrigger className={activeSection || isWizard ? "hidden" : "gap-4 px-4 py-4 hover:bg-muted/20 hover:no-underline [&>svg:last-child]:-rotate-90"}>
+							<div className="min-w-0 flex-1 text-left">
+								<div className="text-sm font-medium">{rateCopy("title")}</div>
+								<p className="mt-1 text-sm font-normal text-muted-foreground">{rateCopy("description")}</p>
+							</div>
+						</AccordionTrigger>
+						<AccordionContent disableAnimation className="pb-2 pt-0">
+							{isWizard ? <WizardSectionHeading {...SECTION_HEADINGS["rate"](s, rateCopy)} /> : null}
+							<RateGuardrailSection
+								value={form}
+								legacyCounting={editingRate && !props.initialGuardrail?.rate_counting}
+								onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
+							/>
 						</AccordionContent>
 					</AccordionItem>
 				</Accordion>

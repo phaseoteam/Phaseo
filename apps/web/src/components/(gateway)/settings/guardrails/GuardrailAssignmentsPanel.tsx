@@ -253,10 +253,11 @@ export default function GuardrailAssignmentsPanel(props: Props) {
 									/>
 								</TableHead>
 							) : null}
-							<TableHead className="w-[20%]">{t(`guardrailAssignments.${nameColumn[targetType]}`)}</TableHead>
-							<TableHead className="w-[34%]">{t("guardrailAssignments.columnGuardrails")}</TableHead>
-							<TableHead className="w-[23%]">{t("guardrailAssignments.columnAccess")}</TableHead>
-							<TableHead className="w-[23%]">{t("guardrailAssignments.columnSafety")}</TableHead>
+							<TableHead className="w-[18%]">{t(`guardrailAssignments.${nameColumn[targetType]}`)}</TableHead>
+							<TableHead className="w-[28%]">{t("guardrailAssignments.columnGuardrails")}</TableHead>
+							<TableHead className="w-[20%]">{t("guardrailAssignments.columnAccess")}</TableHead>
+							<TableHead className="w-[17%]">{t("guardrailAssignments.columnSafety")}</TableHead>
+							<TableHead className="w-[17%]">{t("guardrailAssignments.columnRate")}</TableHead>
 						</TableRow>
 					</TableHeader>
 					<TableBody>
@@ -307,10 +308,14 @@ export default function GuardrailAssignmentsPanel(props: Props) {
 									<SafetySummary effective={row.effective} />
 									<FromLine guardrails={row.safetyFrom} />
 								</TableCell>
+								<TableCell className="text-sm">
+									<RateSummary effective={row.effective} />
+									<FromLine guardrails={row.rateFrom} />
+								</TableCell>
 							</TableRow>
 						)) : (
 							<TableRow>
-								<TableCell colSpan={selectable ? 5 : 4} className="py-8 text-center text-sm text-muted-foreground">
+								<TableCell colSpan={selectable ? 6 : 5} className="py-8 text-center text-sm text-muted-foreground">
 									{emptyMessage}
 								</TableCell>
 							</TableRow>
@@ -454,6 +459,22 @@ function SafetySummary({ effective }: { effective: EffectiveGuardrailPolicy }) {
 	if (effective.sensitiveInfoRuleCount) parts.push(t("guardrailAssignments.sensitiveInfoPart", { count: effective.sensitiveInfoRuleCount }));
 	if (!parts.length) return <span className="text-muted-foreground">{t("guardrailAssignments.off")}</span>;
 	return <span className="line-clamp-2">{parts.join(" · ")}</span>;
+}
+
+function RateSummary({ effective }: { effective: EffectiveGuardrailPolicy }) {
+	const t = useTranslations("SettingsUI");
+	const parts = rateSummaryParts(effective, t);
+	if (!parts.length) return <span className="text-muted-foreground">{t("guardrailAssignments.noLimits")}</span>;
+	return <span className="line-clamp-2">{parts.join(" · ")}</span>;
+}
+
+/** The lowest rate limits that reach a row, e.g. "60 requests a minute · 5 at a time". */
+export function rateSummaryParts(effective: EffectiveGuardrailPolicy, t: ReturnType<typeof useTranslations<"SettingsUI">>): string[] {
+	const parts: string[] = [];
+	if (effective.requestsPerMinute != null) parts.push(t("guardrailAssignments.rateRequests", { count: effective.requestsPerMinute }));
+	if (effective.tokensPerMinute != null) parts.push(t("guardrailAssignments.rateTokens", { count: effective.tokensPerMinute }));
+	if (effective.concurrentRequests != null) parts.push(t("guardrailAssignments.rateConcurrent", { count: effective.concurrentRequests }));
+	return parts;
 }
 
 /** The access part of an effective policy as short phrases, e.g. "ZDR only · 3 providers allowed". */

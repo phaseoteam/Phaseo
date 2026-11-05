@@ -33,6 +33,11 @@ export function guardrailRow(payload: GuardrailPayload, includeName = true): Rec
 		["sensitiveInfoEnabled", "sensitive_info_enabled"],
 		["sensitiveInfoDefaultAction", "sensitive_info_default_action"],
 		["sensitiveInfoRules", "sensitive_info_rules"],
+		["rateRequestsPerMinute", "rate_requests_per_minute"],
+		["rateTokensPerMinute", "rate_tokens_per_minute"],
+		["rateConcurrentRequests", "rate_concurrent_requests"],
+		["rateFailClosed", "rate_fail_closed"],
+		["rateCounting", "rate_counting"],
 	];
 	for (const [input, column] of fields) if (payload[input] !== undefined) row[column] = payload[input];
 	const ioLoggingUpdated =
@@ -109,8 +114,31 @@ export function protectedGuardrailError(error: unknown): { error: "guardrail_pro
 export const GUARDRAIL_KINDS = ["access", "safety", "spend", "rate"] as const;
 export type GuardrailKind = (typeof GUARDRAIL_KINDS)[number];
 
-/** Spend and rate guardrails have no settings yet (they come with later phases), so only these can be written. */
-const WRITABLE_GUARDRAIL_KINDS: ReadonlySet<GuardrailKind> = new Set(["access", "safety"]);
+/** Spend guardrails have no settings yet (they come with a later phase), so only these can be written. */
+const WRITABLE_GUARDRAIL_KINDS: ReadonlySet<GuardrailKind> = new Set(["access", "safety", "rate"]);
+
+export const RATE_COUNTINGS = ["shared", "each_key", "each_end_user"] as const;
+const RATE_LIMIT_MAX = { rateRequestsPerMinute: 2_147_483_647, rateTokensPerMinute: Number.MAX_SAFE_INTEGER, rateConcurrentRequests: 2_147_483_647 } as const;
+
+/**
+ * Problems with a payload's rate fields, or null. A new rate guardrail needs a limit and a chosen
+ * counting (there is no default); limits are positive whole numbers or null; counting, when sent,
+ * is one of RATE_COUNTINGS. The table refuses rate fields on other kinds and other rules on rate ones.
+ */
+export function rateFieldsError(payload: GuardrailPayload, creatingRate: boolean): string | null {
+	for (const [field, max] of Object.entries(RATE_LIMIT_MAX)) {
+		const value = payload[field];
+		if (value === undefined || value === null) continue;
+		if (typeof value !== "number" || !Number.isInteger(value) || value <= 0 || value > max) return `${field} must be a positive whole number up to ${max}, or null`;
+	}
+	if (payload.rateFailClosed !== undefined && typeof payload.rateFailClosed !== "boolean") return "rateFailClosed must be a boolean";
+	if (payload.rateCounting !== undefined && !(RATE_COUNTINGS as readonly unknown[]).includes(payload.rateCounting)) return `rateCounting must be one of ${RATE_COUNTINGS.join(", ")}`;
+	if (creatingRate) {
+		if (!Object.keys(RATE_LIMIT_MAX).some((field) => payload[field] != null)) return "Set at least one of rateRequestsPerMinute, rateTokensPerMinute or rateConcurrentRequests";
+		if (payload.rateCounting === undefined) return "Choose how the rate guardrail counts (rateCounting)";
+	}
+	return null;
+}
 
 /**
  * The kind of a guardrail payload that names none: safety when prompt injection or sensitive info is
@@ -139,7 +167,7 @@ export function guardrailKindForWrite(payload: GuardrailPayload, mode: "create" 
 	if (payload.kind === undefined || payload.kind === null) return { kind: mode === "create" ? inferGuardrailKind(payload) : null };
 	const kind = String(payload.kind).trim().toLowerCase();
 	if (!(GUARDRAIL_KINDS as readonly string[]).includes(kind)) return { error: `kind must be one of ${GUARDRAIL_KINDS.join(", ")}` };
-	if (!WRITABLE_GUARDRAIL_KINDS.has(kind as GuardrailKind)) return { error: "Spend and rate guardrails are not available yet" };
+	if (!WRITABLE_GUARDRAIL_KINDS.has(kind as GuardrailKind)) return { error: "Spend guardrails are not available yet" };
 	return { kind: kind as GuardrailKind };
 }
 
@@ -295,6 +323,8 @@ accountSettingsGuardrailsRouter.post("/guardrails", async (c) => {
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const kind = guardrailKindForWrite(body, "create");
 	if ("error" in kind) return c.json({ error: kind.error }, 400, PRIVATE_NO_STORE_HEADERS);
+	const rateError = rateFieldsError(body, kind.kind === "rate");
+	if (rateError) return c.json({ error: rateError }, 400, PRIVATE_NO_STORE_HEADERS);
 	try {
 		const result = await context.client.from("workspace_guardrails").insert({ workspace_id: context.workspaceId, ...guardrailRow(body), kind: kind.kind }).select("id,kind").maybeSingle();
 		if (result.error) throw result.error;
@@ -309,6 +339,8 @@ accountSettingsGuardrailsRouter.put("/guardrails/:guardrailId", async (c) => {
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const kind = guardrailKindForWrite(body, "update");
 	if ("error" in kind) return c.json({ error: kind.error }, 400, PRIVATE_NO_STORE_HEADERS);
+	const rateError = rateFieldsError(body, false);
+	if (rateError) return c.json({ error: rateError }, 400, PRIVATE_NO_STORE_HEADERS);
 	try {
 		const result = await context.client.from("workspace_guardrails").update({ ...guardrailRow(body), ...(kind.kind ? { kind: kind.kind } : {}) })
 			.eq("id", c.req.param("guardrailId")).eq("workspace_id", context.workspaceId).select("kind");

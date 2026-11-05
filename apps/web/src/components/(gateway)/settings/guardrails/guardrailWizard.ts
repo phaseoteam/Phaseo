@@ -11,6 +11,7 @@ import {
 import type {
 	PromptInjectionAction,
 	ProviderRestrictionMode,
+	RateCounting,
 	SensitiveInfoAction,
 	SensitiveInfoRulePayload,
 } from "@/app/(dashboard)/settings/guardrails/actions";
@@ -22,8 +23,21 @@ import { validateSensitiveInfoRulePayload } from "./sensitiveInfoPreview";
 export const WIZARD_STEPS = ["start", "configure", "assign", "review"] as const;
 export type WizardStep = (typeof WIZARD_STEPS)[number];
 
-export const WIZARD_SECTIONS = ["access", "prompt-injection", "sensitive-info"] as const;
+export const WIZARD_SECTIONS = ["access", "prompt-injection", "sensitive-info", "rate"] as const;
 export type WizardSection = (typeof WIZARD_SECTIONS)[number];
+
+/** One kind per guardrail: a rate guardrail has the rate section only. Access and safety sections combine. */
+export function withSection(sections: WizardSection[], section: WizardSection, on: boolean): WizardSection[] {
+	if (!on) return sections.filter((id) => id !== section);
+	if (section === "rate") return ["rate"];
+	return WIZARD_SECTIONS.filter((id) => id !== "rate" && (id === section || sections.includes(id)));
+}
+
+/** The kind a guardrail with these sections is saved as. */
+export function wizardKind(sections: WizardSection[]): "access" | "safety" | "rate" {
+	if (sections.includes("rate")) return "rate";
+	return sections.includes("access") || !sections.length ? "access" : "safety";
+}
 
 /** The editor form fields the flow reads and writes. */
 export type GuardrailWizardForm = {
@@ -45,6 +59,12 @@ export type GuardrailWizardForm = {
 	sensitiveInfoEnabled: boolean;
 	sensitiveInfoDefaultAction: SensitiveInfoAction;
 	sensitiveInfoRules: SensitiveInfoRulePayload[];
+	/** Rate limits as typed (blank for no limit), and how the guardrail counts. No default: it must be chosen. */
+	rateRequestsPerMinute: string;
+	rateTokensPerMinute: string;
+	rateConcurrentRequests: string;
+	rateFailClosed: boolean;
+	rateCounting: RateCounting | null;
 	keyIds: string[];
 	memberIds: string[];
 	/** Departments and the whole workspace, set only by the new-guardrail flow. */
@@ -59,6 +79,7 @@ export const GUARDRAIL_TEMPLATE_IDS = [
 	"approved-models",
 	"block-prompt-injection",
 	"redact-personal-info",
+	"rate-limit",
 ] as const;
 export type GuardrailTemplateId = (typeof GUARDRAIL_TEMPLATE_IDS)[number];
 
@@ -80,11 +101,13 @@ const ACCESS_FIELDS = [
 ] as const satisfies ReadonlyArray<keyof GuardrailWizardForm>;
 const PROMPT_INJECTION_FIELDS = ["promptInjectionEnabled", "promptInjectionAction"] as const satisfies ReadonlyArray<keyof GuardrailWizardForm>;
 const SENSITIVE_INFO_FIELDS = ["sensitiveInfoEnabled", "sensitiveInfoDefaultAction", "sensitiveInfoRules"] as const satisfies ReadonlyArray<keyof GuardrailWizardForm>;
+const RATE_FIELDS = ["rateRequestsPerMinute", "rateTokensPerMinute", "rateConcurrentRequests", "rateFailClosed", "rateCounting"] as const satisfies ReadonlyArray<keyof GuardrailWizardForm>;
 
 const SECTION_FIELDS: Record<WizardSection, ReadonlyArray<keyof GuardrailWizardForm>> = {
 	access: ACCESS_FIELDS,
 	"prompt-injection": PROMPT_INJECTION_FIELDS,
 	"sensitive-info": SENSITIVE_INFO_FIELDS,
+	rate: RATE_FIELDS,
 };
 
 export type GuardrailTemplate = { id: GuardrailTemplateId; sections: WizardSection[]; patch: (form: GuardrailWizardForm) => SectionFields };
@@ -114,6 +137,8 @@ export const GUARDRAIL_TEMPLATES: Record<GuardrailTemplateId, GuardrailTemplate>
 				: rule),
 		}),
 	},
+	// Limits and counting start blank: nothing is limited until they are chosen.
+	"rate-limit": { id: "rate-limit", sections: ["rate"], patch: () => ({}) },
 };
 
 /** Puts one section's fields back to their defaults, so a section taken out of the flow saves nothing. */
@@ -158,7 +183,43 @@ export type WizardIssue =
 	| "modelAllowlistEmpty"
 	| "promptInjectionOff"
 	| "sensitiveInfoOff"
+	| "rateLimitEmpty"
+	| "rateLimitInvalid"
+	| "rateCountingRequired"
 	| { sensitiveRule: string };
+
+/** Largest values the database and the API accept. */
+const RATE_MAX = { rateRequestsPerMinute: 2_147_483_647, rateTokensPerMinute: Number.MAX_SAFE_INTEGER, rateConcurrentRequests: 2_147_483_647 } as const;
+
+/** A typed limit: null when blank, "invalid" unless it is a positive whole number in range. */
+export function parseRateLimit(value: string, field: keyof typeof RATE_MAX): number | null | "invalid" {
+	const text = value.replace(/[\s,_]/g, "");
+	if (!text) return null;
+	if (!/^\d+$/.test(text)) return "invalid";
+	const limit = Number(text);
+	return Number.isSafeInteger(limit) && limit > 0 && limit <= RATE_MAX[field] ? limit : "invalid";
+}
+
+/** The rate limits to save, or null when one is not a valid number. */
+export function rateLimits(form: GuardrailWizardForm): { requestsPerMinute: number | null; tokensPerMinute: number | null; concurrentRequests: number | null } | null {
+	const requestsPerMinute = parseRateLimit(form.rateRequestsPerMinute, "rateRequestsPerMinute");
+	const tokensPerMinute = parseRateLimit(form.rateTokensPerMinute, "rateTokensPerMinute");
+	const concurrentRequests = parseRateLimit(form.rateConcurrentRequests, "rateConcurrentRequests");
+	if (requestsPerMinute === "invalid" || tokensPerMinute === "invalid" || concurrentRequests === "invalid") return null;
+	return { requestsPerMinute, tokensPerMinute, concurrentRequests };
+}
+
+/**
+ * What stops a rate section being saved, or null. A new rate guardrail must choose how it counts;
+ * one made through the rate limits API (`legacyCounting`) may keep counting as it does.
+ */
+export function rateIssue(form: GuardrailWizardForm, options: { legacyCounting?: boolean } = {}): WizardIssue | null {
+	const limits = rateLimits(form);
+	if (!limits) return "rateLimitInvalid";
+	if (limits.requestsPerMinute == null && limits.tokensPerMinute == null && limits.concurrentRequests == null) return "rateLimitEmpty";
+	if (!form.rateCounting && !options.legacyCounting) return "rateCountingRequired";
+	return null;
+}
 
 /** Whether the access section restricts anything at all. A blocklist with nothing on it does not. */
 export function accessRestricts(form: GuardrailWizardForm): boolean {
@@ -186,6 +247,10 @@ export function stepIssue(step: WizardStep, form: GuardrailWizardForm, sections:
 		if (form.modelRestrictionMode === "allowlist" && !form.allowedApiModelIds.length) return "modelAllowlistEmpty";
 		if (!accessRestricts(form)) return "accessEmpty";
 	}
+	if (sections.includes("rate")) {
+		const issue = rateIssue(form);
+		if (issue) return issue;
+	}
 	if (sections.includes("prompt-injection") && !form.promptInjectionEnabled) return "promptInjectionOff";
 	if (sections.includes("sensitive-info")) {
 		if (!form.sensitiveInfoEnabled || !form.sensitiveInfoRules.some((rule) => rule.enabled)) return "sensitiveInfoOff";
@@ -205,9 +270,18 @@ export function furthestReachableStep(form: GuardrailWizardForm, sections: Wizar
 }
 
 /** The guardrail as it would be saved, in the shape the assignments helpers read. */
-export function draftGuardrailRow(form: GuardrailWizardForm, id = "draft"): SettingsGuardrailRow {
+export function draftGuardrailRow(form: GuardrailWizardForm, id = "draft", sections?: WizardSection[]): SettingsGuardrailRow {
+	const rate = sections?.includes("rate") ? rateLimits(form) : null;
 	return {
 		id,
+		...(rate ? {
+			kind: "rate" as const,
+			rate_requests_per_minute: rate.requestsPerMinute,
+			rate_tokens_per_minute: rate.tokensPerMinute,
+			rate_concurrent_requests: rate.concurrentRequests,
+			rate_fail_closed: form.rateFailClosed,
+			rate_counting: form.rateCounting,
+		} : {}),
 		enabled: form.enabled,
 		name: form.name,
 		description: form.description || null,
@@ -304,6 +378,14 @@ export function describeGuardrail(form: GuardrailWizardForm, sections: WizardSec
 	if (sections.includes("sensitive-info") && form.sensitiveInfoEnabled) {
 		const enabled = form.sensitiveInfoRules.filter((rule) => rule.enabled);
 		if (enabled.length) lines.push({ key: "summarySensitiveInfo", values: { count: enabled.length } });
+	}
+	if (sections.includes("rate")) {
+		const limits = rateLimits(form);
+		if (limits?.requestsPerMinute != null) lines.push({ key: "summaryRateRequests", values: { count: limits.requestsPerMinute } });
+		if (limits?.tokensPerMinute != null) lines.push({ key: "summaryRateTokens", values: { count: limits.tokensPerMinute } });
+		if (limits?.concurrentRequests != null) lines.push({ key: "summaryRateConcurrent", values: { count: limits.concurrentRequests } });
+		if (form.rateCounting) lines.push({ key: `summaryRateCounting.${form.rateCounting}` });
+		if (form.rateFailClosed) lines.push({ key: "summaryRateFailClosed" });
 	}
 	return lines;
 }

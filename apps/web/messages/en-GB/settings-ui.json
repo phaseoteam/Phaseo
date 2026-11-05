@@ -1075,7 +1075,11 @@
 		"noTraining": "No training",
 		"noPaidTraining": "No training on paid endpoints",
 		"noFreeTraining": "No training on free endpoints",
-		"noLogging": "No logging endpoints"
+		"noLogging": "No logging endpoints",
+		"columnRate": "Rate",
+		"rateRequests": "{count, plural, one {# request} other {# requests}} a minute",
+		"rateTokens": "{count, plural, one {# token} other {# tokens}} a minute",
+		"rateConcurrent": "{count, plural, other {# at a time}}"
 	},
 	"guardrailWizard": {
 		"title": "New guardrail",
@@ -1099,7 +1103,10 @@
 			"providerAllowlistEmpty": "Pick at least one provider to allow. An empty list blocks every provider.",
 			"modelAllowlistEmpty": "Pick at least one model to allow. An empty list blocks every model.",
 			"promptInjectionOff": "Choose how to handle prompt injection, or remove this check.",
-			"sensitiveInfoOff": "Turn on at least one sensitive info pattern, or remove this check."
+			"sensitiveInfoOff": "Turn on at least one sensitive info pattern, or remove this check.",
+			"rateLimitEmpty": "Set at least one limit to continue.",
+			"rateLimitInvalid": "Limits must be whole numbers above 0.",
+			"rateCountingRequired": "Choose how the limits count to continue."
 		},
 		"nameLabel": "Name",
 		"namePlaceholder": "e.g. Contractor policy",
@@ -1184,7 +1191,24 @@
 		"levelWorkspace": "The whole workspace",
 		"levelDepartments": "{count, plural, one {# department} other {# departments}}",
 		"levelMembers": "{count, plural, one {# member} other {# members}}",
-		"levelKeys": "{count, plural, one {# API key} other {# API keys}}"
+		"levelKeys": "{count, plural, one {# API key} other {# API keys}}",
+		"templateRateLimit": {
+			"name": "Rate limit",
+			"body": "Cap requests or tokens per minute, or requests at once."
+		},
+		"sectionRate": {
+			"name": "Rate limits",
+			"body": "Requests and tokens per minute, and requests at once. A rate guardrail has no other checks."
+		},
+		"summaryRateRequests": "{count, plural, one {# request} other {# requests}} a minute",
+		"summaryRateTokens": "{count, plural, one {# token} other {# tokens}} a minute",
+		"summaryRateConcurrent": "{count, plural, one {# request} other {# requests}} at a time",
+		"summaryRateCounting": {
+			"shared": "Shared by everything it's assigned to",
+			"each_key": "Separate for each key",
+			"each_end_user": "Separate for each end user"
+		},
+		"summaryRateFailClosed": "Refuses requests when limits can't be checked"
 	},
 	"broadcastControls": {
 		"optional": "(optional)",
@@ -8031,5 +8055,50 @@
 		"expiredBody": "Nobody answered within 30 minutes, so nothing was charged. The agent is told not to retry; it can start a new request when someone is available.",
 		"resume": "Finish card verification",
 		"resumeNotice": "This top-up was confirmed, but the bank's card verification was not finished. Finish it to complete the payment."
+	},
+	"rateGuardrail": {
+		"title": "Rate limits",
+		"description": "Limit requests and tokens per minute, and how many requests run at once.",
+		"limitsTitle": "Limits",
+		"limitsBody": "Set at least one. Leave a limit blank to not limit it.",
+		"noLimit": "No limit",
+		"invalidLimit": "Enter a whole number above 0.",
+		"requests": {
+			"label": "Requests per minute",
+			"help": "Counted over a rolling minute."
+		},
+		"tokens": {
+			"label": "Tokens per minute",
+			"help": "Input and output tokens, counted as each request finishes."
+		},
+		"concurrent": {
+			"label": "Concurrent requests",
+			"help": "Requests in progress at the same time."
+		},
+		"countingTitle": "How it counts",
+		"countingBody": "Choose who shares each allowance. There's no default.",
+		"legacyCounting": "This was made through the rate limits API, so it counts per key, member or department it's assigned to, and per end user on the whole workspace. Choose an option to change that.",
+		"countingLegacy": "Per assignment",
+		"counting": {
+			"shared": {
+				"name": "Shared",
+				"body": "One allowance for everything it's assigned to. On a department, the whole department shares it."
+			},
+			"each_key": {
+				"name": "Each key",
+				"body": "Every API key it covers gets its own allowance. OAuth requests count per person."
+			},
+			"each_end_user": {
+				"name": "Each end user",
+				"body": "Every end user gets their own allowance, from the request's user field or X-Phaseo-User-Id header. Requests without one aren't limited by it."
+			}
+		},
+		"failClosedTitle": "Refuse requests when limits can't be checked",
+		"failClosedBody": "Waits for the counter on every request, which adds a little latency. When this is off, requests go through if the counter doesn't answer.",
+		"issue": {
+			"rateLimitEmpty": "Set at least one limit to continue.",
+			"rateLimitInvalid": "Limits must be whole numbers above 0.",
+			"rateCountingRequired": "Choose how the limits count to continue."
+		}
 	}
 }

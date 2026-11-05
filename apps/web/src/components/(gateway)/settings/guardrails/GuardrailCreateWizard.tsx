@@ -3,7 +3,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { Boxes, Check, EyeOff, Plus, ScanText, Server, ShieldAlert, ShieldCheck, type LucideIcon } from "lucide-react";
+import { Boxes, Check, EyeOff, Gauge, Plus, ScanText, Server, ShieldAlert, ShieldCheck, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -23,6 +23,7 @@ import {
 	stepIssue,
 	WIZARD_SECTIONS,
 	WIZARD_STEPS,
+	withSection,
 	type GuardrailTemplateId,
 	type GuardrailWizardForm,
 	type WizardIssue,
@@ -37,6 +38,7 @@ const TEMPLATE_ICONS: Record<GuardrailTemplateId, LucideIcon> = {
 	"approved-models": Boxes,
 	"block-prompt-injection": ShieldAlert,
 	"redact-personal-info": ScanText,
+	"rate-limit": Gauge,
 };
 
 const TEMPLATE_COPY: Record<GuardrailTemplateId, string> = {
@@ -46,12 +48,14 @@ const TEMPLATE_COPY: Record<GuardrailTemplateId, string> = {
 	"approved-models": "templateApprovedModels",
 	"block-prompt-injection": "templateBlockPromptInjection",
 	"redact-personal-info": "templateRedactPersonalInfo",
+	"rate-limit": "templateRateLimit",
 };
 
 const SECTION_COPY: Record<WizardSection, string> = {
 	access: "sectionAccess",
 	"prompt-injection": "sectionPromptInjection",
 	"sensitive-info": "sectionSensitiveInfo",
+	rate: "sectionRate",
 };
 
 /**
@@ -83,7 +87,10 @@ export default function GuardrailCreateWizard(props: {
 	const reachable = furthestReachableStep(props.form, props.sections, translateRuleIssue);
 	const stepIndex = WIZARD_STEPS.indexOf(step);
 	const reachableIndex = WIZARD_STEPS.indexOf(reachable);
-	const draft = useMemo(() => draftGuardrailRow(props.form), [props.form]);
+	const draft = useMemo(() => draftGuardrailRow(props.form, "draft", props.sections), [props.form, props.sections]);
+	// One kind per guardrail: once rate is chosen nothing else can be added, and rate can't be added to other checks.
+	const addable = WIZARD_SECTIONS.filter((section) => !props.sections.includes(section)
+		&& !(props.sections.length && (section === "rate" || props.sections.includes("rate"))));
 
 	function issueText(value: WizardIssue): string {
 		return typeof value === "string" ? tx(`issue.${value}`) : value.sensitiveRule;
@@ -109,10 +116,14 @@ export default function GuardrailCreateWizard(props: {
 	}
 
 	function toggleSection(section: WizardSection, on: boolean) {
-		props.onFormChange((form) => on ? enableSection(form, section) : resetSection(form, props.defaults, section));
-		props.onSectionsChange(on
-			? WIZARD_SECTIONS.filter((id) => id === section || props.sections.includes(id))
-			: props.sections.filter((id) => id !== section));
+		const next = withSection(props.sections, section, on);
+		props.onFormChange((form) => {
+			// Sections a change of kind removes save nothing.
+			let updated = on ? enableSection(form, section) : resetSection(form, props.defaults, section);
+			for (const removed of props.sections.filter((id) => !next.includes(id))) updated = resetSection(updated, props.defaults, removed);
+			return updated;
+		});
+		props.onSectionsChange(next);
 		// A template no longer describes the guardrail once its checks change.
 		setTemplateId(null);
 	}
@@ -272,10 +283,10 @@ export default function GuardrailCreateWizard(props: {
 			{step === "configure" ? (
 				<div className="space-y-6">
 					{props.configure}
-					{WIZARD_SECTIONS.some((section) => !props.sections.includes(section)) ? (
+					{addable.length ? (
 						<div className="flex flex-wrap items-center gap-2 border-t pt-4">
 							<span className="text-sm text-muted-foreground">{t("addCheck")}</span>
-							{WIZARD_SECTIONS.filter((section) => !props.sections.includes(section)).map((section) => (
+							{addable.map((section) => (
 								<Button key={section} type="button" variant="outline" size="sm" className="rounded-md" onClick={() => toggleSection(section, true)}>
 									<Plus className="h-3.5 w-3.5" aria-hidden="true" />
 									{tx(`${SECTION_COPY[section]}.name`)}

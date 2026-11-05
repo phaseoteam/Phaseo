@@ -6,6 +6,7 @@ import {
 	MAX_ASSIGNMENT_GUARDRAILS,
 	MAX_ASSIGNMENT_TARGETS,
 	parseGuardrailAssignmentChange,
+	rateFieldsError,
 } from "./settings-guardrails";
 
 describe("guardrailRow", () => {
@@ -80,8 +81,30 @@ describe("guardrail kind", () => {
 		expect(guardrailKindForWrite({ kind: "access" }, "update")).toEqual({ kind: "access" });
 	});
 
-	it.each([["spend"], ["rate"]])("refuses %s until those settings exist", (kind) => {
-		expect(guardrailKindForWrite({ kind }, "create")).toEqual({ error: "Spend and rate guardrails are not available yet" });
+	it("refuses spend until those settings exist, and accepts rate", () => {
+		expect(guardrailKindForWrite({ kind: "spend" }, "create")).toEqual({ error: "Spend guardrails are not available yet" });
+		expect(guardrailKindForWrite({ kind: "rate" }, "create")).toEqual({ kind: "rate" });
+	});
+
+	it("needs a limit and a chosen counting for a new rate guardrail", () => {
+		expect(rateFieldsError({ rateRequestsPerMinute: 60, rateCounting: "shared" }, true)).toBeNull();
+		expect(rateFieldsError({ rateTokensPerMinute: 1000, rateCounting: "each_end_user", rateFailClosed: true }, true)).toBeNull();
+		// No default counting.
+		expect(rateFieldsError({ rateRequestsPerMinute: 60 }, true)).toMatch(/rateCounting/);
+		expect(rateFieldsError({ rateCounting: "each_key" }, true)).toMatch(/at least one/);
+		expect(rateFieldsError({ rateRequestsPerMinute: 0, rateCounting: "shared" }, true)).toMatch(/positive whole number/);
+		expect(rateFieldsError({ rateConcurrentRequests: 1.5, rateCounting: "shared" }, true)).toMatch(/positive whole number/);
+		expect(rateFieldsError({ rateRequestsPerMinute: 1, rateCounting: "pooled" }, true)).toMatch(/rateCounting must be one of/);
+		expect(rateFieldsError({ rateRequestsPerMinute: 1, rateCounting: "shared", rateFailClosed: "yes" }, true)).toMatch(/boolean/);
+		// An edit may leave counting as it is, and other kinds send no rate fields.
+		expect(rateFieldsError({ rateRequestsPerMinute: 30 }, false)).toBeNull();
+		expect(rateFieldsError({ privacyZdrOnly: true }, false)).toBeNull();
+	});
+
+	it("maps the rate fields to their columns", () => {
+		expect(guardrailRow({ name: "Batch", rateRequestsPerMinute: 60, rateTokensPerMinute: null, rateConcurrentRequests: 4, rateFailClosed: true, rateCounting: "each_key" })).toMatchObject({
+			rate_requests_per_minute: 60, rate_tokens_per_minute: null, rate_concurrent_requests: 4, rate_fail_closed: true, rate_counting: "each_key",
+		});
 	});
 
 	it("refuses an unknown kind", () => {
