@@ -33,6 +33,12 @@ const SEARCH_LINES = /^ {2}"search_mode" .*\n|^ {2}CONSTRAINT "slack_installatio
 const pagesMigrationName = (await readdir(new URL('../migrations/', import.meta.url))).find((name) => name.endsWith('_slack_agent_pages.sql'));
 const pagesMigration = await readFile(new URL(`../migrations/${pagesMigrationName}`, import.meta.url), 'utf8');
 const PAGES_LINES = /^ {2}"(?:pages_enabled|page_expiry_days|page_default_access|page_link_access)" .*\n|^ {2}CONSTRAINT "slack_installations_page_(?:access|default_access|expiry_days)_check" .*\n|^COMMENT ON COLUMN "public"\."slack_installations"\."(?:pages_enabled|page_expiry_days|page_default_access|page_link_access)" .*\n\n/gm;
+// The 2026-11-04 ownership migration adds slack_apps.verified_at, its comment and a lookup index, and makes the app id
+// index unique only among verified apps.
+const ownershipMigrationName = (await readdir(new URL('../migrations/', import.meta.url))).find((name) => name.endsWith('_slack_link_tokens_and_app_ownership.sql'));
+const ownershipMigration = await readFile(new URL(`../migrations/${ownershipMigrationName}`, import.meta.url), 'utf8');
+const OWNERSHIP_LINES = /^ {2}"verified_at" .*\n|^CREATE INDEX slack_apps_slack_app_id_lookup_idx .*\n\n|^COMMENT ON COLUMN "public"\."slack_apps"\."verified_at" .*\n\n/gm;
+const VERIFIED_APP_ID_INDEX = 'CREATE UNIQUE INDEX slack_apps_slack_app_id_idx ON public.slack_apps USING btree (slack_app_id)\n  WHERE (verified_at IS NOT NULL);';
 const words = (text) => text.trim().replace(/[,;]$/, '').replace(/\s+/g, ' ');
 const schema = (path) => readFile(new URL(`../schemas/${path}`, import.meta.url), 'utf8');
 const TABLES = ['slack_apps', 'slack_installations', 'slack_user_links', 'slack_agent_monthly_people', 'slack_agent_charges'];
@@ -91,6 +97,7 @@ try {
   await db.exec(botScopesMigration);
   await db.exec(searchMigration);
   await db.exec(pagesMigration);
+  await db.exec(ownershipMigration);
 
   // The memory and schedules migrations added the triggers that delete the agent's memory and schedules on
   // uninstall (slack-agent-memory.test.mjs, slack-agent-schedules.test.mjs).
@@ -98,6 +105,14 @@ try {
   const SCHEDULES_TRIGGER = /\nCREATE TRIGGER slack_installations_delete_agent_schedules\n[\s\S]*?;\n/;
   for (const table of TABLES) {
     let definition = (await schema(`public/tables/${table}.sql`)).replace(MEMORY_TRIGGER, '').replace(SCHEDULES_TRIGGER, '');
+    if (table === 'slack_apps') {
+      // The first migration's table, plus what the ownership migration changed.
+      const added = definition.match(OWNERSHIP_LINES) ?? [];
+      assert.equal(added.length, 3, 'slack_apps declares verified_at, its comment and the lookup index');
+      for (const line of added) assert.ok(words(ownershipMigration).includes(words(line)), `the ownership migration adds ${words(line).slice(0, 60)}`);
+      assert.ok(definition.includes(VERIFIED_APP_ID_INDEX) && ownershipMigration.includes(VERIFIED_APP_ID_INDEX), 'the app id is unique among verified apps');
+      definition = definition.replace(OWNERSHIP_LINES, '').replace(VERIFIED_APP_ID_INDEX, 'CREATE UNIQUE INDEX slack_apps_slack_app_id_idx ON public.slack_apps USING btree (slack_app_id);');
+    }
     if (table === 'slack_installations') {
       // The first migration's table, plus what the model choice migration added to it.
       const added = definition.match(MODEL_CHOICE_LINES) ?? [];
