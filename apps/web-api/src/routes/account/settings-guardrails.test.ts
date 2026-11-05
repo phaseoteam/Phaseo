@@ -7,6 +7,7 @@ import {
 	MAX_ASSIGNMENT_TARGETS,
 	parseGuardrailAssignmentChange,
 	rateFieldsError,
+	spendFieldsError,
 } from "./settings-guardrails";
 
 describe("guardrailRow", () => {
@@ -81,9 +82,32 @@ describe("guardrail kind", () => {
 		expect(guardrailKindForWrite({ kind: "access" }, "update")).toEqual({ kind: "access" });
 	});
 
-	it("refuses spend until those settings exist, and accepts rate", () => {
-		expect(guardrailKindForWrite({ kind: "spend" }, "create")).toEqual({ error: "Spend guardrails are not available yet" });
+	it("accepts spend and rate", () => {
+		expect(guardrailKindForWrite({ kind: "spend" }, "create")).toEqual({ kind: "spend" });
 		expect(guardrailKindForWrite({ kind: "rate" }, "create")).toEqual({ kind: "rate" });
+	});
+
+	it("needs every spend setting chosen for a new spend guardrail", () => {
+		const spend = { spendLimitNanos: 25_000_000_000, spendPeriod: "monthly", spendAction: "block", spendCounting: "shared" };
+		expect(spendFieldsError(spend, true)).toBeNull();
+		// No defaults: each one must be chosen.
+		for (const field of ["spendLimitNanos", "spendPeriod", "spendAction", "spendCounting"]) {
+			const { [field]: _left, ...rest } = spend as Record<string, unknown>;
+			expect(spendFieldsError(rest, true)).toMatch(new RegExp(field));
+		}
+		expect(spendFieldsError({ ...spend, spendLimitNanos: 0 }, true)).toMatch(/positive whole number/);
+		expect(spendFieldsError({ ...spend, spendLimitNanos: 1.5 }, true)).toMatch(/positive whole number/);
+		expect(spendFieldsError({ ...spend, spendPeriod: "yearly" }, true)).toMatch(/spendPeriod must be one of daily, weekly, monthly/);
+		expect(spendFieldsError({ ...spend, spendAction: "pause" }, true)).toMatch(/spendAction must be one of notify, block/);
+		expect(spendFieldsError({ ...spend, spendCounting: "each_end_user" }, true)).toMatch(/spendCounting must be one of shared, each_key/);
+		// An edit may change one setting, and other kinds send no spend fields.
+		expect(spendFieldsError({ spendAction: "notify" }, false)).toBeNull();
+		expect(spendFieldsError({ privacyZdrOnly: true }, false)).toBeNull();
+	});
+
+	it("maps the spend fields to their columns", () => {
+		expect(guardrailRow({ name: "Contractors", spendLimitNanos: 5_000_000_000, spendPeriod: "daily", spendAction: "notify", spendCounting: "each_key" }))
+			.toMatchObject({ spend_limit_nanos: 5_000_000_000, spend_period: "daily", spend_action: "notify", spend_counting: "each_key" });
 	});
 
 	it("needs a limit and a chosen counting for a new rate guardrail", () => {

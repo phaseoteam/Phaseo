@@ -22,7 +22,7 @@ import {
 } from "./workspace-routing-settings";
 import { successorOverviewFromRows } from "./successor-overview";
 
-const GUARDRAIL_COLUMNS = "id,workspace_id,kind,is_workspace_baseline,enabled,name,description,privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_free_may_publish_prompts,privacy_enable_input_output_logging,privacy_zdr_only,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed,model_restriction_mode,allowed_api_model_ids,prompt_injection_enabled,prompt_injection_action,sensitive_info_enabled,sensitive_info_default_action,sensitive_info_rules,rate_requests_per_minute,rate_tokens_per_minute,rate_concurrent_requests,rate_fail_closed,rate_counting,created_at,updated_at";
+const GUARDRAIL_COLUMNS = "id,workspace_id,kind,is_workspace_baseline,enabled,name,description,privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_free_may_publish_prompts,privacy_enable_input_output_logging,privacy_zdr_only,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed,model_restriction_mode,allowed_api_model_ids,prompt_injection_enabled,prompt_injection_action,sensitive_info_enabled,sensitive_info_default_action,sensitive_info_rules,rate_requests_per_minute,rate_tokens_per_minute,rate_concurrent_requests,rate_fail_closed,rate_counting,spend_limit_nanos,spend_period,spend_action,spend_counting,created_at,updated_at";
 
 function accountPolicyFromRow(row: any) {
 	const mode = (value: unknown) => value === "allowlist" || value === "blocklist" ? value : "none";
