@@ -338,6 +338,7 @@
 		"videoOutputFrom": "वीडियो आउटपुट (से)",
 		"priceInputOutput": "{input} इनपुट · {output} आउटपुट",
 		"priceOutputOnly": "{output} आउटपुट",
+		"atProviderCost": "प्रदाता की लागत पर",
 		"filters": "फ़िल्टर",
 		"shown": "दिखाए गए",
 		"noModelsForFilters": "चुने गए फ़िल्टर के लिए कोई मॉडल नहीं मिला।",

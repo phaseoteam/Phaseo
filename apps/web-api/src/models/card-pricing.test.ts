@@ -394,7 +394,7 @@ describe("normalizeModelsPagePricing", () => {
 		], ["image"]);
 		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 0.01, unit: "credit" });
 		expect(row.pricing_detail_rows).toContainEqual({ label: "Deepinfra Cost Usd", value: "At provider cost" });
-		expect(card([usage("deepinfra_cost_usd", 1, "usd")], ["image"]).pricing_summary).toBeNull();
+		expect(card([usage("deepinfra_cost_usd", 1, "usd")], ["image"]).pricing_summary).toEqual({ kind: "provider_cost" });
 	});
 
 	it("keeps token pricing from provider tiers ahead of a standard-tier tool fee", () => {
@@ -503,18 +503,50 @@ describe("normalizeModelsPagePricing", () => {
 			tokens("output_text_tokens", 2),
 			tokens("output_image_tokens", 30, { modality: "image" }),
 		], ["image"]);
-		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 30, unit: "1M tokens" });
+		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 30, unit: "1M image tokens" });
 		expect(row).toMatchObject({ lowest_output_price: 30, lowest_input_price: null });
 	});
 
-	it("keeps text rates as the headline on text-and-image models", () => {
+	it("headlines the image price on text-and-image models, not the text rate", () => {
 		const row = card([
 			tokens("input_text_tokens", 0.5),
 			tokens("output_text_tokens", 2),
 			tokens("output_image_tokens", 30, { modality: "image" }),
 		], ["text", "image"]);
-		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 0.5, output: 2, unit: "1M tokens" });
+		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 30, unit: "1M image tokens" });
 		expect(row.pricing_detail_rows).toContainEqual({ label: "Output Image Tokens", value: "$30 / 1M tokens" });
+	});
+
+	it("keeps text rates on a text-and-image model when no provider prices the image", () => {
+		const row = card([tokens("input_text_tokens", 0.5), tokens("output_text_tokens", 2)], ["text", "image"]);
+		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 0.5, output: 2, unit: "1M tokens" });
+	});
+
+	it("estimates one image from documented Gemini image tokens and compares providers per image", () => {
+		const row = normalizeModelsPagePricing({
+			model_id: "google/gemini-3-pro-image",
+			gateway_output_modalities: ["text", "image"],
+			pricing_detail_rows: [
+				tokens("input_text_tokens", 2, { provider: "google-vertex" }),
+				tokens("output_text_tokens", 12, { provider: "google-vertex" }),
+				tokens("output_image_tokens", 120, { provider: "google-vertex", modality: "image" }),
+				usage("output_image", 0.18, "image", 1, { provider: "venice", modality: "image", direction: "output" }),
+				tokens("input_text_tokens", 2, { provider: "kilo" }),
+				tokens("output_text_tokens", 12, { provider: "kilo" }),
+			],
+		});
+		// 1,120 tokens x $120 / 1M = $0.1344 per image, cheaper than $0.18 per image.
+		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 120, unit: "1M image tokens", per_image: 0.1344 });
+		expect(row).toMatchObject({ pricing_provider_id: "google-vertex", lowest_output_price: 0.1344, lowest_standard_output_price_unit: "image" });
+	});
+
+	it("shows no per-image estimate where the provider does not document one", () => {
+		const row = normalizeModelsPagePricing({
+			model_id: "openai/gpt-image-2.6-flare",
+			gateway_output_modalities: ["image"],
+			pricing_detail_rows: [tokens("input_text_tokens", 5), tokens("output_image_tokens", 30, { modality: "image" })],
+		});
+		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 30, unit: "1M image tokens" });
 	});
 
 	it("chooses each token side's tier independently", () => {

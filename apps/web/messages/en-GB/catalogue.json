@@ -338,6 +338,7 @@
 		"videoOutputFrom": "Video output (from)",
 		"priceInputOutput": "{input} in · {output} out",
 		"priceOutputOnly": "{output} out",
+		"atProviderCost": "At provider cost",
 		"filters": "Filters",
 		"shown": "shown",
 		"noModelsForFilters": "No models found for the selected filters.",

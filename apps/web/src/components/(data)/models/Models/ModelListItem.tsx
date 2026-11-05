@@ -351,9 +351,12 @@ function ModelListItemImpl({
 		].filter((row): row is { label: string; value: string } => row !== null);
 	if (headline?.kind === "free") {
 		priceText = t("free");
+	} else if (headline?.kind === "provider_cost") {
+		priceText = t("atProviderCost");
 	} else if (headline?.kind === "usage") {
-		priceText = price(headline.price);
-		priceUnit = headline.unit;
+		// A documented image-token rate reads as the cost of one image.
+		priceText = headline.per_image !== undefined ? `≈${price(headline.per_image)}` : price(headline.price);
+		priceUnit = headline.per_image !== undefined ? "image" : headline.unit;
 	} else if (headline?.kind === "tokens") {
 		priceText =
 			headline.input !== null && headline.output !== null
@@ -366,7 +369,7 @@ function ModelListItemImpl({
 		priceUnit = priceText ? headline.unit : null;
 		priceRows = tokenRows(headline.input, headline.output);
 	}
-	let priceIsFrom = headline && headline.kind !== "free" ? headline.from : false;
+	let priceIsFrom = headline && "from" in headline ? headline.from : false;
 	// Rows without an API headline fall back to the catalogue's lowest prices;
 	// with none at all the price is left out rather than replaced by a link.
 	if (!priceText) {

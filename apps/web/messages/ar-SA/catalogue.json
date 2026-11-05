@@ -338,6 +338,7 @@
 		"videoOutputFrom": "إخراج فيديو (بدءًا من)",
 		"priceInputOutput": "{input} إدخال · {output} إخراج",
 		"priceOutputOnly": "{output} إخراج",
+		"atProviderCost": "بتكلفة المزوّد",
 		"filters": "عوامل التصفية",
 		"shown": "معروض",
 		"noModelsForFilters": "لم يتم العثور على نماذج لعوامل التصفية المحددة.",

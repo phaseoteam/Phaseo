@@ -338,6 +338,7 @@
 		"videoOutputFrom": "Salida de vídeo (desde)",
 		"priceInputOutput": "{input} entrada · {output} salida",
 		"priceOutputOnly": "{output} salida",
+		"atProviderCost": "Al coste del proveedor",
 		"filters": "Filtros",
 		"shown": "mostrados",
 		"noModelsForFilters": "No se han encontrado modelos para los filtros seleccionados.",

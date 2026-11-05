@@ -338,6 +338,7 @@
 		"videoOutputFrom": "動画出力（開始価格）",
 		"priceInputOutput": "入力 {input} · 出力 {output}",
 		"priceOutputOnly": "出力 {output}",
+		"atProviderCost": "プロバイダー原価",
 		"filters": "フィルター",
 		"shown": "件表示",
 		"noModelsForFilters": "選択したフィルターに該当するモデルが見つかりません。",
