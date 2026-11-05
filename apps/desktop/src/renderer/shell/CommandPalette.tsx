@@ -10,6 +10,9 @@ import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, C
 import { StatusDot } from "./Sidebar";
 import { pullRequestSearchTerms } from "../../shared/pullRequestView";
 import { issueSearchTerms } from "../../shared/issueView";
+import { issueToTriage, issueTriagePrompt } from "../../shared/issueTriage";
+import { handNewChatDraft } from "../lib/newChatDraft";
+import { useProjectRepository } from "../views/pullRequests/useProjectRepository";
 import { ModelStack, modelName } from "../chat/ModelPicker";
 import { useEffect, useState, type ComponentType } from "react";
 import { paletteEntries, type PaletteEntry } from "../../shared/appCommands";
@@ -43,7 +46,7 @@ export function CommandPalette() {
 	const run = (action: () => void) => { setCommandsOpen(false); action(); };
 	const [search, setSearch] = useState("");
 	// "New chat in…" lists projects on a page of its own; Backspace in the empty field goes back.
-	const [page, setPage] = useState<"new-chat-in">();
+	const [page, setPage] = useState<"new-chat-in" | "triage-issue">();
 	const messageSearch = useMessageSearch(page ? "" : search, commandsOpen);
 	// The palette opens empty each time, as it did when its input kept its own value.
 	useEffect(() => { if (!commandsOpen) { setSearch(""); setPage(undefined); } }, [commandsOpen]);
@@ -57,6 +60,11 @@ export function CommandPalette() {
 	const shelfProject = currentProject?.worktree ? projects.find(project => project.id === currentProject.worktree!.sourceProjectId) : currentProject;
 	const organizeProject = (id: string, change: { pinned?: boolean; archived?: boolean }) => run(() => void command({ type: "organize-project", id, ...change }));
 	const searching = search.trim() !== "";
+	// Triage runs in the open chat's project (its source for a worktree), else the first project.
+	const triageProject = shelfProject ?? activeProjects[0];
+	const triageRepository = useProjectRepository(page === "triage-issue" ? triageProject?.id : undefined);
+	const triageUrl = page === "triage-issue" ? issueToTriage(search, triageRepository ?? undefined) : undefined;
+	const triageIssue = (url: string) => run(() => { if (!triageProject) return; setMode("code"); setNewChatProjectId(triageProject.id); select(undefined); handNewChatDraft(issueTriagePrompt(url)); });
 	const startIn = (projectId: string) => run(() => { setMode("code"); setNewChatProjectId(projectId); select(undefined); });
 	const projectItem = (project: typeof projects[number]) => <CommandItem key={project.id} value={`${project.name} ${project.directory} ${project.id}`} onSelect={() => startIn(project.id)}>
 		<ProjectIcon project={project} /><span className="min-w-0 truncate">{project.name}</span><span className="min-w-0 flex-1 truncate text-right text-xs text-muted-foreground">{project.directory}</span>
@@ -64,10 +72,13 @@ export function CommandPalette() {
 	const themes: { value: ThemePreference; label: string; icon: typeof Sun }[] = [{ value: "light", label: "Use light theme", icon: Sun }, { value: "dark", label: "Use dark theme", icon: Moon }, { value: "system", label: "Use the system theme", icon: Monitor }];
 	const copyId = (id: string) => void navigator.clipboard.writeText(id).then(() => showToast("success", "Chat ID copied"), () => showToast("error", "Could not copy the chat ID"));
 	return <><ProjectSearchDialog /><CloneProjectDialog /><ImportSessionsDialog /><CommandDialog open={commandsOpen} onOpenChange={setCommandsOpen} title="Search" description="Search chats and run commands" className="max-w-xl rounded-2xl! sm:max-w-xl">
-		<CommandInput autoFocus value={search} onValueChange={setSearch} placeholder={page ? "New chat in…" : "Search chats, messages and commands…"} wrapperClassName="p-2"
+		<CommandInput autoFocus value={search} onValueChange={setSearch} placeholder={page === "triage-issue" ? "An issue URL, or its number in this project" : page ? "New chat in…" : "Search chats, messages and commands…"} wrapperClassName="p-2"
 			onKeyDown={event => { if (page && event.key === "Backspace" && !search) { event.preventDefault(); setPage(undefined); } }} />
 		<ScrollArea className="max-h-[420px]" viewportClassName="max-h-[420px]"><CommandList className="max-h-none overflow-visible p-1">
-			{page ? <><CommandEmpty>No project matches.</CommandEmpty><CommandGroup heading="New chat in">{activeProjects.map(projectItem)}</CommandGroup></> : <>
+			{page === "triage-issue" ? <CommandGroup heading={triageProject ? `Triage in ${triageProject.name}` : "Add a project first"}>
+				{triageUrl && triageProject ? <CommandItem value={`${search} triage`} onSelect={() => triageIssue(triageUrl)}><Bug /><span className="min-w-0 truncate">Triage {triageUrl.replace("https://github.com/", "")}</span></CommandItem>
+					: <p className="px-2 py-3 text-center text-xs text-muted-foreground">{triageProject ? "Paste an issue URL, or type its number." : "Triage runs in a project. Add one first."}</p>}
+			</CommandGroup> : page ? <><CommandEmpty>No project matches.</CommandEmpty><CommandGroup heading="New chat in">{activeProjects.map(projectItem)}</CommandGroup></> : <>
 			{!messageSearch.hits.length && !messageSearch.searching && <CommandEmpty>Nothing matches.</CommandEmpty>}
 			<CommandGroup heading="Actions">
 				{paletteEntries.map(entry => { const Icon = entryIcons[entry.title] ?? Bot, keys = entryShortcut(entry); return <CommandItem key={entry.title} value={`${entry.title} ${entry.keywords ?? ""}`} onSelect={() => run(() => void runAppCommand(entry.command, entry.args).catch(reason => showToast("error", `Could not run ${entry.title}`, errorText(reason))))}><Icon />{entry.title}{keys && <CommandShortcut>{keys}</CommandShortcut>}</CommandItem>; })}
@@ -76,6 +87,7 @@ export function CommandPalette() {
 				<CommandItem onSelect={() => run(() => { if (api) void api.chooseProject().then(state => { setOverview(state); const added = state.projects.find(value => !overview.projects.some(existing => existing.id === value.id)); if (added) { setMode("code"); setNewChatProjectId(added.id); select(undefined); } }, reason => setError(errorText(reason))); })}><FolderPlus />Open project folder…</CommandItem>
 				<CommandItem value="Clone a repository git url github add project" onSelect={() => run(() => openCloneProject())}><GitBranchPlus />Clone a repository…</CommandItem>
 				<CommandItem value="Import past conversations claude code codex history sessions transcripts continue" onSelect={() => run(() => openImportSessions())}><History />Import past conversations…</CommandItem>
+				{activeProjects.length > 0 && <CommandItem value="Triage a GitHub issue investigate reproduce bug report" onSelect={() => { setSearch(""); setPage("triage-issue"); }}><Bug />Triage a GitHub issue…</CommandItem>}
 				{api && <CommandItem value="Triage a Phaseo bug triage debug problem broken crash report issue fix this app" onSelect={() => run(() => { setMode("code"); select(undefined); startTriage(api); })}>
 					<Bug /><span className="flex min-w-0 flex-col"><span>Triage a Phaseo bug</span><span className="truncate text-xs text-muted-foreground">An agent debugs this app from its own source and helps you file an issue</span></span>
 				</CommandItem>}
