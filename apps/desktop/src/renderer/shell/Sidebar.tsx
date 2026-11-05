@@ -13,6 +13,7 @@ import { usablePhaseoAccounts, useWorkspace, type CompareGroup } from "../app/wo
 import { cn } from "../lib/utils";
 import { shortcut } from "../lib/keybindings";
 import { copyChatLink } from "../lib/appCommands";
+import { ChatHoverCard } from "./ChatHoverCard";
 import { usePersistedState } from "../lib/persistedState";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { Tip } from "../components/ui/tooltip";
@@ -91,7 +92,7 @@ function ChatRow({ task, indent, showModel, showTime = true, hint }: { task: Tas
 	// A finished turn not seen yet, as Code's rows show it.
 	const unread = !busy && isUnread(task);
 	// Dragging a chat into a composer mentions it there.
-	return <div role="button" tabIndex={0} aria-current={selected ? "page" : undefined} onPointerEnter={() => prefetchTask(task.id)} onClick={() => select(task.id)} onKeyDown={event => { if (event.key === "Enter" && !renaming) select(task.id); }}
+	return <ChatHoverCard task={task} disabled={renaming || hint !== undefined}><div role="button" tabIndex={0} aria-current={selected ? "page" : undefined} onPointerEnter={() => prefetchTask(task.id)} onClick={() => select(task.id)} onKeyDown={event => { if (event.key === "Enter" && !renaming) select(task.id); }}
 		draggable={!renaming} onDragStart={event => { event.dataTransfer.setData(chatDragType, JSON.stringify({ id: task.id, title: task.title })); event.dataTransfer.setData("text/plain", task.title); event.dataTransfer.effectAllowed = "copy"; }}
 		className={cn("group/row mx-2 flex h-8 items-center gap-2 rounded-md px-2 text-[13px] text-sidebar-foreground/85 outline-none hover:bg-sidebar-accent/70 focus-visible:ring-2 focus-visible:ring-ring/40", selected && "bg-sidebar-accent text-sidebar-foreground", indent && "pl-7")}>
 		{showModel ? <span className="shrink-0"><ModelStack models={[task]} size="sm" ringClassName="ring-transparent" /></span> : <StatusDot task={task} />}
@@ -106,7 +107,7 @@ function ChatRow({ task, indent, showModel, showTime = true, hint }: { task: Tas
 		{hint === undefined && unread && !renaming && <span role="img" aria-label="Unread" title="Unread" className="size-1.5 shrink-0 rounded-[2px] bg-primary" />}
 		{hint === undefined && showTime && !renaming && <span className="text-[11px] text-muted-foreground group-hover/row:hidden">{relative(task.updatedAt)}</span>}
 		{hint !== undefined ? <JumpHint index={hint} /> : !renaming && <RowMenu task={task} onRename={() => setRenaming(true)} />}
-	</div>;
+	</div></ChatHoverCard>;
 }
 
 function CompareRow({ group }: { group: CompareGroup }) {
