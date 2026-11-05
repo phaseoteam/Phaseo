@@ -12,7 +12,18 @@ import { Bot, RotateCw } from "lucide-react";
 import { cn } from "../lib/utils";
 import { HarnessLogo } from "../components/HarnessLogo";
 import { AgentRegistry } from "../settings/AgentRegistry";
+import { secretReferenceHint } from "../../shared/secretReferences";
 import { SettingsButton, SettingsField, SettingsNote, SettingsPageLayout, SettingsRow, SettingsSection, settingsInput } from "../settings/SettingsLayout";
+
+/** NAME=value lines as an environment; blank lines are skipped, and a line without = is refused. */
+export function parseEnvironment(text: string): Record<string, string> {
+	const entries = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean).map(line => {
+		const at = line.indexOf("=");
+		if (at < 1 || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(line.slice(0, at))) throw new Error(`Write each environment variable as NAME=value: "${line.slice(0, 40)}" is not.`);
+		return [line.slice(0, at), line.slice(at + 1)] as const;
+	});
+	return Object.fromEntries(entries);
+}
 
 const harnessNames: Partial<Record<HarnessInstallation["harness"], string>> = { codex: "Codex", claude: "Claude Code", opencode: "OpenCode", pi: "Pi", cursor: "Cursor", grok: "Grok" };
 
@@ -20,7 +31,7 @@ export function Agents() {
 	const api = window.phaseoDesktop?.workspace;
 	const [workspace, setWorkspace] = useState<WorkspaceOverview>(emptyOverview);
 	const [installed, setInstalled] = useState<HarnessInstallation[]>([]);
-	const [name, setName] = useState(""); const [executable, setExecutable] = useState(""); const [argumentsValue, setArgumentsValue] = useState<string[]>([]);
+	const [name, setName] = useState(""); const [executable, setExecutable] = useState(""); const [argumentsValue, setArgumentsValue] = useState<string[]>([]); const [environmentText, setEnvironmentText] = useState("");
 	const [error, setError] = useState(""); const [busy, setBusy] = useState(false);
 	const [editing, setEditing] = useState<string>(); const [showArchived, setShowArchived] = useState(false); const [checking, setChecking] = useState<string>();
 	const [statuses, setStatuses] = useState<Record<string, AgentStatus>>({}); const [refreshing, setRefreshing] = useState(true);
@@ -77,10 +88,10 @@ export function Agents() {
 	}
 	async function add() {
 		if (!api || savePending.current) return; savePending.current = true; setBusy(true); setEditorError("");
-		try { setWorkspace(await api.command({ ...(editing ? { type: "update-agent" as const, id: editing } : { type: "add-agent" as const }), name, executable, arguments: [...argumentsValue] })); if (editing) setStatuses(current => { const next = { ...current }; delete next[editing]; return next; }); reset(); }
+		try { const environment = parseEnvironment(environmentText); setWorkspace(await api.command({ ...(editing ? { type: "update-agent" as const, id: editing } : { type: "add-agent" as const }), name, executable, arguments: [...argumentsValue], environment })); if (editing) setStatuses(current => { const next = { ...current }; delete next[editing]; return next; }); reset(); }
 		catch (reason) { setEditorError((reason instanceof Error ? reason.message : String(reason)).replace(/^Error invoking remote method '[^']+': (?:Error: )?/, "")); } finally { savePending.current = false; setBusy(false); }
 	}
-	function reset() { setEditorError(""); setEditing(undefined); setName(""); setExecutable(""); setArgumentsValue([]); }
+	function reset() { setEditorError(""); setEditing(undefined); setName(""); setExecutable(""); setArgumentsValue([]); setEnvironmentText(""); }
 	async function check(id: string) {
 		if (!api || checking) return; setChecking(id); setError("");
 		try { const status = await api.checkAgent(id); setStatuses(current => ({ ...current, [id]: status })); }
@@ -120,7 +131,7 @@ export function Agents() {
 				<SettingsRow icon={<Bot />} title={agent.name} description={<code className="font-mono text-[11.5px]">{agent.executable} {agent.arguments.join(" ")}</code>}
 					control={<>
 						<SettingsButton disabled={!!checking} onClick={() => void check(agent.id)}>{checking === agent.id ? "Checking…" : "Check connection"}</SettingsButton>
-						<SettingsButton variant="ghost" disabled={busy || checking === agent.id} onClick={() => { setEditorError(""); setEditing(agent.id); setName(agent.name); setExecutable(agent.executable); setArgumentsValue([...agent.arguments]); }}>Edit</SettingsButton>
+						<SettingsButton variant="ghost" disabled={busy || checking === agent.id} onClick={() => { setEditorError(""); setEditing(agent.id); setName(agent.name); setExecutable(agent.executable); setArgumentsValue([...agent.arguments]); setEnvironmentText(Object.entries(agent.environment ?? {}).map(([key, value]) => `${key}=${value}`).join("\n")); }}>Edit</SettingsButton>
 						<SettingsButton variant="ghost" disabled={busy || checking === agent.id} onClick={() => { if (!api) return; reset(); void api.command({ type: "update-agent", id: agent.id, archived: !agent.archived }).then(setWorkspace, reason => setError(message(reason))); }}>{agent.archived ? "Restore" : "Archive"}</SettingsButton>
 					</>}>
 					{statuses[agent.id] && <div className="account-status rounded-lg bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
@@ -143,6 +154,7 @@ export function Agents() {
 						<SettingsField label="Executable"><input value={executable} onChange={event => setExecutable(event.target.value)} placeholder="Path to an agent executable" required className={settingsInput} /></SettingsField>
 					</div>
 					<ArgumentFields value={argumentsValue} onChange={setArgumentsValue} disabled={busy} />
+					<SettingsField label="Environment variables" hint={`One NAME=value a line. ${secretReferenceHint}`}><textarea aria-label="Environment variables" rows={3} value={environmentText} onChange={event => setEnvironmentText(event.target.value)} spellCheck={false} placeholder={"API_KEY=op://Work/Agent/credential\nLOG_LEVEL=info"} className={cn(settingsInput, "h-auto py-2 font-mono text-xs")} /></SettingsField>
 					<div className="account-form-actions flex gap-2">
 						<SettingsButton variant="primary" type="submit" disabled={busy || !api}>{busy ? "Saving…" : editing ? "Save agent" : "Connect agent"}</SettingsButton>
 						{editing && <SettingsButton variant="ghost" disabled={busy} onClick={reset}>Cancel</SettingsButton>}

@@ -16,12 +16,12 @@ const headerCount = (connection: McpConnection) => connection.transport === "htt
 export function HeaderFields({ value, onChange }: { value: HeaderRow[]; onChange: (value: HeaderRow[]) => void }) {
 	const update = (index: number, change: Partial<HeaderRow>) => onChange(value.map((row, position) => position === index ? { ...row, ...change } : row));
 	return <fieldset className="header-fields flex min-w-0 flex-col gap-1.5">
-		<legend className="mb-1.5 text-xs font-medium text-muted-foreground">Headers <span className="font-normal">· values are stored encrypted on this device and not shown again</span></legend>
+		<legend className="mb-1.5 text-xs font-medium text-muted-foreground">Headers <span className="font-normal">· values are stored encrypted on this device and not shown again. A value can also be op://vault/item/field (1Password) or env:NAME, read each time the server connects</span></legend>
 		{value.map((row, index) => <div className="header-row flex items-center gap-1.5" key={index}>
 			{row.saved
 				? <code className="flex h-8 min-w-0 flex-1 items-center truncate px-2.5 font-mono text-[12.5px] text-foreground" aria-label={`Header ${index + 1} name`}>{row.name}</code>
 				: <input aria-label={`Header ${index + 1} name`} value={row.name} maxLength={100} placeholder="Authorization" required spellCheck={false} onChange={event => update(index, { name: event.target.value })} className={rowInput} />}
-			<input aria-label={`${row.name || `Header ${index + 1}`} value`} type="password" autoComplete="off" spellCheck={false} value={row.value} maxLength={8000} required={!row.saved} placeholder={row.saved ? "Saved · type to replace" : "Bearer …"} onChange={event => update(index, { value: event.target.value })} className={rowInput} />
+			<input aria-label={`${row.name || `Header ${index + 1}`} value`} type="password" autoComplete="off" spellCheck={false} value={row.value} maxLength={8000} required={!row.saved} placeholder={row.saved ? "Saved · type to replace" : "Bearer … or op://vault/item/field"} onChange={event => update(index, { value: event.target.value })} className={rowInput} />
 			<button type="button" aria-label={`Remove header ${row.name || index + 1}`} title="Remove header" onClick={() => onChange(value.filter((_, position) => position !== index))}
 				className="grid size-8 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"><X className="size-3.5" /></button>
 		</div>)}
