@@ -30,7 +30,7 @@ flowchart LR
 | --- | --- |
 | `/v1/chat/completions` | `response_format` |
 | `/v1/responses` | `text.format` |
-| `/v1/messages` | 対応していません。プロンプトで JSON を求め、同じ方法で検証してください。 |
+| `/v1/messages` | `output_config.format`（`json_schema` のみ） |
 
 ## スキーマを送る
 

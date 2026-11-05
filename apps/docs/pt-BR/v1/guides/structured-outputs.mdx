@@ -30,7 +30,7 @@ Onde o formato vai depende do endpoint:
 | --- | --- |
 | `/v1/chat/completions` | `response_format` |
 | `/v1/responses` | `text.format` |
-| `/v1/messages` | Não é compatível. Peça JSON no prompt e valide-o da mesma forma. |
+| `/v1/messages` | `output_config.format` (somente `json_schema`) |
 
 ## Enviar um schema
 

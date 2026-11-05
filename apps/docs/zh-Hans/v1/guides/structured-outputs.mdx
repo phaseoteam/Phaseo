@@ -30,7 +30,7 @@ flowchart LR
 | --- | --- |
 | `/v1/chat/completions` | `response_format` |
 | `/v1/responses` | `text.format` |
-| `/v1/messages` | 不支持。在提示词中要求 JSON，并用同样的方式验证。 |
+| `/v1/messages` | `output_config.format`（仅 `json_schema`） |
 
 ## 发送 Schema
 
