@@ -251,7 +251,6 @@ export function openAICompatHeaders(
 				Object.entries(extraHeaders).filter(([, value]) => typeof value === "string" && value.length > 0),
 			)
 			: {}),
-		...(providerId.trim().toLowerCase() === "wafer-zdr" ? { "Wafer-ZDR": "required" } : {}),
 	};
 }
 
