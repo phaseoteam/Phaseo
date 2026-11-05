@@ -5,7 +5,7 @@ import type { AccountStatus } from "./workspace";
  * Usage-limit recovery. A Claude or Codex turn that stops on a plan limit leaves the chat "limited" with when it
  * stopped, when the limit resets (from the account's limits, else the error text) and, once asked, when it resumes.
  */
-export type UsageLimitState = { at: string; resetsAt?: string; resumeAt?: string; /** The resume was set by Resume after usage limits, not asked for in the chat. */ autoResume?: true; /** The person cancelled the resume, so the setting leaves this limit alone. */ resumeCancelled?: true; /** Snoozed by Snooze until limits reset. */ snoozed?: true };
+export type UsageLimitState = { at: string; resetsAt?: string; resumeAt?: string; /** The resume was set by Resume after usage limits, not asked for in the chat. */ autoResume?: true; /** The person cancelled the resume, so the setting leaves this limit alone. */ resumeCancelled?: true; /** Snoozed by Snooze until limits reset. */ snoozed?: true; /** Switch logins at usage limits moved the work to this chat, on this login. */ movedTo?: string; movedToLogin?: string };
 export const usageLimitHarnesses = ["claude", "codex"] as const;
 
 type LimitedChat = { status: string; archived?: boolean; settledOverride?: string; snoozedUntil?: string; usageLimit?: UsageLimitState };

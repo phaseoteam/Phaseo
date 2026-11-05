@@ -846,6 +846,36 @@ export class WorkspaceRuntime {
 		this.store.saveTask(task, true); this.broadcast();
 		if (plan.resumeAt) this.armLimitResume(id, plan.resumeAt);
 	}
+	/** Another signed-in login of the chat's agent with no chat of its own stopped on a limit, or none. */
+	private unlimitedLogin(task: Task) {
+		const limited = new Set(this.store.getOverview().tasks.filter(value => value.status === "limited" && value.accountId).map(value => value.accountId));
+		return this.store.getAccounts().find(account => account.harness === task.harness && account.kind === "native" && account.configured && !account.archived && account.id !== task.accountId && !limited.has(account.id));
+	}
+	/**
+	 * Settings → Threads → Switch logins at usage limits: a limited chat continues at once on another login of its agent,
+	 * through the same handoff as Continue on: what waited in its queue goes to the new chat and leaves this one, so it
+	 * is not done twice. With no such login, or when the move fails, the other usage limit switches apply as before.
+	 */
+	private async switchLoginOrRecover(id: string) {
+		if (this.closing) return;
+		let task; try { task = this.store.getTask(id); } catch { return; }
+		const login = this.store.getPreferences().threads.switchLoginOnLimit && task.status === "limited" && task.usageLimit && !task.usageLimit.movedTo ? this.unlimitedLogin(task) : undefined;
+		if (!login) { this.applyLimitRecovery(id); return; }
+		try {
+			const known = new Set(this.store.getOverview().tasks.map(value => value.id));
+			const state = await this.command({ type: "handoff", id, harness: task.harness, model: task.model, mode: task.mode, accountId: login.id, ...(task.projectId ? { projectId: task.projectId } : {}), ...(task.permissionMode ? { permissionMode: task.permissionMode } : {}),
+				...(task.harness === "codex" && task.reasoningEffort ? { reasoningEffort: task.reasoningEffort } : {}), ...(task.harness === "codex" && task.serviceTier ? { serviceTier: task.serviceTier } : {}), ...(task.modelOptions ? { modelOptions: task.modelOptions } : {}) });
+			const moved = state.tasks.find(value => !known.has(value.id));
+			if (!moved) throw new Error("The handoff made no chat.");
+			const waiting = task.queue.filter(message => !message.autopilot && !message.notice && message.text.trim() && !message.attachments?.length);
+			await this.command({ type: "update-task", id: moved.id, title: task.title });
+			await this.command({ type: "send", id: moved.id, text: waiting.map(message => message.text.trim()).join("\n\n") || "Continue where you left off." });
+			const source = this.store.getTask(id), sent = new Set(waiting.map(message => message.id));
+			source.queue = source.queue.filter(message => !sent.has(message.id));
+			if (source.usageLimit) { source.usageLimit.movedTo = moved.id; source.usageLimit.movedToLogin = login.name; }
+			this.store.saveTask(source, true); this.broadcast();
+		} catch { this.applyLimitRecovery(id); }
+	}
 	/** After the usage limit switches change: resumes the setting armed are dropped when it is turned off, and limited chats get the new rules. */
 	limitPreferencesChanged() {
 		if (this.closing) return;
@@ -1677,7 +1707,7 @@ export class WorkspaceRuntime {
 			if (limit) { current.status = "limited"; current.usageLimit = { at: new Date().toISOString(), ...limit.resetsAt ? { resetsAt: new Date(limit.resetsAt).toISOString() } : {} }; }
 			// A message the agent never answered goes back to the queue, so Resume sends it again.
 			if ((error instanceof AgentInputRejectedError || limit) && !current.messages.some(value => value.role === "assistant" && value.id.startsWith(`${message.id}:`))) { current.messages = current.messages.filter(value => value.id !== message.id); if (!current.queue.some(value => value.id === message.id)) current.queue.unshift(message); }
-			if (limit) void this.readLimitReset(id).catch(() => {}).then(() => this.applyLimitRecovery(id));
+			if (limit) void this.readLimitReset(id).catch(() => {}).then(() => this.switchLoginOrRecover(id));
 			current.approvals = []; current.questions = keepMessageQuestions(current.questions); current.forms = []; this.store.saveTask(current);
 		} finally {
 			ended = true; if (this.turnNotes.get(id) === note) this.turnNotes.delete(id); if (background && this.backgroundWork.get(id) === background) this.backgroundWork.delete(id);

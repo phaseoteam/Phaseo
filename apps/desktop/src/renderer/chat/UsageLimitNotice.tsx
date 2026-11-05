@@ -23,6 +23,12 @@ export function UsageLimitNotice({ task }: { task: Task }) {
 	const run = async (action: () => Promise<unknown>) => { setBusy(true); try { await action(); } catch (reason) { showToast("error", "Could not continue the chat", errorText(reason)); } finally { setBusy(false); } };
 	const moveTo = (offer: ContinueOffer) => run(async () => { const moved = await continueElsewhere(command, task, offer.selection, new Set(overview.tasks.map(value => value.id))); if (!moved) return; select(moved.id); if (moved.filesLeft) showToast("info", "Queued files stayed behind", "Files attached to queued messages belong to the original chat. Attach them again if the agent needs them."); });
 	const button = (label: string, onClick: () => void, disabled = false) => <button type="button" disabled={busy || disabled} onClick={onClick} className="font-medium text-foreground hover:underline disabled:text-muted-foreground disabled:no-underline">{label}</button>;
+	const movedTo = limit.movedTo ? overview.tasks.find(value => value.id === limit.movedTo) : undefined;
+	if (limit.movedTo) return <section aria-label="Usage limit" className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] text-muted-foreground">
+		<Gauge className="size-4 shrink-0 text-warning" />
+		<span className="text-foreground/85">Usage limit reached. This chat continued on {limit.movedToLogin ?? "another login"} (Settings → Threads → Switch logins at usage limits).</span>
+		{movedTo && <>{button("Open it", () => select(movedTo.id))}</>}
+	</section>;
 	return <section aria-label="Usage limit" className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] text-muted-foreground">
 		<Gauge className="size-4 shrink-0 text-warning" />
 		<span className="text-foreground/85">{limit.resetsAt ? `Usage limit reached. It resets at ${resetLabel(limit.resetsAt)}.` : "Usage limit reached. The reset time is not known yet."}</span>

@@ -9,7 +9,7 @@ export type SnoozePresetDay = "today" | "tomorrow" | "monday" | "tuesday" | "wed
 export type SnoozePreset = { kind: "after"; minutes: number } | { kind: "at"; day: SnoozePresetDay; time: string };
 export type IdleCompactionMode = "off" | "onReturn" | "beforeCacheExpires";
 export type ResponseStreamingMode = "live" | "paragraph" | "turn";
-export type ThreadPreferences = { autoResumeLimited: boolean; snoozeLimited: boolean; snoozePresets: SnoozePreset[]; continueAfterRestart: boolean; idleCompaction: IdleCompactionMode; responseStreaming: ResponseStreamingMode; providerHealthMinutes: number | null; providerUpdateChecks: boolean; recordingsAfterDays: number | null; logsAfterDays: number | null };
+export type ThreadPreferences = { autoResumeLimited: boolean; /** Continue a limited chat at once on another signed-in login of its agent that has not hit its limit. */ switchLoginOnLimit: boolean; snoozeLimited: boolean; snoozePresets: SnoozePreset[]; continueAfterRestart: boolean; idleCompaction: IdleCompactionMode; responseStreaming: ResponseStreamingMode; providerHealthMinutes: number | null; providerUpdateChecks: boolean; recordingsAfterDays: number | null; logsAfterDays: number | null };
 
 export const snoozePresetDays: SnoozePresetDay[] = ["today", "tomorrow", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 export const snoozePresetLimits = { maximum: 8, maximumMinutes: 30 * 24 * 60 };
@@ -20,7 +20,7 @@ export const responseStreamingModes: ResponseStreamingMode[] = ["live", "paragra
 /** Minutes between agent CLI checks. Ten is how often the app has always checked. */
 export const providerHealthOptions = [1, 5, 10, 30, 60];
 export const retentionDays = { minimum: 1, maximum: 3650 };
-export const defaultThreadPreferences: ThreadPreferences = { autoResumeLimited: false, snoozeLimited: false, snoozePresets: defaultSnoozePresets, continueAfterRestart: true, idleCompaction: "onReturn", responseStreaming: "live", providerHealthMinutes: 10, providerUpdateChecks: true, recordingsAfterDays: null, logsAfterDays: null };
+export const defaultThreadPreferences: ThreadPreferences = { autoResumeLimited: false, switchLoginOnLimit: false, snoozeLimited: false, snoozePresets: defaultSnoozePresets, continueAfterRestart: true, idleCompaction: "onReturn", responseStreaming: "live", providerHealthMinutes: 10, providerUpdateChecks: true, recordingsAfterDays: null, logsAfterDays: null };
 
 /** "after:60" or "at:monday:09:00": two presets with the same id are the same menu choice. */
 export const snoozePresetId = (preset: SnoozePreset) => preset.kind === "after" ? `after:${preset.minutes}` : `at:${preset.day}:${preset.time}`;
@@ -44,7 +44,7 @@ export function validateThreadPreferences(value: unknown): ThreadPreferences {
 	const presets = input.snoozePresets === undefined ? defaultSnoozePresets : input.snoozePresets;
 	if (!Array.isArray(presets) || presets.length > snoozePresetLimits.maximum) throw new Error(`Keep up to ${snoozePresetLimits.maximum} snooze options.`);
 	return {
-		autoResumeLimited: flag("autoResumeLimited"), snoozeLimited: flag("snoozeLimited"), snoozePresets: presets.map(validateSnoozePreset), continueAfterRestart: flag("continueAfterRestart"),
+		autoResumeLimited: flag("autoResumeLimited"), switchLoginOnLimit: flag("switchLoginOnLimit"), snoozeLimited: flag("snoozeLimited"), snoozePresets: presets.map(validateSnoozePreset), continueAfterRestart: flag("continueAfterRestart"),
 		idleCompaction: read("idleCompaction", entry => idleCompactionModes.includes(entry as IdleCompactionMode), "Choose when to compact idle chats."),
 		responseStreaming: read("responseStreaming", entry => responseStreamingModes.includes(entry as ResponseStreamingMode), "Choose how responses stream."),
 		providerHealthMinutes: read("providerHealthMinutes", entry => entry === null || (typeof entry === "number" && Number.isInteger(entry) && entry >= 1 && entry <= 1440), "Agent checks must run every 1 to 1,440 minutes, or never."),

@@ -40,7 +40,9 @@ export function ThreadSettings() {
 	const set = (patch: Partial<ThreadPreferences>) => void save({ ...preferences, threads: { ...threads, ...patch } });
 	const status = (loading || error) && <SettingsNote tone={error ? "error" : "muted"} role={error ? "alert" : "status"}>{error || "Loading settings…"}</SettingsNote>;
 	return <SettingsPageLayout title="Threads">
-		<SettingsSection title="Usage limits" description="For Claude and Codex chats that stop because their plan hit a usage limit. A chat only ever continues on its own agent and login; moving it elsewhere is always your choice." label="Usage limits">
+		<SettingsSection title="Usage limits" description="For Claude and Codex chats that stop because their plan hit a usage limit. A chat continues on its own agent and login unless you turn on Switch logins; any other move is your choice." label="Usage limits">
+			<SettingsRow title="Switch logins at usage limits" description="When another signed-in login of the same agent (Settings → Accounts) has not hit its limit, a limited chat continues there at once, as a new chat with its history and the message that was waiting. The limited chat says where it went."
+				control={<Switch aria-label="Switch logins at usage limits" disabled={disabled} checked={threads.switchLoginOnLimit} onCheckedChange={value => set({ switchLoginOnLimit: value })} />} />
 			<SettingsRow title="Resume after usage limits" description="Continue a limited chat a minute after its limit resets. You can cancel this in each chat."
 				control={<Switch aria-label="Resume after usage limits" disabled={disabled} checked={threads.autoResumeLimited} onCheckedChange={value => set({ autoResumeLimited: value })} />} />
 			<SettingsRow title="Snooze until limits reset" description="Move a limited chat to Snoozed until its limit resets. Turn on Resume after usage limits to continue it then."
