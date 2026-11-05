@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { projectScopeKey } from "./shell/codeThreads";
 import { projectScopes } from "../shared/projectShelf";
 import { setDynamicCommands, useCommand, useCommands, useKeybindingDispatcher, useKeybindings } from "./lib/keybindings";
@@ -112,6 +112,7 @@ function useShortcuts() {
 const SettingsPage = lazy(() => import("./settings/SettingsPage").then(module => ({ default: module.SettingsPage })));
 const ScheduledTasks = lazy(() => import("./views/ScheduledTasks").then(module => ({ default: module.ScheduledTasks })));
 const Inbox = lazy(() => import("./views/Inbox").then(module => ({ default: module.Inbox })));
+const FirstRun = lazy(() => import("./shell/FirstRun").then(module => ({ default: module.FirstRun })));
 const Usage = lazy(() => import("./views/Usage").then(module => ({ default: module.Usage })));
 const PullRequestsPage = lazy(() => import("./views/pullRequests/PullRequestsPage").then(module => ({ default: module.PullRequestsPage })));
 const NewChat = lazy(() => import("./chat/NewChat").then(module => ({ default: module.NewChat })));
@@ -145,6 +146,8 @@ function ErrorBanner() {
 
 function Shell() {
 	const { sidebarOpen, settings } = useWorkspace();
+	// The welcome loads only until it has been seen or skipped (shell/FirstRun.tsx).
+	const [firstRunPending] = useState(() => { try { return localStorage.getItem("phaseo.desktop.onboarded") === null; } catch { return false; } });
 	useShortcuts();
 	useAppCommandHost();
 	return <div className="flex h-full flex-col">
@@ -157,6 +160,7 @@ function Shell() {
 			<ErrorBanner />
 		</div>
 		<CommandPalette />
+		{firstRunPending && <Suspense><FirstRun /></Suspense>}
 		<HistoryNavigation />
 		<Toaster />
 		<QuitHoldNotice />
