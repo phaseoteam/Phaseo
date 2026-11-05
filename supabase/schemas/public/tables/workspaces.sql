@@ -101,7 +101,7 @@ COMMENT ON TABLE "public"."workspaces" IS 'Teams (organizations) with RLS enable
 
 REVOKE ALL ON TABLE "public"."workspaces" FROM "anon";
 
-GRANT DELETE, MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."workspaces" TO "anon";
+GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."workspaces" TO "anon";
 
 REVOKE ALL ON TABLE "public"."workspaces" FROM "authenticated";
 
@@ -133,7 +133,7 @@ REVOKE ALL ("updated_at") ON TABLE "public"."workspaces" FROM "authenticated";
 
 GRANT INSERT ("updated_at"), UPDATE ("updated_at") ON TABLE "public"."workspaces" TO "authenticated";
 
-GRANT DELETE, MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."workspaces" TO "authenticated";
+GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."workspaces" TO "authenticated";
 
 REVOKE ALL ("owner_user_id") ON TABLE "public"."workspaces" FROM "authenticated";
 

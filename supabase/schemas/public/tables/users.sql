@@ -150,7 +150,7 @@ COMMENT ON COLUMN "public"."users"."display_time_zone" IS 'Preferred IANA time z
 
 REVOKE ALL ON TABLE "public"."users" FROM "anon";
 
-GRANT DELETE, MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."users" TO "anon";
+GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."users" TO "anon";
 
 REVOKE ALL ON TABLE "public"."users" FROM "authenticated";
 
@@ -210,4 +210,4 @@ REVOKE ALL ("user_id") ON TABLE "public"."users" FROM "authenticated";
 
 GRANT INSERT ("user_id") ON TABLE "public"."users" TO "authenticated";
 
-GRANT DELETE, MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."users" TO "authenticated";
+GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."users" TO "authenticated";
