@@ -1,6 +1,6 @@
 import type { SuccessPoint } from "@/lib/api/models";
 import {
-  attemptFailureShares, failureShareText, formatFailureShare, providerHealthHours, summarizeProviderHealth, summaryFailureShares,
+  attemptFailureShares, attemptHeadline, failureShareText, formatFailureShare, providerHealthHours,
   uptimeTone, utcDayLabel, utcDayOffset, UPTIME_COPY,
 } from "./uptime";
 
@@ -33,8 +33,12 @@ describe("failure shares", () => {
   });
 
   test("the website's wording, percentages only", () => {
-    expect(failureShareText("capacity", { kind: "failed", pct: 1.5 })).toBe("1.5% of attempts that reached the provider were turned away because it was at capacity");
-    expect(failureShareText("callErrors", { kind: "failed", pct: 0.01 })).toBe("<0.1% of accepted attempts failed after the provider accepted them");
+    expect(failureShareText("capacity", { kind: "failed", pct: 1.5 })).toBe("1.5% were turned away because the provider was at capacity");
+    expect(failureShareText("callErrors", { kind: "failed", pct: 66.7 })).toBe("66.7% failed after the provider accepted them");
+    expect(failureShareText("callErrors", { kind: "failed", pct: 0.01 })).toBe("<0.1% failed after the provider accepted them");
+    expect(UPTIME_COPY.attemptShare24h).toBe("Last 24 hours · share of all provider attempts. Errors caused by the request or by Phaseo are not counted.");
+    expect(UPTIME_COPY.help.reachability).toContain("gateway errors (502, 504, 520–527) and 503s without an overload signal");
+    expect(UPTIME_COPY.help.capacity).toContain("Rate limits (429) on Phaseo's own key, 529s and responses saying the provider is overloaded");
     expect(failureShareText("reachability", { kind: "none" })).toBe("No failures");
     expect(failureShareText("reachability", { kind: "none" }, UPTIME_COPY.noFailuresThisHour)).toBe("No failures this hour");
   });
@@ -52,12 +56,6 @@ describe("provider health chart", () => {
     expect(hours[0]!.bucket).toBe("2026-11-04T07:00:00.000Z");
     expect(hours.at(-1)!.bucket).toBe("2026-11-05T06:00:00.000Z");
     expect(allAt100(hours)).toBe(true);
-    const summary = summarizeProviderHealth(hours);
-    expect(summary).toEqual({ reachability: 100, capacity: 100, callErrors: 100 });
-    expect(summaryFailureShares(summary)).toEqual(noFailures);
-    expect(summaryFailureShares(summary, null)).toEqual(noFailures);
-    expect(summaryFailureShares(summary, { reachabilityPct: null, capacityPct: null, callErrorPct: null, uptimePct: null })).toEqual(noFailures);
-    expect(failureShareText("reachability", summaryFailureShares(summary).reachability)).toBe("No failures");
   });
 
   test("a series without attempt rates (none published) shows 100%, not the request-level uptime", () => {
@@ -67,7 +65,6 @@ describe("provider health chart", () => {
     ], now);
     expect(hours).toHaveLength(24);
     expect(allAt100(hours)).toBe(true);
-    expect(summaryFailureShares(summarizeProviderHealth(hours))).toEqual(noFailures);
   });
 
   test("24 UTC hours; empty hours show 100% and a step nothing reached stays empty", () => {
@@ -81,20 +78,28 @@ describe("provider health chart", () => {
     expect(hours.at(-2)).toMatchObject({ reachability: 90, capacity: 50, callErrors: 100 });
     expect(hours.at(-3)).toMatchObject({ reachability: 0, capacity: null, callErrors: null, rates: { reachabilityPct: 0, capacityPct: null, callErrorPct: null } });
     expect(hours.at(-4)).toMatchObject({ reachability: 100, capacity: 100, callErrors: 100 });
-    const summary = summarizeProviderHealth(hours);
-    expect(summary.reachability).toBeCloseTo((22 * 100 + 90 + 0) / 24);
-    expect(summary.capacity).toBeCloseTo((22 * 100 + 50) / 23);
   });
 
-  test("the 24-hour failure shares use web-api's totals when sent, else the hourly averages", () => {
-    const summary = { reachability: 99.9, capacity: 100, callErrors: 100 };
-    expect(summaryFailureShares(summary).reachability).toEqual({ kind: "failed", pct: expect.closeTo(0.1) });
-    // An average of hourly rates understates failures when traffic is uneven; the totals don't.
-    expect(summaryFailureShares(summary, { reachabilityPct: 97, capacityPct: 100, callErrorPct: 99.5, uptimePct: 96.5 })).toEqual({
-      reachability: { kind: "failed", pct: expect.closeTo(3) },
-      capacity: { kind: "none" },
-      callErrors: { kind: "failed", pct: expect.closeTo(0.5) },
-    });
+  test("the headline is web-api's true 24-hour share, with failure shares from the same rates", () => {
+    // An average of hourly rates would read about 97% with 23 idle hours; the share of all attempts is 33.3%.
+    const headline = attemptHeadline({ reachabilityPct: 100, capacityPct: 100, callErrorPct: 33.3, uptimePct: 33.3 });
+    expect(headline.rates).toEqual({ reachability: 100, capacity: 100, callErrors: 33.3 });
+    expect(failureShareText("callErrors", headline.shares.callErrors)).toBe("66.7% failed after the provider accepted them");
+    expect(headline.shares.reachability).toEqual({ kind: "none" });
+  });
+
+  test("no attempts in 24 hours reads 100% and no failures", () => {
+    for (const totals of [undefined, null, { reachabilityPct: null, capacityPct: null, callErrorPct: null, uptimePct: null }]) {
+      const headline = attemptHeadline(totals);
+      expect(headline).toEqual({ rates: { reachability: 100, capacity: 100, callErrors: 100 }, shares: noFailures });
+      expect(failureShareText("reachability", headline.shares.reachability)).toBe("No failures");
+    }
+  });
+
+  test("a step no attempt reached has no headline figure", () => {
+    const headline = attemptHeadline({ reachabilityPct: 0, capacityPct: null, callErrorPct: null, uptimePct: 0 });
+    expect(headline.rates).toEqual({ reachability: 0, capacity: null, callErrors: null });
+    expect(headline.shares.capacity).toEqual({ kind: "unmeasured" });
   });
 });
 
