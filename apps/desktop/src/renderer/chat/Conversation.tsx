@@ -1,6 +1,6 @@
 import { activitySummary } from "../lib/activitySummary";
 import { createContext, memo, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowDown, Plane, Brain, Check, ChevronRight, Circle, CircleDot, CircleSlash, Copy, FilePen, FileText, GitBranch, GitPullRequestArrow, Layers, ListChecks, LoaderCircle, PenLine, Radio, RotateCcw, Search, SquareTerminal, Wrench, X, Globe, SlidersHorizontal, AppWindow, MessagesSquare, Bot, Blocks, CornerDownRight } from "lucide-react";
+import { ArrowDown, Plane, Brain, Check, ChevronRight, Circle, CircleDot, CircleSlash, Copy, FilePen, FileText, GitBranch, GitPullRequestArrow, Layers, ListChecks, LoaderCircle, PenLine, Radio, RotateCcw, Search, SquareTerminal, Wrench, X, Globe, SlidersHorizontal, AppWindow, MessagesSquare, Bot, Blocks, CornerDownRight, Compass, PanelTop, ScanEye } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { MessageNavigationRail, type RailTurn } from "./MessageNavigationRail";
 import type { AgentActivity, Message, Task, TurnSettings } from "../../shared/workspace";
@@ -41,7 +41,7 @@ import { presentTool, summarizeTools, thoughtLine, toolInput, toolName, type Too
 const planOutcomes = { implemented: "Implemented", revised: "Revision requested", declined: "Not implemented" } as const;
 
 const toolLabels: Record<string, string> = { run_command: "Ran", start_background_command: "Started", read_background_output: "Read output", stop_background_command: "Stopped", list_background_commands: "Listed commands", read_file: "Read", view_image: "Viewed", edit_file: "Edited", write_file: "Wrote", delete_file: "Deleted", list_files: "Listed", search_files: "Searched", find_files: "Found files", propose_plan: "Proposed plan", load_tools: "Loaded tools", load_skill: "Loaded skill", ask_user: "Asked", fileChange: "Edited" };
-const actionIcons: Record<ToolAction, typeof Wrench> = { command: SquareTerminal, read: FileText, edit: FilePen, search: Search, web: Globe, "app-change": SlidersHorizontal, "app-read": AppWindow, thread: MessagesSquare, tools: Blocks, agent: Bot, other: Wrench };
+const actionIcons: Record<ToolAction, typeof Wrench> = { command: SquareTerminal, read: FileText, edit: FilePen, search: Search, web: Globe, browser: Compass, page: PanelTop, preview: ScanEye, "app-change": SlidersHorizontal, "app-read": AppWindow, thread: MessagesSquare, tools: Blocks, agent: Bot, other: Wrench };
 /** A row's label: what the call did in plain words, or the Phaseo harness's own verb for its tools. */
 function toolRow(activity: AgentActivity) {
 	const presentation = presentTool(activity), name = toolName(activity.title);

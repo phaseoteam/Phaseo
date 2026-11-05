@@ -65,6 +65,13 @@ export function codexCommandStep(command: string, actions: readonly CodexCommand
 	return { title: "run_command", input: { command: only?.command ?? unwrapShell(command) } };
 }
 
+/** An MCP step's details as the other agents give them: the call's input, then its result as text. */
+export function codexMcpText(input: unknown, result: unknown, error: unknown) {
+	const content = (result as { content?: { type?: string; text?: string }[] } | null | undefined)?.content;
+	const output = error ? String((error as { message?: unknown }).message ?? "The tool failed.") : Array.isArray(content) ? content.map(part => part.type === "text" ? part.text ?? "" : `[${part.type ?? "content"}]`).join("\n") : result === undefined || result === null ? "" : JSON.stringify(result, null, 2);
+	return [JSON.stringify(input ?? {}), output].filter(Boolean).join("\n\n");
+}
+
 export class CodexAdapter implements AgentAdapter {
 	private child?: ChildProcessWithoutNullStreams;
 	private rpc?: JsonRpc;
@@ -189,7 +196,7 @@ export class CodexAdapter implements AgentAdapter {
 							? { mcpCall: { server: item.server, tool: item.tool, input: item.arguments ?? {}, result: item.result ?? (item.error ? { content: [{ type: "text", text: String((item.error as { message?: unknown }).message ?? "The tool failed.") }], isError: true } : undefined) } } : {};
 						const step = item.type === "commandExecution" && typeof item.command === "string" ? codexCommandStep(item.command, item.commandActions as CodexCommandAction[] | undefined) : undefined;
 						if (step) callbacks.onActivity?.({ id: item.id, type, title: step.title, text: [JSON.stringify(step.input), item.aggregatedOutput].filter(Boolean).join("\n\n"), status: method === "item/started" ? "running" : item.status === "failed" ? "failed" : "completed" });
-						else callbacks.onActivity?.({ id: item.id, type, ...mcp, title: item.type === "mcpToolCall" && typeof item.tool === "string" ? item.tool : item.command ?? item.type, text: item.type === "reasoning" ? [...(item.summary ?? []), ...(item.content ?? [])].join("\n") : item.text ?? item.aggregatedOutput ?? JSON.stringify(item, null, 2), status: method === "item/started" ? "running" : item.status === "failed" ? "failed" : "completed" });
+						else callbacks.onActivity?.({ id: item.id, type, ...mcp, title: item.type === "mcpToolCall" && typeof item.tool === "string" ? item.tool : item.command ?? item.type, text: item.type === "reasoning" ? [...(item.summary ?? []), ...(item.content ?? [])].join("\n") : item.type === "mcpToolCall" ? codexMcpText(item.arguments, item.result, item.error) : item.text ?? item.aggregatedOutput ?? JSON.stringify(item, null, 2), status: method === "item/started" ? "running" : item.status === "failed" ? "failed" : "completed" });
 					}
 					if (method === "turn/completed" && event.turn) {
 						if ((this.compacting && !this.turnId) || (this.turnId && event.turn.id !== this.turnId)) return;

@@ -241,7 +241,7 @@ describe("Codex native integration", () => {
 		expect(onActivity).toHaveBeenCalledWith(expect.objectContaining({ title: "run_command", text: "{\"command\":\"git status\"}\n\nclean", status: "completed" }));
 		expect(onActivity).toHaveBeenCalledWith(expect.objectContaining({ type: "reasoning", text: "Checking", append: true }));
 		// An MCP App finds its page from the server and tool the step reports.
-		expect(onActivity).toHaveBeenCalledWith(expect.objectContaining({ title: "forecast", mcpCall: { server: "phaseo_0b3c1a2e5d6f4a7b8c9d0e1f2a3b4c5d", tool: "forecast", input: { city: "Leeds" }, result: { content: [{ type: "text", text: "Sunny" }] } } }));
+		expect(onActivity).toHaveBeenCalledWith(expect.objectContaining({ title: "forecast", text: "{\"city\":\"Leeds\"}\n\nSunny", mcpCall: { server: "phaseo_0b3c1a2e5d6f4a7b8c9d0e1f2a3b4c5d", tool: "forecast", input: { city: "Leeds" }, result: { content: [{ type: "text", text: "Sunny" }] } } }));
 	});
 	it("uses native forks rather than presenting visible history as a resumed session", async () => {
 		const methods: string[] = [];
