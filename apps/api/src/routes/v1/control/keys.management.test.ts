@@ -241,7 +241,7 @@ describe("management key routes", () => {
 		vi.resetModules();
 	});
 
-	it("returns current key metadata with hash and computed limit window", async () => {
+	it("returns current key metadata, without the hash, with the computed limit window", async () => {
 		state.keyRows.push({
 			id: "key_1",
 			hash: "hash_1",
@@ -279,7 +279,6 @@ describe("management key routes", () => {
 		expect(response.status).toBe(200);
 		expect(body.data).toMatchObject({
 			id: "key_1",
-			hash: "hash_1",
 			label: "Primary Key",
 			limit: 25,
 			limit_reset: "monthly",
@@ -289,6 +288,8 @@ describe("management key routes", () => {
 			limit_remaining: 17,
 			usage_details: { monthly: { requests: 90, cost: 8 } },
 		});
+		expect(body.data).not.toHaveProperty("hash");
+		expect(body.data).not.toHaveProperty("kid");
 	});
 
 	it("creates a key and applies compatibility limit fields", async () => {
@@ -338,11 +339,12 @@ describe("management key routes", () => {
 			daily_limit_requests: 100,
 		});
 		expect(body.data).toMatchObject({
-			hash: "hash_new",
 			limit: 5,
 			limit_reset: "weekly",
 			key: "phaseo_v1_sk_kid_123_secret_123",
 		});
+		expect(body.data).not.toHaveProperty("hash");
+		expect(body.data).not.toHaveProperty("kid");
 	});
 
 	it("credits a key minted with a management key to that key's creator, falling back to the owner", async () => {
@@ -479,9 +481,10 @@ describe("management key routes", () => {
 		expect(response.status).toBe(200);
 		expect(body.data).toMatchObject({
 			id: "key_1",
-			hash: "hash_1",
 			name: "Primary Key",
 		});
+		expect(body.data).not.toHaveProperty("hash");
+		expect(body.data).not.toHaveProperty("kid");
 	});
 
 	describe("apps that use Sign in with Phaseo", () => {
@@ -841,10 +844,11 @@ describe("management key routes", () => {
 			{ column: "workspace_id", value: "ws_1" },
 		]);
 		expect(body.data).toMatchObject({
-			hash: "hash_1",
 			limit: 10,
 			limit_reset: "daily",
 		});
+		expect(body.data).not.toHaveProperty("hash");
+		expect(body.data).not.toHaveProperty("kid");
 	});
 
 	describe("department link", () => {
