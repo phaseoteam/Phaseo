@@ -2136,9 +2136,11 @@ module Phaseo
     #   @return [Array<String>, nil]
     # @!attribute [rw] parameter_details
     #   @return [Hash{String => Object}]
+    # @!attribute [rw] parameter_specs
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] parameters
     #   @return [Array<String>]
-    GatewayCapabilities = Struct.new(:endpoints, :parameter_details, :parameters, keyword_init: true)
+    GatewayCapabilities = Struct.new(:endpoints, :parameter_details, :parameter_specs, :parameters, keyword_init: true)
     GatewayCapabilityStatus = Object
     # @!attribute [rw] parameters
     #   @return [Hash{String => Object}, nil]
@@ -3842,6 +3844,121 @@ module Phaseo
     OpenAIWebSearchToolDefinition = Struct.new(:filters, :search_context_size, :type, :user_location, keyword_init: true)
     OrganisationId = Object
     OrganisationIdList = Object
+    # @!attribute [rw] aspect_ratios
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] max
+    #   @return [Float, nil]
+    # @!attribute [rw] max_aspect_ratio
+    #   @return [String, nil]
+    # @!attribute [rw] max_height
+    #   @return [Float, nil]
+    # @!attribute [rw] max_pixels
+    #   @return [Float, nil]
+    # @!attribute [rw] max_width
+    #   @return [Float, nil]
+    # @!attribute [rw] min
+    #   @return [Float, nil]
+    # @!attribute [rw] min_pixels
+    #   @return [Float, nil]
+    # @!attribute [rw] multiple_of
+    #   @return [Float, nil]
+    ParameterDimensions = Struct.new(:aspect_ratios, :max, :max_aspect_ratio, :max_height, :max_pixels, :max_width, :min, :min_pixels, :multiple_of, keyword_init: true)
+    # @!attribute [rw] description
+    #   @return [String, nil]
+    # @!attribute [rw] label
+    #   @return [String, nil]
+    # @!attribute [rw] value
+    #   @return [String, Float, Boolean]
+    ParameterOption = Struct.new(:description, :label, :value, keyword_init: true)
+    # @!attribute [rw] default
+    #   @return [String, Float, Boolean, nil]
+    # @!attribute [rw] if
+    #   @return [Hash{String => Object}]
+    # @!attribute [rw] max
+    #   @return [Float, nil]
+    # @!attribute [rw] message
+    #   @return [String, nil]
+    # @!attribute [rw] min
+    #   @return [Float, nil]
+    # @!attribute [rw] step
+    #   @return [Float, nil]
+    # @!attribute [rw] supported
+    #   @return [Boolean, nil]
+    # @!attribute [rw] values
+    #   @return [Array<String, Float, Boolean>, nil]
+    ParameterRule = Struct.new(:default, :if, :max, :message, :min, :step, :supported, :values, keyword_init: true)
+    # @!attribute [rw] alias_of
+    #   @return [String, nil]
+    # @!attribute [rw] aliases
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] always_on
+    #   @return [Boolean, nil]
+    # @!attribute [rw] default
+    #   @return [String, Float, Boolean, nil]
+    # @!attribute [rw] dimensions
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] extra
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] format
+    #   @return [String, nil]
+    # @!attribute [rw] formats
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] item_types
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] max
+    #   @return [Float, nil]
+    # @!attribute [rw] max_file_size_bytes
+    #   @return [Float, nil]
+    # @!attribute [rw] max_items
+    #   @return [Float, nil]
+    # @!attribute [rw] max_length
+    #   @return [Float, nil]
+    # @!attribute [rw] max_tokens
+    #   @return [Float, nil]
+    # @!attribute [rw] media
+    #   @return [String, nil]
+    # @!attribute [rw] min
+    #   @return [Float, nil]
+    # @!attribute [rw] min_items
+    #   @return [Float, nil]
+    # @!attribute [rw] min_length
+    #   @return [Float, nil]
+    # @!attribute [rw] multiple_of
+    #   @return [Float, nil]
+    # @!attribute [rw] notes
+    #   @return [String, nil]
+    # @!attribute [rw] options
+    #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] properties
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] provider_default
+    #   @return [String, Float, Boolean, nil]
+    # @!attribute [rw] required
+    #   @return [Boolean, nil]
+    # @!attribute [rw] requires
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] source
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] step
+    #   @return [Float, nil]
+    # @!attribute [rw] support_level
+    #   @return [String, nil]
+    # @!attribute [rw] supported
+    #   @return [Boolean]
+    # @!attribute [rw] type
+    #   @return [String, Array<String>, nil]
+    # @!attribute [rw] upstream_name
+    #   @return [String, nil]
+    # @!attribute [rw] upstream_values
+    #   @return [Array<String, Float, Boolean>, nil]
+    # @!attribute [rw] values
+    #   @return [Array<String, Float, Boolean>, nil]
+    # @!attribute [rw] when
+    #   @return [Array<Hash{String => Object}>, nil]
+    ParameterSpec = Struct.new(:alias_of, :aliases, :always_on, :default, :dimensions, :extra, :format, :formats, :item_types, :max, :max_file_size_bytes, :max_items, :max_length, :max_tokens, :media, :min, :min_items, :min_length, :multiple_of, :notes, :options, :properties, :provider_default, :required, :requires, :source, :step, :support_level, :supported, :type, :upstream_name, :upstream_values, :values, :when, keyword_init: true)
+    ParameterSpecs = Struct.new(:_unused, keyword_init: true)
+    ParameterType = Object
+    ParameterValue = Object
     ParseBlock = Object
     # @!attribute [rw] bottom_right_x
     #   @return [Float]
@@ -5570,6 +5687,8 @@ module Phaseo
     VideoModelCapability = Struct.new(:input_types, :model, :name, :output_types, :pricing, :providers, :status, :supported_parameters, :supported_parameters_detail, :supported_params, :supported_params_detail, keyword_init: true)
     # @!attribute [rw] id
     #   @return [String, nil]
+    # @!attribute [rw] parameter_specs
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] supported_parameters
     #   @return [Array<String>, nil]
     # @!attribute [rw] supported_parameters_detail
@@ -5578,7 +5697,7 @@ module Phaseo
     #   @return [Array<String>, nil]
     # @!attribute [rw] supported_params_detail
     #   @return [Hash{String => Object}, nil]
-    VideoModelProviderCapability = Struct.new(:id, :supported_parameters, :supported_parameters_detail, :supported_params, :supported_params_detail, keyword_init: true)
+    VideoModelProviderCapability = Struct.new(:id, :parameter_specs, :supported_parameters, :supported_parameters_detail, :supported_params, :supported_params_detail, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] object

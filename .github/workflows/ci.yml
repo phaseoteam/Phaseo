@@ -203,6 +203,8 @@ jobs:
               run: pnpm run validate:guardrail-shared
             - name: Validate shared key IP allowlist validation
               run: pnpm run validate:key-ip-allowlist
+            - name: Validate shared model parameter specs
+              run: pnpm run validate:model-parameters
             - name: Validate shared theme tokens
               run: pnpm run validate:theme-tokens
 
