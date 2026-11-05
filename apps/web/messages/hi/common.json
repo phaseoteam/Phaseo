@@ -919,6 +919,14 @@
 			"selectCapability": "क्षमता चुनें",
 			"supportedParams": "समर्थित पैरामीटर",
 			"supportedParamsDescription": "इस क्षमता द्वारा समर्थित अनुरोध पैरामीटर चुनें।",
+			"parameterSpecs": "पैरामीटर विवरण",
+			"parameterSpecsDescription": "यह रूट जो भी पैरामीटर स्वीकार करता है, उसकी अनुमत वैल्यू, सीमाएँ, डिफ़ॉल्ट और नियम (when) सहित। प्लेग्राउंड और मॉडल API इन्हें पढ़ते हैं।",
+			"parameterSpecsInvalid": "सहेजा नहीं गया: {error}",
+			"parameterPreviewUnsupported": "समर्थित नहीं",
+			"parameterPreviewMore": "+{count} और",
+			"parameterPreviewStep": "चरण {step}",
+			"parameterPreviewDefault": "डिफ़ॉल्ट {value}",
+			"parameterPreviewRules": "{count, plural, one {# नियम} other {# नियम}}",
 			"capabilityStatuses": {
 				"active": "सक्रिय",
 				"deranked": "अंतिम विकल्प",
@@ -2428,7 +2436,7 @@
 			"metricOverTheLastHoursHours": "पिछले {hours} घंटों में {metric}",
 			"localTime": "स्थानीय समय",
 			"perQuantityUnit": "प्रति {quantity} {unit}",
-			"rateLimitedCountExcluded": "दर सीमित: {count} शामिल नहीं"
+			"rateLimitedShareExcluded": "दर सीमित: {percent} अनुरोध शामिल नहीं"
 		},
 		"localisationGaps": {
 			"lastUpdated": "अंतिम अपडेट: {time}",

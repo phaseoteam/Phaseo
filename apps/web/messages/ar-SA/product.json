@@ -1175,6 +1175,8 @@
 		"speechDefaults": "إعدادات الكلام الافتراضية",
 		"voice": "الصوت",
 		"selectVoice": "اختر صوتاً",
+		"customVoiceId": "معرّف صوت مخصّص",
+		"customVoiceIdPlaceholder": "الصق معرّف صوت من مكتبة الأصوات لديك",
 		"format": "التنسيق",
 		"speed": "السرعة",
 		"transcriptionDefaults": "إعدادات النسخ الافتراضية",

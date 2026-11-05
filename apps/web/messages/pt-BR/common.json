@@ -919,6 +919,14 @@
 			"selectCapability": "Selecione uma capacidade",
 			"supportedParams": "Parâmetros compatíveis",
 			"supportedParamsDescription": "Selecione os parâmetros de solicitação compatíveis com esta capacidade.",
+			"parameterSpecs": "Especificações de parâmetros",
+			"parameterSpecsDescription": "Cada parâmetro que esta rota aceita, com valores permitidos, intervalos, padrões e regras (when). O playground e a API de modelos leem estas especificações.",
+			"parameterSpecsInvalid": "Não salvo: {error}",
+			"parameterPreviewUnsupported": "não compatível",
+			"parameterPreviewMore": "+{count} outros",
+			"parameterPreviewStep": "passo {step}",
+			"parameterPreviewDefault": "padrão {value}",
+			"parameterPreviewRules": "{count, plural, one {# regra} other {# regras}}",
 			"capabilityStatuses": {
 				"active": "Ativo",
 				"deranked": "Último recurso",
@@ -2428,7 +2436,7 @@
 			"metricOverTheLastHoursHours": "{metric} nas últimas {hours} horas",
 			"localTime": "Hora local",
 			"perQuantityUnit": "Por {quantity} {unit}",
-			"rateLimitedCountExcluded": "Limitadas por taxa: {count} excluídas"
+			"rateLimitedShareExcluded": "Limitadas por taxa: {percent} das solicitações excluídas"
 		},
 		"localisationGaps": {
 			"lastUpdated": "Última atualização: {time}",

@@ -919,6 +919,14 @@
 			"selectCapability": "Funktion auswählen",
 			"supportedParams": "Unterstützte Parameter",
 			"supportedParamsDescription": "Wähle die von dieser Funktion unterstützten Anfrageparameter aus.",
+			"parameterSpecs": "Parameterangaben",
+			"parameterSpecsDescription": "Jeder Parameter, den diese Route akzeptiert, mit erlaubten Werten, Bereichen, Standardwerten und Regeln (when). Playground und Modelle-API lesen diese Angaben.",
+			"parameterSpecsInvalid": "Nicht gespeichert: {error}",
+			"parameterPreviewUnsupported": "nicht unterstützt",
+			"parameterPreviewMore": "+{count} weitere",
+			"parameterPreviewStep": "Schritt {step}",
+			"parameterPreviewDefault": "Standard {value}",
+			"parameterPreviewRules": "{count, plural, one {# Regel} other {# Regeln}}",
 			"capabilityStatuses": {
 				"active": "Aktiv",
 				"deranked": "Nur als Reserve",
@@ -2428,7 +2436,7 @@
 			"metricOverTheLastHoursHours": "{metric} in den letzten {hours} Stunden",
 			"localTime": "Ortszeit",
 			"perQuantityUnit": "Pro {quantity} {unit}",
-			"rateLimitedCountExcluded": "Ratenbegrenzt: {count} ausgeschlossen"
+			"rateLimitedShareExcluded": "Ratenbegrenzt: {percent} der Anfragen ausgeschlossen"
 		},
 		"localisationGaps": {
 			"lastUpdated": "Zuletzt aktualisiert: {time}",

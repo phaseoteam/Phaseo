@@ -11990,6 +11990,36 @@
 			"zh-Hans": "将支出报告也通过邮件发送给工作区管理员，而不仅是所有者。默认为 false。任何人都可以通过邮件中的链接退订。",
 			"ar": "إرسال تقرير الإنفاق بالبريد الإلكتروني إلى مسؤولي مساحة العمل أيضًا، وليس إلى المالكين فقط. القيمة الافتراضية false. يمكن لأي شخص إلغاء الاشتراك من الرابط الموجود في البريد."
 		},
+		"Every request parameter the provider accepts on this endpoint, in one standard shape whatever way the catalogue stores it.": {
+			"es": "Todos los parámetros de solicitud que el proveedor acepta en este endpoint, con una forma estándar sin importar cómo los guarde el catálogo.",
+			"fr": "Tous les paramètres de requête que le fournisseur accepte sur cet endpoint, dans une forme standard quelle que soit la façon dont le catalogue les stocke.",
+			"de": "Alle Anfrageparameter, die der Anbieter an diesem Endpunkt akzeptiert, in einer einheitlichen Form, unabhängig davon, wie der Katalog sie speichert.",
+			"pt-BR": "Todos os parâmetros de requisição que o provedor aceita neste endpoint, em um formato padrão, seja qual for a forma como o catálogo os armazena.",
+			"hi": "इस एंडपॉइंट पर प्रदाता जो भी अनुरोध पैरामीटर स्वीकार करता है, वे सभी एक मानक रूप में, चाहे कैटलॉग उन्हें किसी भी तरह संग्रहीत करे।",
+			"ja": "このエンドポイントでプロバイダーが受け付けるすべてのリクエストパラメーター。カタログでの保存形式にかかわらず、1 つの標準形式で返します。",
+			"zh-Hans": "提供商在此端点接受的所有请求参数，无论目录以何种方式存储，均以统一的标准格式返回。",
+			"ar": "جميع معلمات الطلب التي يقبلها المزوّد على نقطة النهاية هذه، بصيغة قياسية واحدة أيًّا كانت طريقة تخزينها في الكتالوج."
+		},
+		"When every parameter in if has one of its listed values, the other fields replace the parameter's own.": {
+			"es": "Cuando cada parámetro de if tiene uno de sus valores indicados, los demás campos sustituyen a los del propio parámetro.",
+			"fr": "Lorsque chaque paramètre de if a l’une des valeurs indiquées, les autres champs remplacent ceux du paramètre.",
+			"de": "Wenn jeder Parameter in if einen seiner aufgeführten Werte hat, ersetzen die übrigen Felder die des Parameters selbst.",
+			"pt-BR": "Quando cada parâmetro em if tem um dos valores listados, os demais campos substituem os do próprio parâmetro.",
+			"hi": "जब if में हर पैरामीटर का मान उसके सूचीबद्ध मानों में से एक होता है, तो बाकी फ़ील्ड पैरामीटर के अपने फ़ील्ड की जगह लेते हैं।",
+			"ja": "if 内のすべてのパラメーターが列挙された値のいずれかである場合、その他のフィールドがパラメーター自身の値を置き換えます。",
+			"zh-Hans": "当 if 中的每个参数都取其所列值之一时，其余字段将替换该参数自身的字段。",
+			"ar": "عندما تكون لكل معلمة في if إحدى قيمها المدرجة، تحلّ الحقول الأخرى محل حقول المعلمة نفسها."
+		},
+		"Set to parameter_specs to add each offer's request parameters in the standard shape.": {
+			"es": "Usa parameter_specs para añadir los parámetros de solicitud de cada oferta con la forma estándar.",
+			"fr": "Indiquez parameter_specs pour ajouter les paramètres de requête de chaque offre dans la forme standard.",
+			"de": "Auf parameter_specs setzen, um die Anfrageparameter jedes Angebots in der einheitlichen Form hinzuzufügen.",
+			"pt-BR": "Defina como parameter_specs para incluir os parâmetros de requisição de cada oferta no formato padrão.",
+			"hi": "हर ऑफ़र के अनुरोध पैरामीटर मानक रूप में जोड़ने के लिए parameter_specs सेट करें।",
+			"ja": "parameter_specs を指定すると、各オファーのリクエストパラメーターを標準形式で追加します。",
+			"zh-Hans": "设置为 parameter_specs 可按标准格式附加每个报价的请求参数。",
+			"ar": "اضبطها على parameter_specs لإضافة معلمات الطلب لكل عرض بالصيغة القياسية."
+		},
 		"Applies a policy to one API key, workspace member or department, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for every assignment.": {
 			"es": "Aplica una política a una clave de API, un miembro del espacio de trabajo o un departamento, o define el valor predeterminado del espacio de trabajo para cada usuario final. Cada destino puede tener una política. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en cada asignación.",
 			"fr": "Applique une politique à une clé d’API, à un membre de l’espace de travail ou à un département, ou définit la valeur par défaut de l’espace de travail pour chaque utilisateur final. Chaque cible peut avoir une politique. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests à chaque affectation.",

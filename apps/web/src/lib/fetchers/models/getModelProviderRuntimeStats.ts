@@ -63,15 +63,11 @@ export type ProviderRuntimeStats = {
  * Per attempt: a failed attempt counts against its provider even when the
  * request failed over and succeeded elsewhere. The rates are a funnel
  * (reachable of eligible, accepted of reached, completed of accepted);
- * attempts caused by the customer or by Phaseo are not eligible.
+ * attempts caused by the customer or by Phaseo are not eligible. Only rates
+ * are published: the counts behind them reveal the model's traffic volume.
+ * uptimePct is null when there were no eligible attempts.
  */
 export type ProviderAttemptHealth = {
-	attempts: number;
-	eligibleAttempts: number;
-	successAttempts: number;
-	reachabilityFailures: number;
-	capacityFailures: number;
-	callErrorFailures: number;
 	reachabilityPct: number | null;
 	capacityPct: number | null;
 	callErrorPct: number | null;
@@ -82,17 +78,13 @@ export type RpcProviderAttemptHealthRow = {
 	provider_id: string | null;
 	service_tier?: string | null;
 	provider_name?: string | null;
-	attempts?: number | string | null;
-	eligible_attempts?: number | string | null;
-	success_attempts?: number | string | null;
-	reachability_failures?: number | string | null;
-	capacity_failures?: number | string | null;
-	call_error_failures?: number | string | null;
 	reachability_pct?: number | string | null;
 	capacity_pct?: number | string | null;
 	call_error_pct?: number | string | null;
 	uptime_pct?: number | string | null;
 	buckets?: unknown;
+	/** The same rates per UTC day, rated by web-api from that day's attempts. */
+	days?: unknown;
 };
 
 export type ProviderRuntimeStatsMap = Record<string, ProviderRuntimeStats>;
@@ -544,12 +536,6 @@ export function fillHourlyPerformanceBuckets(
 
 function mapAttemptHealth(row: RpcProviderAttemptHealthRow): ProviderAttemptHealth {
 	return {
-		attempts: toInt(row.attempts),
-		eligibleAttempts: toInt(row.eligible_attempts),
-		successAttempts: toInt(row.success_attempts),
-		reachabilityFailures: toInt(row.reachability_failures),
-		capacityFailures: toInt(row.capacity_failures),
-		callErrorFailures: toInt(row.call_error_failures),
 		reachabilityPct: toFiniteNumber(row.reachability_pct),
 		capacityPct: toFiniteNumber(row.capacity_pct),
 		callErrorPct: toFiniteNumber(row.call_error_pct),
@@ -677,34 +663,34 @@ export function mapRpcRuntimeStatsRows(args: {
 		const attemptRow = attemptHealthByKey.get(statsKey);
 		const attemptHealth = attemptRow ? mapAttemptHealth(attemptRow) : null;
 		// Uptime is per attempt when attempt health is available: eligible attempts
-		// that succeeded, so failovers count against the provider that failed.
-		const usesAttemptUptime = attemptHealth != null && attemptHealth.eligibleAttempts > 0;
-		if (usesAttemptUptime && attemptRow && Array.isArray(attemptRow.buckets)) {
-			for (const totals of uptimeDaily3dTotals) {
-				totals.healthRequests = 0;
-				totals.healthSuccessful = 0;
-			}
-			for (const bucket of attemptRow.buckets) {
-				const bucketRecord = toRecord(bucket);
-				const start = new Date(String(bucketRecord?.start ?? ""));
+		// that succeeded, so failovers count against the provider that failed. Its
+		// rate is null when there were no eligible attempts.
+		const usesAttemptUptime = attemptHealth?.uptimePct != null;
+		// web-api rates each UTC day from that day's attempts and publishes only the rates.
+		// A response cached before it did so has no days: keep the request-level bars then.
+		const usesAttemptDays = usesAttemptUptime && Array.isArray(attemptRow?.days);
+		const attemptDailyUptime = new Map<number, number | null>();
+		if (usesAttemptDays && attemptRow && Array.isArray(attemptRow.days)) {
+			for (const day of attemptRow.days) {
+				const dayRecord = toRecord(day);
+				const start = new Date(String(dayRecord?.start ?? ""));
 				if (!Number.isFinite(start.getTime())) continue;
 				const dayOffset = dayOffsetFromUtcMidnight(nowUtcMidnightMs, start);
 				if (dayOffset == null) continue;
-				uptimeDaily3dTotals[dayOffset]!.healthRequests += toInt(bucketRecord?.eligible_attempts);
-				uptimeDaily3dTotals[dayOffset]!.healthSuccessful += toInt(bucketRecord?.success_attempts);
+				attemptDailyUptime.set(dayOffset, toFiniteNumber(dayRecord?.uptime_pct));
 			}
 		}
 
 		for (const dayOffset of [0, 1, 2] as const) {
 			const bucket = uptimeDaily3dTotals[dayOffset];
+			const requestUptimePct = bucket.healthRequests > 0
+				? (bucket.healthSuccessful / bucket.healthRequests) * 100
+				: null;
 			uptimeDaily3d[dayOffset] = {
 				dayOffset,
-				uptimePct:
-					bucket.healthRequests > 0
-						? (bucket.healthSuccessful / bucket.healthRequests) * 100
-						: null,
-				requests: usesAttemptUptime ? bucket.healthRequests : bucket.requests,
-				successful: usesAttemptUptime ? bucket.healthSuccessful : bucket.successful,
+				uptimePct: usesAttemptDays ? attemptDailyUptime.get(dayOffset) ?? null : requestUptimePct,
+				requests: bucket.requests,
+				successful: bucket.successful,
 			}
 		}
 
@@ -726,7 +712,7 @@ export function mapRpcRuntimeStatsRows(args: {
 				toFiniteNumber(row?.avg_throughput_30m) ??
 				toFiniteNumber(row?.percentile_throughput) ??
 				toFiniteNumber(row?.avg_throughput),
-			uptimePct3d: usesAttemptUptime ? attemptHealth.uptimePct : toFiniteNumber(row?.uptime_pct),
+			uptimePct3d: usesAttemptUptime ? attemptHealth?.uptimePct ?? null : toFiniteNumber(row?.uptime_pct),
 			requestSuccessPct3d: toFiniteNumber(row?.request_success_pct),
 			inputTokens1h: toInt(row?.input_tokens_1h),
 			outputTokens1h: toInt(row?.output_tokens_1h),
@@ -751,8 +737,8 @@ export function mapRpcRuntimeStatsRows(args: {
 			failed3d: toInt(row?.failed_requests),
 			neutral3d: toInt(row?.neutral_requests),
 			rateLimited3d: toInt(row?.rate_limited_requests),
-			healthRequests3d: usesAttemptUptime ? attemptHealth.eligibleAttempts : toInt(row?.health_requests),
-			healthSuccessful3d: usesAttemptUptime ? attemptHealth.successAttempts : toInt(row?.health_success_requests),
+			healthRequests3d: toInt(row?.health_requests),
+			healthSuccessful3d: toInt(row?.health_success_requests),
 			latencyP50Ms3d: toFiniteNumber(row?.p50_latency_ms),
 			latencyP95Ms3d: toFiniteNumber(row?.p95_latency_ms),
 			avgGenerationMs3d: toFiniteNumber(row?.avg_generation_ms),

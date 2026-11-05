@@ -1175,6 +1175,8 @@
 		"speechDefaults": "Padrões de fala",
 		"voice": "Voz",
 		"selectVoice": "Selecionar voz",
+		"customVoiceId": "ID de voz personalizada",
+		"customVoiceIdPlaceholder": "Cole um ID de voz da sua biblioteca de vozes",
 		"format": "Formato",
 		"speed": "Velocidade",
 		"transcriptionDefaults": "Padrões de transcrição",

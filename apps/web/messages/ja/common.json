@@ -919,6 +919,14 @@
 			"selectCapability": "機能を選択",
 			"supportedParams": "対応パラメーター",
 			"supportedParamsDescription": "この機能が対応するリクエストパラメーターを選択します。",
+			"parameterSpecs": "パラメーター仕様",
+			"parameterSpecsDescription": "このルートが受け付けるすべてのパラメーターと、その許可値、範囲、デフォルト値、ルール（when）。Playground とモデル API がこれを読み取ります。",
+			"parameterSpecsInvalid": "保存されていません: {error}",
+			"parameterPreviewUnsupported": "未対応",
+			"parameterPreviewMore": "ほか {count} 件",
+			"parameterPreviewStep": "ステップ {step}",
+			"parameterPreviewDefault": "デフォルト {value}",
+			"parameterPreviewRules": "{count, plural, other {ルール # 件}}",
 			"capabilityStatuses": {
 				"active": "有効",
 				"deranked": "最終手段",
@@ -2428,7 +2436,7 @@
 			"metricOverTheLastHoursHours": "過去{hours}時間の{metric}",
 			"localTime": "現地時間",
 			"perQuantityUnit": "{quantity}{unit}あたり",
-			"rateLimitedCountExcluded": "レート制限：{count}件を除外"
+			"rateLimitedShareExcluded": "レート制限：リクエストの{percent}を除外"
 		},
 		"localisationGaps": {
 			"lastUpdated": "最終更新：{time}",

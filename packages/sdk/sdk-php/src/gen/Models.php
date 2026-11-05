@@ -2673,6 +2673,8 @@ class GatewayCapabilities
 	public $endpoints;
 	/** @var array<string, mixed> */
 	public $parameter_details;
+	/** @var array<string, mixed>|null */
+	public $parameter_specs;
 	/** @var array */
 	public $parameters;
 }
@@ -4764,6 +4766,140 @@ class OpenAIWebSearchToolDefinition
 class OrganisationId { }
 
 class OrganisationIdList { }
+
+class ParameterDimensions
+{
+	/** @var array|null */
+	public $aspect_ratios;
+	/** @var float|null */
+	public $max;
+	/** @var string|null */
+	public $max_aspect_ratio;
+	/** @var float|null */
+	public $max_height;
+	/** @var float|null */
+	public $max_pixels;
+	/** @var float|null */
+	public $max_width;
+	/** @var float|null */
+	public $min;
+	/** @var float|null */
+	public $min_pixels;
+	/** @var float|null */
+	public $multiple_of;
+}
+
+class ParameterOption
+{
+	/** @var string|null */
+	public $description;
+	/** @var string|null */
+	public $label;
+	/** @var string|float|bool */
+	public $value;
+}
+
+class ParameterRule
+{
+	/** @var string|float|bool|null */
+	public $default;
+	/** @var array<string, mixed> */
+	public $if;
+	/** @var float|null */
+	public $max;
+	/** @var string|null */
+	public $message;
+	/** @var float|null */
+	public $min;
+	/** @var float|null */
+	public $step;
+	/** @var bool|null */
+	public $supported;
+	/** @var array|null */
+	public $values;
+}
+
+class ParameterSpec
+{
+	/** @var string|null */
+	public $alias_of;
+	/** @var array|null */
+	public $aliases;
+	/** @var bool|null */
+	public $always_on;
+	/** @var string|float|bool|null */
+	public $default;
+	/** @var array<string, mixed>|null */
+	public $dimensions;
+	/** @var array<string, mixed>|null */
+	public $extra;
+	/** @var string|null */
+	public $format;
+	/** @var array|null */
+	public $formats;
+	/** @var array|null */
+	public $item_types;
+	/** @var float|null */
+	public $max;
+	/** @var float|null */
+	public $max_file_size_bytes;
+	/** @var float|null */
+	public $max_items;
+	/** @var float|null */
+	public $max_length;
+	/** @var float|null */
+	public $max_tokens;
+	/** @var string|null */
+	public $media;
+	/** @var float|null */
+	public $min;
+	/** @var float|null */
+	public $min_items;
+	/** @var float|null */
+	public $min_length;
+	/** @var float|null */
+	public $multiple_of;
+	/** @var string|null */
+	public $notes;
+	/** @var bool|null */
+	public $open;
+	/** @var array|null */
+	public $options;
+	/** @var array<string, mixed>|null */
+	public $properties;
+	/** @var string|float|bool|null */
+	public $provider_default;
+	/** @var bool|null */
+	public $required;
+	/** @var array|null */
+	public $requires;
+	/** @var array<string, mixed>|null */
+	public $source;
+	/** @var float|null */
+	public $step;
+	/** @var string|null */
+	public $support_level;
+	/** @var bool */
+	public $supported;
+	/** @var string|array|null */
+	public $type;
+	/** @var string|null */
+	public $upstream_name;
+	/** @var array|null */
+	public $upstream_values;
+	/** @var array|null */
+	public $values;
+	/** @var array|null */
+	public $when;
+}
+
+class ParameterSpecs
+{
+}
+
+class ParameterType { }
+
+class ParameterValue { }
 
 class ParseBlock { }
 
@@ -6905,6 +7041,8 @@ class VideoModelProviderCapability
 {
 	/** @var string|null */
 	public $id;
+	/** @var array<string, mixed>|null */
+	public $parameter_specs;
 	/** @var array|null */
 	public $supported_parameters;
 	/** @var array<string, mixed>|null */
