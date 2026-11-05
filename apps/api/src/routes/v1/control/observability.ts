@@ -335,7 +335,8 @@ async function updateLoggingPolicy(req: Request) {
 	}
 	if (body.retention_days !== undefined) {
 		const days = Number(body.retention_days);
-		if (!Number.isInteger(days) || days < 90 || days > 365) return json({ error: "bad_request", message: "retention_days must be an integer between 90 and 365" }, 400, NO_STORE);
+		// Extended retention (over 90 days) is not billed yet, so it cannot be chosen.
+		if (days !== 90) return json({ error: "bad_request", message: "retention_days must be 90" }, 400, NO_STORE);
 		update.io_logging_retention_days = days;
 	}
 	if (body.include_provider_payloads !== undefined) {

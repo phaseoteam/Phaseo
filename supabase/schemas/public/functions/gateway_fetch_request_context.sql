@@ -19,6 +19,13 @@ begin
     and not coalesce((v_budget_status->>'ok')::boolean, true) then
     v_context := jsonb_set(v_context, '{key_limit_ok}', v_budget_status, true);
   end if;
+  -- Department budgets, for when the SpendLimit Durable Object cannot decide.
+  if coalesce((v_context->'key_limit_ok'->>'ok')::boolean, true) then
+    v_budget_status := public.gateway_department_budget_status(workspace_id, api_key_id, 0);
+    if not coalesce((v_budget_status->>'ok')::boolean, true) then
+      v_context := jsonb_set(v_context, '{key_limit_ok}', v_budget_status, true);
+    end if;
+  end if;
   return v_context;
 end;
 $function$;

@@ -233,7 +233,7 @@ export default function AccountPrivacySettingsClient({
 							<div><div className="text-sm font-medium">{s("Retention")}</div><p className="mt-0.5 text-sm text-muted-foreground">{s("phraseChooseHowLongPrivatePayloadCopiesRemainAvailable")}</p></div>
 							<Select disabled={editingDisabled} value={String(logStorage.retentionDays)} onValueChange={(value) => setLogStorage((current) => current ? { ...current, retentionDays: Number(value) } : current)}>
 								<SelectTrigger className="w-full rounded-md sm:w-40"><SelectValue /></SelectTrigger>
-								<SelectContent><SelectItem value="90">{tUi("privacy.retention90Days")}</SelectItem><SelectItem value="180">{tUi("privacy.retention180Days")}</SelectItem><SelectItem value="365">{tUi("privacy.retention365Days")}</SelectItem></SelectContent>
+								<SelectContent><SelectItem value="90">{tUi("privacy.retention90Days")}</SelectItem></SelectContent>
 							</Select>
 						</div>
 						<SettingRow disabled={editingDisabled} title={s("Include provider payloads")} description={s("phraseAlsoRetainTheTransformedUpstreamRequestAndProviderResponse")} checked={logStorage.includeProviderPayloads} onCheckedChange={(includeProviderPayloads) => setLogStorage((current) => current ? { ...current, includeProviderPayloads } : current)} />

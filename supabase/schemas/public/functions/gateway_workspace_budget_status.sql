@@ -42,16 +42,28 @@ begin
       end as reset_at
     from public.workspace_budgets budget
     where budget.workspace_id = p_workspace_id
+  ), counted_requests as (
+    -- The batch_hold_usage rows of a hold that is still reserved are that hold's amount, which
+    -- reservation_usage already counts.
+    select request.created_at, request.cost_nanos
+    from public.gateway_requests request
+    where request.workspace_id = p_workspace_id
+      and request.success is true
+      and not (request.request_id like 'batch_hold_usage:%' and exists (
+        select 1 from public.gateway_wallet_reservations hold
+        where hold.workspace_id = request.workspace_id
+          and hold.key_id = request.key_id
+          and hold.status = 'reserved'
+          and starts_with(request.request_id, 'batch_hold_usage:' || hold.reservation_id || ':')
+      ))
   ), request_usage as (
     select
       configured.id,
       coalesce(sum(request.cost_nanos) filter (
-        where request.success is true
-          and (configured.window_start is null or request.created_at >= configured.window_start)
+        where configured.window_start is null or request.created_at >= configured.window_start
       ), 0)::bigint as completed_nanos
     from configured
-    left join public.gateway_requests request
-      on request.workspace_id = configured.workspace_id
+    left join counted_requests request on true
     group by configured.id
   ), reservation_usage as (
     select
