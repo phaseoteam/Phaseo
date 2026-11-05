@@ -38,6 +38,7 @@ const state = vi.hoisted(() => ({
 	publishRateLimitPlan: vi.fn(async (_workspaceId: string) => true),
 	deletedKeyIds: [] as unknown[],
     cacheDelete: vi.fn(async (_key: string) => undefined),
+    invalidated: vi.fn(async (..._args: unknown[]) => undefined),
 	bindings: { PHASEO_CONTROL_SECRET: "secret", KEY_PEPPER_ACTIVE: "pepper" } as Record<string, unknown>,
 }));
 
@@ -169,6 +170,7 @@ vi.mock("@/routes/utils", () => ({
 	withRuntime: (handler: (req: Request) => Promise<Response>) => async (c: any) => handler(c.req.raw),
 }));
 
+vi.mock("@/pipeline/before/privateModelCache", () => ({ invalidatePrivateRoutes: (...args: unknown[]) => state.invalidated(...args) }));
 vi.mock("@/core/kv", () => ({
 	setKeyVersion: state.setKeyVersion,
 }));
@@ -1055,7 +1057,8 @@ describe("management key routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(state.setKeyVersion).toHaveBeenCalledWith("kid", "kid_legacy", expect.any(Number));
-        expect(state.cacheDelete).toHaveBeenCalledWith("gateway:private-routes:v1:ws_legacy");
+        // Key-level: drops this isolate's copy without clearing the whole workspace.
+        expect(state.invalidated).toHaveBeenCalledWith("ws_legacy", { bumpVersion: false });
 	});
 
 	it("allows scoped management auth to invalidate without a shared control secret", async () => {
@@ -1074,6 +1077,6 @@ describe("management key routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(state.setKeyVersion).toHaveBeenCalledWith("kid", "kid_scoped", expect.any(Number));
-        expect(state.cacheDelete).toHaveBeenCalledWith("gateway:private-routes:v1:ws_1");
+        expect(state.invalidated).toHaveBeenCalledWith("ws_1", { bumpVersion: false });
 	});
 });
