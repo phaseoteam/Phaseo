@@ -5,7 +5,7 @@ import { defaultPickerGroups, pickerGroupsKey, validPickerGroups } from "./picke
 import { customModelsKey, validCustomModels } from "./customModels";
 import { appFontsKey, validAppFonts } from "./appFonts";
 import { animationsKey } from "./animations";
-import { defaultDictationModel, dictationModelKey } from "../chat/DictationButton";
+import { defaultDictationModel, dictationModelKey } from "./dictation";
 import { harnesses } from "../../shared/workspace";
 import { workingSectionKey } from "../shell/codeThreads";
 import { chooseColourTheme, colourThemes } from "./appTheme";

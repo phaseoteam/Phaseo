@@ -6,10 +6,8 @@ import { usePersistedState } from "../lib/persistedState";
 import { useCommand } from "../lib/keybindings";
 import type { ComposerEditor } from "./composerEditor";
 import { ToolButton } from "./Composer";
+import { defaultDictationModel, dictationModelKey } from "../lib/dictation";
 
-/** The transcription model dictation uses (Settings → Chat), a Phaseo model id. */
-export const dictationModelKey = "phaseo.desktop.dictationModel";
-export const defaultDictationModel = "openai/whisper-large-v3-turbo";
 /** A recording stops on its own after this long, so a forgotten microphone does not run up a bill. */
 const MAX_RECORDING_MS = 5 * 60_000;
 

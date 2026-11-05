@@ -9,7 +9,7 @@ import { usePreferences } from "./GeneralSettings";
 import { SettingsNote, SettingsPageLayout, SettingsRow, SettingsSection, settingsInput } from "./SettingsLayout";
 import { useState } from "react";
 import { cn } from "../lib/utils";
-import { defaultDictationModel, dictationModelKey } from "../chat/DictationButton";
+import { defaultDictationModel, dictationModelKey } from "../lib/dictation";
 
 /** Search words for Settings → Chat. */
 export const chatSettingsKeywords = "chat message box composer send enter shortcut new line follow-up follow up queue steer running turn rich text markdown format hold quit ctrl+q cmd+qting bold italic plain text quit quitting confirm close window exit ask before quitting working chats";
