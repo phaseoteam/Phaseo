@@ -28,6 +28,9 @@ try {
       hold_ref_id text, created_at timestamptz default now(), settled_amount_nanos bigint, captured_nanos bigint default 0,
       released_nanos bigint default 0, key_id uuid);
     create table public.gateway_realtime_sessions (workspace_id uuid, session_id text, key_id uuid);
+    create table if not exists public.gateway_request_charges (workspace_id uuid, request_id text, cost_nanos bigint, status text,
+      is_final boolean not null default true, created_at timestamptz default now());
+    alter table public.gateway_requests add column if not exists billing_request_id text;
     alter table public.keys add column if not exists department_id uuid;
     -- Department tables, trimmed to what the seed reads.
     create table public.workspace_departments (id uuid primary key, workspace_id uuid not null, name text not null);
@@ -56,13 +59,12 @@ try {
   // 20261104233604_budget_enforcement_money_hygiene moves department usage into the shared
   // private.department_budget_usage (positive-cost requests plus outstanding holds).
   const usageMigration = await readFile(new URL('../migrations/20261104233604_budget_enforcement_money_hygiene.sql', import.meta.url), 'utf8');
-  for (const path of ['private/functions/budget_spend_items.sql', 'private/functions/department_budget_usage.sql', 'public/functions/gateway_spend_limit_seed.sql']) {
+  for (const path of ['private/functions/budget_spend_items.sql', 'private/functions/department_budget_usage.sql',
+    'public/functions/gateway_spend_limit_seed.sql', 'public/functions/workspace_department_budget_status.sql']) {
     const definition = (await schema(path)).trim();
     assert.ok(usageMigration.includes(definition), `${path} matches its migration`);
     await db.exec(definition);
   }
-  assert.ok(migration.includes((await schema('public/functions/workspace_department_budget_status.sql')).trim()),
-    'workspace_department_budget_status matches its migration');
   assert.ok(attributionMigration.includes((await schema('private/functions/department_budget_key_departments.sql')).trim()),
     'the helper matches its migration');
   const manifest = JSON.parse(await schema('.pgdelta-export.json'));
@@ -93,6 +95,7 @@ try {
     ['today-1', capped, true, 100, at(bounds.day, 60_000)],
     ['today-2', capped, true, null, at(bounds.day, 120_000)],
     ['today-failed', capped, false, 999, at(bounds.day, 1_000)],
+    ['today-failed-free', capped, false, 0, at(bounds.day, 1_500)],
     ['yesterday', capped, true, 30, at(bounds.day, -1_000)],
     ['last-week', capped, true, 50, at(bounds.week, -1_000)],
     ['last-month', capped, true, 70, at(bounds.month, -1_000)],
@@ -140,8 +143,9 @@ try {
     assert.equal(seed.month_start, context.key_limit_ok.buckets.monthly.window_start);
   }
   const cappedSeed = seed.keys.find((key) => key.key_id === capped);
+  // Two successful requests; the failed but charged one (999) counts toward cost only, the free one not at all.
   assert.equal(cappedSeed.used.daily.requests, 2);
-  assert.equal(cappedSeed.used.daily.cost_nanos, 100);
+  assert.equal(cappedSeed.used.daily.cost_nanos, 100 + 999);
   const unlimitedSeed = seed.keys.find((key) => key.key_id === unlimited);
   assert.deepEqual([unlimitedSeed.limited, unlimitedSeed.used], [false, null], 'unlimited keys need no history read');
 
@@ -156,7 +160,7 @@ try {
   const excluded = await one(`select public.gateway_spend_limit_seed('${workspace}', ${keyIds}, array['today-1', 'month-start', 'not-yet-written']) as value`);
   const cappedExcluded = excluded.keys.find((key) => key.key_id === capped);
   assert.equal(cappedExcluded.used.daily.requests, 1);
-  assert.equal(cappedExcluded.used.daily.cost_nanos, 0);
+  assert.equal(cappedExcluded.used.daily.cost_nanos, 999);
   assert.equal(cappedExcluded.used.monthly.requests, cappedSeed.used.monthly.requests - 2);
   assert.equal(cappedExcluded.used.monthly.cost_nanos, cappedSeed.used.monthly.cost_nanos - 111);
   assert.deepEqual(excluded.excluded_rows.map((row) => [row.request_id, row.success, row.cost_nanos]),

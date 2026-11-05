@@ -51,7 +51,8 @@ beforeAll(async () => {
 	const fixture = await import(/* @vite-ignore */ fixtureUrl);
 	db = await fixture.createBudgetDatabase(PGlite);
 	const migration = await fixture.readMigration();
-	await db.exec(migration);
+	if (fixture.applyMigration) await fixture.applyMigration(db, migration);
+	else await db.exec(migration);
 	// The deployed seed: this migration's, or the declarative one when a migration does not replace it.
 	if (!migration.includes("FUNCTION public.gateway_spend_limit_seed")) {
 		await db.exec(await fixture.readSchema("public/functions/gateway_spend_limit_seed.sql"));
