@@ -157,7 +157,7 @@ const DOC_LINKS = [
         {
                 label: "Gateway Parity Review",
                 description: "Repo-grounded review of proven and still-open parity areas.",
-                href: "https://phaseo.app/docs/v1/migration-guides/gateway-parity-review",
+                href: "https://phaseo.app/docs/v1/migration-guides/feature-parity-matrix",
         },
 ] as const;
 

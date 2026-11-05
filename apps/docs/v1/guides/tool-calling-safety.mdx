@@ -5,17 +5,7 @@ description: "Validate tool arguments, harden execution, and avoid unsafe model 
 "og:image": "https://phaseo.app/og/dynamic?title=Tool%20Calling%20Safety%20and%20Validation&description=Validate%20tool%20arguments%2C%20harden%20execution%2C%20and%20avoid%20unsafe%20model%20actions.&pathname=/docs/v1/guides/tool-calling-safety"
 ---
 
-Treat model-generated tool arguments as untrusted input.
-
-## Safety checklist
-
-- Keep tool schemas minimal and explicit.
-- Validate parsed arguments before execution.
-- Allowlist tool names; reject unknown tools.
-- Add timeouts and retries for external calls.
-- Log call id, tool name, and validation failures.
-
-## Request validation example (TypeScript + Zod)
+Treat every tool call as untrusted input: check the tool name against an allowlist and validate the arguments before anything runs.
 
 ```typescript
 import { z } from "zod";
@@ -34,14 +24,18 @@ function executeToolCall(name: string, rawArgs: string) {
 }
 ```
 
-## Failure strategy
+## Checklist
 
-If validation fails:
+- **Keep schemas small and explicit.** Fewer, typed fields give the model less room to send something unexpected.
+- **Validate parsed arguments** before execution, as above.
+- **Reject unknown tool names** instead of guessing what the model meant.
+- **Add timeouts and retries** to calls that reach external systems.
+- **Log** the call ID, tool name, and any validation failure.
 
-1. Do not execute the tool.
-2. Return a controlled error payload into the next model turn.
-3. Ask the model to retry with corrected arguments.
+## When validation fails
 
-## Streaming note
+Don't run the tool. Send a short, controlled error as the tool result in the next turn, and ask the model to retry with corrected arguments.
 
-Streaming tool calls depend on model and provider support. Accumulate all argument deltas before parsing, validating, or executing a call. See [Streaming](./streaming.mdx).
+## Streaming
+
+With `stream: true`, arguments arrive in pieces. Collect every argument delta for a call before you parse, validate, or run it. Whether tool calls stream at all depends on the model and provider. See [Streaming](./streaming.mdx).

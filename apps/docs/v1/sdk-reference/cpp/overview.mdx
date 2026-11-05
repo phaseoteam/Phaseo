@@ -8,7 +8,12 @@ description: "Review the work-in-progress C++ headers."
   The C++ SDK is a work in progress and is not yet available through a package manager. Use the source headers for evaluation only.
 </Note>
 
-- Status: Work in progress (not yet published).
-- Source lives in `packages/sdk/sdk-cpp`.
-- Generated headers are in `packages/sdk/sdk-cpp/src/gen`.
-- `src/phaseo.hpp` adds live model capability fetching and parameter support reports. The preview transport returns raw JSON, so deserialize the response into `ModelEndpointCapabilities` before checking it.
+The C++ SDK is a set of header-only C++17 sources in `packages/sdk/sdk-cpp`; it isn't published and is excluded from SDK releases until it works end to end.
+
+| File | Contents |
+| --- | --- |
+| `src/gen/client.hpp`, `src/gen/operations.hpp`, `src/gen/models.hpp`, `src/gen/model_ids.hpp` | The generated client |
+| `src/phaseo.hpp` | `GetModelEndpointCapabilities(...)` for live model capabilities and `CheckParameterSupport(...)` for parameter support reports |
+| `src/workflows.hpp` | Paging and job-polling helpers |
+
+The preview transport returns raw JSON, so deserialize the response into `ModelEndpointCapabilities` before checking it. To try it, see [Installation](./installation). There is no C++ Agent SDK.

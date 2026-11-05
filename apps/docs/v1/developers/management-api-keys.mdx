@@ -5,64 +5,54 @@ description: Create scoped management keys for Phaseo control-plane APIs.
 icon: "key-round"
 ---
 
-Management API keys are server-side credentials for Phaseo's control plane:
-credits, activity, workspace administration, key management, presets, settings,
-and guardrails. They are not for sending inference requests.
+Create a management key to call Phaseo's administration APIs from your own servers: credits, activity, workspaces, keys, presets, settings and guardrails. Management keys can't send inference requests.
 
-Create them with `phaseo management-keys create --name <name> --template read-only --json` in the
-[Phaseo CLI](../guides/integrations/phaseo-cli), or in **Dashboard → Settings →
-Management Keys**. A secret is shown once; store it in your secret manager.
+```bash
+phaseo management-keys create --name <name> --template read-only --json
+```
 
-## Key types
-
-| Credential | Use it for | Controls |
-| --- | --- | --- |
-| Gateway API key | Model and generation requests | Routing policy, budgets, limits, and attached guardrails |
-| Management API key | Control-plane requests | Explicit management capabilities and workspace-role checks |
-| OAuth access token | Delegated control-plane access | The approved OAuth scopes and workspace-role checks |
-
-Management routes accept only `phaseo_v1_mk_<kid>_<secret>`. Gateway API keys
-use `phaseo_v1_sk_<kid>_<secret>` and are inference-only; they cannot access
-control-plane endpoints.
-
-Use management keys only from server-side code:
+Or create one in the dashboard under **Settings → Management Keys**. The secret is shown once, so store it in your secrets manager. Send it from server-side code only, to the same base URL as the Gateway (`https://api.phaseo.app/v1`):
 
 ```http
 Authorization: Bearer phaseo_v1_mk_<kid>_<secret>
 ```
 
-The production base URL is:
+## Management keys, API keys and OAuth tokens
 
-```text
-https://api.phaseo.app/v1
-```
+| Credential | Format | Use it for | Limited by |
+| --- | --- | --- | --- |
+| Gateway API key | `phaseo_v1_sk_<kid>_<secret>` | Model and generation requests | Routing policy, budgets, limits and attached guardrails |
+| Management API key | `phaseo_v1_mk_<kid>_<secret>` | Administration requests | Its capabilities and your workspace role |
+| OAuth access token | | Administration on a user's behalf | The approved OAuth scopes and the user's workspace role |
+
+Management routes accept only management keys (or OAuth tokens); a Gateway API key can't call them.
+
+[Guardrails](../cookbook/guardrails-for-api-keys.mdx) are a separate control: they apply to Gateway API keys and govern inference traffic, such as routing restrictions, budgets, prompt-injection handling and sensitive-information rules. A management key's capabilities govern which administration APIs it can call.
 
 ## Choose an access level
 
-The dashboard offers explicit templates. Each template expands to the listed
-capabilities when the key is created; Phaseo never stores a wildcard such as
-`all`. A key therefore cannot gain a newly introduced permission implicitly.
+Each template expands to an explicit list of capabilities when the key is created. Phaseo never stores a wildcard such as `all`, so a key never gains a permission added later.
 
-| Template | Grants |
-| --- | --- |
-| **Read** | Every current `*:read` management capability |
-| **Write** | Every current `*:read` and `*:write` capability; no delete access |
-| **All** | Every current read, write, and delete management capability |
+| Template | `--template` | Grants |
+| --- | --- | --- |
+| **Read** | `read-only` | Every current `*:read` capability |
+| **Write** | `read-write` | Every current `*:read` and `*:write` capability, no delete |
+| **All** | `full-control` | Every current read, write and delete capability |
 
-## Capability reference
+No template includes `billing:write`, which starts credit top-ups; ask for it explicitly with `--scopes`. Use **All** only for trusted administrative automation.
 
-Use an access template for common cases. Use explicit capabilities when an
-integration needs a smaller, purpose-built grant.
+For a smaller grant, pass the capabilities you need with `--scopes scope_a,scope_b`:
 
 | Area | Read | Write | Delete |
 | --- | --- | --- | --- |
-| Identity and catalogue | `me:read`, `models:read`, `providers:read`, `pricing:read` | — | — |
-| Usage and observability | `credits:read`, `activity:read`, `analytics:read`, `generations:read`, `feedback:read` | `feedback:write` | — |
+| Identity and catalogue | `me:read`, `models:read`, `providers:read`, `pricing:read` | | |
+| Usage and observability | `credits:read`, `activity:read`, `analytics:read`, `generations:read`, `feedback:read` | `feedback:write` | |
+| Billing | | `billing:write` (opt-in) | |
 | Workspaces | `workspaces:read` | `workspaces:write` | `workspaces:delete` |
 | Gateway API keys | `keys:read` | `keys:write` | `keys:delete` |
 | Management API keys | `management_keys:read` | `management_keys:write` | `management_keys:delete` |
 | Presets | `presets:read` | `presets:write` | `presets:delete` |
-| Settings | `settings:read` | `settings:write` | — |
+| Settings | `settings:read` | `settings:write` | |
 | Provider credentials | `provider_credentials:read` | `provider_credentials:write` | `provider_credentials:delete` |
 | Private models | `private_models:read` | `private_models:write` | `private_models:delete` |
 | Guardrails | `guardrails:read` | `guardrails:write` | `guardrails:delete` |
@@ -72,35 +62,14 @@ integration needs a smaller, purpose-built grant.
 | Spend rules | `spend_rules:read` | `spend_rules:write` | `spend_rules:delete` |
 | OAuth clients | `oauth_clients:read` | `oauth_clients:write` | `oauth_clients:delete` |
 
-`Write` templates include the matching read capabilities so an integration can
-inspect a resource before updating it. `All` includes delete capabilities; use
-it only for trusted administrative automation.
+## Capabilities don't override workspace roles
 
-## Scopes and workspace roles
+Phaseo checks two things on every call: that the key has the capability, and that the key or OAuth user belongs to the workspace with the role the action needs. For example, `keys:write` allows key management, but the role check still decides whether the caller may manage keys in that workspace. A key can't use a capability to reach another workspace or skip owner and admin checks.
 
-A scope is necessary but not sufficient. Phaseo also verifies the key or OAuth
-principal belongs to the requested workspace and has the required workspace
-role. A scoped key cannot use a capability to access another workspace or
-bypass ownership and administrator checks.
+## Keep keys safe
 
-For example, `keys:write` authorizes key-management operations, while the
-workspace role check determines whether the caller may manage keys in that
-workspace.
-
-## Guardrails are different
-
-Guardrails apply to **gateway API keys** and govern inference traffic: routing
-restrictions, budgets, prompt-injection handling, and sensitive-information
-rules. Management-key scopes govern which administration APIs a credential may
-call. They are complementary controls, not substitutes.
-
-See [Roll out guardrails on API keys](../cookbook/guardrails-for-api-keys.mdx)
-for an inference-key guardrail rollout.
-
-## Security and rotation
-
-- Keep management keys out of browsers, desktop logs, source control, and chat.
-- Use one purpose-built key per integration and prefer the narrowest template.
-- Give keys an expiry where the integration does not need indefinite access.
-- Pause or delete unused keys immediately.
-- Rotate a leaked key before investigating the incident further.
+- Keep management keys out of browsers, desktop logs, source control and chat.
+- Use one key per integration, with the narrowest template that works.
+- Set an expiry when the integration doesn't need indefinite access.
+- Pause or delete unused keys straight away.
+- Rotate a leaked key before you investigate further.

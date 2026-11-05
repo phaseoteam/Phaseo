@@ -8,6 +8,11 @@ description: "Use the work-in-progress C++ headers from source."
 
 ## Local usage
 
-- Use the generated headers in `packages/sdk/sdk-cpp/src/gen`.
-- Add that folder to your include path in your build system.
-- The client is header-only today.
+The SDK is header-only C++17. Add `packages/sdk/sdk-cpp` to your CMake build and link the interface target, or put `packages/sdk/sdk-cpp/src` on your include path:
+
+```cmake
+add_subdirectory(path/to/Phaseo/packages/sdk/sdk-cpp)
+target_link_libraries(your_app PRIVATE phaseo::sdk)
+```
+
+Then include `phaseo.hpp`, which pulls in the generated client in `src/gen`.

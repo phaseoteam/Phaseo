@@ -5,81 +5,47 @@ description: "Give models the current date and time in one or more timezones."
 "og:image": "https://phaseo.app/og/dynamic?title=Datetime%20Server%20Tool&description=Give%20models%20the%20current%20date%20and%20time%20in%20one%20or%20more%20timezones.&pathname=/docs/v1/guides/server-tools/datetime"
 ---
 
-Use `phaseo:datetime` when a prompt depends on the current date, day of week, time, or timezone.
-
-The model decides when to call the tool. Phaseo returns the resolved timezones and current timestamps to the model, then the model writes the final answer.
-
-## Quick start
+Add `phaseo:datetime` so the model can look up the current date and time when a prompt depends on it, such as "what day is it in Tokyo?". The model decides when to call it; Phaseo returns the time in each timezone you listed.
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "messages": [
       { "role": "user", "content": "What day of the week is it in Tokyo?" }
     ],
     "tools": [
       {
         "type": "phaseo:datetime",
-        "parameters": {
-          "timezones": ["Asia/Tokyo", "UTC"]
-        }
+        "parameters": { "timezones": ["Asia/Tokyo", "UTC"] }
       }
     ]
   }'
 ```
 
-## Configuration
-
-```json
-{
-  "type": "phaseo:datetime",
-  "parameters": {
-    "timezones": ["Europe/London", "UTC"]
-  }
-}
-```
+## Parameters
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| `timezones` | string[] | `["UTC"]` | Up to 5 IANA timezone names to return in one tool call, such as `["Europe/London", "UTC"]`. |
+| `timezones` | string[] | `["UTC"]` | Up to 5 IANA timezone names, such as `["Europe/London", "UTC"]`. |
 
-## Tool result
+More than 5 timezones, or a name that isn't a valid IANA timezone, rejects the request before the model runs. The older type name `gateway:datetime` is still accepted.
 
-The tool result contains one entry per requested timezone.
+## What the tool returns
+
+One entry per timezone:
 
 ```json
 {
   "timezones": [
-    {
-      "timezone": "Europe/London",
-      "datetime": "2026-07-03T10:00:00.123+01:00"
-    },
-    {
-      "timezone": "UTC",
-      "datetime": "2026-07-03T09:00:00.123+00:00"
-    }
+    { "timezone": "Europe/London", "datetime": "2026-07-03T10:00:00.123+01:00" },
+    { "timezone": "UTC", "datetime": "2026-07-03T09:00:00.123+00:00" }
   ]
 }
 ```
 
-## Usage
+## Usage and pricing
 
-Datetime calls increment:
-
-```json
-{
-  "usage": {
-    "server_tool_use": {
-      "datetime_requests": 1
-    }
-  }
-}
-```
-
-## Related
-
-- [Server Tools](./index)
-- [Tool Calling](../tool-calling)
+Each call adds 1 to `usage.server_tool_use.datetime_requests`. Datetime has no price meter of its own.
