@@ -15,6 +15,9 @@ export function replyPreview(text: string) {
 	return text.replace(/```[\s\S]*?(```|$)/g, " ").replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/[*_~`>#|]+/g, "").replace(/\s+/g, " ").trim().slice(0, 220);
 }
 
+/** "5m ago", or "just now" under a minute. */
+const ago = (iso: string) => { const value = formatAgoShort(iso); return value === "now" ? "just now" : value ? `${value} ago` : ""; };
+
 function Body({ task }: { task: TaskOverview }) {
 	const { overview } = useWorkspace();
 	const [reply, setReply] = useState<string>();
@@ -40,7 +43,7 @@ function Body({ task }: { task: TaskOverview }) {
 		</p>
 		{facts.length > 0 && <p className="truncate text-xs text-muted-foreground">{facts.join(" · ")}</p>}
 		{reply === undefined ? <p className="text-xs text-muted-foreground">Loading the latest reply…</p> : reply && <p className="line-clamp-3 text-xs leading-relaxed text-foreground/80">{reply}</p>}
-		<p className="text-2xs text-muted-foreground" title={formatDateTime(task.createdAt)}>Started {formatAgoShort(task.createdAt)} ago · updated {formatAgoShort(task.updatedAt)} ago</p>
+		<p className="text-2xs text-muted-foreground" title={formatDateTime(task.createdAt)}>Started {ago(task.createdAt)} · updated {ago(task.updatedAt)}</p>
 	</div>;
 }
 
