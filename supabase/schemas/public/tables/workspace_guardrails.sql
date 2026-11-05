@@ -28,6 +28,10 @@ CREATE TABLE "public"."workspace_guardrails" (
   "rate_concurrent_requests"                integer,
   "rate_fail_closed"                        boolean                  NOT NULL DEFAULT false,
   "rate_counting"                           text,
+  "spend_limit_nanos"                       bigint,
+  "spend_period"                            text,
+  "spend_action"                            text,
+  "spend_counting"                          text,
   CONSTRAINT "workspace_guardrails_baseline_kind_check" CHECK (((NOT is_workspace_baseline) OR (kind = 'access'::text))),
   CONSTRAINT "workspace_guardrails_id_workspace_id_key" UNIQUE (id, workspace_id),
   CONSTRAINT "workspace_guardrails_kind_check" CHECK ((kind = ANY (ARRAY['access'::text, 'safety'::text, 'spend'::text, 'rate'::text]))),
@@ -41,6 +45,11 @@ CREATE TABLE "public"."workspace_guardrails" (
   CONSTRAINT "workspace_guardrails_rate_requests_per_minute_check" CHECK (((rate_requests_per_minute IS NULL) OR (rate_requests_per_minute > 0))),
   CONSTRAINT "workspace_guardrails_rate_tokens_per_minute_check" CHECK (((rate_tokens_per_minute IS NULL) OR (rate_tokens_per_minute > 0))),
   CONSTRAINT "workspace_guardrails_sensitive_info_default_action_check" CHECK ((sensitive_info_default_action = ANY (ARRAY['flag'::text, 'redact'::text, 'block'::text]))),
+  CONSTRAINT "workspace_guardrails_spend_action_check" CHECK (((spend_action IS NULL) OR (spend_action = ANY (ARRAY['notify'::text, 'block'::text])))),
+  CONSTRAINT "workspace_guardrails_spend_counting_check" CHECK (((spend_counting IS NULL) OR (spend_counting = ANY (ARRAY['shared'::text, 'each_key'::text])))),
+  CONSTRAINT "workspace_guardrails_spend_kind_check" CHECK ((((kind = 'spend'::text) AND (num_nonnulls(spend_limit_nanos, spend_period, spend_action, spend_counting) = 4) AND privacy_enable_paid_may_train AND privacy_enable_free_may_train AND privacy_enable_free_may_publish_prompts AND privacy_enable_input_output_logging AND (NOT privacy_zdr_only) AND (provider_restriction_mode = 'none'::text) AND (model_restriction_mode = 'none'::text) AND (NOT prompt_injection_enabled) AND (NOT sensitive_info_enabled)) OR ((kind <> 'spend'::text) AND (num_nonnulls(spend_limit_nanos, spend_period, spend_action, spend_counting) = 0)))),
+  CONSTRAINT "workspace_guardrails_spend_limit_nanos_check" CHECK (((spend_limit_nanos IS NULL) OR (spend_limit_nanos > 0))),
+  CONSTRAINT "workspace_guardrails_spend_period_check" CHECK (((spend_period IS NULL) OR (spend_period = ANY (ARRAY['daily'::text, 'weekly'::text, 'monthly'::text])))),
   CONSTRAINT "workspace_guardrails_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
 );
 
@@ -113,3 +122,11 @@ COMMENT ON COLUMN "public"."workspace_guardrails"."is_workspace_baseline" IS 'Th
 COMMENT ON COLUMN "public"."workspace_guardrails"."rate_counting" IS 'How a rate guardrail counts: shared (one allowance for everything it is assigned to), each_key (one per key or OAuth user it covers) or each_end_user (one per end user). NULL for rate guardrails made through the rate limits API: one allowance per key, member or department it is assigned to, and per end user at workspace level.';
 
 COMMENT ON COLUMN "public"."workspace_guardrails"."rate_fail_closed" IS 'A rate guardrail waits for its counters and rejects the request when they cannot answer, instead of letting it through.';
+
+COMMENT ON COLUMN "public"."workspace_guardrails"."spend_limit_nanos" IS 'A spend guardrail''s cost limit for each period, in nanodollars.';
+
+COMMENT ON COLUMN "public"."workspace_guardrails"."spend_period" IS 'The UTC period a spend guardrail counts over: daily, weekly (from Monday) or monthly.';
+
+COMMENT ON COLUMN "public"."workspace_guardrails"."spend_action" IS 'What a spend guardrail does at its limit: notify (pushes at 80% and 100%) or block (the same pushes, and the gateway refuses the API-key requests it covers until the period resets).';
+
+COMMENT ON COLUMN "public"."workspace_guardrails"."spend_counting" IS 'How a spend guardrail counts: shared (one counter for each assignment, over every key it covers) or each_key (one counter for each key it covers).';
