@@ -613,6 +613,9 @@ accountSettingsPolicyRouter.put("/presets/:presetId", async (c) => {
 	if (existing.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS); if (!existing.data?.workspace_id) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: existing.data.workspace_id }); if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	if (!canWritePreset(context, user.id, existing.data)) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	// A private draft can only be changed (or made visible) by its creator.
+	const creator = existing.data.created_by === user.id;
+	if (!creator && existing.data.draft_visibility === "private") return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const body: Record<string, any> = await c.req.json<Record<string, any>>().catch(() => ({})); const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
 	if (body.name != null) { const name = String(body.name).trim(); if (!validPresetName(name)) return c.json({ error: "invalid_preset" }, 400, PRIVATE_NO_STORE_HEADERS); update.draft_name = name; }
 	if (body.description !== undefined) update.draft_description = body.description ? String(body.description).trim().slice(0, 500) : null;
@@ -627,7 +630,11 @@ accountSettingsPolicyRouter.put("/presets/:presetId", async (c) => {
 	const nextSlug = String(update.draft_slug ?? existing.data.draft_slug ?? existing.data.slug ?? ""); const nextVisibility = String(update.draft_visibility ?? existing.data.draft_visibility ?? existing.data.visibility); if (!nextSlug) return c.json({ error: "invalid_preset_slug" }, 400, PRIVATE_NO_STORE_HEADERS);
 	const publisher = nextVisibility === "public" ? await workspacePublisher(client, existing.data.workspace_id).catch(() => null) : null; if (nextVisibility === "public" && !publisher) return c.json({ error: "workspace_publisher_required" }, 409, PRIVATE_NO_STORE_HEADERS);
 	const conflict = await presetSlugConflict(client, existing.data.workspace_id, nextSlug, id).catch(() => "error"); if (conflict === "error") return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS); if (conflict) return c.json({ error: "duplicate_preset_slug", slug: nextSlug }, 409, PRIVATE_NO_STORE_HEADERS);
-	const result = await client.from("presets").update(update).eq("id", id); if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	let write = client.from("presets").update(update).eq("id", id).is("archived_at", null);
+	// Checked again in the write, so a draft made private since the read is not overwritten.
+	if (!creator) write = write.neq("visibility", "private").or("draft_visibility.is.null,draft_visibility.neq.private");
+	const result = await write.select("id"); if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	if (!result.data?.length) return c.json({ error: "preset_changed" }, 409, PRIVATE_NO_STORE_HEADERS);
 	const cache = await purgePresetCache(c, id); return c.json({ success: true, cache }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 

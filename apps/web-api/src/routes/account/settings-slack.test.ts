@@ -85,6 +85,8 @@ type Fixture = {
 	linkUseInsertError?: { status: number; body: Record<string, unknown> };
 	/** Slack's users.info answer. */
 	slackUser?: Record<string, unknown>;
+	/** Runs when a slack_apps update arrives, to change the saved row between a read and a write. */
+	beforeAppWrite?: () => void;
 	/** The internal alert webhook's answer: a status (default 204) or a function. */
 	alert?: number | ((request: Request) => Response | Promise<Response>);
 	/** Statsig's answer for the Auto Routing gate (default: closed), or "error" for a failed check. */
@@ -190,7 +192,8 @@ function database(fixture: Fixture = {}) {
 		if (path.endsWith("/slack_apps")) {
 			// The saved row, as the filters on a verification read or write would match it now.
 			const app = fixture.customApp as Record<string, unknown> | null | undefined;
-			const matchesApp = () => Boolean(app) && ["id", "slack_app_id", "client_id"].every((field) => {
+			if (request.method === "PATCH") fixture.beforeAppWrite?.();
+			const matchesApp = () => Boolean(app) && ["id", "slack_app_id", "client_id", "updated_at"].every((field) => {
 				const filter = url.searchParams.get(field);
 				return filter === null || filter === `eq.${app![field]}`;
 			});
@@ -204,6 +207,8 @@ function database(fixture: Fixture = {}) {
 				if (fixture.appVerifyError) return Response.json(fixture.appVerifyError.body, { status: fixture.appVerifyError.status });
 				return rows(matchesApp() && !app!.verified_at ? [{ id: app!.id }] : []);
 			}
+			// A save writes only over the revision it read.
+			if (request.method === "PATCH") return rows(matchesApp() ? [{ ...app, ...parse(text) }] : []);
 			if (request.method === "POST" && fixture.customAppInsertError) {
 				return Response.json(fixture.customAppInsertError.body, { status: fixture.customAppInsertError.status });
 			}
@@ -1431,6 +1436,8 @@ describe("A workspace's own Slack app", () => {
 		expect(response.status).toBe(201);
 		const body = await response.json() as any;
 		expect(body.custom_app).toMatchObject({ id: APP_ROW_ID, slack_app_id: "A0CUSTOM01", client_id: "9999.8888" });
+		// Its own request URLs, which name the saved row: Slack verifies an unverified app only there.
+		expect(body.custom_app).toMatchObject({ events_url: `https://slack.phaseo.app/apps/${APP_ROW_ID}/events`, interactions_url: `https://slack.phaseo.app/apps/${APP_ROW_ID}/interactions` });
 		expect(JSON.stringify(body)).not.toMatch(/secret/i);
 		const insert = find(requests, "POST", "/slack_apps")[0];
 		expect(insert.url.searchParams.get("select")).not.toContain("secrets");
@@ -1473,6 +1480,23 @@ describe("A workspace's own Slack app", () => {
 		const rotated = database({ role: "admin", customApp: saved, appInUse: false });
 		expect((await call("/slack/custom-app", { method: "PUT", body: JSON.stringify({ ...app, client_secret: "rotatedclientsecret01" }) })).status).toBe(200);
 		expect(find(rotated, "PATCH", "/slack_apps")[0].body).not.toHaveProperty("verified_at");
+	});
+
+	it("doesn't let a save that read the row earlier repoint it after it was switched and verified", async () => {
+		const saved: Record<string, unknown> = { id: APP_ROW_ID, slack_app_id: "A0CUSTOM01", client_id: "9999.8888", created_at: "x", updated_at: "2026-11-04T10:00:00Z" };
+		const requests = database({
+			role: "admin", customApp: saved, appInUse: false,
+			// Between this save's read and its write, another save switches the row to A0OTHER001 and an install verifies it.
+			beforeAppWrite: () => Object.assign(saved, { slack_app_id: "A0OTHER001", client_id: "7777.6666", verified_at: "2026-11-04T10:05:00Z", updated_at: "2026-11-04T10:05:00Z" }),
+		});
+		const response = await call("/slack/custom-app", { method: "PUT", body: JSON.stringify({ ...app, slack_app_id: "A0STALE001" }) });
+		expect(response.status).toBe(409);
+		expect(((await response.json()) as any).error).toBe("slack_app_conflict");
+		const write = find(requests, "PATCH", "/slack_apps")[0];
+		expect(write.url.searchParams.get("slack_app_id")).toBe("eq.A0CUSTOM01");
+		expect(write.url.searchParams.get("client_id")).toBe("eq.9999.8888");
+		expect(write.url.searchParams.get("updated_at")).toBe("eq.2026-11-04T10:00:00Z");
+		expect(saved).toMatchObject({ slack_app_id: "A0OTHER001", verified_at: "2026-11-04T10:05:00Z" });
 	});
 
 	it("validates the app details", async () => {

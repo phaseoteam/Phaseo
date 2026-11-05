@@ -115,7 +115,7 @@ Slack में ऐप के **Basic Information** पेज से उसक�
 
 <Step title="अनुरोध URL को अपने ऐप की ओर करें">
 
-Slack में ऐप का **App Manifest** पेज खोलें। दोनों अनुरोध URL में `YOUR_APP_ID` को ऐप ID से बदलें, जैसे `https://slack.phaseo.app/events/A0123ABCDEF`। सहेजें, और जब Slack कहे तो अनुरोध URL सत्यापित करें।
+Phaseo में **सेटिंग्स → Slack** अब आपके सहेजे गए ऐप के लिए दो अनुरोध URL दिखाता है। Slack में ऐप का **App Manifest** पेज खोलें और दोनों `request_url` मानों की जगह इन्हें डालें (पहला इवेंट के लिए, दूसरा इंटरैक्टिविटी के लिए)। सहेजें, और Slack के पूछने पर अनुरोध URL सत्यापित करें।
 
 </Step>
 
@@ -175,7 +175,7 @@ Slack में ऐप का **App Manifest** पेज खोलें। द�
   },
   "settings": {
     "event_subscriptions": {
-      "request_url": "https://slack.phaseo.app/events/YOUR_APP_ID",
+      "request_url": "https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/events",
       "bot_events": [
         "app_mention",
         "message.im",
@@ -187,7 +187,7 @@ Slack में ऐप का **App Manifest** पेज खोलें। द�
     },
     "interactivity": {
       "is_enabled": true,
-      "request_url": "https://slack.phaseo.app/interactions/YOUR_APP_ID"
+      "request_url": "https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/interactions"
     },
     "org_deploy_enabled": true,
     "socket_mode_enabled": false,
@@ -199,8 +199,8 @@ Slack में ऐप का **App Manifest** पेज खोलें। द�
 | सेटिंग | मान |
 | --- | --- |
 | रीडायरेक्ट URL | `https://phaseo.app/api/account/settings/slack/oauth/callback` |
-| Event Subscriptions अनुरोध URL | `https://slack.phaseo.app/events/YOUR_APP_ID` |
-| Interactivity अनुरोध URL | `https://slack.phaseo.app/interactions/YOUR_APP_ID` |
+| Event Subscriptions अनुरोध URL | `https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/events` |
+| Interactivity अनुरोध URL | `https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/interactions` |
 | बॉट इवेंट | `app_mention`, `message.im`, `agent_session_stopped`, `app_uninstalled`, `tokens_revoked`, `app_home_opened` |
 
 इंस्टॉल करते समय Phaseo, Slack से ठीक यही बॉट टोकन स्कोप माँगता है, इसलिए ऐप में ये सभी होने चाहिए:

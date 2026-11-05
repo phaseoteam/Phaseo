@@ -106,6 +106,20 @@ function promptTemplateError(config: unknown): Response | null {
 	return json({ error: "invalid_prompt_template", message: compiled.issues[0]?.message ?? "Invalid prompt template", issues: compiled.issues }, 400, { "Cache-Control": "no-store" });
 }
 
+// Private presets, and private drafts of shared presets, are their creator's alone, as on the web.
+function isPresetCreator(row: PresetRow, userId: string | null | undefined) {
+	return Boolean(userId) && row.created_by === userId;
+}
+/** Whether this caller may see the preset at all. */
+function canSeePreset(row: PresetRow, userId: string | null | undefined) {
+	return row.visibility !== "private" || isPresetCreator(row, userId);
+}
+/** Others see a shared preset with a private draft as published: the draft fields are replaced. */
+function withoutOthersPrivateDraft(row: PresetRow, userId: string | null | undefined): PresetRow {
+	if (row.draft_visibility !== "private" || isPresetCreator(row, userId)) return row;
+	return { ...row, draft_name: row.name, draft_slug: row.slug, draft_description: row.description, draft_config: row.config, draft_visibility: row.visibility };
+}
+
 function formatPreset(row: PresetRow) {
 	return {
 		id: row.id,
@@ -212,7 +226,7 @@ async function handleListPresets(req: Request) {
 		if (error) throw new Error(error.message || "Failed to list presets");
 		return json(
 			{
-				data: (data ?? []).map((row) => formatPreset(row as PresetRow)),
+				data: (data ?? []).map((row) => formatPreset(withoutOthersPrivateDraft(row as PresetRow, auth.value.userId))),
 				total_count: count ?? (data ?? []).length,
 			},
 			200,
@@ -310,8 +324,8 @@ async function handleGetPreset(req: Request) {
 	if (!identifier) return json({ error: "bad_request", message: "Preset id, slug, or name is required" }, 400, { "Cache-Control": "no-store" });
 	try {
 		const preset = await findPreset(auth.value.workspaceId, identifier);
-		if (!preset) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
-		return json({ data: formatPreset(preset) }, 200, { "Cache-Control": "no-store" });
+		if (!preset || !canSeePreset(preset, auth.value.userId)) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
+		return json({ data: formatPreset(withoutOthersPrivateDraft(preset, auth.value.userId)) }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
 		return internalServerError("presets.get", error);
 	}
@@ -340,7 +354,10 @@ async function handleUpdatePreset(req: Request) {
 
 	try {
 		const existing = await findPreset(auth.value.workspaceId, identifier);
-		if (!existing) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
+		if (!existing || !canSeePreset(existing, auth.value.userId)) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
+		const creator = isPresetCreator(existing, auth.value.userId);
+		// A private draft can only be changed (or made visible) by its creator.
+		if (!creator && existing.draft_visibility === "private") return json({ error: "forbidden", message: "Only the preset's creator can change its private draft" }, 403, { "Cache-Control": "no-store" });
 
 		const updatePayload: Record<string, unknown> = { updated_at: new Date().toISOString() };
 		if (typeof body.name === "string") {
@@ -389,15 +406,19 @@ async function handleUpdatePreset(req: Request) {
 			if (publicDuplicate) return json({ error: "public_slug_conflict", message: `Public preset slug "${nextSlug}" is already in use` }, 409, { "Cache-Control": "no-store" });
 		}
 
-		const { error } = await getSupabaseAdmin()
+		let update = getSupabaseAdmin()
 			.from("presets")
 			.update(updatePayload)
 			.eq("workspace_id", auth.value.workspaceId)
 			.eq("id", existing.id);
+		// Checked again in the write, so a draft made private since the read is not overwritten.
+		if (!creator) update = update.neq("visibility", "private").or("draft_visibility.is.null,draft_visibility.neq.private");
+		const { data: written, error } = await update.select("id");
 		if (error) throw new Error(error.message || "Failed to update preset");
+		if (!written?.length) return json({ error: "conflict", message: "The preset changed; reload it and try again" }, 409, { "Cache-Control": "no-store" });
 		const updated = await findPreset(auth.value.workspaceId, existing.id);
 		await auditPreset(auth.value, "preset.updated", updated as PresetRow, { changed_fields: Object.keys(body).filter((key) => key !== "config") });
-		return json({ data: formatPreset(updated as PresetRow) }, 200, { "Cache-Control": "no-store" });
+		return json({ data: formatPreset(withoutOthersPrivateDraft(updated as PresetRow, auth.value.userId)) }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
 		return internalServerError("presets.update", error);
 	}
@@ -416,16 +437,17 @@ async function handleDeletePreset(req: Request) {
 
 	try {
 		const existing = await findPreset(auth.value.workspaceId, identifier);
-		if (!existing) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
+		if (!existing || !canSeePreset(existing, auth.value.userId)) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
 		const confirmation = new URL(req.url).searchParams.get("confirm_name") ?? new URL(req.url).searchParams.get("confirmName");
-		if (confirmation !== null && confirmation !== (existing.draft_name ?? existing.name)) return json({ error: "conflict", message: "Preset name confirmation does not match" }, 409, { "Cache-Control": "no-store" });
+		const shown = withoutOthersPrivateDraft(existing, auth.value.userId);
+		if (confirmation !== null && confirmation !== (shown.draft_name ?? shown.name)) return json({ error: "conflict", message: "Preset name confirmation does not match" }, 409, { "Cache-Control": "no-store" });
 		const { error } = await getSupabaseAdmin()
 			.from("presets")
 			.update({ archived_at: new Date().toISOString() })
 			.eq("workspace_id", auth.value.workspaceId)
 			.eq("id", existing.id);
 		if (error) throw new Error(error.message || "Failed to delete preset");
-		await auditPreset(auth.value, "preset.archived", existing);
+		await auditPreset(auth.value, "preset.archived", shown);
 		return json({ deleted: true }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
 		return internalServerError("presets.delete", error);

@@ -115,7 +115,7 @@ icon: "messages-square"
 
 <Step title="وجّه عناوين URL للطلبات إلى تطبيقك">
 
-في Slack، افتح صفحة **App Manifest** للتطبيق. في عنواني URL للطلبات كليهما، استبدل `YOUR_APP_ID` بمعرّف التطبيق، مثل `https://slack.phaseo.app/events/A0123ABCDEF`. احفظ، وتحقّق من عنوان URL للطلبات عندما يطلب Slack ذلك.
+في Phaseo، تعرض **الإعدادات → Slack** الآن عنواني URL للطلبات خاصّين بتطبيقك المحفوظ. في Slack، افتح صفحة **App Manifest** الخاصة بالتطبيق وضعهما مكان قيمتي `request_url` (الأول للأحداث والثاني للتفاعل). احفظ، ثم تحقّق من عنوان URL للطلبات عندما يطلب Slack ذلك.
 
 </Step>
 
@@ -175,7 +175,7 @@ icon: "messages-square"
   },
   "settings": {
     "event_subscriptions": {
-      "request_url": "https://slack.phaseo.app/events/YOUR_APP_ID",
+      "request_url": "https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/events",
       "bot_events": [
         "app_mention",
         "message.im",
@@ -187,7 +187,7 @@ icon: "messages-square"
     },
     "interactivity": {
       "is_enabled": true,
-      "request_url": "https://slack.phaseo.app/interactions/YOUR_APP_ID"
+      "request_url": "https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/interactions"
     },
     "org_deploy_enabled": true,
     "socket_mode_enabled": false,
@@ -199,8 +199,8 @@ icon: "messages-square"
 | الإعداد | القيمة |
 | --- | --- |
 | عنوان URL لإعادة التوجيه | `https://phaseo.app/api/account/settings/slack/oauth/callback` |
-| عنوان URL للطلبات في Event Subscriptions | `https://slack.phaseo.app/events/YOUR_APP_ID` |
-| عنوان URL للطلبات في Interactivity | `https://slack.phaseo.app/interactions/YOUR_APP_ID` |
+| عنوان URL للطلبات في Event Subscriptions | `https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/events` |
+| عنوان URL للطلبات في Interactivity | `https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/interactions` |
 | أحداث الروبوت | `app_mention`، `message.im`، `agent_session_stopped`، `app_uninstalled`، `tokens_revoked`، `app_home_opened` |
 
 يطلب Phaseo من Slack نطاقات bot token هذه بالضبط عند التثبيت، لذا يحتاج التطبيق إليها جميعًا:

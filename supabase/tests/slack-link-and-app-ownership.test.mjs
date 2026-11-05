@@ -26,7 +26,13 @@ for (const statement of [
   '"verified_at"        timestamp with time zone,',
 ]) assert(appsSql.includes(statement), `slack_apps.sql declares: ${statement}`);
 const exportJson = JSON.parse(await read('../schemas/.pgdelta-export.json'));
-for (const list of ['loadOrder', 'files']) assert(exportJson[list].includes('public/tables/slack_link_token_uses.sql'), `${list} lists the new table file`);
+for (const file of ['public/tables/slack_link_token_uses.sql', 'public/functions/slack_apps_reset_verification.sql']) {
+  for (const list of ['loadOrder', 'files']) assert(exportJson[list].includes(file), `${list} lists ${file}`);
+}
+const resetSql = normalize(await read('../schemas/public/functions/slack_apps_reset_verification.sql'));
+assert(migration.includes(resetSql), 'the migration creates slack_apps_reset_verification exactly as declared');
+const resetTrigger = appsSql.match(/CREATE TRIGGER slack_apps_reset_verification\n[\s\S]*?;/)?.[0];
+assert(resetTrigger && migration.includes(resetTrigger), 'the migration creates the reset trigger as declared');
 
 const db = new PGlite();
 const workspaceA = '20000000-0000-4000-8000-000000000001';
@@ -72,6 +78,17 @@ try {
   await db.exec(`insert into public.slack_apps (id, workspace_id, slack_app_id, client_id, secrets_ciphertext) values ('${savedApp}', '${workspaceB}', 'A0INSTALLED', '2.2', 'y')`);
   // ...but only one workspace can hold it verified.
   await rejects(db.exec(`update public.slack_apps set verified_at = now() where id = '${savedApp}'`), /slack_apps_slack_app_id_idx/, 'a second verified app with the same id is refused');
+
+  // Changing a verified row's app id or client id clears its verification, whatever wrote it.
+  await db.exec(`update public.slack_apps set secrets_ciphertext = 'rotated' where id = '${installedApp}'`);
+  assert.ok((await db.query(`select verified_at from public.slack_apps where id = '${installedApp}'`)).rows[0].verified_at, 'rotating secrets keeps verification');
+  await db.exec(`update public.slack_apps set client_id = '9.9' where id = '${installedApp}'`);
+  assert.equal((await db.query(`select verified_at from public.slack_apps where id = '${installedApp}'`)).rows[0].verified_at, null, 'a new client id clears verification');
+  await db.exec(`update public.slack_apps set verified_at = now() where id = '${installedApp}'`);
+  await db.exec(`update public.slack_apps set slack_app_id = 'A0SWITCHED', verified_at = verified_at where id = '${installedApp}'`);
+  assert.equal((await db.query(`select verified_at from public.slack_apps where id = '${installedApp}'`)).rows[0].verified_at, null, 'a new app id clears verification even when the write keeps verified_at');
+  // With the old row no longer holding the id, the other workspace's install can verify it.
+  await db.exec(`update public.slack_apps set verified_at = now() where id = '${savedApp}'`);
 
   // A link token's nonce is recorded once.
   const use = `insert into public.slack_link_token_uses (nonce, installation_id, slack_user_id, user_id, expires_at) values ('nonce-0000000001', '${installation}', 'U0PERSON01', '${user}', now() + interval '15 minutes')`;

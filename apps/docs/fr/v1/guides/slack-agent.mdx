@@ -115,7 +115,7 @@ Sur la page **Basic Information** de l’application dans Slack, copiez son **Ap
 
 <Step title="Faites pointer les URL de requête vers votre application">
 
-Dans Slack, ouvrez la page **App Manifest** de l’application. Dans les deux URL de requête, remplacez `YOUR_APP_ID` par l’ID de l’application, par exemple `https://slack.phaseo.app/events/A0123ABCDEF`. Enregistrez, puis vérifiez l’URL de requête quand Slack le demande.
+Dans Phaseo, **Paramètres → Slack** affiche désormais deux URL de requête pour votre application enregistrée. Dans Slack, ouvrez la page **App Manifest** de l’application et mettez-les à la place des deux valeurs `request_url` (la première pour les événements, la seconde pour l’interactivité). Enregistrez, puis vérifiez l’URL de requête quand Slack le demande.
 
 </Step>
 
@@ -175,7 +175,7 @@ Dans **Paramètres → Slack**, choisissez **Votre application Slack** sous **Ap
   },
   "settings": {
     "event_subscriptions": {
-      "request_url": "https://slack.phaseo.app/events/YOUR_APP_ID",
+      "request_url": "https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/events",
       "bot_events": [
         "app_mention",
         "message.im",
@@ -187,7 +187,7 @@ Dans **Paramètres → Slack**, choisissez **Votre application Slack** sous **Ap
     },
     "interactivity": {
       "is_enabled": true,
-      "request_url": "https://slack.phaseo.app/interactions/YOUR_APP_ID"
+      "request_url": "https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/interactions"
     },
     "org_deploy_enabled": true,
     "socket_mode_enabled": false,
@@ -199,8 +199,8 @@ Dans **Paramètres → Slack**, choisissez **Votre application Slack** sous **Ap
 | Paramètre | Valeur |
 | --- | --- |
 | URL de redirection | `https://phaseo.app/api/account/settings/slack/oauth/callback` |
-| URL de requête d’Event Subscriptions | `https://slack.phaseo.app/events/YOUR_APP_ID` |
-| URL de requête d’Interactivity | `https://slack.phaseo.app/interactions/YOUR_APP_ID` |
+| URL de requête d’Event Subscriptions | `https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/events` |
+| URL de requête d’Interactivity | `https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/interactions` |
 | Événements de bot | `app_mention`, `message.im`, `agent_session_stopped`, `app_uninstalled`, `tokens_revoked`, `app_home_opened` |
 
 Phaseo demande à Slack exactement ces scopes du token de bot lors de l’installation : l’application doit donc tous les avoir.

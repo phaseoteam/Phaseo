@@ -87,7 +87,8 @@ export type SlackAgentCharge = {
 	charged_at: string | null;
 };
 
-export type SlackCustomApp = { id: string; slack_app_id: string; client_id: string; created_at: string; updated_at: string };
+/** events_url and interactions_url are this saved app's own request URLs, to paste into its Slack manifest. */
+export type SlackCustomApp = { id: string; slack_app_id: string; client_id: string; created_at: string; updated_at: string; events_url: string; interactions_url: string };
 
 export type SlackAgentManagerView = {
 	workspaceId: string;

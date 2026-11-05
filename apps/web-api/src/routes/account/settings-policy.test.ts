@@ -506,6 +506,34 @@ describe("account policy settings routes", () => {
 			}
 		});
 
+		it("doesn't let another admin change or re-share the private draft, and checks again in the write", async () => {
+			const patches: URL[] = [];
+			const stubWrite = (draftVisibility: string, written: unknown[]) => vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+				const request = input instanceof Request ? input : new Request(String(input), init);
+				const url = new URL(request.url);
+				if (url.pathname === "/auth/v1/user") return Response.json({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" });
+				if (url.pathname.endsWith("workspace_members")) return Response.json([{ role: "admin" }]);
+				if (url.pathname.endsWith("/presets") && request.method === "PATCH") { patches.push(url); return Response.json(written); }
+				if (url.pathname.endsWith("/presets")) return Response.json(url.searchParams.has("slug") ? [] : [{ ...row, draft_visibility: draftVisibility }]);
+				return Response.json([]);
+			}));
+			const put = (body: Record<string, unknown>) => app.request("https://phaseo.app/api/account/settings/presets/preset-1", { method: "PUT", headers: { authorization: "Bearer session-token", "content-type": "application/json" }, body: JSON.stringify(body) }, env, { waitUntil() {}, passThroughOnException() {}, props: {} } as never);
+
+			stubWrite("private", []);
+			expect((await put({ visibility: "team" })).status).toBe(403);
+			expect(patches).toHaveLength(0);
+
+			// Read as shared, but made private before the write lands: the conditional write matches nothing.
+			stubWrite("team", []);
+			const raced = await put({ description: "Edited" });
+			expect(raced.status).toBe(409);
+			expect(patches[0].searchParams.get("visibility")).toBe("neq.private");
+			expect(patches[0].searchParams.get("or")).toBe("(draft_visibility.is.null,draft_visibility.neq.private)");
+
+			stubWrite("team", [{ id: "preset-1" }]);
+			expect((await put({ description: "Edited" })).status).toBe(200);
+		});
+
 		it("still shows the creator their draft", async () => {
 			stubList({ userId: "owner-2" });
 			await expect((await list()).json()).resolves.toMatchObject({ presets: [{ id: "preset-1", name: "Secret draft", config: { models: ["openai/secret"] }, visibility: "private", hasDraftChanges: true }] });

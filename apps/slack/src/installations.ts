@@ -106,39 +106,30 @@ export function hostedApp(env: Env): SlackAppContext | null {
 	};
 }
 
-/**
- * At most this many unverified rows are tried for one Slack app id. Each needs its own Phaseo
- * workspace (one app per workspace), so squatters can't cheaply push the genuine row out.
- */
-const MAX_UNVERIFIED_COMPANY_APPS = 100;
+type CompanyAppRow = { id: string; slack_app_id: string; secrets_ciphertext: string };
+
+async function companyAppContext(env: Env, row: CompanyAppRow | undefined): Promise<SlackAppContext | null> {
+	if (!row) return null;
+	const secrets = await decryptSlackSecrets(env, row.secrets_ciphertext);
+	return secrets.signing_secret ? { appRowId: row.id, slackAppId: row.slack_app_id, signingSecret: secrets.signing_secret } : null;
+}
 
 /**
- * The company apps saved under a Slack app id, with their signing secrets decrypted. Saving an app
- * proves nothing, so several workspaces can save the same id until one installs it (only one can be
- * verified, see slack_apps.verified_at). The request's signature picks the real one: only the app's
- * owner knows its signing secret.
- * - A verified app holds its id alone: only its row is tried, so nobody else receives its events.
- * - Before that, every unverified row is tried (up to MAX_UNVERIFIED_COMPANY_APPS), so the owner's
- *   URL verification works however many rows were saved before theirs.
+ * The verified company app with this Slack app id, for the shared /events/<app id> URL. Saving an app
+ * proves nothing, so several workspaces can save the same id; only an install through it verifies one
+ * (slack_apps.verified_at, unique per id). Unverified apps are reached only through their own URL.
  */
-export async function companyApps(env: Env, db: Db, slackAppId: string): Promise<SlackAppContext[]> {
-	if (!SLACK_APP_ID_PATTERN.test(slackAppId)) return [];
-	const select = "id,slack_app_id,secrets_ciphertext";
-	type Row = { id: string; slack_app_id: string; secrets_ciphertext: string };
-	const verified = await db.select<Row>("slack_apps", { select, slack_app_id: `eq.${slackAppId}`, verified_at: "not.is.null", limit: "1" });
-	const rows = verified.length ? verified : await db.select<Row>("slack_apps", {
-		select,
-		slack_app_id: `eq.${slackAppId}`,
-		verified_at: "is.null",
-		order: "created_at.asc",
-		limit: String(MAX_UNVERIFIED_COMPANY_APPS),
-	});
-	const apps: SlackAppContext[] = [];
-	for (const row of rows) {
-		const secrets = await decryptSlackSecrets(env, row.secrets_ciphertext);
-		if (secrets.signing_secret) apps.push({ appRowId: row.id, slackAppId: row.slack_app_id, signingSecret: secrets.signing_secret });
-	}
-	return apps;
+export async function verifiedCompanyApp(env: Env, db: Db, slackAppId: string): Promise<SlackAppContext | null> {
+	if (!SLACK_APP_ID_PATTERN.test(slackAppId)) return null;
+	const rows = await db.select<CompanyAppRow>("slack_apps", { select: "id,slack_app_id,secrets_ciphertext", slack_app_id: `eq.${slackAppId}`, verified_at: "not.is.null", limit: "1" });
+	return companyAppContext(env, rows[0]);
+}
+
+/** One saved company app by its row, for its own /apps/<row id>/... URLs: only its signing secret is tried. */
+export async function companyAppByRow(env: Env, db: Db, rowId: string): Promise<SlackAppContext | null> {
+	if (!UUID_PATTERN.test(rowId)) return null;
+	const rows = await db.select<CompanyAppRow>("slack_apps", { select: "id,slack_app_id,secrets_ciphertext", id: `eq.${rowId}`, limit: "1" });
+	return companyAppContext(env, rows[0]);
 }
 
 /** Where an event or interaction says the app is installed. */

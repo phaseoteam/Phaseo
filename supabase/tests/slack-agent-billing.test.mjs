@@ -38,6 +38,7 @@ const PAGES_LINES = /^ {2}"(?:pages_enabled|page_expiry_days|page_default_access
 const ownershipMigrationName = (await readdir(new URL('../migrations/', import.meta.url))).find((name) => name.endsWith('_slack_link_tokens_and_app_ownership.sql'));
 const ownershipMigration = await readFile(new URL(`../migrations/${ownershipMigrationName}`, import.meta.url), 'utf8');
 const OWNERSHIP_LINES = /^ {2}"verified_at" .*\n|^CREATE INDEX slack_apps_slack_app_id_lookup_idx .*\n\n|^COMMENT ON COLUMN "public"\."slack_apps"\."verified_at" .*\n\n/gm;
+const RESET_TRIGGER = /CREATE TRIGGER slack_apps_reset_verification\n[\s\S]*?;\n\n/;
 const VERIFIED_APP_ID_INDEX = 'CREATE UNIQUE INDEX slack_apps_slack_app_id_idx ON public.slack_apps USING btree (slack_app_id)\n  WHERE (verified_at IS NOT NULL);';
 const words = (text) => text.trim().replace(/[,;]$/, '').replace(/\s+/g, ' ');
 const schema = (path) => readFile(new URL(`../schemas/${path}`, import.meta.url), 'utf8');
@@ -111,7 +112,9 @@ try {
       assert.equal(added.length, 3, 'slack_apps declares verified_at, its comment and the lookup index');
       for (const line of added) assert.ok(words(ownershipMigration).includes(words(line)), `the ownership migration adds ${words(line).slice(0, 60)}`);
       assert.ok(definition.includes(VERIFIED_APP_ID_INDEX) && ownershipMigration.includes(VERIFIED_APP_ID_INDEX), 'the app id is unique among verified apps');
-      definition = definition.replace(OWNERSHIP_LINES, '').replace(VERIFIED_APP_ID_INDEX, 'CREATE UNIQUE INDEX slack_apps_slack_app_id_idx ON public.slack_apps USING btree (slack_app_id);');
+      const resetTrigger = definition.match(RESET_TRIGGER)?.[0];
+      assert.ok(resetTrigger && ownershipMigration.includes(resetTrigger.trim()), 'the ownership migration adds the verification reset trigger');
+      definition = definition.replace(RESET_TRIGGER, '').replace(OWNERSHIP_LINES, '').replace(VERIFIED_APP_ID_INDEX, 'CREATE UNIQUE INDEX slack_apps_slack_app_id_idx ON public.slack_apps USING btree (slack_app_id);');
     }
     if (table === 'slack_installations') {
       // The first migration's table, plus what the model choice migration added to it.

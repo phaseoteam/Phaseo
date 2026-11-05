@@ -115,7 +115,7 @@ Slack 智能体正在逐步向各个工作区开放。如果你的设置中还�
 
 <Step title="把请求 URL 指向你的应用">
 
-在 Slack 中打开该应用的 **App Manifest** 页面。在两个请求 URL 中，把 `YOUR_APP_ID` 替换为应用 ID，例如 `https://slack.phaseo.app/events/A0123ABCDEF`。保存，并在 Slack 要求时验证请求 URL。
+在 Phaseo 中，**设置 → Slack** 现在会显示你保存的应用的两个请求 URL。在 Slack 中打开该应用的 **App Manifest** 页面，用它们替换两个 `request_url` 值（第一个用于事件，第二个用于交互）。保存，并在 Slack 要求时验证请求 URL。
 
 </Step>
 
@@ -175,7 +175,7 @@ Slack 智能体正在逐步向各个工作区开放。如果你的设置中还�
   },
   "settings": {
     "event_subscriptions": {
-      "request_url": "https://slack.phaseo.app/events/YOUR_APP_ID",
+      "request_url": "https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/events",
       "bot_events": [
         "app_mention",
         "message.im",
@@ -187,7 +187,7 @@ Slack 智能体正在逐步向各个工作区开放。如果你的设置中还�
     },
     "interactivity": {
       "is_enabled": true,
-      "request_url": "https://slack.phaseo.app/interactions/YOUR_APP_ID"
+      "request_url": "https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/interactions"
     },
     "org_deploy_enabled": true,
     "socket_mode_enabled": false,
@@ -199,8 +199,8 @@ Slack 智能体正在逐步向各个工作区开放。如果你的设置中还�
 | 设置 | 值 |
 | --- | --- |
 | 重定向 URL | `https://phaseo.app/api/account/settings/slack/oauth/callback` |
-| Event Subscriptions 请求 URL | `https://slack.phaseo.app/events/YOUR_APP_ID` |
-| Interactivity 请求 URL | `https://slack.phaseo.app/interactions/YOUR_APP_ID` |
+| Event Subscriptions 请求 URL | `https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/events` |
+| Interactivity 请求 URL | `https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/interactions` |
 | 机器人事件 | `app_mention`、`message.im`、`agent_session_stopped`、`app_uninstalled`、`tokens_revoked`、`app_home_opened` |
 
 安装时，Phaseo 会向 Slack 请求的正是以下机器人令牌权限范围，所以应用需要具备全部这些权限范围：

@@ -27,6 +27,34 @@ CREATE UNIQUE INDEX slack_apps_slack_app_id_idx ON public.slack_apps USING btree
 
 COMMENT ON COLUMN "public"."slack_apps"."verified_at" IS 'When an install through this app succeeded and Slack confirmed its app id, proving the workspace owns it. Only verified apps hold their Slack app id exclusively.';
 
+-- Changing a row's Slack app id or client id clears its verification in the database, so no code
+-- path (including a save that read the row before it was verified) can keep it.
+CREATE OR REPLACE FUNCTION public.slack_apps_reset_verification()
+  RETURNS TRIGGER
+  LANGUAGE plpgsql
+  SET search_path TO 'public', 'pg_temp'
+  AS $function$
+begin
+  -- Verification proves ownership of one Slack app id and client id; a row saved with another app
+  -- is unverified until an install through it succeeds again, whichever code path saved it.
+  if NEW.slack_app_id is distinct from OLD.slack_app_id or NEW.client_id is distinct from OLD.client_id then
+    NEW.verified_at := null;
+  end if;
+  return NEW;
+end;
+$function$;
+
+REVOKE ALL ON FUNCTION "public"."slack_apps_reset_verification"() FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."slack_apps_reset_verification"() TO "postgres";
+
+REVOKE ALL ON FUNCTION "public"."slack_apps_reset_verification"() FROM PUBLIC, "anon", "authenticated", "service_role";
+
+CREATE TRIGGER slack_apps_reset_verification
+  BEFORE UPDATE ON public.slack_apps
+  FOR EACH ROW
+  EXECUTE FUNCTION public.slack_apps_reset_verification();
+
 CREATE TABLE "public"."slack_link_token_uses" (
   "nonce"           text                     NOT NULL,
   "installation_id" uuid                     NOT NULL,

@@ -86,6 +86,29 @@ describe("SlackAgentSettingsClient Slack permissions", () => {
 	});
 });
 
+describe("SlackAgentSettingsClient own Slack app", () => {
+	it("shows the saved app's own request URLs to paste into its manifest", () => {
+		const view: SlackAgentManagerView = {
+			workspaceId: "w1", canManage: true, configured: { hosted_app: true, custom_app: true }, redirect_url: "https://phaseo.app/callback",
+			scopes: [], auto_routing: false, installed: false, installation: null, charges: [],
+			custom_app: {
+				id: "row-1", slack_app_id: "A0CUSTOM01", client_id: "1.2", created_at: "x", updated_at: "x",
+				events_url: "https://slack.phaseo.app/apps/row-1/events", interactions_url: "https://slack.phaseo.app/apps/row-1/interactions",
+			},
+		};
+		const html = renderToStaticMarkup(
+			<QueryClientProvider client={queryClient}>
+				<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages, Common: commonMessages }}>
+					<SlackAgentSettingsClient view={view} />
+				</NextIntlClientProvider>
+			</QueryClientProvider>,
+		);
+		expect(html).toContain("Request URLs");
+		expect(html).toContain("https://slack.phaseo.app/apps/row-1/events");
+		expect(html).toContain("https://slack.phaseo.app/apps/row-1/interactions");
+	});
+});
+
 describe("SlackAgentSettingsClient Slack search", () => {
 	const GRANTED = { granted: ["chat:write", "search:read.public"], missing: [] };
 	/** The options chosen in the Slack search section. */

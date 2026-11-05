@@ -26,6 +26,11 @@ CREATE UNIQUE INDEX slack_apps_slack_app_id_idx ON public.slack_apps USING btree
 
 CREATE UNIQUE INDEX slack_apps_workspace_idx ON public.slack_apps USING btree (workspace_id);
 
+CREATE TRIGGER slack_apps_reset_verification
+  BEFORE UPDATE ON public.slack_apps
+  FOR EACH ROW
+  EXECUTE FUNCTION public.slack_apps_reset_verification();
+
 CREATE TRIGGER slack_apps_set_updated_at
   BEFORE UPDATE ON public.slack_apps
   FOR EACH ROW

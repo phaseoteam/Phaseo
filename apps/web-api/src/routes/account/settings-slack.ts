@@ -347,8 +347,18 @@ function installationView(row: InstallationRow, keyLimitNanos: number) {
 	};
 }
 
-function customAppView(row: CustomAppRow | null) {
-	return row ? { id: row.id, slack_app_id: row.slack_app_id, client_id: row.client_id, created_at: row.created_at, updated_at: row.updated_at } : null;
+/**
+ * A saved app's own request URLs, which name its row: Slack's URL verification and events for an app
+ * that isn't verified yet only reach it there, so another workspace saving the same app id can't block it.
+ */
+function customAppRequestUrls(env: Env, rowId: string) {
+	let origin = "https://slack.phaseo.app";
+	try { if (env.SLACK_AGENT_PUBLIC_ORIGIN?.trim()) origin = new URL(env.SLACK_AGENT_PUBLIC_ORIGIN.trim()).origin; } catch {}
+	return { events_url: `${origin}/apps/${rowId}/events`, interactions_url: `${origin}/apps/${rowId}/interactions` };
+}
+
+function customAppView(env: Env, row: CustomAppRow | null) {
+	return row ? { id: row.id, slack_app_id: row.slack_app_id, client_id: row.client_id, created_at: row.created_at, updated_at: row.updated_at, ...customAppRequestUrls(env, row.id) } : null;
 }
 
 export async function auditSlack(c: any, context: AccountWorkspaceContext, action: string, target: { id: string; name?: string | null; type?: string }, metadata: Record<string, unknown>) {
@@ -446,7 +456,7 @@ accountSettingsSlackRouter.get("/slack", async (c) => {
 				},
 			}
 			: null,
-		custom_app: customAppView(customApp.data as CustomAppRow | null),
+		custom_app: customAppView(c.env, customApp.data as CustomAppRow | null),
 		charges: (charges.data ?? []).map((row: any) => ({
 			period_start: String(row.period_start),
 			people: Number(row.people) || 0,
@@ -1060,8 +1070,12 @@ accountSettingsSlackRouter.put("/slack/custom-app", bodyLimit({ maxSize: 8 * 102
 	}
 	const secretsCiphertext = await encryptSlackSecrets(c.env, { client_secret: clientSecret, signing_secret: signingSecret });
 	const saved = current
+		// Only over the exact revision read above: a row switched (and maybe verified) since then is left
+		// alone. The database also clears verified_at whenever the app id or client id changes.
 		? await context.client.from("slack_apps").update({ slack_app_id: slackAppId, client_id: clientId, secrets_ciphertext: secretsCiphertext, ...(appChanged ? { verified_at: null } : {}) })
-			.eq("id", current.id).eq("workspace_id", context.workspaceId).select(CUSTOM_APP_COLUMNS).maybeSingle()
+			.eq("id", current.id).eq("workspace_id", context.workspaceId)
+			.eq("slack_app_id", current.slack_app_id).eq("client_id", current.client_id).eq("updated_at", current.updated_at)
+			.select(CUSTOM_APP_COLUMNS).maybeSingle()
 		: await context.client.from("slack_apps").insert({
 			workspace_id: context.workspaceId, slack_app_id: slackAppId, client_id: clientId, secrets_ciphertext: secretsCiphertext, created_by: context.user.id,
 		}).select(CUSTOM_APP_COLUMNS).maybeSingle();
@@ -1075,9 +1089,10 @@ accountSettingsSlackRouter.put("/slack/custom-app", bodyLimit({ maxSize: 8 * 102
 		return json(c, { error: "settings_write_failed" }, 503);
 	}
 	const row = saved.data as CustomAppRow | null;
+	if (!row && current) return json(c, { error: "slack_app_conflict", message: "The Slack app changed while you were saving. Reload and try again." }, 409);
 	if (!row) return json(c, { error: "settings_write_failed" }, 503);
 	await auditSlack(c, context, "custom_app_saved", { id: row.id, name: row.slack_app_id, type: "slack_app" }, { slack_app_id: row.slack_app_id, client_id: row.client_id });
-	return json(c, { custom_app: customAppView(row) }, current ? 200 : 201);
+	return json(c, { custom_app: customAppView(c.env, row) }, current ? 200 : 201);
 });
 
 accountSettingsSlackRouter.delete("/slack/custom-app", async (c) => {
