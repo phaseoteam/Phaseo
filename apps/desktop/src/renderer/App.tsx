@@ -31,6 +31,7 @@ import { ChatNotifications } from "./app/ChatNotifications";
 import { GuideRunNotices } from "./views/pullRequests/GuideRunNotices";
 import { saveChatPreferences, useDiffColours, useWorkspacePreferences } from "./lib/workspacePreferences";
 import { useAppFonts } from "./lib/appFonts";
+import { useAnimations } from "./lib/animations";
 
 /** The app-wide commands behind the keyboard shortcuts (Settings → Keyboard shortcuts). */
 function useShortcuts() {
@@ -168,5 +169,6 @@ export function App() {
 	useAppTheme();
 	useDiffColours();
 	useAppFonts();
+	useAnimations();
 	return <WorkspaceProvider><Shell /></WorkspaceProvider>;
 }

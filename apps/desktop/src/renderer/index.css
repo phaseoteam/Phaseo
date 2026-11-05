@@ -568,3 +568,7 @@ summary:has(> svg:first-child)::before { display: none; }
 
 /* The quit-shortcut hold bar (shell/QuitHoldNotice.tsx). */
 @keyframes quit-hold { from { width: 0%; } to { width: 100%; } }
+
+/* Settings → Appearance → Animations off: panels, menus and dialogs appear at once. Spinners and progress keep moving. */
+:root[data-animations="off"] *, :root[data-animations="off"] *::before, :root[data-animations="off"] *::after { transition-duration: 0s !important; transition-delay: 0s !important; }
+:root[data-animations="off"] .animate-in, :root[data-animations="off"] .animate-out, :root[data-animations="off"] [data-starting-style], :root[data-animations="off"] [data-ending-style] { animation: none !important; }

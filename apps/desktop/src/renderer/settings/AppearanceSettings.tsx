@@ -8,6 +8,9 @@ import { useEffortDisplay } from "../lib/effortDisplay";
 import { PickerGroupsSettings } from "./PickerGroupsSettings";
 import { CustomModelsSettings } from "./CustomModelsSettings";
 import { FontSettings } from "./FontSettings";
+import { Switch } from "../components/ui/switch";
+import { usePersistedState } from "../lib/persistedState";
+import { animationsKey } from "../lib/animations";
 import { builtInThemes, importTheme, serializeTheme, shareCode, themeColours, type Theme, type ThemeHalf, type ThemeMode } from "../lib/themes";
 import type { ThemePreference } from "../types";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
@@ -84,6 +87,7 @@ export function AppearanceSettings() {
 	const { theme: mode, setTheme } = useWorkspace();
 	const { themes, active, choose, save, remove } = useThemes();
 	const [effortDisplay, setEffortDisplay] = useEffortDisplay();
+	const [animations, setAnimations] = usePersistedState<boolean>(animationsKey, true);
 	const [editing, setEditing] = useState<Theme>();
 	useEffect(() => onThemeEditorRequest(() => setEditing(current => current ? undefined : active)), [active]);
 	const [importing, setImporting] = useState(false);
@@ -112,6 +116,8 @@ export function AppearanceSettings() {
 					{([["word", "Word"], ["dots", "Dots"], ["both", "Both"]] as const).map(([value, label]) => <button key={value} type="button" role="radio" aria-checked={effortDisplay === value} onClick={() => setEffortDisplay(value)}
 						className={cn("flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-semibold transition-colors", effortDisplay === value ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>{label}</button>)}
 				</div>} />
+			<SettingsRow title="Animations" description="Panels, menus and dialogs slide and fade as they open. Off, they appear at once; spinners keep moving."
+				control={<Switch aria-label="Animations" checked={animations !== false} onCheckedChange={setAnimations} />} />
 		</SettingsSection>
 		<FontSettings />
 		<PickerGroupsSettings />
