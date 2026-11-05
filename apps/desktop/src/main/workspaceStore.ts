@@ -12,7 +12,7 @@ import type { Account, AgentConnection, Attachment, MessageNotice, Project, Task
 import { usageAmounts, usageTokens, usageTotalsOf } from "../shared/usageAmounts";
 import type { ThreadRoots, TranscriptFile, TranscriptFolder, TranscriptUsage } from "./usageTranscripts";
 import { harnessMerge, staleHour, TranscriptLedger } from "./usageLedgerWrites";
-import { estimateNanos, localDay, noCost, noTokens, tokenTotal, usageIdTime, usageKind, usagePeriods, type HarnessUsage, type TokenPrices, type UsageCost, type UsagePeriod, type UsageReport, type UsageTokens } from "../shared/usageLedger";
+import { estimateNanos, localDay, noCost, noTokens, tokenTotal, usageIdTime, usageKind, usagePeriods, type HarnessUsage, type TokenPrices, type UsageCost, type UsageFilter, type UsagePeriod, type UsageReport, type UsageTokens } from "../shared/usageLedger";
 import type { AutopilotDecision } from "../shared/inbox";
 import { publicMcpConnection, type McpConnection } from "../shared/mcp";
 import { defaultPreferences, validatePreferences } from "../shared/preferences";
@@ -643,16 +643,18 @@ export class WorkspaceStore {
 	 * view (totals, buckets, chats, projects, the pace); `priceOf` then prices each sum Phaseo didn't charge, so no row is
 	 * read on its own.
 	 */
-	usageReport(period: UsagePeriod, priceOf: (model: string) => TokenPrices | undefined, now = new Date()): UsageReport {
+	usageReport(period: UsagePeriod, priceOf: (model: string) => TokenPrices | undefined, now = new Date(), filter: UsageFilter = {}): UsageReport {
 		this.sumStaleQuarters();
 		const days = usagePeriods.find(value => value.id === period)?.days ?? 1;
 		const start = new Date(now); start.setHours(0, 0, 0, 0); start.setDate(start.getDate() - (days - 1));
 		// Quarters are named to the minute; a local midnight is always on one.
 		const from = start.toISOString(), quarter = (at: string) => at.slice(0, 16);
+		// The filter narrows every sum below; the activity counts are about chats, not models, and stay whole.
+		const scope = `${filter.harness ? " AND harness = ?" : ""}${filter.model ? " AND model = ?" : ""}`, scoped = [filter.harness, filter.model].filter((value): value is string => Boolean(value));
 		type Sum = UsageTokens & { model: string; uncharged: number; tokens: number; charged: number | null };
 		const sums = "model, uncharged, SUM(input) AS input, SUM(cached) AS cached, SUM(cache_write) AS cacheWrite, SUM(output) AS output, SUM(reasoning) AS reasoning, SUM(tokens) AS tokens, SUM(cost_nanos) AS charged";
 		const grouped = <Extra extends object = object>(dimensions: string, since = from, where = "", groupBy = dimensions) =>
-			this.statement(`SELECT ${dimensions ? `${dimensions}, ` : ""}${sums} FROM usage_quarters WHERE at >= ? ${where} GROUP BY ${groupBy ? `${groupBy}, ` : ""}model, uncharged`).all(quarter(since)) as (Sum & Extra)[];
+			this.statement(`SELECT ${dimensions ? `${dimensions}, ` : ""}${sums} FROM usage_quarters WHERE at >= ?${scope} ${where} GROUP BY ${groupBy ? `${groupBy}, ` : ""}model, uncharged`).all(quarter(since), ...scoped) as (Sum & Extra)[];
 		const types = noTokens();
 		let cacheSavingsNanos = 0;
 		/** Adds one sum to a cost: Phaseo's charge, or its estimate at catalogue prices, or its tokens as unpriced. */
@@ -678,8 +680,8 @@ export class WorkspaceStore {
 		for (const row of byHarness) add(total, row, true);
 		const models = new Map<string, UsageCost & { harness: string; model: string }>();
 		for (const row of byHarness) { const key = `${row.harness}\0${row.model}`; if (!models.has(key)) models.set(key, { harness: row.harness, model: row.model, ...noCost() }); add(models.get(key)!, row); }
-		const chats = (where = "") => (this.statement(`SELECT COUNT(DISTINCT task_id) AS chats FROM usage_quarters WHERE at >= ? ${where}`).get(quarter(from)) as { chats: number }).chats;
-		const harnessChats = new Map((this.statement("SELECT harness, COUNT(DISTINCT task_id) AS chats FROM usage_quarters WHERE at >= ? GROUP BY harness").all(quarter(from)) as { harness: string; chats: number }[]).map(row => [row.harness, row.chats]));
+		const chats = (where = "") => (this.statement(`SELECT COUNT(DISTINCT task_id) AS chats FROM usage_quarters WHERE at >= ?${scope} ${where}`).get(quarter(from), ...scoped) as { chats: number }).chats;
+		const harnessChats = new Map((this.statement(`SELECT harness, COUNT(DISTINCT task_id) AS chats FROM usage_quarters WHERE at >= ?${scope} GROUP BY harness`).all(quarter(from), ...scoped) as { harness: string; chats: number }[]).map(row => [row.harness, row.chats]));
 		const bucket = period === "today" ? "strftime('%H', at, 'localtime')" : "strftime('%Y-%m-%d', at, 'localtime')";
 		const buckets = new Map<string, Record<string, UsageCost>>();
 		for (const row of grouped<{ bucket: string; harness: string }>(`${bucket} AS bucket, harness`, from, "", "bucket, harness")) {
@@ -690,7 +692,7 @@ export class WorkspaceStore {
 		const autopilot = noCost();
 		for (const row of grouped("", from, "AND autopilot = 1")) add(autopilot, row);
 		const since = (this.statement("SELECT MIN(at) AS since FROM usage_ledger").get() as { since: string | null }).since;
-		const labels = new Map((this.statement("SELECT task_id, MAX(label) AS label FROM usage_quarters WHERE at >= ? AND task_id LIKE 'session:%' AND label IS NOT NULL GROUP BY task_id").all(quarter(from)) as { task_id: string; label: string }[]).map(row => [row.task_id, row.label]));
+		const labels = new Map((this.statement(`SELECT task_id, MAX(label) AS label FROM usage_quarters WHERE at >= ?${scope} AND task_id LIKE 'session:%' AND label IS NOT NULL GROUP BY task_id`).all(quarter(from), ...scoped) as { task_id: string; label: string }[]).map(row => [row.task_id, row.label]));
 		const count = (sql: string) => (this.statement(`SELECT COUNT(*) AS count FROM tasks WHERE json_extract(data, '$.parentId') IS NULL AND ${sql} >= ?`).get(from) as { count: number }).count;
 		let pace: UsageReport["days"];
 		if (period === "today") {
@@ -714,6 +716,8 @@ export class WorkspaceStore {
 			autopilot: { ...autopilot, chats: chats("AND autopilot = 1") },
 			activity: { chatsStarted: count("json_extract(data, '$.createdAt')"), chatsFinished: count("last_completed_at"), chatsSettled: count("json_extract(data, '$.settledAt')"), autopilotChats: chats("AND autopilot = 1") },
 			...pace ? { days: pace } : {},
+			filter,
+			filterOptions: this.statement("SELECT harness, model FROM usage_quarters WHERE at >= ? GROUP BY harness, model ORDER BY SUM(tokens) DESC LIMIT 100").all(quarter(from)) as { harness: string; model: string }[],
 		};
 	}
 	/** A chat's Phaseo usage totals from its stored usage reports. */

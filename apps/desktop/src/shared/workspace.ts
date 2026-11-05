@@ -6,7 +6,7 @@ import type { CreatedOutsideAgentToken, OutsideAgentAccess, OutsideAgentSettings
 import type { IssueDraft, TriagePreparation, TriageProject } from "./triage";
 import type { AutopilotDecision } from "./inbox";
 import type { OperatorState } from "./operator";
-import type { UsageFolder, UsagePeriod, UsageReport } from "./usageLedger";
+import type { UsageFilter, UsageFolder, UsagePeriod, UsageReport } from "./usageLedger";
 import type { PullRequestThreadsQuery, PullRequestThreadsPage } from "./pullRequestThreads";
 import type { ImportableHub, UsageHub, UsageHubRequest, UsageHubSnapshot } from "./usageHubs";
 import { nativeActionText, validateNativeAction, type NativeAction, type NativeActionCatalog } from "./nativeActions";
@@ -266,7 +266,7 @@ export type WorkspaceApi = {
 	autopilotLog: () => Promise<AutopilotDecision[]>;
 	onAutopilotLogChange: (listener: () => void) => () => void;
 	/** Spend through Phaseo today, over the last day and week, by hour, and where today's went (the Today page). */
-	usageReport: (period: UsagePeriod) => Promise<UsageReport>;
+	usageReport: (period: UsagePeriod, filter?: UsageFilter) => Promise<UsageReport>;
 	/** The Claude Code and Codex transcript folders the Usage page reads; "add" asks for a folder. */
 	usageFolders: (request: { type: "list" } | { type: "add"; harness: "claude" | "codex" } | { type: "remove"; directory: string }) => Promise<UsageFolder[]>;
 	/** New usage arrived from transcripts. */

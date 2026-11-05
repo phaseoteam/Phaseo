@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Boxes, CalendarDays, ChartLine, CircleCheck, FolderOpen, Hourglass, Info, MessageSquare, Plane, RotateCw } from "lucide-react";
+import { Boxes, CalendarDays, ChartLine, ChevronDown, CircleCheck, FolderOpen, Hourglass, Info, ListFilter, MessageSquare, Plane, RotateCw } from "lucide-react";
 import { inboxLists } from "../../shared/inbox";
 import { formatAgoShort, formatRoundedCount } from "@phaseo/app-kit/format";
 import { formatSpend } from "../../shared/usageAmounts";
-import { localDay, todayPace, usagePeriods, type TodayPace, type UsageCost, type UsagePeriod, type UsageReport } from "../../shared/usageLedger";
+import { localDay, todayPace, usagePeriods, validateUsageFilter, type TodayPace, type UsageCost, type UsageFilter, type UsagePeriod, type UsageReport } from "../../shared/usageLedger";
 import type { Harness } from "../../shared/workspace";
 import { errorText, useWorkspace, type UsageView } from "../app/workspace";
 import { harnessNames, modelLabel } from "../chat/ModelPicker";
@@ -15,6 +15,7 @@ import { cn } from "../lib/utils";
 import { UsageLimitsPanel } from "../settings/UsageSettings";
 import { Group, Row } from "./Inbox";
 import { useCommand } from "../lib/keybindings";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 
 /** Totals as the website's budgets show them: $1.32, $0.51, with four places below a cent. */
 const money = formatSpend;
@@ -30,7 +31,8 @@ const modelName = modelLabel;
 const views: { id: UsageView; label: string }[] = [{ id: "cost", label: "Cost" }, { id: "tokens", label: "Tokens" }, { id: "limits", label: "Limits" }];
 
 /** The report for a period, read on opening, when chats change (a turn adds usage), every minute and on asking. */
-function useUsageReport(period: UsagePeriod) {
+const filterKey = (filter: UsageFilter | undefined) => JSON.stringify([filter?.harness ?? "", filter?.model ?? ""]);
+function useUsageReport(period: UsagePeriod, filter: UsageFilter) {
 	const { overview } = useWorkspace();
 	const api = window.phaseoDesktop?.workspace;
 	const [report, setReport] = useState<UsageReport>();
@@ -42,14 +44,16 @@ function useUsageReport(period: UsagePeriod) {
 	useEffect(() => {
 		if (!api) return;
 		let active = true;
-		const changed = report?.period !== period;
+		const changed = report?.period !== period || filterKey(report.filter) !== filterKey(filter);
 		const timer = window.setTimeout(() => {
 			setLoading(true);
-			void api.usageReport(period).then(value => { if (active) { setReport(value); setError(""); } }, reason => { if (active) setError(errorText(reason)); }).finally(() => { if (active) setLoading(false); });
+			void api.usageReport(period, filter).then(value => { if (active) { setReport(value); setError(""); } }, reason => { if (active) setError(errorText(reason)); }).finally(() => { if (active) setLoading(false); });
 		}, report && !changed ? 2000 : 0);
 		return () => { active = false; window.clearTimeout(timer); };
-	}, [api, overview, tick, period]);
-	return { report: report?.period === period ? report : undefined, stale: report?.period !== period ? report : undefined, error, loading, refresh: () => setTick(value => value + 1) };
+	// The filter by value, so a new object with the same choice does not read the report again.
+	}, [api, overview, tick, period, filterKey(filter)]);
+	const current = report?.period === period && filterKey(report.filter) === filterKey(filter);
+	return { report: current ? report : undefined, stale: current ? undefined : report, error, loading, refresh: () => setTick(value => value + 1) };
 }
 
 /** How today compares with the usual by this time, in words. */
@@ -59,6 +63,30 @@ function paceText(today: number, pace: TodayPace) {
 	const difference = today - pace.usualByNow, share = pace.usualByNow ? Math.round(Math.abs(difference) / pace.usualByNow * 100) : undefined;
 	if (Math.abs(difference) < 0.005e9 && (share ?? 0) < 5) return "About your usual for this time of day.";
 	return `${money(Math.abs(difference))} ${difference > 0 ? "more" : "less"} than usual by now${share !== undefined ? ` (${difference > 0 ? "+" : "−"}${share}%)` : ""}.`;
+}
+
+/** Narrows the page to one agent or one of its models, from what the period used. */
+function UsageFilterMenu({ value, options, onChange }: { value: UsageFilter; options: { harness: string; model: string }[]; onChange: (filter: UsageFilter) => void }) {
+	const harnesses = [...new Set([...options.map(option => option.harness), ...value.harness ? [value.harness] : []])];
+	const encode = (filter: UsageFilter) => JSON.stringify(filter.model ? { harness: filter.harness, model: filter.model } : filter.harness ? { harness: filter.harness } : {});
+	const label = value.model ? modelName(value.model) : value.harness ? harnessName(value.harness) : "All agents";
+	const choose = (encoded: string) => { try { onChange(validateUsageFilter(JSON.parse(encoded))); } catch { onChange({}); } };
+	return <DropdownMenu>
+		<DropdownMenuTrigger aria-label={`Filter: ${label}`} render={<button type="button" className={cn("flex h-6 min-w-0 max-w-48 items-center gap-1 rounded-md px-1.5 text-2xs font-medium outline-none hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring", value.harness ? "text-foreground" : "text-muted-foreground")} />}>
+			<ListFilter aria-hidden className="size-3.5 shrink-0" /><span className="truncate">{label}</span><ChevronDown aria-hidden className="size-3 shrink-0 opacity-70" />
+		</DropdownMenuTrigger>
+		<DropdownMenuContent align="end" className="max-h-96 w-64 overflow-y-auto">
+			<DropdownMenuRadioGroup value={encode(value)} onValueChange={next => choose(String(next))}>
+				<DropdownMenuRadioItem value={encode({})} className="text-xs">All agents</DropdownMenuRadioItem>
+				{harnesses.map(harness => <DropdownMenuGroup key={harness}>
+					<DropdownMenuSeparator />
+					<DropdownMenuLabel className="text-2xs">{harnessName(harness)}</DropdownMenuLabel>
+					<DropdownMenuRadioItem value={encode({ harness })} className="text-xs">All {harnessName(harness)} models</DropdownMenuRadioItem>
+					{options.filter(option => option.harness === harness).map(option => <DropdownMenuRadioItem key={option.model} value={encode(option)} className="text-xs"><span className="truncate">{modelName(option.model)}</span></DropdownMenuRadioItem>)}
+				</DropdownMenuGroup>)}
+			</DropdownMenuRadioGroup>
+		</DropdownMenuContent>
+	</DropdownMenu>;
 }
 
 /** A small set of choices, one picked. */
@@ -245,7 +273,8 @@ export function Usage() {
 	useCommand("usage.period.day", () => setPeriod("today")); useCommand("usage.period.week", () => setPeriod("7d"));
 	useCommand("usage.period.month", () => setPeriod("30d")); useCommand("usage.period.quarter", () => setPeriod("90d"));
 	const [breakdown, setBreakdown] = useState<Breakdown>("models");
-	const { report, stale, error, loading, refresh } = useUsageReport(period);
+	const [filter, setFilter] = usePersistedState<UsageFilter>("phaseo.desktop.usageFilter", {});
+	const { report, stale, error, loading, refresh } = useUsageReport(period, filter);
 	const shown = report ?? stale;
 	const metric = view === "tokens" ? "tokens" : "cost";
 	const now = useMemo(() => new Date(shown?.generatedAt ?? Date.now()), [shown]);
@@ -267,6 +296,7 @@ export function Usage() {
 			<h1 className="text-xs font-medium">Usage</h1>
 			<span className="hidden min-w-0 truncate text-2xs text-muted-foreground md:block">{view === "limits" ? "Subscription limits" : range}</span>
 			<span className="flex-1" />
+			{view !== "limits" && <UsageFilterMenu value={filter} options={shown?.filterOptions ?? []} onChange={setFilter} />}
 			<Choice label="View" options={views} value={view} onChange={setView} />
 			<Choice label="Period" options={usagePeriods} value={period} onChange={setPeriod} disabled={view === "limits"} />
 			{view !== "limits" && <Tip label="Check again"><button type="button" aria-label="Check again" onClick={refresh} className="grid size-6 place-items-center rounded-md text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring [&_svg]:size-3.5"><RotateCw className={loading ? "animate-spin" : undefined} /></button></Tip>}

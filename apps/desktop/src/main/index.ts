@@ -94,7 +94,7 @@ import { TranscriptScanner, transcriptFiles, transcriptFolders, type TranscriptF
 import { listNativeSessions, readNativeSession } from "./sessionImport";
 import { validateNativeSessionImport, type NativeSession } from "../shared/sessionImport";
 import { TranscriptWriter } from "./usageLedgerWrites";
-import { localDay, modelMatchKey, type TokenPrices, type UsagePeriod } from "../shared/usageLedger";
+import { localDay, modelMatchKey, validateUsageFilter, type TokenPrices, type UsagePeriod } from "../shared/usageLedger";
 import { ghFailure, projectPullRequestAction, projectPullRequestBehind, projectPullRequestCandidates, projectPullRequestView, readPullRequestView, runGh } from "./projectPullRequestView";
 import { PullRequestGuides } from "./pullRequestGuides";
 import { PullRequestWatcher } from "./pullRequestWatcher";
@@ -222,11 +222,11 @@ ipcMain.handle("workspace:thread-servers", (event, taskId: unknown) => { const r
 ipcMain.handle("workspace:stop-thread-server", (event, taskId: unknown, port: unknown) => { const roots = serverRoots(event, taskId); if (!Number.isSafeInteger(port) || Number(port) < 1 || Number(port) > 65535) throw new Error("Invalid port."); return stopThreadServer(roots, Number(port)); });
 ipcMain.handle("workspace:missions", event => { if (!senderWindow(event)) throw new Error("Invalid scheduled task request."); return workspaceRuntime.store.missions.list(); });
 ipcMain.handle("workspace:mission", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid scheduled task request."); return missionService.command(validateMissionCommand(value)); });
-ipcMain.handle("workspace:usage-report", async (event, period: unknown) => {
+ipcMain.handle("workspace:usage-report", async (event, period: unknown, filter: unknown) => {
 	if (!senderWindow(event) || !["today", "7d", "30d", "90d"].includes(period as string)) throw new Error("Invalid usage request.");
 	// New Claude Code and Codex history is read in the background; the page hears when it lands.
 	void transcriptScanner?.scan();
-	const report = workspaceRuntime.store.usageReport(period as UsagePeriod, await usagePrices());
+	const report = workspaceRuntime.store.usageReport(period as UsagePeriod, await usagePrices(), new Date(), validateUsageFilter(filter));
 	const pullRequests = await usagePullRequests(localDay(new Date(report.from)));
 	return pullRequests ? { ...report, activity: { ...report.activity, pullRequests } } : report;
 });

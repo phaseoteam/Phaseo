@@ -8,7 +8,7 @@ import { defaultPreferences, defaultWorktreeCleanup } from "../shared/preference
 
 // The per-area groups at their defaults (shared/chatPreferences.ts and the rest).
 const preferenceGroups = { chat: defaultPreferences.chat, browser: defaultPreferences.browser, sourceControl: defaultPreferences.sourceControl, threads: defaultPreferences.threads };
-import { localDay, todayPace } from "../shared/usageLedger";
+import { localDay, todayPace, validateUsageFilter } from "../shared/usageLedger";
 import { DatabaseSync } from "node:sqlite";
 
 describe("workspace durability", () => {
@@ -278,6 +278,16 @@ describe("IPC validation", () => {
 			const week = store.usageReport("7d", prices, now);
 			expect(week.buckets.map(value => value.start)).toEqual(Array.from({ length: 7 }, (_, index) => localDay(new Date(2026, 9, 15 + index))));
 			expect([week.total.chargedNanos, week.days]).toEqual([6_500_000, undefined]);
+			// Narrowed to one agent, or one of its models, every sum follows; the choices stay the whole period's.
+			const claudeOnly = store.usageReport("today", prices, now, { harness: "claude" });
+			expect(claudeOnly.total).toMatchObject({ costNanos: 17_500_000, unpricedTokens: 300, chats: 1 });
+			expect(claudeOnly.harnesses.map(value => value.harness)).toEqual(["claude"]);
+			expect(claudeOnly.filterOptions).toEqual(report.filterOptions);
+			expect(report.filterOptions.map(value => `${value.harness} ${value.model}`).sort()).toEqual(["claude claude-opus-5-5", "claude unknown-model", "phaseo anthropic/claude-opus-5.5", "phaseo openai/gpt-6.1"]);
+			const gpt = store.usageReport("today", prices, now, { harness: "phaseo", model: "openai/gpt-6.1" });
+			expect(gpt.total).toMatchObject({ chargedNanos: 500_000, chats: 1 }); expect(gpt.chats.map(value => value.taskId)).toEqual([other.id]); expect(gpt.autopilot.costNanos).toBe(500_000);
+			expect(gpt.filter).toEqual({ harness: "phaseo", model: "openai/gpt-6.1" });
+			expect(() => validateUsageFilter({ model: "openai/gpt-6.1" })).toThrow();
 			store.pruneUsageLedger(5, now);
 			expect(store.usageReport("today", prices, now).since).toBe(at(1, 9));
 		} finally { store.close(); }
