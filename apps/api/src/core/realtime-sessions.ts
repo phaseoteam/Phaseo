@@ -998,10 +998,10 @@ export function isRealtimePolicyGraceReason(reason: string): boolean {
 	return REALTIME_POLICY_GRACE_REASONS.some((graceReason) => reason.includes(graceReason));
 }
 
-/** Key limits, or a workspace budget raised by gateway_workspace_budget_status. */
+/** Key limits, or a workspace or department budget (gateway_workspace_budget_status, gateway_department_budget_status). */
 export function isRealtimeSpendLimitReason(message: string): boolean {
 	return REALTIME_SPEND_LIMIT_REASONS.some((reason) => message.includes(reason))
-		|| /workspace_[a-z]+_cost_budget_reached/.test(message);
+		|| /(?:workspace|department)_[a-z]+_cost_budget_reached/.test(message);
 }
 
 type RealtimePolicyOutcome = { ok: true } | { ok: false; reason: string; spendLimit: boolean };

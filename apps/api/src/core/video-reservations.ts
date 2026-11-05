@@ -15,7 +15,8 @@ export type VideoReservationDenial = { status: number; code: string; reason: str
 
 function reservationDenial(reason: string): VideoReservationDenial | null {
 	if (isInsufficientVideoReservationStatus(reason)) return { status: 402, code: "insufficient_funds", reason };
-	if (/^(daily|weekly|monthly)_(cost|request)_limit_reached$/.test(reason) || reason === "key_limit_soft_blocked") {
+	if (/^(daily|weekly|monthly)_(cost|request)_limit_reached$/.test(reason) || reason === "key_limit_soft_blocked" ||
+		/^department_(daily|weekly|monthly)_cost_budget_reached$/.test(reason)) {
 		return { status: 429, code: "key_limit_exceeded", reason };
 	}
 	if (/^workspace_(daily|weekly|monthly|lifetime)_cost_budget_reached$/.test(reason)) {

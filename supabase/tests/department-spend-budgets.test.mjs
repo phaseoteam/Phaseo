@@ -57,8 +57,11 @@ try {
     }
     // The table is created by the first migration; the later one only replaces its comment.
     assert.ok(migration.includes(tableDefinition.replace(COMMENT_LINE, migration.match(COMMENT_LINE)[0]).trim()), 'the table is in the migration');
-    assert.equal(blockMigration.replace(/^SET local check_function_bodies = off;\n\n/, ''), `${sweepDefinition}\n${tableDefinition.match(COMMENT_LINE)[0]}\n`,
-        'the blocking migration matches the declarative sweep and table comment');
+    // 20261104233604_budget_enforcement_money_hygiene replaced the table comment again.
+    const holdsMigration = await read('../migrations/20261104233604_budget_enforcement_money_hygiene.sql');
+    assert.ok(holdsMigration.includes(tableDefinition.match(COMMENT_LINE)[0]), 'the latest table comment is in its migration');
+    assert.equal(blockMigration.replace(/^SET local check_function_bodies = off;\n\n/, ''), `${sweepDefinition}\n${blockMigration.match(COMMENT_LINE)[0]}\n`,
+        'the blocking migration matches the declarative sweep');
     const manifest = JSON.parse(await read('../schemas/.pgdelta-export.json'));
     for (const file of schemaFiles) {
         const path = file.replace('../schemas/', '');

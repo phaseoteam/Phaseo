@@ -12,6 +12,7 @@ CREATE OR REPLACE FUNCTION public.gateway_fetch_request_context_bundle (
 declare
   v_context jsonb;
   v_budget jsonb;
+  v_department jsonb;
   v_byok jsonb;
   v_settings jsonb;
   v_billing text;
@@ -25,6 +26,13 @@ begin
   v_budget := public.gateway_workspace_budget_status(workspace_id,0);
   if coalesce((v_context->'key_limit_ok'->>'ok')::boolean,true) and not coalesce((v_budget->>'ok')::boolean,true) then
     v_context := jsonb_set(v_context,'{key_limit_ok}',v_budget,true);
+  end if;
+  -- Department budgets, for when the SpendLimit Durable Object cannot decide.
+  if coalesce((v_context->'key_limit_ok'->>'ok')::boolean,true) then
+    v_department := public.gateway_department_budget_status(workspace_id,api_key_id,0);
+    if not coalesce((v_department->>'ok')::boolean,true) then
+      v_context := jsonb_set(v_context,'{key_limit_ok}',v_department,true);
+    end if;
   end if;
   -- Return configured workspace budgets even when below their limit, so Workers
   -- never reuse an admission snapshot for a workspace with a spending cap.
