@@ -1,18 +1,17 @@
 import { useEffect, type ReactNode } from "react";
 import { EditorContent } from "@tiptap/react";
 import { ScrollArea } from "../components/ui/scroll-area";
-import { ArrowUp, Pilcrow, Square } from "lucide-react";
+import { ArrowUp, Square } from "lucide-react";
 import { cn } from "../lib/utils";
 import { chatDragType } from "../lib/mentions";
 import type { ComposerMenu } from "./ComposerMenu";
 import { draggedChat, type ComposerEditor } from "./composerEditor";
-import { dispatchComposerKey, runCommand, shortcut } from "../lib/keybindings";
+import { dispatchComposerKey, useCommand } from "../lib/keybindings";
 import { isMac } from "../lib/shortcuts";
 import { keyLabel } from "../../shared/keybindings";
 import { isSendKey, useSendKey } from "./sendKey";
-import { CodeBlockMenu } from "./CodeBlockMenu";
+import { insertCodeBlock } from "./composerCodeBlock";
 import { DictationButton } from "./DictationButton";
-import { useWorkspacePreferences } from "../lib/workspacePreferences";
 
 /** The message box: an editor whose files, chats and attachments sit inline as chips. */
 export function Composer({ editor, onSubmit, onStop, disabled, canSend, running, size = "default", chips, tools, model, footer, menu, className, ultrathink, shortcuts = true }: {
@@ -37,6 +36,8 @@ export function Composer({ editor, onSubmit, onStop, disabled, canSend, running,
 	shortcuts?: boolean;
 }) {
 	const sendKey = useSendKey();
+	// Formatting is by keyboard only: Ctrl+Alt+C for a code block, Ctrl+/ for the Markdown source (App).
+	useCommand("composer.codeBlock", () => { if (disabled) return false; return insertCodeBlock(editor); }, shortcuts);
 	editor.keys.current = event => {
 		if (menu?.onKeyDown(event)) return true;
 		// The composer's own shortcuts (history, steer, stash) come before sending and the editor's keys; one that
@@ -65,8 +66,6 @@ export function Composer({ editor, onSubmit, onStop, disabled, canSend, running,
 			<div className="flex items-center gap-1 px-2 pt-1 pb-2">
 				{tools}
 				<DictationButton editor={editor} disabled={disabled} active={shortcuts} />
-				<CodeBlockMenu editor={editor} disabled={disabled} />
-				<RichTextToggle />
 				<div className="ml-auto flex min-w-0 items-center gap-1">
 					{model}
 					{running && onStop
@@ -84,13 +83,6 @@ export function ComposerChip({ children, onRemove, title }: { children: ReactNod
 		<span className="truncate">{children}</span>
 		{onRemove && <button type="button" aria-label="Remove" onClick={onRemove} className="grid size-4 place-items-center rounded text-muted-foreground hover:bg-background hover:text-foreground">×</button>}
 	</span>;
-}
-
-/** Rich text styles Markdown as it is typed; off, the message box shows the plain source. */
-function RichTextToggle() {
-	const richText = useWorkspacePreferences().chat.richTextComposer;
-	const key = shortcut("composer.richText");
-	return <ToolButton label={`${richText ? "Show Markdown source" : "Show rich text"}${key ? ` (${key})` : ""}`} active={!richText} onClick={() => runCommand("composer.richText")}><Pilcrow /></ToolButton>;
 }
 
 export function ToolButton({ label, onClick, disabled, active, children }: { label: string; onClick?: () => void; disabled?: boolean; active?: boolean; children: ReactNode }) {

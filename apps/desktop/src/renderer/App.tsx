@@ -75,7 +75,7 @@ function useShortcuts() {
 	});
 	useCommand("editor.openFavorite", () => { const projectId = openChat()?.projectId; if (!projectId) return false; void openInFavouriteEditor(projectId); });
 	// The composer's own controls, marked with data-composer-shortcut; nothing happens when the open composer has no such control.
-	useCommands(["composer.mode", "composer.workspace", "composer.branch"], command => {
+	useCommands(["composer.workspace", "composer.branch"], command => {
 		const control = document.querySelector<HTMLButtonElement>(`main [data-composer-shortcut="${command}"]`);
 		if (!control || control.disabled) return false;
 		control.focus(); control.click();

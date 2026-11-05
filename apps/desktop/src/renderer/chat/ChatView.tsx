@@ -30,7 +30,8 @@ import { Conversation } from "./Conversation";
 import { ModelPicker, harnessNames, knownModel, modelName } from "./ModelPicker";
 import { silenceLabel, silentFor } from "../../shared/inbox";
 import { useNow } from "../lib/useNow";
-import { PermissionMenu, PlanIndicator } from "./NewChat";
+import { PlanIndicator } from "./NewChat";
+import { PermissionChoice, usePermissionShortcut } from "./PermissionChoice";
 import { openModelPickerEvent, renameChatEvent, useModelSettingActions, type ComposerAction } from "./composerActions";
 import { ChildRequests, Requests } from "./Requests";
 import { ChatBranchPicker } from "./ChatBranchPicker";
@@ -158,6 +159,8 @@ function ChatComposer({ task }: { task: Task }) {
 	};
 	const running = ["running", "waiting"].includes(task.status);
 	const code = task.mode !== "chat";
+	const setPermission = (permissionMode: NonNullable<Task["permissionMode"]>) => void command({ type: "update-task", id: task.id, permissionMode });
+	usePermissionShortcut(task.permissionMode, setPermission, code && !task.archived);
 	const preferences = useWorkspacePreferences();
 	const followUpSteers = preferences.chat.followUp === "steer";
 	// While the agent waits on a question, the composer is its own-answer field.
@@ -346,13 +349,12 @@ function ChatComposer({ task }: { task: Task }) {
 				{task.projectId && <IssueBadge taskId={task.id} links={overview.tasks.find(value => value.id === task.id)?.issues} className="mr-1 h-7 px-1.5 hover:bg-accent/60" />}
 				{/* Only Phaseo's harness reports its window, and /compact is its own. */}
 				<ContextMeter task={task} onCompact={canCompact && task.harness === "phaseo" ? () => void command({ type: "send", id: task.id, text: "/compact" }) : undefined} />
-				<ModelPicker selections={[selection]} onChange={values => void changeModel(values[0])} onSettingsChange={next => void changeSettings(next)} agents={code} disabled={running || task.archived} openEvent={openModelPickerEvent} hidden={settingsProject(overview.projects, task.projectId)?.settings?.disabledHarnesses} />
+				<ModelPicker footer={code ? <PermissionChoice value={task.permissionMode} onChange={setPermission} /> : undefined} selections={[selection]} onChange={values => void changeModel(values[0])} onSettingsChange={next => void changeSettings(next)} agents={code} disabled={running || task.archived} openEvent={openModelPickerEvent} hidden={settingsProject(overview.projects, task.projectId)?.settings?.disabledHarnesses} />
 			</>}
 			tools={<>
 				<ToolButton label="Attach files" disabled={uploading || task.archived} onClick={() => void attach()}><Paperclip /></ToolButton>
 				{!task.archived && <StashMenu onRestore={id => stash.restore(id)} />}
 				{code && task.projectId && <ChatBranchPicker task={task} />}
-				{code && <PermissionMenu value={task.permissionMode} onChange={permissionMode => void command({ type: "update-task", id: task.id, permissionMode })} />}
 				{code && (preferences.autopilot || task.autopilot) && <AutopilotControl value={task.autopilot ? { capNanos: task.autopilot.capNanos } : undefined} disabled={running || task.archived || !preferences.autopilot} disabledReason={preferences.autopilot ? "Stop the chat to turn on Autopilot." : "Allow Autopilot in Settings → Experimental."} onChange={autopilot => void command({ type: "update-task", id: task.id, autopilot })} />}
 				{plan && <PlanIndicator onClear={running ? undefined : () => void command({ type: "update-task", id: task.id, mode: "code" })} />}
 			</>} /></ComposerTaskContext>

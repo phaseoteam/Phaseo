@@ -35,6 +35,7 @@ import { newChatDraftEvent, newChatDraftKey } from "../lib/newChatDraft";
 import { useWorktreeTarget, WorktreeTargetControls } from "./WorktreeTarget";
 import { OutOfUsageOffer } from "./OutOfUsageOffer";
 import { useCommand } from "../lib/keybindings";
+import { PermissionChoice, usePermissionShortcut } from "./PermissionChoice";
 import { showToast } from "../components/ui/toast";
 
 const suggestions = [
@@ -88,6 +89,8 @@ export function NewChat() {
 	const remembered = preferences.defaultSelection ?? preferences.recentSelection;
 	const [selections, setSelections] = useState<ModelSelection[]>(remembered ? [remembered] : []);
 	const code = mode === "code";
+	const choosePermission = (value: NonNullable<Task["permissionMode"]>) => { setPermissionMode(value); if (value !== "full-access") setAutopilot(undefined); };
+	usePermissionShortcut(autopilot ? "full-access" : permissionMode, choosePermission, code);
 	// Factory's per-item worktrees stay out of the picker; their threads still list.
 	const projects = pickerProjects(overview.projects.filter(project => !project.worktree?.removedAt && !isFactoryWorktree(project)), newChatProjectId);
 	const project = projects.find(value => value.id === newChatProjectId);
@@ -256,10 +259,9 @@ export function NewChat() {
 					</ComposerChip>)}
 				</> : undefined}
 				model={<>
-					<ModelPicker selections={selections} onChange={setSelections} onSettingsChange={next => setSelections([next])} multiple={!code || (!!worktree.createInWorktree && !triaging)} agents={code} disabled={busy} openEvent={openModelPickerEvent} hidden={hidden} />
+					<ModelPicker footer={code ? <PermissionChoice value={autopilot ? "full-access" : permissionMode} onChange={choosePermission} /> : undefined} selections={selections} onChange={setSelections} onSettingsChange={next => setSelections([next])} multiple={!code || (!!worktree.createInWorktree && !triaging)} agents={code} disabled={busy} openEvent={openModelPickerEvent} hidden={hidden} />
 				</>}
 				tools={<>
-					{code && <PermissionMenu value={autopilot ? "full-access" : permissionMode} onChange={value => { setPermissionMode(value); if (value !== "full-access") setAutopilot(undefined); }} />}
 					{code && workspacePreferences.autopilot && <AutopilotControl value={autopilot} onChange={value => setAutopilot(value ?? undefined)} />}
 					{code && project && !triaging && !fanOut && <WorktreeTargetControls target={worktree} disabled={busy} />}
 					{code && plan && <PlanIndicator onClear={() => setPlanMode("code")} />}

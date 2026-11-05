@@ -1,5 +1,5 @@
 import { formatDateParts } from "@phaseo/app-kit/format";
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ChevronDown, CircleCheck, LoaderCircle, SearchIcon, Star } from "lucide-react";
 import { runnableHarnesses, type Harness, type ModelOption } from "../../shared/workspace";
@@ -154,7 +154,9 @@ type Section = { heading: string; entries: Entry[]; harness?: Harness; older?: n
 type Row = { type: "heading"; key: string; heading: string } | { type: "entry"; key: string; entry: Entry } | { type: "older"; key: string; harness: Harness; older: number };
 const rowHeight = (row: Row) => row.type === "heading" ? 30 : 32;
 
-export function ModelPicker({ selections, onChange, multiple, agents, disabled, className, openEvent, onSettingsChange, hidden }: {
+export function ModelPicker({ selections, onChange, multiple, agents, disabled, className, openEvent, onSettingsChange, hidden, footer }: {
+	/** At the foot of the picker, on the right: the chat's permissions. */
+	footer?: ReactNode;
 	selections: ModelSelection[];
 	onChange: (selections: ModelSelection[]) => void;
 	/** Ctrl/⌘-click adds models alongside the first, to compare their answers. */
@@ -421,8 +423,9 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 					<ModelSettingsColumn selection={settingsSelection} descriptors={descriptors} onChange={next => { setPending(next); onSettingsChange?.(next); }} />
 				</ScrollArea>}
 				</div>
-				{settingsSelection && descriptors.some(descriptor => speedIds.includes(descriptor.id)) && <div className="flex flex-wrap items-center gap-2 border-t border-border/70 bg-muted/40 px-3 py-2">
-					<SpeedSegments selection={settingsSelection} descriptors={descriptors} onChange={next => { setPending(next); onSettingsChange?.(next); }} />
+				{((settingsSelection && descriptors.some(descriptor => speedIds.includes(descriptor.id))) || footer) && <div className="flex flex-wrap items-center gap-2 border-t border-border/70 bg-muted/40 px-3 py-2">
+					{settingsSelection && descriptors.some(descriptor => speedIds.includes(descriptor.id)) && <SpeedSegments selection={settingsSelection} descriptors={descriptors} onChange={next => { setPending(next); onSettingsChange?.(next); }} />}
+					{footer}
 				</div>}
 	</PopoverContent>
 	</Popover>;
