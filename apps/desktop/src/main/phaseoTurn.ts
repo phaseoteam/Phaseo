@@ -5,6 +5,7 @@ import type { ModelFacts, Task } from "../shared/workspace";
 import type { WorkspaceStore } from "./workspaceStore";
 import { publishPhaseoPlan } from "./phaseoPlanTools";
 import { span } from "./diagnostics/tracer";
+import { phaseoMcpCalls } from "./phaseoMcp";
 
 /** Steps one turn may take before it pauses; sending another message carries on from there. */
 export const phaseoTurnStepLimit = 100;
@@ -217,7 +218,12 @@ export async function runPhaseoTurn(turn: PhaseoTurn): Promise<AgentRunResult<un
 		if (event.type === "response.output_text.delta") { turn.streamed.add(event.stepIndex); callbacks.onDelta(`step:${event.stepIndex}`, event.delta); }
 		if (event.type === "response.item" && event.item.type === "message" && !turn.streamed.has(event.stepIndex)) { turn.streamed.add(event.stepIndex); callbacks.onDelta(`step:${event.stepIndex}`, event.item.content); }
 		if (event.type === "response.reasoning.delta") callbacks.onActivity?.({ id: `reasoning:${event.stepIndex}`, type: "reasoning", title: "Reasoning", text: event.delta, append: true });
-		if (event.type === "tool.started" || event.type === "tool.completed" || event.type === "tool.failed") callbacks.onActivity?.({ id: event.toolCallId, type: "tool", title: turn.labels[event.toolName] ?? event.toolName, text: event.error ?? activityText(event.output), status: event.type === "tool.started" ? "running" : event.type === "tool.failed" ? "failed" : "completed" });
+		if (event.type === "tool.started" || event.type === "tool.completed" || event.type === "tool.failed") {
+			const mcp = event.type === "tool.started" ? undefined : phaseoMcpCalls.get(event.toolCallId);
+			if (mcp) phaseoMcpCalls.delete(event.toolCallId);
+			callbacks.onActivity?.({ id: event.toolCallId, type: "tool", title: turn.labels[event.toolName] ?? event.toolName, text: event.error ?? activityText(event.output), status: event.type === "tool.started" ? "running" : event.type === "tool.failed" ? "failed" : "completed",
+				...mcp && event.type === "tool.completed" ? { mcpCall: { ...mcp, result: event.output } } : {} });
+		}
 		if (event.type === "step.completed" && event.usage) callbacks.onActivity?.({ id: `usage:${event.stepIndex}`, type: "usage", title: "Usage", text: JSON.stringify({ ...event.usage, contextTokens }, null, 2) });
 		if (event.type === "model.retrying") callbacks.onActivity?.({ id: `retry:${event.stepIndex}`, type: "tool", title: "Retrying the model request", text: `${event.error ?? "The request failed."} Trying again in ${Math.max(1, Math.round((event.delayMs ?? 0) / 1000))} s (attempt ${(event.attempt ?? 1) + 1} of 4).`, status: "completed" });
 		if (event.type === "history.repaired") callbacks.onActivity?.({ id: `repaired:${event.toolCallIds.join(",")}`.slice(0, 200), type: "tool", title: "Recovered the interrupted turn", text: `${event.toolCallIds.length} unfinished tool call${event.toolCallIds.length === 1 ? " was" : "s were"} marked as not run.`, status: "completed" });

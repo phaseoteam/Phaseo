@@ -23,6 +23,8 @@ type PromptServer = { id: string; name: string; projectId?: string; list: Return
 export type PhaseoMcpSession = { tools: AgentTool[]; labels: Record<string,string>; promptServers: PromptServer[]; close: () => Promise<void> };
 /** A connected server and what it offers. Forms it asks for go to whichever turn is using it now. */
 type Server = { connection: McpConnection; client: Client; http?: StreamableHTTPClientTransport; tools: Tool[]; prompts: boolean; resources: boolean; budgets: Set<McpCallBudget>; waitingForms: number; turn: { callbacks?: AgentCallbacks; signal: AbortSignal } };
+/** The MCP calls under way, by tool call id: the turn names the server and tool when the call ends (MCP Apps), then drops it. */
+export const phaseoMcpCalls = new Map<string, { server: string; tool: string; input: unknown }>();
 /** Servers kept between a chat's turns, so each message does not start them again. */
 type Pooled = { connectionId: string; server: Promise<Server>; leases: number; idle?: ReturnType<typeof setTimeout>; broken: boolean };
 const pool = new Map<string, Pooled>();
@@ -116,6 +118,7 @@ function serverTools(server: Server, signal: AbortSignal) {
     if (!input || typeof input !== "object" || Array.isArray(input) || JSON.stringify(input).length > 1000000) throw Error("Invalid MCP tool arguments.");
     const budget = new McpCallBudget(); server.budgets.add(budget); if (server.waitingForms) budget.pause();
     try {
+     phaseoMcpCalls.set(context.toolCall.id, { server: nativeMcpName(connection), tool: tool.name, input });
      const result = await client.callTool({ name: tool.name, arguments: input as Record<string,unknown> }, undefined, { signal: AbortSignal.any([signal, ...(context.signal ? [context.signal] : []), budget.signal]), timeout: 2147483647 });
      if (JSON.stringify(result).length > 1000000) throw Error("MCP tool result exceeds the 1 MB limit.");
      if (result.isError) throw Error(`MCP tool returned an error: ${JSON.stringify(result.content).slice(0,5000)}`);

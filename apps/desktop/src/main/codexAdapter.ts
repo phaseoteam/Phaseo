@@ -162,7 +162,10 @@ export class CodexAdapter implements AgentAdapter {
 					if ((method === "item/started" || method === "item/completed") && event.item && event.item.type !== "agentMessage" && event.item.type !== "userMessage") {
 						const item = event.item;
 						const type = item.type === "reasoning" ? "reasoning" : item.type === "plan" ? "plan" : "tool";
-						callbacks.onActivity?.({ id: item.id, type, title: item.command ?? item.type, text: item.type === "reasoning" ? [...(item.summary ?? []), ...(item.content ?? [])].join("\n") : item.text ?? item.aggregatedOutput ?? JSON.stringify(item, null, 2), status: method === "item/started" ? "running" : item.status === "failed" ? "failed" : "completed" });
+						// An MCP call keeps its server, tool, arguments and result, for MCP Apps (mcpCall).
+						const mcp = item.type === "mcpToolCall" && method === "item/completed" && typeof item.server === "string" && typeof item.tool === "string"
+							? { mcpCall: { server: item.server, tool: item.tool, input: item.arguments ?? {}, result: item.result ?? (item.error ? { content: [{ type: "text", text: String((item.error as { message?: unknown }).message ?? "The tool failed.") }], isError: true } : undefined) } } : {};
+						callbacks.onActivity?.({ id: item.id, type, ...mcp, title: item.type === "mcpToolCall" && typeof item.tool === "string" ? item.tool : item.command ?? item.type, text: item.type === "reasoning" ? [...(item.summary ?? []), ...(item.content ?? [])].join("\n") : item.text ?? item.aggregatedOutput ?? JSON.stringify(item, null, 2), status: method === "item/started" ? "running" : item.status === "failed" ? "failed" : "completed" });
 					}
 					if (method === "turn/completed" && event.turn) {
 						if ((this.compacting && !this.turnId) || (this.turnId && event.turn.id !== this.turnId)) return;

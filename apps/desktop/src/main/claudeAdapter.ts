@@ -17,6 +17,7 @@ import { AgentInputRejectedError } from "./agentAdapter";
 import { respondMcpElicitation } from "./mcpElicitation";
 import { orchestrationInstructions } from "../shared/orchestration";
 import { claudeUsage } from "./harnessUsage";
+import { mcpServerTool, parsedInput } from "../shared/mcpCall";
 
 /** AskUserQuestion's questions for the answer panel: header, options with descriptions and Markdown previews, and an own answer. */
 export function claudeQuestions(raw: unknown[]): AgentQuestion[] {
@@ -190,7 +191,9 @@ ${claudeBackgroundGuide}` } : {}),
 					if (block.type === "tool_result") {
 						const call = calls.get(block.tool_use_id); calls.delete(block.tool_use_id);
 						const output = typeof block.content === "string" ? block.content : Array.isArray(block.content) ? block.content.map(part => part.type === "text" ? part.text : `[${part.type}]`).join("\n") : JSON.stringify(block.content) ?? "";
-						callbacks.onActivity?.({ id: block.tool_use_id, type: "tool", title: call?.name ?? "Tool result", text: call ? `${call.input}\n\n${output}` : output, status: block.is_error ? "failed" : "completed" });
+						const mcp = call ? mcpServerTool(call.name) : undefined;
+						callbacks.onActivity?.({ id: block.tool_use_id, type: "tool", title: call?.name ?? "Tool result", text: call ? `${call.input}\n\n${output}` : output, status: block.is_error ? "failed" : "completed",
+							...mcp ? { mcpCall: { ...mcp, input: parsedInput(call?.input), result: { content: Array.isArray(block.content) ? block.content : [{ type: "text", text: output }], ...block.is_error ? { isError: true } : {} } } } : {} });
 					}
 					if (block.type === "tool_result" && !message.parent_tool_use_id) {
 						const plan = todos.get(block.tool_use_id); todos.delete(block.tool_use_id);

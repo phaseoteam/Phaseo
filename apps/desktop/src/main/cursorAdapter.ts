@@ -10,6 +10,7 @@ import { nativeMcpName } from "../shared/mcp";
 import type { McpConnection } from "../shared/mcp";
 import { parsePlanSteps } from "../shared/planSteps";
 import { orchestrationInstructions } from "../shared/orchestration";
+import { mcpServerTool } from "../shared/mcpCall";
 
 export function assertCursorBackend() {
 	const backend = process.env.CURSOR_BACKEND_URL;
@@ -102,7 +103,12 @@ export class CursorAdapter implements AgentAdapter {
 			if (this.stopped) await this.activeRun.cancel();
 			for await (const event of this.activeRun.stream()) {
 				if (event.type === "thinking") callbacks.onActivity?.({ id: `${event.run_id}:thinking`, type: "reasoning", title: "Reasoning", text: event.text, append: true });
-				if (event.type === "tool_call") callbacks.onActivity?.({ id: event.call_id, type: "tool", title: event.name, text: JSON.stringify({ args: event.args, result: event.result }).slice(0, 100000), status: event.status === "error" ? "failed" : event.status });
+				if (event.type === "tool_call") {
+					const mcp = event.status === "completed" ? mcpServerTool(event.name) : undefined;
+					const result = event.result as { content?: unknown } | undefined;
+					callbacks.onActivity?.({ id: event.call_id, type: "tool", title: event.name, text: JSON.stringify({ args: event.args, result: event.result }).slice(0, 100000), status: event.status === "error" ? "failed" : event.status,
+						...mcp ? { mcpCall: { ...mcp, input: event.args ?? {}, result: result && typeof result === "object" && Array.isArray(result.content) ? result : { content: [{ type: "text", text: typeof event.result === "string" ? event.result : JSON.stringify(event.result ?? "") }] } } } : {} });
+				}
 				if (event.type === "tool_call" && event.name === "updateTodos" && event.status === "completed" && event.agent_id === this.agent.agentId && event.run_id === this.activeRun.id && !event.truncated?.result) {
 					const result = event.result as { status?: unknown; value?: { todos?: unknown } } | undefined;
 					const steps = result?.status === "success" ? parsePlanSteps(result.value?.todos, "cursor") : undefined;

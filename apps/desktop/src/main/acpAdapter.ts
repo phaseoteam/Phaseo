@@ -25,6 +25,7 @@ const permissionKinds: Record<ApprovalDecision, string> = { accept: "allow_once"
 import { grokModels, grokModelStream } from "./grokModels";
 import { orchestrationInstructions } from "../shared/orchestration";
 import { resolveSecretValues } from "./secretReferences";
+import { mcpServerTool } from "../shared/mcpCall";
 
 export class AcpAdapter implements AgentAdapter {
 	private child?: ChildProcessWithoutNullStreams;
@@ -93,7 +94,11 @@ export class AcpAdapter implements AgentAdapter {
 				if (update.sessionUpdate === "agent_thought_chunk" && update.content.type === "text") callbacks.onActivity?.({ id: "reasoning", type: "reasoning", title: "Reasoning", text: update.content.text, append: true });
 				if (update.sessionUpdate === "tool_call" || update.sessionUpdate === "tool_call_update") {
 					const tool = { ...tools.get(update.toolCallId), ...update }; tools.set(update.toolCallId, tool);
-					callbacks.onActivity?.({ id: tool.toolCallId, type: "tool", title: tool.title ?? "Tool", text: JSON.stringify(tool.rawOutput ?? tool.content ?? tool.rawInput ?? {}, null, 2), status: tool.status === "completed" ? "completed" : tool.status === "failed" ? "failed" : "running" });
+					// ACP names a call only by its title; a title naming one of the person's MCP servers is kept as an MCP call.
+					const mcp = tool.status === "completed" ? mcpServerTool(tool.title ?? "") : undefined;
+					const output = tool.rawOutput as { content?: unknown } | undefined;
+					callbacks.onActivity?.({ id: tool.toolCallId, type: "tool", title: tool.title ?? "Tool", text: JSON.stringify(tool.rawOutput ?? tool.content ?? tool.rawInput ?? {}, null, 2), status: tool.status === "completed" ? "completed" : tool.status === "failed" ? "failed" : "running",
+						...mcp ? { mcpCall: { ...mcp, input: tool.rawInput ?? {}, result: output && typeof output === "object" && Array.isArray(output.content) ? output : { content: [{ type: "text", text: JSON.stringify(tool.rawOutput ?? tool.content ?? "") }] } } } : {} });
 				}
 				if (update.sessionUpdate === "plan") callbacks.onActivity?.({ id: "plan", type: "plan", title: "Plan", text: JSON.stringify(update.entries, null, 2), steps: parsePlanSteps(update.entries, "acp") });
 				if (update.sessionUpdate === "usage_update") callbacks.onActivity?.({ id: "usage", type: "usage", title: "Context usage", text: JSON.stringify(update, null, 2) });

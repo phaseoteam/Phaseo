@@ -1,3 +1,4 @@
+import type { McpCall } from "./mcpCall";
 import type { HtmlRenderActivity } from "./htmlRender";
 import type { AcpRegistryAgent, AcpRegistryLaunch } from "./acpRegistry";
 import type { ProviderIncident, ProviderStatusId } from "./providerStatus";
@@ -72,7 +73,8 @@ export type QueuedMessage = { autopilot?: true; notice?: MessageNotice; sourceTa
 export type SteeringMessage = QueuedMessage & { status: "sending" | "rejected" | "unconfirmed"; error?: string };
 export type AgentActivity = { timelineOrder?: number; /** When the app first saw it running, for a live timer. */ startedAt?: string; nativeAgent?: { id: string; model?: string; status: "pending" | "running" | "completed" | "failed" | "interrupted" }; id: string; type: "tool" | "reasoning" | "plan" | "usage" | "compaction"; title: string; text: string; status?: "running" | "completed" | "failed"; steps?: PlanStep[]; explanation?: string; summary?: string; compaction?: { beforeTokens: number; afterTokens?: number; durationMs?: number }; /** A plan the agent proposed (its Markdown is the text), and what the person did with it. */ proposed?: { outcome?: "implemented" | "revised" | "declined"; feedback?: string };
 	/** A page an agent showed with html_render (its HTML is the text), shown above the reply. */ htmlRender?: HtmlRenderActivity;
-	/** An MCP App page (htmlRender too): the tool call it shows, handed to the page as MCP Apps tool input and result. */ mcpApp?: { input: unknown; result: unknown } };
+	/** An MCP App page (htmlRender too): the tool call it shows, handed to the page as MCP Apps tool input and result. */ mcpApp?: { input: unknown; result: unknown; connectionId?: string; tool?: string; source?: string };
+	/** A finished call to a tool of one of the person's MCP servers, as the agent reported it (shared/mcpCall.ts). */ mcpCall?: McpCall };
 /** How the person's own answer is typed: text by default, or a typed control with bounds. */
 export type AgentQuestionInput = { kind: "text" | "multiline" | "number" | "integer" | "boolean" | "email" | "uri" | "date" | "date-time"; min?: number; max?: number; minLength?: number; maxLength?: number };
 export type AgentQuestionOption = { label: string; description?: string; preview?: string; /** Sent instead of the label when set; it may be empty. */ value?: string };

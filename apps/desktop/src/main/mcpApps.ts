@@ -1,15 +1,18 @@
 import { createHash } from "node:crypto";
 import type { McpConnection } from "../shared/mcp";
 import { nativeMcpName } from "../shared/mcp";
+import { mcpServerTool } from "../shared/mcpCall";
 import type { AgentActivity } from "../shared/workspace";
 import { htmlRenderLimits } from "../shared/htmlRender";
 import { loadMcpClientSdk } from "./phaseoMcp";
 
-/** The server and tool behind a finished tool step, from how each agent names MCP tools. */
-export function mcpToolOf(activity: Pick<AgentActivity, "title">, connections: McpConnection[]): { connection: McpConnection; tool: string } | undefined {
-	// Claude Code and agents that keep MCP's own naming: mcp__<server>__<tool>.
-	const native = /^mcp__([A-Za-z0-9_-]+?)__(.+)$/.exec(activity.title);
-	if (native) { const connection = connections.find(value => nativeMcpName(value) === native[1]); return connection ? { connection, tool: native[2] } : undefined; }
+/**
+ * The server and tool behind a finished tool step. Agents report MCP calls (mcpCall) under the server name they were given
+ * (nativeMcpName); a step from an older chat or an agent that does not falls back to its title.
+ */
+export function mcpToolOf(activity: Pick<AgentActivity, "title" | "mcpCall">, connections: McpConnection[]): { connection: McpConnection; tool: string } | undefined {
+	const named = activity.mcpCall ?? mcpServerTool(activity.title);
+	if (named) { const connection = connections.find(value => nativeMcpName(value) === named.server); return connection ? { connection, tool: named.tool } : undefined; }
 	// The Phaseo harness labels its MCP tools "<server> · <tool>".
 	const at = activity.title.indexOf(" · ");
 	if (at < 1) return undefined;
@@ -17,8 +20,16 @@ export function mcpToolOf(activity: Pick<AgentActivity, "title">, connections: M
 	return connection ? { connection, tool: activity.title.slice(at + 3) } : undefined;
 }
 
-/** What a step said it sent and got back: Claude Code's step is the input JSON, a blank line, then the output. */
-export function mcpCallOf(activity: Pick<AgentActivity, "text">) {
+/** A tool result as MCP Apps expects it (CallToolResult), from whatever shape the agent reported. */
+export function toolResult(value: unknown, fallbackText = ""): { content: unknown[]; structuredContent?: unknown; isError?: boolean } {
+	if (value && typeof value === "object" && Array.isArray((value as { content?: unknown }).content)) return value as { content: unknown[] };
+	if (typeof value === "string") return { content: [{ type: "text", text: value }] };
+	return value === undefined ? { content: [{ type: "text", text: fallbackText }] } : { content: [{ type: "text", text: JSON.stringify(value) }], ...value && typeof value === "object" && !Array.isArray(value) ? { structuredContent: value } : {} };
+}
+
+/** What a step sent and got back: the agent's own report, or Claude Code's text (the input JSON, a blank line, the output). */
+export function mcpCallOf(activity: Pick<AgentActivity, "text" | "mcpCall">) {
+	if (activity.mcpCall) return { input: activity.mcpCall.input ?? {}, result: toolResult(activity.mcpCall.result, activity.text) };
 	const split = activity.text.indexOf("\n\n");
 	const inputText = split < 0 ? "" : activity.text.slice(0, split), output = split < 0 ? activity.text : activity.text.slice(split + 2);
 	const parse = (text: string) => { try { const value: unknown = JSON.parse(text); return value && typeof value === "object" ? value : undefined; } catch { return undefined; } };

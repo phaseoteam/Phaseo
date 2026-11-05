@@ -18,9 +18,11 @@ import type { McpConnection } from "../shared/mcp";
 import { OpenCodeMcp } from "./openCodeMcp";
 import type { IsolatedOptions } from "./openCodeService";
 import { orchestrationInstructions } from "../shared/orchestration";
+import { mcpServerTool } from "../shared/mcpCall";
 
 export class OpenCodeAdapter implements AgentAdapter {
 	private controller = new AbortController();
+	private readonly toolCalls = new Map<string, { name?: string; input?: unknown }>();
 	private client?: OpenCodeClient;
 	private sessionId?: string;
 	private acceptingInput = false;
@@ -172,9 +174,15 @@ export class OpenCodeAdapter implements AgentAdapter {
 					}
 					if (event.type === "session.text.delta") { if (commandOutput) commandOutput.stream(event.data.assistantMessageID, event.data.delta); else callbacks.onDelta(event.data.assistantMessageID, event.data.delta); }
 					if (event.type === "session.reasoning.delta") callbacks.onActivity?.({ id: `${event.data.assistantMessageID}:reasoning:${event.data.ordinal}`, type: "reasoning", title: "Reasoning", text: event.data.delta, append: true });
-					if (event.type === "session.tool.input.started") callbacks.onActivity?.({ id: event.data.id, type: "tool", title: event.data.name, text: "", status: "running" });
-					if (event.type === "session.tool.called") callbacks.onActivity?.({ id: event.data.id, type: "tool", title: "Tool call", text: JSON.stringify(event.data.input, null, 2), status: "running" });
-					if (event.type === "session.tool.success" || event.type === "session.tool.failed") callbacks.onActivity?.({ id: event.data.id, type: "tool", title: "Tool result", text: JSON.stringify(event.type === "session.tool.failed" ? event.data.error : event.data.content, null, 2), status: event.type === "session.tool.failed" ? "failed" : "completed" });
+					// The result event names no tool, so each call's name and input are kept until it ends (MCP Apps needs them).
+					if (event.type === "session.tool.input.started") { this.toolCalls.set(event.data.id, { name: event.data.name }); callbacks.onActivity?.({ id: event.data.id, type: "tool", title: event.data.name, text: "", status: "running" }); }
+					if (event.type === "session.tool.called") { this.toolCalls.set(event.data.id, { ...this.toolCalls.get(event.data.id), input: event.data.input }); callbacks.onActivity?.({ id: event.data.id, type: "tool", title: this.toolCalls.get(event.data.id)?.name ?? "Tool call", text: JSON.stringify(event.data.input, null, 2), status: "running" }); }
+					if (event.type === "session.tool.success" || event.type === "session.tool.failed") {
+						const call = this.toolCalls.get(event.data.id); this.toolCalls.delete(event.data.id);
+						const mcp = call?.name ? mcpServerTool(call.name) : undefined, failed = event.type === "session.tool.failed";
+						callbacks.onActivity?.({ id: event.data.id, type: "tool", title: call?.name ?? "Tool result", text: JSON.stringify(failed ? event.data.error : event.data.content, null, 2), status: failed ? "failed" : "completed",
+							...mcp ? { mcpCall: { ...mcp, input: call?.input ?? {}, result: failed ? { content: [{ type: "text", text: JSON.stringify(event.data.error) }], isError: true } : { content: Array.isArray(event.data.content) ? event.data.content : [{ type: "text", text: typeof event.data.content === "string" ? event.data.content : JSON.stringify(event.data.content) }] } } } : {} });
+					}
 					if (event.type === "permission.asked") {
 						const permission = event.data;
 						void (async () => {
