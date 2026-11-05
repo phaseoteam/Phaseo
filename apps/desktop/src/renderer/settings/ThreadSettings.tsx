@@ -4,7 +4,7 @@ import { Plus, X } from "lucide-react";
 import type { WorkspacePreferences } from "../../shared/preferences";
 import { defaultSnoozePresets, snoozePresetDays, snoozePresetId, snoozePresetLimits, type IdleCompactionMode, type ResponseStreamingMode, type SnoozePreset, type SnoozePresetDay, type ThreadPreferences } from "../../shared/threadPreferences";
 import { resolveSnoozePreset, snoozePresets } from "../../shared/threadLifecycle";
-import type { RetentionKind, RetentionPreview, RetentionReport } from "../../shared/maintenance";
+import type { RetentionKind, RetentionPreview, RetentionReport, StorageUsage } from "../../shared/maintenance";
 import { errorText, useWorkspace } from "../app/workspace";
 import { Select } from "../components/Select";
 import { Switch } from "../components/ui/switch";
@@ -159,6 +159,7 @@ export function MaintenanceSettings() {
 				control={<Switch aria-label="Continue chats after restarts" disabled={disabled} checked={threads.continueAfterRestart} onCheckedChange={value => set({ continueAfterRestart: value })} />} />
 			{(loading || error) && <SettingsNote tone={error ? "error" : "muted"} role={error ? "alert" : "status"}>{error || "Loading settings…"}</SettingsNote>}
 		</SettingsSection>
+		<StorageUse />
 		<StorageRetention preferences={preferences} set={set} disabled={disabled} />
 		<SettingsSection title="Worktrees" label="Worktree cleanup">
 			<SettingsRow title="Worktree cleanup" description="Rules for removing worktrees chats no longer need, and their own Clean up now."
@@ -211,5 +212,25 @@ function StorageRetention({ preferences, set, disabled }: { preferences: Workspa
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>
+	</SettingsSection>;
+}
+
+/** What Phaseo's own folder takes on disk, by area, and Clear caches for the ones the window rebuilds by itself. */
+function StorageUse() {
+	const api = window.phaseoDesktop?.maintenance;
+	const [usage, setUsage] = useState<StorageUsage>();
+	const [error, setError] = useState("");
+	const [clearing, setClearing] = useState(false);
+	useEffect(() => { if (!api) return; let active = true; void api.storageUsage().then(value => { if (active) setUsage(value); }, reason => { if (active) setError(errorText(reason)); }); return () => { active = false; }; }, [api]);
+	const clear = async () => { if (!api) return; setClearing(true); setError(""); try { setUsage(await api.clearCaches()); } catch (reason) { setError(errorText(reason)); } finally { setClearing(false); } };
+	const caches = usage?.areas.find(area => area.id === "caches");
+	return <SettingsSection title="Storage" label="Storage use" description={usage ? `${formatBytes(usage.total)} in ${usage.folder}. Worktrees and your projects are stored elsewhere.` : "Adding up Phaseo's folder…"}
+		action={<SettingsButton disabled={!api || clearing || !caches} onClick={() => void clear()}>{clearing ? "Clearing…" : "Clear caches"}</SettingsButton>}>
+		{error && <SettingsNote tone="error" role="alert">{error}</SettingsNote>}
+		{usage && <ul className="flex flex-col px-4 py-2">{usage.areas.map(area => <li key={area.id} data-storage-area={area.id} className="flex h-8 items-center gap-3 text-[13px]">
+			<span className="min-w-0 flex-1 truncate">{area.label}</span>
+			<span aria-hidden className="h-1 w-32 shrink-0 overflow-hidden rounded-sm bg-muted"><span className="block h-full bg-primary/70" style={{ width: `${Math.max(2, area.bytes / (usage.total || 1) * 100)}%` }} /></span>
+			<span className="w-20 shrink-0 text-right text-xs text-muted-foreground tabular-nums">{formatBytes(area.bytes)}</span>
+		</li>)}</ul>}
 	</SettingsSection>;
 }

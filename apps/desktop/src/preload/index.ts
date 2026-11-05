@@ -245,6 +245,8 @@ const desktopApi: PhaseoDesktopApi = {
 		retentionClean: id => ipcRenderer.invoke("maintenance:retention-clean", id),
 		retentionLast: () => ipcRenderer.invoke("maintenance:retention-last"),
 		openNotices: () => ipcRenderer.invoke("maintenance:open-notices"),
+		storageUsage: () => ipcRenderer.invoke("maintenance:storage-usage"),
+		clearCaches: () => ipcRenderer.invoke("maintenance:clear-caches"),
 	},
 	checkForUpdates: () => ipcRenderer.invoke("desktop:check-for-updates"),
 	installUpdate: () => ipcRenderer.invoke("desktop:install-update"),

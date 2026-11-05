@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { copyFile, stat } from "node:fs/promises";
+import { storageUsage } from "./storageUsage";
 import path from "node:path";
-import { shell, type BrowserWindow, type IpcMain, type IpcMainInvokeEvent } from "electron";
+import { session, shell, type BrowserWindow, type IpcMain, type IpcMainInvokeEvent } from "electron";
 import type { RetentionKind, RetentionPreview, RetentionReport } from "../shared/maintenance";
 import type { ThreadPreferences } from "../shared/threadPreferences";
 import { countRetention, removeRetention, scanRetention, type RetentionFile, type RetentionRules } from "./storageRetention";
@@ -46,6 +47,15 @@ export function registerMaintenanceIpc(ipcMain: IpcMain, options: { senderWindow
 		await copyFile(source, target);
 		const problem = await shell.openPath(target);
 		if (problem) throw new Error(problem);
+	});
+	ipcMain.handle("maintenance:storage-usage", async event => { trusted(event); return storageUsage(options.userData); });
+	// Only caches the window rebuilds by itself; no chat, setting, sign-in or browser profile data.
+	ipcMain.handle("maintenance:clear-caches", async event => {
+		trusted(event);
+		await session.defaultSession.clearCache();
+		await session.defaultSession.clearCodeCaches({});
+		await session.defaultSession.clearStorageData({ storages: ["shadercache", "cachestorage"] });
+		return storageUsage(options.userData);
 	});
 	// Automatic cleanup runs only for kinds the person gave a number of days; "Forever" (the default) never removes anything.
 	const automatic = () => {
