@@ -15,6 +15,7 @@ import {
 } from "recharts";
 import type { ModelSuccessPoint } from "@/lib/fetchers/models/getModelPerformance";
 import { useLocale, useTranslations } from "next-intl";
+import type { AttemptFunnelRates } from "./attemptFunnel";
 import ModelProviderHealthChart, { hasProviderAttemptHealth } from "./ModelProviderHealthChart";
 import { formatFailureShare } from "./attemptFunnel";
 
@@ -97,6 +98,8 @@ export function buildUptimeChartData(
 
 interface ModelSuccessChartProps {
 	successSeries: ModelSuccessPoint[];
+	/** The 24 hours' rates from summed attempts, for the provider-health tooltips. */
+	attemptHealth24h?: AttemptFunnelRates | null;
 	showLeastStableProvider?: boolean;
 	showTitle?: boolean;
 }
@@ -105,7 +108,7 @@ export default function ModelSuccessChart(props: ModelSuccessChartProps) {
 	// Per-attempt reachability, capacity and call errors replace the single uptime
 	// line when the data API provides them; older payloads keep the request-level chart.
 	if (hasProviderAttemptHealth(props.successSeries)) {
-		return <ModelProviderHealthChart successSeries={props.successSeries} showTitle={props.showTitle} />;
+		return <ModelProviderHealthChart successSeries={props.successSeries} totals={props.attemptHealth24h} showTitle={props.showTitle} />;
 	}
 	return <RequestUptimeChart {...props} />;
 }

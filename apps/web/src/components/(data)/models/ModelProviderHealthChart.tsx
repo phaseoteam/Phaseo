@@ -9,6 +9,7 @@ import { useLocale, useTranslations } from "next-intl";
 
 import {
 	type AttemptFailureShare,
+	type AttemptFunnelRates,
 	attemptFailureShares,
 	formatFailureShare,
 	PROVIDER_HEALTH_METRICS,
@@ -105,11 +106,16 @@ export function summarizeProviderHealth(points: ProviderHealthChartPoint[]): Pro
 }
 
 /**
- * The 24-hour failure share of each step, from the averages shown beside it.
- * Every hour has a reachable rate (empty hours count as 100%), so a missing
- * accepted or completed average means no attempt got that far.
+ * The 24-hour failure share of each step. Uses the rates web-api computes from
+ * all attempts in those hours when present: an average of hourly rates would
+ * understate failures when traffic is uneven (idle hours count as 100%). Older
+ * cached responses without them fall back to the averages shown beside it.
  */
-export function summaryFailureShares(summary: ProviderHealthSummary): Record<ProviderHealthMetric, AttemptFailureShare> {
+export function summaryFailureShares(
+	summary: ProviderHealthSummary,
+	totals?: AttemptFunnelRates | null,
+): Record<ProviderHealthMetric, AttemptFailureShare> {
+	if (totals) return attemptFailureShares(totals);
 	return attemptFailureShares({
 		reachabilityPct: summary.reachability.averagePct,
 		capacityPct: summary.capacity.averagePct,
@@ -123,16 +129,19 @@ function formatRate(value: number | null | undefined) {
 
 export default function ModelProviderHealthChart({
 	successSeries,
+	totals = null,
 	showTitle = true,
 }: {
 	successSeries: ModelSuccessPoint[];
+	/** The 24 hours' rates from summed attempts (web-api `attemptHealth24h`). */
+	totals?: AttemptFunnelRates | null;
 	showTitle?: boolean;
 }) {
 	const locale = useLocale();
 	const t = useTranslations("Catalogue.modelDetail.uptime");
 	const chartData = buildProviderHealthChartData(successSeries, new Date(), locale);
 	const summary = summarizeProviderHealth(chartData);
-	const summaryShares = summaryFailureShares(summary);
+	const summaryShares = summaryFailureShares(summary, totals);
 	const labels: Record<ProviderHealthMetric, string> = {
 		reachability: t("reachabilityLabel"),
 		capacity: t("capacityLabel"),

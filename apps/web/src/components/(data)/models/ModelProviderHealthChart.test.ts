@@ -125,8 +125,23 @@ describe("provider health chart data", () => {
 		// Hourly average over 24 hours, empty hours at 100%, like the request-level chart.
 		expect(summary.capacity.averagePct).toBeCloseTo((23 * 100 + 95) / 24, 6);
 		expect(summary.callErrors.averagePct).toBe(100);
+		// Without web-api's 24-hour totals (an older cached response), the averages are used.
 		const shares = summaryFailureShares(summary);
 		expect(shares.capacity).toEqual({ kind: "failed", pct: expect.closeTo(5 / 24, 6) });
 		expect(shares.callErrors).toEqual({ kind: "none" });
+		// With them, the tooltip says what share of all attempts failed: all of this
+		// hour's attempts were the day's attempts, so 5% of them were turned away.
+		const totals = summaryFailureShares(summary, { reachabilityPct: 99.41, capacityPct: 95, callErrorPct: 100 });
+		expect(totals.reachability).toEqual({ kind: "failed", pct: expect.closeTo(0.59, 6) });
+		expect(totals.capacity).toEqual({ kind: "failed", pct: expect.closeTo(5, 6) });
+		expect(totals.callErrors).toEqual({ kind: "none" });
+	});
+
+	it("uses the 24-hour totals even when every attempt failed in one hour", () => {
+		const summary = summarizeProviderHealth([]);
+		const shares = summaryFailureShares(summary, { reachabilityPct: 0, capacityPct: null, callErrorPct: null });
+		expect(shares.reachability).toEqual({ kind: "failed", pct: 100 });
+		expect(shares.capacity).toEqual({ kind: "unmeasured" });
+		expect(shares.callErrors).toEqual({ kind: "unmeasured" });
 	});
 });

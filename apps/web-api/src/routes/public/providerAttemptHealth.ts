@@ -37,8 +37,19 @@ const count = (value: unknown) => {
 
 const round2 = (value: number) => Math.round(value * 100) / 100;
 
+/**
+ * A rate rounded to two decimals that never rounds a failure away: with at least
+ * one failure it is at most 99.99, so pages can still say a failure happened
+ * ("<0.1%") without the counts. Rates are all that is published.
+ */
+const publicRate = (succeeded: number, of: number) => {
+	if (of <= 0) return null;
+	const rate = round2((succeeded / of) * 100);
+	return succeeded < of ? Math.min(rate, 99.99) : rate;
+};
+
 /** 1 - failed / of, as a percentage; null when there was nothing to measure. */
-const funnelRate = (failed: number, of: number) => (of > 0 ? round2((1 - failed / of) * 100) : null);
+const funnelRate = (failed: number, of: number) => publicRate(of - failed, of);
 
 /**
  * The three rates are a funnel, as on the model page ("Reachable", "Accepted",
@@ -56,7 +67,7 @@ export function attemptHealthRates(counts: AttemptHealthCounts): AttemptHealthRa
 		reachabilityPct: funnelRate(counts.reachabilityFailures, eligible),
 		capacityPct: funnelRate(counts.capacityFailures, reached),
 		callErrorPct: funnelRate(counts.callErrorFailures, accepted),
-		uptimePct: eligible > 0 ? round2((counts.successAttempts / eligible) * 100) : null,
+		uptimePct: publicRate(counts.successAttempts, eligible),
 	};
 }
 
@@ -153,6 +164,22 @@ export function combineAttemptHealth(rows: ProviderAttemptHealth[]): (AttemptHea
 			...attemptHealthRates(counts),
 		}));
 	return { ...totals, ...attemptHealthRates(totals), buckets };
+}
+
+/**
+ * Rates over a set of hours, from the summed counts: the share of all attempts in
+ * those hours, not an average of hourly rates (idle hours would dilute that).
+ */
+export function attemptHealthOverHours(
+	byHour: Map<string, AttemptHealthCounts & AttemptHealthRates>,
+	hours: Iterable<string>,
+): AttemptHealthRates {
+	const totals = emptyCounts();
+	for (const hour of new Set(hours)) {
+		const counts = byHour.get(hour);
+		if (counts) addCounts(totals, counts);
+	}
+	return attemptHealthRatesOnly(attemptHealthRates(totals));
 }
 
 /** All providers' attempts per UTC hour: what the model page's uptime chart plots. */

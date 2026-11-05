@@ -1385,6 +1385,9 @@ describe("public model routes", () => {
 		});
 		// An hour with no attempts has no rates; the chart shows it as 100%.
 		expect(payload.metrics.successSeries[1]).toMatchObject({ reachabilityPct: null, capacityPct: null, callErrorPct: null });
+		// The chart's 24 hours as shares of all their attempts (the tooltips use these),
+		// not an average of hourly rates that the idle hour would dilute.
+		expect(payload.metrics.attemptHealth24h).toEqual({ reachabilityPct: 90, capacityPct: 94.44, callErrorPct: 94.12, uptimePct: expect.any(Number) });
 		expect(payload.metrics.providerPerformance).toEqual([
 			expect.objectContaining({
 				provider: "steady",
@@ -1420,6 +1423,7 @@ describe("public model routes", () => {
 			expect.objectContaining({ bucket: "2026-08-27T09:00:00Z", overallSuccessPct: 100, requests: 4 }),
 		]);
 		expect(payload.metrics.successSeries[0]).not.toHaveProperty("reachabilityPct");
+		expect(payload.metrics).not.toHaveProperty("attemptHealth24h");
 	});
 
 	it("never exposes a synthetic unknown provider in performance data", async () => {

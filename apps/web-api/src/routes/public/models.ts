@@ -14,6 +14,7 @@ import { normalizeModelLicense } from "@/models/license";
 import { withPublicCache, type PublicCachePolicy } from "@/http/cache";
 import {
 	attemptHealthByHour,
+	attemptHealthOverHours,
 	attemptHealthRatesOnly,
 	attemptHealthToWire,
 	combineAttemptHealth,
@@ -2039,6 +2040,18 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 			}
 			return { ...point, overallSuccessPct: number(value.success_pct), requests: Number(value.requests ?? 0) };
 		});
+		// The 24 hours the uptime chart shows, as shares of all attempts in them. The
+		// chart's tooltips use these: an average of hourly rates would understate
+		// failures whenever traffic is uneven.
+		const attemptHealth24h = attemptHealthRows.length > 0
+			? attemptHealthOverHours(attemptHealthHours, successSeries.flatMap((point: { bucket: unknown }) => {
+				const timestamp = Date.parse(String(point.bucket ?? ""));
+				if (!Number.isFinite(timestamp)) return [];
+				const hour = new Date(timestamp);
+				hour.setUTCMinutes(0, 0, 0);
+				return [hour.toISOString()];
+			}))
+			: null;
 		const timeOfDay = (performance.time_of_day_5d ?? []).map((value: Record<string, unknown>) => ({ hour: Number(value.hour ?? 0), avgThroughput: number(value.avg_throughput), avgLatencyMs: number(value.avg_latency_ms), avgGenerationMs: number(value.avg_generation_ms), sampleCount: Number(value.sample_count ?? 0) }));
 		const providerPercentileDaily7d = (Array.isArray(percentileSeries.data) ? percentileSeries.data : []).map((value: Record<string, unknown>) => {
 			const seriesPercentile = Number(value.percentile);
@@ -2105,7 +2118,7 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 			value.cacheHitRatePct != null
 		);
 		const qualitySeries = hourlyQualitySeries.length > 0 ? hourlyQualitySeries : legacyQualitySeries;
-		const metrics = { cloudflareColo: performance.cloudflare_colo ?? cloudflareColo, percentile, rangeDays, streamMode, contextBucket, summary: summary(performance.last_24h), prevSummary: performance.prev_24h ? summary(performance.prev_24h) : null, hourly, successSeries, timeOfDay, providerPerformance, providerDaily7d, providerHourly7d, providerPercentileDaily7d, qualitySeries, dataRange: providerHourly7d.length ? { start: providerHourly7d[0]?.bucket ?? "", end: providerHourly7d[providerHourly7d.length - 1]?.bucket ?? "" } : hourly.length ? { start: hourly[0]?.bucket ?? "", end: hourly[hourly.length - 1]?.bucket ?? "" } : { start: "", end: "" }, cumulativeTokens: number(performance.cumulative_tokens?.total_tokens), releaseDate: performance.cumulative_tokens?.release_date ?? null };
+		const metrics = { cloudflareColo: performance.cloudflare_colo ?? cloudflareColo, percentile, rangeDays, streamMode, contextBucket, summary: summary(performance.last_24h), prevSummary: performance.prev_24h ? summary(performance.prev_24h) : null, hourly, successSeries, ...(attemptHealth24h ? { attemptHealth24h } : {}), timeOfDay, providerPerformance, providerDaily7d, providerHourly7d, providerPercentileDaily7d, qualitySeries, dataRange: providerHourly7d.length ? { start: providerHourly7d[0]?.bucket ?? "", end: providerHourly7d[providerHourly7d.length - 1]?.bucket ?? "" } : hourly.length ? { start: hourly[0]?.bucket ?? "", end: hourly[hourly.length - 1]?.bucket ?? "" } : { start: "", end: "" }, cumulativeTokens: number(performance.cumulative_tokens?.total_tokens), releaseDate: performance.cumulative_tokens?.release_date ?? null };
 		const activity = { summary: metrics.summary, providerPerformance, cumulativeTokens: metrics.cumulativeTokens };
 		return withPublicCache(c.json({
 			modelId,
