@@ -173,6 +173,7 @@ export function transformChatStream(
 
 	return new ReadableStream<Uint8Array>({
 		async start(controller) {
+			let upstreamError: unknown;
 			try {
 				while (true) {
 					const { value, done } = await reader.read();
@@ -194,9 +195,17 @@ export function transformChatStream(
 				}
 			} catch (err) {
 				// A client cancel ends the read loop early; that is not a failure.
-				if (!cancelledReaders.has(reader)) console.error("openai compat chat stream transform failed:", err);
+				if (!cancelledReaders.has(reader)) {
+					console.error("openai compat chat stream transform failed:", err);
+					upstreamError = err;
+				}
 			} finally {
-				if (!cancelledReaders.has(reader)) controller.close();
+				// A genuine upstream failure (a reset connection) errors this stream too, so billing
+				// sees a broken stream rather than a normal end; our own cancel just stops.
+				if (!cancelledReaders.has(reader)) {
+					if (upstreamError !== undefined) controller.error(upstreamError);
+					else controller.close();
+				}
 			}
 		},
 		// Pass a client cancel on to the stream this one reads, so the upstream stops too.
@@ -363,6 +372,7 @@ export function transformResponsesStreamToChat(
 
 	return new ReadableStream<Uint8Array>({
 		async start(controller) {
+			let upstreamError: unknown;
 			try {
 				while (true) {
 					const { value, done } = await reader.read();
@@ -512,9 +522,17 @@ export function transformResponsesStreamToChat(
 				}
 			} catch (err) {
 				// A client cancel ends the read loop early; that is not a failure.
-				if (!cancelledReaders.has(reader)) console.error("openai compat responses->chat stream transform failed:", err);
+				if (!cancelledReaders.has(reader)) {
+					console.error("openai compat responses->chat stream transform failed:", err);
+					upstreamError = err;
+				}
 			} finally {
-				if (!cancelledReaders.has(reader)) controller.close();
+				// A genuine upstream failure (a reset connection) errors this stream too, so billing
+				// sees a broken stream rather than a normal end; our own cancel just stops.
+				if (!cancelledReaders.has(reader)) {
+					if (upstreamError !== undefined) controller.error(upstreamError);
+					else controller.close();
+				}
 			}
 		},
 		// Pass a client cancel on to the stream this one reads, so the upstream stops too.
@@ -876,6 +894,7 @@ export function transformChatStreamToResponses(
 
 	return new ReadableStream<Uint8Array>({
 		async start(controller) {
+			let upstreamError: unknown;
 			let createdEmitted = false;
 			let upstreamFailure: { code: string | null; message: string } | null = null;
 			try {
@@ -1286,9 +1305,17 @@ export function transformChatStreamToResponses(
 				}
 			} catch (err) {
 				// A client cancel ends the read loop early; that is not a failure.
-				if (!cancelledReaders.has(reader)) console.error("openai compat chat->responses stream transform failed:", err);
+				if (!cancelledReaders.has(reader)) {
+					console.error("openai compat chat->responses stream transform failed:", err);
+					upstreamError = err;
+				}
 			} finally {
-				if (!cancelledReaders.has(reader)) controller.close();
+				// A genuine upstream failure (a reset connection) errors this stream too, so billing
+				// sees a broken stream rather than a normal end; our own cancel just stops.
+				if (!cancelledReaders.has(reader)) {
+					if (upstreamError !== undefined) controller.error(upstreamError);
+					else controller.close();
+				}
 			}
 		},
 		// Pass a client cancel on to the stream this one reads, so the upstream stops too.

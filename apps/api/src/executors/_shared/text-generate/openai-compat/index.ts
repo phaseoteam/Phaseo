@@ -583,6 +583,7 @@ function transformResponsesStreamToAnthropic(
 
 	return new ReadableStream<Uint8Array>({
 		async start(controller) {
+			let upstreamError: unknown;
 			let messageStarted = false;
 			let nextBlockIndex = 0;
 			let terminalEmitted = false;
@@ -1026,9 +1027,18 @@ function transformResponsesStreamToAnthropic(
 				}
 			} catch (err) {
 				// A client cancel ends the read loop early; that is not a failure.
-				if (!cancelledReaders.has(reader)) console.error("openai compat responses->anthropic stream transform failed:", err);
+				if (!cancelledReaders.has(reader)) {
+					console.error("openai compat responses->anthropic stream transform failed:", err);
+					upstreamError = err;
+				}
 			} finally {
 				if (cancelledReaders.has(reader)) return;
+				// A genuine upstream failure (a reset connection) errors this stream too, so billing
+				// sees a broken stream rather than an incomplete message that ended normally.
+				if (upstreamError !== undefined) {
+					controller.error(upstreamError);
+					return;
+				}
 				if (messageStarted && !terminalEmitted) {
 					finishMessage({ ...latestResponse, status: "incomplete" });
 				}
