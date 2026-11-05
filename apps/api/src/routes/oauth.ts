@@ -1220,7 +1220,9 @@ oauthRouter.post(
 				? "Workspace owner or admin role is required"
 				: result.reason === "revoked"
 					? "Phaseo CLI access to this workspace was revoked. Run phaseo login and approve this workspace to restore it."
-					: "Workspace membership is required";
+					: result.reason === "no_scopes"
+						? "Phaseo CLI access to this workspace shares no scopes with this session. Run phaseo login and approve this workspace with the scopes you need."
+						: "Workspace membership is required";
 			return oauthError("access_denied", description, 403);
 		}
 		return json({ ...result.tokens, workspace: result.workspace }, 200, { "Cache-Control": "no-store" });

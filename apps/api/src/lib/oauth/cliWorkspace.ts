@@ -9,7 +9,7 @@ export type CliWorkspaceSwitchResult =
 			workspace: { id: string; name: string | null; slug: string | null };
 			tokens: Awaited<ReturnType<typeof issueTokenPair>>;
 	  }
-	| { ok: false; reason: "not_member" | "not_admin" | "revoked" };
+	| { ok: false; reason: "not_member" | "not_admin" | "revoked" | "no_scopes" };
 
 /**
  * A new Phaseo CLI session for another workspace of the same person. Every CLI token, refresh token and
@@ -62,7 +62,10 @@ export async function issueCliWorkspaceSession(args: {
 	if (authorization) {
 		const granted = new Set(Array.isArray(authorization.scopes) ? authorization.scopes.map(String) : []);
 		scopes = scopes.filter((scope) => granted.has(scope));
-	} else {
+	}
+	// A session that can do nothing would replace (and revoke) one that works.
+	if (scopes.length === 0) return { ok: false, reason: "no_scopes" };
+	if (!authorization) {
 		await ensureGrant({ userId: args.userId, workspaceId, clientId: args.clientId, scopes });
 	}
 

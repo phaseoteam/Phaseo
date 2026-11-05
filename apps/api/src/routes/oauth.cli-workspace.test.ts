@@ -126,6 +126,21 @@ describe("POST /oauth/cli/workspace", () => {
 		expect(state.issued[0]).toMatchObject({ workspaceId: CACHE_TEST, scopes: ["keys:read"] });
 	});
 
+	it("refuses rather than issue a session with no scopes", async () => {
+		state.authorizations = [{ workspace_id: CACHE_TEST, user_id: "user_1", client_id: "phaseo_cli", scopes: ["settings:read"], revoked_at: null }];
+		const response = await switchTo(CACHE_TEST);
+		expect(response.status).toBe(403);
+		expect(await response.json()).toMatchObject({ error: "access_denied" });
+		expect(state.issued).toEqual([]);
+
+		// Nor create a consent with no scopes for a workspace that has none.
+		state.authorizations = [];
+		state.auth = { ...cliSession, oauthScopes: [], scopes: [] };
+		expect((await switchTo(CACHE_TEST)).status).toBe(403);
+		expect(state.grants).toEqual([]);
+		expect(state.issued).toEqual([]);
+	});
+
 	it("refuses a workspace the person isn't a member of, or doesn't exist, the same way", async () => {
 		state.members = state.members.filter((row) => row.workspace_id !== CACHE_TEST);
 		for (const target of [CACHE_TEST, "00000000-0000-4000-8000-00000000dead", "no-such-slug"]) {
