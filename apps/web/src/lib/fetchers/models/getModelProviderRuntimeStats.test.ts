@@ -189,10 +189,10 @@ describe("per-attempt provider health", () => {
 		// Requests succeeded after failover; the provider's own attempts did not.
 		expect(flaky).toMatchObject({ uptimePct3d: 40, requests3d: 4 });
 		// Daily bars use web-api's per-day attempt rates; no attempt counts are published.
-		// A day without attempts shows 100%.
-		expect(flaky?.uptimeDaily3d[0]).toMatchObject({ dayOffset: 0, uptimePct: 40 });
-		expect(flaky?.uptimeDaily3d[1]).toMatchObject({ dayOffset: 1, uptimePct: 50 });
-		expect(flaky?.uptimeDaily3d[2]).toMatchObject({ dayOffset: 2, uptimePct: 100 });
+		// A day without attempts shows 100%, flagged so its bar can say there was no traffic.
+		expect(flaky?.uptimeDaily3d[0]).toMatchObject({ dayOffset: 0, uptimePct: 40, noTraffic: false });
+		expect(flaky?.uptimeDaily3d[1]).toMatchObject({ dayOffset: 1, uptimePct: 50, noTraffic: false });
+		expect(flaky?.uptimeDaily3d[2]).toMatchObject({ dayOffset: 2, uptimePct: 100, noTraffic: true });
 		// Hourly bars use the attempt rate of each hour, never the request-level one.
 		expect(flaky?.performanceHourly3d).toHaveLength(72);
 		expect(flaky?.performanceHourly3d.at(-2)).toMatchObject({ start: "2026-08-30T09:00:00.000Z", uptimePct: 40 });
@@ -246,6 +246,7 @@ describe("per-attempt provider health", () => {
 		const idle = getProviderRuntimeStats(stats, "idle");
 		expect(idle).toMatchObject({ uptimePct3d: null, attemptHealth3d: null });
 		expect(idle?.uptimeDaily3d.map((day) => day.uptimePct)).toEqual([null, null, null]);
+		expect(idle?.uptimeDaily3d.every((day) => day.noTraffic)).toBe(true);
 		expect(idle?.performanceHourly3d.every((point) => point.uptimePct === null)).toBe(true);
 	});
 });

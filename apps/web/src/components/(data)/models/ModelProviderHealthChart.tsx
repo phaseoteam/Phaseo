@@ -1,14 +1,15 @@
 import type { ChartConfig } from "@/components/ui/chart";
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import type { ModelSuccessPoint } from "@/lib/fetchers/models/getModelPerformance";
 import { useLocale, useTranslations } from "@/i18n/react";
 
+import { ModelMetricInfo } from "./ModelMetricInfo";
 import {
 	type AttemptFailureShare,
 	type AttemptFunnelRates,
 	attemptFailureShares,
+	attemptHeadline,
 	formatFailureShare,
 	PROVIDER_HEALTH_METRICS,
 	type ProviderHealthMetric,
@@ -84,40 +85,6 @@ export function buildProviderHealthChartData(
 	});
 }
 
-export type ProviderHealthSummary = Record<ProviderHealthMetric, { averagePct: number | null }>;
-
-/** Hourly averages over the 24 hours shown, empty hours counting as 100%. */
-export function summarizeProviderHealth(points: ProviderHealthChartPoint[]): ProviderHealthSummary {
-	const average = (values: Array<number | null>) => {
-		const valid = values.filter((value): value is number => value != null && Number.isFinite(value));
-		return valid.length ? valid.reduce((sum, value) => sum + value, 0) / valid.length : null;
-	};
-	return {
-		reachability: { averagePct: average(points.map((point) => point.reachability)) },
-		capacity: { averagePct: average(points.map((point) => point.capacity)) },
-		callErrors: { averagePct: average(points.map((point) => point.callErrors)) },
-	};
-}
-
-/**
- * The 24-hour failure share of each step. Uses the rates web-api computes from
- * all attempts in those hours when present: an average of hourly rates would
- * understate failures when traffic is uneven (idle hours count as 100%).
- * Without them (no attempts in the window) it falls back to the averages shown
- * beside it, which then read 100% and "No failures".
- */
-export function summaryFailureShares(
-	summary: ProviderHealthSummary,
-	totals?: AttemptFunnelRates | null,
-): Record<ProviderHealthMetric, AttemptFailureShare> {
-	if (totals) return attemptFailureShares(totals);
-	return attemptFailureShares({
-		reachabilityPct: summary.reachability.averagePct,
-		capacityPct: summary.capacity.averagePct,
-		callErrorPct: summary.callErrors.averagePct,
-	});
-}
-
 function formatRate(value: number | null | undefined) {
 	return value != null ? `${value.toFixed(1)}%` : "—";
 }
@@ -128,15 +95,20 @@ export default function ModelProviderHealthChart({
 	showTitle = true,
 }: {
 	successSeries: ModelSuccessPoint[];
-	/** The 24 hours' rates from summed attempts (web-api `attemptHealth24h`). */
+	/**
+	 * The 24 hours' rates from summed attempts (web-api `attemptHealth24h`): the
+	 * headline figures and their failure shares. Absent when there were no
+	 * attempts in the 24 hours, which reads 100% and "No failures".
+	 */
 	totals?: AttemptFunnelRates | null;
 	showTitle?: boolean;
 }) {
 	const locale = useLocale();
 	const t = useTranslations("Catalogue.modelDetail.uptime");
 	const chartData = buildProviderHealthChartData(successSeries, new Date(), locale);
-	const summary = summarizeProviderHealth(chartData);
-	const summaryShares = summaryFailureShares(summary, totals);
+	// The headline is the true 24-hour share of all attempts, not an average of
+	// the hourly rates (which would count idle hours as 100%).
+	const headline = attemptHeadline(totals);
 	const labels: Record<ProviderHealthMetric, string> = {
 		reachability: t("reachabilityLabel"),
 		capacity: t("capacityLabel"),
@@ -169,39 +141,39 @@ export default function ModelProviderHealthChart({
 					{PROVIDER_HEALTH_METRICS.map((metric) => (
 						<div key={metric} className="flex items-baseline justify-between gap-3">
 							<dt>
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<button
-											type="button"
-											className="cursor-help text-sm text-muted-foreground underline decoration-dotted underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-										>
-											{label(metric)}
-										</button>
-									</TooltipTrigger>
-									<TooltipContent className="max-w-64 space-y-1">
-										<p>{help[metric]}</p>
-										<p className="tabular-nums opacity-80">
-											{failureText(metric, summaryShares[metric], t("noFailures"))}
-										</p>
-									</TooltipContent>
-								</Tooltip>
+								<ModelMetricInfo
+									label={label(metric)}
+									side="top"
+									align="start"
+									triggerClassName="text-sm text-muted-foreground"
+									description={
+										<>
+											<p>{help[metric]}</p>
+											<p className="tabular-nums opacity-80">
+												{failureText(metric, headline.shares[metric], t("noFailures"))}
+											</p>
+										</>
+									}
+								>
+									{label(metric)}
+								</ModelMetricInfo>
 							</dt>
 							<dd className="text-xl font-semibold tracking-tight tabular-nums text-foreground">
-								{formatRate(summary[metric].averagePct)}
+								{formatRate(headline.rates[metric])}
 							</dd>
 						</div>
 					))}
 				</dl>
-				<p className="mt-2 text-xs text-muted-foreground">{t("attemptHourlyAverage")}</p>
+				<p className="mt-2 text-xs text-muted-foreground">{t("attemptShare24h")}</p>
 			</div>
 			<div className="min-w-0">
 				<div
 					className="h-[112px] w-full"
 					role="img"
 					aria-label={t("providerHealthChartLabel", {
-						reachability: formatRate(summary.reachability.averagePct),
-						capacity: formatRate(summary.capacity.averagePct),
-						callErrors: formatRate(summary.callErrors.averagePct),
+						reachability: formatRate(headline.rates.reachability),
+						capacity: formatRate(headline.rates.capacity),
+						callErrors: formatRate(headline.rates.callErrors),
 					})}
 				>
 					<ChartContainer config={chartConfig} className="h-full w-full">

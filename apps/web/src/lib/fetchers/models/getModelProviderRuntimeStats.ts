@@ -17,6 +17,11 @@ export type ProviderRuntimeStats = {
 		uptimePct: number | null;
 		requests: number;
 		successful: number;
+		/**
+		 * No eligible attempts that day: a provider with traffic in the window
+		 * then shows 100% for the day, one without shows no uptime.
+		 */
+		noTraffic?: boolean;
 	}>;
 	uptimeHourly3h: Array<{
 		hourOffset: 0 | 1 | 2;
@@ -693,12 +698,14 @@ export function mapRpcRuntimeStatsRows(args: {
 
 		for (const dayOffset of [0, 1, 2] as const) {
 			const bucket = uptimeDaily3dTotals[dayOffset];
+			const dayRate = attemptDailyUptime.get(dayOffset);
 			uptimeDaily3d[dayOffset] = {
 				dayOffset,
-				uptimePct: shownUptime(attemptDailyUptime.get(dayOffset)),
+				uptimePct: shownUptime(dayRate),
 				requests: bucket.requests,
 				successful: bucket.successful,
-			}
+				noTraffic: dayRate == null,
+			};
 		}
 
 		out[statsKey] = {
