@@ -1995,8 +1995,10 @@ public final class Models {
 
 	public static class ImagesEditRequest {
 		public Object background;
+		public Object complexity;
 		public Object image;
 		public Object input_fidelity;
+		public String markup;
 		public String mask;
 		public Boolean meta;
 		public String model;
@@ -2023,6 +2025,9 @@ public final class Models {
 
 	public static class ImagesGenerationRequest {
 		public Object background;
+		public Object complexity;
+		public Integer frame_count;
+		public Integer frame_duration_ms;
 		public String model;
 		public java.util.List<String> models;
 		public Object moderation;
@@ -2038,12 +2043,14 @@ public final class Models {
 		public String size;
 		public Boolean stream;
 		public String style;
+		public Object svg;
 		public String user;
 	}
 
 	public static class ImagesGenerationResponse {
 		public Integer created;
 		public java.util.List<Object> data;
+		public Object svg_usage;
 	}
 
 	public static class InputTokensDetails {

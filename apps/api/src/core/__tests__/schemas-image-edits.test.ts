@@ -189,3 +189,18 @@ describe("OpenAI image edit schema", () => {
 		expect(ImagesEditSchema.safeParse({ ...base, resolution: "2k" }).success).toBe(true);
 	});
 });
+
+describe("GPT Image 2.6 edit options", () => {
+	const base = { model: "openai/gpt-image-2.6-flare", prompt: "Add a sun", image: "https://example.com/a.png" };
+
+	it("accepts markup and complexity", () => {
+		expect(ImagesEditSchema.safeParse({ ...base, markup: "https://example.com/markup.png", complexity: "medium" }).success).toBe(true);
+		expect(ImagesEditSchema.safeParse({ ...base, model: "openai/gpt-image-2.5-sunburst", markup: "https://example.com/markup.png" }).success).toBe(true);
+	});
+
+	it("rejects markup with a mask, markup before 2.5 and complexity before 2.6", () => {
+		expect(ImagesEditSchema.safeParse({ ...base, markup: "https://example.com/m.png", mask: "https://example.com/k.png" }).success).toBe(false);
+		expect(ImagesEditSchema.safeParse({ ...base, model: "openai/gpt-image-1.5", markup: "https://example.com/m.png" }).success).toBe(false);
+		expect(ImagesEditSchema.safeParse({ ...base, model: "openai/gpt-image-2.5-flare", complexity: "low" }).success).toBe(false);
+	});
+});

@@ -12149,6 +12149,36 @@
 			"ja": "キー、メンバー（ユーザー ID）、または部門の ID。end_user_default の場合は省略します。",
 			"zh-Hans": "密钥、成员（用户 ID）或部门的 ID。end_user_default 时省略。",
 			"ar": "معرّف المفتاح أو العضو (معرّف المستخدم) أو القسم. احذفه لـ end_user_default."
+		},
+		"Output format. gif and svg need a GPT Image 2.6 model and do not support stream or partial_images. svg also needs svg.model and n=1.": {
+			"es": "Formato de salida. gif y svg requieren un modelo GPT Image 2.6 y no admiten stream ni partial_images. svg también requiere svg.model y n=1.",
+			"fr": "Format de sortie. gif et svg nécessitent un modèle GPT Image 2.6 et ne prennent pas en charge stream ni partial_images. svg nécessite aussi svg.model et n=1.",
+			"de": "Ausgabeformat. gif und svg erfordern ein GPT-Image-2.6-Modell und unterstützen weder stream noch partial_images. svg erfordert außerdem svg.model und n=1.",
+			"pt-BR": "Formato de saída. gif e svg exigem um modelo GPT Image 2.6 e não aceitam stream nem partial_images. svg também exige svg.model e n=1.",
+			"hi": "आउटपुट फ़ॉर्मेट। gif और svg के लिए GPT Image 2.6 मॉडल चाहिए, और ये stream या partial_images का समर्थन नहीं करते। svg के लिए svg.model और n=1 भी चाहिए।",
+			"ja": "出力形式。gif と svg には GPT Image 2.6 モデルが必要で、stream と partial_images は使えません。svg には svg.model と n=1 も必要です。",
+			"zh-Hans": "输出格式。gif 和 svg 需要 GPT Image 2.6 模型，且不支持 stream 或 partial_images。svg 还需要 svg.model 和 n=1。",
+			"ar": "تنسيق الإخراج. يتطلب gif وsvg نموذج GPT Image 2.6 ولا يدعمان stream أو partial_images. ويتطلب svg أيضًا svg.model وn=1."
+		},
+		"Required when output_format is svg. svg.model is the OpenAI text model that writes the SVG from the reference image. Its tokens are billed at that model's text prices, with reasoning tokens counted as output, in addition to the image cost.": {
+			"es": "Obligatorio cuando output_format es svg. svg.model es el modelo de texto de OpenAI que escribe el SVG a partir de la imagen de referencia. Sus tokens se cobran a los precios de texto de ese modelo, con los tokens de razonamiento contados como salida, además del coste de la imagen.",
+			"fr": "Obligatoire lorsque output_format vaut svg. svg.model est le modèle de texte OpenAI qui écrit le SVG à partir de l’image de référence. Ses tokens sont facturés aux prix texte de ce modèle, les tokens de raisonnement comptant comme sortie, en plus du coût de l’image.",
+			"de": "Erforderlich, wenn output_format svg ist. svg.model ist das OpenAI-Textmodell, das das SVG aus dem Referenzbild schreibt. Seine Tokens werden zusätzlich zu den Bildkosten zu den Textpreisen dieses Modells abgerechnet, wobei Reasoning-Tokens als Ausgabe zählen.",
+			"pt-BR": "Obrigatório quando output_format é svg. svg.model é o modelo de texto da OpenAI que escreve o SVG a partir da imagem de referência. Os tokens dele são cobrados pelos preços de texto desse modelo, com tokens de raciocínio contados como saída, além do custo da imagem.",
+			"hi": "output_format svg होने पर ज़रूरी। svg.model वह OpenAI टेक्स्ट मॉडल है जो रेफ़रेंस इमेज से SVG लिखता है। इसके टोकन उस मॉडल की टेक्स्ट कीमतों पर, इमेज की लागत के अलावा, बिल होते हैं, और रीज़निंग टोकन आउटपुट में गिने जाते हैं।",
+			"ja": "output_format が svg の場合は必須です。svg.model は参照画像から SVG を書く OpenAI のテキストモデルです。そのトークンは画像の料金に加えて、そのモデルのテキスト料金で課金され、推論トークンは出力として数えられます。",
+			"zh-Hans": "当 output_format 为 svg 时必填。svg.model 是根据参考图像编写 SVG 的 OpenAI 文本模型。其 token 按该模型的文本价格计费，推理 token 计为输出，并在图像费用之外另行收取。",
+			"ar": "مطلوب عندما تكون قيمة output_format هي svg. يحدد svg.model نموذج النص من OpenAI الذي يكتب ملف SVG من الصورة المرجعية. تُحتسب رموزه بأسعار النص لذلك النموذج، مع احتساب رموز الاستدلال كمخرجات، إضافةً إلى تكلفة الصورة."
+		},
+		"Transparent PNG annotation layer over the first image, as a file upload, URL or base64 string. Needs GPT Image 2.5 or later and cannot be combined with mask.": {
+			"es": "Capa de anotación PNG transparente sobre la primera imagen, como archivo subido, URL o cadena base64. Requiere GPT Image 2.5 o posterior y no se puede combinar con mask.",
+			"fr": "Calque d’annotation PNG transparent superposé à la première image, sous forme de fichier envoyé, d’URL ou de chaîne base64. Nécessite GPT Image 2.5 ou ultérieur et ne peut pas être combiné avec mask.",
+			"de": "Transparente PNG-Annotationsebene über dem ersten Bild, als Datei-Upload, URL oder Base64-String. Erfordert GPT Image 2.5 oder neuer und lässt sich nicht mit mask kombinieren.",
+			"pt-BR": "Camada de anotação PNG transparente sobre a primeira imagem, como upload de arquivo, URL ou string base64. Exige GPT Image 2.5 ou posterior e não pode ser combinada com mask.",
+			"hi": "पहली इमेज के ऊपर पारदर्शी PNG एनोटेशन लेयर, फ़ाइल अपलोड, URL या base64 स्ट्रिंग के रूप में। इसके लिए GPT Image 2.5 या बाद का मॉडल चाहिए, और इसे mask के साथ नहीं जोड़ा जा सकता।",
+			"ja": "最初の画像に重ねる透明な PNG の注釈レイヤー。ファイルのアップロード、URL、base64 文字列のいずれかで指定します。GPT Image 2.5 以降が必要で、mask とは併用できません。",
+			"zh-Hans": "覆盖在第一张图像上的透明 PNG 标注层，可以是上传的文件、URL 或 base64 字符串。需要 GPT Image 2.5 或更高版本，且不能与 mask 同时使用。",
+			"ar": "طبقة تعليقات توضيحية بتنسيق PNG شفاف فوق الصورة الأولى، كملف مرفوع أو عنوان URL أو سلسلة base64. تتطلب GPT Image 2.5 أو أحدث، ولا يمكن دمجها مع mask."
 		}
 	},
 	"GET /apps": {

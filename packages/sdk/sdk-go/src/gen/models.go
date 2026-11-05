@@ -2718,8 +2718,10 @@ type ImageModerationInput struct {
 
 type ImagesEditRequest struct {
 	Background *string `json:"background,omitempty"`
+	Complexity *string `json:"complexity,omitempty"`
 	Image interface{} `json:"image"`
 	InputFidelity *string `json:"input_fidelity,omitempty"`
+	Markup *string `json:"markup,omitempty"`
 	Mask *string `json:"mask,omitempty"`
 	Meta *bool `json:"meta,omitempty"`
 	Model string `json:"model"`
@@ -2746,6 +2748,9 @@ type ImagesEditResponse struct {
 
 type ImagesGenerationRequest struct {
 	Background *string `json:"background,omitempty"`
+	Complexity *string `json:"complexity,omitempty"`
+	FrameCount *int `json:"frame_count,omitempty"`
+	FrameDurationMs *int `json:"frame_duration_ms,omitempty"`
 	Model string `json:"model"`
 	Models *[]string `json:"models,omitempty"`
 	Moderation *string `json:"moderation,omitempty"`
@@ -2761,12 +2766,14 @@ type ImagesGenerationRequest struct {
 	Size *string `json:"size,omitempty"`
 	Stream *bool `json:"stream,omitempty"`
 	Style *string `json:"style,omitempty"`
+	Svg *map[string]interface{} `json:"svg,omitempty"`
 	User *string `json:"user,omitempty"`
 }
 
 type ImagesGenerationResponse struct {
 	Created *int `json:"created,omitempty"`
 	Data *[]map[string]interface{} `json:"data,omitempty"`
+	SvgUsage *map[string]interface{} `json:"svg_usage,omitempty"`
 }
 
 type InputTokensDetails struct {

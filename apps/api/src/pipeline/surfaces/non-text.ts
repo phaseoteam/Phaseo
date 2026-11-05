@@ -374,6 +374,7 @@ export function encodeNonTextResponse(
 					}))
 					: [],
 				...(usage ? { usage } : {}),
+				...(image.svgUsage ? { svg_usage: image.svgUsage } : {}),
 			};
 		}
 

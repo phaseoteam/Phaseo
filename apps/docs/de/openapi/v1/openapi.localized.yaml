@@ -15531,10 +15531,13 @@ components:
           maximum: 3
         output_format:
           type: string
+          description: Ausgabeformat. gif und svg erfordern ein GPT-Image-2.6-Modell und unterstützen weder stream noch partial_images. svg erfordert außerdem svg.model und n=1.
           enum:
             - png
             - jpeg
             - webp
+            - gif
+            - svg
         output_compression:
           type: integer
           minimum: 0
@@ -15550,6 +15553,41 @@ components:
           enum:
             - auto
             - low
+        complexity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        frame_count:
+          type: integer
+          minimum: 2
+          maximum: 64
+        frame_duration_ms:
+          type: integer
+          minimum: 20
+          maximum: 2000
+        svg:
+          type: object
+          description: Erforderlich, wenn output_format svg ist. svg.model ist das OpenAI-Textmodell, das das SVG aus dem Referenzbild schreibt. Seine Tokens werden zusätzlich zu den Bildkosten zu den Textpreisen dieses Modells abgerechnet, wobei Reasoning-Tokens als Ausgabe zählen.
+          required:
+            - model
+          properties:
+            model:
+              type: string
+            reasoning:
+              type: object
+              properties:
+                effort:
+                  type: string
+                  enum:
+                    - none
+                    - minimal
+                    - low
+                    - medium
+                    - high
+                    - xhigh
+                    - max
         response_format:
           type: string
         style:
@@ -15567,6 +15605,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Image'
+        svg_usage:
+          type: object
+          properties:
+            model:
+              type: string
+            input_tokens:
+              type: integer
+            output_tokens:
+              type: integer
+            reasoning_tokens:
+              type: integer
+            total_tokens:
+              type: integer
     Image:
       type: object
       properties:
@@ -15597,6 +15648,15 @@ components:
                 type: string
         mask:
           type: string
+        markup:
+          type: string
+          description: Transparente PNG-Annotationsebene über dem ersten Bild, als Datei-Upload, URL oder Base64-String. Erfordert GPT Image 2.5 oder neuer und lässt sich nicht mit mask kombinieren.
+        complexity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
         prompt:
           type: string
         size:

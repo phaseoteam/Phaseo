@@ -1979,8 +1979,10 @@ struct ImageModerationInput {
 
 struct ImagesEditRequest {
 	std::any background;
+	std::any complexity;
 	std::any image;
 	std::any input_fidelity;
+	std::string markup;
 	std::string mask;
 	std::optional<bool> meta;
 	std::string model;
@@ -2007,6 +2009,9 @@ struct ImagesEditResponse {
 
 struct ImagesGenerationRequest {
 	std::any background;
+	std::any complexity;
+	std::optional<int> frame_count;
+	std::optional<int> frame_duration_ms;
 	std::string model;
 	std::vector<std::string> models;
 	std::any moderation;
@@ -2022,12 +2027,14 @@ struct ImagesGenerationRequest {
 	std::string size;
 	std::optional<bool> stream;
 	std::string style;
+	std::map<std::string, std::any> svg;
 	std::string user;
 };
 
 struct ImagesGenerationResponse {
 	std::optional<int> created;
 	std::vector<std::map<std::string, std::any>> data;
+	std::map<std::string, std::any> svg_usage;
 };
 
 struct InputTokensDetails {

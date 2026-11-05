@@ -53,6 +53,7 @@ import {
 	validateProviderQualifiedModelProvider,
 } from "../requestRouting";
 import { fetchWorkspacePolicy, applyWorkspacePolicy, providerPermittedByPolicy } from "./workspacePolicy";
+import { normalizeSvgAuthorModel } from "@providers/openai/endpoints/images-svg";
 import {
     findModelSuccessor,
     findWorkspaceModelSuccessor,
@@ -1455,6 +1456,48 @@ async function runBeforeRequest(
         };
     }
     presetFilteredProviders = workspacePolicyResult.providers;
+
+    // GPT Image SVG output also runs, and bills, the text model named in svg.model. Hold it to
+    // the same workspace and key model rules as the image model, on the OpenAI routes that run it.
+    const svgAuthorModel = endpoint === "images.generations" && mergedBody?.output_format === "svg" && typeof mergedBody?.svg?.model === "string"
+        ? normalizeSvgAuthorModel(mergedBody.svg.model)
+        : null;
+    if (svgAuthorModel) {
+        const authorPolicy = applyWorkspacePolicy({
+            providers: presetFilteredProviders
+                .filter((candidate) => candidate.providerId === "openai")
+                .map((candidate) => ({ ...candidate, apiModelId: svgAuthorModel })),
+            resolvedModel: svgAuthorModel,
+            body: { ...mergedBody, model: svgAuthorModel },
+            workspacePolicy,
+        });
+        if (!authorPolicy.ok) {
+            const description = `SVG author model "${svgAuthorModel}" is blocked by a workspace policy or guardrail`;
+            return {
+                ok: false,
+                response: err("guardrail_blocked", {
+                    model: resolvedModel || model,
+                    reason: "model_restricted_by_policy",
+                    description,
+                    error_operational_kind: "model_restricted_by_policy",
+                    guardrail: {
+                        type: "route_access",
+                        scope: "workspace",
+                        active_guardrail_ids: authorPolicy.diagnostics.activeGuardrailIds,
+                    },
+                    details: [{
+                        message: description,
+                        path: ["svg", "model"],
+                        keyword: "model_restricted_by_policy",
+                        params: authorPolicy.diagnostics,
+                    }],
+                    routing_diagnostics: { workspacePolicy: authorPolicy.diagnostics },
+                    request_id: requestId,
+                    workspace_id: workspaceId,
+                }),
+            };
+        }
+    }
 
     const { applyPromptInjectionGuardrails } = await import("./promptInjection");
     const promptInjectionResult = applyPromptInjectionGuardrails({

@@ -593,7 +593,7 @@ export type IRImageGenerationRequest = {
 	stream?: boolean;
 	partialImages?: number;
 	responseFormat?: string;
-	outputFormat?: "png" | "jpeg" | "webp";
+	outputFormat?: "png" | "jpeg" | "webp" | "gif" | "svg";
 	outputCompression?: number;
 	background?: "transparent" | "opaque" | "auto";
 	moderation?: "auto" | "low";
@@ -610,7 +610,7 @@ export type IRImageGenerationResponse = {
 	model: string;
 	provider: string;
 	background?: "transparent" | "opaque";
-	outputFormat?: "png" | "jpeg" | "webp";
+	outputFormat?: "png" | "jpeg" | "webp" | "gif" | "svg";
 	size?: string;
 	quality?: string;
 	data: Array<{
@@ -619,6 +619,8 @@ export type IRImageGenerationResponse = {
 		revisedPrompt?: string | null;
 	}>;
 	usage?: IRUsage;
+	/** GPT Image SVG output: token usage of the model that wrote the SVG, as OpenAI reports it. */
+	svgUsage?: Record<string, unknown>;
 	rawResponse?: any;
 };
 

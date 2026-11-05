@@ -15531,10 +15531,13 @@ components:
           maximum: 3
         output_format:
           type: string
+          description: تنسيق الإخراج. يتطلب gif وsvg نموذج GPT Image 2.6 ولا يدعمان stream أو partial_images. ويتطلب svg أيضًا svg.model وn=1.
           enum:
             - png
             - jpeg
             - webp
+            - gif
+            - svg
         output_compression:
           type: integer
           minimum: 0
@@ -15550,6 +15553,41 @@ components:
           enum:
             - auto
             - low
+        complexity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        frame_count:
+          type: integer
+          minimum: 2
+          maximum: 64
+        frame_duration_ms:
+          type: integer
+          minimum: 20
+          maximum: 2000
+        svg:
+          type: object
+          description: مطلوب عندما تكون قيمة output_format هي svg. يحدد svg.model نموذج النص من OpenAI الذي يكتب ملف SVG من الصورة المرجعية. تُحتسب رموزه بأسعار النص لذلك النموذج، مع احتساب رموز الاستدلال كمخرجات، إضافةً إلى تكلفة الصورة.
+          required:
+            - model
+          properties:
+            model:
+              type: string
+            reasoning:
+              type: object
+              properties:
+                effort:
+                  type: string
+                  enum:
+                    - none
+                    - minimal
+                    - low
+                    - medium
+                    - high
+                    - xhigh
+                    - max
         response_format:
           type: string
         style:
@@ -15567,6 +15605,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Image'
+        svg_usage:
+          type: object
+          properties:
+            model:
+              type: string
+            input_tokens:
+              type: integer
+            output_tokens:
+              type: integer
+            reasoning_tokens:
+              type: integer
+            total_tokens:
+              type: integer
     Image:
       type: object
       properties:
@@ -15597,6 +15648,15 @@ components:
                 type: string
         mask:
           type: string
+        markup:
+          type: string
+          description: طبقة تعليقات توضيحية بتنسيق PNG شفاف فوق الصورة الأولى، كملف مرفوع أو عنوان URL أو سلسلة base64. تتطلب GPT Image 2.5 أو أحدث، ولا يمكن دمجها مع mask.
+        complexity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
         prompt:
           type: string
         size:

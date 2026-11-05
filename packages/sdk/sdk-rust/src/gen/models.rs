@@ -1980,8 +1980,10 @@ pub struct ImageModerationInput {
 
 pub struct ImagesEditRequest {
 	pub background: Option<String>,
+	pub complexity: Option<String>,
 	pub image: StringOrStringArray,
 	pub input_fidelity: Option<String>,
+	pub markup: Option<String>,
 	pub mask: Option<String>,
 	pub meta: Option<bool>,
 	pub model: String,
@@ -2008,6 +2010,9 @@ pub struct ImagesEditResponse {
 
 pub struct ImagesGenerationRequest {
 	pub background: Option<String>,
+	pub complexity: Option<String>,
+	pub frame_count: Option<i64>,
+	pub frame_duration_ms: Option<i64>,
 	pub model: String,
 	pub models: Option<Vec<String>>,
 	pub moderation: Option<String>,
@@ -2023,12 +2028,14 @@ pub struct ImagesGenerationRequest {
 	pub size: Option<String>,
 	pub stream: Option<bool>,
 	pub style: Option<String>,
+	pub svg: Option<HashMap<String, String>>,
 	pub user: Option<String>,
 }
 
 pub struct ImagesGenerationResponse {
 	pub created: Option<i64>,
 	pub data: Option<Vec<HashMap<String, String>>>,
+	pub svg_usage: Option<HashMap<String, String>>,
 }
 
 pub struct InputTokensDetails {

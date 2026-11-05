@@ -16433,10 +16433,13 @@ components:
           maximum: 3
         output_format:
           type: string
+          description: "Output format. gif and svg need a GPT Image 2.6 model and do not support stream or partial_images. svg also needs svg.model and n=1."
           enum:
             - png
             - jpeg
             - webp
+            - gif
+            - svg
         output_compression:
           type: integer
           minimum: 0
@@ -16452,6 +16455,41 @@ components:
           enum:
             - auto
             - low
+        complexity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        frame_count:
+          type: integer
+          minimum: 2
+          maximum: 64
+        frame_duration_ms:
+          type: integer
+          minimum: 20
+          maximum: 2000
+        svg:
+          type: object
+          description: "Required when output_format is svg. svg.model is the OpenAI text model that writes the SVG from the reference image. Its tokens are billed at that model's text prices, with reasoning tokens counted as output, in addition to the image cost."
+          required:
+            - model
+          properties:
+            model:
+              type: string
+            reasoning:
+              type: object
+              properties:
+                effort:
+                  type: string
+                  enum:
+                    - none
+                    - minimal
+                    - low
+                    - medium
+                    - high
+                    - xhigh
+                    - max
         response_format:
           type: string
         style:
@@ -16469,6 +16507,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Image'
+        svg_usage:
+          type: object
+          properties:
+            model:
+              type: string
+            input_tokens:
+              type: integer
+            output_tokens:
+              type: integer
+            reasoning_tokens:
+              type: integer
+            total_tokens:
+              type: integer
     Image:
       type: object
       properties:
@@ -16499,6 +16550,15 @@ components:
                 type: string
         mask:
           type: string
+        markup:
+          type: string
+          description: "Transparent PNG annotation layer over the first image, as a file upload, URL or base64 string. Needs GPT Image 2.5 or later and cannot be combined with mask."
+        complexity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
         prompt:
           type: string
         size:
