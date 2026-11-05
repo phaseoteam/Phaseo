@@ -3,10 +3,11 @@ import { createContext, memo, useCallback, useContext, useEffect, useLayoutEffec
 import { ArrowDown, Plane, Brain, Check, ChevronRight, Circle, CircleDot, CircleSlash, Copy, FilePen, FileText, GitBranch, GitPullRequestArrow, Layers, ListChecks, LoaderCircle, PenLine, Radio, RotateCcw, Search, SquareTerminal, Wrench, X, Globe, SlidersHorizontal, AppWindow, MessagesSquare, Bot, Blocks, CornerDownRight } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { MessageNavigationRail, type RailTurn } from "./MessageNavigationRail";
-import type { AgentActivity, Message, Task } from "../../shared/workspace";
+import type { AgentActivity, Message, Task, TurnSettings } from "../../shared/workspace";
 import { useConversationPage } from "../lib/useConversationPage";
 import type { ConversationPage } from "../../shared/conversationPage";
-import { conversationTurns, firstUnread, turnDuration, userBursts, type Burst, type TurnEntry } from "../lib/conversationTurns";
+import { conversationTurns, firstUnread, settingsChanges, turnDuration, userBursts, type Burst, type TurnEntry } from "../lib/conversationTurns";
+import { effortName } from "../../shared/turnSettings";
 import { elapsedLabel, useNow } from "../lib/elapsed";
 import { contextShare, turnUsage } from "../lib/turnUsage";
 import { formatRoundedCount } from "@phaseo/app-kit/format";
@@ -18,7 +19,7 @@ import { HtmlRenderFrame } from "../components/HtmlRenderFrame";
 import { ModelLogo } from "../components/ModelLogo";
 import { useTextCopy } from "../components/useTextCopy";
 import { mentionPlainText } from "../lib/mentions";
-import { harnessNames, knownModel, modelLabel } from "./ModelPicker";
+import { harnessNames, knownModel, modelLabel, modelName } from "./ModelPicker";
 import { ModelInfoCard } from "./ModelInfoCard";
 import { AgentResult } from "./AgentThreads";
 import { ProposedPlan } from "./ProposedPlan";
@@ -197,16 +198,25 @@ function AssistantHeader({ task }: { task: Task }) {
 }
 
 const noActivities: AgentActivity[] = [];
+/** "Switched to GPT-6 · High", or "Reasoning changed to Low" when only the level changed. */
+function settingsChangeLabel({ settings, modelChanged }: { settings: TurnSettings; modelChanged: boolean }) {
+	const effort = settings.effort ? effortName(settings.effort) : undefined;
+	if (modelChanged) return `Switched to ${modelName(settings)}${effort ? ` · ${effort}` : ""}`;
+	return effort ? `Reasoning changed to ${effort}` : "Reasoning back to the model's default";
+}
+function SettingsChange({ label }: { label: string }) {
+	return <p data-settings-change className="flex items-center gap-3 text-[11.5px] text-muted-foreground"><span aria-hidden className="h-px flex-1 bg-border" />{label}<span aria-hidden className="h-px flex-1 bg-border" /></p>;
+}
 function UnreadDivider() {
 	return <div role="separator" aria-label="New since your last visit" className="flex items-center gap-3 text-[11px] font-medium text-primary"><span aria-hidden className="h-px flex-1 bg-primary/40" />New since your last visit<span aria-hidden className="h-px flex-1 bg-primary/40" /></div>;
 }
-type TurnProps = { user?: Message; entries: TurnEntry[]; usageActivities: AgentActivity[]; live: boolean; complete: boolean; task: Task; onAttachment: (id: string) => void; onBranch: (id: string) => void; onRewind?: (message: Message) => void; /** Offers Regenerate on this turn's answer (the last turn of a Chat-mode chat). */ onRegenerate?: (message: Message) => void; compact?: boolean; burst?: Burst; /** Where this turn's "New since your last visit" line goes, if it has it. */ unread?: "start" | "answer" };
+type TurnProps = { user?: Message; entries: TurnEntry[]; usageActivities: AgentActivity[]; live: boolean; complete: boolean; task: Task; onAttachment: (id: string) => void; onBranch: (id: string) => void; onRewind?: (message: Message) => void; /** Offers Regenerate on this turn's answer (the last turn of a Chat-mode chat). */ onRegenerate?: (message: Message) => void; compact?: boolean; burst?: Burst; /** Where this turn's "New since your last visit" line goes, if it has it. */ unread?: "start" | "answer"; /** What changed when this turn ran with a different model or reasoning level. */ switched?: string };
 const sameItems = <T,>(a: readonly T[], b: readonly T[], value: (item: T) => unknown = item => item) => a.length === b.length && a.every((item, index) => value(item) === value(b[index]));
 /**
  * A turn re-renders only when its own entries or the chat fields it shows change, so loading a page of older turns
  * renders those turns alone. The callbacks are stable (see Conversation).
  */
-const Turn = memo(function Turn({ user, entries, usageActivities, live, complete, task, onAttachment, onBranch, onRewind, onRegenerate, compact, burst, unread }: TurnProps) {
+const Turn = memo(function Turn({ user, entries, usageActivities, live, complete, task, onAttachment, onBranch, onRewind, onRegenerate, compact, burst, unread, switched }: TurnProps) {
 	// Text after the last step is the answer, even while it is still streaming.
 	const latest = entries.findLast(entry => !(entry.kind === "activity" && entry.value.type === "usage"));
 	const isAnswer = (entry?: TurnEntry) => entry?.kind === "message" && entry.value.role === "assistant" && entry.value.delivery !== "subagent";
@@ -226,6 +236,7 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 	const hasAssistant = work.length > 0 || plans.length > 0 || !!final || live;
 	return <div data-turn-id={user && user.delivery !== "subagent" && !user.notice ? user.id : undefined} className={cn("flex flex-col gap-4", burst?.next && "-mb-6")}>
 		{unread === "start" && <UnreadDivider />}
+		{switched && <SettingsChange label={switched} />}
 		{user && (user.notice ? <WatchNotice message={user} /> : user.delivery === "subagent" ? <AgentResult message={user} projectId={task.projectId} /> : <UserMessage message={user} taskId={task.id} projectId={task.projectId} onAttachment={onAttachment} onBranch={onBranch} onRewind={onRewind} canBranch={canBranch} burst={burst} compact={compact} />)}
 		{unread === "answer" && hasAssistant && <UnreadDivider />}
 		{hasAssistant && <div data-conversation-id={`turn:${user?.id ?? entries[0]?.value.id}`} className="group/turn flex flex-col gap-3">
@@ -253,7 +264,7 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 		{user && !live && complete && task.mode !== "chat" && task.projectId && user.checkpoint?.after && <TurnChanges taskId={task.id} projectId={task.projectId} message={user} />}
 	</div>;
 }, (a, b) => a.user === b.user && a.live === b.live && a.complete === b.complete && a.compact === b.compact
-	&& a.unread === b.unread && a.burst?.previous === b.burst?.previous && a.burst?.next === b.burst?.next && a.burst?.continuesSteer === b.burst?.continuesSteer && a.onRewind === b.onRewind && a.onRegenerate === b.onRegenerate
+	&& a.unread === b.unread && a.switched === b.switched && a.burst?.previous === b.burst?.previous && a.burst?.next === b.burst?.next && a.burst?.continuesSteer === b.burst?.continuesSteer && a.onRewind === b.onRewind && a.onRegenerate === b.onRegenerate
 	&& sameItems(a.entries, b.entries, entry => entry.value) && sameItems(a.usageActivities, b.usageActivities)
 	&& a.task.id === b.task.id && a.task.status === b.task.status && a.task.archived === b.task.archived && a.task.projectId === b.task.projectId && a.task.model === b.task.model && a.task.harness === b.task.harness && a.task.mode === b.task.mode);
 
@@ -279,6 +290,7 @@ export function Conversation({ task, onAttachment, onBranch, onRewind, onRegener
 	const activityEntries = useMemo(() => messages.page.activities ?? [], [messages.page.activities]);
 	const turns = useMemo(() => conversationTurns(messages.page.entries as Message[], activityEntries), [messages.page.entries, activityEntries]);
 	const bursts = useMemo(() => userBursts(turns), [turns]);
+	const switches = useMemo(() => new Map([...settingsChanges(turns)].map(([id, change]) => [id, settingsChangeLabel(change)])), [turns]);
 	const directory = useOptionalWorkspace()?.overview.projects.find(project => project.id === task.projectId)?.directory;
 	const unread = useMemo(() => firstUnread(turns, unreadSince), [turns, unreadSince]);
 	const earlierRow = useRef<HTMLButtonElement>(null), newerRow = useRef<HTMLButtonElement>(null), lastScroll = useRef(0);
@@ -380,7 +392,7 @@ export function Conversation({ task, onAttachment, onBranch, onRewind, onRegener
 				{messages.page.earlier > 0 && <button ref={earlierRow} type="button" disabled={messages.loading} onClick={messages.older} className="flex items-center gap-1.5 self-center px-3 py-1 text-xs text-muted-foreground hover:text-foreground">{messages.loading ? <><LoaderCircle className="size-3.5 animate-spin" />Loading earlier messages…</> : `Load ${messages.page.earlier} earlier messages`}</button>}
 				{messages.error && <div role="alert" className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">{messages.error}<button type="button" className="ml-auto font-semibold underline" onClick={() => messages.retry()}>Retry</button></div>}
 				{messages.loading && !messages.page.entries.length && <p className="text-center text-xs text-muted-foreground">Loading messages…</p>}
-				{turns.map((turn, index) => <Turn key={turn.id} user={turn.user} entries={turn.entries} usageActivities={(turn.user && usageByTurn.get(turn.user.id)) || noActivities} task={view} onAttachment={attach} onBranch={branchFrom} compact={compact} burst={bursts[index]} unread={unread?.turnId === turn.id ? unread.at : undefined}
+				{turns.map((turn, index) => <Turn key={turn.id} user={turn.user} entries={turn.entries} usageActivities={(turn.user && usageByTurn.get(turn.user.id)) || noActivities} task={view} onAttachment={attach} onBranch={branchFrom} compact={compact} burst={bursts[index]} unread={unread?.turnId === turn.id ? unread.at : undefined} switched={switches.get(turn.id)}
 					onRewind={onRewind ? rewindTo : undefined} onRegenerate={onRegenerate && index === turns.length - 1 && !messages.page.later ? regenerate : undefined}
 					live={running && (turn.user?.id === activeTurn || (!turn.user && index === turns.length - 1 && !messages.page.later))}
 					complete={Boolean(turn.user?.completedAt) || index < turns.length - 1 || (!messages.page.later && !running)} />)}

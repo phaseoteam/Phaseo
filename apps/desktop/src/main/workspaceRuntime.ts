@@ -53,6 +53,7 @@ import { PiAdapter } from "./piAdapter";
 import { handoffPrompt } from "./handoffPrompt";
 import { isSideChat, sideChatNoteFor, sideChatUnused } from "../shared/sideChats";
 import { copyWorktreeIncludes } from "./worktreeInclude";
+import { turnSettings } from "../shared/turnSettings";
 import { AttachmentService } from "./attachments";
 import type { FormAnswer } from "../shared/agentForms";
 import { formAnswerError } from "../shared/agentForms";
@@ -1514,7 +1515,7 @@ export class WorkspaceRuntime {
 		if (!task.usageTotals) task.usageTotals = this.store.phaseoUsageTotals(id);
 		// From the stored rows: reading every activity to find the last position loaded a long chat's whole history.
 		let timelineOrder = this.store.nextTimelineOrder(id);
-		task.messages.push({ ...message, startedAt: new Date().toISOString(), timelineOrder: timelineOrder++, role: "user", ...(message.sourceTaskId ? { delivery: "subagent" as const } : {}) }); task.status = "running"; task.error = undefined;
+		task.messages.push({ ...message, startedAt: new Date().toISOString(), timelineOrder: timelineOrder++, role: "user", settings: turnSettings(task), ...(message.sourceTaskId ? { delivery: "subagent" as const } : {}) }); task.status = "running"; task.error = undefined;
 		// Chats starting together (a burst of sends, a scheduled batch) share one chat-list update.
 		this.store.saveTask(task); this.broadcastSoon();
 		const project = this.store.getProjects().find(value => value.id === task.projectId);
