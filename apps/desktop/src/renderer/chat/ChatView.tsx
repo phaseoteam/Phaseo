@@ -34,6 +34,7 @@ import { PermissionMenu, PlanIndicator } from "./NewChat";
 import { openModelPickerEvent, renameChatEvent, useModelSettingActions, type ComposerAction } from "./composerActions";
 import { ChildRequests, Requests } from "./Requests";
 import { ChatBranchPicker } from "./ChatBranchPicker";
+import { ChatLineage } from "./ChatLineage";
 import { AgentThreads } from "./AgentThreads";
 import { ChatSpend } from "./ChatSpend";
 import { AutopilotControl } from "./Autopilot";
@@ -96,6 +97,7 @@ function ChatHeader({ task, onOpenTerminal }: { task: Task; onOpenTerminal: () =
 			: <button type="button" title="Rename" onClick={() => setRenaming(true)} className="min-w-0 truncate rounded-md px-1.5 py-0.5 text-sm font-semibold hover:bg-muted">{task.title}</button>}
 		{!renaming && <TagEditor task={snapshot ?? task} />}
 		<FactoryThreadChip taskId={task.id} />
+		<ChatLineage taskId={task.id} />
 		{project && <span className="flex h-6 shrink-0 items-center gap-1.5 rounded-full border border-border px-2.5 text-[11.5px] text-muted-foreground"><ProjectIcon project={project} className="size-3.5" />{project.name}{project.worktree && <span className="font-mono">⎇ {project.worktree.branch}</span>}</span>}
 		<div className="ml-auto flex items-center gap-1.5">
 			{project && !project.worktree?.removedAt && <ProjectScriptsControl project={project} taskId={task.id} onRun={onOpenTerminal} />}
