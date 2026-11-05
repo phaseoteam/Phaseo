@@ -458,6 +458,7 @@ function UptimeHeaderHoverContent() {
 	return (
 		<div className="space-y-2">
 			<p className="text-sm font-medium text-foreground">{t("threeDayUptime")}</p>
+			<p className="text-xs leading-5 text-muted-foreground">{t("uptimeExplanation")}</p>
 			<UptimeKey className="border-t border-zinc-200 pt-2.5 dark:border-zinc-800" />
 		</div>
 	);
@@ -1685,7 +1686,7 @@ export default function ModelPricingClient({
 			return (
 				<HoverCard openDelay={120} closeDelay={80}>
 					<HoverCardTrigger asChild openOnTap={false}>{button}</HoverCardTrigger>
-					<HoverCardContent align="end" className="w-72 text-left">
+					<HoverCardContent align="end" className="w-72 rounded-md text-left">
 						<UptimeHeaderHoverContent />
 					</HoverCardContent>
 				</HoverCard>

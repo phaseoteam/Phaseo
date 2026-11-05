@@ -47,11 +47,6 @@ import {
 	HoverCardContent,
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TableCell, TableRow } from "@/components/ui/table";
 import {
@@ -263,14 +258,26 @@ function getDisplayedUptimePct(
 	return runtimeStats?.uptimePct3d ?? null;
 }
 
-function getUptimeTrendPoints(
+export type UptimeTrendPoint = {
+	dayOffset: 0 | 1 | 2;
+	value: number | null;
+	/** No eligible attempts that day (shown as 100% when the provider had traffic in the window). */
+	noTraffic: boolean;
+};
+
+/** The last 3 UTC days' uptime, oldest first. */
+export function getUptimeTrendPoints(
 	runtimeStats: ProviderRuntimeStats | null | undefined,
-): Array<number | null> {
-	if (!hasUptimeObservation(runtimeStats)) return [null, null, null];
-	const pointsByDay = new Map(
-		(runtimeStats?.uptimeDaily3d ?? []).map((entry) => [entry.dayOffset, entry.uptimePct]),
+): UptimeTrendPoint[] {
+	const observed = hasUptimeObservation(runtimeStats);
+	const entriesByDay = new Map(
+		(runtimeStats?.uptimeDaily3d ?? []).map((entry) => [entry.dayOffset, entry]),
 	);
-	return [2, 1, 0].map((dayOffset) => pointsByDay.get(dayOffset as 0 | 1 | 2) ?? null);
+	return ([2, 1, 0] as const).map((dayOffset) => {
+		const entry = observed ? entriesByDay.get(dayOffset) : undefined;
+		const value = entry?.uptimePct != null && Number.isFinite(entry.uptimePct) ? entry.uptimePct : null;
+		return { dayOffset, value, noTraffic: value == null || entry?.noTraffic === true };
+	});
 }
 
 function formatUptimeDayLabel(dayOffset: number, locale: string, todayLabel: string): string {
@@ -374,95 +381,77 @@ function UptimeHoverContent({
 	);
 }
 
-function UptimeSparkline({
+/**
+ * The last 3 days' uptime as bars, oldest first, coloured by the uptime bands.
+ * Each bar is a button whose card gives its day and rate on hover, keyboard
+ * focus or tap (the row it sits in ignores clicks on buttons). A day with no
+ * traffic says so. `interactive={false}` draws plain bars, for a sparkline that
+ * sits inside another control.
+ */
+export function UptimeSparkline({
 	points,
 	className,
+	interactive = true,
 }: {
-	points: Array<number | null>;
+	points: UptimeTrendPoint[];
 	className?: string;
+	interactive?: boolean;
 }) {
 	const t = useTranslations("Catalogue.modelDetail.sections");
+	const tProvider = useTranslations("Catalogue.modelDetail.providerTable");
 	const locale = useLocale();
-	const values = points.filter(
-		(value): value is number => value != null && Number.isFinite(value),
-	);
+	if (!points.some((point) => point.value != null)) return null;
 
-	if (values.length === 0) return null;
-
-	const width = 28;
-	const height = 14;
-	const insetX = 1;
-	const insetY = 1.5;
-	const gap = 2.5;
-	const barWidth =
-		(width - insetX * 2 - gap * Math.max(points.length - 1, 0)) / Math.max(points.length, 1);
-	const barHeight = height - insetY * 2;
+	const describe = (point: UptimeTrendPoint) => {
+		const day = formatUptimeDayLabel(point.dayOffset, locale, t("today"));
+		return point.noTraffic
+			? tProvider("uptimeDayNoTraffic", { day })
+			: `${day}: ${formatPercent(point.value, locale)}`;
+	};
 
 	return (
-		<svg
-			viewBox={`0 0 ${width} ${height}`}
-			className={cn("h-3.5 w-8 shrink-0 overflow-visible", className)}
+		<span
+			role={interactive ? "group" : "img"}
 			aria-label={t("dailyUptime")}
-			role="img"
+			className={cn("inline-flex h-3.5 w-8 shrink-0 items-stretch gap-[3px] px-px", className)}
 		>
-			{points.map((value, index) => {
-				const x = insetX + index * (barWidth + gap);
-				const y = height - insetY - barHeight;
-				const opacity =
-					value == null || !Number.isFinite(value)
-						? 0.45
-						: 1;
-
-				const day = formatUptimeDayLabel(
-					points.length - 1 - index,
-					locale,
-					t("today"),
+			{points.map((point) => {
+				const bar = (
+					<span
+						aria-hidden="true"
+						className={cn(
+							"block w-full rounded-[2px] bg-current",
+							point.value == null ? "text-muted-foreground opacity-45" : uptimeValueClass(point.value),
+						)}
+					/>
 				);
-
+				if (!interactive) {
+					return (
+						<span key={point.dayOffset} className="flex flex-1">
+							{bar}
+						</span>
+					);
+				}
+				const label = describe(point);
 				return (
-					<Tooltip key={`${index}-${value ?? "null"}`}>
-						<TooltipTrigger asChild>
-							<g
-								aria-label={`${day}: ${formatPercent(value, locale)}`}
-								className="cursor-help"
-								tabIndex={0}
+					<HoverCard key={point.dayOffset}>
+						{/* The wrapper ignores openDelay; Base UI takes the delays on the trigger. */}
+						<HoverCardTrigger asChild delay={100} closeDelay={80}>
+							<button
+								type="button"
+								aria-label={label}
+								className="relative flex flex-1 cursor-help rounded-[2px] after:absolute after:-inset-y-2 after:inset-x-0 after:content-[''] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
 							>
-								<rect
-									className={cn(
-										value == null || !Number.isFinite(value)
-											? "text-muted-foreground"
-											: uptimeValueClass(value),
-									)}
-									x={x}
-									y={y}
-									width={barWidth}
-									height={barHeight}
-									rx={1.8}
-									fill="currentColor"
-									fillOpacity={opacity}
-									stroke={
-										index === points.length - 1 && value != null && Number.isFinite(value)
-											? "currentColor"
-											: "none"
-									}
-									strokeOpacity={0.12}
-									strokeWidth={0.6}
-								/>
-							</g>
-						</TooltipTrigger>
-						<TooltipContent side="top">{day}: {formatPercent(value, locale)}</TooltipContent>
-					</Tooltip>
+								{bar}
+							</button>
+						</HoverCardTrigger>
+						<HoverCardContent side="top" className="w-auto rounded-md px-2 py-1 text-xs tabular-nums">
+							{label}
+						</HoverCardContent>
+					</HoverCard>
 				);
 			})}
-			<path
-				d={`M ${insetX} ${height - insetY} H ${width - insetX}`}
-				fill="none"
-				stroke="currentColor"
-				strokeOpacity="0.14"
-				strokeWidth="1"
-				strokeLinecap="round"
-			/>
-		</svg>
+		</span>
 	);
 }
 
@@ -3886,7 +3875,7 @@ export default function ProviderCard({
 										>
 											<ProviderPerformanceMetricValue metric={metric.key} value={metric.value} />
 											{metric.key === "uptime" && activePerformanceMetric !== "uptime" ? (
-												<UptimeSparkline points={uptimeTrendPoints} className="h-4 w-10" />
+												<UptimeSparkline points={uptimeTrendPoints} className="h-4 w-10" interactive={false} />
 											) : null}
 										</div>
 									</button>

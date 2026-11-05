@@ -48,6 +48,32 @@ export function attemptFailureShares(rates: AttemptFunnelRates): Record<Provider
 	};
 }
 
+const NO_ATTEMPTS: AttemptFunnelRates = { reachabilityPct: null, capacityPct: null, callErrorPct: null };
+
+/**
+ * The model page's headline figures and their failure shares, both from the
+ * same 24-hour rates (web-api `attemptHealth24h`, computed from all attempts in
+ * those hours), so the figure and its explanation always agree. Without them
+ * (no attempts in 24 hours) every step reads 100% with no failures. A later
+ * step no attempt reached has no figure.
+ */
+export function attemptHeadline(totals: AttemptFunnelRates | null | undefined): {
+	rates: Record<ProviderHealthMetric, number | null>;
+	shares: Record<ProviderHealthMetric, AttemptFailureShare>;
+} {
+	const source = totals && isRate(totals.reachabilityPct) ? totals : NO_ATTEMPTS;
+	const hadAttempts = source !== NO_ATTEMPTS;
+	const rate = (value: number | null | undefined) => (isRate(value) ? value : hadAttempts ? null : 100);
+	return {
+		rates: {
+			reachability: rate(source.reachabilityPct),
+			capacity: rate(source.capacityPct),
+			callErrors: rate(source.callErrorPct),
+		},
+		shares: attemptFailureShares(source),
+	};
+}
+
 /**
  * A failure share as a locale percentage with one decimal place. Shares that
  * would round to 0.0% read "<0.1%" so a small failure never looks like none.
