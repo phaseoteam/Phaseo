@@ -56,9 +56,10 @@ describe("LTX documented model constraints", () => {
 		}), "ltx-2-3-pro")).toThrow("only supported by LTX-2.5");
 	});
 
-	it("rejects 48 fps on LTX-2.5 Pro", () => {
-		expect(() => buildLtxVideoRequest(request({
-			rawRequest: { config: { ltx: { fps: 48 } } },
-		}), "ltx-2-5-pro")).toThrow("supports 24, 25, or 50 fps");
+	it("sends 48 fps and 1440p/4K to LTX-2.5 Pro", () => {
+		expect(buildLtxVideoRequest(request({ rawRequest: { config: { ltx: { fps: 48 } } } }), "ltx-2-5-pro").fps).toBe(48);
+		for (const size of ["2560x1440", "3840x2160", "2160x3840"]) {
+			expect(buildLtxVideoRequest(request({ size } as any), "ltx-2-5-pro").resolution).toBe(size);
+		}
 	});
 });
