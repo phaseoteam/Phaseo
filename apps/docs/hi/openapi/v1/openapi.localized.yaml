@@ -5119,7 +5119,7 @@ paths:
             minimum: 1
             maximum: 250
       summary: List rate limit policies
-      description: Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: वर्कस्पेस की नामित रेट लिमिट नीतियों की सूची देता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।
       responses:
         '200':
           description: Rate limit policies
@@ -5139,7 +5139,7 @@ paths:
         - Gateway
       operationId: createRateLimitPolicy
       summary: Create a rate limit policy
-      description: Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: प्रति मिनट अनुरोध, प्रति मिनट टोकन या समवर्ती अनुरोध सीमाओं के साथ एक नामित नीति बनाता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।
       requestBody:
         required: true
         content:
@@ -5174,7 +5174,7 @@ paths:
         - Gateway
       operationId: getRateLimitPolicy
       summary: Get a rate limit policy
-      description: Returns one rate limit policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: एक रेट लिमिट नीति लौटाता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।
       responses:
         '200':
           description: Rate limit policy
@@ -5194,7 +5194,7 @@ paths:
         - Gateway
       operationId: updateRateLimitPolicy
       summary: Update a rate limit policy
-      description: Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: नीति का नाम, विवरण, सीमाएँ या फ़ेल-क्लोज़्ड सेटिंग बदलता है। किसी सीमा को हटाने के लिए उसे null पर सेट करें; कम से कम एक सीमा बनी रहनी चाहिए। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।
       requestBody:
         required: true
         content:
@@ -5220,7 +5220,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitPolicy
       summary: Delete a rate limit policy
-      description: Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: एक नीति और उसका उपयोग करने वाले हर असाइनमेंट को हटाता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।
       responses:
         '200':
           description: Rate limit policy deleted
@@ -5241,7 +5241,7 @@ paths:
         - Gateway
       operationId: listRateLimitAssignments
       summary: List rate limit assignments
-      description: Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: बताता है कि रेट लिमिट नीतियाँ कहाँ लागू होती हैं, वैकल्पिक रूप से नीति या लक्ष्य प्रकार के अनुसार फ़िल्टर करके। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।
       parameters:
         - name: policy_id
           in: query
@@ -5327,7 +5327,7 @@ paths:
         - Gateway
       operationId: getRateLimitAssignment
       summary: Get a rate limit assignment
-      description: Returns one rate limit assignment. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: एक रेट लिमिट असाइनमेंट लौटाता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।
       responses:
         '200':
           description: Rate limit assignment
@@ -5347,7 +5347,7 @@ paths:
         - Gateway
       operationId: updateRateLimitAssignment
       summary: Change an assignment's policy
-      description: Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: किसी असाइनमेंट के लक्ष्य पर लागू नीति बदलता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।
       requestBody:
         required: true
         content:
@@ -5373,7 +5373,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitAssignment
       summary: Delete a rate limit assignment
-      description: Removes a policy from its target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: किसी नीति को उसके लक्ष्य से हटाता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।
       responses:
         '200':
           description: Rate limit assignment deleted
@@ -24230,7 +24230,7 @@ components:
           type: string
           format: uuid
           nullable: true
-          description: Id of the key, member (user id), department, or guardrail. Null for end_user_default.
+          description: कुंजी, सदस्य (उपयोगकर्ता id) या विभाग की id। end_user_default के लिए null।
         created_by:
           type: string
           format: uuid
@@ -24256,7 +24256,7 @@ components:
         target_id:
           type: string
           format: uuid
-          description: Id of the key, member (user id), department, or guardrail. Omit for end_user_default.
+          description: कुंजी, सदस्य (उपयोगकर्ता id) या विभाग की id। end_user_default के लिए इसे छोड़ दें।
       additionalProperties: false
     RateLimitAssignmentUpdateInput:
       type: object

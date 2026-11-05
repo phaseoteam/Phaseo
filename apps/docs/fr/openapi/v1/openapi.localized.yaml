@@ -5119,7 +5119,7 @@ paths:
             minimum: 1
             maximum: 250
       summary: List rate limit policies
-      description: Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: Liste les politiques de limite de débit nommées de l’espace de travail. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.
       responses:
         '200':
           description: Rate limit policies
@@ -5139,7 +5139,7 @@ paths:
         - Gateway
       operationId: createRateLimitPolicy
       summary: Create a rate limit policy
-      description: Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: Crée une politique nommée avec des limites de requêtes par minute, de tokens par minute ou de requêtes simultanées. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.
       requestBody:
         required: true
         content:
@@ -5174,7 +5174,7 @@ paths:
         - Gateway
       operationId: getRateLimitPolicy
       summary: Get a rate limit policy
-      description: Returns one rate limit policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: Renvoie une politique de limite de débit. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.
       responses:
         '200':
           description: Rate limit policy
@@ -5194,7 +5194,7 @@ paths:
         - Gateway
       operationId: updateRateLimitPolicy
       summary: Update a rate limit policy
-      description: Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: Modifie le nom, la description, les limites ou le réglage de blocage en cas d’échec d’une politique. Définissez une limite sur null pour la supprimer ; au moins une limite doit rester. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.
       requestBody:
         required: true
         content:
@@ -5220,7 +5220,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitPolicy
       summary: Delete a rate limit policy
-      description: Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: Supprime une politique et toutes les affectations qui l’utilisent. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.
       responses:
         '200':
           description: Rate limit policy deleted
@@ -5241,7 +5241,7 @@ paths:
         - Gateway
       operationId: listRateLimitAssignments
       summary: List rate limit assignments
-      description: Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: Liste où s’appliquent les politiques de limite de débit, avec un filtre facultatif par politique ou type de cible. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.
       parameters:
         - name: policy_id
           in: query
@@ -5327,7 +5327,7 @@ paths:
         - Gateway
       operationId: getRateLimitAssignment
       summary: Get a rate limit assignment
-      description: Returns one rate limit assignment. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: Renvoie une affectation de limite de débit. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.
       responses:
         '200':
           description: Rate limit assignment
@@ -5347,7 +5347,7 @@ paths:
         - Gateway
       operationId: updateRateLimitAssignment
       summary: Change an assignment's policy
-      description: Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: Change la politique appliquée à la cible d’une affectation. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.
       requestBody:
         required: true
         content:
@@ -5373,7 +5373,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitAssignment
       summary: Delete a rate limit assignment
-      description: Removes a policy from its target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: Retire une politique de sa cible. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.
       responses:
         '200':
           description: Rate limit assignment deleted
@@ -24230,7 +24230,7 @@ components:
           type: string
           format: uuid
           nullable: true
-          description: Id of the key, member (user id), department, or guardrail. Null for end_user_default.
+          description: Id de la clé, du membre (id utilisateur) ou du département. Null pour end_user_default.
         created_by:
           type: string
           format: uuid
@@ -24256,7 +24256,7 @@ components:
         target_id:
           type: string
           format: uuid
-          description: Id of the key, member (user id), department, or guardrail. Omit for end_user_default.
+          description: Id de la clé, du membre (id utilisateur) ou du département. À omettre pour end_user_default.
       additionalProperties: false
     RateLimitAssignmentUpdateInput:
       type: object

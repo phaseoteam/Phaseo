@@ -5119,7 +5119,7 @@ paths:
             minimum: 1
             maximum: 250
       summary: List rate limit policies
-      description: Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 列出工作区的命名速率限制策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       responses:
         '200':
           description: Rate limit policies
@@ -5139,7 +5139,7 @@ paths:
         - Gateway
       operationId: createRateLimitPolicy
       summary: Create a rate limit policy
-      description: Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 创建一个带有每分钟请求数、每分钟令牌数或并发请求限制的命名策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       requestBody:
         required: true
         content:
@@ -5174,7 +5174,7 @@ paths:
         - Gateway
       operationId: getRateLimitPolicy
       summary: Get a rate limit policy
-      description: Returns one rate limit policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 返回一个速率限制策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       responses:
         '200':
           description: Rate limit policy
@@ -5194,7 +5194,7 @@ paths:
         - Gateway
       operationId: updateRateLimitPolicy
       summary: Update a rate limit policy
-      description: Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 更改策略的名称、描述、限制或失败关闭设置。将某个限制设为 null 即可移除；至少需要保留一个限制。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       requestBody:
         required: true
         content:
@@ -5220,7 +5220,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitPolicy
       summary: Delete a rate limit policy
-      description: Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 删除一个策略以及使用它的所有分配。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       responses:
         '200':
           description: Rate limit policy deleted
@@ -5241,7 +5241,7 @@ paths:
         - Gateway
       operationId: listRateLimitAssignments
       summary: List rate limit assignments
-      description: Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 列出速率限制策略的适用位置，可按策略或目标类型筛选。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       parameters:
         - name: policy_id
           in: query
@@ -5327,7 +5327,7 @@ paths:
         - Gateway
       operationId: getRateLimitAssignment
       summary: Get a rate limit assignment
-      description: Returns one rate limit assignment. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 返回一个速率限制分配。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       responses:
         '200':
           description: Rate limit assignment
@@ -5347,7 +5347,7 @@ paths:
         - Gateway
       operationId: updateRateLimitAssignment
       summary: Change an assignment's policy
-      description: Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 切换应用于分配目标的策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       requestBody:
         required: true
         content:
@@ -5373,7 +5373,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitAssignment
       summary: Delete a rate limit assignment
-      description: Removes a policy from its target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 从目标中移除策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       responses:
         '200':
           description: Rate limit assignment deleted
@@ -24230,7 +24230,7 @@ components:
           type: string
           format: uuid
           nullable: true
-          description: Id of the key, member (user id), department, or guardrail. Null for end_user_default.
+          description: 密钥、成员（用户 ID）或部门的 ID。end_user_default 时为 null。
         created_by:
           type: string
           format: uuid
@@ -24256,7 +24256,7 @@ components:
         target_id:
           type: string
           format: uuid
-          description: Id of the key, member (user id), department, or guardrail. Omit for end_user_default.
+          description: 密钥、成员（用户 ID）或部门的 ID。end_user_default 时省略。
       additionalProperties: false
     RateLimitAssignmentUpdateInput:
       type: object

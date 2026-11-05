@@ -5119,7 +5119,7 @@ paths:
             minimum: 1
             maximum: 250
       summary: List rate limit policies
-      description: Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: ワークスペースの名前付きレート制限ポリシーを一覧表示します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。
       responses:
         '200':
           description: Rate limit policies
@@ -5139,7 +5139,7 @@ paths:
         - Gateway
       operationId: createRateLimitPolicy
       summary: Create a rate limit policy
-      description: Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 1 分あたりのリクエスト数、1 分あたりのトークン数、または同時リクエスト数の制限を持つ名前付きポリシーを作成します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。
       requestBody:
         required: true
         content:
@@ -5174,7 +5174,7 @@ paths:
         - Gateway
       operationId: getRateLimitPolicy
       summary: Get a rate limit policy
-      description: Returns one rate limit policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 1 つのレート制限ポリシーを返します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。
       responses:
         '200':
           description: Rate limit policy
@@ -5194,7 +5194,7 @@ paths:
         - Gateway
       operationId: updateRateLimitPolicy
       summary: Update a rate limit policy
-      description: Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: ポリシーの名前、説明、制限、またはフェイルクローズ設定を変更します。制限を削除するには null に設定します。少なくとも 1 つの制限が残っている必要があります。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。
       requestBody:
         required: true
         content:
@@ -5220,7 +5220,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitPolicy
       summary: Delete a rate limit policy
-      description: Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: ポリシーと、それを使用するすべての割り当てを削除します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。
       responses:
         '200':
           description: Rate limit policy deleted
@@ -5241,7 +5241,7 @@ paths:
         - Gateway
       operationId: listRateLimitAssignments
       summary: List rate limit assignments
-      description: Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: レート制限ポリシーの適用先を一覧表示します。ポリシーまたは対象タイプで絞り込むこともできます。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。
       parameters:
         - name: policy_id
           in: query
@@ -5327,7 +5327,7 @@ paths:
         - Gateway
       operationId: getRateLimitAssignment
       summary: Get a rate limit assignment
-      description: Returns one rate limit assignment. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 1 つのレート制限の割り当てを返します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。
       responses:
         '200':
           description: Rate limit assignment
@@ -5347,7 +5347,7 @@ paths:
         - Gateway
       operationId: updateRateLimitAssignment
       summary: Change an assignment's policy
-      description: Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 割り当ての対象に適用されるポリシーを切り替えます。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。
       requestBody:
         required: true
         content:
@@ -5373,7 +5373,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitAssignment
       summary: Delete a rate limit assignment
-      description: Removes a policy from its target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: ポリシーを対象から外します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。
       responses:
         '200':
           description: Rate limit assignment deleted
@@ -24230,7 +24230,7 @@ components:
           type: string
           format: uuid
           nullable: true
-          description: Id of the key, member (user id), department, or guardrail. Null for end_user_default.
+          description: キー、メンバー（ユーザー ID）、または部門の ID。end_user_default の場合は null。
         created_by:
           type: string
           format: uuid
@@ -24256,7 +24256,7 @@ components:
         target_id:
           type: string
           format: uuid
-          description: Id of the key, member (user id), department, or guardrail. Omit for end_user_default.
+          description: キー、メンバー（ユーザー ID）、または部門の ID。end_user_default の場合は省略します。
       additionalProperties: false
     RateLimitAssignmentUpdateInput:
       type: object

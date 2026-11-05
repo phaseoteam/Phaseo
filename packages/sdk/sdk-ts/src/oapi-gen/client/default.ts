@@ -6000,7 +6000,7 @@ export type CreateRateLimitPolicyParams = {
 };
 
 /**
- * Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+ * Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.
  */
 export async function createRateLimitPolicy(
   client: Client,
@@ -9166,7 +9166,7 @@ export type DeleteRateLimitAssignmentParams = {
 };
 
 /**
- * Removes a policy from its target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+ * Removes a policy from its target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.
  */
 export async function deleteRateLimitAssignment(
   client: Client,
@@ -9205,7 +9205,7 @@ export type DeleteRateLimitPolicyParams = {
 };
 
 /**
- * Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+ * Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.
  */
 export async function deleteRateLimitPolicy(
   client: Client,
@@ -12729,7 +12729,7 @@ export type GetRateLimitAssignmentParams = {
 };
 
 /**
- * Returns one rate limit assignment. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+ * Returns one rate limit assignment. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.
  */
 export async function getRateLimitAssignment(
   client: Client,
@@ -12780,7 +12780,7 @@ export type GetRateLimitPolicyParams = {
 };
 
 /**
- * Returns one rate limit policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+ * Returns one rate limit policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.
  */
 export async function getRateLimitPolicy(
   client: Client,
@@ -19467,7 +19467,7 @@ export type ListRateLimitAssignmentsParams = {
 };
 
 /**
- * Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+ * Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.
  */
 export async function listRateLimitAssignments(
   client: Client,
@@ -19519,7 +19519,7 @@ export type ListRateLimitPoliciesParams = {
 };
 
 /**
- * Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+ * Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.
  */
 export async function listRateLimitPolicies(
   client: Client,
@@ -27950,7 +27950,7 @@ export type UpdateRateLimitAssignmentParams = {
 };
 
 /**
- * Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+ * Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.
  */
 export async function updateRateLimitAssignment(
   client: Client,
@@ -28008,7 +28008,7 @@ export type UpdateRateLimitPolicyParams = {
 };
 
 /**
- * Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+ * Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.
  */
 export async function updateRateLimitPolicy(
   client: Client,

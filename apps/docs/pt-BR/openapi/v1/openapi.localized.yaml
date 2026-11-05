@@ -5119,7 +5119,7 @@ paths:
             minimum: 1
             maximum: 250
       summary: List rate limit policies
-      description: Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: Lista as políticas de limite de taxa nomeadas do workspace. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.
       responses:
         '200':
           description: Rate limit policies
@@ -5139,7 +5139,7 @@ paths:
         - Gateway
       operationId: createRateLimitPolicy
       summary: Create a rate limit policy
-      description: Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: Cria uma política nomeada com limites de solicitações por minuto, tokens por minuto ou solicitações simultâneas. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.
       requestBody:
         required: true
         content:
@@ -5174,7 +5174,7 @@ paths:
         - Gateway
       operationId: getRateLimitPolicy
       summary: Get a rate limit policy
-      description: Returns one rate limit policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: Retorna uma política de limite de taxa. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.
       responses:
         '200':
           description: Rate limit policy
@@ -5194,7 +5194,7 @@ paths:
         - Gateway
       operationId: updateRateLimitPolicy
       summary: Update a rate limit policy
-      description: Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: Altera o nome, a descrição, os limites ou a configuração de bloqueio em falha de uma política. Defina um limite como null para removê-lo; pelo menos um limite deve permanecer. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.
       requestBody:
         required: true
         content:
@@ -5220,7 +5220,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitPolicy
       summary: Delete a rate limit policy
-      description: Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: Exclui uma política e todas as atribuições que a usam. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.
       responses:
         '200':
           description: Rate limit policy deleted
@@ -5241,7 +5241,7 @@ paths:
         - Gateway
       operationId: listRateLimitAssignments
       summary: List rate limit assignments
-      description: Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: Lista onde as políticas de limite de taxa se aplicam, com filtro opcional por política ou tipo de destino. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.
       parameters:
         - name: policy_id
           in: query
@@ -5327,7 +5327,7 @@ paths:
         - Gateway
       operationId: getRateLimitAssignment
       summary: Get a rate limit assignment
-      description: Returns one rate limit assignment. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: Retorna uma atribuição de limite de taxa. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.
       responses:
         '200':
           description: Rate limit assignment
@@ -5347,7 +5347,7 @@ paths:
         - Gateway
       operationId: updateRateLimitAssignment
       summary: Change an assignment's policy
-      description: Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: Troca a política aplicada ao destino de uma atribuição. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.
       requestBody:
         required: true
         content:
@@ -5373,7 +5373,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitAssignment
       summary: Delete a rate limit assignment
-      description: Removes a policy from its target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: Remove uma política do seu destino. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.
       responses:
         '200':
           description: Rate limit assignment deleted
@@ -24230,7 +24230,7 @@ components:
           type: string
           format: uuid
           nullable: true
-          description: Id of the key, member (user id), department, or guardrail. Null for end_user_default.
+          description: Id da chave, do membro (id de usuário) ou do departamento. Null para end_user_default.
         created_by:
           type: string
           format: uuid
@@ -24256,7 +24256,7 @@ components:
         target_id:
           type: string
           format: uuid
-          description: Id of the key, member (user id), department, or guardrail. Omit for end_user_default.
+          description: Id da chave, do membro (id de usuário) ou do departamento. Omita para end_user_default.
       additionalProperties: false
     RateLimitAssignmentUpdateInput:
       type: object

@@ -5402,7 +5402,7 @@ paths:
       description: >-
         Lists the workspace's named rate limit policies. The gateway enforces
         requests_per_minute, tokens_per_minute and concurrent_requests for key,
-        member, department, guardrail and end-user-default assignments.
+        member, department and end-user-default assignments.
       responses:
         '200':
           description: Rate limit policies
@@ -5425,8 +5425,8 @@ paths:
       description: >-
         Creates a named policy with requests per minute, tokens per minute, or
         concurrent request limits. The gateway enforces requests_per_minute,
-        tokens_per_minute and concurrent_requests for key, member, department,
-        guardrail and end-user-default assignments.
+        tokens_per_minute and concurrent_requests for key, member, department
+        and end-user-default assignments.
       requestBody:
         required: true
         content:
@@ -5463,8 +5463,8 @@ paths:
       summary: Get a rate limit policy
       description: >-
         Returns one rate limit policy. The gateway enforces requests_per_minute,
-        tokens_per_minute and concurrent_requests for key, member, department,
-        guardrail and end-user-default assignments.
+        tokens_per_minute and concurrent_requests for key, member, department
+        and end-user-default assignments.
       responses:
         '200':
           description: Rate limit policy
@@ -5488,8 +5488,8 @@ paths:
         Changes a policy's name, description, limits, or fail-closed setting.
         Set a limit to null to remove it; at least one limit must remain. The
         gateway enforces requests_per_minute, tokens_per_minute and
-        concurrent_requests for key, member, department, guardrail and
-        end-user-default assignments.
+        concurrent_requests for key, member, department and end-user-default
+        assignments.
       requestBody:
         required: true
         content:
@@ -5518,7 +5518,7 @@ paths:
       description: >-
         Deletes a policy and every assignment that uses it. The gateway enforces
         requests_per_minute, tokens_per_minute and concurrent_requests for key,
-        member, department, guardrail and end-user-default assignments.
+        member, department and end-user-default assignments.
       responses:
         '200':
           description: Rate limit policy deleted
@@ -5542,8 +5542,8 @@ paths:
       description: >-
         Lists where rate limit policies apply, optionally filtered by policy or
         target type. The gateway enforces requests_per_minute, tokens_per_minute
-        and concurrent_requests for key, member, department, guardrail and
-        end-user-default assignments.
+        and concurrent_requests for key, member, department and end-user-default
+        assignments.
       parameters:
         - name: policy_id
           in: query
@@ -5636,7 +5636,7 @@ paths:
       description: >-
         Returns one rate limit assignment. The gateway enforces
         requests_per_minute, tokens_per_minute and concurrent_requests for key,
-        member, department, guardrail and end-user-default assignments.
+        member, department and end-user-default assignments.
       responses:
         '200':
           description: Rate limit assignment
@@ -5659,7 +5659,7 @@ paths:
       description: >-
         Switches the policy applied to an assignment's target. The gateway
         enforces requests_per_minute, tokens_per_minute and concurrent_requests
-        for key, member, department, guardrail and end-user-default assignments.
+        for key, member, department and end-user-default assignments.
       requestBody:
         required: true
         content:
@@ -5688,7 +5688,7 @@ paths:
       description: >-
         Removes a policy from its target. The gateway enforces
         requests_per_minute, tokens_per_minute and concurrent_requests for key,
-        member, department, guardrail and end-user-default assignments.
+        member, department and end-user-default assignments.
       responses:
         '200':
           description: Rate limit assignment deleted
@@ -25437,7 +25437,7 @@ components:
           format: uuid
           nullable: true
           description: >-
-            Id of the key, member (user id), department, or guardrail. Null for
+            Id of the key, member (user id) or department. Null for
             end_user_default.
         created_by:
           type: string
@@ -25465,7 +25465,7 @@ components:
           type: string
           format: uuid
           description: >-
-            Id of the key, member (user id), department, or guardrail. Omit for
+            Id of the key, member (user id) or department. Omit for
             end_user_default.
       additionalProperties: false
     RateLimitAssignmentUpdateInput:
