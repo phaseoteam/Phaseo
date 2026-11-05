@@ -1,34 +1,42 @@
 ---
 title: "Kilo Code"
 icon: "/icons/brands/kilo.svg"
-description: "कस्टम OpenAI-संगत प्रदाता के ज़रिए Kilo Code को Phaseo से जोड़ें।"
+description: "कस्टम OpenAI-संगत प्रदाता से Kilo Code को Phaseo से जोड़ें।"
 ---
 
-अलग सत्र के लिए Phaseo CLI रनर चुनें, या CLI से समर्पित कुंजी बनाकर मौजूदा Kilo Code इंस्टॉलेशन हाथ से सेट करें।
+Phaseo के ज़रिए Kilo Code CLI सत्र शुरू करने के लिए `phaseo kilo` चलाएँ, या `phaseo kilo-code` से कुंजी बनाएँ और Kilo Code एक्सटेंशन में कस्टम प्रदाता जोड़ें।
 
-## Phaseo CLI से Kilo Code चलाएँ
-
-Kilo Code CLI के लिए Phaseo को एक सत्र का प्रदाता कॉन्फ़िगरेशन बनाने दें:
+## Phaseo के ज़रिए Kilo Code CLI चलाएँ
 
 ```bash
 phaseo login
-phaseo kilo --model openai/gpt-5.6-terra --
+phaseo kilo --model openai/gpt-5.6-terra
 ```
 
-सभी सक्रिय Phaseo टेक्स्ट/चैट मॉडल उपलब्ध कराने के लिए `--catalog all`, या इंस्टॉल और लॉन्च योजना देखने के लिए `--dry-run --json` इस्तेमाल करें। स्पष्ट कमांड रूप के लिए `phaseo run kilo ...` इस्तेमाल करें। रनर अस्थायी `KILO_CONFIG` फ़ाइल इस्तेमाल करता है, इसलिए मौजूदा Kilo Code या VS Code सेटअप नहीं बदलता।
+रनर एक अस्थायी `KILO_CONFIG` फ़ाइल लिखता है, `kilo` लॉन्च करता है, और Kilo बंद होने पर फ़ाइल मिटा देता है, इसलिए आपका मौजूदा Kilo Code या VS Code सेटअप नहीं बदलता। अगर Kilo इंस्टॉल नहीं है, तो इंटरैक्टिव रन उसे इंस्टॉल करने का विकल्प देता है। Kilo के अपने फ़्लैग `--` के बाद लिखें।
 
-## Phaseo CLI से क्रेडेंशियल बनाएँ
+| फ़्लैग | असर |
+| --- | --- |
+| `--model <id>` | इस्तेमाल होने वाला मॉडल। डिफ़ॉल्ट `openai/gpt-5.6-terra` है। |
+| `--catalog all` | सिर्फ़ चुने गए मॉडल की जगह, Kilo में हर सक्रिय Phaseo टेक्स्ट मॉडल दिखाता है। |
+| `--dry-run --json` | कुंजी बनाए या Kilo शुरू किए बिना इंस्टॉल और लॉन्च की योजना दिखाता है। |
+| `--skip-install` | इंस्टॉल जाँच छोड़ देता है। |
+
+`phaseo run kilo ...` इसी कमांड का लंबा रूप है।
+
+## Kilo Code एक्सटेंशन कॉन्फ़िगर करें
+
+एक्सटेंशन के लिए कुंजी बनाएँ:
 
 ```bash
 phaseo login
-phaseo setup kilo-code --model anthropic/claude-sonnet-4.6
+phaseo kilo-code --model anthropic/claude-sonnet-5.5
 ```
 
-## Kilo Code को हाथ से सेट करें
+फिर VS Code में:
 
-1. VS Code में Kilo Code खोलें।
-2. सेटिंग्स आइकन चुनें, **Providers** खोलें, फिर **Add custom provider** चुनें।
-3. ये मान दर्ज करें:
+1. Kilo Code खोलें, सेटिंग्स आइकन चुनें, **Providers** खोलें, फिर **Add custom provider** चुनें।
+2. ये मान दर्ज करें:
 
 | Kilo Code फ़ील्ड | मान |
 | --- | --- |
@@ -36,43 +44,37 @@ phaseo setup kilo-code --model anthropic/claude-sonnet-4.6
 | Display name | `Phaseo` |
 | Provider API | **OpenAI Compatible** |
 | Base URL | `https://api.phaseo.app/v1` |
-| API key | इस कमांड का आउटपुट `phaseo integrations credential kilo-code` |
+| API key | `phaseo integrations credential kilo-code` का आउटपुट |
 
-4. अगर कोई मॉडल अपने-आप न मिले, तो ID `anthropic/claude-sonnet-4.6` मैन्युअल रूप से जोड़ें।
-5. **Submit** चुनें, फिर Phaseo मॉडल चुनें।
+3. अगर कोई मॉडल नहीं मिलता, तो ID `anthropic/claude-sonnet-5.5` ख़ुद जोड़ें।
+4. **Submit** चुनें, फिर Phaseo मॉडल चुनें।
 
-Kilo चयन को `phaseo/anthropic/claude-sonnet-4.6` के रूप में दिखाता है: `phaseo` स्थानीय प्रदाता ID है, जबकि शेष हिस्सा मॉडल ID के रूप में Phaseo को भेजा जाता है।
+Kilo चुने गए मॉडल को `phaseo/anthropic/claude-sonnet-5.5` के रूप में दिखाता है। `phaseo` लोकल प्रदाता ID है; बाकी हिस्सा वह मॉडल ID है जो Phaseo को भेजा जाता है। पूरे फ़ॉर्म के लिए Kilo के [कस्टम मॉडल](https://kilo.ai/docs/code-with-ai/agents/custom-models) दस्तावेज़ देखें।
 
-## जाँचें
+## जाँचें कि यह काम करता है
 
-Kilo Code से `PHASEO_KILO_OK` जवाब देने को कहें, फिर पुष्टि करें कि अनुरोध Phaseo की गतिविधि में दिखाई देता है।
+Kilo Code से `PHASEO_KILO_OK` के साथ जवाब देने को कहें, फिर पुष्टि करें कि अनुरोध **सेटिंग्स → उपयोग → लॉग्स** में दिखता है।
 
-## हटाएँ
+## Phaseo हटाएँ
 
-Kilo Code में कस्टम प्रदाता हटाएँ, फिर यह चलाएँ:
+Kilo Code में कस्टम प्रदाता मिटाएँ, फिर यह चलाएँ:
 
 ```bash
 phaseo integrations remove kilo-code
 ```
 
-CLI एक्सटेंशन का निजी स्टोरेज साफ़ नहीं कर सकती, लेकिन हटाने पर कुंजी निरस्त हो जाती है।
+इससे कुंजी रद्द हो जाती है। CLI एक्सटेंशन का स्टोरेज साफ़ नहीं कर सकता।
 
-## समस्या निवारण
+## आम समस्याएँ ठीक करें
 
 ### कोई मॉडल नहीं मिलता
 
-मॉडल मैन्युअल रूप से जोड़ें। `/models` के ज़रिए मॉडल खोजना ज़रूरी नहीं है।
+मॉडल ख़ुद जोड़ें। Kilo को `/models` के ज़रिए डिस्कवरी की ज़रूरत नहीं है।
 
-### प्रमाणीकरण विफल होता है
+### ऑथेंटिकेशन विफल होता है
 
-सहेजे गए मान को `phaseo integrations credential kilo-code` के आउटपुट से बदलें और Base URL ठीक वैसा ही रखें जैसा दिखाया गया है।
+सेव की गई कुंजी को `phaseo integrations credential kilo-code` के आउटपुट से बदलें, और Base URL ठीक वैसा ही रखें जैसा दिखाया गया है।
 
 ### मॉडल का नाम अलग दिखता है
 
-Kilo में `phaseo/<Phaseo model ID>` चुनें, लेकिन मॉडल ID फ़ील्ड के अंदर `phaseo/` न जोड़ें।
-
-## संबंधित विषय
-
-- [Kilo Code के कस्टम मॉडल](https://kilo.ai/docs/code-with-ai/agents/custom-models)
-- [कोडिंग एजेंट](./coding-assistants.mdx)
-- [मॉडल](../../api-reference/endpoint/models.mdx)
+Kilo में `phaseo/<Phaseo model ID>` चुनें, लेकिन मॉडल ID फ़ील्ड में `phaseo/` न जोड़ें।

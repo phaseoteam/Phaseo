@@ -5,116 +5,57 @@ sidebarTitle: "Modèles"
 icon: "brain"
 ---
 
-Phaseo suit un vaste catalogue ouvert de modèles d’IA pour le texte, l’image, l’audio, la vidéo, les embeddings et d’autres modalités.
+Ouvrez la liste des [Modèles](https://phaseo.app/models) pour trouver des modèles de texte, d’image, d’audio, de vidéo, d’embedding et autres, puis ouvrez un modèle pour voir ses fournisseurs, ses prix, ses performances et ses scores de benchmark.
 
-Chaque page de modèle présente des informations techniques et commerciales détaillées pour vous aider à évaluer, comparer et choisir le modèle adapté à vos besoins.
+![Une page de modèle sur Phaseo](/images/gemini-3-page.png)
 
-<Info>
-Le catalogue est plus vaste que Gateway. Par défaut, la page Modèles affiche les modèles disposant d’une route Gateway active. Choisissez un autre état Gateway uniquement si vous souhaitez consulter des entrées à venir ou inactives du catalogue.
-</Info>
+## Modèles du catalogue et modèles appelables
 
----
-
-## Contenu d’une page de modèle
-
-Chaque page de modèle Phaseo comprend les sections principales suivantes :
-
-| Section | Description |
-| --- | --- |
-| **Vue d’ensemble** | Fournisseur, date de sortie, type de modèle (chat, code, embeddings, image, etc.) et brève description. |
-| **Famille** | Modèles associés et relations entre eux. |
-| **Chronologie** | Historique des sorties et principales mises à jour. |
-| **Benchmarks** | Résultats de performances sur différents benchmarks pour comparer les modèles les plus proches. |
-| **Disponibilité** | Distingue les routes Gateway actives des routes à venir, inactives ou associées à des offres externes. |
-| **Tarification** | Tarifs détaillés en USD, normalisés pour faciliter la comparaison et l’estimation du coût du modèle. |
-| **Gateway** | Liens directs et guides de démarrage rapide lorsqu’une route Gateway publique existe. |
-| **Performances** | Latence, débit et taux de réussite observés pour les requêtes routées par Gateway, lorsque les données sont suffisantes. |
-
-## Modèles du catalogue et modèles routables
-
-Utilisez ces termes de façon cohérente :
+Le catalogue est plus large que le Gateway. Par défaut, la liste des modèles n’affiche que les modèles **Actif sur Gateway**. Changez le filtre **État Gateway** en **Bientôt disponible** ou **Inactif** pour voir les autres.
 
 | Terme | Signification |
 | --- | --- |
-| Modèle du catalogue | Phaseo suit les métadonnées du modèle. Il peut ne pas avoir de route publique. |
-| Modèle routable | Au moins une route fournisseur est active sur Phaseo Gateway. |
-| Offre externe | Phaseo suit une offre fournisseur qui n’est pas exécutée par Gateway. |
+| Modèle du catalogue | Phaseo suit les métadonnées du modèle. Il n’a peut-être aucune route que vous pouvez appeler. |
+| Modèle routable | Au moins une route de fournisseur est active sur le Gateway Phaseo maintenant. |
+| Correspondance externe | Phaseo répertorie une offre de fournisseur que le Gateway n’exécute pas. |
 
-Pour découvrir les modèles par programmation, `GET /v1/models` renvoie uniquement les modèles routables par défaut. Définissez `availability=all` pour consulter l’ensemble du catalogue.
+`GET /v1/models` ne renvoie que les modèles routables. Ajoutez `availability=all` pour inclure les autres.
 
----
+## Filtrer et trier la liste
 
-## Exemple de page de modèle
+| Contrôle | Options |
+| --- | --- |
+| État Gateway | Actif sur Gateway (par défaut), Bientôt disponible, Inactif |
+| Points de terminaison | Les endpoints d’API pris en charge par un modèle, comme la génération de texte ou les embeddings |
+| Modalités d’entrée et de sortie | Texte, image, audio, vidéo et autres |
+| Fonctionnalités | Des capacités comme l’appel d’outils ou le raisonnement |
+| Année | Année de sortie |
+| Tri | Plus récents, plus populaires (tokens sur 7 jours), prix, longueur de contexte, débit, latence |
 
-Voici à quoi peuvent ressembler les données d’un modèle sur Phaseo :
+Pour voir tous les modèles d’un laboratoire, ouvrez sa [page d’organisation](./organisations.mdx).
 
-![Page du modèle GPT-5](../../../images/gemini-3-page.png)
+## Ce que montre une page de modèle
 
----
+| Section | Ce qu’elle vous apprend |
+| --- | --- |
+| **Fournisseurs** | Chaque route de fournisseur avec son état, sa longueur de contexte, son prix, sa disponibilité et sa politique de données. [États du fournisseur](../guides/provider-statuses) explique les icônes. |
+| **Performances** | La latence et le débit mesurés sur le trafic du Gateway, lorsque les données sont suffisantes. |
+| **Tarifs** | Chaque compteur en USD : entrée, sortie, entrée en cache et unités média. |
+| **Évaluations comparatives** | Les scores sur chaque benchmark, avec leurs sources. |
+| **Activité** | L’utilisation des tokens sur le Gateway au fil du temps. |
+| **Applications** | Les applications publiques qui utilisent le modèle. |
+| **Disponibilité** | La disponibilité des routes au cours des derniers jours. |
+| **Vérification** | Les contrôles de provenance du contenu, pour les modèles d’image et de vidéo. |
+| **À propos** | Les dates de sortie, la licence, les liens et la famille. |
+| **Abonnements** | Les forfaits d’abonnement des fournisseurs qui incluent le modèle. |
+| **FAQ** | Les questions fréquentes sur le modèle. |
 
-## Comparer les modèles
+Une section n’apparaît que si des données existent pour elle. Les modèles qui ont une route active affichent aussi un démarrage rapide avec l’ID de modèle à envoyer.
 
-Comparez les modèles côte à côte selon leurs performances, tarifs et fonctionnalités.
-Phaseo met automatiquement en évidence les différences et classe les modèles selon plusieurs moyennes de benchmarks.
+## Comparer des modèles
 
-<Columns cols={2}>
-	<Card
-		title="Comparer les modèles"
-		icon="scale"
-		href="./pricing-performance.mdx"
-	>
-		Analysez le compromis entre coût et performances pour choisir le modèle adapté à votre charge de travail.
-	</Card>
-	<Card
-		title="Voir les benchmarks"
-		icon="chart-column-increasing"
-		href="./benchmarks.mdx"
-	>
-		Découvrez comment les scores des benchmarks sont recueillis et normalisés.
-	</Card>
-</Columns>
+[Comparer](https://phaseo.app/compare) place des modèles côte à côte selon le prix, les scores de benchmark, le contexte et les fonctionnalités. [Prix et performances](./pricing-performance.mdx) explique comment lire les chiffres de coût et de vitesse.
 
----
+## Signaler une correction
 
-## Trouver des modèles selon des critères
-
-Utilisez les filtres et les tags de l’interface Phaseo pour trouver les modèles adaptés à vos besoins :
-
-- **Par fournisseur :** ` Afficher tous les modèles Anthropic. `
-- **Par fonctionnalité :** ` Lister les modèles qui prennent en charge les réponses structurées en JSON. `
-- **Par benchmark :** ` Les 10 meilleurs modèles sur GPQA. `
-- **Par prix :** ` Modèles coûtant moins de 0,01 USD pour 1 000 jetons. `
-- **Par date de sortie :** ` Modèles récemment publiés. `
-
-Combinez les filtres pour trouver précisément ce que vous cherchez.
-
----
-
-## Contribuer aux données des modèles
-
-L’IA évolue rapidement. Phaseo compte donc sur les contributions pour garder les données des modèles à jour.
-Ouvrez une issue GitHub pour signaler une correction, soumettre des benchmarks manquants ou demander de nouvelles métadonnées. Incluez la page du modèle et les sources officielles ; les responsables appliquent les mises à jour approuvées dans l’éditeur de base de données.
-
-<Card
-	title="Contribuer aux données des modèles"
-	icon="github"
-	href="../contributing/editing-a-model.mdx"
-	horizontal
->
-	Découvrez comment signaler une correction de modèle ou demander une entrée manquante.
-</Card>
-
----
-
-## Étapes suivantes
-
-Maintenant que vous savez comment les modèles sont organisés, découvrez les **organisations** qui les créent.
-
-<Card
-	title="Découvrir les organisations"
-	icon="building"
-	href="./organisations.mdx"
-	horizontal
->
-	Découvrez les entreprises et les équipes de recherche à l’origine de chaque modèle.
-</Card>
+Ouvrez une issue GitHub avec la page du modèle et une source officielle. Les mainteneurs appliquent les mises à jour approuvées dans la base de données. Consultez [Signaler une mise à jour de modèle](../contributing/editing-a-model.mdx).

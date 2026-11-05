@@ -1,25 +1,25 @@
 ---
 title: "LangChain"
 icon: "link"
-description: "Use LangChain com o Phaseo pela API de chat compatível com OpenAI."
+description: "Use o LangChain com o Phaseo pela API de chat compatível com OpenAI."
 ---
 
-Use este guia para que chains, agentes ou fluxos de trabalho do LangGraph chamem modelos pelo Phaseo.
+Crie um modelo `ChatOpenAI` com sua chave do Phaseo e `base_url="https://api.phaseo.app/v1"`, e as chains, os agentes e os workflows do LangGraph do LangChain chamam os modelos pelo Phaseo.
 
-## Instalação
+## Instale
 
 ```bash
 pip install -U langchain langchain-openai
 ```
 
-## Configure o ChatOpenAI
+## Aponte o ChatOpenAI para o Phaseo
 
 ```python
 import os
 from langchain_openai import ChatOpenAI
 
 llm = ChatOpenAI(
-    model="openai/gpt-5-nano",
+    model="openai/gpt-6-astra",
     api_key=os.environ["PHASEO_API_KEY"],
     base_url="https://api.phaseo.app/v1",
 )
@@ -28,9 +28,11 @@ result = llm.invoke("Write one sentence about routing reliability.")
 print(result.content)
 ```
 
-## Use com o LangGraph
+Se uma frase for impressa, a configuração funciona.
 
-Passe o mesmo `llm` para os nós do grafo ou para o construtor do agente:
+## Use no LangGraph
+
+Passe o mesmo `llm` aos nós do grafo ou ao construtor de agentes:
 
 ```python
 def call_model(state):
@@ -38,14 +40,8 @@ def call_model(state):
     return {"messages": [response]}
 ```
 
-## Observações
+## Limitações conhecidas
 
-- O caminho compatível com OpenAI do LangChain usa Chat Completions. Use os recursos do Phaseo disponíveis em `/v1/chat/completions`.
-- Para ferramentas de servidor exclusivas da Responses, como `phaseo:apply_patch`, chame o Phaseo diretamente ou consulte o guia do SDK da OpenAI.
-- Para rastreamento, combine esta configuração com [Observabilidade](./observability.mdx).
-
-## Relacionado
-
-- [SDK da OpenAI](./openai-sdk.mdx)
-- [Chamadas de ferramentas](../tool-calling.mdx)
-- [Roteamento e fallbacks](../routing-and-fallbacks.mdx)
+- Este caminho usa [Chat Completions](../../api-reference/endpoint/chat-completions.mdx), então só funcionam os recursos do Phaseo disponíveis em `/v1/chat/completions`, incluindo [chamada de ferramentas](../tool-calling.mdx) e [roteamento e fallbacks](../routing-and-fallbacks.mdx).
+- Para ferramentas de servidor exclusivas do Responses, como `phaseo:apply_patch`, chame o Phaseo diretamente ou use o [SDK da OpenAI](./openai-sdk.mdx).
+- Para rastreamento com o LangSmith, veja [Observabilidade](./observability.mdx).

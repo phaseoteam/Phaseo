@@ -1,0 +1,233 @@
+---
+icon: "shuffle"
+title: "Agent SDK 动态轮次"
+sidebarTitle: "动态轮次"
+description: "在轮次之间更换智能体的模型、指令、采样参数或工具，而无需重新构建它。"
+---
+
+当后续的模型轮次需要依据应用上下文或之前的结果时，就传入一个函数而不是固定值。运行时会在每次模型请求之前调用它，并传入轮次编号、步骤索引、消息和上下文。Rust 没有按轮次的回调；它[按运行设置模型](#set-the-model-per-run-in-rust)。
+
+## 每一轮更改设置
+
+<CodeGroup>
+
+```typescript TypeScript
+type ResearchContext = {
+  fast: boolean;
+};
+
+const agent = createAgent<string, string, ResearchContext>({
+  id: "research-agent",
+  model: ({ context }) =>
+    context?.fast ? "openai/gpt-6-astra" : "openai/gpt-6-astra-pro",
+  instructions: ({ numberOfTurns }) =>
+    `Research turn ${numberOfTurns}. Cite the evidence you use.`,
+});
+```
+
+```python Python
+agent = create_agent({
+    "id": "research-agent",
+    "model": lambda turn: "openai/gpt-6-astra" if (turn["context"] or {}).get("fast") else "openai/gpt-6-astra-pro",
+    "instructions": lambda turn: f"Research turn {turn['number_of_turns']}. Cite the evidence you use.",
+})
+```
+
+```go Go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID:    "support-agent",
+  Model: "openai/gpt-6-astra",
+  DynamicModel: func(turn phaseoagent.TurnContext) string {
+    if turn.StepIndex >= 3 {
+      return "openai/gpt-6-astra-pro"
+    }
+    return "openai/gpt-6-astra"
+  },
+  DynamicInstructions: func(turn phaseoagent.TurnContext) string {
+    return fmt.Sprintf("Resolve the request. Current context: %v", turn.Context)
+  },
+})
+```
+
+```csharp C#
+var agent = AgentSdk.CreateAgent(new AgentDefinition
+{
+    Id = "support-agent",
+    Model = "openai/gpt-6-astra",
+    DynamicModel = turn => turn.StepIndex >= 3 ? "openai/gpt-6-astra-pro" : "openai/gpt-6-astra",
+    DynamicInstructions = turn => $"Resolve the request. Current context: {turn.Context}",
+});
+```
+
+```php PHP
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "support-agent",
+    model: fn (array $turn) => $turn["step_index"] >= 3
+        ? "openai/gpt-6-astra-pro"
+        : "openai/gpt-6-astra",
+    instructions: fn (array $turn) => "Resolve the request. Current context: " . json_encode($turn["context"]),
+));
+```
+
+```ruby Ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "support-agent",
+  model: ->(turn) {
+    turn[:step_index] >= 3 ? "openai/gpt-6-astra-pro" : "openai/gpt-6-astra"
+  },
+  instructions: ->(turn) {
+    "Resolve the request. Current context: #{turn[:context].inspect}"
+  }
+)
+```
+
+```java Java
+// 这些回调是 19 个参数的构造函数中的最后六个参数。
+var agent = AgentSdk.createAgent(new AgentSdk.AgentDefinition(
+    "support-agent", "openai/gpt-6-astra", null, "Resolve the request.",
+    List.of(), 12, null, null, null, null,
+    List.of(), null, null,                         // stopWhen, outputSchema, requireApproval
+    turn -> turn.stepIndex() >= 3 ? "openai/gpt-6-astra-pro" : "openai/gpt-6-astra", // dynamicModel
+    turn -> "Resolve the request. Current context: " + turn.context(),         // dynamicInstructions
+    null, null, null,                              // temperature, maxOutputTokens, topP
+    null                                           // dynamicTools
+));
+```
+
+</CodeGroup>
+
+### 每一轮可以更改什么
+
+| 设置 | TypeScript | Python | Go | C# | PHP | Ruby | Java |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 模型 | `model` | `model` | `DynamicModel` | `DynamicModel` | `model` | `model:` | `dynamicModel` |
+| 指令 | `instructions` | `instructions` | `DynamicInstructions` | `DynamicInstructions` | `instructions` | `instructions:` | `dynamicInstructions` |
+| Temperature | `temperature` | `temperature` | `Temperature`（`*float64`） | `Temperature`（`double?`） | `temperature` | `temperature:` | `temperature`（`Double`） |
+| Top-p | `topP` | `top_p` | `TopP`（`*float64`） | `TopP`（`double?`） | `topP` | `top_p:` | `topP`（`Double`） |
+| 最大输出 token 数 | `maxOutputTokens` | `max_output_tokens` | `MaxOutputTokens`（`*int`） | `MaxOutputTokens`（`int?`） | `maxOutputTokens` | `max_output_tokens:` | `maxOutputTokens`（`Integer`） |
+| 提供的工具 | `activeTools`（工具 ID） | 不能按轮次设置；使用 `next_turn_params` | `DynamicTools`（`[]Tool`） | `DynamicTools`（`IReadOnlyList<Tool>`） | `dynamicTools` | `dynamic_tools:` | `dynamicTools`（`List<Tool>`） |
+| 模型列表 | `models` | 否 | 否 | 否 | 否 | 否 | 否 |
+
+TypeScript、Python、PHP 和 Ruby 用一个函数代替固定字段。Go、C# 和 Java 在固定的 `Model` 和 `Instructions` 旁边使用单独的回调字段。在 TypeScript 中，未列入 `activeTools` 的工具仍然可以调用，所以之前的调用依然能得到处理。
+
+轮次参数在每种语言中都包含相同的四个值：
+
+| 语言 | 轮次参数 |
+| --- | --- |
+| TypeScript | 包含 `numberOfTurns`、`stepIndex`、`messages`、`context` 的对象 |
+| Python | 包含 `number_of_turns`、`step_index`、`messages`、`context` 的字典 |
+| Go、C# | 包含 `NumberOfTurns`、`StepIndex`、`Messages`、`Context` 的 `TurnContext` |
+| PHP | 包含 `number_of_turns`、`step_index`、`messages`、`context` 的数组 |
+| Ruby | 包含 `:number_of_turns`、`:step_index`、`:messages`、`:context` 的 Hash |
+| Java | 包含 `numberOfTurns()`、`stepIndex()`、`messages()`、`context()` 的 `TurnContext` |
+
+在 Python 中，传给 `run()` 的 `model` 或 `preset` 会在每一轮替换定义中的模型。
+
+## 从工具更新应用上下文
+
+工具可以替换之后轮次读取的应用上下文：TypeScript 中用 `context.setContext()`，Python 中用 `runtime.set_context()`，其他语言的等价写法见[工具](./tools#report-progress-and-update-context)。当你保存运行并在之后继续时，请保持上下文精简且可序列化。
+
+```typescript
+const chooseMode = defineTool({
+  id: "choose-mode",
+  async execute(input: { fast: boolean }, context) {
+    context.setContext({ fast: input.fast });
+    return { selected: input.fast ? "fast" : "thorough" };
+  },
+});
+```
+
+## 只覆盖下一轮
+
+在工具上设置下一轮参数，即可更改紧随其后的那次请求，而不改变智能体定义。在那一轮中，它们优先于按轮次的函数。
+
+<CodeGroup>
+
+```typescript TypeScript
+const broadenSearch = defineTool({
+  id: "broaden-search",
+  nextTurnParams: {
+    model: "openai/gpt-6-astra-pro",
+    maxOutputTokens: 2_000,
+  },
+  async execute() {
+    return { broadened: true };
+  },
+});
+```
+
+```python Python
+broaden_search = define_tool(AgentTool(
+    id="broaden-search",
+    next_turn_params={"model": "openai/gpt-6-astra-pro", "max_output_tokens": 2_000},
+    execute=lambda tool_input, runtime: {"broadened": True},
+))
+```
+
+```go Go
+inspect := phaseoagent.Tool{
+  ID:       "inspect_repository",
+  Execute:  inspectRepository,
+  NextTurn: &phaseoagent.NextTurnParams{Model: "openai/gpt-6-astra-pro"},
+}
+```
+
+```csharp C#
+var inspect = new Tool("inspect_repository", InspectRepository)
+{
+    NextTurnParams = new NextTurnParams(Model: "openai/gpt-6-astra-pro"),
+};
+```
+
+```php PHP
+$inspect = new Tool(
+    id: "inspect_repository",
+    execute: fn (array $input, $runtime) => inspectRepository($input),
+    nextTurnParams: ["model" => "openai/gpt-6-astra-pro"],
+);
+```
+
+```ruby Ruby
+inspect_repo = PhaseoAgentSdk::Tool.new(
+  id: "inspect_repository",
+  execute: ->(input, runtime) { inspect_repository(input) },
+  next_turn_params: { model: "openai/gpt-6-astra-pro" }
+)
+```
+
+```java Java
+// 作为工具构造函数的最后一个参数传入。
+new AgentSdk.NextTurnParams("openai/gpt-6-astra-pro", null, null, null, null, null)
+```
+
+</CodeGroup>
+
+下一轮参数接受模型、指令、temperature、top-p、最大输出 token 数和工具，名称遵循各语言的大小写习惯。在 Python 中，这是在轮次之间更改工具列表的唯一方式。
+
+如果工具在等待审批，它的覆盖项会随已暂停的运行一起保存，并在你继续后应用到下一轮：
+
+| 语言 | 保存位置 |
+| --- | --- |
+| TypeScript | 在继续时运行已批准的调用时应用 |
+| Python | `run.next_turn_params` |
+| Go | `Run.NextTurn` |
+| C# | `Run.NextTurn` |
+| PHP | `$result->run->nextTurnParams` |
+| Ruby | `result.run.next_turn_params` |
+| Java | `run().nextTurn()` |
+
+对于希望每一轮都重新计算的策略，使用按轮次的函数；对于某个特定工具的一次性交接，使用下一轮参数。
+
+<span id="set-the-model-per-run-in-rust"></span>
+## 在 Rust 中按运行设置模型
+
+Rust 的 `phaseo-agent` 0.2 没有按轮次的回调、来自工具的上下文更新，也没有下一轮参数。请用 `RunOptions` 按运行设置模型、步数上限和应用上下文：
+
+```rust
+let mut options = RunOptions::new("Explain when to use routing presets.");
+options.model = Some("openai/gpt-6-astra-pro".to_string());
+options.max_steps = Some(4);
+options.context = serde_json::json!({ "workspace": "docs" });
+
+let result = agent.run(&mut client, options)?;
+```

@@ -1,56 +1,27 @@
 ---
 title: "Codex"
 icon: "/icons/brands/codex.svg"
-description: "استخدم Phaseo Gateway كمزوّد مخصّص لـ Codex CLI وCodex App وامتداد Codex لـ IDE."
+description: "استخدم Phaseo Gateway كمزوّد مخصّص لـ Codex CLI وCodex App وإضافة Codex لبيئات التطوير."
 ---
 
-يدعم Codex المزوّدين المخصّصين للنماذج عبر `config.toml`. وبذلك يمكنك توجيه طلبات Codex عبر Phaseo مع الاحتفاظ بسير العمل نفسه في CLI أو التطبيق أو IDE.
-
-إذا أردت أن يطّلع Codex أيضًا على أحدث وثائق Phaseo أثناء العمل، فأضف خادم [Docs MCP](./docs-mcp.mdx) كذلك.
-
-<Visibility for="humans">
-<Note>
-هل تحتاج إلى مساعدة في إعداد وكلاء قابلة لإعادة الاستخدام إلى جانب توصيل المزوّد؟ ثبّت مهارات Phaseo العامة من [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json):
-
-```bash
-npx skills add https://phaseo.app/docs --agent codex --skill '*'
-```
-</Note>
-</Visibility>
-
-<Visibility for="agents">
-<Note>
-تتوفر مهارات Phaseo القابلة لإعادة الاستخدام في [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json). لعمليات تثبيت Codex، استخدم:
-
-```bash
-npx skills add https://phaseo.app/docs --agent codex --skill '*'
-```
-</Note>
-</Visibility>
+شغّل `phaseo codex` لإضافة ملف تعريف Phaseo إلى Codex، أو أضف مزوّد `phaseo` إلى `config.toml` بنفسك. يعمل الإعداد نفسه في Codex CLI وCodex App وإضافة Codex لبيئات التطوير.
 
 ## الإعداد باستخدام Phaseo CLI
 
 ```bash
 phaseo login
 phaseo codex --model openai/gpt-5.6-terra
-```
-
-ثبّت Codex أولًا من إصداره الرسمي. ينشئ الإعداد مفتاحًا باسم `Phaseo CLI: Codex API Key` تنتهي صلاحيته بعد 90 يومًا وله حد إنفاق شهري قدره 100 دولار، ويحفظه في مخزن بيانات الاعتماد بنظام التشغيل، ويكتب ملف تعريف مخصصًا لـ Phaseo. يسترجع Codex المفتاح عبر مساعد CLI الذي ينشئ مفتاحًا جديدًا عند انتهاء صلاحية القديم، لذلك لا يُكتب كنص صريح في `config.toml`.
-
-ابدأ Codex باستخدام:
-
-```bash
 codex --profile phaseo
 ```
 
-يشغّل سير عمل Phaseo CLI نفسه أيضًا [Cline](./cline) و[Kilo Code](./kilo-code) و[oh-my-pi](./oh-my-pi) و[Muse Code](./muse-code) و[MiniMax Code](./minimax-code) بإعداد مزوّد مؤقت ومعزول.
+إذا لم يكن Codex مثبتًا، تعرض CLI أمر التثبيت الرسمي وتطلب موافقتك قبل تشغيله. ثم ينشئ الإعداد مفتاحًا باسم `Phaseo CLI: Codex API Key` تنتهي صلاحيته بعد 90 يومًا وله حد إنفاق شهري قدره $100، ويحفظه في مخزن بيانات الاعتماد في نظام التشغيل، ويكتب ملف التعريف في `~/.codex/phaseo.config.toml` (أو داخل `CODEX_HOME`). يجلب Codex المفتاح من CLI، التي تنشئ مفتاحًا جديدًا عند انتهاء صلاحية القديم، لذلك لا يُكتب أي مفتاح كنص صريح في الإعداد. بدون `--model`، يستخدم ملف التعريف `openai/gpt-5.6-terra`.
 
-## الإعداد اليدوي
+## إعداد Codex يدويًا
 
-أنشئ إعدادات المستخدم أو حدّثها في `~/.codex/config.toml`. وفي مشروع موثوق، يمكنك وضع الإعدادات نفسها في `.codex/config.toml` داخل المستودع.
+أضف ما يلي إلى `~/.codex/config.toml`، أو إلى `.codex/config.toml` في مشروع موثوق:
 
 ```toml
-model = "openai/gpt-5.5"
+model = "openai/gpt-6-astra"
 model_provider = "phaseo"
 
 [model_providers.phaseo]
@@ -60,17 +31,34 @@ env_key = "PHASEO_API_KEY"
 wire_api = "responses"
 ```
 
-يستخدم Codex حاليًا بروتوكول النقل الخاص بـ Responses للمزوّدين المخصّصين. أبقِ `wire_api = "responses"` أو احذف الإعداد لاستخدام القيمة الافتراضية.
+ثم صدّر `PHASEO_API_KEY` وابدأ Codex. تستخدم المزوّدات المخصّصة في Codex بروتوكول النقل الخاص بـ Responses، وهو الافتراضي، لذا يمكنك أيضًا حذف `wire_api`. في إضافة بيئة التطوير، افتح الملف من **Codex Settings → Open config.toml**.
 
-تشترك Codex App وإضافة IDE في طبقات الإعداد نفسها. وفي إضافة IDE، افتح الملف عبر `Codex Settings > Open config.toml`.
+## التحقق من أنه يعمل
 
-## التحقق
+أرسل موجّهًا قصيرًا وتأكد من ظهور الطلب في **الإعدادات → الاستخدام → السجلات**. يستدعي Codex نقطة النهاية [Responses](../../api-reference/endpoint/responses.mdx)، لذا يجب أن يدعم النموذج نقطة النهاية هذه.
 
-- تأكد من وجود معرّف النموذج في [النماذج](../../api-reference/endpoint/models.mdx) قبل التشغيل.
-- استخدم [Responses](../../api-reference/endpoint/responses.mdx) لتدفق Codex الافتراضي.
+## إزالة Phaseo
 
-## استكشاف الأخطاء وإصلاحها
+```bash
+phaseo integrations remove codex
+```
 
-- `401 Unauthorized`: شغّل `phaseo whoami` ثم أعد تشغيل `phaseo codex`.
-- `model_not_found`: احصل على معرّف حديث من [النماذج](../../api-reference/endpoint/models.mdx) وحدّث `model`.
-- مشكلات خاصة بالمزوّد: راجع [التوجيه والبدائل](../routing-and-fallbacks.mdx) لمعرفة سلوك التحويل عند الإخفاق.
+يحذف هذا الأمر `phaseo.config.toml` إذا كان Phaseo قد أنشأه، ويلغي المفتاح. في الإعداد اليدوي، احذف مزوّد `phaseo` من `config.toml`.
+
+## إصلاح المشكلات الشائعة
+
+| الخطأ | الحل |
+| --- | --- |
+| `401 Unauthorized` | شغّل `phaseo whoami`، ثم أعد تشغيل `phaseo codex`. |
+| `model_not_found` | احصل على معرّف حالي من [النماذج](../../api-reference/endpoint/models.mdx) وحدّث `model`. |
+| فشل أحد المزوّدين | راجع [التوجيه والبدائل](../routing-and-fallbacks.mdx) لمعرفة التحويل عند الإخفاق. |
+
+## إضافة مهارات Phaseo ووثائقه
+
+ليتمكن Codex من قراءة وثائق Phaseo المحدّثة أثناء العمل، أضف خادم [Docs MCP](./docs-mcp.mdx). لتثبيت [مهارات Phaseo](https://phaseo.app/docs/.well-known/agent-skills/index.json) العامة لـ Codex:
+
+```bash
+npx skills add https://phaseo.app/docs --agent codex --skill '*'
+```
+
+يشغّل سير عمل CLI نفسه [Cline](./cline.mdx) و[Kilo Code](./kilo-code.mdx) و[oh-my-pi](./oh-my-pi.mdx) و[Muse Code](./muse-code.mdx) و[MiniMax Code](./minimax-code.mdx) بإعدادات مؤقتة.

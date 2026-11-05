@@ -1,127 +1,110 @@
 ---
 title: "Nur zu EU- oder ZDR-fähigen Anbietern routen"
-sidebarTitle: "Nur EU- oder ZDR-Anbieter"
+sidebarTitle: "Zu EU- oder ZDR-Anbietern routen"
 icon: "globe"
 description: "Lege Anforderungen an Datenresidenz und Zero Data Retention für eine Anfrage fest, damit sie nur zu konformen Anbieterangeboten geroutet wird."
 ---
 
-Verwende dieses Rezept, wenn du Anbieter für eine einzelne Anfrage aus Compliance- oder Datenschutzgründen filtern musst, ohne die Richtlinie für den gesamten Arbeitsbereich zu ändern.
+Füge dem `provider`-Objekt einer Anfrage Anforderungen an Datenresidenz und <Tooltip tip="Zero Data Retention: Der Anbieter speichert weder Prompts noch Ausgaben.">ZDR</Tooltip> hinzu, und Phaseo entfernt jedes Anbieterangebot, das sie nicht erfüllt, bevor es die übrigen ordnet. Am Ende läuft ein Workflow nur auf EU- oder ZDR-fähigen Anbietern, ohne dass du die Richtlinie für den ganzen Workspace änderst.
 
-## Ziel
+Die Anfrage ist produktionsreif. Erfüllt kein Anbieter des Modells alle Anforderungen, schlägt die Anfrage fehl, bevor ein Anbieter aufgerufen wird. Prüfe deshalb zuerst die Verfügbarkeit.
 
-- Ausführung in der EU voraussetzen.
-- Datenresidenz in der EU voraussetzen.
-- Anbieter voraussetzen, die Zero Data Retention unterstützen.
+| Feld | Behält nur Anbieter, die |
+| --- | --- |
+| `required_execution_region: "eu"` | Das Modell in der EU ausführen |
+| `required_data_region: "eu"` | Prompt- und Antwortdaten in der EU verarbeiten |
+| `require_zero_data_retention: true` | Die Anforderungen an Zero Data Retention erfüllen |
 
-## 1. Anforderungen an die Datenresidenz zur Anfrage hinzufügen
+## Eine eingeschränkte Anfrage senden
 
-Lege die Anforderungen direkt im Anfrage-Body fest.
+<Steps>
+<Step title="Prüfen, ob ein Anbieter infrage kommt">
+
+Auf der Seite des Modells zeigen die Anbieterkarten regionale Angebote wie **OpenAI EU** oder **Google Vertex EU**, die ZDR-Unterstützung sowie die Hinweise und Quellen zur Datenrichtlinie jedes Anbieters. Für die EU kannst du auch auflisten, was das EU-Gateway bedient:
+
+```bash
+curl https://eu.api.phaseo.app/v1/models \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+</Step>
+<Step title="Nur die nötigen Anforderungen hinzufügen">
+
+Jede Anforderung verkleinert die Auswahl, sodass die Anfrage zu einem teureren regionalen Angebot geroutet werden kann oder gar kein Anbieter übrig bleibt. Sende nur, was deine Richtlinie verlangt:
 
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "google/gemini-3.1-flash-lite",
+    "model": "openai/gpt-5.6-luna",
     "input": "Summarize the ticket in one line.",
     "provider": {
       "required_execution_region": "eu",
-      "required_data_region": "eu",
-      "require_zero_data_retention": true
-    }
+      "required_data_region": "eu"
+    },
+    "meta": true
   }'
 ```
 
-```typescript TypeScript SDK
+```typescript TypeScript
 import Phaseo from "@phaseo/sdk";
 
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-  model: "google/gemini-3.1-flash-lite",
+  model: "openai/gpt-5.6-luna",
   input: "Summarize the ticket in one line.",
   provider: {
     required_execution_region: "eu",
     required_data_region: "eu",
-    require_zero_data_retention: true,
   },
+  meta: true,
 });
 
-console.log(response.output_text);
+console.log(response.meta?.routing);
 ```
 
-```python Python SDK
+```python Python
+import os
+
 from phaseo import Phaseo
 
-client = Phaseo(api_key="YOUR_API_KEY")
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
 
 response = client.generate_response(
     {
-        "model": "google/gemini-3.1-flash-lite",
+        "model": "openai/gpt-5.6-luna",
         "input": "Summarize the ticket in one line.",
         "provider": {
             "required_execution_region": "eu",
             "required_data_region": "eu",
-            "require_zero_data_retention": True,
         },
+        "meta": True,
     }
 )
 
-print(response.get("output_text"))
+print(response["meta"]["routing"]["selected_provider"])
 ```
 </CodeGroup>
 
-Unterstützte Anfragefilter für diesen Ablauf:
+Um zusätzlich ZDR zu verlangen, füge `"require_zero_data_retention": true` hinzu. Mit allen drei braucht ein Modell mindestens einen EU-Anbieter, der auch ZDR erfüllt.
 
-- `required_execution_region`
-- `required_data_region`
-- `require_zero_data_retention`
+</Step>
+<Step title="Prüfen, wo sie lief">
 
-## 2. Nur die Regelmenge verwenden, die zur Richtlinie passt
+`meta.routing.selected_provider` nennt den Anbieter, der sie bedient hat, zum Beispiel `openai-eu`. Die Anfrage unter **Einstellungen → Nutzung → Protokolle** hält die geforderten Regionen und den gewählten Anbieter fest.
 
-Fordere nur an, was die Arbeitslast tatsächlich benötigt.
+</Step>
+</Steps>
 
-Beispiele:
+## Anfragefelder, EU-Gateway oder Workspace-Einstellungen wählen
 
-- nur Ausführungsort:
-  - `required_execution_region: "eu"`
-- nur Speicherort der Daten:
-  - `required_data_region: "eu"`
-- nur Anbieter mit <Tooltip tip="Zero Data Retention: nur Anbieter, die die Vorgaben zur Null-Datenspeicherung erfüllen.">ZDR</Tooltip>-Unterstützung:
-  - `require_zero_data_retention: true`
+| Verwenden | Wann |
+| --- | --- |
+| Diese Anfragefelder auf `api.phaseo.app` | Die Regel gilt für einen Workflow, einen Kunden oder eine Anfrage. Alle Endpunkte und Funktionen bleiben verfügbar. |
+| [`eu.api.phaseo.app`](../guides/regional-routing) | Jede Textanfrage eines Dienstes muss in der EU bleiben. Der Hostname erzwingt die Region und lehnt außerdem Medieneingaben, Phaseo-Server-Tools und vom Anbieter gehostete Tools ab. Wird dort `required_execution_region` oder `required_data_region` für eine andere Region gesendet, kommt `400 validation_error` mit dem Grund `deployment_region_conflict` zurück. |
+| **Einstellungen → Datenschutz** | Die Regel gilt für jede Anfrage im Workspace. |
 
-## 3. Mit einem kleineren Anbieterkreis rechnen
-
-Die Filter werden vor der Anbieterbewertung angewendet und können Anbieter vollständig ausschließen.
-
-Das bedeutet:
-
-- die Anfrage kann zu einem teureren regionalen Angebot geroutet werden
-- die Anbieterliste kann deutlich kleiner ausfallen
-- die Anfrage kann fehlschlagen, wenn kein Anbieter für das Modell die Anforderungen erfüllt
-
-## 4. Wenn möglich, vorab die Modellseite prüfen
-
-Prüfe vor dem Bereitstellen der Anfrage die Anbieterkarten auf der Modellseite auf:
-
-- regionale Angebote wie `OpenAI EU` oder `Google Vertex EU`
-- ZDR-Unterstützung
-- Hinweise und Quellen zu den Datenschutzrichtlinien der Anbieter
-
-So kannst du sicherstellen, dass mindestens ein geeigneter Anbieter verfügbar ist, bevor du die Anforderung im Produktionsverkehr durchsetzt.
-
-## 5. Datenschutz-Einstellungen des Arbeitsbereichs als Standardwerte verwenden
-
-Wenn die Richtlinie für alle Anfragen eines Arbeitsbereichs gelten soll, lege sie unter **Einstellungen -> Datenschutz** fest, statt dieselben Anfragefilter überall zu wiederholen.
-
-Verwende die Anfragefelder, wenn die Regel gilt für:
-
-- einen Workflow
-- einen Kunden
-- eine einzelne Anfrage
-
-## Verwandte Anleitungen
-
-- [Routing und Fallbacks](../guides/routing-and-fallbacks.mdx)
-- [Voreinstellungen](../guides/presets.mdx)
+Regionales Routing schränkt ein, welche Anbieter den Modellaufruf verarbeiten. Es ist noch keine durchgängige Garantie für Datenresidenz; [Was außerhalb der Region bleibt](../guides/regional-routing#what-stays-outside-the-region) listet die gemeinsam genutzten Systeme auf. Um Anbieter ohne Residenzregel einzuschränken, siehe [Anbieter festlegen oder ignorieren](./pin-or-ignore-providers-per-request).

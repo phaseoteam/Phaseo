@@ -1,231 +1,227 @@
 ---
 title: "मिनी ऐप स्टार्टर प्रॉम्प्ट"
 icon: "code"
-description: "रॉ HTTP, SDK या एजेंट रनटाइम से छोटे Phaseo ऐप बनाने के लिए कोडिंग एजेंट हेतु कॉपी किए जा सकने वाले प्रॉम्प्ट।"
+description: "कोडिंग एजेंट के लिए कॉपी करने लायक प्रॉम्प्ट, जिनसे सीधे HTTP, SDK या एजेंट रनटाइम के साथ छोटे Phaseo ऐप बनते हैं।"
 ---
 
-जब आप कोडिंग एजेंट को अस्पष्ट इंटीग्रेशन योजना के बजाय छोटा, काम करने वाला ऐप बनाने वाला ठोस प्रॉम्प्ट देना चाहें, तब इस पेज का उपयोग करें।
+इनमें से कोई एक प्रॉम्प्ट Cursor, Claude Code, Codex या किसी मिलते-जुलते कोडिंग एजेंट में पेस्ट करें, और वह एक छोटा काम करता Phaseo ऐप बनाता है, फिर बताता है कि उसने क्या चलाया और क्या नहीं जाँच सका। हर प्रॉम्प्ट इंटीग्रेशन सरफ़ेस, सुरक्षा नियम और आप जो जाँच चाहते हैं, उन्हें स्पष्ट करता है।
 
-<Tip>
-इन प्रॉम्प्ट को परिणाम पर केंद्रित और कार्यान्वयन-विशिष्ट बनाया गया है, ताकि Cursor, Claude Code, Codex और ऐसे अन्य टूल में बेहतर काम करें।
-</Tip>
+इनसे बनने वाले ऐप शुरुआती बिंदु हैं: डिप्लॉय करने से पहले कोड की समीक्षा करें, खासकर सीक्रेट संभालने और टूल वैलिडेशन की।
 
-## इन प्रॉम्प्ट का उपयोग कैसे करें
+## प्रॉम्प्ट का उपयोग करें
 
 <Steps>
-  <Step title="इंटीग्रेशन का तरीका चुनें">
-    ऐसा प्रॉम्प्ट चुनें जो ऐप द्वारा Phaseo को कॉल करने के तरीके से मेल खाता हो:
-
-    - रॉ HTTP
-    - एक आधिकारिक SDK
-    - Vercel AI SDK
-    - Agent SDK
+  <Step title="इंटीग्रेशन सरफ़ेस चुनें">
+    | प्रॉम्प्ट | Phaseo को कॉल करता है |
+    | --- | --- |
+    | सीधा HTTP | `https://api.phaseo.app/v1` पर `fetch` |
+    | TypeScript SDK | `@phaseo/sdk` |
+    | Python SDK | `phaseo` |
+    | Vercel AI SDK | `@phaseo/ai-sdk-provider` |
+    | Agent SDK | `@phaseo/agent-sdk`, `phaseo-agent-sdk`, या आपकी भाषा का Agent SDK |
   </Step>
-  <Step title="स्क्वायर ब्रैकेट वाले वेरिएबल बदलें">
-    कोडिंग एजेंट में प्रॉम्प्ट पेस्ट करने से पहले `[ऐप का विचार]`, `[फ़्रेमवर्क]`, `[मॉडल]` और `[LANGUAGE]` जैसी वैल्यू भरें।
+  <Step title="ब्रैकेट वाले वेरिएबल बदलें">
+    प्रॉम्प्ट को अपने कोडिंग एजेंट में पेस्ट करने से पहले `[APP IDEA]`, `[FRAMEWORK]`, `[MODEL]` और `[LANGUAGE]` जैसे मान भरें।
   </Step>
-  <Step title="सिर्फ़ कोड नहीं, सत्यापन भी माँगें">
-    प्रॉम्प्ट में सत्यापन वाली पंक्तियाँ रखें। इससे एजेंट को बताना होगा कि उसने वास्तव में क्या चलाया, क्या मान लिया और अभी क्या मैन्युअल सेटअप चाहिए।
+  <Step title="सिर्फ़ कोड नहीं, जाँच भी माँगें">
+    प्रॉम्प्ट में जाँच वाली पंक्तियाँ रहने दें। वे एजेंट को यह बताने के लिए मजबूर करती हैं कि उसने असल में क्या चलाया, क्या माना, और किसके लिए अभी भी मैन्युअल सेटअप चाहिए।
   </Step>
 </Steps>
 
 ## प्रॉम्प्ट पैक
 
 <AccordionGroup>
-  <Accordion title="रॉ HTTP मिनी ऐप" icon="globe">
+  <Accordion title="सीधे HTTP वाला मिनी ऐप" icon="globe">
     <Prompt
-      description="SDK के बजाय Phaseo के साथ **रॉ HTTP** का उपयोग करने वाला छोटा ऐप बनाएँ।"
+      description="एक छोटा ऐप बनाएँ जो SDK के बजाय Phaseo पर **सीधे HTTP** का उपयोग करे।"
       icon="globe"
       actions={["copy", "cursor"]}
     >
-{`आप Phaseo Gateway के साथ प्रोडक्शन-शैली का छोटा डेमो ऐप बना रहे हैं।
+{`You are implementing a small production-style demo app with Phaseo Gateway.
 
-[ऐप का विचार] के लिए [फ़्रेमवर्क] मिनी ऐप बनाएँ।
+Build a [FRAMEWORK] mini app for [APP IDEA].
 
-आवश्यकताएँ:
-- Phaseo SDK के बजाय रॉ HTTP अनुरोध उपयोग करें।
-- Phaseo endpoint [ENDPOINT] का उपयोग करें।
-- मॉडल [मॉडल] का उपयोग करें।
-- PHASEO_API_KEY नाम के environment variable से API key पढ़ें।
-- ऐप को जानबूझकर छोटा रखें: एक मुख्य पेज, एक सर्वर रूट या हैंडलर और न्यूनतम स्टाइलिंग।
-- उपयोगकर्ता इनपुट, अनुरोध सबमिशन की स्थिति, मॉडल आउटपुट और गेटवे त्रुटि की स्थिति दिखाएँ।
-- बाद में इंटीग्रेशन की जाँच आसान बनाने के लिए टिप्पणियों या दस्तावेज़ में एक अनुरोध पेलोड उदाहरण जोड़ें।
+Requirements:
+- Use raw HTTP requests, not a Phaseo SDK.
+- Use the base URL https://api.phaseo.app/v1 and the Phaseo endpoint [ENDPOINT].
+- Use model [MODEL].
+- Read the API key from an environment variable named PHASEO_API_KEY and send it as Authorization: Bearer.
+- Keep the app intentionally small: one main page, one server route or handler, and minimal styling.
+- Show the user input, the request submission state, the model output, and any gateway error state.
+- Add one example request payload in comments or docs so the integration is easy to audit later.
 
-कार्यान्वयन विवरण:
-- fetch का उपयोग करें।
-- फ़ील्ड को एब्स्ट्रैक्शन के पीछे छिपाने के बजाय अनुरोध बॉडी स्पष्ट रखें।
-- API अनुरोध करने से पहले खाली इनपुट के लिए बुनियादी वैलिडेशन जोड़ें।
-- non-200 प्रतिक्रियाएँ सही ढंग से संभालें और उपयोगी होने पर response body दिखाएँ।
-- सीक्रेट सिर्फ़ सर्वर पर रखें।
+Implementation details:
+- Use fetch.
+- Keep the request body explicit instead of hiding fields behind abstractions.
+- Add basic validation for empty input before making the API request.
+- Handle non-200 responses cleanly and surface the response body when useful.
+- Keep secrets server-side only.
 
-डिलिवरेबल:
-- ऐप का कोड।
-- इसे चलाने का तरीका बताने वाला README का छोटा अनुभाग।
-- PHASEO_API_KEY के लिए .env.example एंट्री।
+Deliverables:
+- The app code.
+- A short README section explaining how to run it.
+- A .env.example entry for PHASEO_API_KEY.
 
-सत्यापन:
-- संभव हो तो स्थानीय ऐप चलाएँ।
-- एक सफल अनुरोध पथ सत्यापित करें।
-- ठीक-ठीक बताएँ कि क्या सत्यापित किया, क्या नहीं कर सके और कौन सी धारणाएँ बाकी हैं।`}
+Verification:
+- Run the local app if possible.
+- Verify one successful request path.
+- Report exactly what you verified, what you could not verify, and any remaining assumptions.`}
     </Prompt>
   </Accordion>
 
   <Accordion title="TypeScript SDK मिनी ऐप" icon="file-code-2">
     <Prompt
-      description="**TypeScript SDK** से छोटा, आसानी से जाँचा जा सकने वाला इंटीग्रेशन वाला मिनी ऐप बनाएँ।"
+      description="**TypeScript SDK** पर एक छोटे, जाँचने लायक इंटीग्रेशन वाला मिनी ऐप बनाएँ।"
       icon="file-code-2"
       actions={["copy", "cursor"]}
     >
-{`आप Phaseo TypeScript SDK पर एक छोटा ऐप बना रहे हैं।
+{`You are building a small app on top of the Phaseo TypeScript SDK.
 
-[ऐप का विचार] के लिए [फ़्रेमवर्क] मिनी ऐप बनाएँ।
+Create a [FRAMEWORK] mini app for [APP IDEA].
 
-आवश्यकताएँ:
-- @phaseo/sdk का उपयोग करें।
-- मॉडल [मॉडल] का उपयोग करें।
-- किसी अन्य endpoint का उपयोग करने का ठोस कारण न हो, तो Responses API को प्राथमिकता दें।
-- PHASEO_API_KEY से API key पढ़ें।
-- पहले इंटीग्रेशन के लिए कोड छोटा और समझने योग्य रखें।
-- UI में लोडिंग, सफलता और विफलता की स्थितियाँ दिखाएँ।
+Requirements:
+- Use @phaseo/sdk.
+- Use model [MODEL].
+- Prefer the responses API unless there is a strong reason to use another endpoint.
+- Read the API key from PHASEO_API_KEY.
+- Keep the code compact and understandable for a first integration.
+- Show loading, success, and failure states in the UI.
 
-कार्यान्वयन विवरण:
-- SDK कॉल को कई फ़ाइलों में फैलाने के बजाय एक सर्वर-साइड इंटीग्रेशन सीमा रखें।
-- मॉडल, इनपुट और ज़रूरी विकल्पों सहित अनुरोध का आकार स्पष्ट रखें।
-- असिस्टेंट का अंतिम टेक्स्ट सुरक्षित रूप से निकालने वाला response parsing उदाहरण शामिल करें।
-- जहाँ SDK response shape अन्यथा अस्पष्ट हो, वहीं न्यूनतम टिप्पणियाँ जोड़ें।
+Implementation details:
+- Use one server-side integration boundary instead of scattering SDK calls across many files.
+- Keep the request shape explicit, including model, input, and any important options.
+- Include one example of response parsing that extracts the final assistant text safely.
+- Add minimal comments only where the SDK response shape would otherwise be unclear.
 
-डिलिवरेबल:
-- काम करने वाला ऐप कोड।
-- सेटअप के संक्षिप्त निर्देश।
-- इस मिनी ऐप के लिए रॉ HTTP की तुलना में TypeScript SDK बेहतर क्यों है, इसकी संक्षिप्त व्याख्या।
+Deliverables:
+- Working app code.
+- Short setup instructions.
+- One short explanation of why the TypeScript SDK path is better than raw HTTP for this mini app.
 
-सत्यापन:
-- संभव हो तो ऐप चलाएँ।
-- एक अनुरोध को शुरू से अंत तक चलाएँ।
-- बदली गई फ़ाइलों और उपयोगकर्ता को बाकी सेटअप की सटीक जानकारी दें।`}
+Verification:
+- Run the app if possible.
+- Exercise one end-to-end request.
+- Report the exact files changed and any remaining setup the user must do.`}
     </Prompt>
   </Accordion>
 
   <Accordion title="Python SDK मिनी ऐप" icon="snake">
     <Prompt
-      description="**आधिकारिक Python SDK** का उपयोग करके छोटा Python ऐप या सेवा बनाएँ।"
+      description="**आधिकारिक Python SDK** से एक छोटा Python ऐप या सेवा बनाएँ।"
       icon="snake"
       actions={["copy", "cursor"]}
     >
-{`आप Phaseo Gateway के साथ छोटा AI-संचालित Python ऐप बना रहे हैं।
+{`You are implementing a small AI-powered Python app with Phaseo Gateway.
 
-[ऐप का विचार] के लिए [Python फ़्रेमवर्क या ऐप का प्रकार] ऐप बनाएँ।
+Build a [PYTHON FRAMEWORK OR APP TYPE] app for [APP IDEA].
 
-आवश्यकताएँ:
-- आधिकारिक Python SDK phaseo का उपयोग करें।
-- मॉडल [मॉडल] का उपयोग करें।
-- PHASEO_API_KEY से क्रेडेंशियल पढ़ें।
-- कोड इतना छोटा रखें कि टीम का नया सदस्य उसे जल्दी समझ सके।
-- एक उपयोगकर्ता इनपुट पथ और एक मॉडल आउटपुट पथ शामिल करें।
-- अमान्य इनपुट और upstream gateway विफलताओं के लिए स्पष्ट त्रुटि प्रबंधन शामिल करें।
+Requirements:
+- Use the official Python SDK phaseo.
+- Use model [MODEL].
+- Read credentials from PHASEO_API_KEY.
+- Keep the code small enough for a new team member to understand quickly.
+- Include one user input path and one model output path.
+- Include clean error handling for invalid input and upstream gateway failures.
 
-कार्यान्वयन विवरण:
-- एक ऐसा इंटीग्रेशन मॉड्यूल रखें जो Phaseo client बनाने का काम संभाले।
-- अनावश्यक एब्स्ट्रैक्शन में लपेटने के बजाय SDK response shape सीधे उपयोग करें।
-- ऐप के लिए structured output उपयोगी हो, तो उसका उपयोग करें और लौटाए गए आकार को मान्य करें।
-- README में इंस्टॉल और चलाने के चरणों वाला छोटा अनुभाग जोड़ें।
+Implementation details:
+- Prefer one integration module that owns the Phaseo client creation.
+- Use the SDK response shape directly rather than wrapping it in unnecessary abstractions.
+- If structured output is useful for the app, use it and validate the returned shape.
+- Add a short README section with install and run steps.
 
-डिलिवरेबल:
-- ऐप कोड।
-- कोई भी dependency अपडेट।
-- उपयोग के संक्षिप्त निर्देश।
+Deliverables:
+- App code.
+- Any dependency updates.
+- Short usage instructions.
 
-सत्यापन:
-- संभव हो तो संबंधित कमांड चलाएँ।
-- एक सफल अनुरोध पथ सत्यापित करें या बताएँ कि ऐसा क्यों नहीं कर सके।
-- उपयोगकर्ता को जिन environment variables या स्थानीय सेवाओं की ज़रूरत है, उन्हें बताएँ।`}
+Verification:
+- Run the relevant command if possible.
+- Verify one successful request path or explain why you could not.
+- Call out any environment variables or local services the user still needs.`}
     </Prompt>
   </Accordion>
 
   <Accordion title="Vercel AI SDK मिनी ऐप" icon="code">
     <Prompt
-      description="**Vercel AI SDK के ज़रिए Phaseo** का उपयोग करने वाला छोटा ऐप बनाएँ।"
+      description="**Vercel AI SDK के ज़रिए Phaseo** का उपयोग करने वाला एक छोटा ऐप बनाएँ।"
       icon="code"
       actions={["copy", "cursor"]}
     >
-{`आप Vercel AI SDK provider के ज़रिए Phaseo उपयोग करने वाला मिनी ऐप बना रहे हैं।
+{`You are building a mini app that uses Phaseo through the Vercel AI SDK provider.
 
-[ऐप का विचार] के लिए [फ़्रेमवर्क] ऐप बनाएँ।
+Create a [FRAMEWORK] app for [APP IDEA].
 
-आवश्यकताएँ:
-- Phaseo Vercel AI SDK provider का उपयोग करें।
-- मॉडल [मॉडल] का उपयोग करें।
-- PHASEO_API_KEY से Phaseo API key पढ़ें।
-- UX को हल्का रखें और उपयोगकर्ता के एक स्पष्ट कार्य पर केंद्रित करें।
-- ऐप चैट जैसा हो तो स्ट्रीमिंग आउटपुट सपोर्ट करें; अन्यथा बताएँ कि यहाँ नॉन-स्ट्रीमिंग सरल क्यों है।
+Requirements:
+- Use the Phaseo Vercel AI SDK provider, @phaseo/ai-sdk-provider.
+- Use model [MODEL].
+- Call the provider only from server code; never ship PHASEO_API_KEY to the browser.
+- Read the Phaseo API key from PHASEO_API_KEY.
+- Keep the UX lightweight and oriented around one clear user task.
+- Support streamed output if the app is chat-like; otherwise explain why non-streaming is simpler here.
 
-कार्यान्वयन विवरण:
-- प्रदाता वायरिंग स्पष्ट रखें।
-- AI SDK primitives का मानक और framework-अनुकूल ढंग से उपयोग करें।
-- पहले संस्करण में अनावश्यक अतिरिक्त state management से बचें।
-- प्रदाता मॉडल ID कैसे चुनी जाती है, इसकी संक्षिप्त व्याख्या जोड़ें।
+Implementation details:
+- Keep the provider wiring explicit.
+- Use the AI SDK primitives in a standard, framework-appropriate way.
+- Avoid unnecessary extra state management for the first version.
+- Add one short explanation of how the provider model id is chosen.
 
-डिलिवरेबल:
-- ऐप कोड।
-- सेटअप के चरण।
-- बाद में किसी दूसरे मॉडल पर कैसे जाएँ, इस पर संक्षिप्त टिप्पणी।
+Deliverables:
+- App code.
+- Setup steps.
+- A brief note on how to switch to a different model later.
 
-सत्यापन:
-- संभव हो तो ऐप चलाएँ।
-- मुख्य उपयोगकर्ता प्रवाह सत्यापित करें।
-- जिन हिस्सों का सत्यापन नहीं हुआ, उनकी अलग से जानकारी दें।`}
+Verification:
+- Run the app if possible.
+- Verify the main user flow.
+- Report any unverified parts separately.`}
     </Prompt>
   </Accordion>
 
   <Accordion title="Agent SDK मिनी ऐप" icon="bot">
     <Prompt
-      description="**Phaseo Agent SDK** और सीमित टूल लूप से छोटा ऐप बनाएँ।"
+      description="**Phaseo Agent SDK** और एक सीमित टूल लूप के साथ एक छोटा ऐप बनाएँ।"
       icon="bot"
       actions={["copy", "cursor"]}
     >
-{`आप Phaseo Gateway पर छोटा agentic ऐप बना रहे हैं।
+{`You are building a small agentic app on top of Phaseo Gateway.
 
-Phaseo Agent SDK का उपयोग करके [ऐप का विचार] के लिए [LANGUAGE] मिनी ऐप बनाएँ।
+Create a [LANGUAGE] mini app for [APP IDEA] using the Phaseo Agent SDK.
 
-आवश्यकताएँ:
-- [LANGUAGE] के लिए Phaseo Agent SDK का उपयोग करें।
-- मॉडल [मॉडल] का उपयोग करें।
-- केवल एक या दो नियतात्मक स्थानीय टूल शामिल करें।
-- टूल लूप सीमित और डीबग करने में आसान रखें।
-- PHASEO_API_KEY से API key पढ़ें।
-- अंतिम आउटपुट दिखाएँ और जहाँ उचित हो, टूल गतिविधि या तर्क की मध्यवर्ती स्थिति भी दिखाएँ।
+Requirements:
+- Use the Phaseo Agent SDK for [LANGUAGE] (@phaseo/agent-sdk for TypeScript, phaseo-agent-sdk for Python).
+- Use model [MODEL].
+- Include one or two deterministic local tools only.
+- Give every tool a JSON Schema for its parameters and validate the model's arguments before running it.
+- Require human approval for any tool that writes, deletes, sends or spends.
+- Keep the tool loop bounded with a step limit and easy to debug.
+- Read the API key from PHASEO_API_KEY.
+- Show the final output and, where appropriate, the tool activity or intermediate reasoning state.
 
-कार्यान्वयन विवरण:
-- एजेंट की परिभाषा एक ही जगह रखें।
-- टूल परिभाषाएँ छोटी और नियतात्मक रखें।
-- पहले संस्करण के लिए बड़ा सामान्य-उद्देश्य एजेंट फ़्रेमवर्क न बनाएँ।
-- बाद में ऐप को फिर से शुरू करने योग्य बनाने पर रन स्थिति कहाँ सहेजी जाएगी, इसका नोट जोड़ें।
+Implementation details:
+- Keep the agent definition in one place.
+- Keep tool definitions small and deterministic.
+- Avoid a giant general-purpose agent framework for the first version.
+- Add a note about where run state would be persisted if the app later becomes resumable.
 
-डिलिवरेबल:
-- ऐप कोड।
-- सेटअप निर्देश।
-- इस वर्कफ़्लो में one-shot completion से Agent SDK बेहतर क्यों है, इसकी संक्षिप्त व्याख्या।
+Deliverables:
+- App code.
+- Setup instructions.
+- A short explanation of why the Agent SDK is better than a one-shot completion for this workflow.
 
-सत्यापन:
-- संभव हो तो मुख्य पथ चलाएँ।
-- एक एजेंट रन को शुरू से अंत तक सत्यापित करें।
-- बाकी धारणाएँ बताएँ, खासकर पर्यावरण सेटअप या स्थानीय टूल निर्भरताओं के बारे में।`}
+Verification:
+- Run the main path if possible.
+- Verify one end-to-end agent run.
+- Report any remaining assumptions, especially around environment setup or local tool dependencies.`}
     </Prompt>
   </Accordion>
 </AccordionGroup>
 
 ## प्रॉम्प्ट को बेहतर कैसे बनाएँ
 
-- `[ऐप का विचार]` में व्यापक उत्पाद विवरण के बजाय उपयोगकर्ता का एक सीमित कार्य लिखें।
-- `[मॉडल]` को एजेंट द्वारा उपयोग की जाने वाली सटीक मॉडल ID से बदलें।
-- बताएँ कि आउटपुट मुक्त टेक्स्ट, सख्त JSON, चैट या एक जनरेटेड एसेट होना चाहिए।
-- पता हो तो UI फ़्रेमवर्क और डिप्लॉयमेंट लक्ष्य बताएँ।
-- एक या दो ज़रूरी पाबंदियाँ जोड़ें, जैसे `केवल EU प्रदाता`, `स्ट्रीमिंग उपयोग करें` या `सभी सीक्रेट सर्वर पर रखें`।
+- `[APP IDEA]` को किसी व्यापक प्रोडक्ट पिच के बजाय उपयोगकर्ता के एक सीमित काम से बदलें।
+- `[MODEL]` को उस सटीक मॉडल ID से बदलें जिसे आप एजेंट से इस्तेमाल करवाना चाहते हैं।
+- बताएँ कि आउटपुट खुला टेक्स्ट, सख्त JSON, चैट, या एक जनरेट किया गया एसेट होना चाहिए।
+- अगर आपको पता हो, तो UI फ़्रेमवर्क और डिप्लॉयमेंट लक्ष्य बताएँ।
+- एक या दो ज़रूरी शर्तें जोड़ें, जैसे `EU-only providers`, `use streaming`, या `keep all secrets server-side`।
 
-## संबंधित गाइड
-
-- [क्विकस्टार्ट](../quickstart.mdx)
-- [उदाहरण](../guides/examples.mdx)
-- [TypeScript SDK का अवलोकन](../sdk-reference/typescript/overview.mdx)
-- [Python SDK का अवलोकन](../sdk-reference/python/overview.mdx)
-- [Agent SDK का अवलोकन](../sdk-reference/agent-sdk/overview.mdx)
+[TypeScript और Python SDK](../sdk-reference/client/overview) और [Agent SDK](../sdk-reference/agent/overview) के संदर्भ बताते हैं कि हर पैकेज क्या देता है, ताकि आप एजेंट के कोड को उनसे मिलाकर जाँच सकें।

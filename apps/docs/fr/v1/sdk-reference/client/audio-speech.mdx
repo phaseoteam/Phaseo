@@ -1,0 +1,174 @@
+---
+icon: "music"
+title: "TTS (synthèse vocale)"
+description: "Transformez du texte en audio avec POST /v1/audio/speech depuis n’importe quel SDK Phaseo."
+---
+
+Envoyez du texte à `POST /v1/audio/speech` et recevez l’audio parlé dans le format demandé. Les exemples utilisent un `client` créé comme dans [Installation](./installation).
+
+<CodeGroup>
+
+```typescript TypeScript
+import { writeFile } from "node:fs/promises";
+
+const audio = await client.generateSpeech({
+  model: "openai/gpt-4o-mini-tts",
+  input: "Hello world",
+  voice: "alloy",
+  format: "mp3",
+});
+
+await writeFile("hello.mp3", Buffer.from(await audio.arrayBuffer()));
+```
+
+```python Python
+audio = client.generate_speech({
+    "model": "openai/gpt-4o-mini-tts",
+    "input": "Hello world",
+    "voice": "alloy",
+    "format": "mp3",
+})
+
+with open("hello.mp3", "wb") as file:
+    file.write(audio)
+```
+
+```go Go
+audio, err := client.CreateSpeech(context.Background(), map[string]interface{}{
+  "model":  "openai/gpt-4o-mini-tts",
+  "input":  "Hello world",
+  "voice":  "alloy",
+  "format": "mp3",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Printf("%T\n", audio) // vérifiez le type concret avant de l’écrire dans un fichier
+```
+
+```csharp C#
+var audio = await client.CreateSpeech(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-4o-mini-tts",
+    ["input"] = "Hello world",
+    ["voice"] = "alloy",
+    ["format"] = "mp3",
+});
+```
+
+```php PHP
+$audio = $client->createSpeech([
+    'model' => 'openai/gpt-4o-mini-tts',
+    'input' => 'Hello world',
+    'voice' => 'alloy',
+    'format' => 'mp3',
+]);
+```
+
+```ruby Ruby
+audio = client.generate_speech(
+  model: 'openai/gpt-4o-mini-tts',
+  input: 'Hello world',
+  voice: 'alloy',
+  format: 'mp3'
+)
+```
+
+```java Java
+String body = """
+{
+  "model": "openai/gpt-4o-mini-tts",
+  "input": "Hello world",
+  "voice": "alloy",
+  "format": "mp3"
+}
+""";
+
+byte[] audio = client.rawClient().requestBytes("POST", "/audio/speech", null, null, body);
+java.nio.file.Files.write(java.nio.file.Path.of("hello.mp3"), audio);
+```
+
+</CodeGroup>
+
+## Méthode par langage
+
+| Langage | Méthode | Renvoie |
+| --- | --- | --- |
+| TypeScript | `client.generateSpeech(request)` | Un `Blob` |
+| Python | `client.generate_speech(request)` ou `client.audio.speech.create(request)` | `bytes` |
+| Go | `client.CreateSpeech(ctx, req)` | `interface{}` ; vérifiez le type concret avant de l’écrire dans un fichier |
+| C# | `client.CreateSpeech(request)` | `object?` ; vérifiez le type concret avant de l’écrire dans un fichier |
+| PHP | `$client->createSpeech($request)` | L’audio ; vérifiez le type de la valeur avant de l’écrire dans un fichier |
+| Ruby | `client.generate_speech(...)`, alias `create_speech` | L’audio ; vérifiez la classe de la valeur avant de l’écrire dans un fichier |
+| Java | Pas de méthode de synthèse vocale. `client.rawClient().requestBytes("POST", "/audio/speech", ...)` envoie le corps JSON | `byte[]` |
+
+Rust n’a pas de méthode de synthèse vocale, et son assistant `post()` analyse les réponses comme du JSON : il ne peut donc pas renvoyer d’audio.
+
+## Paramètres
+
+Les noms de champs sont ceux du corps JSON, dans tous les SDK. Utilisez `format` : l’API accepte aussi `response_format`, mais le type de requête TypeScript le rejette.
+
+| Champ | Remarques |
+| --- | --- |
+| `model` | Obligatoire. Un identifiant de modèle de synthèse vocale. |
+| `input` | Obligatoire. Le texte à prononcer. La plupart des fournisseurs acceptent jusqu’à 4 096 caractères ; les modèles ElevenLabs en autorisent de 5 000 à 40 000 selon le modèle. |
+| `voice` | Un alias de voix normalisé entre fournisseurs (recommandé), la valeur de voix propre au fournisseur, ou un objet avec `id` ou `name`. Si la voix n’est pas valide pour le fournisseur choisi par le routage, l’API renvoie `400` avec `param: "voice"`. |
+| `format` | `mp3`, `wav`, `ogg`, `aac`, `flac`, `opus` ou `pcm`. |
+| `speed` | Vitesse de lecture, de `0.25` à `4`. |
+| `instructions` | Indications de style, quand le modèle les prend en charge. |
+| `config` | Réglages propres au fournisseur ; voir plus bas. |
+| `provider` | Préférences de routage des fournisseurs. |
+
+Le schéma complet se trouve dans la [référence de l’API Speech](/fr/v1/api-reference/endpoint/audio-speech).
+
+## Choisir la voix propre à un fournisseur
+
+Passez la voix exacte du fournisseur sous `config`. Le même objet imbriqué fonctionne dans la table de requête de chaque SDK.
+
+<CodeGroup>
+
+```typescript TypeScript
+// ElevenLabs : choisir un identifiant de voix exact
+await client.generateSpeech({
+  model: "eleven-labs/eleven-v3",
+  input: "Hello from ElevenLabs",
+  voice: "rachel",
+  config: {
+    elevenlabs: {
+      voice_id: "21m00Tcm4TlvDq8ikWAM",
+    },
+  },
+});
+
+// Google : choisir un nom de voix exact
+await client.generateSpeech({
+  model: "google/gemini-3.1-flash-tts-preview",
+  input: "Hello from Gemini",
+  voice: "kore",
+  config: {
+    google: {
+      voice_name: "Kore",
+    },
+  },
+});
+```
+
+```python Python
+# ElevenLabs : choisir un identifiant de voix exact
+client.generate_speech({
+    "model": "eleven-labs/eleven-v3",
+    "input": "Hello from ElevenLabs",
+    "voice": "rachel",
+    "config": {"elevenlabs": {"voice_id": "21m00Tcm4TlvDq8ikWAM"}},
+})
+
+# Google : choisir un nom de voix exact
+client.generate_speech({
+    "model": "google/gemini-3.1-flash-tts-preview",
+    "input": "Hello from Gemini",
+    "voice": "kore",
+    "config": {"google": {"voice_name": "Kore"}},
+})
+```
+
+</CodeGroup>

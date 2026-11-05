@@ -2798,7 +2798,7 @@ paths:
       tags:
         - Gateway
       operationId: getCredits
-      summary: क्रेडिट देखें
+      summary: क्रेडिट प्राप्त करें
       description: प्रमाणित वर्कस्पेस के शेष क्रेडिट और उपयोग आँकड़े लौटाता है। Management API key आवश्यक है।
       parameters:
         - name: workspace_id

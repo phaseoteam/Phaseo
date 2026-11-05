@@ -1,117 +1,99 @@
 ---
 title: "Migrer depuis LLM Gateway"
 sidebarTitle: "LLM Gateway"
-description: "Migrez de LLMGateway vers Phaseo Gateway avec un changement de point de terminaison compatible avec OpenAI, la vérification des modèles et une validation progressive."
+description: "Migrez de LLMGateway vers Phaseo Gateway en changeant d’endpoint compatible OpenAI, en vérifiant les identifiants de modèle et en validant un déploiement progressif."
 icon: "/icons/brands/llmgateway.svg"
 ---
 
-Si votre application utilise déjà LLM Gateway avec un client compatible avec OpenAI, vous pouvez généralement conserver le contenu des requêtes et commencer par remplacer uniquement la passerelle.
+Changez l’URL de base et la clé, conservez les charges utiles des requêtes et faites correspondre chaque identifiant de modèle : le préfixe de LLM Gateway désigne le fournisseur qui sert le modèle, tandis que celui de Phaseo désigne le créateur du modèle.
 
-## Ce qui change
-
-| Paramètre | Avant | Après |
+| Paramètre | LLM Gateway | Phaseo |
 | --- | --- | --- |
 | URL de base | `https://api.llmgateway.io/v1` | `https://api.phaseo.app/v1` |
-| Clé API | `LLM_GATEWAY_API_KEY` | `PHASEO_API_KEY` |
-| Alias de modèles | Alias actuels de la passerelle | Vérifiez-les avec `GET /v1/models` ou normalisez-les à un point d’entrée |
-| Contenu de la requête | Requête compatible avec OpenAI actuelle | Gardez-le inchangé lors du premier passage |
+| Clients de style Anthropic | `ANTHROPIC_BASE_URL=https://api.llmgateway.io` | `https://api.phaseo.app`, voir [Migrer depuis le SDK Anthropic](./from-anthropic) |
+| Clé API | `LLM_GATEWAY_API_KEY` (`llmgtwy_…`) | `PHASEO_API_KEY` |
+| Identifiants de modèle | `gpt-4o`, `<provider>/<model>`, `auto` | `<org>/<model>` depuis `GET /v1/models?format=openai` |
+| Charge utile de la requête | Compatible OpenAI | Inchangée |
 
-## Avant de commencer
-
-- La configuration actuelle du point de terminaison et de la clé API LLM Gateway.
-- `PHASEO_API_KEY` disponible en local, en préproduction et en production.
-- Un échantillon de référence de la qualité des réponses, de la latence et du taux d’erreur.
-
-## 1) Inventoriez les points d’intégration
-
-Identifiez les fichiers exacts qui créent et configurent le client LLM Gateway.
-
-- Recherchez toutes les utilisations des variables d’environnement `LLM_GATEWAY_*`.
-- Repérez toutes les références à l’URL de base dans la configuration d’exécution.
-- Notez les identifiants de modèle actifs et leurs chaînes de repli.
-- Relevez les valeurs par défaut des prompts partagés, les règles d’autorisation ou de refus des fournisseurs et les préréglages de paramètres à déplacer dans les préréglages Gateway.
-
-## 2) Remplacez le point de terminaison et les identifiants
-
-Conservez d’abord le contenu des requêtes. Commencez par ne modifier que le point de terminaison et la clé pour réduire les risques.
+## Changer de client
 
 <CodeGroup>
 ```typescript TypeScript
-// Before
 import OpenAI from "openai";
 
-const before = new OpenAI({
-  apiKey: process.env.LLM_GATEWAY_API_KEY,
-  baseURL: "https://api.llmgateway.io/v1",
-});
-```
-
-```typescript TypeScript
-// After
-import OpenAI from "openai";
-
-const after = new OpenAI({
+// Avant :
+// new OpenAI({ apiKey: process.env.LLM_GATEWAY_API_KEY, baseURL: "https://api.llmgateway.io/v1" });
+const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
 });
 ```
 
+```python Python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+```
+
 ```bash cURL
-curl -s "https://api.phaseo.app/v1/chat/completions" \
+curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4.1-mini",
-    "messages": [{"role":"user","content":"Hello"}]
+    "model": "openai/gpt-6-astra",
+    "messages": [{"role": "user", "content": "Hello"}]
   }'
 ```
 </CodeGroup>
 
-## 3) Validez la compatibilité des modèles
+Faites correspondre ou supprimez chaque variable `LLM_GATEWAY_*`, y compris dans la CI et les paramètres d’hébergement. Si l’application utilise `@llmgateway/ai-sdk-provider`, passez à `@phaseo/ai-sdk-provider` comme dans [Migrer depuis Vercel AI Gateway](./from-vercel).
 
-Interrogez le catalogue de modèles Phaseo et vérifiez chaque modèle utilisé en production.
+## Faire correspondre les identifiants de modèle
 
-Si votre configuration utilise des alias sans préfixe comme `gpt-4o`, normalisez-les à un point d’entrée au lieu de modifier chaque client.
-
-Si votre couche de passerelle centralise aussi les valeurs par défaut des requêtes ou les restrictions de fournisseurs, mappez ces comportements vers les [préréglages](../guides/presets.mdx) et le [routage et les solutions de repli](../guides/routing-and-fallbacks.mdx) pendant la migration, au lieu de les réimplémenter pour chaque client.
+Listez les identifiants Phaseo et vérifiez chaque modèle de production par rapport à cette liste :
 
 ```bash
-curl -s "https://api.phaseo.app/v1/models" \
-  -H "Authorization: Bearer $PHASEO_API_KEY" | jq '.data | length'
+curl -s "https://api.phaseo.app/v1/models?format=openai" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" | jq -r '.data[].id'
 ```
 
-## 4) Liste de contrôle de migration LLMGateway
+`alibaba/<model>` sur LLM Gateway n’est pas un identifiant Phaseo. Faites correspondre chaque identifiant au format `<org>/<model>` de Phaseo, et conservez un épinglage de fournisseur avec `provider.only` ou un identifiant `provider:org/model`. Traduisez les alias sans préfixe comme `gpt-4o` dans une seule fonction à la frontière du client plutôt qu’à chaque point d’appel.
 
-- Toutes les variables `LLM_GATEWAY_*` ont été mappées ou supprimées.
-- L’URL de base a été remplacée par `https://api.phaseo.app/v1`.
-- `PHASEO_API_KEY` est configurée dans chaque environnement de déploiement.
-- Les identifiants des modèles de production ont été vérifiés avec `/v1/models`.
-- Une requête avec streaming et une sans streaming ont été validées en préproduction.
-- La gestion des clés et modèles invalides a été vérifiée à nouveau.
-- Les valeurs par défaut partagées des prompts et du routage ont été déplacées dans des préréglages lorsque c’est approprié.
-- Les recherches de génération ont été vérifiées avec `GET /v1/generations?id=<request_id>` afin de pouvoir rejouer les requêtes en échec à partir du contenu `replay_request` stocké lorsque `replay_supported=true`.
+## Faire correspondre les fonctionnalités de la passerelle
 
-## 5) Validez et déployez
+| LLM Gateway | Sur Phaseo |
+| --- | --- |
+| Routeur `auto` | `phaseo/auto` ([Routage automatique](../guides/auto-routing), alpha) ; ne peut pas être combiné avec `models`. |
+| Chaînes de secours | Tableau `models` ou routes dynamiques, essayés sur `429`, `500`, `502`, `503` et `504`, jamais sur les erreurs de requête. |
+| `X-No-Fallback` | `provider.allow_fallbacks: false`, ou un identifiant `provider:org/model`. |
+| Logique d’autorisation et de refus des fournisseurs | `provider.only`, `provider.ignore` ou [Préréglages](../guides/presets). Gardez au moins un fournisseur éligible. |
+| En-têtes `X-LLMGateway-<Key>` | [Étiquettes](../guides/request-labels) `X-Phaseo-Metadata`, jusqu’à 32. |
+| En-têtes de session (`x-session-id`) | Champ de corps `session_id` ; Phaseo ignore les en-têtes de session. |
+| `X-Source` | `HTTP-Referer` ou `X-App-Name`. Consultez [Attribution des applications](../guides/app-attribution). |
+| Mise en cache des réponses | Pas de cache de réponses. |
+| Clés de fournisseur | BYOK (`phaseo byok create` ou `POST /v1/byok`), ou crédits Phaseo. Le basculement sur les crédits correspond au paramètre d’espace de travail `byok_fallback_enabled`. |
+| Journaux des requêtes | Journaux des requêtes, destinations d’observabilité et `GET /v1/generations?id=<request_id>`. Lorsque `replay_supported` vaut `true`, relancez une requête en échec à partir de sa charge utile `replay_request`. |
 
-1. Exécutez votre suite de prompts de référence et comparez la qualité, la latence et les coûts à la base de référence.
-2. Vérifiez que les requêtes de préproduction en échec peuvent être récupérées à partir du contenu de rejeu renvoyé par `GET /v1/generations`.
-3. Déployez derrière un indicateur canary et augmentez progressivement le trafic après stabilisation.
-4. Surveillez les métriques de production pendant au moins un cycle de publication avant de supprimer l’ancienne configuration.
+## Tester et déployer
 
-## Commandes de validation
+Exécutez vos prompts de référence sur les deux passerelles et comparez la qualité, la latence et le coût. Vérifiez d’abord les endpoints :
 
 ```bash
 curl -s "https://api.phaseo.app/v1/health"
-curl -s "https://api.phaseo.app/v1/models" -H "Authorization: Bearer $PHASEO_API_KEY"
+curl -s "https://api.phaseo.app/v1/models?format=openai" -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-Puis :
+Avant de déplacer le trafic, vérifiez que :
 
-- Exécutez une requête avec streaming et une sans streaming en préproduction.
-- Rejouez vos prompts de référence et comparez les résultats à la base de référence.
+- `PHASEO_API_KEY` est défini dans chaque environnement ;
+- chaque identifiant de modèle de production est mis en correspondance et listé ;
+- une requête sans streaming et une requête en streaming passent en préproduction ;
+- les erreurs de clé invalide et de modèle invalide sont gérées ; leurs corps peuvent différer de ceux de LLM Gateway ;
+- une requête de préproduction en échec peut être récupérée depuis `GET /v1/generations` ;
+- les valeurs par défaut partagées de prompt et de routage se trouvent dans des préréglages, là où elles ont leur place.
 
-## Étapes suivantes
-
-- [Migrer depuis OpenRouter](./from-openrouter.mdx)
-- [Migrer depuis Vercel AI Gateway](./from-vercel.mdx)
-- [Démarrage rapide](../quickstart.mdx)
+Publiez derrière un drapeau canary, passez d’une petite part du trafic à la totalité une fois la situation stable, et surveillez les métriques de production pendant au moins un cycle de publication avant de supprimer l’ancienne configuration.

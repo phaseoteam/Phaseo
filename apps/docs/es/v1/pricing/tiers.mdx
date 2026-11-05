@@ -1,80 +1,42 @@
 ---
 title: "Niveles de precios"
-description: "Entiende la comisión fija del 5 % al comprar créditos y cómo funciona la facturación de Gateway."
+description: "Entiende la comisión fija del 5 % al comprar créditos y cómo funciona la facturación de Gateway"
 sidebarTitle: "Precios y facturación"
 icon: "credit-card"
 ---
 
-# Niveles de precios
+Compra créditos una vez y gástalos en solicitudes al precio de catálogo de cada modelo. La única comisión de Phaseo en las solicitudes gestionadas es el 5 % de cada compra de créditos, con un mínimo de $1; las solicitudes no llevan ningún recargo.
 
-La facturación de Gateway tiene dos partes:
+```mermaid
+flowchart LR
+  buy["Compras $100 de créditos"] -->|"Pagas $105<br/>(comisión del 5 %)"| wallet["Monedero del espacio de trabajo<br/>$100.00"]
+  wallet -->|"Cada solicitud cuesta<br/>el precio de catálogo del modelo"| spend["El saldo baja"]
+```
 
-1. **Precio del uso del modelo**: los créditos se descuentan según los precios de los modelos que aparecen en el catálogo.
-2. **Comisión por compra de créditos**: solo al comprar créditos se aplica una comisión fija del **5 %**.
+## Cuánto cuesta una recarga
 
-## Plan actual
+La comisión es la mayor entre el 5 % de los créditos que compras y $1. Se suma al importe que pagas.
 
-<Card title="Plan estándar" icon="tag">
-  **Comisión del 5 % al comprar créditos**
+| Créditos que compras | Comisión | Pagas |
+| ---: | ---: | ---: |
+| $5.00 | $1.00 (mínimo) | $6.00 |
+| $20.00 | $1.00 | $21.00 |
+| $100.00 | $5.00 | $105.00 |
+| $1,000.00 | $50.00 | $1,050.00 |
 
-  Los espacios de trabajo estándar usan la facturación de Gateway según el consumo. Hay complementos empresariales para los equipos que necesitan controles de identidad y directorio.
-</Card>
+Visto al revés, un cargo de $100.00 añade $95.24 de créditos y una comisión de $4.76. Las recargas desde el panel empiezan en $5.
 
-## Cómo funciona la facturación
+Compra créditos en **Configuración -> Facturación -> Facturación y créditos**, o desde una terminal con `phaseo credits add --amount <usd>` (consulta el [inicio rápido](../quickstart#add-credits-for-paid-models)). La misma página muestra tu saldo, la comisión actual y el gasto reciente; **Configuración -> Facturación -> Transacciones** enumera cada compra.
 
-<Steps>
-  <Step title="Compra créditos">
-    Al recargar el saldo, se aplica a la compra una **comisión de plataforma del 5 %**.
-  </Step>
+## Qué no usa créditos
 
-  <Step title="Usa Gateway">
-    Las solicitudes consumen créditos según los precios de los modelos del catálogo.
-  </Step>
+| Uso | Cargo de Phaseo |
+| --- | --- |
+| Modelos gratuitos (`phaseo/free` y modelos con precio de $0) | Ninguno. Las solicitudes a modelos gratuitos tienen una asignación diaria; consulta [Planes](../exploring/subscription-plans). |
+| Usa tu propia clave (BYOK) | Sin recarga. Las primeras 250.000 solicitudes BYOK completadas por espacio de trabajo en cada mes UTC no tienen comisión de servicio; después, el 2.5 % del coste equivalente del proveedor. Tu proveedor factura el uso del modelo. Consulta [Consideraciones sobre BYOK](../guides/routing-and-fallbacks#byok-considerations). |
 
-  <Step title="Consulta el uso">
-    El panel muestra la comisión actual por recarga, el saldo de créditos y el gasto reciente.
-  </Step>
-</Steps>
+## Enterprise
 
-## Ejemplo
+Self Serve Enterprise es una suscripción mensual aparte para SSO, SCIM, gestión de directorios, departamentos y soporte prioritario por correo electrónico. Empieza en $29/mes para hasta 100 miembros del espacio de trabajo y cuesta $79/mes con 1.000 miembros. No incluye créditos ni cambia la comisión del 5 % (mínimo de $1). En [Planes](../exploring/subscription-plans#enterprise-member-pricing) encontrarás todos los precios por miembro y cómo se cuentan los miembros.
 
-| Escenario | Cargo total | Comisión aplicada | Créditos añadidos |
-|---|---:|---:|---:|
-| Plan estándar | $100 | 5 % (~$4.76) | ~$95.24 en créditos |
-| Uso de modelos gratuitos | Sin recarga | $0 | Se usa la asignación de modelos gratuitos |
-
-## Preguntas frecuentes
-
-<AccordionGroup>
-  <Accordion title="¿Se cobran comisiones en cada solicitud?">
-    No. Las comisiones se cobran al comprar créditos. Las solicitudes consumen esos créditos según los precios de los modelos que se muestran en el catálogo.
-  </Accordion>
-
-  <Accordion title="¿Se añade un recargo a los precios por token de los modelos?">
-    Las tarifas de uso de los modelos siguen los precios del catálogo. La comisión de plataforma, independiente, es el 5 % aplicado al comprar créditos.
-  </Accordion>
-
-  <Accordion title="¿Hay un plan empresarial?">
-    Sí. Self Serve Enterprise empieza en **29 USD al mes para hasta 100 miembros del espacio de trabajo**, incluidos equipos pequeños, y cuesta **79 USD al mes con 1.000 miembros**. Incluye SSO, SCIM, gestión de directorios, departamentos y soporte prioritario por correo electrónico. Los créditos de modelos se compran por separado con la comisión estándar del 5% (mínimo de 1 USD). Abre **Precios** en el panel para elegir el cupo y consultar el presupuesto donde esté disponible el autoservicio.
-  </Accordion>
-
-  <Accordion title="¿Qué miembros cuentan para el cupo de Enterprise?">
-    Los miembros cuentan mientras pertenezcan al espacio, aunque no inicien sesión. La suscripción inicial incluye hasta 100 miembros. Con un cupo inferior a 100.000, se bloquean nuevas incorporaciones solo si superarían el cupo elegido. Actualmente no se puede cambiar el cupo de forma autogestionada; elige capacidad para el crecimiento previsto antes de suscribirte. Por encima de 100.000, cada miembro adicional único se factura a 0,02 USD por periodo de facturación de la suscripción, incluidos los eliminados durante ese periodo.
-  </Accordion>
-
-  <Accordion title="¿Puedo solicitar condiciones comerciales personalizadas?">
-    Sí. Para facturación, compras o requisitos comerciales específicos, contacta con el equipo de ventas. El uso estándar de Gateway está disponible sin complementos empresariales.
-  </Accordion>
-</AccordionGroup>
-
-## Consulta tus precios
-
-Comprueba en el panel la comisión actual por recarga y el estado de facturación:
-
-1. Ve a **Configuración -> Precios y niveles**
-2. Consulta la comisión actual y el uso reciente
-3. Revisa el saldo de créditos y las tendencias de gasto
-
-<Card title="¿Tienes preguntas?" icon="question">
-  ¿Necesitas ayuda con la facturación o los precios? Visita el [Centro de ayuda de Phaseo](https://phaseo.app/help).
-</Card>
+Para facturación, compras o condiciones comerciales personalizadas, contacta con el [Centro de ayuda](https://phaseo.app/help). El uso estándar de Gateway no necesita Enterprise.

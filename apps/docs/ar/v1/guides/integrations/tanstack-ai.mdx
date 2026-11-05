@@ -4,7 +4,7 @@ icon: "layers"
 description: "استخدم Phaseo مع المحوّل المتوافق مع OpenAI في TanStack AI."
 ---
 
-استخدم TanStack AI عندما تريد تدفقات دردشة آمنة الأنواع في React أو Solid أو Preact أو Vue أو Svelte أو TypeScript على الخادم.
+أنشئ محوّل `openaiCompatible` في TanStack AI بمفتاح Phaseo و`baseURL: "https://api.phaseo.app/v1"` ومعرّفات نماذج Phaseo التي تستخدمها. يعمل للدردشة الآمنة الأنواع في React أو Solid أو Preact أو Vue أو Svelte أو TypeScript على الخادم.
 
 ## التثبيت
 
@@ -12,7 +12,7 @@ description: "استخدم Phaseo مع المحوّل المتوافق مع Open
 npm install @tanstack/ai @tanstack/ai-openai
 ```
 
-## تهيئة المحوّل
+## توجيه المحوّل إلى Phaseo
 
 ```ts
 import { chat } from "@tanstack/ai";
@@ -22,23 +22,18 @@ const phaseo = openaiCompatible({
 	name: "phaseo",
 	baseURL: "https://api.phaseo.app/v1",
 	apiKey: process.env.PHASEO_API_KEY!,
-	models: ["openai/gpt-5-nano", "anthropic/claude-sonnet-4.5"],
+	models: ["openai/gpt-6-astra", "anthropic/claude-sonnet-5.5"],
 });
 
 const stream = chat({
-	adapter: phaseo("openai/gpt-5-nano"),
+	adapter: phaseo("openai/gpt-6-astra"),
 	messages: [{ role: "user", content: "Reply with only: ok" }],
 });
 ```
 
-## ملاحظات
+صرّح في `models` بكل معرّف نموذج Phaseo تنوي استخدامه. تحقق من المعرّفات في [النماذج](../../api-reference/endpoint/models.mdx).
 
-- صرّح بمعرّفات نماذج Phaseo التي تنوي استخدامها في مصفوفة `models`.
-- يستخدم المحوّل المتوافق مع OpenAI واجهة Chat Completions افتراضيًا. استخدم استدعاءات API مباشرة لميزات Responses فقط.
-- إذا لم يدعم النموذج الأدوات أو الصور في سير عملك، فصرّح بإمكانات أضيق في TanStack AI كي يكتشف TypeScript الاستدعاءات غير المدعومة مبكرًا.
+## القيود المعروفة
 
-## مواضيع ذات صلة
-
-- [OpenAI SDK](./openai-sdk.mdx)
-- [استدعاء الأدوات](../tool-calling.mdx)
-- [النماذج](../../api-reference/endpoint/models.mdx)
+- يستخدم المحوّل Chat Completions. للميزات المتاحة على Responses فقط، استدعِ Phaseo مباشرةً أو استخدم [OpenAI SDK](./openai-sdk.mdx).
+- إذا كان النموذج لا يدعم [الأدوات](../tool-calling.mdx) أو الصور، فصرّح بقدرات أضيق في TanStack AI حتى يكتشف TypeScript الاستدعاءات غير المدعومة.

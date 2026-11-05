@@ -1,18 +1,62 @@
 ---
 icon: "list-filter"
 title: "मॉडल खोज सर्वर टूल"
-description: "मॉडल को Phaseo की लाइव कैटलॉग से उपयुक्त मॉडल खोजने दें।"
+description: "किसी मॉडल को Phaseo के लाइव कैटलॉग से उपयुक्त मॉडल ढूँढने दें।"
 ---
 
-जब कॉल करने वाले मॉडल को मौजूदा कैटलॉग मेटाडेटा के आधार पर मॉडल चुनना या सुझाना हो, तब `phaseo:search_models` का इस्तेमाल करें।
+`phaseo:search_models` जोड़ें ताकि मॉडल Phaseo के लाइव कैटलॉग का इस्तेमाल करके कोई मॉडल चुन सके या सुझा सके: मौजूदा मोडैलिटी, प्रदाता, समर्थित पैरामीटर और कीमतें।
 
 ```json
 {
+  "model": "openai/gpt-6-astra",
+  "messages": [
+    { "role": "user", "content": "Which models can transcribe audio and return JSON?" }
+  ],
   "tools": [{ "type": "phaseo:search_models", "parameters": { "max_results": 5 } }],
   "max_tool_calls": 10
 }
 ```
 
-टूल कॉल इन चीज़ों के आधार पर फ़िल्टर कर सकती है `query`, `input_modalities`, `output_modalities`, `series`, `provider`, और `required_params`. नतीजों में मॉडल ID, मोडैलिटी, प्रदाता, समर्थित पैरामीटर और मूल्य मेटाडेटा शामिल हैं।
+## पैरामीटर
 
-उपयोग की जानकारी यहाँ दी जाती है `usage.server_tool_use.search_models_requests`.
+| पैरामीटर | प्रकार | डिफ़ॉल्ट | विवरण |
+| --- | --- | --- | --- |
+| `max_results` | integer | `5` | हर खोज में लौटाए जाने वाले मॉडल, अधिकतम `20`। |
+
+## मॉडल क्या भेजता है
+
+इनमें से कोई भी फ़िल्टर। सिर्फ़ सक्रिय मॉडल खोजे जाते हैं, और मॉडल को भेजे गए हर फ़िल्टर से मेल खाना चाहिए।
+
+| आर्ग्युमेंट | किससे मेल खाता है |
+| --- | --- |
+| `query` | मॉडल ID, नाम या विवरण में टेक्स्ट |
+| `series` | मॉडल ID, नाम या विवरण में टेक्स्ट |
+| `input_modalities` | वे मॉडल जो ये सभी इनपुट स्वीकार करते हैं |
+| `output_modalities` | वे मॉडल जो ये सभी आउटपुट बनाते हैं |
+| `provider` | एक प्रदाता ID या नाम |
+| `required_params` | वे मॉडल जो ये सभी अनुरोध पैरामीटर सपोर्ट करते हैं |
+
+## टूल क्या लौटाता है
+
+```json
+{
+  "models": [
+    {
+      "id": "openai/gpt-4o-mini-transcribe",
+      "name": "...",
+      "description": "...",
+      "input_modalities": ["audio"],
+      "output_modalities": ["text"],
+      "providers": ["openai"],
+      "supported_params": ["..."],
+      "pricing": {}
+    }
+  ],
+  "total_results": 4,
+  "showing": 4
+}
+```
+
+## उपयोग और कीमत
+
+हर खोज `usage.server_tool_use.search_models_requests` में 1 जोड़ती है और उसका बिल `server_tool_search_models_requests` के साथ बन सकता है।

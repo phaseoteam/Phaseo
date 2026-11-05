@@ -1,185 +1,136 @@
 ---
 title: "Crea una aplicación de chat web con Next.js"
-sidebarTitle: "Chat web con Next.js"
 icon: "messages-square"
-description: "Usa la aplicación de chat de ejemplo existente para Next.js como guía completa, con una instrucción para crearla y copiarla al principio."
+description: "Usa la aplicación de chat de ejemplo con Next.js como recorrido completo, con un prompt de creación para copiar al principio."
 ---
 
-Usa esta página si quieres una aplicación de chat pequeña con Next.js que parezca real y mantenga tu clave de API de Phaseo en el servidor.
+Ejecuta una pequeña aplicación de chat con Next.js cuyo código del navegador solo habla con tus propias rutas de servidor, de modo que tu clave de API de Phaseo nunca llega al navegador. Al terminar tendrás una página de chat local con un selector de modelos que se rellena desde `GET /v1/models` y respuestas de `POST /v1/responses`.
 
-**Objetivo:** Ejecutar una aplicación de chat en el navegador que descubra modelos y envíe respuestas mediante rutas del servidor.
+El ejemplo es ilustrativo: sus rutas no tienen inicio de sesión ni límite de solicitudes, así que cualquiera que pueda acceder a ellas gasta tu clave. Añade primero las comprobaciones de [Antes de desplegarla](#before-you-deploy-it).
 
-**Resultado:** Una interfaz de chat local funcional que no expone las credenciales de Phaseo al navegador.
+Para que un agente de programación cree la misma aplicación desde cero, pega este prompt:
 
 <Prompt
   description="Crea una **aplicación de chat web con Next.js** sobre Phaseo Gateway."
   icon="message-square"
   actions={["copy", "cursor"]}
 >
-{`Estás creando una aplicación de chat pequeña, lista para producción, con Phaseo Gateway.
+{`You are building a small production-style chat app with Phaseo Gateway.
 
-Crea una aplicación Next.js con:
-- una interfaz de chat
-- un selector de modelos basado en GET /v1/models
-- una ruta del servidor que llama a POST /v1/responses
-- gestión de la clave de API en el servidor mediante PHASEO_API_KEY
-- estados de carga, éxito y error
+Create a Next.js app with:
+- a chat UI
+- a model picker backed by GET https://api.phaseo.app/v1/models
+- a server-side route that calls POST https://api.phaseo.app/v1/responses
+- server-side API key handling using PHASEO_API_KEY (Authorization: Bearer)
+- loading, success, and error states
 
-Mantén la aplicación deliberadamente pequeña y fácil de revisar.
+Keep the app intentionally small and easy to inspect.
 
-Requisitos de implementación:
-- Usa una ruta de API local para descubrir modelos.
-- Usa una ruta de API local para generar respuestas.
-- Mantén los secretos únicamente en el servidor.
-- Muestra claramente en el código el flujo de solicitud y respuesta.
-- Añade un README breve con los pasos de configuración y ejecución.
+Implementation requirements:
+- Use one local API route for model discovery.
+- Use one local API route for responses generation.
+- Keep secrets server-side only.
+- Send the whole conversation in input on every turn. The gateway rejects previous_response_id.
+- Only accept model IDs from an allowlist on the server, and cap the input length.
+- Show the request/response flow clearly in code.
+- Add a short README with setup and run steps.
 
-Verificación:
-- Ejecuta la aplicación si es posible.
-- Comprueba que se complete correctamente un turno de chat.
-- Indica los archivos exactos modificados, lo que verificaste y las suposiciones pendientes.`}
+Verification:
+- Run the app if possible.
+- Verify two successful chat turns in a row.
+- Report the exact files changed, what you verified, and any remaining assumptions.`}
 </Prompt>
 
-## Proyecto de ejemplo
+## Cómo está construido el ejemplo
 
-- GitHub: [examples/web-chat-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/web-chat-nextjs)
-- Ruta local del repositorio: `examples/web-chat-nextjs`
+```mermaid
+flowchart LR
+  ui["ChatClient.tsx en el navegador"] -->|"GET /api/models"| models["app/api/models/route.ts"]
+  ui -->|"POST /api/responses"| resp["app/api/responses/route.ts"]
+  models --> lib["lib/gateway.ts añade la clave Bearer"]
+  resp --> lib
+  lib -->|"GET /v1/models, POST /v1/responses"| gw["Phaseo Gateway"]
+```
 
-## Qué hace esta aplicación
+El ejemplo está en [examples/web-chat-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/web-chat-nextjs):
 
-- - obtiene los modelos disponibles mediante `GET /v1/models`
-- - envía los turnos de chat mediante `POST /v1/responses`
-- mantiene la clave de API en el servidor
-- te ofrece un punto de partida sencillo para un producto real sin la complejidad de OAuth
+| Archivo | Qué hace |
+| --- | --- |
+| `app/components/ChatClient.tsx` | Entrada, estados de carga y error, mensajes renderizados y selector de modelos |
+| `app/api/models/route.ts` | Devuelve los ID de modelo de `GET /v1/models` |
+| `app/api/responses/route.ts` | Comprueba que `model` e `input` son cadenas no vacías (`400 missing_model`, `400 missing_input`) y después llama a `POST /v1/responses` |
+| `lib/gateway.ts` | Construye la URL y las cabeceras: `Authorization: Bearer $PHASEO_API_KEY`, `x-title` y `http-referer` cuando están definidas |
 
-## Archivos principales
+## Ejecútalo
 
-<Tree>
+Necesitas Node.js y una clave de API de Phaseo.
 
-- app/
-  - api/
-    - models/
-      - route.ts
-    - responses/
-      - route.ts
-  - components/
-    - ChatClient.tsx
-- lib/
-  - gateway.ts
+<Steps>
+<Step title="Instala">
 
-</Tree>
-
-## Por qué el ejemplo está estructurado así
-
-### 1. El navegador no llama directamente a Phaseo
-
-La interfaz se comunica primero con tus propias rutas de Next.js. Esas rutas llaman a Phaseo desde el servidor.
-
-Esto te permite:
-
-- gestionar los secretos en el servidor
-- centralizar la administración de encabezados y cargas de solicitud
-- facilitar una futura ampliación si añades autenticación, límites de solicitudes o registros
-
-### 2. La búsqueda de modelos está separada de la generación
-
-Mantén las rutas para listar modelos y generar chats separadas para que cada parte sea fácil de entender:
-
-- una ruta para listar los modelos
-- una ruta para ejecutar la solicitud de chat
-
-### 3. La interfaz solo administra el estado de interacción
-
-El cliente de React se ocupa de:
-
-- el estado de la entrada
-- el estado de carga
-- la presentación de errores
-- los mensajes renderizados
-
-La ruta del servidor se ocupa de la llamada a la IA. El navegador solo administra la experiencia del usuario.
-
-## Requisitos previos
-
-- - Node.js y un administrador de paquetes compatible
-- una clave de API de Phaseo
-
-## Ejecuta el ejemplo
-
-<CodeGroup>
-```bash npm
+```bash
 cd examples/web-chat-nextjs
 npm install
-cp .env.example .env.local
 ```
 
-```bash pnpm
-cd examples/web-chat-nextjs
-pnpm install
-cp .env.example .env.local
+El ejemplo incluye un `package-lock.json`, así que `npm` instala las versiones probadas.
+
+</Step>
+<Step title="Crea .env.local">
+
+El ejemplo no tiene `.env.example`. Crea `.env.local` tú mismo:
+
+```bash .env.local
+PHASEO_API_KEY=phaseo_v1_sk_...
+# Opcional. El valor predeterminado es https://api.phaseo.app; /v1 se añade automáticamente.
+NEXT_PUBLIC_GATEWAY_URL=https://api.phaseo.app
+# Cabeceras opcionales de atribución de la aplicación.
+GATEWAY_APP_TITLE=My chat app
+GATEWAY_HTTP_REFERER=https://myapp.example
 ```
 
-```bash yarn
-cd examples/web-chat-nextjs
-yarn install
-cp .env.example .env.local
+Aquí `NEXT_PUBLIC_GATEWAY_URL` solo se lee en el servidor, pero el prefijo `NEXT_PUBLIC_` la expondría al código del navegador, así que nunca pongas una clave en ella. [Atribución de aplicaciones](../guides/app-attribution) explica las dos cabeceras opcionales.
+
+</Step>
+<Step title="Corrige el segundo turno del chat">
+
+`ChatClient.tsx` envía el `id` de la respuesta anterior como `previous_response_id`. El Gateway no guarda respuestas, así que rechaza ese campo con `400 validation_error` (palabra clave `unsupported_param`) y el segundo mensaje falla. En `app/api/responses/route.ts`, elimina el bloque que copia `previous_response_id` en el payload:
+
+```ts app/api/responses/route.ts
+  // Elimina estas líneas:
+  if (typeof body.previous_response_id === 'string' && body.previous_response_id.trim()) {
+    payload.previous_response_id = body.previous_response_id.trim();
+  }
 ```
 
-```bash bun
-cd examples/web-chat-nextjs
-bun install
-cp .env.example .env.local
-```
-</CodeGroup>
+Así cada turno se responde por separado. Para conservar el contexto, envía los turnos anteriores como un array de mensajes en `input`.
 
-Configura:
+</Step>
+<Step title="Inicia el servidor de desarrollo">
 
-- `PHASEO_API_KEY`
-- `NEXT_PUBLIC_GATEWAY_URL`
-
-Luego, ejecuta:
-
-<CodeGroup>
-```bash npm
+```bash
 npm run dev
 ```
 
-```bash pnpm
-pnpm dev
-```
-
-```bash yarn
-yarn dev
-```
-
-```bash bun
-bun run dev
-```
-</CodeGroup>
-
 Abre `http://localhost:3000`.
 
-## Comprueba el resultado
+</Step>
+</Steps>
 
-- El selector de modelos carga los modelos desde la ruta del servidor.
-- Al enviar un mensaje, se genera una respuesta del asistente.
-- El panel de red del navegador no expone `PHASEO_API_KEY`.
-- Si falla una solicitud al gateway, la interfaz muestra un estado de error útil.
+## Comprueba que funciona
 
-## Adapta la aplicación
+- El selector de modelos se rellena con ID de modelo.
+- Dos mensajes seguidos reciben cada uno una respuesta.
+- En el panel de red del navegador, las solicitudes van solo a `/api/models` y `/api/responses`, y ninguna lleva `PHASEO_API_KEY`.
+- Un ID de modelo incorrecto muestra el mensaje de error del Gateway en lugar de una respuesta en blanco.
+- Las solicitudes aparecen en **Ajustes → Uso → Registros** con el título de aplicación que configuraste.
 
-- cambia el modelo predeterminado por el que quieras usar en producción
-- añade streaming si tu experiencia requiere mostrar la salida token por token
-- añade autenticación más adelante si la aplicación admite varios usuarios
-- cambia después la implementación interna de la ruta por el SDK de TypeScript si quieres un cliente de nivel superior
+<span id="before-you-deploy-it"></span>
+## Antes de desplegarla
 
-## Cuándo elegir otro punto de partida
+- **Autentica las rutas.** Exige un usuario con sesión iniciada en `/api/responses` y `/api/models`, o usa el [banco de trabajo OAuth](./build-an-oauth-nextjs-workbench) para que cada usuario gaste sus propios créditos.
+- **Limita los modelos a una lista permitida.** La ruta reenvía cualquier cadena `model` que llegue del navegador. Compruébala en el servidor contra una lista fija.
+- **Limita la entrada y la frecuencia.** Limita la longitud de la entrada y las solicitudes por usuario, y fija un [límite de gasto en la clave](../api-reference/limits#key-limits-and-budgets).
+- **Usa streaming si lo necesitas.** Pon `stream: true` y reenvía los eventos; [Streaming](../guides/streaming) muestra qué evento termina un stream de Responses.
 
-- usa la guía rápida de Node si quieres un script o una prueba del backend, no una interfaz
-- usa la guía rápida de Python si la primera integración se ejecuta en un worker, CLI o servicio de backend
-
-## Guías relacionadas
-
-- [Instrucciones para iniciar una aplicación pequeña](./mini-app-starter-prompts.mdx)
-- [Ejemplos](../guides/examples.mdx)
-- [Guía rápida](../quickstart.mdx)
+Para un script de backend en lugar de una interfaz, empieza por la [aplicación de prueba REST con Node](./build-a-node-rest-smoke-app) o la [CLI del gateway en Python](./build-a-python-gateway-cli).

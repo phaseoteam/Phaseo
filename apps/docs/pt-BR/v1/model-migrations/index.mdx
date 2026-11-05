@@ -1,43 +1,31 @@
 ---
 icon: "compass"
 title: "Migrações de modelos"
-description: "Orientações específicas para adotar novas versões de modelos com segurança em produção."
+description: "Orientações específicas por modelo para adotar novas versões com segurança em produção."
 ---
 
-# Migrações de modelos
+Encontre o modelo para o qual você está migrando, faça as mudanças no formato da solicitação que o guia descreve e execute de novo as suas avaliações antes de mover o tráfego. Estes guias tratam de uma troca de modelo na mesma plataforma; para trocar de gateway ou SDK, use os [guias de migração de plataforma](../migration-guides/index).
 
-Use estes guias para atualizar o modelo sem mudar de plataforma.
+Do lançamento mais recente para o mais antigo:
 
-Eles focam nas mudanças que costumam afetar primeiro as integrações reais:
+| Guia | ID do modelo no Phaseo | Lançamento | Principais mudanças na solicitação |
+| --- | --- | --- | --- |
+| [Anthropic Claude Opus 5](./anthropic-claude-opus-5) | `anthropic/claude-opus-5` | 24 de julho de 2026 | Pensamento adaptativo ativo por padrão; sem parâmetros de amostragem |
+| [OpenAI GPT-5.6](./openai-migrating-to-gpt-5-6) | `openai/gpt-5.6-sol`, `-terra`, `-luna` | 9 de julho de 2026 | Três níveis, esforço `max`, novos medidores de cache |
+| [Anthropic Claude Opus 4.8](./anthropic-claude-opus-4-1-to-4-8) | `anthropic/claude-opus-4.8` | 28 de maio de 2026 | Substitui o Opus 4.1 aposentado; pensamento adaptativo |
+| [Anthropic Claude Opus 4.7](./anthropic-claude-opus-4-6-to-4-7) | `anthropic/claude-opus-4.7` | 16 de abril de 2026 | Sem orçamentos de pensamento nem parâmetros de amostragem; esforço `xhigh` |
+| [Mistral Small 4](./mistral-small-3-2-to-mistral-small-4) | `mistral/mistral-small-4` | 16 de março de 2026 | Raciocínio ativado ou desativado |
+| [OpenAI GPT-5.4](./openai-migrating-to-gpt-5-4) | `openai/gpt-5.4` | 5 de março de 2026 | Esforço `xhigh`, detalhe de imagem `original` |
+| [Google Nano Banana 2](./google-nano-banana-1-to-nano-banana-2) | `google/gemini-3.1-flash-image` | 26 de fevereiro de 2026 | Proporção e saída de 0.5K a 4K |
+| [Google Gemini 3.1](./google-migrating-to-gemini-3-and-3-1) | `google/gemini-3.1-pro-preview` | 19 de fevereiro de 2026 | Níveis de pensamento, assinaturas de pensamento |
+| [Anthropic Claude Sonnet 4.6](./anthropic-claude-sonnet-4-5-to-4-6) | `anthropic/claude-sonnet-4.6` | 17 de fevereiro de 2026 | Sem prefills; `output_config.format` |
+| [SpaceXAI Grok 4.20](./xai-grok-4-20) | `spacex-ai/grok-4.20` | 17 de fevereiro de 2026 | Alternância de raciocínio; esforço multiagente |
+| [Anthropic Claude Opus 4.6](./anthropic-claude-opus-4-5-to-4-6) | `anthropic/claude-opus-4.6` | 5 de fevereiro de 2026 | Sem prefills; `output_config.format` |
 
-- alterações nos parâmetros da requisição
-- mudanças no comportamento de prompts e raciocínio
-- regressões em saídas estruturadas e chamadas de ferramentas
-- estratégias de rollout, fallback e rollback
+[Descontinuações da OpenAI](./openai-deprecations) lista as datas de desligamento e os substitutos da OpenAI.
 
-## Guias de modelos
+## Migre um modelo
 
-Os guias estão ordenados pela data de lançamento do modelo de destino, do mais recente para o mais antigo.
-
-| Modelo | Lançamento | Indicado para |
-| --- | --- | --- |
-| [Anthropic Claude Opus 5](./anthropic-claude-opus-5.mdx) | 24 de julho de 2026 | Raciocínio complexo e agentes em tarefas longas |
-| [OpenAI GPT-5.6](./openai-migrating-to-gpt-5-6.mdx) | 9 de julho de 2026 | Raciocínio em níveis, programação e trabalho profissional |
-| [Anthropic Claude Opus 4.8](./anthropic-claude-opus-4-1-to-4-8.mdx) | 28 de maio de 2026 | Contexto longo e pensamento adaptativo |
-| [Anthropic Claude Opus 4.7](./anthropic-claude-opus-4-6-to-4-7.mdx) | 16 de abril de 2026 | Raciocínio intensivo com controles de requisição mais rigorosos |
-| [Mistral Small 4](./mistral-small-3-2-to-mistral-small-4.mdx) | 16 de março de 2026 | Cargas eficientes com raciocínio opcional |
-| [OpenAI GPT-5.4](./openai-migrating-to-gpt-5-4.mdx) | 5 de março de 2026 | Raciocínio, visão e uso do computador |
-| [Google Nano Banana 2](./google-nano-banana-1-to-nano-banana-2.mdx) | 26 de fevereiro de 2026 | Geração e edição de imagens em produção |
-| [Google Gemini 3.1](./google-migrating-to-gemini-3-and-3-1.mdx) | 19 de fevereiro de 2026 | Cargas multimodais e com muito raciocínio |
-| [Anthropic Claude Sonnet 4.6](./anthropic-claude-sonnet-4-5-to-4-6.mdx) | 17 de fevereiro de 2026 | Programação, uso do computador e planejamento de agentes |
-| [SpaceXAI Grok 4.20](./xai-grok-4-20.mdx) | 17 de fevereiro de 2026 | Raciocínio e cargas multiagente |
-| [Anthropic Claude Opus 4.6](./anthropic-claude-opus-4-5-to-4-6.mdx) | 5 de fevereiro de 2026 | Programação prolongada e tarefas com agentes |
-
-## Como usar esta seção
-
-1. Comece pelo guia da família exata do modelo para o qual você vai migrar.
-2. Atualize os parâmetros da requisição antes de testar a qualidade das respostas.
-3. Refaça as avaliações de prompts e esquemas com exemplos semelhantes aos de produção.
-4. Transfira o tráfego gradualmente, com regras explícitas de fallback e rollback.
-
-Se você vai trocar de provedor, SDK ou gateway, e não apenas de modelo, use a seção [Guias de migração](../migration-guides/index.mdx).
+1. Atualize o formato da solicitação conforme o guia do modelo antes de testar a qualidade da saída.
+2. Execute de novo as avaliações de prompt e de esquema com prompts parecidos com os de produção.
+3. Mova o tráfego aos poucos, com o modelo anterior como fallback em `models` e uma regra clara de rollback.

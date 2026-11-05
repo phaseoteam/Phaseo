@@ -1,10 +1,10 @@
 ---
 title: "ここから始める"
-description: "最初のリクエストの送信、アプリ接続、必要なリファレンスの検索を行います。"
+description: "最初のリクエストを送信し、アプリケーションを接続し、必要なリファレンスを見つけます。"
 icon: "house"
 ---
 
-Phaseoで複数プロバイダーのモデルを1つのAPIから呼び出し、ルーティングの制御と使用量・コストの追跡を行えます。
+`https://api.phaseo.app/v1` の 1 つの API から多数のプロバイダーのモデルを呼び出し、リクエストごとにルーティング方法を選び、使用量とコストをリクエスト単位で追跡できます。このリクエストは `phaseo/free` を使うため、クレジットを追加する前でも動作します。
 
 <CodeGroup>
 
@@ -40,19 +40,19 @@ print(response.output_text)
 
 </CodeGroup>
 
-API キーをまだお持ちでない場合は、[Phaseo CLI](./guides/integrations/phaseo-cli) で `phaseo keys create` を実行するか、[ダッシュボードで作成](https://phaseo.app/ja/settings/keys)してから[クイックスタート](./quickstart.mdx)に進んでください。
+API キーをまだお持ちでない場合は、[Phaseo CLI](./guides/integrations/phaseo-cli) で `phaseo keys create` を実行するか、[ダッシュボードで作成](https://phaseo.app/settings/keys)してから、[クイックスタート](./quickstart.mdx)に進んでください。
 
-## 目的から始める
+## 今の状況から始める
 
 <div className="ph-paths not-prose">
 
 [**<Icon icon="rocket" /> 最初のリクエストを送る** キーを作成し、リクエストを送信して結果を読みます。](./quickstart.mdx)
 
-[**<Icon icon="arrow-right-left" /> アプリケーションを移行する** 既存のプロバイダーまたはGateway連携を更新します。](./migration-guides/index.mdx)
+[**<Icon icon="arrow-right-left" /> アプリケーションを移行する** 既存のプロバイダーまたはゲートウェイとの連携を更新します。](./migration-guides/index.mdx)
 
-[**<Icon icon="terminal" /> コーディングアシスタントを接続する** Codex、Claude Code、Cursorなどのアシスタントを設定します。](./guides/integrations/coding-assistants.mdx)
+[**<Icon icon="terminal" /> コーディングアシスタントを接続する** Codex、Claude Code、Cursor などのアシスタントを設定します。](./guides/integrations/coding-assistants.mdx)
 
-[**<Icon icon="bot" /> エージェントを構築する** Agent SDK で、モデルにツールを渡し、各ステップをストリーミングし、操作を承認します。](./sdk-reference/agent-sdk/overview.mdx)
+[**<Icon icon="bot" /> エージェントを構築する** Agent SDK で、モデルにツールを渡し、各ステップをストリーミングし、操作を承認します。](./sdk-reference/agent/overview.mdx)
 
 </div>
 
@@ -60,13 +60,12 @@ API キーをまだお持ちでない場合は、[Phaseo CLI](./guides/integrati
 
 <div className="ph-sdks not-prose">
 
-[<Icon icon="https://phaseo.app/docs/icons/languages/typescript.svg" /> TypeScript](./sdk-reference/typescript/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/python.svg" /> Python](./sdk-reference/python/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/go.svg" /> Go](./sdk-reference/go/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/csharp.svg" /> C#](./sdk-reference/csharp/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/php.svg" /> PHP](./sdk-reference/php/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/ruby.svg" /> Ruby](./sdk-reference/ruby/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/rust.svg" /> Rust](./sdk-reference/rust/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/typescript.svg" /> <Icon icon="https://phaseo.app/docs/icons/languages/python.svg" /> TypeScript と Python](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/go.svg" /> Go](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/csharp.svg" /> C#](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/php.svg" /> PHP](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/ruby.svg" /> Ruby](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/rust.svg" /> Rust](./sdk-reference/client/overview.mdx)
 
 </div>
 
@@ -74,16 +73,16 @@ API キーをまだお持ちでない場合は、[Phaseo CLI](./guides/integrati
 
 | 作業 | ドキュメント |
 | --- | --- |
-| リクエストフィールドやエンドポイントを調べる | [APIリファレンス](./api-reference/introduction.mdx) |
-| スターターアプリを実行する | [例](./guides/examples.mdx) |
+| リクエストフィールドやエンドポイントを調べる | [API リファレンス](./api-reference/introduction.mdx) |
+| スターターアプリケーションを実行する | [例](./guides/examples.mdx) |
 | 特定のワークフローを実装する | [クックブック](./cookbook/index.mdx) |
 | プロバイダーとフォールバックを選ぶ | [ルーティング](./guides/routing-and-fallbacks.mdx) |
-| 動画やバッチのジョブを処理する | [非同期ジョブとWebhook](./guides/async-video-and-batch.mdx) |
-| リクエスト失敗を診断する | [エラーとデバッグ](./api-reference/errors.mdx) |
+| 動画やバッチのジョブを処理する | [非同期ジョブと Webhook](./guides/async-video-and-batch.mdx) |
+| 失敗したリクエストを診断する | [エラーとデバッグ](./api-reference/errors.mdx) |
 
 ## モデルを選ぶ
 
-[モデルを探す](https://phaseo.app/models)か[比較](https://phaseo.app/compare)してください。カタログにはルーティングできないモデルも含まれるため、連携前にGatewayの利用可否を確認します。モデル、プロバイダー、料金は[Phaseoの仕組み](./developers/introduction.mdx)を参照してください。
+[モデルを探す](https://phaseo.app/models)か、[比較](https://phaseo.app/compare)してください。カタログにはまだ呼び出せないモデルも掲載されているため、連携する前にモデルが **Active on Gateway** であることを確認するか、`GET /v1/models` で呼び出し可能なモデルを一覧表示してください。モデル、プロバイダー、課金については [Phaseo の仕組み](./developers/introduction.mdx)を参照してください。
 
 ## AI エージェントで構築する
 

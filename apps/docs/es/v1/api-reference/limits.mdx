@@ -1,94 +1,135 @@
 ---
 title: "Límites de solicitudes"
-description: "Gestiona las limitaciones, las cuotas de proveedores y los reintentos limitados."
+description: "Gestiona las limitaciones, las cuotas de los proveedores y los reintentos acotados."
 icon: "gauge"
 ---
 
-El proveedor seleccionado o una política aplicable del espacio de trabajo o de la clave pueden limitar una solicitud. El enrutamiento y las alternativas pueden reducir los fallos del proveedor, pero una solicitud aún puede devolver `429`.
+Lee el código de error y el `reason` de un `429` para saber qué límite detuvo la solicitud; después espera lo que indique `Retry-After` o cambia el límite. El enrutamiento y los fallbacks reducen los fallos de los proveedores, pero un proveedor o una política del espacio de trabajo o de la clave aún pueden limitar una solicitud.
 
+| Límite | Código de error | `reason` | Se restablece solo |
+| --- | --- | --- | --- |
+| [Solicitudes por minuto](#gateway-limits) | `key_limit_exceeded` | `customer_requests_per_minute` | Sí, `Retry-After` en segundos |
+| [Solicitudes diarias a modelos gratuitos](#gateway-limits) | `phaseo_free_model_limit_exceeded` | `free_requests_per_day` | Sí, a las 00:00 UTC |
+| [Límite de la clave o presupuesto del espacio de trabajo](#key-limits-and-budgets) | `key_limit_exceeded` | El límite alcanzado; `limit_window` y `reset_at` | Solo cuando `Retry-After` está presente |
+| [Presupuesto de departamento](#department-budgets) | `key_limit_exceeded` | `department_daily_cost_budget_reached` (o `weekly`, `monthly`) | Sí, en `reset_at` |
+| [Regla de gasto configurada para bloquear](#key-limits-and-budgets) | `spend_rule_blocked` | | En `reset_at` cuando el bloqueo lo tiene, o cuando un propietario o administrador lo levanta |
+| [Política de límite de velocidad](#rate-limit-policies) | `rate_limit_exceeded` | `policy_requests_per_minute`, `policy_tokens_per_minute`, `policy_concurrent_requests` o `policy_unavailable` | Sí, `Retry-After` en segundos |
+| [Proveedor](#provider-limits) | `upstream_error` o `provider_capacity_exhausted` | | Sigue el `Retry-After` del proveedor |
+
+Todos devuelven `429`. Si la aplicación de cuotas del gateway no está disponible durante un momento, el gateway devuelve `503` con indicaciones para reintentar.
+
+<span id="gateway-limits"></span>
 ## Límites del gateway
 
-Cada usuario de cada espacio de trabajo tiene una cuota de solicitudes por minuto, medida en una ventana móvil de un minuto. Las claves API creadas por el mismo usuario comparten esa cuota. Las solicitudes OAuth usan el usuario autenticado. Las claves sin propietario comparten una cuota del espacio de trabajo.
+Cada usuario de cada espacio de trabajo tiene una cuota de solicitudes por minuto, medida en una ventana móvil de un minuto. Las claves de API creadas por el mismo usuario la comparten. Las solicitudes OAuth cuentan para el usuario que ha iniciado sesión, y las claves sin propietario comparten una cuota del espacio de trabajo.
 
-La cuota depende de la situación de la cuenta del espacio de trabajo y aumenta automáticamente a medida que el espacio de trabajo se consolida:
+La cuota aumenta automáticamente a medida que el espacio de trabajo se consolida. Un espacio de trabajo recibe la fila más alta para la que cumple los requisitos, y los cambios se aplican en pocos minutos:
 
 | Espacio de trabajo | Solicitudes por minuto |
 | --- | --- |
 | Espacio de trabajo nuevo | 10 |
-| Al menos 7 días de antigüedad o con una recarga de pago | 25 |
-| Al menos 30 días de antigüedad y al menos 50 $ en recargas pagadas, descontados los reembolsos | 60 |
+| Al menos 7 días de antigüedad, o con una recarga de pago | 25 |
+| Al menos 30 días de antigüedad y al menos $50 en recargas de pago, descontados los reembolsos | 60 |
 | Facturación por factura | 120 |
 
-Un espacio de trabajo recibe la cuota más alta para la que cumple los requisitos. Los cambios se aplican en pocos minutos.
+Los modelos gratuitos también tienen una cuota de **1.500 solicitudes por día UTC** de forma predeterminada. Se comparte entre todos los modelos gratuitos y entre todos los espacios de trabajo en los que el mismo usuario envía solicitudes. Las solicitudes a modelos de pago no la usan. Una solicitud gratuita admitida cuenta aunque el proveedor falle después, y los fallbacks de proveedor dentro de una misma solicitud cuentan una sola vez.
 
-Las rutas de modelos gratuitos tienen además una cuota de **1500 solicitudes por día UTC**, compartida entre todos los modelos gratuitos y todos los espacios de trabajo en los que el mismo usuario hace solicitudes. Las solicitudes a modelos de pago no consumen esta cuota diaria. Una solicitud gratuita admitida cuenta aunque el proveedor falle después; los fallbacks dentro de esa solicitud cuentan una sola vez.
+Ambos límites se aplican en todas las regiones del gateway y pueden aumentarse para un usuario y un espacio de trabajo concretos. Las operaciones con archivos y las consultas del estado de trabajos usan la cuota por minuto; los endpoints de administración no.
 
-Estos límites se aplican en todas las regiones del gateway y pueden aumentarse para un usuario y espacio de trabajo específicos. Las operaciones con archivos y las consultas de estado de trabajos consumen la cuota por minuto; los endpoints de administración no.
+Una solicitud rechazada devuelve `429` con `Retry-After` en segundos. Espera ese tiempo antes de reintentar.
 
-Cuando se agota una cuota del gateway, se devuelve `429` con `Retry-After` en segundos. El motivo del error es `customer_requests_per_minute` o `free_requests_per_day`. Espere ese intervalo antes de reintentar. Si la comprobación de cuotas no está disponible temporalmente, el gateway devuelve `503` con indicaciones para reintentar.
-
+<span id="key-limits-and-budgets"></span>
 ## Límites de claves y presupuestos
 
-Al alcanzar los límites diarios, semanales o mensuales de solicitudes y gasto de una clave API, o los [presupuestos](./endpoint/budgets-list.mdx) del espacio de trabajo, se devuelve `429` con el código de error `key_limit_exceeded`. Los campos `reason`, `limit_window` y `reset_at` del cuerpo identifican el límite y cuándo se restablece su periodo. `Retry-After` indica los segundos que faltan para ese restablecimiento. Se omite cuando el límite no se restablece por sí solo, como un presupuesto vitalicio o una clave bloqueada temporalmente; en ese caso, en lugar de reintentar, aumente el presupuesto del espacio de trabajo o, si es un límite de clave, aumente el límite de la clave o use otra clave.
+Los límites diarios, semanales o mensuales de solicitudes y gasto de una clave de API, y los [presupuestos](./endpoint/budgets-list.mdx) del espacio de trabajo, devuelven `429` con `key_limit_exceeded` cuando se alcanzan. Los campos `reason`, `limit_window` y `reset_at` del cuerpo indican qué límite fue y cuándo se restablece su ventana, y `Retry-After` da los segundos que faltan.
 
-Los propietarios y administradores del espacio de trabajo también pueden crear, cambiar y eliminar presupuestos en el panel, en [Configuración → Presupuestos](https://phaseo.app/settings/budgets). La página muestra el gasto acumulado de cada presupuesto, el porcentaje usado, una proyección para el periodo y cuándo se restablece. Los presupuestos diarios, semanales y mensuales se restablecen en límites UTC: a medianoche, el lunes a las 00:00 y el día 1 de cada mes. Desde la CLI, usa `phaseo budgets create|update|delete`.
+`Retry-After` no aparece cuando el límite no se restablece solo, como un presupuesto vitalicio o una clave con bloqueo suave. No reintentes: aumenta el presupuesto del espacio de trabajo, aumenta el límite de la clave o usa otra clave.
 
-Los presupuestos de departamento se gestionan con la API `/v1/department-budgets`. El gasto de un departamento cuenta las mismas claves y solicitudes OAuth que los límites de frecuencia de departamento, descritos más abajo. Cuando un departamento agota su presupuesto diario, semanal o mensual, las solicitudes con clave API que cuentan para él devuelven `429` con el código de error `key_limit_exceeded` y el motivo `department_daily_cost_budget_reached`, `department_weekly_cost_budget_reached` o `department_monthly_cost_budget_reached`. Los campos `department_id` y `department_name` del cuerpo identifican el departamento, y `reset_at` y `Retry-After` indican cuándo se restablece su presupuesto. Los presupuestos de departamento no bloquean los trabajos por lotes, las sesiones en tiempo real ni las solicitudes OAuth. Si la comprobación del presupuesto no está disponible durante un momento, las solicitudes se permiten en lugar de rechazarse, así que un departamento puede gastar por encima de su presupuesto durante poco tiempo. Los propietarios y administradores reciben una notificación push en el móvil al llegar aproximadamente al 80 % y de nuevo al 100 % de un presupuesto. Estas alertas proceden de datos de uso que pueden ir hasta una hora por detrás, así que las solicitudes pueden rechazarse antes de que llegue la alerta del 100 %.
+Los propietarios y administradores del espacio de trabajo gestionan los presupuestos con `phaseo budgets create|update|delete` o en [Ajustes → Presupuestos](https://phaseo.app/settings/budgets), que muestra el gasto acumulado de cada presupuesto, el porcentaje usado, una proyección para el periodo y cuándo se restablece. Los presupuestos diarios, semanales y mensuales se restablecen en los límites UTC: medianoche, el lunes a las 00:00 y el día 1 del mes.
 
-Los propietarios y administradores también pueden gestionar los presupuestos de departamento en [Configuración → Presupuestos](https://phaseo.app/settings/budgets), o con el recurso `phaseo_department_budget` del proveedor de Terraform. Desde la CLI, usa `phaseo department-budgets`.
+Las [alertas de gasto](../guides/spend-alerts.mdx) pueden avisarte antes de que se alcancen estos límites. Una regla de gasto configurada para bloquear devuelve `429` con `spend_rule_blocked`. Funciona en la medida de lo posible y empieza unos minutos después de que el gasto supere su límite, así que usa límites de claves y presupuestos para topes exactos. Un encabezado `x-phaseo-spend-warning` significa que puede llegar un bloqueo.
 
-Las [alertas de gasto](../guides/spend-alerts.mdx) pueden avisar antes de que se alcancen estos límites. Una regla de gasto configurada para bloquear devuelve en su lugar `429` con el código de error `spend_rule_blocked`; se aplica en la medida de lo posible y empieza unos minutos después de que el gasto supere su límite, así que usa los límites de clave y los presupuestos para topes exactos.
+<span id="department-budgets"></span>
+### Presupuestos de departamento
 
-## Políticas de límite de frecuencia
+Los propietarios y administradores gestionan los presupuestos de departamento con `phaseo department-budgets`, la API `/v1/department-budgets`, en [Ajustes → Presupuestos](https://phaseo.app/settings/budgets) o con el recurso `phaseo_department_budget` del proveedor de Terraform. El gasto de un departamento cuenta las mismas claves y solicitudes OAuth que los [límites de velocidad de departamento](#rate-limit-policies).
 
-Los administradores del espacio de trabajo pueden crear políticas de límite de frecuencia con nombre mediante la API de administración `/v1/rate-limits` y asignarlas a claves API, miembros del espacio de trabajo, departamentos o como valor predeterminado para cada usuario final. El gateway aplica el `requests_per_minute` y el `tokens_per_minute` de una política, cada uno medido en un minuto móvil:
+Cuando un departamento ha usado su presupuesto diario, semanal o mensual, las solicitudes con clave de API que cuentan para él devuelven `429` con `key_limit_exceeded` y el motivo `department_daily_cost_budget_reached`, `department_weekly_cost_budget_reached` o `department_monthly_cost_budget_reached`. Los campos `department_id` y `department_name` del cuerpo identifican el departamento, y `reset_at` y `Retry-After` indican cuándo se restablece su presupuesto.
 
-- **Clave:** la asignación propia de la clave.
-- **Miembro:** una asignación compartida por las claves y las solicitudes OAuth del miembro.
-- **Departamento:** una asignación compartida por todo lo que cuenta para el departamento. Una clave vinculada a un departamento cuenta solo para ese departamento. Cualquier otra clave cuenta para todos los departamentos de quien la creó, y las solicitudes OAuth cuentan para todos los departamentos de su usuario. Un miembro con una anulación de departamento cuenta solo para el departamento de la anulación. Para que esas claves y solicitudes OAuth cuenten solo para el departamento principal de la persona, establece la atribución de departamentos del espacio de trabajo en primary en [Configuración → Notificaciones](https://phaseo.app/settings/notifications), con `spend.department_attribution` en `PATCH /v1/notifications/settings` o con `phaseo notifications settings update --department-attribution primary`. Los presupuestos de departamento y las reglas de gasto usan la misma configuración.
-- **Valor predeterminado por usuario final:** una asignación independiente para cada usuario final, identificado por el campo `user` de la solicitud o la cabecera `X-Phaseo-User-Id`. Las solicitudes sin ID de usuario final no quedan limitadas por ella.
+- Los presupuestos de departamento no bloquean los trabajos por lotes, las sesiones en tiempo real ni las solicitudes OAuth.
+- Si la comprobación del presupuesto no está disponible durante un momento, las solicitudes se permiten, así que un departamento puede gastar por encima de su presupuesto durante poco tiempo.
+- Los propietarios y administradores reciben una notificación push en el móvil hacia el 80% y de nuevo al 100% de un presupuesto. Estas alertas se basan en un uso que puede llevar hasta una hora de retraso, así que las solicitudes pueden rechazarse antes de que llegue la alerta del 100%.
 
-Los propietarios y administradores también pueden gestionar las políticas y sus asignaciones en [Configuración → Límites de velocidad](https://phaseo.app/settings/rate-limits), o con los recursos `phaseo_rate_limit_policy` y `phaseo_rate_limit_assignment` del proveedor de Terraform. Desde la CLI, usa `phaseo rate-limits policies` y `phaseo rate-limits assignments`.
+<span id="rate-limit-policies"></span>
+## Políticas de límite de velocidad
 
-Cuando se aplican varias políticas, se cuentan todas y la primera que se agota rechaza la solicitud. Los límites de las políticas se suman a los límites del gateway anteriores. Los cambios de las políticas surten efecto en aproximadamente un minuto. Los cambios en la pertenencia a departamentos hechos en el panel o mediante SCIM pueden tardar hasta unos cinco minutos.
+Los administradores del espacio de trabajo pueden crear políticas con nombre que fijan `requests_per_minute`, `tokens_per_minute` y `concurrent_requests`, y asignarlas a claves, miembros, departamentos o usuarios finales. Gestiónalas con `phaseo rate-limits policies` y `phaseo rate-limits assignments`, la API `/v1/rate-limits`, en [Ajustes → Límites de velocidad](https://phaseo.app/settings/rate-limits) o con los recursos `phaseo_rate_limit_policy` y `phaseo_rate_limit_assignment` del proveedor de Terraform.
 
-`tokens_per_minute` cuenta los tokens de entrada y de salida de cada solicitud cuando termina, incluidas las solicitudes en streaming y las fallidas que consumieron tokens. Una solicitud se rechaza en cuanto el uso de una asignación durante el último minuto alcanza su límite, por lo que las solicitudes que ya están en curso pueden llevar el uso por encima del límite.
+| Asignada a | Qué comparte una misma cuota |
+| --- | --- |
+| Clave (`key`) | Las solicitudes de esa clave. |
+| Miembro (`member`) | Las claves y solicitudes OAuth del miembro. |
+| Departamento (`department`) | Todo lo que cuenta para el departamento (ver abajo). |
+| Valor predeterminado por usuario final (`end_user`) | Cada usuario final recibe su propia cuota, identificado por el campo `user` de la solicitud o el encabezado `X-Phaseo-User-Id`. Las solicitudes sin ID de usuario final no se limitan. |
 
-Una solicitud rechazada devuelve `429` con el código de error `rate_limit_exceeded`, el motivo `policy_requests_per_minute` o `policy_tokens_per_minute`, el `policy_id` y el `limit_scope` (`key`, `member`, `department`, `workspace` o `end_user`), además de `Retry-After` en segundos. Las respuestas a solicitudes a las que se aplica una política incluyen `x-ratelimit-limit-requests`, `x-ratelimit-remaining-requests` y `x-ratelimit-reset-requests` (por ejemplo, `60s`) del límite de solicitudes más restrictivo, y `x-ratelimit-limit-tokens`, `x-ratelimit-remaining-tokens` y `x-ratelimit-reset-tokens` del límite de tokens más restrictivo. Una solicitud rechazada solo incluye las cabeceras del límite que la rechazó. El recuento se hace en segundo plano, así que `remaining` es aproximado, y las cabeceras de tokens todavía no incluyen el uso de la propia solicitud. Los fallbacks de proveedor dentro de una solicitud cuentan una sola vez, y los aciertos de la caché de respuestas no se cuentan.
+**Qué cuenta para un departamento.** Una clave vinculada a un departamento cuenta solo para ese departamento. Cualquier otra clave cuenta para todos los departamentos a los que pertenece su creador, y las solicitudes OAuth cuentan para todos los departamentos de su usuario. Un miembro con un departamento asignado manualmente cuenta solo para ese departamento. Para que esas claves y solicitudes OAuth cuenten solo para el departamento principal de la persona, configura la atribución de departamento como principal en [Ajustes → Notificaciones](https://phaseo.app/settings/notifications), con `spend.department_attribution` en `PATCH /v1/notifications/settings` o con `phaseo notifications settings update --department-attribution primary`. Los presupuestos de departamento y las reglas de gasto usan el mismo ajuste.
 
-`concurrent_requests` limita cuántas solicitudes pueden estar en curso a la vez. Una solicitud ocupa un hueco desde que se admite hasta que su respuesta se ha enviado por completo, incluida toda una respuesta en streaming, y las alternativas de proveedor y de modelo dentro de la solicitud comparten ese hueco. Cuando todos los huecos están en uso, la solicitud se rechaza con el motivo `policy_concurrent_requests` y `Retry-After: 1`. Comprobar un límite de concurrencia espera al contador de la política, lo que añade algo de latencia a las solicitudes que cubre. Un hueco cuya liberación se pierde se libera solo al cabo de 15 minutos. Los lotes y las sesiones en tiempo real no están limitados por él, y una generación de vídeo ocupa un hueco solo mientras dura la solicitud que la inicia.
+Cuando se aplican varias políticas, se cuentan todas y la primera que se agota rechaza la solicitud. Las políticas se aplican además de los [límites del gateway](#gateway-limits). Los cambios en las políticas se aplican en aproximadamente un minuto; los cambios de pertenencia a departamentos hechos en el panel o mediante SCIM pueden tardar hasta unos cinco minutos.
 
-De forma predeterminada, una política permite la solicitud si sus límites no se pueden comprobar. Activa `fail_closed` para que sea estricta. Los límites de solicitudes y tokens de una política estricta se comprueban antes de enviar la solicitud, en lugar de en segundo plano, lo que los hace exactos pero añade latencia, y si no se pueden comprobar en dos segundos, la solicitud se rechaza con el motivo `policy_unavailable`. Los rechazos por concurrencia y por `policy_unavailable` no incluyen encabezados `x-ratelimit-*`.
+### Solicitudes y tokens por minuto
 
+Ambos se miden en una ventana móvil de un minuto. `tokens_per_minute` cuenta los tokens de entrada y salida de cada solicitud cuando termina, incluidas las solicitudes con streaming y las fallidas que usaron tokens. Una solicitud se rechaza en cuanto el uso del último minuto alcanza el límite, así que las solicitudes que ya están en curso pueden llevar el uso por encima. Los fallbacks de proveedor dentro de una misma solicitud cuentan una sola vez, y los aciertos de la caché de respuestas no se cuentan.
+
+Una solicitud rechazada devuelve `429` con `rate_limit_exceeded`, el motivo `policy_requests_per_minute` o `policy_tokens_per_minute`, el `policy_id`, el `limit_scope` (`key`, `member`, `department`, `workspace` o `end_user`) y `Retry-After` en segundos.
+
+Las respuestas a solicitudes que cubre una política incluyen los encabezados del límite más restrictivo:
+
+| Encabezado | Ejemplo |
+| --- | --- |
+| `x-ratelimit-limit-requests`, `x-ratelimit-remaining-requests` | `60`, `42` |
+| `x-ratelimit-reset-requests` | `60s` |
+| `x-ratelimit-limit-tokens`, `x-ratelimit-remaining-tokens`, `x-ratelimit-reset-tokens` | Igual, para el límite de tokens |
+
+Una solicitud rechazada solo incluye los encabezados del límite que la rechazó. El recuento se hace en segundo plano, así que `remaining` es aproximado, y los encabezados de tokens aún no incluyen el uso de la propia solicitud.
+
+### Solicitudes simultáneas
+
+`concurrent_requests` limita cuántas solicitudes pueden estar en curso a la vez. Una solicitud ocupa una plaza desde que se admite hasta que su respuesta se ha enviado por completo, incluida toda una respuesta con streaming; los fallbacks de proveedor y de modelo dentro de la solicitud comparten esa plaza. Cuando todas las plazas están ocupadas, la solicitud se rechaza con el motivo `policy_concurrent_requests` y `Retry-After: 1`.
+
+Comprobar un límite de simultaneidad espera al contador de la política, lo que añade un poco de latencia. Una plaza cuya liberación se pierde se libera sola después de 15 minutos. Los lotes y las sesiones en tiempo real no se limitan, y una generación de vídeo ocupa una plaza solo mientras está en curso la solicitud que la inicia.
+
+### Políticas estrictas
+
+De forma predeterminada, una política falla en abierto: si no se pueden comprobar sus límites, la solicitud se permite. Configura `fail_closed` para hacerla estricta. Una política estricta comprueba los límites de solicitudes y tokens antes de enviar la solicitud en lugar de hacerlo en segundo plano, lo que los hace exactos pero añade latencia. Si no se pueden comprobar en dos segundos, la solicitud se rechaza con el motivo `policy_unavailable`.
+
+Los rechazos por simultaneidad y por `policy_unavailable` no incluyen encabezados `x-ratelimit-*`.
+
+<span id="provider-limits"></span>
 ## Límites del proveedor
 
-Las solicitudes BYOK usan los límites de tu cuenta del proveedor. Las solicitudes gestionadas usan capacidad compartida del proveedor; esa capacidad no es una cuota individual del espacio de trabajo.
+Las solicitudes BYOK usan los límites de tu cuenta del proveedor. Las solicitudes gestionadas usan capacidad compartida del proveedor, que no es una cuota de tu espacio de trabajo.
 
-Phaseo reenvía un valor validado de `Retry-After` cuando el proveedor al que se dirige la solicitud lo proporciona. Las respuestas BYOK también pueden incluir cabeceras `X-Phaseo-Upstream-RateLimit-*`. Estas cabeceras de cuota se omiten en las solicitudes gestionadas porque describen la capacidad compartida del proveedor. No se reenvían otras cabeceras del proveedor.
+Phaseo reenvía un `Retry-After` validado cuando el proveedor lo envía. Las respuestas BYOK también pueden incluir encabezados `X-Phaseo-Upstream-RateLimit-*`; las solicitudes gestionadas los omiten porque describen capacidad compartida. Los demás encabezados del proveedor no se reenvían. Consulta [Códigos de error](./errors.mdx#error-codes) para ver los códigos `429` del proveedor.
 
-## Gestionar una solicitud limitada
+## Gestiona una solicitud limitada
 
-1. Revisa el [código de error](./errors.mdx) para distinguir una limitación temporal del proveedor de una restricción de política o presupuesto que requiera cambios de configuración.
-2. Respeta `Retry-After` cuando esté presente. Puede ser un retraso en segundos o una fecha HTTP; valida el valor antes de programar un reintento.
-3. De lo contrario, usa espera exponencial con variación aleatoria y un retraso máximo.
-4. Limita los reintentos tanto por número de intentos como por un plazo total. Cancela el trabajo abandonado y libera el cuerpo de cada respuesta fallida antes de reintentar.
-5. Reduce la concurrencia si persiste la limitación.
+1. Lee el [código de error](./errors.mdx) para distinguir una limitación temporal de un límite, presupuesto o política que necesita un cambio de configuración.
+2. Respeta `Retry-After` cuando esté presente. Puede ser un número de segundos o una fecha HTTP; valídalo antes de programar un reintento.
+3. Si no está, usa backoff exponencial con jitter y un retraso máximo.
+4. Acota los reintentos con un número de intentos y un plazo total. Cancela el trabajo abandonado y libera el cuerpo de cada respuesta fallida antes de reintentar.
+5. Reduce la simultaneidad si la limitación persiste.
 
-No reintentes automáticamente el envío de un trabajo con resultado incierto ni repitas acciones de herramientas ya completadas. Una solicitud puede haber llegado al proveedor aunque el cliente haya perdido la respuesta; los reintentos pueden duplicar el trabajo y los cargos. Para un trabajo de vídeo o por lotes aceptado, usa su endpoint de estado en lugar de enviarlo de nuevo.
+No reintentes automáticamente un envío de trabajo ambiguo ni repitas acciones de herramientas ya completadas. Una solicitud puede haber llegado al proveedor aunque el cliente haya perdido la respuesta, así que un reintento puede duplicar trabajo y cargos. Para un trabajo de vídeo o de lotes aceptado, usa su endpoint de estado en lugar de enviarlo de nuevo.
 
-## Supervisar las limitaciones
-
-Supervisa la frecuencia de `429` por endpoint y modelo, y revisa la frecuencia de las alternativas en los registros de solicitudes. Compara los registros de tu aplicación con los [ajustes de enrutamiento](../guides/routing-and-fallbacks.mdx) y las cuotas de la cuenta del proveedor para el tráfico BYOK.
-
-Consulta los [presupuestos](./endpoint/budgets-list.mdx) y las [salvaguardas](./endpoint/guardrails.mdx) para controlar el gasto y el acceso del espacio de trabajo.
+Para supervisar las limitaciones, sigue las tasas de `429` por endpoint y modelo, y revisa la frecuencia de fallbacks en los registros de solicitudes. Compáralas con tu [configuración de enrutamiento](../guides/routing-and-fallbacks.mdx) y, para el tráfico BYOK, con las cuotas de tu cuenta del proveedor. Los [guardrails](./endpoint/guardrails.mdx) controlan qué claves pueden usar qué modelos y proveedores.
 
 <Visibility for="agents">
-Reglas de límites de tasa para agentes, resumen de esta página:
+Reglas de límites de solicitudes para agentes, que resumen esta página:
 
-- Las cuotas del Gateway devuelven `429` con el motivo `customer_requests_per_minute` o `free_requests_per_day`; espera los segundos de `Retry-After`. Si la aplicación de cuotas no está disponible, el Gateway devuelve `503` con indicaciones para reintentar.
-- Los límites de clave y los presupuestos devuelven `429` con `key_limit_exceeded` y un `reset_at`. Sin `Retry-After`, el límite no se restablece solo: aumenta el límite o usa otra clave en lugar de reintentar.
+- Las cuotas del gateway devuelven `429` con el motivo `customer_requests_per_minute` (código `key_limit_exceeded`) o `free_requests_per_day` (código `phaseo_free_model_limit_exceeded`); espera los segundos de `Retry-After`. Si la aplicación de cuotas no está disponible, el gateway devuelve `503` con indicaciones para reintentar.
+- Los límites de claves y los presupuestos devuelven `429` con `key_limit_exceeded` y un `reset_at`. Sin `Retry-After`, el límite no se restablece solo: aumenta el límite o usa otra clave en lugar de reintentar.
 - Un presupuesto de departamento agotado devuelve `429` con `key_limit_exceeded`, el motivo `department_<interval>_cost_budget_reached`, `department_id`, `department_name` y `reset_at`; espera los segundos de `Retry-After` o aumenta el presupuesto. Los presupuestos de departamento no bloquean las solicitudes por lotes, en tiempo real ni OAuth. Si la comprobación del presupuesto no está disponible, la solicitud se permite.
-- Las reglas de gasto que bloquean devuelven `429` con `spend_rule_blocked`; espera `Retry-After` o pide a un propietario o administrador que levante el bloqueo. `x-phaseo-spend-warning` significa que puede llegar un bloqueo.
-- Las políticas de límite de tasa del espacio de trabajo devuelven `429` con `rate_limit_exceeded`, `policy_id` y `limit_scope`. `x-ratelimit-remaining-requests` es aproximado.
-- `Retry-After` puede ser un número de segundos o una fecha HTTP; valídalo antes de programar un reintento. Nunca reenvíes un trabajo de vídeo o por lotes ambiguo; consulta su estado.
+- Las reglas de gasto que bloquean devuelven `429` con `spend_rule_blocked`; espera a `Retry-After` o pide a un propietario o administrador que levante el bloqueo. `x-phaseo-spend-warning` significa que puede llegar un bloqueo.
+- Las políticas de límite de velocidad del espacio de trabajo devuelven `429` con `rate_limit_exceeded`, `policy_id` y `limit_scope`. `x-ratelimit-remaining-requests` es aproximado.
+- `Retry-After` puede ser un número de segundos o una fecha HTTP; valídalo antes de programar un reintento. Nunca vuelvas a enviar un trabajo de vídeo o de lotes ambiguo; consulta su estado.
 </Visibility>

@@ -3,17 +3,17 @@ title: "ऑब्ज़र्वेबिलिटी गंतव्य बन�
 sidebarTitle: "गंतव्य बनाएं"
 badge: "बीटा"
 openapi: "/hi/openapi/v1/openapi.localized.yaml POST /observability/destinations"
-description: "Broadcast गंतव्य बनाता है: OpenTelemetry टूल, वेबहुक, स्टोरेज बकेट या डेटा वेयरहाउस।"
+description: "Broadcast गंतव्य बनाएं: OpenTelemetry टूल, वेबहुक, स्टोरेज बकेट या डेटा वेयरहाउस।"
 ---
-<Note>इस एंडपॉइंट के लिए `settings:write` वाली प्रबंधन API कुंजी आवश्यक है।</Note>
+<Note>इस एंडपॉइंट के लिए `settings:write` वाली मैनेजमेंट API कुंजी चाहिए।</Note>
 
-`config` ऑब्जेक्ट केवल लिखने के लिए है और संग्रहित करने से पहले एन्क्रिप्ट किया जाता है। एंडपॉइंट सार्वजनिक HTTPS पते होने चाहिए। हर गंतव्य क्या करता है और उसे क्या मिलता है, यह जानने के लिए [Broadcast](../../guides/broadcast.mdx) देखें।
+`config` ऑब्जेक्ट सिर्फ़ लिखा जा सकता है और संग्रहीत होने से पहले एन्क्रिप्ट किया जाता है। एंडपॉइंट को सार्वजनिक HTTPS पते इस्तेमाल करने होंगे। हर गंतव्य क्या करता है और उसे क्या मिलता है, यह [Broadcast](/hi/v1/guides/broadcast) में देखें।
 
-## प्रकार के अनुसार config कुंजियाँ
+## हर गंतव्य प्रकार के लिए `config` सेट करें
 
-सभी मान स्ट्रिंग होते हैं। जिस अनुरोध में कोई आवश्यक कुंजी न हो, या ऐसा मान हो जिसे गंतव्य इस्तेमाल नहीं कर सकता, वह कुंजी का नाम बताने वाले संदेश के साथ `400` लौटाता है।
+सभी मान string हैं। जिस अनुरोध में कोई आवश्यक कुंजी न हो, या ऐसा मान हो जिसे गंतव्य उपयोग नहीं कर सकता, वह `400` लौटाता है, जिसके संदेश में उस कुंजी का नाम होता है।
 
-| `type` | आवश्यक `config` कुंजियाँ | वैकल्पिक `config` कुंजियाँ |
+| `type` | आवश्यक `config` कुंजियां | वैकल्पिक `config` कुंजियां |
 | --- | --- | --- |
 | `arize` | `api_key`, `space_id`, `project_name` | `base_url` |
 | `axiom` | `api_token`, `dataset` | `region` |
@@ -40,4 +40,4 @@ description: "Broadcast गंतव्य बनाता है: OpenTelemetry
 | `wandb_weave` | `api_key`, `entity`, `project` | `base_url` |
 | `webhook` | `url` | `method`, `headers_json`, `signing_secret` |
 
-OpenTelemetry प्रकार `otlp_protocol` (`http/json` या `http/protobuf`) और `otlp_compression` (`none` या `gzip`) भी स्वीकार करते हैं, सिवाय वहाँ जहाँ विक्रेता केवल एक मान स्वीकार करता है। वेबहुक का `headers_json` हेडर नामों से मानों तक का JSON ऑब्जेक्ट है, जो स्ट्रिंग के रूप में दिया जाता है।
+OpenTelemetry प्रकार `otlp_protocol` (`http/json` या `http/protobuf`) और `otlp_compression` (`none` या `gzip`) भी स्वीकार करते हैं, सिवाय वहां के जहां वेंडर सिर्फ़ एक मान स्वीकार करता है। वेबहुक का `headers_json` हेडर नामों से मानों तक का JSON ऑब्जेक्ट है, जो string के रूप में दिया जाता है।

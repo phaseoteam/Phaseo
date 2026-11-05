@@ -1,214 +1,129 @@
 ---
 title: "按请求固定或忽略提供商"
 icon: "pin"
-description: "使用请求级提供商控制来设置优先顺序、限制候选范围或排除某个提供商。"
+description: "使用请求级提供商控制来设定优先顺序、限定候选范围，或将某个提供商排除在外。"
 ---
 
-当某个请求需要优先使用特定提供商路径，但又不想更改整个工作区的路由默认值时，可以使用此方案。
+在单个请求中添加 `provider` 对象，即可改变由哪些提供商处理它，而无需改动工作区默认设置或预设。完成后，你可以设定优先顺序、把请求限制在允许列表内，或跳过某个提供商，并在响应中看到是哪个提供商回答的。
 
-## 目标
+这些请求结构可直接用于生产环境。提供商 slug 是真实示例；请在模型页面上查看为你的模型提供服务的提供商。
 
-- 按优先顺序尝试提供商。
-- 将请求限制在已批准的提供商子集中。
-- 无需编辑预设即可临时忽略某个提供商。
+| 字段 | 作用 | 示例 |
+| --- | --- | --- |
+| `order` | 先尝试这些提供商，再尝试其余符合条件的提供商 | `["anthropic-us", "anthropic"]` |
+| `only` | 将请求限制在此列表内 | `["openai", "openai-eu"]` |
+| `ignore` | 为此请求移除这些提供商 | `["novita"]` |
+| `sort` | 按 `price`、`latency` 或 `throughput` 对剩余提供商排序 | `"price"` |
 
-## 1. 按指定顺序尝试提供商
+如果要只使用一个提供商并关闭跨提供商回退，请改为把它放在模型 ID 前面：参见[固定一个提供商](../guides/routing-and-fallbacks#pin-one-provider)。
 
-如果已确定首选路由顺序，请使用 `provider.order`。
+## 按设定顺序尝试提供商
 
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "anthropic/claude-opus-4.6",
+    "model": "anthropic/claude-sonnet-5.5",
     "input": "Write a concise launch summary.",
     "provider": {
       "order": ["anthropic-us", "anthropic"]
-    }
+    },
+    "meta": true
   }'
 ```
 
-```typescript TypeScript SDK
+```typescript TypeScript
 import Phaseo from "@phaseo/sdk";
 
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-  model: "anthropic/claude-opus-4.6",
+  model: "anthropic/claude-sonnet-5.5",
   input: "Write a concise launch summary.",
   provider: {
     order: ["anthropic-us", "anthropic"],
   },
+  meta: true,
 });
 
-console.log(response.output_text);
+console.log(response.meta?.routing); // { selected_provider: "anthropic-us", ... }
 ```
 
-```python Python SDK
+```python Python
+import os
+
 from phaseo import Phaseo
 
-client = Phaseo(api_key="YOUR_API_KEY")
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
 
 response = client.generate_response(
     {
-        "model": "anthropic/claude-opus-4.6",
+        "model": "anthropic/claude-sonnet-5.5",
         "input": "Write a concise launch summary.",
         "provider": {
             "order": ["anthropic-us", "anthropic"],
         },
+        "meta": True,
     }
 )
 
-print(response.get("output_text"))
+print(response["meta"]["routing"]["selected_provider"])
 ```
 </CodeGroup>
 
-列出的提供商会排在候选项前面，然后才是其他符合条件的提供商。
+`meta: true` 会在响应中添加 `meta.routing.selected_provider`，这样你无需打开日志就能核对结果。
 
-## 2. 将请求限制在固定的提供商子集中
+## 将请求限制在允许列表内
 
-当请求必须限定在较小的允许列表内时，使用 `provider.only`。
+发送 `only`，并可选择发送 `sort` 在该列表内排序：
 
-<CodeGroup>
-```bash cURL
-curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "openai/gpt-5.4-nano",
-    "input": "Extract the action items.",
-    "provider": {
-      "only": ["openai", "openai-eu"],
-      "sort": "price"
-    }
-  }'
+```json
+{
+  "model": "openai/gpt-5.6-luna",
+  "input": "Extract the action items.",
+  "provider": {
+    "only": ["openai", "openai-eu"],
+    "sort": "price"
+  }
+}
 ```
 
-```typescript TypeScript SDK
-import Phaseo from "@phaseo/sdk";
+如果列表中没有任何提供商提供该模型，请求会失败，而不会跳出列表。
 
-const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+## 跳过一个提供商
 
-const response = await client.generateResponse({
-  model: "openai/gpt-5.4-nano",
-  input: "Extract the action items.",
-  provider: {
-    only: ["openai", "openai-eu"],
-    sort: "price",
-  },
-});
+当某个提供商性能下降，或你在测试另一条路径时，发送 `ignore`：
 
-console.log(response.output_text);
+```json
+{
+  "model": "meta/llama-4-maverick",
+  "input": "Summarize the transcript.",
+  "provider": {
+    "ignore": ["novita"]
+  }
+}
 ```
 
-```python Python SDK
-from phaseo import Phaseo
+## 组合使用
 
-client = Phaseo(api_key="YOUR_API_KEY")
+用 `only` 限定候选范围，用 `order` 设定范围内的优先顺序，用 `sort` 对其余提供商排序。下面的请求会停留在 Google Vertex 上，先尝试欧盟区域，再按延迟排序：
 
-response = client.generate_response(
-    {
-        "model": "openai/gpt-5.4-nano",
-        "input": "Extract the action items.",
-        "provider": {
-            "only": ["openai", "openai-eu"],
-            "sort": "price",
-        },
-    }
-)
-
-print(response.get("output_text"))
-```
-</CodeGroup>
-
-这样，请求会限制在这些提供商中，然后在该子集中应用所选排序模式。
-
-## 3. 排除某个提供商
-
-如果要在某个请求或短期推出期间跳过某个提供商，请使用 `provider.ignore`。
-
-<CodeGroup>
-```bash cURL
-curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "meta/llama-4-maverick",
-    "input": "Summarize the transcript.",
-    "provider": {
-      "ignore": ["deepinfra"]
-    }
-  }'
+```json
+{
+  "model": "anthropic/claude-sonnet-5.5",
+  "input": "Summarize the incident in one sentence.",
+  "provider": {
+    "only": ["google-vertex", "google-vertex-eu"],
+    "order": ["google-vertex-eu"],
+    "sort": "latency"
+  }
+}
 ```
 
-```typescript TypeScript SDK
-import Phaseo from "@phaseo/sdk";
+## 查看请求去了哪里
 
-const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+在**设置 → 用量 → 日志**中打开该请求，展开**路由可观测性**。其中列出了在排序前被排除的提供商及原因，以及参与排序的候选提供商和它们的分数；[解释路由决策](../guides/routing-and-fallbacks#explain-a-routing-decision)介绍了每个字段。
 
-const response = await client.generateResponse({
-  model: "meta/llama-4-maverick",
-  input: "Summarize the transcript.",
-  provider: {
-    ignore: ["deepinfra"],
-  },
-});
-
-console.log(response.output_text);
-```
-
-```python Python SDK
-from phaseo import Phaseo
-
-client = Phaseo(api_key="YOUR_API_KEY")
-
-response = client.generate_response(
-    {
-        "model": "meta/llama-4-maverick",
-        "input": "Summarize the transcript.",
-        "provider": {
-            "ignore": ["deepinfra"],
-        },
-    }
-)
-
-print(response.get("output_text"))
-```
-</CodeGroup>
-
-以下情况适用：
-
-- 某个提供商性能下降
-- 你正在验证另一条提供商路径
-- 你想比较路由结果，但不想编辑预设
-
-## 4. 谨慎组合这些控制项
-
-你可以组合这些控制项，但意图应保持简单明确：
-
-- 使用 `order` 表示偏好
-- 使用 `only` 限定候选范围
-- 使用 `ignore` 排除某个提供商
-
-一种实用模式会组合：
-
-- 使用 `only` 将请求限制在 `google-vertex` 和 `google-vertex-eu` 内
-- 使用 `order` 优先选择 `google-vertex-eu`
-- 使用 `sort: "latency"` 对允许范围内的选项排序
-
-## 5. 何时将这些规则移入预设
-
-如果多个服务使用相同的提供商规则，请不要在每个请求中重复复制，而应将它们移入预设。
-
-以下情况适合使用请求级路由覆盖：
-
-- 临时的
-- 特定于调用方
-- 与某个用户流程绑定
-
-## 相关指南
-
-- [路由和回退](../guides/routing-and-fallbacks.mdx)
-- [推出预设并调试路由](./preset-rollout-and-routing-debug.mdx)
+请求级规则适用于临时的、只针对某个调用方的，或与某个用户流程绑定的覆盖设置。一旦同样的规则出现在多个服务中，就把它们移到[预设](../guides/presets)里，在那里它们还会限制回退可以使用哪些提供商。要比较排序方式，请参见[对提供商排序](./sort-providers-by-price-latency-or-throughput)。

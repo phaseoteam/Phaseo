@@ -1,81 +1,57 @@
 ---
-title: "调试网络搜索请求"
+title: "调试网页搜索请求"
 icon: "bug"
-description: "验证网络搜索请求、确认提供商支持情况，并检查返回的搜索结果和引用。"
+description: "核实网页搜索请求、确认提供商支持情况，并检查返回的搜索结果和引用。"
 ---
 
-如果网络搜索请求的行为与预期不符，请使用本指南确认 Phaseo 是否已接受请求、是否正确路由，以及是否返回了正常的搜索结果。
+通过响应和请求日志，弄清网页搜索是否真的运行了、由哪个引擎运行、返回了什么。完成后，你就能区分根本没有发生的搜索和已经运行但找到内容很少的搜索。
 
-## 1. 明确表达搜索意图
+```mermaid
+flowchart TD
+  req["带网页搜索的请求"] --> tool{{"是否在 tools 或 web_search_options 中声明了搜索？"}}
+  tool -->|"否"| none["不搜索：仅靠提示不会触发搜索"]
+  tool -->|"是"| ran{{"usage.server_tool_use 显示有搜索？"}}
+  ran -->|"否"| skipped["模型没有调用它：设置 tool_choice"]
+  ran -->|"是"| results{{"日志中有结果和引用？"}}
+  results -->|"很少或没有"| quality["检查引擎、域名和查询"]
+  results -->|"是"| ok["搜索正常"]
+```
 
-不要只依赖提示词措辞。请在请求中直接加入搜索设置，让 Phaseo 知道你要使用网络搜索。
+## 在请求中声明搜索
 
-检查是否包含：
+在提示中要求“最新消息”并不会运行搜索。请显式添加：
 
-- `tools` 中的原生搜索工具
-- 端点支持时使用的 `web_search_options`
+```json
+{
+  "model": "openai/gpt-6-astra",
+  "input": "What changed in the Phaseo changelog this week?",
+  "tools": [{ "type": "phaseo:web_search", "parameters": { "max_results": 5 } }],
+  "tool_choice": "phaseo:web_search"
+}
+```
 
-## 2. 确认是否有兼容的提供商
+`phaseo:web_search` 可用于 Chat Completions、Responses 和 Messages。`web_search_options` 可用于支持它的端点。`tool_choice` 会强制调用；没有它，模型可能凭记忆回答。[网页搜索指南](../guides/server-tools/web-search)列出了所有参数。
 
-如果请求被阻止或路由结果与预期不同，请检查请求详情中的：
+## 检查它是否运行
 
-- 候选提供商详情
-- 提供商启用详情
-- 路由说明
+| 查看 | 显示内容 |
+| --- | --- |
+| 响应中的 `usage.server_tool_use.web_search_requests` | 运行了多少次托管搜索 |
+| **设置 → 用量 → 日志**中该请求的**网络搜索可观测性** | 托管搜索、原生搜索、结果数和引用数，以及提取出的结果和引用记录 |
+| 同一请求的**路由可观测性** | 参与考虑的提供商，以及因不支持该请求而被移除的提供商 |
 
-这样可以确认提供商列表是否因缺少搜索支持而被缩小。
+## 区分各种失败情况
 
-## 3. 检查使用量计数器
+| 你看到的现象 | 原因 | 解决方法 |
+| --- | --- | --- |
+| 完全没有搜索计数 | 没有声明搜索，或模型选择不调用它 | 添加该工具并设置 `tool_choice` |
+| 工具向模型返回 `search_not_configured` | 你选择的托管引擎未启用 | 使用默认引擎或其他引擎 |
+| 工具返回 `unsupported_search_engine` | 模型在调用中请求了 `engine: "native"` | 只在工具定义中设置 `native` |
+| `400 not_supported`，原因为 `regional_hosted_tool_not_supported` | 请求发到了 `eu.api.phaseo.app` 或 `us.api.phaseo.app`，它们会拒绝服务器工具 | 使用 `api.phaseo.app` |
+| 搜索运行了但引用很少 | 查询或来源质量较差 | 调整 `max_results`、`allowed_domains` 或 `engine` |
 
-成功的搜索请求应显示与搜索相关的使用量指标，例如：
+使用 `engine: "native"` 时，请求只会发送到自己运行网页搜索的提供商。如果没有这样的提供商提供该模型，Phaseo 会改为运行其默认引擎，并按托管搜索计费，因此原生搜索请求也可能显示托管计数。
 
-- 请求的原生网络搜索工具
-- 网络搜索结果
-- 引用
+## 比较请求
 
-这是确认请求确实使用了搜索的最快方式。
-
-## 4. 检查搜索结果部分
-
-对于成功的请求，请打开请求详情对话框，找到网络搜索可观测性部分。
-
-该部分会显示：
-
-- 是否使用了原生搜索
-- 规范化后的结果数量
-- 规范化后的引用数量
-- 提取出的结果记录
-- 提取出的引用记录
-
-无需查看原始负载，即可比较不同提供商的行为。
-
-## 5. 区分以下情况
-
-目前已支持原生搜索和提供商能力检查。搜索回退计划是单独的功能。
-
-调试时请区分：
-
-1. 原生搜索请求已被接受并路由。
-2. 请求已被接受，但没有兼容的提供商可用。
-3. 请求已成功，但返回的引用质量较差或数量较少。
-
-这些是不同的问题，应分别排查。
-
-## 6. 结果异常时要比较哪些内容
-
-比较不同请求的：
-
-- 模型 ID
-- 实际选中的提供商
-- 请求的搜索选项
-- 结果数量
-- 引用数量
-- 路由详情
-
-如果结果质量因提供商而异，规范化日志仍应能体现这一点。
-
-## 相关内容
-
-- [路由与回退](../guides/routing-and-fallbacks.mdx)
-- [示例](../guides/examples.mdx)
-- [TypeScript SDK](../sdk-reference/typescript/overview.mdx)
+当多次运行的结果不同时，比较模型 ID、选中的提供商、搜索参数，以及结果数和引用数。这些计数已在各提供商之间统一，因此无需阅读原始数据就能看出搜索质量的差异。完整的有依据工作流请参见[用 TypeScript 进行托管网页搜索](./sdk-typescript-managed-search)；对于已知 URL，请改用[网页抓取](./tool-grounding-with-web-fetch)。

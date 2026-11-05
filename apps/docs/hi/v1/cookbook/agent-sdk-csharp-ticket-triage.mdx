@@ -1,18 +1,35 @@
 ---
-title: "C# Agent SDK से टिकट की प्राथमिक छँटाई करें"
+title: "C# Agent SDK से टिकट ट्राइएज करें"
 icon: "ticket-check"
-description: "एक .NET सेवा के भीतर स्थानीय टूल से टिकट वर्गीकृत करने के लिए C# Agent SDK उपयोग करें।"
+description: "स्थानीय टूल वाले टिकट ट्राइएज लूप के लिए C# Agent SDK इस्तेमाल करें, जो एक ही .NET सेवा के अंदर रहता है।"
 ---
 
-.NET सेवा में आने वाले सहायता टिकटों को वर्गीकृत या संक्षेप करने के लिए यह रेसिपी उपयोग करें।
+एक C# एजेंट चलाएँ जो स्थानीय टूल से सपोर्ट टिकट लोड करे और एक ही ASP.NET या worker सेवा के अंदर छोटा ट्राइएज सारांश लिखे। अंत में आपके पास एक कंसोल ऐप होगा जो टिकट `T-1042` के लिए अगली कार्रवाई प्रिंट करता है।
 
-## 1. SDK तैयार करें
+टूल तय नमूना डेटा लौटाता है, इसलिए यह प्रोग्राम उदाहरण के लिए है; इसे अपने टिकट स्टोर से बदलें। यह ऐसी सेवा के लिए सही है जो पहले से आंतरिक टिकट की स्थिति लाना जानती है और कतारें या अनुमोदन जोड़ने से पहले एक सीमित लूप चाहती है।
 
-<Note type="warning">C# Agent SDK पैकेज अभी NuGet पर उपलब्ध नहीं है।[सोर्स से इंस्टॉल करने के निर्देश](../sdk-reference/csharp/agent-sdk-installation.mdx) देखें।</Note>
+## इसे बनाएँ
 
-## 2. आंतरिक लुकअप टूल तय करें
+<Steps>
+<Step title="इंस्टॉल करें">
 
-```csharp
+```bash
+dotnet new console -n TicketTriage
+cd TicketTriage
+dotnet add package Phaseo.AgentSdk
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+`Phaseo.AgentSdk` अपने साथ `Phaseo.Sdk` इंस्टॉल करता है और इसके लिए .NET 8 या नया चाहिए। [C# Agent SDK इंस्टॉलेशन](../sdk-reference/agent/installation) देखें।
+
+</Step>
+<Step title="एजेंट लिखें">
+
+```csharp Program.cs
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using PhaseoAgentSdk;
+
 var loadTicket = AgentSdk.DefineTool(new Tool(
     Id: "load-ticket",
     Description: "Load one support ticket by id.",
@@ -21,46 +38,69 @@ var loadTicket = AgentSdk.DefineTool(new Tool(
         ["type"] = "object",
         ["properties"] = new Dictionary<string, object?>
         {
-            ["ticketId"] = new Dictionary<string, object?> { ["type"] = "string" },
+            ["ticketId"] = new Dictionary<string, object?> { ["type"] = "string", ["pattern"] = "^T-\\d+$" },
         },
         ["required"] = new[] { "ticketId" },
+        ["additionalProperties"] = false,
     },
     Execute: (input, ctx) => Task.FromResult<object?>(new Dictionary<string, object?>
     {
-        ["ticketId"] = "T-1042",
+        ["ticketId"] = ((JsonElement)input!).GetProperty("ticketId").GetString(),
         ["severity"] = "medium",
         ["summary"] = "Customer cannot find preset routing settings.",
     })
-));
-```
+))
+{
+    // आर्ग्युमेंट मॉडल से आते हैं: सही रूप वाली टिकट id के अलावा सब अस्वीकार करें।
+    InputSchema = input =>
+    {
+        if (input is JsonElement json
+            && json.TryGetProperty("ticketId", out var id)
+            && id.ValueKind == JsonValueKind.String
+            && Regex.IsMatch(id.GetString()!, @"^T-\d+$"))
+        {
+            return input;
+        }
+        throw new ArgumentException("ticketId must look like T-1042");
+    },
+};
 
-## 3. एजेंट बनाएँ और चलाएँ
-
-```csharp
 var agent = AgentSdk.CreateAgent(new AgentDefinition
 {
     Id = "ticket-triage-agent",
-    Model = "openai/gpt-5.4-nano",
+    Model = "openai/gpt-6-astra",
     Instructions = "Use tools when helpful and answer with a short triage summary.",
     Tools = new[] { loadTicket },
+    MaxSteps = 4,
 });
 
+// PHASEO_API_KEY को एनवायरनमेंट से पढ़ता है।
 var result = await agent.Run(new RunOptions
 {
     Input = "Review ticket T-1042 and summarize the next action.",
     Client = AgentSdk.CreateGatewayAgentClient(),
 });
 
+Console.WriteLine(result.Run.Status);
 Console.WriteLine(result.Output);
 ```
 
-## यह रेसिपी कब उपयुक्त है
+</Step>
+<Step title="इसे चलाएँ">
 
-- वर्कफ़्लो एक ASP.NET सेवा या worker के भीतर हो
-- आपका स्थानीय runtime पहले से आंतरिक टिकट की स्थिति ला सकता हो
-- queue या approval जोड़ने से पहले सीमित agent loop चाहिए
+```bash
+dotnet run
+```
 
-## संबंधित विषय
+</Step>
+</Steps>
 
-- [C# Agent SDK](../sdk-reference/csharp/agent-sdk.mdx)
-- [preset-आधारित एजेंट से सहायता अनुरोधों की छँटाई करें](./agent-sdk-support-triage.mdx)
+## जाँचें कि यह काम किया
+
+- ऐप `completed` प्रिंट करता है, फिर ऐसा सारांश जिसमें प्रीसेट रूटिंग सेटिंग का ज़िक्र हो।
+- **सेटिंग → उपयोग → लॉग्स** में पहले मॉडल टर्न में `{"ticketId": "T-1042"}` के साथ `load-ticket` कॉल दिखती है।
+- `PHASEO_API_KEY` के बिना `CreateGatewayAgentClient` यह त्रुटि देता है: `PHASEO_API_KEY is required.`
+
+## प्रोडक्शन से पहले
+
+`MaxSteps` कम रखें (डिफ़ॉल्ट `12` है), टूल को सिर्फ़ पढ़ने वाला रखें, और टिकट बदलने वाले किसी भी टूल पर `RequireApproval = true` सेट करें ताकि रन किसी व्यक्ति के लिए रुक जाए। प्रीसेट, सख्त JSON और रिव्यू पॉज़ वाले बड़े ट्राइएज फ़्लो के लिए [सपोर्ट ट्राइएज](./agent-sdk-support-triage) देखें। [C# Agent SDK संदर्भ](../sdk-reference/agent/usage) में स्थिति, अनुमोदन और स्ट्रीमिंग की जानकारी है।

@@ -1,28 +1,27 @@
 ---
 title: "Replit"
 icon: "box"
-description: "ReplitのアプリやデプロイからPhaseoを呼び出します。"
+description: "Replit のアプリケーションとデプロイから Phaseo を呼び出します。"
 ---
 
-ReplitからPhaseoを使うには、公式OpenAI SDKまたはAI SDK向けのPhaseo公式プロバイダーを使います。APIキーはソースコードではなくReplit Secretsに保存します。
+`PHASEO_API_KEY` を Replit Secrets に追加してから、[OpenAI SDK](./openai-sdk.mdx) または [Phaseo AI SDK プロバイダー](./ai-sdk.mdx)で Phaseo を呼び出します。キーはソースコードに含めないでください。
 
 ## シークレットを追加する
 
-Replitのワークスペースで **Tools → Secrets** を開き、次を追加します。
+Replit のワークスペースで **Tools → Secrets** を開き、次を追加します。
 
 ```text
 PHASEO_API_KEY=phaseo_v1_sk_...
 ```
 
-シークレットはアプリケーションから環境変数として利用できます。
+Replit はシークレットを環境変数としてアプリに公開します。キーの種類については[認証](../../developers/authentication.mdx)を参照してください。
 
-## OpenAI SDKを使うTypeScript
+## Phaseo を呼び出す
 
-```bash
-npm install openai
-```
+<CodeGroup>
 
-```ts
+```ts OpenAI SDK
+// npm install openai
 import OpenAI from "openai";
 
 const client = new OpenAI({
@@ -31,37 +30,30 @@ const client = new OpenAI({
 });
 
 const response = await client.responses.create({
-	model: "openai/gpt-5-nano",
+	model: "openai/gpt-6-astra",
 	input: "Reply with only: ok",
 });
 
 console.log(response.output_text);
 ```
 
-## AI SDKを使うTypeScript
-
-```bash
-npm install @phaseo/ai-sdk-provider
-```
-
-```ts
+```ts AI SDK
+// npm install @phaseo/ai-sdk-provider
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 
 const { text } = await generateText({
-	model: phaseo("openai/gpt-5-nano"),
+	model: phaseo("openai/gpt-6-astra"),
 	prompt: "Reply with only: ok",
 });
 
 console.log(text);
 ```
 
-## デプロイ
+</CodeGroup>
 
-開発ワークスペースに加えて、デプロイのシークレットにも`PHASEO_API_KEY`を追加します。環境変数やリクエストヘッダーがデプロイのログに出力されないことを確認してください。
+`ok` が出力されれば、シークレットと Base URL は正しく動作しています。
 
-## 関連項目
+## デプロイする
 
-- [OpenAI SDK](./openai-sdk.mdx)
-- [AI SDK](./ai-sdk.mdx)
-- [認証](../../developers/authentication.mdx)
+`PHASEO_API_KEY` は、ワークスペースだけでなくデプロイのシークレットにも追加します。デプロイが環境変数やリクエストヘッダーをログに出力しないことを確認してください。

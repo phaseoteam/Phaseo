@@ -5,54 +5,55 @@ description: "Basis-URL, Authentifizierung und Endpunktfamilien des Phaseo Gatew
 icon: "map"
 ---
 
-Auf dieser Seite findest du den passenden API-Pfad, bevor du eine Endpunktreferenz öffnest. Alle Phaseo-Gateway-Endpunkte verwenden dieselbe Basis-URL und Bearer-Authentifizierung.
+Sende jede Anfrage an `https://api.phaseo.app/v1`, mit deinem Schlüssel in einem `Authorization: Bearer`-Header. Suche unten den Endpunkt für deine Aufgabe und öffne dann seine Referenzseite.
 
-## Pfad auswählen
+## Den richtigen Endpunkt finden
 
 | Wenn du Folgendes möchtest | Beginne mit |
 | --- | --- |
-| Deine erste Anfrage senden | [Schnellstart](../quickstart.mdx) |
+| Deine erste Anfrage senden | [Schnellstart](../quickstart) |
 | Text generieren oder Tools verwenden | [`POST /responses`](./endpoint/responses) |
 | Typisierte Entscheidungen treffen | [`POST /decisions`](./endpoint/decisions) |
 | Eine bestehende OpenAI-kompatible Integration beibehalten | [`POST /chat/completions`](./endpoint/chat-completions) |
 | Modelle und Anbieter durchsuchen | [`GET /models`](./endpoint/models) und [`GET /providers`](./endpoint/providers) |
-| Musik erstellen oder Dateien verwalten | [`POST /music/generations`](./endpoint/music-generate) und [`POST /files`](./endpoint/files) |
+| Musik erstellen oder Dateien verwalten | [`POST /music/generate`](./endpoint/music-generate) und [`POST /files`](./endpoint/files) |
 | Video generieren (Beta) | [`POST /videos`](./endpoint/video-create) |
-| Batch einreichen oder Ergebnisse herunterladen (Beta) | [`POST /batches`](./endpoint/batches-create) und [`GET /batches/{batch_id}/results`](./endpoint/batches-results) |
+| Einen Batch einreichen oder Ergebnisse herunterladen (Beta) | [`POST /batches`](./endpoint/batches-create) und [`GET /batches/{batch_id}/results`](./endpoint/batches-results) |
 
 ## Basis-URL
-
-Produktions-Basis-URL:
 
 ```http
 https://api.phaseo.app/v1
 ```
 
-Alle Endpunktpfade in dieser Referenz beziehen sich auf die Basis-URL `/v1`.
+Jeder Endpunktpfad in dieser Referenz ist relativ zu dieser Basis-URL.
 
 ## OpenAPI
 
-Verwende die OpenAPI-Datei, um die API in Postman, Hoppscotch oder einen SDK-Generator zu importieren.
+Importiere die OpenAPI-Datei in Postman, Hoppscotch oder einen SDK-Generator.
 
 <Card
-  title="Phaseo-Gateway-OpenAPI"
-  icon="list-bullet"
+	title="Phaseo-Gateway-OpenAPI"
+	icon="list-bullet"
 	href="https://github.com/phaseoteam/Phaseo/blob/main/apps/docs/openapi/v1/openapi.yaml"
 >
-  Spezifikationsdatei anzeigen
+	Spezifikationsdatei anzeigen
 </Card>
 
 Dokumentation und SDKs nutzen dieselbe Spezifikation. Die Endpunkte Video, Batch und Decisions sind als **Beta** gekennzeichnet; möglicherweise ist ein Vorschauzugang für den Workspace erforderlich.
 
 ## Authentifizierung
 
-Nutze einen normalen Gateway-API-Schlüssel für Inferenz und einen Verwaltungs-API-Schlüssel mit passenden Berechtigungen für Administration. Siehe [Authentifizierung](../developers/authentication.mdx) und [Verwaltungs-API-Schlüssel](../developers/management-api-keys.mdx).
+| Zugangsdaten | Format | Aufrufe |
+| --- | --- | --- |
+| [Gateway-API-Schlüssel](../developers/authentication.mdx) | `phaseo_v1_sk_<kid>_<secret>` | Inferenz-Endpunkte |
+| [Verwaltungs-API-Schlüssel](../developers/management-api-keys.mdx) | `phaseo_v1_mk_<kid>_<secret>` | Verwaltungs-Endpunkte, beschränkt auf die Berechtigungen des Schlüssels |
 
 ```http
 Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
 ```
 
-Bei fehlgeschlagener Authentifizierung gibt die API `401` zurück.
+Schlägt die Authentifizierung fehl, gibt die API `401` zurück.
 
 ## API-Ressourcen
 
@@ -60,13 +61,11 @@ Bei fehlgeschlagener Authentifizierung gibt die API `401` zurück.
 | --- | --- |
 | Inferenz | Generiere Text, Bilder, Audio und Embeddings; triff Entscheidungen, sortiere neu, moderiere oder parse Inhalte. Beginne mit [Responses](./endpoint/responses.mdx) oder [Decisions](./endpoint/decisions.mdx). |
 | Asynchrone Jobs und Dateien | Reiche [Video](./endpoint/video-create.mdx)- oder [Batch](./endpoint/batches-create.mdx)-Jobs ein, übertrage Dateien und konfiguriere Webhooks. |
-| Modelle und Preise | Entdecke [Modelle](./endpoint/models.mdx), Anbieterangebote und [Kostenschätzungen](./endpoint/pricing-calculate.mdx). |
-| Routing und Richtlinien | Konfiguriere Voreinstellungen, Anbieterzugangsdaten, private Modelle und [Schutzregeln](./endpoint/guardrails.mdx). |
-| Nutzung und Überwachung | Prüfe [Logs](./endpoint/logs-list.mdx), Aktivität, Analysen, Bewertungen und den Dienststatus. |
+| Modelle und Preise | Entdecke [Modelle](./endpoint/models.mdx), Anbieterangebote und [geschätzte Kosten](./endpoint/pricing-calculate.mdx). |
+| Routing und Richtlinien | Konfiguriere Presets, Anbieterzugangsdaten, private Modelle und [Guardrails](./endpoint/guardrails.mdx). |
+| Nutzung und Überwachung | Prüfe [Logs](./endpoint/logs-list.mdx), Aktivität, Analysen, Evaluierungen und den Dienststatus. |
 | Workspace-Verwaltung | Verwalte [Workspaces](./endpoint/workspaces-list.mdx), Schlüssel, Budgets, Identitäten und Integrationen. |
 
-## Abrechnung und Ratenbegrenzungen
+## Abrechnung und Ratenlimits
 
-- Behandle Anbieter-Drosselung und geltende Zugriffsrichtlinien mit der [Anleitung zu Anfragelimits](./limits.mdx).
-- Für kostenpflichtige Anfragen ist ein ausreichendes Wallet-Guthaben erforderlich, damit die Vorabprüfung des Guthabens erfolgreich ist.
-- Kostenlose Modelle mit `:free` benötigen kein eingezahltes Guthaben.
+Kostenpflichtige Anfragen benötigen genug Wallet-Guthaben, um vor der Ausführung eine Guthabenprüfung zu bestehen. Modelle, deren ID auf `:free` endet, benötigen kein eingezahltes Guthaben. Anfragen können von einem Anbieter oder durch Workspace- und Schlüssellimits gedrosselt werden; siehe [Ratenlimits](./limits.mdx).

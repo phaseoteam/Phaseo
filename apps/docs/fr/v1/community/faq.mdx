@@ -6,24 +6,28 @@ icon: "life-buoy"
 
 ## Où obtenir une clé API ?
 
-Créez vos clés avec `phaseo keys create` dans la [CLI Phaseo](../guides/integrations/phaseo-cli), avec `POST /v1/keys` ou dans le tableau de bord Phaseo. Consultez [Authentification](../developers/authentication.mdx).
+Exécutez `phaseo keys create` dans la [CLI Phaseo](../guides/integrations/phaseo-cli), appelez `POST /v1/keys` ou ouvrez **Paramètres -> Clés API** dans le [tableau de bord](https://phaseo.app/settings/keys). Consultez [Authentification](../developers/authentication).
 
 ## Quelle URL de base utiliser ?
 
-Utilisez `https://api.phaseo.app/v1` comme URL de base du Gateway.
+`https://api.phaseo.app/v1`, avec la clé envoyée sous la forme `Authorization: Bearer $PHASEO_API_KEY`.
 
 ## Quel endpoint utiliser en premier ?
 
-Utilisez `/responses` pour la plupart des workflows textuels. `/chat/completions` et `/messages` sont également disponibles pour assurer la compatibilité.
+`POST /v1/responses` pour la plupart des tâches textuelles. `/v1/chat/completions` et `/v1/messages` acceptent les formats des intégrations existantes. Le [démarrage rapide](../quickstart) envoie une première requête.
+
+## Puis-je essayer Phaseo sans payer ?
+
+Oui. Envoyez `"model": "phaseo/free"` pour utiliser un modèle gratuit disponible sans crédits. Les modèles gratuits autorisent 1 500 requêtes par utilisateur et par jour UTC ; consultez [Formules](../exploring/subscription-plans).
 
 ## Comment voir les modèles pris en charge ?
 
-Utilisez l’[endpoint Models](../api-reference/endpoint/models.mdx) pour consulter la liste la plus récente.
+Appelez [`GET /v1/models`](../api-reference/endpoint/models.mdx). Il renvoie les modèles que vous pouvez appeler dès maintenant ; ajoutez `availability=all` pour inclure les modèles présents uniquement au catalogue.
 
 ## Comment fonctionne BYOK ?
 
-Le mode Bring Your Own Key (BYOK) vous permet d’utiliser le routage et l’observabilité de Phaseo tout en payant directement votre fournisseur pour l’utilisation des modèles. Les 250 000 premières requêtes terminées de chaque mois UTC ne donnent lieu à aucuns frais de service Phaseo ; au-delà, Phaseo facture 2,5 % du coût équivalent chez le fournisseur. Consultez [Routage et solutions de secours](../guides/routing-and-fallbacks.mdx#byok-considerations).
+Avec votre propre clé (BYOK), Phaseo route et journalise la requête, tandis que votre fournisseur facture l’utilisation du modèle. Les 250 000 premières requêtes BYOK terminées par espace de travail et par mois UTC ne donnent lieu à aucuns frais de service Phaseo ; au-delà, Phaseo facture 2,5 % du coût équivalent chez le fournisseur. Consultez [Considérations BYOK](../guides/routing-and-fallbacks#byok-considerations).
 
 ## Où demander de l’aide ?
 
-Consultez [Contact et assistance](./contact-and-support.mdx) pour connaître les moyens d’obtenir de l’aide.
+Consultez [Contact et assistance](./contact-and-support).

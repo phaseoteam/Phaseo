@@ -1,117 +1,127 @@
 ---
 title: "构建 Python 网关 CLI"
 icon: "terminal"
-description: "使用 Python 快速入门示例，完整了解如何构建以 Python 为主的 CLI 或后端集成。"
+description: "以 Python 快速入门示例为完整演练，构建以 Python 为主的 CLI 或后端集成。"
 ---
 
-如果你准备使用 Python 构建第一个实际的 Phaseo 集成，并希望从 CLI、worker 或后端服务入手，请阅读本页。
+运行一个只用标准库的 Python CLI，一次一个命令地调用 Phaseo 端点。完成后，你会得到可用的 `python quickstart.py <command>`，涵盖健康检查、模型、Responses 和 Chat Completions，另外还有 embeddings、内容审核、图像、OCR、视频和音乐命令，可以复制到 worker 或后端中使用。
 
-**目标：** 通过一个小型 Python 命令行应用调用 Phaseo 控制路由和生成路由。
+该 CLI 仅作示例：它是请求结构的参考，而不是打包好的工具。媒体命令的几个默认模型 ID 已不再提供服务，因此请为这些命令传入 `--model`（见[为媒体命令选择模型](#pick-models-for-the-media-commands)）。
 
-**结果：** 获得一个依赖较少的 CLI，可按需改造成 worker、脚本或后端集成。
+要让编程智能体从零构建类似的 CLI，请粘贴以下提示：
 
 <Prompt
   description="围绕 Phaseo 路由构建一个 **Python 网关 CLI**。"
   icon="terminal-square"
   actions={["copy", "cursor"]}
 >
-{`你正在为 Phaseo Gateway 开发 Python 命令行工具或服务端集成。
+{`You are building a Python-first CLI or backend integration for Phaseo Gateway.
 
-创建一个小型 Python 应用，满足以下要求：
-- 从环境变量读取 PHASEO_API_KEY
-- 支持控制路由的快速检查模式
-- 支持一个文本生成命令
-- 尽量减少依赖项
+Create a small Python app that:
+- reads PHASEO_API_KEY from the environment and sends it as Authorization: Bearer
+- uses https://api.phaseo.app/v1 as the base URL
+- supports one control-route smoke mode (GET /health, GET /models)
+- supports one text-generation command (POST /responses)
+- keeps the implementation dependency-light
 
-要求：
-- 除非有充分理由，否则优先使用 Python 标准库。
-- 明确展示请求内容。
-- 清楚地输出成功和失败信息。
-- 提供一两个实用命令，避免构建庞大通用的命令行工具。
-- 添加一份包含示例的简短 README。
+Requirements:
+- Prefer the Python standard library unless there is a strong reason not to.
+- Keep the request payloads explicit.
+- Print clear success and failure output, and exit non-zero on a failed call.
+- Include one or two useful commands instead of a huge general CLI.
+- Add a short README with examples.
 
-交付内容：
-- Python 应用代码
-- 简单的使用命令
-- .env.example 文件或同等的环境变量说明
+Deliverables:
+- Python app code
+- simple usage commands
+- .env.example or equivalent env documentation
 
-验证：
-- 如果可行，运行一次路由快速检查。
-- 如果可行，成功执行一次文本生成。
-- 准确说明已验证的内容和仍未验证的内容。`}
+Verification:
+- run the smoke path if possible
+- run one successful generation path if possible
+- report exactly what you verified and what remains unverified.`}
 </Prompt>
 
-## 示例项目
+## CLI 能做什么
 
-- GitHub：[examples/gateway-python-quickstart](https://github.com/phaseoteam/Phaseo/tree/main/examples/gateway-python-quickstart)
-- 仓库本地路径：`examples/gateway-python-quickstart`
+示例位于 [examples/gateway-python-quickstart](https://github.com/phaseoteam/Phaseo/tree/main/examples/gateway-python-quickstart)：只有一个文件 `quickstart.py`，只使用 `urllib`、`json` 和 `argparse`。
 
-## 此应用的功能
+| 命令 | 调用 |
+| --- | --- |
+| `smoke` | `GET /v1/health`、`GET /v1/models`、`GET /v1/providers`，以及一次 `POST /v1/responses` |
+| `health`、`models`、`providers` | 对应的 `GET` 路由 |
+| `responses --prompt` | `POST /v1/responses` |
+| `chat --prompt` | `POST /v1/chat/completions` |
+| `embeddings --text` | `POST /v1/embeddings` |
+| `moderations --text` | `POST /v1/moderations` |
+| `image --prompt` | `POST /v1/images/generations` |
+| `ocr --image-url` | `POST /v1/ocr` |
+| `video-create`、`video-status`、`video-cancel`、`video-download-url` | `POST /v1/videos`、`GET /v1/videos/{video_id}`、`POST /v1/videos/{video_id}/cancel`、`POST /v1/videos/{video_id}/download_url` |
+| `music-create`、`music-status` | `POST /v1/music/generate`、`GET /v1/music/generate/{music_id}` |
 
-- 支持以下控制路由：
-  - `GET /v1/health`
-  - `GET /v1/models`
-  - `GET /v1/providers`
-- 支持以下生成路由：
-  - `POST /v1/responses`
-  - `POST /v1/chat/completions`
-  - `POST /v1/embeddings`
-  - 以及其他多个端点
+遇到 `429`、`5xx` 和网络错误时，每个请求会重试两次，分别等待 1 秒和 2 秒，并在 45 秒后超时。调用结果不是 `2xx` 时，每个命令都会以 `1` 退出，因此可以在脚本中使用。
 
-## 此示例的用途
+## 运行
 
-它提供：
+你需要 Python 3 和一个 Phaseo API 密钥。
 
-- 无第三方依赖的 Python 实现参考
-- 明确的请求载荷和响应处理方式
-- 可用于 worker、脚本和内部工具的实用模式
+<Steps>
+<Step title="创建 .env.local">
 
-## 前置条件
+脚本会从你运行它的文件夹读取 `.env.local`。示例中没有 `.env.example`，所以请自己创建该文件：
 
-- Python 3
-- Phaseo API 密钥
+```bash .env.local
+PHASEO_API_KEY=phaseo_v1_sk_...
+# Optional
+PHASEO_MODEL=openai/gpt-6-astra
+PHASEO_BASE_URL=https://api.phaseo.app/v1
+PHASEO_APP_TITLE=My Python CLI
+PHASEO_HTTP_REFERER=https://myapp.example
+```
 
-## 运行示例
+shell 中已经设置的变量优先于该文件。没有设置 `PHASEO_MODEL` 时，文本命令使用 `openai/gpt-5.6-sol`。
+
+</Step>
+<Step title="运行冒烟检查">
 
 ```bash
 cd examples/gateway-python-quickstart
-cp .env.example .env.local
+python quickstart.py smoke
 ```
 
-设置：
+`smoke` 还会发送一个简短的 Responses 请求，因此会消耗少量额度。
 
-- `PHASEO_API_KEY`
-
-然后运行：
+</Step>
+<Step title="发送一个请求">
 
 ```bash
-python quickstart.py smoke
 python quickstart.py responses --prompt "Return exactly: integration_ok"
 python quickstart.py --help
 ```
 
-## 检查结果
+</Step>
+</Steps>
 
-- 冒烟测试模式会确认 API 是否可访问。
-- Responses 命令会输出 `integration_ok`。
-- `--help` 会列出可用命令，但不会发送请求。
-- 终端会清晰显示身份验证错误和 API 错误。
+## 检查是否成功
 
-## 阅读代码时关注这些内容
+- `smoke` 为每个块打印 `HTTP 200`，并以 `0` 退出。
+- `responses` 命令的输出包含 `integration_ok`。
+- `--help` 列出所有命令，不会发出请求。
+- 没有密钥时，脚本打印 `Missing PHASEO_API_KEY` 并以 `1` 退出。
+- 这些请求会出现在**设置 → 用量 → 日志**中。
 
-- 如何加载环境变量
-- CLI 如何分派命令
-- 如何构建不同的请求载荷
-- 如何将异步视频和音乐路由与一次性文本路由分开处理
+<span id="pick-models-for-the-media-commands"></span>
+## 为媒体命令选择模型
 
-## 按需修改示例
+`quickstart.py` 中的以下默认值已停用或没有可用的提供商。请用 `--model` 传入当前模型，可以从[模型页面](https://phaseo.app/models)或 `python quickstart.py models` 中挑选：
 
-- 删除服务不需要的端点
-- 使用一个共享的请求辅助函数，避免重复编写请求头
-- 如果之后需要更高层的客户端，可以改用 Python SDK
+| 命令 | 示例中的默认值 | 状态 |
+| --- | --- | --- |
+| `moderations` | `openai/omni-moderation-latest` | 不是目录中的 ID；请使用 `openai/omni-moderation` |
+| `ocr` | `mistral/mistral-ocr` | 已停用；可尝试 `mistral/ocr-4.1` |
+| `video-create` | `openai/sora-2` | 已停用 |
+| `music-create` | `suno/suno-v4` | 没有可用的提供商 |
 
-## 相关指南
+`embeddings`（`google/gemini-embedding-2`）和 `image`（`openai/gpt-image-2`）的默认值仍在提供服务。视频和音乐任务是异步的：保存返回的 ID 并轮询状态命令；[异步视频和批处理](../guides/async-video-and-batch)介绍了任务的生命周期。
 
-- [迷你应用入门提示词](./mini-app-starter-prompts.mdx)
-- [使用 Python 输出结构化 JSON](./sdk-python-presets-and-json.mdx)
-- [示例](../guides/examples.mdx)
+把文件精简为你的服务需要的命令，保留共用的 `gateway_request()` 辅助函数；需要类型化请求时，改用 [Python SDK](../sdk-reference/client/overview)。

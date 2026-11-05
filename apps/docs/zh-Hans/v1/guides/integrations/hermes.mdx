@@ -1,0 +1,79 @@
+---
+title: "Hermes Agent"
+icon: "/icons/brands/hermes.svg"
+description: "将 Hermes Agent 指向 Phaseo Gateway，作为自定义 OpenAI 兼容端点。"
+---
+
+运行 `phaseo hermes`，用一个专属密钥把 Phaseo 设为 Hermes Agent 的自定义端点；或者自己设置同样的四项 Hermes 设置和一行 `.env`。
+
+## 使用 Phaseo CLI 设置
+
+```bash
+phaseo login
+phaseo hermes --model openai/gpt-6-astra
+```
+
+如果没有安装 Hermes，CLI 会显示 Nous Research 官方安装程序命令，并在运行前征求你的确认。在 macOS 和 Linux 上，安装程序需要 `sh`、`bash` 和 `curl`。随后 setup 会：
+
+1. 保存你当前的 `model.provider`、`model.base_url`、`model.default` 和 `model.key_env` 值，以便移除时恢复。
+2. 创建一个 `Phaseo CLI: Hermes Agent API Key`，它 90 天后过期，每月支出上限为 $100。
+3. 把密钥以 `OPENAI_API_KEY` 的形式写入 Hermes 的 `.env` 文件，放在以 `# >>> phaseo managed (do not edit)` 开头、以 `# <<< phaseo managed` 结尾的块中。你的其他行不会被改动，密钥也不会出现在命令行中。
+4. 运行 `hermes config set`，把 Hermes 指向 Phaseo：
+
+| 设置 | 值 |
+| --- | --- |
+| `model.provider` | `custom` |
+| `model.base_url` | `https://api.phaseo.app/v1` |
+| `model.default` | `--model` 的值；未指定时为 `anthropic/claude-sonnet-4.6` |
+| `model.key_env` | `OPENAI_API_KEY` |
+
+`model.key_env` 告诉 Hermes 把 `OPENAI_API_KEY` 发送给自定义端点。没有这项设置时，Hermes 只会把该密钥发送给 OpenAI 自己的主机，请求到达 Phaseo 时就不带密钥。
+
+Phaseo 会询问 Hermes 其 `.env` 文件的位置（`hermes config env-path`），这样可以覆盖配置档案和其他覆盖设置。如果 Hermes 无法给出位置，CLI 会使用 `HERMES_HOME` 中的 `.env`，或 `~/.hermes/.env`（在原生 Windows 上为 `%LOCALAPPDATA%\hermes\.env`）。Hermes 把提供商密钥保存在这个明文文件中，所以请像保护其他密钥文件一样保护它。
+
+再次运行 `phaseo hermes` 即可替换已过期的密钥或更换模型。它会保留首次运行时保存的设置。
+
+<span id="configure-hermes-manually"></span>
+## 手动配置 Hermes
+
+把你的 Phaseo API 密钥添加到 Hermes 的 `.env` 文件中：
+
+```bash .env
+OPENAI_API_KEY=your_phaseo_api_key
+```
+
+然后把 Hermes 指向 Phaseo：
+
+```bash
+hermes config set model.provider custom
+hermes config set model.base_url https://api.phaseo.app/v1
+hermes config set model.default openai/gpt-6-astra
+hermes config set model.key_env OPENAI_API_KEY
+```
+
+运行 `hermes config env-path` 可以找到 Hermes 读取的 `.env` 文件。
+
+## 确认可以正常使用
+
+重启正在运行的 Hermes 会话，让它们使用 Phaseo 端点和密钥。运行 `hermes config get model.base_url --json`，确认它返回 `https://api.phaseo.app/v1`，然后发送一条简短的提示词，并确认该请求出现在 **设置 → 用量 → 日志** 中。
+
+## 移除 Phaseo
+
+```bash
+phaseo integrations remove hermes
+```
+
+此命令会恢复 setup 期间保存的四项模型设置（原本未设置的则取消设置），从 `.env` 中删除 Phaseo 的块，删除 CLI 保存在 `~/.config/phaseo/integrations/hermes.json` 中的状态，并吊销密钥。请重启正在运行的 Hermes 会话，让它们重新加载恢复后的配置。
+
+## 解决常见问题
+
+| 问题 | 解决方法 |
+| --- | --- |
+| `Hermes already defines OPENAI_API_KEY` | setup 不会覆盖你自己设置的密钥。从 Hermes 的 `.env` 中删除那一行 `OPENAI_API_KEY`，然后再次运行 `phaseo hermes`。 |
+| `Phaseo will not edit <path>` | CLI 只编辑每一行都是空行、整行注释，或者纯 ASCII、不含反斜杠的单行 `NAME=VALUE` 的 `.env`。简化它指出的那一行，或按照[手动设置](#configure-hermes-manually)操作。 |
+| `Hermes could not set model.key_env` | 你的 Hermes 版本不支持 `model.key_env`。运行 `hermes update`，然后再次运行 `phaseo hermes`。 |
+| `Refusing to write <path>` | `.env` 文件或其所在文件夹是符号链接，或者不是普通文件。把 Hermes 指向一个真实文件，或使用手动设置。 |
+| `Hermes Agent is not installed or is not on PATH` | 安装 Hermes 或把它添加到 `PATH`，然后重新运行 setup。 |
+| 模型被拒绝 | 用 [Models 端点](../../api-reference/endpoint/models.mdx)核对准确的 ID。 |
+
+其他智能体以及每个智能体都需要的提供商值，请参阅[编程智能体](./coding-assistants.mdx)。

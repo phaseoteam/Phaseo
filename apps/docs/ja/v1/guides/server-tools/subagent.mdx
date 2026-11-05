@@ -1,21 +1,17 @@
 ---
 icon: "bot"
-title: "Subagentサーバーツール"
-description: "メインモデルからワーカーモデルに特定のタスクを委任できます。"
+title: "Subagent サーバーツール"
+description: "メインのモデルが、特定の作業をワーカーモデルに委任できるようにします。"
 ---
 
-同じリクエスト中に、メインモデルから小型または高速なワーカーモデルへ独立したタスクを委任する場合は、`phaseo:subagent`を使います。
-
-メインモデルはタスクの説明とともにSubagentツールを呼び出します。Phaseoはサーバー側でワーカーモデルを実行し、その結果をツールコンテキストとして返すため、メインモデルが回答を完成できます。
-
-## クイックスタート
+`phaseo:subagent` を追加すると、メインのモデルは同じリクエスト内で、独立したタスクをワーカーモデル（多くの場合はより小さい、または高速なモデル）に渡せます。メインのモデルがタスクを記述し、Phaseo がワーカーを実行してその結果を返し、メインのモデルが回答を完成させます。
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "anthropic/claude-opus-5",
     "messages": [
       { "role": "user", "content": "Compare these release notes and summarize the breaking changes." }
     ],
@@ -23,7 +19,7 @@ curl https://api.phaseo.app/v1/chat/completions \
       {
         "type": "phaseo:subagent",
         "parameters": {
-          "model": "openai/gpt-5-nano",
+          "model": "openai/gpt-6-astra",
           "instructions": "Return concise findings for the main model. Do not address the end user directly.",
           "max_uses": 3,
           "max_completion_tokens": 1200
@@ -35,33 +31,20 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 ## パラメーター
 
-```json
-{
-  "type": "phaseo:subagent",
-  "parameters": {
-    "model": "openai/gpt-5-nano",
-    "instructions": "You are a fast, focused worker. Complete only the delegated task.",
-    "max_uses": 3,
-    "max_completion_tokens": 1200,
-    "reasoning": { "effort": "low" },
-    "temperature": 0.2
-  }
-}
-```
-
-| パラメーター | 型 | 既定値 | 説明 |
+| パラメーター | 型 | デフォルト | 説明 |
 | --- | --- | --- | --- |
-| `model` | string | `openai/gpt-5-nano` | 呼び出すワーカーモデルです。 |
-| `instructions` | string | ワーカー向けの具体的な指示 | Subagentの既定の動作に追加する指示です。 |
-| `max_uses` | integer | `10` | サーバーツールループでのSubagent呼び出しの最大数です。 |
-| `max_completion_tokens` | integer | Advisorの既定値 | 各ワーカー応答の最大出力トークン数です。 |
-| `max_tokens` | integer | Advisorの既定値 | `max_completion_tokens`の旧エイリアスです。 |
-| `reasoning` | object | プロバイダーの既定値 | サポートされる場合、ワーカー呼び出しに渡す推論設定です。 |
-| `temperature` | number | プロバイダーの既定値 | ワーカー呼び出しのサンプリング温度です。 |
+| `model` | string | リクエストのモデル | ワーカーモデル。 |
+| `instructions` | string | 組み込みのワーカーの指示 | ワーカーへの追加の指示。 |
+| `max_uses` | integer | `1` | リクエストあたりの Subagent の呼び出し回数。 |
+| `max_completion_tokens` | integer | `1400` | ワーカーの各返答の出力トークン数。`1024` 未満の値は `1024` に引き上げられます。古いエイリアスとして `max_tokens` も受け付けます。 |
+| `reasoning` | object | プロバイダーのデフォルト | 推論の設定。ワーカーモデルが対応している場合に渡されます。 |
+| `temperature` | number | プロバイダーのデフォルト | ワーカーの呼び出しのサンプリング温度。 |
 
-## ツール呼び出しの引数
+ワーカーが会話を受け取ることはありません。必要な情報はすべてタスクに含めてください。
 
-通常、モデルは`task_description`を指定してSubagentを呼び出します。
+## モデルが送信する内容
+
+タスク全体、コンテキスト、期待する出力を含む `task_description` と、任意の短い `task_name` です。
 
 ```json
 {
@@ -69,40 +52,20 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-モデルが異なる引数名を出力した場合、Phaseoは`task`、`prompt`、`input`もエイリアスとして受け付けます。
+`task_description` の代わりに `task`、`prompt`、`input` も受け付けます。
 
-## ツールの戻り値
-
-Subagentはツールの結果としてJSONを返します。
+## ツールが返す内容
 
 ```json
 {
   "status": "ok",
-  "model": "openai/gpt-5-nano",
-  "result": "The highest-risk steps are schema migration, traffic cutover, and rollback verification."
+  "model": "openai/gpt-6-astra",
+  "outcome": "The highest-risk steps are schema migration, traffic cutover, and rollback verification."
 }
 ```
 
-ワーカーへのリクエストを実行できない場合、Phaseoは `subagent_invalid_request`、`subagent_max_uses_exceeded`、`subagent_request_failed` などのツールエラーを返します。
+呼び出しを実行できない場合、モデルには `subagent_invalid_request`（タスクがない）、`subagent_max_uses_exceeded`、`subagent_request_failed` のいずれかが返ります。
 
-## 使用量と料金
+## 利用量と料金
 
-Subagent呼び出しにより次が加算されます。
-
-```json
-{
-  "usage": {
-    "server_tool_use": {
-      "subagent_requests": 1
-    }
-  }
-}
-```
-
-ワーカーモデルのトークンは合計使用量に含まれ、選択したモデルの料金で課金されます。
-
-## 関連項目
-
-- [Advisor](./advisor.mdx)
-- [Fusion](./fusion.mdx)
-- [サーバーツール](./index.mdx)
+呼び出しごとに `usage.server_tool_use.subagent_requests` に 1 が加算され、`server_tool_subagent_requests` で課金されることがあります。ワーカーのトークンはリクエストの利用量に加算され、ワーカーモデルの料金で計算されます。作業を委任するのではなくレビューを受けたい場合は、[Advisor](./advisor) を使います。

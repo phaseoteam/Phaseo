@@ -1,31 +1,38 @@
 ---
 icon: "braces"
 title: "Salida estructurada (AI SDK)"
-description: "Genera objetos JSON validados por un esquema con Phaseo y Vercel AI SDK."
+sidebarTitle: "Salida estructurada"
+description: "Genera objetos JSON validados con un esquema con Phaseo y Vercel AI SDK."
 ---
 
-Usa `generateObject` para obtener salidas tipadas.
+Pasa `output: Output.object({ schema })` a `generateText` para obtener un objeto tipado que coincida con tu esquema. AI SDK envía el esquema como formato de respuesta JSON Schema y valida el resultado.
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import { z } from "zod";
 
-const { object } = await generateObject({
-  model: phaseo("openai/gpt-5-nano"),
-  schema: z.object({
-    title: z.string(),
-    priority: z.enum(["low", "medium", "high"]),
-    actions: z.array(z.string()),
+const { output } = await generateText({
+  model: phaseo("openai/gpt-6-astra"),
+  output: Output.object({
+    schema: z.object({
+      title: z.string(),
+      priority: z.enum(["low", "medium", "high"]),
+      actions: z.array(z.string()),
+    }),
   }),
   prompt: "Create a short incident follow-up plan.",
 });
 
-console.log(object);
+console.log(output);
 ```
 
-## Notas
+`generateObject` sigue funcionando en AI SDK 7 con el mismo `schema` y devuelve `object`, pero está obsoleto en favor de `generateText` con `output`.
 
-- Prefiere enumeraciones explícitas y campos obligatorios en los esquemas.
-- Asegúrate de que los prompts se ajusten a la estructura del esquema.
-- Gestiona los errores de análisis y validación en el código que realiza la llamada.
+## Gestionar una salida no válida
+
+Leer `output` lanza `NoOutputGeneratedError` cuando el modelo no devuelve ningún objeto utilizable, por ejemplo cuando el último paso terminó en una llamada a herramienta. Captura el error donde llamas al modelo.
+
+- Usa enums explícitos y campos obligatorios en el esquema.
+- Mantén el prompt coherente con la forma del esquema.
+- La compatibilidad de los modelos con la salida JSON Schema varía; consulta los parámetros compatibles del modelo en `/v1/models`.

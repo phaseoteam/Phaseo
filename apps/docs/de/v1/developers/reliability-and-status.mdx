@@ -1,17 +1,17 @@
 ---
 title: "Gateway-Zuverlässigkeit und -Status prüfen"
 sidebarTitle: "Zuverlässigkeit und Status"
-description: "Prüfe Vorfälle, bestätige, dass ein Modell geroutet werden kann, interpretiere Gateway-Metriken und validiere Phaseo mit deiner Arbeitslast."
+description: "Prüfe Vorfälle, bestätige, dass ein Modell routbar ist, interpretiere Gateway-Metriken und validiere Phaseo mit deiner Arbeitslast."
 icon: "shield-check"
 ---
 
-Nutze diesen Leitfaden für eine von drei Fragen: Ist Phaseo verfügbar, lässt sich ein Modell jetzt routen oder erfüllt eine Route das Zuverlässigkeitsziel deiner Anwendung?
+Prüfe die [Statusseite](https://status.phaseo.app) und `GET /v1/health`, um zu sehen, ob Phaseo fehlerfrei läuft, `GET /v1/models`, um zu sehen, ob ein Modell gerade routbar ist, und deinen eigenen Testlauf, um zu sehen, ob eine Route dein Zuverlässigkeitsziel erfüllt.
 
 ## Aktuellen Servicestatus prüfen
 
-1. Öffne die [Phaseo-Statusseite](https://status.phaseo.app), um aktuelle Vorfälle und den bisherigen Verlauf zu sehen.
-2. Rufe `GET /v1/health` für eine einfache Gateway-Statusprüfung.
-3. Wenn eine Anfrage fehlschlägt, notiere ihre Request-ID und prüfe Aktivität oder Generierungsdatensatz, bevor du von einem vollständigen Dienstausfall ausgehst.
+1. Öffne die [Phaseo-Statusseite](https://status.phaseo.app) für aktuelle Vorfälle und den Vorfallverlauf.
+2. Rufe `GET /v1/health` für eine minimale Gateway-Statusprüfung auf.
+3. Wenn eine einzelne Anfrage fehlgeschlagen ist, bewahre ihre Request-ID auf und prüfe ihren Aktivitäts- oder Generierungsdatensatz, bevor du annimmst, dass der ganze Dienst ausgefallen ist.
 
 ```bash
 curl https://api.phaseo.app/v1/health
@@ -24,75 +24,68 @@ curl https://api.phaseo.app/v1/health
 ```
 
 <Note>
-Die öffentliche Statusseite meldet den Servicestatus. Phaseo beansprucht derzeit keine vertragliche öffentliche Verfügbarkeits-SLA.
+Die öffentliche Statusseite meldet den Servicestatus. Phaseo sichert derzeit keine vertragliche öffentliche Verfügbarkeits-SLA zu.
 </Note>
 
-## Prüfen, ob ein Modell geroutet werden kann
+## Prüfen, ob ein Modell routbar ist
 
-Der Phaseo-Katalog umfasst mehr Modelle als über das Gateway verfügbar sind. Dass ein Modell im Katalog aufgeführt ist, bedeutet, dass Phaseo es erfasst, nicht dass eine öffentliche Route existiert.
-
-`GET /v1/models` gibt standardmäßig nur aktuell routbare Modelle zurück:
+Der Phaseo-Katalog listet mehr Modelle, als das Gateway routen kann: Ein Katalogeintrag bedeutet, dass Phaseo das Modell erfasst, nicht dass eine öffentliche Route existiert. `GET /v1/models` gibt standardmäßig nur aktuell routbare Modelle zurück:
 
 ```bash
 curl https://api.phaseo.app/v1/models \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-Verwende `availability=all` nur, wenn du gezielt geplante oder inaktive Zuordnungen prüfen möchtest. Sende keinen Produktionsverkehr an einen Provider-Eintrag, es sei denn, `availability_status` lautet `active` und `is_active_gateway` lautet `true`.
+Füge `availability=all` hinzu, um auch demnächst verfügbare und inaktive Zuordnungen zu sehen. Sende Produktions-Traffic nur an eine Anbieterzeile, wenn ihr `availability_status` `active` und `is_active_gateway` `true` ist. Unter [Anbieter- und Phaseo-Status](../guides/provider-statuses.mdx) erfährst du, was die Statussymbole auf Modellseiten bedeuten.
 
 | Status | Bedeutung |
 | --- | --- |
 | `active` | Mindestens eine öffentliche Gateway-Route ist jetzt verfügbar. |
-| `coming_soon` | Phaseo erfasst eine geplante oder Vorschau-Route, sie ist jedoch nicht öffentlich routbar. |
+| `coming_soon` | Phaseo erfasst eine geplante oder Vorschau-Route, sie ist aber nicht öffentlich routbar. |
 | `inactive` | Eine bekannte Route ist deaktiviert, nicht verfügbar, abgelaufen oder aus anderen Gründen nicht routbar. |
-| `not_listed` | Für das Modell ist derzeit keine Gateway-Provider-Zuordnung aufgeführt. |
+| `not_listed` | Für das Modell ist derzeit keine Gateway-Anbieterzuordnung aufgeführt. |
 
-Verfügbarkeit garantiert weder dauerhafte Betriebszeit noch Zugang in jeder Region oder identische Geschäftsbedingungen für alle Workspaces.
+`active` garantiert weder Betriebszeit noch Zugang in jeder Region noch dieselben Geschäftsbedingungen für jeden Workspace.
 
 ## Leistungsmetriken interpretieren
 
-Die Performance-Daten von Phaseo sind Beobachtungsdaten: Sie fassen über das Gateway geleitete Anfragen zusammen und stammen nicht aus einem kontrollierten Labortest.
+Die Leistungsdaten von Phaseo fassen echte Anfragen zusammen, die über das Gateway geroutet wurden; sie sind kein kontrollierter Labor-Benchmark.
 
-| Messwert | Definition |
+| Metrik | Definition |
 | --- | --- |
 | Gateway-TTFT | Vom Start der Gateway-Anfrage bis zur ersten generierten Ausgabe mit Inhalt. |
-| Provider-TTFT | Von der Weiterleitung an den Provider bis zur ersten generierten Ausgabe mit Inhalt. |
-| Provider-Dauer | Von der Weiterleitung an den Provider bis zur finalen Antwort. |
+| Anbieter-TTFT | Von der Weiterleitung an den Anbieter bis zur ersten generierten Ausgabe mit Inhalt. |
+| Anbieterdauer | Von der Weiterleitung an den Anbieter bis zur abschließenden Antwort. |
 | Gateway-E2E | Vom Start der Gateway-Anfrage bis zum Abschluss. |
-| Phaseo-Aufwand | Die nicht negative Differenz zwischen Gateway-E2E und Provider-Dauer. |
-| Effektiver Durchsatz | Alle Ausgabetokens geteilt durch die gesamte Provider-Dauer. |
-| Ausgabegeschwindigkeit | Ausgabetokens nach dem ersten Token geteilt durch die Provider-Zeit nach TTFT. |
+| Phaseo-Overhead | Die nicht negative Differenz zwischen Gateway-E2E und Anbieterdauer. |
+| Effektiver Durchsatz | Alle Ausgabetokens geteilt durch die gesamte Anbieterdauer. |
+| Ausgabegeschwindigkeit | Ausgabetokens nach dem ersten geteilt durch die Anbieterzeit nach TTFT. |
 
-TTFT und Ausgabegeschwindigkeit erfordern eine Streaming-Antwort mit einer ersten Ausgabe, die Inhalt enthält. Eine Anfrage ohne Streaming kann weiterhin Dauer und effektiven Durchsatz beitragen, ohne dass ein TTFT erfunden wird.
+TTFT und Ausgabegeschwindigkeit erfordern eine Streaming-Antwort mit einer ersten Ausgabe, die Inhalt enthält. Eine Anfrage ohne Streaming trägt trotzdem zu Dauer und effektivem Durchsatz bei, aber nicht zu TTFT.
 
-Betrachte eine Metrik immer zusammen mit Zeitfenster, Route, Region, Streaming-Modus und Perzentil. Provider-Auslastung, Prompt- und Ausgabelänge, Wiederholungen sowie Transportbedingungen können das Ergebnis verändern.
+Lies jede Metrik zusammen mit ihrem Zeitfenster, ihrer Route, Region, ihrem Streaming-Modus und Perzentil. Anbieterauslastung, Prompt-Länge, Ausgabelänge, Wiederholungen und Netzwerkbedingungen verändern das Ergebnis.
 
-Die vollständigen Definitionen findest du unter [Preise und Leistung](../exploring/pricing-performance.mdx) und [Wie Phaseo Latenz und Durchsatz misst](https://phaseo.app/how-phaseo-measures-latency-throughput).
+Die vollständigen Definitionen findest du unter [Preise und Leistung](../exploring/pricing-performance) und [Wie Phaseo Latenz und Durchsatz misst](https://phaseo.app/how-phaseo-measures-latency-throughput).
 
 ## Mit deiner Arbeitslast validieren
 
-Öffentliche Telemetrie liefert Hinweise, beweist aber nicht, dass eine Route dein Produktionsziel erfüllt. Führe vor dem Rollout eine kleine, reproduzierbare Untersuchung durch:
+Öffentliche Metriken zeigen die Richtung; sie beweisen nicht, dass eine Route dein Produktionsziel erfüllt. Führe vor einem Rollout einen kleinen, reproduzierbaren Test durch:
 
-1. Entferne sensible Produktionsdaten und verwende eine repräsentative Prompt-Mischung.
-2. Halte Modell-ID, Endpoint, Provider-Einschränkungen, Region, Streaming-Modus und Parallelität fest.
-3. Führe genügend Wiederholungen aus, um Verteilungen statt einzelner Anfragen zu vergleichen.
-4. Erfasse Erfolgsrate, Gateway-TTFT, Provider-Dauer, Gateway-E2E, Ausgabetokens und Endkosten.
-5. Teste ungültige Schlüssel und Modelle, Ratenlimits und Fehler bei nicht verfügbaren Providern.
-6. Speichere Request-IDs und das genaue Zeitfenster, damit andere das Ergebnis reproduzieren können.
+1. Entferne sensible Produktionsdaten und behalte eine repräsentative Prompt-Mischung bei.
+2. Halte Modell-ID, Endpunkt, Anbietereinschränkungen, Region, Streaming-Modus und Parallelität fest.
+3. Führe genügend Wiederholungen aus, um Verteilungen statt einer einzelnen Anfrage zu vergleichen.
+4. Erfasse Erfolgsrate, Gateway-TTFT, Anbieterdauer, Gateway-E2E, Ausgabetokens und Endkosten.
+5. Teste ungültige Schlüssel, ungültige Modelle, Ratenlimits und Fehler durch nicht verfügbare Anbieter.
+6. Speichere Request-IDs und das genaue Zeitfenster, damit eine andere Person das Ergebnis reproduzieren kann.
 
-Veröffentliche Kundennamen, Zitate, Arbeitslastergebnisse oder Zuverlässigkeitswerte nur mit Genehmigung und einer dokumentierten Methode.
+Veröffentliche keinen Kundennamen, kein Zitat, kein Arbeitslastergebnis und keinen Zuverlässigkeitsprozentsatz ohne Erlaubnis und eine dokumentierte Methode.
 
 ## Fehlgeschlagene Anfrage untersuchen
 
-- Prüfe den [Servicestatus](https://status.phaseo.app).
-- Prüfe, ob das Modell weiterhin in der Standardantwort von `GET /v1/models` erscheint.
-- Prüfe den HTTP-Status und Fehlercode unter [Fehlerbehandlung](../api-reference/errors.mdx).
-- Wiederhole vorübergehende Fehler `429` und `5xx` mit begrenztem exponentiellem Backoff.
-- Notiere die Request-ID, wenn du den [Support](https://phaseo.app/help) kontaktierst.
+1. Prüfe den [Servicestatus](https://status.phaseo.app).
+2. Prüfe, ob das Modell weiterhin in der Standardantwort von [`GET /v1/models`](../api-reference/endpoint/models) erscheint, und prüfe seine [Endpunkte](../api-reference/endpoint/model-endpoints).
+3. Schlage HTTP-Status und Fehlercode unter [Fehler und Debugging](../api-reference/errors) nach.
+4. Wiederhole vorübergehende `429`- und `5xx`-Antworten mit begrenztem exponentiellem Backoff; siehe [Ratenlimits](../api-reference/limits.mdx).
+5. Bewahre die Request-ID auf, wenn du den [Support](https://phaseo.app/help) kontaktierst.
 
-## Verwandte Anleitungen
-
-- [Modelle-API](../api-reference/endpoint/models.mdx)
-- [Modell-Endpunkte](../api-reference/endpoint/model-endpoints.mdx)
-- [Routing und Fallbacks](../guides/routing-and-fallbacks.mdx)
-- [Ratenlimits](../api-reference/limits.mdx)
+Damit Anfragen weiter funktionieren, wenn ein Anbieter ausfällt, richte [Routing und Fallbacks](../guides/routing-and-fallbacks) ein.

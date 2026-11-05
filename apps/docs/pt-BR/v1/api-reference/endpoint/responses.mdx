@@ -3,62 +3,54 @@ title: "Criar uma resposta"
 sidebarTitle: "Criar uma resposta"
 openapi: "/pt-BR/openapi/v1/openapi.localized.yaml POST /responses"
 ---
-## Ferramentas do servidor
 
-`/v1/responses` aceita ferramentas de função comuns e estas ferramentas de servidor gerenciadas pelo Gateway:
+## Usar ferramentas de servidor
 
-- `gateway:datetime`
-- `phaseo:web_search`
-- `phaseo:web_fetch`
-- `phaseo:advisor`
-- `phaseo:image_generation`
-- `phaseo:apply_patch`
-
-### Exemplo de data e hora
+Adicione uma ferramenta `phaseo:` a `tools`, ao lado das suas próprias ferramentas de função, e o Phaseo a executa quando o modelo a chama. `/v1/responses` aceita todas as ferramentas de servidor, incluindo `phaseo:apply_patch`, que só este endpoint suporta; o guia [Ferramentas de servidor](../../guides/server-tools) lista todas elas.
 
 ```bash
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
-    "stream": false,
+    "model": "openai/gpt-6-astra",
     "input": [
       { "role": "user", "content": "Give me the current datetime in Asia/Tokyo." }
     ],
     "tools": [
-      {
-        "type": "gateway:datetime",
-        "parameters": { "timezone": "Asia/Tokyo" }
-      }
+      { "type": "phaseo:datetime", "parameters": { "timezones": ["Asia/Tokyo"] } }
     ],
     "tool_choice": "auto"
   }'
 ```
 
-Quando uma ferramenta de servidor é usada, o uso inclui os contadores correspondentes de `usage.server_tool_use.*`.
+Cada chamada de ferramenta de servidor é contabilizada em `usage.server_tool_use`:
 
-- `gateway:datetime` -> `datetime_requests`
-- `phaseo:web_search` -> `web_search_requests`, `web_search_results`, `web_search_extra_results`
-- `phaseo:web_fetch` -> `web_fetch_requests`
-- `phaseo:advisor` -> `advisor_requests`
-- `phaseo:image_generation` -> `image_generation_requests`
-- `phaseo:apply_patch` -> `apply_patch_requests`
+| Ferramenta | Contadores |
+| --- | --- |
+| `phaseo:datetime` | `datetime_requests` |
+| `phaseo:web_search` | `web_search_requests`, `web_search_results`, `web_search_extra_results` |
+| `phaseo:web_fetch` | `web_fetch_requests` |
+| `phaseo:advisor` | `advisor_requests` |
+| `phaseo:subagent` | `subagent_requests` |
+| `phaseo:fusion` | `fusion_requests` |
+| `phaseo:search_models` | `search_models_requests` |
+| `phaseo:image_generation` | `image_generation_requests` |
+| `phaseo:apply_patch` | `apply_patch_requests` |
 
-## Nota sobre streaming
+O tipo antigo `gateway:datetime` continua funcionando. Com `stream: true`, o Phaseo executa os turnos de ferramenta por conta própria e depois transmite a continuação da resposta para você como um único stream.
 
-`stream: true` também é compatível. Para ferramentas de servidor gerenciadas pelo Gateway, a Phaseo pode materializar o turno de chamada à ferramenta upstream, continuar o ciclo e emitir novamente um stream sintético.
+<span id="reasoning-in-tool-loops"></span>
+## Raciocínio em loops de ferramentas
 
-## Raciocínio em ciclos de ferramentas
+Na OpenAI, no Azure OpenAI e na xAI, o Phaseo envia as solicitações do Responses ao upstream com `store: false`, então o raciocínio de um modelo continua entre os passos do loop de ferramentas somente por meio dos itens de saída `reasoning`.
 
-Na OpenAI, no Azure OpenAI e na xAI, a Phaseo envia as solicitações de Responses ao provedor com `store: false`, então o raciocínio de um modelo continua entre as etapas de um ciclo de ferramentas apenas pelos itens de saída `reasoning`.
+Cada item `reasoning` tem `id`, `summary` e `content`. Quando o provedor retorna estado de raciocínio, o item também tem `encrypted_content`, que contém um destes:
 
-Cada item `reasoning` tem `id`, `summary` e `content`. Quando o provedor retorna estado de raciocínio, o item também tem `encrypted_content`:
+- Raciocínio criptografado da OpenAI, do Azure OpenAI e da xAI. O Phaseo o solicita com `include: ["reasoning.encrypted_content"]` para modelos de raciocínio.
+- Assinaturas de pensamento e pensamento redigido do Claude.
+- Assinaturas de pensamento do Gemini, incluindo um item `reasoning` separado colocado logo antes da chamada de função a que a assinatura pertence.
 
-- Raciocínio criptografado da OpenAI, do Azure OpenAI e da xAI. A Phaseo o solicita com `include: ["reasoning.encrypted_content"]` para modelos de raciocínio.
-- Assinaturas de thinking do Claude e thinking ocultado.
-- Assinaturas de pensamento do Gemini, incluindo um item `reasoning` próprio logo antes da chamada de função a que uma assinatura pertence.
+As respostas em streaming trazem os mesmos itens em `response.output_item.done` e `response.completed`.
 
-Respostas com streaming trazem os mesmos itens em `response.output_item.done` e `response.completed`.
-
-Para continuar um ciclo de ferramentas, envie todos os itens de saída de volta em `input` sem alterações, incluindo os itens `reasoning`. `encrypted_content` é opaco e registra o provedor e o modelo que o geraram. A Phaseo o envia apenas para essa família de provedores e esse modelo, então um fallback para outro provedor o descarta em vez de falhar.
+Para continuar um loop de ferramentas, envie de volta em `input` todos os itens de saída, incluindo os itens `reasoning`, sem alterações. `encrypted_content` é opaco e registra o provedor e o modelo que o produziram. O Phaseo o envia somente para essa família de provedor e esse modelo, de modo que um fallback para outro provedor o descarta em vez de falhar.

@@ -4,60 +4,65 @@ icon: "chef-hat"
 description: "Phaseo के साथ निर्माण के लिए व्यावहारिक, परिदृश्य-आधारित रेसिपी।"
 ---
 
-जब आपको पता हो कि क्या बनाना है और शुरुआत से जाँच तक काम करने वाला रास्ता चाहिए, तो इस कुकबुक का उपयोग करें।
+आप जो बनाना चाहते हैं, उसके हिसाब से रेसिपी चुनें। हर रेसिपी तैयार नतीजे से शुरू होती है, फिर चरण, पूरा कोड, उसे चलाने का तरीका, और यह जाँचने का तरीका देती है कि वह काम कर गया। हर रेसिपी बताती है कि उसका कोड प्रोडक्शन के लिए तैयार है या एक शुरुआती बिंदु है जिसे आपको पूरा करना होगा।
 
-## काम करने वाले अनुरोध से शुरुआत करें
+हर उदाहरण `https://api.phaseo.app/v1` का उपयोग करता है और आपकी कुंजी `PHASEO_API_KEY` से पढ़ता है।
+
+## अपना पहला अनुरोध भेजें
 
 <Columns cols={2}>
-	<Card title="मुफ़्त router से लॉन्च करें" icon="route" href="./free-router-first-deploy.mdx">
-		पहले किसी विशिष्ट मॉडल को चुनने या उसके लिए क्रेडिट जोड़ने की ज़रूरत के बिना लाइव अनुरोध भेजें।
+	<Card title="फ़्री राउटर पर लॉन्च करें" icon="route" href="./free-router-first-deploy">
+		कोई मॉडल चुनने या उसके लिए भुगतान करने से पहले `phaseo/free` को एक लाइव अनुरोध भेजें।
 	</Card>
-	<Card title="Next.js web chat app बनाएँ" icon="message-square" href="./build-a-nextjs-web-chat-app.mdx">
-		ब्राउज़र चैट इंटरफ़ेस बनाएँ और Phaseo API कुंजी सर्वर पर रखें।
-	</Card>
-	<Card title="Node REST smoke app बनाएँ" icon="terminal" href="./build-a-node-rest-smoke-app.mdx">
-		सबसे छोटे व्यावहारिक उदाहरण से HTTP अनुरोधों के ज़रिए बैकएंड एकीकरण की जाँच करें।
-	</Card>
-	<Card title="Python gateway CLI बनाएँ" icon="terminal-square" href="./build-a-python-gateway-cli.mdx">
-		Python SDK से कमांड-लाइन कार्यप्रवाह बनाएँ।
+	<Card title="मिनी ऐप स्टार्टर प्रॉम्प्ट" icon="square-terminal" href="./mini-app-starter-prompts">
+		किसी कोडिंग एजेंट में एक प्रॉम्प्ट पेस्ट करें और एक छोटा काम करता ऐप पाएँ।
 	</Card>
 </Columns>
 
-<Tip>
-  क्या आप कोडिंग एजेंट से प्रोजेक्ट का शुरुआती ढाँचा बनवाना चाहते हैं? [मिनी ऐप शुरू करने के प्रॉम्प्ट](./mini-app-starter-prompts.mdx) से शुरुआत करें।
-</Tip>
+## ऐप बनाएँ
 
-## नतीजे के अनुसार recipe चुनें
+| रेसिपी | आपको मिलता है | Phaseo को कॉल करता है |
+| --- | --- | --- |
+| [Next.js वेब चैट ऐप](./build-a-nextjs-web-chat-app) | मॉडल पिकर वाला ब्राउज़र चैट UI | सर्वर-साइड `fetch` |
+| [OAuth Next.js वर्कबेंच](./build-an-oauth-nextjs-workbench) | साइन-इन, टोकन रीफ़्रेश करने वाला प्रॉक्सी, चैट और एंडपॉइंट टेस्टर | OAuth टोकन के साथ सर्वर-साइड `fetch` |
+| [Node REST स्मोक ऐप](./build-a-node-rest-smoke-app) | बिना डिपेंडेंसी वाली स्मोक टेस्ट स्क्रिप्ट | सीधा `fetch` |
+| [Python gateway CLI](./build-a-python-gateway-cli) | कई एंडपॉइंट के लिए स्टैंडर्ड-लाइब्रेरी CLI | `urllib` |
 
-<Columns cols={2}>
-	<Card title="Application बनाएँ" icon="layout-template" href="./build-a-nextjs-web-chat-app.mdx">
-		ब्राउज़र ऐप्लिकेशन, प्रमाणित वर्कबेंचों, बैकएंड स्क्रिप्ट और CLI के लिए पूरी चरण-दर-चरण मार्गदर्शिकाएँ देखें।
-	</Card>
-	<Card title="Routing और policy नियंत्रित करें" icon="route" href="./preset-rollout-and-routing-debug.mdx">
-		प्रीसेट जारी करें, प्रदाता चुनें, डेटा-निवास की आवश्यकताएँ लागू करें और API कुंजियों को नियंत्रित करें।
-	</Card>
-	<Card title="खोजें और structured data लौटाएँ" icon="search-check" href="./sdk-typescript-managed-search.mdx">
-		वेब खोज या डेटा प्राप्ति से अनुरोधों को संदर्भ दें, फिर संरचित आउटपुट की पुष्टि करें और ज़रूरत पड़ने पर उसे सुधारें।
-	</Card>
-	<Card title="Agent SDK से शुरू करें" icon="bot" href="./agent-sdk-durable-loop.mdx">
-		TypeScript, Python, Go, C#, Java, PHP या Ruby में सीमित टूल लूप बनाएँ।
-	</Card>
-	<Card title="उन्नत agent workflows बनाएँ" icon="workflow" href="./agent-sdk-research-brief.mdx">
-		अनुसंधान, मानव समीक्षा, समानांतर टूल, संरचित आउटपुट और कोडिंग कार्यप्रवाह जोड़ें।
-	</Card>
-</Columns>
+## रूटिंग और नीति नियंत्रित करें
 
-## लोकप्रिय रेसिपी
+| रेसिपी | इसका उपयोग करें |
+| --- | --- |
+| [प्रीसेट लागू करें](./preset-rollout-and-routing-debug) | कॉल करने वालों को प्रीसेट पर ले जाने और यह समझाने के लिए कि हर अनुरोध कहाँ गया |
+| [प्रदाताओं को क्रमित करें](./sort-providers-by-price-latency-or-throughput) | किसी एक मॉडल के प्रदाताओं को मूल्य, लेटेंसी या थ्रूपुट के हिसाब से रैंक करने के लिए |
+| [प्रदाता पिन करें या अनदेखा करें](./pin-or-ignore-providers-per-request) | एक अनुरोध के लिए प्रदाताओं को प्राथमिकता देने, अनुमति देने या छोड़ने के लिए |
+| [सिर्फ़ EU या ZDR प्रदाताओं पर रूट करें](./route-only-to-eu-or-zdr-providers) | एक अनुरोध में रेज़िडेंसी और ज़ीरो-डेटा-रिटेंशन नियम जोड़ने के लिए |
+| [API कुंजियों के लिए गार्डरेल](./guardrails-for-api-keys) | किसी कुंजी के लिए मॉडल और प्रदाता सीमित करने और प्रॉम्प्ट स्कैन करने के लिए |
 
-- [कीमत, विलंबता या थ्रूपुट के आधार पर प्रदाताओं को क्रमबद्ध करें](./sort-providers-by-price-latency-or-throughput.mdx)
-- [केवल EU या ZDR प्रदाताओं पर रूट करें](./route-only-to-eu-or-zdr-providers.mdx)
-- [गलत फ़ॉर्मैट वाले संरचित JSON को ठीक करें](./response-healing-for-structured-json.mdx)
-- [एजेंट के ज़रिए वेब खोज करके अनुसंधान करें](./agent-sdk-research-brief.mdx)
-- [स्थानीय एजेंट टूल एक साथ चलाएँ](./agent-sdk-parallel-tools.mdx)
+## खोजें, फ़ेच करें और संरचित डेटा लौटाएँ
 
-## संबंधित गाइड
+| रेसिपी | इसका उपयोग करें |
+| --- | --- |
+| [Python से संरचित JSON](./sdk-python-presets-and-json) | JSON Schema के साथ प्रीसेट कॉल करने और रूटिंग विवरण लॉग करने के लिए |
+| [TypeScript से मैनेज्ड वेब सर्च](./sdk-typescript-managed-search) | `phaseo:web_search` से एक जवाब को आधार देने और JSON लौटाने के लिए |
+| [वेब सर्च डीबग करें](./web-search-debugging) | यह पता लगाने के लिए कि सर्च चली या नहीं और उसने क्या लौटाया |
+| [वेब फ़ेच से एक्सट्रैक्शन को आधार दें](./tool-grounding-with-web-fetch) | एक्सट्रैक्ट करने से पहले `phaseo:web_fetch` से एक ज्ञात URL पढ़ने के लिए |
+| [खराब JSON ठीक करें](./response-healing-for-structured-json) | `response-healing` प्लगइन से लगभग-मान्य JSON ठीक करने के लिए |
+| [प्लगइन डिफ़ॉल्ट सेट करें](./plugin-defaults-and-response-healing) | किसी वर्कस्पेस या प्रीसेट के लिए रिस्पॉन्स हीलिंग चालू करने और उसे लॉक करने के लिए |
 
-- [त्वरित शुरुआत](../quickstart.mdx)
-- [उदाहरण](../guides/examples.mdx)
-- [Routing और fallbacks](../guides/routing-and-fallbacks.mdx)
-- [Agent SDK का अवलोकन](../sdk-reference/agent-sdk/overview.mdx)
+## एजेंट बनाएँ
+
+Agent SDK आपकी प्रोसेस में एक टूल लूप चलाते हैं और मॉडल का हर टर्न Phaseo के ज़रिए भेजते हैं। हर भाषा में इंस्टॉलेशन के लिए [Agent SDK अवलोकन](../sdk-reference/agent/overview) देखें।
+
+| रेसिपी | भाषा | दिखाता है |
+| --- | --- | --- |
+| [टिकाऊ एजेंट लूप](./agent-sdk-durable-loop) | TypeScript | हर चरण के बाद रन की स्थिति सहेजना और क्रैश के बाद फिर से शुरू करना |
+| [समानांतर टूल](./agent-sdk-parallel-tools) | TypeScript | स्वतंत्र, सिर्फ़ पढ़ने वाले टूल एक साथ चलाना |
+| [रिसर्च ब्रीफ़](./agent-sdk-research-brief) | TypeScript | वेब सर्च के साथ सख्त JSON ब्रीफ़ |
+| [सपोर्ट ट्राइएज](./agent-sdk-support-triage) | TypeScript | एक प्रीसेट, मानवीय समीक्षा, और गेटवे त्रुटियाँ जिन्हें आप डीबग कर सकते हैं |
+| [कोड रिव्यू](./agent-sdk-coding-review) | TypeScript | सख्त JSON और एक मंज़ूरी विराम |
+| [संरचित एक्सट्रैक्शन](./agent-sdk-python-structured-extraction) | Python | एक टूल और एक JSON Schema |
+| [ऑप्स रनबुक](./agent-sdk-go-ops-runbook) | Go | सीमित लूप में एक स्टेटस टूल |
+| [टिकट ट्राइएज](./agent-sdk-csharp-ticket-triage) | C# | .NET सेवा के अंदर एक लुकअप टूल |
+| [कंटेंट रिव्यू](./agent-sdk-php-content-review) | PHP | एक CMS लुकअप टूल |
+| [आंतरिक नोट्स](./agent-sdk-ruby-rag-notes) | Ruby | एक नोट्स लुकअप टूल |
+| [SKILL.md के साथ कोडिंग एजेंट](./coding-agents-skill-md) | कोई भी | कोडिंग एजेंट को सिखाना कि आपकी रिपॉज़िटरी Phaseo को कैसे कॉल करती है |

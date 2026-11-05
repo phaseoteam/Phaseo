@@ -4,15 +4,59 @@ title: "模型搜索服务器工具"
 description: "让模型从 Phaseo 的实时目录中查找合适的模型。"
 ---
 
-使用 `phaseo:search_models` 当调用模型需要根据当前目录元数据选择或推荐模型时使用。
+添加 `phaseo:search_models`，模型就能借助 Phaseo 的实时模型目录来选择或推荐模型：当前的模态、提供商、支持的参数和价格。
 
 ```json
 {
+  "model": "openai/gpt-6-astra",
+  "messages": [
+    { "role": "user", "content": "Which models can transcribe audio and return JSON?" }
+  ],
   "tools": [{ "type": "phaseo:search_models", "parameters": { "max_results": 5 } }],
   "max_tool_calls": 10
 }
 ```
 
-工具调用可按以下字段筛选： `query`, `input_modalities`, `output_modalities`, `series`, `provider`, 和 `required_params`. 结果包括模型 ID、模态、提供商、支持的参数和定价元数据。
+## 参数
 
-用量会记录在 `usage.server_tool_use.search_models_requests`.
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `max_results` | integer | `5` | 每次搜索返回的模型数，最多 `20`。 |
+
+## 模型发送的内容
+
+以下任意筛选条件。只搜索活跃模型，并且模型必须匹配发送的每个筛选条件。
+
+| 参数 | 匹配 |
+| --- | --- |
+| `query` | 模型 ID、名称或描述中的文本 |
+| `series` | 模型 ID、名称或描述中的文本 |
+| `input_modalities` | 接受所有这些输入的模型 |
+| `output_modalities` | 能产生所有这些输出的模型 |
+| `provider` | 提供商 ID 或名称 |
+| `required_params` | 支持所有这些请求参数的模型 |
+
+## 工具返回的内容
+
+```json
+{
+  "models": [
+    {
+      "id": "openai/gpt-4o-mini-transcribe",
+      "name": "...",
+      "description": "...",
+      "input_modalities": ["audio"],
+      "output_modalities": ["text"],
+      "providers": ["openai"],
+      "supported_params": ["..."],
+      "pricing": {}
+    }
+  ],
+  "total_results": 4,
+  "showing": 4
+}
+```
+
+## 用量和价格
+
+每次搜索会使 `usage.server_tool_use.search_models_requests` 加 1，并可按 `server_tool_search_models_requests` 计费。

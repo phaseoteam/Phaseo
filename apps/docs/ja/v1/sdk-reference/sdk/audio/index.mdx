@@ -1,28 +1,27 @@
 ---
 icon: "audio-lines"
 title: "音声合成 / 音声認識（AI SDK）"
-description: "Phaseoプロバイダーモデルを使った音声認識（STT）と音声合成（TTS）。"
+sidebarTitle: "音声合成 / 音声認識"
+description: "Phaseo プロバイダーのモデルを使った音声認識（STT）と音声合成（TTS）。"
 ---
 
-`transcriptionModel`と`experimental_transcribe`、`speechModel`と`experimental_generateSpeech`を使います。
+音声認識には `phaseo.transcriptionModel(modelId)` を `transcribe` に、音声合成には `phaseo.speechModel(modelId)` を `generateSpeech` に渡します。プロバイダーは音声をマルチパートフォームとして `/v1/audio/transcriptions` にアップロードし、音声合成のリクエストを `/v1/audio/speech` に送信します。
 
 ```ts
 import { readFileSync, writeFileSync } from "node:fs";
 import { phaseo } from "@phaseo/ai-sdk-provider";
-import { experimental_generateSpeech, experimental_transcribe } from "ai";
+import { generateSpeech, transcribe } from "ai";
 
-const audioInput = readFileSync("./audio.mp3");
-
-const transcription = await experimental_transcribe({
+const transcription = await transcribe({
   model: phaseo.transcriptionModel("openai/whisper-1"),
-  audioData: new Blob([audioInput], { type: "audio/mpeg" }),
+  audio: readFileSync("./audio.mp3"),
 });
 
 console.log(transcription.text);
 console.log(transcription.providerMetadata);
 
-const speech = await experimental_generateSpeech({
-  model: phaseo.speechModel("openai/tts-1"),
+const speech = await generateSpeech({
+  model: phaseo.speechModel("openai/gpt-4o-mini-tts"),
   text: "Hello from Phaseo audio.",
   voice: "alloy",
   outputFormat: "mp3",
@@ -32,9 +31,10 @@ writeFileSync("./speech.mp3", Buffer.from(speech.audio.uint8Array));
 console.log(speech.providerMetadata);
 ```
 
-## 注意事項
+`audio` には `Buffer`、`Uint8Array`、`ArrayBuffer`、base64 文字列、または `URL` を渡せます。AI SDK 7 は、以前の `experimental_transcribe` と `experimental_generateSpeech` という名前も別名として引き続きエクスポートしています。
 
-- 現在のAI SDK音声ヘルパーはまだ実験的なため、上流の安定版APIが公開された際に名前が変わる可能性があります。
-- 音声の入力/出力形式はモデルによって異なります。
-- 長いファイルに合わせてペイロードサイズとタイムアウトを設定します。
-- 一時的な`429`や`5xx`レスポンスには再試行を行います。
+## 長い音声や失敗する音声に対処する
+
+- サポートされる入力形式と出力形式はモデルによって異なります。
+- 長いファイルではタイムアウトを延ばし、アップロードはモデルのサイズ上限（ほとんどのモデルで 25 MB）以内に収めてください。
+- 一時的な `429` と `5xx` レスポンスは、バックオフを入れて再試行してください。

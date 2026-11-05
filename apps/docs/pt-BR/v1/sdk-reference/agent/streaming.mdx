@@ -1,0 +1,179 @@
+---
+icon: "radio"
+title: "Streaming no Agent SDK"
+sidebarTitle: "Streaming"
+description: "Mostre o texto, o raciocínio e a atividade de ferramentas de um agente enquanto a execução está em andamento."
+---
+
+Chame o método de stream do agente em vez do run para mostrar o texto e a atividade de ferramentas enquanto a execução está em andamento. Ele roda o mesmo loop retomável sobre o stream SSE da Responses API do gateway, e o método de continuação com stream faz o mesmo para uma execução pausada. O Rust não tem streaming.
+
+## Faça stream do texto
+
+<CodeGroup>
+
+```typescript TypeScript
+const result = agent.stream({ input, client });
+
+for await (const delta of result.getTextStream()) {
+  process.stdout.write(delta);
+}
+
+const completed = await result.getResult();
+console.log(completed.run.status);
+```
+
+```python Python
+stream = agent.stream(input="Research this topic", client=client)
+
+for delta in stream.text_stream():
+    print(delta, end="", flush=True)
+
+completed = stream.result()
+```
+
+```go Go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: input, Client: client})
+
+for delta := range stream.Text() {
+  fmt.Print(delta)
+}
+
+completed, err := stream.Result()
+```
+
+```csharp C#
+var stream = agent.Stream(new RunOptions { Input = input, Client = client });
+
+await foreach (var delta in stream.TextStream())
+{
+    Console.Write(delta);
+}
+
+var completed = await stream.GetResult();
+```
+
+```php PHP
+$stream = $agent->stream(input: $input, client: $client);
+
+foreach ($stream->textStream() as $delta) {
+    echo $delta;
+}
+
+$completed = $stream->getResult();
+```
+
+```ruby Ruby
+stream = agent.stream(input: "Research this topic", client: client)
+
+stream.text_stream.each { |delta| print delta }
+
+completed = stream.result
+```
+
+```java Java
+// textStream() bloqueia até a execução terminar; imprima os deltas ao vivo a partir de onEvent.
+var options = new AgentSdk.RunOptions(
+    input, AgentSdk.createGatewayAgentClient(), null, null, null, null, null, null,
+    event -> {
+        if (event.type().equals("response.output_text.delta")) {
+            System.out.print(event.details().get("delta"));
+        }
+    },
+    null);
+var completed = agent.stream(options).getResult();
+```
+
+</CodeGroup>
+
+O resultado final é o mesmo resultado de execução que o run retorna. A forma como o stream roda varia por linguagem:
+
+<Tabs>
+<Tab title="TypeScript">
+
+`agent.stream()` e `agent.continueStream()` retornam um resultado de stream imediatamente. `getResult()` é resolvido quando a execução termina.
+
+</Tab>
+<Tab title="Python">
+
+`agent.stream(...)` e `agent.continue_stream(...)` rodam o loop em uma thread em segundo plano e retornam um `AgentStreamResult` reproduzível. `result()` aguarda a execução.
+
+</Tab>
+<Tab title="Go">
+
+`agent.Stream` e `agent.ContinueStream` iniciam a execução em uma goroutine e retornam um `*StreamResult` imediatamente. `Result()` bloqueia até a execução terminar.
+
+</Tab>
+<Tab title="C#">
+
+`agent.Stream` e `agent.ContinueStream` iniciam a execução e retornam um `AgentStreamResult` imediatamente. `GetResult()` é concluído quando a execução termina.
+
+</Tab>
+<Tab title="PHP">
+
+`$agent->stream()` e `$agent->continueStream()` retornam um `AgentStreamResult`. O PHP não tem thread em segundo plano: a execução avança dentro de uma Fiber só enquanto seu código puxa o próximo evento, e `getResult()` consome os eventos restantes. Isso serve para scripts de CLI e workers de requisição; para uma interface ao vivo, itere dentro da requisição que serve a resposta ou rode o agente em um worker e envie você mesmo os eventos ao navegador.
+
+`stream()` recebe só `input`, `client`, `context` e `state`; use `run()` para as outras opções.
+
+</Tab>
+<Tab title="Ruby">
+
+`agent.stream` e `agent.continue_stream` iniciam a execução em uma thread de trabalho e retornam um `StreamResult` imediatamente. `result` aguarda a thread com join, relança qualquer erro e retorna o resultado da execução.
+
+`stream` recebe só `input:`, `client:`, `context:` e `state:`; use `run` para as outras opções.
+
+</Tab>
+<Tab title="Java">
+
+`agent.stream` e `agent.continueStream` iniciam a execução em uma thread daemon chamada `phaseo-agent-stream` e retornam um `StreamResult` imediatamente. `textStream()` e `fullStream()` retornam listas e bloqueiam até a execução terminar, então um loop sobre `textStream()` imprime a resposta inteira no final. Para agir sobre os eventos durante a execução, passe um consumidor `onEvent` em `RunOptions`, como acima.
+
+</Tab>
+<Tab title="Rust">
+
+`phaseo-agent` 0.2 não tem streaming. Chame `run_with_events` ou `continue_with_events` para receber os eventos do ciclo de vida por um callback e leia o texto da execução concluída.
+
+</Tab>
+</Tabs>
+
+## Escolha um stream
+
+Todo consumidor reproduz os eventos desde o início, então um renderizador de interface, um logger e o código de persistência podem ler a mesma execução sem uma segunda requisição ao modelo.
+
+| Produz | TypeScript | Python | Go | C# | PHP | Ruby | Java |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Deltas do texto da resposta | `getTextStream()` | `text_stream()` | `Text()` | `TextStream()` | `textStream()` | `text_stream` | `textStream()` (lista) |
+| Deltas de raciocínio | `getReasoningStream()` | `reasoning_stream()` | `Events()`, com filtro | `FullStream()`, com filtro | `reasoningStream()` | `reasoning_stream` | `fullStream()`, com filtro |
+| Itens da linha do tempo | `getItemsStream()` (tipados) | `item_stream()` (dicts) | `Events()`, com filtro | `FullStream()`, com filtro | `itemStream()` | `item_stream` | `fullStream()`, com filtro |
+| Eventos do ciclo de vida das ferramentas | `getToolStream()` | `tool_stream()` | `Events()`, com filtro | `FullStream()`, com filtro | `fullStream()`, com filtro | `full_stream`, com filtro | `fullStream()`, com filtro |
+| Todos os eventos | `getFullStream()`, depois um evento final `result` | `full_stream()` | `Events()` (channel) | `FullStream()` (`IAsyncEnumerable`) | `fullStream()` | `full_stream` (`Enumerator`) | `fullStream()` (lista, após a execução) |
+
+O TypeScript também tem `getText()` para aguardar a resposta inteira, então a renderização e a persistência podem rodar lado a lado:
+
+```typescript
+const result = agent.stream({ input, client });
+
+const [text, completed] = await Promise.all([
+  result.getText(),
+  result.getResult(),
+]);
+```
+
+Os eventos do modelo são `response.output_text.delta`, `response.reasoning.delta` e `response.item`; [Itens](./items) traz os campos deles. Os eventos do modelo só são transmitidos quando o cliente oferece streaming, como todo cliente de gateway oferece. Com outro cliente de modelo (um que não implementa `StreamingModelClient`, `IStreamingModelClient` nem responde a `stream`), o stream ainda emite os eventos do ciclo de vida, mas não os deltas de texto.
+
+## Faça stream do progresso das ferramentas
+
+Ferramentas que relatam progresso publicam eventos `tool.preliminary_result`, que aparecem no stream completo (e no stream de ferramentas do TypeScript) e ficam anexados à etapa concluída. [Ferramentas](./tools#report-progress-and-update-context) mostra como cada linguagem relata o progresso.
+
+## Cancele um stream
+
+| Linguagem | Chamada | O que acontece |
+| --- | --- | --- |
+| TypeScript | `cancel()` | Aborta a execução. As ferramentas locais recebem o cancelamento por `context.signal`. |
+| Python | `cancel()` | Fecha a requisição ativa ao modelo; a execução lança `InterruptedError` |
+| Go | `stream.Cancel()` | Cancela o contexto passado à execução, o que interrompe a requisição ao modelo; `Result()` retorna um erro |
+| C# | `stream.Cancel()`, ou cancele `RunOptions.CancellationToken` | Cancela um token vinculado que chega à requisição ao modelo e ao `runtime.CancellationToken` de cada ferramenta; `GetResult()` lança uma exceção |
+| PHP | `$stream->cancel()` | Lança `Agent stream cancelled` dentro da Fiber, o que interrompe a execução no próximo ponto de suspensão |
+| Ruby | `stream.cancel` | Encerra a thread de trabalho, o que fecha o stream HTTP e termina todos os enumeradores |
+| Java | `stream.cancel()` | Interrompe a thread de trabalho e a leitura HTTP e cancela o future do resultado; `getResult()` lança uma exceção |
+| Rust | Sem suporte | As execuções são síncronas |
+
+Cada etapa concluída mantém seu ID de requisição, provedor, modelo, motivo de término, avisos e uso.

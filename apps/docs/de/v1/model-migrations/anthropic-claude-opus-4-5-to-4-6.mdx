@@ -4,72 +4,53 @@ description: "Wichtige Hinweise zur Einführung von Claude Opus 4.6, einschließ
 icon: "/icons/brands/anthropic.svg"
 ---
 
-# Anthropic Claude Opus 4.6
+Ändere das Modell in `anthropic/claude-opus-4.6`, entferne Assistant-Prefills und verschiebe strukturierte Ausgaben nach `output_config.format`. Das sind Änderungen an der Anfrageform: Alte Opus-4.5-Muster schlagen mit `400` fehl, wenn sie bestehen bleiben.
 
-Mit diesem Leitfaden führst du `anthropic/claude-opus-4.6` sicher in der Produktion ein.
+| | Claude Opus 4.5 | Claude Opus 4.6 |
+| --- | --- | --- |
+| Phaseo-Modell-ID | `anthropic/claude-opus-4.5` | `anthropic/claude-opus-4.6` |
+| Kontextfenster | 200K Tokens | 1M Tokens |
+| Maximale Ausgabe | 64K Tokens | 128K Tokens |
+| Assistant-Prefill | Unterstützt | Gibt `400` zurück |
+| Strukturierte Ausgabe | `output_format` | `output_config.format` |
+| Thinking | `budget_tokens` | Adaptiv, gesteuert über `output_config.effort` |
+| Beta `interleaved-thinking-2025-05-14` | Erforderlich | Nicht erforderlich |
 
-Die Migration zu Claude Opus 4.6 ist mehr als ein Austausch der Modell-ID. Anthropic beschreibt Änderungen an Anfragen, entfernte Beta-Flags und ein strengeres Verhalten bei Prefills.
+## Anfrage anpassen
 
-## Neuerungen
+**1. Entferne Assistant-Prefills.** Wenn du den Assistant-Zug vorbelegst, um JSON oder ein Präfix zu erzwingen, gibt Opus 4.6 `400` zurück. Verwende stattdessen klarere Systemanweisungen, Beispiele im Prompt oder strukturierte Ausgaben.
 
-- Assistant-Prefills werden von Claude-4.6-Modellen nicht mehr unterstützt und liefern jetzt `400` zurück.
-- Strukturierte Ausgaben verwenden jetzt `output_config.format` statt `output_format`.
-- Adaptives Denken wird über `output_config.effort` konfiguriert.
-- Veraltete Beta-Header sollten entfernt werden.
-- Opus 4.6 benötigt den Beta-Header `interleaved-thinking-2025-05-14` nicht mehr.
-- Opus 4.6 bietet in der Beta ein Kontextfenster von einer Million Tokens und verbessert lang laufende Programmier- und Agentenaufgaben.
+**2. Verschiebe strukturierte Ausgaben** von `output_format` nach `output_config.format` und führe deine Schema- und Parser-Tests erneut aus:
 
-## Schnelleinstieg für die Migration
+```json
+{
+  "model": "anthropic/claude-opus-4.6",
+  "max_tokens": 1024,
+  "messages": [{ "role": "user", "content": "Extract the invoice fields." }],
+  "output_config": {
+    "format": { "type": "json_schema", "schema": { "type": "object", "properties": { "total": { "type": "number" } } } }
+  }
+}
+```
 
-### 1. Assistant-Prefills entfernen
+Unter `/v1/chat/completions` und `/v1/responses` verwendest du weiterhin `response_format`.
 
-Wenn du JSON oder einen Antwortpräfix erzwungen hast, indem du den Assistant-Turn teilweise vorbefüllt hast, funktioniert dieses Muster mit 4.6 nicht mehr. Verlagere die Steuerung auf:
+**3. Stelle Thinking auf adaptiv um.** Opus 4.6 denkt nur, wenn die Anfrage es verlangt. Bei Phaseo schaltet `reasoning.effort` oder `reasoning.enabled: true` ohne Tokenbudget adaptives Thinking ein, und der Effort wird zu `output_config.effort`. Opus 4.6 akzeptiert jede Effort-Stufe außer `xhigh`, die Phaseo als `max` sendet. Solange Thinking aktiv ist, lässt Phaseo `temperature` und `top_k` weg, ebenso `top_p` unter 0.95.
 
-- klarere Systemanweisungen
-- Beispiele im Benutzer- oder System-Prompt
-- strukturierte Ausgaben über `output_config.format`
-
-### 2. Strukturierte Ausgaben migrieren
-
-Wenn du noch `output_format` sendest, verwende im Anfragekörper stattdessen `output_config.format`.
-
-### 3. Denk-Konfiguration prüfen
-
-Wenn du von älteren Thinking-Betas abhängst, wechsle zur aktuellen Einstellung `effort` in `output_config` und teste latenzempfindliche Routen erneut.
-
-### 4. Veraltete Beta-Flags entfernen
-
-Prüfe fest codierte Beta-Header in SDK-Wrappern, Middleware und Gateway-Voreinstellungen. Veraltete Flags verursachen beim Rollout unnötige Fehler.
+**4. Entferne veraltete Beta-Header** aus SDK-Wrappern, Middleware und Presets. Phaseo leitet `anthropic-beta`-Header nicht weiter, sie haben also keine Wirkung mehr.
 
 ## Was du testen solltest
 
-### Prompt-Verhalten
+- **Prompts:** lange Programmier- und Refactoring-Prompts, mehrstufige Recherche- und Dokument-Workflows, Prompts, die sich auf Prefills verlassen haben, und Aufgaben mit langem Kontext, falls du das 1M-Fenster nutzen willst.
+- **Verträge und Tools:** Schema-Erfolgsquote nach dem Wechsel zu `output_config.format`, Tool-Aufruf-Argumente bei mehrstufigen Agentenaufgaben, Wiederholungen, wenn das Modell ablehnt oder die Ausgabe umformatiert, sowie Code-Review- und Debugging-Workflows.
+- **Betrieb:** Median- und p95-Latenz mit aktivem Thinking, Tokenverbrauch bei längeren Durchläufen, Timeout-Rate bei Aufgaben mit großem Kontext und Erfolgsquote gegenüber Opus 4.5 in deinem Evaluierungssatz.
 
-- Lange Programmier- und Refactoring-Prompts.
-- Mehrstufige Recherche- oder Dokumentenabläufe.
-- Prompts, die bisher Assistant-Prefills voraussetzten.
-- Aufgaben mit langem Kontext, wenn du das Beta-Fenster von einer Million Tokens nutzen möchtest.
+## Umstellen
 
-### Verträge und Tools
-
-- Schema-Erfolgsrate nach dem Wechsel zu `output_config.format`.
-- Qualität der Tool-Argumente bei mehrstufigen Agentenaufgaben.
-- Wiederholungsverhalten bei Ablehnung oder Umformatierung der Ausgabe.
-- Regressionen in Code-Review- und Debugging-Abläufen.
-
-### Betrieb
-
-- Median- und p95-Latenz mit den neuen Denk-Einstellungen.
-- Tokenverbrauch bei längeren Ausführungen.
-- Zeitüberschreitungen bei Aufgaben mit großem Kontext.
-- Erfolgsrate gegenüber Opus 4.5 anhand deiner Produktionsauswertungen.
-
-## Sicherer Rollout
-
-1. Entferne Prefills und migriere die Konfiguration strukturierter Ausgaben, bevor du Traffic umstellst.
-2. Führe Opus 4.6 parallel mit wichtigen Produktions-Prompts aus.
-3. Teste den Traffic schrittweise und behalte Opus 4.5 als Fallback.
-4. Erhöhe den Traffic erst, wenn Schema-Erfolgsrate, Latenz und Aufgabenabschluss stabil bleiben.
+1. Entferne Prefills und migriere strukturierte Ausgaben, bevor du Traffic verschiebst.
+2. Lass Opus 4.6 im Schattenbetrieb mit den Produktions-Prompts laufen, die für dich wichtig sind.
+3. Führe einen Canary-Test mit Opus 4.5 als Fallback in `models` durch.
+4. Stufe hoch, sobald Schema-Erfolgsquote, Latenz und Aufgabenerfüllung stabil bleiben.
 
 ## Quellen
 

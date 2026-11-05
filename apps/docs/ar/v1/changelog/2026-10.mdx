@@ -1,6 +1,6 @@
 ---
 title: "أكتوبر"
-description: "أكتوبر 2026 - Phaseo"
+description: "تحديثات منتج Phaseo وتغييرات حزم SDK وإصدارات النماذج في أكتوبر 2026."
 ---
 
 import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
@@ -13,9 +13,9 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">المنتج</p>
 
-- يعرض **الإعدادات -> التوجيه -> توجيه النماذج المتوقفة** قائمة **نماذجك المتأثرة**: كل نموذج استخدمته مساحة عملك في آخر 90 يومًا ويجري إيقافه أو لم يعد يُقدَّم، مع بديله، ومقارنة السعر، وما إذا كانت طلباته يُعاد توجيهها، وإن لم تكن فالسبب. يحدد زر **اختيار بديل** بديلك الخاص لنموذج ما؛ راجع [إهمال النماذج وإيقافها](../guides/model-retirement.mdx#see-which-of-your-models-are-affected) ([#3357](https://github.com/phaseoteam/Phaseo/pull/3357)).
+- يعرض **الإعدادات -> التوجيه -> توجيه النماذج المتوقفة** النماذج الجاري إيقافها التي استخدمتها مساحة عملك في آخر 90 يومًا، ويحدد زر **اختيار بديل** بديلك الخاص؛ راجع [إهمال النماذج وإيقافها](../guides/model-retirement.mdx#see-which-of-your-models-are-affected) ([#3357](https://github.com/phaseoteam/Phaseo/pull/3357)).
 
-- تشترط [شروط الخدمة](https://phaseo.app/terms) الآن أن يكون عمر المستخدمين 18 عامًا أو أكثر وتحظر مواد الاعتداء الجنسي على الأطفال؛ وتوضح [سياسة الخصوصية](https://phaseo.app/privacy) كيف نكتشفها ونحفظها ونبلغ عنها ([#3388](https://github.com/phaseoteam/Phaseo/pull/3388)).
+- تشترط [شروط الخدمة](https://phaseo.app/terms) الآن أن يكون عمر المستخدمين 18 عامًا أو أكثر وتحظر مواد الاعتداء الجنسي على الأطفال؛ وتوضح [سياسة الخصوصية](https://phaseo.app/privacy) كيف تكتشفها Phaseo وتحفظها وتبلغ عنها ([#3388](https://github.com/phaseoteam/Phaseo/pull/3388)).
 
 </div>
 
@@ -111,7 +111,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">المنتج</p>
 
 - يمكن لكل مساحات العمل استخدام توجيه النماذج المتوقفة: يفعّله المالكون والمسؤولون من **الإعدادات -> التوجيه -> توجيه النماذج المتوقفة**، فتذهب الطلبات إلى البديل المعتمد؛ راجع [إهمال النماذج وإيقافها](../guides/model-retirement.mdx) ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#2896](https://github.com/phaseoteam/Phaseo/pull/2896)).
-- لا يستخدم توجيه النماذج المتوقفة إلا بديلًا معتمدًا لا تزيد تكلفته على النموذج المتوقف، ما لم يسمح المالكون والمسؤولون بسعر أعلى؛ أما البديل الذي يختارونه بأنفسهم فيُستخدم أيًا كان سعره ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211)).
+- يتخطى توجيه النماذج المتوقفة البديل المعتمد الذي تزيد تكلفته على النموذج المتوقف ما لم يسمح المالكون والمسؤولون بذلك؛ أما البدائل التي يختارونها فتُطبَّق بأي سعر ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211)).
 - تُفتح قائمة الإعدادات المسبقة ومحررها حتى عندما يتعذّر تحميل فهرس النماذج الكامل؛ وكانت الصفحة تعرض خطأً قبل ذلك ([#3221](https://github.com/phaseoteam/Phaseo/pull/3221)).
 
 </div>
@@ -349,7 +349,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">API وحزم SDK</p>
 
-- تضيف وثائق حزم SDK حزمة Java SDK التي تُثبَّت من المصدر؛ راجع [Java SDK — التثبيت](../sdk-reference/java/installation.mdx) ([#2904](https://github.com/phaseoteam/Phaseo/pull/2904)).
+- تضيف وثائق حزم SDK حزمة Java SDK التي تُثبَّت من المصدر؛ راجع [Java SDK — التثبيت](../sdk-reference/client/installation.mdx) ([#2904](https://github.com/phaseoteam/Phaseo/pull/2904)).
 
 </div>
 

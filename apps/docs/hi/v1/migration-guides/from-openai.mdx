@@ -1,40 +1,28 @@
 ---
-title: "OpenAI SDK से माइग्रेट करें"
+title: "OpenAI SDK से माइग्रेट करना"
 sidebarTitle: "OpenAI SDK"
-description: "क्लाइंट कॉन्फ़िगरेशन बदलकर, मॉडल ID सत्यापित करके और ऐप के वर्कफ़्लो जाँचकर मौजूदा OpenAI SDK इंटीग्रेशन को Phaseo पर माइग्रेट करें।"
+description: "क्लाइंट कॉन्फ़िगरेशन बदलकर, मॉडल ID सत्यापित करके और आपके ऐप के वर्कफ़्लो टेस्ट करके मौजूदा OpenAI SDK इंटीग्रेशन को Phaseo पर ले जाएं।"
 icon: "/icons/brands/openai.svg"
 ---
 
-बाकी एप्लिकेशन को दोबारा लिखे बिना मौजूदा OpenAI SDK इंटीग्रेशन को Phaseo पर लाने के लिए यह गाइड अपनाएँ। पहले base URL और API कुंजी बदलें, अनुरोध को वैसा ही रखें, फिर प्रोडक्शन ट्रैफ़िक बदलने से पहले हर मॉडल और एंडपॉइंट जाँचें।
+OpenAI SDK रखें और दो चीज़ें बदलें: बेस URL और API कुंजी। फिर हर मॉडल को उसकी Phaseo ID दें, जिसमें `openai/` प्रीफ़िक्स जुड़ता है।
 
-## क्या बदलेगा
-
-| सेटिंग | पहले | बाद में |
+| सेटिंग | OpenAI | Phaseo |
 | --- | --- | --- |
-| Base URL | OpenAI का डिफ़ॉल्ट | `https://api.phaseo.app/v1` |
-| API कुंजी | OpenAI कुंजी | `PHASEO_API_KEY` |
-| मॉडल | OpenAI मॉडल का नाम | `GET /v1/models` से मिला मॉडल ID |
-| अनुरोध कोड | मौजूदा SDK कॉल | आम तौर पर अपरिवर्तित |
+| बेस URL | SDK डिफ़ॉल्ट (`https://api.openai.com/v1`) | `https://api.phaseo.app/v1` |
+| API कुंजी | `OPENAI_API_KEY` | `PHASEO_API_KEY`, `Authorization: Bearer` के रूप में भेजी जाती है |
+| मॉडल | `gpt-4.1-mini` | `openai/gpt-4.1-mini`, या `GET /v1/models` की कोई भी ID |
+| अनुरोध कोड | `chat.completions.create`, `responses.create` | अपरिवर्तित |
 
-<Steps>
-<Step title="Phaseo API कुंजी बनाएँ">
+## क्लाइंट बदलें
 
-[Phaseo CLI](../guides/integrations/phaseo-cli) में `phaseo keys create` से या [Gateway Keys](https://phaseo.app/settings/keys) में कुंजी बनाएँ और उसे ऐप चलाने वाले हर परिवेश में जोड़ें।
-
-```bash
-PHASEO_API_KEY=phaseo_v1_sk_...
-```
-
-</Step>
-
-<Step title="क्लाइंट को Phaseo से जोड़ें">
-
-OpenAI SDK को बनाए रखें और पहले केवल उसकी क्रेडेंशियल व base URL बदलें।
+[Phaseo CLI](../guides/integrations/phaseo-cli) में `phaseo keys create` से या [API कुंजियाँ](https://phaseo.app/settings/keys) में कुंजी बनाएं, और उसे हर उस एनवायरनमेंट में जोड़ें जो ऐप चलाता है। फिर उसे और बेस URL को मौजूदा क्लाइंट में दें:
 
 <CodeGroup>
 ```typescript TypeScript
 import OpenAI from "openai";
 
+// पहले: const client = new OpenAI();
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
@@ -50,6 +38,7 @@ const response = await client.chat.completions.create({
 import os
 from openai import OpenAI
 
+# पहले: client = OpenAI()
 client = OpenAI(
     api_key=os.environ["PHASEO_API_KEY"],
     base_url="https://api.phaseo.app/v1",
@@ -72,39 +61,39 @@ curl https://api.phaseo.app/v1/chat/completions \
 ```
 </CodeGroup>
 
-</Step>
+Phaseo कुंजी को `OPENAI_API_KEY` में रखने के बजाय नए वेरिएबल नाम का उपयोग करें, और पुराने `OPENAI_BASE_URL` मान हटाएं, ताकि रिपॉज़िटरी का कोई दूसरा क्लाइंट OpenAI को कॉल करता न रहे। `AzureOpenAI` क्लाइंट सादे `OpenAI` क्लाइंट पर जाते हैं; Azure डिप्लॉयमेंट नाम भी इसी तरह Phaseo मॉडल ID से मैप होते हैं।
 
-<Step title="मॉडल ID और एंडपॉइंट कवरेज सत्यापित करें">
+## मॉडल ID मैप करें
 
-यह मानने के बजाय कि पुराने सभी alias वैसे ही काम करेंगे, Phaseo के उपलब्ध मॉडल सूचीबद्ध करें।
+Phaseo जो ID सर्व करता है, उन्हें OpenAI के सूची फ़ॉर्मेट में सूचीबद्ध करें और हर प्रोडक्शन मॉडल को `data[].id` से जांचें:
 
 ```bash
-curl https://api.phaseo.app/v1/models \
+curl "https://api.phaseo.app/v1/models?format=openai" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-स्ट्रीमिंग, टूल, संरचित आउटपुट, इमेज, ऑडियो, फ़ाइल और बैच सहित हर प्रोडक्शन वर्कफ़्लो जाँचें। संबंधित एंडपॉइंट की पुष्टि के लिए [API संदर्भ](../api-reference/introduction.mdx) देखें।
+`format=openai` के बिना प्रतिक्रिया Phaseo की पेज-वार `models` सूची होती है और उसमें कोई `data` ऐरे नहीं होता। यही `client.models.list()` पर भी लागू होता है: Node में `{ query: { format: "openai" } }` या Python में `extra_query={"format": "openai"}` दें। डिफ़ॉल्ट सूची में सिर्फ़ वे मॉडल होते हैं जिन्हें आप अभी कॉल कर सकते हैं; निष्क्रिय और जल्द आने वाले मॉडल शामिल करने के लिए `availability=all` जोड़ें।
 
-</Step>
+## क्या अलग तरह से काम करता है
 
-<Step title="परीक्षण करें और रोलआउट करें">
+| OpenAI सुविधा | Phaseo पर |
+| --- | --- |
+| Chat Completions, Responses | `/v1/chat/completions` और `/v1/responses` पर वही अनुरोध आकार। अज्ञात शीर्ष-स्तरीय फ़ील्ड `400` `unknown_param` लौटाता है। |
+| `previous_response_id`, `conversation` | `400` लौटाते हैं: Phaseo प्रतिक्रियाएं संग्रहीत नहीं करता। हर अनुरोध में `input` में पूरा इतिहास भेजें। |
+| एम्बेडिंग, मॉडरेशन, इमेज, स्पीच, ट्रांसक्रिप्शन | `/v1/embeddings`, `/v1/moderations`, `/v1/images/*`, `/v1/audio/*`। जांचें कि मॉडल उस ऑपरेशन को सपोर्ट करता है। |
+| Batch API | `/v1/files` और `/v1/batches`। `/v1/files` सिर्फ़ बैच इनपुट रखता है; यह दूसरे अनुरोधों को `file_id` इनपुट नहीं दे सकता। |
+| Realtime | `POST /v1/audio/realtime/sessions`, फिर लौटाए गए `connect.url` पर WebSocket। देखें [रियलटाइम वॉइस](../guides/realtime-voice)। |
+| संग्रहीत प्रॉम्प्ट (`prompt: { id: "pmpt_…" }`) | प्रॉम्प्ट को प्रीसेट के रूप में दोबारा बनाएं और उसे `prompt: { id: "@slug", version, variables }` से कॉल करें। देखें [प्रॉम्प्ट टेम्पलेट](../guides/prompt-templates)। |
+| `organization`, `project`, `OpenAI-Organization` हेडर | कोई समकक्ष नहीं। इन्हें हटाएं; Phaseo वर्कस्पेस और कुंजियां उपयोग करें। |
+| Assistants, Threads, वेक्टर स्टोर, फ़ाइन-ट्यूनिंग, पुराना `/v1/completions` | कोई Phaseo एंडपॉइंट नहीं। इन्हें OpenAI पर रखें या `/v1/responses` पर पोर्ट करें। |
 
-पुराने और नए कॉन्फ़िगरेशन पर समान प्रतिनिधि prompts चलाएँ। ट्रैफ़िक धीरे-धीरे बदलने से पहले आउटपुट स्वरूप, विलंबता, टोकन उपयोग, त्रुटियाँ और लागत की तुलना करें।
+## टेस्ट करें और रोलआउट करें
 
-</Step>
-</Steps>
+वही प्रतिनिधि प्रॉम्प्ट पुराने और नए कॉन्फ़िगरेशन पर चलाएं और आउटपुट आकार, लेटेंसी, टोकन उपयोग, त्रुटियों और लागत की तुलना करें। ट्रैफ़िक बदलने से पहले:
 
-## माइग्रेशन चेकलिस्ट
+- Phaseo कुंजी डेवलपमेंट, स्टेजिंग और प्रोडक्शन में सेट है;
+- हर प्रोडक्शन मॉडल ID `GET /v1/models?format=openai` में दिखती है;
+- स्टेजिंग में एक नॉन-स्ट्रीमिंग और एक स्ट्रीमिंग अनुरोध पास होता है, और ऐप उपयोग करता हो तो टूल कॉल और संरचित आउटपुट भी;
+- रोलबैक अब भी सिर्फ़ बेस URL और कुंजी का बदलाव है।
 
-- डेवलपमेंट, स्टेजिंग और प्रोडक्शन में Phaseo कुंजी कॉन्फ़िगर है।
-- क्लाइंट base URL `https://api.phaseo.app/v1` है।
-- हर प्रोडक्शन मॉडल ID `GET /v1/models` में मौजूद है।
-- स्टेजिंग में streaming और गैर-streaming अनुरोध सफल हैं।
-- ऐप में इस्तेमाल होने पर टूल कॉल और संरचित आउटपुट सफल हैं।
-- रोलबैक के लिए कॉन्फ़िगरेशन में कुंजी और एंडपॉइंट बदलना ही काफ़ी है।
-
-## अगले चरण
-
-- [रूटिंग और फ़ॉलबैक](../guides/routing-and-fallbacks.mdx)
-- [मॉडल](../exploring/models.mdx)
-- [त्रुटि प्रबंधन](../api-reference/errors.mdx)
+फिर ट्रैफ़िक धीरे-धीरे बदलें। [रूटिंग और फ़ॉलबैक](../guides/routing-and-fallbacks) फ़ॉलबैक मॉडल के बारे में बताता है, और [त्रुटि प्रबंधन](../api-reference/errors.mdx) उन त्रुटि बॉडी की सूची देता है जो आपका ऐप अब देख सकता है।

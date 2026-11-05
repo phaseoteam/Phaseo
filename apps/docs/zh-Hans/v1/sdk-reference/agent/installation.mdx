@@ -1,0 +1,287 @@
+---
+icon: "package"
+title: "安装 Agent SDK"
+sidebarTitle: "安装"
+description: "安装 Phaseo Agent SDK，并设置它的网关客户端使用的 API 密钥。"
+---
+
+安装你所用语言的 Agent SDK 包，设置 `PHASEO_API_KEY`，然后在[用法](./usage)中构建第一个智能体。每个包都会把该语言的 Phaseo 核心客户端作为依赖一起安装。
+
+<Steps>
+<Step title="安装包">
+
+<Tabs>
+<Tab title="TypeScript">
+
+把 [`@phaseo/agent-sdk`](https://www.npmjs.com/package/@phaseo/agent-sdk) 0.3.0 安装到 TypeScript 或 JavaScript 项目中。`@phaseo/sdk` 会随之安装。
+
+<CodeGroup>
+
+```bash npm
+npm install @phaseo/agent-sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/agent-sdk
+```
+
+```bash yarn
+yarn add @phaseo/agent-sdk
+```
+
+```bash bun
+bun add @phaseo/agent-sdk
+```
+
+</CodeGroup>
+
+</Tab>
+<Tab title="Python">
+
+把 [`phaseo-agent-sdk`](https://pypi.org/project/phaseo-agent-sdk/) 0.3.0 安装到 Python 3.10 或更高版本的环境中。核心 `phaseo` 客户端（3.x）会随之安装，这个包以 `phaseo_agent` 模块的形式安装。
+
+<CodeGroup>
+
+```bash pip
+pip install phaseo-agent-sdk
+```
+
+```bash uv
+uv add phaseo-agent-sdk
+```
+
+</CodeGroup>
+
+</Tab>
+<Tab title="Go">
+
+使用 Go 1.24 或更高版本添加 [`agent-sdk-go`](https://pkg.go.dev/github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go) `v0.3.0`。Go 会把核心客户端 `github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3` 添加为依赖。
+
+```bash
+go get github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go@latest
+```
+
+以 `phaseoagent` 名称导入智能体包：
+
+```go
+import phaseoagent "github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go"
+```
+
+</Tab>
+<Tab title="C#">
+
+从 NuGet 添加 [`Phaseo.AgentSdk`](https://www.nuget.org/packages/Phaseo.AgentSdk) 0.3.0。你需要 .NET 8 或更高版本。NuGet 会把 `Phaseo.Sdk` 添加为依赖。
+
+```bash
+dotnet add package Phaseo.AgentSdk
+```
+
+智能体类型位于 `PhaseoAgentSdk` 命名空间中：
+
+```csharp
+using PhaseoAgentSdk;
+```
+
+</Tab>
+<Tab title="PHP">
+
+用 Composer 添加 [`phaseo/agent-sdk`](https://packagist.org/packages/phaseo/agent-sdk) `v0.3.0`。你需要 PHP 8.1 或更高版本。Composer 会把 `phaseo/sdk`（`^3.0.0`）添加为依赖。
+
+```bash
+composer require phaseo/agent-sdk
+```
+
+智能体类位于 `Phaseo\AgentSdk` 命名空间中：
+
+```php
+use Phaseo\AgentSdk\AgentDefinition;
+use Phaseo\AgentSdk\AgentSdk;
+use Phaseo\AgentSdk\Tool;
+```
+
+</Tab>
+<Tab title="Ruby">
+
+用 RubyGems 或 Bundler 添加 [`phaseo_agent_sdk`](https://rubygems.org/gems/phaseo_agent_sdk) 0.3.0。你需要 Ruby 3.2 或更高版本。RubyGems 会把 `phaseo_sdk`（`>= 3.0.0, < 4.0.0`）添加为依赖。
+
+<CodeGroup>
+
+```bash gem
+gem install phaseo_agent_sdk
+```
+
+```ruby Gemfile
+gem "phaseo_agent_sdk"
+```
+
+</CodeGroup>
+
+用下面的代码加载智能体模块：
+
+```ruby
+require "phaseo_agent_sdk"
+```
+
+</Tab>
+<Tab title="Java">
+
+从 Maven Central 添加 `app.phaseo:phaseo-agent-sdk` 0.3.0。你需要 Java 17 或更高版本。构建会把 `app.phaseo:phaseo-sdk` 3.0.0 和 Jackson 添加为依赖。所有类型都是 `app.phaseo.agent.AgentSdk` 中的嵌套 record。
+
+<CodeGroup>
+
+```xml Maven
+<dependency>
+  <groupId>app.phaseo</groupId>
+  <artifactId>phaseo-agent-sdk</artifactId>
+  <version>0.3.0</version>
+</dependency>
+```
+
+```kotlin Gradle
+implementation("app.phaseo:phaseo-agent-sdk:0.3.0")
+```
+
+</CodeGroup>
+
+如果要从源码构建：
+
+```bash
+git clone https://github.com/phaseoteam/Phaseo.git
+cd Phaseo
+mvn -f packages/sdk/agent-sdk-java/pom.xml package
+```
+
+</Tab>
+<Tab title="Rust">
+
+使用 Rust 1.86 或更高版本，添加 crates.io 上的 [`phaseo-agent`](https://crates.io/crates/phaseo-agent) 和 `phaseo` 客户端，两者都是 0.2.0。与其他语言不同，你需要自己添加核心客户端。
+
+<CodeGroup>
+
+```toml Cargo.toml
+[dependencies]
+phaseo = "0.2"
+phaseo-agent = "0.2"
+serde_json = "1"
+```
+
+```bash cargo
+cargo add phaseo@0.2 phaseo-agent@0.2 serde_json
+```
+
+</CodeGroup>
+
+</Tab>
+</Tabs>
+
+</Step>
+<Step title="设置你的 API 密钥">
+
+在 [API 密钥](https://phaseo.app/settings/keys)中创建一个密钥，然后导出它：
+
+<CodeGroup>
+
+```bash macOS 和 Linux
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+```powershell Windows
+$env:PHASEO_API_KEY = "phaseo_v1_sk_..."
+```
+
+</CodeGroup>
+
+大多数网关客户端会从环境变量读取密钥，Python 的则不会。TypeScript、Python 和 Java 会忽略 `PHASEO_BASE_URL`：
+
+| 语言 | 网关客户端 | 读取 `PHASEO_API_KEY` | 读取 `PHASEO_BASE_URL` | 在代码中传入的方式 |
+| --- | --- | --- | --- | --- |
+| TypeScript | `createGatewayAgentClient()` | 是 | 否 | `clientOptions.apiKey`、`clientOptions.baseUrl` |
+| Python | `create_gateway_agent_client()` | 否；没有密钥时抛出 `ValueError` | 否 | `client_options={"api_key": ...}` 或 `client=Phaseo()` |
+| Go | `CreateGatewayAgentClient(...)` | 是，在 `APIKey` 为空时 | 是，在 `BaseURL` 为空时 | `GatewayAgentClientOptions.APIKey`、`.BaseURL` |
+| C# | `AgentSdk.CreateGatewayAgentClient()` | 是 | 是 | `GatewayAgentClientOptions.ClientOptions` 中的 `apiKey`、`baseUrl` |
+| PHP | `AgentSdk::createGatewayAgentClient()` | 是 | 是 | `GatewayAgentClientOptions::$clientOptions` 中的 `api_key`、`base_url` |
+| Ruby | `PhaseoAgentSdk.create_gateway_agent_client` | 是 | 是 | `api_key:`、`base_url:` |
+| Java | `AgentSdk.createGatewayAgentClient()` | 是 | 否 | `new AgentSdk.GatewayOptions(null, apiKey, baseUrl, null, null, null)` |
+| Rust | `create_gateway_agent_client(model)`、`GatewayAgentClient::from_env(model)` | 是 | 是，通过 `phaseo` 客户端 | `GatewayAgentClient::new(client, model)` |
+
+默认的基础 URL 是 `https://api.phaseo.app/v1`。
+
+</Step>
+<Step title="检查安装">
+
+构建一个智能体但不调用模型。如果它能编译并运行，说明包已经安装好了：
+
+<CodeGroup>
+
+```typescript TypeScript
+import { createAgent } from "@phaseo/agent-sdk";
+
+createAgent({ id: "verification-agent", model: "openai/gpt-6-astra" });
+console.log("Phaseo Agent SDK installed");
+```
+
+```python Python
+from phaseo_agent import create_agent
+
+create_agent({"id": "verification-agent", "model": "openai/gpt-6-astra"})
+print("Phaseo Agent SDK installed")
+```
+
+```go Go
+package main
+
+import (
+  "fmt"
+
+  phaseoagent "github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go"
+)
+
+func main() {
+  phaseoagent.CreateAgent(phaseoagent.AgentDefinition{ID: "verification-agent", Model: "openai/gpt-6-astra"})
+  fmt.Println("Phaseo Agent SDK installed")
+}
+```
+
+```csharp C#
+using PhaseoAgentSdk;
+
+AgentSdk.CreateAgent(new AgentDefinition { Id = "verification-agent", Model = "openai/gpt-6-astra" });
+Console.WriteLine("Phaseo Agent SDK installed");
+```
+
+```php PHP
+<?php
+require "vendor/autoload.php";
+
+use Phaseo\AgentSdk\AgentDefinition;
+use Phaseo\AgentSdk\AgentSdk;
+
+AgentSdk::createAgent(new AgentDefinition(id: "verification-agent", model: "openai/gpt-6-astra"));
+echo "Phaseo Agent SDK installed" . PHP_EOL;
+```
+
+```ruby Ruby
+require "phaseo_agent_sdk"
+
+PhaseoAgentSdk.create_agent(id: "verification-agent", model: "openai/gpt-6-astra")
+puts "Phaseo Agent SDK installed"
+```
+
+```rust Rust
+use phaseo_agent::{create_agent, AgentDefinition};
+
+fn main() {
+    let _agent = create_agent(AgentDefinition::new(
+        "verification-agent",
+        "openai/gpt-6-astra",
+    ));
+    println!("Phaseo Rust Agent SDK installed");
+}
+```
+
+</CodeGroup>
+
+Java 没有简写形式：`AgentDefinition` 是一个按位置传参的 record，完整写法见[用法](./usage)。
+
+</Step>
+</Steps>

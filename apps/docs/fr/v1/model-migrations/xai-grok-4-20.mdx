@@ -4,75 +4,38 @@ description: "À connaître pour adopter Grok 4.20, notamment les contrôles de 
 icon: "/icons/brands/grok.svg"
 ---
 
-# SpaceXAI Grok 4.20
+Changez l’identifiant de modèle et relancez votre jeu de validation ; les formats de requête et de réponse restent les mêmes. Le seul nouveau contrôle concerne la profondeur de travail de la variante multi-agent.
 
-Suivez ce guide pour adopter Grok 4.20 via Phaseo Gateway en toute sécurité.
+| Modèle | Identifiant de modèle Phaseo | Contrôle du raisonnement |
+| --- | --- | --- |
+| Grok 4.20 | `spacex-ai/grok-4.20` | `reasoning.enabled` : activé ou désactivé |
+| Grok 4.20 Multi-Agent (bêta) | `spacex-ai/grok-4.20-multi-agent-beta` | `reasoning.effort` : `low`, `medium` ou `high` |
 
-Route principale du catalogue :
+## Activer ou désactiver le raisonnement sur Grok 4.20
 
-- `spacex-ai/grok-4-20-2026-02-17`
-
-Route multi-agent facultative, exposée sous l’identifiant de modèle du fournisseur :
-
-- `spacex-ai/grok-4.20-multi-agent-beta-0309`
-
-## Démarrage rapide de la migration
-
-Pour la plupart des intégrations, il suffit de mettre à jour l’identifiant du modèle et de relancer vos vérifications habituelles.
-
-Les formats de requête et de réponse existants peuvent rester inchangés.
-
-## Nouveautés
-
-La route Grok 4.20 de base ne nécessite aucun changement de comportement dans Phaseo Gateway.
-
-Le seul changement pratique concerne le réglage de la variante multi-agent.
-
-Avec Phaseo Gateway :
-
-- Vous pouvez activer le raisonnement du Grok 4.20 de base avec `reasoning.enabled`.
-- Réglez la variante multi-agent avec `reasoning.effort`.
-- Choisissez `low`, `medium`, `high` ou `extra high`.
-- D’après la documentation SpaceXAI, `low` et `medium` utilisent 4 agents ; `high` et `extra high` utilisent des configurations multi-agents plus importantes.
-
-Nous ne transmettons pas directement `agent_count` dans les requêtes Gateway.
-
-### Grok 4.20 de base avec contrôle du raisonnement
-
-Utilisez le modèle de base et définissez directement `reasoning.enabled` :
+Définissez `reasoning.enabled: true` pour utiliser la version avec raisonnement du modèle. Sans ce paramètre, ou avec `false`, Phaseo appelle la version sans raisonnement.
 
 ```json
 {
-  "model": "spacex-ai/grok-4-20-2026-02-17",
+  "model": "spacex-ai/grok-4.20",
   "input": "Explain this architecture",
-  "reasoning": {
-    "enabled": true
-  }
+  "reasoning": { "enabled": true }
 }
 ```
 
-### Grok 4.20 multi-agent avec réglage de l’effort
+## Définir la profondeur du modèle multi-agent
 
-Utilisez le modèle multi-agent et réglez son niveau avec `reasoning.effort` :
+Contrôlez la profondeur avec `reasoning.effort`. Les requêtes à la passerelle n’acceptent pas le paramètre `agent_count` de xAI ; selon xAI, `low` et `medium` exécutent 4 agents et `high` exécute une configuration plus grande.
 
 ```json
 {
-  "model": "spacex-ai/grok-4.20-multi-agent-beta-0309",
+  "model": "spacex-ai/grok-4.20-multi-agent-beta",
   "input": "Evaluate three rollout options with tradeoffs",
-  "reasoning": {
-    "effort": "medium"
-  }
+  "reasoning": { "effort": "medium" }
 }
 ```
-
-Niveaux d’effort de raisonnement :
-
-- `low`
-- `medium`
-- `high`
-- `extra high`
 
 ## Sources
 
-- [Fonctionnalités multi-agents de SpaceXAI](https://docs.x.ai/developers/model-capabilities/text/multi-agent)
-- [Migrer vers les nouveaux modèles SpaceXAI](https://docs.x.ai/docs/guides/migrating-to-new-models)
+- [Capacités multi-agent de SpaceXAI](https://docs.x.ai/developers/model-capabilities/text/multi-agent)
+- [SpaceXAI : migrer vers les nouveaux modèles](https://docs.x.ai/docs/guides/migrating-to-new-models)

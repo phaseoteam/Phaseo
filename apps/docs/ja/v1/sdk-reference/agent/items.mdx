@@ -1,0 +1,246 @@
+---
+icon: "layers"
+title: "Agent SDK のアイテム"
+sidebarTitle: "アイテム"
+description: "テキスト、推論、ツール呼び出し、結果からなるエージェントのタイムラインを、リアルタイムまたは実行後に表示します。"
+---
+
+ストリーミングされる各イベントやアイテムの type で分岐し、テキスト、推論、ツール呼び出し、進捗を届いた順に表示します。後で、保存した実行結果から同じタイムラインを組み立て直せます。TypeScript は型付きのアイテムのユニオンを返し、その他の言語は生のイベントをマップ、dict、ハッシュとして返します。
+
+## ストリーミングしたタイムラインを表示する
+
+<CodeGroup>
+
+```typescript TypeScript
+const stream = agent.stream({ input, client });
+
+for await (const item of stream.getItemsStream()) {
+  switch (item.type) {
+    case "message":
+      renderAssistantMessage(item.content);
+      break;
+    case "reasoning":
+      renderReasoning(item.text);
+      break;
+    case "tool_call":
+      renderToolCall(item.toolCallId, item.name, item.input);
+      break;
+    case "tool_result":
+      renderToolResult(item.toolCallId, item.output);
+      break;
+    case "error":
+      renderError(item.message);
+      break;
+    case "output":
+      renderFinalOutput(item.value);
+      break;
+  }
+}
+```
+
+```python Python
+for item in stream.item_stream():
+    item_type = item.get("type")
+    render_timeline_item(item_type, item)
+```
+
+```go Go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+
+for event := range stream.Events() {
+  switch event.Type {
+  case "response.output_text.delta":
+    fmt.Print(event.Details["delta"])
+  case "response.reasoning.delta":
+    renderReasoning(event.Details["delta"])
+  case "response.item":
+    renderItem(event.Details["item"])
+  case "tool.preliminary_result":
+    renderProgress(event.Details["tool_call_id"], event.Details["result"])
+  default:
+    // フォールバックを残す：新しいイベントの種類が現れることがあります。
+  }
+}
+
+result, err := stream.Result()
+```
+
+```csharp C#
+var stream = agent.Stream(new RunOptions { Input = prompt, Client = client });
+
+await foreach (var item in stream.FullStream())
+{
+    switch (item.Type)
+    {
+        case "response.output_text.delta":
+            Console.Write(item.Details?["delta"]);
+            break;
+        case "response.reasoning.delta":
+            RenderReasoning(item.Details?["delta"]);
+            break;
+        case "response.item":
+            RenderItem(item.Details?["item"]);
+            break;
+        case "tool.preliminary_result":
+            RenderProgress(item.Details?["tool_call_id"], item.Details?["result"]);
+            break;
+        default:
+            break; // フォールバックを残す：新しいイベントの種類が現れることがあります。
+    }
+}
+
+var result = await stream.GetResult();
+```
+
+```php PHP
+$stream = $agent->stream(input: $prompt, client: $client);
+
+foreach ($stream->fullStream() as $event) {
+    match ($event["type"]) {
+        "response.output_text.delta" => print($event["delta"]),
+        "response.reasoning.delta" => renderReasoning($event["delta"]),
+        "response.item" => renderItem($event["item"]),
+        "tool.preliminary_result" => renderProgress($event["tool_call_id"], $event["result"]),
+        default => null, // フォールバックを残す：新しいイベントの種類が現れることがあります。
+    };
+}
+
+$result = $stream->getResult();
+```
+
+```ruby Ruby
+stream = agent.stream(input: prompt, client: client)
+
+stream.full_stream.each do |event|
+  case event[:type]
+  when "response.output_text.delta" then print event[:delta]
+  when "response.reasoning.delta" then render_reasoning(event[:delta])
+  when "response.item" then render_item(event[:item])
+  when "tool.preliminary_result" then render_progress(event[:tool_call_id], event[:result])
+  else nil # フォールバックを残す：新しいイベントの種類が現れることがあります。
+  end
+end
+
+result = stream.result
+```
+
+```java Java
+// イベントは onEvent コンシューマーでライブに処理するか、実行後に stream.fullStream() をループします。
+Consumer<AgentSdk.AgentEvent> render = event -> {
+    switch (event.type()) {
+        case "response.output_text.delta" -> System.out.print(event.details().get("delta"));
+        case "response.reasoning.delta" -> renderReasoning(event.details().get("delta"));
+        case "response.item" -> renderItem(event.details().get("item"));
+        case "tool.preliminary_result" -> renderProgress(event.details().get("tool_call_id"), event.details().get("result"));
+        default -> { } // フォールバックを残す：新しいイベントの種類が現れることがあります。
+    }
+};
+
+var stream = agent.stream(new AgentSdk.RunOptions(
+    prompt, client, null, null, null, null, null, null, render, null));
+var result = stream.getResult();
+```
+
+</CodeGroup>
+
+Rust にはストリーミングがありません。下のように、完了した実行からタイムラインを組み立ててください。
+
+## TypeScript のアイテムの型
+
+`AgentItem<TOutput>` は判別可能なユニオンで、TypeScript は各アイテムを `type` から型を絞り込みます。
+
+| `type` | 主なフィールド | 表すもの |
+| --- | --- | --- |
+| `message` | `role`（常に `assistant`）、`content` | アシスタントのテキスト |
+| `reasoning` | `text` | モデルが提供した推論 |
+| `tool_call` | `toolCallId`、`name`、`input` | 提案されたツール呼び出し |
+| `tool_result` | `toolCallId`、`name`、`output` | 完了したツール呼び出し |
+| `error` | `message`、任意のツール詳細 | プロバイダーまたはツールのエラー |
+| `output` | `value` | パース済みのエージェントの最終出力 |
+
+プロバイダーの出力から作られたアイテムは、移植可能な型に含まれないまれなフィールドのために、元のペイロードを `rawProviderItem` にも保持します。`rawProviderItem` はプロバイダーによって異なるため、製品のロジックは移植可能なフィールドの上に組み立ててください。
+
+## その他の言語のイベントの種類
+
+Go、C#、PHP、Ruby、Java は同じ種類のイベントを返します。Python の `item_stream()` は、プロバイダーとランタイムのアイテムを `type` キーを持つ dict として返します。
+
+| イベントの種類 | フィールド |
+| --- | --- |
+| `response.output_text.delta` | `delta`（文字列） |
+| `response.reasoning.delta` | `delta`（文字列） |
+| `response.item` | `item`（プロバイダーの出力アイテム。型なし） |
+| `tool.started`、`tool.completed`、`tool.failed`、`tool.preliminary_result` | `tool_call_id`、`tool_name`、さらに `output`、`error`、`result` のいずれか |
+
+フィールドの置き場所は言語によって異なります。
+
+| 言語 | イベントの形 |
+| --- | --- |
+| Python | dict。`item.get("type")` を読む |
+| Go | `Type` と `Details map[string]any` を持つ `AgentEvent` |
+| C# | `Type` と、`object?` 値の `Details` ディクショナリを持つ `AgentEvent` |
+| PHP | フラットな配列。ライフサイクルイベントは `type`、`run_id`、`agent_id`、`timestamp`、`status` を持ち、モデルのイベントは `type` と上記のフィールドを最上位に持ちます。 |
+| Ruby | シンボルキー（`:type`、`:delta` など）を持つフラットなハッシュ。構成は PHP の配列と同じです |
+| Java | `type()` と、`Object` 値の `details()` マップを持つ `AgentEvent` |
+
+どれも型付きのユニオンではないため、UI が使うフィールドは検証し、プロバイダー固有のパースは1つのアダプターの裏にまとめ、不明な種類へのフォールバックを残してください。Go、C#、Java では、モデルのストリームイベントの実行 ID は `"stream"` です。実際の実行 ID にはライフサイクルイベントを使います。ライフサイクルイベントの全一覧は[ライフサイクルフック](./lifecycle-hooks)にあります。
+
+## 実行後にタイムラインを組み立て直す
+
+イベントの履歴は実行が終わった後も読めるため、2回目のモデルリクエストなしで、1つのコンシューマーが表示し、別のコンシューマーがイベントを永続化できます。永続的なタイムラインには、完了した実行結果を保存してください。
+
+<Tabs>
+<Tab title="TypeScript">
+
+完了した結果の `items` には、ストリームと同じ順序のアイテムが入っています。
+
+```typescript
+const completed = await stream.getResult();
+
+for (const item of completed.items) {
+  saveTimelineItem(completed.run.id, item);
+}
+```
+
+</Tab>
+<Tab title="Python">
+
+| フィールド | 内容 |
+| --- | --- |
+| `run` | 永続的な状態：`id`、`status`、`input`、`context`、`pause`、`stop_reason`、`error`、`usage`、`next_turn_params` |
+| `steps` | モデルターンごとに1つの `AgentStepRecord`。`request_id`、`native_response_id`、`provider`、`model`、`model_attempts`、`usage`、`finish_reason`、`warnings`、`tool_calls` を持ちます |
+| `messages` | ツールの結果を含む会話全体 |
+| `output` | `parse_output` と `output_schema` を通した後の最終出力 |
+| `usage` | `AgentUsageSummary` の合計：入力、出力、キャッシュ、合計のトークン数と、コスト |
+
+</Tab>
+<Tab title="Go">
+
+`result.Messages` にはすべてのモデルとツールのメッセージが、`result.Steps` には各ターンのツール呼び出し、リクエスト ID、プロバイダー、モデル、使用量が入っています。
+
+</Tab>
+<Tab title="C#">
+
+`result.Messages` にはすべてのモデルとツールのメッセージが、`result.Steps` には各ターンのツール呼び出し、リクエスト ID、プロバイダー、モデル、終了理由、警告、使用量が入っています。
+
+</Tab>
+<Tab title="PHP">
+
+`$result->messages` にはすべてのモデルとツールのメッセージが、`$result->steps` には各ターンのツール呼び出し、リクエスト ID、プロバイダー、モデル、終了理由、警告、使用量が入っています。
+
+</Tab>
+<Tab title="Ruby">
+
+`result.messages` にはすべてのモデルとツールのメッセージが、`result.steps` には各ターンのツール呼び出し、リクエスト ID、プロバイダー、モデル、終了理由、警告、使用量が入っています。
+
+</Tab>
+<Tab title="Java">
+
+`fullStream()` は、実行が終わるとイベントの完全な履歴を返します。`messages()` にはすべてのモデルとツールのメッセージが、`steps()` には各ターンのツール呼び出し、リクエスト ID、プロバイダー、モデル、終了理由、警告、使用量が入っています。
+
+</Tab>
+<Tab title="Rust">
+
+`RunResult` には、`run`（ステータス、ID、実際に使われたモデル、ステップ上限、コンテキスト、一時停止の状態）、`steps`（各モデルターンのリクエスト ID、プロバイダー、モデル、終了理由、ツール呼び出し、使用量）、`messages`（モデルとツールのメッセージの完全な履歴）、`output`、`usage` があります。
+
+</Tab>
+</Tabs>

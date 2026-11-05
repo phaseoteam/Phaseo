@@ -5,74 +5,41 @@ sidebarTitle: "Provedores de API"
 icon: "server"
 ---
 
-Provedores de API são as plataformas que hospedam e disponibilizam APIs de modelos.
+Abra um provedor em [Provedores de API](https://phaseo.app/api-providers) para ver quais modelos ele disponibiliza pelo Phaseo e qual tem sido a velocidade dele, ou [compare provedores](https://phaseo.app/api-providers/compare) lado a lado. Um provedor de API hospeda modelos por trás de uma API; a [organização](./organisations.mdx) que criou um modelo costuma ser outra empresa.
 
-As organizações de modelos treinam os modelos. Os provedores disponibilizam esses modelos por endpoints de produção, autenticação, controles de uso e ferramentas operacionais.
-
-## O que um provedor de API costuma fazer
-
-- Autenticação e gerenciamento de chaves
-- Roteamento de solicitações e gerenciamento de disponibilidade
-- Medição de uso e faturamento
-- Usabilidade da API e do SDK
-- Hospedagem regional e controles de conformidade
-
-## Provedor e organização
-
-| Aspecto | Organização | Provedor de API |
+| | Organização | Provedor de API |
 | --- | --- | --- |
-| Função principal | Cria e treina modelos | Hospeda e disponibiliza APIs de modelos |
-| Foco | Pesquisa e qualidade dos modelos | Confiabilidade, acesso e operação |
-| Distribuição | Geralmente oferece sua própria família de modelos | Pode oferecer modelos de várias organizações |
+| **Faz** | Cria e treina modelos | Hospeda e disponibiliza APIs de modelos |
+| **Foco** | Pesquisa e qualidade dos modelos | Confiabilidade, acesso, regiões e preços |
+| **Modelos** | Geralmente suas próprias famílias | Muitas vezes modelos de várias organizações |
 
-Muitas empresas exercem as duas funções, dependendo do produto.
+Muitas empresas são as duas coisas.
 
-## O que você encontra nas páginas de provedores do Phaseo
+## O que a página de um provedor mostra
 
-| Seção | Informações |
+| Seção | O que ela informa |
 | --- | --- |
-| Visão geral | Identidade do provedor, links para documentação e recursos compatíveis |
-| Modelos | Modelos e variantes disponíveis |
-| Preços | Normalização de preços e unidades de cobrança do provedor |
-| Limites | Limites de solicitação e throughput, quando disponíveis |
-| Recursos | Streaming, ferramentas, saídas estruturadas e suporte a modalidades |
+| **Desempenho** | Latência e vazão por hora no tráfego do Gateway nos últimos sete dias. |
+| **Uso de tokens** | Os tokens que o Phaseo enviou ao provedor ao longo do tempo. |
+| **Principais modelos** e **Principais apps** | Os modelos e apps públicos com mais tráfego neste provedor. |
+| **Modelos** | Todos os modelos que o provedor disponibiliza, com abas para modelos de texto, imagem, áudio, vídeo, embedding e moderação. |
 
-## Phaseo Gateway como camada de provedores
+A página de cada modelo mostra, então, o preço, o tamanho do contexto, o status e a política de dados do provedor para aquele modelo; [Status do provedor e do Phaseo](../guides/provider-statuses) explica os ícones de status.
 
-O Phaseo Gateway unifica o acesso a vários backends.
+## Como o Gateway usa os provedores
 
-Vantagens:
+Quando um modelo tem vários provedores, o Gateway escolhe um por solicitação e recorre a outro se ele falhar. Você envia um único formato de solicitação e recebe uma única fatura e um único log de uso, seja qual for o provedor que atende. Para cobrar na sua própria conta do provedor, adicione uma chave do provedor ([BYOK](../guides/routing-and-fallbacks#byok-considerations)).
 
-- Formato unificado de solicitação e resposta entre provedores
-- Roteamento e fallback que consideram o provedor
-- Uso unificado do SDK para integrações com vários provedores
-- Observabilidade centralizada de uso e custos
-- Suporte opcional a BYOK para chaves nativas do provedor
+[Roteamento e fallbacks](../guides/routing-and-fallbacks) mostra como ordenar, fixar ou excluir provedores.
 
-## Como escolher um provedor
+## Escolha um provedor
 
-Ao avaliar provedores, considere:
+| Se o que importa para você é | Verifique |
+| --- | --- |
+| Um modelo específico | A seção **Provedores** da página do modelo, ou `GET /v1/models/{author}/{slug}/endpoints` |
+| A latência na sua região | A seção **Desempenho** do provedor e as regiões dele na página do modelo |
+| O custo no seu volume | A seção **Preços** do modelo e a [calculadora de preços](https://phaseo.app/tools/pricing-calculator) |
+| Ferramentas, streaming ou saída estruturada | Os parâmetros compatíveis da rota na página do modelo ou na API de endpoints |
+| Tratamento de dados e conformidade | A política de dados e os locais de processamento da rota na página do modelo |
 
-- Disponibilidade dos modelos para seu caso de uso
-- Confiabilidade e latência na região desejada
-- Perfil de custo para o volume de tráfego esperado
-- Compatibilidade com ferramentas, streaming e saídas estruturadas
-- Requisitos de conformidade e tratamento de dados
-
-## Perguntas para avaliar
-
-- Quais provedores disponibilizam a família de modelos de que preciso?
-- Qual provedor oferece menor latência na minha região?
-- Qual é a opção de menor custo para meu volume de tokens?
-- Qual provedor oferece os recursos de endpoint necessários?
-
-## Próximas etapas
-
-<Card
-	title="Explore preços e desempenho"
-	icon="scale"
-	href="./pricing-performance.mdx"
-	horizontal
->
-	Compare custos, velocidade e métricas de eficiência entre provedores.
-</Card>
+[Preços e desempenho](./pricing-performance.mdx) explica como ler os números de custo e velocidade.

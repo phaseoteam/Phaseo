@@ -1,112 +1,101 @@
 ---
-title: "Implantar predefinições e depurar o roteamento"
-sidebarTitle: "Implantar e depurar roteamento"
+title: "Implante predefinições e depure o roteamento"
 icon: "route"
-description: "Use predefinições para padronizar prompts e padrões de roteamento; depois, inspecione os detalhes da solicitação para entender como o Phaseo a roteou."
+description: "Use predefinições para padronizar prompts e padrões de roteamento e depois inspecione os detalhes da solicitação para entender por que o Phaseo a roteou daquele jeito."
 ---
 
-Use esta receita para reutilizar uma predefinição em vários serviços, em vez de copiar os mesmos prompts, modelos e padrões de roteamento em todos eles.
+Migre vários serviços para uma única predefinição para que compartilhem um prompt, um modelo e regras de provedor, e depois use os registros de solicitações para explicar para onde cada solicitação foi. No fim, os seus chamadores enviam `"model": "@release-summary"` e a entrada, e você consegue implantar uma mudança de política um chamador por vez.
 
-## Objetivo
+O formato da solicitação está pronto para produção. [Predefinições](../guides/presets) explica como as configurações de uma predefinição se combinam com a solicitação; esta receita trata da implantação.
 
-- Padronizar os padrões de prompts e parâmetros.
-- Limitar quais provedores podem ser usados em um rollout ou limite de conformidade.
-- Manter contexto suficiente da solicitação para explicar por que ela foi roteada daquela forma.
+## Migre um chamador para uma predefinição
 
-## 1. Crie a predefinição
+<Steps>
+<Step title="Crie a predefinição">
 
-Em **Painel -> Configurações -> Predefinições**, crie uma predefinição com:
+Em **Configurações → Predefinições**, crie `release-summary` com um prompt de sistema, os modelos aprovados, as preferências de provedor e parâmetros padrão como `temperature`. Ou pela CLI:
 
-- um nome e slug claros
-- um prompt de sistema
-- modelos aprovados
-- preferências de provedores
-- valores padrão de parâmetros, como `temperature`
+```bash
+phaseo presets create --name @release-summary --model anthropic/claude-sonnet-5.5
+```
 
-Use o slug da predefinição no código de chamada para reutilizar a mesma política de solicitação em diferentes ambientes.
+</Step>
+<Step title="Chame pelo nome">
 
-## 2. Mantenha o corpo da solicitação enxuto
-
-A principal vantagem das predefinições é que quem faz a chamada não precisa repetir os mesmos padrões de roteamento e prompt em cada solicitação.
+Envie a predefinição como `model`. Não existe um campo `preset` separado.
 
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "anthropic/claude-sonnet-4-5",
+    "model": "@release-summary",
     "input": "Generate a release summary for the last 24 hours.",
-    "preset": "release-summary"
+    "meta": true
   }'
 ```
 
-```typescript TypeScript SDK
+```typescript TypeScript
 import Phaseo from "@phaseo/sdk";
 
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-  model: "anthropic/claude-sonnet-4-5",
+  model: "@release-summary",
   input: "Generate a release summary for the last 24 hours.",
-  preset: "release-summary",
+  meta: true,
 });
 
-console.log(response.output_text);
+console.log(response.model, response.meta?.routing);
 ```
 
-```python Python SDK
+```python Python
+import os
+
 from phaseo import Phaseo
 
-client = Phaseo(api_key="YOUR_API_KEY")
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
 
 response = client.generate_response(
     {
-        "model": "anthropic/claude-sonnet-4-5",
+        "model": "@release-summary",
         "input": "Generate a release summary for the last 24 hours.",
-        "preset": "release-summary",
+        "meta": True,
     }
 )
 
-print(response.get("output_text"))
+print(response.get("model"), response["meta"]["routing"]["selected_provider"])
 ```
 </CodeGroup>
 
-## 3. Entenda o que a predefinição altera
+`model` na resposta é o modelo que respondeu, e `meta.routing.selected_provider` é o provedor.
 
-A predefinição é aplicada antes do roteamento de provedores:
+</Step>
+<Step title="Confira o que a predefinição aplicou">
 
-- parâmetros ausentes na solicitação são preenchidos pela predefinição
-- o prompt da predefinição é adicionado antes da camada de sistema
-- as preferências de provedor reduzem a lista de provedores disponíveis antes da classificação
-- restrições de modelo são verificadas antecipadamente, em vez de redirecionar silenciosamente
+Abra a solicitação em **Configurações → Uso → Registros**. Ali aparecem os padrões da predefinição que foram aplicados. Um modelo fora dos modelos permitidos da predefinição falha com `validation_error` (palavra-chave `preset_model_not_allowed`) em vez de ser roteado para outro.
 
-## 4. Depure o resultado do roteamento
+</Step>
+</Steps>
 
-Quando uma solicitação não for roteada como esperado, abra-a em **Gateway -> Uso** e inspecione:
+## Explique uma decisão de roteamento
 
-- provedores considerados
-- candidatos classificados
-- fatores de roteamento associados a cada candidato
-- bloqueios por política do espaço de trabalho ou proteções
+Quando uma solicitação não foi roteada como você esperava, expanda **Observabilidade do roteamento** na solicitação em **Configurações → Uso → Registros**. Ela responde a três perguntas:
 
-Esta é a forma mais rápida de descobrir:
+| Pergunta | Onde olhar |
+| --- | --- |
+| Por que um provedor foi pulado? | Os provedores excluídos antes da classificação, com o motivo, e os provedores rebaixados pelo status de implantação ou de roteamento |
+| Por que a solicitação foi bloqueada? | Os bloqueios por política do espaço de trabalho ou por guardrail na solicitação |
+| Por que este provedor venceu? | A pontuação final de cada provedor classificado e os fatores por trás dela |
 
-- por que um provedor foi ignorado
-- por que uma solicitação foi bloqueada
-- por que um destino de menor custo ou latência ficou em primeiro lugar
+[Explique uma decisão de roteamento](../guides/routing-and-fallbacks#explain-a-routing-decision) descreve cada campo.
 
-## 5. Padrão operacional
+## Implante uma mudança de política
 
-Use este padrão de rollout ao alterar o comportamento do roteamento:
+1. Publique a mudança como uma nova versão da predefinição ou crie um novo slug para uma política muito diferente.
+2. Migre um chamador de baixo risco para ela, por exemplo apontando-o para `@release-summary@v4` ou para um rótulo `canary`.
+3. Compare os detalhes das solicitações e as tendências de uso dele com os dos outros chamadores.
+4. Migre os demais chamadores quando o roteamento corresponder ao que você espera. Para reverter, aponte o rótulo para a versão anterior.
 
-1. Crie um novo slug de predefinição para a nova política.
-2. Migre um chamador de baixo risco para a nova predefinição.
-3. Inspecione os detalhes das solicitações e as tendências de atividade.
-4. Amplie o rollout somente depois que os resultados de roteamento corresponderem às expectativas.
-
-## Guias relacionados
-
-- [Predefinições](../guides/presets.mdx)
-- [Roteamento e fallback](../guides/routing-and-fallbacks.mdx)
-- [Tratamento de erros](../api-reference/errors.mdx)
+[Versione e reverta](../guides/presets#version-and-roll-back) explica as versões e os rótulos. Para substituições no nível da solicitação que não devem ficar em uma predefinição, veja [Fixe ou ignore provedores](./pin-or-ignore-providers-per-request).
