@@ -1079,7 +1079,15 @@
 		"columnRate": "Frecuencia",
 		"rateRequests": "{count, plural, one {# solicitud} other {# solicitudes}} por minuto",
 		"rateTokens": "{count, plural, one {# token} other {# tokens}} por minuto",
-		"rateConcurrent": "{count, plural, other {# a la vez}}"
+		"rateConcurrent": "{count, plural, other {# a la vez}}",
+		"columnSpend": "Gasto",
+		"spend": {
+			"daily": "{amount} al día",
+			"weekly": "{amount} a la semana",
+			"monthly": "{amount} al mes"
+		},
+		"spendBlocks": "Bloquea",
+		"spendNotifies": "Solo avisos"
 	},
 	"guardrailWizard": {
 		"title": "Nuevo guardrail",
@@ -1106,7 +1114,12 @@
 			"sensitiveInfoOff": "Activa al menos un patrón de información sensible, o quita esta comprobación.",
 			"rateLimitEmpty": "Define al menos un límite para continuar.",
 			"rateLimitInvalid": "Los límites deben ser números enteros mayores que 0.",
-			"rateCountingRequired": "Elige cómo cuentan los límites para continuar."
+			"rateCountingRequired": "Elige cómo cuentan los límites para continuar.",
+			"spendLimitEmpty": "Establece un límite para continuar.",
+			"spendLimitInvalid": "Introduce un importe superior a $0.00 con hasta 2 decimales.",
+			"spendPeriodRequired": "Elige un periodo para continuar.",
+			"spendActionRequired": "Elige qué ocurre al llegar al límite para continuar.",
+			"spendCountingRequired": "Elige cómo cuenta el límite para continuar."
 		},
 		"nameLabel": "Nombre",
 		"namePlaceholder": "p. ej., Política para contratistas",
@@ -1208,7 +1221,28 @@
 			"each_key": "Independiente para cada clave",
 			"each_end_user": "Independiente para cada usuario final"
 		},
-		"summaryRateFailClosed": "Rechaza solicitudes si no se pueden comprobar los límites"
+		"summaryRateFailClosed": "Rechaza solicitudes si no se pueden comprobar los límites",
+		"templateSpendLimit": {
+			"name": "Límite de gasto",
+			"body": "Limita el gasto por día, semana o mes, con avisos."
+		},
+		"sectionSpend": {
+			"name": "Límite de gasto",
+			"body": "Un límite en dólares por día, semana o mes. Una barrera de gasto no tiene otras comprobaciones."
+		},
+		"summarySpendLimit": {
+			"daily": "Hasta {amount} al día",
+			"weekly": "Hasta {amount} a la semana",
+			"monthly": "Hasta {amount} al mes"
+		},
+		"summarySpendAction": {
+			"notify": "Avisa al 80 % y al 100 %, sin bloquear",
+			"block": "Bloquea las solicitudes con clave de API al llegar al límite"
+		},
+		"summarySpendCounting": {
+			"shared": "Compartido por todo aquello a lo que está asignado",
+			"each_key": "Independiente para cada clave"
+		}
 	},
 	"broadcastControls": {
 		"optional": "(opcional)",
@@ -8099,6 +8133,62 @@
 			"rateLimitEmpty": "Define al menos un límite para continuar.",
 			"rateLimitInvalid": "Los límites deben ser números enteros mayores que 0.",
 			"rateCountingRequired": "Elige cómo cuentan los límites para continuar."
+		}
+	},
+	"spendGuardrail": {
+		"title": "Límite de gasto",
+		"description": "Limita lo que gastan las claves que cubre en un día, una semana o un mes.",
+		"limitTitle": "Límite",
+		"limitBody": "Lo máximo que pueden gastar las claves que cubre en cada periodo, en dólares estadounidenses.",
+		"limitLabel": "Importe",
+		"limitHelp": "Hasta 2 decimales, por ejemplo 25.00.",
+		"invalidLimit": "Introduce un importe superior a $0.00 con hasta 2 decimales.",
+		"periodTitle": "Periodo",
+		"periodBody": "Los periodos son días naturales UTC, semanas desde el lunes y meses. No hay valor predeterminado.",
+		"period": {
+			"daily": {
+				"name": "Diario",
+				"body": "Se restablece cada día a las 00:00 UTC."
+			},
+			"weekly": {
+				"name": "Semanal",
+				"body": "Se restablece cada lunes a las 00:00 UTC."
+			},
+			"monthly": {
+				"name": "Mensual",
+				"body": "Se restablece el día 1 de cada mes a las 00:00 UTC."
+			}
+		},
+		"actionTitle": "Al llegar al límite",
+		"actionBody": "Qué ocurre cuando el gasto llega al límite. Los propietarios y administradores reciben un aviso push al 80 % y al 100 % en ambos casos. No hay valor predeterminado.",
+		"action": {
+			"notify": {
+				"name": "Avisar",
+				"body": "Solo enviar los avisos. Las solicitudes siguen pasando."
+			},
+			"block": {
+				"name": "Bloquear",
+				"body": "Rechazar las solicitudes con clave de API que cubre hasta que se restablezca el periodo. No se bloquean los trabajos por lotes, las sesiones en tiempo real ni las solicitudes OAuth."
+			}
+		},
+		"countingTitle": "Cómo cuenta",
+		"countingBody": "Elige quién comparte el límite. No hay valor predeterminado.",
+		"counting": {
+			"shared": {
+				"name": "Compartido",
+				"body": "Un límite para todo aquello a lo que está asignado. En un departamento, lo comparten todas las claves del departamento."
+			},
+			"each_key": {
+				"name": "Cada clave",
+				"body": "Cada clave de API que cubre tiene su propio límite."
+			}
+		},
+		"issue": {
+			"spendLimitEmpty": "Establece un límite para continuar.",
+			"spendLimitInvalid": "Introduce un importe superior a $0.00 con hasta 2 decimales.",
+			"spendPeriodRequired": "Elige un periodo para continuar.",
+			"spendActionRequired": "Elige qué ocurre al llegar al límite para continuar.",
+			"spendCountingRequired": "Elige cómo cuenta el límite para continuar."
 		}
 	}
 }

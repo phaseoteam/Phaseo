@@ -61,6 +61,8 @@ describe("effectiveGuardrailPolicy", () => {
 			requestsPerMinute: null,
 			tokensPerMinute: null,
 			concurrentRequests: null,
+			spendLimits: { daily: null, weekly: null, monthly: null },
+			spendBlocks: false,
 		});
 	});
 
@@ -125,6 +127,30 @@ describe("rate limits in the effective policy", () => {
 		});
 		expect(row!.rateFrom.map((guardrail) => guardrail.id)).toEqual(["strict", "team"]);
 		expect(row!.accessFrom).toEqual([]);
+	});
+});
+
+describe("spend limits in the effective policy", () => {
+	it("keeps the lowest limit of each period from enabled spend guardrails, notes blocking, and names where they come from", () => {
+		const spend = (id: string, fields: Partial<SettingsGuardrailRow>): SettingsGuardrailRow => ({ id, name: id, enabled: true, kind: "spend", spend_counting: "shared", ...fields });
+		const guardrails = [
+			spend("team", { spend_limit_nanos: 100_000_000_000, spend_period: "monthly", spend_action: "notify" }),
+			spend("strict", { spend_limit_nanos: 40_000_000_000, spend_period: "monthly", spend_action: "block" }),
+			spend("daily", { spend_limit_nanos: 5_000_000_000, spend_period: "daily", spend_action: "notify" }),
+			spend("paused", { enabled: false, spend_limit_nanos: 1, spend_period: "weekly", spend_action: "block" }),
+		];
+		expect(effectiveGuardrailPolicy(guardrails)).toMatchObject({
+			spendLimits: { daily: 5_000_000_000, weekly: null, monthly: 40_000_000_000 }, spendBlocks: true,
+		});
+		expect(effectiveGuardrailPolicy([guardrails[0]!, guardrails[2]!])).toMatchObject({ spendBlocks: false });
+		const [row] = buildGuardrailAssignmentRows({
+			targetType: "key", untitled: "Untitled",
+			keys: [{ id: "key-1", name: "Prod", prefix: "pk_1", status: "active" }], members: [], guardrails,
+			guardrailWorkspaceIdsByGuardrailId: { team: ["workspace"] },
+			guardrailKeyIdsByGuardrailId: { strict: ["key-1"], paused: ["key-1"] }, guardrailMemberIdsByGuardrailId: {},
+		});
+		expect(row!.spendFrom.map((guardrail) => guardrail.id)).toEqual(["strict", "team"]);
+		expect(row!.rateFrom).toEqual([]);
 	});
 });
 

@@ -7,6 +7,7 @@ import {
 	enableSection,
 	furthestReachableStep,
 	parseRateLimit,
+	parseSpendLimit,
 	rateIssue,
 	resetSection,
 	stepIssue,
@@ -42,6 +43,10 @@ function defaults(): GuardrailWizardForm {
 		rateConcurrentRequests: "",
 		rateFailClosed: false,
 		rateCounting: null,
+		spendLimit: "",
+		spendPeriod: null,
+		spendAction: null,
+		spendCounting: null,
 		keyIds: [],
 		memberIds: [],
 		departmentIds: [],
@@ -108,6 +113,67 @@ describe("rate guardrails in the flow", () => {
 		expect(rows[0]).toMatchObject({ selected: true, changes: true, after: { requestsPerMinute: 60, concurrentRequests: 4, tokensPerMinute: null } });
 		expect(describeGuardrail(form, ["rate"]).map((line) => line.key)).toEqual([
 			"summaryRateRequests", "summaryRateConcurrent", "summaryRateCounting.each_key", "summaryRateFailClosed",
+		]);
+	});
+});
+
+describe("spend guardrails in the flow", () => {
+	it("keeps spend on its own: one kind per guardrail", () => {
+		expect(withSection(["access", "prompt-injection"], "spend", true)).toEqual(["spend"]);
+		expect(withSection(["rate"], "spend", true)).toEqual(["spend"]);
+		expect(withSection(["spend"], "rate", true)).toEqual(["rate"]);
+		expect(withSection(["spend"], "access", true)).toEqual(["access"]);
+		expect(wizardKind(["spend"])).toBe("spend");
+	});
+
+	it("starts the spend template with nothing chosen", () => {
+		const { form, sections } = applyTemplate({ form: { ...defaults(), privacyZdrOnly: true }, defaults: defaults(), templateId: "spend-limit", previousTemplateName: null, templateName: "Spend limit" });
+		expect(sections).toEqual(["spend"]);
+		expect(form).toMatchObject({ name: "Spend limit", privacyZdrOnly: false, spendLimit: "", spendPeriod: null, spendAction: null, spendCounting: null });
+	});
+
+	it("needs a valid limit and every choice made before configure can finish", () => {
+		const form = { ...defaults(), name: "Contractors" };
+		expect(stepIssue("configure", form, ["spend"], translate)).toBe("spendLimitEmpty");
+		expect(stepIssue("configure", { ...form, spendLimit: "1.234" }, ["spend"], translate)).toBe("spendLimitInvalid");
+		const limited = { ...form, spendLimit: "25" };
+		expect(stepIssue("configure", limited, ["spend"], translate)).toBe("spendPeriodRequired");
+		expect(stepIssue("configure", { ...limited, spendPeriod: "monthly" as const }, ["spend"], translate)).toBe("spendActionRequired");
+		expect(stepIssue("configure", { ...limited, spendPeriod: "monthly" as const, spendAction: "block" as const }, ["spend"], translate)).toBe("spendCountingRequired");
+		expect(furthestReachableStep({ ...limited, spendPeriod: "monthly", spendAction: "block", spendCounting: "shared" }, ["spend"], translate)).toBe("review");
+	});
+
+	it("reads typed dollar amounts as nanodollars", () => {
+		expect(parseSpendLimit("")).toBeNull();
+		expect(parseSpendLimit("25")).toBe(25_000_000_000);
+		expect(parseSpendLimit("$1,250.5")).toBe(1_250_500_000_000);
+		expect(parseSpendLimit("0.01")).toBe(10_000_000);
+		expect(parseSpendLimit("0")).toBe("invalid");
+		expect(parseSpendLimit("1.234")).toBe("invalid");
+		expect(parseSpendLimit("-5")).toBe("invalid");
+		expect(parseSpendLimit("99999999999")).toBe("invalid");
+	});
+
+	it("previews the new spend limit on the rows it reaches, and describes it", () => {
+		const form = { ...defaults(), name: "Contractors", spendLimit: "25", spendPeriod: "daily" as const, spendAction: "block" as const, spendCounting: "each_key" as const };
+		expect(draftGuardrailRow(form, "draft", ["spend"])).toMatchObject({
+			kind: "spend", spend_limit_nanos: 25_000_000_000, spend_period: "daily", spend_action: "block", spend_counting: "each_key",
+		});
+		expect(draftGuardrailRow(form)).not.toHaveProperty("spend_limit_nanos");
+		const rows = buildWizardAssignRows({
+			targetType: "key", untitled: "Untitled",
+			keys: [{ id: "key-1", name: "Prod", prefix: "pk_1", status: "active" }], members: [],
+			guardrails: [{ id: "existing", name: "Monthly", enabled: true, kind: "spend", spend_limit_nanos: 10_000_000_000, spend_period: "daily", spend_action: "notify", spend_counting: "shared" }],
+			guardrailKeyIdsByGuardrailId: { existing: ["key-1"] }, guardrailMemberIdsByGuardrailId: {},
+			workspaceAssigned: false, departmentIds: [], memberIds: [], keyIds: ["key-1"],
+			draft: draftGuardrailRow(form, "draft", ["spend"]),
+		});
+		// The existing $10 a day is lower, so the limit doesn't change, but blocking does.
+		expect(rows[0]).toMatchObject({ selected: true, changes: true, after: { spendLimits: { daily: 10_000_000_000, weekly: null, monthly: null }, spendBlocks: true } });
+		expect(describeGuardrail(form, ["spend"])).toEqual([
+			{ key: "summarySpendLimit.daily", values: { amount: "$25.00" } },
+			{ key: "summarySpendAction.block" },
+			{ key: "summarySpendCounting.each_key" },
 		]);
 	});
 });

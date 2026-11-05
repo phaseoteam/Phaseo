@@ -44,6 +44,7 @@ import {
 	type GuardrailSource,
 	type PendingAssignmentChange,
 } from "./guardrailAssignments";
+import { formatUsd } from "./guardrailWizard";
 
 type Props = {
 	workspaceId: string;
@@ -253,11 +254,12 @@ export default function GuardrailAssignmentsPanel(props: Props) {
 									/>
 								</TableHead>
 							) : null}
-							<TableHead className="w-[18%]">{t(`guardrailAssignments.${nameColumn[targetType]}`)}</TableHead>
-							<TableHead className="w-[28%]">{t("guardrailAssignments.columnGuardrails")}</TableHead>
-							<TableHead className="w-[20%]">{t("guardrailAssignments.columnAccess")}</TableHead>
-							<TableHead className="w-[17%]">{t("guardrailAssignments.columnSafety")}</TableHead>
-							<TableHead className="w-[17%]">{t("guardrailAssignments.columnRate")}</TableHead>
+							<TableHead className="w-[16%]">{t(`guardrailAssignments.${nameColumn[targetType]}`)}</TableHead>
+							<TableHead className="w-[24%]">{t("guardrailAssignments.columnGuardrails")}</TableHead>
+							<TableHead className="w-[18%]">{t("guardrailAssignments.columnAccess")}</TableHead>
+							<TableHead className="w-[14%]">{t("guardrailAssignments.columnSafety")}</TableHead>
+							<TableHead className="w-[14%]">{t("guardrailAssignments.columnRate")}</TableHead>
+							<TableHead className="w-[14%]">{t("guardrailAssignments.columnSpend")}</TableHead>
 						</TableRow>
 					</TableHeader>
 					<TableBody>
@@ -312,10 +314,14 @@ export default function GuardrailAssignmentsPanel(props: Props) {
 									<RateSummary effective={row.effective} />
 									<FromLine guardrails={row.rateFrom} />
 								</TableCell>
+								<TableCell className="text-sm">
+									<SpendSummary effective={row.effective} />
+									<FromLine guardrails={row.spendFrom} />
+								</TableCell>
 							</TableRow>
 						)) : (
 							<TableRow>
-								<TableCell colSpan={selectable ? 6 : 5} className="py-8 text-center text-sm text-muted-foreground">
+								<TableCell colSpan={selectable ? 7 : 6} className="py-8 text-center text-sm text-muted-foreground">
 									{emptyMessage}
 								</TableCell>
 							</TableRow>
@@ -474,6 +480,24 @@ export function rateSummaryParts(effective: EffectiveGuardrailPolicy, t: ReturnT
 	if (effective.requestsPerMinute != null) parts.push(t("guardrailAssignments.rateRequests", { count: effective.requestsPerMinute }));
 	if (effective.tokensPerMinute != null) parts.push(t("guardrailAssignments.rateTokens", { count: effective.tokensPerMinute }));
 	if (effective.concurrentRequests != null) parts.push(t("guardrailAssignments.rateConcurrent", { count: effective.concurrentRequests }));
+	return parts;
+}
+
+function SpendSummary({ effective }: { effective: EffectiveGuardrailPolicy }) {
+	const t = useTranslations("SettingsUI");
+	const parts = spendSummaryParts(effective, t);
+	if (!parts.length) return <span className="text-muted-foreground">{t("guardrailAssignments.noLimits")}</span>;
+	return <span className="line-clamp-2">{parts.join(" · ")}</span>;
+}
+
+/** The lowest spend limits that reach a row and whether any blocks, e.g. "$25.00 a day · Blocks at the limit". */
+export function spendSummaryParts(effective: EffectiveGuardrailPolicy, t: ReturnType<typeof useTranslations<"SettingsUI">>): string[] {
+	const parts: string[] = [];
+	for (const period of ["daily", "weekly", "monthly"] as const) {
+		const limit = effective.spendLimits[period];
+		if (limit != null) parts.push(t(`guardrailAssignments.spend.${period}` as never, { amount: formatUsd(limit) } as never));
+	}
+	if (parts.length) parts.push(t(effective.spendBlocks ? "guardrailAssignments.spendBlocks" : "guardrailAssignments.spendNotifies"));
 	return parts;
 }
 

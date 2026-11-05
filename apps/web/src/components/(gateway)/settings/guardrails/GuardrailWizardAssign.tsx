@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { SettingsGuardrailRow, SettingsGuardrailsInitialData } from "@/lib/fetchers/internal/settingsTypes";
 import { SettingsResourceQuery } from "../PrivateSettingsQuery";
-import { accessSummaryParts, rateSummaryParts, useSourceLabel } from "./GuardrailAssignmentsPanel";
+import { accessSummaryParts, rateSummaryParts, spendSummaryParts, useSourceLabel } from "./GuardrailAssignmentsPanel";
 import {
 	matchesAssignmentQuery,
 	workspaceAssignmentMap,
@@ -238,6 +238,7 @@ function PolicyLine({ policy, emphasis = false }: { policy: EffectiveGuardrailPo
 	if (policy.promptInjection) parts.push(t("guardrailWizard.promptInjectionPart", { action: t(`guardrailsControls.${policy.promptInjection}`) }));
 	if (policy.sensitiveInfoRuleCount) parts.push(t("guardrailWizard.sensitiveInfoPart", { count: policy.sensitiveInfoRuleCount }));
 	parts.push(...rateSummaryParts(policy, t));
+	parts.push(...spendSummaryParts(policy, t));
 	if (!parts.length) return <span className="text-sm text-muted-foreground">{t("guardrailAssignments.noLimits")}</span>;
 	return <span className={emphasis ? "text-sm font-medium" : "text-sm text-muted-foreground"}>{parts.join(" · ")}</span>;
 }
