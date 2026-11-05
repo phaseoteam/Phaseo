@@ -36,6 +36,20 @@ export function rejectThirdPartyOAuthSpendingChange(auth: ManagementRouteAuth, m
 	return json({ error: "forbidden", message }, 403, { "Cache-Control": "no-store" });
 }
 
+/**
+ * Whether a management request may name a workspace other than its token's with `workspace_id`.
+ * Only Phaseo's own CLI and desktop app, signed in as a person, may. The route must then check that
+ * person's role in the named workspace (requireOAuthWorkspaceRole) before acting there. API keys,
+ * management keys, dashboard sessions and apps that use Sign in with Phaseo stay in their token's
+ * workspace: their access was granted for that workspace alone.
+ */
+export function canTargetOtherWorkspace(auth: ManagementRouteAuth): boolean {
+	if (auth.authMethod !== "oauth") return false;
+	if (!auth.userId?.trim()) return false;
+	const clientId = String(auth.oauthClientId ?? "").trim();
+	return Boolean(clientId) && isFirstPartyOAuthClient(clientId);
+}
+
 export function parsePositiveInt(raw: string | null, fallback: number, max: number): number {
 	if (!raw) return fallback;
 	const parsed = Number(raw);

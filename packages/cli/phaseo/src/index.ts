@@ -25,7 +25,7 @@ import { CLI_VERSION } from "./generated/meta.js";
 import { createDoctorReport, detectInstalledPackageManager, type DoctorReport, type PackageManager } from "./installation.js";
 import { getVersionInfo, removeCommandFor, updateCommandFor, updateInvocationFor } from "./release.js";
 import { runCurie } from "./curie.js";
-import { appendQuery, compact, flagBool, flagNumber, flagString, parseCsvFlag, parseJsonFlag } from "./flags.js";
+import { appendQuery, compact, flagBool, flagNumber, flagString, parseCsvFlag, parseJsonFlag, resolveWorkspaceFlag } from "./flags.js";
 import { managementHelpEntries, runManagementCommand } from "./management.js";
 import { parityHelpEntries, parseIpAllowlist, runParityCommand } from "./parity.js";
 import { isIntegrationSetupName, runIntegrationCommand } from "./integrations/index.js";
@@ -253,21 +253,22 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	logout: { usage: ["phaseo logout [--json]"] },
 	whoami: { usage: ["phaseo whoami [--json]"] },
 	keys: {
+		description: "Manage API keys. They belong to the workspace you chose at phaseo login unless you pass --workspace <id-or-slug>, which names another workspace where you are an owner or admin (phaseo whoami lists yours). --workspace needs a phaseo login session; API keys and management keys can only manage their own workspace.",
 		usage: [
 			"phaseo keys current [--json]",
-			"phaseo keys list [--limit <n>] [--offset <n>] [--include-disabled] [--json]",
-			"phaseo keys create --name <name> [--limit <usd>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--show-secret] [--json]",
-			"phaseo keys get <id-or-hash> [--json]",
-			"phaseo keys update <id-or-hash> [--name <name>] [--disabled true|false] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--ip-allowlist <label=address,...>|none] [--json]",
-			"phaseo keys delete <id-or-hash> [--json]",
+			"phaseo keys list [--workspace <id-or-slug>] [--limit <n>] [--offset <n>] [--include-disabled] [--json]",
+			"phaseo keys create --name <name> [--workspace <id-or-slug>] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--show-secret] [--json]",
+			"phaseo keys get <id-or-hash> [--workspace <id-or-slug>] [--json]",
+			"phaseo keys update <id-or-hash> [--workspace <id-or-slug>] [--name <name>] [--disabled true|false] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--ip-allowlist <label=address,...>|none] [--json]",
+			"phaseo keys delete <id-or-hash> [--workspace <id-or-slug>] [--json]",
 		],
 	},
 	"keys current": { usage: ["phaseo keys current [--json]"] },
-	"keys list": { usage: ["phaseo keys list [--limit <n>] [--offset <n>] [--include-disabled] [--json]"] },
-	"keys create": { usage: ["phaseo keys create --name <name> [--limit <usd>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--show-secret] [--json]"] },
-	"keys get": { usage: ["phaseo keys get <id-or-hash> [--json]"] },
-	"keys update": { usage: ["phaseo keys update <id-or-hash> [--name <name>] [--disabled true|false] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--ip-allowlist <label=address,...>|none] [--json]"] },
-	"keys delete": { usage: ["phaseo keys delete <id-or-hash> [--json]"] },
+	"keys list": { usage: ["phaseo keys list [--workspace <id-or-slug>] [--limit <n>] [--offset <n>] [--include-disabled] [--json]"] },
+	"keys create": { usage: ["phaseo keys create --name <name> [--workspace <id-or-slug>] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--show-secret] [--json]"] },
+	"keys get": { usage: ["phaseo keys get <id-or-hash> [--workspace <id-or-slug>] [--json]"] },
+	"keys update": { usage: ["phaseo keys update <id-or-hash> [--workspace <id-or-slug>] [--name <name>] [--disabled true|false] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--ip-allowlist <label=address,...>|none] [--json]"] },
+	"keys delete": { usage: ["phaseo keys delete <id-or-hash> [--workspace <id-or-slug>] [--json]"] },
 	workspaces: {
 		usage: [
 			"phaseo workspaces list [--json]",
@@ -1269,8 +1270,17 @@ async function whoami(flags: Record<string, string | boolean>) {
 	process.stdout.write(renderWhoami(body, session.apiUrl));
 }
 
+// --workspace on the keys commands: another workspace where the signed-in person is an owner or admin.
+function keysWorkspaceId(flags: Record<string, string | boolean>) {
+	return resolveWorkspaceFlag(flags, async () => {
+		const body = await request("/me");
+		return Array.isArray(body?.data?.workspaces) ? body.data.workspaces : [];
+	});
+}
+
 async function listKeys(flags: Record<string, string | boolean>) {
 	const body = await request(appendQuery("/keys", {
+		workspace_id: await keysWorkspaceId(flags),
 		limit: flagString(flags, "limit"),
 		offset: flagString(flags, "offset"),
 		include_disabled: flagBool(flags, "include-disabled") || undefined,
@@ -1282,11 +1292,12 @@ async function listKeys(flags: Record<string, string | boolean>) {
 async function createKey(flags: Record<string, string | boolean>) {
 	const name = flagString(flags, "name");
 	if (!name) throw new Error("`--name` is required");
+	const workspaceId = await keysWorkspaceId(flags);
 	const body = await request("/keys", {
 		method: "POST",
 		body: compact({
 			name,
-			workspace_id: flagString(flags, "workspace"),
+			workspace_id: workspaceId,
 			limit: flagNumber(flags, "limit"),
 			limit_reset: flagString(flags, "limit-reset"),
 			expires_at: flagString(flags, "expires-at"),
@@ -1304,7 +1315,7 @@ async function createKey(flags: Record<string, string | boolean>) {
 
 async function getKey(id: string | undefined, flags: Record<string, string | boolean>) {
 	if (!id) throw new Error("Key id or hash is required");
-	const body = await request(`/keys/${encodeURIComponent(id)}`);
+	const body = await request(appendQuery(`/keys/${encodeURIComponent(id)}`, { workspace_id: await keysWorkspaceId(flags) }));
 	if (flagBool(flags, "json")) return printJson(body);
 	const key = body.data;
 	writeServerText(`${key.name ?? key.id}\nStatus: ${key.disabled ? "disabled" : "active"}\nID: ${key.id}\nPrefix: ${key.prefix ?? "unknown"}\n`);
@@ -1312,7 +1323,7 @@ async function getKey(id: string | undefined, flags: Record<string, string | boo
 
 async function updateKey(id: string | undefined, flags: Record<string, string | boolean>) {
 	if (!id) throw new Error("Key id or hash is required");
-	const body = await request(`/keys/${encodeURIComponent(id)}`, {
+	const body = await request(appendQuery(`/keys/${encodeURIComponent(id)}`, { workspace_id: await keysWorkspaceId(flags) }), {
 		method: "PATCH",
 		body: compact({
 			name: flagString(flags, "name"),
@@ -1329,7 +1340,7 @@ async function updateKey(id: string | undefined, flags: Record<string, string | 
 
 async function deleteKey(id: string | undefined, flags: Record<string, string | boolean>) {
 	if (!id) throw new Error("Key id or hash is required");
-	const body = await request(`/keys/${encodeURIComponent(id)}`, { method: "DELETE" });
+	const body = await request(appendQuery(`/keys/${encodeURIComponent(id)}`, { workspace_id: await keysWorkspaceId(flags) }), { method: "DELETE" });
 	if (flagBool(flags, "json")) return printJson(body);
 	process.stdout.write("Deleted API key.\n");
 }
