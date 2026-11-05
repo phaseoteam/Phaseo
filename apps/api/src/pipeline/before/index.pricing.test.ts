@@ -62,6 +62,17 @@ vi.mock("./workspacePolicy", () => ({
 	applyWorkspacePolicy: (...args: any[]) => applyWorkspacePolicyMock(...args),
 }));
 
+// Only openai/gpt-5-nano has a text price in these tests.
+vi.mock("@providers/openai/endpoints/images-svg", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("@providers/openai/endpoints/images-svg")>();
+	return {
+		...actual,
+		resolveSvgAuthor: async (model: string) => actual.normalizeSvgAuthorModel(model) === "openai/gpt-5-nano"
+			? { model: "openai/gpt-5-nano", upstreamModel: "gpt-5-nano", card: { rules: [] } }
+			: null,
+	};
+});
+
 vi.mock("./promptInjection", () => ({
 	applyPromptInjectionGuardrails: (...args: any[]) =>
 		applyPromptInjectionGuardrailsMock(...args),
@@ -584,6 +595,49 @@ describe("beforeRequest pricing loss-prevention", () => {
 		expect(authorCall.providers.map((candidate: any) => candidate.apiModelId)).toEqual(["openai/gpt-5-nano"]);
 		expect(authorCall.body.model).toBe("openai/gpt-5-nano");
 	});
+
+	it.each(["openai/not-a-real-model", "anthropic/claude-haiku-5-5"])(
+		"rejects an SVG author without an OpenAI text price (%s) as a validation error",
+		async (author) => {
+			const provider = providerWithPricingRules(1);
+			const body = { model: "openai/gpt-image-2.6-flare", prompt: "An apple icon", output_format: "svg", svg: { model: author } };
+			guardJsonMock.mockResolvedValue({ ok: true, value: body });
+			guardZodMock.mockReturnValue({ ok: true, value: body });
+			guardModelMock.mockReturnValue({ ok: true, value: { body, model: body.model, stream: false } });
+			resolveCapabilityFromEndpointMock.mockReturnValue("image.generate");
+			guardContextMock.mockResolvedValue({
+				ok: true,
+				value: {
+					context: {
+						pricing: { openai: provider.pricingCard },
+						key: { ok: true, reason: null, resetAt: null },
+						keyLimit: { ok: true, reason: null, resetAt: null },
+						credit: { ok: true, reason: null, resetAt: null },
+						teamSettings: { billingMode: "wallet" },
+					},
+					providers: [provider],
+					resolvedModel: "openai/gpt-image-2.6-flare",
+					candidateDiagnostics: { totalProviders: 1, supportsEndpointCount: 1, droppedUnsupportedEndpoint: [], droppedMissingAdapter: [], candidateCount: 1 },
+				},
+			});
+
+			const req = new Request("https://gateway.local/v1/images/generations", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify(body),
+			});
+			const result = await beforeRequest(req, "images.generations", new Timer(), null);
+			expect(result.ok).toBe(false);
+			if (result.ok) return;
+			expect(result.response.status).toBe(400);
+			const payload = await result.response.json();
+			expect(payload.code).toBe("validation_error");
+			expect(payload.reason).toBe("invalid_svg_model");
+			expect(payload.error_origin).toBe("user");
+			expect(payload.details?.[0]?.path).toEqual(["svg", "model"]);
+			expect(JSON.stringify(payload)).not.toContain("provider rejected");
+		},
+	);
 
 	it("rejects request when workspace policy filters out all providers", async () => {
 		const provider = providerWithPricingRules(1);
