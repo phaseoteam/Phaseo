@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 
 const db = new PGlite();
@@ -56,8 +56,14 @@ try {
   const migration = await readFile(migrationUrl, 'utf8');
   await db.exec(migration);
 
+  // Rate guardrails replaced these tables and rewrote their comments; everything else is as created here.
+  const rateGuardrailsName = (await readdir(new URL('../migrations/', import.meta.url))).find((name) => name.endsWith('_rate_guardrails.sql'));
+  const rateGuardrails = await readFile(new URL(`../migrations/${rateGuardrailsName}`, import.meta.url), 'utf8');
   for (const table of ['workspace_rate_limit_policies', 'workspace_rate_limit_policy_assignments']) {
-    assert.ok(migration.includes(await schema(`public/tables/${table}.sql`)), `${table} migration matches the declarative definition`);
+    const comment = new RegExp(`COMMENT ON TABLE "public"."${table}" IS [^\\n]+\\n`);
+    const declared = await schema(`public/tables/${table}.sql`);
+    assert.ok(rateGuardrails.includes(comment.exec(declared)[0]), `${table} comment is the rate guardrails migration's`);
+    assert.ok(migration.includes(declared.replace(comment, () => comment.exec(migration)[0])), `${table} migration matches the declarative definition`);
   }
   const keysSchema = await schema('public/tables/keys.sql');
   assert.ok(keysSchema.includes('"department_id"            uuid,'), 'keys declares department_id');

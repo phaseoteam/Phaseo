@@ -5,11 +5,14 @@
 //      context of that workspace, including changes made outside the gateway
 //      control routes.
 // How: Claim leased batches, bump the workspace cache version, drop the
-//      private-route snapshot, then acknowledge with the claimed revision.
+//      private-route snapshot, republish the rate plan (rate guardrails, their
+//      assignments and department links all queue a publication), then
+//      acknowledge with the claimed revision. A failed step is retried.
 
 import { getSupabaseAdmin } from "@/runtime/env";
 import { bumpWorkspacePolicyVersion } from "@/pipeline/before/workspacePolicy";
 import { invalidatePrivateRoutes } from "@/pipeline/before/privateModelCache";
+import { publishRateLimitPlan } from "@core/rate-limit-policies";
 
 const BATCH_SIZE = 100;
 const MAX_BATCHES_PER_RUN = 5;
@@ -26,7 +29,8 @@ async function publish(publication: ClaimedPublication): Promise<boolean> {
 	try {
 		await bumpWorkspacePolicyVersion(publication.workspace_id);
 		await invalidatePrivateRoutes(publication.workspace_id);
-		return true;
+		// Never throws; false when the plan could not be stored.
+		return await publishRateLimitPlan(publication.workspace_id);
 	} catch (error) {
 		console.error("workspace_publication_failed", {
 			workspaceId: publication.workspace_id,

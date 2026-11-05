@@ -32,6 +32,10 @@ export type EffectiveGuardrailPolicy = {
 	modelBlockCount: number;
 	promptInjection: GuardrailAction | null;
 	sensitiveInfoRuleCount: number;
+	/** The lowest of each rate limit that reaches the row, or null when none sets it. Each limit counts, so the lowest is hit first. */
+	requestsPerMinute: number | null;
+	tokensPerMinute: number | null;
+	concurrentRequests: number | null;
 };
 
 /** Where a guardrail that reaches a row comes from: assigned to the row itself, or inherited from a broader level. */
@@ -65,9 +69,10 @@ export type GuardrailAssignmentRow = {
 	/** `name` is null when the key's creator has left the workspace; their member guardrails still apply. */
 	inheritedFrom: { id: string; name: string | null } | null;
 	effective: EffectiveGuardrailPolicy;
-	/** The guardrails behind the Access and Safety columns, so each cell can name where its rules come from. */
+	/** The guardrails behind the Access, Safety and Rate columns, so each cell can name where its rules come from. */
 	accessFrom: AssignedGuardrail[];
 	safetyFrom: AssignedGuardrail[];
+	rateFrom: AssignedGuardrail[];
 };
 
 const ACTION_RANK: Record<GuardrailAction, number> = { flag: 0, redact: 1, block: 2 };
@@ -112,12 +117,22 @@ export function effectiveGuardrailPolicy(guardrails: SettingsGuardrailRow[]): Ef
 	let noPaidTraining = false;
 	let noFreeTraining = false;
 	let noLogging = false;
+	const lowest = (current: number | null, value: unknown) => {
+		const limit = Number(value);
+		return value == null || !Number.isSafeInteger(limit) || limit <= 0 ? current : current == null ? limit : Math.min(current, limit);
+	};
+	let requestsPerMinute: number | null = null;
+	let tokensPerMinute: number | null = null;
+	let concurrentRequests: number | null = null;
 	const active = guardrails.filter(isGuardrailActive);
 	for (const guardrail of active) {
 		zdrOnly ||= guardrail.privacy_zdr_only === true;
 		noPaidTraining ||= guardrail.privacy_enable_paid_may_train === false;
 		noFreeTraining ||= guardrail.privacy_enable_free_may_train === false;
 		noLogging ||= guardrail.privacy_enable_input_output_logging === false;
+		requestsPerMinute = lowest(requestsPerMinute, guardrail.rate_requests_per_minute);
+		tokensPerMinute = lowest(tokensPerMinute, guardrail.rate_tokens_per_minute);
+		concurrentRequests = lowest(concurrentRequests, guardrail.rate_concurrent_requests);
 		// The gateway maps provider aliases onto canonical ids before it merges lists (workspacePolicy.ts).
 		const providerIds = idSet(normalizeProviderList(idSet(guardrail.provider_restriction_provider_ids)));
 		const providerMode = restrictionMode(guardrail.provider_restriction_mode);
@@ -152,6 +167,9 @@ export function effectiveGuardrailPolicy(guardrails: SettingsGuardrailRow[]): Ef
 		modelBlockCount: modelBlock.size,
 		promptInjection,
 		sensitiveInfoRuleCount: sensitiveRules.size,
+		requestsPerMinute,
+		tokensPerMinute,
+		concurrentRequests,
 	};
 }
 
@@ -183,6 +201,11 @@ export function setsAccessRules(guardrail: SettingsGuardrailRow): boolean {
 export function setsSafetyRules(guardrail: SettingsGuardrailRow): boolean {
 	return guardrail.prompt_injection_enabled === true
 		|| (guardrail.sensitive_info_enabled === true && (guardrail.sensitive_info_rules ?? []).some((rule) => rule && rule.enabled !== false));
+}
+
+/** Whether a guardrail sets a rate limit (requests or tokens per minute, or concurrent requests). */
+export function setsRateRules(guardrail: SettingsGuardrailRow): boolean {
+	return guardrail.rate_requests_per_minute != null || guardrail.rate_tokens_per_minute != null || guardrail.rate_concurrent_requests != null;
 }
 
 export type GuardrailAssignmentData = {
@@ -249,6 +272,7 @@ export function buildGuardrailAssignmentRows(args: GuardrailAssignmentData & Ass
 			effective: effectiveGuardrailPolicy(guardrails.map((guardrail) => guardrailById.get(guardrail.id)!)),
 			accessFrom: guardrails.filter((guardrail) => guardrail.enabled && setsAccessRules(guardrailById.get(guardrail.id)!)),
 			safetyFrom: guardrails.filter((guardrail) => guardrail.enabled && setsSafetyRules(guardrailById.get(guardrail.id)!)),
+			rateFrom: guardrails.filter((guardrail) => guardrail.enabled && setsRateRules(guardrailById.get(guardrail.id)!)),
 		};
 	};
 	const workspaceLevel = { source: { level: "workspace" } as GuardrailSource, ids: workspaceIds };

@@ -81,6 +81,27 @@ const SPENDING_LIMIT_FIELDS = new Set([
 	"byok_fallback_enabled",
 ]);
 
+// What content is stored or forwarded, and to which providers: I/O logging, training and publishing
+// permissions, zero data retention and provider restrictions. An app that signs in with Phaseo may only
+// tighten them (the value listed here), whatever scopes the person consented to; null means any change is
+// refused. camelCase aliases are mapped to these names before the check.
+const CONTENT_POLICY_FIELDS = new Map<string, boolean | null>([
+	["io_logging_enabled", false],
+	["io_logging_include_provider_payloads", false],
+	["privacy_enable_input_output_logging", false],
+	["privacy_enable_paid_may_train", false],
+	["privacy_enable_free_may_train", false],
+	["privacy_enable_free_may_publish_prompts", false],
+	["privacy_zdr_only", true],
+	["provider_restriction_mode", null],
+	["provider_restriction_provider_ids", null],
+	["provider_restriction_enforce_allowed", null],
+]);
+
+function widensContentPolicy(patch: Record<string, unknown>): boolean {
+	return Object.entries(patch).some(([field, value]) => CONTENT_POLICY_FIELDS.has(field) && CONTENT_POLICY_FIELDS.get(field) !== value);
+}
+
 /**
  * The workspace-wide privacy and restriction rules. They are saved to the workspace baseline guardrail
  * (save_workspace_baseline_guardrail, which creates it on first use), which the gateway reads with
@@ -214,6 +235,10 @@ async function handleUpdateSettings(req: Request) {
 	}
 	if (Object.keys(patch).some((field) => SPENDING_LIMIT_FIELDS.has(field))) {
 		const appError = rejectThirdPartyOAuthSpendingChange(auth.value, "Apps that use Sign in with Phaseo can't change the successor price policy or BYOK fallback to credits. The person can change them under Settings, Routing or Settings, BYOK.");
+		if (appError) return appError;
+	}
+	if (widensContentPolicy(patch)) {
+		const appError = rejectThirdPartyOAuthSpendingChange(auth.value, "Apps that use Sign in with Phaseo can't turn on I/O logging, allow training or publishing, turn off zero data retention or change provider restrictions, because these control where request content goes. The person can change them under Settings, Privacy.");
 		if (appError) return appError;
 	}
 

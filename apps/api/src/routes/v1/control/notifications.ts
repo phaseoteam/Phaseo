@@ -8,7 +8,7 @@ import { deliverNotificationTest, type NotificationTestKind } from "@/pipeline/n
 import { json, withRuntime } from "@/routes/utils";
 import { parseIanaTimeZone } from "@/lib/time-zones";
 import { publishRateLimitPlan } from "@core/rate-limit-policies";
-import { isResponse, requireCapability, requireJsonBody, requireOAuthWorkspaceRole } from "./route-helpers";
+import { isResponse, rejectThirdPartyOAuthSpendingChange, requireCapability, requireJsonBody, requireOAuthWorkspaceRole } from "./route-helpers";
 import { encryptNotificationTarget, isSignedNotificationDestinationType, issueNotificationSigningSecret, notificationTargetPreview, NOTIFICATION_DESTINATION_TYPES, toPublicNotificationDestination, validateNotificationTarget, type NotificationDestinationType } from "./notification-target";
 
 const NO_STORE = { "Cache-Control": "no-store" };
@@ -16,11 +16,15 @@ const NO_STORE = { "Cache-Control": "no-store" };
 export const EVENT_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "rate_limit_throttled", "broadcast_destination_failing", "spend_alert", "spend_blocked", "spend_report"] as const;
 export function isNotificationEventKind(value: unknown): value is (typeof EVENT_KINDS)[number] { return typeof value === "string" && (EVENT_KINDS as readonly string[]).includes(value); }
 const NOTIFICATION_TEST_KINDS = ["notification_test", "model_deprecation"] as const;
+// Destinations and routes decide where workspace events are sent, so an app that signs in with Phaseo must not
+// change any notification setting, whatever scopes the person consented to.
+const NOTIFICATION_APP_REFUSAL = "Apps that use Sign in with Phaseo can't change notification settings, destinations or routes, because they decide where workspace events are sent. The person can change them under Settings, Notifications.";
 
 async function authorize(req: Request, write: boolean) {
 	const auth = await guardManagementAuth(req, { useKvCache: false }); if (!auth.ok) return { response: (auth as GuardErr).response };
 	const capability = requireCapability(auth.value, write ? CAPABILITIES.SETTINGS_WRITE : CAPABILITIES.SETTINGS_READ); if (capability) return { response: capability };
 	const role = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]); if (role) return { response: role };
+	const appError = write ? rejectThirdPartyOAuthSpendingChange(auth.value, NOTIFICATION_APP_REFUSAL) : null; if (appError) return { response: appError };
 	return { auth: auth.value };
 }
 async function audit(auth: any, action: string, targetType: string, targetId: string, metadata?: Record<string, unknown>) { await recordWorkspaceAuditEvent(getSupabaseAdmin(), { workspaceId: auth.workspaceId, actorUserId: auth.userId, action, targetType, targetId, metadata, requestId: auth.requestId }); }

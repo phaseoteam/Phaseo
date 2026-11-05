@@ -77,6 +77,11 @@ CREATE TRIGGER protect_key_created_by
   FOR EACH ROW
   EXECUTE FUNCTION public.protect_key_created_by();
 
+CREATE TRIGGER protect_key_identity_columns
+  BEFORE INSERT OR UPDATE ON public.keys
+  FOR EACH ROW
+  EXECUTE FUNCTION public.protect_key_identity_columns();
+
 CREATE TRIGGER protect_key_never_store_content
   BEFORE UPDATE OF never_store_content ON public.keys
   FOR EACH ROW
@@ -123,9 +128,7 @@ CREATE POLICY "mfa_required_when_enrolled" ON "public"."keys"
 
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."keys" TO "service_role";
 
-GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."keys" TO "anon";
-
-GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."keys" TO "authenticated";
+GRANT SELECT ("created_at", "created_by", "daily_limit_cost_nanos", "daily_limit_requests", "department_id", "expires_at", "id", "ip_allowlist", "issued_via", "key_kind", "kid", "last_used_at", "monthly_limit_cost_nanos", "monthly_limit_requests", "name", "never_store_content", "oauth_client_id", "oauth_resource", "oauth_scopes", "oauth_user_id", "prefix", "revoked_at", "revoked_reason", "scopes", "soft_blocked", "status", "storage_locations", "updated_at", "weekly_limit_cost_nanos", "weekly_limit_requests", "workspace_id") ON TABLE "public"."keys" TO "authenticated";
 
 CREATE INDEX keys_created_by_idx ON public.keys USING btree (created_by)
   WHERE (created_by IS NOT NULL);

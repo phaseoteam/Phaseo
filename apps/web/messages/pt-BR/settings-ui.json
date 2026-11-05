@@ -1075,7 +1075,11 @@
 		"noTraining": "Sem treinamento",
 		"noPaidTraining": "Sem treinamento em endpoints pagos",
 		"noFreeTraining": "Sem treinamento em endpoints gratuitos",
-		"noLogging": "Sem endpoints que registram"
+		"noLogging": "Sem endpoints que registram",
+		"columnRate": "Taxa",
+		"rateRequests": "{count, plural, one {# solicitação} other {# solicitações}} por minuto",
+		"rateTokens": "{count, plural, one {# token} other {# tokens}} por minuto",
+		"rateConcurrent": "{count, plural, other {# ao mesmo tempo}}"
 	},
 	"guardrailWizard": {
 		"title": "Novo guardrail",
@@ -1099,7 +1103,10 @@
 			"providerAllowlistEmpty": "Escolha pelo menos um provedor permitido. Uma lista vazia bloqueia todos os provedores.",
 			"modelAllowlistEmpty": "Escolha pelo menos um modelo permitido. Uma lista vazia bloqueia todos os modelos.",
 			"promptInjectionOff": "Escolha como tratar injeção de prompt, ou remova esta verificação.",
-			"sensitiveInfoOff": "Ative pelo menos um padrão de informação sensível, ou remova esta verificação."
+			"sensitiveInfoOff": "Ative pelo menos um padrão de informação sensível, ou remova esta verificação.",
+			"rateLimitEmpty": "Defina pelo menos um limite para continuar.",
+			"rateLimitInvalid": "Os limites devem ser números inteiros maiores que 0.",
+			"rateCountingRequired": "Escolha como os limites contam para continuar."
 		},
 		"nameLabel": "Nome",
 		"namePlaceholder": "ex.: Política para terceirizados",
@@ -1184,7 +1191,24 @@
 		"levelWorkspace": "Todo o espaço de trabalho",
 		"levelDepartments": "{count, plural, one {# departamento} other {# departamentos}}",
 		"levelMembers": "{count, plural, one {# membro} other {# membros}}",
-		"levelKeys": "{count, plural, one {# chave de API} other {# chaves de API}}"
+		"levelKeys": "{count, plural, one {# chave de API} other {# chaves de API}}",
+		"templateRateLimit": {
+			"name": "Limite de taxa",
+			"body": "Limite solicitações ou tokens por minuto, ou solicitações simultâneas."
+		},
+		"sectionRate": {
+			"name": "Limites de taxa",
+			"body": "Solicitações e tokens por minuto, e solicitações simultâneas. Uma proteção de taxa não tem outras verificações."
+		},
+		"summaryRateRequests": "{count, plural, one {# solicitação} other {# solicitações}} por minuto",
+		"summaryRateTokens": "{count, plural, one {# token} other {# tokens}} por minuto",
+		"summaryRateConcurrent": "{count, plural, one {# solicitação} other {# solicitações}} ao mesmo tempo",
+		"summaryRateCounting": {
+			"shared": "Compartilhado por tudo a que está atribuído",
+			"each_key": "Separado para cada chave",
+			"each_end_user": "Separado para cada usuário final"
+		},
+		"summaryRateFailClosed": "Recusa solicitações quando os limites não podem ser verificados"
 	},
 	"broadcastControls": {
 		"optional": "(opcional)",
@@ -8031,5 +8055,50 @@
 		"expiredBody": "Ninguém respondeu em 30 minutos, então nada foi cobrado. O agente é instruído a não tentar de novo; ele pode iniciar uma nova solicitação quando alguém estiver disponível.",
 		"resume": "Concluir a verificação do cartão",
 		"resumeNotice": "Esta recarga foi confirmada, mas a verificação do cartão pelo banco não foi concluída. Conclua-a para finalizar o pagamento."
+	},
+	"rateGuardrail": {
+		"title": "Limites de taxa",
+		"description": "Limite solicitações e tokens por minuto, e quantas solicitações rodam ao mesmo tempo.",
+		"limitsTitle": "Limites",
+		"limitsBody": "Defina pelo menos um. Deixe um limite em branco para não limitá-lo.",
+		"noLimit": "Sem limite",
+		"invalidLimit": "Digite um número inteiro maior que 0.",
+		"requests": {
+			"label": "Solicitações por minuto",
+			"help": "Contadas em um minuto móvel."
+		},
+		"tokens": {
+			"label": "Tokens por minuto",
+			"help": "Tokens de entrada e saída, contados quando cada solicitação termina."
+		},
+		"concurrent": {
+			"label": "Solicitações simultâneas",
+			"help": "Solicitações em andamento ao mesmo tempo."
+		},
+		"countingTitle": "Como conta",
+		"countingBody": "Escolha quem compartilha cada cota. Não há padrão.",
+		"legacyCounting": "Foi criado pela API de limites de taxa, então conta por chave, membro ou departamento a que está atribuído, e por usuário final no espaço de trabalho inteiro. Escolha uma opção para mudar isso.",
+		"countingLegacy": "Por atribuição",
+		"counting": {
+			"shared": {
+				"name": "Compartilhado",
+				"body": "Uma cota para tudo a que está atribuído. Em um departamento, o departamento inteiro a compartilha."
+			},
+			"each_key": {
+				"name": "Por chave",
+				"body": "Cada chave de API coberta tem sua própria cota. Solicitações OAuth contam por pessoa."
+			},
+			"each_end_user": {
+				"name": "Por usuário final",
+				"body": "Cada usuário final tem sua própria cota, pelo campo user da solicitação ou pelo cabeçalho X-Phaseo-User-Id. Solicitações sem usuário final não são limitadas por ela."
+			}
+		},
+		"failClosedTitle": "Recusar solicitações quando os limites não puderem ser verificados",
+		"failClosedBody": "Espera o contador em cada solicitação, o que adiciona um pouco de latência. Desativado, as solicitações passam se o contador não responder.",
+		"issue": {
+			"rateLimitEmpty": "Defina pelo menos um limite para continuar.",
+			"rateLimitInvalid": "Os limites devem ser números inteiros maiores que 0.",
+			"rateCountingRequired": "Escolha como os limites contam para continuar."
+		}
 	}
 }

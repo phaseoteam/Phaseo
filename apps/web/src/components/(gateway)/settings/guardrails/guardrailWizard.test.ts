@@ -6,8 +6,12 @@ import {
 	draftGuardrailRow,
 	enableSection,
 	furthestReachableStep,
+	parseRateLimit,
+	rateIssue,
 	resetSection,
 	stepIssue,
+	withSection,
+	wizardKind,
 	type GuardrailWizardForm,
 } from "./guardrailWizard";
 
@@ -33,12 +37,80 @@ function defaults(): GuardrailWizardForm {
 		sensitiveInfoEnabled: false,
 		sensitiveInfoDefaultAction: "redact",
 		sensitiveInfoRules: getDefaultSensitiveInfoRules("redact"),
+		rateRequestsPerMinute: "",
+		rateTokensPerMinute: "",
+		rateConcurrentRequests: "",
+		rateFailClosed: false,
+		rateCounting: null,
 		keyIds: [],
 		memberIds: [],
 		departmentIds: [],
 		workspaceAssigned: false,
 	};
 }
+
+describe("rate guardrails in the flow", () => {
+	it("keeps rate on its own: one kind per guardrail", () => {
+		expect(withSection(["access", "prompt-injection"], "rate", true)).toEqual(["rate"]);
+		expect(withSection(["rate"], "access", true)).toEqual(["access"]);
+		expect(withSection(["access"], "sensitive-info", true)).toEqual(["access", "sensitive-info"]);
+		expect(withSection(["rate"], "rate", false)).toEqual([]);
+		expect(wizardKind(["rate"])).toBe("rate");
+		expect(wizardKind(["prompt-injection"])).toBe("safety");
+		expect(wizardKind(["access", "sensitive-info"])).toBe("access");
+	});
+
+	it("starts the rate template with no limits and no counting", () => {
+		const { form, sections } = applyTemplate({ form: { ...defaults(), privacyZdrOnly: true }, defaults: defaults(), templateId: "rate-limit", previousTemplateName: null, templateName: "Rate limit" });
+		expect(sections).toEqual(["rate"]);
+		expect(form).toMatchObject({ name: "Rate limit", privacyZdrOnly: false, rateRequestsPerMinute: "", rateCounting: null });
+	});
+
+	it("needs a valid limit and a chosen counting before configure can finish", () => {
+		const form = { ...defaults(), name: "Batch" };
+		expect(stepIssue("start", form, ["rate"], translate)).toBeNull();
+		expect(stepIssue("configure", form, ["rate"], translate)).toBe("rateLimitEmpty");
+		expect(stepIssue("configure", { ...form, rateRequestsPerMinute: "1.5" }, ["rate"], translate)).toBe("rateLimitInvalid");
+		expect(stepIssue("configure", { ...form, rateRequestsPerMinute: "60" }, ["rate"], translate)).toBe("rateCountingRequired");
+		expect(stepIssue("configure", { ...form, rateRequestsPerMinute: "60", rateCounting: "shared" }, ["rate"], translate)).toBeNull();
+		expect(furthestReachableStep({ ...form, rateTokensPerMinute: "100,000", rateCounting: "each_key" }, ["rate"], translate)).toBe("review");
+	});
+
+	it("lets a guardrail made through the API keep counting as it does when edited", () => {
+		const legacy = { ...defaults(), name: "Acceptance test", rateTokensPerMinute: "30" };
+		expect(rateIssue(legacy)).toBe("rateCountingRequired");
+		expect(rateIssue(legacy, { legacyCounting: true })).toBeNull();
+		expect(rateIssue({ ...legacy, rateTokensPerMinute: "" }, { legacyCounting: true })).toBe("rateLimitEmpty");
+	});
+
+	it("reads typed limits as whole numbers in range", () => {
+		expect(parseRateLimit("", "rateRequestsPerMinute")).toBeNull();
+		expect(parseRateLimit(" 1 000 ", "rateRequestsPerMinute")).toBe(1000);
+		expect(parseRateLimit("2,000,000", "rateTokensPerMinute")).toBe(2_000_000);
+		expect(parseRateLimit("0", "rateConcurrentRequests")).toBe("invalid");
+		expect(parseRateLimit("-3", "rateConcurrentRequests")).toBe("invalid");
+		expect(parseRateLimit("3000000000", "rateRequestsPerMinute")).toBe("invalid");
+	});
+
+	it("previews the new rate limit on the rows it reaches, and describes it", () => {
+		const form = { ...defaults(), name: "Batch", rateRequestsPerMinute: "60", rateConcurrentRequests: "4", rateCounting: "each_key" as const, rateFailClosed: true };
+		expect(draftGuardrailRow(form, "draft", ["rate"])).toMatchObject({
+			kind: "rate", rate_requests_per_minute: 60, rate_tokens_per_minute: null, rate_concurrent_requests: 4, rate_fail_closed: true, rate_counting: "each_key",
+		});
+		expect(draftGuardrailRow(form)).not.toHaveProperty("rate_requests_per_minute");
+		const rows = buildWizardAssignRows({
+			targetType: "key", untitled: "Untitled",
+			keys: [{ id: "key-1", name: "Prod", prefix: "pk_1", status: "active" }], members: [], guardrails: [],
+			guardrailKeyIdsByGuardrailId: {}, guardrailMemberIdsByGuardrailId: {},
+			workspaceAssigned: false, departmentIds: [], memberIds: [], keyIds: ["key-1"],
+			draft: draftGuardrailRow(form, "draft", ["rate"]),
+		});
+		expect(rows[0]).toMatchObject({ selected: true, changes: true, after: { requestsPerMinute: 60, concurrentRequests: 4, tokensPerMinute: null } });
+		expect(describeGuardrail(form, ["rate"]).map((line) => line.key)).toEqual([
+			"summaryRateRequests", "summaryRateConcurrent", "summaryRateCounting.each_key", "summaryRateFailClosed",
+		]);
+	});
+});
 
 describe("applyTemplate", () => {
 	it("fills in the template's settings and suggests its name", () => {

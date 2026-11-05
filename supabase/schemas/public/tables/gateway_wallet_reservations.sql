@@ -57,4 +57,6 @@ CREATE POLICY "mfa_required_when_enrolled" ON "public"."gateway_wallet_reservati
   USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
   WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
 
-GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."gateway_wallet_reservations" TO "anon", "authenticated", "service_role";
+GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."gateway_wallet_reservations" TO "anon";
+
+GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."gateway_wallet_reservations" TO "authenticated", "service_role";

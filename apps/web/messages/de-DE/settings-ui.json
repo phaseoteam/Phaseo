@@ -1075,7 +1075,11 @@
 		"noTraining": "Kein Training",
 		"noPaidTraining": "Kein Training bei kostenpflichtigen Endpunkten",
 		"noFreeTraining": "Kein Training bei kostenlosen Endpunkten",
-		"noLogging": "Keine protokollierenden Endpunkte"
+		"noLogging": "Keine protokollierenden Endpunkte",
+		"columnRate": "Rate",
+		"rateRequests": "{count, plural, one {# Anfrage} other {# Anfragen}} pro Minute",
+		"rateTokens": "{count, plural, one {# Token} other {# Tokens}} pro Minute",
+		"rateConcurrent": "{count, plural, other {# gleichzeitig}}"
 	},
 	"guardrailWizard": {
 		"title": "Neue Leitplanke",
@@ -1099,7 +1103,10 @@
 			"providerAllowlistEmpty": "Wähle mindestens einen erlaubten Anbieter. Eine leere Liste blockiert alle Anbieter.",
 			"modelAllowlistEmpty": "Wähle mindestens ein erlaubtes Modell. Eine leere Liste blockiert alle Modelle.",
 			"promptInjectionOff": "Lege fest, wie mit Prompt-Injection umgegangen wird, oder entferne diese Prüfung.",
-			"sensitiveInfoOff": "Aktiviere mindestens ein Muster für sensible Daten oder entferne diese Prüfung."
+			"sensitiveInfoOff": "Aktiviere mindestens ein Muster für sensible Daten oder entferne diese Prüfung.",
+			"rateLimitEmpty": "Lege mindestens ein Limit fest, um fortzufahren.",
+			"rateLimitInvalid": "Limits müssen ganze Zahlen größer als 0 sein.",
+			"rateCountingRequired": "Wähle eine Zählweise, um fortzufahren."
 		},
 		"nameLabel": "Name",
 		"namePlaceholder": "z. B. Richtlinie für Auftragnehmer",
@@ -1184,7 +1191,24 @@
 		"levelWorkspace": "Der ganze Arbeitsbereich",
 		"levelDepartments": "{count, plural, one {# Abteilung} other {# Abteilungen}}",
 		"levelMembers": "{count, plural, one {# Mitglied} other {# Mitglieder}}",
-		"levelKeys": "{count, plural, one {# API-Schlüssel} other {# API-Schlüssel}}"
+		"levelKeys": "{count, plural, one {# API-Schlüssel} other {# API-Schlüssel}}",
+		"templateRateLimit": {
+			"name": "Ratenlimit",
+			"body": "Begrenze Anfragen oder Tokens pro Minute oder gleichzeitige Anfragen."
+		},
+		"sectionRate": {
+			"name": "Ratenlimits",
+			"body": "Anfragen und Tokens pro Minute und gleichzeitige Anfragen. Eine Ratenlimit-Leitplanke hat keine weiteren Prüfungen."
+		},
+		"summaryRateRequests": "{count, plural, one {# Anfrage} other {# Anfragen}} pro Minute",
+		"summaryRateTokens": "{count, plural, one {# Token} other {# Tokens}} pro Minute",
+		"summaryRateConcurrent": "{count, plural, one {# Anfrage} other {# Anfragen}} gleichzeitig",
+		"summaryRateCounting": {
+			"shared": "Geteilt von allem, dem es zugewiesen ist",
+			"each_key": "Eigenes Kontingent pro Schlüssel",
+			"each_end_user": "Eigenes Kontingent pro Endnutzer"
+		},
+		"summaryRateFailClosed": "Lehnt Anfragen ab, wenn Limits nicht geprüft werden können"
 	},
 	"broadcastControls": {
 		"optional": "(optional)",
@@ -8031,5 +8055,50 @@
 		"expiredBody": "Niemand hat innerhalb von 30 Minuten geantwortet, daher wurde nichts belastet. Der Agent wird angewiesen, es nicht erneut zu versuchen; er kann eine neue Anfrage starten, wenn jemand erreichbar ist.",
 		"resume": "Kartenbestätigung abschließen",
 		"resumeNotice": "Diese Aufladung wurde bestätigt, aber die Kartenbestätigung der Bank wurde nicht abgeschlossen. Schließe sie ab, um die Zahlung zu beenden."
+	},
+	"rateGuardrail": {
+		"title": "Ratenlimits",
+		"description": "Begrenze Anfragen und Tokens pro Minute und wie viele Anfragen gleichzeitig laufen.",
+		"limitsTitle": "Limits",
+		"limitsBody": "Lege mindestens eins fest. Lass ein Limit leer, um es nicht zu begrenzen.",
+		"noLimit": "Kein Limit",
+		"invalidLimit": "Gib eine ganze Zahl größer als 0 ein.",
+		"requests": {
+			"label": "Anfragen pro Minute",
+			"help": "Gezählt über eine gleitende Minute."
+		},
+		"tokens": {
+			"label": "Tokens pro Minute",
+			"help": "Eingabe- und Ausgabetokens, gezählt, wenn eine Anfrage fertig ist."
+		},
+		"concurrent": {
+			"label": "Gleichzeitige Anfragen",
+			"help": "Anfragen, die zur selben Zeit laufen."
+		},
+		"countingTitle": "Zählweise",
+		"countingBody": "Wähle, wer sich ein Kontingent teilt. Es gibt keine Vorgabe.",
+		"legacyCounting": "Dieses Limit wurde über die Ratenlimit-API erstellt. Es zählt pro zugewiesenem Schlüssel, Mitglied oder Abteilung und im ganzen Workspace pro Endnutzer. Wähle eine Option, um das zu ändern.",
+		"countingLegacy": "Pro Zuweisung",
+		"counting": {
+			"shared": {
+				"name": "Geteilt",
+				"body": "Ein Kontingent für alles, dem es zugewiesen ist. Bei einer Abteilung teilt es sich die ganze Abteilung."
+			},
+			"each_key": {
+				"name": "Pro Schlüssel",
+				"body": "Jeder abgedeckte API-Schlüssel bekommt ein eigenes Kontingent. OAuth-Anfragen zählen pro Person."
+			},
+			"each_end_user": {
+				"name": "Pro Endnutzer",
+				"body": "Jeder Endnutzer bekommt ein eigenes Kontingent, erkannt am Feld user der Anfrage oder am Header X-Phaseo-User-Id. Anfragen ohne Endnutzer werden dadurch nicht begrenzt."
+			}
+		},
+		"failClosedTitle": "Anfragen ablehnen, wenn Limits nicht geprüft werden können",
+		"failClosedBody": "Wartet bei jeder Anfrage auf den Zähler, was etwas Latenz kostet. Ist das aus, gehen Anfragen durch, wenn der Zähler nicht antwortet.",
+		"issue": {
+			"rateLimitEmpty": "Lege mindestens ein Limit fest, um fortzufahren.",
+			"rateLimitInvalid": "Limits müssen ganze Zahlen größer als 0 sein.",
+			"rateCountingRequired": "Wähle eine Zählweise, um fortzufahren."
+		}
 	}
 }

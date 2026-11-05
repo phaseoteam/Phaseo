@@ -1075,7 +1075,11 @@
 		"noTraining": "Sin entrenamiento",
 		"noPaidTraining": "Sin entrenamiento en endpoints de pago",
 		"noFreeTraining": "Sin entrenamiento en endpoints gratuitos",
-		"noLogging": "Sin endpoints que registren"
+		"noLogging": "Sin endpoints que registren",
+		"columnRate": "Frecuencia",
+		"rateRequests": "{count, plural, one {# solicitud} other {# solicitudes}} por minuto",
+		"rateTokens": "{count, plural, one {# token} other {# tokens}} por minuto",
+		"rateConcurrent": "{count, plural, other {# a la vez}}"
 	},
 	"guardrailWizard": {
 		"title": "Nuevo guardrail",
@@ -1099,7 +1103,10 @@
 			"providerAllowlistEmpty": "Elige al menos un proveedor permitido. Una lista vacía bloquea todos los proveedores.",
 			"modelAllowlistEmpty": "Elige al menos un modelo permitido. Una lista vacía bloquea todos los modelos.",
 			"promptInjectionOff": "Elige cómo tratar la inyección de prompts, o quita esta comprobación.",
-			"sensitiveInfoOff": "Activa al menos un patrón de información sensible, o quita esta comprobación."
+			"sensitiveInfoOff": "Activa al menos un patrón de información sensible, o quita esta comprobación.",
+			"rateLimitEmpty": "Define al menos un límite para continuar.",
+			"rateLimitInvalid": "Los límites deben ser números enteros mayores que 0.",
+			"rateCountingRequired": "Elige cómo cuentan los límites para continuar."
 		},
 		"nameLabel": "Nombre",
 		"namePlaceholder": "p. ej., Política para contratistas",
@@ -1184,7 +1191,24 @@
 		"levelWorkspace": "Todo el espacio de trabajo",
 		"levelDepartments": "{count, plural, one {# departamento} other {# departamentos}}",
 		"levelMembers": "{count, plural, one {# miembro} other {# miembros}}",
-		"levelKeys": "{count, plural, one {# clave de API} other {# claves de API}}"
+		"levelKeys": "{count, plural, one {# clave de API} other {# claves de API}}",
+		"templateRateLimit": {
+			"name": "Límite de frecuencia",
+			"body": "Limita las solicitudes o los tokens por minuto, o las solicitudes simultáneas."
+		},
+		"sectionRate": {
+			"name": "Límites de frecuencia",
+			"body": "Solicitudes y tokens por minuto, y solicitudes simultáneas. Una barrera de frecuencia no tiene más comprobaciones."
+		},
+		"summaryRateRequests": "{count, plural, one {# solicitud} other {# solicitudes}} por minuto",
+		"summaryRateTokens": "{count, plural, one {# token} other {# tokens}} por minuto",
+		"summaryRateConcurrent": "{count, plural, one {# solicitud} other {# solicitudes}} a la vez",
+		"summaryRateCounting": {
+			"shared": "Compartido por todo aquello a lo que está asignado",
+			"each_key": "Independiente para cada clave",
+			"each_end_user": "Independiente para cada usuario final"
+		},
+		"summaryRateFailClosed": "Rechaza solicitudes si no se pueden comprobar los límites"
 	},
 	"broadcastControls": {
 		"optional": "(opcional)",
@@ -8031,5 +8055,50 @@
 		"expiredBody": "Nadie respondió en 30 minutos, así que no se ha cobrado nada. Se indica al agente que no lo reintente; puede iniciar una nueva solicitud cuando haya alguien disponible.",
 		"resume": "Terminar la verificación de la tarjeta",
 		"resumeNotice": "Esta recarga se confirmó, pero no se terminó la verificación de la tarjeta del banco. Termínala para completar el pago."
+	},
+	"rateGuardrail": {
+		"title": "Límites de frecuencia",
+		"description": "Limita las solicitudes y los tokens por minuto, y cuántas solicitudes se ejecutan a la vez.",
+		"limitsTitle": "Límites",
+		"limitsBody": "Define al menos uno. Deja un límite en blanco para no limitarlo.",
+		"noLimit": "Sin límite",
+		"invalidLimit": "Introduce un número entero mayor que 0.",
+		"requests": {
+			"label": "Solicitudes por minuto",
+			"help": "Se cuentan en un minuto móvil."
+		},
+		"tokens": {
+			"label": "Tokens por minuto",
+			"help": "Tokens de entrada y salida, contados al terminar cada solicitud."
+		},
+		"concurrent": {
+			"label": "Solicitudes simultáneas",
+			"help": "Solicitudes en curso al mismo tiempo."
+		},
+		"countingTitle": "Cómo cuenta",
+		"countingBody": "Elige quién comparte cada asignación. No hay valor predeterminado.",
+		"legacyCounting": "Se creó con la API de límites de frecuencia, así que cuenta por cada clave, miembro o departamento al que está asignado, y por usuario final en todo el espacio de trabajo. Elige una opción para cambiarlo.",
+		"countingLegacy": "Por asignación",
+		"counting": {
+			"shared": {
+				"name": "Compartido",
+				"body": "Una asignación para todo aquello a lo que está asignado. En un departamento, la comparte todo el departamento."
+			},
+			"each_key": {
+				"name": "Por clave",
+				"body": "Cada clave API que cubre tiene su propia asignación. Las solicitudes OAuth cuentan por persona."
+			},
+			"each_end_user": {
+				"name": "Por usuario final",
+				"body": "Cada usuario final tiene su propia asignación, según el campo user de la solicitud o la cabecera X-Phaseo-User-Id. Las solicitudes sin usuario final no quedan limitadas por ella."
+			}
+		},
+		"failClosedTitle": "Rechazar solicitudes si no se pueden comprobar los límites",
+		"failClosedBody": "Espera al contador en cada solicitud, lo que añade algo de latencia. Si está desactivado, las solicitudes pasan cuando el contador no responde.",
+		"issue": {
+			"rateLimitEmpty": "Define al menos un límite para continuar.",
+			"rateLimitInvalid": "Los límites deben ser números enteros mayores que 0.",
+			"rateCountingRequired": "Elige cómo cuentan los límites para continuar."
+		}
 	}
 }

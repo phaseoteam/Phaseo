@@ -7,7 +7,7 @@ CREATE TABLE "public"."workspace_rate_limit_throttles_minute" (
   "throttled_requests" integer                  NOT NULL,
   CONSTRAINT "workspace_rate_limit_throttles_minute_key" UNIQUE NULLS NOT DISTINCT (workspace_id, bucket_start, policy_id, limit_scope, key_id),
   CONSTRAINT "workspace_rate_limit_throttles_minute_limit_scope_check"
-    CHECK ((limit_scope = ANY (ARRAY['key'::text, 'member'::text, 'guardrail'::text, 'end_user'::text, 'department'::text]))),
+    CHECK ((limit_scope = ANY (ARRAY['key'::text, 'member'::text, 'guardrail'::text, 'end_user'::text, 'department'::text, 'workspace'::text]))),
   CONSTRAINT "workspace_rate_limit_throttles_minute_throttled_requests_check" CHECK ((throttled_requests > 0)),
   CONSTRAINT "workspace_rate_limit_throttles_minute_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
 );

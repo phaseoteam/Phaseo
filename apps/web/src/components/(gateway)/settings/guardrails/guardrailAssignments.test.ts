@@ -58,6 +58,9 @@ describe("effectiveGuardrailPolicy", () => {
 			modelBlockCount: 2,
 			promptInjection: "block",
 			sensitiveInfoRuleCount: 2,
+			requestsPerMinute: null,
+			tokensPerMinute: null,
+			concurrentRequests: null,
 		});
 	});
 
@@ -101,6 +104,27 @@ describe("effectiveGuardrailPolicy", () => {
 			guardrail("b", { provider_restriction_mode: "blocklist", provider_restriction_provider_ids: ["openai"], model_restriction_mode: "blocklist", allowed_api_model_ids: ["m1"] }),
 		]);
 		expect(policy).toMatchObject({ providerAllowCount: 1, providerBlockCount: 1, modelAllowCount: 0, modelBlockCount: 1 });
+	});
+});
+
+describe("rate limits in the effective policy", () => {
+	it("keeps the lowest of each limit from enabled rate guardrails, and names where they come from", () => {
+		const rate = (id: string, fields: Record<string, unknown>) => ({ id, name: id, enabled: true, kind: "rate" as const, ...fields });
+		const guardrails = [
+			rate("team", { rate_requests_per_minute: 600, rate_tokens_per_minute: 2_000_000 }),
+			rate("strict", { rate_requests_per_minute: 60, rate_concurrent_requests: 4 }),
+			rate("paused", { enabled: false, rate_requests_per_minute: 1 }),
+		];
+		expect(effectiveGuardrailPolicy(guardrails)).toMatchObject({ requestsPerMinute: 60, tokensPerMinute: 2_000_000, concurrentRequests: 4 });
+		expect(effectiveGuardrailPolicy([])).toMatchObject({ requestsPerMinute: null, tokensPerMinute: null, concurrentRequests: null });
+		const [row] = buildGuardrailAssignmentRows({
+			targetType: "key", untitled: "Untitled",
+			keys: [{ id: "key-1", name: "Prod", prefix: "pk_1", status: "active" }], members: [], guardrails,
+			guardrailWorkspaceIdsByGuardrailId: { team: ["workspace"] },
+			guardrailKeyIdsByGuardrailId: { strict: ["key-1"], paused: ["key-1"] }, guardrailMemberIdsByGuardrailId: {},
+		});
+		expect(row!.rateFrom.map((guardrail) => guardrail.id)).toEqual(["strict", "team"]);
+		expect(row!.accessFrom).toEqual([]);
 	});
 });
 
