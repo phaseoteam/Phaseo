@@ -131,7 +131,6 @@ type ApiKey struct {
 	DepartmentId *string `json:"department_id,omitempty"`
 	Disabled bool `json:"disabled"`
 	ExpiresAt *string `json:"expires_at"`
-	Hash string `json:"hash"`
 	Id string `json:"id"`
 	IncludeByokInLimit bool `json:"include_byok_in_limit"`
 	IpAllowlist *[]map[string]interface{} `json:"ip_allowlist,omitempty"`
@@ -252,7 +251,6 @@ type ApiKeyWithValue struct {
 	DepartmentId *string `json:"department_id,omitempty"`
 	Disabled bool `json:"disabled"`
 	ExpiresAt *string `json:"expires_at"`
-	Hash string `json:"hash"`
 	Id string `json:"id"`
 	IncludeByokInLimit bool `json:"include_byok_in_limit"`
 	IpAllowlist *[]map[string]interface{} `json:"ip_allowlist,omitempty"`

@@ -6,7 +6,6 @@ export interface ApiKeyListResponse {
     department_id?: string | null;
     disabled: boolean;
     expires_at: string | null;
-    hash: string;
     id: string;
     include_byok_in_limit: boolean;
     ip_allowlist?: {

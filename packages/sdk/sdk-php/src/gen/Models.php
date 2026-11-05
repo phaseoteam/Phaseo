@@ -240,8 +240,6 @@ class ApiKey
 	/** @var string|null */
 	public $expires_at;
 	/** @var string */
-	public $hash;
-	/** @var string */
 	public $id;
 	/** @var bool */
 	public $include_byok_in_limit;
@@ -449,8 +447,6 @@ class ApiKeyWithValue
 	public $disabled;
 	/** @var string|null */
 	public $expires_at;
-	/** @var string */
-	public $hash;
 	/** @var string */
 	public $id;
 	/** @var bool */
