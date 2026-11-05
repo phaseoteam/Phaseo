@@ -42,7 +42,7 @@
   "license": "MIT",
   "dependencies": {
     "@ai-sdk/provider": "^4.0.7",
-    "@ai-sdk/provider-utils": "^5.0.14"
+    "@ai-sdk/provider-utils": "^5.0.70"
   },
   "devDependencies": {
     "@types/node": "^26.1.2",
