@@ -284,7 +284,45 @@ export function calculatePricing(
             console.error("computeBill failed", calcErr);
             throw calcErr;
         }
+        const withSvgAuthor = addSvgAuthorPricing(pricedUsage, totalNanos);
+        if (withSvgAuthor) {
+            pricedUsage = withSvgAuthor.pricedUsage;
+            totalNanos = withSvgAuthor.totalNanos;
+            totalCents = Math.trunc(totalNanos / 10_000_000);
+        }
     }
 
     return { pricedUsage, totalCents, totalNanos, currency };
+}
+
+/**
+ * GPT Image SVG output also bills the model that wrote the SVG, priced by the OpenAI image
+ * adapter from that model's own card (providers/openai/endpoints/images-svg.ts). The image
+ * card cannot price it, so its total and lines are added here.
+ */
+function addSvgAuthorPricing(pricedUsage: any, totalNanos: number): { pricedUsage: any; totalNanos: number } | null {
+    const svgAuthor = pricedUsage?.svg_author_pricing;
+    if (!svgAuthor || typeof svgAuthor !== "object") return null;
+    const authorNanos = svgAuthor.total_nanos;
+    if (!Number.isSafeInteger(authorNanos) || authorNanos < 0) {
+        throw new Error("svg_author_pricing_invalid");
+    }
+    const pricing = pricedUsage.pricing && typeof pricedUsage.pricing === "object" ? pricedUsage.pricing : {};
+    const combinedNanos = totalNanos + authorNanos;
+    return {
+        totalNanos: combinedNanos,
+        pricedUsage: {
+            ...pricedUsage,
+            pricing: {
+                ...pricing,
+                total_nanos: combinedNanos,
+                total_usd_str: String(Number((combinedNanos / 1_000_000_000).toFixed(9))),
+                total_cents: Math.trunc(combinedNanos / 10_000_000),
+                lines: [
+                    ...(Array.isArray(pricing.lines) ? pricing.lines : []),
+                    ...(Array.isArray(svgAuthor.lines) ? svgAuthor.lines : []),
+                ],
+            },
+        },
+    };
 }

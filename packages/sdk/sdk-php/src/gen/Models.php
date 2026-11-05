@@ -3471,10 +3471,14 @@ class ImagesEditRequest
 {
 	/** @var string|null */
 	public $background;
+	/** @var string|null */
+	public $complexity;
 	/** @var string|array */
 	public $image;
 	/** @var string|null */
 	public $input_fidelity;
+	/** @var string|null */
+	public $markup;
 	/** @var string|null */
 	public $mask;
 	/** @var bool|null */
@@ -3523,6 +3527,12 @@ class ImagesGenerationRequest
 {
 	/** @var string|null */
 	public $background;
+	/** @var string|null */
+	public $complexity;
+	/** @var int|null */
+	public $frame_count;
+	/** @var int|null */
+	public $frame_duration_ms;
 	/** @var string */
 	public $model;
 	/** @var array|null */
@@ -3553,6 +3563,8 @@ class ImagesGenerationRequest
 	public $stream;
 	/** @var string|null */
 	public $style;
+	/** @var array<string, mixed>|null */
+	public $svg;
 	/** @var string|null */
 	public $user;
 }
@@ -3563,6 +3575,8 @@ class ImagesGenerationResponse
 	public $created;
 	/** @var array|null */
 	public $data;
+	/** @var array<string, mixed>|null */
+	public $svg_usage;
 }
 
 class InputTokensDetails

@@ -4248,12 +4248,15 @@ export type CreateImageParams = {
   headers?: Record<string, never>;
   body?: {
     background?: "transparent" | "opaque" | "auto";
+    complexity?: "low" | "medium" | "high";
+    frame_count?: number;
+    frame_duration_ms?: number;
     model: string;
     models?: string[];
     moderation?: "auto" | "low";
     n?: number;
     output_compression?: number;
-    output_format?: "png" | "jpeg" | "webp";
+    output_format?: "png" | "jpeg" | "webp" | "gif" | "svg";
     partial_images?: number;
     prompt: string;
     provider?: {
@@ -4299,6 +4302,13 @@ export type CreateImageParams = {
     size?: string;
     stream?: boolean;
     style?: string;
+    svg?: {
+      model: string;
+      reasoning?: {
+        effort?:
+          "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+      };
+    };
     user?: string;
   };
 };
@@ -4316,6 +4326,13 @@ export async function createImage(
     revised_prompt?: string;
     url?: string;
   }[];
+  svg_usage?: {
+    input_tokens?: number;
+    model?: string;
+    output_tokens?: number;
+    reasoning_tokens?: number;
+    total_tokens?: number;
+  };
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/images/generations";
@@ -4326,6 +4343,13 @@ export async function createImage(
       revised_prompt?: string;
       url?: string;
     }[];
+    svg_usage?: {
+      input_tokens?: number;
+      model?: string;
+      output_tokens?: number;
+      reasoning_tokens?: number;
+      total_tokens?: number;
+    };
   }>({
     method: "POST",
     path: resolvedPath,
@@ -4341,8 +4365,10 @@ export type CreateImageEditParams = {
   headers?: Record<string, never>;
   body?: {
     background?: "transparent" | "opaque" | "auto";
+    complexity?: "low" | "medium" | "high";
     image: string | string[];
     input_fidelity?: "high" | "low";
+    markup?: string;
     mask?: string;
     meta?: boolean;
     model: string;

@@ -2787,9 +2787,13 @@ module Phaseo
     ImageModerationInput = Struct.new(:image_url, :type, keyword_init: true)
     # @!attribute [rw] background
     #   @return [String, nil]
+    # @!attribute [rw] complexity
+    #   @return [String, nil]
     # @!attribute [rw] image
     #   @return [String, Array<String>]
     # @!attribute [rw] input_fidelity
+    #   @return [String, nil]
+    # @!attribute [rw] markup
     #   @return [String, nil]
     # @!attribute [rw] mask
     #   @return [String, nil]
@@ -2825,7 +2829,7 @@ module Phaseo
     #   @return [Boolean, nil]
     # @!attribute [rw] user
     #   @return [String, nil]
-    ImagesEditRequest = Struct.new(:background, :image, :input_fidelity, :mask, :meta, :model, :models, :moderation, :n, :output_compression, :output_format, :partial_images, :prompt, :provider, :quality, :resolution, :size, :stream, :usage, :user, keyword_init: true)
+    ImagesEditRequest = Struct.new(:background, :complexity, :image, :input_fidelity, :markup, :mask, :meta, :model, :models, :moderation, :n, :output_compression, :output_format, :partial_images, :prompt, :provider, :quality, :resolution, :size, :stream, :usage, :user, keyword_init: true)
     # @!attribute [rw] created
     #   @return [Integer, nil]
     # @!attribute [rw] data
@@ -2833,6 +2837,12 @@ module Phaseo
     ImagesEditResponse = Struct.new(:created, :data, keyword_init: true)
     # @!attribute [rw] background
     #   @return [String, nil]
+    # @!attribute [rw] complexity
+    #   @return [String, nil]
+    # @!attribute [rw] frame_count
+    #   @return [Integer, nil]
+    # @!attribute [rw] frame_duration_ms
+    #   @return [Integer, nil]
     # @!attribute [rw] model
     #   @return [String]
     # @!attribute [rw] models
@@ -2863,14 +2873,18 @@ module Phaseo
     #   @return [Boolean, nil]
     # @!attribute [rw] style
     #   @return [String, nil]
+    # @!attribute [rw] svg
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] user
     #   @return [String, nil]
-    ImagesGenerationRequest = Struct.new(:background, :model, :models, :moderation, :n, :output_compression, :output_format, :partial_images, :prompt, :provider, :quality, :resolution, :response_format, :size, :stream, :style, :user, keyword_init: true)
+    ImagesGenerationRequest = Struct.new(:background, :complexity, :frame_count, :frame_duration_ms, :model, :models, :moderation, :n, :output_compression, :output_format, :partial_images, :prompt, :provider, :quality, :resolution, :response_format, :size, :stream, :style, :svg, :user, keyword_init: true)
     # @!attribute [rw] created
     #   @return [Integer, nil]
     # @!attribute [rw] data
     #   @return [Array<Hash{String => Object}>, nil]
-    ImagesGenerationResponse = Struct.new(:created, :data, keyword_init: true)
+    # @!attribute [rw] svg_usage
+    #   @return [Hash{String => Object}, nil]
+    ImagesGenerationResponse = Struct.new(:created, :data, :svg_usage, keyword_init: true)
     # @!attribute [rw] cache_write_tokens
     #   @return [Integer, nil]
     # @!attribute [rw] cache_write_tokens_details

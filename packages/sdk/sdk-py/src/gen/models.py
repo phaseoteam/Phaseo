@@ -1759,8 +1759,10 @@ class ImageModerationInput(TypedDict):
 
 class ImagesEditRequest(TypedDict):
 	background: NotRequired[Literal["transparent", "opaque", "auto"]]
+	complexity: NotRequired[Literal["low", "medium", "high"]]
 	image: Union[str, List[str]]
 	input_fidelity: NotRequired[Literal["high", "low"]]
+	markup: NotRequired[str]
 	mask: NotRequired[str]
 	meta: NotRequired[bool]
 	model: str
@@ -1785,12 +1787,15 @@ class ImagesEditResponse(TypedDict):
 
 class ImagesGenerationRequest(TypedDict):
 	background: NotRequired[Literal["transparent", "opaque", "auto"]]
+	complexity: NotRequired[Literal["low", "medium", "high"]]
+	frame_count: NotRequired[int]
+	frame_duration_ms: NotRequired[int]
 	model: str
 	models: NotRequired[List[str]]
 	moderation: NotRequired[Literal["auto", "low"]]
 	n: NotRequired[int]
 	output_compression: NotRequired[int]
-	output_format: NotRequired[Literal["png", "jpeg", "webp"]]
+	output_format: NotRequired[Literal["png", "jpeg", "webp", "gif", "svg"]]
 	partial_images: NotRequired[int]
 	prompt: str
 	provider: NotRequired[ProviderRoutingOptions]
@@ -1800,11 +1805,13 @@ class ImagesGenerationRequest(TypedDict):
 	size: NotRequired[str]
 	stream: NotRequired[bool]
 	style: NotRequired[str]
+	svg: NotRequired[Dict[str, Any]]
 	user: NotRequired[str]
 
 class ImagesGenerationResponse(TypedDict):
 	created: NotRequired[int]
 	data: NotRequired[List[Image]]
+	svg_usage: NotRequired[Dict[str, Any]]
 
 class InputTokensDetails(TypedDict):
 	cache_write_tokens: NotRequired[int]
