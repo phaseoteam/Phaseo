@@ -5,7 +5,7 @@
  */
 
 export const htmlRenderScheme = "phaseo-html";
-export const htmlRenderLimits = { bytes: 256 * 1024, titleLength: 200, minHeight: 80, maxHeight: 2000, minWidth: 240, maxWidth: 1600, columnWidth: 720, consoleMessages: 50 } as const;
+export const htmlRenderLimits = { bytes: 256 * 1024, /** A page with its local images embedded; it still travels in the frame's address. */ embeddedBytes: 1_400_000, titleLength: 200, minHeight: 80, maxHeight: 2000, minWidth: 240, maxWidth: 1600, columnWidth: 720, consoleMessages: 50 } as const;
 export type HtmlAppearance = "dark" | "light";
 export type HtmlRenderRequest = { html: string; title: string; height: number };
 export type HtmlPreviewRequest = { html: string; width: number; appearance: HtmlAppearance };
@@ -13,7 +13,7 @@ export type HtmlPreviewResult = { width: number; contentHeight: number; captured
 /** What an html_render activity carries besides the page itself, which is its text. */
 export type HtmlRenderActivity = { title: string; height: number };
 
-export const htmlRenderGuide = `Pages are complete, self-contained HTML documents of at most ${htmlRenderLimits.bytes / 1024} KB: inline <style> and <script>; scripts, styles, fonts and images from https addresses load, and nothing else does (no fetch or XHR). The frame is the reply's width (about ${htmlRenderLimits.columnWidth}px) on the chat's background: leave html and body without a background, border or side padding, use the theme variables --background, --foreground, --muted-foreground, --border, --primary, --chart-1 to --chart-6, --font-sans, --font-mono and --radius instead of fixed colours, give charts fixed pixel heights, and never use vh units or height:100% on html or body.`;
+export const htmlRenderGuide = `Pages are complete, self-contained HTML documents of at most ${htmlRenderLimits.bytes / 1024} KB: inline <style> and <script>; scripts, styles, fonts and images from https addresses load, and nothing else does (no fetch or XHR). For a local image, put its file path in <img src> (absolute, or relative to the project): it is embedded in the page, up to 2 MB an image. The frame is the reply's width (about ${htmlRenderLimits.columnWidth}px) on the chat's background: leave html and body without a background, border or side padding, use the theme variables --background, --foreground, --muted-foreground, --border, --primary, --chart-1 to --chart-6, --font-sans, --font-mono and --radius instead of fixed colours, give charts fixed pixel heights, and never use vh units or height:100% on html or body.`;
 
 function object(value: unknown): Record<string, unknown> {
 	if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Expected HTML tool arguments.");
@@ -80,7 +80,7 @@ export const htmlRenderUrl = (page: string, appearance: HtmlAppearance, theme?: 
 export function htmlRenderFromUrl(url: string): { page: string; appearance: HtmlAppearance; theme: HtmlTheme } | undefined {
 	let parsed: URL; try { parsed = new URL(url); } catch { return undefined; }
 	const appearance = parsed.pathname.replace(/^\//, ""), encoded = parsed.searchParams.get("h"), themed = parsed.searchParams.get("t");
-	if (parsed.protocol !== `${htmlRenderScheme}:` || (appearance !== "dark" && appearance !== "light") || !encoded || encoded.length > Math.ceil(htmlRenderLimits.bytes * 4 / 3) + 4) return undefined;
+	if (parsed.protocol !== `${htmlRenderScheme}:` || (appearance !== "dark" && appearance !== "light") || !encoded || encoded.length > Math.ceil(htmlRenderLimits.embeddedBytes * 4 / 3) + 4) return undefined;
 	let theme: HtmlTheme = {};
 	if (themed && themed.length <= 4000) try { theme = validHtmlTheme(JSON.parse(fromBase64Url(themed))); } catch { /* The app's own palette. */ }
 	try { return { page: fromBase64Url(encoded), appearance, theme }; } catch { return undefined; }

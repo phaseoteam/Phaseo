@@ -45,6 +45,7 @@ import type { Harness } from "../shared/workspace";
 import type { SecretVault } from "./secretVault";
 import { McpHeaderSecrets } from "./mcpHeaders";
 import { McpAppPages, mcpCallOf, mcpToolOf } from "./mcpApps";
+import { embedLocalImages } from "./htmlImages";
 import { PhaseoAdapter } from "./phaseoAdapter";
 import { PhaseoCodingAdapter, type PhaseoExtras } from "./phaseoCodingAdapter";
 import { closePhaseoMcpConnection } from "./phaseoMcp";
@@ -654,7 +655,7 @@ export class WorkspaceRuntime {
 		const operator = task.operator && !task.archived ? { operator: this.operator.tools(parentId) } : {};
 		const tools = { ...this.threads.forThread(parentId), ...app, ...operator, moveToWorktree: (request: WorktreeMove) => this.moveToWorktree(parentId, request), ...task.harness === "claude" ? { backgroundWait: async (ids: string[], waiting: boolean) => { const work = this.backgroundWork.get(parentId); if (!work) throw new Error("This chat has no running turn."); return work.wait(ids, waiting); } } : {}, ...code ? { requestSecret: (input: SecretRequestInput, signal?: AbortSignal) => this.requestSecret(parentId, input, signal) } : {}, ...this.factoryTools ? { factory: this.factoryTools(parentId) } : {}, ...this.triageProject(parentId) ? { draftIssue: (draft: unknown) => this.draftIssue(parentId, draft) } : {} };
 		const global = this.globalInstructions, instructions = global ? { globalInstructions: { read: () => global.read(), save: (content: string, expectedHash: string) => global.save({ content, expectedHash }) } } : {};
-		const html = this.htmlPreview ? { html: { preview: this.htmlPreview, render: async (request: HtmlRenderRequest) => this.htmlRender(parentId, request) } } : {};
+		const preview = this.htmlPreview, html = preview ? { html: { preview: async (request: HtmlPreviewRequest) => preview({ ...request, html: (await embedLocalImages(request.html, this.chatFolder(parentId))).html }), render: async (request: HtmlRenderRequest) => this.htmlRender(parentId, request) } } : {};
 		return this.browserTools && this.agentBrowserTools(parentId) ? { ...tools, ...html, ...instructions, browser: this.browserTools(parentId) } : { ...tools, ...html, ...instructions }; }
 	/** Whether a chat's agent gets the built-in browser's tools (Settings → Browser, or its project's own choice). Off, they are not offered at all. */
 	private agentBrowserTools(chatId: string) {
@@ -686,11 +687,19 @@ export class WorkspaceRuntime {
 		} finally { this.moving.delete(id); }
 	}
 	/** Puts a page on the chat's running turn; the chat shows it above the reply. */
-	private htmlRender(id: string, request: HtmlRenderRequest) {
+	/** The folder a chat's relative paths start from: its project, or its own folder. */
+	private chatFolder(id: string) {
+		const projectId = this.store.getTask(id).projectId;
+		return this.store.getProjects().find(project => project.id === projectId)?.directory ?? path.join(this.directory, "tasks", id);
+	}
+	private async htmlRender(id: string, request: HtmlRenderRequest) {
 		const note = this.turnNotes.get(id);
 		if (!note) throw new Error("html_render works only while this chat's turn is running.");
-		note({ id: `html-render:${randomUUID()}`, type: "tool", title: "html_render", text: request.html, status: "completed", htmlRender: { title: request.title, height: request.height } });
-		return { shown: true as const, title: request.title, height: request.height, message: "Shown to the user above your reply. Do not mention or describe the page; reply with only what it does not already say." };
+		// Local images go into the page, so it keeps working after the files move.
+		const { html, embedded, missing } = await embedLocalImages(request.html, this.chatFolder(id));
+		note({ id: `html-render:${randomUUID()}`, type: "tool", title: "html_render", text: html, status: "completed", htmlRender: { title: request.title, height: request.height } });
+		return { shown: true as const, title: request.title, height: request.height, ...embedded ? { embeddedImages: embedded } : {}, ...missing.length ? { imagesNotEmbedded: missing.slice(0, 20) } : {},
+			message: `Shown to the user above your reply. Do not mention or describe the page; reply with only what it does not already say.${missing.length ? " Some local images could not be embedded (missing, not an image, over 2 MB, or the page would pass 1.4 MB); they show as broken." : ""}` };
 	}
 	/** The triage project of a top-level chat working in one; delegated agents report to their parent instead of drafting. */
 	private triageProject(id: string) {
