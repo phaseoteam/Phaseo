@@ -161,7 +161,7 @@ curl https://api.phaseo.app/v1/audio/realtime/sessions \
 | `reason` | رمز سبب ثابت. راجع [رموز الأسباب](#reason-codes). |
 | `initiated_by` | `client` أو `gateway` أو `provider`. |
 | `duration_seconds` | الوقت المنقضي منذ اتصال المرحّل. |
-| `usage` | العدّادات المفوترة: أعداد الرموز حسب الوسيط، و`audio_seconds` في حالة xAI وGPT Live. |
+| `usage` | كل العدّادات التي تُفوتَر عليها المكالمة: أعداد الرموز حسب الوسيط، بما فيها القراءة من ذاكرة التخزين المؤقت والكتابة إليها؛ و`audio_seconds` للمكالمات المفوترة حسب المدة (xAI وElevenLabs وMistral وصوت GPT Live)؛ و`native_web_search_requests` لعمليات البحث على الويب في GPT Live. |
 | `cost.estimated` | `true` عندما يكون جزء من الاستخدام مقدّرًا من الصوت المقيس لأن بيانات استخدام المزوّد لدور مقاطَع لم تصل أبدًا. ويوضّح `estimate_basis` السبب. |
 | `cost.debt_nanos` | الجزء من التكلفة الذي احتُسب سحبًا على المكشوف بما يتجاوز حجوزاتك ورصيدك المتاح. |
 | `cost.uncollected_nanos` | التكلفة التي تتجاوز سقف السحب على المكشوف ولم تُحتسب. |

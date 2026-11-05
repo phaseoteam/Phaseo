@@ -161,7 +161,7 @@ Le relais envoie `session.ended` à chaque fin d’appel : celle que vous avez d
 | `reason` | Un code de motif stable. Voir les [codes de motif](#reason-codes). |
 | `initiated_by` | `client`, `gateway` ou `provider`. |
 | `duration_seconds` | Temps écoulé depuis la connexion du relais. |
-| `usage` | Les compteurs facturés : nombres de jetons par modalité et, pour xAI et GPT Live, `audio_seconds`. |
+| `usage` | Chaque compteur sur lequel l'appel est facturé : nombres de jetons par modalité, y compris les lectures et écritures en cache ; `audio_seconds` pour les appels facturés à la durée (xAI, ElevenLabs, Mistral et la voix de GPT Live) ; et `native_web_search_requests` pour les recherches web de GPT Live. |
 | `cost.estimated` | `true` lorsqu’une partie de l’utilisation a été estimée à partir de l’audio mesuré parce que les données d’utilisation du fournisseur pour un tour interrompu ne sont jamais arrivées. `estimate_basis` en indique la raison. |
 | `cost.debt_nanos` | La part du coût prélevée en découvert, au-delà de vos réservations et de votre solde disponible. |
 | `cost.uncollected_nanos` | Le coût au-delà du plafond de découvert qui n’a pas été prélevé. |
