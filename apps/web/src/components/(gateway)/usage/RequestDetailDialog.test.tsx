@@ -170,8 +170,15 @@ describe("formatRequestPricingLine", () => {
 	});
 
 	it("uses the translated SVG author label", () => {
-		expect(formatRequestPricingLine({ model: "openai/gpt-5-nano", component: "svg_author", dimension: "input_text_tokens", quantity: 1860 }, formatNumber, { svgAuthor: "SVG-Autor" }))
+		expect(formatRequestPricingLine({ model: "openai/gpt-5-nano", component: "svg_author", dimension: "input_text_tokens", quantity: 1860 }, formatNumber, { svgAuthor: "SVG-Autor", imageTool: "Bild-Tool" }))
 			.toBe("SVG-Autor (openai/gpt-5-nano) | input_text_tokens=1,860");
+	});
+
+	it("names Chat's image tool and the SVG author inside it", () => {
+		expect(formatRequestPricingLine({ model: "openai/gpt-image-2.6-flare", component: "image_generation", dimension: "output_image_tokens", quantity: 824 }, formatNumber))
+			.toBe("Image tool (openai/gpt-image-2.6-flare) | output_image_tokens=824");
+		expect(formatRequestPricingLine({ model: "openai/gpt-5-nano", component: "image_generation.svg_author", dimension: "output_text_tokens", quantity: 4563 }, formatNumber))
+			.toBe("Image tool · SVG author (openai/gpt-5-nano) | output_text_tokens=4,563");
 	});
 
 	it("keeps the older units and cost_usd shape", () => {

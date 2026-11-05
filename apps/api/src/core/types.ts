@@ -41,7 +41,18 @@ export type RequestBetaOptions = {
     [key: string]: unknown;
 };
 
+/** A charge for a model a server tool ran inside a request, priced on that model's own card. */
+export type ServerToolPricing = {
+    component: string;
+    model: string;
+    provider: string;
+    total_nanos: number;
+    lines: Record<string, unknown>[];
+};
+
 export type RequestMeta = {
+    /** Server-tool charges in this request (such as Chat's image tool); calculatePricing adds them to the total. */
+    serverToolPricing?: ServerToolPricing[];
     apiKeyId: string;             // Internal UUID for the gateway key
     apiKeyRef: string;            // Human-readable reference, e.g. kid_xxx
     apiKeyKid: string;            // Raw kid from token

@@ -375,3 +375,20 @@ describe("buildServerToolDefinitions", () => {
 		]);
 	});
 });
+
+describe("image tool GPT Image 2.6 options", () => {
+	it("sends complexity, GIF frames and the SVG author only for their formats", () => {
+		const [gif] = buildServerToolDefinitions(["phaseo:image_generation"], {
+			imageGeneration: { model: "openai/gpt-image-2.6-flare", outputFormat: "gif", complexity: "low", frameCount: 4, frameDurationMs: 120, svgModel: "openai/gpt-5-nano" },
+		});
+		expect(gif).toMatchObject({ type: "phaseo:image_generation", parameters: { output_format: "gif", complexity: "low", frame_count: 4, frame_duration_ms: 120 } });
+		expect((gif as any).parameters).not.toHaveProperty("svg");
+
+		const [svg] = buildServerToolDefinitions(["phaseo:image_generation"], {
+			imageGeneration: { model: "openai/gpt-image-2.6-flare", outputFormat: "svg", complexity: "auto", frameCount: 4, svgModel: "openai/gpt-5-nano" },
+		});
+		expect((svg as any).parameters).toMatchObject({ output_format: "svg", svg: { model: "openai/gpt-5-nano" } });
+		expect((svg as any).parameters).not.toHaveProperty("complexity");
+		expect((svg as any).parameters).not.toHaveProperty("frame_count");
+	});
+});

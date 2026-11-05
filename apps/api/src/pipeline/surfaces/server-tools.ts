@@ -3,6 +3,7 @@
 // How: Rewrites request tools into callable function tools and executes supported calls.
 
 import type { IRChatResponse, IRContentPart, IRMessage, IRToolCall, IRToolResult, IRUsage } from "@core/ir";
+import type { ServerToolPricing } from "@core/types";
 import type { Protocol } from "@protocols/detect";
 import { encodeUnifiedStreamEvent, type StreamProtocol } from "@protocols/stream/encode";
 import { extractUnifiedStreamEvents, type UnifiedStreamEvent } from "../after/stream-events";
@@ -213,7 +214,24 @@ const IMAGE_GENERATION_TOOL_PARAMETERS = {
 		},
 		output_format: {
 			type: "string",
-			description: "Requested output format such as png, jpeg, or webp.",
+			description: "Requested output format such as png, jpeg, or webp. GPT Image 2.6 models also take gif (animated) and svg.",
+		},
+		complexity: {
+			type: "string",
+			enum: ["low", "medium", "high"],
+			description: "GPT Image 2.6 only: how much the model plans before rendering, separate from quality.",
+		},
+		frame_count: {
+			type: "number",
+			description: "GIF output only: number of animation frames (2 to 64).",
+		},
+		frame_duration_ms: {
+			type: "number",
+			description: "GIF output only: milliseconds per frame (20 to 2000).",
+		},
+		svg_model: {
+			type: "string",
+			description: "SVG output only: the OpenAI text model that writes the SVG, such as openai/gpt-5-nano.",
 		},
 		output_compression: {
 			type: "number",
@@ -302,6 +320,10 @@ export type ImageGenerationServerToolConfig = {
 	outputFormat?: string;
 	outputCompression?: number;
 	moderation?: string;
+	complexity?: string;
+	frameCount?: number;
+	frameDurationMs?: number;
+	svgModel?: string;
 };
 
 const ADVISOR_MIN_MAX_TOKENS = 1024;
@@ -449,7 +471,8 @@ export type ServerToolContinuation = {
 	limitExceeded?: boolean;
 	usage: ServerToolExecutionMetrics;
 	advisorUsage?: IRUsage;
-	imageGenerationUsage?: IRUsage;
+	/** Each tool image priced on its own model's card, added to the request total by the after stage. */
+	imageGenerationPricing?: ServerToolPricing[];
 };
 
 export type AdvisorExecutionResult = {
@@ -479,7 +502,7 @@ export type ImageGenerationExecutionResult = {
 	b64Json?: string;
 	mimeType?: string;
 	model: string;
-	usage?: IRUsage;
+	pricing?: ServerToolPricing;
 } | {
 	ok: false;
 	message: string;
@@ -495,6 +518,10 @@ export type ImageGenerationExecutor = (args: {
 	outputFormat?: string;
 	outputCompression?: number;
 	moderation?: string;
+	complexity?: string;
+	frameCount?: number;
+	frameDurationMs?: number;
+	svgModel?: string;
 }) => Promise<ImageGenerationExecutionResult>;
 
 function cloneBody(body: any): any {
@@ -783,6 +810,15 @@ function parseAdvisorToolDefaults(tool: any): AdvisorServerToolConfig | { error:
 	};
 }
 
+function positiveInteger(value: unknown): number | null {
+	return typeof value === "number" && Number.isFinite(value) && value > 0 ? Math.floor(value) : null;
+}
+
+/** The SVG author, as svg.model (Images API shape) or svg_model (tool argument). */
+function svgAuthorModel(source: any): string | null {
+	return toNonEmptyString(source?.svg?.model) ?? toNonEmptyString(source?.svg_model);
+}
+
 function parseImageGenerationToolDefaults(tool: any): ImageGenerationServerToolConfig {
 	const parameters = tool?.parameters && typeof tool.parameters === "object" ? tool.parameters : {};
 	const outputCompression = parameters?.output_compression ?? tool?.output_compression;
@@ -797,6 +833,10 @@ function parseImageGenerationToolDefaults(tool: any): ImageGenerationServerToolC
 			? { outputCompression: Math.max(0, Math.min(100, outputCompression)) }
 			: {}),
 		...(toNonEmptyString(parameters?.moderation ?? tool?.moderation) ? { moderation: toNonEmptyString(parameters?.moderation ?? tool?.moderation)! } : {}),
+		...(toNonEmptyString(parameters?.complexity ?? tool?.complexity) ? { complexity: toNonEmptyString(parameters?.complexity ?? tool?.complexity)! } : {}),
+		...(positiveInteger(parameters?.frame_count ?? tool?.frame_count) != null ? { frameCount: positiveInteger(parameters?.frame_count ?? tool?.frame_count)! } : {}),
+		...(positiveInteger(parameters?.frame_duration_ms ?? tool?.frame_duration_ms) != null ? { frameDurationMs: positiveInteger(parameters?.frame_duration_ms ?? tool?.frame_duration_ms)! } : {}),
+		...(svgAuthorModel(parameters) ?? svgAuthorModel(tool) ? { svgModel: (svgAuthorModel(parameters) ?? svgAuthorModel(tool))! } : {}),
 	};
 }
 
@@ -3271,7 +3311,7 @@ export async function buildServerToolContinuation(
 
 	const toolResults: IRToolResult[] = [];
 	let advisorUsage: IRUsage | undefined;
-	let imageGenerationUsage: IRUsage | undefined;
+	const imageGenerationPricing: ServerToolPricing[] = [];
 	const usage: ServerToolExecutionMetrics = {
 		datetimeRequests: 0,
 		webSearchRequests: 0,
@@ -3404,6 +3444,10 @@ export async function buildServerToolContinuation(
 						? Math.max(0, Math.min(100, args.output_compression))
 						: config.imageGeneration?.outputCompression,
 				moderation: toNonEmptyString(args.moderation) ?? config.imageGeneration?.moderation,
+				complexity: toNonEmptyString(args.complexity) ?? config.imageGeneration?.complexity,
+				frameCount: positiveInteger(args.frame_count) ?? config.imageGeneration?.frameCount,
+				frameDurationMs: positiveInteger(args.frame_duration_ms) ?? config.imageGeneration?.frameDurationMs,
+				svgModel: svgAuthorModel(args) ?? config.imageGeneration?.svgModel,
 			});
 			if (imageResult.ok === false) {
 				toolResults.push({
@@ -3428,9 +3472,7 @@ export async function buildServerToolContinuation(
 					...(imageResult.mimeType ? { mime_type: imageResult.mimeType } : {}),
 				}),
 			});
-			if (imageResult.usage) {
-				imageGenerationUsage = mergeIRUsageTotals(imageGenerationUsage, imageResult.usage);
-			}
+			if (imageResult.pricing) imageGenerationPricing.push(imageResult.pricing);
 			continue;
 		}
 
@@ -3642,7 +3684,7 @@ export async function buildServerToolContinuation(
 		serverToolCallCount: serverToolCalls.length,
 		usage,
 		advisorUsage,
-		imageGenerationUsage,
+		...(imageGenerationPricing.length > 0 ? { imageGenerationPricing } : {}),
 	};
 }
 

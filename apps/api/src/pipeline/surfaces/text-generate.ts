@@ -4,7 +4,7 @@
 
 import type { IRChatRequest, IRChatResponse } from "@core/ir";
 import { handleError } from "@core/error-handler";
-import { detectTextProtocol } from "@protocols/detect";
+import { detectProtocol, detectTextProtocol } from "@protocols/detect";
 import type { UnifiedStreamEvent } from "../after/stream-events";
 import { decodeProtocol, encodeProtocol } from "@protocols/index";
 import { doRequestWithIR } from "../execute";
@@ -62,7 +62,16 @@ import {
 } from "../after/fetch-observability";
 import { fetchGatewayContext } from "../before/context";
 import { buildProviderCandidatesWithDiagnostics } from "../before/utils";
-import type { PipelineContext } from "../before/types";
+import type { PipelineContext, ProviderCandidate } from "../before/types";
+import { applyWorkspacePolicy, fetchWorkspacePolicy } from "../before/workspacePolicy";
+import { decodeNonTextRequest, encodeNonTextResponse } from "./non-text";
+import { priceServerToolResult } from "./server-tool-pricing";
+import type { IRImageGenerationResponse } from "@core/ir";
+import type { ServerToolPricing } from "@core/types";
+import { ImagesGenerationSchema } from "@core/schemas";
+import { normalizeCapability } from "@/executors";
+import { resolveCapabilityFromEndpoint } from "@/lib/config/capabilityToEndpoints";
+import { resolveSvgAuthor } from "@providers/openai/endpoints/images-svg";
 import {
 	buildEmptyResponseDiagnostics,
 	emptyResponseMessage,
@@ -386,7 +395,7 @@ async function executeAdvisorModel(args: {
 	};
 }
 
-async function executeImageGenerationModel(args: {
+type ImageToolArgs = {
 	pre: PipelineRunnerArgs["pre"];
 	timing: any;
 	model: string;
@@ -398,11 +407,221 @@ async function executeImageGenerationModel(args: {
 	outputFormat?: string;
 	outputCompression?: number;
 	moderation?: string;
-}): Promise<{ ok: true; imageUrl?: string; b64Json?: string; mimeType?: string; model: string; usage?: IRChatResponse["usage"] } | { ok: false; message: string }> {
+	complexity?: string;
+	frameCount?: number;
+	frameDurationMs?: number;
+	svgModel?: string;
+};
+
+type ImageToolResult =
+	| { ok: true; imageUrl?: string; b64Json?: string; mimeType?: string; model: string; usage?: IRChatResponse["usage"]; pricing?: ServerToolPricing }
+	| { ok: false; message: string };
+
+const IMAGE_TOOL_MIME_TYPES: Record<string, string> = {
+	png: "image/png",
+	jpeg: "image/jpeg",
+	webp: "image/webp",
+	gif: "image/gif",
+	svg: "image/svg+xml",
+};
+
+/** A copy of the parent context for a model the image tool runs, with its own meta so parent charges stay out of its price. */
+function imageToolContext(
+	pre: PipelineRunnerArgs["pre"],
+	context: Awaited<ReturnType<typeof fetchGatewayContext>>,
+	overrides: Pick<PipelineContext, "endpoint" | "capability" | "protocol" | "rawBody" | "body" | "providers"> & { model: string },
+): PipelineContext {
+	const { model, ...rest } = overrides;
+	return {
+		...pre.ctx,
+		...rest,
+		meta: { ...pre.ctx.meta, serverToolPricing: undefined },
+		requestId: `${pre.ctx.requestId}:image_generation`,
+		model: context.resolvedModel ?? model,
+		requestedModel: model,
+		stream: false,
+		pricing: context.pricing,
+		gating: {
+			key: context.key,
+			keyLimit: context.keyLimit,
+			credit: context.credit,
+		},
+		preset: context.preset
+			? {
+				id: context.preset.id,
+				name: context.preset.name,
+				slug: context.preset.slug ?? null,
+				config: context.preset.config,
+			}
+			: null,
+		teamEnrichment: context.teamEnrichment ?? pre.ctx.teamEnrichment,
+		keyEnrichment: context.keyEnrichment ?? pre.ctx.keyEnrichment,
+		teamSettings: context.teamSettings ?? pre.ctx.teamSettings,
+		attemptErrors: [],
+		providerAttempts: [],
+		searchObservability: null,
+		lifecycle: undefined,
+		lifecycleParentSpanId: undefined,
+		lifecycleProviderSpanId: undefined,
+		webFetchObservability: null,
+		responseCache: null,
+	};
+}
+
+async function failedImageToolMessage(executed: Response): Promise<string> {
+	let message = `Image generation request failed with status ${executed.status}.`;
+	try {
+		const json = await executed.clone().json() as any;
+		message = typeof json?.message === "string"
+			? json.message
+			: typeof json?.error?.message === "string"
+				? json.error.message
+				: typeof json?.error === "string"
+					? json.error
+					: message;
+	} catch {
+		// Keep status message.
+	}
+	return message;
+}
+
+/** Workspace and key model rules, as the before stage applies them to a request of its own. */
+async function imageToolPolicyCandidates(
+	pre: PipelineRunnerArgs["pre"],
+	candidates: ProviderCandidate[],
+	model: string,
+	body: any,
+): Promise<{ ok: true; providers: ProviderCandidate[]; policy: Awaited<ReturnType<typeof fetchWorkspacePolicy>> } | { ok: false; message: string }> {
+	const policy = await fetchWorkspacePolicy({ workspaceId: pre.ctx.workspaceId, apiKeyId: pre.ctx.keyId! });
+	const result = applyWorkspacePolicy({ providers: candidates, resolvedModel: model, body, workspacePolicy: policy });
+	if (!result.ok) {
+		return { ok: false, message: `Image model "${model}" is blocked by a workspace policy or guardrail.` };
+	}
+	return { ok: true, providers: result.providers, policy };
+}
+
+async function executeImageGenerationModel(args: ImageToolArgs): Promise<ImageToolResult> {
 	const apiKeyId = args.pre.ctx.keyId;
 	if (!apiKeyId) {
 		return { ok: false, message: "Image generation cannot resolve the current API key context." };
 	}
+	// Image models with an Images API route (GPT Image, FLUX and others) run there, which takes the
+	// full image options. Models that make images in chat replies (Gemini image models) run as chat.
+	const imagesCapability = normalizeCapability(resolveCapabilityFromEndpoint("images.generations"));
+	let imagesContext: Awaited<ReturnType<typeof fetchGatewayContext>> | null = null;
+	try {
+		imagesContext = await fetchGatewayContext({
+			workspaceId: args.pre.ctx.workspaceId,
+			model: args.model,
+			endpoint: imagesCapability,
+			apiKeyId,
+			includeTestingMode: args.pre.ctx.testingMode,
+			disableCache: Boolean(args.pre.ctx.meta.debug?.enabled),
+		});
+	} catch {
+		imagesContext = null;
+	}
+	const imagesCandidates = imagesContext ? buildProviderCandidatesWithDiagnostics(imagesContext).candidates : [];
+	if (imagesContext && imagesCandidates.length > 0) {
+		return executeImageToolViaImagesApi(args, imagesContext, imagesCandidates, imagesCapability);
+	}
+	if (args.complexity || args.frameCount != null || args.frameDurationMs != null || args.svgModel || args.outputFormat === "gif" || args.outputFormat === "svg") {
+		return { ok: false, message: `Image model ${args.model} has no Images API route, so complexity, GIF and SVG output are not available for it.` };
+	}
+	return executeImageToolViaChatModel(args, apiKeyId);
+}
+
+async function executeImageToolViaImagesApi(
+	args: ImageToolArgs,
+	context: Awaited<ReturnType<typeof fetchGatewayContext>>,
+	candidates: ProviderCandidate[],
+	capability: string,
+): Promise<ImageToolResult> {
+	const rawBody: Record<string, unknown> = {
+		model: args.model,
+		prompt: args.prompt,
+		n: 1,
+		...(args.size ? { size: args.size } : {}),
+		...(args.aspectRatio ? { aspect_ratio: args.aspectRatio } : {}),
+		...(args.quality ? { quality: args.quality } : {}),
+		...(args.background ? { background: args.background } : {}),
+		...(args.outputFormat ? { output_format: args.outputFormat } : {}),
+		...(typeof args.outputCompression === "number" ? { output_compression: args.outputCompression } : {}),
+		...(args.moderation ? { moderation: args.moderation } : {}),
+		...(args.complexity ? { complexity: args.complexity } : {}),
+		...(typeof args.frameCount === "number" ? { frame_count: args.frameCount } : {}),
+		...(typeof args.frameDurationMs === "number" ? { frame_duration_ms: args.frameDurationMs } : {}),
+		...(args.svgModel ? { svg: { model: args.svgModel } } : {}),
+	};
+	const parsed = ImagesGenerationSchema.safeParse(rawBody);
+	if (!parsed.success) {
+		return { ok: false, message: parsed.error.issues.map((issue) => `${issue.path.join(".") || "request"}: ${issue.message}`).join("; ") };
+	}
+	const policy = await imageToolPolicyCandidates(args.pre, candidates, context.resolvedModel ?? args.model, rawBody);
+	if ("message" in policy) return { ok: false, message: policy.message };
+	if (args.outputFormat === "svg" && args.svgModel) {
+		// The SVG author runs, and bills, as its own model: it needs a price and the same model rules.
+		const author = await resolveSvgAuthor(args.svgModel);
+		if (!author) {
+			return { ok: false, message: `svg.model "${args.svgModel}" is not an OpenAI text model with Phaseo pricing. Use an OpenAI model id such as openai/gpt-5-nano.` };
+		}
+		const authorPolicy = applyWorkspacePolicy({
+			providers: policy.providers
+				.filter((candidate) => candidate.providerId === "openai")
+				.map((candidate) => ({ ...candidate, apiModelId: author.model })),
+			resolvedModel: author.model,
+			body: { ...rawBody, model: author.model },
+			workspacePolicy: policy.policy,
+		});
+		if (!authorPolicy.ok) {
+			return { ok: false, message: `SVG author model "${author.model}" is blocked by a workspace policy or guardrail.` };
+		}
+	}
+	const ir = decodeNonTextRequest("images.generations", parsed.data);
+	(ir as any).rawRequest = rawBody;
+	const imageCtx = imageToolContext(args.pre, context, {
+		model: args.model,
+		endpoint: "images.generations" as any,
+		capability,
+		protocol: detectProtocol("images.generations" as any),
+		rawBody,
+		body: parsed.data,
+		providers: policy.providers,
+	});
+	const executed = await doRequestWithIR(imageCtx, ir as any, args.timing);
+	if (executed instanceof Response) {
+		return { ok: false, message: await failedImageToolMessage(executed) };
+	}
+	if (executed.result.kind !== "completed" || !executed.result.ir) {
+		return { ok: false, message: "Image generation request returned an unsupported response kind." };
+	}
+	const imageResponse = executed.result.ir as unknown as IRImageGenerationResponse;
+	const first = Array.isArray(imageResponse.data) ? imageResponse.data[0] : undefined;
+	if (!first?.b64Json && !first?.url) {
+		return { ok: false, message: "Image generation response did not include an image." };
+	}
+	const model = context.resolvedModel ?? args.model;
+	const payload = encodeNonTextResponse("images.generations", imageResponse, imageCtx.requestId);
+	const pricing = await priceServerToolResult({
+		ctx: imageCtx,
+		result: executed.result,
+		payloadUsage: payload?.usage,
+		body: parsed.data,
+		component: "image_generation",
+		model,
+	});
+	const format = imageResponse.outputFormat ?? args.outputFormat ?? "png";
+	return {
+		ok: true,
+		...(first.url ? { imageUrl: first.url } : {}),
+		...(first.b64Json ? { b64Json: first.b64Json } : {}),
+		mimeType: IMAGE_TOOL_MIME_TYPES[format] ?? "image/png",
+		model,
+		pricing,
+	};
+}
+
+async function executeImageToolViaChatModel(args: ImageToolArgs, apiKeyId: string): Promise<ImageToolResult> {
 	let imageContext;
 	try {
 		imageContext = await fetchGatewayContext({
@@ -424,7 +643,7 @@ async function executeImageGenerationModel(args: {
 	if (candidates.length === 0) {
 		return {
 			ok: false,
-			message: `No text.generate providers are available for image generation model ${args.model}.`,
+			message: `No Images API or chat providers are available for image generation model ${args.model}.`,
 		};
 	}
 
@@ -453,6 +672,8 @@ async function executeImageGenerationModel(args: {
 			: {}),
 		...(Object.keys(providerOptions).length > 0 ? providerOptions : {}),
 	};
+	const policy = await imageToolPolicyCandidates(args.pre, candidates, imageContext.resolvedModel ?? args.model, rawBody);
+	if ("message" in policy) return { ok: false, message: policy.message };
 	const imageIr: IRChatRequest = {
 		model: args.model,
 		stream: false,
@@ -468,59 +689,19 @@ async function executeImageGenerationModel(args: {
 		toolChoice: "none",
 		rawRequest: rawBody,
 	};
-	const imageCtx: PipelineContext = {
-		...args.pre.ctx,
-		requestId: `${args.pre.ctx.requestId}:image_generation`,
-		model: imageContext.resolvedModel ?? args.model,
-		requestedModel: args.model,
+	const imageCtx = imageToolContext(args.pre, imageContext, {
+		model: args.model,
 		endpoint: "text.generate" as any,
 		capability: "text.generate",
 		protocol: "openai.chat",
 		rawBody,
 		body: rawBody,
-		stream: false,
-		providers: candidates,
-		pricing: imageContext.pricing,
-		gating: {
-			key: imageContext.key,
-			keyLimit: imageContext.keyLimit,
-			credit: imageContext.credit,
-		},
-		preset: imageContext.preset
-			? {
-				id: imageContext.preset.id,
-				name: imageContext.preset.name,
-				slug: imageContext.preset.slug ?? null,
-				config: imageContext.preset.config,
-			}
-			: null,
-		teamEnrichment: imageContext.teamEnrichment ?? args.pre.ctx.teamEnrichment,
-		keyEnrichment: imageContext.keyEnrichment ?? args.pre.ctx.keyEnrichment,
-		teamSettings: imageContext.teamSettings ?? args.pre.ctx.teamSettings,
-		attemptErrors: [],
-		providerAttempts: [],
-		searchObservability: null,
-		lifecycle: undefined,
-		lifecycleParentSpanId: undefined,
-		lifecycleProviderSpanId: undefined,
-		webFetchObservability: null,
-		responseCache: null,
-	};
+		providers: policy.providers,
+	});
 
 	const executed = await doRequestWithIR(imageCtx, imageIr, args.timing);
 	if (executed instanceof Response) {
-		let message = `Image generation request failed with status ${executed.status}.`;
-		try {
-			const json = await executed.clone().json() as any;
-			message = typeof json?.message === "string"
-				? json.message
-				: typeof json?.error === "string"
-					? json.error
-					: message;
-		} catch {
-			// Keep status message.
-		}
-		return { ok: false, message };
+		return { ok: false, message: await failedImageToolMessage(executed) };
 	}
 	if (executed.result.kind !== "completed" || !executed.result.ir) {
 		return { ok: false, message: "Image generation request returned an unsupported response kind." };
@@ -530,11 +711,21 @@ async function executeImageGenerationModel(args: {
 	if (!image) {
 		return { ok: false, message: "Image generation response did not include an image." };
 	}
+	const model = imageContext.resolvedModel ?? args.model;
+	const payload = encodeProtocol("openai.chat.completions", imageResponse, imageCtx.requestId);
+	const pricing = await priceServerToolResult({
+		ctx: imageCtx,
+		result: executed.result,
+		payloadUsage: payload?.usage,
+		body: rawBody,
+		component: "image_generation",
+		model,
+	});
 	return {
 		ok: true,
 		...image,
-		model: imageContext.resolvedModel ?? args.model,
-		usage: imageResponse.usage,
+		model,
+		pricing,
 	};
 }
 
@@ -1179,6 +1370,10 @@ async function runTextGeneratePipelineInner(
 								outputFormat: imageArgs.outputFormat,
 								outputCompression: imageArgs.outputCompression,
 								moderation: imageArgs.moderation,
+								complexity: imageArgs.complexity,
+								frameCount: imageArgs.frameCount,
+								frameDurationMs: imageArgs.frameDurationMs,
+								svgModel: imageArgs.svgModel,
 							}),
 						searchModels: async (searchArgs) => {
 							const { fetchCatalogue } = await import("@/routes/v1/control/models.catalogue");
@@ -1273,8 +1468,13 @@ async function runTextGeneratePipelineInner(
 				if (continuation.advisorUsage) {
 					aggregateUsage = mergeIRUsageTotals(aggregateUsage, continuation.advisorUsage);
 				}
-				if (continuation.imageGenerationUsage) {
-					aggregateUsage = mergeIRUsageTotals(aggregateUsage, continuation.imageGenerationUsage);
+				// Tool images are priced on their own model's card, not this request's; the after
+				// stage adds these charges to the total (calculatePricing, meta.serverToolPricing).
+				if (continuation.imageGenerationPricing?.length) {
+					pre.ctx.meta.serverToolPricing = [
+						...(pre.ctx.meta.serverToolPricing ?? []),
+						...continuation.imageGenerationPricing,
+					];
 				}
 				searchObservability = mergeSearchObservability(
 					searchObservability,

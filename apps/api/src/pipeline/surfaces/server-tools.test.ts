@@ -1319,11 +1319,12 @@ describe("buildServerToolContinuation", () => {
 			model: "openai/gpt-image-2",
 			imageUrl: "https://example.com/generated.png",
 			mimeType: "image/png",
-			usage: {
-				inputTokens: 12,
-				outputTokens: 0,
-				totalTokens: 12,
-				_ext: { outputImageTokens: 1 },
+			pricing: {
+				component: "image_generation",
+				model: "openai/gpt-image-2",
+				provider: "openai",
+				total_nanos: 24_720_000,
+				lines: [{ dimension: "output_image_tokens", quantity: 824, line_nanos: 24_720_000, component: "image_generation" }],
 			},
 		}));
 
@@ -1379,18 +1380,68 @@ describe("buildServerToolContinuation", () => {
 			moderation: undefined,
 		});
 		expect(continuation?.usage.imageGenerationRequests).toBe(1);
-		expect(continuation?.imageGenerationUsage).toEqual({
-			inputTokens: 12,
-			outputTokens: 0,
-			totalTokens: 12,
-			_ext: { outputImageTokens: 1 },
-		});
+		// The image is priced on its own card; the chat request adds the charge, not image tokens.
+		expect(continuation?.imageGenerationPricing).toEqual([
+			expect.objectContaining({ component: "image_generation", model: "openai/gpt-image-2", total_nanos: 24_720_000 }),
+		]);
+		expect(continuation).not.toHaveProperty("imageGenerationUsage");
 		expect(JSON.parse(String(continuation?.toolResults[0]?.content))).toEqual({
 			status: "ok",
 			model: "openai/gpt-image-2",
 			imageUrl: "https://example.com/generated.png",
 			mime_type: "image/png",
 		});
+	});
+
+	it("passes GPT Image 2.6 options from the tool definition and the call", async () => {
+		const executeImageGeneration = vi.fn(async () => ({
+			ok: true as const,
+			model: "openai/gpt-image-2.6-flare",
+			b64Json: "PHN2Zz48L3N2Zz4=",
+			mimeType: "image/svg+xml",
+		}));
+
+		await buildServerToolContinuation(
+			{
+				choices: [
+					{
+						message: {
+							role: "assistant",
+							content: [],
+							toolCalls: [
+								{
+									id: "call_svg",
+									name: "phaseo_image_generation",
+									arguments: JSON.stringify({ prompt: "An apple icon", output_format: "svg", complexity: "low" }),
+								},
+							],
+						},
+						finishReason: "tool_calls",
+					},
+				],
+			} as any,
+			{
+				enabled: true,
+				datetimeDefaultTimezones: ["UTC"],
+				webSearchEnabled: false,
+				webSearchMaxResults: 5,
+				webSearchIncludeText: false,
+				webSearchIncludeHighlights: true,
+				webFetchEnabled: false,
+				webFetchMaxChars: 12000,
+				imageGenerationEnabled: true,
+				imageGeneration: { model: "openai/gpt-image-2.6-flare", svgModel: "openai/gpt-5-nano", frameCount: 4 },
+			},
+			{ executeImageGeneration },
+		);
+
+		expect(executeImageGeneration).toHaveBeenCalledWith(expect.objectContaining({
+			model: "openai/gpt-image-2.6-flare",
+			outputFormat: "svg",
+			complexity: "low",
+			svgModel: "openai/gpt-5-nano",
+			frameCount: 4,
+		}));
 	});
 
 	it("uses the default image model and accepts description as the image prompt", async () => {
