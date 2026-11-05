@@ -339,6 +339,8 @@
 		"priceInputOutput": "{input} إدخال · {output} إخراج",
 		"priceOutputOnly": "{output} إخراج",
 		"atProviderCost": "بتكلفة المزوّد",
+		"pricePerImageEstimate": "≈{price} / صورة",
+		"listPricePerImageEstimate": "لكل صورة (تقديري)",
 		"filters": "عوامل التصفية",
 		"shown": "معروض",
 		"noModelsForFilters": "لم يتم العثور على نماذج لعوامل التصفية المحددة.",

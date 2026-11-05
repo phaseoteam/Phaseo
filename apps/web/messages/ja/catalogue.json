@@ -339,6 +339,8 @@
 		"priceInputOutput": "入力 {input} · 出力 {output}",
 		"priceOutputOnly": "出力 {output}",
 		"atProviderCost": "プロバイダー原価",
+		"pricePerImageEstimate": "≈{price} / 画像",
+		"listPricePerImageEstimate": "画像あたり（推定）",
 		"filters": "フィルター",
 		"shown": "件表示",
 		"noModelsForFilters": "選択したフィルターに該当するモデルが見つかりません。",

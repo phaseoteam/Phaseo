@@ -339,6 +339,8 @@
 		"priceInputOutput": "{input} entrada · {output} salida",
 		"priceOutputOnly": "{output} salida",
 		"atProviderCost": "Al coste del proveedor",
+		"pricePerImageEstimate": "≈{price} / imagen",
+		"listPricePerImageEstimate": "por imagen (estimado)",
 		"filters": "Filtros",
 		"shown": "mostrados",
 		"noModelsForFilters": "No se han encontrado modelos para los filtros seleccionados.",

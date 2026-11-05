@@ -342,6 +342,7 @@ function ModelListItemImpl({
 	const price = (value: number) => formatHeadlinePrice(value, format.number);
 	let priceText: string | null = null;
 	let priceUnit: string | null = null;
+	let perImageEstimate = false;
 	// Token prices also stack as labelled input and output rows on desktop.
 	let priceRows: Array<{ label: string; value: string }> = [];
 	const tokenRows = (input: number | null, output: number | null) =>
@@ -356,7 +357,8 @@ function ModelListItemImpl({
 	} else if (headline?.kind === "usage") {
 		// A documented image-token rate reads as the cost of one image.
 		priceText = headline.per_image !== undefined ? `≈${price(headline.per_image)}` : price(headline.price);
-		priceUnit = headline.per_image !== undefined ? "image" : headline.unit;
+		priceUnit = headline.per_image !== undefined ? null : headline.unit;
+		perImageEstimate = headline.per_image !== undefined;
 	} else if (headline?.kind === "tokens") {
 		priceText =
 			headline.input !== null && headline.output !== null
@@ -403,7 +405,9 @@ function ModelListItemImpl({
 			priceIsFrom = true;
 		}
 	}
-	const priceUnitText = priceUnit
+	const priceUnitText = perImageEstimate
+		? t("listPricePerImageEstimate")
+		: priceUnit
 		? priceIsFrom
 			? t("listPriceFromPerUnit", { unit: priceUnit })
 			: t("listPricePerUnit", { unit: priceUnit })

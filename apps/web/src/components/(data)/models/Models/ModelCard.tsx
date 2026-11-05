@@ -722,7 +722,7 @@ function ModelCardImpl({
 				? t("atProviderCost")
 				: headline.kind === "usage"
 				? headline.per_image !== undefined
-					? `≈${headlinePrice(headline.per_image)} / image`
+					? t("pricePerImageEstimate", { price: headlinePrice(headline.per_image) })
 					: `${headlinePrice(headline.price)} / ${headline.unit}`
 				: headline.input !== null && headline.output !== null
 					? `${t("priceInputOutput", { input: headlinePrice(headline.input), output: headlinePrice(headline.output) })} / ${headline.unit}`
