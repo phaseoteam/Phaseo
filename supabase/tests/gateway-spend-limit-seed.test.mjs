@@ -27,6 +27,7 @@ try {
     create table public.gateway_wallet_reservations (workspace_id uuid, reservation_id text, amount_nanos bigint, status text,
       hold_ref_id text, created_at timestamptz default now(), settled_amount_nanos bigint, captured_nanos bigint default 0,
       released_nanos bigint default 0, key_id uuid);
+    create table public.gateway_realtime_sessions (workspace_id uuid, session_id text, key_id uuid);
     alter table public.keys add column if not exists department_id uuid;
     -- Department tables, trimmed to what the seed reads.
     create table public.workspace_departments (id uuid primary key, workspace_id uuid not null, name text not null);
@@ -52,9 +53,16 @@ try {
   // Then the one teaching the helper the workspace's primary-department setting.
   const attributionMigration = await readFile(new URL('../migrations/20261031174621_department_attribution_primary_for_budgets.sql', import.meta.url), 'utf8');
   await db.exec(attributionMigration);
-  for (const path of ['public/functions/workspace_department_budget_status.sql', 'public/functions/gateway_spend_limit_seed.sql']) {
-    assert.ok(migration.includes((await schema(path)).trim()), `${path} matches its migration`);
+  // 20261104233604_budget_enforcement_money_hygiene moves department usage into the shared
+  // private.department_budget_usage (positive-cost requests plus outstanding holds).
+  const usageMigration = await readFile(new URL('../migrations/20261104233604_budget_enforcement_money_hygiene.sql', import.meta.url), 'utf8');
+  for (const path of ['private/functions/budget_spend_items.sql', 'private/functions/department_budget_usage.sql', 'public/functions/gateway_spend_limit_seed.sql']) {
+    const definition = (await schema(path)).trim();
+    assert.ok(usageMigration.includes(definition), `${path} matches its migration`);
+    await db.exec(definition);
   }
+  assert.ok(migration.includes((await schema('public/functions/workspace_department_budget_status.sql')).trim()),
+    'workspace_department_budget_status matches its migration');
   assert.ok(attributionMigration.includes((await schema('private/functions/department_budget_key_departments.sql')).trim()),
     'the helper matches its migration');
   const manifest = JSON.parse(await schema('.pgdelta-export.json'));
@@ -141,7 +149,8 @@ try {
   const budget = await one(`select public.gateway_workspace_budget_status('${workspace}', 0) as value`);
   const withoutNow = ({ now: _now, ...rest }) => rest;
   assert.deepEqual(withoutNow(seed.budget_status), withoutNow(budget));
-  assert.equal(seed.budget_status.budgets.find((entry) => entry.interval === 'daily').usage_nanos, 100 + 5 + 3 + 40);
+  // Positive-cost requests whether or not they succeeded (today-failed was charged 999), plus the hold.
+  assert.equal(seed.budget_status.budgets.find((entry) => entry.interval === 'daily').usage_nanos, 100 + 5 + 3 + 999 + 40);
 
   // Recorded requests are excluded from the counts and returned when persisted.
   const excluded = await one(`select public.gateway_spend_limit_seed('${workspace}', ${keyIds}, array['today-1', 'month-start', 'not-yet-written']) as value`);
@@ -225,17 +234,18 @@ try {
   assert.deepEqual(byBudget['Engineering:daily'].key_ids, sorted([dk.u1, dk.u2, dk.oauth]), 'grants, override and OAuth user; not u4 or the Sales-linked key');
   assert.deepEqual(byBudget['Engineering:monthly'].key_ids, byBudget['Engineering:daily'].key_ids);
   assert.deepEqual(byBudget['Sales:weekly'].key_ids, [dk.linked], 'u2 moved out of Sales by the override');
-  // Successful rows of the department's keys in this workspace from the window start (inclusive).
+  // Positive-cost rows of the department's keys in this workspace from the window start
+  // (inclusive), whether or not the request succeeded.
   const expectedUsage = (keys, start, exclude = []) => departmentRows
-    .filter(([requestId, workspaceId, key, success, , createdAt]) => workspaceId === workspace && keys.includes(key) && success &&
+    .filter(([requestId, workspaceId, key, , cost, createdAt]) => workspaceId === workspace && keys.includes(key) && (cost ?? 0) > 0 &&
       Date.parse(createdAt) >= start.getTime() && !exclude.includes(requestId))
     .reduce((sum, row) => sum + (row[4] ?? 0), 0);
   const engKeys = [dk.u1, dk.u2, dk.oauth];
-  // Today: u1 10 + 20 (day start counts) + u2 100 + OAuth 200. Not yesterday, failed, other-workspace rows or u4.
+  // Today: u1 10 + 20 (day start counts) + 80 (failed but charged) + u2 100 + OAuth 200. Not yesterday, other-workspace rows or u4.
   assert.equal(Number(byBudget['Engineering:daily'].usage_nanos), expectedUsage(engKeys, bounds.day));
-  if (bounds.day.getTime() !== bounds.month.getTime()) assert.equal(Number(byBudget['Engineering:daily'].usage_nanos), 330);
+  if (bounds.day.getTime() !== bounds.month.getTime()) assert.equal(Number(byBudget['Engineering:daily'].usage_nanos), 410);
   assert.equal(Number(byBudget['Engineering:monthly'].usage_nanos), expectedUsage(engKeys, bounds.month));
-  assert.ok(Number(byBudget['Engineering:monthly'].usage_nanos) >= 330 + 6400);
+  assert.ok(Number(byBudget['Engineering:monthly'].usage_nanos) >= 410 + 6400);
   assert.equal(Number(byBudget['Sales:weekly'].usage_nanos), 800);
   assert.deepEqual([byBudget['Engineering:daily'].department_id, Number(byBudget['Engineering:daily'].limit_nanos)], [ENG, 1000]);
   // Windows are the seed's own UTC day/week/month starts.
