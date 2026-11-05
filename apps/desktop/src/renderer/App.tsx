@@ -32,6 +32,7 @@ import { GuideRunNotices } from "./views/pullRequests/GuideRunNotices";
 import { saveChatPreferences, useDiffColours, useWorkspacePreferences } from "./lib/workspacePreferences";
 import { useAppFonts } from "./lib/appFonts";
 import { useAnimations } from "./lib/animations";
+import { useSlowRequestToasts } from "./lib/slowRequestToasts";
 
 /** The app-wide commands behind the keyboard shortcuts (Settings → Keyboard shortcuts). */
 function useShortcuts() {
@@ -170,5 +171,6 @@ export function App() {
 	useDiffColours();
 	useAppFonts();
 	useAnimations();
+	useSlowRequestToasts();
 	return <WorkspaceProvider><Shell /></WorkspaceProvider>;
 }

@@ -6,6 +6,7 @@ import type { WorkspaceApi } from "./workspace";
 import type { DiagnosticsApi } from "./diagnostics";
 import type { MaintenanceApi } from "./maintenance";
 import type { FactoryApi } from "./factory/types";
+import type { SlowRequestEvent } from "./slowRequests";
 
 export type DesktopRuntimeInfo = {
 	platform: NodeJS.Platform;
@@ -78,6 +79,8 @@ export type PhaseoDesktopApi = {
 	onNavigate: (listener: (direction: "back" | "forward") => void) => () => void;
 	/** A phaseo://chat/ link opened or focused the app; takeChatLink returns its chat id once. */
 	onChatLink: (listener: () => void) => () => void;
+	/** A request to the main process still running after ten seconds, and when it settles (shared/slowRequests.ts). */
+	onSlowRequest: (listener: (event: SlowRequestEvent) => void) => () => void;
 	takeChatLink: () => Promise<string | undefined>;
 	getRuntimeInfo: () => Promise<DesktopRuntimeInfo>;
 	getWindowState: () => Promise<DesktopWindowState>;

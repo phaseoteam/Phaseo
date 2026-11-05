@@ -1,11 +1,13 @@
 import { contextBridge, ipcRenderer } from "electron";
 import type { PhaseoDesktopApi } from "../shared/desktop";
+import { withSlowRequestNotice, type SlowRequestEvent } from "../shared/slowRequests";
 import type { UsageFilter, UsagePeriod } from "../shared/usageLedger";
 
 const taskOpenListeners = new Set<(taskId?: string) => void>();
 let pendingTaskOpen: { id?: string } | undefined;
 ipcRenderer.on("workspace:open-task", (_event, id?: string) => { if (taskOpenListeners.size) for (const listener of taskOpenListeners) listener(id); else pendingTaskOpen = { id }; });
 
+const slowListeners = new Set<(event: SlowRequestEvent) => void>();
 const desktopApi: PhaseoDesktopApi = {
 	platform: process.platform,
 	browserDownload: command => ipcRenderer.invoke("desktop:browser-download", command),
@@ -27,6 +29,7 @@ const desktopApi: PhaseoDesktopApi = {
 	onBrowserAgentTab: listener => { const subscription = (_event: Electron.IpcRendererEvent, tab: Parameters<typeof listener>[0]) => listener(tab); ipcRenderer.on("desktop:browser-agent-tab", subscription); return () => ipcRenderer.removeListener("desktop:browser-agent-tab", subscription); },
 	onChatLink: listener => { const subscription = () => listener(); ipcRenderer.on("desktop:chat-link", subscription); return () => ipcRenderer.removeListener("desktop:chat-link", subscription); },
 	takeChatLink: () => ipcRenderer.invoke("desktop:take-chat-link"),
+	onSlowRequest: listener => { slowListeners.add(listener); return () => { slowListeners.delete(listener); }; },
 	onNavigate: listener => { const subscription = (_event: Electron.IpcRendererEvent, direction: "back" | "forward") => listener(direction); ipcRenderer.on("desktop:navigate", subscription); return () => ipcRenderer.removeListener("desktop:navigate", subscription); },
 	onBrowserKey: listener => { const subscription = (_event: Electron.IpcRendererEvent, key: Parameters<typeof listener>[0]) => listener(key); ipcRenderer.on("desktop:browser-key", subscription); return () => ipcRenderer.removeListener("desktop:browser-key", subscription); },
 	workspace: {
@@ -257,4 +260,4 @@ const desktopApi: PhaseoDesktopApi = {
 	setBadge: (count, overlay) => ipcRenderer.invoke("desktop:set-badge", count, overlay),
 };
 
-contextBridge.exposeInMainWorld("phaseoDesktop", desktopApi);
+contextBridge.exposeInMainWorld("phaseoDesktop", withSlowRequestNotice(desktopApi, event => { for (const listener of slowListeners) listener(event); }));
