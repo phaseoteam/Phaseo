@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { typesUltrathink, useUltrathinkReady } from "./ModelSettings";
 import { TerminalDrawer } from "../views/Terminals";
-import { AlarmClockOff, Archive, Box, CircleCheck, Clock, Undo2, CornerLeftUp, Download, Ellipsis, Gauge, GitBranch, Layers, ListChecks, MessagesSquare, Paperclip, Pencil, PenLine, Pin, PinOff, Plug, RotateCcw, Settings, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
+import { AlarmClockOff, Archive, Box, FolderInput, CircleCheck, Clock, Undo2, CornerLeftUp, Download, Ellipsis, Gauge, GitBranch, Layers, ListChecks, MessagesSquare, Paperclip, Pencil, PenLine, Pin, PinOff, Plug, RotateCcw, Settings, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { QuestionPanel } from "./QuestionPanel";
 import { IssueDraftPanel } from "./IssueDraftPanel";
@@ -71,6 +71,18 @@ function ChatHeader({ task, onOpenTerminal }: { task: Task; onOpenTerminal: () =
 	useEffect(() => { setRenaming(false); }, [task.id]);
 	useEffect(() => { const rename = () => setRenaming(true); window.addEventListener(renameChatEvent, rename); return () => window.removeEventListener(renameChatEvent, rename); }, []);
 	const fork = async () => { const known = new Set(overview.tasks.map(value => value.id)); const state = await command({ type: "fork", id: task.id }); const id = state?.tasks.find(value => !known.has(value.id))?.id; if (id) select(id); };
+	// A chat with no project continues in one as a new chat that carries its history, so no agent session moves folders.
+	const destinations = task.projectId ? [] : overview.projects.filter(value => !value.worktree && !value.archived);
+	const continueIn = async (projectId: string) => {
+		const known = new Set(overview.tasks.map(value => value.id));
+		const state = await command({ type: "handoff", id: task.id, projectId, harness: task.harness, model: task.model, mode: task.mode, ...(task.accountId ? { accountId: task.accountId } : {}), ...(task.agentId ? { agentId: task.agentId } : {}),
+			...(task.permissionMode ? { permissionMode: task.permissionMode } : {}), ...(task.reasoningEffort && ["codex", "grok"].includes(task.harness) ? { reasoningEffort: task.reasoningEffort } : {}),
+			...(task.serviceTier && task.harness === "codex" ? { serviceTier: task.serviceTier } : {}), ...(task.modelOptions ? { modelOptions: task.modelOptions } : {}) });
+		const id = state?.tasks.find(value => !known.has(value.id))?.id;
+		if (!id) return;
+		await command({ type: "update-task", id, title: task.title });
+		select(id);
+	};
 	const canCompact = ["opencode", "codex", "claude", "pi", "phaseo"].includes(task.harness) && !!task.nativeSessionId && !task.archived && !["running", "waiting"].includes(task.status);
 	// Agents link to the chat that started them; launched chats to the chat that launched them.
 	const parentId = task.delegation?.parentTaskId ?? task.launch?.byTaskId;
@@ -99,6 +111,9 @@ function ChatHeader({ task, onOpenTerminal }: { task: Task; onOpenTerminal: () =
 						? <DropdownMenuItem onClick={() => void threadActions.wake(snapshot)}><AlarmClockOff />Wake chat</DropdownMenuItem>
 						: <DropdownMenuSub><DropdownMenuSubTrigger><Clock />Snooze</DropdownMenuSubTrigger><DropdownMenuSubContent className="w-56"><SnoozeItems onSnooze={until => void threadActions.snooze(snapshot, until)} onCustom={() => setCustomSnooze(true)} /></DropdownMenuSubContent></DropdownMenuSub>)}
 					<DropdownMenuItem disabled={["running", "waiting"].includes(task.status)} onClick={() => void fork()}><GitBranch />Branch chat</DropdownMenuItem>
+					{destinations.length > 0 && !task.archived && <DropdownMenuSub><DropdownMenuSubTrigger disabled={["running", "waiting"].includes(task.status)}><FolderInput />Continue in a project</DropdownMenuSubTrigger>
+						<DropdownMenuSubContent className="max-h-80 w-60 overflow-y-auto">{destinations.map(value => <DropdownMenuItem key={value.id} onClick={() => void continueIn(value.id)}><ProjectIcon project={value} className="size-3.5" /><span className="truncate">{value.name}</span></DropdownMenuItem>)}</DropdownMenuSubContent>
+					</DropdownMenuSub>}
 					{canCompact && <DropdownMenuItem onClick={() => void command({ type: "send", id: task.id, text: "/compact" })}><Layers />Compact context</DropdownMenuItem>}
 					<DropdownMenuSeparator />
 					{project && <DropdownMenuItem onClick={() => openProjectSettings(project.id)}><Settings />Project settings</DropdownMenuItem>}
