@@ -1,17 +1,20 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { createBudgetDatabase, readMigration, readSchema } from './fixtures/budget-enforcement-db.mjs';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 
-// Migration 20261104233604_budget_enforcement_money_hygiene against production shapes, trimmed
-// to what it reads: department budgets on holds, realtime and the context fallback; one count per
-// batch hold in workspace budgets; no budget row lock in reserve; a missing wallet fails the charge;
-// dropped and revoked money surfaces; 90-day I/O retention; and video holds in the stale-hold reaper.
-const db = new PGlite();
-const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
-const migrationFile = '../migrations/20261104233604_budget_enforcement_money_hygiene.sql';
+// Migration 20261104233604_budget_enforcement_money_hygiene against production shapes (see the
+// fixture): one budget usage calculation for workspace budgets, department admission and the
+// spend-limit seed; department budgets on holds, realtime and the context fallback; one count per
+// batch hold; active holds across period rollover; captured video holds before their audit row;
+// no budget row lock in reserve; a missing wallet fails the charge; dropped and revoked money
+// surfaces; 90-day I/O retention (normalized first); and video holds in the stale-hold reaper.
+// PGlite runs one connection, so lock order is checked from the function definition.
 const functionFiles = [
+  'private/functions/budget_spend_items.sql',
+  'private/functions/department_budget_usage.sql',
   'public/functions/gateway_department_budget_status.sql',
   'public/functions/gateway_workspace_budget_status.sql',
+  'public/functions/gateway_spend_limit_seed.sql',
   'public/functions/gateway_wallet_reserve_once.sql',
   'public/functions/gateway_realtime_create_with_hold.sql',
   'public/functions/gateway_realtime_extend_hold_once.sql',
@@ -26,133 +29,56 @@ const WS = id('1', 1); // department budgets
 const WS_BATCH = id('1', 2); // workspace budget and batch holds
 const WS_REAP = id('1', 3); // stale holds
 const NO_WALLET = id('1', 4);
+const WS_ROLL = id('1', 5); // holds across period rollover
+const WS_CAP = id('1', 6); // captured video holds and charged failures
 const ENG = id('4', 1);
+const ROLL = id('4', 2);
+const CAP = id('4', 3);
 const MEMBER = id('2', 1);
-const KEY = { linked: id('3', 1), member: id('3', 2), outside: id('3', 3), batch: id('3', 4) };
+const KEY = { linked: id('3', 1), member: id('3', 2), outside: id('3', 3), batch: id('3', 4), roll: id('3', 5), cap: id('3', 6) };
+// Before every current period: the earlier of this week's Monday and the 1st, less a day.
+const BEFORE_PERIODS = `(least(date_trunc('week', now() at time zone 'utc'), date_trunc('month', now() at time zone 'utc')) at time zone 'utc' - interval '1 day')`;
+
+const db = await createBudgetDatabase(PGlite);
 const rows = async (sql, params) => (await db.query(sql, params)).rows;
 const one = async (sql, params) => (await rows(sql, params))[0];
 const asService = async (fn) => { await db.exec('set role service_role'); try { return await fn(); } finally { await db.exec('reset role'); } };
 const failures = [];
 const check = async (name, fn) => {
-  try { await fn(); console.log(`ok - ${name}`); } catch (error) { failures.push(name); console.log(`not ok - ${name}\n  ${error.message.split('\n')[0]}`); }
+  try { await fn(); console.log(`ok - ${name}`); } catch (error) { failures.push(name); console.log(`not ok - ${name}\n  ${String(error.message).split('\n')[0]}`); }
 };
 const reserve = (workspace, reservation, nanos, key = null, count = null) => asService(() => one(
   'select * from public.gateway_wallet_reserve_once($1, $2, $3, null, $4, $5)', [workspace, reservation, nanos, key, count]));
-const request = (workspace, requestId, key, nanos) => db.query(
-  `insert into public.gateway_requests (workspace_id, request_id, key_id, success, cost_nanos) values ($1, $2, $3, true, $4)`,
-  [workspace, requestId, key, nanos]);
+const request = (workspace, requestId, key, nanos, success = true) => db.query(
+  `insert into public.gateway_requests (workspace_id, request_id, key_id, success, cost_nanos) values ($1, $2, $3, $4, $5)`,
+  [workspace, requestId, key, success, nanos]);
+const departmentStatus = (workspace, key) => asService(async () => (await one(`select public.gateway_department_budget_status($1, $2, 0) as r`, [workspace, key])).r);
+const workspaceStatus = (workspace) => asService(async () => (await one(`select public.gateway_workspace_budget_status($1, 0) as r`, [workspace])).r);
+const seed = (workspace, keys) => asService(async () => (await one(`select public.gateway_spend_limit_seed($1, $2::uuid[]) as r`, [workspace, keys])).r);
+const byInterval = (budgets) => Object.fromEntries(budgets.map((budget) => [budget.interval, Number(budget.usage_nanos)]));
 
 try {
   await db.exec(`
-    create role anon; create role authenticated; create role service_role bypassrls;
-    grant usage on schema public to anon, authenticated, service_role;
-    create schema auth; create schema private;
-    create table auth.users (id uuid primary key);
-    create function public.is_workspace_member(p_workspace_id uuid) returns boolean language sql stable as $$ select true $$;
-    create function public.mfa_satisfied() returns boolean language sql stable as $$ select true $$;
-    create table public.workspaces (id uuid primary key, billing_mode text not null default 'wallet');
-    create table public.keys (id uuid primary key, workspace_id uuid not null, status text not null default 'active',
-      expires_at timestamptz, soft_blocked boolean default false, department_id uuid, created_by uuid, oauth_user_id uuid,
-      daily_limit_requests bigint, weekly_limit_requests bigint, monthly_limit_requests bigint,
-      daily_limit_cost_nanos bigint, weekly_limit_cost_nanos bigint, monthly_limit_cost_nanos bigint);
-    create table public.wallets (workspace_id uuid primary key, balance_nanos bigint not null default 0,
-      reserved_nanos bigint not null default 0, updated_at timestamptz default now(), auto_top_up_enabled boolean default false,
-      low_balance_threshold bigint default 0, auto_top_up_in_flight_until timestamptz, auto_top_up_amount bigint,
-      auto_top_up_account_id text, stripe_customer_id text);
-    create table public.gateway_wallet_reservations (reservation_id text not null, workspace_id uuid not null,
-      amount_nanos bigint not null, status text not null, hold_ref_id text, key_id uuid, request_count integer,
-      captured_nanos bigint default 0, released_nanos bigint default 0, settled_amount_nanos bigint, capture_ref_id text,
-      release_ref_id text, released_at timestamptz, created_at timestamptz default now(), updated_at timestamptz default now(),
-      primary key (workspace_id, reservation_id));
-    create table public.gateway_requests (id uuid default gen_random_uuid(), workspace_id uuid, request_id text,
-      endpoint text, model_id text, provider text, status_code integer, success boolean, usage jsonb, cost_nanos bigint,
-      currency text, key_id uuid, detail_metadata jsonb, created_at timestamptz default now());
-    create table public.workspace_budgets (id uuid primary key default gen_random_uuid(), workspace_id uuid not null,
-      interval text not null, limit_nanos bigint not null, created_by uuid, created_at timestamptz default now(),
-      updated_at timestamptz default now());
-    create table public.workspace_departments (id uuid primary key, workspace_id uuid not null, name text not null);
-    create table public.workspace_department_grants (workspace_id uuid not null, user_id uuid not null, department_id uuid not null,
-      source_type text not null default 'manual', is_primary boolean not null default false, created_at timestamptz not null default now());
-    create table public.workspace_member_overrides (workspace_id uuid not null, user_id uuid not null,
-      department_override_enabled boolean not null default false, department_id uuid, primary key (workspace_id, user_id));
-    create table public.workspace_department_budgets (id uuid primary key default gen_random_uuid(), workspace_id uuid not null,
-      department_id uuid not null, interval text not null, limit_nanos bigint not null, created_by uuid,
-      created_at timestamptz not null default now(), updated_at timestamptz not null default now());
-    create table public.workspace_settings (workspace_id uuid primary key, department_spend_attribution text not null default 'all',
-      io_logging_retention_days integer not null default 90,
-      routing_mode text, byok_fallback_enabled boolean, beta_channel_enabled boolean, alpha_channel_enabled boolean,
-      cache_aware_routing_enabled boolean, privacy_zdr_only boolean, privacy_enable_paid_may_train boolean,
-      privacy_enable_free_may_train boolean, privacy_enable_input_output_logging boolean, io_logging_enabled boolean,
-      io_logging_include_provider_payloads boolean, data_contribution_enabled boolean, data_contribution_policy_version text,
-      data_contribution_sample_rate_bps integer, data_contribution_classifier_sample_rate_bps integer,
-      data_contribution_discount_bps integer, response_healing_enabled boolean, response_healing_locked boolean,
-      response_healing_mode text,
-      constraint workspace_settings_io_logging_retention_days_check check (((io_logging_retention_days >= 90) and (io_logging_retention_days <= 365))));
-    create table public.byok_keys (id uuid primary key, workspace_id uuid, provider_id text, fingerprint_sha256 text,
-      key_version integer, always_use boolean, enabled boolean);
-    create table public.gateway_realtime_sessions (workspace_id uuid not null, session_id text not null, key_id uuid,
-      reserved_nanos bigint not null default 0, primary key (workspace_id, session_id));
-    create table public.gateway_async_operations (workspace_id uuid not null, kind text not null, status text,
-      request_id text, meta jsonb not null default '{}'::jsonb, billed_at timestamptz);
-    create table public.gateway_request_charges (workspace_id uuid not null, request_id text not null, cost_nanos bigint,
-      status text, deducted_status text, error_message text, auto_top_up_required boolean, overdraft_nanos bigint,
-      created_at timestamptz, updated_at timestamptz, primary key (workspace_id, request_id));
-    create table public.credit_ledger (id uuid primary key default gen_random_uuid(), workspace_id uuid, amount_nanos bigint);
-    alter table public.credit_ledger enable row level security;
-    create policy "Enable insert for users based on user_id" on public.credit_ledger for insert to authenticated
-      with check (public.is_workspace_member(workspace_id));
-    -- Production grants the migration narrows.
-    grant delete, insert, select, trigger, truncate, update on public.gateway_wallet_reservations to anon, authenticated, service_role;
-    grant delete, select on public.wallets to anon;
-    create function public.wallet_apply_delta(p_workspace_id uuid, p_delta_nanos bigint)
-      returns table (before_balance_nanos bigint, after_balance_nanos bigint) language sql as $$ select 0::bigint, 0::bigint $$;
-    -- Callees the migration leaves alone, reduced to what the wrappers need from them.
-    create function public.gateway_fetch_request_context_without_workspace_budget(workspace_id uuid, model text, endpoint text, api_key_id uuid)
-      returns jsonb language sql as $$ select jsonb_build_object('key_limit_ok', jsonb_build_object('ok', true)) $$;
-    create function private.gateway_context_access(workspace_id uuid, model text, endpoint text, api_key_id uuid)
-      returns jsonb language sql as $$ select jsonb_build_object('workspace_id', workspace_id, 'key_limit_ok', jsonb_build_object('ok', true)) $$;
-    create function public.gateway_realtime_create_with_hold_without_workspace_budget(
-      p_workspace_id uuid, p_session_id text, p_key_id uuid, p_user_id text, p_source text, p_provider text, p_model_id text,
-      p_provider_model_id text, p_voice text, p_expires_at timestamptz, p_reservation_prefix text, p_reservation_id text,
-      p_hold_nanos bigint, p_client_secret_hash text, p_metadata jsonb, p_max_workspace_sessions integer,
-      p_max_key_sessions integer, p_max_user_sessions integer, p_max_creations_per_minute integer)
-      returns setof public.gateway_realtime_sessions language sql as $$
-        insert into public.gateway_realtime_sessions (workspace_id, session_id, key_id, reserved_nanos)
-        values (p_workspace_id, p_session_id, p_key_id, p_hold_nanos) returning * $$;
-    create function public.gateway_realtime_extend_hold_once_without_workspace_budget(
-      p_workspace_id uuid, p_session_id text, p_reservation_id text, p_target_reserved_nanos bigint, p_estimated_cost_nanos bigint)
-      returns setof public.gateway_realtime_sessions language sql as $$
-        update public.gateway_realtime_sessions set reserved_nanos = p_target_reserved_nanos
-        where workspace_id = p_workspace_id and session_id = p_session_id returning * $$;
-    grant usage on schema private to service_role;
-    grant all on all tables in schema public to service_role;
-  `);
-  for (const path of [
-    'private/functions/spend_limit_period.sql',
-    'private/functions/department_budget_key_departments.sql',
-    'public/functions/lock_workspace_budget_change.sql',
-    'public/functions/gateway_wallet_reserve_once_without_workspace_budget.sql',
-    'public/functions/gateway_deduct_and_check_top_up_once.sql',
-  ]) await db.exec(await read(`../schemas/${path}`));
-  await db.exec(`
-    create trigger workspace_budgets_lock_change before insert or delete or update on public.workspace_budgets
-      for each row execute function public.lock_workspace_budget_change();
-    create trigger workspace_department_budgets_lock_change before insert or delete or update on public.workspace_department_budgets
-      for each row execute function public.lock_workspace_budget_change();
-  `);
-
-  await db.exec(`
-    insert into public.workspaces (id) values ('${WS}'), ('${WS_BATCH}'), ('${WS_REAP}'), ('${NO_WALLET}');
-    insert into public.workspace_settings (workspace_id) values ('${WS}'), ('${WS_BATCH}');
+    insert into public.workspaces (id) values ('${WS}'), ('${WS_BATCH}'), ('${WS_REAP}'), ('${NO_WALLET}'), ('${WS_ROLL}'), ('${WS_CAP}');
+    insert into public.workspace_settings (workspace_id, io_logging_retention_days) values ('${WS}', 90), ('${WS_BATCH}', 180), ('${WS_ROLL}', 365);
     insert into public.wallets (workspace_id, balance_nanos, reserved_nanos) values
-      ('${WS}', ${1000 * DOLLAR}, 0), ('${WS_BATCH}', ${1000 * DOLLAR}, 0), ('${WS_REAP}', ${1000 * DOLLAR}, ${70 * DOLLAR});
+      ('${WS}', ${1000 * DOLLAR}, 0), ('${WS_BATCH}', ${1000 * DOLLAR}, 0), ('${WS_REAP}', ${1000 * DOLLAR}, ${70 * DOLLAR}),
+      ('${WS_ROLL}', ${1000 * DOLLAR}, 0), ('${WS_CAP}', ${1000 * DOLLAR}, 0);
     insert into public.keys (id, workspace_id, department_id, created_by) values
       ('${KEY.linked}', '${WS}', '${ENG}', null), ('${KEY.member}', '${WS}', null, '${MEMBER}'),
-      ('${KEY.outside}', '${WS}', null, null), ('${KEY.batch}', '${WS_BATCH}', null, null);
-    insert into public.workspace_departments (id, workspace_id, name) values ('${ENG}', '${WS}', 'Engineering');
+      ('${KEY.outside}', '${WS}', null, null), ('${KEY.batch}', '${WS_BATCH}', null, null),
+      ('${KEY.roll}', '${WS_ROLL}', '${ROLL}', null), ('${KEY.cap}', '${WS_CAP}', '${CAP}', null);
+    insert into public.workspace_departments (id, workspace_id, name) values
+      ('${ENG}', '${WS}', 'Engineering'), ('${ROLL}', '${WS_ROLL}', 'Research'), ('${CAP}', '${WS_CAP}', 'Studio');
     insert into public.workspace_department_grants (workspace_id, user_id, department_id) values ('${WS}', '${MEMBER}', '${ENG}');
-    insert into public.workspace_department_budgets (workspace_id, department_id, interval, limit_nanos) values ('${WS}', '${ENG}', 'daily', ${10 * DOLLAR});
-    insert into public.workspace_budgets (workspace_id, interval, limit_nanos) values ('${WS_BATCH}', 'daily', ${10 * DOLLAR});
+    insert into public.workspace_department_budgets (workspace_id, department_id, interval, limit_nanos) values
+      ('${WS}', '${ENG}', 'daily', ${10 * DOLLAR}),
+      ('${WS_ROLL}', '${ROLL}', 'daily', ${100 * DOLLAR}), ('${WS_ROLL}', '${ROLL}', 'weekly', ${100 * DOLLAR}),
+      ('${WS_ROLL}', '${ROLL}', 'monthly', ${100 * DOLLAR}), ('${WS_CAP}', '${CAP}', 'daily', ${10 * DOLLAR});
+    insert into public.workspace_budgets (workspace_id, interval, limit_nanos) values
+      ('${WS_BATCH}', 'daily', ${10 * DOLLAR}),
+      ('${WS_ROLL}', 'daily', ${100 * DOLLAR}), ('${WS_ROLL}', 'weekly', ${100 * DOLLAR}), ('${WS_ROLL}', 'monthly', ${100 * DOLLAR}),
+      ('${WS_CAP}', 'daily', ${10 * DOLLAR});
     -- Stale holds: the reaper's input. Wallet reserved_nanos covers them.
     insert into public.gateway_wallet_reservations (reservation_id, workspace_id, amount_nanos, status, hold_ref_id, created_at) values
       ('video_hold:no-operation', '${WS_REAP}', ${10 * DOLLAR}, 'held', 'video-1', now() - interval '2 days'),
@@ -167,20 +93,49 @@ try {
       ('${WS_REAP}', 'video', 'completed', null, '{"reservationId": "video_hold:billed"}', now()),
       ('${WS_REAP}', 'video', 'completed', 'video-4', '{}', null),
       ('${WS_REAP}', 'video', 'failed', 'video-5', '{}', null);
+    -- Rollover: holds made before every current period, one still active (video, realtime) and
+    -- one already captured, plus a completed request from then and one from today.
+    insert into public.gateway_realtime_sessions (workspace_id, session_id, key_id) values ('${WS_ROLL}', 'rt-old', '${KEY.roll}');
+    insert into public.gateway_wallet_reservations (reservation_id, workspace_id, amount_nanos, status, hold_ref_id, key_id, settled_amount_nanos, created_at) values
+      ('video_hold:old-active', '${WS_ROLL}', ${1 * DOLLAR}, 'reserved', 'vid-old-active', '${KEY.roll}', null, ${BEFORE_PERIODS}),
+      ('realtime_hold:rt-old', '${WS_ROLL}', ${DOLLAR / 4}, 'reserved', 'rt-old', null, null, ${BEFORE_PERIODS}),
+      ('video_hold:old-captured', '${WS_ROLL}', ${2 * DOLLAR}, 'captured', 'vid-old-captured', '${KEY.roll}', ${2 * DOLLAR}, ${BEFORE_PERIODS});
+    insert into public.gateway_requests (workspace_id, request_id, key_id, success, cost_nanos, created_at) values
+      ('${WS_ROLL}', 'old-request', '${KEY.roll}', true, ${4 * DOLLAR}, ${BEFORE_PERIODS}),
+      ('${WS_ROLL}', 'today-request', '${KEY.roll}', true, ${DOLLAR / 2}, now());
   `);
 
-  // The migration carries the declarative definitions and the manifest lists the new function.
-  const migration = await read(migrationFile);
-  for (const path of functionFiles) {
-    assert.ok(migration.includes((await read(`../schemas/${path}`)).replace(/\r\n/g, '\n').trim()), `${path} is in the migration`);
-  }
-  const manifest = JSON.parse(await read('../schemas/.pgdelta-export.json'));
-  for (const list of ['loadOrder', 'files']) {
-    assert.ok(manifest[list].includes('public/functions/gateway_department_budget_status.sql'), `new function in ${list}`);
-    assert.ok(!manifest[list].includes('public/functions/wallet_apply_delta.sql'), `wallet_apply_delta gone from ${list}`);
-  }
-  assert.match(migration, /^-- phaseo:allow-destructive-migration reason: /);
-  await db.exec(migration);
+  // The migration carries the declarative definitions and the manifest lists the new functions.
+  const migration = await readMigration();
+  await check('the migration carries each declarative function and the manifest lists the new ones', async () => {
+    for (const path of functionFiles) {
+      assert.ok(migration.includes((await readSchema(path)).replace(/\r\n/g, '\n').trim()), `${path} is in the migration`);
+    }
+    const manifest = JSON.parse(await readSchema('.pgdelta-export.json'));
+    for (const list of ['loadOrder', 'files']) {
+      for (const path of ['public/functions/gateway_department_budget_status.sql', 'private/functions/budget_spend_items.sql', 'private/functions/department_budget_usage.sql']) {
+        assert.ok(manifest[list].includes(path), `${path} in ${list}`);
+      }
+      assert.ok(!manifest[list].includes('public/functions/wallet_apply_delta.sql'), `wallet_apply_delta gone from ${list}`);
+      const order = manifest.loadOrder;
+      assert.ok(order.indexOf('private/functions/department_budget_usage.sql') > order.indexOf('private/functions/budget_spend_items.sql'));
+      assert.ok(order.indexOf('private/functions/department_budget_usage.sql') > order.indexOf('private/functions/spend_limit_period.sql'));
+    }
+    assert.match(migration, /^-- phaseo:allow-destructive-migration reason: /);
+    assert.match(migration, /raise notice 'io_logging_retention_days set to 90 on % workspace_settings row\(s\)', v_count;/);
+  });
+  await check('the migration applies over workspaces with 180- and 365-day retention, setting them to 90', async () => {
+    try {
+      await db.exec(migration);
+    } catch (error) {
+      // Clear the way so the remaining checks still run against this migration.
+      await db.query(`update public.workspace_settings set io_logging_retention_days = 90`);
+      await db.exec(migration);
+      throw error;
+    }
+    const days = await rows(`select io_logging_retention_days as days from public.workspace_settings order by workspace_id`);
+    assert.deepEqual(days.map((row) => row.days), [90, 90, 90]);
+  });
   await db.exec(migration); // replays cleanly
 
   await check('the migration releases no hold itself', async () => {
@@ -188,16 +143,21 @@ try {
     assert.equal(held.length, 7);
   });
 
-  await check('gateway_department_budget_status is service-only SECURITY DEFINER', async () => {
+  await check('gateway_department_budget_status is service-only SECURITY DEFINER; the helpers are private', async () => {
     const fn = await one(`select prosecdef, provolatile from pg_proc where proname = 'gateway_department_budget_status'`);
     assert.deepEqual(fn, { prosecdef: true, provolatile: 's' });
-    for (const role of ['anon', 'authenticated']) {
+    for (const role of ['anon', 'authenticated', 'service_role']) {
+      for (const signature of ['private.budget_spend_items(uuid, timestamptz, uuid[], text[])', 'private.department_budget_usage(uuid, uuid, text[])']) {
+        const { allowed } = await one(`select has_function_privilege($1, $2, 'execute') as allowed`, [role, signature]);
+        assert.equal(allowed, false, `${role} ${signature}`);
+      }
+      if (role === 'service_role') continue;
       const { allowed } = await one(`select has_function_privilege($1, 'public.gateway_department_budget_status(uuid, uuid, bigint)', 'execute') as allowed`, [role]);
       assert.equal(allowed, false, role);
     }
   });
 
-  // Fix 1: department budgets hold back holds, realtime and the context fallback.
+  // Department budgets hold back holds, realtime and the context fallback.
   await request(WS, 'eng-spend', KEY.linked, 9 * DOLLAR);
   await check('a video hold over the department budget is refused (member key)', async () => {
     const denied = await reserve(WS, 'video_hold:over', 2 * DOLLAR, KEY.member, 1);
@@ -207,11 +167,24 @@ try {
     const outside = await reserve(WS, 'video_hold:outside', 2 * DOLLAR, KEY.outside, 1);
     assert.deepEqual([outside.ok, outside.applied], [true, true]);
   });
-  await check('an active hold counts toward the department', async () => {
+  await check('the context fallback lists the department budget below its limit, so it is not cached', async () => {
+    const context = await asService(async () => (await one(`select public.gateway_fetch_request_context($1, 'lab/model', 'responses', $2) as r`, [WS, KEY.linked])).r);
+    assert.equal(context.key_limit_ok.ok, true);
+    assert.equal(context.key_limit_ok.department_budgets.length, 1);
+    assert.equal(Number(context.key_limit_ok.department_budgets[0].usage_nanos), 9 * DOLLAR);
+    const bundle = await asService(async () => (await one(`select public.gateway_fetch_request_context_bundle($1, 'lab/model', 'responses', $2, false) as r`, [WS, KEY.member])).r);
+    assert.equal(bundle.context.key_limit_ok.department_budgets[0].department_id, ENG);
+    const outside = await asService(async () => (await one(`select public.gateway_fetch_request_context($1, 'lab/model', 'responses', $2) as r`, [WS, KEY.outside])).r);
+    assert.equal(outside.key_limit_ok.department_budgets, undefined);
+  });
+  await check('an active hold counts toward the department, in admission and in the seed alike', async () => {
     const small = await reserve(WS, 'video_hold:small', DOLLAR / 2, KEY.linked, 1);
     assert.equal(small.ok, true);
-    const status = await asService(async () => (await one(`select public.gateway_department_budget_status($1, $2, 0) as r`, [WS, KEY.member])).r);
+    const status = await departmentStatus(WS, KEY.member);
     assert.equal(Number(status.department_budgets[0].usage_nanos), 9.5 * DOLLAR);
+    const seeded = await seed(WS, [KEY.member]);
+    assert.equal(Number(seeded.department_budgets[0].usage_nanos), 9.5 * DOLLAR);
+    assert.deepEqual(seeded.department_budgets[0].key_ids, [KEY.linked, KEY.member].sort());
     const batch = await reserve(WS, 'batch_hold:over', 0.6 * DOLLAR, KEY.member, 2);
     assert.equal(batch.reason, 'department_daily_cost_budget_reached');
   });
@@ -234,35 +207,66 @@ try {
     assert.equal(context.key_limit_ok.department_name, 'Engineering');
     const outside = await asService(async () => (await one(`select public.gateway_fetch_request_context($1, 'lab/model', 'responses', $2) as r`, [WS, KEY.outside])).r);
     assert.equal(outside.key_limit_ok.ok, true);
-  });
-  await check('the context bundle reports a used-up department budget', async () => {
     const bundle = await asService(async () => (await one(`select public.gateway_fetch_request_context_bundle($1, 'lab/model', 'responses', $2, false) as r`, [WS, KEY.member])).r);
     assert.equal(bundle.context.key_limit_ok.reason, 'department_daily_cost_budget_reached');
   });
 
-  // Fix 2: a reserved batch hold counts once in the workspace budget.
+  // A reserved batch hold counts once in the workspace budget.
   await check('a batch hold counts once toward the workspace budget', async () => {
     const held = await reserve(WS_BATCH, 'batch_hold:b1', 6 * DOLLAR, KEY.batch, 3);
     assert.equal(held.ok, true);
-    const status = await asService(async () => (await one(`select public.gateway_workspace_budget_status($1, 0) as r`, [WS_BATCH])).r);
-    assert.equal(Number(status.budgets[0].usage_nanos), 6 * DOLLAR);
+    assert.equal(Number((await workspaceStatus(WS_BATCH)).budgets[0].usage_nanos), 6 * DOLLAR);
     const next = await reserve(WS_BATCH, 'batch_hold:b2', 3 * DOLLAR, KEY.batch, 1);
     assert.equal(next.ok, true, 'a hold that fits next to the first one is admitted');
   });
   await check('a captured batch hold still counts once, through its usage rows', async () => {
     await db.query(`update public.gateway_wallet_reservations set status = 'captured' where reservation_id = 'batch_hold:b1'`);
-    const status = await asService(async () => (await one(`select public.gateway_workspace_budget_status($1, 0) as r`, [WS_BATCH])).r);
-    assert.equal(Number(status.budgets[0].usage_nanos), 9 * DOLLAR);
+    assert.equal(Number((await workspaceStatus(WS_BATCH)).budgets[0].usage_nanos), 9 * DOLLAR);
   });
 
-  // Fix 3: the advisory lock serializes holds and budget writes; no budget row lock after it.
+  // Active holds count in every period until they end; captured ones only in their own.
+  await check('active holds count across daily, weekly and monthly rollover (department)', async () => {
+    const status = await departmentStatus(WS_ROLL, KEY.roll);
+    assert.deepEqual(byInterval(status.department_budgets), { daily: 1.75 * DOLLAR, weekly: 1.75 * DOLLAR, monthly: 1.75 * DOLLAR });
+    assert.deepEqual(byInterval((await seed(WS_ROLL, [KEY.roll])).department_budgets), { daily: 1.75 * DOLLAR, weekly: 1.75 * DOLLAR, monthly: 1.75 * DOLLAR });
+  });
+  await check('active holds count across daily, weekly and monthly rollover (workspace)', async () => {
+    assert.deepEqual(byInterval((await workspaceStatus(WS_ROLL)).budgets), { daily: 1.75 * DOLLAR, weekly: 1.75 * DOLLAR, monthly: 1.75 * DOLLAR });
+  });
+
+  // A captured video hold counts before (or without) its audit row, and once after it lands.
+  await db.exec(`insert into public.gateway_wallet_reservations (reservation_id, workspace_id, amount_nanos, status, hold_ref_id, key_id, settled_amount_nanos, created_at)
+    values ('video_hold:c1', '${WS_CAP}', ${4 * DOLLAR}, 'captured', 'vid-c1', '${KEY.cap}', ${3 * DOLLAR}, now())`);
+  await check('a captured video hold whose audit row failed to persist still counts', async () => {
+    assert.equal(Number((await departmentStatus(WS_CAP, KEY.cap)).department_budgets[0].usage_nanos), 3 * DOLLAR);
+    assert.equal(Number((await workspaceStatus(WS_CAP)).budgets[0].usage_nanos), 3 * DOLLAR);
+  });
+  await check('once the audit row lands, the captured hold counts once', async () => {
+    await request(WS_CAP, 'vid-c1', KEY.cap, 3 * DOLLAR);
+    assert.equal(Number((await departmentStatus(WS_CAP, KEY.cap)).department_budgets[0].usage_nanos), 3 * DOLLAR);
+    assert.equal(Number((await workspaceStatus(WS_CAP)).budgets[0].usage_nanos), 3 * DOLLAR);
+    assert.equal(Number((await seed(WS_CAP, [KEY.cap])).department_budgets[0].usage_nanos), 3 * DOLLAR);
+  });
+  await check('a charged request that did not succeed counts toward both budgets; a free failure does not', async () => {
+    await request(WS_CAP, 'stream-cancelled', KEY.cap, DOLLAR, false);
+    await request(WS_CAP, 'failed-free', KEY.cap, 0, false);
+    assert.equal(Number((await departmentStatus(WS_CAP, KEY.cap)).department_budgets[0].usage_nanos), 4 * DOLLAR);
+    assert.equal(Number((await workspaceStatus(WS_CAP)).budgets[0].usage_nanos), 4 * DOLLAR);
+    assert.equal(Number((await seed(WS_CAP, [KEY.cap])).department_budgets[0].usage_nanos), 4 * DOLLAR);
+  });
+  await check('the seed leaves out request ids the coordinator already counts', async () => {
+    const seeded = await asService(async () => (await one(`select public.gateway_spend_limit_seed($1, $2::uuid[], array['stream-cancelled']) as r`, [WS_CAP, [KEY.cap]])).r);
+    assert.equal(Number(seeded.department_budgets[0].usage_nanos), 3 * DOLLAR);
+  });
+
+  // The advisory lock serializes holds and budget writes; no budget row lock after it.
   await check('gateway_wallet_reserve_once takes no budget row lock', async () => {
     const { def } = await one(`select pg_get_functiondef('public.gateway_wallet_reserve_once(uuid, text, bigint, text, uuid, integer)'::regprocedure) as def`);
     assert.doesNotMatch(def, /from\s+public\.workspace_budgets/i);
     assert.match(def, /pg_advisory_xact_lock\(hashtextextended\(p_workspace_id::text, 0\)\)/);
   });
 
-  // Fix 4: no wallet, no applied charge.
+  // No wallet, no applied charge.
   await check('a charge for a workspace without a wallet fails and is not recorded as applied', async () => {
     await assert.rejects(asService(() => db.query(`select public.deduct_and_check_top_up($1, 100)`, [NO_WALLET])), /wallet_not_found/);
     await assert.rejects(asService(() => db.query(`select * from public.gateway_deduct_and_check_top_up_once($1, 'req-1', 100)`, [NO_WALLET])), /wallet_not_found/);
@@ -270,7 +274,7 @@ try {
     assert.equal(applied.length, 0);
   });
 
-  // Fix 5: hygiene.
+  // Hygiene.
   await check('wallet_apply_delta and the credit_ledger insert policy are gone', async () => {
     assert.equal((await rows(`select 1 from pg_proc where proname = 'wallet_apply_delta'`)).length, 0);
     assert.equal((await rows(`select 1 from pg_policies where tablename = 'credit_ledger' and cmd = 'INSERT'`)).length, 0);
@@ -288,16 +292,15 @@ try {
     assert.equal(deletes, false);
   });
 
-  // Fix 6: retention stays at 90 days.
+  // Retention stays at 90 days.
   await check('I/O log retention over 90 days is refused', async () => {
     await assert.rejects(db.query(`update public.workspace_settings set io_logging_retention_days = 180 where workspace_id = $1`, [WS]), /retention_days_check/);
     await db.query(`update public.workspace_settings set io_logging_retention_days = 90 where workspace_id = $1`, [WS]);
   });
 
-  // Fix 7: the reaper releases video holds that billing will never settle.
+  // The reaper releases video holds that billing will never settle.
   await check('the reaper releases stale video holds with no live operation', async () => {
     const released = await asService(async () => (await one(`select public.gateway_wallet_release_stale_orphan_batch_reservations(1800, 100) as n`)).n);
-    assert.equal(released, 4);
     const states = Object.fromEntries((await rows(`select reservation_id, status, release_ref_id from public.gateway_wallet_reservations where workspace_id = $1`, [WS_REAP]))
       .map((row) => [row.reservation_id, `${row.status}:${row.release_ref_id ?? ''}`]));
     assert.deepEqual(states, {
@@ -309,6 +312,7 @@ try {
       'video_hold:recent': 'reserved:',
       'batch_hold:orphan': 'released:stale_orphan_batch_reaper',
     });
+    assert.equal(released, 4);
     const { reserved_nanos } = await one(`select reserved_nanos from public.wallets where workspace_id = $1`, [WS_REAP]);
     assert.equal(Number(reserved_nanos), 30 * DOLLAR);
   });

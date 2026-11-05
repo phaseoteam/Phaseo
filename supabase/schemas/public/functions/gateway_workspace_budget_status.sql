@@ -42,63 +42,23 @@ begin
       end as reset_at
     from public.workspace_budgets budget
     where budget.workspace_id = p_workspace_id
-  ), counted_requests as (
-    -- The batch_hold_usage rows of a hold that is still reserved are that hold's amount, which
-    -- reservation_usage already counts.
-    select request.created_at, request.cost_nanos
-    from public.gateway_requests request
-    where request.workspace_id = p_workspace_id
-      and request.success is true
-      and not (request.request_id like 'batch_hold_usage:%' and exists (
-        select 1 from public.gateway_wallet_reservations hold
-        where hold.workspace_id = request.workspace_id
-          and hold.key_id = request.key_id
-          and hold.status = 'reserved'
-          and starts_with(request.request_id, 'batch_hold_usage:' || hold.reservation_id || ':')
-      ))
-  ), request_usage as (
-    select
-      configured.id,
-      coalesce(sum(request.cost_nanos) filter (
-        where configured.window_start is null or request.created_at >= configured.window_start
-      ), 0)::bigint as completed_nanos
-    from configured
-    left join counted_requests request on true
-    group by configured.id
-  ), reservation_usage as (
-    select
-      configured.id,
-      coalesce(sum(case
-        when reservation.reservation_id like 'free_model_hold:%' then
-          case when reservation.status in ('held', 'reserved') or
-            (reservation.status = 'captured' and (configured.window_start is null or reservation.created_at >= configured.window_start))
-          then greatest(0, (case when reservation.status = 'captured'
-            then coalesce(reservation.settled_amount_nanos, reservation.amount_nanos)
-            else reservation.amount_nanos end) - coalesce(free_audit.cost, 0))
-          else 0 end
-        when reservation.status = 'reserved' and
-          (configured.window_start is null or reservation.created_at >= configured.window_start)
-        then greatest(0, reservation.amount_nanos - coalesce(reservation.captured_nanos, 0) - coalesce(reservation.released_nanos, 0))
-        else 0 end), 0)::bigint as held_nanos
-    from configured
-    left join public.gateway_wallet_reservations reservation
-      on reservation.workspace_id = configured.workspace_id
-    left join lateral (
-      select sum(request.cost_nanos) as cost from public.gateway_requests request
-      where reservation.reservation_id like 'free_model_hold:%'
-        and request.workspace_id = reservation.workspace_id
-        and request.key_id = reservation.key_id
-        and request.request_id = reservation.hold_ref_id
-        and request.detail_metadata->>'free_model_fee_request_id' = substr(reservation.reservation_id, 17) and request.success is true
-    ) free_audit on true
-    group by configured.id
+  ), items as materialized (
+    -- private.budget_spend_items, as for department budgets: positive-cost requests, active holds
+    -- in every period, captured video and free-model holds less their audited cost.
+    select item.at, item.active, item.nanos
+    from private.budget_spend_items(
+      p_workspace_id,
+      (select case when bool_or(configured.window_start is null) then null else min(configured.window_start) end from configured)
+    ) item
+    where exists (select 1 from configured)
   ), usage_rows as (
     select
       configured.*,
-      request_usage.completed_nanos + reservation_usage.held_nanos as usage_nanos
+      coalesce((
+        select sum(items.nanos) from items
+        where items.active or configured.window_start is null or items.at >= configured.window_start
+      ), 0)::bigint as usage_nanos
     from configured
-    join request_usage using (id)
-    join reservation_usage using (id)
   ), normalized as (
     select *,
       usage_nanos + coalesce(p_requested_amount_nanos, 0) as projected_usage_nanos,
