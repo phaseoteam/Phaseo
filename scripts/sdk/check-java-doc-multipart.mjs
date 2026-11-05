@@ -13,10 +13,10 @@ const audio = Buffer.from([0x49, 0x44, 0x33, 0, 0xff, 0x80, 13, 10]);
 const image = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6OBsAAAAASUVORK5CYII=", "base64");
 const batch = Buffer.from('{"custom_id":"local","method":"POST","url":"/v1/responses","body":{"model":"test-model","input":"Olá"}}\n');
 const cases = [
-  { page: "files", route: "/files", field: "file", file: "requests.jsonl", type: "application/jsonl", bytes: batch, fields: { purpose: "batch" } },
-  { page: "audio-transcriptions", route: "/audio/transcriptions", field: "file", file: "audio.mp3", type: "audio/mpeg", bytes: audio, fields: { model: "openai/whisper-1" } },
-  { page: "audio-translations", route: "/audio/translations", field: "file", file: "audio.mp3", type: "audio/mpeg", bytes: audio, fields: { model: "openai/whisper-1" } },
-  { page: "images-edits", route: "/images/edits", field: "image", file: "input.png", type: "image/png", bytes: image, fields: { model: "openai/gpt-image-1", prompt: "Make this image warmer" } },
+  { page: "files", route: "/files", field: "file", file: "batch.jsonl", type: "application/jsonl", bytes: batch, fields: { purpose: "batch" } },
+  { page: "audio-transcriptions", route: "/audio/transcriptions", field: "file", file: "call.mp3", type: "audio/mpeg", bytes: audio, fields: { model: "openai/gpt-4o-transcribe", language: "en" } },
+  { page: "audio-translations", route: "/audio/translations", field: "file", file: "interview.mp3", type: "audio/mpeg", bytes: audio, fields: { model: "openai/whisper-1" } },
+  { page: "images-edits", route: "/images/edits", field: "image", file: "input.png", type: "image/png", bytes: image, fields: { model: "openai/gpt-image-1", prompt: "Make it sunset" } },
 ];
 const sources = [];
 for (const [index, test] of cases.entries()) {
