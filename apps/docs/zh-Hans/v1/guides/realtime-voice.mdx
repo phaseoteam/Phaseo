@@ -161,7 +161,7 @@ curl https://api.phaseo.app/v1/audio/realtime/sessions \
 | `reason` | 稳定的原因代码。请参阅[原因代码](#reason-codes)。 |
 | `initiated_by` | `client`、`gateway` 或 `provider`。 |
 | `duration_seconds` | 自中继连接以来的时长。 |
-| `usage` | 通话计费所依据的每个计量：按模态划分的 token 数，包括缓存读取和写入；按时长计费的通话（xAI、ElevenLabs、Mistral 以及 GPT Live 的语音）的 `audio_seconds`；以及 GPT Live 网页搜索的 `native_web_search_requests`。 |
+| `usage` | 通话计费所依据的用量：按模态划分的 token 数，包括缓存读取和写入；`audio_seconds`，即通话的音频时长，xAI、ElevenLabs、Mistral 以及 GPT Live 的语音按此计费（在按 token 计费的通话中仅供参考）；以及 GPT Live 网页搜索的 `native_web_search_requests`。当 `billing_status` 为 `pending` 或 `unresolved` 时，这是目前已知的用量，最终计量可通过 `final_bill` 获取。 |
 | `cost.estimated` | 当某个被中断轮次的供应商用量始终未到达，部分用量根据计量的音频估算时为 `true`。`estimate_basis` 说明原因。 |
 | `cost.debt_nanos` | 超出你的预留和可用余额、作为透支收取的那部分成本。 |
 | `cost.uncollected_nanos` | 超出透支上限而未收取的成本。 |

@@ -161,7 +161,7 @@ O relay envia `session.ended` em todo encerramento: o que você solicitou, o que
 | `reason` | Um código de motivo estável. Consulte [códigos de motivo](#reason-codes). |
 | `initiated_by` | `client`, `gateway` ou `provider`. |
 | `duration_seconds` | Tempo desde que o relay se conectou. |
-| `usage` | Cada medidor pelo qual a chamada é cobrada: contagens de tokens por modalidade, incluindo leituras e gravações de cache; `audio_seconds` para chamadas cobradas por duração (xAI, ElevenLabs, Mistral e a voz do GPT Live); e `native_web_search_requests` para as pesquisas na web do GPT Live. |
+| `usage` | O uso pelo qual a chamada é cobrada: contagens de tokens por modalidade, incluindo leituras e gravações de cache; `audio_seconds`, a duração do áudio da chamada, que é o que se cobra no xAI, ElevenLabs, Mistral e na voz do GPT Live (nas chamadas cobradas por tokens, aparece só como informação); e `native_web_search_requests` para as pesquisas na web do GPT Live. Quando `billing_status` é `pending` ou `unresolved`, mostra o uso conhecido até o momento, e `final_bill` retorna os medidores finais. |
 | `cost.estimated` | `true` quando parte do uso foi estimada a partir do áudio medido porque o uso do provedor para um turno interrompido nunca chegou. `estimate_basis` informa o motivo. |
 | `cost.debt_nanos` | A parte do custo cobrada como saldo negativo além das suas reservas e do saldo livre. |
 | `cost.uncollected_nanos` | Custo além do limite de saldo negativo que não foi cobrado. |

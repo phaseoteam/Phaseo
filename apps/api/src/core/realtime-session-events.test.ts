@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { PriceCard } from "@pipeline/pricing/types";
+import type { PriceCard, PriceRule } from "@pipeline/pricing/types";
 import { LIVE_PRICE_CARD, LIVE_SEARCH_PRICE_CARD, priceLiveUsage, type LiveConfig } from "./live-sessions";
 import { liveBackendSettingsSchema } from "./live-settings";
 import { buildSessionEndedEvent } from "./realtime-session-events";
@@ -9,7 +9,7 @@ vi.mock("@pipeline/pricing/loader", () => ({ loadPriceCard: vi.fn() }));
 
 const card = (meters: string[], model = "test-model"): PriceCard => ({
 	provider: "test", model, endpoint: "audio.realtime", currency: "USD", effective_from: null, effective_to: null, version: null,
-	rules: meters.map((meter) => ({ pricing_plan: "standard", meter: meter as any, unit: meter.includes("minutes") ? "minute" : "token",
+	rules: meters.map((meter) => ({ pricing_plan: "standard", meter: meter as PriceRule["meter"], unit: meter.includes("minutes") ? "minute" : "token",
 		unit_size: meter.includes("minutes") ? 1 : 1_000_000, price_per_unit: "1", currency: "USD", match: [], priority: 1 })),
 });
 const TOKEN_METERS = ["input_text_tokens", "input_audio_tokens", "output_text_tokens", "output_audio_tokens", "cached_read_text_tokens", "cached_read_audio_tokens"];
@@ -38,9 +38,9 @@ const liveConfig: LiveConfig = { backendModel: "openai/gpt-5.6-luna", voiceCard:
 	backendCard: { ...card(["input_text_tokens", "cached_read_text_tokens", "cached_write_text_tokens_30m", "cached_write_text_tokens_12h", "output_text_tokens"], "openai/gpt-5.6-luna"), endpoint: "text.generate" } };
 
 /** The quantity of each billed meter, with per-minute meters in seconds as session.ended reports them. */
-function billedQuantities(priced: Record<string, any>) {
+function billedQuantities(priced: Record<string, unknown>) {
 	const totals: Record<string, number> = {};
-	for (const line of priced.pricing.lines as Array<{ dimension: string; quantity: number }>) {
+	for (const line of (priced.pricing as { lines: Array<{ dimension: string; quantity: number }> }).lines) {
 		if (!(Number(line.quantity) > 0)) continue;
 		const minutes = /(^|_)audio_minutes$/.test(line.dimension);
 		const key = minutes ? "audio_seconds" : line.dimension;
