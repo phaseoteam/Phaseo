@@ -13,14 +13,13 @@
 alter table public.gateway_request_charges
   add column if not exists is_final boolean not null default true;
 
--- Relax cost_nanos > 0 to >= 0 without holding a long lock: add unvalidated,
--- then validate (SHARE UPDATE EXCLUSIVE, writes continue).
+-- Relax cost_nanos > 0 to >= 0. The new check is added unvalidated so this
+-- migration's ACCESS EXCLUSIVE lock is brief; it is validated in the next
+-- migration, a separate transaction under SHARE UPDATE EXCLUSIVE (writes continue).
 alter table public.gateway_request_charges
   drop constraint if exists gateway_request_charges_cost_nanos_check;
 alter table public.gateway_request_charges
   add constraint gateway_request_charges_cost_nanos_check check ((cost_nanos >= 0)) not valid;
-alter table public.gateway_request_charges
-  validate constraint gateway_request_charges_cost_nanos_check;
 
 CREATE OR REPLACE FUNCTION public.gateway_charge_request_total (
   p_workspace_id                  uuid,

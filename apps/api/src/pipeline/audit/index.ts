@@ -1077,6 +1077,8 @@ type AuditFailureBefore = {
 };
 type AuditFailureExecute = {
     nativeResponseId?: string | null;
+    /** What the failed request was still charged; null or absent when it was not charged. */
+    costNanos?: number | null;
     stage: "execute";
     requestId: string;
     workspaceId: string;
@@ -1347,6 +1349,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
             latencyMs: args.latencyMs ?? null,
             generationMs: args.generationMs ?? null,
             usage: args.usage ?? {},
+            costNanos: args.costNanos ?? null,
             requestPayload: args.requestPayload,
             gatewayResponse: args.gatewayResponse,
             currency: args.currency ?? null,
@@ -1385,7 +1388,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                     statusCode: args.statusCode,
                     success: false,
                     usage: args.usage ?? {},
-                    totalNanos: 0,
+                    totalNanos: args.costNanos ?? 0,
                     currency: args.currency ?? null,
                     latencyMs: args.latencyMs ?? null,
                     generationMs: args.generationMs ?? null,
@@ -1425,6 +1428,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                         authMethod: args.authMethod ?? null,
                         userAgent: args.userAgent ?? null,
                         clientSource: args.clientSource ?? null,
+                        costNanos: args.costNanos ?? null,
                         currency: args.currency ?? null,
                         toolCallCount: readToolCallCount(args.usage, null),
                         // A failed request's tool calls were never checked.

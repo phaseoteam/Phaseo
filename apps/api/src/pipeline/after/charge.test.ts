@@ -231,6 +231,33 @@ describe("recordUsageAndChargeOnce", () => {
 			expect(calls()).toEqual([["checkpoint_total", "bill", 100], ["final_total", "bill", 300]]);
 		});
 
+		it("never debits twice when the final call commits but its response is lost", async () => {
+			// The database side of gateway_charge_request_total: one stored total per request
+			// (supabase/tests/gateway-charge-request-total.test.mjs pins the SQL itself).
+			const db = { charged: 0, final: false, debits: [] as number[], lostFinalResponses: 1 };
+			recordRequestChargeTotalMock.mockImplementation(async (args: any) => {
+				if (db.final) {
+					if (args.final && args.total_nanos !== db.charged) throw new Error("request_charge_amount_mismatch");
+					return { applied: false, already_applied: true };
+				}
+				const total = args.final ? args.total_nanos : Math.max(args.total_nanos, db.charged);
+				if (total !== db.charged) db.debits.push(total - db.charged);
+				db.charged = total;
+				db.final = args.final;
+				// Committed, but the gateway never sees the response.
+				if (args.final && db.lostFinalResponses-- > 0) throw new Error("fetch failed");
+				return { applied: true, already_applied: false };
+			});
+			const ctx = ctxFor();
+			await recordProvisionalStreamCharge({ ctx, costNanos: 100, endpoint: "responses" });
+			await recordUsageAndChargeOnce({ ctx, costNanos: 300, endpoint: "responses", throwOnFailure: true });
+			// The retry repeats the same final total, which the database already holds: no second debit.
+			expect(calls()).toEqual([["checkpoint_total", "bill", 100], ["final_total", "bill", 300], ["final_total", "bill", 300]]);
+			expect(db.debits).toEqual([100, 200]);
+			expect(db.charged).toBe(300);
+			expect(ctx.meta.__usageChargeRecorded).toBe(true);
+		});
+
 		it("charges a request with no checkpoint once, exactly as before", async () => {
 			const ctx = ctxFor();
 			// Registered but not started before the final charge: dropped, never sent.

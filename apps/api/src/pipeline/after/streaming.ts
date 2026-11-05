@@ -572,6 +572,8 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
             }
         } catch (err) {
             readError = err;
+            // Billing treats a broken upstream as a stream failure, even after the client left.
+            ctx.meta.upstreamStreamBroken = true;
         } finally {
             // Only a real terminal event (a stop or the final snapshot) completes the
             // stream. Without one (a provider disconnect after partial output) the client

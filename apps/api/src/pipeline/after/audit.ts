@@ -247,6 +247,8 @@ export async function handleFailureAudit(
         rawUsage: unknown;
         pricingCard?: unknown;
     },
+    /** What the failed request was charged (a stream the client left, charged at drain checkpoints). */
+    billing?: { costNanos: number },
 ) {
 	finishStreamingProvider(ctx, "error");
 	// The served attempt was marked successful when headers arrived. A stream that
@@ -257,8 +259,11 @@ export async function handleFailureAudit(
 	// A provider accepted the request, even if the response then failed: earlier
 	// 4xx rejections on other routes were Phaseo's routing or mapping problem.
 	reclassifyAttemptsAcceptedElsewhere(ctx.providerAttempts);
-	// Enforce mode: a failed request frees its spend-limit admission (no-op without one).
-	releaseSpend(ctx.spendAdmission);
+	// Enforce mode: a failed request frees its spend-limit admission (no-op without one). A failed
+	// request that was still charged counts its charge instead, once its row is written.
+	const billedNanos = Math.max(0, Math.round(Number(billing?.costNanos) || 0));
+	const settleBilledSpend = billedNanos > 0 && !keyIdIsOAuthClientId(ctx.meta.apiKeyRef);
+	if (!settleBilledSpend) releaseSpend(ctx.spendAdmission);
     const protectedOtlp = protectStealthAuditArgs({
         model: ctx.model,
         requestedModel: ctx.requestedModel ?? ctx.model,
@@ -388,6 +393,7 @@ export async function handleFailureAudit(
 			pricingLines: Array.isArray((result.bill?.usage as any)?.pricing?.lines)
 				? (result.bill?.usage as any).pricing.lines
 				: [],
+            ...(billedNanos > 0 ? { costNanos: billedNanos } : {}),
         }) : null,
         writeOtlp: () => enqueueGatewayOtlpExport({
             requestId: ctx.requestId,
@@ -441,6 +447,18 @@ export async function handleFailureAudit(
             gatewayResponse: gatewayErrorPayload ?? gatewayFailurePayload,
         }),
         onDeliveryFailure: emitGatewayTelemetryDeliveryFailure,
+    }).then((deliveries) => {
+        if (!settleBilledSpend) return;
+        settleEnforcedSpend({
+            admission: ctx.spendAdmission,
+            rowWritten: deliveries.some((delivery) => delivery.sink === "supabase" && delivery.delivered),
+            workspaceId: ctx.workspaceId,
+            keyId: ctx.meta.apiKeyId ?? ctx.keyId ?? null,
+            billingRequestId: ctx.billingRequestId,
+            requestId: ctx.requestId,
+            costNanos: billedNanos,
+            internal: ctx.internal,
+        });
     }).finally(() => releaseRuntime?.());
     dispatchBackground(telemetry);
 }

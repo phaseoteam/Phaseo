@@ -6,13 +6,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // One-off charges ("one_off") and stored-total charges ("total", see gateway_charge_request_total).
 const chargeRpcMock = vi.hoisted(() => vi.fn(async (_kind: string, _args: any) => ({ applied: true })));
 const backgroundWork: Promise<unknown>[] = [];
+const failureAuditMock = vi.hoisted(() => vi.fn(async (..._args: any[]) => undefined));
 
 vi.mock("../pricing/persist", () => ({
 	recordUsageAndCharge: (args: any) => chargeRpcMock("one_off", args),
 	recordRequestChargeTotal: (args: any) => chargeRpcMock("total", args),
 }));
 vi.mock("./audit", () => ({
-	handleFailureAudit: vi.fn(async () => undefined),
+	handleFailureAudit: (...args: any[]) => failureAuditMock(...args),
 	handleSuccessAudit: vi.fn(async () => undefined),
 }));
 vi.mock("@observability/events", () => ({ emitGatewayRequestEvent: vi.fn(async () => undefined) }));
@@ -71,6 +72,8 @@ function controllableUpstream() {
 			controller.enqueue(enc.encode("data: [DONE]\n\n"));
 			controller.close();
 		},
+		// The connection resets: the upstream body errors.
+		reset: () => controller.error(new Error("ECONNRESET")),
 		// A provider error mid-stream, then the upstream closes with no terminal event.
 		fail: () => {
 			controller.enqueue(enc.encode(`data: ${JSON.stringify({ error: { message: "overloaded", type: "server_error" } })}\n\n`));
@@ -118,7 +121,8 @@ const charges = () => chargeRpcMock.mock.calls.map(([kind, args]) => kind === "o
 describe("a stream the client abandons while the upstream keeps draining", () => {
 	beforeEach(() => {
 		vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
-		chargeRpcMock.mockClear();
+		chargeRpcMock.mockReset().mockResolvedValue({ applied: true });
+		failureAuditMock.mockClear();
 		backgroundWork.length = 0;
 	});
 	afterEach(() => { vi.useRealTimers(); });
@@ -226,6 +230,12 @@ describe("a stream the client abandons while the upstream keeps draining", () =>
 		await settle();
 		// No provider usage: the final total is capped at the 1,000,000 already estimated.
 		expect(charges()).toEqual([["checkpoint_total", "bill_drain", 1_000_000], ["final_total", "bill_drain", 1_000_000]]);
+		// The 499 row records that charge, so spend limits and budgets count it.
+		expect(failureAuditMock).toHaveBeenCalledTimes(1);
+		const [, result, status, , code, , , , , billing] = failureAuditMock.mock.calls[0];
+		expect([status, code]).toEqual([499, "client_closed_request"]);
+		expect(billing).toEqual({ costNanos: 1_000_000 });
+		expect(result.bill.usage.pricing).toMatchObject({ total_nanos: 1_000_000, billing_suppressed: false, billing_basis: "drain_checkpoint" });
 	});
 
 	it("settles a stream the client left that then ends early from the provider's reported usage", async () => {
@@ -245,5 +255,47 @@ describe("a stream the client abandons while the upstream keeps draining", () =>
 			["checkpoint_total", "bill_drain", 1_120_000],
 			["final_total", "bill_drain", 120 * 1_000 + 200 * 10_000],
 		]);
+	});
+
+	it("refunds the checkpoint charges when the upstream connection resets after the client left", async () => {
+		const c = ctx();
+		const { upstream, reader } = await start(c);
+		upstream.text("y".repeat(500));
+		await reader.read();
+		await reader.cancel();
+		await vi.advanceTimersByTimeAsync(15_000);
+		await settle();
+		expect(charges()).toEqual([["checkpoint_total", "bill_drain", 1_000_000]]);
+		upstream.reset();
+		await settle();
+		// A broken upstream is a stream failure, not the client leaving: nothing is billed.
+		expect(charges()).toEqual([["checkpoint_total", "bill_drain", 1_000_000], ["final_total", "bill_drain", 0]]);
+		const [, , status, attribution, code, , , , , billing] = failureAuditMock.mock.calls[0];
+		expect([status, attribution, code, billing]).toEqual([502, "upstream", "upstream_stream_failure", undefined]);
+	});
+
+	it("records the intended final total for reconciliation when the zero settlement cannot be recorded", async () => {
+		const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+		const c = ctx();
+		const { upstream, reader } = await start(c);
+		upstream.text("y".repeat(500));
+		await reader.read();
+		await reader.cancel();
+		await vi.advanceTimersByTimeAsync(15_000);
+		await settle();
+		chargeRpcMock.mockRejectedValue(new Error("database unavailable"));
+		upstream.fail();
+		await settle();
+		await vi.advanceTimersByTimeAsync(1_000);
+		await settle();
+		error.mockRestore();
+		// Every attempt at the zero total failed: the checkpoint debit is not left as a plain failure.
+		expect(charges().filter(([kind]) => kind === "final_total")).toEqual([
+			["final_total", "bill_drain", 0], ["final_total", "bill_drain", 0], ["final_total", "bill_drain", 0],
+		]);
+		expect(failureAuditMock).toHaveBeenCalledTimes(1);
+		const [, , status, attribution, code, , details] = failureAuditMock.mock.calls[0];
+		expect([status, attribution, code]).toEqual([500, "gateway", "stream_finalization_failed"]);
+		expect(details).toMatchObject({ billing_status: "pending_reconciliation", charged_in_steps: true, intended_final_total_nanos: 0 });
 	});
 });

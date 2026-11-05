@@ -728,6 +728,9 @@ export async function handleStreamResponse(
 			// ended because the caller left: a customer cancellation, neutral for
 			// routing. With the client still connected, the provider dropped the
 			// stream: a mid-stream failure that counts against the route.
+			// A connection reset or body error from the upstream is a stream failure, not the
+			// client leaving, even when the client had already disconnected.
+			if (ctx.meta.upstreamStreamBroken === true) streamFailed = true;
 			const { clientCancelled, midStreamError } = streamHealthSignals({
 				aborted: info?.aborted === true,
 				downstreamDisconnected: ctx.meta.downstreamDisconnected === true,
@@ -774,7 +777,10 @@ export async function handleStreamResponse(
 				// stream is not billed (0: everything is refunded). A stream the client left keeps
 				// what it generated: priced from provider usage when the provider reported any,
 				// otherwise no more than the checkpoints already estimated.
+				// If this settlement cannot be recorded, the finalization error audit below records
+				// the intended total for reconciliation; the checkpoint debit is not left silently.
 				const stepMeta = ctx.meta as Record<string, unknown>;
+				let billedNanos = 0;
 				if (stepMeta.__chargedInSteps === true) {
 					let finalNanos = 0;
 					if (clientCancelled) {
@@ -782,7 +788,26 @@ export async function handleStreamResponse(
 						const estimatedNanos = Number(stepMeta.__checkpointTotalNanos) || 0;
 						finalNanos = priced?.inputReported ? priced.totalNanos : Math.min(priced?.totalNanos ?? estimatedNanos, estimatedNanos);
 					}
-					await recordUsageAndChargeOnce({ ctx, costNanos: finalNanos, endpoint: ctx.endpoint });
+					await recordUsageAndChargeOnce({ ctx, costNanos: finalNanos, endpoint: ctx.endpoint, throwOnFailure: true });
+					billedNanos = finalNanos;
+				}
+				if (billedNanos > 0) {
+					// The retained charge is the request's price: the row records it, and spend limits
+					// and budgets count it like any other charge.
+					const usage = (result.bill.usage && typeof result.bill.usage === "object" ? result.bill.usage : {}) as Record<string, any>;
+					const { billing_suppression_reason: _dropped, ...pricing } = usage.pricing ?? {};
+					result.bill.usage = {
+						...usage,
+						pricing: {
+							...pricing,
+							total_nanos: billedNanos,
+							total_cents: billedNanos / 1e7,
+							total_usd_str: (billedNanos / 1e9).toFixed(9),
+							billing_suppressed: false,
+							billing_basis: "drain_checkpoint",
+						},
+					};
+					result.bill.cost_cents = billedNanos / 1e7;
 				}
 				if (clientCancelled) {
 					await handleFailureAudit(
@@ -793,6 +818,9 @@ export async function handleStreamResponse(
 						"client_closed_request",
 						"The client closed the stream before it completed.",
 						result.rawResponse ?? latestGatewaySnapshot,
+						undefined,
+						undefined,
+						billedNanos > 0 ? { costNanos: billedNanos } : undefined,
 					);
 					return;
 				}
@@ -1120,6 +1148,10 @@ export async function handleStreamResponse(
                         upstream_status: upstreamStatus,
                         response_delivered: true,
                         billing_status: (ctx.meta as Record<string, unknown>).__usageChargeRecorded === true ? "recorded" : "pending_reconciliation",
+                        // A stream charged at drain checkpoints: the total its final settlement meant to record.
+                        ...(typeof (ctx.meta as Record<string, unknown>).__steppedFinalTotalNanos === "number"
+                            ? { charged_in_steps: true, intended_final_total_nanos: (ctx.meta as Record<string, unknown>).__steppedFinalTotalNanos }
+                            : {}),
                         cause: message,
                     },
                     null,

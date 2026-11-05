@@ -124,6 +124,8 @@ export async function recordUsageAndChargeOnce(args: {
 	const inSteps = state?.sent === true;
 	// A stepped request's final bill is always sent, 0 included: it refunds the estimates.
 	if (inSteps ? !Number.isFinite(costNanos) || costNanos < 0 : !Number.isFinite(costNanos) || costNanos <= 0) return;
+	// Kept for the finalization error audit if this settlement cannot be recorded.
+	if (inSteps) meta.__steppedFinalTotalNanos = Math.round(costNanos);
 
 	const lastError = await chargeWithRetries(ctx, inSteps
 		? { kind: "total", totalNanos: Math.round(costNanos), final: true }
