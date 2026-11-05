@@ -40,6 +40,7 @@ import type { DesktopAppAction, DesktopUpdateState, DesktopWindowAction } from "
 import { isAllowedExternalUrl } from "../shared/desktop";
 import { chatLinkScheme, parseChatLink } from "../shared/chatLinks";
 import { prepareLaunch, readRegistry } from "./acpRegistry";
+import { applyOpenAtLogin, ensureTray, removeTray } from "./trayAndLogin";
 import { validateCommand } from "../shared/workspace";
 import { validateWorktreeChatRequest } from "../shared/worktreeChat";
 import { validatePublishRepository } from "../shared/gitWorkflow";
@@ -142,6 +143,8 @@ const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 const preloadPath = path.join(currentDirectory, "../preload/index.cjs");
 const rendererPath = path.join(currentDirectory, "../renderer/index.html");
 const developmentUrl = app.isPackaged ? undefined : process.env.PHASEO_DESKTOP_DEV_URL;
+/** Set once quitting starts, so the last window's close quits instead of hiding to the tray. */
+let quittingFromTray = false;
 const applicationIcon = path.join(app.getAppPath(), "assets", `icon-${developmentUrl ? "development" : "production"}.png`);
 const updateFeedUrl = resolveUpdateFeedUrl(app.isPackaged, process.env);
 let workspaceRuntime: WorkspaceRuntime;
@@ -235,7 +238,7 @@ ipcMain.handle("workspace:autopilot-log", event => { if (!senderWindow(event)) t
 ipcMain.handle("workspace:global-instructions", event => { if (!senderWindow(event)) throw new Error("Untrusted instruction request."); return globalInstructions.read(); });
 ipcMain.handle("workspace:save-global-instructions", (event, edit: unknown) => { if (!senderWindow(event) || shutdownStarted) throw new Error("Instruction editing is unavailable."); return globalInstructions.save(edit); });
 ipcMain.handle("workspace:preferences", event => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); return { preferences: workspaceRuntime.store.getPreferences(), notificationsSupported: Notification.isSupported() }; });
-ipcMain.handle("workspace:save-preferences", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); if (!value || typeof value !== "object") throw new Error("Invalid workspace preferences."); const preferences = workspaceRuntime.store.savePreferences(validatePreferences({ ...workspaceRuntime.store.getPreferences(), ...value })); taskNotifications.configure(preferences); workspaceRuntime.limitPreferencesChanged(); return preferences; });
+ipcMain.handle("workspace:save-preferences", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); if (!value || typeof value !== "object") throw new Error("Invalid workspace preferences."); const preferences = workspaceRuntime.store.savePreferences(validatePreferences({ ...workspaceRuntime.store.getPreferences(), ...value })); taskNotifications.configure(preferences); applyOpenAtLogin(preferences.chat.openAtLogin); if (!preferences.chat.keepInTray) removeTray(); workspaceRuntime.limitPreferencesChanged(); return preferences; });
 ipcMain.handle("workspace:mcp", (event, value: unknown) => {
 	if (!senderWindow(event)) throw new Error("Invalid MCP request.");
 	return workspaceRuntime.mcp(validateMcpCommand(value));
@@ -1173,7 +1176,12 @@ function createWindow(): BrowserWindow {
 	window.on("blur", () => { quitHold.cancel(); broadcastWindowState(window); });
 	window.webContents.on("before-input-event", (event, input) => { if (quitHoldInput(input, window)) event.preventDefault(); });
 	// Closing the last window quits on Windows and Linux, so it asks first like Quit does (Settings → Chat → Quitting).
-	window.on("close", event => { if (process.platform !== "darwin" && !shutdownStarted && BrowserWindow.getAllWindows().filter(value => !value.isDestroyed()).length === 1 && quitGuard.intercept()) event.preventDefault(); });
+	window.on("close", event => {
+		const last = process.platform !== "darwin" && !shutdownStarted && BrowserWindow.getAllWindows().filter(value => !value.isDestroyed()).length === 1;
+		// Settings → Chat → Keep running in the tray: the last window hides, and work carries on until Quit.
+		if (last && !quittingFromTray && workspaceRuntime?.store.getPreferences().chat.keepInTray) { event.preventDefault(); ensureTray(applicationIcon); window.hide(); return; }
+		if (last && quitGuard.intercept()) event.preventDefault();
+	});
 	window.on("focus", () => broadcastWindowState(window));
 	window.on("maximize", () => broadcastWindowState(window));
 	window.on("unmaximize", () => broadcastWindowState(window));
@@ -1368,6 +1376,8 @@ autoUpdater.on("error", (error) => broadcastUpdateState({ status: "error", messa
 app.whenReady().then(() => {
 	if (!primaryInstance) return;
 	if (process.platform === "darwin") app.dock?.setIcon(applicationIcon);
+	// Quitting from the tray, the menu or the system ends the app rather than hiding it again.
+	app.on("before-quit", () => { quittingFromTray = true; });
 	const workspaceDirectory = path.join(app.getPath("userData"), "workspace");
 	const vault = new SecretVault(path.join(workspaceDirectory, "credentials"), windowsCredentialEncryption({
 		available: async () => await safeStorage.isAsyncEncryptionAvailable() && (process.platform !== "linux" || safeStorage.getSelectedStorageBackend() !== "basic_text"),

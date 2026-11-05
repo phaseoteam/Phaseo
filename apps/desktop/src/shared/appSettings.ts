@@ -24,7 +24,7 @@ export const workspaceSettings = {
 	autopilot: { label: "Allow Autopilot", page: "experimental", description: "Lets Code chats run in Autopilot with full access.", type: "boolean" },
 	autopilotModel: { label: "Autopilot model", page: "experimental", description: "The Phaseo model Autopilot asks; null uses the title model.", type: "model", nullable: true },
 	worktreeCleanup: { label: "Worktree cleanup", page: "worktrees", description: "When worktrees are cleaned up automatically, as the object Settings shows.", type: "object" },
-	chat: { label: "Chat", page: "chat", description: "Follow-ups (queue or steer), the rich text composer, quit confirmation and diff layout, whitespace and colours, as the object Settings → Chat shows.", type: "object" },
+	chat: { label: "Chat", page: "chat", description: "Follow-ups (queue or steer), the rich text composer, quit confirmation, diff layout, whitespace and colours, opening at login and keeping Phaseo in the tray, as the object Settings → Chat shows.", type: "object" },
 	browser: { label: "Browser", page: "browser", description: "Where links open, the search engine, whether agents get browser tools, and browser profiles, as the object Settings → Browser shows.", type: "object" },
 	sourceControl: { label: "Source control", page: "source-control", description: "Worktree folder, branch naming, submodules, commit and pull request writing instructions and the Git model, as the object Settings → Source control shows.", type: "object" },
 	threads: { label: "Threads", page: "threads", description: "Usage-limit resume and snooze, continuing after a restart, idle compaction, response streaming, provider health checks and log retention, as the object Settings → Threads shows.", type: "object" },

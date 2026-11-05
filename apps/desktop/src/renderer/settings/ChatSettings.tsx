@@ -41,6 +41,10 @@ export function ChatSettings() {
 			<SettingsRow title="Protect against quitting" description={`Quitting stops chats that are still working; they continue the next time Phaseo opens (Settings → Maintenance). Holding means ${isMac() ? "⌘Q" : "Ctrl+Q"} quits only once held for a second, and other ways of quitting${isMac() ? "" : ", such as closing the last window,"} ask while chats are working.`}
 				control={<Select label="Protect against quitting" disabled={disabled} value={chat.quitConfirmation} onValueChange={value => { const choice = quitConfirmations.find(option => option === value); if (choice) change({ quitConfirmation: choice }); }}
 					options={[{ value: "hold", label: `Hold ${isMac() ? "⌘Q" : "Ctrl+Q"} to quit (default)` }, { value: "working", label: "Ask while chats are working" }, { value: "always", label: "Always ask" }, { value: "direct", label: "Quit straight away" }]} />} />
+			{!isMac() && <SettingsRow title="Keep running in the tray" description="Closing the window hides Phaseo to the tray, so chats, scheduled tasks and the operator keep working. Quit from the tray icon's menu."
+				control={<Switch aria-label="Keep running in the tray" disabled={disabled} checked={chat.keepInTray} onCheckedChange={keepInTray => change({ keepInTray })} />} />}
+			<SettingsRow title="Open at login" description="Start Phaseo when you sign in to this computer. Installed versions only."
+				control={<Switch aria-label="Open at login" disabled={disabled} checked={chat.openAtLogin} onCheckedChange={openAtLogin => change({ openAtLogin })} />} />
 		</SettingsSection>
 		{error && <SettingsNote tone="error" role="alert">{error}</SettingsNote>}
 	</SettingsPageLayout>;

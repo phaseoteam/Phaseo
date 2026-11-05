@@ -8,6 +8,8 @@
  * diffLayout and diffIgnoreWhitespace: how diffs open everywhere (the changes panel, commits and a pull request's Code tab);
  * their toolbar buttons change these too. diffColours: the added and removed line colours; blue and orange read apart for
  * people who confuse red and green.
+ * openAtLogin: start Phaseo when the person signs in to the computer (installed builds). keepInTray: closing the last window
+ * hides it to the tray (Windows, Linux) so chats, schedules and the operator keep working.
  */
 export const followUpBehaviours = ["queue", "steer"] as const;
 export type FollowUpBehaviour = (typeof followUpBehaviours)[number];
@@ -15,8 +17,8 @@ export const quitConfirmations = ["hold", "working", "always", "direct"] as cons
 export type QuitConfirmation = (typeof quitConfirmations)[number];
 export const diffColourSchemes = ["red-green", "blue-orange"] as const;
 export type DiffColourScheme = (typeof diffColourSchemes)[number];
-export type ChatPreferences = { followUp: FollowUpBehaviour; richTextComposer: boolean; quitConfirmation: QuitConfirmation; diffLayout: "unified" | "split"; diffIgnoreWhitespace: boolean; diffColours: DiffColourScheme };
-export const defaultChatPreferences: ChatPreferences = { followUp: "queue", richTextComposer: true, quitConfirmation: "hold", diffLayout: "unified", diffIgnoreWhitespace: false, diffColours: "red-green" };
+export type ChatPreferences = { followUp: FollowUpBehaviour; richTextComposer: boolean; quitConfirmation: QuitConfirmation; diffLayout: "unified" | "split"; diffIgnoreWhitespace: boolean; diffColours: DiffColourScheme; openAtLogin: boolean; keepInTray: boolean };
+export const defaultChatPreferences: ChatPreferences = { followUp: "queue", richTextComposer: true, quitConfirmation: "hold", diffLayout: "unified", diffIgnoreWhitespace: false, diffColours: "red-green", openAtLogin: false, keepInTray: false };
 
 /** Preferences saved before a field existed omit it, so missing fields take their defaults; a present but invalid value throws. */
 export function validateChatPreferences(value: unknown): ChatPreferences {
@@ -28,7 +30,7 @@ export function validateChatPreferences(value: unknown): ChatPreferences {
 		if (!options.includes(entry as T)) throw new Error(message);
 		return entry as T;
 	};
-	const flag = (key: "richTextComposer" | "diffIgnoreWhitespace") => {
+	const flag = (key: "richTextComposer" | "diffIgnoreWhitespace" | "openAtLogin" | "keepInTray") => {
 		const entry = input[key] ?? defaultChatPreferences[key];
 		if (typeof entry !== "boolean") throw new Error("Invalid chat preferences.");
 		return entry;
@@ -40,5 +42,7 @@ export function validateChatPreferences(value: unknown): ChatPreferences {
 		diffLayout: choice("diffLayout", ["unified", "split"] as const, "Choose a diff layout."),
 		diffIgnoreWhitespace: flag("diffIgnoreWhitespace"),
 		diffColours: choice("diffColours", diffColourSchemes, "Choose diff colours."),
+		openAtLogin: flag("openAtLogin"),
+		keepInTray: flag("keepInTray"),
 	};
 }
