@@ -14,6 +14,7 @@ import { normalizeModelLicense } from "@/models/license";
 import { withPublicCache, type PublicCachePolicy } from "@/http/cache";
 import {
 	attemptHealthByHour,
+	attemptHealthRatesOnly,
 	attemptHealthToWire,
 	combineAttemptHealth,
 	isMissingAttemptHealthRpcError,
@@ -1941,12 +1942,11 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 			return { bucket: value.bucket ?? "", avgThroughput: number(value.avg_throughput), avgOutputSpeed: number(value.output_speed_tps), avgLatencyMs: number(value.avg_latency_ms), avgEndToEndMs: number(value.gateway_e2e_ms), avgGenerationMs: number(value.avg_generation_ms), avgPhaseoOverheadMs: number(value.phaseo_overhead_ms), avgTpotMs: number(value.tpot_ms), avgItlMs: number(value.itl_ms), cachedInputPct: cacheRate(cacheRequests, cache?.cached_input_pct), cacheTelemetryRequests: hasSample(cacheRequests) ? cacheRequests : 0, requests: Number(value.requests ?? 0), successPct: number(value.success_pct) };
 		});
 		// Per-attempt health, combined across service tiers for each public provider id.
+		// Only the rates are published; attempt and failure counts reveal traffic volume.
 		const publicAttemptHealthRows = attemptHealthRows.filter((row) => hasSample(row.attempts));
 		const providerAttemptHealth = (provider: string) => {
 			const combined = combineAttemptHealth(publicAttemptHealthRows.filter((row) => publicProviderId(row.providerId, stealthProviderIds) === provider));
-			if (!combined) return null;
-			const { buckets: _buckets, ...totals } = combined;
-			return totals;
+			return combined ? attemptHealthRatesOnly(combined) : null;
 		};
 		const attemptHealthHours = attemptHealthByHour(publicAttemptHealthRows);
 		const providerPerformance = (performance.provider_uptime_24h ?? []).map((value: Record<string, any>) => { const provider = publicProviderId(value.provider, stealthProviderIds); return { provider, providerName: provider === "stealth" ? "Stealth" : value.provider_name ?? value.provider ?? "", providerColor: providerColor(provider), avgThroughput: number(value.avg_throughput), avgLatencyMs: number(value.avg_latency_ms), avgGenerationMs: number(value.avg_generation_ms), requests: Number(value.requests ?? 0), uptimePct: number(value.uptime_pct), uptimeBuckets: (value.uptime_buckets ?? []).map((bucket: Record<string, unknown>) => {
@@ -2021,13 +2021,10 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 			const leastReliable = providers.reduce<{ successPct: number; requests: number; successfulRequests: number } | null>((worst, candidate) => !worst || candidate.successPct < worst.successPct ? candidate : worst, null);
 			const eligibleRequests = providers.reduce((sum, provider) => sum + provider.requests, 0);
 			const eligibleSuccesses = providers.reduce((sum, provider) => sum + provider.successfulRequests, 0);
-			// Reachability, capacity and call errors across every provider's attempts this hour.
+			// Reachability, capacity and call errors across every provider's attempts this
+			// hour, as rates only. An hour with no eligible attempts has null rates.
 			const attempts = Number.isFinite(timestamp) ? attemptHealthHours.get(hour.toISOString()) : undefined;
 			const attemptFields = attemptHealthRows.length > 0 ? {
-				eligibleAttempts: attempts?.eligibleAttempts ?? 0,
-				reachabilityFailures: attempts?.reachabilityFailures ?? 0,
-				capacityFailures: attempts?.capacityFailures ?? 0,
-				callErrorFailures: attempts?.callErrorFailures ?? 0,
 				reachabilityPct: attempts?.reachabilityPct ?? null,
 				capacityPct: attempts?.capacityPct ?? null,
 				callErrorPct: attempts?.callErrorPct ?? null,
@@ -2038,11 +2035,9 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 			// counts them as failures, so once health is loaded an hour with only those
 			// has no requests to rate rather than falling back to that rate.
 			if (providerHealthLoaded || eligibleRequests > 0) {
-				return { ...point, overallSuccessPct: eligibleRequests > 0 ? eligibleSuccesses / eligibleRequests * 100 : null, requests: eligibleRequests, failedRequests: Math.max(0, eligibleRequests - eligibleSuccesses) };
+				return { ...point, overallSuccessPct: eligibleRequests > 0 ? eligibleSuccesses / eligibleRequests * 100 : null, requests: eligibleRequests };
 			}
-			const requests = Number(value.requests ?? 0);
-			const successPct = number(value.success_pct);
-			return { ...point, overallSuccessPct: successPct, requests, failedRequests: successPct == null ? 0 : Math.max(0, Math.round(requests * (100 - successPct) / 100)) };
+			return { ...point, overallSuccessPct: number(value.success_pct), requests: Number(value.requests ?? 0) };
 		});
 		const timeOfDay = (performance.time_of_day_5d ?? []).map((value: Record<string, unknown>) => ({ hour: Number(value.hour ?? 0), avgThroughput: number(value.avg_throughput), avgLatencyMs: number(value.avg_latency_ms), avgGenerationMs: number(value.avg_generation_ms), sampleCount: Number(value.sample_count ?? 0) }));
 		const providerPercentileDaily7d = (Array.isArray(percentileSeries.data) ? percentileSeries.data : []).map((value: Record<string, unknown>) => {

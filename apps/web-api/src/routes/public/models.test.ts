@@ -197,26 +197,52 @@ describe("provider health RPC fallback", () => {
 		expect(response.status).toBe(200);
 		expect(payload.rows).toEqual([expect.objectContaining({ provider_id: "served", uptime_pct: 100 })]);
 		expect(payload.attempt_health.map((row: any) => row.provider_id)).toEqual(["served", "failover-only", "stealth"]);
+		// Rates only: the attempt and failure counts behind them reveal traffic volume.
 		expect(payload.attempt_health[1]).toEqual({
 			provider_id: "failover-only",
 			service_tier: "standard",
 			provider_name: "Failover Only",
-			attempts: 4,
-			eligible_attempts: 3,
-			success_attempts: 0,
-			reachability_failures: 2,
-			capacity_failures: 1,
-			call_error_failures: 0,
 			// 1 of 3 reached the provider, which turned it away: nothing was accepted,
 			// so there is no completed rate.
 			reachability_pct: 33.33,
 			capacity_pct: 0,
 			call_error_pct: null,
 			uptime_pct: 0,
-			buckets: [expect.objectContaining({ start: "2026-08-27T09:00:00.000Z", end: "2026-08-27T10:00:00.000Z", reachability_failures: 2, reachability_pct: 33.33 })],
+			buckets: [{ start: "2026-08-27T09:00:00.000Z", end: "2026-08-27T10:00:00.000Z", reachability_pct: 33.33, capacity_pct: 0, call_error_pct: null, uptime_pct: 0 }],
+			days: [{ start: "2026-08-27T00:00:00.000Z", end: "2026-08-28T00:00:00.000Z", reachability_pct: 33.33, capacity_pct: 0, call_error_pct: null, uptime_pct: 0 }],
 		});
 		expect(payload.attempt_health[2]).toMatchObject({ provider_id: "stealth", provider_name: "Stealth" });
 		expect(JSON.stringify(payload)).not.toMatch(/private[- ]provider|customer_excluded|phaseo_excluded|health_reason/i);
+		expect(JSON.stringify(payload.attempt_health)).not.toMatch(/"attempts"|eligible_attempts|success_attempts|_failures/);
+	});
+
+	it("rates each UTC day of attempt health from that day's attempts", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("get_v2_model_provider_tier_health_metrics")) {
+				return new Response(JSON.stringify([{ provider_id: "flaky", service_tier: "standard", health_requests: 5, uptime_pct: 100 }]));
+			}
+			if (url.includes("get_v2_model_provider_attempt_health")) {
+				const bucket = (start: string, eligible: number, success: number) => ({
+					start, attempts: eligible, eligible_attempts: eligible, success_attempts: success,
+					reachability_failures: eligible - success, capacity_failures: 0, call_error_failures: 0,
+				});
+				return new Response(JSON.stringify([{
+					provider_id: "flaky", service_tier: "standard", provider_name: "Flaky", attempts: 14, eligible_attempts: 14, success_attempts: 11,
+					reachability_failures: 3, capacity_failures: 0, call_error_failures: 0,
+					// Day one: 1 of 4 and 9 of 9 succeeded (10 of 13 = 76.92%, not the 62.5% hourly mean).
+					buckets: [bucket("2026-08-26T22:00:00Z", 4, 1), bucket("2026-08-26T23:00:00Z", 9, 9), bucket("2026-08-27T00:00:00Z", 1, 1)],
+				}]));
+			}
+			return new Response(JSON.stringify([]));
+		}));
+		const response = await app.request("https://phaseo.app/api/_web/models/test%2Fmodel/provider-health?provider_ids=flaky", {}, env);
+		const payload = await response.json() as any;
+		expect(response.status).toBe(200);
+		expect(payload.attempt_health[0].days).toEqual([
+			expect.objectContaining({ start: "2026-08-26T00:00:00.000Z", end: "2026-08-27T00:00:00.000Z", uptime_pct: 76.92, reachability_pct: 76.92 }),
+			expect.objectContaining({ start: "2026-08-27T00:00:00.000Z", uptime_pct: 100 }),
+		]);
 	});
 
 	it("still serves provider health rows when attempt health fails", async () => {
@@ -1190,8 +1216,9 @@ describe("public model routes", () => {
 		expect(payload.metrics.summary).toMatchObject({ totalRequests: 1, successfulRequests: 1, avgLatencyMs: 240 });
 		expect(payload.metrics.hourly).toEqual([expect.objectContaining({ bucket: "2026-08-27T09:00:00Z", requests: 1 })]);
 		expect(payload.metrics.successSeries).toEqual([
-			expect.objectContaining({ bucket: "2026-08-27T09:00:00Z", overallSuccessPct: 100, requests: 1, failedRequests: 0 }),
+			expect.objectContaining({ bucket: "2026-08-27T09:00:00Z", overallSuccessPct: 100, requests: 1 }),
 		]);
+		expect(payload.metrics.successSeries[0]).not.toHaveProperty("failedRequests");
 		expect(payload.metrics.providerPerformance).toEqual([expect.objectContaining({ provider: "test-provider", requests: 1 })]);
 		expect(payload.metrics.providerHourly7d).toEqual([
 			expect.objectContaining({ provider: "test-provider", requests: 1, cacheTelemetryRequests: 20 }),
@@ -1294,9 +1321,11 @@ describe("public model routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(payload.metrics.successSeries).toEqual([
-			expect.objectContaining({ bucket: "2026-08-27T09:00:00Z", overallSuccessPct: 75, requests: 4, failedRequests: 1 }),
-			expect.objectContaining({ bucket: "2026-08-27T10:00:00Z", overallSuccessPct: null, requests: 0, failedRequests: 0 }),
+			expect.objectContaining({ bucket: "2026-08-27T09:00:00Z", overallSuccessPct: 75, requests: 4 }),
+			expect.objectContaining({ bucket: "2026-08-27T10:00:00Z", overallSuccessPct: null, requests: 0 }),
 		]);
+		// The rate is published; the failure count behind it is not.
+		expect(JSON.stringify(payload.metrics.successSeries)).not.toMatch(/failedRequests/);
 	});
 
 	it("adds per-attempt reachability, capacity and call errors to the uptime series and providers", async () => {
@@ -1350,23 +1379,22 @@ describe("public model routes", () => {
 		expect(payload.metrics.successSeries[0]).toMatchObject({
 			bucket: "2026-08-27T09:00:00Z",
 			overallSuccessPct: 100,
-			eligibleAttempts: 20,
-			reachabilityFailures: 2,
-			capacityFailures: 1,
-			callErrorFailures: 1,
 			reachabilityPct: 90,
 			capacityPct: 94.44,
 			callErrorPct: 94.12,
 		});
 		// An hour with no attempts has no rates; the chart shows it as 100%.
-		expect(payload.metrics.successSeries[1]).toMatchObject({ eligibleAttempts: 0, reachabilityPct: null, capacityPct: null, callErrorPct: null });
+		expect(payload.metrics.successSeries[1]).toMatchObject({ reachabilityPct: null, capacityPct: null, callErrorPct: null });
 		expect(payload.metrics.providerPerformance).toEqual([
 			expect.objectContaining({
 				provider: "steady",
-				attemptHealth: expect.objectContaining({ eligibleAttempts: 10, reachabilityPct: 100, capacityPct: 100, callErrorPct: 100 }),
+				attemptHealth: { reachabilityPct: 100, capacityPct: 100, callErrorPct: 100, uptimePct: 100 },
 			}),
 		]);
 		expect(JSON.stringify(payload)).not.toMatch(/customer_excluded|phaseo_excluded|customerExcluded|phaseoExcluded/);
+		// Rates only: attempt and failure counts reveal traffic volume.
+		expect(JSON.stringify(payload)).not.toMatch(/eligibleAttempts|successAttempts|reachabilityFailures|capacityFailures|callErrorFailures|"attempts"/);
+		expect(JSON.stringify(payload.metrics.successSeries)).not.toMatch(/failedRequests/);
 	});
 
 	it("keeps request-level uptime when the attempt health RPC is not deployed", async () => {

@@ -2428,7 +2428,7 @@
 			"metricOverTheLastHoursHours": "पिछले {hours} घंटों में {metric}",
 			"localTime": "स्थानीय समय",
 			"perQuantityUnit": "प्रति {quantity} {unit}",
-			"rateLimitedCountExcluded": "दर सीमित: {count} शामिल नहीं"
+			"rateLimitedShareExcluded": "दर सीमित: {percent} अनुरोध शामिल नहीं"
 		},
 		"localisationGaps": {
 			"lastUpdated": "अंतिम अपडेट: {time}",

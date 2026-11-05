@@ -1,6 +1,7 @@
 import {
 	buildUptimeChartData,
 	calculateAverageUptime,
+	requestFailureSharePct,
 } from "./ModelSuccessChart";
 
 describe("calculateAverageUptime", () => {
@@ -28,7 +29,6 @@ describe("buildUptimeChartData", () => {
 			worstRequests: 0,
 			bucket: "2026-08-29T11:00:00.000Z",
 			requests: 0,
-			failedRequests: 0,
 		});
 		expect(points[23]).toEqual({
 			time: "10:00",
@@ -37,7 +37,6 @@ describe("buildUptimeChartData", () => {
 			worstRequests: 0,
 			bucket: "2026-08-30T10:00:00.000Z",
 			requests: 0,
-			failedRequests: 0,
 		});
 		expect(points.every((point) => point.overall === 100)).toBe(true);
 	});
@@ -81,7 +80,7 @@ describe("buildUptimeChartData", () => {
 		});
 	});
 
-	test("shows a low-volume hour with a failure as a dip, with its failure count", () => {
+	test("shows a low-volume hour with a failure as a dip, without any request counts", () => {
 		const points = buildUptimeChartData(
 			[
 				{
@@ -89,13 +88,22 @@ describe("buildUptimeChartData", () => {
 					overallSuccessPct: 50,
 					worstProviderSuccessPct: 50,
 					requests: 2,
-					failedRequests: 1,
 				},
 			],
 			new Date("2026-08-30T10:42:00.000Z"),
 		);
 
-		expect(points.at(-2)).toMatchObject({ overall: 50, requests: 2, failedRequests: 1 });
-		expect(points.at(-1)).toMatchObject({ overall: 100, requests: 0, failedRequests: 0 });
+		expect(points.at(-2)).toMatchObject({ overall: 50 });
+		expect(points.at(-1)).toMatchObject({ overall: 100 });
+		expect(points.at(-2)).not.toHaveProperty("failedRequests");
+	});
+});
+
+describe("requestFailureSharePct", () => {
+	test("gives the share of an hour that failed, from its uptime alone", () => {
+		expect(requestFailureSharePct(50)).toBe(50);
+		expect(requestFailureSharePct(99.4)).toBeCloseTo(0.6, 10);
+		expect(requestFailureSharePct(100)).toBeNull();
+		expect(requestFailureSharePct(null)).toBeNull();
 	});
 });

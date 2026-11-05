@@ -2428,7 +2428,7 @@
 			"metricOverTheLastHoursHours": "{metric} over the last {hours} hours",
 			"localTime": "Local time",
 			"perQuantityUnit": "Per {quantity} {unit}",
-			"rateLimitedCountExcluded": "Rate limited: {count} excluded"
+			"rateLimitedShareExcluded": "Rate limited: {percent} of requests excluded"
 		},
 		"localisationGaps": {
 			"lastUpdated": "Last updated: {time}",

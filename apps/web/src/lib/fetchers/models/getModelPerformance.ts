@@ -1,10 +1,15 @@
 export type ModelPerformancePoint = { bucket: string; avgThroughput: number | null; avgOutputSpeed?: number | null; avgLatencyMs: number | null; avgEndToEndMs?: number | null; avgGenerationMs: number | null; avgPhaseoOverheadMs?: number | null; avgTpotMs?: number | null; avgItlMs?: number | null; cachedInputPct?: number | null; cacheTelemetryRequests?: number; requests: number; successPct: number | null };
-/** Per-attempt provider health: rate = 1 - failures / eligible attempts (customer- and Phaseo-caused attempts excluded). */
-export type ModelAttemptHealthCounts = { eligibleAttempts: number; reachabilityFailures: number; capacityFailures: number; callErrorFailures: number; reachabilityPct: number | null; capacityPct: number | null; callErrorPct: number | null };
-export type ModelSuccessPoint = { bucket: string; overallSuccessPct: number | null; worstProviderSuccessPct: number | null; worstProviderRequests?: number; providerCount?: number; requests: number; failedRequests?: number } & Partial<ModelAttemptHealthCounts>;
+/**
+ * Per-attempt provider health as a funnel of rates: reachable of eligible attempts,
+ * accepted of those reached, completed of those accepted (customer- and
+ * Phaseo-caused attempts excluded). Each is null when there was nothing to rate.
+ * Only rates are published; the counts behind them reveal traffic volume.
+ */
+export type ModelAttemptHealthRates = { reachabilityPct: number | null; capacityPct: number | null; callErrorPct: number | null };
+export type ModelSuccessPoint = { bucket: string; overallSuccessPct: number | null; worstProviderSuccessPct: number | null; worstProviderRequests?: number; providerCount?: number; requests: number } & Partial<ModelAttemptHealthRates>;
 export type ModelTimeOfDayPoint = { hour: number; avgThroughput: number | null; avgLatencyMs: number | null; avgGenerationMs: number | null; sampleCount: number };
 export type ModelProviderUptimeBucket = { start: string; end: string; successPct: number | null; errorPct?: number | null; requests?: number; successfulRequests?: number; failedRequests?: number };
-export type ModelProviderPerformance = { provider: string; providerName: string; providerColor?: string | null; avgThroughput: number | null; avgLatencyMs: number | null; avgGenerationMs: number | null; requests: number; uptimePct: number | null; uptimeBuckets: ModelProviderUptimeBucket[]; attemptHealth?: (ModelAttemptHealthCounts & { attempts: number; successAttempts: number; uptimePct: number | null }) | null };
+export type ModelProviderPerformance = { provider: string; providerName: string; providerColor?: string | null; avgThroughput: number | null; avgLatencyMs: number | null; avgGenerationMs: number | null; requests: number; uptimePct: number | null; uptimeBuckets: ModelProviderUptimeBucket[]; attemptHealth?: (ModelAttemptHealthRates & { uptimePct: number | null }) | null };
 export type ModelProviderMetricPoint = { provider: string; providerName: string; providerColor: string | null; avgThroughput: number | null; avgOutputSpeed?: number | null; avgLatencyMs: number | null; avgEndToEndMs?: number | null; avgGenerationMs: number | null; avgPhaseoOverheadMs?: number | null; avgTpotMs?: number | null; avgItlMs?: number | null; cachedInputPct?: number | null; cachedInputTokens?: number | null; effectiveInputTokens?: number | null; cacheTelemetryRequests?: number; requests: number };
 export type ModelProviderDailyPoint = ModelProviderMetricPoint & { day: string };
 export type ModelProviderHourlyPoint = ModelProviderMetricPoint & { bucket: string };

@@ -1,8 +1,9 @@
 // Per-attempt provider health for model pages: reachability, capacity and call
 // errors. Rows come from get_v2_model_provider_attempt_health, one per provider
 // and service tier with hourly buckets. Customer- and Phaseo-caused attempts are
-// excluded from the denominators in SQL; their counts are internal and are never
-// published here.
+// excluded from the denominators in SQL. Every count (attempts, failures) stays
+// internal: the counts here are only used to combine and rate buckets, and only
+// the rates are published, because counts reveal a model's traffic volume.
 
 export type AttemptHealthCounts = {
 	attempts: number;
@@ -167,15 +168,40 @@ export function attemptHealthByHour(rows: ProviderAttemptHealth[]): Map<string, 
 	return new Map([...byHour.entries()].map(([hour, counts]) => [hour, { ...counts, ...attemptHealthRates(counts) }]));
 }
 
-/** The /provider-health wire shape (snake_case, like the rows beside it). */
+/**
+ * Only the rates, never the counts behind them: attempt and failure counts
+ * reveal a model's traffic volume, so they stay internal.
+ */
+export function attemptHealthRatesOnly(value: AttemptHealthRates): AttemptHealthRates {
+	return {
+		reachabilityPct: value.reachabilityPct,
+		capacityPct: value.capacityPct,
+		callErrorPct: value.callErrorPct,
+		uptimePct: value.uptimePct,
+	};
+}
+
+/** Hourly buckets summed per UTC day, so pages can show daily uptime without the counts. */
+export function attemptHealthByDay(buckets: AttemptHealthBucket[]): Array<AttemptHealthRates & { start: string; end: string }> {
+	const byDay = new Map<string, AttemptHealthCounts>();
+	for (const bucket of buckets) {
+		const day = `${bucket.start.slice(0, 10)}T00:00:00.000Z`;
+		const totals = byDay.get(day) ?? emptyCounts();
+		addCounts(totals, bucket);
+		byDay.set(day, totals);
+	}
+	return [...byDay.entries()]
+		.sort(([a], [b]) => a.localeCompare(b))
+		.map(([start, counts]) => ({
+			start,
+			end: new Date(Date.parse(start) + 86_400_000).toISOString(),
+			...attemptHealthRates(counts),
+		}));
+}
+
+/** The /provider-health wire shape (snake_case, like the rows beside it). Rates only. */
 export function attemptHealthToWire(row: ProviderAttemptHealth & { providerId: string; providerName: string }) {
-	const wireCounts = (value: AttemptHealthCounts & AttemptHealthRates) => ({
-		attempts: value.attempts,
-		eligible_attempts: value.eligibleAttempts,
-		success_attempts: value.successAttempts,
-		reachability_failures: value.reachabilityFailures,
-		capacity_failures: value.capacityFailures,
-		call_error_failures: value.callErrorFailures,
+	const wireRates = (value: AttemptHealthRates) => ({
 		reachability_pct: value.reachabilityPct,
 		capacity_pct: value.capacityPct,
 		call_error_pct: value.callErrorPct,
@@ -185,8 +211,9 @@ export function attemptHealthToWire(row: ProviderAttemptHealth & { providerId: s
 		provider_id: row.providerId,
 		service_tier: row.serviceTier,
 		provider_name: row.providerName,
-		...wireCounts(row),
-		buckets: row.buckets.map((bucket) => ({ start: bucket.start, end: bucket.end, ...wireCounts(bucket) })),
+		...wireRates(row),
+		buckets: row.buckets.map((bucket) => ({ start: bucket.start, end: bucket.end, ...wireRates(bucket) })),
+		days: attemptHealthByDay(row.buckets).map((day) => ({ start: day.start, end: day.end, ...wireRates(day) })),
 	};
 }
 

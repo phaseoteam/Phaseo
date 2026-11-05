@@ -16,6 +16,7 @@ import {
 import type { ModelSuccessPoint } from "@/lib/fetchers/models/getModelPerformance";
 import { useLocale, useTranslations } from "next-intl";
 import ModelProviderHealthChart, { hasProviderAttemptHealth } from "./ModelProviderHealthChart";
+import { formatFailureShare } from "./attemptFunnel";
 
 function formatBucketLabel(bucket: string, locale: string) {
 	const date = new Date(bucket);
@@ -57,6 +58,13 @@ function formatUptime(value: number | null | undefined) {
 	return value != null ? `${value.toFixed(1)}%` : "—";
 }
 
+/** The share of an hour's requests that failed, from its uptime; null when none failed. */
+export function requestFailureSharePct(uptimePct: number | null | undefined): number | null {
+	if (uptimePct == null || !Number.isFinite(uptimePct)) return null;
+	const failedPct = Math.min(100, Math.max(0, 100 - uptimePct));
+	return failedPct > 1e-9 ? failedPct : null;
+}
+
 export function buildUptimeChartData(
 	successSeries: ModelSuccessPoint[],
 	now = new Date(),
@@ -82,7 +90,6 @@ export function buildUptimeChartData(
 				: null,
 			bucket,
 			requests,
-			failedRequests: point?.failedRequests ?? 0,
 			worstRequests: point?.worstProviderRequests ?? 0,
 		};
 	});
@@ -133,6 +140,13 @@ function RequestUptimeChart({
 	const withoutRoutingUptime = calculateAverageUptime(
 		measuredWorstPoints.map((point) => point.worst),
 	);
+	// A percentage only: the request counts behind it reveal the model's traffic volume.
+	const failedShareText = (uptimePct: number | null) => {
+		const failedPct = requestFailureSharePct(uptimePct);
+		return failedPct == null
+			? t("noFailuresThisHour")
+			: t("failedShareRequests", { percent: formatFailureShare(failedPct, locale) });
+	};
 
 	return (
 		<div className="grid gap-4 rounded-lg border border-border/70 bg-background p-4 sm:grid-cols-[10rem_minmax(0,1fr)] sm:items-center">
@@ -193,12 +207,11 @@ function RequestUptimeChart({
 												</span>{" "}
 												{formatUptime(payload[0].payload.overall)}
 											</p>
-											<p className="text-xs text-muted-foreground tabular-nums">
-												{t("tooltipFailedRequests", {
-													count: payload[0].payload.requests,
-													failed: payload[0].payload.failedRequests,
-												})}
-											</p>
+											{payload[0].payload.overall != null ? (
+												<p className="text-xs text-muted-foreground tabular-nums">
+													{failedShareText(payload[0].payload.overall)}
+												</p>
+											) : null}
 											{showLeastStableProvider ? (
 												<p className="text-sm">
 													<span className="font-semibold">
