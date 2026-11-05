@@ -25,6 +25,8 @@ import { triageTitle, withoutPlaybookLink, type TriagePreparation } from "../../
 import { Switch } from "../components/ui/switch";
 import { Button } from "../components/ui/button";
 import { MAX_COMPARE, ModelPicker, harnessNames, knownModel, modelLabel, sameSelection } from "./ModelPicker";
+import { PromptLengthNotice } from "./PromptLengthNotice";
+import { promptLengthProblem } from "../../shared/promptLength";
 import { SignInCard } from "./SignInCard";
 import { startChat } from "./startChat";
 import { AutopilotControl, type AutopilotSetting } from "./Autopilot";
@@ -167,7 +169,9 @@ export function NewChat() {
 	}, [preferences]);
 
 	const needsSignIn = !phaseoAccount && ![...connected].some(harness => harness !== "phaseo");
-	const canSend = !busy && (!!message.text || attached.length > 0) && selections.length > 0 && !turnedOff && (!code || !!project) && (!fanOut || (!!worktree.createInWorktree && !triaging)) && (!triaging || (!!preparation && project?.id === preparation.projectId));
+	const lengthModel = selections[0] ? knownModel(selections[0].model) : undefined;
+	const lengthProblem = promptLengthProblem(message.text, lengthModel?.facts?.contextTokens, lengthModel?.name);
+	const canSend = !busy && !lengthProblem?.blocking && (!!message.text || attached.length > 0) && selections.length > 0 && !turnedOff && (!code || !!project) && (!fanOut || (!!worktree.createInWorktree && !triaging)) && (!triaging || (!!preparation && project?.id === preparation.projectId));
 
 	/** `background` (Mod+Enter on this page) starts the chat but stays here for the next one, as a toast says. */
 	async function submit(background = false) {
@@ -243,6 +247,7 @@ export function NewChat() {
 				<h1 className="text-[28px] font-bold tracking-tight">{triaging ? "What went wrong?" : code ? "What should we build?" : greeting()}</h1>
 				{triaging ? <TriageStatus onRetry={() => { if (api) { endTriage(); startTriage(api); } }} /> : code && <div className="mt-4 flex justify-center">{projectMenu}</div>}
 			</div>
+			{lengthProblem && <PromptLengthNotice problem={lengthProblem} />}
 			<Composer size="large" editor={editor} onSubmit={() => void submit()} disabled={busy} canSend={canSend} ultrathink={ultrathinkReady && typesUltrathink(draft)}
 				menu={menu}
 				chips={compare || fanOut ? <>

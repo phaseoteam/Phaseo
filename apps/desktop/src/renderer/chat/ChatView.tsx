@@ -27,7 +27,7 @@ import { ComposerTaskContext, useComposerEditor } from "./composerEditor";
 import { composeMessage, mentionPlainText } from "../lib/mentions";
 import { UsageMeters } from "../settings/UsageMeters";
 import { Conversation } from "./Conversation";
-import { ModelPicker, harnessNames } from "./ModelPicker";
+import { ModelPicker, harnessNames, knownModel, modelName } from "./ModelPicker";
 import { silenceLabel, silentFor } from "../../shared/inbox";
 import { useNow } from "../lib/useNow";
 import { PermissionMenu, PlanIndicator } from "./NewChat";
@@ -35,6 +35,8 @@ import { openModelPickerEvent, renameChatEvent, useModelSettingActions, type Com
 import { ChildRequests, Requests } from "./Requests";
 import { ChatBranchPicker } from "./ChatBranchPicker";
 import { ChatLineage } from "./ChatLineage";
+import { PromptLengthNotice } from "./PromptLengthNotice";
+import { promptLengthProblem } from "../../shared/promptLength";
 import { AgentThreads } from "./AgentThreads";
 import { ChatSpend } from "./ChatSpend";
 import { AutopilotControl } from "./Autopilot";
@@ -213,7 +215,8 @@ function ChatComposer({ task }: { task: Task }) {
 		return () => window.removeEventListener(restoreDraftEvent, restore);
 	});
 	const message = composeMessage(draft.text);
-	const canSend = !busy && !uploading && !task.archived && (!!answerer || !!message.text || message.attachments.length > 0);
+	const lengthProblem = promptLengthProblem(message.text, knownModel(task.model)?.facts?.contextTokens, modelName(task));
+	const canSend = !busy && !uploading && !task.archived && !lengthProblem?.blocking && (!!answerer || !!message.text || message.attachments.length > 0);
 	usePromptHistory(task, draft);
 	const stash = usePromptStash(task.id, draft);
 	// A queued message being edited in the composer, and the draft it set aside ("Editing in the composer").
@@ -332,6 +335,7 @@ function ChatComposer({ task }: { task: Task }) {
 			<div className="flex items-center gap-2 text-[13px] font-semibold"><Gauge className="size-4 text-muted-foreground" />Usage limits<button type="button" aria-label="Hide usage limits" onClick={() => setLimits(undefined)} className="ml-auto grid size-6 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"><X className="size-3.5" /></button></div>
 			{limits === "loading" ? <p className="text-xs text-muted-foreground">Checking…</p> : "error" in limits ? <p className="text-xs text-destructive">{limits.error}</p> : <UsageMeters status={limits} />}
 		</div>}
+		{lengthProblem && <PromptLengthNotice problem={lengthProblem} />}
 		<ComposerTaskContext value={task.id}><Composer editor={editor} onSubmit={submit} canSend={canSend || Boolean(editing)} disabled={task.archived} ultrathink={ultrathinkReady && typesUltrathink(draft.text)}
 			chips={editing && <span className="flex w-full items-center gap-2 text-xs text-muted-foreground"><Pencil className="size-3.5" />Editing a queued message<button type="button" onClick={() => stopEditing()} className="ml-auto rounded-md px-1.5 py-0.5 font-medium text-foreground hover:bg-muted">Cancel</button></span>}
 			running={running} onStop={() => void command({ type: "cancel", id: task.id })}
