@@ -30,19 +30,23 @@ export const ELEVENLABS_TTS_VOICES = ELEVENLABS_VOICE_DEFINITIONS.map((entry) =>
 export const ELEVENLABS_TTS_VOICE_IDS = ELEVENLABS_TTS_VOICES.map((voice) => voice.voice_id);
 export const ELEVENLABS_TTS_VOICE_ALIASES = ELEVENLABS_TTS_VOICES.flatMap((voice) => voice.aliases);
 
+/** ElevenLabs voice IDs are 20 letters and digits. */
+export const ELEVENLABS_VOICE_ID_PATTERN = /^[A-Za-z0-9]{20}$/;
+
 export function resolveElevenLabsVoiceId(voice: string): string {
 	return resolveVoiceAlias(voice, ELEVENLABS_TTS_VOICE_ALIAS_MAP);
 }
 
 export function validateElevenLabsVoiceForModel(
-	model: string,
+	_model: string,
 	voice: string,
 ): { ok: true; resolved: string; supported: string[] } | { ok: false; resolved: string; supported: string[] } {
 	const resolved = resolveElevenLabsVoiceId(voice);
 	const supported = [...ELEVENLABS_TTS_VOICE_IDS] as string[];
-	// Eleven v4 supports the full voice library, including custom clones.
-	const isV4 = /(?:^|\/)eleven[-_]v4(?:[-_]turbo)?$/.test(model);
-	if (supported.includes(resolved) || (isV4 && /^[A-Za-z0-9]{20}$/.test(resolved))) {
+	// Every ElevenLabs TTS model takes any voice in the account's library (premade,
+	// shared library, cloned and designed voices) by its 20-character ID. The
+	// aliases above are conveniences, not a limit.
+	if (supported.includes(resolved) || ELEVENLABS_VOICE_ID_PATTERN.test(resolved)) {
 		return { ok: true, resolved, supported };
 	}
 	return { ok: false, resolved, supported };
