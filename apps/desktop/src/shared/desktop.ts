@@ -76,6 +76,9 @@ export type PhaseoDesktopApi = {
 	onBrowserKey: (listener: (key: BrowserKey) => void) => () => void;
 	/** The mouse's back and forward buttons, or a macOS swipe, outside a browser page. */
 	onNavigate: (listener: (direction: "back" | "forward") => void) => () => void;
+	/** A phaseo://chat/ link opened or focused the app; takeChatLink returns its chat id once. */
+	onChatLink: (listener: () => void) => () => void;
+	takeChatLink: () => Promise<string | undefined>;
 	getRuntimeInfo: () => Promise<DesktopRuntimeInfo>;
 	getWindowState: () => Promise<DesktopWindowState>;
 	performWindowAction: (action: DesktopWindowAction) => Promise<void>;

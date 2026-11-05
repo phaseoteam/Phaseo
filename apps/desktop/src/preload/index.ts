@@ -25,6 +25,8 @@ const desktopApi: PhaseoDesktopApi = {
 	onBrowserAgentRecord: listener => { const subscription = (_event: Electron.IpcRendererEvent, request: Parameters<typeof listener>[0]) => listener(request); ipcRenderer.on("desktop:browser-agent-record", subscription); return () => ipcRenderer.removeListener("desktop:browser-agent-record", subscription); },
 	browserAgentRecorded: (requestId, recording, error) => ipcRenderer.invoke("desktop:browser-agent-recorded", requestId, recording ?? null, error),
 	onBrowserAgentTab: listener => { const subscription = (_event: Electron.IpcRendererEvent, tab: Parameters<typeof listener>[0]) => listener(tab); ipcRenderer.on("desktop:browser-agent-tab", subscription); return () => ipcRenderer.removeListener("desktop:browser-agent-tab", subscription); },
+	onChatLink: listener => { const subscription = () => listener(); ipcRenderer.on("desktop:chat-link", subscription); return () => ipcRenderer.removeListener("desktop:chat-link", subscription); },
+	takeChatLink: () => ipcRenderer.invoke("desktop:take-chat-link"),
 	onNavigate: listener => { const subscription = (_event: Electron.IpcRendererEvent, direction: "back" | "forward") => listener(direction); ipcRenderer.on("desktop:navigate", subscription); return () => ipcRenderer.removeListener("desktop:navigate", subscription); },
 	onBrowserKey: listener => { const subscription = (_event: Electron.IpcRendererEvent, key: Parameters<typeof listener>[0]) => listener(key); ipcRenderer.on("desktop:browser-key", subscription); return () => ipcRenderer.removeListener("desktop:browser-key", subscription); },
 	workspace: {

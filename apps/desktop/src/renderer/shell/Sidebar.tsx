@@ -4,7 +4,7 @@ import { prefetchTask } from "../lib/useSelectedTask";
 import { lazy, Suspense, useMemo, useState, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { JumpHint, publishSidebarOrder, useJumpHints } from "../lib/sidebarOrder";
-import { Archive, ArchiveRestore, CalendarClock, Copy, Mail, Trash2, ChartLine, Inbox, Columns3, GitPullRequestArrow, Ellipsis, ExternalLink, LogIn, RefreshCw, Pencil, Pin, PinOff, Plus, Settings, Gauge, UserRound } from "lucide-react";
+import { Archive, ArchiveRestore, CalendarClock, Copy, Link2, Mail, Trash2, ChartLine, Inbox, Columns3, GitPullRequestArrow, Ellipsis, ExternalLink, LogIn, RefreshCw, Pencil, Pin, PinOff, Plus, Settings, Gauge, UserRound } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { chatDragType } from "../../shared/mentions";
 import type { TaskOverview } from "../../shared/workspaceOverview";
@@ -12,6 +12,7 @@ import { inboxLists } from "../../shared/inbox";
 import { usablePhaseoAccounts, useWorkspace, type CompareGroup } from "../app/workspace";
 import { cn } from "../lib/utils";
 import { shortcut } from "../lib/keybindings";
+import { copyChatLink } from "../lib/appCommands";
 import { usePersistedState } from "../lib/persistedState";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { Tip } from "../components/ui/tooltip";
@@ -72,6 +73,7 @@ function RowMenu({ task, onRename }: { task: TaskOverview; onRename: () => void 
 			<DropdownMenuItem onClick={() => void pin()}>{task.pinned ? <PinOff /> : <Pin />}{task.pinned ? "Unpin" : "Pin"}</DropdownMenuItem>
 			<TagMenu task={task} />
 			<DropdownMenuItem disabled={!task.lastCompletedAt || isUnread(task)} onClick={() => { leave(); void command({ type: "mark-unread", id: task.id }); }}><Mail />Mark unread</DropdownMenuItem>
+			<DropdownMenuItem onClick={() => copyChatLink(task.id)}><Link2 />Copy chat link</DropdownMenuItem>
 			<DropdownMenuItem onClick={() => void navigator.clipboard.writeText(task.id)}><Copy />Copy chat ID</DropdownMenuItem>
 			<DropdownMenuSeparator />
 			{task.archived ? <DropdownMenuItem onClick={() => void command({ type: "update-task", id: task.id, archived: false })}><ArchiveRestore />Restore</DropdownMenuItem>

@@ -38,6 +38,7 @@ import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import type { DesktopAppAction, DesktopUpdateState, DesktopWindowAction } from "../shared/desktop";
 import { isAllowedExternalUrl } from "../shared/desktop";
+import { chatLinkScheme, parseChatLink } from "../shared/chatLinks";
 import { validateCommand } from "../shared/workspace";
 import { validateWorktreeChatRequest } from "../shared/worktreeChat";
 import { validatePublishRepository } from "../shared/gitWorkflow";
@@ -1316,9 +1317,31 @@ ipcMain.handle("desktop:open-external", async (event, url: unknown) => {
 app.setAppUserModelId(developmentUrl ? "app.phaseo.desktop.dev" : "app.phaseo.desktop");
 const primaryInstance = app.requestSingleInstanceLock();
 if (!primaryInstance) app.quit();
-app.on("second-instance", () => {
+// Only an installed build claims the scheme, so a development run never takes links away from it.
+if (primaryInstance && app.isPackaged) app.setAsDefaultProtocolClient(chatLinkScheme);
+/** The chat a link asked for, held until the window takes it: a link can arrive before the window has loaded. */
+let pendingChatLink: string | undefined;
+function receiveChatLink(values: string[]) {
+	const id = values.map(parseChatLink).find(Boolean);
+	if (!id) return;
+	pendingChatLink = id;
+	for (const window of BrowserWindow.getAllWindows()) if (!window.isDestroyed()) window.webContents.send("desktop:chat-link");
+}
+receiveChatLink(process.argv);
+app.on("second-instance", (_event, argv) => {
 	const window = BrowserWindow.getAllWindows()[0];
 	if (window?.isMinimized()) window.restore(); window?.show(); window?.focus();
+	receiveChatLink(argv);
+});
+app.on("open-url", (event, url) => {
+	event.preventDefault();
+	receiveChatLink([url]);
+	const window = BrowserWindow.getAllWindows()[0];
+	if (window?.isMinimized()) window.restore(); window?.show(); window?.focus();
+});
+ipcMain.handle("desktop:take-chat-link", event => {
+	if (!senderWindow(event)) return undefined;
+	const id = pendingChatLink; pendingChatLink = undefined; return id;
 });
 
 autoUpdater.on("update-available", () => broadcastUpdateState({ status: "available" }));

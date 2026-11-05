@@ -7,6 +7,8 @@ import type { CodeToken } from "./codeHighlight";
 import { Check, Code2, Copy, Expand, ImageOff, Info, Lightbulb, MessageSquareWarning, OctagonAlert, Table2, TriangleAlert, WrapText, Workflow } from "lucide-react";
 import { useTextCopy } from "./useTextCopy";
 import { parseFileReference } from "../../shared/editors";
+import { parseChatLink } from "../../shared/chatLinks";
+import { runAppCommand } from "../lib/appCommands";
 import { showToast } from "./ui/toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 
@@ -42,6 +44,9 @@ function MessageLink({ href, children }: { href?: string; children?: ReactNode }
 		const file = { kind: /[\\/]$/.test(reference.filename) ? "folder" as const : "file" as const, path: reference.filename, ...(reference.line ? { line: reference.line } : {}), ...(reference.column ? { column: reference.column } : {}) };
 		return <FilePathChip file={file} projectId={projectId}>{label && label !== href && label !== reference.filename ? children : undefined}</FilePathChip>;
 	}
+	const chatId = href ? parseChatLink(href) : undefined;
+	if (chatId) return <button type="button" data-chat-link={chatId} onClick={() => void runAppCommand("chat.open", { threadId: chatId }).catch(() => showToast("error", "That chat is not in Phaseo on this computer."))}
+		className="font-medium text-primary underline-offset-2 hover:underline">{label && label !== href ? children : "Open chat"}</button>;
 	if (href && /^https?:\/\//i.test(href)) return <LinkChip href={href}>{label && bareUrl(label) !== bareUrl(href) ? children : undefined}</LinkChip>;
 	return <span>{children}</span>;
 }
@@ -87,7 +92,7 @@ function MessageImage({ src, alt }: { src?: string; alt?: string }) {
 	</>;
 }
 
-function messageUrl(href: string, key: string) { return key === "src" ? href : parseFileReference(href) ? href : defaultUrlTransform(href); }
+function messageUrl(href: string, key: string) { return key === "src" ? href : parseFileReference(href) || parseChatLink(href) ? href : defaultUrlTransform(href); }
 
 /** One formula: its TeX until KaTeX loads, and when KaTeX cannot read it (often mid-stream). */
 function MessageMath({ tex, display }: { tex: string; display: boolean }) {

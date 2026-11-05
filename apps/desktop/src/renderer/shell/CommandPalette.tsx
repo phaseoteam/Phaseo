@@ -13,7 +13,7 @@ import { issueSearchTerms } from "../../shared/issueView";
 import { ModelStack, modelName } from "../chat/ModelPicker";
 import { useEffect, useState, type ComponentType } from "react";
 import { paletteEntries, type PaletteEntry } from "../../shared/appCommands";
-import { runAppCommand } from "../lib/appCommands";
+import { copyChatLink, runAppCommand } from "../lib/appCommands";
 import { MessageSearchResults, useMessageSearch } from "./MessageSearch";
 import { requestFind } from "../chat/ChatFind";
 import { CloneProjectDialog, openCloneProject, OpenProjectItems } from "./PaletteExtras";
@@ -97,6 +97,7 @@ export function CommandPalette() {
 				{currentProject && <CommandItem value={`Project settings ${currentProject.name}`} onSelect={() => run(() => openProjectSettings(currentProject.id))}><Settings />Project settings</CommandItem>}
 				{shelfProject && !shelfProject.archived && <CommandItem value={`${shelfProject.pinned ? "Unpin" : "Pin"} project ${shelfProject.name}`} onSelect={() => organizeProject(shelfProject.id, { pinned: !shelfProject.pinned })}>{shelfProject.pinned ? <PinOff /> : <Pin />}{shelfProject.pinned ? "Unpin project" : "Pin project"}</CommandItem>}
 				{shelfProject && !shelfProject.archived && <CommandItem value={`Archive project ${shelfProject.name} hide`} onSelect={() => organizeProject(shelfProject.id, { archived: true })}><Archive />Archive project</CommandItem>}
+				<CommandItem value="Copy chat link open url share" onSelect={() => run(() => copyChatLink(current.id))}><Link2 />Copy chat link</CommandItem>
 				<CommandItem value="Copy chat ID identifier reference" onSelect={() => run(() => copyId(current.id))}><Copy />Copy chat ID</CommandItem>
 				<CommandItem value="Archive chat" disabled={["running", "waiting"].includes(current.status)} onSelect={() => run(() => void threadActions.archive(current))}><Archive />Archive chat</CommandItem>
 			</CommandGroup>}

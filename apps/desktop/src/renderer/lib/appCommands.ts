@@ -6,6 +6,7 @@ import type { ThemePreference } from "../types";
 import { handNewChatDraft } from "./newChatDraft";
 import { listSettings, setSetting } from "./appSettings";
 import { getConfig, setConfig } from "./appConfig";
+import { chatLink } from "../../shared/chatLinks";
 
 type Handler = (args: AppCommandArgs) => unknown;
 let handlers: Partial<Record<AppCommandId, Handler>> = {};
@@ -77,4 +78,18 @@ export function useAppCommandHost() {
 		});
 		return () => { unsubscribe?.(); handlers = {}; };
 	}, []);
+	// After the handlers above are bound: a chat link that started the app is waiting already.
+	useEffect(() => {
+		const desktop = window.phaseoDesktop;
+		if (!desktop?.takeChatLink) return;
+		const take = () => void desktop.takeChatLink().then(id => id && runAppCommand("chat.open", { threadId: id }))
+			.catch(() => showToast("error", "That chat is not in Phaseo on this computer."));
+		take();
+		return desktop.onChatLink(take);
+	}, []);
+}
+
+/** Copies a link that opens the chat in Phaseo from a browser, another app or a message. */
+export function copyChatLink(id: string) {
+	void navigator.clipboard.writeText(chatLink(id)).then(() => showToast("success", "Chat link copied"), () => showToast("error", "Could not copy the chat link"));
 }
