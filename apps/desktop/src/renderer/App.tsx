@@ -29,7 +29,7 @@ import { QuitHoldNotice } from "./shell/QuitHoldNotice";
 import { QuitRecoveryOffer } from "./chat/UsageLimitNotice";
 import { ChatNotifications } from "./app/ChatNotifications";
 import { GuideRunNotices } from "./views/pullRequests/GuideRunNotices";
-import { useDiffColours } from "./lib/workspacePreferences";
+import { saveChatPreferences, useDiffColours, useWorkspacePreferences } from "./lib/workspacePreferences";
 
 /** The app-wide commands behind the keyboard shortcuts (Settings → Keyboard shortcuts). */
 function useShortcuts() {
@@ -53,6 +53,8 @@ function useShortcuts() {
 	useCommand("usage.open", () => openUsage());
 	useCommand("theme.select", () => openSettings("appearance"));
 	// System, then light, then dark, and round again.
+	const richText = useWorkspacePreferences().chat.richTextComposer;
+	useCommand("composer.richText", () => { void saveChatPreferences({ richTextComposer: !richText }); });
 	useCommand("appearance.cycle", () => {
 		const next = theme === "system" ? "light" : theme === "light" ? "dark" : "system";
 		setTheme(next); showToast("info", `Appearance: ${next === "system" ? "System" : next === "light" ? "Light" : "Dark"}`);

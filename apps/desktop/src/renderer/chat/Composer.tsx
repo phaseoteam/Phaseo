@@ -1,15 +1,16 @@
 import { useEffect, type ReactNode } from "react";
 import { EditorContent } from "@tiptap/react";
 import { ScrollArea } from "../components/ui/scroll-area";
-import { ArrowUp, Square } from "lucide-react";
+import { ArrowUp, Pilcrow, Square } from "lucide-react";
 import { cn } from "../lib/utils";
 import { chatDragType } from "../lib/mentions";
 import type { ComposerMenu } from "./ComposerMenu";
 import { draggedChat, type ComposerEditor } from "./composerEditor";
-import { dispatchComposerKey } from "../lib/keybindings";
+import { dispatchComposerKey, runCommand, shortcut } from "../lib/keybindings";
 import { isMac } from "../lib/shortcuts";
 import { keyLabel } from "../../shared/keybindings";
 import { isSendKey, useSendKey } from "./sendKey";
+import { useWorkspacePreferences } from "../lib/workspacePreferences";
 
 /** The message box: an editor whose files, chats and attachments sit inline as chips. */
 export function Composer({ editor, onSubmit, onStop, disabled, canSend, running, size = "default", chips, tools, model, footer, menu, className, ultrathink, shortcuts = true }: {
@@ -61,6 +62,7 @@ export function Composer({ editor, onSubmit, onStop, disabled, canSend, running,
 			<ScrollArea className="max-h-60" viewportClassName="max-h-60"><EditorContent editor={editor.editor} className={cn("composer-editor-host px-4 pt-3.5 pb-1 leading-relaxed", size === "large" ? "min-h-[72px] text-[15px]" : "min-h-11 text-[14px]", disabled && "opacity-60")} /></ScrollArea>
 			<div className="flex items-center gap-1 px-2 pt-1 pb-2">
 				{tools}
+				<RichTextToggle />
 				<div className="ml-auto flex min-w-0 items-center gap-1">
 					{model}
 					{running && onStop
@@ -78,6 +80,13 @@ export function ComposerChip({ children, onRemove, title }: { children: ReactNod
 		<span className="truncate">{children}</span>
 		{onRemove && <button type="button" aria-label="Remove" onClick={onRemove} className="grid size-4 place-items-center rounded text-muted-foreground hover:bg-background hover:text-foreground">×</button>}
 	</span>;
+}
+
+/** Rich text styles Markdown as it is typed; off, the message box shows the plain source. */
+function RichTextToggle() {
+	const richText = useWorkspacePreferences().chat.richTextComposer;
+	const key = shortcut("composer.richText");
+	return <ToolButton label={`${richText ? "Show Markdown source" : "Show rich text"}${key ? ` (${key})` : ""}`} active={!richText} onClick={() => runCommand("composer.richText")}><Pilcrow /></ToolButton>;
 }
 
 export function ToolButton({ label, onClick, disabled, active, children }: { label: string; onClick?: () => void; disabled?: boolean; active?: boolean; children: ReactNode }) {
