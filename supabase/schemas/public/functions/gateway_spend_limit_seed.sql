@@ -21,6 +21,7 @@ declare
   v_keys      jsonb;
   v_excluded  jsonb := '[]'::jsonb;
   v_departments jsonb := '[]'::jsonb;
+  v_guardrails jsonb := '[]'::jsonb;
 begin
   if p_workspace_id is null then
     raise exception using errcode = '22023', message = 'workspace_id_required';
@@ -130,6 +131,28 @@ begin
     join usage on usage.id = budgets.id;
   end if;
 
+  -- Blocking spend guardrails: one entry per counter (private.spend_guardrail_usage), counted
+  -- like a department budget over its keys, with the same exclusions.
+  if exists (
+    select 1 from public.workspace_guardrails g
+    where g.workspace_id = p_workspace_id and g.kind = 'spend' and g.enabled and g.spend_action = 'block'
+  ) then
+    select coalesce(jsonb_agg(jsonb_build_object(
+      'guardrail_id', u.guardrail_id,
+      'guardrail_name', u.guardrail_name,
+      'counting', u.spend_counting,
+      'counter', u.counter,
+      'interval', u.spend_period,
+      'limit_nanos', u.limit_nanos,
+      'usage_nanos', u.usage_nanos,
+      'window_start', u.period_start,
+      'reset_at', u.reset_at,
+      'key_ids', to_jsonb(u.key_ids)
+    ) order by u.guardrail_name, u.guardrail_id, u.counter), '[]'::jsonb)
+    into v_guardrails
+    from private.spend_guardrail_usage(p_workspace_id, now(), v_exclude, 'block') u;
+  end if;
+
   -- Excluded requests that are already persisted, so the caller can stop
   -- tracking them separately and count the stored row instead.
   if cardinality(v_exclude) > 0 then
@@ -155,14 +178,15 @@ begin
     'keys', v_keys,
     'budget_status', public.gateway_workspace_budget_status(p_workspace_id, 0),
     'excluded_rows', v_excluded,
-    'department_budgets', v_departments
+    'department_budgets', v_departments,
+    'guardrail_budgets', v_guardrails
   );
 end;
 $function$;
 
 GRANT EXECUTE ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[]) TO "service_role";
 
-COMMENT ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[]) IS 'Seeds the gateway spend-limit coordinator: per-key day/week/month usage with the request-context windows and filters (excluding already-recorded request ids), plus workspace budget status and department budgets with their usage and keys.';
+COMMENT ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[]) IS 'Seeds the gateway spend-limit coordinator: per-key day/week/month usage with the request-context windows and filters (excluding already-recorded request ids), plus workspace budget status, department budgets and blocking spend guardrail counters with their usage and keys.';
 
 REVOKE ALL ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[]) FROM "postgres";
 

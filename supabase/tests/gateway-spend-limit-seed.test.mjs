@@ -52,9 +52,12 @@ try {
   // Then the one teaching the helper the workspace's primary-department setting.
   const attributionMigration = await readFile(new URL('../migrations/20261031174621_department_attribution_primary_for_budgets.sql', import.meta.url), 'utf8');
   await db.exec(attributionMigration);
-  for (const path of ['public/functions/workspace_department_budget_status.sql', 'public/functions/gateway_spend_limit_seed.sql']) {
-    assert.ok(migration.includes((await schema(path)).trim()), `${path} matches its migration`);
-  }
+  assert.ok(migration.includes((await schema('public/functions/workspace_department_budget_status.sql')).trim()),
+    'public/functions/workspace_department_budget_status.sql matches its migration');
+  // Spend guardrails (phase D) redefine the seed last; that migration is checked in spend-guardrails.test.mjs.
+  const spendGuardrailsMigration = await readFile(new URL('../migrations/20261105120000_spend_guardrails.sql', import.meta.url), 'utf8');
+  assert.ok(spendGuardrailsMigration.includes((await schema('public/functions/gateway_spend_limit_seed.sql')).trim()),
+    'public/functions/gateway_spend_limit_seed.sql matches its latest migration');
   assert.ok(attributionMigration.includes((await schema('private/functions/department_budget_key_departments.sql')).trim()),
     'the helper matches its migration');
   const manifest = JSON.parse(await schema('.pgdelta-export.json'));

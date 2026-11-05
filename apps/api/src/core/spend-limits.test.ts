@@ -52,6 +52,10 @@ type Row = { requestId: string; keyId: string | null; success: boolean; cost: nu
 type KeyConfig = { workspaceId: string; softBlocked?: boolean; daily?: [number, number]; weekly?: [number, number]; monthly?: [number, number] };
 type Budget = { id: string; interval: "daily" | "weekly" | "monthly" | "lifetime"; limit: number; holds?: number };
 type DepartmentBudget = { id: string; departmentId: string; name: string; interval: "daily" | "weekly" | "monthly"; limit: number; keyIds: string[] };
+type GuardrailCounter = {
+	guardrailId: string; name: string; counting: "shared" | "each_key"; counter: string;
+	interval: "daily" | "weekly" | "monthly"; limit: number; keyIds: string[];
+};
 
 // A JavaScript model of gateway_spend_limit_seed (the PGlite contract test pins the SQL itself).
 class FakeDatabase {
@@ -59,6 +63,8 @@ class FakeDatabase {
 	keys = new Map<string, KeyConfig>();
 	budgets: Budget[] = [];
 	departments: DepartmentBudget[] = [];
+	/** Blocking spend guardrail counters (private.spend_guardrail_usage with action block). */
+	guardrails: GuardrailCounter[] = [];
 	/** Seeds as written before department budgets could block (no department_budgets field). */
 	legacyShape = false;
 	calls: Array<{ keyIds: string[]; exclude: string[] }> = [];
@@ -123,11 +129,23 @@ class FakeDatabase {
 				limit_nanos: budget.limit, usage_nanos: usage, window_start: iso(start), reset_at: iso(end), key_ids: [...budget.keyIds],
 			};
 		});
+		const guardrail_budgets = this.guardrails.map((counter) => {
+			const start = windows[counter.interval];
+			const usage = this.rows.filter((row) => row.keyId !== null && counter.keyIds.includes(row.keyId) && row.success &&
+				row.createdAt >= start && row.createdAt <= now && !exclude.includes(row.requestId)).reduce((sum, row) => sum + row.cost, 0);
+			const end = counter.interval === "daily" ? start + DAY : counter.interval === "weekly" ? start + 7 * DAY
+				: Date.UTC(new Date(start).getUTCFullYear(), new Date(start).getUTCMonth() + 1, 1);
+			return {
+				guardrail_id: counter.guardrailId, guardrail_name: counter.name, counting: counter.counting, counter: counter.counter,
+				interval: counter.interval, limit_nanos: counter.limit, usage_nanos: usage, window_start: iso(start), reset_at: iso(end),
+				key_ids: [...counter.keyIds],
+			};
+		});
 		return {
 			now: iso(now), day_start: iso(windows.daily), week_start: iso(windows.weekly), month_start: iso(windows.monthly),
 			keys,
 			budget_status: { ok: true, budgets },
-			...(this.legacyShape ? {} : { department_budgets }),
+			...(this.legacyShape ? {} : { department_budgets, guardrail_budgets }),
 			excluded_rows: this.rows.filter((row) => exclude.includes(row.requestId))
 				.map((row) => ({ request_id: row.requestId, key_id: row.keyId, success: row.success, cost_nanos: row.cost, created_at: iso(row.createdAt) })),
 		};
@@ -582,6 +600,59 @@ describe("spend-limit coordinator", () => {
 		} finally { warn.mockRestore(); }
 	});
 
+	describe("spend guardrails", () => {
+		const TEAM_A = "team-a";
+		const TEAM_B = "team-b";
+		const OUTSIDER = "outsider";
+		const shared = (limit: number): GuardrailCounter => ({
+			guardrailId: "g-team", name: "Contractors", counting: "shared", counter: "department:d-team", interval: "daily", limit, keyIds: [TEAM_A, TEAM_B],
+		});
+		const eachKey = (keyId: string, limit: number): GuardrailCounter => ({
+			guardrailId: "g-each", name: "Every key", counting: "each_key", counter: `key:${keyId}`, interval: "monthly", limit, keyIds: [keyId],
+		});
+
+		beforeEach(() => {
+			for (const keyId of [TEAM_A, TEAM_B, OUTSIDER]) database.keys.set(keyId, { workspaceId: WORKSPACE });
+		});
+
+		it("blocks every key a shared counter covers once its limit is used, and no other key", async () => {
+			database.guardrails.push(shared(1_000));
+			database.rows.push(
+				{ requestId: "a-1", keyId: TEAM_A, success: true, cost: 700, createdAt: Date.now() - 1_000 },
+				{ requestId: "b-1", keyId: TEAM_B, success: true, cost: 300, createdAt: Date.now() - 1_000 },
+				{ requestId: "o-1", keyId: OUTSIDER, success: true, cost: 9_000, createdAt: Date.now() - 1_000 },
+			);
+			for (const keyId of [TEAM_A, TEAM_B]) {
+				expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId, admissionId: `${keyId}-2` })).toMatchObject({
+					outcome: "denied",
+					keyLimit: {
+						ok: false, reason: "guardrail_daily_spend_limit_reached", limitWindow: "daily", limitMetric: "cost",
+						currentValue: 1_000, limitValue: 1_000, guardrailId: "g-team", guardrailName: "Contractors", guardrailCounting: "shared",
+					},
+				});
+			}
+			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: OUTSIDER, admissionId: "o-2" }))
+				.toMatchObject({ outcome: "allowed", admission: { unlimited: true } });
+		});
+
+		it("counts each key on its own when the guardrail counts each key", async () => {
+			database.guardrails.push(eachKey(TEAM_A, 500), eachKey(TEAM_B, 500));
+			database.rows.push({ requestId: "a-1", keyId: TEAM_A, success: true, cost: 500, createdAt: Date.now() - 1_000 });
+			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: TEAM_A, admissionId: "a-2" })).toMatchObject({
+				outcome: "denied",
+				keyLimit: { reason: "guardrail_monthly_spend_limit_reached", guardrailId: "g-each", guardrailCounting: "each_key", currentValue: 500 },
+			});
+			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: TEAM_B, admissionId: "b-2" })).toMatchObject({ outcome: "allowed" });
+		});
+
+		it("ignores spend guardrails missing from older seeds", async () => {
+			database.guardrails.push(shared(1));
+			database.legacyShape = true;
+			database.rows.push({ requestId: "a-1", keyId: TEAM_A, success: true, cost: 50, createdAt: Date.now() - 1_000 });
+			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: TEAM_A, admissionId: "a-2" })).toMatchObject({ outcome: "allowed" });
+		});
+	});
+
 	describe("department budgets", () => {
 		const ENG_A = "eng-a";
 		const ENG_B = "eng-b";
@@ -772,7 +843,7 @@ describe("spend-limit coordinator", () => {
 
 	describe("skipping the coordinator when nothing can be limited", () => {
 		const FREE_KEY = "00000000-0000-4000-8000-000000000003";
-		const NONE: SpendLimitFootprint = { keyLimited: false, softBlocked: false, workspaceBudgets: false, departmentBudgets: false };
+		const NONE: SpendLimitFootprint = { keyLimited: false, softBlocked: false, workspaceBudgets: false, departmentBudgets: false, spendGuardrails: false };
 		const bucket = (requestsLimit = 0, costLimitNanos = 0) => ({ windowStart: "2026-10-09T00:00:00.000Z", requestsUsed: 0, requestsLimit, costUsedNanos: 0, costLimitNanos });
 		// The request context's key-limit check, as context.ts returns it.
 		const contextKeyLimit = (overrides: Record<string, unknown> = {}) => ({
@@ -835,6 +906,9 @@ describe("spend-limit coordinator", () => {
 			["a department budget", { departmentBudgets: true }, () => {
 				database.departments.push({ id: "db", departmentId: "d1", name: "Engineering", interval: "daily", limit: 5, keyIds: [FREE_KEY] });
 			}, "department_daily_cost_budget_reached"],
+			["a blocking spend guardrail", { spendGuardrails: true }, () => {
+				database.guardrails.push({ guardrailId: "g1", name: "Contractors", counting: "shared", counter: "workspace:", interval: "weekly", limit: 5, keyIds: [FREE_KEY] });
+			}, "guardrail_weekly_spend_limit_reached"],
 		])("asks the coordinator, which enforces it, when the footprint shows %s", async (_label, footprint, configure, reason) => {
 			configure();
 			database.rows.push({ requestId: "used", keyId: FREE_KEY, success: true, cost: 10, createdAt: Date.now() - 1_000 });

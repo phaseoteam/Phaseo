@@ -1079,7 +1079,15 @@
 		"columnRate": "Rate",
 		"rateRequests": "{count, plural, one {# request} other {# requests}} a minute",
 		"rateTokens": "{count, plural, one {# token} other {# tokens}} a minute",
-		"rateConcurrent": "{count, plural, other {# at a time}}"
+		"rateConcurrent": "{count, plural, other {# at a time}}",
+		"columnSpend": "Spend",
+		"spend": {
+			"daily": "{amount} a day",
+			"weekly": "{amount} a week",
+			"monthly": "{amount} a month"
+		},
+		"spendBlocks": "Blocks",
+		"spendNotifies": "Alerts only"
 	},
 	"guardrailWizard": {
 		"title": "New guardrail",
@@ -1106,7 +1114,12 @@
 			"sensitiveInfoOff": "Turn on at least one sensitive info pattern, or remove this check.",
 			"rateLimitEmpty": "Set at least one limit to continue.",
 			"rateLimitInvalid": "Limits must be whole numbers above 0.",
-			"rateCountingRequired": "Choose how the limits count to continue."
+			"rateCountingRequired": "Choose how the limits count to continue.",
+			"spendLimitEmpty": "Set a limit to continue.",
+			"spendLimitInvalid": "Enter an amount above $0.00 with up to 2 decimal places.",
+			"spendPeriodRequired": "Choose a period to continue.",
+			"spendActionRequired": "Choose what happens at the limit to continue.",
+			"spendCountingRequired": "Choose how the limit counts to continue."
 		},
 		"nameLabel": "Name",
 		"namePlaceholder": "e.g. Contractor policy",
@@ -1208,7 +1221,28 @@
 			"each_key": "Separate for each key",
 			"each_end_user": "Separate for each end user"
 		},
-		"summaryRateFailClosed": "Refuses requests when limits can't be checked"
+		"summaryRateFailClosed": "Refuses requests when limits can't be checked",
+		"templateSpendLimit": {
+			"name": "Spend limit",
+			"body": "Cap spend per day, week or month, with alerts."
+		},
+		"sectionSpend": {
+			"name": "Spend limit",
+			"body": "A dollar limit per day, week or month. A spend guardrail has no other checks."
+		},
+		"summarySpendLimit": {
+			"daily": "Up to {amount} a day",
+			"weekly": "Up to {amount} a week",
+			"monthly": "Up to {amount} a month"
+		},
+		"summarySpendAction": {
+			"notify": "Alerts at 80% and 100%, without blocking",
+			"block": "Blocks API-key requests at the limit"
+		},
+		"summarySpendCounting": {
+			"shared": "Shared by everything it's assigned to",
+			"each_key": "Separate for each key"
+		}
 	},
 	"broadcastControls": {
 		"optional": "(optional)",
@@ -8099,6 +8133,62 @@
 			"rateLimitEmpty": "Set at least one limit to continue.",
 			"rateLimitInvalid": "Limits must be whole numbers above 0.",
 			"rateCountingRequired": "Choose how the limits count to continue."
+		}
+	},
+	"spendGuardrail": {
+		"title": "Spend limit",
+		"description": "Limit what the keys it covers spend in a day, week or month.",
+		"limitTitle": "Limit",
+		"limitBody": "The most the keys it covers can spend in each period, in US dollars.",
+		"limitLabel": "Amount",
+		"limitHelp": "Up to 2 decimal places, for example 25.00.",
+		"invalidLimit": "Enter an amount above $0.00 with up to 2 decimal places.",
+		"periodTitle": "Period",
+		"periodBody": "Periods are UTC calendar days, weeks from Monday, and months. There's no default.",
+		"period": {
+			"daily": {
+				"name": "Daily",
+				"body": "Resets at 00:00 UTC every day."
+			},
+			"weekly": {
+				"name": "Weekly",
+				"body": "Resets at 00:00 UTC every Monday."
+			},
+			"monthly": {
+				"name": "Monthly",
+				"body": "Resets at 00:00 UTC on the 1st of each month."
+			}
+		},
+		"actionTitle": "At the limit",
+		"actionBody": "What happens when spend reaches the limit. Owners and admins get a push at 80% and at 100% either way. There's no default.",
+		"action": {
+			"notify": {
+				"name": "Notify",
+				"body": "Send the alerts only. Requests keep going through."
+			},
+			"block": {
+				"name": "Block",
+				"body": "Refuse the API-key requests it covers until the period resets. Batch jobs, realtime sessions and OAuth requests aren't blocked."
+			}
+		},
+		"countingTitle": "How it counts",
+		"countingBody": "Choose who shares the limit. There's no default.",
+		"counting": {
+			"shared": {
+				"name": "Shared",
+				"body": "One limit for everything it's assigned to. On a department, the whole department's keys share it."
+			},
+			"each_key": {
+				"name": "Each key",
+				"body": "Every API key it covers gets its own limit."
+			}
+		},
+		"issue": {
+			"spendLimitEmpty": "Set a limit to continue.",
+			"spendLimitInvalid": "Enter an amount above $0.00 with up to 2 decimal places.",
+			"spendPeriodRequired": "Choose a period to continue.",
+			"spendActionRequired": "Choose what happens at the limit to continue.",
+			"spendCountingRequired": "Choose how the limit counts to continue."
 		}
 	}
 }
