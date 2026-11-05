@@ -32,7 +32,7 @@ import { silenceLabel, silentFor } from "../../shared/inbox";
 import { useNow } from "../lib/useNow";
 import { PermissionMenu, PlanIndicator } from "./NewChat";
 import { openModelPickerEvent, renameChatEvent, useModelSettingActions, type ComposerAction } from "./composerActions";
-import { Requests } from "./Requests";
+import { ChildRequests, Requests } from "./Requests";
 import { AgentThreads } from "./AgentThreads";
 import { ChatSpend } from "./ChatSpend";
 import { AutopilotControl } from "./Autopilot";
@@ -402,6 +402,7 @@ export function ChatView({ id }: { id: string }) {
 			<AgentThreads taskId={task.id} />
 			<BackgroundWork taskId={task.id} />
 			<Requests task={task} />
+			<ChildRequests taskId={task.id} />
 			{removed && <p className="text-xs text-muted-foreground">This checkout has been removed. Switch model to continue in another project.</p>}
 		</Conversation>}
 		<QuestionPanel task={task} />
