@@ -109,4 +109,23 @@ describe("reviewing one commit", () => {
 			expect(root.patch).toContain("+One");
 		} finally { owned.cleanup(); }
 	});
+	it("shows committed work the upstream lacks, or what a branch without one added to its base", async () => {
+		const owned = repository(), remote = mkdtempSync(path.join(tmpdir(), "phaseo-scoped-remote-"));
+		try {
+			execFileSync("git", ["init", "--bare", "-b", "main", remote], { windowsHide: true, stdio: "pipe" });
+			owned.git(["remote", "add", "origin", remote]); owned.git(["push", "-u", "origin", "main"]);
+			writeFileSync(path.join(owned.root, "kept.txt"), "One\nUnpushed\nThree\n"); owned.git(["commit", "-am", "Not pushed yet"]);
+			writeFileSync(path.join(owned.root, "kept.txt"), "One\nUnpushed\nThree\nWorking\n");
+			const unpushed = await gitScopedDiff(owned.root, { scope: "unpushed" });
+			expect(unpushed).toMatchObject({ repository: true, headRef: "main", baseRef: "origin/main" });
+			expect(unpushed.patch).toContain("+Unpushed"); expect(unpushed.patch).not.toContain("+Working");
+			const contents = await readScopedDiffContents(owned.root, { diff: { scope: "unpushed" }, filename: "kept.txt", hash: unpushed.hash });
+			expect(contents.newFile.contents).toBe("One\nUnpushed\nThree\n");
+			owned.git(["checkout", "--", "kept.txt"]); owned.git(["push"]);
+			expect((await gitScopedDiff(owned.root, { scope: "unpushed" })).patch).toBe("");
+			owned.git(["switch", "-c", "topic"]); writeFileSync(path.join(owned.root, "topic.txt"), "Topic\n"); owned.git(["add", "."]); owned.git(["commit", "-m", "Topic"]);
+			const topic = await gitScopedDiff(owned.root, { scope: "unpushed" });
+			expect(topic.baseRef).toBe("origin/main"); expect(topic.patch).toContain("+Topic"); expect(topic.patch).not.toContain("Unpushed");
+		} finally { owned.cleanup(); rmSync(remote, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); }
+	}, 30000);
 });

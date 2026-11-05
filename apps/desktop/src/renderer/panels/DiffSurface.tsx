@@ -23,6 +23,7 @@ const noKeys: ReadonlySet<string> = new Set();
 
 function requestFor(selection: DiffSelection, turns: ReturnType<typeof diffTurns>, ignoreWhitespace: boolean): GitDiffRequest | undefined {
 	if (selection.kind === "uncommitted") return { scope: "uncommitted", ignoreWhitespace };
+	if (selection.kind === "unpushed") return { scope: "unpushed", ignoreWhitespace };
 	if (selection.kind === "commit") return { scope: "commit", commit: selection.sha, ignoreWhitespace };
 	if (selection.kind === "branch") return { scope: "branch", ...(selection.baseRef ? { baseRef: selection.baseRef } : {}), ignoreWhitespace };
 	const turn = selectedTurn(selection, turns);
@@ -192,6 +193,7 @@ export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: stri
 	const chooseScope = (value: unknown) => {
 		if (value === "branch") select({ kind: "branch" });
 		else if (value === "uncommitted") select({ kind: "uncommitted" });
+		else if (value === "unpushed") select({ kind: "unpushed" });
 		else if (value === "latest") select({ kind: "turn" });
 		else if (typeof value === "string" && value.startsWith("turn:")) select({ kind: "turn", messageId: value.slice(5) });
 		else if (typeof value === "string" && value.startsWith("commit:")) { const sha = value.slice(7); select({ kind: "commit", sha, subject: commits.list?.find(commit => commit.sha === sha)?.subject }); }
@@ -211,6 +213,7 @@ export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: stri
 					<DropdownMenuRadioGroup value={scopeValue} onValueChange={chooseScope}>
 						<DropdownMenuRadioItem value="branch" className="text-xs">Changes</DropdownMenuRadioItem>
 						<DropdownMenuRadioItem value="uncommitted" className="text-xs">Uncommitted</DropdownMenuRadioItem>
+						<DropdownMenuRadioItem value="unpushed" className="text-xs">Unpushed</DropdownMenuRadioItem>
 						{taskId && <DropdownMenuRadioItem value="latest" className="text-xs">Latest turn</DropdownMenuRadioItem>}
 					</DropdownMenuRadioGroup>
 					{taskId && <DropdownMenuSub>
@@ -238,6 +241,7 @@ export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: stri
 				</DropdownMenuContent>
 			</DropdownMenu>
 			{selection.kind === "commit" && selection.subject && <span className="min-w-0 truncate text-xs text-muted-foreground" title={selection.subject}>{selection.subject}</span>}
+			{selection.kind === "unpushed" && result?.repository && <span className="min-w-0 truncate text-xs text-muted-foreground" title={result.baseRef ? `Commits on ${result.headRef ?? "HEAD"} that ${result.baseRef} does not have` : undefined}>{result.baseRef ? `Not in ${result.baseRef}` : "No upstream or base branch"}</span>}
 			{selection.kind === "branch" && result?.repository && <div className="flex min-w-0 items-center gap-2 overflow-hidden text-xs text-muted-foreground" aria-label={`Comparing ${result.headRef ?? "HEAD"} against ${result.baseRef ?? "nothing"}`}>
 				<span className="min-w-0 max-w-48 truncate" title={result.headRef}>{result.headRef ?? "HEAD"}</span>
 				<ArrowRight className="size-3.5 shrink-0 opacity-70" />
@@ -266,7 +270,7 @@ export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: stri
 	else if (selection.kind === "turn" && !turns.length) body = <SurfaceMessage>{taskId ? running ? "The first turn is still running." : "No completed turns yet." : "Open a chat to review its turns."}</SurfaceMessage>;
 	else if (result && !result.repository) body = <SurfaceMessage>Diffs are unavailable because this project is not a Git repository.</SurfaceMessage>;
 	else if (!result) body = error ? <SurfaceMessage className="text-destructive/80">{error}</SurfaceMessage> : <DiffLoadingState label={selection.kind === "turn" ? "Loading turn diff…" : selection.kind === "uncommitted" ? "Loading uncommitted changes…" : "Loading changes…"} />;
-	else if (!result.patch.trim()) body = <SurfaceMessage>No net changes in this selection.</SurfaceMessage>;
+	else if (!result.patch.trim()) body = <SurfaceMessage>{selection.kind === "unpushed" ? (result.baseRef ? `Nothing to push: ${result.baseRef} has every commit.` : "This branch has no upstream or base branch to compare with.") : "No net changes in this selection."}</SurfaceMessage>;
 	else if (!parsed) body = <ScrollArea className="min-h-0 flex-1" scrollBarOrientation="both" viewportClassName="p-2">
 		<p className="mb-2 text-[11px] text-muted-foreground/75">This patch could not be shown as a diff, so here is the raw text.</p>
 		<pre className={cn("rounded-md border border-border/70 p-3 font-mono text-[11px] leading-relaxed text-muted-foreground/90", wrap && "whitespace-pre-wrap break-words")}>{result.patch}</pre>

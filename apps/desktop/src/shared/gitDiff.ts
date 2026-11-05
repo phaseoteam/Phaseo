@@ -1,7 +1,9 @@
-/** What the diff surface compares: the branch against its base, uncommitted work, one agent turn, or one commit. */
+/** What the diff surface compares: the branch against its base, uncommitted work, commits not yet pushed, one agent turn, or one commit. */
 export type GitDiffRequest =
 	| { scope: "branch"; baseRef?: string; ignoreWhitespace?: boolean }
 	| { scope: "uncommitted"; ignoreWhitespace?: boolean }
+	/** Committed work the upstream does not have yet; without an upstream, what the branch added to its base. */
+	| { scope: "unpushed"; ignoreWhitespace?: boolean }
 	| { scope: "turn"; from: string; to: string; ignoreWhitespace?: boolean }
 	/** One commit against its first parent, so a merge shows what it brought in. */
 	| { scope: "commit"; commit: string; ignoreWhitespace?: boolean };
@@ -30,6 +32,7 @@ export function validateGitDiffRequest(value: unknown): GitDiffRequest {
 	if (request.ignoreWhitespace !== undefined && typeof request.ignoreWhitespace !== "boolean") throw new Error("Invalid diff request.");
 	const ignoreWhitespace = request.ignoreWhitespace === true;
 	if (request.scope === "uncommitted") return { scope: "uncommitted", ignoreWhitespace };
+	if (request.scope === "unpushed") return { scope: "unpushed", ignoreWhitespace };
 	if (request.scope === "branch") {
 		if (request.baseRef !== undefined && !isRefName(request.baseRef)) throw new Error("Choose a valid branch to compare against.");
 		return { scope: "branch", ...(request.baseRef ? { baseRef: request.baseRef as string } : {}), ignoreWhitespace };
