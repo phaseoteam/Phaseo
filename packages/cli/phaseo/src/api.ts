@@ -208,6 +208,33 @@ export async function getSessionAccessToken(): Promise<Session> {
 	return session;
 }
 
+/**
+ * Exchanges the signed-in session for one in another workspace the person owns or administers. Each session
+ * belongs to one workspace, so this is how every command reaches another workspace.
+ */
+export async function requestWorkspaceSession(session: Session, workspace: string) {
+	const response = await fetch(oauthUrl(session.apiUrl, "/cli/workspace"), {
+		method: "POST",
+		headers: { "content-type": "application/json", authorization: `Bearer ${session.accessToken}` },
+		body: JSON.stringify({ workspace_id: workspace }),
+	});
+	const body = await parseJson(response);
+	if (!response.ok) {
+		throw new Error(typeof body?.error_description === "string" ? body.error_description : "Failed to switch workspace");
+	}
+	const tokens = requireRefreshableCliTokens(body);
+	const id = body?.workspace?.id;
+	if (typeof id !== "string" || !id) throw new Error("Phaseo did not say which workspace the session is for");
+	return {
+		...tokens,
+		workspace: {
+			id,
+			name: typeof body.workspace.name === "string" ? body.workspace.name : null,
+			slug: typeof body.workspace.slug === "string" ? body.workspace.slug : null,
+		},
+	};
+}
+
 export async function startDeviceLogin(apiRoot: string, scope = DEFAULT_SCOPE) {
 	const response = await fetch(oauthUrl(apiRoot, "/device/code"), {
 		method: "POST",

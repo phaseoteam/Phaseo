@@ -106,6 +106,7 @@ Mit `phaseo <group> --help` siehst du die Optionen deiner installierten CLI. Hat
 | Aufgabe | CLI | API-Route | MCP-Tool |
 | --- | --- | --- | --- |
 | Workspaces erstellen und Mitglieder hinzufügen | `phaseo workspaces create`, `phaseo workspaces add-members <workspace>` | `POST /v1/workspaces`, `POST /v1/workspaces/{id}/members/add` | — |
+| Die CLI auf einen anderen Workspace umstellen, den du besitzt oder verwaltest | `phaseo workspaces use <workspace>` | — | — |
 | Personen einladen | `phaseo workspaces invites create <workspace>` | `POST /v1/workspaces/{id}/invites` | — |
 | Einladung annehmen | `phaseo invites accept <code>` | `POST /v1/invites/accept` | — |
 | SSO, SCIM, Abteilungen und Verzeichnis | `phaseo identity sso update`, `phaseo identity scim update`, `phaseo identity departments create`, `phaseo identity directory update <user-id>` | `PUT /v1/identity/sso`, `PUT /v1/identity/scim`, `POST /v1/identity/departments`, `PUT /v1/identity/directory/members/{id}` | — |

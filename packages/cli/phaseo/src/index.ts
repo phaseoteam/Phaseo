@@ -16,6 +16,7 @@ import {
 	normalizeApiRoot,
 	parseScopeArgument,
 	pollDeviceToken,
+	requestWorkspaceSession,
 	revokeRefreshToken,
 	startDeviceLogin,
 } from "./api.js";
@@ -260,6 +261,9 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 			"phaseo keys get <id-or-hash> [--json]",
 			"phaseo keys update <id-or-hash> [--name <name>] [--disabled true|false] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--ip-allowlist <label=address,...>|none] [--json]",
 			"phaseo keys delete <id-or-hash> [--json]",
+			"",
+			"Keys belong to the session's current workspace (see phaseo whoami).",
+			"To manage keys in another workspace you own or administer, switch first: phaseo workspaces use <id-or-slug>",
 		],
 	},
 	"keys current": { usage: ["phaseo keys current [--json]"] },
@@ -278,6 +282,10 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 			"phaseo workspaces members <id-or-slug> [--json]",
 			"phaseo workspaces add-members <id-or-slug> --user-ids <id,id> [--role member|admin] [--json]",
 			"phaseo workspaces remove-members <id-or-slug> --user-ids <id,id> [--json]",
+			"phaseo workspaces use <id-or-slug> [--json]",
+			"",
+			"Every other command acts on the session's current workspace. phaseo workspaces use switches it to",
+			"another workspace you own or administer; phaseo whoami lists your workspaces and marks the current one.",
 		],
 	},
 	"workspaces list": { usage: ["phaseo workspaces list [--json]"] },
@@ -288,6 +296,10 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	"workspaces members": { usage: ["phaseo workspaces members <id-or-slug> [--json]"] },
 	"workspaces add-members": { usage: ["phaseo workspaces add-members <id-or-slug> --user-ids <id,id> [--role member|admin] [--json]"] },
 	"workspaces remove-members": { usage: ["phaseo workspaces remove-members <id-or-slug> --user-ids <id,id> [--json]"] },
+	"workspaces use": {
+		description: "Switch this CLI session to another workspace you own or administer. Later commands (keys, settings, credits, presets, logs and the rest) act on that workspace until you switch again or sign in again.",
+		usage: ["phaseo workspaces use <id-or-slug> [--json]"],
+	},
 	presets: {
 		usage: [
 			"phaseo presets list [--json]",
@@ -1382,6 +1394,30 @@ async function deleteWorkspace(id: string | undefined, flags: Record<string, str
 	process.stdout.write("Deleted workspace.\n");
 }
 
+async function useWorkspace(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("Workspace id or slug is required");
+	const previous = await getSessionAccessToken();
+	const next = await requestWorkspaceSession(previous, id);
+	// Integration keys live in the previous workspace: kept when it is the same one, revoked otherwise, as on login.
+	const { carried, revokeFailures } = await integrationCredentialsForNewLogin(previous, { apiUrl: previous.apiUrl, accessToken: next.access_token });
+	await writeSession({
+		accessToken: next.access_token,
+		refreshToken: next.refresh_token,
+		expiresAt: Date.now() + next.expires_in * 1000,
+		apiUrl: previous.apiUrl,
+		scope: next.scope,
+		...carried,
+	});
+	const previousSessionRevoked = await revokeRefreshToken(previous.apiUrl, previous.refreshToken).then(() => true, () => false);
+	if (revokeFailures.length > 0) {
+		process.stderr.write(`${terminalUi({ isTTY: Boolean(process.stderr.isTTY) }).warning(`Could not revoke ${revokeFailures.length} integration key(s) from the previous workspace: ${revokeFailures.map((keyId) => sanitizeTerminalText(keyId)).join(", ")}. Switch back and delete them with phaseo keys delete <id>.`)}\n`);
+	}
+	if (flagBool(flags, "json")) {
+		return printJson({ ok: true, workspace: next.workspace, scope: next.scope ?? null, previous_session_revoked: previousSessionRevoked });
+	}
+	writeServerText(`Now using workspace: ${next.workspace.name ?? next.workspace.id} (${next.workspace.id})\n`);
+}
+
 async function listWorkspaceMembers(id: string | undefined, flags: Record<string, string | boolean>) {
 	if (!id) throw new Error("Workspace id or slug is required");
 	const body = await request(`/workspaces/${encodeURIComponent(id)}/members`);
@@ -2234,6 +2270,7 @@ async function main() {
 		else if (first === "workspaces" && second === "members") action = listWorkspaceMembers(third, parsed.flags);
 		else if (first === "workspaces" && second === "add-members") action = addWorkspaceMembers(third, parsed.flags);
 		else if (first === "workspaces" && second === "remove-members") action = removeWorkspaceMembers(third, parsed.flags);
+		else if (first === "workspaces" && second === "use") action = useWorkspace(third, parsed.flags);
 		else if (first === "presets" && second === "list") action = listPresets(parsed.flags);
 		else if (first === "presets" && second === "create") action = createPreset(parsed.flags);
 		else if (first === "presets" && second === "get") action = getPreset(third, parsed.flags);

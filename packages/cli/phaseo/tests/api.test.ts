@@ -13,6 +13,7 @@ import {
 	exchangeAuthorizationCode,
 	revokeRefreshToken,
 	refreshSession,
+	requestWorkspaceSession,
 	v1Url,
 } from "../src/api.ts";
 import { readSession } from "../src/session.ts";
@@ -180,6 +181,63 @@ test("surfaces refresh-token revocation failures", async () => {
 		await assert.rejects(
 			() => revokeRefreshToken("https://api.example.com", "refresh-token-123"),
 			/token already revoked/,
+		);
+	} finally {
+		globalThis.fetch = originalFetch;
+	}
+});
+
+test("asks for a session in another workspace with the current session token", async () => {
+	const originalFetch = globalThis.fetch;
+	let requestUrl = "";
+	let requestBody = "";
+	let authorization: string | null = null;
+	globalThis.fetch = (async (input, init) => {
+		requestUrl = String(input);
+		requestBody = String(init?.body ?? "");
+		authorization = new Headers(init?.headers).get("authorization");
+		return new Response(JSON.stringify({
+			access_token: "next-access",
+			refresh_token: "next-refresh",
+			expires_in: 900,
+			scope: "keys:read keys:write",
+			workspace: { id: "ws_cache", name: "cache-test", slug: "cache-test" },
+		}), { status: 200, headers: { "content-type": "application/json" } });
+	}) as typeof fetch;
+	try {
+		const next = await requestWorkspaceSession(
+			{ accessToken: "current-access", refreshToken: "current-refresh", expiresAt: Date.now() + 600_000, apiUrl: "https://api.example.com" },
+			"cache-test",
+		);
+		assert.deepEqual(next, {
+			access_token: "next-access",
+			refresh_token: "next-refresh",
+			expires_in: 900,
+			scope: "keys:read keys:write",
+			workspace: { id: "ws_cache", name: "cache-test", slug: "cache-test" },
+		});
+	} finally {
+		globalThis.fetch = originalFetch;
+	}
+	assert.equal(requestUrl, "https://api.example.com/oauth/cli/workspace");
+	assert.equal(authorization, "Bearer current-access");
+	assert.equal(requestBody, JSON.stringify({ workspace_id: "cache-test" }));
+});
+
+test("reports why a workspace switch was refused", async () => {
+	const originalFetch = globalThis.fetch;
+	globalThis.fetch = (async () =>
+		new Response(JSON.stringify({ error: "access_denied", error_description: "Workspace owner or admin role is required" }), {
+			status: 403,
+			headers: { "content-type": "application/json" },
+		})) as typeof fetch;
+	try {
+		await assert.rejects(
+			() => requestWorkspaceSession(
+				{ accessToken: "a", refreshToken: "r", expiresAt: Date.now() + 600_000, apiUrl: "https://api.example.com" },
+				"team",
+			),
+			/Workspace owner or admin role is required/,
 		);
 	} finally {
 		globalThis.fetch = originalFetch;

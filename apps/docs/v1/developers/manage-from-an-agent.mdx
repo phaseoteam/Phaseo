@@ -107,6 +107,7 @@ Run `phaseo <group> --help` to see the flags your installed CLI accepts. When a 
 | Task | CLI | API route | MCP tool |
 | --- | --- | --- | --- |
 | Create workspaces and add members | `phaseo workspaces create`, `phaseo workspaces add-members <workspace>` | `POST /v1/workspaces`, `POST /v1/workspaces/{id}/members/add` | — |
+| Switch the CLI to another workspace you own or administer | `phaseo workspaces use <workspace>` | — | — |
 | Invite people | `phaseo workspaces invites create <workspace>` | `POST /v1/workspaces/{id}/invites` | — |
 | Accept an invite | `phaseo invites accept <code>` | `POST /v1/invites/accept` | — |
 | SSO, SCIM, departments and directory | `phaseo identity sso update`, `phaseo identity scim update`, `phaseo identity departments create`, `phaseo identity directory update <user-id>` | `PUT /v1/identity/sso`, `PUT /v1/identity/scim`, `POST /v1/identity/departments`, `PUT /v1/identity/directory/members/{id}` | — |

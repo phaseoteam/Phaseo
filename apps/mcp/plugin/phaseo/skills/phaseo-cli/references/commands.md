@@ -31,16 +31,30 @@ phaseo keys update <id-or-hash> [--name <name>] [--disabled true|false] [--limit
 phaseo keys delete <id-or-hash> --json
 ```
 
+Keys belong to the session's current workspace (`phaseo whoami --json` shows `current_workspace_id`). To manage keys in another workspace, switch to it with `phaseo workspaces use` first.
+
 ## Workspaces and policy
 
 ```bash
 phaseo workspaces list --json
 phaseo workspaces get <id-or-slug> --json
 phaseo workspaces members <id-or-slug> --json
+phaseo workspaces create --name <name> [--slug <slug>] --json
+phaseo workspaces use <id-or-slug> --json
 phaseo presets list --json
 phaseo settings get --json
 phaseo guardrails list --json
 phaseo management-keys list --json
+```
+
+Every command acts on the session's current workspace. `phaseo workspaces use <id-or-slug>` switches the signed-in session to another workspace where you are an owner or admin; it stays switched for every later command, on this machine, until you switch back or sign in again. API keys and management keys can't switch. If the CLI's access to that workspace was revoked under Authorized apps, run `phaseo login` and approve it again. For example, to use a temporary key in a new workspace:
+
+```bash
+phaseo workspaces create --name cache-test --json
+phaseo workspaces use cache-test --json
+phaseo keys create --name temp-cache-test --expires-at <iso> --json   # capture data.key straight into a secret store
+phaseo keys delete <key-id> --json
+phaseo workspaces use <previous-workspace-id> --json
 ```
 
 Use each group's `--help` before create, update, delete, or membership mutations.

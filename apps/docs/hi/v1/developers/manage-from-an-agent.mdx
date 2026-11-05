@@ -106,6 +106,7 @@ phaseo credits add --amount 20 --json
 | काम | CLI | API रूट | MCP टूल |
 | --- | --- | --- | --- |
 | वर्कस्पेस बनाएँ और सदस्य जोड़ें | `phaseo workspaces create`, `phaseo workspaces add-members <workspace>` | `POST /v1/workspaces`, `POST /v1/workspaces/{id}/members/add` | — |
+| CLI को किसी दूसरे वर्कस्पेस पर ले जाएँ जिसके आप मालिक या एडमिन हैं | `phaseo workspaces use <workspace>` | — | — |
 | लोगों को आमंत्रित करें | `phaseo workspaces invites create <workspace>` | `POST /v1/workspaces/{id}/invites` | — |
 | आमंत्रण स्वीकार करें | `phaseo invites accept <code>` | `POST /v1/invites/accept` | — |
 | SSO, SCIM, विभाग और डायरेक्टरी | `phaseo identity sso update`, `phaseo identity scim update`, `phaseo identity departments create`, `phaseo identity directory update <user-id>` | `PUT /v1/identity/sso`, `PUT /v1/identity/scim`, `POST /v1/identity/departments`, `PUT /v1/identity/directory/members/{id}` | — |

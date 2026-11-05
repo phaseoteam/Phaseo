@@ -106,6 +106,7 @@ phaseo credits add --amount 20 --json
 | 任务 | CLI | API 路由 | MCP 工具 |
 | --- | --- | --- | --- |
 | 创建工作区并添加成员 | `phaseo workspaces create`, `phaseo workspaces add-members <workspace>` | `POST /v1/workspaces`, `POST /v1/workspaces/{id}/members/add` | — |
+| 将 CLI 切换到你拥有或管理的另一个工作区 | `phaseo workspaces use <workspace>` | — | — |
 | 邀请成员 | `phaseo workspaces invites create <workspace>` | `POST /v1/workspaces/{id}/invites` | — |
 | 接受邀请 | `phaseo invites accept <code>` | `POST /v1/invites/accept` | — |
 | SSO、SCIM、部门与目录 | `phaseo identity sso update`, `phaseo identity scim update`, `phaseo identity departments create`, `phaseo identity directory update <user-id>` | `PUT /v1/identity/sso`, `PUT /v1/identity/scim`, `POST /v1/identity/departments`, `PUT /v1/identity/directory/members/{id}` | — |

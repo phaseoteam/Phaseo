@@ -106,6 +106,7 @@ phaseo credits add --amount 20 --json
 | 作業 | CLI | API ルート | MCP ツール |
 | --- | --- | --- | --- |
 | ワークスペースを作成してメンバーを追加する | `phaseo workspaces create`, `phaseo workspaces add-members <workspace>` | `POST /v1/workspaces`, `POST /v1/workspaces/{id}/members/add` | — |
+| 所有または管理している別のワークスペースに CLI を切り替える | `phaseo workspaces use <workspace>` | — | — |
 | ユーザーを招待する | `phaseo workspaces invites create <workspace>` | `POST /v1/workspaces/{id}/invites` | — |
 | 招待を承諾する | `phaseo invites accept <code>` | `POST /v1/invites/accept` | — |
 | SSO、SCIM、部門、ディレクトリ | `phaseo identity sso update`, `phaseo identity scim update`, `phaseo identity departments create`, `phaseo identity directory update <user-id>` | `PUT /v1/identity/sso`, `PUT /v1/identity/scim`, `POST /v1/identity/departments`, `PUT /v1/identity/directory/members/{id}` | — |

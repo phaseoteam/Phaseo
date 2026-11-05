@@ -106,6 +106,7 @@ Execute `phaseo <group> --help` para ver as opções aceitas pela CLI instalada.
 | Tarefa | CLI | Rota da API | Ferramenta MCP |
 | --- | --- | --- | --- |
 | Criar workspaces e adicionar membros | `phaseo workspaces create`, `phaseo workspaces add-members <workspace>` | `POST /v1/workspaces`, `POST /v1/workspaces/{id}/members/add` | — |
+| Mudar a CLI para outro workspace do qual você é proprietário ou administrador | `phaseo workspaces use <workspace>` | — | — |
 | Convidar pessoas | `phaseo workspaces invites create <workspace>` | `POST /v1/workspaces/{id}/invites` | — |
 | Aceitar um convite | `phaseo invites accept <code>` | `POST /v1/invites/accept` | — |
 | SSO, SCIM, departamentos e diretório | `phaseo identity sso update`, `phaseo identity scim update`, `phaseo identity departments create`, `phaseo identity directory update <user-id>` | `PUT /v1/identity/sso`, `PUT /v1/identity/scim`, `POST /v1/identity/departments`, `PUT /v1/identity/directory/members/{id}` | — |

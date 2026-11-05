@@ -90,6 +90,7 @@ phaseo keys create --name "Codex"
 phaseo workspaces list
 phaseo workspaces members <workspace>
 phaseo workspaces add-members <workspace> --user-ids <user-id,user-id>
+phaseo workspaces use <workspace>   # later commands act on this workspace
 
 phaseo presets list
 phaseo settings get

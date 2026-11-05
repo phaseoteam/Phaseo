@@ -10,6 +10,7 @@ import {
 	violatesMcpManagementBinding,
 } from "@/lib/oauth/mcpScopes";
 import { checkOAuthRateLimit } from "@/lib/oauth/rateLimit";
+import { issueCliWorkspaceSession } from "@/lib/oauth/cliWorkspace";
 import { authenticateManagement } from "@/pipeline/before/auth";
 import { json, withRuntime } from "@/routes/utils";
 import {
@@ -1175,6 +1176,54 @@ oauthRouter.post(
 			expires_at: renewed.expiresAt,
 			expires_in: Math.max(0, Math.floor((Date.parse(renewed.expiresAt) - Date.now()) / 1000)),
 		}, 200, { "Cache-Control": "no-store" });
+	}),
+);
+
+// `phaseo workspaces use`: a CLI session for another workspace the person owns or administers (see
+// issueCliWorkspaceSession). Only the CLI's own session token qualifies: API keys, management keys, other
+// apps' tokens and delegated keys are each bound to their workspace for good.
+oauthRouter.post(
+	"/cli/workspace",
+	withRuntime(async (req) => {
+		const auth = await authenticateManagement(req, { useKvCache: false });
+		const clientId = auth.ok ? String(auth.oauthClientId ?? "") : "";
+		if (
+			!auth.ok ||
+			auth.authMethod !== "oauth" ||
+			!isFirstPartyCliClient(clientId) ||
+			auth.apiKeyRef !== `oauth_${clientId}` ||
+			!auth.userId
+		) {
+			return oauthError("invalid_token", "A Phaseo CLI session is required", 401);
+		}
+		if (!(await checkOAuthRateLimit(req, "token", `cli-workspace:${auth.userId}`))) return rateLimitError();
+
+		let body: Record<string, unknown>;
+		try {
+			body = await readBody(req);
+		} catch (error) {
+			return invalidBodyError(error);
+		}
+		const workspace = typeof body.workspace_id === "string" ? body.workspace_id.trim() : "";
+		if (!workspace || workspace.length > 100) {
+			return oauthError("invalid_request", "workspace_id must be a workspace id or slug");
+		}
+
+		const result = await issueCliWorkspaceSession({
+			userId: auth.userId,
+			clientId,
+			scopes: auth.oauthScopes ?? [],
+			workspace,
+		});
+		if (result.ok === false) {
+			const description = result.reason === "not_admin"
+				? "Workspace owner or admin role is required"
+				: result.reason === "revoked"
+					? "Phaseo CLI access to this workspace was revoked. Run phaseo login and approve this workspace to restore it."
+					: "Workspace membership is required";
+			return oauthError("access_denied", description, 403);
+		}
+		return json({ ...result.tokens, workspace: result.workspace }, 200, { "Cache-Control": "no-store" });
 	}),
 );
 
