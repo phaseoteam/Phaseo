@@ -79,6 +79,7 @@ type CustomerStub = {
 	peekTokens(scopeKey: string, tokensPerMinute: number): Promise<CustomerAdmission>;
 	acquireConcurrency(scopeKey: string, leaseId: string, limit: number, ttlMs: number): Promise<CustomerAdmission>;
 	releaseConcurrency(scopeKey: string, leaseId: string): Promise<void>;
+	releaseFreeDay(scopeKey: string, admissionId: string): Promise<void>;
 };
 
 const MAX_DENIALS = 10_000;
@@ -103,9 +104,9 @@ const FREE_DAY_ADMIT_TIMEOUT_MS = 2_000;
  */
 export const FREE_DAY_ADMIT_DEADLINE_MS = 100;
 /**
- * Provisional free-day admissions per scope (user and workspace), per isolate, per UTC day. Each
+ * Provisional free-day admissions per user, per isolate, per UTC day. Each
  * one is still counted; a slot is returned only when the counter confirms it was within quota,
- * so at most this many requests per scope per isolate per day can exceed the allowance.
+ * so at most this many requests per user per isolate per day can exceed the allowance.
  */
 export const FREE_DAY_PROVISIONAL_PER_DAY = 2;
 /**
@@ -119,9 +120,11 @@ export const FREE_DAY_OUTAGE_PER_DAY = 50;
 const FREE_DAY_OUTAGE_RETRY_AFTER_SECONDS = 30;
 const DAY_MS = 86_400_000;
 type DayBudget = { day: number; used: number };
-/** localKey -> provisional free-day slots in use today in this isolate. */
+/**
+ * scopeKey -> provisional and outage free-day slots in use today in this isolate. Keyed on the
+ * user, like the counter, so more workspaces do not multiply either allowance.
+ */
 const provisionalBudgets = new Map<string, DayBudget>();
-/** localKey -> outage free-day slots in use today in this isolate. */
 const outageBudgets = new Map<string, DayBudget>();
 type Headroom = { remaining: number; until: number };
 /** scopeKey -> free-day slots this isolate may still admit without asking the counter. */
@@ -350,7 +353,7 @@ async function guardFreeDayQuota(args: QuotaArgs): Promise<Response | null> {
 		return admission;
 	})();
 	let counted = await awaitShared(counterCall, FREE_DAY_ADMIT_DEADLINE_MS);
-	if (!counted.settled && takeDaySlot(provisionalBudgets, localKey, now, FREE_DAY_PROVISIONAL_PER_DAY)) {
+	if (!counted.settled && takeDaySlot(provisionalBudgets, scopeKey, now, FREE_DAY_PROVISIONAL_PER_DAY)) {
 		// A counter that is starting up (a new scope's object took 1.1 s on 11-04) does not hold the
 		// request: admit it from this isolate's small provisional budget. The counter still counts
 		// it in the background; the slot comes back only if the counter confirms it was in quota.
@@ -360,23 +363,26 @@ async function guardFreeDayQuota(args: QuotaArgs): Promise<Response | null> {
 			timing.provisional = true;
 		}
 		remember(admissions, admissionKey, Date.now() + ADMISSION_MEMORY_MS, MAX_ADMISSIONS);
-		settleDaySlot(provisionalBudgets, localKey, counterCall);
+		settleDaySlot(provisionalBudgets, scopeKey, counterCall);
 		return null;
 	}
 	if (!counted.settled) counted = await awaitShared(counterCall, FREE_DAY_ADMIT_TIMEOUT_MS - FREE_DAY_ADMIT_DEADLINE_MS);
 	answered = true;
 	if (timing) timing.waitMs = performance.now() - waitStartedAt;
 	if (!counted.settled) {
-		const admitted = takeDaySlot(outageBudgets, localKey, Date.now(), FREE_DAY_OUTAGE_PER_DAY);
+		const admitted = takeDaySlot(outageBudgets, scopeKey, Date.now(), FREE_DAY_OUTAGE_PER_DAY);
 		console.warn("customer_rate_limit_count_failed", {
 			kind: args.kind,
 			error: "free_day_admit_unavailable",
 			outcome: admitted ? "outage_admitted" : "outage_refused",
 		});
-		if (!admitted) return freeQuotaUnavailable(args);
+		if (!admitted) {
+			releaseIfCountedLate(bindings, scopeKey, args.admissionId, counterCall);
+			return freeQuotaUnavailable(args);
+		}
 		if (timing) timing.outage = true;
 		remember(admissions, admissionKey, Date.now() + ADMISSION_MEMORY_MS, MAX_ADMISSIONS);
-		settleDaySlot(outageBudgets, localKey, counterCall);
+		settleDaySlot(outageBudgets, scopeKey, counterCall);
 		return null;
 	}
 	if (!counted.value.allowed) {
@@ -387,12 +393,12 @@ async function guardFreeDayQuota(args: QuotaArgs): Promise<Response | null> {
 }
 
 /** Takes one of this isolate's free-day slots (provisional or outage) for the scope, if any is left today. */
-function takeDaySlot(budgets: Map<string, DayBudget>, localKey: string, now: number, perDay: number): boolean {
+function takeDaySlot(budgets: Map<string, DayBudget>, key: string, now: number, perDay: number): boolean {
 	const day = Math.floor(now / DAY_MS);
-	const budget = budgets.get(localKey);
+	const budget = budgets.get(key);
 	const used = budget && budget.day === day ? budget.used : 0;
 	if (used >= perDay) return false;
-	remember(budgets, localKey, { day, used: used + 1 }, MAX_HEADROOM);
+	remember(budgets, key, { day, used: used + 1 }, MAX_HEADROOM);
 	return true;
 }
 
@@ -401,12 +407,12 @@ function takeDaySlot(budgets: Map<string, DayBudget>, localKey: string, now: num
  * counter confirms the admission was within quota. A denial, an error or no answer keeps the
  * slot used until the next UTC day, which is what bounds the overshoot.
  */
-function settleDaySlot(budgets: Map<string, DayBudget>, localKey: string, counterCall: Promise<CustomerAdmission>): void {
+function settleDaySlot(budgets: Map<string, DayBudget>, key: string, counterCall: Promise<CustomerAdmission>): void {
 	const day = Math.floor(Date.now() / DAY_MS);
 	const release = ensureRuntimeForBackground();
 	dispatchBackground(counterCall.then(
 		(admission) => {
-			const budget = budgets.get(localKey);
+			const budget = budgets.get(key);
 			if (admission.allowed && budget && budget.day === day && budget.used > 0) budget.used -= 1;
 		},
 		(error) => {
@@ -416,6 +422,26 @@ function settleDaySlot(budgets: Map<string, DayBudget>, localKey: string, counte
 			});
 		},
 	).finally(release));
+}
+
+/**
+ * A request refused with a 503 while its counter call was still running: if the counter later
+ * admits it, take that admission back, so a request that never ran is not counted.
+ */
+function releaseIfCountedLate(bindings: GatewayBindings, scopeKey: string, admissionId: string, counterCall: Promise<CustomerAdmission>): void {
+	const release = ensureRuntimeForBackground();
+	dispatchBackground(counterCall.then(async (admission) => {
+		if (!admission.allowed) return;
+		const stub = bindings.CUSTOMER_RATE_LIMITS!.getByName(scopeKey) as unknown as CustomerStub;
+		await stub.releaseFreeDay(scopeKey, admissionId);
+	}, () => {
+		// The counter failed: nothing was counted, and the failure was already logged.
+	}).catch((error) => {
+		console.warn("customer_rate_limit_count_failed", {
+			kind: "free-day-release",
+			error: error instanceof Error ? error.message : String(error),
+		});
+	}).finally(release));
 }
 
 export async function guardFreeRouteQuota(args: CustomerScope & {

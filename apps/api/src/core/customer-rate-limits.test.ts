@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
 	bindings: {} as Record<string, unknown>,
 	admit: vi.fn(),
+	releaseFreeDay: vi.fn(),
 	getByName: vi.fn(),
 	background: [] as Promise<unknown>[],
 	release: vi.fn(),
@@ -40,7 +41,8 @@ beforeEach(() => {
 	mocks.release.mockReset();
 	mocks.readLimits.mockReset().mockResolvedValue({ tier: "trusted", requestsPerMinute: 60, freeRequestsPerDay: 1500 });
 	mocks.admit.mockReset().mockResolvedValue({ allowed: true, limit: 25, remaining: 24, retryAfterSeconds: 0 });
-	mocks.getByName.mockReset().mockReturnValue({ admit: mocks.admit });
+	mocks.releaseFreeDay.mockReset().mockResolvedValue(undefined);
+	mocks.getByName.mockReset().mockReturnValue({ admit: mocks.admit, releaseFreeDay: mocks.releaseFreeDay });
 	mocks.bindings = { CUSTOMER_RATE_LIMITS_ENABLED: "true", CUSTOMER_RATE_LIMITS: { getByName: mocks.getByName } };
 });
 
@@ -274,8 +276,11 @@ describe("customer quota integration", () => {
 			expect(body).toMatchObject({ reason: "free_model_quota_unavailable", request_id: "public-request" });
 			// The same request's fallback attempt is refused too, rather than admitted.
 			expect((await free("down-over"))?.status).toBe(503);
-			// Another user still has their own allowance.
+			// Another workspace of the same user shares the allowance; another user has their own.
+			expect((await free("other-workspace", { workspaceId: "other" }))?.status).toBe(503);
 			expect(await free("other-user", { userId: "other" })).toBeNull();
+			// A failed counter counted nothing, so there is nothing to take back.
+			expect(mocks.releaseFreeDay).not.toHaveBeenCalled();
 			// The next UTC day starts a new allowance.
 			vi.setSystemTime(new Date("2026-10-10T00:00:01Z"));
 			expect(await free("next-day")).toBeNull();
@@ -294,6 +299,28 @@ describe("customer quota integration", () => {
 				await vi.advanceTimersByTimeAsync(1_000);
 				await settle();
 			}
+		});
+
+		it("takes back a late admission for a request it refused", async () => {
+			vi.spyOn(console, "warn").mockImplementation(() => {});
+			mocks.admit.mockReturnValue(new Promise(() => {}));
+			for (let index = 0; index < budget; index += 1) {
+				const request = free(`hung-${index}`);
+				await vi.advanceTimersByTimeAsync(2_000);
+				expect(await request).toBeNull();
+			}
+			// Those counter calls never answer; only wait for what the refused request leaves behind.
+			mocks.background.length = 0;
+			let answer!: (value: unknown) => void;
+			mocks.admit.mockReturnValue(new Promise((resolve) => { answer = resolve; }));
+			const refused = free("refused");
+			await vi.advanceTimersByTimeAsync(2_000);
+			expect((await refused)?.status).toBe(503);
+			answer({ allowed: true, limit: 1500, remaining: 5, retryAfterSeconds: 0 });
+			await vi.advanceTimersByTimeAsync(0);
+			await settle();
+			expect(mocks.releaseFreeDay).toHaveBeenCalledTimes(1);
+			expect(mocks.releaseFreeDay).toHaveBeenCalledWith(freeDayScopeKey(args), "refused");
 		});
 
 		it("resumes normal answers when the counter recovers", async () => {
