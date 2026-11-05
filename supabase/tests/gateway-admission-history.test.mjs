@@ -54,7 +54,8 @@ try {
   const limited = await access();
   assert.equal(limited.key_limit_ok.reason, 'daily_request_limit_reached');
   assert.equal(limited.key_limit_ok.buckets.daily.requests_used, 1);
-  assert.equal(limited.key_limit_ok.buckets.daily.cost_used_nanos, 10);
+  // The failed request was charged (999): it counts toward cost, not toward the request count.
+  assert.equal(limited.key_limit_ok.buckets.daily.cost_used_nanos, 10 + 999);
   assert.equal(limited.key_enrichment.requests_today, 1);
   assert.equal((await access('public.gateway_fetch_request_context_without_workspace_budget')).key_limit_ok.reason, 'daily_request_limit_reached');
   for (const [column,reason] of [

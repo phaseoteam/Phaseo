@@ -314,20 +314,33 @@ begin
   if greatest(v_day_req_limit, v_wk_req_limit, v_mo_req_limit,
       v_day_cost_limit, v_wk_cost_limit, v_mo_cost_limit) > 0 then
   select
-    count(*) filter (where gr.created_at >= day_start)                                  as used_day_reqs,
-    count(*) filter (where gr.created_at >= week_start)                                 as used_wk_reqs,
-    count(*) filter (where gr.created_at >= month_start)                                as used_mo_reqs,
+    count(*) filter (where gr.served and gr.created_at >= day_start)                    as used_day_reqs,
+    count(*) filter (where gr.served and gr.created_at >= week_start)                   as used_wk_reqs,
+    count(*) filter (where gr.served and gr.created_at >= month_start)                  as used_mo_reqs,
     coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= day_start), 0)::bigint   as used_day_cost,
     coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= week_start), 0)::bigint  as used_wk_cost,
     coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= month_start), 0)::bigint as used_mo_cost
   into
     used_day_reqs, used_wk_reqs, used_mo_reqs,
     used_day_cost, used_wk_cost, used_mo_cost
-  from public.gateway_requests gr
-  where gr.key_id  = gateway_fetch_request_context_without_workspace_budget.api_key_id
-    and gr.workspace_id = gateway_fetch_request_context_without_workspace_budget.workspace_id
-    and gr.success is true
-    and gr.created_at >= least(week_start, month_start);
+  -- Successful requests count as requests and cost. A request that did not succeed but was
+  -- charged (a cancelled stream that was billed) counts toward cost only.
+  from (
+    select served.created_at, served.cost_nanos, true as served
+    from public.gateway_requests served
+    where served.key_id = gateway_fetch_request_context_without_workspace_budget.api_key_id
+      and served.workspace_id = gateway_fetch_request_context_without_workspace_budget.workspace_id
+      and served.success is true
+      and served.created_at >= least(week_start, month_start)
+    union all
+    select charged.created_at, charged.cost_nanos, false
+    from public.gateway_requests charged
+    where charged.workspace_id = gateway_fetch_request_context_without_workspace_budget.workspace_id
+      and charged.key_id = gateway_fetch_request_context_without_workspace_budget.api_key_id
+      and charged.success is not true
+      and charged.cost_nanos > 0
+      and charged.created_at >= least(week_start, month_start)
+  ) gr;
   end if;
 
   if v_soft_blocked then

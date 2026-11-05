@@ -46,6 +46,17 @@ begin
       and r.created_at >= (select min(b.period_start) from budgets b)
       and r.created_at <= p_now
       and r.key_id in (select kd.key_id from key_departments kd)
+    union all
+    -- Async requests that did not succeed but were charged.
+    select r.key_id, r.created_at, r.cost_nanos
+    from public.gateway_requests r
+    where r.success is not true
+      and r.cost_nanos > 0
+      and r.endpoint = any (array['video.generation', 'batch', 'music.generate', 'audio.realtime'])
+      and r.workspace_id = p_workspace_id
+      and r.created_at >= (select min(b.period_start) from budgets b)
+      and r.created_at <= p_now
+      and r.key_id in (select kd.key_id from key_departments kd)
   ),
   usage as (
     select b.id, coalesce(sum(s.cost_nanos), 0)::numeric as used_nanos

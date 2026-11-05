@@ -104,17 +104,27 @@ begin
       return;
     end if;
 
+    -- Successful requests count as requests and cost; charged requests that did not succeed
+    -- count toward cost only.
     select
-      count(*) filter (where created_at >= v_day_start),
-      count(*) filter (where created_at >= v_week_start),
-      count(*) filter (where created_at >= v_month_start),
-      coalesce(sum(cost_nanos) filter (where created_at >= v_day_start), 0),
-      coalesce(sum(cost_nanos) filter (where created_at >= v_week_start), 0),
-      coalesce(sum(cost_nanos) filter (where created_at >= v_month_start), 0)
+      count(*) filter (where usage.served and usage.created_at >= v_day_start),
+      count(*) filter (where usage.served and usage.created_at >= v_week_start),
+      count(*) filter (where usage.served and usage.created_at >= v_month_start),
+      coalesce(sum(usage.cost_nanos) filter (where usage.created_at >= v_day_start), 0),
+      coalesce(sum(usage.cost_nanos) filter (where usage.created_at >= v_week_start), 0),
+      coalesce(sum(usage.cost_nanos) filter (where usage.created_at >= v_month_start), 0)
     into v_day_requests, v_week_requests, v_month_requests,
       v_day_cost, v_week_cost, v_month_cost
-    from public.gateway_requests
-    where workspace_id = p_workspace_id and key_id = p_key_id and success is true;
+    from (
+      select served.created_at, served.cost_nanos, true as served
+      from public.gateway_requests served
+      where served.workspace_id = p_workspace_id and served.key_id = p_key_id and served.success is true
+      union all
+      select charged.created_at, charged.cost_nanos, false
+      from public.gateway_requests charged
+      where charged.workspace_id = p_workspace_id and charged.key_id = p_key_id
+        and charged.success is not true and charged.cost_nanos > 0
+    ) usage;
 
     -- Video create audit rows have zero cost until completion. Count the unpaid
     -- portion of each reservation under the same key lock as admission. Captured
@@ -133,7 +143,8 @@ begin
         where gr.workspace_id = r.workspace_id and gr.key_id = r.key_id
           and gr.request_id = r.hold_ref_id
           and (r.reservation_id not like 'free_model_hold:%' or
-            gr.detail_metadata->>'free_model_fee_request_id' = substr(r.reservation_id, 17)) and gr.success is true
+            gr.detail_metadata->>'free_model_fee_request_id' = substr(r.reservation_id, 17))
+          and (gr.success is true or gr.cost_nanos > 0)
       ) a on true
       where r.workspace_id = p_workspace_id and r.key_id = p_key_id
         and (r.reservation_id like 'video_hold:%' or r.reservation_id like 'free_model_hold:%')
