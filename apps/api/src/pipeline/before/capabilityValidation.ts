@@ -160,6 +160,7 @@ function preferProvidersByRequestedParams(args: {
  * parameters, which then fails with the allowed values.
  */
 function filterProvidersByParameterValues(args: {
+	endpoint: Endpoint;
 	rawBody: any;
 	body: any;
 	providers: ProviderCandidate[];
@@ -169,7 +170,7 @@ function filterProvidersByParameterValues(args: {
 }): { ok: true; providers: ProviderCandidate[] } | { ok: false; response: Response } {
 	if (args.providers.length === 0) return { ok: true, providers: args.providers };
 	const issuesByProvider = new Map<ProviderCandidate, ParameterValueIssue[]>();
-	for (const provider of args.providers) issuesByProvider.set(provider, parameterValueIssues(provider, args.rawBody));
+	for (const provider of args.providers) issuesByProvider.set(provider, parameterValueIssues(provider, args.rawBody, args.endpoint));
 	const accepting = args.providers.filter((provider) => (issuesByProvider.get(provider) ?? []).length === 0);
 	if (accepting.length === args.providers.length) return { ok: true, providers: args.providers };
 	const rejected = args.providers
@@ -197,10 +198,14 @@ function filterProvidersByParameterValues(args: {
 			}),
 		};
 	}
+	// Names and reasons only: request values must not reach the logs.
 	console.warn("param_value_unsupported_all_candidates", {
 		requestId: args.requestId,
 		model: args.model,
-		rejected: rejected.map((row) => ({ provider: row.provider, issues: row.issues.map(describeParameterValueIssue) })),
+		rejected: rejected.map((row) => ({
+			provider: row.provider,
+			issues: row.issues.map((issue) => ({ param: issue.param, reason: issue.reason })),
+		})),
 	});
 	return { ok: true, providers: args.providers };
 }
@@ -548,6 +553,7 @@ export function validateCapabilities(args: {
 
 	// Step 1.2: Requested values each route's stored parameter specs accept
 	const valueResult = filterProvidersByParameterValues({
+		endpoint: args.endpoint,
 		rawBody: args.rawBody,
 		body: paramResult.body,
 		providers: preferredProviders,

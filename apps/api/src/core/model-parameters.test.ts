@@ -217,4 +217,10 @@ describe("resolveParameterSpec and parameterOptions", () => {
 		expect(resolveParameterSpec(specs.duration!, {}, specs)).toEqual(specs.duration);
 		expect(parameterOptions(resolveParameterSpec(specs.duration!, {}, specs))).toHaveLength(3);
 	});
+
+	it("cuts a listed parameter to the range a rule sets", () => {
+		const duration = normalizeParameterSpec({ values: [4, 6, 8], when: [{ if: { size: ["4k"] }, max: 6 }] });
+		expect(parameterOptions(resolveParameterSpec(duration, { size: "4k" })).map((option) => option.value)).toEqual([4, 6]);
+		expect(parameterOptions(resolveParameterSpec(duration, { size: "720p" })).map((option) => option.value)).toEqual([4, 6, 8]);
+	});
 });

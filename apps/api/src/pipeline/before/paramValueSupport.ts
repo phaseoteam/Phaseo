@@ -10,10 +10,13 @@
 import {
 	normalizeParameterSpecs,
 	resolveParameterSpec,
+	withinBounds,
 	type ParameterSpec,
 	type ParameterSpecs,
 	type ParameterValue,
 } from "@core/model-parameters";
+import type { Endpoint } from "@core/types";
+import { textEndpointRegistryFor } from "./textParamPolicy";
 import type { ProviderCandidate } from "./types";
 
 export type ParameterValueIssue = {
@@ -45,9 +48,55 @@ function isScalar(value: unknown): value is ParameterValue {
 	return typeof value === "string" || typeof value === "boolean" || (typeof value === "number" && Number.isFinite(value));
 }
 
-/** The request's value for a spec: under its name, a dotted path, or an alias. */
-function requestedValue(body: Record<string, unknown>, name: string, spec: ParameterSpec): { field: string; value: unknown } | null {
-	for (const field of [name, ...(spec.aliases ?? [])]) {
+function writePath(body: Record<string, unknown>, path: string, value: unknown): void {
+	const segments = path.split(".");
+	let current = body;
+	for (const segment of segments.slice(0, -1)) {
+		// Copy each level so the caller's body is never changed.
+		const next = isRecord(current[segment]) ? { ...(current[segment] as Record<string, unknown>) } : {};
+		current[segment] = next;
+		current = next;
+	}
+	current[segments[segments.length - 1]] = value;
+}
+
+/**
+ * The body with each wire spelling also under its canonical name, as the
+ * name check reads it: Chat Completions `reasoning_effort` and Messages
+ * `output_config.effort` are both `reasoning.effort`. Fields already sent under
+ * the canonical name win.
+ */
+function canonicalBody(endpoint: Endpoint | undefined, body: Record<string, unknown>): Record<string, unknown> {
+	const registry = endpoint ? textEndpointRegistryFor(endpoint) : null;
+	if (!registry) return body;
+	const view: Record<string, unknown> = { ...body };
+	const alias = (canonical: string, value: unknown) => {
+		if (value === undefined || value === null) return;
+		if (readPath(view, canonical) === undefined) writePath(view, canonical, value);
+	};
+	for (const [key, canonical] of Object.entries(registry.keyToCanonicalParam)) {
+		if (key !== canonical && Object.prototype.hasOwnProperty.call(body, key)) alias(canonical, body[key]);
+	}
+	if (endpoint === "messages" && isRecord(body.output_config)) alias("reasoning.effort", body.output_config.effort);
+	return view;
+}
+
+/** Wire spellings of a canonical name, so a spec stored as `reasoning_effort` matches `reasoning.effort`. */
+function canonicalName(endpoint: Endpoint | undefined, name: string): string | null {
+	const registry = endpoint ? textEndpointRegistryFor(endpoint) : null;
+	const canonical = registry?.keyToCanonicalParam[name];
+	return canonical && canonical !== name ? canonical : null;
+}
+
+/** The request's value for a spec: under its name, a dotted path, its canonical name, or an alias. */
+function requestedValue(
+	body: Record<string, unknown>,
+	name: string,
+	spec: ParameterSpec,
+	endpoint?: Endpoint,
+): { field: string; value: unknown } | null {
+	const canonical = canonicalName(endpoint, name);
+	for (const field of [name, ...(canonical ? [canonical] : []), ...(spec.aliases ?? [])]) {
 		const value = readPath(body, field);
 		if (value !== undefined && value !== null) return { field, value };
 	}
@@ -79,8 +128,10 @@ function checkValue(param: string, value: ParameterValue, spec: ParameterSpec): 
 	// An open list names common values; any other value is accepted too.
 	if (spec.values?.length && spec.open) return null;
 	if (spec.values?.length) {
-		if (spec.values.some((allowed) => sameValue(value, allowed, numeric))) return null;
-		return { param, value, reason: "not_allowed", allowed: spec.values };
+		// A rule can narrow a listed parameter's range, so the list is cut to it.
+		const allowed = spec.values.filter((entry) => withinBounds(spec, entry));
+		if (allowed.some((entry) => sameValue(value, entry, numeric))) return null;
+		return { param, value, reason: "not_allowed", allowed };
 	}
 	if (!numeric) return null;
 	const number = Number(value);
@@ -110,12 +161,15 @@ function candidateSpecs(candidate: Pick<ProviderCandidate, "capabilityParams">):
 export function parameterValueIssues(
 	candidate: Pick<ProviderCandidate, "capabilityParams">,
 	rawBody: unknown,
+	endpoint?: Endpoint,
 ): ParameterValueIssue[] {
 	if (!isRecord(rawBody)) return [];
 	const specs = candidateSpecs(candidate);
+	if (!Object.keys(specs).length) return [];
+	const body = canonicalBody(endpoint, rawBody);
 	const issues: ParameterValueIssue[] = [];
 	for (const [name, spec] of Object.entries(specs)) {
-		const requested = requestedValue(rawBody, name, spec);
+		const requested = requestedValue(body, name, spec, endpoint);
 		if (!requested) continue;
 		const bytes = fileSize(requested.value);
 		if (bytes !== null) {
@@ -125,7 +179,7 @@ export function parameterValueIssues(
 			continue;
 		}
 		if (!isScalar(requested.value)) continue;
-		const resolved = resolveParameterSpec(spec, rawBody, specs);
+		const resolved = resolveParameterSpec(spec, body, specs);
 		if (!resolved.supported) {
 			// An explicitly unsupported parameter is the name check's job; only a
 			// rule that turns it off for this request is reported here.

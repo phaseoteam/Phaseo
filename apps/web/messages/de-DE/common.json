@@ -922,6 +922,11 @@
 			"parameterSpecs": "Parameterangaben",
 			"parameterSpecsDescription": "Jeder Parameter, den diese Route akzeptiert, mit erlaubten Werten, Bereichen, Standardwerten und Regeln (when). Playground und Modelle-API lesen diese Angaben.",
 			"parameterSpecsInvalid": "Nicht gespeichert: {error}",
+			"parameterPreviewUnsupported": "nicht unterstützt",
+			"parameterPreviewMore": "+{count} weitere",
+			"parameterPreviewStep": "Schritt {step}",
+			"parameterPreviewDefault": "Standard {value}",
+			"parameterPreviewRules": "{count, plural, one {# Regel} other {# Regeln}}",
 			"capabilityStatuses": {
 				"active": "Aktiv",
 				"deranked": "Nur als Reserve",

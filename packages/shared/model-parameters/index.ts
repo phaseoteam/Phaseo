@@ -509,6 +509,22 @@ export function resolveParameterSpec(
 }
 
 /**
+ * Whether a listed value fits the spec's min, max and step. A rule can narrow
+ * the range of a listed parameter ({values:[4,6,8]} with max 6 at 4k), so the
+ * list alone is not enough. Non-numeric values are always within bounds.
+ */
+export function withinBounds(spec: ParameterSpec, value: ParameterValue): boolean {
+	if (typeof value !== "number") return true;
+	if (spec.min !== undefined && value < spec.min) return false;
+	if (spec.max !== undefined && value > spec.max) return false;
+	if (spec.step !== undefined && spec.min !== undefined) {
+		const steps = (value - spec.min) / spec.step;
+		if (Math.abs(steps - Math.round(steps)) > 1e-9) return false;
+	}
+	return true;
+}
+
+/**
  * What a picker can offer: the listed values with their details, or a numeric
  * range spelled out (up to MAX_RANGE_OPTIONS entries). Empty when the
  * parameter is free-form or the range is open or too large.
@@ -517,7 +533,9 @@ export function parameterOptions(spec: ParameterSpec | undefined): ParameterOpti
 	if (!spec || !spec.supported) return [];
 	if (spec.values?.length) {
 		const byValue = new Map((spec.options ?? []).map((option) => [`${typeof option.value}:${String(option.value)}`, option]));
-		return spec.values.map((value) => byValue.get(`${typeof value}:${String(value)}`) ?? { value });
+		return spec.values
+			.filter((value) => withinBounds(spec, value))
+			.map((value) => byValue.get(`${typeof value}:${String(value)}`) ?? { value });
 	}
 	if (spec.min === undefined || spec.max === undefined || spec.max < spec.min) return [];
 	const step = spec.step ?? spec.multiple_of ?? 1;

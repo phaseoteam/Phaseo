@@ -922,6 +922,11 @@
 			"parameterSpecs": "Parameter specs",
 			"parameterSpecsDescription": "Every parameter this route accepts, with allowed values, ranges, defaults and rules (when). The playground and the models API read these.",
 			"parameterSpecsInvalid": "Not saved: {error}",
+			"parameterPreviewUnsupported": "not supported",
+			"parameterPreviewMore": "+{count} more",
+			"parameterPreviewStep": "step {step}",
+			"parameterPreviewDefault": "default {value}",
+			"parameterPreviewRules": "{count, plural, one {# rule} other {# rules}}",
 			"capabilityStatuses": {
 				"active": "Active",
 				"deranked": "Last resort",

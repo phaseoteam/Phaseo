@@ -922,6 +922,11 @@
 			"parameterSpecs": "Especificaciones de parámetros",
 			"parameterSpecsDescription": "Cada parámetro que acepta esta ruta, con valores permitidos, rangos, valores predeterminados y reglas (when). El playground y la API de modelos los leen.",
 			"parameterSpecsInvalid": "No se ha guardado: {error}",
+			"parameterPreviewUnsupported": "no admitido",
+			"parameterPreviewMore": "+{count} más",
+			"parameterPreviewStep": "paso {step}",
+			"parameterPreviewDefault": "predeterminado {value}",
+			"parameterPreviewRules": "{count, plural, one {# regla} other {# reglas}}",
 			"capabilityStatuses": {
 				"active": "Activo",
 				"deranked": "Último recurso",

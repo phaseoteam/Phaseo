@@ -922,6 +922,11 @@
 			"parameterSpecs": "مواصفات المعلمات",
 			"parameterSpecsDescription": "كل معلمة يقبلها هذا المسار، مع القيم المسموح بها والنطاقات والقيم الافتراضية والقواعد (when). تقرأها ساحة التجربة وواجهة النماذج البرمجية.",
 			"parameterSpecsInvalid": "لم يُحفظ: {error}",
+			"parameterPreviewUnsupported": "غير مدعومة",
+			"parameterPreviewMore": "+{count} أخرى",
+			"parameterPreviewStep": "الخطوة {step}",
+			"parameterPreviewDefault": "الافتراضي {value}",
+			"parameterPreviewRules": "{count, plural, zero {لا قواعد} one {قاعدة واحدة} two {قاعدتان} few {# قواعد} many {# قاعدة} other {# قاعدة}}",
 			"capabilityStatuses": {
 				"active": "نشط",
 				"deranked": "ملاذ أخير",

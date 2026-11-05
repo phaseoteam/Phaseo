@@ -922,6 +922,11 @@
 			"parameterSpecs": "Especificações de parâmetros",
 			"parameterSpecsDescription": "Cada parâmetro que esta rota aceita, com valores permitidos, intervalos, padrões e regras (when). O playground e a API de modelos leem estas especificações.",
 			"parameterSpecsInvalid": "Não salvo: {error}",
+			"parameterPreviewUnsupported": "não compatível",
+			"parameterPreviewMore": "+{count} outros",
+			"parameterPreviewStep": "passo {step}",
+			"parameterPreviewDefault": "padrão {value}",
+			"parameterPreviewRules": "{count, plural, one {# regra} other {# regras}}",
 			"capabilityStatuses": {
 				"active": "Ativo",
 				"deranked": "Último recurso",

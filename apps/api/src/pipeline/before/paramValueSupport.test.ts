@@ -135,4 +135,25 @@ describe("open value lists and file sizes", () => {
 		expect(parameterValueIssues(together, { file })).toEqual([]);
 		expect(parameterValueIssues(route({ file: { type: "file" } }), { file })).toEqual([]);
 	});
+
+	it("reads protocol spellings under their standard name", () => {
+		const effort = route({ "reasoning.effort": { values: ["low", "high"] } });
+		expect(parameterValueIssues(effort, { reasoning_effort: "max" }, "chat.completions")[0]).toMatchObject({ reason: "not_allowed", value: "max" });
+		expect(parameterValueIssues(effort, { reasoning_effort: "high" }, "chat.completions")).toEqual([]);
+		expect(parameterValueIssues(effort, { output_config: { effort: "max" } }, "messages")[0]).toMatchObject({ reason: "not_allowed", value: "max" });
+		expect(parameterValueIssues(effort, { reasoning: { effort: "max" } }, "responses")[0]).toMatchObject({ reason: "not_allowed" });
+		// A spec stored under the wire spelling matches the standard name too.
+		const stored = route({ reasoning_effort: { values: ["low"] } });
+		expect(parameterValueIssues(stored, { reasoning: { effort: "high" } }, "chat.completions")[0]).toMatchObject({ reason: "not_allowed" });
+		// The body itself is not changed.
+		const body = { reasoning_effort: "max" };
+		parameterValueIssues(effort, body, "chat.completions");
+		expect(body).toEqual({ reasoning_effort: "max" });
+	});
+
+	it("applies a rule's range to a listed parameter", () => {
+		const veo = route({ size: { values: ["720p", "4k"] }, duration: { values: [4, 6, 8], when: [{ if: { size: ["4k"] }, max: 6 }] } });
+		expect(parameterValueIssues(veo, { size: "4k", duration: 8 })[0]).toMatchObject({ param: "duration", reason: "not_allowed", allowed: [4, 6] });
+		expect(parameterValueIssues(veo, { size: "720p", duration: 8 })).toEqual([]);
+	});
 });

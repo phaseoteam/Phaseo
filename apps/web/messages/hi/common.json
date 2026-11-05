@@ -922,6 +922,11 @@
 			"parameterSpecs": "पैरामीटर विवरण",
 			"parameterSpecsDescription": "यह रूट जो भी पैरामीटर स्वीकार करता है, उसकी अनुमत वैल्यू, सीमाएँ, डिफ़ॉल्ट और नियम (when) सहित। प्लेग्राउंड और मॉडल API इन्हें पढ़ते हैं।",
 			"parameterSpecsInvalid": "सहेजा नहीं गया: {error}",
+			"parameterPreviewUnsupported": "समर्थित नहीं",
+			"parameterPreviewMore": "+{count} और",
+			"parameterPreviewStep": "चरण {step}",
+			"parameterPreviewDefault": "डिफ़ॉल्ट {value}",
+			"parameterPreviewRules": "{count, plural, one {# नियम} other {# नियम}}",
 			"capabilityStatuses": {
 				"active": "सक्रिय",
 				"deranked": "अंतिम विकल्प",

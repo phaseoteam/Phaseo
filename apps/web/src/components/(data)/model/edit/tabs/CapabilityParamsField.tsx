@@ -31,7 +31,27 @@ export function CapabilityParamsField({
     setError(null)
   }, [serialized])
 
-  const preview = useMemo(() => describeStoredParams(params), [params])
+  const preview = useMemo(
+    () =>
+      describeStoredParams(params).map((entry) => {
+        if (!entry.supported) return `${entry.name}: ${tEditor("parameterPreviewUnsupported")}`
+        const range = entry.range
+          ? `${entry.range.min ?? "…"}–${entry.range.max ?? "…"}${
+              entry.range.step ? ` ${tEditor("parameterPreviewStep", { step: entry.range.step })}` : ""
+            }`
+          : null
+        const values = entry.values
+          ? entry.values.join(", ") + (entry.more ? ` ${tEditor("parameterPreviewMore", { count: entry.more })}` : "")
+          : null
+        const parts = [
+          values ?? range,
+          entry.default !== undefined ? tEditor("parameterPreviewDefault", { value: entry.default }) : null,
+          entry.rules ? tEditor("parameterPreviewRules", { count: entry.rules }) : null,
+        ].filter(Boolean)
+        return `${entry.name}: ${parts.join(" · ")}`
+      }),
+    [params, tEditor],
+  )
 
   return (
     <div className="grid gap-2">

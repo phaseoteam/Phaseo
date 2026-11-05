@@ -922,6 +922,11 @@
 			"parameterSpecs": "参数规格",
 			"parameterSpecsDescription": "此路由接受的每个参数，包括允许的值、范围、默认值和规则（when）。Playground 和模型 API 会读取这些规格。",
 			"parameterSpecsInvalid": "未保存：{error}",
+			"parameterPreviewUnsupported": "不支持",
+			"parameterPreviewMore": "另有 {count} 个",
+			"parameterPreviewStep": "步长 {step}",
+			"parameterPreviewDefault": "默认 {value}",
+			"parameterPreviewRules": "{count, plural, other {# 条规则}}",
 			"capabilityStatuses": {
 				"active": "已启用",
 				"deranked": "最后备选",
