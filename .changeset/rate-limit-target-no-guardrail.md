@@ -1,8 +1,8 @@
 ---
 "@phaseo/gateway-api": patch
-"@phaseo/sdk": minor
-"@phaseo/py-sdk": minor
-"@phaseo/go-sdk": minor
+"@phaseo/sdk": major
+"@phaseo/py-sdk": major
+"@phaseo/go-sdk": major
 "@phaseo/cli": patch
 "@phaseo/mcp": patch
 "@phaseo/web": patch
