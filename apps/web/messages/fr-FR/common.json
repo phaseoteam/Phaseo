@@ -919,6 +919,9 @@
 			"selectCapability": "Sélectionnez une capacité",
 			"supportedParams": "Paramètres pris en charge",
 			"supportedParamsDescription": "Sélectionnez les paramètres de requête pris en charge par cette capacité.",
+			"parameterSpecs": "Spécifications des paramètres",
+			"parameterSpecsDescription": "Chaque paramètre accepté par cette route, avec les valeurs autorisées, les plages, les valeurs par défaut et les règles (when). Le playground et l’API des modèles les lisent.",
+			"parameterSpecsInvalid": "Non enregistré : {error}",
 			"capabilityStatuses": {
 				"active": "Actif",
 				"deranked": "Dernier recours",

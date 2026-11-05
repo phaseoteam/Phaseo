@@ -919,6 +919,9 @@
 			"selectCapability": "Select a capability",
 			"supportedParams": "Supported parameters",
 			"supportedParamsDescription": "Select the request parameters supported by this capability.",
+			"parameterSpecs": "Parameter specs",
+			"parameterSpecsDescription": "Every parameter this route accepts, with allowed values, ranges, defaults and rules (when). The playground and the models API read these.",
+			"parameterSpecsInvalid": "Not saved: {error}",
 			"capabilityStatuses": {
 				"active": "Active",
 				"deranked": "Last resort",

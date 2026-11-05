@@ -919,6 +919,9 @@
 			"selectCapability": "Selecione uma capacidade",
 			"supportedParams": "Parâmetros compatíveis",
 			"supportedParamsDescription": "Selecione os parâmetros de solicitação compatíveis com esta capacidade.",
+			"parameterSpecs": "Especificações de parâmetros",
+			"parameterSpecsDescription": "Cada parâmetro que esta rota aceita, com valores permitidos, intervalos, padrões e regras (when). O playground e a API de modelos leem estas especificações.",
+			"parameterSpecsInvalid": "Não salvo: {error}",
 			"capabilityStatuses": {
 				"active": "Ativo",
 				"deranked": "Último recurso",

@@ -919,6 +919,9 @@
 			"selectCapability": "Selecciona una capacidad",
 			"supportedParams": "Parámetros admitidos",
 			"supportedParamsDescription": "Selecciona los parámetros de solicitud que admite esta capacidad.",
+			"parameterSpecs": "Especificaciones de parámetros",
+			"parameterSpecsDescription": "Cada parámetro que acepta esta ruta, con valores permitidos, rangos, valores predeterminados y reglas (when). El playground y la API de modelos los leen.",
+			"parameterSpecsInvalid": "No se ha guardado: {error}",
 			"capabilityStatuses": {
 				"active": "Activo",
 				"deranked": "Último recurso",
