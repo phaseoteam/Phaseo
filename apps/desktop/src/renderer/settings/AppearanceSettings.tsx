@@ -7,6 +7,7 @@ import { onThemeEditorRequest } from "../lib/themeEditorRequest";
 import { useEffortDisplay } from "../lib/effortDisplay";
 import { PickerGroupsSettings } from "./PickerGroupsSettings";
 import { CustomModelsSettings } from "./CustomModelsSettings";
+import { FontSettings } from "./FontSettings";
 import { builtInThemes, importTheme, serializeTheme, shareCode, themeColours, type Theme, type ThemeHalf, type ThemeMode } from "../lib/themes";
 import type { ThemePreference } from "../types";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
@@ -112,6 +113,7 @@ export function AppearanceSettings() {
 						className={cn("flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-semibold transition-colors", effortDisplay === value ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>{label}</button>)}
 				</div>} />
 		</SettingsSection>
+		<FontSettings />
 		<PickerGroupsSettings />
 		<CustomModelsSettings />
 		<SettingsSection title="Theme" description="Each theme has a light and a dark side, so it works with any mode."

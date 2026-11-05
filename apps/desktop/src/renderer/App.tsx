@@ -30,6 +30,7 @@ import { QuitRecoveryOffer } from "./chat/UsageLimitNotice";
 import { ChatNotifications } from "./app/ChatNotifications";
 import { GuideRunNotices } from "./views/pullRequests/GuideRunNotices";
 import { saveChatPreferences, useDiffColours, useWorkspacePreferences } from "./lib/workspacePreferences";
+import { useAppFonts } from "./lib/appFonts";
 
 /** The app-wide commands behind the keyboard shortcuts (Settings → Keyboard shortcuts). */
 function useShortcuts() {
@@ -166,5 +167,6 @@ function Shell() {
 export function App() {
 	useAppTheme();
 	useDiffColours();
+	useAppFonts();
 	return <WorkspaceProvider><Shell /></WorkspaceProvider>;
 }

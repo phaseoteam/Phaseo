@@ -3,6 +3,7 @@ import { currentSendKey, setSendKey } from "../chat/sendKey";
 import { defaultEffortDisplay, effortDisplayKey, effortDisplays } from "./effortDisplay";
 import { defaultPickerGroups, pickerGroupsKey, validPickerGroups } from "./pickerGroups";
 import { customModelsKey, validCustomModels } from "./customModels";
+import { appFontsKey, validAppFonts } from "./appFonts";
 import { harnesses } from "../../shared/workspace";
 import { workingSectionKey } from "../shell/codeThreads";
 import { chooseColourTheme, colourThemes } from "./appTheme";
@@ -21,6 +22,7 @@ const windowSettings: Record<string, WindowSetting> = {
 	colourTheme: { label: "Colour theme", page: "appearance", description: "The colour theme in use, by id; settings.list gives the ids. To change a theme's background or accent colours, use config.set with area themes.", type: "enum", values: [], read: () => colourThemes().activeId, write: value => chooseColourTheme(choice(value, colourThemes().ids, "colourTheme")) },
 	effortDisplay: persisted(effortDisplayKey, defaultEffortDisplay, { label: "Show reasoning as", page: "appearance", description: "How the model button shows the reasoning level: word, dots or both.", type: "enum", values: effortDisplays }),
 	pickerGroups: { label: "Model picker groups", page: "appearance", description: "Which groups the model picker's left column shows and their order: { order, hidden }, lists of group ids such as codex, claude, phaseo (all Phaseo models) or lab:openai. Ordered ids come first; the rest keep their default order.", type: "object", read: () => readPersistedValue(pickerGroupsKey, defaultPickerGroups), write: value => writePersistedValue(pickerGroupsKey, validPickerGroups(value)) },
+	fonts: { label: "Fonts", page: "appearance", description: "Font families for the interface and for code (diffs, terminals, code blocks): { interface?, code? }, such as { code: \"JetBrains Mono\" }. Unset keeps the app's own; a missing font falls back to the system's.", type: "object", read: () => readPersistedValue(appFontsKey, {}), write: value => writePersistedValue(appFontsKey, validAppFonts(value)) },
 	customModels: { label: "Custom models", page: "appearance", description: "Model ids the model picker lists for an agent beside its own catalog: a list of { harness, id, name? }, such as { harness: \"codex\", id: \"gpt-7-preview\" }.", type: "object", read: () => readPersistedValue(customModelsKey, []), write: value => writePersistedValue(customModelsKey, validCustomModels(value, harnesses.filter(harness => harness !== "acp"))) },
 	sendKey: { label: "Send with", page: "general", description: "enter, or mod+enter (Ctrl or ⌘ with Enter).", type: "enum", values: ["enter", "mod+enter"], read: currentSendKey, write: value => setSendKey(choice(value, ["enter", "mod+enter"], "sendKey") as "enter" | "mod+enter") },
 	autoOpenPanes: persisted("phaseo.desktop.panes.autoOpen", true, { label: "Open panes automatically", page: "chat", description: "Show the diff when a turn changes files, and a linked pull request.", type: "boolean" }),
