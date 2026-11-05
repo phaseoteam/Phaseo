@@ -444,6 +444,7 @@ async function adapterResultToIR(
 					}))
 					: [],
 				usage,
+				...(payload?.svg_usage && typeof payload.svg_usage === "object" ? { svgUsage: payload.svg_usage } : {}),
 				rawResponse: payload,
 			};
 		}

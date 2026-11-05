@@ -523,6 +523,68 @@ describe("beforeRequest pricing loss-prevention", () => {
 		expect(payload.guardrail).toMatchObject({ type: "route_access", scope: "workspace" });
 	});
 
+	it("rejects a GPT Image SVG request whose svg.model the workspace policy blocks", async () => {
+		const provider = providerWithPricingRules(1);
+		const body = { model: "openai/gpt-image-2.6-flare", prompt: "An apple icon", output_format: "svg", svg: { model: "gpt-5-nano" } };
+		guardJsonMock.mockResolvedValue({ ok: true, value: body });
+		guardZodMock.mockReturnValue({ ok: true, value: body });
+		guardModelMock.mockReturnValue({ ok: true, value: { body, model: body.model, stream: false } });
+		resolveCapabilityFromEndpointMock.mockReturnValue("image.generate");
+		guardContextMock.mockResolvedValue({
+			ok: true,
+			value: {
+				context: {
+					pricing: { openai: provider.pricingCard },
+					key: { ok: true, reason: null, resetAt: null },
+					keyLimit: { ok: true, reason: null, resetAt: null },
+					credit: { ok: true, reason: null, resetAt: null },
+					teamSettings: { billingMode: "wallet" },
+				},
+				providers: [provider],
+				resolvedModel: "openai/gpt-image-2.6-flare",
+				candidateDiagnostics: {
+					totalProviders: 1,
+					supportsEndpointCount: 1,
+					droppedUnsupportedEndpoint: [],
+					droppedMissingAdapter: [],
+					candidateCount: 1,
+				},
+			},
+		});
+		applyWorkspacePolicyMock.mockImplementation((args: any) => {
+			const diagnostics = {
+				resolvedModel: args.resolvedModel,
+				allowedApiModels: ["openai/gpt-image-2.6-flare"],
+				providerAllowlist: [],
+				providerBlocklist: [],
+				requestProviderOnly: [],
+				requestProviderIgnore: [],
+				activeGuardrailIds: ["gr_images_only"],
+				beforeCount: args.providers.length,
+				afterCount: 0,
+			};
+			return args.resolvedModel === "openai/gpt-5-nano"
+				? { ok: false, reason: "model_not_allowed", diagnostics }
+				: { ok: true, providers: args.providers, diagnostics: { ...diagnostics, afterCount: args.providers.length } };
+		});
+
+		const req = new Request("https://gateway.local/v1/images/generations", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify(body),
+		});
+		const result = await beforeRequest(req, "images.generations", new Timer(), null);
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(403);
+		const payload = await result.response.json();
+		expect(payload.reason).toBe("model_restricted_by_policy");
+		expect(payload.details?.[0]?.path).toEqual(["svg", "model"]);
+		const authorCall = applyWorkspacePolicyMock.mock.calls.find(([args]) => args.resolvedModel === "openai/gpt-5-nano")?.[0];
+		expect(authorCall.providers.map((candidate: any) => candidate.apiModelId)).toEqual(["openai/gpt-5-nano"]);
+		expect(authorCall.body.model).toBe("openai/gpt-5-nano");
+	});
+
 	it("rejects request when workspace policy filters out all providers", async () => {
 		const provider = providerWithPricingRules(1);
 		guardContextMock.mockResolvedValue({
