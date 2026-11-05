@@ -6,7 +6,9 @@ import { BACKGROUND_REFRESH_MS } from "./useBackgroundRefresh";
 
 vi.mock("swr", () => ({ default: vi.fn(), mutate: vi.fn() }));
 // The hook is called directly here, outside a React render; its change subscription is covered by the app.
-vi.mock("react", async original => ({ ...await original<typeof React>(), useEffect: vi.fn() }));
+vi.mock("react", async original => ({ ...await original<typeof React>(), useEffect: vi.fn(), useMemo: (make: () => unknown) => make() }));
+// No custom models are added here; customModels.test.ts covers how they join a list.
+vi.mock("./persistedState", () => ({ usePersistedState: (_key: string, initial: unknown) => [initial, vi.fn()] }));
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.clearAllMocks(); });
 describe("model cache policy", () => {
 	it("preserves stale models, scopes accounts and retries automatically after ten minutes", () => {
