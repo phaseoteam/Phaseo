@@ -161,7 +161,7 @@ Das Relay sendet `session.ended` bei jedem Ende: wenn du es angefordert hast, we
 | `reason` | Ein stabiler Grundcode. Siehe [Grundcodes](#reason-codes). |
 | `initiated_by` | `client`, `gateway` oder `provider`. |
 | `duration_seconds` | Zeit seit der Verbindung des Relays. |
-| `usage` | Die abgerechneten Messgrößen: Token-Anzahlen nach Modalität und, bei xAI und GPT Live, `audio_seconds`. |
+| `usage` | Die Nutzung, nach der der Anruf abgerechnet wird: Token-Anzahlen nach Modalität, einschließlich Cache-Lese- und Schreibvorgängen; `audio_seconds`, die Audiodauer des Anrufs, nach der xAI, ElevenLabs, Mistral und die Stimme von GPT Live abgerechnet werden (bei nach Token abgerechneten Anrufen nur zur Information); und `native_web_search_requests` für Websuchen von GPT Live. Ist `billing_status` `pending` oder `unresolved`, enthält es die bisher bekannte Nutzung; `final_bill` liefert die endgültigen Messgrößen. |
 | `cost.estimated` | `true`, wenn ein Teil der Nutzung anhand des gemessenen Audios geschätzt wurde, weil die Nutzungsdaten des Anbieters für einen unterbrochenen Turn nie ankamen. `estimate_basis` nennt den Grund. |
 | `cost.debt_nanos` | Der Teil der Kosten, der als Überziehung über deine Reservierungen und dein freies Guthaben hinaus berechnet wurde. |
 | `cost.uncollected_nanos` | Kosten über dem Überziehungslimit, die nicht berechnet wurden. |

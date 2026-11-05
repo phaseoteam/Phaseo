@@ -161,7 +161,7 @@ El relay envía `session.ended` en cualquier final: el que tú solicitas, el que
 | `reason` | Un código de motivo estable. Consulta los [códigos de motivo](#reason-codes). |
 | `initiated_by` | `client`, `gateway` o `provider`. |
 | `duration_seconds` | Tiempo transcurrido desde que se conectó el relay. |
-| `usage` | Los medidores facturados: recuentos de tokens por modalidad y, para xAI y GPT Live, `audio_seconds`. |
+| `usage` | El uso por el que se factura la llamada: recuentos de tokens por modalidad, incluidas las lecturas y escrituras de caché; `audio_seconds`, la duración del audio de la llamada, que es lo que se factura en xAI, ElevenLabs, Mistral y la voz de GPT Live (en las llamadas facturadas por tokens se muestra solo como información); y `native_web_search_requests` para las búsquedas web de GPT Live. Cuando `billing_status` es `pending` o `unresolved`, muestra el uso conocido hasta el momento, y `final_bill` devuelve los medidores finales. |
 | `cost.estimated` | `true` cuando parte del uso se estimó a partir del audio medido porque nunca llegaron los datos de uso del proveedor para un turno interrumpido. `estimate_basis` indica el motivo. |
 | `cost.debt_nanos` | La parte del coste cobrada como descubierto, más allá de tus retenciones y tu saldo libre. |
 | `cost.uncollected_nanos` | El coste por encima del límite de descubierto que no se cobró. |

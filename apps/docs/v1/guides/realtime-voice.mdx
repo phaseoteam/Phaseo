@@ -162,7 +162,7 @@ The relay sends `session.ended` on every ending: one you requested, one the prov
 | `reason` | A stable reason code. See [reason codes](#reason-codes). |
 | `initiated_by` | `client`, `gateway` or `provider`. |
 | `duration_seconds` | Time since the relay connected. |
-| `usage` | The billed meters: token counts by modality and, for xAI and GPT Live, `audio_seconds`. |
+| `usage` | The usage the call is billed on: token counts by modality, including cache reads and writes; `audio_seconds`, the call's audio duration, which is what xAI, ElevenLabs, Mistral and GPT Live's voice are billed on (on token-billed calls it is shown for information only); and `native_web_search_requests` for GPT Live web searches. When `billing_status` is `pending` or `unresolved`, it is the usage known so far, and `final_bill` returns the final meters. |
 | `cost.estimated` | `true` when part of the usage was estimated from metered audio because the provider's usage for an interrupted turn never arrived. `estimate_basis` says why. |
 | `cost.debt_nanos` | The part of the cost charged as overdraft beyond your holds and free balance. |
 | `cost.uncollected_nanos` | Cost beyond the overdraft cap that wasn't charged. |

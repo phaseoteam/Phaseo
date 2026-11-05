@@ -161,7 +161,7 @@ curl https://api.phaseo.app/v1/audio/realtime/sessions \
 | `reason` | 安定した理由コードです。[理由コード](#reason-codes)を参照してください。 |
 | `initiated_by` | `client`、`gateway`、`provider` のいずれかです。 |
 | `duration_seconds` | リレーが接続してからの時間です。 |
-| `usage` | 課金対象のメーターです。モダリティ別のトークン数と、xAI と GPT Live の場合は `audio_seconds` です。 |
+| `usage` | 通話の課金対象となる使用量です。キャッシュの読み取りと書き込みを含むモダリティ別のトークン数、通話の音声の長さである `audio_seconds`（xAI、ElevenLabs、Mistral、GPT Live の音声はこれで課金されます。トークンで課金される通話では参考値として表示されます）、GPT Live のウェブ検索の `native_web_search_requests` です。`billing_status` が `pending` または `unresolved` の場合はその時点で判明している使用量で、最終的なメーターは `final_bill` で取得できます。 |
 | `cost.estimated` | 中断されたターンのプロバイダー使用量が届かなかったため、使用量の一部を計測した音声から推定した場合に `true` になります。`estimate_basis` がその理由を示します。 |
 | `cost.debt_nanos` | 確保額と空き残高を超えて当座貸越として請求されたコストの部分です。 |
 | `cost.uncollected_nanos` | 当座貸越の上限を超え、請求されなかったコストです。 |
