@@ -137,7 +137,8 @@ function ActivityRow({ activity, live, openDiff, count = 1 }: { activity: AgentA
 		<div className="flex min-w-0 items-center">
 			<button type="button" disabled={!expandable} onClick={() => setOpen(value => !value)} aria-expanded={open} className="group/activity flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1 text-left text-muted-foreground hover:text-foreground disabled:hover:text-muted-foreground">
 				{running ? <LoaderCircle className="size-3.5 shrink-0 animate-spin text-primary" /> : <Icon className={cn("size-3.5 shrink-0 text-muted-foreground", activity.status === "failed" && "text-destructive")} />}
-				<span className={cn("min-w-0 truncate text-foreground/85", (summary || file) && "shrink-0", running && "animate-pulse")}>{label}</span>
+				{/* The label keeps most of the row beside a summary, but still truncates, so a long one never leaves the column. */}
+				<span className={cn("min-w-0 truncate text-foreground/85", (summary || file) && "max-w-[75%] shrink-0", running && "animate-pulse")}>{label}</span>
 				{count > 1 && <span className="shrink-0 tabular-nums text-muted-foreground">×{count}</span>}
 				{file && !summary.includes(file) ? <span className="min-w-0 truncate font-mono text-[11.5px] text-muted-foreground">{files.length > 1 ? `${file} and ${files.length - 1} more` : file}</span>
 					: summary && <span className="min-w-0 truncate font-mono text-[11.5px] text-muted-foreground">{summary}</span>}

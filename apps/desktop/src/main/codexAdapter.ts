@@ -43,6 +43,28 @@ export function codexAsyncQuestions(item: unknown): AgentQuestion[] | undefined 
 }
 
 type CodexEvent = { threadId?: string; turnId?: string; itemId?: string; delta?: string; item?: { id: string; type: string; text?: string; command?: string; aggregatedOutput?: string; summary?: string[]; content?: string[]; status?: string; [key: string]: unknown }; explanation?: string; plan?: unknown[]; tokenUsage?: unknown; turn?: { id: string; status: string; error?: { message: string } } };
+type CodexCommandAction = { type: "read"; command: string; name: string; path: string } | { type: "listFiles"; command: string; path: string | null } | { type: "search"; command: string; query: string | null; path: string | null } | { type: "unknown"; command: string };
+/** The shell Codex wraps a command in ("...\powershell.exe" -Command "...", /bin/bash -lc '...'), quoted for that shell. */
+const shellWrapper = /^(?:"[^"]*?(?:pwsh|powershell|bash|zsh|sh|cmd)(?:\.exe)?"|\S*?(?:pwsh|powershell|bash|zsh|sh|cmd)(?:\.exe)?)\s+(?:-NoProfile\s+)?(?:-Command|-lc|-c|\/c)\s+([\s\S]+)$/i;
+export function unwrapShell(command: string) {
+	const inner = shellWrapper.exec(command.trim())?.[1]?.trim();
+	if (!inner) return command.trim();
+	if (inner.length > 1 && inner.startsWith("\"") && inner.endsWith("\"")) return inner.slice(1, -1).replace(/\\(["\\$`])/g, "$1");
+	if (inner.length > 1 && inner.startsWith("'") && inner.endsWith("'")) return inner.slice(1, -1).replaceAll("'\\''", "'");
+	return inner;
+}
+/**
+ * A Codex command as a step the chat can name: Codex parses each command into actions, so reading a file shows as
+ * "Read SKILL.md" rather than the shell that ran it. The step's input leads its text, as the other agents' steps do.
+ */
+export function codexCommandStep(command: string, actions: readonly CodexCommandAction[] | null | undefined): { title: string; input: Record<string, unknown> } {
+	const only = actions?.length === 1 ? actions[0] : undefined;
+	if (only?.type === "read") return { title: "read_file", input: { path: only.path } };
+	if (only?.type === "listFiles") return { title: "list_files", input: only.path ? { path: only.path } : {} };
+	if (only?.type === "search") return { title: "search_files", input: { ...only.query ? { query: only.query } : {}, ...only.path ? { path: only.path } : {} } };
+	return { title: "run_command", input: { command: only?.command ?? unwrapShell(command) } };
+}
+
 export class CodexAdapter implements AgentAdapter {
 	private child?: ChildProcessWithoutNullStreams;
 	private rpc?: JsonRpc;
@@ -165,7 +187,9 @@ export class CodexAdapter implements AgentAdapter {
 						// An MCP call keeps its server, tool, arguments and result, for MCP Apps (mcpCall).
 						const mcp = item.type === "mcpToolCall" && method === "item/completed" && typeof item.server === "string" && typeof item.tool === "string"
 							? { mcpCall: { server: item.server, tool: item.tool, input: item.arguments ?? {}, result: item.result ?? (item.error ? { content: [{ type: "text", text: String((item.error as { message?: unknown }).message ?? "The tool failed.") }], isError: true } : undefined) } } : {};
-						callbacks.onActivity?.({ id: item.id, type, ...mcp, title: item.type === "mcpToolCall" && typeof item.tool === "string" ? item.tool : item.command ?? item.type, text: item.type === "reasoning" ? [...(item.summary ?? []), ...(item.content ?? [])].join("\n") : item.text ?? item.aggregatedOutput ?? JSON.stringify(item, null, 2), status: method === "item/started" ? "running" : item.status === "failed" ? "failed" : "completed" });
+						const step = item.type === "commandExecution" && typeof item.command === "string" ? codexCommandStep(item.command, item.commandActions as CodexCommandAction[] | undefined) : undefined;
+						if (step) callbacks.onActivity?.({ id: item.id, type, title: step.title, text: [JSON.stringify(step.input), item.aggregatedOutput].filter(Boolean).join("\n\n"), status: method === "item/started" ? "running" : item.status === "failed" ? "failed" : "completed" });
+						else callbacks.onActivity?.({ id: item.id, type, ...mcp, title: item.type === "mcpToolCall" && typeof item.tool === "string" ? item.tool : item.command ?? item.type, text: item.type === "reasoning" ? [...(item.summary ?? []), ...(item.content ?? [])].join("\n") : item.text ?? item.aggregatedOutput ?? JSON.stringify(item, null, 2), status: method === "item/started" ? "running" : item.status === "failed" ? "failed" : "completed" });
 					}
 					if (method === "turn/completed" && event.turn) {
 						if ((this.compacting && !this.turnId) || (this.turnId && event.turn.id !== this.turnId)) return;
