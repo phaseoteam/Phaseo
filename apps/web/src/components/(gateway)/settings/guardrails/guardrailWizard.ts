@@ -251,10 +251,16 @@ export function rateIssue(form: GuardrailWizardForm, options: { legacyCounting?:
 /** Largest spend limit, in nanodollars, that stays a safe integer (about $9 million). */
 const SPEND_MAX_NANOS = Number.MAX_SAFE_INTEGER;
 
-/** A typed dollar limit in nanodollars: null when blank, "invalid" unless it is above zero, at most 2 decimals and in range. */
+/**
+ * A typed dollar limit in nanodollars: null when blank, "invalid" unless it is above zero, at most 2
+ * decimals and in range. Commas count only as thousands separators ("1,250.50"); "12,50" is refused
+ * rather than read as 1,250.
+ */
 export function parseSpendLimit(value: string): number | null | "invalid" {
-	const text = value.replace(/[\s,_$]/g, "");
-	if (!text) return null;
+	const spaced = value.replace(/[\s_$]/g, "");
+	if (!spaced) return null;
+	if (spaced.includes(",") && !/^\d{1,3}(?:,\d{3})+(?:\.\d+)?$/.test(spaced)) return "invalid";
+	const text = spaced.replace(/,/g, "");
 	const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(text);
 	if (!match) return "invalid";
 	const nanos = Number(match[1]) * 1e9 + Number((match[2] ?? "").padEnd(2, "0")) * 1e7;

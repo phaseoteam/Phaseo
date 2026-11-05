@@ -147,6 +147,10 @@ describe("spend guardrails in the flow", () => {
 		expect(parseSpendLimit("")).toBeNull();
 		expect(parseSpendLimit("25")).toBe(25_000_000_000);
 		expect(parseSpendLimit("$1,250.5")).toBe(1_250_500_000_000);
+		expect(parseSpendLimit("1,000,000")).toBe(1_000_000_000_000_000);
+		// A decimal comma is refused, not read as thousands.
+		expect(parseSpendLimit("12,50")).toBe("invalid");
+		expect(parseSpendLimit("1,2345")).toBe("invalid");
 		expect(parseSpendLimit("0.01")).toBe(10_000_000);
 		expect(parseSpendLimit("0")).toBe("invalid");
 		expect(parseSpendLimit("1.234")).toBe("invalid");
