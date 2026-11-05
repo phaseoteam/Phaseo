@@ -16692,7 +16692,12 @@ components:
         enhance_prompt:
           type: boolean
         compression_quality:
-          type: integer
+          oneOf:
+            - type: integer
+            - type: string
+              enum:
+                - optimized
+                - lossless
         person_generation:
           type: string
         resize_mode:

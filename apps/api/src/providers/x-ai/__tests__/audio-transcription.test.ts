@@ -21,6 +21,16 @@ describe("xAI audio transcription", () => {
 		expect(result.bill.usage).toMatchObject({ input_audio_seconds: 3.45 });
 	});
 
+	it("sends grok-voice-transcribe-2.0 keyterms like grok-transcribe", async () => {
+		let form: FormData | undefined;
+		const mock = installFetchMock([{ match: (url, init) => { if (url !== "https://api.x.ai/v1/stt") return false; form = init?.body as FormData; return true; }, response: jsonResponse({ text: "ok", duration: 1 }) }]);
+		const base = args({ keywords: ["Phaseo", "a".repeat(50)] });
+		const result = await exec({ ...base, model: "spacex-ai/grok-voice-transcribe-2.0", providerModelSlug: "grok-voice-transcribe-2.0", body: { ...base.body, model: "spacex-ai/grok-voice-transcribe-2.0" } });
+		mock.restore();
+		expect(result.upstream.status).toBe(200);
+		expect(form!.getAll("keyterm")).toEqual(["Phaseo", "a".repeat(50)]);
+	});
+
 	it("rejects OpenAI-only transcription controls", async () => {
 		const result = await exec(args({ response_format: "verbose_json" }));
 		expect(result.upstream.status).toBe(400);

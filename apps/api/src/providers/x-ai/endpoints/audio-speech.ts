@@ -1,3 +1,8 @@
+// Purpose: xAI text-to-speech adapter for gateway audio.speech.
+// Why: xAI's /v1/tts takes its own body (text, voice_id, language, output_format).
+// How: Maps the speech request onto that body, checks xAI's documented limits first,
+//      and decodes the JSON envelope into audio.
+
 import type { AdapterResult, ProviderExecuteArgs } from "../../types";
 import { AudioSpeechSchema, type AudioSpeechRequest } from "@core/schemas";
 import { buildAdapterPayload } from "../../utils";
@@ -50,6 +55,18 @@ function invalidParameterResponse(param: string, message: string): Response {
 	);
 }
 
+// xAI's TTS reference gives speed a range of 0.7 to 1.5 (Phaseo's shared schema allows 0.25 to 4).
+const XAI_MIN_SPEED = 0.7;
+const XAI_MAX_SPEED = 1.5;
+
+// xAI requires `language`; "auto" is its documented detection value. Callers can set a
+// BCP-47 code through config.xai.language (or config["x-ai"].language).
+function resolveLanguage(config: AudioSpeechRequest["config"]): string {
+	const options = (config as Record<string, any> | undefined)?.xai ?? (config as Record<string, any> | undefined)?.["x-ai"];
+	const language = typeof options?.language === "string" ? options.language.trim() : "";
+	return language || "auto";
+}
+
 function decodeBase64Audio(value: string): ArrayBuffer | undefined {
 	if (value.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(value)) return undefined;
 	try {
@@ -72,23 +89,29 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 		model: args.providerModelSlug || adapterPayload.model,
 	};
 
+	const rejected = (param: string, message: string): AdapterResult => ({
+		kind: "completed",
+		upstream: invalidParameterResponse(param, message),
+		bill: { cost_cents: 0, currency: "USD", usage: undefined, upstream_id: null, finish_reason: null },
+		keySource: keyInfo.source,
+		byokKeyId: keyInfo.byokId,
+	});
+
 	const codec = body.response_format ?? body.format ?? "mp3";
 	if (!["mp3", "wav", "pcm", "mulaw", "alaw"].includes(codec)) {
-		return {
-			kind: "completed",
-			upstream: invalidParameterResponse(
-				body.response_format ? "response_format" : "format",
-				`xAI /v1/tts does not support codec "${codec}".`,
-			),
-			bill: { cost_cents: 0, currency: "USD", usage: undefined, upstream_id: null, finish_reason: null },
-			keySource: keyInfo.source,
-			byokKeyId: keyInfo.byokId,
-		};
+		return rejected(
+			body.response_format ? "response_format" : "format",
+			`xAI /v1/tts does not support codec "${codec}".`,
+		);
 	}
+	if (typeof body.speed === "number" && (body.speed < XAI_MIN_SPEED || body.speed > XAI_MAX_SPEED)) {
+		return rejected("speed", `xAI /v1/tts takes speed from ${XAI_MIN_SPEED} to ${XAI_MAX_SPEED}.`);
+	}
+	// xAI has no instructions field (style goes in inline speech tags), so instructions are not sent.
 	const requestBody = {
 		text: body.input,
 		voice_id: extractVoiceCandidate(body.voice) ?? "eve",
-		language: "auto",
+		language: resolveLanguage(body.config),
 		output_format: {
 			codec,
 		},

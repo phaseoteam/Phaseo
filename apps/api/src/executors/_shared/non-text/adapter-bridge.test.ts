@@ -113,6 +113,37 @@ describe("non-text adapter bridge", () => {
 		}
 	});
 
+	it.each([{ xai: { language: "fr" } }, { "x-ai": { language: "fr" } }])("passes xAI speech language through the bridge (%j)", async (config) => {
+		let sent: Record<string, unknown> | undefined;
+		const mock = installFetchMock([{
+			match: (url, init) => {
+				if (!url.includes("/tts")) return false;
+				sent = JSON.parse(String(init?.body));
+				return true;
+			},
+			response: new Response(new Uint8Array([1, 2, 3]), { headers: { "Content-Type": "audio/mpeg" } }),
+		}]);
+		await executeNonTextAdapter({
+			ir: {
+				model: "spacex-ai/grok-tts",
+				input: "bonjour",
+				voice: "eve",
+				rawRequest: { model: "spacex-ai/grok-tts", input: "bonjour", config },
+			},
+			requestId: "req_xai_speech_language",
+			workspaceId: "team_test",
+			providerId: "spacex-ai",
+			endpoint: "audio.speech",
+			providerModelSlug: "grok-tts",
+			byokMeta: [],
+			pricingCard: { ...PRICING_CARD, provider: "spacex-ai", endpoint: "audio.speech" },
+			meta: {},
+		} as any);
+		mock.restore();
+
+		expect(sent).toMatchObject({ text: "bonjour", language: "fr" });
+	});
+
 	it("forwards diarization controls through the transcription IR bridge", async () => {
 		let capturedForm: FormData | undefined;
 		const mock = installFetchMock([{
@@ -365,5 +396,29 @@ describe("non-text adapter bridge", () => {
 			seed: 42,
 		});
 		expect(result.kind).toBe("completed");
+	});
+
+	it("carries GPT Image 2.6 complexity from the IR to OpenAI", async () => {
+		let capturedBody: any = null;
+		const mock = installFetchMock([{
+			match: (url) => url.includes("/images/generations"),
+			response: jsonResponse({ created: 1, data: [{ b64_json: "openai-image" }] }),
+			onRequest: (call) => { capturedBody = call.bodyJson; },
+		}]);
+
+		await executeNonTextAdapter({
+			ir: { model: "openai/gpt-image-2.6-flare", prompt: "A geometric fox", complexity: "high" },
+			requestId: "req_non_text_openai_image_complexity",
+			workspaceId: "team_test",
+			providerId: "openai",
+			endpoint: "images.generations",
+			providerModelSlug: "gpt-image-2.6-flare",
+			byokMeta: [],
+			pricingCard: { ...PRICING_CARD, provider: "openai" },
+			meta: {},
+		} as any);
+
+		mock.restore();
+		expect(capturedBody?.complexity).toBe("high");
 	});
 });

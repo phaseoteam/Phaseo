@@ -83,9 +83,10 @@ type EndpointConfig = {
 	body: (model: string) => Record<string, unknown>;
 };
 
-function resolveSpeechVoiceForModel(model: string): string {
+/** The example voice for a speech model; MiMo VoiceDesign takes none (the instructions describe it). */
+function resolveSpeechVoiceForModel(model: string): string | undefined {
 	const provider = model.split("/")[0]?.toLowerCase();
-	if (provider === "xiaomi") return "mimo_default";
+	if (provider === "xiaomi") return /voicedesign/i.test(model) ? undefined : "mimo_default";
 	if (provider === "google" || provider === "google-ai-studio") return "Kore";
 	if (provider === "elevenlabs" || provider === "eleven-labs") return "rachel";
 	return "alloy";
@@ -177,7 +178,7 @@ const ENDPOINT_CONFIGS: EndpointConfig[] = [
 		path: "/audio/speech",
 		body: (model) => ({
 			model,
-			voice: resolveSpeechVoiceForModel(model),
+			...(resolveSpeechVoiceForModel(model) ? { voice: resolveSpeechVoiceForModel(model) } : {}),
 			input: "Welcome to the Phaseo Gateway where latency, uptime, and pricing are always in your control.",
 			response_format: "mp3",
 		}),

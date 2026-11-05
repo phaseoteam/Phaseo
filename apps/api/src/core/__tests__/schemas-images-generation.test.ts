@@ -64,6 +64,24 @@ describe("OpenAI image generation schema", () => {
 		expect(ImagesGenerationSchema.safeParse({ model: "openai/gpt-image-2.6-flare", prompt: "A", size: "2048x1152" }).success).toBe(true);
 	});
 
+	it.each(["openai/gpt-image-2.6-flare", "openai/gpt-image-2.6-sunburst"])("accepts complexity on %s", (model) => {
+		for (const complexity of ["low", "medium", "high"]) {
+			const parsed = ImagesGenerationSchema.safeParse({ model, prompt: "A lighthouse", complexity });
+			expect(parsed.success).toBe(true);
+			if (parsed.success) expect(parsed.data.complexity).toBe(complexity);
+		}
+		expect(ImagesGenerationSchema.safeParse({ model, prompt: "A lighthouse", complexity: "max" }).success).toBe(false);
+	});
+
+	it.each(["openai/gpt-image-2.5-flare", "openai/gpt-image-2", "openai/gpt-image-latest", "google/gemini-3-pro-image"])(
+		"rejects complexity on %s",
+		(model) => {
+			const parsed = ImagesGenerationSchema.safeParse({ model, prompt: "A lighthouse", complexity: "low" });
+			expect(parsed.success).toBe(false);
+			if (!parsed.success) expect(parsed.error.issues[0]?.path).toEqual(["complexity"]);
+		},
+	);
+
 	it("rejects GPT Image 2.5-only quality levels for earlier GPT Image models", () => {
 		expect(ImagesGenerationSchema.safeParse({
 			model: "openai/gpt-image-2",

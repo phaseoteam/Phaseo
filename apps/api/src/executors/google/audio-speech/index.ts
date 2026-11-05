@@ -1,6 +1,7 @@
 // Purpose: Executor for google / audio-speech.
 // Why: Runs Gemini native text-to-speech instead of relying on OpenAI-compatible routing.
-// How: Maps IR audio.speech request to generateContent with AUDIO modality and voice config.
+// How: Maps IR audio.speech request to generateContent with AUDIO modality, voice config
+//      (prebuilt or, on 3.8, custom voice ids) and the requested output format.
 
 import type { IRAudioSpeechRequest, IRAudioSpeechResponse } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
@@ -9,12 +10,23 @@ import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
 import { googleUsageMetadataToIRUsage } from "@providers/google-ai-studio/usage";
 import {
-	resolveGoogleTtsVoiceName,
+	googleTtsSupportsCustomVoices,
+	isGoogleCustomVoiceId,
 	validateGoogleTtsVoiceForModel,
 } from "@providers/google-ai-studio/voices";
 import type { ProviderExecutor } from "../../types";
 
 const GOOGLE_API_BASE = "https://generativelanguage.googleapis.com";
+
+// Gemini 3.8 TTS takes generationConfig.responseFormat.audio.mimeType. Google's speech guide
+// lists WAV, L16, mu-law and A-law; Phaseo's schema exposes wav and pcm of those.
+const GEMINI_38_AUDIO_MIME_TYPES: Record<string, string> = {
+	wav: "AUDIO_WAV",
+	pcm: "AUDIO_L16",
+};
+// Older Gemini TTS models have no documented format setting and return raw 24 kHz PCM;
+// Phaseo adds a WAV header itself when wav is asked for.
+const LEGACY_FORMATS = new Set(["wav", "pcm"]);
 
 function resolveGeminiBaseUrl(bindings: Record<string, string | undefined>): string {
 	const baseRoot = String(
@@ -45,22 +57,35 @@ function resolveGoogleVoiceName(ir: IRAudioSpeechRequest): string | undefined {
 	return nonEmptyString(googleConfig.voice_name) ?? nonEmptyString(googleConfig.voiceName);
 }
 
-function invalidVoiceResponse(voice: string, model: string, supported: string[]): Response {
+function invalidParamResponse(param: string, message: string): Response {
 	return new Response(
-		JSON.stringify({
-			error: {
-				type: "invalid_request_error",
-				message:
-					`Invalid voice "${voice}" for Google model "${model}". ` +
-					`Supported voices: ${supported.join(", ")}`,
-				param: "voice",
-			},
-		}),
+		JSON.stringify({ error: { type: "invalid_request_error", message, param } }),
 		{ status: 400, headers: { "Content-Type": "application/json" } },
 	);
 }
 
-function irToGeminiTtsRequest(ir: IRAudioSpeechRequest): Record<string, any> {
+function invalidVoiceResponse(voice: string, model: string, supported: string[], message?: string): Response {
+	return invalidParamResponse(
+		"voice",
+		message ??
+			`Invalid voice "${voice}" for Google model "${model}". ` +
+			`Supported voices: ${supported.join(", ")}`,
+	);
+}
+
+/**
+ * The format to return. Gemini only makes WAV or raw PCM; any other request (mp3 is what
+ * most clients send by default) gets WAV with a matching content type rather than a 400,
+ * so existing callers keep working.
+ */
+function resolveRequestedFormat(model: string, ir: IRAudioSpeechRequest): { format?: string } {
+	const format = ir.responseFormat ?? ir.format;
+	if (!format) return {};
+	const allowed = googleTtsSupportsCustomVoices(model) ? Object.keys(GEMINI_38_AUDIO_MIME_TYPES) : [...LEGACY_FORMATS];
+	return { format: allowed.includes(format) ? format : "wav" };
+}
+
+function irToGeminiTtsRequest(ir: IRAudioSpeechRequest, model: string, format?: string): Record<string, any> {
 	const voiceName = resolveGoogleVoiceName(ir);
 	const text = nonEmptyString(ir.input) ?? "";
 	const instructions = nonEmptyString(ir.instructions);
@@ -70,13 +95,16 @@ function irToGeminiTtsRequest(ir: IRAudioSpeechRequest): Record<string, any> {
 		responseModalities: ["AUDIO"],
 	};
 	if (voiceName) {
+		// Custom voice ids go in voiceConfig.voice; prebuilt names keep prebuiltVoiceConfig.
 		generationConfig.speechConfig = {
-			voiceConfig: {
-				prebuiltVoiceConfig: {
-					voiceName,
-				},
-			},
+			voiceConfig: isGoogleCustomVoiceId(voiceName)
+				? { voice: voiceName }
+				: { prebuiltVoiceConfig: { voiceName } },
 		};
+	}
+	const mimeType = format && googleTtsSupportsCustomVoices(model) ? GEMINI_38_AUDIO_MIME_TYPES[format] : undefined;
+	if (mimeType) {
+		generationConfig.responseFormat = { audio: { mimeType } };
 	}
 
 	return {
@@ -107,11 +135,55 @@ function extractInlineAudio(part: any): { data?: string; mimeType?: string } | n
 	return null;
 }
 
+function isRawPcmMimeType(mimeType: string | undefined): boolean {
+	return /^audio\/(?:l16|pcm)\b/i.test(mimeType ?? "");
+}
+
+function base64ToBytes(value: string): Uint8Array {
+	return Uint8Array.from(atob(value), (char) => char.charCodeAt(0));
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+	let binary = "";
+	for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+		binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
+	}
+	return btoa(binary);
+}
+
+// Google's raw speech audio is 16-bit mono PCM; the rate is in the MIME type (default 24 kHz).
+function wrapPcmAsWav(base64Pcm: string, mimeType: string | undefined): string {
+	const pcm = base64ToBytes(base64Pcm);
+	const rate = Number(/rate=(\d+)/i.exec(mimeType ?? "")?.[1]) || 24000;
+	const header = new DataView(new ArrayBuffer(44));
+	const writeTag = (offset: number, tag: string) => {
+		for (let i = 0; i < 4; i += 1) header.setUint8(offset + i, tag.charCodeAt(i));
+	};
+	writeTag(0, "RIFF");
+	header.setUint32(4, 36 + pcm.length, true);
+	writeTag(8, "WAVE");
+	writeTag(12, "fmt ");
+	header.setUint32(16, 16, true);
+	header.setUint16(20, 1, true);
+	header.setUint16(22, 1, true);
+	header.setUint32(24, rate, true);
+	header.setUint32(28, rate * 2, true);
+	header.setUint16(32, 2, true);
+	header.setUint16(34, 16, true);
+	writeTag(36, "data");
+	header.setUint32(40, pcm.length, true);
+	const wav = new Uint8Array(44 + pcm.length);
+	wav.set(new Uint8Array(header.buffer), 0);
+	wav.set(pcm, 44);
+	return bytesToBase64(wav);
+}
+
 function geminiTtsToIR(
 	json: any,
 	requestId: string,
 	model: string,
 	provider: string,
+	format?: string,
 ): IRAudioSpeechResponse | null {
 	const parts = json?.candidates?.[0]?.content?.parts;
 	const audioPart = Array.isArray(parts)
@@ -121,15 +193,16 @@ function geminiTtsToIR(
 		: null;
 	if (!audioPart?.data) return null;
 
+	// Older models only return raw PCM, so a wav request gets a header added here.
+	const wrapAsWav = format === "wav" && isRawPcmMimeType(audioPart.mimeType);
 	return {
 		id: requestId,
 		nativeId: json?.responseId ?? json?.id ?? undefined,
 		model,
 		provider,
-		audio: {
-			data: audioPart.data,
-			mimeType: audioPart.mimeType ?? "audio/wav",
-		},
+		audio: wrapAsWav
+			? { data: wrapPcmAsWav(audioPart.data, audioPart.mimeType), mimeType: "audio/wav" }
+			: { data: audioPart.data, mimeType: audioPart.mimeType ?? "audio/wav" },
 		usage: googleUsageMetadataToIRUsage(json?.usageMetadata),
 		rawResponse: json,
 	};
@@ -144,24 +217,26 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		() => bindings.GOOGLE_AI_STUDIO_API_KEY,
 	);
 
+	const rejected = (upstream: Response): ExecutorResult => ({
+		kind: "completed",
+		ir: undefined,
+		bill: {
+			cost_cents: 0,
+			currency: "USD",
+			usage: undefined as any,
+			upstream_id: undefined,
+			finish_reason: null,
+		},
+		upstream,
+		keySource: keyInfo.source,
+		byokKeyId: keyInfo.byokId,
+	});
+
 	const voiceCandidate = resolveGoogleVoiceName(ir);
 	if (voiceCandidate != null) {
 		const validation = validateGoogleTtsVoiceForModel(model, voiceCandidate);
 		if (!validation.ok) {
-			return {
-				kind: "completed",
-				ir: undefined,
-				bill: {
-					cost_cents: 0,
-					currency: "USD",
-					usage: undefined as any,
-					upstream_id: undefined,
-					finish_reason: null,
-				},
-				upstream: invalidVoiceResponse(voiceCandidate, model, validation.supported),
-				keySource: keyInfo.source,
-				byokKeyId: keyInfo.byokId,
-			};
+			return rejected(invalidVoiceResponse(voiceCandidate, model, validation.supported, validation.message));
 		}
 		ir = {
 			...ir,
@@ -169,7 +244,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		} as IRAudioSpeechRequest;
 	}
 
-	const bodyObject = irToGeminiTtsRequest(ir);
+	const requested = resolveRequestedFormat(model, ir);
+	const bodyObject = irToGeminiTtsRequest(ir, model, requested.format);
 	const requestBody = JSON.stringify(bodyObject);
 	const mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest)
 		? requestBody
@@ -207,7 +283,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	}
 
 	const json = await upstream.json().catch(() => ({}));
-	const irResponse = geminiTtsToIR(json, args.requestId, model, args.providerId);
+	const irResponse = geminiTtsToIR(json, args.requestId, model, args.providerId, requested.format);
 	if (!irResponse) {
 		return {
 			kind: "completed",

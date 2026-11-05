@@ -153,5 +153,48 @@ describe("Xiaomi audio.speech endpoint", () => {
 		expect(capturedBody.audio).toEqual({ format: "mp3", voice: "mimo_default" });
 		expect(result.normalized?.mime_type).toBe("audio/mpeg");
 	});
+
+	function voiceDesignArgs(body: Record<string, unknown>) {
+		return {
+			endpoint: "audio.speech",
+			model: "xiaomi/mimo-v2.5-tts-voicedesign:free",
+			body: { model: "xiaomi/mimo-v2.5-tts-voicedesign:free", input: "Hello there", instructions: "A warm, low voice", ...body },
+			meta: REQUEST_META,
+			workspaceId: "team_test",
+			providerId: "xiaomi",
+			byokMeta: [],
+			pricingCard: PRICING_CARD,
+			providerModelSlug: "mimo-v2.5-tts-voicedesign",
+			stream: false,
+		} as any;
+	}
+
+	it("rejects a voice on VoiceDesign before calling Xiaomi", async () => {
+		const mock = installFetchMock([]);
+		const result = await execSpeech(voiceDesignArgs({ voice: "mimo_default" }));
+		mock.restore();
+		expect(result.upstream.status).toBe(400);
+		expect((await result.upstream.json() as any).error.param).toBe("voice");
+	});
+
+	it.each([{}])("sends no voice for VoiceDesign (%j)", async (extra) => {
+		let capturedBody: any = null;
+		const mock = installFetchMock([
+			{
+				match: (url) => url.includes("/chat/completions"),
+				response: jsonResponse({ choices: [{ message: { role: "assistant", audio: { data: "WAV" } } }] }),
+				onRequest: (call) => {
+					capturedBody = call.bodyJson;
+				},
+			},
+		]);
+
+		const result = await execSpeech(voiceDesignArgs(extra));
+		mock.restore();
+
+		expect(result.upstream.status).toBe(200);
+		expect(capturedBody.audio).toEqual({ format: "wav" });
+		expect(capturedBody.messages[0]).toEqual({ role: "user", content: "A warm, low voice" });
+	});
 });
 

@@ -155,6 +155,13 @@ describe("VideoGenerationSchema", () => {
 		).toBe(false);
 	});
 
+	it("accepts Veo's compression_quality strings and the legacy number", () => {
+		for (const value of ["optimized", "lossless", 70]) {
+			expect(VideoGenerationSchema.parse({ model: "google/veo-3.1", prompt: "Quality", compression_quality: value }).compression_quality).toBe(value);
+		}
+		expect(VideoGenerationSchema.safeParse({ model: "google/veo-3.1", prompt: "Quality", compression_quality: "high" }).success).toBe(false);
+	});
+
 	it("rejects provider request overrides and excessive output counts", () => {
 		expect(VideoGenerationSchema.safeParse({
 			model: "google/veo-3.1",
