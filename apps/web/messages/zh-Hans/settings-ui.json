@@ -1075,7 +1075,11 @@
 		"noTraining": "不允许训练",
 		"noPaidTraining": "付费端点不允许训练",
 		"noFreeTraining": "免费端点不允许训练",
-		"noLogging": "不使用会记录日志的端点"
+		"noLogging": "不使用会记录日志的端点",
+		"columnRate": "速率",
+		"rateRequests": "每分钟 {count} 个请求",
+		"rateTokens": "每分钟 {count} 个令牌",
+		"rateConcurrent": "同时 {count} 个"
 	},
 	"guardrailWizard": {
 		"title": "新建护栏",
@@ -1099,7 +1103,10 @@
 			"providerAllowlistEmpty": "请至少选择一个允许的提供商。空列表会屏蔽所有提供商。",
 			"modelAllowlistEmpty": "请至少选择一个允许的模型。空列表会屏蔽所有模型。",
 			"promptInjectionOff": "请选择如何处理提示注入，或移除此项检查。",
-			"sensitiveInfoOff": "请至少开启一个敏感信息模式，或移除此项检查。"
+			"sensitiveInfoOff": "请至少开启一个敏感信息模式，或移除此项检查。",
+			"rateLimitEmpty": "至少设置一项限制才能继续。",
+			"rateLimitInvalid": "限制必须是大于 0 的整数。",
+			"rateCountingRequired": "选择限制的计算方式才能继续。"
 		},
 		"nameLabel": "名称",
 		"namePlaceholder": "例如：外包人员策略",
@@ -1184,7 +1191,24 @@
 		"levelWorkspace": "整个工作区",
 		"levelDepartments": "{count} 个部门",
 		"levelMembers": "{count} 名成员",
-		"levelKeys": "{count} 个 API 密钥"
+		"levelKeys": "{count} 个 API 密钥",
+		"templateRateLimit": {
+			"name": "速率限制",
+			"body": "限制每分钟的请求数或令牌数，或并发请求数。"
+		},
+		"sectionRate": {
+			"name": "速率限制",
+			"body": "每分钟请求数和令牌数，以及并发请求数。速率防护规则不包含其他检查。"
+		},
+		"summaryRateRequests": "每分钟 {count} 个请求",
+		"summaryRateTokens": "每分钟 {count} 个令牌",
+		"summaryRateConcurrent": "同时 {count} 个请求",
+		"summaryRateCounting": {
+			"shared": "分配到的所有对象共享",
+			"each_key": "每个密钥单独计算",
+			"each_end_user": "每个最终用户单独计算"
+		},
+		"summaryRateFailClosed": "无法检查限制时拒绝请求"
 	},
 	"broadcastControls": {
 		"optional": "（可选）",
@@ -8031,5 +8055,50 @@
 		"expiredBody": "30 分钟内无人处理，因此未扣款。代理会被告知不要重试；有人可以处理时，它可以发起新的请求。",
 		"resume": "完成银行卡验证",
 		"resumeNotice": "此充值已确认，但银行的银行卡验证尚未完成。请完成验证以完成付款。"
+	},
+	"rateGuardrail": {
+		"title": "速率限制",
+		"description": "限制每分钟的请求数和令牌数，以及同时运行的请求数。",
+		"limitsTitle": "限制",
+		"limitsBody": "至少设置一项。留空表示不限制该项。",
+		"noLimit": "不限制",
+		"invalidLimit": "请输入大于 0 的整数。",
+		"requests": {
+			"label": "每分钟请求数",
+			"help": "按滚动的一分钟计算。"
+		},
+		"tokens": {
+			"label": "每分钟令牌数",
+			"help": "输入和输出令牌，在每个请求完成时计算。"
+		},
+		"concurrent": {
+			"label": "并发请求数",
+			"help": "同时进行中的请求。"
+		},
+		"countingTitle": "计算方式",
+		"countingBody": "选择由谁共享每份配额。没有默认值。",
+		"legacyCounting": "它是通过速率限制 API 创建的，因此按分配到的每个密钥、成员或部门计算，在整个工作区上按每个最终用户计算。选择一个选项即可更改。",
+		"countingLegacy": "按分配",
+		"counting": {
+			"shared": {
+				"name": "共享",
+				"body": "分配到的所有对象共用一份配额。分配给部门时，整个部门共享。"
+			},
+			"each_key": {
+				"name": "每个密钥",
+				"body": "覆盖的每个 API 密钥各有一份配额。OAuth 请求按人计算。"
+			},
+			"each_end_user": {
+				"name": "每个最终用户",
+				"body": "每个最终用户各有一份配额，依据请求的 user 字段或 X-Phaseo-User-Id 请求头识别。没有最终用户的请求不受其限制。"
+			}
+		},
+		"failClosedTitle": "无法检查限制时拒绝请求",
+		"failClosedBody": "每个请求都会等待计数器，会增加少量延迟。关闭时，如果计数器没有响应，请求会照常通过。",
+		"issue": {
+			"rateLimitEmpty": "至少设置一项限制才能继续。",
+			"rateLimitInvalid": "限制必须是大于 0 的整数。",
+			"rateCountingRequired": "选择限制的计算方式才能继续。"
+		}
 	}
 }

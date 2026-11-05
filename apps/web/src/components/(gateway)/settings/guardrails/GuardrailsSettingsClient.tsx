@@ -78,6 +78,12 @@ type GuardrailRow = {
 	sensitive_info_enabled?: boolean | null;
 	sensitive_info_default_action?: string | null;
 	sensitive_info_rules?: SensitiveInfoRulePayload[] | null;
+	kind?: string | null;
+	rate_requests_per_minute?: number | null;
+	rate_tokens_per_minute?: number | null;
+	rate_concurrent_requests?: number | null;
+	rate_fail_closed?: boolean | null;
+	rate_counting?: string | null;
 };
 
 function normalizeMode(value: unknown): ProviderRestrictionMode {
@@ -371,6 +377,12 @@ function GuardrailCard(props: {
 	// The workspace baseline holds the Settings, Privacy rules and is edited there; it applies to
 	// the whole workspace and cannot be deleted.
 	const baseline = props.guardrail.is_workspace_baseline === true;
+	const rate = props.guardrail.kind === "rate";
+	const rateParts = [
+		props.guardrail.rate_requests_per_minute != null ? t("guardrailAssignments.rateRequests", { count: Number(props.guardrail.rate_requests_per_minute) }) : null,
+		props.guardrail.rate_tokens_per_minute != null ? t("guardrailAssignments.rateTokens", { count: Number(props.guardrail.rate_tokens_per_minute) }) : null,
+		props.guardrail.rate_concurrent_requests != null ? t("guardrailAssignments.rateConcurrent", { count: Number(props.guardrail.rate_concurrent_requests) }) : null,
+	].filter((part): part is string => Boolean(part));
 	return (
 		<Link
 			href={baseline ? "/settings/privacy" : `/settings/guardrails/${props.guardrail.id}`}
@@ -434,6 +446,16 @@ function GuardrailCard(props: {
 						</span>
 						</>}
 
+						{rate ? <>
+						<span className="inline-flex items-center gap-2 rounded-md border bg-background px-2 py-1">
+							<span className="font-medium text-foreground">{t("rateGuardrail.title")}</span>
+							<span>{rateParts.join(" · ")}</span>
+						</span>
+						<span className="inline-flex items-center gap-2 rounded-md border bg-background px-2 py-1">
+							<span className="font-medium text-foreground">{t("rateGuardrail.countingTitle")}</span>
+							<span>{props.guardrail.rate_counting ? t(`rateGuardrail.counting.${props.guardrail.rate_counting}.name` as never) : t("rateGuardrail.countingLegacy")}</span>
+						</span>
+						</> : <>
 						<span className="inline-flex items-center gap-2 rounded-md border bg-background px-2 py-1">
 							<span className="font-medium text-foreground">
 								{t("guardrailsControls.providers")}
@@ -476,9 +498,10 @@ function GuardrailCard(props: {
 											: t("guardrailsControls.blocklist")}
 							</span>
 						</span>
+						</>}
 					</div>
 
-					{mode !== "none" ? (
+					{mode !== "none" && !rate ? (
 						<p className="mt-2 text-xs text-muted-foreground">
 							{providerRuleDetail}
 						</p>

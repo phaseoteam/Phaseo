@@ -41,7 +41,16 @@ export type GuardrailUpsertPayload = GlobalGuardrailsSettingsPayload & {
 	sensitiveInfoEnabled?: boolean;
 	sensitiveInfoDefaultAction?: SensitiveInfoAction;
 	sensitiveInfoRules?: SensitiveInfoRulePayload[];
+	/** Set on create; a rate guardrail sets only the rate fields below. */
+	kind?: "access" | "safety" | "rate";
+	rateRequestsPerMinute?: number | null;
+	rateTokensPerMinute?: number | null;
+	rateConcurrentRequests?: number | null;
+	rateFailClosed?: boolean;
+	rateCounting?: RateCounting;
 };
+
+export type RateCounting = "shared" | "each_key" | "each_end_user";
 
 async function account(expectedWorkspaceId?: string): Promise<{ accessToken: string; workspaceId: string }> {
 	const { accessToken, workspaceId } = await getServerAccountContext();

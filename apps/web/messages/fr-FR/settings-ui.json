@@ -1075,7 +1075,11 @@
 		"noTraining": "Pas d'entraînement",
 		"noPaidTraining": "Pas d'entraînement sur les endpoints payants",
 		"noFreeTraining": "Pas d'entraînement sur les endpoints gratuits",
-		"noLogging": "Pas d'endpoints qui journalisent"
+		"noLogging": "Pas d'endpoints qui journalisent",
+		"columnRate": "Débit",
+		"rateRequests": "{count, plural, one {# requête} other {# requêtes}} par minute",
+		"rateTokens": "{count, plural, one {# token} other {# tokens}} par minute",
+		"rateConcurrent": "{count, plural, other {# à la fois}}"
 	},
 	"guardrailWizard": {
 		"title": "Nouveau garde-corps",
@@ -1099,7 +1103,10 @@
 			"providerAllowlistEmpty": "Choisissez au moins un fournisseur autorisé. Une liste vide bloque tous les fournisseurs.",
 			"modelAllowlistEmpty": "Choisissez au moins un modèle autorisé. Une liste vide bloque tous les modèles.",
 			"promptInjectionOff": "Choisissez comment traiter l'injection de prompt, ou retirez cette vérification.",
-			"sensitiveInfoOff": "Activez au moins un motif d'informations sensibles, ou retirez cette vérification."
+			"sensitiveInfoOff": "Activez au moins un motif d'informations sensibles, ou retirez cette vérification.",
+			"rateLimitEmpty": "Définissez au moins une limite pour continuer.",
+			"rateLimitInvalid": "Les limites doivent être des nombres entiers supérieurs à 0.",
+			"rateCountingRequired": "Choisissez un mode de comptage pour continuer."
 		},
 		"nameLabel": "Nom",
 		"namePlaceholder": "ex. Règle pour les prestataires",
@@ -1184,7 +1191,24 @@
 		"levelWorkspace": "Tout l'espace de travail",
 		"levelDepartments": "{count, plural, one {# département} other {# départements}}",
 		"levelMembers": "{count, plural, one {# membre} other {# membres}}",
-		"levelKeys": "{count, plural, one {# clé d'API} other {# clés d'API}}"
+		"levelKeys": "{count, plural, one {# clé d'API} other {# clés d'API}}",
+		"templateRateLimit": {
+			"name": "Limite de débit",
+			"body": "Plafonnez les requêtes ou les tokens par minute, ou les requêtes simultanées."
+		},
+		"sectionRate": {
+			"name": "Limites de débit",
+			"body": "Requêtes et tokens par minute, et requêtes simultanées. Un garde-fou de débit n'a pas d'autre contrôle."
+		},
+		"summaryRateRequests": "{count, plural, one {# requête} other {# requêtes}} par minute",
+		"summaryRateTokens": "{count, plural, one {# token} other {# tokens}} par minute",
+		"summaryRateConcurrent": "{count, plural, one {# requête} other {# requêtes}} à la fois",
+		"summaryRateCounting": {
+			"shared": "Partagé par tout ce à quoi il est attribué",
+			"each_key": "Distinct pour chaque clé",
+			"each_end_user": "Distinct pour chaque utilisateur final"
+		},
+		"summaryRateFailClosed": "Refuse les requêtes si les limites ne peuvent pas être vérifiées"
 	},
 	"broadcastControls": {
 		"optional": "(facultatif)",
@@ -8031,5 +8055,50 @@
 		"expiredBody": "Personne n’a répondu en 30 minutes, rien n’a donc été débité. L’agent est invité à ne pas réessayer ; il peut lancer une nouvelle demande lorsque quelqu’un est disponible.",
 		"resume": "Terminer la vérification de la carte",
 		"resumeNotice": "Cette recharge a été confirmée, mais la vérification de la carte par la banque n’a pas été terminée. Terminez-la pour finaliser le paiement."
+	},
+	"rateGuardrail": {
+		"title": "Limites de débit",
+		"description": "Limitez les requêtes et les tokens par minute, et le nombre de requêtes simultanées.",
+		"limitsTitle": "Limites",
+		"limitsBody": "Définissez-en au moins une. Laissez une limite vide pour ne pas la limiter.",
+		"noLimit": "Aucune limite",
+		"invalidLimit": "Saisissez un nombre entier supérieur à 0.",
+		"requests": {
+			"label": "Requêtes par minute",
+			"help": "Comptées sur une minute glissante."
+		},
+		"tokens": {
+			"label": "Tokens par minute",
+			"help": "Tokens d'entrée et de sortie, comptés à la fin de chaque requête."
+		},
+		"concurrent": {
+			"label": "Requêtes simultanées",
+			"help": "Requêtes en cours au même moment."
+		},
+		"countingTitle": "Mode de comptage",
+		"countingBody": "Choisissez qui partage chaque quota. Il n'y a pas de valeur par défaut.",
+		"legacyCounting": "Cette limite a été créée via l'API des limites de débit : elle compte par clé, membre ou service auquel elle est attribuée, et par utilisateur final sur tout l'espace de travail. Choisissez une option pour changer cela.",
+		"countingLegacy": "Par attribution",
+		"counting": {
+			"shared": {
+				"name": "Partagé",
+				"body": "Un quota pour tout ce à quoi elle est attribuée. Sur un service, tout le service le partage."
+			},
+			"each_key": {
+				"name": "Par clé",
+				"body": "Chaque clé API couverte a son propre quota. Les requêtes OAuth comptent par personne."
+			},
+			"each_end_user": {
+				"name": "Par utilisateur final",
+				"body": "Chaque utilisateur final a son propre quota, identifié par le champ user de la requête ou l'en-tête X-Phaseo-User-Id. Les requêtes sans utilisateur final n'en sont pas limitées."
+			}
+		},
+		"failClosedTitle": "Refuser les requêtes si les limites ne peuvent pas être vérifiées",
+		"failClosedBody": "Attend le compteur à chaque requête, ce qui ajoute un peu de latence. Désactivé, les requêtes passent si le compteur ne répond pas.",
+		"issue": {
+			"rateLimitEmpty": "Définissez au moins une limite pour continuer.",
+			"rateLimitInvalid": "Les limites doivent être des nombres entiers supérieurs à 0.",
+			"rateCountingRequired": "Choisissez un mode de comptage pour continuer."
+		}
 	}
 }

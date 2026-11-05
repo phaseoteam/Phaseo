@@ -1075,7 +1075,11 @@
 		"noTraining": "学習なし",
 		"noPaidTraining": "有料エンドポイントでの学習なし",
 		"noFreeTraining": "無料エンドポイントでの学習なし",
-		"noLogging": "ログを残すエンドポイントなし"
+		"noLogging": "ログを残すエンドポイントなし",
+		"columnRate": "レート",
+		"rateRequests": "1 分あたり {count} リクエスト",
+		"rateTokens": "1 分あたり {count} トークン",
+		"rateConcurrent": "同時に {count}"
 	},
 	"guardrailWizard": {
 		"title": "新しいガードレール",
@@ -1099,7 +1103,10 @@
 			"providerAllowlistEmpty": "許可するプロバイダーを1つ以上選んでください。空のリストはすべてのプロバイダーをブロックします。",
 			"modelAllowlistEmpty": "許可するモデルを1つ以上選んでください。空のリストはすべてのモデルをブロックします。",
 			"promptInjectionOff": "プロンプトインジェクションの扱いを選ぶか、このチェックを外してください。",
-			"sensitiveInfoOff": "機密情報のパターンを1つ以上オンにするか、このチェックを外してください。"
+			"sensitiveInfoOff": "機密情報のパターンを1つ以上オンにするか、このチェックを外してください。",
+			"rateLimitEmpty": "続けるには制限を 1 つ以上設定してください。",
+			"rateLimitInvalid": "制限は 0 より大きい整数にしてください。",
+			"rateCountingRequired": "続けるには数え方を選んでください。"
 		},
 		"nameLabel": "名前",
 		"namePlaceholder": "例: 業務委託先向けポリシー",
@@ -1184,7 +1191,24 @@
 		"levelWorkspace": "ワークスペース全体",
 		"levelDepartments": "部署 {count} 件",
 		"levelMembers": "メンバー {count} 人",
-		"levelKeys": "API キー {count} 件"
+		"levelKeys": "API キー {count} 件",
+		"templateRateLimit": {
+			"name": "レート制限",
+			"body": "1 分あたりのリクエスト数やトークン数、同時リクエスト数に上限を設けます。"
+		},
+		"sectionRate": {
+			"name": "レート制限",
+			"body": "1 分あたりのリクエスト数とトークン数、同時リクエスト数。レートガードレールには他のチェックはありません。"
+		},
+		"summaryRateRequests": "1 分あたり {count} リクエスト",
+		"summaryRateTokens": "1 分あたり {count} トークン",
+		"summaryRateConcurrent": "同時に {count} リクエスト",
+		"summaryRateCounting": {
+			"shared": "割り当て先全体で共有",
+			"each_key": "キーごとに個別",
+			"each_end_user": "エンドユーザーごとに個別"
+		},
+		"summaryRateFailClosed": "制限を確認できないときはリクエストを拒否"
 	},
 	"broadcastControls": {
 		"optional": "（任意）",
@@ -8031,5 +8055,50 @@
 		"expiredBody": "30 分以内に誰も回答しなかったため、請求は行われていません。エージェントには再試行しないよう伝えられます。対応できる人がいるときに新しいリクエストを開始できます。",
 		"resume": "カードの認証を完了",
 		"resumeNotice": "このチャージは確認済みですが、銀行によるカード認証が完了していません。支払いを完了するには認証を終えてください。"
+	},
+	"rateGuardrail": {
+		"title": "レート制限",
+		"description": "1 分あたりのリクエスト数とトークン数、同時に実行できるリクエスト数を制限します。",
+		"limitsTitle": "制限",
+		"limitsBody": "少なくとも 1 つ設定してください。空欄の項目は制限しません。",
+		"noLimit": "制限なし",
+		"invalidLimit": "0 より大きい整数を入力してください。",
+		"requests": {
+			"label": "1 分あたりのリクエスト数",
+			"help": "直近 1 分間で数えます。"
+		},
+		"tokens": {
+			"label": "1 分あたりのトークン数",
+			"help": "入力と出力のトークン。各リクエストの完了時に数えます。"
+		},
+		"concurrent": {
+			"label": "同時リクエスト数",
+			"help": "同時に処理中のリクエスト。"
+		},
+		"countingTitle": "数え方",
+		"countingBody": "各割り当てを誰で共有するかを選んでください。既定値はありません。",
+		"legacyCounting": "レート制限 API で作成されたため、割り当て先のキー、メンバー、部門ごと、ワークスペース全体ではエンドユーザーごとに数えます。変更するにはオプションを選んでください。",
+		"countingLegacy": "割り当てごと",
+		"counting": {
+			"shared": {
+				"name": "共有",
+				"body": "割り当て先全体で 1 つの割り当て。部門に割り当てると、部門全体で共有します。"
+			},
+			"each_key": {
+				"name": "キーごと",
+				"body": "対象の API キーごとに個別の割り当て。OAuth リクエストはユーザーごとに数えます。"
+			},
+			"each_end_user": {
+				"name": "エンドユーザーごと",
+				"body": "エンドユーザーごとに個別の割り当て。リクエストの user フィールドまたは X-Phaseo-User-Id ヘッダーで識別します。エンドユーザーのないリクエストは制限されません。"
+			}
+		},
+		"failClosedTitle": "制限を確認できないときはリクエストを拒否する",
+		"failClosedBody": "リクエストごとにカウンターの応答を待つため、少し遅延が増えます。オフの場合、カウンターが応答しなければリクエストを通します。",
+		"issue": {
+			"rateLimitEmpty": "続けるには制限を 1 つ以上設定してください。",
+			"rateLimitInvalid": "制限は 0 より大きい整数にしてください。",
+			"rateCountingRequired": "続けるには数え方を選んでください。"
+		}
 	}
 }
