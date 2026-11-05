@@ -22,9 +22,11 @@ const sources = [];
 for (const [index, test] of cases.entries()) {
   const snippets = [];
   for (const locale of ["", "ar", "de", "es", "fr", "hi", "ja", "pt-BR", "zh-Hans"]) {
-    const file = path.join(root, "apps/docs", locale, "v1/sdk-reference/java", test.page + ".mdx");
+    const file = path.join(root, "apps/docs", locale, "v1/sdk-reference/client", test.page + ".mdx");
     const contents = (await readFile(file, "utf8")).replaceAll("\r\n", "\n");
-    const code = contents.match(/```java\n([\s\S]*?)```/)?.[1];
+    const code = [...contents.matchAll(/```java(?:[ \t][^\n]*)?\n([\s\S]*?)```/g)]
+      .map(match => match[1])
+      .find(block => block.includes("multipart/form-data"));
     assert.ok(code, `Missing multipart example in ${file}`);
     snippets.push(code);
   }

@@ -31,7 +31,7 @@ Where the format goes depends on the endpoint:
 | --- | --- |
 | `/v1/chat/completions` | `response_format` |
 | `/v1/responses` | `text.format` |
-| `/v1/messages` | Not supported. Ask for JSON in the prompt and validate it the same way. |
+| `/v1/messages` | `output_config.format` (`json_schema` only) |
 
 ## Send a schema
 
