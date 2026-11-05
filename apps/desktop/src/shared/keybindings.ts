@@ -45,7 +45,6 @@ export const keybindingCommands = [
 	{ command: "composer.previousWorktree", label: "Start the new chat in the project's latest worktree", group: "Composer", keys: ["mod+shift+l"], when: "!terminalFocused" },
 	{ command: "composer.historyPrevious", label: "Previous prompt (in an empty message box)", group: "Composer", keys: ["arrowup"], when: "composerFocused" },
 	{ command: "composer.historyNext", label: "Next prompt", group: "Composer", keys: ["arrowdown"], when: "composerFocused" },
-	{ command: "composer.dictate", label: "Start or stop dictation", group: "Composer", keys: ["mod+shift+space"], when: "composerFocused" },
 	{ command: "composer.codeBlock", label: "Wrap the selection in a code block, or start one", group: "Composer", keys: ["mod+alt+c"], when: "composerFocused" },
 	{ command: "composer.richText", label: "Switch the message box between rich text and Markdown source", group: "Composer", keys: ["mod+/"], when: "composerFocused" },
 	{ command: "composer.stash", label: "Stash the draft, or bring back the last stashed", group: "Composer", keys: ["mod+s"], when: "chatOpen && !terminalFocused" },

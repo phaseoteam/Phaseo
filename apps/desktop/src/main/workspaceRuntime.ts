@@ -388,22 +388,6 @@ export class WorkspaceRuntime {
 		if (!account || !this.vault) return { missing: "account" };
 		return { model, ...account };
 	}
-	/**
-	 * Dictation: a recording from the composer, transcribed by `model` through the person's Phaseo account at its price.
-	 * Nothing is kept: the audio goes to the gateway once and only the text comes back.
-	 */
-	async transcribe(audio: Uint8Array, mimeType: string, model: string, fetcher: typeof fetch = fetch): Promise<string> {
-		const account = this.phaseoAccount();
-		if (!account || !this.vault) throw new Error("Sign in to Phaseo to dictate: speech is transcribed through your Phaseo account.");
-		const extension = /ogg/.test(mimeType) ? "ogg" : /mp4|m4a|aac/.test(mimeType) ? "m4a" : /wav/.test(mimeType) ? "wav" : "webm";
-		const form = new FormData();
-		form.append("model", model);
-		form.append("file", new Blob([Uint8Array.from(audio)], { type: mimeType }), `dictation.${extension}`);
-		const response = await fetcher(`${account.endpoint.replace(/\/$/, "")}/audio/transcriptions`, { method: "POST", headers: { authorization: `Bearer ${await this.vault.get(account.secretId)}` }, body: form, signal: AbortSignal.timeout(120_000) });
-		const body = await response.json().catch(() => ({})) as { text?: unknown; error?: { message?: unknown } };
-		if (!response.ok) throw new Error(`Transcription failed (${response.status})${typeof body.error?.message === "string" ? `: ${body.error.message}` : "."}`);
-		return typeof body.text === "string" ? body.text.trim() : "";
-	}
 	/** The person's signed-in Phaseo account, for requests the app makes on their behalf. */
 	private phaseoAccount() {
 		const account = this.store.getAccounts().find(value => value.harness === "phaseo" && value.configured && !value.archived && value.endpoint && (!value.oauthExpiresAt || Date.parse(value.oauthExpiresAt) > Date.now()));
