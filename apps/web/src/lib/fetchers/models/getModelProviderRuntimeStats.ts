@@ -591,9 +591,9 @@ export function mapRpcRuntimeStatsRows(args: {
 		const providerId = String(row.provider_id ?? "").trim();
 		const serviceTier = normalizeProviderRuntimeServiceTier(row.service_tier);
 		const uptimeDaily3dTotals = [
-			{ requests: 0, successful: 0, healthRequests: 0, healthSuccessful: 0 },
-			{ requests: 0, successful: 0, healthRequests: 0, healthSuccessful: 0 },
-			{ requests: 0, successful: 0, healthRequests: 0, healthSuccessful: 0 },
+			{ requests: 0, successful: 0 },
+			{ requests: 0, successful: 0 },
+			{ requests: 0, successful: 0 },
 		];
 		const uptimeDaily3d: ProviderRuntimeStats["uptimeDaily3d"] = [
 			{ dayOffset: 0, uptimePct: null, requests: 0, successful: 0 },
@@ -632,7 +632,8 @@ export function mapRpcRuntimeStatsRows(args: {
 				});
 				performanceHourly3d.push({
 					start: start.toISOString(),
-					uptimePct,
+					// Set per attempt below, once the window's attempt rates are known.
+					uptimePct: null,
 					latencyMs:
 						toFiniteNumber(bucketRecord?.p50_latency_ms) ??
 						toFiniteNumber(bucketRecord?.avg_latency_ms),
@@ -645,8 +646,6 @@ export function mapRpcRuntimeStatsRows(args: {
 				if (dayOffset != null) {
 					uptimeDaily3dTotals[dayOffset]!.requests += requests;
 					uptimeDaily3dTotals[dayOffset]!.successful += successful;
-					uptimeDaily3dTotals[dayOffset]!.healthRequests += healthRequests;
-					uptimeDaily3dTotals[dayOffset]!.healthSuccessful += healthSuccessful;
 				}
 				const hourOffset = hourOffsetFromUtcHour(nowUtcHourMs, start);
 				if (hourOffset != null) {
@@ -662,33 +661,41 @@ export function mapRpcRuntimeStatsRows(args: {
 
 		const attemptRow = attemptHealthByKey.get(statsKey);
 		const attemptHealth = attemptRow ? mapAttemptHealth(attemptRow) : null;
-		// Uptime is per attempt when attempt health is available: eligible attempts
-		// that succeeded, so failovers count against the provider that failed. Its
-		// rate is null when there were no eligible attempts.
-		const usesAttemptUptime = attemptHealth?.uptimePct != null;
-		// web-api rates each UTC day from that day's attempts and publishes only the rates.
-		// A response cached before it did so has no days: keep the request-level bars then.
-		const usesAttemptDays = usesAttemptUptime && Array.isArray(attemptRow?.days);
+		// Uptime is per attempt only: eligible attempts that succeeded, so failovers
+		// count against the provider that failed. web-api publishes the window's,
+		// each UTC day's and each hour's rates (never counts). A provider with
+		// traffic in the window shows 100% for any period without a rate (no
+		// eligible attempts then, or no attempt rates published at all); one with
+		// no traffic has no uptime.
+		const hasTraffic =
+			attemptHealth?.uptimePct != null ||
+			toInt(row?.health_requests) > 0 ||
+			uptimeDaily3dTotals.some((day) => day.requests > 0);
+		const shownUptime = (ratePct: number | null | undefined): number | null =>
+			hasTraffic ? ratePct ?? 100 : null;
 		const attemptDailyUptime = new Map<number, number | null>();
-		if (usesAttemptDays && attemptRow && Array.isArray(attemptRow.days)) {
-			for (const day of attemptRow.days) {
-				const dayRecord = toRecord(day);
-				const start = new Date(String(dayRecord?.start ?? ""));
-				if (!Number.isFinite(start.getTime())) continue;
-				const dayOffset = dayOffsetFromUtcMidnight(nowUtcMidnightMs, start);
-				if (dayOffset == null) continue;
-				attemptDailyUptime.set(dayOffset, toFiniteNumber(dayRecord?.uptime_pct));
-			}
+		const attemptDays = attemptRow?.days;
+		for (const day of Array.isArray(attemptDays) ? attemptDays : []) {
+			const dayRecord = toRecord(day);
+			const start = new Date(String(dayRecord?.start ?? ""));
+			if (!Number.isFinite(start.getTime())) continue;
+			const dayOffset = dayOffsetFromUtcMidnight(nowUtcMidnightMs, start);
+			if (dayOffset == null) continue;
+			attemptDailyUptime.set(dayOffset, toFiniteNumber(dayRecord?.uptime_pct));
+		}
+		const attemptHourlyUptime = new Map<string, number | null>();
+		const attemptBuckets = attemptRow?.buckets;
+		for (const bucket of Array.isArray(attemptBuckets) ? attemptBuckets : []) {
+			const bucketRecord = toRecord(bucket);
+			const hour = toUtcHourBucket(String(bucketRecord?.start ?? ""));
+			if (hour) attemptHourlyUptime.set(hour, toFiniteNumber(bucketRecord?.uptime_pct));
 		}
 
 		for (const dayOffset of [0, 1, 2] as const) {
 			const bucket = uptimeDaily3dTotals[dayOffset];
-			const requestUptimePct = bucket.healthRequests > 0
-				? (bucket.healthSuccessful / bucket.healthRequests) * 100
-				: null;
 			uptimeDaily3d[dayOffset] = {
 				dayOffset,
-				uptimePct: usesAttemptDays ? attemptDailyUptime.get(dayOffset) ?? null : requestUptimePct,
+				uptimePct: shownUptime(attemptDailyUptime.get(dayOffset)),
 				requests: bucket.requests,
 				successful: bucket.successful,
 			}
@@ -712,7 +719,7 @@ export function mapRpcRuntimeStatsRows(args: {
 				toFiniteNumber(row?.avg_throughput_30m) ??
 				toFiniteNumber(row?.percentile_throughput) ??
 				toFiniteNumber(row?.avg_throughput),
-			uptimePct3d: usesAttemptUptime ? attemptHealth?.uptimePct ?? null : toFiniteNumber(row?.uptime_pct),
+			uptimePct3d: shownUptime(attemptHealth?.uptimePct),
 			requestSuccessPct3d: toFiniteNumber(row?.request_success_pct),
 			inputTokens1h: toInt(row?.input_tokens_1h),
 			outputTokens1h: toInt(row?.output_tokens_1h),
@@ -730,7 +737,7 @@ export function mapRpcRuntimeStatsRows(args: {
 			performanceHourly3d: fillHourlyPerformanceBuckets(
 				performanceHourly3d.sort((a, b) => Date.parse(a.start) - Date.parse(b.start)),
 				now,
-			),
+			).map((point) => ({ ...point, uptimePct: shownUptime(attemptHourlyUptime.get(point.start)) })),
 			requests30m: toInt(row?.requests_30m),
 			requests3d: toInt(row?.requests),
 			successful3d: toInt(row?.success_requests),

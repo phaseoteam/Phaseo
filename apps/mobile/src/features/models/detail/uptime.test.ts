@@ -1,6 +1,6 @@
 import type { SuccessPoint } from "@/lib/api/models";
 import {
-  attemptFailureShares, failureShareText, formatFailureShare, hasProviderAttemptHealth, providerHealthHours, requestFailureText, summarizeProviderHealth, summaryFailureShares,
+  attemptFailureShares, failureShareText, formatFailureShare, providerHealthHours, summarizeProviderHealth, summaryFailureShares,
   uptimeTone, utcDayLabel, utcDayOffset, UPTIME_COPY,
 } from "./uptime";
 
@@ -38,20 +38,36 @@ describe("failure shares", () => {
     expect(failureShareText("reachability", { kind: "none" })).toBe("No failures");
     expect(failureShareText("reachability", { kind: "none" }, UPTIME_COPY.noFailuresThisHour)).toBe("No failures this hour");
   });
-
-  test("the request-level hour says what share failed, never how many", () => {
-    expect(requestFailureText(99.4)).toBe("0.6% of requests failed");
-    expect(requestFailureText(100)).toBe("No failures this hour");
-    expect(requestFailureText(null)).toBeNull();
-  });
 });
 
 describe("provider health chart", () => {
   const now = new Date("2026-11-05T06:30:00Z");
 
-  test("only series with attempt rates switch to the three-line chart", () => {
-    expect(hasProviderAttemptHealth([point("2026-11-05T05:00:00Z")])).toBe(false);
-    expect(hasProviderAttemptHealth([point("2026-11-05T05:00:00Z", { reachabilityPct: null, capacityPct: null, callErrorPct: null })])).toBe(true);
+  const allAt100 = (hours: ReturnType<typeof providerHealthHours>) => hours.every((hour) => hour.reachability === 100 && hour.capacity === 100 && hour.callErrors === 100);
+  const noFailures = { reachability: { kind: "none" }, capacity: { kind: "none" }, callErrors: { kind: "none" } };
+
+  test("an empty series (no traffic in 24 hours) shows all three metrics at 100% with no failures", () => {
+    const hours = providerHealthHours([], now);
+    expect(hours).toHaveLength(24);
+    expect(hours[0]!.bucket).toBe("2026-11-04T07:00:00.000Z");
+    expect(hours.at(-1)!.bucket).toBe("2026-11-05T06:00:00.000Z");
+    expect(allAt100(hours)).toBe(true);
+    const summary = summarizeProviderHealth(hours);
+    expect(summary).toEqual({ reachability: 100, capacity: 100, callErrors: 100 });
+    expect(summaryFailureShares(summary)).toEqual(noFailures);
+    expect(summaryFailureShares(summary, null)).toEqual(noFailures);
+    expect(summaryFailureShares(summary, { reachabilityPct: null, capacityPct: null, callErrorPct: null, uptimePct: null })).toEqual(noFailures);
+    expect(failureShareText("reachability", summaryFailureShares(summary).reachability)).toBe("No failures");
+  });
+
+  test("a series without attempt rates (none published) shows 100%, not the request-level uptime", () => {
+    const hours = providerHealthHours([
+      point("2026-11-05T05:00:00Z", { overallSuccessPct: 50, worstProviderSuccessPct: 25, worstProviderRequests: 4, providerCount: 2, requests: 8 }),
+      point("2026-11-05T04:00:00Z", { overallSuccessPct: null, requests: 0 }),
+    ], now);
+    expect(hours).toHaveLength(24);
+    expect(allAt100(hours)).toBe(true);
+    expect(summaryFailureShares(summarizeProviderHealth(hours))).toEqual(noFailures);
   });
 
   test("24 UTC hours; empty hours show 100% and a step nothing reached stays empty", () => {

@@ -268,8 +268,7 @@ const performanceSchema = z.object({
     worstProviderRequests: count,
     providerCount: count,
     requests: count,
-    // All providers' attempts this hour. Absent (not null) when the attempt-health RPC isn't deployed;
-    // null for an hour with nothing to rate.
+    // All providers' attempts this hour; null or absent for an hour with nothing to rate (it shows as 100%).
     reachabilityPct: num,
     capacityPct: num,
     callErrorPct: num,
