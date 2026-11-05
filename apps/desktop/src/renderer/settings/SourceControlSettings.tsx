@@ -94,6 +94,8 @@ export function SourceControlSettings() {
 		</SettingsSection>
 		<SettingsSection title="Projects" label="Projects">
 			<FolderRow title="Add project opens in" description="The folder the Add project and clone dialogs start in." purpose="add-project" empty="The system's choice" disabled={disabled} value={sourceControl.addProjectDirectory} onChange={value => set({ addProjectDirectory: value })} />
+			<SettingsRow title="Clone into host and owner folders" description="Clones go to <folder>/<host>/<owner>/<repository>, such as github.com/acme/app, instead of straight into the folder you choose."
+				control={<Switch aria-label="Clone into host and owner folders" disabled={disabled} checked={sourceControl.cloneByHost} onCheckedChange={cloneByHost => set({ cloneByHost })} />} />
 		</SettingsSection>
 	</SettingsPageLayout>;
 }

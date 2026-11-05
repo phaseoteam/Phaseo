@@ -957,7 +957,8 @@ ipcMain.handle("workspace:clone-project", async (event, url: unknown) => {
 	const start = workspaceRuntime.store.getPreferences().sourceControl.addProjectDirectory;
 	const result = await dialog.showOpenDialog(window, { properties: ["openDirectory", "createDirectory"], title: "Choose where to clone", buttonLabel: "Clone here", ...start && existingFolder(start) ? { defaultPath: start } : {} });
 	if (result.canceled || !result.filePaths[0]) return undefined;
-	const directory = await span("projects.clone", undefined, () => cloneRepository(url, result.filePaths[0]));
+	const byHost = workspaceRuntime.store.getPreferences().sourceControl.cloneByHost;
+	const directory = await span("projects.clone", undefined, () => cloneRepository(url, result.filePaths[0], undefined, byHost));
 	const project = workspaceRuntime.store.addProject(directory);
 	const state = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(state); return { workspace: state, projectId: project.id };
 });

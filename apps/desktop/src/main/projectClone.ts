@@ -18,9 +18,21 @@ export function cloneSource(value: unknown): { url: string; name: string } {
 	return { url, name };
 }
 
-/** Clones into `parent/<name>`. Git never asks for a password here: a private repository needs saved credentials or a key. */
-export async function cloneRepository(value: unknown, parent: string, run = execute): Promise<string> {
-	const { url, name } = cloneSource(value), directory = path.join(parent, name);
+/** The host and owner path an address names (owner can be nested groups), for folders laid out as <host>/<owner>/<repository>. */
+export function cloneHostPath(url: string): string[] {
+	const match = /^(?:https:\/\/|ssh:\/\/)(?:[^@/]+@)?([^/:]+)(?::\d+)?\/(.+)$/i.exec(url) ?? /^[\w.-]+@([\w.-]+):(.+)$/.exec(url);
+	if (!match) throw new Error("This address does not name a host.");
+	const parts = match[2].replace(/[?#].*$/, "").replace(/\/+$/, "").split("/").filter(Boolean).slice(0, -1);
+	if ([match[1], ...parts].some(part => part === "." || part === ".." || /[<>:"|?*\\]/.test(part))) throw new Error("This address does not name a repository.");
+	return [match[1].toLowerCase(), ...parts];
+}
+
+/**
+ * Clones into `parent/<name>`, or `parent/<host>/<owner>/<name>` when `byHost`. Git never asks for a password here: a private
+ * repository needs saved credentials or a key.
+ */
+export async function cloneRepository(value: unknown, parent: string, run = execute, byHost = false): Promise<string> {
+	const { url, name } = cloneSource(value), directory = byHost ? path.join(parent, ...cloneHostPath(url), name) : path.join(parent, name);
 	if (existsSync(directory)) throw new Error(`${directory} already exists. Choose another folder.`);
 	try {
 		await run("git", ["-c", "protocol.ext.allow=never", "-c", "protocol.file.allow=never", "clone", "--", url, directory], { cwd: parent, windowsHide: true, timeout: 15 * 60_000, maxBuffer: 4 * 1024 * 1024, env: { ...process.env, GIT_TERMINAL_PROMPT: "0", GCM_INTERACTIVE: "never" } });

@@ -10,7 +10,7 @@ describe("source control preferences", () => {
 	});
 
 	it("keeps valid values", () => {
-		const value = { worktreeDirectory: "D:\\worktrees", branchNaming: "custom", branchPrefix: "", branchInstructions: "Use the issue ID.", submodules: "top-level", addProjectDirectory: "/home/me/code", titleInstructions: "Short.", writingInstructions: "Conventional Commits.", reviewGuideInstructions: "Interfaces first.", followPullRequestTemplate: false, gitModel: "openai/gpt-6-mini", reviewGuideModel: "anthropic/claude-opus" };
+		const value = { worktreeDirectory: "D:\\worktrees", branchNaming: "custom", branchPrefix: "", branchInstructions: "Use the issue ID.", submodules: "top-level", addProjectDirectory: "/home/me/code", cloneByHost: true, titleInstructions: "Short.", writingInstructions: "Conventional Commits.", reviewGuideInstructions: "Interfaces first.", followPullRequestTemplate: false, gitModel: "openai/gpt-6-mini", reviewGuideModel: "anthropic/claude-opus" };
 		expect(validateSourceControlPreferences(value)).toEqual(value);
 		expect(validateSourceControlPreferences({ worktreeDirectory: "\\\\server\\share\\worktrees" }).worktreeDirectory).toBe("\\\\server\\share\\worktrees");
 	});

@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { cloneRepository, cloneSource } from "./projectClone";
+import { cloneHostPath, cloneRepository, cloneSource } from "./projectClone";
 
 describe("cloning a project", () => {
 	it("accepts HTTPS and SSH addresses and names the folder after the repository", () => {
@@ -23,6 +23,17 @@ describe("cloning a project", () => {
 			await expect(cloneRepository("https://github.com/phaseo/app.git", parent, failing as never)).rejects.toThrow("Could not clone https://github.com/phaseo/app.git: repository not found");
 			mkdirSync(path.join(parent, "taken"));
 			await expect(cloneRepository("https://github.com/phaseo/taken", parent, run as never)).rejects.toThrow("already exists");
+		} finally { rmSync(parent, { recursive: true, force: true }); }
+	});
+	it("lays a clone out by host and owner when asked, as ghq does", async () => {
+		expect(cloneHostPath("https://github.com/Owner/repo.git")).toEqual(["github.com", "Owner"]);
+		expect(cloneHostPath("git@gitlab.com:group/sub/repo.git")).toEqual(["gitlab.com", "group", "sub"]);
+		expect(cloneHostPath("ssh://git@Example.com:2222/team/repo")).toEqual(["example.com", "team"]);
+		expect(() => cloneHostPath("https://github.com/../repo")).toThrow();
+		const run = vi.fn(async () => ({ stdout: "", stderr: "" }));
+		const parent = mkdtempSync(path.join(tmpdir(), "phaseo-clone-host-"));
+		try {
+			expect(await cloneRepository("https://github.com/Owner/repo.git", parent, run as never, true)).toBe(path.join(parent, "github.com", "Owner", "repo"));
 		} finally { rmSync(parent, { recursive: true, force: true }); }
 	});
 });
