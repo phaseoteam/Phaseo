@@ -12,6 +12,8 @@ let root: Root;
 let container: HTMLDivElement;
 
 beforeEach(() => {
+	// Fake timers: the hover card's open delay is advanced, never waited on.
+	jest.useFakeTimers();
 	Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 	container = document.createElement("div");
 	document.body.appendChild(container);
@@ -21,6 +23,7 @@ beforeEach(() => {
 afterEach(() => {
 	act(() => root.unmount());
 	container.remove();
+	jest.useRealTimers();
 });
 
 const points: UptimeTrendPoint[] = [
@@ -37,9 +40,9 @@ function render(interactive = true) {
 	));
 }
 
-async function settle(ms = 0) {
-	await act(async () => { await new Promise((resolve) => setTimeout(resolve, ms)); });
-	for (let i = 0; i < 3; i++) await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+/** Runs every pending timer (open delays, positioning) and the updates they schedule. */
+async function settle() {
+	await act(async () => { await jest.runAllTimersAsync(); });
 }
 
 const bars = () => Array.from(container.querySelectorAll("button"));
@@ -70,8 +73,8 @@ it("opens a bar's card on tap", async () => {
 it("opens a bar's card on keyboard focus", async () => {
 	render();
 	await act(async () => { bars()[2]!.focus(); });
-	// Focus opens after the trigger's short delay.
-	await settle(200);
+	// Focus opens after the trigger's short delay, which the fake timers advance.
+	await settle();
 	expect(document.body.querySelector('[data-slot="hover-card-content"]')?.textContent).toBe("Today: no traffic");
 });
 

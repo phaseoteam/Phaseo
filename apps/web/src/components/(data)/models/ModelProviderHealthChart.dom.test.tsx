@@ -21,6 +21,7 @@ let root: Root;
 let container: HTMLDivElement;
 
 beforeEach(() => {
+	jest.useFakeTimers();
 	Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 	container = document.createElement("div");
 	document.body.appendChild(container);
@@ -30,6 +31,7 @@ beforeEach(() => {
 afterEach(() => {
 	act(() => root.unmount());
 	container.remove();
+	jest.useRealTimers();
 });
 
 function render(totals: Parameters<typeof ModelProviderHealthChart>[0]["totals"]) {
@@ -55,8 +57,9 @@ const labelButton = (label: string) => {
 	return button as HTMLButtonElement;
 };
 
+/** Runs every pending timer (popover open, positioning) and the updates they schedule. */
 async function settle() {
-	for (let i = 0; i < 3; i++) await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+	await act(async () => { await jest.runAllTimersAsync(); });
 }
 
 it("shows the true 24-hour shares from attemptHealth24h, with the matching caption", () => {
