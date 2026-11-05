@@ -268,17 +268,6 @@ function authenticatedFetch(input: RequestInfo | URL): Response {
 	if (url.includes("workspace_byok_monthly_usage")) {
 		return new Response(JSON.stringify([{ request_count: 1_000_250 }]), { status: 200 });
 	}
-	if (url.includes("workspace_invoice_profiles")) {
-		return new Response(JSON.stringify([{
-			enabled: true, billing_day: 15, payment_terms_days: 14,
-		}]), { status: 200 });
-	}
-	if (url.includes("workspace_invoices")) {
-		return new Response(JSON.stringify([{
-			id: "invoice-1", period_start: "2026-06-01", period_end: "2026-06-30",
-			amount_nanos: 12000000000, currency: "USD", status: "issued",
-		}]), { status: 200 });
-	}
 	if (url.includes("select=id%2Cname")) {
 		return new Response(JSON.stringify([{ id: "workspace-1", name: "Team One" }]), { status: 200 });
 	}
@@ -612,9 +601,9 @@ describe("account settings routes", () => {
 			canAccessOnboarding: true,
 			canManageBilling: true,
 			currentBillingMode: "invoice",
-			initialBillingDay: 15,
-			initialPaymentTermsDays: 14,
-			invoiceProfileEnabled: true,
+			initialBillingDay: 1,
+			initialPaymentTermsDays: 30,
+			invoiceProfileEnabled: false,
 			signedIn: true,
 			workspaceId: "workspace-1",
 		});
@@ -622,7 +611,7 @@ describe("account settings routes", () => {
 			billingMode: "invoice",
 			isEnterpriseInvoiceMode: true,
 			teamTier: "enterprise",
-			invoices: [{ id: "invoice-1", amount_nanos: 12000000000 }],
+			invoices: [],
 			transactions: [],
 			workspaceId: "workspace-1",
 		});

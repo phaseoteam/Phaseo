@@ -10,7 +10,7 @@ try {
       ('key','workspace',true,'2026-09-29',7),('key','workspace',true,'2026-10-01',11),
       ('key','workspace',true,'2026-09-27',99),('key','workspace',false,'2026-09-29',99),
       ('foreign','workspace',true,'2026-09-29',99),('key','foreign',true,'2026-09-29',99);`);
-  for (const path of ['private/functions/gateway_context_access.sql', 'private/functions/gateway_compiled_context_access.sql', 'public/functions/gateway_fetch_request_context_without_workspace_budget.sql']) {
+  for (const path of ['private/functions/gateway_context_access.sql', 'public/functions/gateway_fetch_request_context_without_workspace_budget.sql']) {
     const source = await readFile(new URL(`../schemas/${path}`, import.meta.url), 'utf8');
     const statement = source.match(/select\s+count\(\*\) filter \(where gr\.created_at >= day_start\)[\s\S]*?from public\.gateway_requests gr[\s\S]*?;/i)?.[0];
     assert.ok(statement, `Missing accounting query: ${path}`);

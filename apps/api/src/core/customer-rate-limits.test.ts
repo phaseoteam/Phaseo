@@ -17,7 +17,7 @@ vi.mock("@/runtime/env", () => ({
 
 import {
 	__customerQuotaStateSizeForTests, __resetCustomerQuotaStateForTests,
-	customerScopeKey, freeDayScopeKey, guardCustomerQuota, guardFreeRouteQuota, parseCustomerLimits,
+	customerScopeKey, FREE_DAY_ADMIT_DEADLINE_MS, FREE_DAY_PROVISIONAL_PER_DAY, freeDayScopeKey, guardCustomerQuota, guardFreeRouteQuota, parseCustomerLimits,
 } from "./customer-rate-limits";
 import type { PriceCard } from "@pipeline/pricing/types";
 
@@ -200,12 +200,153 @@ describe("customer quota integration", () => {
 		expect((await guardFreeRouteQuota({ ...args, admissionId: "c", pricingCard: card("free", "0") }))?.status).toBe(429);
 	});
 
-	it("fails open when the counter does not answer in time", async () => {
+	it("reports where a free admission spent its time: limits read, then the counter, or answered locally", async () => {
+		mocks.bindings.CUSTOMER_RATE_LIMIT_LADDER_ENABLED = "true";
+		mocks.readLimits.mockImplementation(async () => {
+			vi.advanceTimersByTime(30);
+			return { tier: "trusted", requestsPerMinute: 60, freeRequestsPerDay: 1500 };
+		});
+		mocks.admit.mockImplementationOnce(async () => {
+			vi.advanceTimersByTime(25); // a warm Durable Object (a cold one is under "a counter that is starting up")
+			return { allowed: true, limit: 1500, remaining: 900, retryAfterSeconds: 0 };
+		});
+		const counted: Record<string, unknown> = {};
+		expect(await guardFreeRouteQuota({ ...args, admissionId: "a", pricingCard: card("free", "0"), timing: counted })).toBeNull();
+		expect(counted).toEqual({ limitsMs: 30, counterMs: 25, waitMs: 55 });
+		// Plenty of headroom left: answered in this isolate, nothing awaited.
+		const local: Record<string, unknown> = {};
+		expect(await guardFreeRouteQuota({ ...args, admissionId: "b", pricingCard: card("free", "0"), timing: local })).toBeNull();
+		expect(local).toEqual({ local: true });
+		// Paid models are not timed at all.
+		const paid: Record<string, unknown> = {};
+		await guardFreeRouteQuota({ ...args, admissionId: "c", pricingCard: card("standard", "1"), timing: paid });
+		expect(paid).toEqual({});
+	});
+
+	it("reports the capped wait when the counter does not answer in time and the provisional slots are used", async () => {
 		vi.spyOn(console, "warn").mockImplementation(() => {});
 		mocks.admit.mockReturnValue(new Promise(() => {}));
+		for (const admissionId of ["p1", "p2"]) {
+			const provisional = guardFreeRouteQuota({ ...args, admissionId, pricingCard: card("free", "0") });
+			await vi.advanceTimersByTimeAsync(FREE_DAY_ADMIT_DEADLINE_MS);
+			expect(await provisional).toBeNull();
+		}
+		const timing: Record<string, unknown> = {};
+		const admitted = guardFreeRouteQuota({ ...args, pricingCard: card("free", "0"), timing });
+		await vi.advanceTimersByTimeAsync(2_000);
+		expect(await admitted).toBeNull();
+		expect(timing.waitMs).toBe(2_000);
+		expect(timing).not.toHaveProperty("counterMs");
+		expect(timing).not.toHaveProperty("provisional");
+	});
+
+	it("fails open, as before, when the counter does not answer in time and the provisional slots are used", async () => {
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		mocks.admit.mockReturnValue(new Promise(() => {}));
+		for (const admissionId of ["p1", "p2"]) {
+			const provisional = guardFreeRouteQuota({ ...args, admissionId, pricingCard: card("free", "0") });
+			await vi.advanceTimersByTimeAsync(FREE_DAY_ADMIT_DEADLINE_MS);
+			await provisional;
+		}
 		const admitted = guardFreeRouteQuota({ ...args, pricingCard: card("free", "0") });
 		await vi.advanceTimersByTimeAsync(2_000);
 		expect(await admitted).toBeNull();
+	});
+
+	describe("a counter that is starting up", () => {
+		const COLD_MS = 1_100;
+		/** The counter's answer arrives COLD_MS after the call (a new scope's object starting). */
+		const slowAdmit = (answer: { allowed: boolean; remaining: number; retryAfterSeconds: number }) =>
+			mocks.admit.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({ limit: 1500, ...answer }), COLD_MS)));
+		const free = (admissionId: string, timing?: Record<string, unknown>) =>
+			guardFreeRouteQuota({ ...args, admissionId, pricingCard: card("free", "0"), ...(timing ? { timing } : {}) });
+
+		it("does not hold the request beyond the deadline, and still counts it", async () => {
+			slowAdmit({ allowed: true, remaining: 1499, retryAfterSeconds: 0 });
+			const timing: Record<string, unknown> = {};
+			let settledAt: number | null = null;
+			const started = Date.now();
+			const admitted = free("first", timing).then((value) => { settledAt = Date.now() - started; return value; });
+			await vi.advanceTimersByTimeAsync(FREE_DAY_ADMIT_DEADLINE_MS);
+			expect(await admitted).toBeNull();
+			expect(settledAt).toBe(FREE_DAY_ADMIT_DEADLINE_MS);
+			expect(timing).toMatchObject({ provisional: true, waitMs: FREE_DAY_ADMIT_DEADLINE_MS });
+			// The counter call keeps running and counts the request.
+			expect(mocks.admit).toHaveBeenCalledWith(expect.any(String), "free-day", "first", expect.anything());
+			await vi.advanceTimersByTimeAsync(COLD_MS);
+			await settle();
+			// Its answer (plenty left) is recorded: the next request is admitted locally at once.
+			const next: Record<string, unknown> = {};
+			expect(await free("second", next)).toBeNull();
+			expect(next).toEqual({ local: true });
+		});
+
+		it("lets at most FREE_DAY_PROVISIONAL_PER_DAY requests past an exhausted allowance, however many arrive at once", async () => {
+			slowAdmit({ allowed: false, remaining: 0, retryAfterSeconds: 3_600 });
+			const results: Array<Response | null | "pending"> = Array.from({ length: 6 }, () => "pending");
+			const requests = results.map((_, index) => free(`burst-${index}`).then((value) => { results[index] = value; }));
+			await vi.advanceTimersByTimeAsync(FREE_DAY_ADMIT_DEADLINE_MS);
+			// Two provisional admissions; the others keep waiting for the counter.
+			expect(results.filter((value) => value === null)).toHaveLength(FREE_DAY_PROVISIONAL_PER_DAY);
+			expect(results.filter((value) => value === "pending")).toHaveLength(6 - FREE_DAY_PROVISIONAL_PER_DAY);
+			await vi.advanceTimersByTimeAsync(COLD_MS);
+			await Promise.all(requests);
+			await settle();
+			expect(results.filter((value) => value instanceof Response && value.status === 429)).toHaveLength(6 - FREE_DAY_PROVISIONAL_PER_DAY);
+			// The denial is remembered, and the used slots are not given back: no further overshoot today.
+			const later = await free("later");
+			expect(later?.status).toBe(429);
+			expect(mocks.admit).toHaveBeenCalledTimes(6);
+		});
+
+		it("does not give slots back after a denial, even once the remembered denial has expired", async () => {
+			slowAdmit({ allowed: false, remaining: 0, retryAfterSeconds: 1 });
+			for (const admissionId of ["d1", "d2"]) {
+				const provisional = free(admissionId);
+				await vi.advanceTimersByTimeAsync(FREE_DAY_ADMIT_DEADLINE_MS);
+				expect(await provisional).toBeNull();
+			}
+			await vi.advanceTimersByTimeAsync(COLD_MS + 2_000);
+			await settle();
+			// The 1 s denial has expired and the counter is still slow: the request waits for its answer.
+			const timing: Record<string, unknown> = {};
+			const third = free("d3", timing);
+			await vi.advanceTimersByTimeAsync(FREE_DAY_ADMIT_DEADLINE_MS);
+			await vi.advanceTimersByTimeAsync(COLD_MS);
+			expect((await third)?.status).toBe(429);
+			expect(timing).not.toHaveProperty("provisional");
+		});
+
+		it("gives a slot back when the counter confirms the admission was within quota", async () => {
+			slowAdmit({ allowed: true, remaining: 5, retryAfterSeconds: 0 });
+			for (let index = 0; index < 5; index += 1) {
+				const timing: Record<string, unknown> = {};
+				const request = free(`ok-${index}`, timing);
+				await vi.advanceTimersByTimeAsync(FREE_DAY_ADMIT_DEADLINE_MS);
+				expect(await request).toBeNull();
+				expect(timing.provisional).toBe(true);
+				await vi.advanceTimersByTimeAsync(COLD_MS);
+				await settle();
+			}
+		});
+
+		it("still rejects at once from a warm counter, without using a slot", async () => {
+			mocks.admit.mockResolvedValue({ allowed: false, limit: 1500, remaining: 0, retryAfterSeconds: 3_600 });
+			const timing: Record<string, unknown> = {};
+			expect((await free("warm", timing))?.status).toBe(429);
+			expect(timing).not.toHaveProperty("provisional");
+		});
+
+		it("uses a slot when the counter fails, and fails open as before once the slots are used", async () => {
+			vi.spyOn(console, "warn").mockImplementation(() => {});
+			mocks.admit.mockRejectedValue(new Error("object unavailable"));
+			const timings = Array.from({ length: 3 }, () => ({} as Record<string, unknown>));
+			for (const [index, timing] of timings.entries()) {
+				expect(await free(`err-${index}`, timing)).toBeNull();
+				await settle();
+			}
+			expect(timings.map((timing) => timing.provisional === true)).toEqual([true, true, false]);
+		});
 	});
 
 	it("counts one free admission per request across fallback attempts", async () => {

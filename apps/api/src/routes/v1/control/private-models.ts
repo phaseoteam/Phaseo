@@ -101,12 +101,12 @@ async function resolveModelIdentity(workspaceId: string, reference: unknown) {
 	const namespace = await getWorkspaceNamespace(workspaceId);
 	const value = String(reference ?? "").trim().toLowerCase();
 	if (value.includes("/")) {
-		const { data, error } = await getSupabaseAdmin().from("models").select("model_id").eq("model_id", value).maybeSingle();
+		const { data, error } = await getSupabaseAdmin().from("v2_models").select("model_id:model_slug").eq("model_slug", value).maybeSingle();
 		if (error || !data) throw new Error("slug must be an existing catalogue model ID or a short model slug");
 		return { model_id: value, catalog_model_id: value, local_slug: value.split("/").at(-1) };
 	}
 	const localModelId = buildPrivateModelId(namespace, value);
-	const { data } = await getSupabaseAdmin().from("models").select("model_id").like("model_id", `%/${value}`).limit(2);
+	const { data } = await getSupabaseAdmin().from("v2_models").select("model_id:model_slug").like("model_slug", `%/${value}`).limit(2);
 	if (data?.length === 1) return { model_id: data[0].model_id, catalog_model_id: data[0].model_id, local_slug: value };
 	return { model_id: localModelId, catalog_model_id: null, local_slug: value };
 }

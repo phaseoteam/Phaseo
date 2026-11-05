@@ -1,5 +1,5 @@
 import { createRoot } from "react-dom/client";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { money, type CardModel, type Model } from "./model";
 import { ModelComparison } from "./ModelComparison";
 import { ModelDetails } from "./ModelDetails";
@@ -26,7 +26,7 @@ function Explorer({
   theme: Theme;
 }) {
   const initialCompare = seed.models;
-  const { status, context } = useBridge();
+  const { status, context, toolCall, result } = useBridge();
   const connected = status === "connected";
   const [models, setModels] = useState<CardModel[]>(initialModels);
   const [query, setQuery] = useState("");
@@ -74,20 +74,34 @@ function Explorer({
     setPage("models");
   }, [seed]);
 
-  // A newer models_list result from the conversation replaces the list.
+  // A newer models_list result from the conversation replaces the list, and wins
+  // over any search still in flight.
   useEffect(() => {
     if (initialModels.length) {
+      ++request.current;
       setModels(initialModels);
       setBusy(false);
     }
   }, [initialModels]);
+  // A tool result without models (an error, or another tool's data) ends loading.
+  useEffect(() => {
+    if (result && !initialModels.length) setBusy(false);
+  }, [result]);
 
-  // Opened from the sidebar or thread panel with no result yet: load a first page.
+  // Opened from the sidebar or thread panel with no tool call: load a first page.
+  // A model-invoked tool sends its arguments just after connecting, so wait briefly
+  // and never search over a tool call's own result.
+  const toolCallRef = useRef(toolCall);
+  toolCallRef.current = toolCall;
   const loadedOnce = useRef(false);
   useEffect(() => {
     if (!connected || loadedOnce.current) return;
     loadedOnce.current = true;
-    if (!initialModels.length) void search();
+    if (initialModels.length || toolCallRef.current) return;
+    const timer = setTimeout(() => {
+      if (!toolCallRef.current) void search();
+    }, 800);
+    return () => clearTimeout(timer);
   }, [connected]);
 
   const deepLink = (context?.["openai/deepLink"] as { url?: string } | undefined)?.url;
@@ -664,15 +678,19 @@ function Root() {
 
   const theme: Theme = context?.theme === "dark" ? "dark" : "light";
   const fullscreen = context?.displayMode === "fullscreen";
-  let card = null;
-  let error = "";
-  if (result) {
+  // Parse once per tool result, so host-context renders (theme, display mode) keep
+  // the same models array and never invalidate a search the user started.
+  const { card, error } = useMemo(() => {
+    if (!result) return { card: null, error: "" };
     try {
-      card = cardFor(readResult(result));
+      return { card: cardFor(readResult(result)), error: "" };
     } catch (reason) {
-      error = reason instanceof Error ? reason.message : "Phaseo could not load this data.";
+      return {
+        card: null,
+        error: reason instanceof Error ? reason.message : "Phaseo could not load this data.",
+      };
     }
-  }
+  }, [result]);
   const resultModels = card?.kind === "models" ? card.models : NO_MODELS;
 
   const showExplorer =
