@@ -17,6 +17,7 @@ import {
 	isResponse,
 	internalServerError,
 	parsePathId,
+	rejectThirdPartyOAuthSpendingChange,
 	requireCapability,
 	requireJsonBody,
 	requireOAuthWorkspaceRole,
@@ -61,6 +62,10 @@ function formatPrivateModel(row: Record<string, any>) {
 	};
 }
 
+// A private model sends requests to its base_url, so an app that signs in with Phaseo must not add, change or
+// remove one, whatever scopes the person consented to.
+const PRIVATE_MODEL_APP_REFUSAL = "Apps that use Sign in with Phaseo can't add, change or remove private models, because requests are sent to their endpoints. The person can change them under Settings.";
+
 async function authorize(req: Request, capability: string) {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) return { response: (auth as GuardErr).response };
@@ -68,6 +73,8 @@ async function authorize(req: Request, capability: string) {
 	if (scopeError) return { response: scopeError };
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return { response: roleError };
+	const appError = capability === CAPABILITIES.PRIVATE_MODELS_READ ? null : rejectThirdPartyOAuthSpendingChange(auth.value, PRIVATE_MODEL_APP_REFUSAL);
+	if (appError) return { response: appError };
 	return { auth: auth.value };
 }
 
