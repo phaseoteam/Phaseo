@@ -188,9 +188,14 @@ describe("per-attempt provider health", () => {
 		// Requests succeeded after failover; the provider's own attempts did not.
 		expect(flaky).toMatchObject({ uptimePct3d: 40, requests3d: 4 });
 		// Daily bars use web-api's per-day attempt rates; no attempt counts are published.
+		// A day without attempts shows 100%.
 		expect(flaky?.uptimeDaily3d[0]).toMatchObject({ dayOffset: 0, uptimePct: 40 });
 		expect(flaky?.uptimeDaily3d[1]).toMatchObject({ dayOffset: 1, uptimePct: 50 });
-		expect(flaky?.uptimeDaily3d[2]).toMatchObject({ dayOffset: 2, uptimePct: null });
+		expect(flaky?.uptimeDaily3d[2]).toMatchObject({ dayOffset: 2, uptimePct: 100 });
+		// Hourly bars use the attempt rate of each hour, never the request-level one.
+		expect(flaky?.performanceHourly3d).toHaveLength(72);
+		expect(flaky?.performanceHourly3d.at(-2)).toMatchObject({ start: "2026-08-30T09:00:00.000Z", uptimePct: 40 });
+		expect(flaky?.performanceHourly3d.at(-1)).toMatchObject({ start: "2026-08-30T10:00:00.000Z", uptimePct: 100 });
 		expect(flaky?.attemptHealth3d).toEqual({
 			reachabilityPct: 70,
 			capacityPct: 80,
@@ -199,7 +204,7 @@ describe("per-attempt provider health", () => {
 		});
 	});
 
-	it("keeps request-level daily bars when a cached response has no attempt days", () => {
+	it("never falls back to request-level bars when a response has no attempt days or hours", () => {
 		const stats = mapRpcRuntimeStatsRows({
 			now,
 			providerIds: ["flaky"],
@@ -211,24 +216,35 @@ describe("per-attempt provider health", () => {
 		});
 		const flaky = getProviderRuntimeStats(stats, "flaky");
 		expect(flaky?.uptimePct3d).toBe(40);
-		expect(flaky?.uptimeDaily3d[0]?.uptimePct).toBe(75);
+		expect(flaky?.uptimeDaily3d.map((day) => day.uptimePct)).toEqual([100, 100, 100]);
+		expect(flaky?.performanceHourly3d.every((point) => point.uptimePct === 100)).toBe(true);
 	});
 
-	it("adds providers that only failed over and keeps request uptime without attempt data", () => {
+	it("adds providers that only failed over; traffic without attempt rates reads 100%, no traffic stays empty", () => {
 		const stats = mapRpcRuntimeStatsRows({
 			now,
-			providerIds: ["served", "failover-only"],
+			providerIds: ["served", "failover-only", "idle"],
 			rows: [
-				{ provider_id: "served", service_tier: "standard", requests: 2, health_requests: 2, health_success_requests: 2, uptime_pct: 100, buckets: [] },
+				// Request-level uptime of 50% is never shown: without attempt rates the provider reads 100%.
+				{ provider_id: "served", service_tier: "standard", requests: 2, health_requests: 2, health_success_requests: 1, uptime_pct: 50,
+					buckets: [{ start: "2026-08-30T09:00:00.000Z", requests: 2, health_requests: 2, health_success_requests: 1 }] },
 			] as Parameters<typeof mapRpcRuntimeStatsRows>[0]["rows"],
 			attemptHealthRows: [
 				{ provider_id: "failover-only", service_tier: "standard", reachability_pct: 0, capacity_pct: null, call_error_pct: null, uptime_pct: 0, buckets: [], days: [] },
 			],
 		});
-		expect(getProviderRuntimeStats(stats, "served")).toMatchObject({ uptimePct3d: 100, healthRequests3d: 2, attemptHealth3d: null });
+		const served = getProviderRuntimeStats(stats, "served");
+		expect(served).toMatchObject({ uptimePct3d: 100, healthRequests3d: 2, attemptHealth3d: null });
+		expect(served?.uptimeDaily3d.map((day) => day.uptimePct)).toEqual([100, 100, 100]);
+		expect(served?.performanceHourly3d.at(-2)).toMatchObject({ start: "2026-08-30T09:00:00.000Z", uptimePct: 100 });
 		expect(getProviderRuntimeStats(stats, "failover-only")).toMatchObject({
 			uptimePct3d: 0,
 			attemptHealth3d: { reachabilityPct: 0, capacityPct: null, callErrorPct: null, uptimePct: 0 },
 		});
+		// A provider with no traffic in the window has no uptime to show ("--").
+		const idle = getProviderRuntimeStats(stats, "idle");
+		expect(idle).toMatchObject({ uptimePct3d: null, attemptHealth3d: null });
+		expect(idle?.uptimeDaily3d.map((day) => day.uptimePct)).toEqual([null, null, null]);
+		expect(idle?.performanceHourly3d.every((point) => point.uptimePct === null)).toBe(true);
 	});
 });

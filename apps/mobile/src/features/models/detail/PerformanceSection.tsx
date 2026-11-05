@@ -4,14 +4,14 @@ import { useMemo, useRef, useState } from "react";
 import { useCSSVariable } from "uniwind";
 import { Pressable, View } from "react-native";
 import { LegendItem, LineChart } from "@/components/charts";
-import { Button, Icon, OptionSheet, Text, useMenu, useToneColor, type ViewRef } from "@/components/ui";
+import { Button, Icon, OptionSheet, Text, useMenu, type ViewRef } from "@/components/ui";
 import { getModelPerformance, getModelPerformanceColos, type ModelPerformance } from "@/lib/api/models";
 import { formatSeconds, formatShortDate, formatSpeed } from "@/lib/format";
 import { EmptyBox, PageSection } from "./parts";
-import { averageUptime, formatPercentile, hasPerformanceHistory, PERCENTILES, performanceView, RANGE_DAYS, showsLeastStableProvider, TREND_METRICS, trendSeries, uptimeHours, type RangeDays, type TrendMetric } from "./performance";
+import { formatPercentile, hasPerformanceHistory, PERCENTILES, performanceView, RANGE_DAYS, TREND_METRICS, trendSeries, type RangeDays, type TrendMetric } from "./performance";
 import type { SectionId } from "./sections";
 import {
-  attemptFailureShares, failureShareText, formatRate, hasProviderAttemptHealth, PROVIDER_HEALTH_METRICS, PROVIDER_HEALTH_STYLE, providerHealthHours, requestFailureText, summarizeProviderHealth,
+  attemptFailureShares, failureShareText, formatRate, PROVIDER_HEALTH_METRICS, PROVIDER_HEALTH_STYLE, providerHealthHours, summarizeProviderHealth,
   summaryFailureShares, UPTIME_COPY, type ProviderHealthMetric,
 } from "./uptime";
 
@@ -149,32 +149,34 @@ function TrendCard({ metric, label, view }: { metric: TrendMetric; label: string
 }
 
 /**
- * "Model uptime". Per provider attempt (Reachable, Accepted, Completed) when the data API publishes those rates, as
- * the website's ModelSuccessChart does; otherwise the older request-level uptime line. Percentages only.
+ * "Model uptime": per provider attempt (Reachable, Accepted, Completed), as the website's model page shows it.
+ * Hours without data read 100%, so a model with no recent traffic (or a response without attempt rates) shows
+ * three flat 100% lines. Percentages only.
  */
 export function UptimeSection({ modelId, onLayoutSection, first }: { modelId: string; onLayoutSection: (id: SectionId, y: number) => void; first?: boolean }) {
   const metrics = usePerformance(modelId);
-  const data = metrics.data ?? null;
   return (
     <PageSection id="uptime" first={first} onLayoutSection={onLayoutSection} title="Model uptime" description="Uptime trend for this model over the last 24 hours.">
-      {data && hasProviderAttemptHealth(data.successSeries) ? <ProviderHealthCard metrics={data} /> : <UptimeCard metrics={data} />}
+      <ProviderHealthCard metrics={metrics.data ?? null} />
     </PageSection>
   );
 }
 
-/** The uptime buckets are UTC hours (uptimeHours), so their labels are too, as on the website. */
+/** The uptime buckets are UTC hours (providerHealthHours), so their labels are too, as on the website. */
 const utcHour = (time: number) => `${String(new Date(time).getUTCHours()).padStart(2, "0")}:00`;
 
 /**
  * Reachable, Accepted and Completed over the last 24 hours: each step's hourly average with the share that failed
  * it, then a line per step. Press and hold the chart to read an hour; a label opens what the step measures.
  */
-function ProviderHealthCard({ metrics }: { metrics: ModelPerformance }) {
+function ProviderHealthCard({ metrics }: { metrics: ModelPerformance | null }) {
   const [inspected, setInspected] = useState<number | null>(null);
   const [help, setHelp] = useState<ProviderHealthMetric | null>(null);
-  const hours = useMemo(() => providerHealthHours(metrics.successSeries), [metrics.successSeries]);
+  const series = metrics?.successSeries;
+  const totals = metrics?.attemptHealth24h ?? null;
+  const hours = useMemo(() => providerHealthHours(series ?? []), [series]);
   const summary = useMemo(() => summarizeProviderHealth(hours), [hours]);
-  const summaryShares = useMemo(() => summaryFailureShares(summary, metrics.attemptHealth24h), [summary, metrics.attemptHealth24h]);
+  const summaryShares = useMemo(() => summaryFailureShares(summary, totals), [summary, totals]);
   const shown = inspected != null ? hours.find((hour) => Date.parse(hour.bucket) === inspected) : null;
   const shares = shown ? attemptFailureShares(shown.rates) : summaryShares;
   const label = UPTIME_COPY.labels;
@@ -221,44 +223,6 @@ function ProviderHealthCard({ metrics }: { metrics: ModelPerformance }) {
         }))}
         onInspect={setInspected}
       />
-    </View>
-  );
-}
-
-function UptimeCard({ metrics }: { metrics: ModelPerformance | null }) {
-  const success = useToneColor("success");
-  const [inspected, setInspected] = useState<number | null>(null);
-  const series = useMemo(() => metrics?.successSeries ?? [], [metrics]);
-  const hours = useMemo(() => uptimeHours(series), [series]);
-  const leastStable = showsLeastStableProvider(series);
-  const average = averageUptime(hours.map((hour) => hour.overall));
-  const without = averageUptime(hours.filter((hour) => hour.worstRequests > 0 && hour.worst != null).map((hour) => hour.worst));
-  const format = (value: number | null) => (value == null ? "—" : `${value.toFixed(1)}%`);
-  const shown = inspected != null ? hours.find((hour) => Date.parse(hour.bucket) === inspected) : null;
-  return (
-    <View className="rounded-md border border-border px-4 py-4">
-      <Text className="text-[24px] font-bold leading-[30px] tracking-tight" style={{ color: success }}>{format(shown ? shown.overall : average)}</Text>
-      <Text variant="caption" className="mt-0.5">{shown ? [`${utcHour(Date.parse(shown.bucket))} UTC`, requestFailureText(shown.overall)].filter(Boolean).join(" · ") : UPTIME_COPY.hourlyAverage}</Text>
-      <LineChart
-        className="mt-3"
-        height={110}
-        yMax={100}
-        showYAxis={false}
-        xTicks={4}
-        xFormat={utcHour}
-        tooltipTitle={(time) => `${formatShortDate(time)}, ${utcHour(time)} UTC`}
-        valueFormat={format}
-        accessibilityLabel={`Uptime per hour over the last 24 hours, ${format(average)} on average`}
-        series={[
-          { key: "overall", label: "Phaseo routing", colour: "#16a249", points: hours.map((hour) => ({ x: Date.parse(hour.bucket), y: hour.overall })) },
-          ...(leastStable ? [{ key: "worst", label: "Without Phaseo Routing", colour: "#e92063", points: hours.map((hour) => ({ x: Date.parse(hour.bucket), y: hour.worst })) }] : []),
-        ]}
-        onInspect={setInspected}
-      />
-      <View className="mt-3 flex-row flex-wrap justify-center gap-x-4 gap-y-1">
-        <LegendItem colour="#16a249" label="Phaseo routing" value={format(average)} />
-        {leastStable ? <LegendItem colour="#e92063" label="Without Phaseo Routing" value={format(without)} /> : null}
-      </View>
     </View>
   );
 }

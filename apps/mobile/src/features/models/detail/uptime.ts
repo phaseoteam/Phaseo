@@ -21,13 +21,11 @@ export const UPTIME_COPY = {
   } satisfies Record<ProviderHealthMetric, string>,
   noFailures: "No failures",
   noFailuresThisHour: "No failures this hour",
-  failedShareRequests: (percent: string) => `${percent} of requests failed`,
   reachabilityFailureShare: (percent: string) => `${percent} of attempts couldn't reach the provider`,
   capacityFailureShare: (percent: string) => `${percent} of attempts that reached the provider were turned away because it was at capacity`,
   capacityUnmeasured: "No attempts reached the provider",
   callErrorsFailureShare: (percent: string) => `${percent} of accepted attempts failed after the provider accepted them`,
   callErrorsUnmeasured: "No attempts were accepted",
-  hourlyAverage: "Last 24 hours · hourly average",
   attemptHourlyAverage: "Last 24 hours · hourly average, per provider attempt",
   attemptBasis: "Last 3 days, per provider attempt. Errors caused by the request or by Phaseo are not counted.",
 } as const;
@@ -83,18 +81,6 @@ export function failureShareText(metric: ProviderHealthMetric, share: FailureSha
   return UPTIME_COPY.callErrorsFailureShare(percent);
 }
 
-/** The request-level chart's hour in words: "0.6% of requests failed" or "No failures this hour" (never a count). */
-export function requestFailureText(uptimePct: number | null | undefined) {
-  if (!isRate(uptimePct)) return null;
-  const failedPct = Math.min(100, Math.max(0, 100 - uptimePct));
-  return failedPct > 1e-9 ? UPTIME_COPY.failedShareRequests(formatFailureShare(failedPct)) : UPTIME_COPY.noFailuresThisHour;
-}
-
-/** True when the series carries per-attempt provider health (web-api with the attempt-health RPC deployed). */
-export function hasProviderAttemptHealth(series: SuccessPoint[]) {
-  return series.some((point) => point.reachabilityPct !== undefined);
-}
-
 const toHour = (value: string | Date) => {
   const date = new Date(value);
   date.setUTCMinutes(0, 0, 0);
@@ -110,8 +96,8 @@ export type ProviderHealthHour = {
 } & Record<ProviderHealthMetric, number | null>;
 
 /**
- * The last 24 UTC hours of the three rates. An hour with no eligible attempts (no Reachable rate) shows 100%, like
- * the request-level chart; a later step nothing reached stays empty.
+ * The last 24 UTC hours of the three rates. An hour with no eligible attempts (no Reachable rate) shows 100%, so an
+ * empty series, or one without attempt rates, reads 100% throughout; a later step nothing reached stays empty.
  */
 export function providerHealthHours(series: SuccessPoint[], now = new Date()): ProviderHealthHour[] {
   const byHour = new Map(series.map((point) => [toHour(point.bucket), point]));
@@ -144,8 +130,8 @@ export function summarizeProviderHealth(hours: ProviderHealthHour[]): Record<Pro
 
 /**
  * The 24-hour failure share of each step: from web-api's `attemptHealth24h` (rated from all the attempts in those
- * hours) when present, since an average of hourly rates understates failures when traffic is uneven. Older
- * responses fall back to the hourly averages.
+ * hours) when present, since an average of hourly rates understates failures when traffic is uneven. Without them
+ * (no attempts in the window) it falls back to the hourly averages, which then read 100% and "No failures".
  */
 export function summaryFailureShares(summary: Record<ProviderHealthMetric, number | null>, totals?: AttemptRates | null) {
   if (totals) return attemptFailureShares(totals);
