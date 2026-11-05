@@ -49,12 +49,12 @@ function toolRow(activity: AgentActivity) {
 }
 
 function ActionButton({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: ReactNode }) {
-	return <button type="button" aria-label={label} title={label} disabled={disabled} onClick={onClick} className="grid size-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40 [&_svg]:size-3.5">{children}</button>;
+	return <button type="button" aria-label={label} title={label} disabled={disabled} onClick={onClick} className="hover-wiggle press-squish grid size-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40 [&_svg]:size-3.5">{children}</button>;
 }
 
 function CopyButton({ text }: { text: string }) {
 	const { status, copying, copy } = useTextCopy(text);
-	return <ActionButton label={status === "copied" ? "Copied" : "Copy"} disabled={copying || !text} onClick={() => void copy()}>{status === "copied" ? <Check /> : <Copy />}</ActionButton>;
+	return <ActionButton label={status === "copied" ? "Copied" : "Copy"} disabled={copying || !text} onClick={() => void copy()}>{status === "copied" ? <Check className="icon-draw" /> : <Copy />}</ActionButton>;
 }
 
 function UserMessage({ message, taskId, projectId, onAttachment, onBranch, onRewind, canBranch, burst, compact }: { message: Message; taskId: string; projectId?: string; onAttachment: (id: string) => void; onBranch: (id: string) => void; onRewind?: (message: Message) => void; canBranch: boolean; burst?: Burst; compact?: boolean }) {
@@ -97,11 +97,14 @@ function WatchNotice({ message }: { message: Message }) {
 function PlanSteps({ activity }: { activity: AgentActivity }) {
 	const steps = activity.steps ?? [];
 	const done = steps.filter(step => step.status === "completed").length;
+	// Only a step that changes while it is on screen moves: its tick draws, or its dot pops in.
+	const [initial] = useState(() => steps.map(step => step.status));
+	const changed = (index: number, status: string) => initial[index] !== status;
 	return <div className="py-1">
 		<div className="mb-2 flex items-center gap-2 text-xs font-semibold"><ListChecks className="size-3.5 text-muted-foreground" />Plan<span className="font-normal text-muted-foreground">{done} of {steps.length} done</span></div>
 		{activity.explanation && <p className="mb-2 text-xs text-muted-foreground">{activity.explanation}</p>}
 		<ol className="space-y-1">{steps.map((step, index) => <li key={index} className={cn("flex items-start gap-2 text-[13px]", step.status === "completed" && "text-muted-foreground line-through decoration-muted-foreground/40", step.status === "cancelled" && "text-muted-foreground")}>
-			{step.status === "completed" ? <Check className="mt-0.5 size-3.5 shrink-0 text-success" /> : step.status === "in_progress" ? <CircleDot className="mt-0.5 size-3.5 shrink-0 text-primary" /> : step.status === "cancelled" ? <CircleSlash className="mt-0.5 size-3.5 shrink-0" /> : <Circle className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />}
+			{step.status === "completed" ? <Check className={cn("mt-0.5 size-3.5 shrink-0 text-success", changed(index, step.status) && "icon-draw")} /> : step.status === "in_progress" ? <CircleDot className={cn("mt-0.5 size-3.5 shrink-0 text-primary", changed(index, step.status) && "icon-pop")} /> : step.status === "cancelled" ? <CircleSlash className="mt-0.5 size-3.5 shrink-0" /> : <Circle className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />}
 			<span>{step.text}</span></li>)}</ol>
 	</div>;
 }
@@ -119,6 +122,9 @@ const ProjectDirectoryContext = createContext<string | undefined>(undefined);
 /** `openDiff` opens the turn's diff at a file, once the turn has finished in a project that keeps snapshots. */
 function ActivityRow({ activity, live, openDiff, count = 1 }: { activity: AgentActivity; live: boolean; openDiff?: (path: string) => void; count?: number }) {
 	const [open, setOpen] = useState(false);
+	// A step that appeared during the turn slides in, and its icon pops in (or shakes, failed) when it finishes on screen.
+	const [appeared] = useState(() => ({ live: live || activity.status === "running", status: activity.status }));
+	const finishedHere = appeared.status === "running" && activity.status !== "running";
 	const directory = useContext(ProjectDirectoryContext);
 	const edits = useMemo(() => toolCallEdits(activity, directory), [activity, directory]);
 	if (activity.type === "usage") return null;
@@ -133,10 +139,10 @@ function ActivityRow({ activity, live, openDiff, count = 1 }: { activity: AgentA
 	const expandable = !!activity.text.trim() && (!reasoning || activity.text.trim() !== label);
 	// An edit shows the file it changed and opens the turn's diff there; a recorded patch (Codex) shows as a diff, not JSON.
 	const files = edits?.files ?? [], file = files[0];
-	return <div className="group/edit text-[12.5px]">
+	return <div className={cn("group/edit text-[12.5px]", appeared.live && "step-in")}>
 		<div className="flex min-w-0 items-center">
 			<button type="button" disabled={!expandable} onClick={() => setOpen(value => !value)} aria-expanded={open} className="group/activity flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1 text-left text-muted-foreground hover:text-foreground disabled:hover:text-muted-foreground">
-				{running ? <LoaderCircle className="size-3.5 shrink-0 animate-spin text-primary" /> : <Icon className={cn("size-3.5 shrink-0 text-muted-foreground", activity.status === "failed" && "text-destructive")} />}
+				{running ? <LoaderCircle className="size-3.5 shrink-0 animate-spin text-primary" /> : <Icon className={cn("size-3.5 shrink-0 text-muted-foreground", activity.status === "failed" && "text-destructive", finishedHere && (activity.status === "failed" ? "icon-shake" : "icon-pop"))} />}
 				{/* The label keeps most of the row beside a summary, but still truncates, so a long one never leaves the column. */}
 				<span className={cn("min-w-0 truncate text-foreground/85", (summary || file) && "max-w-[75%] shrink-0", running && "animate-pulse")}>{label}</span>
 				{count > 1 && <span className="shrink-0 tabular-nums text-muted-foreground">×{count}</span>}
@@ -144,7 +150,7 @@ function ActivityRow({ activity, live, openDiff, count = 1 }: { activity: AgentA
 					: summary && <span className="min-w-0 truncate font-mono text-[11.5px] text-muted-foreground">{summary}</span>}
 				{running && !reasoning && <Elapsed since={activity.startedAt} className="text-[11.5px]" />}
 				{activity.status === "failed" && <X className="size-3.5 shrink-0 text-destructive" />}
-				{expandable && <ChevronRight className={cn("size-3.5 shrink-0 opacity-0 transition group-hover/activity:opacity-100", open && "rotate-90 opacity-100")} />}
+				{expandable && <ChevronRight className={cn("chevron-spring size-3.5 shrink-0 opacity-0 group-hover/activity:opacity-100", open && "rotate-90 opacity-100")} />}
 			</button>
 			{file && openDiff && <button type="button" onClick={() => openDiff(file)} title={`Open ${file} in the turn's diff`} className="shrink-0 rounded-md px-1.5 py-0.5 text-xs font-medium text-muted-foreground opacity-0 group-hover/edit:opacity-100 focus-visible:opacity-100 hover:bg-muted hover:text-foreground">Open diff</button>}
 		</div>
@@ -155,6 +161,8 @@ function ActivityRow({ activity, live, openDiff, count = 1 }: { activity: AgentA
 
 function WorkLog({ entries, user, live, complete, task }: { entries: TurnEntry[]; user?: Message; live: boolean; complete: boolean; task: Task }) {
 	const [opened, setOpen] = useState(live);
+	// A turn watched to its end swaps its spinner for the chevron with a pop.
+	const [startedLive] = useState(live);
 	const openDiff = user?.checkpoint?.after && !live && task.mode !== "chat" && task.projectId ? (path: string) => openTurnDiff({ taskId: task.id, messageId: user.id, path }) : undefined;
 	useEffect(() => { setOpen(live); }, [live]);
 	// A reasoning block the model kept to itself (Claude can return thinking with no text) has nothing to show once it ends.
@@ -176,7 +184,7 @@ function WorkLog({ entries, user, live, complete, task }: { entries: TurnEntry[]
 	return <div className="flex flex-col gap-1">
 		<div>
 			<button type="button" onClick={() => setOpen(value => !value)} aria-expanded={open} className="flex max-w-full min-w-0 items-center gap-1.5 py-1 text-left text-[13px] text-muted-foreground hover:text-foreground">
-				{live ? <LoaderCircle className="size-3.5 shrink-0 animate-spin text-primary" /> : <ChevronRight className={cn("size-3.5 shrink-0 transition-transform", open && "rotate-90")} />}
+				{live ? <LoaderCircle className="size-3.5 shrink-0 animate-spin text-primary" /> : <ChevronRight className={cn("chevron-spring size-3.5 shrink-0", open && "rotate-90", startedLive && "icon-pop")} />}
 				<span className={cn("shrink-0 font-medium", live && "animate-pulse")}>{title}</span>
 				{live && <Elapsed since={user?.startedAt} />}
 				{tools.length > 0 && <span className="min-w-0 truncate">· {summarizeTools(tools)}</span>}

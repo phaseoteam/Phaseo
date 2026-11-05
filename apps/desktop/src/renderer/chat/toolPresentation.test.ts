@@ -49,6 +49,7 @@ describe("every tool as an English sentence", () => {
 		expect(label("request_secret", { label: "Stripe key", reason: "x" })).toBe("Asked you for Stripe key");
 		expect(label("view_image", { path: "E:/repo/docs/shots/home.png" })).toBe("Viewed docs/shots/home.png");
 		expect(label("mcp", { providerIdentifier: "phaseo_1", toolName: "forecast" })).toBe("Used forecast");
+		expect(presentTool({ title: "Weather · search_forecasts", text: "Sunny", status: "completed" })).toEqual({ label: "Used search forecasts from Weather", action: "other" });
 	});
 	it("groups pages and the browser in the turn's summary", () => {
 		expect(summarizeTools([claude("html_preview", {}), claude("html_render", { title: "Sales" }), claude("Read", { file_path: "a.md" })].map(presentTool))).toBe("Showed 1 page, read 1 file and 1 other action");

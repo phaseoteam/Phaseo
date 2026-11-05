@@ -67,8 +67,8 @@ export function Composer({ editor, onSubmit, onStop, disabled, canSend, running,
 				<div className="ml-auto flex min-w-0 items-center gap-1">
 					{model}
 					{running && onStop
-						? <button type="button" aria-label="Stop" title="Stop" onClick={onStop} className="ml-1 grid size-8 shrink-0 place-items-center rounded-full bg-foreground text-background transition-opacity hover:opacity-85"><Square className="size-3 fill-current" /></button>
-						: <button type="submit" aria-label={ultrathink ? "Send with Ultrathink" : "Send"} title={`${ultrathink ? "Sends with Ultrathink: this turn runs at Extra High" : "Send"} (${sendKey === "enter" ? "Enter" : keyLabel("mod+enter", isMac())})`} disabled={!canSend} className={cn("relative ml-1 grid size-8 shrink-0 place-items-center overflow-hidden rounded-full bg-foreground text-background transition-opacity hover:opacity-85 disabled:opacity-25", ultrathink && "ultrathink-send")}><ArrowUp className="relative size-4" strokeWidth={2.5} /></button>}
+						? <button type="button" aria-label="Stop" title="Stop" onClick={onStop} className="press-squish ml-1 grid size-8 shrink-0 place-items-center rounded-full bg-foreground text-background transition-opacity hover:opacity-85"><Square className="size-3 fill-current" /></button>
+						: <button type="submit" aria-label={ultrathink ? "Send with Ultrathink" : "Send"} title={`${ultrathink ? "Sends with Ultrathink: this turn runs at Extra High" : "Send"} (${sendKey === "enter" ? "Enter" : keyLabel("mod+enter", isMac())})`} disabled={!canSend} className={cn("hover-lift press-squish relative ml-1 grid size-8 shrink-0 place-items-center overflow-hidden rounded-full bg-foreground text-background transition-opacity hover:opacity-85 disabled:opacity-25", ultrathink && "ultrathink-send")}><ArrowUp className="relative size-4" strokeWidth={2.5} /></button>}
 				</div>
 			</div>
 		</form>

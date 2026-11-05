@@ -221,6 +221,9 @@ export function presentTool(activity: Pick<AgentActivity, "title" | "text" | "st
 	}
 	const sentence = sentences[key];
 	if (sentence) return sentence(input, running);
+	// The Phaseo agent labels an MCP call "Server · tool".
+	const served = /^(.+?) · (.+)$/.exec(activity.title);
+	if (served) return { label: `${running ? "Using" : "Used"} ${humanise(served[2]).toLowerCase()} from ${served[1]}`, action: "other" };
 	// A Codex command arrives as its own title.
 	if (/\s/.test(activity.title) && !/^[A-Z][a-z]+ [a-z]/.test(activity.title)) return { label: `${running ? "Running" : "Ran"} ${text(activity.title)}`, action: "command" };
 	return { label: /\s/.test(name) ? name : humanise(name), action: "other" };

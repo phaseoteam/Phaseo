@@ -80,10 +80,10 @@ export function HtmlRenderFrame({ html, render, mcpApp, place }: { html: string;
 	return <figure className="group/html relative m-0" aria-label={render.title} data-html-page={mcpApp ? "app" : "page"}>
 		<Frame src={src} title={render.title} className="block w-full border-0 bg-transparent" style={{ height }} onHeight={setReported} mcpApp={mcpApp} place={place} theme={theme} styles={styles} zoom={zoom} onFullscreen={fullscreen} />
 		<div className="absolute top-2 right-2 flex items-center gap-0.5 rounded-md bg-background/80 p-0.5 text-muted-foreground opacity-0 transition-opacity group-hover/html:opacity-100 focus-within:opacity-100">
-			<button type="button" aria-label={`Zoom out of ${render.title}`} title="Zoom out" disabled={zoom <= 0.5} onClick={() => step(-0.1)} className="rounded p-1 hover:text-foreground disabled:opacity-40"><ZoomOut className="size-3.5" /></button>
+			<button type="button" aria-label={`Zoom out of ${render.title}`} title="Zoom out" disabled={zoom <= 0.5} onClick={() => step(-0.1)} className="hover-wiggle press-squish rounded p-1 hover:text-foreground disabled:opacity-40"><ZoomOut className="size-3.5" /></button>
 			{zoom !== 1 && <button type="button" aria-label="Reset zoom" title="Reset zoom" onClick={() => setZoom(1)} className="rounded px-1 text-[11px] tabular-nums hover:text-foreground">{Math.round(zoom * 100)}%</button>}
-			<button type="button" aria-label={`Zoom in on ${render.title}`} title="Zoom in" disabled={zoom >= 2} onClick={() => step(0.1)} className="rounded p-1 hover:text-foreground disabled:opacity-40"><ZoomIn className="size-3.5" /></button>
-			<button type="button" aria-label={`Open ${render.title} full screen`} title="Open full screen" onClick={() => setExpanded(true)} className="rounded p-1 hover:text-foreground"><Maximize2 className="size-3.5" /></button>
+			<button type="button" aria-label={`Zoom in on ${render.title}`} title="Zoom in" disabled={zoom >= 2} onClick={() => step(0.1)} className="hover-wiggle press-squish rounded p-1 hover:text-foreground disabled:opacity-40"><ZoomIn className="size-3.5" /></button>
+			<button type="button" aria-label={`Open ${render.title} full screen`} title="Open full screen" onClick={() => setExpanded(true)} className="hover-wiggle press-squish rounded p-1 hover:text-foreground"><Maximize2 className="size-3.5" /></button>
 		</div>
 		<Dialog open={expanded} onOpenChange={setExpanded}>
 			<DialogContent className="flex h-[90vh] max-w-[95vw] flex-col gap-2 p-3 sm:max-w-[95vw]">
