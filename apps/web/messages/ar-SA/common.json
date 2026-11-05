@@ -2428,7 +2428,7 @@
 			"metricOverTheLastHoursHours": "{metric} خلال آخر {hours} ساعة",
 			"localTime": "الوقت المحلي",
 			"perQuantityUnit": "لكل {quantity} {unit}",
-			"rateLimitedCountExcluded": "تقييد المعدل: تم استبعاد {count}"
+			"rateLimitedShareExcluded": "تقييد المعدل: تم استبعاد {percent} من الطلبات"
 		},
 		"localisationGaps": {
 			"lastUpdated": "آخر تحديث: {time}",

@@ -7,21 +7,16 @@ import { CartesianGrid, Line, LineChart, ResponsiveContainer, XAxis, YAxis } fro
 import type { ModelSuccessPoint } from "@/lib/fetchers/models/getModelPerformance";
 import { useLocale, useTranslations } from "next-intl";
 
-import { attemptFunnel, type AttemptFunnelCounts, PROVIDER_HEALTH_METRICS, type ProviderHealthMetric } from "./attemptFunnel";
+import {
+	type AttemptFailureShare,
+	type AttemptFunnelRates,
+	attemptFailureShares,
+	formatFailureShare,
+	PROVIDER_HEALTH_METRICS,
+	type ProviderHealthMetric,
+} from "./attemptFunnel";
 
 export { PROVIDER_HEALTH_METRICS, type ProviderHealthMetric } from "./attemptFunnel";
-
-const PCT_FIELD = {
-	reachability: "reachabilityPct",
-	capacity: "capacityPct",
-	callErrors: "callErrorPct",
-} as const satisfies Record<ProviderHealthMetric, keyof ModelSuccessPoint>;
-
-const FAILURE_FIELD = {
-	reachability: "reachabilityFailures",
-	capacity: "capacityFailures",
-	callErrors: "callErrorFailures",
-} as const satisfies Record<ProviderHealthMetric, keyof ModelSuccessPoint>;
 
 const METRIC_STYLE: Record<ProviderHealthMetric, { color: string; dash?: string; swatch: string }> = {
 	reachability: { color: "hsl(142, 76%, 36%)", swatch: "border-emerald-600 dark:border-emerald-400" },
@@ -32,12 +27,13 @@ const METRIC_STYLE: Record<ProviderHealthMetric, { color: string; dash?: string;
 export type ProviderHealthChartPoint = {
 	time: string;
 	bucket: string;
-	eligibleAttempts: number;
-} & Record<ProviderHealthMetric, number | null> & Record<`${ProviderHealthMetric}Failures`, number>;
+	/** Rates as published for the hour (null when there was nothing to rate). */
+	rates: { reachabilityPct: number | null; capacityPct: number | null; callErrorPct: number | null };
+} & Record<ProviderHealthMetric, number | null>;
 
 /** True when the series carries per-attempt provider health (newer web-api). */
 export function hasProviderAttemptHealth(successSeries: ModelSuccessPoint[]): boolean {
-	return successSeries.some((point) => point.eligibleAttempts !== undefined);
+	return successSeries.some((point) => point.reachabilityPct !== undefined);
 }
 
 function toHourlyBucket(value: Date | string) {
@@ -52,10 +48,17 @@ function formatBucketLabel(bucket: string, locale: string) {
 	return date.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" });
 }
 
-/** An hour with no eligible attempts shows as 100%, like the request-level chart. */
-function displayedRate(value: number | null | undefined, eligibleAttempts: number): number | null {
-	if (value != null && Number.isFinite(value)) return value;
-	return eligibleAttempts === 0 ? 100 : null;
+const finite = (value: number | null | undefined): number | null =>
+	value != null && Number.isFinite(value) ? value : null;
+
+/**
+ * An hour with no eligible attempts (no reachable rate) shows as 100%, like the
+ * request-level chart. A later step nothing reached stays empty.
+ */
+function displayedRate(value: number | null | undefined, hadAttempts: boolean): number | null {
+	const rate = finite(value);
+	if (rate != null) return rate;
+	return hadAttempts ? null : 100;
 }
 
 export function buildProviderHealthChartData(
@@ -70,41 +73,54 @@ export function buildProviderHealthChartData(
 		bucketDate.setUTCHours(currentHour.getUTCHours() - (23 - index));
 		const bucket = bucketDate.toISOString();
 		const point = pointsByBucket.get(bucket);
-		const eligibleAttempts = point?.eligibleAttempts ?? 0;
+		const rates = {
+			reachabilityPct: finite(point?.reachabilityPct),
+			capacityPct: finite(point?.capacityPct),
+			callErrorPct: finite(point?.callErrorPct),
+		};
+		const hadAttempts = rates.reachabilityPct != null;
 		return {
 			time: formatBucketLabel(bucket, locale),
 			bucket,
-			eligibleAttempts,
-			reachability: displayedRate(point?.reachabilityPct, eligibleAttempts),
-			capacity: displayedRate(point?.capacityPct, eligibleAttempts),
-			callErrors: displayedRate(point?.callErrorPct, eligibleAttempts),
-			reachabilityFailures: point?.reachabilityFailures ?? 0,
-			capacityFailures: point?.capacityFailures ?? 0,
-			callErrorsFailures: point?.callErrorFailures ?? 0,
+			rates,
+			reachability: displayedRate(rates.reachabilityPct, hadAttempts),
+			capacity: displayedRate(rates.capacityPct, hadAttempts),
+			callErrors: displayedRate(rates.callErrorPct, hadAttempts),
 		};
 	});
 }
 
-export type ProviderHealthSummary = Record<ProviderHealthMetric, { averagePct: number | null; failures: number }> & {
-	eligibleAttempts: number;
-};
+export type ProviderHealthSummary = Record<ProviderHealthMetric, { averagePct: number | null }>;
 
-/** Hourly averages (as the request-level chart) and 24-hour counts for each metric. */
+/** Hourly averages over the 24 hours shown, as the request-level chart. */
 export function summarizeProviderHealth(points: ProviderHealthChartPoint[]): ProviderHealthSummary {
 	const average = (values: Array<number | null>) => {
 		const valid = values.filter((value): value is number => value != null && Number.isFinite(value));
 		return valid.length ? valid.reduce((sum, value) => sum + value, 0) / valid.length : null;
 	};
-	const metric = (key: ProviderHealthMetric) => ({
-		averagePct: average(points.map((point) => point[key])),
-		failures: points.reduce((sum, point) => sum + point[`${key}Failures`], 0),
-	});
 	return {
-		eligibleAttempts: points.reduce((sum, point) => sum + point.eligibleAttempts, 0),
-		reachability: metric("reachability"),
-		capacity: metric("capacity"),
-		callErrors: metric("callErrors"),
+		reachability: { averagePct: average(points.map((point) => point.reachability)) },
+		capacity: { averagePct: average(points.map((point) => point.capacity)) },
+		callErrors: { averagePct: average(points.map((point) => point.callErrors)) },
 	};
+}
+
+/**
+ * The 24-hour failure share of each step. Uses the rates web-api computes from
+ * all attempts in those hours when present: an average of hourly rates would
+ * understate failures when traffic is uneven (idle hours count as 100%). Older
+ * cached responses without them fall back to the averages shown beside it.
+ */
+export function summaryFailureShares(
+	summary: ProviderHealthSummary,
+	totals?: AttemptFunnelRates | null,
+): Record<ProviderHealthMetric, AttemptFailureShare> {
+	if (totals) return attemptFailureShares(totals);
+	return attemptFailureShares({
+		reachabilityPct: summary.reachability.averagePct,
+		capacityPct: summary.capacity.averagePct,
+		callErrorPct: summary.callErrors.averagePct,
+	});
 }
 
 function formatRate(value: number | null | undefined) {
@@ -113,15 +129,19 @@ function formatRate(value: number | null | undefined) {
 
 export default function ModelProviderHealthChart({
 	successSeries,
+	totals = null,
 	showTitle = true,
 }: {
 	successSeries: ModelSuccessPoint[];
+	/** The 24 hours' rates from summed attempts (web-api `attemptHealth24h`). */
+	totals?: AttemptFunnelRates | null;
 	showTitle?: boolean;
 }) {
 	const locale = useLocale();
 	const t = useTranslations("Catalogue.modelDetail.uptime");
 	const chartData = buildProviderHealthChartData(successSeries, new Date(), locale);
 	const summary = summarizeProviderHealth(chartData);
+	const summaryShares = summaryFailureShares(summary, totals);
 	const labels: Record<ProviderHealthMetric, string> = {
 		reachability: t("reachabilityLabel"),
 		capacity: t("capacityLabel"),
@@ -133,23 +153,14 @@ export default function ModelProviderHealthChart({
 		callErrors: t("callErrorsHelp"),
 	};
 	const label = (metric: ProviderHealthMetric) => labels[metric];
-	const failureText = (metric: ProviderHealthMetric, counts: AttemptFunnelCounts) => {
-		const { failed, of: count } = attemptFunnel(counts)[metric];
-		if (metric === "reachability") return t("reachabilityCount", { failed, count });
-		if (metric === "capacity") return t("capacityCount", { failed, count });
-		return t("callErrorsCount", { failed, count });
-	};
-	const funnelCounts = (point: Pick<ProviderHealthChartPoint, "eligibleAttempts" | `${ProviderHealthMetric}Failures`>): AttemptFunnelCounts => ({
-		eligibleAttempts: point.eligibleAttempts,
-		reachabilityFailures: point.reachabilityFailures,
-		capacityFailures: point.capacityFailures,
-		callErrorFailures: point.callErrorsFailures,
-	});
-	const summaryCounts: AttemptFunnelCounts = {
-		eligibleAttempts: summary.eligibleAttempts,
-		reachabilityFailures: summary.reachability.failures,
-		capacityFailures: summary.capacity.failures,
-		callErrorFailures: summary.callErrors.failures,
+	/** Percentages only: the counts behind them reveal the model's traffic volume. */
+	const failureText = (metric: ProviderHealthMetric, share: AttemptFailureShare, noFailures: string) => {
+		if (share.kind === "none") return noFailures;
+		if (share.kind === "unmeasured") return metric === "capacity" ? t("capacityUnmeasured") : t("callErrorsUnmeasured");
+		const percent = formatFailureShare(share.pct, locale);
+		if (metric === "reachability") return t("reachabilityFailureShare", { percent });
+		if (metric === "capacity") return t("capacityFailureShare", { percent });
+		return t("callErrorsFailureShare", { percent });
 	};
 	const chartConfig: ChartConfig = Object.fromEntries(
 		PROVIDER_HEALTH_METRICS.map((metric) => [metric, { label: label(metric), color: METRIC_STYLE[metric].color }]),
@@ -175,7 +186,7 @@ export default function ModelProviderHealthChart({
 									<TooltipContent className="max-w-64 space-y-1">
 										<p>{help[metric]}</p>
 										<p className="tabular-nums opacity-80">
-											{failureText(metric, summaryCounts)}
+											{failureText(metric, summaryShares[metric], t("noFailures"))}
 										</p>
 									</TooltipContent>
 								</Tooltip>
@@ -215,6 +226,7 @@ export default function ModelProviderHealthChart({
 									content={({ active, payload }) => {
 										if (!active || !payload?.length) return null;
 										const point = payload[0].payload as ProviderHealthChartPoint;
+										const shares = attemptFailureShares(point.rates);
 										return (
 											<div className="space-y-1.5 rounded-md border border-border bg-popover p-3 text-popover-foreground shadow-lg">
 												<p className="text-xs text-muted-foreground">{point.time}</p>
@@ -225,7 +237,7 @@ export default function ModelProviderHealthChart({
 															<span className="tabular-nums">{formatRate(point[metric])}</span>
 														</p>
 														<p className="text-xs text-muted-foreground tabular-nums">
-															{failureText(metric, funnelCounts(point))}
+															{failureText(metric, shares[metric], t("noFailuresThisHour"))}
 														</p>
 													</div>
 												))}

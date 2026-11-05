@@ -2428,7 +2428,7 @@
 			"metricOverTheLastHoursHours": "{metric} in den letzten {hours} Stunden",
 			"localTime": "Ortszeit",
 			"perQuantityUnit": "Pro {quantity} {unit}",
-			"rateLimitedCountExcluded": "Ratenbegrenzt: {count} ausgeschlossen"
+			"rateLimitedShareExcluded": "Ratenbegrenzt: {percent} der Anfragen ausgeschlossen"
 		},
 		"localisationGaps": {
 			"lastUpdated": "Zuletzt aktualisiert: {time}",

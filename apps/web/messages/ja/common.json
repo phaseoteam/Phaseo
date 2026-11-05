@@ -2428,7 +2428,7 @@
 			"metricOverTheLastHoursHours": "過去{hours}時間の{metric}",
 			"localTime": "現地時間",
 			"perQuantityUnit": "{quantity}{unit}あたり",
-			"rateLimitedCountExcluded": "レート制限：{count}件を除外"
+			"rateLimitedShareExcluded": "レート制限：リクエストの{percent}を除外"
 		},
 		"localisationGaps": {
 			"lastUpdated": "最終更新：{time}",

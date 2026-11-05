@@ -2428,7 +2428,7 @@
 			"metricOverTheLastHoursHours": "过去 {hours} 小时的{metric}",
 			"localTime": "本地时间",
 			"perQuantityUnit": "每 {quantity} {unit}",
-			"rateLimitedCountExcluded": "速率限制：已排除 {count} 次"
+			"rateLimitedShareExcluded": "速率限制：已排除 {percent} 的请求"
 		},
 		"localisationGaps": {
 			"lastUpdated": "上次更新：{time}",

@@ -83,7 +83,7 @@ import {
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import type { PricingRuntimeStats as ProviderRuntimeStats } from "./pricingRuntimeStats";
 import type { ProviderAttemptHealth } from "@/lib/fetchers/models/getModelProviderRuntimeStats";
-import { attemptFunnel } from "@/components/(data)/models/attemptFunnel";
+import { type AttemptFailureShare, attemptFailureShares, formatFailureShare } from "@/components/(data)/models/attemptFunnel";
 import type { ProviderRoutingStatus } from "@/lib/fetchers/models/getModelProviderRoutingHealth";
 import { ProviderLiveRoutingIndicator, useLiveRouting } from "./ProviderLiveRouting";
 import { Logo } from "@/components/Logo";
@@ -190,6 +190,8 @@ function hasUptimeObservation(
 	runtimeStats: ProviderRuntimeStats | null | undefined,
 ): boolean {
 	if (!runtimeStats) return false;
+	// A provider that only ever failed over has attempt uptime but no served requests.
+	if (runtimeStats.attemptHealth3d?.uptimePct != null) return true;
 	if ((runtimeStats.healthRequests3d ?? 0) > 0) return true;
 	return runtimeStats.uptimeDaily3d.some((entry) => entry.requests > 0);
 }
@@ -280,18 +282,24 @@ function formatUptimeDayLabel(dayOffset: number, locale: string, todayLabel: str
 }
 
 /**
- * Reachable, accepted and completed per provider attempt, with the counts
- * behind each rate. Customer- and Phaseo-caused attempts are not counted.
+ * Reachable, accepted and completed per provider attempt, with the share that
+ * failed each step. Percentages only: the counts behind them reveal the model's
+ * traffic volume. Customer- and Phaseo-caused attempts are not counted.
  */
 function AttemptHealthBreakdown({ health }: { health: ProviderAttemptHealth }) {
 	const t = useTranslations("Catalogue.modelDetail.uptime");
 	const locale = useLocale();
 	// Each rate is of the step before it: reached of eligible, accepted of reached, completed of accepted.
-	const funnel = attemptFunnel(health);
+	const shares = attemptFailureShares(health);
+	const detail = (share: AttemptFailureShare, failedText: (percent: string) => string, unmeasured: string) => {
+		if (share.kind === "none") return t("noFailures");
+		if (share.kind === "unmeasured") return unmeasured;
+		return failedText(formatFailureShare(share.pct, locale));
+	};
 	const metrics = [
-		{ key: "reachability", label: t("reachabilityLabel"), pct: health.reachabilityPct, detail: t("reachabilityCount", { failed: funnel.reachability.failed, count: funnel.reachability.of }) },
-		{ key: "capacity", label: t("capacityLabel"), pct: health.capacityPct, detail: t("capacityCount", { failed: funnel.capacity.failed, count: funnel.capacity.of }) },
-		{ key: "callErrors", label: t("callErrorsLabel"), pct: health.callErrorPct, detail: t("callErrorsCount", { failed: funnel.callErrors.failed, count: funnel.callErrors.of }) },
+		{ key: "reachability", label: t("reachabilityLabel"), pct: health.reachabilityPct, detail: detail(shares.reachability, (percent) => t("reachabilityFailureShare", { percent }), t("noFailures")) },
+		{ key: "capacity", label: t("capacityLabel"), pct: health.capacityPct, detail: detail(shares.capacity, (percent) => t("capacityFailureShare", { percent }), t("capacityUnmeasured")) },
+		{ key: "callErrors", label: t("callErrorsLabel"), pct: health.callErrorPct, detail: detail(shares.callErrors, (percent) => t("callErrorsFailureShare", { percent }), t("callErrorsUnmeasured")) },
 	];
 	return (
 		<dl className="space-y-1.5 border-t border-zinc-200 pt-2.5 dark:border-zinc-800">
@@ -647,6 +655,9 @@ function ProviderHourlyPerformance({
 		.sort((a, b) => b[1] - a[1]);
 	const totalFailures = categories.reduce((sum, [, count]) => sum + count, 0);
 	const rateLimited = runtimeStats?.rateLimited3d ?? 0;
+	// A share of the provider's requests, never the count: counts reveal traffic volume.
+	const requests3d = runtimeStats?.requests3d ?? 0;
+	const rateLimitedPct = rateLimited > 0 && requests3d > 0 ? Math.min(100, (rateLimited / requests3d) * 100) : null;
 	const metricLabel = getPerformanceMetricLabel(activeMetric, tx);
 	const metricTooltipLabel = getPerformanceMetricTooltipLabel(activeMetric, tx);
 	const performancePeriod = hoveredPoint
@@ -659,7 +670,7 @@ function ProviderHourlyPerformance({
 	const hasHourlyPerformance = points.length > 0 && (
 		metricValues.length > 0 || hasUptimeObservation(runtimeStats)
 	);
-	if (!hasHourlyPerformance && categories.length === 0 && rateLimited === 0) return null;
+	if (!hasHourlyPerformance && categories.length === 0 && rateLimitedPct == null) return null;
 
 	return (
 		<div className="space-y-3 py-3">
@@ -724,14 +735,14 @@ function ProviderHourlyPerformance({
 					) : null}
 				</div>
 			) : null}
-			{categories.length > 0 || rateLimited > 0 ? (
+			{categories.length > 0 || rateLimitedPct != null ? (
 				<div>
 					<p className="text-[11px] text-muted-foreground">{tx("Common.ui.providerCardCopy.errorBreakdown3Days" as never)}</p>
 					<div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs">
 						{categories.map(([category, count]) => (
 							<span key={category} className="tabular-nums"><span className="text-muted-foreground">{ERROR_CATEGORY_LABELS[category] ? tx(ERROR_CATEGORY_LABELS[category] as never) : category}</span> {totalFailures > 0 ? formatPercent((count / totalFailures) * 100, locale) : "—"}</span>
 						))}
-						{rateLimited > 0 ? <span className="tabular-nums">{tx("Common.ui.providerCardCopy.rateLimitedCountExcluded", { count: rateLimited.toLocaleString(locale) })}</span> : null}
+						{rateLimitedPct != null ? <span className="tabular-nums">{tx("Common.ui.providerCardCopy.rateLimitedShareExcluded", { percent: formatFailureShare(rateLimitedPct, locale) })}</span> : null}
 					</div>
 				</div>
 			) : null}

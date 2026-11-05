@@ -267,6 +267,8 @@ function hasProviderUptimeObservation(
 	stats: ProviderRuntimeStatsMap[string] | undefined
 ): boolean {
 	if (!stats) return false;
+	// A provider that only ever failed over has attempt uptime but no served requests.
+	if (stats.attemptHealth3d?.uptimePct != null) return true;
 	if ((stats.healthRequests3d ?? 0) > 0) return true;
 	return stats.uptimeDaily3d.some((entry) => entry.requests > 0);
 }
