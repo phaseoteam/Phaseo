@@ -265,9 +265,9 @@ describe("Upstage stream usage", () => {
 });
 
 // Wafer Chat Completions: minimal returns 400; none, low, medium, high, xhigh, max are accepted
-// (https://docs.wafer.ai/serverless/models). wafer-zdr is the same API with a ZDR header.
+// (https://docs.wafer.ai/serverless/models). wafer-zdr and wafer-us are offers on the same API.
 describe("Wafer reasoning effort", () => {
-	it.each(["wafer", "wafer-zdr"])("sends %s minimal as low", (providerId) => {
+	it.each(["wafer", "wafer-zdr", "wafer-us"])("sends %s minimal as low", (providerId) => {
 		expect(irToOpenAIChat(baseIR({ reasoning: { effort: "minimal" } as any }), "zai-org/GLM-5.3", providerId).reasoning_effort).toBe("low");
 	});
 });
@@ -287,7 +287,7 @@ describe("DeepSeek Responses reasoning", () => {
 // Providers that document reasoning_content on earlier assistant messages get it back in tool
 // loops (Baseten Beam returns 400 without it: https://docs.baseten.co/inference/model-apis/reasoning).
 describe("assistant reasoning_content pass-back", () => {
-	it.each(["baseten", "arcee-ai", "together", "deepinfra", "wafer-zdr"])("sends %s the earlier turn's reasoning", (providerId) => {
+	it.each(["baseten", "arcee-ai", "together", "deepinfra", "wafer-zdr", "wafer-us"])("sends %s the earlier turn's reasoning", (providerId) => {
 		const request = irToOpenAIChat(baseIR({
 			messages: [
 				{ role: "user", content: [{ type: "text", text: "hi" }] },

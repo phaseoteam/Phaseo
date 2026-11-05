@@ -320,6 +320,9 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	wafer: {
 		"text.generate": waferText,
 	},
+	"wafer-us": {
+		"text.generate": waferText,
+	},
 	"wafer-zdr": {
 		"text.generate": waferText,
 	},

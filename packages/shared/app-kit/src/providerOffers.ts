@@ -19,6 +19,7 @@ const KNOWN_PROVIDER_LOGO_ID_OVERRIDES = new Map<string, string>([
     ["mistral-eu", "mistral"],
     ["moonshotai-turbo", "moonshotai"],
     ["wafer-zdr", "wafer"],
+    ["wafer-us", "wafer"],
 ]);
 
 function toTitleCase(value: string): string {
