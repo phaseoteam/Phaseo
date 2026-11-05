@@ -134,7 +134,7 @@ import { TaskNotifications } from "./taskNotifications";
 import { MissionService } from "./missionService";
 import { validateMissionCommand } from "../shared/missions";
 import { cursorAccountStatus, cursorModels, cursorSignIn } from "./cursorAccounts";
-import { registerDiagnosticsIpc, stopTracing, traceIpcHandlers } from "./diagnostics/diagnosticsIpc";
+import { registerDiagnosticsIpc, stopTracing, traceExporter, traceIpcHandlers } from "./diagnostics/diagnosticsIpc";
 import type { ProcessOwner } from "./diagnostics/processTable";
 import { span } from "./diagnostics/tracer";
 import { AppControl } from "./appControl";
@@ -239,7 +239,7 @@ ipcMain.handle("workspace:autopilot-log", event => { if (!senderWindow(event)) t
 ipcMain.handle("workspace:global-instructions", event => { if (!senderWindow(event)) throw new Error("Untrusted instruction request."); return globalInstructions.read(); });
 ipcMain.handle("workspace:save-global-instructions", (event, edit: unknown) => { if (!senderWindow(event) || shutdownStarted) throw new Error("Instruction editing is unavailable."); return globalInstructions.save(edit); });
 ipcMain.handle("workspace:preferences", event => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); return { preferences: workspaceRuntime.store.getPreferences(), notificationsSupported: Notification.isSupported() }; });
-ipcMain.handle("workspace:save-preferences", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); if (!value || typeof value !== "object") throw new Error("Invalid workspace preferences."); const preferences = workspaceRuntime.store.savePreferences(validatePreferences({ ...workspaceRuntime.store.getPreferences(), ...value })); taskNotifications.configure(preferences); applyOpenAtLogin(preferences.chat.openAtLogin); if (!preferences.chat.keepInTray) removeTray(); workspaceRuntime.limitPreferencesChanged(); return preferences; });
+ipcMain.handle("workspace:save-preferences", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); if (!value || typeof value !== "object") throw new Error("Invalid workspace preferences."); const preferences = workspaceRuntime.store.savePreferences(validatePreferences({ ...workspaceRuntime.store.getPreferences(), ...value })); taskNotifications.configure(preferences); applyOpenAtLogin(preferences.chat.openAtLogin); traceExporter.configure(preferences.threads.traceExport); if (!preferences.chat.keepInTray) removeTray(); workspaceRuntime.limitPreferencesChanged(); return preferences; });
 ipcMain.handle("workspace:mcp", (event, value: unknown) => {
 	if (!senderWindow(event)) throw new Error("Invalid MCP request.");
 	return workspaceRuntime.mcp(validateMcpCommand(value));
@@ -1399,6 +1399,7 @@ app.whenReady().then(() => {
 	modelCatalogCache = new ModelCatalogCache(path.join(app.getPath("userData"), "cache"), ({ accountId }) => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:models-changed", { harness: "phaseo", accountId }); });
 	harnessModelCache = new HarnessModelCache(path.join(app.getPath("userData"), "cache", "harness-models.json"), (harness, accountId) => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:models-changed", { harness, accountId }); });
 	workspaceRuntime = new WorkspaceRuntime(workspaceDirectory, undefined, vault);
+	traceExporter.configure(workspaceRuntime.store.getPreferences().threads.traceExport);
 	workspaceRuntime.phaseo.background = backgroundCommands();
 	workspaceRuntime.phaseo.background.onChange = taskId => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:background-changed", taskId); };
 	outsideAgents = new OutsideAgentsMcp(workspaceDirectory, { tools: agent => workspaceRuntime.outsideThreadTools(agent), changed: settings => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:outside-agents-changed", settings); } });

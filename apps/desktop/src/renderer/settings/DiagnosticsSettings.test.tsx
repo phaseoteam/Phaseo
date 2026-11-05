@@ -44,7 +44,7 @@ describe("diagnostics page", () => {
 		global.window = { phaseoDesktop: { diagnostics: { processes: pending, resources: pending, traces: pending, stopProcess: pending, openLogs: pending, subscribe: pending, unsubscribe: pending, onSample: () => () => {} } } };
 		const markup = renderToStaticMarkup(<DiagnosticsSettings />);
 		const titles = [...markup.matchAll(/<h2[^>]*>([^<]+)<\/h2>/g)].map(match => match[1]);
-		expect(titles).toEqual(["Live processes", "Resource history", "Trace diagnostics", "Latest failures", "Most common failures", "Slowest spans", "Span logs", "Top span names"]);
+		expect(titles).toEqual(["Live processes", "Resource history", "Export traces", "Trace diagnostics", "Latest failures", "Most common failures", "Slowest spans", "Span logs", "Top span names"]);
 		for (const label of ["Loading live processes…", "Collecting process samples…", "Loading failures…", "Loading failure groups…", "Loading slow spans…", "Loading recent logs…", "Loading span names…", "Child processes", "Slow spans", "Open logs folder"]) expect(markup).toContain(label);
 		expect(markup).not.toMatch(/\buppercase\b/);
 	});

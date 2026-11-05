@@ -1,3 +1,4 @@
+import { defaultTraceExport, validateTraceExport, type TraceExport } from "./traceExport";
 /**
  * Workspace preferences for usage limit resumes and snoozes, snooze times, restarts, idle compaction, response streaming, provider checks and storage retention (Settings → Threads, Maintenance and Agents). Saved with the rest in WorkspacePreferences.threads.
  * autoResumeLimited resumes a chat on its own agent and plan when its usage limit resets; snoozeLimited snoozes it until then. continueAfterRestart resumes chats a quit or crash interrupted, instead of offering to.
@@ -9,7 +10,7 @@ export type SnoozePresetDay = "today" | "tomorrow" | "monday" | "tuesday" | "wed
 export type SnoozePreset = { kind: "after"; minutes: number } | { kind: "at"; day: SnoozePresetDay; time: string };
 export type IdleCompactionMode = "off" | "onReturn" | "beforeCacheExpires";
 export type ResponseStreamingMode = "live" | "paragraph" | "turn";
-export type ThreadPreferences = { autoResumeLimited: boolean; /** Continue a limited chat at once on another signed-in login of its agent that has not hit its limit. */ switchLoginOnLimit: boolean; snoozeLimited: boolean; snoozePresets: SnoozePreset[]; continueAfterRestart: boolean; idleCompaction: IdleCompactionMode; responseStreaming: ResponseStreamingMode; providerHealthMinutes: number | null; providerUpdateChecks: boolean; recordingsAfterDays: number | null; logsAfterDays: number | null };
+export type ThreadPreferences = { autoResumeLimited: boolean; /** Continue a limited chat at once on another signed-in login of its agent that has not hit its limit. */ switchLoginOnLimit: boolean; snoozeLimited: boolean; snoozePresets: SnoozePreset[]; continueAfterRestart: boolean; idleCompaction: IdleCompactionMode; responseStreaming: ResponseStreamingMode; providerHealthMinutes: number | null; providerUpdateChecks: boolean; recordingsAfterDays: number | null; logsAfterDays: number | null; /** Settings → Diagnostics → Export traces (shared/traceExport.ts). */ traceExport: TraceExport };
 
 export const snoozePresetDays: SnoozePresetDay[] = ["today", "tomorrow", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 export const snoozePresetLimits = { maximum: 8, maximumMinutes: 30 * 24 * 60 };
@@ -20,7 +21,7 @@ export const responseStreamingModes: ResponseStreamingMode[] = ["live", "paragra
 /** Minutes between agent CLI checks. Ten is how often the app has always checked. */
 export const providerHealthOptions = [1, 5, 10, 30, 60];
 export const retentionDays = { minimum: 1, maximum: 3650 };
-export const defaultThreadPreferences: ThreadPreferences = { autoResumeLimited: false, switchLoginOnLimit: false, snoozeLimited: false, snoozePresets: defaultSnoozePresets, continueAfterRestart: true, idleCompaction: "onReturn", responseStreaming: "live", providerHealthMinutes: 10, providerUpdateChecks: true, recordingsAfterDays: null, logsAfterDays: null };
+export const defaultThreadPreferences: ThreadPreferences = { autoResumeLimited: false, switchLoginOnLimit: false, snoozeLimited: false, snoozePresets: defaultSnoozePresets, continueAfterRestart: true, idleCompaction: "onReturn", responseStreaming: "live", providerHealthMinutes: 10, providerUpdateChecks: true, recordingsAfterDays: null, logsAfterDays: null, traceExport: defaultTraceExport };
 
 /** "after:60" or "at:monday:09:00": two presets with the same id are the same menu choice. */
 export const snoozePresetId = (preset: SnoozePreset) => preset.kind === "after" ? `after:${preset.minutes}` : `at:${preset.day}:${preset.time}`;
@@ -51,5 +52,6 @@ export function validateThreadPreferences(value: unknown): ThreadPreferences {
 		providerUpdateChecks: flag("providerUpdateChecks"),
 		recordingsAfterDays: read("recordingsAfterDays", days, `Keep browser recordings for ${retentionDays.minimum} to ${retentionDays.maximum} days, or forever.`),
 		logsAfterDays: read("logsAfterDays", days, `Keep logs for ${retentionDays.minimum} to ${retentionDays.maximum} days, or forever.`),
+		traceExport: validateTraceExport(input.traceExport),
 	};
 }
