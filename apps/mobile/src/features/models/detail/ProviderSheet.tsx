@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, X } from "lucide-react-native";
 import { useMemo, type ReactNode } from "react";
 import { ScrollView, View } from "react-native";
 import { Logo } from "@/components/Logo";
-import { Button, IconButton, Segmented, Sheet, Text } from "@/components/ui";
+import { Button, IconButton, Segmented, Sheet, Text, useToneColor } from "@/components/ui";
 import { getModelProviderHealth, type ProviderPricing } from "@/lib/api/models";
 import { formatSeconds, formatSpeed, formatTokenCount } from "@/lib/format";
 import { priceLines } from "../pricing";
@@ -12,8 +12,9 @@ import { PolicyIcon, StatusIcon, STATUS_META, SubHeading } from "./parts";
 import { formatPercentile } from "./performance";
 import {
   DATA_POLICY_LABELS, dataPolicyTier, executionRegions, modelScopeForPlan, providerDisplayName, providerLogoId, providerPlans, providerStatus, RESIDENCY_LABELS,
-  routeLimits, runtimeStatsFromHealth, statsKey, tierLabel, type RuntimeStats,
+  routeLimits, runtimeStatsFromHealth, statsKey, tierLabel, type AttemptHealth, type RuntimeStats,
 } from "./providers";
+import { attemptFailureShares, failureShareText, formatRate, PROVIDER_HEALTH_METRICS, UPTIME_COPY, uptimeTone, utcDayLabel, type ProviderHealthMetric } from "./uptime";
 
 export const formatUptime = (value: number | null | undefined) => (value == null || !Number.isFinite(value) ? "—" : `${value.toFixed(1)}%`);
 
@@ -30,7 +31,7 @@ export function useProviderStats(modelId: string, providers: ProviderPricing[], 
     staleTime: 5 * 60_000,
     placeholderData: (previous) => previous,
   });
-  const stats = useMemo(() => runtimeStatsFromHealth(health.data ?? []), [health.data]);
+  const stats = useMemo(() => runtimeStatsFromHealth(health.data?.rows ?? [], health.data?.attemptHealth ?? []), [health.data]);
   return { stats, health };
 }
 
@@ -120,6 +121,8 @@ function SheetBody({ providers, provider, index, target, stats, percentile, onCh
           <Line label="Latency" value={formatSeconds(runtime?.latencyMs)} />
           <Line label="Throughput" value={formatSpeed(runtime?.throughput)} />
           <Line label="Uptime" value={formatUptime(runtime?.uptimePct)} />
+          {runtime?.uptimeDays ? <UptimeDays days={runtime.uptimeDays} /> : null}
+          {runtime?.attemptHealth ? <AttemptHealthLines health={runtime.attemptHealth} /> : null}
         </SheetSection>
         <SheetSection title="Routing">
           <Line label="Status" value={STATUS_META[status].label} detail={STATUS_META[status].description} />
@@ -138,6 +141,42 @@ function SheetBody({ providers, provider, index, target, stats, percentile, onCh
         ) : null}
         {id ? <Button label={`View ${name}`} variant="outline" size="sm" className="mt-4" onPress={() => { onClose(); router.push(`/providers/${id}`); }} /> : null}
       </ScrollView>
+    </>
+  );
+}
+
+/** Attempt uptime for each of the last three UTC days, as the website's provider card draws it: a short bar per day. */
+function UptimeDays({ days }: { days: NonNullable<RuntimeStats["uptimeDays"]> }) {
+  const colours = { success: useToneColor("success"), warning: useToneColor("warning"), destructive: useToneColor("destructive"), none: useToneColor("border") };
+  return (
+    <View className="flex-row justify-end gap-4 py-1" accessible accessibilityLabel={`Daily uptime: ${days.map((day) => `${utcDayLabel(day.offset)} ${formatRate(day.uptimePct)}`).join(", ")}`}>
+      {days.map((day) => {
+        const tone = uptimeTone(day.uptimePct);
+        const height = day.uptimePct == null ? 8 : Math.max(8, Math.min(34, 8 + (day.uptimePct / 100) * 26));
+        return (
+          <View key={day.offset} className="w-16 items-center gap-1">
+            <View className="h-[34px] justify-end">
+              <View className="w-3 rounded-[2px]" style={{ height, backgroundColor: colours[tone ?? "none"] }} />
+            </View>
+            <Text variant="caption" className="font-semibold text-foreground">{formatRate(day.uptimePct)}</Text>
+            <Text variant="caption">{utcDayLabel(day.offset)}</Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+/** Reachable, accepted and completed per provider attempt, each with the share that failed that step (percentages only). */
+function AttemptHealthLines({ health }: { health: AttemptHealth }) {
+  const shares = attemptFailureShares(health);
+  const rates: Record<ProviderHealthMetric, number | null> = { reachability: health.reachabilityPct, capacity: health.capacityPct, callErrors: health.callErrorPct };
+  return (
+    <>
+      {PROVIDER_HEALTH_METRICS.map((metric) => (
+        <Line key={metric} label={UPTIME_COPY.labels[metric]} value={formatRate(rates[metric])} detail={failureShareText(metric, shares[metric])} />
+      ))}
+      <Text variant="caption" className="pt-1">{UPTIME_COPY.attemptBasis}</Text>
     </>
   );
 }
