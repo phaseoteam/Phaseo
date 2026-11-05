@@ -12,7 +12,7 @@ import type { RequestResult, Bill } from "../execute";
 import type { PriceCard } from "../pricing";
 import { calculatePricing } from "./pricing";
 import { handleFailureAudit, handleSuccessAudit } from "./audit";
-import { recordProvisionalStreamCharge, recordUsageAndChargeOnce } from "./charge";
+import { chargedTotalForUnsettledRequest, recordProvisionalStreamCharge, recordUsageAndChargeOnce } from "./charge";
 import { estimateDrainProgressUsage } from "./drain-progress";
 import {
     countRequestMediaInputs,
@@ -820,7 +820,7 @@ export async function handleStreamResponse(
 						result.rawResponse ?? latestGatewaySnapshot,
 						undefined,
 						undefined,
-						billedNanos > 0 ? { costNanos: billedNanos } : undefined,
+						stepMeta.__chargedInSteps === true || billedNanos > 0 ? { costNanos: billedNanos } : undefined,
 					);
 					return;
 				}
@@ -832,6 +832,10 @@ export async function handleStreamResponse(
 					"upstream_stream_failure",
 					"The upstream stream failed before successful completion.",
 					result.rawResponse ?? latestGatewaySnapshot,
+					undefined,
+					undefined,
+					// Settled to 0: the checkpoint charge recorded for spend limits is lowered to it.
+					stepMeta.__chargedInSteps === true ? { costNanos: 0 } : undefined,
 				);
 				return;
 			}
@@ -1137,6 +1141,13 @@ export async function handleStreamResponse(
                     workspaceId: ctx.workspaceId,
                     error: message,
                 });
+                // A stream charged at drain checkpoints whose final settlement could not be recorded
+                // still holds a charge (the checkpoints, or a final that committed unacknowledged):
+                // the row records it and spend limits count it, never 0 unless the database says so.
+                const failedMeta = ctx.meta as Record<string, unknown>;
+                const unsettledCharge = failedMeta.__chargedInSteps === true && failedMeta.__usageChargeRecorded !== true
+                    ? await chargedTotalForUnsettledRequest(ctx)
+                    : null;
                 await handleFailureAudit(
                     ctx,
                     result,
@@ -1152,6 +1163,9 @@ export async function handleStreamResponse(
                         ...(typeof (ctx.meta as Record<string, unknown>).__steppedFinalTotalNanos === "number"
                             ? { charged_in_steps: true, intended_final_total_nanos: (ctx.meta as Record<string, unknown>).__steppedFinalTotalNanos }
                             : {}),
+                        ...(unsettledCharge
+                            ? { charged_total_nanos: unsettledCharge.costNanos, charged_total_source: unsettledCharge.stored ? "database" : "last_checkpoint" }
+                            : {}),
                         cause: message,
                     },
                     null,
@@ -1160,6 +1174,7 @@ export async function handleStreamResponse(
                         rawUsage: usageRaw ?? latestStreamUsageRaw ?? result.bill.usage,
                         pricingCard: card,
                     },
+                    unsettledCharge ? { costNanos: unsettledCharge.costNanos } : undefined,
                 );
             } finally {
                 releaseRuntime();

@@ -7,7 +7,11 @@ const auditFailureMock = vi.hoisted(() => vi.fn(async (_args: any) => undefined)
 const background = vi.hoisted(() => [] as Promise<unknown>[]);
 // An enforced daily cost budget, as the spend-limit coordinator applies it: a request is admitted
 // while recorded spend is below the limit; its admission is then released or settled with a cost.
-const budget = vi.hoisted(() => ({ limit: 1_000, used: 0, open: new Set<string>() }));
+// Amounts are kept per billing request: a replace (stepped charge) sets the request's amount.
+const budget = vi.hoisted(() => ({
+	limit: 1_000, open: new Set<string>(), recorded: new Map<string, number>(),
+	get used() { return [...this.recorded.values()].reduce((sum, value) => sum + value, 0); },
+}));
 
 vi.mock("../audit", () => ({ auditSuccess: vi.fn(), auditFailure: (args: any) => auditFailureMock(args) }));
 vi.mock("@observability/events", () => ({ emitGatewayRequestEvent: vi.fn(async () => undefined) }));
@@ -19,9 +23,10 @@ vi.mock("@/runtime/env", async (importOriginal) => ({
 vi.mock("@core/spend-limits", () => ({
 	recordShadowSpend: vi.fn(),
 	releaseSpend: (admission: { admissionId: string } | null) => { if (admission) budget.open.delete(admission.admissionId); },
-	settleEnforcedSpend: (args: { admission: { admissionId: string } | null; rowWritten: boolean; costNanos: number }) => {
+	settleEnforcedSpend: (args: { admission: { admissionId: string } | null; rowWritten: boolean; billingRequestId: string; costNanos: number; replace?: boolean }) => {
 		if (args.admission) budget.open.delete(args.admission.admissionId);
-		if (args.rowWritten) budget.used += args.costNanos;
+		if (!args.rowWritten && !args.replace) return;
+		if (args.replace || !budget.recorded.has(args.billingRequestId)) budget.recorded.set(args.billingRequestId, args.costNanos);
 	},
 }));
 
@@ -60,7 +65,7 @@ describe("failed requests that were still charged", () => {
 	beforeEach(() => {
 		auditFailureMock.mockClear();
 		background.length = 0;
-		budget.used = 0;
+		budget.recorded.clear();
 		budget.open.clear();
 	});
 
@@ -91,6 +96,15 @@ describe("failed requests that were still charged", () => {
 
 	it("are not counted against a key for an OAuth access token, which has no admission", async () => {
 		await cancelWithCharge("oauth", admit("oauth"), 300, { authMethod: "oauth", apiKeyRef: "oauth_client_1" });
+		expect(budget.used).toBe(0);
+		expect(budget.open.size).toBe(0);
+	});
+
+	it("lower a stepped request's recorded checkpoint spend to the refunded final amount", async () => {
+		// The drain checkpoint already counted 300 for this request (recordCheckpointSpend).
+		budget.recorded.set("bill_refunded", 300);
+		await cancelWithCharge("refunded", admit("refunded"), 0, { __chargedInSteps: true });
+		expect(budget.recorded.get("bill_refunded")).toBe(0);
 		expect(budget.used).toBe(0);
 		expect(budget.open.size).toBe(0);
 	});

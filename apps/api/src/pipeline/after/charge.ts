@@ -3,6 +3,8 @@
 // How: Tracks per-request charge attempts on pipeline context metadata.
 
 import type { PipelineContext } from "../before/types";
+import { keyIdIsOAuthClientId } from "@core/request-key";
+import { recordCheckpointSpend } from "@core/spend-limits";
 
 const CHARGE_RETRY_DELAYS_MS = [0, 100, 500] as const;
 
@@ -99,8 +101,39 @@ export function recordProvisionalStreamCharge(args: {
 		if (error) {
 			console.error("provisional stream charge failed", { error, requestId: ctx.requestId, workspaceId: ctx.workspaceId, endpoint, total_nanos: totalNanos });
 		}
+		// Spend limits count the charge now: if the runtime stops the drain, the request never
+		// settles. Reported even after an error, as the debit may have committed; the final
+		// settlement replaces this amount.
+		if (!keyIdIsOAuthClientId(ctx.meta.apiKeyRef)) {
+			recordCheckpointSpend({
+				admission: ctx.spendAdmission,
+				workspaceId: ctx.workspaceId,
+				keyId: ctx.meta.apiKeyId ?? ctx.keyId ?? null,
+				billingRequestId: ctx.billingRequestId,
+				requestId: ctx.requestId,
+				costNanos: Number(meta.__checkpointTotalNanos) || totalNanos,
+				internal: ctx.internal,
+			});
+		}
 	});
 	return current.chain;
+}
+
+/**
+ * After a stepped request's final settlement could not be recorded: what the database holds as
+ * charged for it (checkpoints, or a final that committed without its response arriving), or the
+ * highest checkpoint total sent when even that cannot be read. Never 0 for a request that sent a
+ * checkpoint unless the database says so.
+ */
+export async function chargedTotalForUnsettledRequest(ctx: PipelineContext): Promise<{ costNanos: number; stored: boolean }> {
+	const lastKnown = Number((ctx.meta as Record<string, unknown>).__checkpointTotalNanos) || 0;
+	try {
+		const { readRequestChargeTotal } = await import("../pricing/persist");
+		return { costNanos: await readRequestChargeTotal({ requestId: ctx.billingRequestId, workspaceId: ctx.workspaceId }), stored: true };
+	} catch (error) {
+		console.error("stepped charge total unreadable", { error, requestId: ctx.requestId, workspaceId: ctx.workspaceId });
+		return { costNanos: lastKnown, stored: false };
+	}
 }
 
 export async function recordUsageAndChargeOnce(args: {

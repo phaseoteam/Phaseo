@@ -7,10 +7,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const chargeRpcMock = vi.hoisted(() => vi.fn(async (_kind: string, _args: any) => ({ applied: true })));
 const backgroundWork: Promise<unknown>[] = [];
 const failureAuditMock = vi.hoisted(() => vi.fn(async (..._args: any[]) => undefined));
+// What gateway_request_charges holds for the request (read when a final settlement cannot be recorded).
+const storedChargeTotalMock = vi.hoisted(() => vi.fn(async (_args: any) => 0));
+const checkpointSpendMock = vi.hoisted(() => vi.fn((_args: any) => undefined));
 
 vi.mock("../pricing/persist", () => ({
 	recordUsageAndCharge: (args: any) => chargeRpcMock("one_off", args),
 	recordRequestChargeTotal: (args: any) => chargeRpcMock("total", args),
+	readRequestChargeTotal: (args: any) => storedChargeTotalMock(args),
+}));
+vi.mock("@core/spend-limits", async (importOriginal) => ({
+	...(await importOriginal<typeof import("@core/spend-limits")>()),
+	recordCheckpointSpend: (args: any) => checkpointSpendMock(args),
 }));
 vi.mock("./audit", () => ({
 	handleFailureAudit: (...args: any[]) => failureAuditMock(...args),
@@ -123,6 +131,8 @@ describe("a stream the client abandons while the upstream keeps draining", () =>
 		vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
 		chargeRpcMock.mockReset().mockResolvedValue({ applied: true });
 		failureAuditMock.mockClear();
+		storedChargeTotalMock.mockReset().mockResolvedValue(0);
+		checkpointSpendMock.mockClear();
 		backgroundWork.length = 0;
 	});
 	afterEach(() => { vi.useRealTimers(); });
@@ -271,7 +281,8 @@ describe("a stream the client abandons while the upstream keeps draining", () =>
 		// A broken upstream is a stream failure, not the client leaving: nothing is billed.
 		expect(charges()).toEqual([["checkpoint_total", "bill_drain", 1_000_000], ["final_total", "bill_drain", 0]]);
 		const [, , status, attribution, code, , , , , billing] = failureAuditMock.mock.calls[0];
-		expect([status, attribution, code, billing]).toEqual([502, "upstream", "upstream_stream_failure", undefined]);
+		// Settled at 0: the checkpoint spend recorded for limits is lowered to it, not left behind.
+		expect([status, attribution, code, billing]).toEqual([502, "upstream", "upstream_stream_failure", { costNanos: 0 }]);
 	});
 
 	it("records the intended final total for reconciliation when the zero settlement cannot be recorded", async () => {
@@ -284,6 +295,8 @@ describe("a stream the client abandons while the upstream keeps draining", () =>
 		await vi.advanceTimersByTimeAsync(15_000);
 		await settle();
 		chargeRpcMock.mockRejectedValue(new Error("database unavailable"));
+		// The charge row still holds the checkpoint's 1,000,000.
+		storedChargeTotalMock.mockResolvedValue(1_000_000);
 		upstream.fail();
 		await settle();
 		await vi.advanceTimersByTimeAsync(1_000);
@@ -294,8 +307,61 @@ describe("a stream the client abandons while the upstream keeps draining", () =>
 			["final_total", "bill_drain", 0], ["final_total", "bill_drain", 0], ["final_total", "bill_drain", 0],
 		]);
 		expect(failureAuditMock).toHaveBeenCalledTimes(1);
-		const [, , status, attribution, code, , details] = failureAuditMock.mock.calls[0];
+		const [, , status, attribution, code, , details, , , billing] = failureAuditMock.mock.calls[0];
 		expect([status, attribution, code]).toEqual([500, "gateway", "stream_finalization_failed"]);
-		expect(details).toMatchObject({ billing_status: "pending_reconciliation", charged_in_steps: true, intended_final_total_nanos: 0 });
+		expect(details).toMatchObject({
+			billing_status: "pending_reconciliation", charged_in_steps: true, intended_final_total_nanos: 0,
+			charged_total_nanos: 1_000_000, charged_total_source: "database",
+		});
+		// The charge still held is the request's cost, and spend limits count it: not released at 0.
+		expect(storedChargeTotalMock).toHaveBeenCalledWith({ requestId: "bill_drain", workspaceId: "ws_drain" });
+		expect(billing).toEqual({ costNanos: 1_000_000 });
+	});
+
+	it("falls back to the last checkpoint total, never 0, when the stored charge cannot be read either", async () => {
+		const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+		const c = ctx();
+		const { upstream, reader } = await start(c);
+		upstream.text("y".repeat(500));
+		await reader.read();
+		await reader.cancel();
+		await vi.advanceTimersByTimeAsync(15_000);
+		await settle();
+		chargeRpcMock.mockRejectedValue(new Error("database unavailable"));
+		storedChargeTotalMock.mockRejectedValue(new Error("database unavailable"));
+		upstream.fail();
+		await settle();
+		await vi.advanceTimersByTimeAsync(1_000);
+		await settle();
+		error.mockRestore();
+		const [, , , , code, , details, , , billing] = failureAuditMock.mock.calls[0];
+		expect(code).toBe("stream_finalization_failed");
+		expect(details).toMatchObject({ billing_status: "pending_reconciliation", charged_total_nanos: 1_000_000, charged_total_source: "last_checkpoint" });
+		expect(billing).toEqual({ costNanos: 1_000_000 });
+	});
+
+	it("reports each checkpoint to the spend coordinator, so a drain stopped by the runtime still counts", async () => {
+		const c = ctx();
+		c.meta.apiKeyId = "00000000-0000-4000-8000-000000000001";
+		c.spendAdmission = { workspaceId: "ws_drain", keyId: c.meta.apiKeyId, admissionId: "req_drain", leaseId: "lease_1", fromSlice: false, unlimited: false };
+		const { upstream, reader } = await start(c);
+		upstream.text("y".repeat(500));
+		await reader.read();
+		await reader.cancel();
+		await vi.advanceTimersByTimeAsync(15_000);
+		await settle();
+		upstream.text("z".repeat(500));
+		await settle();
+		await vi.advanceTimersByTimeAsync(10_000);
+		await settle();
+		// The runtime stops the drain here: there is no final settlement and no audit row.
+		expect(failureAuditMock).not.toHaveBeenCalled();
+		expect(charges()).toEqual([["checkpoint_total", "bill_drain", 1_000_000], ["checkpoint_total", "bill_drain", 2_000_000]]);
+		expect(checkpointSpendMock.mock.calls.map(([args]) => [args.billingRequestId, args.costNanos])).toEqual([
+			["bill_drain", 1_000_000], ["bill_drain", 2_000_000],
+		]);
+		expect(checkpointSpendMock.mock.calls[0][0]).toMatchObject({
+			workspaceId: "ws_drain", keyId: c.meta.apiKeyId, requestId: "req_drain", admission: c.spendAdmission,
+		});
 	});
 });

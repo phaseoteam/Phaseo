@@ -106,6 +106,12 @@ export type SpendRecordEntry = {
 	occurredAtMs?: number;
 	/** Lease the request was admitted from, if any. */
 	leaseId?: string | null;
+	/**
+	 * `costNanos` is the request's charged total so far (a stream charged at drain checkpoints):
+	 * it replaces an amount already recorded for this `billingRequestId` instead of being ignored
+	 * as a duplicate, so a later checkpoint or the final settlement raises it and a refund lowers it.
+	 */
+	replace?: boolean;
 };
 
 export type SpendRecordResult = { duplicates: number; drainKeyIds: string[] };

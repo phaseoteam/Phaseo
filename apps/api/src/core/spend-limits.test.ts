@@ -32,6 +32,7 @@ import {
 	enforcedSpendLimit,
 	flushSpendRecordsForTests,
 	getSpendLimitMode,
+	recordCheckpointSpend,
 	recordShadowSpend,
 	recordSpend,
 	releaseSpend,
@@ -278,6 +279,44 @@ describe("spend-limit coordinator", () => {
 			.toEqual({ duplicates: 1, drainKeyIds: [] });
 		const next = await checkSpendLimit({ workspaceId: WORKSPACE, keyId: KEY, admissionId: "req-2" });
 		expect(next.keyLimit?.buckets?.daily).toMatchObject({ requestsUsed: 1, costUsedNanos: 250 });
+	});
+
+	it("counts a stream's checkpoint charges and lets the final settlement replace them", async () => {
+		const used = async (_label: string) => (await probe())?.daily;
+		const entry = { keyId: KEY, billingRequestId: "bill-stepped", requestId: "req-stepped", requests: 1, replace: true };
+		await checkSpendLimit({ workspaceId: WORKSPACE, keyId: KEY, admissionId: "warm" });
+		// Checkpoints report the charged total so far; the drain may be stopped before it settles.
+		await coordinator.record(WORKSPACE, { ...entry, costNanos: 100 });
+		expect(await used("c1")).toMatchObject({ requestsUsed: 1, costUsedNanos: 100 });
+		await coordinator.record(WORKSPACE, { ...entry, costNanos: 250 });
+		expect(await used("c2")).toMatchObject({ requestsUsed: 1, costUsedNanos: 250 });
+		// The final settlement replaces the checkpoint amount instead of adding to it, a refund lowers it.
+		await coordinator.record(WORKSPACE, { ...entry, costNanos: 400 });
+		expect(await used("c3")).toMatchObject({ requestsUsed: 1, costUsedNanos: 400 });
+		await coordinator.record(WORKSPACE, { ...entry, costNanos: 0 });
+		expect(await used("c4")).toMatchObject({ requestsUsed: 1, costUsedNanos: 0 });
+		// A plain record of the same request is still a duplicate.
+		expect(await coordinator.record(WORKSPACE, { ...entry, replace: undefined, costNanos: 900 })).toEqual({ duplicates: 1, drainKeyIds: [] });
+		expect(await used("c5")).toMatchObject({ costUsedNanos: 0 });
+	});
+
+	it("records checkpoint spend in enforce mode without settling the admission", async () => {
+		runtime.bindings = { ...runtime.bindings!, GATEWAY_SPEND_LIMIT_DO_MODE: "enforce" };
+		const key = "00000000-0000-4000-8000-000000000001";
+		database.keys.set(key, { workspaceId: WORKSPACE, daily: [0, 1_000] });
+		const decision = await checkSpendLimit({ workspaceId: WORKSPACE, keyId: key, admissionId: "req-ckpt" });
+		if (decision.outcome !== "allowed") throw new Error("expected admission");
+		const record = vi.spyOn(coordinator, "record");
+		const args = { admission: decision.admission, workspaceId: WORKSPACE, keyId: key, billingRequestId: "bill-ckpt", requestId: "req-ckpt" };
+		recordCheckpointSpend({ ...args, costNanos: 600 });
+		await flush();
+		expect(record).toHaveBeenLastCalledWith(WORKSPACE, [expect.objectContaining({ billingRequestId: "bill-ckpt", costNanos: 600, replace: true })]);
+		// The drain is stopped here: the coordinator still holds the 600 for this key's budget.
+		expect((await probe(key))?.daily).toMatchObject({ costUsedNanos: 600 });
+		// When it does settle, the final amount replaces the checkpoint's.
+		settleEnforcedSpend({ ...args, rowWritten: false, costNanos: 350, replace: true });
+		await flush();
+		expect((await probe(key))?.daily).toMatchObject({ costUsedNanos: 350 });
 	});
 
 	it("never grants more requests than remain, across isolates and failures", async () => {

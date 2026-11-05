@@ -357,7 +357,21 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			console.warn("spend_limit_invalid_record", { workspaceId: this.workspaceId });
 			return false;
 		}
-		if (this.seen.has(entry.billingRequestId) || this.pending.has(entry.billingRequestId)) return false;
+		const existing = this.pending.get(entry.billingRequestId);
+		if (entry.replace === true && existing && existing.keyId === entry.keyId) {
+			// The request's charged total so far: a later checkpoint or the final settlement
+			// replaces the recorded amount, and a refund lowers it.
+			const cost = nonNegative(entry.costNanos);
+			const lease = entry.leaseId ? this.leases.get(entry.leaseId) : undefined;
+			if (lease && lease.keyId === entry.keyId) {
+				lease.consumed = Math.max(0, lease.consumed + cost - existing.cost);
+				this.settleIfDone(lease);
+			}
+			existing.cost = cost;
+			existing.recordedAt = now;
+			return true;
+		}
+		if (this.seen.has(entry.billingRequestId) || existing) return false;
 		this.seen.add(entry.billingRequestId);
 		if (this.seen.size > MAX_SEEN_IDS) {
 			const oldest = this.seen.values().next();

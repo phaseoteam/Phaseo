@@ -140,6 +140,28 @@ export async function recordRequestChargeTotal(args: {
     }
 }
 
+/**
+ * The total charged for a request so far (its gateway_request_charges row), or 0 when it has
+ * no applied charge. Throws when the row cannot be read.
+ */
+export async function readRequestChargeTotal(args: { requestId: string; workspaceId: string }): Promise<number> {
+    const releaseRuntime = ensureRuntimeForBackground();
+    try {
+        const { data, error } = await getSupabaseAdmin()
+            .from("gateway_request_charges")
+            .select("cost_nanos, status")
+            .eq("workspace_id", args.workspaceId)
+            .eq("request_id", args.requestId)
+            .maybeSingle();
+        if (error) throw error;
+        const row = data as { cost_nanos?: number | string | null; status?: string | null } | null;
+        const total = row?.status === "applied" ? Number(row.cost_nanos) : 0;
+        return Number.isFinite(total) && total > 0 ? Math.round(total) : 0;
+    } finally {
+        releaseRuntime();
+    }
+}
+
 // Cache write-back or invalidation and auto top-up, shared by both charge RPCs.
 async function settleChargeRpcResult(
     args: { requestId: string; workspaceId: string },

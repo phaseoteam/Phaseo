@@ -262,7 +262,10 @@ export async function handleFailureAudit(
 	// Enforce mode: a failed request frees its spend-limit admission (no-op without one). A failed
 	// request that was still charged counts its charge instead, once its row is written.
 	const billedNanos = Math.max(0, Math.round(Number(billing?.costNanos) || 0));
-	const settleBilledSpend = billedNanos > 0 && !keyIdIsOAuthClientId(ctx.meta.apiKeyRef);
+	// A stream charged at drain checkpoints already recorded its charge: settle it to the final
+	// amount, 0 included (a refund), instead of releasing.
+	const chargedInSteps = (ctx.meta as Record<string, unknown>).__chargedInSteps === true;
+	const settleBilledSpend = (billedNanos > 0 || (billing != null && chargedInSteps)) && !keyIdIsOAuthClientId(ctx.meta.apiKeyRef);
 	if (!settleBilledSpend) releaseSpend(ctx.spendAdmission);
     const protectedOtlp = protectStealthAuditArgs({
         model: ctx.model,
@@ -458,6 +461,7 @@ export async function handleFailureAudit(
             requestId: ctx.requestId,
             costNanos: billedNanos,
             internal: ctx.internal,
+            ...(chargedInSteps ? { replace: true } : {}),
         });
     }).finally(() => releaseRuntime?.());
     dispatchBackground(telemetry);
@@ -754,6 +758,8 @@ export async function handleSuccessAudit(
 			requestId: ctx.requestId,
 			costNanos: totalNanos,
 			internal: ctx.internal,
+			// Drain checkpoints already recorded part of this charge: the final amount replaces it.
+			...((ctx.meta as Record<string, unknown>).__chargedInSteps === true ? { replace: true } : {}),
 		});
 	}
 

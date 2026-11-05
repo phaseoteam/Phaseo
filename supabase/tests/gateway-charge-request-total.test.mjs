@@ -98,6 +98,11 @@ try {
   assert.equal(Number(next.delta_nanos), 150, 'the next checkpoint charges only the increase');
   assert.equal((await total('lost', 200, false)).already_applied, true, 'a lower checkpoint never refunds');
   assert.equal(await balance(), usd(10) - 250);
+  // If the runtime stops the drain here, the charge row is the durable record of what was charged:
+  // applied and not final, with no gateway_requests row. It joins gateway_requests on
+  // (workspace_id, request_id) = (workspace_id, billing_request_id) once a row is written.
+  const unsettled = await chargeRow('lost');
+  assert.deepEqual([unsettled.status, unsettled.is_final, Number(unsettled.cost_nanos)], ['applied', false, 250]);
   const final = await total('lost', 400, true);
   assert.equal(Number(final.delta_nanos), 150);
   assert.equal(Number(final.charged_total_nanos), 400);
