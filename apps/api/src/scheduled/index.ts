@@ -22,7 +22,7 @@ import { enqueueFeedbackRequestEmails } from "@/pipeline/notifications/feedback-
 import { hasLowBalanceEmailActivity, runLowBalanceEmailSweep } from "@/pipeline/notifications/low-balance";
 import { hasMobilePushActivity, runMobilePushJob } from "@/pipeline/notifications/mobile-push";
 import { hasMobilePushDigestActivity, runMobilePushDigestJob } from "@/pipeline/notifications/mobile-push-digest";
-import { runDepartmentBudgetAlertSweep, runSpendLimitWarningSweep } from "@/pipeline/notifications/spend-limit-alerts";
+import { runDepartmentBudgetAlertSweep, runSpendGuardrailAlertSweep, runSpendLimitWarningSweep } from "@/pipeline/notifications/spend-limit-alerts";
 import { hasSpendRuleSweepActivity, publishSweepSpendBlockEntries, runSpendRulesSweep } from "@/pipeline/notifications/spend-rules";
 import { hasSpendReportActivity, runSpendReportsQueue } from "@/pipeline/notifications/spend-reports";
 import { reconcileSpendBlockEntries } from "@core/spend-blocks";
@@ -413,11 +413,14 @@ async function handleSpendLimitSweepScheduledEvent(env: GatewayBindings): Promis
 	if (env.MOBILE_PUSH_ENABLED !== "true") return;
 	configureRuntime(env);
 	try {
-		// Independent sweeps: one failing must not hold back the other's alerts.
-		const [spend, departments] = await Promise.allSettled([runSpendLimitWarningSweep(), runDepartmentBudgetAlertSweep()]);
+		// Independent sweeps: one failing must not hold back the others' alerts.
+		const [spend, departments, guardrails] = await Promise.allSettled([
+			runSpendLimitWarningSweep(), runDepartmentBudgetAlertSweep(), runSpendGuardrailAlertSweep(),
+		]);
 		if (spend.status === "fulfilled" && spend.value.warned > 0) console.log("spend_limit_warnings_swept", spend.value);
 		if (departments.status === "fulfilled" && departments.value.alerted > 0) console.log("department_budget_alerts_swept", departments.value);
-		const failed = [spend, departments].find((result): result is PromiseRejectedResult => result.status === "rejected");
+		if (guardrails.status === "fulfilled" && guardrails.value.alerted > 0) console.log("spend_guardrail_alerts_swept", guardrails.value);
+		const failed = [spend, departments, guardrails].find((result): result is PromiseRejectedResult => result.status === "rejected");
 		if (failed) throw failed.reason;
 	} finally {
 		clearRuntime();
