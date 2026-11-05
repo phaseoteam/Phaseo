@@ -1009,7 +1009,10 @@
 		"rules": "normas",
 		"flag": "Marcar",
 		"redact": "Ocultar datos",
-		"block": "Bloquear"
+		"block": "Bloquear",
+		"workspaceBaseline": "Guardrail base del espacio de trabajo",
+		"workspaceBaselineDescription": "Se aplica a todas las claves del espacio de trabajo. Edítalo en Privacidad.",
+		"wholeWorkspace": "Todo el espacio de trabajo"
 	},
 	"guardrailAssignments": {
 		"tabGuardrails": "Guardrails",
@@ -1021,8 +1024,6 @@
 		"columnMember": "Miembro",
 		"columnGuardrails": "Guardrails",
 		"columnAccess": "Acceso",
-		"columnPromptInjection": "Inyección de prompts",
-		"columnSensitiveInfo": "Información sensible",
 		"none": "Ninguno",
 		"off": "Desactivado",
 		"offHint": "Este guardrail está desactivado, así que el gateway lo omite.",
@@ -1038,7 +1039,6 @@
 		"modelsBlocked": "{count, plural, one {# modelo bloqueado} other {# modelos bloqueados}}",
 		"noProvidersAllowed": "Ningún proveedor permitido",
 		"noModelsAllowed": "Ningún modelo permitido",
-		"sensitiveRules": "{count, plural, one {# regla} other {# reglas}}",
 		"editGuardrails": "Editar guardrails de {name}",
 		"selectRow": "Seleccionar {name}",
 		"selectAll": "Seleccionar todo",
@@ -1054,8 +1054,161 @@
 		"noKeys": "Este espacio de trabajo no tiene claves API.",
 		"noMembers": "Este espacio de trabajo no tiene miembros.",
 		"noMatches": "Nada coincide con tu búsqueda.",
-		"footnote": "Acceso, inyección de prompts e información sensible muestran el resultado combinado de los guardrails de cada fila. Si se aplican varios, gana la regla más estricta. La configuración de privacidad y enrutamiento del espacio de trabajo se aplica además.",
-		"readOnly": "Solo los propietarios y administradores del espacio de trabajo pueden cambiar las asignaciones."
+		"readOnly": "Solo los propietarios y administradores del espacio de trabajo pueden cambiar las asignaciones.",
+		"workspaceView": "Espacio de trabajo",
+		"departmentsView": "Departamentos",
+		"columnWorkspace": "Espacio de trabajo",
+		"columnDepartment": "Departamento",
+		"columnSafety": "Seguridad",
+		"wholeWorkspace": "Todo el espacio de trabajo",
+		"wholeWorkspaceDetail": "Todas las claves de API y todos los miembros",
+		"departmentReach": "{members, plural, one {# miembro} other {# miembros}} · {keys, plural, one {# clave} other {# claves}}",
+		"noDepartments": "Este espacio de trabajo aún no tiene departamentos.",
+		"fromWorkspace": "Espacio de trabajo",
+		"workspaceHint": "Se aplica a todo el espacio de trabajo. Cámbialo en la vista Espacio de trabajo.",
+		"departmentHint": "Se aplica a través del departamento {name}. Cámbialo en la vista Departamentos.",
+		"baselineHint": "El guardrail base del espacio de trabajo se aplica a todas las claves de API y miembros. Edítalo en Privacidad.",
+		"fromGuardrails": "De {names}",
+		"promptInjectionPart": "Inyección de prompts: {action}",
+		"sensitiveInfoPart": "{count, plural, one {# regla de información sensible} other {# reglas de información sensible}}",
+		"footnoteLevels": "Cada fila muestra todos los guardrails que le llegan: los suyos y los de su miembro, sus departamentos y todo el espacio de trabajo. Cuando se aplican varios, gana la regla más estricta.",
+		"noTraining": "Sin entrenamiento",
+		"noPaidTraining": "Sin entrenamiento en endpoints de pago",
+		"noFreeTraining": "Sin entrenamiento en endpoints gratuitos",
+		"noLogging": "Sin endpoints que registren",
+		"columnRate": "Frecuencia",
+		"rateRequests": "{count, plural, one {# solicitud} other {# solicitudes}} por minuto",
+		"rateTokens": "{count, plural, one {# token} other {# tokens}} por minuto",
+		"rateConcurrent": "{count, plural, other {# a la vez}}"
+	},
+	"guardrailWizard": {
+		"title": "Nuevo guardrail",
+		"subtitle": "Elige qué comprueba, configúralo y luego elige a quién se aplica.",
+		"stepsLabel": "Pasos para configurar el guardrail",
+		"step": {
+			"start": "Qué hace",
+			"configure": "Configurar",
+			"assign": "Asignar",
+			"review": "Revisar"
+		},
+		"cancel": "Cancelar",
+		"back": "Atrás",
+		"continue": "Continuar",
+		"create": "Crear guardrail",
+		"creating": "Creando…",
+		"issue": {
+			"nameRequired": "Añade un nombre para continuar.",
+			"chooseSection": "Elige una plantilla o al menos una comprobación para continuar.",
+			"accessEmpty": "Activa al menos una regla de acceso o privacidad, o quita esta comprobación.",
+			"providerAllowlistEmpty": "Elige al menos un proveedor permitido. Una lista vacía bloquea todos los proveedores.",
+			"modelAllowlistEmpty": "Elige al menos un modelo permitido. Una lista vacía bloquea todos los modelos.",
+			"promptInjectionOff": "Elige cómo tratar la inyección de prompts, o quita esta comprobación.",
+			"sensitiveInfoOff": "Activa al menos un patrón de información sensible, o quita esta comprobación.",
+			"rateLimitEmpty": "Define al menos un límite para continuar.",
+			"rateLimitInvalid": "Los límites deben ser números enteros mayores que 0.",
+			"rateCountingRequired": "Elige cómo cuentan los límites para continuar."
+		},
+		"nameLabel": "Nombre",
+		"namePlaceholder": "p. ej., Política para contratistas",
+		"descriptionLabel": "Descripción (opcional)",
+		"descriptionPlaceholder": "¿Para quién es?",
+		"templatesTitle": "Empezar con una plantilla",
+		"templatesBody": "Una plantilla rellena la configuración. Puedes cambiarla toda en el siguiente paso.",
+		"templateZdr": {
+			"name": "Sin retención de datos",
+			"body": "Enrutar solo a endpoints que no guardan prompts ni respuestas."
+		},
+		"templateNoTraining": {
+			"name": "Sin entrenamiento con prompts",
+			"body": "Omitir endpoints que pueden entrenar con tus prompts o publicarlos."
+		},
+		"templateApprovedProviders": {
+			"name": "Solo proveedores aprobados",
+			"body": "Permitir solo los proveedores que elijas."
+		},
+		"templateApprovedModels": {
+			"name": "Solo modelos aprobados",
+			"body": "Permitir solo los modelos que elijas."
+		},
+		"templateBlockPromptInjection": {
+			"name": "Bloquear inyección de prompts",
+			"body": "Detener las solicitudes que parecen inyección de prompts antes de que lleguen al modelo."
+		},
+		"templateRedactPersonalInfo": {
+			"name": "Ocultar datos personales",
+			"body": "Sustituir correos, teléfonos, SSN y números de tarjeta antes de que las solicitudes salgan de Phaseo."
+		},
+		"sectionsTitle": "Comprobaciones",
+		"sectionsBody": "Elige una o más. Al elegir una plantilla se marcan por ti.",
+		"sectionAccess": {
+			"name": "Acceso y privacidad",
+			"body": "Retención de datos, entrenamiento y qué proveedores y modelos se pueden usar."
+		},
+		"sectionPromptInjection": {
+			"name": "Inyección de prompts",
+			"body": "Analizar las solicitudes en busca de inyección de prompts y marcarlas, ocultarlas o bloquearlas."
+		},
+		"sectionSensitiveInfo": {
+			"name": "Información sensible",
+			"body": "Detectar datos personales y secretos en las solicitudes y marcarlos, ocultarlos o bloquearlos."
+		},
+		"addCheck": "Añadir comprobación:",
+		"assignTitle": "¿A quién se debe aplicar «{name}»?",
+		"assignBody": "Elige todo el espacio de trabajo, o departamentos, miembros y claves de API. Cada fila muestra el resultado de sus guardrails ahora y con este. Puedes saltarte este paso y asignarlo más tarde.",
+		"columnNow": "Ahora",
+		"columnAfter": "Con este guardrail",
+		"assignMemberHint": "Los guardrails de un miembro también se aplican a las claves de API que crea.",
+		"notApplied": "No aplicado",
+		"coveredVia": "A través de {name}",
+		"noTighter": "Sin cambios: sus guardrails actuales ya cubren esto.",
+		"promptInjectionPart": "Inyección de prompts: {action}",
+		"sensitiveInfoPart": "{count, plural, one {# regla de información sensible} other {# reglas de información sensible}}",
+		"reviewWhat": "Qué hace",
+		"reviewModels": "Modelos",
+		"reviewWho": "Se aplica a",
+		"change": "Cambiar",
+		"modelsAvailable": "Se pueden seguir usando {available} de {total} modelos.",
+		"blocksEverything": "Estas reglas bloquean todos los modelos, así que fallarán las solicitudes de las claves afectadas.",
+		"appliesToNothing": "Nada todavía. Puedes asignarlo más tarde desde la pestaña Asignaciones.",
+		"turnOnNow": "Activar ahora",
+		"turnOnNowBody": "Si está desactivado, se guarda pero el gateway lo omite.",
+		"summaryZdr": "Solo enruta a endpoints sin retención de datos",
+		"summaryNoPaidTraining": "Omite endpoints de pago que pueden entrenar con prompts",
+		"summaryNoFreeTraining": "Omite endpoints gratuitos que pueden entrenar con prompts",
+		"summaryNoPublishing": "Omite endpoints gratuitos que pueden publicar prompts",
+		"summaryNoLogging": "Omite endpoints que registran prompts y respuestas",
+		"summaryProvidersAllowed": "Solo permite {count, plural, one {# proveedor} other {# proveedores}}",
+		"summaryProvidersBlocked": "Bloquea {count, plural, one {# proveedor} other {# proveedores}}",
+		"summaryModelsAllowed": "Solo permite {count, plural, one {# modelo} other {# modelos}}",
+		"summaryModelsBlocked": "Bloquea {count, plural, one {# modelo} other {# modelos}}",
+		"summaryPromptInjection": "Inyección de prompts: {action}",
+		"summarySensitiveInfo": "Comprueba {count, plural, one {# patrón de información sensible} other {# patrones de información sensible}}",
+		"wholeWorkspaceTitle": "Todo el espacio de trabajo",
+		"wholeWorkspaceBody": "Se aplica a todas las claves de API y miembros, también a los que se añadan después.",
+		"wholeWorkspaceOn": "Se aplica a todo el espacio de trabajo, así que todas las filas de abajo lo reciben.",
+		"coveredByWorkspace": "Cubierto por todo el espacio de trabajo",
+		"coveredByDepartment": "Cubierto a través de {name}",
+		"levelWorkspace": "Todo el espacio de trabajo",
+		"levelDepartments": "{count, plural, one {# departamento} other {# departamentos}}",
+		"levelMembers": "{count, plural, one {# miembro} other {# miembros}}",
+		"levelKeys": "{count, plural, one {# clave de API} other {# claves de API}}",
+		"templateRateLimit": {
+			"name": "Límite de frecuencia",
+			"body": "Limita las solicitudes o los tokens por minuto, o las solicitudes simultáneas."
+		},
+		"sectionRate": {
+			"name": "Límites de frecuencia",
+			"body": "Solicitudes y tokens por minuto, y solicitudes simultáneas. Una barrera de frecuencia no tiene más comprobaciones."
+		},
+		"summaryRateRequests": "{count, plural, one {# solicitud} other {# solicitudes}} por minuto",
+		"summaryRateTokens": "{count, plural, one {# token} other {# tokens}} por minuto",
+		"summaryRateConcurrent": "{count, plural, one {# solicitud} other {# solicitudes}} a la vez",
+		"summaryRateCounting": {
+			"shared": "Compartido por todo aquello a lo que está asignado",
+			"each_key": "Independiente para cada clave",
+			"each_end_user": "Independiente para cada usuario final"
+		},
+		"summaryRateFailClosed": "Rechaza solicitudes si no se pueden comprobar los límites"
 	},
 	"broadcastControls": {
 		"optional": "(opcional)",
@@ -1458,7 +1611,9 @@
 			"selectWorkspace": "Selecciona un espacio de trabajo para administrar los guardrails.",
 			"notFound": "No se ha encontrado el guardrail.",
 			"back": "Volver a los guardrails",
-			"permissions": "Solo los propietarios y administradores del espacio de trabajo pueden cambiar los guardrails. Las políticas asignadas se aplican automáticamente a los miembros."
+			"permissions": "Solo los propietarios y administradores del espacio de trabajo pueden cambiar los guardrails. Las políticas asignadas se aplican automáticamente a los miembros.",
+			"workspaceBaseline": "Este es el guardrail base del espacio de trabajo. Contiene las reglas de Configuración, Privacidad y se aplica a todo el espacio de trabajo, así que no se puede eliminar, desactivar ni asignar a claves o miembros concretos.",
+			"openPrivacy": "Editarlo en Privacidad"
 		},
 		"keyDelete": {
 			"permanent": "Esta acción es permanente.",
@@ -7900,5 +8055,50 @@
 		"expiredBody": "Nadie respondió en 30 minutos, así que no se ha cobrado nada. Se indica al agente que no lo reintente; puede iniciar una nueva solicitud cuando haya alguien disponible.",
 		"resume": "Terminar la verificación de la tarjeta",
 		"resumeNotice": "Esta recarga se confirmó, pero no se terminó la verificación de la tarjeta del banco. Termínala para completar el pago."
+	},
+	"rateGuardrail": {
+		"title": "Límites de frecuencia",
+		"description": "Limita las solicitudes y los tokens por minuto, y cuántas solicitudes se ejecutan a la vez.",
+		"limitsTitle": "Límites",
+		"limitsBody": "Define al menos uno. Deja un límite en blanco para no limitarlo.",
+		"noLimit": "Sin límite",
+		"invalidLimit": "Introduce un número entero mayor que 0.",
+		"requests": {
+			"label": "Solicitudes por minuto",
+			"help": "Se cuentan en un minuto móvil."
+		},
+		"tokens": {
+			"label": "Tokens por minuto",
+			"help": "Tokens de entrada y salida, contados al terminar cada solicitud."
+		},
+		"concurrent": {
+			"label": "Solicitudes simultáneas",
+			"help": "Solicitudes en curso al mismo tiempo."
+		},
+		"countingTitle": "Cómo cuenta",
+		"countingBody": "Elige quién comparte cada asignación. No hay valor predeterminado.",
+		"legacyCounting": "Se creó con la API de límites de frecuencia, así que cuenta por cada clave, miembro o departamento al que está asignado, y por usuario final en todo el espacio de trabajo. Elige una opción para cambiarlo.",
+		"countingLegacy": "Por asignación",
+		"counting": {
+			"shared": {
+				"name": "Compartido",
+				"body": "Una asignación para todo aquello a lo que está asignado. En un departamento, la comparte todo el departamento."
+			},
+			"each_key": {
+				"name": "Por clave",
+				"body": "Cada clave API que cubre tiene su propia asignación. Las solicitudes OAuth cuentan por persona."
+			},
+			"each_end_user": {
+				"name": "Por usuario final",
+				"body": "Cada usuario final tiene su propia asignación, según el campo user de la solicitud o la cabecera X-Phaseo-User-Id. Las solicitudes sin usuario final no quedan limitadas por ella."
+			}
+		},
+		"failClosedTitle": "Rechazar solicitudes si no se pueden comprobar los límites",
+		"failClosedBody": "Espera al contador en cada solicitud, lo que añade algo de latencia. Si está desactivado, las solicitudes pasan cuando el contador no responde.",
+		"issue": {
+			"rateLimitEmpty": "Define al menos un límite para continuar.",
+			"rateLimitInvalid": "Los límites deben ser números enteros mayores que 0.",
+			"rateCountingRequired": "Elige cómo cuentan los límites para continuar."
+		}
 	}
 }

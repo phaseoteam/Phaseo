@@ -232,9 +232,7 @@
 			"featureStructuredOutputs": "Salidas estructuradas",
 			"featureWebSearch": "Búsqueda web",
 			"featureFree": "Variante gratuita",
-			"statusDeranked1": "Nivel 1 de degradación",
-			"statusDeranked2": "Nivel 2 de degradación",
-			"statusDeranked3": "Nivel 3 de degradación",
+			"statusDeranked": "Prioridad más baja",
 			"statusDisabled": "Deshabilitado",
 			"regionJapan": "Japón",
 			"regionAustralia": "Australia",
@@ -811,17 +809,9 @@
 						"label": "Bloqueo temporal",
 						"description": "El enrutamiento está bloqueado temporalmente."
 					},
-					"deranked_lvl1": {
-						"label": "Prioridad reducida L1",
-						"description": "Se puede enrutar públicamente, pero la prioridad se reduce ligeramente por el estado de salud."
-					},
-					"deranked_lvl2": {
-						"label": "Prioridad reducida L2",
-						"description": "Se puede enrutar públicamente, pero el estado de salud reduce la prioridad."
-					},
-					"deranked_lvl3": {
-						"label": "Prioridad reducida L3",
-						"description": "Se puede enrutar públicamente, pero el estado de salud reduce mucho la prioridad."
+					"deranked": {
+						"label": "Prioridad más baja",
+						"description": "Enrutable públicamente, pero solo se usa como respaldo cuando fallan los demás proveedores."
 					},
 					"internal_testing": {
 						"label": "Pruebas internas",
@@ -1105,7 +1095,7 @@
 				"disabled": "Deshabilitado explícitamente y no enrutable.",
 				"comingSoon": "Próximamente; todavía no es enrutable.",
 				"internalTesting": "Disponible solo para pruebas internas.",
-				"rateLimited": "Lo establece Phaseo. Sigue disponible, pero las solicitudes van primero a otros proveedores hasta que Phaseo lo cambie.",
+				"rateLimited": "Lo establece Phaseo. Solo se usa como respaldo cuando fallan los demás proveedores.",
 				"degraded": "Disponible con el enrutamiento degradado.",
 				"external": "Incluido en un catálogo externo; no se puede enrutar a través de Phaseo."
 			},
@@ -1487,16 +1477,32 @@
 			"title": "Disponibilidad media",
 			"last24Hours": "Últimas 24 horas",
 			"noRequests": "No se observaron solicitudes",
-			"requestsObserved": "Solicitudes observadas: {count}",
 			"perHour": "Disponibilidad por hora",
-			"chartLabel": "Disponibilidad del modelo por hora durante las últimas {hours} horas. Disponibilidad: {uptime}. Solicitudes registradas: {count}.",
 			"leastStableProviderLabel": "Sin Phaseo Routing",
 			"tooltipUptime": "Disponibilidad:",
+			"failedShareRequests": "Falló el {percent} de las solicitudes",
+			"noFailuresThisHour": "Sin fallos en esta hora",
 			"tooltipWorstProvider": "Sin Phaseo Routing:",
 			"hourlyAverage": "Últimas 24 horas · media por hora",
 			"routingChartLabel": "Disponibilidad del modelo por hora durante las últimas 24 horas. Phaseo Routing: {uptime}.{comparison}",
 			"routingComparison": " Sin Phaseo Routing: {uptime}.",
-			"routingLabel": "Enrutamiento de Phaseo"
+			"routingLabel": "Enrutamiento de Phaseo",
+			"providerHealthTitle": "Estado del proveedor",
+			"reachabilityLabel": "Alcanzables",
+			"capacityLabel": "Aceptadas",
+			"callErrorsLabel": "Completadas",
+			"reachabilityHelp": "Con qué frecuencia Phaseo obtuvo una respuesta del proveedor. Cuentan en contra los fallos de conexión, los tiempos de espera agotados antes de empezar la respuesta y los errores de pasarela (502, 503, 504).",
+			"capacityHelp": "De las llamadas que llegaron al proveedor, con qué frecuencia las aceptó en lugar de rechazarlas por falta de capacidad. Cuentan en contra los límites de frecuencia en la clave propia de Phaseo y las respuestas de sobrecarga.",
+			"callErrorsHelp": "De las llamadas que aceptó el proveedor, con qué frecuencia terminaron sin un error del proveedor. Cuentan en contra los errores del servidor, los streams que se cortaron a mitad y las salidas vacías o no válidas.",
+			"noFailures": "Sin fallos",
+			"reachabilityFailureShare": "El {percent} de los intentos no pudo llegar al proveedor",
+			"capacityFailureShare": "El {percent} de los intentos que llegaron al proveedor fue rechazado porque no tenía capacidad",
+			"capacityUnmeasured": "Ningún intento llegó al proveedor",
+			"callErrorsFailureShare": "El {percent} de los intentos aceptados falló después de que el proveedor los aceptara",
+			"callErrorsUnmeasured": "No se aceptó ningún intento",
+			"attemptHourlyAverage": "Últimas 24 horas · media por hora, por intento al proveedor",
+			"providerHealthChartLabel": "Estado del proveedor por hora en las últimas 24 horas. Alcanzables: {reachability}. Aceptadas: {capacity}. Completadas: {callErrors}.",
+			"attemptBasis": "Últimos 3 días, por intento al proveedor. No se cuentan los errores causados por la solicitud ni por Phaseo."
 		},
 		"providerInfo": {
 			"dataPolicy": "Política de datos",
@@ -1626,8 +1632,10 @@
 			"viewLicense": "Ver licencia"
 		},
 		"performance": {
-			"noTelemetry": "Sin telemetría de Gateway en los últimos 7 días",
-			"telemetryHint": "Los gráficos por hora aparecerán cuando este modelo procese tráfico de Gateway en la ubicación seleccionada.",
+			"noTelemetry": "No hay solicitudes en los últimos 7 días",
+			"telemetryHint": "Los gráficos aparecerán cuando este modelo atienda solicitudes a través de Phaseo.",
+			"noFilteredTelemetry": "No hay tráfico suficiente en {location} para publicarlo",
+			"filteredTelemetryHint": "Los gráficos de una ubicación solo aparecen cuando tiene suficientes solicitudes como para que no se pueda identificar el tráfico de ningún cliente. Elige Todas las ubicaciones para ver todas las solicitudes.",
 			"filterByLocation": "Filtrar el rendimiento por ubicación de la API",
 			"providerPerformance": "Rendimiento del proveedor",
 			"last24Hours": "Últimas 24 horas",
@@ -2186,7 +2194,8 @@
 			"audio": "Clasificación de modelos de audio",
 			"video": "Clasificación de modelos de vídeo",
 			"speech": "Clasificación de modelos de voz",
-			"transcription": "Clasificación de modelos de transcripción"
+			"transcription": "Clasificación de modelos de transcripción",
+			"decisions": "Clasificación de modelos de decisión"
 		},
 		"leaderboard": "Clasificación",
 		"fastestModels": "Modelos más rápidos",
@@ -2289,7 +2298,8 @@
 			"video-seconds": "Segundos de vídeo generados",
 			"video-tokens": "Total de tokens de vídeo",
 			"speech-seconds": "Segundos de voz generados",
-			"transcription-minutes": "Minutos transcritos"
+			"transcription-minutes": "Minutos transcritos",
+			"decision-volume": "Tokens de decisiones"
 		},
 		"usageImagesUnit": "imágenes",
 		"usageSecondsUnit": "segundos",
@@ -2338,7 +2348,8 @@
 			"audio": "Audio",
 			"video": "Vídeo",
 			"speech": "Voz",
-			"transcription": "Transcripción"
+			"transcription": "Transcripción",
+			"decisions": "Decisiones"
 		},
 		"shareLabel": "Cuota",
 		"tokensLabel": "Tokens",
@@ -3172,9 +3183,7 @@
 		"providerStatus": {
 			"active": "Activo",
 			"coming_soon": "Próximamente",
-			"deranked_lvl1": "Rebajado de nivel L1",
-			"deranked_lvl2": "Rebajado de nivel L2",
-			"deranked_lvl3": "Rebajado de nivel L3",
+			"deranked": "Prioridad más baja",
 			"disabled": "Desactivado",
 			"inactive": "Inactivo",
 			"internal_testing": "Pruebas internas",

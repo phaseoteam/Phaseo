@@ -17071,6 +17071,7 @@ export async function listModelEndpoints(
       capability:
         | "active"
         | "coming_soon"
+        | "deranked"
         | "deranked_lvl1"
         | "deranked_lvl2"
         | "deranked_lvl3"
@@ -17078,12 +17079,14 @@ export async function listModelEndpoints(
         | "internal_testing";
       model:
         | "active"
+        | "deranked"
         | "deranked_lvl1"
         | "deranked_lvl2"
         | "deranked_lvl3"
         | "disabled";
       provider:
         | "active"
+        | "deranked"
         | "deranked_lvl1"
         | "deranked_lvl2"
         | "deranked_lvl3"
@@ -17099,6 +17102,7 @@ export async function listModelEndpoints(
       | "project_limited"
       | "paused"
       | "soft_blocked"
+      | "deranked"
       | "deranked_lvl1"
       | "deranked_lvl2"
       | "deranked_lvl3"
@@ -17191,6 +17195,7 @@ export async function listModelEndpoints(
         capability:
           | "active"
           | "coming_soon"
+          | "deranked"
           | "deranked_lvl1"
           | "deranked_lvl2"
           | "deranked_lvl3"
@@ -17198,12 +17203,14 @@ export async function listModelEndpoints(
           | "internal_testing";
         model:
           | "active"
+          | "deranked"
           | "deranked_lvl1"
           | "deranked_lvl2"
           | "deranked_lvl3"
           | "disabled";
         provider:
           | "active"
+          | "deranked"
           | "deranked_lvl1"
           | "deranked_lvl2"
           | "deranked_lvl3"
@@ -17219,6 +17226,7 @@ export async function listModelEndpoints(
         | "project_limited"
         | "paused"
         | "soft_blocked"
+        | "deranked"
         | "deranked_lvl1"
         | "deranked_lvl2"
         | "deranked_lvl3"
@@ -17631,6 +17639,7 @@ export async function listModels(
             capability:
               | "active"
               | "coming_soon"
+              | "deranked"
               | "deranked_lvl1"
               | "deranked_lvl2"
               | "deranked_lvl3"
@@ -17638,12 +17647,14 @@ export async function listModels(
               | "internal_testing";
             model:
               | "active"
+              | "deranked"
               | "deranked_lvl1"
               | "deranked_lvl2"
               | "deranked_lvl3"
               | "disabled";
             provider:
               | "active"
+              | "deranked"
               | "deranked_lvl1"
               | "deranked_lvl2"
               | "deranked_lvl3"
@@ -17660,6 +17671,7 @@ export async function listModels(
             | "project_limited"
             | "paused"
             | "soft_blocked"
+            | "deranked"
             | "deranked_lvl1"
             | "deranked_lvl2"
             | "deranked_lvl3"
@@ -17798,6 +17810,7 @@ export async function listModels(
               capability:
                 | "active"
                 | "coming_soon"
+                | "deranked"
                 | "deranked_lvl1"
                 | "deranked_lvl2"
                 | "deranked_lvl3"
@@ -17805,12 +17818,14 @@ export async function listModels(
                 | "internal_testing";
               model:
                 | "active"
+                | "deranked"
                 | "deranked_lvl1"
                 | "deranked_lvl2"
                 | "deranked_lvl3"
                 | "disabled";
               provider:
                 | "active"
+                | "deranked"
                 | "deranked_lvl1"
                 | "deranked_lvl2"
                 | "deranked_lvl3"
@@ -17827,6 +17842,7 @@ export async function listModels(
               | "project_limited"
               | "paused"
               | "soft_blocked"
+              | "deranked"
               | "deranked_lvl1"
               | "deranked_lvl2"
               | "deranked_lvl3"
@@ -19714,6 +19730,7 @@ export async function listTeamModels(
         capability:
           | "active"
           | "coming_soon"
+          | "deranked"
           | "deranked_lvl1"
           | "deranked_lvl2"
           | "deranked_lvl3"
@@ -19721,12 +19738,14 @@ export async function listTeamModels(
           | "internal_testing";
         model:
           | "active"
+          | "deranked"
           | "deranked_lvl1"
           | "deranked_lvl2"
           | "deranked_lvl3"
           | "disabled";
         provider:
           | "active"
+          | "deranked"
           | "deranked_lvl1"
           | "deranked_lvl2"
           | "deranked_lvl3"
@@ -19743,6 +19762,7 @@ export async function listTeamModels(
         | "project_limited"
         | "paused"
         | "soft_blocked"
+        | "deranked"
         | "deranked_lvl1"
         | "deranked_lvl2"
         | "deranked_lvl3"
@@ -19870,6 +19890,7 @@ export async function listTeamModels(
           capability:
             | "active"
             | "coming_soon"
+            | "deranked"
             | "deranked_lvl1"
             | "deranked_lvl2"
             | "deranked_lvl3"
@@ -19877,12 +19898,14 @@ export async function listTeamModels(
             | "internal_testing";
           model:
             | "active"
+            | "deranked"
             | "deranked_lvl1"
             | "deranked_lvl2"
             | "deranked_lvl3"
             | "disabled";
           provider:
             | "active"
+            | "deranked"
             | "deranked_lvl1"
             | "deranked_lvl2"
             | "deranked_lvl3"
@@ -19899,6 +19922,7 @@ export async function listTeamModels(
           | "project_limited"
           | "paused"
           | "soft_blocked"
+          | "deranked"
           | "deranked_lvl1"
           | "deranked_lvl2"
           | "deranked_lvl3"

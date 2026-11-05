@@ -55,6 +55,36 @@ export type ProviderRuntimeStats = {
 	errorCodeCounts3d?: Record<string, number>;
 	errorCategoryCounts3d?: Record<string, number>;
 	lastRequestAt?: string | null;
+	/** Per-attempt reachability, capacity and call errors over the window. */
+	attemptHealth3d?: ProviderAttemptHealth | null;
+};
+
+/**
+ * Per attempt: a failed attempt counts against its provider even when the
+ * request failed over and succeeded elsewhere. The rates are a funnel
+ * (reachable of eligible, accepted of reached, completed of accepted);
+ * attempts caused by the customer or by Phaseo are not eligible. Only rates
+ * are published: the counts behind them reveal the model's traffic volume.
+ * uptimePct is null when there were no eligible attempts.
+ */
+export type ProviderAttemptHealth = {
+	reachabilityPct: number | null;
+	capacityPct: number | null;
+	callErrorPct: number | null;
+	uptimePct: number | null;
+};
+
+export type RpcProviderAttemptHealthRow = {
+	provider_id: string | null;
+	service_tier?: string | null;
+	provider_name?: string | null;
+	reachability_pct?: number | string | null;
+	capacity_pct?: number | string | null;
+	call_error_pct?: number | string | null;
+	uptime_pct?: number | string | null;
+	buckets?: unknown;
+	/** The same rates per UTC day, rated by web-api from that day's attempts. */
+	days?: unknown;
 };
 
 export type ProviderRuntimeStatsMap = Record<string, ProviderRuntimeStats>;
@@ -504,8 +534,18 @@ export function fillHourlyPerformanceBuckets(
 	});
 }
 
+function mapAttemptHealth(row: RpcProviderAttemptHealthRow): ProviderAttemptHealth {
+	return {
+		reachabilityPct: toFiniteNumber(row.reachability_pct),
+		capacityPct: toFiniteNumber(row.capacity_pct),
+		callErrorPct: toFiniteNumber(row.call_error_pct),
+		uptimePct: toFiniteNumber(row.uptime_pct),
+	};
+}
+
 export function mapRpcRuntimeStatsRows(args: {
 	rows: RpcProviderHealthMetricsRow[];
+	attemptHealthRows?: RpcProviderAttemptHealthRow[];
 	providerIds: string[];
 	now?: Date;
 }): ProviderRuntimeStatsMap {
@@ -527,6 +567,17 @@ export function mapRpcRuntimeStatsRows(args: {
 		const serviceTier = normalizeProviderRuntimeServiceTier(row.service_tier);
 		if (!providerId) continue;
 		byProviderTier.set(providerRuntimeStatsKey(providerId, serviceTier), row);
+	}
+	const attemptHealthByKey = new Map<string, RpcProviderAttemptHealthRow>();
+	for (const row of args.attemptHealthRows ?? []) {
+		const providerId = String(row.provider_id ?? "").trim();
+		if (!providerId) continue;
+		const key = providerRuntimeStatsKey(providerId, normalizeProviderRuntimeServiceTier(row.service_tier));
+		attemptHealthByKey.set(key, row);
+		// A provider that only ever failed over has attempts but no served requests.
+		if (!byProviderTier.has(key)) {
+			byProviderTier.set(key, { provider_id: providerId, service_tier: row.service_tier ?? null, provider_name: row.provider_name ?? null } as RpcProviderHealthMetricsRow);
+		}
 	}
 	for (const providerId of args.providerIds) {
 		const standardKey = providerRuntimeStatsKey(providerId);
@@ -609,14 +660,35 @@ export function mapRpcRuntimeStatsRows(args: {
 			}
 		}
 
+		const attemptRow = attemptHealthByKey.get(statsKey);
+		const attemptHealth = attemptRow ? mapAttemptHealth(attemptRow) : null;
+		// Uptime is per attempt when attempt health is available: eligible attempts
+		// that succeeded, so failovers count against the provider that failed. Its
+		// rate is null when there were no eligible attempts.
+		const usesAttemptUptime = attemptHealth?.uptimePct != null;
+		// web-api rates each UTC day from that day's attempts and publishes only the rates.
+		// A response cached before it did so has no days: keep the request-level bars then.
+		const usesAttemptDays = usesAttemptUptime && Array.isArray(attemptRow?.days);
+		const attemptDailyUptime = new Map<number, number | null>();
+		if (usesAttemptDays && attemptRow && Array.isArray(attemptRow.days)) {
+			for (const day of attemptRow.days) {
+				const dayRecord = toRecord(day);
+				const start = new Date(String(dayRecord?.start ?? ""));
+				if (!Number.isFinite(start.getTime())) continue;
+				const dayOffset = dayOffsetFromUtcMidnight(nowUtcMidnightMs, start);
+				if (dayOffset == null) continue;
+				attemptDailyUptime.set(dayOffset, toFiniteNumber(dayRecord?.uptime_pct));
+			}
+		}
+
 		for (const dayOffset of [0, 1, 2] as const) {
 			const bucket = uptimeDaily3dTotals[dayOffset];
+			const requestUptimePct = bucket.healthRequests > 0
+				? (bucket.healthSuccessful / bucket.healthRequests) * 100
+				: null;
 			uptimeDaily3d[dayOffset] = {
 				dayOffset,
-				uptimePct:
-					bucket.healthRequests > 0
-						? (bucket.healthSuccessful / bucket.healthRequests) * 100
-						: null,
+				uptimePct: usesAttemptDays ? attemptDailyUptime.get(dayOffset) ?? null : requestUptimePct,
 				requests: bucket.requests,
 				successful: bucket.successful,
 			}
@@ -640,7 +712,7 @@ export function mapRpcRuntimeStatsRows(args: {
 				toFiniteNumber(row?.avg_throughput_30m) ??
 				toFiniteNumber(row?.percentile_throughput) ??
 				toFiniteNumber(row?.avg_throughput),
-			uptimePct3d: toFiniteNumber(row?.uptime_pct),
+			uptimePct3d: usesAttemptUptime ? attemptHealth?.uptimePct ?? null : toFiniteNumber(row?.uptime_pct),
 			requestSuccessPct3d: toFiniteNumber(row?.request_success_pct),
 			inputTokens1h: toInt(row?.input_tokens_1h),
 			outputTokens1h: toInt(row?.output_tokens_1h),
@@ -675,6 +747,7 @@ export function mapRpcRuntimeStatsRows(args: {
 			errorCodeCounts3d: toCountRecord(row?.error_code_counts),
 			errorCategoryCounts3d: toCountRecord(row?.error_category_counts),
 			lastRequestAt: row?.last_request_at ?? null,
+			attemptHealth3d: attemptHealth,
 		};
 	}
 
@@ -767,11 +840,11 @@ export async function getModelProviderRuntimeStats(args: {
 		bucket_hours: "1",
 		percentile: String(args.percentile ?? 50),
 	});
-	const payload = await fetchPublicWebApi<{ rows: RpcProviderHealthMetricsRow[] }>(
+	const payload = await fetchPublicWebApi<{ rows: RpcProviderHealthMetricsRow[]; attempt_health?: RpcProviderAttemptHealthRow[] }>(
 		`/api/_web/models/${encodeURIComponent(args.modelId)}/provider-health?${query.toString()}`,
 		{ signal: args.signal },
 	);
-	return mapRpcRuntimeStatsRows({ rows: payload.rows, providerIds });
+	return mapRpcRuntimeStatsRows({ rows: payload.rows, attemptHealthRows: payload.attempt_health ?? [], providerIds });
 }
 
 export async function getModelProviderRuntimeStatsCached(args: {

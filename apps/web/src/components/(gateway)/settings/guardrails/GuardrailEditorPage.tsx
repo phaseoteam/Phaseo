@@ -37,6 +37,19 @@ function GuardrailEditorContent(props: { mode: "create" | "edit"; guardrailId?: 
 		);
 	}
 
+	// The workspace baseline is edited on the Privacy page; it cannot be deleted or reassigned here.
+	if (data.guardrail?.is_workspace_baseline) {
+		return (
+			<div className="rounded-xl border bg-muted/10 p-6 text-sm text-muted-foreground">
+				{t("workspaceBaseline")}{" "}
+				<Link className="underline underline-offset-4" href="/settings/privacy">
+					{t("openPrivacy")}
+				</Link>
+				.
+			</div>
+		);
+	}
+
 	if (!data.canManageGuardrails) {
 		return (
 			<div className="rounded-xl border bg-muted/10 p-6 text-sm text-muted-foreground">

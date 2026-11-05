@@ -5,6 +5,7 @@ import {
 	Captions,
 	Headphones,
 	ImageIcon,
+	Scale,
 	Speech,
 	Type as TypeIcon,
 	Video,
@@ -35,6 +36,7 @@ const ITEMS: RankingsModalityItem[] = [
 		href: "/rankings/transcription",
 		icon: Captions,
 	},
+	{ id: "decisions", label: "decisions", href: "/rankings/decisions", icon: Scale },
 ];
 
 export function RankingsModalityTabs({

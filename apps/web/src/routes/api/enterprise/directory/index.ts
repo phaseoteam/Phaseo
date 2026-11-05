@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { isWorkspaceAddonActive } from "@/lib/billing/identityAddon";
 import { requireActiveWorkspaceBillingAdmin } from "@/lib/server/activeTeamStripe";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { rejectCrossOriginRequest } from "@/lib/http/sameOrigin";
 
 const ICONS = new Set(["users","briefcase","megaphone","code","palette","headphones","landmark","scale","heart-pulse","globe","flask","graduation-cap","shield-check","shopping-bag","wrench","truck","handshake","chart"]);
 const COLORS = new Set(["blue","emerald","amber","rose","violet","slate","cyan","teal","lime","yellow","orange","red","pink","fuchsia","indigo","sky","green","purple"]);
@@ -70,6 +71,7 @@ async function handleGet(request: Request) {
 }
 
 async function handlePost(request: Request) {
+	const crossOrigin = rejectCrossOriginRequest(request); if (crossOrigin) return crossOrigin;
 	try {
 		const { workspaceId, userId, admin } = await requireEnterpriseAdmin(request);
 		const body = await request.json();

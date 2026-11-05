@@ -189,8 +189,8 @@ describe("settings UI contracts", () => {
 		expect(editorSource).toContain("inlineGroups");
 		expect(editorSource).toContain("const [expandedSections, setExpandedSections] = useQueryState(");
 		expect(editorSource).toContain('"sections",');
-		expect(editorSource).toContain("value={validExpandedSections}");
-		expect(editorSource).toContain("onValueChange={(sections) => void setExpandedSections(sections.slice(-1))}");
+		expect(editorSource).toContain("value={isWizard ? wizardSections : validExpandedSections}");
+		expect(editorSource).toContain("onValueChange={(sections) => { if (!isWizard) void setExpandedSections(sections.slice(-1)); }}");
 		expect(editorSource).toContain("groupActions");
 		expect(editorSource).toContain('"availabilityModelRestriction"');
 		expect(editorSource).toContain('"availabilityPassesCurrentRules"');

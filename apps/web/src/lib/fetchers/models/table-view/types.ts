@@ -29,7 +29,7 @@ export interface MonitorModelData {
         features: string[];
     };
     endpoint: string; // The specific endpoint/key
-    gatewayStatus: string; // Capability/gateway status (active, inactive, deranked_lvl1, deranked_lvl2, deranked_lvl3, disabled, ...)
+    gatewayStatus: string; // Capability/gateway status (active, inactive, deranked, disabled, ...)
     inputModalities: string[];
     outputModalities: string[];
     context: number;

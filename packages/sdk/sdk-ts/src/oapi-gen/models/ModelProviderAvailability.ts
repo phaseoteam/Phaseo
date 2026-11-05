@@ -10,6 +10,7 @@ export interface ModelProviderAvailability {
     | "project_limited"
     | "paused"
     | "soft_blocked"
+    | "deranked"
     | "deranked_lvl1"
     | "deranked_lvl2"
     | "deranked_lvl3"
@@ -27,6 +28,7 @@ export interface ModelProviderAvailability {
   capability_status:
     | "active"
     | "coming_soon"
+    | "deranked"
     | "deranked_lvl1"
     | "deranked_lvl2"
     | "deranked_lvl3"
@@ -38,7 +40,12 @@ export interface ModelProviderAvailability {
   input_modalities?: string[];
   is_active_gateway: boolean;
   model_routing_status:
-    "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
+    | "active"
+    | "deranked"
+    | "deranked_lvl1"
+    | "deranked_lvl2"
+    | "deranked_lvl3"
+    | "disabled";
   output_modalities?: string[];
   params: string[];
   params_detail?: {
@@ -48,7 +55,12 @@ export interface ModelProviderAvailability {
   };
   provider_model_slug?: string | null;
   provider_routing_status:
-    "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
+    | "active"
+    | "deranked"
+    | "deranked_lvl1"
+    | "deranked_lvl2"
+    | "deranked_lvl3"
+    | "disabled";
   provider_status:
     | "active"
     | "beta"

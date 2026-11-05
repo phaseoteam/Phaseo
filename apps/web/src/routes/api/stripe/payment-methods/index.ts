@@ -4,6 +4,7 @@ import { getStripe } from "@/lib/stripe";
 import { requireActiveTeamStripeCustomer } from "@/lib/server/activeTeamStripe";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { rejectCrossOriginRequest } from "@/lib/http/sameOrigin";
 
 type PaymentMethodSummary = {
     id: string;
@@ -103,6 +104,7 @@ async function handleGet() {
 }
 
 async function handlePost(request: Request) {
+    const crossOrigin = rejectCrossOriginRequest(request); if (crossOrigin) return crossOrigin;
     try {
         const stripe = getStripe();
         const { customerId, workspaceId } = await requireActiveTeamStripeCustomer({ createIfMissing: true });
@@ -134,6 +136,7 @@ async function handlePost(request: Request) {
 }
 
 async function handlePatch(request: Request) {
+    const crossOrigin = rejectCrossOriginRequest(request); if (crossOrigin) return crossOrigin;
     try {
         const stripe = getStripe();
         const { customerId } = await requireActiveTeamStripeCustomer({ createIfMissing: true });
@@ -169,6 +172,7 @@ async function handlePatch(request: Request) {
 }
 
 async function handleDelete(request: Request) {
+    const crossOrigin = rejectCrossOriginRequest(request); if (crossOrigin) return crossOrigin;
 	let lease: { workspaceId: string; claimToken: string } | null = null;
     try {
         const stripe = getStripe();

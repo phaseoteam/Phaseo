@@ -1009,7 +1009,10 @@
 		"rules": "rules",
 		"flag": "Flag",
 		"redact": "Redact",
-		"block": "Block"
+		"block": "Block",
+		"workspaceBaseline": "Workspace baseline",
+		"workspaceBaselineDescription": "Applies to every key in the workspace. Edit it under Privacy.",
+		"wholeWorkspace": "Whole workspace"
 	},
 	"guardrailAssignments": {
 		"tabGuardrails": "Guardrails",
@@ -1021,8 +1024,6 @@
 		"columnMember": "Member",
 		"columnGuardrails": "Guardrails",
 		"columnAccess": "Access",
-		"columnPromptInjection": "Prompt injection",
-		"columnSensitiveInfo": "Sensitive info",
 		"none": "None",
 		"off": "Off",
 		"offHint": "This guardrail is off, so the gateway skips it.",
@@ -1038,7 +1039,6 @@
 		"modelsBlocked": "{count, plural, one {# model blocked} other {# models blocked}}",
 		"noProvidersAllowed": "No providers allowed",
 		"noModelsAllowed": "No models allowed",
-		"sensitiveRules": "{count, plural, one {# rule} other {# rules}}",
 		"editGuardrails": "Edit guardrails for {name}",
 		"selectRow": "Select {name}",
 		"selectAll": "Select all",
@@ -1054,8 +1054,161 @@
 		"noKeys": "This workspace has no API keys.",
 		"noMembers": "This workspace has no members.",
 		"noMatches": "Nothing matches your search.",
-		"footnote": "Access, prompt injection and sensitive info show what each row's guardrails add up to. When several apply, the strictest rule wins. Workspace privacy and routing settings apply on top.",
-		"readOnly": "Only workspace owners and admins can change assignments."
+		"readOnly": "Only workspace owners and admins can change assignments.",
+		"workspaceView": "Workspace",
+		"departmentsView": "Departments",
+		"columnWorkspace": "Workspace",
+		"columnDepartment": "Department",
+		"columnSafety": "Safety",
+		"wholeWorkspace": "Whole workspace",
+		"wholeWorkspaceDetail": "Every API key and member",
+		"departmentReach": "{members, plural, one {# member} other {# members}} · {keys, plural, one {# key} other {# keys}}",
+		"noDepartments": "This workspace has no departments yet.",
+		"fromWorkspace": "Workspace",
+		"workspaceHint": "Applies to the whole workspace. Change it in the Workspace view.",
+		"departmentHint": "Applies through the {name} department. Change it in the Departments view.",
+		"baselineHint": "The workspace baseline applies to every API key and member. Edit it under Privacy.",
+		"fromGuardrails": "From {names}",
+		"promptInjectionPart": "Prompt injection: {action}",
+		"sensitiveInfoPart": "{count, plural, one {# sensitive info rule} other {# sensitive info rules}}",
+		"footnoteLevels": "Each row shows every guardrail that reaches it: its own, and those from its member, its departments and the whole workspace. When several apply, the strictest rule wins.",
+		"noTraining": "No training",
+		"noPaidTraining": "No training on paid endpoints",
+		"noFreeTraining": "No training on free endpoints",
+		"noLogging": "No logging endpoints",
+		"columnRate": "Rate",
+		"rateRequests": "{count, plural, one {# request} other {# requests}} a minute",
+		"rateTokens": "{count, plural, one {# token} other {# tokens}} a minute",
+		"rateConcurrent": "{count, plural, other {# at a time}}"
+	},
+	"guardrailWizard": {
+		"title": "New guardrail",
+		"subtitle": "Choose what it checks, set it up, then choose who it applies to.",
+		"stepsLabel": "Guardrail setup steps",
+		"step": {
+			"start": "What it does",
+			"configure": "Configure",
+			"assign": "Assign",
+			"review": "Review"
+		},
+		"cancel": "Cancel",
+		"back": "Back",
+		"continue": "Continue",
+		"create": "Create guardrail",
+		"creating": "Creating…",
+		"issue": {
+			"nameRequired": "Add a name to continue.",
+			"chooseSection": "Pick a template or at least one check to continue.",
+			"accessEmpty": "Turn on at least one access or privacy rule, or remove this check.",
+			"providerAllowlistEmpty": "Pick at least one provider to allow. An empty list blocks every provider.",
+			"modelAllowlistEmpty": "Pick at least one model to allow. An empty list blocks every model.",
+			"promptInjectionOff": "Choose how to handle prompt injection, or remove this check.",
+			"sensitiveInfoOff": "Turn on at least one sensitive info pattern, or remove this check.",
+			"rateLimitEmpty": "Set at least one limit to continue.",
+			"rateLimitInvalid": "Limits must be whole numbers above 0.",
+			"rateCountingRequired": "Choose how the limits count to continue."
+		},
+		"nameLabel": "Name",
+		"namePlaceholder": "e.g. Contractor policy",
+		"descriptionLabel": "Description (optional)",
+		"descriptionPlaceholder": "Who is it for?",
+		"templatesTitle": "Start from a template",
+		"templatesBody": "A template fills in the settings. You can change all of them on the next step.",
+		"templateZdr": {
+			"name": "Zero data retention",
+			"body": "Only route to endpoints that don't store prompts or outputs."
+		},
+		"templateNoTraining": {
+			"name": "No training on prompts",
+			"body": "Skip endpoints that may train on or publish your prompts."
+		},
+		"templateApprovedProviders": {
+			"name": "Approved providers only",
+			"body": "Allow only the providers you pick."
+		},
+		"templateApprovedModels": {
+			"name": "Approved models only",
+			"body": "Allow only the models you pick."
+		},
+		"templateBlockPromptInjection": {
+			"name": "Block prompt injection",
+			"body": "Stop requests that look like prompt injection before they reach the model."
+		},
+		"templateRedactPersonalInfo": {
+			"name": "Redact personal info",
+			"body": "Replace emails, phone numbers, SSNs and card numbers before requests leave Phaseo."
+		},
+		"sectionsTitle": "Checks",
+		"sectionsBody": "Pick one or more. Choosing a template ticks these for you.",
+		"sectionAccess": {
+			"name": "Access and privacy",
+			"body": "Data retention, training, and which providers and models can be used."
+		},
+		"sectionPromptInjection": {
+			"name": "Prompt injection",
+			"body": "Scan requests for prompt injection, then flag, redact or block them."
+		},
+		"sectionSensitiveInfo": {
+			"name": "Sensitive info",
+			"body": "Find personal data and secrets in requests, then flag, redact or block them."
+		},
+		"addCheck": "Add a check:",
+		"assignTitle": "Who should “{name}” apply to?",
+		"assignBody": "Pick the whole workspace, or departments, members and API keys. Each row shows what its guardrails add up to now and with this one. You can skip this and assign it later.",
+		"columnNow": "Now",
+		"columnAfter": "With this guardrail",
+		"assignMemberHint": "A member's guardrails also apply to the API keys they create.",
+		"notApplied": "Not applied",
+		"coveredVia": "Through {name}",
+		"noTighter": "No change: its current guardrails already cover this.",
+		"promptInjectionPart": "Prompt injection: {action}",
+		"sensitiveInfoPart": "{count, plural, one {# sensitive info rule} other {# sensitive info rules}}",
+		"reviewWhat": "What it does",
+		"reviewModels": "Models",
+		"reviewWho": "Applies to",
+		"change": "Change",
+		"modelsAvailable": "{available} of {total} models can still be used.",
+		"blocksEverything": "These rules block every model, so requests from the keys this applies to will fail.",
+		"appliesToNothing": "Nothing yet. You can assign it later from the Assignments tab.",
+		"turnOnNow": "Turn on now",
+		"turnOnNowBody": "When it's off, it's saved but the gateway skips it.",
+		"summaryZdr": "Only routes to endpoints with zero data retention",
+		"summaryNoPaidTraining": "Skips paid endpoints that may train on prompts",
+		"summaryNoFreeTraining": "Skips free endpoints that may train on prompts",
+		"summaryNoPublishing": "Skips free endpoints that may publish prompts",
+		"summaryNoLogging": "Skips endpoints that log prompts and outputs",
+		"summaryProvidersAllowed": "Allows only {count, plural, one {# provider} other {# providers}}",
+		"summaryProvidersBlocked": "Blocks {count, plural, one {# provider} other {# providers}}",
+		"summaryModelsAllowed": "Allows only {count, plural, one {# model} other {# models}}",
+		"summaryModelsBlocked": "Blocks {count, plural, one {# model} other {# models}}",
+		"summaryPromptInjection": "Prompt injection: {action}",
+		"summarySensitiveInfo": "Checks {count, plural, one {# sensitive info pattern} other {# sensitive info patterns}}",
+		"wholeWorkspaceTitle": "Whole workspace",
+		"wholeWorkspaceBody": "Apply to every API key and member, including ones added later.",
+		"wholeWorkspaceOn": "Applies to the whole workspace, so every row below gets it.",
+		"coveredByWorkspace": "Covered by the whole workspace",
+		"coveredByDepartment": "Covered through {name}",
+		"levelWorkspace": "The whole workspace",
+		"levelDepartments": "{count, plural, one {# department} other {# departments}}",
+		"levelMembers": "{count, plural, one {# member} other {# members}}",
+		"levelKeys": "{count, plural, one {# API key} other {# API keys}}",
+		"templateRateLimit": {
+			"name": "Rate limit",
+			"body": "Cap requests or tokens per minute, or requests at once."
+		},
+		"sectionRate": {
+			"name": "Rate limits",
+			"body": "Requests and tokens per minute, and requests at once. A rate guardrail has no other checks."
+		},
+		"summaryRateRequests": "{count, plural, one {# request} other {# requests}} a minute",
+		"summaryRateTokens": "{count, plural, one {# token} other {# tokens}} a minute",
+		"summaryRateConcurrent": "{count, plural, one {# request} other {# requests}} at a time",
+		"summaryRateCounting": {
+			"shared": "Shared by everything it's assigned to",
+			"each_key": "Separate for each key",
+			"each_end_user": "Separate for each end user"
+		},
+		"summaryRateFailClosed": "Refuses requests when limits can't be checked"
 	},
 	"broadcastControls": {
 		"optional": "(optional)",
@@ -1458,7 +1611,9 @@
 			"selectWorkspace": "Select a workspace to manage guardrails.",
 			"notFound": "Guardrail not found.",
 			"back": "Back to guardrails",
-			"permissions": "Only workspace owners and admins can change guardrails. Assigned policies are enforced automatically for members."
+			"permissions": "Only workspace owners and admins can change guardrails. Assigned policies are enforced automatically for members.",
+			"workspaceBaseline": "This is the workspace baseline. It holds the rules from Settings, Privacy and applies to the whole workspace, so it can't be deleted, turned off or assigned to single keys or members.",
+			"openPrivacy": "Edit it under Privacy"
 		},
 		"keyDelete": {
 			"permanent": "This action is permanent.",
@@ -7900,5 +8055,50 @@
 		"expiredBody": "Nobody answered within 30 minutes, so nothing was charged. The agent is told not to retry; it can start a new request when someone is available.",
 		"resume": "Finish card verification",
 		"resumeNotice": "This top-up was confirmed, but the bank's card verification was not finished. Finish it to complete the payment."
+	},
+	"rateGuardrail": {
+		"title": "Rate limits",
+		"description": "Limit requests and tokens per minute, and how many requests run at once.",
+		"limitsTitle": "Limits",
+		"limitsBody": "Set at least one. Leave a limit blank to not limit it.",
+		"noLimit": "No limit",
+		"invalidLimit": "Enter a whole number above 0.",
+		"requests": {
+			"label": "Requests per minute",
+			"help": "Counted over a rolling minute."
+		},
+		"tokens": {
+			"label": "Tokens per minute",
+			"help": "Input and output tokens, counted as each request finishes."
+		},
+		"concurrent": {
+			"label": "Concurrent requests",
+			"help": "Requests in progress at the same time."
+		},
+		"countingTitle": "How it counts",
+		"countingBody": "Choose who shares each allowance. There's no default.",
+		"legacyCounting": "This was made through the rate limits API, so it counts per key, member or department it's assigned to, and per end user on the whole workspace. Choose an option to change that.",
+		"countingLegacy": "Per assignment",
+		"counting": {
+			"shared": {
+				"name": "Shared",
+				"body": "One allowance for everything it's assigned to. On a department, the whole department shares it."
+			},
+			"each_key": {
+				"name": "Each key",
+				"body": "Every API key it covers gets its own allowance. OAuth requests count per person."
+			},
+			"each_end_user": {
+				"name": "Each end user",
+				"body": "Every end user gets their own allowance, from the request's user field or X-Phaseo-User-Id header. Requests without one aren't limited by it."
+			}
+		},
+		"failClosedTitle": "Refuse requests when limits can't be checked",
+		"failClosedBody": "Waits for the counter on every request, which adds a little latency. When this is off, requests go through if the counter doesn't answer.",
+		"issue": {
+			"rateLimitEmpty": "Set at least one limit to continue.",
+			"rateLimitInvalid": "Limits must be whole numbers above 0.",
+			"rateCountingRequired": "Choose how the limits count to continue."
+		}
 	}
 }

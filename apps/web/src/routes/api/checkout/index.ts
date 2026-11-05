@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createStripeCheckoutResponse } from "@/lib/server/createStripeCheckoutResponse";
+import { rejectCrossOriginRequest } from "@/lib/http/sameOrigin";
 
 // Legacy compatibility route. The active UI uses /api/checkout/create.
 
 async function handlePost(req: Request) {
+	const crossOrigin = rejectCrossOriginRequest(req); if (crossOrigin) return crossOrigin;
 	try {
 		const body = await req.json();
 		const purchaseAmount = Number(body?.purchase_amount_cents);

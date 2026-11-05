@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createStripeCheckoutResponse } from "@/lib/server/createStripeCheckoutResponse";
+import { rejectCrossOriginRequest } from "@/lib/http/sameOrigin";
 
 async function handlePost(req: Request) {
+	const crossOrigin = rejectCrossOriginRequest(req); if (crossOrigin) return crossOrigin;
 	try {
 		const { kind, amount_pence, workspace_id, country_code } =
 			await req.json();

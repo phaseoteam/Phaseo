@@ -1009,7 +1009,10 @@
 		"rules": "règles",
 		"flag": "Signaler",
 		"redact": "Masquer les données",
-		"block": "Bloquer"
+		"block": "Bloquer",
+		"workspaceBaseline": "Garde-fou de base de l’espace de travail",
+		"workspaceBaselineDescription": "S’applique à chaque clé de l’espace de travail. Modifiez-le dans Confidentialité.",
+		"wholeWorkspace": "Tout l’espace de travail"
 	},
 	"guardrailAssignments": {
 		"tabGuardrails": "Garde-corps",
@@ -1021,8 +1024,6 @@
 		"columnMember": "Membre",
 		"columnGuardrails": "Garde-corps",
 		"columnAccess": "Accès",
-		"columnPromptInjection": "Injection de prompt",
-		"columnSensitiveInfo": "Informations sensibles",
 		"none": "Aucun",
 		"off": "Désactivé",
 		"offHint": "Ce garde-corps est désactivé, le gateway l'ignore donc.",
@@ -1038,7 +1039,6 @@
 		"modelsBlocked": "{count, plural, one {# modèle bloqué} other {# modèles bloqués}}",
 		"noProvidersAllowed": "Aucun fournisseur autorisé",
 		"noModelsAllowed": "Aucun modèle autorisé",
-		"sensitiveRules": "{count, plural, one {# règle} other {# règles}}",
 		"editGuardrails": "Modifier les garde-corps de {name}",
 		"selectRow": "Sélectionner {name}",
 		"selectAll": "Tout sélectionner",
@@ -1054,8 +1054,161 @@
 		"noKeys": "Cet espace de travail n'a aucune clé API.",
 		"noMembers": "Cet espace de travail n'a aucun membre.",
 		"noMatches": "Aucun résultat pour votre recherche.",
-		"footnote": "Accès, injection de prompt et informations sensibles montrent l'effet combiné des garde-corps de chaque ligne. Quand plusieurs s'appliquent, la règle la plus stricte l'emporte. Les paramètres de confidentialité et de routage de l'espace de travail s'appliquent en plus.",
-		"readOnly": "Seuls les propriétaires et administrateurs de l'espace de travail peuvent modifier les attributions."
+		"readOnly": "Seuls les propriétaires et administrateurs de l'espace de travail peuvent modifier les attributions.",
+		"workspaceView": "Espace de travail",
+		"departmentsView": "Départements",
+		"columnWorkspace": "Espace de travail",
+		"columnDepartment": "Département",
+		"columnSafety": "Sécurité",
+		"wholeWorkspace": "Tout l’espace de travail",
+		"wholeWorkspaceDetail": "Chaque clé d'API et chaque membre",
+		"departmentReach": "{members, plural, one {# membre} other {# membres}} · {keys, plural, one {# clé} other {# clés}}",
+		"noDepartments": "Cet espace de travail n'a pas encore de départements.",
+		"fromWorkspace": "Espace de travail",
+		"workspaceHint": "S'applique à tout l'espace de travail. Modifiez-le dans la vue Espace de travail.",
+		"departmentHint": "S'applique via le département {name}. Modifiez-le dans la vue Départements.",
+		"baselineHint": "Le garde-corps de base de l'espace de travail s'applique à chaque clé d'API et à chaque membre. Modifiez-le dans Confidentialité.",
+		"fromGuardrails": "Issu de {names}",
+		"promptInjectionPart": "Injection de prompt : {action}",
+		"sensitiveInfoPart": "{count, plural, one {# règle d'informations sensibles} other {# règles d'informations sensibles}}",
+		"footnoteLevels": "Chaque ligne montre tous les garde-corps qui s'y appliquent : les siens, et ceux de son membre, de ses départements et de tout l'espace de travail. Quand plusieurs s'appliquent, la règle la plus stricte l'emporte.",
+		"noTraining": "Pas d'entraînement",
+		"noPaidTraining": "Pas d'entraînement sur les endpoints payants",
+		"noFreeTraining": "Pas d'entraînement sur les endpoints gratuits",
+		"noLogging": "Pas d'endpoints qui journalisent",
+		"columnRate": "Débit",
+		"rateRequests": "{count, plural, one {# requête} other {# requêtes}} par minute",
+		"rateTokens": "{count, plural, one {# token} other {# tokens}} par minute",
+		"rateConcurrent": "{count, plural, other {# à la fois}}"
+	},
+	"guardrailWizard": {
+		"title": "Nouveau garde-corps",
+		"subtitle": "Choisissez ce qu'il vérifie, configurez-le, puis choisissez à qui il s'applique.",
+		"stepsLabel": "Étapes de configuration du garde-corps",
+		"step": {
+			"start": "Ce qu'il fait",
+			"configure": "Configurer",
+			"assign": "Attribuer",
+			"review": "Vérifier"
+		},
+		"cancel": "Annuler",
+		"back": "Retour",
+		"continue": "Continuer",
+		"create": "Créer le garde-corps",
+		"creating": "Création…",
+		"issue": {
+			"nameRequired": "Ajoutez un nom pour continuer.",
+			"chooseSection": "Choisissez un modèle ou au moins une vérification pour continuer.",
+			"accessEmpty": "Activez au moins une règle d'accès ou de confidentialité, ou retirez cette vérification.",
+			"providerAllowlistEmpty": "Choisissez au moins un fournisseur autorisé. Une liste vide bloque tous les fournisseurs.",
+			"modelAllowlistEmpty": "Choisissez au moins un modèle autorisé. Une liste vide bloque tous les modèles.",
+			"promptInjectionOff": "Choisissez comment traiter l'injection de prompt, ou retirez cette vérification.",
+			"sensitiveInfoOff": "Activez au moins un motif d'informations sensibles, ou retirez cette vérification.",
+			"rateLimitEmpty": "Définissez au moins une limite pour continuer.",
+			"rateLimitInvalid": "Les limites doivent être des nombres entiers supérieurs à 0.",
+			"rateCountingRequired": "Choisissez un mode de comptage pour continuer."
+		},
+		"nameLabel": "Nom",
+		"namePlaceholder": "ex. Règle pour les prestataires",
+		"descriptionLabel": "Description (facultatif)",
+		"descriptionPlaceholder": "À qui est-il destiné ?",
+		"templatesTitle": "Partir d'un modèle",
+		"templatesBody": "Un modèle remplit les paramètres. Vous pourrez tout modifier à l'étape suivante.",
+		"templateZdr": {
+			"name": "Aucune conservation des données",
+			"body": "Router uniquement vers des endpoints qui ne conservent ni prompts ni réponses."
+		},
+		"templateNoTraining": {
+			"name": "Pas d'entraînement sur les prompts",
+			"body": "Ignorer les endpoints susceptibles d'entraîner sur vos prompts ou de les publier."
+		},
+		"templateApprovedProviders": {
+			"name": "Fournisseurs approuvés uniquement",
+			"body": "Autoriser uniquement les fournisseurs que vous choisissez."
+		},
+		"templateApprovedModels": {
+			"name": "Modèles approuvés uniquement",
+			"body": "Autoriser uniquement les modèles que vous choisissez."
+		},
+		"templateBlockPromptInjection": {
+			"name": "Bloquer l'injection de prompt",
+			"body": "Arrêter les requêtes qui ressemblent à une injection de prompt avant qu'elles n'atteignent le modèle."
+		},
+		"templateRedactPersonalInfo": {
+			"name": "Masquer les données personnelles",
+			"body": "Remplacer e-mails, numéros de téléphone, SSN et numéros de carte avant que les requêtes ne quittent Phaseo."
+		},
+		"sectionsTitle": "Vérifications",
+		"sectionsBody": "Choisissez-en une ou plusieurs. Un modèle les coche pour vous.",
+		"sectionAccess": {
+			"name": "Accès et confidentialité",
+			"body": "Conservation des données, entraînement, et fournisseurs et modèles utilisables."
+		},
+		"sectionPromptInjection": {
+			"name": "Injection de prompt",
+			"body": "Analyser les requêtes pour détecter l'injection de prompt, puis les signaler, les masquer ou les bloquer."
+		},
+		"sectionSensitiveInfo": {
+			"name": "Informations sensibles",
+			"body": "Repérer les données personnelles et les secrets dans les requêtes, puis les signaler, les masquer ou les bloquer."
+		},
+		"addCheck": "Ajouter une vérification :",
+		"assignTitle": "À qui « {name} » doit-il s'appliquer ?",
+		"assignBody": "Choisissez tout l'espace de travail, ou des départements, des membres et des clés d'API. Chaque ligne montre le résultat de ses garde-corps maintenant et avec celui-ci. Vous pouvez passer cette étape et l'attribuer plus tard.",
+		"columnNow": "Maintenant",
+		"columnAfter": "Avec ce garde-corps",
+		"assignMemberHint": "Les garde-corps d'un membre s'appliquent aussi aux clés d'API qu'il crée.",
+		"notApplied": "Non appliqué",
+		"coveredVia": "Via {name}",
+		"noTighter": "Aucun changement : ses garde-corps actuels couvrent déjà cela.",
+		"promptInjectionPart": "Injection de prompt : {action}",
+		"sensitiveInfoPart": "{count, plural, one {# règle d'informations sensibles} other {# règles d'informations sensibles}}",
+		"reviewWhat": "Ce qu'il fait",
+		"reviewModels": "Modèles",
+		"reviewWho": "S'applique à",
+		"change": "Modifier",
+		"modelsAvailable": "{available} modèles sur {total} restent utilisables.",
+		"blocksEverything": "Ces règles bloquent tous les modèles : les requêtes des clés concernées échoueront.",
+		"appliesToNothing": "Rien pour l'instant. Vous pourrez l'attribuer plus tard depuis l'onglet Attributions.",
+		"turnOnNow": "Activer maintenant",
+		"turnOnNowBody": "Désactivé, il est enregistré mais la passerelle l'ignore.",
+		"summaryZdr": "Route uniquement vers des endpoints sans conservation des données",
+		"summaryNoPaidTraining": "Ignore les endpoints payants susceptibles d'entraîner sur les prompts",
+		"summaryNoFreeTraining": "Ignore les endpoints gratuits susceptibles d'entraîner sur les prompts",
+		"summaryNoPublishing": "Ignore les endpoints gratuits susceptibles de publier les prompts",
+		"summaryNoLogging": "Ignore les endpoints qui journalisent prompts et réponses",
+		"summaryProvidersAllowed": "N'autorise que {count, plural, one {# fournisseur} other {# fournisseurs}}",
+		"summaryProvidersBlocked": "Bloque {count, plural, one {# fournisseur} other {# fournisseurs}}",
+		"summaryModelsAllowed": "N'autorise que {count, plural, one {# modèle} other {# modèles}}",
+		"summaryModelsBlocked": "Bloque {count, plural, one {# modèle} other {# modèles}}",
+		"summaryPromptInjection": "Injection de prompt : {action}",
+		"summarySensitiveInfo": "Vérifie {count, plural, one {# motif d'informations sensibles} other {# motifs d'informations sensibles}}",
+		"wholeWorkspaceTitle": "Tout l’espace de travail",
+		"wholeWorkspaceBody": "S'applique à chaque clé d'API et à chaque membre, y compris ceux ajoutés plus tard.",
+		"wholeWorkspaceOn": "S'applique à tout l'espace de travail, donc à chaque ligne ci-dessous.",
+		"coveredByWorkspace": "Couvert par tout l'espace de travail",
+		"coveredByDepartment": "Couvert via {name}",
+		"levelWorkspace": "Tout l'espace de travail",
+		"levelDepartments": "{count, plural, one {# département} other {# départements}}",
+		"levelMembers": "{count, plural, one {# membre} other {# membres}}",
+		"levelKeys": "{count, plural, one {# clé d'API} other {# clés d'API}}",
+		"templateRateLimit": {
+			"name": "Limite de débit",
+			"body": "Plafonnez les requêtes ou les tokens par minute, ou les requêtes simultanées."
+		},
+		"sectionRate": {
+			"name": "Limites de débit",
+			"body": "Requêtes et tokens par minute, et requêtes simultanées. Un garde-fou de débit n'a pas d'autre contrôle."
+		},
+		"summaryRateRequests": "{count, plural, one {# requête} other {# requêtes}} par minute",
+		"summaryRateTokens": "{count, plural, one {# token} other {# tokens}} par minute",
+		"summaryRateConcurrent": "{count, plural, one {# requête} other {# requêtes}} à la fois",
+		"summaryRateCounting": {
+			"shared": "Partagé par tout ce à quoi il est attribué",
+			"each_key": "Distinct pour chaque clé",
+			"each_end_user": "Distinct pour chaque utilisateur final"
+		},
+		"summaryRateFailClosed": "Refuse les requêtes si les limites ne peuvent pas être vérifiées"
 	},
 	"broadcastControls": {
 		"optional": "(facultatif)",
@@ -1458,7 +1611,9 @@
 			"selectWorkspace": "Sélectionnez un espace de travail pour gérer les garde-fous.",
 			"notFound": "Garde-fou introuvable.",
 			"back": "Retour aux garde-fous",
-			"permissions": "Seuls les propriétaires et les administrateurs de l’espace de travail peuvent modifier les garde-fous. Les règles attribuées sont appliquées automatiquement aux membres."
+			"permissions": "Seuls les propriétaires et les administrateurs de l’espace de travail peuvent modifier les garde-fous. Les règles attribuées sont appliquées automatiquement aux membres.",
+			"workspaceBaseline": "Voici le garde-fou de base de l’espace de travail. Il contient les règles de Paramètres, Confidentialité et s’applique à tout l’espace de travail : il ne peut donc pas être supprimé, désactivé ni attribué à des clés ou des membres en particulier.",
+			"openPrivacy": "Le modifier dans Confidentialité"
 		},
 		"keyDelete": {
 			"permanent": "Cette action est irréversible.",
@@ -7900,5 +8055,50 @@
 		"expiredBody": "Personne n’a répondu en 30 minutes, rien n’a donc été débité. L’agent est invité à ne pas réessayer ; il peut lancer une nouvelle demande lorsque quelqu’un est disponible.",
 		"resume": "Terminer la vérification de la carte",
 		"resumeNotice": "Cette recharge a été confirmée, mais la vérification de la carte par la banque n’a pas été terminée. Terminez-la pour finaliser le paiement."
+	},
+	"rateGuardrail": {
+		"title": "Limites de débit",
+		"description": "Limitez les requêtes et les tokens par minute, et le nombre de requêtes simultanées.",
+		"limitsTitle": "Limites",
+		"limitsBody": "Définissez-en au moins une. Laissez une limite vide pour ne pas la limiter.",
+		"noLimit": "Aucune limite",
+		"invalidLimit": "Saisissez un nombre entier supérieur à 0.",
+		"requests": {
+			"label": "Requêtes par minute",
+			"help": "Comptées sur une minute glissante."
+		},
+		"tokens": {
+			"label": "Tokens par minute",
+			"help": "Tokens d'entrée et de sortie, comptés à la fin de chaque requête."
+		},
+		"concurrent": {
+			"label": "Requêtes simultanées",
+			"help": "Requêtes en cours au même moment."
+		},
+		"countingTitle": "Mode de comptage",
+		"countingBody": "Choisissez qui partage chaque quota. Il n'y a pas de valeur par défaut.",
+		"legacyCounting": "Cette limite a été créée via l'API des limites de débit : elle compte par clé, membre ou service auquel elle est attribuée, et par utilisateur final sur tout l'espace de travail. Choisissez une option pour changer cela.",
+		"countingLegacy": "Par attribution",
+		"counting": {
+			"shared": {
+				"name": "Partagé",
+				"body": "Un quota pour tout ce à quoi elle est attribuée. Sur un service, tout le service le partage."
+			},
+			"each_key": {
+				"name": "Par clé",
+				"body": "Chaque clé API couverte a son propre quota. Les requêtes OAuth comptent par personne."
+			},
+			"each_end_user": {
+				"name": "Par utilisateur final",
+				"body": "Chaque utilisateur final a son propre quota, identifié par le champ user de la requête ou l'en-tête X-Phaseo-User-Id. Les requêtes sans utilisateur final n'en sont pas limitées."
+			}
+		},
+		"failClosedTitle": "Refuser les requêtes si les limites ne peuvent pas être vérifiées",
+		"failClosedBody": "Attend le compteur à chaque requête, ce qui ajoute un peu de latence. Désactivé, les requêtes passent si le compteur ne répond pas.",
+		"issue": {
+			"rateLimitEmpty": "Définissez au moins une limite pour continuer.",
+			"rateLimitInvalid": "Les limites doivent être des nombres entiers supérieurs à 0.",
+			"rateCountingRequired": "Choisissez un mode de comptage pour continuer."
+		}
 	}
 }

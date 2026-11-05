@@ -11,12 +11,10 @@ const routeMetadata = createServerFn({ method: "GET" })
 	.handler(async () => toSerializableMetadata(await getActivateMetadata()));
 
 export const Route = createFileRoute("/{-$locale}/_auth/activate/")({
-	loader: async ({ location }) => {
+	loader: async () => {
 		const metadataPromise = routeMetadata();
 		metadataPromise.catch(() => undefined);
-		const userCodeParam = (location.search as Record<string, unknown>).user_code;
-		const userCode = typeof userCodeParam === "string" ? userCodeParam : null;
-		const signInRedirect = await getActivateSignInRedirect({ data: userCode });
+		const signInRedirect = await getActivateSignInRedirect();
 		if (signInRedirect) redirect(signInRedirect);
 		return metadataLoaderData(metadataPromise);
 	},

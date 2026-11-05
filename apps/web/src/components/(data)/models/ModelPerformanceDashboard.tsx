@@ -399,9 +399,17 @@ export default function ModelPerformanceDashboard({
 						<EmptyMedia variant="icon">
 							<Activity className="size-5" />
 						</EmptyMedia>
-						<EmptyTitle>{t("noTelemetry")}</EmptyTitle>
+						{/* All-traffic views publish at any volume, so an empty one had no requests;
+						    a location view is also empty below its privacy minimum. */}
+						<EmptyTitle>
+							{activeMetrics.cloudflareColo
+								? t("noFilteredTelemetry", { location: formatCloudflareColo(activeMetrics.cloudflareColo) })
+								: t("noTelemetry")}
+						</EmptyTitle>
 						<EmptyDescription>
-							{t("telemetryHint")}
+							{activeMetrics.cloudflareColo
+								? t("filteredTelemetryHint")
+								: t("telemetryHint")}
 						</EmptyDescription>
 					</EmptyHeader>
 				</Empty>

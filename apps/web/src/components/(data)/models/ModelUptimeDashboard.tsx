@@ -28,6 +28,7 @@ export default function ModelUptimeDashboard({
 	return (
 		<ModelSuccessChart
 			successSeries={metrics?.successSeries ?? []}
+			attemptHealth24h={metrics?.attemptHealth24h ?? null}
 			showLeastStableProvider={showLeastStableProvider}
 			showTitle={false}
 		/>

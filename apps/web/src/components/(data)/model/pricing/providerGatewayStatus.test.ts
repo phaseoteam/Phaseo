@@ -6,21 +6,21 @@ import {
 } from "@/components/(data)/model/pricing/providerGatewayStatus";
 
 describe("providerGatewayStatus", () => {
-	it("orders active, deranked levels, coming soon, and inactive states", () => {
+	it("orders active, deranked, coming soon, and inactive states", () => {
 		const statuses = [
 			"active",
-			"deranked_lvl1",
-			"deranked_lvl2",
-			"deranked_lvl3",
+			"deranked",
 			"internal_testing",
 			"coming_soon",
 			"inactive",
 			"disabled",
 		];
 
-			expect(
+		expect(
 			statuses.map((status) => getGatewayStatusSortRank(status)),
-		).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+		).toEqual([0, 1, 2, 3, 4, 5]);
+		// The catalogue's stored value and the former levels all read as the one deranked status.
+		expect(["degraded", "deranked_lvl1", "deranked_lvl3"].map((status) => getGatewayStatusSortRank(status))).toEqual([1, 1, 1]);
 	});
 
 	it("keeps external catalogue providers distinct from inactive providers", () => {
@@ -54,30 +54,25 @@ describe("providerGatewayStatus", () => {
 			chooseGatewayStatus([
 				"inactive",
 				"internal_testing",
-				"deranked_lvl2",
+				"deranked",
 				"coming_soon",
 			]),
-		).toBe("deranked_lvl2");
+		).toBe("deranked");
 	});
 
-	it("resolves provider and model routing deranks before active", () => {
-		expect(
-			resolveGatewayStatus({
-				isActiveGateway: true,
-				capabilityStatus: "active",
-				providerRoutingStatus: "deranked_lvl1",
-				modelRoutingStatus: "active",
-			}),
-		).toBe("deranked_lvl1");
-
-		expect(
-			resolveGatewayStatus({
-				isActiveGateway: true,
-				capabilityStatus: "active",
-				providerRoutingStatus: "active",
-				modelRoutingStatus: "deranked_lvl3",
-			}),
-		).toBe("deranked_lvl3");
+	it("resolves provider, model and capability deranks before active, only while routing is on", () => {
+		const resolve = (overrides: Record<string, unknown>) => resolveGatewayStatus({
+			isActiveGateway: true,
+			capabilityStatus: "active",
+			providerRoutingStatus: "active",
+			modelRoutingStatus: "active",
+			...overrides,
+		});
+		expect(resolve({ providerRoutingStatus: "deranked" })).toBe("deranked");
+		expect(resolve({ modelRoutingStatus: "degraded" })).toBe("deranked");
+		expect(resolve({ capabilityStatus: "degraded" })).toBe("deranked");
+		// `degraded` is also stored on routes whose routing is off.
+		expect(resolve({ isActiveGateway: false, modelRoutingStatus: "degraded" })).toBe("inactive");
 	});
 
 	it("keeps internal testing distinct from generic coming soon", () => {

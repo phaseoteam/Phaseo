@@ -17,6 +17,7 @@ import { Loader2, Lock } from 'lucide-react'
 import { PasswordStrengthIndicator } from '@/components/(gateway)/settings/account/PasswordStrengthIndicator'
 import { z } from 'zod'
 import { useTranslations } from '@/i18n/react'
+import { revokeOtherSessionsAfterPasswordResetAction } from './actions'
 
 export function ResetPasswordPage() {
     const router = useRouter()
@@ -80,6 +81,15 @@ export function ResetPasswordPage() {
 
             if (error) {
                 throw error
+            }
+
+            // Sign out every other session and app grant made with the old password.
+            const revoked = await revokeOtherSessionsAfterPasswordResetAction()
+                .then(() => true)
+                .catch(() => false)
+            if (!revoked) {
+                toast.error(t('signOutOthersFailed'))
+                return
             }
 
             toast.success(t('success'))

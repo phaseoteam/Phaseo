@@ -90,9 +90,9 @@ export const SetUpAutoTopUp = createServerFn({ method: "POST", strict: { output:
             mfaBypassAcknowledged = false,
             mfaBypassPhrase = "",
         } = props;
-        const minTopUpNanos = 1 * 1_000_000_000;
+        const minTopUpNanos = 5 * 1_000_000_000;
         if (topUpAmount < minTopUpNanos) {
-            throw new Error("Minimum auto top-up amount is $1");
+            throw new Error("Minimum auto top-up amount is $5");
         }
 
     	const { data } = await fetchAccountWebApi<{ data: unknown[] }>("/api/account/credits/auto-top-up", context.accessToken, { method: "PUT", body: JSON.stringify({ workspaceId, enabled: true, balanceThreshold, topUpAmount, paymentMethodId, mfaBypassAcknowledged, mfaBypassPhrase }) });

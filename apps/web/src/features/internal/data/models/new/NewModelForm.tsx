@@ -308,9 +308,7 @@ export default function NewModelForm({
 	};
 	const capabilityStatusLabels: Record<string, string> = {
 		active: t("modelEditor.capabilityStatuses.active"),
-		deranked_lvl1: t("modelEditor.capabilityStatuses.derankedLvl1"),
-		deranked_lvl2: t("modelEditor.capabilityStatuses.derankedLvl2"),
-		deranked_lvl3: t("modelEditor.capabilityStatuses.derankedLvl3"),
+		deranked: t("modelEditor.capabilityStatuses.deranked"),
 		disabled: t("modelEditor.capabilityStatuses.disabled"),
 	};
 	const detailFieldLabels: Record<DetailFieldKey, string> = {

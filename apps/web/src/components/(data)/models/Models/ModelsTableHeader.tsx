@@ -102,9 +102,7 @@ export default function ModelsTableHeader({
 			coming_soon: t("filtersUi.comingSoon"),
 			inactive: t("filtersUi.notActive"),
 			not_active: t("filtersUi.notActive"),
-			deranked_lvl1: t("filtersUi.statusDeranked1"),
-			deranked_lvl2: t("filtersUi.statusDeranked2"),
-			deranked_lvl3: t("filtersUi.statusDeranked3"),
+			deranked: t("filtersUi.statusDeranked"),
 			disabled: t("filtersUi.statusDisabled"),
 		};
 		return statusLabels[normalized] ?? value;

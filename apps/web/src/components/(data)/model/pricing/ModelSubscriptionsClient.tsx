@@ -235,6 +235,19 @@ function getPlanSortKey(prices: SubscriptionPrice[]): {
 	};
 }
 
+/**
+ * The organisation name a subscription group shows. A label is generated only when
+ * there is no real name, or the name is just the lower-case id: "OpenAI" matches
+ * "openai" case-insensitively but is the real name, not "Openai".
+ */
+export function resolveSubscriptionOrganisationName(
+	sourceName: string | null | undefined,
+	organisationId: string,
+): string {
+	const name = sourceName?.trim();
+	return !name || name === organisationId ? getLogoLabel(organisationId) : name;
+}
+
 function normalizeIdentity(value: string | null | undefined): string {
 	return String(value ?? "")
 		.trim()
@@ -327,10 +340,7 @@ export default function ModelSubscriptionsClient({
 	const groupedPlans = subscriptionPlans.reduce<SubscriptionPlanGroup[]>((groups, plan) => {
 		const organisationId = plan.organisation?.organisation_id ?? plan.organisation_id;
 		const sourceOrganisationName = plan.organisation?.name?.trim();
-		const organisationName = !sourceOrganisationName ||
-			normalizeIdentity(sourceOrganisationName) === normalizeIdentity(organisationId)
-			? getLogoLabel(organisationId)
-			: sourceOrganisationName;
+		const organisationName = resolveSubscriptionOrganisationName(sourceOrganisationName, organisationId);
 		const existing = groups.find((group) => group.organisationId === organisationId);
 		if (existing) {
 			existing.plans.push(plan);

@@ -3,11 +3,13 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { getStripe } from "@/lib/stripe";
 import { creditTopupTokenMatches, decideCreditTopup, loadCreditTopup, reviewerAccess } from "@/lib/server/creditTopups";
+import { rejectCrossOriginRequest } from "@/lib/http/sameOrigin";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
 // POST only, like confirm: following the emailed link never changes a request.
 async function handlePost(req: Request, params: { id: string }) {
+	const crossOrigin = rejectCrossOriginRequest(req); if (crossOrigin) return crossOrigin;
 	const { id } = params;
 	// JSON only, so a cross-site form post cannot reach the handler without a CORS preflight.
 	if (!req.headers.get("content-type")?.toLowerCase().includes("application/json")) {

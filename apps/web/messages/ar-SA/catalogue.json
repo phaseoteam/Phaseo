@@ -232,9 +232,7 @@
 			"featureStructuredOutputs": "مخرجات منظّمة",
 			"featureWebSearch": "البحث على الويب",
 			"featureFree": "إصدار مجاني",
-			"statusDeranked1": "خفض الترتيب من المستوى 1",
-			"statusDeranked2": "خفض الترتيب من المستوى 2",
-			"statusDeranked3": "خفض الترتيب من المستوى 3",
+			"statusDeranked": "أولوية أقل",
 			"statusDisabled": "معطّل",
 			"regionJapan": "اليابان",
 			"regionAustralia": "أستراليا",
@@ -811,17 +809,9 @@
 						"label": "محظور مؤقتًا",
 						"description": "التوجيه محظور مؤقتًا."
 					},
-					"deranked_lvl1": {
-						"label": "أولوية منخفضة L1",
-						"description": "متاح للتوجيه العام، لكن أولويته منخفضة قليلًا بناءً على صحة التوجيه."
-					},
-					"deranked_lvl2": {
-						"label": "أولوية منخفضة L2",
-						"description": "متاح للتوجيه العام، لكن أولويته منخفضة حاليًا بناءً على صحة التوجيه."
-					},
-					"deranked_lvl3": {
-						"label": "أولوية منخفضة L3",
-						"description": "متاح للتوجيه العام، لكن أولويته منخفضة جدًا بناءً على صحة التوجيه."
+					"deranked": {
+						"label": "أولوية أقل",
+						"description": "قابل للتوجيه علنًا، لكنه يُستخدم فقط كاحتياط عندما تفشل المزوّدات الأخرى."
 					},
 					"internal_testing": {
 						"label": "اختبار داخلي",
@@ -1105,7 +1095,7 @@
 				"disabled": "معطّل صراحةً وغير قابل للتوجيه.",
 				"comingSoon": "قريبًا، وغير قابل للتوجيه بعد.",
 				"internalTesting": "متاح للاختبار الداخلي فقط.",
-				"rateLimited": "يحدده Phaseo. لا يزال متاحًا، لكن الطلبات تُرسل أولًا إلى مزوّدين آخرين حتى يغيّر Phaseo ذلك.",
+				"rateLimited": "يحدده Phaseo. يُستخدم فقط كاحتياط عندما تفشل المزوّدات الأخرى.",
 				"degraded": "متاح مع تدهور في صحة التوجيه.",
 				"external": "مدرج من كتالوج خارجي؛ لا يمكن توجيهه عبر Phaseo."
 			},
@@ -1487,16 +1477,32 @@
 			"title": "متوسط وقت التشغيل",
 			"last24Hours": "آخر 24 ساعة",
 			"noRequests": "لم تُرصد أي طلبات",
-			"requestsObserved": "الطلبات المرصودة: {count}",
 			"perHour": "التوافر بالساعة",
-			"chartLabel": "توافر النموذج بالساعة خلال آخر {hours} ساعة. التوافر: {uptime}. الطلبات المسجلة: {count}.",
 			"leastStableProviderLabel": "بدون Phaseo Routing",
 			"tooltipUptime": "مدة التشغيل:",
+			"failedShareRequests": "فشل {percent} من الطلبات",
+			"noFailuresThisHour": "لا توجد إخفاقات في هذه الساعة",
 			"tooltipWorstProvider": "بدون Phaseo Routing:",
 			"hourlyAverage": "آخر 24 ساعة · المتوسط لكل ساعة",
 			"routingChartLabel": "وقت تشغيل النموذج لكل ساعة خلال آخر 24 ساعة. Phaseo Routing: {uptime}.{comparison}",
 			"routingComparison": " بدون Phaseo Routing: {uptime}.",
-			"routingLabel": "توجيه Phaseo"
+			"routingLabel": "توجيه Phaseo",
+			"providerHealthTitle": "حالة المزوّد",
+			"reachabilityLabel": "تم الوصول",
+			"capacityLabel": "مقبولة",
+			"callErrorsLabel": "مكتملة",
+			"reachabilityHelp": "عدد المرات التي حصلت فيها Phaseo على استجابة من المزوّد. تُحتسب ضدها حالات فشل الاتصال، وانتهاء المهلة قبل بدء الاستجابة، وأخطاء البوابة (502 و503 و504).",
+			"capacityHelp": "من بين الاستدعاءات التي وصلت إلى المزوّد، عدد المرات التي قبلها بدلًا من رفضها لأنه بلغ سعته القصوى. تُحتسب ضدها حدود المعدل على مفتاح Phaseo نفسه والاستجابات التي تشير إلى الحمل الزائد.",
+			"callErrorsHelp": "من بين الاستدعاءات التي قبلها المزوّد، عدد المرات التي اكتملت فيها دون خطأ من المزوّد. تُحتسب ضدها أخطاء الخادم، والبث الذي انقطع في منتصفه، والمخرجات الفارغة أو غير الصالحة.",
+			"noFailures": "لا توجد إخفاقات",
+			"reachabilityFailureShare": "{percent} من المحاولات لم تصل إلى المزوّد",
+			"capacityFailureShare": "رُفضت {percent} من المحاولات التي وصلت إلى المزوّد لأنه بلغ سعته القصوى",
+			"capacityUnmeasured": "لم تصل أي محاولة إلى المزوّد",
+			"callErrorsFailureShare": "فشلت {percent} من المحاولات المقبولة بعد أن قبلها المزوّد",
+			"callErrorsUnmeasured": "لم تُقبل أي محاولة",
+			"attemptHourlyAverage": "آخر 24 ساعة · متوسط كل ساعة، لكل محاولة لدى المزوّد",
+			"providerHealthChartLabel": "حالة المزوّد كل ساعة خلال آخر 24 ساعة. تم الوصول: {reachability}. مقبولة: {capacity}. مكتملة: {callErrors}.",
+			"attemptBasis": "آخر 3 أيام، لكل محاولة لدى المزوّد. لا تُحتسب الأخطاء الناتجة عن الطلب نفسه أو عن Phaseo."
 		},
 		"providerInfo": {
 			"dataPolicy": "سياسة البيانات",
@@ -1626,8 +1632,10 @@
 			"viewLicense": "عرض الترخيص"
 		},
 		"performance": {
-			"noTelemetry": "لا توجد بيانات قياس عن Gateway خلال آخر 7 أيام",
-			"telemetryHint": "ستظهر الرسوم بالساعة عند معالجة هذا النموذج لحركة Gateway في الموقع المحدد.",
+			"noTelemetry": "لا توجد طلبات خلال آخر 7 أيام",
+			"telemetryHint": "ستظهر الرسوم البيانية بعد أن يخدم هذا النموذج طلبات عبر Phaseo.",
+			"noFilteredTelemetry": "لا توجد حركة كافية في {location} للنشر",
+			"filteredTelemetryHint": "لا تظهر رسوم الموقع إلا بعد أن يتلقى عددًا كافيًا من الطلبات بحيث لا يمكن تمييز حركة أي عميل بمفرده. اختر كل المواقع لرؤية جميع الطلبات.",
 			"filterByLocation": "تصفية الأداء حسب موقع API",
 			"providerPerformance": "أداء المزوّد",
 			"last24Hours": "آخر 24 ساعة",
@@ -2186,7 +2194,8 @@
 			"audio": "ترتيب نماذج الصوت",
 			"video": "ترتيب نماذج الفيديو",
 			"speech": "ترتيب نماذج الكلام",
-			"transcription": "ترتيب نماذج النسخ الصوتي"
+			"transcription": "ترتيب نماذج النسخ الصوتي",
+			"decisions": "ترتيب نماذج القرارات"
 		},
 		"leaderboard": "لوحة الصدارة",
 		"fastestModels": "أسرع النماذج",
@@ -2289,7 +2298,8 @@
 			"video-seconds": "ثواني الفيديو المُنشأ",
 			"video-tokens": "إجمالي رموز الفيديو",
 			"speech-seconds": "ثواني الكلام المُنشأ",
-			"transcription-minutes": "دقائق التفريغ النصي"
+			"transcription-minutes": "دقائق التفريغ النصي",
+			"decision-volume": "رموز القرارات"
 		},
 		"usageImagesUnit": "صور",
 		"usageSecondsUnit": "ثوانٍ",
@@ -2338,7 +2348,8 @@
 			"audio": "الصوت",
 			"video": "الفيديو",
 			"speech": "الكلام",
-			"transcription": "النسخ الصوتي"
+			"transcription": "النسخ الصوتي",
+			"decisions": "القرارات"
 		},
 		"shareLabel": "الحصة",
 		"tokensLabel": "الرموز",
@@ -3172,9 +3183,7 @@
 		"providerStatus": {
 			"active": "نشط",
 			"coming_soon": "قريبًا",
-			"deranked_lvl1": "خُفّض تصنيفه L1",
-			"deranked_lvl2": "خُفّض تصنيفه L2",
-			"deranked_lvl3": "خُفّض تصنيفه L3",
+			"deranked": "أولوية أقل",
 			"disabled": "معطّل",
 			"inactive": "غير نشط",
 			"internal_testing": "اختبار داخلي",

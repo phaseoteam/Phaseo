@@ -13,6 +13,9 @@ import {
 } from "recharts";
 import type { ModelSuccessPoint } from "@/lib/fetchers/models/getModelPerformance";
 import { useLocale, useTranslations } from "@/i18n/react";
+import type { AttemptFunnelRates } from "./attemptFunnel";
+import ModelProviderHealthChart, { hasProviderAttemptHealth } from "./ModelProviderHealthChart";
+import { formatFailureShare } from "./attemptFunnel";
 
 function formatBucketLabel(bucket: string, locale: string) {
 	const date = new Date(bucket);
@@ -54,6 +57,13 @@ function formatUptime(value: number | null | undefined) {
 	return value != null ? `${value.toFixed(1)}%` : "—";
 }
 
+/** The share of an hour's requests that failed, from its uptime; null when none failed. */
+export function requestFailureSharePct(uptimePct: number | null | undefined): number | null {
+	if (uptimePct == null || !Number.isFinite(uptimePct)) return null;
+	const failedPct = Math.min(100, Math.max(0, 100 - uptimePct));
+	return failedPct > 1e-9 ? failedPct : null;
+}
+
 export function buildUptimeChartData(
 	successSeries: ModelSuccessPoint[],
 	now = new Date(),
@@ -86,11 +96,22 @@ export function buildUptimeChartData(
 
 interface ModelSuccessChartProps {
 	successSeries: ModelSuccessPoint[];
+	/** The 24 hours' rates from summed attempts, for the provider-health tooltips. */
+	attemptHealth24h?: AttemptFunnelRates | null;
 	showLeastStableProvider?: boolean;
 	showTitle?: boolean;
 }
 
-export default function ModelSuccessChart({
+export default function ModelSuccessChart(props: ModelSuccessChartProps) {
+	// Per-attempt reachability, capacity and call errors replace the single uptime
+	// line when the data API provides them; older payloads keep the request-level chart.
+	if (hasProviderAttemptHealth(props.successSeries)) {
+		return <ModelProviderHealthChart successSeries={props.successSeries} totals={props.attemptHealth24h} showTitle={props.showTitle} />;
+	}
+	return <RequestUptimeChart {...props} />;
+}
+
+function RequestUptimeChart({
 	successSeries,
 	showLeastStableProvider = true,
 	showTitle = true,
@@ -120,6 +141,13 @@ export default function ModelSuccessChart({
 	const withoutRoutingUptime = calculateAverageUptime(
 		measuredWorstPoints.map((point) => point.worst),
 	);
+	// A percentage only: the request counts behind it reveal the model's traffic volume.
+	const failedShareText = (uptimePct: number | null) => {
+		const failedPct = requestFailureSharePct(uptimePct);
+		return failedPct == null
+			? t("noFailuresThisHour")
+			: t("failedShareRequests", { percent: formatFailureShare(failedPct, locale) });
+	};
 
 	return (
 		<div className="grid gap-4 rounded-lg border border-border/70 bg-background p-4 sm:grid-cols-[10rem_minmax(0,1fr)] sm:items-center">
@@ -180,6 +208,11 @@ export default function ModelSuccessChart({
 												</span>{" "}
 												{formatUptime(payload[0].payload.overall)}
 											</p>
+											{payload[0].payload.overall != null ? (
+												<p className="text-xs text-muted-foreground tabular-nums">
+													{failedShareText(payload[0].payload.overall)}
+												</p>
+											) : null}
 											{showLeastStableProvider ? (
 												<p className="text-sm">
 													<span className="font-semibold">

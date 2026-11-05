@@ -1,11 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";
+import { rejectCrossOriginRequest } from "@/lib/http/sameOrigin";
 
 async function handlePut(
 	request: Request,
 	params: { appId: string },
 ) {
+	const crossOrigin = rejectCrossOriginRequest(request); if (crossOrigin) return crossOrigin;
 	const { appId } = params;
 	const account = await getServerAccountContext();
 	if (!account.accessToken) {

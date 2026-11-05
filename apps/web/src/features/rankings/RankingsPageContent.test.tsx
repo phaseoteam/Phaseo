@@ -70,6 +70,7 @@ it.each([
 	["embeddings", "embedding_tokens", "tokens"], ["rerank", "rerank_quad_tokens", "quadtokens"],
 	["audio", "audio_tokens", "tokens"], ["video", "video_seconds", "seconds"],
 	["speech", "speech_seconds", "seconds"], ["transcription", "transcription_seconds", "seconds"],
+	["decisions", "decision_tokens", "tokens"],
 ])("loads %s rankings with matching chart and leaderboard units", async (modality, metric, unit) => {
 	const result = await loadSections(modality as RankingModality);
 	const section = result.props.sections[0];

@@ -232,9 +232,7 @@
 			"featureStructuredOutputs": "Strukturierte Ausgaben",
 			"featureWebSearch": "Websuche",
 			"featureFree": "Kostenlose Variante",
-			"statusDeranked1": "Herabstufung Stufe 1",
-			"statusDeranked2": "Herabstufung Stufe 2",
-			"statusDeranked3": "Herabstufung Stufe 3",
+			"statusDeranked": "Niedrigere Priorität",
 			"statusDisabled": "Deaktiviert",
 			"regionJapan": "Japan",
 			"regionAustralia": "Australien",
@@ -811,17 +809,9 @@
 						"label": "Vorübergehend blockiert",
 						"description": "Das Routing ist vorübergehend blockiert."
 					},
-					"deranked_lvl1": {
-						"label": "Herabgestuft L1",
-						"description": "Öffentlich routbar, aber durch den Routingstatus leicht zurückgestuft."
-					},
-					"deranked_lvl2": {
-						"label": "Herabgestuft L2",
-						"description": "Öffentlich routbar, aber durch den Routingstatus zurückgestuft."
-					},
-					"deranked_lvl3": {
-						"label": "Herabgestuft L3",
-						"description": "Öffentlich routbar, aber durch den Routingstatus stark zurückgestuft."
+					"deranked": {
+						"label": "Niedrigere Priorität",
+						"description": "Öffentlich routbar, wird aber nur als Reserve genutzt, wenn die anderen Anbieter ausfallen."
 					},
 					"internal_testing": {
 						"label": "Interne Tests",
@@ -1105,7 +1095,7 @@
 				"disabled": "Explizit deaktiviert und nicht routbar.",
 				"comingSoon": "Demnächst verfügbar und noch nicht routbar.",
 				"internalTesting": "Nur für interne Tests verfügbar.",
-				"rateLimited": "Von Phaseo festgelegt. Weiterhin verfügbar, aber Anfragen gehen zuerst an andere Anbieter, bis Phaseo das ändert.",
+				"rateLimited": "Von Phaseo festgelegt. Wird nur als Reserve genutzt, wenn die anderen Anbieter ausfallen.",
 				"degraded": "Verfügbar, aber mit beeinträchtigtem Routingstatus.",
 				"external": "In einem externen Katalog gelistet; über Phaseo nicht routbar."
 			},
@@ -1487,16 +1477,32 @@
 			"title": "Durchschnittliche Verfügbarkeit",
 			"last24Hours": "Letzte 24 Stunden",
 			"noRequests": "Keine Anfragen beobachtet",
-			"requestsObserved": "Beobachtete Anfragen: {count}",
 			"perHour": "Verfügbarkeit pro Stunde",
-			"chartLabel": "Stündliche Modellverfügbarkeit der letzten {hours} Stunden. Verfügbarkeit: {uptime}. Erfasste Anfragen: {count}.",
 			"leastStableProviderLabel": "Ohne Phaseo Routing",
 			"tooltipUptime": "Betriebszeit:",
+			"failedShareRequests": "{percent} der Anfragen fehlgeschlagen",
+			"noFailuresThisHour": "Keine Fehler in dieser Stunde",
 			"tooltipWorstProvider": "Ohne Phaseo Routing:",
 			"hourlyAverage": "Letzte 24 Stunden · stündlicher Durchschnitt",
 			"routingChartLabel": "Stündliche Modellverfügbarkeit in den letzten 24 Stunden. Phaseo Routing: {uptime}.{comparison}",
 			"routingComparison": " Ohne Phaseo Routing: {uptime}.",
-			"routingLabel": "Phaseo-Routing"
+			"routingLabel": "Phaseo-Routing",
+			"providerHealthTitle": "Anbieterzustand",
+			"reachabilityLabel": "Erreichbar",
+			"capacityLabel": "Angenommen",
+			"callErrorsLabel": "Abgeschlossen",
+			"reachabilityHelp": "Wie oft Phaseo eine Antwort vom Anbieter erhalten hat. Verbindungsfehler, Zeitüberschreitungen vor Beginn der Antwort und Gateway-Fehler (502, 503, 504) zählen dagegen.",
+			"capacityHelp": "Von den Aufrufen, die den Anbieter erreicht haben: wie oft er sie angenommen hat, statt sie wegen ausgeschöpfter Kapazität abzulehnen. Ratenlimits für Phaseos eigenen Schlüssel und Überlastungsantworten zählen dagegen.",
+			"callErrorsHelp": "Von den Aufrufen, die der Anbieter angenommen hat: wie oft sie ohne Anbieterfehler abgeschlossen wurden. Serverfehler, mittendrin abgebrochene Streams und leere oder ungültige Ausgaben zählen dagegen.",
+			"noFailures": "Keine Fehler",
+			"reachabilityFailureShare": "{percent} der Versuche konnten den Anbieter nicht erreichen",
+			"capacityFailureShare": "{percent} der Versuche, die den Anbieter erreichten, wurden abgelehnt, weil er ausgelastet war",
+			"capacityUnmeasured": "Kein Versuch hat den Anbieter erreicht",
+			"callErrorsFailureShare": "{percent} der angenommenen Versuche schlugen fehl, nachdem der Anbieter sie angenommen hatte",
+			"callErrorsUnmeasured": "Kein Versuch wurde angenommen",
+			"attemptHourlyAverage": "Letzte 24 Stunden · Stundendurchschnitt, pro Anbieterversuch",
+			"providerHealthChartLabel": "Stündlicher Anbieterzustand der letzten 24 Stunden. Erreichbar: {reachability}. Angenommen: {capacity}. Abgeschlossen: {callErrors}.",
+			"attemptBasis": "Letzte 3 Tage, pro Anbieterversuch. Fehler, die durch die Anfrage oder durch Phaseo verursacht wurden, zählen nicht."
 		},
 		"providerInfo": {
 			"dataPolicy": "Datenschutzrichtlinie",
@@ -1626,8 +1632,10 @@
 			"viewLicense": "Lizenz anzeigen"
 		},
 		"performance": {
-			"noTelemetry": "Keine Gateway-Telemetrie in den letzten 7 Tagen",
-			"telemetryHint": "Stundendiagramme werden angezeigt, sobald dieses Modell Gateway-Datenverkehr am ausgewählten Standort verarbeitet.",
+			"noTelemetry": "Keine Anfragen in den letzten 7 Tagen",
+			"telemetryHint": "Diagramme erscheinen, sobald dieses Modell Anfragen über Phaseo verarbeitet.",
+			"noFilteredTelemetry": "Nicht genug Datenverkehr in {location} für eine Veröffentlichung",
+			"filteredTelemetryHint": "Standortdiagramme erscheinen erst, wenn ein Standort so viele Anfragen hat, dass sich der Datenverkehr einzelner Kunden nicht herauslesen lässt. Wähle „Alle Standorte“, um alle Anfragen zu sehen.",
 			"filterByLocation": "Leistung nach API-Standort filtern",
 			"providerPerformance": "Anbieterleistung",
 			"last24Hours": "Letzte 24 Stunden",
@@ -2186,7 +2194,8 @@
 			"audio": "Audio-Modell-Rangliste",
 			"video": "Video-Modell-Rangliste",
 			"speech": "Sprachmodell-Rangliste",
-			"transcription": "Transkriptionsmodell-Rangliste"
+			"transcription": "Transkriptionsmodell-Rangliste",
+			"decisions": "Entscheidungsmodell-Rangliste"
 		},
 		"leaderboard": "Rangliste",
 		"fastestModels": "Schnellste Modelle",
@@ -2289,7 +2298,8 @@
 			"video-seconds": "Generierte Videosekunden",
 			"video-tokens": "Video-Tokens insgesamt",
 			"speech-seconds": "Generierte Sprachsekunden",
-			"transcription-minutes": "Transkribierte Minuten"
+			"transcription-minutes": "Transkribierte Minuten",
+			"decision-volume": "Entscheidungs-Tokens"
 		},
 		"usageImagesUnit": "Bilder",
 		"usageSecondsUnit": "Sekunden",
@@ -2338,7 +2348,8 @@
 			"audio": "Audio",
 			"video": "Video",
 			"speech": "Sprachsynthese",
-			"transcription": "Transkription"
+			"transcription": "Transkription",
+			"decisions": "Entscheidungen"
 		},
 		"shareLabel": "Anteil",
 		"tokensLabel": "Tokens",
@@ -3172,9 +3183,7 @@
 		"providerStatus": {
 			"active": "Aktiv",
 			"coming_soon": "Demnächst verfügbar",
-			"deranked_lvl1": "Herabgestuft L1",
-			"deranked_lvl2": "Herabgestuft L2",
-			"deranked_lvl3": "Herabgestuft L3",
+			"deranked": "Niedrigere Priorität",
 			"disabled": "Deaktiviert",
 			"inactive": "Nicht aktiv",
 			"internal_testing": "Interne Tests",

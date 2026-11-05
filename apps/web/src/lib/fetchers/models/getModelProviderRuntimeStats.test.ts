@@ -150,3 +150,86 @@ describe("fillHourlyPerformanceBuckets", () => {
 		});
 	});
 });
+
+describe("per-attempt provider health", () => {
+	const now = new Date("2026-08-30T10:42:00.000Z");
+
+	it("bases uptime on eligible attempts and keeps the three rates", () => {
+		const stats = mapRpcRuntimeStatsRows({
+			now,
+			providerIds: ["flaky"],
+			rows: [
+				{
+					provider_id: "flaky",
+					service_tier: "standard",
+					requests: 4,
+					health_requests: 4,
+					health_success_requests: 4,
+					uptime_pct: 100,
+					buckets: [{ start: "2026-08-30T09:00:00.000Z", requests: 4, health_requests: 4, health_success_requests: 4 }],
+				},
+			] as Parameters<typeof mapRpcRuntimeStatsRows>[0]["rows"],
+			attemptHealthRows: [
+				{
+					provider_id: "flaky",
+					service_tier: "standard",
+					reachability_pct: 70,
+					capacity_pct: 80,
+					call_error_pct: 90,
+					uptime_pct: 40,
+					buckets: [{ start: "2026-08-30T09:00:00.000Z", reachability_pct: 70, capacity_pct: 80, call_error_pct: 90, uptime_pct: 40 }],
+					days: [
+						{ start: "2026-08-29T00:00:00.000Z", end: "2026-08-30T00:00:00.000Z", uptime_pct: 50 },
+						{ start: "2026-08-30T00:00:00.000Z", end: "2026-08-31T00:00:00.000Z", uptime_pct: 40 },
+					],
+				},
+			],
+		});
+		const flaky = getProviderRuntimeStats(stats, "flaky");
+		// Requests succeeded after failover; the provider's own attempts did not.
+		expect(flaky).toMatchObject({ uptimePct3d: 40, requests3d: 4 });
+		// Daily bars use web-api's per-day attempt rates; no attempt counts are published.
+		expect(flaky?.uptimeDaily3d[0]).toMatchObject({ dayOffset: 0, uptimePct: 40 });
+		expect(flaky?.uptimeDaily3d[1]).toMatchObject({ dayOffset: 1, uptimePct: 50 });
+		expect(flaky?.uptimeDaily3d[2]).toMatchObject({ dayOffset: 2, uptimePct: null });
+		expect(flaky?.attemptHealth3d).toEqual({
+			reachabilityPct: 70,
+			capacityPct: 80,
+			callErrorPct: 90,
+			uptimePct: 40,
+		});
+	});
+
+	it("keeps request-level daily bars when a cached response has no attempt days", () => {
+		const stats = mapRpcRuntimeStatsRows({
+			now,
+			providerIds: ["flaky"],
+			rows: [
+				{ provider_id: "flaky", service_tier: "standard", requests: 4, health_requests: 4, health_success_requests: 3, uptime_pct: 75,
+					buckets: [{ start: "2026-08-30T09:00:00.000Z", requests: 4, health_requests: 4, health_success_requests: 3 }] },
+			] as Parameters<typeof mapRpcRuntimeStatsRows>[0]["rows"],
+			attemptHealthRows: [{ provider_id: "flaky", service_tier: "standard", reachability_pct: 70, capacity_pct: 80, call_error_pct: 90, uptime_pct: 40, buckets: [] }],
+		});
+		const flaky = getProviderRuntimeStats(stats, "flaky");
+		expect(flaky?.uptimePct3d).toBe(40);
+		expect(flaky?.uptimeDaily3d[0]?.uptimePct).toBe(75);
+	});
+
+	it("adds providers that only failed over and keeps request uptime without attempt data", () => {
+		const stats = mapRpcRuntimeStatsRows({
+			now,
+			providerIds: ["served", "failover-only"],
+			rows: [
+				{ provider_id: "served", service_tier: "standard", requests: 2, health_requests: 2, health_success_requests: 2, uptime_pct: 100, buckets: [] },
+			] as Parameters<typeof mapRpcRuntimeStatsRows>[0]["rows"],
+			attemptHealthRows: [
+				{ provider_id: "failover-only", service_tier: "standard", reachability_pct: 0, capacity_pct: null, call_error_pct: null, uptime_pct: 0, buckets: [], days: [] },
+			],
+		});
+		expect(getProviderRuntimeStats(stats, "served")).toMatchObject({ uptimePct3d: 100, healthRequests3d: 2, attemptHealth3d: null });
+		expect(getProviderRuntimeStats(stats, "failover-only")).toMatchObject({
+			uptimePct3d: 0,
+			attemptHealth3d: { reachabilityPct: 0, capacityPct: null, callErrorPct: null, uptimePct: 0 },
+		});
+	});
+});

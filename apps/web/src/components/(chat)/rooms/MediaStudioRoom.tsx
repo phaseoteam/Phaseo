@@ -73,6 +73,7 @@ import {
 	getDefaultImageRoomParams,
 	getImageModelSchema,
 	getDefaultVideoRoomParams,
+	type CapabilityParamsById,
 	type ImageRoomParams,
 	type VideoRoomParams,
 } from "@/lib/chat/roomModelSettings";
@@ -910,6 +911,23 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 		() => filterModelsForRoom(models, roomId).filter((model) => model.isAvailable),
 		[models, roomId],
 	);
+	// The video options the catalogue stores for a model (sizes, durations and
+	// defaults), from the row of the chosen provider when there is one.
+	const videoParamsFor = useCallback(
+		(modelId: string, providerId?: string | null): CapabilityParamsById => {
+			const rows = filteredModels.filter((model) => model.modelId === modelId);
+			const preferred = providerId && providerId !== "auto"
+				? rows.find((model) => model.providerId === providerId)
+				: undefined;
+			const withParams = rows.find((model) => {
+				const params = model.capabilityParamsById as Record<string, unknown> | null | undefined;
+				const video = params?.["video.generate"];
+				return Boolean(video && typeof video === "object" && !Array.isArray(video));
+			});
+			return (preferred ?? withParams ?? rows[0])?.capabilityParamsById;
+		},
+		[filteredModels],
+	);
 	const [selectedModelIds, setSelectedModelIds] = useState<string[]>([]);
 	const [activeModelId, setActiveModelId] = useState("");
 	const [temporaryMode, setTemporaryMode] = useState(false);
@@ -933,7 +951,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 		getDefaultParams: (nextModelId) =>
 			(isImageRoom
 				? getDefaultImageRoomParams(nextModelId)
-				: getDefaultVideoRoomParams(nextModelId)) as ImageRoomParams | VideoRoomParams,
+				: getDefaultVideoRoomParams(nextModelId, videoParamsFor(nextModelId))) as ImageRoomParams | VideoRoomParams,
 	});
 	const modelSettingsCompat = modelSettings as any;
 	const selectedProfile =
@@ -1575,10 +1593,11 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 								? (retrySourceEntry.generationParams as VideoRoomParams | null)
 								: null) ??
 							(profile.params as VideoRoomParams) ??
-							getDefaultVideoRoomParams(selectedId);
+							getDefaultVideoRoomParams(selectedId, videoParamsFor(selectedId, profile.providerId));
 						const videoRequestOptions = buildVideoRequestOptions(
 							selectedId,
 							videoParams,
+							videoParamsFor(selectedId, profile.providerId),
 						);
 						generationParams = { ...videoParams };
 						videoSeconds = toOptionalNumber(
@@ -1669,7 +1688,8 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 										targetModelId,
 										(pendingEntry.generationParams as VideoRoomParams | null) ??
 										(profile.params as VideoRoomParams) ??
-											getDefaultVideoRoomParams(targetModelId),
+											getDefaultVideoRoomParams(targetModelId, videoParamsFor(targetModelId, profile.providerId)),
+										videoParamsFor(targetModelId, profile.providerId),
 									),
 								);
 							}
@@ -2574,6 +2594,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 					onOpenChange={modelSettings.handleModelSettingsOpenChange}
 					settings={dialogProfile as RoomModelProfile<VideoRoomParams>}
 					selectedModelId={dialogModelId}
+					capabilityParamsById={dialogModelId ? videoParamsFor(dialogModelId, dialogProfile.providerId) : undefined}
 					modelChoices={modelSettings.modelSettingsChoices}
 					onModelChange={handleModelSettingsModelChange}
 					providerOptions={modelSettings.providerOptions}

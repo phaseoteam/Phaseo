@@ -1009,7 +1009,10 @@
 		"rules": "Regeln",
 		"flag": "Markieren",
 		"redact": "Schwärzen",
-		"block": "Blockieren"
+		"block": "Blockieren",
+		"workspaceBaseline": "Basisregeln des Arbeitsbereichs",
+		"workspaceBaselineDescription": "Gilt für jeden Schlüssel im Arbeitsbereich. Bearbeite sie unter Datenschutz.",
+		"wholeWorkspace": "Ganzer Arbeitsbereich"
 	},
 	"guardrailAssignments": {
 		"tabGuardrails": "Leitplanken",
@@ -1021,8 +1024,6 @@
 		"columnMember": "Mitglied",
 		"columnGuardrails": "Leitplanken",
 		"columnAccess": "Zugriff",
-		"columnPromptInjection": "Prompt-Injection",
-		"columnSensitiveInfo": "Sensible Daten",
 		"none": "Keine",
 		"off": "Aus",
 		"offHint": "Diese Leitplanke ist ausgeschaltet, daher überspringt das Gateway sie.",
@@ -1038,7 +1039,6 @@
 		"modelsBlocked": "{count, plural, one {# Modell gesperrt} other {# Modelle gesperrt}}",
 		"noProvidersAllowed": "Keine Anbieter erlaubt",
 		"noModelsAllowed": "Keine Modelle erlaubt",
-		"sensitiveRules": "{count, plural, one {# Regel} other {# Regeln}}",
 		"editGuardrails": "Leitplanken für {name} bearbeiten",
 		"selectRow": "{name} auswählen",
 		"selectAll": "Alle auswählen",
@@ -1054,8 +1054,161 @@
 		"noKeys": "Dieser Arbeitsbereich hat keine API-Schlüssel.",
 		"noMembers": "Dieser Arbeitsbereich hat keine Mitglieder.",
 		"noMatches": "Keine Treffer für deine Suche.",
-		"footnote": "Zugriff, Prompt-Injection und sensible Daten zeigen, was die Leitplanken einer Zeile zusammen ergeben. Gelten mehrere, gewinnt die strengste Regel. Die Datenschutz- und Routing-Einstellungen des Arbeitsbereichs gelten zusätzlich.",
-		"readOnly": "Nur Inhaber und Admins des Arbeitsbereichs können Zuweisungen ändern."
+		"readOnly": "Nur Inhaber und Admins des Arbeitsbereichs können Zuweisungen ändern.",
+		"workspaceView": "Arbeitsbereich",
+		"departmentsView": "Abteilungen",
+		"columnWorkspace": "Arbeitsbereich",
+		"columnDepartment": "Abteilung",
+		"columnSafety": "Sicherheit",
+		"wholeWorkspace": "Ganzer Arbeitsbereich",
+		"wholeWorkspaceDetail": "Jeder API-Schlüssel und jedes Mitglied",
+		"departmentReach": "{members, plural, one {# Mitglied} other {# Mitglieder}} · {keys, plural, one {# Schlüssel} other {# Schlüssel}}",
+		"noDepartments": "Dieser Arbeitsbereich hat noch keine Abteilungen.",
+		"fromWorkspace": "Arbeitsbereich",
+		"workspaceHint": "Gilt für den ganzen Arbeitsbereich. Ändere sie in der Ansicht „Arbeitsbereich“.",
+		"departmentHint": "Gilt über die Abteilung {name}. Ändere sie in der Ansicht „Abteilungen“.",
+		"baselineHint": "Die Basisregeln des Arbeitsbereichs gelten für jeden API-Schlüssel und jedes Mitglied. Bearbeite sie unter Datenschutz.",
+		"fromGuardrails": "Aus {names}",
+		"promptInjectionPart": "Prompt-Injection: {action}",
+		"sensitiveInfoPart": "{count, plural, one {# Regel für sensible Daten} other {# Regeln für sensible Daten}}",
+		"footnoteLevels": "Jede Zeile zeigt alle Leitplanken, die für sie gelten: ihre eigenen und die ihres Mitglieds, ihrer Abteilungen und des ganzen Arbeitsbereichs. Wenn mehrere gelten, gewinnt die strengste Regel.",
+		"noTraining": "Kein Training",
+		"noPaidTraining": "Kein Training bei kostenpflichtigen Endpunkten",
+		"noFreeTraining": "Kein Training bei kostenlosen Endpunkten",
+		"noLogging": "Keine protokollierenden Endpunkte",
+		"columnRate": "Rate",
+		"rateRequests": "{count, plural, one {# Anfrage} other {# Anfragen}} pro Minute",
+		"rateTokens": "{count, plural, one {# Token} other {# Tokens}} pro Minute",
+		"rateConcurrent": "{count, plural, other {# gleichzeitig}}"
+	},
+	"guardrailWizard": {
+		"title": "Neue Leitplanke",
+		"subtitle": "Lege fest, was sie prüft, richte sie ein und wähle dann, für wen sie gilt.",
+		"stepsLabel": "Schritte zum Einrichten der Leitplanke",
+		"step": {
+			"start": "Was sie tut",
+			"configure": "Einrichten",
+			"assign": "Zuweisen",
+			"review": "Prüfen"
+		},
+		"cancel": "Abbrechen",
+		"back": "Zurück",
+		"continue": "Weiter",
+		"create": "Leitplanke erstellen",
+		"creating": "Wird erstellt…",
+		"issue": {
+			"nameRequired": "Gib einen Namen ein, um fortzufahren.",
+			"chooseSection": "Wähle eine Vorlage oder mindestens eine Prüfung, um fortzufahren.",
+			"accessEmpty": "Aktiviere mindestens eine Zugriffs- oder Datenschutzregel oder entferne diese Prüfung.",
+			"providerAllowlistEmpty": "Wähle mindestens einen erlaubten Anbieter. Eine leere Liste blockiert alle Anbieter.",
+			"modelAllowlistEmpty": "Wähle mindestens ein erlaubtes Modell. Eine leere Liste blockiert alle Modelle.",
+			"promptInjectionOff": "Lege fest, wie mit Prompt-Injection umgegangen wird, oder entferne diese Prüfung.",
+			"sensitiveInfoOff": "Aktiviere mindestens ein Muster für sensible Daten oder entferne diese Prüfung.",
+			"rateLimitEmpty": "Lege mindestens ein Limit fest, um fortzufahren.",
+			"rateLimitInvalid": "Limits müssen ganze Zahlen größer als 0 sein.",
+			"rateCountingRequired": "Wähle eine Zählweise, um fortzufahren."
+		},
+		"nameLabel": "Name",
+		"namePlaceholder": "z. B. Richtlinie für Auftragnehmer",
+		"descriptionLabel": "Beschreibung (optional)",
+		"descriptionPlaceholder": "Für wen ist sie gedacht?",
+		"templatesTitle": "Mit einer Vorlage beginnen",
+		"templatesBody": "Eine Vorlage füllt die Einstellungen aus. Im nächsten Schritt kannst du alles ändern.",
+		"templateZdr": {
+			"name": "Keine Datenspeicherung",
+			"body": "Nur an Endpunkte weiterleiten, die Prompts und Ausgaben nicht speichern."
+		},
+		"templateNoTraining": {
+			"name": "Kein Training mit Prompts",
+			"body": "Endpunkte überspringen, die mit deinen Prompts trainieren oder sie veröffentlichen könnten."
+		},
+		"templateApprovedProviders": {
+			"name": "Nur freigegebene Anbieter",
+			"body": "Nur die Anbieter erlauben, die du auswählst."
+		},
+		"templateApprovedModels": {
+			"name": "Nur freigegebene Modelle",
+			"body": "Nur die Modelle erlauben, die du auswählst."
+		},
+		"templateBlockPromptInjection": {
+			"name": "Prompt-Injection blockieren",
+			"body": "Anfragen, die nach Prompt-Injection aussehen, stoppen, bevor sie das Modell erreichen."
+		},
+		"templateRedactPersonalInfo": {
+			"name": "Personenbezogene Daten schwärzen",
+			"body": "E-Mail-Adressen, Telefonnummern, SSNs und Kartennummern ersetzen, bevor Anfragen Phaseo verlassen."
+		},
+		"sectionsTitle": "Prüfungen",
+		"sectionsBody": "Wähle eine oder mehrere. Eine Vorlage setzt die Häkchen für dich.",
+		"sectionAccess": {
+			"name": "Zugriff und Datenschutz",
+			"body": "Datenspeicherung, Training und welche Anbieter und Modelle genutzt werden dürfen."
+		},
+		"sectionPromptInjection": {
+			"name": "Prompt-Injection",
+			"body": "Anfragen auf Prompt-Injection prüfen und sie markieren, schwärzen oder blockieren."
+		},
+		"sectionSensitiveInfo": {
+			"name": "Sensible Daten",
+			"body": "Personenbezogene Daten und Geheimnisse in Anfragen finden und markieren, schwärzen oder blockieren."
+		},
+		"addCheck": "Prüfung hinzufügen:",
+		"assignTitle": "Für wen soll „{name}“ gelten?",
+		"assignBody": "Wähle den ganzen Arbeitsbereich oder Abteilungen, Mitglieder und API-Schlüssel. Jede Zeile zeigt, was ihre Leitplanken jetzt und mit dieser ergeben. Du kannst das überspringen und sie später zuweisen.",
+		"columnNow": "Jetzt",
+		"columnAfter": "Mit dieser Leitplanke",
+		"assignMemberHint": "Die Leitplanken eines Mitglieds gelten auch für die API-Schlüssel, die es erstellt.",
+		"notApplied": "Nicht zugewiesen",
+		"coveredVia": "Über {name}",
+		"noTighter": "Keine Änderung: Die bisherigen Leitplanken decken das bereits ab.",
+		"promptInjectionPart": "Prompt-Injection: {action}",
+		"sensitiveInfoPart": "{count, plural, one {# Regel für sensible Daten} other {# Regeln für sensible Daten}}",
+		"reviewWhat": "Was sie tut",
+		"reviewModels": "Modelle",
+		"reviewWho": "Gilt für",
+		"change": "Ändern",
+		"modelsAvailable": "{available} von {total} Modellen können weiter genutzt werden.",
+		"blocksEverything": "Diese Regeln blockieren alle Modelle. Anfragen der betroffenen Schlüssel schlagen dann fehl.",
+		"appliesToNothing": "Noch nichts. Du kannst sie später im Tab „Zuweisungen“ zuweisen.",
+		"turnOnNow": "Jetzt aktivieren",
+		"turnOnNowBody": "Ist sie aus, wird sie gespeichert, aber das Gateway überspringt sie.",
+		"summaryZdr": "Leitet nur an Endpunkte ohne Datenspeicherung weiter",
+		"summaryNoPaidTraining": "Überspringt kostenpflichtige Endpunkte, die mit Prompts trainieren könnten",
+		"summaryNoFreeTraining": "Überspringt kostenlose Endpunkte, die mit Prompts trainieren könnten",
+		"summaryNoPublishing": "Überspringt kostenlose Endpunkte, die Prompts veröffentlichen könnten",
+		"summaryNoLogging": "Überspringt Endpunkte, die Prompts und Ausgaben protokollieren",
+		"summaryProvidersAllowed": "Erlaubt nur {count, plural, one {# Anbieter} other {# Anbieter}}",
+		"summaryProvidersBlocked": "Blockiert {count, plural, one {# Anbieter} other {# Anbieter}}",
+		"summaryModelsAllowed": "Erlaubt nur {count, plural, one {# Modell} other {# Modelle}}",
+		"summaryModelsBlocked": "Blockiert {count, plural, one {# Modell} other {# Modelle}}",
+		"summaryPromptInjection": "Prompt-Injection: {action}",
+		"summarySensitiveInfo": "Prüft {count, plural, one {# Muster für sensible Daten} other {# Muster für sensible Daten}}",
+		"wholeWorkspaceTitle": "Ganzer Arbeitsbereich",
+		"wholeWorkspaceBody": "Für jeden API-Schlüssel und jedes Mitglied, auch für später hinzugefügte.",
+		"wholeWorkspaceOn": "Gilt für den ganzen Arbeitsbereich, also für jede Zeile unten.",
+		"coveredByWorkspace": "Über den ganzen Arbeitsbereich",
+		"coveredByDepartment": "Über {name}",
+		"levelWorkspace": "Der ganze Arbeitsbereich",
+		"levelDepartments": "{count, plural, one {# Abteilung} other {# Abteilungen}}",
+		"levelMembers": "{count, plural, one {# Mitglied} other {# Mitglieder}}",
+		"levelKeys": "{count, plural, one {# API-Schlüssel} other {# API-Schlüssel}}",
+		"templateRateLimit": {
+			"name": "Ratenlimit",
+			"body": "Begrenze Anfragen oder Tokens pro Minute oder gleichzeitige Anfragen."
+		},
+		"sectionRate": {
+			"name": "Ratenlimits",
+			"body": "Anfragen und Tokens pro Minute und gleichzeitige Anfragen. Eine Ratenlimit-Leitplanke hat keine weiteren Prüfungen."
+		},
+		"summaryRateRequests": "{count, plural, one {# Anfrage} other {# Anfragen}} pro Minute",
+		"summaryRateTokens": "{count, plural, one {# Token} other {# Tokens}} pro Minute",
+		"summaryRateConcurrent": "{count, plural, one {# Anfrage} other {# Anfragen}} gleichzeitig",
+		"summaryRateCounting": {
+			"shared": "Geteilt von allem, dem es zugewiesen ist",
+			"each_key": "Eigenes Kontingent pro Schlüssel",
+			"each_end_user": "Eigenes Kontingent pro Endnutzer"
+		},
+		"summaryRateFailClosed": "Lehnt Anfragen ab, wenn Limits nicht geprüft werden können"
 	},
 	"broadcastControls": {
 		"optional": "(optional)",
@@ -1458,7 +1611,9 @@
 			"selectWorkspace": "Wähle einen Workspace aus, um Guardrails zu verwalten.",
 			"notFound": "Guardrail nicht gefunden.",
 			"back": "Zurück zu den Guardrails",
-			"permissions": "Nur Workspace-Inhaber und -Administratoren können Guardrails ändern. Zugewiesene Richtlinien werden für Mitglieder automatisch durchgesetzt."
+			"permissions": "Nur Workspace-Inhaber und -Administratoren können Guardrails ändern. Zugewiesene Richtlinien werden für Mitglieder automatisch durchgesetzt.",
+			"workspaceBaseline": "Das sind die Basisregeln des Arbeitsbereichs. Sie enthalten die Regeln aus Einstellungen, Datenschutz und gelten für den ganzen Arbeitsbereich. Sie lassen sich daher nicht löschen, ausschalten oder einzelnen Schlüsseln oder Mitgliedern zuweisen.",
+			"openPrivacy": "Unter Datenschutz bearbeiten"
 		},
 		"keyDelete": {
 			"permanent": "Diese Aktion ist dauerhaft.",
@@ -7900,5 +8055,50 @@
 		"expiredBody": "Niemand hat innerhalb von 30 Minuten geantwortet, daher wurde nichts belastet. Der Agent wird angewiesen, es nicht erneut zu versuchen; er kann eine neue Anfrage starten, wenn jemand erreichbar ist.",
 		"resume": "Kartenbestätigung abschließen",
 		"resumeNotice": "Diese Aufladung wurde bestätigt, aber die Kartenbestätigung der Bank wurde nicht abgeschlossen. Schließe sie ab, um die Zahlung zu beenden."
+	},
+	"rateGuardrail": {
+		"title": "Ratenlimits",
+		"description": "Begrenze Anfragen und Tokens pro Minute und wie viele Anfragen gleichzeitig laufen.",
+		"limitsTitle": "Limits",
+		"limitsBody": "Lege mindestens eins fest. Lass ein Limit leer, um es nicht zu begrenzen.",
+		"noLimit": "Kein Limit",
+		"invalidLimit": "Gib eine ganze Zahl größer als 0 ein.",
+		"requests": {
+			"label": "Anfragen pro Minute",
+			"help": "Gezählt über eine gleitende Minute."
+		},
+		"tokens": {
+			"label": "Tokens pro Minute",
+			"help": "Eingabe- und Ausgabetokens, gezählt, wenn eine Anfrage fertig ist."
+		},
+		"concurrent": {
+			"label": "Gleichzeitige Anfragen",
+			"help": "Anfragen, die zur selben Zeit laufen."
+		},
+		"countingTitle": "Zählweise",
+		"countingBody": "Wähle, wer sich ein Kontingent teilt. Es gibt keine Vorgabe.",
+		"legacyCounting": "Dieses Limit wurde über die Ratenlimit-API erstellt. Es zählt pro zugewiesenem Schlüssel, Mitglied oder Abteilung und im ganzen Workspace pro Endnutzer. Wähle eine Option, um das zu ändern.",
+		"countingLegacy": "Pro Zuweisung",
+		"counting": {
+			"shared": {
+				"name": "Geteilt",
+				"body": "Ein Kontingent für alles, dem es zugewiesen ist. Bei einer Abteilung teilt es sich die ganze Abteilung."
+			},
+			"each_key": {
+				"name": "Pro Schlüssel",
+				"body": "Jeder abgedeckte API-Schlüssel bekommt ein eigenes Kontingent. OAuth-Anfragen zählen pro Person."
+			},
+			"each_end_user": {
+				"name": "Pro Endnutzer",
+				"body": "Jeder Endnutzer bekommt ein eigenes Kontingent, erkannt am Feld user der Anfrage oder am Header X-Phaseo-User-Id. Anfragen ohne Endnutzer werden dadurch nicht begrenzt."
+			}
+		},
+		"failClosedTitle": "Anfragen ablehnen, wenn Limits nicht geprüft werden können",
+		"failClosedBody": "Wartet bei jeder Anfrage auf den Zähler, was etwas Latenz kostet. Ist das aus, gehen Anfragen durch, wenn der Zähler nicht antwortet.",
+		"issue": {
+			"rateLimitEmpty": "Lege mindestens ein Limit fest, um fortzufahren.",
+			"rateLimitInvalid": "Limits müssen ganze Zahlen größer als 0 sein.",
+			"rateCountingRequired": "Wähle eine Zählweise, um fortzufahren."
+		}
 	}
 }

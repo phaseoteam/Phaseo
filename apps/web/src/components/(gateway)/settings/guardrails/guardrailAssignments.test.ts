@@ -8,6 +8,8 @@ import {
 	effectiveGuardrailPolicy,
 	matchesAssignmentQuery,
 	withPendingChanges,
+	workspaceAssignmentMap,
+	WORKSPACE_TARGET_ID,
 } from "./guardrailAssignments";
 
 function guardrail(id: string, overrides: Partial<SettingsGuardrailRow> = {}): SettingsGuardrailRow {
@@ -48,13 +50,28 @@ describe("effectiveGuardrailPolicy", () => {
 		expect(policy).toEqual({
 			activeCount: 2,
 			zdrOnly: true,
+			noPaidTraining: false,
+			noFreeTraining: false,
+			noLogging: false,
 			providerAllowCount: 2,
 			providerBlockCount: 0,
 			modelAllowCount: null,
 			modelBlockCount: 2,
 			promptInjection: "block",
 			sensitiveInfoRuleCount: 2,
+			requestsPerMinute: null,
+			tokensPerMinute: null,
+			concurrentRequests: null,
 		});
+	});
+
+	it("counts a training or logging rule from any guardrail, as the gateway does", () => {
+		const policy = effectiveGuardrailPolicy([
+			guardrail("a", { privacy_enable_paid_may_train: false }),
+			guardrail("b", { privacy_enable_free_may_train: true, privacy_enable_input_output_logging: false }),
+			guardrail("off", { enabled: false, privacy_enable_free_may_train: false }),
+		]);
+		expect(policy).toMatchObject({ noPaidTraining: true, noFreeTraining: false, noLogging: true });
 	});
 
 	it("skips guardrails that are off, and sensitive-info rules when the section is off", () => {
@@ -91,6 +108,27 @@ describe("effectiveGuardrailPolicy", () => {
 	});
 });
 
+describe("rate limits in the effective policy", () => {
+	it("keeps the lowest of each limit from enabled rate guardrails, and names where they come from", () => {
+		const rate = (id: string, fields: Record<string, unknown>) => ({ id, name: id, enabled: true, kind: "rate" as const, ...fields });
+		const guardrails = [
+			rate("team", { rate_requests_per_minute: 600, rate_tokens_per_minute: 2_000_000 }),
+			rate("strict", { rate_requests_per_minute: 60, rate_concurrent_requests: 4 }),
+			rate("paused", { enabled: false, rate_requests_per_minute: 1 }),
+		];
+		expect(effectiveGuardrailPolicy(guardrails)).toMatchObject({ requestsPerMinute: 60, tokensPerMinute: 2_000_000, concurrentRequests: 4 });
+		expect(effectiveGuardrailPolicy([])).toMatchObject({ requestsPerMinute: null, tokensPerMinute: null, concurrentRequests: null });
+		const [row] = buildGuardrailAssignmentRows({
+			targetType: "key", untitled: "Untitled",
+			keys: [{ id: "key-1", name: "Prod", prefix: "pk_1", status: "active" }], members: [], guardrails,
+			guardrailWorkspaceIdsByGuardrailId: { team: ["workspace"] },
+			guardrailKeyIdsByGuardrailId: { strict: ["key-1"], paused: ["key-1"] }, guardrailMemberIdsByGuardrailId: {},
+		});
+		expect(row!.rateFrom.map((guardrail) => guardrail.id)).toEqual(["strict", "team"]);
+		expect(row!.accessFrom).toEqual([]);
+	});
+});
+
 describe("buildGuardrailAssignmentRows", () => {
 	const guardrails = [guardrail("g-new", { name: "Newest" }), guardrail("g-old", { name: "Oldest", enabled: false }), guardrail("g-member", { name: "Team policy", privacy_zdr_only: true })];
 	const base = {
@@ -108,9 +146,9 @@ describe("buildGuardrailAssignmentRows", () => {
 	it("lists a key's direct guardrails in list order, then the ones its principal member passes on", () => {
 		const [prod, ci] = buildGuardrailAssignmentRows({ ...base, targetType: "key" });
 		expect(prod.guardrails).toEqual([
-			{ id: "g-new", name: "Newest", enabled: true, source: "direct" },
-			{ id: "g-old", name: "Oldest", enabled: false, source: "direct" },
-			{ id: "g-member", name: "Team policy", enabled: true, source: "member" },
+			{ id: "g-new", name: "Newest", enabled: true, source: { level: "direct" }, sources: [{ level: "direct" }], baseline: false },
+			{ id: "g-old", name: "Oldest", enabled: false, source: { level: "direct" }, sources: [{ level: "direct" }], baseline: false },
+			{ id: "g-member", name: "Team policy", enabled: true, source: { level: "member", id: "u1", name: "Sam" }, sources: [{ level: "member", id: "u1", name: "Sam" }], baseline: false },
 		]);
 		expect(prod.directGuardrailIds).toEqual(["g-new", "g-old"]);
 		expect(prod.inheritedFrom).toEqual({ id: "u1", name: "Sam" });
@@ -123,14 +161,16 @@ describe("buildGuardrailAssignmentRows", () => {
 
 	it("keeps guardrails inherited from a creator who has left the workspace", () => {
 		const [prod] = buildGuardrailAssignmentRows({ ...base, targetType: "key", members: [{ id: "u2", name: "Lee", role: "member" }] });
-		expect(prod.guardrails.map((g) => `${g.id}:${g.source}`)).toEqual(["g-new:direct", "g-old:direct", "g-member:member"]);
+		expect(prod.guardrails.map((g) => `${g.id}:${g.source.level}`)).toEqual(["g-new:direct", "g-old:direct", "g-member:member"]);
+		expect(prod.guardrails[2]?.source).toEqual({ level: "member", id: "u1", name: null });
 		expect(prod.inheritedFrom).toEqual({ id: "u1", name: null });
 		expect(prod.effective).toMatchObject({ activeCount: 2, zdrOnly: true });
 	});
 
 	it("does not repeat a guardrail assigned both directly and through the member", () => {
 		const [prod] = buildGuardrailAssignmentRows({ ...base, targetType: "key", guardrailKeyIdsByGuardrailId: { "g-member": ["k1"] } });
-		expect(prod.guardrails.map((g) => `${g.id}:${g.source}`)).toEqual(["g-member:direct"]);
+		expect(prod.guardrails.map((g) => `${g.id}:${g.source.level}`)).toEqual(["g-member:direct"]);
+		expect(prod.guardrails[0]?.sources.map((source) => source.level)).toEqual(["direct", "member"]);
 		expect(prod.inheritedFrom).toBeNull();
 	});
 
@@ -144,6 +184,56 @@ describe("buildGuardrailAssignmentRows", () => {
 		expect(rows.filter((row) => matchesAssignmentQuery(row, "team")).map((row) => row.id)).toEqual(["k1"]);
 		expect(rows.filter((row) => matchesAssignmentQuery(row, "AISTATS_CD")).map((row) => row.id)).toEqual(["k2"]);
 		expect(rows.filter((row) => matchesAssignmentQuery(row, " ")).length).toBe(2);
+	});
+
+	describe("workspace and department levels", () => {
+		const levels = {
+			...base,
+			guardrails: [
+				...guardrails,
+				guardrail("g-eng", { name: "EU only", provider_restriction_mode: "allowlist", provider_restriction_provider_ids: ["mistral"] }),
+				guardrail("g-all", { name: "Block injection", prompt_injection_enabled: true, prompt_injection_action: "block" }),
+				guardrail("g-base", { name: "Workspace baseline", is_workspace_baseline: true, privacy_zdr_only: true }),
+			],
+			departments: [{ id: "d-eng", name: "Engineering" }, { id: "d-ops", name: "Operations" }],
+			guardrailWorkspaceIdsByGuardrailId: workspaceAssignmentMap(["g-base", "g-all"]),
+			guardrailDepartmentIdsByGuardrailId: { "g-eng": ["d-eng"] },
+			keyDepartmentIds: { k1: ["d-eng"] },
+			memberDepartmentIds: { u1: ["d-eng"], u2: ["d-ops"] },
+			workspace: { name: "Whole workspace", detail: "Every key" },
+			departmentDetail: ({ members, keys }: { members: number; keys: number }) => `${members}m ${keys}k`,
+		};
+
+		it("shows the workspace row with its guardrails, the baseline last", () => {
+			const [row] = buildGuardrailAssignmentRows({ ...levels, targetType: "workspace" });
+			expect(row).toMatchObject({ type: "workspace", id: WORKSPACE_TARGET_ID, name: "Whole workspace", detail: "Every key" });
+			expect(row?.guardrails.map((g) => `${g.id}:${g.source.level}:${g.baseline}`)).toEqual(["g-all:direct:false", "g-base:direct:true"]);
+		});
+
+		it("gives each department its own guardrails, the workspace's, and how many members and keys it reaches", () => {
+			const rows = buildGuardrailAssignmentRows({ ...levels, targetType: "department" });
+			expect(rows.map((row) => [row.name, row.detail, row.directGuardrailIds])).toEqual([["Engineering", "1m 1k", ["g-eng"]], ["Operations", "1m 0k", []]]);
+			expect(rows[0]?.guardrails.map((g) => `${g.id}:${g.source.level}`)).toEqual(["g-eng:direct", "g-all:workspace", "g-base:workspace"]);
+		});
+
+		it("gives a key every level, most specific first, and names where each column's rules come from", () => {
+			const [prod, ci] = buildGuardrailAssignmentRows({ ...levels, targetType: "key" });
+			expect(prod?.guardrails.map((g) => `${g.id}:${g.source.level}`)).toEqual([
+				"g-new:direct", "g-old:direct", "g-member:member", "g-eng:department", "g-all:workspace", "g-base:workspace",
+			]);
+			expect(prod?.guardrails.find((g) => g.id === "g-eng")?.source).toEqual({ level: "department", id: "d-eng", name: "Engineering" });
+			expect(prod?.effective).toMatchObject({ zdrOnly: true, providerAllowCount: 1, promptInjection: "block" });
+			expect(prod?.accessFrom.map((g) => g.id)).toEqual(["g-member", "g-eng", "g-base"]);
+			expect(prod?.safetyFrom.map((g) => g.id)).toEqual(["g-all"]);
+			// No department: only the workspace level reaches it.
+			expect(ci?.guardrails.map((g) => `${g.id}:${g.source.level}`)).toEqual(["g-all:workspace", "g-base:workspace"]);
+		});
+
+		it("gives a member their departments' guardrails and the workspace's", () => {
+			const [sam, lee] = buildGuardrailAssignmentRows({ ...levels, targetType: "member" });
+			expect(sam?.guardrails.map((g) => `${g.id}:${g.source.level}`)).toEqual(["g-member:direct", "g-eng:department", "g-all:workspace", "g-base:workspace"]);
+			expect(lee?.guardrails.map((g) => `${g.id}:${g.source.level}`)).toEqual(["g-all:workspace", "g-base:workspace"]);
+		});
 	});
 
 	it("reports whether all, some or none of the rows have a guardrail directly", () => {

@@ -55,9 +55,10 @@ export type RankingModality =
 	| "audio"
 	| "video"
 	| "speech"
-	| "transcription";
+	| "transcription"
+	| "decisions";
 
-export const RANKING_MODALITIES: RankingModality[] = ["text", "image", "embeddings", "rerank", "audio", "video", "speech", "transcription"];
+export const RANKING_MODALITIES: RankingModality[] = ["text", "image", "embeddings", "rerank", "audio", "video", "speech", "transcription", "decisions"];
 
 const rankingSectionLabelKeys: Record<RankingModality, string> = {
 	text: "modalityTitles.text",
@@ -68,6 +69,7 @@ const rankingSectionLabelKeys: Record<RankingModality, string> = {
 	video: "modalityTitles.video",
 	speech: "modalityTitles.speech",
 	transcription: "modalityTitles.transcription",
+	decisions: "modalityTitles.decisions",
 };
 
 export function isRankingModality(value: string): value is RankingModality {
@@ -341,7 +343,7 @@ function buildPerformanceEntries(
 export function ModalityLeaderboardsServer({ modality }: { modality: RankingModality }) {
 	const t = useTranslations("Catalogue.rankings");
 	const locale = useLocale();
-	const metricTitles = { text_tokens: "modalityMetricTitles.text-volume", image_outputs: "modalityMetricTitles.image-generated", embedding_tokens: "modalityMetricTitles.embedding-volume", rerank_quad_tokens: "modalityMetricTitles.rerank-volume", audio_tokens: "modalityMetricTitles.audio-tokens", video_seconds: "modalityMetricTitles.video-seconds", speech_seconds: "modalityMetricTitles.speech-seconds", transcription_seconds: "audioTranscribed", image_inputs: "modalityMetricTitles.image-inputs", audio_seconds: "modalityMetricTitles.audio-cache", video_tokens: "modalityMetricTitles.video-tokens" } as const;
+	const metricTitles = { text_tokens: "modalityMetricTitles.text-volume", image_outputs: "modalityMetricTitles.image-generated", embedding_tokens: "modalityMetricTitles.embedding-volume", rerank_quad_tokens: "modalityMetricTitles.rerank-volume", audio_tokens: "modalityMetricTitles.audio-tokens", video_seconds: "modalityMetricTitles.video-seconds", speech_seconds: "modalityMetricTitles.speech-seconds", transcription_seconds: "audioTranscribed", image_inputs: "modalityMetricTitles.image-inputs", audio_seconds: "modalityMetricTitles.audio-cache", video_tokens: "modalityMetricTitles.video-tokens", decision_tokens: "modalityMetricTitles.decision-volume" } as const;
 	const metricTitle = (metric: string) => t(metricTitles[metric as keyof typeof metricTitles]);
 	const unitLabel = (unit: string) => unit === "quadtokens" ? unit : t(({ tokens: "usageTokensUnit", images: "usageImagesUnit", seconds: "usageSecondsUnit" } as const)[unit as "tokens" | "images" | "seconds"]);
 	const primary = modalityMetrics[modality];
@@ -482,6 +484,7 @@ function UniqueUsersSectionServer() {
 				leaderboardTitle={t("uniqueUsersLeaderboardTitle")}
 				leaderboardDescription={t("uniqueUsersLeaderboardDescription")}
 				valueUnit={t("usageUsersUnit")}
+				share={{ section: "unique-users", chartId: "unique-users", title: t("uniqueUsers") }}
 			/>
 		</section>
 	);
@@ -531,6 +534,7 @@ function MarketShareOrganizationServer() {
                 dimension="organization"
                 metric="tokens"
                 normalizeToPercent
+                share={{ section: "market-share", chartId: "market-share-organisations", title: t("marketShareByOrganisation") }}
             />
             <MarketShareLeaderboard data={entries} maxCollapsed={10} maxExpanded={20} />
         </>
@@ -588,6 +592,7 @@ function MarketShareProviderServer() {
                 dimension="provider"
                 metric="tokens"
                 normalizeToPercent
+                share={{ section: "market-share", chartId: "market-share-providers", title: t("marketShareByProvider") }}
             />
             <MarketShareLeaderboard data={entries} maxCollapsed={10} maxExpanded={20} />
         </>

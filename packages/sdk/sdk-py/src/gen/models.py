@@ -1356,7 +1356,7 @@ class GatewayCapabilities(TypedDict):
 	parameter_details: SupportedParameterDetails
 	parameters: List[str]
 
-GatewayCapabilityStatus = Literal["active", "coming_soon", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3", "disabled", "internal_testing"]
+GatewayCapabilityStatus = Literal["active", "coming_soon", "deranked", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3", "disabled", "internal_testing"]
 
 class GatewayDatetimeToolDefinition(TypedDict):
 	parameters: NotRequired[Dict[str, Any]]
@@ -1448,7 +1448,7 @@ class GatewayModelOffer(TypedDict):
 	routing: Dict[str, Any]
 	service_tiers: NotRequired[List[Literal["flex", "priority", "standard", "ultrafast"]]]
 	status: Literal["active", "coming_soon", "inactive"]
-	status_reason: Literal["active", "preview_only", "gated", "access_limited", "region_limited", "project_limited", "paused", "soft_blocked", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3", "internal_testing", "scheduled", "coming_soon", "provider_disabled", "model_disabled", "capability_disabled", "provider_not_ready", "provider_inactive", "inactive", "retired"]
+	status_reason: Literal["active", "preview_only", "gated", "access_limited", "region_limited", "project_limited", "paused", "soft_blocked", "deranked", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3", "internal_testing", "scheduled", "coming_soon", "provider_disabled", "model_disabled", "capability_disabled", "provider_not_ready", "provider_inactive", "inactive", "retired"]
 
 GatewayModelOrganization = Optional[Dict[str, Any]]
 
@@ -1508,7 +1508,7 @@ class GatewayPricing(TypedDict):
 
 GatewayPricingMeter = Optional[Dict[str, Any]]
 
-GatewayProviderAvailabilityReason = Literal["active", "preview_only", "gated", "access_limited", "region_limited", "project_limited", "paused", "soft_blocked", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3", "internal_testing", "scheduled", "coming_soon", "provider_disabled", "model_disabled", "capability_disabled", "provider_not_ready", "provider_inactive", "inactive", "retired"]
+GatewayProviderAvailabilityReason = Literal["active", "preview_only", "gated", "access_limited", "region_limited", "project_limited", "paused", "soft_blocked", "deranked", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3", "internal_testing", "scheduled", "coming_soon", "provider_disabled", "model_disabled", "capability_disabled", "provider_not_ready", "provider_inactive", "inactive", "retired"]
 
 class GatewayRequestLog(TypedDict):
 	auth_method: NotRequired[Optional[str]]
@@ -1551,7 +1551,7 @@ class GatewayRequestLogResponse(TypedDict):
 	data: GatewayRequestLog
 	ok: Literal[true]
 
-GatewayRoutingStatus = Literal["active", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3", "disabled"]
+GatewayRoutingStatus = Literal["active", "deranked", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3", "disabled"]
 
 class GatewayWebFetchToolDefinition(TypedDict):
 	max_chars: NotRequired[int]
@@ -2033,7 +2033,7 @@ class ModelEndpointCapability(TypedDict):
 	routable: bool
 	routing: Dict[str, Any]
 	status: Literal["active", "coming_soon", "inactive"]
-	status_reason: Literal["active", "preview_only", "gated", "access_limited", "region_limited", "project_limited", "paused", "soft_blocked", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3", "internal_testing", "scheduled", "coming_soon", "provider_disabled", "model_disabled", "capability_disabled", "provider_not_ready", "provider_inactive", "inactive", "retired"]
+	status_reason: Literal["active", "preview_only", "gated", "access_limited", "region_limited", "project_limited", "paused", "soft_blocked", "deranked", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3", "internal_testing", "scheduled", "coming_soon", "provider_disabled", "model_disabled", "capability_disabled", "provider_not_ready", "provider_inactive", "inactive", "retired"]
 
 class ModelEndpointsResponse(TypedDict):
 	availability_mode: Literal["active", "all"]
@@ -2059,20 +2059,20 @@ class ModelLifecycle(TypedDict):
 class ModelProviderAvailability(TypedDict):
 	api_provider_id: str
 	api_provider_name: NotRequired[Optional[str]]
-	availability_reason: Literal["active", "preview_only", "gated", "access_limited", "region_limited", "project_limited", "paused", "soft_blocked", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3", "internal_testing", "scheduled", "coming_soon", "provider_disabled", "model_disabled", "capability_disabled", "provider_not_ready", "provider_inactive", "inactive", "retired"]
+	availability_reason: Literal["active", "preview_only", "gated", "access_limited", "region_limited", "project_limited", "paused", "soft_blocked", "deranked", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3", "internal_testing", "scheduled", "coming_soon", "provider_disabled", "model_disabled", "capability_disabled", "provider_not_ready", "provider_inactive", "inactive", "retired"]
 	availability_status: Literal["active", "coming_soon", "inactive"]
-	capability_status: Literal["active", "coming_soon", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3", "disabled", "internal_testing"]
+	capability_status: Literal["active", "coming_soon", "deranked", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3", "disabled", "internal_testing"]
 	effective_from: NotRequired[Optional[str]]
 	effective_to: NotRequired[Optional[str]]
 	endpoints: List[str]
 	input_modalities: NotRequired[List[str]]
 	is_active_gateway: bool
-	model_routing_status: Literal["active", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3", "disabled"]
+	model_routing_status: Literal["active", "deranked", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3", "disabled"]
 	output_modalities: NotRequired[List[str]]
 	params: List[str]
 	params_detail: NotRequired[SupportedParameterDetails]
 	provider_model_slug: NotRequired[Optional[str]]
-	provider_routing_status: Literal["active", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3", "disabled"]
+	provider_routing_status: Literal["active", "deranked", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3", "disabled"]
 	provider_status: Literal["active", "beta", "alpha", "not_ready", "gated", "access_limited", "region_limited", "project_limited", "paused", "soft_blocked"]
 	supported_parameters: NotRequired[List[str]]
 	supported_parameters_detail: NotRequired[SupportedParameterDetails]

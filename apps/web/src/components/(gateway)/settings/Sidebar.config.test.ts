@@ -121,7 +121,6 @@ describe("settings sidebar navigation", () => {
 				"Logs",
 				"Routing",
 				"Guardrails",
-				"Rate limits",
 				"Classifiers",
 				"Privacy",
 				"Presets",

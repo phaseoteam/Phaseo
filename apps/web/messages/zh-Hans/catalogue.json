@@ -232,9 +232,7 @@
 			"featureStructuredOutputs": "结构化输出",
 			"featureWebSearch": "网页搜索",
 			"featureFree": "免费变体",
-			"statusDeranked1": "降级级别 1",
-			"statusDeranked2": "降级级别 2",
-			"statusDeranked3": "降级级别 3",
+			"statusDeranked": "优先级较低",
 			"statusDisabled": "已停用",
 			"regionJapan": "日本",
 			"regionAustralia": "澳大利亚",
@@ -811,17 +809,9 @@
 						"label": "临时拦截",
 						"description": "路由暂时受到软性限制。"
 					},
-					"deranked_lvl1": {
-						"label": "降级 L1",
-						"description": "可公开路由，但健康策略略微降低了优先级。"
-					},
-					"deranked_lvl2": {
-						"label": "降级 L2",
-						"description": "可公开路由，但健康策略当前降低了优先级。"
-					},
-					"deranked_lvl3": {
-						"label": "降级 L3",
-						"description": "可公开路由，但健康策略大幅降低了优先级。"
+					"deranked": {
+						"label": "优先级较低",
+						"description": "可公开路由，但仅在其他提供商失败时作为备用。"
 					},
 					"internal_testing": {
 						"label": "内部测试",
@@ -1105,7 +1095,7 @@
 				"disabled": "已明确停用，无法路由。",
 				"comingSoon": "即将推出，尚不可路由。",
 				"internalTesting": "仅供内部测试。",
-				"rateLimited": "由 Phaseo 设置。仍然可用，但在 Phaseo 更改之前，请求会先发送给其他提供商。",
+				"rateLimited": "由 Phaseo 设置。仅在其他提供商失败时作为备用。",
 				"degraded": "可用，但路由健康状况已降级。",
 				"external": "列在外部目录中；无法通过 Phaseo 路由。"
 			},
@@ -1487,16 +1477,32 @@
 			"title": "平均可用率",
 			"last24Hours": "过去 24 小时",
 			"noRequests": "未观察到请求",
-			"requestsObserved": "观察到的请求数：{count}",
 			"perHour": "每小时可用率",
-			"chartLabel": "过去 {hours} 小时的模型每小时可用率。可用率：{uptime}。记录的请求数：{count}。",
 			"leastStableProviderLabel": "不使用 Phaseo Routing",
 			"tooltipUptime": "运行时间：",
+			"failedShareRequests": "{percent} 的请求失败",
+			"noFailuresThisHour": "这一小时没有失败",
 			"tooltipWorstProvider": "不使用 Phaseo Routing:",
 			"hourlyAverage": "过去24小时 · 每小时平均值",
 			"routingChartLabel": "过去24小时的模型每小时可用率。Phaseo Routing：{uptime}。{comparison}",
 			"routingComparison": " 不使用 Phaseo Routing：{uptime}。",
-			"routingLabel": "Phaseo 路由"
+			"routingLabel": "Phaseo 路由",
+			"providerHealthTitle": "提供商状态",
+			"reachabilityLabel": "可达",
+			"capacityLabel": "已接受",
+			"callErrorsLabel": "已完成",
+			"reachabilityHelp": "Phaseo 能从提供商拿到响应的比例。连接失败、响应开始前超时以及网关错误（502、503、504）都会拉低该值。",
+			"capacityHelp": "在到达提供商的调用中，提供商接受而不是因容量已满而拒绝的比例。Phaseo 自有密钥触发的速率限制以及过载响应都会拉低该值。",
+			"callErrorsHelp": "在提供商接受的调用中，没有出现提供商错误并顺利完成的比例。服务器错误、中途断开的流式响应以及空的或无效的输出都会拉低该值。",
+			"noFailures": "没有失败",
+			"reachabilityFailureShare": "{percent} 的尝试无法连接到提供商",
+			"capacityFailureShare": "到达提供商的尝试中有 {percent} 因提供商容量已满被拒绝",
+			"capacityUnmeasured": "没有到达提供商的尝试",
+			"callErrorsFailureShare": "被接受的尝试中有 {percent} 在提供商接受后失败",
+			"callErrorsUnmeasured": "没有被接受的尝试",
+			"attemptHourlyAverage": "过去 24 小时 · 每小时平均，按提供商尝试计算",
+			"providerHealthChartLabel": "过去 24 小时每小时的提供商状态。可达：{reachability}。已接受：{capacity}。已完成：{callErrors}。",
+			"attemptBasis": "过去 3 天，按提供商尝试计算。由请求本身或 Phaseo 导致的错误不计入。"
 		},
 		"providerInfo": {
 			"dataPolicy": "数据政策",
@@ -1626,8 +1632,10 @@
 			"viewLicense": "查看许可证"
 		},
 		"performance": {
-			"noTelemetry": "过去 7 天没有 Gateway 遥测数据",
-			"telemetryHint": "当此模型在所选位置处理 Gateway 流量后，每小时图表会显示在此处。",
+			"noTelemetry": "过去 7 天没有请求",
+			"telemetryHint": "此模型通过 Phaseo 处理请求后，图表会显示在此处。",
+			"noFilteredTelemetry": "{location} 的流量不足，无法发布",
+			"filteredTelemetryHint": "只有当某个位置的请求足够多、无法从中辨认出任何单个客户的流量时，才会显示该位置的图表。选择“所有位置”可查看全部请求。",
 			"filterByLocation": "按 API 位置筛选性能",
 			"providerPerformance": "提供商性能",
 			"last24Hours": "过去 24 小时",
@@ -2186,7 +2194,8 @@
 			"audio": "音频模型排行榜",
 			"video": "视频模型排行榜",
 			"speech": "语音模型排行榜",
-			"transcription": "转录模型排行榜"
+			"transcription": "转录模型排行榜",
+			"decisions": "决策模型排行榜"
 		},
 		"leaderboard": "排行榜",
 		"fastestModels": "最快模型",
@@ -2289,7 +2298,8 @@
 			"video-seconds": "生成视频秒数",
 			"video-tokens": "视频 token 总量",
 			"speech-seconds": "生成语音秒数",
-			"transcription-minutes": "转录分钟数"
+			"transcription-minutes": "转录分钟数",
+			"decision-volume": "决策 token 量"
 		},
 		"usageImagesUnit": "张图像",
 		"usageSecondsUnit": "秒",
@@ -2338,7 +2348,8 @@
 			"audio": "音频",
 			"video": "视频",
 			"speech": "语音",
-			"transcription": "转写"
+			"transcription": "转写",
+			"decisions": "决策"
 		},
 		"shareLabel": "占比",
 		"tokensLabel": "Token",
@@ -3172,9 +3183,7 @@
 		"providerStatus": {
 			"active": "已启用",
 			"coming_soon": "即将推出",
-			"deranked_lvl1": "降级 L1",
-			"deranked_lvl2": "降级 L2",
-			"deranked_lvl3": "降级 L3",
+			"deranked": "优先级较低",
 			"disabled": "已停用",
 			"inactive": "未激活",
 			"internal_testing": "内部测试",

@@ -15,7 +15,8 @@ export type ModalityId =
 	| "audio"
 	| "video"
 	| "speech"
-	| "transcription";
+	| "transcription"
+	| "decisions";
 
 export type ModalityLeaderboardEntry = {
 	key: string;
@@ -129,6 +130,7 @@ function TopChart({
 				leaderboardDescription={t("usageDefaultLeaderboardDescription")}
 				valueUnit={valueUnit}
 				showScaleToggle={section.id === "text"}
+				share={{ section: section.id, chartId: `usage-${section.id}`, title: section.chartTitle }}
 			/>
 		</div>
 	);

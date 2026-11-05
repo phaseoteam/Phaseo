@@ -14,6 +14,7 @@ vi.mock("@/lib/fetchers/frontend/fetchRankingSections", () => ({}));
 vi.mock("react", async () => ({
 	...(await vi.importActual("react")),
 	useEffect: vi.fn(),
+	useRef: vi.fn((initial) => ({ current: initial })),
 	useState: vi.fn((initial) => [typeof initial === "function" ? initial() : initial, vi.fn()]),
 }));
 vi.mock("@/components/link", () => ({ default: () => null }));

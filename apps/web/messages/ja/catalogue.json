@@ -232,9 +232,7 @@
 			"featureStructuredOutputs": "構造化出力",
 			"featureWebSearch": "ウェブ検索",
 			"featureFree": "無料版",
-			"statusDeranked1": "ランク低下レベル 1",
-			"statusDeranked2": "ランク低下レベル 2",
-			"statusDeranked3": "ランク低下レベル 3",
+			"statusDeranked": "優先度低",
 			"statusDisabled": "無効",
 			"regionJapan": "日本",
 			"regionAustralia": "オーストラリア",
@@ -811,17 +809,9 @@
 						"label": "一時ブロック",
 						"description": "ルーティングは一時的に制限されています。"
 					},
-					"deranked_lvl1": {
-						"label": "優先度低下 L1",
-						"description": "公開ルーティングに対応していますが、稼働状況により優先度が少し下がっています。"
-					},
-					"deranked_lvl2": {
-						"label": "優先度低下 L2",
-						"description": "公開ルーティングに対応していますが、稼働状況により優先度が下がっています。"
-					},
-					"deranked_lvl3": {
-						"label": "優先度低下 L3",
-						"description": "公開ルーティングに対応していますが、稼働状況により優先度が大きく下がっています。"
+					"deranked": {
+						"label": "優先度低",
+						"description": "公開でルーティング可能ですが、他のプロバイダーが失敗した場合のバックアップとしてのみ使われます。"
 					},
 					"internal_testing": {
 						"label": "内部テスト",
@@ -1105,7 +1095,7 @@
 				"disabled": "明示的に無効化されており、ルーティングできません。",
 				"comingSoon": "近日公開です。現在はルーティングできません。",
 				"internalTesting": "内部テストのみ利用できます。",
-				"rateLimited": "Phaseo が設定しています。引き続き利用できますが、Phaseo が変更するまで、リクエストは先に他のプロバイダーへ送られます。",
+				"rateLimited": "Phaseo が設定しています。他のプロバイダーが失敗した場合のバックアップとしてのみ使われます。",
 				"degraded": "利用可能ですが、ルーティングの健全性が低下しています。",
 				"external": "外部カタログに掲載されています。Phaseo 経由ではルーティングできません。"
 			},
@@ -1487,16 +1477,32 @@
 			"title": "平均稼働率",
 			"last24Hours": "過去24時間",
 			"noRequests": "リクエストは観測されていません",
-			"requestsObserved": "観測されたリクエスト数：{count}",
 			"perHour": "時間ごとの稼働率",
-			"chartLabel": "過去{hours}時間のモデル稼働率（時間ごと）。稼働率：{uptime}。記録されたリクエスト数：{count}。",
 			"leastStableProviderLabel": "Phaseo Routing なし",
 			"tooltipUptime": "稼働率:",
+			"failedShareRequests": "リクエストの{percent}が失敗",
+			"noFailuresThisHour": "この時間の失敗はありません",
 			"tooltipWorstProvider": "Phaseo Routing なし:",
 			"hourlyAverage": "過去24時間 · 時間別平均",
 			"routingChartLabel": "過去24時間のモデルの時間別稼働率。Phaseo Routing：{uptime}。{comparison}",
 			"routingComparison": " Phaseo Routing なし：{uptime}。",
-			"routingLabel": "Phaseoルーティング"
+			"routingLabel": "Phaseoルーティング",
+			"providerHealthTitle": "プロバイダーの状態",
+			"reachabilityLabel": "到達",
+			"capacityLabel": "受付",
+			"callErrorsLabel": "完了",
+			"reachabilityHelp": "Phaseo がプロバイダーから応答を得られた割合です。接続エラー、応答開始前のタイムアウト、ゲートウェイエラー（502、503、504）が減点対象です。",
+			"capacityHelp": "プロバイダーに到達した呼び出しのうち、処理能力の上限を理由に拒否されず受け付けられた割合です。Phaseo 自身のキーに対するレート制限や過負荷の応答が減点対象です。",
+			"callErrorsHelp": "プロバイダーが受け付けた呼び出しのうち、プロバイダー側のエラーなく完了した割合です。サーバーエラー、途中で途切れたストリーム、空または無効な出力が減点対象です。",
+			"noFailures": "失敗なし",
+			"reachabilityFailureShare": "試行の{percent}がプロバイダーに到達できませんでした",
+			"capacityFailureShare": "プロバイダーに到達した試行の{percent}が処理能力の上限により拒否されました",
+			"capacityUnmeasured": "プロバイダーに到達した試行なし",
+			"callErrorsFailureShare": "受け付けられた試行の{percent}がプロバイダーの受付後に失敗しました",
+			"callErrorsUnmeasured": "受け付けられた試行なし",
+			"attemptHourlyAverage": "過去 24 時間 · 1 時間ごとの平均（プロバイダーへの試行単位）",
+			"providerHealthChartLabel": "過去 24 時間のプロバイダーの状態（1 時間ごと）。到達: {reachability}。受付: {capacity}。完了: {callErrors}。",
+			"attemptBasis": "過去 3 日間、プロバイダーへの試行単位。リクエストまたは Phaseo が原因のエラーは含みません。"
 		},
 		"providerInfo": {
 			"dataPolicy": "データポリシー",
@@ -1626,8 +1632,10 @@
 			"viewLicense": "ライセンスを表示"
 		},
 		"performance": {
-			"noTelemetry": "過去7日間にGatewayのテレメトリーはありません",
-			"telemetryHint": "選択した場所でこのモデルがGatewayトラフィックを処理すると、時間ごとのグラフが表示されます。",
+			"noTelemetry": "過去7日間にリクエストはありません",
+			"telemetryHint": "このモデルがPhaseo経由でリクエストを処理すると、グラフが表示されます。",
+			"noFilteredTelemetry": "{location}には公開できるだけのトラフィックがありません",
+			"filteredTelemetryHint": "場所ごとのグラフは、特定の顧客のトラフィックを識別できないほどリクエストが集まった場合にのみ表示されます。すべてのリクエストを見るには「すべての場所」を選択してください。",
 			"filterByLocation": "APIの場所でパフォーマンスを絞り込む",
 			"providerPerformance": "プロバイダーのパフォーマンス",
 			"last24Hours": "過去24時間",
@@ -2186,7 +2194,8 @@
 			"audio": "音声モデルランキング",
 			"video": "動画モデルランキング",
 			"speech": "音声生成モデルランキング",
-			"transcription": "文字起こしモデルランキング"
+			"transcription": "文字起こしモデルランキング",
+			"decisions": "判断モデルランキング"
 		},
 		"leaderboard": "リーダーボード",
 		"fastestModels": "最速モデル",
@@ -2289,7 +2298,8 @@
 			"video-seconds": "生成動画の秒数",
 			"video-tokens": "動画トークン合計",
 			"speech-seconds": "生成音声の秒数",
-			"transcription-minutes": "文字起こし時間（分）"
+			"transcription-minutes": "文字起こし時間（分）",
+			"decision-volume": "判断トークン"
 		},
 		"usageImagesUnit": "枚",
 		"usageSecondsUnit": "秒",
@@ -2338,7 +2348,8 @@
 			"audio": "音声",
 			"video": "動画",
 			"speech": "音声合成",
-			"transcription": "文字起こし"
+			"transcription": "文字起こし",
+			"decisions": "判断"
 		},
 		"shareLabel": "シェア",
 		"tokensLabel": "トークン",
@@ -3172,9 +3183,7 @@
 		"providerStatus": {
 			"active": "有効",
 			"coming_soon": "近日公開",
-			"deranked_lvl1": "ランク低下 L1",
-			"deranked_lvl2": "ランク低下 L2",
-			"deranked_lvl3": "ランク低下 L3",
+			"deranked": "優先度低",
 			"disabled": "無効",
 			"inactive": "非アクティブ",
 			"internal_testing": "内部テスト",

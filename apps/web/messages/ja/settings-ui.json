@@ -1009,7 +1009,10 @@
 		"rules": "ルール",
 		"flag": "フラグを付ける",
 		"redact": "マスキング",
-		"block": "ブロックする"
+		"block": "ブロックする",
+		"workspaceBaseline": "ワークスペースの基本ガードレール",
+		"workspaceBaselineDescription": "ワークスペースのすべてのキーに適用されます。プライバシーで編集できます。",
+		"wholeWorkspace": "ワークスペース全体"
 	},
 	"guardrailAssignments": {
 		"tabGuardrails": "ガードレール",
@@ -1021,8 +1024,6 @@
 		"columnMember": "メンバー",
 		"columnGuardrails": "ガードレール",
 		"columnAccess": "アクセス",
-		"columnPromptInjection": "プロンプトインジェクション",
-		"columnSensitiveInfo": "機密情報",
 		"none": "なし",
 		"off": "オフ",
 		"offHint": "このガードレールはオフのため、ゲートウェイは適用しません。",
@@ -1038,7 +1039,6 @@
 		"modelsBlocked": "{count, plural, other {# 件のモデルをブロック}}",
 		"noProvidersAllowed": "許可されたプロバイダーなし",
 		"noModelsAllowed": "許可されたモデルなし",
-		"sensitiveRules": "{count, plural, other {# 件のルール}}",
 		"editGuardrails": "{name} のガードレールを編集",
 		"selectRow": "{name} を選択",
 		"selectAll": "すべて選択",
@@ -1054,8 +1054,161 @@
 		"noKeys": "このワークスペースには API キーがありません。",
 		"noMembers": "このワークスペースにはメンバーがいません。",
 		"noMatches": "検索に一致する項目はありません。",
-		"footnote": "アクセス、プロンプトインジェクション、機密情報の列は、各行のガードレールを組み合わせた結果です。複数が適用される場合は最も厳しいルールが優先されます。ワークスペースのプライバシーとルーティングの設定もあわせて適用されます。",
-		"readOnly": "割り当てを変更できるのはワークスペースのオーナーと管理者だけです。"
+		"readOnly": "割り当てを変更できるのはワークスペースのオーナーと管理者だけです。",
+		"workspaceView": "ワークスペース",
+		"departmentsView": "部署",
+		"columnWorkspace": "ワークスペース",
+		"columnDepartment": "部署",
+		"columnSafety": "安全性",
+		"wholeWorkspace": "ワークスペース全体",
+		"wholeWorkspaceDetail": "すべての API キーとメンバー",
+		"departmentReach": "メンバー {members} 人 · キー {keys} 件",
+		"noDepartments": "このワークスペースにはまだ部署がありません。",
+		"fromWorkspace": "ワークスペース",
+		"workspaceHint": "ワークスペース全体に適用されます。ワークスペース表示で変更してください。",
+		"departmentHint": "{name} 部署を通じて適用されます。部署表示で変更してください。",
+		"baselineHint": "ワークスペースの基本ガードレールはすべての API キーとメンバーに適用されます。プライバシーで編集できます。",
+		"fromGuardrails": "適用元: {names}",
+		"promptInjectionPart": "プロンプトインジェクション: {action}",
+		"sensitiveInfoPart": "機密情報ルール {count} 件",
+		"footnoteLevels": "各行には、その行に適用されるすべてのガードレールが表示されます。行自体のもの、メンバー、部署、ワークスペース全体のものです。複数が適用される場合は、最も厳しいルールが優先されます。",
+		"noTraining": "学習なし",
+		"noPaidTraining": "有料エンドポイントでの学習なし",
+		"noFreeTraining": "無料エンドポイントでの学習なし",
+		"noLogging": "ログを残すエンドポイントなし",
+		"columnRate": "レート",
+		"rateRequests": "1 分あたり {count} リクエスト",
+		"rateTokens": "1 分あたり {count} トークン",
+		"rateConcurrent": "同時に {count}"
+	},
+	"guardrailWizard": {
+		"title": "新しいガードレール",
+		"subtitle": "チェック内容を選んで設定し、適用先を選びます。",
+		"stepsLabel": "ガードレールの設定手順",
+		"step": {
+			"start": "内容",
+			"configure": "設定",
+			"assign": "割り当て",
+			"review": "確認"
+		},
+		"cancel": "キャンセル",
+		"back": "戻る",
+		"continue": "次へ",
+		"create": "ガードレールを作成",
+		"creating": "作成中…",
+		"issue": {
+			"nameRequired": "続けるには名前を入力してください。",
+			"chooseSection": "続けるにはテンプレートか、チェックを1つ以上選んでください。",
+			"accessEmpty": "アクセスまたはプライバシーのルールを1つ以上オンにするか、このチェックを外してください。",
+			"providerAllowlistEmpty": "許可するプロバイダーを1つ以上選んでください。空のリストはすべてのプロバイダーをブロックします。",
+			"modelAllowlistEmpty": "許可するモデルを1つ以上選んでください。空のリストはすべてのモデルをブロックします。",
+			"promptInjectionOff": "プロンプトインジェクションの扱いを選ぶか、このチェックを外してください。",
+			"sensitiveInfoOff": "機密情報のパターンを1つ以上オンにするか、このチェックを外してください。",
+			"rateLimitEmpty": "続けるには制限を 1 つ以上設定してください。",
+			"rateLimitInvalid": "制限は 0 より大きい整数にしてください。",
+			"rateCountingRequired": "続けるには数え方を選んでください。"
+		},
+		"nameLabel": "名前",
+		"namePlaceholder": "例: 業務委託先向けポリシー",
+		"descriptionLabel": "説明（任意）",
+		"descriptionPlaceholder": "誰向けですか？",
+		"templatesTitle": "テンプレートから始める",
+		"templatesBody": "テンプレートが設定を入力します。次の手順ですべて変更できます。",
+		"templateZdr": {
+			"name": "データ保持ゼロ",
+			"body": "プロンプトや出力を保存しないエンドポイントにのみルーティングします。"
+		},
+		"templateNoTraining": {
+			"name": "プロンプトで学習しない",
+			"body": "プロンプトを学習に使ったり公開したりする可能性のあるエンドポイントを除外します。"
+		},
+		"templateApprovedProviders": {
+			"name": "承認済みプロバイダーのみ",
+			"body": "選んだプロバイダーだけを許可します。"
+		},
+		"templateApprovedModels": {
+			"name": "承認済みモデルのみ",
+			"body": "選んだモデルだけを許可します。"
+		},
+		"templateBlockPromptInjection": {
+			"name": "プロンプトインジェクションをブロック",
+			"body": "プロンプトインジェクションと思われるリクエストを、モデルに届く前に止めます。"
+		},
+		"templateRedactPersonalInfo": {
+			"name": "個人情報をマスク",
+			"body": "リクエストが Phaseo を出る前に、メールアドレス、電話番号、SSN、カード番号を置き換えます。"
+		},
+		"sectionsTitle": "チェック",
+		"sectionsBody": "1つ以上選んでください。テンプレートを選ぶと自動でチェックが入ります。",
+		"sectionAccess": {
+			"name": "アクセスとプライバシー",
+			"body": "データ保持、学習、使用できるプロバイダーとモデル。"
+		},
+		"sectionPromptInjection": {
+			"name": "プロンプトインジェクション",
+			"body": "リクエストのプロンプトインジェクションを検出し、フラグ、マスク、ブロックします。"
+		},
+		"sectionSensitiveInfo": {
+			"name": "機密情報",
+			"body": "リクエスト内の個人データや秘密情報を検出し、フラグ、マスク、ブロックします。"
+		},
+		"addCheck": "チェックを追加:",
+		"assignTitle": "「{name}」の適用先",
+		"assignBody": "ワークスペース全体、または部署、メンバー、API キーを選びます。各行に、現在のガードレールの組み合わせと、このガードレールを加えた結果が表示されます。この手順は省略して後で割り当てることもできます。",
+		"columnNow": "現在",
+		"columnAfter": "このガードレールを追加後",
+		"assignMemberHint": "メンバーのガードレールは、そのメンバーが作成した API キーにも適用されます。",
+		"notApplied": "適用なし",
+		"coveredVia": "{name} 経由",
+		"noTighter": "変更なし: 現在のガードレールですでにカバーされています。",
+		"promptInjectionPart": "プロンプトインジェクション: {action}",
+		"sensitiveInfoPart": "機密情報ルール {count} 件",
+		"reviewWhat": "内容",
+		"reviewModels": "モデル",
+		"reviewWho": "適用先",
+		"change": "変更",
+		"modelsAvailable": "{total} 件中 {available} 件のモデルを引き続き使えます。",
+		"blocksEverything": "これらのルールはすべてのモデルをブロックするため、適用先のキーからのリクエストは失敗します。",
+		"appliesToNothing": "まだありません。後で「割り当て」タブから割り当てられます。",
+		"turnOnNow": "今すぐオンにする",
+		"turnOnNowBody": "オフの場合は保存されますが、ゲートウェイは適用しません。",
+		"summaryZdr": "データ保持ゼロのエンドポイントにのみルーティング",
+		"summaryNoPaidTraining": "プロンプトで学習する可能性のある有料エンドポイントを除外",
+		"summaryNoFreeTraining": "プロンプトで学習する可能性のある無料エンドポイントを除外",
+		"summaryNoPublishing": "プロンプトを公開する可能性のある無料エンドポイントを除外",
+		"summaryNoLogging": "プロンプトと出力を記録するエンドポイントを除外",
+		"summaryProvidersAllowed": "{count} 件のプロバイダーのみ許可",
+		"summaryProvidersBlocked": "{count} 件のプロバイダーをブロック",
+		"summaryModelsAllowed": "{count} 件のモデルのみ許可",
+		"summaryModelsBlocked": "{count} 件のモデルをブロック",
+		"summaryPromptInjection": "プロンプトインジェクション: {action}",
+		"summarySensitiveInfo": "機密情報のパターン {count} 件をチェック",
+		"wholeWorkspaceTitle": "ワークスペース全体",
+		"wholeWorkspaceBody": "すべての API キーとメンバーに適用します。後から追加されたものも含みます。",
+		"wholeWorkspaceOn": "ワークスペース全体に適用されるため、以下のすべての行に適用されます。",
+		"coveredByWorkspace": "ワークスペース全体で適用",
+		"coveredByDepartment": "{name} を通じて適用",
+		"levelWorkspace": "ワークスペース全体",
+		"levelDepartments": "部署 {count} 件",
+		"levelMembers": "メンバー {count} 人",
+		"levelKeys": "API キー {count} 件",
+		"templateRateLimit": {
+			"name": "レート制限",
+			"body": "1 分あたりのリクエスト数やトークン数、同時リクエスト数に上限を設けます。"
+		},
+		"sectionRate": {
+			"name": "レート制限",
+			"body": "1 分あたりのリクエスト数とトークン数、同時リクエスト数。レートガードレールには他のチェックはありません。"
+		},
+		"summaryRateRequests": "1 分あたり {count} リクエスト",
+		"summaryRateTokens": "1 分あたり {count} トークン",
+		"summaryRateConcurrent": "同時に {count} リクエスト",
+		"summaryRateCounting": {
+			"shared": "割り当て先全体で共有",
+			"each_key": "キーごとに個別",
+			"each_end_user": "エンドユーザーごとに個別"
+		},
+		"summaryRateFailClosed": "制限を確認できないときはリクエストを拒否"
 	},
 	"broadcastControls": {
 		"optional": "（任意）",
@@ -1458,7 +1611,9 @@
 			"selectWorkspace": "ガードレールを管理するワークスペースを選択してください。",
 			"notFound": "ガードレールが見つかりません。",
 			"back": "ガードレールに戻る",
-			"permissions": "ガードレールを変更できるのはワークスペースのオーナーと管理者のみです。割り当て済みのポリシーはメンバーに自動的に適用されます。"
+			"permissions": "ガードレールを変更できるのはワークスペースのオーナーと管理者のみです。割り当て済みのポリシーはメンバーに自動的に適用されます。",
+			"workspaceBaseline": "これはワークスペースの基本ガードレールです。「設定」>「プライバシー」のルールを保持し、ワークスペース全体に適用されるため、削除、無効化、個別のキーやメンバーへの割り当てはできません。",
+			"openPrivacy": "プライバシーで編集"
 		},
 		"keyDelete": {
 			"permanent": "この操作は取り消せません。",
@@ -7900,5 +8055,50 @@
 		"expiredBody": "30 分以内に誰も回答しなかったため、請求は行われていません。エージェントには再試行しないよう伝えられます。対応できる人がいるときに新しいリクエストを開始できます。",
 		"resume": "カードの認証を完了",
 		"resumeNotice": "このチャージは確認済みですが、銀行によるカード認証が完了していません。支払いを完了するには認証を終えてください。"
+	},
+	"rateGuardrail": {
+		"title": "レート制限",
+		"description": "1 分あたりのリクエスト数とトークン数、同時に実行できるリクエスト数を制限します。",
+		"limitsTitle": "制限",
+		"limitsBody": "少なくとも 1 つ設定してください。空欄の項目は制限しません。",
+		"noLimit": "制限なし",
+		"invalidLimit": "0 より大きい整数を入力してください。",
+		"requests": {
+			"label": "1 分あたりのリクエスト数",
+			"help": "直近 1 分間で数えます。"
+		},
+		"tokens": {
+			"label": "1 分あたりのトークン数",
+			"help": "入力と出力のトークン。各リクエストの完了時に数えます。"
+		},
+		"concurrent": {
+			"label": "同時リクエスト数",
+			"help": "同時に処理中のリクエスト。"
+		},
+		"countingTitle": "数え方",
+		"countingBody": "各割り当てを誰で共有するかを選んでください。既定値はありません。",
+		"legacyCounting": "レート制限 API で作成されたため、割り当て先のキー、メンバー、部門ごと、ワークスペース全体ではエンドユーザーごとに数えます。変更するにはオプションを選んでください。",
+		"countingLegacy": "割り当てごと",
+		"counting": {
+			"shared": {
+				"name": "共有",
+				"body": "割り当て先全体で 1 つの割り当て。部門に割り当てると、部門全体で共有します。"
+			},
+			"each_key": {
+				"name": "キーごと",
+				"body": "対象の API キーごとに個別の割り当て。OAuth リクエストはユーザーごとに数えます。"
+			},
+			"each_end_user": {
+				"name": "エンドユーザーごと",
+				"body": "エンドユーザーごとに個別の割り当て。リクエストの user フィールドまたは X-Phaseo-User-Id ヘッダーで識別します。エンドユーザーのないリクエストは制限されません。"
+			}
+		},
+		"failClosedTitle": "制限を確認できないときはリクエストを拒否する",
+		"failClosedBody": "リクエストごとにカウンターの応答を待つため、少し遅延が増えます。オフの場合、カウンターが応答しなければリクエストを通します。",
+		"issue": {
+			"rateLimitEmpty": "続けるには制限を 1 つ以上設定してください。",
+			"rateLimitInvalid": "制限は 0 より大きい整数にしてください。",
+			"rateCountingRequired": "続けるには数え方を選んでください。"
+		}
 	}
 }
