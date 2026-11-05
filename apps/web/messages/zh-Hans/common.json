@@ -899,7 +899,7 @@
 			"providerModelIdPlaceholder": "提供商专用模型 ID 或别名",
 			"internalModelId": "内部模型 ID",
 			"gatewayActive": "Gateway 已启用",
-			"activeOnGateway": "在 Gateway 上启用",
+			"activeOnGateway": "Gateway 已启用",
 			"quantizationScheme": "量化方案",
 			"quantizationExample": "例如：FP16、INT8 等",
 			"contextOutputLimits": "上下文和输出限制",
