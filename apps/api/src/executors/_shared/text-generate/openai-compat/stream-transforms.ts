@@ -179,17 +179,20 @@ export async function readUntilFailure(
 	}
 }
 
-function chatChunkHasFinish(payload: any): boolean {
-	return Array.isArray(payload?.choices) && payload.choices.some((choice: any) => Boolean(choice?.finish_reason));
-}
+type ChoiceProgress = { open: Set<number>; finished: Set<number> };
 
 /**
  * Whether a Chat chunk completes the stream (as `[DONE]` does): a full chat.completion
- * snapshot, or the usage that comes with or after a finish reason.
+ * snapshot, or usage once every choice seen has finished. One finished choice is not enough.
  */
-function chatChunkCompletes(payload: any, sawFinish: boolean): boolean {
+function chatChunkCompletes(payload: any, choices: ChoiceProgress): boolean {
+	for (const choice of Array.isArray(payload?.choices) ? payload.choices : []) {
+		const index = Number(choice?.index ?? 0);
+		choices.open.add(index);
+		if (choice?.finish_reason) choices.finished.add(index);
+	}
 	if (payload?.object === "chat.completion") return true;
-	return Boolean(payload?.usage) && (sawFinish || chatChunkHasFinish(payload));
+	return Boolean(payload?.usage) && choices.finished.size > 0 && [...choices.open].every((index) => choices.finished.has(index));
 }
 
 export function transformChatStream(
@@ -206,7 +209,7 @@ export function transformChatStream(
 			let upstreamError: unknown;
 			// Set at the protocol's completion boundary; a transport error after it is only teardown.
 			let upstreamCompleted = false;
-			let sawFinish = false;
+			const choices: ChoiceProgress = { open: new Set(), finished: new Set() };
 			try {
 				while (true) {
 					const { value, done } = await readUntilFailure(reader, () => upstreamCompleted);
@@ -224,8 +227,7 @@ export function transformChatStream(
 						}
 
 						applyStreamQuirks(payload, state, args.providerId);
-						if (chatChunkCompletes(payload, sawFinish)) upstreamCompleted = true;
-						if (chatChunkHasFinish(payload)) sawFinish = true;
+						if (chatChunkCompletes(payload, choices)) upstreamCompleted = true;
 						controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
 					}
 				}
@@ -937,7 +939,7 @@ export function transformChatStreamToResponses(
 			let upstreamError: unknown;
 			// Set at the protocol's completion boundary; a transport error after it is only teardown.
 			let upstreamCompleted = false;
-			let sawFinish = false;
+			const choices: ChoiceProgress = { open: new Set(), finished: new Set() };
 			let createdEmitted = false;
 			let upstreamFailure: { code: string | null; message: string } | null = null;
 			try {
@@ -973,6 +975,11 @@ export function transformChatStreamToResponses(
 
 						if (mode === "responses" && !isChatPayload) {
 							const normalized = normalizeResponsesEvent(event) ?? "response.event";
+							// Set before the frame is queued: a later reset must not error the stream and
+							// discard the queued terminal frame.
+							if (normalized === "response.completed" || normalized === "response.incomplete" || normalized === "response.failed") {
+								upstreamCompleted = true;
+							}
 							if (sealResponsesReasoningPayload(payload, args)) {
 								controller.enqueue(encoder.encode(`event: ${normalized}\ndata: ${JSON.stringify(payload)}\n\n`));
 								continue;
@@ -1013,8 +1020,7 @@ export function transformChatStreamToResponses(
 						if (payload?.id) nativeResponseId = payload.id;
 						if (payload?.created) createdAt = payload.created;
 						if (payload?.model) model = payload.model;
-						if (chatChunkCompletes(payload, sawFinish)) upstreamCompleted = true;
-						if (chatChunkHasFinish(payload)) sawFinish = true;
+						if (chatChunkCompletes(payload, choices)) upstreamCompleted = true;
 
 						finalResponse = accumulateChatCompletion(finalResponse, payload);
 

@@ -122,15 +122,16 @@ data: ${JSON.stringify({ type: "response.completed", response: completedResponse
 	].join("");
 
 	const COMPLETE_CASES = [
-		["Chat upstream ([DONE]) to a Chat client", "chat", "openai.chat.completions", CHAT_COMPLETE],
-		["Chat upstream (finish and usage) to a Chat client", "chat", "openai.chat.completions", CHAT_COMPLETE_NO_DONE],
-		["Chat upstream to a Responses client", "chat", "openai.responses", CHAT_COMPLETE],
-		["Chat upstream to a Messages client", "chat", "anthropic.messages", CHAT_COMPLETE],
-		["Responses upstream (response.completed) to a Chat client", "responses", "openai.chat.completions", RESPONSES_COMPLETE],
-		["Responses upstream to a Messages client", "responses", "anthropic.messages", RESPONSES_COMPLETE],
+		["Chat upstream ([DONE]) to a Chat client", "chat", "openai.chat.completions", CHAT_COMPLETE, '"finish_reason":"stop"'],
+		["Chat upstream (finish and usage) to a Chat client", "chat", "openai.chat.completions", CHAT_COMPLETE_NO_DONE, '"finish_reason":"stop"'],
+		["Chat upstream to a Responses client", "chat", "openai.responses", CHAT_COMPLETE, "response.completed"],
+		["Chat upstream to a Messages client", "chat", "anthropic.messages", CHAT_COMPLETE, "message_stop"],
+		["Responses upstream (response.completed) to a Chat client", "responses", "openai.chat.completions", RESPONSES_COMPLETE, '"finish_reason":"stop"'],
+		["Responses upstream to a Responses client", "responses", "openai.responses", RESPONSES_COMPLETE, "response.completed"],
+		["Responses upstream to a Messages client", "responses", "anthropic.messages", RESPONSES_COMPLETE, "message_stop"],
 	] as const;
 
-	it.each(COMPLETE_CASES)("%s: a reset after completion is teardown, the stream ends normally", async (_label, route, protocol, complete) => {
+	it.each(COMPLETE_CASES)("%s: a reset after completion is teardown, the stream ends normally", async (_label, route, protocol, complete, terminal) => {
 		const upstream = resetUpstream(complete);
 		const adapted = resolveStreamForProtocol(upstream.response, args(protocol), route);
 		const reader = adapted.getReader();
@@ -147,6 +148,8 @@ data: ${JSON.stringify({ type: "response.completed", response: completedResponse
 			}
 		})()).resolves.toBeUndefined();
 		expect(chunks.join("")).toContain("done");
+		// The terminal frame was still queued when the connection reset; it must reach the client.
+		expect(chunks.join("")).toContain(terminal);
 	});
 
 	it.each(COMPLETE_CASES)("%s: billing keeps the completed output after a late reset", async (_label, route, protocol, complete) => {
@@ -168,5 +171,55 @@ data: ${JSON.stringify({ type: "response.completed", response: completedResponse
 		await finalized;
 		expect(ctx.meta.upstreamStreamBroken).toBeUndefined();
 		expect(info.aborted).toBe(false);
+	});
+
+	// A stop reason is not completion: a reset before the protocol's end is a failure.
+	const anthropicFrame = (event: string, data: unknown) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+	const chatChunk = (choices: unknown[], extra: Record<string, unknown> = {}) =>
+		chatFrame({ id: "chatcmpl_1", object: "chat.completion.chunk", created: 1, model: "test-model", choices, ...extra });
+	const EARLY_CASES = [
+		["Chat: finish_reason without usage or [DONE]", "openai.chat.completions",
+			chatChunk([{ index: 0, delta: { content: "done" } }]) + chatChunk([{ index: 0, delta: {}, finish_reason: "stop" }])],
+		["Chat: one of two choices finished, with usage", "openai.chat.completions",
+			chatChunk([{ index: 0, delta: { content: "a" } }, { index: 1, delta: { content: "b" } }]) +
+			chatChunk([{ index: 0, delta: {}, finish_reason: "stop" }], { usage: { prompt_tokens: 3, completion_tokens: 2, total_tokens: 5 } })],
+		["Messages: message_delta before message_stop", "anthropic.messages",
+			anthropicFrame("message_start", { type: "message_start", message: { id: "msg_1", type: "message", role: "assistant", content: [], model: "m", usage: { input_tokens: 3, output_tokens: 1 } } }) +
+			anthropicFrame("content_block_start", { type: "content_block_start", index: 0, content_block: { type: "text", text: "" } }) +
+			anthropicFrame("content_block_delta", { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: "done" } }) +
+			anthropicFrame("content_block_stop", { type: "content_block_stop", index: 0 }) +
+			anthropicFrame("message_delta", { type: "message_delta", delta: { stop_reason: "end_turn", stop_sequence: null }, usage: { output_tokens: 1 } })],
+	] as const;
+
+	it.each(EARLY_CASES)("native stream, %s: a reset is a broken upstream for billing", async (_label, protocol, frames) => {
+		const upstream = resetUpstream(frames);
+		const ctx: any = { requestId: "req_early", workspaceId: "team_test", endpoint: args(protocol).endpoint, protocol, meta: {} };
+		let finalUsage!: () => void;
+		const finalized = new Promise<void>((resolve) => { finalUsage = resolve; });
+		const response = await passthroughWithPricing({ upstream: upstream.response, ctx, provider: "deepinfra", priceCard: null, onFinalUsage: () => finalUsage() });
+		const client = response.body!.getReader();
+		await client.read();
+		await client.cancel();
+		upstream.reset();
+		await finalized;
+		expect(ctx.meta.upstreamStreamBroken).toBe(true);
+	});
+
+	it("adapter stream, Chat with one of two choices finished: a reset is a broken upstream for billing", async () => {
+		const upstream = resetUpstream(EARLY_CASES[1][2]);
+		const adapted = resolveStreamForProtocol(upstream.response, args("openai.chat.completions"), "chat");
+		const ctx: any = { requestId: "req_early", workspaceId: "team_test", endpoint: "chat.completions", protocol: "openai.chat.completions", meta: {} };
+		let finalUsage!: () => void;
+		const finalized = new Promise<void>((resolve) => { finalUsage = resolve; });
+		const response = await passthroughWithPricing({
+			upstream: new Response(adapted, { headers: { "Content-Type": "text/event-stream" } }),
+			ctx, provider: "deepinfra", priceCard: null, onFinalUsage: () => finalUsage(),
+		});
+		const client = response.body!.getReader();
+		await client.read();
+		await client.cancel();
+		upstream.reset();
+		await finalized;
+		expect(ctx.meta.upstreamStreamBroken).toBe(true);
 	});
 });

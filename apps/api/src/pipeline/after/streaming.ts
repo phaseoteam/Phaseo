@@ -272,6 +272,13 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
 
         const parser = new SseParser();
         let sawTerminalSnapshot = false;
+        // Protocol-level completion, which a stop reason alone is not: Chat `[DONE]` (or a full
+        // chat.completion, or usage once every choice has finished), the final Responses snapshot,
+        // Messages message_stop. A transport error after it is teardown; before it, a failure.
+        let protocolCompleted = false;
+        let messageStopSeen = false;
+        const openChoices = new Set<number>();
+        const finishedChoices = new Set<number>();
         let lastSeenUsage: any = null;
         // After a Chat Completions terminal, usage settles at the stream's end: its
         // [DONE], or the upstream closing (see the terminal handling below).
@@ -335,7 +342,10 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                     const dataStr = frame.data;
                     const eventName = frame.event;
                     if (!dataStr) continue;
-                    if (dataStr.trim() === "[DONE]") settleUsageAtEnd();
+                    if (dataStr.trim() === "[DONE]") {
+                        protocolCompleted = true;
+                        settleUsageAtEnd();
+                    }
                     // Chat streams end with exactly one data: [DONE], written after the
                     // last chunk below; an upstream one is not forwarded mid-stream.
                     if (chatTerminal && dataStr.trim() === "[DONE]") continue;
@@ -386,6 +396,30 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                                 // Never let event consumer errors break stream forwarding.
                             }
                         }
+                    }
+
+                    for (const event of events) {
+                        if ((event.type === "delta_text" || event.type === "delta_tool" || event.type === "delta_content_part") &&
+                            typeof event.choiceIndex === "number") openChoices.add(event.choiceIndex);
+                        if (event.type === "stop" && typeof event.choiceIndex === "number") {
+                            openChoices.add(event.choiceIndex);
+                            finishedChoices.add(event.choiceIndex);
+                        }
+                    }
+                    const frameProtocol = detectedProtocol ?? ctx.protocol;
+                    if (frameProtocol === "openai.chat.completions") {
+                        const allChoicesFinished = finishedChoices.size > 0 &&
+                            [...openChoices].every((index) => finishedChoices.has(index));
+                        if (json?.object === "chat.completion" || (allChoicesFinished && (json?.usage || events.some((event) => event.type === "usage")))) {
+                            protocolCompleted = true;
+                        }
+                    } else if (frameProtocol === "anthropic.messages") {
+                        if (eventName === "message_stop" || json?.type === "message_stop") {
+                            protocolCompleted = true;
+                            messageStopSeen = true;
+                        }
+                    } else if (events.some((event) => event.type === "snapshot" && event.isFinal)) {
+                        protocolCompleted = true;
                     }
 
                     const usageFromEvents =
@@ -490,7 +524,11 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                         // even when content chunks carried usage too, and other choices can still
                         // be writing. Its usage is the last one reported, so it settles when the
                         // stream ends, not with whatever usage the finish chunk had seen.
-                        if ((detectedProtocol ?? ctx.protocol) === "openai.chat.completions") {
+                        // A Messages stream's stop reason (message_delta) comes before message_stop:
+                        // it settles at message_stop or the stream end, so a reset in between is
+                        // seen as a broken stream.
+                        if ((detectedProtocol ?? ctx.protocol) === "openai.chat.completions" ||
+                            (detectedProtocol ?? ctx.protocol) === "anthropic.messages") {
                             settleUsageAtStreamEnd = true;
                         } else {
                             finalUsageAfterWrite = usageCandidate ?? lastSeenUsage;
@@ -567,14 +605,16 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                             sawFinalUsage: true,
                         });
                     }
+                    // message_stop is downstream: the Messages stream settles with its usage.
+                    if (messageStopSeen) settleUsageAtEnd();
 
                 }
             }
         } catch (err) {
             readError = err;
             // Billing treats a broken upstream as a stream failure, even after the client left. A
-            // transport error after the terminal event is only teardown: the output was complete.
-            if (!sawTerminalSnapshot) ctx.meta.upstreamStreamBroken = true;
+            // transport error after protocol completion is only teardown: the output was complete.
+            if (!protocolCompleted) ctx.meta.upstreamStreamBroken = true;
         } finally {
             // Only a real terminal event (a stop or the final snapshot) completes the
             // stream. Without one (a provider disconnect after partial output) the client
