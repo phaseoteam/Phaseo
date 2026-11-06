@@ -140,6 +140,8 @@ const CASES: Case[] = [
 		persisted: () => expect(write("presets", "insert")?.payload).toMatchObject({ source_preset_id: SOURCE }) },
 	{ label: "apply an upstream version", method: "POST", path: `/${PRESET}/upstream`, body: { version_id: VERSION },
 		persisted: () => expect(rpc("apply_preset_upstream_version")?.args).toMatchObject({ target_preset_id: PRESET, target_version_id: VERSION }) },
+	{ label: "archive a preset", method: "DELETE", path: `/${PRESET}`,
+		persisted: () => expect((write("presets", "update")?.payload as any)?.archived_at).toEqual(expect.any(String)) },
 ];
 
 async function send(testCase: { method: string; path: string; body?: unknown; draft?: unknown }) {

@@ -450,6 +450,8 @@ async function handleDeletePreset(req: Request) {
 	if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
+	// Archiving frees the slug, so another preset can answer the same "@slug" afterwards.
+	const appError = presetWriteError(auth.value); if (appError) return appError;
 
 	const identifier = parsePathId(new URL(req.url));
 	if (!identifier) return json({ error: "bad_request", message: "Preset id, slug, or name is required" }, 400, { "Cache-Control": "no-store" });
