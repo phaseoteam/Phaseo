@@ -1,10 +1,11 @@
 import { DatabaseSync } from "node:sqlite";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
-// A stream charged at drain checkpoints, on the real seed SQL: the coordinator counts the charged
-// total from memory (replace records keyed by billing request id) while the charge row also sits
-// in gateway_request_charges. Checkpoint, reseed and admission must count it exactly once, and so
-// must a coordinator that restarts and only has the database.
+// A stream charged at drain checkpoints, on the real seed SQL. The database is the source of truth
+// for stepped charges: the seed counts the charge row (until its request row lands) and lists it by
+// billing id, whatever the coordinator excludes, so a coordinator with no copy of it, fresh or
+// restarted, counts it exactly once. (Dropping an in-memory copy for a listed id is the
+// coordinator's side of the contract, tested with it.)
 const runtime = vi.hoisted(() => ({ bindings: null as Record<string, unknown> | null, background: [] as Promise<unknown>[] }));
 
 vi.mock("cloudflare:workers", () => ({
@@ -25,7 +26,6 @@ const WORKSPACE = "10000000-0000-4000-8000-000000000001";
 const KEY = "30000000-0000-4000-8000-000000000001";
 const OTHER_KEY = "30000000-0000-4000-8000-000000000002";
 const THIRD_KEY = "30000000-0000-4000-8000-000000000003";
-const FOURTH_KEY = "30000000-0000-4000-8000-000000000004";
 const DEPARTMENT = "40000000-0000-4000-8000-000000000001";
 const BILLING_ID = "bill-stream-1";
 const REQUEST_ID = "req-stream-1";
@@ -94,7 +94,7 @@ beforeAll(async () => {
 		insert into public.workspaces (id) values ('${WORKSPACE}');
 		insert into public.wallets (workspace_id, balance_nanos) values ('${WORKSPACE}', ${100 * DOLLAR});
 		insert into public.keys (id, workspace_id, department_id) values ('${KEY}', '${WORKSPACE}', '${DEPARTMENT}'),
-			('${OTHER_KEY}', '${WORKSPACE}', '${DEPARTMENT}'), ('${THIRD_KEY}', '${WORKSPACE}', null), ('${FOURTH_KEY}', '${WORKSPACE}', null);
+			('${OTHER_KEY}', '${WORKSPACE}', '${DEPARTMENT}'), ('${THIRD_KEY}', '${WORKSPACE}', null);
 		insert into public.workspace_departments (id, workspace_id, name) values ('${DEPARTMENT}', '${WORKSPACE}', 'Engineering');
 		-- Both $10 a day: the department decides for its keys, the workspace for the third key.
 		insert into public.workspace_department_budgets (workspace_id, department_id, interval, limit_nanos) values ('${WORKSPACE}', '${DEPARTMENT}', 'daily', ${10 * DOLLAR});
@@ -108,46 +108,35 @@ beforeAll(async () => {
 afterAll(async () => { await db?.close(); });
 
 describe("stepped stream charges in the spend-limit coordinator", () => {
-	it("counts a checkpoint once through reseed, replacement, restart and the request row landing", async () => {
+	it("counts a stepped charge once from the database, across a restart and the request row landing", async () => {
+		const department = (nanos: number) => ({ outcome: "denied", keyLimit: { reason: "department_daily_cost_budget_reached", currentValue: nanos, departmentId: DEPARTMENT } });
+		const workspace = (nanos: number) => ({ outcome: "denied", keyLimit: { reason: "workspace_daily_cost_budget_reached", currentValue: nanos } });
+
+		// $6 taken at the first checkpoint, the stream still open: counted once ($6 of $10), and listed.
 		startCoordinator();
-		// The checkpoint is recorded while the coordinator holds the charge row's $6 from its seed.
 		expect(await admit(KEY, "a-1")).toMatchObject({ outcome: "allowed" });
-		await coordinator.record(WORKSPACE, { keyId: KEY, billingRequestId: BILLING_ID, requestId: REQUEST_ID, costNanos: 6 * DOLLAR, requests: 1, replace: true, revision: 1 });
+		expect(await admit(THIRD_KEY, "a-2")).toMatchObject({ outcome: "allowed" });
+		expect(seeds.at(-1).stepped_charges).toEqual([{ billing_id: BILLING_ID, charged_nanos: 6 * DOLLAR }]);
+		expect(seeds.at(-1).budget_status.budgets[0].usage_nanos).toBe(6 * DOLLAR);
+		expect(seeds.at(-1).department_budgets[0].usage_nanos).toBe(6 * DOLLAR);
+		// An exclusion naming the stream never hides the charge row.
+		const excluded = (await db.query("select public.gateway_spend_limit_seed($1, $2::uuid[], $3::text[]) as seed",
+			[WORKSPACE, [KEY], [REQUEST_ID, BILLING_ID]])).rows[0].seed;
+		expect(excluded.budget_status.budgets[0].usage_nanos).toBe(6 * DOLLAR);
 
-		// A new key forces a full reseed. The coordinator lists the checkpoint's request id and
-		// billing id; the seed skips the charge row by its billing id and counts nothing twice.
-		expect(await admit(OTHER_KEY, "a-2")).toMatchObject({ outcome: "allowed" });
-		expect(seedCalls.at(-1)?.sort()).toEqual([BILLING_ID, REQUEST_ID].sort());
-		expect(seeds.at(-1).budget_status.budgets[0].usage_nanos).toBe(0);
-		expect(seeds.at(-1).department_budgets[0].usage_nanos).toBe(0);
-		// $6 of $10: still admitted (counted twice it would be $12 and refused).
-		expect(await admit(KEY, "a-3")).toMatchObject({ outcome: "allowed" });
-
-		// The next checkpoint replaces the amount ($11 taken in all), in memory and in the charge row.
+		// A later checkpoint takes the total to $11; the coordinator restarts and reads it from the database.
 		await charged(11 * DOLLAR);
-		await coordinator.record(WORKSPACE, { keyId: KEY, billingRequestId: BILLING_ID, requestId: REQUEST_ID, costNanos: 11 * DOLLAR, requests: 1, replace: true, revision: 2 });
-		const department = { reason: "department_daily_cost_budget_reached", currentValue: 11 * DOLLAR, departmentId: DEPARTMENT };
-		const workspace = { reason: "workspace_daily_cost_budget_reached", currentValue: 11 * DOLLAR };
-		expect(await admit(KEY, "a-4")).toMatchObject({ outcome: "denied", keyLimit: department });
-		expect(await admit(THIRD_KEY, "a-5")).toMatchObject({ outcome: "denied", keyLimit: workspace });
-
-		// After a restart only the database knows the charge (the seed counts its row): still $11.
 		startCoordinator();
-		expect(await admit(KEY, "a-6")).toMatchObject({ outcome: "denied", keyLimit: department });
-		expect(await admit(THIRD_KEY, "a-6b")).toMatchObject({ outcome: "denied", keyLimit: workspace });
-		// A checkpoint recorded after the restart is counted from memory once the next reseed lists it.
-		// (Until that reseed, which runs within a minute, the seed's earlier count of the charge row
-		// and the new pending entry both apply: an early refusal, never an under-count.)
-		await coordinator.record(WORKSPACE, { keyId: KEY, billingRequestId: BILLING_ID, requestId: REQUEST_ID, costNanos: 11 * DOLLAR, requests: 1, replace: true, revision: 3 });
-		expect(await admit(FOURTH_KEY, "a-6c")).toMatchObject({ outcome: "denied", keyLimit: workspace });
-		expect(seedCalls.at(-1)?.sort()).toEqual([BILLING_ID, REQUEST_ID].sort());
+		expect(await admit(KEY, "a-3")).toMatchObject(department(11 * DOLLAR));
+		expect(await admit(THIRD_KEY, "a-4")).toMatchObject(workspace(11 * DOLLAR));
 
-		// The request row lands at finalization ($11, the stream was cancelled): counted through it instead.
+		// The request row lands at finalization ($11, the stream was cancelled): counted through it
+		// instead, and no longer listed.
 		await db.query(`insert into public.gateway_requests (workspace_id, request_id, billing_request_id, key_id, success, cost_nanos)
 			values ($1, $2, $3, $4, false, $5)`, [WORKSPACE, REQUEST_ID, BILLING_ID, KEY, 11 * DOLLAR]);
 		startCoordinator();
-		await coordinator.record(WORKSPACE, { keyId: KEY, billingRequestId: BILLING_ID, requestId: REQUEST_ID, costNanos: 11 * DOLLAR, requests: 1, replace: true, final: true });
-		expect(await admit(OTHER_KEY, "a-7")).toMatchObject({ outcome: "denied", keyLimit: department });
-		expect(await admit(THIRD_KEY, "a-8")).toMatchObject({ outcome: "denied", keyLimit: workspace });
+		expect(await admit(OTHER_KEY, "a-5")).toMatchObject(department(11 * DOLLAR));
+		expect(await admit(THIRD_KEY, "a-6")).toMatchObject(workspace(11 * DOLLAR));
+		expect(seeds.at(-1).stepped_charges).toEqual([]);
 	});
 });

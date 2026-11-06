@@ -124,6 +124,10 @@ begin
       from public.gateway_requests charged
       where charged.workspace_id = p_workspace_id and charged.key_id = p_key_id
         and charged.success is not true and charged.cost_nanos > 0
+      -- Unbilled spend (private.unbilled_spend), cost only.
+      union all
+      select unbilled.at, unbilled.nanos, false
+      from private.unbilled_spend(p_workspace_id, least(v_day_start, v_week_start, v_month_start), array[p_key_id]) unbilled
     ) usage;
 
     -- Video create audit rows have zero cost until completion. Count the unpaid
