@@ -1672,11 +1672,12 @@ export const ImagesEditSchema = lazySchema(() => z.object({
             message: "GPT Image models always return base64 images and do not accept response_format",
         });
     }
-    if (model === "gpt-image-1-mini" && body.input_fidelity != null) {
+    // OpenAI: gpt-image-1-mini supports only low (its default).
+    if (model === "gpt-image-1-mini" && body.input_fidelity === "high") {
         ctx.addIssue({
             code: "custom",
             path: ["input_fidelity"],
-            message: "gpt-image-1-mini does not support input_fidelity",
+            message: "gpt-image-1-mini supports only input_fidelity low",
         });
     }
     if (body.background === "transparent" && body.output_format === "jpeg") {
@@ -1991,7 +1992,8 @@ export const AudioTranscriptionSchema = lazySchema(() => z.object({
 	),
 	output_content: z.string().optional(),
 	session_id: z.string().trim().min(1).max(256).optional(),
-    context_bias: z.array(z.string().min(1).regex(/^[^,\s]+$/, "context_bias entries cannot contain commas or whitespace")).max(100).optional(),
+    // Per-model rules live in the superRefine below (Voxtral 3 takes phrases).
+    context_bias: z.array(z.string().min(1)).optional(),
     include: z.array(z.string()).optional(),
     chunking_strategy: z.union([
         z.literal("auto"),
@@ -2019,7 +2021,10 @@ export const AudioTranscriptionSchema = lazySchema(() => z.object({
     const isStepTranscription = ["stepaudio-2.5-asr", "stepaudio-2-asr-pro", "step-asr-1.1-stream"].includes(model);
     const isDiarize = model === "gpt-4o-transcribe-diarize";
     const isMorpheusTranscription = body.model.toLowerCase().startsWith("morpheus/");
-	const isXAiTranscription = model === "grok-transcribe";
+	// Voxtral 3 changed context_bias: phrases with spaces and no fixed count.
+	const isVoxtral3 = isMistralTranscription && /^voxtral-(?:mini|small)-transcribe-3(?:$|[-.])/.test(model);
+	// xAI serves grok-transcribe and grok-voice-transcribe-2.0 from the same /v1/stt endpoint.
+	const isXAiTranscription = body.model.toLowerCase().startsWith("spacex-ai/") || model === "grok-transcribe" || model.startsWith("grok-voice-transcribe");
 	const isMetaTranscription = model === "muse-voice-transcribe-1.0";
 	const isElevenLabsTranscription = body.model.toLowerCase().startsWith("eleven-labs/") || model.startsWith("scribe-");
     const sources = [body.file, body.file_url, body.s3_presigned_url, body.file_id].filter(Boolean);
@@ -2032,10 +2037,15 @@ export const AudioTranscriptionSchema = lazySchema(() => z.object({
 	} else if (isMorpheusTranscription && sources.length !== 1) {
 		ctx.addIssue({ code: "custom", path: ["file"], message: "Morpheus transcription requires exactly one of file, file_url, or s3_presigned_url" });
     }
-	const isOvhWhisper = model === "whisper-large-v3" || model === "whisper-large-v3-turbo";
-	const maxFileBytes = isElevenLabsTranscription ? 5 * 1024 * 1024 * 1024 : isXAiTranscription ? 500 * 1024 * 1024 : isMetaTranscription ? 32 * 1024 * 1024 : isOvhWhisper ? 2048 * 1024 * 1024 : 25 * 1024 * 1024;
+	// This is only a ceiling: the largest upload any provider of the model takes.
+	// Open Whisper large-v3 models are served by several providers with different
+	// limits (OVHcloud 2048 MB, Together 80 MB, Groq 25 MB), so the per-provider
+	// limit comes from each route's stored max_file_size_bytes and the provider's
+	// adapter (see OPENAI_COMPAT_TRANSCRIPTION_MAX_BYTES).
+	const isOpenWhisperLargeV3 = model === "whisper-large-v3" || model === "whisper-large-v3-turbo";
+	const maxFileBytes = isElevenLabsTranscription ? 5 * 1024 * 1024 * 1024 : isXAiTranscription ? 500 * 1024 * 1024 : isMetaTranscription ? 32 * 1024 * 1024 : isOpenWhisperLargeV3 ? 2048 * 1024 * 1024 : 25 * 1024 * 1024;
     if (!isMistralTranscription && body.file && body.file.size > maxFileBytes) {
-		ctx.addIssue({ code: "custom", path: ["file"], message: `Transcription files must be ${isElevenLabsTranscription ? "5 GB" : isXAiTranscription ? "500 MB" : isMetaTranscription ? "32 MB" : isOvhWhisper ? "2048 MB" : "25 MB"} or smaller` });
+		ctx.addIssue({ code: "custom", path: ["file"], message: `Transcription files must be ${isElevenLabsTranscription ? "5 GB" : isXAiTranscription ? "500 MB" : isMetaTranscription ? "32 MB" : isOpenWhisperLargeV3 ? "2048 MB" : "25 MB"} or smaller` });
     }
     const file = body.file;
     const filename = file && typeof File !== "undefined" && file instanceof File ? file.name.toLowerCase() : "";
@@ -2073,8 +2083,22 @@ export const AudioTranscriptionSchema = lazySchema(() => z.object({
 		ctx.addIssue({ code: "custom", path: ["keywords"], message: "ElevenLabs supports at most 1000 keyterms" });
 	}
 	for (const [index, keyword] of (isElevenLabsTranscription ? body.keywords ?? [] : []).entries()) {
-		if (keyword.length >= 50 || keyword.trim().split(/\s+/).length > 5 || /[<>{}\[\]\\]/.test(keyword)) {
-			ctx.addIssue({ code: "custom", path: ["keywords", index], message: "ElevenLabs keyterms must be under 50 characters, at most 5 words, and exclude angle/square/curly brackets and backslashes" });
+		// ElevenLabs: "at most 50 characters", "at most 5 words".
+		if (keyword.length > 50 || keyword.trim().split(/\s+/).length > 5 || /[<>{}\[\]\\]/.test(keyword)) {
+			ctx.addIssue({ code: "custom", path: ["keywords", index], message: "ElevenLabs keyterms must be at most 50 characters and 5 words, without < > { } [ ] or backslashes" });
+		}
+	}
+	// Voxtral 3 accepts terms, multi-word names and descriptive sentences, with no
+	// fixed count (entries share the context window; Mistral returns 400 if they
+	// don't fit). Every other model keeps the earlier rule: up to 100 single terms.
+	if (!isVoxtral3) {
+		if ((body.context_bias?.length ?? 0) > 100) {
+			ctx.addIssue({ code: "custom", path: ["context_bias"], message: "context_bias takes at most 100 entries for this model" });
+		}
+		for (const [index, entry] of (body.context_bias ?? []).entries()) {
+			if (/[,\s]/.test(entry)) {
+				ctx.addIssue({ code: "custom", path: ["context_bias", index], message: `context_bias entries cannot contain commas or whitespace for this model${isMistralTranscription ? "; join words with underscores, or use a Voxtral 3 model for phrases" : ""}` });
+			}
 		}
 	}
     if ((body.known_speaker_names || body.known_speaker_references) && !isDiarize) {
@@ -2289,7 +2313,12 @@ export const VideoGenerationSchema = lazySchema(() => z.object({
 	negative_prompt: z.string().optional(),
 	generate_audio: z.boolean().optional(),
 	enhance_prompt: z.boolean().optional(),
-	compression_quality: z.number().int().min(0).max(100).optional(),
+	// Veo takes "optimized" or "lossless". The old 0-100 number stays valid here for
+	// compatible providers; the Vertex executor rejects it with a clear message.
+	compression_quality: z.union([
+		z.enum(["optimized", "lossless"]),
+		z.number().int().min(0).max(100),
+	]).optional(),
 	person_generation: z.string().optional(),
 	resize_mode: z.string().optional(),
 	input_references: z.array(VideoInputReferenceSchema).optional(),

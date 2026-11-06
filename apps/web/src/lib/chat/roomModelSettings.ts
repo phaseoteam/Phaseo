@@ -75,8 +75,12 @@ type AudioModelSchema = {
 	customVoice?: boolean;
 	formatOptions: string[];
 	supportsSpeechSpeed: boolean;
+	/** The provider's speed range, when it is narrower than 0.25 to 4. */
+	speedRange?: { min: number; max: number };
 	supportsLanguageHint: boolean;
 };
+
+const DEFAULT_SPEED_RANGE = { min: 0.25, max: 4 };
 
 export type CapabilityParamsById = Record<string, unknown> | null | undefined;
 
@@ -131,10 +135,19 @@ function getCapabilityParams(
 	return null;
 }
 
+/** Stored speed bounds replace the built-in ones; either bound may be stored alone. */
+function applySpeedParams(schema: AudioModelSchema, params: unknown): AudioModelSchema {
+	const speed = normalizeParameterSpecs(params).speed;
+	if (!speed || (speed.min === undefined && speed.max === undefined)) return schema;
+	const current = schema.speedRange ?? DEFAULT_SPEED_RANGE;
+	return { ...schema, speedRange: { min: speed.min ?? current.min, max: speed.max ?? current.max } };
+}
+
 function applyVoiceParams(
-	schema: AudioModelSchema,
+	builtIn: AudioModelSchema,
 	params: unknown,
 ): AudioModelSchema {
+	const schema = applySpeedParams(builtIn, params);
 	const voiceOptions = readVoiceIdsFromParams(params);
 	if (voiceOptions.length === 0) return schema;
 	const voiceSpec = readVoiceSpec(params);
@@ -148,11 +161,13 @@ function applyVoiceParams(
 		defaultVoice && voiceOptions.includes(defaultVoice)
 			? [defaultVoice, ...voiceOptions.filter((voice) => voice !== defaultVoice)]
 			: voiceOptions;
+	// A stored list decides whether other ids are allowed: the gateway rejects ids
+	// outside a closed list, so the built-in custom-voice field is dropped then.
 	return {
 		...schema,
 		voiceOptions: orderedVoiceOptions,
 		...(Object.keys(voiceLabels).length > 0 ? { voiceLabels } : {}),
-		...(voiceSpec?.open ? { customVoice: true } : {}),
+		customVoice: Boolean(voiceSpec?.open),
 	};
 }
 
@@ -398,16 +413,137 @@ export function getAudioModelSchema(
 		"audio",
 		"audio.generate",
 	]);
-	if (modelIdIncludes(modelId, ["mimo-v2-tts"])) {
-		return applyVoiceParams({
-			voiceOptions: ["mimo_Default"],
-			formatOptions: ["mp3", "wav", "pcm"],
-			supportsSpeechSpeed: false,
-			supportsLanguageHint: false,
-		}, speechParams);
+	return applyVoiceParams(getBuiltInSpeechSchema(modelId), speechParams);
+}
+
+// Fallback speech options per model family, from each provider's docs (checked
+// 2026-11-05). Routes with stored voice params use those instead, so the long
+// lists here are a documented subset, not every voice.
+const GEMINI_TTS_VOICES = [
+	"Zephyr", "Puck", "Charon", "Kore", "Fenrir", "Leda", "Orus", "Aoede", "Callirrhoe", "Autonoe",
+	"Enceladus", "Iapetus", "Umbriel", "Algieba", "Despina", "Erinome", "Algenib", "Rasalgethi",
+	"Laomedeia", "Achernar", "Alnilam", "Schedar", "Gacrux", "Pulcherrima", "Achird",
+	"Zubenelgenubi", "Vindemiatrix", "Sadachbia", "Sadaltager", "Sulafat",
+];
+const GROK_TTS_VOICES = [
+	"eve", "ara", "leo", "rex", "sal", "carina", "zagan", "helix", "orion", "luna", "iris", "altair",
+	"zenith", "perseus", "helios", "lux", "kepler", "rigel", "cosmo", "celeste", "ursa", "sirius",
+	"lumen", "castor", "naksh", "atlas", "aurora", "liora",
+];
+const ELEVENLABS_VOICE_LABELS: Record<string, string> = {
+	"21m00Tcm4TlvDq8ikWAM": "Rachel",
+	AZnzlk1XvdvUeBnXmlld: "Domi",
+	EXAVITQu4vr4xnSDxMaL: "Bella",
+	ErXwobaYiN019PkySvjV: "Antoni",
+	MF3mGyEYCl7XYWbV9V6O: "Elli",
+	TxGEqnHWrfWFTfGW9XjX: "Josh",
+	VR6AewLTigWG4xSOukaG: "Arnold",
+	pNInz6obpgDQGcFmaJgB: "Adam",
+	yoZ06aMxZJJ28mfd3POQ: "Sam",
+};
+const RIVA_VOICES: Record<string, string[]> = {
+	"en-us": [
+		"English-US.Female-1", "English-US.Male-1", "English-US.Female-Calm", "English-US.Female-Neutral",
+		"English-US.Female-Happy", "English-US.Female-Angry", "English-US.Female-Fearful",
+		"English-US.Female-Sad", "English-US.Male-Calm", "English-US.Male-Neutral",
+		"English-US.Male-Happy", "English-US.Male-Angry",
+	],
+	"de-de": ["German-DE-Male-1"],
+	"es-es": ["Spanish-ES-Female-1", "Spanish-ES-Male-1"],
+	"it-it": ["Italian-IT-Female-1", "Italian-IT-Male-1"],
+};
+
+function speechSchema(
+	voiceOptions: string[],
+	formatOptions: string[],
+	speedRange: { min: number; max: number } | null,
+	extra: Partial<AudioModelSchema> = {},
+): AudioModelSchema {
+	return {
+		voiceOptions,
+		formatOptions,
+		supportsSpeechSpeed: speedRange !== null,
+		...(speedRange ? { speedRange } : {}),
+		supportsLanguageHint: false,
+		...extra,
+	};
+}
+
+function getBuiltInSpeechSchema(modelId: string): AudioModelSchema {
+	const id = modelId.toLowerCase();
+	// Xiaomi MiMo: VoiceDesign takes no voice and VoiceClone takes a voice sample, so
+	// neither has a list. Non-streaming output is wav.
+	if (id.includes("mimo-v2.5-tts-voicedesign") || id.includes("mimo-v2.5-tts-voiceclone")) {
+		return speechSchema([], ["wav"], null);
 	}
-	if (modelIdIncludes(modelId, ["gpt-4o-mini-tts", "gpt-4o-audio"])) {
-		return applyVoiceParams({
+	if (id.includes("mimo-v2.5-tts")) {
+		return speechSchema(["mimo_default", "冰糖", "茉莉", "苏打", "白桦", "Mia", "Chloe", "Milo", "Dean"], ["wav"], null);
+	}
+	if (id.includes("mimo-v2-tts")) {
+		return speechSchema(["mimo_default", "default_zh", "default_en"], ["wav"], null);
+	}
+	if (id.includes("grok-tts")) {
+		// xAI also takes mulaw and alaw, which the gateway's response_format does not.
+		return speechSchema(GROK_TTS_VOICES, ["mp3", "wav", "pcm"], { min: 0.7, max: 1.5 }, { supportsLanguageHint: true });
+	}
+	if (id.includes("gemini") && id.includes("tts")) {
+		// Gemini 3.8 TTS also takes custom voice ids (voice_... and voicekey_...).
+		const custom = /gemini-3\.8-flash(?:-lite)?-tts/.test(id);
+		return speechSchema(GEMINI_TTS_VOICES, ["wav", "pcm"], null, { supportsLanguageHint: true, ...(custom ? { customVoice: true } : {}) });
+	}
+	if (id.includes("eleven-labs/") || id.includes("elevenlabs")) {
+		// Any voice in the account's library works by id; v4 has no speed setting.
+		const speed = /eleven-v4/.test(id) ? null : { min: 0.7, max: 1.2 };
+		return speechSchema(Object.keys(ELEVENLABS_VOICE_LABELS), ["mp3", "wav", "pcm"], speed, {
+			voiceLabels: ELEVENLABS_VOICE_LABELS,
+			customVoice: true,
+		});
+	}
+	if (id.includes("minimax/speech-")) {
+		return speechSchema([
+			"English_expressive_narrator", "English_radiant_girl", "English_magnetic_voiced_man",
+			"English_compelling_lady1", "English_Aussie_Bloke", "English_captivating_female1",
+			"English_Upbeat_Woman", "English_Trustworth_Man", "English_CalmWoman", "English_Gentle-voiced_man",
+		], ["mp3", "wav", "flac", "pcm"], { min: 0.5, max: 2 });
+	}
+	if (id.includes("kokoro")) {
+		return speechSchema([
+			"af_heart", "af_bella", "af_nicole", "af_sarah", "af_sky", "am_michael", "am_fenrir",
+			"am_puck", "bf_emma", "bf_isabella", "bm_george", "bm_fable",
+		], ["mp3", "wav", "opus", "flac", "pcm"], DEFAULT_SPEED_RANGE);
+	}
+	if (id.includes("qwen3-tts-voicedesign")) {
+		// The voice is a free-text description; there are no preset voices.
+		return speechSchema([], ["mp3", "wav", "opus", "flac", "pcm"], null);
+	}
+	if (id.includes("qwen3-tts")) {
+		return speechSchema(
+			["Vivian", "Serena", "Uncle_Fu", "Dylan", "Eric", "Ryan", "Aiden", "Ono_Anna", "Sohee"],
+			["mp3", "wav", "opus", "flac", "pcm"],
+			null,
+		);
+	}
+	if (id.includes("stepfun/") && id.includes("tts")) {
+		// Voices shared by step-tts-mini, step-tts-2 and stepaudio-2.5-tts.
+		return speechSchema([
+			"elegantgentle-female", "livelybreezy-female", "wenrounansheng", "wenrougongzi",
+			"yuanqinansheng", "jingdiannvsheng", "wenroushunv", "tianmeinvsheng", "qingchunshaonv",
+			"cixingnansheng",
+		], ["mp3", "wav", "flac", "opus", "pcm"], { min: 0.5, max: 2 });
+	}
+	if (id.includes("voxtral") && id.includes("tts")) {
+		// Voices shared by Voxtral TTS and Voxtral TTS 3.
+		return speechSchema([
+			"en_paul_neutral", "en_paul_cheerful", "gb_jane_neutral", "gb_jane_confident",
+			"gb_oliver_neutral", "gb_oliver_cheerful", "fr_marie_neutral", "fr_marie_happy",
+		], ["mp3", "wav", "flac", "opus", "pcm"], null);
+	}
+	if (id.includes("riva-tts")) {
+		const locale = Object.keys(RIVA_VOICES).find((key) => id.endsWith(key));
+		return speechSchema(locale ? RIVA_VOICES[locale] : [], ["wav"], null);
+	}
+	if (id.includes("gpt-4o-mini-tts") || id.includes("gpt-4o-audio")) {
+		return {
 			voiceOptions: [
 				"marin",
 				"cedar",
@@ -426,10 +562,10 @@ export function getAudioModelSchema(
 			formatOptions: ["mp3", "wav", "opus"],
 			supportsSpeechSpeed: true,
 			supportsLanguageHint: true,
-		}, speechParams);
+		};
 	}
-	if (modelIdIncludes(modelId, ["tts-1"])) {
-		return applyVoiceParams({
+	if (id.includes("tts-1")) {
+		return {
 			voiceOptions: [
 				"alloy",
 				"ash",
@@ -444,30 +580,15 @@ export function getAudioModelSchema(
 			formatOptions: ["mp3", "wav", "opus"],
 			supportsSpeechSpeed: true,
 			supportsLanguageHint: false,
-		}, speechParams);
+		};
 	}
-	if (modelIdIncludes(modelId, ["grok-tts"])) {
-		return applyVoiceParams({
-			voiceOptions: ["eve", "ara", "rex", "sal", "leo"],
-			formatOptions: ["mp3", "wav", "pcm", "ulaw"],
-			supportsSpeechSpeed: true,
-			supportsLanguageHint: true,
-		}, speechParams);
-	}
-	if (modelIdIncludes(modelId, ["gemini", "tts"])) {
-		return applyVoiceParams({
-			voiceOptions: ["Kore", "Puck", "Zephyr", "Charon"],
-			formatOptions: ["wav"],
-			supportsSpeechSpeed: false,
-			supportsLanguageHint: true,
-		}, speechParams);
-	}
-	return applyVoiceParams({
+	// Unknown models: OpenAI-compatible defaults.
+	return {
 		voiceOptions: ["alloy"],
 		formatOptions: ["mp3", "wav"],
 		supportsSpeechSpeed: true,
 		supportsLanguageHint: true,
-	}, speechParams);
+	};
 }
 
 function normalizeCapabilityId(value: string): string {
@@ -705,7 +826,8 @@ export function buildAudioRequestOptions(
 			: (schema.formatOptions[0] ?? CHAT_AUDIO_SPEECH_FORMAT);
 		next.response_format = normalizedSpeechFormat;
 		if (schema.supportsSpeechSpeed) {
-			next.speed = Math.max(0.25, Math.min(4, Number(params.speechSpeed) || 1));
+			const { min, max } = schema.speedRange ?? DEFAULT_SPEED_RANGE;
+			next.speed = Math.max(min, Math.min(max, Number(params.speechSpeed) || 1));
 		}
 		return next;
 	}

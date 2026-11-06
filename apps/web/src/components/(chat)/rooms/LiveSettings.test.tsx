@@ -12,11 +12,12 @@ function renderToStaticMarkup(children: ReactNode) {
 
 describe("Live settings and usage", () => {
 	it("offers all built-in voices without generating paid voice previews", () => {
-		expect(new Set(LIVE_VOICE_OPTIONS.map((voice) => voice.id)).size).toBe(22);
+		expect(new Set(LIVE_VOICE_OPTIONS.map((voice) => voice.id)).size).toBe(31);
 		expect(LIVE_VOICE_OPTIONS).toEqual(expect.arrayContaining([
 			expect.objectContaining({ id: "vesper", label: "Vesper" }),
 			expect.objectContaining({ id: "willow", label: "Willow" }),
 			expect.objectContaining({ id: "bossa", label: "Bossa" }),
+			expect.objectContaining({ id: "noeul", label: "Noeul" }),
 		]));
 	});
 	it("describes documented Live voices without inventing profiles for the others", () => {
@@ -24,12 +25,21 @@ describe("Live settings and usage", () => {
 			.map((voice) => [voice.id, voice.description]))).toEqual({
 			beacon: "English · Filipino-influenced · Masculine",
 			bossa: "Portuguese · Brazilian-influenced · Feminine",
+			brise: "French · Feminine",
 			cinder: "English · Southern U.S.-influenced · Masculine",
 			delta: "English · Southern U.S.-influenced · Feminine",
+			flitz: "German · Masculine",
 			gleam: "English · North American-influenced · Feminine",
+			harema: "Japanese · Feminine",
+			juni: "German · Feminine",
 			meridian: "English · North American-influenced · Masculine",
+			nira: "Hindi · Feminine",
+			noeul: "Korean · Feminine",
+			nuri: "German · Feminine",
 			quartz: "English · Australian-influenced · Feminine",
 			ripple: "English · Australian-influenced · Masculine",
+			shida: "Japanese · Masculine",
+			sillage: "French · Masculine",
 			stone: "English · Irish-influenced · Masculine",
 			tempo: "Portuguese · Brazilian-influenced · Masculine",
 			vesper: "English · British-influenced · Masculine",

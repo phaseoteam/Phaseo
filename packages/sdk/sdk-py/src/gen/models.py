@@ -3497,7 +3497,7 @@ class VideoDeleteResponse(TypedDict):
 
 class VideoGenerationRequest(TypedDict):
 	aspect_ratio: NotRequired[str]
-	compression_quality: NotRequired[int]
+	compression_quality: NotRequired[Union[int, Literal["optimized", "lossless"]]]
 	duration: NotRequired[int]
 	enhance_prompt: NotRequired[bool]
 	frame_images: NotRequired[List[Dict[str, Any]]]

@@ -3921,7 +3921,7 @@ struct VideoDeleteResponse {
 
 struct VideoGenerationRequest {
 	std::string aspect_ratio;
-	std::optional<int> compression_quality;
+	std::any compression_quality;
 	std::optional<int> duration;
 	std::optional<bool> enhance_prompt;
 	std::vector<std::map<std::string, std::any>> frame_images;

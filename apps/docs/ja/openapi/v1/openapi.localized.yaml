@@ -15777,7 +15777,13 @@ components:
         enhance_prompt:
           type: boolean
         compression_quality:
-          type: integer
+          description: 出力の圧縮。Vertex Veo は optimized または lossless を受け付け、数値は拒否します。対応しているほかのプロバイダーは整数を受け付けます。
+          oneOf:
+            - type: integer
+            - type: string
+              enum:
+                - optimized
+                - lossless
         person_generation:
           type: string
         resize_mode:
@@ -15820,7 +15826,7 @@ components:
         provider_params:
           type: object
           additionalProperties: true
-          description: プロバイダー固有の拡張のみ。リクエスト全体のパススルーと、重複するルーティング、プロンプト、コールバック、課金フィールドは拒否されます。
+          description: 'プロバイダー固有の拡張のみ。リクエスト全体のパススルーと、重複するルーティング、プロンプト、コールバック、課金フィールドは拒否されます。たとえば Wan 3.0 では smart_duration: true を指定するとモデルが長さを決めます（この場合 duration は送らないでください）。ジョブは 30 秒分を確保し、プロバイダーが報告した長さで請求されます。'
         provider_options:
           type: object
           additionalProperties:

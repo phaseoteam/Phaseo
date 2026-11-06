@@ -452,7 +452,7 @@ class VideoCreateRequest(TypedDict, total=False):
     negative_prompt: str
     generate_audio: bool
     enhance_prompt: bool
-    compression_quality: int
+    compression_quality: int | Literal["optimized", "lossless"]
     person_generation: str
     resize_mode: str
     input_references: list[VideoInputReference]

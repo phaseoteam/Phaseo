@@ -5547,7 +5547,7 @@ module Phaseo
     # @!attribute [rw] aspect_ratio
     #   @return [String, nil]
     # @!attribute [rw] compression_quality
-    #   @return [Integer, nil]
+    #   @return [Integer, String, nil]
     # @!attribute [rw] duration
     #   @return [Integer, nil]
     # @!attribute [rw] enhance_prompt

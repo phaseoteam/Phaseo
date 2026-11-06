@@ -278,6 +278,9 @@ function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"
 					stepfun: raw.config?.stepfun,
 					elevenlabs: (request.vendor as any)?.elevenlabs,
 					minimax: (request.vendor as any)?.minimax ?? raw.config?.minimax,
+					// xAI language (config.xai.language, also spelled config["x-ai"]).
+					...(raw.config?.xai ? { xai: raw.config.xai } : {}),
+					...(raw.config?.["x-ai"] ? { "x-ai": raw.config["x-ai"] } : {}),
 				},
 				user: request.userId,
 			};

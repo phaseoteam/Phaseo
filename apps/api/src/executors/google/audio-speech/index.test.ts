@@ -187,6 +187,116 @@ describe("google audio.speech executor", () => {
 		expect(capturedBody?.generationConfig?.speechConfig?.voiceConfig?.prebuiltVoiceConfig?.voiceName).toBe("Kore");
 	});
 
+	it("sends Gemini 3.8 custom voice ids as voiceConfig.voice and maps response_format", async () => {
+		let capturedBody: any = null;
+		const mock = installFetchMock([
+			{
+				match: (url) => url.includes(":generateContent?key="),
+				response: () => jsonResponse({
+					candidates: [{ content: { parts: [{ inlineData: { data: "QUJD", mimeType: "audio/wav" } }] } }],
+				}),
+				onRequest: (call) => {
+					capturedBody = call.bodyJson;
+				},
+			},
+		]);
+
+		const stored = await execute(buildArgs({
+			model: "gemini-3.8-flash-tts",
+			input: "Custom voice",
+			voice: "voice_abc123",
+			responseFormat: "wav",
+		}));
+		expect(stored.upstream?.status).toBe(200);
+		expect(capturedBody?.generationConfig?.speechConfig?.voiceConfig).toEqual({ voice: "voice_abc123" });
+		expect(capturedBody?.generationConfig?.responseFormat).toEqual({ audio: { mimeType: "AUDIO_WAV" } });
+
+		const replicated = await execute(buildArgs({
+			model: "gemini-3.8-flash-lite-tts",
+			input: "Replicated voice",
+			voice: "voicekey_xyz",
+			responseFormat: "pcm",
+		}));
+		mock.restore();
+		expect(replicated.upstream?.status).toBe(200);
+		expect(capturedBody?.generationConfig?.speechConfig?.voiceConfig).toEqual({ voice: "voicekey_xyz" });
+		expect(capturedBody?.generationConfig?.responseFormat).toEqual({ audio: { mimeType: "AUDIO_L16" } });
+	});
+
+	it("rejects custom voice ids on models without custom voices", async () => {
+		const result = await execute(buildArgs({
+			model: "gemini-3.1-flash-tts-preview",
+			input: "Custom voice on preview",
+			voice: "voice_abc123",
+		}));
+		expect(result.upstream?.status).toBe(400);
+		const payload = await result.upstream?.clone().json();
+		expect(payload?.error?.param).toBe("voice");
+		expect(payload?.error?.message).toContain("Gemini 3.8");
+	});
+
+	it.each([
+		["gemini-3.8-flash-tts", "mp3"],
+		["gemini-3.1-flash-tts-preview", "opus"],
+	] as const)("rejects formats %s cannot return (%s) before calling Google", async (model, responseFormat) => {
+		const mock = installFetchMock([]);
+		const result = await execute(buildArgs({ model, input: "Format test", responseFormat }));
+		mock.restore();
+		expect(result.upstream?.status).toBe(400);
+		const payload = await result.upstream?.clone().json();
+		expect(payload?.error?.param).toBe("response_format");
+	});
+
+	it("returns Google's bytes as they are when the PCM cannot be decoded", async () => {
+		const mock = installFetchMock([
+			{
+				match: (url) => url.includes(":generateContent?key="),
+				response: () => jsonResponse({
+					candidates: [{ content: { parts: [{ inlineData: { data: "@@not-base64@@", mimeType: "audio/L16;codec=pcm;rate=24000" } }] } }],
+				}),
+			},
+		]);
+		const result = await execute(buildArgs({ model: "gemini-3.1-flash-tts-preview", input: "Bad audio", responseFormat: "wav" }));
+		mock.restore();
+		expect(result.upstream?.status).toBe(200);
+		expect((result as any).ir?.audio).toMatchObject({ data: "@@not-base64@@", mimeType: "audio/L16;codec=pcm;rate=24000" });
+	});
+
+	it("adds a WAV header when an older model returns raw PCM for a wav request", async () => {
+		let capturedBody: any = null;
+		const pcm = Buffer.from([1, 0, 2, 0]).toString("base64");
+		const mock = installFetchMock([
+			{
+				match: (url) => url.includes(":generateContent?key="),
+				response: () => jsonResponse({
+					candidates: [{ content: { parts: [{ inlineData: { data: pcm, mimeType: "audio/L16;codec=pcm;rate=24000" } }] } }],
+				}),
+				onRequest: (call) => {
+					capturedBody = call.bodyJson;
+				},
+			},
+		]);
+
+		const result = await execute(buildArgs({
+			model: "gemini-3.1-flash-tts-preview",
+			input: "Wrap me",
+			responseFormat: "wav",
+		}));
+		mock.restore();
+
+		expect(result.upstream?.status).toBe(200);
+		expect(capturedBody?.generationConfig?.responseFormat).toBeUndefined();
+		const audio = (result as any).ir?.audio;
+		expect(audio?.mimeType).toBe("audio/wav");
+		const bytes = Buffer.from(audio?.data, "base64");
+		expect(bytes.length).toBe(48);
+		expect(bytes.subarray(0, 4).toString("ascii")).toBe("RIFF");
+		expect(bytes.subarray(8, 12).toString("ascii")).toBe("WAVE");
+		expect(bytes.readUInt32LE(24)).toBe(24000);
+		expect(bytes.readUInt32LE(40)).toBe(4);
+		expect([...bytes.subarray(44)]).toEqual([1, 0, 2, 0]);
+	});
+
 	it("returns 400 for unsupported Google speech voice", async () => {
 		const result = await execute(buildArgs({
 			model: "gemini-2.5-flash-preview-tts",

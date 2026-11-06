@@ -1143,8 +1143,14 @@ function RealtimeVoiceSelector({
 	const tCopy = useTranslations("SettingsUI.chatGaps");
 	const t = useTranslations("Product.chatRooms");
 	const localizeVoiceProfile = (description: string) => {
-		const parts: Record<string, string> = { "English": tCopy("english"), "Portuguese": tCopy("portuguese"), "Filipino-influenced": tCopy("filipino"), "Brazilian-influenced": tCopy("brazilian"), "Southern U.S.-influenced": tCopy("southernUs"), "North American-influenced": tCopy("northAmerican"), "Australian-influenced": tCopy("australian"), "Irish-influenced": tCopy("irish"), "British-influenced": tCopy("british"), "Masculine": tCopy("masculine"), "Feminine": tCopy("feminine"), };
-		const [language, style, gender] = description.split(" · ");
+		const parts: Record<string, string> = { "English": tCopy("english"), "Portuguese": tCopy("portuguese"), "French": tCopy("french"), "German": tCopy("german"), "Hindi": tCopy("hindi"), "Japanese": tCopy("japanese"), "Korean": tCopy("korean"), "Filipino-influenced": tCopy("filipino"), "Brazilian-influenced": tCopy("brazilian"), "Southern U.S.-influenced": tCopy("southernUs"), "North American-influenced": tCopy("northAmerican"), "Australian-influenced": tCopy("australian"), "Irish-influenced": tCopy("irish"), "British-influenced": tCopy("british"), "Masculine": tCopy("masculine"), "Feminine": tCopy("feminine"), };
+		const segments = description.split(" · ");
+		// Non-English Live voices are described as "Language · Gender".
+		if (segments.length === 2) {
+			const [shortLanguage, shortGender] = segments;
+			return parts[shortLanguage] && parts[shortGender] ? tCopy("voiceProfileShort", { language: parts[shortLanguage], gender: parts[shortGender] }) : description;
+		}
+		const [language, style, gender] = segments;
 		return parts[language] && parts[style] && parts[gender] ? tCopy("voiceProfile", { language: parts[language], style: parts[style], gender: parts[gender] }) : description;
 	};
 	const selectedVoice =

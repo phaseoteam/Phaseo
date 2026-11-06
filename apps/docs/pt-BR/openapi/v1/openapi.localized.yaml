@@ -15777,7 +15777,13 @@ components:
         enhance_prompt:
           type: boolean
         compression_quality:
-          type: integer
+          description: Compactação da saída. O Vertex Veo aceita optimized ou lossless e rejeita um número; os outros provedores que a suportam aceitam um inteiro.
+          oneOf:
+            - type: integer
+            - type: string
+              enum:
+                - optimized
+                - lossless
         person_generation:
           type: string
         resize_mode:
@@ -15820,7 +15826,7 @@ components:
         provider_params:
           type: object
           additionalProperties: true
-          description: Somente extensões específicas do provedor. O repasse completo da solicitação e campos duplicados de roteamento, prompt, callback ou cobrança são rejeitados.
+          description: 'Somente extensões específicas do provedor. O repasse completo da solicitação e campos duplicados de roteamento, prompt, callback ou cobrança são rejeitados. Por exemplo, o Wan 3.0 aceita smart_duration: true para deixar o modelo escolher a duração (não envie duration junto); o job reserva 30 segundos e é cobrada a duração informada pelo provedor.'
         provider_options:
           type: object
           additionalProperties:

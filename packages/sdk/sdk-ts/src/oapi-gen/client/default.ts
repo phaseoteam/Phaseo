@@ -7358,7 +7358,7 @@ export type CreateVideoParams = {
   headers?: Record<string, never>;
   body?: {
     aspect_ratio?: string;
-    compression_quality?: number;
+    compression_quality?: number | "optimized" | "lossless";
     duration?: number;
     enhance_prompt?: boolean;
     frame_images?: {
@@ -7697,7 +7697,7 @@ export type CreateVideoAliasParams = {
   headers?: Record<string, never>;
   body?: {
     aspect_ratio?: string;
-    compression_quality?: number;
+    compression_quality?: number | "optimized" | "lossless";
     duration?: number;
     enhance_prompt?: boolean;
     frame_images?: {
