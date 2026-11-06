@@ -20,6 +20,9 @@ CREATE TABLE "public"."gateway_request_charges" (
 ALTER TABLE "public"."gateway_request_charges"
   ENABLE ROW LEVEL SECURITY;
 
+CREATE INDEX gateway_request_charges_open_step_idx ON public.gateway_request_charges USING btree (workspace_id)
+  WHERE (is_final IS FALSE);
+
 CREATE INDEX idx_gateway_request_charges_created_at ON public.gateway_request_charges USING btree (created_at DESC);
 
 CREATE POLICY "service_role_full_access" ON "public"."gateway_request_charges"
