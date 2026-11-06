@@ -12,7 +12,7 @@ CREATE OR REPLACE FUNCTION public.workspace_department_budget_status (
 -- a JSON array ordered by department and period. A department's spend is the cost of the API
 -- keys private.department_budget_key_departments gives it: keys linked to it, plus, for keys not
 -- linked to any department, the keys its members created and their OAuth requests. Spend comes from v2_private_usage_15m, which is rebuilt hourly and so lags, plus
--- async jobs and realtime sessions from gateway_requests, which the rollup leaves out.
+-- async jobs (video, batch, music) from gateway_requests, which the rollup leaves out; realtime sessions are in the rollup.
 declare
   v_result jsonb;
 begin
@@ -41,7 +41,7 @@ begin
     select r.key_id, r.created_at, coalesce(r.cost_nanos, 0)
     from public.gateway_requests r
     where r.success is true
-      and r.endpoint = any (array['video.generation', 'batch', 'music.generate', 'audio.realtime'])
+      and r.endpoint = any (array['video.generation', 'batch', 'music.generate'])
       and r.workspace_id = p_workspace_id
       and r.created_at >= (select min(b.period_start) from budgets b)
       and r.created_at <= p_now
@@ -52,7 +52,7 @@ begin
     from public.gateway_requests r
     where r.success is not true
       and r.cost_nanos > 0
-      and r.endpoint = any (array['video.generation', 'batch', 'music.generate', 'audio.realtime'])
+      and r.endpoint = any (array['video.generation', 'batch', 'music.generate'])
       and r.workspace_id = p_workspace_id
       and r.created_at >= (select min(b.period_start) from budgets b)
       and r.created_at <= p_now

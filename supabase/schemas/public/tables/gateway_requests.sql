@@ -366,6 +366,9 @@ CREATE INDEX gateway_requests_charged_unsuccessful_cost_idx ON ONLY public.gatew
 CREATE INDEX gateway_requests_expected_cost_idx ON ONLY public.gateway_requests USING btree (workspace_id, created_at) INCLUDE (key_id, cost_nanos, expected_cost_nanos, request_id, billing_request_id)
   WHERE (expected_cost_nanos IS NOT NULL);
 
+CREATE INDEX gateway_requests_batch_rows_idx ON ONLY public.gateway_requests USING btree (workspace_id, request_id text_pattern_ops) INCLUDE (cost_nanos)
+  WHERE ((request_id ~>=~ 'batch'::text) AND (request_id ~<~ 'batci'::text));
+
 CREATE INDEX gateway_requests_key_id_idx ON ONLY public.gateway_requests USING btree (key_id)
   WHERE (key_id IS NOT NULL);
 

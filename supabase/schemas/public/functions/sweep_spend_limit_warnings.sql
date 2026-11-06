@@ -49,13 +49,14 @@ begin
         k.daily_limit_cost_nanos, k.weekly_limit_cost_nanos, k.monthly_limit_cost_nanos) > 0
   ),
   async_requests as (
-    -- Async jobs and realtime sessions, which the rollup leaves out (gateway_requests_async_spend_idx):
-    -- successful ones as requests and cost, charged ones that did not succeed as cost only.
+    -- Async jobs, which the rollup leaves out (private.v2_usage_overview_requests: video, batch,
+    -- music; realtime is in the rollup): successful ones as requests and cost, charged ones that did
+    -- not succeed as cost only.
     select r.key_id, r.created_at, case when r.success is true then 1 else 0 end::bigint as requests,
       coalesce(r.cost_nanos, 0)::numeric as cost_nanos
     from public.gateway_requests r
     where (r.success is true or r.cost_nanos > 0)
-      and r.endpoint = any (array['video.generation', 'batch', 'music.generate', 'audio.realtime'])
+      and r.endpoint = any (array['video.generation', 'batch', 'music.generate'])
       and r.workspace_id in (select k.workspace_id from limited_keys k)
       and r.created_at >= least(v_week, v_month)
       and r.created_at <= p_now
@@ -98,7 +99,7 @@ begin
         select coalesce(sum(r.cost_nanos), 0)
         from public.gateway_requests r
         where (r.success is true or r.cost_nanos > 0)
-          and r.endpoint = any (array['video.generation', 'batch', 'music.generate', 'audio.realtime'])
+          and r.endpoint = any (array['video.generation', 'batch', 'music.generate'])
           and r.workspace_id = b.workspace_id
           and r.created_at >= coalesce((private.spend_limit_period(b.interval, p_now)).period_start, '-infinity'::timestamptz)
           and r.created_at <= p_now
