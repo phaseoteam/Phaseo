@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { requireUser } from "@/auth/requireUser";
+import { refuseOAuthClientSensitiveWrites } from "@/auth/oauthClientWrites";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { creditsRouter } from "@/routes/account/credits";
@@ -10,6 +11,9 @@ import { accountChatIssuesRouter } from "@/routes/account/chat-issues";
 import { accountPrivateModelsRouter } from "@/routes/account/private-models";
 
 export const accountRouter = new Hono<{ Bindings: Env }>();
+
+// Registered before the routes so it runs first.
+accountRouter.use("*", refuseOAuthClientSensitiveWrites);
 
 accountRouter.route("/credits", creditsRouter);
 accountRouter.route("/auth", accountAuthRouter);

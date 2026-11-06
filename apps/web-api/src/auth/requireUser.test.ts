@@ -53,7 +53,8 @@ describe("requireUser and tokens issued to apps", () => {
     expect(await requireUser(request(token({ aal: "aal1" })), env)).toMatchObject({ id: "user-1" });
   });
 
-  it.each(["phaseo_cli", "aistats_cli", "phaseo_desktop"])("keeps Phaseo's own app %s signed in", async (clientId) => {
+  // Signed in for reads and ordinary settings; sensitive account writes refuse these tokens (oauthClientWrites.test.ts).
+  it.each(["phaseo_cli", "aistats_cli", "phaseo_desktop"])("keeps Phaseo's own app %s signed in for reads and ordinary settings", async (clientId) => {
     signedIn([]);
     expect(await requireUser(request(token({ client_id: clientId })), env)).toMatchObject({ id: "user-1" });
     signedIn([totp]);
