@@ -74,5 +74,7 @@ describe("generated images in assistant replies", () => {
 		const upper = sanitizeGeneratedImageSrc("DATA:image/svg+xml;base64,PHN2Zz48L3N2Zz4=");
 		expect(upper).not.toBeNull();
 		expect(isGeneratedDataImage(upper!)).toBe(true);
+		expect(isGeneratedDataImage("  data:image/png;base64,iVBORw0KGgo=")).toBe(true);
+		expect(isGeneratedDataImage("sdata:image/png;base64,iVBORw0KGgo=")).toBe(false);
 	});
 });
