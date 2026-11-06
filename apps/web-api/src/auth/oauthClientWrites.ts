@@ -1,4 +1,4 @@
-import type { MiddlewareHandler } from "hono";
+import type { Context, MiddlewareHandler } from "hono";
 import { hasOAuthClientToken } from "@/auth/requireUser";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
@@ -12,7 +12,11 @@ const ALLOWED_WRITES: Array<[method: string, path: RegExp]> = [
 	["POST", /^\/api\/account\/chat\/issues$/],
 	["POST", /^\/api\/account\/credits\/redeem$/],
 	["POST", /^\/api\/account\/settings\/privacy\/review$/],
-	["*", /^\/api\/account\/settings\/mobile-notifications(\/.*)?$/],
+	// Push devices receive private balance, payment and key alerts, so an app may only take notifications
+	// away: unregister the caller's own device, or switch notifications or categories off (the handler
+	// refuses anything else). Registering a device, rules and test pushes stay refused.
+	["DELETE", /^\/api\/account\/settings\/mobile-notifications\/devices\/[^/]+$/],
+	["PUT", /^\/api\/account\/settings\/mobile-notifications$/],
 	["PUT", /^\/api\/account\/settings\/account\/profile$/],
 	["POST", /^\/api\/account\/settings\/profile\/avatar$/],
 	["POST", /^\/api\/account\/settings\/teams\/[^/]+\/logo$/],
@@ -41,9 +45,12 @@ export function oauthClientMayWrite(method: string, path: string): boolean {
 	return ALLOWED_WRITES.some(([allowed, pattern]) => (allowed === "*" || allowed === verb) && pattern.test(path));
 }
 
+/** The 403 every OAuth-client write refusal returns. */
+export function oauthClientWriteRefused(c: Context) {
+	return c.json({ error: "forbidden", reason: "oauth_client_write_refused", message: OAUTH_CLIENT_WRITE_REFUSAL }, 403, PRIVATE_NO_STORE_HEADERS);
+}
+
 export const refuseOAuthClientWrites: MiddlewareHandler<{ Bindings: Env }> = async (c, next) => {
-	if (!oauthClientMayWrite(c.req.method, c.req.path) && hasOAuthClientToken(c.req.raw)) {
-		return c.json({ error: "forbidden", reason: "oauth_client_write_refused", message: OAUTH_CLIENT_WRITE_REFUSAL }, 403, PRIVATE_NO_STORE_HEADERS);
-	}
+	if (!oauthClientMayWrite(c.req.method, c.req.path) && hasOAuthClientToken(c.req.raw)) return oauthClientWriteRefused(c);
 	await next();
 };

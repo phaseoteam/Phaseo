@@ -67,6 +67,8 @@ describe("web-api writes with an OAuth client's token", () => {
 			"POST /api/account/settings/presets", "POST /api/account/settings/keys", "POST /api/account/settings/budgets",
 			"PUT /api/account/settings/guardrails/global", "POST /api/account/settings/webhooks", "PUT /api/account/credits/auto-top-up",
 			"POST /api/account/settings/teams/:workspaceId/invites", "POST /api/account/settings/teams/invites/accept",
+			// A push device would keep receiving private alerts after the token is revoked.
+			"PUT /api/account/settings/mobile-notifications/devices/:installationId", "POST /api/account/settings/mobile-notifications/rules",
 		]));
 	});
 
@@ -75,15 +77,11 @@ describe("web-api writes with an OAuth client's token", () => {
 		expect(allowed.sort()).toEqual([
 			"DELETE /api/account/settings/authorized-apps/:authorizationId",
 			"DELETE /api/account/settings/mobile-notifications/devices/:installationId",
-			"DELETE /api/account/settings/mobile-notifications/rules/:id",
 			"DELETE /api/account/settings/teams/:workspaceId/logo",
 			"PATCH /api/account/settings/authorized-apps/:authorizationId/scopes",
-			"PATCH /api/account/settings/mobile-notifications/rules/:id",
 			"POST /api/account/auth/workspace-accessed",
 			"POST /api/account/chat/issues",
 			"POST /api/account/credits/redeem",
-			"POST /api/account/settings/mobile-notifications/rules",
-			"POST /api/account/settings/mobile-notifications/test",
 			"POST /api/account/settings/privacy/review",
 			"POST /api/account/settings/profile/avatar",
 			"POST /api/account/settings/provider-onboarding/preview",
@@ -94,8 +92,6 @@ describe("web-api writes with an OAuth client's token", () => {
 			"PUT /api/account/settings/account/profile",
 			"PUT /api/account/settings/beta",
 			"PUT /api/account/settings/mobile-notifications",
-			"PUT /api/account/settings/mobile-notifications/devices/:installationId",
-			"PUT /api/account/settings/mobile-notifications/rules/order",
 			"PUT /api/account/settings/preferences",
 			"PUT /api/account/settings/teams/:workspaceId",
 		].sort());
