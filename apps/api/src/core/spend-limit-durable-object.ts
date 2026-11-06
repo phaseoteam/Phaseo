@@ -29,6 +29,7 @@ import {
 	DAY_MS,
 	KEY_WINDOWS,
 	SPEND_LEASE,
+	utcMonthStart,
 	windowEnd,
 	windowStarts,
 	type BudgetInterval,
@@ -126,6 +127,12 @@ type Pending = {
 	recordedAt: number;
 	/** The gateway_requests row exists: budget status already includes it. */
 	persisted: boolean;
+	/**
+	 * A stream charged at drain checkpoints: the amount is its charged total so far. Until its final
+	 * record arrives it is kept past the pending TTL (the drain may have been stopped, so no row will
+	 * land), up to `keepUntil`, the end of the longest budget window it counts toward.
+	 */
+	stepped?: { revision: number; final: boolean; keepUntil: number };
 };
 
 type Lease = {
@@ -358,9 +365,13 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			return false;
 		}
 		const existing = this.pending.get(entry.billingRequestId);
-		if (entry.replace === true && existing && existing.keyId === entry.keyId) {
-			// The request's charged total so far: a later checkpoint or the final settlement
-			// replaces the recorded amount, and a refund lowers it.
+		const replace = entry.replace === true;
+		const revision = Number.isSafeInteger(entry.revision) && Number(entry.revision) > 0 ? Number(entry.revision) : 0;
+		const final = replace && entry.final === true;
+		if (replace && existing?.stepped && existing.keyId === entry.keyId) {
+			// The request's charged total so far. Records can arrive out of order: nothing replaces
+			// the final one, and a checkpoint replaces only an earlier checkpoint.
+			if (existing.stepped.final || (!final && revision <= existing.stepped.revision)) return false;
 			const cost = nonNegative(entry.costNanos);
 			const lease = entry.leaseId ? this.leases.get(entry.leaseId) : undefined;
 			if (lease && lease.keyId === entry.keyId) {
@@ -369,6 +380,7 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			}
 			existing.cost = cost;
 			existing.recordedAt = now;
+			existing.stepped = { ...existing.stepped, revision: Math.max(revision, existing.stepped.revision), final };
 			return true;
 		}
 		if (this.seen.has(entry.billingRequestId) || existing) return false;
@@ -389,6 +401,7 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			at,
 			recordedAt: now,
 			persisted: false,
+			...(replace ? { stepped: { revision, final, keepUntil: windowEnd("monthly", utcMonthStart(at)) } } : {}),
 		});
 		const lease = entry.leaseId ? this.leases.get(entry.leaseId) : undefined;
 		if (lease && lease.keyId === entry.keyId) {
@@ -483,7 +496,11 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			for (const entry of unpersisted.slice(SPEND_LEASE.maxExcludedRequestIds)) this.pending.delete(entry.billingRequestId);
 		}
 		const excluded = unpersisted.slice(0, SPEND_LEASE.maxExcludedRequestIds);
-		const exclude = [...new Set(excluded.map((entry) => entry.requestId))];
+		// Contract with gateway_spend_limit_seed: it skips gateway_requests rows whose request_id is
+		// listed, and stepped charge rows (gateway_request_charges, keyed by billing request id)
+		// whose request_id is listed; spend in `pending` is counted from memory instead.
+		const exclude = [...new Set(excluded.flatMap((entry) =>
+			entry.stepped ? [entry.requestId, entry.billingRequestId] : [entry.requestId]))].slice(0, SPEND_LEASE.maxExcludedRequestIds);
 		const persistedBefore = [...this.pending.values()].filter((entry) => entry.persisted);
 		const chunks: string[][] = [];
 		for (let index = 0; index < Math.max(1, keyIds.length); index += SPEND_LEASE.maxKeysPerSeed) {
@@ -495,7 +512,13 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 		}
 		const now = Date.now();
 		for (const entry of this.pending.values()) {
-			if (!entry.persisted && now - entry.recordedAt > SPEND_LEASE.pendingTtlMs) this.pending.delete(entry.billingRequestId);
+			if (entry.persisted) continue;
+			// An open stepped charge has no row to wait for if its drain was stopped: keep it until
+			// its final record or the end of the windows it counts toward, not the pending TTL.
+			const expired = entry.stepped && !entry.stepped.final
+				? now >= entry.stepped.keepUntil
+				: now - entry.recordedAt > SPEND_LEASE.pendingTtlMs;
+			if (expired) this.pending.delete(entry.billingRequestId);
 		}
 	}
 

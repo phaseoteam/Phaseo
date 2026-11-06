@@ -112,6 +112,13 @@ export type SpendRecordEntry = {
 	 * as a duplicate, so a later checkpoint or the final settlement raises it and a refund lowers it.
 	 */
 	replace?: boolean;
+	/**
+	 * Order of the replace records of one `billingRequestId` (checkpoints count 1, 2, …): the
+	 * coordinator ignores a record whose revision is not above the last one it applied.
+	 */
+	revision?: number;
+	/** The request's final settled total: replaces any checkpoint, and nothing replaces it. */
+	final?: boolean;
 };
 
 export type SpendRecordResult = { duplicates: number; drainKeyIds: string[] };

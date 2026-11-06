@@ -357,8 +357,9 @@ describe("a stream the client abandons while the upstream keeps draining", () =>
 		// The runtime stops the drain here: there is no final settlement and no audit row.
 		expect(failureAuditMock).not.toHaveBeenCalled();
 		expect(charges()).toEqual([["checkpoint_total", "bill_drain", 1_000_000], ["checkpoint_total", "bill_drain", 2_000_000]]);
-		expect(checkpointSpendMock.mock.calls.map(([args]) => [args.billingRequestId, args.costNanos])).toEqual([
-			["bill_drain", 1_000_000], ["bill_drain", 2_000_000],
+		// Increasing revisions, so the coordinator keeps the latest even if delivery reorders them.
+		expect(checkpointSpendMock.mock.calls.map(([args]) => [args.billingRequestId, args.costNanos, args.revision])).toEqual([
+			["bill_drain", 1_000_000, 1], ["bill_drain", 2_000_000, 2],
 		]);
 		expect(checkpointSpendMock.mock.calls[0][0]).toMatchObject({
 			workspaceId: "ws_drain", keyId: c.meta.apiKeyId, requestId: "req_drain", admission: c.spendAdmission,

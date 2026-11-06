@@ -281,23 +281,87 @@ describe("spend-limit coordinator", () => {
 		expect(next.keyLimit?.buckets?.daily).toMatchObject({ requestsUsed: 1, costUsedNanos: 250 });
 	});
 
-	it("counts a stream's checkpoint charges and lets the final settlement replace them", async () => {
-		const used = async (_label: string) => (await probe())?.daily;
+	it("keeps the latest checkpoint and the final settlement of a stepped charge, in any delivery order", async () => {
+		const used = async () => (await probe())?.daily;
 		const entry = { keyId: KEY, billingRequestId: "bill-stepped", requestId: "req-stepped", requests: 1, replace: true };
 		await checkSpendLimit({ workspaceId: WORKSPACE, keyId: KEY, admissionId: "warm" });
 		// Checkpoints report the charged total so far; the drain may be stopped before it settles.
-		await coordinator.record(WORKSPACE, { ...entry, costNanos: 100 });
-		expect(await used("c1")).toMatchObject({ requestsUsed: 1, costUsedNanos: 100 });
-		await coordinator.record(WORKSPACE, { ...entry, costNanos: 250 });
-		expect(await used("c2")).toMatchObject({ requestsUsed: 1, costUsedNanos: 250 });
-		// The final settlement replaces the checkpoint amount instead of adding to it, a refund lowers it.
-		await coordinator.record(WORKSPACE, { ...entry, costNanos: 400 });
-		expect(await used("c3")).toMatchObject({ requestsUsed: 1, costUsedNanos: 400 });
-		await coordinator.record(WORKSPACE, { ...entry, costNanos: 0 });
-		expect(await used("c4")).toMatchObject({ requestsUsed: 1, costUsedNanos: 0 });
-		// A plain record of the same request is still a duplicate.
-		expect(await coordinator.record(WORKSPACE, { ...entry, replace: undefined, costNanos: 900 })).toEqual({ duplicates: 1, drainKeyIds: [] });
-		expect(await used("c5")).toMatchObject({ costUsedNanos: 0 });
+		await coordinator.record(WORKSPACE, { ...entry, costNanos: 100, revision: 1 });
+		expect(await used()).toMatchObject({ requestsUsed: 1, costUsedNanos: 100 });
+		await coordinator.record(WORKSPACE, { ...entry, costNanos: 250, revision: 2 });
+		expect(await used()).toMatchObject({ requestsUsed: 1, costUsedNanos: 250 });
+		// A replay, or checkpoint 1 delivered late, changes nothing.
+		expect(await coordinator.record(WORKSPACE, { ...entry, costNanos: 250, revision: 2 })).toMatchObject({ duplicates: 1 });
+		expect(await coordinator.record(WORKSPACE, { ...entry, costNanos: 100, revision: 1 })).toMatchObject({ duplicates: 1 });
+		expect(await used()).toMatchObject({ costUsedNanos: 250 });
+		// The final settlement (a refund to 0 here) replaces the checkpoints instead of adding to them.
+		await coordinator.record(WORKSPACE, { ...entry, costNanos: 0, final: true });
+		expect(await used()).toMatchObject({ requestsUsed: 1, costUsedNanos: 0 });
+		// A checkpoint delayed past the final, a replayed final, or a plain record never replace it.
+		expect(await coordinator.record(WORKSPACE, { ...entry, costNanos: 600, revision: 3 })).toMatchObject({ duplicates: 1 });
+		expect(await coordinator.record(WORKSPACE, { ...entry, costNanos: 0, final: true })).toMatchObject({ duplicates: 1 });
+		expect(await coordinator.record(WORKSPACE, { ...entry, replace: undefined, costNanos: 900 })).toMatchObject({ duplicates: 1 });
+		expect(await used()).toMatchObject({ costUsedNanos: 0 });
+	});
+
+	it("keeps an open stepped charge past the pending TTL until its final record or the end of its windows", async () => {
+		const entry = { keyId: KEY, billingRequestId: "bill-stopped", requestId: "req-stopped", requests: 1, replace: true };
+		await checkSpendLimit({ workspaceId: WORKSPACE, keyId: KEY, admissionId: "warm" });
+		await coordinator.record(WORKSPACE, [
+			{ ...entry, costNanos: 300, revision: 1 },
+			// An ordinary success whose row never lands, for comparison.
+			{ keyId: KEY, billingRequestId: "bill-plain", requestId: "req-plain", requests: 1, costNanos: 50 },
+		]);
+		// The drain was stopped: no row and no final record. Well past the pending TTL, a reseed
+		// still counts the checkpoint from memory and tells the seed to skip its request and billing ids.
+		vi.setSystemTime(Date.now() + SPEND_LEASE.pendingTtlMs + SPEND_LEASE.reseedMs + 1);
+		await probe();
+		await flush();
+		vi.setSystemTime(Date.now() + SPEND_LEASE.reseedMs + 1);
+		await probe();
+		await flush();
+		expect(database.calls.at(-1)?.exclude.sort()).toEqual(["bill-stopped", "req-stopped"]);
+		expect((await probe())?.daily).toMatchObject({ costUsedNanos: 300 });
+		// After the end of the month it counts toward, it is no longer kept (the seed owns it from then).
+		vi.setSystemTime(new Date("2026-11-01T00:00:01Z"));
+		await probe();
+		await flush();
+		vi.setSystemTime(Date.now() + SPEND_LEASE.reseedMs + 1);
+		await probe();
+		await flush();
+		expect(database.calls.at(-1)?.exclude).toEqual([]);
+	});
+
+	it("applies a checkpoint to the isolate's cached slice, so the next request near the cap is refused", async () => {
+		runtime.bindings = { ...runtime.bindings!, GATEWAY_SPEND_LIMIT_DO_MODE: "enforce" };
+		const key = "00000000-0000-4000-8000-000000000002";
+		database.keys.set(key, { workspaceId: WORKSPACE, daily: [0, 1_000] });
+		const first = await checkSpendLimit({ workspaceId: WORKSPACE, keyId: key, admissionId: "req-a" });
+		if (first.outcome !== "allowed") throw new Error("expected admission");
+		const args = { admission: first.admission, workspaceId: WORKSPACE, keyId: key, billingRequestId: "bill-a", requestId: "req-a" };
+		recordCheckpointSpend({ ...args, costNanos: 1_100, revision: 1 });
+		await flush();
+		expect((await checkSpendLimit({ workspaceId: WORKSPACE, keyId: key, admissionId: "req-b" })).outcome).toBe("denied");
+		// The final settlement replaces the checkpoint units on the slice instead of adding to them.
+		settleEnforcedSpend({ ...args, rowWritten: true, costNanos: 1_100, replace: true });
+		await flush();
+		expect((await probe(key))?.daily).toMatchObject({ costUsedNanos: 1_100 });
+		expect((await checkSpendLimit({ workspaceId: WORKSPACE, keyId: key, admissionId: "req-c" })).outcome).toBe("denied");
+	});
+
+	it("frees the slice again when a checkpointed request is refunded to 0", async () => {
+		runtime.bindings = { ...runtime.bindings!, GATEWAY_SPEND_LIMIT_DO_MODE: "enforce" };
+		const key = "00000000-0000-4000-8000-000000000003";
+		database.keys.set(key, { workspaceId: WORKSPACE, daily: [0, 1_000] });
+		const first = await checkSpendLimit({ workspaceId: WORKSPACE, keyId: key, admissionId: "req-a" });
+		if (first.outcome !== "allowed") throw new Error("expected admission");
+		const args = { admission: first.admission, workspaceId: WORKSPACE, keyId: key, billingRequestId: "bill-r", requestId: "req-a" };
+		recordCheckpointSpend({ ...args, costNanos: 1_100, revision: 1 });
+		await flush();
+		settleEnforcedSpend({ ...args, rowWritten: false, costNanos: 0, replace: true });
+		await flush();
+		expect((await probe(key))?.daily).toMatchObject({ costUsedNanos: 0 });
+		expect((await checkSpendLimit({ workspaceId: WORKSPACE, keyId: key, admissionId: "req-d" })).outcome).toBe("allowed");
 	});
 
 	it("records checkpoint spend in enforce mode without settling the admission", async () => {
@@ -308,7 +372,7 @@ describe("spend-limit coordinator", () => {
 		if (decision.outcome !== "allowed") throw new Error("expected admission");
 		const record = vi.spyOn(coordinator, "record");
 		const args = { admission: decision.admission, workspaceId: WORKSPACE, keyId: key, billingRequestId: "bill-ckpt", requestId: "req-ckpt" };
-		recordCheckpointSpend({ ...args, costNanos: 600 });
+		recordCheckpointSpend({ ...args, costNanos: 600, revision: 1 });
 		await flush();
 		expect(record).toHaveBeenLastCalledWith(WORKSPACE, [expect.objectContaining({ billingRequestId: "bill-ckpt", costNanos: 600, replace: true })]);
 		// The drain is stopped here: the coordinator still holds the 600 for this key's budget.

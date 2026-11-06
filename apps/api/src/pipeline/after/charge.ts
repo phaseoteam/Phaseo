@@ -121,6 +121,8 @@ export function recordProvisionalStreamCharge(args: {
 				billingRequestId: ctx.billingRequestId,
 				requestId: ctx.requestId,
 				costNanos: Number(meta.__checkpointTotalNanos) || totalNanos,
+				// Records can be delivered out of order; the coordinator keeps the latest.
+				revision: (meta.__checkpointRevision = (Number(meta.__checkpointRevision) || 0) + 1) as number,
 				internal: ctx.internal,
 			});
 		}
