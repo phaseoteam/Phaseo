@@ -40,6 +40,33 @@ export const serverMutation = createMiddleware({ type: "function" })
 		return result;
 	});
 
+/** Where a redirect thrown by a server function points, as a URL the browser can load. */
+export function redirectHref(error: { options: { href?: string }; headers: Headers }): string {
+	const router = getRouter();
+	if (!error.options.href && router) router.resolveRedirect(error);
+	return error.options.href ?? error.headers.get("Location") ?? "/";
+}
+
+/**
+ * A server action that signs someone in, up or out and then redirects: the
+ * browser loads the destination as a full page. A client-side navigation would
+ * keep the signed-out state already cached in the page (account queries stay
+ * fresh for minutes), so the header kept showing "Sign in" and route guards
+ * such as /settings sent the person straight back to sign-in.
+ */
+export const serverAuthRedirectAction = createMiddleware({ type: "function" })
+	.middleware([serverAction])
+	.client(async (ctx) => {
+		try {
+			return await ctx.next();
+		} catch (error) {
+			if (!isRedirect(error)) throw error;
+			window.location.assign(redirectHref(error));
+			// The page is unloading: keep the call pending so forms stay in their submitting state.
+			return new Promise<never>(() => {});
+		}
+	});
+
 /**
  * A server action that ends with `redirect()`: the browser follows it with
  * the client router (external URLs load as a full page) and the call resolves

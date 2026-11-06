@@ -55,8 +55,10 @@ function VerifyMFAContent() {
             const result = await verifyMFALoginAction({ data: { code: finalCode, returnUrl } })
             toast.success(t('success'))
 
+            // A full page load: data cached before verification was loaded at the
+            // lower assurance level, so client-side navigation would keep it.
             setTimeout(() => {
-                router.replace(result.redirectPath)
+                window.location.replace(result.redirectPath)
             }, 500)
         } catch (error: any) {
             toast.error(t('failure'))
