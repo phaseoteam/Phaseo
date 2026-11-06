@@ -2,13 +2,15 @@
 -- 1. Unsuccessful gateway_requests rows with a cost. A stream the client left
 --    can keep its drain checkpoint charge on a 499 row; counting only success
 --    rows made a partly used purchase look unused and refundable.
--- 2. Open stepped charges with no request row. A stream whose drain the
---    runtime stopped has only its gateway_request_charges row (is_final =
---    false); it is counted unless a gateway_requests row with that
---    billing_request_id already records it. Ledger adjustment rows are not read.
+-- 2. Applied charges with no request row: a stream whose drain the runtime
+--    stopped (an open stepped charge, is_final = false), or a settled charge
+--    whose audit row never landed. A charge row counts only when no
+--    gateway_requests row with that billing_request_id records it (looked up
+--    with gateway_requests_workspace_billing_request_idx). Batch captures are
+--    left out: their cost is on per-row request rows without a billing id.
+--    Ledger adjustment rows are not read.
 -- The body is the one from 20261104193047_billing_security_fixes with only the
--- usage query changed. Depends on gateway_request_charges.is_final
--- (20261104231117_gateway_charge_request_total).
+-- usage query changed.
 
 CREATE OR REPLACE FUNCTION public.stripe_claim_self_serve_refund (
   p_team_id           uuid,
@@ -142,11 +144,14 @@ begin
     end if;
 
     -- Every charged request is usage, successful or not: a stream the client
-    -- left can keep its charge on an unsuccessful (499) row. A stream whose
-    -- drain the runtime stopped has only its open stepped charge row
-    -- (is_final = false) and no gateway_requests row: count that charge too,
-    -- unless a request row records it (billing_request_id), so nothing is
-    -- counted twice. Ledger adjustment rows are not read.
+    -- left can keep its charge on an unsuccessful (499) row. A charge with no
+    -- request row is usage too: a stream whose drain the runtime stopped (an
+    -- open stepped charge), or a settled charge whose audit row never landed.
+    -- A charge row counts only when no request row records it
+    -- (billing_request_id, gateway_requests_workspace_billing_request_idx), so
+    -- nothing is counted twice. Batch captures are left out: their cost is on
+    -- the per-row request rows, which carry no billing_request_id. Ledger
+    -- adjustment rows are not read.
     select coalesce(sum(gr.cost_nanos), 0)::bigint
     into v_usage_nanos
     from public.gateway_requests gr
@@ -158,17 +163,14 @@ begin
       select sum(charge.cost_nanos)
       from public.gateway_request_charges charge
       where charge.workspace_id = p_team_id
-        and charge.is_final = false
         and charge.status = 'applied'
         and charge.cost_nanos > 0
         and charge.created_at >= v_purchase.event_time
+        and charge.request_id not like 'batch\_capture:%'
         and not exists (
           select 1 from public.gateway_requests gr
           where gr.workspace_id = charge.workspace_id
             and gr.billing_request_id = charge.request_id
-            -- The request row is written within a day of its charge; the bound
-            -- keeps this to the workspace's recent partitions.
-            and gr.created_at between charge.created_at - interval '1 day' and charge.created_at + interval '1 day'
         )
     ), 0)::bigint;
 

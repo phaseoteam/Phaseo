@@ -23,7 +23,17 @@ const findMigration = async (suffix) => {
 const previous = await findMigration('_billing_security_fixes.sql');
 const chargeTotals = await findMigration('_gateway_charge_request_total.sql');
 const migration = await findMigration('_refund_claim_counts_charged_failures.sql');
-assert.equal(migrations.at(-1), migration.name, 'the migration is newer than every other migration');
+const billingIndex = await findMigration('_gateway_requests_billing_request_index.sql');
+assert(migration.name > chargeTotals.name, 'the refund migration runs after the stepped charge columns exist');
+assert.equal(migrations.at(-1), billingIndex.name, 'the index migration is newer than every other migration');
+// The index migration holds the one index and nothing else.
+assert.equal(
+  billingIndex.sql.replace(/^--.*\n/gm, '').trim(),
+  'create index if not exists gateway_requests_workspace_billing_request_idx\n  on public.gateway_requests (workspace_id, billing_request_id)\n  where billing_request_id is not null;',
+);
+assert(normalize(await read('../schemas/public/tables/gateway_requests.sql')).includes(
+  'CREATE INDEX gateway_requests_workspace_billing_request_idx ON ONLY public.gateway_requests USING btree (workspace_id, billing_request_id)\n  WHERE (billing_request_id IS NOT NULL);'),
+'the declarative table has the index');
 
 // The declarative file describes the same end state.
 const functionBody = (sql) => {
@@ -33,8 +43,10 @@ const functionBody = (sql) => {
 const schemaBody = functionBody(normalize(await read('../schemas/public/functions/stripe_claim_self_serve_refund.sql')));
 assert(schemaBody.length > 20 && migration.sql.includes(schemaBody), 'the migration ships the schema body of stripe_claim_self_serve_refund');
 assert(!schemaBody.includes('gr.success is true'), 'unsuccessful charged rows count as usage');
-assert(/from public\.gateway_request_charges charge[\s\S]*charge\.is_final = false[\s\S]*gr\.billing_request_id = charge\.request_id/.test(schemaBody),
-  'open stepped charges without a request row count as usage');
+assert(/from public\.gateway_request_charges charge[\s\S]*gr\.billing_request_id = charge\.request_id/.test(schemaBody),
+  'charges without a request row count as usage');
+assert(!/charge\.is_final/.test(schemaBody) && !/interval '1 day'/.test(schemaBody),
+  'every applied charge counts, open or settled, with no time window on the request lookup');
 // Outside the usage query the body is the previous one.
 const outsideUsage = (body) => {
   const usageStart = body.indexOf('    select coalesce(sum(gr.cost_nanos), 0)::bigint');
@@ -102,6 +114,9 @@ try {
 
   await db.exec(migration.sql);
   await db.exec(migration.sql);
+  await db.exec(billingIndex.sql);
+  await db.exec(billingIndex.sql);
+  assert.equal(Number((await one(`select count(*)::int as n from pg_indexes where indexname = 'gateway_requests_workspace_billing_request_idx'`)).n), 1);
 
   // ---------- After the fix ----------
   // $5 spent through charged cancellations uses the first purchase.
@@ -128,12 +143,33 @@ try {
   await stoppedDrain('once_bill', usd(5), 120, { requestRow: true });
   await setBalance(usd(12));
   assert.equal((await claim('once_first')).ok, true, 'the charge row and its request row are not counted twice');
-  // A settled stepped charge is counted from its request row only.
+  // A settled stepped charge whose audit row never landed is usage too.
+  await scenario('lost_audit', (prefix) => stoppedDrain(`${prefix}_bill`, usd(5), 120, { isFinal: true }));
+  assert.equal((await claim('lost_audit_first')).reason, 'lot_used', 'a final charge with no request row counts as usage');
+  assert.equal(await balance(), usd(15));
+  // A settled stepped charge with its request row is counted once, as is an ordinary one-off charge.
   await reset();
   await purchase('final_first', usd(10), usd(7), 3);
   await stoppedDrain('final_bill', usd(5), 120, { requestRow: true, isFinal: true });
   await setBalance(usd(12));
-  assert.equal((await claim('final_first')).ok, true, 'a settled charge is counted once, from its request row');
+  assert.equal((await claim('final_first')).ok, true, 'a settled charge with both rows is counted once');
+  await reset();
+  await purchase('sync_first', usd(10), usd(7), 3);
+  await asService(() => db.query('select public.gateway_charge_with_credit_cache($1, $2, $3, null)', [ws, 'sync_bill', usd(5)]));
+  await db.query(`update public.gateway_request_charges set created_at = now() - interval '2 hours' where request_id = 'sync_bill'`);
+  await db.query(`insert into public.gateway_requests (workspace_id, success, cost_nanos, created_at, billing_request_id)
+    values ($1, true, $2, now() - interval '2 hours', 'sync_bill')`, [ws, usd(5)]);
+  await setBalance(usd(12));
+  assert.equal((await claim('sync_first')).ok, true, 'a one-off charge with its request row is counted once');
+  // A batch capture is counted from its per-row request rows, which carry no billing id.
+  await reset();
+  await purchase('batch_first', usd(10), usd(7), 3);
+  await db.query(`insert into public.gateway_request_charges (workspace_id, request_id, cost_nanos, status, created_at)
+    values ($1, 'batch_capture:batch_1', $2, 'applied', now() - interval '2 hours')`, [ws, usd(5)]);
+  await db.query(`insert into public.gateway_requests (workspace_id, success, cost_nanos, created_at)
+    select $1, true, $2, now() - interval '2 hours' from generate_series(1, 5)`, [ws, usd(1)]);
+  await setBalance(usd(12));
+  assert.equal((await claim('batch_first')).ok, true, 'a batch capture is not counted on top of its request rows');
   // A stepped charge from before the purchase is not usage of it.
   await reset();
   await stoppedDrain('old_bill', usd(5), 600);
