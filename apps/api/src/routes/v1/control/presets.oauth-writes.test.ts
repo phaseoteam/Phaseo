@@ -36,6 +36,7 @@ const state = vi.hoisted(() => ({
 	rpcs: [] as Array<{ name: string; args: any }>,
 	rows: {} as Record<string, Record<string, Record<string, unknown>>>,
 	labels: [] as Array<Record<string, unknown>>,
+	writeError: null as { code: string; message: string } | null,
 }));
 
 function query(table: string) {
@@ -61,7 +62,7 @@ function query(table: string) {
 		const found = id && !excluded ? state.rows[table]?.[id] ?? null : null;
 		return found && presetId && found.preset_id && found.preset_id !== presetId ? null : found;
 	};
-	q.maybeSingle = async () => ({ data: row(), error: null });
+	q.maybeSingle = async () => (wrote && state.writeError ? { data: null, error: state.writeError } : { data: row(), error: null });
 	q.single = q.maybeSingle;
 	q.then = (resolve: (value: unknown) => unknown, reject: (error: unknown) => unknown) =>
 		Promise.resolve({ data: table === "preset_version_labels" ? state.labels : [], count: 0, error: null }).then(resolve, reject);
@@ -154,6 +155,7 @@ async function send(testCase: { method: string; path: string; body?: unknown; dr
 function reset() {
 	state.writes.length = 0;
 	state.rpcs.length = 0;
+	state.writeError = null;
 }
 
 describe("OAuth callers can't change what a preset runs", () => {
@@ -185,6 +187,15 @@ describe("OAuth callers can't change what a preset runs", () => {
 			testCase.persisted();
 		});
 	}
+
+	it("answers 409 when a new preset's slug matches another preset's except for case", async () => {
+		state.auth = ALLOWED["a management key"];
+		setPreset();
+		state.writeError = { code: "23505", message: 'duplicate key value violates unique constraint "presets_workspace_resolution_key"' };
+		const { status, body } = await send({ method: "POST", path: "/", body: { name: "@SUPPORT", config: RESTRICTED } });
+		expect(status, JSON.stringify(body)).toBe(409);
+		expect(body).toMatchObject({ error: "conflict", message: "Another preset in this workspace has the same slug, ignoring case" });
+	});
 
 	it("can't erase a label's baseline by deleting and recreating it", async () => {
 		for (const auth of Object.values(OAUTH)) {

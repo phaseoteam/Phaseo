@@ -19,6 +19,25 @@ CREATE INDEX preset_version_labels_preset_version_idx ON public.preset_version_l
 
 CREATE INDEX preset_version_labels_updated_by_idx ON public.preset_version_labels USING btree (updated_by);
 
+CREATE POLICY "preset_version_labels_no_oauth_client_insert" ON "public"."preset_version_labels"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (((( SELECT auth.jwt() AS jwt) ->> 'client_id'::text) IS NULL));
+
+CREATE POLICY "preset_version_labels_no_oauth_client_update" ON "public"."preset_version_labels"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (((( SELECT auth.jwt() AS jwt) ->> 'client_id'::text) IS NULL))
+  WITH CHECK (((( SELECT auth.jwt() AS jwt) ->> 'client_id'::text) IS NULL));
+
+CREATE POLICY "preset_version_labels_no_oauth_client_delete" ON "public"."preset_version_labels"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (((( SELECT auth.jwt() AS jwt) ->> 'client_id'::text) IS NULL));
+
 CREATE POLICY "service_role_full_access" ON "public"."preset_version_labels"
   FOR ALL
   TO "service_role"

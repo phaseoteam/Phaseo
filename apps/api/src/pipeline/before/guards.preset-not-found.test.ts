@@ -55,6 +55,17 @@ describe("guardContext for preset references", () => {
 		expect((await result.response.json()).reason).toBe("preset_not_found");
 	});
 
+	it("returns 400 when the reference matches presets whose slugs differ only in case", async () => {
+		fetchGatewayContextMock.mockRejectedValue(new Error("gateway_context_rpc_error:preset_ambiguous"));
+		const result = await guard("@Support@prod");
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(400);
+		const body = await result.response.json();
+		expect(body).toMatchObject({ reason: "preset_ambiguous", error: { code: "validation_error" } });
+		expect(body.error.message).toContain("matches more than one preset");
+	});
+
 	it("returns 400 when the preset has no model", async () => {
 		fetchGatewayContextMock.mockRejectedValue(new Error('preset_no_model: Preset "x" has no model configured'));
 		const result = await guard("@empty");

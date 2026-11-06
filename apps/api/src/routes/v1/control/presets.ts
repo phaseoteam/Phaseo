@@ -143,6 +143,12 @@ function presetMetadataOnly(body: Record<string, unknown>, existing: PresetRow):
 	return body.name === undefined || String(existing.slug ?? "").trim() !== "";
 }
 
+/** A 409 when a write hit the case-insensitive slug index, which keeps "@slug" references unambiguous. */
+function slugCollision(error: { message?: string | null } | null | undefined): Response | null {
+	if (!String(error?.message ?? "").includes("presets_workspace_resolution_key")) return null;
+	return json({ error: "conflict", message: "Another preset in this workspace has the same slug, ignoring case" }, 409, { "Cache-Control": "no-store" });
+}
+
 function formatPreset(row: PresetRow) {
 	return {
 		id: row.id,
@@ -313,6 +319,7 @@ async function handleCreatePreset(req: Request) {
 			})
 			.select("id, workspace_id, name, slug, description, config, visibility, created_by, source_preset_id, source_preset_version_id, upstream_version_id, created_at, updated_at, draft_name, draft_slug, draft_description, draft_config, draft_visibility, active_version_id, versioning_method")
 			.maybeSingle();
+		const collision = slugCollision(error); if (collision) return collision;
 		if (error) throw new Error(error.message || "Failed to create preset");
 		await auditPreset(auth.value, "preset.created", data as PresetRow, { visibility });
 		return json({ data: formatPreset(data as PresetRow), canonical_model: visibility === "public" ? `@${publisher}/${slug}` : `@${slug}` }, 201, { "Cache-Control": "no-store" });
@@ -500,6 +507,7 @@ async function handlePublishPresetVersion(req: Request) {
 			if (message.includes("preset_not_found")) return json({ error: "not_found" }, 404, { "Cache-Control": "no-store" });
 			if (message.includes("preset_publish_forbidden")) return json({ error: "forbidden" }, 403, { "Cache-Control": "no-store" });
 			if (message.includes("no_draft_changes")) return json({ error: "conflict", message: "No draft changes to publish" }, 409, { "Cache-Control": "no-store" });
+			const collision = slugCollision(result.error); if (collision) return collision;
 			throw new Error(message || "Failed to publish preset version");
 		}
 		const version = Array.isArray(result.data) ? result.data[0] : result.data;
@@ -732,6 +740,7 @@ async function handleForkPreset(req: Request) {
 		}
 		const config = boundedConfig(snapshot.config); if (!config) return json({ error: "conflict", message: "Source preset configuration is too large" }, 409, { "Cache-Control": "no-store" });
 		const created = await client.from("presets").insert({ workspace_id: auth.value.workspaceId, name, slug: nextSlug, description: snapshot.description ?? null, config, visibility: "private", created_by: auth.value.userId ?? null, source_preset_id: sourceId, source_preset_version_id: snapshot.id, upstream_version_id: snapshot.id }).select("id, workspace_id, name, slug, description, config, visibility, created_by, source_preset_id, source_preset_version_id, upstream_version_id, created_at, updated_at, draft_name, draft_slug, draft_description, draft_config, draft_visibility, active_version_id, versioning_method").maybeSingle();
+		const collision = slugCollision(created.error); if (collision) return collision;
 		if (created.error || !created.data) throw new Error(created.error?.message || "Failed to fork preset");
 		await auditPreset(auth.value, "preset.forked", created.data as PresetRow, { source_preset_id: sourceId, source_version_id: snapshot.id ?? null });
 		return json({ data: formatPreset(created.data as PresetRow) }, 201, { "Cache-Control": "no-store" });
