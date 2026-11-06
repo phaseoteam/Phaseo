@@ -487,18 +487,18 @@ describe("account policy settings routes", () => {
 			expect(presetUrl.searchParams.get("select")).not.toContain("*");
 		});
 
-		it.each([
-			["change it", "", { method: "PUT", body: JSON.stringify({ description: "Mine" }) }],
-			["archive it", "", { method: "DELETE" }],
-			["publish a version", "/versions", { method: "POST", body: JSON.stringify({}) }],
-			["set a label", "/labels/probe", { method: "PUT", body: JSON.stringify({ versionId: VERSION_ID }) }],
-			["remove a label", "/labels/probe", { method: "DELETE" }],
-			["apply an upstream version", "/upstream", { method: "POST", body: JSON.stringify({ versionId: VERSION_ID }) }],
-		])("treats a teammate's private preset as missing when an admin tries to %s", async (_label, path, init) => {
-			const calls = stubLabels({ role: "admin", visibility: "private" });
-			const response = await request(path, init as RequestInit);
-			expect(response.status).toBe(404);
-			await expect(response.json()).resolves.toMatchObject({ error: "not_found" });
+		it("lets the creator publish their own private draft", async () => {
+			const calls = stubLabels({ role: "member", createdBy: "user-1", visibility: "team", draftVisibility: "private" });
+			const response = await request("/versions", { method: "POST", body: JSON.stringify({}) });
+			expect(response.status).toBe(201);
+			expect(calls.map((call) => call.name)).toEqual(["publish_preset_version"]);
+		});
+
+		it("says there's nothing to publish for a shared preset whose draft is unchanged", async () => {
+			const calls = stubLabels({ role: "admin", visibility: "team", draftVisibility: "team" });
+			const response = await request("/versions", { method: "POST", body: JSON.stringify({}) });
+			expect(response.status).toBe(409);
+			await expect(response.json()).resolves.toEqual({ error: "no_draft_changes" });
 			expect(calls).toEqual([]);
 		});
 
@@ -691,6 +691,91 @@ describe("account policy settings routes", () => {
 		await expect(response.json()).resolves.toMatchObject({
 			presets: [{ id: "fork-1", latestUpstreamVersion: { id: "version-2", version_number: 2 }, hasUpstreamUpdate: true }],
 		});
+	});
+
+	describe("writes on a hidden preset and a missing one look the same", () => {
+		const VERSION = "7d0b6f0e-3c1a-4f0b-9a55-2f3c4d5e6f70";
+		/** A PostgREST stand-in for the write lookup: it applies the id, archived, workspace and visibility filters. */
+		function stubWorld({ userId, memberOf, preset }: { userId: string; memberOf: string[]; preset: Record<string, unknown> | null }) {
+			const requests: string[] = [];
+			vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+				const req = input instanceof Request ? input : new Request(String(input), init);
+				const url = new URL(req.url);
+				requests.push(`${req.method} ${url.pathname}?${[...url.searchParams.entries()].map(([key, value]) => `${key}=${value}`).sort().join("&")}`);
+				if (url.pathname === "/auth/v1/user") return Response.json({ id: userId, email: "user@example.com", created_at: "2025-01-01" });
+				if (url.pathname.endsWith("/workspace_members") && url.searchParams.get("select") === "workspace_id") return Response.json(memberOf.map((workspace_id) => ({ workspace_id })));
+				if (url.pathname.endsWith("/workspace_members")) return Response.json(memberOf.includes(String(url.searchParams.get("workspace_id")).replace(/^eq\./, "")) ? [{ role: "admin" }] : []);
+				if (url.pathname.endsWith("/workspaces")) return Response.json([]);
+				if (url.pathname.endsWith("/presets") && req.method === "GET") {
+					if (!preset) return Response.json([]);
+					const workspaces = (url.searchParams.get("workspace_id") ?? "").replace(/^in\.\(|\)$/g, "").split(",").map((id) => id.replace(/^"|"$/g, ""));
+					const visible = preset.visibility !== "private" || preset.created_by === userId;
+					const matches = url.searchParams.get("id") === `eq.${preset.id}` && url.searchParams.get("archived_at") === "is.null"
+						&& workspaces.includes(String(preset.workspace_id)) && url.searchParams.get("or") === `(visibility.neq.private,created_by.eq.${userId})` && visible;
+					return Response.json(matches ? [preset] : []);
+				}
+				return Response.json([]);
+			}));
+			return requests;
+		}
+		const routes: Array<[string, string, RequestInit]> = [
+			["update", "", { method: "PUT", body: JSON.stringify({ description: "Mine" }) }],
+			["archive", "", { method: "DELETE" }],
+			["publish", "/versions", { method: "POST", body: JSON.stringify({}) }],
+			["set a label", "/labels/probe", { method: "PUT", body: JSON.stringify({ versionId: VERSION }) }],
+			["remove a label", "/labels/probe", { method: "DELETE" }],
+			["apply upstream", "/upstream", { method: "POST", body: JSON.stringify({ versionId: VERSION }) }],
+		];
+		const send = (path: string, init: RequestInit) => app.request(`https://phaseo.app/api/account/settings/presets/preset-1${path}`, { ...init, headers: { authorization: "Bearer session-token", "content-type": "application/json" } }, env, { waitUntil() {}, passThroughOnException() {}, props: {} } as never);
+		async function observe(path: string, init: RequestInit, world: Parameters<typeof stubWorld>[0]) {
+			const requests = stubWorld(world);
+			const response = await send(path, init);
+			return { status: response.status, body: await response.text(), headers: Object.fromEntries(response.headers.entries()), requests };
+		}
+		const teammatesPrivate = { id: "preset-1", workspace_id: "workspace-1", created_by: "owner-2", visibility: "private", draft_visibility: "private" };
+		const otherWorkspaceTeam = { id: "preset-1", workspace_id: "workspace-1", created_by: "owner-2", visibility: "team", draft_visibility: "team" };
+
+		it.each(routes)("%s: a teammate's private preset matches a missing one (status, body, headers, requests)", async (_label, path, init) => {
+			const hidden = await observe(path, init, { userId: "user-1", memberOf: ["workspace-1"], preset: teammatesPrivate });
+			const missing = await observe(path, init, { userId: "user-1", memberOf: ["workspace-1"], preset: null });
+			expect(hidden.status).toBe(404);
+			expect(JSON.parse(hidden.body)).toEqual({ error: "not_found" });
+			expect(hidden).toEqual(missing);
+		});
+
+		it.each(routes)("%s: someone outside the workspace can't tell a preset there from a missing one", async (_label, path, init) => {
+			const existing = await observe(path, init, { userId: "user-1", memberOf: ["workspace-2"], preset: otherWorkspaceTeam });
+			const missing = await observe(path, init, { userId: "user-1", memberOf: ["workspace-2"], preset: null });
+			expect(existing.status).toBe(404);
+			expect(existing).toEqual(missing);
+		});
+
+		it("checks the upstream body's shape before looking the preset up", async () => {
+			const requests = stubWorld({ userId: "user-1", memberOf: ["workspace-1"], preset: null });
+			const response = await send("/upstream", { method: "POST", body: JSON.stringify({}) });
+			expect(response.status).toBe(400);
+			await expect(response.json()).resolves.toEqual({ error: "invalid_upstream_version" });
+			expect(requests.some((line) => line.includes("/presets?"))).toBe(false);
+		});
+	});
+
+	it("only forks public presets", async () => {
+		for (const visibility of ["private", "team"]) {
+			vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+				const url = input instanceof Request ? input.url : String(input);
+				if (url.includes("/auth/v1/user")) return Response.json({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" });
+				if (url.includes("workspace_members")) return Response.json([{ role: "admin" }]);
+				if (url.includes("/presets") && url.includes("id=eq.source-1")) return Response.json([{ id: "source-1", name: "Source", slug: "source", description: null, config: { secret: true }, visibility, active_version_id: null }]);
+				return Response.json([]);
+			}));
+			const response = await app.request("https://phaseo.app/api/account/settings/presets/source-1/fork", {
+				method: "POST",
+				headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+				body: JSON.stringify({ workspaceId: "workspace-1" }),
+			}, env, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
+			expect(response.status, visibility).toBe(404);
+			await expect(response.json()).resolves.toEqual({ error: "not_public" });
+		}
 	});
 
 	it("rejects a non-public source version when creating a fork", async () => {
