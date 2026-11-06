@@ -161,8 +161,8 @@ try {
     const fn = await one(`select prosecdef, provolatile from pg_proc where proname = 'gateway_department_budget_status'`);
     assert.deepEqual(fn, { prosecdef: true, provolatile: 's' });
     for (const role of ['anon', 'authenticated', 'service_role']) {
-      for (const signature of ['private.budget_spend_items(uuid, timestamptz, uuid[], text[], boolean)', 'private.department_budget_usage(uuid, uuid, text[], boolean)',
-        'private.workspace_budget_status(uuid, bigint, boolean)', 'private.open_stepped_charges(uuid)']) {
+      for (const signature of ['private.budget_spend_items(uuid, timestamptz, uuid[], text[], text[])', 'private.department_budget_usage(uuid, uuid, text[])',
+        'private.workspace_budget_status(uuid, bigint, text[])', 'private.open_stepped_charges(uuid)']) {
         const { allowed } = await one(`select has_function_privilege($1, $2, 'execute') as allowed`, [role, signature]);
         assert.equal(allowed, false, `${role} ${signature}`);
       }
@@ -304,22 +304,45 @@ try {
       ($1, 'stream-abandoned', 'billing-abandoned', $2, false, $3, now())`, [WS_ROLL, KEY.roll, 1.5 * DOLLAR]);
     assert.equal(Number((await workspaceStatus(WS_ROLL)).budgets[0].usage_nanos), before + 2.75 * DOLLAR);
   });
-  await check('the seed returns open stepped charges by billing request id, outside its totals', async () => {
+  await check('the seed skips an open stepped charge listed by billing request id, and only then', async () => {
     await db.exec(`insert into public.gateway_request_charges (workspace_id, request_id, cost_nanos, status, is_final, key_id) values
-      ('${WS_CAP}', 'billing-open', ${DOLLAR}, 'applied', false, '${KEY.cap}')`);
-    const admitted = Number((await workspaceStatus(WS_CAP)).budgets[0].usage_nanos);
-    const seeded = await asService(async () => (await one(
-      `select public.gateway_spend_limit_seed($1, $2::uuid[], array['stream-open']) as r`, [WS_CAP, [KEY.cap]])).r);
-    // Admission counts it; the seed's totals leave it to the coordinator, which skips it when its
-    // pending spend (keyed by billing request id) already holds it.
-    assert.equal(Number(seeded.budget_status.budgets[0].usage_nanos), admitted - DOLLAR);
-    assert.deepEqual(seeded.open_charges.map((charge) => [charge.billing_request_id, charge.key_id, Number(charge.cost_nanos)]),
-      [['billing-open', KEY.cap, DOLLAR]]);
-    // Public request ids never stand in for billing ids.
-    const byBillingId = await asService(async () => (await one(
-      `select public.gateway_spend_limit_seed($1, $2::uuid[], array['billing-open']) as r`, [WS_CAP, [KEY.cap]])).r);
-    assert.equal(byBillingId.open_charges.length, 1);
+      ('${WS_CAP}', 'billing-open', ${DOLLAR}, 'applied', false, '${KEY.limited}')`);
+    const seedWith = async (exclude) => asService(async () => (await one(
+      `select public.gateway_spend_limit_seed($1, $2::uuid[], $3::text[]) as r`, [WS_CAP, [KEY.limited], exclude])).r);
+    const usage = (seeded) => ({
+      workspace: Number(seeded.budget_status.budgets[0].usage_nanos),
+      key: Number(seeded.keys[0].used.daily.cost_nanos),
+    });
+    const counted = usage(await seedWith([]));
+    // The coordinator holds the stream's checkpoint: it lists the request id and the billing id.
+    assert.deepEqual(usage(await seedWith(['stream-open', 'billing-open'])), { workspace: counted.workspace - DOLLAR, key: counted.key - DOLLAR });
+    // The request id alone does not stand for the charge row.
+    assert.deepEqual(usage(await seedWith(['stream-open'])), counted);
+    // Admission always counts it.
+    assert.equal(Number((await workspaceStatus(WS_CAP)).budgets[0].usage_nanos), counted.workspace);
     await db.query(`delete from public.gateway_request_charges where request_id = 'billing-open'`);
+  });
+  await check('a delivered request pending reconciliation counts at its expected cost, once', async () => {
+    const before = { workspace: Number((await workspaceStatus(WS_CAP)).budgets[0].usage_nanos),
+      department: Number((await departmentStatus(WS_CAP, KEY.cap)).department_budgets[0].usage_nanos) };
+    // The response was delivered; the wallet charge failed, so the row carries cost 0 and the expected amount.
+    await db.query(`insert into public.gateway_requests (workspace_id, request_id, key_id, success, cost_nanos, expected_cost_nanos) values
+      ($1, 'delivered-unbilled', $2, false, 0, $3), ($1, 'unpriced', $2, false, 0, null)`, [WS_CAP, KEY.cap, 2 * DOLLAR]);
+    const now = async () => ({ workspace: Number((await workspaceStatus(WS_CAP)).budgets[0].usage_nanos),
+      department: Number((await departmentStatus(WS_CAP, KEY.cap)).department_budgets[0].usage_nanos),
+      seeded: Number((await seed(WS_CAP, [KEY.cap])).department_budgets[0].usage_nanos) });
+    assert.deepEqual(await now(), { workspace: before.workspace + 2 * DOLLAR, department: before.department + 2 * DOLLAR, seeded: before.department + 2 * DOLLAR });
+    // A later charge of the full amount: counted once, whether or not the expected amount is cleared.
+    await db.query(`update public.gateway_requests set cost_nanos = $2 where workspace_id = $1 and request_id = 'delivered-unbilled'`, [WS_CAP, 2 * DOLLAR]);
+    assert.deepEqual(await now(), { workspace: before.workspace + 2 * DOLLAR, department: before.department + 2 * DOLLAR, seeded: before.department + 2 * DOLLAR });
+    // A partial charge counts the larger of the two.
+    await db.query(`update public.gateway_requests set cost_nanos = $2 where workspace_id = $1 and request_id = 'delivered-unbilled'`, [WS_CAP, DOLLAR / 2]);
+    assert.equal((await now()).workspace, before.workspace + 2 * DOLLAR);
+    // The seed leaves it to the coordinator while it is still counted from memory.
+    const excluded = await asService(async () => (await one(
+      `select public.gateway_spend_limit_seed($1, $2::uuid[], array['delivered-unbilled']) as r`, [WS_CAP, [KEY.cap]])).r);
+    assert.equal(Number(excluded.department_budgets[0].usage_nanos), before.department);
+    await db.query(`delete from public.gateway_requests where request_id in ('delivered-unbilled', 'unpriced')`);
   });
   await check('the seed leaves out request ids the coordinator already counts', async () => {
     const seeded = await asService(async () => (await one(`select public.gateway_spend_limit_seed($1, $2::uuid[], array['stream-cancelled']) as r`, [WS_CAP, [KEY.cap]])).r);
@@ -397,11 +420,12 @@ try {
       ('${WS_CAP}', 'billing-keyless', ${2 * DOLLAR}, 'applied', false, null)`);
     assert.equal(Number((await departmentStatus(WS_CAP, KEY.cap)).department_budgets[0].usage_nanos), before + DOLLAR);
     assert.equal(Number((await workspaceStatus(WS_CAP)).budgets[0].usage_nanos), workspaceBefore + 3 * DOLLAR);
-    // The seed hands both over with their keys, for the coordinator to attribute.
-    const seeded = await seed(WS_CAP, [KEY.cap]);
-    assert.equal(Number(seeded.department_budgets[0].usage_nanos), before);
-    assert.deepEqual(seeded.open_charges.map((charge) => [charge.billing_request_id, charge.key_id]),
-      [['billing-keyed', KEY.cap], ['billing-keyless', null]]);
+    assert.equal(Number((await seed(WS_CAP, [KEY.cap])).department_budgets[0].usage_nanos), before + DOLLAR);
+    // Listed by billing request id while the coordinator counts it from memory.
+    const excluded = await asService(async () => (await one(
+      `select public.gateway_spend_limit_seed($1, $2::uuid[], array['billing-keyed']) as r`, [WS_CAP, [KEY.cap]])).r);
+    assert.equal(Number(excluded.department_budgets[0].usage_nanos), before);
+    assert.equal(Number(excluded.budget_status.budgets[0].usage_nanos), workspaceBefore + 2 * DOLLAR);
     await db.query(`delete from public.gateway_request_charges where request_id in ('billing-keyed', 'billing-keyless')`);
   });
   await check('deleting a key keeps its captured video and batch hold counted once', async () => {
@@ -425,9 +449,9 @@ try {
     assert.equal(await usage(), 5 * DOLLAR, 'still counted once after the key is gone');
   });
   await check('the history bound prunes gateway_requests partitions under a generic plan', async () => {
-    const { def } = await one(`select pg_get_functiondef('private.budget_spend_items(uuid, timestamptz, uuid[], text[], boolean)'::regprocedure) as def`);
+    const { def } = await one(`select pg_get_functiondef('private.budget_spend_items(uuid, timestamptz, uuid[], text[], text[])'::regprocedure) as def`);
     assert.doesNotMatch(def, /p_since is null or/i);
-    assert.equal((def.match(/created_at >= coalesce\(p_since, '-infinity'::timestamptz\)/g) ?? []).length, 3);
+    assert.equal((def.match(/created_at >= coalesce\(p_since, '-infinity'::timestamptz\)/g) ?? []).length, 4);
     // The same predicate, prepared and planned generically as inside the function.
     await db.exec(`set plan_cache_mode = force_generic_plan;
       prepare spend_history(uuid, timestamptz) as select sum(request.cost_nanos) from public.gateway_requests request

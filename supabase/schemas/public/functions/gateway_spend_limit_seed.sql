@@ -29,6 +29,10 @@ begin
   if cardinality(v_key_ids) > 100 then
     raise exception using errcode = '22023', message = 'too_many_key_ids';
   end if;
+  -- p_exclude_request_ids is the SpendLimit Durable Object's spend still counted from memory:
+  -- gateway_requests rows are skipped by request_id (the public request id) and stepped charge
+  -- rows by gateway_request_charges.request_id (the billing request id), which it also lists for
+  -- its open checkpoint entries.
   if cardinality(v_exclude) > 5000 then
     raise exception using errcode = '22023', message = 'too_many_excluded_request_ids';
   end if;
@@ -75,6 +79,13 @@ begin
         and charged.created_at >= least(week_start, month_start)
         and not (charged.request_id = any(v_exclude))
       union all
+      -- Open stepped charges of the key, cost only.
+      select charge.key_id, charge.created_at, charge.cost_nanos, false
+      from private.open_stepped_charges(p_workspace_id) charge
+      where charge.key_id = any(array(select key_rows.id from key_rows where key_rows.limited))
+        and charge.created_at >= least(week_start, month_start)
+        and not (charge.billing_request_id = any(v_exclude))
+      union all
       -- Delivered requests whose charge is pending reconciliation: the uncharged expected cost.
       select pending.key_id, pending.created_at,
         pending.expected_cost_nanos - greatest(coalesce(pending.cost_nanos, 0), 0), false
@@ -111,8 +122,7 @@ begin
   -- Department budgets with their usage this UTC period and every key that counts toward each
   -- department, from private.department_budget_usage, the calculation gateway_department_budget_status
   -- admits holds with: positive-cost requests of the department's keys (less excluded request ids)
-  -- plus their outstanding batch, video and realtime holds. Open stepped charges are left out here
-  -- and returned in open_charges.
+  -- plus their outstanding batch, video and realtime holds and open stepped charges.
   if exists (select 1 from public.workspace_department_budgets b where b.workspace_id = p_workspace_id) then
     select coalesce(jsonb_agg(jsonb_build_object(
       'id', usage.id,
@@ -126,7 +136,7 @@ begin
       'key_ids', to_jsonb(usage.key_ids)
     ) order by usage.department_id, usage.budget_interval), '[]'::jsonb)
     into v_departments
-    from private.department_budget_usage(p_workspace_id, null, v_exclude, false) usage;
+    from private.department_budget_usage(p_workspace_id, null, v_exclude) usage;
   end if;
 
   -- Blocking spend guardrails: one entry per counter (private.spend_guardrail_usage), counted
@@ -174,18 +184,7 @@ begin
     'week_start', to_jsonb(week_start),
     'month_start', to_jsonb(month_start),
     'keys', v_keys,
-    'budget_status', private.workspace_budget_status(p_workspace_id, 0, false),
-    -- Open stepped charges, by billing request id: the coordinator counts each one it does not
-    -- already hold in memory toward the workspace budgets, the department and the cost of its key.
-    'open_charges', coalesce((
-      select jsonb_agg(jsonb_build_object(
-        'billing_request_id', charge.billing_request_id,
-        'key_id', charge.key_id,
-        'cost_nanos', charge.cost_nanos,
-        'created_at', charge.created_at
-      ) order by charge.billing_request_id)
-      from private.open_stepped_charges(p_workspace_id) charge
-    ), '[]'::jsonb),
+    'budget_status', private.workspace_budget_status(p_workspace_id, 0, v_exclude),
     'excluded_rows', v_excluded,
     'department_budgets', v_departments,
     'guardrail_budgets', v_guardrails

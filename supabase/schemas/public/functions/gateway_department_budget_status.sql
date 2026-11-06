@@ -50,7 +50,7 @@ begin
   ) order by case usage.budget_interval when 'daily' then 1 when 'weekly' then 2 else 3 end,
     usage.department_name, usage.department_id), '[]'::jsonb)
   into v_result
-  from private.department_budget_usage(p_workspace_id, p_key_id, '{}'::text[], true) usage;
+  from private.department_budget_usage(p_workspace_id, p_key_id, '{}'::text[]) usage;
 
   select budget into v_exceeded
   from jsonb_array_elements(v_result) with ordinality as item(budget, position)
