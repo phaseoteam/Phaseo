@@ -386,6 +386,9 @@ CREATE INDEX gateway_requests_success_workspace_cost_idx ON ONLY public.gateway_
 
 CREATE INDEX gateway_requests_workspace_auth_method_created_idx ON ONLY public.gateway_requests USING btree (workspace_id, auth_method, created_at DESC);
 
+CREATE INDEX gateway_requests_workspace_billing_request_idx ON ONLY public.gateway_requests USING btree (workspace_id, billing_request_id)
+  WHERE (billing_request_id IS NOT NULL);
+
 CREATE INDEX gateway_requests_workspace_client_source_time_idx ON ONLY public.gateway_requests USING btree (workspace_id, client_source_id, created_at DESC)
   WHERE (client_source_id IS NOT NULL);
 
