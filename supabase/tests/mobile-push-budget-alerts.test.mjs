@@ -45,7 +45,7 @@ try {
     const v4 = await read(v4File);
     // sweep_spend_limit_warnings was last replaced by budget_enforcement_money_hygiene (charged async
     // requests that did not succeed count toward cost).
-    const latestFile = '../migrations/20261106220407_budget_enforcement_money_hygiene.sql';
+    const latestFile = '../migrations/20261106234007_budget_enforcement_money_hygiene.sql';
     const latest = await read(latestFile);
     for (const file of schemaFiles) {
         const shipped = file.endsWith('sweep_spend_limit_warnings.sql') ? latest : v4;
