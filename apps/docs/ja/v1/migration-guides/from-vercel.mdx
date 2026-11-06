@@ -68,7 +68,7 @@ AI SDK は、文字列のみのモデル指定(`model: "openai/gpt-4.1-mini"`)�
 | `providerOptions.gateway.sort`(`cost`、`ttft`、`tps`) | `provider.sort`(`price`、`latency`、`throughput`)。 |
 | `providerOptions.gateway.zeroDataRetention` | `provider.require_zero_data_retention`。ルーティングを ZDR プロバイダーに限定します。 |
 | `providerOptions.gateway.user`、`.tags` | `user` と `X-Phaseo-Metadata` の[ラベル](../guides/request-labels)。 |
-| リクエスト単位の `byok` 認証情報 | 代替はありません。`phaseo byok create` でワークスペースにプロバイダーキーを追加してください。 |
+| リクエスト単位の `byok` 認証情報 | 代替はありません。**設定 → BYOK** でワークスペースにプロバイダーキーを追加してください。 |
 | テキスト、ストリーミング、ツール、構造化出力、埋め込み、画像、文字起こし、音声合成 | プロバイダーがサポートしています。ただし、対応する機能はモデルによって異なります。 |
 | リランキング | AI SDK 6 と 7 の系列で `phaseo.rerankingModel(id)`。 |
 | 管理されたファイル参照、プロバイダー実行のツール | サポートされていません。サポートされていない部分は削除されず、エラーになります。 |

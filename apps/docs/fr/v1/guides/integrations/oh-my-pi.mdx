@@ -26,10 +26,9 @@ Le lanceur crée une clé dédiée, écrit `models.yml` dans un `PI_CODING_AGENT
 
 ## Configurer oh-my-pi manuellement
 
-Créez une clé, exportez-la dans le shell qui démarre oh-my-pi et créez le répertoire de configuration :
+Créez une clé dans le tableau de bord, sous **Paramètres → Clés API**, exportez-la dans le shell qui démarre oh-my-pi et créez le répertoire de configuration :
 
 ```bash
-phaseo keys create --name "oh-my-pi Phaseo key" --json
 export PHASEO_OMP_API_KEY="<your Phaseo API key>"
 mkdir -p ~/.omp/agent
 ```

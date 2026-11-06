@@ -75,7 +75,7 @@ LLM Gateway の `alibaba/<model>` は Phaseo の ID ではありません。各 
 | セッションヘッダー(`x-session-id`) | ボディの `session_id` フィールド。Phaseo はセッションヘッダーを無視します。 |
 | `X-Source` | `HTTP-Referer` または `X-App-Name`。[アプリの帰属](../guides/app-attribution)を参照してください。 |
 | レスポンスキャッシュ | レスポンスキャッシュはありません。 |
-| プロバイダーキー | BYOK(`phaseo byok create` または `POST /v1/byok`)、または Phaseo のクレジット。クレジットへのフォールバックはワークスペース設定の `byok_fallback_enabled` です。 |
+| プロバイダーキー | BYOK(**設定 → BYOK** または `POST /v1/byok`)、または Phaseo のクレジット。クレジットへのフォールバックはワークスペース設定の `byok_fallback_enabled` です。 |
 | リクエストログ | リクエストログ、オブザーバビリティの送信先、`GET /v1/generations?id=<request_id>`。`replay_supported` が `true` の場合は、失敗したリクエストを `replay_request` のペイロードからリプレイできます。 |
 
 ## テストして展開する

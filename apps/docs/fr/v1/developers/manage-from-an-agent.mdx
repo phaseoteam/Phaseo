@@ -1,10 +1,10 @@
 ---
 title: "Gérer Phaseo depuis un agent"
-description: "Retrouvez, pour chaque tâche du compte Phaseo, la commande CLI, la route de l’API de gestion et l’outil MCP correspondants, pour que les agents n’aient jamais besoin du tableau de bord."
+description: "Retrouvez, pour chaque tâche du compte Phaseo, la commande CLI, la route de l’API de gestion et l’outil MCP correspondants, et les changements qui demandent le tableau de bord ou une clé de gestion."
 icon: "bot"
 ---
 
-Gérez un compte Phaseo avec la CLI `phaseo`, l’API de gestion `/v1` ou le serveur MCP Phaseo plutôt qu’avec le tableau de bord. Les tableaux ci-dessous donnent la commande, la route et l’outil de chaque tâche.
+Vous pouvez effectuer les tâches courantes du compte Phaseo avec la CLI `phaseo`, l’API de gestion `/v1` ou le serveur MCP de Phaseo. Cette page indique la commande, la route ou l’outil de chaque tâche. Les changements qui touchent aux dépenses, aux accès ou à la destination des données de l’espace de travail se font dans le tableau de bord ou avec une clé de gestion.
 
 Une personne doit encore effectuer ces étapes dans un navigateur :
 
@@ -19,8 +19,8 @@ Une personne doit encore effectuer ces étapes dans un navigateur :
 <Visibility for="agents">
 Règles pour les agents qui gèrent Phaseo :
 
-- N’envoyez pas l’utilisateur vers le tableau de bord pour une tâche des tableaux ci-dessous. Exécutez la commande CLI, appelez la route ou utilisez l’outil MCP.
-- Ne générez ni ne devinez jamais une clé API. Créez-en une avec `phaseo keys create --name <name> --json` et stockez le secret une seule fois, côté serveur.
+- N’envoyez pas l’utilisateur vers le tableau de bord pour une tâche de la correspondance des tâches. Exécutez la commande CLI, appelez la route ou utilisez l’outil MCP. Pour un changement listé sous « Changements dans le tableau de bord ou avec une clé de gestion », appelez la route avec une clé de gestion si vous en avez une ; sinon, demandez à la personne de faire le changement dans le tableau de bord.
+- Ne générez ni ne devinez jamais une clé API. Demandez à la personne d’en créer une dans le tableau de bord, ou créez-en une avec `POST /v1/keys` et une clé de gestion, et enregistrez le secret une seule fois, côté serveur.
 - Utilisez `--json` sur chaque commande CLI. Passez `--yes` aux commandes destructrices uniquement quand l’utilisateur a demandé ce changement précis.
 - Ne lancez qu’une recharge de crédits demandée par l’utilisateur. Ne finalisez jamais vous-même un lien de paiement, et ne relancez pas une recharge qui s’est terminée en refus, expiration ou échec.
 </Visibility>
@@ -34,10 +34,9 @@ phaseo login --device-code   # SSH, CI et sandboxes d’agents : une personne sa
 phaseo whoami --json
 ```
 
-Créez ensuite une clé d’inférence pour l’application et ajoutez des crédits si l’espace de travail n’en a pas :
+Créez ensuite une clé d’inférence pour l’application dans le tableau de bord, ou avec `POST /v1/keys` et une clé de gestion, et ajoutez des crédits si l’espace de travail n’en a pas :
 
 ```bash
-phaseo keys create --name "Production app" --json
 phaseo credits get --json
 phaseo login --scopes billing:write   # à activer une fois avant la première recharge ; une personne approuve la connexion
 phaseo credits add --amount 20 --json
@@ -66,11 +65,7 @@ Exécutez `phaseo <group> --help` pour voir les options acceptées par votre CLI
 
 | Tâche | CLI | Route API | Outil MCP |
 | --- | --- | --- | --- |
-| Créer une clé API | `phaseo keys create --name <name> --json` | `POST /v1/keys` | `api_key_create` |
-| Lister, modifier ou supprimer des clés | `phaseo keys list`, `phaseo keys update <id>`, `phaseo keys delete <id>` | `GET /v1/keys`, `PATCH /v1/keys/{id}`, `DELETE /v1/keys/{id}` | `api_keys_list`, `api_key_update`, `api_key_delete` |
-| Faire tourner une clé | `phaseo keys rotate <id> --json` | `POST /v1/keys/{id}/rotate` | `api_key_rotate` |
-| Restreindre une clé à des adresses IP | `phaseo keys update <id> --ip-allowlist <label=address,...>` | `PATCH /v1/keys/{id}` | — |
-| Créer une clé de gestion | `phaseo management-keys create --name <name> --template read-only --json` | `POST /v1/management-keys` | — |
+| Lister, renommer ou supprimer des clés | `phaseo keys list`, `phaseo keys update <id> --name <name>`, `phaseo keys delete <id>` | `GET /v1/keys`, `PATCH /v1/keys/{id}`, `DELETE /v1/keys/{id}` | `api_keys_list`, `api_key_update`, `api_key_delete` |
 | Examiner, restreindre ou révoquer les applications que vous avez autorisées | `phaseo authorized-apps list`, `phaseo authorized-apps update-scopes <id> --scopes <scope,...>`, `phaseo authorized-apps revoke <id> --yes` | `GET /v1/me/authorized-apps`, `PATCH /v1/me/authorized-apps/{id}`, `DELETE /v1/me/authorized-apps/{id}` | — |
 | Modifier votre profil | `phaseo profile update` | `PATCH /v1/me/profile` | — |
 
@@ -80,43 +75,21 @@ Exécutez `phaseo <group> --help` pour voir les options acceptées par votre CLI
 | --- | --- | --- | --- |
 | Consulter le solde | `phaseo credits get` | `GET /v1/credits` | Outils en lecture seule |
 | Ajouter des crédits (une personne confirme) | `phaseo login --scopes billing:write`, puis `phaseo credits add --amount <usd>` | `POST /v1/credits/topups` | — |
-| Activer la recharge automatique ou les e-mails de solde faible | `phaseo notifications settings update` | `PATCH /v1/notifications/settings` | — |
-| Définir les budgets de l’espace de travail | `phaseo budgets create`, `phaseo budgets update <id>` | `POST /v1/budgets`, `PATCH /v1/budgets/{id}` | `budget_create`, `budget_update` |
-| Définir les budgets de département | `phaseo department-budgets create` | `POST /v1/department-budgets` | — |
-| Alerter sur les dépenses ou les bloquer | `phaseo spend-rules create`, `phaseo spend-blocks lift <id>` | `POST /v1/spend-rules`, `POST /v1/spend-blocks/{id}/lift` | `spend_rule_create`, `spend_rule_update` |
-| Politiques de limites de débit | `phaseo rate-limits policies create`, `phaseo rate-limits assignments create` | `POST /v1/rate-limits/policies`, `POST /v1/rate-limits/assignments` | — |
-| Consulter ou relever le palier de limite de débit de l’espace de travail | `phaseo rate-limits tier get`, `phaseo rate-limits tier raise` | `GET /v1/rate-limits/tier`, `POST /v1/rate-limits/tier/raise` | — |
+| Consulter le palier de limite de débit de l’espace de travail | `phaseo rate-limits tier get` | `GET /v1/rate-limits/tier` | — |
 
 ### Routage et fournisseurs
 
 | Tâche | CLI | Route API | Outil MCP |
 | --- | --- | --- | --- |
-| Définir le mode de routage, la confidentialité, ZDR ou le repli BYOK | `phaseo settings update` | `PATCH /v1/settings` | `settings_update` |
-| Ajouter vos propres clés de fournisseur (BYOK) | `phaseo byok create --provider <id> --name <name> --key-stdin` | `POST /v1/byok` | `provider_key_create` |
-| Configurer le routage automatique | `phaseo routing auto update` | `PATCH /v1/routing/auto` | — |
-| Créer et déployer des routes dynamiques | `phaseo routing dynamic-routes create`, `phaseo routing dynamic-routes deploy <id> <version>` | `POST /v1/routing/dynamic-routes`, `POST /v1/routing/dynamic-routes/{id}/versions/{version}/deploy` | — |
-| Choisir des remplaçants pour les modèles retirés | `phaseo routing successors set --model <id> --successor <id>` | `PUT /v1/routing/successor/replacements` | — |
-| Ajouter un modèle privé | `phaseo private-models create --credential-stdin` | `POST /v1/private-models` | — |
-
-### Préréglages, garde-fous et classificateurs
-
-| Tâche | CLI | Route API | Outil MCP |
-| --- | --- | --- | --- |
-| Créer ou modifier des préréglages | `phaseo presets create`, `phaseo presets update <preset>` | `POST /v1/presets`, `PATCH /v1/presets/{id}` | `preset_create`, `preset_update` |
-| Publier une version de préréglage ou déplacer un libellé | `phaseo presets versions create <preset>`, `phaseo presets labels set <preset> <label>` | `POST /v1/presets/{id}/versions`, `PUT /v1/presets/{id}/labels/{label}` | `preset_version_publish` |
-| Créer des garde-fous et y associer des clés | `phaseo guardrails create`, `phaseo guardrails set-keys <id>` | `POST /v1/guardrails`, `PUT /v1/guardrails/{id}/keys` | `guardrail_create`, `guardrail_keys_set` |
-| Gérer les classificateurs de requêtes | `phaseo classifiers create` | `POST /v1/classifiers` | — |
-| Tester un classificateur sur un échantillon (nécessite un identifiant avec `gateway:access` ; les connexions CLI et les clés de gestion reçoivent aujourd’hui `403 gateway_access_required`) | `phaseo classifiers test` | `POST /v1/classifiers/test` | — |
+| Définir le mode de routage, ou renforcer la confidentialité (activer ZDR, désactiver la journalisation ou l’entraînement) | `phaseo settings update` | `PATCH /v1/settings` | `settings_update` |
+| Configurer Auto Routing, sauf son profil de dépense et ses limites de prix | `phaseo routing auto update` | `PATCH /v1/routing/auto` | — |
 
 ### Espaces de travail et identité
 
 | Tâche | CLI | Route API | Outil MCP |
 | --- | --- | --- | --- |
-| Créer des espaces de travail et ajouter des membres | `phaseo workspaces create`, `phaseo workspaces add-members <workspace>` | `POST /v1/workspaces`, `POST /v1/workspaces/{id}/members/add` | — |
-| Inviter des personnes | `phaseo workspaces invites create <workspace>` | `POST /v1/workspaces/{id}/invites` | — |
+| Créer des espaces de travail | `phaseo workspaces create` | `POST /v1/workspaces` | — |
 | Accepter une invitation | `phaseo invites accept <code>` | `POST /v1/invites/accept` | — |
-| SSO, SCIM, départements et annuaire | `phaseo identity sso update`, `phaseo identity scim update`, `phaseo identity departments create`, `phaseo identity directory update <user-id>` | `PUT /v1/identity/sso`, `PUT /v1/identity/scim`, `POST /v1/identity/departments`, `PUT /v1/identity/directory/members/{id}` | — |
-| Workloads de confiance (OIDC) | `phaseo workload-identity policies create` | `POST /v1/workload-identity/policies` | — |
 | Lire le journal d’activité | `phaseo audit-events list` | `GET /v1/audit-events` | — |
 
 ### Utilisation, journaux et notifications
@@ -125,10 +98,43 @@ Exécutez `phaseo <group> --help` pour voir les options acceptées par votre CLI
 | --- | --- | --- | --- |
 | Lire les journaux de requêtes | `phaseo logs list --since 1h` | `GET /v1/logs` | Outils en lecture seule |
 | Exporter l’utilisation en CSV | `phaseo analytics export` | `GET /v1/analytics/export` | — |
-| Envoyer des traces vers un outil d’observabilité | `phaseo observability destinations create`, `phaseo observability destinations test <id>` | `POST /v1/observability/destinations`, `POST /v1/observability/destinations/{id}/test` | `observability_destination_create` |
-| Destinations d’alerte par e-mail, Slack ou webhook | `phaseo notifications destinations create`, `phaseo notifications routes set <event-kind> --destination-ids <id>` | `POST /v1/notifications/destinations`, `PUT /v1/notifications/routes/{eventKind}` | — |
-| Webhooks pour les tâches asynchrones | `phaseo webhooks create --url <https-url>` | `POST /v1/webhook-endpoints` | `webhook_create` |
+
+## Changements dans le tableau de bord ou avec une clé de gestion
+
+Ces changements touchent aux dépenses, aux accès ou à la destination des données de l’espace de travail. Une connexion via la CLI ou une connexion MCP ne peut pas les faire, quels que soient ses scopes : l’API renvoie `403` et indique d’utiliser le tableau de bord ou une clé de gestion. Faites-les dans le tableau de bord Phaseo, ou appelez la route avec une [clé de gestion](./management-api-keys).
+
+| Tâche | Route API |
+| --- | --- |
+| Créer une clé API | `POST /v1/keys` |
+| Modifier les limites, le statut ou l’expiration d’une clé | `PATCH /v1/keys/{id}` |
+| Faire tourner une clé | `POST /v1/keys/{id}/rotate` |
+| Restreindre une clé à des adresses IP | `PATCH /v1/keys/{id}` |
+| Créer une clé de gestion | `POST /v1/management-keys` |
+| Activer la recharge automatique ou les e-mails de solde faible | `PATCH /v1/notifications/settings` |
+| Définir les budgets de l’espace de travail | `POST /v1/budgets`, `PATCH /v1/budgets/{id}` |
+| Définir les budgets de département | `POST /v1/department-budgets` |
+| Alerter sur les dépenses ou les bloquer | `POST /v1/spend-rules`, `POST /v1/spend-blocks/{id}/lift` |
+| Politiques de limites de débit | `POST /v1/rate-limits/policies`, `POST /v1/rate-limits/assignments` |
+| Relever le palier de limite de débit de l’espace de travail | `POST /v1/rate-limits/tier/raise` |
+| Assouplir la confidentialité ou ZDR, ou changer les restrictions de fournisseurs ou le repli BYOK | `PATCH /v1/settings` |
+| Ajouter vos propres clés de fournisseur (BYOK) | `POST /v1/byok` |
+| Définir le profil de dépense ou les limites de prix d’Auto Routing | `PATCH /v1/routing/auto` |
+| Créer et déployer des routes dynamiques | `POST /v1/routing/dynamic-routes`, `POST /v1/routing/dynamic-routes/{id}/versions/{version}/deploy` |
+| Choisir des remplaçants pour les modèles retirés | `PUT /v1/routing/successor/replacements` |
+| Ajouter un modèle privé | `POST /v1/private-models` |
+| Créer ou modifier des préréglages | `POST /v1/presets`, `PATCH /v1/presets/{id}` |
+| Publier une version de préréglage ou déplacer un libellé | `POST /v1/presets/{id}/versions`, `PUT /v1/presets/{id}/labels/{label}` |
+| Créer des garde-fous et y associer des clés | `POST /v1/guardrails`, `PUT /v1/guardrails/{id}/keys` |
+| Gérer les classificateurs de requêtes | `POST /v1/classifiers` |
+| Tester un classificateur sur un échantillon (nécessite un identifiant avec `gateway:access` ; les connexions CLI et les clés de gestion reçoivent aujourd’hui `403 gateway_access_required`) | `POST /v1/classifiers/test` |
+| Ajouter des membres à un espace de travail | `POST /v1/workspaces/{id}/members/add` |
+| Inviter des personnes | `POST /v1/workspaces/{id}/invites` |
+| SSO, SCIM, départements et annuaire | `PUT /v1/identity/sso`, `PUT /v1/identity/scim`, `POST /v1/identity/departments`, `PUT /v1/identity/directory/members/{id}` |
+| Workloads de confiance (OIDC) | `POST /v1/workload-identity/policies` |
+| Envoyer des traces vers un outil d’observabilité | `POST /v1/observability/destinations`, `POST /v1/observability/destinations/{id}/test` |
+| Destinations d’alerte par e-mail, Slack ou webhook | `POST /v1/notifications/destinations`, `PUT /v1/notifications/routes/{eventKind}` |
+| Webhooks pour les tâches asynchrones | `POST /v1/webhook-endpoints` |
 
 ## Corriger une erreur 403
 
-Une session CLI, une clé de gestion ou une connexion MCP ne peut faire que ce que permettent ses scopes et votre rôle dans l’espace de travail, et les modifications réservées aux propriétaires et administrateurs exigent toujours un propriétaire ou un administrateur. Si une commande renvoie `403`, vérifiez les scopes accordés avec `phaseo whoami --json`, et reconnectez-vous avec `phaseo login --scopes <scope,...>` s’il en manque un. `billing:write` n’est jamais accordé par défaut.
+Une session CLI, une clé de gestion ou une connexion MCP ne peut faire que ce que permettent ses scopes et votre rôle dans l’espace de travail, et les modifications réservées aux propriétaires et administrateurs exigent toujours un propriétaire ou un administrateur. Si une commande renvoie `403`, vérifiez les scopes accordés avec `phaseo whoami --json`, et reconnectez-vous avec `phaseo login --scopes <scope,...>` s’il en manque un. `billing:write` n’est jamais accordé par défaut. Les changements listés sous « Changements dans le tableau de bord ou avec une clé de gestion » sont refusés pour les connexions via la CLI et les connexions MCP, quels que soient leurs scopes.

@@ -26,7 +26,7 @@ As regras são:
 
 Abra **Painel -> Configurações -> Predefinições** e crie uma predefinição com um slug como `support-triage`. Adicione apenas os padrões que todos os solicitantes devem compartilhar.
 
-Pela CLI: `phaseo presets create --name @support-triage --model <model-id>`.
+Para criar por um script, chame `POST /v1/presets` com uma chave de gerenciamento.
 
 </Step>
 
@@ -116,7 +116,7 @@ Escolha como os rótulos de versão aparecem:
 
 Aponte um rótulo com nome, como `production`, para uma versão e mova-o de volta para uma versão anterior para reverter. Veja [Versões e rótulos](/pt-BR/v1/guides/prompt-templates#versions-and-labels).
 
-Pela CLI: `phaseo presets versions create` e `phaseo presets labels set`, ou a API `/v1/presets`.
+Por um script, publique com `POST /v1/presets/{id}/versions` e mova rótulos com `PUT /v1/presets/{id}/labels/{label}`, usando uma chave de gerenciamento. Um login pela CLI ou um app que usa Entrar com Phaseo pode ler predefinições, mas não alterá-las.
 
 ## Fazer fork de uma predefinição do marketplace
 

@@ -30,7 +30,7 @@ Ein eigener Webhook bekommt beim Anlegen ein Signaturgeheimnis. Kopiere es aus d
 </Step>
 </Steps>
 
-Über die CLI erstellst du ein Ziel mit `phaseo notifications destinations create`, prüfst es mit `phaseo notifications destinations test <id>` und legst dann mit `phaseo notifications routes set <event-kind> --destination-ids <id>` fest, welche Alarme es erhält.
+In Skripten erstellst du ein Ziel mit `POST /v1/notifications/destinations`, prüfst es mit `POST /v1/notifications/destinations/{id}/test` und legst mit `PUT /v1/notifications/routes/{eventKind}` fest, welche Alarme es erhält, jeweils mit einem Management-Schlüssel.
 
 Verwende Erwähnungen sparsam: Schick häufige Alarme an einen überwachten Kanal, statt eine große Gruppe direkt zu alarmieren.
 

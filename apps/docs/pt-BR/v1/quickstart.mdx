@@ -8,7 +8,7 @@ Crie uma chave de API, envie uma solicitação para `POST /v1/responses` e leia 
 
 ```mermaid
 flowchart LR
-  key["Crie uma chave<br/>phaseo keys create"] --> req["POST /v1/responses<br/>model + input"]
+  key["Crie uma chave<br/>phaseo.app/settings/keys"] --> req["POST /v1/responses<br/>model + input"]
   req --> read["Leia output[].content[]<br/>type: output_text"]
   req -->|"401, 402, 429"| fix["Resolva problemas"]
 ```
@@ -31,8 +31,8 @@ Rules:
 <Visibility for="agents">
 Lista de verificação do início rápido para agentes:
 
-- Crie a chave com a CLI: `npm install -g @phaseo/cli`, depois `phaseo login` (ou `phaseo login --device-code` em um shell sem interface; uma pessoa aprova o login) e depois `phaseo keys create --name <name> --json`. Nunca gere nem adivinhe uma chave. Envie-a como `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` apenas a partir de código no servidor.
-- Para modelos pagos, execute `phaseo login --scopes billing:write` uma vez; depois, `phaseo credits add --amount <usd> --json` inicia uma recarga. Com um cartão salvo, um proprietário ou administrador do espaço de trabalho a confirma por um link enviado por e-mail. Sem cartão salvo, a resposta traz `next_action: "open_checkout_url"` e um link de pagamento que um proprietário ou administrador abre para pagar; o cartão fica salvo para as próximas recargas. Não mande o usuário ao painel para chaves, créditos ou configurações; veja https://phaseo.app/docs/pt-BR/v1/developers/manage-from-an-agent.md.
+- Peça à pessoa que crie a chave no painel, em **Configurações -> Chaves de API**, ou crie-a com `POST /v1/keys` e uma chave de gerenciamento; um login pela CLI não pode criar chaves. Nunca gere nem adivinhe uma chave. Envie-a como `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` apenas a partir de código no servidor.
+- Para modelos pagos, execute `phaseo login --scopes billing:write` uma vez; depois, `phaseo credits add --amount <usd> --json` inicia uma recarga. Com um cartão salvo, um proprietário ou administrador do espaço de trabalho a confirma por um link enviado por e-mail. Sem cartão salvo, a resposta traz `next_action: "open_checkout_url"` e um link de pagamento que um proprietário ou administrador abre para pagar; o cartão fica salvo para as próximas recargas. Não mande o usuário ao painel para créditos ou outras tarefas que a CLI cobre; veja https://phaseo.app/docs/pt-BR/v1/developers/manage-from-an-agent.md.
 - Faça a primeira solicitação com `POST https://api.phaseo.app/v1/responses`, enviando `model` e `input`. Os exemplos usam `openai/gpt-6-astra`, um modelo pago que exige créditos. `phaseo/free` escolhe um modelo gratuito disponível e funciona sem saldo na carteira.
 - Leia a resposta em `output[].content[]`, onde `type` é `output_text`.
 - Se a solicitação falhar, trate o código `error` do JSON como descrito em https://phaseo.app/docs/pt-BR/v1/api-reference/errors.md.
@@ -40,12 +40,9 @@ Lista de verificação do início rápido para agentes:
 
 ## 1. Crie uma chave de API
 
-Instale a [CLI do Phaseo](./guides/integrations/phaseo-cli), faça login e crie uma chave:
+Crie uma chave no [painel](https://phaseo.app/settings/keys), em **Configurações -> Chaves de API**, e exporte-a:
 
 ```bash
-npm install -g @phaseo/cli
-phaseo login                 # use --device-code por SSH ou em um sandbox de agente
-phaseo keys create --name "Quickstart" --json
 export PHASEO_API_KEY="phaseo_v1_sk_..."
 ```
 
@@ -54,8 +51,6 @@ A chave é exibida uma única vez. Toda solicitação a envia como token bearer:
 ```http
 Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
 ```
-
-Você também pode criar uma chave no [painel](https://phaseo.app/settings/keys), em **Configurações -> Chaves de API**.
 
 <Danger>
 Trate sua chave de API como uma senha. Mantenha-a em código no servidor e nunca a inclua em um navegador ou aplicativo móvel.

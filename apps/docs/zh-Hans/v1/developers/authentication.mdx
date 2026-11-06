@@ -4,7 +4,7 @@ description: "使用 API 密钥对发送到 Phaseo Gateway 的每个请求进行
 icon: "key-round"
 ---
 
-在 [Phaseo CLI](../guides/integrations/phaseo-cli) 中运行 `phaseo keys create --name <name> --json`，或在[仪表板](https://phaseo.app/settings/keys)中创建密钥，把它保存在你的服务器上，并在每个 Gateway 请求中作为 bearer 令牌发送。智能体应使用 CLI；参见[通过智能体管理 Phaseo](./manage-from-an-agent)。
+在[仪表板](https://phaseo.app/settings/keys)中创建密钥，或使用管理密钥调用 `POST /v1/keys`，把它保存在你的服务器上，并在每个 Gateway 请求中作为 bearer 令牌发送。智能体应使用 CLI；参见[通过智能体管理 Phaseo](./manage-from-an-agent)。
 
 ```http
 Authorization: Bearer phaseo_v1_sk_<kid>_<secret>

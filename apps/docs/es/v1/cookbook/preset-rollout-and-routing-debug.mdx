@@ -13,10 +13,13 @@ La forma de la solicitud está lista para producción. [Preajustes](../guides/pr
 <Steps>
 <Step title="Crea el preajuste">
 
-En **Configuración → Preajustes**, crea `release-summary` con un prompt de sistema, los modelos aprobados, las preferencias de proveedor y parámetros predeterminados como `temperature`. O desde la CLI:
+En **Configuración → Preajustes**, crea `release-summary` con un prompt de sistema, los modelos aprobados, las preferencias de proveedor y parámetros predeterminados como `temperature`. O con una clave de administración:
 
 ```bash
-phaseo presets create --name @release-summary --model anthropic/claude-sonnet-5.5
+curl https://api.phaseo.app/v1/presets \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"@release-summary","config":{"model":"anthropic/claude-sonnet-5.5"}}'
 ```
 
 </Step>

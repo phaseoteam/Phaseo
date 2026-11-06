@@ -8,7 +8,7 @@ Créez une clé API, envoyez une requête à `POST /v1/responses` et lisez la r�
 
 ```mermaid
 flowchart LR
-  key["Créer une clé<br/>phaseo keys create"] --> req["POST /v1/responses<br/>model + input"]
+  key["Créer une clé<br/>phaseo.app/settings/keys"] --> req["POST /v1/responses<br/>model + input"]
   req --> read["Lire output[].content[]<br/>type: output_text"]
   req -->|"401, 402, 429"| fix["Dépanner"]
 ```
@@ -31,8 +31,8 @@ Rules:
 <Visibility for="agents">
 Liste de contrôle du démarrage rapide pour les agents :
 
-- Créez la clé avec la CLI : `npm install -g @phaseo/cli`, puis `phaseo login` (ou `phaseo login --device-code` dans un shell sans interface ; une personne approuve la connexion), puis `phaseo keys create --name <name> --json`. Ne générez ni ne devinez jamais une clé. Envoyez-la sous la forme `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>`, uniquement depuis du code côté serveur.
-- Pour les modèles payants, lancez une fois `phaseo login --scopes billing:write` ; ensuite, `phaseo credits add --amount <usd> --json` démarre une recharge. Avec une carte enregistrée, un propriétaire ou un administrateur de l’espace de travail la confirme depuis un lien reçu par e-mail. Sans carte enregistrée, la réponse contient `next_action: "open_checkout_url"` et un lien de paiement qu’un propriétaire ou un administrateur ouvre pour payer ; la carte est ensuite enregistrée pour les recharges suivantes. N’envoyez pas l’utilisateur dans le tableau de bord pour les clés, les crédits ou les paramètres ; voir https://phaseo.app/docs/fr/v1/developers/manage-from-an-agent.md.
+- Demandez à la personne de créer la clé dans le tableau de bord, sous **Paramètres -> Clés API**, ou créez-la avec `POST /v1/keys` et une clé de gestion ; une connexion via la CLI ne peut pas créer de clés. Ne générez ni ne devinez jamais une clé. Envoyez-la sous la forme `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>`, uniquement depuis du code côté serveur.
+- Pour les modèles payants, lancez une fois `phaseo login --scopes billing:write` ; ensuite, `phaseo credits add --amount <usd> --json` démarre une recharge. Avec une carte enregistrée, un propriétaire ou un administrateur de l’espace de travail la confirme depuis un lien reçu par e-mail. Sans carte enregistrée, la réponse contient `next_action: "open_checkout_url"` et un lien de paiement qu’un propriétaire ou un administrateur ouvre pour payer ; la carte est ensuite enregistrée pour les recharges suivantes. N’envoyez pas l’utilisateur dans le tableau de bord pour les crédits ou les autres tâches que couvre la CLI ; voir https://phaseo.app/docs/fr/v1/developers/manage-from-an-agent.md.
 - Envoyez la première requête avec `POST https://api.phaseo.app/v1/responses`, en passant `model` et `input`. Les exemples utilisent `openai/gpt-6-astra`, un modèle payant qui nécessite des crédits. `phaseo/free` choisit un modèle gratuit disponible et fonctionne sans solde de portefeuille.
 - Lisez la réponse dans `output[].content[]`, là où `type` vaut `output_text`.
 - Si la requête échoue, traitez le code `error` du JSON comme décrit dans https://phaseo.app/docs/fr/v1/api-reference/errors.md.
@@ -40,12 +40,9 @@ Liste de contrôle du démarrage rapide pour les agents :
 
 ## 1. Créer une clé API
 
-Installez la [CLI Phaseo](./guides/integrations/phaseo-cli), connectez-vous et créez une clé :
+Créez une clé dans le [tableau de bord](https://phaseo.app/settings/keys), sous **Paramètres -> Clés API**, puis exportez-la :
 
 ```bash
-npm install -g @phaseo/cli
-phaseo login                 # utilisez --device-code en SSH ou dans le bac à sable d’un agent
-phaseo keys create --name "Quickstart" --json
 export PHASEO_API_KEY="phaseo_v1_sk_..."
 ```
 
@@ -54,8 +51,6 @@ La clé ne s’affiche qu’une seule fois. Chaque requête l’envoie comme jet
 ```http
 Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
 ```
-
-Vous pouvez aussi créer une clé dans le [tableau de bord](https://phaseo.app/settings/keys), sous **Paramètres -> Clés API**.
 
 <Danger>
 Traitez votre clé API comme un mot de passe. Gardez-la dans du code côté serveur et ne l’intégrez jamais à un navigateur ou à une application mobile.

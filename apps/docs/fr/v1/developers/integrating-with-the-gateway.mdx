@@ -12,7 +12,7 @@ Il vous faut un compte Phaseo avec accès au Gateway et un client HTTP, un SDK c
 <Steps>
 <Step title="Créer et stocker une clé">
 
-Exécutez `phaseo keys create --name <app-and-environment> --json` dans la [CLI Phaseo](../guides/integrations/phaseo-cli), ou ouvrez **Paramètres → Clés API** dans le [tableau de bord](https://phaseo.app/settings/keys). Nommez la clé d’après l’application et l’environnement, puis stockez-la dans un gestionnaire de secrets ou un fichier d’environnement :
+Ouvrez **Paramètres → Clés API** dans le [tableau de bord](https://phaseo.app/settings/keys), ou appelez `POST /v1/keys` avec une clé de gestion. Nommez la clé d’après l’application et l’environnement, puis stockez-la dans un gestionnaire de secrets ou un fichier d’environnement :
 
 ```bash
 # .env.local

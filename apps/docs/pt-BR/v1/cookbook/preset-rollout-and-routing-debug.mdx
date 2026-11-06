@@ -13,10 +13,13 @@ O formato da solicitação está pronto para produção. [Predefinições](../gu
 <Steps>
 <Step title="Crie a predefinição">
 
-Em **Configurações → Predefinições**, crie `release-summary` com um prompt de sistema, os modelos aprovados, as preferências de provedor e parâmetros padrão como `temperature`. Ou pela CLI:
+Em **Configurações → Predefinições**, crie `release-summary` com um prompt de sistema, os modelos aprovados, as preferências de provedor e parâmetros padrão como `temperature`. Ou com uma chave de gerenciamento:
 
 ```bash
-phaseo presets create --name @release-summary --model anthropic/claude-sonnet-5.5
+curl https://api.phaseo.app/v1/presets \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"@release-summary","config":{"model":"anthropic/claude-sonnet-5.5"}}'
 ```
 
 </Step>

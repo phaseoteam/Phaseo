@@ -4,7 +4,7 @@ description: "استخدم مفاتيح API لمصادقة كل طلب إلى Ph
 icon: "key-round"
 ---
 
-أنشئ مفتاحًا باستخدام `phaseo keys create --name <name> --json` في [Phaseo CLI](../guides/integrations/phaseo-cli) أو من [لوحة التحكم](https://phaseo.app/settings/keys)، واحفظه على خادمك، وأرسله كرمز bearer مع كل طلب إلى الـ Gateway. ينبغي أن يستخدم الوكلاء CLI؛ راجع [أدِر Phaseo من وكيل](./manage-from-an-agent).
+أنشئ مفتاحًا من [لوحة التحكم](https://phaseo.app/settings/keys)، أو باستخدام `POST /v1/keys` ومفتاح إدارة، واحفظه على خادمك، وأرسله كرمز bearer مع كل طلب إلى الـ Gateway. ينبغي أن يستخدم الوكلاء CLI؛ راجع [أدِر Phaseo من وكيل](./manage-from-an-agent).
 
 ```http
 Authorization: Bearer phaseo_v1_sk_<kid>_<secret>

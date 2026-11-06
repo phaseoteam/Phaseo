@@ -13,7 +13,7 @@ You need a Phaseo account with Gateway access and an HTTP client, an OpenAI-comp
 <Steps>
 <Step title="Create and store a key">
 
-Run `phaseo keys create --name <app-and-environment> --json` in the [Phaseo CLI](../guides/integrations/phaseo-cli), or open **Settings → API Keys** in the [dashboard](https://phaseo.app/settings/keys). Name the key after the app and environment, then store it in a secrets manager or an environment file:
+Open **Settings → API Keys** in the [dashboard](https://phaseo.app/settings/keys), or call `POST /v1/keys` with a management key. Name the key after the app and environment, then store it in a secrets manager or an environment file:
 
 ```bash
 # .env.local

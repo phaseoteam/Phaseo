@@ -12,7 +12,7 @@ Du brauchst ein Phaseo-Konto mit Gateway-Zugriff und einen HTTP-Client, ein Open
 <Steps>
 <Step title="Einen Schlüssel erstellen und speichern">
 
-Führe `phaseo keys create --name <app-and-environment> --json` in der [Phaseo CLI](../guides/integrations/phaseo-cli) aus oder öffne **Einstellungen → API-Schlüssel** im [Dashboard](https://phaseo.app/settings/keys). Benenne den Schlüssel nach App und Umgebung und speichere ihn dann in einem Secrets-Manager oder einer Umgebungsdatei:
+Öffne **Einstellungen → API-Schlüssel** im [Dashboard](https://phaseo.app/settings/keys) oder rufe `POST /v1/keys` mit einem Management-Schlüssel auf. Benenne den Schlüssel nach App und Umgebung und speichere ihn dann in einem Secrets-Manager oder einer Umgebungsdatei:
 
 ```bash
 # .env.local

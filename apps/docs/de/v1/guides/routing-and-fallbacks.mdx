@@ -144,7 +144,7 @@ Eine dynamische Route ist ein Ablauf aus Regeln, der einem oder mehreren Inferen
 
 Bedingungen haben Ausgänge für wahr und falsch; Raten- und Budgetknoten haben Ausgänge für innerhalb und überschritten. Prozentuale Aufteilungen sind pro Sitzung oder Prompt-Cache-Schlüssel deterministisch, sodass eine gecachte Unterhaltung nicht zwischen Zweigen wechselt.
 
-Speichern erstellt eine unveränderliche Entwurfsversion. Das Deployen kopiert diese Version ins Gateway und leert die Richtlinien-Caches seiner Schlüssel; frühere Versionen bleiben für ein Rollback verfügbar. Empfehlungen zum Anbieterzustand erscheinen unter **Insights**. Über die CLI: `phaseo routing dynamic-routes create`, `set-keys` und `deploy` oder die API `/v1/routing/dynamic-routes`.
+Speichern erstellt eine unveränderliche Entwurfsversion. Das Deployen kopiert diese Version ins Gateway und leert die Richtlinien-Caches seiner Schlüssel; frühere Versionen bleiben für ein Rollback verfügbar. Empfehlungen zum Anbieterzustand erscheinen unter **Insights**. In Skripten nutzt du die API `/v1/routing/dynamic-routes` mit einem Management-Schlüssel.
 
 Benutzerdefinierte Metadaten stehen bei den OpenAI-kompatiblen Text-Endpunkten im Anfrage-Body:
 
@@ -219,4 +219,4 @@ Mit <Tooltip tip="Eigener Schlüssel: Phaseo leitet die Anfrage mit deinem eigen
 | Anbieterregeln | Kontingente, Datenrichtlinie, Modellzugriff und Kontolimits deines Anbieters gelten weiterhin. |
 | Speicherung | Schlüssel werden mit AES-256-GCM verschlüsselt und an ihren Arbeitsbereich und Anbieter gebunden. |
 
-Beschränke jeden Schlüssel auf die Modelle und API-Schlüssel, die ihn brauchen. Damit eine fehlgeschlagene BYOK-Anfrage nicht mit Phaseo-Guthaben wiederholt wird, schalte den Fallback unter **Dashboard -> Einstellungen -> BYOK** ab oder setze `byok_fallback_enabled` über `PATCH /v1/settings` (`phaseo settings update --body-json '{"byok_fallback_enabled":false}'`). Füge Schlüssel mit `phaseo byok create --provider <id> --name <name> --key-stdin` hinzu.
+Beschränke jeden Schlüssel auf die Modelle und API-Schlüssel, die ihn brauchen. Damit eine fehlgeschlagene BYOK-Anfrage nicht mit Phaseo-Guthaben wiederholt wird, schalte den Fallback unter **Dashboard -> Einstellungen -> BYOK** ab oder setze `byok_fallback_enabled` über `PATCH /v1/settings` mit einem Management-Schlüssel. Schlüssel fügst du an derselben Stelle hinzu oder mit `POST /v1/byok` und einem Management-Schlüssel.

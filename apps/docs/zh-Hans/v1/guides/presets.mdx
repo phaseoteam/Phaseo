@@ -26,7 +26,7 @@ import { PresetMergeExplorer } from "/snippets/preset-merge.jsx";
 
 打开**控制台 -> 设置 -> 预设**，创建一个标识符为 `support-triage` 之类的预设。只添加所有调用方都应共享的默认值。
 
-在 CLI 中：`phaseo presets create --name @support-triage --model <model-id>`。
+如需通过脚本创建，请使用管理密钥调用 `POST /v1/presets`。
 
 </Step>
 
@@ -116,7 +116,7 @@ response = client.generate_response({
 
 把 `production` 这样的命名标签指向某个版本；要回滚，就把它移回较早的版本。参见[版本和标签](/zh-Hans/v1/guides/prompt-templates#versions-and-labels)。
 
-在 CLI 中：使用 `phaseo presets versions create` 和 `phaseo presets labels set`，或使用 `/v1/presets` API。
+通过脚本时，请使用管理密钥，以 `POST /v1/presets/{id}/versions` 发布版本，并以 `PUT /v1/presets/{id}/labels/{label}` 移动标签。CLI 登录或采用“使用 Phaseo 登录”的应用可以读取预设，但不能更改。
 
 ## 复刻市场中的预设
 

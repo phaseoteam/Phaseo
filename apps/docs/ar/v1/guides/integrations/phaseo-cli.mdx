@@ -55,21 +55,19 @@ phaseo whoami
 phaseo whoami --json
 ```
 
-## إنشاء المفاتيح وإدارة مساحة العمل
+## إدارة مساحة العمل
 
 ```bash
-phaseo keys create --name "Local CLI Key"
-phaseo keys create --name "Agent Sandbox Key" --json
+phaseo keys list
 phaseo keys current
 
 phaseo workspaces list
 phaseo workspaces members <workspace-id-or-slug>
 
 phaseo guardrails list
-phaseo guardrails create --name "Production Safety" --body-json '{"enabled":true}'
 ```
 
-استخدم `--json` عندما يحتاج وكيل أو برنامج نصي إلى المفتاح الجديد؛ فهو يُعرض مرة واحدة فقط. تغطي CLI مهام الإدارة في لوحة التحكم، بما فيها الفوترة والميزانيات وBYOK والتوجيه والهوية. راجع [إدارة Phaseo من وكيل](../../developers/manage-from-an-agent) لمعرفة الأمر الخاص بكل مهمة.
+استخدم `--json` عندما يقرأ وكيل أو برنامج نصي المخرجات. تغطي CLI المهام اليومية في الحساب؛ أما تغييرات حدود المفاتيح والميزانيات وBYOK وقواعد التوجيه والإعدادات المسبقة والهوية فتُجرى من لوحة التحكم أو باستخدام مفتاح إدارة. راجع [إدارة Phaseo من وكيل](../../developers/manage-from-an-agent) لمعرفة المهام التي تغطيها CLI.
 
 ## ربط وكيل برمجة
 

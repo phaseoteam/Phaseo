@@ -75,7 +75,7 @@ curl -s "https://api.phaseo.app/v1/models?format=openai" \
 | En-têtes de session (`x-session-id`) | Champ de corps `session_id` ; Phaseo ignore les en-têtes de session. |
 | `X-Source` | `HTTP-Referer` ou `X-App-Name`. Consultez [Attribution des applications](../guides/app-attribution). |
 | Mise en cache des réponses | Pas de cache de réponses. |
-| Clés de fournisseur | BYOK (`phaseo byok create` ou `POST /v1/byok`), ou crédits Phaseo. Le basculement sur les crédits correspond au paramètre d’espace de travail `byok_fallback_enabled`. |
+| Clés de fournisseur | BYOK (**Paramètres → BYOK** ou `POST /v1/byok`), ou crédits Phaseo. Le basculement sur les crédits correspond au paramètre d’espace de travail `byok_fallback_enabled`. |
 | Journaux des requêtes | Journaux des requêtes, destinations d’observabilité et `GET /v1/generations?id=<request_id>`. Lorsque `replay_supported` vaut `true`, relancez une requête en échec à partir de sa charge utile `replay_request`. |
 
 ## Tester et déployer
