@@ -708,10 +708,22 @@ describe("account policy settings routes", () => {
 				if (url.pathname.endsWith("/workspaces")) return Response.json([]);
 				if (url.pathname.endsWith("/presets") && req.method === "GET") {
 					if (!preset) return Response.json([]);
-					const workspaces = (url.searchParams.get("workspace_id") ?? "").replace(/^in\.\(|\)$/g, "").split(",").map((id) => id.replace(/^"|"$/g, ""));
-					const visible = preset.visibility !== "private" || preset.created_by === userId;
-					const matches = url.searchParams.get("id") === `eq.${preset.id}` && url.searchParams.get("archived_at") === "is.null"
-						&& workspaces.includes(String(preset.workspace_id)) && url.searchParams.get("or") === `(visibility.neq.private,created_by.eq.${userId})` && visible;
+					// Applies whichever filters the request sends, as PostgREST does; absent filters don't narrow.
+					const row = { archived_at: null, ...preset } as Record<string, unknown>;
+					const condition = (column: string, filter: string) => {
+						const value = row[column];
+						if (filter === "is.null") return value === null || value === undefined;
+						if (value === null || value === undefined) return false;
+						if (filter.startsWith("eq.")) return String(value) === filter.slice(3);
+						if (filter.startsWith("neq.")) return String(value) !== filter.slice(4);
+						if (filter.startsWith("in.(")) return filter.slice(4, -1).split(",").map((item) => item.replace(/^"|"$/g, "")).includes(String(value));
+						throw new Error(`unsupported filter ${column}=${filter}`);
+					};
+					const matches = [...url.searchParams.entries()].every(([key, filter]) => {
+						if (["select", "limit", "order"].includes(key)) return true;
+						if (key === "or") return filter.slice(1, -1).split(",").some((part) => { const [column, ...rest] = part.split("."); return condition(column, rest.join(".")); });
+						return condition(key, filter);
+					});
 					return Response.json(matches ? [preset] : []);
 				}
 				return Response.json([]);
