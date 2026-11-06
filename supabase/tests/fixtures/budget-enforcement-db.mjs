@@ -1,10 +1,10 @@
-// Production shapes, trimmed to what migration 20261106220406_budget_enforcement_money_hygiene and
+// Production shapes, trimmed to what migration 20261106220407_budget_enforcement_money_hygiene and
 // the functions it replaces read. Shared by supabase/tests/budget-enforcement-money-hygiene.test.mjs
 // and the gateway's seed -> SpendLimit Durable Object -> guard test, so both run the real SQL.
 import { readFile } from 'node:fs/promises';
 
 const schemasUrl = new URL('../../schemas/', import.meta.url);
-export const MIGRATION_FILE = '20261106220406_budget_enforcement_money_hygiene.sql';
+export const MIGRATION_FILE = '20261106220407_budget_enforcement_money_hygiene.sql';
 export const readSchema = (path) => readFile(new URL(path, schemasUrl), 'utf8');
 export const readMigration = () => readFile(new URL(`../../migrations/${MIGRATION_FILE}`, import.meta.url), 'utf8');
 // The migrations that precede MIGRATION_FILE: the expected_cost_nanos column (added, then validated),
@@ -19,6 +19,7 @@ export const INDEX_MIGRATION_FILES = [
   '20261106220403_gateway_requests_charged_unsuccessful_cost_idx.sql',
   '20261106220404_gateway_request_charges_applied_cost_idx.sql',
   '20261106220405_credit_ledger_request_charge_movements_idx.sql',
+  '20261106220406_gateway_requests_batch_rows_idx.sql',
 ];
 export const readIndexMigrations = () => Promise.all(INDEX_MIGRATION_FILES.map((name) =>
   readFile(new URL(`../../migrations/${name}`, import.meta.url), 'utf8')));

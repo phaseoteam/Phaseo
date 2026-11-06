@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { applyMigration, createBudgetDatabase, readColumnMigrations, readIndexMigrations, readMigration, readSchema } from './fixtures/budget-enforcement-db.mjs';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 
-// Migration 20261106220406_budget_enforcement_money_hygiene against production shapes (see the
+// Migration 20261106220407_budget_enforcement_money_hygiene against production shapes (see the
 // fixture): one budget usage calculation for workspace budgets, department admission and the
 // spend-limit seed; department budgets on holds, realtime and the context fallback; one count per
 // batch hold; active holds across period rollover; captured video holds before their audit row;
@@ -40,11 +40,12 @@ const WS_CAP = id('1', 6); // captured video holds and charged failures
 const WS_DEL = id('1', 7); // a key deleted after its holds and requests
 const WS_PLAN = id('1', 8); // history in every partition, for plans
 const WS_BATCHES = id('1', 9); // batch debits and their rows
+const WS_RECON = id('1', 10); // batch placeholders reconciled to the debit, and rows persisted late
 const ENG = id('4', 1);
 const ROLL = id('4', 2);
 const CAP = id('4', 3);
 const MEMBER = id('2', 1);
-const KEY = { linked: id('3', 1), member: id('3', 2), outside: id('3', 3), batch: id('3', 4), roll: id('3', 5), cap: id('3', 6), limited: id('3', 7), del: id('3', 8), batches: id('3', 9) };
+const KEY = { linked: id('3', 1), member: id('3', 2), outside: id('3', 3), batch: id('3', 4), roll: id('3', 5), cap: id('3', 6), limited: id('3', 7), del: id('3', 8), batches: id('3', 9), recon: id('3', 10) };
 // Before every current period: the earlier of this week's Monday and the 1st, less a day.
 const BEFORE_PERIODS = `(least(date_trunc('week', now() at time zone 'utc'), date_trunc('month', now() at time zone 'utc')) at time zone 'utc' - interval '1 day')`;
 
@@ -382,6 +383,47 @@ try {
       ('${WS_BATCHES}', 'batch_usage:b-res:2', '${KEY.batches}', true, ${8 * DOLLAR})`);
     assert.equal(Number((await workspaceStatus(WS_BATCHES)).budgets[0].usage_nanos), 18 * DOLLAR);
   });
+  await check('a batch reconciles to its debit: placeholders in their window, the correction at the debit, late rows once', async () => {
+    const usage = async () => Number((await workspaceStatus(WS_RECON)).budgets[0].usage_nanos);
+    const sinceYesterday = async () => Number((await one(`select sum(nanos) as n from private.budget_spend_items($1,
+      date_trunc('day', now() at time zone 'utc') at time zone 'utc' - interval '1 day')`, [WS_RECON])).n);
+    await db.exec(`
+      insert into public.workspaces (id) values ('${WS_RECON}');
+      insert into public.keys (id, workspace_id) values ('${KEY.recon}', '${WS_RECON}');
+      insert into public.workspace_budgets (workspace_id, interval, limit_nanos) values ('${WS_RECON}', 'daily', ${1000 * DOLLAR});
+      insert into public.gateway_requests (workspace_id, request_id, key_id, success, cost_nanos) values
+        ('${WS_RECON}', 'recon-chat', '${KEY.recon}', true, ${70 * DOLLAR});
+      -- Held at $100 before midnight, with $100 of batch_hold_usage placeholders at the held price; captured at $50 today.
+      insert into public.gateway_wallet_reservations (reservation_id, workspace_id, amount_nanos, status, hold_ref_id, key_id,
+        captured_nanos, settled_amount_nanos, capture_ref_id, created_at) values
+        ('batch_hold:recon', '${WS_RECON}', ${100 * DOLLAR}, 'captured', 'b-recon', '${KEY.recon}', ${100 * DOLLAR}, ${50 * DOLLAR}, 'b-recon',
+         date_trunc('day', now() at time zone 'utc') at time zone 'utc' - interval '1 hour');
+      insert into public.gateway_requests (workspace_id, request_id, key_id, success, cost_nanos, created_at)
+        select '${WS_RECON}', 'batch_hold_usage:batch_hold:recon:' || n, '${KEY.recon}', true, ${50 * DOLLAR},
+          date_trunc('day', now() at time zone 'utc') at time zone 'utc' - interval '1 hour'
+        from generate_series(1, 2) n;
+      insert into public.credit_ledger (workspace_id, kind, amount_nanos, ref_type, ref_id, source_ref_type, source_ref_id, status) values
+        ('${WS_RECON}', 'charge', ${-50 * DOLLAR}, 'async_job_charge', '${WS_RECON}:batch_hold:recon', 'async_job', 'b-recon', 'captured');`);
+    // Today: $70 of chat and the batch's -$50 correction. Yesterday and today together: $70 and the $50 debit.
+    assert.equal(await usage(), 20 * DOLLAR);
+    assert.equal(await sinceYesterday(), 120 * DOLLAR);
+    // Two batches debited today whose rows persist three days later (a persistence retry): one
+    // without a reservation ($6), one reserved ($5). Each counts its debit, then once its rows land.
+    // b-late's rows range excludes b-late-res's.
+    await db.exec(`
+      insert into public.gateway_request_charges (workspace_id, request_id, cost_nanos, status, is_final, key_id) values
+        ('${WS_RECON}', 'batch_capture:b-late', ${6 * DOLLAR}, 'applied', true, '${KEY.recon}');
+      insert into public.gateway_wallet_reservations (reservation_id, workspace_id, amount_nanos, status, hold_ref_id, key_id,
+        captured_nanos, settled_amount_nanos, capture_ref_id) values
+        ('batch_hold:late', '${WS_RECON}', ${5 * DOLLAR}, 'captured', 'b-late-res', '${KEY.recon}', ${5 * DOLLAR}, ${5 * DOLLAR}, 'b-late-res');
+      insert into public.credit_ledger (workspace_id, kind, amount_nanos, ref_type, ref_id, source_ref_type, source_ref_id, status) values
+        ('${WS_RECON}', 'charge', ${-5 * DOLLAR}, 'async_job_charge', '${WS_RECON}:batch_hold:late', 'async_job', 'b-late-res', 'captured');`);
+    assert.equal(await usage(), 31 * DOLLAR);
+    await db.exec(`insert into public.gateway_requests (workspace_id, request_id, key_id, success, cost_nanos, created_at) values
+      ('${WS_RECON}', 'batch_usage:b-late:1', '${KEY.recon}', true, ${6 * DOLLAR}, now() + interval '3 days'),
+      ('${WS_RECON}', 'batch_usage:b-late-res:1', '${KEY.recon}', true, ${5 * DOLLAR}, now() + interval '3 days')`);
+    assert.equal(await usage(), 31 * DOLLAR);
+  });
   await check('a delivered request pending reconciliation counts at its expected cost, once', async () => {
     const before = { workspace: Number((await workspaceStatus(WS_CAP)).budgets[0].usage_nanos),
       department: Number((await departmentStatus(WS_CAP, KEY.cap)).department_budgets[0].usage_nanos) };
@@ -433,6 +475,17 @@ try {
       insert into public.credit_ledger (workspace_id, kind, amount_nanos, ref_type, ref_id, source_ref_type, source_ref_id, status, created_at)
         select '${WS_PLAN}', 'adjustment', -5, 'gateway_request_charge', 'plan-step-' || i, 'gateway_request', 'plan-open-' || i, 'applied', now()
         from generate_series(1, 10) i;
+      -- A batch of each kind, with rows in every partition.
+      insert into public.gateway_request_charges (workspace_id, request_id, cost_nanos, status, is_final, created_at) values
+        ('${WS_PLAN}', 'batch_capture:plan-b', 9, 'applied', true, now());
+      insert into public.gateway_wallet_reservations (reservation_id, workspace_id, amount_nanos, status, hold_ref_id, captured_nanos, capture_ref_id) values
+        ('batch_hold:plan', '${WS_PLAN}', 9, 'captured', 'plan-r', 9, 'plan-r');
+      insert into public.credit_ledger (workspace_id, kind, amount_nanos, ref_type, ref_id, source_ref_type, source_ref_id, status, created_at) values
+        ('${WS_PLAN}', 'charge', -9, 'async_job_charge', '${WS_PLAN}:batch_hold:plan', 'async_job', 'plan-r', 'captured', now());
+      insert into public.gateway_requests (workspace_id, request_id, success, cost_nanos, created_at)
+        select '${WS_PLAN}', case i % 2 when 0 then 'batch_usage:plan-b:' else 'batch_usage:plan-r:' end || i, true, 1,
+          case i % 3 when 0 then timestamptz '2025-06-01' when 1 then now() else timestamptz '2027-06-01' end
+        from generate_series(1, 300) i;
       analyze public.gateway_requests; analyze public.gateway_request_charges; analyze public.credit_ledger;`);
     // The function's own body, prepared with its parameters and planned generically, as a SQL function is.
     const source = await readSchema('private/functions/unbilled_spend.sql');
@@ -447,9 +500,10 @@ try {
         .map((row) => row['QUERY PLAN']).join('\n');
       assert.match(plan, /Limit/);
       assert.match(plan, /gateway_requests_\w+_workspace_id_billing_request_id_idx/);
+      assert.match(plan, /gateway_requests_\w+_workspace_id_request_id_\w*idx/, plan);
       assert.doesNotMatch(plan, /Seq Scan on gateway_requests/, plan);
       assert.doesNotMatch(plan, /Hash (Right )?Anti Join/, plan);
-      assert.equal((await rows(`execute unbilled('${WS_PLAN}', now() - interval '1 day', null, '{}', '{}')`)).length, 20);
+      assert.equal((await rows(`execute unbilled('${WS_PLAN}', now() - interval '1 day', null, '{}', '{}')`)).length, 22);
     } finally {
       await db.exec('deallocate unbilled; reset plan_cache_mode');
     }
