@@ -137,10 +137,15 @@ describe("key request approval", () => {
 	it.each([["the CLI", CLI_TOKEN], ["the desktop app", DESKTOP_TOKEN], ["a third-party app", APP_TOKEN]])(
 		"refuses a token issued to %s: only a dashboard session can approve, deny or read a request",
 		async (_label, token) => {
-			for (const response of [await approve(token), await deny(token), await send(REQUEST, token)]) {
+			// web-api refuses every write from an app's token before routing (oauthClientWrites.ts); the read is
+			// refused by this route itself.
+			for (const response of [await approve(token), await deny(token)]) {
 				expect(response.status).toBe(403);
-				expect(await response.json()).toMatchObject({ reason: "dashboard_session_required" });
+				expect(await response.json()).toMatchObject({ reason: "oauth_client_write_refused" });
 			}
+			const read = await send(REQUEST, token);
+			expect(read.status).toBe(403);
+			expect(await read.json()).toMatchObject({ reason: "dashboard_session_required" });
 			expect(db.rpcs).toEqual([]);
 			expect(db.keyInserts).toEqual([]);
 		},
