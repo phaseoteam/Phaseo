@@ -333,14 +333,14 @@ describe("account policy settings routes", () => {
 
 	describe("preset version labels", () => {
 		const VERSION_ID = "7d0b6f0e-3c1a-4f0b-9a55-2f3c4d5e6f70";
-		function stubLabels({ role = "admin", createdBy = "owner-2", visibility = "team", rpc }: { role?: string; createdBy?: string; visibility?: string; rpc?: (name: string, body: any) => Response }) {
+		function stubLabels({ role = "admin", createdBy = "owner-2", visibility = "team", draftVisibility = visibility, rpc }: { role?: string; createdBy?: string; visibility?: string; draftVisibility?: string; rpc?: (name: string, body: any) => Response }) {
 			const calls: Array<{ name: string; body: any }> = [];
 			vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 				const request = input instanceof Request ? input : new Request(input, init);
 				const url = request.url;
 				if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" }), { status: 200 });
 				if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role }]), { status: 200 });
-				if (url.includes("/presets?")) return new Response(JSON.stringify([{ id: "preset-1", workspace_id: "workspace-1", created_by: createdBy, visibility, draft_visibility: visibility, active_version_id: "version-3" }]), { status: 200 });
+				if (url.includes("/presets?")) return new Response(JSON.stringify([{ id: "preset-1", workspace_id: "workspace-1", created_by: createdBy, visibility, draft_visibility: draftVisibility, active_version_id: "version-3" }]), { status: 200 });
 				// The target version check before moving a label: a shared version.
 				if (url.includes("/preset_versions?") && new URL(url).searchParams.has("id")) return new Response(JSON.stringify([{ id: VERSION_ID }]), { status: 200 });
 				if (url.includes("/preset_versions?")) return new Response(JSON.stringify([
@@ -485,6 +485,29 @@ describe("account policy settings routes", () => {
 			const presetUrl = new URL(urls.find((url) => url.includes("/presets?"))!);
 			expect(presetUrl.searchParams.get("archived_at")).toBe("is.null");
 			expect(presetUrl.searchParams.get("select")).not.toContain("*");
+		});
+
+		it.each([
+			["change it", "", { method: "PUT", body: JSON.stringify({ description: "Mine" }) }],
+			["archive it", "", { method: "DELETE" }],
+			["publish a version", "/versions", { method: "POST", body: JSON.stringify({}) }],
+			["set a label", "/labels/probe", { method: "PUT", body: JSON.stringify({ versionId: VERSION_ID }) }],
+			["remove a label", "/labels/probe", { method: "DELETE" }],
+			["apply an upstream version", "/upstream", { method: "POST", body: JSON.stringify({ versionId: VERSION_ID }) }],
+		])("treats a teammate's private preset as missing when an admin tries to %s", async (_label, path, init) => {
+			const calls = stubLabels({ role: "admin", visibility: "private" });
+			const response = await request(path, init as RequestInit);
+			expect(response.status).toBe(404);
+			await expect(response.json()).resolves.toMatchObject({ error: "not_found" });
+			expect(calls).toEqual([]);
+		});
+
+		it("refuses to publish a teammate's private draft before looking at it", async () => {
+			const calls = stubLabels({ role: "admin", visibility: "team", draftVisibility: "private" });
+			const response = await request("/versions", { method: "POST", body: JSON.stringify({}) });
+			expect(response.status).toBe(403);
+			await expect(response.json()).resolves.toMatchObject({ error: "forbidden" });
+			expect(calls).toEqual([]);
 		});
 
 		it("tells members who did not create the preset that they cannot move labels", async () => {

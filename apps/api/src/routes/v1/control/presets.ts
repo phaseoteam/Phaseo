@@ -473,7 +473,10 @@ async function handlePublishPresetVersion(req: Request) {
 	if (!presetId) return json({ error: "bad_request" }, 400, { "Cache-Control": "no-store" });
 	const body = await req.json().catch(() => ({})) as { release_notes?: string; version_label?: string };
 	try {
-		const preset = await findPreset(auth.value.workspaceId, presetId); if (!preset) return json({ error: "not_found" }, 404, { "Cache-Control": "no-store" });
+		const preset = await findPreset(auth.value.workspaceId, presetId);
+		// A teammate's private preset reads as missing, as in GET; and only a draft's creator learns anything about a private draft.
+		if (!preset || !canSeePreset(preset, auth.value.userId)) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
+		if (preset.draft_visibility === "private" && !isPresetCreator(preset, auth.value.userId)) return json({ error: "forbidden" }, 403, { "Cache-Control": "no-store" });
 		const hasDraftChanges = preset.draft_name !== preset.name
 			|| preset.draft_slug !== preset.slug
 			|| preset.draft_description !== preset.description
@@ -623,7 +626,8 @@ async function handleSetPresetLabel(req: Request) {
 	const versionRef = typeof body.version === "string" ? body.version.trim() : "";
 	if (Boolean(versionId) === Boolean(versionRef)) return json({ error: "bad_request", message: "Send either version_id or version" }, 400, { "Cache-Control": "no-store" });
 	try {
-		const preset = await findPreset(auth.value.workspaceId, parts.presetId); if (!preset) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
+		const preset = await findPreset(auth.value.workspaceId, parts.presetId);
+		if (!preset || !canSeePreset(preset, auth.value.userId)) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
 		if (versionId && !UUID_PATTERN.test(versionId)) return json({ error: "preset_version_not_found", message: "Preset version not found" }, 404, { "Cache-Control": "no-store" });
 		let targetVersionId = versionId;
 		if (versionRef) {
@@ -669,7 +673,8 @@ async function handleRemovePresetLabel(req: Request) {
 	const label = normalizePresetLabel(parts.label);
 	if (!label) return json({ error: "invalid_preset_label", message: INVALID_LABEL_MESSAGE }, 400, { "Cache-Control": "no-store" });
 	try {
-		const preset = await findPreset(auth.value.workspaceId, parts.presetId); if (!preset) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
+		const preset = await findPreset(auth.value.workspaceId, parts.presetId);
+		if (!preset || !canSeePreset(preset, auth.value.userId)) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
 		const result = await getSupabaseAdmin().rpc("remove_preset_version_label", { p_preset_id: preset.id, p_label: label, actor_user_id: auth.value.userId });
 		if (result.error) {
 			const mapped = labelRpcError(result.error.message ?? ""); if (mapped) return mapped;
@@ -730,7 +735,8 @@ async function handleApplyUpstream(req: Request) {
 	const body = await req.json<Record<string, unknown>>().catch(() => ({} as Record<string, unknown>)); const versionId = String(body.version_id ?? body.versionId ?? "").trim();
 	if (!presetId || !versionId) return json({ error: "bad_request", message: "Preset id and version_id are required" }, 400, { "Cache-Control": "no-store" });
 	try {
-		const preset = await findPreset(auth.value.workspaceId, presetId); if (!preset) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
+		const preset = await findPreset(auth.value.workspaceId, presetId);
+		if (!preset || !canSeePreset(preset, auth.value.userId)) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
 		const result = await getSupabaseAdmin().rpc("apply_preset_upstream_version", { target_preset_id: preset.id, target_version_id: versionId, actor_user_id: auth.value.userId });
 		if (result.error) {
 			const message = result.error.message ?? "";

@@ -31,13 +31,14 @@ const privatePreset = () => ({
 });
 const teamPreset = () => ({ ...teamPresetWithPrivateDraft(), id: "team_1", name: "@team", slug: "team", draft_name: "@team", draft_slug: "team", draft_description: "Published description", draft_config: { models: ["openai/published"] }, draft_visibility: "team" });
 
-/** PostgREST-style condition: column.op.value with eq, neq and is.null. */
+/** PostgREST-style condition: column.op.value with eq, neq and is.null. As in SQL, eq and neq never match NULL. */
 function holds(row: Row, condition: string) {
 	const [column, op, ...rest] = condition.split(".");
 	const value = rest.join(".");
 	if (op === "is" && value === "null") return row[column] === null || row[column] === undefined;
+	if (row[column] === null || row[column] === undefined) return false;
 	if (op === "eq") return String(row[column]) === value;
-	if (op === "neq") return row[column] === null || row[column] === undefined ? true : String(row[column]) !== value;
+	if (op === "neq") return String(row[column]) !== value;
 	throw new Error(`unsupported condition ${condition}`);
 }
 
@@ -48,7 +49,7 @@ function query(table: string) {
 	let head = false;
 	const builder: any = {};
 	builder.select = (_columns: string, options?: { count?: string }) => { head = Boolean(options?.count); return builder; };
-	builder.eq = (column: string, value: unknown) => { conditions.push((row) => String(row[column]) === String(value)); return builder; };
+	builder.eq = (column: string, value: unknown) => { conditions.push((row) => row[column] !== null && row[column] !== undefined && String(row[column]) === String(value)); return builder; };
 	builder.neq = (column: string, value: unknown) => { conditions.push((row) => holds(row, `${column}.neq.${value}`)); return builder; };
 	builder.is = (column: string, value: unknown) => { conditions.push((row) => (value === null ? row[column] === null || row[column] === undefined : row[column] === value)); return builder; };
 	builder.or = (expression: string) => { const parts = expression.split(","); conditions.push((row) => parts.some((part) => holds(row, part))); return builder; };
@@ -236,6 +237,37 @@ describe("preset privacy on the management API", () => {
 		state.userId = CREATOR;
 		expect((await request("/team_1", { method: "DELETE" })).status).toBe(200);
 		expect(state.presets.find((row) => row.id === "team_1")!.archived_at).toBeTruthy();
+	});
+
+	it("still lets an admin edit a shared preset with no draft visibility yet (only the is.null branch matches it)", async () => {
+		Object.assign(state.presets.find((row) => row.id === "team_1")!, { draft_visibility: null });
+		const response = await patch("/team_1", { description: "From null" });
+		expect(response.status).toBe(200);
+		expect(state.presets.find((row) => row.id === "team_1")).toMatchObject({ draft_description: "From null" });
+	});
+
+	describe("writes on a teammate's private preset read as missing", () => {
+		const put = (path: string, body: Row) => request(path, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+		const post = (path: string, body: Row) => request(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+		it.each([
+			["publish a version", () => post("/private_1/versions", {})],
+			["set a label", () => put("/private_1/labels/probe", { version: "v1" })],
+			["remove a label", () => request("/private_1/labels/probe", { method: "DELETE" })],
+			["apply an upstream version", () => post("/private_1/upstream", { version_id: "50000000-0000-4000-8000-000000000009" })],
+		])("%s: the same 404 as a missing preset, and no database call", async (_label, run) => {
+			const response = await run();
+			expect(response.status).toBe(404);
+			await expect(response.json()).resolves.toEqual({ error: "not_found", message: "Preset not found" });
+			expect(state.rpcs).toEqual([]);
+		});
+
+		it("refuses to publish a teammate's private draft before looking at it", async () => {
+			// shared_1 is a team preset whose draft is private; its draft differs from the published preset.
+			const response = await post("/shared_1/versions", {});
+			expect(response.status).toBe(403);
+			await expect(response.json()).resolves.toEqual({ error: "forbidden" });
+			expect(state.rpcs).toEqual([]);
+		});
 	});
 
 	it("still lets an admin edit a shared preset", async () => {

@@ -456,6 +456,8 @@ function validPresetName(value: string) {
 }
 function presetVisibility(value: unknown) { return ["private", "team", "public"].includes(String(value)) ? String(value) : "team"; }
 function normalizePresetSlug(value: unknown) { return String(value ?? "").trim().toLowerCase().replace(/^@+/, "").replace(/[^a-z0-9._:-]+/g, "-").replace(/-{2,}/g, "-").replace(/^[-._:]+|[-._:]+$/g, ""); }
+/** A teammate's private preset: it reads as missing (404), on writes as on reads. */
+function hiddenPreset(preset: { created_by?: string | null; visibility?: string | null }, userId: string) { return preset.visibility === "private" && preset.created_by !== userId; }
 function canWritePreset(context: AccountWorkspaceContext, userId: string, preset: { created_by?: string | null; visibility?: string | null }) { return preset.created_by === userId || (preset.visibility !== "private" && ["owner", "admin"].includes(context.role.toLowerCase())); }
 async function presetSlugConflict(client: ReturnType<typeof getDataClient>, workspaceId: string, slug: string, excludeId?: string) {
 	let scoped = client.from("presets").select("id").eq("workspace_id", workspaceId).eq("slug", slug).is("archived_at", null); if (excludeId) scoped = scoped.neq("id", excludeId);
@@ -619,6 +621,7 @@ accountSettingsPolicyRouter.put("/presets/:presetId", async (c) => {
 	const client = getDataClient(c.env); const id = c.req.param("presetId"); const existing = await client.from("presets").select("id,workspace_id,name,slug,config,visibility,created_by,draft_name,draft_slug,draft_description,draft_config,draft_visibility,source_preset_id,upstream_version_id").eq("id", id).is("archived_at", null).maybeSingle();
 	if (existing.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS); if (!existing.data?.workspace_id) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: existing.data.workspace_id }); if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	if (hiddenPreset(existing.data, user.id)) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 	if (!canWritePreset(context, user.id, existing.data)) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	// A private draft can only be changed (or made visible) by its creator.
 	const creator = existing.data.created_by === user.id;
@@ -704,6 +707,7 @@ async function presetForLabelChange(c: Context<{ Bindings: Env }>, userId: strin
 	if (preset.error) return { response: c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS) } as const;
 	if (!preset.data?.workspace_id) return { response: c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS) } as const;
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: preset.data.workspace_id });
+	if (context && hiddenPreset(preset.data, userId)) return { response: c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS) } as const;
 	if (!context || !canManagePresetLabels(context, userId, preset.data)) return { response: c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS) } as const;
 	return { client, preset: preset.data } as const;
 }
@@ -743,7 +747,10 @@ accountSettingsPolicyRouter.post("/presets/:presetId/versions", async (c) => {
 	const client = getDataClient(c.env); const id = c.req.param("presetId"); const body: { releaseNotes?: string; versionLabel?: string } = await c.req.json<{ releaseNotes?: string; versionLabel?: string }>().catch(() => ({}));
 	const preset = await client.from("presets").select("workspace_id,created_by,name,slug,description,config,visibility,draft_name,draft_slug,draft_description,draft_config,draft_visibility").eq("id", id).is("archived_at", null).maybeSingle();
 	if (preset.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS); if (!preset.data?.workspace_id) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
-	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: preset.data.workspace_id }); if (!context || !canWritePreset(context, user.id, preset.data)) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: preset.data.workspace_id }); if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	if (hiddenPreset(preset.data, user.id)) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
+	// Judged on the draft it would publish (publish_preset_version's rule), before anything about the draft is revealed.
+	if (!canWritePreset(context, user.id, { created_by: preset.data.created_by, visibility: preset.data.draft_visibility ?? preset.data.visibility })) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	if (!presetHasDraftChanges(preset.data)) return c.json({ error: "no_draft_changes" }, 409, PRIVATE_NO_STORE_HEADERS);
 	const templateIssues = promptTemplateIssues(preset.data.draft_config ?? preset.data.config);
 	if (templateIssues) return c.json({ error: "invalid_prompt_template", issues: templateIssues }, 400, PRIVATE_NO_STORE_HEADERS);
@@ -764,9 +771,11 @@ accountSettingsPolicyRouter.post("/presets/:presetId/versions", async (c) => {
 accountSettingsPolicyRouter.post("/presets/:presetId/upstream", async (c) => {
 	const user = await requireUser(c.req.raw, c.env); if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const client = getDataClient(c.env); const id = c.req.param("presetId"); const body: { versionId?: string } = await c.req.json<{ versionId?: string }>().catch(() => ({}));
-	const preset = await client.from("presets").select("workspace_id,created_by").eq("id", id).is("archived_at", null).maybeSingle();
+	const preset = await client.from("presets").select("workspace_id,created_by,visibility").eq("id", id).is("archived_at", null).maybeSingle();
 	if (preset.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS); if (!preset.data?.workspace_id || !body.versionId) return c.json({ error: "invalid_upstream_version" }, 400, PRIVATE_NO_STORE_HEADERS);
-	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: preset.data.workspace_id }); if (!context || preset.data.created_by !== user.id) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: preset.data.workspace_id }); if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	if (hiddenPreset(preset.data, user.id)) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
+	if (preset.data.created_by !== user.id) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const applied = await client.rpc("apply_preset_upstream_version", { target_preset_id: id, target_version_id: body.versionId, actor_user_id: user.id });
 	if (applied.error) {
 		const message = applied.error.message ?? "";
@@ -782,6 +791,7 @@ accountSettingsPolicyRouter.delete("/presets/:presetId", async (c) => {
 	const client = getDataClient(c.env); const id = c.req.param("presetId"); const existing = await client.from("presets").select("name,workspace_id,created_by,visibility").eq("id", id).maybeSingle();
 	if (existing.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS); if (!existing.data?.workspace_id) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: existing.data.workspace_id }); if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	if (hiddenPreset(existing.data, user.id)) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 	if (!canWritePreset(context, user.id, existing.data)) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const confirm = c.req.query("confirmName"); if (confirm && confirm !== existing.data.name) return c.json({ error: "confirmation_mismatch" }, 409, PRIVATE_NO_STORE_HEADERS);
 	let archive = client.from("presets").update({ archived_at: new Date().toISOString() }).eq("id", id).is("archived_at", null);
