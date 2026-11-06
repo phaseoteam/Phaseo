@@ -13,6 +13,13 @@
   "vars": {
     "WEB_API_ORIGIN": "https://phaseo.app",
     "PHASEO_ENV": "production",
+    // Build-time inlining only replaces literal process.env.X reads. Code that
+    // takes an env object (auth redirect origin, Stripe checkout URLs) reads
+    // these at runtime; without them auth thought it was in development and
+    // sent OAuth and email links to http://localhost:3000.
+    "NODE_ENV": "production",
+    "PUBLIC_WEBSITE_URL": "https://phaseo.app",
+    "WEBSITE_URL": "https://phaseo.app",
     // Onboarding emails through Resend (same as the previous site).
     "RESEND_ONBOARDING_AUTOMATIONS_ENABLED": "true",
     // Rollout canary (src/lib/start/canary.ts): on these hosts, CANARY_PERCENT
