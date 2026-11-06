@@ -10,22 +10,27 @@ import { usePersistedState } from "../lib/persistedState";
 import { useCommand } from "../lib/keybindings";
 import { cn } from "../lib/utils";
 import { AgentThreadsPanel } from "../components/AgentThreadsPanel";
-import { BrowserSurface } from "../views/BrowserSurface";
 import { createBrowserTab, ensureBrowserTab, closeBrowserTab, confirmCloseBrowserTabs, onBrowserTabOpened, setBrowserTabMuted, useBrowserTab, useBrowserTabs } from "../lib/browserTabs";
-import { PullRequestListSurface, PullRequestSurface, pullRequestStatePresentation } from "../views/pullRequests";
+import { pullRequestStatePresentation } from "../views/pullRequests/presentation";
 import { closeTerminal, createTerminal, terminalTitle, terminalsFor, useTerminalSessions } from "../lib/terminalSessions";
 import { OPEN_PROJECT_FILE_EVENT, OPEN_SIDE_CHAT_EVENT, OPEN_TURN_DIFF_EVENT, type OpenProjectFileDetail, type OpenSideChatDetail, type OpenTurnDiffDetail } from "../panels/events";
-import { SideChatPane } from "../chat/SideChatPane";
 import { OPEN_PULL_REQUEST_EVENT, type OpenPullRequestDetail } from "../views/pullRequests/events";
 import { seedPullRequestTabStatus, usePullRequestTabStatus } from "../views/pullRequests/tabStatus";
 import { useBranchPullRequest } from "../views/pullRequests/useBranchPullRequest";
 import { useProjectRepository } from "../views/pullRequests/useProjectRepository";
 import { currentPullRequest } from "../../shared/pullRequestStacks";
 import { closePaneTabs, migratePaneState, movePaneTab, openPaneTab, paneKind, paneValue, paneWidths, reopenPaneTab, type PaneKey, type PaneState } from "./paneTabs";
+import { readSidebarWidth, sidebarSurface } from "../lib/sidebarWidth";
+import { IconSwap } from "../components/IconSwap";
 
 // The diff viewer and editor are large, so they load when first opened.
 const DiffSurface = lazy(() => import("../panels/DiffSurface").then(module => ({ default: module.DiffSurface })));
 const FileSurface = lazy(() => import("../panels/FileSurface").then(module => ({ default: module.FileSurface })));
+// Each surface loads when its tab is first shown, so none of them hold up the window's first paint.
+const SideChatPane = lazy(() => import("../chat/SideChatPane").then(module => ({ default: module.SideChatPane })));
+const BrowserSurface = lazy(() => import("../views/BrowserSurface").then(module => ({ default: module.BrowserSurface })));
+const PullRequestListSurface = lazy(() => import("../views/pullRequests/PullRequestListSurface").then(module => ({ default: module.PullRequestListSurface })));
+const PullRequestSurface = lazy(() => import("../views/pullRequests/PullRequestSurface").then(module => ({ default: module.PullRequestSurface })));
 const FileBrowserSurface = lazy(() => import("../panels/FileBrowserSurface").then(module => ({ default: module.FileBrowserSurface })));
 const TerminalSurface = lazy(() => import("../views/Terminals").then(module => ({ default: module.TerminalSurface })));
 
@@ -99,7 +104,7 @@ function SurfaceTab({ paneKey, context, projectId, active, dirty, onSelect, onCl
 				<span className="relative flex size-3 items-center justify-center group-hover/tab:hidden group-focus-visible/close:hidden [&_svg]:size-3"><TabFace paneKey={paneKey} context={context} projectId={projectId} dirty={dirty} /></span>
 				<X className="hidden size-3 group-hover/tab:block group-focus-visible/close:block" />
 			</button>
-			{browser && (browser.audible || browser.muted) && <button type="button" aria-label={browser.muted ? "Unmute tab" : "Mute tab"} onClick={event => { event.stopPropagation(); void setBrowserTabMuted(browser.id, !browser.muted); }} className="grid size-4 shrink-0 place-items-center rounded-sm hover:bg-muted">{browser.muted ? <VolumeOff className="size-3" /> : <Volume2 className="size-3" />}</button>}
+			{browser && (browser.audible || browser.muted) && <button type="button" aria-label={browser.muted ? "Unmute tab" : "Mute tab"} onClick={event => { event.stopPropagation(); void setBrowserTabMuted(browser.id, !browser.muted); }} className="grid size-4 shrink-0 place-items-center rounded-sm hover:bg-muted"><IconSwap show={browser.muted ? "volumeOff" : "volume2"}>{{ volumeOff: <VolumeOff className="size-3" />, volume2: <Volume2 className="size-3" /> }}</IconSwap></button>}
 			<Tip label={title} side="bottom" delay={600}><span className="truncate">{title}</span></Tip>
 		</ContextMenu.Trigger>
 		<DropdownMenuContent className="w-48">
@@ -145,7 +150,7 @@ function Launcher({ onOpen, unavailable: reason }: { onOpen: (kind: typeof launc
 }
 
 export function RightPanel() {
-	const { rightPanel, setRightPanel, selectedId, overview, newChatProjectId, select, commandsOpen, settings, sidebarOpen, api, setError, mode, command } = useWorkspace();
+	const { rightPanel, setRightPanel, selectedId, overview, newChatProjectId, select, commandsOpen, settings, sidebarOpen, api, setError, mode, codeView, command } = useWorkspace();
 	// Tabs, the active one, width and maximise are remembered per chat.
 	const [states, setStates] = usePersistedState<Record<string, PaneState>>("phaseo.desktop.rightPanelState", {});
 	const [lastWidth, setLastWidth] = usePersistedState("phaseo.desktop.rightPanelWidth", paneWidths.default);
@@ -278,7 +283,7 @@ export function RightPanel() {
 	useCommand("preview.toggle", () => { const browser = tabs.find(key => paneKind(key) === "browser"); if (rightPanel && active && paneKind(active) === "browser") { requested.current = undefined; setRightPanel(undefined); } else if (browser) show(browser); else void openKind("browser"); });
 
 	if (!rightPanel || settings) return null;
-	const sidebar = sidebarOpen ? Number(localStorage.getItem("phaseo.desktop.sidebarWidth") ?? 256) || 256 : 0;
+	const sidebar = sidebarOpen ? readSidebarWidth(sidebarSurface(mode, codeView)) : 0;
 	const sheet = viewport <= 980;
 	const widest = Math.max(paneWidths.minimum, Math.min(Math.floor(viewport * 0.7), viewport - sidebar - paneWidths.minimum));
 	const width = Math.max(paneWidths.minimum, Math.min(widest, state.width ?? (Number.isFinite(lastWidth) ? lastWidth : paneWidths.default)));
@@ -286,21 +291,21 @@ export function RightPanel() {
 	const kind = active ? paneKind(active) : undefined, value = active ? paneValue(active) : "";
 	const fallback = <p className="p-4 text-xs text-muted-foreground">Loading…</p>;
 	const content = !active ? null
-		: kind === "browser" ? <BrowserSurface key={value} context={context} tabId={value} covered={commandsOpen || !!settings || menuOpen} />
+		: kind === "browser" ? <Suspense fallback={fallback}><BrowserSurface key={value} context={context} tabId={value} covered={commandsOpen || !!settings || menuOpen} /></Suspense>
 		: kind === "terminal" ? <Suspense fallback={fallback}><TerminalSurface key={value} projectId={projectId} terminalId={value} /></Suspense>
 		: kind === "files" ? <Suspense fallback={fallback}><FileBrowserSurface projectId={projectId} onOpenFile={path => show(`file:${path}`)} /></Suspense>
 		: kind === "file" ? <Suspense fallback={fallback}><FileSurface key={value} projectId={projectId} path={value} onDirtyChange={isDirty => setDirty(current => current[active] === isDirty ? current : { ...current, [active]: isDirty })} onOpenFile={path => show(`file:${path}`)} /></Suspense>
 		: kind === "diff" ? <Suspense fallback={fallback}><DiffSurface projectId={projectId} taskId={selectedId} onOpenFile={path => show(`file:${path}`)} /></Suspense>
-		: kind === "pulls" ? <PullRequestListSurface projectId={projectId} taskId={selectedId} onOpen={pull => { seedPullRequestTabStatus(projectId, pull.number, pull); show(`pull:${pull.number}`); }} />
-		: kind === "side" ? <SideChatPane key={value} id={value} onClose={() => close([active])} />
-		: kind === "pull" ? <PullRequestSurface key={value} projectId={projectId} number={Number(value)} onBack={() => show("pulls")} />
+		: kind === "pulls" ? <Suspense fallback={fallback}><PullRequestListSurface projectId={projectId} taskId={selectedId} onOpen={pull => { seedPullRequestTabStatus(projectId, pull.number, pull); show(`pull:${pull.number}`); }} /></Suspense>
+		: kind === "side" ? <Suspense fallback={fallback}><SideChatPane key={value} id={value} onClose={() => close([active])} /></Suspense>
+		: kind === "pull" ? <Suspense fallback={fallback}><PullRequestSurface key={value} projectId={projectId} number={Number(value)} onBack={() => show("pulls")} /></Suspense>
 		: <AgentThreadsPanel id={selectedId} onOpen={select} />;
 	const finishDrag = () => { drag.current = undefined; setDragging(false); };
 	const pane = <aside aria-label="Tools" data-focus-region data-maximized={state.maximized || undefined}
 		style={sheet || state.maximized ? undefined : { ["--pane-width" as string]: `${width}px` }}
 		className={cn("relative flex min-w-0 flex-col border-l border-border bg-background",
 			sheet ? "fixed top-11 right-0 bottom-0 z-40 w-[min(42vw,28rem)] max-w-[28rem] min-w-80 shadow-2xl max-[760px]:w-[min(88vw,24rem)]"
-				: state.maximized ? "flex-[1_0_0]" : cn("w-(--pane-width) shrink-0 overflow-clip", !dragging && "transition-[width] duration-150 ease-out starting:w-0 motion-reduce:transition-none"))}>
+				: state.maximized ? "flex-[1_0_0]" : cn("w-(--pane-width) shrink-0 overflow-clip", !dragging && "transition-[width] duration-(--panel-animation-duration) ease-out starting:w-0 motion-reduce:transition-none"))}>
 		{!sheet && !state.maximized && <div role="separator" aria-orientation="vertical" aria-label="Resize panel" tabIndex={0}
 			onPointerDown={event => { drag.current = { x: event.clientX, width }; setDragging(true); event.currentTarget.setPointerCapture(event.pointerId); }}
 			onPointerMove={event => { if (drag.current) setWidth(drag.current.width + drag.current.x - event.clientX); }}
@@ -326,7 +331,7 @@ export function RightPanel() {
 				</ScrollArea>
 				{overflow.right && <button type="button" aria-label="Scroll tabs right" onClick={() => strip.current?.scrollBy({ left: 160, behavior: "smooth" })} className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"><ChevronRight className="size-3.5" /></button>}
 				{tabs.length > 0 && !sheet && <Tip label={state.maximized ? "Restore panel" : "Maximize panel"} side="bottom"><button type="button" aria-label={state.maximized ? "Restore panel" : "Maximize panel"} aria-pressed={!!state.maximized} onClick={() => update({ ...state, maximized: !state.maximized })}
-					className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground">{state.maximized ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}</button></Tip>}
+					className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"><IconSwap show={state.maximized ? "minimize2" : "maximize2"}>{{ minimize2: <Minimize2 className="size-4" />, maximize2: <Maximize2 className="size-4" /> }}</IconSwap></button></Tip>}
 				<Tip label="Close panel" side="bottom"><button type="button" aria-label="Close panel" onClick={() => { requested.current = undefined; setRightPanel(undefined); }} className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"><X className="size-4" /></button></Tip>
 			</div>
 			{!active ? <Launcher onOpen={kindToOpen => void openKind(kindToOpen)} unavailable={unavailable} />

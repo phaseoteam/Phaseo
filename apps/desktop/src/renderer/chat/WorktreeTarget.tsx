@@ -9,8 +9,11 @@ import { cn } from "../lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
 import { ScrollArea } from "../components/ui/scroll-area";
+import { IconSwap } from "../components/IconSwap";
 
 type CreateTask = Extract<WorkspaceCommand, { type: "create-task" }>;
+/** Each project folder's Local or New worktree choice for the next new chat. */
+export const draftWorkspaceKey = "phaseo.desktop.draftWorkspace";
 export type WorktreeTarget = ReturnType<typeof useWorktreeTarget>;
 
 /**
@@ -18,7 +21,7 @@ export type WorktreeTarget = ReturnType<typeof useWorktreeTarget>;
  * worktree from a base branch for the chat. Kept per project folder.
  */
 export function useWorktreeTarget(api: WorkspaceApi | undefined, projectId: string | undefined, setOverview: (workspace: WorkspaceOverview) => void) {
-	const [modes, setModes] = usePersistedState<Record<string, "local" | "worktree">>("phaseo.desktop.draftWorkspace", {});
+	const [modes, setModes] = usePersistedState<Record<string, "local" | "worktree">>(draftWorkspaceKey, {});
 	const [refs, setRefs] = useState<GitRefs>();
 	const [base, setBase] = useState<string>();
 	useEffect(() => {
@@ -53,33 +56,33 @@ export function WorktreeTargetControls({ target, disabled }: { target: WorktreeT
 	const worktree = target.mode === "worktree";
 	return <>
 		<DropdownMenu>
-			<DropdownMenuTrigger disabled={disabled} render={<button type="button" aria-label="Workspace" title="Where the chat works" className="flex h-8 items-center gap-1.5 rounded-md px-2 text-[12.5px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50 [&_svg]:size-4" />}>
-				{worktree ? <FolderGit2 /> : <Laptop />}{worktree ? "New worktree" : "Local"}<ChevronDown className="size-3!" />
+			<DropdownMenuTrigger disabled={disabled} render={<button type="button" aria-label="Workspace" title="Where the chat works" data-composer-shortcut="composer.workspace" className="flex h-8 items-center gap-1.5 rounded-md px-2 text-[12.5px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50 [&_svg]:size-4" />}>
+				<IconSwap show={worktree ? "folderGit2" : "laptop"}>{{ folderGit2: <FolderGit2 />, laptop: <Laptop /> }}</IconSwap>{worktree ? "New worktree" : "Local"}<ChevronDown className="size-3!" />
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="start" side="top" className="w-72">
 				<DropdownMenuItem onClick={() => target.setMode("local")} className="items-start"><Laptop className="mt-0.5" /><span><span className="block font-semibold">Local</span><span className="text-xs text-muted-foreground">Work in the project's own checkout.</span></span>{!worktree && <Check className="ml-auto" />}</DropdownMenuItem>
 				<DropdownMenuItem onClick={() => target.setMode("worktree")} className="items-start"><FolderGit2 className="mt-0.5" /><span><span className="block font-semibold">New worktree</span><span className="text-xs text-muted-foreground">A separate checkout on a new branch, named from your message.</span></span>{worktree && <Check className="ml-auto" />}</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>
-		{worktree && target.refs && <BaseBranchPicker refs={target.refs} value={target.base} onChange={target.setBase} disabled={disabled} />}
+		{worktree && target.refs && <BranchPicker refs={target.refs} value={target.base} onChange={target.setBase} disabled={disabled} label={`from ${target.base}`} ariaLabel="Base branch" title="The branch the worktree starts from" />}
 	</>;
 }
 
-/** The base branch picker: local branches first, then remote ones, filtered as you type. */
-function BaseBranchPicker({ refs, value, onChange, disabled }: { refs: GitRefs; value: string; onChange: (value: string) => void; disabled?: boolean }) {
+/** A branch picker: local branches first, then remote ones unless localOnly, filtered as you type. */
+export function BranchPicker({ refs, value, onChange, disabled, label, ariaLabel, title, localOnly }: { refs: GitRefs; value: string; onChange: (value: string) => void; disabled?: boolean; label: string; ariaLabel: string; title: string; localOnly?: boolean }) {
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
 	const [active, setActive] = useState(0);
 	const options = useMemo(() => {
-		const all = [...new Set([...refs.current ? [refs.current] : [], ...refs.local, ...refs.remote.filter(name => !name.endsWith("/HEAD"))])];
+		const all = [...new Set([...refs.current ? [refs.current] : [], ...refs.local, ...localOnly ? [] : refs.remote.filter(name => !name.endsWith("/HEAD"))])];
 		const needle = query.trim().toLowerCase();
 		return (needle ? all.filter(name => name.toLowerCase().includes(needle)) : all).slice(0, 200);
 	}, [refs, query]);
 	useEffect(() => { setActive(0); }, [query, open]);
 	const choose = (name: string) => { onChange(name); setOpen(false); setQuery(""); };
 	return <Popover open={open} onOpenChange={setOpen}>
-		<PopoverTrigger disabled={disabled} render={<button type="button" aria-label="Base branch" title="The branch the worktree starts from" className="flex h-8 max-w-48 items-center gap-1.5 rounded-md px-2 text-[12.5px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50 data-popup-open:bg-muted [&_svg]:size-4" />}>
-			<GitBranch /><span className="truncate font-mono text-xs">from {value}</span><ChevronDown className="size-3! shrink-0" />
+		<PopoverTrigger disabled={disabled} render={<button type="button" aria-label={ariaLabel} title={title} data-composer-shortcut="composer.branch" className="flex h-8 max-w-48 items-center gap-1.5 rounded-md px-2 text-[12.5px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50 data-popup-open:bg-muted [&_svg]:size-4" />}>
+			<GitBranch /><span className="truncate font-mono text-xs">{label}</span><ChevronDown className="size-3! shrink-0" />
 		</PopoverTrigger>
 		<PopoverContent align="start" side="top" sideOffset={8} className="w-72 gap-0 overflow-hidden rounded-md p-0">
 			<div className="p-2 pb-1"><div className="flex h-8 items-center gap-2 rounded-md border border-input bg-input/50 px-2.5">

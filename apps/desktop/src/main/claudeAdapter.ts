@@ -4,7 +4,7 @@ import { nativeActionText, type NativeAction } from "../shared/nativeActions";
 import { parsePlanSteps, type PlanStep } from "../shared/planSteps";
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import type { SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
-import type { Account, AgentQuestion, Task } from "../shared/workspace";
+import type { Account, AgentQuestion, QueuedMessage, Task } from "../shared/workspace";
 import { nativeAccountEnvironment } from "./nativeAccountEnvironment";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import { resolveNativeCommand } from "./nativeProcess";
@@ -17,6 +17,7 @@ import { AgentInputRejectedError } from "./agentAdapter";
 import { respondMcpElicitation } from "./mcpElicitation";
 import { orchestrationInstructions } from "../shared/orchestration";
 import { claudeUsage } from "./harnessUsage";
+import { mcpServerTool, parsedInput } from "../shared/mcpCall";
 
 /** AskUserQuestion's questions for the answer panel: header, options with descriptions and Markdown previews, and an own answer. */
 export function claudeQuestions(raw: unknown[]): AgentQuestion[] {
@@ -44,8 +45,7 @@ export class ClaudeAdapter implements AgentAdapter {
 		if (nativeAction) text = nativeActionText(nativeAction);
 		const manualCompact = !attachments.length && text.trim() === "/compact";
 		if (manualCompact) text = "/compact";
-		const tuning = claudeRunOptions(task.model, task.modelOptions);
-		if (tuning.promptPrefix && !nativeAction && !text.trimStart().startsWith("/")) text = tuning.promptPrefix + text;
+		const tuning = claudeRunOptions(task.model, task.modelOptions, nativeAction ? "" : text);
 		const images = attachments.filter(attachment => attachment.kind === "image");
 		const content: SDKUserMessage["message"]["content"] = [{ type: "text", text: attachmentPrompt(text, attachments) }, ...images.map(attachment => ({ type: "image" as const, source: { type: "base64" as const, media_type: attachment.mimeType as "image/png" | "image/jpeg" | "image/gif" | "image/webp", data: attachment.dataUrl!.split(",")[1] } }))];
 		// Chat admits only the orchestration server: no built-in tools (tools: []), no other MCP (strictMcpConfig) and canUseTool denies the rest.
@@ -54,11 +54,30 @@ export class ClaudeAdapter implements AgentAdapter {
 		const orchestration = managedMcp.find(server => server.orchestration), orchestrationTool = orchestration ? `mcp__${nativeMcpName(orchestration)}__` : undefined;
 		// Claude ends its background shells when its input closes, so a turn waiting on one (background_wait) keeps the input open until they finish.
 		const background = orchestrationTool ? callbacks.background : undefined;
-		let release!: () => void; const held = background ? new Promise<void>(resolve => { release = resolve; }) : Promise.resolve();
-		if (!background) release = () => undefined;
+		// The input stays open for the turn, so messages steered in meanwhile reach Claude (it folds them in at its next step).
+		// It closes once a result leaves nothing queued and any awaited background work is done.
+		const steering: SDKUserMessage[] = []; let inputDone = false, wakeInput: (() => void) | undefined;
+		const wake = () => { const resolve = wakeInput; wakeInput = undefined; resolve?.(); };
+		const release = () => { inputDone = true; wake(); };
+		signal.addEventListener("abort", wake, { once: true });
 		let cleanup: (() => void) | undefined;
-		async function* prompt(): AsyncGenerator<SDKUserMessage> { await gate; if (promptAllowed && !signal.aborted) { yield { type: "user", message: { role: "user", content }, parent_tool_use_id: null, session_id: "" }; await Promise.race([held, new Promise(resolve => signal.addEventListener("abort", resolve, { once: true }))]); } }
-		const execution = query({ prompt: images.length || gated ? prompt() : attachmentPrompt(text, attachments), options: {
+		async function* prompt(): AsyncGenerator<SDKUserMessage> {
+			await gate; if (!promptAllowed || signal.aborted) return;
+			yield { type: "user", message: { role: "user", content }, parent_tool_use_id: null, session_id: "" };
+			for (;;) {
+				const next = steering.shift();
+				if (next) { yield next; continue; }
+				if (inputDone || signal.aborted) return;
+				await new Promise<void>(resolve => { wakeInput = resolve; });
+			}
+		}
+		// /compact goes as a bare command; a compaction takes no steering.
+		const streamInput = !manualCompact;
+		if (streamInput) this.steerTurn = message => {
+			if (inputDone || signal.aborted) throw new Error("This turn has finished; the message waits in the queue.");
+			steering.push(message); wake();
+		};
+		const execution = query({ prompt: streamInput ? prompt() : text, options: {
 			cwd,
 			mcpServers: Object.fromEntries(managedMcp.map(server => [nativeMcpName(server), server.transport === "stdio" ? { command: server.executable, args: server.arguments, env: { ELECTRON_RUN_AS_NODE: "1" } } : { type: "http" as const, url: server.url, ...(server.headers ? { headers: server.headers } : {}) }])),
 			...(task.mode === "chat" ? { strictMcpConfig: true } : {}),
@@ -111,6 +130,8 @@ ${claudeBackgroundGuide}` } : {}),
 		let messageId = "assistant";
 		const streamed = new Set<string>();
 		const todos = new Map<string, { steps: PlanStep[]; text: string }>();
+		// A result carries only the call's id; its row keeps the tool's name and input from the call.
+		const calls = new Map<string, { name: string; input: string }>();
 		let sessionId = task.nativeSessionId;
 		let compaction: { id: string; title: string } | undefined;
 		let compactBoundary = false; let compactFailed = false; let compactFailure: string | undefined;
@@ -174,7 +195,11 @@ ${claudeBackgroundGuide}` } : {}),
 				// Every API response, the main agent's and its subagents', counts towards usage.
 				if (message.type === "assistant") { const usage = claudeUsage(message.message.id, message.message.model, message.message.usage); if (usage) callbacks.onUsage?.(usage); }
 				if (message.type === "assistant") for (const block of message.message.content) {
-					if (block.type === "tool_use") callbacks.onActivity?.({ id: block.id, type: "tool", title: block.name, text: JSON.stringify(block.input, null, 2), status: "running" });
+					if (block.type === "tool_use") {
+						const call = { name: block.name, input: JSON.stringify(block.input) ?? "" };
+						calls.set(block.id, call);
+						callbacks.onActivity?.({ id: block.id, type: "tool", title: call.name, text: call.input, status: "running" });
+					}
 					if (block.type === "tool_use" && block.name === "TodoWrite" && !message.parent_tool_use_id) {
 						const steps = parsePlanSteps((block.input as { todos?: unknown } | null)?.todos, "claude");
 						if (steps) todos.set(block.id, { steps, text: JSON.stringify(block.input, null, 2) });
@@ -182,7 +207,13 @@ ${claudeBackgroundGuide}` } : {}),
 					if (block.type === "thinking") callbacks.onActivity?.({ id: `${message.message.id}:reasoning`, type: "reasoning", title: "Reasoning", text: block.thinking, status: "completed" });
 				}
 				if (message.type === "user" && Array.isArray(message.message.content)) for (const block of message.message.content) {
-					if (block.type === "tool_result") callbacks.onActivity?.({ id: block.tool_use_id, type: "tool", title: "Tool result", text: typeof block.content === "string" ? block.content : JSON.stringify(block.content, null, 2), status: block.is_error ? "failed" : "completed" });
+					if (block.type === "tool_result") {
+						const call = calls.get(block.tool_use_id); calls.delete(block.tool_use_id);
+						const output = typeof block.content === "string" ? block.content : Array.isArray(block.content) ? block.content.map(part => part.type === "text" ? part.text : `[${part.type}]`).join("\n") : JSON.stringify(block.content) ?? "";
+						const mcp = call ? mcpServerTool(call.name) : undefined;
+						callbacks.onActivity?.({ id: block.tool_use_id, type: "tool", title: call?.name ?? "Tool result", text: call ? `${call.input}\n\n${output}` : output, status: block.is_error ? "failed" : "completed",
+							...mcp ? { mcpCall: { ...mcp, input: parsedInput(call?.input), result: { content: Array.isArray(block.content) ? block.content : [{ type: "text", text: output }], ...block.is_error ? { isError: true } : {} } } } : {} });
+					}
 					if (block.type === "tool_result" && !message.parent_tool_use_id) {
 						const plan = todos.get(block.tool_use_id); todos.delete(block.tool_use_id);
 						if (plan && !block.is_error) callbacks.onActivity?.({ id: "todo-plan", type: "plan", title: "Task progress", ...plan });
@@ -201,14 +232,23 @@ ${claudeBackgroundGuide}` } : {}),
 						compaction = undefined;
 					}
 					completed = true; answered = true;
-					if (!background?.pending) release();
+					// A steered message still queued gets its own turn and result; the input stays open for it.
+					if (!background?.pending && !message.queued_turn_count && !steering.length) release();
 				}
 			}
 			if (!completed) throw new Error("Claude stopped before completing the turn.");
 		} finally {
+			this.steerTurn = undefined;
 			cleanup?.(); execution.close(); releasePrompt?.();
 			if (compaction) callbacks.onActivity?.({ ...compaction, type: "compaction", title: "Compaction completion unconfirmed", text: "The native stream ended without confirming compaction completion.", status: "failed" });
 		}
 	}
 	async cancel() { this.controller.abort(); }
+	private steerTurn?: (message: SDKUserMessage) => void;
+	/** Sends a message into the running turn; Claude takes it at its next step, as its own CLI does with a message typed mid-turn. */
+	async steer(message: QueuedMessage, attachments: AttachmentContent[]) {
+		if (!this.steerTurn) throw new Error("Claude is not running a turn to steer.");
+		const images = attachments.filter(attachment => attachment.kind === "image");
+		this.steerTurn({ type: "user", message: { role: "user", content: [{ type: "text", text: attachmentPrompt(message.text, attachments) }, ...images.map(attachment => ({ type: "image" as const, source: { type: "base64" as const, media_type: attachment.mimeType as "image/png" | "image/jpeg" | "image/gif" | "image/webp", data: attachment.dataUrl!.split(",")[1] } }))] }, parent_tool_use_id: null, session_id: "", priority: "next" });
+	}
 }

@@ -113,6 +113,8 @@ describe("Phaseo turns", () => {
 	it("turns optional tool sets on with load_tools", () => {
 		const tools = ["read_file", "delegate_task", "watch_pull_request", "browser_open", "schedule_task", "send_thread"].map(id => defineTool({ id, execute: async () => id }));
 		expect(activeToolIds(tools, {})).toEqual(["read_file", "delegate_task"]);
+		// A preloaded set (the operator's) is on from the start without load_tools.
+		expect(activeToolIds(tools, {}, ["browser"])).toEqual(["read_file", "delegate_task", "browser_open"]);
 		expect(activeToolIds(tools, { phaseoToolsets: ["browser", "threads"] })).toEqual(["read_file", "delegate_task", "browser_open", "send_thread"]);
 	});
 

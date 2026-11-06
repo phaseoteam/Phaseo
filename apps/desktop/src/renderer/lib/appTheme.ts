@@ -20,6 +20,24 @@ function write(next: State) {
 	for (const listener of listeners) listener();
 }
 
+/** The colour theme in use and every theme to choose from, for the settings.list app command. */
+export function colourThemes() { const all = [...builtInThemes, ...state.custom]; return { activeId: all.some(theme => theme.id === state.activeId) ? state.activeId : builtInThemes[0].id, ids: all.map(theme => theme.id) }; }
+export function chooseColourTheme(id: string) {
+	if (!colourThemes().ids.includes(id)) throw new Error("No colour theme has that id.");
+	write({ ...state, activeId: id });
+}
+
+/** Adds or replaces a custom theme (ids are made unique against the built-ins) and makes it active. */
+export function saveColourTheme(theme: Theme) {
+	const taken = new Set([...builtInThemes.map(value => value.id), ...state.custom.filter(value => value.id !== theme.id).map(value => value.id)]);
+	let id = theme.id; for (let index = 2; taken.has(id); index++) id = `${theme.id}-${index}`;
+	const saved = { ...theme, id, builtIn: undefined };
+	write({ activeId: id, custom: [...state.custom.filter(value => value.id !== theme.id), saved] });
+	return saved;
+}
+/** Every theme with its colours, for config.get. */
+export const allColourThemes = () => ({ activeId: colourThemes().activeId, themes: [...builtInThemes, ...state.custom] });
+
 export function useThemes() {
 	const current = useSyncExternalStore(listener => { listeners.add(listener); return () => listeners.delete(listener); }, () => state);
 	const all = [...builtInThemes, ...current.custom];
@@ -27,14 +45,7 @@ export function useThemes() {
 		themes: all, custom: current.custom,
 		active: all.find(theme => theme.id === current.activeId) ?? builtInThemes[0],
 		choose: (id: string) => write({ ...state, activeId: id }),
-		/** Adds or replaces a custom theme (ids are made unique against the built-ins) and makes it active. */
-		save: (theme: Theme) => {
-			const taken = new Set([...builtInThemes.map(value => value.id), ...state.custom.filter(value => value.id !== theme.id).map(value => value.id)]);
-			let id = theme.id; for (let index = 2; taken.has(id); index++) id = `${theme.id}-${index}`;
-			const saved = { ...theme, id, builtIn: undefined };
-			write({ activeId: id, custom: [...state.custom.filter(value => value.id !== theme.id), saved] });
-			return saved;
-		},
+		save: saveColourTheme,
 		remove: (id: string) => write({ activeId: state.activeId === id ? "phaseo" : state.activeId, custom: state.custom.filter(value => value.id !== id) }),
 	};
 }

@@ -1,4 +1,5 @@
 import type { Account, ModelOption } from "../shared/workspace";
+import { spellModelName } from "../shared/modelNames";
 import { phaseoModelFacts } from "./phaseoModelFacts";
 import { phaseoModelOptions } from "./phaseoModelOptions";
 
@@ -21,6 +22,16 @@ async function unchanged(url: URL, key: string, validators: CatalogPageValidator
 		if (response.status !== 304) { await response.body?.cancel(); return false; }
 	}
 	return true;
+}
+
+/** Latest aliases the picker leaves out: GPT Pro Latest stands for a premium tier, not a line people pick by name. */
+const hiddenLatestAliases = new Set(["openai/gpt-pro-latest"]);
+
+/** openai/gpt-sol-latest reads "GPT Sol Latest"; each word takes its casing from the model's name (DeepSeek, not Deepseek). */
+export function latestName(alias: string, modelName = "") {
+	const named = new Map(modelName.split(/\s+/).map(word => [word.toLowerCase(), word] as const));
+	const words = alias.slice(alias.indexOf("/") + 1).replace(/-latest$/, "").split("-").map(word => named.get(word) ?? (/^gpt$/i.test(word) ? "GPT" : word.charAt(0).toUpperCase() + word.slice(1)));
+	return `${words.join(" ")} Latest`;
 }
 
 export async function apiModelCatalog(account: Account, key: string, previous?: CatalogPageValidator[], fetcher: typeof fetch = fetch): Promise<ApiModelCatalog> {
@@ -63,7 +74,13 @@ export async function apiModelCatalog(account: Account, key: string, previous?: 
 			const releaseDate = record(model.lifecycle)?.released_at;
 			const options = native ? phaseoModelOptions(model) : [];
 			const facts = native ? phaseoModelFacts(model) : undefined;
-			models.set(model.id, { id: model.id, name: typeof model.name === "string" && model.name.trim() ? model.name : model.id, ...(typeof model.description === "string" ? { description: model.description } : {}), ...(facts ? { facts } : {}),...(typeof organisationId === "string" && organisationId.trim() ? { organisationId } : {}), ...(typeof organisationName === "string" ? { organisationName } : {}), ...(typeof releaseDate === "string" ? { releaseDate } : {}), ...(options.length ? { options } : {}) });
+			const option: ModelOption = { id: model.id, name: typeof model.name === "string" && model.name.trim() ? spellModelName(model.name) : model.id, ...(typeof model.description === "string" ? { description: model.description } : {}), ...(facts ? { facts } : {}),...(typeof organisationId === "string" && organisationId.trim() ? { organisationId } : {}), ...(typeof organisationName === "string" ? { organisationName } : {}), ...(typeof releaseDate === "string" ? { releaseDate } : {}), ...(options.length ? { options } : {}) };
+			models.set(model.id, option);
+			// A "...-latest" alias with no version in it (not gpt-5.2-chat-latest) follows the newest model of its line, so it can be chosen and keep up by itself. One per model:
+			// the alias naming its line (gpt-luna-latest over chat-latest).
+			const aliases = (Array.isArray(model.aliases) ? model.aliases : []).filter((alias): alias is string => typeof alias === "string" && /^[a-z0-9-]+\/[a-z-]+-latest$/.test(alias) && !hiddenLatestAliases.has(alias) && !models.has(alias));
+			const alias = aliases.find(value => value.slice(value.indexOf("/") + 1).replace(/-latest$/, "").split("-").every(word => option.id.includes(word))) ?? aliases[0];
+			if (alias) models.set(alias, { ...option, id: alias, name: latestName(alias, option.name), description: `Always the newest of this line; now ${option.name}.`, latestOf: model.id });
 		}
 		if (seenIds.size > 10_000) throw new Error("Model catalog exceeded the limit.");
 		if (native && ((!entries.length && offset < (result.total as number)) || (page > 0 && entries.length > 0 && !added))) throw new Error("Model catalog repeated or omitted a page.");

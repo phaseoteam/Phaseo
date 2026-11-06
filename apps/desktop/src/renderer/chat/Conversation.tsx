@@ -1,12 +1,13 @@
 import { activitySummary } from "../lib/activitySummary";
 import { createContext, memo, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowDown, Plane, Bot, Brain, Check, ChevronRight, Circle, CircleDot, CornerDownRight, CircleSlash, Copy, FilePen, FileText, FolderSearch, GitBranch, GitPullRequestArrow, Layers, ListChecks, LoaderCircle, MessagesSquare, PenLine, RotateCcw, Search, Sparkles, SquareTerminal, Wrench, X } from "lucide-react";
+import { ArrowDown, Plane, Brain, Check, ChevronRight, Circle, CircleDot, CircleSlash, Copy, FilePen, FileText, GitBranch, GitPullRequestArrow, Layers, ListChecks, LoaderCircle, PenLine, Radio, RotateCcw, Search, SquareTerminal, Wrench, X, Globe, SlidersHorizontal, AppWindow, MessagesSquare, Bot, Blocks, CornerDownRight, Compass, PanelTop, ScanEye } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { MessageNavigationRail, type RailTurn } from "./MessageNavigationRail";
-import type { AgentActivity, Message, Task } from "../../shared/workspace";
+import type { AgentActivity, Message, Task, TurnSettings } from "../../shared/workspace";
 import { useConversationPage } from "../lib/useConversationPage";
 import type { ConversationPage } from "../../shared/conversationPage";
-import { conversationTurns, firstUnread, turnDuration, userBursts, type Burst, type TurnEntry } from "../lib/conversationTurns";
+import { conversationTurns, firstUnread, settingsChanges, turnDuration, userBursts, type Burst, type TurnEntry } from "../lib/conversationTurns";
+import { effortName } from "../../shared/turnSettings";
 import { elapsedLabel, useNow } from "../lib/elapsed";
 import { contextShare, turnUsage } from "../lib/turnUsage";
 import { formatRoundedCount } from "@phaseo/app-kit/format";
@@ -18,7 +19,7 @@ import { HtmlRenderFrame } from "../components/HtmlRenderFrame";
 import { ModelLogo } from "../components/ModelLogo";
 import { useTextCopy } from "../components/useTextCopy";
 import { mentionPlainText } from "../lib/mentions";
-import { harnessNames, knownModel, modelLabel } from "./ModelPicker";
+import { harnessNames, knownModel, modelLabel, modelName } from "./ModelPicker";
 import { ModelInfoCard } from "./ModelInfoCard";
 import { AgentResult } from "./AgentThreads";
 import { ProposedPlan } from "./ProposedPlan";
@@ -35,27 +36,26 @@ import { openTurnDiff } from "../panels/events";
 import { toolCallEdits } from "./toolCallDiff";
 import { useWorkspacePreferences } from "../lib/workspacePreferences";
 import { revealStreamingText } from "../lib/responseStreaming";
+import { presentTool, summarizeTools, thoughtLine, toolInput, toolName, type ToolAction } from "./toolPresentation";
+import { IconSwap } from "../components/IconSwap";
 
 const planOutcomes = { implemented: "Implemented", revised: "Revision requested", declined: "Not implemented" } as const;
 
-const toolLabels: Record<string, string> = { run_command: "Ran", start_background_command: "Started", read_background_output: "Read output", stop_background_command: "Stopped", list_background_commands: "Listed commands", read_file: "Read", view_image: "Viewed", edit_file: "Edited", fileChange: "Edited", write_file: "Wrote", delete_file: "Deleted", list_files: "Listed", search_files: "Searched", find_files: "Found files", propose_plan: "Proposed plan", load_tools: "Loaded tools", load_skill: "Loaded skill", ask_user: "Asked" };
-function toolIcon(title: string) {
-	if (/command|terminal|bash|shell|run/i.test(title)) return SquareTerminal;
-	if (/write|edit|patch|apply/i.test(title)) return FilePen;
-	if (/read|open|view/i.test(title)) return FileText;
-	if (/search|grep|find|glob/i.test(title)) return Search;
-	if (/list|browse|ls/i.test(title)) return FolderSearch;
-	if (/skill/i.test(title)) return Sparkles;
-	return Wrench;
+const toolLabels: Record<string, string> = { run_command: "Ran", start_background_command: "Started", read_background_output: "Read output", stop_background_command: "Stopped", list_background_commands: "Listed commands", read_file: "Read", view_image: "Viewed", edit_file: "Edited", write_file: "Wrote", delete_file: "Deleted", list_files: "Listed", search_files: "Searched", find_files: "Found files", propose_plan: "Proposed plan", load_tools: "Loaded tools", load_skill: "Loaded skill", ask_user: "Asked", fileChange: "Edited" };
+const actionIcons: Record<ToolAction, typeof Wrench> = { command: SquareTerminal, read: FileText, edit: FilePen, search: Search, web: Globe, browser: Compass, page: PanelTop, preview: ScanEye, "app-change": SlidersHorizontal, "app-read": AppWindow, thread: MessagesSquare, tools: Blocks, agent: Bot, other: Wrench };
+/** A row's label: what the call did in plain words, or the Phaseo harness's own verb for its tools. */
+function toolRow(activity: AgentActivity) {
+	const presentation = presentTool(activity), name = toolName(activity.title);
+	return { ...presentation, label: presentation.action === "other" && toolLabels[name] ? toolLabels[name] : presentation.label };
 }
 
 function ActionButton({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: ReactNode }) {
-	return <button type="button" aria-label={label} title={label} disabled={disabled} onClick={onClick} className="grid size-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40 [&_svg]:size-3.5">{children}</button>;
+	return <button type="button" aria-label={label} title={label} disabled={disabled} onClick={onClick} className="hover-wiggle press-squish grid size-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40 [&_svg]:size-3.5">{children}</button>;
 }
 
 function CopyButton({ text }: { text: string }) {
 	const { status, copying, copy } = useTextCopy(text);
-	return <ActionButton label={status === "copied" ? "Copied" : "Copy"} disabled={copying || !text} onClick={() => void copy()}>{status === "copied" ? <Check /> : <Copy />}</ActionButton>;
+	return <ActionButton label={status === "copied" ? "Copied" : "Copy"} disabled={copying || !text} onClick={() => void copy()}><IconSwap show={status === "copied" ? "check" : "copy"}>{{ copy: <Copy />, check: <Check key={status} className={status === "copied" ? "icon-draw" : undefined} /> }}</IconSwap></ActionButton>;
 }
 
 function UserMessage({ message, taskId, projectId, onAttachment, onBranch, onRewind, canBranch, burst, compact }: { message: Message; taskId: string; projectId?: string; onAttachment: (id: string) => void; onBranch: (id: string) => void; onRewind?: (message: Message) => void; canBranch: boolean; burst?: Burst; compact?: boolean }) {
@@ -86,7 +86,7 @@ function WatchNotice({ message }: { message: Message }) {
 	const [open, setOpen] = useState(false), notice = message.notice!;
 	return <div data-conversation-id={`message:${message.id}`} data-notice={notice.kind} className="text-[12.5px]">
 		<button type="button" onClick={() => setOpen(value => !value)} aria-expanded={open} className="group/notice flex w-full min-w-0 items-center gap-2 rounded-md py-1 text-left text-muted-foreground hover:text-foreground">
-			{notice.kind === "issue" ? <CircleDot aria-hidden className={cn("size-3.5 shrink-0", noticeTones[notice.outcome])} /> : notice.kind === "outside-agent" ? <Bot aria-hidden className="size-3.5 shrink-0" /> : notice.kind === "side-chat" ? <MessagesSquare aria-hidden className="size-3.5 shrink-0" /> : <GitPullRequestArrow aria-hidden className={cn("size-3.5 shrink-0", noticeTones[notice.outcome])} />}
+			{notice.kind === "issue" ? <CircleDot aria-hidden className={cn("size-3.5 shrink-0", noticeTones[notice.outcome])} /> : notice.kind === "event" ? <Radio aria-hidden className={cn("size-3.5 shrink-0", noticeTones[notice.outcome])} /> : notice.kind === "outside-agent" ? <Bot aria-hidden className="size-3.5 shrink-0" /> : notice.kind === "side-chat" ? <MessagesSquare aria-hidden className="size-3.5 shrink-0" /> : <GitPullRequestArrow aria-hidden className={cn("size-3.5 shrink-0", noticeTones[notice.outcome])} />}
 			<span className="min-w-0 truncate font-medium text-foreground/85">{notice.kind === "pull-request" ? `Pull request ${notice.summary}` : notice.summary}</span>
 			<time dateTime={message.createdAt} title={fullMessageTime(message.createdAt)} className="shrink-0 text-[11px]">{messageTime(message.createdAt)}</time>
 			<ChevronRight aria-hidden className={cn("size-3.5 shrink-0 opacity-0 transition group-hover/notice:opacity-100", open && "rotate-90 opacity-100")} />
@@ -98,11 +98,14 @@ function WatchNotice({ message }: { message: Message }) {
 function PlanSteps({ activity }: { activity: AgentActivity }) {
 	const steps = activity.steps ?? [];
 	const done = steps.filter(step => step.status === "completed").length;
+	// Only a step that changes while it is on screen moves: its tick draws, or its dot pops in.
+	const [initial] = useState(() => steps.map(step => step.status));
+	const changed = (index: number, status: string) => initial[index] !== status;
 	return <div className="py-1">
 		<div className="mb-2 flex items-center gap-2 text-xs font-semibold"><ListChecks className="size-3.5 text-muted-foreground" />Plan<span className="font-normal text-muted-foreground">{done} of {steps.length} done</span></div>
 		{activity.explanation && <p className="mb-2 text-xs text-muted-foreground">{activity.explanation}</p>}
 		<ol className="space-y-1">{steps.map((step, index) => <li key={index} className={cn("flex items-start gap-2 text-[13px]", step.status === "completed" && "text-muted-foreground line-through decoration-muted-foreground/40", step.status === "cancelled" && "text-muted-foreground")}>
-			{step.status === "completed" ? <Check className="mt-0.5 size-3.5 shrink-0 text-success" /> : step.status === "in_progress" ? <CircleDot className="mt-0.5 size-3.5 shrink-0 text-primary" /> : step.status === "cancelled" ? <CircleSlash className="mt-0.5 size-3.5 shrink-0" /> : <Circle className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />}
+			<IconSwap show={step.status} className="mt-0.5">{{ pending: <Circle className="size-3.5 text-muted-foreground" />, in_progress: <CircleDot className="size-3.5 text-primary" />, completed: <Check className={cn("size-3.5 text-success", changed(index, step.status) && "icon-draw")} />, cancelled: <CircleSlash className="size-3.5" /> }}</IconSwap>
 			<span>{step.text}</span></li>)}</ol>
 	</div>;
 }
@@ -118,30 +121,37 @@ function Elapsed({ since, className }: { since?: string; className?: string }) {
 const ProjectDirectoryContext = createContext<string | undefined>(undefined);
 
 /** `openDiff` opens the turn's diff at a file, once the turn has finished in a project that keeps snapshots. */
-function ActivityRow({ activity, live, openDiff }: { activity: AgentActivity; live: boolean; openDiff?: (path: string) => void }) {
+function ActivityRow({ activity, live, openDiff, count = 1 }: { activity: AgentActivity; live: boolean; openDiff?: (path: string) => void; count?: number }) {
 	const [open, setOpen] = useState(false);
+	// A step that appeared during the turn slides in; its spinner morphs into its icon, which shakes if it failed on screen.
+	const [appeared] = useState(() => ({ live: live || activity.status === "running", status: activity.status }));
+	const finishedHere = appeared.status === "running" && activity.status !== "running";
 	const directory = useContext(ProjectDirectoryContext);
 	const edits = useMemo(() => toolCallEdits(activity, directory), [activity, directory]);
 	if (activity.type === "usage") return null;
 	if (activity.type === "plan" && activity.steps?.length) return <PlanSteps activity={activity} />;
 	const reasoning = activity.type === "reasoning";
 	const running = activity.status === "running" || (reasoning && live);
-	const Icon = reasoning ? Brain : activity.type === "compaction" ? Layers : activity.type === "plan" ? ListChecks : toolIcon(activity.title);
-	const label = reasoning ? (running ? "Thinking" : "Thought") : activity.type === "compaction" ? (running ? "Compacting context" : "Compacted context") : toolLabels[activity.title] ?? activity.title.replaceAll("_", " ");
-	const summary = reasoning ? "" : activitySummary(activity.text);
-	const expandable = !!activity.text && (reasoning || activity.text.length > summary.length || activity.text.length > 80);
+	const tool = activity.type === "tool" ? toolRow(activity) : undefined;
+	const Icon = reasoning ? Brain : activity.type === "compaction" ? Layers : activity.type === "plan" ? ListChecks : actionIcons[tool?.action ?? "other"];
+	const label = reasoning ? thoughtLine(activity.text) || (running ? "Thinking" : "Thought") : activity.type === "compaction" ? (running ? "Compacting context" : "Compacted context") : tool?.label ?? activity.title;
+	// Without the call's input (the Phaseo harness reports output only), the output says what it touched.
+	const summary = reasoning || !tool || toolInput(activity) ? "" : activitySummary(activity.text);
+	const expandable = !!activity.text.trim() && (!reasoning || activity.text.trim() !== label);
 	// An edit shows the file it changed and opens the turn's diff there; a recorded patch (Codex) shows as a diff, not JSON.
 	const files = edits?.files ?? [], file = files[0];
-	return <div className="group/edit text-[12.5px]">
+	return <div className={cn("group/edit text-[12.5px]", appeared.live && "step-in")}>
 		<div className="flex min-w-0 items-center">
 			<button type="button" disabled={!expandable} onClick={() => setOpen(value => !value)} aria-expanded={open} className="group/activity flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1 text-left text-muted-foreground hover:text-foreground disabled:hover:text-muted-foreground">
-				{running ? <LoaderCircle className="size-3.5 shrink-0 animate-spin text-primary" /> : <Icon className={cn("size-3.5 shrink-0 text-muted-foreground", activity.status === "failed" && "text-destructive")} />}
-				<span className={cn("shrink-0 font-medium text-foreground/85", running && "animate-pulse")}>{label}</span>
+				<IconSwap show={running ? "running" : "done"}>{{ running: <LoaderCircle className="size-3.5 animate-spin text-primary" />, done: <Icon className={cn("size-3.5 text-muted-foreground", activity.status === "failed" && "text-destructive", finishedHere && activity.status === "failed" && "icon-shake")} /> }}</IconSwap>
+				{/* The label keeps most of the row beside a summary, but still truncates, so a long one never leaves the column. */}
+				<span className={cn("min-w-0 truncate text-foreground/85", (summary || file) && "max-w-[75%] shrink-0", running && "animate-pulse")}>{label}</span>
+				{count > 1 && <span className="shrink-0 tabular-nums text-muted-foreground">×{count}</span>}
 				{file && !summary.includes(file) ? <span className="min-w-0 truncate font-mono text-[11.5px] text-muted-foreground">{files.length > 1 ? `${file} and ${files.length - 1} more` : file}</span>
 					: summary && <span className="min-w-0 truncate font-mono text-[11.5px] text-muted-foreground">{summary}</span>}
 				{running && !reasoning && <Elapsed since={activity.startedAt} className="text-[11.5px]" />}
 				{activity.status === "failed" && <X className="size-3.5 shrink-0 text-destructive" />}
-				{expandable && <ChevronRight className={cn("size-3.5 shrink-0 opacity-0 transition group-hover/activity:opacity-100", open && "rotate-90 opacity-100")} />}
+				{expandable && <ChevronRight className={cn("chevron-spring size-3.5 shrink-0 opacity-0 group-hover/activity:opacity-100", open && "rotate-90 opacity-100")} />}
 			</button>
 			{file && openDiff && <button type="button" onClick={() => openDiff(file)} title={`Open ${file} in the turn's diff`} className="shrink-0 rounded-md px-1.5 py-0.5 text-xs font-medium text-muted-foreground opacity-0 group-hover/edit:opacity-100 focus-visible:opacity-100 hover:bg-muted hover:text-foreground">Open diff</button>}
 		</div>
@@ -154,24 +164,32 @@ function WorkLog({ entries, user, live, complete, task }: { entries: TurnEntry[]
 	const [opened, setOpen] = useState(live);
 	const openDiff = user?.checkpoint?.after && !live && task.mode !== "chat" && task.projectId ? (path: string) => openTurnDiff({ taskId: task.id, messageId: user.id, path }) : undefined;
 	useEffect(() => { setOpen(live); }, [live]);
-	const steps = entries.filter(entry => entry.kind === "activity" ? entry.value.type !== "usage" : true);
+	// A reasoning block the model kept to itself (Claude can return thinking with no text) has nothing to show once it ends.
+	const steps = entries.filter((entry, index) => entry.kind === "activity" ? entry.value.type !== "usage" && !(entry.value.type === "reasoning" && !entry.value.text.trim() && !(live && index === entries.length - 1)) : true);
 	// Find in chat opens the log around its match.
 	const found = useFindTarget(steps.map(entry => entry.value.id)), open = opened || found;
 	if (!steps.length) return null;
-	const tools = entries.filter(entry => entry.kind === "activity" && entry.value.type === "tool").length;
+	const tools = entries.flatMap(entry => entry.kind === "activity" && entry.value.type === "tool" ? [toolRow(entry.value)] : []);
+	// The same finished call in a row ("Looked up app commands" three times) is one row with a count.
+	const rows = steps.reduce<{ entry: TurnEntry; count: number }[]>((list, entry) => {
+		const previous = list.at(-1)?.entry;
+		const repeat = previous?.kind === "activity" && entry.kind === "activity" && previous.value.type === "tool" && entry.value.type === "tool" && previous.value.status !== "running" && previous.value.status === entry.value.status && toolRow(previous.value).label === toolRow(entry.value).label;
+		if (repeat) list.at(-1)!.count++; else list.push({ entry, count: 1 });
+		return list;
+	}, []);
 	const plan = entries.find(entry => entry.kind === "activity" && entry.value.type === "plan" && entry.value.steps?.length);
 	const onlyReasoning = steps.every(entry => entry.kind === "activity" && entry.value.type === "reasoning");
 	const title = live || !complete ? "Working" : onlyReasoning ? turnDuration(user).replace("Worked", "Thought") : turnDuration(user);
 	return <div className="flex flex-col gap-1">
 		<div>
-			<button type="button" onClick={() => setOpen(value => !value)} aria-expanded={open} className="flex items-center gap-1.5 py-1 text-[13px] text-muted-foreground hover:text-foreground">
-				{live ? <LoaderCircle className="size-3.5 animate-spin text-primary" /> : <ChevronRight className={cn("size-3.5 transition-transform", open && "rotate-90")} />}
-				<span className={cn("font-medium", live && "animate-pulse")}>{title}</span>
+			<button type="button" onClick={() => setOpen(value => !value)} aria-expanded={open} className="flex max-w-full min-w-0 items-center gap-1.5 py-1 text-left text-[13px] text-muted-foreground hover:text-foreground">
+				<IconSwap show={live ? "live" : "done"}>{{ live: <LoaderCircle className="size-3.5 animate-spin text-primary" />, done: <ChevronRight className={cn("chevron-spring size-3.5", open && "rotate-90")} /> }}</IconSwap>
+				<span className={cn("shrink-0 font-medium", live && "animate-pulse")}>{title}</span>
 				{live && <Elapsed since={user?.startedAt} />}
-				{tools > 0 && <span>· {tools} {tools === 1 ? "step" : "steps"}</span>}
+				{tools.length > 0 && <span className="min-w-0 truncate">· {summarizeTools(tools)}</span>}
 			</button>
-			{open && <div className="mt-1 ml-[7px] flex flex-col gap-0.5 border-l border-border pl-1.5">{steps.map(entry => entry.kind === "activity"
-				? <ActivityRow key={entry.value.id} activity={entry.value} live={live} openDiff={openDiff} />
+			{open && <div className="mt-1 ml-[7px] flex flex-col gap-0.5 border-l border-border pl-1.5">{rows.map(({ entry, count }) => entry.kind === "activity"
+				? <ActivityRow key={entry.value.id} activity={entry.value} count={count} live={live && entry === steps.at(-1)} openDiff={openDiff} />
 				: <div key={entry.value.id} data-conversation-id={`message:${entry.value.id}`} data-selectable data-quote className="px-2 py-1 text-[13px] text-foreground/85"><MessageContent text={entry.value.text} projectId={task.projectId} repairLocalLinks /></div>)}</div>}
 		</div>
 		{!open && plan?.kind === "activity" && <PlanSteps activity={plan.value} />}
@@ -188,16 +206,25 @@ function AssistantHeader({ task }: { task: Task }) {
 }
 
 const noActivities: AgentActivity[] = [];
+/** "Switched to GPT-6 · High", or "Reasoning changed to Low" when only the level changed. */
+function settingsChangeLabel({ settings, modelChanged }: { settings: TurnSettings; modelChanged: boolean }) {
+	const effort = settings.effort ? effortName(settings.effort) : undefined;
+	if (modelChanged) return `Switched to ${modelName(settings)}${effort ? ` · ${effort}` : ""}`;
+	return effort ? `Reasoning changed to ${effort}` : "Reasoning back to the model's default";
+}
+function SettingsChange({ label }: { label: string }) {
+	return <p data-settings-change className="flex items-center gap-3 text-[11.5px] text-muted-foreground"><span aria-hidden className="h-px flex-1 bg-border" />{label}<span aria-hidden className="h-px flex-1 bg-border" /></p>;
+}
 function UnreadDivider() {
 	return <div role="separator" aria-label="New since your last visit" className="flex items-center gap-3 text-[11px] font-medium text-primary"><span aria-hidden className="h-px flex-1 bg-primary/40" />New since your last visit<span aria-hidden className="h-px flex-1 bg-primary/40" /></div>;
 }
-type TurnProps = { user?: Message; entries: TurnEntry[]; usageActivities: AgentActivity[]; live: boolean; complete: boolean; task: Task; onAttachment: (id: string) => void; onBranch: (id: string) => void; onRewind?: (message: Message) => void; /** Offers Regenerate on this turn's answer (the last turn of a Chat-mode chat). */ onRegenerate?: (message: Message) => void; compact?: boolean; burst?: Burst; /** Where this turn's "New since your last visit" line goes, if it has it. */ unread?: "start" | "answer" };
+type TurnProps = { user?: Message; entries: TurnEntry[]; usageActivities: AgentActivity[]; live: boolean; complete: boolean; task: Task; onAttachment: (id: string) => void; onBranch: (id: string) => void; onRewind?: (message: Message) => void; /** Offers Regenerate on this turn's answer (the last turn of a Chat-mode chat). */ onRegenerate?: (message: Message) => void; compact?: boolean; burst?: Burst; /** Where this turn's "New since your last visit" line goes, if it has it. */ unread?: "start" | "answer"; /** What changed when this turn ran with a different model or reasoning level. */ switched?: string };
 const sameItems = <T,>(a: readonly T[], b: readonly T[], value: (item: T) => unknown = item => item) => a.length === b.length && a.every((item, index) => value(item) === value(b[index]));
 /**
  * A turn re-renders only when its own entries or the chat fields it shows change, so loading a page of older turns
  * renders those turns alone. The callbacks are stable (see Conversation).
  */
-const Turn = memo(function Turn({ user, entries, usageActivities, live, complete, task, onAttachment, onBranch, onRewind, onRegenerate, compact, burst, unread }: TurnProps) {
+const Turn = memo(function Turn({ user, entries, usageActivities, live, complete, task, onAttachment, onBranch, onRewind, onRegenerate, compact, burst, unread, switched }: TurnProps) {
 	// Text after the last step is the answer, even while it is still streaming.
 	const latest = entries.findLast(entry => !(entry.kind === "activity" && entry.value.type === "usage"));
 	const isAnswer = (entry?: TurnEntry) => entry?.kind === "message" && entry.value.role === "assistant" && entry.value.delivery !== "subagent";
@@ -208,8 +235,10 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 	// Proposed plans stand on their own in the turn rather than inside the work log.
 	const plans = entries.flatMap(entry => entry.kind === "activity" && entry.value.proposed ? [entry.value] : []);
 	// Pages an agent showed with html_render stand above the reply, like plans.
-	const pages = entries.flatMap(entry => entry.kind === "activity" && entry.value.htmlRender ? [{ id: entry.value.id, html: entry.value.text, render: entry.value.htmlRender }] : []);
-	const work = entries.filter(entry => entry !== final && !(entry.kind === "message" && entry.value.delivery === "subagent") && !(entry.kind === "activity" && (entry.value.proposed || entry.value.htmlRender)));
+	const pages = entries.flatMap(entry => entry.kind === "activity" && entry.value.htmlRender ? [{ id: entry.value.id, html: entry.value.text, render: entry.value.htmlRender, mcpApp: entry.value.mcpApp }] : []);
+	// An MCP App takes the place of the tool call it came from: its row leaves the steps, and the app follows them.
+	const apps = pages.filter(page => page.mcpApp), appSources = new Set(apps.map(page => page.mcpApp?.source).filter(Boolean));
+	const work = entries.filter(entry => entry !== final && !(entry.kind === "message" && entry.value.delivery === "subagent") && !(entry.kind === "activity" && (entry.value.proposed || entry.value.htmlRender || appSources.has(entry.value.id))));
 	const delegated = entries.filter(entry => entry.kind === "message" && entry.value.delivery === "subagent");
 	// The timeline omits usage reports, so read them from the turn's activities.
 	const usage = turnUsage(usageActivities), context = contextShare(usageActivities);
@@ -217,16 +246,18 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 	const hasAssistant = work.length > 0 || plans.length > 0 || !!final || live;
 	return <div data-turn-id={user && user.delivery !== "subagent" && !user.notice ? user.id : undefined} className={cn("flex flex-col gap-4", burst?.next && "-mb-6")}>
 		{unread === "start" && <UnreadDivider />}
+		{switched && <SettingsChange label={switched} />}
 		{user && (user.notice ? <WatchNotice message={user} /> : user.delivery === "subagent" ? <AgentResult message={user} projectId={task.projectId} /> : <UserMessage message={user} taskId={task.id} projectId={task.projectId} onAttachment={onAttachment} onBranch={onBranch} onRewind={onRewind} canBranch={canBranch} burst={burst} compact={compact} />)}
 		{unread === "answer" && hasAssistant && <UnreadDivider />}
 		{hasAssistant && <div data-conversation-id={`turn:${user?.id ?? entries[0]?.value.id}`} className="group/turn flex flex-col gap-3">
 			{/* Messages are headings, so a screen reader's heading keys move between them. */}
 			{compact ? <h3 className="sr-only">{task.model === "default" ? harnessNames[task.harness] : modelLabel(task.model)} replied</h3> : <AssistantHeader task={task} />}
 			<WorkLog entries={work} user={user} live={live} complete={complete} task={task} />
+			{apps.map(page => <HtmlRenderFrame key={page.id} html={page.html} render={page.render} mcpApp={page.mcpApp} place={{ taskId: task.id, activityId: page.id }} />)}
 			{plans.map(plan => <ProposedPlan key={plan.id} markdown={plan.text} projectId={task.projectId} status={plan.proposed?.outcome ? planOutcomes[plan.proposed.outcome] : undefined}>
 				{plan.proposed?.feedback && <p data-selectable className="mt-2 border-l-2 border-border pl-3 text-[13px] whitespace-pre-wrap text-muted-foreground">{plan.proposed.feedback}</p>}
 			</ProposedPlan>)}
-			{pages.map(page => <HtmlRenderFrame key={page.id} html={page.html} render={page.render} />)}
+			{pages.filter(page => !page.mcpApp).map(page => <HtmlRenderFrame key={page.id} html={page.html} render={page.render} />)}
 			{live && !finalText && !work.some(entry => entry.kind === "message" || entry.value.type !== "usage") && <div className="flex items-center gap-1.5 py-1 text-[13px] text-muted-foreground"><LoaderCircle className="size-3.5 animate-spin text-primary" /><span className="animate-pulse font-medium">Working</span><Elapsed since={user?.startedAt} /></div>}
 			{delegated.map(entry => <details key={entry.value.id} className="rounded-xl border border-border px-3 py-2 text-[13px]"><summary className="cursor-pointer font-medium text-muted-foreground">Agent result</summary><MessageContent text={entry.value.text} projectId={task.projectId} /></details>)}
 			{final?.kind === "message" && finalText && <div data-selectable data-quote data-conversation-id={`message:${final.value.id}`} className="text-[14px] leading-relaxed"><MessageContent text={finalText} projectId={task.projectId} repairLocalLinks /></div>}
@@ -244,7 +275,7 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 		{user && !live && complete && task.mode !== "chat" && task.projectId && user.checkpoint?.after && <TurnChanges taskId={task.id} projectId={task.projectId} message={user} />}
 	</div>;
 }, (a, b) => a.user === b.user && a.live === b.live && a.complete === b.complete && a.compact === b.compact
-	&& a.unread === b.unread && a.burst?.previous === b.burst?.previous && a.burst?.next === b.burst?.next && a.burst?.continuesSteer === b.burst?.continuesSteer && a.onRewind === b.onRewind && a.onRegenerate === b.onRegenerate
+	&& a.unread === b.unread && a.switched === b.switched && a.burst?.previous === b.burst?.previous && a.burst?.next === b.burst?.next && a.burst?.continuesSteer === b.burst?.continuesSteer && a.onRewind === b.onRewind && a.onRegenerate === b.onRegenerate
 	&& sameItems(a.entries, b.entries, entry => entry.value) && sameItems(a.usageActivities, b.usageActivities)
 	&& a.task.id === b.task.id && a.task.status === b.task.status && a.task.archived === b.task.archived && a.task.projectId === b.task.projectId && a.task.model === b.task.model && a.task.harness === b.task.harness && a.task.mode === b.task.mode);
 
@@ -270,6 +301,7 @@ export function Conversation({ task, onAttachment, onBranch, onRewind, onRegener
 	const activityEntries = useMemo(() => messages.page.activities ?? [], [messages.page.activities]);
 	const turns = useMemo(() => conversationTurns(messages.page.entries as Message[], activityEntries), [messages.page.entries, activityEntries]);
 	const bursts = useMemo(() => userBursts(turns), [turns]);
+	const switches = useMemo(() => new Map([...settingsChanges(turns)].map(([id, change]) => [id, settingsChangeLabel(change)])), [turns]);
 	const directory = useOptionalWorkspace()?.overview.projects.find(project => project.id === task.projectId)?.directory;
 	const unread = useMemo(() => firstUnread(turns, unreadSince), [turns, unreadSince]);
 	const earlierRow = useRef<HTMLButtonElement>(null), newerRow = useRef<HTMLButtonElement>(null), lastScroll = useRef(0);
@@ -371,7 +403,7 @@ export function Conversation({ task, onAttachment, onBranch, onRewind, onRegener
 				{messages.page.earlier > 0 && <button ref={earlierRow} type="button" disabled={messages.loading} onClick={messages.older} className="flex items-center gap-1.5 self-center px-3 py-1 text-xs text-muted-foreground hover:text-foreground">{messages.loading ? <><LoaderCircle className="size-3.5 animate-spin" />Loading earlier messages…</> : `Load ${messages.page.earlier} earlier messages`}</button>}
 				{messages.error && <div role="alert" className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">{messages.error}<button type="button" className="ml-auto font-semibold underline" onClick={() => messages.retry()}>Retry</button></div>}
 				{messages.loading && !messages.page.entries.length && <p className="text-center text-xs text-muted-foreground">Loading messages…</p>}
-				{turns.map((turn, index) => <Turn key={turn.id} user={turn.user} entries={turn.entries} usageActivities={(turn.user && usageByTurn.get(turn.user.id)) || noActivities} task={view} onAttachment={attach} onBranch={branchFrom} compact={compact} burst={bursts[index]} unread={unread?.turnId === turn.id ? unread.at : undefined}
+				{turns.map((turn, index) => <Turn key={turn.id} user={turn.user} entries={turn.entries} usageActivities={(turn.user && usageByTurn.get(turn.user.id)) || noActivities} task={view} onAttachment={attach} onBranch={branchFrom} compact={compact} burst={bursts[index]} unread={unread?.turnId === turn.id ? unread.at : undefined} switched={switches.get(turn.id)}
 					onRewind={onRewind ? rewindTo : undefined} onRegenerate={onRegenerate && index === turns.length - 1 && !messages.page.later ? regenerate : undefined}
 					live={running && (turn.user?.id === activeTurn || (!turn.user && index === turns.length - 1 && !messages.page.later))}
 					complete={Boolean(turn.user?.completedAt) || index < turns.length - 1 || (!messages.page.later && !running)} />)}

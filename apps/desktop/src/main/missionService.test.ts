@@ -6,7 +6,7 @@ import { WorkspaceRuntime } from "./workspaceRuntime";
 import { MissionService } from "./missionService";
 import type { AgentAdapter } from "./agentAdapter";
 import { AgentInputRejectedError } from "./agentAdapter";
-import { nextMissionRun, validateMissionCommand } from "../shared/missions";
+import { nextMissionRun, scheduleLabel, validateMissionCommand, validateSchedule } from "../shared/missions";
 
 function fixture(run: AgentAdapter["run"] = async () => {}) {
 	const directory = mkdtempSync(path.join(tmpdir(), "phaseo-missions-")); const execute = vi.fn(run); const runtime = new WorkspaceRuntime(directory, () => ({ run: execute, cancel: async () => {} })); let now = Date.now(); const service = new MissionService(runtime, () => now); runtime.onChange = state => service.observe(state);
@@ -86,7 +86,39 @@ describe("desktop missions", () => {
 	});
 	it("validates intervals and computes the next selected local weekday", () => {
 		expect(() => validateMissionCommand({ type: "save", title: "Name", prompt: "Instruction", templateTaskId: "task", schedule: { type: "interval", minutes: 0 } })).toThrow();
-		const after = new Date(2026, 9, 5, 10, 0, 0); const next = new Date(nextMissionRun({ type: "daily", time: "09:30", weekdays: [1] }, after.getTime())); expect(next.getDay()).toBe(1); expect(next.getHours()).toBe(9); expect(next.getMinutes()).toBe(30); expect(next.getDate()).toBe(12);
+		const after = new Date(2026, 9, 5, 10, 0, 0); const next = new Date(nextMissionRun({ type: "daily", time: "09:30", weekdays: [1] }, after.getTime())!); expect(next.getDay()).toBe(1); expect(next.getHours()).toBe(9); expect(next.getMinutes()).toBe(30); expect(next.getDate()).toBe(12);
+	});
+	it("runs a one-time task once at its moment and then switches it off", async () => {
+		const value = fixture(); try {
+			const at = new Date(value.now() + 3 * 60000).toISOString();
+			expect(() => value.service.command({ type: "save", id: value.mission.id, title: "Once", prompt: "Once instruction", templateTaskId: value.template.id, schedule: { type: "once", at: new Date(value.now() - 60000).toISOString() } })).toThrow("Choose a time in the future.");
+			value.service.command({ type: "save", id: value.mission.id, title: "Once", prompt: "Once instruction", templateTaskId: value.template.id, schedule: { type: "once", at } });
+			value.service.command({ type: "enable", id: value.mission.id, enabled: true });
+			expect(value.runtime.store.missions.get(value.mission.id).nextRunAt).toBe(at);
+			value.advance(2 * 60000); value.service.tick(); expect(value.execute).not.toHaveBeenCalled();
+			value.advance(60000); value.service.tick();
+			await vi.waitFor(() => expect(value.runtime.store.missions.get(value.mission.id).lastStatus).toBe("completed"));
+			const done = value.runtime.store.missions.get(value.mission.id);
+			expect(done).toMatchObject({ enabled: false, runCount: 1 }); expect(done.nextRunAt).toBeUndefined();
+			value.advance(86400000); value.service.tick(); expect(value.execute).toHaveBeenCalledOnce();
+			expect(() => value.service.command({ type: "enable", id: value.mission.id, enabled: true })).toThrow("time has passed");
+		} finally { await value.close(); }
+	});
+	it("switches off a one-time task whose moment passed while it could not run, and says why", async () => {
+		const value = fixture(); try {
+			value.service.command({ type: "save", id: value.mission.id, title: "Once", prompt: "Once instruction", templateTaskId: value.template.id, schedule: { type: "once", at: new Date(value.now() + 60000).toISOString() } });
+			value.service.command({ type: "enable", id: value.mission.id, enabled: true });
+			value.advance(10 * 60000); value.service.tick();
+			expect(value.execute).not.toHaveBeenCalled();
+			expect(value.runtime.store.missions.get(value.mission.id)).toMatchObject({ enabled: false, error: expect.stringContaining("skipped") });
+		} finally { await value.close(); }
+	});
+	it("validates a one-time schedule and labels it in local time", () => {
+		expect(() => validateSchedule({ type: "once", at: "soon" })).toThrow();
+		const at = new Date(2026, 10, 6, 9, 5);
+		expect(validateSchedule({ type: "once", at: at.toISOString() })).toEqual({ type: "once", at: at.toISOString() });
+		expect(scheduleLabel({ type: "once", at: at.toISOString() })).toBe("Once on Fri 6 Nov 2026 at 09:05");
+		expect(nextMissionRun({ type: "once", at: at.toISOString() }, at.getTime())).toBeUndefined();
 	});
 	it("blocks new runs while an older mission task has been resumed", async () => {
 		const value = fixture(); try {

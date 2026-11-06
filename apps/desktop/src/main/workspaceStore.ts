@@ -1,5 +1,5 @@
 import { updateNativeActionText } from "../shared/nativeActions";
-import { messageRange, TaskEntries, taskEntriesSchema, type EntryOffsets } from "./taskEntries";
+import { messageRange, TaskEntries, taskEntriesSchema, type EntryKind, type EntryOffsets } from "./taskEntries";
 import { existsSync, renameSync } from "node:fs";
 import { BrowserDownloadStore } from "./browserDownloadStore";
 import { settleBlocker, snoozeBlocker } from "../shared/threadLifecycle";
@@ -12,7 +12,7 @@ import type { Account, AgentConnection, Attachment, MessageNotice, Project, Task
 import { usageAmounts, usageTokens, usageTotalsOf } from "../shared/usageAmounts";
 import type { ThreadRoots, TranscriptFile, TranscriptFolder, TranscriptUsage } from "./usageTranscripts";
 import { harnessMerge, staleHour, TranscriptLedger } from "./usageLedgerWrites";
-import { estimateNanos, localDay, noCost, noTokens, tokenTotal, usageIdTime, usageKind, usagePeriods, type HarnessUsage, type TokenPrices, type UsageCost, type UsagePeriod, type UsageReport, type UsageTokens } from "../shared/usageLedger";
+import { estimateNanos, localDay, noCost, noTokens, tokenTotal, usageIdTime, usageKind, usagePeriods, type HarnessUsage, type TokenPrices, type UsageCost, type UsageFilter, type UsagePeriod, type UsageReport, type UsageTokens } from "../shared/usageLedger";
 import type { AutopilotDecision } from "../shared/inbox";
 import { publicMcpConnection, type McpConnection } from "../shared/mcp";
 import { defaultPreferences, validatePreferences } from "../shared/preferences";
@@ -44,8 +44,9 @@ const SLOW_STORE_MS = 50;
  */
 const partialEntries = Symbol("partial entries");
 /** On a chat from getTask: whether its conversation is still unread, so saving it writes only the header. */
-const unreadEntries = Symbol("unread entries");
-type PartialTask = Task & { [partialEntries]?: EntryOffsets; [unreadEntries]?: () => boolean };
+const readEntries = Symbol("read entries");
+/** A chat from getTask lists the kinds of entries read so far; saveTask writes only those. */
+type PartialTask = Task & { [partialEntries]?: EntryOffsets; [readEntries]?: () => EntryKind[] };
 
 /** The layout this build writes. A database from another layout is set aside, not converted: there is nothing to keep. */
 const schemaVersion = 4;
@@ -385,12 +386,14 @@ export class WorkspaceStore {
 	 */
 	getTask(id: string): Task {
 		const { task, key } = this.getHead(id);
-		let loaded: { messages: Task["messages"]; activities: NonNullable<Task["activities"]> } | undefined;
-		const load = () => loaded ??= this.entries.load(key, task.revision ?? 0);
-		for (const name of ["messages", "activities"] as const) Object.defineProperty(task, name, { enumerable: true, configurable: true, get: () => load()[name], set: (value: never) => { load()[name] = value; } });
-		Object.defineProperty(task, unreadEntries, { value: () => loaded === undefined });
+		// Each kind loads on its own first use: a turn reads the messages, and a long chat's activities are most of it.
+		const loaded: Partial<Record<EntryKind, unknown[]>> = {}, revision = task.revision ?? 0;
+		for (const name of ["messages", "activities"] as const) Object.defineProperty(task, name, { enumerable: true, configurable: true, get: () => loaded[name] ??= this.entries.load(key, revision, name), set: (value: unknown[]) => { loaded[name] = value; } });
+		Object.defineProperty(task, readEntries, { value: () => (["messages", "activities"] as const).filter(name => loaded[name] !== undefined) });
 		return task;
 	}
+	/** The timeline position after everything in a chat, read from the stored rows rather than by loading them. */
+	nextTimelineOrder(id: string) { return this.entries.nextTimelineOrder(this.getHead(id).key); }
 	/**
 	 * A chat with only its latest turn's messages (from `fromMessageId`) and activities, for streaming. saveTask writes
 	 * such a chat back over that range alone. The whole chat when the message is not found.
@@ -640,16 +643,18 @@ export class WorkspaceStore {
 	 * view (totals, buckets, chats, projects, the pace); `priceOf` then prices each sum Phaseo didn't charge, so no row is
 	 * read on its own.
 	 */
-	usageReport(period: UsagePeriod, priceOf: (model: string) => TokenPrices | undefined, now = new Date()): UsageReport {
+	usageReport(period: UsagePeriod, priceOf: (model: string) => TokenPrices | undefined, now = new Date(), filter: UsageFilter = {}): UsageReport {
 		this.sumStaleQuarters();
 		const days = usagePeriods.find(value => value.id === period)?.days ?? 1;
 		const start = new Date(now); start.setHours(0, 0, 0, 0); start.setDate(start.getDate() - (days - 1));
 		// Quarters are named to the minute; a local midnight is always on one.
 		const from = start.toISOString(), quarter = (at: string) => at.slice(0, 16);
+		// The filter narrows every sum below; the activity counts are about chats, not models, and stay whole.
+		const scope = `${filter.harness ? " AND harness = ?" : ""}${filter.model ? " AND model = ?" : ""}`, scoped = [filter.harness, filter.model].filter((value): value is string => Boolean(value));
 		type Sum = UsageTokens & { model: string; uncharged: number; tokens: number; charged: number | null };
 		const sums = "model, uncharged, SUM(input) AS input, SUM(cached) AS cached, SUM(cache_write) AS cacheWrite, SUM(output) AS output, SUM(reasoning) AS reasoning, SUM(tokens) AS tokens, SUM(cost_nanos) AS charged";
 		const grouped = <Extra extends object = object>(dimensions: string, since = from, where = "", groupBy = dimensions) =>
-			this.statement(`SELECT ${dimensions ? `${dimensions}, ` : ""}${sums} FROM usage_quarters WHERE at >= ? ${where} GROUP BY ${groupBy ? `${groupBy}, ` : ""}model, uncharged`).all(quarter(since)) as (Sum & Extra)[];
+			this.statement(`SELECT ${dimensions ? `${dimensions}, ` : ""}${sums} FROM usage_quarters WHERE at >= ?${scope} ${where} GROUP BY ${groupBy ? `${groupBy}, ` : ""}model, uncharged`).all(quarter(since), ...scoped) as (Sum & Extra)[];
 		const types = noTokens();
 		let cacheSavingsNanos = 0;
 		/** Adds one sum to a cost: Phaseo's charge, or its estimate at catalogue prices, or its tokens as unpriced. */
@@ -675,8 +680,8 @@ export class WorkspaceStore {
 		for (const row of byHarness) add(total, row, true);
 		const models = new Map<string, UsageCost & { harness: string; model: string }>();
 		for (const row of byHarness) { const key = `${row.harness}\0${row.model}`; if (!models.has(key)) models.set(key, { harness: row.harness, model: row.model, ...noCost() }); add(models.get(key)!, row); }
-		const chats = (where = "") => (this.statement(`SELECT COUNT(DISTINCT task_id) AS chats FROM usage_quarters WHERE at >= ? ${where}`).get(quarter(from)) as { chats: number }).chats;
-		const harnessChats = new Map((this.statement("SELECT harness, COUNT(DISTINCT task_id) AS chats FROM usage_quarters WHERE at >= ? GROUP BY harness").all(quarter(from)) as { harness: string; chats: number }[]).map(row => [row.harness, row.chats]));
+		const chats = (where = "") => (this.statement(`SELECT COUNT(DISTINCT task_id) AS chats FROM usage_quarters WHERE at >= ?${scope} ${where}`).get(quarter(from), ...scoped) as { chats: number }).chats;
+		const harnessChats = new Map((this.statement(`SELECT harness, COUNT(DISTINCT task_id) AS chats FROM usage_quarters WHERE at >= ?${scope} GROUP BY harness`).all(quarter(from), ...scoped) as { harness: string; chats: number }[]).map(row => [row.harness, row.chats]));
 		const bucket = period === "today" ? "strftime('%H', at, 'localtime')" : "strftime('%Y-%m-%d', at, 'localtime')";
 		const buckets = new Map<string, Record<string, UsageCost>>();
 		for (const row of grouped<{ bucket: string; harness: string }>(`${bucket} AS bucket, harness`, from, "", "bucket, harness")) {
@@ -687,7 +692,7 @@ export class WorkspaceStore {
 		const autopilot = noCost();
 		for (const row of grouped("", from, "AND autopilot = 1")) add(autopilot, row);
 		const since = (this.statement("SELECT MIN(at) AS since FROM usage_ledger").get() as { since: string | null }).since;
-		const labels = new Map((this.statement("SELECT task_id, MAX(label) AS label FROM usage_quarters WHERE at >= ? AND task_id LIKE 'session:%' AND label IS NOT NULL GROUP BY task_id").all(quarter(from)) as { task_id: string; label: string }[]).map(row => [row.task_id, row.label]));
+		const labels = new Map((this.statement(`SELECT task_id, MAX(label) AS label FROM usage_quarters WHERE at >= ?${scope} AND task_id LIKE 'session:%' AND label IS NOT NULL GROUP BY task_id`).all(quarter(from), ...scoped) as { task_id: string; label: string }[]).map(row => [row.task_id, row.label]));
 		const count = (sql: string) => (this.statement(`SELECT COUNT(*) AS count FROM tasks WHERE json_extract(data, '$.parentId') IS NULL AND ${sql} >= ?`).get(from) as { count: number }).count;
 		let pace: UsageReport["days"];
 		if (period === "today") {
@@ -711,6 +716,8 @@ export class WorkspaceStore {
 			autopilot: { ...autopilot, chats: chats("AND autopilot = 1") },
 			activity: { chatsStarted: count("json_extract(data, '$.createdAt')"), chatsFinished: count("last_completed_at"), chatsSettled: count("json_extract(data, '$.settledAt')"), autopilotChats: chats("AND autopilot = 1") },
 			...pace ? { days: pace } : {},
+			filter,
+			filterOptions: this.statement("SELECT harness, model FROM usage_quarters WHERE at >= ? GROUP BY harness, model ORDER BY SUM(tokens) DESC LIMIT 100").all(quarter(from)) as { harness: string; model: string }[],
 		};
 	}
 	/** A chat's Phaseo usage totals from its stored usage reports. */
@@ -779,12 +786,13 @@ export class WorkspaceStore {
 			// does not read a conversation getTask has not loaded.
 			const fields: Record<string, unknown> = {};
 			for (const name of Object.keys(task)) if (name !== "messages" && name !== "activities" && name !== "revision" && name !== "conversationCounts") fields[name] = (task as unknown as Record<string, unknown>)[name];
-			const head = JSON.stringify(fields), untouched = (task as PartialTask)[unreadEntries]?.() === true;
+			const read = (task as PartialTask)[readEntries]?.(), head = JSON.stringify(fields), untouched = read?.length === 0;
 			const offsets = (task as PartialTask)[partialEntries], summary: Partial<ReturnType<typeof conversationSummary>> = untouched ? {} : conversationSummary(task.messages ?? []);
 			// Entries go first for a chat that exists, so the header's delegation trigger reads its new conversation; a new
 			// chat needs its key first.
 			const existing = this.statement("SELECT key, revision FROM tasks WHERE id = ?").get(task.id) as { key: number; revision: number } | undefined;
-			if (existing && !untouched) this.entries.save(existing.key, task, existing.revision, offsets);
+			// The summary reads the messages, so a chat whose activities alone changed writes its messages too (unchanged ones cost a comparison).
+			if (existing && !untouched) this.entries.save(existing.key, task, existing.revision, offsets, (task as PartialTask)[readEntries]?.());
 			// A tail may not reach back to the last completed turn, and an unread conversation has not changed: their columns keep what they had.
 			const row = this.statement(`INSERT INTO tasks (id, revision, last_user_id, last_user_at, last_completed_at, data) VALUES (?, 1, ?, ?, ?, ?)
 				ON CONFLICT(id) DO UPDATE SET revision = revision + 1, data = excluded.data,

@@ -25,6 +25,23 @@ describe("durable native MCP connections", () => {
 			release(); await vi.waitFor(()=>expect(runtime.store.getTask(task.id).status).toBe("completed")); await runtime.mcp({type:"save",connection:{...connection,enabled:false,archived:true}}); expect(runtime.store.get().mcpConnections[0].archived).toBe(true);
 		} finally { release?.(); await runtime.close(); rmSync(directory,{recursive:true,force:true}); }
 	});
+	it("saves an agent's change once the chats it affects finish, instead of refusing it", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-mcp-idle-")); let release!: () => void;
+		const turn = new Promise<void>(resolve => { release = resolve; });
+		const runtime = new WorkspaceRuntime(directory, () => ({ run: async () => { await turn; }, cancel: async () => { release(); } }));
+		try {
+			const task = (await runtime.command({ type: "create-task", harness: "claude", model: "default", mode: "code" })).tasks[0];
+			await runtime.command({ type: "send", id: task.id, text: "Add the docs server" });
+			await vi.waitFor(() => expect(runtime.store.getTask(task.id).status).toBe("running"));
+			const result = await runtime.mcpWhenIdle({ type: "save", connection });
+			expect(result.applied).toBe(false);
+			expect(runtime.store.get().mcpConnections).toEqual([]);
+			release();
+			await vi.waitFor(() => expect(runtime.store.get().mcpConnections).toEqual([connection]));
+			expect((await runtime.mcpWhenIdle({ type: "save", connection: { ...connection, enabled: false } })).applied).toBe(true);
+			expect(runtime.store.get().mcpConnections[0].enabled).toBe(false);
+		} finally { release(); await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
 	it("serializes OpenCode setup, preserves native servers and removes archived managed overrides", async () => {
 		const directory=mkdtempSync(path.join(tmpdir(),"phaseo-mcp-sync-")); const name=nativeMcpName(connection); let connected=false;
 		const list=vi.fn(async()=>({data:[{name:"native-existing",status:{status:"connected"}},...(connected?[{name,status:{status:"connected"}}]:[])]})); const add=vi.fn(async()=>{connected=true;}); const remove=vi.fn(async()=>{connected=false;});

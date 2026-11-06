@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { apiModels, readCodexModels } from "./modelCatalog";
+import { latestName } from "./apiModelCatalog";
 import { apiModelCatalog } from "./apiModelCatalog";
 import type { Account } from "../shared/workspace";
 
@@ -24,7 +25,7 @@ describe("API model catalog", () => {
 	it("attaches effort and speed settings from routable offer parameter details", async () => {
 		const model = nativeModel("openai/reasoner", { offers: [{ routable: true, capabilities: { parameter_details: { reasoning: { supported: true, supported_values: ["low", "medium", "high"] }, service_tier: { supported: true, supported_values: ["standard", "priority"] } } } }] });
 		const [result] = await apiModels(gatewayAccount, "owned-key", vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, offset: 0, total: 1, models: [model] }))));
-		expect(result.options).toEqual([{ id: "effort", label: "Reasoning", type: "select", options: [{ id: "low", label: "Low" }, { id: "medium", label: "Medium", isDefault: true }, { id: "high", label: "High" }] }, { id: "speed", label: "Speed", type: "select", options: [{ id: "standard", label: "Standard", isDefault: true }, { id: "priority", label: "Fast" }] }]);
+		expect(result.options).toEqual([{ id: "effort", label: "Reasoning", type: "select", options: [{ id: "low", label: "Low" }, { id: "medium", label: "Medium", isDefault: true }, { id: "high", label: "High" }] }, { id: "speed", label: "Speed", type: "select", options: [{ id: "standard", label: "Standard", description: "The provider's usual speed and price.", isDefault: true }, { id: "priority", label: "Fast", description: "Served ahead of standard traffic, at the provider's Fast price." }] }]);
 	});
 	it("reads the Phaseo catalog across pages with real gateway IDs and readable names", async () => {
 		const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 0, limit: 250, total: 3, models: [nativeModel("owned/first", { name: "First Model", description: "Owned model" }), nativeModel("owned/second")] }))).mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 2, limit: 250, total: 3, models: [nativeModel("owned/last")] })));
@@ -66,6 +67,10 @@ describe("API model catalog", () => {
 		const request = vi.fn().mockResolvedValueOnce({ data: [{ model: "first", displayName: "First", description: "", isDefault: true, supportedReasoningEfforts: [{ reasoningEffort: "medium", description: "Balanced" }, { reasoningEffort: 42 }], defaultReasoningEffort: "medium", serviceTiers: [{ id: "fast", name: "Fast", description: "Priority" }], defaultServiceTier: "default" }], nextCursor: "page-2" }).mockResolvedValueOnce({ data: [{ model: "hidden", hidden: true }, { model: "second", displayName: "Second", supportedReasoningEfforts: [{ reasoningEffort: "custom-native-level", description: "Native option" }] }], nextCursor: null });
 		const models = await readCodexModels({ request }); expect(models).toHaveLength(2); expect(models[0].serviceTiers).toEqual([{ id: "fast", name: "Fast", description: "Priority" }]); expect(models[0]).toMatchObject({ defaultReasoningEffort: "medium", reasoningEfforts: [{ id: "medium", description: "Balanced" }] }); expect(models[1].reasoningEfforts?.[0].id).toBe("custom-native-level"); expect(request.mock.calls[1]).toEqual(["model/list", { cursor: "page-2", limit: 100 }]);
 	});
+	it("spells Codex model names the way the Phaseo catalogue does", async () => {
+		const request = vi.fn().mockResolvedValue({ data: [{ model: "gpt-6.1-sol", displayName: "GPT-6.1-Sol" }, { model: "gpt-6.1-terra", displayName: "GPT-6.1 Terra" }, { model: "gpt-4o-mini", displayName: "GPT-4o-mini" }, { model: "unnamed-model" }], nextCursor: null });
+		expect((await readCodexModels({ request })).map(model => model.name)).toEqual(["GPT 6.1 Sol", "GPT 6.1 Terra", "GPT-4o-mini", "unnamed-model"]);
+	});
 	it("uses the selected account and filters malformed catalog entries", async () => {
 		const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: [{ id: "model-one", name: "Model One" }, { id: 42 }, { id: "model-two" }] })));
 		expect(await apiModels(account, "secret", fetcher)).toEqual([{ id: "model-one", name: "Model One" }, { id: "model-two", name: "model-two" }]);
@@ -73,5 +78,23 @@ describe("API model catalog", () => {
 	});
 	it("surfaces authentication errors", async () => {
 		await expect(apiModels(account, "secret", vi.fn().mockResolvedValue(new Response("", { status: 401 })))).rejects.toThrow("HTTP 401");
+	});
+});
+
+describe("Latest aliases", () => {
+	it("lists one Latest per model, the alias naming its line, pointing at the model", async () => {
+		const model = { id: "openai/gpt-6-luna", name: "GPT-6 Luna", aliases: ["openai/chat-latest", "openai/gpt-luna-latest", "gpt-6-luna"], organization: { id: "openai", name: "OpenAI" }, capabilities: { endpoints: ["text.generate"] }, offers: [{ routable: true }], lifecycle: { status: "active" } };
+		const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, offset: 0, total: 1, models: [model] })));
+		const models = await apiModels({ id: "a", name: "API", harness: "phaseo", kind: "api", configured: true, endpoint: "https://api.example.test/v1/" }, "key", fetcher);
+		expect(models.map(value => [value.id, value.name, value.latestOf])).toEqual([["openai/gpt-6-luna", "GPT 6 Luna", undefined], ["openai/gpt-luna-latest", "GPT Luna Latest", "openai/gpt-6-luna"]]);
+	});
+	it("leaves GPT Pro Latest out, keeping the Pro model itself", async () => {
+		const model = { id: "openai/gpt-6-sol-pro", name: "GPT-6 Sol Pro", aliases: ["openai/gpt-pro-latest"], organization: { id: "openai", name: "OpenAI" }, capabilities: { endpoints: ["text.generate"] }, offers: [{ routable: true }], lifecycle: { status: "active" } };
+		const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, offset: 0, total: 1, models: [model] })));
+		const models = await apiModels({ id: "a", name: "API", harness: "phaseo", kind: "api", configured: true, endpoint: "https://api.example.test/v1/" }, "key", fetcher);
+		expect(models.map(value => value.id)).toEqual(["openai/gpt-6-sol-pro"]);
+	});
+	it("takes each word's casing from the model's name", () => {
+		expect(latestName("deepseek/deepseek-flash-latest", "DeepSeek V4.1 Flash 1017")).toBe("DeepSeek Flash Latest");
 	});
 });

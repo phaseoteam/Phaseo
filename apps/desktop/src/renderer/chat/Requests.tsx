@@ -1,7 +1,10 @@
 import { useRef, useState } from "react";
-import { ShieldQuestion } from "lucide-react";
+import { Network, ShieldQuestion } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import type { ApprovalDecision, ApprovalRequest, Task } from "../../shared/workspace";
+import type { TaskOverview } from "../../shared/workspaceOverview";
+import { useSelectedTask } from "../lib/useSelectedTask";
+import { waitingDescendants } from "../lib/waitingDescendants";
 import { ProposedPlan } from "./ProposedPlan";
 import { useWorkspace } from "../app/workspace";
 import { Button } from "../components/ui/button";
@@ -89,6 +92,32 @@ function ApprovalCard({ title, description, always, never, onDecision }: { title
 			{never && <Button variant="ghost" size="sm" title={never} disabled={!!pending} onClick={() => void decide("never")}>{pending === "never" ? "Denying…" : "Always deny"}</Button>}
 		</div>
 	</section>;
+}
+
+/** An agent's pending approvals, answered from the chat that started it. */
+function ChildApprovals({ child }: { child: TaskOverview }) {
+	const { command, select } = useWorkspace();
+	const { task } = useSelectedTask(window.phaseoDesktop?.workspace.task, child.id, String(child.revision ?? child.updatedAt));
+	const approvals = task?.approvals ?? [];
+	if (!approvals.length) return null;
+	return <div data-child-approvals={child.id} className="flex flex-col gap-2">
+		<p className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground"><Network aria-hidden className="size-3.5 shrink-0" />
+			<span className="min-w-0 truncate">From <button type="button" className="font-medium text-foreground/85 hover:underline" onClick={() => select(child.id)}>{child.title}</button></span>
+		</p>
+		{approvals.map(approval => {
+			const onDecision: Decide = async (decision, feedback) => !!await command({ type: "approval", id: child.id, approvalId: approval.id, decision, ...(feedback ? { feedback } : {}) });
+			return approval.kind === "plan" ? <PlanCard key={approval.id} approval={approval} projectId={task?.projectId} onDecision={onDecision} />
+				: <ApprovalCard key={approval.id} title={approval.method} description={approval.description} always={approval.always} never={approval.never} onDecision={onDecision} />;
+		})}
+	</div>;
+}
+
+/** Approvals the chat's agents are waiting on, so a delegated run never stalls out of sight. */
+export function ChildRequests({ taskId }: { taskId: string }) {
+	const { overview } = useWorkspace();
+	const waiting = waitingDescendants(overview.tasks, taskId);
+	if (!waiting.length) return null;
+	return <section aria-label="Approvals from agents this chat started" className="flex flex-col gap-3">{waiting.map(child => <ChildApprovals key={child.id} child={child} />)}</section>;
 }
 
 /** Pending approvals, questions and forms the agent is waiting on. */

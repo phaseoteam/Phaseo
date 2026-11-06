@@ -84,6 +84,28 @@ describe("usage-limit recovery in the runtime", () => {
 		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); }
 	}, 30000);
 
+	it("continues a limited chat on another login that has not hit its limit, once, when Switch logins is on", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-usage-limit-switch-"));
+		const runs: { accountId?: string; text: string }[] = [];
+		const adapter = () => ({ run: async (task: { accountId?: string }, _cwd: string, text: string) => { runs.push({ accountId: task.accountId, text }); if (!task.accountId) throw new Error("Claude AI usage limit reached|1900000000"); }, cancel: async () => {} });
+		const runtime = new WorkspaceRuntime(directory, adapter as never);
+		try {
+			runtime.usageLimitReset = async () => Date.now() + 3_600_000;
+			const preferences = runtime.store.getPreferences();
+			runtime.store.savePreferences({ ...preferences, threads: { ...preferences.threads, switchLoginOnLimit: true } });
+			runtime.store.saveAccount({ id: "work", name: "Work login", harness: "claude", kind: "native", configDirectory: path.join(directory, "accounts", "work"), configured: true });
+			const id = (await runtime.command({ type: "create-task", harness: "claude", model: "default", mode: "code" })).tasks[0].id;
+			await runtime.command({ type: "update-task", id, title: "Fix the build" });
+			const moved = new Promise<string>(resolve => { runtime.onChange = () => { const target = runtime.store.getTask(id).usageLimit?.movedTo; if (target && runtime.store.getTask(target).status === "completed") resolve(target); }; });
+			await runtime.command({ type: "send", id, text: "Fix the build" });
+			const target = await moved;
+			const limited = runtime.store.getTask(id), continued = runtime.store.getTask(target);
+			expect(limited).toMatchObject({ status: "limited", queue: [], usageLimit: { movedTo: target, movedToLogin: "Work login" } });
+			expect(continued).toMatchObject({ accountId: "work", harness: "claude", title: "Fix the build", parentId: id });
+			expect(runs).toEqual([{ accountId: undefined, text: "Fix the build" }, { accountId: "work", text: "Fix the build" }]);
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); }
+	}, 30000);
+
 	it("pauses a limited chat, schedules its resume from the limits data, and offers chats a quit interrupted", async () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-usage-limit-"));
 		let fail = true;

@@ -3,7 +3,7 @@ import type { Message } from "../../shared/workspace";
 
 /** What the diff surface shows. A turn is named by the message that started it. */
 /** A commit keeps its subject so the label reads before the list loads. */
-export type DiffSelection = { kind: "branch"; baseRef?: string } | { kind: "uncommitted" } | { kind: "turn"; messageId?: string } | { kind: "commit"; sha: string; subject?: string };
+export type DiffSelection = { kind: "branch"; baseRef?: string } | { kind: "uncommitted" } | { kind: "unpushed" } | { kind: "turn"; messageId?: string } | { kind: "commit"; sha: string; subject?: string };
 export type DiffTurn = { messageId: string; number: number; completedAt?: string; from: string; to: string };
 
 /** Turns with both snapshots, newest first. Numbers count every turn the chat has run. */
@@ -24,6 +24,7 @@ export const selectedTurn = (selection: DiffSelection, turns: readonly DiffTurn[
 export function scopeLabel(selection: DiffSelection, turns: readonly DiffTurn[]) {
 	if (selection.kind === "branch") return "Changes";
 	if (selection.kind === "uncommitted") return "Uncommitted";
+	if (selection.kind === "unpushed") return "Unpushed";
 	if (selection.kind === "commit") return `Commit ${selection.sha.slice(0, 7)}`;
 	const turn = selectedTurn(selection, turns);
 	return !turn || turn === turns[0] ? "Latest turn" : `Turn ${turn.number}`;
@@ -32,7 +33,7 @@ export function scopeLabel(selection: DiffSelection, turns: readonly DiffTurn[])
 export function sectionOf(selection: DiffSelection, turns: readonly DiffTurn[]) {
 	const turn = selectedTurn(selection, turns);
 	if (selection.kind === "commit") return { id: `commit:${selection.sha}`, title: `Commit ${selection.sha.slice(0, 7)}` };
-	return turn ? { id: `turn:${turn.messageId}`, title: `Turn ${turn.number}` } : selection.kind === "uncommitted" ? { id: "uncommitted", title: "Uncommitted" } : { id: "branch", title: "Changes" };
+	return turn ? { id: `turn:${turn.messageId}`, title: `Turn ${turn.number}` } : selection.kind === "uncommitted" ? { id: "uncommitted", title: "Uncommitted" } : selection.kind === "unpushed" ? { id: "unpushed", title: "Unpushed" } : { id: "branch", title: "Changes" };
 }
 
 /** The parser already drops Git's a/ and b/ prefixes, so a folder really named "a" is kept. */

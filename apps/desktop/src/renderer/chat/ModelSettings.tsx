@@ -1,14 +1,14 @@
-import { Fragment, useState, type ComponentProps } from "react";
-import { useCommand } from "../lib/keybindings";
-import { Check, ChevronDown, Zap } from "lucide-react";
+import { Check } from "lucide-react";
+import { cn } from "../lib/utils";
+import { Tip } from "../components/ui/tooltip";
+import { Switch } from "../components/ui/switch";
+import { effortHints } from "../lib/effortHints";
+import { useEffortDisplay } from "../lib/effortDisplay";
 import type { ModelOption, ModelOptionDescriptor } from "../../shared/workspace";
 import type { ModelSelection } from "../lib/modelPreferences";
 import { rememberSettings } from "../lib/modelSettings";
 import { useModels } from "../lib/useModels";
-import { cn } from "../lib/utils";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { optionHarnesses } from "./startChat";
-import { ModelPicker } from "./ModelPicker";
 
 const effortLabels: Record<string, string> = { none: "None", minimal: "Minimal", low: "Low", medium: "Medium", high: "High", xhigh: "Extra High", max: "Max", ultra: "Ultra" };
 export const effortLabel = (id: string) => effortLabels[id] ?? id.charAt(0).toUpperCase() + id.slice(1);
@@ -49,97 +49,203 @@ export function withSetting(selection: ModelSelection, descriptor: ModelOptionDe
 	return { ...selection, options: Object.keys(options).length ? options : undefined };
 }
 
-/** The settings shown after the model's name: "High", "High · 1M context"; empty when they are all the model's usual. */
+/** The composer button's words, such as "High · Ultrafast". Speed is a word, shown only when it isn't the standard speed. */
 export function settingsLabel(selection: ModelSelection, descriptors: ModelOptionDescriptor[]) {
-	return descriptors.filter(descriptor => !speedIds.includes(descriptor.id) || (descriptor.id === "speed" && current(selection, descriptor) === "flex")).map(descriptor => {
+	const parts = descriptors.map(descriptor => {
 		const value = current(selection, descriptor);
-		return descriptor.type === "boolean" ? `${descriptor.label} ${value ? "On" : "Off"}` : descriptor.options.find(option => option.id === value)?.label ?? "";
-	}).filter(Boolean).join(" · ");
+		if (descriptor.type === "boolean") return speedIds.includes(descriptor.id) ? (value === true ? "Fast" : "") : descriptor.id === "ultracode" ? (value === true ? "Ultracode" : "") : `${descriptor.label} ${value ? "On" : "Off"}`;
+		const label = descriptor.options.find(option => option.id === value)?.label ?? "";
+		if (descriptor.id === "region") return value === "any" ? "" : label;
+		return !speedIds.includes(descriptor.id) || isFast(descriptor, value) || value === "flex" ? label : "";
+	});
+	return parts.filter(Boolean).join(" · ") || "Normal";
 }
 
-/** The selected model's own settings (reasoning, speed, context and the like), and how to show them. */
-export function useModelSettings(selection: ModelSelection | undefined) {
-	const usesCatalog = !!selection && selection.harness !== "acp";
-	const { models } = useModels(selection?.harness ?? "phaseo", selection?.accountId, undefined, undefined, usesCatalog);
-	if (!selection) return { descriptors: [], label: "", fast: false };
-	const model = models.find(value => selection.model === "default" ? value.default : value.id === selection.model);
-	const descriptors = settingDescriptors(selection.harness, model);
-	return { descriptors, label: settingsLabel(selection, descriptors), fast: descriptors.some(descriptor => isFast(descriptor, current(selection, descriptor))) };
+
+export type SpeedTier = "flex" | "fast" | "ultrafast";
+/** Which speed a value is, for its glyph; the standard speed has none. */
+export function speedTier(descriptor: ModelOptionDescriptor, value: string | boolean | undefined): SpeedTier | undefined {
+	if (!speedIds.includes(descriptor.id)) return undefined;
+	if (value === "flex") return "flex";
+	if (!isFast(descriptor, value)) return undefined;
+	const label = descriptor.type === "select" ? descriptor.options.find(option => option.id === value)?.label ?? "" : "";
+	return /ultra/i.test(`${String(value)} ${label}`) ? "ultrafast" : "fast";
 }
 
-const choices = (descriptor: ModelOptionDescriptor): { id: string; label: string; description?: string; isDefault?: boolean }[] => descriptor.type === "boolean"
-	? [{ id: "true", label: "On", isDefault: descriptor.default === true }, { id: "false", label: "Off", isDefault: descriptor.default !== true }]
+const isReasoning = (descriptor: ModelOptionDescriptor) => /reason|effort|think/i.test(`${descriptor.id} ${descriptor.label}`);
+
+const offLevels = new Set(["none", "off"]);
+export type EffortDots = { count: number; filled: number };
+
+/**
+ * A reasoning level as dots: one per level, filled up to the chosen one, none filled for an off
+ * level. Undefined when there are too few or too many to count.
+ */
+export function effortDots(descriptor: ModelOptionDescriptor, value: string | boolean | undefined): EffortDots | undefined {
+	if (descriptor.type !== "select" || typeof value !== "string") return undefined;
+	const levels = descriptor.options, startsOff = offLevels.has(levels[0]?.id ?? "");
+	const count = levels.length - (startsOff ? 1 : 0);
+	if (count < 2 || count > 7) return undefined;
+	const index = levels.findIndex(option => option.id === value);
+	return index < 0 ? undefined : { count, filled: startsOff ? index : index + 1 };
+}
+
+/** What the model button shows after the name: the reasoning level and a speed glyph. The context window stays in the picker. */
+export function settingsSummary(selection: ModelSelection, descriptors: ModelOptionDescriptor[]) {
+	let effort: string | undefined, dots: EffortDots | undefined, speed: SpeedTier | undefined, ultracode = false, region: string | undefined;
+	for (const descriptor of descriptors) {
+		const value = current(selection, descriptor);
+		const label = descriptor.type === "select" ? descriptor.options.find(option => option.id === value)?.label : `${descriptor.label} ${value ? "On" : "Off"}`;
+		if (speedIds.includes(descriptor.id)) speed ??= speedTier(descriptor, value);
+		else if (descriptor.id === "ultracode") ultracode = value === true;
+		else if (descriptor.id === "region") region = typeof value === "string" && value !== "any" ? value : undefined;
+		else if (!effort && isReasoning(descriptor)) { effort = label; dots = effortDots(descriptor, value); }
+	}
+	return { effort, dots, speed, ultracode, region };
+}
+
+/** Dots on whole pixels, the chosen ones solid and the rest faint, in the text's colour. */
+export function EffortDotsGlyph({ dots }: { dots: EffortDots }) {
+	const width = dots.count * 6 - 2;
+	return <svg aria-hidden width={width} height={8} viewBox={`0 0 ${width} 8`} className="shrink-0" data-effort-dots>
+		{Array.from({ length: dots.count }, (_, index) => <circle key={index} cx={index * 6 + 2} cy={4} r={2} fill="currentColor" opacity={index < dots.filled ? 1 : 0.3} />)}
+	</svg>;
+}
+
+/** The web's service tier colours (its tier badges and model filters): Fast violet, Ultrafast fuchsia, Flex sky. */
+const tierText = { fast: "text-violet-600 dark:text-violet-400", ultrafast: "text-fuchsia-600 dark:text-fuchsia-400", flex: "text-sky-600 dark:text-sky-400" } as const;
+const tierBadge = { fast: "bg-violet-100 dark:bg-violet-950", ultrafast: "bg-fuchsia-100 dark:bg-fuchsia-950", flex: "bg-sky-100 dark:bg-sky-950" } as const;
+
+/**
+ * Phaseo's speed marks, in the tier's colour: chevrons forward, two for Fast and three for Ultrafast, and two back for
+ * Flex, the slower and cheaper side of Standard. Drawn on whole pixels so they stay sharp at 1x.
+ */
+export function SpeedGlyph({ tier, className }: { tier: SpeedTier; className?: string }) {
+	const count = tier === "ultrafast" ? 3 : 2, width = 4 * count + 3, back = tier === "flex";
+	return <svg aria-hidden width={width} height={10} viewBox={`0 0 ${width} 10`} className={cn("shrink-0", tierText[tier], className)} data-speed={tier}>
+		{Array.from({ length: count }, (_, index) => <path key={index} d={back ? `M${4.5 + index * 4} 1.5 L${1 + index * 4} 5 L${4.5 + index * 4} 8.5` : `M${1 + index * 4} 1.5 L${4.5 + index * 4} 5 L${1 + index * 4} 8.5`} fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" />)}
+	</svg>;
+}
+
+/**
+ * A region's mark, drawn small enough for a menu row: the US and EU flags, a globe tile for Global, and the region's code for
+ * any other. Flags are simplified (no stars on the US canton) so they stay legible at 14 by 10 pixels.
+ */
+export function RegionFlag({ region, className }: { region: string; className?: string }) {
+	const box = cn("h-2.5 w-3.5 shrink-0 overflow-hidden rounded-[2px] ring-1 ring-black/10 dark:ring-white/15", className);
+	// Global gets a tile of its own, a white globe on blue, so it lines up with the flags beside it.
+	if (region === "any") return <svg aria-hidden viewBox="0 0 14 10" className={box}>
+		<rect width="14" height="10" fill="#1f6feb" />
+		<g fill="none" stroke="#fff" strokeWidth={0.7}>
+			<circle cx="7" cy="5" r="3.4" />
+			<path d="M3.6 5h6.8M7 1.6c1.5 1.7 1.5 5.1 0 6.8M7 1.6c-1.5 1.7-1.5 5.1 0 6.8" />
+		</g>
+	</svg>;
+	if (region === "us") return <svg aria-hidden viewBox="0 0 14 10" className={box}>
+		<rect width="14" height="10" fill="#fff" />
+		{[0, 2, 4, 6, 8].map(y => <rect key={y} y={y * 10 / 9 + 0.0} width="14" height={10 / 9} fill="#b22234" />)}
+		<rect width="6" height={50 / 9} fill="#3c3b6e" />
+	</svg>;
+	if (region === "eu") return <svg aria-hidden viewBox="0 0 14 10" className={box}>
+		<rect width="14" height="10" fill="#003399" />
+		{Array.from({ length: 12 }, (_, index) => { const angle = index * Math.PI / 6; return <circle key={index} cx={7 + 3 * Math.sin(angle)} cy={5 - 3 * Math.cos(angle)} r={0.55} fill="#ffcc00" />; })}
+	</svg>;
+	return <span aria-hidden className={cn("rounded-sm border border-border px-1 text-[10px] leading-4", className)}>{region.toUpperCase()}</span>;
+}
+
+/** The model button's tail: the reasoning level as Appearance asks (its word, dots or both), then the speed glyph. */
+export function SettingsSuffix({ selection, descriptors }: { selection: ModelSelection; descriptors: ModelOptionDescriptor[] }) {
+	const { effort, dots, speed, ultracode, region } = settingsSummary(selection, descriptors);
+	const [display] = useEffortDisplay();
+	if (!effort && !speed && !ultracode && !region) return null;
+	// Without dots to draw, the word shows whatever the setting.
+	const word = effort && (display !== "dots" || !dots);
+	return <span data-model-settings className="flex shrink-0 items-center gap-1.5 font-medium text-muted-foreground">
+		{dots && display !== "word" && <EffortDotsGlyph dots={dots} />}
+		{word && <span className="max-w-24 truncate">{effort}</span>}
+		{ultracode && <span>· Ultracode</span>}
+		{speed && <SpeedGlyph tier={speed} />}
+		{region && <span className="flex" title={`Data kept in ${descriptors.find(descriptor => descriptor.id === "region")?.type === "select" ? (descriptors.find(descriptor => descriptor.id === "region") as Extract<ModelOptionDescriptor, { type: "select" }>).options.find(option => option.id === region)?.label ?? region.toUpperCase() : region.toUpperCase()}`}><RegionFlag region={region} /></span>}
+	</span>;
+}
+
+type Choice = { id: string; label: string; description?: string };
+const choicesOf = (descriptor: ModelOptionDescriptor): Choice[] => descriptor.type === "boolean"
+	? speedIds.includes(descriptor.id) ? [{ id: "false", label: "Standard" }, { id: "true", label: "Fast" }] : [{ id: "true", label: "On" }, { id: "false", label: "Off" }]
 	: descriptor.options;
+const pick = (selection: ModelSelection, descriptor: ModelOptionDescriptor, id: string, onChange: (selection: ModelSelection) => void) => {
+	const next = withSetting(selection, descriptor, descriptor.type === "boolean" ? id === "true" : id); rememberSettings(next); onChange(next);
+};
 
-/** The model's settings inside the model picker, one row each, so the model and its effort are chosen in one place. */
-export function ModelSettingsPanel({ selection, descriptors, onChange }: { selection: ModelSelection; descriptors: ModelOptionDescriptor[]; onChange: (selection: ModelSelection) => void }) {
-	const change = (descriptor: ModelOptionDescriptor, value: string | boolean) => { const next = withSetting(selection, descriptor, value); rememberSettings(next); onChange(next); };
-	return <div aria-label="Model settings" role="group" className="flex flex-col gap-1 border-t border-border px-3 py-2">
-		{descriptors.map(descriptor => {
+/**
+ * The picker's settings column: the model's reasoning levels first, then its context window and any other options,
+ * one group each. Speed has the footer. A pick applies at once and leaves the picker open, so several can change together.
+ */
+export function ModelSettingsColumn({ selection, descriptors, onChange }: { selection: ModelSelection; descriptors: ModelOptionDescriptor[]; onChange: (selection: ModelSelection) => void }) {
+	const rest = descriptors.filter(descriptor => !speedIds.includes(descriptor.id));
+	const ordered = [...rest.filter(isReasoning), ...rest.filter(descriptor => !isReasoning(descriptor))];
+	if (!ordered.length) return <p className="flex h-8 items-center px-2 text-sm text-muted-foreground">No effort levels</p>;
+	return <div role="group" aria-label="Model settings" className="flex flex-col gap-2">
+		{ordered.map(descriptor => {
 			const value = String(current(selection, descriptor));
-			return <div key={descriptor.id} role="radiogroup" aria-label={descriptor.label} className="flex min-h-8 items-center gap-2">
-				<span className="w-20 shrink-0 truncate text-xs font-medium text-muted-foreground">{descriptor.label}</span>
-				<div className="flex min-w-0 flex-wrap gap-0.5">
-					{choices(descriptor).map(option => {
-						const checked = option.id === value;
-						return <button key={option.id} type="button" role="radio" aria-checked={checked} title={[option.description, option.isDefault ? "The model's default" : ""].filter(Boolean).join(" · ") || undefined}
-							onClick={() => change(descriptor, descriptor.type === "boolean" ? option.id === "true" : option.id)}
-							className={cn("flex h-7 items-center gap-1 rounded-md px-2 text-xs font-medium transition-colors", checked ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground")}>
-							{checked && <Check className="size-3" />}{option.label}
-						</button>;
-					})}
-				</div>
+			if (descriptor.id === "ultracode") return <Tip key={descriptor.id} label="Plans and runs multi-agent workflows on every substantive task, at the chosen level" side="right">
+				<label className="flex h-8 w-full shrink-0 cursor-pointer items-center gap-2 rounded-sm px-2 text-sm text-foreground hover:bg-foreground/[0.09]">
+					<span className="min-w-0 flex-1 truncate">Ultracode</span>
+					<Switch size="sm" aria-label="Ultracode" checked={value === "true"} onCheckedChange={on => pick(selection, descriptor, String(on), onChange)} />
+				</label>
+			</Tip>;
+			return <div key={descriptor.id} role="radiogroup" aria-label={descriptor.label} className="flex flex-col gap-0.5">
+				<p className="px-2 pb-1.5 text-xs text-muted-foreground/80">{descriptor.label}</p>
+				{choicesOf(descriptor).map(option => {
+					const hint = option.description ?? (isReasoning(descriptor) ? effortHints[option.id] : undefined);
+					const row = <button key={option.id} type="button" role="radio" aria-checked={value === option.id} aria-description={hint}
+						onClick={() => pick(selection, descriptor, option.id, onChange)}
+						className="flex h-8 w-full shrink-0 items-center gap-2 rounded-sm px-2 text-left text-sm text-foreground outline-none hover:bg-foreground/[0.09] focus-visible:bg-foreground/[0.09]">
+						{descriptor.id === "region" && <RegionFlag region={option.id} className="text-muted-foreground" />}
+						<span className="min-w-0 flex-1 truncate">{option.label}</span>
+						<Check className={cn("size-3.5 shrink-0", value !== option.id && "invisible")} />
+					</button>;
+					return hint ? <Tip key={option.id} label={hint} side="right">{row}</Tip> : row;
+				})}
 			</div>;
 		})}
 	</div>;
 }
 
-/**
- * The composer's model control: the model, then its effort and other settings after the name, all chosen in one
- * picker. With several models (comparing), the settings stay each model's own remembered ones.
- */
-export function ModelControl({ selections, onChange, onSettings, openEvent, disabled, ...picker }: Omit<ComponentProps<typeof ModelPicker>, "settings"> & { onSettings: (selection: ModelSelection) => void; openEvent: string }) {
-	const single = selections.length === 1 ? selections[0] : undefined;
-	const { descriptors, label, fast } = useModelSettings(single);
-	useCommand("modelSettings.toggle", () => { window.dispatchEvent(new Event(openEvent)); }, descriptors.length > 0 && !disabled);
-	useCommand("modelPicker.toggle", () => { window.dispatchEvent(new Event(openEvent)); }, !disabled);
-	return <ModelPicker {...picker} selections={selections} onChange={onChange} openEvent={openEvent} disabled={disabled}
-		settings={single && descriptors.length ? { label, fast, panel: <ModelSettingsPanel selection={single} descriptors={descriptors} onChange={onSettings} /> } : undefined} />;
+/** The picker's footer: speed as segments, one click away, with Phaseo's marks on the fast ones. */
+export function SpeedSegments({ selection, descriptors, onChange }: { selection: ModelSelection; descriptors: ModelOptionDescriptor[]; onChange: (selection: ModelSelection) => void }) {
+	const descriptor = descriptors.find(value => speedIds.includes(value.id));
+	if (!descriptor) return null;
+	const value = String(current(selection, descriptor));
+	return <div role="radiogroup" aria-label={descriptor.label} className="flex rounded-lg bg-input/40 p-0.5">
+		{choicesOf(descriptor).map(option => {
+			const checked = value === option.id, tier = speedTier(descriptor, descriptor.type === "boolean" ? option.id === "true" : option.id);
+			// A chosen tier reads like the web's tier badge: its colour on a tint of it.
+			const tone = tier;
+			const hint = option.description ?? (option.id === "true" ? "Faster output at the model's Fast price" : option.id === "false" ? "The model's usual speed and price" : undefined);
+			const segment = <button key={option.id} type="button" role="radio" aria-checked={checked} data-checked={checked || undefined} aria-description={hint}
+				onClick={() => pick(selection, descriptor, option.id, onChange)}
+				className={cn("flex h-6 cursor-pointer items-center justify-center gap-1 px-2 text-xs text-muted-foreground outline-none first:rounded-l-md last:rounded-r-md hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset", checked && (tone ? cn(tierBadge[tone], tierText[tone], "hover:text-current") : "bg-input/72 text-foreground"))}>
+				{tier && <SpeedGlyph tier={tier} />}{option.label}
+			</button>;
+			return hint ? <Tip key={option.id} label={hint} side="top">{segment}</Tip> : segment;
+		})}
+	</div>;
 }
 
-/** A model's settings on their own, for places that choose the model separately (Settings → General). */
-export function ModelSettings({ selection, onChange, disabled }: { selection: ModelSelection; onChange: (selection: ModelSelection) => void; disabled?: boolean }) {
-	const [open, setOpen] = useState(false);
-	const { descriptors, label: named, fast } = useModelSettings(selection);
-	if (!descriptors.length) return null;
-	const label = named || (fast ? "Fast" : "Normal");
-	const change = (descriptor: ModelOptionDescriptor, value: string | boolean) => { const next = withSetting(selection, descriptor, value); rememberSettings(next); onChange(next); };
+/**
+ * Whether this model takes a typed "ultrathink", as Claude Code does: a Claude Code model with an Extra High level.
+ * That turn runs at Extra High, so the word and the send button show it.
+ */
+export function useUltrathinkReady(selection: ModelSelection | undefined) {
+	const descriptors = useSettingDescriptors(selection?.harness === "claude" ? selection : undefined);
+	return descriptors.some(descriptor => descriptor.id === "effort" && descriptor.type === "select" && descriptor.options.some(option => option.id === "xhigh"));
+}
+export const typesUltrathink = (text: string) => /\bultrathink\b/i.test(text);
 
-	return <DropdownMenu open={open} onOpenChange={setOpen}>
-		<DropdownMenuTrigger disabled={disabled} render={<button type="button" aria-label={`Model settings: ${label}${fast ? ", fast" : ""}`} title="Model settings"
-			className="flex h-8 max-w-56 shrink-0 items-center gap-1 rounded-lg px-2 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50 data-popup-open:bg-muted data-popup-open:text-foreground" />}>
-			{fast && <Zap className={cn("size-3.5 shrink-0 fill-current", selection.harness === "claude" ? "text-[#d97757]" : "text-amber-500")} />}
-			<span className="truncate">{label}</span>
-			<ChevronDown className="size-3.5 shrink-0" />
-		</DropdownMenuTrigger>
-		<DropdownMenuContent align="start" side="top" sideOffset={8} className="w-64">
-			{descriptors.map((descriptor, index) => <Fragment key={descriptor.id}>
-				{index > 0 && <DropdownMenuSeparator />}
-				<DropdownMenuGroup>
-					<DropdownMenuLabel className="px-2 pt-1.5 pb-1 text-xs font-semibold text-muted-foreground">{descriptor.label}</DropdownMenuLabel>
-					<DropdownMenuRadioGroup value={String(current(selection, descriptor))} onValueChange={value => change(descriptor, descriptor.type === "boolean" ? value === "true" : String(value))}>
-						{(descriptor.type === "boolean"
-							? [{ id: "true", label: "On", isDefault: descriptor.default === true }, { id: "false", label: "Off", isDefault: descriptor.default !== true }] as { id: string; label: string; description?: string; isDefault?: boolean }[]
-							: descriptor.options
-						).map(option => <DropdownMenuRadioItem key={option.id} value={option.id} closeOnClick className="items-start">
-							<span className="min-w-0">
-								<span className="flex items-center gap-1.5">{option.label}{option.isDefault && <span className="rounded-sm border border-border px-1 text-[10px] leading-4 text-muted-foreground">Default</span>}</span>
-								{option.description && <span className="mt-0.5 block max-w-52 text-xs text-muted-foreground/80">{option.description}</span>}
-							</span>
-						</DropdownMenuRadioItem>)}
-					</DropdownMenuRadioGroup>
-				</DropdownMenuGroup>
-			</Fragment>)}
-		</DropdownMenuContent>
-	</DropdownMenu>;
+/** The settings a model has, for the picker and the composer; empty while the model's list loads. */
+export function useSettingDescriptors(selection: ModelSelection | undefined) {
+	const { models } = useModels(selection?.harness ?? "phaseo", selection?.accountId, undefined, undefined, !!selection && selection.harness !== "acp");
+	if (!selection) return [];
+	return settingDescriptors(selection.harness, models.find(value => selection.model === "default" ? value.default : value.id === selection.model));
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { ArrowDown, ArrowUp, Check, ChevronDown, CloudUpload, FolderPlus, GitBranch, GitPullRequestArrow, LoaderCircle, Minus, Plus, Trash2, WandSparkles } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, ChevronDown, CloudUpload, FolderPlus, GitBranch, GitPullRequestArrow, LoaderCircle, Minus, PenLine, Plus, Trash2 } from "lucide-react";
 import type { GitCommand, GitFile, GitReview } from "../../shared/workspace";
 import type { BranchPullRequest } from "../../shared/pullRequests";
 import { toastManager } from "../components/ui/toast";
@@ -17,6 +17,7 @@ import { pushesToDefaultBranch } from "../../shared/gitWorkflow";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { Button } from "../components/ui/button";
 import { knownModel, modelLabel } from "../chat/ModelPicker";
+import { IconSwap } from "../components/IconSwap";
 
 const statusTone: Record<string, string> = { M: "text-warning", A: "text-success", "?": "text-success", D: "text-destructive", R: "text-info", U: "text-destructive" };
 const statusLabel = (file: GitFile) => (file.indexStatus === "?" ? "U" : [file.indexStatus, file.worktreeStatus].find(value => value.trim()) ?? "M");
@@ -210,7 +211,7 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 				<textarea aria-label="Commit message" rows={2} placeholder={generating ? "Writing a commit message…" : "Commit message, or leave empty to generate one"} value={message} onChange={event => setMessage(event.target.value)} readOnly={generating}
 					onKeyDown={event => { if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }}
 					className="block w-full resize-none rounded-md border border-input bg-transparent py-1.5 pr-8 pl-2.5 text-xs outline-none placeholder:text-muted-foreground focus:border-ring" />
-				<span className="absolute top-1 right-1"><ToolbarButton size="sm" label="Generate a commit message" disabled={busy || generating} onClick={() => void run(async () => setMessage(await generateMessage()))}>{generating ? <LoaderCircle className="animate-spin" /> : <WandSparkles />}</ToolbarButton></span>
+				<span className="absolute top-1 right-1"><ToolbarButton size="sm" label="Generate a commit message" disabled={busy || generating} onClick={() => void run(async () => setMessage(await generateMessage()))}><IconSwap show={generating ? "loaderCircle" : "penLine"}>{{ loaderCircle: <LoaderCircle className="animate-spin" />, penLine: <PenLine /> }}</IconSwap></ToolbarButton></span>
 			</div>
 			<div className="mt-1.5 flex gap-1.5">
 				<button type="submit" disabled={busy || generating} className="h-7 min-w-0 flex-1 truncate rounded-md bg-primary px-2 text-xs font-semibold text-primary-foreground hover:bg-primary/85 disabled:opacity-50">{commitLabel}</button>

@@ -15,6 +15,8 @@ import { Conversation } from "./Conversation";
 import { Requests } from "./Requests";
 import { PermissionMenu } from "./NewChat";
 import { useTaskDraft } from "./ChatView";
+import { QueuePanel, steerBlocker } from "./QueuePanel";
+import { useWorkspacePreferences } from "../lib/workspacePreferences";
 
 /**
  * A side chat in the right pane: its conversation and its own message box, with Bring back, Delete and Close. It
@@ -29,7 +31,9 @@ export function SideChatPane({ id, onClose }: { id: string; onClose: () => void 
 	const [busy, setBusy] = useState(false);
 	const [preview, setPreview] = useState<string>();
 	const running = snapshot?.status === "running" || snapshot?.status === "waiting";
-	const editor = useComposerEditor({ value: draft.text, onChange: draft.setText, disabled: !snapshot, label: "Side chat message", placeholder: running ? "Queue a follow-up…" : "Ask a follow-up…" });
+	// Follow-ups go the way Settings → Chat says, as in the main chat: into the running turn, or onto the queue.
+	const steers = useWorkspacePreferences().chat.followUp === "steer" && Boolean(snapshot && !steerBlocker(snapshot));
+	const editor = useComposerEditor({ value: draft.text, onChange: draft.setText, disabled: !snapshot, label: "Side chat message", placeholder: running ? (steers ? "Steer the running turn…" : "Queue a follow-up…") : "Ask a follow-up…" });
 	const menu = useComposerMenu({ editor, taskId: id, harness: snapshot?.harness, accountId: snapshot?.accountId, projectId: snapshot?.projectId });
 	const message = composeMessage(draft.text);
 	const canSend = !busy && Boolean(snapshot) && Boolean(message.text) && !message.attachments.length;
@@ -41,9 +45,14 @@ export function SideChatPane({ id, onClose }: { id: string; onClose: () => void 
 		setBusy(true);
 		try {
 			const prepared = await menu.prepare(message.text);
-			if (await command({ type: "send", id, text: prepared.text, ...(message.threadReferences.length ? { threadReferences: message.threadReferences } : {}), ...(message.githubReferences.length ? { githubReferences: message.githubReferences } : {}) })) draft.clear();
+			const sent = running && steers ? await command({ type: "steer", id, text: prepared.text })
+				: await command({ type: "send", id, text: prepared.text, ...(message.threadReferences.length ? { threadReferences: message.threadReferences } : {}), ...(message.githubReferences.length ? { githubReferences: message.githubReferences } : {}) });
+			if (sent) draft.clear();
 		} finally { setBusy(false); }
 	}
+	const steerQueued = (messageId: string) => { const queued = task?.queue.find(value => value.id === messageId); if (queued) void command({ type: "steer", id, text: queued.text, queuedId: messageId }); };
+	/** Editing a queued message takes it back into the box; sending it again queues it in its new form. */
+	const editQueued = (messageId: string) => { const queued = task?.queue.find(value => value.id === messageId); if (!queued) return; draft.setText(queued.text); void command({ type: "queue-remove", id, messageId }); };
 	async function bringBack() {
 		if (blocker || !await command({ type: "bring-back", id })) return;
 		const busyParent = parent && (parent.status === "running" || parent.status === "waiting");
@@ -73,6 +82,7 @@ export function SideChatPane({ id, onClose }: { id: string; onClose: () => void 
 		</div>
 		{task ? <Conversation task={task} compact className="min-h-0 flex-1" onAttachment={setPreview} onBranch={messageId => void branch(messageId)}><Requests task={task} inlineQuestions /></Conversation> : <p className="min-h-0 flex-1 p-4 text-xs text-muted-foreground">Loading…</p>}
 		<div className="shrink-0 px-3 pt-2 pb-3">
+			{task && <QueuePanel task={task} onEdit={editQueued} onSteer={steerQueued} />}
 			<Composer editor={editor} menu={menu} shortcuts={false} onSubmit={() => void send()} canSend={canSend} running={running} onStop={() => void command({ type: "cancel", id })}
 				tools={snapshot.mode !== "chat" && <PermissionMenu value={task?.permissionMode ?? "supervised"} onChange={permissionMode => void command({ type: "update-task", id, permissionMode })} />} />
 		</div>

@@ -22,6 +22,8 @@ import { BulkMenuItems, CustomSnoozeDialog, DeleteChatDialog, RenameInput, Snooz
 import { chatDragType } from "../../shared/mentions";
 import { PullRequestBadge } from "../views/pullRequests/PullRequestBadge";
 import { IssueBadge } from "../views/issues/IssueBadge";
+import { ChatHoverCard } from "./ChatHoverCard";
+import { IconSwap } from "../components/IconSwap";
 
 /** A Code chat being dragged within the sidebar. */
 const codeRowType = "application/x-phaseo-code-chat";
@@ -71,7 +73,7 @@ function CardRow({ task, now, scope, onScope, hint, controls, twoLine }: { task:
 	const selected = task.id === selectedId;
 	const quiet = (task.status === "running" || task.status === "waiting" || !isUnread(task)) && !task.approvalsCount && !task.answersCount && !hasWoken(task, now) && !["failed", "limited", "interrupted"].includes(task.status);
 	const blocked = settleBlocker(task);
-	return <ContextMenu.Root>
+	return <ChatHoverCard task={task} disabled={renaming || hint !== undefined}><ContextMenu.Root>
 		<ContextMenu.Trigger render={<div role="button" tabIndex={0} data-row-id={task.id} aria-current={selected ? "page" : undefined} onPointerEnter={() => prefetchTask(task.id)} aria-selected={controls.picked || undefined} draggable={!renaming && Boolean(controls.drag)} onClick={event => { if (!controls.onPick(event)) select(task.id); }} onKeyDown={event => { if (event.key === "Enter") select(task.id); }} {...controls.drag} />}
 			className={cn("group/row relative mx-2 flex flex-col justify-center gap-0.5 rounded-md px-2.5", twoLine ? "h-14" : "h-[4.5rem]", "outline-none hover:bg-sidebar-accent/70 focus-visible:ring-2 focus-visible:ring-ring/40", selected && "bg-sidebar-accent", controls.picked && "bg-primary/10 ring-1 ring-primary/30 ring-inset")}>
 			{controls.dropLine && <span aria-hidden className={cn("pointer-events-none absolute inset-x-2 h-0.5 rounded-full bg-primary", controls.dropLine === "above" ? "-top-px" : "-bottom-px")} />}
@@ -102,7 +104,7 @@ function CardRow({ task, now, scope, onScope, hint, controls, twoLine }: { task:
 		<DropdownMenuContent className="w-64">{controls.bulk ?? <ThreadMenuItems task={task} scope={scope} onScope={onScope} onRename={() => setRenaming(true)} onDelete={() => setDeleting(true)} onCustomSnooze={() => setCustomSnooze(true)} />}</DropdownMenuContent>
 		<CustomSnoozeDialog open={customSnooze} onOpenChange={setCustomSnooze} onSnooze={until => void actions.snooze(task, until, scope)} />
 		<DeleteChatDialog task={task} scope={scope} open={deleting} onOpenChange={setDeleting} />
-	</ContextMenu.Root>;
+	</ContextMenu.Root></ChatHoverCard>;
 }
 
 /** A snoozed or settled chat: just the title, and when it wakes or how long ago it settled. */
@@ -267,7 +269,7 @@ export function CodeThreadList() {
 					{projects.map(project => <DropdownMenuCheckboxItem key={project.id} checked={scope.includes(project.id)} onCheckedChange={() => toggleScope(project.id)} className="group/project pr-8">
 						<ProjectIcon project={project} /><span className="min-w-0 flex-1 truncate">{project.name}</span>
 						{!project.worktree && <Tip label={project.pinned ? `Unpin ${project.name}` : `Pin ${project.name} to the top`} side="right"><button type="button" aria-label={project.pinned ? `Unpin ${project.name}` : `Pin ${project.name}`} onPointerDown={event => event.stopPropagation()} onClick={event => { event.preventDefault(); event.stopPropagation(); organize(project, { pinned: !project.pinned }); }}
-							className={cn("grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground", !project.pinned && "opacity-0 group-hover/project:opacity-100 group-focus-visible/project:opacity-100")}>{project.pinned ? <PinOff className="size-3.5" /> : <Pin className="size-3.5" />}</button></Tip>}
+							className={cn("grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground", !project.pinned && "opacity-0 group-hover/project:opacity-100 group-focus-visible/project:opacity-100")}><IconSwap show={project.pinned ? "pinOff" : "pin"}>{{ pinOff: <PinOff className="size-3.5" />, pin: <Pin className="size-3.5" /> }}</IconSwap></button></Tip>}
 						<Tip label={`Project settings for ${project.name}`} side="right"><button type="button" aria-label={`Project settings for ${project.name}`} onPointerDown={event => event.stopPropagation()} onClick={event => { event.preventDefault(); event.stopPropagation(); openProjectSettings(project.id); }}
 							className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground opacity-0 group-hover/project:opacity-100 group-focus-visible/project:opacity-100 hover:bg-accent hover:text-foreground"><Settings className="size-3.5" /></button></Tip>
 					</DropdownMenuCheckboxItem>)}

@@ -1,6 +1,6 @@
 import { formatDateParts } from "@phaseo/app-kit/format";
 import { useState } from "react";
-import { AlarmClock, AlarmClockOff, Archive, CircleCheck, Clock, Copy, Filter, Mail, Pencil, Pin, PinOff, Settings, Sparkles, SquarePen, Trash2, Undo2, WandSparkles } from "lucide-react";
+import { AlarmClock, AlarmClockOff, Archive, CircleCheck, Clock, Copy, Filter, Mail, Pencil, Pin, PinOff, RefreshCw, Settings, SquarePen, Timer, Trash2, Undo2 } from "lucide-react";
 import { hasWoken, isSettled, isSnoozed, settleBlocker, snoozeBlocker, snoozePresets } from "../../shared/threadLifecycle";
 import type { TaskOverview } from "../../shared/workspaceOverview";
 import { useWorkspace } from "../app/workspace";
@@ -117,13 +117,13 @@ export function ThreadMenuItems({ task, scope, onScope, onRename, onDelete, onCu
 			</DropdownMenuSub>}
 		<DropdownMenuSeparator />
 		{onRename && <DropdownMenuItem onClick={onRename}><Pencil />Rename chat</DropdownMenuItem>}
-		<DropdownMenuItem onClick={() => void actions.regenerateTitle(task)}><WandSparkles />Regenerate title</DropdownMenuItem>
+		<DropdownMenuItem onClick={() => void actions.regenerateTitle(task)}><RefreshCw />Regenerate title</DropdownMenuItem>
 		<TagMenu task={task} />
 		<DropdownMenuItem disabled={!task.lastCompletedAt} onClick={() => void actions.markUnread(task)}><Mail />Mark unread</DropdownMenuItem>
 		{onScope && project && <DropdownMenuItem onClick={() => onScope(scope?.length ? "" : project.id)}><Filter />{scope?.length ? "Show all projects" : `Filter by ${project.name}`}</DropdownMenuItem>}
 		{project && <DropdownMenuItem onClick={() => openProjectSettings(project.id)}><Settings />Project settings</DropdownMenuItem>}
 		<DropdownMenuSub>
-			<DropdownMenuSubTrigger><Sparkles />Auto-settle behaviour</DropdownMenuSubTrigger>
+			<DropdownMenuSubTrigger><Timer />Auto-settle behaviour</DropdownMenuSubTrigger>
 			<DropdownMenuSubContent className="w-40">
 				<DropdownMenuCheckboxItem checked={task.autoSettle !== false} onCheckedChange={() => void actions.autoSettle(task, true)}>Enabled</DropdownMenuCheckboxItem>
 				<DropdownMenuCheckboxItem checked={task.autoSettle === false} onCheckedChange={() => void actions.autoSettle(task, false)}>Disabled</DropdownMenuCheckboxItem>

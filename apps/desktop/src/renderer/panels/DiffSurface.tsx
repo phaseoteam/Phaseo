@@ -16,6 +16,8 @@ import { DiffCodeView, type DiffViewFile, type DiffViewHandle } from "./DiffCode
 import { DiffFileTree } from "./DiffFileTree";
 import { DIFF_SELECTION_KEY, OPEN_TURN_DIFF_EVENT, onProjectChange, openProjectFile, pendingTurnDiffPaths, type OpenTurnDiffDetail } from "./events";
 import { DiffLoadingState, ipcError, RefreshIcon, SURFACE_HEADER_CLASS, SurfaceMessage, SurfaceNotice, ToolbarButton, useThemeType } from "./surfaceChrome";
+import { ResizableAside } from "./ResizableAside";
+import { IconSwap } from "../components/IconSwap";
 
 type Loaded = { key: string; result: GitDiffResult };
 const AUTOMATIC = "";
@@ -23,6 +25,7 @@ const noKeys: ReadonlySet<string> = new Set();
 
 function requestFor(selection: DiffSelection, turns: ReturnType<typeof diffTurns>, ignoreWhitespace: boolean): GitDiffRequest | undefined {
 	if (selection.kind === "uncommitted") return { scope: "uncommitted", ignoreWhitespace };
+	if (selection.kind === "unpushed") return { scope: "unpushed", ignoreWhitespace };
 	if (selection.kind === "commit") return { scope: "commit", commit: selection.sha, ignoreWhitespace };
 	if (selection.kind === "branch") return { scope: "branch", ...(selection.baseRef ? { baseRef: selection.baseRef } : {}), ignoreWhitespace };
 	const turn = selectedTurn(selection, turns);
@@ -41,7 +44,7 @@ function CopyPathButton({ path }: { path: string }) {
 	const [copied, setCopied] = useState(false);
 	useEffect(() => { if (!copied) return; const timer = setTimeout(() => setCopied(false), 1500); return () => clearTimeout(timer); }, [copied]);
 	return <ToolbarButton size="sm" label={copied ? "Copied" : "Copy path"} className="size-5" onClick={() => void navigator.clipboard.writeText(path).then(() => setCopied(true), () => undefined)}>
-		{copied ? <Check className="size-3! text-success" /> : <Copy className="size-3!" />}
+		<IconSwap show={copied ? "check" : "copy"}>{{ check: <Check className="size-3! text-success" />, copy: <Copy className="size-3!" /> }}</IconSwap>
 	</ToolbarButton>;
 }
 
@@ -192,6 +195,7 @@ export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: stri
 	const chooseScope = (value: unknown) => {
 		if (value === "branch") select({ kind: "branch" });
 		else if (value === "uncommitted") select({ kind: "uncommitted" });
+		else if (value === "unpushed") select({ kind: "unpushed" });
 		else if (value === "latest") select({ kind: "turn" });
 		else if (typeof value === "string" && value.startsWith("turn:")) select({ kind: "turn", messageId: value.slice(5) });
 		else if (typeof value === "string" && value.startsWith("commit:")) { const sha = value.slice(7); select({ kind: "commit", sha, subject: commits.list?.find(commit => commit.sha === sha)?.subject }); }
@@ -211,6 +215,7 @@ export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: stri
 					<DropdownMenuRadioGroup value={scopeValue} onValueChange={chooseScope}>
 						<DropdownMenuRadioItem value="branch" className="text-xs">Changes</DropdownMenuRadioItem>
 						<DropdownMenuRadioItem value="uncommitted" className="text-xs">Uncommitted</DropdownMenuRadioItem>
+						<DropdownMenuRadioItem value="unpushed" className="text-xs">Unpushed</DropdownMenuRadioItem>
 						{taskId && <DropdownMenuRadioItem value="latest" className="text-xs">Latest turn</DropdownMenuRadioItem>}
 					</DropdownMenuRadioGroup>
 					{taskId && <DropdownMenuSub>
@@ -238,6 +243,7 @@ export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: stri
 				</DropdownMenuContent>
 			</DropdownMenu>
 			{selection.kind === "commit" && selection.subject && <span className="min-w-0 truncate text-xs text-muted-foreground" title={selection.subject}>{selection.subject}</span>}
+			{selection.kind === "unpushed" && result?.repository && <span className="min-w-0 truncate text-xs text-muted-foreground" title={result.baseRef ? `Commits on ${result.headRef ?? "HEAD"} that ${result.baseRef} does not have` : undefined}>{result.baseRef ? `Not in ${result.baseRef}` : "No upstream or base branch"}</span>}
 			{selection.kind === "branch" && result?.repository && <div className="flex min-w-0 items-center gap-2 overflow-hidden text-xs text-muted-foreground" aria-label={`Comparing ${result.headRef ?? "HEAD"} against ${result.baseRef ?? "nothing"}`}>
 				<span className="min-w-0 max-w-48 truncate" title={result.headRef}>{result.headRef ?? "HEAD"}</span>
 				<ArrowRight className="size-3.5 shrink-0 opacity-70" />
@@ -249,7 +255,7 @@ export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: stri
 				<span className="text-success">+{stat.additions}</span><span className="text-destructive">−{stat.deletions}</span>
 			</span>}
 			{selection.kind !== "turn" && selection.kind !== "commit" && <ToolbarButton label={loading ? "Refreshing diff" : "Refresh diff"} onClick={() => setRefresh(value => value + 1)}><RefreshIcon refreshing={loading} /></ToolbarButton>}
-			{files.length > 0 && <ToolbarButton label={everyCollapsed ? "Expand all files" : "Collapse all files"} onClick={() => setKeys(toggleAll(keys, collapsedKeys))}>{everyCollapsed ? <ChevronsUpDown /> : <ChevronsDownUp />}</ToolbarButton>}
+			{files.length > 0 && <ToolbarButton label={everyCollapsed ? "Expand all files" : "Collapse all files"} onClick={() => setKeys(toggleAll(keys, collapsedKeys))}><IconSwap show={everyCollapsed ? "chevronsUpDown" : "chevronsDownUp"}>{{ chevronsUpDown: <ChevronsUpDown />, chevronsDownUp: <ChevronsDownUp /> }}</IconSwap></ToolbarButton>}
 			<div role="radiogroup" aria-label="Diff layout" className="flex shrink-0 items-center rounded-md bg-muted/70 p-0.5">
 				{([["unified", "Stacked diff view", <Rows3 key="u" />], ["split", "Split diff view", <Columns2 key="s" />]] as const).map(([value, name, icon]) =>
 					<button key={value} type="button" role="radio" aria-checked={layout === value} aria-label={name} title={name} onClick={() => setLayout(value)}
@@ -266,7 +272,7 @@ export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: stri
 	else if (selection.kind === "turn" && !turns.length) body = <SurfaceMessage>{taskId ? running ? "The first turn is still running." : "No completed turns yet." : "Open a chat to review its turns."}</SurfaceMessage>;
 	else if (result && !result.repository) body = <SurfaceMessage>Diffs are unavailable because this project is not a Git repository.</SurfaceMessage>;
 	else if (!result) body = error ? <SurfaceMessage className="text-destructive/80">{error}</SurfaceMessage> : <DiffLoadingState label={selection.kind === "turn" ? "Loading turn diff…" : selection.kind === "uncommitted" ? "Loading uncommitted changes…" : "Loading changes…"} />;
-	else if (!result.patch.trim()) body = <SurfaceMessage>No net changes in this selection.</SurfaceMessage>;
+	else if (!result.patch.trim()) body = <SurfaceMessage>{selection.kind === "unpushed" ? (result.baseRef ? `Nothing to push: ${result.baseRef} has every commit.` : "This branch has no upstream or base branch to compare with.") : "No net changes in this selection."}</SurfaceMessage>;
 	else if (!parsed) body = <ScrollArea className="min-h-0 flex-1" scrollBarOrientation="both" viewportClassName="p-2">
 		<p className="mb-2 text-[11px] text-muted-foreground/75">This patch could not be shown as a diff, so here is the raw text.</p>
 		<pre className={cn("rounded-md border border-border/70 p-3 font-mono text-[11px] leading-relaxed text-muted-foreground/90", wrap && "whitespace-pre-wrap break-words")}>{result.patch}</pre>
@@ -286,11 +292,11 @@ export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: stri
 			<DiffCodeView key={`${scopeKey}:${section.id}`} viewerRef={viewer} className="h-full min-h-0 overflow-auto" files={files} commentTarget={taskId ?? `project:${projectId}`} sectionId={section.id} sectionTitle={section.title}
 				layout={layout} wrap={wrap} theme={theme} loadDiffFiles={loadDiffFiles}
 				renderHeaderPrefix={file => <ToolbarButton size="sm" className="-ms-0.5 size-5" label={file.collapsed ? `Expand ${file.filePath}` : `Collapse ${file.filePath}`} onClick={() => setKeys(toggleOne(collapsedKeys, file.fileKey))}>
-					{file.collapsed ? <ChevronRight className={cn("size-4!", changeTone(file.fileDiff.type))} /> : <ChevronDown className={cn("size-4!", changeTone(file.fileDiff.type))} />}
+					<IconSwap show={file.collapsed ? "chevronRight" : "chevronDown"}>{{ chevronRight: <ChevronRight className={cn("size-4!", changeTone(file.fileDiff.type))} />, chevronDown: <ChevronDown className={cn("size-4!", changeTone(file.fileDiff.type))} /> }}</IconSwap>
 				</ToolbarButton>}
 				renderHeaderSuffix={file => <CopyPathButton path={file.filePath} />} />
 		</div>
-		{treeOpen && <aside className="flex w-[min(16rem,40%)] min-w-40 shrink-0 border-l border-border/60"><DiffFileTree label={`${section.title} files`} nodes={tree} selectedPath={selectedPath} onSelect={reveal} /></aside>}
+		{treeOpen && <ResizableAside storageKey="phaseo.desktop.diffTreeWidth" defaultWidth={256} min={160} maxShare={0.6} label="Resize the changed files list"><DiffFileTree label={`${section.title} files`} nodes={tree} selectedPath={selectedPath} onSelect={reveal} /></ResizableAside>}
 	</div>;
 
 	return <div className="diff-surface flex h-full min-h-0 min-w-0 flex-col bg-background" data-diff-scope={selection.kind}>

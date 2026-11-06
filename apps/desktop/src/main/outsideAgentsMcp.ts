@@ -2,9 +2,10 @@ import { createServer, type IncomingMessage, type Server as HttpServer, type Ser
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
+import type { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+
+// The MCP SDK (with zod and ajv) loads with the first outside agent's request, not with the app, as in orchestratorMcp.ts.
+const serverSdk = () => Promise.all([import("@modelcontextprotocol/sdk/server/index.js"), import("@modelcontextprotocol/sdk/server/streamableHttp.js"), import("@modelcontextprotocol/sdk/types.js")]);
 import type { ThreadTools } from "../shared/orchestration";
 import { defaultOutsideAgentPort, outsideAgentTools, validateOutsideAgentToken, validOutsideAgentPort, type CreatedOutsideAgentToken, type OutsideAgentAccess, type OutsideAgentSettings, type OutsideAgentToken } from "../shared/outsideAgents";
 import { toolContent } from "./orchestratorMcp";
@@ -97,6 +98,7 @@ export class OutsideAgentsMcp {
 		if (used && (!used.lastUsedAt || this.now().getTime() - Date.parse(used.lastUsedAt) > 60_000)) { used.lastUsedAt = this.now().toISOString(); this.save(); }
 		const allowed = outsideAgentTools[token.access];
 		const tools = threadTools(this.ports.tools({ id: token.id, name: token.name, access: token.access }) as ThreadTools).filter(tool => allowed.includes(tool.id));
+		const [{ Server }, { StreamableHTTPServerTransport }, { CallToolRequestSchema, ListToolsRequestSchema }] = await serverSdk();
 		const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
 		const mcp = new Server({ name: "phaseo", version: "1.0.0" }, { capabilities: { tools: {} } });
 		const disconnected = new AbortController(); response.on("close", () => disconnected.abort());

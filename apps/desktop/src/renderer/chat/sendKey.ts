@@ -7,6 +7,7 @@ const listeners = new Set<() => void>();
 const read = (): SendKey => { try { return localStorage.getItem(storageKey) === "mod+enter" ? "mod+enter" : "enter"; } catch { return "enter"; } };
 let value: SendKey | undefined;
 
+export const currentSendKey = () => value ??= read();
 export const useSendKey = () => useSyncExternalStore(listener => { listeners.add(listener); return () => { listeners.delete(listener); }; }, () => value ??= read());
 export function setSendKey(next: SendKey) {
 	value = next;

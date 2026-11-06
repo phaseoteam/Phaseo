@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { fileURLToPath } from "node:url";
 import { windowsCredentialEncryption } from "./windowsCredentialEncryption";
 describe("Windows credential protection", () => {
  it.skipIf(process.platform !== "win32")("keeps the event loop responsive while native protection is running", async () => {
@@ -12,5 +13,12 @@ describe("Windows credential protection", () => {
   expect(written.toString("utf8")).not.toContain("owned-credential"); expect(written.subarray(0, Buffer.byteLength("phaseo-dpapi-v1\0")).toString()).toBe("phaseo-dpapi-v1\0");
   const next = windowsCredentialEncryption(fallback); expect(await next.decrypt(written)).toBe("owned-credential-🦊"); expect(decrypt).not.toHaveBeenCalled(); expect(await next.decrypt(Buffer.from("legacy"))).toBe("legacy-owned"); expect(decrypt).toHaveBeenCalledOnce();
   const damaged = Buffer.from(written); damaged[damaged.length - 1] ^= 1; await expect(next.decrypt(damaged)).rejects.toThrow("protection failed");
+ }, 100_000);
+ it.skipIf(process.platform !== "win32")("round-trips credentials through the helper worker the app uses", async () => {
+  const fallback = { available: () => true, encrypt: () => Buffer.alloc(0), decrypt: () => "" };
+  const provider = windowsCredentialEncryption(fallback, fileURLToPath(new URL("./credentialWorker.ts", import.meta.url)));
+  const written = await provider.encrypt("owned-worker-credential");
+  expect(written.toString("utf8")).not.toContain("owned-worker-credential");
+  expect(await windowsCredentialEncryption(fallback, fileURLToPath(new URL("./credentialWorker.ts", import.meta.url))).decrypt(written)).toBe("owned-worker-credential");
  }, 100_000);
 });

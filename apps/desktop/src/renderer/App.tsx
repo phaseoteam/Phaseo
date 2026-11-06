@@ -1,7 +1,11 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { projectScopeKey } from "./shell/codeThreads";
 import { projectScopes } from "../shared/projectShelf";
-import { setDynamicCommands, useCommand, useKeybindingDispatcher, useKeybindings } from "./lib/keybindings";
+import { setDynamicCommands, useCommand, useCommands, useKeybindingDispatcher, useKeybindings } from "./lib/keybindings";
+import { readPersistedValue, writePersistedValue } from "./lib/persistedState";
+import { requestThemeEditor } from "./lib/themeEditorRequest";
+import { draftWorkspaceKey } from "./chat/WorktreeTarget";
+import { openInFavouriteEditor } from "./shell/PaletteExtras";
 import { projectActionCommands } from "../shared/projectSettings";
 import { sidebarOrder } from "./lib/sidebarOrder";
 import { X } from "lucide-react";
@@ -10,6 +14,7 @@ import { runUndo } from "./shell/threadUndo";
 import { isSettled } from "../shared/threadLifecycle";
 import { useAppTheme } from "./lib/appTheme";
 import { useWorkspace, WorkspaceProvider } from "./app/workspace";
+import { useAppCommandHost } from "./lib/appCommands";
 import { Titlebar } from "./shell/Titlebar";
 import { typeIntoComposer } from "./chat/composerFocusRedirect";
 import { HistoryNavigation } from "./shell/HistoryNavigation";
@@ -22,27 +27,25 @@ import { CommandPalette } from "./shell/CommandPalette";
 import { Toaster } from "./components/ui/toast";
 import { QuitHoldNotice } from "./shell/QuitHoldNotice";
 import { QuitRecoveryOffer } from "./chat/UsageLimitNotice";
-import { SettingsPage } from "./settings/SettingsPage";
-import { ScheduledTasks } from "./views/ScheduledTasks";
-import { Inbox } from "./views/Inbox";
-import { Usage } from "./views/Usage";
-import { PullRequestsPage } from "./views/pullRequests/PullRequestsPage";
 import { ChatNotifications } from "./app/ChatNotifications";
-import { NewChat } from "./chat/NewChat";
-import { ChatView } from "./chat/ChatView";
-import { CompareView } from "./chat/CompareView";
 import { GuideRunNotices } from "./views/pullRequests/GuideRunNotices";
-import { useDiffColours } from "./lib/workspacePreferences";
-import { FactoryPage } from "./factory/FactoryPage";
+import { saveChatPreferences, useDiffColours, useWorkspacePreferences } from "./lib/workspacePreferences";
+import { useAppFonts } from "./lib/appFonts";
+import { useAnimations } from "./lib/animations";
+import { useSlowRequestToasts } from "./lib/slowRequestToasts";
+import { ConsentHost } from "./components/ConsentDialog";
 
 /** The app-wide commands behind the keyboard shortcuts (Settings → Keyboard shortcuts). */
 function useShortcuts() {
-	const { setCommandsOpen, select, openSettings, openUsage, setMode, setSidebarOpen, setRightPanel, rightPanel, overview, selectedId, mode, settings } = useWorkspace();
+	const { setCommandsOpen, select, openSettings, openUsage, setMode, setSidebarOpen, setRightPanel, rightPanel, overview, selectedId, mode, settings, usagePage, scheduled, inboxPage, pullRequestsPage, compareId, codeView, theme, setTheme, newChatProjectId, setNewChatProjectId } = useWorkspace();
 	const threadActions = useThreadActions();
 	useKeybindings();
 	// Project actions with shortcuts become commands of their own (Settings → Keyboard shortcuts → Project actions).
 	useEffect(() => setDynamicCommands(projectActionCommands(overview.projects)), [overview.projects]);
-	useKeybindingDispatcher(() => ({ chatMode: mode === "chat", codeMode: mode === "code", chatOpen: Boolean(selectedId) && !settings, paneOpen: Boolean(rightPanel) && !settings, settingsOpen: Boolean(settings) }), typeIntoComposer);
+	// draftRoute: the New chat page is what the main column shows; modelPickerOpen is read when a key is pressed.
+	const draftRoute = !selectedId && !settings && !usagePage && !scheduled && !inboxPage && !pullRequestsPage && !compareId && !(mode === "code" && codeView === "factory");
+	useKeybindingDispatcher(() => ({ chatMode: mode === "chat", codeMode: mode === "code", chatOpen: Boolean(selectedId) && !settings, paneOpen: Boolean(rightPanel) && !settings, settingsOpen: Boolean(settings),
+		usagePageOpen: usagePage && !settings, draftRoute, modelPickerOpen: Boolean(document.getElementById("model-picker-list")) }), typeIntoComposer);
 	useCommand("commandPalette.toggle", () => setCommandsOpen(open => !open));
 	useCommand("chat.new", () => select(undefined));
 	useCommand("settings.open", () => openSettings());
@@ -53,9 +56,31 @@ function useShortcuts() {
 	useCommand("chat.newWithoutProject", () => { setMode("chat"); select(undefined); });
 	useCommand("usage.open", () => openUsage());
 	useCommand("theme.select", () => openSettings("appearance"));
+	// System, then light, then dark, and round again.
+	const richText = useWorkspacePreferences().chat.richTextComposer;
+	useCommand("composer.richText", () => { void saveChatPreferences({ richTextComposer: !richText }); });
+	useCommand("appearance.cycle", () => {
+		const next = theme === "system" ? "light" : theme === "light" ? "dark" : "system";
+		setTheme(next); showToast("info", `Appearance: ${next === "system" ? "System" : next === "light" ? "Light" : "Dark"}`);
+	});
+	useCommand("themeEditor.toggle", () => { openSettings("appearance"); requestThemeEditor(); });
 	useCommand("workspace.focusNext", () => moveRegionFocus(1));
 	useCommand("workspace.focusPrevious", () => moveRegionFocus(-1));
 	const openChat = () => overview.tasks.find(value => value.id === selectedId);
+	// A new Code chat in the open chat's project (or the last one chosen), in the project's own checkout, not a worktree.
+	useCommand("chat.newLocal", () => {
+		const projectId = openChat()?.projectId ?? newChatProjectId, project = overview.projects.find(value => value.id === projectId), root = project?.worktree?.sourceProjectId ?? project?.id;
+		setMode("code");
+		if (root) { setNewChatProjectId(root); writePersistedValue(draftWorkspaceKey, { ...readPersistedValue<Record<string, string>>(draftWorkspaceKey, {}), [root]: "local" }); }
+		select(undefined);
+	});
+	useCommand("editor.openFavorite", () => { const projectId = openChat()?.projectId; if (!projectId) return false; void openInFavouriteEditor(projectId); });
+	// The composer's own controls, marked with data-composer-shortcut; nothing happens when the open composer has no such control.
+	useCommands(["composer.workspace", "composer.branch"], command => {
+		const control = document.querySelector<HTMLButtonElement>(`main [data-composer-shortcut="${command}"]`);
+		if (!control || control.disabled) return false;
+		control.focus(); control.click();
+	});
 	useCommand("thread.pin", () => { const task = openChat(); if (!task) return false; void threadActions.pin(task); });
 	useCommand("thread.copyReference", () => {
 		const task = openChat(); if (!task) return false;
@@ -84,6 +109,18 @@ function useShortcuts() {
 	useCommand("view.zoomReset", () => void window.phaseoDesktop?.performAppAction("zoom-reset"));
 }
 
+// Each view loads on its own when first shown, so the sidebar paints without waiting for the code of every page.
+const SettingsPage = lazy(() => import("./settings/SettingsPage").then(module => ({ default: module.SettingsPage })));
+const ScheduledTasks = lazy(() => import("./views/ScheduledTasks").then(module => ({ default: module.ScheduledTasks })));
+const Inbox = lazy(() => import("./views/Inbox").then(module => ({ default: module.Inbox })));
+const FirstRun = lazy(() => import("./shell/FirstRun").then(module => ({ default: module.FirstRun })));
+const Usage = lazy(() => import("./views/Usage").then(module => ({ default: module.Usage })));
+const PullRequestsPage = lazy(() => import("./views/pullRequests/PullRequestsPage").then(module => ({ default: module.PullRequestsPage })));
+const NewChat = lazy(() => import("./chat/NewChat").then(module => ({ default: module.NewChat })));
+const ChatView = lazy(() => import("./chat/ChatView").then(module => ({ default: module.ChatView })));
+const CompareView = lazy(() => import("./chat/CompareView").then(module => ({ default: module.CompareView })));
+const FactoryPage = lazy(() => import("./factory/FactoryPage").then(module => ({ default: module.FactoryPage })));
+
 function Main() {
 	const { selectedId, compareId, compareGroups, settings, scheduled, pullRequestsPage, inboxPage, usagePage, mode, codeView } = useWorkspace();
 	if (settings) return <SettingsPage />;
@@ -109,18 +146,22 @@ function ErrorBanner() {
 }
 
 function Shell() {
-	const { sidebarOpen, settings } = useWorkspace();
+	// The welcome loads only until it has been seen or skipped (shell/FirstRun.tsx).
+	const [firstRunPending] = useState(() => { try { return localStorage.getItem("phaseo.desktop.onboarded") === null; } catch { return false; } });
 	useShortcuts();
+	useAppCommandHost();
 	return <div className="flex h-full flex-col">
 		<Titlebar />
 		<div className="relative flex min-h-0 flex-1">
-			{(sidebarOpen || settings) && <Sidebar />}
+			<Sidebar />
 			{/* A maximised pane takes the chat column's place. */}
-			<main className="relative min-w-0 flex-1 bg-background [&:has(~aside[data-maximized])]:hidden"><Main /><BrowserMiniPlayerHost /></main>
+			<main className="relative min-w-0 flex-1 bg-background [&:has(~aside[data-maximized])]:hidden"><Suspense><Main /></Suspense><BrowserMiniPlayerHost /></main>
 			<RightPanel />
 			<ErrorBanner />
 		</div>
 		<CommandPalette />
+		<ConsentHost />
+		{firstRunPending && <Suspense><FirstRun /></Suspense>}
 		<HistoryNavigation />
 		<Toaster />
 		<QuitHoldNotice />
@@ -133,5 +174,8 @@ function Shell() {
 export function App() {
 	useAppTheme();
 	useDiffColours();
+	useAppFonts();
+	useAnimations();
+	useSlowRequestToasts();
 	return <WorkspaceProvider><Shell /></WorkspaceProvider>;
 }

@@ -5,6 +5,9 @@ import type { Task } from "../../shared/workspace";
 const cache = new Map<string, Task>(), prefetching = new Set<string>();
 function remember(id: string, task: Task) { cache.delete(id); cache.set(id, task); if (cache.size > 20) cache.delete(cache.keys().next().value!); }
 
+/** A chat read lately, when its revision is still the one wanted. */
+export function cachedTask(id: string, revision?: number) { const task = cache.get(id); return task && (revision === undefined || task.revision === revision) ? task : undefined; }
+
 /** Reads a chat ahead of opening it (its sidebar row is under the pointer); the open view still re-reads it. */
 export function prefetchTask(id: string) {
 	const read = window.phaseoDesktop?.workspace.task;

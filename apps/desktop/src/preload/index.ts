@@ -1,11 +1,13 @@
 import { contextBridge, ipcRenderer } from "electron";
 import type { PhaseoDesktopApi } from "../shared/desktop";
-import type { UsagePeriod } from "../shared/usageLedger";
+import { withSlowRequestNotice, type SlowRequestEvent } from "../shared/slowRequests";
+import type { UsageFilter, UsagePeriod } from "../shared/usageLedger";
 
 const taskOpenListeners = new Set<(taskId?: string) => void>();
 let pendingTaskOpen: { id?: string } | undefined;
 ipcRenderer.on("workspace:open-task", (_event, id?: string) => { if (taskOpenListeners.size) for (const listener of taskOpenListeners) listener(id); else pendingTaskOpen = { id }; });
 
+const slowListeners = new Set<(event: SlowRequestEvent) => void>();
 const desktopApi: PhaseoDesktopApi = {
 	platform: process.platform,
 	browserDownload: command => ipcRenderer.invoke("desktop:browser-download", command),
@@ -25,6 +27,9 @@ const desktopApi: PhaseoDesktopApi = {
 	onBrowserAgentRecord: listener => { const subscription = (_event: Electron.IpcRendererEvent, request: Parameters<typeof listener>[0]) => listener(request); ipcRenderer.on("desktop:browser-agent-record", subscription); return () => ipcRenderer.removeListener("desktop:browser-agent-record", subscription); },
 	browserAgentRecorded: (requestId, recording, error) => ipcRenderer.invoke("desktop:browser-agent-recorded", requestId, recording ?? null, error),
 	onBrowserAgentTab: listener => { const subscription = (_event: Electron.IpcRendererEvent, tab: Parameters<typeof listener>[0]) => listener(tab); ipcRenderer.on("desktop:browser-agent-tab", subscription); return () => ipcRenderer.removeListener("desktop:browser-agent-tab", subscription); },
+	onChatLink: listener => { const subscription = () => listener(); ipcRenderer.on("desktop:chat-link", subscription); return () => ipcRenderer.removeListener("desktop:chat-link", subscription); },
+	takeChatLink: () => ipcRenderer.invoke("desktop:take-chat-link"),
+	onSlowRequest: listener => { slowListeners.add(listener); return () => { slowListeners.delete(listener); }; },
 	onNavigate: listener => { const subscription = (_event: Electron.IpcRendererEvent, direction: "back" | "forward") => listener(direction); ipcRenderer.on("desktop:navigate", subscription); return () => ipcRenderer.removeListener("desktop:navigate", subscription); },
 	onBrowserKey: listener => { const subscription = (_event: Electron.IpcRendererEvent, key: Parameters<typeof listener>[0]) => listener(key); ipcRenderer.on("desktop:browser-key", subscription); return () => ipcRenderer.removeListener("desktop:browser-key", subscription); },
 	workspace: {
@@ -32,7 +37,7 @@ const desktopApi: PhaseoDesktopApi = {
 		mission: command => ipcRenderer.invoke("workspace:mission", command),
 		onMissionsChange: listener => { const subscription = (_event: Electron.IpcRendererEvent, missions: Parameters<typeof listener>[0]) => listener(missions); ipcRenderer.on("workspace:missions-changed", subscription); return () => ipcRenderer.removeListener("workspace:missions-changed", subscription); },
 		autopilotLog: () => ipcRenderer.invoke("workspace:autopilot-log"),
-		usageReport: (period: UsagePeriod) => ipcRenderer.invoke("workspace:usage-report", period),
+		usageReport: (period: UsagePeriod, filter?: UsageFilter) => ipcRenderer.invoke("workspace:usage-report", period, filter),
 		usageFolders: request => ipcRenderer.invoke("workspace:usage-folders", request),
 		onUsageChange: listener => { const subscription = () => listener(); ipcRenderer.on("workspace:usage-changed", subscription); return () => ipcRenderer.removeListener("workspace:usage-changed", subscription); },
 		onAutopilotLogChange: listener => { const subscription = () => listener(); ipcRenderer.on("workspace:autopilot-log-changed", subscription); return () => ipcRenderer.removeListener("workspace:autopilot-log-changed", subscription); },
@@ -87,11 +92,19 @@ const desktopApi: PhaseoDesktopApi = {
 		onBackgroundChange: listener => { const subscription = (_event: Electron.IpcRendererEvent, taskId: string) => listener(taskId); ipcRenderer.on("workspace:background-changed", subscription); return () => ipcRenderer.removeListener("workspace:background-changed", subscription); },
 		saveAttachment: (taskId, id) => ipcRenderer.invoke("workspace:save-attachment", taskId, id),
 		installations: () => ipcRenderer.invoke("workspace:installations"),
+		mcpAppTool: (taskId, activityId, name) => ipcRenderer.invoke("workspace:mcp-app-tool", taskId, activityId, name),
+		mcpAppCall: (taskId, activityId, name, input) => ipcRenderer.invoke("workspace:mcp-app-call", taskId, activityId, name, input),
+		openPageLink: url => ipcRenderer.invoke("workspace:open-page-link", url),
+		providerIncidents: () => ipcRenderer.invoke("workspace:provider-incidents"),
+		openStatusPage: id => ipcRenderer.invoke("workspace:open-status-page", id),
+		acpRegistry: fresh => ipcRenderer.invoke("workspace:acp-registry", fresh ?? false),
+		addRegistryAgent: (id, kind) => ipcRenderer.invoke("workspace:acp-registry-add", id, kind),
 		updateHarness: harness => ipcRenderer.invoke("workspace:update-harness", harness),
 		cancelHarnessUpdate: () => ipcRenderer.invoke("workspace:cancel-harness-update"),
 		harnessUpdateStatus: () => ipcRenderer.invoke("workspace:harness-update-status"),
 		checkAgent: id => ipcRenderer.invoke("workspace:check-agent", id),
 		mcp: command => ipcRenderer.invoke("workspace:mcp", command),
+		mcpWhenIdle: command => ipcRenderer.invoke("workspace:mcp-when-idle", command),
 		models: (harness, accountId, projectId) => ipcRenderer.invoke("workspace:models", harness, accountId, projectId),
 		refreshModels: (harness, accountId) => ipcRenderer.invoke("workspace:refresh-models", harness, accountId),
 		onModelsChange: listener => { const subscription = (_event: Electron.IpcRendererEvent, change: Parameters<typeof listener>[0]) => listener(change); ipcRenderer.on("workspace:models-changed", subscription); return () => ipcRenderer.removeListener("workspace:models-changed", subscription); },
@@ -207,6 +220,11 @@ const desktopApi: PhaseoDesktopApi = {
 	getWindowState: () => ipcRenderer.invoke("desktop:get-window-state"),
 	performWindowAction: (action) => ipcRenderer.invoke("desktop:window-action", action),
 	performAppAction: (action) => ipcRenderer.invoke("desktop:app-action", action),
+	appCommands: {
+		run: (command, args) => ipcRenderer.invoke("desktop:app-command", command, args),
+		onRequest: listener => { const subscription = (_event: Electron.IpcRendererEvent, request: Parameters<typeof listener>[0]) => listener(request); ipcRenderer.on("desktop:app-command-request", subscription); return () => ipcRenderer.removeListener("desktop:app-command-request", subscription); },
+		reply: result => ipcRenderer.send("desktop:app-command-result", result),
+	},
 	keybindings: {
 		get: () => ipcRenderer.invoke("desktop:keybindings"),
 		save: entries => ipcRenderer.invoke("desktop:save-keybindings", entries),
@@ -232,6 +250,8 @@ const desktopApi: PhaseoDesktopApi = {
 		retentionClean: id => ipcRenderer.invoke("maintenance:retention-clean", id),
 		retentionLast: () => ipcRenderer.invoke("maintenance:retention-last"),
 		openNotices: () => ipcRenderer.invoke("maintenance:open-notices"),
+		storageUsage: () => ipcRenderer.invoke("maintenance:storage-usage"),
+		clearCaches: () => ipcRenderer.invoke("maintenance:clear-caches"),
 	},
 	checkForUpdates: () => ipcRenderer.invoke("desktop:check-for-updates"),
 	installUpdate: () => ipcRenderer.invoke("desktop:install-update"),
@@ -249,4 +269,4 @@ const desktopApi: PhaseoDesktopApi = {
 	setBadge: (count, overlay) => ipcRenderer.invoke("desktop:set-badge", count, overlay),
 };
 
-contextBridge.exposeInMainWorld("phaseoDesktop", desktopApi);
+contextBridge.exposeInMainWorld("phaseoDesktop", withSlowRequestNotice(desktopApi, event => { for (const listener of slowListeners) listener(event); }));

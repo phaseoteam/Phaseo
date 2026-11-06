@@ -1,4 +1,3 @@
-import { GetPromptResultSchema } from "@modelcontextprotocol/sdk/types.js";
 import { mcpPromptDraft } from "../shared/mcpPrompts";
 import type { Attachment } from "../shared/workspace";
 import type { AttachmentService } from "./attachments";
@@ -6,6 +5,7 @@ import { imageMime } from "./attachments";
 
 export async function importMcpPromptAttachments(taskId: string, value: unknown, service: AttachmentService, commit: (attachments: Attachment[]) => void) {
  if (Buffer.byteLength(JSON.stringify(value) ?? "", "utf8") > 1000000) throw Error("MCP prompt result exceeds the 1 MB limit.");
+ const { GetPromptResultSchema } = await import("@modelcontextprotocol/sdk/types.js");
  const { messages } = GetPromptResultSchema.parse({ messages: value });
  const draft = mcpPromptDraft(messages);
  if (draft.text === undefined) throw Error(draft.insertionError);

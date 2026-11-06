@@ -17,7 +17,6 @@ import { useKeybindings } from "../lib/keybindings";
 import { isMac } from "../lib/shortcuts";
 import { mergeMethodLabels } from "../views/pullRequests/pullRequestLogic";
 import { ModelPicker, harnessNames } from "../chat/ModelPicker";
-import { ModelSettings } from "../chat/ModelSettings";
 import { useConnectedHarnesses } from "../lib/useConnectedHarnesses";
 import { runnableHarnesses, type Harness } from "../../shared/workspace";
 
@@ -104,8 +103,8 @@ export function ProjectSettingsPage() {
 		<SettingsSection title="New chats" description="What new Code chats in this project start with. Each can still be changed before sending." label="Project new chat defaults">
 			<SettingsRow title="Model" description={settings.defaultModel ? "New chats start with this model and its settings." : "New chats start with the model you chose last."}
 				control={<>
-					{settings.defaultModel && <><SettingsButton variant="ghost" disabled={busy} onClick={() => override("defaultModel", "inherit")}>Reset</SettingsButton><ModelSettings selection={settings.defaultModel} onChange={next => override("defaultModel", next)} disabled={busy} /></>}
-					<ModelPicker selections={settings.defaultModel ? [settings.defaultModel] : []} onChange={values => { if (values[0]) override("defaultModel", values[0]); }} agents disabled={busy} hidden={settings.disabledHarnesses} className="border border-border" />
+					{settings.defaultModel && <><SettingsButton variant="ghost" disabled={busy} onClick={() => override("defaultModel", "inherit")}>Reset</SettingsButton></>}
+					<ModelPicker selections={settings.defaultModel ? [settings.defaultModel] : []} onChange={values => { if (values[0]) override("defaultModel", values[0]); }} onSettingsChange={next => override("defaultModel", next)} agents disabled={busy} hidden={settings.disabledHarnesses} className="border border-border" />
 				</>} />
 			<SettingsRow title="Permissions" description="How much the agent may do without asking."
 				control={<Select label="Project default permissions" disabled={busy} value={settings.defaultPermissionMode ?? "inherit"} onValueChange={value => override("defaultPermissionMode", value === "supervised" || value === "accept-edits" || value === "full-access" ? value : "inherit")}

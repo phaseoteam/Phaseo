@@ -1,20 +1,23 @@
 import type { ModelOption, ModelOptionDescriptor, ModelOptionValues } from "../shared/workspace";
 
-type Effort = "low" | "medium" | "high" | "xhigh" | "max" | "ultracode" | "ultrathink";
-/** Per-model settings for each Claude model (as of 2026-10-02). */
-type Profile = { effort: Effort[]; defaultEffort?: Effort; fastMode?: boolean; contextWindow?: "200k" | "1m"; thinking?: boolean; effortMap?: Partial<Record<Effort, string | null>> };
+type Effort = "low" | "medium" | "high" | "xhigh" | "max";
+/**
+ * Per-model settings for each Claude model (as of 2026-10-02). As Claude Code has them, Ultracode is a switch that runs
+ * workflows at any level, and Ultrathink is a word typed in a message, not a level.
+ */
+type Profile = { effort: Effort[]; defaultEffort?: Effort; fastMode?: boolean; contextWindow?: "200k" | "1m"; thinking?: boolean; ultracode?: boolean; effortMap?: Partial<Record<Effort, Effort>> };
 
-const all: Effort[] = ["low", "medium", "high", "xhigh", "max", "ultracode", "ultrathink"];
+const all: Effort[] = ["low", "medium", "high", "xhigh", "max"];
 const profiles: Record<string, Profile> = {
-	"fable-5": { effort: all, defaultEffort: "medium", contextWindow: "1m", effortMap: { ultracode: "xhigh", ultrathink: null } },
-	"opus-5-5": { effort: all, defaultEffort: "medium", fastMode: true, contextWindow: "1m", effortMap: { ultracode: "xhigh", ultrathink: null } },
-	"opus-5": { effort: all, defaultEffort: "high", fastMode: true, contextWindow: "1m", effortMap: { ultracode: "xhigh", ultrathink: null } },
-	"opus-4-8": { effort: all, defaultEffort: "high", fastMode: true, effortMap: { ultracode: "xhigh", ultrathink: null } },
-	"opus-4-7": { effort: ["low", "medium", "high", "xhigh", "max", "ultrathink"], defaultEffort: "xhigh", fastMode: true, effortMap: { xhigh: "max", ultrathink: null } },
-	"opus-4-6": { effort: ["low", "medium", "high", "max", "ultrathink"], defaultEffort: "high", fastMode: true, contextWindow: "1m", effortMap: { ultrathink: null } },
+	"fable-5": { effort: all, defaultEffort: "medium", contextWindow: "1m", ultracode: true },
+	"opus-5-5": { effort: all, defaultEffort: "medium", fastMode: true, contextWindow: "1m", ultracode: true },
+	"opus-5": { effort: all, defaultEffort: "high", fastMode: true, contextWindow: "1m", ultracode: true },
+	"opus-4-8": { effort: all, defaultEffort: "high", fastMode: true, ultracode: true },
+	"opus-4-7": { effort: all, defaultEffort: "xhigh", fastMode: true, effortMap: { xhigh: "max" } },
+	"opus-4-6": { effort: ["low", "medium", "high", "max"], defaultEffort: "high", fastMode: true, contextWindow: "1m" },
 	"opus-4-5": { effort: ["low", "medium", "high", "max"], defaultEffort: "high", fastMode: true },
-	"sonnet-5": { effort: ["low", "medium", "high", "xhigh", "max", "ultrathink"], defaultEffort: "high", contextWindow: "200k", effortMap: { ultrathink: null } },
-	"sonnet-4-6": { effort: ["low", "medium", "high", "max", "ultrathink"], defaultEffort: "high", contextWindow: "200k", effortMap: { max: "high", ultrathink: null } },
+	"sonnet-5": { effort: all, defaultEffort: "high", contextWindow: "200k" },
+	"sonnet-4-6": { effort: ["low", "medium", "high", "max"], defaultEffort: "high", contextWindow: "200k", effortMap: { max: "high" } },
 	"haiku-4-5": { effort: [], thinking: true },
 };
 
@@ -42,15 +45,13 @@ export type ClaudeAlias = ModelOption & { resolvedModel?: string; supportsEffort
 
 const effortLabels: Record<Effort, { label: string; description?: string }> = {
 	low: { label: "Low" }, medium: { label: "Medium" }, high: { label: "High" }, xhigh: { label: "Extra High" }, max: { label: "Max" },
-	ultracode: { label: "Ultracode", description: "Extra High effort plus multi-agent workflow orchestration" },
-	ultrathink: { label: "Ultrathink", description: "Asks Claude to think as hard as it can about each message" },
 };
 
 function descriptors(profile: Profile): ModelOptionDescriptor[] {
 	const result: ModelOptionDescriptor[] = [];
 	if (profile.effort.length) result.push({ id: "effort", label: "Reasoning", type: "select", options: profile.effort.map(id => ({ id, ...effortLabels[id], ...(id === profile.defaultEffort ? { isDefault: true } : {}) })) });
+	if (profile.ultracode) result.push({ id: "ultracode", label: "Ultracode", type: "boolean", default: false });
 	if (profile.fastMode) result.push({ id: "fastMode", label: "Fast Mode", type: "boolean", default: false });
-	if (profile.contextWindow) result.push({ id: "contextWindow", label: "Context Window", type: "select", options: [{ id: "200k", label: "200k", ...(profile.contextWindow === "200k" ? { isDefault: true } : {}) }, { id: "1m", label: "1M", ...(profile.contextWindow === "1m" ? { isDefault: true } : {}) }] });
 	if (profile.thinking) result.push({ id: "thinking", label: "Thinking", type: "boolean", default: false });
 	return result;
 }
@@ -61,7 +62,19 @@ function reportedProfile(alias: ClaudeAlias): Profile {
 	return { effort, defaultEffort: effort.includes("medium") ? "medium" : effort[0], fastMode: alias.supportsFastMode };
 }
 
-const profileFor = (id: string) => profiles[claudeModelManifest.find(model => model.id === id)?.profile ?? ""];
+/** Claude Code's own aliases ("opus") and the model each runs now, as it last reported them. */
+const latestAliases = new Map<string, string>();
+const profileFor = (id: string) => profiles[claudeModelManifest.find(model => model.id === (latestAliases.get(id) ?? id))?.profile ?? ""];
+
+/**
+ * What Claude Code reports about a model narrows its manifest profile, so the picker offers only levels it accepts:
+ * a level stays when the effort it sends is reported, and Fast mode follows the report.
+ */
+function withReported(profile: Profile, alias: ClaudeAlias): Profile {
+	const levels = alias.supportsEffort === false ? [] : alias.supportedEffortLevels;
+	const effort = levels ? profile.effort.filter(id => levels.includes(profile.effortMap?.[id] ?? id)) : profile.effort;
+	return { ...profile, effort, defaultEffort: profile.defaultEffort && effort.includes(profile.defaultEffort) ? profile.defaultEffort : undefined, ...(alias.supportsFastMode !== undefined ? { fastMode: alias.supportsFastMode } : {}) };
+}
 
 function compareVersions(left: string, right: string) {
 	const a = left.split(".").map(Number), b = right.split(".").map(Number);
@@ -77,44 +90,53 @@ export function claudeModelsFor(aliases: ClaudeAlias[], installedVersion?: strin
 	const version = installedVersion?.match(/\d+(?:\.\d+)+/)?.[0];
 	const supported = (minVersion?: string) => !minVersion || (!!version && compareVersions(version, minVersion) >= 0);
 	const withOptions = (model: ModelOption, profile?: Profile): ModelOption => { const options = profile ? descriptors(profile) : []; return options.length ? { ...model, options } : model; };
-	const current: ModelOption[] = [];
+	const current: ModelOption[] = [], latest: ModelOption[] = [];
 	for (const alias of aliases) {
 		if (alias.id === "default") continue;
 		const [described, ...details] = (alias.description ?? "").split(" · ");
 		const match = described?.match(/^(Opus|Sonnet|Fable|Haiku) (\d+(?:\.\d+)?)$/);
 		const id = alias.resolvedModel?.replace(/\[1m\]$/, "") || (match ? `claude-${match[1].toLowerCase()}-${match[2].replace(".", "-")}` : undefined);
 		if (!id) { current.push({ id: alias.id, name: alias.name, description: alias.description }); continue; }
+		if (/^[a-z]+$/.test(alias.id) && alias.id !== id) {
+			latestAliases.set(alias.id, id);
+			const profile = profileFor(id) ? withReported(profileFor(id)!, alias) : reportedProfile(alias);
+			latest.push(withOptions({ id: alias.id, name: `Claude ${alias.id.charAt(0).toUpperCase()}${alias.id.slice(1)} Latest`, description: `Always Claude Code's newest ${alias.id.charAt(0).toUpperCase()}${alias.id.slice(1)}.`, latestOf: id }, profile));
+		}
 		if (current.some(model => model.id === id)) continue;
 		const name = match ? `Claude ${described}` : claudeModelManifest.find(model => model.id === id)?.name ?? alias.name;
-		current.push(withOptions({ id, name, description: match ? details.find(detail => !detail.startsWith("$")) : alias.description }, profileFor(id) ?? reportedProfile(alias)));
+		current.push(withOptions({ id, name, description: match ? details.find(detail => !detail.startsWith("$")) : alias.description }, profileFor(id) ? withReported(profileFor(id)!, alias) : reportedProfile(alias)));
 	}
 	const known = new Set(current.map(model => model.id));
 	const older = claudeModelManifest.filter(model => !known.has(model.id) && supported(model.minVersion)).map(model => withOptions({ id: model.id, name: model.name, legacy: true }, profiles[model.profile]));
 	if (!current.length) return older.map(model => ({ ...model, legacy: undefined }));
-	return [...current, ...older];
+	return [...current, ...latest, ...older];
 }
 
-/** How the chosen settings reach Claude Code: SDK `effort`, a `[1m]` model suffix, session `settings`, and Ultrathink as a prompt prefix. */
-export function claudeRunOptions(model: string, values: ModelOptionValues | undefined) {
+/** Typed in a message, as in Claude Code: that turn runs at Extra High, unless Max is already chosen. */
+export const typesUltrathink = (text: string) => /\bultrathink\b/i.test(text);
+
+/**
+ * How the chosen settings reach Claude Code: SDK `effort`, a `[1m]` model suffix and session `settings`. A message that
+ * types "ultrathink" raises its turn to Extra High. Chats saved when Ultracode and Ultrathink were levels keep working.
+ */
+export function claudeRunOptions(model: string, values: ModelOptionValues | undefined, text = "") {
 	const profile = profileFor(model);
 	// Models newer than the manifest offered the settings Claude Code reported; accept its standard ones.
-	const options = descriptors(profile ?? { effort: ["low", "medium", "high", "xhigh", "max"], fastMode: true });
+	const options = descriptors(profile ?? { effort: all, fastMode: true });
 	const offered = (id: string) => options.find(option => option.id === id);
 	const effortOption = offered("effort");
-	const chosen = typeof values?.effort === "string" && effortOption?.type === "select" && effortOption.options.some(option => option.id === values.effort) ? values.effort as Effort : undefined;
-	const mapped = chosen && profile?.effortMap && chosen in profile.effortMap ? profile.effortMap[chosen] : chosen;
-	const effort = mapped === "ultracode" || mapped === "ultrathink" ? undefined : mapped ?? undefined;
-	const windowOption = offered("contextWindow");
-	const window = windowOption?.type === "select" ? (typeof values?.contextWindow === "string" ? values.contextWindow : windowOption.options.find(option => option.isDefault)?.id) : undefined;
+	const saved = values?.effort === "ultracode" ? "xhigh" : values?.effort;
+	const levels = effortOption?.type === "select" ? effortOption.options.map(option => option.id as Effort) : [];
+	let chosen = typeof saved === "string" && levels.includes(saved as Effort) ? saved as Effort : undefined;
+	const ultrathink = (typesUltrathink(text) || values?.effort === "ultrathink") && levels.includes("xhigh");
+	if (ultrathink && chosen !== "max") chosen = "xhigh";
+	const effort = chosen ? profile?.effortMap?.[chosen] ?? chosen : undefined;
+	// Each model runs at its own context window, 1M where it offers one; it is not a choice.
+	const window = profile?.contextWindow;
 	const settings = {
 		...(offered("fastMode") ? { fastMode: values?.fastMode === true } : {}),
 		...(offered("thinking") && typeof values?.thinking === "boolean" ? { alwaysThinkingEnabled: values.thinking } : {}),
-		...(chosen === "ultracode" ? { ultracode: true } : {}),
+		...(offered("ultracode") && (values?.ultracode === true || values?.effort === "ultracode") ? { ultracode: true } : {}),
 	};
-	return {
-		model: window === "1m" ? `${model}[1m]` : model,
-		effort: effort as "low" | "medium" | "high" | "xhigh" | "max" | undefined,
-		settings: Object.keys(settings).length ? settings : undefined,
-		promptPrefix: chosen === "ultrathink" ? "Ultrathink:\n" : "",
-	};
+	return { model: window === "1m" ? `${model}[1m]` : model, effort, settings: Object.keys(settings).length ? settings : undefined };
 }

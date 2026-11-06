@@ -10,6 +10,7 @@ import { StatusDot } from "../shell/Sidebar";
 import { ModelStack, modelName } from "./ModelPicker";
 import { isSideChat } from "../../shared/sideChats";
 import { openSideChat } from "../panels/events";
+import { IconSwap } from "../components/IconSwap";
 
 const working = (task: TaskOverview) => task.status === "running" || task.status === "waiting" || !!task.approvalsCount || !!task.answersCount;
 const statusLabel = (task: TaskOverview) => task.approvalsCount || task.answersCount ? "Needs input" : task.status === "running" ? "Working" : task.status === "waiting" ? "Waiting" : task.status === "completed" ? "Done" : task.status === "failed" ? "Failed" : task.status === "interrupted" ? "Stopped" : task.status === "limited" ? "Usage limit" : "Idle";
@@ -47,7 +48,7 @@ export function AgentThreads({ taskId }: { taskId: string }) {
 	return <section aria-label="Agents started by this chat" className="flex flex-col gap-2">
 		{children.length > 0 && <div className="flex flex-col gap-0.5">
 			<div className="flex items-center gap-1.5 py-1 text-[13px] text-muted-foreground">
-				{active ? <LoaderCircle className="size-3.5 animate-spin text-primary" /> : <Network className="size-3.5" />}
+				<IconSwap show={active ? "loaderCircle" : "network"}>{{ loaderCircle: <LoaderCircle className="size-3.5 animate-spin text-primary" />, network: <Network className="size-3.5" /> }}</IconSwap>
 				<span className="font-medium">{children.length === 1 ? "Started 1 agent" : `Started ${children.length} agents`}{active ? ` · ${active} working` : ""}</span>
 				{active > 0 && <button type="button" title="Stop every agent this chat started, and the agents they started" onClick={() => { for (const child of children.filter(working)) void command({ type: "cancel", id: child.id }); }}
 					className="ml-1 flex h-6 items-center gap-1 rounded-md px-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"><Square className="size-2.5 fill-current" />Stop all</button>}

@@ -1,3 +1,4 @@
+import type { AppCommandArgs, AppCommandRequest, AppCommandResult } from "./appCommands";
 import type { BrowserDownload, BrowserDownloadCommand } from "./browserDownloads";
 import type { KeybindingEntry } from "./keybindings";
 import type { BrowserAgentTabOpened, BrowserCapture, BrowserCommand, BrowserKey, BrowserLocalServer, BrowserOpenTab, BrowserPick, BrowserRecording, BrowserState } from "./browser";
@@ -5,6 +6,7 @@ import type { WorkspaceApi } from "./workspace";
 import type { DiagnosticsApi } from "./diagnostics";
 import type { MaintenanceApi } from "./maintenance";
 import type { FactoryApi } from "./factory/types";
+import type { SlowRequestEvent } from "./slowRequests";
 
 export type DesktopRuntimeInfo = {
 	platform: NodeJS.Platform;
@@ -75,10 +77,21 @@ export type PhaseoDesktopApi = {
 	onBrowserKey: (listener: (key: BrowserKey) => void) => () => void;
 	/** The mouse's back and forward buttons, or a macOS swipe, outside a browser page. */
 	onNavigate: (listener: (direction: "back" | "forward") => void) => () => void;
+	/** A phaseo://chat/ link opened or focused the app; takeChatLink returns its chat id once. */
+	onChatLink: (listener: () => void) => () => void;
+	/** A request to the main process still running after ten seconds, and when it settles (shared/slowRequests.ts). */
+	onSlowRequest: (listener: (event: SlowRequestEvent) => void) => () => void;
+	takeChatLink: () => Promise<string | undefined>;
 	getRuntimeInfo: () => Promise<DesktopRuntimeInfo>;
 	getWindowState: () => Promise<DesktopWindowState>;
 	performWindowAction: (action: DesktopWindowAction) => Promise<void>;
 	performAppAction: (action: DesktopAppAction) => Promise<void>;
+	/** The app command registry (shared/appCommands.ts): run a main-process command, and answer the main process's requests to run renderer commands for agents. */
+	appCommands?: {
+		run: (command: string, args?: AppCommandArgs) => Promise<unknown>;
+		onRequest: (listener: (request: AppCommandRequest) => void) => () => void;
+		reply: (result: AppCommandResult) => void;
+	};
 	/** keybindings.json: the person's own shortcuts. */
 	keybindings: {
 		get: () => Promise<KeybindingsState>;

@@ -38,6 +38,10 @@ import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import type { DesktopAppAction, DesktopUpdateState, DesktopWindowAction } from "../shared/desktop";
 import { isAllowedExternalUrl } from "../shared/desktop";
+import { chatLinkScheme, parseChatLink } from "../shared/chatLinks";
+import { prepareLaunch, readRegistry } from "./acpRegistry";
+import { providerIncidents, statusSources } from "./providerStatus";
+import { applyOpenAtLogin, ensureTray, removeTray } from "./trayAndLogin";
 import { validateCommand } from "../shared/workspace";
 import { validateWorktreeChatRequest } from "../shared/worktreeChat";
 import { validatePublishRepository } from "../shared/gitWorkflow";
@@ -93,7 +97,7 @@ import { TranscriptScanner, transcriptFiles, transcriptFolders, type TranscriptF
 import { listNativeSessions, readNativeSession } from "./sessionImport";
 import { validateNativeSessionImport, type NativeSession } from "../shared/sessionImport";
 import { TranscriptWriter } from "./usageLedgerWrites";
-import { localDay, modelMatchKey, type TokenPrices, type UsagePeriod } from "../shared/usageLedger";
+import { localDay, modelMatchKey, validateUsageFilter, type TokenPrices, type UsagePeriod } from "../shared/usageLedger";
 import { ghFailure, projectPullRequestAction, projectPullRequestBehind, projectPullRequestCandidates, projectPullRequestView, readPullRequestView, runGh } from "./projectPullRequestView";
 import { PullRequestGuides } from "./pullRequestGuides";
 import { PullRequestWatcher } from "./pullRequestWatcher";
@@ -130,18 +134,23 @@ import { TaskNotifications } from "./taskNotifications";
 import { MissionService } from "./missionService";
 import { validateMissionCommand } from "../shared/missions";
 import { cursorAccountStatus, cursorModels, cursorSignIn } from "./cursorAccounts";
-import { registerDiagnosticsIpc, stopTracing, traceIpcHandlers } from "./diagnostics/diagnosticsIpc";
+import { registerDiagnosticsIpc, stopTracing, traceExporter, traceIpcHandlers } from "./diagnostics/diagnosticsIpc";
 import type { ProcessOwner } from "./diagnostics/processTable";
 import { span } from "./diagnostics/tracer";
+import { AppControl } from "./appControl";
 import { resolveUpdateFeedUrl } from "./updateFeed";
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 const preloadPath = path.join(currentDirectory, "../preload/index.cjs");
 const rendererPath = path.join(currentDirectory, "../renderer/index.html");
 const developmentUrl = app.isPackaged ? undefined : process.env.PHASEO_DESKTOP_DEV_URL;
+/** Set once quitting starts, so the last window's close quits instead of hiding to the tray. */
+let quittingFromTray = false;
 const applicationIcon = path.join(app.getAppPath(), "assets", `icon-${developmentUrl ? "development" : "production"}.png`);
 const updateFeedUrl = resolveUpdateFeedUrl(app.isPackaged, process.env);
 let workspaceRuntime: WorkspaceRuntime;
+/** The app command registry's main side (main/appControl.ts), once the workspace is open. */
+let appControl: AppControl | undefined;
 let pullRequestGuides: PullRequestGuides;
 /** Code ▸ Factory; PHASEO_FACTORY_DEMO=1 runs it on demo data, for screenshots. */
 let factoryService: FactoryService | undefined;
@@ -218,11 +227,11 @@ ipcMain.handle("workspace:thread-servers", (event, taskId: unknown) => { const r
 ipcMain.handle("workspace:stop-thread-server", (event, taskId: unknown, port: unknown) => { const roots = serverRoots(event, taskId); if (!Number.isSafeInteger(port) || Number(port) < 1 || Number(port) > 65535) throw new Error("Invalid port."); return stopThreadServer(roots, Number(port)); });
 ipcMain.handle("workspace:missions", event => { if (!senderWindow(event)) throw new Error("Invalid scheduled task request."); return workspaceRuntime.store.missions.list(); });
 ipcMain.handle("workspace:mission", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid scheduled task request."); return missionService.command(validateMissionCommand(value)); });
-ipcMain.handle("workspace:usage-report", async (event, period: unknown) => {
+ipcMain.handle("workspace:usage-report", async (event, period: unknown, filter: unknown) => {
 	if (!senderWindow(event) || !["today", "7d", "30d", "90d"].includes(period as string)) throw new Error("Invalid usage request.");
 	// New Claude Code and Codex history is read in the background; the page hears when it lands.
 	void transcriptScanner?.scan();
-	const report = workspaceRuntime.store.usageReport(period as UsagePeriod, await usagePrices());
+	const report = workspaceRuntime.store.usageReport(period as UsagePeriod, await usagePrices(), new Date(), validateUsageFilter(filter));
 	const pullRequests = await usagePullRequests(localDay(new Date(report.from)));
 	return pullRequests ? { ...report, activity: { ...report.activity, pullRequests } } : report;
 });
@@ -230,10 +239,14 @@ ipcMain.handle("workspace:autopilot-log", event => { if (!senderWindow(event)) t
 ipcMain.handle("workspace:global-instructions", event => { if (!senderWindow(event)) throw new Error("Untrusted instruction request."); return globalInstructions.read(); });
 ipcMain.handle("workspace:save-global-instructions", (event, edit: unknown) => { if (!senderWindow(event) || shutdownStarted) throw new Error("Instruction editing is unavailable."); return globalInstructions.save(edit); });
 ipcMain.handle("workspace:preferences", event => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); return { preferences: workspaceRuntime.store.getPreferences(), notificationsSupported: Notification.isSupported() }; });
-ipcMain.handle("workspace:save-preferences", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); if (!value || typeof value !== "object") throw new Error("Invalid workspace preferences."); const preferences = workspaceRuntime.store.savePreferences(validatePreferences({ ...workspaceRuntime.store.getPreferences(), ...value })); taskNotifications.configure(preferences); workspaceRuntime.limitPreferencesChanged(); return preferences; });
+ipcMain.handle("workspace:save-preferences", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); if (!value || typeof value !== "object") throw new Error("Invalid workspace preferences."); const preferences = workspaceRuntime.store.savePreferences(validatePreferences({ ...workspaceRuntime.store.getPreferences(), ...value })); taskNotifications.configure(preferences); applyOpenAtLogin(preferences.chat.openAtLogin); traceExporter.configure(preferences.threads.traceExport); if (!preferences.chat.keepInTray) removeTray(); workspaceRuntime.limitPreferencesChanged(); return preferences; });
 ipcMain.handle("workspace:mcp", (event, value: unknown) => {
 	if (!senderWindow(event)) throw new Error("Invalid MCP request.");
 	return workspaceRuntime.mcp(validateMcpCommand(value));
+});
+ipcMain.handle("workspace:mcp-when-idle", (event, value: unknown) => {
+	if (!senderWindow(event)) throw new Error("Invalid MCP request.");
+	return workspaceRuntime.mcpWhenIdle(validateMcpCommand(value));
 });
 ipcMain.handle("workspace:terminals", event => {
 	if (!senderWindow(event)) throw new Error("Invalid terminal request.");
@@ -944,7 +957,8 @@ ipcMain.handle("workspace:clone-project", async (event, url: unknown) => {
 	const start = workspaceRuntime.store.getPreferences().sourceControl.addProjectDirectory;
 	const result = await dialog.showOpenDialog(window, { properties: ["openDirectory", "createDirectory"], title: "Choose where to clone", buttonLabel: "Clone here", ...start && existingFolder(start) ? { defaultPath: start } : {} });
 	if (result.canceled || !result.filePaths[0]) return undefined;
-	const directory = await span("projects.clone", undefined, () => cloneRepository(url, result.filePaths[0]));
+	const byHost = workspaceRuntime.store.getPreferences().sourceControl.cloneByHost;
+	const directory = await span("projects.clone", undefined, () => cloneRepository(url, result.filePaths[0], undefined, byHost));
 	const project = workspaceRuntime.store.addProject(directory);
 	const state = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(state); return { workspace: state, projectId: project.id };
 });
@@ -1069,6 +1083,38 @@ function harnessInstallations() {
 		} catch (error) { return { harness, installed: false, error: error instanceof Error ? error.message : "Installation is unavailable." }; }
 	}));
 }
+// MCP Apps: a page's calls to its own server's tools. The window asked the person first unless the tool is read-only.
+const appIds = (taskId: unknown, activityId: unknown, name: unknown) => typeof taskId === "string" && taskId.length <= 100 && typeof activityId === "string" && activityId.length <= 300 && typeof name === "string" && name.length > 0 && name.length <= 200;
+ipcMain.handle("workspace:mcp-app-tool", async (event, taskId: unknown, activityId: unknown, name: unknown) => {
+	if (!senderWindow(event) || !appIds(taskId, activityId, name)) throw new Error("Invalid app request.");
+	return workspaceRuntime.mcpAppTool(taskId as string, activityId as string, name as string);
+});
+ipcMain.handle("workspace:mcp-app-call", async (event, taskId: unknown, activityId: unknown, name: unknown, input: unknown) => {
+	if (!senderWindow(event) || !appIds(taskId, activityId, name) || !input || typeof input !== "object" || Array.isArray(input) || JSON.stringify(input).length > 1_000_000) throw new Error("Invalid app request.");
+	return workspaceRuntime.mcpAppCall(taskId as string, activityId as string, name as string, input as Record<string, unknown>);
+});
+// A link a page or an app opened: http and https only, in the system's browser.
+ipcMain.handle("workspace:open-page-link", async (event, url: unknown) => {
+	if (!senderWindow(event) || typeof url !== "string" || url.length > 4000) return false;
+	let parsed: URL; try { parsed = new URL(url); } catch { return false; }
+	if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;
+	await shell.openExternal(parsed.href); return true;
+});
+ipcMain.handle("workspace:provider-incidents", event => { if (!senderWindow(event)) throw new Error("Untrusted workspace request."); return providerIncidents(); });
+// Opens a provider's status page by its id; the address comes from the app, never the window.
+ipcMain.handle("workspace:open-status-page", async (event, id: unknown) => { if (!senderWindow(event) || typeof id !== "string" || !Object.hasOwn(statusSources, id)) throw new Error("Unknown status page."); await shell.openExternal(statusSources[id as keyof typeof statusSources].page); });
+ipcMain.handle("workspace:acp-registry", async (event, fresh: unknown) => {
+	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
+	return readRegistry(fresh === true);
+});
+// Adds a registry agent by its id and one of its launch ways, as listed; a binary is downloaded and checked first.
+ipcMain.handle("workspace:acp-registry-add", async (event, id: unknown, kind: unknown) => {
+	if (!senderWindow(event) || typeof id !== "string" || !["binary", "npx", "uvx"].includes(kind as string)) throw new Error("Invalid agent request.");
+	const agent = (await readRegistry()).find(value => value.id === id), launch = agent?.launches.find(value => value.kind === kind);
+	if (!agent || !launch) throw new Error("That agent is no longer in the registry for this computer.");
+	const prepared = await prepareLaunch(agent, launch, path.join(app.getPath("userData"), "acp-agents"));
+	return workspaceRuntime.command({ type: "add-agent", name: agent.name, executable: prepared.executable, arguments: prepared.arguments, ...(Object.keys(prepared.environment).length ? { environment: prepared.environment } : {}) });
+});
 ipcMain.handle("workspace:installations", async event => {
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
 	return harnessInstallations();
@@ -1152,7 +1198,12 @@ function createWindow(): BrowserWindow {
 	window.on("blur", () => { quitHold.cancel(); broadcastWindowState(window); });
 	window.webContents.on("before-input-event", (event, input) => { if (quitHoldInput(input, window)) event.preventDefault(); });
 	// Closing the last window quits on Windows and Linux, so it asks first like Quit does (Settings → Chat → Quitting).
-	window.on("close", event => { if (process.platform !== "darwin" && !shutdownStarted && BrowserWindow.getAllWindows().filter(value => !value.isDestroyed()).length === 1 && quitGuard.intercept()) event.preventDefault(); });
+	window.on("close", event => {
+		const last = process.platform !== "darwin" && !shutdownStarted && BrowserWindow.getAllWindows().filter(value => !value.isDestroyed()).length === 1;
+		// Settings → Chat → Keep running in the tray: the last window hides, and work carries on until Quit.
+		if (last && !quittingFromTray && workspaceRuntime?.store.getPreferences().chat.keepInTray) { event.preventDefault(); ensureTray(applicationIcon); window.hide(); return; }
+		if (last && quitGuard.intercept()) event.preventDefault();
+	});
 	window.on("focus", () => broadcastWindowState(window));
 	window.on("maximize", () => broadcastWindowState(window));
 	window.on("unmaximize", () => broadcastWindowState(window));
@@ -1192,6 +1243,8 @@ function senderWindow(event: Electron.IpcMainInvokeEvent): BrowserWindow | null 
 }
 
 const browserHost = new BrowserHost();
+ipcMain.handle("desktop:app-command", (event, command: unknown, args: unknown) => { if (!senderWindow(event) || !appControl) throw new Error("Invalid app command."); return appControl.run("person", command, args); });
+ipcMain.on("desktop:app-command-result", (event, result: unknown) => { if (event.senderFrame === event.sender.mainFrame) appControl?.resolve(result); });
 browserHost.quitHoldInput = quitHoldInput;
 registerHtmlRenderScheme();
 registerFactoryIpc(ipcMain, () => factoryService, senderWindow, async window => { const picked = await dialog.showOpenDialog(window, { title: "Choose a local clone of the repository", properties: ["openDirectory"] }); return picked.canceled ? undefined : picked.filePaths[0]; });
@@ -1307,9 +1360,31 @@ ipcMain.handle("desktop:open-external", async (event, url: unknown) => {
 app.setAppUserModelId(developmentUrl ? "app.phaseo.desktop.dev" : "app.phaseo.desktop");
 const primaryInstance = app.requestSingleInstanceLock();
 if (!primaryInstance) app.quit();
-app.on("second-instance", () => {
+// Only an installed build claims the scheme, so a development run never takes links away from it.
+if (primaryInstance && app.isPackaged) app.setAsDefaultProtocolClient(chatLinkScheme);
+/** The chat a link asked for, held until the window takes it: a link can arrive before the window has loaded. */
+let pendingChatLink: string | undefined;
+function receiveChatLink(values: string[]) {
+	const id = values.map(parseChatLink).find(Boolean);
+	if (!id) return;
+	pendingChatLink = id;
+	for (const window of BrowserWindow.getAllWindows()) if (!window.isDestroyed()) window.webContents.send("desktop:chat-link");
+}
+receiveChatLink(process.argv);
+app.on("second-instance", (_event, argv) => {
 	const window = BrowserWindow.getAllWindows()[0];
 	if (window?.isMinimized()) window.restore(); window?.show(); window?.focus();
+	receiveChatLink(argv);
+});
+app.on("open-url", (event, url) => {
+	event.preventDefault();
+	receiveChatLink([url]);
+	const window = BrowserWindow.getAllWindows()[0];
+	if (window?.isMinimized()) window.restore(); window?.show(); window?.focus();
+});
+ipcMain.handle("desktop:take-chat-link", event => {
+	if (!senderWindow(event)) return undefined;
+	const id = pendingChatLink; pendingChatLink = undefined; return id;
 });
 
 autoUpdater.on("update-available", () => broadcastUpdateState({ status: "available" }));
@@ -1323,17 +1398,20 @@ autoUpdater.on("error", (error) => broadcastUpdateState({ status: "error", messa
 app.whenReady().then(() => {
 	if (!primaryInstance) return;
 	if (process.platform === "darwin") app.dock?.setIcon(applicationIcon);
+	// Quitting from the tray, the menu or the system ends the app rather than hiding it again.
+	app.on("before-quit", () => { quittingFromTray = true; });
 	const workspaceDirectory = path.join(app.getPath("userData"), "workspace");
 	const vault = new SecretVault(path.join(workspaceDirectory, "credentials"), windowsCredentialEncryption({
 		available: async () => await safeStorage.isAsyncEncryptionAvailable() && (process.platform !== "linux" || safeStorage.getSelectedStorageBackend() !== "basic_text"),
 		encrypt: value => safeStorage.encryptStringAsync(value), decrypt: async value => (await safeStorage.decryptStringAsync(value)).result,
-	}));
+	}, path.join(currentDirectory, "credentialWorker.mjs")));
 	credentialVault = vault;
 	usageHubs = new UsageHubs(usageHubFile(workspaceDirectory), { set: (id, value) => vault.set(id, value), get: id => vault.get(id), remove: id => vault.remove(id) });
 	configureCodeHosts(workspaceDirectory, { set: (id, value) => vault.set(id, value), get: id => vault.get(id), remove: id => vault.remove(id) });
 	modelCatalogCache = new ModelCatalogCache(path.join(app.getPath("userData"), "cache"), ({ accountId }) => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:models-changed", { harness: "phaseo", accountId }); });
 	harnessModelCache = new HarnessModelCache(path.join(app.getPath("userData"), "cache", "harness-models.json"), (harness, accountId) => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:models-changed", { harness, accountId }); });
 	workspaceRuntime = new WorkspaceRuntime(workspaceDirectory, undefined, vault);
+	traceExporter.configure(workspaceRuntime.store.getPreferences().threads.traceExport);
 	workspaceRuntime.phaseo.background = backgroundCommands();
 	workspaceRuntime.phaseo.background.onChange = taskId => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:background-changed", taskId); };
 	outsideAgents = new OutsideAgentsMcp(workspaceDirectory, { tools: agent => workspaceRuntime.outsideThreadTools(agent), changed: settings => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:outside-agents-changed", settings); } });
@@ -1395,6 +1473,18 @@ app.whenReady().then(() => {
 		return limitResetAt(await nativeAccountStatus(harness, account?.configDirectory ?? app.getPath("userData"), account, AbortSignal.timeout(30000)));
 	};
 	workspaceRuntime.browserTools = chatId => browserAgent.forChat(chatId);
+	const control: AppControl = appControl = new AppControl({
+		send: request => { const window = [...appWindows].find(value => !value.isDestroyed()); if (!window) return false; window.webContents.send("desktop:app-command-request", request); return true; },
+		main: async (command, _args, caller) => {
+			const operator = workspaceRuntime.operator;
+			if (command === "operator.open") { const opened = operator.open(); await control.renderer("chat.open", { threadId: opened.threadId }).catch(() => undefined); return opened; }
+			if (command === "operator.pause") return operator.pause("person", caller === "agent" ? "The operator paused itself. Its events are held until you resume it." : "Paused by you. Its events are held until you resume it.");
+			if (command === "operator.resume") return operator.resume();
+			if (command === "operator.raiseCap") return operator.raiseCap();
+			throw new Error("Unknown app command.");
+		},
+	});
+	workspaceRuntime.appControl = control;
 	browserHost.profiles = { resolve: profile => knownBrowserProfile(workspaceRuntime.store.getPreferences().browser, profile), preferred: () => { const browser = workspaceRuntime.store.getPreferences().browser; return knownBrowserProfile(browser, browser.defaultProfile); } };
 	serveHtmlRenders();
 	workspaceRuntime.htmlPreview = request => htmlPreview(request, htmlRenderUrl(request.html, request.appearance));

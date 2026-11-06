@@ -44,6 +44,8 @@ import { AgentInputRejectedError, type AgentAdapter, type AgentCallbacks } from 
 import type { Harness } from "../shared/workspace";
 import type { SecretVault } from "./secretVault";
 import { McpHeaderSecrets } from "./mcpHeaders";
+import { McpAppPages, mcpCallOf, mcpToolOf } from "./mcpApps";
+import { embedLocalImages } from "./htmlImages";
 import { PhaseoAdapter } from "./phaseoAdapter";
 import { PhaseoCodingAdapter, type PhaseoExtras } from "./phaseoCodingAdapter";
 import { closePhaseoMcpConnection } from "./phaseoMcp";
@@ -53,10 +55,13 @@ import { PiAdapter } from "./piAdapter";
 import { handoffPrompt } from "./handoffPrompt";
 import { isSideChat, sideChatNoteFor, sideChatUnused } from "../shared/sideChats";
 import { copyWorktreeIncludes } from "./worktreeInclude";
+import { turnSettings } from "../shared/turnSettings";
 import { AttachmentService } from "./attachments";
 import type { FormAnswer } from "../shared/agentForms";
 import { formAnswerError } from "../shared/agentForms";
 import { OpenCodeService } from "./openCodeService";
+import { OperatorService } from "./operatorService";
+import type { AppControl } from "./appControl";
 import { CursorAdapter } from "./cursorAdapter";
 import type { ImportedConversation } from "./taskImport";
 import type { Attachment } from "../shared/workspace";
@@ -99,6 +104,9 @@ function createAdapter(harness: Harness, agent?: AgentConnection, openCode?: Ope
 
 /** What a model call from the app writes: a chat title, Git text (commits, pull requests, branch names) or a review guide. */
 export type ModelPurpose = "title" | "git" | "guide";
+/** An MCP App as a chat keeps it: its source is the stored id of the tool step it replaces, which carries the same message prefix. */
+const storedMcpApp = (messageId: string, activity: AgentActivity) => activity.mcpApp ? { mcpApp: { ...activity.mcpApp, ...activity.mcpApp.source ? { source: `${messageId}:${activity.mcpApp.source}` } : {} } } : {};
+
 export class WorkspaceRuntime {
 	readonly store: WorkspaceStore;
 	readonly attachments: AttachmentService;
@@ -187,10 +195,12 @@ export class WorkspaceRuntime {
 		this.store = new WorkspaceStore(path.join(directory, "workspace.sqlite"));
 		// MCP header values move to the vault; until they can, they stay in settings and are still never broadcast.
 		this.mcpHeaders = new McpHeaderSecrets(vault); void this.mcpHeaders.migrate(this.store).catch(() => {});
+		this.mcpApps = new McpAppPages(async connection => (await this.mcpHeaders.resolve([connection]))[0]);
 		this.attachments = new AttachmentService(path.join(directory, "attachments"), this.store);
 		this.openCode = new OpenCodeService(directory);
 		const modelDiscovery = () => this.discoverThreadModels, installationDiscovery = () => this.discoverInstallations, missions = () => this.missionCommand, guides = () => this.pullRequestGuideTools;
 		this.threads = new WorkspaceThreads({ store: this.store, isClosing: () => this.closing, broadcast: () => this.broadcast(), start: id => this.start(id), command: command => this.command(command), createWorktree: (projectId, branch, base) => this.createWorktree(projectId, branch, base), cloneRepository: (url, parent) => this.cloneRepository(url, parent), attachments: this.attachments, stopped: async id => { await this.executions.get(id)?.catch(() => {}); }, assertHarnessAvailable: harness => this.assertHarnessAvailable(harness), assertProjectAvailable: id => this.assertProjectAvailable(id), readIssue: (root, repository, number) => this.github.readIssue(root, repository, number), get discoverModels() { return modelDiscovery(); }, get discoverInstallations() { return installationDiscovery(); }, get missions() { return missions(); }, get pullRequestGuides() { return guides(); }, modelDiscoveries: this.modelDiscoveries }, () => this.store.getPreferences().maxActiveAgents);
+		this.operator = new OperatorService(this.operatorHost());
 		// Deliveries recorded while the app was closed wake idle parents as they would at runtime, after the host has wired its hooks.
 		// Children cut off by the app quitting are only reported: waking the parent for them would spend tokens nobody asked for.
 		const finished = (id: string) => { try { return this.store.getTask(id).status !== "interrupted"; } catch { return false; } };
@@ -214,6 +224,11 @@ export class WorkspaceRuntime {
 		this.usageBackfill.unref?.();
 	}
 	private readonly threads: WorkspaceThreads;
+	/** The operator chat's events, subscriptions and safety (main/operatorService.ts). */
+	readonly operator: OperatorService;
+	private operatorHost() { return { store: this.store, isClosing: () => this.closing, broadcast: () => this.broadcast(), wake: (id: string) => this.wake(id), cancel: (id: string) => this.command({ type: "cancel", id }), note: (id: string, title: string, text: string) => this.recordActivity(id, { id: `operator:${randomUUID()}`, type: "tool", title, text, status: "completed" }), createThread: (command: Parameters<WorkspaceRuntime["createThread"]>[0], title: string) => this.createThread(command, title) }; }
+	/** The app command registry, set by the app once it has a window; offered to top-level chats as list_app_commands and run_app_command. */
+	appControl?: AppControl;
 
 	/** Whether Autopilot acts for this chat: the experimental setting is on, the chat is in Autopilot, and its spend cap has not stopped it. */
 	private autopilotActive(id: string) {
@@ -293,7 +308,8 @@ export class WorkspaceRuntime {
 		const task = this.store.getTaskTail(id, messageId);
 		task.activities ??= [];
 		const timelineOrder = [...task.messages, ...task.activities].reduce((maximum, item) => Math.max(maximum, item.timelineOrder ?? 0), 0) + 1;
-		const stored = { ...activity, id: `${messageId}:${activity.id}`, timelineOrder };
+		const { mcpCall: _call, ...kept } = activity;
+		const stored = { ...kept, id: `${messageId}:${activity.id}`, timelineOrder, ...storedMcpApp(messageId, activity) };
 		task.activities.push(stored);
 		const usage = activity.type === "usage" && isPhaseoUsageId(stored.id);
 		if (usage) addUsage(task.usageTotals ??= { tokens: 0, costNanos: 0 }, activity.text);
@@ -537,6 +553,7 @@ export class WorkspaceRuntime {
 		this.broadcast();
 		if (!queued || !update) return;
 		this.start(taskId);
+		this.operator.watchNotice("pull-request.update", taskId, update.summary);
 		this.onPullRequestNotice?.(taskId, update.summary, update.outcome);
 	}
 	/** Raised for each watched pull request update, for the desktop notification. */
@@ -557,6 +574,7 @@ export class WorkspaceRuntime {
 		this.broadcast();
 		if (!queued || !update) return;
 		this.start(taskId);
+		this.operator.watchNotice("issue.update", taskId, update.summary);
 		this.onIssueNotice?.(taskId, update.summary, update.outcome);
 	}
 	/** Raised for each watched issue update, for the desktop notification. */
@@ -591,7 +609,7 @@ export class WorkspaceRuntime {
 	}
 	private broadcast() {
 		const parents = this.store.collectDelegationResults();
-		this.onChange(this.store.getOverview()); this.threads.changed();
+		this.onChange(this.store.getOverview()); this.threads.changed(); this.operator.changed();
 		for (const listener of [...this.threadListeners]) try { listener(); } catch { /* A listener's failure is its own. */ }
 		if (!this.closing) for (const id of parents) this.wake(id);
 	}
@@ -626,7 +644,8 @@ export class WorkspaceRuntime {
 			const collected = this.store.collectDelegationResults();
 			if (collected.length) { this.onChange(this.store.getOverview()); this.threads.changed(); for (const other of collected) if (other !== id) this.wake(other); }
 			let task; try { task = this.store.getTask(id); } catch { return; }
-			if (!task.archived && ["idle", "completed"].includes(task.status)) this.start(id);
+			// The operator also wakes after it was stopped or failed: its events are the person's standing request.
+			if (!task.archived && (["idle", "completed"].includes(task.status) || (task.operator && !task.operator.paused && ["failed", "interrupted"].includes(task.status)))) this.start(id);
 		}, 250));
 	}
 	/** Thread tools for an agent outside Phaseo, reached through the local MCP server with a token. */
@@ -634,9 +653,13 @@ export class WorkspaceRuntime {
 	threadTools(parentId: string): ThreadTools {
 		// Only Code chats run commands, so a Chat-mode secret would have nothing to use it.
 		const code = this.store.getTask(parentId)?.mode !== "chat";
-		const tools = { ...this.threads.forThread(parentId), moveToWorktree: (request: WorktreeMove) => this.moveToWorktree(parentId, request), ...this.store.getTask(parentId).harness === "claude" ? { backgroundWait: async (ids: string[], waiting: boolean) => { const work = this.backgroundWork.get(parentId); if (!work) throw new Error("This chat has no running turn."); return work.wait(ids, waiting); } } : {}, ...code ? { requestSecret: (input: SecretRequestInput, signal?: AbortSignal) => this.requestSecret(parentId, input, signal) } : {}, ...this.factoryTools ? { factory: this.factoryTools(parentId) } : {}, ...this.triageProject(parentId) ? { draftIssue: (draft: unknown) => this.draftIssue(parentId, draft) } : {} };
+		const task = this.store.getTask(parentId), appControl = this.appControl;
+		// Delegated agents work in the background and do not move the person's window; the operator alone subscribes to events.
+		const app = appControl && !task.delegation ? { app: { list: (query?: string) => appControl.list(query), run: (command: string, args?: unknown) => appControl.run("agent", command, args) } } : {};
+		const operator = task.operator && !task.archived ? { operator: this.operator.tools(parentId) } : {};
+		const tools = { ...this.threads.forThread(parentId), ...app, ...operator, moveToWorktree: (request: WorktreeMove) => this.moveToWorktree(parentId, request), ...task.harness === "claude" ? { backgroundWait: async (ids: string[], waiting: boolean) => { const work = this.backgroundWork.get(parentId); if (!work) throw new Error("This chat has no running turn."); return work.wait(ids, waiting); } } : {}, ...code ? { requestSecret: (input: SecretRequestInput, signal?: AbortSignal) => this.requestSecret(parentId, input, signal) } : {}, ...this.factoryTools ? { factory: this.factoryTools(parentId) } : {}, ...this.triageProject(parentId) ? { draftIssue: (draft: unknown) => this.draftIssue(parentId, draft) } : {} };
 		const global = this.globalInstructions, instructions = global ? { globalInstructions: { read: () => global.read(), save: (content: string, expectedHash: string) => global.save({ content, expectedHash }) } } : {};
-		const html = this.htmlPreview ? { html: { preview: this.htmlPreview, render: async (request: HtmlRenderRequest) => this.htmlRender(parentId, request) } } : {};
+		const preview = this.htmlPreview, html = preview ? { html: { preview: async (request: HtmlPreviewRequest) => preview({ ...request, html: (await embedLocalImages(request.html, this.chatFolder(parentId))).html }), render: async (request: HtmlRenderRequest) => this.htmlRender(parentId, request) } } : {};
 		return this.browserTools && this.agentBrowserTools(parentId) ? { ...tools, ...html, ...instructions, browser: this.browserTools(parentId) } : { ...tools, ...html, ...instructions }; }
 	/** Whether a chat's agent gets the built-in browser's tools (Settings → Browser, or its project's own choice). Off, they are not offered at all. */
 	private agentBrowserTools(chatId: string) {
@@ -668,11 +691,19 @@ export class WorkspaceRuntime {
 		} finally { this.moving.delete(id); }
 	}
 	/** Puts a page on the chat's running turn; the chat shows it above the reply. */
-	private htmlRender(id: string, request: HtmlRenderRequest) {
+	/** The folder a chat's relative paths start from: its project, or its own folder. */
+	private chatFolder(id: string) {
+		const projectId = this.store.getTask(id).projectId;
+		return this.store.getProjects().find(project => project.id === projectId)?.directory ?? path.join(this.directory, "tasks", id);
+	}
+	private async htmlRender(id: string, request: HtmlRenderRequest) {
 		const note = this.turnNotes.get(id);
 		if (!note) throw new Error("html_render works only while this chat's turn is running.");
-		note({ id: `html-render:${randomUUID()}`, type: "tool", title: "html_render", text: request.html, status: "completed", htmlRender: { title: request.title, height: request.height } });
-		return { shown: true as const, title: request.title, height: request.height, message: "Shown to the user above your reply. Do not mention or describe the page; reply with only what it does not already say." };
+		// Local images go into the page, so it keeps working after the files move.
+		const { html, embedded, missing } = await embedLocalImages(request.html, this.chatFolder(id));
+		note({ id: `html-render:${randomUUID()}`, type: "tool", title: "html_render", text: html, status: "completed", htmlRender: { title: request.title, height: request.height } });
+		return { shown: true as const, title: request.title, height: request.height, ...embedded ? { embeddedImages: embedded } : {}, ...missing.length ? { imagesNotEmbedded: missing.slice(0, 20) } : {},
+			message: `Shown to the user above your reply. Do not mention or describe the page; reply with only what it does not already say.${missing.length ? " Some local images could not be embedded (missing, not an image, over 2 MB, or the page would pass 1.4 MB); they show as broken." : ""}` };
 	}
 	/** The triage project of a top-level chat working in one; delegated agents report to their parent instead of drafting. */
 	private triageProject(id: string) {
@@ -829,6 +860,36 @@ export class WorkspaceRuntime {
 		if (plan.resumeAt) { task.usageLimit.resumeAt = plan.resumeAt; task.usageLimit.autoResume = true; }
 		this.store.saveTask(task, true); this.broadcast();
 		if (plan.resumeAt) this.armLimitResume(id, plan.resumeAt);
+	}
+	/** Another signed-in login of the chat's agent with no chat of its own stopped on a limit, or none. */
+	private unlimitedLogin(task: Task) {
+		const limited = new Set(this.store.getOverview().tasks.filter(value => value.status === "limited" && value.accountId).map(value => value.accountId));
+		return this.store.getAccounts().find(account => account.harness === task.harness && account.kind === "native" && account.configured && !account.archived && account.id !== task.accountId && !limited.has(account.id));
+	}
+	/**
+	 * Settings → Threads → Switch logins at usage limits: a limited chat continues at once on another login of its agent,
+	 * through the same handoff as Continue on: what waited in its queue goes to the new chat and leaves this one, so it
+	 * is not done twice. With no such login, or when the move fails, the other usage limit switches apply as before.
+	 */
+	private async switchLoginOrRecover(id: string) {
+		if (this.closing) return;
+		let task; try { task = this.store.getTask(id); } catch { return; }
+		const login = this.store.getPreferences().threads.switchLoginOnLimit && task.status === "limited" && task.usageLimit && !task.usageLimit.movedTo ? this.unlimitedLogin(task) : undefined;
+		if (!login) { this.applyLimitRecovery(id); return; }
+		try {
+			const known = new Set(this.store.getOverview().tasks.map(value => value.id));
+			const state = await this.command({ type: "handoff", id, harness: task.harness, model: task.model, mode: task.mode, accountId: login.id, ...(task.projectId ? { projectId: task.projectId } : {}), ...(task.permissionMode ? { permissionMode: task.permissionMode } : {}),
+				...(task.harness === "codex" && task.reasoningEffort ? { reasoningEffort: task.reasoningEffort } : {}), ...(task.harness === "codex" && task.serviceTier ? { serviceTier: task.serviceTier } : {}), ...(task.modelOptions ? { modelOptions: task.modelOptions } : {}) });
+			const moved = state.tasks.find(value => !known.has(value.id));
+			if (!moved) throw new Error("The handoff made no chat.");
+			const waiting = task.queue.filter(message => !message.autopilot && !message.notice && message.text.trim() && !message.attachments?.length);
+			await this.command({ type: "update-task", id: moved.id, title: task.title });
+			await this.command({ type: "send", id: moved.id, text: waiting.map(message => message.text.trim()).join("\n\n") || "Continue where you left off." });
+			const source = this.store.getTask(id), sent = new Set(waiting.map(message => message.id));
+			source.queue = source.queue.filter(message => !sent.has(message.id));
+			if (source.usageLimit) { source.usageLimit.movedTo = moved.id; source.usageLimit.movedToLogin = login.name; }
+			this.store.saveTask(source, true); this.broadcast();
+		} catch { this.applyLimitRecovery(id); }
 	}
 	/** After the usage limit switches change: resumes the setting armed are dropped when it is turned off, and limited chats get the new rules. */
 	limitPreferencesChanged() {
@@ -1020,16 +1081,74 @@ export class WorkspaceRuntime {
 		this.maintainingHarnesses.add(harness);
 		return () => { this.maintainingHarnesses.delete(harness); };
 	}
+	/** Pages MCP tools name for MCP Apps, fetched once per server configuration. */
+	private readonly mcpApps: McpAppPages;
+	private readonly shownMcpApps = new Set<string>();
+	/**
+	 * MCP Apps: when a finished step was a tool of one of the person's MCP servers that names a ui:// page, the page goes on
+	 * the turn like an html_render page, with the call's input and result for it to show.
+	 */
+	private async showMcpApp(activity: AgentActivity, note: (activity: AgentActivity) => void) {
+		if (activity.type !== "tool" || activity.status !== "completed" || activity.htmlRender || this.shownMcpApps.has(activity.id)) return;
+		const match = mcpToolOf(activity, this.store.getMcpConnections().filter(connection => connection.enabled && !connection.archived));
+		if (!match) return;
+		this.shownMcpApps.add(activity.id);
+		const html = await this.mcpApps.page(match.connection, match.tool).catch(() => undefined);
+		if (!html || this.closing) return;
+		const title = `${match.connection.name} · ${match.tool}`;
+		note({ id: `${activity.id}:app`, type: "tool", title, text: html, status: "completed", htmlRender: { title, height: 360 }, mcpApp: { ...mcpCallOf(activity), connectionId: match.connection.id, tool: match.tool, source: activity.id } });
+	}
+	/** The MCP server behind an app page on a chat's turn, for the page's own tool calls. */
+	private mcpAppServer(taskId: string, activityId: string) {
+		const app = (this.store.getTask(taskId).activities ?? []).find(activity => activity.id === activityId)?.mcpApp;
+		const connection = app?.connectionId ? this.store.getMcpConnections().find(value => value.id === app.connectionId && value.enabled && !value.archived) : undefined;
+		if (!connection) throw new Error("This app's MCP server is no longer set up. Check Settings → MCP servers.");
+		return connection;
+	}
+	/** What a tool on an app's own server is, so the window can ask the person before the app runs it. */
+	async mcpAppTool(taskId: string, activityId: string, name: string) {
+		const tool = await this.mcpApps.tool(this.mcpAppServer(taskId, activityId), name);
+		if (!tool) throw new Error(`The app's server has no tool called ${name}.`);
+		return tool;
+	}
+	/** Runs a tool of an app's own server for the app; the window asked the person first unless the tool is read-only. */
+	async mcpAppCall(taskId: string, activityId: string, name: string, input: Record<string, unknown>) {
+		const result = await this.mcpApps.call(this.mcpAppServer(taskId, activityId), name, input);
+		if (JSON.stringify(result).length > 1_000_000) throw new Error("The tool's result is over 1 MB.");
+		return result;
+	}
 	/** MCP header values, kept in the vault by connection (see McpHeaderSecrets). */
 	private readonly mcpHeaders: McpHeaderSecrets;
 	/** Saved MCP connections with header values filled in for those `projectId` uses, for connecting. Main only. */
 	resolvedMcpConnections(projectId?: string) { return this.mcpHeaders.resolve(this.store.getMcpConnections(), connection => connection.enabled && !connection.archived && (!connection.projectId || connection.projectId === projectId)); }
+	/** Whether a running chat uses the connection as saved or as changed; changing it then could break that turn. */
+	private mcpBusy({ connection }: McpCommand) {
+		const workspace = this.store.getOverview(), previous = workspace.mcpConnections.find(value => value.id === connection.id);
+		return workspace.tasks.some(task => this.executions.has(task.id) && ["phaseo", "codex", "claude", "opencode", "acp", "cursor", "grok"].includes(task.harness) && ((!connection.projectId || task.projectId === connection.projectId) || (previous && (!previous.projectId || task.projectId === previous.projectId))));
+	}
+	/** MCP changes an agent made while chats they affect were running (often its own), by connection; each is saved once those chats are idle. */
+	private readonly pendingMcp = new Map<string, McpCommand>();
+	/** For agents, whose own chat is running when they ask: saves now when no running chat is affected, otherwise as soon as none is. */
+	async mcpWhenIdle(command: McpCommand): Promise<{ applied: boolean; workspace: WorkspaceOverview }> {
+		if (!this.mcpBusy(command)) { this.pendingMcp.delete(command.connection.id); return { applied: true, workspace: await this.mcp(command) }; }
+		if (command.connection.projectId && !this.store.getProjects().some(project => project.id === command.connection.projectId)) throw new Error("Project no longer exists.");
+		const earlier = this.pendingMcp.get(command.connection.id);
+		this.pendingMcp.set(command.connection.id, { ...command, headers: { ...earlier?.headers, ...command.headers } });
+		return { applied: false, workspace: this.store.getOverview() };
+	}
+	private applyPendingMcp() {
+		for (const [id, command] of this.pendingMcp) {
+			if (this.mcpBusy(command)) continue;
+			this.pendingMcp.delete(id);
+			void this.mcp(command).catch(error => console.warn("A waiting MCP change could not be saved:", error instanceof Error ? error.message : error));
+		}
+	}
 	async mcp(command: McpCommand): Promise<WorkspaceOverview> {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		const connection = command.connection; const workspace = this.store.getOverview(); const previous = workspace.mcpConnections.find(value => value.id === connection.id);
 		if (connection.projectId && !workspace.projects.some(project => project.id === connection.projectId)) throw new Error("Project no longer exists.");
 		if (!previous && workspace.mcpConnections.length >= 100) throw new Error("The workspace supports up to 100 MCP connections.");
-		if (workspace.tasks.some(task => this.executions.has(task.id) && ["phaseo", "codex", "claude", "opencode", "acp", "cursor", "grok"].includes(task.harness) && ((!connection.projectId || task.projectId === connection.projectId) || (previous && (!previous.projectId || task.projectId === previous.projectId))))) throw new Error("Stop affected tasks before changing their MCP connections.");
+		if (this.mcpBusy(command)) throw new Error("Stop affected tasks before changing their MCP connections.");
 		const stored = await this.mcpHeaders.save(connection, command.headers, this.store.getMcpConnections().find(value => value.id === connection.id));
 		this.store.saveMcp(stored);
 		// Servers kept warm between turns would otherwise outlive the settings that started them.
@@ -1141,15 +1260,16 @@ export class WorkspaceRuntime {
 			}
 		}
 		if (command.type === "add-agent") {
-			this.store.saveAgent({ id: randomUUID(), name: command.name, executable: command.executable, arguments: command.arguments });
+			this.store.saveAgent({ id: randomUUID(), name: command.name, executable: command.executable, arguments: command.arguments, ...(command.environment && Object.keys(command.environment).length ? { environment: command.environment } : {}) });
 			this.broadcast(); return this.store.getOverview();
 		}
 		if (command.type === "update-agent") {
 			const agent = this.store.getAgents().find(value => value.id === command.id); if (!agent) throw new Error("Agent no longer exists.");
-			if ((command.executable !== undefined || command.arguments !== undefined) && this.store.getOverview().tasks.some(task => task.agentId === agent.id && this.running.has(task.id))) throw new Error("Stop this agent's running tasks before changing its command.");
+			if ((command.executable !== undefined || command.arguments !== undefined || command.environment !== undefined) && this.store.getOverview().tasks.some(task => task.agentId === agent.id && this.running.has(task.id))) throw new Error("Stop this agent's running tasks before changing its command.");
 			if (command.name !== undefined) agent.name = command.name;
 			if (command.executable !== undefined) agent.executable = command.executable;
 			if (command.arguments !== undefined) agent.arguments = command.arguments;
+			if (command.environment !== undefined) { if (Object.keys(command.environment).length) agent.environment = command.environment; else delete agent.environment; }
 			if (command.archived !== undefined) agent.archived = command.archived;
 			this.store.saveAgent(agent); this.broadcast(); return this.store.getOverview();
 		}
@@ -1382,9 +1502,10 @@ export class WorkspaceRuntime {
 		const turn = startSpan("turn.run");
 		const execution = turn.within(() => this.drain(id, turn)).then(() => turn.discard(), error => { turn.end(error); throw error; }).finally(() => {
 			this.executions.delete(id);
+			if (this.pendingMcp.size && !this.closing) this.applyPendingMcp();
 			if (this.settledByTurn.delete(id)) this.settled(id);
 			if (!this.closing && this.store.getTask(id).status === "completed" && this.store.getTask(id).queue.length) this.start(id);
-			else if (!this.closing) { void this.autopilotAfterTurn(id).catch(() => {}); this.scheduleIdleCompaction(id); }
+			else if (!this.closing) { void this.autopilotAfterTurn(id).catch(() => {}); this.operator.afterTurn(id); this.scheduleIdleCompaction(id); }
 		});
 		this.executions.set(id, execution);
 		// Failures outside provider execution must be visible rather than unhandled.
@@ -1474,8 +1595,9 @@ export class WorkspaceRuntime {
 		const message = task.queue.shift()!;
 		// The running total of what the chat used through Phaseo starts from its history, then grows as the turn streams.
 		if (!task.usageTotals) task.usageTotals = this.store.phaseoUsageTotals(id);
-		let timelineOrder = [...task.messages, ...(task.activities ?? [])].reduce((maximum, item) => Math.max(maximum, item.timelineOrder ?? 0), task.messages.length + (task.activities?.length ?? 0)) + 1;
-		task.messages.push({ ...message, startedAt: new Date().toISOString(), timelineOrder: timelineOrder++, role: "user", ...(message.sourceTaskId ? { delivery: "subagent" as const } : {}) }); task.status = "running"; task.error = undefined;
+		// From the stored rows: reading every activity to find the last position loaded a long chat's whole history.
+		let timelineOrder = this.store.nextTimelineOrder(id);
+		task.messages.push({ ...message, startedAt: new Date().toISOString(), timelineOrder: timelineOrder++, role: "user", settings: turnSettings(task), ...(message.sourceTaskId ? { delivery: "subagent" as const } : {}) }); task.status = "running"; task.error = undefined;
 		// Chats starting together (a burst of sends, a scheduled batch) share one chat-list update.
 		this.store.saveTask(task); this.broadcastSoon();
 		const project = this.store.getProjects().find(value => value.id === task.projectId);
@@ -1508,7 +1630,7 @@ export class WorkspaceRuntime {
 				if (activity.type === "usage" && isPhaseoUsageId(activity.id)) priced = true;
 				if (activity.type === "usage" && isPhaseoUsageId(activity.id)) addUsage(current.usageTotals ??= { tokens: 0, costNanos: 0 }, activity.text, existing?.type === "usage" ? existing.text : undefined);
 				if (existing) { existing.text = activity.append ? existing.text + activity.text : activity.text; existing.status = activity.status; existing.title = activity.title; existing.steps = activity.steps; existing.explanation = activity.explanation; existing.summary = activity.summary; existing.compaction = activity.compaction; existing.nativeAgent = activity.nativeAgent; existing.proposed = activity.proposed; }
-				else current.activities.push({ id: activityId, timelineOrder: order(`activity:${activity.id}`), ...(activity.status === "running" ? { startedAt: new Date().toISOString() } : {}), type: activity.type, title: activity.title, text: activity.text, status: activity.status, steps: activity.steps, explanation: activity.explanation, summary: activity.summary, compaction: activity.compaction, nativeAgent: activity.nativeAgent, ...(activity.proposed ? { proposed: activity.proposed } : {}), ...(activity.htmlRender ? { htmlRender: activity.htmlRender } : {}) });
+				else current.activities.push({ id: activityId, timelineOrder: order(`activity:${activity.id}`), ...(activity.status === "running" ? { startedAt: new Date().toISOString() } : {}), type: activity.type, title: activity.title, text: activity.text, status: activity.status, steps: activity.steps, explanation: activity.explanation, summary: activity.summary, compaction: activity.compaction, nativeAgent: activity.nativeAgent, ...(activity.proposed ? { proposed: activity.proposed } : {}), ...(activity.htmlRender ? { htmlRender: activity.htmlRender } : {}), ...storedMcpApp(message.id, activity) });
 				// The ledger keeps when each request was billed, for the Usage page; a failed write leaves the chat's own record intact.
 				if (activity.type === "usage" && isPhaseoUsageId(activity.id)) try { this.store.recordUsage(current, activityId, current.activities.find(value => value.id === activityId)!.text, Boolean(message.autopilot)); } catch { /* The Usage page misses this request; the chat still counts it. */ }
 			}
@@ -1520,7 +1642,7 @@ export class WorkspaceRuntime {
 		const scheduleFlush = () => this.queueStreamFlush(id, flushDelay, () => { try { flush(); } catch (error) { streamError = error; void adapter.cancel().catch(() => {}); } });
 		// Autopilot can note something after the turn has ended (its answer let the turn finish); that goes on the finished turn.
 		let ended = false;
-		const note = (activity: AgentActivity) => { if (ended) { this.appendActivity(id, message.id, activity); return; } order(`activity:${activity.id}`); activities.push(activity); scheduleFlush(); };
+		const note = (activity: AgentActivity) => { if (ended) { this.appendActivity(id, message.id, activity); return; } order(`activity:${activity.id}`); activities.push(activity); scheduleFlush(); void this.showMcpApp(activity, note); };
 		this.turnNotes.set(id, note);
 		const background = task.harness === "claude" ? new BackgroundWork() : undefined;
 		if (background) this.backgroundWork.set(id, background);
@@ -1636,7 +1758,7 @@ export class WorkspaceRuntime {
 			if (limit) { current.status = "limited"; current.usageLimit = { at: new Date().toISOString(), ...limit.resetsAt ? { resetsAt: new Date(limit.resetsAt).toISOString() } : {} }; }
 			// A message the agent never answered goes back to the queue, so Resume sends it again.
 			if ((error instanceof AgentInputRejectedError || limit) && !current.messages.some(value => value.role === "assistant" && value.id.startsWith(`${message.id}:`))) { current.messages = current.messages.filter(value => value.id !== message.id); if (!current.queue.some(value => value.id === message.id)) current.queue.unshift(message); }
-			if (limit) void this.readLimitReset(id).catch(() => {}).then(() => this.applyLimitRecovery(id));
+			if (limit) void this.readLimitReset(id).catch(() => {}).then(() => this.switchLoginOrRecover(id));
 			current.approvals = []; current.questions = keepMessageQuestions(current.questions); current.forms = []; this.store.saveTask(current);
 		} finally {
 			ended = true; if (this.turnNotes.get(id) === note) this.turnNotes.delete(id); if (background && this.backgroundWork.get(id) === background) this.backgroundWork.delete(id);
@@ -1655,7 +1777,7 @@ export class WorkspaceRuntime {
 		}
 	}
 	async close() {
-		this.closing = true; this.settleAbort.abort(); clearTimeout(this.broadcastTimer); clearTimeout(this.usageBackfill); clearTimeout(this.flushClock); for (const timer of this.wakeTimers.values()) clearTimeout(timer); this.wakeTimers.clear(); for (const close of this.orchestrationSessions.values()) close(); this.broadcast();
+		this.closing = true; this.operator.close(); this.settleAbort.abort(); clearTimeout(this.broadcastTimer); clearTimeout(this.usageBackfill); clearTimeout(this.flushClock); for (const timer of this.wakeTimers.values()) clearTimeout(timer); this.wakeTimers.clear(); for (const close of this.orchestrationSessions.values()) close(); this.broadcast();
 		for (const timer of this.limitTimers.values()) clearTimeout(timer); this.limitTimers.clear();
 		for (const timer of this.compactionTimers.values()) clearTimeout(timer); this.compactionTimers.clear();
 		// Chats cut off by quitting are offered to continue at the next start.

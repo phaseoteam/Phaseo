@@ -1,10 +1,10 @@
 import { formatAgoShort, formatDateParts } from "@phaseo/app-kit/format";
 import { useNow } from "../lib/useNow";
 import { prefetchTask } from "../lib/useSelectedTask";
-import { useMemo, useState, type ReactNode } from "react";
+import { lazy, Suspense, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { JumpHint, publishSidebarOrder, useJumpHints } from "../lib/sidebarOrder";
-import { Archive, ArchiveRestore, CalendarClock, Copy, Mail, Trash2, ChartLine, Inbox, Columns3, GitPullRequestArrow, Ellipsis, ExternalLink, LogIn, WandSparkles, Pencil, Pin, PinOff, Plus, Settings, Gauge, UserRound } from "lucide-react";
+import { Archive, ArchiveRestore, CalendarClock, Copy, Link2, Mail, Trash2, ChartLine, Inbox, Columns3, GitPullRequestArrow, Ellipsis, ExternalLink, LogIn, RefreshCw, Pencil, Pin, PinOff, Plus, Settings, Gauge, UserRound } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { chatDragType } from "../../shared/mentions";
 import type { TaskOverview } from "../../shared/workspaceOverview";
@@ -12,20 +12,25 @@ import { inboxLists } from "../../shared/inbox";
 import { usablePhaseoAccounts, useWorkspace, type CompareGroup } from "../app/workspace";
 import { cn } from "../lib/utils";
 import { shortcut } from "../lib/keybindings";
+import { copyChatLink } from "../lib/appCommands";
+import { ChatHoverCard } from "./ChatHoverCard";
 import { usePersistedState } from "../lib/persistedState";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { Tip } from "../components/ui/tooltip";
-import { SettingsNav } from "../settings/SettingsPage";
 import { ModelStack } from "../chat/ModelPicker";
-import { useScheduledTasks } from "../views/ScheduledTasks";
+import { useScheduledTasks } from "../lib/useScheduledTasks";
 import { CodeThreadList } from "./CodeThreadList";
-import { FactorySidebar } from "../factory/FactoryPage";
 import { UsageRings } from "./UsageRings";
 import { deleteWithUndo, dismissUndo, offerUndo, runUndo, undoLabel, usePendingDeletes, useThreadUndo } from "./threadUndo";
 import { isUnread } from "../../shared/threadLifecycle";
 import { ArchivedChatsDialog, archivedChats, openArchivedChats } from "./ArchivedChats";
 import { TagChip, TagDots, TagMenu } from "../components/Tags";
 import { tagsInUse } from "../../shared/tags";
+import { clampSidebarWidth, sidebarSurface, sidebarWidths, useSidebarWidth } from "../lib/sidebarWidth";
+
+// Settings and Factory bring their own pages; they load when first opened, not before the chat list shows.
+const SettingsNav = lazy(() => import("../settings/SettingsPage").then(module => ({ default: module.SettingsNav })));
+const FactorySidebar = lazy(() => import("../factory/FactoryPage").then(module => ({ default: module.FactorySidebar })));
 
 const dayMs = 86_400_000;
 function dateBucket(iso: string, now = new Date()) {
@@ -66,10 +71,11 @@ function RowMenu({ task, onRename }: { task: TaskOverview; onRename: () => void 
 		<DropdownMenuTrigger render={<button type="button" aria-label={`Actions for ${task.title}`} onClick={event => event.stopPropagation()} className="hidden size-5 shrink-0 place-items-center rounded text-muted-foreground group-hover/row:grid group-has-[:focus-visible]/row:grid hover:bg-background/70 hover:text-foreground data-popup-open:grid [&_svg]:size-3.5" />}><Ellipsis /></DropdownMenuTrigger>
 		<DropdownMenuContent align="start" className="w-44">
 			<DropdownMenuItem onClick={onRename}><Pencil />Rename</DropdownMenuItem>
-			<DropdownMenuItem onClick={() => void command({ type: "regenerate-title", id: task.id })}><WandSparkles />Regenerate title</DropdownMenuItem>
+			<DropdownMenuItem onClick={() => void command({ type: "regenerate-title", id: task.id })}><RefreshCw />Regenerate title</DropdownMenuItem>
 			<DropdownMenuItem onClick={() => void pin()}>{task.pinned ? <PinOff /> : <Pin />}{task.pinned ? "Unpin" : "Pin"}</DropdownMenuItem>
 			<TagMenu task={task} />
 			<DropdownMenuItem disabled={!task.lastCompletedAt || isUnread(task)} onClick={() => { leave(); void command({ type: "mark-unread", id: task.id }); }}><Mail />Mark unread</DropdownMenuItem>
+			<DropdownMenuItem onClick={() => copyChatLink(task.id)}><Link2 />Copy chat link</DropdownMenuItem>
 			<DropdownMenuItem onClick={() => void navigator.clipboard.writeText(task.id)}><Copy />Copy chat ID</DropdownMenuItem>
 			<DropdownMenuSeparator />
 			{task.archived ? <DropdownMenuItem onClick={() => void command({ type: "update-task", id: task.id, archived: false })}><ArchiveRestore />Restore</DropdownMenuItem>
@@ -87,7 +93,7 @@ function ChatRow({ task, indent, showModel, showTime = true, hint }: { task: Tas
 	// A finished turn not seen yet, as Code's rows show it.
 	const unread = !busy && isUnread(task);
 	// Dragging a chat into a composer mentions it there.
-	return <div role="button" tabIndex={0} aria-current={selected ? "page" : undefined} onPointerEnter={() => prefetchTask(task.id)} onClick={() => select(task.id)} onKeyDown={event => { if (event.key === "Enter" && !renaming) select(task.id); }}
+	return <ChatHoverCard task={task} disabled={renaming || hint !== undefined}><div role="button" tabIndex={0} aria-current={selected ? "page" : undefined} onPointerEnter={() => prefetchTask(task.id)} onClick={() => select(task.id)} onKeyDown={event => { if (event.key === "Enter" && !renaming) select(task.id); }}
 		draggable={!renaming} onDragStart={event => { event.dataTransfer.setData(chatDragType, JSON.stringify({ id: task.id, title: task.title })); event.dataTransfer.setData("text/plain", task.title); event.dataTransfer.effectAllowed = "copy"; }}
 		className={cn("group/row mx-2 flex h-8 items-center gap-2 rounded-md px-2 text-[13px] text-sidebar-foreground/85 outline-none hover:bg-sidebar-accent/70 focus-visible:ring-2 focus-visible:ring-ring/40", selected && "bg-sidebar-accent text-sidebar-foreground", indent && "pl-7")}>
 		{showModel ? <span className="shrink-0"><ModelStack models={[task]} size="sm" ringClassName="ring-transparent" /></span> : <StatusDot task={task} />}
@@ -97,11 +103,12 @@ function ChatRow({ task, indent, showModel, showTime = true, hint }: { task: Tas
 				onKeyDown={event => { event.stopPropagation(); if (event.key === "Enter") event.currentTarget.blur(); if (event.key === "Escape") setRenaming(false); }} />
 			: <span className={cn("min-w-0 flex-1 truncate", unread && "font-semibold text-sidebar-foreground")}>{task.title}</span>}
 		{!renaming && <TagDots tags={task.tags} />}
-		{showModel && busy && <StatusDot task={task} />}
-		{unread && !renaming && <span role="img" aria-label="Unread" title="Unread" className="size-1.5 shrink-0 rounded-[2px] bg-primary" />}
-		{showTime && !renaming && <span className="text-[11px] text-muted-foreground group-hover/row:hidden">{relative(task.updatedAt)}</span>}
+		{/* While the jump shortcuts show, a row's shortcut takes the place of its status and time. */}
+		{hint === undefined && showModel && busy && <StatusDot task={task} />}
+		{hint === undefined && unread && !renaming && <span role="img" aria-label="Unread" title="Unread" className="size-1.5 shrink-0 rounded-[2px] bg-primary" />}
+		{hint === undefined && showTime && !renaming && <span className="text-[11px] text-muted-foreground group-hover/row:hidden">{relative(task.updatedAt)}</span>}
 		{hint !== undefined ? <JumpHint index={hint} /> : !renaming && <RowMenu task={task} onRename={() => setRenaming(true)} />}
-	</div>;
+	</div></ChatHoverCard>;
 }
 
 function CompareRow({ group }: { group: CompareGroup }) {
@@ -251,14 +258,20 @@ function PullRequestsLink() {
 	</button>;
 }
 
-const sidebarWidths = { min: 200, max: 480, default: 256 };
-
-/** The sidebar's frame: its width is dragged from the right edge and remembered. */
+/** The sidebar's frame: its width is dragged from the right edge and remembered for Chat, Code and Factory apart. */
 function SidebarFrame({ label, children }: { label: string; children: ReactNode }) {
-	const [width, setWidth] = usePersistedState("phaseo.desktop.sidebarWidth", sidebarWidths.default);
+	const { mode, codeView, sidebarOpen, settings } = useWorkspace();
+	const [width, setWidth] = useSidebarWidth(sidebarSurface(mode, codeView));
 	const [dragging, setDragging] = useState(false);
-	const clamp = (value: number) => Math.round(Math.min(sidebarWidths.max, Math.max(sidebarWidths.min, value)));
-	return <aside aria-label={label} data-focus-region style={{ width: clamp(width) }} className="relative flex shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+	const frame = useRef<HTMLElement>(null);
+	const open = sidebarOpen || Boolean(settings);
+	useLayoutEffect(() => {
+		if (!open && frame.current?.contains(document.activeElement)) document.querySelector<HTMLButtonElement>('header [aria-label="Show sidebar"]')?.focus({ preventScroll: true });
+	}, [open]);
+	const clamp = clampSidebarWidth;
+	return <aside ref={frame} aria-label={label} aria-hidden={!open || undefined} inert={!open} data-focus-region={open || undefined} data-sidebar-frame data-open={open}
+		style={{ width: clamp(width), "--sidebar-width": `${clamp(width)}px`, "--sidebar-open": open ? 1 : 0 } as CSSProperties}
+		className="sidebar-frame relative flex shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
 		{children}
 		<div role="separator" aria-orientation="vertical" aria-label="Resize sidebar" aria-valuemin={sidebarWidths.min} aria-valuemax={sidebarWidths.max} aria-valuenow={clamp(width)} tabIndex={0} title="Drag to resize, double-click to reset"
 			onPointerDown={event => {
@@ -284,7 +297,7 @@ export function Sidebar() {
 	const [chatViewport, setChatViewport] = useState<HTMLDivElement | null>(null);
 	const fresh = !factory && !selectedId && !compareId && !scheduled && !pullRequestsPage && !inboxPage;
 	// The settings list is taller than short windows, so it scrolls like the chat list does.
-	if (settings) return <SidebarFrame label="Settings"><ScrollArea className="min-h-0 flex-1"><SettingsNav /></ScrollArea></SidebarFrame>;
+	if (settings) return <SidebarFrame label="Settings"><ScrollArea className="min-h-0 flex-1"><Suspense><SettingsNav /></Suspense></ScrollArea></SidebarFrame>;
 	return <SidebarFrame label={mode === "chat" ? "Chats" : factory ? "Factory" : "Projects"}>
 		<div className="p-2.5">
 			{factory ? <button type="button" onClick={() => openFactory({ page: "new" })}
@@ -298,7 +311,7 @@ export function Sidebar() {
 			{mode === "code" && !factory && <PullRequestsLink />}
 		</div>
 		{factory
-			? <FactorySidebar />
+			? <Suspense><FactorySidebar /></Suspense>
 			: mode === "chat"
 			? <ScrollArea className="min-h-0 flex-1" viewportRef={setChatViewport}><nav className="pb-3"><ChatList viewport={chatViewport} /></nav></ScrollArea>
 			: <ScrollArea className="min-h-0 flex-1" viewportClassName="[&>div]:min-h-full [&>div]:flex [&>div]:flex-col"><nav aria-label="Code chats" className="flex flex-1 flex-col"><CodeThreadList /></nav></ScrollArea>}

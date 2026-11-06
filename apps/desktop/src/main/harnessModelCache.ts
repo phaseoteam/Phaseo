@@ -3,8 +3,11 @@ import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { Harness, ModelOption } from "../shared/workspace";
 
-/** A list younger than this is served without asking the harness again. */
-export const HARNESS_MODELS_FRESH_MS = 60_000;
+/**
+ * A list younger than this is served without asking the harness again. Composers re-read their list every minute, and
+ * each ask starts the CLI (seconds of CPU for Claude Code), while a harness's models change only when it updates.
+ */
+export const HARNESS_MODELS_FRESH_MS = 60 * 60_000;
 const MAX_ENTRIES = 200;
 type Entry = { fetchedAt: number; harness: Harness; accountId: string; models: ModelOption[] };
 type CacheFile = { version: 1; entries: Record<string, Entry> };

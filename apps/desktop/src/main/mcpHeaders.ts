@@ -1,5 +1,6 @@
 import type { McpConnection } from "../shared/mcp";
 import type { SecretVault } from "./secretVault";
+import { resolveSecretValues } from "./secretReferences";
 
 type Vault = Pick<SecretVault, "available" | "get" | "set" | "remove">;
 type Store = { getMcpConnections(): McpConnection[]; saveMcp(connection: McpConnection): void };
@@ -46,7 +47,9 @@ export class McpHeaderSecrets {
 			const lost = new Error(`The saved headers for MCP server “${connection.name}” could not be read. Enter them again in Settings → MCP servers.`);
 			const values = await this.read(connection.id).catch(error => { throw error instanceof Error && error.message === unavailable().message ? error : lost; });
 			if (names.some(name => typeof values[name] !== "string")) throw lost;
-			return { ...connection, headers: { ...connection.headers, ...Object.fromEntries(names.map(name => [name, values[name]])) } };
+			// A saved op:// or env: reference is read now, for this connection only.
+			const resolved = await resolveSecretValues(Object.fromEntries(names.map(name => [name, values[name]])));
+			return { ...connection, headers: { ...connection.headers, ...resolved } };
 		}));
 	}
 

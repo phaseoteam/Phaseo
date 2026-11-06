@@ -5,10 +5,31 @@ import type { Task } from "../shared/workspace";
 
 const native = vi.hoisted(() => ({ spawn: vi.fn() }));
 vi.mock("./nativeProcess", () => ({ spawnNative: native.spawn }));
-import { CodexAdapter, codexAsyncQuestions, codexQuestions } from "./codexAdapter";
+import { CodexAdapter, codexAsyncQuestions, codexCommandStep, codexQuestions, unwrapShell } from "./codexAdapter";
+import { presentTool } from "../renderer/chat/toolPresentation";
 import { AgentInputRejectedError } from "./agentAdapter";
 import { nativeMcpName, type McpConnection } from "../shared/mcp";
 import { orchestrationInstructions } from "../shared/orchestration";
+
+describe("Codex command steps", () => {
+	// As Codex 0.166 sends them on Windows: the wrapper's path keeps its quoting, backslashes doubled.
+	const powershell = "\"C:\\\\WINDOWS\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe\" -Command \"Get-Content 'E:/CodexHome/plugins/cache/openai-bundled/visualize/1.0.66/skills/visualize/SKILL.md'\"";
+	it("names what a command did from Codex's own parse, not the shell that ran it", () => {
+		const read = codexCommandStep(powershell, [{ type: "read", command: "Get-Content 'E:/CodexHome/plugins/cache/openai-bundled/visualize/1.0.66/skills/visualize/SKILL.md'", name: "SKILL.md", path: "E:/CodexHome/plugins/cache/openai-bundled/visualize/1.0.66/skills/visualize/SKILL.md" }]);
+		expect(presentTool({ title: read.title, text: JSON.stringify(read.input), status: "completed" }).label).toBe("Read skills/visualize/SKILL.md");
+		const search = codexCommandStep("/bin/bash -lc 'rg -n todo src'", [{ type: "search", command: "rg -n todo src", query: "todo", path: "src" }]);
+		expect(presentTool({ title: search.title, text: JSON.stringify(search.input), status: "running" }).label).toBe("Searching for “todo”");
+		const other = codexCommandStep(powershell, [{ type: "unknown", command: "npm test" }]);
+		expect(presentTool({ title: other.title, text: JSON.stringify(other.input), status: "completed" }).label).toBe("Ran npm test");
+	});
+	it("shows a command without its shell wrapper when Codex could not parse it", () => {
+		expect(unwrapShell(powershell)).toBe("Get-Content 'E:/CodexHome/plugins/cache/openai-bundled/visualize/1.0.66/skills/visualize/SKILL.md'");
+		expect(unwrapShell("/bin/bash -lc 'echo '\\''hi'\\'' && ls'")).toBe("echo 'hi' && ls");
+		expect(unwrapShell("\"C:\\\\Program Files\\\\PowerShell\\\\7\\\\pwsh.exe\" -Command \"Write-Output \\\"x\\\"\"")).toBe("Write-Output \"x\"");
+		expect(unwrapShell("git status")).toBe("git status");
+		expect(codexCommandStep(powershell, [{ type: "read", command: "a", name: "a", path: "a" }, { type: "read", command: "b", name: "b", path: "b" }])).toEqual({ title: "run_command", input: { command: "Get-Content 'E:/CodexHome/plugins/cache/openai-bundled/visualize/1.0.66/skills/visualize/SKILL.md'" } });
+	});
+});
 
 function fixture(onRequest: (packet: { id: number; method: string; params: Record<string, unknown> }, send: (value: unknown) => void) => void) {
 	const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() });
@@ -207,6 +228,7 @@ describe("Codex native integration", () => {
 				send({ method: "item/agentMessage/delta", params: { threadId: "other", itemId: "a", delta: "Ignored" } });
 				send({ method: "item/agentMessage/delta", params: { threadId: "native", itemId: "a", delta: "Hello" } });
 				send({ method: "item/completed", params: { threadId: "native", item: { id: "command", type: "commandExecution", command: "git status", aggregatedOutput: "clean", status: "completed" } } });
+				send({ method: "item/completed", params: { threadId: "native", item: { id: "mcp", type: "mcpToolCall", server: "phaseo_0b3c1a2e5d6f4a7b8c9d0e1f2a3b4c5d", tool: "forecast", arguments: { city: "Leeds" }, result: { content: [{ type: "text", text: "Sunny" }] }, status: "completed" } } });
 				send({ method: "item/reasoning/summaryTextDelta", params: { threadId: "native", itemId: "reasoning", delta: "Checking" } });
 				send({ method: "turn/completed", params: { threadId: "native", turn: { id: "turn", status: "completed" } } });
 			}
@@ -216,8 +238,10 @@ describe("Codex native integration", () => {
 		expect(methods).toEqual(["initialize", "initialized", "thread/start", "turn/start"]);
 		expect(onDelta).toHaveBeenCalledExactlyOnceWith("a", "Hello");
 		expect(onSession).toHaveBeenCalledWith("native"); expect(child.kill).toHaveBeenCalled();
-		expect(onActivity).toHaveBeenCalledWith(expect.objectContaining({ title: "git status", text: "clean", status: "completed" }));
+		expect(onActivity).toHaveBeenCalledWith(expect.objectContaining({ title: "run_command", text: "{\"command\":\"git status\"}\n\nclean", status: "completed" }));
 		expect(onActivity).toHaveBeenCalledWith(expect.objectContaining({ type: "reasoning", text: "Checking", append: true }));
+		// An MCP App finds its page from the server and tool the step reports.
+		expect(onActivity).toHaveBeenCalledWith(expect.objectContaining({ title: "forecast", text: "{\"city\":\"Leeds\"}\n\nSunny", mcpCall: { server: "phaseo_0b3c1a2e5d6f4a7b8c9d0e1f2a3b4c5d", tool: "forecast", input: { city: "Leeds" }, result: { content: [{ type: "text", text: "Sunny" }] } } }));
 	});
 	it("uses native forks rather than presenting visible history as a resumed session", async () => {
 		const methods: string[] = [];

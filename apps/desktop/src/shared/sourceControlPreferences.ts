@@ -15,6 +15,8 @@ export type SourceControlPreferences = {
 	submodules: WorktreeSubmodules;
 	/** The folder Add project opens in; null for the system's choice. */
 	addProjectDirectory: string | null;
+	/** Clone into <folder>/<host>/<owner>/<repository>, as ghq lays repositories out, rather than <folder>/<repository>. */
+	cloneByHost: boolean;
 	/** The person's instructions, added to the prompts for chat titles, commit messages and pull request text, and review guides. */
 	titleInstructions: string; writingInstructions: string; reviewGuideInstructions: string;
 	/** Pull request descriptions fill in the repository's pull request template when it has one. */
@@ -22,7 +24,7 @@ export type SourceControlPreferences = {
 	/** The Phaseo model for commit messages, pull request text and branch names, and the one for review guides; null for the title model. */
 	gitModel: string | null; reviewGuideModel: string | null;
 };
-export const defaultSourceControlPreferences: SourceControlPreferences = { worktreeDirectory: null, branchNaming: "static", branchPrefix: "phaseo", branchInstructions: "", submodules: "recursive", addProjectDirectory: null, titleInstructions: "", writingInstructions: "", reviewGuideInstructions: "", followPullRequestTemplate: true, gitModel: null, reviewGuideModel: null };
+export const defaultSourceControlPreferences: SourceControlPreferences = { worktreeDirectory: null, branchNaming: "static", branchPrefix: "phaseo", branchInstructions: "", submodules: "recursive", addProjectDirectory: null, cloneByHost: false, titleInstructions: "", writingInstructions: "", reviewGuideInstructions: "", followPullRequestTemplate: true, gitModel: null, reviewGuideModel: null };
 
 export const branchNamingModes: readonly BranchNaming[] = ["static", "semantic", "custom"];
 export const worktreeSubmoduleModes: readonly WorktreeSubmodules[] = ["recursive", "top-level", "none"];
@@ -59,9 +61,11 @@ export function validateSourceControlPreferences(value: unknown): SourceControlP
 	if (typeof prefix !== "string") throw new Error("Invalid branch prefix.");
 	const problem = branchPrefixProblem(prefix.trim()); if (problem) throw new Error(problem);
 	if (typeof followPullRequestTemplate !== "boolean") throw new Error("Invalid pull request template setting.");
+	const cloneByHost = read("cloneByHost");
+	if (typeof cloneByHost !== "boolean") throw new Error("Invalid clone folder setting.");
 	return {
 		worktreeDirectory: folder("worktreeDirectory", "worktrees"), branchNaming: branchNaming as BranchNaming, branchPrefix: normalizeBranchPrefix(prefix), branchInstructions: text("branchInstructions", "branch naming instructions"),
-		submodules: submodules as WorktreeSubmodules, addProjectDirectory: folder("addProjectDirectory", "Add project"),
+		submodules: submodules as WorktreeSubmodules, addProjectDirectory: folder("addProjectDirectory", "Add project"), cloneByHost,
 		titleInstructions: text("titleInstructions", "chat title instructions"), writingInstructions: text("writingInstructions", "commit and pull request instructions"), reviewGuideInstructions: text("reviewGuideInstructions", "review guide instructions"),
 		followPullRequestTemplate, gitModel: model("gitModel", "commits and pull requests"), reviewGuideModel: model("reviewGuideModel", "review guides"),
 	};

@@ -14,6 +14,10 @@ import { Conversation } from "./Conversation";
 import { harnessNames, knownModel, modelLabel } from "./ModelPicker";
 import { ModelInfoCard } from "./ModelInfoCard";
 import { Requests } from "./Requests";
+import { steerBlocker } from "./QueuePanel";
+import { useWorkspacePreferences } from "../lib/workspacePreferences";
+import { useCommand } from "../lib/keybindings";
+import { useSendKey } from "./sendKey";
 
 function CompareColumn({ id }: { id: string }) {
 	const { api, overview, select } = useWorkspace();
@@ -41,19 +45,26 @@ export function CompareView({ group }: { group: CompareGroup }) {
 	const text = drafts[group.id] ?? "";
 	const setText = (value: string) => setDrafts(current => ({ ...current, [group.id]: value }));
 	const running = ids.some(id => ["running", "waiting"].includes(overview.tasks.find(task => task.id === id)?.status ?? ""));
-	const editor = useComposerEditor({ value: text, onChange: setText, placeholder: running ? "Queue a follow-up for every model…" : "Ask every model a follow-up…" });
+	const followUpSteers = useWorkspacePreferences().chat.followUp === "steer";
+	const editor = useComposerEditor({ value: text, onChange: setText, placeholder: running ? (followUpSteers ? "Steer every model…" : "Queue a follow-up for every model…") : "Ask every model a follow-up…" });
 	// Each column is its own agent, so the menu offers saved prompts and chats rather than one agent's commands.
 	const menu = useComposerMenu({ editor });
 	const message = composeMessage(text);
-	async function send() {
+	/** Steering sends into each running turn whose agent can take it; the other chats queue it (or start on it, when idle). */
+	async function send(steer = followUpSteers) {
 		if (!message.text || busy) return;
 		setBusy(true);
 		try {
 			const prepared = await menu.prepare(message.text);
-			const results = await Promise.all(ids.map(id => command({ type: "send", id, text: prepared.text, ...(message.threadReferences.length ? { threadReferences: message.threadReferences } : {}), ...(message.githubReferences.length ? { githubReferences: message.githubReferences } : {}) })));
+			const steerable = (id: string) => { const task = overview.tasks.find(value => value.id === id); return steer && Boolean(task && ["running", "waiting"].includes(task.status) && !steerBlocker(task)); };
+			const results = await Promise.all(ids.map(id => steerable(id) ? command({ type: "steer", id, text: prepared.text }) : command({ type: "send", id, text: prepared.text, ...(message.threadReferences.length ? { threadReferences: message.threadReferences } : {}), ...(message.githubReferences.length ? { githubReferences: message.githubReferences } : {}) })));
 			if (results.every(Boolean)) setText("");
 		} finally { setBusy(false); }
 	}
+	// Mod+Shift+Enter steers, and the other send key does the opposite of the default, as in a single chat.
+	useCommand("composer.steer", () => { void send(true); });
+	const sendKey = useSendKey();
+	useCommand("composer.sendAlternate", () => { if (!running || sendKey !== "enter") return false; void send(!followUpSteers); });
 	return <div className="flex h-full min-w-0 flex-col">
 		<header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-4">
 			<Columns3 className="size-4 text-muted-foreground" />

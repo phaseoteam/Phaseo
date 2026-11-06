@@ -46,6 +46,16 @@ export const usagePeriods: { id: UsagePeriod; label: string; days: number }[] = 
 /** Counts of what got done in the period. Pull requests are absent when GitHub couldn't be asked. */
 export type UsageActivity = { chatsStarted: number; chatsFinished: number; chatsSettled: number; autopilotChats: number; pullRequests?: { opened: number; merged: number } };
 
+/** Narrows the Usage page to one agent, or one of its models. */
+export type UsageFilter = { harness?: string; model?: string };
+export function validateUsageFilter(value: unknown): UsageFilter {
+	if (value === undefined || value === null) return {};
+	const input = value as Record<string, unknown>, field = (key: string) => input[key] === undefined ? undefined : typeof input[key] === "string" && input[key].length > 0 && input[key].length <= 300 ? input[key] as string : null;
+	const harness = field("harness"), model = field("model");
+	if (typeof value !== "object" || harness === null || model === null || (model && !harness)) throw new Error("Invalid usage filter.");
+	return { ...harness ? { harness } : {}, ...model ? { model } : {} };
+}
+
 /**
  * What the Usage page reads for one period. The database sums the ledger by harness and model; the main process
  * prices those sums. Buckets are local hours for today and local days otherwise, oldest first.
@@ -70,6 +80,9 @@ export type UsageReport = {
 	activity: UsageActivity;
 	/** For today: each local day of the last eight with its cost per hour, today last, for the pace. */
 	days?: { day: string; hours: number[] }[];
+	/** What the report was narrowed to, and every agent and model the period used, busiest first, to narrow by. */
+	filter: UsageFilter;
+	filterOptions: { harness: string; model: string }[];
 };
 
 /**

@@ -77,6 +77,7 @@ export async function runPhaseoChat(task: Task, cwd: string, text: string, callb
   }
  } };
  await runPhaseoTurn({
+  ...(task.operator ? { preloaded: ["app", "events"] } : {}),
   task, input: requested ? requested.arguments : text, callbacks, signal, store, client, tools, facts: dependencies.facts, steering, streamed,
   transcript: phaseoConversationMessages(task.messages, text, attachments, requested?.arguments), previous, labels: mcp.labels,
   context: { ...record(unfinished?.run.context), ...(nativeAction ? { phaseoSkill: { id: nativeAction.id, name: nativeAction.name } } : {}), ...(toolkit?.snapshot().length ? { phaseoModelSkills: toolkit.snapshot() } : {}) },

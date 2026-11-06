@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useRef } from "react";
-import { Node, mergeAttributes, type Editor, type JSONContent } from "@tiptap/core";
+import { Extension, Node, mergeAttributes, type Editor, type JSONContent } from "@tiptap/core";
+import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { NodeViewWrapper, ReactNodeViewRenderer, useEditor, type NodeViewProps } from "@tiptap/react";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import Document from "@tiptap/extension-document";
@@ -64,6 +66,21 @@ const MentionNode = Node.create({
 	addNodeView: () => ReactNodeViewRenderer(MentionChip),
 });
 
+/** Marks a typed "ultrathink" with a dithered shimmer while the chosen model takes it; `enabled` is read on every redraw. */
+const ultrathinkKey = new PluginKey("ultrathink-word");
+const UltrathinkWord = (enabled: () => boolean) => Extension.create({
+	name: "ultrathinkWord",
+	addProseMirrorPlugins: () => [new Plugin({ key: ultrathinkKey, props: { decorations: state => {
+		if (!enabled()) return null;
+		const found: Decoration[] = [];
+		state.doc.descendants((node, position) => {
+			if (!node.isText || !node.text) return;
+			for (const match of node.text.matchAll(/\bultrathink\b/gi)) found.push(Decoration.inline(position + match.index, position + match.index + match[0].length, { class: "ultrathink-word" }));
+		});
+		return DecorationSet.create(state.doc, found);
+	} } })],
+});
+
 /** Draft text, with `@[label](kind:ref)` chip tokens, as editor content: one paragraph per line. */
 export function draftContent(text: string): JSONContent {
 	return { type: "doc", content: text.split("\n").map(line => ({ type: "paragraph", content: parseMentions(line).filter(segment => segment !== "").map(segment => typeof segment === "string" ? { type: "text", text: segment } : { type: "mention", attrs: segment }) })) };
@@ -88,7 +105,7 @@ export type ComposerEditor = {
 	insert: (mentions: Mention[]) => void;
 };
 
-export function useComposerEditor({ value, onChange, placeholder, disabled, onFiles, label = "Message" }: {
+export function useComposerEditor({ value, onChange, placeholder, disabled, onFiles, label = "Message", ultrathink = false }: {
 	value: string;
 	onChange: (value: string) => void;
 	placeholder: string;
@@ -96,15 +113,17 @@ export function useComposerEditor({ value, onChange, placeholder, disabled, onFi
 	/** Images pasted or files dropped into the composer. */
 	onFiles?: (files: File[]) => void;
 	label?: string;
+	/** Whether the chosen model takes a typed "ultrathink", so the word is marked. */
+	ultrathink?: boolean;
 }): ComposerEditor {
 	const keys = useRef<(event: KeyboardEvent) => boolean>(undefined);
 	const pasteInline = useRef(false);
 	const last = useRef(value);
 	const richText = useWorkspacePreferences().chat.richTextComposer;
-	const latest = useRef({ onChange, onFiles, placeholder, richText });
-	latest.current = { onChange, onFiles, placeholder, richText };
+	const latest = useRef({ onChange, onFiles, placeholder, richText, ultrathink });
+	latest.current = { onChange, onFiles, placeholder, richText, ultrathink };
 	const editor = useEditor({
-		extensions: [Document, Paragraph, Text, HardBreak, UndoRedo, MentionNode, Placeholder.configure({ placeholder: () => latest.current.placeholder }), ComposerMarkdown.configure({ enabled: () => latest.current.richText })],
+		extensions: [Document, Paragraph, Text, HardBreak, UndoRedo, MentionNode, UltrathinkWord(() => latest.current.ultrathink), Placeholder.configure({ placeholder: () => latest.current.placeholder }), ComposerMarkdown.configure({ enabled: () => latest.current.richText })],
 		content: draftContent(value),
 		editable: !disabled,
 		editorProps: {
@@ -162,14 +181,20 @@ export function useComposerEditor({ value, onChange, placeholder, disabled, onFi
 	useEffect(() => editor ? registerComposer(editor) : undefined, [editor]);
 	// Placeholder text is read when the editor redraws; nudge it when the text changes.
 	useEffect(() => { if (editor && !editor.isDestroyed) editor.view.dispatch(editor.state.tr.setMeta("placeholder", placeholder)); }, [editor, placeholder]);
+	useEffect(() => { if (editor && !editor.isDestroyed) editor.view.dispatch(editor.state.tr.setMeta(ultrathinkKey, ultrathink)); }, [editor, ultrathink]);
 	// Turning rich text on or off in Settings restyles open drafts straight away.
 	useEffect(() => { if (editor && !editor.isDestroyed) editor.view.dispatch(editor.state.tr.setMeta(refreshComposerMarkdown, true)); }, [editor, richText]);
 
 	// Scripts drive the composer like a text field: `value` reads and replaces the draft text.
 	useEffect(() => {
 		if (!editor) return;
-		const dom = editor.view.dom as HTMLElement & { value?: string };
-		Object.defineProperty(dom, "value", { configurable: true, get: () => draftText(editor.state.doc), set: (text: string) => { editor.commands.setContent(draftContent(text), { emitUpdate: true }); editor.commands.focus("end"); } });
+		const define = () => {
+			const dom = editor.view.dom as HTMLElement & { value?: string };
+			Object.defineProperty(dom, "value", { configurable: true, get: () => draftText(editor.state.doc), set: (text: string) => { editor.commands.setContent(draftContent(text), { emitUpdate: true }); editor.commands.focus("end"); } });
+		};
+		// The view mounts with the editor's content element, which can come after the editor itself; reading it sooner throws.
+		if (!editor.isDestroyed) define(); else editor.on("mount", define);
+		return () => { editor.off("mount", define); };
 	}, [editor]);
 
 	// The browser's screenshot and annotate tools hand images and a note to whichever composer is open.
@@ -205,5 +230,7 @@ export function useComposerEditor({ value, onChange, placeholder, disabled, onFi
 		chain.insertContent([...before && !/\s/.test(before) ? [{ type: "text", text: " " }] : [], ...mentions.flatMap(mentionContent)]).run();
 	};
 	insertRef.current = insert;
-	return { editor, keys, focus: position => { editor?.commands.focus(position ?? "end"); }, insert };
+	// A chat view hidden while a page loads gets a fresh editor when it's shown again, and its effects can run first with
+	// the old one, destroyed (no commands) or not yet mounted (no view); focusing either throws.
+	return { editor, keys, focus: position => { if (editor && !editor.isDestroyed) editor.commands.focus(position ?? "end"); }, insert };
 }

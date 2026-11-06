@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
-import { Brain, SlidersHorizontal, Zap } from "lucide-react";
+import { Brain, SlidersHorizontal } from "lucide-react";
 import type { ModelOptionDescriptor } from "../../shared/workspace";
 import type { ModelSelection } from "../lib/modelPreferences";
 import { rememberSettings } from "../lib/modelSettings";
 import { useModels } from "../lib/useModels";
-import { current, isFast, settingDescriptors, speedIds, withSetting } from "./ModelSettings";
+import { current, isFast, settingDescriptors, SpeedGlyph, speedIds, withSetting } from "./ModelSettings";
 
 /** Something `/` can do in this chat: run straight away, or open a short list of choices. */
 /** `insert` puts text in the message box in place of the typed `/name` instead of running anything (`/side ` for a question to follow). */
@@ -28,12 +28,14 @@ export function useModelSettingActions(selection: ModelSelection | undefined, on
 		const value = current(selection, descriptor);
 		if (speedIds.includes(descriptor.id)) {
 			const fast = isFast(descriptor, value);
-			const fastValue = descriptor.type === "boolean" ? true : descriptor.options.find(option => isFast(descriptor, option.id))?.id;
+			// One fast speed is a toggle; Fast and Ultrafast together stay a list, so either can be picked.
+			const fastValues = descriptor.type === "boolean" ? [true] : descriptor.options.filter(option => isFast(descriptor, option.id)).map(option => option.id);
+			const fastValue = fastValues.length === 1 ? fastValues[0] : undefined;
 			const standard = descriptor.type === "boolean" ? false : descriptor.options.find(option => !isFast(descriptor, option.id) && option.id !== "flex")?.id;
-			if (fastValue !== undefined && standard !== undefined) return { id: "fast", label: "Fast", icon: <Zap />, checked: fast, description: fast ? "Turn off Fast and return to standard speed" : "Turn on Fast for quicker replies, at the model's fast price", run: () => change(descriptor, fast ? standard : fastValue) };
+			if (fastValue !== undefined && standard !== undefined) return { id: "fast", label: "Fast", icon: <SpeedGlyph tier="fast" />, checked: fast, description: fast ? "Turn off Fast and return to standard speed" : "Turn on Fast for quicker replies, at the model's fast price", run: () => change(descriptor, fast ? standard : fastValue) };
 		}
 		const valueId = String(value);
-		return { id: descriptor.id, label: descriptor.label, icon: /reason|effort|think/i.test(`${descriptor.id} ${descriptor.label}`) ? <Brain /> : <SlidersHorizontal />, hint: choices(descriptor).find(choice => choice.id === valueId)?.label,
+		return { id: descriptor.id, label: descriptor.label, icon: speedIds.includes(descriptor.id) ? <SpeedGlyph tier="fast" /> : /reason|effort|think/i.test(`${descriptor.id} ${descriptor.label}`) ? <Brain /> : <SlidersHorizontal />, hint: choices(descriptor).find(choice => choice.id === valueId)?.label,
 			options: choices(descriptor).map(choice => ({ id: `${descriptor.id}:${choice.id}`, label: choice.label, description: choice.description, icon: null, checked: choice.id === valueId, run: () => change(descriptor, descriptor.type === "boolean" ? choice.id === "true" : choice.id) })) };
 	});
 }

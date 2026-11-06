@@ -28,7 +28,7 @@ describe("Phaseo model option descriptors", () => {
 	});
 	it("builds Speed from service_tier values, aliases and positive notes across routable providers", () => {
 		const [speed] = phaseoModelOptions(model(offer({ service_tier: { supported: true, supported_values: ["standard", "priority"], provider_default: "standard" } }), offer({ service_tier: { supported: true, notes: "Flex processing is available at half price." } }), offer({ service_tier: { supported: true, enum: ["default", "ultrafast"] } }, false)));
-		expect(speed).toEqual({ id: "speed", label: "Speed", type: "select", options: [{ id: "standard", label: "Standard", isDefault: true }, { id: "priority", label: "Fast" }, { id: "flex", label: "Flex" }] });
+		expect(speed.type === "select" && speed.options.map(option => [option.id, option.label, option.isDefault ?? false])).toEqual([["flex", "Flex", false], ["standard", "Standard", true], ["priority", "Fast", false]]);
 		const [fast] = phaseoModelOptions(model(offer({ service_tier: { values: [{ value: "fast" }, "ultrafast"] } })));
 		expect(fast.type === "select" && fast.options.map(option => option.label)).toEqual(["Standard", "Fast", "Ultrafast"]);
 	});
@@ -37,8 +37,16 @@ describe("Phaseo model option descriptors", () => {
 	});
 	it("prefers the service_tiers each routable offer lists over parameter hints", () => {
 		const model = { offers: [{ routable: true, service_tiers: ["standard", "priority"], capabilities: { parameter_details: {} } }, { routable: true, service_tiers: ["standard", "flex"], capabilities: { parameter_details: {} } }, { routable: false, service_tiers: ["ultrafast"] }] };
-		expect(phaseoModelOptions(model)).toEqual([{ id: "speed", label: "Speed", type: "select", options: [{ id: "standard", label: "Standard", isDefault: true }, { id: "priority", label: "Fast" }, { id: "flex", label: "Flex" }] }]);
+		const [speed] = phaseoModelOptions(model);
+		expect(speed.type === "select" && speed.options.map(option => option.id)).toEqual(["flex", "standard", "priority"]);
 		expect(phaseoModelOptions({ offers: [{ routable: true, service_tiers: ["standard"], capabilities: { parameter_details: { service_tier: { supported_values: ["standard", "priority"] } } } }] })).toEqual([]);
+	});
+	it("says what each speed is and, when not every provider has it, which ones serve it", () => {
+		const [speed] = phaseoModelOptions({ offers: [{ routable: true, provider: { id: "openai", name: "OpenAI" }, service_tiers: ["standard", "priority", "ultrafast"] }, { routable: true, provider: { id: "azure", name: "Azure" }, service_tiers: ["standard", "priority"] }] });
+		const about = (id: string) => speed.type === "select" ? speed.options.find(option => option.id === id)?.description : undefined;
+		expect(about("standard")).toBe("The provider's usual speed and price.");
+		expect(about("priority")).toBe("Served ahead of standard traffic, at the provider's Fast price.");
+		expect(about("ultrafast")).toBe("The provider's quickest processing, at its Ultrafast price. Only through OpenAI.");
 	});
 });
 
@@ -48,5 +56,20 @@ describe("Phaseo request settings", () => {
 		expect(phaseoRequestSettings({ effort: "low", speed: "standard" })).toEqual({ reasoning: { effort: "low" } });
 		expect(phaseoRequestSettings({ speed: "flex", effort: true })).toEqual({ service_tier: "flex" });
 		expect(phaseoRequestSettings(undefined)).toEqual({});
+	});
+});
+
+describe("Region", () => {
+	it("offers the data regions the model's providers keep data in, and asks the gateway for one", () => {
+		const options = phaseoModelOptions({ offers: [
+			{ routable: true, provider: { id: "anthropic", name: "Anthropic" }, residency: { data_regions: ["us"] } },
+			{ routable: true, provider: { id: "azure", name: "Azure" }, residency: { data_regions: ["eu", "global", "eu-west2"] } },
+			{ routable: false, provider: { id: "off", name: "Off" }, residency: { data_regions: ["jp"] } },
+		] });
+		const region = options.find(option => option.id === "region");
+		expect(region?.type === "select" && region.options.map(option => [option.id, option.label])).toEqual([["any", "Global"], ["eu", "European Union"], ["us", "United States"]]);
+		expect(region?.type === "select" && region.options.find(option => option.id === "eu")?.description).toBe("Keeps the request's data in European Union. Only through Azure.");
+		expect(phaseoRequestSettings({ region: "eu" })).toEqual({ provider: { required_data_region: "eu" } });
+		expect(phaseoRequestSettings({ region: "any" })).toEqual({});
 	});
 });

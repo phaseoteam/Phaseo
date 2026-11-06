@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { typesUltrathink, useUltrathinkReady } from "./ModelSettings";
 import { TerminalDrawer } from "../views/Terminals";
-import { AlarmClockOff, Archive, Box, CircleCheck, Clock, Undo2, CornerLeftUp, Download, Ellipsis, Gauge, GitBranch, Layers, ListChecks, MessagesSquare, Paperclip, Pencil, PenLine, Pin, PinOff, Plug, RotateCcw, Settings, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
+import { AlarmClockOff, Archive, Box, FolderInput, CircleCheck, Clock, Undo2, CornerLeftUp, Download, Ellipsis, Gauge, GitBranch, Layers, ListChecks, MessagesSquare, Paperclip, Pencil, PenLine, Pin, PinOff, Plug, RotateCcw, Settings, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { QuestionPanel } from "./QuestionPanel";
 import { IssueDraftPanel } from "./IssueDraftPanel";
@@ -26,13 +27,18 @@ import { ComposerTaskContext, useComposerEditor } from "./composerEditor";
 import { composeMessage, mentionPlainText } from "../lib/mentions";
 import { UsageMeters } from "../settings/UsageMeters";
 import { Conversation } from "./Conversation";
-import { harnessNames } from "./ModelPicker";
-import { ModelControl } from "./ModelSettings";
+import { ModelPicker, harnessNames, knownModel, modelName } from "./ModelPicker";
 import { silenceLabel, silentFor } from "../../shared/inbox";
 import { useNow } from "../lib/useNow";
-import { PermissionMenu, PlanIndicator } from "./NewChat";
+import { PlanIndicator } from "./NewChat";
+import { PermissionChoice, usePermissionShortcut } from "./PermissionChoice";
 import { openModelPickerEvent, renameChatEvent, useModelSettingActions, type ComposerAction } from "./composerActions";
-import { Requests } from "./Requests";
+import { ChildRequests, Requests } from "./Requests";
+import { ChatBranchPicker } from "./ChatBranchPicker";
+import { ChatLineage } from "./ChatLineage";
+import { PromptLengthNotice } from "./PromptLengthNotice";
+import { takeAppContext } from "../lib/mcpAppContext";
+import { promptLengthProblem } from "../../shared/promptLength";
 import { AgentThreads } from "./AgentThreads";
 import { ChatSpend } from "./ChatSpend";
 import { AutopilotControl } from "./Autopilot";
@@ -70,6 +76,18 @@ function ChatHeader({ task, onOpenTerminal }: { task: Task; onOpenTerminal: () =
 	useEffect(() => { setRenaming(false); }, [task.id]);
 	useEffect(() => { const rename = () => setRenaming(true); window.addEventListener(renameChatEvent, rename); return () => window.removeEventListener(renameChatEvent, rename); }, []);
 	const fork = async () => { const known = new Set(overview.tasks.map(value => value.id)); const state = await command({ type: "fork", id: task.id }); const id = state?.tasks.find(value => !known.has(value.id))?.id; if (id) select(id); };
+	// A chat with no project continues in one as a new chat that carries its history, so no agent session moves folders.
+	const destinations = task.projectId ? [] : overview.projects.filter(value => !value.worktree && !value.archived);
+	const continueIn = async (projectId: string) => {
+		const known = new Set(overview.tasks.map(value => value.id));
+		const state = await command({ type: "handoff", id: task.id, projectId, harness: task.harness, model: task.model, mode: task.mode, ...(task.accountId ? { accountId: task.accountId } : {}), ...(task.agentId ? { agentId: task.agentId } : {}),
+			...(task.permissionMode ? { permissionMode: task.permissionMode } : {}), ...(task.reasoningEffort && ["codex", "grok"].includes(task.harness) ? { reasoningEffort: task.reasoningEffort } : {}),
+			...(task.serviceTier && task.harness === "codex" ? { serviceTier: task.serviceTier } : {}), ...(task.modelOptions ? { modelOptions: task.modelOptions } : {}) });
+		const id = state?.tasks.find(value => !known.has(value.id))?.id;
+		if (!id) return;
+		await command({ type: "update-task", id, title: task.title });
+		select(id);
+	};
 	const canCompact = ["opencode", "codex", "claude", "pi", "phaseo"].includes(task.harness) && !!task.nativeSessionId && !task.archived && !["running", "waiting"].includes(task.status);
 	// Agents link to the chat that started them; launched chats to the chat that launched them.
 	const parentId = task.delegation?.parentTaskId ?? task.launch?.byTaskId;
@@ -83,6 +101,7 @@ function ChatHeader({ task, onOpenTerminal }: { task: Task; onOpenTerminal: () =
 			: <button type="button" title="Rename" onClick={() => setRenaming(true)} className="min-w-0 truncate rounded-md px-1.5 py-0.5 text-sm font-semibold hover:bg-muted">{task.title}</button>}
 		{!renaming && <TagEditor task={snapshot ?? task} />}
 		<FactoryThreadChip taskId={task.id} />
+		<ChatLineage taskId={task.id} />
 		{project && <span className="flex h-6 shrink-0 items-center gap-1.5 rounded-full border border-border px-2.5 text-[11.5px] text-muted-foreground"><ProjectIcon project={project} className="size-3.5" />{project.name}{project.worktree && <span className="font-mono">⎇ {project.worktree.branch}</span>}</span>}
 		<div className="ml-auto flex items-center gap-1.5">
 			{project && !project.worktree?.removedAt && <ProjectScriptsControl project={project} taskId={task.id} onRun={onOpenTerminal} />}
@@ -98,6 +117,9 @@ function ChatHeader({ task, onOpenTerminal }: { task: Task; onOpenTerminal: () =
 						? <DropdownMenuItem onClick={() => void threadActions.wake(snapshot)}><AlarmClockOff />Wake chat</DropdownMenuItem>
 						: <DropdownMenuSub><DropdownMenuSubTrigger><Clock />Snooze</DropdownMenuSubTrigger><DropdownMenuSubContent className="w-56"><SnoozeItems onSnooze={until => void threadActions.snooze(snapshot, until)} onCustom={() => setCustomSnooze(true)} /></DropdownMenuSubContent></DropdownMenuSub>)}
 					<DropdownMenuItem disabled={["running", "waiting"].includes(task.status)} onClick={() => void fork()}><GitBranch />Branch chat</DropdownMenuItem>
+					{destinations.length > 0 && !task.archived && <DropdownMenuSub><DropdownMenuSubTrigger disabled={["running", "waiting"].includes(task.status)}><FolderInput />Continue in a project</DropdownMenuSubTrigger>
+						<DropdownMenuSubContent className="max-h-80 w-60 overflow-y-auto">{destinations.map(value => <DropdownMenuItem key={value.id} onClick={() => void continueIn(value.id)}><ProjectIcon project={value} className="size-3.5" /><span className="truncate">{value.name}</span></DropdownMenuItem>)}</DropdownMenuSubContent>
+					</DropdownMenuSub>}
 					{canCompact && <DropdownMenuItem onClick={() => void command({ type: "send", id: task.id, text: "/compact" })}><Layers />Compact context</DropdownMenuItem>}
 					<DropdownMenuSeparator />
 					{project && <DropdownMenuItem onClick={() => openProjectSettings(project.id)}><Settings />Project settings</DropdownMenuItem>}
@@ -138,11 +160,14 @@ function ChatComposer({ task }: { task: Task }) {
 	};
 	const running = ["running", "waiting"].includes(task.status);
 	const code = task.mode !== "chat";
+	const setPermission = (permissionMode: NonNullable<Task["permissionMode"]>) => void command({ type: "update-task", id: task.id, permissionMode });
+	usePermissionShortcut(task.permissionMode, setPermission, code && !task.archived);
 	const preferences = useWorkspacePreferences();
 	const followUpSteers = preferences.chat.followUp === "steer";
 	// While the agent waits on a question, the composer is its own-answer field.
 	const answerer = useQuestionAnswerer(task.id);
-	const editor = useComposerEditor({ value: draft.text, onChange: draft.setText, disabled: task.archived, onFiles: files => void upload(files),
+	const ultrathinkReady = useUltrathinkReady({ harness: task.harness, model: task.model, accountId: task.accountId });
+	const editor = useComposerEditor({ value: draft.text, onChange: draft.setText, disabled: task.archived, onFiles: files => void upload(files), ultrathink: ultrathinkReady,
 		placeholder: task.archived ? "This chat is archived" : answerer ? "Type your own answer, or leave this blank to use the selected option" : running ? (followUpSteers ? "Steer the running turn…" : "Queue a follow-up…") : code ? "Ask for a change, or reply to the agent…" : "Reply…" });
 	const selection: ModelSelection = { harness: task.harness, model: task.model, accountId: task.accountId, reasoningEffort: task.reasoningEffort, serviceTier: task.serviceTier, options: task.modelOptions };
 	const settingActions = useModelSettingActions(task.archived || running ? undefined : selection, next => void changeSettings(next));
@@ -194,7 +219,8 @@ function ChatComposer({ task }: { task: Task }) {
 		return () => window.removeEventListener(restoreDraftEvent, restore);
 	});
 	const message = composeMessage(draft.text);
-	const canSend = !busy && !uploading && !task.archived && (!!answerer || !!message.text || message.attachments.length > 0);
+	const lengthProblem = promptLengthProblem(message.text, knownModel(task.model)?.facts?.contextTokens, modelName(task));
+	const canSend = !busy && !uploading && !task.archived && !lengthProblem?.blocking && (!!answerer || !!message.text || message.attachments.length > 0);
 	usePromptHistory(task, draft);
 	const stash = usePromptStash(task.id, draft);
 	// A queued message being edited in the composer, and the draft it set aside ("Editing in the composer").
@@ -260,7 +286,9 @@ function ChatComposer({ task }: { task: Task }) {
 		let delivered = false;
 		try {
 			const prepared = await menu.prepare(message.text);
-			if (await command({ type: "send", id: task.id, text: prepared.text || attachmentsOnlyText, attachments: message.attachments,
+			// What MCP Apps in this chat noted about what the person did in them goes with the message, where it can be seen.
+			const appContext = prepared.nativeAction ? "" : takeAppContext(task.id);
+			if (await command({ type: "send", id: task.id, text: (prepared.text || attachmentsOnlyText) + appContext, attachments: message.attachments,
 				...(message.threadReferences.length ? { threadReferences: message.threadReferences } : {}), ...(message.githubReferences.length ? { githubReferences: message.githubReferences } : {}), ...(prepared.nativeAction ? { nativeAction: prepared.nativeAction } : {}) })) {
 				delivered = true; rememberModel(selection); recordPrompt(typed); return true;
 			}
@@ -313,7 +341,8 @@ function ChatComposer({ task }: { task: Task }) {
 			<div className="flex items-center gap-2 text-[13px] font-semibold"><Gauge className="size-4 text-muted-foreground" />Usage limits<button type="button" aria-label="Hide usage limits" onClick={() => setLimits(undefined)} className="ml-auto grid size-6 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"><X className="size-3.5" /></button></div>
 			{limits === "loading" ? <p className="text-xs text-muted-foreground">Checking…</p> : "error" in limits ? <p className="text-xs text-destructive">{limits.error}</p> : <UsageMeters status={limits} />}
 		</div>}
-		<ComposerTaskContext value={task.id}><Composer editor={editor} onSubmit={submit} canSend={canSend || Boolean(editing)} disabled={task.archived}
+		{lengthProblem && <PromptLengthNotice problem={lengthProblem} />}
+		<ComposerTaskContext value={task.id}><Composer editor={editor} onSubmit={submit} canSend={canSend || Boolean(editing)} disabled={task.archived} ultrathink={ultrathinkReady && typesUltrathink(draft.text)}
 			chips={editing && <span className="flex w-full items-center gap-2 text-xs text-muted-foreground"><Pencil className="size-3.5" />Editing a queued message<button type="button" onClick={() => stopEditing()} className="ml-auto rounded-md px-1.5 py-0.5 font-medium text-foreground hover:bg-muted">Cancel</button></span>}
 			running={running} onStop={() => void command({ type: "cancel", id: task.id })}
 			menu={task.archived ? undefined : menu}
@@ -323,12 +352,12 @@ function ChatComposer({ task }: { task: Task }) {
 				{task.projectId && <IssueBadge taskId={task.id} links={overview.tasks.find(value => value.id === task.id)?.issues} className="mr-1 h-7 px-1.5 hover:bg-accent/60" />}
 				{/* Only Phaseo's harness reports its window, and /compact is its own. */}
 				<ContextMeter task={task} onCompact={canCompact && task.harness === "phaseo" ? () => void command({ type: "send", id: task.id, text: "/compact" }) : undefined} />
+				<ModelPicker footer={code ? <PermissionChoice value={task.permissionMode} onChange={setPermission} /> : undefined} selections={[selection]} onChange={values => void changeModel(values[0])} onSettingsChange={next => void changeSettings(next)} agents={code} disabled={running || task.archived} openEvent={openModelPickerEvent} hidden={settingsProject(overview.projects, task.projectId)?.settings?.disabledHarnesses} />
 			</>}
 			tools={<>
 				<ToolButton label="Attach files" disabled={uploading || task.archived} onClick={() => void attach()}><Paperclip /></ToolButton>
 				{!task.archived && <StashMenu onRestore={id => stash.restore(id)} />}
-				<ModelControl selections={[selection]} onChange={values => void changeModel(values[0])} onSettings={next => void changeSettings(next)} agents={code} disabled={running || task.archived} openEvent={openModelPickerEvent} hidden={settingsProject(overview.projects, task.projectId)?.settings?.disabledHarnesses} />
-				{code && <PermissionMenu value={task.permissionMode} onChange={permissionMode => void command({ type: "update-task", id: task.id, permissionMode })} />}
+				{code && task.projectId && <ChatBranchPicker task={task} />}
 				{code && (preferences.autopilot || task.autopilot) && <AutopilotControl value={task.autopilot ? { capNanos: task.autopilot.capNanos } : undefined} disabled={running || task.archived || !preferences.autopilot} disabledReason={preferences.autopilot ? "Stop the chat to turn on Autopilot." : "Allow Autopilot in Settings → Experimental."} onChange={autopilot => void command({ type: "update-task", id: task.id, autopilot })} />}
 				{plan && <PlanIndicator onClear={running ? undefined : () => void command({ type: "update-task", id: task.id, mode: "code" })} />}
 			</>} /></ComposerTaskContext>
@@ -401,6 +430,7 @@ export function ChatView({ id }: { id: string }) {
 			<AgentThreads taskId={task.id} />
 			<BackgroundWork taskId={task.id} />
 			<Requests task={task} />
+			<ChildRequests taskId={task.id} />
 			{removed && <p className="text-xs text-muted-foreground">This checkout has been removed. Switch model to continue in another project.</p>}
 		</Conversation>}
 		<QuestionPanel task={task} />

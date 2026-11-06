@@ -102,6 +102,23 @@ describe("chat entries", () => {
 		expect(head).not.toHaveProperty("messages"); expect(head).not.toHaveProperty("activities"); expect(head).not.toHaveProperty("revision");
 	}));
 
+	it("reads and saves messages without the activities, so a turn leaves a long chat's activities alone", () => withStore((store, filename) => {
+		store.saveTask(chat("kinds", 4));
+		const task = store.getTask("kinds");
+		expect(task.messages).toHaveLength(8);
+		// Another connection changes an activity after this copy read its messages, as a turn's own streaming does.
+		const other = new WorkspaceStore(filename);
+		try { const copy = other.getTask("kinds"); copy.activities![1].text = "Written elsewhere"; other.saveTask(copy); } finally { other.close(); }
+		task.messages.push({ id: "kinds-u9", role: "user", text: "Next question", createdAt: created, timelineOrder: store.nextTimelineOrder("kinds") });
+		store.saveTask(task);
+		const saved = store.getTask("kinds");
+		expect(saved.messages.at(-1)).toMatchObject({ text: "Next question", timelineOrder: 40 });
+		expect(saved.activities![1].text).toBe("Written elsewhere");
+		// The next position follows the last entry's, or the number of entries when that is larger.
+		expect(store.nextTimelineOrder("kinds")).toBe(41);
+		store.saveTask(chat("unordered", 0, { messages: [1, 2, 3].map(n => ({ id: `m${n}`, role: "user" as const, text: "", createdAt: created })) }));
+		expect(store.nextTimelineOrder("unordered")).toBe(4);
+	}));
 	it("gives deleted chats' pages back and does not reuse their cache", () => withStore((store, _filename, raw) => {
 		for (let index = 0; index < 20; index++) store.saveTask(chat(`gone-${index}`, 6));
 		store.deleteTasks(Array.from({ length: 20 }, (_, index) => `gone-${index}`));

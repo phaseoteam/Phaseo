@@ -3,6 +3,9 @@ import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import { DesktopFlags } from "./lib/DesktopFlags";
 import "./index.css";
+import { appFontsKey, applyAppFonts, validAppFonts } from "./lib/appFonts";
+import { readPersistedValue } from "./lib/persistedState";
+import { animationsKey, applyAnimations } from "./lib/animations";
 import developmentIcon from "../../assets/icon-development.svg";
 import productionIcon from "../../assets/icon-production.svg";
 
@@ -11,6 +14,10 @@ favicon.rel = "icon";
 favicon.type = "image/svg+xml";
 favicon.href = import.meta.env.DEV ? developmentIcon : productionIcon;
 document.head.append(favicon);
+
+// Before the first paint, so chosen fonts never flash in after the app's own.
+try { applyAppFonts(validAppFonts(readPersistedValue(appFontsKey, {}))); } catch { /* The app's own fonts. */ }
+applyAnimations(readPersistedValue<boolean>(animationsKey, true) !== false);
 
 const root = document.getElementById("root");
 

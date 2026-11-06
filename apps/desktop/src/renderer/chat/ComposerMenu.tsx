@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Editor, JSONContent } from "@tiptap/core";
-import { Blocks, Check, ChevronLeft, ChevronRight, File, FileText, Folder, LoaderCircle, Sparkles, Terminal } from "lucide-react";
+import { Blocks, Check, ChevronLeft, ChevronRight, File, FileText, Folder, LoaderCircle, ScrollText, Terminal } from "lucide-react";
 import type { Harness } from "../../shared/workspace";
 import { nativeActionPrefix, nativeActionText, type NativeAction, type NativeActionEntry } from "../../shared/nativeActions";
 import { findTrigger, resolveSlash } from "../lib/composerTriggers";
@@ -179,7 +179,7 @@ export function useComposerMenu({ editor: composer, taskId, harness, accountId, 
 				}),
 			})),
 			...rank(nativeActions.filter(action => !action.name.startsWith("__") && !builtIn.has(action.name.toLowerCase())), query, action => nativeActionPrefix(action).slice(1), action => action.description).map(action => ({
-				key: `native:${action.kind}:${action.id}`, group: action.kind === "skill" ? "Skills" : "Commands", label: nativeActionPrefix(action), detail: action.description, hint: action.argumentHint, icon: action.kind === "skill" ? <Sparkles /> : <Terminal />,
+				key: `native:${action.kind}:${action.id}`, group: action.kind === "skill" ? "Skills" : "Commands", label: nativeActionPrefix(action), detail: action.description, hint: action.argumentHint, icon: action.kind === "skill" ? <ScrollText /> : <Terminal />,
 				run: () => { picked.current.add(nativeActionPrefix(action)); replace(`${nativeActionPrefix(action)} `); },
 			})),
 			...rank(prompts, query, prompt => prompt.name, prompt => `${prompt.server} ${prompt.description}`).map(prompt => ({

@@ -3,6 +3,7 @@ import { Check, ChevronDown, Copy, ListChecks } from "lucide-react";
 import { MessageContent } from "../components/MessageContent";
 import { useTextCopy } from "../components/useTextCopy";
 import { cn } from "../lib/utils";
+import { IconSwap } from "../components/IconSwap";
 
 /** The plan's own first heading, as the plan's title. */
 export function proposedPlanTitle(markdown: string) {
@@ -24,7 +25,7 @@ export function ProposedPlan({ markdown, projectId, status, children }: { markdo
 			<span className="shrink-0 font-semibold">Plan</span>
 			<span className="min-w-0 truncate text-muted-foreground">{proposedPlanTitle(markdown)}</span>
 			{status && <span className="shrink-0 text-xs text-muted-foreground">· {status}</span>}
-			<button type="button" aria-label={copied === "copied" ? "Copied" : "Copy plan"} title={copied === "copied" ? "Copied" : "Copy plan"} disabled={copying} onClick={() => void copy()} className="ml-auto grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground">{copied === "copied" ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}</button>
+			<button type="button" aria-label={copied === "copied" ? "Copied" : "Copy plan"} title={copied === "copied" ? "Copied" : "Copy plan"} disabled={copying} onClick={() => void copy()} className="ml-auto grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"><IconSwap show={copied === "copied" ? "check" : "copy"}>{{ check: <Check className="size-3.5" />, copy: <Copy className="size-3.5" /> }}</IconSwap></button>
 		</div>
 		<div className={cn("relative mt-2", folded && "max-h-72 overflow-hidden")}>
 			<div data-selectable className="text-[14px] leading-relaxed"><MessageContent text={markdown} projectId={projectId} /></div>

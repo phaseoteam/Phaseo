@@ -13,12 +13,14 @@ export class MissionStore {
 		const existing = command.id ? this.get(command.id) : undefined; if (existing?.lastStatus === "running") throw new Error("Stop this scheduled task's run before editing it.");
 		const timestamp = new Date(now).toISOString(); const threadTaskId = command.threadTaskId === undefined ? existing?.threadTaskId : command.threadTaskId ?? undefined;
 		const mission: Mission = { ...existing, id: existing?.id ?? randomUUID(), title: command.title, prompt: command.prompt, templateTaskId: command.templateTaskId, threadTaskId, schedule: command.schedule, enabled: existing?.enabled ?? false, createdAt: existing?.createdAt ?? timestamp, updatedAt: timestamp, lastStatus: existing?.lastStatus ?? "never", runCount: existing?.runCount ?? 0, error: undefined };
-		mission.nextRunAt = mission.enabled ? nextMissionRun(mission.schedule, now) : undefined; this.put(mission); return mission;
+		const changedSchedule = !existing || JSON.stringify(existing.schedule) !== JSON.stringify(command.schedule);
+		if (changedSchedule && !nextMissionRun(command.schedule, now)) throw new Error("Choose a time in the future.");
+		mission.nextRunAt = mission.enabled ? nextMissionRun(mission.schedule, now) : undefined; if (!mission.nextRunAt) mission.enabled = false; this.put(mission); return mission;
 	}
 	delete(id: string) { const mission = this.get(id); if (mission.lastStatus === "running") throw new Error("Stop this scheduled task's run before deleting it."); this.db.prepare("DELETE FROM missions WHERE id=?").run(id); }
 	admit(id: string, now: number, create: (mission: Mission) => Task): Task {
 		this.db.exec("BEGIN IMMEDIATE");
-		try { const mission = this.get(id); if (mission.lastStatus === "running") throw new Error("This scheduled task is already running."); const task = create(mission); mission.lastTaskId = task.id; mission.lastRunAt = new Date(now).toISOString(); mission.updatedAt = mission.lastRunAt; mission.lastStatus = "running"; mission.runCount++; mission.error = undefined; mission.nextRunAt = mission.enabled ? nextMissionRun(mission.schedule, now) : undefined; this.put(mission); this.db.exec("COMMIT"); return task; }
+		try { const mission = this.get(id); if (mission.lastStatus === "running") throw new Error("This scheduled task is already running."); const task = create(mission); mission.lastTaskId = task.id; mission.lastRunAt = new Date(now).toISOString(); mission.updatedAt = mission.lastRunAt; mission.lastStatus = "running"; mission.runCount++; mission.error = undefined; mission.nextRunAt = mission.enabled ? nextMissionRun(mission.schedule, now) : undefined; if (!mission.nextRunAt) mission.enabled = false; this.put(mission); this.db.exec("COMMIT"); return task; }
 		catch (error) { this.db.exec("ROLLBACK"); throw error; }
 	}
 }

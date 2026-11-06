@@ -17,6 +17,7 @@ import { PullRequestSurface } from "./PullRequestSurface";
 import { summaryChecksRollup } from "./pullRequestLogic";
 import { useMergeMethodResolver } from "./mergeMethod";
 import { activeFilterCount, applyPullRequestOverrides, collectPullRequestFacets, filterPullRequestsByInvolvement, groupPullRequestsByInvolvement, matchedElsewhereScore, matchesPullRequestFilters, matchesPullRequestQuery, menuFilters, narrowPullRequests, parsePullRequestQuery, pullRequestEntryKey, pullRequestLabelColor, pullRequestOverrideAfterAction, pullRequestQuickActions, rankPullRequestMatches, readPullRequestListPreferences, scorePullRequestMatch, settlePullRequestOverrides, sortPullRequestGroups, sweepKeys, writePullRequestListPreferences, type PullRequestAuthorFacet, type PullRequestGroupKey, type PullRequestLabelFacet, type PullRequestListPreferences, type PullRequestListSort, type PullRequestOverride, type PullRequestQuickAction } from "./pullRequestDirectory.logic";
+import { IconSwap } from "../../components/IconSwap";
 
 type Option<Value extends string> = { value: Value; label: string; Icon: ComponentType<{ className?: string }>; unavailable?: string };
 const stateOptions: Option<PullRequestListState>[] = [{ value: "all", label: "All", Icon: Layers }, { value: "open", label: "Open", Icon: PullRequestGlyph.pullRequest }, { value: "closed", label: "Closed", Icon: PullRequestGlyph.closed }, { value: "merged", label: "Merged", Icon: PullRequestGlyph.merged }];
@@ -108,7 +109,7 @@ const PageRow = memo(function PageRow({ entry, selected, matchedElsewhere, speed
 		{actions.length > 0 && <div role="group" aria-label={`Quick actions for pull request #${entry.number}`} data-pull-request-action-pending={busy || undefined} className="shrink-0 items-center gap-1 pr-3" style={{ display: speedMode || busy || sweeping ? "flex" : "none" }}>
 			{actions.map(action => { const { label, Icon } = quickActionLabels[action]; return <Tip key={action} label={action === "close" ? "Close immediately, or drag across rows to close several" : `${label} immediately`}>
 				<Button size="xs" variant={action === "close" ? "destructive" : "outline"} disabled={busy} aria-label={`${label} #${entry.number}`} onClick={() => onAction(entry, action)} onPointerDown={event => { if (action === "close" && event.isPrimary && event.button === 0) onSweepStart(entry, event); }}>
-					{busy ? <RefreshCw aria-hidden className="size-3 animate-spin" /> : <Icon aria-hidden className="size-3" />}{label}
+					<IconSwap show={busy ? "refreshCw" : "icon"}>{{ refreshCw: <RefreshCw aria-hidden className="size-3 animate-spin" />, icon: <Icon aria-hidden className="size-3" /> }}</IconSwap>{label}
 				</Button>
 			</Tip>; })}
 		</div>}
@@ -219,7 +220,7 @@ function CompactMenu<Value extends string>({ label, value, options, onChange, tr
 
 function SearchInput({ value, busy, onChange, inputRef, className }: { value: string; busy: boolean; onChange: (value: string) => void; inputRef?: React.Ref<HTMLInputElement>; className?: string }) {
 	return <InputGroup className={cn("min-w-0 flex-1", className)}>
-		<InputGroupAddon>{busy ? <RefreshCw aria-hidden className="size-3.5 animate-spin" /> : <Search aria-hidden className="size-3.5" />}</InputGroupAddon>
+		<InputGroupAddon><IconSwap show={busy ? "refreshCw" : "search"}>{{ refreshCw: <RefreshCw aria-hidden className="size-3.5 animate-spin" />, search: <Search aria-hidden className="size-3.5" /> }}</IconSwap></InputGroupAddon>
 		<InputGroupInput ref={inputRef} type="search" value={value} onChange={event => onChange(event.currentTarget.value)} onKeyDown={event => { if (event.key === "Escape" && value) { event.preventDefault(); event.stopPropagation(); onChange(""); } }} placeholder="Search pull requests, or label:bug" aria-label="Search pull requests" className="text-xs" />
 	</InputGroup>;
 }

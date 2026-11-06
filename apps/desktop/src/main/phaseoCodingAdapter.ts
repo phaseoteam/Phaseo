@@ -42,10 +42,10 @@ export const phaseoAnthropicCache = { enabled: true, options: { anthropic: { cac
 
 /** Gateway client options for a task, carrying its explicit effort and speed choices and a cache key for the chat. */
 export function phaseoGatewayClientOptions(account: Account, key: string, task: Pick<Task, "modelOptions"> & Partial<Pick<Task, "id">>): GatewayAgentClientOptions {
-	const { reasoning, service_tier } = phaseoRequestSettings(task.modelOptions);
+	const { reasoning, service_tier, provider } = phaseoRequestSettings(task.modelOptions);
 	return { clientOptions: { apiKey: key, baseUrl: account.endpoint, timeoutMs: streamTimeoutMs }, includeMeta: true, streamIdleTimeoutMs: streamIdleMs,
 		...(task.id ? { promptCacheKey: `phaseo-desktop:${task.id}` } : {}), ...(phaseoAnthropicCache.enabled ? { providerOptions: phaseoAnthropicCache.options as GatewayAgentClientOptions["providerOptions"] } : {}),
-		...(reasoning ? { reasoning: reasoning as GatewayAgentClientOptions["reasoning"] } : {}), ...(service_tier ? { requestOptions: { service_tier: service_tier as NonNullable<GatewayAgentClientOptions["requestOptions"]>["service_tier"] } } : {}) };
+		...(reasoning ? { reasoning: reasoning as GatewayAgentClientOptions["reasoning"] } : {}), ...(service_tier || provider ? { requestOptions: { ...(service_tier ? { service_tier: service_tier as NonNullable<GatewayAgentClientOptions["requestOptions"]>["service_tier"] } : {}), ...(provider ? { provider } : {}) } } : {}) };
 }
 
 /** What the runtime lends Phaseo turns: model facts for context limits and the long-running command manager. */
@@ -138,6 +138,7 @@ export class PhaseoCodingAdapter implements AgentAdapter {
 			const codeGuide = "You are a coding agent working in the person's project. Find code with search_files and find_files, read only what you need with read_file (use offset and limit for large files), make focused edits with edit_file, and use write_file for new files or full rewrites. Match the surrounding style. Run the project's own checks with run_command where they exist, and say exactly what you ran; never claim a command or test ran without tool evidence. Use start_background_command for servers and watchers. Track multi-step work with update_plan. Keep progress notes short and finish with a concise summary of what changed and what is left.";
 			const streamed = new Set<number>();
 			const result = await runPhaseoTurn({
+				...(task.operator ? { preloaded: ["app", "events"] } : {}),
 				task, input: requestedAction?.arguments ?? text, callbacks, signal: this.controller.signal, store: this.store,
 				client: this.clientFactory(account, key, task), tools, facts, steering: this.steering, streamed,
 				transcript: phaseoConversationMessages(task.messages, text, attachments, requestedAction?.arguments),

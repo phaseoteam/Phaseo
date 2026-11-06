@@ -2,8 +2,12 @@ import type { ModelOptionDescriptor, ModelOptionValues } from "../shared/workspa
 
 // Mirrors the web chat's reasoningEffortSupport.ts and serviceTierSupport.ts for /v1/models parameter_details.
 const record = (value: unknown): Record<string, unknown> | undefined => value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
+const text = (value: unknown) => typeof value === "string" && value.trim() ? value.trim() : undefined;
 const efforts = { none: "None", instant: "Instant", minimal: "Minimal", low: "Low", medium: "Medium", high: "High", xhigh: "Extra High", max: "Max" } as const;
 const tiers = { standard: "Standard", priority: "Fast", ultrafast: "Ultrafast", flex: "Flex" } as const;
+// The regions offered for now; each has a flag in the picker. The gateway matches a region exactly.
+const offeredRegions = new Set(["us", "eu"]);
+const regionNames: Record<string, string> = { us: "United States", eu: "European Union", uk: "United Kingdom", ca: "Canada", apac: "Asia Pacific", ap: "Asia Pacific", jp: "Japan", kr: "South Korea", au: "Australia", sg: "Singapore", in: "India", my: "Malaysia", id: "Indonesia", cn: "China", br: "Brazil", ch: "Switzerland", de: "Germany", fr: "France" };
 type Support = { values: string[]; default?: string };
 
 const parseEffort = (value: unknown) => typeof value === "string" && Object.hasOwn(efforts, value.trim().toLowerCase()) ? value.trim().toLowerCase() : undefined;
@@ -61,13 +65,31 @@ export function phaseoModelOptions(model: Record<string, unknown>): ModelOptionD
 	const routable = (Array.isArray(model.offers) ? model.offers : []).flatMap(offer => record(offer)?.routable === true ? [record(offer)!] : []);
 	const listed = routable.filter(offer => Array.isArray(offer.service_tiers));
 	const speeds = new Set(listed.length ? listed.flatMap(offer => parseList(offer.service_tiers, parseTier, Object.keys(tiers))) : routes.flatMap(tierValues));
+	// Slowest to fastest, each saying what it is and, when not every provider has it, which ones serve it:
+	// asking for a tier routes only to providers that offer it.
 	const extra = (["priority", "ultrafast", "flex"] as const).filter(tier => speeds.has(tier));
-	if (extra.length) options.push({ id: "speed", label: "Speed", type: "select", options: [{ id: "standard", label: tiers.standard, isDefault: true }, ...extra.map(id => ({ id, label: tiers[id] }))] });
+	const servedBy = (tier: string) => {
+		if (!listed.length) return "";
+		const names = [...new Set(listed.filter(offer => parseList(offer.service_tiers, parseTier, Object.keys(tiers)).includes(tier)).map(offer => text(record(offer.provider)?.name) ?? text(record(offer.provider)?.id) ?? ""))].filter(Boolean);
+		return names.length && names.length < routable.length ? ` Only through ${names.length > 3 ? `${names.slice(0, 3).join(", ")} and ${names.length - 3} more` : names.join(names.length === 2 ? " and " : ", ")}.` : "";
+	};
+	const about = { flex: "Slower and cheaper, when providers have spare capacity.", standard: "The provider's usual speed and price.", priority: "Served ahead of standard traffic, at the provider's Fast price.", ultrafast: "The provider's quickest processing, at its Ultrafast price." } as const;
+	// Region keeps a request's data where chosen: the gateway routes only to providers that keep data there (an exact match).
+	const regions = new Map<string, string[]>();
+	for (const offer of routable) for (const region of Array.isArray(record(offer.residency)?.data_regions) ? record(offer.residency)!.data_regions as unknown[] : []) {
+		if (typeof region !== "string" || !offeredRegions.has(region)) continue;
+		const name = text(record(offer.provider)?.name) ?? text(record(offer.provider)?.id) ?? "";
+		regions.set(region, [...new Set([...regions.get(region) ?? [], ...name ? [name] : []])]);
+	}
+	if (regions.size) options.push({ id: "region", label: "Region", type: "select", options: [{ id: "any", label: "Global", description: "Any provider, wherever it keeps data.", isDefault: true },
+		...[...regions].sort(([a], [b]) => (regionNames[a] ?? a).localeCompare(regionNames[b] ?? b)).map(([id, providers]) => ({ id, label: regionNames[id] ?? id.toUpperCase(), description: `Keeps the request's data in ${regionNames[id] ?? id.toUpperCase()}. Only through ${providers.length > 3 ? `${providers.slice(0, 3).join(", ")} and ${providers.length - 3} more` : providers.join(providers.length === 2 ? " and " : ", ")}.` }))] });
+	if (extra.length) options.push({ id: "speed", label: "Speed", type: "select", options: (["flex", "standard", "priority", "ultrafast"] as const).filter(id => id === "standard" || speeds.has(id)).map(id => ({ id, label: tiers[id], description: `${about[id]}${id === "standard" ? "" : servedBy(id)}`, ...(id === "standard" ? { isDefault: true } : {}) })) });
 	return options;
 }
 
-/** Gateway request fields for a Phaseo task's explicit effort and speed choices. */
-export function phaseoRequestSettings(options: ModelOptionValues | undefined): { reasoning?: { effort: string }; service_tier?: string } {
-	const effort = options?.effort, speed = options?.speed;
-	return { ...(typeof effort === "string" && effort ? { reasoning: { effort } } : {}), ...(typeof speed === "string" && speed && speed !== "standard" ? { service_tier: speed } : {}) };
+/** Gateway request fields for a Phaseo task's explicit effort, speed and region choices. */
+export function phaseoRequestSettings(options: ModelOptionValues | undefined): { reasoning?: { effort: string }; service_tier?: string; provider?: { required_data_region: string } } {
+	const effort = options?.effort, speed = options?.speed, region = options?.region;
+	return { ...(typeof effort === "string" && effort ? { reasoning: { effort } } : {}), ...(typeof speed === "string" && speed && speed !== "standard" ? { service_tier: speed } : {}),
+		...(typeof region === "string" && /^[a-z]{2,4}$/.test(region) && region !== "any" ? { provider: { required_data_region: region } } : {}) };
 }

@@ -8,13 +8,13 @@ import { useBackgroundRefresh } from "../lib/useBackgroundRefresh";
 import { Select } from "../components/Select";
 import { Switch } from "../components/ui/switch";
 import { ModelPicker } from "../chat/ModelPicker";
-import { ModelSettings } from "../chat/ModelSettings";
-import { publishWorkspacePreferences } from "../lib/workspacePreferences";
+import { publishWorkspacePreferences, useWorkspacePreferences } from "../lib/workspacePreferences";
 import { SettingsButton, SettingsNote, SettingsPageLayout, SettingsRow, SettingsSection, settingsInput } from "./SettingsLayout";
 import { Check, Copy } from "lucide-react";
 import type { DesktopRuntimeInfo, DesktopUpdateState } from "../../shared/desktop";
 import { checkForUpdates, useUpdateState, versionText } from "../lib/updateState";
 import { MarkdownTextarea } from "../components/MarkdownTextarea";
+import { IconSwap } from "../components/IconSwap";
 
 /** Workspace preferences, loaded once and saved one change at a time. */
 export function usePreferences() {
@@ -23,6 +23,9 @@ export function usePreferences() {
 	const [supported, setSupported] = useState<boolean>();
 	const [loading, setLoading] = useState(true), [busy, setBusy] = useState(false), [error, setError] = useState("");
 	const pending = useRef(false);
+	// A change made elsewhere (an agent's settings.set) shows here at once.
+	const published = useWorkspacePreferences();
+	useEffect(() => { if (!loading) setPreferences(published); }, [published, loading]);
 	useEffect(() => {
 		if (!api) { setLoading(false); setError("Open the desktop application to load settings."); return; }
 		let active = true;
@@ -49,7 +52,7 @@ function DefaultModel() {
 			control={<Select label="New chat model selection" value={fixed ? "fixed" : "recent"} onValueChange={value => { const next = value === "fixed"; setFixed(next); if (next && selection) choose(selection); if (!next) setDefaultModel(undefined); }}
 				options={[{ value: "recent", label: "Last used" }, { value: "fixed", label: "Always the same" }]} />} />
 		{fixed && <SettingsRow title="Default model" description="Used for every new chat until you change it here."
-			control={<>{selection ? <ModelSettings selection={selection} onChange={choose} /> : null}<ModelPicker selections={selection ? [selection] : []} onChange={values => { if (values[0]) choose(values[0]); }} className="border border-border" /></>} />}
+			control={<ModelPicker selections={selection ? [selection] : []} onChange={values => { if (values[0]) choose(values[0]); }} onSettingsChange={choose} className="border border-border" />} />}
 	</>;
 }
 
@@ -67,7 +70,7 @@ function About() {
 	const copy = async () => { if (!info) return; await navigator.clipboard.writeText(`Phaseo ${versionText(info)}`); setCopied(true); setTimeout(() => setCopied(false), 1500); };
 	return <SettingsSection title="About" label="About Phaseo">
 		<SettingsRow title="Version" description={info ? `Phaseo ${versionText(info)}` : "Loading…"}
-			control={<SettingsButton disabled={!info} onClick={() => void copy()} title="Copy the version">{copied ? <Check /> : <Copy />}{copied ? "Copied" : "Copy"}</SettingsButton>} />
+			control={<SettingsButton disabled={!info} onClick={() => void copy()} title="Copy the version"><IconSwap show={copied ? "check" : "copy"}>{{ check: <Check />, copy: <Copy /> }}</IconSwap>{copied ? "Copied" : "Copy"}</SettingsButton>} />
 		<SettingsRow title="Acknowledgements" description="Many of Phaseo's desktop features were inspired by T3 Code, and some code is adapted from it under the MIT licence. Copyright (c) 2026 T3 Tools Inc."
 			control={<SettingsButton onClick={() => void window.phaseoDesktop?.openExternal("https://github.com/pingdotgg/t3code")}>Open on GitHub</SettingsButton>} />
 		<SettingsRow title="Open source licences" description={noticesError || "The licences of the open source software Phaseo is built with."}

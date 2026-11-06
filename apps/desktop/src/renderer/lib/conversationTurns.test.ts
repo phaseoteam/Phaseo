@@ -1,6 +1,7 @@
 import { expect, it } from "vitest";
 import type { Message, AgentActivity } from "../../shared/workspace";
-import { conversationTurns, firstUnread, turnDuration, userBursts } from "./conversationTurns";
+import { conversationTurns, firstUnread, settingsChanges, turnDuration, userBursts } from "./conversationTurns";
+import { effortName, turnSettings } from "../../shared/turnSettings";
 it("groups complete turns while preserving commentary and tool order", () => {
 	const messages = [{id:"u",role:"user",text:"Inspect",timelineOrder:1},{id:"comment",role:"assistant",text:"Checking",timelineOrder:2},{id:"final",role:"assistant",text:"Done",timelineOrder:4},{id:"next",role:"user",text:"Again",timelineOrder:5}] as Message[];
 	const activities = [{id:"u:tool",type:"tool",timelineOrder:3}] as AgentActivity[];
@@ -39,4 +40,24 @@ it("puts the new-since-your-visit line above what arrived after the visit", () =
 	expect(firstUnread(turns, at(9))).toEqual({ turnId: "c", at: "start" });
 	expect(firstUnread(turns, at(30))).toBeUndefined();
 	expect(firstUnread(turns, undefined)).toBeUndefined();
+});
+it("marks the turns that ran with a different model or reasoning level from the one before", () => {
+	const gpt = { harness: "phaseo", model: "openai/gpt-6", effort: "high" } as const;
+	const messages = [
+		{ id: "old", role: "user", text: "Before settings were recorded", timelineOrder: 1 },
+		{ id: "a", role: "user", text: "First", timelineOrder: 2, settings: gpt },
+		{ id: "b", role: "user", text: "Same", timelineOrder: 3, settings: gpt },
+		{ id: "c", role: "user", text: "Lower", timelineOrder: 4, settings: { ...gpt, effort: "low" } },
+		{ id: "d", role: "user", text: "Other model", timelineOrder: 5, settings: { harness: "claude", model: "opus" } },
+	] as Message[];
+	expect(Object.fromEntries(settingsChanges(conversationTurns(messages, [])))).toEqual({
+		c: { settings: { ...gpt, effort: "low" }, modelChanged: false },
+		d: { settings: { harness: "claude", model: "opus" }, modelChanged: true },
+	});
+});
+it("reads a turn's reasoning level from the chat's effort or its model option", () => {
+	expect(turnSettings({ harness: "codex", model: "gpt-6", reasoningEffort: "xhigh" })).toEqual({ harness: "codex", model: "gpt-6", effort: "xhigh" });
+	expect(turnSettings({ harness: "claude", model: "opus", modelOptions: { contextWindow: "1m", effort: "max" } })).toEqual({ harness: "claude", model: "opus", effort: "max" });
+	expect(turnSettings({ harness: "phaseo", model: "x" })).toEqual({ harness: "phaseo", model: "x" });
+	expect(effortName("xhigh")).toBe("Extra high");
 });

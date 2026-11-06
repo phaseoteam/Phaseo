@@ -1,8 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import useSWR, { mutate } from "swr";
 import type { Harness, ModelOption } from "../../shared/workspace";
 import { BACKGROUND_REFRESH_MS } from "./useBackgroundRefresh";
 import { providerHealthMs } from "./providerHealth";
+import { usePersistedState } from "./persistedState";
+import { customModelsKey, withCustomModels, type CustomModel } from "./customModels";
 
 const PHASEO_POLL_MS = 5 * 60 * 1000;
 const modelsKey = (harness: Harness, accountId?: string, projectId?: string) => ["workspace-models", harness, accountId ?? "", projectId ?? ""];
@@ -35,7 +37,9 @@ export function useModels(harness: Harness, accountId?: string, projectId?: stri
 		if (!available) return;
 		return api!.onModelsChange(change => { if (change.harness === harness && (change.accountId ?? "") === (accountId ?? "")) void revalidateModels(harness, accountId); });
 	}, [api, available, harness, accountId]);
-	const models = available ? data ?? [] : fallback ?? [];
+	const [custom] = usePersistedState<CustomModel[]>(customModelsKey, []);
+	const listed = available ? data : fallback;
+	const models = useMemo(() => withCustomModels(listed ?? [], custom, harness), [listed, custom, harness]);
 	return {
 		models,
 		loading: available && data === undefined && !error,

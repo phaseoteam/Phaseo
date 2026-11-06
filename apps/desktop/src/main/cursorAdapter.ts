@@ -1,6 +1,5 @@
 import path from "node:path";
-import { Agent, Cursor, JsonlLocalAgentStore } from "@cursor/sdk";
-import type { AgentOptions, McpServerConfig, ModelListItem, ModelSelection, Run, SDKAgent } from "@cursor/sdk";
+import type { AgentOptions, JsonlLocalAgentStore, McpServerConfig, ModelListItem, ModelSelection, Run, SDKAgent } from "@cursor/sdk";
 import type { Account, ModelOptionDescriptor, ModelOptionValues, QueuedMessage, Task } from "../shared/workspace";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import { AgentInputRejectedError } from "./agentAdapter";
@@ -11,6 +10,23 @@ import { nativeMcpName } from "../shared/mcp";
 import type { McpConnection } from "../shared/mcp";
 import { parsePlanSteps } from "../shared/planSteps";
 import { orchestrationInstructions } from "../shared/orchestration";
+import { mcpServerTool, type McpCall } from "../shared/mcpCall";
+
+type CursorMcpResult = { status?: string; value?: { content?: { text?: { text: string }; image?: { data: string; mimeType?: string } }[]; isError?: boolean } };
+/**
+ * Cursor reports every MCP call as its own "mcp" tool, naming the server (as registered, nativeMcpName) and the tool in its
+ * arguments, with the result in Cursor's shape; this is the call in MCP's terms, for MCP Apps.
+ */
+export function cursorMcpCall(event: { name: string; args?: unknown; result?: unknown }): McpCall | undefined {
+	const args = event.args as { providerIdentifier?: unknown; toolName?: unknown; args?: unknown } | undefined;
+	const viaMcp = event.name === "mcp" && typeof args?.providerIdentifier === "string" && typeof args.toolName === "string";
+	const named = viaMcp ? mcpServerTool(`${args.providerIdentifier as string}__${args.toolName as string}`) : mcpServerTool(event.name);
+	if (!named) return undefined;
+	const result = event.result as CursorMcpResult | undefined, parts = result?.status === "success" ? result.value?.content : undefined;
+	const content = Array.isArray(parts) ? parts.flatMap((part): Record<string, string>[] => part.text ? [{ type: "text", text: part.text.text }] : part.image ? [{ type: "image", data: part.image.data, mimeType: part.image.mimeType ?? "image/png" }] : [])
+		: [{ type: "text", text: typeof event.result === "string" ? event.result : JSON.stringify(event.result ?? "") }];
+	return { ...named, input: (viaMcp ? args.args : event.args) ?? {}, result: { content, ...result?.status === "error" || result?.value?.isError ? { isError: true } : {} } };
+}
 
 export function assertCursorBackend() {
 	const backend = process.env.CURSOR_BACKEND_URL;
@@ -61,7 +77,7 @@ export function cursorModelSelection(model: string, values?: ModelOptionValues, 
 }
 async function cursorCatalogModel(apiKey: string, model: string) {
 	const id = model === "default" ? "auto" : model;
-	try { return (await bounded(Cursor.models.list({ apiKey }))).find(item => item.id === id || item.aliases?.includes(id)); }
+	try { const { Cursor } = await import("@cursor/sdk"); return (await bounded(Cursor.models.list({ apiKey }))).find(item => item.id === id || item.aliases?.includes(id)); }
 	catch { return undefined; }
 }
 
@@ -93,6 +109,8 @@ export class CursorAdapter implements AgentAdapter {
 			const guided = !task.nativeSessionId && this.connections.some(connection => connection.orchestration) ? `${orchestrationInstructions}\n\n---\n\n${prompt}` : prompt;
 			const catalog = task.modelOptions && Object.keys(task.modelOptions).length ? await cursorCatalogModel(apiKey, task.model) : undefined;
 			if (this.stopped) throw new Error("Cursor task stopped.");
+			// Loaded on first use, as in cursorAccounts.ts.
+			const { Agent, JsonlLocalAgentStore } = await import("@cursor/sdk");
 			const options = cursorOptions(task, cwd, apiKey, new JsonlLocalAgentStore(path.join(this.directory, "native", "cursor", account.id)), this.connections, catalog);
 			this.agent = task.nativeSessionId ? await Agent.resume(task.nativeSessionId, options) : await Agent.create(options);
 			callbacks.onSession(this.agent.agentId); if (this.stopped) throw new Error("Cursor task stopped.");
@@ -101,7 +119,10 @@ export class CursorAdapter implements AgentAdapter {
 			if (this.stopped) await this.activeRun.cancel();
 			for await (const event of this.activeRun.stream()) {
 				if (event.type === "thinking") callbacks.onActivity?.({ id: `${event.run_id}:thinking`, type: "reasoning", title: "Reasoning", text: event.text, append: true });
-				if (event.type === "tool_call") callbacks.onActivity?.({ id: event.call_id, type: "tool", title: event.name, text: JSON.stringify({ args: event.args, result: event.result }).slice(0, 100000), status: event.status === "error" ? "failed" : event.status });
+				if (event.type === "tool_call") {
+					const mcpCall = event.status === "completed" ? cursorMcpCall(event) : undefined;
+					callbacks.onActivity?.({ id: event.call_id, type: "tool", title: event.name, text: JSON.stringify({ args: event.args, result: event.result }).slice(0, 100000), status: event.status === "error" ? "failed" : event.status, ...mcpCall ? { mcpCall } : {} });
+				}
 				if (event.type === "tool_call" && event.name === "updateTodos" && event.status === "completed" && event.agent_id === this.agent.agentId && event.run_id === this.activeRun.id && !event.truncated?.result) {
 					const result = event.result as { status?: unknown; value?: { todos?: unknown } } | undefined;
 					const steps = result?.status === "success" ? parsePlanSteps(result.value?.todos, "cursor") : undefined;

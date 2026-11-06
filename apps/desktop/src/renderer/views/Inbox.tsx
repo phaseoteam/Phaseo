@@ -36,6 +36,7 @@ const reasonGlyphs: Record<string, Glyph> = {
 	"Review pending instruction": { Icon: MessageSquareText, tone: attention },
 	"Autopilot needs you": { Icon: Hand, tone: attention },
 	"Spend cap reached": { Icon: Gauge, tone: attention },
+	"Operator paused": { Icon: CirclePause, tone: attention },
 	"Waiting for you": { Icon: Hourglass, tone: attention },
 	"Usage limit reached": { Icon: Gauge, tone: attention },
 	"Task failed": { Icon: CircleX, tone: "text-destructive" },

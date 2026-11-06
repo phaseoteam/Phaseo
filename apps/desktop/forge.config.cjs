@@ -43,6 +43,8 @@ module.exports = {
 		asar: { unpack: "**/node_modules/{node-pty,@cursor/sdk-*}/**" },
 		appBundleId: "app.phaseo.desktop",
 		appCategoryType: "public.app-category.developer-tools",
+		// phaseo://chat/<id> links open the chat (src/shared/chatLinks.ts).
+		protocols: [{ name: "Phaseo chat link", schemes: ["phaseo"] }],
 		name: "Phaseo",
 		ignore: [
 			/^\/node_modules(?:\/|$)/,
@@ -67,7 +69,7 @@ module.exports = {
 		{
 			name: "@electron-forge/maker-deb",
 			platforms: ["linux"],
-			config: { options: { maintainer: "Phaseo", homepage: "https://phaseo.app", categories: ["Development"], icon: path.join(__dirname, "assets", "icon-production.png") } },
+			config: { options: { maintainer: "Phaseo", homepage: "https://phaseo.app", categories: ["Development"], mimeType: ["x-scheme-handler/phaseo"], icon: path.join(__dirname, "assets", "icon-production.png") } },
 		},
 	],
 };

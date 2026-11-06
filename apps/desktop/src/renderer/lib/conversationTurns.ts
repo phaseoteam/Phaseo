@@ -1,5 +1,6 @@
 import { formatDuration } from "@phaseo/app-kit/format";
-import type { AgentActivity, Message } from "../../shared/workspace";
+import type { AgentActivity, Message, TurnSettings } from "../../shared/workspace";
+import { sameTurnSettings } from "../../shared/turnSettings";
 import { conversationTimeline } from "./conversationTimeline";
 export type TurnEntry = ReturnType<typeof conversationTimeline>[number];
 export function conversationTurns(messages: Message[], activities: AgentActivity[]) {
@@ -9,6 +10,21 @@ export function conversationTurns(messages: Message[], activities: AgentActivity
 		else { if (!turns.length) turns.push({ id: entry.value.id, entries: [] }); turns.at(-1)!.entries.push(entry); }
 	}
 	return turns;
+}
+/**
+ * The turns that ran with a different model or reasoning level from the turn before, each with what it changed to.
+ * Turns from before settings were recorded carry none and never count as a change.
+ */
+export function settingsChanges(turns: ReturnType<typeof conversationTurns>) {
+	const changes = new Map<string, { settings: TurnSettings; modelChanged: boolean }>();
+	let previous: TurnSettings | undefined;
+	for (const turn of turns) {
+		const settings = turn.user?.settings;
+		if (!settings) continue;
+		if (previous && !sameTurnSettings(previous, settings)) changes.set(turn.id, { settings, modelChanged: previous.harness !== settings.harness || previous.model !== settings.model });
+		previous = settings;
+	}
+	return changes;
 }
 export type Burst = { previous: boolean; next: boolean; continuesSteer: boolean };
 /**

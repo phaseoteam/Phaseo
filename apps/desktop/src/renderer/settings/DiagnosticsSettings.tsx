@@ -10,6 +10,7 @@ import { ToggleGroup, ToggleGroupItem } from "../components/ui/toggle-group";
 import { Tip } from "../components/ui/tooltip";
 import { cn } from "../lib/utils";
 import { formatAgo, formatBytes, formatCount, formatCpuTime, formatDuration, formatElapsed, processKindLabel, processName, shortTraceId, visibleProcesses } from "./diagnosticsFormat";
+import { TraceExportSettings } from "./TraceExportSettings";
 import { SettingsPageLayout, SettingsSection } from "./SettingsLayout";
 
 /** Re-renders on an interval, for "Checked 12 s ago". */
@@ -312,6 +313,7 @@ export function DiagnosticsSettings() {
 			<HistoryTable processes={resources?.processes ?? []} emptyLabel={resourceLoading ? "Collecting process samples…" : "No process samples for this period."} />
 		</SettingsSection>
 
+		<TraceExportSettings />
 		<SettingsSection title="Trace diagnostics" description={traces ? <>Spans from <span className="font-mono [overflow-wrap:anywhere]">{traces.traceFilePath}</span> and its rotated copies.</> : undefined} action={<div className="flex items-center gap-1.5"><Checked at={traces?.readAt} busy={traceBusy} />
 			<Tip label="Open logs folder"><Button size="icon-xs" variant="ghost" aria-label="Open logs folder" disabled={openingLogs} onClick={openLogs} className="text-muted-foreground"><FolderOpen className="size-3.5" /></Button></Tip>
 			<RefreshButton busy={traceBusy} label="Refresh trace diagnostics" onClick={() => void loadTraces()} /></div>}>

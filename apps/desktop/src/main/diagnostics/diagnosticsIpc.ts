@@ -6,20 +6,23 @@ import { ProcessDiagnostics } from "./processDiagnostics";
 import type { ProcessOwner } from "./processTable";
 import { readTraceDiagnostics, SLOW_SPAN_THRESHOLD_MS } from "./traceDiagnostics";
 import { captureConsole, setTraceSink, span, TraceFileWriter } from "./tracer";
+import { OtlpExporter } from "./otlpExport";
 
 let writer: TraceFileWriter | undefined;
+/** Settings → Diagnostics → Export traces: spans also go to the person's OpenTelemetry collector when one is set. */
+export const traceExporter = new OtlpExporter(app.getVersion());
 
 /** Starts writing spans to `<userData>/logs/traces.ndjson` and copies console warnings and errors there. */
 export function startTracing(logsDirectory = path.join(app.getPath("userData"), "logs")) {
 	if (writer) return writer;
 	writer = new TraceFileWriter(logsDirectory, { maxBytes: 10 * 1024 * 1024, maxFiles: 3 });
 	const current = writer;
-	setTraceSink(record => current.write(record));
+	setTraceSink(record => { current.write(record); traceExporter.add(record); });
 	captureConsole();
 	return writer;
 }
 /** At quit, after the last spans: writes what is still buffered. */
-export function stopTracing() { setTraceSink(undefined); writer?.closeSync(); }
+export function stopTracing() { setTraceSink(undefined); writer?.closeSync(); void traceExporter.flush(); }
 
 /** Channels whose work has its own span, or that are diagnostics reading themselves. */
 const untracedChannels = /^(workspace:command$|diagnostics:)/;

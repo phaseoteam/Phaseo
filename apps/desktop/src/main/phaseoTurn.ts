@@ -5,6 +5,7 @@ import type { ModelFacts, Task } from "../shared/workspace";
 import type { WorkspaceStore } from "./workspaceStore";
 import { publishPhaseoPlan } from "./phaseoPlanTools";
 import { span } from "./diagnostics/tracer";
+import { phaseoMcpCalls } from "./phaseoMcp";
 
 /** Steps one turn may take before it pauses; sending another message carries on from there. */
 export const phaseoTurnStepLimit = 100;
@@ -25,6 +26,8 @@ export const phaseoToolsets: Record<string, { description: string; match: (id: s
 	browser: { description: "open, read and use web pages in this chat's browser", match: id => id.startsWith("browser_") },
 	html: { description: "show an HTML page (a chart, diagram or mockup) inline in this chat", match: id => id.startsWith("html_") },
 	instructions: { description: "read or change the user's instructions for every chat", match: id => id.endsWith("_global_instructions") },
+	app: { description: "change this app's settings, theme and configuration, and open its pages (Settings, Inbox, a chat)", match: id => id === "list_app_commands" || id === "run_app_command" },
+	events: { description: "subscribe to events about chats, pull requests and issues, as the operator does", match: id => id === "subscribe_events" || id === "unsubscribe_events" || id === "list_subscriptions" },
 };
 
 export type PhaseoReview =
@@ -46,6 +49,8 @@ export type PhaseoTurn = {
 	/** Adds adapter state (active skills) to what is saved. */
 	decorate?: (result: AgentRunResult<unknown, string>) => AgentRunResult<unknown, string>;
 	review: (entry: AgentPendingToolCall, rules: ReadonlySet<string>, pending: AgentPendingToolCall[]) => Promise<PhaseoReview>;
+	/** Sets loaded from the start, left out of load_tools: the operator's app and event tools are its job. */
+	preloaded?: string[];
 	/** Tools registered but not offered right now, such as edits in Plan mode before a plan is approved. */
 	hidden?: () => ReadonlySet<string>;
 	labels: Record<string, string>;
@@ -146,8 +151,8 @@ export function imageResultsToMessages(tools: AgentTool[], steering: AgentMessag
 	} });
 }
 
-export function activeToolIds(tools: AgentTool[], context: unknown) {
-	const loaded = strings(record(context).phaseoToolsets);
+export function activeToolIds(tools: AgentTool[], context: unknown, preloaded: readonly string[] = []) {
+	const loaded = [...strings(record(context).phaseoToolsets), ...preloaded];
 	return tools.filter(tool => !Object.entries(phaseoToolsets).some(([name, set]) => set.match(tool.id) && !coreThreadToolIds.includes(tool.id) && !loaded.includes(name))).map(tool => tool.id);
 }
 
@@ -181,7 +186,8 @@ export async function runPhaseoTurn(turn: PhaseoTurn): Promise<AgentRunResult<un
 		return run;
 	}
 
-	const optional = Object.keys(phaseoToolsets).filter(name => turn.tools.some(tool => phaseoToolsets[name].match(tool.id) && !coreThreadToolIds.includes(tool.id)));
+	const preloaded = turn.preloaded ?? [];
+	const optional = Object.keys(phaseoToolsets).filter(name => !preloaded.includes(name) && turn.tools.some(tool => phaseoToolsets[name].match(tool.id) && !coreThreadToolIds.includes(tool.id)));
 	const tools = optional.length ? [...turn.tools, loadToolsTool(optional)] : turn.tools;
 	const turnStart = continuing?.stepResults?.length ?? continuing?.run.stepCount ?? 0;
 	let lastCompactedAt = 0;
@@ -190,8 +196,8 @@ export async function runPhaseoTurn(turn: PhaseoTurn): Promise<AgentRunResult<un
 		toolExecution: { onError: "return-to-model", maxOutputChars: phaseoToolOutputLimit },
 		modelRetry: { maxRetries: 3, backoffMs: 1000, maxBackoffMs: 20_000 },
 		...(turn.facts?.outputTokens ? { maxOutputTokens: Math.min(turn.facts.outputTokens, 32_000) } : {}),
-		instructions: async ({ context }) => turn.instructions(strings(record(context).phaseoToolsets)),
-		activeTools: ({ context }) => { const hidden = turn.hidden?.(); return optional.length || hidden?.size ? activeToolIds(tools, context).filter(id => !hidden?.has(id)) : undefined; },
+		instructions: async ({ context }) => turn.instructions([...strings(record(context).phaseoToolsets), ...preloaded]),
+		activeTools: ({ context }) => { const hidden = turn.hidden?.(); return optional.length || hidden?.size ? activeToolIds(tools, context, preloaded).filter(id => !hidden?.has(id)) : undefined; },
 		stopWhen: ({ steps }) => steps.length - turnStart >= phaseoTurnStepLimit ? "step_limit" : false,
 		prepareMessages: async (messages, info) => {
 			const trimmed = dropOldImages(messages) ?? messages;
@@ -212,7 +218,12 @@ export async function runPhaseoTurn(turn: PhaseoTurn): Promise<AgentRunResult<un
 		if (event.type === "response.output_text.delta") { turn.streamed.add(event.stepIndex); callbacks.onDelta(`step:${event.stepIndex}`, event.delta); }
 		if (event.type === "response.item" && event.item.type === "message" && !turn.streamed.has(event.stepIndex)) { turn.streamed.add(event.stepIndex); callbacks.onDelta(`step:${event.stepIndex}`, event.item.content); }
 		if (event.type === "response.reasoning.delta") callbacks.onActivity?.({ id: `reasoning:${event.stepIndex}`, type: "reasoning", title: "Reasoning", text: event.delta, append: true });
-		if (event.type === "tool.started" || event.type === "tool.completed" || event.type === "tool.failed") callbacks.onActivity?.({ id: event.toolCallId, type: "tool", title: turn.labels[event.toolName] ?? event.toolName, text: event.error ?? activityText(event.output), status: event.type === "tool.started" ? "running" : event.type === "tool.failed" ? "failed" : "completed" });
+		if (event.type === "tool.started" || event.type === "tool.completed" || event.type === "tool.failed") {
+			const mcp = event.type === "tool.started" ? undefined : phaseoMcpCalls.get(event.toolCallId);
+			if (mcp) phaseoMcpCalls.delete(event.toolCallId);
+			callbacks.onActivity?.({ id: event.toolCallId, type: "tool", title: turn.labels[event.toolName] ?? event.toolName, text: event.error ?? activityText(event.output), status: event.type === "tool.started" ? "running" : event.type === "tool.failed" ? "failed" : "completed",
+				...mcp && event.type === "tool.completed" ? { mcpCall: { ...mcp, result: event.output } } : {} });
+		}
 		if (event.type === "step.completed" && event.usage) callbacks.onActivity?.({ id: `usage:${event.stepIndex}`, type: "usage", title: "Usage", text: JSON.stringify({ ...event.usage, contextTokens }, null, 2) });
 		if (event.type === "model.retrying") callbacks.onActivity?.({ id: `retry:${event.stepIndex}`, type: "tool", title: "Retrying the model request", text: `${event.error ?? "The request failed."} Trying again in ${Math.max(1, Math.round((event.delayMs ?? 0) / 1000))} s (attempt ${(event.attempt ?? 1) + 1} of 4).`, status: "completed" });
 		if (event.type === "history.repaired") callbacks.onActivity?.({ id: `repaired:${event.toolCallIds.join(",")}`.slice(0, 200), type: "tool", title: "Recovered the interrupted turn", text: `${event.toolCallIds.length} unfinished tool call${event.toolCallIds.length === 1 ? " was" : "s were"} marked as not run.`, status: "completed" });

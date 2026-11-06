@@ -15,18 +15,20 @@ export function codexMcpConfig(connections: McpConnection[], task: Pick<Task, "p
 }
 
 export async function waitCodexMcp(rpc: Pick<JsonRpc, "request">, threadId: string, connections: McpConnection[], signal: AbortSignal) {
-	const deadline = Date.now() + 30000;
+	// Codex answers a status request only once its own configured servers have started or failed, which takes tens of
+	// seconds with several remote servers; a request may use the whole wait.
+	const deadline = Date.now() + 60000;
 	while (connections.length) {
 		if (signal.aborted) throw new Error("MCP setup cancelled.");
 		const statuses: { name: string; runtimeStatus: string | null; toolsError?: string | null }[] = []; let cursor: string | null = null; const seen = new Set<string>();
 		do {
-			const page: { data: typeof statuses; nextCursor: string | null } = await rpc.request("mcpServerStatus/list", { threadId, cursor, detail: "toolsAndAuthOnly", limit: 100 }, Math.max(1, Math.min(5000, deadline - Date.now())));
+			const page: { data: typeof statuses; nextCursor: string | null } = await rpc.request("mcpServerStatus/list", { threadId, cursor, detail: "toolsAndAuthOnly", limit: 100 }, Math.max(1, deadline - Date.now()));
 			statuses.push(...page.data); cursor = page.nextCursor;
 			if (statuses.length > 10000 || (cursor && seen.has(cursor))) throw new Error("Native MCP status pagination exceeded its limit."); if (cursor) seen.add(cursor);
 		} while (cursor);
 		for (const connection of connections) { const status = statuses.find(value => value.name === nativeMcpName(connection)); if (["failed", "authenticationRequired", "cancelled", "disabled"].includes(status?.runtimeStatus ?? "") || status?.toolsError) throw new Error(`MCP server “${connection.name}” ${status?.runtimeStatus === "authenticationRequired" ? "needs native sign-in" : "could not connect"}.`); }
 		if (connections.every(connection => statuses.find(value => value.name === nativeMcpName(connection))?.runtimeStatus === "connected")) return;
-		if (Date.now() > deadline) throw new Error("MCP connections did not become ready within 30 seconds.");
+		if (Date.now() > deadline) throw new Error("MCP connections did not become ready within 60 seconds.");
 		await delay(100, undefined, { signal });
 	}
 }

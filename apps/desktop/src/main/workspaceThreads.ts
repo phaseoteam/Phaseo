@@ -417,10 +417,20 @@ export class WorkspaceThreads {
 	}
 	forThread(parentId: string): ThreadTools {
 		const summary = (task: Pick<Task, "id" | "title" | "harness" | "model" | "status" | "parentId"> & { error?: string; tags?: string[] }) => ({ id: task.id, title: task.title, harness: task.harness, model: task.model, status: task.status, parentId: task.parentId, error: task.error, ...(task.tags?.length ? { tags: task.tags } : {}) });
+		/**
+		 * The operator reaches every top-level chat where a launcher reaches the chats it launched, but never one with a
+		 * broader mode or permissions than its own, so it cannot use another chat to do what it may not.
+		 */
+		const operatorReach = (task: Task) => {
+			const caller = this.host.store.getTask(parentId);
+			if (!caller.operator || caller.archived || task.delegation || task.archived || task.id === parentId) return false;
+			if (modeRank[task.mode] > modeRank[caller.mode] || permissionRank(task.permissionMode) > permissionRank(caller.permissionMode)) throw new Error("This chat has a broader mode or permissions than the operator.");
+			return true;
+		};
 		/** Owned: a child this chat delegated, forked or handed off, plus, where `launched`, a top-level chat it launched. */
 		const scoped = (id: string, childOnly = false, launched = false) => {
 			const task = this.host.store.getTask(id);
-			const owned = (task.delegation?.parentTaskId === parentId && task.delegation.kind !== "side") || (launched && task.launch?.byTaskId === parentId);
+			const owned = (task.delegation?.parentTaskId === parentId && task.delegation.kind !== "side") || (launched && (task.launch?.byTaskId === parentId || operatorReach(task)));
 			if ((childOnly || id !== parentId) && !owned && (childOnly || !this.host.store.getTask(parentId).messages.some(message => message.role === "user" && message.threadReferences?.includes(id)))) throw new Error("This chat is outside this agent's scope.");
 			return task;
 		};
@@ -517,7 +527,7 @@ export class WorkspaceThreads {
 			merge: async (id, requestId) => { scoped(id, true); if (this.host.isClosing() || this.host.store.getTask(parentId).status === "interrupted") throw new Error("This parent is no longer accepting results."); const parent = this.host.store.mergeThreadContext(parentId, id, requestId); this.host.broadcast(); if (!parent.archived && ["idle", "completed"].includes(parent.status)) this.host.start(parentId); return summary(parent); },
 			models: async (harness, accountId, query) => { const { models, total, accounts } = await this.discover(this.host.store.getTask(parentId), harness, accountId, query); return { models, total, accounts }; },
 			agents: async (filter = {}) => this.catalog(this.host.store.getTask(parentId), filter),
-			list: query => this.host.store.getOverview().tasks.filter(task => (task.id === parentId || (task.delegation?.parentTaskId === parentId && task.delegation.kind !== "side") || task.launch?.byTaskId === parentId) && (!query || task.title.toLowerCase().includes(query.toLowerCase()))).slice(0, 50).map(summary),
+			list: query => { const operator = Boolean(this.host.store.getTask(parentId).operator); return this.host.store.getOverview().tasks.filter(task => (task.id === parentId || (task.delegation?.parentTaskId === parentId && task.delegation.kind !== "side") || task.launch?.byTaskId === parentId || (operator && !task.delegation && !task.archived)) && (!query || task.title.toLowerCase().includes(query.toLowerCase()))).slice(0, 50).map(summary); },
 			read: id => { scoped(id, false, true); const task = this.host.store.getTaskView(id); return { thread: summary(task), messages: task.messages.slice(-30).map(({ role, text, createdAt }) => ({ role, text: text.slice(0, 8000), createdAt })), truncated: (task.conversationCounts?.messages ?? task.messages.length) > 30 || task.messages.some(message => message.text.length > 8000) }; },
 			delegate: async raw => {
 				const request = validateDelegate(raw);

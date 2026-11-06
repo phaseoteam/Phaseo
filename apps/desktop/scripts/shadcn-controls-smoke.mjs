@@ -46,6 +46,12 @@ app.whenReady().then(async () => {
     const capture = async (folder, name) => { const output = path.resolve("../../output/playwright", folder); mkdirSync(output, { recursive: true }); await new Promise(resolve => setTimeout(resolve, 150)); writeFileSync(path.join(output, `${entry ? "archive" : "source"}-${name}.png`), (await owner.webContents.capturePage()).toPNG()); };
     if (owner.webContents.isLoading()) await new Promise(resolve => owner.webContents.once("did-finish-load", resolve));
     await installControlActions(owner);
+    const systemReducedMotion = await run("matchMedia('(prefers-reduced-motion: reduce)').matches");
+    console.log('SYSTEM_MOTION_PREFERENCE',JSON.stringify({reduced:systemReducedMotion}));
+    // Hosted desktops can disable motion. Exercise each preference explicitly in this owned window.
+    owner.webContents.debugger.attach('1.3');
+    const setMotionPreference = value => owner.webContents.debugger.sendCommand('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value}]});
+    await setMotionPreference('no-preference');
     // Chat mode lists every personal chat; project chats live under Code.
     await wait(`document.querySelector('aside[aria-label="Chats"] [data-chat-count]')?.dataset.chatCount==='60'&&${rows}.length>0`);
     owner.setSize(1440, 920);
@@ -62,13 +68,35 @@ app.whenReady().then(async () => {
     await run("document.querySelector('[aria-label=\"Forward\"]').click()");
     await wait(`window.__auditChatTitle()===${JSON.stringify(secondChat)}&&${rows}[1]?.getAttribute('aria-current')==='page'`);
     await run("document.querySelector('[aria-label=\"Hide sidebar\"]').click()");
-    await wait("!document.querySelector('aside[aria-label=\"Chats\"]')&&Boolean(document.querySelector('[aria-label=\"Show sidebar\"]'))");
+    await wait("document.querySelector('aside[aria-label=\"Chats\"]').inert&&Boolean(document.querySelector('[aria-label=\"Show sidebar\"]'))");
     await run("document.querySelector('[aria-label=\"Show sidebar\"]').click()");
-    await wait("Boolean(document.querySelector('aside[aria-label=\"Chats\"]'))");
+    await wait("!document.querySelector('aside[aria-label=\"Chats\"]').inert");
     await run("window.dispatchEvent(new KeyboardEvent('keydown',{key:'b',ctrlKey:true,bubbles:true}))");
-    await wait("!document.querySelector('aside[aria-label=\"Chats\"]')");
+    await wait("document.querySelector('aside[aria-label=\"Chats\"]').inert");
     await run("window.dispatchEvent(new KeyboardEvent('keydown',{key:'b',ctrlKey:true,bubbles:true}))");
-    await wait("Boolean(document.querySelector('aside[aria-label=\"Chats\"]'))");
+    await wait("!document.querySelector('aside[aria-label=\"Chats\"]').inert");
+    const sidebarMotion = await run(`(async()=>{
+      if(matchMedia('(prefers-reduced-motion: reduce)').matches)throw Error('Normal motion preference was not applied');
+      const frame=document.querySelector('[data-sidebar-frame]'),width=frame.getBoundingClientRect().width;
+      await Promise.all(frame.getAnimations().map(animation=>animation.finished));
+      frame.querySelector('button').focus();
+      window.dispatchEvent(new KeyboardEvent('keydown',{key:'b',ctrlKey:true,bubbles:true}));
+      await new Promise(requestAnimationFrame);
+      const motion=frame.getAnimations().find(animation=>animation.transitionProperty==='--sidebar-open');
+      if(!motion)throw Error('Sidebar did not slide');
+      motion.pause();motion.currentTime=motion.effect.getTiming().duration/2;
+      const edge=frame.getBoundingClientRect().right,chat=document.querySelector('main').getBoundingClientRect().left;
+      if(!(edge>0&&edge<width&&Math.abs(edge-chat)<1&&frame.getBoundingClientRect().width===width))throw Error('Sidebar content reflowed or detached from the conversation');
+      if(!frame.inert||frame.hasAttribute('data-focus-region')||document.activeElement.getAttribute('aria-label')!=='Show sidebar')throw Error('Collapsed sidebar retained keyboard focus');
+      motion.play();await motion.finished;
+      if(Math.abs(frame.getBoundingClientRect().right)>1)throw Error('Sidebar did not finish closing');
+      document.documentElement.dataset.animations='off';
+      document.querySelector('[aria-label="Show sidebar"]').click();await new Promise(requestAnimationFrame);
+      if(frame.getBoundingClientRect().right!==width||frame.inert)throw Error('Animations off did not open the sidebar immediately');
+      delete document.documentElement.dataset.animations;
+      return {fixedContentWidth:width,midpointEdge:edge,conversationEdge:chat,focusRestored:true,animationsOff:true};
+    })()`);
+    console.log('SIDEBAR_MOTION_SMOKE',JSON.stringify(sidebarMotion));
     // Code lists chats across projects, each card naming its project, with Settled folded at the bottom; Back returns to the chat that was open.
     await run("Array.from(document.querySelectorAll('[role=radiogroup][aria-label=Workspace] [role=radio]')).find(button=>button.textContent==='Code').click()");
     await wait("Boolean(document.querySelector('aside[aria-label=\"Projects\"]'))&&window.__auditChatTitle()===undefined");
@@ -100,10 +128,61 @@ app.whenReady().then(async () => {
     }
     await run("window.__auditButton('Appearance',document.querySelector('nav[aria-label=\"Settings sections\"]')).click()");
     await wait("Boolean(document.querySelector('[role=radiogroup][aria-label=Theme]'))");
+    const animationSettings = await run(`(async()=>{
+      const slider=document.querySelector('input[aria-label="Panel animation duration"]'),preview=document.querySelector('[aria-label="Preview panel animation"]');
+      if(slider.max!=='600')throw Error('Panel duration slider has the wrong upper limit');
+      window.__auditType(slider,'600');await new Promise(requestAnimationFrame);
+      if(slider.value!=='600'||localStorage.getItem('phaseo.desktop.panelAnimationDurationMs')!=='600'||getComputedStyle(document.documentElement).getPropertyValue('--panel-animation-duration')!=='600ms')throw Error('Panel duration did not save or apply');
+      preview.click();await new Promise(requestAnimationFrame);
+      const motion=preview.firstElementChild.getAnimations().find(animation=>animation.transitionProperty==='--sidebar-open');
+      if(motion?.effect.getTiming().duration!==600)throw Error('Preview ignored the chosen duration');
+      motion.pause();motion.currentTime=300;
+      const edge=preview.firstElementChild.getBoundingClientRect().right-preview.getBoundingClientRect().left;
+      if(!(edge>0&&edge<20))throw Error('Preview did not slide');
+      motion.play();await motion.finished;
+      document.querySelector('[aria-label=Animations]').click();await new Promise(requestAnimationFrame);
+      if(!slider.disabled||slider.value!=='600')throw Error('Animations off lost the duration');
+      preview.click();await new Promise(requestAnimationFrame);
+      if(preview.firstElementChild.getAnimations().length)throw Error('Animations off left the preview moving');
+      document.querySelector('[aria-label=Animations]').click();await new Promise(requestAnimationFrame);
+      await window.phaseoDesktop.appCommands.run('settings.set',{key:'panelAnimationDurationMs',value:0});await new Promise(requestAnimationFrame);
+      preview.click();await new Promise(requestAnimationFrame);
+      if(slider.value!=='0'||preview.firstElementChild.getAnimations().length)throw Error('Instant duration did not reach Settings and its preview');
+      document.querySelector('[aria-label="Reset panel animation duration"]').click();await new Promise(requestAnimationFrame);
+      if(slider.value!=='200'||!document.querySelector('[aria-label="Reset panel animation duration"]').disabled)throw Error('Duration reset failed');
+      return {slider:true,previewDuration:600,instant:true,animationsOff:true,agentControl:true,reset:true};
+    })()`);
+    console.log('ANIMATION_SETTINGS_SMOKE',JSON.stringify(animationSettings));
+    await setMotionPreference('reduce');
+    const reducedPreview = await run(`(async()=>{
+      if(!matchMedia('(prefers-reduced-motion: reduce)').matches)throw Error('Reduced motion preference was not applied');
+      const preview=document.querySelector('[aria-label="Preview panel animation"]'),wasOpen=preview.getAttribute('aria-pressed')==='true';
+      await window.phaseoDesktop.appCommands.run('settings.set',{key:'panelAnimationDurationMs',value:600});
+      preview.click();await new Promise(requestAnimationFrame);
+      const style=getComputedStyle(preview.firstElementChild),duration=parseFloat(style.transitionDuration);
+      if(duration>0.001||Math.abs(parseFloat(style.marginLeft)-(wasOpen?-20:0))>0.01)throw Error('Reduced motion did not update the preview immediately');
+      if(document.querySelector('input[aria-label="Panel animation duration"]').value!=='600')throw Error('Reduced motion changed the saved duration');
+      document.querySelector('[aria-label="Reset panel animation duration"]').click();await new Promise(requestAnimationFrame);
+      return {durationSeconds:duration,savedDurationPreserved:true};
+    })()`);
     await run("Array.from(document.querySelectorAll('[role=radiogroup][aria-label=Theme] [role=radio]')).find(button=>button.textContent==='Light').click()");
     await wait("document.documentElement.dataset.theme==='light'&&document.querySelector('[role=radiogroup][aria-label=Theme] [aria-checked=true]')?.textContent==='Light'");
     key("Escape");
     await wait(`!document.querySelector('nav[aria-label="Settings sections"]')&&document.querySelector('main [aria-label=Message]')?.value==='Keep this draft'&&window.__auditChatTitle()===${JSON.stringify(secondChat)}`);
+    const reducedSidebar = await run(`(async()=>{
+      const frame=document.querySelector('[data-sidebar-frame]'),width=frame.getBoundingClientRect().width;
+      frame.querySelector('button').focus();
+      window.dispatchEvent(new KeyboardEvent('keydown',{key:'b',ctrlKey:true,bubbles:true}));await new Promise(requestAnimationFrame);
+      const duration=parseFloat(getComputedStyle(frame).transitionDuration);
+      if(duration>0.001||Math.abs(frame.getBoundingClientRect().right)>1||Math.abs(document.querySelector('main').getBoundingClientRect().left)>1)throw Error('Reduced motion did not collapse the sidebar immediately');
+      if(!frame.inert||frame.hasAttribute('data-focus-region')||document.activeElement.getAttribute('aria-label')!=='Show sidebar')throw Error('Reduced motion lost collapse accessibility');
+      document.querySelector('[aria-label="Show sidebar"]').click();await new Promise(requestAnimationFrame);
+      if(frame.getBoundingClientRect().right!==width||frame.inert)throw Error('Reduced motion did not open the sidebar immediately');
+      return {durationSeconds:duration,instantClose:true,instantOpen:true,focusRestored:true};
+    })()`);
+    console.log('REDUCED_MOTION_SMOKE',JSON.stringify({preview:reducedPreview,sidebar:reducedSidebar}));
+    await owner.webContents.debugger.sendCommand('Emulation.setEmulatedMedia',{features:[]});
+    owner.webContents.debugger.detach();
     console.log('SETTINGS_LAYOUT_SMOKE',JSON.stringify({chatList:60,modeSwitch:true,collapsibleSettled:true,surfaceBack:true,appearance:true,draftPreserved:true,escapeCloses:true,settingsCaptures:6}));
     // The tools panel resizes from its keyboard-focusable separator and by dragging, and remembers its width.
     owner.setSize(1440, 920);
@@ -164,20 +243,27 @@ app.whenReady().then(async () => {
     // The list is virtualised: rendered rows are a window, and every option reports the full count.
     const items = `Array.from(${popup}?.querySelectorAll('#model-picker-list [role=option]')??[]).filter(item=>!item.textContent.startsWith('Show'))`;
     const count = `Number(${popup}?.querySelector('#model-picker-list [role=option]')?.getAttribute('aria-setsize')??0)`;
+    // The picker opens on the chosen model's lab; "All Phaseo models" lists every model by date.
+    const group = name => `${popup}?.querySelector('[aria-label="Model groups"] button[aria-label="${name}"]')`;
+    const showGroup = async name => { await run(`${group(name)}.click()`); await wait(`${group(name)}?.getAttribute('aria-pressed')==='true'`); };
     await run("document.querySelector('main form [aria-label=\"Choose model\"]').click()");
+    await wait(`${group("Anthropic")}?.getAttribute('aria-pressed')==='true'&&${count}===999`);
+    await showGroup("All Phaseo models");
     await wait(`${count}===1000`);
     await run(`window.__auditType(${popup}.querySelector('[role=combobox]'),'owned model')`);
     await wait(`${count}===25&&Array.from(${popup}.querySelectorAll('#model-picker-list [role=presentation]')).some(heading=>heading.textContent==='Results (25 of 1000)')`);
     await run(`window.__auditType(${popup}.querySelector('[role=combobox]'),'')`);
     await run(`window.__auditButton('New',${popup}).click()`);
-    await wait(`${count}===1&&${items}[0].textContent.includes('OpenAI: Owned model 999')`);
+    await wait(`${count}===1&&${items}[0].textContent.includes('Owned model 999')`);
     await run(`${popup}.querySelector('[aria-label="Add Owned model 999 to favourites"]').click()`);
-    await wait(`Array.from(${popup}.querySelectorAll('#model-picker-list [role=presentation]')).some(heading=>heading.textContent==='Favourites')&&Boolean(${popup}.querySelector('[aria-label="Remove Owned model 999 from favourites"]'))`);
-    if (!await run(`${items}.every(item=>Array.from(item.querySelectorAll('img')).every(image=>image.complete&&image.naturalWidth>0))&&Boolean(${items}[0].querySelector('[data-model-lab=openai]'))&&JSON.parse(localStorage.getItem('phaseo.desktop.favouriteModels')).includes('phaseo:owned-model-999')`)) throw Error('Model branding or favourite persistence failed');
     await run(`window.__auditButton('Free',${popup}).click()`);
     await wait(`${count}===0&&${popup}.textContent.includes('No models found')`);
     await run(`window.__auditButton('Free',${popup}).click();window.__auditButton('New',${popup}).click()`);
     await wait(`${count}===1000&&JSON.parse(localStorage.getItem('phaseo.desktop.modelFilters')).free===false`);
+    await showGroup("Favourites");
+    await wait(`${count}===1&&${items}[0].textContent.includes('Owned model 999')&&Boolean(${popup}.querySelector('[aria-label="Remove Owned model 999 from favourites"]'))`);
+    if (!await run(`${items}.every(item=>Array.from(item.querySelectorAll('img')).every(image=>image.complete&&image.naturalWidth>0))&&Boolean(${items}[0].querySelector('[data-model-lab=openai]'))&&JSON.parse(localStorage.getItem('phaseo.desktop.favouriteModels')).includes('phaseo:owned-model-999')`)) throw Error('Model branding or favourite persistence failed');
+    await showGroup("All Phaseo models");
     key("Escape");
     await wait(`!${popup}`);
     console.log('PHASEO_MODEL_FILTERS_SMOKE', JSON.stringify({search:true,free:true,new:true,favourites:true,persistence:true,clear:true,logos:true}));
@@ -188,14 +274,17 @@ app.whenReady().then(async () => {
     await run(`window.__auditType(${popup}.querySelector('[role=combobox]'),'owned model 999')`);
     await wait(`${items}[0]?.textContent.includes('Owned model 999')`);
     await run(`${items}[0].click()`);
-    await wait(`!${popup}&&document.querySelector('main form [aria-label="Choose model"]').textContent.includes('Owned model 999')`);
+    await wait(`Boolean(${popup})&&document.querySelector('main form [aria-label="Choose model"]').textContent.includes('Owned model 999')`);
+    key("Escape");
+    await wait(`!${popup}`);
     await run("window.__auditModelSetting('Reasoning','High')");
-    await run("window.__auditModelSetting('Fast mode','On')");
-    await wait("window.__auditModelSettings()==='High'&&Boolean(document.querySelector('main form button[aria-label=\"Choose model\"] [aria-label=\"Fast\"]'))");
+    await run("window.__auditModelSetting('Fast mode','Fast')");
+    await wait("window.__auditModelSettings()==='High'&&Boolean(document.querySelector('main form button[aria-label=\"Choose model\"] [data-speed=fast]'))");
     if (modelReads !== cachedReads) throw Error('Reopening the picker refetched a cached catalog');
     console.log('UNIFIED_PICKER_SMOKE',JSON.stringify({modelReasoningSpeed:true,cachedCatalog:true}));
     // Background refreshes keep the cached catalog on failure and report the error until a later refresh succeeds.
     await run("document.querySelector('main form [aria-label=\"Choose model\"]').click()");
+    await showGroup("All Phaseo models");
     await wait(`${count}===1000`);
     modelRefreshDelay = 500; modelRefreshFailure = true;
     await advanceBackgroundRefresh(owner);
@@ -225,10 +314,12 @@ app.whenReady().then(async () => {
     });
     await run("document.querySelector('main form [aria-label=\"Choose model\"]').click()");
     await run(`window.__auditType(${popup}.querySelector('[role=combobox]'),'owned model 0')`);
-    await wait(`${items}[0]?.textContent.trim().startsWith('Anthropic: Owned model 0')`);
+    await wait(`${items}[0]?.textContent.trim().startsWith('Owned model 0')`);
     await run(`${items}[0].click()`);
     // The button names the effort after the model, so compare the model name alone.
-    await wait(`!${popup}&&window.__auditModelName()==='Owned model 0'`);
+    await wait(`window.__auditModelName()==='Owned model 0'`);
+    key("Escape");
+    await wait(`!${popup}`);
     await run("window.__auditType(document.querySelector('main [aria-label=Message]'),'Keep my first message')");
     await wait("!document.querySelector('main form [aria-label=Send]').disabled");
     await run("document.querySelector('main form [aria-label=Send]').click()");
@@ -251,6 +342,8 @@ app.whenReady().then(async () => {
     await wait("Array.from(document.querySelectorAll('#model-picker-list [role=option]')).some(option=>option.textContent.includes('Owned model 999'))");
     await run("Array.from(document.querySelectorAll('#model-picker-list [role=option]')).find(option=>option.textContent.includes('Owned model 999')).click()");
     await wait("JSON.parse(localStorage.getItem('phaseo.desktop.modelPreferences')).defaultSelection?.model==='owned-model-999'");
+    key("Escape");
+    await wait("!document.querySelector('[data-slot=popover-content]')");
     await run("window.__auditCloseSettings()");
     await run("window.dispatchEvent(new KeyboardEvent('keydown',{key:'n',ctrlKey:true,bubbles:true}))");
     await wait("window.__auditChatTitle()===undefined&&window.__auditModelName()==='Owned model 999'");

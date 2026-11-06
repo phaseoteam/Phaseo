@@ -2,7 +2,7 @@ import { mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { MODEL_CATALOG_FRESH_MS, ModelCatalogCache } from "./modelCatalogCache";
+import { CATALOG_VERSION, MODEL_CATALOG_FRESH_MS, ModelCatalogCache } from "./modelCatalogCache";
 
 const key = { endpoint: "https://api.phaseo.app/v1", accountId: "account" };
 const first = [{ id: "owned/first", name: "First" }], second = [{ id: "owned/second", name: "Second" }];
@@ -70,7 +70,7 @@ describe("model catalog disk cache", () => {
 		expect(await cache.get(key, fetchModels)).toEqual(first);
 		await vi.waitFor(async () => expect((await cache.read(key))?.fetchedAt).toBe(new Date(now).toISOString()), { timeout: 5000 });
 		expect(fetchModels).toHaveBeenCalledWith([{ offset: 0, etag: "\"v1\"" }]); expect(onChange).not.toHaveBeenCalled();
-		expect(await cache.read(key)).toMatchObject({ version: 4, models: first, validators: [{ offset: 0, etag: "\"v1\"" }], fetchedAt: new Date(now).toISOString() });
+		expect(await cache.read(key)).toMatchObject({ version: CATALOG_VERSION, models: first, validators: [{ offset: 0, etag: "\"v1\"" }], fetchedAt: new Date(now).toISOString() });
 		expect(MODEL_CATALOG_FRESH_MS).toBe(15 * 60 * 1000);
 	});
 	it("lends a new account another account's catalog from the same gateway while its own downloads", async () => {
@@ -97,6 +97,6 @@ describe("model catalog disk cache", () => {
 		writeFileSync(cache.filename(key), JSON.stringify({ version: 2, ...key, fetchedAt: new Date().toISOString(), models: first, validators: [{ offset: 0, etag: "\"v1\"" }] }));
 		const fetchModels = vi.fn().mockResolvedValue({ models: second, validators: [] });
 		expect(await cache.get(key, fetchModels)).toEqual(first); await vi.waitFor(async () => expect((await cache.read(key))?.models).toEqual(second), { timeout: 5000 });
-		expect(fetchModels).toHaveBeenCalledExactlyOnceWith(undefined); expect((await cache.read(key))?.version).toBe(4);
+		expect(fetchModels).toHaveBeenCalledExactlyOnceWith(undefined); expect((await cache.read(key))?.version).toBe(CATALOG_VERSION);
 	});
 });

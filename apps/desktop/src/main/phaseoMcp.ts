@@ -1,11 +1,16 @@
 import { closeMcpClient } from "./closeMcpClient";
 import { McpCallBudget } from "./mcpCallBudget";
-import { ElicitRequestSchema, type Tool } from "@modelcontextprotocol/sdk/types.js";
+import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { respondMcpElicitation } from "./mcpElicitation";
 import type { AgentCallbacks } from "./agentAdapter";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport, getDefaultEnvironment } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import type { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+
+// Loaded with the first MCP connection rather than at launch, as in orchestratorMcp.ts.
+const importClientSdk = () => Promise.all([import("@modelcontextprotocol/sdk/client/index.js"), import("@modelcontextprotocol/sdk/client/stdio.js"), import("@modelcontextprotocol/sdk/client/streamableHttp.js"), import("@modelcontextprotocol/sdk/types.js")]);
+let clientSdk: Awaited<ReturnType<typeof importClientSdk>> | undefined;
+/** Loads the MCP client SDK once; after that, servers start without waiting a tick for it. */
+export async function loadMcpClientSdk() { return clientSdk ??= await importClientSdk(); }
 import { createHash } from "node:crypto";
 import { defineTool, type AgentTool } from "@phaseo/agent-sdk";
 import { nativeMcpName, type McpConnection } from "../shared/mcp";
@@ -18,6 +23,8 @@ type PromptServer = { id: string; name: string; projectId?: string; list: Return
 export type PhaseoMcpSession = { tools: AgentTool[]; labels: Record<string,string>; promptServers: PromptServer[]; close: () => Promise<void> };
 /** A connected server and what it offers. Forms it asks for go to whichever turn is using it now. */
 type Server = { connection: McpConnection; client: Client; http?: StreamableHTTPClientTransport; tools: Tool[]; prompts: boolean; resources: boolean; budgets: Set<McpCallBudget>; waitingForms: number; turn: { callbacks?: AgentCallbacks; signal: AbortSignal } };
+/** The MCP calls under way, by tool call id: the turn names the server and tool when the call ends (MCP Apps), then drops it. */
+export const phaseoMcpCalls = new Map<string, { server: string; tool: string; input: unknown }>();
 /** Servers kept between a chat's turns, so each message does not start them again. */
 type Pooled = { connectionId: string; server: Promise<Server>; leases: number; idle?: ReturnType<typeof setTimeout>; broken: boolean };
 const pool = new Map<string, Pooled>();
@@ -48,6 +55,7 @@ function disconnect(server: Server, callbacks?: AgentCallbacks) {
 
 async function startServer(connection: McpConnection, cwd: string, setupSignal: AbortSignal, turn: Server["turn"], track: (client: Client) => void): Promise<Server> {
  const elicit = Boolean(turn.callbacks?.onForm);
+ const [{ Client }, { StdioClientTransport, getDefaultEnvironment }, { StreamableHTTPClientTransport }, { ElicitRequestSchema }] = clientSdk ?? await loadMcpClientSdk();
  const client = new Client({ name: "phaseo-desktop", version: "0.1.0" }, { capabilities: elicit ? { elicitation: { form: {}, url: {} } } : {} }); track(client);
  const server: Server = { connection, client, tools: [], prompts: false, resources: false, budgets: new Set(), waitingForms: 0, turn };
  if (elicit) {
@@ -110,6 +118,7 @@ function serverTools(server: Server, signal: AbortSignal) {
     if (!input || typeof input !== "object" || Array.isArray(input) || JSON.stringify(input).length > 1000000) throw Error("Invalid MCP tool arguments.");
     const budget = new McpCallBudget(); server.budgets.add(budget); if (server.waitingForms) budget.pause();
     try {
+     phaseoMcpCalls.set(context.toolCall.id, { server: nativeMcpName(connection), tool: tool.name, input });
      const result = await client.callTool({ name: tool.name, arguments: input as Record<string,unknown> }, undefined, { signal: AbortSignal.any([signal, ...(context.signal ? [context.signal] : []), budget.signal]), timeout: 2147483647 });
      if (JSON.stringify(result).length > 1000000) throw Error("MCP tool result exceeds the 1 MB limit.");
      if (result.isError) throw Error(`MCP tool returned an error: ${JSON.stringify(result.content).slice(0,5000)}`);

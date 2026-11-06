@@ -116,8 +116,14 @@ export async function gitScopedDiff(root: string, value: unknown): Promise<Scope
 			if (request.baseRef) { await runGit(root, ["check-ref-format", "--allow-onelevel", request.baseRef]); if (!await revision(root, request.baseRef)) throw new Error(`${request.baseRef} no longer exists.`); }
 			baseRef = request.baseRef ?? await automaticBaseRef(root, headRef);
 		}
+		else if (request.scope === "unpushed") {
+			const upstream = (await runGit(root, ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"]).catch(() => "")).trim();
+			baseRef = upstream || await automaticBaseRef(root, headRef);
+		}
 		const mergeBase = baseRef && head ? (await runGit(root, ["merge-base", baseRef, "HEAD"]).catch(() => "")).trim() : "";
 		base = mergeBase || head || await emptyTree(root);
+		// Committed work only: the working tree is what Uncommitted shows.
+		if (request.scope === "unpushed") target = head ?? base;
 	}
 	const tracked = await runGit(root, ["diff", ...DIFF_FLAGS, ...whitespace, base, ...(target ? [target] : []), "--"]);
 	const untracked = target ? { patch: "", truncated: false } : await untrackedPatch(root, request.ignoreWhitespace === true);

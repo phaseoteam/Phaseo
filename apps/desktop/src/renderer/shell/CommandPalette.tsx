@@ -1,4 +1,4 @@
-import { Activity, CalendarClock, ChartLine, Gauge, Inbox, Code2, GitPullRequestArrow, Link2, Keyboard, Columns3, FolderPlus, Globe, MessageSquare, Moon, PanelLeft, Plus, Settings, SquareTerminal, Sun, UserRound, Files, Archive, FileSearch, TextSearch, Search, Copy, GitBranchPlus, Bug, SquarePen, Pin, PinOff, CircleCheck, Undo2, Mail, Pencil, Monitor, History, ArchiveRestore } from "lucide-react";
+import { Bot, Pause, Play, Activity, CalendarClock, ChartLine, Gauge, Inbox, Code2, GitPullRequestArrow, Link2, Keyboard, Columns3, FolderPlus, Globe, MessageSquare, Moon, PanelLeft, Plus, Settings, SquareTerminal, Sun, UserRound, Files, Archive, FileSearch, TextSearch, Search, Copy, GitBranchPlus, Bug, SquarePen, Pencil, Pin, PinOff, Undo2, CircleCheck, Mail, History, Monitor, ArchiveRestore } from "lucide-react";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { errorText, useWorkspace } from "../app/workspace";
 import { ScrollArea } from "../components/ui/scroll-area";
@@ -10,8 +10,13 @@ import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, C
 import { StatusDot } from "./Sidebar";
 import { pullRequestSearchTerms } from "../../shared/pullRequestView";
 import { issueSearchTerms } from "../../shared/issueView";
+import { issueToTriage, issueTriagePrompt } from "../../shared/issueTriage";
+import { handNewChatDraft } from "../lib/newChatDraft";
+import { useProjectRepository } from "../views/pullRequests/useProjectRepository";
 import { ModelStack, modelName } from "../chat/ModelPicker";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ComponentType } from "react";
+import { paletteEntries, type PaletteEntry } from "../../shared/appCommands";
+import { copyChatLink, runAppCommand } from "../lib/appCommands";
 import { MessageSearchResults, useMessageSearch } from "./MessageSearch";
 import { requestFind } from "../chat/ChatFind";
 import { CloneProjectDialog, openCloneProject, OpenProjectItems } from "./PaletteExtras";
@@ -23,13 +28,25 @@ import { isSettled, settleBlocker } from "../../shared/threadLifecycle";
 import { renameChatEvent } from "../chat/composerActions";
 import type { ThemePreference } from "../types";
 
+const entryIcons: Record<string, ComponentType> = { "New chat": Plus, "Operator": Bot, "Switch to Chat": MessageSquare, "Switch to Code": Code2, "Inbox": Inbox, "Usage": ChartLine, "Usage limits": Gauge, "Scheduled tasks": CalendarClock, "Open pull requests": GitPullRequestArrow, "Toggle sidebar": PanelLeft, "Show files and changes": Files, "Open terminal": SquareTerminal, "Open browser": Globe, "Settings": Settings, "Accounts and sign-in": UserRound, "Keyboard shortcuts": Keyboard, "Diagnostics": Activity };
+/** The keyboard shortcut that does what a palette entry does, when there is one. */
+function entryShortcut(entry: PaletteEntry) {
+	if (entry.command === "chat.new") return shortcut("chat.new");
+	if (entry.command === "mode.set") return shortcut(entry.args?.mode === "code" ? "mode.code" : "mode.chat");
+	if (entry.command === "sidebar.set") return shortcut("sidebar.toggle");
+	if (entry.command === "pane.open" && entry.args?.surface === "terminal") return shortcut("terminal.toggle");
+	if (entry.command === "settings.open" && !entry.args) return shortcut("settings.open");
+	return "";
+}
+
 export function CommandPalette() {
-	const { commandsOpen, setCommandsOpen, overview, compareGroups, openCompare, taskById, select, setMode, openSettings, openScheduled, openPullRequests, openInbox, openUsage, selectedId, setRightPanel, setSidebarOpen, theme, setTheme, api, setOverview, setError, setNewChatProjectId, openProjectSettings, command } = useWorkspace();
+	const { commandsOpen, setCommandsOpen, overview, compareGroups, openCompare, taskById, select, setMode, selectedId, setRightPanel, theme, setTheme, api, setOverview, setError, setNewChatProjectId, openProjectSettings, command } = useWorkspace();
 	const threadActions = useThreadActions();
+	const operatorChat = overview.tasks.find(task => task.operator && !task.archived);
 	const run = (action: () => void) => { setCommandsOpen(false); action(); };
 	const [search, setSearch] = useState("");
 	// "New chat in…" lists projects on a page of its own; Backspace in the empty field goes back.
-	const [page, setPage] = useState<"new-chat-in">();
+	const [page, setPage] = useState<"new-chat-in" | "triage-issue">();
 	const messageSearch = useMessageSearch(page ? "" : search, commandsOpen);
 	// The palette opens empty each time, as it did when its input kept its own value.
 	useEffect(() => { if (!commandsOpen) { setSearch(""); setPage(undefined); } }, [commandsOpen]);
@@ -43,6 +60,11 @@ export function CommandPalette() {
 	const shelfProject = currentProject?.worktree ? projects.find(project => project.id === currentProject.worktree!.sourceProjectId) : currentProject;
 	const organizeProject = (id: string, change: { pinned?: boolean; archived?: boolean }) => run(() => void command({ type: "organize-project", id, ...change }));
 	const searching = search.trim() !== "";
+	// Triage runs in the open chat's project (its source for a worktree), else the first project.
+	const triageProject = shelfProject ?? activeProjects[0];
+	const triageRepository = useProjectRepository(page === "triage-issue" ? triageProject?.id : undefined);
+	const triageUrl = page === "triage-issue" ? issueToTriage(search, triageRepository ?? undefined) : undefined;
+	const triageIssue = (url: string) => run(() => { if (!triageProject) return; setMode("code"); setNewChatProjectId(triageProject.id); select(undefined); handNewChatDraft(issueTriagePrompt(url)); });
 	const startIn = (projectId: string) => run(() => { setMode("code"); setNewChatProjectId(projectId); select(undefined); });
 	const projectItem = (project: typeof projects[number]) => <CommandItem key={project.id} value={`${project.name} ${project.directory} ${project.id}`} onSelect={() => startIn(project.id)}>
 		<ProjectIcon project={project} /><span className="min-w-0 truncate">{project.name}</span><span className="min-w-0 flex-1 truncate text-right text-xs text-muted-foreground">{project.directory}</span>
@@ -50,41 +72,31 @@ export function CommandPalette() {
 	const themes: { value: ThemePreference; label: string; icon: typeof Sun }[] = [{ value: "light", label: "Use light theme", icon: Sun }, { value: "dark", label: "Use dark theme", icon: Moon }, { value: "system", label: "Use the system theme", icon: Monitor }];
 	const copyId = (id: string) => void navigator.clipboard.writeText(id).then(() => showToast("success", "Chat ID copied"), () => showToast("error", "Could not copy the chat ID"));
 	return <><ProjectSearchDialog /><CloneProjectDialog /><ImportSessionsDialog /><CommandDialog open={commandsOpen} onOpenChange={setCommandsOpen} title="Search" description="Search chats and run commands" className="max-w-xl rounded-2xl! sm:max-w-xl">
-		<CommandInput autoFocus value={search} onValueChange={setSearch} placeholder={page ? "New chat in…" : "Search chats, messages and commands…"} wrapperClassName="p-2"
+		<CommandInput autoFocus value={search} onValueChange={setSearch} placeholder={page === "triage-issue" ? "An issue URL, or its number in this project" : page ? "New chat in…" : "Search chats, messages and commands…"} wrapperClassName="p-2"
 			onKeyDown={event => { if (page && event.key === "Backspace" && !search) { event.preventDefault(); setPage(undefined); } }} />
 		<ScrollArea className="max-h-[420px]" viewportClassName="max-h-[420px]"><CommandList className="max-h-none overflow-visible p-1">
-			{page ? <><CommandEmpty>No project matches.</CommandEmpty><CommandGroup heading="New chat in">{activeProjects.map(projectItem)}</CommandGroup></> : <>
+			{page === "triage-issue" ? <CommandGroup heading={triageProject ? `Triage in ${triageProject.name}` : "Add a project first"}>
+				{triageUrl && triageProject ? <CommandItem value={`${search} triage`} onSelect={() => triageIssue(triageUrl)}><Bug /><span className="min-w-0 truncate">Triage {triageUrl.replace("https://github.com/", "")}</span></CommandItem>
+					: <p className="px-2 py-3 text-center text-xs text-muted-foreground">{triageProject ? "Paste an issue URL, or type its number." : "Triage runs in a project. Add one first."}</p>}
+			</CommandGroup> : page ? <><CommandEmpty>No project matches.</CommandEmpty><CommandGroup heading="New chat in">{activeProjects.map(projectItem)}</CommandGroup></> : <>
 			{!messageSearch.hits.length && !messageSearch.searching && <CommandEmpty>Nothing matches.</CommandEmpty>}
 			<CommandGroup heading="Actions">
-				<CommandItem onSelect={() => run(() => select(undefined))}><Plus />New chat<CommandShortcut>{shortcut("chat.new")}</CommandShortcut></CommandItem>
+				{paletteEntries.map(entry => { const Icon = entryIcons[entry.title] ?? Bot, keys = entryShortcut(entry); return <CommandItem key={entry.title} value={`${entry.title} ${entry.keywords ?? ""}`} onSelect={() => run(() => void runAppCommand(entry.command, entry.args).catch(reason => showToast("error", `Could not run ${entry.title}`, errorText(reason))))}><Icon />{entry.title}{keys && <CommandShortcut>{keys}</CommandShortcut>}</CommandItem>; })}
 				{activeProjects.length > 0 && <CommandItem value="New chat in project folder start" onSelect={() => { setSearch(""); setPage("new-chat-in"); }}><SquarePen />New chat in…</CommandItem>}
-				<CommandItem onSelect={() => run(() => setMode("chat"))}><MessageSquare />Switch to Chat<CommandShortcut>{shortcut("mode.chat")}</CommandShortcut></CommandItem>
-				<CommandItem onSelect={() => run(() => setMode("code"))}><Code2 />Switch to Code<CommandShortcut>{shortcut("mode.code")}</CommandShortcut></CommandItem>
+				{operatorChat && <CommandItem value={operatorChat.operator?.paused ? "Resume the operator" : "Pause the operator stop"} onSelect={() => run(() => void runAppCommand(operatorChat.operator?.paused ? "operator.resume" : "operator.pause").catch(reason => showToast("error", "Could not change the operator", errorText(reason))))}>{operatorChat.operator?.paused ? <Play /> : <Pause />}{operatorChat.operator?.paused ? "Resume the operator" : "Pause the operator"}</CommandItem>}
 				<CommandItem onSelect={() => run(() => { if (api) void api.chooseProject().then(state => { setOverview(state); const added = state.projects.find(value => !overview.projects.some(existing => existing.id === value.id)); if (added) { setMode("code"); setNewChatProjectId(added.id); select(undefined); } }, reason => setError(errorText(reason))); })}><FolderPlus />Open project folder…</CommandItem>
 				<CommandItem value="Clone a repository git url github add project" onSelect={() => run(() => openCloneProject())}><GitBranchPlus />Clone a repository…</CommandItem>
 				<CommandItem value="Import past conversations claude code codex history sessions transcripts continue" onSelect={() => run(() => openImportSessions())}><History />Import past conversations…</CommandItem>
+				{activeProjects.length > 0 && <CommandItem value="Triage a GitHub issue investigate reproduce bug report" onSelect={() => { setSearch(""); setPage("triage-issue"); }}><Bug />Triage a GitHub issue…</CommandItem>}
 				{api && <CommandItem value="Triage a Phaseo bug triage debug problem broken crash report issue fix this app" onSelect={() => run(() => { setMode("code"); select(undefined); startTriage(api); })}>
 					<Bug /><span className="flex min-w-0 flex-col"><span>Triage a Phaseo bug</span><span className="truncate text-xs text-muted-foreground">An agent debugs this app from its own source and helps you file an issue</span></span>
 				</CommandItem>}
-				<CommandItem value="Inbox needs you waiting attention autopilot log decisions" onSelect={() => run(openInbox)}><Inbox />Inbox</CommandItem>
-				<CommandItem value="Usage cost tokens spend today pace forecast pull requests settled" onSelect={() => run(() => openUsage())}><ChartLine />Usage</CommandItem>
-				<CommandItem value="Usage limits subscriptions rings Claude Codex" onSelect={() => run(() => openUsage("limits"))}><Gauge />Usage limits</CommandItem>
-				<CommandItem onSelect={() => run(openScheduled)}><CalendarClock />Scheduled tasks</CommandItem>
 			<CommandItem value="Archived chats restore unarchive deleted" onSelect={() => run(() => openArchivedChats())}><Archive />Archived chats</CommandItem>
-				<CommandItem value="Open pull requests prs pr github review merge branch" onSelect={() => run(openPullRequests)}><GitPullRequestArrow />Open pull requests</CommandItem>
 				{current?.projectId && <CommandItem value="Show linked pull requests prs linked stack" disabled={!linked.length} onSelect={() => run(() => setRightPanel("pulls"))}><Link2 />Show linked pull requests</CommandItem>}
-				<CommandItem onSelect={() => run(() => setSidebarOpen(open => !open))}><PanelLeft />Toggle sidebar<CommandShortcut>{shortcut("sidebar.toggle")}</CommandShortcut></CommandItem>
-				<CommandItem onSelect={() => run(() => setRightPanel("changes"))}><Files />Show files and changes</CommandItem>
 			{current?.projectId && <CommandItem value="Go to file open quick" onSelect={() => run(() => runCommand("filePicker.toggle"))}><FileSearch />Go to file…<CommandShortcut>{shortcut("filePicker.toggle")}</CommandShortcut></CommandItem>}
 			{current?.projectId && <CommandItem value="Search in files contents grep project text" onSelect={() => run(() => runCommand("projectSearch.toggle"))}><TextSearch />Search in files…<CommandShortcut>{shortcut("projectSearch.toggle")}</CommandShortcut></CommandItem>}
 			{current && <CommandItem value="Find in chat search this conversation" onSelect={() => run(() => runCommand("chat.find"))}><Search />Find in chat<CommandShortcut>{shortcut("chat.find")}</CommandShortcut></CommandItem>}
-				<CommandItem onSelect={() => run(() => setRightPanel("terminal"))}><SquareTerminal />Open terminal<CommandShortcut>{shortcut("terminal.toggle")}</CommandShortcut></CommandItem>
-				<CommandItem onSelect={() => run(() => setRightPanel("browser"))}><Globe />Open browser</CommandItem>
 				{themes.filter(option => option.value !== theme).map(option => <CommandItem key={option.value} value={`${option.label} appearance colour mode`} onSelect={() => run(() => setTheme(option.value))}><option.icon />{option.label}</CommandItem>)}
-				<CommandItem onSelect={() => run(() => openSettings())}><Settings />Settings<CommandShortcut>{shortcut("settings.open")}</CommandShortcut></CommandItem>
-				<CommandItem onSelect={() => run(() => openSettings("accounts"))}><UserRound />Accounts and sign-in</CommandItem>
-				<CommandItem onSelect={() => run(() => openSettings("keyboard"))}><Keyboard />Keyboard shortcuts</CommandItem>
-				<CommandItem value="Diagnostics processes cpu memory traces logs slow failures" onSelect={() => run(() => openSettings("diagnostics"))}><Activity />Diagnostics</CommandItem>
 			</CommandGroup>
 			{current && <CommandGroup heading="This chat">
 				{currentProject && <CommandItem value={`New chat in ${currentProject.name} this project`} onSelect={() => startIn(currentProject.id)}><SquarePen />{currentProject.worktree ? `New chat on ${currentProject.worktree.branch}` : `New chat in ${currentProject.name}`}</CommandItem>}
@@ -97,6 +109,7 @@ export function CommandPalette() {
 				{currentProject && <CommandItem value={`Project settings ${currentProject.name}`} onSelect={() => run(() => openProjectSettings(currentProject.id))}><Settings />Project settings</CommandItem>}
 				{shelfProject && !shelfProject.archived && <CommandItem value={`${shelfProject.pinned ? "Unpin" : "Pin"} project ${shelfProject.name}`} onSelect={() => organizeProject(shelfProject.id, { pinned: !shelfProject.pinned })}>{shelfProject.pinned ? <PinOff /> : <Pin />}{shelfProject.pinned ? "Unpin project" : "Pin project"}</CommandItem>}
 				{shelfProject && !shelfProject.archived && <CommandItem value={`Archive project ${shelfProject.name} hide`} onSelect={() => organizeProject(shelfProject.id, { archived: true })}><Archive />Archive project</CommandItem>}
+				<CommandItem value="Copy chat link open url share" onSelect={() => run(() => copyChatLink(current.id))}><Link2 />Copy chat link</CommandItem>
 				<CommandItem value="Copy chat ID identifier reference" onSelect={() => run(() => copyId(current.id))}><Copy />Copy chat ID</CommandItem>
 				<CommandItem value="Archive chat" disabled={["running", "waiting"].includes(current.status)} onSelect={() => run(() => void threadActions.archive(current))}><Archive />Archive chat</CommandItem>
 			</CommandGroup>}

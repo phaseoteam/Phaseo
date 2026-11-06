@@ -401,7 +401,7 @@ app.whenReady().then(async () => {
 			// The composer's model picker lists only connected harnesses, so pick the fixture model and plan mode through the bridge,
 			// then change reasoning through the composer's model settings menu.
 			await window.phaseoDesktop.workspace.command({type:'update-task',id:task.id,model:'fixture-model',mode:'plan'});
-			await window.__auditUntil(()=>window.__auditModelName()==='Fixture Model'&&window.__auditModelSettings()==='Low','fixture model settings');
+			await window.__auditUntil(()=>window.__auditModelName()==='Fixture model'&&window.__auditModelSettings()==='Low','fixture model settings');
 			await window.__auditModelSetting('Reasoning','High');
 			for(let attempt=0;attempt<30 && (await window.phaseoDesktop.workspace.task(task.id)).reasoningEffort!=='high';attempt++) await new Promise(resolve=>setTimeout(resolve,100));
 			await window.__auditUntil(()=>window.__auditModelSettings()==='High','model settings label');

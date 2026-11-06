@@ -1,11 +1,15 @@
+import type { McpCall } from "./mcpCall";
 import type { HtmlRenderActivity } from "./htmlRender";
+import type { AcpRegistryAgent, AcpRegistryLaunch } from "./acpRegistry";
+import type { ProviderIncident, ProviderStatusId } from "./providerStatus";
 import type { Delegation, Launch } from "./orchestration";
 import type { CodeHostKind, CustomCodeHost } from "./codeHosts";
 import type { CodeHostSettings, CodeHostTokenRequest } from "./codeHostSettings";
 import type { CreatedOutsideAgentToken, OutsideAgentAccess, OutsideAgentSettings } from "./outsideAgents";
 import type { IssueDraft, TriagePreparation, TriageProject } from "./triage";
 import type { AutopilotDecision } from "./inbox";
-import type { UsageFolder, UsagePeriod, UsageReport } from "./usageLedger";
+import type { OperatorState } from "./operator";
+import type { UsageFilter, UsageFolder, UsagePeriod, UsageReport } from "./usageLedger";
 import type { PullRequestThreadsQuery, PullRequestThreadsPage } from "./pullRequestThreads";
 import type { ImportableHub, UsageHub, UsageHubRequest, UsageHubSnapshot } from "./usageHubs";
 import { nativeActionText, validateNativeAction, type NativeAction, type NativeActionCatalog } from "./nativeActions";
@@ -52,17 +56,25 @@ export type Project = { id: string; name: string; directory: string; createdAt: 
 export type PhaseoSignInMethod = { provider: "github" | "google" | "gitlab" } | { email: string; password: string };
 export type PhaseoSignInResult = { workspace: WorkspaceOverview; accountId: string } | { secondFactor: true };
 export type Account = { id: string; name: string; harness: Harness; kind: "native" | "api"; endpoint?: string; configDirectory?: string; configured: boolean; archived?: boolean; secretId?: string; oauthExpiresAt?: string; /** For a Phaseo login (not an older OAuth sign-in): the vault entry holding the login, and the Phaseo workspace its key is for. */ sessionSecretId?: string; phaseoWorkspaceId?: string; /** For a Phaseo sign-in, who it belongs to, from its Phaseo profile. */ profile?: { name?: string; givenName?: string; email?: string; picture?: string; checkedAt: string } };
-export type AgentConnection = { id: string; name: string; executable: string; arguments: string[]; archived?: boolean };
+/** environment: variables the agent starts with, such as a registry agent's settings or a secret reference (op://…). */
+export type AgentConnection = { id: string; name: string; executable: string; arguments: string[]; environment?: Record<string, string>; archived?: boolean };
 export type AgentStatus = { checkedAt: string; name?: string; version?: string; protocolVersion: number; capabilities: string[]; authMethods: string[] };
 export type BackgroundCommandView = { id: string; command: string; directory: string; running: boolean; durationMs: number; output: string };
 export type Attachment = { id: string; taskId: string; name: string; kind: "text" | "image" | "audio" | "video"; mimeType: string; size: number; pages?: number };
-export type Message = { startedAt?: string; completedAt?: string; /** Working-tree snapshots around the turn this message started (user messages in a project). */ checkpoint?: TurnCheckpoint; timelineOrder?: number; threadReferences?: string[]; /** Issue and pull request URLs the person referenced with `#`. */ githubReferences?: string[]; nativeAction?: NativeAction; id: string; role: "user" | "assistant" | "system" | "tool"; text: string; attachments?: Attachment[]; delivery?: "steer" | "subagent"; /** Sent by Autopilot to keep the task going, not by the person. */ autopilot?: true; /** A wake the app sent (a watched pull request changed): shown as a compact notice, not as the person's message. */ notice?: MessageNotice; /** Delegated results: the first child, and every child batched into this message. */ sourceTaskId?: string; sourceTaskIds?: string[]; createdAt: string };
-/** `outside-agent` is a prompt an agent outside Phaseo sent through its MCP server; the summary names the agent. `side-chat` is what the person brought back from a side chat. */
-export type MessageNotice = { kind: "pull-request" | "issue" | "outside-agent" | "side-chat"; summary: string; outcome: "failed" | "completed" | "updated"; url?: string; /** The side chat it came from. */ taskId?: string };
+/** The model and reasoning level a turn ran with, so the chat can show where they changed. */
+export type TurnSettings = { harness: Harness; model: string; effort?: string };
+export type Message = { /** On the user message that started a turn. */ settings?: TurnSettings; startedAt?: string; completedAt?: string; /** Working-tree snapshots around the turn this message started (user messages in a project). */ checkpoint?: TurnCheckpoint; timelineOrder?: number; threadReferences?: string[]; /** Issue and pull request URLs the person referenced with `#`. */ githubReferences?: string[]; nativeAction?: NativeAction; id: string; role: "user" | "assistant" | "system" | "tool"; text: string; attachments?: Attachment[]; delivery?: "steer" | "subagent"; /** Sent by Autopilot to keep the task going, not by the person. */ autopilot?: true; /** A wake the app sent (a watched pull request changed): shown as a compact notice, not as the person's message. */ notice?: MessageNotice; /** Delegated results: the first child, and every child batched into this message. */ sourceTaskId?: string; sourceTaskIds?: string[]; createdAt: string };
+/**
+ * `outside-agent` is a prompt an agent outside Phaseo sent through its MCP server; the summary names the agent. `side-chat`
+ * is what the person brought back from a side chat. `event` is what the operator's subscriptions delivered.
+ */
+export type MessageNotice = { kind: "pull-request" | "issue" | "event" | "outside-agent" | "side-chat"; summary: string; outcome: "failed" | "completed" | "updated"; url?: string; /** The side chat it came from. */ taskId?: string };
 export type QueuedMessage = { autopilot?: true; notice?: MessageNotice; sourceTaskId?: string; sourceTaskIds?: string[]; threadReferences?: string[]; githubReferences?: string[]; nativeAction?: NativeAction; id: string; text: string; attachments?: Attachment[]; createdAt: string };
 export type SteeringMessage = QueuedMessage & { status: "sending" | "rejected" | "unconfirmed"; error?: string };
 export type AgentActivity = { timelineOrder?: number; /** When the app first saw it running, for a live timer. */ startedAt?: string; nativeAgent?: { id: string; model?: string; status: "pending" | "running" | "completed" | "failed" | "interrupted" }; id: string; type: "tool" | "reasoning" | "plan" | "usage" | "compaction"; title: string; text: string; status?: "running" | "completed" | "failed"; steps?: PlanStep[]; explanation?: string; summary?: string; compaction?: { beforeTokens: number; afterTokens?: number; durationMs?: number }; /** A plan the agent proposed (its Markdown is the text), and what the person did with it. */ proposed?: { outcome?: "implemented" | "revised" | "declined"; feedback?: string };
-	/** A page an agent showed with html_render (its HTML is the text), shown above the reply. */ htmlRender?: HtmlRenderActivity };
+	/** A page an agent showed with html_render (its HTML is the text), shown above the reply. */ htmlRender?: HtmlRenderActivity;
+	/** An MCP App page (htmlRender too): the tool call it shows, handed to the page as MCP Apps tool input and result. */ mcpApp?: { input: unknown; result: unknown; connectionId?: string; tool?: string; source?: string };
+	/** A finished call to a tool of one of the person's MCP servers, as the agent reported it (shared/mcpCall.ts). */ mcpCall?: McpCall };
 /** How the person's own answer is typed: text by default, or a typed control with bounds. */
 export type AgentQuestionInput = { kind: "text" | "multiline" | "number" | "integer" | "boolean" | "email" | "uri" | "date" | "date-time"; min?: number; max?: number; minLength?: number; maxLength?: number };
 export type AgentQuestionOption = { label: string; description?: string; preview?: string; /** Sent instead of the label when set; it may be empty. */ value?: string };
@@ -120,6 +132,8 @@ export type Task = {
 	/** What the chat's Phaseo turns have used, kept as they stream; filled in from its history for older chats. */
 	usageTotals?: UsageTotals;
 	autopilot?: AutopilotState;
+	/** Present only on the operator chat: its subscriptions, held events, budgets and pause (shared/operator.ts). */
+	operator?: OperatorState;
 	/** Code-mode lifecycle (see shared/threadLifecycle.ts). */
 	settledOverride?: "settled" | "active"; settledAt?: string; unsettledAt?: string;
 	snoozedUntil?: string; snoozedAt?: string; lastSnoozeWakeAt?: string;
@@ -167,7 +181,7 @@ export type ModelOptionDescriptor =
 export type ModelOptionValues = Record<string, string | boolean>;
 /** What Phaseo's catalog says about a model, for its info card. Prices are USD per million tokens from the cheapest routable offer. */
 export type ModelFacts = { contextTokens?: number; outputTokens?: number; input?: string[]; inputPrice?: number; outputPrice?: number; /** USD per million cached input tokens read, and written. */ cacheReadPrice?: number; cacheWritePrice?: number; providers?: string[] };
-export type ModelOption = { id: string; name: string; description?: string; facts?: ModelFacts;/** An older model, listed only when searching. */ legacy?: boolean; options?: ModelOptionDescriptor[]; organisationId?: string; organisationName?: string; releaseDate?: string; default?: boolean; reasoningEfforts?: { id: string; description: string }[]; defaultReasoningEffort?: string; serviceTiers?: { id: string; name: string; description: string }[]; defaultServiceTier?: string };
+export type ModelOption = { id: string; name: string; description?: string; facts?: ModelFacts; /** A "Latest" alias: the model id it points at now. */ latestOf?: string;/** An older model, listed only when searching. */ legacy?: boolean; options?: ModelOptionDescriptor[]; organisationId?: string; organisationName?: string; releaseDate?: string; default?: boolean; reasoningEfforts?: { id: string; description: string }[]; defaultReasoningEffort?: string; serviceTiers?: { id: string; name: string; description: string }[]; defaultServiceTier?: string };
 export type ModelsChange = { harness: Harness; accountId?: string };
 export type UsageWindow = { usedPercent: number; windowDurationMins: number | null; resetsAt: number | null };
 export type AccountStatus = { checkedAt: string; authenticated: boolean | null; method?: string; identity?: string; plan?: string; ordinaryUsageAllowed?: boolean | null; usage?: { id: string; name: string; primary: UsageWindow | null; secondary: UsageWindow | null; spendControlReached: boolean | null }[]; usageError?: string; /** The login works but its plan has no limit windows (an API key, a cloud provider or a long-lived token), so usageError is a note rather than a failure. */ noPlanLimits?: boolean; /** Paid usage beyond the plan, where the plan offers it (Claude). */ extraUsage?: { enabled: boolean; used: number | null; limit: number | null; currency?: string } };
@@ -210,8 +224,8 @@ export type WorkspaceCommand =
 	| { type: "watch-issue"; id: string; repository: string; number: number; watching: boolean }
 	| { type: "add-account"; name: string; harness: "codex" | "claude" | "phaseo" | "cursor" | "grok"; kind: "native" | "api"; endpoint?: string; apiKey?: string }
 	| { type: "update-account"; id: string; name?: string; endpoint?: string; apiKey?: string; archived?: boolean }
-	| { type: "add-agent"; name: string; executable: string; arguments: string[] }
-	| { type: "update-agent"; id: string; name?: string; executable?: string; arguments?: string[]; archived?: boolean }
+	| { type: "add-agent"; name: string; executable: string; arguments: string[]; environment?: Record<string, string> }
+	| { type: "update-agent"; id: string; name?: string; executable?: string; arguments?: string[]; environment?: Record<string, string>; archived?: boolean }
 	| { type: "create-task"; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"]; permissionMode?: Task["permissionMode"]; reasoningEffort?: string; serviceTier?: string; modelOptions?: ModelOptionValues; autopilot?: { capNanos: number | null }; untrustedCheckout?: true; forkCheckout?: true }
 	| { type: "handoff"; id: string; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"]; permissionMode?: Task["permissionMode"]; reasoningEffort?: string; serviceTier?: string; modelOptions?: ModelOptionValues }
 	| { type: "update-task"; id: string; title?: string; pinned?: boolean; archived?: boolean; tags?: string[]; model?: string; mode?: Task["mode"]; permissionMode?: Task["permissionMode"]; serviceTier?: string; reasoningEffort?: string; nativeMode?: string; modelOptions?: ModelOptionValues; /** Turns Autopilot on with a spend cap, or off with null. */ autopilot?: { capNanos: number | null } | null }
@@ -258,7 +272,7 @@ export type WorkspaceApi = {
 	autopilotLog: () => Promise<AutopilotDecision[]>;
 	onAutopilotLogChange: (listener: () => void) => () => void;
 	/** Spend through Phaseo today, over the last day and week, by hour, and where today's went (the Today page). */
-	usageReport: (period: UsagePeriod) => Promise<UsageReport>;
+	usageReport: (period: UsagePeriod, filter?: UsageFilter) => Promise<UsageReport>;
 	/** The Claude Code and Codex transcript folders the Usage page reads; "add" asks for a folder. */
 	usageFolders: (request: { type: "list" } | { type: "add"; harness: "claude" | "codex" } | { type: "remove"; directory: string }) => Promise<UsageFolder[]>;
 	/** New usage arrived from transcripts. */
@@ -322,11 +336,24 @@ export type WorkspaceApi = {
 	/** Saves a copy of an attachment where the person chooses; false when they cancel. */
 	saveAttachment: (taskId: string, id: string) => Promise<boolean>;
 	installations: () => Promise<HarnessInstallation[]>;
+	/** MCP Apps: a tool on the app's own server, and running it for the app once the person allowed it. */
+	mcpAppTool: (taskId: string, activityId: string, name: string) => Promise<{ name: string; title?: string; description?: string; readOnly: boolean }>;
+	mcpAppCall: (taskId: string, activityId: string, name: string, input: Record<string, unknown>) => Promise<unknown>;
+	/** Opens a link a page or an app opened (http or https) in the system's browser. */
+	openPageLink: (url: string) => Promise<boolean>;
+	/** Open incidents on the public status pages of Phaseo and the agents' makers, read at most every five minutes. */
+	providerIncidents: () => Promise<ProviderIncident[]>;
+	openStatusPage: (id: ProviderStatusId) => Promise<void>;
+	/** Agents from the public Agent Client Protocol registry this computer can run. */
+	acpRegistry: (fresh?: boolean) => Promise<AcpRegistryAgent[]>;
+	addRegistryAgent: (id: string, kind: AcpRegistryLaunch["kind"]) => Promise<WorkspaceOverview>;
 	updateHarness: (harness: "codex" | "claude" | "pi") => Promise<void>;
 	cancelHarnessUpdate: () => Promise<void>;
 	harnessUpdateStatus: () => Promise<"codex" | "claude" | "pi" | undefined>;
 	checkAgent: (agentId: string) => Promise<AgentStatus>;
 	mcp: (command: McpCommand) => Promise<WorkspaceOverview>;
+	/** An agent's MCP change: saved now, or (applied false) as soon as no running chat it affects is still running. */
+	mcpWhenIdle: (command: McpCommand) => Promise<{ applied: boolean; workspace: WorkspaceOverview }>;
 	models: (harness: Harness, accountId?: string, projectId?: string) => Promise<ModelOption[]>;
 	/** Refetches a harness catalog now, ignoring the Phaseo disk cache freshness. */
 	refreshModels: (harness: Harness, accountId?: string) => Promise<ModelOption[]>;
@@ -452,6 +479,13 @@ function validAutopilot(value: unknown) {
 	const cap = (value as { capNanos?: unknown }).capNanos;
 	return cap === null || (typeof cap === "number" && Number.isInteger(cap) && cap >= autopilotCap.minimumNanos && cap <= autopilotCap.maximumNanos);
 }
+/** Up to 50 variables with ordinary names; values are plain text or a secret reference resolved at launch. */
+export function validateAgentEnvironment(value: unknown) {
+	if (value === undefined) return;
+	if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid agent environment.");
+	const entries = Object.entries(value as Record<string, unknown>);
+	if (entries.length > 50 || entries.some(([name, text]) => !/^[A-Za-z_][A-Za-z0-9_]{0,127}$/.test(name) || typeof text !== "string" || text.length > 10000 || text.includes("\0"))) throw new Error("Invalid agent environment.");
+}
 export function validateCommand(value: unknown): WorkspaceCommand {
 	if (!value || typeof value !== "object") throw new Error("Invalid workspace command.");
 	const command = value as Record<string, unknown>;
@@ -463,6 +497,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 	if (command.type === "add-agent") {
 		string("name", true, 100); string("executable");
 		if (!Array.isArray(command.arguments) || command.arguments.length > 100 || command.arguments.some(value => typeof value !== "string" || value.includes("\0") || value.length > 10000)) throw new Error("Invalid agent arguments.");
+		validateAgentEnvironment(command.environment);
 	} else if (command.type === "add-account") {
 		string("name", true, 100);
 		if (!["codex", "claude", "phaseo", "cursor", "grok"].includes(command.harness as string)) throw new Error("Invalid account harness.");
@@ -497,6 +532,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 			case "update-agent":
 				string("name", false, 100); string("executable", false);
 				if (command.arguments !== undefined && (!Array.isArray(command.arguments) || command.arguments.length > 100 || command.arguments.some(value => typeof value !== "string" || value.includes("\0") || value.length > 10000))) throw new Error("Invalid agent arguments.");
+				validateAgentEnvironment(command.environment);
 				if (command.archived !== undefined && typeof command.archived !== "boolean") throw new Error("Invalid archived state.");
 				break;
 			case "update-task":

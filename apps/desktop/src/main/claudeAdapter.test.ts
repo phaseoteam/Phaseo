@@ -10,6 +10,8 @@ import { nativeMcpName, type McpConnection } from "../shared/mcp";
 import { orchestrationInstructions } from "../shared/orchestration";
 
 const task: Task = { id: "task", title: "Task", harness: "claude", model: "default", mode: "chat", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
+/** The first message's text, whether the adapter passed a string or its input stream. */
+const firstText = async (prompt: unknown) => typeof prompt === "string" ? prompt : ((await (prompt as AsyncIterable<{ message: { content: { type: string; text?: string }[] } }>)[Symbol.asyncIterator]().next()).value?.message.content.find((part: { type: string; text?: string }) => part.type === "text")?.text);
 describe("Claude SDK integration", () => {
 	it("observes native agents without treating background shell jobs as agents", async () => {
 		sdk.query.mockReturnValue(Object.assign((async function* () {
@@ -34,6 +36,29 @@ describe("Claude SDK integration", () => {
   await expect(adapter.run(task, "/project", "/review target", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => { if (condition === "cancelled") await adapter.cancel(); return condition === "declined" ? "decline" : "accept"; } }, undefined, [], { kind: "command", id: "review", name: "review", arguments: "target" })).rejects.toBeInstanceOf(AgentInputRejectedError); await admitted; expect(inputs).toEqual([]); expect(close).toHaveBeenCalledOnce();
  });
 
+	it("keeps the tool's name and input when its result arrives, and shows the result as text", async () => {
+		sdk.query.mockReturnValue(Object.assign((async function* () {
+			yield { type: "assistant", parent_tool_use_id: null, session_id: "native", message: { id: "call", content: [{ type: "tool_use", id: "call", name: "mcp__phaseo__run_app_command", input: { command: "theme.set", args: { theme: "dark" } } }] } };
+			yield { type: "user", parent_tool_use_id: null, session_id: "native", message: { content: [{ type: "tool_result", tool_use_id: "call", content: [{ type: "text", text: "{\"command\":\"theme.set\",\"done\":true}" }], is_error: false }] } };
+			yield { type: "result", subtype: "success", is_error: false, result: "Done" };
+		})(), { close: vi.fn() }));
+		const onActivity = vi.fn();
+		await new ClaudeAdapter().run({ ...task, mode: "code" }, ".", "Dark", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "accept", onActivity });
+		const [call, result] = onActivity.mock.calls.map(([activity]) => activity);
+		expect(call).toMatchObject({ id: "call", title: "mcp__phaseo__run_app_command", status: "running", text: "{\"command\":\"theme.set\",\"args\":{\"theme\":\"dark\"}}" });
+		expect(result).toMatchObject({ id: "call", title: "mcp__phaseo__run_app_command", status: "completed", text: "{\"command\":\"theme.set\",\"args\":{\"theme\":\"dark\"}}\n\n{\"command\":\"theme.set\",\"done\":true}" });
+		expect(result).not.toHaveProperty("mcpCall");
+	});
+	it("reports which of the person's MCP servers and tools a finished step called", async () => {
+		sdk.query.mockReturnValue(Object.assign((async function* () {
+			yield { type: "assistant", parent_tool_use_id: null, session_id: "native", message: { id: "call", content: [{ type: "tool_use", id: "call", name: "mcp__phaseo_0b3c1a2e5d6f4a7b8c9d0e1f2a3b4c5d__forecast", input: { city: "Leeds" } }] } };
+			yield { type: "user", parent_tool_use_id: null, session_id: "native", message: { content: [{ type: "tool_result", tool_use_id: "call", content: [{ type: "text", text: "Sunny" }], is_error: false }] } };
+			yield { type: "result", subtype: "success", is_error: false, result: "Done" };
+		})(), { close: vi.fn() }));
+		const onActivity = vi.fn();
+		await new ClaudeAdapter().run({ ...task, mode: "code" }, ".", "Forecast", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "accept", onActivity });
+		expect(onActivity.mock.calls.map(([activity]) => activity).find(activity => activity.status === "completed")).toMatchObject({ mcpCall: { server: "phaseo_0b3c1a2e5d6f4a7b8c9d0e1f2a3b4c5d", tool: "forecast", input: { city: "Leeds" } } });
+	});
 	it.each([[true, ["user"]], [undefined, ["user", "project", "local"]]] as const)("loads the repository's own settings, hooks and MCP servers only for a checkout the person opened (untrusted: %s)", async (untrustedCheckout, sources) => {
 		sdk.query.mockReturnValue(Object.assign((async function* () { yield { type: "result", subtype: "success", is_error: false, result: "Done" }; })(), { close: vi.fn() }));
 		await new ClaudeAdapter().run({ ...task, mode: "code", permissionMode: "full-access", ...(untrustedCheckout ? { untrustedCheckout } : {}) }, "/project", "Review", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "accept" });
@@ -66,7 +91,7 @@ describe("Claude SDK integration", () => {
 	});
 	it.each(["chat", "code"] as const)("applies managed MCP connections with native tool permissions (%s)", async mode => {
 		const server: McpConnection = { id: "00000000-0000-4000-8000-000000000001", name: "Fixture", enabled: true, transport: "stdio", executable: process.execPath, arguments: ["fixture.mjs"] }; const onApproval = vi.fn(async () => "decline" as const);
-		sdk.query.mockImplementation(({ prompt, options }) => Object.assign((async function* () { if (typeof prompt !== "string") for await (const message of prompt) expect(message.message.content).toEqual([{type:"text",text:"Use tools"}]); expect(options.mcpServers).toEqual(mode === "chat" ? {} : { [nativeMcpName(server)]: { command: process.execPath, args: ["fixture.mjs"], env: { ELECTRON_RUN_AS_NODE: "1" } } }); const decision = await options.canUseTool(`mcp__${nativeMcpName(server)}__fixture`, {}); expect(decision.behavior).toBe("deny"); if (mode === "chat") { expect(options.strictMcpConfig).toBe(true); expect(onApproval).not.toHaveBeenCalled(); } else expect(onApproval).toHaveBeenCalledOnce(); yield {type:"result",subtype:"success",is_error:false,result:"Done"}; })(), { close: vi.fn(), mcpServerStatus: async () => [{ name: nativeMcpName(server), status: "connected" }] }));
+		sdk.query.mockImplementation(({ prompt, options }) => Object.assign((async function* () { if (typeof prompt !== "string") for (const message of [(await prompt[Symbol.asyncIterator]().next()).value]) expect(message.message.content).toEqual([{type:"text",text:"Use tools"}]); expect(options.mcpServers).toEqual(mode === "chat" ? {} : { [nativeMcpName(server)]: { command: process.execPath, args: ["fixture.mjs"], env: { ELECTRON_RUN_AS_NODE: "1" } } }); const decision = await options.canUseTool(`mcp__${nativeMcpName(server)}__fixture`, {}); expect(decision.behavior).toBe("deny"); if (mode === "chat") { expect(options.strictMcpConfig).toBe(true); expect(onApproval).not.toHaveBeenCalled(); } else expect(onApproval).toHaveBeenCalledOnce(); yield {type:"result",subtype:"success",is_error:false,result:"Done"}; })(), { close: vi.fn(), mcpServerStatus: async () => [{ name: nativeMcpName(server), status: "connected" }] }));
 		await new ClaudeAdapter([server]).run({ ...task, mode }, ".", "Use tools", { onDelta: vi.fn(), onSession: vi.fn(), onApproval });
 	});
 	it.each(["chat", "code"] as const)("admits the orchestration server with shared guidance and its own approvals (%s)", async mode => {
@@ -74,7 +99,7 @@ describe("Claude SDK integration", () => {
 		const orchestration: McpConnection = { id: "00000000-0000-4000-8000-000000000002", name: "Phaseo orchestration", enabled: true, orchestration: true, transport: "http", url: "http://127.0.0.1:1/mcp", headers: { Authorization: "Bearer owned" } };
 		const onApproval = vi.fn(async () => "decline" as const);
 		sdk.query.mockImplementation(({ prompt, options }) => Object.assign((async function* () {
-			if (typeof prompt !== "string") for await (const message of prompt) void message;
+			if (typeof prompt !== "string") for (const message of [(await prompt[Symbol.asyncIterator]().next()).value]) void message;
 			expect(Object.keys(options.mcpServers)).toEqual(mode === "chat" ? [nativeMcpName(orchestration)] : [nativeMcpName(user), nativeMcpName(orchestration)]);
 			expect(options.systemPrompt).toContain(orchestrationInstructions);
 			if (mode === "chat") expect(options).toMatchObject({ tools: ["AskUserQuestion"], strictMcpConfig: true });
@@ -90,9 +115,33 @@ describe("Claude SDK integration", () => {
 		sdk.query.mockImplementation(({prompt})=>{input=prompt;return Object.assign((async function*(){yield {type:"result",subtype:"success",is_error:false,result:"Unexpected"};})(),{close,mcpServerStatus:async()=>[{name:nativeMcpName(server),status:"failed",error:"token=secret"}]});});
 		await expect(new ClaudeAdapter([server]).run({...task,mode:"code"},".","Do not send",{onDelta:vi.fn(),onSession:vi.fn(),onApproval:async()=>"decline"})).rejects.toThrow("could not connect"); expect(close).toHaveBeenCalled(); const submitted=[]; for await(const message of input!) submitted.push(message); expect(submitted).toEqual([]);
 	});
+	it("takes a steered message mid-turn and keeps its input open until nothing is queued", async () => {
+		const received: { message: { content: { text?: string }[] }; priority?: string }[] = [];
+		let steered!: () => void; const steerArrived = new Promise<void>(resolve => { steered = resolve; });
+		let readSecond!: () => void; const secondRead = new Promise<void>(resolve => { readSecond = resolve; });
+		sdk.query.mockImplementation(({ prompt }) => Object.assign((async function* () {
+			const input = prompt[Symbol.asyncIterator]();
+			received.push((await input.next()).value);
+			yield { type: "assistant", parent_tool_use_id: null, session_id: "native", message: { id: "a", content: [{ type: "text", text: "Working" }] } };
+			steered();
+			received.push((await input.next()).value); readSecond();
+			// Claude reports the steered send as still queued, so its own turn and result follow.
+			yield { type: "result", subtype: "success", is_error: false, result: "First", queued_turn_count: 1 };
+			yield { type: "result", subtype: "success", is_error: false, result: "Second", queued_turn_count: 0 };
+			received.push((await input.next()).value);
+		})(), { close: vi.fn() }));
+		const adapter = new ClaudeAdapter();
+		const run = adapter.run(task, ".", "Plan the release", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" });
+		await steerArrived;
+		await adapter.steer({ id: "steer", text: "Also check the changelog", createdAt: "" }, []);
+		await secondRead; await run;
+		expect(received.map(message => message?.message.content[0].text)).toEqual(["Plan the release", "Also check the changelog", undefined]);
+		expect(received[1].priority).toBe("next");
+		await expect(adapter.steer({ id: "late", text: "Too late", createdAt: "" }, [])).rejects.toThrow("not running a turn");
+	});
 	it("passes image bytes through a structured native user message", async () => {
 		const received: unknown[] = [];
-		sdk.query.mockImplementation(({ prompt }) => Object.assign((async function* () { for await (const message of prompt) received.push(message); yield { type: "result", subtype: "success", is_error: false, result: "Done" }; })(), { close: vi.fn() }));
+		sdk.query.mockImplementation(({ prompt }) => Object.assign((async function* () { for (const message of [(await prompt[Symbol.asyncIterator]().next()).value]) received.push(message); yield { type: "result", subtype: "success", is_error: false, result: "Done" }; })(), { close: vi.fn() }));
 		await new ClaudeAdapter().run(task, ".", "Describe", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" }, undefined, [{ id: "image", taskId: "task", name: "image.png", kind: "image", mimeType: "image/png", size: 3, filePath: "/image", dataUrl: "data:image/png;base64,YWJj" }]);
 		expect(received).toEqual([expect.objectContaining({ type: "user", message: { role: "user", content: [{ type: "text", text: "Describe" }, { type: "image", source: { type: "base64", media_type: "image/png", data: "YWJj" } }] } })]);
 	});
@@ -142,16 +191,16 @@ describe("Claude SDK integration", () => {
 		sdk.query.mockReturnValue(Object.assign((async function* () { yield { type: "result", subtype: "error_during_execution", errors: ["Failed"] }; })(), { close: vi.fn() }));
 		await expect(new ClaudeAdapter().run(task, ".", "Hi", { onDelta: () => {}, onSession: () => {}, onApproval: async () => "decline" })).rejects.toThrow("Failed");
 	});
-	it("passes per-model settings: effort, fast mode, the 1M context suffix and Ultrathink", async () => {
+	it("passes per-model settings: effort, fast mode, the 1M context suffix and a typed ultrathink", async () => {
 		const calls: { prompt: unknown; options: Record<string, unknown> }[] = [];
 		sdk.query.mockImplementation(({ prompt, options }) => { calls.push({ prompt, options }); return Object.assign((async function* () { yield { type: "result", subtype: "success", is_error: false, result: "Done" }; })(), { close: vi.fn() }); });
 		const callbacks = { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" as const };
 		await new ClaudeAdapter().run({ ...task, model: "claude-opus-5-5", modelOptions: { effort: "high", fastMode: true } }, ".", "Plan it", callbacks);
 		expect(calls[0].options).toMatchObject({ model: "claude-opus-5-5[1m]", effort: "high", settings: { fastMode: true } });
-		await new ClaudeAdapter().run({ ...task, model: "claude-fable-5-1", modelOptions: { effort: "ultrathink", contextWindow: "200k" } }, ".", "Plan it", callbacks);
-		expect(calls[1].options).toMatchObject({ model: "claude-fable-5-1" });
-		expect(calls[1].options.effort).toBeUndefined();
-		expect(calls[1].prompt).toBe("Ultrathink:\nPlan it");
+		// Typed ultrathink raises the turn to Extra High and goes to Claude Code as written, with nothing added.
+		await new ClaudeAdapter().run({ ...task, model: "claude-fable-5-1", modelOptions: { effort: "low", ultracode: true } }, ".", "ultrathink: plan it", callbacks);
+		expect(calls[1].options).toMatchObject({ model: "claude-fable-5-1[1m]", effort: "xhigh", settings: { ultracode: true } });
+		expect(await firstText(calls[1].prompt)).toBe("ultrathink: plan it");
 	});
 	it("keeps its input open while a background task it waits on runs, and takes the answer it gives when the task ends", async () => {
 		const orchestration: McpConnection = { id: "00000000-0000-4000-8000-000000000002", name: "Phaseo orchestration", enabled: true, orchestration: true, transport: "http", url: "http://127.0.0.1:1/mcp" };
