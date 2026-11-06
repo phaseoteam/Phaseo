@@ -1,6 +1,10 @@
 import type { SlackAgentAdminBinding } from "@/lib/slack-agent-admin";
 
 export type Env = {
+	PLATFORM_TELEMETRY_ENABLED?: string;
+	GRAFANA_OTLP_ENDPOINT?: string;
+	GRAFANA_OTLP_AUTHORIZATION?: string;
+	PLATFORM_TRACE_SAMPLE_RATE?: string;
   ENV: "development" | "preview" | "staging" | "production";
 	SUPABASE_URL?: string;
 	SUPABASE_ANON_KEY?: string;

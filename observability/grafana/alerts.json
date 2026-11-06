@@ -1,0 +1,302 @@
+[
+  {
+    "uid": "phaseo-gateway-errors-production",
+    "title": "Phaseo production · Gateway actionable failures",
+    "folderUID": "phaseo-observability",
+    "ruleGroup": "phaseo-production",
+    "orgID": 1,
+    "condition": "B",
+    "for": "5m",
+    "noDataState": "OK",
+    "execErrState": "Error",
+    "isPaused": true,
+    "labels": {
+      "application": "phaseo",
+      "environment": "production",
+      "severity": "warning"
+    },
+    "annotations": {
+      "summary": "At least 20 requests in 10 minutes and over 5% actionable failures."
+    },
+    "data": [
+      {
+        "refId": "A",
+        "relativeTimeRange": {
+          "from": 1200,
+          "to": 0
+        },
+        "datasourceUid": "SET_LOKI_DATASOURCE_UID",
+        "model": {
+          "refId": "A",
+          "expr": "(((sum(count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", actionable=\"actionable\" | __error__=\"\" | environment=\"production\" | event_name=\"gateway.request\" | actionable=\"true\" | __error__=\"\" [10m])) or vector(0)) / (sum(count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"production\" | event_name=\"gateway.request\" | __error__=\"\" [10m])) or vector(0))) > 0.05) and ((sum(count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"production\" | event_name=\"gateway.request\" | __error__=\"\" [10m])) or vector(0)) >= 20)",
+          "queryType": "instant",
+          "instant": true,
+          "range": false,
+          "datasource": {
+            "type": "loki",
+            "uid": "SET_LOKI_DATASOURCE_UID"
+          },
+          "intervalMs": 1000,
+          "maxDataPoints": 43200
+        }
+      },
+      {
+        "refId": "B",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "refId": "B",
+          "type": "math",
+          "expression": "$A > 0",
+          "datasource": {
+            "type": "__expr__",
+            "uid": "__expr__"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "uid": "phaseo-scheduler-missing-production",
+    "title": "Phaseo production · Scheduler telemetry missing",
+    "folderUID": "phaseo-observability",
+    "ruleGroup": "phaseo-production",
+    "orgID": 1,
+    "condition": "B",
+    "for": "5m",
+    "noDataState": "OK",
+    "execErrState": "Error",
+    "isPaused": true,
+    "labels": {
+      "application": "phaseo",
+      "environment": "production",
+      "severity": "warning"
+    },
+    "annotations": {
+      "summary": "No scheduler heartbeat for 15 minutes. Check cron, bindings and Grafana delivery; quiet user traffic does not cause this alert."
+    },
+    "data": [
+      {
+        "refId": "A",
+        "relativeTimeRange": {
+          "from": 1200,
+          "to": 0
+        },
+        "datasourceUid": "SET_LOKI_DATASOURCE_UID",
+        "model": {
+          "refId": "A",
+          "expr": "absent_over_time({service_name=~\"phaseo-jobs\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"production\" | event_name=\"job.heartbeat\" [15m]) or vector(0)",
+          "queryType": "instant",
+          "instant": true,
+          "range": false,
+          "datasource": {
+            "type": "loki",
+            "uid": "SET_LOKI_DATASOURCE_UID"
+          },
+          "intervalMs": 1000,
+          "maxDataPoints": 43200
+        }
+      },
+      {
+        "refId": "B",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "refId": "B",
+          "type": "math",
+          "expression": "$A > 0",
+          "datasource": {
+            "type": "__expr__",
+            "uid": "__expr__"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "uid": "phaseo-jobs-failing-production",
+    "title": "Phaseo production · Scheduled job failure",
+    "folderUID": "phaseo-observability",
+    "ruleGroup": "phaseo-production",
+    "orgID": 1,
+    "condition": "B",
+    "for": "0s",
+    "noDataState": "OK",
+    "execErrState": "Error",
+    "isPaused": true,
+    "labels": {
+      "application": "phaseo",
+      "environment": "production",
+      "severity": "warning"
+    },
+    "annotations": {
+      "summary": "A scheduled invocation threw or reported item failures. Inspect job logs and the relevant platform queue."
+    },
+    "data": [
+      {
+        "refId": "A",
+        "relativeTimeRange": {
+          "from": 1200,
+          "to": 0
+        },
+        "datasourceUid": "SET_LOKI_DATASOURCE_UID",
+        "model": {
+          "refId": "A",
+          "expr": "sum(count_over_time({service_name=~\"phaseo-jobs|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", outcome=\"outcome\" | __error__=\"\" | environment=\"production\" | event_name=\"job.run\" | outcome=\"error\" | __error__=\"\" [10m])) or vector(0)",
+          "queryType": "instant",
+          "instant": true,
+          "range": false,
+          "datasource": {
+            "type": "loki",
+            "uid": "SET_LOKI_DATASOURCE_UID"
+          },
+          "intervalMs": 1000,
+          "maxDataPoints": 43200
+        }
+      },
+      {
+        "refId": "B",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "refId": "B",
+          "type": "math",
+          "expression": "$A > 0",
+          "datasource": {
+            "type": "__expr__",
+            "uid": "__expr__"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "uid": "phaseo-ops-failing-production",
+    "title": "Phaseo production · Settlement or operational failure",
+    "folderUID": "phaseo-observability",
+    "ruleGroup": "phaseo-production",
+    "orgID": 1,
+    "condition": "B",
+    "for": "0s",
+    "noDataState": "OK",
+    "execErrState": "Error",
+    "isPaused": true,
+    "labels": {
+      "application": "phaseo",
+      "environment": "production",
+      "severity": "critical"
+    },
+    "annotations": {
+      "summary": "An existing operational failure hook fired. Inspect request and settlement records before taking action."
+    },
+    "data": [
+      {
+        "refId": "A",
+        "relativeTimeRange": {
+          "from": 1200,
+          "to": 0
+        },
+        "datasourceUid": "SET_LOKI_DATASOURCE_UID",
+        "model": {
+          "refId": "A",
+          "expr": "sum(count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"production\" | event_name=\"ops.failure\" | __error__=\"\" [5m])) or vector(0)",
+          "queryType": "instant",
+          "instant": true,
+          "range": false,
+          "datasource": {
+            "type": "loki",
+            "uid": "SET_LOKI_DATASOURCE_UID"
+          },
+          "intervalMs": 1000,
+          "maxDataPoints": 43200
+        }
+      },
+      {
+        "refId": "B",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "refId": "B",
+          "type": "math",
+          "expression": "$A > 0",
+          "datasource": {
+            "type": "__expr__",
+            "uid": "__expr__"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "uid": "phaseo-web-errors-production",
+    "title": "Phaseo production · Web server failures",
+    "folderUID": "phaseo-observability",
+    "ruleGroup": "phaseo-production",
+    "orgID": 1,
+    "condition": "B",
+    "for": "5m",
+    "noDataState": "OK",
+    "execErrState": "Error",
+    "isPaused": true,
+    "labels": {
+      "application": "phaseo",
+      "environment": "production",
+      "severity": "warning"
+    },
+    "annotations": {
+      "summary": "Web API 5xx responses or captured web server errors. Check routes, release and source frames."
+    },
+    "data": [
+      {
+        "refId": "A",
+        "relativeTimeRange": {
+          "from": 1200,
+          "to": 0
+        },
+        "datasourceUid": "SET_LOKI_DATASOURCE_UID",
+        "model": {
+          "refId": "A",
+          "expr": "(sum(count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", status_code=\"status_code\" | __error__=\"\" | environment=\"production\" | event_name=\"web.request\" | status_code >= 500 | __error__=\"\" [10m])) or vector(0)) + (sum(count_over_time({service_name=~\"phaseo-web\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"production\" | event_name=\"web.server_error\" | __error__=\"\" [10m])) or vector(0))",
+          "queryType": "instant",
+          "instant": true,
+          "range": false,
+          "datasource": {
+            "type": "loki",
+            "uid": "SET_LOKI_DATASOURCE_UID"
+          },
+          "intervalMs": 1000,
+          "maxDataPoints": 43200
+        }
+      },
+      {
+        "refId": "B",
+        "relativeTimeRange": {
+          "from": 0,
+          "to": 0
+        },
+        "datasourceUid": "__expr__",
+        "model": {
+          "refId": "B",
+          "type": "math",
+          "expression": "$A > 0",
+          "datasource": {
+            "type": "__expr__",
+            "uid": "__expr__"
+          }
+        }
+      }
+    ]
+  }
+]

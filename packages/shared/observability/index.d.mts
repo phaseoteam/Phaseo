@@ -1,0 +1,22 @@
+export type PlatformConfig = {
+  enabled: boolean;
+  endpoint?: string;
+  authorization?: string;
+  environment: string;
+  service: string;
+  region?: string;
+  release?: string;
+};
+export type PlatformEvent = Record<string, string | number | boolean | null | undefined>;
+export type Delivery = { state: 'disabled' | 'delivered' | 'failed'; reason?: string };
+export function environmentName(value: unknown): string;
+export function telemetryConfig(bindings: Record<string, unknown>, service: string): PlatformConfig;
+export function telemetryEndpoint(config: PlatformConfig, signal: 'logs' | 'traces'): string | null;
+export function sampled(key: string, rate?: number | string): boolean;
+export function randomHex(bytes: number): string;
+export function traceContext(header?: string | null): { traceId: string; parentSpanId: string; traceFlags: number } | null;
+export function safeEvent(event: PlatformEvent): PlatformEvent;
+export function logPayload(config: PlatformConfig, events: PlatformEvent[], now?: number): unknown;
+export function sendOtlp(config: PlatformConfig, signal: 'logs' | 'traces', payload: unknown, fetcher?: typeof fetch): Promise<Delivery>;
+export function emitLogs(config: PlatformConfig, events: PlatformEvent[], fetcher?: typeof fetch): Promise<Delivery>;
+export function safeError(error: unknown): PlatformEvent;
