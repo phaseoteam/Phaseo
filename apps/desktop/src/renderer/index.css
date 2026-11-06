@@ -571,7 +571,7 @@ summary:has(> svg:first-child)::before { display: none; }
 
 /* Animate openness independently of width so dragging and keyboard resizing stay immediate. */
 @property --sidebar-open { syntax: "<number>"; inherits: false; initial-value: 1; }
-.sidebar-frame { margin-left: calc((var(--sidebar-open) - 1) * var(--sidebar-width)); transition: --sidebar-open 200ms ease-out; }
+.sidebar-frame { margin-left: calc((var(--sidebar-open) - 1) * var(--sidebar-width)); transition: --sidebar-open var(--panel-animation-duration, 200ms) ease-out; }
 @media (prefers-reduced-motion: reduce) { .sidebar-frame { transition: none; } }
 
 /*

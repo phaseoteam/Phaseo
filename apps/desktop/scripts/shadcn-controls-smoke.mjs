@@ -121,6 +121,30 @@ app.whenReady().then(async () => {
     }
     await run("window.__auditButton('Appearance',document.querySelector('nav[aria-label=\"Settings sections\"]')).click()");
     await wait("Boolean(document.querySelector('[role=radiogroup][aria-label=Theme]'))");
+    const animationSettings = await run(`(async()=>{
+      const slider=document.querySelector('input[aria-label="Panel animation duration"]'),preview=document.querySelector('[aria-label="Preview panel animation"]');
+      window.__auditType(slider,'400');await new Promise(requestAnimationFrame);
+      if(slider.value!=='400'||localStorage.getItem('phaseo.desktop.panelAnimationDurationMs')!=='400'||getComputedStyle(document.documentElement).getPropertyValue('--panel-animation-duration')!=='400ms')throw Error('Panel duration did not save or apply');
+      preview.click();await new Promise(requestAnimationFrame);
+      const motion=preview.firstElementChild.getAnimations().find(animation=>animation.transitionProperty==='--sidebar-open');
+      if(motion?.effect.getTiming().duration!==400)throw Error('Preview ignored the chosen duration');
+      motion.pause();motion.currentTime=200;
+      const edge=preview.firstElementChild.getBoundingClientRect().right-preview.getBoundingClientRect().left;
+      if(!(edge>0&&edge<20))throw Error('Preview did not slide');
+      motion.play();await motion.finished;
+      document.querySelector('[aria-label=Animations]').click();await new Promise(requestAnimationFrame);
+      if(!slider.disabled||slider.value!=='400')throw Error('Animations off lost the duration');
+      preview.click();await new Promise(requestAnimationFrame);
+      if(preview.firstElementChild.getAnimations().length)throw Error('Animations off left the preview moving');
+      document.querySelector('[aria-label=Animations]').click();await new Promise(requestAnimationFrame);
+      await window.phaseoDesktop.appCommands.run('settings.set',{key:'panelAnimationDurationMs',value:0});await new Promise(requestAnimationFrame);
+      preview.click();await new Promise(requestAnimationFrame);
+      if(slider.value!=='0'||preview.firstElementChild.getAnimations().length)throw Error('Instant duration did not reach Settings and its preview');
+      document.querySelector('[aria-label="Reset panel animation duration"]').click();await new Promise(requestAnimationFrame);
+      if(slider.value!=='200'||!document.querySelector('[aria-label="Reset panel animation duration"]').disabled)throw Error('Duration reset failed');
+      return {slider:true,previewDuration:400,instant:true,animationsOff:true,agentControl:true,reset:true};
+    })()`);
+    console.log('ANIMATION_SETTINGS_SMOKE',JSON.stringify(animationSettings));
     await run("Array.from(document.querySelectorAll('[role=radiogroup][aria-label=Theme] [role=radio]')).find(button=>button.textContent==='Light').click()");
     await wait("document.documentElement.dataset.theme==='light'&&document.querySelector('[role=radiogroup][aria-label=Theme] [aria-checked=true]')?.textContent==='Light'");
     key("Escape");

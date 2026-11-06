@@ -305,7 +305,7 @@ export function RightPanel() {
 		style={sheet || state.maximized ? undefined : { ["--pane-width" as string]: `${width}px` }}
 		className={cn("relative flex min-w-0 flex-col border-l border-border bg-background",
 			sheet ? "fixed top-11 right-0 bottom-0 z-40 w-[min(42vw,28rem)] max-w-[28rem] min-w-80 shadow-2xl max-[760px]:w-[min(88vw,24rem)]"
-				: state.maximized ? "flex-[1_0_0]" : cn("w-(--pane-width) shrink-0 overflow-clip", !dragging && "transition-[width] duration-150 ease-out starting:w-0 motion-reduce:transition-none"))}>
+				: state.maximized ? "flex-[1_0_0]" : cn("w-(--pane-width) shrink-0 overflow-clip", !dragging && "transition-[width] duration-(--panel-animation-duration) ease-out starting:w-0 motion-reduce:transition-none"))}>
 		{!sheet && !state.maximized && <div role="separator" aria-orientation="vertical" aria-label="Resize panel" tabIndex={0}
 			onPointerDown={event => { drag.current = { x: event.clientX, width }; setDragging(true); event.currentTarget.setPointerCapture(event.pointerId); }}
 			onPointerMove={event => { if (drag.current) setWidth(drag.current.width + drag.current.x - event.clientX); }}

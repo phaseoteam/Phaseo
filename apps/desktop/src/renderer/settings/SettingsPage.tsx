@@ -26,7 +26,7 @@ type Entry = { id: Page; label: string; icon: ReactNode; keywords: string };
 const groups: { label: string; pages: Entry[] }[] = [
 	{ label: "Personal", pages: [
 		{ id: "general", label: "General", icon: <SlidersHorizontal />, keywords: "default model new chats agents running at once instructions agents.md" },
-		{ id: "appearance", label: "Appearance", icon: <Palette />, keywords: "theme dark light system colours colors accent font share import export" },
+		{ id: "appearance", label: "Appearance", icon: <Palette />, keywords: "theme dark light system colours colors accent font share import export animations motion panels sidebar duration" },
 		{ id: "notifications", label: "Notifications", icon: <Bell />, keywords: "alerts desktop titles" },
 		{ id: "keyboard", label: "Keyboard shortcuts", icon: <Keyboard />, keywords: "keybindings keys hotkeys shortcuts bind remap keybindings.json" },
 	] },
