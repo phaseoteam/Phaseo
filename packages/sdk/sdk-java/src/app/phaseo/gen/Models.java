@@ -3962,7 +3962,7 @@ public final class Models {
 
 	public static class VideoGenerationRequest {
 		public String aspect_ratio;
-		public Integer compression_quality;
+		public Object compression_quality;
 		public Integer duration;
 		public Boolean enhance_prompt;
 		public java.util.List<Object> frame_images;

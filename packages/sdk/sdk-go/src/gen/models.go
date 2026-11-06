@@ -5580,7 +5580,7 @@ type VideoDeleteResponse struct {
 
 type VideoGenerationRequest struct {
 	AspectRatio *string `json:"aspect_ratio,omitempty"`
-	CompressionQuality *int `json:"compression_quality,omitempty"`
+	CompressionQuality interface{} `json:"compression_quality,omitempty"`
 	Duration *int `json:"duration,omitempty"`
 	EnhancePrompt *bool `json:"enhance_prompt,omitempty"`
 	FrameImages *[]map[string]interface{} `json:"frame_images,omitempty"`

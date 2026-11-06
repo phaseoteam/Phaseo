@@ -90,6 +90,28 @@ describe("OpenAI image edit schema", () => {
 		}).success).toBe(true);
 	});
 
+	it("accepts input_fidelity low on gpt-image-1-mini and rejects high", () => {
+		const edit = (input_fidelity: string) => ImagesEditSchema.safeParse({
+			model: "openai/gpt-image-1-mini",
+			image: "image",
+			prompt: "edit",
+			input_fidelity,
+		});
+		expect(edit("low").success).toBe(true);
+		const high = edit("high");
+		expect(high.success).toBe(false);
+		if (!high.success) expect(high.error.issues[0]?.message).toBe("gpt-image-1-mini supports only input_fidelity low");
+	});
+
+	it("accepts complexity on GPT Image 2.6 edits only", () => {
+		const edit = (model: string, complexity: string) => ImagesEditSchema.safeParse({ model, image: "image", prompt: "edit", complexity });
+		expect(edit("openai/gpt-image-2.6-flare", "low").success).toBe(true);
+		expect(edit("openai/gpt-image-2.6-sunburst", "medium").success).toBe(true);
+		expect(edit("openai/gpt-image-2.6-flare", "xhigh").success).toBe(false);
+		expect(edit("openai/gpt-image-2.5-sunburst", "high").success).toBe(false);
+		expect(edit("openai/gpt-image-1.5", "high").success).toBe(false);
+	});
+
 	it("rejects GPT Image 2.5-only edit quality for earlier GPT Image models", () => {
 		expect(ImagesEditSchema.safeParse({
 			model: "openai/gpt-image-2",

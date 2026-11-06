@@ -786,7 +786,8 @@ export type IRVideoGenerationRequest = {
 	durationSeconds?: number;
 	ratio?: string;
 	aspectRatio?: string;
-	compressionQuality?: number;
+	// Veo: "optimized" or "lossless". Numbers are legacy input for compatible providers.
+	compressionQuality?: number | "optimized" | "lossless";
 	negativePrompt?: string;
 	sampleCount?: number;
 	numberOfVideos?: number;

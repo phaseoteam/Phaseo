@@ -16692,7 +16692,13 @@ components:
         enhance_prompt:
           type: boolean
         compression_quality:
-          type: integer
+          description: "Output compression. Vertex Veo takes optimized or lossless and rejects a number; other providers that support it take an integer."
+          oneOf:
+            - type: integer
+            - type: string
+              enum:
+                - optimized
+                - lossless
         person_generation:
           type: string
         resize_mode:
@@ -16743,9 +16749,7 @@ components:
         provider_params:
           type: object
           additionalProperties: true
-          description: >-
-            Provider-specific extensions only. Complete request passthrough and
-            duplicate routing, prompt, callback, or billing fields are rejected.
+          description: "Provider-specific extensions only. Complete request passthrough and duplicate routing, prompt, callback, or billing fields are rejected. For example, Wan 3.0 takes smart_duration: true to let the model choose the length (send no duration with it); the job reserves 30 seconds and is billed for the length the provider reports."
         provider_options:
           type: object
           additionalProperties:

@@ -242,7 +242,7 @@ describe("x-ai video executor", () => {
 		}, "grok-imagine-video")).toThrow("Unsupported xAI video aspect ratio");
 	});
 
-	it("enforces Grok Imagine Video 1.5 image-only input and supports 1080p", () => {
+	it("maps Grok Imagine Video 1.5 image-to-video at 1080p", () => {
 		const mapped = __xAiVideoGenerateTestUtils.buildXAiVideoRequest({
 			model: "spacex-ai/grok-imagine-video-1.5",
 			prompt: "Animate this still frame",
@@ -261,11 +261,39 @@ describe("x-ai video executor", () => {
 				resolution: "1080p",
 			},
 		});
+	});
+
+	it("submits Grok Imagine Video 1.5 text-to-video and reserves for the output seconds only", async () => {
+		let body: any;
+		const mock = installFetchMock([{
+			match: (url) => url.endsWith("/videos/generations"),
+			response: jsonResponse({ id: "vid_15_t2v", status: "queued" }),
+			onRequest: (call) => { body = call.bodyJson; },
+		}]);
+		try {
+			const args = buildArgs({ model: "spacex-ai/grok-imagine-video-1.5", prompt: "A mountain sunrise", duration: 10, resolution: "1080p", aspectRatio: "16:9" });
+			args.providerModelSlug = "grok-imagine-video-1.5";
+			const result = await execute(args);
+			expect(result.upstream?.status).toBe(200);
+			expect(body).toEqual({ model: "grok-imagine-video-1.5", prompt: "A mountain sunrise", duration: 10, resolution: "1080p", aspect_ratio: "16:9" });
+			const { reserveVideoGenerationCredits } = await import("@core/video-reservations");
+			expect(reserveVideoGenerationCredits).toHaveBeenLastCalledWith(expect.objectContaining({
+				model: "spacex-ai/grok-imagine-video-1.5",
+				seconds: 10,
+				requestOptions: expect.objectContaining({ size: "1080p", video_params: expect.objectContaining({ input_image_count: 0 }) }),
+			}));
+		} finally {
+			mock.restore();
+		}
+	});
+
+	it.each(["reference", "last_frame"])("still rejects a Grok Imagine Video 1.5 %s image", (role) => {
 		expect(() => __xAiVideoGenerateTestUtils.buildXAiVideoRequest({
 			model: "spacex-ai/grok-imagine-video-1.5",
-			prompt: "Unsupported text-only request",
+			prompt: "Unsupported references",
 			duration: 5,
-		}, "grok-imagine-video-1.5")).toThrow("requires exactly one first_frame image");
+			inputReferences: [{ type: "image", role, url: "https://example.com/a.png" } as any],
+		}, "grok-imagine-video-1.5")).toThrow("accepts text-only input or one first_frame image");
 	});
 
 	it.each(["480p", "720p", "1080p"])("submits Lite text-to-video at %s without an image", async (resolution) => {

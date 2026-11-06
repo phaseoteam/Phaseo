@@ -6885,7 +6885,7 @@ class VideoGenerationRequest
 {
 	/** @var string|null */
 	public $aspect_ratio;
-	/** @var int|null */
+	/** @var int|string|null */
 	public $compression_quality;
 	/** @var int|null */
 	public $duration;

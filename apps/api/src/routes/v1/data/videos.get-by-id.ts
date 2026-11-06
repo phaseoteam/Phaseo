@@ -3,7 +3,7 @@ import { dispatchVideoWebhookEventInBackground } from "@core/video-user-webhooks
 import { setVideoJobStatus, type VideoJobMeta, type VideoJobRecord } from "@core/video-jobs";
 import { guardAuth } from "@pipeline/before/guards";
 import { err } from "@pipeline/before/http";
-import { fetchVideoProviderStatus } from "@core/video-reconciliation";
+import { fetchVideoProviderStatus, resolveDashscopeAutoDurationSeconds } from "@core/video-reconciliation";
 import { buildVideoPricingRequestOptions } from "@core/video-request-options";
 
 import * as videoHelpers from "./videos.helpers";
@@ -446,7 +446,9 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {
 				providerId,
 				status,
 				model: model || videoMeta?.model || null,
+				// Smart-duration jobs bill the length DashScope reports, same as the reconciler.
 				seconds:
+					resolveDashscopeAutoDurationSeconds(json, videoMeta) ??
 					toFiniteNumber(json?.output?.duration) ??
 					toFiniteNumber(json?.output?.video_duration) ??
 					toFiniteNumber(videoMeta?.seconds),

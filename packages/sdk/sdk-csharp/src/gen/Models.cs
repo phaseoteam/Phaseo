@@ -9423,7 +9423,7 @@ public sealed class VideoGenerationRequest
 	public string? AspectRatio { get; set; }
 
 	[JsonPropertyName("compression_quality")]
-	public long? CompressionQuality { get; set; }
+	public object? CompressionQuality { get; set; }
 
 	[JsonPropertyName("duration")]
 	public long? Duration { get; set; }
