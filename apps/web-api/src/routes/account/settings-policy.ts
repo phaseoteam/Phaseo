@@ -707,6 +707,12 @@ accountSettingsPolicyRouter.put("/presets/:presetId/labels/:label", async (c) =>
 	const body: { versionId?: string } = await c.req.json<{ versionId?: string }>().catch(() => ({})); const versionId = String(body.versionId ?? "").trim();
 	if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(versionId)) return c.json({ error: "preset_version_not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 	const loaded = await presetForLabelChange(c, user.id); if ("response" in loaded) return loaded.response;
+	// A version published while the preset was private is its creator's; set_preset_version_label agrees.
+	if (loaded.preset.created_by !== user.id) {
+		const target = await loaded.client.from("preset_versions").select("id").eq("preset_id", loaded.preset.id).eq("id", versionId).neq("visibility", "private").maybeSingle();
+		if (target.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+		if (!target.data) return c.json({ error: "preset_version_not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
+	}
 	const saved = await loaded.client.rpc("set_preset_version_label", { p_preset_id: loaded.preset.id, p_label: label, p_version_id: versionId, actor_user_id: user.id });
 	if (saved.error) { const mapped = presetLabelRpcError(saved.error.message ?? ""); return c.json({ error: mapped?.error ?? "settings_unavailable" }, mapped?.status ?? 503, PRIVATE_NO_STORE_HEADERS); }
 	const row = Array.isArray(saved.data) ? saved.data[0] : saved.data;

@@ -7,6 +7,7 @@ const state = vi.hoisted(() => ({
 	presets: [] as Row[],
 	versions: [] as Row[],
 	labels: [] as Row[],
+	rpcs: [] as Array<{ name: string; args: Row }>,
 	/** Runs just before the next preset update, to change the row between the read and the write. */
 	beforeUpdate: null as null | (() => void),
 	/** Runs just after the next preset update, to change the row before anything reads it again. */
@@ -81,7 +82,11 @@ function query(table: string) {
 vi.mock("@/runtime/env", () => ({
 	getSupabaseAdmin: () => ({
 		from: (table: string) => (table === "workspace_audit_events" ? { insert: async () => ({ error: null }) } : query(table)),
-		rpc: async () => ({ data: null, error: null }),
+		rpc: async (name: string, args: Row) => {
+			state.rpcs.push({ name, args });
+			if (name !== "set_preset_version_label") return { data: null, error: null };
+			return { data: { label: args.p_label, version_id: args.p_version_id, updated_by: args.actor_user_id, created_at: null, updated_at: null }, error: null };
+		},
 	}),
 }));
 vi.mock("@/pipeline/before/guards", () => ({ guardManagementAuth: async () => ({ ok: true, value: { workspaceId: "workspace_1", userId: state.userId, requestId: "request_1", authMethod: "oauth" } }) }));
@@ -109,6 +114,7 @@ describe("preset privacy on the management API", () => {
 		state.presets = [teamPresetWithPrivateDraft(), privatePreset(), teamPreset()];
 		state.beforeUpdate = null;
 		state.afterUpdate = null;
+		state.rpcs = [];
 		state.versions = [
 			{ id: "version_2", preset_id: "team_1", version_number: 2, version_label: "v2", visibility: "team", config: { models: ["openai/published"] } },
 			{ id: "version_1", preset_id: "team_1", version_number: 1, version_label: "v1", visibility: "private", config: { models: ["openai/secret-v1"], prompt: { messages: [{ role: "system", content: "Secret prompt" }] } } },
@@ -174,6 +180,29 @@ describe("preset privacy on the management API", () => {
 		state.userId = CREATOR;
 		expect(((await (await request("/team_1/versions")).json()) as { data: Row[] }).data.map((version) => version.id)).toEqual(["version_2", "version_1"]);
 		expect(((await (await request("/team_1/labels")).json()) as { data: Row[] }).data).toHaveLength(2);
+	});
+
+	it("doesn't let another admin point a label at a private version, or name it in the response", async () => {
+		// v1 (private, still labelled production) then v2 (shared); an admin who didn't create the preset.
+		const put = (body: Row) => request("/team_1/labels/probe", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+		for (const body of [{ version: "production" }, { version: "v1" }, { version_id: "version_1" }]) {
+			const response = await put(body);
+			expect(response.status, JSON.stringify(body)).toBe(404);
+			const text = await response.text();
+			expect(text).not.toMatch(/version_1|"version_number":1|"v1"/);
+			expect(JSON.parse(text).error).toBe("preset_version_not_found");
+		}
+		expect(state.rpcs).toEqual([]);
+		// A shared version still works, and its response names only that version.
+		const shared = await put({ version: "staging" });
+		expect(shared.status).toBe(200);
+		expect(await shared.json()).toMatchObject({ data: { label: "probe", version_id: "version_2", version_number: 2, version_label: "v2" } });
+		// The creator can point a label at their private version.
+		state.userId = CREATOR;
+		state.rpcs = [];
+		const own = await put({ version: "production" });
+		expect(own.status).toBe(200);
+		expect(state.rpcs[0]).toMatchObject({ name: "set_preset_version_label", args: { p_version_id: "version_1" } });
 	});
 
 	it("returns the row its update wrote, not a later change it may not show", async () => {

@@ -619,6 +619,14 @@ async function handleSetPresetLabel(req: Request) {
 			}
 			if (!targetVersionId) return json({ error: "preset_version_not_found", message: `Version "${versionRef}" of this preset was not found` }, 404, { "Cache-Control": "no-store" });
 		}
+		const creator = isPresetCreator(preset, auth.value.userId);
+		// A version published while the preset was private is its creator's: for anyone else it doesn't exist
+		// here, however it was named (id, version label or another label). set_preset_version_label agrees.
+		if (!creator) {
+			const target = await getSupabaseAdmin().from("preset_versions").select("id").eq("preset_id", preset.id).eq("id", targetVersionId).neq("visibility", "private").maybeSingle();
+			if (target.error) throw new Error(target.error.message || "Failed to resolve preset version");
+			if (!target.data) return json({ error: "preset_version_not_found", message: versionRef ? `Version "${versionRef}" of this preset was not found` : "Preset version not found" }, 404, { "Cache-Control": "no-store" });
+		}
 		const previous = (await listLabelRows(preset.id)).find((row) => row.label === label) ?? null;
 		const result = await getSupabaseAdmin().rpc("set_preset_version_label", { p_preset_id: preset.id, p_label: label, p_version_id: targetVersionId, actor_user_id: auth.value.userId });
 		if (result.error) {
@@ -626,7 +634,7 @@ async function handleSetPresetLabel(req: Request) {
 			throw new Error(result.error.message || "Failed to set preset label");
 		}
 		const saved = (Array.isArray(result.data) ? result.data[0] : result.data) as LabelRow | null;
-		const [formatted] = await formatLabels(preset.id, [saved ?? { label, version_id: targetVersionId, updated_by: auth.value.userId, created_at: null, updated_at: null }]);
+		const [formatted] = await formatLabels(preset.id, [saved ?? { label, version_id: targetVersionId, updated_by: auth.value.userId, created_at: null, updated_at: null }], !creator);
 		await auditPreset(auth.value, "preset.label.set", preset, { label, version_id: targetVersionId, previous_version_id: previous?.version_id ?? null });
 		return json({ data: formatted }, 200, { "Cache-Control": "no-store" });
 	} catch (error) { return internalServerError("presets.labels.set", error); }

@@ -341,6 +341,8 @@ describe("account policy settings routes", () => {
 				if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" }), { status: 200 });
 				if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role }]), { status: 200 });
 				if (url.includes("/presets?")) return new Response(JSON.stringify([{ id: "preset-1", workspace_id: "workspace-1", created_by: createdBy, visibility, draft_visibility: visibility, active_version_id: "version-3" }]), { status: 200 });
+				// The target version check before moving a label: a shared version.
+				if (url.includes("/preset_versions?") && new URL(url).searchParams.has("id")) return new Response(JSON.stringify([{ id: VERSION_ID }]), { status: 200 });
 				if (url.includes("/preset_versions?")) return new Response(JSON.stringify([
 					{ id: "version-3", version_number: 3, version_label: "v3", config: { models: ["openai/gpt-test"], prompt: { messages: [{ role: "user", content: "Hi {{name}}" }] }, parameters: { temperature: 0.2 } } },
 					{ id: "version-2", version_number: 2, version_label: "v2", config: null },
@@ -416,6 +418,34 @@ describe("account policy settings routes", () => {
 			const own = await (await request("/versions")).json() as { versions: Array<{ id: string }>; labels: unknown[] };
 			expect(own.versions.map((version) => version.id)).toEqual(["version-2", "version-1"]);
 			expect(own.labels).toHaveLength(2);
+		});
+
+		it("doesn't let another admin point a label at a private version", async () => {
+			const rpcs: string[] = [];
+			const versionLookups: URL[] = [];
+			const stub = (userId: string) => vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+				const req = input instanceof Request ? input : new Request(String(input), init);
+				const url = new URL(req.url);
+				if (url.pathname === "/auth/v1/user") return Response.json({ id: userId, email: "user@example.com", created_at: "2025-01-01" });
+				if (url.pathname.endsWith("workspace_members")) return Response.json([{ role: "admin" }]);
+				if (url.pathname.endsWith("/presets")) return Response.json([{ id: "preset-1", workspace_id: "workspace-1", created_by: "owner-2", visibility: "team", draft_visibility: "team" }]);
+				if (url.pathname.endsWith("/preset_versions")) {
+					versionLookups.push(url);
+					// VERSION_ID is v1, published while the preset was private.
+					return Response.json(url.searchParams.get("visibility") === "neq.private" ? [] : [{ id: VERSION_ID }]);
+				}
+				if (url.pathname.includes("/rpc/")) { rpcs.push(url.pathname); return Response.json({ label: "probe", version_id: VERSION_ID }); }
+				return Response.json([]);
+			}));
+			stub("user-1");
+			const response = await request("/labels/probe", { method: "PUT", body: JSON.stringify({ versionId: VERSION_ID }) });
+			expect(response.status).toBe(404);
+			await expect(response.json()).resolves.toEqual({ error: "preset_version_not_found" });
+			expect(rpcs).toEqual([]);
+			expect(versionLookups[0].searchParams.get("id")).toBe(`eq.${VERSION_ID}`);
+			stub("owner-2");
+			expect((await request("/labels/probe", { method: "PUT", body: JSON.stringify({ versionId: VERSION_ID }) })).status).toBe(200);
+			expect(rpcs).toHaveLength(1);
 		});
 
 		it("refuses to archive a preset made private since the read, unless you created it", async () => {
