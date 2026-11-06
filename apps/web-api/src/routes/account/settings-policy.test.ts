@@ -788,6 +788,31 @@ describe("account policy settings routes", () => {
 			expect(existing).toEqual(missing);
 		});
 
+		it.each(["user-1", "owner-2"])("asks the lookup about the signed-in user (%s) on every route", async (userId) => {
+			const preset = { id: "preset-1", workspace_id: "workspace-1", created_by: "owner-2", visibility: "team", draft_visibility: "team", name: "Shared" };
+			for (const [label, path, init] of routes) {
+				const requests = stubWorld({ userId, memberOf: ["workspace-1"], preset });
+				await send(path, init);
+				const lookups = requests.filter((line) => line.includes("/rpc/find_member_visible_preset"));
+				expect(lookups, label).toHaveLength(1);
+				expect(JSON.parse(lookups[0].slice(lookups[0].indexOf(" {") + 1)), label).toEqual({ p_preset_id: "preset-1", p_user_id: userId });
+			}
+		});
+
+		it("shows the creator their own private draft on the detail read, asking the lookup about them", async () => {
+			const preset = { id: "preset-1", workspace_id: "workspace-1", created_by: "owner-2", visibility: "team", name: "Published", draft_name: "My draft", draft_visibility: "private" };
+			const requests = stubWorld({ userId: "owner-2", memberOf: ["workspace-1"], preset });
+			const response = await send("", { method: "GET" });
+			expect(response.status).toBe(200);
+			await expect(response.json()).resolves.toMatchObject({ preset: { draft_name: "My draft", draft_visibility: "private" } });
+			const lookup = requests.find((line) => line.includes("/rpc/find_member_visible_preset"))!;
+			expect(JSON.parse(lookup.slice(lookup.indexOf(" {") + 1))).toEqual({ p_preset_id: "preset-1", p_user_id: "owner-2" });
+			// Another member gets the published preset, with the draft replaced.
+			stubWorld({ userId: "user-1", memberOf: ["workspace-1"], preset });
+			const other = await (await send("", { method: "GET" })).json() as { preset: Record<string, unknown> };
+			expect(other.preset).toMatchObject({ draft_name: "Published", draft_visibility: "team" });
+		});
+
 		it("finds a preset in a member's 1,001st workspace (membership isn't listed into a capped page)", async () => {
 			const memberOf = Array.from({ length: 1001 }, (_, index) => `workspace-${index + 1}`);
 			const preset = { id: "preset-1", workspace_id: "workspace-1001", created_by: "owner-2", visibility: "team", draft_visibility: "team", name: "Far" };
