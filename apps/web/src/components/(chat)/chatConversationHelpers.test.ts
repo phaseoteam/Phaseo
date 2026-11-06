@@ -71,5 +71,8 @@ describe("generated images in assistant replies", () => {
 	it("never offers a data image as a link target", () => {
 		expect(isGeneratedDataImage(svg)).toBe(true);
 		expect(isGeneratedDataImage("https://example.com/a.png")).toBe(false);
+		const upper = sanitizeGeneratedImageSrc("DATA:image/svg+xml;base64,PHN2Zz48L3N2Zz4=");
+		expect(upper).not.toBeNull();
+		expect(isGeneratedDataImage(upper!)).toBe(true);
 	});
 });

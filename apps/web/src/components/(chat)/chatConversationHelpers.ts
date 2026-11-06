@@ -259,7 +259,7 @@ export function sanitizeGeneratedImageSrc(
 }
 
 export function isGeneratedDataImage(src: string): boolean {
-	return src.startsWith("data:");
+	return /^s*data:/i.test(src);
 }
 
 /** Every generated image in an assistant message, in order (a reply can carry several). */
