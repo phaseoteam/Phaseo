@@ -88,11 +88,20 @@ export function buildAutoTopUpFailureDedupeId(args: {
 }
 
 // src/lib/gateway/pricing/persist.ts
+const KEY_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** The key to store on a charge row; anything that is not a key id is stored as null, never sent. */
+function chargeRowKeyId(keyId: string | null | undefined): string | null {
+    return typeof keyId === "string" && KEY_UUID.test(keyId) ? keyId : null;
+}
+
 export async function recordUsageAndCharge(args: {
     requestId: string;
     workspaceId: string;
     cost_nanos: number;
     creditSnapshotBalanceNanos?: number | null;
+    /** The key the charge was made under, stored on the charge row so budgets can attribute it. */
+    keyId?: string | null;
 }): Promise<ChargeRpcResult> {
     const releaseRuntime = ensureRuntimeForBackground();
     try {
@@ -105,6 +114,7 @@ export async function recordUsageAndCharge(args: {
             p_request_id: args.requestId,
             p_cost_nanos: args.cost_nanos,
             p_credit_snapshot_balance_nanos: Number.isSafeInteger(snapshotBalance) && snapshotBalance! >= 0 ? snapshotBalance : null,
+            p_key_id: chargeRowKeyId(args.keyId),
         });
         return await settleChargeRpcResult(args, onceRpc);
     } finally {
@@ -135,7 +145,7 @@ export async function recordRequestChargeTotal(args: {
             p_total_nanos: args.total_nanos,
             p_final: args.final,
             p_credit_snapshot_balance_nanos: Number.isSafeInteger(args.creditSnapshotBalanceNanos) && args.creditSnapshotBalanceNanos! >= 0 ? args.creditSnapshotBalanceNanos : null,
-            p_key_id: args.keyId ?? null,
+            p_key_id: chargeRowKeyId(args.keyId),
         });
         return await settleChargeRpcResult(args, totalRpc);
     } finally {

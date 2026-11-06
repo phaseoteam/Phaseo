@@ -38,6 +38,16 @@ assert.deepEqual(migrationOrder.map((name) => name.replace(/^\d+_/, '')),
 const fnSql = normalize(await read('../schemas/public/functions/gateway_charge_request_total.sql'));
 const body = fnSql.slice(fnSql.indexOf('$function$'), fnSql.lastIndexOf('$function$') + 10);
 assert(body.length > 20 && migration.includes(body), 'the migration ships the schema body of gateway_charge_request_total');
+// One-off charges record their key too: both functions gain p_key_id, and the old signatures are
+// dropped so calls without it are not ambiguous.
+for (const name of ['gateway_deduct_and_check_top_up_once', 'gateway_charge_with_credit_cache']) {
+  const sql = normalize(await read(`../schemas/public/functions/${name}.sql`));
+  const fnBody = sql.slice(sql.indexOf('$function$'), sql.lastIndexOf('$function$') + 10);
+  assert(fnBody.length > 20 && migration.includes(fnBody), `the migration ships the schema body of ${name}`);
+  assert(sql.includes('p_key_id'), `${name} takes the key`);
+}
+assert(migration.includes('drop function if exists public.gateway_charge_with_credit_cache(uuid, text, bigint, bigint);'));
+assert(migration.includes('drop function if exists public.gateway_deduct_and_check_top_up_once(uuid, text, bigint);'));
 const tableSql = normalize(await read('../schemas/public/tables/gateway_request_charges.sql'));
 assert(tableSql.includes('"is_final"             boolean                  NOT NULL DEFAULT true'));
 assert(tableSql.includes('"key_id"               uuid,'), 'the charge row records the key of a stepped charge');
@@ -179,8 +189,15 @@ try {
   await total('keyed', 200, false);
   await total('keyed', 300, true, null);
   assert.equal((await chargeRow('keyed')).key_id, KEY);
-  // One-off charges record no key; existing rows stay null.
+  // A one-off charge without a key records none (an OAuth access token); with one it records it.
   assert.equal((await chargeRow('one-off')).key_id, null);
+  await asService(() => db.query('select public.gateway_charge_with_credit_cache($1, $2, $3, null, $4)', [ws, 'one-off-keyed', 100, KEY]));
+  assert.equal((await chargeRow('one-off-keyed')).key_id, KEY, 'a one-off charge row records its key');
+  // A call without p_key_id still resolves to one function (the old signatures are gone).
+  await asService(() => db.query('select public.gateway_charge_with_credit_cache($1, $2, $3, null)', [ws, 'one-off-legacy-call', 100]));
+  assert.equal((await chargeRow('one-off-legacy-call')).key_id, null);
+  const overloads = await one(`select count(*)::int as n from pg_proc where proname in ('gateway_charge_with_credit_cache', 'gateway_deduct_and_check_top_up_once')`);
+  assert.equal(overloads.n, 2, 'one function each, no leftover overloads');
 
   // 8. Existing one-off charges are unchanged: still positive-only and idempotent.
   await assert.rejects(oneOff('zero', 0), /invalid_cost_nanos/);

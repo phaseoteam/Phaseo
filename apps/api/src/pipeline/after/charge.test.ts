@@ -258,6 +258,13 @@ describe("recordUsageAndChargeOnce", () => {
 			expect(ctx.meta.__usageChargeRecorded).toBe(true);
 		});
 
+		it("stores the request's key on a one-off charge too, and none for an OAuth access token", async () => {
+			const KEY = "00000000-0000-4000-8000-000000000001";
+			await recordUsageAndChargeOnce({ ctx: { ...ctxFor(), meta: { apiKeyId: KEY, apiKeyRef: "kid_1" } }, costNanos: 300, endpoint: "responses" });
+			await recordUsageAndChargeOnce({ ctx: { ...ctxFor(), billingRequestId: "bill_oauth", meta: { apiKeyId: "client_1", apiKeyRef: "oauth_client_1" } }, costNanos: 300, endpoint: "responses" });
+			expect(recordUsageAndChargeMock.mock.calls.map(([args]: any[]) => [args.requestId, args.keyId])).toEqual([["bill", KEY], ["bill_oauth", undefined]]);
+		});
+
 		it("stores the request's key on every stepped charge, and none for an OAuth access token", async () => {
 			const KEY = "00000000-0000-4000-8000-000000000001";
 			const keyed = { ...ctxFor(), meta: { apiKeyId: KEY, apiKeyRef: "kid_1" } };

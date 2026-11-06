@@ -45,7 +45,8 @@ async function chargeWithRetries(ctx: PipelineContext, call: ChargeCall): Promis
 		try {
 			await waitBeforeRetry(delayMs);
 			if (call.kind === "one_off") {
-				await persist.recordUsageAndCharge({ ...base, cost_nanos: call.costNanos });
+				const keyId = chargeKeyId(ctx);
+				await persist.recordUsageAndCharge({ ...base, cost_nanos: call.costNanos, ...(keyId ? { keyId } : {}) });
 			} else {
 				await persist.recordRequestChargeTotal({ ...base, total_nanos: call.totalNanos, final: call.final, keyId: chargeKeyId(ctx) });
 			}
