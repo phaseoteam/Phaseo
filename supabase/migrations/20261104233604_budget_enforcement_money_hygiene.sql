@@ -36,7 +36,8 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
   p_workspace_id        uuid,
   p_since               timestamp with time zone,
   p_key_ids             uuid[] DEFAULT NULL::uuid[],
-  p_exclude_request_ids text[] DEFAULT '{}'::text[]
+  p_exclude_request_ids text[] DEFAULT '{}'::text[],
+  p_exclude_charge_ids  text[] DEFAULT '{}'::text[]
 )
   RETURNS TABLE (
     key_id uuid,
@@ -53,6 +54,9 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
   -- seed). A budget's usage is the sum of nanos over rows that are active or at/after its period
   -- start. p_key_ids limits the rows to those keys (NULL: the whole workspace). p_since (NULL: all
   -- time) bounds the history read; active holds are returned whenever they were made.
+  -- p_exclude_request_ids leaves out gateway_requests rows and p_exclude_charge_ids stepped charges
+  -- (gateway_request_charges.request_id, the billing request id) that the SpendLimit Durable
+  -- Object is still counting from memory.
   --
   -- * Requests: every gateway_requests row with a positive cost, whether or not it succeeded (a
   --   cancelled or failed request can still be charged), read as two disjoint parts so each uses
@@ -66,8 +70,10 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
   -- * Stepped stream charges (gateway_charge_request_total, is_final false) whose gateway_requests
   --   row has not landed: money already taken for a stream whose worker may have stopped before
   --   writing it. Active from the charge's created_at in every period until the request row
-  --   (billing_request_id) lands, which then counts instead. The charge row records no key, so
-  --   these count toward workspace budgets (p_key_ids NULL) only.
+  --   (billing_request_id) lands, which then counts instead. Read from the few open charge rows
+  --   (gateway_request_charges_open_step_idx), each checked against
+  --   gateway_requests_workspace_billing_request_idx. The charge row records no key, so these
+  --   count toward workspace budgets (p_key_ids NULL) only.
   select request.key_id, request.created_at, false, request.cost_nanos
   from public.gateway_requests request
   where request.workspace_id = p_workspace_id
@@ -133,7 +139,7 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
     and charge.is_final is false
     and charge.status = 'applied'
     and charge.cost_nanos > 0
-    and not (charge.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
+    and not (charge.request_id = any (coalesce(p_exclude_charge_ids, '{}'::text[])))
     and not exists (
       select 1 from public.gateway_requests request
       where request.workspace_id = charge.workspace_id
@@ -141,13 +147,13 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
     );
 $function$;
 
-COMMENT ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[]) IS 'Spend items counted toward workspace and department budgets: positive-cost requests, active holds in every period, captured video and free-model holds less their audited cost (each hold''s batch_hold_usage rows counted once), and stepped stream charges whose request row has not landed (workspace only).';
+COMMENT ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) IS 'Spend items counted toward workspace and department budgets: positive-cost requests, active holds in every period, captured video and free-model holds less their audited cost (each hold''s batch_hold_usage rows counted once), and stepped stream charges whose request row has not landed (workspace only).';
 
-REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[]) FROM PUBLIC;
+REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) FROM PUBLIC;
 
-REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[]) FROM "postgres";
+REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[]) TO "postgres";
+GRANT EXECUTE ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) TO "postgres";
 
 CREATE OR REPLACE FUNCTION private.department_budget_usage (
   p_workspace_id        uuid,
@@ -191,6 +197,7 @@ CREATE OR REPLACE FUNCTION private.department_budget_usage (
       p_workspace_id,
       (select min(budgets.period_start) from budgets),
       array(select distinct dk.key_id from department_keys dk where dk.department_id in (select budgets.department_id from budgets)),
+      p_exclude_request_ids,
       p_exclude_request_ids
     ) item
   )
@@ -212,6 +219,133 @@ REVOKE ALL ON FUNCTION "private"."department_budget_usage"(uuid, uuid, text[]) F
 REVOKE ALL ON FUNCTION "private"."department_budget_usage"(uuid, uuid, text[]) FROM "postgres";
 
 GRANT EXECUTE ON FUNCTION "private"."department_budget_usage"(uuid, uuid, text[]) TO "postgres";
+
+CREATE OR REPLACE FUNCTION private.workspace_budget_status (
+  p_workspace_id           uuid,
+  p_requested_amount_nanos bigint DEFAULT 0,
+  p_exclude_charge_ids     text[] DEFAULT '{}'::text[]
+)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  STABLE
+  SET search_path TO ''
+  AS $function$
+declare
+  v_now timestamptz := now();
+  v_result jsonb;
+  v_exceeded jsonb;
+begin
+  if p_workspace_id is null then
+    raise exception 'workspace_id_required';
+  end if;
+  if coalesce(p_requested_amount_nanos, 0) < 0 then
+    raise exception 'requested_amount_must_be_non_negative';
+  end if;
+
+  with configured as (
+    select
+      budget.id,
+      budget.workspace_id,
+      budget.interval,
+      budget.limit_nanos,
+      budget.created_by,
+      budget.created_at,
+      budget.updated_at,
+      case budget.interval
+        when 'daily' then date_trunc('day', v_now at time zone 'utc') at time zone 'utc'
+        when 'weekly' then date_trunc('week', v_now at time zone 'utc') at time zone 'utc'
+        when 'monthly' then date_trunc('month', v_now at time zone 'utc') at time zone 'utc'
+        else null
+      end as window_start,
+      case budget.interval
+        when 'daily' then (date_trunc('day', v_now at time zone 'utc') + interval '1 day') at time zone 'utc'
+        when 'weekly' then (date_trunc('week', v_now at time zone 'utc') + interval '1 week') at time zone 'utc'
+        when 'monthly' then (date_trunc('month', v_now at time zone 'utc') + interval '1 month') at time zone 'utc'
+        else null
+      end as reset_at
+    from public.workspace_budgets budget
+    where budget.workspace_id = p_workspace_id
+  ), items as materialized (
+    -- private.budget_spend_items, as for department budgets: positive-cost requests, active holds
+    -- in every period, captured video and free-model holds less their audited cost.
+    select item.at, item.active, item.nanos
+    from private.budget_spend_items(
+      p_workspace_id,
+      (select case when bool_or(configured.window_start is null) then null else min(configured.window_start) end from configured),
+      null::uuid[],
+      '{}'::text[],
+      p_exclude_charge_ids
+    ) item
+    where exists (select 1 from configured)
+  ), usage_rows as (
+    select
+      configured.*,
+      coalesce((
+        select sum(items.nanos) from items
+        where items.active or configured.window_start is null or items.at >= configured.window_start
+      ), 0)::bigint as usage_nanos
+    from configured
+  ), normalized as (
+    select *,
+      usage_nanos + coalesce(p_requested_amount_nanos, 0) as projected_usage_nanos,
+      greatest(limit_nanos - usage_nanos, 0) as remaining_nanos,
+      case
+        when coalesce(p_requested_amount_nanos, 0) > 0
+          then usage_nanos + p_requested_amount_nanos > limit_nanos
+        else usage_nanos >= limit_nanos
+      end as exceeded
+    from usage_rows
+  )
+  select coalesce(jsonb_agg(jsonb_build_object(
+    'id', id,
+    'workspace_id', workspace_id,
+    'interval', interval,
+    'limit_nanos', limit_nanos,
+    'usage_nanos', usage_nanos,
+    'remaining_nanos', remaining_nanos,
+    'projected_usage_nanos', projected_usage_nanos,
+    'exceeded', exceeded,
+    'window_start', window_start,
+    'reset_at', reset_at,
+    'created_by', created_by,
+    'created_at', created_at,
+    'updated_at', updated_at
+  ) order by case interval when 'daily' then 1 when 'weekly' then 2 when 'monthly' then 3 else 4 end), '[]'::jsonb)
+  into v_result
+  from normalized;
+
+  select budget
+  into v_exceeded
+  from jsonb_array_elements(v_result) budget
+  where (budget->>'exceeded')::boolean
+  order by case budget->>'interval' when 'daily' then 1 when 'weekly' then 2 when 'monthly' then 3 else 4 end
+  limit 1;
+
+  if v_exceeded is not null then
+    return jsonb_build_object(
+      'ok', false,
+      'reason', 'workspace_' || (v_exceeded->>'interval') || '_cost_budget_reached',
+      'limit_window', v_exceeded->>'interval',
+      'limit_metric', 'cost',
+      'current_value', (v_exceeded->>'usage_nanos')::bigint,
+      'limit_value', (v_exceeded->>'limit_nanos')::bigint,
+      'reset_at', v_exceeded->'reset_at',
+      'now', to_jsonb(v_now),
+      'budgets', v_result
+    );
+  end if;
+
+  return jsonb_build_object('ok', true, 'reason', null, 'now', to_jsonb(v_now), 'budgets', v_result);
+end;
+$function$;
+
+COMMENT ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[]) IS 'Workspace budgets with usage this UTC period (private.budget_spend_items), for gateway_workspace_budget_status and gateway_spend_limit_seed. p_exclude_charge_ids leaves out stepped charges the SpendLimit Durable Object counts from memory; request rows are never excluded here (the Durable Object stops counting those once the seed reports them).';
+
+REVOKE ALL ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[]) FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[]) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[]) TO "postgres";
 
 CREATE OR REPLACE FUNCTION public.gateway_department_budget_status (
   p_workspace_id           uuid,
@@ -312,109 +446,10 @@ CREATE OR REPLACE FUNCTION public.gateway_workspace_budget_status (
   SECURITY DEFINER
   SET search_path TO ''
   AS $function$
-declare
-  v_now timestamptz := now();
-  v_result jsonb;
-  v_exceeded jsonb;
 begin
-  if p_workspace_id is null then
-    raise exception 'workspace_id_required';
-  end if;
-  if coalesce(p_requested_amount_nanos, 0) < 0 then
-    raise exception 'requested_amount_must_be_non_negative';
-  end if;
-
-  with configured as (
-    select
-      budget.id,
-      budget.workspace_id,
-      budget.interval,
-      budget.limit_nanos,
-      budget.created_by,
-      budget.created_at,
-      budget.updated_at,
-      case budget.interval
-        when 'daily' then date_trunc('day', v_now at time zone 'utc') at time zone 'utc'
-        when 'weekly' then date_trunc('week', v_now at time zone 'utc') at time zone 'utc'
-        when 'monthly' then date_trunc('month', v_now at time zone 'utc') at time zone 'utc'
-        else null
-      end as window_start,
-      case budget.interval
-        when 'daily' then (date_trunc('day', v_now at time zone 'utc') + interval '1 day') at time zone 'utc'
-        when 'weekly' then (date_trunc('week', v_now at time zone 'utc') + interval '1 week') at time zone 'utc'
-        when 'monthly' then (date_trunc('month', v_now at time zone 'utc') + interval '1 month') at time zone 'utc'
-        else null
-      end as reset_at
-    from public.workspace_budgets budget
-    where budget.workspace_id = p_workspace_id
-  ), items as materialized (
-    -- private.budget_spend_items, as for department budgets: positive-cost requests, active holds
-    -- in every period, captured video and free-model holds less their audited cost.
-    select item.at, item.active, item.nanos
-    from private.budget_spend_items(
-      p_workspace_id,
-      (select case when bool_or(configured.window_start is null) then null else min(configured.window_start) end from configured)
-    ) item
-    where exists (select 1 from configured)
-  ), usage_rows as (
-    select
-      configured.*,
-      coalesce((
-        select sum(items.nanos) from items
-        where items.active or configured.window_start is null or items.at >= configured.window_start
-      ), 0)::bigint as usage_nanos
-    from configured
-  ), normalized as (
-    select *,
-      usage_nanos + coalesce(p_requested_amount_nanos, 0) as projected_usage_nanos,
-      greatest(limit_nanos - usage_nanos, 0) as remaining_nanos,
-      case
-        when coalesce(p_requested_amount_nanos, 0) > 0
-          then usage_nanos + p_requested_amount_nanos > limit_nanos
-        else usage_nanos >= limit_nanos
-      end as exceeded
-    from usage_rows
-  )
-  select coalesce(jsonb_agg(jsonb_build_object(
-    'id', id,
-    'workspace_id', workspace_id,
-    'interval', interval,
-    'limit_nanos', limit_nanos,
-    'usage_nanos', usage_nanos,
-    'remaining_nanos', remaining_nanos,
-    'projected_usage_nanos', projected_usage_nanos,
-    'exceeded', exceeded,
-    'window_start', window_start,
-    'reset_at', reset_at,
-    'created_by', created_by,
-    'created_at', created_at,
-    'updated_at', updated_at
-  ) order by case interval when 'daily' then 1 when 'weekly' then 2 when 'monthly' then 3 else 4 end), '[]'::jsonb)
-  into v_result
-  from normalized;
-
-  select budget
-  into v_exceeded
-  from jsonb_array_elements(v_result) budget
-  where (budget->>'exceeded')::boolean
-  order by case budget->>'interval' when 'daily' then 1 when 'weekly' then 2 when 'monthly' then 3 else 4 end
-  limit 1;
-
-  if v_exceeded is not null then
-    return jsonb_build_object(
-      'ok', false,
-      'reason', 'workspace_' || (v_exceeded->>'interval') || '_cost_budget_reached',
-      'limit_window', v_exceeded->>'interval',
-      'limit_metric', 'cost',
-      'current_value', (v_exceeded->>'usage_nanos')::bigint,
-      'limit_value', (v_exceeded->>'limit_nanos')::bigint,
-      'reset_at', v_exceeded->'reset_at',
-      'now', to_jsonb(v_now),
-      'budgets', v_result
-    );
-  end if;
-
-  return jsonb_build_object('ok', true, 'reason', null, 'now', to_jsonb(v_now), 'budgets', v_result);
+  -- Workspace budgets with their usage this UTC period and whether one is reached (or, with
+  -- p_requested_amount_nanos, would be passed); see private.workspace_budget_status.
+  return private.workspace_budget_status(p_workspace_id, p_requested_amount_nanos, '{}'::text[]);
 end;
 $function$;
 
@@ -456,7 +491,8 @@ begin
   if cardinality(v_key_ids) > 100 then
     raise exception using errcode = '22023', message = 'too_many_key_ids';
   end if;
-  if cardinality(v_exclude) > 5000 then
+  -- Up to 5,000 excluded entries, each with its request id and billing request id.
+  if cardinality(v_exclude) > 10000 then
     raise exception using errcode = '22023', message = 'too_many_excluded_request_ids';
   end if;
 
@@ -567,7 +603,7 @@ begin
     'week_start', to_jsonb(week_start),
     'month_start', to_jsonb(month_start),
     'keys', v_keys,
-    'budget_status', public.gateway_workspace_budget_status(p_workspace_id, 0),
+    'budget_status', private.workspace_budget_status(p_workspace_id, 0, v_exclude),
     'excluded_rows', v_excluded,
     'department_budgets', v_departments
   );
@@ -2579,6 +2615,13 @@ REVOKE ALL ON FUNCTION "public"."gateway_wallet_release_stale_orphan_batch_reser
 GRANT EXECUTE ON FUNCTION "public"."gateway_wallet_release_stale_orphan_batch_reservations"(integer, integer) TO "postgres";
 
 REVOKE ALL ON FUNCTION "public"."gateway_wallet_release_stale_orphan_batch_reservations"(integer, integer) FROM PUBLIC, "anon", "authenticated";
+
+-- Partial and small: requests with a billing request id, and open stepped charges.
+CREATE INDEX IF NOT EXISTS gateway_requests_workspace_billing_request_idx ON public.gateway_requests USING btree (workspace_id, billing_request_id)
+  WHERE (billing_request_id IS NOT NULL);
+
+CREATE INDEX IF NOT EXISTS gateway_request_charges_open_step_idx ON public.gateway_request_charges USING btree (workspace_id)
+  WHERE (is_final IS FALSE);
 
 -- Partial and small (charged requests that did not succeed); built on every partition.
 CREATE INDEX IF NOT EXISTS gateway_requests_charged_unsuccessful_cost_idx ON public.gateway_requests USING btree (workspace_id, created_at) INCLUDE (key_id, cost_nanos)

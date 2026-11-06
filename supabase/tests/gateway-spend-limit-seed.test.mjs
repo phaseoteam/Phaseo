@@ -60,7 +60,8 @@ try {
   // private.department_budget_usage (positive-cost requests plus outstanding holds).
   const usageMigration = await readFile(new URL('../migrations/20261104233604_budget_enforcement_money_hygiene.sql', import.meta.url), 'utf8');
   for (const path of ['private/functions/budget_spend_items.sql', 'private/functions/department_budget_usage.sql',
-    'public/functions/gateway_spend_limit_seed.sql', 'public/functions/workspace_department_budget_status.sql']) {
+    'private/functions/workspace_budget_status.sql', 'public/functions/gateway_spend_limit_seed.sql',
+    'public/functions/workspace_department_budget_status.sql']) {
     const definition = (await schema(path)).trim();
     assert.ok(usageMigration.includes(definition), `${path} matches its migration`);
     await db.exec(definition);
@@ -302,7 +303,7 @@ try {
 
   await assert.rejects(db.query(`select public.gateway_spend_limit_seed(null, ${keyIds})`), /workspace_id_required/);
   await assert.rejects(db.query(`select public.gateway_spend_limit_seed('${workspace}', ${keyIds},
-    array(select i::text from generate_series(1, 5001) i))`), /too_many_excluded_request_ids/);
+    array(select i::text from generate_series(1, 10001) i))`), /too_many_excluded_request_ids/);
   console.log('Spend-limit seed: matches context key-limit windows and filters, excludes recorded requests, service role only.');
 } finally {
   await db.close();

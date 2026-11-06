@@ -28,7 +28,8 @@ begin
   if cardinality(v_key_ids) > 100 then
     raise exception using errcode = '22023', message = 'too_many_key_ids';
   end if;
-  if cardinality(v_exclude) > 5000 then
+  -- Up to 5,000 excluded entries, each with its request id and billing request id.
+  if cardinality(v_exclude) > 10000 then
     raise exception using errcode = '22023', message = 'too_many_excluded_request_ids';
   end if;
 
@@ -139,7 +140,7 @@ begin
     'week_start', to_jsonb(week_start),
     'month_start', to_jsonb(month_start),
     'keys', v_keys,
-    'budget_status', public.gateway_workspace_budget_status(p_workspace_id, 0),
+    'budget_status', private.workspace_budget_status(p_workspace_id, 0, v_exclude),
     'excluded_rows', v_excluded,
     'department_budgets', v_departments
   );
