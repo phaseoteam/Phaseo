@@ -39,6 +39,13 @@ All source values were privately read back; all eight Vercel destination values 
 - Staged diff was checked against both private Grafana credentials; neither is present.
 - Deployment is pending PR checks/review and merge.
 
+## Review regressions
+
+- The root-loader regression failed before the fix (`Network unavailable` rejected the loader), then passed after making monitoring configuration optional. Both rejection and successful configuration results are covered. All eight focused web monitoring/root tests passed.
+- Local Loki 3.6.0 received OTLP fixtures with distinct trace/span metadata. Before grouping, the gateway p95 produced 20 series instead of one. After grouping, all five dashboard/provisioning/Loki tests passed: gateway duration p95 190.5 ms across 20 requests, web API p95 39 ms, first-token p95 38.1 ms, provider first-token p95 19.05 ms, and exactly two job series with p95 values 140 ms and 75 ms. Query limit is 1,000, and each run uses an isolated fixture environment.
+- `pnpm --filter @phaseo/web typecheck`: passed after the root-loader fix.
+- Scoped ESLint for `__root.tsx` and `-root.test.ts` passed without warnings. The full web production build passed again, with the existing externalization/chunk warnings and zero client source maps. All 37 Cloud queries validated again; all 32 installed panel queries match the corrected definitions, and five staging alerts remain paused. The temporary local Loki process was stopped.
+
 ## Rollout evidence still required
 
 Verify the deployed web, gateway and web API versions and a live scheduler heartbeat. Verify request summaries, environment filtering and retained trace correlation without paid model calls. Controlled errors/cancellation and browser consent collection should be exercised in staging. Browser sessions are sampled, so absence from an individual session is expected.

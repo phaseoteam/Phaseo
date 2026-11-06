@@ -83,6 +83,10 @@ Published Free allowances at implementation time are 50 GB/month each for logs a
 
 Sampling does not guarantee a monthly quota. Review usage daily during rollout. Staying on Free avoids a paid Grafana bill; exhaustion may stop ingestion. Existing platform CPU/network/invocation costs still apply. Customer Broadcast and Axiom behavior are preserved; retiring duplicate collection is a separate decision.
 
+Backend logs are initially unsampled so request counts, error rates and latency distributions describe all received events. For capacity planning, assuming 2 KiB per ingested log gives about 2.05 GB per million events. A heartbeat every minute is 43,200 events, about 88.5 MB per 30 days; ten additional job events per minute add about 0.885 GB. Provider attempts and web API requests are separate events. These are illustrative volume assumptions, not measured billable usage; traces and browser sessions have separate allowances.
+
+Before enabling notifications, use the stack's actual usage datasource to configure a quota alert at 80% of the verified monthly logs allowance (40 GB if the allowance is 50 GB). Check that it reads account-wide ingested bytes, including other senders, rather than the application's event count. That usage alert is not provisioned here because the account's usage metric and notification route have not been verified. If usage approaches the limit, disable collection through Infisical until a lower-volume policy and its dashboard calculations are reviewed.
+
 To stop collection, set `PLATFORM_TELEMETRY_ENABLED=false` in the backend and website Infisical folders, and `PUBLIC_FARO_ENABLED=false` in the website folder. Sync applies backend changes; existing pages may retain public config until reload. Pause alerts while collection is intentionally off. No database migration is required. Export failures emit a static warning; a broken destination cannot report its own failures reliably. Export failures never retry customer requests or settlement.
 
 ## Local checks

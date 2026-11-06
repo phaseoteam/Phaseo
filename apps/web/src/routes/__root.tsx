@@ -18,7 +18,7 @@ export function localeFromPathname(pathname: string): PublicLocale {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-	loader: () => getGrafanaBrowserConfig(),
+	loader: () => getGrafanaBrowserConfig().catch(() => undefined),
 	head: ({ match }) => ({
 		meta: [
 			{ charSet: "utf-8" },

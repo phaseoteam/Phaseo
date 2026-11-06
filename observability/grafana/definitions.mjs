@@ -12,8 +12,8 @@ function count(service, event, filter = '', fields = [], range = window, environ
 function rate(service, event, filter = '', fields = []) {
   return `sum(rate(${logs(service, event, fields)}${filter} | __error__="" [${window}])) or vector(0)`;
 }
-function percentile(service, event, field, quantile = 0.95, filter = '', fields = []) {
-  return `quantile_over_time(${quantile}, ${logs(service, event, [field, ...fields])}${filter} | unwrap ${field} | __error__="" [${window}])`;
+function percentile(service, event, field, quantile = 0.95, filter = '', fields = [], groupBy = 'service_name') {
+  return `quantile_over_time(${quantile}, ${logs(service, event, [field, ...fields])}${filter} | unwrap ${field} | __error__="" [${window}]) by (${groupBy})`;
 }
 const gateway = 'phaseo-gateway';
 function panel(title, expr, { type = 'timeseries', unit = 'short', description = '', instant = false, legend = '', ...extra } = {}) {
@@ -72,7 +72,7 @@ export function dashboards() {
     dashboard('phaseo-jobs', 'Jobs and settlement', 'Completion means the handler returned; inspect item failures separately. Skipped jobs are distinct. Financial truth remains in Supabase.', [
       panel('Completed job invocations', `sum by (job) (count_over_time(${logs('phaseo-jobs|phaseo-web-api', 'job.run', ['job', 'outcome'])} | outcome="completed" [${window}]))`, { legend: '{{job}}' }),
       panel('Failed job invocations', `sum by (job) (count_over_time(${logs('phaseo-jobs|phaseo-web-api', 'job.run', ['job', 'outcome'])} | outcome="error" [${window}]))`, { legend: '{{job}}' }),
-      panel('Job p95 duration', `${percentile('phaseo-jobs|phaseo-web-api', 'job.run', 'duration_ms', 0.95, '', ['job'])} by (job)`, { unit: 'ms', legend: '{{job}}' }),
+      panel('Job p95 duration', percentile('phaseo-jobs|phaseo-web-api', 'job.run', 'duration_ms', 0.95, '', ['job'], 'job'), { unit: 'ms', legend: '{{job}}' }),
       panel('Disabled job invocations', `sum by (job) (count_over_time(${logs('phaseo-jobs', 'job.run', ['job', 'outcome'])} | outcome="skipped" [${window}]))`, { legend: '{{job}}' }),
       panel('Operational failures', logs(gateway, 'ops.failure'), { type: 'logs', description: 'Includes existing settlement and usage persistence failure hooks. No balances, prompts or customer identities are exported.' }),
       panel('Recent job runs', logs('phaseo-jobs|phaseo-web-api', 'job.run'), { type: 'logs' }),

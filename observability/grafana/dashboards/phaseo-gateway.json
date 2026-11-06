@@ -230,7 +230,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "quantile_over_time(0.95, {service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", ttft_ms=\"ttft_ms\", stream=\"stream\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | stream=\"true\" | unwrap ttft_ms | __error__=\"\" [$__auto])",
+          "expr": "quantile_over_time(0.95, {service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", ttft_ms=\"ttft_ms\", stream=\"stream\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | stream=\"true\" | unwrap ttft_ms | __error__=\"\" [$__auto]) by (service_name)",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -276,7 +276,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "quantile_over_time(0.95, {service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider_ttft_ms=\"provider_ttft_ms\", stream=\"stream\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | stream=\"true\" | unwrap provider_ttft_ms | __error__=\"\" [$__auto])",
+          "expr": "quantile_over_time(0.95, {service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider_ttft_ms=\"provider_ttft_ms\", stream=\"stream\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | stream=\"true\" | unwrap provider_ttft_ms | __error__=\"\" [$__auto]) by (service_name)",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
