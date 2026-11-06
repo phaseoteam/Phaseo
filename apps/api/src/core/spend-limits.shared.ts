@@ -108,22 +108,17 @@ export type SpendRecordEntry = {
 	leaseId?: string | null;
 	/**
 	 * `costNanos` is the request's charged total so far (a stream charged at drain checkpoints):
-	 * it replaces an amount already recorded for this `billingRequestId` instead of being ignored
-	 * as a duplicate, so a later checkpoint or the final settlement raises it and a refund lowers it.
+	 * a checkpoint raises the amount recorded for this `billingRequestId` (never lowers it), and
+	 * the final record sets it, lower or 0 included.
 	 */
 	replace?: boolean;
 	/**
-	 * Order of the replace records of one `billingRequestId` (checkpoints count 1, 2, …): the
-	 * coordinator ignores a record whose revision is not above the last one it applied.
+	 * The checkpoint's place in the request's sequence (1, 2, …). Only checkpoint 1 opens an entry:
+	 * any other record for an entry the coordinator does not hold is ignored.
 	 */
 	revision?: number;
-	/** The request's final settled total: replaces any checkpoint, and nothing replaces it. */
+	/** The request's final settled total: sets the amount, and nothing changes it after that. */
 	final?: boolean;
-	/**
-	 * When this total's debit returned from the database, in epoch ms. A seed that started later
-	 * already counts it, so a record first seen after such a seed adds only what is above it.
-	 */
-	debitAtMs?: number;
 };
 
 export type SpendRecordResult = { duplicates: number; drainKeyIds: string[] };

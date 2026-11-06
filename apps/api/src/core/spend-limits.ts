@@ -228,8 +228,6 @@ export function recordCheckpointSpend(args: {
 	costNanos: number;
 	/** This checkpoint's place in the request's sequence (1, 2, …); see SpendRecordEntry.revision. */
 	revision: number;
-	/** When the checkpoint's debit returned from the database (defaults to now). */
-	debitAtMs?: number;
 	internal?: boolean;
 }): void {
 	try {
@@ -250,7 +248,6 @@ export function recordCheckpointSpend(args: {
 			leaseId: args.admission && args.admission.keyId === args.keyId ? args.admission.leaseId : null,
 			replace: true,
 			revision: Math.max(1, Math.trunc(args.revision)),
-			debitAtMs: Number.isFinite(args.debitAtMs) ? Number(args.debitAtMs) : Date.now(),
 		});
 	} catch (error) {
 		console.warn("spend_limit_checkpoint_record_failed", { error: error instanceof Error ? error.message : String(error) });
@@ -302,7 +299,7 @@ export function recordSpend(args: {
 			requests: args.requests ?? 1,
 			occurredAtMs: args.occurredAtMs,
 			leaseId: admission && admission.keyId === args.keyId ? admission.leaseId : null,
-			...(args.replace ? { replace: true, final: true, debitAtMs: Date.now() } : {}),
+			...(args.replace ? { replace: true, final: true } : {}),
 		});
 	} catch (error) {
 		console.error("[gateway] spend record failed", {

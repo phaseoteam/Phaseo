@@ -63,15 +63,12 @@ class FakeDatabase {
 	/** Seeds as written before department budgets could block (no department_budgets field). */
 	legacyShape = false;
 	calls: Array<{ keyIds: string[]; exclude: string[] }> = [];
-	/**
-	 * Applied stepped charges (gateway_request_charges), counted by debit time and reported as
-	 * stepped_charges while open or without a request row. Null: a seed that predates them.
-	 */
-	stepped: Array<{ billingId: string; keyId: string; total: number; at: number; final?: boolean; audited?: boolean }> | null = null;
+	/** Charge rows (gateway_request_charges) without a request row: counted unless their billing id is excluded. */
+	charges: Array<{ billingId: string; keyId: string; total: number; at: number }> = [];
 
-	steppedCost(keyIds: string[] | null, start: number | null): { cost: number; requests: number } {
+	chargeCost(keyIds: string[] | null, start: number | null, exclude: string[]): { cost: number; requests: number } {
 		const now = Date.now();
-		const rows = (this.stepped ?? []).filter((row) => (keyIds === null || keyIds.includes(row.keyId)) &&
+		const rows = this.charges.filter((row) => (keyIds === null || keyIds.includes(row.keyId)) && !exclude.includes(row.billingId) &&
 			(start === null || row.at >= start) && row.at <= now);
 		return { cost: rows.reduce((sum, row) => sum + row.total, 0), requests: rows.length };
 	}
@@ -93,8 +90,8 @@ class FakeDatabase {
 		for (const window of ["daily", "weekly", "monthly"] as const) {
 			const rows = this.rows.filter((row) => row.keyId === keyId && row.success && row.createdAt >= windows[window] &&
 				row.createdAt <= Date.now() && !exclude.includes(row.requestId));
-			const stepped = this.steppedCost([keyId], windows[window]);
-			result[window] = { requests: rows.length + stepped.requests, cost_nanos: rows.reduce((sum, row) => sum + row.cost, 0) + stepped.cost };
+			const charges = this.chargeCost([keyId], windows[window], exclude);
+			result[window] = { requests: rows.length + charges.requests, cost_nanos: rows.reduce((sum, row) => sum + row.cost, 0) + charges.cost };
 		}
 		return result;
 	}
@@ -119,7 +116,7 @@ class FakeDatabase {
 		const budgets = this.budgets.map((budget) => {
 			const start = budget.interval === "lifetime" ? null : windows[budget.interval];
 			const completed = this.rows.filter((row) => row.success && row.createdAt <= now && (start === null || row.createdAt >= start))
-				.reduce((sum, row) => sum + row.cost, 0) + this.steppedCost(null, start).cost;
+				.reduce((sum, row) => sum + row.cost, 0);
 			const end = budget.interval === "daily" ? start! + DAY : budget.interval === "weekly" ? start! + 7 * DAY : null;
 			return {
 				id: budget.id, interval: budget.interval, limit_nanos: budget.limit, usage_nanos: completed + (budget.holds ?? 0),
@@ -129,8 +126,7 @@ class FakeDatabase {
 		const department_budgets = this.departments.map((budget) => {
 			const start = windows[budget.interval];
 			const usage = this.rows.filter((row) => row.keyId !== null && budget.keyIds.includes(row.keyId) && row.success &&
-				row.createdAt >= start && row.createdAt <= now && !exclude.includes(row.requestId)).reduce((sum, row) => sum + row.cost, 0) +
-				this.steppedCost(budget.keyIds, start).cost;
+				row.createdAt >= start && row.createdAt <= now && !exclude.includes(row.requestId)).reduce((sum, row) => sum + row.cost, 0);
 			const end = budget.interval === "daily" ? start + DAY : budget.interval === "weekly" ? start + 7 * DAY
 				: Date.UTC(new Date(start).getUTCFullYear(), new Date(start).getUTCMonth() + 1, 1);
 			return {
@@ -143,8 +139,6 @@ class FakeDatabase {
 			keys,
 			budget_status: { ok: true, budgets },
 			...(this.legacyShape ? {} : { department_budgets }),
-			...(this.stepped ? { stepped_charges: this.stepped.filter((row) => !row.final || !row.audited)
-				.map((row) => ({ billing_id: row.billingId, charged_nanos: row.total, key_id: row.keyId })) } : {}),
 			excluded_rows: this.rows.filter((row) => exclude.includes(row.requestId))
 				.map((row) => ({ request_id: row.requestId, key_id: row.keyId, success: row.success, cost_nanos: row.cost, created_at: iso(row.createdAt) })),
 		};
@@ -320,122 +314,81 @@ describe("spend-limit coordinator", () => {
 		expect(await used()).toMatchObject({ costUsedNanos: 0 });
 	});
 
-	describe("stepped charges, with the database as the truth", () => {
+	describe("stepped charges as ordinary entries", () => {
 		const entry = (billingRequestId: string) => ({ keyId: KEY, billingRequestId, requestId: `req-${billingRequestId}`, requests: 1, replace: true });
-		const weekly = async () => (await probe())?.weekly?.costUsedNanos;
+		const daily = async () => (await probe())?.daily?.costUsedNanos;
 		const reseed = async () => {
 			vi.setSystemTime(Date.now() + SPEND_LEASE.reseedMs + 1);
 			await probe();
 			await flush();
 		};
-		// A checkpoint debit commits its charge row before the coordinator hears of it.
-		const checkpoint = async (billingRequestId: string, total: number, revision: number, debitAtMs = Date.now()) => {
-			const row = database.stepped!.find((charge) => charge.billingId === billingRequestId);
-			if (row) row.total = Math.max(row.total, total);
-			else database.stepped!.push({ billingId: billingRequestId, keyId: KEY, total, at: debitAtMs });
-			return coordinator.record(WORKSPACE, { ...entry(billingRequestId), costNanos: total, revision, debitAtMs });
+		// The checkpoint debit commits the charge row before the coordinator hears of it.
+		const checkpoint = (billingRequestId: string, total: number, revision: number) => {
+			const row = database.charges.find((charge) => charge.billingId === billingRequestId);
+			if (row) row.total = total;
+			else database.charges.push({ billingId: billingRequestId, keyId: KEY, total, at: Date.now() });
+			return coordinator.record(WORKSPACE, { ...entry(billingRequestId), costNanos: total, revision });
 		};
-		beforeEach(() => {
-			database.keys.set(KEY, { workspaceId: WORKSPACE, daily: [100, 0], weekly: [0, 1_000_000], monthly: [0, 1_000_000] });
-		});
-
-		it("counts a stepped charge once, in the weekly window and a lifetime budget, across a month end", async () => {
-			database.stepped = [];
-			vi.setSystemTime(new Date("2026-10-31T23:00:00Z"));
+		beforeEach(async () => {
 			await checkSpendLimit({ workspaceId: WORKSPACE, keyId: KEY, admissionId: "warm" });
 			await flush();
-			await checkpoint("b-month", 200, 1);
-			expect(await weekly()).toBe(200);
-			// Into November: the week (from Monday 26 October) still counts it; so does the lifetime budget.
-			vi.setSystemTime(new Date("2026-11-01T00:30:00Z"));
-			await reseed();
-			expect(await weekly()).toBe(200);
-			// A lifetime budget reached exactly by the charge: the denial reports its usage (0 if the
-			// charge were dropped, 400 if counted twice).
-			database.budgets.push({ id: "lifetime", interval: "lifetime", limit: 200 });
-			await reseed();
-			const decision = await checkSpendLimit({ workspaceId: WORKSPACE, keyId: KEY, admissionId: "after" });
-			expect(decision).toMatchObject({ outcome: "denied", keyLimit: { reason: "workspace_lifetime_cost_budget_reached" } });
-			expect(decision.keyLimit?.budgets?.find((budget) => budget.id === "lifetime")).toMatchObject({ usageNanos: 200 });
 		});
 
-		it("never lets a delayed revision replace the database total after a restart", async () => {
-			database.stepped = [];
-			await checkSpendLimit({ workspaceId: WORKSPACE, keyId: KEY, admissionId: "warm" });
-			await flush();
-			const firstDebit = Date.now();
-			database.stepped.push({ billingId: "b-restart", keyId: KEY, total: 100, at: firstDebit });
-			await checkpoint("b-restart", 200, 2);
-			expect(await weekly()).toBe(200);
-			// The coordinator restarts; the seed reports the stored 200. Checkpoint 1 (100) arrives late.
-			coordinator = createCoordinator();
-			await reseed();
-			expect(await weekly()).toBe(200);
-			await coordinator.record(WORKSPACE, { ...entry("b-restart"), costNanos: 100, revision: 1, debitAtMs: firstDebit });
-			expect(await weekly()).toBe(200);
+		it("raises the entry with each checkpoint and never lowers it", async () => {
+			await checkpoint("b-raise", 100, 1);
+			expect(await daily()).toBe(100);
+			await checkpoint("b-raise", 300, 2);
+			expect(await daily()).toBe(300);
+			// A reordered, lower checkpoint changes nothing.
+			expect(await coordinator.record(WORKSPACE, { ...entry("b-raise"), costNanos: 250, revision: 3 })).toMatchObject({ duplicates: 1 });
+			expect(await daily()).toBe(300);
 		});
 
-		it("keeps a refunded final after a restart when a delayed checkpoint arrives", async () => {
-			database.stepped = [];
-			await checkSpendLimit({ workspaceId: WORKSPACE, keyId: KEY, admissionId: "warm" });
-			await flush();
-			const debitAt = Date.now();
-			await checkpoint("b-final", 200, 2, debitAt);
-			// Settled at 0 with its request row: the database holds 0 and no longer lists it.
-			database.stepped[0] = { ...database.stepped[0], total: 0, final: true, audited: true };
-			await coordinator.record(WORKSPACE, { ...entry("b-final"), costNanos: 0, final: true });
-			coordinator = createCoordinator();
-			await reseed();
-			expect(await weekly()).toBe(0);
-			await coordinator.record(WORKSPACE, { ...entry("b-final"), costNanos: 200, revision: 2, debitAtMs: debitAt });
-			expect(await weekly()).toBe(0);
+		it("lets the final lower it, then ignores late checkpoints", async () => {
+			await checkpoint("b-final", 300, 1);
+			await coordinator.record(WORKSPACE, { ...entry("b-final"), costNanos: 50, final: true });
+			expect(await daily()).toBe(50);
+			expect(await coordinator.record(WORKSPACE, { ...entry("b-final"), costNanos: 600, revision: 2 })).toMatchObject({ duplicates: 1 });
+			expect(await coordinator.record(WORKSPACE, { ...entry("b-final"), costNanos: 0, final: true })).toMatchObject({ duplicates: 1 });
+			expect(await daily()).toBe(50);
 		});
 
-		it("ignores a stale revision after a reseed, and counts later checkpoints only above the database total", async () => {
-			database.stepped = [];
-			await checkSpendLimit({ workspaceId: WORKSPACE, keyId: KEY, admissionId: "warm" });
-			await flush();
-			await checkpoint("b-stale", 100, 1);
-			await checkpoint("b-stale", 200, 2);
-			await reseed();
-			expect(await weekly()).toBe(200);
-			expect(await coordinator.record(WORKSPACE, { ...entry("b-stale"), costNanos: 100, revision: 1 })).toMatchObject({ duplicates: 1 });
-			expect(await weekly()).toBe(200);
-			await checkpoint("b-stale", 350, 3);
-			expect(await weekly()).toBe(350);
-			await reseed();
-			expect(await weekly()).toBe(350);
-		});
-
-		it("does not exclude stepped charges once the seed counts them", async () => {
-			database.stepped = [];
-			await checkSpendLimit({ workspaceId: WORKSPACE, keyId: KEY, admissionId: "warm" });
-			await flush();
+		it("excludes both its request and billing ids while it is held, so the seed does not count it twice", async () => {
 			await checkpoint("b-excl", 300, 1);
 			await reseed();
+			expect(database.calls.at(-1)?.exclude.sort()).toEqual(["b-excl", "req-b-excl"]);
+			expect(await daily()).toBe(300);
+		});
+
+		it("ends with the same total after it expires and the seed counts the charge row", async () => {
+			await checkpoint("b-expire", 300, 1);
+			await reseed();
+			expect(await daily()).toBe(300);
+			vi.setSystemTime(Date.now() + SPEND_LEASE.pendingTtlMs + 1);
+			await reseed();
+			await reseed();
 			expect(database.calls.at(-1)?.exclude).toEqual([]);
+			expect(await daily()).toBe(300);
+			// A late record for the expired entry is ignored, never recreated: the charge row counts.
+			expect(await coordinator.record(WORKSPACE, { ...entry("b-expire"), costNanos: 400, revision: 2 })).toMatchObject({ duplicates: 1 });
+			expect(await daily()).toBe(300);
 		});
 
-		it("before the seed counts them, keeps an open one from memory across a month end for the weekly window", async () => {
-			vi.setSystemTime(new Date("2026-10-31T23:00:00Z"));
-			await checkSpendLimit({ workspaceId: WORKSPACE, keyId: KEY, admissionId: "warm" });
-			await coordinator.record(WORKSPACE, { ...entry("b-legacy"), costNanos: 300, revision: 1 });
-			vi.setSystemTime(new Date("2026-11-01T00:30:00Z"));
+		it("is dropped by a restart, and the seed counts the charge row", async () => {
+			await checkpoint("b-restart", 300, 1);
+			coordinator = createCoordinator();
 			await reseed();
-			await reseed();
-			expect(await weekly()).toBe(300);
-			expect(database.calls.at(-1)?.exclude).toEqual(["req-b-legacy"]);
+			expect(database.calls.at(-1)?.exclude).toEqual([]);
+			expect(await daily()).toBe(300);
+			await coordinator.record(WORKSPACE, { ...entry("b-restart"), costNanos: 500, revision: 2 });
+			await coordinator.record(WORKSPACE, { ...entry("b-restart"), costNanos: 0, final: true });
+			expect(await daily()).toBe(300);
 		});
 
-		it("excludes one request id per open stepped charge, so 2,501 of them all fit", async () => {
-			await checkSpendLimit({ workspaceId: WORKSPACE, keyId: KEY, admissionId: "warm" });
-			const entries = Array.from({ length: 2_501 }, (_, index) => ({ ...entry(`b-${index}`), costNanos: 1, revision: 1 }));
-			for (let index = 0; index < entries.length; index += 100) await coordinator.record(WORKSPACE, entries.slice(index, index + 100));
-			await reseed();
-			const exclude = database.calls.at(-1)?.exclude ?? [];
-			expect(exclude).toHaveLength(2_501);
-			expect(new Set(exclude)).toEqual(new Set(entries.map((item) => item.requestId)));
-			expect(await weekly()).toBe(2_501);
+		it("ignores records for an entry it never held", async () => {
+			expect(await coordinator.record(WORKSPACE, { ...entry("b-unknown"), costNanos: 400, revision: 2 })).toMatchObject({ duplicates: 1 });
+			expect(await coordinator.record(WORKSPACE, { ...entry("b-unknown"), costNanos: 400, final: true })).toMatchObject({ duplicates: 1 });
+			expect(await daily()).toBe(0);
 		});
 	});
 

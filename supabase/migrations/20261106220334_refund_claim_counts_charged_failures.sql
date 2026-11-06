@@ -12,6 +12,10 @@
 -- 4. Batch captures: the part of the capture its per-row request rows
 --    (batch_usage:<batch>:<row>, written after the charge) do not count, so a
 --    batch whose row persistence failed is counted in full.
+-- 5. Reserved batches: their settled debit (gateway_wallet_settle_once writes
+--    an async_job_charge ledger row), less the batch's request rows 1. already
+--    counted (batch_usage rows, or the held-price batch_hold_usage placeholders),
+--    so a reserved batch counts its actual debit once.
 -- The body is the one from 20261104193047_billing_security_fixes with only the
 -- usage query changed.
 
@@ -161,6 +165,11 @@ begin
     -- 4. Batch captures, whose per-row request rows (batch_usage:<batch>:<row>)
     --    are written after the charge and carry no billing id: the part of the
     --    capture those rows do not already count.
+    -- 5. Reserved batches, settled by gateway_wallet_settle_once into an
+    --    async_job_charge ledger row: the debit, less the request rows of that
+    --    batch 1. already counted (its batch_usage rows, or the batch_hold_usage
+    --    placeholders written at the held price until they are replaced), so the
+    --    batch counts its actual debit once, whatever its rows say.
     select coalesce(sum(gr.cost_nanos), 0)::bigint
     into v_usage_nanos
     from public.gateway_requests gr
@@ -220,6 +229,24 @@ begin
         and charge.cost_nanos > 0
         and charge.created_at >= v_purchase.event_time
         and starts_with(charge.request_id, 'batch_capture:')
+    ), 0)::bigint;
+
+    v_usage_nanos := v_usage_nanos + coalesce((
+      select sum(-debit.amount_nanos - coalesce((
+        select sum(gr.cost_nanos)
+        from public.gateway_requests gr
+        where gr.workspace_id = debit.workspace_id
+          and gr.cost_nanos > 0
+          and gr.created_at >= v_purchase.event_time
+          and (starts_with(gr.request_id, 'batch_usage:' || debit.source_ref_id || ':')
+            or starts_with(gr.request_id, 'batch_hold_usage:' || substr(debit.ref_id, length(debit.workspace_id::text) + 2) || ':'))
+      ), 0))
+      from public.credit_ledger debit
+      where debit.workspace_id = p_team_id
+        and debit.ref_type = 'async_job_charge'
+        and starts_with(debit.ref_id, p_team_id::text || ':batch_hold:')
+        and debit.amount_nanos < 0
+        and debit.created_at >= v_purchase.event_time
     ), 0)::bigint;
 
     select *

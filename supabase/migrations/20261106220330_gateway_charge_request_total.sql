@@ -13,9 +13,9 @@
 alter table public.gateway_request_charges
   add column if not exists is_final boolean not null default true;
 
--- The key a stepped charge was made under, so key and department budgets can
--- count it before its gateway_requests row exists. Null for one-off charges
--- and for rows written before this column.
+-- The key every charge (one-off or stepped) was made under, so key and
+-- department budgets can count it before, or without, its gateway_requests
+-- row. Null for OAuth access tokens and for rows written before this column.
 alter table public.gateway_request_charges
   add column if not exists key_id uuid;
 
@@ -26,6 +26,261 @@ alter table public.gateway_request_charges
   drop constraint if exists gateway_request_charges_cost_nanos_check;
 alter table public.gateway_request_charges
   add constraint gateway_request_charges_cost_nanos_check check ((cost_nanos >= 0)) not valid;
+
+-- One-off charges record their key too: both functions gain p_key_id. The old
+-- signatures are dropped first, so a call without p_key_id is not ambiguous.
+drop function if exists public.gateway_charge_with_credit_cache(uuid, text, bigint, bigint);
+drop function if exists public.gateway_deduct_and_check_top_up_once(uuid, text, bigint);
+
+CREATE OR REPLACE FUNCTION public.gateway_deduct_and_check_top_up_once (
+  p_workspace_id uuid,
+  p_request_id   text,
+  p_cost_nanos   bigint,
+  p_key_id       uuid   DEFAULT NULL::uuid
+)
+  RETURNS TABLE (
+    applied                  boolean,
+    already_applied          boolean,
+    status                   text,
+    auto_top_up_amount_nanos bigint,
+    auto_top_up_account_id   text,
+    stripe_customer_id       text
+  )
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO 'public'
+  AS $function$
+declare
+  v_charge public.gateway_request_charges%rowtype;
+  v_result record;
+  v_result_json jsonb;
+  v_status text;
+  v_auto_top_up_amount_nanos bigint;
+  v_auto_top_up_account_id text;
+  v_stripe_customer_id text;
+begin
+  if p_workspace_id is null then
+    raise exception 'missing_workspace_id';
+  end if;
+
+  if coalesce(trim(p_request_id), '') = '' then
+    raise exception 'missing_request_id';
+  end if;
+
+  if p_cost_nanos is null or p_cost_nanos <= 0 then
+    raise exception 'invalid_cost_nanos';
+  end if;
+
+  -- key_id attributes the charge to its key (and department) even when its
+  -- request row never lands.
+  insert into public.gateway_request_charges (
+    workspace_id,
+    request_id,
+    cost_nanos,
+    status,
+    created_at,
+    updated_at,
+    key_id
+  ) values (
+    p_workspace_id,
+    p_request_id,
+    p_cost_nanos,
+    'applying',
+    now(),
+    now(),
+    p_key_id
+  )
+  on conflict (workspace_id, request_id) do nothing;
+
+  select *
+  into v_charge
+  from public.gateway_request_charges
+  where workspace_id = p_workspace_id
+    and request_id = p_request_id
+  for update;
+
+  if not found then
+    raise exception 'gateway_request_charge_row_missing';
+  end if;
+
+  if v_charge.cost_nanos <> p_cost_nanos then
+    raise exception 'request_charge_amount_mismatch';
+  end if;
+
+  if v_charge.status = 'applied' then
+    return query
+    select
+      false,
+      true,
+      coalesce(v_charge.deducted_status, 'already_applied')::text,
+      0::bigint,
+      null::text,
+      null::text;
+    return;
+  end if;
+
+  update public.gateway_request_charges
+  set status = 'applying',
+      error_message = null,
+      updated_at = now()
+  where workspace_id = p_workspace_id
+    and request_id = p_request_id;
+
+  begin
+    select *
+    into v_result
+    from public.deduct_and_check_top_up(
+      p_workspace_id := p_workspace_id,
+      p_cost_nanos := p_cost_nanos
+    );
+
+    v_result_json := to_jsonb(v_result);
+  exception when others then
+    update public.gateway_request_charges
+    set status = 'failed',
+        error_message = sqlerrm,
+        updated_at = now()
+    where workspace_id = p_workspace_id
+      and request_id = p_request_id;
+    raise;
+  end;
+
+  v_status := coalesce(
+    nullif(trim(v_result_json ->> 'status'), ''),
+    nullif(trim(v_result_json ->> 'result'), ''),
+    nullif(trim(v_result_json ->> 'deduct_and_check_top_up'), ''),
+    'unknown'
+  );
+
+  v_auto_top_up_amount_nanos := case
+    when coalesce(v_result_json ->> 'auto_top_up_amount_nanos', '') ~ '^-?[0-9]+$'
+      then (v_result_json ->> 'auto_top_up_amount_nanos')::bigint
+    when coalesce(v_result_json ->> 'auto_top_up_amount', '') ~ '^-?[0-9]+$'
+      then (v_result_json ->> 'auto_top_up_amount')::bigint
+    else 0::bigint
+  end;
+
+  v_auto_top_up_account_id := nullif(
+    coalesce(
+      v_result_json ->> 'auto_top_up_account_id',
+      v_result_json ->> 'auto_top_up_payment_method_id',
+      ''
+    ),
+    ''
+  );
+
+  v_stripe_customer_id := nullif(v_result_json ->> 'stripe_customer_id', '');
+
+  update public.gateway_request_charges
+  set status = 'applied',
+      deducted_status = v_status,
+      auto_top_up_required = v_status = 'top_up_required',
+      -- deduct_and_check_top_up returns json, so the record nests it under the function name.
+      overdraft_nanos = case
+        when coalesce(coalesce(v_result_json -> 'deduct_and_check_top_up', v_result_json) ->> 'overdraft_nanos', '') ~ '^[0-9]+$'
+          then (coalesce(v_result_json -> 'deduct_and_check_top_up', v_result_json) ->> 'overdraft_nanos')::bigint
+        else 0::bigint
+      end,
+      updated_at = now()
+  where workspace_id = p_workspace_id
+    and request_id = p_request_id;
+
+  return query
+  select
+    true,
+    false,
+    v_status,
+    v_auto_top_up_amount_nanos,
+    v_auto_top_up_account_id,
+    v_stripe_customer_id;
+end;
+$function$;
+
+GRANT EXECUTE ON FUNCTION "public"."gateway_deduct_and_check_top_up_once"(uuid, text, bigint, uuid) TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."gateway_deduct_and_check_top_up_once"(uuid, text, bigint, uuid) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."gateway_deduct_and_check_top_up_once"(uuid, text, bigint, uuid) TO "postgres";
+
+REVOKE ALL ON FUNCTION "public"."gateway_deduct_and_check_top_up_once"(uuid, text, bigint, uuid) FROM PUBLIC, "anon", "authenticated";
+
+CREATE OR REPLACE FUNCTION public.gateway_charge_with_credit_cache (
+  p_workspace_id                  uuid,
+  p_request_id                    text,
+  p_cost_nanos                    bigint,
+  p_credit_snapshot_balance_nanos bigint DEFAULT NULL::bigint,
+  p_key_id                        uuid   DEFAULT NULL::uuid
+)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SET search_path TO ''
+  AS $function$
+declare
+  v_result jsonb;
+  v_legacy jsonb;
+  v_available numeric;
+  v_invalidate boolean := true;
+begin
+  -- Keep the existing idempotency key, debit, wallet lock and top-up behavior.
+  -- A successful debit holds its wallet row lock until this transaction ends.
+  select to_jsonb(charged) into v_result
+  from public.gateway_deduct_and_check_top_up_once(
+    p_workspace_id, p_request_id, p_cost_nanos, p_key_id
+  ) as charged;
+
+  if v_result is null then raise exception 'gateway_charge_result_missing'; end if;
+
+  -- Some deployed debit functions return JSON through a scalar result column.
+  -- The older idempotency wrapper stores that JSON as the status string.
+  -- Normalize the known fields here without replacing either existing function.
+  begin
+    v_legacy := (v_result ->> 'status')::jsonb;
+    if jsonb_typeof(v_legacy) = 'object' and jsonb_typeof(v_legacy -> 'status') = 'string' then
+      v_result := v_result || jsonb_build_object(
+        'status', v_legacy -> 'status',
+        'auto_top_up_amount_nanos', coalesce(v_legacy -> 'auto_top_up_amount_nanos', v_result -> 'auto_top_up_amount_nanos'),
+        'auto_top_up_account_id', coalesce(v_legacy -> 'auto_top_up_account_id', v_result -> 'auto_top_up_account_id'),
+        'stripe_customer_id', coalesce(v_legacy -> 'stripe_customer_id', v_result -> 'stripe_customer_id')
+      );
+    end if;
+  exception when invalid_text_representation then
+    null; -- Ordinary textual status; no legacy conversion is needed.
+  end;
+
+  if (v_result ->> 'applied')::boolean is true then
+    -- Read under the debit's wallet row lock: this is the exact post-charge
+    -- available balance, which the gateway can write back to its cache instead
+    -- of deleting the entry and re-reading the wallet on the next request.
+    select w.balance_nanos::numeric - coalesce(w.reserved_nanos, 0)::numeric
+    into v_available from public.wallets w where w.workspace_id = p_workspace_id;
+
+    -- Compare to the request's original snapshot, NOT just this request's cost.
+    -- This catches cumulative spending by other requests and includes holds.
+    -- Numeric arithmetic avoids bigint multiplication overflow at large balances.
+    if v_result ->> 'status' = 'top_up_not_required'
+       and p_credit_snapshot_balance_nanos >= 10000000000
+       and v_available >= 10000000000
+       and v_available * 10 > p_credit_snapshot_balance_nanos::numeric * 9 then
+      v_invalidate := false;
+    end if;
+  end if;
+
+  -- Replays invalidate conservatively: an earlier response/invalidation may
+  -- have been lost after the debit committed. Never debit a replay twice.
+  return v_result || jsonb_build_object(
+    'invalidate_credit_cache', v_invalidate,
+    'available_nanos', case when v_available is null then null else greatest(v_available, 0)::bigint end
+  );
+end;
+$function$;
+
+GRANT EXECUTE ON FUNCTION "public"."gateway_charge_with_credit_cache"(uuid, text, bigint, bigint, uuid) TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."gateway_charge_with_credit_cache"(uuid, text, bigint, bigint, uuid) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."gateway_charge_with_credit_cache"(uuid, text, bigint, bigint, uuid) TO "postgres";
+
+REVOKE ALL ON FUNCTION "public"."gateway_charge_with_credit_cache"(uuid, text, bigint, bigint, uuid) FROM PUBLIC, "anon", "authenticated";
 
 CREATE OR REPLACE FUNCTION public.gateway_charge_request_total (
   p_workspace_id                  uuid,
