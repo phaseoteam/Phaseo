@@ -22,6 +22,7 @@ const findMigration = async (suffix) => {
 };
 const previous = await findMigration('_billing_security_fixes.sql');
 const chargeTotals = await findMigration('_gateway_charge_request_total.sql');
+const settlement = await findMigration('_async_settlement_always_charges.sql');
 const migration = await findMigration('_refund_claim_counts_charged_failures.sql');
 const billingIndex = await findMigration('_gateway_requests_billing_request_index.sql');
 assert(migration.name > chargeTotals.name, 'the refund migration runs after the stepped charge columns exist');
@@ -48,6 +49,7 @@ assert(/from public\.gateway_request_charges charge[\s\S]*gr\.billing_request_id
 assert(!/charge\.is_final/.test(schemaBody) && !/interval '1 day'/.test(schemaBody),
   'every applied charge counts, open or settled, with no time window on the request lookup');
 assert(/adjustment\.created_at >= v_purchase\.event_time/.test(schemaBody), 'stepped charges count by debit time');
+assert(/debit\.ref_type = 'async_job_charge'/.test(schemaBody), 'reserved batches count by their settled debit');
 assert(!/not like 'batch\\_capture:%'/.test(schemaBody), 'batch captures are counted, not left out');
 // Outside the usage query the body is the previous one.
 const outsideUsage = (body) => {
@@ -66,7 +68,8 @@ const one = async (sql, params = []) => (await db.query(sql, params)).rows[0];
 const asService = async (fn) => { await db.exec('set role service_role'); try { return await fn(); } finally { await db.exec('reset role'); } };
 const balance = async () => Number((await one('select balance_nanos from public.wallets where workspace_id = $1', [ws])).balance_nanos);
 const setBalance = (nanos) => db.query('update public.wallets set balance_nanos = $2, reserved_nanos = 0 where workspace_id = $1', [ws, nanos]);
-const reset = () => db.exec('delete from public.gateway_requests; delete from public.credit_ledger; delete from public.gateway_request_charges;');
+const reset = () => db.exec(`delete from public.gateway_requests; delete from public.credit_ledger; delete from public.gateway_request_charges;
+  delete from public.gateway_wallet_reservations; update public.wallets set reserved_nanos = 0;`);
 const purchase = (pi, amount, before, hoursAgo) => db.query(
   `insert into public.credit_ledger (workspace_id, event_time, kind, amount_nanos, before_balance_nanos, after_balance_nanos, ref_type, ref_id, status)
    values ($1, now() - make_interval(hours => $5::int), 'top_up', $3::bigint, $4::bigint, $4::bigint + $3::bigint, 'Stripe_Payment_Intent', $2, 'Paid')`,
@@ -106,6 +109,7 @@ try {
   // The request row's charge key (production has it) and the stepped charge columns.
   await db.exec('alter table public.gateway_requests add column billing_request_id text, add column request_id text;');
   await db.exec(chargeTotals.sql);
+  await db.exec(settlement.sql);
 
   // ---------- Before the fix ----------
   await scenario('before', viaCancellations);
@@ -181,6 +185,37 @@ try {
   assert.equal((await batch('batch_missing', 0, 4)).reason, 'lot_used', 'a batch whose rows never persisted still counts its $5');
   assert.equal((await batch('batch_partial', 2, 4)).reason, 'lot_used', 'a batch with 2 of 5 rows persisted still counts its $5');
   assert.equal((await batch('batch_partial_ok', 2, 6)).ok, true, 'a partly persisted batch is counted once, not rows plus capture');
+
+  // A reserved batch: $3 held (three $1 key-limit placeholders, batch_hold_usage), settled after the
+  // purchase at its actual $10 through gateway_wallet_settle_once (an async_job_charge ledger row).
+  // The purchase had a $5 prior balance; $2 of per-row usage persisted in the partial case.
+  const reservedBatch = async (prefix, { placeholders, rowsPersisted, priorBalance }) => {
+    await reset();
+    const reservation = `batch_hold:${prefix}_req`;
+    await db.query(`update public.wallets set balance_nanos = $2, reserved_nanos = $3 where workspace_id = $1`, [ws, usd(30), usd(3)]);
+    await db.query(`insert into public.gateway_wallet_reservations (workspace_id, reservation_id, amount_nanos, status, created_at)
+      values ($1, $2, $3, 'held', now() - interval '3 hours')`, [ws, reservation, usd(3)]);
+    if (placeholders) await db.query(`insert into public.gateway_requests (workspace_id, success, cost_nanos, created_at, request_id)
+      select $1, true, $2, now() - interval '90 minutes', 'batch_hold_usage:' || $3 || ':' || i from generate_series(1, 3) i`, [ws, usd(1), reservation]);
+    await purchase(`${prefix}_first`, usd(10), usd(priorBalance), 2);
+    const settled = await asService(() => one('select * from public.gateway_wallet_settle_once($1, $2, $3, $4)', [ws, reservation, usd(10), `${prefix}_batch`]));
+    assert.equal(settled.ok, true, JSON.stringify(settled));
+    if (rowsPersisted) await db.query(`insert into public.gateway_requests (workspace_id, success, cost_nanos, created_at, request_id)
+      select $1, true, $2, now() - interval '30 minutes', 'batch_usage:' || $3 || ':' || i from generate_series(1, $4::int) i`,
+      [ws, usd(1), `${prefix}_batch`, rowsPersisted]);
+    await setBalance(usd(priorBalance + 10));
+    return claim(`${prefix}_first`);
+  };
+  assert.equal((await reservedBatch('rb_partial', { placeholders: false, rowsPersisted: 2, priorBalance: 5 })).reason, 'lot_used',
+    'a reserved batch counts its $10 debit, not the $2 of rows that persisted');
+  assert.equal((await reservedBatch('rb_missing', { placeholders: false, rowsPersisted: 0, priorBalance: 5 })).reason, 'lot_used',
+    'a reserved batch with no persisted rows counts its $10 debit');
+  assert.equal((await reservedBatch('rb_hold', { placeholders: true, rowsPersisted: 0, priorBalance: 5 })).reason, 'lot_used',
+    'a reserved batch counts its $10 debit, not its $3 held-price placeholders');
+  assert.equal((await reservedBatch('rb_once', { placeholders: false, rowsPersisted: 2, priorBalance: 11 })).ok, true,
+    'the debit and its persisted rows are counted once ($10 fits in $11)');
+  assert.equal((await reservedBatch('rb_once_hold', { placeholders: true, rowsPersisted: 0, priorBalance: 11 })).ok, true,
+    'the debit and its placeholders are counted once ($10 fits in $11)');
 
   // A stream charged at checkpoints that started before the purchase: checkpoint 1 ($3) debited
   // before it, checkpoint 2 ($4 more) after. The $4 used the new purchase; the $3 did not.
