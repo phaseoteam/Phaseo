@@ -994,7 +994,15 @@ jobs:
                     exit 1
                   fi
                   # The commit in the deployment message lets the next run skip unchanged deploys.
-                  pnpm --filter @phaseo/web run deploy --message "$GITHUB_SHA"
+                  # Runtime vars for code that reads an env object (auth redirect origin,
+                  # Stripe checkout URLs), which build-time inlining of process.env.X does
+                  # not reach. Without them auth assumed development and sent OAuth and
+                  # email links to localhost. Set here, not in wrangler.jsonc, so local
+                  # `vite dev` keeps its localhost defaults.
+                  pnpm --filter @phaseo/web run deploy --message "$GITHUB_SHA" \
+                      --var NODE_ENV:production \
+                      --var PUBLIC_WEBSITE_URL:https://phaseo.app \
+                      --var WEBSITE_URL:https://phaseo.app
             # ---------- API (Cloudflare Workers) ----------
             # Install deps so wrangler can resolve imports
 
