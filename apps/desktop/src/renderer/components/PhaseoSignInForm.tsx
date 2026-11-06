@@ -10,8 +10,8 @@ import type { PhaseoSignInMethod, PhaseoSignInResult } from "../../shared/worksp
 import type { WorkspaceOverview } from "../../shared/workspaceOverview";
 
 const providers = [
-	{ id: "github", label: "GitHub", logo: githubLight, darkLogo: githubDark },
 	{ id: "google", label: "Google", logo: google },
+	{ id: "github", label: "GitHub", logo: githubLight, darkLogo: githubDark },
 	{ id: "gitlab", label: "GitLab", logo: gitlab },
 ] as const;
 type Step = "choose" | "browser" | "password" | "code" | "verifying";
