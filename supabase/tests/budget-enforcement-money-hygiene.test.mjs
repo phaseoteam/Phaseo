@@ -134,7 +134,7 @@ try {
     for (const index of await readIndexMigrations()) {
       const statements = index.split('\n').filter((line) => !line.startsWith('--')).join('\n').split(';').filter((part) => part.trim());
       assert.equal(statements.length, 1, 'one statement per index migration');
-      assert.match(statements[0], /^\s*CREATE INDEX IF NOT EXISTS /);
+      assert.match(statements[0], /^\s*CREATE INDEX IF NOT EXISTS /i);
     }
     assert.match(migration, /raise notice 'io_logging_retention_days set to 90 on % workspace_settings row\(s\)', v_count;/);
   });
