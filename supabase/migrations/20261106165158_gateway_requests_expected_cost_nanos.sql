@@ -17,4 +17,9 @@ begin
 end
 $add_check$;
 
+-- Clients read every request column except detail_metadata (RLS limits the rows).
+GRANT SELECT ("expected_cost_nanos") ON TABLE "public"."gateway_requests" TO "anon";
+
+GRANT SELECT ("expected_cost_nanos") ON TABLE "public"."gateway_requests" TO "authenticated";
+
 COMMENT ON COLUMN "public"."gateway_requests"."expected_cost_nanos" IS 'Expected cost of a delivered request whose wallet charge did not go through (pending reconciliation); NULL otherwise. cost_nanos is what the wallet took. Budgets count greatest(cost_nanos, expected_cost_nanos).';
