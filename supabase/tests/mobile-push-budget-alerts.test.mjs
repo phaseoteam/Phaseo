@@ -43,7 +43,14 @@ const events = async (where = 'true') => (await rows(`select kind, dedupe_key, p
 try {
     // The migration carries every schema file it added, and the manifest lists them.
     const v4 = await read(v4File);
-    for (const file of schemaFiles) assert.ok(v4.includes((await read(file)).trim()), `${file} is in the migration`);
+    // sweep_spend_limit_warnings was last replaced by budget_enforcement_money_hygiene (charged async
+    // requests that did not succeed count toward cost).
+    const latestFile = '../migrations/20261106220406_budget_enforcement_money_hygiene.sql';
+    const latest = await read(latestFile);
+    for (const file of schemaFiles) {
+        const shipped = file.endsWith('sweep_spend_limit_warnings.sql') ? latest : v4;
+        assert.ok(shipped.includes((await read(file)).trim()), `${file} is in the migration`);
+    }
     const manifest = JSON.parse(await read('../schemas/.pgdelta-export.json'));
     for (const file of schemaFiles) {
         const path = file.replace('../schemas/', '');
@@ -170,6 +177,7 @@ try {
     await db.exec(await read('../schemas/public/functions/catalog_model_is_public.sql'));
     for (const file of migrations) await db.exec(await read(file));
     await db.exec(v4);
+    await db.exec(await read('../schemas/public/functions/sweep_spend_limit_warnings.sql'));
 
     // Acme: u1 owns it (and a personal workspace), u2 is an admin, u3 a member who created the ci
     // key, u4 another member. Beta has a lifetime budget.
@@ -307,7 +315,7 @@ try {
     assert.equal((await one(`select count(*)::int n from public.email_outbox`)).n, 0, 'no email is queued');
 
     // Async jobs and realtime sessions are not in the rollup but count towards limits: in November,
-    // Gamma's vid key ran nine video jobs (and one that failed) and a realtime session ran on the
+    // Gamma's vid key ran nine video jobs (and one that failed but was charged: cost only) and a realtime session ran on the
     // workspace. Its sync request is in gateway_requests too, but sync usage comes from the rollup,
     // which has none here, so it is not counted twice.
     await db.exec(`
@@ -324,11 +332,11 @@ try {
     `);
     assert.deepEqual(await sweep('2026-11-04T12:00:00Z'), { budgets: 3, limitedKeys: 5, warned: 3 });
     assert.deepEqual((await events(`occurred_at = '2026-11-04T12:00:00Z'`)).map(event => [event.kind, event.title, event.body]), [
-        // $40.50 of video and $40 of realtime: 2.5 days into the week, 2.5 * 100 / 80.5 = 3.1 days.
-        ['budget_warning', 'About 80% of the weekly budget used', '$80.50 of $100.00 so far this week. At this pace it runs out around Nov 5.'],
+        // $45 of video (the failed job was charged) and $40 of realtime: 2.5 days into the week, 2.5 * 100 / 85 = 2.9 days.
+        ['budget_warning', 'About 80% of the weekly budget used', '$85.00 of $100.00 so far this week. At this pace it runs out around Nov 4.'],
         ['key_limit_warning', "API key 'vid' is at about 80% of its daily limit", '9 of 10 requests so far today.'],
-        // 3.5 days into November, 3.5 * 50 / 40.5 = 4.3 days.
-        ['key_limit_warning', "API key 'vid' is at about 80% of its monthly limit", '$40.50 of $50.00 so far this month. At this pace it runs out around Nov 5.'],
+        // 3.5 days into November, 3.5 * 50 / 45 = 3.9 days; the failed job is not a request (9 of 10 today).
+        ['key_limit_warning', "API key 'vid' is at about 80% of its monthly limit", '$45.00 of $50.00 so far this month. At this pace it runs out around Nov 4.'],
     ]);
 
     // Nothing configured: the sweep returns after two counts.

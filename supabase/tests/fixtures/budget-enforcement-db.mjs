@@ -1,24 +1,24 @@
-// Production shapes, trimmed to what migration 20261106165205_budget_enforcement_money_hygiene and
+// Production shapes, trimmed to what migration 20261106220406_budget_enforcement_money_hygiene and
 // the functions it replaces read. Shared by supabase/tests/budget-enforcement-money-hygiene.test.mjs
 // and the gateway's seed -> SpendLimit Durable Object -> guard test, so both run the real SQL.
 import { readFile } from 'node:fs/promises';
 
 const schemasUrl = new URL('../../schemas/', import.meta.url);
-export const MIGRATION_FILE = '20261106165205_budget_enforcement_money_hygiene.sql';
+export const MIGRATION_FILE = '20261106220406_budget_enforcement_money_hygiene.sql';
 export const readSchema = (path) => readFile(new URL(path, schemasUrl), 'utf8');
 export const readMigration = () => readFile(new URL(`../../migrations/${MIGRATION_FILE}`, import.meta.url), 'utf8');
 // The migrations that precede MIGRATION_FILE: the expected_cost_nanos column (added, then validated),
 // then each new index in its own migration.
 export const COLUMN_MIGRATION_FILES = [
-  '20261106165158_gateway_requests_expected_cost_nanos.sql',
-  '20261106165159_validate_gateway_requests_expected_cost_nanos_check.sql',
+  '20261106220400_gateway_requests_expected_cost_nanos.sql',
+  '20261106220401_validate_gateway_requests_expected_cost_nanos_check.sql',
 ];
 export const INDEX_MIGRATION_FILES = [
-  '20261106162022_gateway_requests_billing_request_index.sql', // fix/async-billing-20261104's
-  '20261106165200_gateway_requests_expected_cost_idx.sql',
-  '20261106165201_gateway_requests_charged_unsuccessful_cost_idx.sql',
-  '20261106165202_gateway_request_charges_applied_cost_idx.sql',
-  '20261106165203_credit_ledger_request_charge_movements_idx.sql',
+  '20261106220335_gateway_requests_billing_request_index.sql', // fix/async-billing-20261104's
+  '20261106220402_gateway_requests_expected_cost_idx.sql',
+  '20261106220403_gateway_requests_charged_unsuccessful_cost_idx.sql',
+  '20261106220404_gateway_request_charges_applied_cost_idx.sql',
+  '20261106220405_credit_ledger_request_charge_movements_idx.sql',
 ];
 export const readIndexMigrations = () => Promise.all(INDEX_MIGRATION_FILES.map((name) =>
   readFile(new URL(`../../migrations/${name}`, import.meta.url), 'utf8')));
@@ -63,6 +63,8 @@ const STUBS = `
   create table public.gateway_requests_2025 partition of public.gateway_requests for values from ('2025-01-01') to ('2026-01-01');
   create table public.gateway_requests_2026 partition of public.gateway_requests for values from ('2026-01-01') to ('2027-01-01');
   create table public.gateway_requests_default partition of public.gateway_requests default;
+  -- Production's history index (gateway_requests_workspace_cursor_idx).
+  create index gateway_requests_workspace_cursor_idx on public.gateway_requests (workspace_id, created_at desc, id desc);
   create table public.workspace_budgets (id uuid primary key default gen_random_uuid(), workspace_id uuid not null,
     interval text not null, limit_nanos bigint not null, created_by uuid, created_at timestamptz default now(),
     updated_at timestamptz default now());

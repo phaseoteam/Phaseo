@@ -28,13 +28,19 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
   -- row then counts), probed per charge with LIMIT 1 on #3534's (workspace_id, billing_request_id)
   -- index. Charges before 2026-11-04 00:00 UTC are left out: request rows recorded
   -- billing_request_id only from 2026-11-03 14:43 UTC, so an older charge's audit row cannot be
-  -- matched and is already counted. Batch captures are left out: their cost is on per-row request
-  -- rows without a billing id.
+  -- matched and is already counted.
   --
   -- * 'stepped': a stream charged at drain checkpoints (gateway_charge_request_total), through the
   --   adjustment ledger rows it writes, one per debit or refund, each at its own time; attributed
   --   to the key on the charge row.
   -- * 'charge': a one-off charge (no adjustment rows), one movement at the charge's time.
+  -- * 'batch': a batch's debit less the per-row request rows that already count it, at the debit's
+  --   time. A batch without a reservation is charged as batch_capture:<batch>; a reserved batch is
+  --   settled into an async_job_charge ledger row (gateway_wallet_settle_once), and its rows may
+  --   still be the batch_hold_usage placeholders written at the held price. Rows link to the batch
+  --   by the batch_usage:<batch>: (or batch_hold_usage:<reservation>:) prefix, not by billing id,
+  --   so a batch whose rows never persisted still counts its debit. Rows are read from a day either
+  --   side of the batch (they are written as it settles) through the (workspace_id, created_at) index.
   -- * 'unpaid': a delivered request whose wallet charge failed (expected_cost_nanos, pending
   --   reconciliation): the part of the expected amount cost_nanos does not cover, so the row
   --   counts greatest(cost_nanos, expected_cost_nanos) and a later charge never counts twice.
@@ -87,6 +93,47 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
     and (p_key_ids is null or charge.key_id = any (p_key_ids))
     and not (charge.request_id = any (coalesce(p_exclude_charge_ids, '{}'::text[])))
   union all
+  select 'batch'::text, charge.request_id, charge.key_id, charge.created_at,
+    greatest(0, charge.cost_nanos - coalesce(persisted.cost, 0))
+  from public.gateway_request_charges charge
+  left join lateral (
+    select sum(request.cost_nanos) as cost
+    from public.gateway_requests request
+    where request.workspace_id = charge.workspace_id
+      and request.created_at between charge.created_at - interval '1 day' and charge.created_at + interval '1 day'
+      and request.cost_nanos > 0
+      and starts_with(request.request_id, 'batch_usage:' || substr(charge.request_id, 15) || ':')
+  ) persisted on true
+  where charge.workspace_id = p_workspace_id
+    and starts_with(charge.request_id, 'batch_capture:')
+    and charge.status = 'applied'
+    and charge.cost_nanos > 0
+    and charge.created_at >= greatest(coalesce(p_since, '-infinity'::timestamptz), '2026-11-04 00:00:00+00'::timestamptz)
+    and (p_key_ids is null or charge.key_id = any (p_key_ids))
+    and not (charge.request_id = any (coalesce(p_exclude_charge_ids, '{}'::text[])))
+  union all
+  select 'batch'::text, debit.ref_id, hold.key_id, debit.created_at,
+    greatest(0, -debit.amount_nanos - coalesce(persisted.cost, 0))
+  from public.credit_ledger debit
+  join public.gateway_wallet_reservations hold
+    on hold.workspace_id = debit.workspace_id
+    and hold.reservation_id = substr(debit.ref_id, length(debit.workspace_id::text) + 2)
+  left join lateral (
+    select sum(request.cost_nanos) as cost
+    from public.gateway_requests request
+    where request.workspace_id = debit.workspace_id
+      and request.created_at between hold.created_at - interval '1 day' and debit.created_at + interval '1 day'
+      and request.cost_nanos > 0
+      and (starts_with(request.request_id, 'batch_usage:' || debit.source_ref_id || ':')
+        or starts_with(request.request_id, 'batch_hold_usage:' || hold.reservation_id || ':'))
+  ) persisted on true
+  where debit.workspace_id = p_workspace_id
+    and debit.ref_type = 'async_job_charge'
+    and starts_with(debit.ref_id, p_workspace_id::text || ':batch_hold:')
+    and debit.amount_nanos < 0
+    and debit.created_at >= greatest(coalesce(p_since, '-infinity'::timestamptz), '2026-11-04 00:00:00+00'::timestamptz)
+    and (p_key_ids is null or hold.key_id = any (p_key_ids))
+  union all
   select 'unpaid'::text, request.billing_request_id, request.key_id, request.created_at,
     request.expected_cost_nanos - greatest(coalesce(request.cost_nanos, 0), 0)
   from public.gateway_requests request
@@ -98,7 +145,7 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
     and not (request.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])));
 $function$;
 
-COMMENT ON FUNCTION "private"."unbilled_spend"(uuid, timestamp with time zone, uuid[], text[], text[]) IS 'Spend counted toward budgets and key caps that no ordinary request row carries yet, by wallet movement: stepped charges through their adjustment ledger rows (each at its time), one-off charges without a request row, and the uncharged part of delivered requests pending reconciliation (expected_cost_nanos). Charge rows the SpendLimit Durable Object holds are excluded by billing request id, request rows by request id.';
+COMMENT ON FUNCTION "private"."unbilled_spend"(uuid, timestamp with time zone, uuid[], text[], text[]) IS 'Spend counted toward budgets and key caps that no ordinary request row carries yet, by wallet movement: stepped charges through their adjustment ledger rows (each at its time), one-off charges without a request row, batch debits their rows do not cover, and the uncharged part of delivered requests pending reconciliation (expected_cost_nanos). Charge rows the SpendLimit Durable Object holds are excluded by billing request id, request rows by request id.';
 
 REVOKE ALL ON FUNCTION "private"."unbilled_spend"(uuid, timestamp with time zone, uuid[], text[], text[]) FROM PUBLIC;
 
