@@ -1,6 +1,7 @@
 // The document shell: html, head and the providers every page shares (see RootDocument).
 import appCss from "@/styles/globals.css?url";
 import fontsCss from "@/components/layout/fonts.css?url";
+import montserratLatin from "@fontsource-variable/montserrat/files/montserrat-latin-wght-normal.woff2?url";
 import type { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, Outlet, useLocation } from "@tanstack/react-router";
 import { RootDocument } from "@/components/layout/RootDocument";
@@ -27,6 +28,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 		links: [
 			{ rel: "stylesheet", href: appCss },
 			{ rel: "stylesheet", href: fontsCss },
+			// Fetch the Latin Montserrat file alongside the stylesheets instead of after
+			// them, so the first paint usually has it (next/font preloaded it the same way).
+			{ rel: "preload", href: montserratLatin, as: "font", type: "font/woff2", crossOrigin: "anonymous" },
 		],
 	}),
 	component: RootComponent,
