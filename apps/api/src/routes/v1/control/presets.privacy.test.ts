@@ -10,6 +10,10 @@ const state = vi.hoisted(() => ({
 	rpcs: [] as Array<{ name: string; args: Row }>,
 	/** Rows the real audit writer inserted into workspace_audit_events. */
 	audits: [] as Row[],
+	/** Every database query, in order: table, operation and each builder call with its arguments. */
+	queries: [] as Array<{ table: string; operation: string; calls: string[] }>,
+	/** Auth and role checks, in order. */
+	authCalls: [] as string[],
 	/** Runs just before the next preset update, to change the row between the read and the write. */
 	beforeUpdate: null as null | (() => void),
 	/** Runs just after the next preset update, to change the row before anything reads it again. */
@@ -31,13 +35,14 @@ const privatePreset = () => ({
 });
 const teamPreset = () => ({ ...teamPresetWithPrivateDraft(), id: "team_1", name: "@team", slug: "team", draft_name: "@team", draft_slug: "team", draft_description: "Published description", draft_config: { models: ["openai/published"] }, draft_visibility: "team" });
 
-/** PostgREST-style condition: column.op.value with eq, neq and is.null. */
+/** PostgREST-style condition: column.op.value with eq, neq and is.null. As in SQL, eq and neq never match NULL. */
 function holds(row: Row, condition: string) {
 	const [column, op, ...rest] = condition.split(".");
 	const value = rest.join(".");
 	if (op === "is" && value === "null") return row[column] === null || row[column] === undefined;
+	if (row[column] === null || row[column] === undefined) return false;
 	if (op === "eq") return String(row[column]) === value;
-	if (op === "neq") return row[column] === null || row[column] === undefined ? true : String(row[column]) !== value;
+	if (op === "neq") return String(row[column]) !== value;
 	throw new Error(`unsupported condition ${condition}`);
 }
 
@@ -46,9 +51,10 @@ function query(table: string) {
 	let operation: "select" | "update" = "select";
 	let payload: Row = {};
 	let head = false;
+	const calls: string[] = [];
 	const builder: any = {};
 	builder.select = (_columns: string, options?: { count?: string }) => { head = Boolean(options?.count); return builder; };
-	builder.eq = (column: string, value: unknown) => { conditions.push((row) => String(row[column]) === String(value)); return builder; };
+	builder.eq = (column: string, value: unknown) => { conditions.push((row) => row[column] !== null && row[column] !== undefined && String(row[column]) === String(value)); return builder; };
 	builder.neq = (column: string, value: unknown) => { conditions.push((row) => holds(row, `${column}.neq.${value}`)); return builder; };
 	builder.is = (column: string, value: unknown) => { conditions.push((row) => (value === null ? row[column] === null || row[column] === undefined : row[column] === value)); return builder; };
 	builder.or = (expression: string) => { const parts = expression.split(","); conditions.push((row) => parts.some((part) => holds(row, part))); return builder; };
@@ -59,6 +65,7 @@ function query(table: string) {
 	const rowsOf: Record<string, Row[]> = { presets: state.presets, preset_versions: state.versions, preset_version_labels: state.labels };
 	const matching = () => (rowsOf[table] ?? []).filter((row) => conditions.every((check) => check(row)));
 	function run() {
+		state.queries.push({ table, operation, calls: [...calls] });
 		if (table === "workspaces") return { data: { publisher_handle: "team" }, error: null };
 		if (!rowsOf[table]) return { data: null, error: null };
 		if (operation === "update") {
@@ -74,6 +81,11 @@ function query(table: string) {
 		}
 		const rows = matching();
 		return { data: rows.map((row) => ({ ...row })), error: null, count: head ? rows.length : undefined };
+	}
+	// Record every builder call (wrapped after definition so each keeps its behaviour).
+	for (const name of ["select", "eq", "neq", "is", "or", "in", "order", "range", "update"]) {
+		const original = builder[name];
+		builder[name] = (...args: unknown[]) => { calls.push(`${name}(${JSON.stringify(args)})`); return original(...args); };
 	}
 	builder.maybeSingle = async () => { const result = run(); return { ...result, data: Array.isArray(result.data) ? result.data[0] ?? null : result.data }; };
 	builder.single = builder.maybeSingle;
@@ -91,11 +103,11 @@ vi.mock("@/runtime/env", () => ({
 		},
 	}),
 }));
-vi.mock("@/pipeline/before/guards", () => ({ guardManagementAuth: async () => ({ ok: true, value: { workspaceId: "workspace_1", userId: state.userId, requestId: "request_1", authMethod: "oauth" } }) }));
+vi.mock("@/pipeline/before/guards", () => ({ guardManagementAuth: async () => { state.authCalls.push("guardManagementAuth"); return { ok: true, value: { workspaceId: "workspace_1", userId: state.userId, requestId: "request_1", authMethod: "oauth" } }; } }));
 vi.mock("./route-helpers", async (importOriginal) => ({
 	...(await importOriginal<Record<string, unknown>>()),
-	requireCapability: () => null,
-	requireOAuthWorkspaceRole: async () => null,
+	requireCapability: (_auth: unknown, capability: string) => { state.authCalls.push(`requireCapability:${capability}`); return null; },
+	requireOAuthWorkspaceRole: async (_auth: unknown, _workspace: string, roles: string[]) => { state.authCalls.push(`requireOAuthWorkspaceRole:${roles.join("|")}`); return null; },
 	internalServerError: (_name: string, error: unknown) => new Response(JSON.stringify({ error: String(error) }), { status: 500 }),
 }));
 vi.mock("@/routes/utils", () => ({
@@ -117,6 +129,8 @@ describe("preset privacy on the management API", () => {
 		state.afterUpdate = null;
 		state.rpcs = [];
 		state.audits = [];
+		state.queries = [];
+		state.authCalls = [];
 		state.versions = [
 			{ id: "version_2", preset_id: "team_1", version_number: 2, version_label: "v2", visibility: "team", config: { models: ["openai/published"] } },
 			{ id: "50000000-0000-4000-8000-000000000001", preset_id: "team_1", version_number: 1, version_label: "v1", visibility: "private", config: { models: ["openai/secret-v1"], prompt: { messages: [{ role: "system", content: "Secret prompt" }] } } },
@@ -236,6 +250,108 @@ describe("preset privacy on the management API", () => {
 		state.userId = CREATOR;
 		expect((await request("/team_1", { method: "DELETE" })).status).toBe(200);
 		expect(state.presets.find((row) => row.id === "team_1")!.archived_at).toBeTruthy();
+	});
+
+	it("still lets an admin edit a shared preset with no draft visibility yet (only the is.null branch matches it)", async () => {
+		Object.assign(state.presets.find((row) => row.id === "team_1")!, { draft_visibility: null });
+		const response = await patch("/team_1", { description: "From null" });
+		expect(response.status).toBe(200);
+		expect(state.presets.find((row) => row.id === "team_1")).toMatchObject({ draft_description: "From null" });
+	});
+
+	describe("a teammate's private preset and a missing one look the same", () => {
+		const json = (body: Row) => ({ headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+		const cases: Array<[string, string, RequestInit | undefined]> = [
+			["read", "/private_1", undefined],
+			["read by slug", "/private", undefined],
+			["update", "/private_1", { method: "PATCH", ...json({ description: "Mine" }) }],
+			["archive", "/private_1", { method: "DELETE" }],
+			["publish", "/private_1/versions", { method: "POST", ...json({}) }],
+			["list versions", "/private_1/versions", undefined],
+			["list labels", "/private_1/labels", undefined],
+			["set a label", "/private_1/labels/probe", { method: "PUT", ...json({ version: "v1" }) }],
+			["remove a label", "/private_1/labels/probe", { method: "DELETE" }],
+			["apply upstream", "/private_1/upstream", { method: "POST", ...json({ version_id: "50000000-0000-4000-8000-000000000009" }) }],
+		];
+		async function observe(path: string, init: RequestInit | undefined, exists: boolean) {
+			state.presets = [teamPresetWithPrivateDraft(), ...(exists ? [privatePreset()] : []), teamPreset()];
+			state.queries = [];
+			state.authCalls = [];
+			state.rpcs = [];
+			const response = await request(path, init);
+			return {
+				status: response.status,
+				body: await response.text(),
+				headers: Object.fromEntries(response.headers.entries()),
+				authCalls: [...state.authCalls],
+				queries: state.queries.map((query) => ({ ...query })),
+				rpcs: [...state.rpcs],
+			};
+		}
+		it.each(cases)("%s: same status, body, headers, auth checks and queries", async (_label, path, init) => {
+			const hidden = await observe(path, init, true);
+			const missing = await observe(path, init, false);
+			expect(hidden.status).toBe(404);
+			expect(hidden).toEqual(missing);
+		});
+	});
+
+	it("lets the creator publish their own private draft", async () => {
+		state.userId = CREATOR;
+		const response = await request("/shared_1/versions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({}) });
+		expect(response.status).toBe(201);
+		expect(state.rpcs).toEqual([expect.objectContaining({ name: "publish_preset_version", args: expect.objectContaining({ target_preset_id: "shared_1", actor_user_id: CREATOR }) })]);
+	});
+
+	it("says there's nothing to publish for a shared preset whose draft is unchanged", async () => {
+		const response = await request("/team_1/versions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({}) });
+		expect(response.status).toBe(409);
+		await expect(response.json()).resolves.toMatchObject({ error: "conflict", message: "No draft changes to publish" });
+		expect(state.rpcs).toEqual([]);
+	});
+
+	it("only forks public presets, and only their public versions", async () => {
+		state.presets.push({ id: "public_1", workspace_id: "workspace_2", created_by: "someone", visibility: "public", archived_at: null, name: "@public", slug: "public", description: null, config: {}, active_version_id: "pv_public" });
+		state.versions.push(
+			{ id: "pv_public", preset_id: "public_1", version_number: 1, version_label: "v1", visibility: "public", name: "@public", slug: "public", description: null, config: {} },
+			{ id: "pv_team", preset_id: "public_1", version_number: 2, version_label: "v2", visibility: "team", name: "@public", slug: "public", description: null, config: { secret: true } },
+		);
+		const fork = (id: string, body: Row = {}) => request(`/${id}/fork`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+		const presetCount = state.presets.length;
+		for (const id of ["private_1", "team_1", "missing_1"]) {
+			const response = await fork(id);
+			expect(response.status, id).toBe(404);
+			await expect(response.json()).resolves.toEqual({ error: "not_found", message: "Public source preset not found" });
+		}
+		const hiddenVersion = await fork("public_1", { source_version_id: "pv_team" });
+		expect(hiddenVersion.status).toBeGreaterThanOrEqual(400);
+		expect(hiddenVersion.status).toBeLessThan(500);
+		expect(await hiddenVersion.text()).not.toContain("secret");
+		expect(state.presets).toHaveLength(presetCount);
+	});
+
+	describe("writes on a teammate's private preset read as missing", () => {
+		const put = (path: string, body: Row) => request(path, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+		const post = (path: string, body: Row) => request(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+		it.each([
+			["publish a version", () => post("/private_1/versions", {})],
+			["set a label", () => put("/private_1/labels/probe", { version: "v1" })],
+			["remove a label", () => request("/private_1/labels/probe", { method: "DELETE" })],
+			["apply an upstream version", () => post("/private_1/upstream", { version_id: "50000000-0000-4000-8000-000000000009" })],
+		])("%s: the same 404 as a missing preset, and no database call", async (_label, run) => {
+			const response = await run();
+			expect(response.status).toBe(404);
+			await expect(response.json()).resolves.toEqual({ error: "not_found", message: "Preset not found" });
+			expect(state.rpcs).toEqual([]);
+		});
+
+		it("refuses to publish a teammate's private draft before looking at it", async () => {
+			// shared_1 is a team preset whose draft is private; its draft differs from the published preset.
+			const response = await post("/shared_1/versions", {});
+			expect(response.status).toBe(403);
+			await expect(response.json()).resolves.toEqual({ error: "forbidden" });
+			expect(state.rpcs).toEqual([]);
+		});
 	});
 
 	it("still lets an admin edit a shared preset", async () => {
