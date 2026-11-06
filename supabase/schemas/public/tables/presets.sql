@@ -84,20 +84,20 @@ CREATE POLICY "presets_no_oauth_client_insert" ON "public"."presets"
   AS RESTRICTIVE
   FOR INSERT
   TO "authenticated"
-  WITH CHECK (((( SELECT auth.jwt() AS jwt) ->> 'client_id'::text) IS NULL));
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
 
 CREATE POLICY "presets_no_oauth_client_update" ON "public"."presets"
   AS RESTRICTIVE
   FOR UPDATE
   TO "authenticated"
-  USING (((( SELECT auth.jwt() AS jwt) ->> 'client_id'::text) IS NULL))
-  WITH CHECK (((( SELECT auth.jwt() AS jwt) ->> 'client_id'::text) IS NULL));
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
 
 CREATE POLICY "presets_no_oauth_client_delete" ON "public"."presets"
   AS RESTRICTIVE
   FOR DELETE
   TO "authenticated"
-  USING (((( SELECT auth.jwt() AS jwt) ->> 'client_id'::text) IS NULL));
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
 
 CREATE POLICY "mfa_required_when_enrolled" ON "public"."presets"
   AS RESTRICTIVE

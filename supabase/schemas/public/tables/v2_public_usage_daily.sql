@@ -66,6 +66,25 @@ CREATE INDEX v2_public_usage_daily_model_date_idx ON public.v2_public_usage_dail
 CREATE INDEX v2_public_usage_daily_provider_date_idx ON public.v2_public_usage_daily USING btree (provider_model_id, usage_date DESC)
   WHERE (provider_model_id IS NOT NULL);
 
+CREATE POLICY "v2_public_usage_daily_no_oauth_client_insert" ON "public"."v2_public_usage_daily"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "v2_public_usage_daily_no_oauth_client_update" ON "public"."v2_public_usage_daily"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "v2_public_usage_daily_no_oauth_client_delete" ON "public"."v2_public_usage_daily"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
 CREATE POLICY "v2_public_usage_daily_public_select" ON "public"."v2_public_usage_daily"
   FOR SELECT
   TO "anon", "authenticated"

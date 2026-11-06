@@ -57,6 +57,25 @@ CREATE TRIGGER gateway_workspace_publication
   FOR EACH ROW
   EXECUTE FUNCTION private.capture_gateway_workspace_publication();
 
+CREATE POLICY "byok_keys_no_oauth_client_insert" ON "public"."byok_keys"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "byok_keys_no_oauth_client_update" ON "public"."byok_keys"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "byok_keys_no_oauth_client_delete" ON "public"."byok_keys"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
 CREATE POLICY "byok_keys_delete_workspace_admin" ON "public"."byok_keys"
   FOR DELETE
   TO "authenticated"

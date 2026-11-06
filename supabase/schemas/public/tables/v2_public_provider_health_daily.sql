@@ -21,6 +21,25 @@ ALTER TABLE "public"."v2_public_provider_health_daily"
 
 CREATE INDEX v2_public_provider_health_model_idx ON public.v2_public_provider_health_daily USING btree (model_slug, usage_date DESC, provider_slug);
 
+CREATE POLICY "v2_public_provider_health_daily_no_oauth_client_insert" ON "public"."v2_public_provider_health_daily"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "v2_public_provider_health_daily_no_oauth_client_update" ON "public"."v2_public_provider_health_daily"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "v2_public_provider_health_daily_no_oauth_client_delete" ON "public"."v2_public_provider_health_daily"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
 CREATE POLICY "v2_public_provider_health_daily_public_select" ON "public"."v2_public_provider_health_daily"
   FOR SELECT
   TO "anon", "authenticated"

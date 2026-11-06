@@ -66,6 +66,25 @@ CREATE INDEX v2_public_usage_hourly_model_colo_bucket_idx ON public.v2_public_us
 CREATE INDEX v2_public_usage_hourly_provider_bucket_idx ON public.v2_public_usage_hourly USING btree (provider_model_id, bucket_start DESC)
   WHERE (provider_model_id IS NOT NULL);
 
+CREATE POLICY "v2_public_usage_hourly_no_oauth_client_insert" ON "public"."v2_public_usage_hourly"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "v2_public_usage_hourly_no_oauth_client_update" ON "public"."v2_public_usage_hourly"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "v2_public_usage_hourly_no_oauth_client_delete" ON "public"."v2_public_usage_hourly"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
 CREATE POLICY "v2_public_usage_hourly_public_select" ON "public"."v2_public_usage_hourly"
   FOR SELECT
   TO "anon", "authenticated"

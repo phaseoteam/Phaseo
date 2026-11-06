@@ -1,69 +1,8 @@
--- Preset content can't be changed with an OAuth client's token, and preset references resolve to one preset.
--- 1. Apps that use Sign in with Phaseo, and the CLI and desktop app (whose client IDs are public), get tokens
---    from the auth provider's OAuth server that carry the app's client_id. The management API and web-api
---    already refuse their preset writes; these restrictive policies close the Data API (/rest/v1) too.
---    The person's own session has no client_id, and the app writes presets with the service role, so
---    nothing else changes. Reads are unaffected.
--- 2. The gateway matches preset slugs case-insensitively. A unique index makes two non-archived presets with
---    the same resolution key impossible (production had none on 2026-11-06), and the gateway context
---    functions refuse a reference that still matches two, instead of picking one.
-
-CREATE POLICY "presets_no_oauth_client_insert" ON "public"."presets"
-  AS RESTRICTIVE
-  FOR INSERT
-  TO "authenticated"
-  WITH CHECK (((( SELECT auth.jwt() AS jwt) ->> 'client_id'::text) IS NULL));
-
-CREATE POLICY "presets_no_oauth_client_update" ON "public"."presets"
-  AS RESTRICTIVE
-  FOR UPDATE
-  TO "authenticated"
-  USING (((( SELECT auth.jwt() AS jwt) ->> 'client_id'::text) IS NULL))
-  WITH CHECK (((( SELECT auth.jwt() AS jwt) ->> 'client_id'::text) IS NULL));
-
-CREATE POLICY "presets_no_oauth_client_delete" ON "public"."presets"
-  AS RESTRICTIVE
-  FOR DELETE
-  TO "authenticated"
-  USING (((( SELECT auth.jwt() AS jwt) ->> 'client_id'::text) IS NULL));
-
-CREATE POLICY "preset_versions_no_oauth_client_insert" ON "public"."preset_versions"
-  AS RESTRICTIVE
-  FOR INSERT
-  TO "authenticated"
-  WITH CHECK (((( SELECT auth.jwt() AS jwt) ->> 'client_id'::text) IS NULL));
-
-CREATE POLICY "preset_versions_no_oauth_client_update" ON "public"."preset_versions"
-  AS RESTRICTIVE
-  FOR UPDATE
-  TO "authenticated"
-  USING (((( SELECT auth.jwt() AS jwt) ->> 'client_id'::text) IS NULL))
-  WITH CHECK (((( SELECT auth.jwt() AS jwt) ->> 'client_id'::text) IS NULL));
-
-CREATE POLICY "preset_versions_no_oauth_client_delete" ON "public"."preset_versions"
-  AS RESTRICTIVE
-  FOR DELETE
-  TO "authenticated"
-  USING (((( SELECT auth.jwt() AS jwt) ->> 'client_id'::text) IS NULL));
-
-CREATE POLICY "preset_version_labels_no_oauth_client_insert" ON "public"."preset_version_labels"
-  AS RESTRICTIVE
-  FOR INSERT
-  TO "authenticated"
-  WITH CHECK (((( SELECT auth.jwt() AS jwt) ->> 'client_id'::text) IS NULL));
-
-CREATE POLICY "preset_version_labels_no_oauth_client_update" ON "public"."preset_version_labels"
-  AS RESTRICTIVE
-  FOR UPDATE
-  TO "authenticated"
-  USING (((( SELECT auth.jwt() AS jwt) ->> 'client_id'::text) IS NULL))
-  WITH CHECK (((( SELECT auth.jwt() AS jwt) ->> 'client_id'::text) IS NULL));
-
-CREATE POLICY "preset_version_labels_no_oauth_client_delete" ON "public"."preset_version_labels"
-  AS RESTRICTIVE
-  FOR DELETE
-  TO "authenticated"
-  USING (((( SELECT auth.jwt() AS jwt) ->> 'client_id'::text) IS NULL));
+-- Preset references resolve to one preset.
+-- The gateway matches preset slugs case-insensitively. A unique index makes two non-archived presets with the
+-- same resolution key impossible (production had none on 2026-11-06), and the gateway context functions
+-- refuse a reference that still matches two, instead of picking one.
+-- (Writes from OAuth client tokens are refused by the refuse_oauth_client_writes migration.)
 
 CREATE UNIQUE INDEX presets_workspace_resolution_key ON public.presets USING btree (workspace_id, lower(COALESCE(NULLIF(slug, ''::text), regexp_replace(name, '^@'::text, ''::text))))
   WHERE (archived_at IS NULL);

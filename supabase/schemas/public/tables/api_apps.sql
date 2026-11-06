@@ -50,6 +50,25 @@ CREATE INDEX idx_api_apps_public_active_docs_url ON public.api_apps USING btree 
 
 CREATE INDEX idx_api_apps_public_active ON public.api_apps USING btree (is_public, is_active);
 
+CREATE POLICY "api_apps_no_oauth_client_insert" ON "public"."api_apps"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "api_apps_no_oauth_client_update" ON "public"."api_apps"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "api_apps_no_oauth_client_delete" ON "public"."api_apps"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
 CREATE POLICY "api_apps_delete_own_team" ON "public"."api_apps"
   FOR DELETE
   TO "authenticated"
