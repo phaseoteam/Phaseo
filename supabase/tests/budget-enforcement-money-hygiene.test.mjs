@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { applyMigration, createBudgetDatabase, readColumnMigrations, readIndexMigrations, readMigration, readSchema } from './fixtures/budget-enforcement-db.mjs';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 
-// Migration 20261106220407_budget_enforcement_money_hygiene against production shapes (see the
+// Migration 20261106234007_budget_enforcement_money_hygiene against production shapes (see the
 // fixture): one budget usage calculation for workspace budgets, department admission and the
 // spend-limit seed; department budgets on holds, realtime and the context fallback; one count per
 // batch hold; active holds across period rollover; captured video holds before their audit row;
@@ -447,6 +447,14 @@ try {
     assert.deepEqual(await now(), counted);
     await db.query(`update public.gateway_requests set expected_cost_nanos = null where workspace_id = $1 and request_id = 'delivered-unbilled'`, [WS_CAP]);
     assert.deepEqual(await now(), counted);
+    // A one-off charge whose stored total could not be read back: the row leaves cost_nanos unknown
+    // (NULL, not 0) while the debit did commit. Still the expected amount, once.
+    await db.query(`update public.gateway_requests set cost_nanos = null, expected_cost_nanos = $2 where workspace_id = $1 and request_id = 'delivered-unbilled'`, [WS_CAP, 2 * DOLLAR]);
+    assert.deepEqual(await now(), counted);
+    await db.query(`insert into public.gateway_request_charges (workspace_id, request_id, cost_nanos, status, is_final, key_id)
+      values ($1, 'billing-unbilled', $2, 'applied', true, $3)`, [WS_CAP, 2 * DOLLAR, KEY.cap]);
+    assert.deepEqual(await now(), counted);
+    await db.query(`delete from public.gateway_request_charges where request_id = 'billing-unbilled'`);
     await db.query(`delete from public.gateway_requests where request_id in ('delivered-unbilled', 'unpriced')`);
   });
   await check('the seed leaves out request ids the coordinator already counts', async () => {
