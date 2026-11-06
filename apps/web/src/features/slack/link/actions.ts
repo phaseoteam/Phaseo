@@ -62,7 +62,7 @@ export const describeSlackLink = createServerFn({ method: "POST" })
 			});
 			const user = preview.slack_user;
 			const name = user.display_name || user.real_name || (user.handle ? `@${user.handle}` : null);
-			const team = preview.team_name || "Slack";
+			const team = preview.team_name || t("unknownTeam");
 			return { account: name ? t("account", { name, id: user.id, team }) : t("accountUnnamed", { id: user.id, team }), failure: null };
 		} catch (error) {
 			return { account: null, failure: t(`errors.${slackLinkErrorKey(error instanceof WebApiError ? error.code : null)}`) };

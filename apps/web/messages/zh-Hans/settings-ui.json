@@ -7665,6 +7665,7 @@
 			"description": "这会将下方的 Slack 账户与你的 Phaseo 账户关联，让 Phaseo 智能体知道你是谁。",
 			"account": "Slack 账户：{name}（{id}），位于 {team}",
 			"accountUnnamed": "Slack 账户：{id}，位于 {team}",
+			"unknownTeam": "Slack 未提供名称的工作区",
 			"warning": "仅当这是你自己的 Slack 账户时才继续。如果是别人发给你的链接，请不要使用：否则该 Slack 账户将以你的身份操作。",
 			"confirm": "连接账户",
 			"confirming": "正在连接…",

@@ -7665,6 +7665,7 @@
 			"description": "Esto vincula la cuenta de Slack indicada abajo con tu cuenta de Phaseo, para que el agente de Phaseo sepa quién eres.",
 			"account": "Cuenta de Slack: {name} ({id}) en {team}",
 			"accountUnnamed": "Cuenta de Slack: {id} en {team}",
+			"unknownTeam": "un espacio de trabajo de Slack cuyo nombre Slack no ha indicado",
 			"warning": "Continúa solo si esta es tu propia cuenta de Slack. Si alguien te envió este enlace, no lo uses: esa cuenta de Slack actuaría en tu nombre.",
 			"confirm": "Conectar cuenta",
 			"confirming": "Conectando…",

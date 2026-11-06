@@ -58,7 +58,7 @@ describe("Showing whose Slack account a link is for", () => {
 
 	it("falls back to the handle, then to the Slack user id", async () => {
 		fetchMock.mockResolvedValueOnce(respond(200, { slack_user: { id: "U0PERSON01", handle: "mallory", real_name: null, display_name: null }, team_name: null, workspace_name: "Acme Inc" }));
-		expect((await describeSlackLink({ data: { token: TOKEN, localeValue: "en-GB" } })).account).toBe('account {"name":"@mallory","id":"U0PERSON01","team":"Slack"}');
+		expect((await describeSlackLink({ data: { token: TOKEN, localeValue: "en-GB" } })).account).toBe('account {"name":"@mallory","id":"U0PERSON01","team":"unknownTeam"}');
 		fetchMock.mockResolvedValueOnce(respond(200, { slack_user: { id: "U0PERSON01", handle: null, real_name: null, display_name: null }, team_name: "Acme", workspace_name: "Acme Inc" }));
 		expect((await describeSlackLink({ data: { token: TOKEN, localeValue: "en-GB" } })).account).toBe('accountUnnamed {"id":"U0PERSON01","team":"Acme"}');
 	});

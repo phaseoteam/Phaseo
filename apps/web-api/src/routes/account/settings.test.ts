@@ -765,6 +765,19 @@ describe("account settings routes", () => {
 			expect(writes).toEqual([]);
 		});
 
+		it("treats about:blank, which the dashboard sends for no URL, like an empty URL", async () => {
+			const bodies: unknown[] = [];
+			stubApps("owner");
+			const inner = globalThis.fetch;
+			vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+				const request = input instanceof Request ? input : new Request(String(input), init);
+				if (request.method === "PATCH" && request.url.includes("api_apps")) bodies.push(JSON.parse(await request.clone().text()));
+				return inner(request);
+			}));
+			for (const url of ["about:blank", " ABOUT:BLANK ", "", null]) expect((await put({ url })).status, String(url)).toBe(200);
+			expect(bodies).toEqual([{ url: "about:blank" }, { url: "about:blank" }, { url: "about:blank" }, { url: "about:blank" }]);
+		});
+
 		it("accepts http(s) app URLs as typed and clears an empty one", async () => {
 			stubApps("owner");
 			expect((await put({ url: " https://app.example.com/path " })).status).toBe(200);

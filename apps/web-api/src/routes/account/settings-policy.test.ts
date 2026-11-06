@@ -570,6 +570,8 @@ describe("account policy settings routes", () => {
 				if (url.includes("workspace_members") && url.includes("teams")) return Response.json([{ workspace_id: "workspace-1", teams: { id: "workspace-1", name: "Team" } }]);
 				if (url.includes("workspace_members")) return Response.json([{ role: "admin" }]);
 				if (url.includes("/presets") && url.includes("workspace_id=eq.workspace-1")) return Response.json([row]);
+				// The detail read, by id.
+				if (url.includes("/presets?") && url.includes("id=eq.preset-1")) return Response.json([row]);
 				// The upstream lookup: failing it exercises the fallback serialisation.
 				if (url.includes("/presets") && url.includes("id=in.")) return lifecycleFails ? Response.json({ message: "boom" }, { status: 500 }) : Response.json([]);
 				return Response.json([]);
@@ -617,6 +619,26 @@ describe("account policy settings routes", () => {
 
 			stubWrite("team", [{ id: "preset-1" }]);
 			expect((await put({ description: "Edited" })).status).toBe(200);
+		});
+
+		it("shows other members the published preset by id too, not a 404", async () => {
+			stubList();
+			const response = await app.request("https://phaseo.app/api/account/settings/presets/preset-1", { headers: { authorization: "Bearer session-token" } }, env);
+			expect(response.status).toBe(200);
+			const text = await response.text();
+			expect(text).not.toMatch(/secret/i);
+			expect(JSON.parse(text).preset).toMatchObject({ id: "preset-1", name: "Published", draft_name: "Published", draft_visibility: "team", visibility: "team" });
+		});
+
+		it("doesn't offer to publish a teammate's private draft, even to an admin", async () => {
+			for (const read of [list, page]) {
+				stubList();
+				const body = await (await read()).json() as { presets?: Array<{ canPublish: boolean }>; teamsWithPresets?: Array<{ presets: Array<{ canPublish: boolean }> }> };
+				expect((body.presets ?? body.teamsWithPresets![0].presets)[0].canPublish).toBe(false);
+			}
+			// The creator can publish it.
+			stubList({ userId: "owner-2" });
+			await expect((await list()).json()).resolves.toMatchObject({ presets: [{ canPublish: true }] });
 		});
 
 		it("still shows the creator their draft", async () => {

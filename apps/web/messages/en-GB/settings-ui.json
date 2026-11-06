@@ -7665,6 +7665,7 @@
 			"description": "This links the Slack account below to your Phaseo account, so the Phaseo agent knows who you are.",
 			"account": "Slack account: {name} ({id}) in {team}",
 			"accountUnnamed": "Slack account: {id} in {team}",
+			"unknownTeam": "a Slack workspace whose name Slack didn't share",
 			"warning": "Only continue if this is your own Slack account. If someone sent you this link, don't use it: that Slack account would act as you.",
 			"confirm": "Connect account",
 			"confirming": "Connecting…",

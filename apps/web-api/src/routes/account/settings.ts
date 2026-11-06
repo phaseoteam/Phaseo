@@ -797,7 +797,7 @@ accountSettingsRouter.put("/apps/:appId", async (c) => {
 	if (body.url === null) update.url = "about:blank";
 	else if (typeof body.url === "string") {
 		const value = body.url.trim();
-		if (!value) update.url = "about:blank";
+		if (!value || value.toLowerCase() === "about:blank") update.url = "about:blank";
 		else if (!httpUrl(value)) return c.json({ error: "invalid_url" }, 400, PRIVATE_NO_STORE_HEADERS);
 		else update.url = value;
 	}
