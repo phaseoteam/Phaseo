@@ -491,7 +491,8 @@ async function handlePublishPresetVersion(req: Request) {
 			throw new Error(message || "Failed to publish preset version");
 		}
 		const version = Array.isArray(result.data) ? result.data[0] : result.data;
-		await auditPreset(auth.value, "preset.version.published", preset, { version_number: version?.version_number ?? null, version_label: version?.version_label ?? null });
+		// A version published from a private draft stays out of the workspace audit feed's details.
+		await auditPreset(auth.value, "preset.version.published", preset, version?.visibility === "private" ? { version: "private" } : { version_number: version?.version_number ?? null, version_label: version?.version_label ?? null });
 		return json({ data: version }, 201, { "Cache-Control": "no-store" });
 	} catch (error: any) { return internalServerError("presets.publish-version", error); }
 }
@@ -528,6 +529,24 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 const INVALID_LABEL_MESSAGE = "Labels are 1-32 lowercase letters, numbers, hyphens or underscores, start with a letter, and cannot look like a version (v1, v2)";
 
 type LabelRow = { label: string; version_id: string; updated_by: string | null; created_at: string | null; updated_at: string | null };
+
+/**
+ * Workspace audit events are read by every admin, so they never carry a version that was published while
+ * the preset was private: its id is replaced by a marker ({ version: "private" }). An unreadable version
+ * counts as private.
+ */
+async function auditVersionRefs(presetId: string, refs: Record<string, string | null | undefined>): Promise<Record<string, unknown>> {
+	const ids = [...new Set(Object.values(refs).filter((id): id is string => Boolean(id)))];
+	let hidden = new Set(ids);
+	if (ids.length) {
+		const { data, error } = await getSupabaseAdmin().from("preset_versions").select("id,visibility").eq("preset_id", presetId).in("id", ids);
+		if (!error) {
+			const visible = new Set((data ?? []).filter((version: { visibility: string | null }) => version.visibility !== "private").map((version: { id: unknown }) => String(version.id)));
+			hidden = new Set(ids.filter((id) => !visible.has(id)));
+		}
+	}
+	return Object.fromEntries(Object.entries(refs).map(([key, id]) => (id && hidden.has(id) ? [key, "private"] : [`${key}_id`, id ?? null])));
+}
 
 async function listLabelRows(presetId: string): Promise<LabelRow[]> {
 	const { data, error } = await getSupabaseAdmin().from("preset_version_labels").select("label,version_id,updated_by,created_at,updated_at").eq("preset_id", presetId).order("label", { ascending: true });
@@ -635,7 +654,7 @@ async function handleSetPresetLabel(req: Request) {
 		}
 		const saved = (Array.isArray(result.data) ? result.data[0] : result.data) as LabelRow | null;
 		const [formatted] = await formatLabels(preset.id, [saved ?? { label, version_id: targetVersionId, updated_by: auth.value.userId, created_at: null, updated_at: null }], !creator);
-		await auditPreset(auth.value, "preset.label.set", preset, { label, version_id: targetVersionId, previous_version_id: previous?.version_id ?? null });
+		await auditPreset(auth.value, "preset.label.set", preset, { label, ...(await auditVersionRefs(preset.id, { version: targetVersionId, previous_version: previous?.version_id })) });
 		return json({ data: formatted }, 200, { "Cache-Control": "no-store" });
 	} catch (error) { return internalServerError("presets.labels.set", error); }
 }

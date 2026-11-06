@@ -34,7 +34,7 @@ function query(table: string) {
 		if (table === "preset_versions") {
 			if (filters.has("version_label")) return { data: filters.get("version_label") === "v2" ? { id: "version_2" } : null, error: null };
 			if (filters.get("id") === "version_2") return { data: publicVersion, error: null };
-			return { data: [publicVersion], error: null };
+			return { data: [publicVersion, { id: "version_3", preset_id: "local_1", version_number: 3, version_label: "v3", visibility: "team" }], error: null };
 		}
 		if (table === "presets") {
 			if (operation === "insert") return { data: { ...localPreset, id: "fork_1", name: payload?.name, slug: payload?.slug, config: payload?.config, source_preset_version_id: payload?.source_preset_version_id, upstream_version_id: payload?.upstream_version_id }, error: null };
