@@ -627,16 +627,23 @@ describe("management key routes", () => {
 				method: call.method, headers: { "content-type": "application/json" }, ...(call.body ? { body: JSON.stringify(call.body) } : {}),
 			});
 		};
+		// Listing, reading, renaming and deleting don't raise what a key can spend, so the CLI may do them in another
+		// workspace too. Creating, rotating and changing a key's limits are made in the dashboard or with a management key.
+		const reads = calls.filter((call) => ["list", "get", "update", "delete"].includes(call.name));
+		const writes: Call[] = [
+			...calls.filter((call) => !reads.includes(call)),
+			{ name: "limit", url: "https://example.com/hash_2?workspace_id=ws_2", method: "PATCH", body: { limit: 5 }, status: 403 },
+		];
 		const expectNothingTouched = () => {
 			expect(state.keyWorkspaceFilters).toEqual([]);
 			expect(state.insertPayloads).toEqual([]);
 			expect(state.updatePayloads).toEqual([]);
 		};
 
-		it("lets Phaseo's CLI list, create, read, update, delete and rotate keys where the person is an owner or admin", async () => {
+		it("lets Phaseo's CLI list, read, rename and delete keys where the person is an owner or admin", async () => {
 			const { recordWorkspaceAuditEvent } = await import("@/lib/audit/workspaceAudit");
 			const audit = vi.mocked(recordWorkspaceAuditEvent);
-			for (const call of calls) {
+			for (const call of reads) {
 				state.guardManagementAuthResult = cliAuth();
 				state.membershipRows.push({ role: call.name === "get" ? "admin" : "owner" });
 				state.keyRows.length = 0;
@@ -652,15 +659,33 @@ describe("management key routes", () => {
 				expect(state.membershipLookups, call.name).toEqual([[{ column: "workspace_id", value: "ws_2" }, { column: "user_id", value: "user_1" }]]);
 				expect(state.keyWorkspaceFilters.every((value) => value === "ws_2"), `${call.name} ${JSON.stringify(state.keyWorkspaceFilters)}`).toBe(true);
 				for (const [, event] of audit.mock.calls) expect(event, call.name).toMatchObject({ workspaceId: "ws_2" });
-				if (call.name !== "list" && call.name !== "get") expect(audit, call.name).toHaveBeenCalled();
+				if (call.name === "update" || call.name === "delete") expect(audit, call.name).toHaveBeenCalled();
 			}
-			expect(state.insertPayloads.map((payload) => payload.workspace_id)).toEqual(["ws_2", "ws_2"]);
-			expect(state.insertPayloads[0]).toMatchObject({ name: "Cache test", created_by: "user_1" });
-			expect(state.updateFilters.flat().filter((filter) => filter.column === "workspace_id").map((filter) => filter.value)).toEqual(["ws_2", "ws_2"]);
+			expect(state.insertPayloads).toEqual([]);
+			expect(state.updateFilters.flat().filter((filter) => filter.column === "workspace_id").map((filter) => filter.value).every((value) => value === "ws_2")).toBe(true);
+		});
+
+		it("refuses the CLI's key changes in any workspace: they're made in the dashboard or with a management key", async () => {
+			for (const call of writes) {
+				for (const workspace of ["ws_1", "ws_2"]) {
+					state.guardManagementAuthResult = cliAuth();
+					state.membershipRows.length = 0;
+					state.membershipRows.push({ role: "owner" });
+					state.keyRows.length = 0;
+					state.keyRows.push({ ...key, workspace_id: workspace });
+
+					const response = await send({ ...call, url: call.url.replace("ws_2", workspace), ...(call.body ? { body: { ...call.body, workspace_id: workspace } } : {}) });
+
+					expect(response.status, `${call.name} ${workspace}`).toBe(403);
+					expect(await response.json(), `${call.name} ${workspace}`).toMatchObject({ error: "forbidden", message: PUBLIC_NATIVE_CLIENT_REFUSAL });
+				}
+			}
+			expect(state.insertPayloads).toEqual([]);
+			expect(state.updatePayloads).toEqual([]);
 		});
 
 		it("refuses a person who isn't a member of the named workspace", async () => {
-			for (const call of calls) {
+			for (const call of reads) {
 				state.guardManagementAuthResult = cliAuth();
 				state.membershipRows.push(null);
 
@@ -673,7 +698,7 @@ describe("management key routes", () => {
 		});
 
 		it("refuses a member of the named workspace who isn't an owner or admin", async () => {
-			for (const call of calls) {
+			for (const call of reads) {
 				state.guardManagementAuthResult = cliAuth();
 				state.membershipRows.push({ role: "member" });
 
@@ -700,7 +725,11 @@ describe("management key routes", () => {
 					const response = await send(call);
 
 					expect(response.status, `${caller} ${call.name}`).toBe(403);
-					expect(await response.json(), `${caller} ${call.name}`).toEqual({ ok: false, error: "forbidden", message: "workspace_id must match authenticated workspace" });
+					// A CLI token is refused key changes before the workspace is looked at.
+					const refusedAsCli = caller === "OAuth token without a person" && writes.includes(call);
+					expect(await response.json(), `${caller} ${call.name}`).toMatchObject(refusedAsCli
+						? { error: "forbidden", message: PUBLIC_NATIVE_CLIENT_REFUSAL }
+						: { ok: false, error: "forbidden", message: "workspace_id must match authenticated workspace" });
 					state.membershipRows.length = 0;
 				}
 			}
