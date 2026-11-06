@@ -265,6 +265,18 @@ async function handleCreate(req: Request) {
 	}
 }
 
+type CollectRow = {
+	outcome?: string;
+	workspace_id?: string | null;
+	key_id?: string | null;
+	secret_ciphertext?: string | null;
+	key_name?: string | null;
+	key_prefix?: string | null;
+	key_expires_at?: string | null;
+	daily_cost_nanos?: number | string | null;
+	monthly_cost_nanos?: number | string | null;
+};
+
 const STATUS_MESSAGES: Record<string, string> = {
 	pending: "Waiting for approval in the browser.",
 	denied: "The key request was denied in the dashboard. Nothing was created.",
@@ -300,7 +312,7 @@ async function handleCollect(req: Request) {
 			p_code_challenge: await codeChallengeFor(verifier),
 		});
 		if (error) throw error;
-		const row = (Array.isArray(data) ? data[0] : data) as { outcome?: string; workspace_id?: string | null; key_id?: string | null; secret_ciphertext?: string | null } | null;
+		const row = (Array.isArray(data) ? data[0] : data) as CollectRow | null;
 		const outcome = String(row?.outcome ?? "not_found");
 
 		if (outcome === "not_found") return errorResponse(404, "not_found", "Key request not found");
@@ -321,24 +333,22 @@ async function handleCollect(req: Request) {
 		const peppers = resolveKeyPepperCandidates(getBindings()).map((candidate) => candidate.value);
 		const secret = row?.secret_ciphertext ? await decryptKeyRequestSecret(peppers, id, row.secret_ciphertext) : null;
 		if (!secret || !row?.key_id) throw new Error("approved key request secret could not be opened");
-		const key = await supabase
-			.from("keys")
-			.select("id, workspace_id, name, prefix, expires_at, daily_limit_cost_nanos, monthly_limit_cost_nanos")
-			.eq("id", row.key_id)
-			.maybeSingle();
-		if (key.error) throw key.error;
-		const keyRow = (key.data ?? {}) as Record<string, unknown>;
-
-		await recordWorkspaceAuditEvent(supabase, {
-			workspaceId: String(row.workspace_id ?? caller.workspaceId),
-			actorUserId: userId,
-			action: "api_key_request.collected",
-			targetType: "api_key",
-			targetId: row.key_id,
-			targetName: typeof keyRow.name === "string" ? keyRow.name : null,
-			metadata: { request_id: id, oauth_client_id: caller.authMethod === "oauth" ? caller.oauthClientId ?? null : null },
-			requestId: caller.requestId ?? null,
-		});
+		// The secret is already wiped in the database, so nothing after this point may fail the response: the
+		// key's details came back with it, and the audit record is best effort.
+		try {
+			await recordWorkspaceAuditEvent(supabase, {
+				workspaceId: String(row.workspace_id ?? caller.workspaceId),
+				actorUserId: userId,
+				action: "api_key_request.collected",
+				targetType: "api_key",
+				targetId: row.key_id,
+				targetName: row.key_name ?? null,
+				metadata: { request_id: id, oauth_client_id: caller.authMethod === "oauth" ? caller.oauthClientId ?? null : null },
+				requestId: caller.requestId ?? null,
+			});
+		} catch {
+			console.error("key_requests.collect_audit_failed", { request_id: id });
+		}
 
 		return json({
 			request_id: id,
@@ -347,12 +357,12 @@ async function handleCollect(req: Request) {
 			key: secret,
 			key_id: row.key_id,
 			workspace_id: row.workspace_id ?? null,
-			name: keyRow.name ?? null,
-			prefix: keyRow.prefix ?? null,
-			expires_at: keyRow.expires_at ?? null,
+			name: row.key_name ?? null,
+			prefix: row.key_prefix ?? null,
+			expires_at: row.key_expires_at ?? null,
 			limits: {
-				daily_cost_usd: nanosToUsd(keyRow.daily_limit_cost_nanos),
-				monthly_cost_usd: nanosToUsd(keyRow.monthly_limit_cost_nanos),
+				daily_cost_usd: nanosToUsd(row.daily_cost_nanos),
+				monthly_cost_usd: nanosToUsd(row.monthly_cost_nanos),
 			},
 		}, 200, NO_STORE);
 	} catch (error) {

@@ -44,6 +44,12 @@ const member = id(13);
 const outsider = id(14);
 const KEY = id(100);
 const challenge = (c = 'a') => c.repeat(43);
+const NOTHING = { outcome: 'not_found', workspace_id: null, key_id: null, secret_ciphertext: null, key_name: null, key_prefix: null, key_expires_at: null, daily_cost_nanos: null, monthly_cost_nanos: null };
+// An approved pickup returns the key's details with the secret, in the same call.
+const approvedWith = (workspace) => ({
+  outcome: 'approved', workspace_id: workspace, key_id: KEY, secret_ciphertext: 'v1.iv.ct', key_name: 'Phaseo CLI: Codex API Key',
+  key_prefix: 'abcdef', key_expires_at: new Date('2027-02-04T00:00:00Z'), daily_cost_nanos: 5_000_000_000, monthly_cost_nanos: 100_000_000_000,
+});
 const CLI = 'oauth:phaseo_cli';
 const W2 = id(2);
 
@@ -74,11 +80,11 @@ try {
     create type public.workspace_role as enum ('owner', 'admin', 'member');
     create table public.workspaces (id uuid primary key, owner_user_id uuid);
     create table public.workspace_members (workspace_id uuid not null references public.workspaces(id) on delete cascade, user_id uuid not null, role public.workspace_role not null default 'member', primary key (workspace_id, user_id));
-    create table public.keys (id uuid primary key);
+    create table public.keys (id uuid primary key, name text, prefix text, expires_at timestamptz, daily_limit_cost_nanos bigint not null default 0, monthly_limit_cost_nanos bigint not null default 0);
     insert into auth.users values ('${owner}'), ('${admin}'), ('${member}'), ('${outsider}');
     insert into public.workspaces values ('${W1}', '${owner}');
     insert into public.workspace_members values ('${W1}', '${admin}', 'admin'), ('${W1}', '${member}', 'member');
-    insert into public.keys values ('${KEY}');
+    insert into public.keys values ('${KEY}', 'Phaseo CLI: Codex API Key', 'abcdef', '2027-02-04T00:00:00Z', 5000000000, 100000000000);
     -- Supabase's default privileges grant new tables and functions to the API roles; the migration must take them away.
     alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
     alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;
@@ -150,10 +156,10 @@ try {
   assert.equal((await row(pending.id)).status, 'approved');
 
   // Collecting: other people and wrong verifiers get nothing; the secret comes out once and is wiped.
-  assert.deepEqual(await collect(pending.id, owner), { outcome: 'not_found', workspace_id: null, key_id: null, secret_ciphertext: null }, 'a different user cannot collect');
+  assert.deepEqual(await collect(pending.id, owner), NOTHING, 'a different user cannot collect');
   assert.equal((await collect(pending.id, admin, challenge('b'))).outcome, 'invalid_verifier', 'a wrong verifier cannot collect');
   const collected = await collect(pending.id);
-  assert.deepEqual(collected, { outcome: 'approved', workspace_id: W1, key_id: KEY, secret_ciphertext: 'v1.iv.ct' });
+  assert.deepEqual(collected, approvedWith(W1), 'the secret comes back with the key details, so nothing is read after it is wiped');
   assert.deepEqual((await collect(pending.id)).outcome, 'collected', 'the secret is returned once');
   const after = await row(pending.id);
   assert.equal(after.secret_ciphertext, null, 'the secret is wiped on pickup');
@@ -237,7 +243,7 @@ try {
   await begin(elsewhere.id);
   await finish(elsewhere.id);
   assert.equal((await collect(elsewhere.id, admin, challenge(), CLI, W2)).outcome, 'not_found');
-  assert.deepEqual(await collect(elsewhere.id), { outcome: 'approved', workspace_id: W2, key_id: KEY, secret_ciphertext: 'v1.iv.ct' });
+  assert.deepEqual(await collect(elsewhere.id), approvedWith(W2));
 
   // Cleanup with no later request or poll: the scheduled job wipes uncollected secrets past their expiry and
   // leaves the row, and secrets still in time.
@@ -253,6 +259,13 @@ try {
   await db.exec('reset role');
   assert.deepEqual([(await row(forgotten.id)).status, (await row(forgotten.id)).secret_ciphertext, (await row(forgotten.id)).key_id], ['expired', null, KEY], 'wiped, row kept');
   assert.deepEqual([(await row(inTime.id)).status, (await row(inTime.id)).secret_ciphertext], ['approved', 'v1.iv.ct'], 'a secret still in time is kept');
+  // Running the cleanup again wipes nothing more and deletes nothing.
+  const rowsBefore = (await one('select count(*)::int n from public.api_key_requests')).n;
+  await db.exec('set role service_role');
+  assert.equal((await one('select public.wipe_expired_api_key_request_secrets() n')).n, 0, 'a second run has nothing to wipe');
+  await db.exec('reset role');
+  assert.equal((await one('select count(*)::int n from public.api_key_requests')).n, rowsBefore, 'and keeps every row');
+  assert.deepEqual([(await row(forgotten.id)).status, (await row(inTime.id)).secret_ciphertext], ['expired', 'v1.iv.ct']);
   // Never more than 15 minutes: finish caps the pickup window at 900 seconds.
   const capped = await create();
   await begin(capped.id);
@@ -268,6 +281,18 @@ try {
   assert.equal((await row(raced.id)).status, 'approving');
   assert.equal(await finish(raced.id), true);
   assert.equal((await collect(raced.id)).outcome, 'approved');
+
+  // A request made with a management key: another management key of the same person gets not_found
+  // without counting an attempt or touching the request, then the original key collects.
+  const viaKey = await create({ credential: 'api_key:mk_1' });
+  await begin(viaKey.id);
+  await finish(viaKey.id);
+  for (let i = 0; i < 6; i += 1) {
+    assert.deepEqual(await collect(viaKey.id, admin, challenge(), 'api_key:mk_2'), NOTHING, 'a second management key is refused');
+  }
+  assert.deepEqual([(await row(viaKey.id)).failed_verifier_attempts, (await row(viaKey.id)).last_polled_at, (await row(viaKey.id)).status],
+    [0, null, 'approved'], 'no attempt counted');
+  assert.deepEqual(await collect(viaKey.id, admin, challenge(), 'api_key:mk_1'), approvedWith(W1), 'the key that asked collects');
 
   console.log('api-key-requests: all assertions passed');
 } finally {

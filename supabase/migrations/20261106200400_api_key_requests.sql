@@ -467,7 +467,12 @@ CREATE OR REPLACE FUNCTION public.collect_api_key_request (
     outcome           text,
     workspace_id      uuid,
     key_id            uuid,
-    secret_ciphertext text
+    secret_ciphertext text,
+    key_name          text,
+    key_prefix        text,
+    key_expires_at    timestamp with time zone,
+    daily_cost_nanos  bigint,
+    monthly_cost_nanos bigint
   )
   LANGUAGE plpgsql
   SECURITY DEFINER
@@ -479,7 +484,8 @@ CREATE OR REPLACE FUNCTION public.collect_api_key_request (
 -- not_found before anything is counted, so it can't use up the verifier attempts.
 -- Outcomes: not_found (no such request for this caller), slow_down (polled again within
 -- p_min_poll_seconds), invalid_verifier (after p_max_failed_attempts the request is denied and any
--- secret wiped), pending, approved (with the secret), collected (already picked up), denied, expired.
+-- secret wiped), pending, approved (with the secret and the key's name, prefix, expiry and cost limits),
+-- collected (already picked up), denied, expired.
 declare
   v_request public.api_key_requests%rowtype;
   v_failed integer;
@@ -492,13 +498,13 @@ begin
     or v_request.requested_by is distinct from p_user_id
     or v_request.requester_credential is distinct from p_requester_credential
     or v_request.requester_workspace_id is distinct from p_requester_workspace_id then
-    return query select 'not_found'::text, null::uuid, null::uuid, null::text;
+    return query select 'not_found'::text, null::uuid, null::uuid, null::text, null::text, null::text, null::timestamptz, null::bigint, null::bigint;
     return;
   end if;
 
   if v_request.last_polled_at is not null
     and v_request.last_polled_at > now() - make_interval(secs => greatest(coalesce(p_min_poll_seconds, 2), 0)) then
-    return query select 'slow_down'::text, null::uuid, null::uuid, null::text;
+    return query select 'slow_down'::text, null::uuid, null::uuid, null::text, null::text, null::text, null::timestamptz, null::bigint, null::bigint;
     return;
   end if;
 
@@ -514,18 +520,18 @@ begin
         secret_ciphertext = case when v_failed >= greatest(coalesce(p_max_failed_attempts, 5), 1) then null else r.secret_ciphertext end,
         updated_at = now()
     where r.id = v_request.id;
-    return query select 'invalid_verifier'::text, null::uuid, null::uuid, null::text;
+    return query select 'invalid_verifier'::text, null::uuid, null::uuid, null::text, null::text, null::text, null::timestamptz, null::bigint, null::bigint;
     return;
   end if;
 
   if v_request.status in ('pending', 'approving') then
     if v_request.expires_at <= now() then
       update public.api_key_requests r set status = 'expired', last_polled_at = now(), updated_at = now() where r.id = v_request.id;
-      return query select 'expired'::text, null::uuid, null::uuid, null::text;
+      return query select 'expired'::text, null::uuid, null::uuid, null::text, null::text, null::text, null::timestamptz, null::bigint, null::bigint;
       return;
     end if;
     update public.api_key_requests r set last_polled_at = now() where r.id = v_request.id;
-    return query select 'pending'::text, null::uuid, null::uuid, null::text;
+    return query select 'pending'::text, null::uuid, null::uuid, null::text, null::text, null::text, null::timestamptz, null::bigint, null::bigint;
     return;
   end if;
 
@@ -534,18 +540,24 @@ begin
       update public.api_key_requests r
       set status = 'expired', secret_ciphertext = null, last_polled_at = now(), updated_at = now()
       where r.id = v_request.id;
-      return query select 'expired'::text, null::uuid, null::uuid, null::text;
+      return query select 'expired'::text, null::uuid, null::uuid, null::text, null::text, null::text, null::timestamptz, null::bigint, null::bigint;
       return;
     end if;
     update public.api_key_requests r
     set status = 'collected', secret_ciphertext = null, collected_at = now(), last_polled_at = now(), updated_at = now()
     where r.id = v_request.id;
-    return query select 'approved'::text, v_request.workspace_id, v_request.key_id, v_request.secret_ciphertext;
+    -- The key's details come back in this same call: once the secret is wiped, a separate read that fails
+    -- would lose the key's only pickup.
+    return query
+    select 'approved'::text, v_request.workspace_id, v_request.key_id, v_request.secret_ciphertext,
+      k.name, k.prefix, k.expires_at, k.daily_limit_cost_nanos, k.monthly_limit_cost_nanos
+    from (select 1) as one
+    left join public.keys k on k.id = v_request.key_id;
     return;
   end if;
 
   update public.api_key_requests r set last_polled_at = now() where r.id = v_request.id;
-  return query select v_request.status, null::uuid, null::uuid, null::text;
+  return query select v_request.status, null::uuid, null::uuid, null::text, null::text, null::text, null::timestamptz, null::bigint, null::bigint;
 end;
 $function$;
 

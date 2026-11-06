@@ -15,6 +15,12 @@ const CHALLENGE = createHash("sha256").update(VERIFIER).digest("base64url");
 // request id and IV, so the two copies of the code stay compatible.
 const SEALED = "v1.AQIDBAUGBwgJCgsM.EdZB0EFDmv5c4NO1SBsCw7B3XvwtxPzlPHB2WJwIgouzPZl_OZEsv1p0tWpS_mqi2qlsQcTU3d_4jP9PQ-8U9PCnRmiK2SWyqpO2SsKKMrGGrw";
 const PLAINTEXT = "phaseo_v1_sk_abcdefghijkl_0123456789abcdefghijABCDEFGHIJ0123456789";
+// What collect_api_key_request returns for an approved request: the sealed secret and the key's details,
+// in one call.
+const APPROVED_ROW = {
+	workspace_id: WORKSPACE, key_id: KEY, secret_ciphertext: SEALED, key_name: "Phaseo CLI: Codex API Key", key_prefix: "abcdef",
+	key_expires_at: "2027-02-04T00:00:00.000Z", daily_cost_nanos: 0, monthly_cost_nanos: 100_000_000_000,
+};
 
 type Row = Record<string, any>;
 
@@ -23,6 +29,7 @@ const state = vi.hoisted(() => ({
 	rpc: null as any,
 	audit: null as any,
 	keys: [] as Row[],
+	keysReadFails: false,
 	bindings: {} as Record<string, string>,
 	clients: {} as Record<string, Row>,
 }));
@@ -35,7 +42,9 @@ vi.mock("@/runtime/env", () => ({
 			const builder: any = {
 				select: () => builder,
 				eq: (column: string, value: unknown) => { filters.push((row) => row[column] === value); return builder; },
-				maybeSingle: async () => ({ data: (table === "keys" ? state.keys : []).find((row) => filters.every((f) => f(row))) ?? null, error: null }),
+				maybeSingle: async () => state.keysReadFails
+					? { data: null, error: { message: "connection reset" } }
+					: { data: (table === "keys" ? state.keys : []).find((row) => filters.every((f) => f(row))) ?? null, error: null },
 			};
 			return builder;
 		},
@@ -211,6 +220,7 @@ describe("POST /v1/key-requests/:id/token", () => {
 		state.auth = oauth("phaseo_cli");
 		state.bindings = { KEY_PEPPER_ACTIVE: "test-pepper-active" };
 		state.keys = [{ id: KEY, workspace_id: WORKSPACE, name: "Phaseo CLI: Codex API Key", prefix: "abcdef", expires_at: "2027-02-04T00:00:00.000Z", daily_limit_cost_nanos: 0, monthly_limit_cost_nanos: 100_000_000_000 }];
+		state.keysReadFails = false;
 		state.audit = vi.fn(async () => true);
 	});
 
@@ -220,7 +230,7 @@ describe("POST /v1/key-requests/:id/token", () => {
 	};
 
 	it("returns the secret to the requester holding the verifier, with the key's limits", async () => {
-		const response = await collect("approved", { workspace_id: WORKSPACE, key_id: KEY, secret_ciphertext: SEALED });
+		const response = await collect("approved", APPROVED_ROW);
 		expect(response.status).toBe(200);
 		expect(await response.json()).toEqual({
 			request_id: REQUEST, status: "approved", final: true, key: PLAINTEXT, key_id: KEY, workspace_id: WORKSPACE,
@@ -261,15 +271,26 @@ describe("POST /v1/key-requests/:id/token", () => {
 		expect(rpcCalls("create_api_key_request")[0]).toMatchObject({ p_requested_via: "management_key", p_requester_credential: "api_key:mk_1", p_requester_workspace_id: WORKSPACE });
 	});
 
+	it("hands over the key even when a later database read or the audit write would fail: the secret is already wiped", async () => {
+		state.keysReadFails = true;
+		state.audit = vi.fn(async () => { throw new Error("audit insert failed"); });
+		const response = await collect("approved", APPROVED_ROW);
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({
+			status: "approved", key: PLAINTEXT, key_id: KEY, name: "Phaseo CLI: Codex API Key", prefix: "abcdef",
+			expires_at: "2027-02-04T00:00:00.000Z", limits: { daily_cost_usd: null, monthly_cost_usd: 100 },
+		});
+	});
+
 	it("opens a secret sealed before a pepper rotation", async () => {
 		state.bindings = { KEY_PEPPER_ACTIVE: "new-pepper", KEY_PEPPER_PREVIOUS: "test-pepper-active" };
-		const response = await collect("approved", { workspace_id: WORKSPACE, key_id: KEY, secret_ciphertext: SEALED });
+		const response = await collect("approved", APPROVED_ROW);
 		expect((await response.json() as Row).key).toBe(PLAINTEXT);
 	});
 
 	it("never returns a secret sealed for another request or with another pepper", async () => {
 		state.bindings = { KEY_PEPPER_ACTIVE: "other-pepper" };
-		const response = await collect("approved", { workspace_id: WORKSPACE, key_id: KEY, secret_ciphertext: SEALED });
+		const response = await collect("approved", APPROVED_ROW);
 		expect(response.status).toBe(500);
 		expect(await response.text()).not.toContain("phaseo_v1_sk");
 	});
