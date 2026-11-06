@@ -18,7 +18,7 @@ export async function installUnbilledSpend(db) {
     -- As in production.
     grant select on public.gateway_request_charges, public.credit_ledger to service_role;
   `);
-  for (const name of ['20261106165158_gateway_requests_expected_cost_nanos.sql', '20261106165159_validate_gateway_requests_expected_cost_nanos_check.sql']) {
+  for (const name of ['20261106220400_gateway_requests_expected_cost_nanos.sql', '20261106220401_validate_gateway_requests_expected_cost_nanos_check.sql']) {
     await db.exec(await migration(name));
   }
   await db.exec(await readFile(new URL('../../schemas/private/functions/unbilled_spend.sql', import.meta.url), 'utf8'));

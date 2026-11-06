@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { applyMigration, createBudgetDatabase, readColumnMigrations, readIndexMigrations, readMigration, readSchema } from './fixtures/budget-enforcement-db.mjs';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 
-// Migration 20261106165205_budget_enforcement_money_hygiene against production shapes (see the
+// Migration 20261106220406_budget_enforcement_money_hygiene against production shapes (see the
 // fixture): one budget usage calculation for workspace budgets, department admission and the
 // spend-limit seed; department budgets on holds, realtime and the context fallback; one count per
 // batch hold; active holds across period rollover; captured video holds before their audit row;
@@ -39,11 +39,12 @@ const WS_ROLL = id('1', 5); // holds across period rollover
 const WS_CAP = id('1', 6); // captured video holds and charged failures
 const WS_DEL = id('1', 7); // a key deleted after its holds and requests
 const WS_PLAN = id('1', 8); // history in every partition, for plans
+const WS_BATCHES = id('1', 9); // batch debits and their rows
 const ENG = id('4', 1);
 const ROLL = id('4', 2);
 const CAP = id('4', 3);
 const MEMBER = id('2', 1);
-const KEY = { linked: id('3', 1), member: id('3', 2), outside: id('3', 3), batch: id('3', 4), roll: id('3', 5), cap: id('3', 6), limited: id('3', 7), del: id('3', 8) };
+const KEY = { linked: id('3', 1), member: id('3', 2), outside: id('3', 3), batch: id('3', 4), roll: id('3', 5), cap: id('3', 6), limited: id('3', 7), del: id('3', 8), batches: id('3', 9) };
 // Before every current period: the earlier of this week's Monday and the 1st, less a day.
 const BEFORE_PERIODS = `(least(date_trunc('week', now() at time zone 'utc'), date_trunc('month', now() at time zone 'utc')) at time zone 'utc' - interval '1 day')`;
 
@@ -310,7 +311,6 @@ try {
       ('${WS_ROLL}', 'billing-open', ${3 * DOLLAR}, 'applied', false, '${KEY.roll}', ${BEFORE_PERIODS}),
       ('${WS_ROLL}', 'billing-final', ${DOLLAR / 2}, 'applied', true, null, now()),
       ('${WS_ROLL}', 'billing-applying', ${DOLLAR}, 'applying', false, null, now()),
-      ('${WS_ROLL}', 'batch_capture:b1', ${DOLLAR}, 'applied', true, null, now()),
       ('${WS_ROLL}', 'billing-landed', ${DOLLAR}, 'applied', false, '${KEY.roll}', now());
       -- The open stream's checkpoints: $1 before every current period, $2 today (the charge row
       -- holds the $3 total with its first debit's time).
@@ -320,7 +320,7 @@ try {
     await db.query(`insert into public.gateway_requests (workspace_id, request_id, billing_request_id, key_id, success, cost_nanos) values
       ($1, 'stream-landed', 'billing-landed', $2, false, $3)`, [WS_ROLL, KEY.roll, 1.25 * DOLLAR]);
     // Today: the open stream's $2 debit, the final one-off charge's $0.50, and the landed stream's
-    // row ($1.25, not its movement). Not the earlier debit, a charge still applying or a batch capture.
+    // row ($1.25, not its movement). Not the earlier debit or a charge still applying.
     assert.deepEqual(byInterval((await workspaceStatus(WS_ROLL)).budgets), {
       daily: before + 3.75 * DOLLAR, weekly: before + 3.75 * DOLLAR, monthly: before + 3.75 * DOLLAR,
     });
@@ -332,7 +332,7 @@ try {
     await db.query(`insert into public.gateway_requests (workspace_id, request_id, billing_request_id, key_id, success, cost_nanos) values
       ($1, 'stream-open', 'billing-open', $2, false, $3)`, [WS_ROLL, KEY.roll, 2.5 * DOLLAR]);
     assert.equal(Number((await workspaceStatus(WS_ROLL)).budgets[0].usage_nanos), before + 4.25 * DOLLAR);
-    await db.query(`delete from public.gateway_request_charges where workspace_id = $1 and request_id in ('billing-final', 'batch_capture:b1')`, [WS_ROLL]);
+    await db.query(`delete from public.gateway_request_charges where workspace_id = $1 and request_id = 'billing-final'`, [WS_ROLL]);
   });
   await check('the seed skips a held admission\'s charge row by billing id, and only by billing id', async () => {
     await db.exec(`insert into public.gateway_request_charges (workspace_id, request_id, cost_nanos, status, is_final, key_id) values
@@ -354,6 +354,33 @@ try {
     const refused = await reserve(WS_CAP, 'video_hold:after-open-charge', 1.5 * DOLLAR, KEY.limited, 1);
     assert.equal(refused.reason, 'daily_cost_limit_reached');
     await db.query(`delete from public.gateway_request_charges where request_id = 'billing-open'`);
+  });
+  await check('a batch counts its debit once, whether or not its rows persisted', async () => {
+    await db.exec(`
+      insert into public.workspaces (id) values ('${WS_BATCHES}');
+      insert into public.keys (id, workspace_id) values ('${KEY.batches}', '${WS_BATCHES}');
+      insert into public.workspace_budgets (workspace_id, interval, limit_nanos) values ('${WS_BATCHES}', 'daily', ${100 * DOLLAR});
+      -- Batches without a reservation: one charged $3 whose rows never persisted, one charged $5 with $2 of rows.
+      insert into public.gateway_request_charges (workspace_id, request_id, cost_nanos, status, is_final, key_id) values
+        ('${WS_BATCHES}', 'batch_capture:b-none', ${3 * DOLLAR}, 'applied', true, '${KEY.batches}'),
+        ('${WS_BATCHES}', 'batch_capture:b-part', ${5 * DOLLAR}, 'applied', true, '${KEY.batches}');
+      insert into public.gateway_requests (workspace_id, request_id, key_id, success, cost_nanos) values
+        ('${WS_BATCHES}', 'batch_usage:b-part:1', '${KEY.batches}', true, ${2 * DOLLAR});
+      -- A reserved batch held at $3 and settled at $10, with $2 of rows persisted.
+      insert into public.gateway_wallet_reservations (reservation_id, workspace_id, amount_nanos, status, hold_ref_id, key_id,
+        captured_nanos, settled_amount_nanos, capture_ref_id) values
+        ('batch_hold:r1', '${WS_BATCHES}', ${3 * DOLLAR}, 'captured', 'b-res', '${KEY.batches}', ${3 * DOLLAR}, ${10 * DOLLAR}, 'b-res');
+      insert into public.credit_ledger (workspace_id, kind, amount_nanos, ref_type, ref_id, source_ref_type, source_ref_id, status) values
+        ('${WS_BATCHES}', 'charge', ${-10 * DOLLAR}, 'async_job_charge', '${WS_BATCHES}:batch_hold:r1', 'async_job', 'b-res', 'captured');
+      insert into public.gateway_requests (workspace_id, request_id, key_id, success, cost_nanos) values
+        ('${WS_BATCHES}', 'batch_usage:b-res:1', '${KEY.batches}', true, ${2 * DOLLAR});`);
+    // $3 + $5 + $10, each once.
+    assert.equal(Number((await workspaceStatus(WS_BATCHES)).budgets[0].usage_nanos), 18 * DOLLAR);
+    // The rest of a batch's rows land: still its debit, once.
+    await db.exec(`insert into public.gateway_requests (workspace_id, request_id, key_id, success, cost_nanos) values
+      ('${WS_BATCHES}', 'batch_usage:b-none:1', '${KEY.batches}', true, ${3 * DOLLAR}),
+      ('${WS_BATCHES}', 'batch_usage:b-res:2', '${KEY.batches}', true, ${8 * DOLLAR})`);
+    assert.equal(Number((await workspaceStatus(WS_BATCHES)).budgets[0].usage_nanos), 18 * DOLLAR);
   });
   await check('a delivered request pending reconciliation counts at its expected cost, once', async () => {
     const before = { workspace: Number((await workspaceStatus(WS_CAP)).budgets[0].usage_nanos),
