@@ -27,6 +27,7 @@ const schemaFiles = [
   'public/functions/abort_api_key_request_approval.sql',
   'public/functions/deny_api_key_request.sql',
   'public/functions/collect_api_key_request.sql',
+  'public/functions/wipe_expired_api_key_request_secrets.sql',
 ];
 const manifest = JSON.parse(await read('../schemas/.pgdelta-export.json'));
 for (const file of schemaFiles) {
@@ -43,22 +44,24 @@ const member = id(13);
 const outsider = id(14);
 const KEY = id(100);
 const challenge = (c = 'a') => c.repeat(43);
+const CLI = 'oauth:phaseo_cli';
+const W2 = id(2);
 
 const db = new PGlite();
 const rows = async (sql, params) => (await db.query(sql, params)).rows;
 const one = async (sql, params) => (await rows(sql, params))[0];
 const create = (args = {}) => one(
-  `select * from public.create_api_key_request($1, $2, 'oauth', 'phaseo_cli', 'Phaseo CLI', $3, $4, $5, $6, $7, $8)`,
+  `select * from public.create_api_key_request($1, $2, 'oauth', 'phaseo_cli', 'Phaseo CLI', $3, $4, $5, $6, $7, $8, $9, $10)`,
   [args.workspace ?? W1, args.by ?? admin, args.agent ?? 'codex', args.name ?? 'Phaseo CLI: Codex API Key',
-    args.daily ?? 0, args.monthly ?? 100_000_000_000, args.days ?? 90, args.challenge ?? challenge()],
+    args.daily ?? 0, args.monthly ?? 100_000_000_000, args.days ?? 90, args.challenge ?? challenge(), args.credential ?? CLI, args.tokenWorkspace ?? W1],
 );
 const begin = (request, user = admin) => one('select * from public.begin_api_key_request_approval($1, $2)', [request, user]);
 const finish = async (request, user = admin, cipher = 'v1.iv.ct') =>
   (await one('select public.finish_api_key_request_approval($1, $2, $3, $4) ok', [request, user, KEY, cipher])).ok;
-const collect = async (request, user = admin, code = challenge()) => {
+const collect = async (request, user = admin, code = challenge(), credential = CLI, tokenWorkspace = W1) => {
   // Each poll is more than the minimum interval after the previous one.
   await db.query(`update public.api_key_requests set last_polled_at = last_polled_at - interval '1 minute' where id = $1 and last_polled_at is not null`, [request]);
-  return one('select * from public.collect_api_key_request($1, $2, $3)', [request, user, code]);
+  return one('select * from public.collect_api_key_request($1, $2, $3, $4, $5)', [request, user, credential, tokenWorkspace, code]);
 };
 const row = (request) => one('select * from public.api_key_requests where id = $1', [request]);
 
@@ -91,7 +94,8 @@ try {
     await assert.rejects(create(), /permission denied/, `${role} can't create a request`);
     await assert.rejects(db.query(`select * from public.get_api_key_request('${id(9)}')`), /permission denied/, `${role} can't read a request`);
     await assert.rejects(begin(id(9)), /permission denied/, `${role} can't approve`);
-    await assert.rejects(db.query(`select * from public.collect_api_key_request('${id(9)}', '${admin}', '${challenge()}')`), /permission denied/, `${role} can't collect`);
+    await assert.rejects(db.query('select public.wipe_expired_api_key_request_secrets()'), /permission denied/, `${role} can't run the cleanup`);
+    await assert.rejects(db.query(`select * from public.collect_api_key_request('${id(9)}', '${admin}', '${CLI}', '${W1}', '${challenge()}')`), /permission denied/, `${role} can't collect`);
     await db.exec('reset role');
   }
   // The service role uses the functions, not the table.
@@ -103,7 +107,7 @@ try {
   const rls = await one(`select relrowsecurity from pg_class where oid = 'public.api_key_requests'::regclass`);
   assert.equal(rls.relrowsecurity, true, 'RLS is on');
   const definers = await rows(`select proname from pg_proc where proname like '%api_key_request%' and prosecdef order by proname`);
-  assert.equal(definers.length, 7, 'every function is SECURITY DEFINER (and so service-role only, above)');
+  assert.equal(definers.length, 8, 'every function is SECURITY DEFINER (and so service-role only, above)');
 
   // Asking: owners and admins only, valid challenge and limits, at most 5 waiting.
   await assert.rejects(create({ by: member }), /api_key_request_forbidden/, 'a member cannot ask for a key');
@@ -158,8 +162,8 @@ try {
 
   // Polling faster than every 2 seconds is refused without changing anything.
   const polled = await create();
-  assert.equal((await one('select * from public.collect_api_key_request($1, $2, $3)', [polled.id, admin, challenge()])).outcome, 'pending');
-  assert.equal((await one('select * from public.collect_api_key_request($1, $2, $3)', [polled.id, admin, challenge()])).outcome, 'slow_down');
+  assert.equal((await one('select * from public.collect_api_key_request($1, $2, $3, $4, $5)', [polled.id, admin, CLI, W1, challenge()])).outcome, 'pending');
+  assert.equal((await one('select * from public.collect_api_key_request($1, $2, $3, $4, $5)', [polled.id, admin, CLI, W1, challenge()])).outcome, 'slow_down');
 
   // Denying: only the requester; a denied request can't be approved or collected.
   await assert.rejects(one('select public.deny_api_key_request($1, $2) s', [polled.id, owner]), /api_key_request_not_found/);
@@ -204,6 +208,66 @@ try {
   assert.equal((await collect(guessed.id, admin, challenge('c'))).outcome, 'invalid_verifier');
   assert.deepEqual([(await row(guessed.id)).status, (await row(guessed.id)).secret_ciphertext], ['denied', null], 'the fifth denies it and wipes the secret');
   assert.equal((await collect(guessed.id)).outcome, 'denied', 'the right verifier is too late');
+
+  // Reserved names: keys Phaseo manages are hidden from Settings and the key limit, so a request can't take one.
+  for (const name of ['__chat_route_managed_key__', '__slack_agent_managed_key__', ' __anything__ ']) {
+    await assert.rejects(create({ name }), /api_key_requests_key_name_check/, `${name} is reserved`);
+  }
+  await db.exec(`update public.api_key_requests set status = 'denied' where status in ('pending', 'approving')`);
+
+  // Pickup is bound to the credential and token workspace that asked, not just the person. Another client or
+  // workspace gets not_found and can't use up the five verifier attempts; a refreshed token of the same
+  // client (same credential, user and workspace) collects normally.
+  const bound = await create();
+  await begin(bound.id);
+  await finish(bound.id);
+  for (const [credential, tokenWorkspace, label] of [['oauth:partner_app', W1, 'another OAuth client'], ['api_key:mk_1', W1, 'a management key'], [CLI, W2, 'a token for another workspace']]) {
+    for (let i = 0; i < 6; i += 1) {
+      assert.equal((await collect(bound.id, admin, challenge('z'), credential, tokenWorkspace)).outcome, 'not_found', label);
+    }
+  }
+  assert.deepEqual([(await row(bound.id)).failed_verifier_attempts, (await row(bound.id)).status, (await row(bound.id)).last_polled_at],
+    [0, 'approved', null], 'other callers changed nothing');
+  const refreshed = await collect(bound.id);
+  assert.equal(refreshed.outcome, 'approved', 'the same client, user and workspace collect after a token refresh');
+  assert.equal(refreshed.secret_ciphertext, 'v1.iv.ct');
+  // The CLI may ask for a key in another workspace of the person's; pickup follows the token's workspace.
+  await db.exec(`insert into public.workspaces values ('${W2}', '${owner}'); insert into public.workspace_members values ('${W2}', '${admin}', 'admin')`);
+  const elsewhere = await create({ workspace: W2, tokenWorkspace: W1 });
+  await begin(elsewhere.id);
+  await finish(elsewhere.id);
+  assert.equal((await collect(elsewhere.id, admin, challenge(), CLI, W2)).outcome, 'not_found');
+  assert.deepEqual(await collect(elsewhere.id), { outcome: 'approved', workspace_id: W2, key_id: KEY, secret_ciphertext: 'v1.iv.ct' });
+
+  // Cleanup with no later request or poll: the scheduled job wipes uncollected secrets past their expiry and
+  // leaves the row, and secrets still in time.
+  const forgotten = await create();
+  await begin(forgotten.id);
+  await finish(forgotten.id);
+  const inTime = await create();
+  await begin(inTime.id);
+  await finish(inTime.id);
+  await db.query(`update public.api_key_requests set secret_expires_at = now() - interval '1 second' where id = $1`, [forgotten.id]);
+  await db.exec('set role service_role');
+  assert.equal((await one('select public.wipe_expired_api_key_request_secrets() n')).n, 1);
+  await db.exec('reset role');
+  assert.deepEqual([(await row(forgotten.id)).status, (await row(forgotten.id)).secret_ciphertext, (await row(forgotten.id)).key_id], ['expired', null, KEY], 'wiped, row kept');
+  assert.deepEqual([(await row(inTime.id)).status, (await row(inTime.id)).secret_ciphertext], ['approved', 'v1.iv.ct'], 'a secret still in time is kept');
+  // Never more than 15 minutes: finish caps the pickup window at 900 seconds.
+  const capped = await create();
+  await begin(capped.id);
+  await one('select public.finish_api_key_request_approval($1, $2, $3, $4, $5)', [capped.id, admin, KEY, 'v1.iv.ct', 86_400]);
+  const window = ((await row(capped.id)).secret_expires_at.getTime() - Date.now()) / 60_000;
+  assert(window <= 15.01, `pickup window capped at 15 minutes, got ${window}`);
+
+  // Approval and pickup interleaved: a poll while the key is being created sees pending and leaves the claim
+  // alone; the approval then finishes and the next poll collects.
+  const raced = await create();
+  await begin(raced.id);
+  assert.equal((await collect(raced.id)).outcome, 'pending');
+  assert.equal((await row(raced.id)).status, 'approving');
+  assert.equal(await finish(raced.id), true);
+  assert.equal((await collect(raced.id)).outcome, 'approved');
 
   console.log('api-key-requests: all assertions passed');
 } finally {

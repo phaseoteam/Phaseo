@@ -861,6 +861,31 @@ test("--key-stdin reads the key without putting it on the command line", async (
 	await assert.rejects(readKeyFlag({ key: "x", "key-stdin": true }, stdin()), /not both/);
 });
 
+test("--key and --key-stdin win over PHASEO_API_KEY, and are still checked and stored", async () => {
+	const checked: string[] = [];
+	await withFileSession(async (input, init) => {
+		if (String(input).endsWith("/v1/key")) {
+			checked.push(new Headers(init?.headers).get("authorization") ?? "");
+			return new Response(JSON.stringify({ data: { id: `key_${checked.length}`, expires_at: null } }), { status: 200 });
+		}
+		throw new Error(`Unexpected request: ${init?.method ?? "GET"} ${String(input)}`);
+	}, async () => {
+		await writeSession(SESSION());
+		process.env.PHASEO_API_KEY = "phaseo_v1_sk_env_fromtheenvironment";
+		const flagKey = "phaseo_v1_sk_flag_secretsecretsecret";
+		const stdinKey = "phaseo_v1_sk_stdin_secretsecretsecret";
+		async function* stdin() { yield `${stdinKey}\n`; }
+		assert.equal(await getIntegrationGatewayCredential("codex", { existingKey: await readKeyFlag({ key: flagKey }) }), flagKey);
+		assert.equal(await getIntegrationGatewayCredential("aider", { existingKey: await readKeyFlag({ "key-stdin": true }, stdin()) }), stdinKey);
+		assert.deepEqual(checked, [`Bearer ${flagKey}`, `Bearer ${stdinKey}`], "both keys were checked with the gateway");
+		const stored = (await readSession())?.integrationGatewayCredentials;
+		assert.deepEqual(stored?.codex, { key: flagKey, keyId: "key_1", external: true });
+		assert.deepEqual(stored?.aider, { key: stdinKey, keyId: "key_2", external: true });
+		await assert.rejects(getIntegrationGatewayCredential("codex", { existingKey: "not-a-key" }), /--key must be a Phaseo API key/, "validated even with PHASEO_API_KEY set");
+		assert.equal(await getIntegrationGatewayCredential("zed"), "phaseo_v1_sk_env_fromtheenvironment", "without a flag the environment still wins");
+	});
+});
+
 test("legacy credential helpers keep a valid shared key, and bulk revocation clears every integration key", async () => {
 	const deleted: string[] = [];
 	await withFileSession(async (input, init) => {

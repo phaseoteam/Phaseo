@@ -9,8 +9,9 @@
 //   denies. Approval creates the key with exactly the stored limits through the dashboard's key-creation
 //   path in web-api (POST /api/account/settings/keys/requests/{id}/approve), and holds its secret
 //   encrypted until pickup. There is no approve route here: the gateway API can't approve a request.
-// * POST /v1/key-requests/{id}/token with the code_verifier: the person who made the request, holding
-//   the verifier, gets the secret once (then it's wiped); otherwise pending, denied or expired. Polling
+// * POST /v1/key-requests/{id}/token with the code_verifier: the person who made the request, through the
+//   same OAuth client or management key and a token for the same workspace, holding the verifier, gets
+//   the secret once (then it's wiped); otherwise pending, denied or expired. Polling
 //   faster than every 2 seconds gets 429 slow_down, and five wrong verifiers deny the request.
 import { Hono } from "hono";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
@@ -24,6 +25,7 @@ import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import type { Env } from "@/runtime/types";
 import { json, withRuntime } from "@/routes/utils";
 import { canTargetOtherWorkspace, internalServerError, isResponse, requireCapability, requireJsonBody, type ManagementRouteAuth } from "./route-helpers";
+import { isReservedKeyName } from "./management-helpers";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 const DEFAULT_WEB_BASE_URL = "https://phaseo.app";
@@ -39,7 +41,17 @@ export const KEY_REQUEST_MAX_LIFETIME_DAYS = 365;
 /** A single cap above this is almost certainly a typo; larger keys are made in the dashboard. */
 export const KEY_REQUEST_MAX_COST_USD = 100_000;
 
-type RequestAuth = ManagementRouteAuth & { workspaceId: string; requestId?: string | null; internal?: boolean };
+type RequestAuth = ManagementRouteAuth & { workspaceId: string; apiKeyId?: string; requestId?: string | null; internal?: boolean };
+
+/**
+ * The credential a request came from, which its pickup must come from too: the OAuth client (a refreshed
+ * token of the same client still matches) or the management key. Another client the person signed in to
+ * can't collect the key or use up its verifier attempts.
+ */
+function requesterCredential(auth: RequestAuth): string {
+	if (auth.authMethod === "oauth") return `oauth:${String(auth.oauthClientId ?? "").trim() || auth.apiKeyRef || "session"}`;
+	return `api_key:${String(auth.apiKeyId ?? "").trim() || auth.apiKeyRef || "unknown"}`;
+}
 
 function errorResponse(status: number, error: string, message: string, extra: Record<string, unknown> = {}, headers: Record<string, string> = {}) {
 	return json({ ok: false, error, message, ...extra }, status, { ...NO_STORE, ...headers });
@@ -84,6 +96,7 @@ type ParsedRequest = {
 export function parseKeyRequestBody(body: Record<string, unknown>): { ok: true; value: ParsedRequest } | { ok: false; message: string } {
 	const name = typeof body.name === "string" ? body.name.trim() : "";
 	if (!name || name.length > 120) return { ok: false, message: "name is required (at most 120 characters)" };
+	if (isReservedKeyName(name)) return { ok: false, message: "This key name is reserved for keys Phaseo manages" };
 	const agentRaw = body.agent ?? null;
 	if (agentRaw !== null && (typeof agentRaw !== "string" || !/^[a-z0-9][a-z0-9._-]{0,63}$/i.test(agentRaw.trim()))) {
 		return { ok: false, message: "agent must be a short identifier such as codex or claude-code" };
@@ -196,6 +209,8 @@ async function handleCreate(req: Request) {
 			p_monthly_cost_nanos: parsed.value.monthlyCostNanos,
 			p_key_lifetime_days: parsed.value.lifetimeDays,
 			p_code_challenge: parsed.value.codeChallenge,
+			p_requester_credential: requesterCredential(caller),
+			p_requester_workspace_id: caller.workspaceId,
 			p_ttl_seconds: KEY_REQUEST_TTL_SECONDS,
 			p_max_open: KEY_REQUEST_MAX_OPEN,
 		});
@@ -280,6 +295,8 @@ async function handleCollect(req: Request) {
 		const { data, error } = await supabase.rpc("collect_api_key_request", {
 			p_request_id: id,
 			p_user_id: userId,
+			p_requester_credential: requesterCredential(caller),
+			p_requester_workspace_id: caller.workspaceId,
 			p_code_challenge: await codeChallengeFor(verifier),
 		});
 		if (error) throw error;

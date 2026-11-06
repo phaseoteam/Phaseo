@@ -201,7 +201,8 @@ accountSettingsKeyRequestsRouter.post("/keys/requests/:requestId/approve", bodyL
 		});
 	} catch (error) {
 		await client.rpc("abort_api_key_request_approval", { p_request_id: id, p_user_id: auth.user.id });
-		return c.json({ error: error instanceof Error ? error.message : "key_write_failed" }, 409, PRIVATE_NO_STORE_HEADERS);
+		const message = error instanceof Error ? error.message : "key_write_failed";
+		return c.json({ error: message }, message === "reserved_key_name" ? 400 : 409, PRIVATE_NO_STORE_HEADERS);
 	}
 
 	try {

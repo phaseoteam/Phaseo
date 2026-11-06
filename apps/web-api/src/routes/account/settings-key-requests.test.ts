@@ -222,6 +222,32 @@ describe("key request approval", () => {
 		expect(db.keyInserts).toHaveLength(1);
 	});
 
+	it.each(["__chat_route_managed_key__", "__slack_agent_managed_key__"])("never creates a key under the reserved name %s", async (name) => {
+		// A key with a managed name would be hidden from Settings, 404 on its page and skip the key limit.
+		db.request = storedRequest({ key_name: name });
+		const response = await approve(SESSION, { ...SHOWN, keyName: name });
+		expect(response.status).toBe(400);
+		expect(await response.json()).toEqual({ error: "reserved_key_name" });
+		expect(db.keyInserts).toEqual([]);
+		expect(db.request.status).toBe("pending");
+	});
+
+	it.each(["__chat_route_managed_key__", "__slack_agent_managed_key__"])("the dashboard's Create key refuses the reserved name %s too", async (name) => {
+		const response = await app.request("https://phaseo.app/api/account/settings/keys", {
+			method: "POST",
+			headers: { authorization: `Bearer ${SESSION}`, "content-type": "application/json" },
+			body: JSON.stringify({ workspaceId: WORKSPACE, name }),
+		}, env);
+		expect(response.status).toBe(400);
+		expect(db.keyInserts).toEqual([]);
+	});
+
+	it("creates one key when two approvals race", async () => {
+		const responses = await Promise.all([approve(), approve()]);
+		expect(responses.map((response) => response.status).sort()).toEqual([200, 409]);
+		expect(db.keyInserts).toHaveLength(1);
+	});
+
 	it("can't approve an expired request", async () => {
 		db.request = storedRequest({ status: "expired" });
 		expect((await approve()).status).toBe(409);

@@ -208,9 +208,9 @@ async function requestApprovedKey(integration: string, hooks: KeyApprovalHooks =
  * person approves in the browser (setup and runners only; credential helpers can't wait for a browser).
  */
 export async function getIntegrationGatewayCredential(integration: IntegrationId | string, options: IntegrationCredentialOptions = {}): Promise<string> {
-	if (process.env.PHASEO_API_KEY) return process.env.PHASEO_API_KEY;
-	let session = await getSessionAccessToken();
+	// An explicit --key / --key-stdin wins over PHASEO_API_KEY: it is checked and stored like any other.
 	if (options.existingKey !== undefined) {
+		const session = await getSessionAccessToken();
 		const key = options.existingKey.trim();
 		const described = await describeExistingKey(session.apiUrl, key);
 		await writeSession({
@@ -219,6 +219,8 @@ export async function getIntegrationGatewayCredential(integration: IntegrationId
 		});
 		return key;
 	}
+	if (process.env.PHASEO_API_KEY) return process.env.PHASEO_API_KEY;
+	let session = await getSessionAccessToken();
 	const existing = session.integrationGatewayCredentials?.[integration];
 	if (existing && !isExpired(existing)) return existing.key;
 	if (existing) {

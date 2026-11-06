@@ -4,6 +4,8 @@ CREATE TABLE "public"."api_key_requests" (
   "requested_by"             uuid                     NOT NULL,
   "requested_via"            text                     NOT NULL,
   "oauth_client_id"          text,
+  "requester_credential"     text                     NOT NULL,
+  "requester_workspace_id"   uuid                     NOT NULL,
   "client_name"              text                     NOT NULL,
   "agent"                    text,
   "key_name"                 text                     NOT NULL,
@@ -28,8 +30,9 @@ CREATE TABLE "public"."api_key_requests" (
   CONSTRAINT "api_key_requests_client_name_check" CHECK (((length(client_name) >= 1) AND (length(client_name) <= 120))),
   CONSTRAINT "api_key_requests_code_challenge_check" CHECK ((code_challenge ~ '^[A-Za-z0-9_-]{43}$'::text)),
   CONSTRAINT "api_key_requests_key_lifetime_days_check" CHECK (((key_lifetime_days >= 1) AND (key_lifetime_days <= 365))),
-  CONSTRAINT "api_key_requests_key_name_check" CHECK (((length(btrim(key_name)) >= 1) AND (length(key_name) <= 120))),
+  CONSTRAINT "api_key_requests_key_name_check" CHECK (((length(btrim(key_name)) >= 1) AND (length(key_name) <= 120) AND (btrim(key_name) !~ '^__.*__$'::text))),
   CONSTRAINT "api_key_requests_limits_check" CHECK (((daily_cost_nanos >= 0) AND (monthly_cost_nanos >= 0) AND ((daily_cost_nanos > 0) OR (monthly_cost_nanos > 0)))),
+  CONSTRAINT "api_key_requests_requester_credential_check" CHECK (((length(requester_credential) >= 1) AND (length(requester_credential) <= 200))),
   CONSTRAINT "api_key_requests_requested_via_check" CHECK ((requested_via = ANY (ARRAY['oauth'::text, 'management_key'::text]))),
   CONSTRAINT "api_key_requests_secret_check" CHECK (((secret_ciphertext IS NULL) OR ((status = 'approved'::text) AND (secret_expires_at IS NOT NULL)))),
   CONSTRAINT "api_key_requests_status_check" CHECK ((status = ANY (ARRAY['pending'::text, 'approving'::text, 'approved'::text, 'collected'::text, 'denied'::text, 'expired'::text]))),
@@ -63,6 +66,12 @@ COMMENT ON TABLE "public"."api_key_requests" IS 'API keys asked for by the CLI o
 
 COMMENT ON COLUMN "public"."api_key_requests"."code_challenge" IS 'base64url SHA-256 of the requester''s code_verifier (PKCE S256). Only the verifier''s holder can collect the key.';
 
-COMMENT ON COLUMN "public"."api_key_requests"."secret_ciphertext" IS 'The approved key''s plaintext, AES-GCM encrypted with a key derived from the key pepper and the request id. Set on approval, wiped when collected or after secret_expires_at.';
+COMMENT ON COLUMN "public"."api_key_requests"."key_name" IS 'Names wrapped in double underscores are reserved for keys Phaseo manages (chat, Slack agent), which are hidden from Settings and the key limit.';
+
+COMMENT ON COLUMN "public"."api_key_requests"."requester_credential" IS 'The credential that asked: oauth:<client id> or api_key:<management key id>. Pickup must come from the same one; a refreshed token of the same client still matches.';
+
+COMMENT ON COLUMN "public"."api_key_requests"."requester_workspace_id" IS 'The workspace of the token that asked, which can differ from workspace_id when the CLI names another workspace. Pickup must come from a token for the same workspace.';
+
+COMMENT ON COLUMN "public"."api_key_requests"."secret_ciphertext" IS 'The approved key''s plaintext, AES-GCM encrypted with a key derived from the key pepper and the request id. Set on approval, wiped when collected or after secret_expires_at (wipe_expired_api_key_request_secrets runs every 5 minutes).';
 
 REVOKE ALL ON TABLE "public"."api_key_requests" FROM "anon", "authenticated", "service_role";

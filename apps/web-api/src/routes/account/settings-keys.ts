@@ -5,7 +5,7 @@ import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
-import { CHAT_MANAGED_KEY_NAME, SLACK_AGENT_MANAGED_KEY_NAME, isManagedKeyName } from "@/lib/managed-keys";
+import { CHAT_MANAGED_KEY_NAME, SLACK_AGENT_MANAGED_KEY_NAME, isManagedKeyName, isReservedKeyName } from "@/lib/managed-keys";
 import { requireAccountWorkspace } from "./context";
 import { keyIpAllowlistSchema } from "./keyIpAllowlist";
 import { parseKeyStorageLocations } from "./key-storage-locations";
@@ -180,7 +180,8 @@ accountSettingsKeysRouter.post("/keys/lookup", bodyLimit({ maxSize: 4096,
  * Creates an API key the way the dashboard does: the workspace's key limit, a new kid and secret hashed
  * with the active pepper, the signed-in person as created_by, the given limits, and an api_key.created
  * audit event. The dashboard's Create key and an approved CLI key request (settings-key-requests.ts) both
- * use it, so their keys are made identically. The plaintext is returned once and never stored.
+ * use it, so their keys are made identically. The plaintext is returned once and never stored. Reserved
+ * (managed) names throw reserved_key_name: such a key would be hidden from Settings and the key limit.
  */
 export async function createWorkspaceApiKey(
 	context: NonNullable<Awaited<ReturnType<typeof requireAccountWorkspace>>>,
@@ -196,6 +197,7 @@ export async function createWorkspaceApiKey(
 		requestId?: string | null;
 	},
 ): Promise<{ id: string; plaintext: string; prefix: string }> {
+	if (isReservedKeyName(input.name)) throw new Error("reserved_key_name");
 	await enforceKeyLimit(context, env, "api"); const key = generateKey("sk"); const limits = limitMetadata(input.limits);
 	const result = await context.client.from("keys").insert({ workspace_id: context.workspaceId, name: input.name, kid: key.kid, hash: await hmac(env, key.secret), prefix: key.prefix, status: "active", scopes: input.scopes ?? "[]", created_by: input.userId, daily_limit_requests: limits.dailyRequests, weekly_limit_requests: limits.weeklyRequests, monthly_limit_requests: limits.monthlyRequests, daily_limit_cost_nanos: limits.dailyCostNanos, weekly_limit_cost_nanos: limits.weeklyCostNanos, monthly_limit_cost_nanos: limits.monthlyCostNanos, storage_locations: input.storageLocations, ...(input.expiresAt ? { expires_at: input.expiresAt } : {}) }).select("id").maybeSingle();
 	if (result.error || !result.data?.id) throw result.error ?? new Error("key_write_failed");
@@ -212,7 +214,7 @@ accountSettingsKeysRouter.post("/keys", async (c) => {
 	try {
 		const created = await createWorkspaceApiKey(context, c.env, { userId: user.id, name, limits: body.limits ?? {}, storageLocations: storage.value, scopes: typeof body.scopes === "string" ? body.scopes : "[]", requestId: requestId(c) });
 		return c.json(created, 200, PRIVATE_NO_STORE_HEADERS);
-	} catch (error) { return c.json({ error: error instanceof Error ? error.message : "key_write_failed" }, 409, PRIVATE_NO_STORE_HEADERS); }
+	} catch (error) { const message = error instanceof Error ? error.message : "key_write_failed"; return c.json({ error: message }, message === "reserved_key_name" ? 400 : 409, PRIVATE_NO_STORE_HEADERS); }
 });
 
 async function apiKeyContext(c: any) {

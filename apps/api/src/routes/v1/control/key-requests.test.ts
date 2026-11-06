@@ -126,6 +126,8 @@ describe("POST /v1/key-requests", () => {
 			p_monthly_cost_nanos: 100_000_000_000,
 			p_key_lifetime_days: 90,
 			p_code_challenge: CHALLENGE,
+			p_requester_credential: "oauth:phaseo_cli",
+			p_requester_workspace_id: WORKSPACE,
 			p_ttl_seconds: 600,
 			p_max_open: 5,
 		}]);
@@ -176,6 +178,9 @@ describe("POST /v1/key-requests", () => {
 		["the plain method", { code_challenge_method: "plain" }],
 		["a long lifetime", { expires_in_days: 400 }],
 		["no name", { name: " " }],
+		["the chat's managed key name", { name: "__chat_route_managed_key__" }],
+		["the Slack agent's managed key name", { name: "__slack_agent_managed_key__" }],
+		["another reserved name", { name: " __phaseo_internal__ " }],
 	])("refuses %s", async (_label, extra) => {
 		const response = await call("/", validRequest(extra));
 		expect(response.status).toBe(400);
@@ -223,7 +228,37 @@ describe("POST /v1/key-requests/:id/token", () => {
 			limits: { daily_cost_usd: null, monthly_cost_usd: 100 },
 		});
 		// The database compares the S256 challenge of the verifier, for this user.
-		expect(rpcCalls("collect_api_key_request")).toEqual([{ p_request_id: REQUEST, p_user_id: USER, p_code_challenge: CHALLENGE }]);
+		expect(rpcCalls("collect_api_key_request")).toEqual([{
+			p_request_id: REQUEST, p_user_id: USER, p_requester_credential: "oauth:phaseo_cli", p_requester_workspace_id: WORKSPACE, p_code_challenge: CHALLENGE,
+		}]);
+	});
+
+	it("binds pickup to the client and token workspace that asked; a refreshed token of the same client still matches", async () => {
+		const callers = [
+			oauth("phaseo_cli", { requestId: "refreshed-token" }),
+			oauth("partner_app"),
+			oauth("phaseo_cli", { workspaceId: OTHER_WORKSPACE }),
+			{ ok: true, value: { workspaceId: WORKSPACE, authMethod: "api_key", apiKeyId: "mk_1", userId: USER, scopes: ["keys:write"], requestId: "r" } },
+		];
+		const seen: Row[] = [];
+		for (const auth of callers) {
+			state.auth = auth;
+			expect((await collect("not_found")).status).toBe(404);
+			seen.push(...rpcCalls("collect_api_key_request"));
+		}
+		expect(seen.map((args) => [args.p_requester_credential, args.p_requester_workspace_id])).toEqual([
+			["oauth:phaseo_cli", WORKSPACE],
+			["oauth:partner_app", WORKSPACE],
+			["oauth:phaseo_cli", OTHER_WORKSPACE],
+			["api_key:mk_1", WORKSPACE],
+		]);
+	});
+
+	it("records the management key that asked, so only it can collect", async () => {
+		state.auth = { ok: true, value: { workspaceId: WORKSPACE, authMethod: "api_key", apiKeyId: "mk_1", userId: USER, scopes: ["keys:write"], requestId: "r" } };
+		state.rpc = vi.fn(async () => ({ data: [{ id: REQUEST, expires_at: "2026-11-06T20:10:00.000Z" }], error: null }));
+		expect((await call("/", validRequest())).status).toBe(201);
+		expect(rpcCalls("create_api_key_request")[0]).toMatchObject({ p_requested_via: "management_key", p_requester_credential: "api_key:mk_1", p_requester_workspace_id: WORKSPACE });
 	});
 
 	it("opens a secret sealed before a pepper rotation", async () => {

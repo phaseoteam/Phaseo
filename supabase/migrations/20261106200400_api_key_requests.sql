@@ -6,7 +6,10 @@
 --   10 minutes), get_api_key_request (approval page), begin/finish/abort_api_key_request_approval
 --   (dashboard approval: claim, create the key with the stored limits, hold its encrypted secret),
 --   deny_api_key_request, and collect_api_key_request (POST /v1/key-requests/{id}/token: the requester
---   with the PKCE verifier gets the secret once; polling is rate-limited).
+--   with the PKCE verifier, through the same credential and token workspace, gets the secret once;
+--   polling is rate-limited), and wipe_expired_api_key_request_secrets (called by the gateway's 5-minute
+--   scheduled cleanup, so an uncollected secret is gone within 15 minutes of approval).
+-- * Names wrapped in double underscores are reserved for keys Phaseo manages and can't be requested.
 -- Hand-written: the declarative sync needs a local Postgres runtime (Docker), which is not
 -- available where this was authored. It matches the definitions in schemas/.
 SET local check_function_bodies = off;
@@ -17,6 +20,8 @@ CREATE TABLE "public"."api_key_requests" (
   "requested_by"             uuid                     NOT NULL,
   "requested_via"            text                     NOT NULL,
   "oauth_client_id"          text,
+  "requester_credential"     text                     NOT NULL,
+  "requester_workspace_id"   uuid                     NOT NULL,
   "client_name"              text                     NOT NULL,
   "agent"                    text,
   "key_name"                 text                     NOT NULL,
@@ -41,8 +46,9 @@ CREATE TABLE "public"."api_key_requests" (
   CONSTRAINT "api_key_requests_client_name_check" CHECK (((length(client_name) >= 1) AND (length(client_name) <= 120))),
   CONSTRAINT "api_key_requests_code_challenge_check" CHECK ((code_challenge ~ '^[A-Za-z0-9_-]{43}$'::text)),
   CONSTRAINT "api_key_requests_key_lifetime_days_check" CHECK (((key_lifetime_days >= 1) AND (key_lifetime_days <= 365))),
-  CONSTRAINT "api_key_requests_key_name_check" CHECK (((length(btrim(key_name)) >= 1) AND (length(key_name) <= 120))),
+  CONSTRAINT "api_key_requests_key_name_check" CHECK (((length(btrim(key_name)) >= 1) AND (length(key_name) <= 120) AND (btrim(key_name) !~ '^__.*__$'::text))),
   CONSTRAINT "api_key_requests_limits_check" CHECK (((daily_cost_nanos >= 0) AND (monthly_cost_nanos >= 0) AND ((daily_cost_nanos > 0) OR (monthly_cost_nanos > 0)))),
+  CONSTRAINT "api_key_requests_requester_credential_check" CHECK (((length(requester_credential) >= 1) AND (length(requester_credential) <= 200))),
   CONSTRAINT "api_key_requests_requested_via_check" CHECK ((requested_via = ANY (ARRAY['oauth'::text, 'management_key'::text]))),
   CONSTRAINT "api_key_requests_secret_check" CHECK (((secret_ciphertext IS NULL) OR ((status = 'approved'::text) AND (secret_expires_at IS NOT NULL)))),
   CONSTRAINT "api_key_requests_status_check" CHECK ((status = ANY (ARRAY['pending'::text, 'approving'::text, 'approved'::text, 'collected'::text, 'denied'::text, 'expired'::text]))),
@@ -76,7 +82,13 @@ COMMENT ON TABLE "public"."api_key_requests" IS 'API keys asked for by the CLI o
 
 COMMENT ON COLUMN "public"."api_key_requests"."code_challenge" IS 'base64url SHA-256 of the requester''s code_verifier (PKCE S256). Only the verifier''s holder can collect the key.';
 
-COMMENT ON COLUMN "public"."api_key_requests"."secret_ciphertext" IS 'The approved key''s plaintext, AES-GCM encrypted with a key derived from the key pepper and the request id. Set on approval, wiped when collected or after secret_expires_at.';
+COMMENT ON COLUMN "public"."api_key_requests"."key_name" IS 'Names wrapped in double underscores are reserved for keys Phaseo manages (chat, Slack agent), which are hidden from Settings and the key limit.';
+
+COMMENT ON COLUMN "public"."api_key_requests"."requester_credential" IS 'The credential that asked: oauth:<client id> or api_key:<management key id>. Pickup must come from the same one; a refreshed token of the same client still matches.';
+
+COMMENT ON COLUMN "public"."api_key_requests"."requester_workspace_id" IS 'The workspace of the token that asked, which can differ from workspace_id when the CLI names another workspace. Pickup must come from a token for the same workspace.';
+
+COMMENT ON COLUMN "public"."api_key_requests"."secret_ciphertext" IS 'The approved key''s plaintext, AES-GCM encrypted with a key derived from the key pepper and the request id. Set on approval, wiped when collected or after secret_expires_at (wipe_expired_api_key_request_secrets runs every 5 minutes).';
 
 REVOKE ALL ON TABLE "public"."api_key_requests" FROM "anon", "authenticated", "service_role";
 
@@ -92,6 +104,8 @@ CREATE OR REPLACE FUNCTION public.create_api_key_request (
   p_monthly_cost_nanos bigint,
   p_key_lifetime_days  integer,
   p_code_challenge     text,
+  p_requester_credential   text,
+  p_requester_workspace_id uuid,
   p_ttl_seconds        integer DEFAULT 600,
   p_max_open           integer DEFAULT 5
 )
@@ -106,12 +120,14 @@ CREATE OR REPLACE FUNCTION public.create_api_key_request (
 -- Records a pending request for an API key that the person approves in the dashboard. Nothing is
 -- created here: the key exists only once the requester approves it there. The requester must be an
 -- owner or admin of the workspace (the role that creates keys in the dashboard), and may have at most
--- p_max_open requests waiting in it. Secrets of approved requests nobody collected in time are wiped.
+-- p_max_open requests waiting in it. Pickup must later come from the same credential (p_requester_credential)
+-- and token workspace (p_requester_workspace_id). Secrets of approved requests nobody collected in time are wiped.
 declare
   v_id uuid;
   v_expires_at timestamptz := now() + make_interval(secs => least(greatest(coalesce(p_ttl_seconds, 600), 60), 900));
 begin
-  if p_workspace_id is null or p_user_id is null or p_code_challenge is null then
+  if p_workspace_id is null or p_user_id is null or p_code_challenge is null
+    or nullif(btrim(p_requester_credential), '') is null or p_requester_workspace_id is null then
     raise exception 'api_key_request_invalid_arguments' using errcode = '22023';
   end if;
 
@@ -128,10 +144,7 @@ begin
     raise exception 'api_key_request_forbidden' using errcode = '42501';
   end if;
 
-  update public.api_key_requests r
-  set secret_ciphertext = null, status = 'expired', updated_at = now()
-  where r.secret_ciphertext is not null
-    and r.secret_expires_at <= now();
+  perform public.wipe_expired_api_key_request_secrets();
 
   update public.api_key_requests r
   set status = 'expired', updated_at = now()
@@ -152,11 +165,12 @@ begin
 
   insert into public.api_key_requests (
     workspace_id, requested_by, requested_via, oauth_client_id, client_name, agent, key_name,
-    daily_cost_nanos, monthly_cost_nanos, key_lifetime_days, code_challenge, expires_at
+    daily_cost_nanos, monthly_cost_nanos, key_lifetime_days, code_challenge, requester_credential,
+    requester_workspace_id, expires_at
   ) values (
     p_workspace_id, p_user_id, p_requested_via, nullif(btrim(p_oauth_client_id), ''), btrim(p_client_name),
     nullif(btrim(p_agent), ''), btrim(p_key_name), coalesce(p_daily_cost_nanos, 0), coalesce(p_monthly_cost_nanos, 0),
-    p_key_lifetime_days, p_code_challenge, v_expires_at
+    p_key_lifetime_days, p_code_challenge, btrim(p_requester_credential), p_requester_workspace_id, v_expires_at
   )
   returning api_key_requests.id into v_id;
 
@@ -164,17 +178,17 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "public"."create_api_key_request"(uuid, uuid, text, text, text, text, text, bigint, bigint, integer, text, integer, integer) IS 'Records a pending API key request for a workspace owner or admin to approve in the dashboard (at most p_max_open waiting per person and workspace). Creates no key. Service role only.';
+COMMENT ON FUNCTION "public"."create_api_key_request"(uuid, uuid, text, text, text, text, text, bigint, bigint, integer, text, text, uuid, integer, integer) IS 'Records a pending API key request for a workspace owner or admin to approve in the dashboard (at most p_max_open waiting per person and workspace). Creates no key. Service role only.';
 
-REVOKE ALL ON FUNCTION "public"."create_api_key_request"(uuid, uuid, text, text, text, text, text, bigint, bigint, integer, text, integer, integer) FROM PUBLIC;
+REVOKE ALL ON FUNCTION "public"."create_api_key_request"(uuid, uuid, text, text, text, text, text, bigint, bigint, integer, text, text, uuid, integer, integer) FROM PUBLIC;
 
-REVOKE ALL ON FUNCTION "public"."create_api_key_request"(uuid, uuid, text, text, text, text, text, bigint, bigint, integer, text, integer, integer) FROM "postgres";
+REVOKE ALL ON FUNCTION "public"."create_api_key_request"(uuid, uuid, text, text, text, text, text, bigint, bigint, integer, text, text, uuid, integer, integer) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."create_api_key_request"(uuid, uuid, text, text, text, text, text, bigint, bigint, integer, text, integer, integer) TO "postgres";
+GRANT EXECUTE ON FUNCTION "public"."create_api_key_request"(uuid, uuid, text, text, text, text, text, bigint, bigint, integer, text, text, uuid, integer, integer) TO "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."create_api_key_request"(uuid, uuid, text, text, text, text, text, bigint, bigint, integer, text, integer, integer) TO "service_role";
+GRANT EXECUTE ON FUNCTION "public"."create_api_key_request"(uuid, uuid, text, text, text, text, text, bigint, bigint, integer, text, text, uuid, integer, integer) TO "service_role";
 
-REVOKE ALL ON FUNCTION "public"."create_api_key_request"(uuid, uuid, text, text, text, text, text, bigint, bigint, integer, text, integer, integer) FROM "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."create_api_key_request"(uuid, uuid, text, text, text, text, text, bigint, bigint, integer, text, text, uuid, integer, integer) FROM "anon", "authenticated";
 
 CREATE OR REPLACE FUNCTION public.get_api_key_request (
   p_request_id uuid
@@ -443,6 +457,8 @@ REVOKE ALL ON FUNCTION "public"."deny_api_key_request"(uuid, uuid) FROM "anon", 
 CREATE OR REPLACE FUNCTION public.collect_api_key_request (
   p_request_id          uuid,
   p_user_id             uuid,
+  p_requester_credential   text,
+  p_requester_workspace_id uuid,
   p_code_challenge      text,
   p_min_poll_seconds    integer DEFAULT 2,
   p_max_failed_attempts integer DEFAULT 5
@@ -457,9 +473,11 @@ CREATE OR REPLACE FUNCTION public.collect_api_key_request (
   SECURITY DEFINER
   SET search_path TO ''
   AS $function$
--- The requester polls for its API key. Only the person who made the request, holding the verifier
--- of its code challenge, gets the key's encrypted secret, once: it is wiped as it is returned.
--- Outcomes: not_found (no such request for this person), slow_down (polled again within
+-- The requester polls for its API key. Only the person who made the request, through the same credential
+-- (OAuth client or management key) and a token for the same workspace, holding the verifier of its code
+-- challenge, gets the key's encrypted secret, once: it is wiped as it is returned. Any other caller gets
+-- not_found before anything is counted, so it can't use up the verifier attempts.
+-- Outcomes: not_found (no such request for this caller), slow_down (polled again within
 -- p_min_poll_seconds), invalid_verifier (after p_max_failed_attempts the request is denied and any
 -- secret wiped), pending, approved (with the secret), collected (already picked up), denied, expired.
 declare
@@ -470,7 +488,10 @@ begin
   from public.api_key_requests r
   where r.id = p_request_id
   for update;
-  if not found or v_request.requested_by is distinct from p_user_id then
+  if not found
+    or v_request.requested_by is distinct from p_user_id
+    or v_request.requester_credential is distinct from p_requester_credential
+    or v_request.requester_workspace_id is distinct from p_requester_workspace_id then
     return query select 'not_found'::text, null::uuid, null::uuid, null::text;
     return;
   end if;
@@ -528,14 +549,48 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "public"."collect_api_key_request"(uuid, uuid, text, integer, integer) IS 'Returns an approved API key''s encrypted secret once, to the person who requested it and holds the PKCE verifier, and wipes it; otherwise the request''s status. Rate-limits polling and denies the request after repeated wrong verifiers. Service role only.';
+COMMENT ON FUNCTION "public"."collect_api_key_request"(uuid, uuid, text, uuid, text, integer, integer) IS 'Returns an approved API key''s encrypted secret once, to the person who requested it and holds the PKCE verifier, and wipes it; otherwise the request''s status. Rate-limits polling and denies the request after repeated wrong verifiers. Service role only.';
 
-REVOKE ALL ON FUNCTION "public"."collect_api_key_request"(uuid, uuid, text, integer, integer) FROM PUBLIC;
+REVOKE ALL ON FUNCTION "public"."collect_api_key_request"(uuid, uuid, text, uuid, text, integer, integer) FROM PUBLIC;
 
-REVOKE ALL ON FUNCTION "public"."collect_api_key_request"(uuid, uuid, text, integer, integer) FROM "postgres";
+REVOKE ALL ON FUNCTION "public"."collect_api_key_request"(uuid, uuid, text, uuid, text, integer, integer) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."collect_api_key_request"(uuid, uuid, text, integer, integer) TO "postgres";
+GRANT EXECUTE ON FUNCTION "public"."collect_api_key_request"(uuid, uuid, text, uuid, text, integer, integer) TO "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."collect_api_key_request"(uuid, uuid, text, integer, integer) TO "service_role";
+GRANT EXECUTE ON FUNCTION "public"."collect_api_key_request"(uuid, uuid, text, uuid, text, integer, integer) TO "service_role";
 
-REVOKE ALL ON FUNCTION "public"."collect_api_key_request"(uuid, uuid, text, integer, integer) FROM "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."collect_api_key_request"(uuid, uuid, text, uuid, text, integer, integer) FROM "anon", "authenticated";
+
+CREATE OR REPLACE FUNCTION public.wipe_expired_api_key_request_secrets ()
+  RETURNS integer
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+-- Wipes the encrypted secret of every approved key request nobody collected before secret_expires_at
+-- (at most 15 minutes after approval) and marks the request expired. Only clears columns; rows are kept.
+-- The gateway's 5-minute scheduled cleanup calls it, so no ciphertext outlives its expiry by more than a
+-- few minutes even when nobody polls or asks again. Returns the number of secrets wiped.
+declare
+  v_wiped integer;
+begin
+  update public.api_key_requests r
+  set secret_ciphertext = null, status = 'expired', updated_at = now()
+  where r.secret_ciphertext is not null
+    and r.secret_expires_at <= now();
+  get diagnostics v_wiped = row_count;
+  return v_wiped;
+end;
+$function$;
+
+COMMENT ON FUNCTION "public"."wipe_expired_api_key_request_secrets"() IS 'Clears the encrypted secrets of approved API key requests past secret_expires_at and marks them expired. Called by the gateway scheduled cleanup every 5 minutes. Service role only.';
+
+REVOKE ALL ON FUNCTION "public"."wipe_expired_api_key_request_secrets"() FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION "public"."wipe_expired_api_key_request_secrets"() FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."wipe_expired_api_key_request_secrets"() TO "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."wipe_expired_api_key_request_secrets"() TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."wipe_expired_api_key_request_secrets"() FROM "anon", "authenticated";

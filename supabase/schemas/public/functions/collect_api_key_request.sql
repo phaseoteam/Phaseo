@@ -1,6 +1,8 @@
 CREATE OR REPLACE FUNCTION public.collect_api_key_request (
   p_request_id          uuid,
   p_user_id             uuid,
+  p_requester_credential   text,
+  p_requester_workspace_id uuid,
   p_code_challenge      text,
   p_min_poll_seconds    integer DEFAULT 2,
   p_max_failed_attempts integer DEFAULT 5
@@ -15,9 +17,11 @@ CREATE OR REPLACE FUNCTION public.collect_api_key_request (
   SECURITY DEFINER
   SET search_path TO ''
   AS $function$
--- The requester polls for its API key. Only the person who made the request, holding the verifier
--- of its code challenge, gets the key's encrypted secret, once: it is wiped as it is returned.
--- Outcomes: not_found (no such request for this person), slow_down (polled again within
+-- The requester polls for its API key. Only the person who made the request, through the same credential
+-- (OAuth client or management key) and a token for the same workspace, holding the verifier of its code
+-- challenge, gets the key's encrypted secret, once: it is wiped as it is returned. Any other caller gets
+-- not_found before anything is counted, so it can't use up the verifier attempts.
+-- Outcomes: not_found (no such request for this caller), slow_down (polled again within
 -- p_min_poll_seconds), invalid_verifier (after p_max_failed_attempts the request is denied and any
 -- secret wiped), pending, approved (with the secret), collected (already picked up), denied, expired.
 declare
@@ -28,7 +32,10 @@ begin
   from public.api_key_requests r
   where r.id = p_request_id
   for update;
-  if not found or v_request.requested_by is distinct from p_user_id then
+  if not found
+    or v_request.requested_by is distinct from p_user_id
+    or v_request.requester_credential is distinct from p_requester_credential
+    or v_request.requester_workspace_id is distinct from p_requester_workspace_id then
     return query select 'not_found'::text, null::uuid, null::uuid, null::text;
     return;
   end if;
@@ -86,14 +93,14 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "public"."collect_api_key_request"(uuid, uuid, text, integer, integer) IS 'Returns an approved API key''s encrypted secret once, to the person who requested it and holds the PKCE verifier, and wipes it; otherwise the request''s status. Rate-limits polling and denies the request after repeated wrong verifiers. Service role only.';
+COMMENT ON FUNCTION "public"."collect_api_key_request"(uuid, uuid, text, uuid, text, integer, integer) IS 'Returns an approved API key''s encrypted secret once, to the person who requested it and holds the PKCE verifier, and wipes it; otherwise the request''s status. Rate-limits polling and denies the request after repeated wrong verifiers. Service role only.';
 
-REVOKE ALL ON FUNCTION "public"."collect_api_key_request"(uuid, uuid, text, integer, integer) FROM PUBLIC;
+REVOKE ALL ON FUNCTION "public"."collect_api_key_request"(uuid, uuid, text, uuid, text, integer, integer) FROM PUBLIC;
 
-REVOKE ALL ON FUNCTION "public"."collect_api_key_request"(uuid, uuid, text, integer, integer) FROM "postgres";
+REVOKE ALL ON FUNCTION "public"."collect_api_key_request"(uuid, uuid, text, uuid, text, integer, integer) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."collect_api_key_request"(uuid, uuid, text, integer, integer) TO "postgres";
+GRANT EXECUTE ON FUNCTION "public"."collect_api_key_request"(uuid, uuid, text, uuid, text, integer, integer) TO "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."collect_api_key_request"(uuid, uuid, text, integer, integer) TO "service_role";
+GRANT EXECUTE ON FUNCTION "public"."collect_api_key_request"(uuid, uuid, text, uuid, text, integer, integer) TO "service_role";
 
-REVOKE ALL ON FUNCTION "public"."collect_api_key_request"(uuid, uuid, text, integer, integer) FROM "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."collect_api_key_request"(uuid, uuid, text, uuid, text, integer, integer) FROM "anon", "authenticated";
