@@ -457,20 +457,13 @@ function validPresetName(value: string) {
 function presetVisibility(value: unknown) { return ["private", "team", "public"].includes(String(value)) ? String(value) : "team"; }
 function normalizePresetSlug(value: unknown) { return String(value ?? "").trim().toLowerCase().replace(/^@+/, "").replace(/[^a-z0-9._:-]+/g, "-").replace(/-{2,}/g, "-").replace(/^[-._:]+|[-._:]+$/g, ""); }
 /**
- * The preset a write may act on: in a workspace the caller belongs to, and not a teammate's private
- * preset. Both rules are in the lookup itself, so a preset that is hidden from the caller and one that
- * doesn't exist get the same 404 after the same queries.
+ * The preset a dashboard request may act on, from find_member_visible_preset: live, in a workspace the
+ * caller belongs to or owns, and not a teammate's private preset. Membership and visibility are checked in
+ * that one database call, so a hidden preset and a missing one get the same 404 after the same call.
  */
-async function findWritablePreset(c: Context<{ Bindings: Env }>, userId: string, presetId: string, columns: string) {
+async function findVisiblePreset(c: Context<{ Bindings: Env }>, userId: string, presetId: string, columns: string) {
 	const client = getDataClient(c.env);
-	const [memberships, owned] = await Promise.all([
-		client.from("workspace_members").select("workspace_id").eq("user_id", userId),
-		client.from("workspaces").select("id").eq("owner_user_id", userId),
-	]);
-	if (memberships.error || owned.error) return { response: c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS) } as const;
-	const workspaceIds = [...new Set([...(memberships.data ?? []).map((row) => String(row.workspace_id)), ...(owned.data ?? []).map((row) => String(row.id))])];
-	const result = await client.from("presets").select(columns).eq("id", presetId).is("archived_at", null)
-		.in("workspace_id", workspaceIds).or(`visibility.neq.private,created_by.eq.${userId}`).maybeSingle();
+	const result = await client.rpc("find_member_visible_preset", { p_preset_id: presetId, p_user_id: userId }).select(columns).maybeSingle();
 	if (result.error) return { response: c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS) } as const;
 	const preset = result.data as unknown as Record<string, any> | null;
 	if (!preset?.workspace_id) return { response: c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS) } as const;
@@ -600,14 +593,11 @@ accountSettingsPolicyRouter.post("/presets", async (c) => {
 accountSettingsPolicyRouter.get("/presets/:presetId", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
-	const client = getDataClient(c.env); const result = await client.from("presets").select(PRESET_DETAIL_COLUMNS).eq("id", c.req.param("presetId")).is("archived_at", null).maybeSingle();
-	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	if (!result.data?.workspace_id) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
-	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: result.data.workspace_id }); if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
-	// Private presets are visible to their creator only, as in the list and versions routes; a private
-	// draft of a shared preset is shown to everyone else as the published preset.
-	if (result.data.visibility === "private" && result.data.created_by !== user.id) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
-	return c.json({ preset: withoutOthersPrivateDrafts([result.data], user.id)[0] }, 200, PRIVATE_NO_STORE_HEADERS);
+	// Private presets are visible to their creator only (the lookup returns nothing for anyone else); a
+	// private draft of a shared preset is shown to everyone else as the published preset.
+	const found = await findVisiblePreset(c, user.id, c.req.param("presetId"), PRESET_DETAIL_COLUMNS);
+	if ("response" in found) return found.response;
+	return c.json({ preset: withoutOthersPrivateDrafts([found.preset], user.id)[0] }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountSettingsPolicyRouter.post("/presets/:presetId/fork", async (c) => {
@@ -637,7 +627,7 @@ accountSettingsPolicyRouter.post("/presets/:presetId/fork", async (c) => {
 accountSettingsPolicyRouter.put("/presets/:presetId", async (c) => {
 	const user = await requireUser(c.req.raw, c.env); if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const id = c.req.param("presetId");
-	const found = await findWritablePreset(c, user.id, id, "id,workspace_id,name,slug,config,visibility,created_by,draft_name,draft_slug,draft_description,draft_config,draft_visibility,source_preset_id,upstream_version_id");
+	const found = await findVisiblePreset(c, user.id, id, "id,workspace_id,name,slug,config,visibility,created_by,draft_name,draft_slug,draft_description,draft_config,draft_visibility,source_preset_id,upstream_version_id");
 	if ("response" in found) return found.response;
 	const { client } = found; const existing = { data: found.preset };
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: existing.data.workspace_id }); if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
@@ -669,12 +659,12 @@ accountSettingsPolicyRouter.put("/presets/:presetId", async (c) => {
 
 accountSettingsPolicyRouter.get("/presets/:presetId/versions", async (c) => {
 	const user = await requireUser(c.req.raw, c.env); if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
-	const client = getDataClient(c.env); const id = c.req.param("presetId");
-	const preset = await client.from("presets").select("workspace_id,created_by,visibility,draft_visibility,active_version_id").eq("id", id).is("archived_at", null).maybeSingle();
-	if (preset.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS); if (!preset.data?.workspace_id) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
+	const id = c.req.param("presetId");
+	const found = await findVisiblePreset(c, user.id, id, "workspace_id,created_by,visibility,draft_visibility,active_version_id");
+	if ("response" in found) return found.response;
+	const { client } = found; const preset = { data: found.preset };
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: preset.data.workspace_id }); if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const creator = preset.data.created_by === user.id;
-	if (preset.data.visibility === "private" && !creator) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 	// A version published while the preset was private stays its creator's, even after a later version is shared.
 	let versionsQuery = client.from("preset_versions").select("id,version_number,version_label,name,slug,description,visibility,release_notes,created_at,config").eq("preset_id", id);
 	if (!creator) versionsQuery = versionsQuery.neq("visibility", "private");
@@ -721,7 +711,7 @@ function presetLabelRpcError(message: string): { error: string; status: 400 | 40
 	return null;
 }
 async function presetForLabelChange(c: Context<{ Bindings: Env }>, userId: string) {
-	const found = await findWritablePreset(c, userId, String(c.req.param("presetId") ?? ""), "id,workspace_id,created_by,visibility,draft_visibility");
+	const found = await findVisiblePreset(c, userId, String(c.req.param("presetId") ?? ""), "id,workspace_id,created_by,visibility,draft_visibility");
 	if ("response" in found) return found;
 	const { client } = found; const preset = { data: found.preset };
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: preset.data.workspace_id });
@@ -762,7 +752,7 @@ accountSettingsPolicyRouter.delete("/presets/:presetId/labels/:label", async (c)
 accountSettingsPolicyRouter.post("/presets/:presetId/versions", async (c) => {
 	const user = await requireUser(c.req.raw, c.env); if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const id = c.req.param("presetId"); const body: { releaseNotes?: string; versionLabel?: string } = await c.req.json<{ releaseNotes?: string; versionLabel?: string }>().catch(() => ({}));
-	const found = await findWritablePreset(c, user.id, id, "workspace_id,created_by,name,slug,description,config,visibility,draft_name,draft_slug,draft_description,draft_config,draft_visibility");
+	const found = await findVisiblePreset(c, user.id, id, "workspace_id,created_by,name,slug,description,config,visibility,draft_name,draft_slug,draft_description,draft_config,draft_visibility");
 	if ("response" in found) return found.response;
 	const { client } = found; const preset = { data: found.preset };
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: preset.data.workspace_id }); if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
@@ -790,7 +780,7 @@ accountSettingsPolicyRouter.post("/presets/:presetId/upstream", async (c) => {
 	const id = c.req.param("presetId"); const body: { versionId?: unknown } = await c.req.json<{ versionId?: unknown }>().catch(() => ({}));
 	// The body's shape is checked on its own, so it says nothing about the preset.
 	if (typeof body.versionId !== "string" || !body.versionId.trim()) return c.json({ error: "invalid_upstream_version" }, 400, PRIVATE_NO_STORE_HEADERS);
-	const found = await findWritablePreset(c, user.id, id, "workspace_id,created_by,visibility");
+	const found = await findVisiblePreset(c, user.id, id, "workspace_id,created_by,visibility");
 	if ("response" in found) return found.response;
 	const { client } = found; const preset = { data: found.preset };
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: preset.data.workspace_id }); if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
@@ -808,7 +798,7 @@ accountSettingsPolicyRouter.post("/presets/:presetId/upstream", async (c) => {
 accountSettingsPolicyRouter.delete("/presets/:presetId", async (c) => {
 	const user = await requireUser(c.req.raw, c.env); if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const id = c.req.param("presetId");
-	const found = await findWritablePreset(c, user.id, id, "name,workspace_id,created_by,visibility");
+	const found = await findVisiblePreset(c, user.id, id, "name,workspace_id,created_by,visibility");
 	if ("response" in found) return found.response;
 	const { client } = found; const existing = { data: found.preset };
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: existing.data.workspace_id }); if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);

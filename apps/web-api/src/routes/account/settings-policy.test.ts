@@ -14,6 +14,16 @@ const env = {
 
 afterEach(() => vi.unstubAllGlobals());
 
+/**
+ * A stand-in for find_member_visible_preset: the row when the caller belongs to its workspace and may see it
+ * (not someone else's private preset), otherwise nothing, as the database function answers.
+ */
+function visiblePresetRpc(url: string, row: Record<string, unknown> | null, { userId = "user-1", member = true }: { userId?: string; member?: boolean } = {}) {
+	if (!url.includes("/rpc/find_member_visible_preset")) return null;
+	const visible = Boolean(row) && member && (row!.visibility !== "private" || row!.created_by === userId);
+	return Response.json(visible ? [row] : []);
+}
+
 describe("account policy settings routes", () => {
 	it.each(["owner", "admin", "member"])("reports routing edit access for a %s and enforces it on writes", async (role) => {
 		let writes = 0;
@@ -281,7 +291,7 @@ describe("account policy settings routes", () => {
 			const url = input instanceof Request ? input.url : String(input);
 			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" }), { status: 200 });
 			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "member" }]), { status: 200 });
-			if (url.includes("/presets?")) return new Response(JSON.stringify([{
+			if (url.includes("/presets?") || url.includes("/rpc/find_member_visible_preset")) return new Response(JSON.stringify([{
 				workspace_id: "workspace-1", created_by: "user-1", name: "Stable", slug: "stable", description: null,
 				config: { models: ["openai/gpt-test"] }, visibility: "team", draft_name: "Stable", draft_slug: "stable",
 				draft_description: null, draft_config: { models: ["openai/gpt-test"] }, draft_visibility: "team",
@@ -308,7 +318,7 @@ describe("account policy settings routes", () => {
 			const url = request.url;
 			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" }), { status: 200 });
 			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "member" }]), { status: 200 });
-			if (url.includes("/presets?")) return new Response(JSON.stringify([{
+			if (url.includes("/presets?") || url.includes("/rpc/find_member_visible_preset")) return new Response(JSON.stringify([{
 				workspace_id: "workspace-1", created_by: "user-1", name: "Stable", slug: "stable", description: null,
 				config: { models: ["openai/gpt-test"] }, visibility: "team", draft_name: "Stable", draft_slug: "stable",
 				draft_description: null, draft_config: { models: ["openai/gpt-other"] }, draft_visibility: "team", versioning_method: "semver",
@@ -340,7 +350,10 @@ describe("account policy settings routes", () => {
 				const url = request.url;
 				if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" }), { status: 200 });
 				if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role }]), { status: 200 });
-				if (url.includes("/presets?")) return new Response(JSON.stringify([{ id: "preset-1", workspace_id: "workspace-1", created_by: createdBy, visibility, draft_visibility: draftVisibility, active_version_id: "version-3" }]), { status: 200 });
+				const presetRow = { id: "preset-1", workspace_id: "workspace-1", created_by: createdBy, visibility, draft_visibility: draftVisibility, active_version_id: "version-3" };
+				const lookup = visiblePresetRpc(url, presetRow, { member: role !== null });
+				if (lookup) return lookup;
+				if (url.includes("/presets?")) return new Response(JSON.stringify([presetRow]), { status: 200 });
 				// The target version check before moving a label: a shared version.
 				if (url.includes("/preset_versions?") && new URL(url).searchParams.has("id")) return new Response(JSON.stringify([{ id: VERSION_ID }]), { status: 200 });
 				if (url.includes("/preset_versions?")) return new Response(JSON.stringify([
@@ -395,7 +408,7 @@ describe("account policy settings routes", () => {
 				urls.push(url);
 				if (url.pathname === "/auth/v1/user") return Response.json({ id: userId, email: "user@example.com", created_at: "2025-01-01" });
 				if (url.pathname.endsWith("workspace_members")) return Response.json([{ role: "admin" }]);
-				if (url.pathname.endsWith("/presets")) return Response.json([{ id: "preset-1", workspace_id: "workspace-1", created_by: "owner-2", visibility: "team", draft_visibility: "team", active_version_id: "version-2" }]);
+				if (url.pathname.endsWith("/presets") || url.pathname.endsWith("/rpc/find_member_visible_preset")) return Response.json([{ id: "preset-1", workspace_id: "workspace-1", created_by: "owner-2", visibility: "team", draft_visibility: "team", active_version_id: "version-2" }]);
 				if (url.pathname.endsWith("/preset_versions")) {
 					const versions = [
 						{ id: "version-2", version_number: 2, version_label: "v2", visibility: "team", config: { models: ["openai/shared"] } },
@@ -428,7 +441,7 @@ describe("account policy settings routes", () => {
 				const url = new URL(req.url);
 				if (url.pathname === "/auth/v1/user") return Response.json({ id: userId, email: "user@example.com", created_at: "2025-01-01" });
 				if (url.pathname.endsWith("workspace_members")) return Response.json([{ role: "admin" }]);
-				if (url.pathname.endsWith("/presets")) return Response.json([{ id: "preset-1", workspace_id: "workspace-1", created_by: "owner-2", visibility: "team", draft_visibility: "team" }]);
+				if (url.pathname.endsWith("/presets") || url.pathname.endsWith("/rpc/find_member_visible_preset")) return Response.json([{ id: "preset-1", workspace_id: "workspace-1", created_by: "owner-2", visibility: "team", draft_visibility: "team" }]);
 				if (url.pathname.endsWith("/preset_versions")) {
 					versionLookups.push(url);
 					// VERSION_ID is v1, published while the preset was private.
@@ -457,7 +470,7 @@ describe("account policy settings routes", () => {
 				if (url.pathname.endsWith("workspace_members")) return Response.json([{ role: "admin" }]);
 				if (url.pathname.endsWith("/presets") && request.method === "PATCH") { archives.push(url); return Response.json(archived); }
 				// Read as shared; the creator makes it private before the archive lands.
-				if (url.pathname.endsWith("/presets")) return Response.json([{ name: "@shared", workspace_id: "workspace-1", created_by: "owner-2", visibility: "team" }]);
+				if (url.pathname.endsWith("/presets") || url.pathname.endsWith("/rpc/find_member_visible_preset")) return Response.json([{ name: "@shared", workspace_id: "workspace-1", created_by: "owner-2", visibility: "team" }]);
 				return Response.json([]);
 			}));
 			stub("user-1", []);
@@ -482,9 +495,10 @@ describe("account policy settings routes", () => {
 			const response = await request("");
 			expect(response.status).toBe(200);
 			await expect(response.json()).resolves.toMatchObject({ preset: { id: "preset-1", visibility: "team" } });
-			const presetUrl = new URL(urls.find((url) => url.includes("/presets?"))!);
-			expect(presetUrl.searchParams.get("archived_at")).toBe("is.null");
-			expect(presetUrl.searchParams.get("select")).not.toContain("*");
+			// One lookup call, which checks membership, visibility and archived presets in the database, and selects named columns.
+			const lookups = urls.filter((url) => url.includes("/rpc/find_member_visible_preset"));
+			expect(lookups).toHaveLength(1);
+			expect(new URL(lookups[0]).searchParams.get("select")).not.toContain("*");
 		});
 
 		it("lets the creator publish their own private draft", async () => {
@@ -594,7 +608,8 @@ describe("account policy settings routes", () => {
 				if (url.includes("workspace_members")) return Response.json([{ role: "admin" }]);
 				if (url.includes("/presets") && url.includes("workspace_id=eq.workspace-1")) return Response.json([row]);
 				// The detail read, by id.
-				if (url.includes("/presets?") && url.includes("id=eq.preset-1")) return Response.json([row]);
+				const lookup = visiblePresetRpc(url, row, { userId });
+				if (lookup) return lookup;
 				// The upstream lookup: failing it exercises the fallback serialisation.
 				if (url.includes("/presets") && url.includes("id=in.")) return lifecycleFails ? Response.json({ message: "boom" }, { status: 500 }) : Response.json([]);
 				return Response.json([]);
@@ -624,7 +639,7 @@ describe("account policy settings routes", () => {
 				if (url.pathname === "/auth/v1/user") return Response.json({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" });
 				if (url.pathname.endsWith("workspace_members")) return Response.json([{ role: "admin" }]);
 				if (url.pathname.endsWith("/presets") && request.method === "PATCH") { patches.push(url); return Response.json(written); }
-				if (url.pathname.endsWith("/presets")) return Response.json(url.searchParams.has("slug") ? [] : [{ ...row, draft_visibility: draftVisibility }]);
+				if (url.pathname.endsWith("/presets") || url.pathname.endsWith("/rpc/find_member_visible_preset")) return Response.json(url.searchParams.has("slug") ? [] : [{ ...row, draft_visibility: draftVisibility }]);
 				return Response.json([]);
 			}));
 			const put = (body: Record<string, unknown>) => app.request("https://phaseo.app/api/account/settings/presets/preset-1", { method: "PUT", headers: { authorization: "Bearer session-token", "content-type": "application/json" }, body: JSON.stringify(body) }, env, { waitUntil() {}, passThroughOnException() {}, props: {} } as never);
@@ -701,9 +716,18 @@ describe("account policy settings routes", () => {
 			vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 				const req = input instanceof Request ? input : new Request(String(input), init);
 				const url = new URL(req.url);
-				requests.push(`${req.method} ${url.pathname}?${[...url.searchParams.entries()].map(([key, value]) => `${key}=${value}`).sort().join("&")}`);
+				const body = ["GET", "HEAD"].includes(req.method) ? "" : await req.clone().text();
+				requests.push(`${req.method} ${url.pathname}?${[...url.searchParams.entries()].map(([key, value]) => `${key}=${value}`).sort().join("&")} ${body}`);
 				if (url.pathname === "/auth/v1/user") return Response.json({ id: userId, email: "user@example.com", created_at: "2025-01-01" });
-				if (url.pathname.endsWith("/workspace_members") && url.searchParams.get("select") === "workspace_id") return Response.json(memberOf.map((workspace_id) => ({ workspace_id })));
+				// find_member_visible_preset, answered as the database would: membership checked in full.
+				if (url.pathname.endsWith("/rpc/find_member_visible_preset")) {
+					const args = JSON.parse(body || "{}") as { p_preset_id?: string; p_user_id?: string };
+					const visible = Boolean(preset) && preset!.id === args.p_preset_id && !preset!.archived_at && memberOf.includes(String(preset!.workspace_id))
+						&& (preset!.visibility !== "private" || preset!.created_by === args.p_user_id);
+					return Response.json(visible ? [preset] : []);
+				}
+				// A listed membership page is capped at 1,000 rows, as PostgREST's max-rows is.
+				if (url.pathname.endsWith("/workspace_members") && url.searchParams.get("select") === "workspace_id") return Response.json(memberOf.slice(0, 1000).map((workspace_id) => ({ workspace_id })));
 				if (url.pathname.endsWith("/workspace_members")) return Response.json(memberOf.includes(String(url.searchParams.get("workspace_id")).replace(/^eq\./, "")) ? [{ role: "admin" }] : []);
 				if (url.pathname.endsWith("/workspaces")) return Response.json([]);
 				if (url.pathname.endsWith("/presets") && req.method === "GET") {
@@ -737,6 +761,8 @@ describe("account policy settings routes", () => {
 			["set a label", "/labels/probe", { method: "PUT", body: JSON.stringify({ versionId: VERSION }) }],
 			["remove a label", "/labels/probe", { method: "DELETE" }],
 			["apply upstream", "/upstream", { method: "POST", body: JSON.stringify({ versionId: VERSION }) }],
+			["read", "", { method: "GET" }],
+			["list versions", "/versions", { method: "GET" }],
 		];
 		const send = (path: string, init: RequestInit) => app.request(`https://phaseo.app/api/account/settings/presets/preset-1${path}`, { ...init, headers: { authorization: "Bearer session-token", "content-type": "application/json" } }, env, { waitUntil() {}, passThroughOnException() {}, props: {} } as never);
 		async function observe(path: string, init: RequestInit, world: Parameters<typeof stubWorld>[0]) {
@@ -762,12 +788,24 @@ describe("account policy settings routes", () => {
 			expect(existing).toEqual(missing);
 		});
 
+		it("finds a preset in a member's 1,001st workspace (membership isn't listed into a capped page)", async () => {
+			const memberOf = Array.from({ length: 1001 }, (_, index) => `workspace-${index + 1}`);
+			const preset = { id: "preset-1", workspace_id: "workspace-1001", created_by: "owner-2", visibility: "team", draft_visibility: "team", name: "Far" };
+			for (const [path, init] of [["", { method: "GET" }], ["/versions", { method: "GET" }]] as const) {
+				const requests = stubWorld({ userId: "user-1", memberOf, preset });
+				const response = await send(path, init);
+				expect(response.status, path || "read").toBe(200);
+				expect(requests.filter((line) => line.includes("/rpc/find_member_visible_preset"))).toHaveLength(1);
+				expect(requests.some((line) => line.includes("/workspace_members?select=workspace_id&"))).toBe(false);
+			}
+		});
+
 		it("checks the upstream body's shape before looking the preset up", async () => {
 			const requests = stubWorld({ userId: "user-1", memberOf: ["workspace-1"], preset: null });
 			const response = await send("/upstream", { method: "POST", body: JSON.stringify({}) });
 			expect(response.status).toBe(400);
 			await expect(response.json()).resolves.toEqual({ error: "invalid_upstream_version" });
-			expect(requests.some((line) => line.includes("/presets?"))).toBe(false);
+			expect(requests.some((line) => line.includes("/presets?") || line.includes("/rpc/find_member_visible_preset"))).toBe(false);
 		});
 	});
 
