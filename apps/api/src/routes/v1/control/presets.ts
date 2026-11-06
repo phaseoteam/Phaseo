@@ -132,15 +132,15 @@ function presetWriteError(auth: ManagementRouteAuth): Response | null {
 	return rejectThirdPartyOAuthSpendingChange(auth, PRESET_APP_REFUSAL);
 }
 
-/**
- * The fields an app may still edit: the draft name and description, which don't change what the preset runs.
- * A name is how the gateway finds a preset with no slug, so renaming one of those is refused too.
- */
+/** The fields an app may still edit: the draft name and description, which don't change what the preset runs. */
 const PRESET_METADATA_FIELDS = new Set(["name", "description"]);
-function presetMetadataOnly(body: Record<string, unknown>, existing: PresetRow): boolean {
-	const fields = Object.keys(body);
-	if (fields.length === 0 || fields.some((field) => !PRESET_METADATA_FIELDS.has(field))) return false;
-	return body.name === undefined || String(existing.slug ?? "").trim() !== "";
+function presetMetadataFieldsOnly(body: Record<string, unknown>): boolean {
+	const fields = body && typeof body === "object" && !Array.isArray(body) ? Object.keys(body) : [];
+	return fields.length > 0 && fields.every((field) => PRESET_METADATA_FIELDS.has(field));
+}
+/** A name is how the gateway finds a preset with no slug, so renaming one of those changes what it runs too. */
+function renamesSluglessPreset(body: Record<string, unknown>, existing: PresetRow): boolean {
+	return body.name !== undefined && String(existing.slug ?? "").trim() === "";
 }
 
 /** A 409 when a write hit the case-insensitive slug index, which keeps "@slug" references unambiguous. */
@@ -368,13 +368,17 @@ async function handleUpdatePreset(req: Request) {
 		throw error;
 	}
 
+	// Refused before the preset is read, so the answer doesn't depend on (or reveal) whether it exists or has a
+	// private draft. The metadata edits apps may make still go through the privacy checks below.
+	if (!presetMetadataFieldsOnly(body)) { const appError = presetWriteError(auth.value); if (appError) return appError; }
+
 	try {
 		const existing = await findPreset(auth.value.workspaceId, identifier, auth.value.userId);
 		if (!existing || !canSeePreset(existing, auth.value.userId)) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
 		const creator = isPresetCreator(existing, auth.value.userId);
 		// A private draft can only be changed (or made visible) by its creator.
 		if (!creator && existing.draft_visibility === "private") return json({ error: "forbidden", message: "Only the preset's creator can change its private draft" }, 403, { "Cache-Control": "no-store" });
-		if (!presetMetadataOnly(body, existing)) { const appError = presetWriteError(auth.value); if (appError) return appError; }
+		if (renamesSluglessPreset(body, existing)) { const appError = presetWriteError(auth.value); if (appError) return appError; }
 
 		const updatePayload: Record<string, unknown> = { updated_at: new Date().toISOString() };
 		if (typeof body.name === "string") {

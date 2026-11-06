@@ -231,6 +231,30 @@ describe("OAuth callers can't change what a preset runs", () => {
 		expect((write("presets", "update")?.payload as any)?.draft_config).toBeUndefined();
 	});
 
+	it.each(Object.entries(OAUTH))("%s is refused a prohibited edit before the preset is read, so its privacy doesn't show", async (_caller, auth) => {
+		state.auth = auth;
+		const edit = async (path: string, body: Record<string, unknown>) => {
+			reset();
+			const result = await send({ method: "PATCH", path, body });
+			expect(state.writes).toEqual([]);
+			return result;
+		};
+		const prohibited = { config: { model: "openai/gpt-5-mini" } };
+		const missing = await edit("/00000000-0000-4000-8000-0000000000ff", prohibited);
+		expect(missing.status).toBe(403);
+		expect(String(missing.body?.message)).toMatch(/Phaseo dashboard, or call the API with a management key\.$/);
+		// Another person's private draft, and another person's private preset, answer exactly the same.
+		setPreset(RESTRICTED, { draft_visibility: "private" });
+		expect(await edit(`/${PRESET}`, prohibited)).toEqual(missing);
+		setPreset(RESTRICTED, { visibility: "private", draft_visibility: "private" });
+		expect(await edit(`/${PRESET}`, prohibited)).toEqual(missing);
+		// The metadata edits apps may make still meet the privacy checks.
+		setPreset(RESTRICTED, { draft_visibility: "private" });
+		expect(await edit(`/${PRESET}`, { description: "Answers tickets" })).toMatchObject({ status: 403, body: { message: "Only the preset's creator can change its private draft" } });
+		setPreset(RESTRICTED, { visibility: "private", draft_visibility: "private" });
+		expect((await edit(`/${PRESET}`, { description: "Answers tickets" })).status).toBe(404);
+	});
+
 	it.each(Object.entries(OAUTH))("%s can't rename a preset the gateway finds by name", async (_caller, auth) => {
 		state.auth = auth;
 		setPreset(RESTRICTED, { slug: "", draft_slug: "" });
