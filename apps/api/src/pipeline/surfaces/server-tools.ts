@@ -3438,16 +3438,18 @@ export async function buildServerToolContinuation(
 				size: toNonEmptyString(args.size) ?? config.imageGeneration?.size,
 				aspectRatio: toNonEmptyString(args.aspect_ratio) ?? config.imageGeneration?.aspectRatio,
 				background: toNonEmptyString(args.background) ?? config.imageGeneration?.background,
-				outputFormat: toNonEmptyString(args.output_format) ?? config.imageGeneration?.outputFormat,
+				// Settings chosen in Chat (the tool definition) win over the model's guesses for the
+				// options that change what comes back; the model fills in only what is unset.
+				outputFormat: config.imageGeneration?.outputFormat ?? toNonEmptyString(args.output_format) ?? undefined,
 				outputCompression:
 					typeof args.output_compression === "number" && Number.isFinite(args.output_compression)
 						? Math.max(0, Math.min(100, args.output_compression))
 						: config.imageGeneration?.outputCompression,
 				moderation: toNonEmptyString(args.moderation) ?? config.imageGeneration?.moderation,
-				complexity: toNonEmptyString(args.complexity) ?? config.imageGeneration?.complexity,
-				frameCount: positiveInteger(args.frame_count) ?? config.imageGeneration?.frameCount,
-				frameDurationMs: positiveInteger(args.frame_duration_ms) ?? config.imageGeneration?.frameDurationMs,
-				svgModel: svgAuthorModel(args) ?? config.imageGeneration?.svgModel,
+				complexity: config.imageGeneration?.complexity ?? toNonEmptyString(args.complexity) ?? undefined,
+				frameCount: config.imageGeneration?.frameCount ?? positiveInteger(args.frame_count) ?? undefined,
+				frameDurationMs: config.imageGeneration?.frameDurationMs ?? positiveInteger(args.frame_duration_ms) ?? undefined,
+				svgModel: config.imageGeneration?.svgModel ?? svgAuthorModel(args) ?? undefined,
 			});
 			if (imageResult.ok === false) {
 				toolResults.push({
@@ -3462,9 +3464,18 @@ export async function buildServerToolContinuation(
 				continue;
 			}
 			usage.imageGenerationRequests += 1;
+			// The model only needs to know the image exists; the image itself (often megabytes of
+			// base64) would fill its context and bill it as input. The client gets the full output.
 			toolResults.push({
 				toolCallId: call.id,
 				content: JSON.stringify({
+					status: "ok",
+					model: imageResult.model,
+					...(imageResult.mimeType ? { mime_type: imageResult.mimeType } : {}),
+					...(imageResult.imageUrl ? { imageUrl: imageResult.imageUrl } : {}),
+					note: "The image was generated and is shown to the user. Do not repeat or describe its data.",
+				}),
+				clientOutput: JSON.stringify({
 					status: "ok",
 					model: imageResult.model,
 					...(imageResult.imageUrl ? { imageUrl: imageResult.imageUrl } : {}),

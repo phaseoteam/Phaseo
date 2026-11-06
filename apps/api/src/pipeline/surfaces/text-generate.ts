@@ -417,6 +417,9 @@ type ImageToolResult =
 	| { ok: true; imageUrl?: string; b64Json?: string; mimeType?: string; model: string; usage?: IRChatResponse["usage"]; pricing?: ServerToolPricing }
 	| { ok: false; message: string };
 
+/** Image tool settings that fall back to the image model's default when the value is invalid for it. */
+const IMAGE_TOOL_DEFAULTABLE_FIELDS = new Set(["moderation", "quality", "background", "size", "aspect_ratio", "output_compression"]);
+
 const IMAGE_TOOL_MIME_TYPES: Record<string, string> = {
 	png: "image/png",
 	jpeg: "image/jpeg",
@@ -472,7 +475,9 @@ async function failedImageToolMessage(executed: Response): Promise<string> {
 	let message = `Image generation request failed with status ${executed.status}.`;
 	try {
 		const json = await executed.clone().json() as any;
-		message = typeof json?.message === "string"
+		message = typeof json?.description === "string"
+			? json.description
+			: typeof json?.message === "string"
 			? json.message
 			: typeof json?.error?.message === "string"
 				? json.error.message
@@ -553,9 +558,18 @@ async function executeImageToolViaImagesApi(
 		...(typeof args.frameDurationMs === "number" ? { frame_duration_ms: args.frameDurationMs } : {}),
 		...(args.svgModel ? { svg: { model: args.svgModel } } : {}),
 	};
-	const parsed = ImagesGenerationSchema.safeParse(rawBody);
-	if (!parsed.success) {
-		return { ok: false, message: parsed.error.issues.map((issue) => `${issue.path.join(".") || "request"}: ${issue.message}`).join("; ") };
+	// The chat model picks these freely ("standard" moderation, a size the image model lacks).
+	// An invalid value falls back to the image model's default instead of failing the image.
+	// Format, complexity, frames and the SVG author change what comes back, so they still fail.
+	let parsed = ImagesGenerationSchema.safeParse(rawBody);
+	while (!parsed.success) {
+		const droppable = [...new Set(parsed.error.issues.map((issue) => String(issue.path[0] ?? "")))]
+			.filter((field) => IMAGE_TOOL_DEFAULTABLE_FIELDS.has(field) && field in rawBody);
+		if (droppable.length === 0) {
+			return { ok: false, message: parsed.error.issues.map((issue) => `${issue.path.join(".") || "request"}: ${issue.message}`).join("; ") };
+		}
+		for (const field of droppable) delete rawBody[field];
+		parsed = ImagesGenerationSchema.safeParse(rawBody);
 	}
 	const policy = await imageToolPolicyCandidates(args.pre, candidates, context.resolvedModel ?? args.model, rawBody);
 	if ("message" in policy) return { ok: false, message: policy.message };
@@ -1459,7 +1473,7 @@ async function runTextGeneratePipelineInner(
 						id: call.id,
 						name: call.name,
 						arguments: call.arguments,
-						output: result.content,
+						output: result.clientOutput ?? result.content,
 						...(result.isError ? { isError: true } : {}),
 					};
 					serverToolTrace.push(tracedCall);

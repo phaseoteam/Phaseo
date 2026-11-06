@@ -1390,7 +1390,52 @@ describe("buildServerToolContinuation", () => {
 			model: "openai/gpt-image-2",
 			imageUrl: "https://example.com/generated.png",
 			mime_type: "image/png",
+			note: expect.stringContaining("shown to the user"),
 		});
+		expect(JSON.parse(String(continuation?.toolResults[0]?.clientOutput))).toEqual({
+			status: "ok",
+			model: "openai/gpt-image-2",
+			imageUrl: "https://example.com/generated.png",
+			mime_type: "image/png",
+		});
+	});
+
+	it("keeps base64 images out of the model's tool result and lets Chat settings win", async () => {
+		const executeImageGeneration = vi.fn(async () => ({
+			ok: true as const,
+			model: "openai/gpt-image-2.6-flare",
+			b64Json: "R0lGODlh",
+			mimeType: "image/gif",
+		}));
+		const continuation = await buildServerToolContinuation(
+			{
+				choices: [{
+					message: {
+						role: "assistant",
+						content: [],
+						toolCalls: [{ id: "call_gif", name: "phaseo_image_generation", arguments: JSON.stringify({ prompt: "A ball", output_format: "png", complexity: "high" }) }],
+					},
+					finishReason: "tool_calls",
+				}],
+			} as any,
+			{
+				enabled: true,
+				datetimeDefaultTimezones: ["UTC"],
+				webSearchEnabled: false,
+				webSearchMaxResults: 5,
+				webSearchIncludeText: false,
+				webSearchIncludeHighlights: true,
+				webFetchEnabled: false,
+				webFetchMaxChars: 12000,
+				imageGenerationEnabled: true,
+				imageGeneration: { model: "openai/gpt-image-2.6-flare", outputFormat: "gif", complexity: "low", frameCount: 2 },
+			},
+			{ executeImageGeneration },
+		);
+
+		expect(executeImageGeneration).toHaveBeenCalledWith(expect.objectContaining({ outputFormat: "gif", complexity: "low", frameCount: 2 }));
+		expect(continuation?.toolResults[0]?.content).not.toContain("R0lGODlh");
+		expect(JSON.parse(String(continuation?.toolResults[0]?.clientOutput))).toMatchObject({ b64_json: "R0lGODlh", mime_type: "image/gif" });
 	});
 
 	it("passes GPT Image 2.6 options from the tool definition and the call", async () => {
