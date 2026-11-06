@@ -24,12 +24,15 @@ const refused = { error: "forbidden", reason: "oauth_client_write_refused", mess
 type Row = Record<string, unknown>;
 let db: Record<string, Row[]>;
 let appMetadata: Record<string, unknown>;
+let calls: Array<{ method: string; path: string }>;
+let betweenReadAndWrite: (() => void) | null;
 
 // Just enough of PostgREST (eq filters, upsert by user_id, update) and the auth API for these routes.
 function fakeSupabase() {
 	vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 		const request = input instanceof Request ? input : new Request(String(input), init);
 		const url = new URL(request.url);
+		calls.push({ method: request.method, path: url.pathname });
 		const body = request.method === "GET" ? null : await request.text().then((text) => text ? JSON.parse(text) : null);
 		if (url.pathname === "/auth/v1/user") {
 			const token = request.headers.get("authorization")?.replace("Bearer ", "");
@@ -41,8 +44,10 @@ function fakeSupabase() {
 			return Response.json({ id: VICTIM, app_metadata: appMetadata });
 		}
 		const table = url.pathname.replace("/rest/v1/", "");
-		const filters = [...url.searchParams].filter(([, value]) => value.startsWith("eq.")).map(([column, value]) => [column, value.slice(3)] as const);
-		const matching = (db[table] ?? []).filter((row) => filters.every(([column, value]) => String(row[column]) === value));
+		const filters = [...url.searchParams].filter(([, value]) => value.startsWith("eq.") || value === "is.null").map(([column, value]) => [column, value] as const);
+		// eq on a JSON column compares the JSON, as Postgres does for jsonb.
+		const text = (value: unknown) => value !== null && typeof value === "object" ? JSON.stringify(value) : String(value);
+		const matching = (db[table] ?? []).filter((row) => filters.every(([column, value]) => value === "is.null" ? row[column] == null : text(row[column]) === value.slice(3)));
 		if (request.method === "GET") return Response.json(matching);
 		if (request.method === "POST" && table === "users") {
 			for (const incoming of [body].flat()) {
@@ -52,8 +57,10 @@ function fakeSupabase() {
 			return new Response(null, { status: 201 });
 		}
 		if (request.method === "PATCH") {
-			for (const row of matching) Object.assign(row, body);
-			return new Response(null, { status: 204 });
+			betweenReadAndWrite?.();
+			const targets = (db[table] ?? []).filter((row) => filters.every(([column, value]) => value === "is.null" ? row[column] == null : text(row[column]) === value.slice(3)));
+			for (const row of targets) Object.assign(row, body);
+			return request.headers.get("prefer")?.includes("return=representation") ? Response.json(targets) : new Response(null, { status: 204 });
 		}
 		return Response.json({ message: `unexpected ${request.method} ${url.pathname}` }, { status: 500 });
 	}));
@@ -73,6 +80,8 @@ beforeEach(() => {
 		],
 	};
 	appMetadata = { chat_privacy_reviews: { [OWN_WS]: CHAT_PRIVACY_REVIEW_VERSION } };
+	calls = [];
+	betweenReadAndWrite = null;
 	fakeSupabase();
 });
 afterEach(() => vi.unstubAllGlobals());
@@ -113,6 +122,34 @@ describe("an app token can't steer browser chat into another workspace", () => {
 		expect(await browserChat()).toEqual({ workspaceId: OTHER_WS, privacyNotice: true });
 	});
 
+	it.each([
+		["workspaceId", OTHER_WS],
+		["selectedKeyId", "30000000-0000-4000-8000-000000000001"],
+		["createdKeyId", "30000000-0000-4000-8000-000000000002"],
+	])("refuses an onboarding %s from an app token, alone or with progress", async (field, value) => {
+		for (const body of [{ [field]: value }, { status: "started", [field]: value }]) {
+			expect(await send(CLI_TOKEN, "PUT", "/api/account/auth/onboarding", body)).toEqual({ status: 403, body: refused });
+		}
+		expect(db.users[0]!.onboarding_state).toEqual({});
+		expect(calls.filter((call) => call.method !== "GET")).toEqual([]);
+		// The person's own session saves it.
+		expect((await send(SESSION_TOKEN, "PUT", "/api/account/auth/onboarding", { [field]: value })).status).toBe(200);
+		expect(db.users[0]!.onboarding_state).toMatchObject({ [field]: value });
+	});
+
+	it("answers 409 instead of putting back an onboarding workspace the dashboard changed meanwhile", async () => {
+		db.users[0]!.onboarding_state = { workspaceId: OWN_WS, completedSteps: ["install-cli"] };
+		// The person picks the other workspace in the dashboard while the app's progress update is in flight.
+		betweenReadAndWrite = () => { db.users[0]!.onboarding_state = { workspaceId: OTHER_WS, completedSteps: ["install-cli"] }; };
+		const result = await send(CLI_TOKEN, "PUT", "/api/account/auth/onboarding", { completedSteps: ["first-request"] });
+		expect(result).toMatchObject({ status: 409, body: { error: "onboarding_changed" } });
+		expect(db.users[0]!.onboarding_state).toEqual({ workspaceId: OTHER_WS, completedSteps: ["install-cli"] });
+		// Read again, the same progress applies over the person's choice.
+		betweenReadAndWrite = null;
+		expect((await send(CLI_TOKEN, "PUT", "/api/account/auth/onboarding", { completedSteps: ["first-request"] })).status).toBe(200);
+		expect(db.users[0]!.onboarding_state).toMatchObject({ workspaceId: OTHER_WS, completedSteps: ["install-cli", "first-request"] });
+	});
+
 	it("lets the person's own session make the same changes", async () => {
 		for (const result of await steer(SESSION_TOKEN)) expect(result.status).toBe(200);
 		expect(db.users[0]).toMatchObject({ default_workspace_id: OTHER_WS, onboarding_state: { workspaceId: OTHER_WS } });
@@ -125,5 +162,48 @@ describe("an app token can't steer browser chat into another workspace", () => {
 		const progress = await send(CLI_TOKEN, "PUT", "/api/account/auth/onboarding", { status: "started", completedSteps: ["install-cli"] });
 		expect(progress.status).toBe(200);
 		expect(db.users[0]!.onboarding_state).toMatchObject({ status: "started", completedSteps: ["install-cli"] });
+	});
+});
+
+describe("an app token can't steer browser chat through a GET or HEAD", () => {
+	const persist = `/api/account/auth/workspace?requested=${OTHER_WS}&persist=1`;
+	async function request(token: string, method: "GET" | "HEAD", path: string) {
+		return app.request(`https://phaseo.app${path}`, { method, headers: { authorization: `Bearer ${token}` }, redirect: "manual" }, env, executionCtx);
+	}
+
+	it.each(["GET", "HEAD"] as const)("%s workspace?persist=1 resolves for an app token without moving the default", async (method) => {
+		const response = await request(CLI_TOKEN, method, persist);
+		expect(response.status).toBe(200);
+		if (method === "GET") expect(await response.json()).toMatchObject({ signedIn: true, workspaceId: OTHER_WS });
+		expect(db.users[0]!.default_workspace_id).toBe(OWN_WS);
+		expect(calls.filter((call) => call.method !== "GET")).toEqual([]);
+		expect(await browserChat()).toEqual({ workspaceId: OWN_WS, privacyNotice: false });
+	});
+
+	it.each(["GET", "HEAD"] as const)("%s workspace?persist=1 still persists for the person's own session", async (method) => {
+		expect((await request(SESSION_TOKEN, method, persist)).status).toBe(200);
+		expect(db.users[0]!.default_workspace_id).toBe(OTHER_WS);
+		// Their chat then goes there, and the other workspace's notice still applies.
+		expect(await browserChat()).toEqual({ workspaceId: OTHER_WS, privacyNotice: true });
+	});
+
+	it.each(["GET", "HEAD"] as const)("%s on browser chat routes is refused for an app token before a chat key exists", async (method) => {
+		for (const path of ["/api/chat/video?id=vid_1", "/api/chat/audio?id=mus_1", "/api/chat/realtime/session/rt_01h00000000000000000000000"]) {
+			const response = await request(CLI_TOKEN, method, path);
+			expect(response.status, path).toBe(403);
+			if (method === "GET") expect(await response.json()).toEqual(refused);
+		}
+		expect(calls).toEqual([]);
+	});
+
+	it("doesn't let an app token finish a Slack install on the browser's OAuth callback", async () => {
+		const callback = "/api/account/settings/slack/oauth/callback?state=signed-state&code=slack-code";
+		const refusedCallback = await request(CLI_TOKEN, "GET", callback);
+		expect(refusedCallback.status).toBe(302);
+		expect(refusedCallback.headers.get("location")).toContain("error=sign_in_required");
+		expect(calls).toEqual([]);
+		// The person's own session gets past that check (and stops at the forged state here).
+		const session = await request(SESSION_TOKEN, "GET", callback);
+		expect(session.headers.get("location")).not.toContain("error=sign_in_required");
 	});
 });

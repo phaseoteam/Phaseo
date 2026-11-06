@@ -125,7 +125,9 @@ accountAuthRouter.get("/workspace", async (c) => {
 	].filter(Boolean));
 	const defaultWorkspaceId = String(userResult.data?.default_workspace_id ?? "").trim();
 	const workspaceId = (requested && accessible.has(requested) ? requested : null) ?? (defaultWorkspaceId && accessible.has(defaultWorkspaceId) ? defaultWorkspaceId : null) ?? [...accessible].sort()[0] ?? null;
-	if (workspaceId && workspaceId !== defaultWorkspaceId && c.req.query("persist") === "1") {
+	// Persisting moves the default workspace, which browser chat uses with none selected, so a token issued to
+	// an app (the CLI and desktop app too) only resolves. The person's own sessions still persist.
+	if (workspaceId && workspaceId !== defaultWorkspaceId && c.req.query("persist") === "1" && !hasOAuthClientToken(c.req.raw)) {
 		const update = await client.from("users").update({ default_workspace_id: workspaceId }).eq("user_id", user.id);
 		if (update.error) return c.json({ error: "workspace_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}
@@ -295,6 +297,17 @@ accountAuthRouter.put("/onboarding", async (c) => {
 		update.country_declared_at = new Date().toISOString();
 	}
 	if (body.status === "completed" || body.status === "skipped") update.onboarding_completed_at = new Date().toISOString();
+	// The whole saved state is written back. For an app's token, only over the state it read: otherwise its
+	// progress update could put back a workspace or key the person changed in the dashboard meanwhile. (The
+	// dashboard's own overlapping saves of the same page keep last-write-wins.)
+	if (hasOAuthClientToken(c.req.raw)) {
+		const stored = existing.data?.onboarding_state ?? null;
+		const guarded = client.from("users").update(update).eq("user_id", user.id);
+		const result = await (stored === null ? guarded.is("onboarding_state", null) : guarded.eq("onboarding_state", JSON.stringify(stored))).select("user_id");
+		if (result.error) return c.json({ error: "onboarding_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+		if (!result.data?.length) return c.json({ error: "onboarding_changed", message: "Onboarding changed since it was read. Read it again and retry." }, 409, PRIVATE_NO_STORE_HEADERS);
+		return c.json({ state: next }, 200, PRIVATE_NO_STORE_HEADERS);
+	}
 	const result = await client.from("users").update(update).eq("user_id", user.id);
 	if (result.error) return c.json({ error: "onboarding_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	return c.json({ state: next }, 200, PRIVATE_NO_STORE_HEADERS);
