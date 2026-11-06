@@ -162,6 +162,36 @@ function isExecutableResponseToolItem(item: any): boolean {
  */
 export const cancelledReaders = new WeakSet<object>();
 
+/**
+ * Reads the upstream. A transport error after the protocol's completion boundary (`[DONE]`, a
+ * terminal Responses event, message_stop) ends the stream like EOF: the output was complete, so
+ * the adapter still emits its final events and billing sees a finished stream.
+ */
+export async function readUntilFailure(
+	reader: ReadableStreamDefaultReader<Uint8Array>,
+	completed: () => boolean,
+): Promise<ReadableStreamReadResult<Uint8Array>> {
+	try {
+		return await reader.read();
+	} catch (err) {
+		if (completed()) return { done: true, value: undefined };
+		throw err;
+	}
+}
+
+function chatChunkHasFinish(payload: any): boolean {
+	return Array.isArray(payload?.choices) && payload.choices.some((choice: any) => Boolean(choice?.finish_reason));
+}
+
+/**
+ * Whether a Chat chunk completes the stream (as `[DONE]` does): a full chat.completion
+ * snapshot, or the usage that comes with or after a finish reason.
+ */
+function chatChunkCompletes(payload: any, sawFinish: boolean): boolean {
+	if (payload?.object === "chat.completion") return true;
+	return Boolean(payload?.usage) && (sawFinish || chatChunkHasFinish(payload));
+}
+
 export function transformChatStream(
 	stream: ReadableStream<Uint8Array>,
 	args: ExecutorExecuteArgs,
@@ -174,13 +204,17 @@ export function transformChatStream(
 	return new ReadableStream<Uint8Array>({
 		async start(controller) {
 			let upstreamError: unknown;
+			// Set at the protocol's completion boundary; a transport error after it is only teardown.
+			let upstreamCompleted = false;
+			let sawFinish = false;
 			try {
 				while (true) {
-					const { value, done } = await reader.read();
+					const { value, done } = await readUntilFailure(reader, () => upstreamCompleted);
 					if (done) break;
 
 					for (const frame of parser.pushBytes(value)) {
 						const { data } = frame;
+						if (data === "[DONE]") upstreamCompleted = true;
 						if (!data || data === "[DONE]") continue;
 						let payload: any;
 						try {
@@ -190,12 +224,14 @@ export function transformChatStream(
 						}
 
 						applyStreamQuirks(payload, state, args.providerId);
+						if (chatChunkCompletes(payload, sawFinish)) upstreamCompleted = true;
+						if (chatChunkHasFinish(payload)) sawFinish = true;
 						controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
 					}
 				}
 			} catch (err) {
 				// A client cancel ends the read loop early; that is not a failure.
-				if (!cancelledReaders.has(reader)) {
+				if (!cancelledReaders.has(reader) && !upstreamCompleted) {
 					console.error("openai compat chat stream transform failed:", err);
 					upstreamError = err;
 				}
@@ -373,13 +409,16 @@ export function transformResponsesStreamToChat(
 	return new ReadableStream<Uint8Array>({
 		async start(controller) {
 			let upstreamError: unknown;
+			// Set at the protocol's completion boundary; a transport error after it is only teardown.
+			let upstreamCompleted = false;
 			try {
 				while (true) {
-					const { value, done } = await reader.read();
+					const { value, done } = await readUntilFailure(reader, () => upstreamCompleted);
 					if (done) break;
 
 					for (const frame of parser.pushBytes(value)) {
 						const { data } = frame;
+						if (data === "[DONE]") upstreamCompleted = true;
 						if (!data || data === "[DONE]") continue;
 						let payload: any;
 						try {
@@ -501,6 +540,7 @@ export function transformResponsesStreamToChat(
 							case "response.completed":
 							case "response.incomplete":
 								finalResponse = payload?.response ?? finalResponse;
+								upstreamCompleted = true;
 								break;
 							case "response.failed":
 							case "error":
@@ -522,7 +562,7 @@ export function transformResponsesStreamToChat(
 				}
 			} catch (err) {
 				// A client cancel ends the read loop early; that is not a failure.
-				if (!cancelledReaders.has(reader)) {
+				if (!cancelledReaders.has(reader) && !upstreamCompleted) {
 					console.error("openai compat responses->chat stream transform failed:", err);
 					upstreamError = err;
 				}
@@ -895,15 +935,19 @@ export function transformChatStreamToResponses(
 	return new ReadableStream<Uint8Array>({
 		async start(controller) {
 			let upstreamError: unknown;
+			// Set at the protocol's completion boundary; a transport error after it is only teardown.
+			let upstreamCompleted = false;
+			let sawFinish = false;
 			let createdEmitted = false;
 			let upstreamFailure: { code: string | null; message: string } | null = null;
 			try {
 				while (true) {
-					const { value, done } = await reader.read();
+					const { value, done } = await readUntilFailure(reader, () => upstreamCompleted);
 					if (done) break;
 
 					for (const frame of parser.pushBytes(value)) {
 						const { data } = frame;
+						if (data === "[DONE]") upstreamCompleted = true;
 						if (!data || data === "[DONE]") continue;
 						let payload: any;
 						try {
@@ -969,6 +1013,8 @@ export function transformChatStreamToResponses(
 						if (payload?.id) nativeResponseId = payload.id;
 						if (payload?.created) createdAt = payload.created;
 						if (payload?.model) model = payload.model;
+						if (chatChunkCompletes(payload, sawFinish)) upstreamCompleted = true;
+						if (chatChunkHasFinish(payload)) sawFinish = true;
 
 						finalResponse = accumulateChatCompletion(finalResponse, payload);
 
@@ -1305,7 +1351,7 @@ export function transformChatStreamToResponses(
 				}
 			} catch (err) {
 				// A client cancel ends the read loop early; that is not a failure.
-				if (!cancelledReaders.has(reader)) {
+				if (!cancelledReaders.has(reader) && !upstreamCompleted) {
 					console.error("openai compat chat->responses stream transform failed:", err);
 					upstreamError = err;
 				}

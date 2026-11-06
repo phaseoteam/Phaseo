@@ -42,6 +42,7 @@ import {
 	transformResponsesStreamToChat,
 	normalizeTerminalResponsesFrames,
 	cancelledReaders,
+	readUntilFailure,
 } from "./stream-transforms";
 import {
 	adaptRequestFromUpstreamError,
@@ -880,7 +881,7 @@ function transformResponsesStreamToAnthropic(
 
 			try {
 				while (true) {
-					const { value, done } = await reader.read();
+					const { value, done } = await readUntilFailure(reader, () => terminalEmitted);
 					if (done) break;
 					for (const frame of parser.pushBytes(value)) {
 						const { event, data } = frame;
@@ -1027,7 +1028,9 @@ function transformResponsesStreamToAnthropic(
 				}
 			} catch (err) {
 				// A client cancel ends the read loop early; that is not a failure.
-				if (!cancelledReaders.has(reader)) {
+				// After message_stop (or the failure event) the Messages stream is complete: a transport
+				// error then is only teardown.
+				if (!cancelledReaders.has(reader) && !terminalEmitted) {
 					console.error("openai compat responses->anthropic stream transform failed:", err);
 					upstreamError = err;
 				}

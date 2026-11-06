@@ -90,4 +90,83 @@ describe("upstream connection resets through the protocol adapters", () => {
 		expect(upstream.cancelled()).toBe(true);
 		await expect(reader.closed).resolves.toBeUndefined();
 	});
+
+	// A complete upstream stream, then a reset while the connection is torn down.
+	const chatFrame = (data: unknown) => `data: ${JSON.stringify(data)}
+
+`;
+	const CHAT_COMPLETE = [
+		chatFrame({ id: "chatcmpl_1", object: "chat.completion.chunk", created: 1, model: "test-model", choices: [{ index: 0, delta: { content: "done" } }] }),
+		chatFrame({ id: "chatcmpl_1", object: "chat.completion.chunk", created: 1, model: "test-model", choices: [{ index: 0, delta: {}, finish_reason: "stop" }] }),
+		chatFrame({ id: "chatcmpl_1", object: "chat.completion.chunk", created: 1, model: "test-model", choices: [], usage: { prompt_tokens: 3, completion_tokens: 1, total_tokens: 4 } }),
+		"data: [DONE]\n\n",
+	].join("");
+	// Finish and usage but no [DONE]: some providers end there.
+	const CHAT_COMPLETE_NO_DONE = CHAT_COMPLETE.replace("data: [DONE]\n\n", "");
+	const completedResponse = { id: "resp_1", object: "response", status: "completed", model: "test-model",
+		output: [{ type: "message", id: "msg_1", role: "assistant", status: "completed", content: [{ type: "output_text", text: "done", annotations: [] }] }],
+		usage: { input_tokens: 3, output_tokens: 1, total_tokens: 4 } };
+	const RESPONSES_COMPLETE = [
+		`event: response.created
+data: ${JSON.stringify({ type: "response.created", response: { ...completedResponse, status: "in_progress", output: [], usage: null } })}
+
+`,
+		`event: response.output_text.delta
+data: ${JSON.stringify({ type: "response.output_text.delta", item_id: "msg_1", output_index: 0, content_index: 0, delta: "done" })}
+
+`,
+		`event: response.completed
+data: ${JSON.stringify({ type: "response.completed", response: completedResponse })}
+
+`,
+	].join("");
+
+	const COMPLETE_CASES = [
+		["Chat upstream ([DONE]) to a Chat client", "chat", "openai.chat.completions", CHAT_COMPLETE],
+		["Chat upstream (finish and usage) to a Chat client", "chat", "openai.chat.completions", CHAT_COMPLETE_NO_DONE],
+		["Chat upstream to a Responses client", "chat", "openai.responses", CHAT_COMPLETE],
+		["Chat upstream to a Messages client", "chat", "anthropic.messages", CHAT_COMPLETE],
+		["Responses upstream (response.completed) to a Chat client", "responses", "openai.chat.completions", RESPONSES_COMPLETE],
+		["Responses upstream to a Messages client", "responses", "anthropic.messages", RESPONSES_COMPLETE],
+	] as const;
+
+	it.each(COMPLETE_CASES)("%s: a reset after completion is teardown, the stream ends normally", async (_label, route, protocol, complete) => {
+		const upstream = resetUpstream(complete);
+		const adapted = resolveStreamForProtocol(upstream.response, args(protocol), route);
+		const reader = adapted.getReader();
+		const chunks: string[] = [];
+		const decoder = new TextDecoder();
+		const first = await reader.read();
+		if (first.value) chunks.push(decoder.decode(first.value));
+		upstream.reset();
+		await expect((async () => {
+			while (true) {
+				const { value, done } = await reader.read();
+				if (done) return;
+				chunks.push(decoder.decode(value));
+			}
+		})()).resolves.toBeUndefined();
+		expect(chunks.join("")).toContain("done");
+	});
+
+	it.each(COMPLETE_CASES)("%s: billing keeps the completed output after a late reset", async (_label, route, protocol, complete) => {
+		const upstream = resetUpstream(complete);
+		const adapted = resolveStreamForProtocol(upstream.response, args(protocol), route);
+		const ctx: any = { requestId: "req_reset", workspaceId: "team_test", endpoint: args(protocol).endpoint, protocol, meta: {} };
+		let info!: { aborted: boolean };
+		let onFinal: (value: { aborted: boolean }) => void = () => undefined;
+		const finalized = new Promise<void>((resolve) => { onFinal = (value) => { info = value; resolve(); }; });
+		const response = await passthroughWithPricing({
+			upstream: new Response(adapted, { headers: { "Content-Type": "text/event-stream" } }),
+			ctx, provider: "deepinfra", priceCard: null,
+			onFinalUsage: (_usage, value) => onFinal(value),
+		});
+		const client = response.body!.getReader();
+		await client.read();
+		await client.cancel();
+		upstream.reset();
+		await finalized;
+		expect(ctx.meta.upstreamStreamBroken).toBeUndefined();
+		expect(info.aborted).toBe(false);
+	});
 });
