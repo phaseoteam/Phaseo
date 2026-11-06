@@ -284,15 +284,23 @@ export function calculatePricing(
             console.error("computeBill failed", calcErr);
             throw calcErr;
         }
-        const extras = [
-            ...svgAuthorCharges(pricedUsage),
-            ...serverToolCharges(meta),
-        ];
+        const toolCharges = serverToolCharges(meta);
+        const extras = [...svgAuthorCharges(pricedUsage), ...toolCharges];
         if (extras.length > 0) {
             const withExtras = addExtraCharges(pricedUsage, totalNanos, extras);
             pricedUsage = withExtras.pricedUsage;
             totalNanos = withExtras.totalNanos;
             totalCents = Math.trunc(totalNanos / 10_000_000);
+        }
+        if (toolCharges.length > 0) {
+            // The after stage settles these under each tool's own credential (applyByokServiceFeeWithToolCharges).
+            pricedUsage = {
+                ...pricedUsage,
+                pricing: {
+                    ...pricedUsage.pricing,
+                    server_tool_nanos: toolCharges.reduce((sum, charge) => sum + (charge.total_nanos as number), 0),
+                },
+            };
         }
     }
 

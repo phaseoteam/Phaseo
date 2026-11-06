@@ -66,6 +66,7 @@ import type { PipelineContext, ProviderCandidate } from "../before/types";
 import { applyWorkspacePolicy, fetchWorkspacePolicy } from "../before/workspacePolicy";
 import { decodeNonTextRequest, encodeNonTextResponse } from "./non-text";
 import { priceServerToolResult } from "./server-tool-pricing";
+import { gptImageSizeForAspectRatio, isGptImageModel } from "./image-tool-size";
 import type { IRImageGenerationResponse } from "@core/ir";
 import type { ServerToolPricing } from "@core/types";
 import { ImagesGenerationSchema } from "@core/schemas";
@@ -523,11 +524,16 @@ async function executeImageGenerationModel(args: ImageToolArgs): Promise<ImageTo
 			includeTestingMode: args.pre.ctx.testingMode,
 			disableCache: Boolean(args.pre.ctx.meta.debug?.enabled),
 		});
-	} catch {
-		imagesContext = null;
+	} catch (error) {
+		// A model without an Images API route resolves with no candidates; a throw is a real
+		// failure, and falling back to chat would change the image's options and pricing.
+		return {
+			ok: false,
+			message: `Could not load the Images API route for ${args.model}: ${error instanceof Error ? error.message : String(error)}`,
+		};
 	}
-	const imagesCandidates = imagesContext ? buildProviderCandidatesWithDiagnostics(imagesContext).candidates : [];
-	if (imagesContext && imagesCandidates.length > 0) {
+	const imagesCandidates = buildProviderCandidatesWithDiagnostics(imagesContext).candidates;
+	if (imagesCandidates.length > 0) {
 		return executeImageToolViaImagesApi(args, imagesContext, imagesCandidates, imagesCapability);
 	}
 	if (args.complexity || args.frameCount != null || args.frameDurationMs != null || args.svgModel || args.outputFormat === "gif" || args.outputFormat === "svg") {
@@ -542,12 +548,17 @@ async function executeImageToolViaImagesApi(
 	candidates: ProviderCandidate[],
 	capability: string,
 ): Promise<ImageToolResult> {
+	// GPT Image takes a size, not an aspect ratio; other image models keep aspect_ratio.
+	const gptImageSize = !args.size && args.aspectRatio && isGptImageModel(args.model)
+		? gptImageSizeForAspectRatio(args.aspectRatio)
+		: undefined;
+	const size = args.size ?? gptImageSize;
 	const rawBody: Record<string, unknown> = {
 		model: args.model,
 		prompt: args.prompt,
 		n: 1,
-		...(args.size ? { size: args.size } : {}),
-		...(args.aspectRatio ? { aspect_ratio: args.aspectRatio } : {}),
+		...(size ? { size } : {}),
+		...(args.aspectRatio && !isGptImageModel(args.model) ? { aspect_ratio: args.aspectRatio } : {}),
 		...(args.quality ? { quality: args.quality } : {}),
 		...(args.background ? { background: args.background } : {}),
 		...(args.outputFormat ? { output_format: args.outputFormat } : {}),

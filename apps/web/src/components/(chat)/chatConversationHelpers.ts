@@ -241,6 +241,35 @@ export function extractGeneratedImageUrl(content: string): string | null {
 	return null;
 }
 
+/** Base64 images a model or tool generated, in formats safe to show through <img>. */
+const GENERATED_DATA_IMAGE = /^data:image\/(png|jpeg|webp|gif|svg\+xml);base64,[a-z0-9+/=]+$/i;
+
+/**
+ * A generated image source Chat may render: an http(s) URL, or a base64 data URL of a
+ * known image type. Data URLs only ever go to <img> (Streamdown blocks them in Markdown,
+ * and an SVG must never be a navigation target, where its scripts could run).
+ */
+export function sanitizeGeneratedImageSrc(
+	value: string | null | undefined,
+): string | null {
+	if (!value) return null;
+	const trimmed = value.trim();
+	if (GENERATED_DATA_IMAGE.test(trimmed)) return trimmed;
+	return sanitizeHttpMediaUrl(trimmed);
+}
+
+export function isGeneratedDataImage(src: string): boolean {
+	return src.startsWith("data:");
+}
+
+/** Every generated image in an assistant message, in order (a reply can carry several). */
+export function extractGeneratedImageUrls(content: string): string[] {
+	const markdownImages = [...content.matchAll(/!\[[^\]]*\]\(([^)\s]+)\)/gi)].map((match) => match[1]);
+	if (markdownImages.length > 0) return markdownImages;
+	const single = extractGeneratedImageUrl(content);
+	return single ? [single] : [];
+}
+
 export function sanitizeHttpMediaUrl(
 	value: string | null | undefined,
 ): string | null {

@@ -37,6 +37,7 @@ export async function priceServerToolResult(args: {
 		model: args.model,
 		provider: String(args.result?.provider ?? ""),
 		total_nanos: priced.totalNanos,
+		key_source: args.result?.keySource === "byok" ? "byok" : "gateway",
 		lines: lines.map((line: Record<string, unknown>) => ({
 			...line,
 			// Keep a line's own model (an SVG author) and name the tool's model otherwise.

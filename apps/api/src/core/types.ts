@@ -48,6 +48,8 @@ export type ServerToolPricing = {
     provider: string;
     total_nanos: number;
     lines: Record<string, unknown>[];
+    /** The credential the tool's model ran on: a BYOK run is charged the BYOK fee, not its cost. */
+    key_source?: "byok" | "gateway";
 };
 
 export type RequestMeta = {
