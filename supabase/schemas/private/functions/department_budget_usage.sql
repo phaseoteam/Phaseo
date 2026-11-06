@@ -1,7 +1,8 @@
 CREATE OR REPLACE FUNCTION private.department_budget_usage (
   p_workspace_id        uuid,
   p_key_id              uuid   DEFAULT NULL::uuid,
-  p_exclude_request_ids text[] DEFAULT '{}'::text[]
+  p_exclude_request_ids  text[]  DEFAULT '{}'::text[],
+  p_include_open_charges boolean DEFAULT true
 )
   RETURNS TABLE (
     id              uuid,
@@ -41,7 +42,7 @@ CREATE OR REPLACE FUNCTION private.department_budget_usage (
       (select min(budgets.period_start) from budgets),
       array(select distinct dk.key_id from department_keys dk where dk.department_id in (select budgets.department_id from budgets)),
       p_exclude_request_ids,
-      p_exclude_request_ids
+      p_include_open_charges
     ) item
   )
   select budgets.id, budgets.department_id, budgets.name, budgets.interval, budgets.limit_nanos,
@@ -55,10 +56,10 @@ CREATE OR REPLACE FUNCTION private.department_budget_usage (
   from budgets;
 $function$;
 
-COMMENT ON FUNCTION "private"."department_budget_usage"(uuid, uuid, text[]) IS 'Department budgets of a workspace with their usage this UTC period (private.budget_spend_items of the department''s keys) and keys; shared by gateway_department_budget_status and gateway_spend_limit_seed.';
+COMMENT ON FUNCTION "private"."department_budget_usage"(uuid, uuid, text[], boolean) IS 'Department budgets of a workspace with their usage this UTC period (private.budget_spend_items of the department''s keys) and keys; shared by gateway_department_budget_status and gateway_spend_limit_seed.';
 
-REVOKE ALL ON FUNCTION "private"."department_budget_usage"(uuid, uuid, text[]) FROM PUBLIC;
+REVOKE ALL ON FUNCTION "private"."department_budget_usage"(uuid, uuid, text[], boolean) FROM PUBLIC;
 
-REVOKE ALL ON FUNCTION "private"."department_budget_usage"(uuid, uuid, text[]) FROM "postgres";
+REVOKE ALL ON FUNCTION "private"."department_budget_usage"(uuid, uuid, text[], boolean) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "private"."department_budget_usage"(uuid, uuid, text[]) TO "postgres";
+GRANT EXECUTE ON FUNCTION "private"."department_budget_usage"(uuid, uuid, text[], boolean) TO "postgres";

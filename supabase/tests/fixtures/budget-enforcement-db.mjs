@@ -1,12 +1,20 @@
-// Production shapes, trimmed to what migration 20261104233604_budget_enforcement_money_hygiene and
+// Production shapes, trimmed to what migration 20261106153747_budget_enforcement_money_hygiene and
 // the functions it replaces read. Shared by supabase/tests/budget-enforcement-money-hygiene.test.mjs
 // and the gateway's seed -> SpendLimit Durable Object -> guard test, so both run the real SQL.
 import { readFile } from 'node:fs/promises';
 
 const schemasUrl = new URL('../../schemas/', import.meta.url);
-export const MIGRATION_FILE = '20261104233604_budget_enforcement_money_hygiene.sql';
+export const MIGRATION_FILE = '20261106153747_budget_enforcement_money_hygiene.sql';
 export const readSchema = (path) => readFile(new URL(path, schemasUrl), 'utf8');
 export const readMigration = () => readFile(new URL(`../../migrations/${MIGRATION_FILE}`, import.meta.url), 'utf8');
+// Each new index has its own migration, applied before MIGRATION_FILE.
+export const INDEX_MIGRATION_FILES = [
+  '20261106153744_gateway_requests_charged_unsuccessful_cost_idx.sql',
+  '20261106153745_gateway_requests_workspace_billing_request_idx.sql',
+  '20261106153746_gateway_request_charges_open_step_idx.sql',
+];
+export const readIndexMigrations = () => Promise.all(INDEX_MIGRATION_FILES.map((name) =>
+  readFile(new URL(`../../migrations/${name}`, import.meta.url), 'utf8')));
 
 // The request-context callees, reduced to what the wrappers need (the key-limit accounting in
 // the real ones is tested by gateway-spend-limit-seed and key-weekly-accounting).
@@ -35,13 +43,19 @@ const STUBS = `
     low_balance_threshold bigint default 0, auto_top_up_in_flight_until timestamptz, auto_top_up_amount bigint,
     auto_top_up_account_id text, stripe_customer_id text);
   create table public.gateway_wallet_reservations (reservation_id text not null, workspace_id uuid not null,
-    amount_nanos bigint not null, status text not null, hold_ref_id text, key_id uuid, request_count integer,
+    amount_nanos bigint not null, status text not null, hold_ref_id text,
+    key_id uuid references public.keys(id) on delete set null, request_count integer,
     captured_nanos bigint default 0, released_nanos bigint default 0, settled_amount_nanos bigint, capture_ref_id text,
     release_ref_id text, released_at timestamptz, created_at timestamptz default now(), updated_at timestamptz default now(),
     primary key (workspace_id, reservation_id));
+  -- Range-partitioned by created_at, as in production.
   create table public.gateway_requests (id uuid default gen_random_uuid(), workspace_id uuid, request_id text,
     endpoint text, model_id text, provider text, status_code integer, success boolean, usage jsonb, cost_nanos bigint,
-    currency text, key_id uuid, detail_metadata jsonb, billing_request_id text, created_at timestamptz default now());
+    currency text, key_id uuid references public.keys(id) on delete set null, detail_metadata jsonb, billing_request_id text,
+    created_at timestamptz not null default now()) partition by range (created_at);
+  create table public.gateway_requests_2025 partition of public.gateway_requests for values from ('2025-01-01') to ('2026-01-01');
+  create table public.gateway_requests_2026 partition of public.gateway_requests for values from ('2026-01-01') to ('2027-01-01');
+  create table public.gateway_requests_default partition of public.gateway_requests default;
   create table public.workspace_budgets (id uuid primary key default gen_random_uuid(), workspace_id uuid not null,
     interval text not null, limit_nanos bigint not null, created_by uuid, created_at timestamptz default now(),
     updated_at timestamptz default now());
@@ -72,7 +86,7 @@ const STUBS = `
   create table public.gateway_request_charges (workspace_id uuid not null, request_id text not null, cost_nanos bigint,
     status text, deducted_status text, error_message text, auto_top_up_required boolean, overdraft_nanos bigint,
     created_at timestamptz default now(), updated_at timestamptz default now(),
-    is_final boolean not null default true, -- added by fix/async-billing-20261104 (stepped stream charges)
+    is_final boolean not null default true, key_id uuid,
     primary key (workspace_id, request_id));
   create table public.credit_ledger (id uuid primary key default gen_random_uuid(), workspace_id uuid, amount_nanos bigint);
   alter table public.credit_ledger enable row level security;
@@ -113,6 +127,7 @@ const CALLEES = [
 
 /** Applies the migration, then puts the request-context callee stubs back for the wrapper tests. */
 export async function applyMigration(db, migration) {
+  for (const index of await readIndexMigrations()) await db.exec(index);
   await db.exec(migration);
   await db.exec(CONTEXT_STUBS);
 }
