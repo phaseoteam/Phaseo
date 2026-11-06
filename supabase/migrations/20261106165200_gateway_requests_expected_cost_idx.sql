@@ -2,5 +2,5 @@
 -- budgets count until charged; partial and small. Built on every partition of gateway_requests.
 -- Its own migration, so the SHARE lock it takes on gateway_requests and each of its partitions
 -- (blocking writes, not reads) lasts only for this build.
-CREATE INDEX IF NOT EXISTS gateway_requests_expected_cost_idx ON public.gateway_requests USING btree (workspace_id, created_at) INCLUDE (key_id, cost_nanos, expected_cost_nanos)
+CREATE INDEX IF NOT EXISTS gateway_requests_expected_cost_idx ON public.gateway_requests USING btree (workspace_id, created_at) INCLUDE (key_id, cost_nanos, expected_cost_nanos, billing_request_id)
   WHERE (expected_cost_nanos IS NOT NULL);

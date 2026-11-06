@@ -2,8 +2,7 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
   p_workspace_id        uuid,
   p_since               timestamp with time zone,
   p_key_ids             uuid[] DEFAULT NULL::uuid[],
-  p_exclude_request_ids text[] DEFAULT '{}'::text[],
-  p_exclude_charge_ids  text[] DEFAULT '{}'::text[]
+  p_exclude_request_ids text[] DEFAULT '{}'::text[]
 )
   RETURNS TABLE (
     key_id uuid,
@@ -16,32 +15,26 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
   SET search_path TO ''
   AS $function$
   -- The spend that counts toward workspace and department budgets, one row per item, shared by
-  -- private.workspace_budget_status and private.department_budget_usage (and so the spend-limit
+  -- gateway_workspace_budget_status and private.department_budget_usage (and so the spend-limit
   -- seed). A budget's usage is the sum of nanos over rows that are active or at/after its period
   -- start. p_key_ids limits the rows to those keys (NULL: the whole workspace). p_since (NULL: all
   -- time) bounds the history read, written as created_at >= coalesce(...) so partitions of
   -- gateway_requests are pruned under generic plans; active holds are returned whenever they were
-  -- made. The SpendLimit Durable Object's spend still counted from memory is left out:
-  -- p_exclude_request_ids matches gateway_requests.request_id (the public request id), and
-  -- p_exclude_charge_ids matches gateway_request_charges.request_id (the billing request id).
+  -- made. p_exclude_request_ids leaves out ordinary request rows (by public request id) the
+  -- SpendLimit Durable Object still counts from memory.
   --
   -- * Requests: every gateway_requests row with a positive cost, whether or not it succeeded (a
   --   cancelled or failed request can still be charged), read as two disjoint parts so each uses
   --   its partial index, except excluded request ids and the batch_hold_usage rows of a hold that
   --   is still active, which the hold itself counts.
-  -- * Delivered requests whose wallet charge is pending reconciliation (expected_cost_nanos, set
-  --   by the request audit when the charge failed): the part of the expected amount cost_nanos
-  --   does not yet cover, so each such row counts greatest(cost_nanos, expected_cost_nanos) and a
-  --   later charge never counts twice (gateway_requests_expected_cost_idx).
   -- * Active holds (held or reserved), in every period until they end: video and free-model
   --   holds less the cost already audited for them, other holds (batch, realtime) less what was
   --   captured or released. Realtime holds carry no key; their session does.
   -- * Captured video and free-model holds made in the period, less the cost audited for them, so
   --   a capture counts before (or without) its request row and once after it lands.
-  -- * Open stepped stream charges (private.open_stepped_charges): active from the charge's
-  --   created_at in every period until the request row lands, which then counts instead;
-  --   attributed to the charge's key when it has one (keyless charges count toward workspace
-  --   budgets only).
+  -- * Unbilled spend (private.unbilled_spend): applied charges whose request row has not landed,
+  --   by debit time, and the uncharged part of delivered requests pending reconciliation. Never
+  --   excluded: the Durable Object drops its copy of every id the seed lists.
   --
   -- Holds and request rows are matched by workspace and ids; their keys are compared null-safely
   -- because deleting a key sets both key_id columns to NULL (ON DELETE SET NULL).
@@ -68,16 +61,6 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
     and (p_key_ids is null or request.key_id = any (p_key_ids))
     and request.success is not true
     and request.cost_nanos > 0
-    and request.created_at >= coalesce(p_since, '-infinity'::timestamptz)
-    and not (request.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
-  union all
-  select request.key_id, request.created_at, false,
-    request.expected_cost_nanos - greatest(coalesce(request.cost_nanos, 0), 0)
-  from public.gateway_requests request
-  where request.workspace_id = p_workspace_id
-    and request.expected_cost_nanos is not null
-    and request.expected_cost_nanos > greatest(coalesce(request.cost_nanos, 0), 0)
-    and (p_key_ids is null or request.key_id = any (p_key_ids))
     and request.created_at >= coalesce(p_since, '-infinity'::timestamptz)
     and not (request.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
   union all
@@ -113,16 +96,14 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
         and (reservation.reservation_id like 'video_hold:%' or reservation.reservation_id like 'free_model_hold:%')
         and reservation.created_at >= coalesce(p_since, '-infinity'::timestamptz)))
   union all
-  select charge.key_id, charge.created_at, true, charge.cost_nanos
-  from private.open_stepped_charges(p_workspace_id) charge
-  where (p_key_ids is null or charge.key_id = any (p_key_ids))
-    and not (charge.billing_request_id = any (coalesce(p_exclude_charge_ids, '{}'::text[])));
+  select unbilled.key_id, unbilled.at, false, unbilled.nanos
+  from private.unbilled_spend(p_workspace_id, p_since, p_key_ids) unbilled;
 $function$;
 
-COMMENT ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) IS 'Spend items counted toward workspace and department budgets: positive-cost requests, active holds in every period, captured video and free-model holds less their audited cost (each hold''s batch_hold_usage rows counted once), the uncharged part of delivered requests pending reconciliation (expected_cost_nanos), and applied stepped stream charges whose request row has not landed (attributed to the charge''s key when it has one).';
+COMMENT ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[]) IS 'Spend items counted toward workspace and department budgets: positive-cost requests, active holds in every period, captured video and free-model holds less their audited cost (each hold''s batch_hold_usage rows counted once), and private.unbilled_spend (unaudited charges by debit time, delivered requests pending reconciliation).';
 
-REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) FROM PUBLIC;
+REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[]) FROM PUBLIC;
 
-REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) FROM "postgres";
+REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[]) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) TO "postgres";
+GRANT EXECUTE ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[]) TO "postgres";

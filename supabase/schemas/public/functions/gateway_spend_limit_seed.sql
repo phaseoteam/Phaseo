@@ -28,10 +28,10 @@ begin
   if cardinality(v_key_ids) > 100 then
     raise exception using errcode = '22023', message = 'too_many_key_ids';
   end if;
-  -- p_exclude_request_ids is the SpendLimit Durable Object's spend still counted from memory:
-  -- gateway_requests rows are skipped by request_id (the public request id) and stepped charge
-  -- rows by gateway_request_charges.request_id (the billing request id), which it also lists for
-  -- its open checkpoint entries.
+  -- p_exclude_request_ids is the SpendLimit Durable Object's ordinary spend still counted from
+  -- memory, by public request id; those gateway_requests rows are skipped. Unbilled spend (wallet
+  -- charges without a request row, delivered requests pending reconciliation) is never skipped:
+  -- it is returned in stepped_charges and unpaid_requests, and the coordinator drops its copies.
   if cardinality(v_exclude) > 5000 then
     raise exception using errcode = '22023', message = 'too_many_excluded_request_ids';
   end if;
@@ -78,23 +78,10 @@ begin
         and charged.created_at >= least(week_start, month_start)
         and not (charged.request_id = any(v_exclude))
       union all
-      -- Open stepped charges of the key, cost only.
-      select charge.key_id, charge.created_at, charge.cost_nanos, false
-      from private.open_stepped_charges(p_workspace_id) charge
-      where charge.key_id = any(array(select key_rows.id from key_rows where key_rows.limited))
-        and charge.created_at >= least(week_start, month_start)
-        and not (charge.billing_request_id = any(v_exclude))
-      union all
-      -- Delivered requests whose charge is pending reconciliation: the uncharged expected cost.
-      select pending.key_id, pending.created_at,
-        pending.expected_cost_nanos - greatest(coalesce(pending.cost_nanos, 0), 0), false
-      from public.gateway_requests pending
-      where pending.workspace_id = p_workspace_id
-        and pending.key_id = any(array(select key_rows.id from key_rows where key_rows.limited))
-        and pending.expected_cost_nanos is not null
-        and pending.expected_cost_nanos > greatest(coalesce(pending.cost_nanos, 0), 0)
-        and pending.created_at >= least(week_start, month_start)
-        and not (pending.request_id = any(v_exclude))
+      -- Unbilled spend of the key (private.unbilled_spend), cost only, never excluded.
+      select unbilled.key_id, unbilled.at, unbilled.nanos, false
+      from private.unbilled_spend(p_workspace_id, least(week_start, month_start),
+        array(select key_rows.id from key_rows where key_rows.limited)) unbilled
     ) gr
     group by gr.key_id
   )
@@ -121,7 +108,7 @@ begin
   -- Department budgets with their usage this UTC period and every key that counts toward each
   -- department, from private.department_budget_usage, the calculation gateway_department_budget_status
   -- admits holds with: positive-cost requests of the department's keys (less excluded request ids)
-  -- plus their outstanding batch, video and realtime holds and open stepped charges.
+  -- plus their outstanding batch, video and realtime holds and unbilled spend.
   if exists (select 1 from public.workspace_department_budgets b where b.workspace_id = p_workspace_id) then
     select coalesce(jsonb_agg(jsonb_build_object(
       'id', usage.id,
@@ -161,7 +148,21 @@ begin
     'week_start', to_jsonb(week_start),
     'month_start', to_jsonb(month_start),
     'keys', v_keys,
-    'budget_status', private.workspace_budget_status(p_workspace_id, 0, v_exclude),
+    'budget_status', public.gateway_workspace_budget_status(p_workspace_id, 0),
+    -- The unbilled spend counted above, by billing request id, for the windows the seed covers:
+    -- the coordinator drops its own copy of each listed id and uses the amount as a floor.
+    'stepped_charges', coalesce((
+      select jsonb_agg(jsonb_build_object('billing_id', unbilled.billing_request_id, 'charged_nanos', unbilled.nanos)
+        order by unbilled.billing_request_id)
+      from private.unbilled_spend(p_workspace_id, least(week_start, month_start)) unbilled
+      where unbilled.kind = 'charge'
+    ), '[]'::jsonb),
+    'unpaid_requests', coalesce((
+      select jsonb_agg(jsonb_build_object('billing_id', unbilled.billing_request_id, 'expected_nanos', unbilled.recorded_nanos)
+        order by unbilled.billing_request_id)
+      from private.unbilled_spend(p_workspace_id, least(week_start, month_start)) unbilled
+      where unbilled.kind = 'unpaid' and unbilled.billing_request_id is not null
+    ), '[]'::jsonb),
     'excluded_rows', v_excluded,
     'department_budgets', v_departments
   );

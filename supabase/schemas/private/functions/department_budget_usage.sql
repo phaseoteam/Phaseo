@@ -40,7 +40,6 @@ CREATE OR REPLACE FUNCTION private.department_budget_usage (
       p_workspace_id,
       (select min(budgets.period_start) from budgets),
       array(select distinct dk.key_id from department_keys dk where dk.department_id in (select budgets.department_id from budgets)),
-      p_exclude_request_ids,
       p_exclude_request_ids
     ) item
   )

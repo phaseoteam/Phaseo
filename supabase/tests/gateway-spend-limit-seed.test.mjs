@@ -60,8 +60,8 @@ try {
   // 20261106165203_budget_enforcement_money_hygiene moves department usage into the shared
   // private.department_budget_usage (positive-cost requests plus outstanding holds).
   const usageMigration = await readFile(new URL('../migrations/20261106165203_budget_enforcement_money_hygiene.sql', import.meta.url), 'utf8');
-  for (const path of ['private/functions/open_stepped_charges.sql', 'private/functions/budget_spend_items.sql', 'private/functions/department_budget_usage.sql',
-    'private/functions/workspace_budget_status.sql', 'public/functions/gateway_spend_limit_seed.sql',
+  for (const path of ['private/functions/unbilled_spend.sql', 'private/functions/budget_spend_items.sql', 'private/functions/department_budget_usage.sql',
+    'public/functions/gateway_workspace_budget_status.sql', 'public/functions/gateway_spend_limit_seed.sql',
     'public/functions/workspace_department_budget_status.sql']) {
     const definition = (await schema(path)).trim();
     assert.ok(usageMigration.includes(definition), `${path} matches its migration`);

@@ -340,6 +340,11 @@ begin
       and charged.success is not true
       and charged.cost_nanos > 0
       and charged.created_at >= least(week_start, month_start)
+    -- Unbilled spend (private.unbilled_spend): charges without a request row, delivered requests
+    -- pending reconciliation; cost only.
+    union all
+    select unbilled.at, unbilled.nanos, false
+    from private.unbilled_spend(gateway_fetch_request_context_without_workspace_budget.workspace_id, least(week_start, month_start), array[gateway_fetch_request_context_without_workspace_budget.api_key_id]) unbilled
   ) gr;
   end if;
 

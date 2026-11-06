@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { installCatalogPolicyContext } from './fixtures/catalog-policy-context.mjs';
+import { installUnbilledSpend } from './fixtures/unbilled-spend.mjs';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 const db = new PGlite();
 const read = path => readFile(new URL(path, import.meta.url), 'utf8');
@@ -15,6 +16,7 @@ try {
   await installCatalogPolicyContext(db);
   await db.exec('alter table public.byok_keys add column name text');
   await db.exec(await read('../migrations/20260916121303_gateway_context_bundle.sql'));
+  await installUnbilledSpend(db);
   await db.exec(await read('../schemas/private/functions/gateway_context_access.sql'));
   await db.exec(await read('../schemas/public/functions/gateway_fetch_request_context_without_workspace_budget.sql'));
   await db.exec(`
