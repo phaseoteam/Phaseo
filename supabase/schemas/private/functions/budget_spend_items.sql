@@ -3,7 +3,7 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
   p_since               timestamp with time zone,
   p_key_ids             uuid[] DEFAULT NULL::uuid[],
   p_exclude_request_ids text[] DEFAULT '{}'::text[],
-  p_exclude_charge_ids  text[] DEFAULT '{}'::text[]
+  p_include_open_charges boolean DEFAULT true
 )
   RETURNS TABLE (
     key_id uuid,
@@ -16,13 +16,15 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
   SET search_path TO ''
   AS $function$
   -- The spend that counts toward workspace and department budgets, one row per item, shared by
-  -- gateway_workspace_budget_status and private.department_budget_usage (and so the spend-limit
+  -- private.workspace_budget_status and private.department_budget_usage (and so the spend-limit
   -- seed). A budget's usage is the sum of nanos over rows that are active or at/after its period
   -- start. p_key_ids limits the rows to those keys (NULL: the whole workspace). p_since (NULL: all
-  -- time) bounds the history read; active holds are returned whenever they were made.
-  -- p_exclude_request_ids leaves out gateway_requests rows and p_exclude_charge_ids stepped charges
-  -- (gateway_request_charges.request_id, the billing request id) that the SpendLimit Durable
-  -- Object is still counting from memory.
+  -- time) bounds the history read, written as created_at >= coalesce(...) so partitions of
+  -- gateway_requests are pruned under generic plans; active holds are returned whenever they were
+  -- made. p_exclude_request_ids leaves out gateway_requests rows (by public request id) the
+  -- SpendLimit Durable Object is still counting from memory. p_include_open_charges false leaves
+  -- out open stepped charges, which gateway_spend_limit_seed hands to the Durable Object by billing
+  -- request id instead.
   --
   -- * Requests: every gateway_requests row with a positive cost, whether or not it succeeded (a
   --   cancelled or failed request can still be charged), read as two disjoint parts so each uses
@@ -33,25 +35,25 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
   --   captured or released. Realtime holds carry no key; their session does.
   -- * Captured video and free-model holds made in the period, less the cost audited for them, so
   --   a capture counts before (or without) its request row and once after it lands.
-  -- * Stepped stream charges (gateway_charge_request_total, is_final false) whose gateway_requests
-  --   row has not landed: money already taken for a stream whose worker may have stopped before
-  --   writing it. Active from the charge's created_at in every period until the request row
-  --   (billing_request_id) lands, which then counts instead. Read from the few open charge rows
-  --   (gateway_request_charges_open_step_idx), each checked against
-  --   gateway_requests_workspace_billing_request_idx. The charge row records no key, so these
-  --   count toward workspace budgets (p_key_ids NULL) only.
+  -- * Open stepped stream charges (private.open_stepped_charges): active from the charge's
+  --   created_at in every period until the request row lands, which then counts instead;
+  --   attributed to the charge's key when it has one (keyless charges count toward workspace
+  --   budgets only).
+  --
+  -- Holds and request rows are matched by workspace and ids; their keys are compared null-safely
+  -- because deleting a key sets both key_id columns to NULL (ON DELETE SET NULL).
   select request.key_id, request.created_at, false, request.cost_nanos
   from public.gateway_requests request
   where request.workspace_id = p_workspace_id
     and (p_key_ids is null or request.key_id = any (p_key_ids))
     and request.success is true
     and request.cost_nanos > 0
-    and (p_since is null or request.created_at >= p_since)
+    and request.created_at >= coalesce(p_since, '-infinity'::timestamptz)
     and not (request.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
     and not (request.request_id like 'batch_hold_usage:%' and exists (
       select 1 from public.gateway_wallet_reservations hold
       where hold.workspace_id = request.workspace_id
-        and hold.key_id = request.key_id
+        and hold.key_id is not distinct from request.key_id
         and hold.status in ('held', 'reserved')
         and starts_with(request.request_id, 'batch_hold_usage:' || hold.reservation_id || ':')
     ))
@@ -63,7 +65,7 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
     and (p_key_ids is null or request.key_id = any (p_key_ids))
     and request.success is not true
     and request.cost_nanos > 0
-    and (p_since is null or request.created_at >= p_since)
+    and request.created_at >= coalesce(p_since, '-infinity'::timestamptz)
     and not (request.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
   union all
   select coalesce(reservation.key_id, session.key_id), reservation.created_at,
@@ -85,7 +87,7 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
     from public.gateway_requests request
     where (reservation.reservation_id like 'video_hold:%' or reservation.reservation_id like 'free_model_hold:%')
       and request.workspace_id = reservation.workspace_id
-      and request.key_id = reservation.key_id
+      and request.key_id is not distinct from reservation.key_id
       and request.request_id = reservation.hold_ref_id
       and coalesce(request.cost_nanos, 0) > 0
       and (reservation.reservation_id not like 'free_model_hold:%'
@@ -96,27 +98,18 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
     and (reservation.status in ('held', 'reserved')
       or (reservation.status = 'captured'
         and (reservation.reservation_id like 'video_hold:%' or reservation.reservation_id like 'free_model_hold:%')
-        and (p_since is null or reservation.created_at >= p_since)))
+        and reservation.created_at >= coalesce(p_since, '-infinity'::timestamptz)))
   union all
-  select null::uuid, charge.created_at, true, charge.cost_nanos
-  from public.gateway_request_charges charge
-  where p_key_ids is null
-    and charge.workspace_id = p_workspace_id
-    and charge.is_final is false
-    and charge.status = 'applied'
-    and charge.cost_nanos > 0
-    and not (charge.request_id = any (coalesce(p_exclude_charge_ids, '{}'::text[])))
-    and not exists (
-      select 1 from public.gateway_requests request
-      where request.workspace_id = charge.workspace_id
-        and request.billing_request_id = charge.request_id
-    );
+  select charge.key_id, charge.created_at, true, charge.cost_nanos
+  from private.open_stepped_charges(p_workspace_id) charge
+  where coalesce(p_include_open_charges, true)
+    and (p_key_ids is null or charge.key_id = any (p_key_ids));
 $function$;
 
-COMMENT ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) IS 'Spend items counted toward workspace and department budgets: positive-cost requests, active holds in every period, captured video and free-model holds less their audited cost (each hold''s batch_hold_usage rows counted once), and stepped stream charges whose request row has not landed (workspace only).';
+COMMENT ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], boolean) IS 'Spend items counted toward workspace and department budgets: positive-cost requests, active holds in every period, captured video and free-model holds less their audited cost (each hold''s batch_hold_usage rows counted once), and applied stepped stream charges whose request row has not landed (attributed to the charge''s key when it has one).';
 
-REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) FROM PUBLIC;
+REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], boolean) FROM PUBLIC;
 
-REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) FROM "postgres";
+REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], boolean) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) TO "postgres";
+GRANT EXECUTE ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], boolean) TO "postgres";
