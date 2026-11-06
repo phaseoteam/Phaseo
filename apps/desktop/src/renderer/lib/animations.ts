@@ -5,7 +5,7 @@ import { usePersistedState } from "./persistedState";
 export const animationsKey = "phaseo.desktop.animations";
 export const panelAnimationDurationKey = "phaseo.desktop.panelAnimationDurationMs";
 export const defaultPanelAnimationDuration = 200;
-export const maxPanelAnimationDuration = 400;
+export const maxPanelAnimationDuration = 600;
 
 export function validPanelAnimationDuration(value: unknown): number {
 	if (typeof value !== "number" || !Number.isInteger(value) || value < 0 || value > maxPanelAnimationDuration) throw new Error(`panelAnimationDurationMs must be an integer from 0 to ${maxPanelAnimationDuration}.`);
