@@ -36,7 +36,7 @@ try {
   assert.ok(name, 'migration exists');
   const migration = await readFile(new URL(name, migrations), 'utf8');
   // The migration carries the declarative definitions verbatim, apart from the OAuth-client write policies a
-  // later migration added (preset-oauth-writes-and-resolution.test.mjs checks those).
+  // later migration added (refuse-oauth-client-writes.test.mjs checks those).
   const laterPolicies = /CREATE POLICY "[a-z_]+_no_oauth_client_(insert|update|delete)"[\s\S]*?;\n\n/g;
   for (const file of [
     'public/tables/preset_version_labels.sql',
