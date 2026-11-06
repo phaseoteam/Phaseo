@@ -1,3 +1,4 @@
+import { createMiddleware } from "@tanstack/react-start";
 import { redirect } from "@/lib/navigation";
 import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
 
@@ -15,3 +16,9 @@ export async function requireInternalAdminAction(): Promise<void> {
 	const status = await fetchInternalAuthStatus();
 	if (!status.signedIn || !status.isAdmin) throw new Error("Unauthorized");
 }
+
+/** Server function middleware: the internal admin check, before the handler runs. */
+export const internalAdminAction = createMiddleware({ type: "function" }).server(async ({ next }) => {
+	await requireInternalAdminAction();
+	return next();
+});

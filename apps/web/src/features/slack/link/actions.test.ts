@@ -49,7 +49,7 @@ describe("Confirming a Slack account link", () => {
 describe("Showing whose Slack account a link is for", () => {
 	it("names the Slack account and team from the preview, without linking anything", async () => {
 		fetchMock.mockResolvedValue(respond(200, { slack_user: { id: "U0PERSON01", handle: "mallory", real_name: "Mallory M", display_name: "mal" }, team_name: "Acme", workspace_name: "Acme Inc" }));
-		expect(await describeSlackLink(TOKEN, "en-GB")).toEqual({ account: 'account {"name":"mal","id":"U0PERSON01","team":"Acme"}', failure: null });
+		expect(await describeSlackLink({ data: { token: TOKEN, localeValue: "en-GB" } })).toEqual({ account: 'account {"name":"mal","id":"U0PERSON01","team":"Acme"}', failure: null });
 		const [url, init] = fetchMock.mock.calls[0];
 		expect(String(url).endsWith("/api/account/settings/slack/link/preview")).toBe(true);
 		expect(init.method).toBe("POST");
@@ -58,14 +58,14 @@ describe("Showing whose Slack account a link is for", () => {
 
 	it("falls back to the handle, then to the Slack user id", async () => {
 		fetchMock.mockResolvedValueOnce(respond(200, { slack_user: { id: "U0PERSON01", handle: "mallory", real_name: null, display_name: null }, team_name: null, workspace_name: "Acme Inc" }));
-		expect((await describeSlackLink(TOKEN, "en-GB")).account).toBe('account {"name":"@mallory","id":"U0PERSON01","team":"Slack"}');
+		expect((await describeSlackLink({ data: { token: TOKEN, localeValue: "en-GB" } })).account).toBe('account {"name":"@mallory","id":"U0PERSON01","team":"Slack"}');
 		fetchMock.mockResolvedValueOnce(respond(200, { slack_user: { id: "U0PERSON01", handle: null, real_name: null, display_name: null }, team_name: "Acme", workspace_name: "Acme Inc" }));
-		expect((await describeSlackLink(TOKEN, "en-GB")).account).toBe('accountUnnamed {"id":"U0PERSON01","team":"Acme"}');
+		expect((await describeSlackLink({ data: { token: TOKEN, localeValue: "en-GB" } })).account).toBe('accountUnnamed {"id":"U0PERSON01","team":"Acme"}');
 	});
 
 	it("says why a link can't be used, including one already used", async () => {
 		fetchMock.mockResolvedValueOnce(respond(409, { error: "link_used", message: "English text" }));
-		expect(await describeSlackLink(TOKEN, "en-GB")).toEqual({ account: null, failure: "errors.used" });
-		expect(await describeSlackLink("not a token", "en-GB")).toEqual({ account: null, failure: "errors.invalid" });
+		expect(await describeSlackLink({ data: { token: TOKEN, localeValue: "en-GB" } })).toEqual({ account: null, failure: "errors.used" });
+		expect(await describeSlackLink({ data: { token: "not a token", localeValue: "en-GB" } })).toEqual({ account: null, failure: "errors.invalid" });
 	});
 });

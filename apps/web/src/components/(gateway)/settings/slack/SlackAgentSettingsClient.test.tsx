@@ -98,9 +98,9 @@ describe("SlackAgentSettingsClient own Slack app", () => {
 		};
 		const html = renderToStaticMarkup(
 			<QueryClientProvider client={queryClient}>
-				<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages, Common: commonMessages }}>
+				<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages, Common: commonMessages }}>
 					<SlackAgentSettingsClient view={view} />
-				</NextIntlClientProvider>
+				</AppIntlProvider>
 			</QueryClientProvider>,
 		);
 		expect(html).toContain("Request URLs");

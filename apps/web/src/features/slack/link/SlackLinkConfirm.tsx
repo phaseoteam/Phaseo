@@ -20,7 +20,7 @@ export type SlackLinkCopy = {
  * Slack team tie their Slack identity to whoever opened it. The page names the
  * Slack account first (account), so a forwarded link shows whose it is.
  */
-export default function SlackLinkConfirm({ token, locale, account, failure, copy }: { token: string; locale: string; account: string | null; failure: string | null; copy: SlackLinkCopy }) {
+export default function SlackLinkConfirm({ token, locale, account, failure, checking = false, copy }: { token: string; locale: string; account: string | null; failure: string | null; checking?: boolean; copy: SlackLinkCopy }) {
 	const [result, setResult] = useState<SlackLinkResult | null>(null);
 	const [pending, startTransition] = useTransition();
 
@@ -37,7 +37,7 @@ export default function SlackLinkConfirm({ token, locale, account, failure, copy
 			<p className="text-sm text-muted-foreground">{copy.description}</p>
 			{account ? <p className="text-sm font-medium">{account}</p> : null}
 			<Callout tone="warning">{copy.warning}</Callout>
-			<Button type="button" disabled={pending} onClick={() => startTransition(async () => setResult(await confirmSlackLink({ data: { token, localeValue: locale } })))}>
+			<Button type="button" disabled={pending || checking} onClick={() => startTransition(async () => setResult(await confirmSlackLink({ data: { token, localeValue: locale } })))}>
 				{pending ? copy.confirming : copy.confirm}
 			</Button>
 		</div>

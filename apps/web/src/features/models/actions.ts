@@ -1,12 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { serverAction } from "@/lib/serverFn/actionMiddleware";
+import { internalAdminAction } from "@/lib/auth/requireInternalAdmin";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 
 export type ModelUpdatePayload = Record<string, any> & { modelId: string };
 
 export const updateModel = createServerFn({ method: "POST" })
-	.middleware([serverAction])
+	.middleware([serverAction, internalAdminAction])
 	.validator((payload: ModelUpdatePayload) => payload)
 	.handler(async ({ data: payload }): Promise<{ ok: boolean; error?: string }> => {
 		try {
