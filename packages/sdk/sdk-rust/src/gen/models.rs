@@ -3922,7 +3922,7 @@ pub struct VideoDeleteResponse {
 
 pub struct VideoGenerationRequest {
 	pub aspect_ratio: Option<String>,
-	pub compression_quality: Option<i64>,
+	pub compression_quality: Option<String>,
 	pub duration: Option<i64>,
 	pub enhance_prompt: Option<bool>,
 	pub frame_images: Option<Vec<HashMap<String, String>>>,

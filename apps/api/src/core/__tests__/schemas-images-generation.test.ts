@@ -73,7 +73,8 @@ describe("OpenAI image generation schema", () => {
 		expect(ImagesGenerationSchema.safeParse({ model, prompt: "A lighthouse", complexity: "max" }).success).toBe(false);
 	});
 
-	it.each(["openai/gpt-image-2.5-flare", "openai/gpt-image-2", "openai/gpt-image-latest", "google/gemini-3-pro-image"])(
+	// Ids without a version (gpt-image-latest) pass; OpenAI rejects the field if the target lacks it.
+	it.each(["openai/gpt-image-2.5-flare", "openai/gpt-image-2", "google/gemini-3-pro-image"])(
 		"rejects complexity on %s",
 		(model) => {
 			const parsed = ImagesGenerationSchema.safeParse({ model, prompt: "A lighthouse", complexity: "low" });

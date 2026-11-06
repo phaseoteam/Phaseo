@@ -398,7 +398,7 @@ describe("non-text adapter bridge", () => {
 		expect(result.kind).toBe("completed");
 	});
 
-	it("carries GPT Image 2.6 complexity from the IR to OpenAI", async () => {
+	it("carries GPT Image 2.6 complexity from the request to OpenAI", async () => {
 		let capturedBody: any = null;
 		const mock = installFetchMock([{
 			match: (url) => url.includes("/images/generations"),
@@ -407,7 +407,11 @@ describe("non-text adapter bridge", () => {
 		}]);
 
 		await executeNonTextAdapter({
-			ir: { model: "openai/gpt-image-2.6-flare", prompt: "A geometric fox", complexity: "high" },
+			ir: {
+				model: "openai/gpt-image-2.6-flare",
+				prompt: "A geometric fox",
+				rawRequest: { model: "openai/gpt-image-2.6-flare", prompt: "A geometric fox", complexity: "high" },
+			},
 			requestId: "req_non_text_openai_image_complexity",
 			workspaceId: "team_test",
 			providerId: "openai",
