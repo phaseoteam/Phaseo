@@ -307,15 +307,16 @@ describe("a stream the client abandons while the upstream keeps draining", () =>
 			["final_total", "bill_drain", 0], ["final_total", "bill_drain", 0], ["final_total", "bill_drain", 0],
 		]);
 		expect(failureAuditMock).toHaveBeenCalledTimes(1);
-		const [, , status, attribution, code, , details, , , billing] = failureAuditMock.mock.calls[0];
+		const [failedCtx, , status, attribution, code, , details] = failureAuditMock.mock.calls[0];
 		expect([status, attribution, code]).toEqual([500, "gateway", "stream_finalization_failed"]);
 		expect(details).toMatchObject({
 			billing_status: "pending_reconciliation", charged_in_steps: true, intended_final_total_nanos: 0,
 			charged_total_nanos: 1_000_000, charged_total_source: "database",
 		});
-		// The charge still held is the request's cost, and spend limits count it: not released at 0.
+		// The charge still held is the row's cost (pendingChargeFields reads it from ctx), and spend
+		// limits count it: not released at 0.
 		expect(storedChargeTotalMock).toHaveBeenCalledWith({ requestId: "bill_drain", workspaceId: "ws_drain" });
-		expect(billing).toEqual({ costNanos: 1_000_000 });
+		expect([failedCtx.confirmedChargeNanos, failedCtx.confirmedChargeSource]).toEqual([1_000_000, "database"]);
 	});
 
 	it("falls back to the last checkpoint total, never 0, when the stored charge cannot be read either", async () => {
@@ -334,10 +335,10 @@ describe("a stream the client abandons while the upstream keeps draining", () =>
 		await vi.advanceTimersByTimeAsync(1_000);
 		await settle();
 		error.mockRestore();
-		const [, , , , code, , details, , , billing] = failureAuditMock.mock.calls[0];
+		const [failedCtx, , , , code, , details] = failureAuditMock.mock.calls[0];
 		expect(code).toBe("stream_finalization_failed");
 		expect(details).toMatchObject({ billing_status: "pending_reconciliation", charged_total_nanos: 1_000_000, charged_total_source: "last_checkpoint" });
-		expect(billing).toEqual({ costNanos: 1_000_000 });
+		expect([failedCtx.confirmedChargeNanos, failedCtx.confirmedChargeSource]).toEqual([1_000_000, "last_checkpoint"]);
 	});
 
 	it("reports each checkpoint to the spend coordinator, so a drain stopped by the runtime still counts", async () => {

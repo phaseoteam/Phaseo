@@ -12,7 +12,7 @@ import type { RequestResult, Bill } from "../execute";
 import type { PriceCard } from "../pricing";
 import { calculatePricing } from "./pricing";
 import { handleFailureAudit, handleSuccessAudit } from "./audit";
-import { chargedTotalForUnsettledRequest, recordProvisionalStreamCharge, recordUsageAndChargeOnce } from "./charge";
+import { recordProvisionalStreamCharge, recordUsageAndChargeOnce } from "./charge";
 import { estimateDrainProgressUsage } from "./drain-progress";
 import {
     countRequestMediaInputs,
@@ -1147,9 +1147,10 @@ export async function handleStreamResponse(
                 // A stream charged at drain checkpoints whose final settlement could not be recorded
                 // still holds a charge (the checkpoints, or a final that committed unacknowledged):
                 // the row records it and spend limits count it, never 0 unless the database says so.
-                const failedMeta = ctx.meta as Record<string, unknown>;
-                const unsettledCharge = failedMeta.__chargedInSteps === true && failedMeta.__usageChargeRecorded !== true
-                    ? await chargedTotalForUnsettledRequest(ctx)
+                // recordUsageAndChargeOnce read back the stored charge (ctx.confirmedChargeNanos) and
+                // kept the intended bill (ctx.uncollectedChargeNanos); handleFailureAudit writes both.
+                const unsettledCharge = typeof ctx.confirmedChargeNanos === "number"
+                    ? { costNanos: ctx.confirmedChargeNanos, stored: ctx.confirmedChargeSource === "database" }
                     : null;
                 await handleFailureAudit(
                     ctx,
@@ -1177,7 +1178,6 @@ export async function handleStreamResponse(
                         rawUsage: usageRaw ?? latestStreamUsageRaw ?? result.bill.usage,
                         pricingCard: card,
                     },
-                    unsettledCharge ? { costNanos: unsettledCharge.costNanos } : undefined,
                 );
             } finally {
                 releaseRuntime();

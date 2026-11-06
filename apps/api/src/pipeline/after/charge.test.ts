@@ -2,10 +2,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const recordUsageAndChargeMock = vi.hoisted(() => vi.fn(async (_args: any) => {}));
 const recordRequestChargeTotalMock = vi.hoisted(() => vi.fn(async (_args: any) => {}));
+// What gateway_request_charges holds for the request when every charge attempt failed.
+const readRequestChargeTotalMock = vi.hoisted(() => vi.fn(async (_args: any): Promise<number> => 0));
 
 vi.mock("../pricing/persist", () => ({
 	recordUsageAndCharge: recordUsageAndChargeMock,
 	recordRequestChargeTotal: recordRequestChargeTotalMock,
+	readRequestChargeTotal: readRequestChargeTotalMock,
 }));
 
 import { recordProvisionalStreamCharge, recordUsageAndChargeOnce, requestChargedInSteps } from "./charge";
@@ -288,6 +291,39 @@ describe("recordUsageAndChargeOnce", () => {
 			const free = ctxFor();
 			await recordUsageAndChargeOnce({ ctx: free, costNanos: 0, endpoint: "responses" });
 			expect(calls()).toHaveLength(1);
+		});
+	});
+
+	describe("a charge that does not go through", () => {
+		const failAll = () => recordUsageAndChargeMock
+			.mockRejectedValueOnce(new Error("db")).mockRejectedValueOnce(new Error("db")).mockRejectedValueOnce(new Error("db"));
+		const ctxFor = (): any => ({ requestId: "r", billingRequestId: "bill_fail", workspaceId: "ws", meta: {} });
+		beforeEach(() => { readRequestChargeTotalMock.mockReset().mockResolvedValue(0); });
+
+		it("keeps the intended bill and the 0 the database holds when the debit never happened", async () => {
+			failAll();
+			const ctx = ctxFor();
+			await expect(recordUsageAndChargeOnce({ ctx, costNanos: 300, endpoint: "responses", throwOnFailure: true })).rejects.toThrow();
+			expect(readRequestChargeTotalMock).toHaveBeenCalledWith({ requestId: "bill_fail", workspaceId: "ws" });
+			expect([ctx.uncollectedChargeNanos, ctx.confirmedChargeNanos, ctx.confirmedChargeSource]).toEqual([300, 0, "database"]);
+		});
+
+		it("reads back a debit that committed while every response was lost", async () => {
+			failAll();
+			readRequestChargeTotalMock.mockResolvedValue(300);
+			const ctx = ctxFor();
+			await expect(recordUsageAndChargeOnce({ ctx, costNanos: 300, endpoint: "responses", throwOnFailure: true })).rejects.toThrow();
+			expect([ctx.uncollectedChargeNanos, ctx.confirmedChargeNanos]).toEqual([300, 300]);
+		});
+
+		it("leaves a one-off charge's amount unknown when the stored total cannot be read", async () => {
+			failAll();
+			readRequestChargeTotalMock.mockRejectedValue(new Error("db"));
+			const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+			const ctx = ctxFor();
+			await expect(recordUsageAndChargeOnce({ ctx, costNanos: 300, endpoint: "responses", throwOnFailure: true })).rejects.toThrow();
+			error.mockRestore();
+			expect([ctx.uncollectedChargeNanos, ctx.confirmedChargeNanos]).toEqual([300, null]);
 		});
 	});
 });

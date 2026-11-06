@@ -549,6 +549,8 @@ function buildSupaRow(args: {
     outputSpeedTps?: number | null; tpotMs?: number | null;
     itlMs?: number | null; phaseoOverheadMs?: number | null;
     usage?: any | null; costNanos?: number | null; currency?: string | null;
+    /** The bill a delivered request meant to charge while its charge is pending reconciliation. */
+    expectedCostNanos?: number | null;
     pricingLines?: any[] | null; throughput?: number | null;
     finishReason?: string | null;
     requestPayload?: unknown;
@@ -626,6 +628,7 @@ function buildSupaRow(args: {
         usage: args.usage ?? {},
         ...usageColumns,
         ...(args.costNanos != null ? { cost_nanos: Math.round(args.costNanos as number) } : {}),
+        ...(args.expectedCostNanos != null ? { expected_cost_nanos: Math.max(0, Math.round(args.expectedCostNanos)) } : {}),
         currency: args.currency ?? null,
         pricing_lines: Array.isArray(args.pricingLines) ? args.pricingLines : [],
         key_id: args.keyId ?? null,
@@ -1079,6 +1082,8 @@ type AuditFailureExecute = {
     nativeResponseId?: string | null;
     /** What the failed request was still charged; null or absent when it was not charged. */
     costNanos?: number | null;
+    /** The bill it meant to charge, while the charge is pending reconciliation (expected_cost_nanos). */
+    expectedCostNanos?: number | null;
     stage: "execute";
     requestId: string;
     workspaceId: string;
@@ -1350,6 +1355,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
             generationMs: args.generationMs ?? null,
             usage: args.usage ?? {},
             costNanos: args.costNanos ?? null,
+            ...(args.expectedCostNanos != null ? { expectedCostNanos: args.expectedCostNanos } : {}),
             requestPayload: args.requestPayload,
             gatewayResponse: args.gatewayResponse,
             currency: args.currency ?? null,

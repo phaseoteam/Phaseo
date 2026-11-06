@@ -233,6 +233,21 @@ export function shouldPersistGatewayAudit(ctx: Pick<PipelineContext, "testingMod
 	return !ctx.testingMode || ctx.billableInternalTesting === true;
 }
 
+/**
+ * The pending-reconciliation fields of a failure row (shared by every failure writer): cost_nanos
+ * is the charge the database confirmed after the request's charge attempts failed, and
+ * expected_cost_nanos the bill it meant to charge. Both absent when no charge failed.
+ */
+export function pendingChargeFields(ctx: PipelineContext): { costNanos?: number; expectedCostNanos?: number } {
+	const expected = ctx.uncollectedChargeNanos;
+	if (!(typeof expected === "number" && expected > 0)) return {};
+	const confirmed = ctx.confirmedChargeNanos;
+	return {
+		expectedCostNanos: Math.round(expected),
+		...(typeof confirmed === "number" && confirmed >= 0 ? { costNanos: Math.round(confirmed) } : {}),
+	};
+}
+
 export async function handleFailureAudit(
     ctx: PipelineContext,
     result: RequestResult,
@@ -261,11 +276,17 @@ export async function handleFailureAudit(
 	reclassifyAttemptsAcceptedElsewhere(ctx.providerAttempts);
 	// Enforce mode: a failed request frees its spend-limit admission (no-op without one). A failed
 	// request that was still charged counts its charge instead, once its row is written.
-	const billedNanos = Math.max(0, Math.round(Number(billing?.costNanos) || 0));
+	// A delivered request whose charge did not go through: the row owns what the database holds
+	// (ctx.confirmedChargeNanos) and the bill it meant to charge (expected_cost_nanos).
+	const pending = pendingChargeFields(ctx);
+	const billedNanos = Math.max(0, Math.round(Number(billing?.costNanos ?? pending.costNanos) || 0));
+	const writeCost = billing != null || pending.costNanos != null;
+	// Spend limits count the bill even when the wallet did not take it.
+	const spendNanos = Math.max(billedNanos, pending.expectedCostNanos ?? 0);
 	// A stream charged at drain checkpoints already recorded its charge: settle it to the final
 	// amount, 0 included (a refund), instead of releasing.
 	const chargedInSteps = (ctx.meta as Record<string, unknown>).__chargedInSteps === true;
-	const settleBilledSpend = (billedNanos > 0 || (billing != null && chargedInSteps)) && !keyIdIsOAuthClientId(ctx.meta.apiKeyRef);
+	const settleBilledSpend = (spendNanos > 0 || (writeCost && chargedInSteps)) && !keyIdIsOAuthClientId(ctx.meta.apiKeyRef);
 	if (!settleBilledSpend) releaseSpend(ctx.spendAdmission);
     const protectedOtlp = protectStealthAuditArgs({
         model: ctx.model,
@@ -396,7 +417,8 @@ export async function handleFailureAudit(
 			pricingLines: Array.isArray((result.bill?.usage as any)?.pricing?.lines)
 				? (result.bill?.usage as any).pricing.lines
 				: [],
-            ...(billedNanos > 0 ? { costNanos: billedNanos } : {}),
+            ...(writeCost ? { costNanos: billedNanos } : {}),
+            ...(pending.expectedCostNanos != null ? { expectedCostNanos: pending.expectedCostNanos } : {}),
         }) : null,
         writeOtlp: () => enqueueGatewayOtlpExport({
             requestId: ctx.requestId,
@@ -459,7 +481,7 @@ export async function handleFailureAudit(
             keyId: ctx.meta.apiKeyId ?? ctx.keyId ?? null,
             billingRequestId: ctx.billingRequestId,
             requestId: ctx.requestId,
-            costNanos: billedNanos,
+            costNanos: spendNanos,
             internal: ctx.internal,
             ...(chargedInSteps ? { replace: true } : {}),
         });

@@ -720,6 +720,20 @@ export type PipelineContext = {
     capability: string;
     /** Server-owned idempotency key for this billable pipeline execution. */
     billingRequestId: string;
+    /**
+     * The bill a delivered request meant to charge when every charge attempt failed (one-off or a
+     * stepped request's final total). Its failure row records it as expected_cost_nanos; spend limits
+     * count it as if it had been charged.
+     */
+    uncollectedChargeNanos?: number;
+    /**
+     * What the database holds as charged for this request after those attempts failed (read back
+     * from gateway_request_charges: a debit can commit while every response is lost). The failure
+     * row records it as cost_nanos. Null when it could not be read.
+     */
+    confirmedChargeNanos?: number | null;
+    /** Where confirmedChargeNanos came from: the charge row, or the last checkpoint sent. */
+    confirmedChargeSource?: "database" | "last_checkpoint";
     requestId: string;
     protocol?: string;
     providerCapabilitiesBeta?: boolean;

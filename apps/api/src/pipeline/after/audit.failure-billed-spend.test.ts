@@ -108,4 +108,41 @@ describe("failed requests that were still charged", () => {
 		expect(budget.used).toBe(0);
 		expect(budget.open.size).toBe(0);
 	});
+
+	describe("a delivered request whose charge did not go through", () => {
+		// recordUsageAndChargeOnce leaves the intended bill and what the database holds on ctx.
+		async function finalizationFailed(id: string, pending: { uncollected: number; confirmed: number | null }) {
+			const ctx = context(id, admit(id));
+			ctx.uncollectedChargeNanos = pending.uncollected;
+			ctx.confirmedChargeNanos = pending.confirmed;
+			await handleFailureAudit(
+				ctx,
+				{ provider: "openai", bill: { cost_cents: 0, currency: "USD", usage: {}, finish_reason: "stop" } } as any,
+				500, "gateway", "stream_finalization_failed", "The response was delivered but accounting finalization failed.",
+				{ billing_status: "pending_reconciliation" },
+			);
+			await Promise.all(background.splice(0));
+			return auditFailureMock.mock.calls.at(-1)![0];
+		}
+
+		it("records an unpaid bill as expected cost, with the 0 the database confirmed", async () => {
+			const row = await finalizationFailed("unpaid", { uncollected: 300, confirmed: 0 });
+			expect(row).toMatchObject({ costNanos: 0, expectedCostNanos: 300 });
+			// Spend limits count the bill the wallet did not take.
+			expect(budget.recorded.get("bill_unpaid")).toBe(300);
+		});
+
+		it("records a debit that committed while every response was lost as the row's cost", async () => {
+			const row = await finalizationFailed("committed", { uncollected: 300, confirmed: 300 });
+			expect(row).toMatchObject({ costNanos: 300, expectedCostNanos: 300 });
+			expect(budget.recorded.get("bill_committed")).toBe(300);
+		});
+
+		it("leaves the cost unknown, not 0, when the stored charge could not be read", async () => {
+			const row = await finalizationFailed("unreadable", { uncollected: 300, confirmed: null });
+			expect(row.expectedCostNanos).toBe(300);
+			expect(row).not.toHaveProperty("costNanos");
+			expect(budget.recorded.get("bill_unreadable")).toBe(300);
+		});
+	});
 });

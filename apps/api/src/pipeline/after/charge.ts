@@ -180,6 +180,14 @@ export async function recordUsageAndChargeOnce(args: {
 		return;
 	}
 
+	// The response was delivered: its failure row must carry the bill it meant to charge, and what
+	// the database holds (a debit may have committed while every response was lost).
+	ctx.uncollectedChargeNanos = Math.round(costNanos);
+	// Unreadable: a stepped request falls back to its last checkpoint total (a known minimum); a
+	// one-off charge's amount is unknown, not 0.
+	const stored = await chargedTotalForUnsettledRequest(ctx);
+	ctx.confirmedChargeNanos = stored.stored || inSteps ? stored.costNanos : null;
+	ctx.confirmedChargeSource = stored.stored ? "database" : "last_checkpoint";
 	console.error("recordUsageAndCharge failed after retries", {
 		error: lastError,
 		requestId: ctx.requestId,
@@ -188,6 +196,7 @@ export async function recordUsageAndChargeOnce(args: {
 		cost_nanos: costNanos,
 		attempts: CHARGE_RETRY_DELAYS_MS.length,
 		charged_in_steps: inSteps,
+		confirmed_charge_nanos: stored.costNanos,
 	});
 	if (args.throwOnFailure) {
 		throw new Error("usage_charge_persistence_failed", { cause: lastError });
