@@ -1,18 +1,24 @@
-// Production shapes, trimmed to what migration 20261106165203_budget_enforcement_money_hygiene and
+// Production shapes, trimmed to what migration 20261106165205_budget_enforcement_money_hygiene and
 // the functions it replaces read. Shared by supabase/tests/budget-enforcement-money-hygiene.test.mjs
 // and the gateway's seed -> SpendLimit Durable Object -> guard test, so both run the real SQL.
 import { readFile } from 'node:fs/promises';
 
 const schemasUrl = new URL('../../schemas/', import.meta.url);
-export const MIGRATION_FILE = '20261106165203_budget_enforcement_money_hygiene.sql';
+export const MIGRATION_FILE = '20261106165205_budget_enforcement_money_hygiene.sql';
 export const readSchema = (path) => readFile(new URL(path, schemasUrl), 'utf8');
 export const readMigration = () => readFile(new URL(`../../migrations/${MIGRATION_FILE}`, import.meta.url), 'utf8');
-// Each new index has its own migration, applied before MIGRATION_FILE.
+// The migrations that precede MIGRATION_FILE: the expected_cost_nanos column (added, then validated),
+// then each new index in its own migration.
+export const COLUMN_MIGRATION_FILES = [
+  '20261106165158_gateway_requests_expected_cost_nanos.sql',
+  '20261106165159_validate_gateway_requests_expected_cost_nanos_check.sql',
+];
 export const INDEX_MIGRATION_FILES = [
   '20261106162022_gateway_requests_billing_request_index.sql', // fix/async-billing-20261104's
   '20261106165200_gateway_requests_expected_cost_idx.sql',
   '20261106165201_gateway_requests_charged_unsuccessful_cost_idx.sql',
   '20261106165202_gateway_request_charges_applied_cost_idx.sql',
+  '20261106165203_credit_ledger_request_charge_movements_idx.sql',
 ];
 export const readIndexMigrations = () => Promise.all(INDEX_MIGRATION_FILES.map((name) =>
   readFile(new URL(`../../migrations/${name}`, import.meta.url), 'utf8')));
@@ -53,7 +59,6 @@ const STUBS = `
   create table public.gateway_requests (id uuid default gen_random_uuid(), workspace_id uuid, request_id text,
     endpoint text, model_id text, provider text, status_code integer, success boolean, usage jsonb, cost_nanos bigint,
     currency text, key_id uuid references public.keys(id) on delete set null, detail_metadata jsonb, billing_request_id text,
-    expected_cost_nanos bigint,
     created_at timestamptz not null default now()) partition by range (created_at);
   create table public.gateway_requests_2025 partition of public.gateway_requests for values from ('2025-01-01') to ('2026-01-01');
   create table public.gateway_requests_2026 partition of public.gateway_requests for values from ('2026-01-01') to ('2027-01-01');
@@ -90,7 +95,9 @@ const STUBS = `
     created_at timestamptz default now(), updated_at timestamptz default now(),
     is_final boolean not null default true, key_id uuid,
     primary key (workspace_id, request_id));
-  create table public.credit_ledger (id uuid primary key default gen_random_uuid(), workspace_id uuid, amount_nanos bigint);
+  create table public.credit_ledger (id uuid primary key default gen_random_uuid(), workspace_id uuid, kind text, amount_nanos bigint,
+    ref_type text, ref_id text, source_ref_type text, source_ref_id text, status text, created_at timestamptz not null default now());
+  grant all on public.credit_ledger to service_role;
   alter table public.credit_ledger enable row level security;
   create policy "Enable insert for users based on user_id" on public.credit_ledger for insert to authenticated
     with check (public.is_workspace_member(workspace_id));
@@ -128,7 +135,11 @@ const CALLEES = [
 ];
 
 /** Applies the migration, then puts the request-context callee stubs back for the wrapper tests. */
+export const readColumnMigrations = () => Promise.all(COLUMN_MIGRATION_FILES.map((name) =>
+  readFile(new URL(`../../migrations/${name}`, import.meta.url), 'utf8')));
+
 export async function applyMigration(db, migration) {
+  for (const column of await readColumnMigrations()) await db.exec(column);
   for (const index of await readIndexMigrations()) await db.exec(index);
   await db.exec(migration);
   await db.exec(CONTEXT_STUBS);
