@@ -791,6 +791,11 @@ describe("account policy settings routes", () => {
 		it("finds a preset in a member's 1,001st workspace (membership isn't listed into a capped page)", async () => {
 			const memberOf = Array.from({ length: 1001 }, (_, index) => `workspace-${index + 1}`);
 			const preset = { id: "preset-1", workspace_id: "workspace-1001", created_by: "owner-2", visibility: "team", draft_visibility: "team", name: "Far" };
+			// A write: its creator applies an upstream version to a preset in the 1,001st workspace.
+			const writeRequests = stubWorld({ userId: "user-1", memberOf, preset: { ...preset, created_by: "user-1" } });
+			const applied = await send("/upstream", { method: "POST", body: JSON.stringify({ versionId: VERSION }) });
+			expect(applied.status).toBe(200);
+			expect(writeRequests.some((line) => line.includes("/workspace_members?select=workspace_id&"))).toBe(false);
 			for (const [path, init] of [["", { method: "GET" }], ["/versions", { method: "GET" }]] as const) {
 				const requests = stubWorld({ userId: "user-1", memberOf, preset });
 				const response = await send(path, init);
@@ -798,6 +803,7 @@ describe("account policy settings routes", () => {
 				expect(requests.filter((line) => line.includes("/rpc/find_member_visible_preset"))).toHaveLength(1);
 				expect(requests.some((line) => line.includes("/workspace_members?select=workspace_id&"))).toBe(false);
 			}
+	
 		});
 
 		it("checks the upstream body's shape before looking the preset up", async () => {
