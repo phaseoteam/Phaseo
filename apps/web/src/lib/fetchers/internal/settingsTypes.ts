@@ -50,6 +50,7 @@ export type PrivacyGlobalSettings = {
 };
 
 export type SettingsPrivacyInitialData = {
+	canManage: boolean;
 	accountPolicy: AccountPrivacyPolicy | null;
 	activeProviderModels: Array<{
 		apiModelId: string;
@@ -489,6 +490,7 @@ export type SettingsObservabilityDestinationNewInitialData = {
 };
 
 export type SettingsRoutingInitialData = {
+	canManage: boolean;
 	responseHealingEnabled: boolean;
 	responseHealingLocked: boolean;
 	responseHealingMode: "safe" | "strict";

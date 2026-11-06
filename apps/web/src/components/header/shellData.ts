@@ -5,6 +5,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { defaultLocale, isPublicLocale } from "@/i18n/locales";
+import { isThirdPartyOAuthEnabled } from "@/lib/oauth/thirdPartyOAuth";
 
 const loadShellData = createServerFn({ method: "GET" })
 	.validator((locale: string) => (isPublicLocale(locale) ? locale : defaultLocale))
@@ -24,7 +25,7 @@ const loadShellData = createServerFn({ method: "GET" })
 			flags.workloadIdentityFlag().catch(() => false),
 			flags.slackAgentSettingsEnabled().catch(() => false),
 			flags.enterpriseSelfServePreviewEnabled().catch(() => false),
-			flags.batchApiFlag().catch(() => false),
+			flags.webhookSettingsEnabled().catch(() => false),
 			flags.videoApiFlag().catch(() => false),
 			flags.realtimeVoiceFlag().catch(() => false),
 			catalogueGamesEnabled().catch(() => false),
@@ -33,7 +34,7 @@ const loadShellData = createServerFn({ method: "GET" })
 		]);
 		return {
 			account,
-			capabilities: { autoRouting, classifiers, workloadIdentity, slackAgent, enterprise, webhooks, video, realtime, games },
+			capabilities: { autoRouting, classifiers, workloadIdentity, slackAgent, enterprise, webhooks, video, realtime, games, oauthApps: isThirdPartyOAuthEnabled() },
 			settingsNavigationCopy: getSettingsNavigationCopy(navigationMessages, messages.SettingsUI.sidebarNew),
 		};
 	});

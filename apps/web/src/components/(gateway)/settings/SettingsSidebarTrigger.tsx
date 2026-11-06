@@ -34,6 +34,7 @@ import {
 	isSettingsNavChildActive,
 	type NavItem,
 	type SettingsScope,
+	type SettingsNavigationOptions,
 } from "./Sidebar.config";
 import { cn } from "@/lib/utils";
 import type { SettingsNavigationCopy } from "./Sidebar.labels";
@@ -42,25 +43,8 @@ const subscribe = () => () => {};
 const getClientSnapshot = () => true;
 const getServerSnapshot = () => false;
 
-export default function SettingsSidebarTrigger({
-	copy,
-	showBroadcast = true,
-	showWebhooks = true,
-	showAutoRouting = false,
-	showClassifiers = false,
-	showWorkloadIdentity = false,
-	showSlackAgent = false,
-	providerMode = false,
-}: {
-	copy: SettingsNavigationCopy;
-	showBroadcast?: boolean;
-	showWebhooks?: boolean;
-	showAutoRouting?: boolean;
-	showClassifiers?: boolean;
-	showWorkloadIdentity?: boolean;
-	showSlackAgent?: boolean;
-	providerMode?: boolean;
-}) {
+export default function SettingsSidebarTrigger({ copy, workspaceName, ...options }: SettingsNavigationOptions & { copy: SettingsNavigationCopy; workspaceName?: string | null }) {
+	const providerMode = options.providerMode === true;
 	const t = useTranslations("SettingsUI");
 	const pathname = usePathname() ?? "";
 	const [open, setOpen] = useState(false);
@@ -75,16 +59,8 @@ export default function SettingsSidebarTrigger({
 		getClientSnapshot,
 		getServerSnapshot,
 	);
-	const navGroups = getSettingsSidebar({ showBroadcast, showWebhooks, showAutoRouting, showClassifiers, showWorkloadIdentity, showSlackAgent, providerMode });
-	const activeNav = getActiveSettingsNav(pathname, {
-		showBroadcast,
-		showWebhooks,
-		showAutoRouting,
-		showClassifiers,
-		showWorkloadIdentity,
-		showSlackAgent,
-		providerMode,
-	});
+	const navGroups = getSettingsSidebar(options);
+	const activeNav = getActiveSettingsNav(pathname, options);
 	const activeItem = activeNav?.item ?? null;
 	const activeScope = providerMode && pathname === "/settings/account/providers"
 		? "provider" : activeNav?.group.scope ?? "personal";
@@ -280,6 +256,7 @@ export default function SettingsSidebarTrigger({
 							</button>
 						</div>
 					</div>
+					{visibleScope === "workspace" && workspaceName ? <p className="truncate px-6 pt-3 text-sm font-medium" title={workspaceName}>{workspaceName}</p> : null}
 					<ScrollArea className="min-h-0 flex-1">
 						<div className="space-y-3 px-3 py-3">
 							{visibleGroups.map((group, index) => {

@@ -300,6 +300,7 @@
 				"nav-settings-usage-logs-batches": "ログ：バッチ",
 				"nav-settings-usage-logs-realtime": "ログ：リアルタイムセッション",
 				"nav-settings-routing-auto": "ルーティング：自動ルーティング",
+				"nav-settings-routing-access": "ルートへのアクセス",
 				"nav-settings-routing-dynamic": "ルーティング：動的ルート",
 				"nav-settings-presets-experiments": "プリセット：フィードバック",
 				"nav-settings-workspaces-private-models": "プライベートモデル",

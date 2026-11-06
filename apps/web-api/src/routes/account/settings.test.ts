@@ -485,6 +485,7 @@ describe("account settings routes", () => {
 			profile: { betaOptIn: true, betaFeatures: { models_catalogue_v2: true } },
 		});
 		await expect(privacy.json()).resolves.toMatchObject({
+			canManage: true,
 			workspaceId: "workspace-1",
 			teamName: "Team One",
 			initialGlobal: { privacy_zdr_only: true, privacy_enable_paid_may_train: false, model_restriction_model_ids: ["gpt-test"] },

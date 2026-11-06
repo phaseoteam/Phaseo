@@ -300,6 +300,7 @@
 				"nav-settings-usage-logs-batches": "Protokolle: Stapelverarbeitungen",
 				"nav-settings-usage-logs-realtime": "Protokolle: Echtzeitsitzungen",
 				"nav-settings-routing-auto": "Routing: Automatisches Routing",
+				"nav-settings-routing-access": "Routenzugriff",
 				"nav-settings-routing-dynamic": "Routing: Dynamische Routen",
 				"nav-settings-presets-experiments": "Voreinstellungen: Rückmeldung",
 				"nav-settings-workspaces-private-models": "Private Modelle",
