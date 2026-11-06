@@ -18,7 +18,7 @@ OpenClaw がインストールされていない場合、CLI はインストー�
 - **`secrets.providers.phaseo_cli`**: `phaseo integrations credential openclaw` を実行してキーを読み込む exec シークレットプロバイダーです。キーが OpenClaw の設定に書き込まれることはありません。
 - **`models.providers.phaseo`**: Base URL が `https://api.phaseo.app/v1`、API の種類が `openai-completions` で、キーを `phaseo_cli` から取得するプロバイダーです。Chat Completions で動作する Phaseo の有効なテキストモデルがすべて登録され、`--model` の値（指定しない場合は `anthropic/claude-sonnet-4.6`）が先頭になります。
 
-キーは、有効期限が 90 日で月額 $100 の利用上限が付いた `Phaseo CLI: OpenClaw API Key` です。期限切れの後に OpenClaw が CLI にキーを要求すると、CLI が新しいキーを作成します。
+キーは、セットアップ中にブラウザーで承認する `Phaseo CLI: OpenClaw API Key` です。有効期限は 90 日で、月額 $100 の利用上限があります。期限が切れたら、`phaseo openclaw` を再実行して新しいキーを承認してください。
 
 セットアップでは OpenClaw のデフォルトのモデルは変更されません。準備ができたら、`openclaw models set` で Phaseo のモデルを選びます。選択したモデルだけを登録するには `--catalog default` を使います。
 

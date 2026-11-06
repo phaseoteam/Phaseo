@@ -176,6 +176,33 @@ accountSettingsKeysRouter.post("/keys/lookup", bodyLimit({ maxSize: 4096,
 	}
 });
 
+/**
+ * Creates an API key the way the dashboard does: the workspace's key limit, a new kid and secret hashed
+ * with the active pepper, the signed-in person as created_by, the given limits, and an api_key.created
+ * audit event. The dashboard's Create key and an approved CLI key request (settings-key-requests.ts) both
+ * use it, so their keys are made identically. The plaintext is returned once and never stored.
+ */
+export async function createWorkspaceApiKey(
+	context: NonNullable<Awaited<ReturnType<typeof requireAccountWorkspace>>>,
+	env: Env,
+	input: {
+		userId: string;
+		name: string;
+		limits: Record<string, unknown>;
+		storageLocations: string[];
+		scopes?: string;
+		expiresAt?: string | null;
+		auditMetadata?: Record<string, unknown>;
+		requestId?: string | null;
+	},
+): Promise<{ id: string; plaintext: string; prefix: string }> {
+	await enforceKeyLimit(context, env, "api"); const key = generateKey("sk"); const limits = limitMetadata(input.limits);
+	const result = await context.client.from("keys").insert({ workspace_id: context.workspaceId, name: input.name, kid: key.kid, hash: await hmac(env, key.secret), prefix: key.prefix, status: "active", scopes: input.scopes ?? "[]", created_by: input.userId, daily_limit_requests: limits.dailyRequests, weekly_limit_requests: limits.weeklyRequests, monthly_limit_requests: limits.monthlyRequests, daily_limit_cost_nanos: limits.dailyCostNanos, weekly_limit_cost_nanos: limits.weeklyCostNanos, monthly_limit_cost_nanos: limits.monthlyCostNanos, storage_locations: input.storageLocations, ...(input.expiresAt ? { expires_at: input.expiresAt } : {}) }).select("id").maybeSingle();
+	if (result.error || !result.data?.id) throw result.error ?? new Error("key_write_failed");
+	await recordWorkspaceAuditEvent(context.client, { workspaceId: context.workspaceId, actorUserId: input.userId, action: "api_key.created", targetType: "api_key", targetId: result.data.id, targetName: input.name, metadata: { prefix: key.prefix, status: "active", limits, storageLocations: input.storageLocations, ...(input.expiresAt ? { expiresAt: input.expiresAt } : {}), ...input.auditMetadata }, requestId: input.requestId ?? null });
+	return { id: result.data.id, plaintext: key.plaintext, prefix: key.prefix };
+}
+
 accountSettingsKeysRouter.post("/keys", async (c) => {
 	const user = await requireUser(c.req.raw, c.env); if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const body: Record<string, any> = await c.req.json<Record<string, any>>().catch(() => ({})); const workspaceId = String(body.workspaceId ?? "").trim(); const name = String(body.name ?? "").trim();
@@ -183,11 +210,8 @@ accountSettingsKeysRouter.post("/keys", async (c) => {
 	const storage = parseKeyStorageLocations(body.storageLocations ?? []);
 	if (storage.ok === false) return c.json({ error: "invalid_storage_locations", message: storage.message }, 400, PRIVATE_NO_STORE_HEADERS);
 	try {
-		await enforceKeyLimit(context, c.env, "api"); const key = generateKey("sk"); const limits = limitMetadata(body.limits ?? {});
-		const result = await context.client.from("keys").insert({ workspace_id: workspaceId, name, kid: key.kid, hash: await hmac(c.env, key.secret), prefix: key.prefix, status: "active", scopes: typeof body.scopes === "string" ? body.scopes : "[]", created_by: user.id, daily_limit_requests: limits.dailyRequests, weekly_limit_requests: limits.weeklyRequests, monthly_limit_requests: limits.monthlyRequests, daily_limit_cost_nanos: limits.dailyCostNanos, weekly_limit_cost_nanos: limits.weeklyCostNanos, monthly_limit_cost_nanos: limits.monthlyCostNanos, storage_locations: storage.value }).select("id").maybeSingle();
-		if (result.error || !result.data?.id) throw result.error ?? new Error("key_write_failed");
-		await recordWorkspaceAuditEvent(context.client, { workspaceId, actorUserId: user.id, action: "api_key.created", targetType: "api_key", targetId: result.data.id, targetName: name, metadata: { prefix: key.prefix, status: "active", limits, storageLocations: storage.value }, requestId: requestId(c) });
-		return c.json({ id: result.data.id, plaintext: key.plaintext, prefix: key.prefix }, 200, PRIVATE_NO_STORE_HEADERS);
+		const created = await createWorkspaceApiKey(context, c.env, { userId: user.id, name, limits: body.limits ?? {}, storageLocations: storage.value, scopes: typeof body.scopes === "string" ? body.scopes : "[]", requestId: requestId(c) });
+		return c.json(created, 200, PRIVATE_NO_STORE_HEADERS);
 	} catch (error) { return c.json({ error: error instanceof Error ? error.message : "key_write_failed" }, 409, PRIVATE_NO_STORE_HEADERS); }
 });
 

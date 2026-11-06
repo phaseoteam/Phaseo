@@ -45,7 +45,7 @@ CLI 用以下三种方式之一设置每个智能体：
 
 ## CLI 会创建什么
 
-每个智能体都有自己的 API 密钥，以智能体命名（例如 `Phaseo CLI: Codex API Key`）。密钥 90 天后过期，每月支出上限为 $100。再次运行 setup 命令即可替换已过期的密钥，用 `phaseo keys update <id> --limit` 可以提高上限。
+每个智能体都有自己的 API 密钥，以智能体命名（例如 `Phaseo CLI: Codex API Key`），每月支出上限为 $100，90 天后过期。每个新密钥都由你在 CLI 打开的控制台页面中批准，之后 CLI 只取回一次；参见[在浏览器中批准密钥](./phaseo-cli.mdx#approve-the-key-in-your-browser)。再次运行 setup 命令即可替换已过期的密钥，在控制台的 **设置 → API 密钥** 中更改上限。
 
 如果没有安装 Claude Code、Codex、OpenCode、fx、DeepSeek Harness、Pi、Prime Agent、OpenClaw 或 Hermes Agent，CLI 会显示官方安装命令，并在运行前征求你的确认。在非交互式终端中，它会输出安装命令后停止。OpenCode、fx、DeepSeek Harness、Pi、Prime Agent 和 OpenClaw 还会获得所有支持 Chat Completions 的活跃 Phaseo 文本模型。
 
@@ -55,6 +55,7 @@ CLI 用以下三种方式之一设置每个智能体：
 | `--catalog default` | 只添加所选模型，而不是整个模型目录。 |
 | `--skip-install` | 跳过安装检查，适用于你自己管理的智能体。 |
 | `--dry-run` | 显示将要进行的文件更改，但不实际执行。 |
+| `--key <key>` | 使用你在控制台中创建的密钥，而不是请求新密钥。`--key-stdin` 从标准输入读取该密钥。 |
 | `phaseo integrations credential <agent>` | 输出该智能体的密钥，适用于需要你手动粘贴密钥的智能体。 |
 | `phaseo integrations remove <agent>` | 删除 Phaseo 写入的配置并吊销密钥。你的其他设置保持不变。 |
 

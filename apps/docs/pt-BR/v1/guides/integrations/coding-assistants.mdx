@@ -45,7 +45,7 @@ A CLI configura cada agente de uma de três formas:
 
 ## O que a CLI cria
 
-Cada agente recebe sua própria chave de API, com o nome dele (por exemplo, `Phaseo CLI: Codex API Key`). A chave expira após 90 dias e tem um limite de gastos mensal de $100. Execute o comando de configuração de novo para substituir uma chave expirada e aumente o limite com `phaseo keys update <id> --limit`.
+Cada agente recebe sua própria chave de API, com o nome dele (por exemplo, `Phaseo CLI: Codex API Key`), com limite de gastos mensal de $100 e expiração após 90 dias. Você aprova cada chave nova em uma página do painel que a CLI abre, e a CLI a recebe uma única vez; veja [Aprove a chave no navegador](./phaseo-cli.mdx#approve-the-key-in-your-browser). Execute o comando de configuração de novo para substituir uma chave expirada e altere o limite no painel, em **Configurações → Chaves de API**.
 
 Se o Claude Code, o Codex, o OpenCode, o fx, o DeepSeek Harness, o Pi, o Prime Agent, o OpenClaw ou o Hermes Agent não estiver instalado, a CLI mostra o comando de instalação oficial e pede confirmação antes de executá-lo. Fora de um terminal interativo, ela mostra o comando de instalação e para. O OpenCode, o fx, o DeepSeek Harness, o Pi, o Prime Agent e o OpenClaw também recebem todos os modelos de texto ativos do Phaseo que funcionam com Chat Completions.
 
@@ -55,6 +55,7 @@ Se o Claude Code, o Codex, o OpenCode, o fx, o DeepSeek Harness, o Pi, o Prime A
 | `--catalog default` | Adiciona só o modelo selecionado, em vez do catálogo inteiro. |
 | `--skip-install` | Pula a verificação de instalação, para um agente que você mesmo gerencia. |
 | `--dry-run` | Mostra as alterações nos arquivos sem aplicá-las. |
+| `--key <key>` | Usa uma chave que você criou no painel em vez de pedir uma nova. `--key-stdin` lê a chave da entrada padrão. |
 | `phaseo integrations credential <agent>` | Mostra a chave daquele agente, para agentes em que você a cola manualmente. |
 | `phaseo integrations remove <agent>` | Apaga a configuração que o Phaseo gravou e revoga a chave. Suas outras configurações continuam. |
 

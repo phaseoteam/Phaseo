@@ -45,7 +45,7 @@ La CLI configura cada agente de una de estas tres formas:
 
 ## Qué crea la CLI
 
-Cada agente recibe su propia clave de API, con su nombre (por ejemplo, `Phaseo CLI: Codex API Key`). La clave caduca a los 90 días y tiene un límite de gasto mensual de $100. Vuelve a ejecutar el comando de configuración para sustituir una clave caducada, y sube el límite con `phaseo keys update <id> --limit`.
+Cada agente recibe su propia clave de API, con su nombre (por ejemplo, `Phaseo CLI: Codex API Key`), con un límite de gasto mensual de $100 y caducidad a los 90 días. Apruebas cada clave nueva en una página del panel que abre la CLI, y después la CLI la recoge una sola vez; consulta [Aprueba la clave en el navegador](./phaseo-cli.mdx#approve-the-key-in-your-browser). Vuelve a ejecutar el comando de configuración para sustituir una clave caducada, y cambia el límite en el panel, en **Configuración → Claves de API**.
 
 Si falta Claude Code, Codex, OpenCode, fx, DeepSeek Harness, Pi, Prime Agent, OpenClaw o Hermes Agent, la CLI muestra el comando de instalación oficial y pide confirmación antes de ejecutarlo. Fuera de una terminal interactiva, muestra el comando de instalación y se detiene. OpenCode, fx, DeepSeek Harness, Pi, Prime Agent y OpenClaw también reciben todos los modelos de texto activos de Phaseo que funcionan con Chat Completions.
 
@@ -55,6 +55,7 @@ Si falta Claude Code, Codex, OpenCode, fx, DeepSeek Harness, Pi, Prime Agent, Op
 | `--catalog default` | Añade solo el modelo seleccionado en lugar de todo el catálogo. |
 | `--skip-install` | Omite la comprobación de instalación, para un agente que gestionas tú. |
 | `--dry-run` | Muestra los cambios en los archivos sin hacerlos. |
+| `--key <key>` | Usa una clave que creaste en el panel en lugar de pedir una nueva. `--key-stdin` la lee de la entrada estándar. |
 | `phaseo integrations credential <agent>` | Muestra la clave de ese agente, para los agentes en los que la pegas tú. |
 | `phaseo integrations remove <agent>` | Borra la configuración que escribió Phaseo y revoca la clave. El resto de tus ajustes se mantiene. |
 

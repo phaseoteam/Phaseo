@@ -45,7 +45,7 @@ La CLI configure chaque agent de l’une des trois façons suivantes :
 
 ## Ce que crée la CLI
 
-Chaque agent reçoit sa propre clé API, nommée d’après lui (par exemple `Phaseo CLI: Codex API Key`). La clé expire au bout de 90 jours et dispose d’une limite de dépenses mensuelle de $100. Relancez la commande de configuration pour remplacer une clé expirée, et relevez la limite avec `phaseo keys update <id> --limit`.
+Chaque agent reçoit sa propre clé API, nommée d’après lui (par exemple `Phaseo CLI: Codex API Key`), avec une limite de dépenses mensuelle de $100 et une expiration au bout de 90 jours. Vous approuvez chaque nouvelle clé sur une page du tableau de bord que la CLI ouvre, puis la CLI la récupère une seule fois ; voir [Approuver la clé dans le navigateur](./phaseo-cli.mdx#approve-the-key-in-your-browser). Relancez la commande de configuration pour remplacer une clé expirée, et modifiez la limite dans le tableau de bord, sous **Paramètres → Clés d’API**.
 
 Si Claude Code, Codex, OpenCode, fx, DeepSeek Harness, Pi, Prime Agent, OpenClaw ou Hermes Agent n’est pas installé, la CLI affiche la commande d’installation officielle et demande confirmation avant de l’exécuter. Hors d’un terminal interactif, elle affiche la commande d’installation et s’arrête. OpenCode, fx, DeepSeek Harness, Pi, Prime Agent et OpenClaw reçoivent aussi tous les modèles texte Phaseo actifs compatibles avec Chat Completions.
 
@@ -55,6 +55,7 @@ Si Claude Code, Codex, OpenCode, fx, DeepSeek Harness, Pi, Prime Agent, OpenClaw
 | `--catalog default` | Ajoute uniquement le modèle sélectionné au lieu de tout le catalogue. |
 | `--skip-install` | Ignore la vérification de l’installation, pour un agent que vous gérez vous-même. |
 | `--dry-run` | Affiche les modifications de fichiers sans les appliquer. |
+| `--key <key>` | Utilise une clé créée dans le tableau de bord au lieu d’en demander une nouvelle. `--key-stdin` la lit sur l’entrée standard. |
 | `phaseo integrations credential <agent>` | Affiche la clé de cet agent, pour les agents où vous la collez vous-même. |
 | `phaseo integrations remove <agent>` | Supprime la configuration écrite par Phaseo et révoque la clé. Vos autres réglages restent en place. |
 

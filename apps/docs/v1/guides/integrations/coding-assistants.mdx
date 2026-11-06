@@ -46,7 +46,7 @@ The CLI sets up each agent in one of three ways:
 
 ## What the CLI creates
 
-Every agent gets its own API key, named after it (for example `Phaseo CLI: Codex API Key`). The key expires after 90 days and has a $100 monthly spend limit. Run the setup command again to replace an expired key, and raise the limit with `phaseo keys update <id> --limit`.
+Every agent gets its own API key, named after it (for example `Phaseo CLI: Codex API Key`), with a $100 monthly spend limit and a 90-day expiry. You approve each new key on a dashboard page that the CLI opens, and the CLI then picks it up once; see [Approve the key in your browser](./phaseo-cli.mdx#approve-the-key-in-your-browser). Run the setup command again to replace an expired key, and change the limit in the dashboard under **Settings → API Keys**.
 
 If Claude Code, Codex, OpenCode, fx, DeepSeek Harness, Pi, Prime Agent, OpenClaw, or Hermes Agent is missing, the CLI shows the official install command and asks before running it. Outside an interactive terminal it prints the install command and stops. OpenCode, fx, DeepSeek Harness, Pi, Prime Agent, and OpenClaw also receive every active Phaseo text model that works with Chat Completions.
 
@@ -56,6 +56,7 @@ If Claude Code, Codex, OpenCode, fx, DeepSeek Harness, Pi, Prime Agent, OpenClaw
 | `--catalog default` | Adds only the selected model instead of the whole catalog. |
 | `--skip-install` | Skips the install check, for an agent you manage yourself. |
 | `--dry-run` | Shows the file changes without making them. |
+| `--key <key>` | Uses a key you made in the dashboard instead of asking for a new one. `--key-stdin` reads it from standard input. |
 | `phaseo integrations credential <agent>` | Prints that agent's key, for agents where you paste it in. |
 | `phaseo integrations remove <agent>` | Deletes the configuration Phaseo wrote and revokes the key. Your other settings stay. |
 

@@ -73,7 +73,7 @@ phaseo guardrails create --name "Production Safety" --body-json '{"enabled":true
 
 ## 连接编程智能体
 
-用智能体的名称作为命令。CLI 会创建一个专用密钥，并写入该智能体的配置：
+用智能体的名称作为命令。CLI 会请求一个专用密钥，由你在浏览器中批准，然后写入该智能体的配置：
 
 ```bash
 phaseo codex
@@ -94,6 +94,14 @@ phaseo cursor
 ```
 
 按需使用 `--model`、`--catalog all|default` 或 `--dry-run`。`phaseo setup <agent>` 和 `phaseo integrations setup <agent>` 也可以使用。
+
+### 在浏览器中批准密钥
+
+首次设置某个智能体时，CLI 会打开一个 Phaseo 控制台页面并输出其链接。该页面显示工作区、密钥名称、每月 $100 的支出上限和 90 天的有效期，以及请求来自 Phaseo CLI。选择 **批准并创建密钥** 后，CLI 会取回一次密钥并完成设置。选择 **拒绝**，或请求在 10 分钟后过期，则不会创建任何内容。
+
+批准时，请使用你在 CLI 中使用的账户登录控制台，以工作区所有者或管理员身份操作；如果设置了第二验证因素，也需要完成验证。仅凭 CLI 登录无法创建密钥。通过 SSH 或在 CI 中时，在任何已登录的设备上打开输出的链接即可。
+
+如果要改用你在控制台中创建的密钥，请通过 `--key <key>` 传入，或使用 `--key-stdin`，避免密钥留在 shell 历史中。CLI 会检查并保存该密钥，移除智能体时不会吊销它。
 
 要用临时设置运行 Cline、Kilo Code、oh-my-pi、Muse Code 或 MiniMax Code（这些设置会在退出时删除），请使用会话运行器。Phaseo 参数放在 `--` 之前，智能体自己的参数放在之后：
 
