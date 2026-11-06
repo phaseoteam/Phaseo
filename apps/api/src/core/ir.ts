@@ -150,6 +150,9 @@ export type IRToolResult = {
 	isError?: boolean; // Optional error flag
 	cacheControl?: IRCacheControl;
 	type?: "function" | "custom";
+	// A server tool's full output for the client when the model gets a shorter `content`
+	// (an image tool's image goes to the client, not back into the model's context).
+	clientOutput?: string;
 };
 
 // ============================================================================

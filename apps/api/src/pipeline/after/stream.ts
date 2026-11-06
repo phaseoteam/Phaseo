@@ -35,7 +35,7 @@ import { logDebugEvent, previewValue } from "../debug";
 import { ensureRuntimeForBackground } from "@/runtime/env";
 import { normalizeFinishReason } from "../audit/normalize-finish-reason";
 import { CLIENT_CLOSED_REQUEST_STATUS, streamHealthSignals } from "../execute/attempt-health";
-import { applyByokServiceFee } from "../pricing/byok-fee";
+import { applyByokServiceFeeWithToolCharges } from "../pricing/byok-tool-charges";
 import { applyDataContributionDiscount } from "../pricing/data-contribution-discount";
 import {
     attachToolUsageMetrics,
@@ -825,7 +825,8 @@ export async function handleStreamResponse(
                 }
                 alertUnexpectedZeroCostMedia({ ctx, result, card, totalNanos: totalNanosOverride });
 
-                const pricedWithByokSubtotal = await applyByokServiceFee({
+                const pricedWithByokSubtotal = await applyByokServiceFeeWithToolCharges({
+                    toolCharges: ctx.meta.serverToolPricing,
                     workspaceId: ctx.workspaceId,
                     idempotencyKey: ctx.billingRequestId,
                     isByok,
@@ -917,7 +918,8 @@ export async function handleStreamResponse(
                     shapeStreamUsageForClient(usageForShaping),
                     buildToolUsage()
                 );
-                const pricedWithByokSubtotal = await applyByokServiceFee({
+                const pricedWithByokSubtotal = await applyByokServiceFeeWithToolCharges({
+                    toolCharges: ctx.meta.serverToolPricing,
                     workspaceId: ctx.workspaceId,
                     idempotencyKey: ctx.billingRequestId,
                     isByok,
@@ -991,7 +993,8 @@ export async function handleStreamResponse(
             const usageWithToolMetrics = attachToolUsageMetrics(pricedUsage, {
                 ...buildToolUsage(),
             });
-            const pricedWithByokSubtotal = await applyByokServiceFee({
+            const pricedWithByokSubtotal = await applyByokServiceFeeWithToolCharges({
+                toolCharges: ctx.meta.serverToolPricing,
                 workspaceId: ctx.workspaceId,
                 idempotencyKey: ctx.billingRequestId,
                 isByok,

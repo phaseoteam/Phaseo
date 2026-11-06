@@ -21,7 +21,7 @@ import { keepStreamServerToolMeters, mergeBillAndPayloadUsage, shapeUsageForClie
 import { logDebugEvent, previewValue } from "../debug";
 import { normalizeFinishReason } from "../audit/normalize-finish-reason";
 import { attachToolUsageMetrics, summarizeToolUsage } from "./tool-usage";
-import { applyByokServiceFee } from "../pricing/byok-fee";
+import { applyByokServiceFeeWithToolCharges } from "../pricing/byok-tool-charges";
 import { applyDataContributionDiscount } from "../pricing/data-contribution-discount";
 import { getBaseModel } from "../execute/utils";
 import { cachedDroppedParams, droppedParamsForClient, twelveHourCacheDroppedFor } from "../execute/unsupportedParams";
@@ -528,7 +528,8 @@ async function handleNonStreamResponse(
     ));
     alertUnexpectedZeroCostMedia({ ctx, result, card, totalNanos });
     const isByok = (result?.keySource ?? ctx.meta.keySource) === "byok";
-    const pricedWithByokSubtotal = await ctx.timer.span("after_apply_byok_fee", () => applyByokServiceFee({
+    const pricedWithByokSubtotal = await ctx.timer.span("after_apply_byok_fee", () => applyByokServiceFeeWithToolCharges({
+        toolCharges: ctx.meta.serverToolPricing,
         workspaceId: ctx.workspaceId,
         idempotencyKey: ctx.billingRequestId,
         isByok,

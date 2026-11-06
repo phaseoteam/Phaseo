@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
+	extractImageToolOutput,
+	extractResponseImages,
 	extractOutputText,
 	resolveChatReasoningSummary,
 	extractResponseText,
@@ -186,5 +188,36 @@ describe("extractResponseText", () => {
 		]);
 
 		expect(text).toBe("First. Second.");
+	});
+});
+
+describe("image tool output in Chat", () => {
+	const call = (output: unknown) => ({
+		type: "function_call",
+		name: "phaseo_image_generation",
+		call_id: "call_1",
+		arguments: "{}",
+		status: "completed",
+		output: typeof output === "string" ? output : JSON.stringify(output),
+	});
+
+	it("shows SVG and GIF images the image tool returned", () => {
+		const images = extractResponseImages({
+			output: [
+				call({ status: "ok", model: "openai/gpt-image-2.6-flare", b64_json: "PHN2Zz48L3N2Zz4=", mime_type: "image/svg+xml" }),
+				call({ status: "ok", model: "openai/gpt-image-2.6-flare", b64_json: "R0lGODlh", mime_type: "image/gif" }),
+			],
+		});
+		expect(images.map((image) => image.url)).toEqual([
+			"data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=",
+			"data:image/gif;base64,R0lGODlh",
+		]);
+	});
+
+	it("ignores failed calls, other tools and unsafe image types", () => {
+		expect(extractImageToolOutput(call({ status: "error", message: "blocked" }))).toBeNull();
+		expect(extractImageToolOutput({ ...call({ status: "ok", b64_json: "abc" }), name: "phaseo_web_search" })).toBeNull();
+		expect(extractImageToolOutput(call({ status: "ok", b64_json: "abc", mime_type: "text/html" }))?.url).toBe("data:image/png;base64,abc");
+		expect(extractImageToolOutput(call({ status: "ok", imageUrl: "javascript:alert(1)" }))).toBeNull();
 	});
 });

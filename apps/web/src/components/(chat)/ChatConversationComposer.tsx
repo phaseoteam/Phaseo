@@ -272,8 +272,20 @@ const IMAGE_OUTPUT_FORMAT_OPTIONS = [
 	{ value: "png", label: "PNG" },
 	{ value: "jpeg", label: "JPEG" },
 	{ value: "webp", label: "WebP" },
+	{ value: "gif", label: "GIF" },
+	{ value: "svg", label: "SVG" },
 ] satisfies Array<{
 	value: NonNullable<ChatImageGenerationServerToolConfig["outputFormat"]>;
+	label: string;
+}>;
+
+const IMAGE_COMPLEXITY_OPTIONS = [
+	{ value: "auto", label: "Auto" },
+	{ value: "low", label: "Low" },
+	{ value: "medium", label: "Medium" },
+	{ value: "high", label: "High" },
+] satisfies Array<{
+	value: NonNullable<ChatImageGenerationServerToolConfig["complexity"]>;
 	label: string;
 }>;
 
@@ -1240,6 +1252,13 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		);
 		return supportedOptions.length > 0 ? supportedOptions : activeModelOptions;
 	}, [activeModelOptions]);
+	// GPT Image SVG output is written by an OpenAI text model, billed at that model's prices.
+	const svgAuthorModelOptions = useMemo(
+		() => activeModelOptions.filter((option) =>
+			option.modelId.startsWith("openai/") && option.capabilityEndpoints.includes("responses"),
+		),
+		[activeModelOptions],
+	);
 	const advisorReasoningOptions = useMemo<
 		Array<{
 			value: NonNullable<ChatAdvisorServerToolConfig["reasoningEffort"]>;
@@ -2162,7 +2181,66 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 								onChange: (moderation) =>
 									updateImageGenerationConfig({ moderation }),
 							})}
+							{renderSelectField({
+								label: tUi("chatComposer.complexity"),
+								value: imageGenerationConfig.complexity ?? "auto",
+								options: IMAGE_COMPLEXITY_OPTIONS,
+								onChange: (complexity) =>
+									updateImageGenerationConfig({ complexity }),
+							})}
 						</div>
+						{imageGenerationConfig.outputFormat === "gif" ? (
+							<div className="grid gap-2 sm:grid-cols-2">
+								<label className="grid gap-1 text-[11px] text-muted-foreground">
+									<span>{tUi("chatComposer.frameCount")}</span>
+									<Input
+										type="number"
+										min={2}
+										max={64}
+										value={imageGenerationConfig.frameCount ?? ""}
+										onChange={(event) =>
+											updateImageGenerationConfig({
+												frameCount: parseOptionalNumber(event.target.value),
+											})
+										}
+										placeholder={tUi("chatComposer.defaultRange", { min: 2, max: 64 })}
+										className="h-8 rounded-lg text-xs"
+									/>
+								</label>
+								<label className="grid gap-1 text-[11px] text-muted-foreground">
+									<span>{tUi("chatComposer.frameDuration")}</span>
+									<Input
+										type="number"
+										min={20}
+										max={2000}
+										step={10}
+										value={imageGenerationConfig.frameDurationMs ?? ""}
+										onChange={(event) =>
+											updateImageGenerationConfig({
+												frameDurationMs: parseOptionalNumber(event.target.value),
+											})
+										}
+										placeholder={tUi("chatComposer.defaultRange", { min: 20, max: 2000 })}
+										className="h-8 rounded-lg text-xs"
+									/>
+								</label>
+							</div>
+						) : null}
+						{imageGenerationConfig.outputFormat === "svg" ? (
+							<div className="grid gap-1">
+								<ComposerModelSelectField
+									label={tUi("chatComposer.svgAuthorModel")}
+									value={imageGenerationConfig.svgModel}
+									options={svgAuthorModelOptions}
+									autoLabel={tUi("chatComposer.chooseSvgAuthorModel")}
+									allowAuto={false}
+									onChange={(svgModel) => updateImageGenerationConfig({ svgModel })}
+								/>
+								<p className="text-[11px] text-muted-foreground">
+									{tUi("chatComposer.svgAuthorHint")}
+								</p>
+							</div>
+						) : null}
 						<label className="grid gap-1 text-[11px] text-muted-foreground">
 							<span>{tUi("chatComposer.outputCompression")}</span>
 							<Input
