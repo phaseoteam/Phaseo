@@ -337,12 +337,14 @@ describe("account settings routes", () => {
 
 	it("lets an authorization owner reduce granted scopes", async () => {
 		let updatedScopes: unknown = null;
+		let expected: string | null = null;
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 			const request = input instanceof Request ? input : new Request(String(input), init);
 			if (request.url.includes("oauth_authorizations")) {
 				if (request.method === "PATCH") {
 					updatedScopes = (await request.clone().json() as { scopes?: unknown }).scopes;
-					return new Response(JSON.stringify([]), { status: 200 });
+					expected = new URL(request.url).searchParams.get("scopes");
+					return new Response(JSON.stringify([{ id: "authorization-1" }]), { status: 200 });
 				}
 				return new Response(JSON.stringify([{
 					id: "authorization-1", scopes: ["models:read", "usage:read"],
@@ -364,6 +366,43 @@ describe("account settings routes", () => {
 		expect(response.status).toBe(200);
 		await expect(response.json()).resolves.toEqual({ success: true, scopes: ["models:read"] });
 		expect(updatedScopes).toEqual(["models:read"]);
+		// Only while the stored scopes are still the ones read.
+		expect(expected).toBe('eq.{"models:read","usage:read"}');
+	});
+
+	it("doesn't put back a scope the dashboard removed after the reduction read it", async () => {
+		// The stored row, as PostgREST would apply the update's filters to it.
+		let stored = ["models:read", "usage:read", "keys:read"];
+		const literal = (values: string[]) => `{${values.map((value) => `"${value}"`).join(",")}}`;
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const request = input instanceof Request ? input : new Request(String(input), init);
+			if (request.url.includes("oauth_authorizations")) {
+				if (request.method === "PATCH") {
+					if (new URL(request.url).searchParams.get("scopes") !== `eq.${literal(stored)}`) return new Response(JSON.stringify([]), { status: 200 });
+					stored = (await request.clone().json() as { scopes: string[] }).scopes;
+					return new Response(JSON.stringify([{ id: "authorization-1" }]), { status: 200 });
+				}
+				const snapshot = [...stored];
+				// Meanwhile the person removes usage:read in the dashboard.
+				stored = ["models:read", "keys:read"];
+				return new Response(JSON.stringify([{ id: "authorization-1", scopes: snapshot }]), { status: 200 });
+			}
+			return authenticatedFetch(input);
+		}));
+
+		const response = await app.request(
+			"https://phaseo.app/api/account/settings/authorized-apps/authorization-1/scopes",
+			{
+				method: "PATCH",
+				headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" },
+				body: JSON.stringify({ scopes: ["models:read", "usage:read"] }),
+			},
+			env,
+		);
+
+		expect(response.status).toBe(409);
+		await expect(response.json()).resolves.toMatchObject({ error: "scopes_changed" });
+		expect(stored).toEqual(["models:read", "keys:read"]);
 	});
 
 	it("rejects attempts to add scopes through authorization settings", async () => {
