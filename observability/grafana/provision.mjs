@@ -62,12 +62,12 @@ export async function provision({ args = process.argv.slice(2), env = process.en
   if (check) {
     // Read-only: syntax checks all dashboard and alert expressions against Loki.
     // Empty results prove syntax/access, not that collection is working.
-    for (const dashboard of definitions) for (const panel of dashboard.panels) {
-      const query = panel.targets[0].expr.replaceAll('$__auto', '5m').replaceAll('$environment', environment).replaceAll('${request:regex}', '');
+    for (const dashboard of definitions) for (const panel of dashboard.panels) for (const target of panel.targets ?? []) {
+      const query = target.expr.replaceAll('$__auto', '5m').replaceAll('$__range', '1h').replaceAll('$environment', environment).replaceAll('${request:regex}', '');
       const endpoint = panel.type === 'logs' ? 'query_range' : 'query';
       const result = await api(`/api/datasources/proxy/uid/${encodeURIComponent(env.GRAFANA_LOKI_UID)}/loki/api/v1/${endpoint}?${new URLSearchParams({ query, limit: '1' })}`);
       if (result.status !== 'success') throw new Error(`Query validation failed: ${panel.title}`);
-      log(`${dashboard.title} / ${panel.title}: valid (${result.data?.result?.length ?? 0} series)`);
+      log(`${dashboard.title} / ${panel.title} / ${target.refId}: valid (${result.data?.result?.length ?? 0} series)`);
     }
     for (const rule of rules) {
       const result = await api(`/api/datasources/proxy/uid/${encodeURIComponent(env.GRAFANA_LOKI_UID)}/loki/api/v1/query?${new URLSearchParams({ query: rule.data[0].model.expr })}`);

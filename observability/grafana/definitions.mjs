@@ -16,11 +16,31 @@ function percentile(service, event, field, quantile = 0.95, filter = '', fields 
   return `quantile_over_time(${quantile}, ${logs(service, event, [field, ...fields])}${filter} | unwrap ${field} | __error__="" [${window}]) by (${groupBy})`;
 }
 const gateway = 'phaseo-gateway';
-function panel(title, expr, { type = 'timeseries', unit = 'short', description = '', instant = false, legend = '', ...extra } = {}) {
+function panel(title, expr, { type = 'timeseries', unit = 'short', description = '', instant = false, legend = '', series = [[expr, legend]], ...extra } = {}) {
   return { title, type, datasource: loki, description,
-    targets: [{ refId: 'A', expr, datasource: loki, queryType: instant ? 'instant' : 'range', instant, range: !instant, legendFormat: legend }],
+    targets: series.map(([expression, legendFormat], index) => ({ refId: String.fromCharCode(65 + index), expr: expression, datasource: loki, queryType: instant ? 'instant' : 'range', instant, range: !instant, legendFormat })),
     fieldConfig: { defaults: { unit, noValue: 'No data', custom: { spanNulls: false } }, overrides: [] },
     options: type === 'logs' ? { showTime: true, wrapLogMessage: true, enableLogDetails: true, sortOrder: 'Descending' } : { legend: { displayMode: 'list', placement: 'bottom' } }, ...extra };
+}
+function stat(title, expr, x, { description, failures = false, heartbeat = false } = {}) {
+  return panel(title, expr, { type: 'stat', instant: true, description,
+    gridPos: { x, y: 5, w: 4, h: 4 },
+    fieldConfig: { defaults: { unit: 'short', decimals: 0, noValue: 'No data',
+      color: { mode: failures || heartbeat ? 'thresholds' : 'fixed', fixedColor: 'blue' },
+      thresholds: { mode: 'absolute', steps: [{ color: heartbeat ? 'red' : 'green', value: null }, { color: heartbeat ? 'green' : 'red', value: 1 }] },
+      mappings: heartbeat ? [{ type: 'range', options: { from: 0, to: 0, result: { text: 'Missing', color: 'red' } } }, { type: 'range', options: { from: 1, to: 1000000, result: { text: 'Arriving', color: 'green' } } }] : [],
+    }, overrides: [] },
+    options: { reduceOptions: { calcs: ['lastNotNull'], fields: '', values: false }, orientation: 'auto', textMode: 'auto', colorMode: 'value', graphMode: 'none', justifyMode: 'auto' },
+  });
+}
+function note(title, content, gridPos) {
+  return { title, type: 'text', gridPos, options: { mode: 'markdown', content } };
+}
+function breakdown(title, expr, legend, gridPos, description) {
+  return panel(title, expr, { type: 'bargauge', instant: true, legend, gridPos, description,
+    fieldConfig: { defaults: { unit: 'short', decimals: 0, min: 0, noValue: 'No matching events', color: { mode: 'fixed', fixedColor: 'blue' } }, overrides: [] },
+    options: { orientation: 'horizontal', displayMode: 'basic', showUnfilled: false, reduceOptions: { calcs: ['lastNotNull'], fields: '', values: false } },
+  });
 }
 function dashboard(uid, title, description, panels) {
   return { uid, title: `Phaseo · ${title}`, description, schemaVersion: 39, version: 1, editable: true,
@@ -42,15 +62,40 @@ function dashboard(uid, title, description, panels) {
 }
 export function dashboards() {
   const requestFilter = ' | request_id=~"${request:regex}.*"';
+  const selectedCount = (service, event, filter = '', fields = []) => count(service, event, filter, fields, '$__range');
+  const windowCount = (service, event, filter = '', fields = []) => count(service, event, filter, fields, '5m');
+  const groupedCount = (service, event, field, filter = '', fields = []) => `sum by (${field}) (count_over_time(${logs(service, event, [field, ...fields])}${filter} | __error__="" [$__range]))`;
+  const overview = dashboard('phaseo-overview', 'Overview', 'Check received traffic and failures, then investigate the affected service. Scheduler freshness is not an external uptime check.', [
+    note('Start here', '**1. Check collection:** “Arriving” means a scheduler heartbeat was received in the last 5 minutes. “Missing” means check cron and telemetry delivery. **2. Check failures:** red counts need investigation; click a count to open its service dashboard. **3. Compare the charts:** did failures or latency rise after a deployment?\n\nCounts cover the selected time range and received events only. Zero requests can mean quiet traffic; zero failures does not prove uptime. Use external checks to establish availability and alert rules to configure notifications.', { x: 0, y: 0, w: 24, h: 5 }),
+    stat('Scheduler telemetry · last 5m', count('phaseo-jobs', 'job.heartbeat', '', [], '5m'), 0, { heartbeat: true, description: 'At least one recent heartbeat confirms scheduler telemetry is arriving. This does not test the website or generation endpoints from outside Cloudflare.' }),
+    stat('Gateway requests', selectedCount(gateway, 'gateway.request'), 4, { description: 'Received terminal gateway request events in the selected time range. Includes success, error and cancellation; not a billing count.' }),
+    stat('Gateway failures', selectedCount(gateway, 'gateway.request', ' | actionable="true"', ['actionable']), 8, { failures: true, description: 'Actionable logical request failures, including failures after streaming HTTP 200. Client cancellations are excluded.' }),
+    stat('Web API requests', selectedCount('phaseo-web-api', 'web.request'), 12, { description: 'Web API response-header events in the selected time range. This is separate from gateway generation traffic.' }),
+    stat('Web API 5xx', selectedCount('phaseo-web-api', 'web.request', ' | status_code >= 500', ['status_code']), 16, { failures: true, description: 'Server-error responses only. Expected client rejections such as 401 and 404 are excluded.' }),
+    stat('Job failures', selectedCount('phaseo-jobs|phaseo-web-api', 'job.run', ' | outcome="error"', ['outcome']), 20, { failures: true, description: 'Job invocations that threw or explicitly reported known item failures. A completed handler can still contain internally handled failures.' }),
+    panel('Traffic · rolling 5 minutes', '', { gridPos: { x: 0, y: 9, w: 12, h: 8 },
+      description: 'Each point counts events received in the preceding 5 minutes. Web API and gateway are separate traffic populations; do not add them as unique requests.',
+      series: [[windowCount(gateway, 'gateway.request'), 'Gateway'], [windowCount('phaseo-web-api', 'web.request'), 'Web API']],
+    }),
+    panel('Failures · rolling 5 minutes', '', { gridPos: { x: 12, y: 9, w: 12, h: 8 },
+      description: 'Received failure events per category, not distinct incidents. One incident can produce events in multiple categories.',
+      series: [[windowCount(gateway, 'gateway.request', ' | actionable="true"', ['actionable']), 'Gateway actionable'], [windowCount('phaseo-web-api', 'web.request', ' | status_code >= 500', ['status_code']), 'Web API 5xx'], [windowCount('phaseo-web', 'web.server_error'), 'Website server errors'], [windowCount('phaseo-jobs|phaseo-web-api', 'job.run', ' | outcome="error"', ['outcome']), 'Job failures'], [windowCount(gateway, 'ops.failure'), 'Operational failures']],
+    }),
+    panel('Gateway p95 duration', percentile(gateway, 'gateway.request', 'duration_ms'), { unit: 'ms', gridPos: { x: 0, y: 17, w: 12, h: 8 }, description: '95% of received terminal gateway timings are at or below this value. Includes streamed response completion. Interpret with request volume; a percentile from very few requests is unstable. Missing timing stays empty.' }),
+    panel('Web API p95 headers', percentile('phaseo-web-api', 'web.request', 'duration_ms'), { unit: 'ms', gridPos: { x: 12, y: 17, w: 12, h: 8 }, description: '95% of received web API timings reach response headers within this duration. Does not measure full streamed response completion. Empty means no matching timings, not zero latency.' }),
+    breakdown('Gateway outcomes', groupedCount(gateway, 'gateway.request', 'outcome'), '{{outcome}}', { x: 0, y: 25, w: 12, h: 7 }, 'Counts in the selected time range. Cancellation is separate from success and error; error is not always operationally actionable.'),
+    breakdown('Web API responses by status', groupedCount('phaseo-web-api', 'web.request', 'status_code'), 'HTTP {{status_code}}', { x: 12, y: 25, w: 12, h: 7 }, 'Counts by HTTP status in the selected time range. A 4xx response is a client rejection and is not automatically an outage.'),
+    breakdown('Web API 5xx by route', `topk(10, ${groupedCount('phaseo-web-api', 'web.request', 'route', ' | status_code >= 500', ['status_code'])})`, '{{route}}', { x: 0, y: 32, w: 12, h: 7 }, 'Up to 10 route templates with received server-error responses in the selected time range. Empty means no matching events, not confirmed availability.'),
+    breakdown('Provider attempt failures', `topk(10, ${groupedCount(gateway, 'provider.attempt', 'provider', ' | outcome="error"', ['outcome'])})`, '{{provider}}', { x: 12, y: 32, w: 12, h: 7 }, 'Up to 10 providers with failed attempts in the selected time range. Retries and fallbacks can recover, so these are not necessarily failed customer requests. Attempt detail is capped per request.'),
+    panel('Recent actionable events', `${logs('phaseo-gateway|phaseo-web-api|phaseo-web|phaseo-jobs', '', ['actionable'])} | actionable="true"`, { type: 'logs', gridPos: { x: 0, y: 39, w: 24, h: 9 }, description: 'Start with the newest event. Expand it for service, route, job, outcome and request/trace IDs. No matching events does not establish external uptime.' }),
+    note('Investigate and recover', '**API failures:** open [Gateway and providers](/d/phaseo-gateway?var-environment=$environment&from=$__from&to=$__to) and look for shared providers, outcomes or request IDs. **Website problems:** open [Web experience](/d/phaseo-web?var-environment=$environment&from=$__from&to=$__to); browser errors and Web Vitals are in [Frontend Observability](/a/grafana-kowalski-app). **Job or settlement failures:** open [Jobs and settlement](/d/phaseo-jobs?var-environment=$environment&from=$__from&to=$__to).\n\nExpand a log, then search its `trace_id` in **Explore → Tempo**. Only 5% of backend traces are retained; a missing trace is expected for most requests. Compare the incident time with [recent deployments](https://github.com/phaseoteam/Phaseo/actions/workflows/ci.yml). After a fix or rollback, test the affected page or endpoint directly and confirm errors settle. [Alert rules](/alerting/list) show notification-rule state; this dashboard itself does not send notifications.', { x: 0, y: 48, w: 24, h: 7 }),
+  ]);
+  overview.time.from = 'now-1h';
+  overview.templating.list[2].hide = 2;
+  const destinations = ['telemetry', 'gateway', 'gateway', 'web', 'web', 'jobs'];
+  for (const [index, item] of overview.panels.slice(1, 7).entries()) item.fieldConfig.defaults.links = [{ title: 'Investigate', url: `/d/phaseo-${destinations[index]}?var-environment=$environment&from=$__from&to=$__to` }];
   return [
-    dashboard('phaseo-overview', 'Overview', 'Start here. Quiet traffic is normal; the scheduler heartbeat provides independent telemetry freshness.', [
-      panel('Gateway requests / second', rate(gateway, 'gateway.request'), { unit: 'reqps' }),
-      panel('Actionable failures / second', rate(gateway, 'gateway.request', ' | actionable="true"', ['actionable']), { unit: 'reqps', description: 'Logical request failures classified as actionable. Client cancellations are excluded.' }),
-      panel('Gateway p95 duration', percentile(gateway, 'gateway.request', 'duration_ms'), { unit: 'ms', description: 'Terminal request duration, including streamed responses. Missing timing is omitted.' }),
-      panel('Web API p95 headers', percentile('phaseo-web-api', 'web.request', 'duration_ms'), { unit: 'ms', description: 'Time to response headers; streamed generation completion is measured by the gateway.' }),
-      panel('Scheduler ticks / 15 minutes', count('phaseo-jobs', 'job.heartbeat', '', [], '15m'), { description: 'Expected about 15 ticks. Zero means missing scheduler or missing telemetry, even if there are no users.' }),
-      panel('Recent actionable events', `${logs('phaseo-.*', '', ['actionable'])} | actionable="true"`, { type: 'logs' }),
-    ]),
+    overview,
     dashboard('phaseo-gateway', 'Gateway and providers', 'Request summaries cover received terminal events. Trace retention is sampled. Delivery is best effort, so counts are operational rather than financial.', [
       panel('Requests by outcome', `sum by (outcome) (rate(${logs(gateway, 'gateway.request', ['outcome'])} [${window}]))`, { unit: 'reqps', legend: '{{outcome}}' }),
       panel('Provider attempts / second', `sum by (provider, outcome) (rate(${logs(gateway, 'provider.attempt', ['provider', 'outcome'])} [${window}]))`, { unit: 'reqps', legend: '{{provider}} · {{outcome}}' }),

@@ -13,10 +13,10 @@ test('dashboard queries run against OTLP fixtures and alerts distinguish failure
   const correlation = index => ({ trace_id: (index + 1).toString(16).padStart(32, '0'), span_id: (index + 1).toString(16).padStart(16, '0') });
   const request = (index, extra = {}) => ({ event_name: 'gateway.request', request_id: `fixture-${index}`, ...correlation(index), outcome: 'success', stream: true, duration_ms: (index + 1) * 10, ttft_ms: (index + 1) * 2, provider_ttft_ms: index + 1, ...extra });
   const fixtures = [
-    ['phaseo-gateway', Array.from({ length: 20 }, (_, index) => request(index, index < 2 ? { outcome: 'error', actionable: true } : {}))],
-    ['phaseo-gateway', [{ event_name: 'provider.attempt', provider: 'fixture', outcome: 'success', duration_ms: 80 }]],
-    ['phaseo-web-api', [20, 40].map((duration_ms, index) => ({ event_name: 'web.request', ...correlation(index), status_code: 200, duration_ms }))],
-    ['phaseo-jobs', [{ event_name: 'job.heartbeat' }, ...[45, 145].map((duration_ms, index) => ({ event_name: 'job.run', ...correlation(index), job: 'fixture', outcome: 'completed', duration_ms })), { event_name: 'job.run', ...correlation(2), job: 'other', outcome: 'completed', duration_ms: 75 }]],
+    ['phaseo-gateway', Array.from({ length: 20 }, (_, index) => request(index, index < 2 ? { outcome: 'error', actionable: true } : index === 2 ? { outcome: 'error', actionable: false } : index === 3 ? { outcome: 'cancelled', actionable: false } : {}))],
+    ['phaseo-gateway', [{ event_name: 'provider.attempt', provider: 'fixture', outcome: 'success', duration_ms: 80 }, ...['fixture', 'other'].map(provider => ({ event_name: 'provider.attempt', provider, outcome: 'error' }))]],
+    ['phaseo-web-api', [...[20, 40].map((duration_ms, index) => ({ event_name: 'web.request', ...correlation(index), status_code: 200, duration_ms })), { event_name: 'web.request', status_code: 404, route: '/missing', actionable: false }, { event_name: 'web.request', status_code: 503, route: '/broken', actionable: true }]],
+    ['phaseo-jobs', [{ event_name: 'job.heartbeat' }, ...[45, 145].map((duration_ms, index) => ({ event_name: 'job.run', ...correlation(index), job: 'fixture', outcome: 'completed', duration_ms })), { event_name: 'job.run', ...correlation(2), job: 'other', outcome: 'completed', duration_ms: 75 }, { event_name: 'job.run', job: 'failed', outcome: 'error', actionable: true }]],
   ];
   for (const [service, events] of fixtures) {
     const response = await fetch(`${url.origin}/otlp/v1/logs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(logPayload({ service, environment }, events, now - 30000)) });
@@ -32,8 +32,17 @@ test('dashboard queries run against OTLP fixtures and alerts distinguish failure
     return result.data.result;
   };
   const percentiles = { 'Gateway p95 duration': 190.5, 'Web API p95 headers': 39, 'Streaming p95 time to first token': 38.1, 'Provider p95 first token': 19.05 };
-  for (const dashboard of dashboards()) for (const panel of dashboard.panels) {
-    const result = await query(panel.targets[0].expr.replaceAll('$__auto', '5m').replaceAll('$environment', 'staging').replaceAll('${request:regex}', ''), panel.type === 'logs');
+  const counts = { 'Scheduler telemetry · last 5m': 1, 'Gateway requests': 20, 'Gateway failures': 2, 'Web API requests': 4, 'Web API 5xx': 1, 'Job failures': 1 };
+  for (const dashboard of dashboards()) for (const panel of dashboard.panels) for (const target of panel.targets ?? []) {
+    const expression = target.expr.replaceAll('$__auto', '5m').replaceAll('$__range', '1h').replaceAll('$environment', 'staging').replaceAll('${request:regex}', '');
+    const result = await query(expression, panel.type === 'logs');
+    if (panel.title in counts) {
+      assert.equal(Number(result[0].value[1]), counts[panel.title], `${panel.title} must count its intended population`);
+      const quiet = await query(expression.replaceAll('environment="staging"', 'environment="production"'));
+      assert.equal(Number(quiet[0].value[1]), 0, `${panel.title} must handle a quiet environment`);
+    }
+    if (panel.title === 'Web API 5xx by route') assert.deepEqual(result.map(series => [series.metric.route, Number(series.value[1])]), [['/broken', 1]], 'client 404 responses must not count as server failures');
+    if (panel.title === 'Provider attempt failures') assert.deepEqual(Object.fromEntries(result.map(series => [series.metric.provider, Number(series.value[1])])), { fixture: 1, other: 1 }, 'successful provider attempts must not count as failures');
     if (panel.title in percentiles) {
       assert.equal(result.length, 1, `${panel.title} must combine request trace/span series`);
       assert.ok(Math.abs(Number(result[0].value[1]) - percentiles[panel.title]) < 1e-6, `${panel.title} must calculate the p95 across requests`);

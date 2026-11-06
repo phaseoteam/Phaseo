@@ -6,7 +6,7 @@ Release preparation on 6 November 2026, based on `f7a27db05011e8ff60581eccd7d48d
 
 Stack: <https://honestcushion71.grafana.net>.
 
-All five dashboards were installed and read back from `phaseo-observability`, with 32 panels total. All 37 dashboard/alert LogQL expressions passed against the stack's Loki datasource. The current definitions were reapplied after adapting the server labels to Cloudflare. Five staging alerts remain paused. No contact points or notification policies were changed.
+The initial rollout installed five dashboards in `phaseo-observability`, with 32 panels total. All 37 initial dashboard/alert LogQL expressions passed against the stack's Loki datasource. Those definitions were reapplied after adapting the server labels to Cloudflare. Five staging alerts remain paused. No contact points or notification policies were changed.
 
 Frontend Observability application `phaseo-web` (ID 1418) allows `https://phaseo.app` and `https://www.phaseo.app`. Add an actual staging origin before testing there.
 
@@ -22,7 +22,7 @@ Six dedicated production Infisical auto-syncs succeeded, with destination deleti
 
 All source values were privately read back; all eight Vercel destination values also matched. The old general Vercel production sync still targets a deleted project and remains untouched. Temporary monitoring copies were removed from the original application folders, preserving their original settings. Development and staging were not changed. Gateway cron runs the scheduled jobs; no new Worker or schedule was created.
 
-## Current release checks
+## Initial release checks
 
 - Shared transport, browser redaction, dashboard/provisioning definitions and source-map file checks: **13 passed** (`node --test packages/shared/observability/index.test.mjs packages/shared/observability/browser.test.mjs observability/grafana/definitions.test.mjs observability/grafana/build-web.test.mjs`).
 - Cloud query validation: **37 passed** (`provision.mjs --check` using the private local configuration).
@@ -37,7 +37,7 @@ All source values were privately read back; all eight Vercel destination values 
 - Gateway, both regional gateways and web API Wrangler dry-run builds passed (`build` and `build:regional`). Website `wrangler deploy --dry-run --config dist/server/wrangler.json` passed (7,153 KiB gzip upload).
 - The built website ran in local workerd: `GET /privacy` returned **200**, rendered HTML included the runtime public Faro collector configuration, and no OTLP authorization setting was exposed. No browser collector requests or model calls were made. The temporary server was stopped.
 - Staged diff was checked against both private Grafana credentials; neither is present.
-- Deployment is pending PR checks/review and merge.
+- The initial release (#3579) and Cloudflare redirect-mode fix (#3581) are merged and deployed. The production CI run for `4beff8d12ebed859061f8ee20c961aa3abe5b24d` passed, and all five intended Workers retained their monitoring bindings.
 
 ## Review regressions
 
@@ -48,7 +48,7 @@ All source values were privately read back; all eight Vercel destination values 
 
 ## Rollout evidence still required
 
-Verify the deployed web, gateway and web API versions and a live scheduler heartbeat. Verify request summaries, environment filtering and retained trace correlation without paid model calls. Controlled errors/cancellation and browser consent collection should be exercised in staging. Browser sessions are sampled, so absence from an individual session is expected.
+Production versions, a scheduler heartbeat, environment filtering, and matching request log/trace were verified after #3581 deployed. A harmless unmatched web API GET returned 404; its production log and one Tempo span were read back for trace `71a4e624b387c9566cecb19e4bb746d9`, with no model or database call. Website `/privacy` and gateway `/v1/health` returned 200; public Faro configuration was present and private Grafana credentials were absent from website HTML. Controlled errors/cancellation and browser consent collection still need staging verification. Browser sessions are sampled, so absence from an individual session is expected.
 
 Job `completed` means its handler returned; internally caught failures are not inferred from arbitrary summaries. Web API scheduled provider polling and monthly charges explicitly include their known failed counts. Operational settlement/persistence hooks report independently.
 
