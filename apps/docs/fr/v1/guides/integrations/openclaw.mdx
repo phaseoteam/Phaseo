@@ -18,7 +18,7 @@ Si OpenClaw n’est pas installé, la CLI affiche la commande d’installation (
 - **`secrets.providers.phaseo_cli`** : un fournisseur de secrets de type exec qui exécute `phaseo integrations credential openclaw` pour lire la clé. La clé n’est jamais écrite dans la configuration d’OpenClaw.
 - **`models.providers.phaseo`** : un fournisseur avec la Base URL `https://api.phaseo.app/v1`, le type d’API `openai-completions` et la clé fournie par `phaseo_cli`. Il liste tous les modèles texte Phaseo actifs compatibles avec Chat Completions, en commençant par la valeur de `--model` (`anthropic/claude-sonnet-4.6` en son absence).
 
-La clé est une `Phaseo CLI: OpenClaw API Key` qui expire au bout de 90 jours et dispose d’une limite de dépenses mensuelle de $100. Lorsqu’OpenClaw demande la clé à la CLI après son expiration, la CLI en crée une nouvelle.
+La clé est une `Phaseo CLI: OpenClaw API Key` que vous approuvez dans votre navigateur pendant la configuration. Elle expire au bout de 90 jours et dispose d’une limite de dépenses mensuelle de $100. Une fois expirée, relancez `phaseo openclaw` pour en approuver une nouvelle.
 
 La configuration ne modifie pas le modèle par défaut d’OpenClaw. Sélectionnez le modèle Phaseo avec `openclaw models set` quand vous êtes prêt. Utilisez `--catalog default` pour n’enregistrer que le modèle sélectionné.
 

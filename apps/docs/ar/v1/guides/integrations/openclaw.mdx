@@ -18,7 +18,7 @@ phaseo openclaw --model openai/gpt-6-astra
 - **`secrets.providers.phaseo_cli`**: مزوّد أسرار من نوع exec يشغّل `phaseo integrations credential openclaw` لقراءة المفتاح. لا يُكتب المفتاح أبدًا في إعداد OpenClaw.
 - **`models.providers.phaseo`**: مزوّد بـ Base URL ‏`https://api.phaseo.app/v1`، ونوع API ‏`openai-completions`، والمفتاح مأخوذ من `phaseo_cli`. يسرد كل نماذج النص النشطة في Phaseo التي تعمل مع Chat Completions، مع قيمة `--model` أولًا (`anthropic/claude-sonnet-4.6` بدونها).
 
-المفتاح من نوع `Phaseo CLI: OpenClaw API Key` تنتهي صلاحيته بعد 90 يومًا وله حد إنفاق شهري قدره $100. عندما يطلب OpenClaw المفتاح من CLI بعد انتهاء صلاحيته، تنشئ CLI مفتاحًا جديدًا.
+المفتاح من نوع `Phaseo CLI: OpenClaw API Key` توافق عليه في المتصفح أثناء الإعداد. تنتهي صلاحيته بعد 90 يومًا وله حد إنفاق شهري قدره $100. بعد انتهاء صلاحيته، شغّل `phaseo openclaw` مرة أخرى للموافقة على مفتاح جديد.
 
 لا يغيّر الإعداد النموذج الافتراضي في OpenClaw. اختر نموذج Phaseo باستخدام `openclaw models set` عندما تكون جاهزًا. استخدم `--catalog default` لتسجيل النموذج المحدد فقط.
 

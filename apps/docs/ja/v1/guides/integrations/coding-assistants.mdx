@@ -45,7 +45,7 @@ CLI は各エージェントを次の 3 つのいずれかの方法で設定し�
 
 ## CLI が作成するもの
 
-各エージェントには、エージェント名の付いた専用の API キー（例: `Phaseo CLI: Codex API Key`）が作成されます。キーの有効期限は 90 日で、月額 $100 の利用上限があります。期限切れのキーを置き換えるにはセットアップコマンドを再実行し、上限を引き上げるには `phaseo keys update <id> --limit` を使います。
+各エージェントには、エージェント名の付いた専用の API キー（例: `Phaseo CLI: Codex API Key`）が用意されます。月額 $100 の利用上限と 90 日の有効期限があります。新しいキーは CLI が開くダッシュボードのページで承認し、その後 CLI がキーを一度だけ受け取ります。詳しくは[ブラウザーでキーを承認する](./phaseo-cli.mdx#approve-the-key-in-your-browser)を参照してください。期限切れのキーを置き換えるにはセットアップコマンドを再実行し、上限はダッシュボードの **設定 → API キー** で変更します。
 
 Claude Code、Codex、OpenCode、fx、DeepSeek Harness、Pi、Prime Agent、OpenClaw、Hermes Agent がインストールされていない場合、CLI は公式のインストールコマンドを表示し、実行する前に確認します。対話型ターミナル以外では、インストールコマンドを表示して停止します。OpenCode、fx、DeepSeek Harness、Pi、Prime Agent、OpenClaw には、Chat Completions で動作する Phaseo の有効なテキストモデルもすべて登録されます。
 
@@ -55,6 +55,7 @@ Claude Code、Codex、OpenCode、fx、DeepSeek Harness、Pi、Prime Agent、Open
 | `--catalog default` | カタログ全体ではなく、選択したモデルだけを追加します。 |
 | `--skip-install` | 自分で管理しているエージェントのために、インストールの確認をスキップします。 |
 | `--dry-run` | ファイルを変更せずに、変更内容を表示します。 |
+| `--key <key>` | 新しいキーを要求する代わりに、ダッシュボードで作成したキーを使います。`--key-stdin` は標準入力からキーを読み取ります。 |
 | `phaseo integrations credential <agent>` | キーを貼り付けて使うエージェントのために、そのエージェントのキーを表示します。 |
 | `phaseo integrations remove <agent>` | Phaseo が書き込んだ設定を削除し、キーを失効させます。その他の設定はそのまま残ります。 |
 
