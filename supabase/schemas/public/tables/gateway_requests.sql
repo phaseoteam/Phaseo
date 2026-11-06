@@ -360,11 +360,13 @@ CREATE INDEX gateway_requests_auth_method_idx ON ONLY public.gateway_requests US
 CREATE INDEX gateway_requests_finish_reason_created_idx ON ONLY public.gateway_requests USING btree (finish_reason, created_at DESC)
   WHERE (finish_reason IS NOT NULL);
 
-CREATE INDEX gateway_requests_charged_unsuccessful_cost_idx ON ONLY public.gateway_requests USING btree (workspace_id, created_at) INCLUDE (key_id, cost_nanos)
-  WHERE ((success IS NOT TRUE) AND (cost_nanos > 0));
-
+-- In migration order: partitions name their copies of these two from the same truncated columns,
+-- numbered in creation order (expected_cost ..._co_idx1, charged_unsuccessful ..._co_idx2).
 CREATE INDEX gateway_requests_expected_cost_idx ON ONLY public.gateway_requests USING btree (workspace_id, created_at) INCLUDE (key_id, cost_nanos, expected_cost_nanos, request_id, billing_request_id)
   WHERE (expected_cost_nanos IS NOT NULL);
+
+CREATE INDEX gateway_requests_charged_unsuccessful_cost_idx ON ONLY public.gateway_requests USING btree (workspace_id, created_at) INCLUDE (key_id, cost_nanos)
+  WHERE ((success IS NOT TRUE) AND (cost_nanos > 0));
 
 CREATE INDEX gateway_requests_batch_rows_idx ON ONLY public.gateway_requests USING btree (workspace_id, request_id text_pattern_ops) INCLUDE (cost_nanos)
   WHERE ((request_id ~>=~ 'batch'::text) AND (request_id ~<~ 'batci'::text));
