@@ -53,14 +53,14 @@ try {
     // The MFA policy (require_mfa_for_data_api) was added to the table file by a later migration.
     const tableDefinition = (await read(tableFile)).replace(/\r\n/g, '\n').replace(/\n*CREATE POLICY "mfa_required_when_enrolled" ON [^;]*;/g, '');
     for (const file of schemaFiles.filter(file => file !== sweepFile && file !== tableFile)) {
-        // workspace_department_budget_status was last replaced by 20261106165203_budget_enforcement_money_hygiene.
-        const holds = await read('../migrations/20261106165203_budget_enforcement_money_hygiene.sql');
+        // workspace_department_budget_status was last replaced by 20261106165205_budget_enforcement_money_hygiene.
+        const holds = await read('../migrations/20261106165205_budget_enforcement_money_hygiene.sql');
         assert.ok((redefinedLast.test(file) ? primaryMigration : redefinedLater.test(file) ? holds : migration).includes((await read(file)).replace(/\r\n/g, '\n').trim()), `${file} is in the migration`);
     }
     // The table is created by the first migration; the later one only replaces its comment.
     assert.ok(migration.includes(tableDefinition.replace(COMMENT_LINE, migration.match(COMMENT_LINE)[0]).trim()), 'the table is in the migration');
-    // 20261106165203_budget_enforcement_money_hygiene replaced the table comment again.
-    const holdsMigration = await read('../migrations/20261106165203_budget_enforcement_money_hygiene.sql');
+    // 20261106165205_budget_enforcement_money_hygiene replaced the table comment again.
+    const holdsMigration = await read('../migrations/20261106165205_budget_enforcement_money_hygiene.sql');
     assert.ok(holdsMigration.includes(tableDefinition.match(COMMENT_LINE)[0]), 'the latest table comment is in its migration');
     assert.equal(blockMigration.replace(/^SET local check_function_bodies = off;\n\n/, ''), `${sweepDefinition}\n${blockMigration.match(COMMENT_LINE)[0]}\n`,
         'the blocking migration matches the declarative sweep');
