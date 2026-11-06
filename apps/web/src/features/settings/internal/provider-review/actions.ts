@@ -1,21 +1,22 @@
 import { createServerFn } from "@tanstack/react-start";
 import { serverAction } from "@/lib/serverFn/actionMiddleware";
+import { internalAdminAction } from "@/lib/auth/requireInternalAdmin";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchInternalProviderApplications, fetchProviderModelRequests, type InternalProviderApplicationCursor } from "@/lib/fetchers/internal/fetchInternalProviderCatalogReviews";
 import { fetchInternalWebApi, WebApiError } from "@/lib/web-api/client";
 
 export const fetchMoreProviderApplicationsAction = createServerFn({ method: "POST" })
-	.middleware([serverAction])
+	.middleware([serverAction, internalAdminAction])
 	.validator((cursor: InternalProviderApplicationCursor) => cursor)
 	.handler(async ({ data: cursor }) => {
 		return fetchInternalProviderApplications(cursor);
 	});
 
 export const refreshProviderModelRequestsAction = createServerFn({ method: "POST" })
-	.middleware([serverAction])
+	.middleware([serverAction, internalAdminAction])
 	.handler(async () => {return fetchProviderModelRequests();});
 export const reviewProviderModelRequestAction = createServerFn({ method: "POST" })
-	.middleware([serverAction])
+	.middleware([serverAction, internalAdminAction])
 	.validator((input: {requestId:string;decision:"approved"|"rejected"|"needs_changes";reason?:string;expectedUpdatedAt:string}) => input)
 	.handler(async ({ data: input }) => {
 		const context=await getServerAccountContext();
@@ -23,7 +24,7 @@ export const reviewProviderModelRequestAction = createServerFn({ method: "POST" 
 	});
 
 export const reviewProviderCatalogModelAction = createServerFn({ method: "POST" })
-	.middleware([serverAction])
+	.middleware([serverAction, internalAdminAction])
 	.validator((input: {
 		runId: string;
 		modelSlug: string;
@@ -40,7 +41,7 @@ export const reviewProviderCatalogModelAction = createServerFn({ method: "POST" 
 	});
 
 export const recordProviderRouteProbeAction = createServerFn({ method: "POST" })
-	.middleware([serverAction])
+	.middleware([serverAction, internalAdminAction])
 	.validator((input: { runId: string; modelSlug: string; passed: boolean; reason?: string }) => input)
 	.handler(async ({ data: input }) => {
 		const context = await getServerAccountContext();
@@ -52,7 +53,7 @@ export const recordProviderRouteProbeAction = createServerFn({ method: "POST" })
 	});
 
 export const promoteProviderRouteCandidateAction = createServerFn({ method: "POST" })
-	.middleware([serverAction])
+	.middleware([serverAction, internalAdminAction])
 	.validator((input: { runId: string; modelSlug: string }) => input)
 	.handler(async ({ data: input }) => {
 		const context = await getServerAccountContext();
@@ -64,7 +65,7 @@ export const promoteProviderRouteCandidateAction = createServerFn({ method: "POS
 	});
 
 export const reviewProviderApplicationAction = createServerFn({ method: "POST" })
-	.middleware([serverAction])
+	.middleware([serverAction, internalAdminAction])
 	.validator((input: { providerSlug: string; decision: "approved" | "paused" | "rejected" | "needs_changes"; reason?: string }) => input)
 	.handler(async ({ data: input }) => {
 		const context = await getServerAccountContext();

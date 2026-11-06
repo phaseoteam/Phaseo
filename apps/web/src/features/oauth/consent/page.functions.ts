@@ -74,6 +74,10 @@ function parseRedirectUris(value: unknown): string[] {
 	return [];
 }
 
+// The consent page receives this row, so only what it shows (plus the redirect URIs checked here) is
+// read; never the client secret hash, creator or workspace.
+const CONSENT_APP_COLUMNS = "client_id,name,description,logo_url,homepage_url,privacy_policy_url,terms_of_service_url,allowed_scopes,redirect_uris,is_first_party,status";
+
 function oauthAppFromClientRow(row: Record<string, any>) {
 	return {
 		client_id: row.client_id ?? row.id ?? null,
@@ -174,7 +178,7 @@ export const resolveOAuthConsent = createServerFn({ method: "GET" })
 			if (resolvedClientId) {
 				const { data: appMetadata } = await supabase
 					.from("oauth_app_metadata")
-					.select("*")
+					.select(CONSENT_APP_COLUMNS)
 					.eq("client_id", resolvedClientId)
 					.eq("status", "active")
 					.maybeSingle();
@@ -203,7 +207,7 @@ export const resolveOAuthConsent = createServerFn({ method: "GET" })
 			// Fetch OAuth app metadata
 			const { data: appMetadata, error: appError } = await supabase
 				.from("oauth_app_metadata")
-				.select("*")
+				.select(CONSENT_APP_COLUMNS)
 				.eq("client_id", params.client_id)
 				.eq("status", "active")
 				.single();

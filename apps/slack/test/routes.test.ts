@@ -142,6 +142,7 @@ describe("routes", () => {
 			id: COMPANY_APP_ROW_ID,
 			slack_app_id: COMPANY_APP_ID,
 			client_id: "1111111111.2222222222",
+			verified_at: "2026-11-01T00:00:00Z",
 			secrets_ciphertext: await encryptSlackSecrets({ SLACK_SECRETS_ENCRYPTION_KEY: TEST_ENCRYPTION_KEY }, { client_secret: "test-client-secret", signing_secret: COMPANY_SIGNING_SECRET }),
 		});
 		const body = JSON.stringify(eventEnvelope(mention(), { api_app_id: COMPANY_APP_ID }));
@@ -154,6 +155,82 @@ describe("routes", () => {
 		// The same team through the hosted app has no installation.
 		expect((await signed("/events", JSON.stringify(eventEnvelope(mention(), { event_id: "Ev0TEST0002" })))).status).toBe(200);
 		await expect(settled()).resolves.toEqual(["no_installation"]);
+	});
+
+	it("routes a company app's events by signing secret when another workspace saved the same app id", async () => {
+		const squatterRowId = "99999999-9999-4999-8999-999999999999";
+		world.db.tables.slack_installations = [await installationRow({ slack_app_id: COMPANY_APP_ROW_ID })];
+		// Saved first, by a workspace that doesn't own the Slack app and so has a different signing secret.
+		world.db.tables.slack_apps.push({
+			id: squatterRowId,
+			slack_app_id: COMPANY_APP_ID,
+			client_id: "3333333333.4444444444",
+			verified_at: null,
+			secrets_ciphertext: await encryptSlackSecrets({ SLACK_SECRETS_ENCRYPTION_KEY: TEST_ENCRYPTION_KEY }, { client_secret: "other-client-secret", signing_secret: "squatter-signing-secret" }),
+		}, {
+			id: COMPANY_APP_ROW_ID,
+			slack_app_id: COMPANY_APP_ID,
+			client_id: "1111111111.2222222222",
+			verified_at: "2026-11-04T00:00:00Z",
+			secrets_ciphertext: await encryptSlackSecrets({ SLACK_SECRETS_ENCRYPTION_KEY: TEST_ENCRYPTION_KEY }, { client_secret: "test-client-secret", signing_secret: COMPANY_SIGNING_SECRET }),
+		});
+		const body = JSON.stringify(eventEnvelope(mention(), { api_app_id: COMPANY_APP_ID }));
+		expect((await signed(`/events/${COMPANY_APP_ID}`, body, { secret: COMPANY_SIGNING_SECRET })).status).toBe(200);
+		await expect(settled()).resolves.toEqual(["started"]);
+		expect(world.db.queries.find((query) => query.table === "slack_installations")?.query).toMatchObject({ slack_app_id: `eq.${COMPANY_APP_ROW_ID}` });
+		expect((await signed(`/events/${COMPANY_APP_ID}`, body, { secret: "not-either-secret" })).status).toBe(401);
+	});
+
+	describe("a saved company app's own request URL", () => {
+		const secrets = (signing: string) => encryptSlackSecrets({ SLACK_SECRETS_ENCRYPTION_KEY: TEST_ENCRYPTION_KEY }, { client_secret: "client-secret", signing_secret: signing });
+		const squatterRow = (index: number) => `99999999-9999-4999-8999-${String(index).padStart(12, "0")}`;
+		const challenge = JSON.stringify({ type: "url_verification", challenge: "owner-challenge", token: "x" });
+		async function saveHundredSquattersThenOwner() {
+			// Saved before the owner, from 100 other workspaces, with secrets of their own.
+			for (let index = 1; index <= 100; index += 1) {
+				world.db.tables.slack_apps.push({ id: squatterRow(index), slack_app_id: COMPANY_APP_ID, client_id: `${index}.${index}`, verified_at: null, secrets_ciphertext: await secrets(`squatter-signing-secret-${index}`) });
+			}
+			world.db.tables.slack_apps.push({ id: COMPANY_APP_ROW_ID, slack_app_id: COMPANY_APP_ID, client_id: "1111111111.2222222222", verified_at: null, secrets_ciphertext: await secrets(COMPANY_SIGNING_SECRET) });
+		}
+
+		it("answers the owner's URL verification on its own URL however many squatters saved the app id first", async () => {
+			await saveHundredSquattersThenOwner();
+			const response = await signed(`/apps/${COMPANY_APP_ROW_ID}/events`, challenge, { secret: COMPANY_SIGNING_SECRET });
+			expect(response.status).toBe(200);
+			await expect(response.json()).resolves.toEqual({ challenge: "owner-challenge" });
+			const lookup = world.db.queries.filter((query) => query.table === "slack_apps").at(-1);
+			expect(lookup?.query).toMatchObject({ id: `eq.${COMPANY_APP_ROW_ID}` });
+		});
+
+		it("doesn't let a squatter's URL verify for another row", async () => {
+			await saveHundredSquattersThenOwner();
+			expect((await signed(`/apps/${squatterRow(1)}/events`, challenge, { secret: COMPANY_SIGNING_SECRET })).status).toBe(401);
+			expect((await signed(`/apps/${squatterRow(1)}/events`, challenge, { secret: "squatter-signing-secret-1" })).status).toBe(200);
+			expect((await signed("/apps/not-a-row/events", challenge, { secret: COMPANY_SIGNING_SECRET })).status).toBe(404);
+		});
+
+		it("never tries unverified secrets on the shared URL, and serves the verified app there", async () => {
+			await saveHundredSquattersThenOwner();
+			for (const secret of [COMPANY_SIGNING_SECRET, "squatter-signing-secret-1"]) {
+				expect((await signed(`/events/${COMPANY_APP_ID}`, challenge, { secret })).status).toBe(404);
+			}
+			for (const query of world.db.queries.filter((entry) => entry.table === "slack_apps")) expect(query.query).toMatchObject({ verified_at: "not.is.null" });
+			// Once the owner's install verifies the app, the shared URL takes only its secret.
+			world.db.tables.slack_apps.find((row) => row.id === COMPANY_APP_ROW_ID)!.verified_at = "2026-11-10T00:00:00Z";
+			expect((await signed(`/events/${COMPANY_APP_ID}`, challenge, { secret: "squatter-signing-secret-1" })).status).toBe(401);
+			expect((await signed(`/events/${COMPANY_APP_ID}`, challenge, { secret: COMPANY_SIGNING_SECRET })).status).toBe(200);
+		});
+
+		it("routes events and button clicks on the row's URL to its installation", async () => {
+			world.db.tables.slack_installations = [await installationRow({ slack_app_id: COMPANY_APP_ROW_ID })];
+			await saveHundredSquattersThenOwner();
+			const body = JSON.stringify(eventEnvelope(mention(), { api_app_id: COMPANY_APP_ID }));
+			expect((await signed(`/apps/${COMPANY_APP_ROW_ID}/events`, body, { secret: COMPANY_SIGNING_SECRET })).status).toBe(200);
+			await expect(settled()).resolves.toEqual(["started"]);
+			// The row's own app id still has to match the event's.
+			const other = JSON.stringify(eventEnvelope(mention(), { api_app_id: "A0SOMEONE1", event_id: "Ev0TEST0003" }));
+			expect((await signed(`/apps/${COMPANY_APP_ROW_ID}/events`, other, { secret: COMPANY_SIGNING_SECRET })).status).toBe(403);
+		});
 	});
 
 	it("looks hosted installations up by team with no app", async () => {

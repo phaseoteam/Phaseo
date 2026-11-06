@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { serverAction } from "@/lib/serverFn/actionMiddleware";
+import { internalAdminAction } from "@/lib/auth/requireInternalAdmin";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 
@@ -35,84 +36,84 @@ async function graph(modelId: string, body: Record<string, unknown>) {
 }
 
 export const updateModelDetails = createServerFn({ method: "POST" })
-	.middleware([serverAction])
+	.middleware([serverAction, internalAdminAction])
 	.validator((input: any) => input)
 	.handler(async ({ data: input }) => {
 		return graph(input.modelId, { model_details: (input.details ?? []).map((row: any) => ({ detail_name: row.name, detail_value: row.value })) });
 	});
 
 export const updateModelOrganization = createServerFn({ method: "POST" })
-	.middleware([serverAction])
+	.middleware([serverAction, internalAdminAction])
 	.validator((input: any) => input)
 	.handler(async ({ data: input }) => {
 		return graph(input.modelId, { organisation_id: input.organisationId });
 	});
 
 export const updateModelLinks = createServerFn({ method: "POST" })
-	.middleware([serverAction])
+	.middleware([serverAction, internalAdminAction])
 	.validator((input: any) => input)
 	.handler(async ({ data: input }) => {
 		return graph(input.modelId, { links: (input.links ?? []).map((row: any) => ({ platform: row.type, kind: row.type, title: row.title, url: row.url })) });
 	});
 
 export const updateModelAliases = createServerFn({ method: "POST" })
-	.middleware([serverAction])
+	.middleware([serverAction, internalAdminAction])
 	.validator((input: any) => input)
 	.handler(async ({ data: input }) => {
 		return graph(input.modelId, { aliases: (input.aliases ?? []).map((row: any) => ({ alias_slug: row.alias, is_enabled: row.enabled })) });
 	});
 
 export const createProviderModel = createServerFn({ method: "POST" })
-	.middleware([serverAction])
+	.middleware([serverAction, internalAdminAction])
 	.validator((input: any) => input)
 	.handler(async ({ data: input }) => {
 		return mutation("/api/account/models/catalog/provider-models", "POST", input);
 	});
 
 export const updateProviderModel = createServerFn({ method: "POST" })
-	.middleware([serverAction])
+	.middleware([serverAction, internalAdminAction])
 	.validator((input: any) => input)
 	.handler(async ({ data: input }) => {
 		return mutation(`/api/account/models/catalog/provider-models/${encodeURIComponent(input.providerApiModelId)}`, "PATCH", input);
 	});
 
 export const deleteProviderModel = createServerFn({ method: "POST" })
-	.middleware([serverAction])
+	.middleware([serverAction, internalAdminAction])
 	.validator((providerApiModelId: string) => providerApiModelId)
 	.handler(async ({ data: providerApiModelId }) => {
 		return mutation(`/api/account/models/catalog/provider-models/${encodeURIComponent(providerApiModelId)}`, "DELETE");
 	});
 
 export const createBenchmarkResult = createServerFn({ method: "POST" })
-	.middleware([serverAction])
+	.middleware([serverAction, internalAdminAction])
 	.validator((input: any) => input)
 	.handler(async ({ data: input }) => {
 		return mutation("/api/account/models/catalog/benchmark-results", "POST", input);
 	});
 
 export const updateBenchmarkResult = createServerFn({ method: "POST" })
-	.middleware([serverAction])
+	.middleware([serverAction, internalAdminAction])
 	.validator((input: any) => input)
 	.handler(async ({ data: input }) => {
 		return mutation(`/api/account/models/catalog/benchmark-results/${encodeURIComponent(input.resultId)}`, "PATCH", input);
 	});
 
 export const deleteBenchmarkResult = createServerFn({ method: "POST" })
-	.middleware([serverAction])
+	.middleware([serverAction, internalAdminAction])
 	.validator((resultId: string) => resultId)
 	.handler(async ({ data: resultId }) => {
 		return mutation(`/api/account/models/catalog/benchmark-results/${encodeURIComponent(resultId)}`, "DELETE");
 	});
 
 export const deleteModel = createServerFn({ method: "POST" })
-	.middleware([serverAction])
+	.middleware([serverAction, internalAdminAction])
 	.validator((modelId: string) => modelId)
 	.handler(async ({ data: modelId }) => {
 		return mutation(`/api/account/models/catalog/models/${encodeURIComponent(modelId)}`, "DELETE");
 	});
 
 export const fetchCompleteModelData = createServerFn({ method: "POST", strict: { output: false } })
-	.middleware([serverAction])
+	.middleware([serverAction, internalAdminAction])
 	.validator((modelId: string) => modelId)
 	.handler(async ({ data: modelId }): Promise<Result<CompleteModelData>> => {
 		try {
@@ -139,19 +140,19 @@ async function options() {
 }
 
 export const fetchOrganisations = createServerFn({ method: "POST" })
-	.middleware([serverAction])
+	.middleware([serverAction, internalAdminAction])
 	.handler(async () => {
 		try { const value = await options(); return { success: true, data: (value.organisations ?? []).map((row: any) => ({ id: row.organisation_id, name: row.name })) }; } catch (error) { return { success: false, error: error instanceof Error ? error.message : "Unavailable", data: [] }; }
 	});
 
 export const fetchProviders = createServerFn({ method: "POST" })
-	.middleware([serverAction])
+	.middleware([serverAction, internalAdminAction])
 	.handler(async () => {
 		try { const value = await options(); return { success: true, data: (value.providers ?? []).map((row: any) => ({ id: row.api_provider_id, name: row.api_provider_name ?? row.api_provider_id })) }; } catch (error) { return { success: false, error: error instanceof Error ? error.message : "Unavailable", data: [] }; }
 	});
 
 export const fetchBenchmarks = createServerFn({ method: "POST" })
-	.middleware([serverAction])
+	.middleware([serverAction, internalAdminAction])
 	.handler(async () => {
 		try { const value = await options(); return { success: true, data: (value.benchmarks ?? []).map((row: any) => ({ id: row.id, name: row.name ?? row.id })) }; } catch (error) { return { success: false, error: error instanceof Error ? error.message : "Unavailable", data: [] }; }
 	});
