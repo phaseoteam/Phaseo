@@ -178,10 +178,16 @@ export function SlackCustomAppSection({ view }: { view: SlackAgentManagerView })
 							<div className="space-y-1.5">
 								<Label>{t("customApp.requestUrls")}</Label>
 								<p className="text-xs text-muted-foreground">{t("customApp.requestUrlsHelp")}</p>
-								{[saved.events_url, saved.interactions_url].map((url) => (
-									<div key={url} className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2">
-										<code className="min-w-0 flex-1 truncate font-mono text-xs">{url}</code>
-										<CopyButton size="sm" variant="ghost" content={url} aria-label={t("customApp.copyRequestUrl")} />
+								{([
+									{ url: saved.events_url, label: t("customApp.eventsUrl"), copy: t("customApp.copyEventsUrl") },
+									{ url: saved.interactions_url, label: t("customApp.interactionsUrl"), copy: t("customApp.copyInteractionsUrl") },
+								]).map(({ url, label, copy }) => (
+									<div key={url} className="space-y-1">
+										<p className="text-xs font-medium">{label}</p>
+										<div className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2">
+											<code className="min-w-0 flex-1 truncate font-mono text-xs">{url}</code>
+											<CopyButton size="sm" variant="ghost" content={url} aria-label={copy} />
+										</div>
 									</div>
 								))}
 							</div>

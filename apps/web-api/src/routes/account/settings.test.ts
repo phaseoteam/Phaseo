@@ -720,7 +720,7 @@ describe("account settings routes", () => {
 
 	describe("app editing, publishing and merging", () => {
 		const executionCtx = { waitUntil: vi.fn(), passThroughOnException: vi.fn(), props: {} } as unknown as ExecutionContext;
-		function stubApps(role: string) {
+		function stubApps(role: string, patchError?: { code: string; message: string }) {
 			const writes: string[] = [];
 			vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 				const url = input instanceof Request ? input.url : String(input);
@@ -730,6 +730,7 @@ describe("account settings routes", () => {
 				if (url.includes("select=owner_user_id")) return new Response(JSON.stringify([{ owner_user_id: "owner-1" }]), { status: 200 });
 				if (url.includes("/rpc/merge_v2_gateway_app_history")) { writes.push("merge"); return new Response(JSON.stringify({ gateway_requests: 1 }), { status: 200 }); }
 				if (url.includes("api_apps")) {
+					if (method === "PATCH" && patchError) return new Response(JSON.stringify(patchError), { status: 409 });
 					if (method === "PATCH") { writes.push(`update:${url}`); return new Response(JSON.stringify({ id: "app-1", is_public: true, is_active: true, image_url: null }), { status: 200 }); }
 					return new Response(JSON.stringify(url.includes("id=in.")
 						? [{ id: "app-1", workspace_id: "workspace-1", title: "One", app_key: "one" }, { id: "app-2", workspace_id: "workspace-1", title: "Two", app_key: "two" }]
@@ -763,6 +764,18 @@ describe("account settings routes", () => {
 			expect(response.status).toBe(400);
 			await expect(response.json()).resolves.toEqual({ error: "invalid_url" });
 			expect(writes).toEqual([]);
+		});
+
+		it("says the URL is in use when another app in the workspace already has it, including no URL", async () => {
+			stubApps("owner", { code: "23505", message: "duplicate key value violates unique constraint \"api_apps_workspace_id_url_key\"" });
+			for (const url of ["", "https://taken.example.com"]) {
+				const response = await put({ url });
+				expect(response.status, url).toBe(409);
+				await expect(response.json()).resolves.toEqual({ error: "app_url_in_use", message: "Another app in this workspace already uses this URL" });
+			}
+			// Other failures are still reported as unavailable.
+			stubApps("owner", { code: "57014", message: "canceling statement due to statement timeout" });
+			expect((await put({ title: "Renamed" })).status).toBe(503);
 		});
 
 		it("treats about:blank, which the dashboard sends for no URL, like an empty URL", async () => {

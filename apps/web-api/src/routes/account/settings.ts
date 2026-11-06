@@ -822,6 +822,11 @@ accountSettingsRouter.put("/apps/:appId", async (c) => {
 			.select("id,is_public,is_active,image_url")
 			.maybeSingle();
 		const result = await updateApp(update);
+		// Apps are identified by URL within a workspace (api_apps_workspace_id_url_key), so a second app
+		// can't take a URL another app has, including "no URL" (about:blank).
+		if (result.error?.code === "23505" && String(result.error.message ?? "").includes("api_apps_workspace_id_url_key")) {
+			return c.json({ error: "app_url_in_use", message: "Another app in this workspace already uses this URL" }, 409, PRIVATE_NO_STORE_HEADERS);
+		}
 		if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 		if (!result.data) return c.json({ error: "app_not_updated" }, 409, PRIVATE_NO_STORE_HEADERS);
 		updatedApp = result.data as Record<string, unknown>;

@@ -106,6 +106,15 @@ describe("SlackAgentSettingsClient own Slack app", () => {
 		expect(html).toContain("Request URLs");
 		expect(html).toContain("https://slack.phaseo.app/apps/row-1/events");
 		expect(html).toContain("https://slack.phaseo.app/apps/row-1/interactions");
+		// Each URL is labelled for its Slack setting, and so is its copy button.
+		const eventsAt = html.indexOf("Event Subscriptions request URL");
+		const interactionsAt = html.indexOf("Interactivity request URL");
+		expect(eventsAt).toBeGreaterThan(-1);
+		expect(interactionsAt).toBeGreaterThan(-1);
+		expect(html.indexOf("https://slack.phaseo.app/apps/row-1/events")).toBeGreaterThan(eventsAt);
+		expect(html.indexOf("https://slack.phaseo.app/apps/row-1/interactions")).toBeGreaterThan(interactionsAt);
+		expect(html).toContain('aria-label="Copy Event Subscriptions request URL"');
+		expect(html).toContain('aria-label="Copy Interactivity request URL"');
 	});
 });
 
