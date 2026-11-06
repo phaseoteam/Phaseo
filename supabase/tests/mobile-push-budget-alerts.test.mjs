@@ -45,7 +45,7 @@ try {
     const v4 = await read(v4File);
     // sweep_spend_limit_warnings was last replaced by budget_enforcement_money_hygiene (charged async
     // requests that did not succeed count toward cost).
-    const latestFile = '../migrations/20261106220406_budget_enforcement_money_hygiene.sql';
+    const latestFile = '../migrations/20261106220407_budget_enforcement_money_hygiene.sql';
     const latest = await read(latestFile);
     for (const file of schemaFiles) {
         const shipped = file.endsWith('sweep_spend_limit_warnings.sql') ? latest : v4;
@@ -314,10 +314,11 @@ try {
     assert.ok(pushes.every(push => push.href === (push.kind.startsWith('budget') ? '/settings/usage/overview' : '/settings/keys')));
     assert.equal((await one(`select count(*)::int n from public.email_outbox`)).n, 0, 'no email is queued');
 
-    // Async jobs and realtime sessions are not in the rollup but count towards limits: in November,
-    // Gamma's vid key ran nine video jobs (and one that failed but was charged: cost only) and a realtime session ran on the
-    // workspace. Its sync request is in gateway_requests too, but sync usage comes from the rollup,
-    // which has none here, so it is not counted twice.
+    // Async jobs are not in the rollup but count towards limits: in November, Gamma's vid key ran
+    // nine video jobs (and one that failed but was charged: cost only). A $40 realtime session that
+    // failed but was charged ran on the workspace, and a $4 one on the vid key; realtime is in the rollup, so it counts from
+    // there once, not again from gateway_requests. The sync request is in gateway_requests too, but
+    // sync usage comes from the rollup, which has none for it, so it is not counted twice.
     await db.exec(`
       insert into public.workspaces (id, name, owner_user_id) values ('${GAMMA}', 'Gamma', '${user(2)}');
       insert into public.workspace_members (workspace_id, user_id, role) values ('${GAMMA}', '${user(2)}', 'owner');
@@ -327,16 +328,20 @@ try {
         select '${GAMMA}', '${KEY_VID}', 'video.generation', true, ${4.5 * DOLLAR}, '2026-11-04T01:00:00Z'::timestamptz + make_interval(mins => n) from generate_series(1, 9) n;
       insert into public.gateway_requests (workspace_id, key_id, endpoint, success, cost_nanos, created_at) values
         ('${GAMMA}', '${KEY_VID}', 'video.generation', false, ${4.5 * DOLLAR}, '2026-11-04T02:00:00Z'),
-        ('${GAMMA}', null, 'audio.realtime', true, ${40 * DOLLAR}, '2026-11-03T08:00:00Z'),
+        ('${GAMMA}', null, 'audio.realtime', false, ${40 * DOLLAR}, '2026-11-03T08:00:00Z'),
+        ('${GAMMA}', '${KEY_VID}', 'audio.realtime', false, ${4 * DOLLAR}, '2026-11-03T09:00:00Z'),
         ('${GAMMA}', '${KEY_VID}', 'chat.completions', true, ${30 * DOLLAR}, '2026-11-04T03:00:00Z');
     `);
+    await usage(GAMMA, null, '2026-11-03T08:00:00Z', { cost: 40 * DOLLAR, requests: 1 });
+    await usage(GAMMA, KEY_VID, '2026-11-03T09:00:00Z', { cost: 4 * DOLLAR, requests: 1 });
     assert.deepEqual(await sweep('2026-11-04T12:00:00Z'), { budgets: 3, limitedKeys: 5, warned: 3 });
     assert.deepEqual((await events(`occurred_at = '2026-11-04T12:00:00Z'`)).map(event => [event.kind, event.title, event.body]), [
-        // $45 of video (the failed job was charged) and $40 of realtime: 2.5 days into the week, 2.5 * 100 / 85 = 2.9 days.
-        ['budget_warning', 'About 80% of the weekly budget used', '$85.00 of $100.00 so far this week. At this pace it runs out around Nov 4.'],
+        // $45 of video (the failed job was charged) and $44 of realtime, once: 2.5 days into the week, 2.5 * 100 / 89 = 2.8 days.
+        ['budget_warning', 'About 80% of the weekly budget used', '$89.00 of $100.00 so far this week. At this pace it runs out around Nov 4.'],
         ['key_limit_warning', "API key 'vid' is at about 80% of its daily limit", '9 of 10 requests so far today.'],
-        // 3.5 days into November, 3.5 * 50 / 45 = 3.9 days; the failed job is not a request (9 of 10 today).
-        ['key_limit_warning', "API key 'vid' is at about 80% of its monthly limit", '$45.00 of $50.00 so far this month. At this pace it runs out around Nov 4.'],
+        // $45 of video and $4 of realtime, 3.5 days into November: 3.5 * 50 / 49 = 3.6 days; the failed
+        // job is not a request (9 of 10 today).
+        ['key_limit_warning', "API key 'vid' is at about 80% of its monthly limit", '$49.00 of $50.00 so far this month. At this pace it runs out around Nov 4.'],
     ]);
 
     // Nothing configured: the sweep returns after two counts.

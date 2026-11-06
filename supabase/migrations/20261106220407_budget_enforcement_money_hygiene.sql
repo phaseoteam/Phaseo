@@ -67,13 +67,14 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
   --   adjustment ledger rows it writes, one per debit or refund, each at its own time; attributed
   --   to the key on the charge row.
   -- * 'charge': a one-off charge (no adjustment rows), one movement at the charge's time.
-  -- * 'batch': a batch's debit less the per-row request rows that already count it, at the debit's
-  --   time. A batch without a reservation is charged as batch_capture:<batch>; a reserved batch is
-  --   settled into an async_job_charge ledger row (gateway_wallet_settle_once), and its rows may
-  --   still be the batch_hold_usage placeholders written at the held price. Rows link to the batch
-  --   by the batch_usage:<batch>: (or batch_hold_usage:<reservation>:) prefix, not by billing id,
-  --   so a batch whose rows never persisted still counts its debit. Rows are read from a day either
-  --   side of the batch (they are written as it settles) through the (workspace_id, created_at) index.
+  -- * 'batch': a correction at the debit's time that makes a batch count exactly its debit: the
+  --   debit less the per-row request rows that already count it, which may be negative (a capture
+  --   cheaper than its hold, whose batch_hold_usage placeholders were written at the held price).
+  --   The rows stay in their own windows. A batch without a reservation is charged as
+  --   batch_capture:<batch>; a reserved batch is settled into an async_job_charge ledger row
+  --   (gateway_wallet_settle_once). Rows are found by batch identity, whenever they were written:
+  --   the batch_usage:<batch>: (or batch_hold_usage:<reservation>:) prefix, as a range on
+  --   gateway_requests_batch_rows_idx (text_pattern_ops, since the collation is not C).
   -- * 'unpaid': a delivered request whose wallet charge failed (expected_cost_nanos, pending
   --   reconciliation): the part of the expected amount cost_nanos does not cover, so the row
   --   counts greatest(cost_nanos, expected_cost_nanos) and a later charge never counts twice.
@@ -127,15 +128,16 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
     and not (charge.request_id = any (coalesce(p_exclude_charge_ids, '{}'::text[])))
   union all
   select 'batch'::text, charge.request_id, charge.key_id, charge.created_at,
-    greatest(0, charge.cost_nanos - coalesce(persisted.cost, 0))
+    charge.cost_nanos - coalesce(persisted.cost, 0)
   from public.gateway_request_charges charge
   left join lateral (
     select sum(request.cost_nanos) as cost
     from public.gateway_requests request
     where request.workspace_id = charge.workspace_id
-      and request.created_at between charge.created_at - interval '1 day' and charge.created_at + interval '1 day'
+      -- The constant range selects gateway_requests_batch_rows_idx; the second is this batch's rows.
+      and request.request_id ~>=~ 'batch' and request.request_id ~<~ 'batci'
+      and request.request_id ~>=~ ('batch_usage:' || substr(charge.request_id, 15) || ':') and request.request_id ~<~ ('batch_usage:' || substr(charge.request_id, 15) || ';')
       and request.cost_nanos > 0
-      and starts_with(request.request_id, 'batch_usage:' || substr(charge.request_id, 15) || ':')
   ) persisted on true
   where charge.workspace_id = p_workspace_id
     and starts_with(charge.request_id, 'batch_capture:')
@@ -146,7 +148,7 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
     and not (charge.request_id = any (coalesce(p_exclude_charge_ids, '{}'::text[])))
   union all
   select 'batch'::text, debit.ref_id, hold.key_id, debit.created_at,
-    greatest(0, -debit.amount_nanos - coalesce(persisted.cost, 0))
+    -debit.amount_nanos - coalesce(persisted.cost, 0) - coalesce(placeholders.cost, 0)
   from public.credit_ledger debit
   join public.gateway_wallet_reservations hold
     on hold.workspace_id = debit.workspace_id
@@ -155,11 +157,20 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
     select sum(request.cost_nanos) as cost
     from public.gateway_requests request
     where request.workspace_id = debit.workspace_id
-      and request.created_at between hold.created_at - interval '1 day' and debit.created_at + interval '1 day'
+      -- The constant range selects gateway_requests_batch_rows_idx; the second is this batch's rows.
+      and request.request_id ~>=~ 'batch' and request.request_id ~<~ 'batci'
+      and request.request_id ~>=~ ('batch_usage:' || debit.source_ref_id || ':') and request.request_id ~<~ ('batch_usage:' || debit.source_ref_id || ';')
       and request.cost_nanos > 0
-      and (starts_with(request.request_id, 'batch_usage:' || debit.source_ref_id || ':')
-        or starts_with(request.request_id, 'batch_hold_usage:' || hold.reservation_id || ':'))
   ) persisted on true
+  left join lateral (
+    select sum(request.cost_nanos) as cost
+    from public.gateway_requests request
+    where request.workspace_id = debit.workspace_id
+      -- The constant range selects gateway_requests_batch_rows_idx; the second is this batch's rows.
+      and request.request_id ~>=~ 'batch' and request.request_id ~<~ 'batci'
+      and request.request_id ~>=~ ('batch_hold_usage:' || hold.reservation_id || ':') and request.request_id ~<~ ('batch_hold_usage:' || hold.reservation_id || ';')
+      and request.cost_nanos > 0
+  ) placeholders on true
   where debit.workspace_id = p_workspace_id
     and debit.ref_type = 'async_job_charge'
     and starts_with(debit.ref_id, p_workspace_id::text || ':batch_hold:')
@@ -790,7 +801,7 @@ CREATE OR REPLACE FUNCTION public.workspace_department_budget_status (
 -- a JSON array ordered by department and period. A department's spend is the cost of the API
 -- keys private.department_budget_key_departments gives it: keys linked to it, plus, for keys not
 -- linked to any department, the keys its members created and their OAuth requests. Spend comes from v2_private_usage_15m, which is rebuilt hourly and so lags, plus
--- async jobs and realtime sessions from gateway_requests, which the rollup leaves out.
+-- async jobs (video, batch, music) from gateway_requests, which the rollup leaves out; realtime sessions are in the rollup.
 declare
   v_result jsonb;
 begin
@@ -819,7 +830,7 @@ begin
     select r.key_id, r.created_at, coalesce(r.cost_nanos, 0)
     from public.gateway_requests r
     where r.success is true
-      and r.endpoint = any (array['video.generation', 'batch', 'music.generate', 'audio.realtime'])
+      and r.endpoint = any (array['video.generation', 'batch', 'music.generate'])
       and r.workspace_id = p_workspace_id
       and r.created_at >= (select min(b.period_start) from budgets b)
       and r.created_at <= p_now
@@ -830,7 +841,7 @@ begin
     from public.gateway_requests r
     where r.success is not true
       and r.cost_nanos > 0
-      and r.endpoint = any (array['video.generation', 'batch', 'music.generate', 'audio.realtime'])
+      and r.endpoint = any (array['video.generation', 'batch', 'music.generate'])
       and r.workspace_id = p_workspace_id
       and r.created_at >= (select min(b.period_start) from budgets b)
       and r.created_at <= p_now
@@ -927,13 +938,14 @@ begin
         k.daily_limit_cost_nanos, k.weekly_limit_cost_nanos, k.monthly_limit_cost_nanos) > 0
   ),
   async_requests as (
-    -- Async jobs and realtime sessions, which the rollup leaves out (gateway_requests_async_spend_idx):
-    -- successful ones as requests and cost, charged ones that did not succeed as cost only.
+    -- Async jobs, which the rollup leaves out (private.v2_usage_overview_requests: video, batch,
+    -- music; realtime is in the rollup): successful ones as requests and cost, charged ones that did
+    -- not succeed as cost only.
     select r.key_id, r.created_at, case when r.success is true then 1 else 0 end::bigint as requests,
       coalesce(r.cost_nanos, 0)::numeric as cost_nanos
     from public.gateway_requests r
     where (r.success is true or r.cost_nanos > 0)
-      and r.endpoint = any (array['video.generation', 'batch', 'music.generate', 'audio.realtime'])
+      and r.endpoint = any (array['video.generation', 'batch', 'music.generate'])
       and r.workspace_id in (select k.workspace_id from limited_keys k)
       and r.created_at >= least(v_week, v_month)
       and r.created_at <= p_now
@@ -976,7 +988,7 @@ begin
         select coalesce(sum(r.cost_nanos), 0)
         from public.gateway_requests r
         where (r.success is true or r.cost_nanos > 0)
-          and r.endpoint = any (array['video.generation', 'batch', 'music.generate', 'audio.realtime'])
+          and r.endpoint = any (array['video.generation', 'batch', 'music.generate'])
           and r.workspace_id = b.workspace_id
           and r.created_at >= coalesce((private.spend_limit_period(b.interval, p_now)).period_start, '-infinity'::timestamptz)
           and r.created_at <= p_now
