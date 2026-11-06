@@ -23,8 +23,9 @@ import {
 } from "./fakes";
 
 // apps/slack/manifest.json is the hosted Slack app's manifest. The Slack agent
-// guide prints the same manifest in every docs language, with YOUR_APP_ID in the
-// request URLs, for companies that use their own Slack app. These checks keep
+// guide prints the same manifest in every docs language, with placeholder request
+// URLs (/apps/FROM_PHASEO_SETTINGS/...) for companies that use their own Slack app:
+// Settings → Slack shows the saved app's own URLs to paste instead. These checks keep
 // both in step with the code: the bot scopes web-api asks for at install, the
 // events this Worker handles, the OAuth redirects (install, and Sign in with
 // Slack for shared pages), and the production host and routes Slack sends
@@ -54,7 +55,9 @@ const manifest = JSON.parse(read("../manifest.json")) as Manifest;
 
 /** The docs guide's languages: English at the root, then each translation's folder. */
 const DOCS_LOCALES = ["", "ar", "de", "es", "fr", "hi", "ja", "pt-BR", "zh-Hans"];
-const PLACEHOLDER = "YOUR_APP_ID";
+const PLACEHOLDER = "FROM_PHASEO_SETTINGS";
+/** A saved company app's own request URL, as Settings → Slack shows it, for the hosted URL's route. */
+const companyUrl = (hostedUrl: string, rowId: string) => { const url = new URL(hostedUrl); return `${url.origin}/apps/${rowId}${url.pathname}`; };
 
 function docsManifest(locale: string): Manifest {
 	const page = read(`../../docs/${locale ? `${locale}/` : ""}v1/guides/slack-agent.mdx`);
@@ -200,18 +203,18 @@ describe("Slack app manifest", () => {
 });
 
 describe("the manifest in the Slack agent guide", () => {
-	it.each(DOCS_LOCALES)("matches manifest.json, with YOUR_APP_ID in the request URLs (%s)", (locale) => {
+	it.each(DOCS_LOCALES)("matches manifest.json, with placeholder request URLs (%s)", (locale) => {
 		const printed = docsManifest(locale);
-		expect(printed.settings.event_subscriptions.request_url).toBe(`${manifest.settings.event_subscriptions.request_url}/${PLACEHOLDER}`);
-		expect(printed.settings.interactivity.request_url).toBe(`${manifest.settings.interactivity.request_url}/${PLACEHOLDER}`);
-		const asHosted = JSON.parse(JSON.stringify(printed).replaceAll(`/${PLACEHOLDER}`, "")) as Manifest;
+		expect(printed.settings.event_subscriptions.request_url).toBe(companyUrl(manifest.settings.event_subscriptions.request_url, PLACEHOLDER));
+		expect(printed.settings.interactivity.request_url).toBe(companyUrl(manifest.settings.interactivity.request_url, PLACEHOLDER));
+		const asHosted = JSON.parse(JSON.stringify(printed).replaceAll(`/apps/${PLACEHOLDER}`, "")) as Manifest;
 		expect(asHosted).toEqual(manifest);
 	});
 
-	it("routes a company's own app once YOUR_APP_ID is replaced with its app id", async () => {
+	it("routes a company's own app through the request URLs Settings → Slack shows for it", async () => {
 		const printed = docsManifest("");
-		const eventsUrl = printed.settings.event_subscriptions.request_url.replace(PLACEHOLDER, COMPANY_APP_ID);
-		const interactionsUrl = printed.settings.interactivity.request_url.replace(PLACEHOLDER, COMPANY_APP_ID);
+		const eventsUrl = printed.settings.event_subscriptions.request_url.replace(PLACEHOLDER, COMPANY_APP_ROW_ID);
+		const interactionsUrl = printed.settings.interactivity.request_url.replace(PLACEHOLDER, COMPANY_APP_ROW_ID);
 
 		const challenge = JSON.stringify({ token: "deprecated", challenge: "company-challenge", type: "url_verification" });
 		const verified = await slackRequest(eventsUrl, challenge, COMPANY_SIGNING_SECRET);

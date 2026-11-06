@@ -106,19 +106,30 @@ export function hostedApp(env: Env): SlackAppContext | null {
 	};
 }
 
-/** A company's own app by its Slack app id, with its signing secret decrypted. Null if unknown. */
-export async function companyApp(env: Env, db: Db, slackAppId: string): Promise<SlackAppContext | null> {
-	if (!SLACK_APP_ID_PATTERN.test(slackAppId)) return null;
-	const rows = await db.select<{ id: string; slack_app_id: string; secrets_ciphertext: string }>("slack_apps", {
-		select: "id,slack_app_id,secrets_ciphertext",
-		slack_app_id: `eq.${slackAppId}`,
-		limit: "1",
-	});
-	const row = rows[0];
+type CompanyAppRow = { id: string; slack_app_id: string; secrets_ciphertext: string };
+
+async function companyAppContext(env: Env, row: CompanyAppRow | undefined): Promise<SlackAppContext | null> {
 	if (!row) return null;
 	const secrets = await decryptSlackSecrets(env, row.secrets_ciphertext);
-	if (!secrets.signing_secret) return null;
-	return { appRowId: row.id, slackAppId: row.slack_app_id, signingSecret: secrets.signing_secret };
+	return secrets.signing_secret ? { appRowId: row.id, slackAppId: row.slack_app_id, signingSecret: secrets.signing_secret } : null;
+}
+
+/**
+ * The verified company app with this Slack app id, for the shared /events/<app id> URL. Saving an app
+ * proves nothing, so several workspaces can save the same id; only an install through it verifies one
+ * (slack_apps.verified_at, unique per id). Unverified apps are reached only through their own URL.
+ */
+export async function verifiedCompanyApp(env: Env, db: Db, slackAppId: string): Promise<SlackAppContext | null> {
+	if (!SLACK_APP_ID_PATTERN.test(slackAppId)) return null;
+	const rows = await db.select<CompanyAppRow>("slack_apps", { select: "id,slack_app_id,secrets_ciphertext", slack_app_id: `eq.${slackAppId}`, verified_at: "not.is.null", limit: "1" });
+	return companyAppContext(env, rows[0]);
+}
+
+/** One saved company app by its row, for its own /apps/<row id>/... URLs: only its signing secret is tried. */
+export async function companyAppByRow(env: Env, db: Db, rowId: string): Promise<SlackAppContext | null> {
+	if (!UUID_PATTERN.test(rowId)) return null;
+	const rows = await db.select<CompanyAppRow>("slack_apps", { select: "id,slack_app_id,secrets_ciphertext", id: `eq.${rowId}`, limit: "1" });
+	return companyAppContext(env, rows[0]);
 }
 
 /** Where an event or interaction says the app is installed. */

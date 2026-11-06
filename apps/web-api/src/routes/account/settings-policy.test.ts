@@ -341,6 +341,8 @@ describe("account policy settings routes", () => {
 				if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" }), { status: 200 });
 				if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role }]), { status: 200 });
 				if (url.includes("/presets?")) return new Response(JSON.stringify([{ id: "preset-1", workspace_id: "workspace-1", created_by: createdBy, visibility, draft_visibility: visibility, active_version_id: "version-3" }]), { status: 200 });
+				// The target version check before moving a label: a shared version.
+				if (url.includes("/preset_versions?") && new URL(url).searchParams.has("id")) return new Response(JSON.stringify([{ id: VERSION_ID }]), { status: 200 });
 				if (url.includes("/preset_versions?")) return new Response(JSON.stringify([
 					{ id: "version-3", version_number: 3, version_label: "v3", config: { models: ["openai/gpt-test"], prompt: { messages: [{ role: "user", content: "Hi {{name}}" }] }, parameters: { temperature: 0.2 } } },
 					{ id: "version-2", version_number: 2, version_label: "v2", config: null },
@@ -384,6 +386,105 @@ describe("account policy settings routes", () => {
 		it("does not show a private preset's versions to other members", async () => {
 			stubLabels({ role: "member", visibility: "private" });
 			expect((await request("/versions")).status).toBe(404);
+		});
+
+		it("keeps a version published while the preset was private from other members after a shared version follows it", async () => {
+			const urls: URL[] = [];
+			const stub = (userId: string) => vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+				const url = new URL(input instanceof Request ? input.url : String(input));
+				urls.push(url);
+				if (url.pathname === "/auth/v1/user") return Response.json({ id: userId, email: "user@example.com", created_at: "2025-01-01" });
+				if (url.pathname.endsWith("workspace_members")) return Response.json([{ role: "admin" }]);
+				if (url.pathname.endsWith("/presets")) return Response.json([{ id: "preset-1", workspace_id: "workspace-1", created_by: "owner-2", visibility: "team", draft_visibility: "team", active_version_id: "version-2" }]);
+				if (url.pathname.endsWith("/preset_versions")) {
+					const versions = [
+						{ id: "version-2", version_number: 2, version_label: "v2", visibility: "team", config: { models: ["openai/shared"] } },
+						{ id: "version-1", version_number: 1, version_label: "v1", visibility: "private", config: { models: ["openai/private"], prompt: { messages: [{ role: "system", content: "Private prompt" }] } } },
+					];
+					return Response.json(url.searchParams.get("visibility") === "neq.private" ? versions.filter((version) => version.visibility !== "private") : versions);
+				}
+				if (url.pathname.endsWith("/preset_version_labels")) return Response.json([{ label: "production", version_id: "version-1", updated_at: "x" }, { label: "staging", version_id: "version-2", updated_at: "x" }]);
+				return Response.json([]);
+			}));
+			stub("user-1");
+			const response = await request("/versions");
+			expect(response.status).toBe(200);
+			const text = await response.text();
+			expect(text).not.toMatch(/version-1|Private prompt|openai\/private|production/);
+			expect(JSON.parse(text)).toMatchObject({ versions: [{ id: "version-2", labels: ["staging"] }], labels: [{ label: "staging", version_id: "version-2" }] });
+			expect(urls.find((url) => url.pathname.endsWith("/preset_versions"))!.searchParams.get("visibility")).toBe("neq.private");
+
+			stub("owner-2");
+			const own = await (await request("/versions")).json() as { versions: Array<{ id: string }>; labels: unknown[] };
+			expect(own.versions.map((version) => version.id)).toEqual(["version-2", "version-1"]);
+			expect(own.labels).toHaveLength(2);
+		});
+
+		it("doesn't let another admin point a label at a private version", async () => {
+			const rpcs: string[] = [];
+			const versionLookups: URL[] = [];
+			const stub = (userId: string) => vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+				const req = input instanceof Request ? input : new Request(String(input), init);
+				const url = new URL(req.url);
+				if (url.pathname === "/auth/v1/user") return Response.json({ id: userId, email: "user@example.com", created_at: "2025-01-01" });
+				if (url.pathname.endsWith("workspace_members")) return Response.json([{ role: "admin" }]);
+				if (url.pathname.endsWith("/presets")) return Response.json([{ id: "preset-1", workspace_id: "workspace-1", created_by: "owner-2", visibility: "team", draft_visibility: "team" }]);
+				if (url.pathname.endsWith("/preset_versions")) {
+					versionLookups.push(url);
+					// VERSION_ID is v1, published while the preset was private.
+					return Response.json(url.searchParams.get("visibility") === "neq.private" ? [] : [{ id: VERSION_ID }]);
+				}
+				if (url.pathname.includes("/rpc/")) { rpcs.push(url.pathname); return Response.json({ label: "probe", version_id: VERSION_ID }); }
+				return Response.json([]);
+			}));
+			stub("user-1");
+			const response = await request("/labels/probe", { method: "PUT", body: JSON.stringify({ versionId: VERSION_ID }) });
+			expect(response.status).toBe(404);
+			await expect(response.json()).resolves.toEqual({ error: "preset_version_not_found" });
+			expect(rpcs).toEqual([]);
+			expect(versionLookups[0].searchParams.get("id")).toBe(`eq.${VERSION_ID}`);
+			stub("owner-2");
+			expect((await request("/labels/probe", { method: "PUT", body: JSON.stringify({ versionId: VERSION_ID }) })).status).toBe(200);
+			expect(rpcs).toHaveLength(1);
+		});
+
+		it("refuses to archive a preset made private since the read, unless you created it", async () => {
+			const archives: URL[] = [];
+			const stub = (userId: string, archived: unknown[]) => vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+				const request = input instanceof Request ? input : new Request(String(input), init);
+				const url = new URL(request.url);
+				if (url.pathname === "/auth/v1/user") return Response.json({ id: userId, email: "user@example.com", created_at: "2025-01-01" });
+				if (url.pathname.endsWith("workspace_members")) return Response.json([{ role: "admin" }]);
+				if (url.pathname.endsWith("/presets") && request.method === "PATCH") { archives.push(url); return Response.json(archived); }
+				// Read as shared; the creator makes it private before the archive lands.
+				if (url.pathname.endsWith("/presets")) return Response.json([{ name: "@shared", workspace_id: "workspace-1", created_by: "owner-2", visibility: "team" }]);
+				return Response.json([]);
+			}));
+			stub("user-1", []);
+			expect((await request("", { method: "DELETE" })).status).toBe(409);
+			expect(archives[0].searchParams.get("visibility")).toBe("neq.private");
+			stub("user-1", [{ id: "preset-1" }]);
+			expect((await request("", { method: "DELETE" })).status).toBe(200);
+			archives.length = 0;
+			stub("owner-2", [{ id: "preset-1" }]);
+			expect((await request("", { method: "DELETE" })).status).toBe(200);
+			expect(archives[0].searchParams.has("visibility")).toBe(false);
+		});
+
+		it("does not show a teammate's private preset by id, but shows it to its creator and shows team presets", async () => {
+			stubLabels({ role: "admin", visibility: "private", createdBy: "owner-2" });
+			expect((await request("")).status).toBe(404);
+			stubLabels({ role: "member", visibility: "private", createdBy: "user-1" });
+			expect((await request("")).status).toBe(200);
+			stubLabels({ role: "member", visibility: "team" });
+			const inner = globalThis.fetch; const urls: string[] = [];
+			vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => { urls.push(input instanceof Request ? input.url : String(input)); return inner(input, init); }));
+			const response = await request("");
+			expect(response.status).toBe(200);
+			await expect(response.json()).resolves.toMatchObject({ preset: { id: "preset-1", visibility: "team" } });
+			const presetUrl = new URL(urls.find((url) => url.includes("/presets?"))!);
+			expect(presetUrl.searchParams.get("archived_at")).toBe("is.null");
+			expect(presetUrl.searchParams.get("select")).not.toContain("*");
 		});
 
 		it("tells members who did not create the preset that they cannot move labels", async () => {
@@ -454,6 +555,96 @@ describe("account policy settings routes", () => {
 		});
 		expect(requestedUrls.some((url) => url.includes("visibility=eq.public") && url.includes("archived_at=is.null"))).toBe(true);
 		expect(requestedUrls.some((url) => url.includes("/preset_versions"))).toBe(false);
+	});
+
+	describe("a teammate's private draft of a team preset", () => {
+		const row = {
+			id: "preset-1", workspace_id: "workspace-1", created_by: "owner-2", source_preset_id: "source-1",
+			name: "Published", slug: "published", description: "Published description", config: { models: ["openai/published"] }, visibility: "team",
+			draft_name: "Secret draft", draft_slug: "secret-draft", draft_description: "Secret description", draft_config: { models: ["openai/secret"] }, draft_visibility: "private",
+		};
+		function stubList({ userId = "user-1", lifecycleFails = false } = {}) {
+			vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+				const url = input instanceof Request ? input.url : String(input);
+				if (url.includes("/auth/v1/user")) return Response.json({ id: userId, email: "user@example.com", created_at: "2025-01-01" });
+				if (url.includes("workspace_members") && url.includes("teams")) return Response.json([{ workspace_id: "workspace-1", teams: { id: "workspace-1", name: "Team" } }]);
+				if (url.includes("workspace_members")) return Response.json([{ role: "admin" }]);
+				if (url.includes("/presets") && url.includes("workspace_id=eq.workspace-1")) return Response.json([row]);
+				// The detail read, by id.
+				if (url.includes("/presets?") && url.includes("id=eq.preset-1")) return Response.json([row]);
+				// The upstream lookup: failing it exercises the fallback serialisation.
+				if (url.includes("/presets") && url.includes("id=in.")) return lifecycleFails ? Response.json({ message: "boom" }, { status: 500 }) : Response.json([]);
+				return Response.json([]);
+			}));
+		}
+		const list = () => app.request("https://phaseo.app/api/account/settings/presets/list?workspaceId=workspace-1", { headers: { authorization: "Bearer session-token" } }, env);
+		const page = () => app.request("https://phaseo.app/api/account/settings/presets?workspaceId=workspace-1", { headers: { authorization: "Bearer session-token" } }, env);
+
+		it.each([false, true])("shows other members only the published preset in both lists (lifecycle lookup fails: %s)", async (lifecycleFails) => {
+			for (const read of [list, page]) {
+				stubList({ lifecycleFails });
+				const response = await read();
+				expect(response.status).toBe(200);
+				const text = await response.text();
+				expect(text).not.toMatch(/secret/i);
+				const body = JSON.parse(text);
+				const preset = body.presets?.[0] ?? body.teamsWithPresets?.[0]?.presets?.[0];
+				expect(preset).toMatchObject({ id: "preset-1", name: "Published", config: { models: ["openai/published"] }, visibility: "team", hasDraftChanges: false });
+			}
+		});
+
+		it("doesn't let another admin change or re-share the private draft, and checks again in the write", async () => {
+			const patches: URL[] = [];
+			const stubWrite = (draftVisibility: string, written: unknown[]) => vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+				const request = input instanceof Request ? input : new Request(String(input), init);
+				const url = new URL(request.url);
+				if (url.pathname === "/auth/v1/user") return Response.json({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" });
+				if (url.pathname.endsWith("workspace_members")) return Response.json([{ role: "admin" }]);
+				if (url.pathname.endsWith("/presets") && request.method === "PATCH") { patches.push(url); return Response.json(written); }
+				if (url.pathname.endsWith("/presets")) return Response.json(url.searchParams.has("slug") ? [] : [{ ...row, draft_visibility: draftVisibility }]);
+				return Response.json([]);
+			}));
+			const put = (body: Record<string, unknown>) => app.request("https://phaseo.app/api/account/settings/presets/preset-1", { method: "PUT", headers: { authorization: "Bearer session-token", "content-type": "application/json" }, body: JSON.stringify(body) }, env, { waitUntil() {}, passThroughOnException() {}, props: {} } as never);
+
+			stubWrite("private", []);
+			expect((await put({ visibility: "team" })).status).toBe(403);
+			expect(patches).toHaveLength(0);
+
+			// Read as shared, but made private before the write lands: the conditional write matches nothing.
+			stubWrite("team", []);
+			const raced = await put({ description: "Edited" });
+			expect(raced.status).toBe(409);
+			expect(patches[0].searchParams.get("visibility")).toBe("neq.private");
+			expect(patches[0].searchParams.get("or")).toBe("(draft_visibility.is.null,draft_visibility.neq.private)");
+
+			stubWrite("team", [{ id: "preset-1" }]);
+			expect((await put({ description: "Edited" })).status).toBe(200);
+		});
+
+		it("shows other members the published preset by id too, not a 404", async () => {
+			stubList();
+			const response = await app.request("https://phaseo.app/api/account/settings/presets/preset-1", { headers: { authorization: "Bearer session-token" } }, env);
+			expect(response.status).toBe(200);
+			const text = await response.text();
+			expect(text).not.toMatch(/secret/i);
+			expect(JSON.parse(text).preset).toMatchObject({ id: "preset-1", name: "Published", draft_name: "Published", draft_visibility: "team", visibility: "team" });
+		});
+
+		it("doesn't offer to publish a teammate's private draft, even to an admin", async () => {
+			for (const read of [list, page]) {
+				stubList();
+				const body = await (await read()).json() as { presets?: Array<{ canPublish: boolean }>; teamsWithPresets?: Array<{ presets: Array<{ canPublish: boolean }> }> };
+				expect((body.presets ?? body.teamsWithPresets![0].presets)[0].canPublish).toBe(false);
+			}
+			// The creator can publish it.
+			stubList({ userId: "owner-2" });
+			await expect((await list()).json()).resolves.toMatchObject({ presets: [{ canPublish: true }] });
+		});
+
+		it("still shows the creator their draft", async () => {
+			stubList({ userId: "owner-2" });
+			await expect((await list()).json()).resolves.toMatchObject({ presets: [{ id: "preset-1", name: "Secret draft", config: { models: ["openai/secret"] }, visibility: "private", hasDraftChanges: true }] });
+		});
 	});
 
 	it("continues to advertise public versions from a public source preset", async () => {

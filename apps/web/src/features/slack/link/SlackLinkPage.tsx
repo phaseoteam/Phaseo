@@ -1,11 +1,13 @@
 import type { PageMetadata } from "@/lib/seo/metadataTypes";
 import { useParams, useSearch } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { defaultLocale } from "@/i18n/locales";
 import type { RouteMetadataInput } from "@/lib/start/metadata";
 import { useTranslations } from "@/i18n/react";
 import { getTranslations } from "@/i18n/server";
 import { isPublicLocale, type PublicLocale } from "@/i18n/routing";
 import SlackLinkConfirm from "./SlackLinkConfirm";
+import { describeSlackLink } from "./actions";
 import { slackLinkLocale, slackLinkToken } from "./link.functions";
 
 // The Slack agent DMs people a link here (/slack/link?token=…) to connect their
@@ -31,6 +33,14 @@ export default function SlackLinkPage() {
 	const locale = slackLinkLocale(localeValue);
 	const token = slackLinkToken(rawToken);
 	const t = useTranslations("SettingsUI.slack.link");
+	// Names the Slack account the link was made for, as Slack knows it, before anything is linked.
+	const preview = useQuery({
+		queryKey: ["slack-link-preview", token, locale],
+		queryFn: () => describeSlackLink({ data: { token, localeValue: locale } }),
+		enabled: Boolean(token),
+		staleTime: Infinity,
+		retry: false,
+	});
 
 	return (
 		<div className="container mx-auto flex w-full min-h-0 flex-1 flex-col justify-center px-4 py-10">
@@ -38,6 +48,9 @@ export default function SlackLinkPage() {
 				<SlackLinkConfirm
 					token={token}
 					locale={locale}
+					account={preview.data?.account ?? null}
+					failure={preview.data?.failure ?? (preview.isError ? t("errors.failed") : null)}
+					checking={Boolean(token) && preview.isPending}
 					copy={{
 						title: t("title"),
 						description: t("description"),

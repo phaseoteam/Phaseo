@@ -87,7 +87,8 @@ export type SlackAgentCharge = {
 	charged_at: string | null;
 };
 
-export type SlackCustomApp = { id: string; slack_app_id: string; client_id: string; created_at: string; updated_at: string };
+/** events_url and interactions_url are this saved app's own request URLs, to paste into its Slack manifest. */
+export type SlackCustomApp = { id: string; slack_app_id: string; client_id: string; created_at: string; updated_at: string; events_url: string; interactions_url: string };
 
 export type SlackAgentManagerView = {
 	workspaceId: string;
@@ -485,12 +486,13 @@ export function callbackNotice(params: Pick<URLSearchParams, "get">): { kind: "i
 	return error ? { kind: "error", key: slackErrorKey(error) } : null;
 }
 
-/** SettingsUI.slack.link.errors keys, for POST /slack/link. */
-export type SlackLinkErrorKey = "expired" | "invalid" | "notInstalled" | "wrongWorkspace" | "notAvailable" | "signIn" | "failed";
+/** SettingsUI.slack.link.errors keys, for POST /slack/link and /slack/link/preview. */
+export type SlackLinkErrorKey = "expired" | "used" | "invalid" | "notInstalled" | "wrongWorkspace" | "notAvailable" | "signIn" | "failed";
 
 const LINK_ERROR_KEYS: Record<string, SlackLinkErrorKey> = {
 	unauthorized: "signIn",
 	link_expired: "expired",
+	link_used: "used",
 	link_invalid: "invalid",
 	bad_request: "invalid",
 	not_installed: "notInstalled",

@@ -115,7 +115,7 @@ Slack のアプリの **Basic Information** ページで、**App ID**、**Client
 
 <Step title="リクエスト URL を自分のアプリに向ける">
 
-Slack でアプリの **App Manifest** ページを開きます。2 つのリクエスト URL の `YOUR_APP_ID` をアプリ ID に置き換えます（例：`https://slack.phaseo.app/events/A0123ABCDEF`）。保存し、Slack から求められたらリクエスト URL を検証します。
+Phaseo の **設定 → Slack** に、保存したアプリ用の 2 つのリクエスト URL が表示されます。Slack でアプリの **App Manifest** ページを開き、2 つの `request_url` の値をこれらに置き換えます（1 つ目はイベント用、2 つ目はインタラクティビティ用）。保存し、Slack から求められたらリクエスト URL を検証します。
 
 </Step>
 
@@ -175,7 +175,7 @@ Slack でアプリの **App Manifest** ページを開きます。2 つのリク
   },
   "settings": {
     "event_subscriptions": {
-      "request_url": "https://slack.phaseo.app/events/YOUR_APP_ID",
+      "request_url": "https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/events",
       "bot_events": [
         "app_mention",
         "message.im",
@@ -187,7 +187,7 @@ Slack でアプリの **App Manifest** ページを開きます。2 つのリク
     },
     "interactivity": {
       "is_enabled": true,
-      "request_url": "https://slack.phaseo.app/interactions/YOUR_APP_ID"
+      "request_url": "https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/interactions"
     },
     "org_deploy_enabled": true,
     "socket_mode_enabled": false,
@@ -199,8 +199,8 @@ Slack でアプリの **App Manifest** ページを開きます。2 つのリク
 | 設定 | 値 |
 | --- | --- |
 | リダイレクト URL | `https://phaseo.app/api/account/settings/slack/oauth/callback` |
-| Event Subscriptions のリクエスト URL | `https://slack.phaseo.app/events/YOUR_APP_ID` |
-| Interactivity のリクエスト URL | `https://slack.phaseo.app/interactions/YOUR_APP_ID` |
+| Event Subscriptions のリクエスト URL | `https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/events` |
+| Interactivity のリクエスト URL | `https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/interactions` |
 | ボットイベント | `app_mention`、`message.im`、`agent_session_stopped`、`app_uninstalled`、`tokens_revoked`、`app_home_opened` |
 
 Phaseo はインストール時に、Slack にちょうど次のボットトークンのスコープを求めます。そのため、アプリにはこれらすべてが必要です。
@@ -236,6 +236,6 @@ Phaseo はインストール時に、Slack にちょうど次のボットトー�
 
 - チャンネルでは、エージェントがそのチャンネルのメンバーであることを確認し、回答してほしいメッセージごとにメンションしてください。
 - 編集されたメッセージ、ボット、ほかのアプリには回答しません。
-- 独自の Slack アプリの場合は、2 つのリクエスト URL の末尾がアプリ ID になっていること、Slack で検証済みと表示されていること、アプリが **設定 → Slack** に保存されていることを確認してください。
+- 独自の Slack アプリの場合は、リクエスト URL が **設定 → Slack** で保存したアプリに表示されているものであること、Slack で検証済みと表示されていることを確認してください。
 
 回答できないと非公開で返信された場合は、その返信に理由が書かれています。[エージェントが回答できない場合](/ja/v1/guides/slack-agent-admin#when-the-agent-cant-answer)を参照してください。

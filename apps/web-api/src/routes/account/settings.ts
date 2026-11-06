@@ -771,6 +771,14 @@ accountSettingsRouter.get("/apps", async (c) => {
 	return c.json({ apps }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
+/** Editing, publishing and merging apps is for workspace owners and admins. */
+function canManageApps(context: { role: string }) { return ["owner", "admin"].includes(context.role.toLowerCase()); }
+
+/** The normalised URL when it is http(s), otherwise null. */
+function httpUrl(value: string): string | null {
+	try { const url = new URL(value); return ["http:", "https:"].includes(url.protocol) ? url.toString() : null; } catch { return null; }
+}
+
 accountSettingsRouter.put("/apps/:appId", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
@@ -781,17 +789,24 @@ accountSettingsRouter.put("/apps/:appId", async (c) => {
 	if (!existing.data?.workspace_id) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: existing.data.workspace_id });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	if (!canManageApps(context)) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	if (isInternalApp(existing.data.title, existing.data.app_key)) return c.json({ error: "managed_app" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const body: Record<string, unknown> = await c.req.json<Record<string, unknown>>().catch(() => ({}));
 	const update: Record<string, unknown> = {};
 	if (typeof body.title === "string") { const value = body.title.trim(); if (!value) return c.json({ error: "invalid_title" }, 400, PRIVATE_NO_STORE_HEADERS); update.title = value; }
-	if (body.url === null) update.url = "about:blank"; else if (typeof body.url === "string") update.url = body.url.trim() || "about:blank";
+	if (body.url === null) update.url = "about:blank";
+	else if (typeof body.url === "string") {
+		const value = body.url.trim();
+		if (!value || value.toLowerCase() === "about:blank") update.url = "about:blank";
+		else if (!httpUrl(value)) return c.json({ error: "invalid_url" }, 400, PRIVATE_NO_STORE_HEADERS);
+		else update.url = value;
+	}
 	for (const field of ["docs_url", "image_url"] as const) {
 		if (body[field] === null) update[field] = null;
 		else if (typeof body[field] === "string") {
 			const value = body[field].trim();
 			if (!value) update[field] = null;
-			else { try { const url = new URL(value); if (!["http:", "https:"].includes(url.protocol)) throw new Error(); update[field] = url.toString(); } catch { return c.json({ error: `invalid_${field}` }, 400, PRIVATE_NO_STORE_HEADERS); } }
+			else { const url = httpUrl(value); if (!url) return c.json({ error: `invalid_${field}` }, 400, PRIVATE_NO_STORE_HEADERS); update[field] = url; }
 		}
 	}
 	if (typeof body.is_public === "boolean") update.is_public = body.is_public;
@@ -807,6 +822,11 @@ accountSettingsRouter.put("/apps/:appId", async (c) => {
 			.select("id,is_public,is_active,image_url")
 			.maybeSingle();
 		const result = await updateApp(update);
+		// Apps are identified by URL within a workspace (api_apps_workspace_id_url_key), so a second app
+		// can't take a URL another app has, including "no URL" (about:blank).
+		if (result.error?.code === "23505" && String(result.error.message ?? "").includes("api_apps_workspace_id_url_key")) {
+			return c.json({ error: "app_url_in_use", message: "Another app in this workspace already uses this URL" }, 409, PRIVATE_NO_STORE_HEADERS);
+		}
 		if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 		if (!result.data) return c.json({ error: "app_not_updated" }, 409, PRIVATE_NO_STORE_HEADERS);
 		updatedApp = result.data as Record<string, unknown>;
@@ -829,6 +849,7 @@ accountSettingsRouter.post("/apps/:sourceAppId/merge", async (c) => {
 	if (!workspaceId || !apps.data!.every((app) => app.workspace_id === workspaceId)) return c.json({ error: "invalid_target" }, 400, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	if (!canManageApps(context)) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	if (apps.data!.some((app) => isInternalApp(app.title, app.app_key))) return c.json({ error: "managed_app" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const merged = await context.client.rpc("merge_v2_gateway_app_history", {
 		p_workspace_id: workspaceId,

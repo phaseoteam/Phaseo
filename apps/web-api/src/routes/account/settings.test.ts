@@ -13,7 +13,7 @@ const env = {
 
 afterEach(() => vi.unstubAllGlobals());
 
-it.each(["keys", "management-api-keys"])("omits credential material from the %s response", async (path) => {
+it.each(["keys", "management-api-keys", "management-keys", "management-keys/management-key-1"])("omits credential material from the %s response", async (path) => {
 	vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => authenticatedFetch(input)));
 	const response = await app.request(`https://phaseo.app/api/account/settings/${path}?workspaceId=workspace-1`, { headers: { authorization: `Bearer ${sessionToken}` } }, env);
 	expect(response.status).toBe(200);
@@ -234,7 +234,7 @@ function authenticatedFetch(input: RequestInfo | URL): Response {
 	if (url.includes("management_keys")) {
 		return new Response(JSON.stringify([{
 			id: "management-key-1", workspace_id: "workspace-1", name: "Automation",
-			hash: "do-not-send-credential-hash", encrypted_key: "do-not-send-ciphertext",
+			hash: "do-not-send-credential-hash", encrypted_key: "do-not-send-ciphertext", kid: "do-not-send-kid",
 			created_at: "2026-01-01T00:00:00Z",
 		}]), { status: 200 });
 	}
@@ -716,6 +716,86 @@ describe("account settings routes", () => {
 		const requestedUrls = fetchMock.mock.calls.map(([input]) => input instanceof Request ? input.url : String(input));
 		expect(requestedUrls.some((url) => url.includes("/rpc/merge_v2_gateway_app_history"))).toBe(true);
 		expect(requestedUrls.some((url) => url.includes("/gateway_requests?"))).toBe(false);
+	});
+
+	describe("app editing, publishing and merging", () => {
+		const executionCtx = { waitUntil: vi.fn(), passThroughOnException: vi.fn(), props: {} } as unknown as ExecutionContext;
+		function stubApps(role: string, patchError?: { code: string; message: string }) {
+			const writes: string[] = [];
+			vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+				const url = input instanceof Request ? input.url : String(input);
+				const method = (input instanceof Request ? input.method : init?.method ?? "GET").toUpperCase();
+				if (url.includes("workspace_members") && !url.includes("teams%3Aworkspaces") && !url.includes("select=workspace_id")) return new Response(JSON.stringify([{ role }]), { status: 200 });
+				// The shared fixture makes user-1 the workspace owner; here only the member role decides.
+				if (url.includes("select=owner_user_id")) return new Response(JSON.stringify([{ owner_user_id: "owner-1" }]), { status: 200 });
+				if (url.includes("/rpc/merge_v2_gateway_app_history")) { writes.push("merge"); return new Response(JSON.stringify({ gateway_requests: 1 }), { status: 200 }); }
+				if (url.includes("api_apps")) {
+					if (method === "PATCH" && patchError) return new Response(JSON.stringify(patchError), { status: 409 });
+					if (method === "PATCH") { writes.push(`update:${url}`); return new Response(JSON.stringify({ id: "app-1", is_public: true, is_active: true, image_url: null }), { status: 200 }); }
+					return new Response(JSON.stringify(url.includes("id=in.")
+						? [{ id: "app-1", workspace_id: "workspace-1", title: "One", app_key: "one" }, { id: "app-2", workspace_id: "workspace-1", title: "Two", app_key: "two" }]
+						: [{ id: "app-1", workspace_id: "workspace-1", title: "One", app_key: "one" }]), { status: 200 });
+				}
+				return authenticatedFetch(input);
+			}));
+			return writes;
+		}
+		const put = (body: Record<string, unknown>) => app.request("https://phaseo.app/api/account/settings/apps/app-1", { method: "PUT", headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" }, body: JSON.stringify(body) }, env, executionCtx);
+		const merge = () => app.request("https://phaseo.app/api/account/settings/apps/app-1/merge", { method: "POST", headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" }, body: JSON.stringify({ targetAppId: "app-2" }) }, env, executionCtx);
+
+		it("refuses plain members before writing anything", async () => {
+			const writes = stubApps("member");
+			expect((await put({ is_public: true, title: "Mine", url: "https://mine.example" })).status).toBe(403);
+			expect((await merge()).status).toBe(403);
+			expect(writes).toEqual([]);
+		});
+
+		it("lets admins publish and merge apps", async () => {
+			const writes = stubApps("admin");
+			expect((await put({ is_public: true })).status).toBe(200);
+			expect((await merge()).status).toBe(200);
+			expect(writes.some((write) => write.startsWith("update:"))).toBe(true);
+			expect(writes).toContain("merge");
+		});
+
+		it.each(["javascript:alert(1)", "data:text/html,hi", "not a url"])("rejects the app URL %s", async (url) => {
+			const writes = stubApps("owner");
+			const response = await put({ url });
+			expect(response.status).toBe(400);
+			await expect(response.json()).resolves.toEqual({ error: "invalid_url" });
+			expect(writes).toEqual([]);
+		});
+
+		it("says the URL is in use when another app in the workspace already has it, including no URL", async () => {
+			stubApps("owner", { code: "23505", message: "duplicate key value violates unique constraint \"api_apps_workspace_id_url_key\"" });
+			for (const url of ["", "https://taken.example.com"]) {
+				const response = await put({ url });
+				expect(response.status, url).toBe(409);
+				await expect(response.json()).resolves.toEqual({ error: "app_url_in_use", message: "Another app in this workspace already uses this URL" });
+			}
+			// Other failures are still reported as unavailable.
+			stubApps("owner", { code: "57014", message: "canceling statement due to statement timeout" });
+			expect((await put({ title: "Renamed" })).status).toBe(503);
+		});
+
+		it("treats about:blank, which the dashboard sends for no URL, like an empty URL", async () => {
+			const bodies: unknown[] = [];
+			stubApps("owner");
+			const inner = globalThis.fetch;
+			vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+				const request = input instanceof Request ? input : new Request(String(input), init);
+				if (request.method === "PATCH" && request.url.includes("api_apps")) bodies.push(JSON.parse(await request.clone().text()));
+				return inner(request);
+			}));
+			for (const url of ["about:blank", " ABOUT:BLANK ", "", null]) expect((await put({ url })).status, String(url)).toBe(200);
+			expect(bodies).toEqual([{ url: "about:blank" }, { url: "about:blank" }, { url: "about:blank" }, { url: "about:blank" }]);
+		});
+
+		it("accepts http(s) app URLs as typed and clears an empty one", async () => {
+			stubApps("owner");
+			expect((await put({ url: " https://app.example.com/path " })).status).toBe(200);
+			expect((await put({ url: "" })).status).toBe(200);
+		});
 	});
 
 	it("rejects a workspace that is not accessible to the authenticated user", async () => {

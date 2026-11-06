@@ -91,6 +91,8 @@ export type Env = {
 	/** Encrypts Slack bot tokens, gateway keys and custom app secrets (shared with the Slack Worker). */
 	SLACK_SECRETS_ENCRYPTION_KEY?: string;
 	SLACK_SECRETS_ENCRYPTION_KEY_VERSION?: string;
+	/** The Slack agent Worker's public origin, for a company app's request URLs. Defaults to https://slack.phaseo.app. */
+	SLACK_AGENT_PUBLIC_ORIGIN?: string;
 	/** Public web origin for the Slack OAuth redirect and the settings page. Defaults to https://phaseo.app. */
 	PHASEO_WEB_ORIGIN?: string;
 	/** The Slack agent Worker's admin entrypoint (service binding, production only): its shared pages. */

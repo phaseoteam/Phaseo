@@ -46,8 +46,12 @@ been told.
 
 `manifest.json` is the hosted app's manifest. The Slack agent guide
 (`apps/docs/v1/guides/slack-agent.mdx`, and each translation) prints the same
-manifest for companies that use their own Slack app, with `YOUR_APP_ID` in both
-request URLs. `test/manifest.test.ts` keeps them in step with the code: the bot
+manifest for companies that use their own Slack app, with placeholder request
+URLs (`/apps/FROM_PHASEO_SETTINGS/events` and `/interactions`): Settings → Slack
+shows the saved app's own URLs, which name its `slack_apps` row, to paste
+instead. Only the row's signing secret is tried there; the older
+`/events/<app id>` URL reaches an app only once an install has verified it.
+`test/manifest.test.ts` keeps them in step with the code: the bot
 scopes must equal web-api's `SLACK_AGENT_BOT_SCOPES`, the bot events must be
 exactly the ones `src/events.ts` handles, and the URLs must point at this
 Worker's production host and routes.

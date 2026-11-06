@@ -38,9 +38,16 @@ try {
   // The migration carries the declarative definitions verbatim.
   for (const file of [
     'public/tables/preset_version_labels.sql',
-    'public/functions/set_preset_version_label.sql',
     'public/functions/remove_preset_version_label.sql',
   ]) assert.ok(migration.includes(await schema(file)), `migration includes ${file}`);
+  // A later migration stops non-creators labelling private versions, so the latest one carries set_preset_version_label.
+  const labelHeader = 'CREATE OR REPLACE FUNCTION public.set_preset_version_label (';
+  const labelMigrations = [];
+  for (const file of (await readdir(migrations)).filter((file) => file >= name).sort()) {
+    const source = await readFile(new URL(file, migrations), 'utf8');
+    if (source.includes(labelHeader)) labelMigrations.push(source);
+  }
+  assert.ok(labelMigrations.at(-1)?.includes(await schema('public/functions/set_preset_version_label.sql')), 'latest migration includes set_preset_version_label.sql');
   // Later migrations redefine the request context, so the latest one must carry it verbatim.
   const contextFile = 'public/functions/gateway_fetch_request_context_without_workspace_budget.sql';
   const contextHeader = 'CREATE OR REPLACE FUNCTION public.gateway_fetch_request_context_without_workspace_budget (';
@@ -91,6 +98,8 @@ try {
   for (const payload of Object.values(versionsBefore)) assert.equal(payload.preset.id, preset);
 
   await db.exec(migration);
+  // Later migrations that redefine set_preset_version_label, in order.
+  for (const source of labelMigrations.slice(1)) await db.exec(source);
 
   // Versions: v1 private (before the preset went public), v2 team, v3 public and published.
   const [v1, v2, v3, m1] = ['50000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000002',
@@ -138,6 +147,12 @@ try {
   await assert.rejects(setLabel('production', v2, member), /preset_label_forbidden/, 'members cannot move labels');
   await assert.rejects(setLabel('production', v2, outsider), /preset_label_forbidden/);
   await assert.rejects(setLabel('mine', m1, admin, privatePreset), /preset_label_forbidden/, 'admins cannot label a private preset');
+  // v1 was published while the preset was private: only the creator may point a label at it.
+  await assert.rejects(setLabel('probe', v1, admin), /preset_version_not_found/, 'an admin cannot label a private version');
+  assert.equal((await rows(`select count(*)::int as n from public.preset_version_labels where label = 'probe'`))[0].n, 0);
+  const [own] = await setLabel('probe', v1, owner);
+  assert.equal(own.version_id, v1, 'the creator can');
+  await removeLabel('probe');
   await assert.rejects(setLabel('x', v2, owner, '40000000-0000-4000-8000-0000000000ff'), /preset_not_found/);
   const [created] = await setLabel(' Production ', v2, admin);
   assert.deepEqual([created.label, created.version_id, created.updated_by], ['production', v2, admin]);
