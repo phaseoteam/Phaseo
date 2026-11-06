@@ -57,9 +57,9 @@ try {
   // Then the one teaching the helper the workspace's primary-department setting.
   const attributionMigration = await readFile(new URL('../migrations/20261031174621_department_attribution_primary_for_budgets.sql', import.meta.url), 'utf8');
   await db.exec(attributionMigration);
-  // 20261106153747_budget_enforcement_money_hygiene moves department usage into the shared
+  // 20261106165203_budget_enforcement_money_hygiene moves department usage into the shared
   // private.department_budget_usage (positive-cost requests plus outstanding holds).
-  const usageMigration = await readFile(new URL('../migrations/20261106153747_budget_enforcement_money_hygiene.sql', import.meta.url), 'utf8');
+  const usageMigration = await readFile(new URL('../migrations/20261106165203_budget_enforcement_money_hygiene.sql', import.meta.url), 'utf8');
   for (const path of ['private/functions/open_stepped_charges.sql', 'private/functions/budget_spend_items.sql', 'private/functions/department_budget_usage.sql',
     'private/functions/workspace_budget_status.sql', 'public/functions/gateway_spend_limit_seed.sql',
     'public/functions/workspace_department_budget_status.sql']) {
