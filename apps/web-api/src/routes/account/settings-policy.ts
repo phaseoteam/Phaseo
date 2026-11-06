@@ -207,7 +207,7 @@ accountSettingsPolicyRouter.get("/chat/effective-policy", async (c) => {
 
 accountSettingsPolicyRouter.get("/routing", async (c) => {
 	const workspaceId = c.req.query("workspaceId")?.trim();
-	if (!workspaceId) return c.json({ responseHealingEnabled: false, responseHealingLocked: false, responseHealingMode: "safe", routingMode: "balanced", teamName: null, alphaChannelEnabled: false, betaChannelEnabled: false, workspaceId: null }, 200, PRIVATE_NO_STORE_HEADERS);
+	if (!workspaceId) return c.json({ canManage: false, responseHealingEnabled: false, responseHealingLocked: false, responseHealingMode: "safe", routingMode: "balanced", teamName: null, alphaChannelEnabled: false, betaChannelEnabled: false, workspaceId: null }, 200, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const [teamResult, settingsResult] = await Promise.all([
@@ -217,6 +217,7 @@ accountSettingsPolicyRouter.get("/routing", async (c) => {
 	if (teamResult.error || settingsResult.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	return c.json({
 		responseHealingEnabled: Boolean(settingsResult.data?.response_healing_enabled),
+		canManage: ["owner", "admin"].includes(context.role.toLowerCase()),
 		responseHealingLocked: Boolean(settingsResult.data?.response_healing_locked),
 		responseHealingMode: settingsResult.data?.response_healing_mode === "strict" ? "strict" : "safe",
 		routingMode: settingsResult.data?.routing_mode ?? "balanced",

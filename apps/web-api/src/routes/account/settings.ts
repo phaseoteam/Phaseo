@@ -368,7 +368,7 @@ accountSettingsRouter.get("/privacy", async (c) => {
 	const workspaceId = c.req.query("workspaceId")?.trim();
 	if (!workspaceId) {
 		return c.json({
-			activeProviderModels: [], initialGlobal: null, providers: [],
+			canManage: false, activeProviderModels: [], initialGlobal: null, providers: [],
 			accountPolicy: null,
 			policy: {
 				privacyEnablePaidMayTrain: true, privacyEnableFreeMayTrain: true,
@@ -472,6 +472,7 @@ accountSettingsRouter.get("/privacy", async (c) => {
 		})),
 		teamName: teamResult.data?.name ?? null,
 		workspaceId,
+		canManage: ["owner", "admin"].includes(context.role.toLowerCase()),
 		dataContribution: {
 			available: contributionData !== null,
 			enabled: contributionData?.enabled === true,
