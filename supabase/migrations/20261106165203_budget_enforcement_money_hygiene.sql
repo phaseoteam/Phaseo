@@ -31,52 +31,82 @@
 --    or completed and billed, a day after the hold. This migration releases nothing itself.
 
 
-CREATE OR REPLACE FUNCTION private.open_stepped_charges (
-  p_workspace_id uuid
+CREATE OR REPLACE FUNCTION private.unbilled_spend (
+  p_workspace_id uuid,
+  p_since        timestamp with time zone,
+  p_key_ids      uuid[] DEFAULT NULL::uuid[]
 )
   RETURNS TABLE (
+    kind               text,
     billing_request_id text,
     key_id             uuid,
-    created_at         timestamp with time zone,
-    cost_nanos         bigint
+    at                 timestamp with time zone,
+    nanos              bigint,
+    recorded_nanos     bigint
   )
   LANGUAGE sql
   STABLE
   SET search_path TO ''
   AS $function$
-  -- Stepped stream charges (gateway_charge_request_total: applied, not final) whose
-  -- gateway_requests row has not landed: money already taken for a stream whose worker may have
-  -- stopped before writing it. Identified by billing request id (gateway_request_charges.request_id,
-  -- gateway_requests.billing_request_id), never by the public request id. Read from
-  -- gateway_request_charges_open_step_idx, each checked against the (workspace_id,
-  -- billing_request_id) index on gateway_requests.
-  select charge.request_id, charge.key_id, charge.created_at, charge.cost_nanos
+  -- Spend that budgets and key caps count although no ordinary request row carries it, by
+  -- billing request id. The database is the source of truth for both kinds; the SpendLimit
+  -- Durable Object drops its own copy of any id gateway_spend_limit_seed lists, so these rows
+  -- are never excluded. p_key_ids limits the rows to those keys (NULL: the whole workspace);
+  -- p_since (NULL: all time) is the earliest window the caller counts.
+  --
+  -- * 'charge': an applied wallet charge (gateway_request_charges) whose request row has not
+  --   landed: an open stepped charge (gateway_charge_request_total, is_final false) or a final
+  --   charge whose audit row was never written. Counted at its debit time (created_at), for the
+  --   key the charge records, until a gateway_requests row with that billing_request_id lands
+  --   (#3534's index on workspace_id, billing_request_id). Batch captures are left out: their cost
+  --   is on per-row request rows without a billing id. Charges before 2026-11-04 00:00 UTC are
+  --   left out: request rows recorded billing_request_id only from 2026-11-03 14:43 UTC, so an
+  --   older charge's audit row cannot be matched and is already counted.
+  -- * 'unpaid': a delivered request whose wallet charge failed (expected_cost_nanos, written by
+  --   the request audit, pending reconciliation): the part of the expected amount cost_nanos does
+  --   not cover, so the row counts greatest(cost_nanos, expected_cost_nanos) and a later charge
+  --   never counts twice. recorded_nanos is expected_cost_nanos.
+  select 'charge'::text, charge.request_id, charge.key_id, charge.created_at, charge.cost_nanos, charge.cost_nanos
   from public.gateway_request_charges charge
   where charge.workspace_id = p_workspace_id
-    and charge.is_final is false
     and charge.status = 'applied'
     and charge.cost_nanos > 0
+    and charge.created_at >= greatest(coalesce(p_since, '-infinity'::timestamptz), '2026-11-04 00:00:00+00'::timestamptz)
+    and charge.request_id not like 'batch\_capture:%'
+    and (p_key_ids is null or charge.key_id = any (p_key_ids))
     and not exists (
       select 1 from public.gateway_requests request
       where request.workspace_id = charge.workspace_id
         and request.billing_request_id = charge.request_id
-    );
+    )
+  union all
+  select 'unpaid'::text, request.billing_request_id, request.key_id, request.created_at,
+    request.expected_cost_nanos - greatest(coalesce(request.cost_nanos, 0), 0), request.expected_cost_nanos
+  from public.gateway_requests request
+  where request.workspace_id = p_workspace_id
+    and request.expected_cost_nanos is not null
+    and request.expected_cost_nanos > greatest(coalesce(request.cost_nanos, 0), 0)
+    and (p_key_ids is null or request.key_id = any (p_key_ids))
+    and request.created_at >= coalesce(p_since, '-infinity'::timestamptz);
 $function$;
 
-COMMENT ON FUNCTION "private"."open_stepped_charges"(uuid) IS 'Applied, not yet final stepped stream charges of a workspace whose request row has not landed, by billing request id. Counted by budget_spend_items and the key usage of gateway_spend_limit_seed.';
+COMMENT ON FUNCTION "private"."unbilled_spend"(uuid, timestamp with time zone, uuid[]) IS 'Spend counted toward budgets and key caps that no ordinary request row carries: applied wallet charges whose request row has not landed (by debit time) and the uncharged part of delivered requests pending reconciliation (expected_cost_nanos), by billing request id. Shared by budget_spend_items, the request-context key-limit checks, hold admission and gateway_spend_limit_seed.';
 
-REVOKE ALL ON FUNCTION "private"."open_stepped_charges"(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION "private"."unbilled_spend"(uuid, timestamp with time zone, uuid[]) FROM PUBLIC;
 
-REVOKE ALL ON FUNCTION "private"."open_stepped_charges"(uuid) FROM "postgres";
+REVOKE ALL ON FUNCTION "private"."unbilled_spend"(uuid, timestamp with time zone, uuid[]) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "private"."open_stepped_charges"(uuid) TO "postgres";
+GRANT EXECUTE ON FUNCTION "private"."unbilled_spend"(uuid, timestamp with time zone, uuid[]) TO "postgres";
+
+-- private.gateway_context_access runs as its caller (service_role, through
+-- gateway_fetch_request_context_bundle) and reads this.
+GRANT EXECUTE ON FUNCTION "private"."unbilled_spend"(uuid, timestamp with time zone, uuid[]) TO "service_role";
 
 CREATE OR REPLACE FUNCTION private.budget_spend_items (
   p_workspace_id        uuid,
   p_since               timestamp with time zone,
   p_key_ids             uuid[] DEFAULT NULL::uuid[],
-  p_exclude_request_ids text[] DEFAULT '{}'::text[],
-  p_exclude_charge_ids  text[] DEFAULT '{}'::text[]
+  p_exclude_request_ids text[] DEFAULT '{}'::text[]
 )
   RETURNS TABLE (
     key_id uuid,
@@ -89,32 +119,26 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
   SET search_path TO ''
   AS $function$
   -- The spend that counts toward workspace and department budgets, one row per item, shared by
-  -- private.workspace_budget_status and private.department_budget_usage (and so the spend-limit
+  -- gateway_workspace_budget_status and private.department_budget_usage (and so the spend-limit
   -- seed). A budget's usage is the sum of nanos over rows that are active or at/after its period
   -- start. p_key_ids limits the rows to those keys (NULL: the whole workspace). p_since (NULL: all
   -- time) bounds the history read, written as created_at >= coalesce(...) so partitions of
   -- gateway_requests are pruned under generic plans; active holds are returned whenever they were
-  -- made. The SpendLimit Durable Object's spend still counted from memory is left out:
-  -- p_exclude_request_ids matches gateway_requests.request_id (the public request id), and
-  -- p_exclude_charge_ids matches gateway_request_charges.request_id (the billing request id).
+  -- made. p_exclude_request_ids leaves out ordinary request rows (by public request id) the
+  -- SpendLimit Durable Object still counts from memory.
   --
   -- * Requests: every gateway_requests row with a positive cost, whether or not it succeeded (a
   --   cancelled or failed request can still be charged), read as two disjoint parts so each uses
   --   its partial index, except excluded request ids and the batch_hold_usage rows of a hold that
   --   is still active, which the hold itself counts.
-  -- * Delivered requests whose wallet charge is pending reconciliation (expected_cost_nanos, set
-  --   by the request audit when the charge failed): the part of the expected amount cost_nanos
-  --   does not yet cover, so each such row counts greatest(cost_nanos, expected_cost_nanos) and a
-  --   later charge never counts twice (gateway_requests_expected_cost_idx).
   -- * Active holds (held or reserved), in every period until they end: video and free-model
   --   holds less the cost already audited for them, other holds (batch, realtime) less what was
   --   captured or released. Realtime holds carry no key; their session does.
   -- * Captured video and free-model holds made in the period, less the cost audited for them, so
   --   a capture counts before (or without) its request row and once after it lands.
-  -- * Open stepped stream charges (private.open_stepped_charges): active from the charge's
-  --   created_at in every period until the request row lands, which then counts instead;
-  --   attributed to the charge's key when it has one (keyless charges count toward workspace
-  --   budgets only).
+  -- * Unbilled spend (private.unbilled_spend): applied charges whose request row has not landed,
+  --   by debit time, and the uncharged part of delivered requests pending reconciliation. Never
+  --   excluded: the Durable Object drops its copy of every id the seed lists.
   --
   -- Holds and request rows are matched by workspace and ids; their keys are compared null-safely
   -- because deleting a key sets both key_id columns to NULL (ON DELETE SET NULL).
@@ -141,16 +165,6 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
     and (p_key_ids is null or request.key_id = any (p_key_ids))
     and request.success is not true
     and request.cost_nanos > 0
-    and request.created_at >= coalesce(p_since, '-infinity'::timestamptz)
-    and not (request.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
-  union all
-  select request.key_id, request.created_at, false,
-    request.expected_cost_nanos - greatest(coalesce(request.cost_nanos, 0), 0)
-  from public.gateway_requests request
-  where request.workspace_id = p_workspace_id
-    and request.expected_cost_nanos is not null
-    and request.expected_cost_nanos > greatest(coalesce(request.cost_nanos, 0), 0)
-    and (p_key_ids is null or request.key_id = any (p_key_ids))
     and request.created_at >= coalesce(p_since, '-infinity'::timestamptz)
     and not (request.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
   union all
@@ -186,19 +200,17 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
         and (reservation.reservation_id like 'video_hold:%' or reservation.reservation_id like 'free_model_hold:%')
         and reservation.created_at >= coalesce(p_since, '-infinity'::timestamptz)))
   union all
-  select charge.key_id, charge.created_at, true, charge.cost_nanos
-  from private.open_stepped_charges(p_workspace_id) charge
-  where (p_key_ids is null or charge.key_id = any (p_key_ids))
-    and not (charge.billing_request_id = any (coalesce(p_exclude_charge_ids, '{}'::text[])));
+  select unbilled.key_id, unbilled.at, false, unbilled.nanos
+  from private.unbilled_spend(p_workspace_id, p_since, p_key_ids) unbilled;
 $function$;
 
-COMMENT ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) IS 'Spend items counted toward workspace and department budgets: positive-cost requests, active holds in every period, captured video and free-model holds less their audited cost (each hold''s batch_hold_usage rows counted once), the uncharged part of delivered requests pending reconciliation (expected_cost_nanos), and applied stepped stream charges whose request row has not landed (attributed to the charge''s key when it has one).';
+COMMENT ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[]) IS 'Spend items counted toward workspace and department budgets: positive-cost requests, active holds in every period, captured video and free-model holds less their audited cost (each hold''s batch_hold_usage rows counted once), and private.unbilled_spend (unaudited charges by debit time, delivered requests pending reconciliation).';
 
-REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) FROM PUBLIC;
+REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[]) FROM PUBLIC;
 
-REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) FROM "postgres";
+REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[]) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) TO "postgres";
+GRANT EXECUTE ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[]) TO "postgres";
 
 CREATE OR REPLACE FUNCTION private.department_budget_usage (
   p_workspace_id        uuid,
@@ -242,7 +254,6 @@ CREATE OR REPLACE FUNCTION private.department_budget_usage (
       p_workspace_id,
       (select min(budgets.period_start) from budgets),
       array(select distinct dk.key_id from department_keys dk where dk.department_id in (select budgets.department_id from budgets)),
-      p_exclude_request_ids,
       p_exclude_request_ids
     ) item
   )
@@ -264,133 +275,6 @@ REVOKE ALL ON FUNCTION "private"."department_budget_usage"(uuid, uuid, text[]) F
 REVOKE ALL ON FUNCTION "private"."department_budget_usage"(uuid, uuid, text[]) FROM "postgres";
 
 GRANT EXECUTE ON FUNCTION "private"."department_budget_usage"(uuid, uuid, text[]) TO "postgres";
-
-CREATE OR REPLACE FUNCTION private.workspace_budget_status (
-  p_workspace_id           uuid,
-  p_requested_amount_nanos bigint DEFAULT 0,
-  p_exclude_charge_ids     text[] DEFAULT '{}'::text[]
-)
-  RETURNS jsonb
-  LANGUAGE plpgsql
-  STABLE
-  SET search_path TO ''
-  AS $function$
-declare
-  v_now timestamptz := now();
-  v_result jsonb;
-  v_exceeded jsonb;
-begin
-  if p_workspace_id is null then
-    raise exception 'workspace_id_required';
-  end if;
-  if coalesce(p_requested_amount_nanos, 0) < 0 then
-    raise exception 'requested_amount_must_be_non_negative';
-  end if;
-
-  with configured as (
-    select
-      budget.id,
-      budget.workspace_id,
-      budget.interval,
-      budget.limit_nanos,
-      budget.created_by,
-      budget.created_at,
-      budget.updated_at,
-      case budget.interval
-        when 'daily' then date_trunc('day', v_now at time zone 'utc') at time zone 'utc'
-        when 'weekly' then date_trunc('week', v_now at time zone 'utc') at time zone 'utc'
-        when 'monthly' then date_trunc('month', v_now at time zone 'utc') at time zone 'utc'
-        else null
-      end as window_start,
-      case budget.interval
-        when 'daily' then (date_trunc('day', v_now at time zone 'utc') + interval '1 day') at time zone 'utc'
-        when 'weekly' then (date_trunc('week', v_now at time zone 'utc') + interval '1 week') at time zone 'utc'
-        when 'monthly' then (date_trunc('month', v_now at time zone 'utc') + interval '1 month') at time zone 'utc'
-        else null
-      end as reset_at
-    from public.workspace_budgets budget
-    where budget.workspace_id = p_workspace_id
-  ), items as materialized (
-    -- private.budget_spend_items, as for department budgets: positive-cost requests, active holds
-    -- in every period, captured video and free-model holds less their audited cost.
-    select item.at, item.active, item.nanos
-    from private.budget_spend_items(
-      p_workspace_id,
-      (select case when bool_or(configured.window_start is null) then null else min(configured.window_start) end from configured),
-      null::uuid[],
-      '{}'::text[],
-      p_exclude_charge_ids
-    ) item
-    where exists (select 1 from configured)
-  ), usage_rows as (
-    select
-      configured.*,
-      coalesce((
-        select sum(items.nanos) from items
-        where items.active or configured.window_start is null or items.at >= configured.window_start
-      ), 0)::bigint as usage_nanos
-    from configured
-  ), normalized as (
-    select *,
-      usage_nanos + coalesce(p_requested_amount_nanos, 0) as projected_usage_nanos,
-      greatest(limit_nanos - usage_nanos, 0) as remaining_nanos,
-      case
-        when coalesce(p_requested_amount_nanos, 0) > 0
-          then usage_nanos + p_requested_amount_nanos > limit_nanos
-        else usage_nanos >= limit_nanos
-      end as exceeded
-    from usage_rows
-  )
-  select coalesce(jsonb_agg(jsonb_build_object(
-    'id', id,
-    'workspace_id', workspace_id,
-    'interval', interval,
-    'limit_nanos', limit_nanos,
-    'usage_nanos', usage_nanos,
-    'remaining_nanos', remaining_nanos,
-    'projected_usage_nanos', projected_usage_nanos,
-    'exceeded', exceeded,
-    'window_start', window_start,
-    'reset_at', reset_at,
-    'created_by', created_by,
-    'created_at', created_at,
-    'updated_at', updated_at
-  ) order by case interval when 'daily' then 1 when 'weekly' then 2 when 'monthly' then 3 else 4 end), '[]'::jsonb)
-  into v_result
-  from normalized;
-
-  select budget
-  into v_exceeded
-  from jsonb_array_elements(v_result) budget
-  where (budget->>'exceeded')::boolean
-  order by case budget->>'interval' when 'daily' then 1 when 'weekly' then 2 when 'monthly' then 3 else 4 end
-  limit 1;
-
-  if v_exceeded is not null then
-    return jsonb_build_object(
-      'ok', false,
-      'reason', 'workspace_' || (v_exceeded->>'interval') || '_cost_budget_reached',
-      'limit_window', v_exceeded->>'interval',
-      'limit_metric', 'cost',
-      'current_value', (v_exceeded->>'usage_nanos')::bigint,
-      'limit_value', (v_exceeded->>'limit_nanos')::bigint,
-      'reset_at', v_exceeded->'reset_at',
-      'now', to_jsonb(v_now),
-      'budgets', v_result
-    );
-  end if;
-
-  return jsonb_build_object('ok', true, 'reason', null, 'now', to_jsonb(v_now), 'budgets', v_result);
-end;
-$function$;
-
-COMMENT ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[]) IS 'Workspace budgets with usage this UTC period (private.budget_spend_items), for gateway_workspace_budget_status and gateway_spend_limit_seed. p_exclude_charge_ids leaves out stepped charges (by billing request id) the SpendLimit Durable Object counts from memory; request rows are never excluded here (the Durable Object stops counting those once the seed reports them).';
-
-REVOKE ALL ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[]) FROM PUBLIC;
-
-REVOKE ALL ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[]) FROM "postgres";
-
-GRANT EXECUTE ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[]) TO "postgres";
 
 CREATE OR REPLACE FUNCTION public.gateway_department_budget_status (
   p_workspace_id           uuid,
@@ -491,10 +375,110 @@ CREATE OR REPLACE FUNCTION public.gateway_workspace_budget_status (
   SECURITY DEFINER
   SET search_path TO ''
   AS $function$
+declare
+  v_now timestamptz := now();
+  v_result jsonb;
+  v_exceeded jsonb;
 begin
-  -- Workspace budgets with their usage this UTC period and whether one is reached (or, with
-  -- p_requested_amount_nanos, would be passed); see private.workspace_budget_status.
-  return private.workspace_budget_status(p_workspace_id, p_requested_amount_nanos, '{}'::text[]);
+  if p_workspace_id is null then
+    raise exception 'workspace_id_required';
+  end if;
+  if coalesce(p_requested_amount_nanos, 0) < 0 then
+    raise exception 'requested_amount_must_be_non_negative';
+  end if;
+
+  with configured as (
+    select
+      budget.id,
+      budget.workspace_id,
+      budget.interval,
+      budget.limit_nanos,
+      budget.created_by,
+      budget.created_at,
+      budget.updated_at,
+      case budget.interval
+        when 'daily' then date_trunc('day', v_now at time zone 'utc') at time zone 'utc'
+        when 'weekly' then date_trunc('week', v_now at time zone 'utc') at time zone 'utc'
+        when 'monthly' then date_trunc('month', v_now at time zone 'utc') at time zone 'utc'
+        else null
+      end as window_start,
+      case budget.interval
+        when 'daily' then (date_trunc('day', v_now at time zone 'utc') + interval '1 day') at time zone 'utc'
+        when 'weekly' then (date_trunc('week', v_now at time zone 'utc') + interval '1 week') at time zone 'utc'
+        when 'monthly' then (date_trunc('month', v_now at time zone 'utc') + interval '1 month') at time zone 'utc'
+        else null
+      end as reset_at
+    from public.workspace_budgets budget
+    where budget.workspace_id = p_workspace_id
+  ), items as materialized (
+    -- private.budget_spend_items, as for department budgets: positive-cost requests, active holds
+    -- in every period, captured video and free-model holds less their audited cost, and unbilled
+    -- spend (charges without a request row, delivered requests pending reconciliation).
+    select item.at, item.active, item.nanos
+    from private.budget_spend_items(
+      p_workspace_id,
+      (select case when bool_or(configured.window_start is null) then null else min(configured.window_start) end from configured)
+    ) item
+    where exists (select 1 from configured)
+  ), usage_rows as (
+    select
+      configured.*,
+      coalesce((
+        select sum(items.nanos) from items
+        where items.active or configured.window_start is null or items.at >= configured.window_start
+      ), 0)::bigint as usage_nanos
+    from configured
+  ), normalized as (
+    select *,
+      usage_nanos + coalesce(p_requested_amount_nanos, 0) as projected_usage_nanos,
+      greatest(limit_nanos - usage_nanos, 0) as remaining_nanos,
+      case
+        when coalesce(p_requested_amount_nanos, 0) > 0
+          then usage_nanos + p_requested_amount_nanos > limit_nanos
+        else usage_nanos >= limit_nanos
+      end as exceeded
+    from usage_rows
+  )
+  select coalesce(jsonb_agg(jsonb_build_object(
+    'id', id,
+    'workspace_id', workspace_id,
+    'interval', interval,
+    'limit_nanos', limit_nanos,
+    'usage_nanos', usage_nanos,
+    'remaining_nanos', remaining_nanos,
+    'projected_usage_nanos', projected_usage_nanos,
+    'exceeded', exceeded,
+    'window_start', window_start,
+    'reset_at', reset_at,
+    'created_by', created_by,
+    'created_at', created_at,
+    'updated_at', updated_at
+  ) order by case interval when 'daily' then 1 when 'weekly' then 2 when 'monthly' then 3 else 4 end), '[]'::jsonb)
+  into v_result
+  from normalized;
+
+  select budget
+  into v_exceeded
+  from jsonb_array_elements(v_result) budget
+  where (budget->>'exceeded')::boolean
+  order by case budget->>'interval' when 'daily' then 1 when 'weekly' then 2 when 'monthly' then 3 else 4 end
+  limit 1;
+
+  if v_exceeded is not null then
+    return jsonb_build_object(
+      'ok', false,
+      'reason', 'workspace_' || (v_exceeded->>'interval') || '_cost_budget_reached',
+      'limit_window', v_exceeded->>'interval',
+      'limit_metric', 'cost',
+      'current_value', (v_exceeded->>'usage_nanos')::bigint,
+      'limit_value', (v_exceeded->>'limit_nanos')::bigint,
+      'reset_at', v_exceeded->'reset_at',
+      'now', to_jsonb(v_now),
+      'budgets', v_result
+    );
+  end if;
+
+  return jsonb_build_object('ok', true, 'reason', null, 'now', to_jsonb(v_now), 'budgets', v_result);
 end;
 $function$;
 
@@ -536,10 +520,10 @@ begin
   if cardinality(v_key_ids) > 100 then
     raise exception using errcode = '22023', message = 'too_many_key_ids';
   end if;
-  -- p_exclude_request_ids is the SpendLimit Durable Object's spend still counted from memory:
-  -- gateway_requests rows are skipped by request_id (the public request id) and stepped charge
-  -- rows by gateway_request_charges.request_id (the billing request id), which it also lists for
-  -- its open checkpoint entries.
+  -- p_exclude_request_ids is the SpendLimit Durable Object's ordinary spend still counted from
+  -- memory, by public request id; those gateway_requests rows are skipped. Unbilled spend (wallet
+  -- charges without a request row, delivered requests pending reconciliation) is never skipped:
+  -- it is returned in stepped_charges and unpaid_requests, and the coordinator drops its copies.
   if cardinality(v_exclude) > 5000 then
     raise exception using errcode = '22023', message = 'too_many_excluded_request_ids';
   end if;
@@ -586,23 +570,10 @@ begin
         and charged.created_at >= least(week_start, month_start)
         and not (charged.request_id = any(v_exclude))
       union all
-      -- Open stepped charges of the key, cost only.
-      select charge.key_id, charge.created_at, charge.cost_nanos, false
-      from private.open_stepped_charges(p_workspace_id) charge
-      where charge.key_id = any(array(select key_rows.id from key_rows where key_rows.limited))
-        and charge.created_at >= least(week_start, month_start)
-        and not (charge.billing_request_id = any(v_exclude))
-      union all
-      -- Delivered requests whose charge is pending reconciliation: the uncharged expected cost.
-      select pending.key_id, pending.created_at,
-        pending.expected_cost_nanos - greatest(coalesce(pending.cost_nanos, 0), 0), false
-      from public.gateway_requests pending
-      where pending.workspace_id = p_workspace_id
-        and pending.key_id = any(array(select key_rows.id from key_rows where key_rows.limited))
-        and pending.expected_cost_nanos is not null
-        and pending.expected_cost_nanos > greatest(coalesce(pending.cost_nanos, 0), 0)
-        and pending.created_at >= least(week_start, month_start)
-        and not (pending.request_id = any(v_exclude))
+      -- Unbilled spend of the key (private.unbilled_spend), cost only, never excluded.
+      select unbilled.key_id, unbilled.at, unbilled.nanos, false
+      from private.unbilled_spend(p_workspace_id, least(week_start, month_start),
+        array(select key_rows.id from key_rows where key_rows.limited)) unbilled
     ) gr
     group by gr.key_id
   )
@@ -629,7 +600,7 @@ begin
   -- Department budgets with their usage this UTC period and every key that counts toward each
   -- department, from private.department_budget_usage, the calculation gateway_department_budget_status
   -- admits holds with: positive-cost requests of the department's keys (less excluded request ids)
-  -- plus their outstanding batch, video and realtime holds and open stepped charges.
+  -- plus their outstanding batch, video and realtime holds and unbilled spend.
   if exists (select 1 from public.workspace_department_budgets b where b.workspace_id = p_workspace_id) then
     select coalesce(jsonb_agg(jsonb_build_object(
       'id', usage.id,
@@ -669,7 +640,21 @@ begin
     'week_start', to_jsonb(week_start),
     'month_start', to_jsonb(month_start),
     'keys', v_keys,
-    'budget_status', private.workspace_budget_status(p_workspace_id, 0, v_exclude),
+    'budget_status', public.gateway_workspace_budget_status(p_workspace_id, 0),
+    -- The unbilled spend counted above, by billing request id, for the windows the seed covers:
+    -- the coordinator drops its own copy of each listed id and uses the amount as a floor.
+    'stepped_charges', coalesce((
+      select jsonb_agg(jsonb_build_object('billing_id', unbilled.billing_request_id, 'charged_nanos', unbilled.nanos)
+        order by unbilled.billing_request_id)
+      from private.unbilled_spend(p_workspace_id, least(week_start, month_start)) unbilled
+      where unbilled.kind = 'charge'
+    ), '[]'::jsonb),
+    'unpaid_requests', coalesce((
+      select jsonb_agg(jsonb_build_object('billing_id', unbilled.billing_request_id, 'expected_nanos', unbilled.recorded_nanos)
+        order by unbilled.billing_request_id)
+      from private.unbilled_spend(p_workspace_id, least(week_start, month_start)) unbilled
+      where unbilled.kind = 'unpaid' and unbilled.billing_request_id is not null
+    ), '[]'::jsonb),
     'excluded_rows', v_excluded,
     'department_budgets', v_departments
   );
@@ -1056,6 +1041,11 @@ begin
       and charged.success is not true
       and charged.cost_nanos > 0
       and charged.created_at >= least(week_start, month_start)
+    -- Unbilled spend (private.unbilled_spend): charges without a request row, delivered requests
+    -- pending reconciliation; cost only.
+    union all
+    select unbilled.at, unbilled.nanos, false
+    from private.unbilled_spend(gateway_context_access.workspace_id, least(week_start, month_start), array[gateway_context_access.api_key_id]) unbilled
   ) gr;
   end if;
 
@@ -1580,6 +1570,11 @@ begin
       and charged.success is not true
       and charged.cost_nanos > 0
       and charged.created_at >= least(week_start, month_start)
+    -- Unbilled spend (private.unbilled_spend): charges without a request row, delivered requests
+    -- pending reconciliation; cost only.
+    union all
+    select unbilled.at, unbilled.nanos, false
+    from private.unbilled_spend(gateway_fetch_request_context_without_workspace_budget.workspace_id, least(week_start, month_start), array[gateway_fetch_request_context_without_workspace_budget.api_key_id]) unbilled
   ) gr;
   end if;
 
@@ -2048,6 +2043,10 @@ begin
       from public.gateway_requests charged
       where charged.workspace_id = p_workspace_id and charged.key_id = p_key_id
         and charged.success is not true and charged.cost_nanos > 0
+      -- Unbilled spend (private.unbilled_spend), cost only.
+      union all
+      select unbilled.at, unbilled.nanos, false
+      from private.unbilled_spend(p_workspace_id, least(v_day_start, v_week_start, v_month_start), array[p_key_id]) unbilled
     ) usage;
 
     -- Video create audit rows have zero cost until completion. Count the unpaid

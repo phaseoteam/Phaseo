@@ -20,8 +20,8 @@ CREATE TABLE "public"."gateway_request_charges" (
 ALTER TABLE "public"."gateway_request_charges"
   ENABLE ROW LEVEL SECURITY;
 
-CREATE INDEX gateway_request_charges_open_step_idx ON public.gateway_request_charges USING btree (workspace_id, request_id) INCLUDE (key_id, created_at, cost_nanos)
-  WHERE ((is_final IS FALSE) AND (status = 'applied'::text) AND (cost_nanos > 0));
+CREATE INDEX gateway_request_charges_applied_cost_idx ON public.gateway_request_charges USING btree (workspace_id, created_at) INCLUDE (request_id, key_id, cost_nanos)
+  WHERE ((status = 'applied'::text) AND (cost_nanos > 0));
 
 CREATE INDEX idx_gateway_request_charges_created_at ON public.gateway_request_charges USING btree (created_at DESC);
 
