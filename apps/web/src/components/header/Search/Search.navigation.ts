@@ -4,6 +4,7 @@ import type { PaletteItem } from "./Search.types";
 export type GlobalNavigationItem = PaletteItem & { href: string };
 
 export type SearchCapabilities = {
+	oauthApps: boolean;
 	autoRouting: boolean;
 	classifiers: boolean;
 	workloadIdentity: boolean;
@@ -16,6 +17,7 @@ export type SearchCapabilities = {
 };
 
 export const DEFAULT_SEARCH_CAPABILITIES: SearchCapabilities = {
+	oauthApps: false,
 	autoRouting: false,
 	classifiers: false,
 	workloadIdentity: false,
@@ -28,6 +30,7 @@ export const DEFAULT_SEARCH_CAPABILITIES: SearchCapabilities = {
 };
 
 const GATED_DESTINATIONS: ReadonlyArray<[string, keyof SearchCapabilities]> = [
+	["/settings/oauth-apps", "oauthApps"],
 	["/settings/routing/auto", "autoRouting"],
 	["/settings/classifiers", "classifiers"],
 	["/settings/trusted-workloads", "workloadIdentity"],
@@ -127,7 +130,7 @@ const CURATED_NAVIGATION_ITEMS: readonly GlobalNavigationItem[] = [
 ];
 
 // Derive settings pages from the sidebar so new subpages remain discoverable.
-const settingsPages: GlobalNavigationItem[] = getSettingsSidebar({ showAutoRouting: true, showClassifiers: true, showWorkloadIdentity: true, showSlackAgent: true }).flatMap((group) =>
+const settingsPages: GlobalNavigationItem[] = getSettingsSidebar({ showOAuthApps: true, showAutoRouting: true, showClassifiers: true, showWorkloadIdentity: true, showSlackAgent: true }).flatMap((group) =>
 	group.items.filter((item) => !item.disabled && !item.external).flatMap((item) => [
 		{ id: `nav-${item.href.slice(1).replaceAll("/", "-")}`, title: item.label, href: item.href, subtitle: `${group.scope === "personal" ? "Account" : "Workspace"} settings`, keywords: ["settings", item.label] },
 		...(item.children ?? []).map((child) => ({ id: `nav-${child.href.slice(1).replaceAll("/", "-")}`, title: `${item.label}: ${child.label}`, href: child.href, subtitle: `${group.scope === "personal" ? "Account" : "Workspace"} settings`, keywords: ["settings", item.label, child.label] })),

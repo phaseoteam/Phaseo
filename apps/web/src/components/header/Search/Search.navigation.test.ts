@@ -11,6 +11,8 @@ describe("global search navigation", () => {
 		expect(disabled).not.toContain("/settings/routing/auto");
 		expect(disabled).not.toContain("/settings/workspaces/enterprise/sso");
 		expect(disabled).not.toContain("/settings/webhooks/new");
+		expect(disabled).not.toContain("/settings/oauth-apps");
+		expect(getGlobalNavigationItems({ ...DEFAULT_SEARCH_CAPABILITIES, oauthApps: true }).map((item) => item.href)).toContain("/settings/oauth-apps");
 		expect(disabled).not.toContain("/chat/video");
 		expect(disabled).not.toContain("/games");
 		expect(disabled).not.toContain("/settings/classifiers");

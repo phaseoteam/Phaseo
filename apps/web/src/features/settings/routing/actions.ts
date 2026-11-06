@@ -13,6 +13,7 @@ import { autoRoutingFlag } from "@/lib/flags";
 export type RoutingMode = "balanced" | "price" | "latency" | "throughput";
 
 type UpdateRoutingSettingsInput = {
+	expectedWorkspaceId?: string;
 	mode: RoutingMode;
 	betaChannelEnabled?: boolean;
 	alphaChannelEnabled?: boolean;
@@ -25,6 +26,7 @@ export const updateRoutingSettings = createServerFn({ method: "POST" })
 	.middleware([serverMutation])
 	.validator((input: UpdateRoutingSettingsInput) => input)
 	.handler(async ({ data: {
+	expectedWorkspaceId,
 	mode,
 	betaChannelEnabled,
 	alphaChannelEnabled,
@@ -36,6 +38,9 @@ export const updateRoutingSettings = createServerFn({ method: "POST" })
 			const context = await getServerAccountContext();
 			if (!context.accessToken || !context.workspaceId) {
 				return { ok: false as const, error: "Select a workspace before changing routing settings." };
+			}
+			if (expectedWorkspaceId && context.workspaceId !== expectedWorkspaceId) {
+				return { ok: false as const, error: "Active workspace changed" };
 			}
 			const response = await fetchAccountWebApi<{ ok: true; gatewayCacheInvalidated?: boolean }>("/api/account/settings/routing", context.accessToken, {
 				method: "PUT",

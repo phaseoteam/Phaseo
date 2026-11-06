@@ -15,6 +15,38 @@ const env = {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("account policy settings routes", () => {
+	it.each(["owner", "admin", "member"])("reports routing edit access for a %s and enforces it on writes", async (role) => {
+		let writes = 0;
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const request = input instanceof Request ? input : new Request(input, init);
+			if (request.url.includes("/auth/v1/user")) return Response.json({ id: "user-1" });
+			if (request.url.includes("workspace_members")) return Response.json([{ role }]);
+			if (request.url.includes("/workspaces")) return Response.json([{ id: "workspace-1", name: "Fixture workspace", owner_user_id: role === "owner" ? "user-1" : "other-user" }]);
+			if (request.url.includes("workspace_settings")) {
+				if (request.method !== "GET") writes++;
+				return Response.json([]);
+			}
+			return Response.json([]);
+		}));
+		const canManage = role !== "member";
+		const response = await app.request("https://phaseo.app/api/account/settings/routing?workspaceId=workspace-1", { headers: { authorization: "Bearer fixture" } }, env);
+		expect(response.status).toBe(200);
+		await expect(response.json()).resolves.toMatchObject({ canManage, workspaceId: "workspace-1" });
+		const privacy = await app.request("https://phaseo.app/api/account/settings/privacy?workspaceId=workspace-1", { headers: { authorization: "Bearer fixture" } }, env);
+		expect(privacy.status).toBe(200);
+		await expect(privacy.json()).resolves.toMatchObject({ canManage, workspaceId: "workspace-1" });
+		const write = await app.request("https://phaseo.app/api/account/settings/routing", {
+			method: "PUT", headers: { authorization: "Bearer fixture", "content-type": "application/json" },
+			body: JSON.stringify({ workspaceId: "workspace-1", mode: "price" }),
+		}, env);
+		expect(write.status).toBe(canManage ? 200 : 403);
+		expect(writes).toBe(canManage ? 1 : 0);
+	});
+
+	it("does not grant routing edit access without a selected workspace", async () => {
+		const response = await app.request("https://phaseo.app/api/account/settings/routing", {}, env);
+		await expect(response.json()).resolves.toMatchObject({ canManage: false, workspaceId: null });
+	});
 	it("returns the private effective Chat policy with the guardrails the Chat key inherits and its own", async () => {
 		const rpcBodies: unknown[] = [];
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {

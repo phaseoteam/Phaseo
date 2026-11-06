@@ -45,6 +45,9 @@ function RoutingSettingsView({ initialData, showModelSuccessor }: { initialData:
 	return (
 		<div className="space-y-8">
 			<RoutingSettingsClient
+				key={initialData.workspaceId}
+				workspaceId={initialData.workspaceId}
+				canManage={initialData.canManage}
 				initialMode={initialData.routingMode}
 				initialBetaChannelEnabled={initialData.betaChannelEnabled}
 				initialAlphaChannelEnabled={initialData.alphaChannelEnabled}

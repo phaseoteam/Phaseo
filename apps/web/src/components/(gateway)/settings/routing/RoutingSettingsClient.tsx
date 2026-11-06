@@ -1,36 +1,12 @@
-import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
-
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
-import {
-	updateRoutingSettings,
-	type RoutingMode,
-} from "@/features/settings/routing/actions";
+import { useRef, useState } from "react";
 import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
-
-type RoutingOption = {
-	value: RoutingMode;
-	label: string;
-	description: string;
-};
-
-type PreviewKind = "active" | "beta" | "alpha";
-type PreviewRow = {
-	name: string;
-	share: number;
-	kind?: PreviewKind;
-};
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
+import { WorkspacePolicyForm } from "../WorkspacePolicyForm";
+import { updateRoutingSettings, type RoutingMode } from "@/features/settings/routing/actions";
 
 const ROUTING_OPTION_COPY = [
 	{ value: "balanced", labelKey: "credits.Balanced", descriptionKey: "routingModeDescriptions.balanced" },
@@ -44,7 +20,10 @@ const RESPONSE_HEALING_OPTION_COPY = [
 	{ value: "strict", labelKey: "strings.Strict" },
 ] as const;
 
+
 type Props = {
+	workspaceId: string;
+	canManage: boolean;
 	initialMode?: RoutingMode | null;
 	initialBetaChannelEnabled?: boolean;
 	initialAlphaChannelEnabled?: boolean;
@@ -54,244 +33,51 @@ type Props = {
 	teamName?: string | null;
 };
 
-const AUTO_SAVE_DEBOUNCE_MS = 650;
-
-const PREVIEW_DISTRIBUTIONS: Record<RoutingMode, PreviewRow[]> = {
-	balanced: [
-		{ name: "OpenAI", share: 34, kind: "active" },
-		{ name: "Anthropic", share: 29, kind: "active" },
-		{ name: "Google", share: 22, kind: "active" },
-		{ name: "Groq", share: 15, kind: "active" },
-	],
-	price: [
-		{ name: "OpenAI", share: 18, kind: "active" },
-		{ name: "Anthropic", share: 14, kind: "active" },
-		{ name: "Google", share: 20, kind: "active" },
-		{ name: "Groq", share: 48, kind: "active" },
-	],
-	latency: [
-		{ name: "OpenAI", share: 24, kind: "active" },
-		{ name: "Anthropic", share: 18, kind: "active" },
-		{ name: "Google", share: 13, kind: "active" },
-		{ name: "Groq", share: 45, kind: "active" },
-	],
-	throughput: [
-		{ name: "OpenAI", share: 23, kind: "active" },
-		{ name: "Anthropic", share: 35, kind: "active" },
-		{ name: "Google", share: 27, kind: "active" },
-		{ name: "Groq", share: 15, kind: "active" },
-	],
-};
-
-function withCanaryTraffic(
-	rows: PreviewRow[],
-	betaEnabled: boolean,
-	alphaEnabled: boolean,
-): PreviewRow[] {
-	if (!betaEnabled) return rows;
-	const alphaShare = alphaEnabled ? 2 : 0;
-	const betaShare = 5 - alphaShare;
-	const totalCanaryShare = betaShare + alphaShare;
-	const next: PreviewRow[] = rows.map((row, index) => ({
-		...row,
-		share: index === 0 ? Math.max(0, row.share - totalCanaryShare) : row.share,
-	}));
-	if (betaShare > 0) {
-		next.push({ name: "Beta Pool", share: betaShare, kind: "beta" });
-	}
-	if (alphaShare > 0) {
-		next.push({ name: "Alpha Pool", share: alphaShare, kind: "alpha" });
-	}
-	return next;
-}
-
-export default function RoutingSettingsClient({
-	initialMode,
-	initialBetaChannelEnabled,
-	initialAlphaChannelEnabled,
-	initialResponseHealingEnabled,
-	initialResponseHealingLocked,
-	initialResponseHealingMode,
-	teamName,
-}: Props) {
+export default function RoutingSettingsClient({ workspaceId, canManage, initialMode, initialBetaChannelEnabled, initialAlphaChannelEnabled, initialResponseHealingEnabled, initialResponseHealingLocked, initialResponseHealingMode, teamName }: Props) {
 	const t = useTranslations("SettingsUI");
 	const tAuditCopy = useTranslations();
-	const routingOptions: RoutingOption[] = ROUTING_OPTION_COPY.map((option) => ({
-		value: option.value,
-		label: t(option.labelKey as never),
-		description: t(option.descriptionKey as never),
-	}));
-	const responseHealingOptions = RESPONSE_HEALING_OPTION_COPY.map((option) => ({
-		value: option.value,
-		label: t(option.labelKey as never),
-	}));
+	const routingOptions = ROUTING_OPTION_COPY.map((option) => ({ value: option.value, label: t(option.labelKey as never), description: t(option.descriptionKey as never) }));
+	const responseHealingOptions = RESPONSE_HEALING_OPTION_COPY.map((option) => ({ value: option.value, label: t(option.labelKey as never) }));
 	const invalidateSettings = useInvalidatePrivateSettings();
-	const defaultMode = initialMode ?? "balanced";
-	const defaultBeta = Boolean(initialBetaChannelEnabled);
-	const defaultAlpha = defaultBeta && Boolean(initialAlphaChannelEnabled);
-	const defaultResponseHealing = Boolean(initialResponseHealingEnabled);
-	const defaultResponseHealingLocked = Boolean(initialResponseHealingLocked);
-	const defaultResponseHealingMode =
-		initialResponseHealingMode === "strict" ? "strict" : "safe";
-	const [mode, setMode] = useState<RoutingMode>(defaultMode);
-	const [betaChannelEnabled, setBetaChannelEnabled] = useState(defaultBeta);
-	const [alphaChannelEnabled, setAlphaChannelEnabled] = useState(defaultAlpha);
-	const [responseHealingEnabled, setResponseHealingEnabled] = useState(
-		defaultResponseHealing,
-	);
-	const [responseHealingLocked, setResponseHealingLocked] = useState(
-		defaultResponseHealingLocked,
-	);
-	const [responseHealingMode, setResponseHealingMode] = useState<"safe" | "strict">(
-		defaultResponseHealingMode,
-	);
-	const [savedMode, setSavedMode] = useState<RoutingMode>(defaultMode);
-	const [savedBeta, setSavedBeta] = useState(defaultBeta);
-	const [savedAlpha, setSavedAlpha] = useState(defaultAlpha);
-	const [savedResponseHealing, setSavedResponseHealing] = useState(
-		defaultResponseHealing,
-	);
-	const [savedResponseHealingLocked, setSavedResponseHealingLocked] = useState(
-		defaultResponseHealingLocked,
-	);
-	const [savedResponseHealingMode, setSavedResponseHealingMode] = useState(
-		defaultResponseHealingMode,
-	);
+	const [saved, setSaved] = useState(() => ({
+		mode: initialMode ?? "balanced",
+		betaChannelEnabled: Boolean(initialBetaChannelEnabled),
+		alphaChannelEnabled: Boolean(initialBetaChannelEnabled && initialAlphaChannelEnabled),
+		responseHealingEnabled: Boolean(initialResponseHealingEnabled),
+		responseHealingLocked: Boolean(initialResponseHealingLocked),
+		responseHealingMode: initialResponseHealingMode === "strict" ? "strict" as const : "safe" as const,
+	}));
+	const [draft, setDraft] = useState(saved);
 	const [saving, setSaving] = useState(false);
-	const isFirstRun = useRef(true);
-	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const saveSequenceRef = useRef(0);
-
+	const savingRef = useRef(false);
+	const [error, setError] = useState<string | null>(null);
+	const [notice, setNotice] = useState<string | null>(null);
+	const { mode, betaChannelEnabled, alphaChannelEnabled, responseHealingEnabled, responseHealingLocked, responseHealingMode } = draft;
+	const isDirty = JSON.stringify(draft) !== JSON.stringify(saved);
 	const activeOption = routingOptions.find((option) => option.value === mode);
-	const previewRows = useMemo(
-		() =>
-			withCanaryTraffic(
-				PREVIEW_DISTRIBUTIONS[mode],
-				betaChannelEnabled,
-				alphaChannelEnabled,
-			),
-		[mode, betaChannelEnabled, alphaChannelEnabled],
-	);
-
-	useEffect(() => {
-		if (!betaChannelEnabled && alphaChannelEnabled) {
-			setAlphaChannelEnabled(false);
-		}
-	}, [betaChannelEnabled, alphaChannelEnabled]);
-
-	useEffect(() => {
-		if (isFirstRun.current) {
-			isFirstRun.current = false;
-			return;
-		}
-
-		if (timerRef.current) {
-			clearTimeout(timerRef.current);
-		}
-
-		timerRef.current = setTimeout(async () => {
-		const saveSequence = ++saveSequenceRef.current;
+	function update<K extends keyof typeof draft>(key: K, value: (typeof draft)[K]) {
+		setDraft((current) => ({ ...current, [key]: value }));
+	}
+	function cancel() { setDraft(saved); setError(null); setNotice(null); }
+	async function save() {
+		if (!canManage || !isDirty || savingRef.current) return;
+		savingRef.current = true;
 		setSaving(true);
+		setError(null);
+		setNotice(null);
 		try {
-			const save = async () => {
-				const result = await updateRoutingSettings({ data: {
-					mode,
-					betaChannelEnabled,
-					alphaChannelEnabled,
-					responseHealingEnabled,
-					responseHealingLocked,
-					responseHealingMode,
-				} });
-				if (!result.ok) throw new Error(result.error);
-				void invalidateSettings();
-				return result;
-			};
-			const promise = save();
-			toast.promise(
-				promise,
-				{
-					loading: t("strings.phraseUpdatingRoutingPolicy" as never),
-					success: (result) =>
-						result.gatewayCacheInvalidated
-							? t("credits.Routing policy updated" as never)
-							: t("credits.Routing policy updated; gateway cache refresh pending" as never),
-						error: (error) =>
-							localizedSettingsError(error, t, "Failed to update routing policy"),
-					},
-				);
-				await promise;
-				if (saveSequence === saveSequenceRef.current) {
-					setSavedMode(mode);
-					setSavedBeta(betaChannelEnabled);
-					setSavedAlpha(alphaChannelEnabled);
-					setSavedResponseHealing(responseHealingEnabled);
-					setSavedResponseHealingLocked(responseHealingLocked);
-					setSavedResponseHealingMode(responseHealingMode);
-				}
-			} catch {
-				// Keep unsaved state; the toast reports the failure.
-			} finally {
-				if (saveSequence === saveSequenceRef.current) {
-					setSaving(false);
-				}
-			}
-		}, AUTO_SAVE_DEBOUNCE_MS);
-
-		return () => {
-			if (timerRef.current) {
-				clearTimeout(timerRef.current);
-				timerRef.current = null;
-			}
-		};
-	}, [
-		invalidateSettings,
-		mode,
-		betaChannelEnabled,
-		alphaChannelEnabled,
-		responseHealingEnabled,
-		responseHealingLocked,
-		responseHealingMode,
-	]);
-
-	const isDirty =
-		mode !== savedMode ||
-		betaChannelEnabled !== savedBeta ||
-		alphaChannelEnabled !== savedAlpha ||
-		responseHealingEnabled !== savedResponseHealing ||
-		responseHealingLocked !== savedResponseHealingLocked ||
-		responseHealingMode !== savedResponseHealingMode;
-	const stateText = saving
-		? t("labels.saving")
-		: isDirty
-			? t("credits.Pending sync" as never)
-			: t("credits.Synced" as never);
-
-	function barTone(kind?: PreviewKind) {
-		if (kind === "beta") return "bg-amber-500/80";
-		if (kind === "alpha") return "bg-red-500/80";
-		return "bg-primary";
-	}
-
-	function barTrackTone(kind?: PreviewKind) {
-		if (kind === "beta") return "bg-amber-100/80";
-		if (kind === "alpha") return "bg-red-100/80";
-		return "bg-primary/10";
-	}
-
-	function barLabelTone(kind?: PreviewKind) {
-		if (kind === "beta") return "text-amber-700 dark:text-amber-300";
-		if (kind === "alpha") return "text-red-700 dark:text-red-300";
-		return "text-foreground";
-	}
-
-	function subLabelTone(kind?: PreviewKind) {
-		if (kind === "beta") return "text-amber-600 dark:text-amber-300";
-		if (kind === "alpha") return "text-red-600 dark:text-red-300";
-		return "text-muted-foreground";
+			const result = await updateRoutingSettings({ data: { ...draft, expectedWorkspaceId: workspaceId } });
+			if (!result.ok) throw new Error(result.error);
+			setSaved(draft);
+			setNotice(t(result.gatewayCacheInvalidated ? "credits.Routing policy updated" : "credits.Routing policy updated; gateway cache refresh pending"));
+			void invalidateSettings();
+		} catch (cause) {
+			setError(localizedSettingsError(cause, t, "Failed to update routing policy", t("credits.Failed to update routing policy")));
+		} finally { savingRef.current = false; setSaving(false); }
 	}
 
 	return (
-		<div className="space-y-6">
+		<WorkspacePolicyForm canManage={canManage} dirty={isDirty} saving={saving} error={error} notice={notice} onSave={save} onCancel={cancel}>
 			<section className="space-y-3">
 				<div className="flex items-start justify-between gap-4">
 					<div>
@@ -301,9 +87,6 @@ export default function RoutingSettingsClient({
 							{tAuditCopy("Common.ui.auditCopy.workspaceSuffix", { named: teamName ? "yes" : "no", workspace: teamName ?? "" })}.
 						</p>
 					</div>
-					<Badge variant="outline" className="shrink-0 rounded-md font-normal">
-						{stateText}
-					</Badge>
 				</div>
 
 				<div className="overflow-hidden rounded-md border">
@@ -319,7 +102,7 @@ export default function RoutingSettingsClient({
 					<Select
 						value={mode}
 						items={routingOptions}
-						onValueChange={(value) => setMode(value as RoutingMode)}
+						onValueChange={(value) => update("mode", value as RoutingMode)}
 					>
 						<SelectTrigger id="routing-mode" className="w-full rounded-md">
 							<SelectValue placeholder={t("credits.Select a routing mode" as never)} />
@@ -346,7 +129,7 @@ export default function RoutingSettingsClient({
 						<Switch
 							id="beta-channel"
 							checked={betaChannelEnabled}
-							onCheckedChange={setBetaChannelEnabled}
+							onCheckedChange={(enabled) => setDraft((current) => ({ ...current, betaChannelEnabled: enabled, alphaChannelEnabled: enabled && current.alphaChannelEnabled }))}
 							aria-label={t("credits.Enable beta channel" as never)}
 						/>
 					</div>
@@ -362,7 +145,7 @@ export default function RoutingSettingsClient({
 							<Switch
 								id="alpha-channel"
 								checked={alphaChannelEnabled}
-								onCheckedChange={setAlphaChannelEnabled}
+								onCheckedChange={(enabled) => update("alphaChannelEnabled", enabled)}
 								aria-label={t("credits.Enable alpha channel" as never)}
 							/>
 						</div>
@@ -385,7 +168,7 @@ export default function RoutingSettingsClient({
 						<Switch
 							id="response-healing"
 							checked={responseHealingEnabled}
-							onCheckedChange={setResponseHealingEnabled}
+							onCheckedChange={(enabled) => update("responseHealingEnabled", enabled)}
 							aria-label={t("credits.Enable default response healing" as never)}
 						/>
 					</div>
@@ -403,7 +186,7 @@ export default function RoutingSettingsClient({
 							value={responseHealingMode}
 							items={responseHealingOptions}
 							onValueChange={(value) =>
-								setResponseHealingMode(value as "safe" | "strict")
+								update("responseHealingMode", value as "safe" | "strict")
 							}
 						>
 							<SelectTrigger id="response-healing-mode" className="w-full rounded-md">
@@ -431,55 +214,13 @@ export default function RoutingSettingsClient({
 						<Switch
 							id="response-healing-lock"
 							checked={responseHealingLocked}
-							onCheckedChange={setResponseHealingLocked}
+							onCheckedChange={(locked) => update("responseHealingLocked", locked)}
 							aria-label={t("credits.Lock default response healing policy" as never)}
 						/>
 					</div>
 				</div>
 			</section>
 
-			<section className="space-y-3">
-				<div>
-					<h2 className="text-base font-semibold">{t("credits.Routing Preview" as never)}</h2>
-					<p className="mt-1 text-sm text-muted-foreground">{t("strings.phraseAnIllustrativeDistributionForTheCurrentPolicyLiveRoutingAlsoConsidersCompatibilityHealthAvailabilityAndFailoverSignals" as never)}</p>
-				</div>
-				<div className="rounded-md border px-4 py-3">
-					<div className="space-y-3">
-						{previewRows.map((row) => (
-							<div key={row.name} className="space-y-1">
-								<div className="flex items-center justify-between">
-									<span
-										className={`text-sm font-medium ${barLabelTone(
-											row.kind,
-										)}`}
-									>
-										{row.name}
-									</span>
-									<span
-										className={`text-xs ${subLabelTone(
-											row.kind,
-										)}`}
-									>
-										{row.share.toFixed(0)}%
-									</span>
-								</div>
-								<div
-									className={`h-2 w-full overflow-hidden rounded-full ${barTrackTone(
-										row.kind,
-									)}`}
-								>
-									<div
-										className={`h-full rounded-full transition-all duration-500 ease-out ${barTone(
-											row.kind,
-										)}`}
-										style={{ width: `${row.share}%` }}
-									/>
-								</div>
-							</div>
-						))}
-					</div>
-				</div>
-			</section>
-		</div>
+		</WorkspacePolicyForm>
 	);
 }

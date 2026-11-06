@@ -3,9 +3,9 @@ import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import Link from "@/components/link";
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import { WorkspacePolicyForm } from "../WorkspacePolicyForm";
 import { useTranslations } from "@/i18n/react";
-import { AlertCircle, CheckCircle2, Loader2, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,8 @@ import type { AccountPrivacyPolicy, SettingsAccountPrivacyInitialData } from "@/
 import { formatProviderOfferDisplayName, formatProviderOfferVariantLabel, resolveProviderLogoId } from "@/lib/providers/providerOffers";
 
 type Props = Omit<SettingsAccountPrivacyInitialData, "signedIn"> & {
+	canManage: boolean;
+	section?: "privacy" | "access";
 	workspaceId?: string | null;
 	workspaceLogStorage?: {
 		enabled: boolean;
@@ -55,6 +57,8 @@ function DebouncedSearchInput({ value, onChange, placeholder, disabled }: { valu
 
 export default function AccountPrivacySettingsClient({
 	policy: initialPolicy,
+	canManage,
+	section = "privacy",
 	providers,
 	models,
 	workspaceId = null,
@@ -81,57 +85,45 @@ export default function AccountPrivacySettingsClient({
 	const [routeKind, setRouteKind] = useState<"providers" | "models">("providers");
 	const [availabilityKind, setAvailabilityKind] = useState<"providers" | "models">("models");
 	const [availabilityState, setAvailabilityState] = useState<"all" | "available" | "unavailable">("all");
-	const [autosaveStatus, setAutosaveStatus] = useState<"idle" | "saving" | "saved" | "pending" | "error">("idle");
+
 	const [logStorage, setLogStorage] = useState(workspaceLogStorage);
-	const lastSavedPolicy = useRef(JSON.stringify(policy));
-	const lastSavedLogStorage = useRef(JSON.stringify(workspaceLogStorage));
-	useEffect(() => {
-		if (!workspaceId) return;
-		const serialized = JSON.stringify(policy);
-		if (serialized === lastSavedPolicy.current) return;
-		setAutosaveStatus("saving");
-		let cancelled = false;
-		const timer = window.setTimeout(async () => {
-			try {
-				await updateGlobalGuardrailsSettings({ data: { payload: policy, expectedWorkspaceId: workspaceId } });
-				void invalidateSettings();
-				if (cancelled) return;
-				lastSavedPolicy.current = serialized;
-				setAutosaveStatus("saved");
-			} catch {
-				if (cancelled) return;
-				setAutosaveStatus("error");
-				toast.error(tUi("privacyEligibility.saveWorkspacePolicyFailed"));
-			}
-		}, 650);
-		return () => { cancelled = true; window.clearTimeout(timer); };
-	}, [policy, workspaceId, invalidateSettings]);
-	useEffect(() => {
-		if (!logStorage || !workspaceId) return;
-		const serialized = JSON.stringify(logStorage);
-		if (serialized === lastSavedLogStorage.current) return;
-		setAutosaveStatus("saving");
-		let cancelled = false;
-		const timer = window.setTimeout(async () => {
-			try {
-				await updateGlobalGuardrailsSettings({ data: { payload: {
+	const [saved, setSaved] = useState(() => ({ policy, logStorage: workspaceLogStorage }));
+	const [saving, setSaving] = useState(false);
+	const savingRef = useRef(false);
+	const [error, setError] = useState<string | null>(null);
+	const [notice, setNotice] = useState<string | null>(null);
+	const isDirty = JSON.stringify({ policy, logStorage }) !== JSON.stringify(saved);
+	function cancel() { setPolicy(saved.policy); setLogStorage(saved.logStorage); setError(null); setNotice(null); }
+	async function save() {
+		if (!canManage || !workspaceId || !isDirty || savingRef.current) return;
+		savingRef.current = true;
+		setSaving(true); setError(null); setNotice(null);
+		try {
+			await updateGlobalGuardrailsSettings({ data: { expectedWorkspaceId: workspaceId, payload: {
+				...(section === "access" ? {
+					providerRestrictionMode: policy.providerRestrictionMode,
+					providerRestrictionProviderIds: policy.providerRestrictionProviderIds,
+					modelRestrictionMode: policy.modelRestrictionMode,
+					modelRestrictionModelIds: policy.modelRestrictionModelIds,
+				} : {
+					privacyEnablePaidMayTrain: policy.privacyEnablePaidMayTrain,
+					privacyEnableFreeMayTrain: policy.privacyEnableFreeMayTrain,
+					privacyEnableInputOutputLogging: policy.privacyEnableInputOutputLogging,
+					privacyZdrOnly: policy.privacyZdrOnly,
+				}),
+				...(section === "privacy" && logStorage ? {
 					ioLoggingEnabled: logStorage.enabled,
 					ioLoggingRetentionDays: logStorage.retentionDays,
 					ioLoggingIncludeProviderPayloads: logStorage.includeProviderPayloads,
 					ioLoggingContentsAccess: logStorage.contentsAccess ?? undefined,
-				}, expectedWorkspaceId: workspaceId } });
-				void invalidateSettings();
-				if (cancelled) return;
-				lastSavedLogStorage.current = serialized;
-				setAutosaveStatus("saved");
-			} catch {
-				if (cancelled) return;
-				setAutosaveStatus("error");
-				toast.error(s("Could not save workspace log storage settings"));
-			}
-		}, 650);
-		return () => { cancelled = true; window.clearTimeout(timer); };
-	}, [logStorage, workspaceId, invalidateSettings]);
+				} : {}),
+			} } });
+			setSaved({ policy, logStorage });
+			setNotice(tUi("privacyEligibility.changesSaved"));
+			void invalidateSettings();
+		} catch { setError(tUi("privacyEligibility.saveFailed")); }
+		finally { savingRef.current = false; setSaving(false); }
+	}
 	const normalized = query.trim().toLowerCase();
 	const visibleProviders = useMemo(() => providers
 		.filter((item) => `${item.name} ${item.id} ${item.offer_label ?? ""}`.toLowerCase().includes(normalized))
@@ -216,8 +208,8 @@ export default function AccountPrivacySettingsClient({
 				? tUi("privacyEligibility.providers")
 				: tUi("privacyEligibility.models"),
 	});
-	return <div className="space-y-8">
-		<section>
+	return <WorkspacePolicyForm canManage={canManage} dirty={isDirty} saving={saving} error={error} notice={notice} onSave={save} onCancel={cancel}>
+		{section === "privacy" ? <section>
 			<h2 className="text-base font-semibold">{s("Data Handling")}</h2>
 			<p className="mt-1 text-sm text-muted-foreground">{s("phraseSetTheMinimumPrivacyStandardForEveryRequestInThisWorkspace")}</p>
 			<div className="mt-3 rounded-lg border px-4">
@@ -226,8 +218,8 @@ export default function AccountPrivacySettingsClient({
 				<SettingRow title={s("Allow prompt logging")} description={s("phrasePermitProvidersThatMayRetainPromptsButDoNotUseThemForTraining")} checked={policy.privacyEnableInputOutputLogging} onCheckedChange={(value) => set("privacyEnableInputOutputLogging", value)} />
 				<SettingRow title={s("Require zero data retention")} description={s("phraseOnlyRouteRequestsWhereTheSelectedCapabilityIsEligibleForZDR")} checked={policy.privacyZdrOnly} onCheckedChange={(value) => set("privacyZdrOnly", value)} />
 			</div>
-		</section>
-		{logStorage ? <section className="border-t pt-8">
+		</section> : null}
+		{section === "privacy" && logStorage ? <section className="border-t pt-8">
 			<div className="grid gap-6 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-10">
 				<div>
 					<h2 className="text-base font-semibold">{s("Gateway Log Storage")}</h2>
@@ -255,7 +247,7 @@ export default function AccountPrivacySettingsClient({
 				</div>
 			</div>
 		</section> : null}
-		<section className="border-t pt-8">
+		{section === "access" ? <section>
 			<div className="grid gap-6 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-10">
 				<div>
 					<h2 className="text-base font-semibold">{s("Route Access")}</h2>
@@ -278,7 +270,7 @@ export default function AccountPrivacySettingsClient({
 			</div>
 				</div>
 			</div>
-		</section>
+		</section> : null}
 		<section className="border-t pt-8">
 			<div className="grid gap-6 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-10">
 				<div>
@@ -307,8 +299,5 @@ export default function AccountPrivacySettingsClient({
 				</div>
 			</div>
 		</section>
-		<div className="flex min-h-8 justify-end text-sm text-muted-foreground" role="status" aria-live="polite">
-			{autosaveStatus === "saving" ? <span className="inline-flex items-center gap-2"><Loader2 className="size-4 animate-spin" />{tUi("privacyEligibility.savingChanges")}</span> : autosaveStatus === "saved" ? <span className="inline-flex items-center gap-2"><CheckCircle2 className="size-4" />{tUi("privacyEligibility.changesSaved")}</span> : autosaveStatus === "pending" ? <span className="inline-flex items-center gap-2 text-amber-500"><AlertCircle className="size-4" />{tUi("privacyEligibility.cacheUpdatePending")}</span> : autosaveStatus === "error" ? <span className="inline-flex items-center gap-2 text-destructive"><AlertCircle className="size-4" />{tUi("privacyEligibility.saveFailed")}</span> : <span>{tUi("privacyEligibility.saveAutomatically")}</span>}
-		</div>
-	</div>;
+	</WorkspacePolicyForm>;
 }

@@ -16,14 +16,22 @@ import SettingsSidebarTrigger from "@/components/(gateway)/settings/SettingsSide
 import { BrandMenu } from "./BrandMenu";
 import { getLocalizedDocsHref } from "@/lib/docs";
 import { shellDataQuery } from "./shellData";
+import { settingsLayoutQuery } from "@/features/settings/settings.functions";
+import { usePathname } from "@/i18n/navigation";
 
 const showHeaderAnnouncement = false;
 
 function GatedSettingsSidebarTrigger() {
+	const pathname = usePathname();
+	return pathname?.startsWith("/settings") ? <SettingsMobileNavigation /> : null;
+}
+
+function SettingsMobileNavigation() {
 	const locale = useLocale();
 	const { data } = useSuspenseQuery(shellDataQuery(locale));
-	const { capabilities, settingsNavigationCopy: copy, account } = data;
-	return <SettingsSidebarTrigger showAutoRouting={capabilities.autoRouting} showClassifiers={capabilities.classifiers} showWorkloadIdentity={capabilities.workloadIdentity} showSlackAgent={capabilities.slackAgent} copy={copy} providerMode={account.providerMode === true} />;
+	const { data: settings } = useSuspenseQuery(settingsLayoutQuery());
+	if (!settings.signedIn) return null;
+	return <SettingsSidebarTrigger {...settings} copy={data.settingsNavigationCopy} />;
 }
 
 export default function Header() {
