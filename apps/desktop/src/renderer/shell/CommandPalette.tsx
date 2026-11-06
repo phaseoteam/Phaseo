@@ -28,7 +28,7 @@ import { isSettled, settleBlocker } from "../../shared/threadLifecycle";
 import { renameChatEvent } from "../chat/composerActions";
 import type { ThemePreference } from "../types";
 
-const entryIcons: Record<string, ComponentType> = { "New chat": Plus, "Operator": Bot, "Switch to Chat": MessageSquare, "Switch to Code": Code2, "Inbox": Inbox, "Usage": ChartLine, "Usage limits": Gauge, "Scheduled tasks": CalendarClock, "Open pull requests": GitPullRequestArrow, "Toggle sidebar": PanelLeft, "Show files and changes": Files, "Open terminal": SquareTerminal, "Open browser": Globe, "Settings": Settings, "Accounts and sign-in": UserRound, "Keyboard shortcuts": Keyboard, "Diagnostics": Activity };
+const entryIcons: Record<string, ComponentType> = { "New chat": Plus, "Operator": Bot, "Switch to Chat": MessageSquare, "Switch to Code": Code2, "Inbox": Inbox, "Usage": ChartLine, "Usage limits": Gauge, "Scheduled tasks": CalendarClock, "Open pull requests": GitPullRequestArrow, "Toggle sidebar": PanelLeft, "Show files and changes": Files, "Open terminal": SquareTerminal, "Open browser": Globe, "Settings": Settings, "Accounts and sign-in": UserRound, "Phaseo account": UserRound, "Keyboard shortcuts": Keyboard, "Diagnostics": Activity };
 /** The keyboard shortcut that does what a palette entry does, when there is one. */
 function entryShortcut(entry: PaletteEntry) {
 	if (entry.command === "chat.new") return shortcut("chat.new");

@@ -30,7 +30,7 @@ function Steps({ onClose }: { onClose: () => void }) {
 	return <>
 		<ol className="divide-y divide-border/60">
 			<Step number={1} title="Connect an agent" description="Sign in to Phaseo, or use Codex, Claude Code and the other agents already signed in on this computer." complete={signedIn}>
-				<Button size="sm" variant={signedIn ? "ghost" : "default"} onClick={() => { onClose(); openSettings("accounts"); }}><KeyRound />Accounts</Button>
+				<Button size="sm" variant={signedIn ? "ghost" : "default"} onClick={() => { onClose(); openSettings(signedIn ? "accounts" : "phaseo-account"); }}><KeyRound />{signedIn ? "Accounts" : "Sign in"}</Button>
 			</Step>
 			<Step number={2} title="Add a project" description="A folder the agents can read and change. Skip it to just chat." complete={hasProject}>
 				<Button size="sm" variant={hasProject ? "ghost" : "outline"} onClick={addProject}><FolderPlus />Add a folder…</Button>

@@ -210,12 +210,12 @@ function AccountFooter() {
 					</div>
 					<DropdownMenuSeparator />
 					<DropdownMenuItem onClick={() => void window.phaseoDesktop?.openExternal("https://phaseo.app/settings/account")}><ExternalLink />Manage account</DropdownMenuItem>
-					<DropdownMenuItem onClick={() => openSettings("accounts")}><UserRound />Accounts</DropdownMenuItem>
+					<DropdownMenuItem onClick={() => openSettings("phaseo-account")}><UserRound />Phaseo account</DropdownMenuItem>
 					<DropdownMenuItem onClick={() => openUsage("limits")}><Gauge />Usage limits</DropdownMenuItem>
 					<DropdownMenuItem onClick={() => openSettings()}><Settings />Settings<DropdownMenuShortcut>{shortcut("settings.open")}</DropdownMenuShortcut></DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>
-			: <button type="button" onClick={() => openSettings("accounts")} className="flex h-7 items-center gap-1.5 rounded-md px-1.5 text-[12.5px] font-semibold text-primary hover:bg-sidebar-accent/70"><LogIn className="size-4" />Sign in</button>}
+			: <button type="button" onClick={() => openSettings("phaseo-account")} className="flex h-7 items-center gap-1.5 rounded-md px-1.5 text-[12.5px] font-semibold text-primary hover:bg-sidebar-accent/70"><LogIn className="size-4" />Sign in</button>}
 		<span className="flex-1" />
 		<FooterButton name="Usage" tip="Usage: cost, tokens and limits" active={usagePage} onClick={() => openUsage()}><ChartLine /></FooterButton>
 		<FooterButton name="Scheduled tasks" tip={on ? `Scheduled tasks · ${on} on` : "Scheduled tasks"} active={scheduled} onClick={openScheduled}>

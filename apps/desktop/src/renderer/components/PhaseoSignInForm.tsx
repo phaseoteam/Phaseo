@@ -2,10 +2,18 @@ import { useRef, useState } from "react";
 import { LoaderCircle } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import githubLight from "../../../../web/public/social/github_light.svg";
+import githubDark from "../../../../web/public/social/github_dark.svg";
+import google from "../../../../web/public/logos/google.svg";
+import gitlab from "../../../../web/public/social/gitlab.svg";
 import type { PhaseoSignInMethod, PhaseoSignInResult } from "../../shared/workspace";
 import type { WorkspaceOverview } from "../../shared/workspaceOverview";
 
-const providers = [["github", "GitHub"], ["google", "Google"], ["gitlab", "GitLab"]] as const;
+const providers = [
+	{ id: "github", label: "GitHub", logo: githubLight, darkLogo: githubDark },
+	{ id: "google", label: "Google", logo: google },
+	{ id: "gitlab", label: "GitLab", logo: gitlab },
+] as const;
 type Step = "choose" | "browser" | "password" | "code" | "verifying";
 
 function message(reason: unknown) {
@@ -58,26 +66,31 @@ export function PhaseoSignInForm({ accountId, onConnected, onCancel, disabled = 
 	</form>;
 
 	const waiting = step === "browser" || step === "password";
-	return <div className="flex flex-col gap-3 text-left">
+	return <div className="flex flex-col gap-5 text-left">
 		<div className="flex flex-col gap-2">
-			{providers.map(([provider, label]) => <Button key={provider} type="button" variant="outline" disabled={disabled || waiting} onClick={() => void signIn({ provider })}>Continue with {label}</Button>)}
+			{providers.map(provider => <Button key={provider.id} data-auth-provider={provider.id} type="button" variant="outline" className="relative h-10 w-full px-10" disabled={disabled || waiting} onClick={() => void signIn({ provider: provider.id })}>
+				<span aria-hidden="true" className="absolute left-3 grid size-4 place-items-center">
+					<img src={provider.logo} alt="" className={"darkLogo" in provider ? "size-4 dark:hidden" : "size-4"} />
+					{"darkLogo" in provider && <img src={provider.darkLogo} alt="" className="hidden size-4 dark:block" />}
+				</span>
+				Continue with {provider.label}
+			</Button>)}
 		</div>
 		{step === "browser" && <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
 			<span className="inline-flex items-center gap-1.5"><LoaderCircle className="size-3.5 animate-spin" />Finish signing in in your browser…</span>
 			<Button type="button" variant="ghost" size="xs" onClick={cancel}>Cancel</Button>
 		</div>}
-		<div className="flex items-center gap-2 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" />or<span className="h-px flex-1 bg-border" /></div>
-		<form className="flex flex-col gap-2" aria-label="Sign in with email" onSubmit={event => { event.preventDefault(); void signIn({ email, password }); }}>
-			<Input type="email" autoComplete="username" placeholder="Email" aria-label="Email" required value={email} onChange={event => setEmail(event.target.value)} disabled={disabled || waiting} />
-			<Input type="password" autoComplete="current-password" placeholder="Password" aria-label="Password" required value={password} onChange={event => setPassword(event.target.value)} disabled={disabled || waiting} />
-			<Button type="submit" disabled={disabled || waiting || !email.trim() || !password}>{step === "password" ? <><LoaderCircle className="animate-spin" />Signing in…</> : "Sign in"}</Button>
+		<div className="flex items-center gap-3 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" />or sign in with email<span className="h-px flex-1 bg-border" /></div>
+		<form className="flex flex-col gap-4" aria-label="Sign in with email" onSubmit={event => { event.preventDefault(); void signIn({ email, password }); }}>
+			<label className="flex flex-col gap-1.5 text-xs font-medium">Email<Input type="email" autoComplete="username" placeholder="you@example.com" aria-label="Email" className="h-10" required value={email} onChange={event => setEmail(event.target.value)} disabled={disabled || waiting} /></label>
+			<label className="flex flex-col gap-1.5 text-xs font-medium">Password<Input type="password" autoComplete="current-password" aria-label="Password" className="h-10" required value={password} onChange={event => setPassword(event.target.value)} disabled={disabled || waiting} /></label>
+			<Button type="submit" className="h-10 w-full" disabled={disabled || waiting || !email.trim() || !password}>{step === "password" ? <><LoaderCircle className="animate-spin" />Signing in…</> : "Sign in"}</Button>
 		</form>
 		{error && <p role="alert" className="text-xs text-destructive">{error}</p>}
-		<p className="text-xs text-muted-foreground">
+		<div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs text-muted-foreground">
 			<button type="button" className="hover:text-foreground hover:underline" onClick={() => link("https://phaseo.app/sign-in")}>Forgot your password?</button>
-			{" · "}
 			<button type="button" className="hover:text-foreground hover:underline" onClick={() => link("https://phaseo.app/sign-up")}>Create an account</button>
-			{onCancel && <>{" · "}<button type="button" className="hover:text-foreground hover:underline" onClick={cancel}>Cancel</button></>}
-		</p>
+			{onCancel && <button type="button" className="hover:text-foreground hover:underline" onClick={cancel}>Cancel</button>}
+		</div>
 	</div>;
 }
