@@ -119,6 +119,11 @@ export type SpendRecordEntry = {
 	revision?: number;
 	/** The request's final settled total: replaces any checkpoint, and nothing replaces it. */
 	final?: boolean;
+	/**
+	 * When this total's debit returned from the database, in epoch ms. A seed that started later
+	 * already counts it, so a record first seen after such a seed adds only what is above it.
+	 */
+	debitAtMs?: number;
 };
 
 export type SpendRecordResult = { duplicates: number; drainKeyIds: string[] };

@@ -29,7 +29,6 @@ import {
 	DAY_MS,
 	KEY_WINDOWS,
 	SPEND_LEASE,
-	utcMonthStart,
 	windowEnd,
 	windowStarts,
 	type BudgetInterval,
@@ -68,6 +67,13 @@ export type SpendLimitSeed = {
 		}>;
 	} | null;
 	excluded_rows: Array<{ request_id: string; key_id: string | null; success: boolean; cost_nanos: number; created_at: string }>;
+	/**
+	 * Stepped charges (streams charged at drain checkpoints) still open or without a request row, in
+	 * the windows this seed covers, with the total the database holds. The seed's totals already
+	 * count every applied stepped charge by debit time. Absent from seeds that do not count stepped
+	 * charges; the coordinator then counts them from memory.
+	 */
+	stepped_charges?: Array<{ billing_id: string; charged_nanos: number; key_id?: string | null }>;
 	/** Absent from seeds written before department budgets could block. */
 	department_budgets?: Array<{
 		id: string;
@@ -127,13 +133,31 @@ type Pending = {
 	recordedAt: number;
 	/** The gateway_requests row exists: budget status already includes it. */
 	persisted: boolean;
-	/**
-	 * A stream charged at drain checkpoints: the amount is its charged total so far. Until its final
-	 * record arrives it is kept past the pending TTL (the drain may have been stopped, so no row will
-	 * land), up to `keepUntil`, the end of the longest budget window it counts toward.
-	 */
-	stepped?: { revision: number; final: boolean; keepUntil: number };
+	/** A stream charged at drain checkpoints: `cost` is the part of its total not yet in the seed. */
+	stepped?: true;
 };
+
+/**
+ * What the coordinator knows of one stepped charge (by billing request id). The database holds the
+ * charged total; `floor` is the part of it the last seed counted, so records only add what is
+ * above it. Records arrive out of order: a checkpoint replaces only an earlier one, nothing
+ * replaces the final one.
+ */
+type SteppedState = {
+	keyId: string | null;
+	requestId: string;
+	revision: number;
+	final: boolean;
+	total: number;
+	floor: number;
+	/** When `floor` was taken (seed start), and when the latest record's debit happened. */
+	floorAt: number;
+	lastDebitAt: number;
+	at: number;
+};
+
+/** Stepped charges older than any key or department window are forgotten (lifetime budgets: seed). */
+const STEPPED_RETENTION_MS = 31 * DAY_MS;
 
 type Lease = {
 	id: string;
@@ -187,6 +211,9 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 	private workspaceAvgCost = 0;
 	private readonly pending = new Map<string, Pending>();
 	private readonly seen = new Set<string>();
+	private readonly stepped = new Map<string, SteppedState>();
+	/** Start of the latest seed that reported `stepped_charges`; null while seeds do not count them. */
+	private steppedSeedAt: number | null = null;
 	private readonly leases = new Map<string, Lease>();
 	private readonly drainUntil = new Map<string, number>();
 	private sweepAt = 0;
@@ -364,25 +391,9 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			console.warn("spend_limit_invalid_record", { workspaceId: this.workspaceId });
 			return false;
 		}
+		if (entry.replace === true) return this.recordStepped(entry, now);
 		const existing = this.pending.get(entry.billingRequestId);
-		const replace = entry.replace === true;
-		const revision = Number.isSafeInteger(entry.revision) && Number(entry.revision) > 0 ? Number(entry.revision) : 0;
-		const final = replace && entry.final === true;
-		if (replace && existing?.stepped && existing.keyId === entry.keyId) {
-			// The request's charged total so far. Records can arrive out of order: nothing replaces
-			// the final one, and a checkpoint replaces only an earlier checkpoint.
-			if (existing.stepped.final || (!final && revision <= existing.stepped.revision)) return false;
-			const cost = nonNegative(entry.costNanos);
-			const lease = entry.leaseId ? this.leases.get(entry.leaseId) : undefined;
-			if (lease && lease.keyId === entry.keyId) {
-				lease.consumed = Math.max(0, lease.consumed + cost - existing.cost);
-				this.settleIfDone(lease);
-			}
-			existing.cost = cost;
-			existing.recordedAt = now;
-			existing.stepped = { ...existing.stepped, revision: Math.max(revision, existing.stepped.revision), final };
-			return true;
-		}
+		if (this.stepped.has(entry.billingRequestId)) return false;
 		if (this.seen.has(entry.billingRequestId) || existing) return false;
 		this.seen.add(entry.billingRequestId);
 		if (this.seen.size > MAX_SEEN_IDS) {
@@ -401,7 +412,6 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			at,
 			recordedAt: now,
 			persisted: false,
-			...(replace ? { stepped: { revision, final, keepUntil: windowEnd("monthly", utcMonthStart(at)) } } : {}),
 		});
 		const lease = entry.leaseId ? this.leases.get(entry.leaseId) : undefined;
 		if (lease && lease.keyId === entry.keyId) {
@@ -416,6 +426,110 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			this.workspaceAvgCost = this.workspaceAvgCost ? this.workspaceAvgCost * 0.9 + perRequest * 0.1 : perRequest;
 		}
 		return true;
+	}
+
+	private recordStepped(entry: SpendRecordEntry, now: number): boolean {
+		const id = entry.billingRequestId;
+		const revision = Number.isSafeInteger(entry.revision) && Number(entry.revision) > 0 ? Number(entry.revision) : 0;
+		const final = entry.final === true;
+		const total = nonNegative(entry.costNanos);
+		const debitAt = Number.isFinite(entry.debitAtMs) ? Number(entry.debitAtMs) : now;
+		let state = this.stepped.get(id);
+		if (state && state.keyId !== null && state.keyId !== entry.keyId) return false;
+		if (state?.final || (state && !final && revision <= state.revision)) return false;
+		if (!state) {
+			state = {
+				keyId: entry.keyId,
+				requestId: typeof entry.requestId === "string" && entry.requestId ? entry.requestId : id,
+				revision: 0, final: false, total: 0, floor: 0, floorAt: 0, lastDebitAt: debitAt,
+				at: Number.isFinite(entry.occurredAtMs) ? Number(entry.occurredAtMs) : debitAt,
+			};
+			// A seed that counts stepped charges includes every debit made before it started (a debit in
+			// the same millisecond may not be in it, so it counts until the next seed): a charge
+			// first heard of after such a seed (a restart, a late delivery) is already in it that far.
+			if (this.steppedSeedAt !== null && debitAt < this.steppedSeedAt) {
+				state.floor = total;
+				state.floorAt = this.steppedSeedAt;
+			}
+			this.stepped.set(id, state);
+			if (this.stepped.size > MAX_SEEN_IDS) {
+				const oldest = this.stepped.keys().next();
+				if (!oldest.done) this.stepped.delete(oldest.value);
+			}
+		}
+		state.keyId ??= entry.keyId;
+		state.revision = Math.max(state.revision, revision);
+		state.final = final;
+		state.total = total;
+		state.lastDebitAt = Math.max(state.lastDebitAt, debitAt);
+		this.countStepped(id, state, now, entry.leaseId ?? null);
+		return true;
+	}
+
+	/**
+	 * The part of a stepped charge counted from memory: its total above what the seed counted. A
+	 * final total below it, debited after that seed, is a refund the seed has not seen yet.
+	 */
+	private steppedCount(state: SteppedState): number {
+		const above = state.total - state.floor;
+		return state.final && state.lastDebitAt > state.floorAt ? above : Math.max(0, above);
+	}
+
+	private countStepped(id: string, state: SteppedState, now: number, leaseId: string | null): void {
+		const count = this.steppedCount(state);
+		const existing = this.pending.get(id);
+		const before = existing?.cost ?? 0;
+		const lease = leaseId ? this.leases.get(leaseId) : undefined;
+		const leaseMatches = Boolean(lease && lease.keyId === state.keyId);
+		if (existing) {
+			existing.cost = count;
+			existing.recordedAt = now;
+			if (count === 0 && state.floor > 0) this.pending.delete(id);
+		} else if (count !== 0) {
+			// The seed counted the request once it counted any of its charge.
+			const requests = state.floor > 0 ? 0 : 1;
+			this.pending.set(id, {
+				billingRequestId: id, requestId: state.requestId, keyId: state.keyId ?? "", cost: count, requests,
+				at: state.at, recordedAt: now, persisted: false, stepped: true,
+			});
+			if (lease && leaseMatches) lease.successes += requests;
+		}
+		if (lease && leaseMatches && count !== before) {
+			lease.consumed = Math.max(0, lease.consumed + count - before);
+			this.settleIfDone(lease);
+		}
+	}
+
+	/** A seed that reports stepped charges: the database totals become each charge's floor. */
+	private applySteppedSeed(seed: SpendLimitSeed, chunkKeys: Set<string>, startedAt: number): void {
+		if (!Array.isArray(seed.stepped_charges)) return;
+		const now = Date.now();
+		const listed = new Set<string>();
+		for (const row of seed.stepped_charges) {
+			const id = typeof row?.billing_id === "string" ? row.billing_id : "";
+			if (!id) continue;
+			listed.add(id);
+			const charged = nonNegative(row.charged_nanos);
+			let state = this.stepped.get(id);
+			if (!state) {
+				const keyId = typeof row.key_id === "string" && row.key_id ? row.key_id : null;
+				state = { keyId, requestId: id, revision: 0, final: false, total: charged, floor: charged, floorAt: startedAt, lastDebitAt: startedAt, at: startedAt };
+				this.stepped.set(id, state);
+			}
+			state.floor = charged;
+			state.floorAt = startedAt;
+			this.countStepped(id, state, now, null);
+		}
+		// Not listed (settled with a request row, or outside the windows): the seed counted every
+		// debit it saw, so only debits after it started still count from memory.
+		for (const [id, state] of this.stepped) {
+			if (listed.has(id) || state.lastDebitAt >= startedAt) continue;
+			if (state.keyId !== null && !chunkKeys.has(state.keyId)) continue;
+			state.floor = state.total;
+			state.floorAt = startedAt;
+			this.countStepped(id, state, now, null);
+		}
+		this.steppedSeedAt = Math.max(this.steppedSeedAt ?? 0, startedAt);
 	}
 
 	/** Reads seed data. Overridden in tests. */
@@ -496,29 +610,35 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			for (const entry of unpersisted.slice(SPEND_LEASE.maxExcludedRequestIds)) this.pending.delete(entry.billingRequestId);
 		}
 		const excluded = unpersisted.slice(0, SPEND_LEASE.maxExcludedRequestIds);
-		// Contract with gateway_spend_limit_seed: it skips gateway_requests rows whose request_id is
-		// listed, and stepped charge rows (gateway_request_charges, keyed by billing request id)
-		// whose request_id is listed; spend in `pending` is counted from memory instead.
-		const exclude = [...new Set(excluded.flatMap((entry) =>
-			entry.stepped ? [entry.requestId, entry.billingRequestId] : [entry.requestId]))].slice(0, SPEND_LEASE.maxExcludedRequestIds);
+		// The seed skips gateway_requests rows whose request_id is listed; that spend is counted from
+		// memory. Once seeds count stepped charges (the database holds them), those are not excluded.
+		const exclude = [...new Set(excluded
+			.filter((entry) => !(entry.stepped && this.steppedSeedAt !== null))
+			.map((entry) => entry.requestId))];
 		const persistedBefore = [...this.pending.values()].filter((entry) => entry.persisted);
 		const chunks: string[][] = [];
 		for (let index = 0; index < Math.max(1, keyIds.length); index += SPEND_LEASE.maxKeysPerSeed) {
 			chunks.push(keyIds.slice(index, index + SPEND_LEASE.maxKeysPerSeed));
 		}
 		for (const chunk of chunks) {
+			const startedAt = Date.now();
 			const seed = await this.loadSeed(workspaceId, chunk, exclude);
 			this.applySeed(seed, chunk, persistedBefore);
+			this.applySteppedSeed(seed, new Set(chunk), startedAt);
 		}
 		const now = Date.now();
 		for (const entry of this.pending.values()) {
 			if (entry.persisted) continue;
-			// An open stepped charge has no row to wait for if its drain was stopped: keep it until
-			// its final record or the end of the windows it counts toward, not the pending TTL.
-			const expired = entry.stepped && !entry.stepped.final
-				? now >= entry.stepped.keepUntil
+			// Until seeds count stepped charges, an open one is counted from memory only: a stopped
+			// drain writes no row, so it is kept past the pending TTL while any window can count it.
+			const state = entry.stepped ? this.stepped.get(entry.billingRequestId) : undefined;
+			const expired = state && !state.final
+				? now - state.at > STEPPED_RETENTION_MS
 				: now - entry.recordedAt > SPEND_LEASE.pendingTtlMs;
 			if (expired) this.pending.delete(entry.billingRequestId);
+		}
+		for (const [id, state] of this.stepped) {
+			if (now - state.at > STEPPED_RETENTION_MS && !this.pending.has(id)) this.stepped.delete(id);
 		}
 	}
 
