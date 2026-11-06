@@ -10,7 +10,7 @@ export type AppCommandArgument = { name: string; type: "string" | "boolean" | "e
 export type AppCommand = { id: string; title: string; group: "Navigate" | "View" | "Chats" | "Operator"; description: string; surface: "renderer" | "main"; agent: boolean; args?: readonly AppCommandArgument[] };
 
 // Every Settings page an agent can open; a project's settings need its id, so they open from the project instead.
-const pages = ["general", "appearance", "chat", "diffs", "threads", "browser", "source-control", "worktrees", "maintenance", "notifications", "phaseo-account", "accounts", "usage", "agents", "mcp", "code-hosts", "outside-agents", "keyboard", "diagnostics", "experimental"] as const;
+const pages = ["general", "appearance", "chat", "diffs", "threads", "browser", "source-control", "worktrees", "maintenance", "notifications", "accounts", "usage", "agents", "mcp", "code-hosts", "outside-agents", "keyboard", "diagnostics", "experimental"] as const;
 const panes = ["changes", "files", "diff", "terminal", "browser", "agents", "pulls"] as const;
 
 export const appCommands = [
@@ -90,7 +90,7 @@ export const paletteEntries: readonly PaletteEntry[] = [
 	{ title: "Open browser", command: "pane.open", args: { surface: "browser" } },
 	{ title: "Settings", command: "settings.open" },
 	{ title: "Accounts and sign-in", command: "settings.open", args: { page: "accounts" } },
-	{ title: "Phaseo account", command: "settings.open", args: { page: "phaseo-account" }, keywords: "sign in login github google gitlab email credits" },
+	{ title: "Phaseo account", command: "settings.open", args: { page: "accounts" }, keywords: "sign in login github google gitlab email credits" },
 	{ title: "Keyboard shortcuts", command: "settings.open", args: { page: "keyboard" } },
 	{ title: "Diagnostics", command: "settings.open", args: { page: "diagnostics" }, keywords: "processes cpu memory traces logs slow failures" },
 ];

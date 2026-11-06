@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useWorkspace } from "../app/workspace";
+import { PhaseoAccountSection } from "../settings/PhaseoAccountSection";
 import { Select } from "../components/Select";
 import { HarnessLogo } from "../components/HarnessLogo";
 import type { AccountStatus as NativeAccountStatus, WorkspaceCommand } from "../../shared/workspace";
@@ -11,7 +11,6 @@ const harnessLabel: Record<string, string> = { codex: "Codex", claude: "Claude C
 import { AccountEditor } from "../components/AccountEditor";
 
 export function Accounts() {
-	const { openSettings } = useWorkspace();
 	const api = window.phaseoDesktop?.workspace;
 	const [workspace, setWorkspace] = useState<WorkspaceOverview>(emptyOverview);
 	const [name, setName] = useState("");
@@ -21,6 +20,7 @@ export function Accounts() {
 	const [apiKey, setApiKey] = useState("");
 	const [error, setError] = useState("");
 	const [signingIn, setSigningIn] = useState<string>();
+	const [phaseoAgain, setPhaseoAgain] = useState<string>();
 	const [saving, setSaving] = useState(false);
 	const [statuses, setStatuses] = useState<Record<string, NativeAccountStatus>>({});
 	const [checking, setChecking] = useState<string>();
@@ -62,6 +62,7 @@ export function Accounts() {
 	const state = (account: (typeof visible)[number]) => account.oauthExpiresAt ? Date.parse(account.oauthExpiresAt) <= Date.now() ? "Sign-in expired" : account.profile?.email ? `Signed in as ${account.profile.email}` : "Signed in" : account.kind === "api" ? account.harness === "cursor" ? "Cursor API key" : account.endpoint : account.configured ? "Signed in" : "Sign-in required";
 	return <SettingsPageLayout title="Accounts" description="Subscriptions and API keys your chats run on." className="accounts-page">
 		{error && <p className="text-[13px] text-destructive" role="alert">{error}</p>}
+		<PhaseoAccountSection workspace={workspace} accountId={phaseoAgain} onCancel={() => setPhaseoAgain(undefined)} onConnected={setWorkspace} />
 		<SettingsSection title="Logins on this computer" description="Codex and Claude Code use the login you already have in their own apps.">
 			{(["codex", "claude"] as const).map(harness => <article key={harness}>
 				<SettingsRow icon={<HarnessLogo harness={harness} />} title={`${harness === "codex" ? "Codex" : "Claude Code"} login`} description="Your existing sign-in"
@@ -74,7 +75,7 @@ export function Accounts() {
 			{visible.map(account => <article key={account.id}>
 				<SettingsRow icon={<HarnessLogo harness={account.harness} />} title={account.name} description={<>{harnessLabel[account.harness] ?? account.harness} · {state(account)}</>}
 					control={<>
-						{account.oauthExpiresAt && !account.archived && <SettingsButton onClick={() => openSettings("phaseo-account")}>Sign in again</SettingsButton>}
+						{account.oauthExpiresAt && !account.archived && <SettingsButton onClick={() => { setEditing(undefined); setPhaseoAgain(account.id); }}>Sign in again</SettingsButton>}
 						{account.kind === "api" && account.harness === "cursor" && <SettingsButton disabled={!!checking} onClick={() => void check("cursor", account.id)}>Check status</SettingsButton>}
 						{account.kind === "native" && <>
 							<SettingsButton disabled={!!checking || signingIn === account.id} onClick={() => void check(account.harness as "codex" | "claude" | "cursor" | "grok", account.id)}>{checking === account.id ? "Checking…" : "Check status"}</SettingsButton>

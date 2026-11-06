@@ -12,8 +12,6 @@ import { UsageSettings } from "./UsageSettings";
 import { DiagnosticsSettings } from "./DiagnosticsSettings";
 import { AppearanceSettings } from "./AppearanceSettings";
 import { Accounts } from "../views/Accounts";
-import { PhaseoAccountSettings } from "./PhaseoAccountSettings";
-import { BrandMark } from "../shell/BrandMark";
 import { Agents } from "../views/Agents";
 import { McpConnections } from "../views/McpConnections";
 import { ProjectSettingsPage } from "./ProjectSettings";
@@ -41,8 +39,7 @@ const groups: { label: string; pages: Entry[] }[] = [
 		{ id: "worktrees", label: "Worktrees", icon: <FolderTree />, keywords: worktreeSettingsKeywords },
 	] },
 	{ label: "Accounts", pages: [
-		{ id: "phaseo-account", label: "Phaseo account", icon: <BrandMark className="size-4 rounded-md" />, keywords: "sign in login email password github google gitlab credits profile" },
-		{ id: "accounts", label: "Accounts", icon: <UserRound />, keywords: "sign in login api key subscription codex claude cursor grok phaseo" },
+		{ id: "accounts", label: "Accounts", icon: <UserRound />, keywords: "sign in login email password github google gitlab credits profile api key subscription codex claude cursor grok phaseo" },
 		{ id: "usage", label: "Usage sources", icon: <Gauge />, keywords: "usage limits hubs rate limits plan weekly 5-hour reset quota billing credits CLIProxyAPI" },
 	] },
 	{ label: "Integrations", pages: [
@@ -119,7 +116,6 @@ export function SettingsPage() {
 		{settings === "keyboard" && <KeyboardShortcuts />}
 		{settings === "usage" && <UsageSettings />}
 		{settings === "accounts" && <Accounts />}
-		{settings === "phaseo-account" && <PhaseoAccountSettings />}
 		{settings === "appearance" && <AppearanceSettings />}
 		{settings === "agents" && <Agents />}
 		{settings === "project" && <ProjectSettingsPage />}
