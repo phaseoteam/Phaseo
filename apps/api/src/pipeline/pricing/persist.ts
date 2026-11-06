@@ -124,6 +124,8 @@ export async function recordRequestChargeTotal(args: {
     total_nanos: number;
     final: boolean;
     creditSnapshotBalanceNanos?: number | null;
+    /** The key the request was made with, stored on the charge row for budgets; null for OAuth tokens. */
+    keyId?: string | null;
 }): Promise<ChargeRpcResult> {
     const releaseRuntime = ensureRuntimeForBackground();
     try {
@@ -133,6 +135,7 @@ export async function recordRequestChargeTotal(args: {
             p_total_nanos: args.total_nanos,
             p_final: args.final,
             p_credit_snapshot_balance_nanos: Number.isSafeInteger(args.creditSnapshotBalanceNanos) && args.creditSnapshotBalanceNanos! >= 0 ? args.creditSnapshotBalanceNanos : null,
+            p_key_id: args.keyId ?? null,
         });
         return await settleChargeRpcResult(args, totalRpc);
     } finally {

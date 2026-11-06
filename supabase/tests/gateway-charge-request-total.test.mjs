@@ -40,6 +40,7 @@ const body = fnSql.slice(fnSql.indexOf('$function$'), fnSql.lastIndexOf('$functi
 assert(body.length > 20 && migration.includes(body), 'the migration ships the schema body of gateway_charge_request_total');
 const tableSql = normalize(await read('../schemas/public/tables/gateway_request_charges.sql'));
 assert(tableSql.includes('"is_final"             boolean                  NOT NULL DEFAULT true'));
+assert(tableSql.includes('"key_id"               uuid,'), 'the charge row records the key of a stepped charge');
 assert(tableSql.includes('CHECK ((cost_nanos >= 0))'));
 const exportJson = JSON.parse(await read('../schemas/.pgdelta-export.json'));
 const file = 'public/functions/gateway_charge_request_total.sql';
@@ -53,8 +54,9 @@ const asService = async (fn) => { await db.exec('set role service_role'); try { 
 const balance = async () => Number((await one('select balance_nanos from public.wallets where workspace_id = $1', [ws])).balance_nanos);
 const setWallet = (balanceNanos, reserved = 0) =>
   db.query('update public.wallets set balance_nanos = $2, reserved_nanos = $3 where workspace_id = $1', [ws, balanceNanos, reserved]);
-const total = (request, nanos, final) => asService(() =>
-  one('select public.gateway_charge_request_total($1, $2, $3, $4, null) as r', [ws, request, nanos, final]).then((row) => row.r));
+const KEY = '30000000-0000-4000-8000-000000000001';
+const total = (request, nanos, final, keyId = KEY) => asService(() =>
+  one('select public.gateway_charge_request_total($1, $2, $3, $4, null, $5) as r', [ws, request, nanos, final, keyId]).then((row) => row.r));
 const oneOff = (request, nanos) => asService(() =>
   one('select public.gateway_charge_with_credit_cache($1, $2, $3, null) as r', [ws, request, nanos]).then((row) => row.r));
 const chargeRow = (request) => one('select * from public.gateway_request_charges where workspace_id = $1 and request_id = $2', [ws, request]);
@@ -84,7 +86,7 @@ try {
 
   // Service role only.
   for (const role of ['anon', 'authenticated']) {
-    const allowed = await one(`select has_function_privilege($1, 'public.gateway_charge_request_total(uuid, text, bigint, boolean, bigint)', 'execute') as ok`, [role]);
+    const allowed = await one(`select has_function_privilege($1, 'public.gateway_charge_request_total(uuid, text, bigint, boolean, bigint, uuid)', 'execute') as ok`, [role]);
     assert.equal(allowed.ok, false, `${role} cannot charge`);
   }
 
@@ -103,6 +105,8 @@ try {
   // (workspace_id, request_id) = (workspace_id, billing_request_id) once a row is written.
   const unsettled = await chargeRow('lost');
   assert.deepEqual([unsettled.status, unsettled.is_final, Number(unsettled.cost_nanos)], ['applied', false, 250]);
+  // The key is on the checkpoint row, so key and department budgets can count it with no audit row.
+  assert.equal(unsettled.key_id, KEY);
   const final = await total('lost', 400, true);
   assert.equal(Number(final.delta_nanos), 150);
   assert.equal(Number(final.charged_total_nanos), 400);
@@ -168,6 +172,15 @@ try {
   await total('stepped', 100, false);
   await assert.rejects(oneOff('stepped', 300), /request_charge_amount_mismatch/, 'a one-off charge cannot charge a stepped request again');
   assert.equal(await balance(), usd(10) - 400);
+
+  // 7b. The key comes from the first stepped call that has one; a later call without one keeps it.
+  await total('keyed', 100, false, null);
+  assert.equal((await chargeRow('keyed')).key_id, null);
+  await total('keyed', 200, false);
+  await total('keyed', 300, true, null);
+  assert.equal((await chargeRow('keyed')).key_id, KEY);
+  // One-off charges record no key; existing rows stay null.
+  assert.equal((await chargeRow('one-off')).key_id, null);
 
   // 8. Existing one-off charges are unchanged: still positive-only and idempotent.
   await assert.rejects(oneOff('zero', 0), /invalid_cost_nanos/);

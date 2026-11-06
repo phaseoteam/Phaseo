@@ -21,6 +21,15 @@ type ChargeCall =
 	| { kind: "one_off"; costNanos: number }
 	| { kind: "total"; totalNanos: number; final: boolean };
 
+const KEY_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** The request's API key id for the charge row; null for an OAuth access token or a non-key id. */
+function chargeKeyId(ctx: PipelineContext): string | null {
+	if (keyIdIsOAuthClientId(ctx.meta.apiKeyRef)) return null;
+	const keyId = ctx.meta.apiKeyId ?? ctx.keyId ?? null;
+	return typeof keyId === "string" && KEY_UUID.test(keyId) ? keyId : null;
+}
+
 async function chargeWithRetries(ctx: PipelineContext, call: ChargeCall): Promise<unknown> {
 	// Preserve fill -> debit -> invalidation order without delaying first token.
 	// Fills swallow cache failures, just as synchronous persistence did.
@@ -38,7 +47,7 @@ async function chargeWithRetries(ctx: PipelineContext, call: ChargeCall): Promis
 			if (call.kind === "one_off") {
 				await persist.recordUsageAndCharge({ ...base, cost_nanos: call.costNanos });
 			} else {
-				await persist.recordRequestChargeTotal({ ...base, total_nanos: call.totalNanos, final: call.final });
+				await persist.recordRequestChargeTotal({ ...base, total_nanos: call.totalNanos, final: call.final, keyId: chargeKeyId(ctx) });
 			}
 			return null;
 		} catch (chargeErr) {

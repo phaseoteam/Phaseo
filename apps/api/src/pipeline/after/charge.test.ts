@@ -258,6 +258,18 @@ describe("recordUsageAndChargeOnce", () => {
 			expect(ctx.meta.__usageChargeRecorded).toBe(true);
 		});
 
+		it("stores the request's key on every stepped charge, and none for an OAuth access token", async () => {
+			const KEY = "00000000-0000-4000-8000-000000000001";
+			const keyed = { ...ctxFor(), meta: { apiKeyId: KEY, apiKeyRef: "kid_1" } };
+			await recordProvisionalStreamCharge({ ctx: keyed, costNanos: 100, endpoint: "responses" });
+			await recordUsageAndChargeOnce({ ctx: keyed, costNanos: 300, endpoint: "responses" });
+			expect(recordRequestChargeTotalMock.mock.calls.map(([args]) => [args.final, args.keyId])).toEqual([[false, KEY], [true, KEY]]);
+			recordRequestChargeTotalMock.mockClear();
+			const oauth = { ...ctxFor(), meta: { apiKeyId: "client_1", apiKeyRef: "oauth_client_1" } };
+			await recordProvisionalStreamCharge({ ctx: oauth, costNanos: 100, endpoint: "responses" });
+			expect(recordRequestChargeTotalMock.mock.calls[0][0].keyId).toBeNull();
+		});
+
 		it("charges a request with no checkpoint once, exactly as before", async () => {
 			const ctx = ctxFor();
 			// Registered but not started before the final charge: dropped, never sent.

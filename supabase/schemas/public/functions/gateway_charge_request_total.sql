@@ -3,7 +3,8 @@ CREATE OR REPLACE FUNCTION public.gateway_charge_request_total (
   p_request_id                    text,
   p_total_nanos                   bigint,
   p_final                         boolean,
-  p_credit_snapshot_balance_nanos bigint DEFAULT NULL::bigint
+  p_credit_snapshot_balance_nanos bigint DEFAULT NULL::bigint,
+  p_key_id                        uuid   DEFAULT NULL::uuid
 )
   RETURNS jsonb
   LANGUAGE plpgsql
@@ -39,8 +40,10 @@ begin
 
   -- Same lock order as gateway_deduct_and_check_top_up_once: this request's
   -- charge row, then the wallet row.
-  insert into public.gateway_request_charges (workspace_id, request_id, cost_nanos, status, is_final)
-  values (p_workspace_id, p_request_id, 0, 'applying', false)
+  -- key_id lets budgets attribute a charge to its key before the request's
+  -- gateway_requests row exists (a drain the runtime stopped never gets one).
+  insert into public.gateway_request_charges (workspace_id, request_id, cost_nanos, status, is_final, key_id)
+  values (p_workspace_id, p_request_id, 0, 'applying', false, p_key_id)
   on conflict (workspace_id, request_id) do nothing;
 
   select * into v_charge from public.gateway_request_charges
@@ -119,6 +122,7 @@ begin
       auto_top_up_required = v_status = 'top_up_required',
       overdraft_nanos = v_overdraft,
       is_final = p_final,
+      key_id = coalesce(key_id, p_key_id),
       error_message = null,
       updated_at = now()
   where workspace_id = p_workspace_id and request_id = p_request_id;
@@ -148,10 +152,10 @@ begin
 end;
 $function$;
 
-GRANT EXECUTE ON FUNCTION "public"."gateway_charge_request_total"(uuid, text, bigint, boolean, bigint) TO "service_role";
+GRANT EXECUTE ON FUNCTION "public"."gateway_charge_request_total"(uuid, text, bigint, boolean, bigint, uuid) TO "service_role";
 
-REVOKE ALL ON FUNCTION "public"."gateway_charge_request_total"(uuid, text, bigint, boolean, bigint) FROM "postgres";
+REVOKE ALL ON FUNCTION "public"."gateway_charge_request_total"(uuid, text, bigint, boolean, bigint, uuid) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."gateway_charge_request_total"(uuid, text, bigint, boolean, bigint) TO "postgres";
+GRANT EXECUTE ON FUNCTION "public"."gateway_charge_request_total"(uuid, text, bigint, boolean, bigint, uuid) TO "postgres";
 
-REVOKE ALL ON FUNCTION "public"."gateway_charge_request_total"(uuid, text, bigint, boolean, bigint) FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."gateway_charge_request_total"(uuid, text, bigint, boolean, bigint, uuid) FROM PUBLIC, "anon", "authenticated";

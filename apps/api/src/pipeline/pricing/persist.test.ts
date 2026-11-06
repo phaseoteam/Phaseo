@@ -63,10 +63,11 @@ describe("recordUsageAndCharge", () => {
 		});
 		const { recordRequestChargeTotal } = await import("./persist");
 
-		await recordRequestChargeTotal({ requestId: "bill_1", workspaceId: "workspace_123", total_nanos: 400, final: true, creditSnapshotBalanceNanos: 9 });
+		await recordRequestChargeTotal({ requestId: "bill_1", workspaceId: "workspace_123", total_nanos: 400, final: true, creditSnapshotBalanceNanos: 9, keyId: "00000000-0000-4000-8000-000000000001" });
 
 		expect(rpcMock).toHaveBeenCalledWith("gateway_charge_request_total", {
 			p_workspace_id: "workspace_123", p_request_id: "bill_1", p_total_nanos: 400, p_final: true, p_credit_snapshot_balance_nanos: 9,
+			p_key_id: "00000000-0000-4000-8000-000000000001",
 		});
 		expect(invalidateGatewayCreditCacheMock).toHaveBeenCalledWith("workspace_123");
 		expect(releaseRuntimeMock).toHaveBeenCalledOnce();
