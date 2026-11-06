@@ -63,14 +63,17 @@ class FakeDatabase {
 	/** Seeds as written before department budgets could block (no department_budgets field). */
 	legacyShape = false;
 	calls: Array<{ keyIds: string[]; exclude: string[] }> = [];
-	/** Charge rows (gateway_request_charges) without a request row: counted unless their billing id is excluded. */
+	/**
+	 * Debit movements of charges without a request row (one per checkpoint, final or refund), each at
+	 * its own time: counted unless the charge's billing id is excluded.
+	 */
 	charges: Array<{ billingId: string; keyId: string; total: number; at: number }> = [];
 
 	chargeCost(keyIds: string[] | null, start: number | null, exclude: string[]): { cost: number; requests: number } {
 		const now = Date.now();
 		const rows = this.charges.filter((row) => (keyIds === null || keyIds.includes(row.keyId)) && !exclude.includes(row.billingId) &&
 			(start === null || row.at >= start) && row.at <= now);
-		return { cost: rows.reduce((sum, row) => sum + row.total, 0), requests: rows.length };
+		return { cost: rows.reduce((sum, row) => sum + row.total, 0), requests: new Set(rows.map((row) => row.billingId)).size };
 	}
 	fail = false;
 	/** Holds every seed read until resolved (a stalled Postgres call). */
@@ -323,11 +326,20 @@ describe("spend-limit coordinator", () => {
 			await flush();
 		};
 		// The checkpoint debit commits the charge row before the coordinator hears of it.
+		// The debit of the increase, at its own time, then the report of the running total.
+		const charged = (billingRequestId: string) => database.charges
+			.filter((charge) => charge.billingId === billingRequestId).reduce((sum, charge) => sum + charge.total, 0);
+		const debit = (billingRequestId: string, total: number) => {
+			const delta = total - charged(billingRequestId);
+			if (delta !== 0) database.charges.push({ billingId: billingRequestId, keyId: KEY, total: delta, at: Date.now() });
+		};
 		const checkpoint = (billingRequestId: string, total: number, revision: number) => {
-			const row = database.charges.find((charge) => charge.billingId === billingRequestId);
-			if (row) row.total = total;
-			else database.charges.push({ billingId: billingRequestId, keyId: KEY, total, at: Date.now() });
+			debit(billingRequestId, total);
 			return coordinator.record(WORKSPACE, { ...entry(billingRequestId), costNanos: total, revision });
+		};
+		const buckets = async () => {
+			const value = await probe();
+			return { daily: value?.daily?.costUsedNanos, weekly: value?.weekly?.costUsedNanos, monthly: value?.monthly?.costUsedNanos };
 		};
 		beforeEach(async () => {
 			await checkSpendLimit({ workspaceId: WORKSPACE, keyId: KEY, admissionId: "warm" });
@@ -365,7 +377,7 @@ describe("spend-limit coordinator", () => {
 			await reseed();
 			expect(await daily()).toBe(300);
 			vi.setSystemTime(Date.now() + SPEND_LEASE.pendingTtlMs + 1);
-			await reseed();
+			// The very next seed after expiry no longer excludes it, so it counts the charge row.
 			await reseed();
 			expect(database.calls.at(-1)?.exclude).toEqual([]);
 			expect(await daily()).toBe(300);
@@ -383,6 +395,38 @@ describe("spend-limit coordinator", () => {
 			await coordinator.record(WORKSPACE, { ...entry("b-restart"), costNanos: 500, revision: 2 });
 			await coordinator.record(WORKSPACE, { ...entry("b-restart"), costNanos: 0, final: true });
 			expect(await daily()).toBe(300);
+		});
+
+		it.each([
+			["a daily boundary (Friday to Saturday)", "2026-10-09T23:58:00Z", "2026-10-10T00:01:00Z", { daily: 50, weekly: 150, monthly: 150 }],
+			["a weekly boundary (Sunday to Monday)", "2026-10-11T23:58:00Z", "2026-10-12T00:01:00Z", { daily: 50, weekly: 50, monthly: 150 }],
+			["a monthly boundary (31 October to 1 November)", "2026-10-31T23:58:00Z", "2026-11-01T00:01:00Z", { daily: 50, weekly: 150, monthly: 50 }],
+		])("retires an entry held across %s, so each debit counts in its own period", async (_label, before, after, expected) => {
+			database.keys.set(KEY, { workspaceId: WORKSPACE, daily: [100, 1_000_000], weekly: [0, 1_000_000], monthly: [0, 1_000_000] });
+			vi.setSystemTime(new Date(before));
+			await reseed();
+			await checkpoint("b-roll", 100, 1);
+			expect(await buckets()).toEqual({ daily: 100, weekly: 100, monthly: 100 });
+			// Past midnight: checkpoint 2 debits $50 more while the coordinator still holds the entry.
+			vi.setSystemTime(new Date(after));
+			await checkpoint("b-roll", 150, 2);
+			await reseed();
+			expect(database.calls.at(-1)?.exclude).toEqual([]);
+			expect(await buckets()).toEqual(expected);
+			// Later records for the retired entry are ignored; the database counts them.
+			expect(await coordinator.record(WORKSPACE, { ...entry("b-roll"), costNanos: 200, revision: 3 })).toMatchObject({ duplicates: 1 });
+			expect(await buckets()).toEqual(expected);
+		});
+
+		it("ignores a first checkpoint that arrives after the request's final", async () => {
+			// The stream was refunded to 0 at its final; delivery put the final first.
+			debit("b-reordered", 300);
+			debit("b-reordered", 0);
+			expect(await coordinator.record(WORKSPACE, { ...entry("b-reordered"), costNanos: 0, final: true })).toMatchObject({ duplicates: 1 });
+			expect(await coordinator.record(WORKSPACE, { ...entry("b-reordered"), costNanos: 300, revision: 1 })).toMatchObject({ duplicates: 1 });
+			expect(await daily()).toBe(0);
+			await reseed();
+			expect(await daily()).toBe(0);
 		});
 
 		it("ignores records for an entry it never held", async () => {

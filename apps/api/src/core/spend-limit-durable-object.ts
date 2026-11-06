@@ -371,7 +371,13 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 				// Only a request's first checkpoint opens its entry. Any other record for an entry this
 				// coordinator does not hold (expired, or lost on a restart) is ignored: its charge row
 				// is no longer excluded from the seed, which counts it.
-				const first = !final && entry.revision === 1 && !this.seen.has(entry.billingRequestId);
+				if (final) {
+					// Delivery can reorder the final ahead of the first checkpoint: remember it, so that
+					// checkpoint is ignored too and the seed counts the charge row's net (often 0).
+					this.markSeen(entry.billingRequestId);
+					return false;
+				}
+				const first = entry.revision === 1 && !this.seen.has(entry.billingRequestId);
 				if (!first) return false;
 			} else {
 				if (!existing.stepped || existing.keyId !== entry.keyId || existing.stepped.final) return false;
@@ -391,11 +397,7 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			}
 		}
 		if (this.seen.has(entry.billingRequestId) || existing) return false;
-		this.seen.add(entry.billingRequestId);
-		if (this.seen.size > MAX_SEEN_IDS) {
-			const oldest = this.seen.values().next();
-			if (!oldest.done) this.seen.delete(oldest.value);
-		}
+		this.markSeen(entry.billingRequestId);
 		const cost = nonNegative(entry.costNanos);
 		const requests = nonNegative(entry.requests);
 		const at = Number.isFinite(entry.occurredAtMs) ? Number(entry.occurredAtMs) : now;
@@ -423,6 +425,37 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			this.workspaceAvgCost = this.workspaceAvgCost ? this.workspaceAvgCost * 0.9 + perRequest * 0.1 : perRequest;
 		}
 		return true;
+	}
+
+	private markSeen(billingRequestId: string): void {
+		this.seen.add(billingRequestId);
+		if (this.seen.size > MAX_SEEN_IDS) {
+			const oldest = this.seen.values().next();
+			if (!oldest.done) this.seen.delete(oldest.value);
+		}
+	}
+
+	/**
+	 * Before a seed's exclusions are built: entries past the pending TTL are dropped, and stepped
+	 * entries whose day, week or month has ended since they opened are retired (later records for
+	 * them are ignored). The entry counts all its spend at the time it opened; the database counts
+	 * each debit at its own time, so from here the same seed counts their spend instead.
+	 */
+	private retireStaleEntries(now: number): void {
+		const current = windowStarts(now);
+		for (const entry of this.pending.values()) {
+			if (entry.persisted) continue;
+			if (now - entry.recordedAt > SPEND_LEASE.pendingTtlMs) {
+				this.pending.delete(entry.billingRequestId);
+				continue;
+			}
+			if (!entry.stepped) continue;
+			const opened = windowStarts(entry.at);
+			if (opened.daily !== current.daily || opened.weekly !== current.weekly || opened.monthly !== current.monthly) {
+				this.pending.delete(entry.billingRequestId);
+				this.markSeen(entry.billingRequestId);
+			}
+		}
 	}
 
 	/** Reads seed data. Overridden in tests. */
@@ -495,6 +528,7 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 		const keyIds = [...new Set([...this.keys.keys(), ...(extraKeyId ? [extraKeyId] : [])])];
 		// Exclude recorded spend whose row may not be visible yet; it is counted from memory.
 		// Spend already confirmed persisted is not excluded: the seed counts it, so it is dropped.
+		this.retireStaleEntries(Date.now());
 		const unpersisted = [...this.pending.values()].filter((entry) => !entry.persisted)
 			.sort((left, right) => right.recordedAt - left.recordedAt);
 		// Contract with gateway_spend_limit_seed: it skips gateway_requests rows whose request_id is
@@ -527,10 +561,8 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			const seed = await this.loadSeed(workspaceId, chunk, exclude);
 			this.applySeed(seed, chunk, persistedBefore);
 		}
-		const now = Date.now();
-		for (const entry of this.pending.values()) {
-			if (!entry.persisted && now - entry.recordedAt > SPEND_LEASE.pendingTtlMs) this.pending.delete(entry.billingRequestId);
-		}
+		// Entries that passed the TTL while the seed loaded: dropped now; the next seed counts them.
+		this.retireStaleEntries(Date.now());
 	}
 
 	private applySeed(seed: SpendLimitSeed, chunk: string[], persistedBefore: Pending[]): void {
