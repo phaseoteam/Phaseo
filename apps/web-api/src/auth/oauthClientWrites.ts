@@ -3,38 +3,46 @@ import { hasOAuthClientToken } from "@/auth/requireUser";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 
-// Account routes that change what can spend, who has access, where workspace content and events go, or what a
-// preset or route runs. A token issued to an OAuth client (Phaseo's CLI and desktop app included, since their
-// client IDs are public) can read them but not write them; the person makes these changes in the dashboard,
-// and automation uses the management API with a management key. Paths are relative to /api/account.
-const SENSITIVE_WRITE_PATHS = [
-	// Preset content: create, change, publish, fork, upstream and labels. The publisher handle isn't content.
-	/^\/settings\/presets(?!\/publisher$)(\/|$)/,
-	/^\/settings\/routing\/(auto|successor)(\/|$)/,
-	/^\/settings\/dynamic-routes(\/|$)/,
-	// Spending and access.
-	/^\/settings\/(keys|management-keys|key-security|budgets|guardrails|rate-limits|spend-rules|trusted-workloads)(\/|$)/,
-	/^\/settings\/teams\/[^/]+\/(invites|members|sso|scim)(\/|$)/,
-	/^\/credits\/(auto-top-up|admin)(\/|$)/,
-	// Where content and events go: logging and privacy (on guardrails above), destinations, provider keys,
-	// private models, classifiers, data contribution, webhooks, notification routes and the Slack integration.
-	/^\/settings\/(broadcast|webhooks|byok|byok-fallback|classifiers|data-contribution|slack)(\/|$)/,
-	/^\/credits\/(notification-destinations|notification-routes)(\/|$)/,
-	/^\/private-models(\/|$)/,
+// A token issued to an OAuth client (Phaseo's CLI and desktop app included, since their client IDs are public)
+// may read anything its person can, but may write only these ordinary, personal or read-only-over-POST routes.
+// Every other write is refused, so a new route is refused until someone decides it belongs here.
+const ALLOWED_WRITES: Array<[method: string, path: RegExp]> = [
+	["POST", /^\/api\/account\/auth\/workspace-accessed$/],
+	["PUT", /^\/api\/account\/auth\/onboarding$/],
+	["POST", /^\/api\/account\/chat\/issues$/],
+	["POST", /^\/api\/account\/credits\/redeem$/],
+	["POST", /^\/api\/account\/settings\/privacy\/review$/],
+	["*", /^\/api\/account\/settings\/mobile-notifications(\/.*)?$/],
+	["PUT", /^\/api\/account\/settings\/account\/profile$/],
+	["POST", /^\/api\/account\/settings\/profile\/avatar$/],
+	["POST", /^\/api\/account\/settings\/teams\/[^/]+\/logo$/],
+	["DELETE", /^\/api\/account\/settings\/teams\/[^/]+\/logo$/],
+	["POST", /^\/api\/account\/settings\/teams$/],
+	// Renames the workspace; the handler changes nothing else.
+	["PUT", /^\/api\/account\/settings\/teams\/[^/]+$/],
+	// Reads usage over POST.
+	["POST", /^\/api\/account\/settings\/usage\/actions$/],
+	["PUT", /^\/api\/account\/settings\/beta$/],
+	["PUT", /^\/api\/account\/settings\/preferences$/],
+	// An authorized app's scopes can only be reduced, and an app can be revoked.
+	["PATCH", /^\/api\/account\/settings\/authorized-apps\/[^/]+\/scopes$/],
+	["DELETE", /^\/api\/account\/settings\/authorized-apps\/[^/]+$/],
+	["POST", /^\/api\/account\/settings\/provider-onboarding\/preview$/],
 ];
 
 const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 export const OAUTH_CLIENT_WRITE_REFUSAL = "This change can't be made with a Phaseo CLI or desktop app sign-in. Make it in the Phaseo dashboard, or call the API with a management key.";
 
-export function isSensitiveAccountWrite(method: string, path: string): boolean {
-	if (!WRITE_METHODS.has(method.toUpperCase())) return false;
-	const relative = path.replace(/^\/api\/account(?=\/|$)/, "");
-	return SENSITIVE_WRITE_PATHS.some((pattern) => pattern.test(relative));
+/** Whether an OAuth client's token may make this request. Reads always may. */
+export function oauthClientMayWrite(method: string, path: string): boolean {
+	const verb = method.toUpperCase();
+	if (!WRITE_METHODS.has(verb)) return true;
+	return ALLOWED_WRITES.some(([allowed, pattern]) => (allowed === "*" || allowed === verb) && pattern.test(path));
 }
 
-export const refuseOAuthClientSensitiveWrites: MiddlewareHandler<{ Bindings: Env }> = async (c, next) => {
-	if (isSensitiveAccountWrite(c.req.method, c.req.path) && hasOAuthClientToken(c.req.raw)) {
+export const refuseOAuthClientWrites: MiddlewareHandler<{ Bindings: Env }> = async (c, next) => {
+	if (!oauthClientMayWrite(c.req.method, c.req.path) && hasOAuthClientToken(c.req.raw)) {
 		return c.json({ error: "forbidden", reason: "oauth_client_write_refused", message: OAUTH_CLIENT_WRITE_REFUSAL }, 403, PRIVATE_NO_STORE_HEADERS);
 	}
 	await next();
