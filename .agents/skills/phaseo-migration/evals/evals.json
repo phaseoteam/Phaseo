@@ -5,7 +5,7 @@
     "should_trigger": true,
     "expected_behavior": [
       "Keeps the OpenAI SDK and changes only apiKey to process.env.PHASEO_API_KEY and baseURL to https://api.phaseo.app/v1",
-      "Checks each model ID against GET /v1/models and maps unprefixed names such as gpt-4.1-mini to Phaseo IDs instead of guessing",
+      "Checks each model ID against data[].id from GET /v1/models?format=openai and maps unprefixed names such as gpt-4.1-mini to Phaseo IDs instead of guessing",
       "Smoke tests with phaseo/free, including one streaming request",
       "Does not print or commit an API key"
     ]
@@ -22,13 +22,23 @@
     ]
   },
   {
+    "id": "openai-responses-state",
+    "query": "Our chat feature calls client.responses.create with previous_response_id to continue conversations on OpenAI. Move it to Phaseo.",
+    "should_trigger": true,
+    "expected_behavior": [
+      "Explains that previous_response_id returns 400 on Phaseo because responses are not stored",
+      "Changes the app to send the conversation history in input on each request",
+      "Keeps the OpenAI SDK and swaps only apiKey and baseURL"
+    ]
+  },
+  {
     "id": "helicone-headers",
     "query": "We proxy OpenAI through oai.helicone.ai with Helicone-Auth, Helicone-Property-Team and Helicone-User-Id headers. Move us to Phaseo and keep the per-team cost breakdown.",
     "should_trigger": true,
     "expected_behavior": [
       "Removes Helicone-Auth and the Helicone base URL",
       "Maps Helicone-Property-* to X-Phaseo-Metadata labels and Helicone-User-Id to the user field or X-Phaseo-User-Id",
-      "Lists Helicone features with no direct equivalent instead of inventing headers",
+      "Lists Helicone features with no direct equivalent instead of inventing headers, including response caching, which Phaseo does not offer",
       "Plans the observability cutover before switching traffic"
     ]
   },
