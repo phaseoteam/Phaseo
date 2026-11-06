@@ -370,6 +370,37 @@ describe("account settings routes", () => {
 		expect(expected).toBe('eq.{"models:read","usage:read"}');
 	});
 
+	it.each([
+		["stored order", ["usage:read", "models:read"], ["models:read"], 'eq.{"usage:read","models:read"}'],
+		["duplicates", ["models:read", "usage:read", "models:read"], ["models:read"], 'eq.{"models:read","usage:read","models:read"}'],
+		["a reordered request", ["keys:read", "models:read", "usage:read"], ["usage:read", "keys:read"], 'eq.{"keys:read","models:read","usage:read"}'],
+	])("matches the stored scopes exactly as read, keeping %s", async (_label, stored, requested, filter) => {
+		let sentFilter: string | null = null;
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const request = input instanceof Request ? input : new Request(String(input), init);
+			if (request.url.includes("oauth_authorizations")) {
+				if (request.method === "PATCH") {
+					sentFilter = new URL(request.url).searchParams.get("scopes");
+					return new Response(JSON.stringify([{ id: "authorization-1" }]), { status: 200 });
+				}
+				return new Response(JSON.stringify([{ id: "authorization-1", scopes: stored }]), { status: 200 });
+			}
+			return authenticatedFetch(input);
+		}));
+		const response = await app.request(
+			"https://phaseo.app/api/account/settings/authorized-apps/authorization-1/scopes",
+			{
+				method: "PATCH",
+				headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" },
+				body: JSON.stringify({ scopes: requested }),
+			},
+			env,
+		);
+		expect(response.status).toBe(200);
+		// Not sorted or deduplicated: Postgres compares text[] element by element, so only the array as read matches.
+		expect(sentFilter).toBe(filter);
+	});
+
 	it("doesn't put back a scope the dashboard removed after the reduction read it", async () => {
 		// The stored row, as PostgREST would apply the update's filters to it.
 		let stored = ["models:read", "usage:read", "keys:read"];
