@@ -9,6 +9,7 @@ export const readSchema = (path) => readFile(new URL(path, schemasUrl), 'utf8');
 export const readMigration = () => readFile(new URL(`../../migrations/${MIGRATION_FILE}`, import.meta.url), 'utf8');
 // Each new index has its own migration, applied before MIGRATION_FILE.
 export const INDEX_MIGRATION_FILES = [
+  '20261106153743_gateway_requests_expected_cost_idx.sql',
   '20261106153744_gateway_requests_charged_unsuccessful_cost_idx.sql',
   '20261106153745_gateway_requests_workspace_billing_request_idx.sql',
   '20261106153746_gateway_request_charges_open_step_idx.sql',
@@ -52,6 +53,7 @@ const STUBS = `
   create table public.gateway_requests (id uuid default gen_random_uuid(), workspace_id uuid, request_id text,
     endpoint text, model_id text, provider text, status_code integer, success boolean, usage jsonb, cost_nanos bigint,
     currency text, key_id uuid references public.keys(id) on delete set null, detail_metadata jsonb, billing_request_id text,
+    expected_cost_nanos bigint,
     created_at timestamptz not null default now()) partition by range (created_at);
   create table public.gateway_requests_2025 partition of public.gateway_requests for values from ('2025-01-01') to ('2026-01-01');
   create table public.gateway_requests_2026 partition of public.gateway_requests for values from ('2026-01-01') to ('2027-01-01');
