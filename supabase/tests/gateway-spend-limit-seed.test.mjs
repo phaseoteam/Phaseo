@@ -30,8 +30,10 @@ try {
     create table public.gateway_realtime_sessions (workspace_id uuid, session_id text, key_id uuid);
     create table if not exists public.gateway_request_charges (workspace_id uuid, request_id text, cost_nanos bigint, status text,
       is_final boolean not null default true, key_id uuid, created_at timestamptz default now());
+    create table if not exists public.credit_ledger (id uuid primary key default gen_random_uuid(), workspace_id uuid, kind text,
+      amount_nanos bigint, ref_type text, ref_id text, source_ref_type text, source_ref_id text, status text,
+      created_at timestamptz not null default now());
     alter table public.gateway_requests add column if not exists billing_request_id text;
-    alter table public.gateway_requests add column if not exists expected_cost_nanos bigint;
     alter table public.keys add column if not exists department_id uuid;
     -- Department tables, trimmed to what the seed reads.
     create table public.workspace_departments (id uuid primary key, workspace_id uuid not null, name text not null);
@@ -57,11 +59,14 @@ try {
   // Then the one teaching the helper the workspace's primary-department setting.
   const attributionMigration = await readFile(new URL('../migrations/20261031174621_department_attribution_primary_for_budgets.sql', import.meta.url), 'utf8');
   await db.exec(attributionMigration);
-  // 20261106165203_budget_enforcement_money_hygiene moves department usage into the shared
+  // 20261106165205_budget_enforcement_money_hygiene moves department usage into the shared
   // private.department_budget_usage (positive-cost requests plus outstanding holds).
-  const usageMigration = await readFile(new URL('../migrations/20261106165203_budget_enforcement_money_hygiene.sql', import.meta.url), 'utf8');
+  const usageMigration = await readFile(new URL('../migrations/20261106165205_budget_enforcement_money_hygiene.sql', import.meta.url), 'utf8');
+  for (const name of ['20261106165158_gateway_requests_expected_cost_nanos.sql', '20261106165159_validate_gateway_requests_expected_cost_nanos_check.sql']) {
+    await db.exec(await readFile(new URL(`../migrations/${name}`, import.meta.url), 'utf8'));
+  }
   for (const path of ['private/functions/unbilled_spend.sql', 'private/functions/budget_spend_items.sql', 'private/functions/department_budget_usage.sql',
-    'public/functions/gateway_workspace_budget_status.sql', 'public/functions/gateway_spend_limit_seed.sql',
+    'private/functions/workspace_budget_status.sql', 'public/functions/gateway_workspace_budget_status.sql', 'public/functions/gateway_spend_limit_seed.sql',
     'public/functions/workspace_department_budget_status.sql']) {
     const definition = (await schema(path)).trim();
     assert.ok(usageMigration.includes(definition), `${path} matches its migration`);
