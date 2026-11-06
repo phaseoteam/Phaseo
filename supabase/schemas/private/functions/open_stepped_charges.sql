@@ -15,8 +15,8 @@ CREATE OR REPLACE FUNCTION private.open_stepped_charges (
   -- gateway_requests row has not landed: money already taken for a stream whose worker may have
   -- stopped before writing it. Identified by billing request id (gateway_request_charges.request_id,
   -- gateway_requests.billing_request_id), never by the public request id. Read from
-  -- gateway_request_charges_open_step_idx, each checked against
-  -- gateway_requests_workspace_billing_request_idx.
+  -- gateway_request_charges_open_step_idx, each checked against the (workspace_id,
+  -- billing_request_id) index on gateway_requests.
   select charge.request_id, charge.key_id, charge.created_at, charge.cost_nanos
   from public.gateway_request_charges charge
   where charge.workspace_id = p_workspace_id
@@ -30,7 +30,7 @@ CREATE OR REPLACE FUNCTION private.open_stepped_charges (
     );
 $function$;
 
-COMMENT ON FUNCTION "private"."open_stepped_charges"(uuid) IS 'Applied, not yet final stepped stream charges of a workspace whose request row has not landed, by billing request id. Counted by budget_spend_items (admission) and returned by gateway_spend_limit_seed for the SpendLimit Durable Object.';
+COMMENT ON FUNCTION "private"."open_stepped_charges"(uuid) IS 'Applied, not yet final stepped stream charges of a workspace whose request row has not landed, by billing request id. Counted by budget_spend_items and the key usage of gateway_spend_limit_seed.';
 
 REVOKE ALL ON FUNCTION "private"."open_stepped_charges"(uuid) FROM PUBLIC;
 

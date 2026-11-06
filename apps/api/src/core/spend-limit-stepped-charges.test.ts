@@ -25,6 +25,7 @@ const WORKSPACE = "10000000-0000-4000-8000-000000000001";
 const KEY = "30000000-0000-4000-8000-000000000001";
 const OTHER_KEY = "30000000-0000-4000-8000-000000000002";
 const THIRD_KEY = "30000000-0000-4000-8000-000000000003";
+const FOURTH_KEY = "30000000-0000-4000-8000-000000000004";
 const DEPARTMENT = "40000000-0000-4000-8000-000000000001";
 const BILLING_ID = "bill-stream-1";
 const REQUEST_ID = "req-stream-1";
@@ -93,7 +94,7 @@ beforeAll(async () => {
 		insert into public.workspaces (id) values ('${WORKSPACE}');
 		insert into public.wallets (workspace_id, balance_nanos) values ('${WORKSPACE}', ${100 * DOLLAR});
 		insert into public.keys (id, workspace_id, department_id) values ('${KEY}', '${WORKSPACE}', '${DEPARTMENT}'),
-			('${OTHER_KEY}', '${WORKSPACE}', '${DEPARTMENT}'), ('${THIRD_KEY}', '${WORKSPACE}', null);
+			('${OTHER_KEY}', '${WORKSPACE}', '${DEPARTMENT}'), ('${THIRD_KEY}', '${WORKSPACE}', null), ('${FOURTH_KEY}', '${WORKSPACE}', null);
 		insert into public.workspace_departments (id, workspace_id, name) values ('${DEPARTMENT}', '${WORKSPACE}', 'Engineering');
 		-- Both $10 a day: the department decides for its keys, the workspace for the third key.
 		insert into public.workspace_department_budgets (workspace_id, department_id, interval, limit_nanos) values ('${WORKSPACE}', '${DEPARTMENT}', 'daily', ${10 * DOLLAR});
@@ -111,13 +112,12 @@ describe("stepped stream charges in the spend-limit coordinator", () => {
 		startCoordinator();
 		// The checkpoint is recorded while the coordinator holds the charge row's $6 from its seed.
 		expect(await admit(KEY, "a-1")).toMatchObject({ outcome: "allowed" });
-		await coordinator.record(WORKSPACE, { keyId: KEY, billingRequestId: BILLING_ID, requestId: REQUEST_ID, costNanos: 6 * DOLLAR, requests: 1, replace: true });
+		await coordinator.record(WORKSPACE, { keyId: KEY, billingRequestId: BILLING_ID, requestId: REQUEST_ID, costNanos: 6 * DOLLAR, requests: 1, replace: true, revision: 1 });
 
-		// A new key forces a full reseed. The exclusions are public request ids only; the stepped
-		// charge comes back on its own, by billing request id, for the coordinator to skip.
+		// A new key forces a full reseed. The coordinator lists the checkpoint's request id and
+		// billing id; the seed skips the charge row by its billing id and counts nothing twice.
 		expect(await admit(OTHER_KEY, "a-2")).toMatchObject({ outcome: "allowed" });
-		expect(seedCalls.at(-1)).toEqual([REQUEST_ID]);
-		expect(seeds.at(-1).open_charges).toEqual([expect.objectContaining({ billing_request_id: BILLING_ID, key_id: KEY, cost_nanos: 6 * DOLLAR })]);
+		expect(seedCalls.at(-1)?.sort()).toEqual([BILLING_ID, REQUEST_ID].sort());
 		expect(seeds.at(-1).budget_status.budgets[0].usage_nanos).toBe(0);
 		expect(seeds.at(-1).department_budgets[0].usage_nanos).toBe(0);
 		// $6 of $10: still admitted (counted twice it would be $12 and refused).
@@ -125,27 +125,29 @@ describe("stepped stream charges in the spend-limit coordinator", () => {
 
 		// The next checkpoint replaces the amount ($11 taken in all), in memory and in the charge row.
 		await charged(11 * DOLLAR);
-		await coordinator.record(WORKSPACE, { keyId: KEY, billingRequestId: BILLING_ID, requestId: REQUEST_ID, costNanos: 11 * DOLLAR, requests: 1, replace: true });
+		await coordinator.record(WORKSPACE, { keyId: KEY, billingRequestId: BILLING_ID, requestId: REQUEST_ID, costNanos: 11 * DOLLAR, requests: 1, replace: true, revision: 2 });
 		const department = { reason: "department_daily_cost_budget_reached", currentValue: 11 * DOLLAR, departmentId: DEPARTMENT };
 		const workspace = { reason: "workspace_daily_cost_budget_reached", currentValue: 11 * DOLLAR };
 		expect(await admit(KEY, "a-4")).toMatchObject({ outcome: "denied", keyLimit: department });
 		expect(await admit(THIRD_KEY, "a-5")).toMatchObject({ outcome: "denied", keyLimit: workspace });
 
-		// After a restart only the database knows the charge (from the seed's open charges): still $11.
+		// After a restart only the database knows the charge (the seed counts its row): still $11.
 		startCoordinator();
 		expect(await admit(KEY, "a-6")).toMatchObject({ outcome: "denied", keyLimit: department });
 		expect(await admit(THIRD_KEY, "a-6b")).toMatchObject({ outcome: "denied", keyLimit: workspace });
-		// A checkpoint recorded after the restart replaces the seeded amount instead of adding to it.
-		await coordinator.record(WORKSPACE, { keyId: KEY, billingRequestId: BILLING_ID, requestId: REQUEST_ID, costNanos: 11 * DOLLAR, requests: 1, replace: true });
-		expect(await admit(THIRD_KEY, "a-6c")).toMatchObject({ outcome: "denied", keyLimit: workspace });
+		// A checkpoint recorded after the restart is counted from memory once the next reseed lists it.
+		// (Until that reseed, which runs within a minute, the seed's earlier count of the charge row
+		// and the new pending entry both apply: an early refusal, never an under-count.)
+		await coordinator.record(WORKSPACE, { keyId: KEY, billingRequestId: BILLING_ID, requestId: REQUEST_ID, costNanos: 11 * DOLLAR, requests: 1, replace: true, revision: 3 });
+		expect(await admit(FOURTH_KEY, "a-6c")).toMatchObject({ outcome: "denied", keyLimit: workspace });
+		expect(seedCalls.at(-1)?.sort()).toEqual([BILLING_ID, REQUEST_ID].sort());
 
 		// The request row lands at finalization ($11, the stream was cancelled): counted through it instead.
 		await db.query(`insert into public.gateway_requests (workspace_id, request_id, billing_request_id, key_id, success, cost_nanos)
 			values ($1, $2, $3, $4, false, $5)`, [WORKSPACE, REQUEST_ID, BILLING_ID, KEY, 11 * DOLLAR]);
 		startCoordinator();
-		await coordinator.record(WORKSPACE, { keyId: KEY, billingRequestId: BILLING_ID, requestId: REQUEST_ID, costNanos: 11 * DOLLAR, requests: 1, replace: true });
+		await coordinator.record(WORKSPACE, { keyId: KEY, billingRequestId: BILLING_ID, requestId: REQUEST_ID, costNanos: 11 * DOLLAR, requests: 1, replace: true, final: true });
 		expect(await admit(OTHER_KEY, "a-7")).toMatchObject({ outcome: "denied", keyLimit: department });
-		expect(seeds.at(-1).open_charges).toEqual([]);
 		expect(await admit(THIRD_KEY, "a-8")).toMatchObject({ outcome: "denied", keyLimit: workspace });
 	});
 });

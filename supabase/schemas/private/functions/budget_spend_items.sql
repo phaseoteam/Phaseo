@@ -3,7 +3,7 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
   p_since               timestamp with time zone,
   p_key_ids             uuid[] DEFAULT NULL::uuid[],
   p_exclude_request_ids text[] DEFAULT '{}'::text[],
-  p_include_open_charges boolean DEFAULT true
+  p_exclude_charge_ids  text[] DEFAULT '{}'::text[]
 )
   RETURNS TABLE (
     key_id uuid,
@@ -21,10 +21,9 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
   -- start. p_key_ids limits the rows to those keys (NULL: the whole workspace). p_since (NULL: all
   -- time) bounds the history read, written as created_at >= coalesce(...) so partitions of
   -- gateway_requests are pruned under generic plans; active holds are returned whenever they were
-  -- made. p_exclude_request_ids leaves out gateway_requests rows (by public request id) the
-  -- SpendLimit Durable Object is still counting from memory. p_include_open_charges false leaves
-  -- out open stepped charges, which gateway_spend_limit_seed hands to the Durable Object by billing
-  -- request id instead.
+  -- made. The SpendLimit Durable Object's spend still counted from memory is left out:
+  -- p_exclude_request_ids matches gateway_requests.request_id (the public request id), and
+  -- p_exclude_charge_ids matches gateway_request_charges.request_id (the billing request id).
   --
   -- * Requests: every gateway_requests row with a positive cost, whether or not it succeeded (a
   --   cancelled or failed request can still be charged), read as two disjoint parts so each uses
@@ -116,14 +115,14 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
   union all
   select charge.key_id, charge.created_at, true, charge.cost_nanos
   from private.open_stepped_charges(p_workspace_id) charge
-  where coalesce(p_include_open_charges, true)
-    and (p_key_ids is null or charge.key_id = any (p_key_ids));
+  where (p_key_ids is null or charge.key_id = any (p_key_ids))
+    and not (charge.billing_request_id = any (coalesce(p_exclude_charge_ids, '{}'::text[])));
 $function$;
 
-COMMENT ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], boolean) IS 'Spend items counted toward workspace and department budgets: positive-cost requests, active holds in every period, captured video and free-model holds less their audited cost (each hold''s batch_hold_usage rows counted once), the uncharged part of delivered requests pending reconciliation (expected_cost_nanos), and applied stepped stream charges whose request row has not landed (attributed to the charge''s key when it has one).';
+COMMENT ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) IS 'Spend items counted toward workspace and department budgets: positive-cost requests, active holds in every period, captured video and free-model holds less their audited cost (each hold''s batch_hold_usage rows counted once), the uncharged part of delivered requests pending reconciliation (expected_cost_nanos), and applied stepped stream charges whose request row has not landed (attributed to the charge''s key when it has one).';
 
-REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], boolean) FROM PUBLIC;
+REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) FROM PUBLIC;
 
-REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], boolean) FROM "postgres";
+REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], boolean) TO "postgres";
+GRANT EXECUTE ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) TO "postgres";

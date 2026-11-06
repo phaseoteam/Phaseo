@@ -363,9 +363,6 @@ CREATE INDEX gateway_requests_finish_reason_created_idx ON ONLY public.gateway_r
 CREATE INDEX gateway_requests_charged_unsuccessful_cost_idx ON ONLY public.gateway_requests USING btree (workspace_id, created_at) INCLUDE (key_id, cost_nanos)
   WHERE ((success IS NOT TRUE) AND (cost_nanos > 0));
 
-CREATE INDEX gateway_requests_workspace_billing_request_idx ON ONLY public.gateway_requests USING btree (workspace_id, billing_request_id)
-  WHERE (billing_request_id IS NOT NULL);
-
 CREATE INDEX gateway_requests_expected_cost_idx ON ONLY public.gateway_requests USING btree (workspace_id, created_at) INCLUDE (key_id, cost_nanos, expected_cost_nanos)
   WHERE (expected_cost_nanos IS NOT NULL);
 
