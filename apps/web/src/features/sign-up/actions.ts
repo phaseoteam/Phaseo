@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { serverRedirectAction } from "@/lib/serverFn/actionMiddleware";
+import { serverAuthRedirectAction } from "@/lib/serverFn/actionMiddleware";
 import { redirect } from '@/lib/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { resolveAuthCallbackUrl } from '@/lib/auth/authOrigin'
@@ -22,7 +22,7 @@ function buildCallbackPath(params: {
 }
 
 export const handleOAuthRedirect = createServerFn({ method: "POST" })
-	.middleware([serverRedirectAction])
+	.middleware([serverAuthRedirectAction])
 	.validator((formData: FormData) => formData)
 	.handler(async ({ data: formData }) => {
 		const locale = readAuthLocale(formData)
@@ -53,7 +53,7 @@ export const handleOAuthRedirect = createServerFn({ method: "POST" })
 	});
 
 export const handleEmailSignup = createServerFn({ method: "POST" })
-	.middleware([serverRedirectAction])
+	.middleware([serverAuthRedirectAction])
 	.validator((formData: FormData) => formData)
 	.handler(async ({ data: formData }) => {
 		const locale = readAuthLocale(formData)
