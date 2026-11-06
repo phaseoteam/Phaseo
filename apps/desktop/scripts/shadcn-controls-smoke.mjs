@@ -46,6 +46,12 @@ app.whenReady().then(async () => {
     const capture = async (folder, name) => { const output = path.resolve("../../output/playwright", folder); mkdirSync(output, { recursive: true }); await new Promise(resolve => setTimeout(resolve, 150)); writeFileSync(path.join(output, `${entry ? "archive" : "source"}-${name}.png`), (await owner.webContents.capturePage()).toPNG()); };
     if (owner.webContents.isLoading()) await new Promise(resolve => owner.webContents.once("did-finish-load", resolve));
     await installControlActions(owner);
+    const systemReducedMotion = await run("matchMedia('(prefers-reduced-motion: reduce)').matches");
+    console.log('SYSTEM_MOTION_PREFERENCE',JSON.stringify({reduced:systemReducedMotion}));
+    // Hosted desktops can disable motion. Exercise each preference explicitly in this owned window.
+    owner.webContents.debugger.attach('1.3');
+    const setMotionPreference = value => owner.webContents.debugger.sendCommand('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value}]});
+    await setMotionPreference('no-preference');
     // Chat mode lists every personal chat; project chats live under Code.
     await wait(`document.querySelector('aside[aria-label="Chats"] [data-chat-count]')?.dataset.chatCount==='60'&&${rows}.length>0`);
     owner.setSize(1440, 920);
@@ -70,6 +76,7 @@ app.whenReady().then(async () => {
     await run("window.dispatchEvent(new KeyboardEvent('keydown',{key:'b',ctrlKey:true,bubbles:true}))");
     await wait("!document.querySelector('aside[aria-label=\"Chats\"]').inert");
     const sidebarMotion = await run(`(async()=>{
+      if(matchMedia('(prefers-reduced-motion: reduce)').matches)throw Error('Normal motion preference was not applied');
       const frame=document.querySelector('[data-sidebar-frame]'),width=frame.getBoundingClientRect().width;
       await Promise.all(frame.getAnimations().map(animation=>animation.finished));
       frame.querySelector('button').focus();
@@ -146,10 +153,36 @@ app.whenReady().then(async () => {
       return {slider:true,previewDuration:600,instant:true,animationsOff:true,agentControl:true,reset:true};
     })()`);
     console.log('ANIMATION_SETTINGS_SMOKE',JSON.stringify(animationSettings));
+    await setMotionPreference('reduce');
+    const reducedPreview = await run(`(async()=>{
+      if(!matchMedia('(prefers-reduced-motion: reduce)').matches)throw Error('Reduced motion preference was not applied');
+      const preview=document.querySelector('[aria-label="Preview panel animation"]'),wasOpen=preview.getAttribute('aria-pressed')==='true';
+      await window.phaseoDesktop.appCommands.run('settings.set',{key:'panelAnimationDurationMs',value:600});
+      preview.click();await new Promise(requestAnimationFrame);
+      const style=getComputedStyle(preview.firstElementChild),duration=parseFloat(style.transitionDuration);
+      if(duration>0.001||Math.abs(parseFloat(style.marginLeft)-(wasOpen?-20:0))>0.01)throw Error('Reduced motion did not update the preview immediately');
+      if(document.querySelector('input[aria-label="Panel animation duration"]').value!=='600')throw Error('Reduced motion changed the saved duration');
+      document.querySelector('[aria-label="Reset panel animation duration"]').click();await new Promise(requestAnimationFrame);
+      return {durationSeconds:duration,savedDurationPreserved:true};
+    })()`);
     await run("Array.from(document.querySelectorAll('[role=radiogroup][aria-label=Theme] [role=radio]')).find(button=>button.textContent==='Light').click()");
     await wait("document.documentElement.dataset.theme==='light'&&document.querySelector('[role=radiogroup][aria-label=Theme] [aria-checked=true]')?.textContent==='Light'");
     key("Escape");
     await wait(`!document.querySelector('nav[aria-label="Settings sections"]')&&document.querySelector('main [aria-label=Message]')?.value==='Keep this draft'&&window.__auditChatTitle()===${JSON.stringify(secondChat)}`);
+    const reducedSidebar = await run(`(async()=>{
+      const frame=document.querySelector('[data-sidebar-frame]'),width=frame.getBoundingClientRect().width;
+      frame.querySelector('button').focus();
+      window.dispatchEvent(new KeyboardEvent('keydown',{key:'b',ctrlKey:true,bubbles:true}));await new Promise(requestAnimationFrame);
+      const duration=parseFloat(getComputedStyle(frame).transitionDuration);
+      if(duration>0.001||Math.abs(frame.getBoundingClientRect().right)>1||Math.abs(document.querySelector('main').getBoundingClientRect().left)>1)throw Error('Reduced motion did not collapse the sidebar immediately');
+      if(!frame.inert||frame.hasAttribute('data-focus-region')||document.activeElement.getAttribute('aria-label')!=='Show sidebar')throw Error('Reduced motion lost collapse accessibility');
+      document.querySelector('[aria-label="Show sidebar"]').click();await new Promise(requestAnimationFrame);
+      if(frame.getBoundingClientRect().right!==width||frame.inert)throw Error('Reduced motion did not open the sidebar immediately');
+      return {durationSeconds:duration,instantClose:true,instantOpen:true,focusRestored:true};
+    })()`);
+    console.log('REDUCED_MOTION_SMOKE',JSON.stringify({preview:reducedPreview,sidebar:reducedSidebar}));
+    await owner.webContents.debugger.sendCommand('Emulation.setEmulatedMedia',{features:[]});
+    owner.webContents.debugger.detach();
     console.log('SETTINGS_LAYOUT_SMOKE',JSON.stringify({chatList:60,modeSwitch:true,collapsibleSettled:true,surfaceBack:true,appearance:true,draftPreserved:true,escapeCloses:true,settingsCaptures:6}));
     // The tools panel resizes from its keyboard-focusable separator and by dragging, and remembers its width.
     owner.setSize(1440, 920);
