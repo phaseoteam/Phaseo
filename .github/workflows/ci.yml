@@ -899,7 +899,7 @@ jobs:
                       if [ -n "$deployed_sha" ] \
                           && git fetch --quiet --depth=1 origin "$deployed_sha" \
                           && git diff --quiet "$deployed_sha" "$GITHUB_SHA" -- \
-                              apps/web apps/docs packages/shared/app-kit packages/shared/ui \
+                              apps/web apps/docs packages/shared/app-kit packages/shared/ui packages/shared/observability \
                               apps/api/openapi.openai.yml apps/api/openapi.anthropic.json \
                               apps/api/src/pipeline/model-discovery/public-model-announcement-discord.ts \
                               apps/api/src/pipeline/model-discovery/discord-webhook.ts \

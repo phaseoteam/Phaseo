@@ -45,6 +45,10 @@ export type GatewayBindings = {
 	V2_ANALYTICS_OUTBOX_LIMIT?: string;
 	OTEL_EXPORT_ENABLED?: string;
 	OTEL_EXPORT_OUTBOX_LIMIT?: string;
+	PLATFORM_TELEMETRY_ENABLED?: string;
+	GRAFANA_OTLP_ENDPOINT?: string;
+	GRAFANA_OTLP_AUTHORIZATION?: string;
+	PLATFORM_TRACE_SAMPLE_RATE?: string;
 	/** Broadcast event queue; consumed by this worker's queue handler. */
 	BROADCAST_QUEUE?: Queue<import("@/observability/broadcast-event").BroadcastQueueMessage>;
 	/** "true" sends Broadcast events to BROADCAST_QUEUE instead of otel_export_outbox. */

@@ -3,6 +3,7 @@
 // How: Sends structured events to Axiom with safe timeouts.
 
 import { getBindings, isLocalTestingModeEnabled } from "@/runtime/env";
+import { emitPlatformOperationalEvent } from "./platform";
 import type { GatewayBindings } from "@/runtime/env";
 
 export type WideEvent = Record<string, unknown>;
@@ -96,6 +97,7 @@ export async function emitGatewayOperationalFailure(args: {
     reason: string;
     error?: unknown;
 }) {
+    emitPlatformOperationalEvent({ event_name: "ops.failure", job: args.workflow, reason: args.reason, outcome: "error", actionable: true });
     try {
         const message = args.error instanceof Error ? args.error.message : String(args.error ?? "");
         await sendAxiomWideEvent({
@@ -125,6 +127,7 @@ export async function emitGatewayTelemetryDeliveryFailure(args: {
     workspaceId: string | null;
     error: string;
 }) {
+    emitPlatformOperationalEvent({ event_name: "telemetry.delivery", request_id: args.requestId, signal: args.sink, outcome: "error", actionable: true });
     await sendAxiomWideEvent({
         event_type: "gateway.telemetry_delivery",
         event_emitted_at: new Date().toISOString(),

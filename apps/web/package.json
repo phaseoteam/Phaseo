@@ -27,7 +27,8 @@
 		"audit:i18n:ui": "node scripts/audit-localised-ui.mjs",
 		"test:i18n:ui-audit": "node scripts/audit-localised-ui.mjs --self-test",
 		"validate:i18n": "tsx scripts/validate-localisation.ts && node scripts/generate-docs-search.mjs --check",
-		"test:i18n": "pnpm run validate:i18n"
+		"test:i18n": "pnpm run validate:i18n",
+		"build:observability": "node ../../observability/grafana/build-web.mjs"
 	},
 	"dependencies": {
 		"@1password/save-button": "^1.3.0",
@@ -130,7 +131,9 @@
 		"use-stick-to-bottom": "^1.1.6",
 		"vaul": "^1.1.2",
 		"ws": "^8.21.0",
-		"zod": "^4.6.7"
+		"zod": "^4.6.7",
+		"@grafana/faro-web-sdk": "2.13.0",
+		"@grafana/faro-web-tracing": "2.13.0"
 	},
 	"devDependencies": {
 		"@cloudflare/vite-plugin": "^1.65.0",
@@ -160,6 +163,7 @@
 		"typescript-eslint": "^8.60.0",
 		"vite": "8.3.4",
 		"vitest": "catalog:",
-		"wrangler": "^4.152.0"
+		"wrangler": "^4.152.0",
+		"@grafana/faro-cli": "0.13.3"
 	}
 }

@@ -1,0 +1,492 @@
+{
+  "uid": "phaseo-gateway",
+  "title": "Phaseo · Gateway and providers",
+  "description": "Request summaries cover received terminal events. Trace retention is sampled. Delivery is best effort, so counts are operational rather than financial.",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "tags": [
+    "phaseo",
+    "observability"
+  ],
+  "timezone": "browser",
+  "refresh": "1m",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "links": [
+    {
+      "title": "Overview",
+      "type": "link",
+      "url": "/d/phaseo-overview?var-environment=$environment",
+      "keepTime": true,
+      "includeVars": true
+    },
+    {
+      "title": "Web",
+      "type": "link",
+      "url": "/d/phaseo-web?var-environment=$environment",
+      "keepTime": true,
+      "includeVars": true
+    },
+    {
+      "title": "Jobs",
+      "type": "link",
+      "url": "/d/phaseo-jobs?var-environment=$environment",
+      "keepTime": true,
+      "includeVars": true
+    },
+    {
+      "title": "Telemetry",
+      "type": "link",
+      "url": "/d/phaseo-telemetry?var-environment=$environment",
+      "keepTime": true,
+      "includeVars": true
+    },
+    {
+      "title": "Explore",
+      "type": "link",
+      "url": "/explore"
+    },
+    {
+      "title": "Frontend Observability",
+      "type": "link",
+      "url": "/a/grafana-kowalski-app"
+    },
+    {
+      "title": "Alerts",
+      "type": "link",
+      "url": "/alerting/list"
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "loki",
+        "label": "Logs",
+        "type": "datasource",
+        "query": "loki",
+        "refresh": 1
+      },
+      {
+        "name": "environment",
+        "label": "Environment",
+        "type": "custom",
+        "query": "production,staging",
+        "current": {
+          "text": "production",
+          "value": "production"
+        },
+        "options": [
+          {
+            "text": "production",
+            "value": "production",
+            "selected": true
+          },
+          {
+            "text": "staging",
+            "value": "staging",
+            "selected": false
+          }
+        ]
+      },
+      {
+        "name": "request",
+        "label": "Request ID",
+        "type": "textbox",
+        "query": "",
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "hide": 0
+      }
+    ]
+  },
+  "annotations": {
+    "list": [
+      {
+        "name": "Annotations & Alerts",
+        "type": "dashboard",
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 9
+      },
+      "title": "Requests by outcome",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (outcome) (rate({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" [$__auto]))",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "range",
+          "instant": false,
+          "range": true,
+          "legendFormat": "{{outcome}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "noValue": "No data",
+          "custom": {
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 9
+      },
+      "title": "Provider attempts / second",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (provider, outcome) (rate({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" [$__auto]))",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "range",
+          "instant": false,
+          "range": true,
+          "legendFormat": "{{provider}} · {{outcome}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "noValue": "No data",
+          "custom": {
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 12,
+        "h": 9
+      },
+      "title": "Streaming p95 time to first token",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "Downstream first token timing. Null timings are omitted, never converted into zero.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "quantile_over_time(0.95, {service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", ttft_ms=\"ttft_ms\", stream=\"stream\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | stream=\"true\" | unwrap ttft_ms | __error__=\"\" [$__auto])",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "range",
+          "instant": false,
+          "range": true,
+          "legendFormat": ""
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "noValue": "No data",
+          "custom": {
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "gridPos": {
+        "x": 12,
+        "y": 9,
+        "w": 12,
+        "h": 9
+      },
+      "title": "Provider p95 first token",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "quantile_over_time(0.95, {service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider_ttft_ms=\"provider_ttft_ms\", stream=\"stream\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | stream=\"true\" | unwrap provider_ttft_ms | __error__=\"\" [$__auto])",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "range",
+          "instant": false,
+          "range": true,
+          "legendFormat": ""
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "noValue": "No data",
+          "custom": {
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 12,
+        "h": 9
+      },
+      "title": "Requests requiring fallback / second",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", attempt_count=\"attempt_count\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | attempt_count > 1 | __error__=\"\" [$__auto])) or vector(0)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "range",
+          "instant": false,
+          "range": true,
+          "legendFormat": ""
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "noValue": "No data",
+          "custom": {
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "gridPos": {
+        "x": 12,
+        "y": 18,
+        "w": 12,
+        "h": 9
+      },
+      "title": "Client cancellations / second",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | outcome=\"cancelled\" | __error__=\"\" [$__auto])) or vector(0)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "range",
+          "instant": false,
+          "range": true,
+          "legendFormat": ""
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "noValue": "No data",
+          "custom": {
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "gridPos": {
+        "x": 0,
+        "y": 27,
+        "w": 12,
+        "h": 9
+      },
+      "title": "Request lookup",
+      "type": "logs",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "Enter a request ID above. Expand the JSON line to find trace_id; paste it into Tempo in Explore. Only sampled traces exist.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", request_id=\"request_id\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | request_id=~\"${request:regex}.*\"",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "range",
+          "instant": false,
+          "range": true,
+          "legendFormat": ""
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No data",
+          "custom": {
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "enableLogDetails": true,
+        "sortOrder": "Descending"
+      }
+    },
+    {
+      "id": 8,
+      "gridPos": {
+        "x": 12,
+        "y": 27,
+        "w": 12,
+        "h": 9
+      },
+      "title": "Provider attempt lookup",
+      "type": "logs",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", request_id=\"request_id\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | request_id=~\"${request:regex}.*\"",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "range",
+          "instant": false,
+          "range": true,
+          "legendFormat": ""
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No data",
+          "custom": {
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "enableLogDetails": true,
+        "sortOrder": "Descending"
+      }
+    }
+  ]
+}

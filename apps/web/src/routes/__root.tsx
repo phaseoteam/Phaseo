@@ -9,6 +9,7 @@ import { GlobalError } from "@/components/layout/GlobalError";
 import { RouteNotFound } from "@/components/layout/RouteBoundaries";
 import { metadataToHead, notFoundMetadata } from "@/lib/start/metadataToHead";
 import { StreamedMetadata } from "@/lib/start/streamedMetadata";
+import { getGrafanaBrowserConfig } from "@/lib/grafana.functions";
 import { defaultLocale, getLocaleDefinition, isPublicLocale, type PublicLocale } from "@/i18n/locales";
 
 export function localeFromPathname(pathname: string): PublicLocale {
@@ -17,6 +18,7 @@ export function localeFromPathname(pathname: string): PublicLocale {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+	loader: () => getGrafanaBrowserConfig(),
 	head: ({ match }) => ({
 		meta: [
 			{ charSet: "utf-8" },
@@ -40,11 +42,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootComponent() {
+	const grafana = Route.useLoaderData();
 	const pathname = useLocation({ select: (location) => location.pathname });
 	const locale = localeFromPathname(pathname);
 	const definition = getLocaleDefinition(locale);
 	return (
-		<RootDocument locale={locale} direction={definition.dir} fontProfile={definition.font}>
+		<RootDocument locale={locale} direction={definition.dir} fontProfile={definition.font} grafana={grafana}>
 			<StreamedMetadata />
 			<Outlet />
 		</RootDocument>
