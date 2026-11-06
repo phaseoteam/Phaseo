@@ -1,7 +1,7 @@
 CREATE OR REPLACE FUNCTION private.workspace_budget_status (
   p_workspace_id           uuid,
   p_requested_amount_nanos bigint DEFAULT 0,
-  p_include_open_charges   boolean DEFAULT true
+  p_exclude_charge_ids     text[] DEFAULT '{}'::text[]
 )
   RETURNS jsonb
   LANGUAGE plpgsql
@@ -52,7 +52,7 @@ begin
       (select case when bool_or(configured.window_start is null) then null else min(configured.window_start) end from configured),
       null::uuid[],
       '{}'::text[],
-      p_include_open_charges
+      p_exclude_charge_ids
     ) item
     where exists (select 1 from configured)
   ), usage_rows as (
@@ -117,10 +117,10 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, boolean) IS 'Workspace budgets with usage this UTC period (private.budget_spend_items), for gateway_workspace_budget_status and gateway_spend_limit_seed. p_include_open_charges false leaves out open stepped charges, which the seed returns by billing request id for the SpendLimit Durable Object to count.';
+COMMENT ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[]) IS 'Workspace budgets with usage this UTC period (private.budget_spend_items), for gateway_workspace_budget_status and gateway_spend_limit_seed. p_exclude_charge_ids leaves out stepped charges (by billing request id) the SpendLimit Durable Object counts from memory; request rows are never excluded here (the Durable Object stops counting those once the seed reports them).';
 
-REVOKE ALL ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, boolean) FROM PUBLIC;
+REVOKE ALL ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[]) FROM PUBLIC;
 
-REVOKE ALL ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, boolean) FROM "postgres";
+REVOKE ALL ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[]) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, boolean) TO "postgres";
+GRANT EXECUTE ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[]) TO "postgres";
