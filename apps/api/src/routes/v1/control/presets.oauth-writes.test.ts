@@ -43,11 +43,11 @@ function query(table: string) {
 	let wrote: Record<string, unknown> | null = null;
 	let id: string | null = null;
 	let presetId: string | null = null;
-	let excluded = false;
+	const excluded: Array<[string, unknown]> = [];
 	const q: any = {};
 	for (const method of ["select", "in", "is", "or", "order", "range", "limit", "not"]) q[method] = () => q;
 	q.eq = (column: string, value: unknown) => { if (column === "id") id = String(value); if (column === "preset_id") presetId = String(value); return q; };
-	q.neq = () => { excluded = true; return q; };
+	q.neq = (column: string, value: unknown) => { excluded.push([column, value]); return q; };
 	for (const op of ["insert", "update", "upsert", "delete"]) {
 		q[op] = (payload?: unknown) => {
 			state.writes.push({ table, op, payload });
@@ -59,13 +59,16 @@ function query(table: string) {
 		if (wrote) return wrote;
 		if (table === "workspaces") return { id: WS, publisher_handle: "acme" };
 		if (table === "workspace_members") return { workspace_id: WS, user_id: USER, role: "owner" };
-		const found = id && !excluded ? state.rows[table]?.[id] ?? null : null;
+		const candidate = id ? state.rows[table]?.[id] ?? null : null;
+		const found = candidate && !excluded.some(([column, value]) => candidate[column] === value) ? candidate : null;
 		return found && presetId && found.preset_id && found.preset_id !== presetId ? null : found;
 	};
 	q.maybeSingle = async () => (wrote && state.writeError ? { data: null, error: state.writeError } : { data: row(), error: null });
 	q.single = q.maybeSingle;
+	// An awaited write returns the rows it wrote, as `update(...).select()` does.
 	q.then = (resolve: (value: unknown) => unknown, reject: (error: unknown) => unknown) =>
-		Promise.resolve({ data: table === "preset_version_labels" ? state.labels : [], count: 0, error: null }).then(resolve, reject);
+		Promise.resolve(wrote && state.writeError ? { data: null, error: state.writeError }
+			: { data: wrote ? [wrote] : table === "preset_version_labels" ? state.labels : [], count: 0, error: null }).then(resolve, reject);
 	return q;
 }
 

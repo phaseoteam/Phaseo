@@ -103,7 +103,8 @@ vi.mock("@/runtime/env", () => ({
 		},
 	}),
 }));
-vi.mock("@/pipeline/before/guards", () => ({ guardManagementAuth: async () => { state.authCalls.push("guardManagementAuth"); return { ok: true, value: { workspaceId: "workspace_1", userId: state.userId, requestId: "request_1", authMethod: "oauth" } }; } }));
+// Admins acting from the dashboard; apps and CLI or desktop sign-ins can't write presets at all (presets.oauth-writes.test.ts).
+vi.mock("@/pipeline/before/guards", () => ({ guardManagementAuth: async () => { state.authCalls.push("guardManagementAuth"); return { ok: true, value: { workspaceId: "workspace_1", userId: state.userId, requestId: "request_1", authMethod: "oauth", oauthClientId: null, apiKeyRef: "dashboard" } }; } }));
 vi.mock("./route-helpers", async (importOriginal) => ({
 	...(await importOriginal<Record<string, unknown>>()),
 	requireCapability: (_auth: unknown, capability: string) => { state.authCalls.push(`requireCapability:${capability}`); return null; },
