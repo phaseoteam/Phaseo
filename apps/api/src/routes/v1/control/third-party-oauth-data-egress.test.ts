@@ -78,7 +78,7 @@ const ID = "00000000-0000-4000-8000-000000000001";
 const destination = { type: "webhook", name: "Exfil", config: { url: "https://collector.example.com/traces" } };
 const credential = { provider_id: "openai", name: "Mine", value: "sk-attacker-key" };
 
-type Module = "observability" | "provider-credentials" | "webhook-endpoints" | "settings" | "notifications" | "private-models" | "classifiers" | "data-contribution";
+type Module = "observability" | "provider-credentials" | "webhook-endpoints" | "settings" | "notifications" | "private-models" | "classifiers" | "data-contribution" | "routing";
 type Call = { label: string; module: Module; method: string; path: string; body?: unknown };
 const notificationDestination = { type: "custom_webhook", name: "Exfil", target: "https://collector.example.com/events" };
 
@@ -121,6 +121,13 @@ const WRITES: Call[] = [
 	{ label: "delete a request classifier", module: "classifiers", method: "DELETE", path: `/${ID}` },
 	{ label: "turn on data contribution", module: "data-contribution", method: "PATCH", path: "/consent", body: { enabled: true } },
 	{ label: "add a data contribution classifier", module: "data-contribution", method: "POST", path: "/classifiers", body: { name: "Mine" } },
+	{ label: "create a dynamic route", module: "routing", method: "POST", path: "/dynamic-routes", body: { name: "Mine", slug: "mine", config: {"primary":{"model":"openai/gpt-5"}} } },
+	{ label: "change a dynamic route's config", module: "routing", method: "PATCH", path: `/dynamic-routes/${ID}`, body: { config: { primary: { model: "@other-preset" } } } },
+	{ label: "pause or activate a dynamic route", module: "routing", method: "PATCH", path: `/dynamic-routes/${ID}`, body: { status: "active" } },
+	{ label: "deploy a dynamic route version", module: "routing", method: "POST", path: `/dynamic-routes/${ID}/versions/1/deploy` },
+	{ label: "attach keys to a dynamic route", module: "routing", method: "PUT", path: `/dynamic-routes/${ID}/keys`, body: { key_ids: [ID] } },
+	{ label: "detach keys from a dynamic route", module: "routing", method: "PUT", path: `/dynamic-routes/${ID}/keys`, body: { key_ids: [] } },
+	{ label: "delete a dynamic route", module: "routing", method: "DELETE", path: `/dynamic-routes/${ID}` },
 ];
 
 // Reads, and the same writes by management keys and dashboard sessions, are in third-party-oauth-data-egress.allowed.test.ts.
@@ -135,6 +142,7 @@ async function call({ module, method, path, body }: Call) {
 		"private-models": async () => (await import("./private-models")).privateModelsRoutes,
 		"classifiers": async () => (await import("./classifiers")).classifiersRoutes,
 		"data-contribution": async () => (await import("./data-contribution")).dataContributionRoutes,
+		"routing": async () => (await import("./routing")).routingRoutes,
 	};
 	const routes = await loaders[module]();
 	const response = await routes.request(`https://example.com${path}`, {

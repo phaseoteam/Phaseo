@@ -119,7 +119,7 @@ const CALLERS = {
 };
 const APP = { ok: true, value: { ...base, authMethod: "oauth", oauthClientId: "acme_reporting_app", apiKeyRef: "oauth_acme_reporting_app" } };
 
-type Module = "observability" | "provider-credentials" | "webhook-endpoints" | "settings" | "notifications" | "private-models" | "classifiers";
+type Module = "observability" | "provider-credentials" | "webhook-endpoints" | "settings" | "notifications" | "private-models" | "classifiers" | "routing";
 type Call = { label: string; module: Module; method: string; path: string; body?: unknown; persists: { table?: string; op?: string; rpc?: string; includes?: Record<string, unknown> } };
 
 const destination = { type: "webhook", name: "Production", config: { url: "https://telemetry.example.com/traces" } };
@@ -154,6 +154,7 @@ const READS: Array<Omit<Call, "persists">> = [
 	{ label: "list notification destinations", module: "notifications", method: "GET", path: "/destinations" },
 	{ label: "list private models", module: "private-models", method: "GET", path: "/" },
 	{ label: "list request classifiers", module: "classifiers", method: "GET", path: "/" },
+	{ label: "list dynamic routes", module: "routing", method: "GET", path: "/dynamic-routes" },
 ];
 
 async function call({ module, method, path, body }: { module: Module; method: string; path: string; body?: unknown }) {
@@ -165,6 +166,7 @@ async function call({ module, method, path, body }: { module: Module; method: st
 		"notifications": async () => (await import("./notifications")).notificationRoutes,
 		"private-models": async () => (await import("./private-models")).privateModelsRoutes,
 		"classifiers": async () => (await import("./classifiers")).classifiersRoutes,
+		"routing": async () => (await import("./routing")).routingRoutes,
 	};
 	const routes = await loaders[module]();
 	const response = await routes.request(`https://example.com${path}`, {
