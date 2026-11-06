@@ -1,6 +1,4 @@
-"use client";
-
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -65,7 +63,9 @@ export function AudioModelSettingsDialog({
 }: AudioModelSettingsDialogProps) {
 	const t = useTranslations("Product.chatRooms");
 	const schema = getAudioModelSchema(selectedModelId ?? "", capabilityParamsById);
-	const speechVoice = schema.voiceOptions.includes(settings.params.speechVoice)
+	const isListedVoice = schema.voiceOptions.includes(settings.params.speechVoice);
+	// With an open list (any voice in the account's library), a typed voice id stays.
+	const speechVoice = isListedVoice || (schema.customVoice && settings.params.speechVoice.trim())
 		? settings.params.speechVoice
 		: (schema.voiceOptions[0] ?? "");
 	const transcriptionResponseFormat = settings.params.transcriptionResponseFormat || "json";
@@ -94,7 +94,7 @@ export function AudioModelSettingsDialog({
 							<div className="grid gap-1.5">
 								<Label>{t("voice")}</Label>
 								<Select
-									value={speechVoice}
+									value={schema.voiceOptions.includes(speechVoice) ? speechVoice : ""}
 									onValueChange={(value) => onUpdateParams({ speechVoice: value })}
 								>
 									<SelectTrigger>
@@ -103,12 +103,24 @@ export function AudioModelSettingsDialog({
 									<SelectContent>
 										{schema.voiceOptions.map((voice) => (
 											<SelectItem key={voice} value={voice}>
-												{voice}
+												{schema.voiceLabels?.[voice] ?? voice}
 											</SelectItem>
 										))}
 									</SelectContent>
 								</Select>
 							</div>
+							{schema.customVoice ? (
+								<div className="grid gap-1.5">
+									<Label htmlFor="custom-voice-id">{t("customVoiceId")}</Label>
+									<Input
+										id="custom-voice-id"
+										value={schema.voiceOptions.includes(speechVoice) ? "" : speechVoice}
+										placeholder={t("customVoiceIdPlaceholder")}
+										spellCheck={false}
+										onChange={(event) => onUpdateParams({ speechVoice: event.target.value.trim() })}
+									/>
+								</div>
+							) : null}
 							<div className="grid gap-1.5">
 								<Label>{t("format")}</Label>
 								<div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">

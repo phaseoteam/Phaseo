@@ -2,173 +2,78 @@
 title: "Définir les valeurs par défaut des plugins pour les workflows JSON structurés"
 sidebarTitle: "Plugins par défaut pour JSON"
 icon: "puzzle"
-description: "Utilisez les règles de plugin de l’espace de travail, des préréglages et des requêtes pour assurer une réparation cohérente des réponses."
+description: "Utilisez les règles de plugin de l’espace de travail, des préréglages et des requêtes pour garder une réparation de réponse cohérente."
 ---
 
-Suivez cette recette si les requêtes à sortie structurée ont besoin d’une règle de plugin stable, plutôt que de paramètres différents pour chaque requête.
+Activez la [réparation de réponse](./response-healing-for-structured-json) une seule fois pour tout l’espace de travail ou pour un préréglage, au lieu de le faire dans chaque requête. À la fin, chaque appelant à sortie structurée reçoit la même règle de réparation, et vous pouvez la verrouiller pour qu’aucun préréglage ni aucune requête ne la désactive.
 
-## 1. Comprendre les priorités
+Il s’agit d’une procédure dans le tableau de bord ; l’exemple de requête à la fin est prêt pour la production.
 
-La règle des plugins du gateway est résolue dans cet ordre :
+## Comment les niveaux se combinent
 
-1. valeurs par défaut de l’espace de travail
-2. valeurs par défaut des préréglages
-3. plugins au niveau de la requête
+Phaseo construit la liste des plugins de chaque requête à partir de trois niveaux. Un niveau ultérieur remplace les réglages d’un niveau précédent pour le même plugin, sauf si le précédent est verrouillé :
 
-Les couches moins prioritaires peuvent remplacer celles qui les précèdent, sauf si la valeur par défaut de l’espace de travail est explicitement verrouillée.
+```mermaid
+flowchart LR
+  ws["Valeur par défaut de l’espace de travail"] --> pr["Plugins du préréglage"]
+  pr --> rq["Plugins de la requête"]
+  rq --> eff["Plugins exécutés"]
+  lock["Verrou de l’espace de travail activé"] -.->|"les niveaux suivants ne peuvent pas modifier response-healing"| pr
+```
 
-## 2. Définir la valeur par défaut de l’espace de travail
+| Niveau | Défini dans | Remplace |
+| --- | --- | --- |
+| Espace de travail | **Paramètres → Routage → Réparation des réponses** | Rien |
+| Préréglage | **Paramètres → Préréglages → (préréglage) → Réparation des réponses** | L’espace de travail, sauf s’il est verrouillé |
+| Requête | `plugins` dans le corps | Le préréglage et l’espace de travail, sauf si l’espace de travail est verrouillé |
 
-Utilisez les paramètres de routage lorsqu’un espace de travail doit activer par défaut la réparation des réponses pour les requêtes JSON structurées.
+## La configurer
 
-C’est le bon endroit pour définir :
+<Steps>
+<Step title="Activer la valeur par défaut de l’espace de travail">
 
-- des valeurs opérationnelles générales
-- le comportement partagé des clés API
-- la prévention des écarts entre services
+Dans **Paramètres → Routage → Réparation des réponses**, activez **Activer par défaut** et choisissez un **Mode de réparation** : `safe` pour une réparation syntaxique bornée, `strict` pour seulement extraire un JSON déjà valide. Utilisez-le pour les valeurs par défaut générales que partagent toutes les clés API de l’espace de travail.
 
-## 3. Verrouiller la règle si elle n’est pas négociable
+</Step>
+<Step title="La verrouiller si elle n’est pas négociable">
 
-Si la réparation des réponses doit toujours rester activée dans un espace de travail, verrouillez cette valeur par défaut.
+Activez **Verrouiller la stratégie d'espace de travail**. Les préréglages et les requêtes ne peuvent alors ni désactiver la réparation ni changer son mode. Les journaux indiquent toujours si elle a été appliquée ou ignorée.
 
-Avec une valeur par défaut de l’espace de travail verrouillée :
+</Step>
+<Step title="Définir les valeurs par défaut d’un préréglage pour un workflow">
 
-- les préréglages ne peuvent pas la désactiver
-- le contenu des requêtes ne peut pas la désactiver
-- les journaux indiquent toujours si le plugin a été appliqué, ignoré ou a échoué
+Dans l’éditeur de préréglage, activez **Réparation des réponses** et choisissez son mode lorsqu’une famille de requêtes doit porter à la fois un format de sortie structurée et la réparation. Les appelants de ce préréglage n’envoient alors que leur entrée.
 
-## 4. Utiliser des préréglages pour les workflows spécifiques
+</Step>
+</Steps>
 
-Les préréglages constituent la bonne couche si une famille de requêtes doit combiner :
+## La remplacer pour une requête
 
-- des paramètres de sortie structurée
-- des valeurs par défaut du plugin de réparation des réponses
+Quand l’espace de travail n’est pas verrouillé, une requête peut définir le plugin elle-même. `"enabled": false` le désactive pour cette requête :
 
-Cette couche peut aussi sélectionner le mode de réparation :
-
-- `safe` pour un nettoyage syntaxique limité
-- `strict` pour un comportement qui supprime uniquement les enveloppes
-
-Le corps des requêtes reste ainsi plus compact, et le routage comme le comportement de sortie sont plus faciles à réutiliser entre les services.
-
-## 5. Remplacer la configuration au niveau de la requête uniquement si l’espace de travail l’autorise
-
-Si la valeur par défaut de l’espace de travail n’est pas verrouillée, une requête peut toujours remplacer directement la configuration du plugin :
-
-<CodeGroup>
-```bash cURL
-curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "phaseo/free",
-    "input": "Return valid JSON",
-    "response_format": {
+```json
+{
+  "model": "openai/gpt-6-astra",
+  "input": "Return the summary as JSON.",
+  "text": {
+    "format": {
       "type": "json_schema",
-      "json_schema": {
-        "name": "answer",
-        "schema": {
-          "type": "object",
-          "properties": {
-            "summary": { "type": "string" }
-          },
-          "required": ["summary"],
-          "additionalProperties": false
-        }
+      "name": "answer",
+      "schema": {
+        "type": "object",
+        "properties": { "summary": { "type": "string" } },
+        "required": ["summary"],
+        "additionalProperties": false
       }
-    },
-    "plugins": [
-      { "id": "response-healing", "enabled": true }
-    ]
-  }'
-```
-
-```typescript TypeScript SDK
-import Phaseo from "@phaseo/sdk";
-
-const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
-
-const response = await client.generateResponse({
-  model: "phaseo/free",
-  input: "Return valid JSON",
-  response_format: {
-    type: "json_schema",
-    json_schema: {
-      name: "answer",
-      schema: {
-        type: "object",
-        properties: {
-          summary: { type: "string" },
-        },
-        required: ["summary"],
-        additionalProperties: false,
-      },
-    },
-  },
-  plugins: [{ id: "response-healing", enabled: true }],
-});
-
-console.log(response.output_text);
-```
-
-```python Python SDK
-from phaseo import Phaseo
-
-client = Phaseo(api_key="YOUR_API_KEY")
-
-response = client.generate_response(
-    {
-        "model": "phaseo/free",
-        "input": "Return valid JSON",
-        "response_format": {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "answer",
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "summary": {"type": "string"}
-                    },
-                    "required": ["summary"],
-                    "additionalProperties": False,
-                },
-            },
-        },
-        "plugins": [
-            {"id": "response-healing", "enabled": True}
-        ],
     }
-)
-
-print(response.get("output_text"))
+  },
+  "plugins": [{ "id": "response-healing", "enabled": true, "mode": "strict" }],
+  "meta": true
+}
 ```
-</CodeGroup>
 
-## 6. Vérifier le comportement dans les journaux
+## Vérifier la règle appliquée
 
-Après une requête, examinez la vue détaillée et vérifiez les éléments suivants :
+Ouvrez la requête dans **Paramètres → Utilisation → Journaux**, ou lisez `meta.plugin_executions` si vous avez envoyé `meta: true`. Vous y trouvez le statut (`applied`, `skipped` ou `failed`), le mode réellement exécuté, et les éventuelles `validation_errors` quand un candidat réparé ne correspondait pas au schéma.
 
-- `plugin_executions` contient `response-healing`
-- l’état correspond à l’une de ces valeurs :
-  - `applied`
-  - `skipped`
-  - `failed`
-- le mode de plugin effectif est visible
-- les erreurs de validation apparaissent lorsque l’application du schéma rejette un contenu réparé candidat
-
-## 7. Que faire si le comportement varie selon les services
-
-Si deux services se comportent différemment, comparez :
-
-- les paramètres de routage de l’espace de travail
-- les valeurs par défaut des plugins dans les préréglages
-- les `plugins` de chaque requête
-- le verrouillage ou non de la valeur par défaut de l’espace de travail
-
-Ne cherchez pas d’abord du côté de la qualité du modèle : vérifiez que ces couches de règles sont identiques.
-
-## Voir aussi
-
-- [Récupérer un JSON structuré mal formé](./response-healing-for-structured-json.mdx)
-- [Utiliser le cache de réponses avec des préréglages](./response-caching-with-presets.mdx)
-- [Agent SDK TypeScript](../sdk-reference/typescript/agent-sdk.mdx)
+Si deux services se comportent différemment, comparez le réglage de l’espace de travail et son verrou, les plugins du préréglage et les `plugins` de chaque requête avant de conclure à un problème de modèle.

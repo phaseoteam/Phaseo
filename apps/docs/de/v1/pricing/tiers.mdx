@@ -1,80 +1,42 @@
 ---
 title: "Preisstufen"
-description: "Hier erfährst du mehr über die feste Gebühr von 5 % beim Kauf von Guthaben und die Gateway-Abrechnung."
+description: "Erfahre mehr über die feste Gebühr von 5 % beim Kauf von Guthaben und wie die Gateway-Abrechnung funktioniert."
 sidebarTitle: "Preise und Abrechnung"
 icon: "credit-card"
 ---
 
-# Preisstufen
+Kaufe einmal Guthaben und gib es für Anfragen zum Katalogpreis des jeweiligen Modells aus. Die einzige Gebühr von Phaseo auf verwaltete Anfragen beträgt 5 % jedes Guthabenkaufs, mindestens $1; auf die Anfragen selbst gibt es keinen Aufschlag.
 
-Die Gateway-Abrechnung besteht aus zwei Teilen:
+```mermaid
+flowchart LR
+  buy["Guthaben für $100 kaufen"] -->|"$105 zahlen<br/>(5 % Gebühr)"| wallet["Workspace-Guthaben<br/>$100.00"]
+  wallet -->|"Jede Anfrage kostet<br/>den Katalogpreis des Modells"| spend["Guthaben sinkt"]
+```
 
-1. **Preise für die Modellnutzung**: Guthaben wird zu den im Katalog aufgeführten Modellpreisen verbraucht.
-2. **Gebühr für den Guthabenkauf**: Eine feste Gebühr von **5 %** fällt nur beim Kauf von Guthaben an.
+## Was eine Aufladung kostet
 
-## Aktueller Tarif
+Die Gebühr ist der größere Wert aus 5 % des gekauften Guthabens und $1. Die Gebühr wird zu dem Betrag addiert, den du zahlst.
 
-<Card title="Standardtarif" icon="tag">
-  **5 % Gebühr beim Kauf von Guthaben**
+| Gekauftes Guthaben | Gebühr | Du zahlst |
+| ---: | ---: | ---: |
+| $5.00 | $1.00 (Minimum) | $6.00 |
+| $20.00 | $1.00 | $21.00 |
+| $100.00 | $5.00 | $105.00 |
+| $1,000.00 | $50.00 | $1,050.00 |
 
-  Standardarbeitsbereiche nutzen die nutzungsbasierte Gateway-Abrechnung. Für Teams mit Anforderungen an Identitäts- und Verzeichnisdienste sind Enterprise-Erweiterungen verfügbar.
-</Card>
+Umgekehrt betrachtet bringt eine Zahlung von $100.00 Guthaben über $95.24 und eine Gebühr von $4.76. Aufladungen im Dashboard beginnen bei $5.
 
-## So funktioniert die Abrechnung
+Kaufe Guthaben unter **Einstellungen -> Abrechnung -> Abrechnung und Guthaben** oder im Terminal mit `phaseo credits add --amount <usd>` (siehe den [Schnellstart](../quickstart#add-credits-for-paid-models)). Dieselbe Seite zeigt dein Guthaben, die aktuelle Gebühr und die jüngsten Ausgaben; **Einstellungen -> Abrechnung -> Transaktionen** listet jeden Kauf auf.
 
-<Steps>
-  <Step title="Guthaben kaufen">
-    Beim Aufladen wird eine **Plattformgebühr von 5 %** auf den Kauf erhoben.
-  </Step>
+## Was kein Guthaben verbraucht
 
-  <Step title="Gateway nutzen">
-    Anfragen verbrauchen Guthaben zu den im Katalog aufgeführten Modellpreisen.
-  </Step>
+| Nutzung | Gebühr von Phaseo |
+| --- | --- |
+| Kostenlose Modelle (`phaseo/free` und Modelle mit einem Preis von $0) | Keine. Anfragen an kostenlose Modelle haben ein tägliches Kontingent; siehe [Tarife](../exploring/subscription-plans). |
+| Bring Your Own Key (BYOK) | Keine Aufladung. Die ersten 250.000 abgeschlossenen BYOK-Anfragen pro Workspace und UTC-Monat sind frei von Servicegebühren, danach fallen 2.5 % der anbieteräquivalenten Kosten an. Dein Anbieter rechnet die Modellnutzung ab. Siehe [Hinweise zu BYOK](../guides/routing-and-fallbacks#byok-considerations). |
 
-  <Step title="Nutzung prüfen">
-    Dein Dashboard zeigt die aktuelle Aufladegebühr, den Guthabenstand und die letzten Ausgaben.
-  </Step>
-</Steps>
+## Enterprise
 
-## Beispiel
+Self Serve Enterprise ist ein separates Monatsabonnement für SSO, SCIM, Verzeichnisverwaltung, Abteilungen und bevorzugten E-Mail-Support. Es beginnt bei $29/Monat für bis zu 100 Workspace-Mitglieder und kostet $79/Monat bei 1.000 Mitgliedern. Es enthält kein Guthaben und ändert nichts an der Gebühr von 5 % (mindestens $1). Unter [Tarife](../exploring/subscription-plans#enterprise-member-pricing) findest du die vollständigen Mitgliederpreise und wie Mitglieder gezählt werden.
 
-| Szenario | Gesamtbetrag | Gebühr | Hinzugefügtes Guthaben |
-|---|---:|---:|---:|
-| Standardtarif | $100 | 5 % (~$4.76) | ~$95.24 Guthaben |
-| Nutzung kostenloser Modelle | Keine Aufladung | $0 | Verwendet das kostenlose Modellkontingent |
-
-## Häufig gestellte Fragen
-
-<AccordionGroup>
-  <Accordion title="Fallen bei jeder Anfrage Gebühren an?">
-    Nein. Gebühren fallen beim Kauf von Guthaben an. Anfragen verbrauchen dieses Guthaben zu den im Katalog angezeigten Modellpreisen.
-  </Accordion>
-
-  <Accordion title="Gibt es einen Aufschlag auf die Tokenpreise der Modelle?">
-    Die Nutzungsgebühren der Modelle entsprechen den Katalogpreisen. Die separate Plattformgebühr von 5 % wird beim Kauf von Guthaben erhoben.
-  </Accordion>
-
-  <Accordion title="Gibt es einen Enterprise-Tarif?">
-    Ja. Self Serve Enterprise beginnt bei **29 USD pro Monat für bis zu 100 Arbeitsbereichsmitglieder**, auch für kleine Teams, und kostet **79 USD pro Monat bei 1.000 Mitgliedern**. SSO, SCIM, Verzeichnisverwaltung, Abteilungen und bevorzugter E-Mail-Support sind enthalten. Modellguthaben wird separat mit der üblichen Aufladegebühr von 5% (mindestens 1 USD) gekauft. Öffne **Preise** im Dashboard, um eine Mitgliederkapazität und das aktuelle Angebot zu wählen, wo Self-Service verfügbar ist.
-  </Accordion>
-
-  <Accordion title="Welche Mitglieder zählen zur Enterprise-Kapazität?">
-    Mitglieder zählen, solange sie zum Arbeitsbereich gehören, auch ohne Anmeldung. Das Einstiegsabo umfasst bis zu 100 Mitglieder. Unter 100.000 werden neue Mitgliedschaften nur blockiert, wenn sie die gewählte Kapazität überschreiten würden. Kapazitätsänderungen im Self-Service sind derzeit nicht verfügbar; wähle vor dem Abonnieren genügend Kapazität für das erwartete Wachstum. Über 100.000 werden zusätzliche eindeutige Mitglieder mit 0,02 USD pro Mitglied und Abrechnungszeitraum berechnet, einschließlich während dieses Zeitraums entfernter Mitglieder.
-  </Accordion>
-
-  <Accordion title="Kann ich individuelle Geschäftsbedingungen anfragen?">
-    Ja. Bei Fragen zu Rechnungen, Beschaffung oder besonderen Geschäftsanforderungen wende dich an den Vertrieb. Die standardmäßige Gateway-Nutzung ist auch ohne Enterprise-Erweiterung verfügbar.
-  </Accordion>
-</AccordionGroup>
-
-## Preise ansehen
-
-Prüfe die aktuelle Aufladegebühr und den Abrechnungsstatus in deinem Dashboard:
-
-1. Öffne **Einstellungen -> Preise und Stufen**
-2. Sieh dir den aktuellen Gebührensatz und die letzte Nutzung an
-3. Prüfe den Guthabenstand und die Ausgabenentwicklung
-
-<Card title="Fragen?" icon="question">
-  Du brauchst Hilfe bei Abrechnung oder Preisen? Besuche das [Phaseo Help Center](https://phaseo.app/help).
-</Card>
+Für Rechnungsstellung, Beschaffung oder individuelle kommerzielle Bedingungen wende dich an das [Hilfecenter](https://phaseo.app/help). Für die normale Gateway-Nutzung brauchst du kein Enterprise.

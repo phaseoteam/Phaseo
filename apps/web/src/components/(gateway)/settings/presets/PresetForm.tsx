@@ -1,10 +1,8 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 
 import React, { useState, useMemo } from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,7 +33,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { toast } from "sonner";
-import { createPresetAction, publishPresetDraftAction, updatePresetAction } from "@/app/(dashboard)/settings/presets/actions";
+import { createPresetAction, publishPresetDraftAction, updatePresetAction } from "@/features/settings/presets/actions";
 import {
 	Dialog,
 	DialogContent,
@@ -51,7 +49,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { SortablePresetList } from "./SortablePresetList";
 import { PresetVersionLabels, labelsSummary, usePresetVersions, versionName } from "./PresetVersionLabels";
 import { PresetPromptTemplateEditor, buildPromptTemplate, draftFromTemplate } from "./PresetPromptTemplateEditor";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 interface APIProviderCard {
@@ -670,10 +668,10 @@ export default function PresetForm({
 		setLoading(true);
 		try {
 			if (initialPreset?.id) {
-				await updatePresetAction({ id: initialPreset.id, ...submission });
+				await updatePresetAction({ data: { id: initialPreset.id, ...submission } });
 				toast.success(t("credits.Draft saved" as never));
 			} else {
-				await createPresetAction({ ...submission, creatorUserId: currentUserId!, workspaceId: currentTeamId! });
+				await createPresetAction({ data: { ...submission, creatorUserId: currentUserId!, workspaceId: currentTeamId! } });
 				toast.success(t("credits.Preset created" as never));
 			}
 			router.push("/settings/presets");
@@ -710,10 +708,10 @@ export default function PresetForm({
 		setPublishError(null);
 		try {
 			if (formHasUnsavedChanges) {
-				await updatePresetAction({ id: presetId, ...submission });
+				await updatePresetAction({ data: { id: presetId, ...submission } });
 				markSaved(submission);
 			}
-			const result = await publishPresetDraftAction(presetId, releaseNotes, needsVersionLabel ? publishVersionLabel : undefined);
+			const result = await publishPresetDraftAction({ data: { id: presetId, releaseNotes, versionLabel: needsVersionLabel ? publishVersionLabel : undefined } });
 			if (!result.ok) {
 				setPublishError(publishErrorMessage(result.error));
 				return;

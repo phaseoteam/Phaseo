@@ -89,6 +89,15 @@ paths:
             enum:
               - asc
               - desc
+        - name: include
+          in: query
+          description: اضبطها على parameter_specs لإضافة معلمات الطلب لكل عرض بالصيغة القياسية.
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - parameter_specs
         - name: endpoints
           in: query
           description: التصفية حسب نقاط النهاية
@@ -5110,7 +5119,7 @@ paths:
             minimum: 1
             maximum: 250
       summary: List rate limit policies
-      description: Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: يسرد سياسات حدود المعدل المسماة لمساحة العمل. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي.
       responses:
         '200':
           description: Rate limit policies
@@ -5130,7 +5139,7 @@ paths:
         - Gateway
       operationId: createRateLimitPolicy
       summary: Create a rate limit policy
-      description: Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: ينشئ سياسة مسماة بحدود للطلبات في الدقيقة أو الرموز في الدقيقة أو الطلبات المتزامنة. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي.
       requestBody:
         required: true
         content:
@@ -5165,7 +5174,7 @@ paths:
         - Gateway
       operationId: getRateLimitPolicy
       summary: Get a rate limit policy
-      description: Returns one rate limit policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: يعيد سياسة حد معدل واحدة. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي.
       responses:
         '200':
           description: Rate limit policy
@@ -5185,7 +5194,7 @@ paths:
         - Gateway
       operationId: updateRateLimitPolicy
       summary: Update a rate limit policy
-      description: Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: يغيّر اسم السياسة أو وصفها أو حدودها أو إعداد الإغلاق عند الفشل. اضبط الحد على null لإزالته؛ يجب أن يبقى حد واحد على الأقل. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي.
       requestBody:
         required: true
         content:
@@ -5211,7 +5220,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitPolicy
       summary: Delete a rate limit policy
-      description: Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: يحذف سياسة وكل تعيين يستخدمها. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي.
       responses:
         '200':
           description: Rate limit policy deleted
@@ -5232,7 +5241,7 @@ paths:
         - Gateway
       operationId: listRateLimitAssignments
       summary: List rate limit assignments
-      description: Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: يسرد أماكن تطبيق سياسات حدود المعدل، مع إمكانية التصفية حسب السياسة أو نوع الهدف. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي.
       parameters:
         - name: policy_id
           in: query
@@ -5283,7 +5292,7 @@ paths:
         - Gateway
       operationId: createRateLimitAssignment
       summary: Assign a rate limit policy
-      description: Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: يطبّق سياسة على مفتاح API واحد أو عضو في مساحة العمل أو قسم، أو يضبط الإعداد الافتراضي لمساحة العمل لكل مستخدم نهائي. يمكن أن يكون لكل هدف سياسة واحدة. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على كل تعيين.
       requestBody:
         required: true
         content:
@@ -5318,7 +5327,7 @@ paths:
         - Gateway
       operationId: getRateLimitAssignment
       summary: Get a rate limit assignment
-      description: Returns one rate limit assignment. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: يعيد تعيين حد معدل واحدًا. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي.
       responses:
         '200':
           description: Rate limit assignment
@@ -5338,7 +5347,7 @@ paths:
         - Gateway
       operationId: updateRateLimitAssignment
       summary: Change an assignment's policy
-      description: Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: يبدّل السياسة المطبقة على هدف التعيين. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي.
       requestBody:
         required: true
         content:
@@ -5364,7 +5373,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitAssignment
       summary: Delete a rate limit assignment
-      description: Removes a policy from its target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: يزيل سياسة من هدفها. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي.
       responses:
         '200':
           description: Rate limit assignment deleted
@@ -11372,6 +11381,8 @@ components:
             type: string
         parameter_details:
           $ref: '#/components/schemas/SupportedParameterDetails'
+        parameter_specs:
+          $ref: '#/components/schemas/ParameterSpecs'
     GatewayPricingMeter:
       type: object
       nullable: true
@@ -11674,6 +11685,197 @@ components:
           $ref: '#/components/schemas/SupportedParameterDetails'
         supported_parameters_detail:
           $ref: '#/components/schemas/SupportedParameterDetails'
+    ParameterValue:
+      oneOf:
+        - type: string
+        - type: number
+        - type: boolean
+    ParameterOption:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          $ref: '#/components/schemas/ParameterValue'
+        label:
+          type: string
+        description:
+          type: string
+      additionalProperties: true
+    ParameterRule:
+      type: object
+      description: عندما تكون لكل معلمة في if إحدى قيمها المدرجة، تحلّ الحقول الأخرى محل حقول المعلمة نفسها.
+      required:
+        - if
+      properties:
+        if:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: '#/components/schemas/ParameterValue'
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        min:
+          type: number
+        max:
+          type: number
+        step:
+          type: number
+        default:
+          $ref: '#/components/schemas/ParameterValue'
+        supported:
+          type: boolean
+        message:
+          type: string
+    ParameterDimensions:
+      type: object
+      properties:
+        min:
+          type: number
+        max:
+          type: number
+        multiple_of:
+          type: number
+        max_width:
+          type: number
+        max_height:
+          type: number
+        min_pixels:
+          type: number
+        max_pixels:
+          type: number
+        max_aspect_ratio:
+          type: string
+        aspect_ratios:
+          type: array
+          items:
+            type: string
+    ParameterSpec:
+      type: object
+      required:
+        - supported
+      properties:
+        supported:
+          type: boolean
+        type:
+          oneOf:
+            - $ref: '#/components/schemas/ParameterType'
+            - type: array
+              items:
+                $ref: '#/components/schemas/ParameterType'
+        media:
+          type: string
+          enum:
+            - image
+            - audio
+            - video
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        open:
+          type: boolean
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterOption'
+        min:
+          type: number
+        max:
+          type: number
+        step:
+          type: number
+        multiple_of:
+          type: number
+        default:
+          $ref: '#/components/schemas/ParameterValue'
+        provider_default:
+          $ref: '#/components/schemas/ParameterValue'
+        required:
+          type: boolean
+        always_on:
+          type: boolean
+        aliases:
+          type: array
+          items:
+            type: string
+        alias_of:
+          type: string
+        upstream_name:
+          type: string
+        upstream_values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        requires:
+          type: array
+          items:
+            type: string
+        min_length:
+          type: number
+        max_length:
+          type: number
+        max_tokens:
+          type: number
+        min_items:
+          type: number
+        max_items:
+          type: number
+        item_types:
+          type: array
+          items:
+            type: string
+        formats:
+          type: array
+          items:
+            type: string
+        max_file_size_bytes:
+          type: number
+        format:
+          type: string
+        dimensions:
+          $ref: '#/components/schemas/ParameterDimensions'
+        properties:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+        when:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterRule'
+        support_level:
+          type: string
+        notes:
+          type: string
+        source:
+          type: object
+          properties:
+            url:
+              type: string
+            verified_at:
+              type: string
+        extra:
+          type: object
+          additionalProperties: true
+    ParameterType:
+      type: string
+      enum:
+        - string
+        - integer
+        - number
+        - boolean
+        - array
+        - object
+        - file
+    ParameterSpecs:
+      type: object
+      description: جميع معلمات الطلب التي يقبلها المزوّد على نقطة النهاية هذه، بصيغة قياسية واحدة أيًّا كانت طريقة تخزينها في الكتالوج.
+      additionalProperties:
+        $ref: '#/components/schemas/ParameterSpec'
     SupportedParameterDetails:
       type: object
       description: قيود منظمة ودعم المزوّد لمعلمات الطلب، مرتبة حسب اسم المعلمة.
@@ -15329,10 +15531,13 @@ components:
           maximum: 3
         output_format:
           type: string
+          description: تنسيق الإخراج. يتطلب gif وsvg نموذج GPT Image 2.6 ولا يدعمان stream أو partial_images. ويتطلب svg أيضًا svg.model وn=1.
           enum:
             - png
             - jpeg
             - webp
+            - gif
+            - svg
         output_compression:
           type: integer
           minimum: 0
@@ -15348,6 +15553,41 @@ components:
           enum:
             - auto
             - low
+        complexity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        frame_count:
+          type: integer
+          minimum: 2
+          maximum: 64
+        frame_duration_ms:
+          type: integer
+          minimum: 20
+          maximum: 2000
+        svg:
+          type: object
+          description: مطلوب عندما تكون قيمة output_format هي svg. يحدد svg.model نموذج النص من OpenAI الذي يكتب ملف SVG من الصورة المرجعية. تُحتسب رموزه بأسعار النص لذلك النموذج، مع احتساب رموز الاستدلال كمخرجات، إضافةً إلى تكلفة الصورة.
+          required:
+            - model
+          properties:
+            model:
+              type: string
+            reasoning:
+              type: object
+              properties:
+                effort:
+                  type: string
+                  enum:
+                    - none
+                    - minimal
+                    - low
+                    - medium
+                    - high
+                    - xhigh
+                    - max
         response_format:
           type: string
         style:
@@ -15365,6 +15605,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Image'
+        svg_usage:
+          type: object
+          properties:
+            model:
+              type: string
+            input_tokens:
+              type: integer
+            output_tokens:
+              type: integer
+            reasoning_tokens:
+              type: integer
+            total_tokens:
+              type: integer
     Image:
       type: object
       properties:
@@ -15395,6 +15648,15 @@ components:
                 type: string
         mask:
           type: string
+        markup:
+          type: string
+          description: طبقة تعليقات توضيحية بتنسيق PNG شفاف فوق الصورة الأولى، كملف مرفوع أو عنوان URL أو سلسلة base64. تتطلب GPT Image 2.5 أو أحدث، ولا يمكن دمجها مع mask.
+        complexity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
         prompt:
           type: string
         size:
@@ -16014,6 +16276,8 @@ components:
           $ref: '#/components/schemas/SupportedParameterDetails'
         supported_parameters_detail:
           $ref: '#/components/schemas/SupportedParameterDetails'
+        parameter_specs:
+          $ref: '#/components/schemas/ParameterSpecs'
     VideoModelCapability:
       type: object
       properties:
@@ -23994,12 +24258,11 @@ components:
       additionalProperties: false
     RateLimitTargetType:
       type: string
-      description: What a policy applies to. A department policy is one allowance shared by its members and linked keys. A guardrail policy gives each key and member the guardrail covers its own allowance. end_user_default applies to each end user identified on a request.
+      description: ما تنطبق عليه السياسة. سياسة القسم حصة واحدة يتشاركها أعضاؤه والمفاتيح المرتبطة به. ينطبق end_user_default على كل مستخدم نهائي يُحدَّد في الطلب.
       enum:
         - key
         - member
         - department
-        - guardrail
         - end_user_default
     RateLimitAssignment:
       type: object
@@ -24027,7 +24290,7 @@ components:
           type: string
           format: uuid
           nullable: true
-          description: Id of the key, member (user id), department, or guardrail. Null for end_user_default.
+          description: معرّف المفتاح أو العضو (معرّف المستخدم) أو القسم. null لـ end_user_default.
         created_by:
           type: string
           format: uuid
@@ -24053,7 +24316,7 @@ components:
         target_id:
           type: string
           format: uuid
-          description: Id of the key, member (user id), department, or guardrail. Omit for end_user_default.
+          description: معرّف المفتاح أو العضو (معرّف المستخدم) أو القسم. احذفه لـ end_user_default.
       additionalProperties: false
     RateLimitAssignmentUpdateInput:
       type: object

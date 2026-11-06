@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@/components/ui/button";
 import {
   HoverCard,
@@ -8,7 +6,7 @@ import {
 } from "@/components/ui/hover-card";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import type { LanguageModelUsage } from "ai";
 import { type ComponentProps, createContext, useContext } from "react";
 import { getUsage } from "tokenlens";

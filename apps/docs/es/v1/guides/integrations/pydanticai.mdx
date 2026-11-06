@@ -1,18 +1,18 @@
 ---
 title: "PydanticAI"
 icon: "braces"
-description: "Crea agentes Python con tipos usando PydanticAI y Phaseo."
+description: "Crea agentes tipados de Python con PydanticAI y Phaseo."
 ---
 
-Usa PydanticAI si quieres agentes Python con salidas tipadas, validación y una configuración compacta de modelos compatible con OpenAI.
+Crea un `OpenAIChatModel` con un `OpenAIProvider` que apunte a `https://api.phaseo.app/v1`, y los agentes de PydanticAI funcionarán con modelos de Phaseo.
 
-## Instalar
+## Instala
 
 ```bash
 pip install "pydantic-ai-slim[openai]"
 ```
 
-## Configurar el modelo
+## Haz que PydanticAI use Phaseo
 
 ```python
 import os
@@ -21,7 +21,7 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 model = OpenAIChatModel(
-    "openai/gpt-5-nano",
+    "openai/gpt-6-astra",
     provider=OpenAIProvider(
         api_key=os.environ["PHASEO_API_KEY"],
         base_url="https://api.phaseo.app/v1",
@@ -33,14 +33,9 @@ result = agent.run_sync("Reply with only: ok")
 print(result.output)
 ```
 
-## Notas
+Si se imprime `ok`, la configuración funciona.
 
-- La ruta compatible con OpenAI de PydanticAI utiliza un comportamiento de chat al estilo de OpenAI.
-- Usa llamadas directas de Phaseo Responses para funciones exclusivas de Responses, como `phaseo:apply_patch`.
-- Mantén los esquemas de salida estructurada lo bastante pequeños para la ventana de contexto del modelo seleccionado.
+## Límites conocidos
 
-## Relacionado
-
-- [Salidas estructuradas](../structured-outputs.mdx)
-- [SDK OpenAI](./openai-sdk.mdx)
-- [Modelos](../../api-reference/endpoint/models.mdx)
+- Esta vía usa Chat Completions de estilo OpenAI. Para funciones exclusivas de Responses, como `phaseo:apply_patch`, llama directamente al endpoint de Responses de Phaseo.
+- Mantén los esquemas de [salida estructurada](../structured-outputs.mdx) lo bastante pequeños para la ventana de contexto del modelo. Consulta los límites en [Modelos](../../api-reference/endpoint/models.mdx).

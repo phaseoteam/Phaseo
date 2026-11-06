@@ -1,4 +1,5 @@
-﻿import { dashboardDefaultModels, dashboardDefaultEfforts, dashboardModelCategory, dashboardModelTier, toggleDashboardModels } from "./artificialAnalysisModelPicker";
+﻿import { it, expect } from "vitest";
+import { dashboardDefaultModels, dashboardDefaultEfforts, dashboardModelCategory, dashboardModelTier, toggleDashboardModels } from "./artificialAnalysisModelPicker";
 import type { DashboardRow } from "./artificialAnalysisDashboard";
 const model = (name: string, extra: Partial<DashboardRow> = {}) => ({ modelName: name, modelId: name, ...extra } as DashboardRow);
 it("uses curated frontier tiers without inferring a size from a score", () => {

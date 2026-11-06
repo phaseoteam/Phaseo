@@ -2,7 +2,7 @@
 
 This is the **Mintlify** documentation site for the Phaseo Gateway.
 
-The Client SDKs menu includes [Java](v1/sdk-reference/java/overview.mdx) in all
+The Client SDKs menu includes [Java](v1/sdk-reference/client/overview.mdx) in all
 nine documentation languages. Its installation guide uses a pinned source
 build because the Maven Central artifact predates the current transport APIs.
 

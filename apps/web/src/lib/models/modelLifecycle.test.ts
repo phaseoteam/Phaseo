@@ -1,14 +1,15 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { hasPassedLifecycleDate } from "./modelLifecycle";
 
 describe("hasPassedLifecycleDate", () => {
 	beforeEach(() => {
-		jest.spyOn(Date, "now").mockReturnValue(
+		vi.spyOn(Date, "now").mockReturnValue(
 			Date.parse("2026-08-26T00:00:00Z"),
 		);
 	});
 
 	afterEach(() => {
-		jest.restoreAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	it("treats offset-free catalogue timestamps as UTC", () => {

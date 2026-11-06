@@ -1,11 +1,9 @@
-"use client";
-
 import * as React from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { Check, ChevronLeft, ChevronRight, CircleAlert, Clock3, Search, X } from "lucide-react";
 import { toast } from "sonner";
-import { fetchMoreProviderApplicationsAction, reviewProviderApplicationAction } from "@/app/(dashboard)/settings/internal/provider-review/actions";
+import { fetchMoreProviderApplicationsAction, reviewProviderApplicationAction } from "@/features/settings/internal/provider-review/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -129,7 +127,7 @@ function ownershipProofLabel(provider: InternalProviderApplication): string {
 		if (!nextApplicationCursor || loadingMoreApplications) return;
 		setLoadingMoreApplications(true);
 		try {
-			const page = await fetchMoreProviderApplicationsAction(nextApplicationCursor);
+			const page = await fetchMoreProviderApplicationsAction({ data: nextApplicationCursor });
 			setApplications((current) => {
 				const bySlug = new Map(current.map((provider) => [provider.provider_slug, provider]));
 				for (const provider of page.providers) {
@@ -155,7 +153,7 @@ function ownershipProofLabel(provider: InternalProviderApplication): string {
 		}
 		setSaving(key);
 		try {
-			const result = await reviewProviderApplicationAction({ providerSlug, decision, reason });
+			const result = await reviewProviderApplicationAction({ data: { providerSlug, decision, reason } });
 			if (!result.ok) {
 				toast.error(providerReviewErrorMessage(result.error));
 				return;

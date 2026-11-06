@@ -1,6 +1,6 @@
 ---
 title: "Oktober"
-description: "Oktober 2026 - Phaseo"
+description: "Phaseo-Produktneuerungen, SDK-Änderungen und Modellveröffentlichungen aus dem Oktober 2026."
 ---
 
 import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
@@ -13,9 +13,9 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">Produkt</p>
 
-- **Einstellungen -> Routing -> Routing für eingestellte Modelle** zeigt **Deine betroffenen Modelle**: jedes Modell, das dein Workspace in den letzten 90 Tagen genutzt hat und das eingestellt wird oder nicht mehr bereitgestellt wird, mit seinem Nachfolger, dem Preisvergleich und ob seine Anfragen umgeleitet werden, und falls nicht, warum. Mit **Ersatzmodell wählen** legst du einen eigenen Nachfolger für ein Modell fest; siehe [Modellabkündigung und -einstellung](../guides/model-retirement.mdx#see-which-of-your-models-are-affected) ([#3357](https://github.com/phaseoteam/Phaseo/pull/3357)).
+- **Einstellungen -> Routing -> Routing für eingestellte Modelle** zeigt die eingestellten Modelle, die dein Workspace in den letzten 90 Tagen genutzt hat, und mit **Ersatzmodell wählen** legst du einen eigenen Nachfolger fest; siehe [Modellabkündigung und -einstellung](../guides/model-retirement.mdx#see-which-of-your-models-are-affected) ([#3357](https://github.com/phaseoteam/Phaseo/pull/3357)).
 
-- Die [Nutzungsbedingungen](https://phaseo.app/terms) setzen jetzt ein Mindestalter von 18 Jahren voraus und verbieten Material über sexuellen Kindesmissbrauch; die [Datenschutzerklärung](https://phaseo.app/privacy) erklärt, wie wir es erkennen, sichern und melden ([#3388](https://github.com/phaseoteam/Phaseo/pull/3388)).
+- Die [Nutzungsbedingungen](https://phaseo.app/terms) setzen jetzt ein Mindestalter von 18 Jahren voraus und verbieten Material über sexuellen Kindesmissbrauch; die [Datenschutzerklärung](https://phaseo.app/privacy) erklärt, wie Phaseo es erkennt, sichert und meldet ([#3388](https://github.com/phaseoteam/Phaseo/pull/3388)).
 
 </div>
 
@@ -62,7 +62,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">Produkt</p>
 
-- Der Bereich **Versions and labels** im Preset-Editor lässt benannte Labels auf veröffentlichte Versionen zeigen, sodass ein verschobenes Label Anfragen mit einem Klick zurückrollt; siehe [Prompt-Vorlagen](../guides/prompt-templates.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283)).
+- Der Bereich **Versionen und Labels** im Preset-Editor lässt benannte Labels auf veröffentlichte Versionen zeigen, sodass ein verschobenes Label Anfragen mit einem Klick zurückrollt; siehe [Prompt-Vorlagen](../guides/prompt-templates.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283)).
 - Die Modellauswahl für Presets bietet nur Modelle an, die das Gateway noch bedient; vorher listete sie auch eingestellte Modelle, die Anfragen nicht erreichen konnten ([#3260](https://github.com/phaseoteam/Phaseo/pull/3260)).
 - Wer ein Preset in einem Workspace ohne Guthaben ausführt, sieht das und einen Link zu **Guthaben aufladen**; vorher erschien ein allgemeiner Fehler ([#3276](https://github.com/phaseoteam/Phaseo/pull/3276)).
 - Seiten, die den vollständigen Modellkatalog laden, etwa der Preset-Editor, erhalten ihn aus dem Cache; vorher dauerte jeder Abruf etwa 3 Sekunden und manche schlugen fehl ([#3278](https://github.com/phaseoteam/Phaseo/pull/3278)).
@@ -111,7 +111,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">Produkt</p>
 
 - Jeder Workspace kann das Routing für eingestellte Modelle nutzen: Inhaber und Admins aktivieren es unter **Einstellungen -> Routing -> Routing für eingestellte Modelle**, und Anfragen gehen an den freigegebenen Nachfolger; siehe [Modellabkündigung und -einstellung](../guides/model-retirement.mdx) ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#2896](https://github.com/phaseoteam/Phaseo/pull/2896)).
-- Das Routing für eingestellte Modelle nutzt einen freigegebenen Nachfolger nur, wenn er nicht mehr kostet als das eingestellte Modell, außer Inhaber und Admins erlauben einen höheren Preis; einen selbst gewählten Nachfolger nutzt es unabhängig vom Preis ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211)).
+- Das Routing für eingestellte Modelle überspringt einen freigegebenen Nachfolger, der mehr kostet als das eingestellte Modell, außer Inhaber und Admins erlauben es; selbst gewählte Nachfolger gelten zu jedem Preis ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211)).
 - Die Preset-Liste und der Editor öffnen sich auch, wenn der vollständige Modellkatalog nicht lädt; vorher zeigte die Seite einen Fehler ([#3221](https://github.com/phaseoteam/Phaseo/pull/3221)).
 
 </div>
@@ -349,7 +349,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">API & SDKs</p>
 
-- Die SDK-Dokumentation ergänzt das Java SDK, das aus dem Quellcode installiert wird; siehe [Java SDK — Installation](../sdk-reference/java/installation.mdx) ([#2904](https://github.com/phaseoteam/Phaseo/pull/2904)).
+- Die SDK-Dokumentation ergänzt das Java SDK, das aus dem Quellcode installiert wird; siehe [Java SDK — Installation](../sdk-reference/client/installation.mdx) ([#2904](https://github.com/phaseoteam/Phaseo/pull/2904)).
 
 </div>
 

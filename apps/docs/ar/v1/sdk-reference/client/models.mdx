@@ -1,0 +1,199 @@
+---
+icon: "brain-circuit"
+title: "النماذج"
+description: "اسرد النماذج وتحقّق منها من أي حزمة Phaseo SDK."
+---
+
+استدعِ دالة السرد في حزمة SDK لقراءة كتالوج النماذج من `GET /v1/models`، مع عوامل تصفية اختيارية.
+
+<CodeGroup>
+
+```typescript TypeScript
+const models = await client.getModels({
+  provider: ["anthropic"],
+  provider_status: ["beta", "not_ready"],
+  provider_availability_reason: ["preview_only", "provider_not_ready"],
+  capability_status: ["coming_soon", "internal_testing"],
+  availability: "all",
+});
+```
+
+```python Python
+models = client.get_models({
+    "provider": ["anthropic"],
+    "provider_status": ["beta", "not_ready"],
+    "provider_availability_reason": ["preview_only", "provider_not_ready"],
+    "capability_status": ["coming_soon", "internal_testing"],
+    "availability": "all",
+})
+```
+
+```go Go
+client, err := phaseo.NewFromEnv()
+if err != nil {
+  panic(err)
+}
+
+models, err := client.GetModels(context.Background(), map[string]string{
+  "provider":                     "anthropic",
+  "provider_status":              "beta,not_ready",
+  "provider_availability_reason": "preview_only,provider_not_ready",
+  "capability_status":            "coming_soon,internal_testing",
+  "availability":                 "all",
+  "limit":                        "10",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(models["models"])
+```
+
+```csharp C#
+using PhaseoSdk;
+
+var client = new Phaseo();
+
+var models = await client.ListModels(new Dictionary<string, string>
+{
+    ["provider"] = "anthropic",
+    ["provider_status"] = "beta,not_ready",
+    ["provider_availability_reason"] = "preview_only,provider_not_ready",
+    ["capability_status"] = "coming_soon,internal_testing",
+    ["availability"] = "all",
+    ["limit"] = "10",
+});
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo();
+
+$models = $client->listModels([
+    'provider' => 'anthropic',
+    'provider_status' => 'beta,not_ready',
+    'provider_availability_reason' => 'preview_only,provider_not_ready',
+    'capability_status' => 'coming_soon,internal_testing',
+    'availability' => 'all',
+    'limit' => 5,
+]);
+
+echo "Found " . count($models['models'] ?? []) . " models\n";
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new
+
+models = client.list_models(
+  provider: 'anthropic',
+  provider_status: 'beta,not_ready',
+  provider_availability_reason: 'preview_only,provider_not_ready',
+  capability_status: 'coming_soon,internal_testing',
+  availability: 'all',
+  limit: 10
+)
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+import java.util.HashMap;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+Map<String, String> query = new HashMap<>();
+query.put("limit", "10");
+query.put("provider", "anthropic");
+query.put("provider_status", "beta,not_ready");
+query.put("provider_availability_reason", "preview_only,provider_not_ready");
+query.put("capability_status", "coming_soon,internal_testing");
+query.put("availability", "all");
+
+var models = client.listModels(query);
+System.out.println(models);
+```
+
+</CodeGroup>
+
+| اللغة | الدالة | عوامل التصفية متعددة القيم |
+| --- | --- | --- |
+| TypeScript | `client.getModels(filters)` أو `client.models.list(filters)` | مصفوفات |
+| Python | `client.get_models(filters)` أو `client.models.list(filters)` | قوائم |
+| Go | `client.GetModels(ctx, query)` مع `map[string]string` | سلاسل مفصولة بفواصل |
+| C# | `client.ListModels(query)` مع `Dictionary<string, string>` | سلاسل مفصولة بفواصل |
+| PHP | `$client->listModels($params)` | سلاسل مفصولة بفواصل |
+| Ruby | `client.list_models(...)` | سلاسل مفصولة بفواصل |
+| Java | `client.listModels(query)` مع `Map<String, String>` | سلاسل مفصولة بفواصل |
+| Rust | لا توجد دالة مساعدة؛ استدعِ `client.request("GET", "/models?<filters>", None, &RequestOptions::default())` | سلاسل مفصولة بفواصل في سلسلة الاستعلام |
+
+## تصفية القائمة
+
+كل عوامل التصفية اختيارية ولها الأسماء نفسها في كل حزمة SDK: إنها معاملات الاستعلام.
+
+| عامل التصفية | يصفّي حسب |
+| --- | --- |
+| `provider`، `organisation` | المزوّد أو الجهة المالكة للنموذج |
+| `endpoints`، `input_types`، `output_types`، `params` | نقاط النهاية، والوسائط، ومعاملات الطلب المدعومة |
+| `status`، `provider_status`، `provider_routing_status`، `model_routing_status`، `capability_status`، `provider_availability_status`، `provider_availability_reason` | حالة دورة الحياة والتوجيه |
+| `availability` | عيّنه إلى `all` لتضمين النماذج التي لا يمكن توجيه الطلبات إليها |
+| `limit`، `offset` | التقسيم إلى صفحات |
+
+افتراضيًا، لا تضم القائمة إلا النماذج القابلة للتوجيه. عيّن `availability` إلى `all` لتضمين البقية، ثم ضيّق النتائج:
+
+- يحدد `provider_availability_reason` حالات الطرح مثل `preview_only` أو `provider_not_ready` أو `gated` أو `access_limited` أو `region_limited` أو `project_limited` أو `paused` أو `soft_blocked`.
+- يحدد `capability_status` ربط نقاط النهاية التي لم تصبح قابلة للتوجيه بعد، مثل `coming_soon` أو `internal_testing`.
+
+<span id="check-one-model"></span>
+## التحقق من نموذج واحد
+
+تقرأ `checkParameters` ومكافئاتها البيانات الوصفية الحية لمسارات المزوّدين، وتصنّف كل معامل على أنه `supported` أو `partial` أو `unsupported` أو `unknown`، وتتحقق من القيم والنطاقات المعلنة، وتعيد مسارات المزوّدين التي تقبل المجموعة كاملة. تؤدي `preflight` الشيء نفسه لجسم طلب كامل وتضيف فحص دورة حياة النموذج، مع نتيجة `ok` إجمالية.
+
+| اللغة | القدرات | التحقق من المعاملات | الفحص المسبق | دورة الحياة |
+| --- | --- | --- | --- | --- |
+| TypeScript | `models.capabilities(modelId)` | `models.checkParameters(modelId, values, { endpoint, provider })` | `models.preflight(request, { endpoint, provider })` | تعيد `models.validate(modelId)` القيمة `{ ok, info, reason }`؛ و`models.getDeprecationInfo(modelId)` |
+| Python | `models.capabilities(model_id)` | `models.check_parameters(model_id, values, endpoint=..., provider=...)` | `models.preflight(request, endpoint=..., provider=...)` | `models.validate(model_id)`، `models.get_deprecation_info(model_id)` |
+| Go (الإصدار القادم) | `GetModelEndpointCapabilities` | `CheckModelParameters` | `PreflightRequest` | `ValidateModel`، و`GetModelDeprecationInfo` (منشورة) |
+| C# (الإصدار القادم) | `GetModelEndpointCapabilities(modelId)` | `CheckModelParameters(modelId, values)` | `PreflightRequest` | `ValidateModel`، و`GetModelDeprecationInfo` (منشورة) |
+| PHP (الإصدار القادم) | `getModelEndpointCapabilities` | `checkModelParameters(...)` | `preflightRequest` | `validateModel`، و`getModelDeprecationInfo` (منشورة) |
+| Ruby (الإصدار القادم) | `model_endpoint_capabilities` | `check_model_parameters(model_id, values)` | `preflight_request` | `validate_model`، و`get_model_deprecation_info` (منشورة) |
+| Java (بناء من المصدر) | `getModelEndpointCapabilities(modelId, query)` | `checkModelParameters(modelId, values, options)` | `preflightRequest(request, options)` | `validateModel`، `getModelDeprecationInfo` |
+| Rust (غير موجودة في `0.2.0`) | `Phaseo::model_endpoint_capabilities(...)` | `Phaseo::check_model_parameters(...)` | لا توجد | لا توجد |
+
+تعني "الإصدار القادم" أن الدالة موجودة في مصدر حزمة SDK لكنها ليست في الحزمة المنشورة؛ انظر [ما الذي تتضمنه كل حزمة](./overview#check-what-each-package-ships). تعيد دوال معلومات الإيقاف حالة النموذج (`active` أو `deprecated` أو `retired`)، وتاريخي الإيقاف والسحب، ومعرّف النموذج البديل.
+
+## الاستجابة
+
+`ModelListResponse`:
+
+```json
+{
+  "ok": true,
+  "limit": 50,
+  "offset": 0,
+  "total": 123,
+  "models": [
+    {
+      "model_id": "openai/gpt-4o-mini",
+      "name": "GPT-4o Mini",
+      "release_date": "2024-07-18",
+      "status": "active",
+      "organisation_id": "openai",
+      "aliases": ["gpt-4o-mini"],
+      "endpoints": ["chat/completions", "responses"],
+      "input_types": ["text"],
+      "output_types": ["text"],
+      "providers": [
+        {
+          "api_provider_id": "openai",
+          "params": ["temperature", "max_tokens"]
+        }
+      ]
+    }
+  ]
+}
+```

@@ -89,6 +89,15 @@ paths:
             enum:
               - asc
               - desc
+        - name: include
+          in: query
+          description: 设置为 parameter_specs 可按标准格式附加每个报价的请求参数。
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - parameter_specs
         - name: endpoints
           in: query
           description: 按端点筛选
@@ -5110,7 +5119,7 @@ paths:
             minimum: 1
             maximum: 250
       summary: List rate limit policies
-      description: Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 列出工作区的命名速率限制策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       responses:
         '200':
           description: Rate limit policies
@@ -5130,7 +5139,7 @@ paths:
         - Gateway
       operationId: createRateLimitPolicy
       summary: Create a rate limit policy
-      description: Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 创建一个带有每分钟请求数、每分钟令牌数或并发请求限制的命名策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       requestBody:
         required: true
         content:
@@ -5165,7 +5174,7 @@ paths:
         - Gateway
       operationId: getRateLimitPolicy
       summary: Get a rate limit policy
-      description: Returns one rate limit policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 返回一个速率限制策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       responses:
         '200':
           description: Rate limit policy
@@ -5185,7 +5194,7 @@ paths:
         - Gateway
       operationId: updateRateLimitPolicy
       summary: Update a rate limit policy
-      description: Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 更改策略的名称、描述、限制或失败关闭设置。将某个限制设为 null 即可移除；至少需要保留一个限制。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       requestBody:
         required: true
         content:
@@ -5211,7 +5220,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitPolicy
       summary: Delete a rate limit policy
-      description: Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 删除一个策略以及使用它的所有分配。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       responses:
         '200':
           description: Rate limit policy deleted
@@ -5232,7 +5241,7 @@ paths:
         - Gateway
       operationId: listRateLimitAssignments
       summary: List rate limit assignments
-      description: Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 列出速率限制策略的适用位置，可按策略或目标类型筛选。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       parameters:
         - name: policy_id
           in: query
@@ -5283,7 +5292,7 @@ paths:
         - Gateway
       operationId: createRateLimitAssignment
       summary: Assign a rate limit policy
-      description: Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 将策略应用于一个 API 密钥、工作区成员或部门，或为每个最终用户设置工作区默认值。每个目标只能有一个策略。网关会对每个分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       requestBody:
         required: true
         content:
@@ -5318,7 +5327,7 @@ paths:
         - Gateway
       operationId: getRateLimitAssignment
       summary: Get a rate limit assignment
-      description: Returns one rate limit assignment. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 返回一个速率限制分配。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       responses:
         '200':
           description: Rate limit assignment
@@ -5338,7 +5347,7 @@ paths:
         - Gateway
       operationId: updateRateLimitAssignment
       summary: Change an assignment's policy
-      description: Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 切换应用于分配目标的策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       requestBody:
         required: true
         content:
@@ -5364,7 +5373,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitAssignment
       summary: Delete a rate limit assignment
-      description: Removes a policy from its target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: 从目标中移除策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。
       responses:
         '200':
           description: Rate limit assignment deleted
@@ -11372,6 +11381,8 @@ components:
             type: string
         parameter_details:
           $ref: '#/components/schemas/SupportedParameterDetails'
+        parameter_specs:
+          $ref: '#/components/schemas/ParameterSpecs'
     GatewayPricingMeter:
       type: object
       nullable: true
@@ -11674,6 +11685,197 @@ components:
           $ref: '#/components/schemas/SupportedParameterDetails'
         supported_parameters_detail:
           $ref: '#/components/schemas/SupportedParameterDetails'
+    ParameterValue:
+      oneOf:
+        - type: string
+        - type: number
+        - type: boolean
+    ParameterOption:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          $ref: '#/components/schemas/ParameterValue'
+        label:
+          type: string
+        description:
+          type: string
+      additionalProperties: true
+    ParameterRule:
+      type: object
+      description: 当 if 中的每个参数都取其所列值之一时，其余字段将替换该参数自身的字段。
+      required:
+        - if
+      properties:
+        if:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: '#/components/schemas/ParameterValue'
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        min:
+          type: number
+        max:
+          type: number
+        step:
+          type: number
+        default:
+          $ref: '#/components/schemas/ParameterValue'
+        supported:
+          type: boolean
+        message:
+          type: string
+    ParameterDimensions:
+      type: object
+      properties:
+        min:
+          type: number
+        max:
+          type: number
+        multiple_of:
+          type: number
+        max_width:
+          type: number
+        max_height:
+          type: number
+        min_pixels:
+          type: number
+        max_pixels:
+          type: number
+        max_aspect_ratio:
+          type: string
+        aspect_ratios:
+          type: array
+          items:
+            type: string
+    ParameterSpec:
+      type: object
+      required:
+        - supported
+      properties:
+        supported:
+          type: boolean
+        type:
+          oneOf:
+            - $ref: '#/components/schemas/ParameterType'
+            - type: array
+              items:
+                $ref: '#/components/schemas/ParameterType'
+        media:
+          type: string
+          enum:
+            - image
+            - audio
+            - video
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        open:
+          type: boolean
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterOption'
+        min:
+          type: number
+        max:
+          type: number
+        step:
+          type: number
+        multiple_of:
+          type: number
+        default:
+          $ref: '#/components/schemas/ParameterValue'
+        provider_default:
+          $ref: '#/components/schemas/ParameterValue'
+        required:
+          type: boolean
+        always_on:
+          type: boolean
+        aliases:
+          type: array
+          items:
+            type: string
+        alias_of:
+          type: string
+        upstream_name:
+          type: string
+        upstream_values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        requires:
+          type: array
+          items:
+            type: string
+        min_length:
+          type: number
+        max_length:
+          type: number
+        max_tokens:
+          type: number
+        min_items:
+          type: number
+        max_items:
+          type: number
+        item_types:
+          type: array
+          items:
+            type: string
+        formats:
+          type: array
+          items:
+            type: string
+        max_file_size_bytes:
+          type: number
+        format:
+          type: string
+        dimensions:
+          $ref: '#/components/schemas/ParameterDimensions'
+        properties:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+        when:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterRule'
+        support_level:
+          type: string
+        notes:
+          type: string
+        source:
+          type: object
+          properties:
+            url:
+              type: string
+            verified_at:
+              type: string
+        extra:
+          type: object
+          additionalProperties: true
+    ParameterType:
+      type: string
+      enum:
+        - string
+        - integer
+        - number
+        - boolean
+        - array
+        - object
+        - file
+    ParameterSpecs:
+      type: object
+      description: 提供商在此端点接受的所有请求参数，无论目录以何种方式存储，均以统一的标准格式返回。
+      additionalProperties:
+        $ref: '#/components/schemas/ParameterSpec'
     SupportedParameterDetails:
       type: object
       description: 按参数名称列出的请求参数结构化约束和提供商支持情况。
@@ -15329,10 +15531,13 @@ components:
           maximum: 3
         output_format:
           type: string
+          description: 输出格式。gif 和 svg 需要 GPT Image 2.6 模型，且不支持 stream 或 partial_images。svg 还需要 svg.model 和 n=1。
           enum:
             - png
             - jpeg
             - webp
+            - gif
+            - svg
         output_compression:
           type: integer
           minimum: 0
@@ -15348,6 +15553,41 @@ components:
           enum:
             - auto
             - low
+        complexity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        frame_count:
+          type: integer
+          minimum: 2
+          maximum: 64
+        frame_duration_ms:
+          type: integer
+          minimum: 20
+          maximum: 2000
+        svg:
+          type: object
+          description: 当 output_format 为 svg 时必填。svg.model 是根据参考图像编写 SVG 的 OpenAI 文本模型。其 token 按该模型的文本价格计费，推理 token 计为输出，并在图像费用之外另行收取。
+          required:
+            - model
+          properties:
+            model:
+              type: string
+            reasoning:
+              type: object
+              properties:
+                effort:
+                  type: string
+                  enum:
+                    - none
+                    - minimal
+                    - low
+                    - medium
+                    - high
+                    - xhigh
+                    - max
         response_format:
           type: string
         style:
@@ -15365,6 +15605,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Image'
+        svg_usage:
+          type: object
+          properties:
+            model:
+              type: string
+            input_tokens:
+              type: integer
+            output_tokens:
+              type: integer
+            reasoning_tokens:
+              type: integer
+            total_tokens:
+              type: integer
     Image:
       type: object
       properties:
@@ -15395,6 +15648,15 @@ components:
                 type: string
         mask:
           type: string
+        markup:
+          type: string
+          description: 覆盖在第一张图像上的透明 PNG 标注层，可以是上传的文件、URL 或 base64 字符串。需要 GPT Image 2.5 或更高版本，且不能与 mask 同时使用。
+        complexity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
         prompt:
           type: string
         size:
@@ -16014,6 +16276,8 @@ components:
           $ref: '#/components/schemas/SupportedParameterDetails'
         supported_parameters_detail:
           $ref: '#/components/schemas/SupportedParameterDetails'
+        parameter_specs:
+          $ref: '#/components/schemas/ParameterSpecs'
     VideoModelCapability:
       type: object
       properties:
@@ -23994,12 +24258,11 @@ components:
       additionalProperties: false
     RateLimitTargetType:
       type: string
-      description: What a policy applies to. A department policy is one allowance shared by its members and linked keys. A guardrail policy gives each key and member the guardrail covers its own allowance. end_user_default applies to each end user identified on a request.
+      description: 策略的适用对象。部门策略是由其成员和关联密钥共享的一份额度。end_user_default 适用于请求中识别出的每个最终用户。
       enum:
         - key
         - member
         - department
-        - guardrail
         - end_user_default
     RateLimitAssignment:
       type: object
@@ -24027,7 +24290,7 @@ components:
           type: string
           format: uuid
           nullable: true
-          description: Id of the key, member (user id), department, or guardrail. Null for end_user_default.
+          description: 密钥、成员（用户 ID）或部门的 ID。end_user_default 时为 null。
         created_by:
           type: string
           format: uuid
@@ -24053,7 +24316,7 @@ components:
         target_id:
           type: string
           format: uuid
-          description: Id of the key, member (user id), department, or guardrail. Omit for end_user_default.
+          description: 密钥、成员（用户 ID）或部门的 ID。end_user_default 时省略。
       additionalProperties: false
     RateLimitAssignmentUpdateInput:
       type: object

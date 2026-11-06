@@ -1,10 +1,8 @@
-"use client";
-
 import { chatLocalStorage } from "@/lib/chat/userStorage";
 import NumberFlow from "@number-flow/react";
-import dynamic from "next/dynamic";
+import dynamic from "@/lib/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import type { ReactNode } from "react";
@@ -63,6 +61,7 @@ import { RoomSdkExport } from "@/components/(chat)/RoomSdkExport";
 import { DEFAULT_LIVE_SETTINGS, LIVE_VOICE_OPTIONS, LiveSettings, LiveUsageDetails, type LiveUsageView, type LiveSettingsValue } from "./LiveSettings";
 import { createAudioBufferFromPcm16, createPcmCapture, ensureAudioRunning, type PcmChunk } from "./realtimeAudio";
 import { MONEY_LOCALE } from "@/lib/displayPreferences";
+import { normalizeParameterSpecs, parameterOptions, type ParameterSpec } from "@/lib/models/modelParameters";
 
 const RealtimePersona = dynamic(
 	() => import("@/components/ai-elements/persona").then((mod) => mod.Persona),
@@ -1259,9 +1258,6 @@ function getArrayField<T = unknown>(
 	return Array.isArray(value) ? (value as T[]) : [];
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
 
 function providerFromGatewayModel(model: GatewaySupportedModel): RealtimeProvider | null {
 	const providerId = model.providerId.trim().toLowerCase();
@@ -1332,44 +1328,27 @@ function realtimeCapabilityParams(model: GatewaySupportedModel): unknown {
 	return null;
 }
 
+/** The voice parameter from a route's stored params, in the shared standard shape. */
+function realtimeVoiceSpec(params: unknown): ParameterSpec | undefined {
+	const specs = normalizeParameterSpecs(params);
+	return specs.voice ?? specs.voices;
+}
+
 function readRealtimeVoiceOptions(params: unknown, provider: RealtimeProvider): RealtimeVoiceOption[] {
-	if (!isRecord(params)) return fallbackVoiceOptions(provider);
-	const voice = params.voice ?? params.voices;
-	const source = isRecord(voice)
-		? voice.values ?? voice.options ?? voice.enum
-		: voice;
-	if (!Array.isArray(source)) {
-		const defaultVoice = isRecord(voice) ? voice.default ?? voice.default_voice : null;
-		return typeof defaultVoice === "string" && defaultVoice.trim()
-			? [{ id: defaultVoice.trim(), label: defaultVoice.trim() }]
-			: fallbackVoiceOptions(provider);
-	}
-	const voices = source
-		.map((entry): RealtimeVoiceOption | null => {
-			if (typeof entry === "string" && entry.trim()) {
-				return { id: entry.trim(), label: entry.trim() };
-			}
-			if (!isRecord(entry)) return null;
-			const id = entry.id ?? entry.value ?? entry.voice_id ?? entry.voiceId;
-			if (typeof id !== "string" || !id.trim()) return null;
-			const label = entry.label;
-			const description = entry.description;
-			return {
-				id: id.trim(),
-				...(typeof label === "string" && label.trim() ? { label: label.trim() } : {}),
-				...(typeof description === "string" && description.trim()
-					? { description: description.trim() }
-					: {}),
-			};
+	const spec = realtimeVoiceSpec(params);
+	const voices = parameterOptions(spec)
+		.map((option): RealtimeVoiceOption | null => {
+			const id = String(option.value).trim();
+			if (!id) return null;
+			const label = typeof option.label === "string" && option.label.trim() ? option.label.trim() : id;
+			const description = typeof option.description === "string" && option.description.trim() ? option.description.trim() : undefined;
+			return { id, label, ...(description ? { description } : {}) };
 		})
 		.filter((voice): voice is RealtimeVoiceOption => Boolean(voice));
-	const seen = new Set<string>();
-	const deduped = voices.filter((voice) => {
-		if (seen.has(voice.id)) return false;
-		seen.add(voice.id);
-		return true;
-	});
-	return deduped.length > 0 ? deduped : fallbackVoiceOptions(provider);
+	if (voices.length > 0) return voices;
+	// Only a default stored: offer that voice alone.
+	const defaultVoice = typeof spec?.default === "string" ? spec.default.trim() : "";
+	return defaultVoice ? [{ id: defaultVoice, label: defaultVoice }] : fallbackVoiceOptions(provider);
 }
 
 function readRealtimeDefaultVoice(
@@ -1377,8 +1356,7 @@ function readRealtimeDefaultVoice(
 	voices: RealtimeVoiceOption[],
 	provider: RealtimeProvider,
 ): string {
-	const voice = isRecord(params) ? params.voice ?? params.voices : null;
-	const defaultVoice = isRecord(voice) ? voice.default ?? voice.default_voice : null;
+	const defaultVoice = realtimeVoiceSpec(params)?.default;
 	if (typeof defaultVoice === "string" && voices.some((option) => option.id === defaultVoice.trim())) {
 		return defaultVoice.trim();
 	}

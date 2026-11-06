@@ -1,54 +1,62 @@
 ---
 title: "الترحيل من Helicone AI Gateway"
 sidebarTitle: "Helicone"
-description: "انقل تكامل وكيل Helicone المتوافق مع OpenAI إلى Phaseo، وأزل رؤوس قابلية الرصد التي لم تعد بحاجة إليها."
+description: "انقل تكامل وكيل Helicone المتوافق مع OpenAI إلى Phaseo، واستبدل ترويسات المراقبة التي لم يعد يحتاجها."
 icon: "activity"
 ---
 
-استخدم هذا الدليل إذا كانت Helicone تقع بين تطبيقك ومزوّد الذكاء الاصطناعي. غالبًا ما يكون التغيير الأساسي في الطلب صغيرًا، لكن خطّط لنقل قابلية الرصد بعناية توازي تغيير نقطة النهاية.
+وجّه العميل إلى `https://api.phaseo.app/v1` باستخدام مفتاح Phaseo، وأزل `Helicone-Auth`، وانقل كل ترويسة `Helicone-*` لا تزال تحتاجها إلى مقابلها في Phaseo. تغيير الطلب صغير؛ لكن خطّط لتحويل المراقبة بالعناية نفسها.
 
-## ما الذي سيتغير
-
-| الإعداد | قبل | بعد |
+| الإعداد | Helicone | Phaseo |
 | --- | --- | --- |
-| عنوان URL الأساسي | عنوان URL لوكيل Helicone | `https://api.phaseo.app/v1` |
-| المصادقة | مفتاح المزوّد ومصادقة Helicone | `PHASEO_API_KEY` |
-| رؤوس Helicone | تُضاف إلى الطلبات | تُزال |
-| الاطلاع على الطلبات | لوحة معلومات Helicone | نشاط Phaseo وتفاصيل الطلبات |
+| عنوان URL الأساسي | `oai.helicone.ai/v1` أو `anthropic.helicone.ai` أو `ai-gateway.helicone.ai`، أو `gateway.helicone.ai` مع `Helicone-Target-URL` | `https://api.phaseo.app/v1` |
+| المصادقة | مفتاح المزوّد إضافة إلى `Helicone-Auth`، أو `HELICONE_API_KEY` على AI Gateway | `PHASEO_API_KEY` وحده |
+| الخصائص المخصصة | `Helicone-Property-<Name>` | تسميات `X-Phaseo-Metadata` |
+| رؤية الطلبات | لوحة تحكم Helicone | سجلات الطلبات وتفاصيل الطلبات في Phaseo |
 
-<Steps>
-<Step title="احصر سلوكيات Helicone التي تعتمد عليها">
-
-سجّل الخصائص المخصصة والجلسات ومعرّفات المستخدم والتخزين المؤقت وحدود المعدل والتنبيهات ولوحات المعلومات التي تؤثر في عمليات الإنتاج. لا تفترض أن إزالة الوكيل ستعيد إنشاء مسارات العمل هذه تلقائيًا في مكان آخر.
-
-</Step>
-
-<Step title="استبدل إعداد الوكيل">
-
-وجّه عميلك المتوافق مع OpenAI إلى Phaseo، وأزل `Helicone-Auth` والرؤوس الأخرى الخاصة بـ Helicone.
+## تبديل العميل
 
 <CodeGroup>
 ```typescript TypeScript
 import OpenAI from "openai";
 
+// قبل:
+// new OpenAI({
+//   apiKey: process.env.OPENAI_API_KEY,
+//   baseURL: "https://oai.helicone.ai/v1",
+//   defaultHeaders: {
+//     "Helicone-Auth": `Bearer ${process.env.HELICONE_API_KEY}`,
+//     "Helicone-Property-Team": "support",
+//   },
+// });
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
+  defaultHeaders: {
+    "X-Phaseo-Metadata": JSON.stringify({ labels: [{ key: "team", value: "support" }] }),
+  },
 });
 
-const response = await client.chat.completions.create({
-  model: "openai/gpt-4.1-mini",
-  messages: [{ role: "user", content: "Reply with: migration ready" }],
-});
+const response = await client.chat.completions.create(
+  {
+    model: "openai/gpt-6-astra",
+    messages: [{ role: "user", content: "Reply with: migration ready" }],
+  },
+  { headers: { "X-Phaseo-User-Id": "user_123" } },
+);
 ```
 
 ```python Python
+import json
 import os
 from openai import OpenAI
 
 client = OpenAI(
     api_key=os.environ["PHASEO_API_KEY"],
     base_url="https://api.phaseo.app/v1",
+    default_headers={
+        "X-Phaseo-Metadata": json.dumps({"labels": [{"key": "team", "value": "support"}]}),
+    },
 )
 ```
 
@@ -57,37 +65,43 @@ curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4.1-mini",
+    "model": "openai/gpt-6-astra",
     "messages": [{"role": "user", "content": "Reply with: migration ready"}]
   }'
 ```
 </CodeGroup>
 
-</Step>
+القيم الخاصة بكل طلب، مثل معرّفات المستخدمين، توضع على الطلب لا على العميل. تنتقل مسارات `anthropic.helicone.ai` إلى الإعداد الموضح في [الترحيل من Anthropic SDK](./from-anthropic).
 
-<Step title="انقل إمكانية الاطلاع على الطلبات">
+على Helicone AI Gateway، يوجد التوجيه داخل سلسلة `model`. قسّمها: يصبح الإدخال الأول المفصول بفاصلة هو `model` وتصبح البقية مصفوفة `models`؛ ويصبح التثبيت `<model>/<provider>` هو `provider.only` أو معرّفًا بصيغة `provider:org/model`؛ ويصبح الاستبعاد `!provider` هو `provider.ignore`.
 
-استخدم نشاط Phaseo ومعرّفات الطلب ومحاولات المزوّد وتفاصيل التسعير لتصحيح مشكلات التشغيل. إذا كان فريقك يصدّر بيانات القياس عن بُعد إلى مكان آخر، فأعد إعداد تكامل [قابلية الرصد](../guides/integrations/observability.mdx) المناسب قبل التحويل.
+## مطابقة ترويسات Helicone
 
-</Step>
+| Helicone | على Phaseo |
+| --- | --- |
+| `Helicone-Auth` | أزلها. |
+| `Helicone-Property-<Name>` | [تسميات](../guides/request-labels) `X-Phaseo-Metadata`: حتى 32 تسمية، وتطابق المفاتيح `[A-Za-z0-9_.:-]` (64 حرفًا)، لذا أعد تسمية الخصائص التي تحتوي على مسافات. يعيد JSON غير الصالح أو المفاتيح المكررة الخطأ `400`. لا تضع بيانات شخصية في التسميات. |
+| `Helicone-User-Id` | حقل الجسم `user` أو `X-Phaseo-User-Id`. ويُستخدم أيضًا مفتاحًا لسياسات حدود المعدّل الخاصة بالمستخدم النهائي. |
+| `Helicone-Session-Id` | حقل الجسم `session_id`. يوجّه تقارب ذاكرة التخزين المؤقت والمزوّد، لا شجرة تتبّع. |
+| `Helicone-Session-Path` و`Helicone-Session-Name` | الحقول `metadata.trace_id` و`parent_span_id` و`trace_name` و`span_name` في الجسم، أو ترويسة W3C `traceparent`. تحدد هذه شكل المقاطع المرسلة إلى وجهات المراقبة؛ أما سجلات Phaseo نفسها فلا تحتوي على شجرة تتبّع. |
+| `Helicone-Cache-Enabled` | لا توجد ذاكرة تخزين مؤقت للاستجابات. خزّن مؤقتًا في التطبيق عند الحاجة. |
+| `Helicone-Fallbacks` و`Helicone-Retry-Enabled` | مصفوفة `models`، تُجرَّب عند `429` و`500` و`502` و`503` و`504`، إضافة إلى احتياط المزوّد المدمج. أبقِ التراجع التدريجي في العميل. |
+| `Helicone-RateLimit-Policy` | سياسات حدود المعدّل وحدود المفاتيح. راجع [الحدود](../api-reference/limits). |
+| `Helicone-LLM-Security-Enabled` | كشف حقن المطالبات في ضوابط الحماية، على الطلبات فقط. |
+| `Helicone-Moderations-Enabled` | لا يوجد مقابل داخل البوابة. استدعِ `/v1/moderations` من التطبيق. |
+| `Helicone-Omit-Request` و`Helicone-Omit-Response` | سياسة التسجيل لمساحة العمل أو عدم الاحتفاظ بالبيانات. |
+| `Helicone-Posthog-*` | [وجهة المراقبة](../guides/integrations/observability) PostHog. |
+| إدارة المطالبات | [قوالب المطالبات في الإعدادات المسبقة](../guides/prompt-templates): `"prompt": {"id": "@slug", "version": "production", "variables": {...}}`. |
 
-<Step title="اختبر وأطلق التغيير">
+## نقل رؤية الطلبات
 
-تحقّق من اكتمال الطلبات من دون رؤوس Helicone، ومن قدرة فريقك على الإجابة عن أسئلة التشغيل التي يحتاج إليها أثناء الحوادث. انقل حركة المرور تدريجيًا بعد اجتياز فحوصات الاستدلال وقابلية الرصد.
+استخدم سجلات الطلبات ومعرّفات الطلبات ومحاولات المزوّدين وتفاصيل التسعير لتصحيح الأخطاء. إذا كان الفريق يصدّر بيانات القياس عن بُعد، فاربط [وجهة المراقبة](../guides/integrations/observability) المطابقة قبل التحويل حتى لا تحدث فجوة. التسجيل غير المتزامن في Helicone، الذي لا يمرر الحركة عبر وكيل، قرار منفصل عن استبدال البوابة.
 
-</Step>
-</Steps>
+## الاختبار والنشر
 
-## قائمة التحقق من الترحيل
+تحقّق من نجاح الطلبات دون ترويسات Helicone، ومن أن الفريق لا يزال قادرًا على الإجابة عن الأسئلة التي يطرحها أثناء الحوادث. قبل نقل الحركة، تأكد من أن:
 
-- أُزيل عنوان URL لوكيل Helicone ورؤوس المصادقة.
-- تم التحقق من معرّفات نماذج الإنتاج باستخدام `GET /v1/models`.
-- لا تزال بيانات الطلب الوصفية المطلوبة متاحة في Phaseo أو في حزمة القياس عن بُعد لديك.
-- وُضع بديل مقصود للتنبيهات ولوحات المعلومات عند الحاجة.
-- يظل التراجع مقتصرًا على تغيير إعداد نقطة النهاية والمفتاح.
-
-## الخطوات التالية
-
-- [قابلية الرصد](../guides/integrations/observability.mdx)
-- [حالات المزوّدين](../guides/provider-statuses.mdx)
-- [معالجة الأخطاء](../api-reference/errors.mdx)
+- كل عنوان URL من Helicone وكل ترويسة `Helicone-*` قد أُزيلت أو طوبقت؛
+- معرّفات النماذج الإنتاجية موجودة في `GET /v1/models?format=openai`؛
+- للتنبيهات ولوحات المعلومات بديل حيث يحتاجه الفريق؛
+- التراجع لا يزال مجرد تغيير لعنوان URL الأساسي والمفتاح.

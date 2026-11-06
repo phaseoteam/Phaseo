@@ -1,75 +1,78 @@
 ---
 title: "Cline"
 icon: "/icons/brands/cline.svg"
-description: "Cline के OpenAI-संगत provider के ज़रिए इसे Phaseo से जोड़ें।"
+description: "Cline के OpenAI-संगत प्रदाता के ज़रिए उसे Phaseo से जोड़ें।"
 ---
 
-अलग सत्र के लिए Phaseo CLI रनर चुनें, या CLI से समर्पित कुंजी बनाकर मौजूदा Cline इंस्टॉलेशन हाथ से सेट करें। Cline क्रेडेंशियल VS Code के सुरक्षित सीक्रेट स्टोरेज में रखता है, इसलिए अंतिम प्रविष्टि एक्सटेंशन के इंटरफ़ेस में होती है।
+Phaseo के ज़रिए Cline CLI सत्र शुरू करने के लिए `phaseo cline` चलाएँ, या `phaseo setup cline` से कुंजी बनाएँ और Cline एक्सटेंशन में **OpenAI Compatible** प्रदाता जोड़ें। एक्सटेंशन कुंजियाँ VS Code के सीक्रेट स्टोरेज में रखता है, इसलिए यह आख़िरी चरण उसी के UI में होता है।
 
-## Phaseo CLI से Cline चलाएँ
-
-Cline CLI के लिए Phaseo को एक सत्र का प्रदाता कॉन्फ़िगरेशन बनाने दें:
+## Phaseo के ज़रिए Cline CLI चलाएँ
 
 ```bash
 phaseo login
 phaseo cline --model openai/gpt-5.6-terra -- --tui
 ```
 
-सभी सक्रिय Phaseo टेक्स्ट/चैट मॉडल उपलब्ध कराने के लिए `--catalog all`, या इंस्टॉल और लॉन्च योजना देखने के लिए `--dry-run --json` इस्तेमाल करें। स्पष्ट कमांड रूप के लिए `phaseo run cline ...` इस्तेमाल करें। रनर अस्थायी Cline सेटिंग और डेटा निर्देशिका इस्तेमाल करता है, इसलिए मौजूदा Cline या VS Code सेटअप नहीं बदलता।
+रनर Cline सेटिंग्स एक अस्थायी डायरेक्टरी में लिखता है, `cline` लॉन्च करता है, और Cline बंद होने पर वह डायरेक्टरी मिटा देता है, इसलिए आपका मौजूदा Cline या VS Code सेटअप नहीं बदलता। अगर Cline इंस्टॉल नहीं है, तो इंटरैक्टिव रन उसे इंस्टॉल करने का विकल्प देता है। Cline के अपने फ़्लैग `--` के बाद लिखें।
 
-## Phaseo CLI से क्रेडेंशियल बनाएँ
+| फ़्लैग | असर |
+| --- | --- |
+| `--model <id>` | इस्तेमाल होने वाला मॉडल। डिफ़ॉल्ट `openai/gpt-5.6-terra` है। |
+| `--catalog all` | सिर्फ़ चुने गए मॉडल की जगह, Cline में हर सक्रिय Phaseo टेक्स्ट मॉडल दिखाता है। |
+| `--dry-run --json` | कुंजी बनाए या Cline शुरू किए बिना इंस्टॉल और लॉन्च की योजना दिखाता है। |
+| `--skip-install` | इंस्टॉल जाँच छोड़ देता है। |
+
+`phaseo run cline ...` इसी कमांड का लंबा रूप है।
+
+## Cline एक्सटेंशन कॉन्फ़िगर करें
+
+एक्सटेंशन के लिए कुंजी बनाएँ:
 
 ```bash
 phaseo login
-phaseo setup cline --model anthropic/claude-sonnet-4.6
+phaseo setup cline --model anthropic/claude-sonnet-5.5
 ```
 
-## Cline को हाथ से सेट करें
+फिर VS Code में:
 
-1. VS Code में Cline panel खोलें।
-2. Settings icon चुनें या chat box के नीचे provider चुनें।
-3. **OpenAI Compatible** चुनें।
-4. ये values दर्ज करें:
+1. Cline पैनल खोलें और सेटिंग्स आइकन चुनें, या चैट बॉक्स के नीचे वाला प्रदाता चुनें।
+2. **OpenAI Compatible** चुनें और ये मान दर्ज करें:
 
-| Cline field | मान |
+| Cline फ़ील्ड | मान |
 | --- | --- |
 | Base URL | `https://api.phaseo.app/v1` |
-| API Key | इस कमांड का आउटपुट `phaseo integrations credential cline` |
-| Model ID | `anthropic/claude-sonnet-4.6` या सेटअप में दिखाया गया मॉडल |
+| API Key | `phaseo integrations credential cline` का आउटपुट |
+| Model ID | `anthropic/claude-sonnet-5.5`, या सेटअप द्वारा दिखाया गया मॉडल |
 
-5. Provider सेव करें। आपके version में **Verify** दिखे तो उसे चुनें।
-6. अगले task के लिए कॉन्फ़िगर किया गया model चुनें।
+3. प्रदाता सेव करें। अगर आपके वर्ज़न में **Verify** दिखता है, तो उसे चुनें।
+4. अगले टास्क के लिए कॉन्फ़िगर किया गया मॉडल चुनें।
 
-## जाँचें
+CLI छोड़ना हो तो किसी भी Phaseo API कुंजी का इस्तेमाल करें। टीम द्वारा प्रबंधित सेटअप के लिए Cline के [OpenAI-संगत कॉन्फ़िगरेशन](https://docs.cline.bot/enterprise-solutions/configuration/remote-configuration/openai-compatible/member-configuration) दस्तावेज़ देखें।
 
-Cline से `PHASEO_CLINE_OK` जवाब देने को कहें और Phaseo activity में request दिखाई देने की पुष्टि करें।
+## जाँचें कि यह काम करता है
 
-## हटाएँ
+Cline से `PHASEO_CLINE_OK` के साथ जवाब देने को कहें, फिर पुष्टि करें कि अनुरोध **सेटिंग्स → उपयोग → लॉग्स** में दिखता है।
 
-Cline में Phaseo provider हटाएँ या बदलें, फिर यह चलाएँ:
+## Phaseo हटाएँ
+
+Cline में Phaseo प्रदाता हटाएँ या किसी दूसरे प्रदाता पर स्विच करें, फिर यह चलाएँ:
 
 ```bash
 phaseo integrations remove cline
 ```
 
-CLI VS Code के private extension storage को साफ़ नहीं कर सकती, लेकिन हटाने पर सहेजी गई key revoke हो जाती है।
+इससे कुंजी रद्द हो जाती है। CLI VS Code का एक्सटेंशन स्टोरेज साफ़ नहीं कर सकता, इसलिए हटाई गई कुंजी Cline में तब तक दिख सकती है जब तक आप उसे वहाँ से नहीं हटाते।
 
-## समस्या निवारण
+## आम समस्याएँ ठीक करें
 
-### जाँच विफल होती है
+### सत्यापन विफल होता है
 
-Base URL को `/v1` सहित ठीक वैसा ही रखें और नई प्राप्त key को quotes या whitespace के बिना paste करें।
+Base URL को `/v1` सहित ठीक वैसा ही रखें जैसा दिखाया गया है, और नई प्राप्त की गई कुंजी को बिना उद्धरण चिह्नों या स्पेस के पेस्ट करें।
 
 ### मॉडल सूची खाली है
 
-Phaseo model ID स्वयं दर्ज करें। Model discovery ज़रूरी नहीं है।
+Phaseo मॉडल ID ख़ुद टाइप करें। Cline को मॉडल डिस्कवरी की ज़रूरत नहीं है।
 
-### चैट चलता है, लेकिन टूल विफल होते हैं
+### चैट काम करती है, लेकिन टूल विफल होते हैं
 
-Tool calling सपोर्ट वाला Phaseo model चुनें। Connectivity और model tool support अलग-अलग जाँच हैं।
-
-## संबंधित विषय
-
-- [OpenAI-संगत Cline configuration](https://docs.cline.bot/enterprise-solutions/configuration/remote-configuration/openai-compatible/member-configuration)
-- [कोडिंग एजेंट](./coding-assistants.mdx)
-- [मॉडल](../../api-reference/endpoint/models.mdx)
+टूल-कॉलिंग सपोर्ट वाला Phaseo मॉडल चुनें। कनेक्शन काम करने का मतलब यह नहीं कि मॉडल टूल सपोर्ट करता है।

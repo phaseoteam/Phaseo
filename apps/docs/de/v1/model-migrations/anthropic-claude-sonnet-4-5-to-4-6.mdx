@@ -4,66 +4,42 @@ description: "Wichtige Hinweise zur Einführung von Claude Sonnet 4.6 für Progr
 icon: "/icons/brands/anthropic.svg"
 ---
 
-# Anthropic Claude Sonnet 4.6
+Ändere das Modell in `anthropic/claude-sonnet-4.6`, entferne Assistant-Prefills und verschiebe strukturierte Ausgaben nach `output_config.format`. Sonnet 4.6 teilt diese Anfrageänderungen mit [Claude Opus 4.6](./anthropic-claude-opus-4-5-to-4-6); bei Programmierung, Computernutzung und Agentenplanung verhält es sich außerdem so anders, dass Annahmen zu Prompts und Routing neu getestet werden müssen.
 
-Mit diesem Leitfaden führst du `anthropic/claude-sonnet-4.6` sicher in der Produktion ein.
+| | Claude Sonnet 4.5 | Claude Sonnet 4.6 |
+| --- | --- | --- |
+| Phaseo-Modell-ID | `anthropic/claude-sonnet-4.5` | `anthropic/claude-sonnet-4.6` |
+| Status | Veraltet; wird am 30. November 2026 eingestellt | Verfügbar |
+| Kontextfenster | 200K Tokens | 1M Tokens |
+| Maximale Ausgabe | 64K Tokens | 64K Tokens |
+| Assistant-Prefill | Unterstützt | Gibt `400` zurück |
+| Strukturierte Ausgabe | `output_format` | `output_config.format` |
+| Thinking | `budget_tokens` | Adaptiv, gesteuert über `output_config.effort` |
 
-Sonnet 4.6 folgt denselben Migrationsgrundsätzen wie die übrigen Claude-4.6-Modelle. Das Leistungsprofil ändert sich jedoch so deutlich, dass du deine Annahmen zu Prompts und Routing erneut prüfen solltest.
+## Anfrage anpassen
 
-## Neuerungen
+**1. Verzichte auf Assistant-Prefills.** Wenn deine Sonnet-4.5-Prompts den Assistant-Zug mit einem JSON-Präfix, einem XML-Tag oder einem Formatierungsansatz beginnen, entferne ihn vor der Umstellung; Sonnet 4.6 gibt `400` zurück.
 
-- Claude-4.6-Modelle unterstützen keine Assistant-Prefills mehr und liefern `400` zurück.
-- Strukturierte Ausgaben verwenden jetzt `output_config.format` statt `output_format`.
-- Adaptives Denken wird über `output_config.effort` konfiguriert.
-- Veraltete Beta-Header sollten entfernt werden.
-- Sonnet 4.6 verbessert Programmierung, Computernutzung, Reasoning mit langem Kontext, Agentenplanung und Befolgung von Anweisungen umfassend.
-- Sonnet 4.6 bietet in der Beta ein Kontextfenster von einer Million Tokens.
+**2. Verschiebe strukturierte Ausgaben** unter `/v1/messages` von `output_format` nach `output_config.format` und führe deine Schema- und Parser-Tests erneut aus. Unter `/v1/chat/completions` und `/v1/responses` verwendest du weiterhin `response_format`.
 
-## Schnelleinstieg für die Migration
+**3. Stimme den Effort neu auf die Latenz ab.** Sonnet 4.6 denkt nur auf Anfrage. Bei Phaseo schaltet `reasoning.effort` oder `reasoning.enabled: true` adaptives Thinking ein und setzt `output_config.effort`; jede Stufe außer `xhigh` wird akzeptiert, und `xhigh` wird als `max` gesendet. Miss die Stufen gegen dein Latenzbudget, bevor du 4.6 zum Standard für interaktive Routen machst.
 
-### 1. Keine Assistant-Prefills mehr verwenden
-
-Wenn deine bisherigen Sonnet-4.5-Prompts den Assistant-Turn mit einem JSON-Präfix, XML-Tag oder Formatierungsmuster beginnen, entferne dieses Muster vor dem Rollout.
-
-### 2. Konfiguration strukturierter Ausgaben verschieben
-
-Ersetze `output_format` durch `output_config.format` und führe Schema- und Parser-Tests erneut aus.
-
-### 3. Aufwand und Latenzerwartungen neu abstimmen
-
-Vergleiche bei interaktiven Routen verschiedene `effort`-Stufen, bevor du 4.6 als Standard festlegst. Das Modell ist leistungsfähiger, die passende Einstellung hängt jedoch von deinem Latenzbudget ab.
+**4. Entferne veraltete Beta-Header.** Phaseo leitet `anthropic-beta`-Header nicht weiter.
 
 ## Was du testen solltest
 
-### Ausgabeverhalten
+- **Ausgabeverhalten:** formatierungsempfindliche Prompts, mehrstufige Agentenplanung, Programmier-, Refactoring- und Review-Prompts sowie Abruf und Zusammenfassung mit langem Kontext.
+- **Vertragsstabilität:** JSON- und Schema-Erfolgsquote, Vollständigkeit der Tool-Argumente, Finish-Reasons und leere Ausgaben sowie Routen, die sich auf Prefills verlassen haben.
+- **Produktionsmetriken:** Latenz pro Effort-Stufe, Aufgabenerfolg gegenüber Sonnet 4.5, Timeout- und Wiederholungsraten sowie Kosten pro erfolgreicher Aufgabe.
 
-- Befolgung von Formatvorgaben in empfindlichen Prompts.
-- Qualität der Agentenplanung bei mehrstufigen Aufgaben.
-- Prompts für Programmierung, Refactoring und Reviews.
-- Abruf und Zusammenfassung bei langem Kontext.
+## Umstellen
 
-### Vertragsstabilität
-
-- Erfolgsrate der JSON- und Schema-Validierung.
-- Vollständigkeit der Tool-Argumente.
-- Beendigungsgründe und Behandlung leerer Ausgaben.
-- Routen, die für ein stabiles Format bisher Prefills verwendeten.
-
-### Produktionsmetriken
-
-- Latenz nach Aufwandsstufe.
-- Aufgabenerfolg im Vergleich zu Sonnet 4.5.
-- Zeitüberschreitungs- und Wiederholungsraten.
-- Kosten pro erfolgreich abgeschlossener Aufgabe.
-
-## Sicherer Rollout
-
-1. Entferne Prefills und aktualisiere zuerst die Konfiguration strukturierter Ausgaben.
-2. Bewerte Sonnet 4.6 anhand deiner aktuellen Produktions-Prompts.
-3. Teste Traffic schrittweise mit Sonnet 4.5 oder einer anderen stabilen Route als Fallback.
-4. Erhöhe den Traffic nur, wenn Qualität und Vertragsstabilität gewährleistet sind.
+1. Entferne zuerst Prefills und aktualisiere strukturierte Ausgaben.
+2. Evaluiere Sonnet 4.6 mit deinen aktuellen Produktions-Prompts.
+3. Führe einen Canary-Test mit Sonnet 4.5 oder einem anderen stabilen Modell als Fallback in `models` durch und schließe ihn ab, bevor Sonnet 4.5 eingestellt wird.
+4. Erhöhe den Traffic, sobald Qualität und Vertragsstabilität gegeben sind.
 
 ## Quellen
 
 - [Anthropic-Migrationsleitfaden](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
-- [Sonnet 4.6 vorgestellt](https://www.anthropic.com/news/claude-sonnet-4-6)
+- [Claude Sonnet 4.6 vorgestellt](https://www.anthropic.com/news/claude-sonnet-4-6)

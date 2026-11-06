@@ -1,4 +1,4 @@
-import type { ModelPerformance, ProviderTrendPoint, SuccessPoint } from "@/lib/api/models";
+import type { ModelPerformance, ProviderTrendPoint } from "@/lib/api/models";
 
 export type RangeDays = 1 | 3 | 7;
 export const RANGE_DAYS: RangeDays[] = [1, 3, 7];
@@ -104,44 +104,4 @@ export function performanceView(metrics: ModelPerformance, days: RangeDays) {
   const providerCount = new Set(data.filter((point) => point.requests > 0).map((point) => point.provider)).size;
   const percentileSeries = singleProviderPercentileSeries(providerCount, percentiles);
   return { data: cardData(percentileSeries, data), resolution: percentileSeries ? ("day" as const) : resolution, providerCount, usesPercentiles: Boolean(percentileSeries) };
-}
-
-// Model uptime (ModelSuccessChart)
-
-const toHour = (value: string | Date) => {
-  const date = new Date(value);
-  date.setUTCMinutes(0, 0, 0);
-  return date.toISOString();
-};
-
-const displayedUptime = (value: number | null | undefined, requests: number) => (value != null && Number.isFinite(value) ? value : requests === 0 ? 100 : null);
-
-/** The last 24 UTC hours. Hours without requests count as 100%, as on the website. */
-export function uptimeHours(series: SuccessPoint[], now = new Date()) {
-  const byHour = new Map(series.map((point) => [toHour(point.bucket), point]));
-  const current = new Date(toHour(now));
-  return Array.from({ length: 24 }, (_, index) => {
-    const hour = new Date(current);
-    hour.setUTCHours(current.getUTCHours() - (23 - index));
-    const bucket = hour.toISOString();
-    const point = byHour.get(bucket);
-    const requests = point?.requests ?? 0;
-    return {
-      bucket,
-      overall: displayedUptime(point?.overallSuccessPct, requests),
-      worst: point ? displayedUptime(point.worstProviderSuccessPct, requests) : null,
-      requests,
-      worstRequests: point?.worstProviderRequests ?? 0,
-    };
-  });
-}
-
-export function averageUptime(values: (number | null | undefined)[]) {
-  const valid = values.filter((value): value is number => value != null && Number.isFinite(value));
-  return valid.length ? valid.reduce((sum, value) => sum + value, 0) / valid.length : null;
-}
-
-/** "Without Phaseo routing" shows when some hour had more than one provider to compare. */
-export function showsLeastStableProvider(series: SuccessPoint[]) {
-  return series.some((point) => point.providerCount > 1 && point.worstProviderSuccessPct != null);
 }

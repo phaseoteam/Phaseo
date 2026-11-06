@@ -1,3 +1,4 @@
+import { describe, test, expect } from "vitest";
 import { groupProviders, variantRegionCode } from "./providerGroups";
 
 describe("groupProviders", () => {

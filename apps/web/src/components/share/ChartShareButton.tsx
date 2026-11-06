@@ -1,8 +1,6 @@
-"use client";
-
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { Check, ChevronDown, Copy, Download, Link2, Moon, Share2, Sun } from "lucide-react";
 import ChartSeriesPicker, { type ChartShareSeries } from "@/components/share/ChartSeriesPicker";
 import { toast } from "sonner";
@@ -514,7 +512,6 @@ export default function ChartShareButton({ renderForShare, series, targetRef, ta
 
 				<div className="relative aspect-video overflow-hidden rounded-md border bg-muted/30">
 					{rendered ? (
-						// eslint-disable-next-line @next/next/no-img-element -- local blob preview
 						<img src={rendered.url} alt={t("imageAlt", { chart: title })} className="block size-full object-contain" />
 					) : null}
 					{!rendered && !failed ? (

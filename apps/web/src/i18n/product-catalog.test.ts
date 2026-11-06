@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import englishProductMessages from "../../messages/en-GB/product.json";
 import germanProductMessages from "../../messages/de-DE/product.json";
 import { flattenCatalog } from "./validation";

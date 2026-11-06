@@ -1,7 +1,5 @@
-"use client";
-
 import { Link, useRouter } from "@/i18n/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { getLocalizedDocsHref } from "@/lib/docs";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
@@ -16,7 +14,7 @@ import {
 	createWebhookEndpointAction,
 	sendWebhookEndpointTestAction,
 	updateWebhookEndpointAction,
-} from "@/app/(dashboard)/settings/webhooks/actions";
+} from "@/features/settings/webhooks/actions";
 import type { WebhookEndpoint } from "./WebhooksSettingsClient";
 import {
 	DEFAULT_WEBHOOK_EVENTS,
@@ -70,16 +68,16 @@ export default function WebhookEndpointForm({
 		startTransition(async () => {
 			try {
 				if (mode === "create") {
-					const result = await write(createWebhookEndpointAction({ name, url, events: selectedEvents }));
+					const result = await write(createWebhookEndpointAction({ data: { name, url, events: selectedEvents } }));
 					setRevealedSecret({ id: result.id, secret: result.signingSecret });
 					toast.success(t("webhookFormCopy.webhookEndpointCreated"));
 				} else if (initialEndpoint) {
 					const eventUpdate = getWebhookEventsForUpdate(mode, selectedEvents, eventsChanged);
-					await write(updateWebhookEndpointAction(initialEndpoint.id, {
+					await write(updateWebhookEndpointAction({ data: { id: initialEndpoint.id, args: {
 						name,
 						url,
 						...(eventUpdate ? { events: eventUpdate } : {}),
-					}));
+					} } }));
 					toast.success(t("webhookFormCopy.webhookEndpointUpdated"));
 					router.push("/settings/webhooks");
 				}
@@ -93,7 +91,7 @@ export default function WebhookEndpointForm({
 		if (!initialEndpoint) return;
 		setIsTesting(true);
 		try {
-			const result = await write(sendWebhookEndpointTestAction(initialEndpoint.id));
+			const result = await write(sendWebhookEndpointTestAction({ data: initialEndpoint.id }));
 			toast.success(result.status_code ? t("webhookFormCopy.testDeliveredStatus", {status: result.status_code}) : t("webhookFormCopy.testDelivered"));
 		} catch (error) {
 			toast.error(localizedSettingsError(error, t, "Test delivery failed", t("webhookFormCopy.testFailed")));

@@ -1,5 +1,3 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
@@ -81,9 +79,9 @@ import {
 	deleteApiKeyAction,
 	lookupApiKeyAction,
 	updateApiKeyAction,
-} from "@/app/(dashboard)/settings/keys/actions";
+} from "@/features/settings/keys/actions";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 import { ForecastMeter } from "@/components/(gateway)/usage/ForecastMeter";
@@ -771,7 +769,7 @@ export default function KeysPanel({ teamsWithKeys, observedAt }: any) {
 		let current = true;
 		const timeout = window.setTimeout(() => {
 			setRawLookupPending(true);
-			lookupApiKeyAction(workspaceId, normalizedSearch)
+			lookupApiKeyAction({ data: { workspaceId, key: normalizedSearch } })
 				.then((result) => { if (current) setMatchedKeyId(result.keyId); })
 				.catch(() => { if (current) setMatchedKeyId(null); })
 				.finally(() => { if (current) setRawLookupPending(false); });
@@ -849,7 +847,7 @@ export default function KeysPanel({ teamsWithKeys, observedAt }: any) {
 		try {
 			const operation = write(settleWrites(
 				selectedKeys.map((key: any) =>
-					updateApiKeyAction(String(key.id), { paused })
+					updateApiKeyAction({ data: { id: String(key.id), updates: { paused } } })
 				)
 			));
 			toast.promise(operation,
@@ -875,7 +873,7 @@ export default function KeysPanel({ teamsWithKeys, observedAt }: any) {
 		try {
 			const operation = write(settleWrites(
 				selectedKeys.map((key: any) =>
-					deleteApiKeyAction(String(key.id), String(key.name ?? ""))
+					deleteApiKeyAction({ data: { id: String(key.id), confirmName: String(key.name ?? "") } })
 				)
 			));
 			toast.promise(operation,

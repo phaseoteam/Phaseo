@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { DEFAULT_SEARCH_CAPABILITIES, getGlobalNavigationItems, GLOBAL_NAVIGATION_ITEMS, isSearchDestinationEnabled } from "@/components/header/Search/Search.navigation";
 import { getSettingsSidebar } from "@/components/(gateway)/settings/Sidebar.config";
 import { GLOBAL_ACTION_ITEMS } from "@/components/header/Search/Search.commands";
@@ -36,19 +37,19 @@ describe("global search navigation", () => {
 	});
 	it("covers public static pages in the dashboard", () => {
 		const hrefs = new Set(GLOBAL_NAVIGATION_ITEMS.map((item) => item.href));
-		for (const directory of ["src/app/(dashboard)", "src/app/[locale]/(dashboard)"]) {
-			const root = path.join(process.cwd(), directory);
-			const pages = fs.readdirSync(root, { recursive: true, encoding: "utf8" });
-			for (const file of pages) {
-				const normalized = file.replaceAll("\\", "/");
-				if ((normalized !== "page.tsx" && !normalized.endsWith("/page.tsx")) || normalized.includes("[") || normalized.startsWith("internal/") || normalized.startsWith("settings/internal/")) continue;
-				const source = fs.readFileSync(path.join(root, file), "utf8");
-				if (/\b(?:redirect|permanentRedirect)\(/.test(source)) continue;
-				// Route groups such as `(list)` are not part of the URL.
-				const route = normalized === "page.tsx" ? "" : normalized.slice(0, -"/page.tsx".length).split("/").filter((segment) => !/^\(.+\)$/.test(segment)).join("/");
-				const href = `/${route}`;
-				expect(hrefs).toContain(href);
-			}
+		const root = path.join(process.cwd(), "src/routes/{-$locale}/_dashboard");
+		const routes = fs.readdirSync(root, { recursive: true, encoding: "utf8" });
+		for (const file of routes) {
+			const normalized = file.replaceAll("\\", "/");
+			if ((normalized !== "index.tsx" && !normalized.endsWith("/index.tsx")) || normalized.includes("$") || normalized.startsWith("internal/") || normalized.startsWith("settings/internal/")) continue;
+			const source = fs.readFileSync(path.join(root, file), "utf8");
+			if (/\b(?:redirect|permanentRedirect|redirectBeforeLoad)\(/.test(source)) continue;
+			// These redirect from helpers their route calls (onboarding.functions.ts, link.functions.ts).
+			if (normalized === "onboarding/index.tsx" || normalized === "slack/link/index.tsx") continue;
+			// Pathless segments such as `_list` are not part of the URL.
+			const route = normalized === "index.tsx" ? "" : normalized.slice(0, -"/index.tsx".length).split("/").filter((segment) => !segment.startsWith("_")).join("/");
+			const href = `/${route}`;
+			expect(hrefs).toContain(href);
 		}
 	});
 	it("has translated labels for every navigation destination", () => {

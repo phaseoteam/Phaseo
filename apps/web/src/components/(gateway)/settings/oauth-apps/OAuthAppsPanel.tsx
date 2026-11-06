@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import OAuthAppCard from "./OAuthAppCard";
 import {
@@ -10,7 +8,7 @@ import {
 	EmptyTitle,
 } from "@/components/ui/empty";
 import { AppWindow } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 interface OAuthAppsPanelProps {
 	oauthApps: any[];

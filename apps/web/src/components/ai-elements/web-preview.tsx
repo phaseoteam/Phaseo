@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@/components/ui/button";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
@@ -15,7 +13,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { ChevronDownIcon } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 import { createContext, useContext, useEffect, useState } from "react";

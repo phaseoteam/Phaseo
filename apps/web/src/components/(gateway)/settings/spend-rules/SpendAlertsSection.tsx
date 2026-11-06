@@ -1,9 +1,7 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { parseAsString, useQueryStates } from "nuqs";
 import { BellRing, History, MoreHorizontal, Pencil, Plus, Send, Trash2 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
 import {
 	AlertDialog,
@@ -21,7 +19,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Switch } from "@/components/ui/switch";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import type { NotificationDestination, SettingsSpendAlertsData } from "@/lib/fetchers/internal/settingsTypes";
-import { deleteSpendRule, testSpendRule, updateSpendRule } from "@/app/(dashboard)/settings/notifications/spend-rules-actions";
+import { deleteSpendRule, testSpendRule, updateSpendRule } from "@/features/settings/notifications/spend-rules-actions";
 import { SettingsResourceQuery, useSettingsWrite } from "../PrivateSettingsQuery";
 import { SpendRuleEditorSheet, useSpendActionError, type SpendRuleEditorTarget } from "./SpendRuleEditorSheet";
 import { SpendBlocksList } from "./SpendBlocksList";
@@ -207,7 +205,7 @@ function SpendRuleRow({ rule, data, activeBlock, onEdit, onHistory, onDelete }: 
 	async function toggle(next: boolean) {
 		setEnabled(next);
 		setBusy(true);
-		const result = await write(updateSpendRule(rule.id, { enabled: next }));
+		const result = await write(updateSpendRule({ data: { id: rule.id, payload: { enabled: next } } }));
 		setBusy(false);
 		if (result.ok === false) {
 			setEnabled(!next);
@@ -219,7 +217,7 @@ function SpendRuleRow({ rule, data, activeBlock, onEdit, onHistory, onDelete }: 
 
 	async function sendTest() {
 		setBusy(true);
-		const result = await testSpendRule(rule.id);
+		const result = await testSpendRule({ data: rule.id });
 		setBusy(false);
 		if (result.ok === false) {
 			toast.error(actionError(result, data.maxRules));
@@ -306,7 +304,7 @@ function DeleteSpendRuleDialog({ rule, maxRules, onClose }: { rule: SpendRule | 
 	async function confirm() {
 		if (!rule) return;
 		setDeleting(true);
-		const result = await write(deleteSpendRule(rule.id));
+		const result = await write(deleteSpendRule({ data: rule.id }));
 		setDeleting(false);
 		if (result.ok === false) {
 			toast.error(actionError(result, maxRules));

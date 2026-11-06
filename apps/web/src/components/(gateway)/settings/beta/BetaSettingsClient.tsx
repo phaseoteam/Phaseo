@@ -1,13 +1,11 @@
-"use client";
-
 import * as React from "react";
-import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useRouter } from "@/lib/navigation";
+import { useTranslations } from "@/i18n/react";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { toast } from "sonner";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
-import { updateBetaPreferences } from "@/app/(dashboard)/settings/beta/actions";
+import { updateBetaPreferences } from "@/features/settings/beta/actions";
 import {
 	dispatchStoredBetaProfileChanged,
 	writeStoredBetaProfile,
@@ -42,9 +40,9 @@ export default function BetaSettingsClient({
 
 	const persistFeatures = React.useCallback(
 		async (nextBetaFeatures: Record<string, boolean>) => {
-			const savePromise = write(updateBetaPreferences({
+			const savePromise = write(updateBetaPreferences({ data: {
 				beta_features: nextBetaFeatures,
-			}));
+			} }));
 
 			toast.promise(savePromise, {
 				loading: t("settingsPageCopy.betaSaving"),

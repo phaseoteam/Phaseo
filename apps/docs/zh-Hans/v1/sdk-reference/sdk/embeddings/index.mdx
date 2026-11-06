@@ -1,10 +1,11 @@
 ---
 icon: "binary"
-title: "嵌入（AI SDK）"
-description: "使用 Vercel AI SDK 和 Phaseo 供应商模型创建嵌入。"
+title: "嵌入 (AI SDK)"
+sidebarTitle: "嵌入"
+description: "在 Vercel AI SDK 中使用 Phaseo 提供商模型创建嵌入。"
 ---
 
-将 `phaseo.textEmbeddingModel(...)`（或 `embeddingModel`）与 `embed` 和 `embedMany` 配合使用。
+把 `phaseo.embeddingModel(modelId)`（或其别名 `textEmbeddingModel`）传给 `embed` 处理单个值，或传给 `embedMany` 处理列表。请求会发送到 Gateway 的 `/v1/embeddings` 端点。
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
@@ -25,8 +26,8 @@ const batch = await embedMany({
 console.log(batch.embeddings.length);
 ```
 
-## 说明
+## 保持向量可比较
 
-- 查询和语料嵌入应使用相同的模型版本。
-- 在计算相似度分数前，统一对向量进行归一化。
-- 对重复内容的稳定嵌入进行缓存。
+- 用同一个模型版本嵌入查询和语料库。
+- 在计算相似度之前，以一致的方式归一化向量。
+- 对重复内容缓存稳定的嵌入。

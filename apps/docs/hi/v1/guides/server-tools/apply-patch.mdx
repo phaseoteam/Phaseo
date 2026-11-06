@@ -1,23 +1,17 @@
 ---
-title: "पैच लागू करें"
-description: "Responses API में मॉडल को सत्यापित पैच ऑपरेशन लौटाने दें।"
+title: "Apply Patch"
+description: "Responses मॉडल को मान्य किए गए पैच ऑपरेशन लौटाने दें।"
 icon: "file-pen-line"
 ---
 
-जब किसी Responses वर्कफ़्लो को फ़ाइलों में किए गए बदलाव संरचित पैच ऑपरेशन के रूप में लौटाने हों, तब `phaseo:apply_patch` इस्तेमाल करें। Phaseo ऑपरेशन को सत्यापित करके आपके क्लाइंट को लौटाता है; यह आपके फ़ाइल सिस्टम या रिपॉज़िटरी में कोई बदलाव नहीं करता।
-
-<Note>
-`phaseo:apply_patch` `/v1/responses` पर उपलब्ध है।
-</Note>
-
-## अनुरोध
+फ़ाइल बदलाव संरचित पैच ऑपरेशन के रूप में वापस पाने के लिए `/v1/responses` पर `phaseo:apply_patch` जोड़ें। Phaseo हर ऑपरेशन का आकार जाँचता है और उसे लौटाता है; यह कभी आपकी फ़ाइलों को नहीं छूता। आपका ऐप तय करता है कि पैच लागू करना है, उपयोगकर्ता को दिखाना है, अस्वीकार करना है या संशोधन माँगना है।
 
 ```bash
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "input": "Create a small README patch for this project.",
     "tools": [
       { "type": "phaseo:apply_patch" }
@@ -25,9 +19,15 @@ curl https://api.phaseo.app/v1/responses \
   }'
 ```
 
-## ऑपरेशन की संरचना
+`/v1/chat/completions` या `/v1/messages` पर अनुरोध अस्वीकार कर दिया जाता है।
 
-जब मॉडल टूल को कॉल करता है, तो वह एक ऑपरेशन ऑब्जेक्ट भेजता है:
+## पैरामीटर
+
+कोई नहीं। `{ "type": "phaseo:apply_patch" }` को जैसा है वैसा जोड़ें।
+
+## मॉडल क्या भेजता है
+
+एक `operation` ऑब्जेक्ट:
 
 ```json
 {
@@ -39,17 +39,15 @@ curl https://api.phaseo.app/v1/responses \
 }
 ```
 
-समर्थित ऑपरेशन प्रकार:
+| `type` | ज़रूरी फ़ील्ड | Diff नियम |
+| --- | --- | --- |
+| `create_file` | `path`, `diff` | हर गैर-ख़ाली लाइन `+` से शुरू होती है |
+| `update_file` | `path`, `diff` | हर गैर-ख़ाली लाइन `@@`, एक स्पेस, `+` या `-` से शुरू होती है |
+| `delete_file` | `path` | कोई नहीं |
 
-| प्रकार | आवश्यक फ़ील्ड |
-| --- | --- |
-| `create_file` | `path`, `diff` |
-| `update_file` | `path`, `diff` |
-| `delete_file` | `path` |
+`path` में null बाइट नहीं हो सकते।
 
-## टूल का परिणाम
-
-Phaseo सत्यापित ऑपरेशन को मॉडल लूप में लौटाता है:
+## टूल क्या लौटाता है
 
 ```json
 {
@@ -63,25 +61,8 @@ Phaseo सत्यापित ऑपरेशन को मॉडल लूप
 }
 ```
 
-पैच लागू करना, उसे उपयोगकर्ता को दिखाना, अस्वीकार करना या मॉडल से संशोधित ऑपरेशन माँगना आपके ऐप्लिकेशन की ही ज़िम्मेदारी है।
+ऊपर दिए गए नियम तोड़ने वाला ऑपरेशन कारण के साथ `apply_patch_invalid_operation` लौटाता है, ताकि मॉडल फिर से कोशिश कर सके।
 
-## उपयोग और मूल्य निर्धारण
+## उपयोग और कीमत
 
-Phaseo यह दर्ज करता है:
-
-```json
-{
-  "usage": {
-    "server_tool_use": {
-      "apply_patch_requests": 1
-    }
-  }
-}
-```
-
-मूल्य निर्धारण कार्ड इसका बिल `server_tool_apply_patch_requests` मीटर से बना सकते हैं।
-
-## संबंधित
-
-- [सर्वर टूल](./index.mdx)
-- [Responses API](../../api-reference/endpoint/responses.mdx)
+हर कॉल `usage.server_tool_use.apply_patch_requests` में 1 जोड़ती है और उसका बिल `server_tool_apply_patch_requests` के साथ बन सकता है।

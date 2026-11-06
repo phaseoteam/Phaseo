@@ -1,8 +1,6 @@
-"use client";
-
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import type { StatsigClient } from "@statsig/js-client";
-import { useReportWebVitals } from "next/web-vitals";
+import { useReportWebVitals } from "@/lib/analytics/webVitals";
 import { isAnalyticsCaptureAllowed } from "@/lib/clientErrorReporting";
 import { ANALYTICS_CONSENT_EVENT, readAnalyticsConsent } from "@/lib/cookieConsent";
 import { captureProductEvent } from "@/lib/productAnalytics";
@@ -51,7 +49,7 @@ export function useModelsLayoutExperiment(enabled: boolean) {
 		window.addEventListener(ANALYTICS_CONSENT_EVENT, syncConsent);
 		window.addEventListener("storage", syncConsent);
 		void (async () => {
-			const key = process.env.NEXT_PUBLIC_STATSIG_CLIENT_KEY;
+			const key = process.env.PUBLIC_STATSIG_CLIENT_KEY;
 			if (!key) { settle({ variant: "cards" }); return; }
 			const { StatsigClient } = await import("@statsig/js-client");
 			if (!active || settled) return;
@@ -107,9 +105,8 @@ export function useModelsLayoutExperiment(enabled: boolean) {
 		));
 	}, [assignment, enabled]);
 
-	// Keep one subscription: Next's hook does not unsubscribe when its callback changes.
 	useReportWebVitals(useCallback((metric) => {
-		if (!vitalsActive.current || !["LCP", "INP", "CLS"].includes(metric.name)) return;
+		if (!vitalsActive.current) return;
 		const properties = { metric: metric.name, value: metric.value, rating: metric.rating };
 		if (vitalSink.current) vitalSink.current(properties);
 		else pendingVitals.current.push(properties);

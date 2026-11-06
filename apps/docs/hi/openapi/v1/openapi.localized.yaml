@@ -89,6 +89,15 @@ paths:
             enum:
               - asc
               - desc
+        - name: include
+          in: query
+          description: हर ऑफ़र के अनुरोध पैरामीटर मानक रूप में जोड़ने के लिए parameter_specs सेट करें।
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - parameter_specs
         - name: endpoints
           in: query
           description: एंडपॉइंट के अनुसार फ़िल्टर करें
@@ -2789,7 +2798,7 @@ paths:
       tags:
         - Gateway
       operationId: getCredits
-      summary: क्रेडिट देखें
+      summary: क्रेडिट प्राप्त करें
       description: प्रमाणित वर्कस्पेस के शेष क्रेडिट और उपयोग आँकड़े लौटाता है। Management API key आवश्यक है।
       parameters:
         - name: workspace_id
@@ -5110,7 +5119,7 @@ paths:
             minimum: 1
             maximum: 250
       summary: List rate limit policies
-      description: Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: वर्कस्पेस की नामित रेट लिमिट नीतियों की सूची देता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।
       responses:
         '200':
           description: Rate limit policies
@@ -5130,7 +5139,7 @@ paths:
         - Gateway
       operationId: createRateLimitPolicy
       summary: Create a rate limit policy
-      description: Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: प्रति मिनट अनुरोध, प्रति मिनट टोकन या समवर्ती अनुरोध सीमाओं के साथ एक नामित नीति बनाता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।
       requestBody:
         required: true
         content:
@@ -5165,7 +5174,7 @@ paths:
         - Gateway
       operationId: getRateLimitPolicy
       summary: Get a rate limit policy
-      description: Returns one rate limit policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: एक रेट लिमिट नीति लौटाता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।
       responses:
         '200':
           description: Rate limit policy
@@ -5185,7 +5194,7 @@ paths:
         - Gateway
       operationId: updateRateLimitPolicy
       summary: Update a rate limit policy
-      description: Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: नीति का नाम, विवरण, सीमाएँ या फ़ेल-क्लोज़्ड सेटिंग बदलता है। किसी सीमा को हटाने के लिए उसे null पर सेट करें; कम से कम एक सीमा बनी रहनी चाहिए। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।
       requestBody:
         required: true
         content:
@@ -5211,7 +5220,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitPolicy
       summary: Delete a rate limit policy
-      description: Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: एक नीति और उसका उपयोग करने वाले हर असाइनमेंट को हटाता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।
       responses:
         '200':
           description: Rate limit policy deleted
@@ -5232,7 +5241,7 @@ paths:
         - Gateway
       operationId: listRateLimitAssignments
       summary: List rate limit assignments
-      description: Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: बताता है कि रेट लिमिट नीतियाँ कहाँ लागू होती हैं, वैकल्पिक रूप से नीति या लक्ष्य प्रकार के अनुसार फ़िल्टर करके। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।
       parameters:
         - name: policy_id
           in: query
@@ -5283,7 +5292,7 @@ paths:
         - Gateway
       operationId: createRateLimitAssignment
       summary: Assign a rate limit policy
-      description: Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: किसी एक API कुंजी, वर्कस्पेस सदस्य या विभाग पर नीति लागू करता है, या हर अंतिम उपयोगकर्ता के लिए वर्कस्पेस का डिफ़ॉल्ट सेट करता है। हर लक्ष्य पर एक नीति हो सकती है। गेटवे हर असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।
       requestBody:
         required: true
         content:
@@ -5318,7 +5327,7 @@ paths:
         - Gateway
       operationId: getRateLimitAssignment
       summary: Get a rate limit assignment
-      description: Returns one rate limit assignment. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: एक रेट लिमिट असाइनमेंट लौटाता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।
       responses:
         '200':
           description: Rate limit assignment
@@ -5338,7 +5347,7 @@ paths:
         - Gateway
       operationId: updateRateLimitAssignment
       summary: Change an assignment's policy
-      description: Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: किसी असाइनमेंट के लक्ष्य पर लागू नीति बदलता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।
       requestBody:
         required: true
         content:
@@ -5364,7 +5373,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitAssignment
       summary: Delete a rate limit assignment
-      description: Removes a policy from its target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: किसी नीति को उसके लक्ष्य से हटाता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।
       responses:
         '200':
           description: Rate limit assignment deleted
@@ -11372,6 +11381,8 @@ components:
             type: string
         parameter_details:
           $ref: '#/components/schemas/SupportedParameterDetails'
+        parameter_specs:
+          $ref: '#/components/schemas/ParameterSpecs'
     GatewayPricingMeter:
       type: object
       nullable: true
@@ -11674,6 +11685,197 @@ components:
           $ref: '#/components/schemas/SupportedParameterDetails'
         supported_parameters_detail:
           $ref: '#/components/schemas/SupportedParameterDetails'
+    ParameterValue:
+      oneOf:
+        - type: string
+        - type: number
+        - type: boolean
+    ParameterOption:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          $ref: '#/components/schemas/ParameterValue'
+        label:
+          type: string
+        description:
+          type: string
+      additionalProperties: true
+    ParameterRule:
+      type: object
+      description: जब if में हर पैरामीटर का मान उसके सूचीबद्ध मानों में से एक होता है, तो बाकी फ़ील्ड पैरामीटर के अपने फ़ील्ड की जगह लेते हैं।
+      required:
+        - if
+      properties:
+        if:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: '#/components/schemas/ParameterValue'
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        min:
+          type: number
+        max:
+          type: number
+        step:
+          type: number
+        default:
+          $ref: '#/components/schemas/ParameterValue'
+        supported:
+          type: boolean
+        message:
+          type: string
+    ParameterDimensions:
+      type: object
+      properties:
+        min:
+          type: number
+        max:
+          type: number
+        multiple_of:
+          type: number
+        max_width:
+          type: number
+        max_height:
+          type: number
+        min_pixels:
+          type: number
+        max_pixels:
+          type: number
+        max_aspect_ratio:
+          type: string
+        aspect_ratios:
+          type: array
+          items:
+            type: string
+    ParameterSpec:
+      type: object
+      required:
+        - supported
+      properties:
+        supported:
+          type: boolean
+        type:
+          oneOf:
+            - $ref: '#/components/schemas/ParameterType'
+            - type: array
+              items:
+                $ref: '#/components/schemas/ParameterType'
+        media:
+          type: string
+          enum:
+            - image
+            - audio
+            - video
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        open:
+          type: boolean
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterOption'
+        min:
+          type: number
+        max:
+          type: number
+        step:
+          type: number
+        multiple_of:
+          type: number
+        default:
+          $ref: '#/components/schemas/ParameterValue'
+        provider_default:
+          $ref: '#/components/schemas/ParameterValue'
+        required:
+          type: boolean
+        always_on:
+          type: boolean
+        aliases:
+          type: array
+          items:
+            type: string
+        alias_of:
+          type: string
+        upstream_name:
+          type: string
+        upstream_values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        requires:
+          type: array
+          items:
+            type: string
+        min_length:
+          type: number
+        max_length:
+          type: number
+        max_tokens:
+          type: number
+        min_items:
+          type: number
+        max_items:
+          type: number
+        item_types:
+          type: array
+          items:
+            type: string
+        formats:
+          type: array
+          items:
+            type: string
+        max_file_size_bytes:
+          type: number
+        format:
+          type: string
+        dimensions:
+          $ref: '#/components/schemas/ParameterDimensions'
+        properties:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+        when:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterRule'
+        support_level:
+          type: string
+        notes:
+          type: string
+        source:
+          type: object
+          properties:
+            url:
+              type: string
+            verified_at:
+              type: string
+        extra:
+          type: object
+          additionalProperties: true
+    ParameterType:
+      type: string
+      enum:
+        - string
+        - integer
+        - number
+        - boolean
+        - array
+        - object
+        - file
+    ParameterSpecs:
+      type: object
+      description: इस एंडपॉइंट पर प्रदाता जो भी अनुरोध पैरामीटर स्वीकार करता है, वे सभी एक मानक रूप में, चाहे कैटलॉग उन्हें किसी भी तरह संग्रहीत करे।
+      additionalProperties:
+        $ref: '#/components/schemas/ParameterSpec'
     SupportedParameterDetails:
       type: object
       description: अनुरोध पैरामीटर के लिए संरचित सीमाएँ और प्रदाता समर्थन, पैरामीटर नाम के अनुसार कुंजीबद्ध।
@@ -15329,10 +15531,13 @@ components:
           maximum: 3
         output_format:
           type: string
+          description: आउटपुट फ़ॉर्मेट। gif और svg के लिए GPT Image 2.6 मॉडल चाहिए, और ये stream या partial_images का समर्थन नहीं करते। svg के लिए svg.model और n=1 भी चाहिए।
           enum:
             - png
             - jpeg
             - webp
+            - gif
+            - svg
         output_compression:
           type: integer
           minimum: 0
@@ -15348,6 +15553,41 @@ components:
           enum:
             - auto
             - low
+        complexity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        frame_count:
+          type: integer
+          minimum: 2
+          maximum: 64
+        frame_duration_ms:
+          type: integer
+          minimum: 20
+          maximum: 2000
+        svg:
+          type: object
+          description: output_format svg होने पर ज़रूरी। svg.model वह OpenAI टेक्स्ट मॉडल है जो रेफ़रेंस इमेज से SVG लिखता है। इसके टोकन उस मॉडल की टेक्स्ट कीमतों पर, इमेज की लागत के अलावा, बिल होते हैं, और रीज़निंग टोकन आउटपुट में गिने जाते हैं।
+          required:
+            - model
+          properties:
+            model:
+              type: string
+            reasoning:
+              type: object
+              properties:
+                effort:
+                  type: string
+                  enum:
+                    - none
+                    - minimal
+                    - low
+                    - medium
+                    - high
+                    - xhigh
+                    - max
         response_format:
           type: string
         style:
@@ -15365,6 +15605,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Image'
+        svg_usage:
+          type: object
+          properties:
+            model:
+              type: string
+            input_tokens:
+              type: integer
+            output_tokens:
+              type: integer
+            reasoning_tokens:
+              type: integer
+            total_tokens:
+              type: integer
     Image:
       type: object
       properties:
@@ -15395,6 +15648,15 @@ components:
                 type: string
         mask:
           type: string
+        markup:
+          type: string
+          description: पहली इमेज के ऊपर पारदर्शी PNG एनोटेशन लेयर, फ़ाइल अपलोड, URL या base64 स्ट्रिंग के रूप में। इसके लिए GPT Image 2.5 या बाद का मॉडल चाहिए, और इसे mask के साथ नहीं जोड़ा जा सकता।
+        complexity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
         prompt:
           type: string
         size:
@@ -16014,6 +16276,8 @@ components:
           $ref: '#/components/schemas/SupportedParameterDetails'
         supported_parameters_detail:
           $ref: '#/components/schemas/SupportedParameterDetails'
+        parameter_specs:
+          $ref: '#/components/schemas/ParameterSpecs'
     VideoModelCapability:
       type: object
       properties:
@@ -23994,12 +24258,11 @@ components:
       additionalProperties: false
     RateLimitTargetType:
       type: string
-      description: What a policy applies to. A department policy is one allowance shared by its members and linked keys. A guardrail policy gives each key and member the guardrail covers its own allowance. end_user_default applies to each end user identified on a request.
+      description: नीति किस पर लागू होती है। विभाग की नीति एक साझा सीमा है, जिसे उसके सदस्य और जुड़ी कुंजियाँ साझा करते हैं। end_user_default अनुरोध में पहचाने गए हर अंतिम उपयोगकर्ता पर लागू होता है।
       enum:
         - key
         - member
         - department
-        - guardrail
         - end_user_default
     RateLimitAssignment:
       type: object
@@ -24027,7 +24290,7 @@ components:
           type: string
           format: uuid
           nullable: true
-          description: Id of the key, member (user id), department, or guardrail. Null for end_user_default.
+          description: कुंजी, सदस्य (उपयोगकर्ता id) या विभाग की id। end_user_default के लिए null।
         created_by:
           type: string
           format: uuid
@@ -24053,7 +24316,7 @@ components:
         target_id:
           type: string
           format: uuid
-          description: Id of the key, member (user id), department, or guardrail. Omit for end_user_default.
+          description: कुंजी, सदस्य (उपयोगकर्ता id) या विभाग की id। end_user_default के लिए इसे छोड़ दें।
       additionalProperties: false
     RateLimitAssignmentUpdateInput:
       type: object

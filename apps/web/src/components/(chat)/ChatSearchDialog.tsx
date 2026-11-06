@@ -1,5 +1,3 @@
-"use client";
-
 import {
     CommandDialog,
     CommandEmpty,
@@ -11,7 +9,7 @@ import {
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { MessageSquare, Pin } from "lucide-react";
 import type { ChatThread } from "@/lib/indexeddb/chats";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 type ChatSearchDialogProps = {
     open: boolean;

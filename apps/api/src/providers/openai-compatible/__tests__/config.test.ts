@@ -349,11 +349,13 @@ describe("openAICompatUrl", () => {
 		expect(openAICompatUrl("wafer-zdr", "/chat/completions")).toBe(
 			"https://pass.wafer.ai/v1/chat/completions",
 		);
-		expect(openAICompatHeaders("wafer-zdr", "test-wafer-key")).toMatchObject({
-			Authorization: "Bearer test-wafer-key",
-			"Wafer-ZDR": "required",
-		});
+		// Wafer applies ZDR to every request, so the legacy Wafer-ZDR header is not sent.
+		expect(openAICompatHeaders("wafer-zdr", "test-wafer-key")).toMatchObject({ Authorization: "Bearer test-wafer-key" });
+		expect(openAICompatHeaders("wafer-zdr", "test-wafer-key")).not.toHaveProperty("Wafer-ZDR");
 		expect(openAICompatHeaders("wafer", "test-wafer-key")).not.toHaveProperty("Wafer-ZDR");
+		// Wafer US is a regional offer on the same account and endpoint.
+		expect(openAICompatUrl("wafer-us", "/chat/completions")).toBe("https://pass.wafer.ai/v1/chat/completions");
+		expect(openAICompatHeaders("wafer-us", "test-wafer-key")).toMatchObject({ Authorization: "Bearer test-wafer-key" });
 		expect(openAICompatHeaders("ambient", "test-ambient-key")).toEqual(
 			expect.objectContaining({ Authorization: "Bearer test-ambient-key" }),
 		);

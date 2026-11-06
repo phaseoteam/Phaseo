@@ -1,4 +1,3 @@
-"use client";
 import { useSettingsWrite } from "../settings/PrivateSettingsQuery";
 
 import * as React from "react";
@@ -7,14 +6,14 @@ import { toast } from "sonner";
 import {
 	setBillingNotificationPreference,
 	setLowBalanceEmailAlert,
-} from "@/app/(dashboard)/settings/credits/actions";
+} from "@/features/settings/credits/actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import NotificationRouteSelector from "@/components/(gateway)/settings/notifications/NotificationRouteSelector";
 import type { NotificationDestination, NotificationEventKind } from "@/lib/fetchers/internal/settingsTypes";
 import { cn } from "@/lib/utils";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 function parseThreshold(value: string): number | null {
@@ -58,7 +57,7 @@ export default function LowBalanceEmailAlertsClient(props: {
 		(next: { enabled: boolean; thresholdUsd: number | null }) => {
 			if (debounceRef.current != null) window.clearTimeout(debounceRef.current);
 			debounceRef.current = window.setTimeout(() => {
-				toast.promise(write(setLowBalanceEmailAlert(next)), {
+				toast.promise(write(setLowBalanceEmailAlert({ data: next })), {
 					loading: t("savingAlert"),
 					success: t("saved"),
 					error: (e: unknown) =>
@@ -72,7 +71,7 @@ export default function LowBalanceEmailAlertsClient(props: {
 		const existing = preferenceDebounceRef.current[preference];
 		if (existing != null) window.clearTimeout(existing);
 		preferenceDebounceRef.current[preference] = window.setTimeout(() => {
-			toast.promise(write(setBillingNotificationPreference({ preference, enabled: nextEnabled })), {
+			toast.promise(write(setBillingNotificationPreference({ data: { preference, enabled: nextEnabled } })), {
 				loading: t("savingPreference"),
 				success: t("saved"),
 					error: (error: unknown) =>

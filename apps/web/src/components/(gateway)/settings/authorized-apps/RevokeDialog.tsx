@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState } from "react";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import {
@@ -16,7 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, X } from "lucide-react";
 import { toast } from "sonner";
 import { localizedSettingsError } from "@/i18n/error-messages";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 interface RevokeDialogProps {
 	authorizationId: string;
@@ -39,10 +37,10 @@ export default function RevokeDialog({
 
 		try {
 			const { revokeAuthorizationAction } = await import(
-				"@/app/(dashboard)/settings/authorized-apps/actions"
+				"@/features/settings/authorized-apps/actions"
 			);
 
-			const result = await revokeAuthorizationAction(authorizationId);
+			const result = await revokeAuthorizationAction({ data: authorizationId });
 
 			if (result.error) {
 				setError(localizedSettingsError(result.error, t, "Failed to revoke access"));

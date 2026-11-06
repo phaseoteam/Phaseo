@@ -2148,6 +2148,8 @@
 		"Completion": "Respuesta",
 		"phraseNoIOPayloadIsAvailableForThisRequest": "No hay ninguna carga útil de E/S disponible para esta solicitud.",
 		"Technical Details": "Detalles técnicos",
+		"SVG author": "Autor del SVG",
+		"Image tool": "Herramienta de imagen",
 		"Pricing": "Precios",
 		"Direct HTTP": "Solicitud HTTP directa",
 		"Data policy": "Política de datos",

@@ -1,0 +1,149 @@
+---
+icon: "shield-check"
+title: "内容审核"
+description: "在任意 Phaseo SDK 中使用 POST /v1/moderations 对文本和图片做安全分类。"
+---
+
+把文本或图片发送到 `POST /v1/moderations`，即可知道它们是否被标记，以及属于哪些类别。示例中的 `client` 按[安装](./installation)中的方式创建。
+
+<CodeGroup>
+
+```typescript TypeScript
+const moderation = await client.generateModeration({
+  model: "openai/omni-moderation",
+  input: "Text to classify",
+});
+
+console.log(moderation.results[0].flagged);
+```
+
+```python Python
+moderation = client.generate_moderation({
+    "model": "openai/omni-moderation",
+    "input": "Text to classify",
+})
+
+print(moderation["results"][0]["flagged"])
+```
+
+```go Go
+resp, err := client.GenerateModeration(context.Background(), map[string]interface{}{
+  "model": "openai/omni-moderation",
+  "input": "Text to classify",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp["results"])
+```
+
+```csharp C#
+var response = await client.GenerateModeration(new Dictionary<string, object>
+{
+    ["model"] = "openai/omni-moderation",
+    ["input"] = "Text to classify",
+});
+```
+
+```php PHP
+$response = $client->generateModeration([
+    'model' => 'openai/omni-moderation',
+    'input' => 'Text to classify',
+]);
+```
+
+```ruby Ruby
+response = client.generate_moderation(
+  model: 'openai/omni-moderation',
+  input: 'Text to classify'
+)
+```
+
+```java Java
+String body = """
+{
+  "model": "openai/omni-moderation",
+  "input": "Text to classify"
+}
+""";
+
+Object response = client.createModeration(new com.fasterxml.jackson.databind.ObjectMapper().readTree(body));
+System.out.println(String.valueOf(response));
+```
+
+```rust Rust
+// 目前还没有 moderations 方法：post() 可以向任意 Phaseo 路径发送 JSON。
+let response = client.post("/moderations", &json!({
+    "model": "openai/omni-moderation",
+    "input": "Text to classify"
+}))?;
+
+println!("{}", response.body["results"][0]["flagged"]);
+```
+
+</CodeGroup>
+
+| 语言 | 方法 | 返回值 |
+| --- | --- | --- |
+| TypeScript | `client.generateModeration(request)` | `ModerationsResponse` |
+| Python | `client.generate_moderation(request)` 或 `client.moderations.create(request)` | dict |
+| Go | `client.GenerateModeration(ctx, req)`，别名 `CreateModeration` | `map[string]interface{}` |
+| C# | `client.GenerateModeration(request)`，别名 `CreateModeration` | `Dictionary<string, object>?` |
+| PHP | `$client->generateModeration($request)`，别名 `createModeration()` | 数组 |
+| Ruby | `client.generate_moderation(...)`，别名 `create_moderation` | Hash |
+| Java | `client.createModeration(jsonNode)` | `Object` |
+| Rust | `client.post("/moderations", &request)` | `PhaseoResponse`，JSON 位于 `body` 中 |
+
+## 参数
+
+在每个 SDK 中，字段名都是 JSON 正文字段。
+
+| 字段 | 说明 |
+| --- | --- |
+| `input` | 必填。一个字符串、一个字符串数组，或由 `text` 和 `image_url` 片段组成的数组。 |
+| `model` | 审核模型 ID。默认为 `openai/omni-moderation`。 |
+| `metadata` | 你自己的键值数据。 |
+| `provider` | 提供商路由偏好。 |
+| `meta` | 设为 `true` 时包含网关的 `meta` 块。 |
+
+完整的 schema 见 [Moderations API 参考](/zh-Hans/v1/api-reference/endpoint/moderations)。
+
+## 响应
+
+`ModerationsResponse`。每个结果包含 `flagged`、一个布尔值映射 `categories` 和一个分数映射 `category_scores`：
+
+```json
+{
+  "results": [
+    {
+      "flagged": false,
+      "categories": {
+        "hate": false,
+        "hate/threatening": false,
+        "harassment": false,
+        "harassment/threatening": false,
+        "self-harm": false,
+        "self-harm/intent": false,
+        "self-harm/instructions": false,
+        "sexual": false,
+        "sexual/minors": false,
+        "violence": false,
+        "violence/graphic": false
+      },
+      "category_scores": {
+        "hate": 0.01,
+        "hate/threatening": 0.0,
+        "harassment": 0.02,
+        "harassment/threatening": 0.0,
+        "self-harm": 0.0,
+        "self-harm/intent": 0.0,
+        "self-harm/instructions": 0.0,
+        "sexual": 0.05,
+        "sexual/minors": 0.0,
+        "violence": 0.01,
+        "violence/graphic": 0.0
+      }
+    }
+  ]
+}
+```

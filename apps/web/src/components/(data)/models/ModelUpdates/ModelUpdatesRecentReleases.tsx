@@ -1,4 +1,4 @@
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import ModelUpdateCard, { type EventTypeOption } from "./ModelUpdateCard";
 import type { ModelEvent } from "@/lib/fetchers/updates/types";
 import type React from "react";

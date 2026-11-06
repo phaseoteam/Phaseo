@@ -1,0 +1,232 @@
+---
+icon: "files"
+title: "文件"
+description: "在任意 Phaseo SDK 中上传批处理输入文件，并按 ID 读回。"
+---
+
+以 multipart 表单上传批处理输入文件，保存返回的 `id`，再按这个 ID 读回文件的元数据和字节。示例中的 `client` 按[安装](./installation)中的方式创建。
+
+## 上传文件
+
+TypeScript 和 Python 使用 SDK 方法上传，发送的是 `POST /v1/batches/files`。其他 SDK 无法发送 multipart，因此用标准 HTTP 客户端把表单提交到 `POST /v1/files`。
+
+<CodeGroup>
+
+```typescript TypeScript
+const uploaded = await client.uploadFile({
+  purpose: "batch",
+  file: new Blob(["{}"], { type: "application/json" }),
+  filename: "batch.jsonl",
+});
+```
+
+```python Python
+from pathlib import Path
+
+uploaded = client.upload_file(
+    purpose="batch",
+    file=Path("batch.jsonl"),
+    content_type="application/json",
+)
+```
+
+```go Go
+// Go 封装没有上传方法，所以用 net/http 和 mime/multipart 提交表单。
+var body bytes.Buffer
+form := multipart.NewWriter(&body)
+_ = form.WriteField("purpose", "batch")
+part, _ := form.CreateFormFile("file", "batch.jsonl")
+data, _ := os.ReadFile("batch.jsonl")
+_, _ = part.Write(data)
+_ = form.Close()
+
+req, _ := http.NewRequest("POST", "https://api.phaseo.app/v1/files", &body)
+req.Header.Set("Authorization", "Bearer "+os.Getenv("PHASEO_API_KEY"))
+req.Header.Set("Content-Type", form.FormDataContentType())
+
+resp, err := http.DefaultClient.Do(req) // 保存返回的 id
+```
+
+```csharp C#
+// UploadFile() 发送的是 JSON，所以用 HttpClient 提交表单。
+using var http = new HttpClient();
+http.DefaultRequestHeaders.Authorization =
+    new("Bearer", Environment.GetEnvironmentVariable("PHASEO_API_KEY"));
+
+using var form = new MultipartFormDataContent
+{
+    { new StringContent("batch"), "purpose" },
+    { new ByteArrayContent(await File.ReadAllBytesAsync("batch.jsonl")), "file", "batch.jsonl" },
+};
+
+var uploaded = await http.PostAsync("https://api.phaseo.app/v1/files", form);
+Console.WriteLine(await uploaded.Content.ReadAsStringAsync()); // 保存返回的 id
+```
+
+```php PHP
+// uploadFile() 发送的是 JSON，所以用 Guzzle 提交表单。
+$http = new GuzzleHttp\Client();
+
+$uploaded = $http->post('https://api.phaseo.app/v1/files', [
+    'headers' => ['Authorization' => 'Bearer ' . getenv('PHASEO_API_KEY')],
+    'multipart' => [
+        ['name' => 'purpose', 'contents' => 'batch'],
+        ['name' => 'file', 'contents' => fopen('batch.jsonl', 'r'), 'filename' => 'batch.jsonl'],
+    ],
+]);
+
+$fileId = json_decode((string) $uploaded->getBody(), true)['id'];
+```
+
+```ruby Ruby
+# upload_file 发送的是 JSON，所以用 Net::HTTP 提交表单。
+require 'net/http'
+require 'json'
+
+uri = URI('https://api.phaseo.app/v1/files')
+request = Net::HTTP::Post.new(uri)
+request['Authorization'] = "Bearer #{ENV.fetch('PHASEO_API_KEY')}"
+request.set_form([['purpose', 'batch'], ['file', File.open('batch.jsonl')]], 'multipart/form-data')
+
+response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |http| http.request(request) }
+file_id = JSON.parse(response.body)['id']
+```
+
+```java Java
+// SDK 的 JSON 辅助方法不编码 multipart，所以用 java.net.http 提交表单。
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.UUID;
+
+String baseUrl = System.getenv().getOrDefault("PHASEO_BASE_URL", "https://api.phaseo.app/v1")
+    .replaceAll("/+$", "");
+String apiKey = System.getenv("PHASEO_API_KEY");
+String boundary = "phaseo-" + UUID.randomUUID();
+var body = BodyPublishers.concat(
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"purpose\"\r\n\r\nbatch\r\n"),
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"batch.jsonl\"\r\nContent-Type: application/jsonl\r\n\r\n"),
+    BodyPublishers.ofFile(Path.of("batch.jsonl")),
+    BodyPublishers.ofString("\r\n--" + boundary + "--\r\n")
+);
+var request = HttpRequest.newBuilder(URI.create(baseUrl + "/files"))
+    .header("Authorization", "Bearer " + apiKey)
+    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+    .timeout(Duration.ofSeconds(60))
+    .POST(body)
+    .build();
+var response = HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
+if (response.statusCode() < 200 || response.statusCode() >= 300) {
+    throw new IOException("HTTP " + response.statusCode() + ": " + response.body());
+}
+System.out.println(response.body()); // 保存返回的 id
+```
+
+</CodeGroup>
+
+### 上传选项
+
+这些选项适用于 TypeScript 和 Python 的上传方法。在直接发送的 multipart 请求中，把 `purpose` 和 `file` 作为表单字段发送。
+
+| TypeScript | Python | 说明 |
+| --- | --- | --- |
+| `file` | `file` | 必填。TypeScript：`Blob`、`File`、`BufferSource` 或字符串。Python：`bytes`、`Path`、文件对象或 HTTPX 文件元组；普通字符串会抛出 `TypeError`。 |
+| `purpose` | `purpose` | 例如 `batch`。 |
+| `filename`、`contentType` | `filename`、`content_type` | 上传的名称和媒体类型。在 Python 中，`Path` 会使用它自己的文件名。 |
+| `model`、`provider` | 无 | 仅 TypeScript。选择存储该文件的批处理提供商。两者都不设置时，文件会发送到 OpenAI。Python 上传总是发送到默认的 OpenAI 批处理提供商。 |
+
+## 读回文件
+
+<CodeGroup>
+
+```typescript TypeScript
+const file = await client.getFile(uploaded.id);
+const content = await client.getFileContent(uploaded.id); // Uint8Array
+```
+
+```python Python
+file_obj = client.get_file(uploaded["id"])
+file_bytes = client.get_file_content(uploaded["id"])  # bytes
+```
+
+```go Go
+file, err := client.RetrieveFile(context.Background(), "file_123")
+if err != nil {
+  panic(err)
+}
+
+content, err := client.RetrieveFileContent(context.Background(), "file_123") // []byte
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(file)
+fmt.Println(string(content))
+```
+
+```csharp C#
+var file = await client.RetrieveFile("file_123");
+byte[] content = await client.RetrieveFileContent("file_123");
+```
+
+```php PHP
+$file = $client->retrieveFile('file_123');
+$content = $client->retrieveFileContent('file_123');
+```
+
+```ruby Ruby
+file = client.retrieve_file('file_123')
+content = client.retrieve_file_content('file_123')
+```
+
+```java Java
+import java.nio.charset.StandardCharsets;
+
+var file = client.retrieveFile("file_123");
+byte[] content = client.retrieveFileContent("file_123");
+System.out.println(file);
+System.out.println(new String(content, StandardCharsets.UTF_8));
+```
+
+</CodeGroup>
+
+把 `file_123` 替换为上传返回的 ID。
+
+| 语言 | 元数据 | 内容 | 上传方法 | 列表 |
+| --- | --- | --- | --- | --- |
+| TypeScript | `getFile(id)` | `getFileContent(id)`，返回 `Uint8Array` | `uploadFile(...)`，multipart | `listFiles()` |
+| Python | `get_file(id)` | `get_file_content(id)`，返回 `bytes` | `upload_file(...)`，multipart | `list_files()` |
+| Go | `RetrieveFile(ctx, id)` | `RetrieveFileContent(ctx, id)`，返回 `[]byte` | 无 | `ListFiles(ctx, query)` |
+| C# | `RetrieveFile(id)` | `RetrieveFileContent(id)`，返回 `byte[]` | `UploadFile(request)` 发送 JSON，因此无法上传 | `ListFiles(query)` |
+| PHP | `retrieveFile($id)` | `retrieveFileContent($id)` | `uploadFile($payload)` 发送 JSON，因此无法上传 | `listFiles($params)` |
+| Ruby | `retrieve_file(id)` | `retrieve_file_content(id)` | `upload_file(payload)` 发送 JSON，因此无法上传 | `list_files(...)` |
+| Java | `retrieveFile(id)` | `retrieveFileContent(id)`，返回 `byte[]` | `uploadFile(request)` 发送 JSON，因此无法上传 | `listFiles(query)` |
+
+在 Python 中，你也可以通过 `client.files` 调用这些操作：`create(params)` 像 `upload_file` 一样上传，`list()` 列出文件，`retrieve(id)` 读取元数据，`content(id)` 读取字节。Rust 没有文件方法。
+
+<Note>文件端点处于 Beta 阶段，需要已启用的批处理提供商。</Note>
+
+## 保存文件 ID：你无法列出文件
+
+请保存每个上传文件的 `id`。列表方法调用 `GET /v1/files`，它会返回 `400`，代码为 `not_supported`，原因为 `file_list_not_supported_with_shared_gateway_key`。完整的契约见 [Files API 参考](/zh-Hans/v1/api-reference/endpoint/files)。
+
+## 响应
+
+上传方法和元数据方法返回的 `FileObject`：
+
+```json
+{
+  "id": "file-123",
+  "object": "file",
+  "filename": "data.json",
+  "purpose": "batch",
+  "status": "processed",
+  "created_at": 1677610602,
+  "bytes": 123
+}
+```

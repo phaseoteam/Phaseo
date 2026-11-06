@@ -5,57 +5,47 @@ sidebarTitle: "Create a response"
 openapi: "/openapi/v1/openapi.yaml POST /responses"
 ---
 
-## Server tools
+## Use server tools
 
-`/v1/responses` supports regular function tools and these gateway-managed server tools:
-
-- `gateway:datetime`
-- `phaseo:web_search`
-- `phaseo:web_fetch`
-- `phaseo:advisor`
-- `phaseo:image_generation`
-- `phaseo:apply_patch`
-
-### Datetime example
+Add a `phaseo:` tool to `tools` next to your own function tools, and Phaseo runs it when the model calls it. `/v1/responses` accepts every server tool, including `phaseo:apply_patch`, which only this endpoint supports; the [Server Tools](../../guides/server-tools) guide lists them.
 
 ```bash
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
-    "stream": false,
+    "model": "openai/gpt-6-astra",
     "input": [
       { "role": "user", "content": "Give me the current datetime in Asia/Tokyo." }
     ],
     "tools": [
-      {
-        "type": "gateway:datetime",
-        "parameters": { "timezone": "Asia/Tokyo" }
-      }
+      { "type": "phaseo:datetime", "parameters": { "timezones": ["Asia/Tokyo"] } }
     ],
     "tool_choice": "auto"
   }'
 ```
 
-When a server tool is used, usage includes the matching `usage.server_tool_use.*` counters.
+Each server tool call is counted in `usage.server_tool_use`:
 
-- `gateway:datetime` -> `datetime_requests`
-- `phaseo:web_search` -> `web_search_requests`, `web_search_results`, `web_search_extra_results`
-- `phaseo:web_fetch` -> `web_fetch_requests`
-- `phaseo:advisor` -> `advisor_requests`
-- `phaseo:image_generation` -> `image_generation_requests`
-- `phaseo:apply_patch` -> `apply_patch_requests`
+| Tool | Counters |
+| --- | --- |
+| `phaseo:datetime` | `datetime_requests` |
+| `phaseo:web_search` | `web_search_requests`, `web_search_results`, `web_search_extra_results` |
+| `phaseo:web_fetch` | `web_fetch_requests` |
+| `phaseo:advisor` | `advisor_requests` |
+| `phaseo:subagent` | `subagent_requests` |
+| `phaseo:fusion` | `fusion_requests` |
+| `phaseo:search_models` | `search_models_requests` |
+| `phaseo:image_generation` | `image_generation_requests` |
+| `phaseo:apply_patch` | `apply_patch_requests` |
 
-## Streaming note
-
-`stream: true` is also supported. For gateway-managed server tools, Phaseo may materialize the upstream tool-call turn and re-emit a synthetic stream after continuing the loop.
+The older `gateway:datetime` type still works. With `stream: true`, Phaseo runs the tool turns itself, then streams the continued answer to you as a single stream.
 
 ## Reasoning in tool loops
 
 On OpenAI, Azure OpenAI and xAI, Phaseo sends Responses requests upstream with `store: false`, so a model's reasoning continues between tool-loop steps only through the `reasoning` output items.
 
-Each `reasoning` item has an `id`, `summary` and `content`. When the provider returns reasoning state, the item also has `encrypted_content`:
+Each `reasoning` item has an `id`, `summary` and `content`. When the provider returns reasoning state, the item also has `encrypted_content`, which holds one of:
 
 - OpenAI, Azure OpenAI and xAI encrypted reasoning. Phaseo requests it with `include: ["reasoning.encrypted_content"]` for reasoning models.
 - Claude thinking signatures and redacted thinking.

@@ -1,18 +1,30 @@
 ---
 title: "OpenAI SDK"
 icon: "code"
-description: "公式の OpenAI SDK を Phaseo で使用します。"
+description: "OpenAI 公式 SDK で Phaseo を使います。"
 ---
 
-アプリケーションが TypeScript、JavaScript、Python からすでに OpenAI を呼び出している場合は、このガイドを使ってください。変更するのは API キー、ベースURL、モデルIDだけです。
+API キー、Base URL（`https://api.phaseo.app/v1`）、モデル ID の 3 つを変更して、OpenAI 公式 SDK を Phaseo に向けます。
 
-## TypeScript
+## インストール
 
-```bash
+<CodeGroup>
+
+```bash TypeScript
 npm install openai
 ```
 
-```ts
+```bash Python
+pip install openai
+```
+
+</CodeGroup>
+
+## クライアントを Phaseo に向ける
+
+<CodeGroup>
+
+```ts TypeScript
 import OpenAI from "openai";
 
 const client = new OpenAI({
@@ -21,20 +33,14 @@ const client = new OpenAI({
 });
 
 const response = await client.responses.create({
-	model: "openai/gpt-5-nano",
+	model: "openai/gpt-6-astra",
 	input: "Write one sentence about reliable model routing.",
 });
 
 console.log(response.output_text);
 ```
 
-## Python
-
-```bash
-pip install openai
-```
-
-```python
+```python Python
 import os
 from openai import OpenAI
 
@@ -44,32 +50,30 @@ client = OpenAI(
 )
 
 response = client.responses.create(
-    model="openai/gpt-5-nano",
+    model="openai/gpt-6-astra",
     input="Write one sentence about reliable model routing.",
 )
 
 print(response.output_text)
 ```
 
-## Chat Completions
+</CodeGroup>
 
-古いライブラリでは、引き続き Chat Completions が使われる場合があります。
+文が 1 つ出力されれば、キーと Base URL は正しく動作しています。リクエストは**設定 → 利用状況 → ログ**にも表示されます。
+
+## Chat Completions を使う
+
+Chat Completions を呼び出すコードも、同じクライアントで動作します。
 
 ```ts
 const completion = await client.chat.completions.create({
-	model: "openai/gpt-5-nano",
+	model: "openai/gpt-6-astra",
 	messages: [{ role: "user", content: "Reply with only: ok" }],
 });
 ```
 
-## 注意点
+## 既知の制限
 
-- `openai/`、`anthropic/`、`google/` などのプロバイダー接頭辞を含む Phaseo モデルIDを使ってください。
-- サーバーツールには `phaseo:web_search` のような Phaseo のツール名を使います。
-- Anthropic ネイティブクライアントには、[Anthropic SDK](./anthropic-sdk.mdx) ガイドを使ってください。
-
-## 関連ページ
-
-- [Responses API](../../api-reference/endpoint/responses.mdx)
-- [Chat Completions](../../api-reference/endpoint/chat-completions.mdx)
-- [サーバーツール](../server-tools/index.mdx)
+- `openai/`、`anthropic/`、`google/` などのプロバイダーのプレフィックスが付いた Phaseo のモデル ID を使います。リクエストの完全な形式については、[Responses](../../api-reference/endpoint/responses.mdx) と [Chat Completions](../../api-reference/endpoint/chat-completions.mdx) を参照してください。
+- [サーバーツール](../server-tools/index.mdx)は、`phaseo:web_search` などの Phaseo のツール名を使います。
+- Anthropic 形式の `/v1/messages` クライアントについては、[Anthropic SDK](./anthropic-sdk.mdx) のガイドを参照してください。

@@ -5,27 +5,18 @@ description: "将 Anthropic SDK 集成迁移到 Phaseo，同时保留熟悉的 M
 icon: "/icons/brands/anthropic.svg"
 ---
 
-使用本指南可以保留 Anthropic SDK 工作流，同时通过 Phaseo 发送请求。先更改客户端配置，再验证模型 ID 和应用依赖的 Anthropic 专属行为。
+保留 Anthropic SDK 和 Messages 调用。把客户端指向 `https://api.phaseo.app`，将 Phaseo 密钥作为 `authToken` 传入，并为每个模型使用其 Phaseo ID。
 
-## 变更内容
-
-| 设置 | 之前 | 之后 |
+| 设置 | Anthropic | Phaseo |
 | --- | --- | --- |
-| 基础 URL | Anthropic 默认值 | `https://api.phaseo.app` |
-| API 密钥 | Anthropic 密钥 | `PHASEO_API_KEY` |
-| 模型 | Anthropic 模型名称 | `GET /v1/models` 返回的 Phaseo 模型 ID |
-| Messages 调用 | 现有 SDK 调用 | 通常不变 |
+| Base URL | SDK 默认值（`https://api.anthropic.com`） | `https://api.phaseo.app`（SDK 会追加 `/v1/messages`） |
+| API 密钥 | `ANTHROPIC_API_KEY`，以 `x-api-key` 发送 | `PHASEO_API_KEY` 作为 `authToken` / `auth_token`，以 `Authorization: Bearer` 发送 |
+| 模型 | `claude-sonnet-5-5` | `anthropic/claude-sonnet-5.5`，或 `GET /v1/models` 返回的任意 ID |
+| Messages 调用 | `messages.create` | 不变 |
 
-<Steps>
-<Step title="创建 Phaseo API 密钥">
+## 切换客户端
 
-使用 [Phaseo CLI](../guides/integrations/phaseo-cli) 中的 `phaseo keys create` 或在[网关密钥](https://phaseo.app/settings/keys)中创建密钥，并将其作为 `PHASEO_API_KEY` 提供给应用。
-
-</Step>
-
-<Step title="更新 Anthropic 客户端">
-
-将 SDK 指向 Phaseo 根主机 `https://api.phaseo.app`，并通过 `authToken`（Python 中为 `auth_token`）传入你的 Phaseo 密钥。SDK 会自动追加 `/v1/messages`，并以 `Authorization: Bearer` 发送密钥。在现在调用 Phaseo 的环境中删除 `ANTHROPIC_API_KEY`，以免旧版 SDK 同时发送你的 Anthropic 密钥。
+在 [Phaseo CLI](../guides/integrations/phaseo-cli) 中用 `phaseo keys create` 或在[API 密钥](https://phaseo.app/settings/keys)中创建密钥，并将其作为 `PHASEO_API_KEY` 提供给应用。
 
 <CodeGroup>
 ```typescript TypeScript
@@ -38,7 +29,7 @@ const client = new Anthropic({
 });
 
 const response = await client.messages.create({
-  model: "anthropic/claude-sonnet-4.6",
+  model: "anthropic/claude-sonnet-5.5",
   max_tokens: 256,
   messages: [{ role: "user", content: "Reply with: migration ready" }],
 });
@@ -54,7 +45,7 @@ client = anthropic.Anthropic(
 )
 
 response = client.messages.create(
-    model="anthropic/claude-sonnet-4.6",
+    model="anthropic/claude-sonnet-5.5",
     max_tokens=256,
     messages=[{"role": "user", "content": "Reply with: migration ready"}],
 )
@@ -65,39 +56,47 @@ curl https://api.phaseo.app/v1/messages \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "anthropic/claude-sonnet-4.6",
+    "model": "anthropic/claude-sonnet-5.5",
     "max_tokens": 256,
     "messages": [{"role": "user", "content": "Reply with: migration ready"}]
   }'
 ```
 </CodeGroup>
 
-</Step>
+这一步最常因以下三个细节出错：
 
-<Step title="验证 Anthropic 专属行为">
+- **使用根主机。** `baseURL: "https://api.phaseo.app/v1"` 会生成 `/v1/v1/messages`。同一仓库中的 OpenAI 兼容客户端仍然使用 `/v1`。
+- **以 bearer 令牌发送密钥。** 网关只读取 `Authorization: Bearer`；`x-api-key` 请求头会得到 `401` `missing_or_invalid_authorization_header`。`authToken` 在所有 SDK 版本中都发送 Bearer。`apiKey` 只有从 `@anthropic-ai/sdk` 1.0 和 `anthropic` 2.0 起才会这样做。
+- **从现在调用 Phaseo 的环境中删除 `ANTHROPIC_API_KEY`。** `apiKey: null` 可以阻止旧版 TypeScript SDK 读取它，而 0.98 之前的 Python SDK 即使设置了 `auth_token` 也会读取它。
 
-使用应用实际采用的模型，测试系统提示词、流式传输、工具调用、推理选项和结构化输出。移除已弃用的 Beta 请求头或请求字段，不要未经检查就将它们带入新的请求路径。
+通过环境变量配置的工具（例如 Claude Code）使用 `ANTHROPIC_BASE_URL=https://api.phaseo.app`、设为 Phaseo 密钥的 `ANTHROPIC_AUTH_TOKEN`，以及为空的 `ANTHROPIC_API_KEY`。
 
-</Step>
+## 映射模型 ID
 
-<Step title="逐步发布">
+用 `GET /v1/models?format=openai` 返回的 `data[].id` 核对每个生产模型。Phaseo ID 的版本号使用点号：`claude-sonnet-5-5` 变为 `anthropic/claude-sonnet-5.5`。如果模型也要更换，请阅读对应的[模型迁移指南](../model-migrations)。
 
-使用两种配置运行一组有代表性的提示词并进行比较。切换生产流量前，检查输出格式、延迟、token 用量、错误和费用。
+## 有哪些不同
 
-</Step>
-</Steps>
+| Anthropic 功能 | 在 Phaseo 上 |
+| --- | --- |
+| `anthropic-version` 请求头 | 接受任何值；Phaseo 使用自己的版本调用 Claude。 |
+| `anthropic-beta` 请求头 | 不转发。Phaseo 会添加其支持的功能所需的 beta；仅限 beta 的请求体字段（例如 `mcp_servers`）会返回 `400`。 |
+| `temperature`、`top_p`、`top_k` | 在模型或路由不接受时会被丢弃，并列在 `X-Phaseo-Dropped-Params` 中。 |
+| `speed: "fast"` | 返回 `400`。请使用 `service_tier: "fast"`。 |
+| 原生网页搜索和 web fetch 工具 | 在提供商运行它们时接受，也可以使用 Phaseo 的 `phaseo:web_search` 服务器工具。 |
+| `cache_control` | 支持在顶层或按块设置。参见[提示词缓存](../guides/prompt-caching)。 |
+| `metadata.user_id` | 不作为终端用户 ID 使用。如需终端用户速率限制策略，请发送 `user` 或 `X-Phaseo-User-Id` 请求头。 |
+| Message Batches（`/v1/messages/batches`） | 没有这个路径。`/v1/batches` 接受形状不同的 `/v1/messages` 行。 |
+| token 计数（`/v1/messages/count_tokens`） | 没有对应项。保留在 Anthropic 上，或在客户端估算。 |
+| Files API（`client.beta.files`） | 没有对应项。以内联方式发送文档。 |
+| `AnthropicBedrock`、`AnthropicVertex` 客户端 | 替换为普通的 `Anthropic` 客户端；云身份验证和区域设置不再适用。 |
 
-## 迁移检查清单
+## 测试并上线
 
-- 已在每个部署环境中配置 Phaseo 密钥。
-- Anthropic 客户端已指向 `https://api.phaseo.app`。
-- 已通过 `GET /v1/models` 验证每个生产模型 ID。
-- 在预发布环境中，流式传输和工具调用流程均已通过。
-- 已检查 Anthropic 专属的 Beta 请求头和参数。
-- 回滚仍只需更改密钥和端点配置。
+用应用实际使用的模型 ID 测试系统提示词、流式传输、工具使用、思考和结构化输出。然后用一组有代表性的提示词比较两种配置的输出形状、延迟、token 用量、错误和成本。迁移流量之前确认：
 
-## 后续步骤
-
-- [Anthropic 模型迁移](../model-migrations/index.mdx)
-- [模型](../exploring/models.mdx)
-- [工具调用](../guides/tool-calling.mdx)
+- 每个部署环境都设置了 Phaseo 密钥；
+- 每个生产模型 ID 都出现在 `GET /v1/models?format=openai` 中；
+- 流式传输和工具使用流程在预发布环境中通过；
+- 每个 `anthropic-beta` 请求头和仅限 beta 的字段都已删除或替换；
+- 回退仍然只需更改 base URL 和密钥。

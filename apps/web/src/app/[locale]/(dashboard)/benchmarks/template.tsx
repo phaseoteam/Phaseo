@@ -1,2 +1,0 @@
-import { createScopedMessagesTemplate } from "@/components/i18n/ScopedMessages";
-export default createScopedMessagesTemplate(["Catalogue", "Site.homeQuickstart.rank", "Product.latency.nA", "Common.ui.benchmarkComparison", "Common.ui.modelCreation", "Common.ui.benchmarkChartCopy", "Common.ui.modelEditor", "Common.ui.rankings", "Common.ui.requestBuilder", "Common.ui.chatComposer", "Common.ui.chatSettings.export", "Product.internalTools.dataEditor.searchModelsPlaceholder"]);

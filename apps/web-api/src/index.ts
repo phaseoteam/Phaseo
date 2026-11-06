@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { platformObservability } from "@/observability";
 import type { Env } from "@/env";
 import { accountRouter } from "@/routes/account";
 import { internalRouter } from "@/routes/internal";
@@ -12,6 +13,8 @@ import { handleProviderCatalogScheduledEvent } from "@/scheduled/provider-catalo
 import { handleSlackAgentChargesScheduledEvent } from "@/scheduled/slack-agent-charges";
 
 const app = new Hono<{ Bindings: Env }>();
+
+app.use("*", platformObservability);
 
 app.route("/api/_web", publicRouter);
 app.route("/api/account", accountRouter);

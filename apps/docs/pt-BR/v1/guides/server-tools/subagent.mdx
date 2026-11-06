@@ -1,21 +1,17 @@
 ---
 icon: "bot"
 title: "Ferramenta de servidor Subagent"
-description: "Permita que o modelo principal delegue tarefas específicas a um modelo auxiliar."
+description: "Deixe o modelo principal delegar um trabalho específico a um modelo trabalhador."
 ---
 
-Use `phaseo:subagent` quando o modelo principal precisar repassar uma tarefa independente para um modelo auxiliar menor ou mais rápido durante a mesma solicitação.
-
-O modelo principal chama a ferramenta Subagent com a descrição da tarefa. O Phaseo executa o modelo auxiliar no servidor, retorna o resultado como contexto da ferramenta e permite que o modelo principal conclua a resposta.
-
-## Início rápido
+Adicione `phaseo:subagent` para que o modelo principal possa repassar uma tarefa autocontida a um modelo trabalhador, muitas vezes menor ou mais rápido, na mesma solicitação. O modelo principal descreve a tarefa; o Phaseo executa o trabalhador e devolve o resultado, e o modelo principal termina a resposta.
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "anthropic/claude-opus-5",
     "messages": [
       { "role": "user", "content": "Compare these release notes and summarize the breaking changes." }
     ],
@@ -23,7 +19,7 @@ curl https://api.phaseo.app/v1/chat/completions \
       {
         "type": "phaseo:subagent",
         "parameters": {
-          "model": "openai/gpt-5-nano",
+          "model": "openai/gpt-6-astra",
           "instructions": "Return concise findings for the main model. Do not address the end user directly.",
           "max_uses": 3,
           "max_completion_tokens": 1200
@@ -35,33 +31,20 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 ## Parâmetros
 
-```json
-{
-  "type": "phaseo:subagent",
-  "parameters": {
-    "model": "openai/gpt-5-nano",
-    "instructions": "You are a fast, focused worker. Complete only the delegated task.",
-    "max_uses": 3,
-    "max_completion_tokens": 1200,
-    "reasoning": { "effort": "low" },
-    "temperature": 0.2
-  }
-}
-```
-
 | Parâmetro | Tipo | Padrão | Descrição |
 | --- | --- | --- | --- |
-| `model` | string | `openai/gpt-5-nano` | Modelo auxiliar a ser chamado. |
-| `instructions` | string | instruções específicas para o worker | Instruções extras adicionadas ao comportamento padrão do Subagent. |
-| `max_uses` | integer | `10` | Número máximo de chamadas ao Subagent durante o loop de ferramentas do servidor. |
-| `max_completion_tokens` | integer | padrão do assessor | Máximo de tokens de saída para cada resposta do modelo auxiliar. |
-| `max_tokens` | integer | padrão do assessor | Alias legado de `max_completion_tokens`. |
-| `reasoning` | object | padrão do provedor | Configuração de raciocínio encaminhada ao modelo auxiliar quando houver suporte. |
-| `temperature` | number | padrão do provedor | Temperatura de amostragem da chamada ao modelo auxiliar. |
+| `model` | string | O modelo da solicitação | O modelo trabalhador. |
+| `instructions` | string | Instruções de trabalhador integradas | Instruções extras para o trabalhador. |
+| `max_uses` | integer | `1` | Chamadas ao Subagent por solicitação. |
+| `max_completion_tokens` | integer | `1400` | Tokens de saída de cada resposta do trabalhador. Valores abaixo de `1024` são elevados para `1024`. `max_tokens` é aceito como alias antigo. |
+| `reasoning` | object | Padrão do provedor | Configurações de raciocínio, repassadas quando o modelo trabalhador as aceita. |
+| `temperature` | number | Padrão do provedor | Temperatura de amostragem da chamada ao trabalhador. |
 
-## Argumentos da chamada da ferramenta
+O trabalhador nunca recebe a conversa: coloque na tarefa tudo de que ele precisa.
 
-O modelo normalmente chama Subagent com `task_description`:
+## O que o modelo envia
+
+Um `task_description` com a tarefa completa, o contexto e a saída esperada, além de um `task_name` curto opcional:
 
 ```json
 {
@@ -69,40 +52,20 @@ O modelo normalmente chama Subagent com `task_description`:
 }
 ```
 
-O Phaseo também aceita `task`, `prompt` ou `input` como aliases quando o modelo usa um nome de argumento um pouco diferente.
+`task`, `prompt` ou `input` são aceitos no lugar de `task_description`.
 
 ## O que a ferramenta retorna
-
-Subagent retorna JSON como resultado da ferramenta:
 
 ```json
 {
   "status": "ok",
-  "model": "openai/gpt-5-nano",
-  "result": "The highest-risk steps are schema migration, traffic cutover, and rollback verification."
+  "model": "openai/gpt-6-astra",
+  "outcome": "The highest-risk steps are schema migration, traffic cutover, and rollback verification."
 }
 ```
 
-Se não for possível executar a solicitação ao modelo auxiliar, o Phaseo retorna um erro de ferramenta como `subagent_invalid_request`, `subagent_max_uses_exceeded` ou `subagent_request_failed`.
+Se a chamada não puder ser executada, o modelo recebe `subagent_invalid_request` (sem tarefa), `subagent_max_uses_exceeded` ou `subagent_request_failed`.
 
 ## Uso e preços
 
-As chamadas ao Subagent aumentam:
-
-```json
-{
-  "usage": {
-    "server_tool_use": {
-      "subagent_requests": 1
-    }
-  }
-}
-```
-
-Os tokens do modelo auxiliar são incluídos no uso total e podem ser cobrados pelas tarifas do modelo selecionado.
-
-## Relacionado
-
-- [Advisor](./advisor.mdx)
-- [Fusion](./fusion.mdx)
-- [Ferramentas do servidor](./index.mdx)
+Cada chamada soma 1 a `usage.server_tool_use.subagent_requests` e pode ser cobrada com `server_tool_subagent_requests`. Os tokens do trabalhador são somados ao uso da solicitação e cobrados com os preços do modelo trabalhador. Para obter uma revisão em vez de delegar trabalho, use o [Advisor](./advisor).

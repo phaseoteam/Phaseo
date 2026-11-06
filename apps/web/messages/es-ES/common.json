@@ -919,6 +919,14 @@
 			"selectCapability": "Selecciona una capacidad",
 			"supportedParams": "Parámetros admitidos",
 			"supportedParamsDescription": "Selecciona los parámetros de solicitud que admite esta capacidad.",
+			"parameterSpecs": "Especificaciones de parámetros",
+			"parameterSpecsDescription": "Cada parámetro que acepta esta ruta, con valores permitidos, rangos, valores predeterminados y reglas (when). El playground y la API de modelos los leen.",
+			"parameterSpecsInvalid": "No se ha guardado: {error}",
+			"parameterPreviewUnsupported": "no admitido",
+			"parameterPreviewMore": "+{count} más",
+			"parameterPreviewStep": "paso {step}",
+			"parameterPreviewDefault": "predeterminado {value}",
+			"parameterPreviewRules": "{count, plural, one {# regla} other {# reglas}}",
 			"capabilityStatuses": {
 				"active": "Activo",
 				"deranked": "Último recurso",
@@ -1779,6 +1787,12 @@
 			"browserUtc": "Navegador + UTC",
 			"imageModel": "Modelo de imagen",
 			"chooseImageModel": "Elegir modelo de imagen",
+			"complexity": "Complejidad",
+			"frameCount": "Fotogramas",
+			"frameDuration": "Duración del fotograma (ms)",
+			"svgAuthorModel": "Modelo autor del SVG",
+			"chooseSvgAuthorModel": "Elegir modelo autor del SVG",
+			"svgAuthorHint": "Este modelo de OpenAI escribe la salida SVG a partir de la imagen generada. Sus tokens se cobran a sus propios precios, además de la imagen.",
 			"quality": "Calidad",
 			"aspectRatio": "Relación de aspecto",
 			"size": "Tamaño",
@@ -2428,7 +2442,7 @@
 			"metricOverTheLastHoursHours": "{metric} durante las últimas {hours} horas",
 			"localTime": "Hora local",
 			"perQuantityUnit": "Por {quantity} {unit}",
-			"rateLimitedCountExcluded": "Limitadas por tasa: {count} excluidas"
+			"rateLimitedShareExcluded": "Limitadas por tasa: {percent} de las solicitudes excluidas"
 		},
 		"localisationGaps": {
 			"lastUpdated": "Última actualización: {time}",

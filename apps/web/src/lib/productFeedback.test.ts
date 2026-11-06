@@ -1,11 +1,12 @@
+import { describe, it, expect, vi } from "vitest";
 import {
 	PRODUCT_FEEDBACK_EVENT,
 	captureProductFeedback,
 	type ProductFeedbackPayload,
 } from "./productFeedback";
 
-jest.mock("@/lib/clientErrorReporting", () => ({
-	isAnalyticsCaptureAllowed: jest.fn(() => true),
+vi.mock("@/lib/clientErrorReporting", () => ({
+	isAnalyticsCaptureAllowed: vi.fn(() => true),
 }));
 
 describe("captureProductFeedback", () => {

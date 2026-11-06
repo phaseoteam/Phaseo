@@ -1,14 +1,17 @@
 ---
 title: "الحصول على عملية توليد الموسيقى"
 sidebarTitle: "الحصول على عملية توليد الموسيقى"
-badge: "Beta"
+badge: "تجريبي"
 openapi: "/ar/openapi/v1/openapi.localized.yaml GET /music/generate/{music_id}"
-description: "استرداد عملية توليد موسيقى باستخدام معرّف طلب Phaseo."
+description: "استرجع عملية توليد موسيقى باستخدام معرّف طلب Phaseo الخاص بها."
 ---
 
-استرداد نتيجة موسيقية أُنشئت عبر `POST /music/generate`. يعيد هذا المسار النتيجة الموحّدة المخزنة بعد اكتمال المزوّد، ويستطلع المزوّد المصدر إذا ظلت المهمة غير متزامنة.
+مرّر قيمة `id` التي أعادها [`POST /v1/music/generate`](./music-generate.mdx)، لا قيمة `nativeResponseId`. يُرجع Phaseo النتيجة المخزّنة عند انتهاء عملية التوليد، ويستطلع المزوّد عنك ما دامت لا تزال قيد التشغيل.
 
-## بنية الاستجابة
+```bash
+curl https://api.phaseo.app/v1/music/generate/req_01JY6MUSIC123 \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
 
 ```json
 {
@@ -37,10 +40,4 @@ description: "استرداد عملية توليد موسيقى باستخدام
 }
 ```
 
-## ملاحظات
-
-- يمكن أن تكون قيمة `status`: `queued` أو `in_progress` أو `completed` أو `failed`.
-- يُدرج `usage` عند اكتمال التوليد.
-- مرّر معرّف Phaseo `id` الذي أعاده `POST /music/generate`، وليس `nativeResponseId`.
-- يتولى هذا المسار داخليًا معالجة واجهات الحالة والاسترداد الخاصة بالمزوّد.
-
+قيمة `status` هي `queued` أو `in_progress` أو `completed` أو `failed`. يُضمَّن `usage` بمجرد اكتمال عملية التوليد.

@@ -6,12 +6,13 @@ import type { PipelineContext } from "@pipeline/before/types";
 import type { RequestResult } from "@pipeline/execute";
 import { ensureRuntimeForBackground, getBindings } from "@/runtime/env";
 import { sendAxiomWideEvent } from "./axiom";
+import { emitGatewayPlatformEvent } from "./platform";
 import { reportedCacheTokens } from "@core/cache-usage";
 import { sanitizeForAxiom, sanitizeJsonStringForAxiom, stringifyForAxiom } from "./privacy";
 import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
 import { keyKeepsContentOutOfTelemetry, requestAsksForZeroDataRetention } from "@pipeline/audit/io-logging";
 
-type EventArgs = {
+export type EventArgs = {
     ctx?: PipelineContext;
     result?: RequestResult;
     provider?: string | null;
@@ -1189,6 +1190,7 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             (ctx as any).__wideEventEmitted = true;
         }
 
+        try { emitGatewayPlatformEvent(args, classifyOperationalError(args)); } catch { /* Preserve request finalization. */ }
         const observabilityPlan = buildObservabilityPlan(args, bindings);
         if (!observabilityPlan.emit) {
             return;

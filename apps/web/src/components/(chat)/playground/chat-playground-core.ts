@@ -254,7 +254,7 @@ export type ChatApiTarget =
 	| "custom";
 export const LOCAL_CHAT_API_BASE_URL = "http://127.0.0.1:8787/v1";
 export const STAGING_CHAT_API_BASE_URL =
-	process.env.NEXT_PUBLIC_STAGING_GATEWAY_BASE_URL?.trim().replace(/\/+$/, "") ??
+	process.env.PUBLIC_STAGING_GATEWAY_BASE_URL?.trim().replace(/\/+$/, "") ??
 	"";
 
 const CHAT_API_TARGETS = new Set<ChatApiTarget>([
@@ -762,6 +762,16 @@ export function buildServerToolDefinitions(
 			);
 			if (config?.moderation && config.moderation !== "auto") {
 				parameters.moderation = config.moderation;
+			}
+			if (config?.complexity && config.complexity !== "auto") {
+				parameters.complexity = config.complexity;
+			}
+			if (config?.outputFormat === "gif") {
+				setOptionalNumber(parameters, "frame_count", config.frameCount, { min: 2, max: 64 });
+				setOptionalNumber(parameters, "frame_duration_ms", config.frameDurationMs, { min: 20, max: 2000 });
+			}
+			if (config?.outputFormat === "svg" && config.svgModel?.trim()) {
+				parameters.svg = { model: config.svgModel.trim() };
 			}
 			return withParameters(toolType, parameters);
 		}

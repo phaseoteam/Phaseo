@@ -1,6 +1,6 @@
 import { Link } from "@/i18n/navigation";
-import Script from "next/script";
-import { useTranslations } from "next-intl";
+import Script from "@/components/script";
+import { useTranslations } from "@/i18n/react";
 import { ArrowRight } from "lucide-react";
 import { absoluteUrl, SITE_NAME } from "@/lib/seo";
 import type { MethodologyEntry } from "@/lib/content/methodology";

@@ -1,3 +1,4 @@
+import { describe, it, expect, afterEach, vi } from "vitest";
 import {
 	buildAccountLifecycleDiscordPayload,
 	maskEmailForWebhook,
@@ -15,7 +16,7 @@ describe("account lifecycle Discord webhook helpers", () => {
 			process.env.DISCORD_SIGNUP_WEBHOOK_URL = originalSignupWebhookUrl;
 		}
 
-		jest.restoreAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	it("masks the local part of an email for webhook payloads", () => {
@@ -54,7 +55,7 @@ describe("account lifecycle Discord webhook helpers", () => {
 	it("sends lifecycle notifications through the signup webhook env var", async () => {
 		process.env.DISCORD_SIGNUP_WEBHOOK_URL = "https://discord.example/signup";
 
-		const fetchImpl = jest.fn().mockResolvedValue({
+		const fetchImpl = vi.fn().mockResolvedValue({
 			ok: true,
 			status: 204,
 			statusText: "No Content",
@@ -97,7 +98,7 @@ describe("account lifecycle Discord webhook helpers", () => {
 	it("returns false without calling fetch when no lifecycle webhook is configured", async () => {
 		delete process.env.DISCORD_SIGNUP_WEBHOOK_URL;
 
-		const fetchImpl = jest.fn();
+		const fetchImpl = vi.fn();
 
 		await expect(
 			sendAccountLifecycleDiscordWebhook(

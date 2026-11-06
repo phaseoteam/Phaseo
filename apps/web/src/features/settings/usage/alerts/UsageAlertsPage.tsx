@@ -1,0 +1,6 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { privateUsageScopeQuery } from "../usage.functions";
+import UsageAlertsClient from "./UsageAlertsClient";
+import { getTranslations } from "@/i18n/server";
+export async function getUsageAlertsMetadata() { const t = await getTranslations("SettingsUI.settingsPageMetadata"); return { title: t("lifecycleAlerts") }; }
+export default function Page() { const { data: scope } = useSuspenseQuery(privateUsageScopeQuery()); return <UsageAlertsClient scope={scope} />; }

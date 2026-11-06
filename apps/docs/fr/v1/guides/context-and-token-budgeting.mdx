@@ -1,52 +1,39 @@
 ---
 icon: "calculator"
-title: "Contexte et budget de jetons"
-description: "Comment répartir les jetons d’entrée et de sortie pour optimiser la qualité, la vitesse et le coût."
+title: "Contexte et budget de tokens"
+description: "Comment répartir les tokens d’entrée et de sortie pour optimiser la qualité, la vitesse et le coût."
 ---
 
-La gestion du budget de jetons est une compétence essentielle en production. Elle influe directement sur la latence, les dépenses et la fiabilité.
+Donnez à chaque type de requête une taille d’entrée cible et une limite de sortie, puis comparez-les à l’utilisation réelle. Chaque token envoyé ou reçu ajoute de la latence et du coût, et une limite de sortie trop basse tronque les réponses.
 
-## Éléments du budget de jetons
+## Ce qui compte dans une requête
 
-La taille totale d’une requête comprend généralement :
+| Partie | Compte comme | Points de vigilance |
+| --- | --- | --- |
+| Instructions système et développeur | Entrée | Les longues instructions répétées à chaque requête. Mettez-les en cache avec la [mise en cache des prompts](./prompt-caching.mdx). |
+| Saisie de l’utilisateur | Entrée | Les collages et téléversements sans limite. |
+| Contexte récupéré (documents, résultats de recherche, sortie d’outils) | Entrée | Les passages peu pertinents qui ajoutent des tokens et diluent la réponse. |
+| Schémas d’outils et définitions de fonctions | Entrée | Les outils déclarés comptent comme entrée, que le modèle les appelle ou non. |
+| Raisonnement | Sortie | Les modèles de raisonnement consomment une partie de la limite de sortie avant de répondre. |
+| La réponse | Sortie | Les limites qui tronquent les réponses ou la sortie structurée. |
 
-- Instructions système ou développeur
-- Prompt ou entrée utilisateur
-- Contexte récupéré (RAG, documentation et outils)
-- Schémas d’outils ou définitions de fonctions
-- Jetons générés par le modèle
+## Quand le raisonnement épuise la limite de sortie
 
-## Pourquoi les budgets sont importants
+Un modèle de raisonnement peut consommer toute la limite de sortie avant de produire une réponse. La réponse reste en HTTP `200` et contient le raisonnement produit, sans réponse inventée :
 
-- Les prompts plus longs augmentent la latence et le coût.
-- Des prompts trop longs peuvent réduire la pertinence lorsque le contexte est de mauvaise qualité.
-- Un budget de sortie trop faible peut tronquer la réponse et produire des sorties structurées non valides.
+| Endpoint | Ce que vous obtenez |
+| --- | --- |
+| Chat Completions | `reasoning_content`, avec `finish_reason: "length"` |
+| Responses | L’élément de sortie de raisonnement, avec `status: "incomplete"` |
 
-Le raisonnement peut consommer le budget de sortie avant que le modèle ne produise une réponse. Ces
-réponses renvoient HTTP 200 avec le raisonnement produit, sans réponse
-fabriquée. Chat Completions conserve `reasoning_content` et `finish_reason: "length"`
-lorsque la limite de sortie est atteinte. Responses conserve l’élément de raisonnement et
-indique `status: "incomplete"`. Un arrêt normal du fournisseur reste `stop` ou `completed`.
-## Stratégie de budgétisation
+Un arrêt normal reste `stop` (Chat Completions) ou `completed` (Responses). Augmentez la limite de sortie ou réduisez l’effort de raisonnement si ces cas se produisent souvent.
 
-1. Définissez une cible maximale de jetons d’entrée pour chaque route.
-2. Réservez une marge de sortie pour les réponses les plus longues prévues.
-3. Supprimez sans hésiter le contexte de faible valeur.
-4. Surveillez l’évolution de la distribution réelle de l’utilisation des jetons.
+## Définir un budget par route
 
-## Garde-fous pratiques
+1. Fixez une taille d’entrée maximale pour chaque type de requête, comme une réponse de recherche ou un brouillon long. Ne copiez pas la même limite sur tous les endpoints.
+2. Laissez assez de place en sortie pour la réponse la plus longue que ce type de requête doit produire.
+3. Réduisez ou résumez les contextes volumineux avant de les envoyer, en commençant par les passages les moins susceptibles de compter.
+4. Vérifiez si les sorties sont tronquées, par exemple avec `finish_reason: "length"` ou un JSON partiel, et relancez avec plus de place le cas échéant.
+5. Suivez dans le temps le nombre de tokens indiqué dans le champ `usage` de chaque réponse, et ajustez les limites à mesure que vos prompts évoluent.
 
-- Imposer des limites strictes aux jetons d’entrée et de sortie.
-- Ajoutez des règles préalables de troncature ou de résumé des contextes volumineux.
-- Utilisez des limites propres à chaque route (réponse de recherche ou génération longue).
-- Vérifiez que les sorties ne contiennent pas de marqueurs de troncature ni de JSON partiel.
-
-## Erreurs fréquentes
-
-- Copier la même limite de jetons sur tous les endpoints.
-- Conserver de longs prompts système pour tous les types de requête.
-- Ignorer le coût en jetons des schémas d’outils.
-
-## Recommandation
-
-Considérez les budgets de jetons comme une configuration à surveiller en continu, et non comme un réglage ponctuel.
+Pour comprendre l’interaction entre limites de sortie et échantillonnage, consultez [Paramètres d’inférence](./inference-parameters.mdx).

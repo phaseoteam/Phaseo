@@ -1,0 +1,233 @@
+---
+icon: "shuffle"
+title: "الأدوار الديناميكية في Agent SDK"
+sidebarTitle: "الأدوار الديناميكية"
+description: "غيّر نموذج الوكيل أو تعليماته أو إعدادات أخذ العينات أو أدواته بين الأدوار دون إعادة بنائه."
+---
+
+مرّر دالة بدلًا من قيمة ثابتة عندما ينبغي أن يعتمد دور لاحق للنموذج على سياق التطبيق أو على نتائج سابقة. يستدعي وقت التشغيل هذه الدالة قبل كل طلب إلى النموذج مع رقم الدور وفهرس الخطوة والرسائل والسياق. لا توجد في Rust دوال رد نداء لكل دور؛ بل [تضبط النموذج لكل تشغيل](#set-the-model-per-run-in-rust).
+
+## غيّر الإعدادات في كل دور
+
+<CodeGroup>
+
+```typescript TypeScript
+type ResearchContext = {
+  fast: boolean;
+};
+
+const agent = createAgent<string, string, ResearchContext>({
+  id: "research-agent",
+  model: ({ context }) =>
+    context?.fast ? "openai/gpt-6-astra" : "openai/gpt-6-astra-pro",
+  instructions: ({ numberOfTurns }) =>
+    `Research turn ${numberOfTurns}. Cite the evidence you use.`,
+});
+```
+
+```python Python
+agent = create_agent({
+    "id": "research-agent",
+    "model": lambda turn: "openai/gpt-6-astra" if (turn["context"] or {}).get("fast") else "openai/gpt-6-astra-pro",
+    "instructions": lambda turn: f"Research turn {turn['number_of_turns']}. Cite the evidence you use.",
+})
+```
+
+```go Go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID:    "support-agent",
+  Model: "openai/gpt-6-astra",
+  DynamicModel: func(turn phaseoagent.TurnContext) string {
+    if turn.StepIndex >= 3 {
+      return "openai/gpt-6-astra-pro"
+    }
+    return "openai/gpt-6-astra"
+  },
+  DynamicInstructions: func(turn phaseoagent.TurnContext) string {
+    return fmt.Sprintf("Resolve the request. Current context: %v", turn.Context)
+  },
+})
+```
+
+```csharp C#
+var agent = AgentSdk.CreateAgent(new AgentDefinition
+{
+    Id = "support-agent",
+    Model = "openai/gpt-6-astra",
+    DynamicModel = turn => turn.StepIndex >= 3 ? "openai/gpt-6-astra-pro" : "openai/gpt-6-astra",
+    DynamicInstructions = turn => $"Resolve the request. Current context: {turn.Context}",
+});
+```
+
+```php PHP
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "support-agent",
+    model: fn (array $turn) => $turn["step_index"] >= 3
+        ? "openai/gpt-6-astra-pro"
+        : "openai/gpt-6-astra",
+    instructions: fn (array $turn) => "Resolve the request. Current context: " . json_encode($turn["context"]),
+));
+```
+
+```ruby Ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "support-agent",
+  model: ->(turn) {
+    turn[:step_index] >= 3 ? "openai/gpt-6-astra-pro" : "openai/gpt-6-astra"
+  },
+  instructions: ->(turn) {
+    "Resolve the request. Current context: #{turn[:context].inspect}"
+  }
+)
+```
+
+```java Java
+// The callbacks are the last six arguments of the 19-argument constructor.
+var agent = AgentSdk.createAgent(new AgentSdk.AgentDefinition(
+    "support-agent", "openai/gpt-6-astra", null, "Resolve the request.",
+    List.of(), 12, null, null, null, null,
+    List.of(), null, null,                         // stopWhen, outputSchema, requireApproval
+    turn -> turn.stepIndex() >= 3 ? "openai/gpt-6-astra-pro" : "openai/gpt-6-astra", // dynamicModel
+    turn -> "Resolve the request. Current context: " + turn.context(),         // dynamicInstructions
+    null, null, null,                              // temperature, maxOutputTokens, topP
+    null                                           // dynamicTools
+));
+```
+
+</CodeGroup>
+
+### ما يمكنك تغييره في كل دور
+
+| الإعداد | TypeScript | Python | Go | C# | PHP | Ruby | Java |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| النموذج | `model` | `model` | `DynamicModel` | `DynamicModel` | `model` | `model:` | `dynamicModel` |
+| التعليمات | `instructions` | `instructions` | `DynamicInstructions` | `DynamicInstructions` | `instructions` | `instructions:` | `dynamicInstructions` |
+| درجة الحرارة | `temperature` | `temperature` | `Temperature` (`*float64`) | `Temperature` (`double?`) | `temperature` | `temperature:` | `temperature` (`Double`) |
+| Top-p | `topP` | `top_p` | `TopP` (`*float64`) | `TopP` (`double?`) | `topP` | `top_p:` | `topP` (`Double`) |
+| الحد الأقصى لرموز الإخراج | `maxOutputTokens` | `max_output_tokens` | `MaxOutputTokens` (`*int`) | `MaxOutputTokens` (`int?`) | `maxOutputTokens` | `max_output_tokens:` | `maxOutputTokens` (`Integer`) |
+| الأدوات المعروضة | `activeTools` (معرّفات الأدوات) | ليس لكل دور؛ استخدم `next_turn_params` | `DynamicTools` (`[]Tool`) | `DynamicTools` (`IReadOnlyList<Tool>`) | `dynamicTools` | `dynamic_tools:` | `dynamicTools` (`List<Tool>`) |
+| قائمة النماذج | `models` | لا | لا | لا | لا | لا | لا |
+
+تأخذ TypeScript وPython وPHP وRuby دالة مكان الحقل الثابت. أما Go وC# وJava فتستخدم حقول رد نداء منفصلة بجانب الحقلين الثابتين `Model` و`Instructions`. في TypeScript تبقى الأدوات المستبعدة من `activeTools` قابلة للاستدعاء، لذا تُحل الاستدعاءات السابقة رغم ذلك.
+
+يحمل وسيط الدور القيم الأربع نفسها في كل لغة:
+
+| اللغة | وسيط الدور |
+| --- | --- |
+| TypeScript | كائن يتضمن `numberOfTurns` و`stepIndex` و`messages` و`context` |
+| Python | قاموس يتضمن `number_of_turns` و`step_index` و`messages` و`context` |
+| Go، C# | `TurnContext` يتضمن `NumberOfTurns` و`StepIndex` و`Messages` و`Context` |
+| PHP | مصفوفة تتضمن `number_of_turns` و`step_index` و`messages` و`context` |
+| Ruby | Hash يتضمن `:number_of_turns` و`:step_index` و`:messages` و`:context` |
+| Java | `TurnContext` يتضمن `numberOfTurns()` و`stepIndex()` و`messages()` و`context()` |
+
+في Python، تحل قيمة `model` أو `preset` الممرّرة إلى `run()` محل نموذج التعريف في كل دور.
+
+## حدّث سياق التطبيق من أداة
+
+يمكن للأداة استبدال سياق التطبيق الذي تقرأه الأدوار اللاحقة: `context.setContext()` في TypeScript، و`runtime.set_context()` في Python، وما يعادلهما في [الأدوات](./tools#report-progress-and-update-context). أبقِ السياق صغيرًا وقابلًا للتسلسل عندما تحفظ عمليات التشغيل وتتابعها لاحقًا.
+
+```typescript
+const chooseMode = defineTool({
+  id: "choose-mode",
+  async execute(input: { fast: boolean }, context) {
+    context.setContext({ fast: input.fast });
+    return { selected: input.fast ? "fast" : "thorough" };
+  },
+});
+```
+
+## تجاوز الدور التالي فقط
+
+اضبط معاملات الدور التالي على أداة لتغيير الطلب الذي يليها مباشرة، دون تغيير تعريف الوكيل. وتتقدّم هذه المعاملات على دوال كل دور في ذلك الدور وحده.
+
+<CodeGroup>
+
+```typescript TypeScript
+const broadenSearch = defineTool({
+  id: "broaden-search",
+  nextTurnParams: {
+    model: "openai/gpt-6-astra-pro",
+    maxOutputTokens: 2_000,
+  },
+  async execute() {
+    return { broadened: true };
+  },
+});
+```
+
+```python Python
+broaden_search = define_tool(AgentTool(
+    id="broaden-search",
+    next_turn_params={"model": "openai/gpt-6-astra-pro", "max_output_tokens": 2_000},
+    execute=lambda tool_input, runtime: {"broadened": True},
+))
+```
+
+```go Go
+inspect := phaseoagent.Tool{
+  ID:       "inspect_repository",
+  Execute:  inspectRepository,
+  NextTurn: &phaseoagent.NextTurnParams{Model: "openai/gpt-6-astra-pro"},
+}
+```
+
+```csharp C#
+var inspect = new Tool("inspect_repository", InspectRepository)
+{
+    NextTurnParams = new NextTurnParams(Model: "openai/gpt-6-astra-pro"),
+};
+```
+
+```php PHP
+$inspect = new Tool(
+    id: "inspect_repository",
+    execute: fn (array $input, $runtime) => inspectRepository($input),
+    nextTurnParams: ["model" => "openai/gpt-6-astra-pro"],
+);
+```
+
+```ruby Ruby
+inspect_repo = PhaseoAgentSdk::Tool.new(
+  id: "inspect_repository",
+  execute: ->(input, runtime) { inspect_repository(input) },
+  next_turn_params: { model: "openai/gpt-6-astra-pro" }
+)
+```
+
+```java Java
+// Pass as the tool's last constructor argument.
+new AgentSdk.NextTurnParams("openai/gpt-6-astra-pro", null, null, null, null, null)
+```
+
+</CodeGroup>
+
+تقبل معاملات الدور التالي النموذج والتعليمات ودرجة الحرارة وtop-p والحد الأقصى لرموز الإخراج والأدوات، وتُسمّى بنمط الكتابة في كل لغة. وفي Python هي الطريقة الوحيدة لتغيير قائمة الأدوات بين الأدوار.
+
+إذا كانت الأداة تنتظر الموافقة، تُحفظ تجاوزاتها مع التشغيل الموقوف مؤقتًا وتُطبَّق على الدور الذي يلي المتابعة:
+
+| اللغة | تُحفظ في |
+| --- | --- |
+| TypeScript | تُطبَّق عندما يُنفَّذ الاستدعاء الموافَق عليه عند المتابعة |
+| Python | `run.next_turn_params` |
+| Go | `Run.NextTurn` |
+| C# | `Run.NextTurn` |
+| PHP | `$result->run->nextTurnParams` |
+| Ruby | `result.run.next_turn_params` |
+| Java | `run().nextTurn()` |
+
+استخدم دوال كل دور للسياسات التي تريد إعادة حسابها في كل دور، ومعاملات الدور التالي لتسليم لمرة واحدة من أداة محددة.
+
+<span id="set-the-model-per-run-in-rust"></span>
+## اضبط النموذج لكل تشغيل في Rust
+
+لا تتضمن `phaseo-agent` 0.2 في Rust دوال رد نداء لكل دور، ولا تحديثات للسياق من الأدوات، ولا معاملات للدور التالي. اضبط النموذج وحد الخطوات وسياق التطبيق لكل تشغيل باستخدام `RunOptions`:
+
+```rust
+let mut options = RunOptions::new("Explain when to use routing presets.");
+options.model = Some("openai/gpt-6-astra-pro".to_string());
+options.max_steps = Some(4);
+options.context = serde_json::json!({ "workspace": "docs" });
+
+let result = agent.run(&mut client, options)?;
+```

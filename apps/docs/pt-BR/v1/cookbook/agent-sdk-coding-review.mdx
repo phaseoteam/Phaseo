@@ -1,41 +1,68 @@
 ---
 title: "Execute um agente de revisão de código com ferramentas de runtime"
-sidebarTitle: "Agente de revisão de código"
+sidebarTitle: "Executar um agente de revisão de código"
 icon: "code-xml"
 description: "Crie um fluxo retomável de revisão de código com ferramentas locais de runtime, JSON estrito e pontos de aprovação humana."
 ---
 
-Use esta receita quando um fluxo de trabalho precisar:
+Crie um agente em TypeScript que inspeciona um pull request com ferramentas locais, retorna um plano de revisão em JSON estrito e pausa para uma pessoa quando o plano diz que precisa de aprovação. Ao final, você terá um único script que imprime um `CodeReviewPlan` validado e para em `waiting_for_human` até que alguém o aprove.
 
-- inspecionar o contexto relacionado ao código com ferramentas locais de runtime
-- retornar uma saída estruturada estrita, em vez de prosa livre
-- pausar decisões de alto risco para obter aprovação humana
-- salvar o progresso entre turnos do modelo e chamadas de ferramenta
+As ferramentas retornam dados de exemplo fixos, então o script é ilustrativo; substitua-as por chamadas ao seu host de código e à sua CI. Uma versão empacotada está em `packages/sdk/agent-sdk-ts/examples/coding-review-agent.ts`.
 
-## 1. Defina um contrato de saída restrito
-
-```ts
-type CodeReviewPlan = {
-  risk: "low" | "medium" | "high";
-  summary: string;
-  recommendedActions: string[];
-  needsApproval: boolean;
-};
+```mermaid
+flowchart LR
+  run["agent.run()"] --> tools["lookup-diff-summary, lookup-failing-checks"]
+  tools --> plan["Plano de revisão em JSON"]
+  plan --> check{{"needsApproval?"}}
+  check -->|"Não"| done["completed"]
+  check -->|"Sim"| wait["waiting_for_human"]
+  wait -->|"continueRun com humanInput"| done
 ```
 
-Isso mantém o primeiro fluxo de revisão de código fácil de inspecionar nos logs e de encaminhar às etapas seguintes do worker.
+## Crie o agente
 
-## 2. Defina ferramentas de runtime pequenas
+<Steps>
+<Step title="Instale">
 
-```ts
-import { defineTool } from "@phaseo/agent-sdk";
+```bash
+npm install @phaseo/agent-sdk zod
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
 
+</Step>
+<Step title="Escreva o agente">
+
+```ts review-agent.ts
+import { z } from "zod";
+import { createAgent, createGatewayAgentClient, defineTool } from "@phaseo/agent-sdk";
+
+const CodeReviewPlan = z
+  .object({
+    risk: z.enum(["low", "medium", "high"]),
+    summary: z.string().min(1),
+    recommendedActions: z.array(z.string()).min(1),
+    needsApproval: z.boolean(),
+  })
+  .strict();
+type CodeReviewPlan = z.infer<typeof CodeReviewPlan>;
+
+const PullRequestInput = z.object({ pullRequestId: z.string().regex(/^pr_\d+$/) }).strict();
+const pullRequestParameters = {
+  type: "object",
+  properties: { pullRequestId: { type: "string", pattern: "^pr_\\d+$" } },
+  required: ["pullRequestId"],
+  additionalProperties: false,
+};
+
+// Ferramentas somente leitura e determinísticas: seguras para executar de novo se um worker retomar a execução.
 const lookupDiffSummary = defineTool({
   id: "lookup-diff-summary",
   description: "Return a short summary of the changed files in one pull request.",
-  async execute(input: { pullRequestId: string }) {
+  parameters: pullRequestParameters,
+  inputSchema: PullRequestInput,
+  async execute({ pullRequestId }) {
     return {
-      pullRequestId: input.pullRequestId,
+      pullRequestId,
       files: ["apps/api/src/pipeline/before/index.ts"],
       summary: "Changes touch request validation.",
     };
@@ -45,68 +72,40 @@ const lookupDiffSummary = defineTool({
 const lookupFailingChecks = defineTool({
   id: "lookup-failing-checks",
   description: "Return the failing CI checks for one pull request.",
-  async execute(input: { pullRequestId: string }) {
-    return {
-      pullRequestId: input.pullRequestId,
-      failingChecks: ["web-typecheck"],
-    };
+  parameters: pullRequestParameters,
+  inputSchema: PullRequestInput,
+  async execute({ pullRequestId }) {
+    return { pullRequestId, failingChecks: ["web-typecheck"] };
   },
 });
-```
-
-Mantenha essas ferramentas determinísticas e idempotentes para que os dados de etapas salvos continuem úteis caso um worker retome a execução mais tarde.
-
-## 3. Crie o agente com um ponto de revisão humana
-
-```ts
-import { createAgent } from "@phaseo/agent-sdk";
 
 const codingReviewAgent = createAgent<string, CodeReviewPlan>({
   id: "coding-review-agent",
-  model: "phaseo/free",
+  model: "openai/gpt-6-astra",
   instructions:
     "Use the available tools to inspect the coding task, then return a strict JSON review plan.",
   tools: [lookupDiffSummary, lookupFailingChecks],
-  parseOutput(text) {
-    return JSON.parse(text) as CodeReviewPlan;
-  },
+  maxSteps: 6,
+  parseOutput: (text) => JSON.parse(text),
+  outputSchema: CodeReviewPlan,
   humanReview: ({ parsedOutput }) =>
     parsedOutput?.needsApproval
-      ? {
-          reason: "coding_review_approval_required",
-          payload: parsedOutput,
-        }
+      ? { reason: "coding_review_approval_required", payload: parsedOutput }
       : null,
 });
-```
 
-## 4. Use o adaptador do gateway para exigir JSON estrito
-
-```ts
-import {
-  createGatewayAgentClient,
-} from "@phaseo/agent-sdk";
-
+// Pede ao Gateway exatamente este formato de JSON e repara JSON quase válido.
 const client = createGatewayAgentClient({
-  clientOptions: {
-    apiKey: process.env.PHASEO_API_KEY!,
-  },
+  clientOptions: { apiKey: process.env.PHASEO_API_KEY! },
   responseFormat: {
     type: "json_schema",
     name: "code_review_plan",
     schema: {
       type: "object",
       properties: {
-        risk: {
-          type: "string",
-          enum: ["low", "medium", "high"],
-        },
+        risk: { type: "string", enum: ["low", "medium", "high"] },
         summary: { type: "string" },
-        recommendedActions: {
-          type: "array",
-          items: { type: "string" },
-          minItems: 1,
-        },
+        recommendedActions: { type: "array", items: { type: "string" }, minItems: 1 },
         needsApproval: { type: "boolean" },
       },
       required: ["risk", "summary", "recommendedActions", "needsApproval"],
@@ -115,11 +114,7 @@ const client = createGatewayAgentClient({
   },
   plugins: [{ id: "response-healing", mode: "strict" }],
 });
-```
 
-## 5. Execute e retome o fluxo de trabalho
-
-```ts
 const result = await codingReviewAgent.run({
   input: "Review pull request pr_482 and produce a remediation plan.",
   client,
@@ -129,28 +124,42 @@ const result = await codingReviewAgent.run({
 });
 
 if (result.run.status === "waiting_for_human") {
-  const continued = await codingReviewAgent.continueRun({
-    run: result,
-    client,
-    humanInput: "Approved. Finalize the plan.",
-  });
+  console.log("Needs approval:", result.run.pause?.payload);
 
-  console.log(continued.output);
+  // Em um app real, guarde `result` e continue quando um revisor aprovar.
+  if (process.env.APPROVE === "yes") {
+    const continued = await codingReviewAgent.continueRun({
+      run: result,
+      client,
+      humanInput: "Approved. Finalize the plan.",
+    });
+    console.log(continued.output);
+  }
+} else {
+  console.log(result.output);
 }
 ```
 
-## 6. O que verificar
+`responseFormat` faz o Gateway solicitar este esquema, e `outputSchema` verifica de novo o resultado analisado no seu processo. O modo estrito de [recuperação de respostas](./response-healing-for-structured-json) só desembrulha JSON que já é válido.
 
-Depois de uma execução com ferramentas e de outra pausada para aprovação, confirme:
+</Step>
+<Step title="Execute">
 
-- as telas de detalhes da requisição mostram claramente o ciclo das ferramentas de runtime
-- execuções pausadas passam para `waiting_for_human`
-- os registros das etapas salvam um ponto de controle após a execução de uma ferramenta
-- falhas de esquema ou atividade de recuperação do plugin continuam visíveis nos logs
+```bash
+npx tsx review-agent.ts
+APPROVE=yes npx tsx review-agent.ts
+```
 
-## Guias relacionados
+</Step>
+</Steps>
 
-- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
-- [Crie um ciclo durável de agente](./agent-sdk-durable-loop.mdx)
-- [Valide saídas estruturadas](../guides/structured-outputs.mdx)
-- [Recupere JSON estruturado malformado](./response-healing-for-structured-json.mdx)
+## Verifique se funcionou
+
+- O log de eventos mostra `tool.started` e `tool.completed` para as duas ferramentas e, em seguida, `checkpoint.saved` após a etapa de ferramentas.
+- Um plano com `needsApproval: true` encerra a primeira execução em `waiting_for_human`, com o plano em `result.run.pause.payload`; com `APPROVE=yes`, ela continua até `completed`.
+- Em **Configurações → Uso → Registros**, cada turno do modelo mostra as chamadas de ferramentas, e o registro de plugins da solicitação mostra se a recuperação foi executada.
+- Um plano que viola o esquema faz a execução falhar com um `AgentSchemaValidationError` em vez de retornar dados ruins.
+
+## Torne-o seguro para repositórios reais
+
+Mantenha as ferramentas de revisão somente leitura. Se você adicionar uma ferramenta que comenta, faz push ou faz merge, defina `requireApproval: true` nela para que a execução pause antes de ela rodar, e aprove-a com `continueRun({ run, client, approvals: [toolCallId] })`. Trate o conteúdo do diff como entrada não confiável: comentários no código podem conter instruções direcionadas ao modelo. Para sobreviver a reinícios enquanto uma revisão aguarda, salve a execução com um acessor `state`, como no [loop persistente](./agent-sdk-durable-loop). [Estado e aprovação](../sdk-reference/agent/state-and-approval) cobre aprovações e rejeições.

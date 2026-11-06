@@ -1,0 +1,131 @@
+---
+icon: "search-check"
+title: "البحث عن عملية توليد"
+description: "استرجع عملية توليد سابقة باستخدام /generations من أي حزمة Phaseo SDK."
+---
+
+مرّر معرّف طلب (مثل `G-01ABC...`) إلى دالة التوليد في حزمة SDK لجلب السجل المخزّن لذلك الطلب من `GET /v1/generations?id=<id>`.
+
+<CodeGroup>
+
+```typescript TypeScript
+const record = await client.getGeneration("G-01ABC...");
+```
+
+```python Python
+record = client.get_generation("G-01ABC...")
+
+print(record["model_id"], record["cost_nanos"])
+```
+
+```go Go
+client, err := phaseo.NewFromEnv()
+if err != nil {
+  panic(err)
+}
+
+record, err := client.GetGeneration(context.Background(), "G-01ABC...")
+if err != nil {
+  panic(err)
+}
+fmt.Println(record["status_code"], record["cost_nanos"])
+```
+
+```csharp C#
+using PhaseoSdk;
+
+var client = new Phaseo();
+var record = await client.GetGeneration("G-01ABC...");
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo();
+$record = $client->getGeneration('G-01ABC...');
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new
+record = client.get_generation('G-01ABC...')
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+var record = client.getGeneration("G-01ABC...");
+System.out.println(record);
+```
+
+</CodeGroup>
+
+| اللغة | الدالة | القيمة المُعادة |
+| --- | --- | --- |
+| TypeScript | `client.getGeneration(id)` | كائن السجل |
+| Python | `client.get_generation(id)` | قاموس `APIResponse` |
+| Go | `client.GetGeneration(ctx, id)` | `map[string]interface{}` |
+| C# | `client.GetGeneration(id)` | `Dictionary<string, object>?` |
+| PHP | `$client->getGeneration($id)` | مصفوفة |
+| Ruby | `client.get_generation(id)` | Hash |
+| Java | `client.getGeneration(id)` | `JsonNode` من Jackson |
+| Rust | لا توجد دالة مساعدة؛ استدعِ `client.request("GET", "/generations?id=<id>", None, &RequestOptions::default())` | `PhaseoResponse`، والسجل في `body` (من النوع `serde_json::Value`) |
+
+يقتصر البحث على مساحة العمل الخاصة بك. يؤدي غياب `id` إلى `400` (`missing_id`)، ويؤدي معرّف غير موجود في مساحة العمل إلى `404` (`not_found`).
+
+## إعادة تشغيل طلب مخزّن
+
+إذا خزّنت البوابة الطلب كاملًا، فسيحتوي السجل على `replay_supported` بقيمة true وعلى `replay_request`، ويمكنك إرساله مجددًا إلى نقطة النهاية الأصلية لإعادة تشغيل مضبوطة.
+
+## قراءة حقول التوقيت
+
+- `latency_ms`: الوقت حتى أول token، أو أول بايت أو إطار من المخرجات، عند تتبّعه.
+- `generation_ms`: وقت التوليد بعد تلك النقطة، عند تتبّعه.
+
+## الاستجابة
+
+```json
+{
+  "created_at": "2026-05-05T12:00:00.000Z",
+  "request_id": "G-01ABC123",
+  "team_id": "team-123",
+  "app_id": "app-123",
+  "endpoint": "chat/completions",
+  "model_id": "openai/gpt-6-astra",
+  "provider": "openai",
+  "native_response_id": "chatcmpl-123",
+  "stream": false,
+  "byok": false,
+  "status_code": 200,
+  "success": true,
+  "error_code": null,
+  "error_message": null,
+  "latency_ms": 1500,
+  "generation_ms": 1400,
+  "usage": {
+    "prompt_tokens": 9,
+    "completion_tokens": 9,
+    "total_tokens": 18
+  },
+  "cost_nanos": 1000000,
+  "currency": "USD",
+  "pricing_lines": [],
+  "key_id": "key-123",
+  "throughput": null,
+  "replay_supported": true,
+  "replay_request": {
+    "model": "openai/gpt-6-astra",
+    "messages": [
+      { "role": "user", "content": "Say hello" }
+    ]
+  }
+}
+```
+
+يسرد [البحث عن عملية توليد](../../api-reference/endpoint/generation) كل الحقول.

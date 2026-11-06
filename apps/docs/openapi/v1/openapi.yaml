@@ -100,6 +100,15 @@ paths:
             enum:
               - asc
               - desc
+        - name: include
+          in: query
+          description: Set to parameter_specs to add each offer's request parameters in the standard shape.
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - parameter_specs
         - name: endpoints
           in: query
           description: Filter by endpoints
@@ -5393,7 +5402,7 @@ paths:
       description: >-
         Lists the workspace's named rate limit policies. The gateway enforces
         requests_per_minute, tokens_per_minute and concurrent_requests for key,
-        member, department, guardrail and end-user-default assignments.
+        member, department and end-user-default assignments.
       responses:
         '200':
           description: Rate limit policies
@@ -5416,8 +5425,8 @@ paths:
       description: >-
         Creates a named policy with requests per minute, tokens per minute, or
         concurrent request limits. The gateway enforces requests_per_minute,
-        tokens_per_minute and concurrent_requests for key, member, department,
-        guardrail and end-user-default assignments.
+        tokens_per_minute and concurrent_requests for key, member, department
+        and end-user-default assignments.
       requestBody:
         required: true
         content:
@@ -5454,8 +5463,8 @@ paths:
       summary: Get a rate limit policy
       description: >-
         Returns one rate limit policy. The gateway enforces requests_per_minute,
-        tokens_per_minute and concurrent_requests for key, member, department,
-        guardrail and end-user-default assignments.
+        tokens_per_minute and concurrent_requests for key, member, department
+        and end-user-default assignments.
       responses:
         '200':
           description: Rate limit policy
@@ -5479,8 +5488,8 @@ paths:
         Changes a policy's name, description, limits, or fail-closed setting.
         Set a limit to null to remove it; at least one limit must remain. The
         gateway enforces requests_per_minute, tokens_per_minute and
-        concurrent_requests for key, member, department, guardrail and
-        end-user-default assignments.
+        concurrent_requests for key, member, department and end-user-default
+        assignments.
       requestBody:
         required: true
         content:
@@ -5509,7 +5518,7 @@ paths:
       description: >-
         Deletes a policy and every assignment that uses it. The gateway enforces
         requests_per_minute, tokens_per_minute and concurrent_requests for key,
-        member, department, guardrail and end-user-default assignments.
+        member, department and end-user-default assignments.
       responses:
         '200':
           description: Rate limit policy deleted
@@ -5533,8 +5542,8 @@ paths:
       description: >-
         Lists where rate limit policies apply, optionally filtered by policy or
         target type. The gateway enforces requests_per_minute, tokens_per_minute
-        and concurrent_requests for key, member, department, guardrail and
-        end-user-default assignments.
+        and concurrent_requests for key, member, department and end-user-default
+        assignments.
       parameters:
         - name: policy_id
           in: query
@@ -5586,11 +5595,10 @@ paths:
       operationId: createRateLimitAssignment
       summary: Assign a rate limit policy
       description: >-
-        Applies a policy to one API key, workspace member, department, or
-        guardrail, or sets the workspace default for each end user. Each target
-        can have one policy. The gateway enforces requests_per_minute,
-        tokens_per_minute and concurrent_requests for key, member, department,
-        guardrail and end-user-default assignments.
+        Applies a policy to one API key, workspace member or department, or
+        sets the workspace default for each end user. Each target can have one
+        policy. The gateway enforces requests_per_minute, tokens_per_minute and
+        concurrent_requests for every assignment.
       requestBody:
         required: true
         content:
@@ -5628,7 +5636,7 @@ paths:
       description: >-
         Returns one rate limit assignment. The gateway enforces
         requests_per_minute, tokens_per_minute and concurrent_requests for key,
-        member, department, guardrail and end-user-default assignments.
+        member, department and end-user-default assignments.
       responses:
         '200':
           description: Rate limit assignment
@@ -5651,7 +5659,7 @@ paths:
       description: >-
         Switches the policy applied to an assignment's target. The gateway
         enforces requests_per_minute, tokens_per_minute and concurrent_requests
-        for key, member, department, guardrail and end-user-default assignments.
+        for key, member, department and end-user-default assignments.
       requestBody:
         required: true
         content:
@@ -5680,7 +5688,7 @@ paths:
       description: >-
         Removes a policy from its target. The gateway enforces
         requests_per_minute, tokens_per_minute and concurrent_requests for key,
-        member, department, guardrail and end-user-default assignments.
+        member, department and end-user-default assignments.
       responses:
         '200':
           description: Rate limit assignment deleted
@@ -12008,6 +12016,8 @@ components:
             type: string
         parameter_details:
           $ref: '#/components/schemas/SupportedParameterDetails'
+        parameter_specs:
+          $ref: '#/components/schemas/ParameterSpecs'
     GatewayPricingMeter:
       type: object
       nullable: true
@@ -12314,6 +12324,198 @@ components:
           $ref: '#/components/schemas/SupportedParameterDetails'
         supported_parameters_detail:
           $ref: '#/components/schemas/SupportedParameterDetails'
+    ParameterValue:
+      oneOf:
+        - type: string
+        - type: number
+        - type: boolean
+    ParameterOption:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          $ref: '#/components/schemas/ParameterValue'
+        label:
+          type: string
+        description:
+          type: string
+      additionalProperties: true
+    ParameterRule:
+      type: object
+      description: When every parameter in if has one of its listed values, the other fields replace the parameter's own.
+      required:
+        - if
+      properties:
+        if:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: '#/components/schemas/ParameterValue'
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        min:
+          type: number
+        max:
+          type: number
+        step:
+          type: number
+        default:
+          $ref: '#/components/schemas/ParameterValue'
+        supported:
+          type: boolean
+        message:
+          type: string
+    ParameterDimensions:
+      type: object
+      properties:
+        min:
+          type: number
+        max:
+          type: number
+        multiple_of:
+          type: number
+        max_width:
+          type: number
+        max_height:
+          type: number
+        min_pixels:
+          type: number
+        max_pixels:
+          type: number
+        max_aspect_ratio:
+          type: string
+        aspect_ratios:
+          type: array
+          items:
+            type: string
+    ParameterSpec:
+      type: object
+      required:
+        - supported
+      properties:
+        supported:
+          type: boolean
+        type:
+          oneOf:
+            - $ref: '#/components/schemas/ParameterType'
+            - type: array
+              items:
+                $ref: '#/components/schemas/ParameterType'
+        media:
+          type: string
+          enum:
+            - image
+            - audio
+            - video
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        open:
+          type: boolean
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterOption'
+        min:
+          type: number
+        max:
+          type: number
+        step:
+          type: number
+        multiple_of:
+          type: number
+        default:
+          $ref: '#/components/schemas/ParameterValue'
+        provider_default:
+          $ref: '#/components/schemas/ParameterValue'
+        required:
+          type: boolean
+        always_on:
+          type: boolean
+        aliases:
+          type: array
+          items:
+            type: string
+        alias_of:
+          type: string
+        upstream_name:
+          type: string
+        upstream_values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        requires:
+          type: array
+          items:
+            type: string
+        min_length:
+          type: number
+        max_length:
+          type: number
+        max_tokens:
+          type: number
+        min_items:
+          type: number
+        max_items:
+          type: number
+        item_types:
+          type: array
+          items:
+            type: string
+        formats:
+          type: array
+          items:
+            type: string
+        max_file_size_bytes:
+          type: number
+        format:
+          type: string
+        dimensions:
+          $ref: '#/components/schemas/ParameterDimensions'
+        properties:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+        when:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterRule'
+        support_level:
+          type: string
+        notes:
+          type: string
+        source:
+          type: object
+          properties:
+            url:
+              type: string
+            verified_at:
+              type: string
+        extra:
+          type: object
+          additionalProperties: true
+    ParameterType:
+      type: string
+      enum:
+        - string
+        - integer
+        - number
+        - boolean
+        - array
+        - object
+        - file
+    ParameterSpecs:
+      type: object
+      description: >-
+        Every request parameter the provider accepts on this endpoint, in one standard shape whatever way the catalogue stores it.
+      additionalProperties:
+        $ref: '#/components/schemas/ParameterSpec'
     SupportedParameterDetails:
       type: object
       description: >-
@@ -16231,10 +16433,13 @@ components:
           maximum: 3
         output_format:
           type: string
+          description: "Output format. gif and svg need a GPT Image 2.6 model and do not support stream or partial_images. svg also needs svg.model and n=1."
           enum:
             - png
             - jpeg
             - webp
+            - gif
+            - svg
         output_compression:
           type: integer
           minimum: 0
@@ -16250,6 +16455,41 @@ components:
           enum:
             - auto
             - low
+        complexity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        frame_count:
+          type: integer
+          minimum: 2
+          maximum: 64
+        frame_duration_ms:
+          type: integer
+          minimum: 20
+          maximum: 2000
+        svg:
+          type: object
+          description: "Required when output_format is svg. svg.model is the OpenAI text model that writes the SVG from the reference image. Its tokens are billed at that model's text prices, with reasoning tokens counted as output, in addition to the image cost."
+          required:
+            - model
+          properties:
+            model:
+              type: string
+            reasoning:
+              type: object
+              properties:
+                effort:
+                  type: string
+                  enum:
+                    - none
+                    - minimal
+                    - low
+                    - medium
+                    - high
+                    - xhigh
+                    - max
         response_format:
           type: string
         style:
@@ -16267,6 +16507,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Image'
+        svg_usage:
+          type: object
+          properties:
+            model:
+              type: string
+            input_tokens:
+              type: integer
+            output_tokens:
+              type: integer
+            reasoning_tokens:
+              type: integer
+            total_tokens:
+              type: integer
     Image:
       type: object
       properties:
@@ -16297,6 +16550,15 @@ components:
                 type: string
         mask:
           type: string
+        markup:
+          type: string
+          description: "Transparent PNG annotation layer over the first image, as a file upload, URL or base64 string. Needs GPT Image 2.5 or later and cannot be combined with mask."
+        complexity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
         prompt:
           type: string
         size:
@@ -16977,6 +17239,8 @@ components:
           $ref: '#/components/schemas/SupportedParameterDetails'
         supported_parameters_detail:
           $ref: '#/components/schemas/SupportedParameterDetails'
+        parameter_specs:
+          $ref: '#/components/schemas/ParameterSpecs'
     VideoModelCapability:
       type: object
       properties:
@@ -25199,14 +25463,12 @@ components:
       type: string
       description: >-
         What a policy applies to. A department policy is one allowance shared by
-        its members and linked keys. A guardrail policy gives each key and
-        member the guardrail covers its own allowance. end_user_default applies
-        to each end user identified on a request.
+        its members and linked keys. end_user_default applies to each end user
+        identified on a request.
       enum:
         - key
         - member
         - department
-        - guardrail
         - end_user_default
     RateLimitAssignment:
       type: object
@@ -25235,7 +25497,7 @@ components:
           format: uuid
           nullable: true
           description: >-
-            Id of the key, member (user id), department, or guardrail. Null for
+            Id of the key, member (user id) or department. Null for
             end_user_default.
         created_by:
           type: string
@@ -25263,7 +25525,7 @@ components:
           type: string
           format: uuid
           description: >-
-            Id of the key, member (user id), department, or guardrail. Omit for
+            Id of the key, member (user id) or department. Omit for
             end_user_default.
       additionalProperties: false
     RateLimitAssignmentUpdateInput:

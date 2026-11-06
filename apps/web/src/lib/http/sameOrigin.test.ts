@@ -1,14 +1,20 @@
-jest.mock("@/lib/stripe", () => ({ getStripe: jest.fn() }));
-jest.mock("@/lib/server/activeTeamStripe", () => ({ requireActiveTeamStripeCustomer: jest.fn() }));
-jest.mock("@/utils/supabase/server", () => ({ createClient: jest.fn() }));
-jest.mock("@/utils/supabase/admin", () => ({ createAdminClient: jest.fn() }));
-jest.mock("next/cache", () => ({ revalidatePath: jest.fn() }));
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { serverRouteHandler } from "@/lib/testing/serverRoute";
+
+vi.mock("@/lib/stripe", () => ({ getStripe: vi.fn() }));
+vi.mock("@/lib/server/activeTeamStripe", () => ({ requireActiveTeamStripeCustomer: vi.fn() }));
+vi.mock("@/utils/supabase/server", () => ({ createClient: vi.fn() }));
+vi.mock("@/utils/supabase/admin", () => ({ createAdminClient: vi.fn() }));
 
 import { isSameOriginRequest } from "./sameOrigin";
 import { getStripe } from "@/lib/stripe";
 import { requireActiveTeamStripeCustomer } from "@/lib/server/activeTeamStripe";
-import { DELETE as deletePaymentMethod, POST as createPaymentMethod } from "@/app/api/stripe/payment-methods/route";
-import { POST as requestRefund } from "@/app/api/stripe/refunds/request/route";
+import { Route as PaymentMethodsRoute } from "@/routes/api/stripe/payment-methods/index";
+import { Route as RefundRequestRoute } from "@/routes/api/stripe/refunds/request/index";
+
+const createPaymentMethod = serverRouteHandler(PaymentMethodsRoute, "POST");
+const deletePaymentMethod = serverRouteHandler(PaymentMethodsRoute, "DELETE");
+const requestRefund = serverRouteHandler(RefundRequestRoute, "POST");
 
 function request(headers: Record<string, string>, method = "POST") {
 	return new Request("https://phaseo.app/api/stripe/payment-methods", {
@@ -40,12 +46,12 @@ describe("isSameOriginRequest", () => {
 });
 
 describe("cookie-authenticated billing routes", () => {
-	beforeEach(() => jest.clearAllMocks());
+	beforeEach(() => vi.clearAllMocks());
 
 	it.each([
 		["create a payment method", () => createPaymentMethod(request({ origin: "https://evil.example" }))],
 		["delete a payment method", () => deletePaymentMethod(request({ origin: "https://evil.example" }, "DELETE"))],
-		["request a refund", () => requestRefund(request({ "sec-fetch-site": "cross-site" }) as never)],
+		["request a refund", () => requestRefund(request({ "sec-fetch-site": "cross-site" }))],
 	])("refuse a cross-site request to %s before touching Stripe", async (_name, call) => {
 		const response = await call();
 

@@ -1527,6 +1527,7 @@ struct FusionToolDefinition {
 struct GatewayCapabilities {
 	std::vector<std::string> endpoints;
 	std::map<std::string, std::any> parameter_details;
+	std::map<std::string, std::any> parameter_specs;
 	std::vector<std::string> parameters;
 };
 
@@ -1978,8 +1979,10 @@ struct ImageModerationInput {
 
 struct ImagesEditRequest {
 	std::any background;
+	std::any complexity;
 	std::any image;
 	std::any input_fidelity;
+	std::string markup;
 	std::string mask;
 	std::optional<bool> meta;
 	std::string model;
@@ -2006,6 +2009,9 @@ struct ImagesEditResponse {
 
 struct ImagesGenerationRequest {
 	std::any background;
+	std::any complexity;
+	std::optional<int> frame_count;
+	std::optional<int> frame_duration_ms;
 	std::string model;
 	std::vector<std::string> models;
 	std::any moderation;
@@ -2021,12 +2027,14 @@ struct ImagesGenerationRequest {
 	std::string size;
 	std::optional<bool> stream;
 	std::string style;
+	std::map<std::string, std::any> svg;
 	std::string user;
 };
 
 struct ImagesGenerationResponse {
 	std::optional<int> created;
 	std::vector<std::map<std::string, std::any>> data;
+	std::map<std::string, std::any> svg_usage;
 };
 
 struct InputTokensDetails {
@@ -2710,6 +2718,80 @@ struct OpenAIWebSearchToolDefinition {
 using OrganisationId = std::any;
 
 using OrganisationIdList = std::any;
+
+struct ParameterDimensions {
+	std::vector<std::string> aspect_ratios;
+	std::optional<double> max;
+	std::string max_aspect_ratio;
+	std::optional<double> max_height;
+	std::optional<double> max_pixels;
+	std::optional<double> max_width;
+	std::optional<double> min;
+	std::optional<double> min_pixels;
+	std::optional<double> multiple_of;
+};
+
+struct ParameterOption {
+	std::string description;
+	std::string label;
+	std::any value;
+};
+
+struct ParameterRule {
+	std::any default;
+	std::map<std::string, std::any> if;
+	std::optional<double> max;
+	std::string message;
+	std::optional<double> min;
+	std::optional<double> step;
+	std::optional<bool> supported;
+	std::vector<std::any> values;
+};
+
+struct ParameterSpec {
+	std::string alias_of;
+	std::vector<std::string> aliases;
+	std::optional<bool> always_on;
+	std::any default;
+	std::map<std::string, std::any> dimensions;
+	std::map<std::string, std::any> extra;
+	std::string format;
+	std::vector<std::string> formats;
+	std::vector<std::string> item_types;
+	std::optional<double> max;
+	std::optional<double> max_file_size_bytes;
+	std::optional<double> max_items;
+	std::optional<double> max_length;
+	std::optional<double> max_tokens;
+	std::any media;
+	std::optional<double> min;
+	std::optional<double> min_items;
+	std::optional<double> min_length;
+	std::optional<double> multiple_of;
+	std::string notes;
+	std::optional<bool> open;
+	std::vector<std::map<std::string, std::any>> options;
+	std::map<std::string, std::any> properties;
+	std::any provider_default;
+	std::optional<bool> required;
+	std::vector<std::string> requires;
+	std::map<std::string, std::any> source;
+	std::optional<double> step;
+	std::string support_level;
+	bool supported;
+	std::any type;
+	std::string upstream_name;
+	std::vector<std::any> upstream_values;
+	std::vector<std::any> values;
+	std::vector<std::map<std::string, std::any>> when;
+};
+
+struct ParameterSpecs {
+};
+
+using ParameterType = std::any;
+
+using ParameterValue = std::any;
 
 using ParseBlock = std::any;
 
@@ -3929,6 +4011,7 @@ struct VideoModelCapability {
 
 struct VideoModelProviderCapability {
 	std::string id;
+	std::map<std::string, std::any> parameter_specs;
 	std::vector<std::string> supported_parameters;
 	std::map<std::string, std::any> supported_parameters_detail;
 	std::vector<std::string> supported_params;

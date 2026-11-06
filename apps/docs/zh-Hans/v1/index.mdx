@@ -1,10 +1,10 @@
 ---
 title: "从这里开始"
-description: "发送第一个请求、连接应用或查找所需参考。"
+description: "发送第一个请求、连接应用，或查找你需要的参考。"
 icon: "house"
 ---
 
-使用 Phaseo 通过一个 API 调用多个提供商的模型、控制路由并跟踪使用量和费用。
+通过 `https://api.phaseo.app/v1` 这一个 API 调用多家提供商的模型，为每个请求选择路由方式，并按请求跟踪使用量和费用。下面的请求使用 `phaseo/free`，所以在你充值额度之前就能运行：
 
 <CodeGroup>
 
@@ -40,19 +40,19 @@ print(response.output_text)
 
 </CodeGroup>
 
-还没有 API 密钥？使用 [Phaseo CLI](./guides/integrations/phaseo-cli) 运行 `phaseo keys create`，或[在控制台创建一个](https://phaseo.app/zh-Hans/settings/keys)，然后按照[快速开始](./quickstart.mdx)操作。
+还没有 API 密钥？使用 [Phaseo CLI](./guides/integrations/phaseo-cli) 运行 `phaseo keys create`，或[在控制台创建一个](https://phaseo.app/settings/keys)，然后按照[快速开始](./quickstart.mdx)操作。
 
-## 选择起点
+## 从你的现状出发
 
 <div className="ph-paths not-prose">
 
 [**<Icon icon="rocket" /> 发送第一个请求** 创建密钥、发送请求并读取结果。](./quickstart.mdx)
 
-[**<Icon icon="arrow-right-left" /> 迁移应用** 更新现有提供商或网关集成。](./migration-guides/index.mdx)
+[**<Icon icon="arrow-right-left" /> 迁移应用** 更新现有的提供商或网关集成。](./migration-guides/index.mdx)
 
 [**<Icon icon="terminal" /> 连接编程助手** 配置 Codex、Claude Code、Cursor 或其他助手。](./guides/integrations/coding-assistants.mdx)
 
-[**<Icon icon="bot" /> 构建智能体** 使用智能体 SDK 为模型提供工具、流式输出每一步，并审批它的操作。](./sdk-reference/agent-sdk/overview.mdx)
+[**<Icon icon="bot" /> 构建智能体** 使用智能体 SDK 为模型提供工具、流式输出它的每一步，并审批它的操作。](./sdk-reference/agent/overview.mdx)
 
 </div>
 
@@ -60,17 +60,16 @@ print(response.output_text)
 
 <div className="ph-sdks not-prose">
 
-[<Icon icon="https://phaseo.app/docs/icons/languages/typescript.svg" /> TypeScript](./sdk-reference/typescript/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/python.svg" /> Python](./sdk-reference/python/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/go.svg" /> Go](./sdk-reference/go/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/csharp.svg" /> C#](./sdk-reference/csharp/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/php.svg" /> PHP](./sdk-reference/php/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/ruby.svg" /> Ruby](./sdk-reference/ruby/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/rust.svg" /> Rust](./sdk-reference/rust/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/typescript.svg" /> <Icon icon="https://phaseo.app/docs/icons/languages/python.svg" /> TypeScript 和 Python](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/go.svg" /> Go](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/csharp.svg" /> C#](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/php.svg" /> PHP](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/ruby.svg" /> Ruby](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/rust.svg" /> Rust](./sdk-reference/client/overview.mdx)
 
 </div>
 
-## 构建与运行
+## 构建与运营
 
 | 任务 | 文档 |
 | --- | --- |
@@ -83,7 +82,7 @@ print(response.output_text)
 
 ## 选择模型
 
-[浏览模型](https://phaseo.app/models)或[比较模型](https://phaseo.app/compare)。目录可能包含无法路由的模型；集成前请检查 Gateway 可用性。模型、提供商和计费请参阅 [Phaseo 工作原理](./developers/introduction.mdx)。
+[浏览模型](https://phaseo.app/models)或[比较模型](https://phaseo.app/compare)。目录中也列出了你暂时还不能调用的模型，因此集成之前请确认模型标记为 **Gateway 已启用**，或者用 `GET /v1/models` 列出可调用的模型。模型、提供商和计费请参阅 [Phaseo 工作原理](./developers/introduction.mdx)。
 
 ## 使用 AI 智能体构建
 

@@ -919,6 +919,14 @@
 			"selectCapability": "Sélectionnez une capacité",
 			"supportedParams": "Paramètres pris en charge",
 			"supportedParamsDescription": "Sélectionnez les paramètres de requête pris en charge par cette capacité.",
+			"parameterSpecs": "Spécifications des paramètres",
+			"parameterSpecsDescription": "Chaque paramètre accepté par cette route, avec les valeurs autorisées, les plages, les valeurs par défaut et les règles (when). Le playground et l’API des modèles les lisent.",
+			"parameterSpecsInvalid": "Non enregistré : {error}",
+			"parameterPreviewUnsupported": "non pris en charge",
+			"parameterPreviewMore": "+{count} de plus",
+			"parameterPreviewStep": "pas de {step}",
+			"parameterPreviewDefault": "par défaut {value}",
+			"parameterPreviewRules": "{count, plural, one {# règle} other {# règles}}",
 			"capabilityStatuses": {
 				"active": "Actif",
 				"deranked": "Dernier recours",
@@ -1779,6 +1787,12 @@
 			"browserUtc": "Navigateur + UTC",
 			"imageModel": "Modèle d’image",
 			"chooseImageModel": "Choisir un modèle d’image",
+			"complexity": "Complexité",
+			"frameCount": "Images",
+			"frameDuration": "Durée d’une image (ms)",
+			"svgAuthorModel": "Modèle auteur du SVG",
+			"chooseSvgAuthorModel": "Choisir le modèle auteur du SVG",
+			"svgAuthorHint": "Ce modèle OpenAI écrit la sortie SVG à partir de l’image générée. Ses tokens sont facturés à ses propres prix, en plus de l’image.",
 			"quality": "Qualité",
 			"aspectRatio": "Format d’image",
 			"size": "Taille",
@@ -2428,7 +2442,7 @@
 			"metricOverTheLastHoursHours": "{metric} au cours des {hours} dernières heures",
 			"localTime": "Heure locale",
 			"perQuantityUnit": "Par {quantity} {unit}",
-			"rateLimitedCountExcluded": "Limite de débit : {count} exclues"
+			"rateLimitedShareExcluded": "Limite de débit : {percent} des requêtes exclues"
 		},
 		"localisationGaps": {
 			"lastUpdated": "Dernière mise à jour : {time}",

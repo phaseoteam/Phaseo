@@ -1,3 +1,10 @@
+import {
+	normalizeParameterSpecs,
+	parameterOptions,
+	resolveParameterSpec,
+	type ParameterSpec,
+} from "@/lib/models/modelParameters";
+
 export type AudioMode = "speech" | "transcription" | "translation" | "music";
 export const CHAT_AUDIO_SPEECH_FORMAT = "mp3";
 
@@ -56,10 +63,16 @@ type VideoModelSchema = {
 	durationOptions: number[];
 	durationOptionsBySize?: Record<string, number[]>;
 	maxCount: number;
+	defaultSize?: string;
+	defaultDuration?: number;
 };
 
 type AudioModelSchema = {
 	voiceOptions: string[];
+	/** Display names for voice ids, when the catalogue gives them. */
+	voiceLabels?: Record<string, string>;
+	/** Any voice id is accepted (ElevenLabs voice libraries); voiceOptions are suggestions. */
+	customVoice?: boolean;
 	formatOptions: string[];
 	supportsSpeechSpeed: boolean;
 	supportsLanguageHint: boolean;
@@ -84,9 +97,6 @@ function modelIdIncludes(modelId: string, hints: string[]) {
 	return hints.some((hint) => normalized.includes(hint));
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
 
 function dedupeStrings(values: string[]): string[] {
 	return Array.from(
@@ -94,30 +104,19 @@ function dedupeStrings(values: string[]): string[] {
 	);
 }
 
+/** Voice ids (default first is applied by the caller) from a route's stored params. */
+function readVoiceSpec(params: unknown): ParameterSpec | undefined {
+	const specs = normalizeParameterSpecs(params);
+	return specs.voice ?? specs.voices;
+}
+
 function readVoiceIdsFromParams(params: unknown): string[] {
-	if (!isRecord(params)) return [];
-	const voice = params.voice ?? params.voices;
-	const source = isRecord(voice)
-		? voice.values ?? voice.options ?? voice.enum
-		: voice;
-	if (!Array.isArray(source)) return [];
-	return dedupeStrings(
-		source
-			.map((entry) => {
-				if (typeof entry === "string") return entry;
-				if (!isRecord(entry)) return "";
-				const id = entry.id ?? entry.value ?? entry.voice_id ?? entry.voiceId;
-				return typeof id === "string" ? id : "";
-			})
-			.filter(Boolean),
-	);
+	return dedupeStrings(parameterOptions(readVoiceSpec(params)).map((option) => String(option.value)));
 }
 
 function readDefaultVoiceFromParams(params: unknown): string | null {
-	if (!isRecord(params)) return null;
-	const voice = params.voice ?? params.voices;
-	const source = isRecord(voice) ? voice.default ?? voice.default_voice : null;
-	return typeof source === "string" && source.trim() ? source.trim() : null;
+	const value = readVoiceSpec(params)?.default;
+	return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
 function getCapabilityParams(
@@ -138,6 +137,12 @@ function applyVoiceParams(
 ): AudioModelSchema {
 	const voiceOptions = readVoiceIdsFromParams(params);
 	if (voiceOptions.length === 0) return schema;
+	const voiceSpec = readVoiceSpec(params);
+	const voiceLabels = Object.fromEntries(
+		parameterOptions(voiceSpec)
+			.filter((option) => typeof option.label === "string" && option.label.trim())
+			.map((option) => [String(option.value), String(option.label)]),
+	);
 	const defaultVoice = readDefaultVoiceFromParams(params);
 	const orderedVoiceOptions =
 		defaultVoice && voiceOptions.includes(defaultVoice)
@@ -146,6 +151,8 @@ function applyVoiceParams(
 	return {
 		...schema,
 		voiceOptions: orderedVoiceOptions,
+		...(Object.keys(voiceLabels).length > 0 ? { voiceLabels } : {}),
+		...(voiceSpec?.open ? { customVoice: true } : {}),
 	};
 }
 
@@ -200,7 +207,53 @@ export function getImageModelSchema(modelId: string): ImageModelSchema {
 	};
 }
 
-export function getVideoModelSchema(modelId: string): VideoModelSchema {
+const VIDEO_CAPABILITY_IDS = ["video.generate", "video.generation", "video.generations"];
+
+/**
+ * Video options stored for a route (size and duration lists or ranges, their
+ * defaults, and duration rules that depend on the size), laid over the built-in
+ * schema for the model. Any part the catalogue leaves out keeps the built-in value.
+ */
+function applyStoredVideoParams(schema: VideoModelSchema, paramsById: CapabilityParamsById): VideoModelSchema {
+	const params = getCapabilityParams(paramsById, VIDEO_CAPABILITY_IDS);
+	if (!params) return schema;
+	const specs = normalizeParameterSpecs(params);
+	const sizeSpec = specs.size ?? specs.resolution;
+	const durationSpec = specs.duration ?? specs.seconds ?? specs.duration_seconds;
+	// Some rows list a size in two cases (480P and 480p); offer it once.
+	const seenSizes = new Set<string>();
+	const sizes = dedupeStrings(parameterOptions(sizeSpec).map((option) => option.value).filter((value): value is string => typeof value === "string"))
+		.filter((size) => !seenSizes.has(size.toLowerCase()) && Boolean(seenSizes.add(size.toLowerCase())));
+	const durationsFor = (spec: ParameterSpec | undefined) =>
+		Array.from(new Set(parameterOptions(spec).map((option) => Number(option.value)).filter((value) => Number.isFinite(value) && value > 0)));
+	const durations = durationsFor(durationSpec);
+	const next: VideoModelSchema = { ...schema };
+	if (sizes.length > 0) {
+		next.sizeOptions = sizes;
+		// Per-size durations written for other sizes no longer apply.
+		next.durationOptionsBySize = undefined;
+	}
+	if (durations.length > 0) next.durationOptions = durations;
+	if (durationSpec?.when?.length) {
+		const bySize: Record<string, number[]> = {};
+		for (const size of next.sizeOptions) {
+			const options = durationsFor(resolveParameterSpec(durationSpec, { size }, specs));
+			if (options.length > 0 && options.join() !== next.durationOptions.join()) bySize[size] = options;
+		}
+		if (Object.keys(bySize).length > 0) next.durationOptionsBySize = bySize;
+	}
+	const defaultSize = typeof sizeSpec?.default === "string" ? sizeSpec.default : undefined;
+	if (defaultSize && next.sizeOptions.includes(defaultSize)) next.defaultSize = defaultSize;
+	const defaultDuration = Number(durationSpec?.default);
+	if (next.durationOptions.includes(defaultDuration)) next.defaultDuration = defaultDuration;
+	return next;
+}
+
+export function getVideoModelSchema(modelId: string, capabilityParamsById?: CapabilityParamsById): VideoModelSchema {
+	return applyStoredVideoParams(getBuiltInVideoModelSchema(modelId), capabilityParamsById);
+}
+
+function getBuiltInVideoModelSchema(modelId: string): VideoModelSchema {
 	if (modelIdIncludes(modelId, ["minimax/hailuo-2.3-fast", "hailuo-2.3-fast"])) {
 		return {
 			sizeOptions: ["768P", "1080P"],
@@ -326,8 +379,9 @@ function getVideoDurationOptionsForSchema(
 export function getVideoDurationOptions(
 	modelId: string,
 	size?: string | null,
+	capabilityParamsById?: CapabilityParamsById,
 ): number[] {
-	const schema = getVideoModelSchema(modelId);
+	const schema = getVideoModelSchema(modelId, capabilityParamsById);
 	const normalizedSize =
 		typeof size === "string" && schema.sizeOptions.includes(size)
 			? size
@@ -537,12 +591,18 @@ export function getDefaultImageRoomParams(modelId: string): ImageRoomParams {
 	};
 }
 
-export function getDefaultVideoRoomParams(modelId: string): VideoRoomParams {
-	const schema = getVideoModelSchema(modelId);
-	const size = schema.sizeOptions[0] ?? "1280x720";
+export function getDefaultVideoRoomParams(
+	modelId: string,
+	capabilityParamsById?: CapabilityParamsById,
+): VideoRoomParams {
+	const schema = getVideoModelSchema(modelId, capabilityParamsById);
+	const size = schema.defaultSize ?? schema.sizeOptions[0] ?? "1280x720";
 	const durationOptions = getVideoDurationOptionsForSchema(schema, size);
+	const duration = schema.defaultDuration != null && durationOptions.includes(schema.defaultDuration)
+		? schema.defaultDuration
+		: durationOptions[0];
 	return {
-		duration: durationOptions[0] ?? schema.durationOptions[0] ?? 5,
+		duration: duration ?? schema.durationOptions[0] ?? 5,
 		size,
 		n: 1,
 	};
@@ -607,16 +667,20 @@ export function buildImageRequestOptions(
 export function buildVideoRequestOptions(
 	modelId: string,
 	params: VideoRoomParams,
+	capabilityParamsById?: CapabilityParamsById,
 ): Record<string, unknown> {
-	const schema = getVideoModelSchema(modelId);
+	const schema = getVideoModelSchema(modelId, capabilityParamsById);
+	const defaults = getDefaultVideoRoomParams(modelId, capabilityParamsById);
 	const next: Record<string, unknown> = {};
 	const size = schema.sizeOptions.includes(params.size)
 		? params.size
-		: schema.sizeOptions[0] ?? "1280x720";
+		: defaults.size;
 	const durationOptions = getVideoDurationOptionsForSchema(schema, size);
 	const duration = durationOptions.includes(params.duration)
 		? params.duration
-		: durationOptions[0] ?? schema.durationOptions[0] ?? 5;
+		: durationOptions.includes(defaults.duration)
+			? defaults.duration
+			: durationOptions[0] ?? schema.durationOptions[0] ?? 5;
 	const count = Math.max(1, Math.min(schema.maxCount, Math.floor(params.n || 1)));
 	next.duration = duration;
 	next.size = size;
@@ -633,8 +697,8 @@ export function buildAudioRequestOptions(
 	const schema = getAudioModelSchema(modelId, capabilityParamsById);
 	if (mode === "speech") {
 		const next: Record<string, unknown> = {};
-		if (schema.voiceOptions.includes(params.speechVoice)) {
-			next.voice = params.speechVoice;
+		if (schema.voiceOptions.includes(params.speechVoice) || (schema.customVoice && params.speechVoice.trim())) {
+			next.voice = params.speechVoice.trim();
 		}
 		const normalizedSpeechFormat = schema.formatOptions.includes(CHAT_AUDIO_SPEECH_FORMAT)
 			? CHAT_AUDIO_SPEECH_FORMAT

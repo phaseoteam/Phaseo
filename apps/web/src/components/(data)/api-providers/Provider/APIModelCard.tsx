@@ -1,8 +1,6 @@
 ﻿// components/providers/APIModelCard.tsx
-"use client";
-
 import React, { useMemo } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";

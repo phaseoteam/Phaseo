@@ -3,12 +3,15 @@ title: "Musikgenerierung abrufen"
 sidebarTitle: "Musikgenerierung abrufen"
 badge: "Beta"
 openapi: "/de/openapi/v1/openapi.localized.yaml GET /music/generate/{music_id}"
-description: "Eine Musikgenerierung anhand ihrer Phaseo-Anfrage-ID abrufen."
+description: "Rufe eine Musikgenerierung anhand ihrer Phaseo-Anfrage-ID ab."
 ---
 
-Rufe ein mit `POST /music/generate` erstelltes Musikergebnis ab. Bei abgeschlossenen Anbietern gibt dieser Endpunkt das gespeicherte normalisierte Ergebnis zurück und fragt den Upstream-Anbieter ab, solange ein Auftrag noch asynchron läuft.
+Übergib die `id`, die [`POST /v1/music/generate`](./music-generate.mdx) zurückgegeben hat, nicht deren `nativeResponseId`. Phaseo gibt das gespeicherte Ergebnis zurück, wenn die Generierung fertig ist, und fragt für dich beim Anbieter nach, solange sie noch läuft.
 
-## Aufbau der Antwort
+```bash
+curl https://api.phaseo.app/v1/music/generate/req_01JY6MUSIC123 \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
 
 ```json
 {
@@ -37,10 +40,4 @@ Rufe ein mit `POST /music/generate` erstelltes Musikergebnis ab. Bei abgeschloss
 }
 ```
 
-## Hinweise
-
-- `status` kann `queued`, `in_progress`, `completed` oder `failed` sein.
-- `usage` ist enthalten, sobald die Generierung abgeschlossen ist.
-- Übergib die von `POST /music/generate` zurückgegebene Phaseo-`id`, nicht `nativeResponseId`.
-- Anbieterspezifische Status- und Abruf-APIs werden intern über diesen Endpunkt verarbeitet.
-
+`status` ist `queued`, `in_progress`, `completed` oder `failed`. `usage` ist enthalten, sobald die Generierung abgeschlossen ist.

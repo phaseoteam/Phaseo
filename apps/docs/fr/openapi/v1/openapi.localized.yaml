@@ -89,6 +89,15 @@ paths:
             enum:
               - asc
               - desc
+        - name: include
+          in: query
+          description: Indiquez parameter_specs pour ajouter les paramètres de requête de chaque offre dans la forme standard.
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - parameter_specs
         - name: endpoints
           in: query
           description: Filtrer par points de terminaison
@@ -5110,7 +5119,7 @@ paths:
             minimum: 1
             maximum: 250
       summary: List rate limit policies
-      description: Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: Liste les politiques de limite de débit nommées de l’espace de travail. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.
       responses:
         '200':
           description: Rate limit policies
@@ -5130,7 +5139,7 @@ paths:
         - Gateway
       operationId: createRateLimitPolicy
       summary: Create a rate limit policy
-      description: Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: Crée une politique nommée avec des limites de requêtes par minute, de tokens par minute ou de requêtes simultanées. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.
       requestBody:
         required: true
         content:
@@ -5165,7 +5174,7 @@ paths:
         - Gateway
       operationId: getRateLimitPolicy
       summary: Get a rate limit policy
-      description: Returns one rate limit policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: Renvoie une politique de limite de débit. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.
       responses:
         '200':
           description: Rate limit policy
@@ -5185,7 +5194,7 @@ paths:
         - Gateway
       operationId: updateRateLimitPolicy
       summary: Update a rate limit policy
-      description: Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: Modifie le nom, la description, les limites ou le réglage de blocage en cas d’échec d’une politique. Définissez une limite sur null pour la supprimer ; au moins une limite doit rester. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.
       requestBody:
         required: true
         content:
@@ -5211,7 +5220,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitPolicy
       summary: Delete a rate limit policy
-      description: Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: Supprime une politique et toutes les affectations qui l’utilisent. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.
       responses:
         '200':
           description: Rate limit policy deleted
@@ -5232,7 +5241,7 @@ paths:
         - Gateway
       operationId: listRateLimitAssignments
       summary: List rate limit assignments
-      description: Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: Liste où s’appliquent les politiques de limite de débit, avec un filtre facultatif par politique ou type de cible. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.
       parameters:
         - name: policy_id
           in: query
@@ -5283,7 +5292,7 @@ paths:
         - Gateway
       operationId: createRateLimitAssignment
       summary: Assign a rate limit policy
-      description: Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: Applique une politique à une clé d’API, à un membre de l’espace de travail ou à un département, ou définit la valeur par défaut de l’espace de travail pour chaque utilisateur final. Chaque cible peut avoir une politique. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests à chaque affectation.
       requestBody:
         required: true
         content:
@@ -5318,7 +5327,7 @@ paths:
         - Gateway
       operationId: getRateLimitAssignment
       summary: Get a rate limit assignment
-      description: Returns one rate limit assignment. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: Renvoie une affectation de limite de débit. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.
       responses:
         '200':
           description: Rate limit assignment
@@ -5338,7 +5347,7 @@ paths:
         - Gateway
       operationId: updateRateLimitAssignment
       summary: Change an assignment's policy
-      description: Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: Change la politique appliquée à la cible d’une affectation. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.
       requestBody:
         required: true
         content:
@@ -5364,7 +5373,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitAssignment
       summary: Delete a rate limit assignment
-      description: Removes a policy from its target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: Retire une politique de sa cible. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.
       responses:
         '200':
           description: Rate limit assignment deleted
@@ -11372,6 +11381,8 @@ components:
             type: string
         parameter_details:
           $ref: '#/components/schemas/SupportedParameterDetails'
+        parameter_specs:
+          $ref: '#/components/schemas/ParameterSpecs'
     GatewayPricingMeter:
       type: object
       nullable: true
@@ -11674,6 +11685,197 @@ components:
           $ref: '#/components/schemas/SupportedParameterDetails'
         supported_parameters_detail:
           $ref: '#/components/schemas/SupportedParameterDetails'
+    ParameterValue:
+      oneOf:
+        - type: string
+        - type: number
+        - type: boolean
+    ParameterOption:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          $ref: '#/components/schemas/ParameterValue'
+        label:
+          type: string
+        description:
+          type: string
+      additionalProperties: true
+    ParameterRule:
+      type: object
+      description: Lorsque chaque paramètre de if a l’une des valeurs indiquées, les autres champs remplacent ceux du paramètre.
+      required:
+        - if
+      properties:
+        if:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: '#/components/schemas/ParameterValue'
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        min:
+          type: number
+        max:
+          type: number
+        step:
+          type: number
+        default:
+          $ref: '#/components/schemas/ParameterValue'
+        supported:
+          type: boolean
+        message:
+          type: string
+    ParameterDimensions:
+      type: object
+      properties:
+        min:
+          type: number
+        max:
+          type: number
+        multiple_of:
+          type: number
+        max_width:
+          type: number
+        max_height:
+          type: number
+        min_pixels:
+          type: number
+        max_pixels:
+          type: number
+        max_aspect_ratio:
+          type: string
+        aspect_ratios:
+          type: array
+          items:
+            type: string
+    ParameterSpec:
+      type: object
+      required:
+        - supported
+      properties:
+        supported:
+          type: boolean
+        type:
+          oneOf:
+            - $ref: '#/components/schemas/ParameterType'
+            - type: array
+              items:
+                $ref: '#/components/schemas/ParameterType'
+        media:
+          type: string
+          enum:
+            - image
+            - audio
+            - video
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        open:
+          type: boolean
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterOption'
+        min:
+          type: number
+        max:
+          type: number
+        step:
+          type: number
+        multiple_of:
+          type: number
+        default:
+          $ref: '#/components/schemas/ParameterValue'
+        provider_default:
+          $ref: '#/components/schemas/ParameterValue'
+        required:
+          type: boolean
+        always_on:
+          type: boolean
+        aliases:
+          type: array
+          items:
+            type: string
+        alias_of:
+          type: string
+        upstream_name:
+          type: string
+        upstream_values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        requires:
+          type: array
+          items:
+            type: string
+        min_length:
+          type: number
+        max_length:
+          type: number
+        max_tokens:
+          type: number
+        min_items:
+          type: number
+        max_items:
+          type: number
+        item_types:
+          type: array
+          items:
+            type: string
+        formats:
+          type: array
+          items:
+            type: string
+        max_file_size_bytes:
+          type: number
+        format:
+          type: string
+        dimensions:
+          $ref: '#/components/schemas/ParameterDimensions'
+        properties:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+        when:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterRule'
+        support_level:
+          type: string
+        notes:
+          type: string
+        source:
+          type: object
+          properties:
+            url:
+              type: string
+            verified_at:
+              type: string
+        extra:
+          type: object
+          additionalProperties: true
+    ParameterType:
+      type: string
+      enum:
+        - string
+        - integer
+        - number
+        - boolean
+        - array
+        - object
+        - file
+    ParameterSpecs:
+      type: object
+      description: Tous les paramètres de requête que le fournisseur accepte sur cet endpoint, dans une forme standard quelle que soit la façon dont le catalogue les stocke.
+      additionalProperties:
+        $ref: '#/components/schemas/ParameterSpec'
     SupportedParameterDetails:
       type: object
       description: Contraintes structurées et prise en charge des paramètres de requête par le fournisseur, indexées par nom de paramètre.
@@ -15329,10 +15531,13 @@ components:
           maximum: 3
         output_format:
           type: string
+          description: Format de sortie. gif et svg nécessitent un modèle GPT Image 2.6 et ne prennent pas en charge stream ni partial_images. svg nécessite aussi svg.model et n=1.
           enum:
             - png
             - jpeg
             - webp
+            - gif
+            - svg
         output_compression:
           type: integer
           minimum: 0
@@ -15348,6 +15553,41 @@ components:
           enum:
             - auto
             - low
+        complexity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        frame_count:
+          type: integer
+          minimum: 2
+          maximum: 64
+        frame_duration_ms:
+          type: integer
+          minimum: 20
+          maximum: 2000
+        svg:
+          type: object
+          description: Obligatoire lorsque output_format vaut svg. svg.model est le modèle de texte OpenAI qui écrit le SVG à partir de l’image de référence. Ses tokens sont facturés aux prix texte de ce modèle, les tokens de raisonnement comptant comme sortie, en plus du coût de l’image.
+          required:
+            - model
+          properties:
+            model:
+              type: string
+            reasoning:
+              type: object
+              properties:
+                effort:
+                  type: string
+                  enum:
+                    - none
+                    - minimal
+                    - low
+                    - medium
+                    - high
+                    - xhigh
+                    - max
         response_format:
           type: string
         style:
@@ -15365,6 +15605,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Image'
+        svg_usage:
+          type: object
+          properties:
+            model:
+              type: string
+            input_tokens:
+              type: integer
+            output_tokens:
+              type: integer
+            reasoning_tokens:
+              type: integer
+            total_tokens:
+              type: integer
     Image:
       type: object
       properties:
@@ -15395,6 +15648,15 @@ components:
                 type: string
         mask:
           type: string
+        markup:
+          type: string
+          description: Calque d’annotation PNG transparent superposé à la première image, sous forme de fichier envoyé, d’URL ou de chaîne base64. Nécessite GPT Image 2.5 ou ultérieur et ne peut pas être combiné avec mask.
+        complexity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
         prompt:
           type: string
         size:
@@ -16014,6 +16276,8 @@ components:
           $ref: '#/components/schemas/SupportedParameterDetails'
         supported_parameters_detail:
           $ref: '#/components/schemas/SupportedParameterDetails'
+        parameter_specs:
+          $ref: '#/components/schemas/ParameterSpecs'
     VideoModelCapability:
       type: object
       properties:
@@ -23994,12 +24258,11 @@ components:
       additionalProperties: false
     RateLimitTargetType:
       type: string
-      description: What a policy applies to. A department policy is one allowance shared by its members and linked keys. A guardrail policy gives each key and member the guardrail covers its own allowance. end_user_default applies to each end user identified on a request.
+      description: Ce à quoi une politique s’applique. Une politique de département est une allocation partagée par ses membres et les clés liées. end_user_default s’applique à chaque utilisateur final identifié dans une requête.
       enum:
         - key
         - member
         - department
-        - guardrail
         - end_user_default
     RateLimitAssignment:
       type: object
@@ -24027,7 +24290,7 @@ components:
           type: string
           format: uuid
           nullable: true
-          description: Id of the key, member (user id), department, or guardrail. Null for end_user_default.
+          description: Id de la clé, du membre (id utilisateur) ou du département. Null pour end_user_default.
         created_by:
           type: string
           format: uuid
@@ -24053,7 +24316,7 @@ components:
         target_id:
           type: string
           format: uuid
-          description: Id of the key, member (user id), department, or guardrail. Omit for end_user_default.
+          description: Id de la clé, du membre (id utilisateur) ou du département. À omettre pour end_user_default.
       additionalProperties: false
     RateLimitAssignmentUpdateInput:
       type: object

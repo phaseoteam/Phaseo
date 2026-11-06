@@ -1,133 +1,125 @@
 ---
-title: "Envie JSON estruturado com predefinições e o SDK de Python"
+title: "Entregue JSON estruturado com predefinições usando o SDK de Python"
 sidebarTitle: "JSON com predefinições em Python"
 icon: "braces"
-description: "Use o SDK oficial de Python com predefinições, saídas estruturadas e depuração por requisição sem recorrer a chamadas HTTP brutas."
+description: "Use o SDK oficial de Python com predefinições, saídas estruturadas e depuração no nível da solicitação, sem recorrer a chamadas HTTP diretas."
 ---
 
-Use esta receita quando um serviço em Python precisar usar padrões gerenciados pelo painel, em vez de repetir a configuração de prompts, roteamento e parâmetros em cada requisição.
+Chame uma predefinição do painel a partir do Python com um JSON Schema, depois valide a resposta e registre os IDs de que você precisa para depurá-la. No fim, você tem um script que envia `"model": "@release-summary"`, recebe `{"summary": ..., "risk_level": ...}` e imprime os detalhes de provedor e de plugin dessa solicitação.
 
-## Objetivo
+O script fica pronto para produção depois que você substituir a predefinição e o schema pelos seus. Mantenha a etapa de validação: o reparo corrige a sintaxe, não o conteúdo.
 
-- manter pequeno o código Python que faz a chamada
-- rotear por um slug de predefinição, em vez de fixar um modelo no código
-- solicitar uma saída estruturada estrita
-- manter metadados de resposta suficientes para depurar o roteamento ou o comportamento dos plugins
+## Crie
 
-## 1. Comece com um cliente compartilhado
+<Steps>
+<Step title="Crie a predefinição">
 
-```python
+Em **Configurações → Predefinições**, crie `release-summary` com o prompt de sistema, o modelo ou os modelos permitidos, as preferências de provedor, as configurações de raciocínio e a `temperature` que todos os chamadores devem compartilhar. Assim, o código Python só envia o que varia. [Predefinições](../guides/presets) explica como a predefinição se combina com a solicitação.
+
+</Step>
+<Step title="Instale o SDK">
+
+```bash
+pip install phaseo
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+</Step>
+<Step title="Escreva o script">
+
+```python release_summary.py
+import json
 import os
 
 from phaseo import Phaseo
 
+# Create one client and reuse it.
 gateway = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
-```
 
-Compartilhe o cliente, em vez de criar um para cada requisição.
+SCHEMA = {
+    "type": "object",
+    "properties": {
+        "summary": {"type": "string"},
+        "risk_level": {"type": "string", "enum": ["low", "medium", "high"]},
+    },
+    "required": ["summary", "risk_level"],
+    "additionalProperties": False,
+}
 
-## 2. Mova os padrões estáveis para uma predefinição
 
-Crie uma predefinição em **Painel -> Configurações -> Predefinições** quando estes valores precisarem permanecer estáveis entre vários chamadores:
+def output_text(response: dict) -> str:
+    return "".join(
+        part.get("text", "")
+        for item in response.get("output", [])
+        if item.get("type") == "message"
+        for part in item.get("content", [])
+        if part.get("type") == "output_text"
+    )
 
-- prompt do sistema
-- modelo ou lista de modelos permitidos
-- preferências de provedores
-- configuração de raciocínio
-- temperatura e outros parâmetros de geração relacionados
-- política de cache de respostas quando a repetição determinística for importante
 
-Depois que a predefinição existir, o código Python que faz a chamada pode continuar enxuto.
+def validate(payload: dict) -> dict:
+    if set(payload) != {"summary", "risk_level"}:
+        raise ValueError(f"unexpected keys: {sorted(payload)}")
+    if not isinstance(payload["summary"], str) or not payload["summary"]:
+        raise ValueError("summary must be a non-empty string")
+    if payload["risk_level"] not in ("low", "medium", "high"):
+        raise ValueError("risk_level must be low, medium or high")
+    return payload
 
-## 3. Solicite um formato JSON estrito
 
-```python
 response = gateway.generate_response(
     {
-        "preset": "release-summary",
+        "model": "@release-summary",
         "input": "Summarize the last 24 hours of deployment activity.",
-        "response_format": {
-            "type": "json_schema",
-            "name": "release_summary",
-            "schema": {
-                "type": "object",
-                "required": ["summary", "risk_level"],
-                "properties": {
-                    "summary": {"type": "string"},
-                    "risk_level": {
-                        "type": "string",
-                        "enum": ["low", "medium", "high"],
-                    },
-                },
-                "additionalProperties": False,
-            },
+        "text": {
+            "format": {
+                "type": "json_schema",
+                "name": "release_summary",
+                "strict": True,
+                "schema": SCHEMA,
+            }
         },
         "plugins": [{"id": "response-healing"}],
         "meta": True,
     }
 )
-```
 
-Por que esse formato funciona bem:
+if response.get("status") != "completed":
+    raise RuntimeError(f"response {response.get('id')} ended as {response.get('status')}")
 
-- `preset` mantém os padrões de roteamento e de prompt fora do código do aplicativo
-- `response_format` deixa o contrato explícito
-- `plugins` pode recuperar JSON malformado quase válido quando o fluxo permitir
-- `meta` preserva detalhes do roteamento e da execução do plugin para depuração
-
-## 4. Analise o JSON e registre os identificadores operacionais
-
-```python
-import json
-
-message_text = ""
-for item in response.get("output", []):
-    if item.get("type") != "message":
-        continue
-    for part in item.get("content", []):
-        if part.get("type") == "output_text":
-            message_text = part.get("text", "")
-            break
-
-payload = json.loads(message_text)
+payload = validate(json.loads(output_text(response)))
+meta = response.get("meta", {})
 
 print("response_id:", response.get("id"))
-print("selected_provider:", response.get("meta", {}).get("routing", {}).get("selected_provider"))
-print("plugin_executions:", response.get("meta", {}).get("plugin_executions"))
+print("model:", response.get("model"))
+print("selected_provider:", meta.get("routing", {}).get("selected_provider"))
+print("plugin_executions:", meta.get("plugin_executions"))
 print(payload)
 ```
 
-Para workers em Python, isso geralmente basta para relacionar uma linha de log do aplicativo a:
+| Campo | Função |
+| --- | --- |
+| `"model": "@release-summary"` | Usa a predefinição. Não existe um campo `preset` separado. |
+| `text.format` | Pede este JSON Schema. No Chat Completions, ele vai em `response_format`; veja [Saídas estruturadas](../guides/structured-outputs). |
+| `plugins` | Repara JSON quase válido; veja [reparo de respostas](./response-healing-for-structured-json). |
+| `meta: true` | Adiciona `meta.routing` e `meta.plugin_executions` à resposta. |
 
-- a janela de detalhes da requisição no painel
-- os diagnósticos de roteamento
-- os metadados de execução do plugin
+</Step>
+<Step title="Execute">
 
-## 5. Depure antes de substituir configurações
+```bash
+python release_summary.py
+```
 
-Se uma requisição for roteada de forma diferente do esperado:
+</Step>
+</Steps>
 
-1. abra a requisição em **Gateway -> Uso**
-2. confira os diagnósticos de roteamento e os provedores candidatos
-3. inspecione os metadados de execução dos plugins se houver JSON estruturado
-4. altere a predefinição somente depois que os logs mostrarem o que aconteceu
+## Confira se funcionou
 
-Evite tentar corrigir uma requisição problemática adicionando muitas substituições inline. Isso geralmente anula a vantagem de usar predefinições.
+O script imprime o ID da resposta, o modelo e o provedor que responderam, o registro do plugin e um dict com `summary` e um dos valores `low`, `medium` ou `high`. Procure o ID da resposta em **Configurações → Uso → Registros** para ver a mesma solicitação com os detalhes de roteamento.
 
-## 6. Mantenha a compatibilidade do cache quando quiser reutilizar resultados
+Um modelo fora dos modelos permitidos da predefinição falha com `validation_error` (palavra-chave `preset_model_not_allowed`). Um `ValueError` vindo de `validate()` significa que o JSON foi analisado, mas o conteúdo estava errado: restrinja o schema ou o prompt em vez de adicionar novas tentativas.
 
-Se a predefinição habilitar o cache de respostas:
+## Depure antes de substituir
 
-- mantenha estável o texto do prompt
-- mantenha estável o esquema da resposta
-- evite substituições desnecessárias de provedor em cada requisição
-- evite listas de ferramentas que mudem com frequência
-
-Se um chamador realmente precisar de outro comportamento, use uma predefinição separada em vez de reduzir a reutilização do cache no fluxo compartilhado.
-
-## Guias relacionados
-
-- [Implante predefinições e depure o roteamento](./preset-rollout-and-routing-debug.mdx)
-- [Use cache de respostas com predefinições](./response-caching-with-presets.mdx)
-- [Recupere respostas JSON estruturadas](./response-healing-for-structured-json.mdx)
-- [Visão geral do SDK de Python](../sdk-reference/python/overview.mdx)
+Se uma solicitação for roteada de um jeito diferente do esperado, abra-a nos registros, leia **Observabilidade do roteamento** e o registro do plugin, e só mude a predefinição quando os registros mostrarem o que aconteceu. Acumular substituições inline em uma solicitação acaba com o propósito da predefinição; se um chamador realmente precisa de outro comportamento, dê a ele uma predefinição própria.

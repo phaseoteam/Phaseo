@@ -919,6 +919,14 @@
 			"selectCapability": "Select a capability",
 			"supportedParams": "Supported parameters",
 			"supportedParamsDescription": "Select the request parameters supported by this capability.",
+			"parameterSpecs": "Parameter specs",
+			"parameterSpecsDescription": "Every parameter this route accepts, with allowed values, ranges, defaults and rules (when). The playground and the models API read these.",
+			"parameterSpecsInvalid": "Not saved: {error}",
+			"parameterPreviewUnsupported": "not supported",
+			"parameterPreviewMore": "+{count} more",
+			"parameterPreviewStep": "step {step}",
+			"parameterPreviewDefault": "default {value}",
+			"parameterPreviewRules": "{count, plural, one {# rule} other {# rules}}",
 			"capabilityStatuses": {
 				"active": "Active",
 				"deranked": "Last resort",
@@ -1779,6 +1787,12 @@
 			"browserUtc": "Browser + UTC",
 			"imageModel": "Image model",
 			"chooseImageModel": "Choose image model",
+			"complexity": "Complexity",
+			"frameCount": "Frames",
+			"frameDuration": "Frame duration (ms)",
+			"svgAuthorModel": "SVG author model",
+			"chooseSvgAuthorModel": "Choose SVG author model",
+			"svgAuthorHint": "SVG output is written by this OpenAI model from the generated image. Its tokens are billed at its own prices, on top of the image.",
 			"quality": "Quality",
 			"aspectRatio": "Aspect ratio",
 			"size": "Size",
@@ -2428,7 +2442,7 @@
 			"metricOverTheLastHoursHours": "{metric} over the last {hours} hours",
 			"localTime": "Local time",
 			"perQuantityUnit": "Per {quantity} {unit}",
-			"rateLimitedCountExcluded": "Rate limited: {count} excluded"
+			"rateLimitedShareExcluded": "Rate limited: {percent} of requests excluded"
 		},
 		"localisationGaps": {
 			"lastUpdated": "Last updated: {time}",

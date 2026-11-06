@@ -25,7 +25,7 @@ export function listenForQueryHistory(
 	const onPageShow = (event: PageTransitionEvent) => {
 		if (!event.persisted && !departed) return;
 		discard();
-		// Do not unhide this document: server props and retained Next routes may
+		// Do not unhide this document: cached route data may
 		// belong to another account. The new request rechecks authentication.
 		reload();
 	};

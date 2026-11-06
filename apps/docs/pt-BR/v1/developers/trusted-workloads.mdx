@@ -1,6 +1,6 @@
 ---
 title: "Workloads confiáveis"
-description: "Permita que deployments, jobs de CI e workloads na nuvem na Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI, AWS ou no seu próprio emissor OIDC chamem o Phaseo sem chave de API."
+description: "Permita que deployments, jobs de CI e workloads na nuvem na Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI, AWS ou no seu próprio emissor OIDC chamem o Phaseo sem uma chave de API."
 icon: "fingerprint-pattern"
 ---
 
@@ -8,28 +8,27 @@ icon: "fingerprint-pattern"
 Os workloads confiáveis estão em beta e estão sendo liberados gradualmente para os espaços de trabalho. Se **Configurações → Chaves de API → Workloads confiáveis** não aparece no seu painel, seu espaço de trabalho ainda não tem o recurso.
 </Note>
 
-Muitas plataformas dão a cada deployment, job ou workload um token assinado que diz quem ele é, como "este é o deployment de produção do projeto `website`" ou "este é um job no projeto `4815162` do GitLab". O token expira em poucas horas. Com os workloads confiáveis, você informa ao Phaseo em quais desses workloads confiar, e eles enviam esse token em vez de uma chave de API. Nada de longa duração precisa ficar guardado nas configurações do projeto ou nos secrets de CI.
+Envie o token OIDC de curta duração da sua plataforma como token bearer em vez de uma chave de API do Phaseo, e nada de longa duração precisa ficar nas configurações do projeto ou nos secrets de CI. As plataformas dão a cada deployment, job ou workload um token assinado que diz quem ele é, como "o deployment de produção do projeto `website`" ou "um job no projeto `4815162` do GitLab", e o token expira em poucas horas. Você informa ao Phaseo em quais workloads confiar.
 
-O Phaseo confia em tokens da Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI e AWS, e de um emissor OIDC que você mesmo opera, como um cluster Kubernetes, o Bitbucket Pipelines ou um GitLab autogerenciado.
-
-As chaves de API continuam funcionando. Use workloads confiáveis para código que roda nessas plataformas e mantenha chaves de API para todo o resto, como scripts locais e apps móveis.
-
----
+O Phaseo confia em tokens da Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI e AWS, e de um emissor OIDC que você mesmo opera, como um cluster Kubernetes, o Bitbucket Pipelines ou um GitLab autogerenciado. Continue usando chaves de API para todo o resto, como scripts locais e apps móveis.
 
 ## Como funciona
 
-1. Um proprietário ou administrador do espaço de trabalho cria uma **política de confiança** em **Configurações → Chaves de API → Workloads confiáveis**. A política indica a plataforma, o proprietário em que ela confia, como um proprietário no GitHub, um projeto do GitLab ou uma função da AWS, e condições opcionais, como um projeto, um repositório, uma branch ou um ambiente.
-2. Seu código pede à plataforma um token para a audiência `https://api.phaseo.app` e o envia como `Authorization: Bearer <token>`.
-3. O Phaseo verifica a assinatura e a validade do token e depois procura exatamente uma política ativa que corresponda a ele.
-4. A solicitação é executada como a chave dessa política. Ela recebe os mesmos limites de taxa, orçamentos, logs e cobrança de uma solicitação feita com uma chave de API.
+```mermaid
+flowchart LR
+  job["Seu workload"] -->|"1. Solicita um token para https://api.phaseo.app"| platform["Plataforma"]
+  platform -->|"2. Token assinado"| job
+  job -->|"3. Authorization: Bearer token"| phaseo["Phaseo"]
+  phaseo --> check{{"Assinatura, validade e audiência corretas, e exatamente uma política ativa corresponde?"}}
+  check -->|"Sim"| run["Executa como a chave da política"]
+  check -->|"Não"| refuse["401"]
+```
 
-### Por que a audiência importa
+Um proprietário ou administrador do espaço de trabalho cria uma **política de confiança** que indica a plataforma, o proprietário em que ela confia (como um proprietário no GitHub, um projeto do GitLab ou uma função da AWS) e condições opcionais, como um projeto, um repositório, uma branch ou um ambiente. Uma solicitação que corresponde é executada como a chave da política, com os mesmos limites de taxa, orçamentos, logs e cobrança de uma solicitação feita com uma chave de API.
 
-Os tokens precisam ser emitidos para a audiência `https://api.phaseo.app`. Por padrão, a maioria das plataformas emite tokens para uma audiência compartilhada por todos os serviços que seu workload chama. Se o Phaseo os aceitasse, um token que você enviou para outro serviço poderia ser reutilizado para chamar o Phaseo. O Phaseo recusa tokens com qualquer outra audiência.
+Os tokens precisam ser emitidos para a audiência `https://api.phaseo.app`; o Phaseo recusa qualquer outra audiência. A maioria das plataformas usa por padrão uma audiência compartilhada por todos os serviços que seu workload chama, e aceitá-la permitiria que um token enviado a outro serviço fosse reutilizado contra o Phaseo.
 
----
-
-## Criar uma política de confiança
+## Crie uma política de confiança
 
 <Steps>
 <Step title="Abra Workloads confiáveis">
@@ -55,8 +54,6 @@ Obtenha os dois IDs com a CLI do GitHub:
 ```bash
 gh api repos/OWNER/REPO --jq '.id, .owner.id'
 ```
-
-O Phaseo usa IDs numéricos porque nomes podem ser alterados ou assumidos por outra pessoa.
 </Tab>
 <Tab title="GitLab">
 Para projetos no GitLab.com. Para GitLab autogerenciado, use **Emissor OIDC personalizado**.
@@ -70,7 +67,7 @@ Deixe as duas condições em branco para aceitar todos os jobs do projeto.
 <Tab title="Google Cloud">
 Para tokens do servidor de metadados no Cloud Run, Compute Engine, GKE, Cloud Run functions, App Engine e Cloud Build.
 
-- **ID exclusivo da conta de serviço**: o ID exclusivo numérico na página de detalhes da conta de serviço no console do Google Cloud. Todas as contas do Google compartilham o mesmo emissor, então é esse ID que diferencia seu workload. Não use o e-mail: se a conta de serviço for excluída, alguém pode criar uma nova com o mesmo e-mail.
+- **ID exclusivo da conta de serviço**: o ID exclusivo numérico na página de detalhes da conta de serviço no console do Google Cloud. Todas as contas do Google compartilham o mesmo emissor, então é esse ID que diferencia seu workload. Não use o e-mail no lugar dele: se a conta de serviço for excluída, alguém pode criar uma nova com o mesmo e-mail.
 - **E-mail da conta de serviço** (opcional): uma verificação extra. Os tokens só incluem o e-mail quando o workload os solicita com `format=full`.
 </Tab>
 <Tab title="Buildkite">
@@ -121,17 +118,15 @@ Clusters Kubernetes autogerenciados cujo endpoint de descoberta não é público
 </Tabs>
 </Step>
 <Step title="Defina o token mais longo aceito">
-Em **Token mais longo aceito (horas)**, defina a maior duração que você aceita. Tokens emitidos para durar mais são recusados. O máximo é de 12 horas, o que cobre os tokens de desenvolvimento da Vercel.
+Em **Token mais longo aceito (horas)**, defina a maior duração que você aceita. Tokens emitidos para durar mais são recusados. O máximo, e também o padrão, é de 12 horas, o que cobre os tokens de desenvolvimento da Vercel.
 </Step>
 </Steps>
 
 As políticas entram em vigor em cerca de um minuto. Ao desativar ou excluir uma política, os tokens dela param de funcionar no mesmo prazo.
 
----
+## Gerencie políticas com Terraform ou com a API
 
-## Gerenciar políticas com Terraform ou a API
-
-Você também pode gerenciar as políticas como código com uma [chave de gerenciamento](./management-api-keys.mdx) que tenha as permissões `keys:read`, `keys:write` e `keys:delete`. Isso só funciona em workspaces que já têm workloads confiáveis.
+Gerencie as políticas como código com uma [chave de gerenciamento](./management-api-keys.mdx) que tenha os recursos `keys:read`, `keys:write` e `keys:delete`. Somente espaços de trabalho com workloads confiáveis podem usar essas rotas.
 
 No Terraform, use o recurso `phaseo_trusted_workload`:
 
@@ -173,6 +168,14 @@ resource "phaseo_trusted_workload" "cluster" {
 }
 ```
 
+Outros campos:
+
+| Campo | Valores |
+| --- | --- |
+| `claim_conditions` | Nome da claim mapeado para os valores permitidos; cada claim precisa corresponder a um dos seus valores. Até 15 claims além da claim do proprietário, e 20 valores por claim. `iss`, `aud`, `exp`, `iat`, `nbf`, `jti` e a claim do proprietário não podem ser usadas. |
+| `max_token_lifetime_seconds` | Maior duração de token aceita, de `60` a `43200` (12 horas). O padrão é `43200`. |
+| `enabled` (Terraform) ou `status` (API: `active` ou `disabled`) | Se os tokens correspondentes são aceitos. |
+
 Alterar a plataforma, o emissor, a claim do proprietário ou o proprietário substitui a política. Uma política não tem segredo, então nada sensível fica salvo no estado do Terraform.
 
 Pela API, envie os mesmos campos para `/v1/workload-identity/policies`. Na API, a plataforma se chama `provider`:
@@ -193,13 +196,11 @@ curl https://api.phaseo.app/v1/workload-identity/policies \
   -d '{"name":"Production cluster","provider":"custom","issuer":"https://oidc.eks.us-east-1.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE","owner_claim":"sub","owner_id":"system:serviceaccount:prod:api"}'
 ```
 
-A [referência da API](../api-reference/endpoint/trusted-workloads-create.mdx) descreve todos os campos e respostas.
+A [referência da API](../api-reference/endpoint/trusted-workloads-create.mdx) lista todos os campos e respostas.
 
----
+## Chame o Phaseo com um token
 
-## Chamar o Phaseo com um token
-
-Todo SDK do Phaseo aceita uma função no lugar da chave de API e a chama antes de cada solicitação e de cada nova tentativa, para que cada solicitação use um token atual. Todo SDK, exceto o de C++, inclui um auxiliar para o GitHub Actions e outro para a Vercel. Ele obtém um token emitido para `https://api.phaseo.app` e o reutiliza até um minuto antes de expirar:
+Todo SDK do Phaseo aceita uma função no lugar da chave de API e a chama antes de cada solicitação e de cada nova tentativa, para que cada solicitação use um token atual. Todo SDK, exceto o de C++, inclui um auxiliar para o GitHub Actions e para a Vercel. Ele obtém um token emitido para `https://api.phaseo.app` e o reutiliza até um minuto antes de expirar:
 
 | SDK | GitHub Actions | Vercel |
 | --- | --- | --- |
@@ -213,7 +214,7 @@ Todo SDK do Phaseo aceita uma função no lugar da chave de API e a chama antes 
 | Rust | `phaseo::auth::github_actions_token()` | `phaseo::auth::vercel_token()` |
 | C++ | Passe sua própria função para `set_api_key_provider` | Passe sua própria função para `set_api_key_provider` |
 
-Os auxiliares exigem a próxima versão de cada SDK. Na Vercel, o auxiliar troca o token da implantação de `VERCEL_OIDC_TOKEN_FILE` ou `VERCEL_OIDC_TOKEN`. Nas Vercel Functions, o token chega em cada solicitação no cabeçalho `x-vercel-oidc-token`; passe-o ao auxiliar como origem do token.
+Os auxiliares exigem a próxima versão de cada SDK. Na Vercel, o auxiliar troca o token do deployment obtido de `VERCEL_OIDC_TOKEN_FILE` ou `VERCEL_OIDC_TOKEN`. Nas Vercel Functions, o token chega em cada solicitação no cabeçalho `x-vercel-oidc-token`; passe-o ao auxiliar como origem do token.
 
 Em outras plataformas, passe sua própria função que retorna o token, como uma que lê a variável do job do GitLab ou chama o servidor de metadados do Google Cloud:
 
@@ -235,7 +236,7 @@ const client = new Phaseo({
 <Tab title="Vercel">
 Use `getVercelOidcToken` a partir da entrada de servidor de `@vercel/oidc` 4.x. Ao passar `audience`, o token do deployment é trocado por um emitido para o Phaseo.
 
-Com o [SDK de TypeScript](../sdk-reference/typescript/overview.mdx), passe uma função como `apiKey`. O SDK a chama antes de cada solicitação, então cada solicitação usa um token atual:
+Com o [SDK de TypeScript](../sdk-reference/client/overview.mdx), passe-o como a função `apiKey`:
 
 ```ts
 import Phaseo from "@phaseo/sdk";
@@ -246,7 +247,7 @@ const client = new Phaseo({
 });
 
 const response = await client.responses.create({
-	model: "openai/gpt-5-mini",
+	model: "openai/gpt-6-astra",
 	input: "Hello from a trusted workload",
 });
 ```
@@ -267,7 +268,7 @@ const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
 		"Content-Type": "application/json",
 	},
 	body: JSON.stringify({
-		model: "openai/gpt-5-mini",
+		model: "openai/gpt-6-astra",
 		messages: [{ role: "user", content: "Hello from a trusted workload" }],
 	}),
 });
@@ -298,7 +299,7 @@ jobs:
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                model: "openai/gpt-5-mini",
+                model: "openai/gpt-6-astra",
                 messages: [{ role: "user", content: "Hello from GitHub Actions" }],
               }),
             });
@@ -314,7 +315,7 @@ TOKEN=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
 curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello"}]}'
+  -d '{"model":"openai/gpt-6-astra","messages":[{"role":"user","content":"Hello"}]}'
 ```
 
 Os tokens do GitHub Actions são de curta duração, então solicite um novo em jobs longos.
@@ -332,7 +333,7 @@ evals:
       curl https://api.phaseo.app/v1/chat/completions
       -H "Authorization: Bearer $PHASEO_TOKEN"
       -H "Content-Type: application/json"
-      -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from GitLab"}]}'
+      -d '{"model":"openai/gpt-6-astra","messages":[{"role":"user","content":"Hello from GitLab"}]}'
 ```
 
 O token dura o mesmo que o tempo limite (timeout) do job.
@@ -347,7 +348,7 @@ TOKEN=$(curl -sS -H "Metadata-Flavor: Google" \
 curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from Google Cloud"}]}'
+  -d '{"model":"openai/gpt-6-astra","messages":[{"role":"user","content":"Hello from Google Cloud"}]}'
 ```
 
 Adicione `&format=full` à URL se a sua política verificar o e-mail da conta de serviço. Os tokens duram 1 hora.
@@ -361,7 +362,7 @@ TOKEN=$(buildkite-agent oidc request-token --audience https://api.phaseo.app)
 curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from Buildkite"}]}'
+  -d '{"model":"openai/gpt-6-astra","messages":[{"role":"user","content":"Hello from Buildkite"}]}'
 ```
 
 Os tokens duram 5 minutos por padrão. Em steps mais longos, solicite um novo ou passe `--lifetime` em segundos.
@@ -375,7 +376,7 @@ TOKEN=$(circleci run oidc get --claims '{"aud":"https://api.phaseo.app"}')
 curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from CircleCI"}]}'
+  -d '{"model":"openai/gpt-6-astra","messages":[{"role":"user","content":"Hello from CircleCI"}]}'
 ```
 
 Os tokens duram 1 hora.
@@ -384,17 +385,17 @@ Os tokens duram 1 hora.
 Ative a federação de identidade de saída uma vez por conta da AWS e depois solicite um token como a função do IAM. A função precisa de permissão para `sts:GetWebIdentityToken`.
 
 ```bash
-# Once per account
+# Uma vez por conta
 aws iam enable-outbound-web-identity-federation
 
-# In the workload
+# No workload
 TOKEN=$(aws sts get-web-identity-token --audience https://api.phaseo.app \
   --signing-algorithm ES384 --query WebIdentityToken --output text)
 
 curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from AWS"}]}'
+  -d '{"model":"openai/gpt-6-astra","messages":[{"role":"user","content":"Hello from AWS"}]}'
 ```
 
 O Phaseo aceita `ES384` e `RS256`. Os tokens duram 5 minutos por padrão; passe `--duration-seconds` para até 1 hora.
@@ -426,33 +427,33 @@ No Bitbucket Pipelines, um step com audiências `oidc` definidas recebe o token 
 </Tab>
 </Tabs>
 
----
-
 ## Comportamento e limites
 
 - **Os mesmos controles de uma chave.** As solicitações são executadas como a chave da política, então os limites de taxa da chave, orçamentos, vínculos com departamentos, listas de IPs permitidos, configurações de log e cobrança se aplicam normalmente.
-- **Apenas chamadas de modelos.** Os tokens de workloads funcionam onde uma chave de API do gateway funciona. As APIs de gerenciamento os recusam.
-- **Uma única política correspondente.** Se dois espaços de trabalho confiarem no mesmo workload, o Phaseo não consegue saber qual você quer e recusa a solicitação. Envie o ID do espaço de trabalho no cabeçalho `x-phaseo-workspace` para escolher um.
+- **Apenas chamadas de modelos.** Os tokens de workloads funcionam onde uma chave de API do Gateway funciona. As APIs de gerenciamento os recusam.
+- **Uma única política correspondente.** Um token que corresponde a mais de uma política ativa é recusado. Se as políticas estiverem em espaços de trabalho diferentes, envie o ID do espaço de trabalho no cabeçalho `x-phaseo-workspace` para escolher um. Se estiverem no mesmo espaço de trabalho, restrinja as condições delas para que só uma corresponda.
 - **Duração do token.** Tokens emitidos para durar mais do que o **Token mais longo aceito** da política são recusados, e o Phaseo nunca aceita tokens emitidos para mais de 12 horas. Os tokens do Buildkite e da AWS duram 5 minutos por padrão; os do Google Cloud e do CircleCI, 1 hora. Os tokens do GitLab duram o mesmo que o tempo limite do job, então um job com tempo limite acima de 12 horas recebe um token que o Phaseo recusa. O AKS pode emitir tokens de até 24 horas, então defina um `expirationSeconds` menor.
 - **A Azure ainda não é compatível.** As identidades gerenciadas da Azure não conseguem solicitar tokens para a audiência do Phaseo. Pods no AKS ainda podem usar um token de conta de serviço do Kubernetes por meio de um emissor personalizado.
 - **As chaves de API não mudam.** Os workloads confiáveis adicionam uma segunda forma de autenticação; eles não alteram nem desativam chaves de API.
 
----
+## Corrija um token recusado
 
-## Solução de problemas
+Um token recusado retorna `401` com o código de erro `unauthorised` e um destes valores de `reason`:
 
-Um token recusado retorna `401` com uma destas mensagens:
-
-| Mensagem | O que significa | O que fazer |
+| `reason` | O que significa | O que fazer |
 | --- | --- | --- |
 | `workload_token_wrong_audience` | O token não foi emitido para `https://api.phaseo.app`. | Solicite o token com essa audiência. |
+| `workload_token_malformed` | O token não é um token OIDC bem formado: não tem ID de chave, emissor ou claims de tempo válidas. | Envie o token sem alterações, exatamente como a plataforma o emitiu. |
 | `workload_issuer_not_trusted` | Nenhuma política ativa usa o emissor deste token. | Verifique se a política está ativada e se o emissor dela corresponde exatamente à claim `iss` do token, incluindo o slug da equipe da Vercel ou o modo de emissor e qualquer barra final em um emissor personalizado. |
 | `workload_identity_no_matching_policy` | O token é válido, mas nenhuma política ativa corresponde a ele. | Verifique o ID do proprietário, as condições de projeto, repositório, pipeline, branch, tag ou ambiente, e se o token não dura mais do que o **Token mais longo aceito** da política. |
-| `workload_identity_ambiguous` | Mais de um espaço de trabalho confia neste workload. | Envie `x-phaseo-workspace: <workspace id>`. |
+| `workload_identity_ambiguous` | Mais de uma política ativa corresponde a este token. | Entre espaços de trabalho, envie `x-phaseo-workspace: <workspace id>`. Em um mesmo espaço de trabalho, restrinja as condições das políticas. |
 | `workload_identity_not_enabled` | Os workloads confiáveis ainda não estão disponíveis para este espaço de trabalho. | Use uma chave de API por enquanto. |
 | `workload_token_expired` | O token expirou. | Solicite um novo token a cada solicitação ou etapa do job. |
+| `workload_token_not_yet_valid` | O horário `nbf` do token está mais de um minuto no futuro. | Verifique o relógio da máquina que emite os tokens. |
 | `workload_token_lifetime_too_long` | O token foi emitido para durar mais de 12 horas, o máximo que o Phaseo aceita. | Solicite um token de menor duração, como um `expirationSeconds` menor no Kubernetes ou um tempo limite de job menor no GitLab. |
 | `workload_token_too_many_claims` | O token de um emissor personalizado tem mais de 100 valores distintos de claims de nível superior. | Configure o emissor para enviar menos claims ou mova os valores extras para um objeto aninhado. |
 | `workload_token_unsupported_alg` | O token não está assinado com RS256, ES256 ou ES384. | Configure o emissor para usar um deles. |
 | `workload_token_invalid_signature` | A assinatura do token não corresponde às chaves da plataforma. | Envie o token sem alterações, exatamente como a plataforma o emitiu. |
+| `workload_token_key_not_found` | As chaves publicadas pelo emissor não incluem a chave que assinou o token. | Tente novamente após uma breve espera. Em um emissor personalizado, verifique se o `jwks_uri` dele disponibiliza a chave de assinatura atual. |
+| `key_ip_not_allowed` | A chave da política tem uma lista de IPs permitidos que não inclui quem fez a chamada. | Adicione os endereços IP do workload à lista de IPs permitidos da chave. |
 | `workload_jwks_unavailable` | O Phaseo não conseguiu obter as chaves de assinatura da plataforma. | Tente novamente após uma breve espera. Em um emissor personalizado, verifique se `<issuer>/.well-known/openid-configuration` carrega pela internet pública sem credenciais e se o `jwks_uri` dele fica no mesmo host. |

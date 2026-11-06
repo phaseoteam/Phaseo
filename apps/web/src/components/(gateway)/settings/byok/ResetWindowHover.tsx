@@ -1,9 +1,7 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import { useEffect, useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 import {
 	HoverCard,

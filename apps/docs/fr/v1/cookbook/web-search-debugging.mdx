@@ -1,82 +1,57 @@
 ---
-title: "Diagnostiquer les requêtes de recherche Web"
-sidebarTitle: "Déboguer la recherche Web"
+title: "Déboguer les requêtes de recherche Web"
 icon: "bug"
-description: "Vérifiez les requêtes de recherche Web, la prise en charge des fournisseurs ainsi que les résultats et citations renvoyés."
+description: "Vérifiez les requêtes de recherche Web, confirmez la prise en charge par les fournisseurs et examinez les résultats et citations renvoyés."
 ---
 
-Utilisez cette recette lorsqu’une requête de recherche Web ne se comporte pas comme prévu et que vous souhaitez vérifier si Phaseo l’a acceptée, correctement routée et si elle a renvoyé des résultats propres.
+Déterminez, à partir de la réponse et du journal de la requête, si une recherche Web a réellement eu lieu, quel moteur l’a exécutée et ce qu’elle a renvoyé. À la fin, vous savez distinguer une recherche qui n’a jamais eu lieu d’une recherche qui a eu lieu mais a trouvé peu de choses.
 
-## 1. Indiquer clairement l’intention de recherche
+```mermaid
+flowchart TD
+  req["Requête avec recherche Web"] --> tool{{"Recherche déclarée dans tools ou web_search_options ?"}}
+  tool -->|"Non"| none["Pas de recherche : le prompt seul n’en déclenche pas"]
+  tool -->|"Oui"| ran{{"usage.server_tool_use indique une recherche ?"}}
+  ran -->|"Non"| skipped["Le modèle ne l’a pas appelée : définissez tool_choice"]
+  ran -->|"Oui"| results{{"Résultats et citations dans le journal ?"}}
+  results -->|"Peu ou aucun"| quality["Vérifiez le moteur, les domaines et la requête"]
+  results -->|"Oui"| ok["La recherche a fonctionné"]
+```
 
-Ne vous fiez pas uniquement à la formulation du prompt. Ajoutez directement les paramètres de recherche à la requête afin que Phaseo sache que vous souhaitez utiliser la recherche Web.
+## Déclarer la recherche dans la requête
 
-Vérifiez la présence de :
+Demander « les dernières actualités » dans le prompt ne lance pas de recherche. Ajoutez-la explicitement :
 
-- outils de recherche natifs dans `tools`
-- `web_search_options` lorsque le point de terminaison les accepte
+```json
+{
+  "model": "openai/gpt-6-astra",
+  "input": "What changed in the Phaseo changelog this week?",
+  "tools": [{ "type": "phaseo:web_search", "parameters": { "max_results": 5 } }],
+  "tool_choice": "phaseo:web_search"
+}
+```
 
-## 2. Confirmer qu’un fournisseur compatible était disponible
+`phaseo:web_search` fonctionne avec Chat Completions, Responses et Messages. `web_search_options` fonctionne là où l’endpoint le prend en charge. `tool_choice` force l’appel ; sans lui, le modèle peut répondre de mémoire. Le [guide de la recherche Web](../guides/server-tools/web-search) liste tous les paramètres.
 
-Si la requête est bloquée ou routée autrement que prévu, consultez les détails suivants :
+## Vérifier qu’elle a eu lieu
 
-- détails des fournisseurs candidats
-- détails d’activation des fournisseurs
-- explication du routage
+| Où regarder | Ce qu’on y voit |
+| --- | --- |
+| `usage.server_tool_use.web_search_requests` dans la réponse | Le nombre de recherches gérées exécutées |
+| **Observabilité de la recherche sur le Web** sur la requête dans **Paramètres → Utilisation → Journaux** | Les recherches gérées, les recherches natives, le nombre de résultats et le nombre de citations, avec les résultats et citations extraits |
+| **Observabilité du routage** sur la même requête | Les fournisseurs envisagés, et ceux qui ont été écartés parce qu’ils ne prenaient pas en charge la requête |
 
-Vous saurez ainsi si la liste des fournisseurs a été réduite faute de prise en charge de la recherche.
+## Distinguer les cas d’échec
 
-## 3. Examiner les compteurs d’utilisation
+| Ce que vous voyez | Cause | Correction |
+| --- | --- | --- |
+| Aucun compteur de recherche | La recherche n’a pas été déclarée, ou le modèle a choisi de ne pas l’appeler | Ajoutez l’outil et définissez `tool_choice` |
+| L’outil renvoie `search_not_configured` au modèle | Le moteur géré choisi n’est pas activé | Utilisez le moteur par défaut ou un autre |
+| L’outil renvoie `unsupported_search_engine` | Le modèle a demandé `engine: "native"` dans un appel | Définissez `native` uniquement dans la définition de l’outil |
+| `400 not_supported`, raison `regional_hosted_tool_not_supported` | Envoyée à `eu.api.phaseo.app` ou `us.api.phaseo.app`, qui refusent les outils serveur | Utilisez `api.phaseo.app` |
+| Des recherches ont eu lieu mais les citations sont rares | La requête ou les sources étaient faibles | Ajustez `max_results`, `allowed_domains` ou `engine` |
 
-Les requêtes utilisant la recherche qui aboutissent doivent afficher des compteurs associés, par exemple :
+Avec `engine: "native"`, la requête ne va qu’aux fournisseurs qui exécutent eux-mêmes la recherche Web. Si aucun ne sert le modèle, Phaseo exécute à la place son moteur par défaut et le facture comme une recherche gérée ; une requête native peut donc afficher des compteurs de recherche gérée.
 
-- outils natifs de recherche Web demandés
-- résultats de recherche Web
-- citations
+## Comparer les requêtes
 
-C’est le moyen le plus rapide de confirmer que la requête a réellement utilisé la recherche.
-
-## 4. Examiner la section des résultats de recherche
-
-Pour les requêtes réussies, ouvrez la fenêtre des détails et recherchez la section d’observabilité de la recherche Web.
-
-Elle indique :
-
-- si la recherche native a été utilisée
-- le nombre de résultats normalisés
-- le nombre de citations normalisées
-- les enregistrements de résultats extraits
-- les enregistrements de citations extraits
-
-Utilisez-la pour comparer les fournisseurs sans lire les charges utiles brutes.
-
-## 5. Traiter ces cas séparément
-
-La recherche native et la vérification des capacités des fournisseurs sont actuellement disponibles. La planification d’une solution de repli à la recherche est distincte.
-
-Lors du diagnostic, distinguez ces cas :
-
-1. La requête de recherche native a été acceptée et routée.
-2. La requête a été acceptée, mais aucun fournisseur compatible n’est resté disponible.
-3. La requête a abouti, mais les citations sont faibles ou peu nombreuses.
-
-Ce sont des problèmes différents qui ne se diagnostiquent pas de la même manière.
-
-## 6. Éléments à comparer si les résultats sont incorrects
-
-Comparez les requêtes selon les critères suivants :
-
-- ID du modèle
-- fournisseur réellement sélectionné
-- options de recherche de la requête
-- nombre de résultats
-- nombre de citations
-- détails du routage
-
-Si la qualité varie selon le fournisseur, les journaux normalisés doivent le montrer.
-
-## Articles associés
-
-- [Routage et solutions de repli](../guides/routing-and-fallbacks.mdx)
-- [Exemples](../guides/examples.mdx)
-- [SDK TypeScript](../sdk-reference/typescript/overview.mdx)
+Quand les résultats diffèrent d’une exécution à l’autre, comparez l’ID du modèle, le fournisseur sélectionné, les paramètres de recherche, et le nombre de résultats et de citations. Ces nombres sont normalisés entre fournisseurs : les différences de qualité de recherche apparaissent sans lire les payloads bruts. Pour un workflow ancré complet, voir [Recherche Web gérée en TypeScript](./sdk-typescript-managed-search) ; pour une URL connue, utilisez plutôt [web fetch](./tool-grounding-with-web-fetch).

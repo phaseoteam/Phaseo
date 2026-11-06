@@ -1,65 +1,60 @@
 ---
 title: "Roo Code"
 icon: "/icons/brands/roo-code.svg"
-description: "通过 OpenAI 兼容配置将 Roo Code 连接到 Phaseo。"
+description: "通过 OpenAI 兼容配置档案将 Roo Code 连接到 Phaseo。"
 ---
 
-使用 Phaseo CLI 创建专用密钥，然后手动配置 Roo Code 的提供商配置文件。Roo Code 将凭据保存在 VS Code 密钥存储中，因此最后的输入需在扩展界面中完成。
+运行 `phaseo roo-code` 创建密钥，然后在 Roo Code 中添加一个 **OpenAI Compatible** 配置档案。Roo Code 把密钥保存在 VS Code 的密钥存储中，所以最后一步要在它的界面里完成。
 
 ## 使用 Phaseo CLI 设置
 
 ```bash
 phaseo login
-phaseo roo-code --model anthropic/claude-sonnet-4.6
+phaseo roo-code --model anthropic/claude-sonnet-5.5
 ```
 
-## 手动配置 Roo Code
+CLI 会创建一个 `Phaseo CLI: Roo Code API Key`，它 90 天后过期，每月支出上限为 $100，然后输出下一步需要的值。
 
-1. 在 VS Code 中打开 Roo Code。
-2. 打开 **Settings**，然后打开 **Providers**。
-3. 创建供应商配置并选择 **OpenAI Compatible**。
-4. 输入以下值：
+## 配置 Roo Code
+
+1. 在 VS Code 中打开 Roo Code，然后打开 **Settings → Providers**。
+2. 创建一个提供商配置档案，并选择 **OpenAI Compatible**。
+3. 填写：
 
 | Roo Code 字段 | 值 |
 | --- | --- |
 | Base URL | `https://api.phaseo.app/v1` |
-| API Key | 以下命令的输出 `phaseo integrations credential roo-code` |
-| Model | `anthropic/claude-sonnet-4.6` 或设置过程中显示的模型 |
+| API Key | `phaseo integrations credential roo-code` 的输出，或任意 Phaseo API 密钥 |
+| Model | `anthropic/claude-sonnet-5.5`，或 setup 输出的模型 |
 
-5. 保存配置并将其设为活动配置。
+4. 保存配置档案并将其设为当前使用。
 
-不同版本中的字段标签可能略有差异，但配置必须包含端点、密钥和准确的模型 ID。
+字段标签在不同版本之间略有变化；如果你看到的不一样，请参阅 Roo Code 的[模型提供商](https://docs.roocode.com/providers/)文档。
 
-## 验证
+## 确认可以正常使用
 
-让 Roo Code 回复 `PHASEO_ROO_OK`，然后确认请求出现在 Phaseo 活动记录中。
+让 Roo Code 回复 `PHASEO_ROO_OK`，然后确认该请求出现在 **设置 → 用量 → 日志** 中。
 
-## 移除
+## 移除 Phaseo
 
-删除 Phaseo 配置或切换到其他配置，然后运行：
+删除 Phaseo 配置档案或切换到其他配置档案，然后运行：
 
 ```bash
 phaseo integrations remove roo-code
 ```
 
-CLI 无法删除 VS Code 扩展私有存储中的值，但移除操作会撤销密钥。
+这会吊销该密钥。CLI 无法清除 VS Code 的扩展存储。
 
-## 故障排除
+## 解决常见问题
 
-### 身份验证失败
+### 认证失败
 
-使用 `phaseo integrations credential roo-code` 重新获取密钥，并确保 Base URL 以 `/v1` 结尾。
+用 `phaseo integrations credential roo-code` 重新复制密钥，并检查 Base URL 是否以 `/v1` 结尾。
 
 ### Roo Code 找不到模型
 
-手动输入准确的 Phaseo 模型 ID，包括供应商前缀。
+输入准确的 Phaseo 模型 ID，包括其提供商前缀。
 
-### 聊天正常，但工具调用失败
+### 聊天正常但工具调用失败
 
-切换到支持工具调用的模型。
-
-## 相关内容
-
-- [Roo Code 模型供应商](https://docs.roocode.com/providers/)
-- [编程智能体](./coding-assistants.mdx)
-- [模型](../../api-reference/endpoint/models.mdx)
+换用支持工具调用的模型。

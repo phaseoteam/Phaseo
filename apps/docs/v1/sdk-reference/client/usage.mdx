@@ -1,0 +1,799 @@
+---
+icon: "square-terminal"
+title: "Client SDK usage"
+sidebarTitle: "Usage"
+description: "One short example per Gateway endpoint in every Phaseo client SDK."
+"og:image": "https://phaseo.app/og/dynamic?title=Client%20SDK%20usage&description=One%20short%20example%20per%20Gateway%20endpoint%20in%20every%20Phaseo%20client%20SDK.&pathname=/docs/v1/sdk-reference/client/usage"
+---
+
+Each section below is one short example per endpoint. A language is missing from a section when its SDK has no wrapper for that endpoint; the [method table](./overview#find-the-method-for-each-endpoint) shows the alternative. The endpoint pages in this section list every parameter.
+
+## Setup
+
+<CodeGroup>
+
+```typescript TypeScript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+```
+
+```python Python
+from phaseo import Phaseo
+
+client = Phaseo(api_key="your-api-key")
+```
+
+```go Go
+import (
+  "context"
+
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client, err := phaseo.NewFromEnv() // reads PHASEO_API_KEY
+if err != nil {
+  panic(err)
+}
+ctx := context.Background()
+```
+
+```csharp C#
+using PhaseoSdk;
+
+var client = new Phaseo(); // reads PHASEO_API_KEY
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo(); // reads PHASEO_API_KEY
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new # reads PHASEO_API_KEY
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+```
+
+```rust Rust
+use phaseo::Phaseo;
+use serde_json::json;
+
+let client = Phaseo::from_env()?; // or Phaseo::new("phaseo_v1_sk_...")?
+```
+
+</CodeGroup>
+
+## Chat completions
+
+<CodeGroup>
+
+```typescript TypeScript
+const completion = await client.generateText({
+  model: "openai/gpt-6-astra",
+  messages: [
+    { role: "system", content: "You are a helpful assistant." },
+    { role: "user", content: "What is Phaseo?" },
+  ],
+});
+
+for await (const chunk of client.streamChat({
+  model: "openai/gpt-6-astra",
+  messages: [{ role: "user", content: "Tell me a story" }],
+})) {
+  if (chunk.text) process.stdout.write(chunk.text);
+}
+```
+
+```python Python
+completion = client.generate_text(
+    {
+        "model": "openai/gpt-6-astra",
+        "messages": [
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": "What is Phaseo?"},
+        ],
+    }
+)
+
+for chunk in client.stream_chat(
+    {
+        "model": "openai/gpt-6-astra",
+        "messages": [{"role": "user", "content": "Tell me a story"}],
+    }
+):
+    if chunk.get("text"):
+        print(chunk["text"], end="", flush=True)
+```
+
+```go Go
+chat, err := client.GenerateText(ctx, phaseo.ChatCompletionsRequest{
+  Model:    "openai/gpt-6-astra",
+  Messages: []map[string]interface{}{{"role": "user", "content": "Hello"}},
+})
+```
+
+```csharp C#
+var chat = await client.GenerateText(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-6-astra",
+    ["messages"] = new[]
+    {
+        new Dictionary<string, object> { ["role"] = "user", ["content"] = "Hello" },
+    },
+});
+```
+
+```php PHP
+$chat = $client->generateText([
+    'model' => 'openai/gpt-6-astra',
+    'messages' => [
+        ['role' => 'user', 'content' => 'Hello'],
+    ],
+]);
+```
+
+```ruby Ruby
+chat = client.generate_text(
+  model: 'openai/gpt-6-astra',
+  messages: [{ role: 'user', content: 'Hello' }]
+)
+```
+
+```java Java
+var chat = client.createChatCompletion(Map.of(
+    "model", "openai/gpt-6-astra",
+    "messages", List.of(Map.of("role", "user", "content", "Hello"))
+));
+```
+
+```rust Rust
+let response = client.chat_completions(&json!({
+    "model": "openai/gpt-6-astra",
+    "messages": [{
+        "role": "user",
+        "content": "Reply with exactly: chat works"
+    }]
+}))?;
+
+println!("{}", response.body);
+```
+
+</CodeGroup>
+
+Only TypeScript and Python have a parsed chat stream. [Chat completions](./chat-completions#stream-the-response) shows the Java raw-stream alternative.
+
+## Responses
+
+<CodeGroup>
+
+```typescript TypeScript
+const response = await client.generateResponse({
+  model: "openai/gpt-6-astra",
+  input: [{ role: "user", content: [{ type: "input_text", text: "Summarise this" }] }],
+});
+
+for await (const chunk of client.streamResponses({
+  model: "openai/gpt-6-astra",
+  input: [{ role: "user", content: [{ type: "input_text", text: "Stream this" }] }],
+})) {
+  if (chunk.text) process.stdout.write(chunk.text);
+}
+```
+
+```python Python
+resp = client.generate_response(
+    {
+        "model": "openai/gpt-6-astra",
+        "input": [{"role": "user", "content": [{"type": "input_text", "text": "Summarise this"}]}],
+    }
+)
+
+for chunk in client.stream_responses(
+    {
+        "model": "openai/gpt-6-astra",
+        "input": [{"role": "user", "content": [{"type": "input_text", "text": "Stream this"}]}],
+    }
+):
+    if chunk.get("text"):
+        print(chunk["text"], end="", flush=True)
+```
+
+```go Go
+resp, err := client.GenerateResponse(ctx, phaseo.ResponsesRequest{
+  Model: "openai/gpt-6-astra",
+  Input: "Reply with: go sdk works",
+})
+```
+
+```csharp C#
+var resp = await client.GenerateResponse(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-6-astra",
+    ["input"] = "Reply with: csharp sdk works",
+});
+```
+
+```php PHP
+$response = $client->generateResponse([
+    'model' => 'openai/gpt-6-astra',
+    'input' => 'Reply with: php sdk works',
+]);
+```
+
+```ruby Ruby
+response = client.generate_response(
+  model: 'openai/gpt-6-astra',
+  input: 'Reply with: ruby sdk works'
+)
+```
+
+```java Java
+var response = client.createResponse(Map.of(
+    "model", "openai/gpt-6-astra",
+    "input", "Reply with: Java SDK works"
+));
+
+try (var lines = client.streamResponse(Map.of(
+    "model", "openai/gpt-6-astra", "input", "Hello"
+))) {
+    lines.forEach(System.out::println);
+}
+```
+
+```rust Rust
+let response = client.responses(&json!({
+    "model": "openai/gpt-6-astra",
+    "input": "Summarise why provider fallbacks improve reliability."
+}))?;
+
+println!("{}", response.body);
+```
+
+</CodeGroup>
+
+[Responses](./responses) covers streaming in C#, PHP and Java, and reading the output text in Rust.
+
+## Messages (Anthropic-compatible)
+
+<CodeGroup>
+
+```typescript TypeScript
+const message = await client.generateMessage({
+  model: "anthropic/claude-haiku-4.5",
+  messages: [{ role: "user", content: "Hello from the Messages API" }],
+  max_tokens: 128,
+});
+
+for await (const chunk of client.streamMessages({
+  model: "anthropic/claude-haiku-4.5",
+  messages: [{ role: "user", content: "Stream a short hello" }],
+  max_tokens: 128,
+})) {
+  if (chunk.text) process.stdout.write(chunk.text);
+}
+```
+
+```python Python
+message = client.generate_message(
+    {
+        "model": "anthropic/claude-haiku-4.5",
+        "messages": [{"role": "user", "content": "Hello from the Messages API"}],
+        "max_tokens": 128,
+    }
+)
+
+for chunk in client.stream_message(
+    {
+        "model": "anthropic/claude-haiku-4.5",
+        "messages": [{"role": "user", "content": "Stream a short hello"}],
+        "max_tokens": 128,
+    }
+):
+    if chunk.get("text"):
+        print(chunk["text"], end="", flush=True)
+```
+
+</CodeGroup>
+
+**Python:** `stream_message` yields parsed chunks; `stream_messages` yields the raw SSE lines. Go, C#, PHP, Ruby and Java have `createAnthropicMessage` in their naming style.
+
+## Images
+
+<CodeGroup>
+
+```typescript TypeScript
+await client.generateImage({
+  model: "openai/gpt-image-1",
+  prompt: "A lighthouse at golden hour",
+});
+
+await client.generateImageEdit({
+  model: "openai/gpt-image-1",
+  prompt: "Make it sunset",
+  image: "data:image/png;base64,...",
+});
+```
+
+```python Python
+image = client.generate_image(
+    {"model": "openai/gpt-image-1", "prompt": "A lighthouse at golden hour"}
+)
+
+edited = client.generate_image_edit(
+    {
+        "model": "openai/gpt-image-1",
+        "prompt": "Make it sunset",
+        "image": "data:image/png;base64,...",
+    }
+)
+```
+
+```go Go
+image, err := client.CreateImage(ctx, map[string]interface{}{
+  "model":  "openai/gpt-image-1",
+  "prompt": "A lighthouse at golden hour",
+})
+```
+
+```csharp C#
+var image = await client.GenerateImage(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-image-1",
+    ["prompt"] = "A lighthouse at golden hour",
+});
+```
+
+```php PHP
+$image = $client->generateImage([
+    'model' => 'openai/gpt-image-1',
+    'prompt' => 'A lighthouse at golden hour',
+]);
+
+$edit = $client->generateImageEdit([
+    'model' => 'openai/gpt-image-1',
+    'prompt' => 'Make it sunset',
+    'image' => 'data:image/png;base64,...',
+]);
+```
+
+```ruby Ruby
+image = client.generate_image(
+  model: 'openai/gpt-image-1',
+  prompt: 'A lighthouse at golden hour'
+)
+
+edit = client.generate_image_edit(
+  model: 'openai/gpt-image-1',
+  prompt: 'Make it sunset',
+  image: 'data:image/png;base64,...'
+)
+```
+
+```java Java
+var image = client.createImage(Map.of(
+    "model", "openai/gpt-image-1",
+    "prompt", "A lighthouse at golden hour"
+));
+```
+
+</CodeGroup>
+
+See [Image generations](./images-generations) and [Image edits](./images-edits).
+
+## Audio
+
+Transcriptions and translations take a multipart upload. TypeScript sends a `FormData` body as multipart. The Python, Go, C#, PHP and Ruby methods send JSON, so transcription works only with a URL passed to a model that accepts `file_url`, and translation needs a multipart upload. To upload an audio file from those SDKs, see [STT (Speech to Text)](./audio-transcriptions#upload-an-audio-file) and [Translations](./audio-translations).
+
+<CodeGroup>
+
+```typescript TypeScript
+import { readFile } from "node:fs/promises";
+
+const speech = await client.generateSpeech({
+  model: "openai/gpt-4o-mini-tts",
+  input: "Hello world",
+});
+
+// Transcriptions and translations take a multipart upload.
+const form = new FormData();
+form.append("model", "openai/gpt-4o-transcribe");
+form.append("file", new Blob([await readFile("call.mp3")], { type: "audio/mpeg" }), "call.mp3");
+const transcript = await client.generateTranscription(form as unknown as Record<string, unknown>);
+```
+
+```python Python
+speech = client.generate_speech(
+    {"model": "openai/gpt-4o-mini-tts", "input": "Hello world"}
+)
+
+# generate_transcription sends JSON, so pass a URL to a model that accepts file_url.
+transcription = client.generate_transcription(
+    {"model": "mistral/voxtral-mini-transcribe-2", "file_url": "https://example.com/call.mp3"}
+)
+```
+
+```go Go
+speech, err := client.CreateSpeech(ctx, map[string]interface{}{
+  "model": "openai/gpt-4o-mini-tts",
+  "input": "Hello from Go",
+})
+```
+
+```csharp C#
+var speech = await client.CreateSpeech(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-4o-mini-tts",
+    ["input"] = "Hello from .NET",
+});
+```
+
+```php PHP
+$speech = $client->createSpeech([
+    'model' => 'openai/gpt-4o-mini-tts',
+    'input' => 'Hello from PHP',
+]);
+
+$transcript = $client->generateTranscription([
+    'model' => 'mistral/voxtral-mini-transcribe-2',
+    'file_url' => 'https://example.com/meeting.mp3',
+]);
+```
+
+```ruby Ruby
+speech = client.generate_speech(
+  model: 'openai/gpt-4o-mini-tts',
+  input: 'Hello world'
+)
+
+transcription = client.generate_transcription(
+  model: 'mistral/voxtral-mini-transcribe-2',
+  file_url: 'https://example.com/meeting.mp3'
+)
+```
+
+</CodeGroup>
+
+See [Translations](./audio-translations) for `generateTranslation()`. **Java:** `createSpeech` expects JSON and can't decode binary audio, so use `rawClient().requestBytes` for speech; send transcription and translation uploads with Java's standard HTTP client, as the [STT](./audio-transcriptions) and [Translations](./audio-translations) pages show.
+
+## Video
+
+<CodeGroup>
+
+```typescript TypeScript
+const video = await client.videos.generateAndWait({
+  model: "openai/sora-2",
+  prompt: "A serene mountain lake at sunrise",
+});
+```
+
+```python Python
+video = client.videos.generate_and_wait(
+    {"model": "openai/sora-2", "prompt": "A serene mountain lake at sunrise"}
+)
+```
+
+</CodeGroup>
+
+Go, C#, PHP, Ruby and Java create the job and return it without waiting; see the [method table](./overview#find-the-method-for-each-endpoint).
+
+## Embeddings, rerank and moderations
+
+<CodeGroup>
+
+```typescript TypeScript
+const embedding = await client.generateEmbedding({
+  model: "openai/text-embedding-3-large",
+  input: "Sample text",
+});
+
+const ranked = await client.rerank.create({
+  model: "voyage/rerank-2",
+  query: "How do I list models?",
+  documents: ["Call GET /v1/models.", "Create an image with POST /v1/images/generations."],
+});
+
+await client.generateModeration({
+  model: "openai/omni-moderation",
+  input: "Some text to check",
+});
+```
+
+```python Python
+embedding = client.generate_embedding(
+    {"model": "openai/text-embedding-3-large", "input": "Sample text"}
+)
+
+ranked = client.rerank.create(
+    {
+        "model": "voyage/rerank-2",
+        "query": "How do I list models?",
+        "documents": ["Call GET /v1/models.", "Create an image with POST /v1/images/generations."],
+    }
+)
+
+moderation = client.generate_moderation(
+    {"model": "openai/omni-moderation", "input": "Text to check"}
+)
+```
+
+```go Go
+embedding, err := client.GenerateEmbedding(ctx, map[string]interface{}{
+  "model": "openai/text-embedding-3-large",
+  "input": "Sample text",
+})
+
+moderation, err := client.GenerateModeration(ctx, map[string]interface{}{
+  "model": "openai/omni-moderation",
+  "input": "Some text to check",
+})
+```
+
+```csharp C#
+var embedding = await client.CreateEmbedding(new Dictionary<string, object>
+{
+    ["model"] = "openai/text-embedding-3-large",
+    ["input"] = "Sample text",
+});
+
+var moderation = await client.GenerateModeration(new Dictionary<string, object>
+{
+    ["model"] = "openai/omni-moderation",
+    ["input"] = "Some text to check",
+});
+```
+
+```php PHP
+$embedding = $client->generateEmbedding([
+    'model' => 'openai/text-embedding-3-large',
+    'input' => 'Sample text',
+]);
+
+$moderation = $client->generateModeration([
+    'model' => 'openai/omni-moderation',
+    'input' => 'Some text to check',
+]);
+```
+
+```ruby Ruby
+embedding = client.generate_embedding(
+  model: 'openai/text-embedding-3-large',
+  input: 'Sample text'
+)
+
+moderation = client.generate_moderation(
+  model: 'openai/omni-moderation',
+  input: 'Some text to check'
+)
+```
+
+```java Java
+var embedding = client.createEmbedding(Map.of(
+    "model", "openai/text-embedding-3-large",
+    "input", "Sample text"
+));
+```
+
+```rust Rust
+// post(...) sends JSON to an endpoint without a high-level helper.
+// The path may include or omit its leading slash.
+let response = client.post("/embeddings", &json!({
+    "model": "openai/text-embedding-3-small",
+    "input": "Phaseo routes across AI providers"
+}))?;
+```
+
+</CodeGroup>
+
+## Batches and files
+
+<CodeGroup>
+
+```typescript TypeScript
+const file = await client.uploadFile({
+  purpose: "batch",
+  file: new Blob(["{}"], { type: "application/json" }),
+  filename: "batch.jsonl",
+});
+
+const batch = await client.createBatch({
+  input_file_id: file.id,
+  endpoint: "/v1/responses",
+  completion_window: "24h",
+});
+
+const batchStatus = await client.getBatch(batch.id);
+```
+
+```python Python
+uploaded = client.upload_file(
+    purpose="batch",
+    file=b'{"test": true}',
+    filename="batch.jsonl",
+    content_type="application/json",
+)
+
+batch = client.create_batch(
+    {
+        "endpoint": "/v1/responses",
+        "input_file_id": uploaded["id"],
+        "completion_window": "24h",
+        "session_id": "agent-run-42",
+    }
+)
+
+status = client.get_batch(batch["id"])
+```
+
+</CodeGroup>
+
+Go, C#, PHP, Ruby and Java have `createBatch` and `retrieveBatch` in their naming style; [Files](./files) covers uploads in each SDK.
+
+## Async job WebSocket URLs
+
+<CodeGroup>
+
+```typescript TypeScript
+const batchSocketUrl = client.batches.websocketUrl(batch.id, {
+  intervalMs: 1500,
+  closeOnTerminal: false,
+});
+
+const videoSocketUrl = client.videos.websocketUrl(video.id);
+```
+
+```python Python
+batch_socket_url = client.batches.websocket_url(
+    batch["id"], interval_ms=1500, close_on_terminal=False
+)
+
+video_socket_url = client.videos.websocket_url(video["id"])
+```
+
+```java Java
+String batchSocketUrl = client.getBatchWebSocketUrl(batchId, 1500, false);
+String videoSocketUrl = client.getVideoWebSocketUrl(videoId);
+```
+
+</CodeGroup>
+
+## Models, health and account
+
+Credits and activity need a management API key.
+
+<CodeGroup>
+
+```typescript TypeScript
+const models = await client.getModels();
+const health = await client.getHealth();
+const providers = await client.listProviders();
+
+// Credits and activity need a management API key.
+const credits = await client.getCredits();
+const activity = await client.getActivity({ days: 30 });
+```
+
+```python Python
+models = client.get_models()
+health = client.get_health()
+providers = client.list_providers()
+generation = client.get_generation("G-01ABC...")
+
+# Credits and activity need a management API key.
+credits = client.get_credits()
+activity = client.get_activity({"days": 30})
+```
+
+```go Go
+models, err := client.GetModels(ctx, map[string]string{"limit": "10"})
+health, err := client.Health(ctx)
+```
+
+```csharp C#
+var models = await client.ListModels(new Dictionary<string, string> { ["limit"] = "10" });
+var health = await client.Health();
+```
+
+```php PHP
+$models = $client->listModels(['limit' => 10]);
+$health = $client->health();
+```
+
+```ruby Ruby
+models = client.list_models(limit: 10)
+health = client.health
+```
+
+```java Java
+var models = client.listModels(Map.of("limit", "10"));
+```
+
+</CodeGroup>
+
+## Handle errors
+
+<CodeGroup>
+
+```typescript TypeScript
+import { PhaseoHttpError } from "@phaseo/sdk";
+
+try {
+  await client.generateText({ model: "invalid", messages: [{ role: "user", content: "Hi" }] });
+} catch (error) {
+  if (error instanceof PhaseoHttpError) {
+    console.error(error.status, error.code, error.requestId, error.traceUrl);
+  } else {
+    throw error;
+  }
+}
+```
+
+```python Python
+from phaseo import PhaseoHTTPError
+
+try:
+    client.generate_text({"model": "invalid", "messages": [{"role": "user", "content": "Hi"}]})
+except PhaseoHTTPError as error:
+    print(error.status, error.code, error.request_id, error.trace_url)
+```
+
+```java Java
+import app.phaseo.gen.Client;
+import app.phaseo.sdk.Phaseo;
+import java.time.Duration;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"))
+    .setTimeout(Duration.ofSeconds(30))
+    .setMaxRetries(2);
+
+try {
+    var result = client.requestWithResponse("GET", "/models",
+        Map.of("limit", "5"), null, null, null);
+    System.out.println(result.requestId());
+    System.out.println(result.data);
+} catch (Client.ApiException error) {
+    System.err.println(error.getStatusCode());
+    System.err.println(error.getRequestId());
+    System.err.println(error.getResponseBody());
+}
+```
+
+```rust Rust
+let request = serde_json::json!({
+    "model": "openai/gpt-6-astra",
+    "input": "Handle this request"
+});
+
+match client.responses(&request) {
+    Ok(response) => println!("{}", response.body),
+    Err(error) => {
+        eprintln!("message: {}", error.message);
+        eprintln!("status: {:?}", error.status);
+        eprintln!("body: {:?}", error.body);
+    }
+}
+```
+
+</CodeGroup>
+
+`PhaseoError` (Rust) has an HTTP status and parsed JSON body when the Gateway returned an error; transport and configuration failures have no status. The [overview](./overview#request-controls-and-errors) lists the error fields in each SDK.
+
+## Add a request header
+
+**Rust:** `with_header` adds a header to every later request.
+
+```rust Rust
+let client = Phaseo::from_env()?
+    .with_header("x-phaseo-workspace-id", "workspace_123");
+```

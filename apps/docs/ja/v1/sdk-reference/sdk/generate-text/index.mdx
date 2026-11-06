@@ -1,17 +1,18 @@
 ---
 icon: "message-square"
 title: "テキスト生成（AI SDK）"
-description: "Vercel AI SDKとPhaseoを使った非ストリーミングのテキスト生成です。"
+sidebarTitle: "テキスト生成"
+description: "Vercel AI SDK と Phaseo を使った、ストリーミングなしのテキスト生成です。"
 ---
 
-1回で完了する生成には、`phaseo(modelId)`と`generateText`を使います。
+`phaseo(modelId)` を指定して `generateText` を呼び出すと、完了したレスポンスを1つ取得できます。
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 
 const result = await generateText({
-  model: phaseo("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-6-astra"),
   prompt: "Write a concise summary of Phaseo Gateway.",
 });
 
@@ -19,14 +20,16 @@ console.log(result.text);
 console.log(result.providerMetadata);
 ```
 
-## チャット履歴を使う
+## チャット履歴を送信する
+
+1ターンだけなら `prompt` を、複数のターンや system ロールが必要な場合は `messages` を使います。
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 
 const result = await generateText({
-  model: phaseo("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-6-astra"),
   messages: [
     { role: "system", content: "You are a terse assistant." },
     { role: "user", content: "Give me three bullet points on retrieval augmentation." },
@@ -37,16 +40,16 @@ console.log(result.text);
 console.log(result.providerMetadata);
 ```
 
-## モデルごとの設定
+## モデルにデフォルト設定を指定する
+
+`phaseo()` の2番目の引数として設定を渡します。設定は、このモデルインスタンスを使うすべての呼び出しに適用されます。
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 
 const result = await generateText({
-  model: phaseo("openai/gpt-5-nano", {
-    temperature: 0.2,
-    topP: 0.9,
+  model: phaseo("openai/gpt-6-astra", {
     maxTokens: 300,
   }),
   prompt: "Draft a release note for an API update.",
@@ -56,8 +59,4 @@ console.log(result.text);
 console.log(result.providerMetadata);
 ```
 
-## promptとmessages
-
-- 1ターンで完了する簡単なリクエストには`prompt`を使います。
-- 複数ターンのコンテキストやロール制御には`messages`を使います。
-- モデルIDを最新に保つには`/v1/models`を照会します（[モデルの検索](../get-models/index.mdx)を参照）。
+モデル ID は `provider/model` の形式です。最新の状態に保つには `/v1/models` から読み込んでください。詳しくは[モデルの検出](/ja/v1/sdk-reference/sdk/get-models)を参照してください。

@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { getChatThreadActivityTime } from "./use-grouped-chat-threads";
 import type { ChatThread } from "@/lib/indexeddb/chats";
 

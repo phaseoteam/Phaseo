@@ -7,7 +7,12 @@ description: "Sieh dir die C++-Header in Arbeit an."
   Das C++-SDK befindet sich in Arbeit und ist noch nicht über einen Paketmanager verfügbar. Verwende die Quellcode-Header nur zur Evaluierung.
 </Note>
 
-- Status: in Arbeit (noch nicht veröffentlicht).
-- Der Quellcode befindet sich unter `packages/sdk/sdk-cpp`.
-- Die generierten Header befinden sich unter `packages/sdk/sdk-cpp/src/gen`.
-- `src/phaseo.hpp` ergänzt den aktuellen Abruf von Modellfähigkeiten und Berichte zur Parameterunterstützung. Der Vorschau-Transport liefert unverarbeitetes JSON; deserialisiere die Antwort daher vor der Prüfung in `ModelEndpointCapabilities`.
+Das C++-SDK ist eine Sammlung reiner C++17-Header-Quellen in `packages/sdk/sdk-cpp`; es ist nicht veröffentlicht und von SDK-Releases ausgeschlossen, bis es durchgängig funktioniert.
+
+| Datei | Inhalt |
+| --- | --- |
+| `src/gen/client.hpp`, `src/gen/operations.hpp`, `src/gen/models.hpp`, `src/gen/model_ids.hpp` | Der generierte Client |
+| `src/phaseo.hpp` | `GetModelEndpointCapabilities(...)` für aktuelle Modellfähigkeiten und `CheckParameterSupport(...)` für Berichte zur Parameterunterstützung |
+| `src/workflows.hpp` | Helfer für Paginierung und das Abfragen von Jobs |
+
+Der Vorschau-Transport gibt rohes JSON zurück; deserialisiere die Antwort daher vor der Prüfung in `ModelEndpointCapabilities`. Zum Ausprobieren siehe [Installation](./installation). Ein C++-Agent-SDK gibt es nicht.

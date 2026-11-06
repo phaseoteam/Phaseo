@@ -151,7 +151,7 @@ Phaseo supports agentic workflows through:
 
 ### Agent workflows
 
-- `v1/sdk-reference/agent-sdk/overview`
+- `v1/sdk-reference/agent/overview`
 - `v1/cookbook/agent-sdk-durable-loop`
 - `v1/cookbook/agent-sdk-research-brief`
 

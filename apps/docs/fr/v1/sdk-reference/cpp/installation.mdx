@@ -1,13 +1,17 @@
 ---
 title: "Installation du SDK C++ (en cours)"
-description: "Utilisez les en-têtes C++ en cours de développement depuis les sources."
+description: "Utilisez depuis les sources les en-têtes C++ en cours de développement."
 ---
 
-<Note type="warning">Le SDK C++ est en cours de développement et n’est pas encore publié dans un registre de packages.</Note>
+<Note type="warning">Le SDK C++ est en cours de développement et n’est pas encore publié dans un registre de paquets.</Note>
 
 ## Utilisation locale
 
-- Utilisez les en-têtes générés dans `packages/sdk/sdk-cpp/src/gen`.
-- Ajoutez ce dossier au chemin d’inclusion de votre système de build.
-- Le client est actuellement uniquement composé d’en-têtes.
+Le SDK est composé uniquement d’en-têtes C++17. Ajoutez `packages/sdk/sdk-cpp` à votre build CMake et liez la cible d’interface, ou placez `packages/sdk/sdk-cpp/src` dans votre chemin d’inclusion :
 
+```cmake
+add_subdirectory(path/to/Phaseo/packages/sdk/sdk-cpp)
+target_link_libraries(your_app PRIVATE phaseo::sdk)
+```
+
+Incluez ensuite `phaseo.hpp`, qui intègre le client généré dans `src/gen`.

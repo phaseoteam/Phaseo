@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
 	bindings: {} as Record<string, unknown>,
 	admit: vi.fn(),
+	releaseFreeDay: vi.fn(),
 	getByName: vi.fn(),
 	background: [] as Promise<unknown>[],
 	release: vi.fn(),
@@ -17,7 +18,7 @@ vi.mock("@/runtime/env", () => ({
 
 import {
 	__customerQuotaStateSizeForTests, __resetCustomerQuotaStateForTests,
-	customerScopeKey, FREE_DAY_ADMIT_DEADLINE_MS, FREE_DAY_PROVISIONAL_PER_DAY, freeDayScopeKey, guardCustomerQuota, guardFreeRouteQuota, parseCustomerLimits,
+	customerScopeKey, FREE_DAY_ADMIT_DEADLINE_MS, FREE_DAY_OUTAGE_PER_DAY, FREE_DAY_PROVISIONAL_PER_DAY, freeDayScopeKey, guardCustomerQuota, guardFreeRouteQuota, parseCustomerLimits,
 } from "./customer-rate-limits";
 import type { PriceCard } from "@pipeline/pricing/types";
 
@@ -40,7 +41,8 @@ beforeEach(() => {
 	mocks.release.mockReset();
 	mocks.readLimits.mockReset().mockResolvedValue({ tier: "trusted", requestsPerMinute: 60, freeRequestsPerDay: 1500 });
 	mocks.admit.mockReset().mockResolvedValue({ allowed: true, limit: 25, remaining: 24, retryAfterSeconds: 0 });
-	mocks.getByName.mockReset().mockReturnValue({ admit: mocks.admit });
+	mocks.releaseFreeDay.mockReset().mockResolvedValue(undefined);
+	mocks.getByName.mockReset().mockReturnValue({ admit: mocks.admit, releaseFreeDay: mocks.releaseFreeDay });
 	mocks.bindings = { CUSTOMER_RATE_LIMITS_ENABLED: "true", CUSTOMER_RATE_LIMITS: { getByName: mocks.getByName } };
 });
 
@@ -240,7 +242,7 @@ describe("customer quota integration", () => {
 		expect(timing).not.toHaveProperty("provisional");
 	});
 
-	it("fails open, as before, when the counter does not answer in time and the provisional slots are used", async () => {
+	it("admits from the outage allowance when the counter does not answer in time and the provisional slots are used", async () => {
 		vi.spyOn(console, "warn").mockImplementation(() => {});
 		mocks.admit.mockReturnValue(new Promise(() => {}));
 		for (const admissionId of ["p1", "p2"]) {
@@ -248,9 +250,90 @@ describe("customer quota integration", () => {
 			await vi.advanceTimersByTimeAsync(FREE_DAY_ADMIT_DEADLINE_MS);
 			await provisional;
 		}
-		const admitted = guardFreeRouteQuota({ ...args, pricingCard: card("free", "0") });
+		const timing: Record<string, unknown> = {};
+		const admitted = guardFreeRouteQuota({ ...args, pricingCard: card("free", "0"), timing });
 		await vi.advanceTimersByTimeAsync(2_000);
 		expect(await admitted).toBeNull();
+		expect(timing.outage).toBe(true);
+	});
+
+	describe("a counter that is unavailable", () => {
+		const free = (admissionId: string, overrides: Record<string, unknown> = {}) =>
+			guardFreeRouteQuota({ ...args, admissionId, pricingCard: card("free", "0"), ...overrides });
+		const budget = FREE_DAY_PROVISIONAL_PER_DAY + FREE_DAY_OUTAGE_PER_DAY;
+
+		it("admits a bounded number per user per day, then refuses with a 503 and Retry-After", async () => {
+			vi.spyOn(console, "warn").mockImplementation(() => {});
+			mocks.admit.mockRejectedValue(new Error("object unavailable"));
+			for (let index = 0; index < budget; index += 1) {
+				expect(await free(`down-${index}`)).toBeNull();
+				await settle();
+			}
+			const refused = await free("down-over");
+			expect(refused?.status).toBe(503);
+			expect(refused?.headers.get("Retry-After")).toBe("30");
+			const body = await refused!.json() as Record<string, unknown>;
+			expect(body).toMatchObject({ reason: "free_model_quota_unavailable", request_id: "public-request" });
+			// The same request's fallback attempt is refused too, rather than admitted.
+			expect((await free("down-over"))?.status).toBe(503);
+			// Another workspace of the same user shares the allowance; another user has their own.
+			expect((await free("other-workspace", { workspaceId: "other" }))?.status).toBe(503);
+			expect(await free("other-user", { userId: "other" })).toBeNull();
+			// A failed counter counted nothing, so there is nothing to take back.
+			expect(mocks.releaseFreeDay).not.toHaveBeenCalled();
+			// The next UTC day starts a new allowance.
+			vi.setSystemTime(new Date("2026-10-10T00:00:01Z"));
+			expect(await free("next-day")).toBeNull();
+		});
+
+		it("gives an outage slot back when a late answer confirms the admission", async () => {
+			// Little remaining headroom, so every request asks the (slow) counter.
+			vi.spyOn(console, "warn").mockImplementation(() => {});
+			mocks.admit.mockImplementation(() => new Promise((resolve) => setTimeout(
+				() => resolve({ allowed: true, limit: 1500, remaining: 5, retryAfterSeconds: 0 }), 3_000,
+			)));
+			for (let index = 0; index < budget + 5; index += 1) {
+				const request = free(`slow-${index}`);
+				await vi.advanceTimersByTimeAsync(2_000);
+				expect(await request).toBeNull();
+				await vi.advanceTimersByTimeAsync(1_000);
+				await settle();
+			}
+		});
+
+		it("takes back a late admission for a request it refused", async () => {
+			vi.spyOn(console, "warn").mockImplementation(() => {});
+			mocks.admit.mockReturnValue(new Promise(() => {}));
+			for (let index = 0; index < budget; index += 1) {
+				const request = free(`hung-${index}`);
+				await vi.advanceTimersByTimeAsync(2_000);
+				expect(await request).toBeNull();
+			}
+			// Those counter calls never answer; only wait for what the refused request leaves behind.
+			mocks.background.length = 0;
+			let answer!: (value: unknown) => void;
+			mocks.admit.mockReturnValue(new Promise((resolve) => { answer = resolve; }));
+			const refused = free("refused");
+			await vi.advanceTimersByTimeAsync(2_000);
+			expect((await refused)?.status).toBe(503);
+			answer({ allowed: true, limit: 1500, remaining: 5, retryAfterSeconds: 0 });
+			await vi.advanceTimersByTimeAsync(0);
+			await settle();
+			expect(mocks.releaseFreeDay).toHaveBeenCalledTimes(1);
+			expect(mocks.releaseFreeDay).toHaveBeenCalledWith(freeDayScopeKey(args), "refused");
+		});
+
+		it("resumes normal answers when the counter recovers", async () => {
+			vi.spyOn(console, "warn").mockImplementation(() => {});
+			mocks.admit.mockRejectedValue(new Error("object unavailable"));
+			for (let index = 0; index < budget; index += 1) {
+				await free(`down-${index}`);
+				await settle();
+			}
+			expect((await free("still-down"))?.status).toBe(503);
+			mocks.admit.mockResolvedValue({ allowed: true, limit: 1500, remaining: 3, retryAfterSeconds: 0 });
+			expect(await free("recovered")).toBeNull();
+		});
 	});
 
 	describe("a counter that is starting up", () => {
@@ -337,7 +420,7 @@ describe("customer quota integration", () => {
 			expect(timing).not.toHaveProperty("provisional");
 		});
 
-		it("uses a slot when the counter fails, and fails open as before once the slots are used", async () => {
+		it("uses a slot when the counter fails, then the outage allowance once the slots are used", async () => {
 			vi.spyOn(console, "warn").mockImplementation(() => {});
 			mocks.admit.mockRejectedValue(new Error("object unavailable"));
 			const timings = Array.from({ length: 3 }, () => ({} as Record<string, unknown>));
@@ -346,6 +429,7 @@ describe("customer quota integration", () => {
 				await settle();
 			}
 			expect(timings.map((timing) => timing.provisional === true)).toEqual([true, true, false]);
+			expect(timings.map((timing) => timing.outage === true)).toEqual([false, false, true]);
 		});
 	});
 

@@ -1,11 +1,9 @@
-"use client";
-
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ChevronsUpDown, Search, Shield } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { toast } from "sonner";
-import { updateGuardrailAssignments } from "@/app/(dashboard)/settings/guardrails/actions";
+import { updateGuardrailAssignments } from "@/features/settings/guardrails/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -151,7 +149,7 @@ export default function GuardrailAssignmentsPanel(props: Props) {
 				savedOn = latest.current[type];
 				// The workspace is the target itself, so its change names no target ids.
 				const request = type === "workspace" ? { ...part, targetIds: [] } : part;
-				const result = await write((props.save ?? updateGuardrailAssignments)({ targetType: type, ...request }, props.workspaceId));
+				const result = await write((props.save ?? updateGuardrailAssignments)({ data: { change: { targetType: type, ...request }, expectedWorkspaceId: props.workspaceId } }));
 				if (!result.ok) {
 					failed = true;
 					reason = result.error;

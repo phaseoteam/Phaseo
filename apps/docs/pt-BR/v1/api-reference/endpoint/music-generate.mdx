@@ -5,46 +5,20 @@ badge: "Beta"
 openapi: "/pt-BR/openapi/v1/openapi.localized.yaml POST /music/generate"
 ---
 
-Gere música por meio de uma API independente do provedor. O Phaseo gerencia respostas síncronas e consulta as filas dos provedores em segundo plano.
+Envie um `model` e um `prompt` para `POST /v1/music/generate` e receba uma faixa de qualquer provedor de música com um único formato de solicitação. O Phaseo cuida dos provedores síncronos e da consulta às filas dos provedores para você.
 
-Quando a geração for concluída, a resposta incluirá `audio_url` ou `audio_base64`. Se um provedor retornar um trabalho ainda não finalizado, use o mesmo `id` da resposta com `GET /music/generate/{music_id}`.
-
-## Formato da solicitação
-
-```json
-{
-  "model": "minimax/music-3.0:free",
-  "prompt": "Warm jazz trio with brushed drums",
-  "format": "mp3"
-}
+```bash
+curl https://api.phaseo.app/v1/music/generate \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "minimax/music-3.0:free",
+    "prompt": "Warm jazz trio with brushed drums",
+    "format": "mp3"
+  }'
 ```
 
-## Opções do Suno
-
-- `suno.customMode` (booleano; padrão: `false`)
-- `suno.instrumental` (booleano; padrão: `false`)
-- `suno.prompt` (substituição opcional de `prompt` no nível superior)
-- `suno.style`, `suno.title` (obrigatório quando `customMode = true`)
-- `suno.personaId`, `suno.personaModel`
-- `suno.negativeTags`, `suno.vocalGender`
-- `suno.styleWeight`, `suno.weirdnessConstraint`, `suno.audioWeight`
-
-## Regras de validação
-
-- Quando `customMode = false`, `prompt` é obrigatório.
-- Quando `customMode = true`, `style` e `title` são obrigatórios.
-- Quando `customMode = true` e `instrumental = false`, `prompt` é obrigatório.
-
-Erros de validação retornam `400` com:
-
-```json
-{
-  "error": "validation_error",
-  "reason": "..."
-}
-```
-
-## Resposta
+## Ler o resultado
 
 ```json
 {
@@ -62,8 +36,32 @@ Erros de validação retornam `400` com:
 }
 ```
 
-- `id` é o ID estável da solicitação no Phaseo. Use-o para recuperar a solicitação por meio de `GET /music/generate/{music_id}`.
-- `nativeResponseId` é o identificador do provedor de origem e serve para correlacionar a solicitação com o provedor e acionar o suporte.
-- `status` pode ser `queued`, `in_progress`, `completed` ou `failed`.
-- `usage` pode incluir `output_audio_seconds` quando o provedor informar a duração gerada.
+Uma geração concluída inclui `audio_url` ou `audio_base64`. `status` é `queued`, `in_progress`, `completed` ou `failed`. Enquanto ele ainda não for final, consulte [`GET /v1/music/generate/{music_id}`](./music-status.mdx) com o mesmo `id`.
 
+`id` é o ID estável da solicitação no Phaseo. `nativeResponseId` é o identificador do provedor upstream, para correlação com o provedor e suporte. `usage` inclui `output_audio_seconds` quando o provedor informa a duração gerada.
+
+## Definir opções do Suno
+
+Os modelos Suno aceitam um objeto `suno` opcional:
+
+| Campo | Tipo | Observações |
+| --- | --- | --- |
+| `customMode` | boolean | Padrão `false` |
+| `instrumental` | boolean | Padrão `false` |
+| `prompt` | string | Substitui o `prompt` de nível superior |
+| `style`, `title` | string | Obrigatórios quando `customMode` é `true` |
+| `personaId`, `personaModel` | string | |
+| `negativeTags` | string | |
+| `vocalGender` | `m` ou `f` | |
+| `styleWeight`, `weirdnessConstraint`, `audioWeight` | number | De 0 a 1 |
+
+`prompt` é obrigatório quando `customMode` é `false`, e quando `customMode` é `true` com `instrumental` definido como `false`.
+
+Uma solicitação que viola uma regra do provedor retorna `400`:
+
+```json
+{
+  "error": "validation_error",
+  "reason": "..."
+}
+```

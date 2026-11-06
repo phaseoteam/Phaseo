@@ -1,3 +1,4 @@
+import { describe, test, expect } from "vitest";
 import type { SettingsWorkspaceBudget } from "@/lib/fetchers/internal/settingsTypes";
 import { budgetPercentFraction, budgetProjection, budgetSlots, budgetTone } from "./budgetForecast";
 import { parseBudgetInterval, parseBudgetLimitUsd } from "./workspaceBudgets";

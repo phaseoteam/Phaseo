@@ -28,7 +28,7 @@ export type WorkspacePublicationSummary = {
 async function publish(publication: ClaimedPublication): Promise<boolean> {
 	try {
 		await bumpWorkspacePolicyVersion(publication.workspace_id);
-		await invalidatePrivateRoutes(publication.workspace_id);
+		await invalidatePrivateRoutes(publication.workspace_id, { bumpVersion: false }); // just bumped above
 		// Never throws; false when the plan could not be stored.
 		return await publishRateLimitPlan(publication.workspace_id);
 	} catch (error) {

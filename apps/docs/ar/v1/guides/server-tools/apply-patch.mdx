@@ -4,20 +4,14 @@ description: "اسمح لنماذج Responses بإرجاع عمليات تصحي
 icon: "file-pen-line"
 ---
 
-استخدم `phaseo:apply_patch` عندما يحتاج سير عمل Responses إلى إرجاع تغييرات الملفات كعمليات تصحيح منظّمة. يتحقق Phaseo من العملية ويعيدها إلى العميل؛ ولا يغيّر نظام الملفات أو المستودع.
-
-<Note>
-`phaseo:apply_patch` is available on `/v1/responses`.
-</Note>
-
-## الطلب
+أضف `phaseo:apply_patch` على `/v1/responses` لتحصل على تغييرات الملفات كعمليات تصحيح منظمة. يتحقق Phaseo من شكل كل عملية ويعيدها؛ ولا يمس ملفاتك أبدًا. يقرر تطبيقك ما إذا كان سيطبّق التصحيح، أو يعرضه على مستخدم، أو يرفضه، أو يطلب مراجعة.
 
 ```bash
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "input": "Create a small README patch for this project.",
     "tools": [
       { "type": "phaseo:apply_patch" }
@@ -25,9 +19,15 @@ curl https://api.phaseo.app/v1/responses \
   }'
 ```
 
-## بنية العملية
+على `/v1/chat/completions` أو `/v1/messages`، يُرفض الطلب.
 
-عندما يستدعي النموذج الأداة، يرسل كائن عملية:
+## المعاملات
+
+لا يوجد. أضف `{ "type": "phaseo:apply_patch" }` كما هو.
+
+## ما يرسله النموذج
+
+كائن `operation`:
 
 ```json
 {
@@ -39,17 +39,15 @@ curl https://api.phaseo.app/v1/responses \
 }
 ```
 
-أنواع العمليات المدعومة:
+| `type` | الحقول المطلوبة | قواعد الفرق |
+| --- | --- | --- |
+| `create_file` | `path`، `diff` | يبدأ كل سطر غير فارغ بـ `+` |
+| `update_file` | `path`، `diff` | يبدأ كل سطر غير فارغ بـ `@@` أو مسافة أو `+` أو `-` |
+| `delete_file` | `path` | لا يوجد |
 
-| النوع | الحقول المطلوبة |
-| --- | --- |
-| `create_file` | `path`, `diff` |
-| `update_file` | `path`, `diff` |
-| `delete_file` | `path` |
+لا يمكن أن يحتوي `path` على بايتات فارغة.
 
-## نتيجة الأداة
-
-يعيد Phaseo العملية التي تم التحقق منها إلى حلقة النموذج:
+## ما تعيده الأداة
 
 ```json
 {
@@ -63,25 +61,8 @@ curl https://api.phaseo.app/v1/responses \
 }
 ```
 
-تظل مسؤولية تطبيق التصحيح أو عرضه على المستخدم أو رفضه أو طلب عملية منقّحة من النموذج على عاتق تطبيقك.
+العملية التي تخالف القواعد أعلاه تعيد `apply_patch_invalid_operation` مع السبب، حتى يتمكن النموذج من المحاولة مرة أخرى.
 
-## الاستخدام والأسعار
+## الاستخدام والتسعير
 
-يسجّل Phaseo:
-
-```json
-{
-  "usage": {
-    "server_tool_use": {
-      "apply_patch_requests": 1
-    }
-  }
-}
-```
-
-يمكن لبطاقات الأسعار احتساب ذلك باستخدام مقياس `server_tool_apply_patch_requests`.
-
-## صفحات ذات صلة
-
-- [أدوات الخادم](./index.mdx)
-- [واجهة Responses](../../api-reference/endpoint/responses.mdx)
+يضيف كل استدعاء 1 إلى `usage.server_tool_use.apply_patch_requests` ويمكن احتسابه باستخدام `server_tool_apply_patch_requests`.

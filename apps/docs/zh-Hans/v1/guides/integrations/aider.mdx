@@ -4,68 +4,64 @@ icon: "/icons/brands/aider.png"
 description: "通过自动管理的配置将 Aider 连接到 Phaseo。"
 ---
 
-使用 Phaseo CLI 创建专用密钥和托管的 Aider 配置，或自行将相同的提供商值复制到现有 Aider 配置。
+运行 `phaseo aider`，写入一份指向 Phaseo 的 Aider 配置；或者在你现有的 `.aider.conf.yml` 中添加三行。
 
 ## 使用 Phaseo CLI 设置
 
 ```bash
 phaseo login
-phaseo aider --model anthropic/claude-sonnet-4.6
+phaseo aider --model anthropic/claude-sonnet-5.5
 ```
 
-如果 `~/.aider.conf.yml` 不存在，设置过程会创建一个由 Phaseo 管理的文件，其中包含：
+如果 `~/.aider.conf.yml` 不存在，设置会创建一个 `Phaseo CLI: Aider API Key`（90 天后过期，每月支出上限 $100），并写入这个文件。不带 `--model` 时，它使用 `anthropic/claude-sonnet-4.6`。
 
-```yaml
-model: openai/anthropic/claude-sonnet-4.6
+```yaml ~/.aider.conf.yml
+# Managed by Phaseo CLI
+model: openai/anthropic/claude-sonnet-5.5
 openai-api-base: https://api.phaseo.app/v1
-openai-api-key: <dedicated Phaseo key>
+openai-api-key: "<dedicated Phaseo key>"
 ```
 
-Aider 需要 `openai/` 前缀，才能通过其 OpenAI 兼容适配器路由自定义模型。发送给 Phaseo 的模型仍为 `anthropic/claude-sonnet-4.6`。
+Aider 需要 `openai/` 前缀，才能通过其 OpenAI 兼容适配器发送自定义模型。发送到 Phaseo 的模型仍然是 `anthropic/claude-sonnet-5.5`。
 
 <Warning>
-由于 `.aider.conf.yml` 是 Aider 文档列出的凭据存储位置之一，API 密钥会以明文保存。请使用常规用户权限保护此文件，切勿将其提交到代码库。
+密钥以明文存储，因为 `.aider.conf.yml` 是 Aider 文档中列出的密钥存放位置之一。请让该文件只对你的用户账户可读，并且绝不要提交它。
 </Warning>
 
-如果已有 Aider 配置，CLI 会停止且不会修改配置。请将上述三个值合并到 Aider 要加载的配置中。Aider 会检查主目录、代码库根目录和当前目录，后加载的文件优先级更高。
+## 手动配置 Aider
 
-## 验证
+如果你已经有 Aider 配置，CLI 会停止，不做任何更改。把上面的三项设置复制到你希望 Aider 加载的配置中，`openai-api-key` 使用 `phaseo integrations credential aider` 的输出或任意 Phaseo API 密钥。Aider 会从你的主目录、仓库根目录和当前目录读取 `.aider.conf.yml`，后读取的文件优先。请参阅 Aider 的 [YAML 配置](https://aider.chat/docs/config/aider_conf.html)和 [OpenAI 兼容 API](https://aider.chat/docs/llms/openai-compat.html) 文档。
 
-打开代码库并启动 Aider：
+## 检查是否可用
+
+打开一个仓库并启动 Aider：
 
 ```bash
 aider
 ```
 
-确认启动输出中显示 `openai/anthropic/claude-sonnet-4.6`，然后让 Aider 回复 `PHASEO_AIDER_OK`。该请求也应出现在 Phaseo 活动记录中。
+检查启动输出中是否显示 `openai/anthropic/claude-sonnet-5.5`，让它回复 `PHASEO_AIDER_OK`，并确认请求出现在 **设置 → 使用情况 → 日志** 中。
 
-未知模型警告不会阻止请求发送。只有在需要准确估算 token 上限或成本时，才为 Aider 添加模型元数据。
+未知模型警告不会阻止请求。只有在需要准确的 token 上限或费用估算时，才需要添加 Aider 模型元数据。
 
-## 移除
+## 移除 Phaseo
 
 ```bash
 phaseo integrations remove aider
 ```
 
-移除操作会撤销专用密钥；只有 `~/.aider.conf.yml` 仍带有 Phaseo CLI 所有权标记时才会删除该文件。如果你手动将 Phaseo 配置合并到现有文件中，请手动删除这三个 Phaseo 值。
+这会撤销密钥，并且只有在 `~/.aider.conf.yml` 仍以 Phaseo CLI 标记开头时才删除该文件。如果你把这些设置合并到了自己的文件中，请自行删除这三行。
 
-## 故障排查
+## 解决常见问题
 
 ### Aider 使用了其他端点或模型
 
-检查代码库根目录和当前目录是否有 `.aider.conf.yml`。这些文件会覆盖主目录配置。环境变量和命令行选项也可能覆盖已保存的值。
+仓库根目录或当前目录中的 `.aider.conf.yml` 会覆盖主目录中的那个。环境变量和命令行选项会覆盖所有配置文件。
 
 ### 身份验证失败
 
-运行 `phaseo integrations credential aider`，并将结果与 `openai-api-key` 对照。`openai-api-base` 必须保持为 `https://api.phaseo.app/v1`。
+把 `openai-api-key` 与 `phaseo integrations credential aider` 的输出进行比较，并确保 `openai-api-base` 完全是 `https://api.phaseo.app/v1`。
 
 ### 无法解析模型
 
-保留 Aider 专用的 `openai/` 前缀。例如，Phaseo 模型 `openai/gpt-5.6-terra` 在 Aider 中应写作 `openai/openai/gpt-5.6-terra`。
-
-## 相关内容
-
-- [Aider OpenAI 兼容 API 文档](https://aider.chat/docs/llms/openai-compat.html)
-- [Aider YAML 配置](https://aider.chat/docs/config/aider_conf.html)
-- [编程智能体](./coding-assistants.mdx)
-- [模型](../../api-reference/endpoint/models.mdx)
+保留 Aider 的 `openai/` 前缀。Phaseo 模型 `openai/gpt-6-astra` 在 Aider 中写作 `openai/openai/gpt-6-astra`。

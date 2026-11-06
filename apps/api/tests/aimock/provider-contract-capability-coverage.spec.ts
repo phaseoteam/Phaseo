@@ -24,6 +24,7 @@ const inheritedContractByProvider: Record<string, string> = {
 	openrouter: "openai",
 	tensorx: "tensorix",
     wafer: "openai",
+    "wafer-us": "openai",
     "wafer-zdr": "openai",
 };
 

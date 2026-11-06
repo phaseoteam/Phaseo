@@ -792,6 +792,11 @@ const GatewayImageGenerationToolSchema = lazySchema(() => z.object({
 		output_format: z.string().min(1).optional(),
 		output_compression: z.number().min(0).max(100).optional(),
 		moderation: z.string().min(1).optional(),
+		complexity: z.enum(["low", "medium", "high"]).optional(),
+		frame_count: z.number().int().min(2).max(64).optional(),
+		frame_duration_ms: z.number().int().min(20).max(2000).optional(),
+		svg: z.object({ model: z.string().trim().min(1) }).optional(),
+		svg_model: z.string().trim().min(1).optional(),
 	}).optional(),
 	model: z.string().min(1).optional(),
 	quality: z.string().min(1).optional(),
@@ -801,6 +806,11 @@ const GatewayImageGenerationToolSchema = lazySchema(() => z.object({
 	output_format: z.string().min(1).optional(),
 	output_compression: z.number().min(0).max(100).optional(),
 	moderation: z.string().min(1).optional(),
+	complexity: z.enum(["low", "medium", "high"]).optional(),
+	frame_count: z.number().int().min(2).max(64).optional(),
+	frame_duration_ms: z.number().int().min(20).max(2000).optional(),
+	svg: z.object({ model: z.string().trim().min(1) }).optional(),
+	svg_model: z.string().trim().min(1).optional(),
 	prompt: z.string().min(1).optional(),
 	description: z.string().min(1).optional(),
 }));
@@ -1308,8 +1318,97 @@ function validateMiniMaxImageRequest(
     });
 }
 
+/** The GPT Image version in a model id (gpt-image-2.6-flare → [2, 6]), or null. */
+function gptImageVersion(model: string | undefined): [number, number] | null {
+    const match = model?.match(/^gpt-image-(\d+)(?:\.(\d+))?(?:$|-)/);
+    return match ? [Number(match[1]), Number(match[2] ?? 0)] : null;
+}
+
+/** GPT Image 2.5 and later, which add the xhigh and max quality levels. */
 function isGptImage25Model(model: string | undefined): boolean {
-    return model === "gpt-image-latest" || (model != null && /^gpt-image-2\.5(?:$|-)/.test(model));
+    if (model === "gpt-image-latest") return true;
+    const version = gptImageVersion(model);
+    return version != null && (version[0] > 2 || (version[0] === 2 && version[1] >= 5));
+}
+
+/**
+ * GPT Image 2.6 and later, which add complexity, SVG and GIF output. An id without a version
+ * (such as gpt-image-flare-latest) passes, and OpenAI rejects the field if the target lacks it.
+ */
+function supportsGptImage26Features(model: string | undefined): boolean {
+    const version = gptImageVersion(model);
+    return version == null || version[0] > 2 || (version[0] === 2 && version[1] >= 6);
+}
+
+const GptImageComplexitySchema = lazySchema(() => z.enum(["low", "medium", "high"]));
+
+/** The model that writes an SVG from GPT Image's reference image, and its reasoning effort. */
+const GptImageSvgOptionsSchema = lazySchema(() => z.object({
+    model: z.string().trim().min(1),
+    reasoning: z.object({
+        effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh", "max"]).nullable().optional(),
+    }).nullable().optional(),
+}));
+
+function validateGptImage26Generation(
+    request: {
+        n?: number;
+        size?: string;
+        stream?: boolean;
+        partial_images?: number;
+        output_format?: string;
+        complexity?: string;
+        frame_count?: number;
+        frame_duration_ms?: number;
+        svg?: { model: string } | null;
+    },
+    model: string,
+    ctx: z.RefinementCtx,
+): void {
+    const isSvg = request.output_format === "svg";
+    const isGif = request.output_format === "gif";
+    if (!supportsGptImage26Features(model)) {
+        for (const field of ["complexity", "frame_count", "frame_duration_ms", "svg"] as const) {
+            if (request[field] != null) {
+                ctx.addIssue({ code: z.ZodIssueCode.custom, path: [field], message: `${field} requires a GPT Image 2.6 model` });
+            }
+        }
+        if (isSvg || isGif) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["output_format"], message: `${request.output_format} output requires a GPT Image 2.6 model` });
+        }
+        return;
+    }
+    if (isSvg || isGif) {
+        if (request.stream === true) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["stream"], message: `${request.output_format} output does not support streaming` });
+        }
+        if (request.partial_images != null && request.partial_images > 0) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["partial_images"], message: `${request.output_format} output does not support partial_images` });
+        }
+    }
+    if (isSvg) {
+        if (!request.svg?.model) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["svg", "model"], message: "SVG output requires svg.model, the OpenAI model that writes the SVG (for example openai/gpt-5-nano)" });
+        }
+        if (request.n != null && request.n !== 1) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["n"], message: "SVG output requires n=1" });
+        }
+    } else if (request.svg != null) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["svg"], message: "svg requires output_format svg" });
+    }
+    if (!isGif) {
+        for (const field of ["frame_count", "frame_duration_ms"] as const) {
+            if (request[field] != null) {
+                ctx.addIssue({ code: z.ZodIssueCode.custom, path: [field], message: `${field} requires output_format gif` });
+            }
+        }
+    } else if (request.size && request.size !== "auto") {
+        // size is each GIF frame: positive multiples of 16, within the model's limits (checked by OpenAI).
+        const dimensions = /^(\d+)x(\d+)$/i.exec(request.size);
+        if (!dimensions || Number(dimensions[1]) % 16 !== 0 || Number(dimensions[2]) % 16 !== 0 || Number(dimensions[1]) === 0 || Number(dimensions[2]) === 0) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["size"], message: "GIF frame size must be auto or WIDTHxHEIGHT in multiples of 16" });
+        }
+    }
 }
 
 function validateGptImage2Size(
@@ -1317,7 +1416,9 @@ function validateGptImage2Size(
     model: string | undefined,
     ctx: z.RefinementCtx,
 ): void {
-    if (!model || (!/^gpt-image-2(?:\.5)?(?:$|-)/.test(model) && model !== "gpt-image-latest")) return;
+    // GPT Image 2 and later share the 2.x size rules.
+    const version = gptImageVersion(model);
+    if (!model || ((version == null || version[0] < 2) && model !== "gpt-image-latest")) return;
     if (!request.size || request.size === "auto") return;
     const dimensions = /^(\d+)x(\d+)$/i.exec(request.size);
     if (!dimensions) {
@@ -1349,10 +1450,15 @@ export const ImagesGenerationSchema = lazySchema(() => z.object({
     stream: z.boolean().optional(),
     partial_images: z.number().int().min(0).max(3).optional(),
     response_format: z.string().optional(),
-    output_format: z.enum(["png", "jpeg", "webp"]).optional(),
+    output_format: z.enum(["png", "jpeg", "webp", "gif", "svg"]).optional(),
     output_compression: z.number().int().min(0).max(100).optional(),
     background: z.enum(["transparent", "opaque", "auto"]).optional(),
     moderation: z.enum(["auto", "low"]).optional(),
+    complexity: GptImageComplexitySchema.optional(),
+    // OpenAI's guide allows 2–64 frames and 20–2000 ms; its API reference is narrower, so OpenAI has the last word.
+    frame_count: z.number().int().min(2).max(64).optional(),
+    frame_duration_ms: z.number().int().min(20).max(2000).optional(),
+    svg: GptImageSvgOptionsSchema.optional(),
     style: z.string().optional(),
     user: z.string().optional(),
     aspect_ratio: z.string().min(1).optional(),
@@ -1369,7 +1475,18 @@ export const ImagesGenerationSchema = lazySchema(() => z.object({
     validateMiniMaxImageRequest(request, ctx, { allowSubjectReference: false });
     const model = request.model.trim().toLowerCase().replace(/^openai\//, "");
     const isGptImage = model.startsWith("gpt-image-") || model === "chatgpt-image-latest";
-    if (!isGptImage) return;
+    if (!isGptImage) {
+        for (const field of ["complexity", "frame_count", "frame_duration_ms", "svg"] as const) {
+            if (request[field] != null) {
+                ctx.addIssue({ code: z.ZodIssueCode.custom, path: [field], message: `${field} is only supported by GPT Image 2.6 models` });
+            }
+        }
+        if (request.output_format === "gif" || request.output_format === "svg") {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["output_format"], message: `${request.output_format} output is only supported by GPT Image 2.6 models` });
+        }
+        return;
+    }
+    validateGptImage26Generation(request, model, ctx);
 
     if (request.prompt.length > 32_000) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["prompt"], message: "GPT Image prompts must be at most 32000 characters" });
@@ -1393,7 +1510,8 @@ export const ImagesGenerationSchema = lazySchema(() => z.object({
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["background"], message: "transparent backgrounds require png or webp output_format" });
     }
 
-    validateGptImage2Size(request, model, ctx);
+    // GIF sizes are per frame, checked above against OpenAI's frame rules.
+    if (request.output_format !== "gif") validateGptImage2Size(request, model, ctx);
 }));
 export type ImagesGenerationRequest = z.infer<typeof ImagesGenerationSchema>;
 
@@ -1430,6 +1548,12 @@ export const ImagesEditSchema = lazySchema(() => z.object({
         z.array(ImageEditUploadSchema).min(1).max(16),
     ]),
     mask: ImageEditUploadSchema.optional(),
+    // A transparent PNG annotation layer over the first image (GPT Image 2.5 and later).
+    markup: ImageEditUploadSchema.optional(),
+    complexity: z.preprocess(
+        (value) => value === null || value === "" ? undefined : value,
+        GptImageComplexitySchema.optional(),
+    ),
     prompt: z.string().min(1).max(32000),
     size: z.string().optional(),
     resolution: z.string().min(1).optional(),
@@ -1530,6 +1654,17 @@ export const ImagesEditSchema = lazySchema(() => z.object({
         });
     }
     validateGptImage2Size(body, model, ctx);
+    if (body.markup != null) {
+        if (!isGptImage || !(isGptImage25 || gptImageVersion(model) == null)) {
+            ctx.addIssue({ code: "custom", path: ["markup"], message: "markup requires a GPT Image 2.5 or 2.6 model" });
+        }
+        if (body.mask != null) {
+            ctx.addIssue({ code: "custom", path: ["markup"], message: "markup cannot be combined with mask" });
+        }
+    }
+    if (body.complexity != null && (!isGptImage || !supportsGptImage26Features(model))) {
+        ctx.addIssue({ code: "custom", path: ["complexity"], message: "complexity requires a GPT Image 2.6 model" });
+    }
     if (isGptImage && body.response_format != null) {
         ctx.addIssue({
             code: "custom",

@@ -9,6 +9,7 @@ const state = vi.hoisted(() => ({
 	catalogueModel: null as Record<string, unknown> | null,
 	audit: vi.fn(async () => true),
     cacheDelete: vi.fn(async (_key: string) => undefined),
+    invalidated: vi.fn(async (..._args: unknown[]) => undefined),
 }));
 
 function query(table?: string) {
@@ -34,6 +35,7 @@ function query(table?: string) {
 }
 
 vi.mock("@/pipeline/before/guards", () => ({ guardManagementAuth: vi.fn(async () => state.auth) }));
+vi.mock("@/pipeline/before/privateModelCache", () => ({ invalidatePrivateRoutes: (...args: unknown[]) => state.invalidated(...args) }));
 vi.mock("@/runtime/env", () => ({ getSupabaseAdmin: () => ({ from: (table: string) => { state.tables.push(table); return query(table); } }), getCache: () => ({ delete: state.cacheDelete }) }));
 vi.mock("@/core/provider-credentials", () => ({
 	encryptProviderCredential: vi.fn(async () => ({
@@ -88,7 +90,8 @@ describe("private model management", () => {
 			}),
 		});
 		expect(response.status).toBe(201);
-        expect(state.cacheDelete).toHaveBeenCalledWith(`gateway:private-routes:v1:${state.auth.value.workspaceId}`);
+        // Bumps the workspace cache version, so every location reloads the snapshot.
+        expect(state.invalidated).toHaveBeenCalledWith(state.auth.value.workspaceId);
 		expect(state.inserted).toMatchObject({
 			workspace_id: state.auth.value.workspaceId,
 			model_id: "acme/legal-assistant",
@@ -196,7 +199,8 @@ describe("private model management", () => {
 			custom_provider_name: "Acme Hosting",
 			custom_provider_url: "https://new.example.com",
 		});
-        expect(state.cacheDelete).toHaveBeenCalledWith(`gateway:private-routes:v1:${state.auth.value.workspaceId}`);
+        // Bumps the workspace cache version, so every location reloads the snapshot.
+        expect(state.invalidated).toHaveBeenCalledWith(state.auth.value.workspaceId);
 	});
     it("deletes the route and invalidates its workspace snapshot", async () => {
         const id = "00000000-0000-4000-8000-000000000001";
@@ -204,6 +208,7 @@ describe("private model management", () => {
         const { privateModelsRoutes } = await import("./private-models");
         const response = await privateModelsRoutes.request(`https://example.com/${id}`, { method: "DELETE" });
         expect(response.status).toBe(200);
-        expect(state.cacheDelete).toHaveBeenCalledWith(`gateway:private-routes:v1:${state.auth.value.workspaceId}`);
+        // Bumps the workspace cache version, so every location reloads the snapshot.
+        expect(state.invalidated).toHaveBeenCalledWith(state.auth.value.workspaceId);
     });
 });

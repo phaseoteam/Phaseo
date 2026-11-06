@@ -1,6 +1,4 @@
 // ModelCombobox.tsx
-"use client";
-
 import * as React from "react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Archive, ArrowRight, Check, CircleAlert, CircleCheck, CircleDashed, FlaskConical, Plus, Search } from "lucide-react";
@@ -26,7 +24,7 @@ import { useModalityLabel } from "@/components/(data)/models/Models/useModalityL
 import type { CompareModelOption } from "./types";
 import { ProviderLogo } from "./ProviderLogo";
 import { useCompareModelOptions, usePrefetchCompareModelOptions } from "./useCompareModelOptions";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 interface ModelComboboxProps {
 	/** Options the page already has: the selected models. The full list loads when the picker opens. */

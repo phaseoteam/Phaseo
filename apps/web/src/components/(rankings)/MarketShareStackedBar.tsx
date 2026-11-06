@@ -1,10 +1,9 @@
-"use client";
 import { startOfUTCWeek } from "./time-buckets";
 
 import { useRef, useState } from "react";
 import RankingsChartShareButton, { type RankingsChartShare } from "@/components/(rankings)/RankingsChartShareButton";
 import type { ChartShareRenderSize, ChartShareSeriesSelection } from "@/components/share/ChartShareButton";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { formatCompactAxisTick, formatRoundedCount } from "@/lib/formatRoundedCount";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";

@@ -21,7 +21,7 @@ export function buildJavaSdkQuickstart({
 			: `var payload = new ObjectMapper().readTree(${JSON.stringify(payloadJson)});
         var response = client.request("POST", ${JSON.stringify(path)}, null, null, payload);
         System.out.println(response);`;
-	return `// Build from source: https://phaseo.app/docs/v1/sdk-reference/java/installation
+	return `// Build from source: https://phaseo.app/docs/v1/sdk-reference/client/installation
 import app.phaseo.sdk.Phaseo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;

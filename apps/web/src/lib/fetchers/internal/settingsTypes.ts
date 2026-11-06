@@ -1,5 +1,5 @@
 import type { StatsigProfile } from "@/lib/statsig/shared";
-import type { SensitiveInfoRulePayload } from "@/app/(dashboard)/settings/guardrails/actions";
+import type { SensitiveInfoRulePayload } from "@/features/settings/guardrails/actions";
 import type { DeprecationWarning } from "@/lib/fetchers/usage/types";
 import type { BroadcastDestinationHealth } from "@/components/(gateway)/settings/observability/broadcastHealth";
 import type { DisplayPreferences } from "@/lib/displayPreferences";
@@ -630,7 +630,7 @@ export type SettingsClassifiersInitialData = {
 	apps: Array<{ id: string; title: string }>;
 };
 
-export type SettingsRateLimitTargetType = "key" | "member" | "department" | "guardrail" | "end_user_default";
+export type SettingsRateLimitTargetType = "key" | "member" | "department" | "end_user_default";
 
 export type SettingsRateLimitPolicy = {
 	id: string;

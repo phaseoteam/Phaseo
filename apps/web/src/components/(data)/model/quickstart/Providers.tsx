@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/link";
 import {
 	AlertTriangle,
 	ArrowUpRight,
@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Logo } from "@/components/Logo";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "@/i18n/react";
 import ProviderInfoHoverIcons from "@/components/(data)/model/ProviderInfoHoverIcons";
 import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import {
@@ -85,12 +85,10 @@ function getStatusUi(statusKey: ProviderStateKey): {
 	}
 }
 
-export default async function Providers({ metadata }: { metadata: ModelGatewayMetadata }) {
-	const [tAvailability, tState, t] = await Promise.all([
-		getTranslations("Catalogue.models.detail.quickstart.providerAvailability"),
-		getTranslations("Catalogue.models.detail.quickstart.providerStates"),
-		getTranslations("Catalogue.models.detail.quickstart"),
-	]);
+export default function Providers({ metadata }: { metadata: ModelGatewayMetadata }) {
+	const tAvailability = useTranslations("Catalogue.models.detail.quickstart.providerAvailability");
+	const tState = useTranslations("Catalogue.models.detail.quickstart.providerStates");
+	const t = useTranslations("Catalogue.models.detail.quickstart");
 	const providers = groupProviders(metadata);
 
 	return (

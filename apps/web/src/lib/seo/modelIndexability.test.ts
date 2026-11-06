@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { analyseModelIndexability } from "./modelIndexability";
 
 describe("modelIndexability", () => {

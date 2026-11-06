@@ -1,11 +1,9 @@
-"use client";
-
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
-import type { RateCounting } from "@/app/(dashboard)/settings/guardrails/actions";
+import type { RateCounting } from "@/features/settings/guardrails/actions";
 import { parseRateLimit, type GuardrailWizardForm } from "./guardrailWizard";
 
 type RateFields = Pick<GuardrailWizardForm, "rateRequestsPerMinute" | "rateTokensPerMinute" | "rateConcurrentRequests" | "rateFailClosed" | "rateCounting">;

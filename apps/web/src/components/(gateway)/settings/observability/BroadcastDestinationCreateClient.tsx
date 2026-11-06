@@ -1,9 +1,7 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import Link from "@/components/link";
+import { useRouter } from "@/lib/navigation";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
@@ -47,11 +45,11 @@ import {
 } from "@/components/ui/select";
 import {
 	createBroadcastDestinationAction,
-} from "@/app/(dashboard)/settings/broadcast/actions";
+} from "@/features/settings/broadcast/actions";
 import { getBrowserAccessToken } from "@/lib/fetchers/internal/accountAuthClient";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 import type { DestinationDefinition } from "@/components/(gateway)/settings/observability/destinationCatalog";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 type KeyOption = {
@@ -410,7 +408,7 @@ export default function BroadcastDestinationCreateClient(props: {
 		if (!canSave || isSaving) return;
 		setIsSaving(true);
 		try {
-			await write(createBroadcastDestinationAction({
+			await write(createBroadcastDestinationAction({ data: {
 				destinationId: destination.id,
 				name: destinationName.trim(),
 				config,
@@ -431,7 +429,7 @@ export default function BroadcastDestinationCreateClient(props: {
 						value: rule.value,
 					})),
 				})),
-			}));
+			} }));
 			toast.success(t("credits.Destination saved" as never));
 			router.push("/settings/broadcast");
 			router.refresh();

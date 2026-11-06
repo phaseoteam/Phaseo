@@ -1,4 +1,3 @@
-"use client";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import { useMemo, useRef, useState, useTransition } from "react";
@@ -6,7 +5,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { useQuery } from "@tanstack/react-query";
 import { Check, ChevronDown, DollarSign, Gauge, Layers3, Loader2, Plus, ShieldCheck, Sparkles, Trash2, Zap } from "lucide-react";
 import { toast } from "sonner";
-import { updateAutoRoutingSettings } from "@/app/(dashboard)/settings/routing/actions";
+import { updateAutoRoutingSettings } from "@/features/settings/routing/actions";
 import { Logo } from "@/components/Logo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,7 +20,7 @@ import { fetchJsonQuery } from "@/lib/query/fetchers";
 import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
 import { webQueryKeys } from "@/lib/query/queryKeys";
 import { cn } from "@/lib/utils";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 
 type ModelOption = { id: string; label: string; organisationId: string; organisationName: string; releaseDate: string | null; releaseTimestamp: number | null; providerCount: number; inputPrice: number | null; outputPrice: number | null };
 const TEXT_CAPABILITIES = new Set(["responses", "chat/completions", "chat.completions", "messages", "text.generate"]);
@@ -163,7 +162,7 @@ export default function AutoRoutingSettingsClient({ initialData }: { initialData
 		if (!validCustomLimits) { toast.error(s("enterBothPriceLimits")); return; }
 		if (!modelCatalogLoading && !modelCatalogError && !eligibleModels.length) { toast.error(s("noEligibleTextModels")); return; }
 		startTransition(async () => {
-			const result = await updateAutoRoutingSettings(current);
+			const result = await updateAutoRoutingSettings({ data: current });
 			if (!result.ok) {
 				toast.error(
 					result.error.code === "serviceRejected"

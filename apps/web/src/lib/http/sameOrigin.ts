@@ -1,5 +1,3 @@
-import { NextResponse } from "next/server";
-
 const SAME_SITE_FETCHES = new Set(["same-origin", "none"]);
 
 function parsedOrigin(value: string): string | null {
@@ -25,9 +23,9 @@ export function isSameOriginRequest(request: Request): boolean {
 }
 
 /** A 403 response for a cross-origin state-changing request, or null when it may continue. */
-export function rejectCrossOriginRequest(request: Request): NextResponse | null {
+export function rejectCrossOriginRequest(request: Request): Response | null {
 	if (isSameOriginRequest(request)) return null;
-	return NextResponse.json(
+	return Response.json(
 		{ error: "cross_origin_request", message: "This request must come from the Phaseo dashboard." },
 		{ status: 403, headers: { "Cache-Control": "no-store" } },
 	);

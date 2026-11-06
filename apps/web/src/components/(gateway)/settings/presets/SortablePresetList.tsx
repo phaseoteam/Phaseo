@@ -1,5 +1,3 @@
-"use client";
-
 import {
 	DndContext,
 	KeyboardSensor,
@@ -21,7 +19,7 @@ import { GripVertical, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 export type SortablePresetOption = {
 	id: string;

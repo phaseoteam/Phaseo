@@ -1,10 +1,8 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 import { useInvalidatePrivateSettings } from "./PrivateSettingsQuery";
 
 import React, { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import {
 	Dialog,
 	DialogContent,
@@ -16,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { acceptTeamInviteAction } from "@/app/(dashboard)/settings/teams/actions";
+import { acceptTeamInviteAction } from "@/features/settings/teams/actions";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 export default function AcceptInviteDialog({
@@ -42,7 +40,7 @@ export default function AcceptInviteDialog({
 		setMessage(null);
 		try {
 			// call server action to create a join request
-			const res = await acceptTeamInviteAction(code, currentUserId);
+			const res = await acceptTeamInviteAction({ data: { token: code, userId: currentUserId } });
 			void invalidateSettings();
 			if (!res || !res.success)
 				throw new Error(res?.error || s("Failed to submit request"));

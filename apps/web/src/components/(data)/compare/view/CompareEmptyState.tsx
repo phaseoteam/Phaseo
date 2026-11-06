@@ -1,8 +1,6 @@
-"use client";
-
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { usePathname } from "@/lib/navigation";
+import { useTranslations } from "@/i18n/react";
 import { Activity, ArrowRight, ChartColumn, CircleDollarSign, Gauge, Server } from "lucide-react";
 import { getModalityIcon } from "@/components/(data)/models/Models/modalityIcons";
 import { useModalityLabel } from "@/components/(data)/models/Models/useModalityLabel";

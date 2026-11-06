@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { sdkCode } from "@/lib/chat/sdkExport";
 import { readTemplateRunError, readTemplateRunErrorCode, readTemplateRunReply, templateRunBody } from "./PresetTemplateRun";
 

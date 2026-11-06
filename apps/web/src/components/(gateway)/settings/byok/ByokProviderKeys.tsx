@@ -1,7 +1,5 @@
-"use client";
-
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import {
 	DndContext,
@@ -32,9 +30,9 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import BYOKInputDialog from "@/components/(gateway)/settings/byok/BYOKInputDialog";
 import DeleteKeyButton from "@/components/(gateway)/settings/byok/DeleteKeyButton";
-import { reorderByokKeyAction, updateByokKeyAction } from "@/app/(dashboard)/settings/byok/actions";
+import { reorderByokKeyAction, updateByokKeyAction } from "@/features/settings/byok/actions";
 import { MAX_BYOK_KEYS_PER_MODE } from "@/lib/byok/constants";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 export type ByokKeyEntry = {
@@ -211,14 +209,14 @@ export default function ByokProviderKeys({ provider, entries, modelOptions, apiK
 		setSaving(true);
 		try {
 			await write((async () => {
-				if (previous.routingMode !== next.routingMode) await updateByokKeyAction(id, { always_use: next.routingMode === "priority" });
+				if (previous.routingMode !== next.routingMode) await updateByokKeyAction({ data: { id, updates: { always_use: next.routingMode === "priority" } } });
 				const targetModeEntries = after.filter((entry) => entry.routingMode === next.routingMode).sort((a, b) => a.sortOrder - b.sortOrder);
 				const targetIndex = targetModeEntries.findIndex((entry) => entry.id === id);
 				const startingIndex = previous.routingMode === next.routingMode
 					? before.filter((entry) => entry.routingMode === previous.routingMode).sort((a, b) => a.sortOrder - b.sortOrder).findIndex((entry) => entry.id === id)
 					: targetModeEntries.length - 1;
 				const direction = targetIndex < startingIndex ? "up" : "down";
-				for (let step = 0; step < Math.abs(targetIndex - startingIndex); step += 1) await reorderByokKeyAction(id, direction);
+				for (let step = 0; step < Math.abs(targetIndex - startingIndex); step += 1) await reorderByokKeyAction({ data: { id, direction } });
 			})());
 		} catch (error) {
 			setEntries(before);

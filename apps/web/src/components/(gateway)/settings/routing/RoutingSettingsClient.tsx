@@ -1,4 +1,3 @@
-"use client";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -16,8 +15,8 @@ import { toast } from "sonner";
 import {
 	updateRoutingSettings,
 	type RoutingMode,
-} from "@/app/(dashboard)/settings/routing/actions";
-import { useTranslations } from "next-intl";
+} from "@/features/settings/routing/actions";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 type RoutingOption = {
@@ -195,14 +194,14 @@ export default function RoutingSettingsClient({
 		setSaving(true);
 		try {
 			const save = async () => {
-				const result = await updateRoutingSettings({
+				const result = await updateRoutingSettings({ data: {
 					mode,
 					betaChannelEnabled,
 					alphaChannelEnabled,
 					responseHealingEnabled,
 					responseHealingLocked,
 					responseHealingMode,
-				});
+				} });
 				if (!result.ok) throw new Error(result.error);
 				void invalidateSettings();
 				return result;

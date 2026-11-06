@@ -10,6 +10,7 @@ import { computeBillAfterProviderCharge } from "@pipeline/pricing/engine";
 import { resolveOpenAITransport } from "../../shared/openai-transport";
 import { buildImagePricingRequestOptions, normalizeOpenAIImageTokenUsage } from "@core/image-request-options";
 import { upstreamTestHeaders } from "@providers/shared/testing";
+import { priceSvgAuthorUsage, resolveSvgAuthor, type SvgAuthor } from "./images-svg";
 
 function shouldLogRawImageResponse(args: ProviderExecuteArgs): boolean {
     return (
@@ -84,7 +85,12 @@ function logRawImageResponse(
         },
     });
 }
-function mapGatewayToOpenAIImages(body: ImagesGenerationRequest, rawBody: Record<string, unknown>, providerId: string) {
+function mapGatewayToOpenAIImages(
+    body: ImagesGenerationRequest,
+    rawBody: Record<string, unknown>,
+    providerId: string,
+    svgAuthor?: SvgAuthor | null,
+) {
     const providerParams = rawBody.provider_params && typeof rawBody.provider_params === "object"
         ? rawBody.provider_params as Record<string, unknown>
         : {};
@@ -115,6 +121,12 @@ function mapGatewayToOpenAIImages(body: ImagesGenerationRequest, rawBody: Record
         output_compression: body.output_compression,
         background: body.background,
         moderation: body.moderation,
+        complexity: body.complexity,
+        frame_count: body.frame_count,
+        frame_duration_ms: body.frame_duration_ms,
+        svg: body.svg && svgAuthor
+            ? { ...body.svg, model: svgAuthor.upstreamModel }
+            : undefined,
         size: body.size,
         style: body.style,
         user: body.user,
@@ -145,7 +157,19 @@ function mapOpenAIToGatewayImages(json: any): any {
         quality: json.quality,
         size: json.size,
         usage: json.usage,
+        ...(json.svg_usage && typeof json.svg_usage === "object" ? { svg_usage: json.svg_usage } : {}),
     };
+}
+
+function invalidSvgModelResponse(model: string): Response {
+    return new Response(JSON.stringify({
+        error: {
+            message: `svg.model "${model}" is not an OpenAI text model with Phaseo pricing. Use an OpenAI model id such as openai/gpt-5-nano.`,
+            type: "invalid_request_error",
+            param: "svg.model",
+            code: "invalid_svg_model",
+        },
+    }), { status: 400, headers: { "Content-Type": "application/json" } });
 }
 
 function resolveOutputImageCount(body: ImagesGenerationRequest, normalized: any): number {
@@ -227,7 +251,22 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         ...sanitizedBody,
         model: deployment || args.providerModelSlug || args.model,
     };
-    const req = mapGatewayToOpenAIImages(modifiedBody, args.body as Record<string, unknown>, args.providerId);
+    // SVG output also bills the caller-chosen author model; without a Phaseo price for it the
+    // request is refused here, before OpenAI charges for tokens we could not bill.
+    let svgAuthor: SvgAuthor | null = null;
+    if (modifiedBody.output_format === "svg" && modifiedBody.svg?.model) {
+        svgAuthor = await resolveSvgAuthor(modifiedBody.svg.model);
+        if (!svgAuthor) {
+            return {
+                kind: "completed",
+                upstream: invalidSvgModelResponse(modifiedBody.svg.model),
+                bill: { cost_cents: 0, currency: "USD" as const, usage: undefined as any, upstream_id: null, finish_reason: null },
+                keySource: keyInfo.source,
+                byokKeyId: keyInfo.byokId,
+            };
+        }
+    }
+    const req = mapGatewayToOpenAIImages(modifiedBody, args.body as Record<string, unknown>, args.providerId, svgAuthor);
     // Together takes no size or quality field; its output follows width and height,
     // which default to 1024 (https://docs.together.ai/openapi.yaml).
     const togetherSize = req as { width?: unknown; height?: unknown };
@@ -315,6 +354,27 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         bill.cost_cents = pricedUsage.pricing.total_cents;
         bill.currency = pricedUsage.pricing.currency;
         bill.usage = pricedUsage;
+        if (svgAuthor) {
+            // OpenAI has already charged; a pricing failure is logged, never thrown.
+            try {
+                const svgAuthorPricing = priceSvgAuthorUsage(json?.svg_usage, svgAuthor);
+                if (svgAuthorPricing) {
+                    bill.usage = { ...pricedUsage, svg_author_pricing: svgAuthorPricing };
+                    bill.cost_cents = Math.trunc((Number(pricedUsage.pricing.total_nanos ?? 0) + svgAuthorPricing.total_nanos) / 10_000_000);
+                } else {
+                    console.error("[gateway][openai][images] svg_usage missing from SVG response", {
+                        requestId: args.meta?.requestId ?? null,
+                        svgAuthor: svgAuthor.model,
+                    });
+                }
+            } catch (error) {
+                console.error("[gateway][openai][images] svg author pricing failed", {
+                    requestId: args.meta?.requestId ?? null,
+                    svgAuthor: svgAuthor.model,
+                    error: error instanceof Error ? error.message : String(error),
+                });
+            }
+        }
     }
     
     return { kind: "completed", upstream: res, bill, normalized, keySource: keyInfo.source, byokKeyId: keyInfo.byokId };

@@ -1,0 +1,232 @@
+---
+icon: "rotate-cw"
+title: "输出与重试"
+description: "重试失败的模型请求，校验最终输出，并为每个模型轮次设置网关默认值。"
+---
+
+设置模型重试策略，即可在运行中重试失败的模型请求；设置解析器或 schema，即可在最终回答到达应用其他部分之前，把它变成经过检查的值。网关默认值（例如提供商或严格的响应格式）设置在网关智能体客户端上。
+
+## 重试失败的模型请求
+
+<CodeGroup>
+
+```typescript TypeScript
+const agent = createAgent({
+  id: "support-agent",
+  modelRetry: {
+    maxRetries: 2,
+    backoffMs: 250,
+  },
+});
+```
+
+```python Python
+from phaseo_agent import AgentModelRetryConfig
+
+retry = AgentModelRetryConfig(max_retries=2, backoff_ms=250)
+# 把它作为 model_retry 传给定义或 run()
+```
+
+```go Go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID:    "research-agent",
+  Model: "openai/gpt-6-astra",
+  ModelRetry: phaseoagent.ModelRetryConfig{
+    MaxRetries: 3,
+    Backoff:    500 * time.Millisecond,
+  },
+})
+```
+
+```csharp C#
+var agent = AgentSdk.CreateAgent(new AgentDefinition
+{
+    Id = "research-agent",
+    Model = "openai/gpt-6-astra",
+    ModelRetry = new ModelRetryConfig(MaxRetries: 3, Backoff: TimeSpan.FromMilliseconds(500)),
+});
+```
+
+```php PHP
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "research-agent",
+    model: "openai/gpt-6-astra",
+    modelRetry: ["max_retries" => 3, "backoff_ms" => 500],
+));
+```
+
+```ruby Ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "research-agent",
+  model: "openai/gpt-6-astra",
+  model_retry: { max_retries: 3, backoff_ms: 500 }
+)
+```
+
+```java Java
+// 作为智能体的 modelRetry 参数传入，或为单次运行放在 RunOptions 中
+var retry = new AgentSdk.ModelRetryConfig(3, Duration.ofMillis(500)); // maxRetries, backoff
+```
+
+```rust Rust
+use std::time::Duration;
+
+let definition = AgentDefinition::new("resilient-agent", "openai/gpt-6-astra")
+    .model_retries(2, Duration::from_millis(250));
+```
+
+</CodeGroup>
+
+重试次数是第一次请求之后额外尝试的次数，默认为 `0`。每个步骤都会在它的模型尝试次数字段（`modelAttempts`、`model_attempts` 或 `ModelAttempts`）中记录尝试了几次。只有模型请求会被重试：工具错误遵循工具自己的错误策略，所以请把有副作用的工具的重试放在工具内部，并让它们具备幂等性。
+
+两次尝试之间的等待时间，以及哪些错误会被重试，因语言而异：
+
+| 语言 | 第 `n` 次重试前的等待 | 会重试的错误 | 为单次运行覆盖 |
+| --- | --- | --- | --- |
+| TypeScript | 从 `backoffMs` 开始指数增长并带完全抖动，最多到 `maxBackoffMs`；网关的 `Retry-After` 优先 | `retryOn(error)`，默认为 `agentErrorIsRetryable`。一旦输出开始流式传输，就不会再重复该次尝试。 | 运行选项 |
+| Python | `backoff_ms × n` | 模型请求抛出的任何异常 | `run()` 上的 `model_retry` |
+| Go | `Backoff × n`（默认 250 ms） | 任何模型请求错误 | `RunOptions.ModelRetry` |
+| C# | `Backoff × n`（默认 250 ms） | 任何模型请求错误 | `RunOptions.ModelRetry` |
+| PHP | `backoff_ms × n`（默认 250） | 任何模型请求错误 | `run()` 上的 `modelRetry:` |
+| Ruby | `backoff_ms × n`（默认 250） | 任何模型请求错误 | `run` 上的 `model_retry:` |
+| Java | `backoff × n`（`null` 退避表示 250 ms） | 任何模型请求错误 | `RunOptions` |
+| Rust | 固定的 `Duration` | 任何模型请求错误 | 无 |
+
+使用线性等待和 500 ms 退避时，三次重试分别等待 0.5 s、1 s 和 1.5 s。
+
+<span id="validate-the-final-output"></span>
+## 校验最终输出
+
+当模型不调用工具直接回答时，解析器会把最终文本转换为你的值，schema 再对它进行检查。只要其中任何一步失败，运行就会以 `Invalid agent output: ...` 错误失败，因此错误的输出会止步于智能体边界。请让校验器保持确定性且没有副作用。
+
+<CodeGroup>
+
+```typescript TypeScript
+const agent = createAgent<string, { summary: string }>({
+  id: "summary-agent",
+  parseOutput(text) {
+    return JSON.parse(text) as { summary: string };
+  },
+});
+```
+
+```python Python
+import json
+from pydantic import BaseModel
+
+class Ticket(BaseModel):
+    ticket_id: str
+
+agent = create_agent({
+    "id": "ticket-agent",
+    "parse_output": json.loads,
+    "output_schema": Ticket,
+})
+```
+
+```go Go
+ParseOutput: func(text string) (any, error) {
+  var ticket Ticket
+  return ticket, json.Unmarshal([]byte(text), &ticket)
+},
+OutputSchema: validateTicket, // func(any) (any, error)
+```
+
+```csharp C#
+ParseOutput = text => JsonSerializer.Deserialize<Ticket>(text),
+OutputSchema = value => value is Ticket { Id.Length: > 0 } ? value : throw new ArgumentException("Ticket ID is required"),
+```
+
+```php PHP
+parseOutput: fn (string $text) => json_decode($text, true, flags: JSON_THROW_ON_ERROR),
+outputSchema: fn ($value) => isset($value["ticket_id"]) ? $value : throw new InvalidArgumentException("ticket_id is required"),
+```
+
+```ruby Ruby
+parse_output: ->(text) { JSON.parse(text) },
+output_schema: ->(value) { value.key?("ticket_id") ? value : raise("ticket_id is required") }
+```
+
+</CodeGroup>
+
+| 语言 | 解析器 | Schema | 失败时 |
+| --- | --- | --- | --- |
+| TypeScript | `parseOutput(text)` | `outputSchema` | 抛出带有 `target: "agent_output"` 的 `AgentSchemaValidationError` |
+| Python | `parse_output(text)` | `output_schema`：可调用对象、Pydantic 模型，或提供 `parse` 或 `safe_parse` 的对象 | 抛出 `ValueError` |
+| Go | `ParseOutput(text) (any, error)` | `OutputSchema func(any) (any, error)` | `Run` 返回该错误（`invalid agent output: ...`） |
+| C# | `ParseOutput` | `OutputSchema` | 异常从 `Run` 中传播出来 |
+| PHP | `parseOutput` 可调用对象 | `outputSchema` 可调用对象 | 异常从 `run()` 中传播出来 |
+| Ruby | `parse_output:` 可调用对象 | `output_schema:` 可调用对象 | 异常从 `run` 中传播出来 |
+| Java | `parseOutput`，一个 `Function<String, Object>` | `outputSchema`，一个 `Validator`（13 个参数的 `AgentDefinition` 构造函数） | 异常从 `run` 中传播出来 |
+| Rust | 无 | 无 | 输出是 `serde_json::Value`；请在你的应用中校验它 |
+
+如果要让模型行为更严格，还可以要求网关返回结构化输出。在网关智能体客户端上设置 JSON Schema 响应格式（以及可选的 response-healing 插件）：
+
+```typescript
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "agent_answer",
+    schema: {
+      type: "object",
+      properties: {
+        summary: { type: "string" },
+      },
+      required: ["summary"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+});
+```
+
+Python、PHP 和 Ruby 接受相同的 `response_format`/`responseFormat` 和 `plugins` 选项。Go、C# 和 Java 没有响应格式选项；请通过客户端用于其他请求字段的扩展入口设置该字段（见下一节）。
+
+## 把路由默认值放在预设中
+
+当路由、提示词或参数默认值应保留在控制台中时，在智能体上设置 `preset`（Go 和 C# 中为 `Preset`）：
+
+```typescript
+const agent = createAgent({
+  id: "support-triage-agent",
+  preset: "support-triage",
+});
+```
+
+Rust 没有 `preset` 选项。
+
+<span id="set-gateway-defaults-on-the-client"></span>
+## 在客户端上设置网关默认值
+
+网关智能体客户端（`createGatewayAgentClient()`、`create_gateway_agent_client()`、`CreateGatewayAgentClient`）为每个模型轮次携带请求默认值，所以你不必在每次运行时重新构建它们。`model`、`input`、`instructions` 和函数工具仍由智能体负责；只有当智能体没有设置模型时，才会使用默认模型。
+
+| 设置 | camelCase（TypeScript、PHP） | snake_case（Python、Ruby） | PascalCase（Go、C#） |
+| --- | --- | --- | --- |
+| 复用核心客户端 | `client` | `client` | `Client` |
+| 配置新的核心客户端 | `clientOptions` | `client_options`（Python）；`api_key`、`base_url`（Ruby） | `APIKey`、`BaseURL`、`HTTPClient`、`Headers`（Go）；`ClientOptions`（C#） |
+| 默认模型或预设 | `model`、`preset` | `model`、`preset` | `Model`、`Preset` |
+| 提供商路由 | `provider` | `provider` | `Provider` |
+| 推理 | `reasoning` | `reasoning` | `Reasoning` |
+| 采样和长度 | `temperature`、`maxOutputTokens` | `temperature`、`max_output_tokens` | `Temperature`、`MaxOutputTokens` |
+| 并行工具调用 | `parallelToolCalls` | `parallel_tool_calls` | `ParallelToolCall`（Go）、`ParallelToolCalls`（C#） |
+| 元数据和终端用户 | `metadata`、`user` | `metadata`、`user` | `Metadata`、`User` |
+| 结构化输出 | `responseFormat` | `response_format` | 无 |
+| 插件 | `plugins` | `plugins` | 无 |
+| 网页搜索 | `webSearchOptions` | `web_search_options` | 无 |
+| 托管工具和工具选择 | `gatewayTools`、`toolChoice` | `gateway_tools`、`tool_choice` | `GatewayTools`、`ToolChoice` |
+| 提供商选项和缓存 | `providerOptions`、`promptCacheKey` | `provider_options`、`prompt_cache_key` | `ProviderOptions`、`PromptCacheKey` |
+| 返回网关 meta 块 | `includeMeta` | `include_meta` | `IncludeMeta` |
+| 任何其他 Responses API 字段 | `requestOptions` | `request_options` | `ConfigureRequest`，一个 `func(*gen.ResponsesRequest)`（Go）；`RequestOptions`（C#） |
+| 放弃一个没有动静的流 | `streamIdleTimeoutMs`（仅 TypeScript；默认关闭，以可重试错误的形式失败） | 无 | 无 |
+
+Java 和 Rust 接受的选项更少：
+
+| 语言 | 网关客户端选项 |
+| --- | --- |
+| Java | `new AgentSdk.GatewayOptions(client, apiKey, baseUrl, model, preset, requestOptions)`。其他所有 Responses API 字段都放在 `requestOptions` 中。 |
+| Rust | `GatewayAgentClient::new(phaseo_client, model)`、`GatewayAgentClient::from_env(model)` 或 `create_gateway_agent_client(model)`。除模型外没有其他请求默认值。 |
+
+[Responses 参数](/zh-Hans/v1/api-reference/parameters)页面解释了每个字段。要从结果中读取用量、费用和状态，参见[可观测性](./observability)。

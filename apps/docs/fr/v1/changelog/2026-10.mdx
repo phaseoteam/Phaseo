@@ -13,9 +13,9 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">Produit</p>
 
-- **Paramètres -> Routage -> Routage des modèles retirés** affiche **Vos modèles concernés** : chaque modèle utilisé par votre espace de travail au cours des 90 derniers jours qui est en cours de retrait ou n'est plus servi, avec son remplaçant, la comparaison des prix et si ses requêtes sont redirigées, et sinon pourquoi. **Choisir un remplaçant** définit votre propre remplaçant pour un modèle ; voir [Dépréciation et retrait des modèles](../guides/model-retirement.mdx#see-which-of-your-models-are-affected) ([#3357](https://github.com/phaseoteam/Phaseo/pull/3357)).
+- **Paramètres -> Routage -> Routage des modèles retirés** affiche les modèles en cours de retrait que votre espace de travail a utilisés au cours des 90 derniers jours, et **Choisir un remplaçant** définit votre propre remplaçant ; voir [Dépréciation et retrait des modèles](../guides/model-retirement.mdx#see-which-of-your-models-are-affected) ([#3357](https://github.com/phaseoteam/Phaseo/pull/3357)).
 
-- Les [Conditions d'utilisation](https://phaseo.app/terms) exigent désormais d'avoir 18 ans ou plus et interdisent les contenus d'abus sexuels sur mineurs ; la [Politique de confidentialité](https://phaseo.app/privacy) explique comment nous les détectons, les conservons et les signalons ([#3388](https://github.com/phaseoteam/Phaseo/pull/3388)).
+- Les [Conditions d'utilisation](https://phaseo.app/terms) exigent désormais d'avoir 18 ans ou plus et interdisent les contenus d'abus sexuels sur mineurs ; la [Politique de confidentialité](https://phaseo.app/privacy) explique comment Phaseo les détecte, les conserve et les signale ([#3388](https://github.com/phaseoteam/Phaseo/pull/3388)).
 
 </div>
 
@@ -111,7 +111,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">Produit</p>
 
 - Tous les espaces de travail peuvent utiliser le routage des modèles retirés : les propriétaires et administrateurs l'activent dans **Paramètres -> Routage -> Routage des modèles retirés**, et les requêtes vont au remplaçant approuvé ; voir [Dépréciation et retrait des modèles](../guides/model-retirement.mdx) ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#2896](https://github.com/phaseoteam/Phaseo/pull/2896)).
-- Le routage des modèles retirés n'utilise un remplaçant approuvé que s'il ne coûte pas plus que le modèle retiré, sauf si les propriétaires et administrateurs autorisent un prix plus élevé ; un remplaçant qu'ils choisissent eux-mêmes est utilisé quel que soit son prix ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211)).
+- Le routage des modèles retirés ignore un remplaçant approuvé qui coûte plus cher que le modèle retiré, sauf si les propriétaires et administrateurs l'autorisent ; les remplaçants qu'ils choisissent s'appliquent quel que soit le prix ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211)).
 - La liste et l'éditeur de préréglages s'ouvrent même si le catalogue complet des modèles ne se charge pas ; avant, la page affichait une erreur ([#3221](https://github.com/phaseoteam/Phaseo/pull/3221)).
 
 </div>
@@ -349,7 +349,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">API et SDK</p>
 
-- La documentation des SDK ajoute le SDK Java, à installer depuis les sources ; voir [Java SDK — Installation](../sdk-reference/java/installation.mdx) ([#2904](https://github.com/phaseoteam/Phaseo/pull/2904)).
+- La documentation des SDK ajoute le SDK Java, à installer depuis les sources ; voir [Java SDK — Installation](../sdk-reference/client/installation.mdx) ([#2904](https://github.com/phaseoteam/Phaseo/pull/2904)).
 
 </div>
 

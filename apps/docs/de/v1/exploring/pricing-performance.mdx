@@ -1,83 +1,81 @@
 ---
 title: "Preise und Leistung messen"
-description: "Vergleiche Anbieterpreise und die operative Gateway-Leistung, ohne Beobachtungsdaten als kontrollierten Benchmark zu betrachten."
+description: "Vergleiche Anbieterpreise und die operative Gateway-Leistung, ohne Beobachtungsdaten als kontrollierten Benchmark zu behandeln."
 icon: "chart-spline"
 ---
 
-Nutze diesen Leitfaden, um Kosten und Geschwindigkeit über Routen hinweg zu vergleichen, die von Phaseo angezeigten Kennzahlen zu verstehen und eine Workload-Studie zu planen, bevor du Produktionsverkehr umstellst.
+Vergleiche, was ein Modell bei jedem Anbieter kostet, mit der Geschwindigkeit, mit der es Gateway-Traffic bedient hat, und bestätige die Favoriten dann mit deinen eigenen Prompts, bevor du Produktions-Traffic umstellst.
 
-## Mit der Entscheidung beginnen
+## Die Metrik wählen, die für deine Arbeitslast zählt
 
-Wähle die Kennzahl, die zu der Nutzererfahrung passt, die du schützen möchtest.
-
-| Workload | Beginnen mit | Warum |
+| Arbeitslast | Beginne mit | Warum |
 | --- | --- | --- |
-| Chat, Copilots und Sprache | Gateway TTFT | Nutzer merken, wie schnell eine nützliche Ausgabe beginnt. |
-| Lange Antworten und Codegenerierung | Output speed | Bei längeren Antworten ist die anhaltende Generierungsgeschwindigkeit entscheidend. |
-| Tools und strukturierte Workflows | Gateway E2E | Routing, Wiederholungsversuche und Orchestrierung beeinflussen das Gesamtergebnis. |
-| Batch- oder Offline-Verarbeitung | Kosten und effektiver Durchsatz | Ein langsamerer Start kann akzeptabel sein, wenn Gesamtdurchsatz und Kosten wichtiger sind. |
+| Chat, Copilots und Sprache | Gateway-TTFT | Nutzer merken, wie schnell eine nützliche Ausgabe beginnt. |
+| Lange Antworten und Codegenerierung | Ausgabegeschwindigkeit | Bei längeren Antworten dominiert die anhaltende Generierungsgeschwindigkeit. |
+| Tools und strukturierte Workflows | Gateway-E2E | Routing, Wiederholungen und Orchestrierung beeinflussen das Gesamtergebnis. |
+| Batch- oder Offline-Arbeit | Kosten und effektiver Durchsatz | Ein langsamerer Start kann akzeptabel sein, wenn Gesamtdurchsatz und Ausgaben wichtiger sind. |
 
-Keine einzelne Punktzahl beweist, dass ein Modell für jede Workload die beste Wahl ist.
+Keine einzelne Punktzahl beweist, dass ein Modell für jede Arbeitslast die beste Wahl ist.
 
 ## Preise vergleichen
 
-Preislisten von Anbietern verwenden unterschiedliche Einheiten: pro Token, Million Tokens, Bild, Sekunde, Minute oder Anfrage. Phaseo behält die zugrunde liegende Einheit bei und normalisiert vergleichbare Preise für Katalogansichten und den Preisrechner.
+Preislisten von Anbietern verwenden unterschiedliche Einheiten: pro Token, pro Million Tokens, pro Bild, pro Sekunde, pro Minute oder pro Anfrage. Phaseo behält jeden Preis in seiner eigenen Einheit und rechnet vergleichbare Textpreise für Katalogansichten und den Preisrechner auf 1 Million Tokens um.
 
-Vergleiche bei Textmodellen vorhandene Preise für Eingabe, Cache-Eingabe, Cache-Schreiben, Reasoning und Ausgabe getrennt. Bei Medienmodellen muss die native Abrechnungseinheit sichtbar bleiben; ein Videopreis pro Sekunde darf nicht wie ein Tokenpreis dargestellt werden.
+Vergleiche bei Textmodellen die Abrechnungseinheiten für Eingabe, zwischengespeicherte Eingabe, Cache-Schreiben, Reasoning und Ausgabe getrennt, sofern vorhanden. Medienmodelle behalten ihre eigene Abrechnungseinheit; vergleiche einen Videopreis pro Sekunde nur mit anderen Preisen pro Sekunde.
 
 <Note>
-Katalogpreise dienen zur Schätzung einer Anfrage und sind kein Angebot für jede mögliche Nutzlast. Anbieterstufen, regionale Angebote, Batch-Preise, Cache-Verhalten und anfragespezifische Zähler können den Endbetrag verändern.
+Katalogpreise schätzen eine Anfrage; sie sind kein Angebot für jede Nutzlast. Anbieterstufen, regionale Angebote, Batch-Preise, Cache-Verhalten und anfragespezifische Abrechnungseinheiten verändern den Endbetrag.
 </Note>
 
-Nutze den [Preisrechner](https://phaseo.app/tools/pricing-calculator) mit einer repräsentativen Nutzlast und prüfe nach einer Testanfrage den abgerechneten Betrag in der Gateway-Nutzung.
+Nutze den [Preisrechner](https://phaseo.app/tools/pricing-calculator) für eine repräsentative Nutzlast und bestätige nach einer Testanfrage den abgerechneten Betrag in der Gateway-Nutzung.
 
-## Leistungskennzahlen verstehen
+## Leistungsmetriken verstehen
 
-Phaseo erfasst die Betriebszeiten von Anfragen, die über das Gateway geleitet werden.
+Phaseo erfasst operative Zeitmessungen für Anfragen, die über das Gateway geroutet werden.
 
 | Metrik | Definition |
 | --- | --- |
-| **Gateway TTFT** | Vom Start der Gateway-Anfrage bis zur ersten generierten Ausgabe mit Inhalt. |
-| **Provider TTFT** | Vom Versand an den ausgewählten Anbieter bis zur ersten generierten Ausgabe mit Inhalt. |
-| **Provider duration** | Vom Versand an den ausgewählten Anbieter bis zur endgültigen Antwort. |
-| **Gateway E2E** | Vom Start der Gateway-Anfrage bis zu ihrem Abschluss. |
-| **Phaseo overhead** | `max(0, Gateway E2E - provider duration)`. |
-| **Effective throughput** | Alle Ausgabetokens geteilt durch die gesamte Anbieterdauer. |
-| **Output speed** | Ausgabetokens nach dem ersten, ohne verborgenes Reasoning davor, geteilt durch die Anbieterzeit nach dem TTFT. Wird nicht angezeigt, wenn die ganze Antwort in einem einzigen Netzwerk-Read ankommt. |
+| **Gateway-TTFT** | Vom Start der Gateway-Anfrage bis zur ersten generierten Ausgabe mit Inhalt. |
+| **Anbieter-TTFT** | Von der Weiterleitung an den ausgewählten Anbieter bis zur ersten generierten Ausgabe mit Inhalt. |
+| **Anbieterdauer** | Von der Weiterleitung an den ausgewählten Anbieter bis zur abschließenden Antwort. |
+| **Gateway-E2E** | Vom Start der Gateway-Anfrage bis zum Abschluss. |
+| **Phaseo-Overhead** | `max(0, Gateway E2E - provider duration)`. |
+| **Effektiver Durchsatz** | Alle Ausgabetokens geteilt durch die gesamte Anbieterdauer. |
+| **Ausgabegeschwindigkeit** | Ausgabetokens nach dem ersten, ohne verborgenes Reasoning davor, geteilt durch die Anbieterzeit nach TTFT. Wird nicht angezeigt, wenn die ganze Antwort in einem einzigen Netzwerk-Read ankommt. |
 | **TPOT / ITL** | Durchschnittliche Zeit pro Token auf Anfrageebene nach der ersten Ausgabe. |
 
-TTFT, Ausgabegeschwindigkeit, TPOT und ITL setzen eine Streaming-Antwort mit einer ersten inhaltstragenden Ausgabe voraus. Reine Metadaten-Frames im Stream zählen nicht. Nicht gestreamte Antworten können weiterhin zur Anbieterdauer, Gateway E2E und zum effektiven Durchsatz beitragen, ohne einen TTFT zu erfinden.
+TTFT, Ausgabegeschwindigkeit, TPOT und ITL erfordern eine Streaming-Antwort mit einer ersten Ausgabe, die Inhalt enthält. Stream-Frames nur mit Metadaten zählen nicht. Antworten ohne Streaming tragen trotzdem zu Anbieterdauer, Gateway-E2E und effektivem Durchsatz bei, ohne dass ein TTFT erfunden wird.
 
-Der Phaseo-Overhead erfasst die Zeit außerhalb des Aufrufs beim ausgewählten Anbieter. Er kann Gateway-Verarbeitung, Routing, Wiederholungsversuche und Netzwerkeinflüsse umfassen. Er ist keine feste Plattformkonstante und sollte als Verteilung über ein festgelegtes Zeitfenster betrachtet werden.
+Der Phaseo-Overhead ist die Zeit außerhalb des Aufrufs beim ausgewählten Anbieter: Gateway-Verarbeitung, Routing, Wiederholungen und Netzwerkeffekte. Er schwankt von Anfrage zu Anfrage, also lies ihn als Verteilung über ein festgelegtes Zeitfenster, nicht als feste Zahl.
 
 ## Operative Daten richtig lesen
 
-Leistungsseiten fassen den aktuellen Gateway-Verkehr zusammen. Es handelt sich um Beobachtungsmessungen, nicht um kontrollierte Benchmark-Läufe oder intrinsische Eigenschaften eines Modells.
+Leistungsseiten fassen den Live-Traffic des Gateways zusammen. Sie sind Beobachtungen, keine kontrollierten Benchmark-Läufe, und sie beschreiben eine Route über ein Zeitfenster, nicht das Modell selbst. Vergangene Latenz und Verfügbarkeit garantieren keine künftigen Ergebnisse.
 
-Ergebnisse können sich aus folgenden Gründen verändern:
+Ergebnisse verändern sich durch:
 
-- der Auswahl von Anbieter und Route
-- dem Cloudflare-Ausführungsort und dem Netzwerkpfad
-- Warteschlangen beim Anbieter oder regionalen Auslastung
-- der Länge von Prompt und Ausgabe
+- die Auswahl von Anbieter und Route
+- den Cloudflare-Ausführungsort und den Netzwerkpfad
+- Warteschlangen beim Anbieter oder regionale Auslastung
+- die Länge von Prompt und Ausgabe
 - Streaming- oder Nicht-Streaming-Verhalten
-- Wiederholungsversuchen, Abbrüchen und Tool-Aufrufen
-- Aktualisierungen von Modell oder Anbieter im ausgewählten Zeitraum
+- Wiederholungen, Abbrüche und Tool-Aufrufe
+- Aktualisierungen von Modell oder Anbieter im ausgewählten Zeitfenster
 
-Öffentliche Diagramme können Perzentile wie P50, P90, P95 und P99 zeigen. Bei der Latenz gilt: Je niedriger, desto besser. Beim Durchsatz gilt: höher ist besser. Ein niedrigeres Durchsatz-Perzentil beschreibt daher den langsamen Randbereich.
+Öffentliche Diagramme können Perzentile wie P50, P90, P95 und P99 zeigen. Bei der Latenz ist niedriger besser. Beim Durchsatz ist höher besser, daher beschreibt ein niedrigeres Durchsatz-Perzentil den langsamen Rand.
 
-Notiere neben dem Ergebnis immer den ausgewählten Zeitraum, die Route, die Region, die Stichprobenfilter und das Perzentil. Vergleiche keine Screenshots mit unterschiedlichen Zeiträumen, als wären sie Teil derselben Studie.
+Notiere neben einem Ergebnis immer das ausgewählte Zeitfenster, die Route, die Region, die Stichprobenfilter und das Perzentil. Vergleiche keine zwei Screenshots mit unterschiedlichen Zeitfenstern, als stammten sie aus derselben Studie.
 
-## Eine reproduzierbare Workload-Studie durchführen
+## Eine reproduzierbare Arbeitslast-Studie durchführen
 
-Grenze die Kandidaten anhand öffentlicher Telemetrie ein und prüfe die Favoriten anschließend mit deinem eigenen Prompt-Mix.
+Grenze die Kandidaten mit öffentlicher Telemetrie ein und validiere die Favoriten dann mit deiner eigenen Prompt-Mischung.
 
 1. Wähle zwei oder drei routbare Modelle aus der Standardantwort von `GET /v1/models`.
-2. Erstelle einen bereinigten Prompt-Satz mit kurzen, typischen und langen Anfragen.
-3. Lege Endpoint, Region, Streaming-Modus, Anbieterbeschränkungen und Parallelität fest.
-4. Sende mehrere Anfragen pro Prompt, statt dich auf eine einzelne Messung zu verlassen.
-5. Erfasse Request-ID, ausgewählten Anbieter, Erfolg oder Fehler, Ausgabetokens, Gateway TTFT, Anbieterdauer, Gateway E2E, Phaseo-Overhead und Kosten.
-6. Vergleiche Verteilungen und Fehlermuster und bewahre die Rohdaten zusammen mit der Testkonfiguration auf.
+2. Erstelle einen bereinigten Prompt-Satz, der kurze, typische und lange Anfragen abbildet.
+3. Lege Endpunkt, Region, Streaming-Modus, Anbietereinschränkungen und Parallelität fest.
+4. Führe für jeden Prompt wiederholte Anfragen aus, statt dich auf eine einzelne Stichprobe zu verlassen.
+5. Erfasse Request-ID, ausgewählten Anbieter, Erfolg oder Fehler, Ausgabetokens, Gateway-TTFT, Anbieterdauer, Gateway-E2E, Phaseo-Overhead und Kosten.
+6. Vergleiche Verteilungen und Fehlermuster und bewahre die Rohergebnisse zusammen mit der Testkonfiguration auf.
 
 Beispiel für ein Ergebnisschema:
 
@@ -99,29 +97,6 @@ Beispiel für ein Ergebnisschema:
 }
 ```
 
-Die Nullwerte sind Platzhalter. Veröffentliche Messwerte nur zusammen mit der Workload-Definition, der Stichprobenzahl, dem Zeitraum und der Erlaubnis zur Offenlegung der Daten.
+Die Nullwerte sind Platzhalter. Veröffentliche Messwerte nur zusammen mit der Definition der Arbeitslast, der Stichprobenzahl, dem Zeitfenster und der Erlaubnis, die Daten offenzulegen.
 
-## Was Phaseo nicht behauptet
-
-- Ein Modelle im Katalog ist nicht automatisch routbar. Verwende den standardmäßigen Filter für aktive Verfügbarkeit.
-- Öffentliche Betriebsdaten garantieren weder zukünftige Latenz noch Verfügbarkeit.
-- Ein Benchmark-Ergebnis belegt nicht die Produktionsqualität für deinen Prompt-Mix.
-- Ein beispielhaftes UI-Profil ist keine Live-Messung des Modells.
-- Kundenreferenzen, Logos oder Workload-Ergebnisse dürfen nur mit Genehmigung und Belegen veröffentlicht werden.
-
-## Nächste Schritte
-
-<Columns cols={2}>
-  <Card title="Zuverlässigkeit und Status prüfen" icon="shield-check" href="../developers/reliability-and-status.mdx">
-    Prüfe Vorfälle, aktuelle Modell-Routbarkeit, Metrikdefinitionen und Fehleranalyse.
-  </Card>
-  <Card title="Modelle vergleichen" icon="scale" href="https://phaseo.app/compare">
-    Vergleiche Preise, Metadaten und verfügbare Leistungssignale nebeneinander.
-  </Card>
-  <Card title="Modellrouten prüfen" icon="route" href="../api-reference/endpoint/model-endpoints.mdx">
-    Prüfe Anbieterrouten, Funktionen, Verfügbarkeitsstatus und Preise für ein Modell.
-  </Card>
-  <Card title="Benchmark-Methodik prüfen" icon="microscope" href="../research/benchmark-methodology.mdx">
-    Erfahre, wie Benchmark-Quellen und -Ergebnisse unabhängig von Gateway-Telemetrie normalisiert werden.
-  </Card>
-</Columns>
+Ein Katalogeintrag bedeutet nicht, dass ein Modell routbar ist, also beginne mit der Standardantwort von `GET /v1/models`. Eine Benchmark-Punktzahl belegt nicht die Qualität für deine Prompt-Mischung; unter [Benchmark-Methodik](../research/benchmark-methodology) erfährst du, wie Punktzahlen unabhängig von der Gateway-Telemetrie bezogen werden. Um jede Anbieterroute, jede Fähigkeit und jeden Preis für ein Modell zu prüfen, nutze die [Modell-Endpunkte-API](../api-reference/endpoint/model-endpoints) oder [Vergleichen](https://phaseo.app/compare). Für Vorfälle und die Fehleranalyse siehe [Zuverlässigkeit und Status](../developers/reliability-and-status).

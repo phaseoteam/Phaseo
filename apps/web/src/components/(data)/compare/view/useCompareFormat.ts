@@ -1,7 +1,5 @@
-"use client";
-
 import { useMemo } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { asUtc, CONDITION_FIELDS, describeCondition, formatUsd, parseLegacyCondition, type ConditionWords } from "./compareViewMath";
 import type { CompareUsageWindow, CompareViewPriceRow } from "./types";

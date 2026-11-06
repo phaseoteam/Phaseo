@@ -4,20 +4,14 @@ description: "让 Responses 模型返回经过验证的补丁操作。"
 icon: "file-pen-line"
 ---
 
-当 Responses 工作流需要以结构化补丁操作返回文件更改时，请使用 `phaseo:apply_patch`。Phaseo 会校验该操作并返回给客户端，但不会修改文件系统或代码库。
-
-<Note>
-`phaseo:apply_patch` is available on `/v1/responses`.
-</Note>
-
-## 请求
+在 `/v1/responses` 上添加 `phaseo:apply_patch`，即可以结构化补丁操作的形式取回文件更改。Phaseo 会检查每个操作的结构并返回它；它从不触碰你的文件。是否应用补丁、展示给用户、拒绝它还是要求修改，都由你的应用决定。
 
 ```bash
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "input": "Create a small README patch for this project.",
     "tools": [
       { "type": "phaseo:apply_patch" }
@@ -25,9 +19,15 @@ curl https://api.phaseo.app/v1/responses \
   }'
 ```
 
-## 操作结构
+在 `/v1/chat/completions` 或 `/v1/messages` 上，该请求会被拒绝。
 
-模型调用该工具时，会发送一个操作对象：
+## 参数
+
+无。按原样添加 `{ "type": "phaseo:apply_patch" }` 即可。
+
+## 模型发送的内容
+
+一个 `operation` 对象：
 
 ```json
 {
@@ -39,17 +39,15 @@ curl https://api.phaseo.app/v1/responses \
 }
 ```
 
-支持的操作类型：
+| `type` | 必填字段 | Diff 规则 |
+| --- | --- | --- |
+| `create_file` | `path`、`diff` | 每个非空行都以 `+` 开头 |
+| `update_file` | `path`、`diff` | 每个非空行都以 `@@`、空格、`+` 或 `-` 开头 |
+| `delete_file` | `path` | 无 |
 
-| 类型 | 必填字段 |
-| --- | --- |
-| `create_file` | `path`, `diff` |
-| `update_file` | `path`, `diff` |
-| `delete_file` | `path` |
+`path` 不能包含空字节。
 
-## 工具结果
-
-Phaseo 会将验证后的操作返回模型循环：
+## 工具返回的内容
 
 ```json
 {
@@ -63,25 +61,8 @@ Phaseo 会将验证后的操作返回模型循环：
 }
 ```
 
-应用仍需负责应用补丁、向用户展示、拒绝补丁，或要求模型返回修订后的操作。
+违反上述规则的操作会返回 `apply_patch_invalid_operation` 及原因，以便模型重试。
 
-## 用量与定价
+## 用量和价格
 
-Phaseo 会记录：
-
-```json
-{
-  "usage": {
-    "server_tool_use": {
-      "apply_patch_requests": 1
-    }
-  }
-}
-```
-
-价格卡可通过 `server_tool_apply_patch_requests` 计量项对此计费。
-
-## 相关内容
-
-- [服务器工具](./index.mdx)
-- [Responses API](../../api-reference/endpoint/responses.mdx)
+每次调用会使 `usage.server_tool_use.apply_patch_requests` 加 1，并可按 `server_tool_apply_patch_requests` 计费。

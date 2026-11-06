@@ -1,67 +1,43 @@
 ---
 title: "Mistral Small 4"
-description: "O que considerar ao adotar Mistral Small 4, incluindo controles de raciocínio e campos de resposta normalizados."
+description: "O que saber ao adotar o Mistral Small 4, incluindo controles de raciocínio e campos de resposta normalizados."
 icon: "/icons/brands/mistral.svg"
 ---
 
-# Mistral Small 4
-
-Use este guia para adotar Mistral Small 4 com segurança pelo Phaseo Gateway:
-
-- `mistral/mistral-small-4-2026-03-16`
-
-## Novidades
-
-- Mistral Small 4 permite controlar o modo de raciocínio por `reasoning_effort`.
-- O Gateway envia ao provedor somente dois valores para essa rota:
-  - `none` (raciocínio desativado)
-  - `high` (raciocínio ativado)
-- O Gateway normaliza blocos de pensamento do Mistral para campos de resposta padrão:
-  - `message.content` para o texto visível do assistente
-  - `message.reasoning_content` e `message.reasoning_details` para o texto de raciocínio
-
-## Início rápido da migração
-
-Por padrão, o raciocínio fica desativado nessa rota.
-
-Regras de mapeamento do Gateway:
-
-- Sem controles de raciocínio, o Gateway envia `reasoning_effort: "none"`.
-- Com `reasoning.enabled: true`, envia `reasoning_effort: "high"`.
-- Com `reasoning.effort: "none"`, envia `reasoning_effort: "none"`.
-- Qualquer outro valor de `reasoning.effort` é convertido em `reasoning_effort: "high"`.
-
-Uso recomendado:
-
-- `reasoning.effort: "none"` para tarefas leves.
-- `reasoning.effort: "high"` para raciocínio profundo.
-
-Exemplo:
+Troque o modelo para `mistral/mistral-small-4` e decida, rota por rota, se o raciocínio fica ativado. O Mistral Small 4 tem dois modos de raciocínio, desativado e alto, e o Phaseo mapeia cada valor de esforço para um deles.
 
 ```json
 {
-  "model": "mistral/mistral-small-4-2026-03-16",
+  "model": "mistral/mistral-small-4",
   "messages": [
     { "role": "user", "content": "Why is fast inference important?" }
   ],
-  "reasoning": {
-    "effort": "high"
-  }
+  "reasoning": { "effort": "high" }
 }
 ```
 
-## Observações sobre respostas
+## Ative ou desative o raciocínio
 
-O Mistral pode retornar blocos de conteúdo mistos para o assistente (por exemplo, `thinking` e `text`). O Gateway os converte para um formato estável:
+O raciocínio fica desativado, a menos que a solicitação o peça. Na API da própria Mistral, o Phaseo envia `reasoning_effort` assim:
 
-- Resposta final visível ao usuário em `choices[0].message.content`.
-- Texto de raciocínio em `choices[0].message.reasoning_content`.
+| Solicitação | Enviado à Mistral |
+| --- | --- |
+| Nenhuma configuração de raciocínio | `reasoning_effort: "none"` |
+| `reasoning.effort: "none"` ou `reasoning.enabled: false` | `reasoning_effort: "none"` |
+| Qualquer outro `reasoning.effort`, ou `reasoning.enabled: true` | `reasoning_effort: "high"` |
 
-Assim, o comportamento posterior que espera campos de chat completion no padrão OpenAI continua funcionando.
+Um `reasoning_effort` simples na solicitação tem precedência sobre `reasoning.effort`. Use `none` em rotas leves e `high` para raciocínio profundo; `low` e `medium` se comportam exatamente como `high`.
 
-## Lista de verificação do rollout
+## Leia a resposta e o raciocínio
 
-1. Atualize o ID do modelo para `mistral/mistral-small-4-2026-03-16`.
-2. Valide os controles de raciocínio usando somente `none` e `high`.
-3. Execute novamente testes de qualidade e esquema nas rotas de alto esforço.
-4. Compare latência e custo com `none` e `high` antes da migração completa.
+A Mistral pode retornar blocos de conteúdo mistos, como `thinking` seguido de `text`. O Phaseo os separa em campos no estilo da OpenAI, para que o código downstream que lê Chat Completions continue funcionando:
+
+- a resposta fica em `choices[0].message.content`;
+- o texto do raciocínio fica em `choices[0].message.reasoning_content` e em `reasoning_details`.
+
+## Faça o rollout
+
+1. Troque o ID do modelo do Mistral Small 3.2 para `mistral/mistral-small-4`.
+2. Teste o raciocínio apenas com `none` e `high`.
+3. Execute de novo os testes de qualidade da saída e de esquema nas rotas que usam `high`.
+4. Compare a latência e o custo de `none` e `high` antes da virada completa.

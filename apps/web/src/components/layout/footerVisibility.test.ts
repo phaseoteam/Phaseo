@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from "vitest";
 import {
 	getFooterVisibilitySnapshot,
 	registerHideFooter,
@@ -7,7 +8,7 @@ import {
 
 describe("footer visibility overrides", () => {
 	it("supports nested hide and show overrides with idempotent cleanup", () => {
-		const listener = jest.fn();
+		const listener = vi.fn();
 		const unsubscribe = subscribeFooterVisibility(listener);
 		const removeHide = registerHideFooter();
 

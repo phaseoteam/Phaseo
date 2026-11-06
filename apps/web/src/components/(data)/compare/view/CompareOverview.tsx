@@ -1,7 +1,5 @@
-"use client";
-
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useTranslations } from "@/i18n/react";
 import { AudioLines, CircleCheck, FileText, Image as ImageIcon, Minus, Type, Video, type LucideIcon } from "lucide-react";
 import { getModalityIcon } from "@/components/(data)/models/Models/modalityIcons";
 import { useModalityLabel } from "@/components/(data)/models/Models/useModalityLabel";

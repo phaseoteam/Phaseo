@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useMemo, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { Info, Plus, Trash2 } from "lucide-react";
@@ -24,7 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { cn } from "@/lib/utils";
@@ -38,7 +36,7 @@ import { localizedProviderCredentialLabel, localizedProviderKeyHint, localizedPr
 import {
 	createByokKeyAction,
 	updateByokKeyAction,
-} from "@/app/(dashboard)/settings/byok/actions";
+} from "@/features/settings/byok/actions";
 
 type Props = {
 	providerId?: string;
@@ -288,24 +286,18 @@ export default function BYOKInputDialog({
 		try {
 			setLoading(true);
 			if (initial && initial.id) {
-				await write(updateByokKeyAction(initial.id, {
+				await write(updateByokKeyAction({ data: { id: initial.id, updates: {
 					name: normalizedName,
 					value: submission.value ?? undefined,
 					enabled,
 					always_use: alwaysUse,
 					allowedModelSlugs,
 					allowedApiKeyIds,
-				}));
+				} } }));
 			toast.success(submission.value ? t("credits.Key updated and replaced" as never) : t("strings.Key updated" as never));
 			} else {
 				await write(createByokKeyAction(
-					normalizedName,
-					providerId as string,
-					submission.value as string,
-					enabled,
-					alwaysUse,
-					allowedModelSlugs,
-					allowedApiKeyIds,
+					{ data: { name: normalizedName, providerId: providerId as string, value: submission.value as string, enabled, always_use: alwaysUse, allowedModelSlugs, allowedApiKeyIds } },
 				));
 		toast.success(t("credits.Key saved" as never));
 			}

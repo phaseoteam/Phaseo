@@ -2148,6 +2148,8 @@
 		"Completion": "補完",
 		"phraseNoIOPayloadIsAvailableForThisRequest": "このリクエストで利用可能な I/O ペイロードはありません。",
 		"Technical Details": "技術的な詳細",
+		"SVG author": "SVG 作成モデル",
+		"Image tool": "画像ツール",
 		"Pricing": "料金",
 		"Direct HTTP": "HTTP からの直接リクエスト",
 		"Data policy": "データポリシー",

@@ -1,8 +1,7 @@
-"use client";
 import { SettingsResourceQuery } from "../PrivateSettingsQuery";
 import type { TeamsSettingsData } from "@/lib/fetchers/internal/settingsTypes";
 import { Link } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { ArrowUpRight } from "lucide-react";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import { Badge } from "@/components/ui/badge";

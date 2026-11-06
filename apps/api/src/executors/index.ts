@@ -116,6 +116,7 @@ import { executor as nebiusTokenFactoryUsText } from "./nebius-token-factory-us-
 import { executor as nvidiaText } from "./nvidia/text-generate";
 import { executor as parasailText } from "./parasail/text-generate";
 import { executor as phalaText } from "./phala/text-generate";
+import { executor as phalaDecisions } from "./phala/decisions";
 import { executor as poolsideText } from "./poolside/text-generate";
 import { executor as relaceText } from "./relace/text-generate";
 import { executor as sambanovaText } from "./sambanova/text-generate";
@@ -319,6 +320,9 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	wafer: {
 		"text.generate": waferText,
 	},
+	"wafer-us": {
+		"text.generate": waferText,
+	},
 	"wafer-zdr": {
 		"text.generate": waferText,
 	},
@@ -442,7 +446,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	"nebius-token-factory-us-central-1": { "text.generate": nebiusTokenFactoryUsText },
 	nvidia: { "text.generate": nvidiaText },
 	parasail: { "text.generate": parasailText, embeddings: openaiEmbeddings },
-	phala: { "text.generate": phalaText, embeddings: openaiEmbeddings },
+	phala: { "text.generate": phalaText, embeddings: openaiEmbeddings, "decisions.make": phalaDecisions },
 	poolside: { "text.generate": poolsideText },
 	runway: { "video.generate": runwayVideo },
 	runwayml: { "video.generate": runwayVideo },

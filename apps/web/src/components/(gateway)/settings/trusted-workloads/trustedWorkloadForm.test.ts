@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import type { SettingsWorkloadIdentityProvider } from "@/lib/fetchers/internal/settingsTypes";
 import {
 	WORKLOAD_PROVIDERS,

@@ -1,23 +1,24 @@
 ---
 icon: "blocks"
-title: "Chamadas de ferramentas (AI SDK)"
-description: "Chamadas de funções e ferramentas com o Vercel AI SDK e o provedor Phaseo."
+title: "Chamada de ferramentas (AI SDK)"
+sidebarTitle: "Chamada de ferramentas"
+description: "Chamada de funções/ferramentas com o Vercel AI SDK e o provedor Phaseo."
 ---
 
-Use `tools` em `generateText` para executar funções com parâmetros tipados.
+Defina ferramentas com o helper `tool()` do AI SDK, passe-as para `generateText` e defina `stopWhen` para que o modelo possa responder depois que a ferramenta for executada.
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
-import { generateText } from "ai";
+import { generateText, stepCountIs, tool } from "ai";
 import { z } from "zod";
 
 const result = await generateText({
-  model: phaseo("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-6-astra"),
   prompt: "What is 17 + 25? Use the calculator tool.",
   tools: {
-    calculator: {
+    calculator: tool({
       description: "Perform basic arithmetic",
-      parameters: z.object({
+      inputSchema: z.object({
         operation: z.enum(["add", "subtract", "multiply", "divide"]),
         a: z.number(),
         b: z.number(),
@@ -28,15 +29,18 @@ const result = await generateText({
         if (operation === "multiply") return a * b;
         return a / b;
       },
-    },
+    }),
   },
+  stopWhen: stepCountIs(2),
 });
 
 console.log(result.text);
 ```
 
-## Observações
+Por padrão, `generateText` para depois de uma etapa. Se essa etapa for uma chamada de ferramenta, `result.text` fica vazio e o resultado da ferramenta está em `result.toolResults`. `stepCountIs(2)` dá ao modelo uma segunda etapa para responder com o resultado.
 
-- Mantenha as descrições das ferramentas precisas e os parâmetros rigorosos.
-- Valide efeitos colaterais externos dentro de `execute`.
-- Adicione novas tentativas e backoff às APIs de ferramentas downstream quando necessário.
+## Escrever ferramentas seguras
+
+- Mantenha as descrições precisas e os schemas de entrada rígidos; é o modelo que preenche os argumentos.
+- Trate os argumentos como entrada não confiável. Valide-os dentro de `execute` antes de qualquer efeito colateral.
+- Adicione novas tentativas e backoff dentro de `execute` para APIs downstream com falhas transitórias.

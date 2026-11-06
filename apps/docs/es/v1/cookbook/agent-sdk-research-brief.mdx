@@ -1,88 +1,71 @@
 ---
 title: "Investigar con salida estructurada y búsqueda web"
-sidebarTitle: "Investigar con búsqueda web"
+sidebarTitle: "Informes de investigación con búsqueda web"
 icon: "telescope"
-description: "Crea un agente de TypeScript respaldado por búsquedas que devuelva JSON estricto mediante el SDK de agentes."
+description: "Crea un agente de TypeScript respaldado por búsquedas que devuelve JSON estricto a través del Agent SDK."
 ---
 
-Usa esta receta cuando un flujo de agente deba:
+Crea un agente de TypeScript que busca en la web a través de Phaseo antes de responder y devuelve un informe de investigación como JSON estricto con sus fuentes. Al terminar tendrás un script que imprime un objeto `{ topic, summary, sources }` validado para cualquier tema que le des.
 
-- ejecutarse mediante el SDK de agentes de TypeScript
-- usar búsqueda web gestionada
-- devolver JSON estructurado estricto
-- recuperar de forma determinista JSON mal formado pero casi válido
+El script está listo para producción en investigaciones de una sola llamada. Los resultados de búsqueda son contenido web no fiable: la comprobación de esquema de abajo detiene la salida mal formada, pero revisa las fuentes antes de actuar en función de ellas. Hay una versión empaquetada en `packages/sdk/agent-sdk-ts/examples/research-brief-agent.ts`.
 
-## 1. Instala los SDK
+## Créalo
+
+<Steps>
+<Step title="Instala">
 
 <CodeGroup>
 ```bash npm
-npm install @phaseo/sdk @phaseo/agent-sdk
+npm install @phaseo/agent-sdk zod
 ```
 
 ```bash pnpm
-pnpm add @phaseo/sdk @phaseo/agent-sdk
+pnpm add @phaseo/agent-sdk zod
 ```
 
 ```bash yarn
-yarn add @phaseo/sdk @phaseo/agent-sdk
+yarn add @phaseo/agent-sdk zod
 ```
 
 ```bash bun
-bun add @phaseo/sdk @phaseo/agent-sdk
+bun add @phaseo/agent-sdk zod
 ```
 </CodeGroup>
 
-## 2. Define un contrato de salida acotado
-
-Mantén el primer resultado de investigación lo bastante pequeño como para que los operadores lo inspeccionen fácilmente en los registros.
-
-```ts
-type ResearchBrief = {
-  topic: string;
-  summary: string;
-  sources: Array<{
-    title: string;
-    url: string;
-  }>;
-};
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
 ```
 
-## 3. Crea el agente
+</Step>
+<Step title="Escribe el agente">
 
-Usa `parseOutput` para que el entorno de ejecución devuelva datos tipados en lugar de texto sin procesar.
+```ts research-agent.ts
+import { z } from "zod";
+import { createAgent, createGatewayAgentClient } from "@phaseo/agent-sdk";
 
-```ts
-import { createAgent } from "@phaseo/agent-sdk";
+// Lo bastante pequeño para leerlo en una línea de registro.
+const ResearchBrief = z
+  .object({
+    topic: z.string(),
+    summary: z.string().min(1),
+    sources: z.array(z.object({ title: z.string(), url: z.string().url() }).strict()).min(1),
+  })
+  .strict();
+type ResearchBrief = z.infer<typeof ResearchBrief>;
 
-export const researchBriefAgent = createAgent<string, ResearchBrief>({
+const researchBriefAgent = createAgent<string, ResearchBrief>({
   id: "research-brief-agent",
-  model: "phaseo/free",
+  model: "openai/gpt-6-astra",
   instructions:
-    "Research the user's topic with web search when needed and return a concise JSON brief with cited sources.",
-  parseOutput(text) {
-    return JSON.parse(text) as ResearchBrief;
-  },
+    "Research the user's topic with web search and return a concise JSON brief with cited sources.",
+  maxSteps: 4,
+  parseOutput: (text) => JSON.parse(text),
+  outputSchema: ResearchBrief,
 });
-```
-
-## 4. Configura una vez el adaptador respaldado por el gateway
-
-Esta es la parte importante:
-
-- `responseFormat` mantiene explícito el esquema de salida
-- `plugins` activa la reparación de respuestas para JSON casi válido
-- `gatewayTools` pone la búsqueda web gestionada a disposición del modelo
-- `toolChoice` obliga a usar la herramienta de búsqueda cuando el flujo siempre deba basarse en fuentes
-
-```ts
-import {
-  createGatewayAgentClient,
-} from "@phaseo/agent-sdk";
 
 const client = createGatewayAgentClient({
-  clientOptions: {
-    apiKey: process.env.PHASEO_API_KEY!,
-  },
+  clientOptions: { apiKey: process.env.PHASEO_API_KEY! },
+  // El JSON Schema que el Gateway pide al modelo.
   responseFormat: {
     type: "json_schema",
     name: "research_brief",
@@ -95,10 +78,7 @@ const client = createGatewayAgentClient({
           type: "array",
           items: {
             type: "object",
-            properties: {
-              title: { type: "string" },
-              url: { type: "string" },
-            },
+            properties: { title: { type: "string" }, url: { type: "string" } },
             required: ["title", "url"],
             additionalProperties: false,
           },
@@ -109,18 +89,15 @@ const client = createGatewayAgentClient({
       additionalProperties: false,
     },
   },
+  // Repara el JSON casi válido.
   plugins: [{ id: "response-healing" }],
-  gatewayTools: [
-    { type: "phaseo:web_search", parameters: { max_results: 5 } },
-  ],
+  // Phaseo ejecuta la búsqueda; el modelo escribe las consultas.
+  gatewayTools: [{ type: "phaseo:web_search", parameters: { max_results: 5 } }],
+  // Busca siempre antes de responder.
   toolChoice: "phaseo:web_search",
   webSearchOptions: { search_context_size: "high" },
 });
-```
 
-## 5. Ejecuta el flujo de trabajo
-
-```ts
 const result = await researchBriefAgent.run({
   input: "Summarize the latest browser automation support patterns for coding agents.",
   client,
@@ -132,33 +109,34 @@ const result = await researchBriefAgent.run({
 console.log(result.output);
 ```
 
-## 6. Qué comprobar en los registros
+| Opción del cliente | Qué hace |
+| --- | --- |
+| `responseFormat` | Mantiene explícito el esquema de salida |
+| `plugins` | [Reparación de respuestas](./response-healing-for-structured-json) para JSON casi válido |
+| `gatewayTools` | Añade `phaseo:web_search`; la [guía de búsqueda web](../guides/server-tools/web-search) enumera sus parámetros |
+| `toolChoice` | Fuerza la búsqueda en un flujo que siempre debe fundamentarse |
+| `webSearchOptions` | Ajustes de búsqueda para los motores que dimensionan sus resultados |
 
-Después de una ejecución correcta, abre la vista de detalles de la solicitud y confirma que:
+</Step>
+<Step title="Ejecútalo">
 
-- aparezca `requested native web search tools` o actividad de búsqueda gestionada
-- se hayan guardado los resultados de búsqueda y las citas
-- la ejecución del plugin muestre `response-healing` solo cuando se haya necesitado reparar una respuesta
-- el resultado final coincida con el esquema JSON solicitado
+```bash
+npx tsx research-agent.ts
+```
 
-## 7. Cuándo usar este patrón
+</Step>
+</Steps>
 
-Usa esta receta cuando:
+## Comprueba que funciona
 
-- el flujo de trabajo sea principalmente una investigación puntual y no un ciclo profundo de herramientas locales
-- el modelo deba consultar fuentes antes de responder
-- los clientes posteriores necesiten JSON tipado en vez de prosa
+El script imprime un informe con al menos una URL de fuente. Después abre la solicitud en **Ajustes → Uso → Registros** y comprueba que:
 
-No uses este patrón cuando:
+- **Supervisión de la búsqueda web** muestra las búsquedas gestionadas, los resultados y las citas.
+- El registro de plugins muestra `response-healing` como `applied` solo cuando el JSON necesitó reparación.
+- La respuesta coincidió con el esquema; si no, la ejecución habría fallado con un `AgentSchemaValidationError`.
 
-- el flujo ya conozca las URL exactas y `phaseo:web_fetch` sea suficiente
-- el agente necesite más herramientas locales avanzadas que herramientas nativas del proveedor
-- el contrato de salida sea tan flexible que el JSON estricto cueste más de lo que aporta
+[Depurar la búsqueda web](./web-search-debugging) cubre los casos en los que no se ejecutó ninguna búsqueda.
 
-## Guías relacionadas
+## Cuándo usar otra cosa
 
-- [SDK de agentes de TypeScript](../sdk-reference/typescript/agent-sdk.mdx)
-- [Salidas estructuradas](../guides/structured-outputs.mdx)
-- [Validar salidas estructuradas](../guides/structured-outputs.mdx)
-- [Depurar solicitudes de búsqueda web](./web-search-debugging.mdx)
-- [Recuperar JSON estructurado mal formado](./response-healing-for-structured-json.mdx)
+Este patrón encaja en investigaciones de una sola llamada en las que el modelo debe fundamentarse por sí mismo y quien llama quiere JSON tipado. Usa [`phaseo:web_fetch`](./tool-grounding-with-web-fetch) cuando ya conozcas las URL, un [agente con herramientas locales](./agent-sdk-durable-loop) cuando el trabajo necesite tus propios datos más que la web, y salida de texto simple cuando el contrato sea tan flexible que un esquema añada más trabajo del que ahorra.

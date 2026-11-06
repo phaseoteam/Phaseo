@@ -1,13 +1,11 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
-import { deleteAccount } from "@/app/(dashboard)/settings/account/actions";
+import { deleteAccount } from "@/features/settings/account/actions";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 import { Button } from "@/components/ui/button";
@@ -35,7 +33,7 @@ export default function AccountDangerZoneClient() {
 	async function handleDeleteAccount(confirmation: string, currentPassword: string) {
 		setDeleting(true);
 		try {
-			await toast.promise(deleteAccount(confirmation, currentPassword || undefined), {
+			await toast.promise(deleteAccount({ data: { confirmation, currentPassword: currentPassword || undefined } }), {
 				loading: s("phraseStartingAccountDeletion"),
 				success: s("phraseAccountAccessRemovedDeletionIsInProgress"),
 				error: (error: unknown) =>

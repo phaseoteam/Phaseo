@@ -1,19 +1,20 @@
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { fetchSettingsObservabilityData } from "./fetchSettingsObservabilityData";
 import { getServerAccountContext } from "./serverAccountContext";
 import { resolveAccessibleWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 
-jest.mock("./serverAccountContext", () => ({ getServerAccountContext: jest.fn() }));
-jest.mock("@/utils/workspaceCookie", () => ({
-	resolveAccessibleWorkspaceIdFromCookie: jest.fn(),
+vi.mock("./serverAccountContext", () => ({ getServerAccountContext: vi.fn() }));
+vi.mock("@/utils/workspaceCookie", () => ({
+	resolveAccessibleWorkspaceIdFromCookie: vi.fn(),
 }));
-jest.mock("@/lib/web-api/client", () => ({ fetchAccountWebApi: jest.fn() }));
+vi.mock("@/lib/web-api/client", () => ({ fetchAccountWebApi: vi.fn() }));
 
-const mockGetServerAccountContext = jest.mocked(getServerAccountContext);
-const mockResolveAccessibleWorkspaceIdFromCookie = jest.mocked(
+const mockGetServerAccountContext = vi.mocked(getServerAccountContext);
+const mockResolveAccessibleWorkspaceIdFromCookie = vi.mocked(
 	resolveAccessibleWorkspaceIdFromCookie,
 );
-const mockFetchAccountWebApi = jest.mocked(fetchAccountWebApi);
+const mockFetchAccountWebApi = vi.mocked(fetchAccountWebApi);
 
 const request = {
 	from: "2026-08-01T00:00:00.000Z",
@@ -24,7 +25,7 @@ const request = {
 
 describe("fetchSettingsObservabilityData", () => {
 	beforeEach(() => {
-		jest.resetAllMocks();
+		vi.resetAllMocks();
 		mockGetServerAccountContext.mockResolvedValue({
 			accessToken: "token",
 			obfuscateInfo: null,

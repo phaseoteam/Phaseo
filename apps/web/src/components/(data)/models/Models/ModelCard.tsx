@@ -1,9 +1,7 @@
-"use client";
-
 import { useModelsLayoutTracking } from "./useModelsLayoutExperiment";
 
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useTranslations } from "@/i18n/react";
 import { decisionModelCapabilities } from "@/lib/models/modelCapabilities";
 import {
 	memo,
@@ -44,7 +42,7 @@ type ModelCardLike = Omit<ModelCardType, "gateway_status"> & {
 };
 import { Logo } from "@/components/Logo";
 import { getModalityTone } from "@/lib/models/modalityStyles";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import {
 	Tooltip,
 	TooltipContent,
@@ -718,8 +716,13 @@ function ModelCardImpl({
 		? null
 		: headline.kind === "free"
 			? t("free")
-			: headline.kind === "usage"
-				? `${headlinePrice(headline.price)} / ${headline.unit}`
+			: headline.kind === "provider_cost"
+				? t("atProviderCost")
+				: headline.kind === "usage"
+				? headline.per_image !== undefined
+					// Three significant digits keep a sub-cent estimate exact ($0.0336, not $0.034).
+					? t("pricePerImageEstimate", { price: `$${format.number(headline.per_image, { maximumSignificantDigits: 3, notation: "standard" })}` })
+					: `${headlinePrice(headline.price)} / ${headline.unit}`
 				: headline.input !== null && headline.output !== null
 					? `${t("priceInputOutput", { input: headlinePrice(headline.input), output: headlinePrice(headline.output) })} / ${headline.unit}`
 					: headline.input !== null
@@ -734,7 +737,7 @@ function ModelCardImpl({
 				? structuredPriceSummary
 				: fromPriceSummary);
 	const priceLabel = headlineSummary
-		? headline?.kind !== "free" && headline?.from ? t("from") : null
+		? headline && "from" in headline && headline.from ? t("from") : null
 		: structuredPriceSummary || isTextModel ? t("pricing") : t("from");
 	// Models with meter details but no headline price (for example, billed at
 	// provider cost) still get a pill that opens the details.

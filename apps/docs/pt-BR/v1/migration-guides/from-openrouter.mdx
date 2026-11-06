@@ -1,209 +1,148 @@
 ---
 title: "Migração do OpenRouter para o Phaseo"
 sidebarTitle: "OpenRouter"
-description: "Use o Phaseo como alternativa ao OpenRouter: altere a URL do gateway e a chave de API, verifique os modelos e teste uma migração gradual."
+description: "Use o Phaseo como alternativa ao OpenRouter trocando a URL do gateway e a chave de API, validando os IDs de modelo e testando um rollout controlado."
 icon: "arrow-right-left"
 ---
 
-O Phaseo é uma alternativa ao OpenRouter compatível com OpenAI. Se o aplicativo já usa OpenRouter pelo SDK da OpenAI ou por chamadas HTTP diretas, normalmente basta migrar na camada do cliente, sem reescrever prompts ou a lógica do aplicativo.
-
-## O que muda
+Troque a URL base para `https://api.phaseo.app/v1` e a chave para `PHASEO_API_KEY`. Os payloads das solicitações, o cabeçalho `Authorization: Bearer`, o objeto `provider` e o array de fallback `models` continuam funcionando; confira os IDs de modelo e os poucos campos da tabela abaixo.
 
 | Configuração | OpenRouter | Phaseo |
 | --- | --- | --- |
 | URL base | `https://openrouter.ai/api/v1` | `https://api.phaseo.app/v1` |
-| Variável da chave de API | `OPENROUTER_API_KEY` | `PHASEO_API_KEY` |
-| Autenticação | `Authorization: Bearer <key>` | `Authorization: Bearer <key>` |
-| Payload da requisição | Compatível com OpenAI | Mantenha sem alterações na primeira etapa |
-| IDs de modelo | Catálogo do OpenRouter | Verifique cada ID com `GET /v1/models` |
+| Chave de API | `OPENROUTER_API_KEY` (`sk-or-v1-…`) | `PHASEO_API_KEY` |
+| Autenticação | `Authorization: Bearer <key>` | Inalterada |
+| Payload da solicitação | Compatível com OpenAI | Inalterado |
+| IDs de modelo | `<org>/<model>` | `<org>/<model>`; a maioria coincide, algumas orgs são diferentes |
+| Cabeçalhos de atribuição | `HTTP-Referer`, `X-Title` | Inalterados; adicione `X-App-Id` para um agrupamento estável |
 
-A migração tem quatro partes:
-
-1. Mantenha o formato do payload.
-2. Troque a URL base e a origem da chave de API.
-3. Verifique os IDs de modelo e cabeçalhos exclusivos do OpenRouter.
-4. Aumente o tráfego gradualmente e compare latência, respostas e custos.
-
-## Antes de começar
-
-- Acesso ao código atual da integração com OpenRouter e à configuração de deploy.
-- `PHASEO_API_KEY` disponível em desenvolvimento, testes e produção.
-- Uma lista curta de IDs de modelo em produção e prompts representativos.
-
-## 1) Faça o inventário do uso atual do OpenRouter
-
-Encontre todas as referências a OpenRouter: URLs, chaves, IDs de modelo e cabeçalhos específicos do provedor.
-
-- Procure endpoints `openrouter.ai`.
-- Procure `OPENROUTER_API_KEY` no código, na CI e nas variáveis de ambiente da hospedagem.
-- Procure cabeçalhos exclusivos, como `HTTP-Referer` e `X-Title`.
-- Documente IDs de modelo ativos e a lógica de fallback.
-- Identifique padrões reutilizáveis de prompts, provedores ou parâmetros que devem virar predefinições do Gateway, em vez de ficar duplicados no código.
-
-## 2) Troque a URL base e as credenciais
-
-Mantenha primeiro o formato do payload e valide a paridade antes de otimizar.
+## Troque o cliente
 
 <CodeGroup>
-```typescript TypeScript
-// Before
+```typescript Antes
 import OpenAI from "openai";
 
-const before = new OpenAI({
+const client = new OpenAI({
   apiKey: process.env.OPENROUTER_API_KEY,
   baseURL: "https://openrouter.ai/api/v1",
 });
 
-const response = await before.chat.completions.create({
+const response = await client.chat.completions.create({
   model: "openai/gpt-4.1-mini",
   messages: [{ role: "user", content: "Summarize our migration plan." }],
 });
 ```
 
-```typescript TypeScript
-// After
+```typescript Depois
 import OpenAI from "openai";
 
-const after = new OpenAI({
+const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
 });
 
-const response = await after.chat.completions.create({
+const response = await client.chat.completions.create({
   model: "openai/gpt-4.1-mini",
   messages: [{ role: "user", content: "Summarize our migration plan." }],
 });
 ```
 
 ```bash cURL
-# Before
-curl -s "https://openrouter.ai/api/v1/chat/completions" \
-  -H "Authorization: Bearer $OPENROUTER_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "openai/gpt-4.1-mini",
-    "messages": [{"role":"user","content":"Say hello"}]
-  }'
-
-# After
 curl -s "https://api.phaseo.app/v1/chat/completions" \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4.1-mini",
+    "model": "openai/gpt-6-astra",
     "messages": [{"role":"user","content":"Say hello"}]
   }'
 ```
 </CodeGroup>
 
-## 3) Valide os IDs de modelo e mapeie comportamentos exclusivos do OpenRouter
+Mantenha o payload inalterado na primeira rodada e alcance a paridade antes de otimizar. Remova `OPENROUTER_BASE_URL` e a chave antiga do código, da CI e das configurações de hospedagem. `@openrouter/ai-sdk-provider` vira `@phaseo/ai-sdk-provider` (veja [Migração do Vercel AI Gateway](./from-vercel)); os SDKs próprios do OpenRouter (`@openrouter/sdk`, `openrouter` no PyPI) exigem uma troca de cliente, não apenas uma nova URL base.
 
-Não presuma que todos os aliases anteriores são válidos. Consulte `/v1/models` e verifique cada modelo de produção. A resposta padrão inclui apenas modelos atualmente disponíveis para roteamento público; use `availability=all` somente para inspecionar modelos inativos ou futuros.
+## Confira os IDs de modelo
 
-<CodeGroup>
-```bash cURL
-curl -s "https://api.phaseo.app/v1/models" \
-  -H "Authorization: Bearer $PHASEO_API_KEY" | jq '.data[0:10] | map(.id)'
+A maioria dos IDs coincide, mas algumas orgs são diferentes: `x-ai/` é `spacex-ai/`, `meta-llama/` é `meta/` e `mistralai/` é `mistral/`. Liste os IDs do Phaseo e confira cada modelo de produção com eles:
+
+```bash
+curl -s "https://api.phaseo.app/v1/models?format=openai" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" | jq -r '.data[].id'
 ```
-</CodeGroup>
 
-- Mantenha o formato `Authorization: Bearer`.
-- Mantenha `HTTP-Referer` e `X-Title` se identificarem o aplicativo que faz a chamada. O Phaseo também aceita as formas em minúsculas `http-referer` e `x-title`.
-- Se os clientes dependerem de campos de resposta exclusivos do OpenRouter, adapte-os em uma única camada de compatibilidade.
-- Se a configuração usar listas de provedores permitidos ou bloqueados e padrões de roteamento, mova-os para [Predefinições](../guides/presets.mdx) e [Roteamento e alternativas](../guides/routing-and-fallbacks.mdx).
+A lista padrão contém apenas os modelos que você pode chamar agora; adicione `availability=all` para ver os inativos ou os que estão por vir. Sem `format=openai`, a resposta é a lista paginada `models` do Phaseo, que não tem array `data`.
 
-Não copie preferências de provedores ou campos de resposta exclusivos do OpenRouter para cada chamada. Centralize essas diferenças em um adaptador para que o rollback exija apenas alterar URL e credenciais.
+## Mapeie os campos da solicitação
 
-### Mapeie os controles de provedores
+| OpenRouter | No Phaseo |
+| --- | --- |
+| `provider.order`, `only`, `ignore`, `allow_fallbacks`, `require_parameters`, `max_price` | Os mesmos campos. Use IDs de provedor base, não slugs de endpoint. |
+| `provider.sort` | O mesmo campo: `price`, `latency` ou `throughput`. |
+| `provider.zdr` | Aceito como alias de `provider.require_zero_data_retention`. |
+| `provider.data_collection: "deny"` | Retorna `400`. Use `zdr: true` no lugar. |
+| Array de fallback `models` | Igual, de 1 a 25 entradas. `model` é obrigatório, então passe `models[0]` para ele. |
+| Sufixo `:nitro` | Igual (throughput). O Phaseo também tem `:cheap` e `:fast`; `:floor` vira `:cheap`. Remova `:online` e `:thinking` e use pesquisa na web e `reasoning` no lugar. |
+| `openrouter/auto`, `openrouter/free` | `phaseo/auto` ([Roteamento automático](../guides/auto-routing), alfa, não pode ser combinado com `models`) e `phaseo/free`. |
+| `plugins` `web`, `web-fetch`, `response-healing` | Os mesmos IDs de plugin. Outros plugins, como `file-parser`, retornam `400`. |
+| `transforms`, `usage: { include: true }` | Não são aceitos. Remova-os; uso e custo são sempre retornados. |
+| `X-OpenRouter-Title` | Renomeie para `X-Title`. Veja [Atribuição de apps](../guides/app-attribution). |
+| Predefinições `@preset/<slug>` | Recrie-as como [Predefinições](../guides/presets) e chame-as como `"model": "@slug"`. |
+| `usage.cost`, `reasoning_details`, `provider` nas respostas | Retornados. `native_finish_reason` e `is_byok` não são; normalize-os em uma única camada se os chamadores os leem. |
 
-| Campo atual | Campo do Phaseo | Observações |
-| --- | --- | --- |
-| `provider.order` | `provider.order` | Tenta os provedores na ordem preferida. |
-| `provider.only` | `provider.only` | Limita a requisição a um conjunto aprovado. |
-| `provider.ignore` | `provider.ignore` | Remove provedores da seleção. |
-| `provider.sort` | `provider.sort` | Aceita `price`, `latency` e `throughput`. |
-| `provider.zdr` | `provider.require_zero_data_retention` | Exige uma rota compatível com retenção zero de dados. |
+O Phaseo também tem `provider.required_execution_region` e `provider.required_data_region`, que não têm equivalente no OpenRouter. Veja [Fixe ou ignore provedores](../cookbook/pin-or-ignore-providers-per-request) e [Roteie apenas para provedores na UE ou com ZDR](../cookbook/route-only-to-eu-or-zdr-providers) para solicitações completas.
 
-O Phaseo também oferece `provider.required_execution_region` e `provider.required_data_region` para cargas de trabalho com requisitos regionais. Veja [Fixar ou ignorar provedores](../cookbook/pin-or-ignore-providers-per-request.mdx) e [Rotear apenas para provedores da UE ou compatíveis com ZDR](../cookbook/route-only-to-eu-or-zdr-providers.mdx) para exemplos completos.
+Mantenha os campos exclusivos do OpenRouter que restarem em um único adaptador, e não em cada ponto de chamada, para que o rollback continue sendo uma troca de URL base e chave.
 
-## 4) Lista de verificação de paridade com OpenRouter
+## Valide antes da virada
 
-Antes de redirecionar tráfego significativo, confirme:
-
-- URL base atualizada para `https://api.phaseo.app/v1`.
-- `OPENROUTER_API_KEY` substituída por `PHASEO_API_KEY` em todos os ambientes.
-- Todos os IDs de modelo de produção verificados em `/v1/models`.
-- Uma requisição sem streaming validada por `/v1/chat/completions` ou `/v1/responses`.
-- Uma requisição com streaming validada pelo mesmo caminho de integração usado em produção.
-- Consultas `GET /v1/generations?id=<request_id>` verificadas para reproduzir falhas pelo `replay_request` armazenado quando `replay_supported=true`.
-- Chamadas de ferramentas e saídas estruturadas verificadas novamente com prompts reais.
-- Falhas de chave e modelo inválidos verificadas em testes.
-- Cabeçalhos e campos de resposta exclusivos do OpenRouter removidos ou normalizados explicitamente.
-- Padrões compartilhados de prompts/roteamento movidos para predefinições quando apropriado.
-
-### Lista de migração para um agente
-
-Passe ao agente esta sequência delimitada:
-
-1. Procure `openrouter.ai`, `OPENROUTER_API_KEY`, `sk-or-v1`, `HTTP-Referer` e `X-Title` no código e na configuração de deploy.
-2. Altere a camada do cliente para `https://api.phaseo.app/v1` e `PHASEO_API_KEY` sem salvar segredos no repositório.
-3. Consulte `GET /v1/models` e registre cada mapeamento de modelo.
-4. Adapte opções de roteamento ou campos de resposta exclusivos do OpenRouter em um único módulo de compatibilidade.
-5. Execute as verificações de saúde, modelos, requisições, streaming e falhas abaixo.
-6. Relate arquivos alterados, nomes de segredos, mapeamentos, evidências de teste, diferenças de paridade e a opção de rollback.
-
-Para um fluxo reutilizável, consulte o [guia de migração do OpenRouter para o Phaseo](https://github.com/phaseoteam/Phaseo/tree/main/.agents/skills/openrouter-to-phaseo-migration), que reúne inventário, mapeamento, validação, relatório e rollback.
-
-## 5) Faça o rollout com segurança
-
-Faça a migração por etapas: desenvolvimento, uma pequena parcela da produção e, com métricas estáveis, todo o tráfego.
-
-1. Comece apenas com tráfego interno.
-2. Passe para 5–10% do tráfego de produção e compare qualidade, latência e custo.
-3. Passe a 100% somente depois de confirmar a paridade.
-4. Até a estabilização, mantenha o rollback como uma simples troca de URL e chave.
-
-## Comandos de validação
+Execute estes comandos contra o Phaseo e depois as mesmas verificações pelo caminho de cliente do seu app:
 
 ```bash
 curl -s "https://api.phaseo.app/v1/health"
-curl -s "https://api.phaseo.app/v1/models" -H "Authorization: Bearer $PHASEO_API_KEY"
+
 curl -s "https://api.phaseo.app/v1/chat/completions" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
-  -d '{"model":"openai/gpt-4.1-mini","messages":[{"role":"user","content":"Say hello"}]}'
-```
+  -d '{"model":"openai/gpt-6-astra","messages":[{"role":"user","content":"Say hello"}]}'
 
-Teste o streaming separadamente pelo mesmo endpoint:
-
-```bash
+# Streaming
 curl -N "https://api.phaseo.app/v1/chat/completions" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
-  -d '{"model":"openai/gpt-4.1-mini","stream":true,"messages":[{"role":"user","content":"Reply with: stream works"}]}'
-```
+  -d '{"model":"openai/gpt-6-astra","stream":true,"messages":[{"role":"user","content":"Reply with: stream works"}]}'
 
-Confirme também que o aplicativo lida com um modelo inválido sem expor credenciais:
-
-```bash
+# Modelo inválido: o app deve tratar o erro sem expor credenciais
 curl -s "https://api.phaseo.app/v1/chat/completions" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -d '{"model":"invalid/migration-test","messages":[{"role":"user","content":"test"}]}'
 ```
 
-Depois:
+Antes de mover uma parte relevante do tráfego, confirme que:
 
-- Faça uma requisição com streaming pelo teste de integração do aplicativo.
-- Faça um teste negativo com chave ou modelo inválido.
-- Reproduza um pequeno conjunto de prompts de referência e compare os resultados.
+- `OPENROUTER_API_KEY` foi substituída por `PHASEO_API_KEY` em todos os ambientes;
+- cada ID de modelo de produção está em `GET /v1/models?format=openai`;
+- uma solicitação sem streaming e uma com streaming passam por `/v1/chat/completions` ou `/v1/responses`, usando o mesmo caminho de cliente da produção;
+- os fluxos de chamada de ferramentas e de saída estruturada passam com prompts reais;
+- as falhas de chave inválida e de modelo inválido são tratadas;
+- uma solicitação com falha pode ser consultada com `GET /v1/generations?id=<request_id>` e, quando `replay_supported` é `true`, refeita a partir de `replay_request`;
+- os cabeçalhos e campos de resposta exclusivos do OpenRouter foram removidos ou normalizados, e os padrões compartilhados ficam em predefinições.
 
-## Próximas etapas
+## Faça o rollout
 
-- [Obtenha ajuda gratuita para migrar sua integração com OpenRouter](https://phaseo.app/contact)
-- [Abra o guia interativo de migração do OpenRouter](https://phaseo.app/migrate/openrouter)
-- [Compare Phaseo e OpenRouter](https://phaseo.app/compare/openrouter)
-- [Início rápido](../quickstart.mdx)
-- [Referência da API: modelos](../api-reference/endpoint/models.mdx)
-- [Exemplos](../guides/examples.mdx)
-- [Tratamento de erros](../api-reference/errors.mdx)
+1. Comece pelo tráfego interno.
+2. Mova de 5% a 10% do tráfego de produção e compare qualidade, latência e custo.
+3. Passe para 100% quando a paridade estiver confirmada.
+4. Mantenha o rollback como uma troca de URL base e chave até a virada ficar estável.
+
+## Entregue a migração a um agente de código
+
+Dê ao agente esta sequência delimitada, ou instale a [skill de migração do OpenRouter para o Phaseo](https://github.com/phaseoteam/Phaseo/tree/main/.agents/skills/openrouter-to-phaseo-migration), que reúne as mesmas etapas de inventário, mapeamento, validação e rollback:
+
+1. Procure no código de runtime e na configuração de implantação por `openrouter.ai`, `OPENROUTER_API_KEY`, `sk-or-v1`, `HTTP-Referer` e `X-Title`.
+2. Troque a fronteira do cliente para `https://api.phaseo.app/v1` e `PHASEO_API_KEY` sem adicionar nenhum valor secreto ao controle de versão.
+3. Consulte `GET /v1/models?format=openai` e registre cada mapeamento de modelo antigo para novo.
+4. Adapte as opções de roteamento ou os campos de resposta exclusivos do OpenRouter em um único módulo de compatibilidade.
+5. Execute as verificações de saúde, sem streaming, com streaming e de caminho de falha acima.
+6. Relate os arquivos alterados, as mudanças de nomes de secrets, os mapeamentos de modelos, as evidências de teste, as lacunas de paridade e a chave de rollback.
+
+Para uma versão guiada, abra o [guia interativo de migração do OpenRouter](https://phaseo.app/migrate/openrouter), veja como os dois se [comparam](https://phaseo.app/compare/openrouter) ou [receba ajuda gratuita na migração](https://phaseo.app/contact).

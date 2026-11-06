@@ -1,0 +1,101 @@
+---
+icon: "chart-spline"
+title: "DevTools"
+description: "Record each agent run and continuation to a local file while you develop."
+"og:image": "https://phaseo.app/og/dynamic?title=DevTools&description=Record%20each%20agent%20run%20and%20continuation%20to%20a%20local%20file%20while%20you%20develop.&pathname=/docs/v1/sdk-reference/agent/devtools"
+---
+
+Pass a DevTools config to a run or continuation during development to append one JSON line per run to `generations.jsonl` in a local directory. Each line holds the run's input, steps, tool activity, output, usage and gateway request IDs. Nothing is captured unless you turn it on.
+
+<CodeGroup>
+
+```typescript TypeScript
+import { createAgentDevtools } from "@phaseo/agent-sdk";
+
+const result = await agent.run({
+  input,
+  client,
+  devtools: createAgentDevtools(),
+});
+```
+
+```python Python
+from phaseo_agent import create_agent_devtools
+
+result = agent.run(input="Summarise this ticket", client=client, devtools=create_agent_devtools())
+```
+
+```go Go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{
+  Input:    prompt,
+  Client:   client,
+  Devtools: phaseoagent.CreateAgentDevtools(".phaseo-devtools"),
+})
+```
+
+```csharp C#
+var result = await agent.Run(new RunOptions
+{
+    Input = prompt,
+    Client = client,
+    Devtools = AgentSdk.CreateAgentDevtools(".phaseo-devtools"),
+});
+```
+
+```php PHP
+$result = $agent->run(
+    input: $prompt,
+    client: $client,
+    devtools: AgentSdk::createAgentDevtools(".phaseo-devtools")
+);
+```
+
+```ruby Ruby
+result = agent.run(
+  input: prompt,
+  client: client,
+  devtools: PhaseoAgentSdk.create_agent_devtools(directory: ".phaseo-devtools")
+)
+```
+
+```java Java
+var result = agent.run(new AgentSdk.RunOptions(
+    prompt, client, null, null, null, null, null, null, null,
+    AgentSdk.createAgentDevtools(".phaseo-devtools")));
+```
+
+</CodeGroup>
+
+<Note>
+Rust `0.2` has no DevTools capture. Use [lifecycle hooks](./lifecycle-hooks) with `run_with_events` and write the events yourself.
+</Note>
+
+| Language | Create a config | Pass it as | Choose the directory |
+| --- | --- | --- | --- |
+| TypeScript | `createAgentDevtools()` | `devtools` on run and continue options | `createAgentDevtools({ directory: ".local/agent-runs" })` |
+| Python | `create_agent_devtools()` | `devtools=` on `run()`, `stream()` or a continuation | `create_agent_devtools(directory=".local/agent-runs")` |
+| Go | `CreateAgentDevtools(directory)` | `Devtools` on `RunOptions` or `ContinueOptions` | The `directory` argument |
+| C# | `AgentSdk.CreateAgentDevtools(directory)` | `Devtools` on `RunOptions` or `ContinueOptions` | The `directory` argument (default `.phaseo-devtools`) |
+| PHP | `AgentSdk::createAgentDevtools($directory)` | `devtools:` on `run()` or `continueRun()` | The `$directory` argument (default `.phaseo-devtools`) |
+| Ruby | `PhaseoAgentSdk.create_agent_devtools(directory:, enabled:)` | `devtools:` on `run` or `continue_run` | `directory:` (default `.phaseo-devtools`) |
+| Java | `AgentSdk.createAgentDevtools(directory)` | The `devtools` argument of `RunOptions` or `ContinueOptions` | The `directory` argument |
+
+## Turn capture on from the environment
+
+Without a DevTools config, capture turns on when `PHASEO_DEVTOOLS=true`. Files go to `PHASEO_DEVTOOLS_DIR`, or `.phaseo-devtools` in the working directory if that's unset. This works the same in every language that has DevTools.
+
+## What gets written
+
+| File | Contents |
+| --- | --- |
+| `generations.jsonl` | One entry per run and one per continuation |
+| `metadata.json` | Session ID, start time and the SDK name (`"sdk": "typescript"`, `"python"`, `"go"`, `"csharp"`, `"php"`, `"ruby"` or `"java"`), written once |
+| `assets/images`, `assets/audio`, `assets/video` | Created empty for the DevTools viewer |
+
+Each entry's `type` is `agent.run` for a run and `agent.continue` for a continuation. `agent.continue` is an entry type, not a method name: it's what a call to `continueRun()` (TypeScript, PHP, Java), `continue_run()` (Python, Ruby), `Continue` (Go) or `ContinueRun` (C#) writes.
+
+An entry holds the run and agent IDs, the tool count, and the full run result: status, messages, steps with model, provider and gateway request IDs, tool activity, usage and output. A run that fails gets an entry with the error (`error.message` in Go and Java; structured failure details in TypeScript). In Java, write errors are ignored, so capture never fails a run.
+
+<Warning>
+Entries hold prompts, messages, application context, tool inputs and tool outputs in plain text. Keep the directory out of source control and production images, and don't use it as an audit store. For production telemetry, use [lifecycle hooks](./lifecycle-hooks).
+</Warning>

@@ -5,66 +5,37 @@ description: "Organise API keys, settings, and administrative access without cha
 icon: "building-2"
 ---
 
-Workspaces keep API keys, routing settings, presets, guardrails, and administrative access organised around a team, product, or environment.
+Create a workspace for each team, product, or environment to keep its API keys, routing settings, presets, guardrails, and admin access separate. Every account starts with a personal workspace, which is enough for a small integration.
 
-Workspaces are included with Phaseo's standard pay-as-you-go service. You do not need a separate plan to create or use them.
-
-## When to create a workspace
-
-Use separate workspaces when you want to:
+Separate workspaces help when you want to:
 
 - isolate development, staging, and production credentials
-- keep different products or customer projects separate
-- give administrative integrations access to only the resources they need
+- keep products or customer projects apart
+- give an admin integration access to only the resources it needs
 - apply different routing, preset, or guardrail policies
 
-For a small integration, the default workspace may be all you need.
+Workspaces don't change your pricing: all usage stays on standard pay-as-you-go billing, described in [Pricing & Billing](../pricing/tiers). Additional workspaces unlock after your first credit deposit; until then, creating one fails with `403 workspace_upgrade_required`.
 
-## Manage workspaces
+## Manage workspaces from the API
 
-You can manage workspaces from the Phaseo dashboard or through the management API.
+Manage workspaces in the dashboard or with the management API. The API needs a [management key](../developers/management-api-keys); ordinary Gateway API keys are for inference and can't call these endpoints.
 
-The workspace API uses [management API keys](../developers/management-api-keys). Standard Gateway API keys are for inference requests and cannot call workspace administration endpoints.
+| Task | Endpoint | Capability |
+| --- | --- | --- |
+| List workspaces | [`GET /workspaces`](../api-reference/endpoint/workspaces-list) | `workspaces:read` |
+| Read a workspace | [`GET /workspaces/{id}`](../api-reference/endpoint/workspaces-get) | `workspaces:read` |
+| Create a workspace | [`POST /workspaces`](../api-reference/endpoint/workspaces-create) | `workspaces:write` |
+| Update a workspace | [`PATCH /workspaces/{id}`](../api-reference/endpoint/workspaces-update) | `workspaces:write` |
+| Delete a workspace | [`DELETE /workspaces/{id}`](../api-reference/endpoint/workspaces-delete) | `workspaces:delete` |
 
-| Task | Endpoint |
-| --- | --- |
-| List workspaces | [`GET /workspaces`](../api-reference/endpoint/workspaces-list) |
-| Create a workspace | [`POST /workspaces`](../api-reference/endpoint/workspaces-create) |
-| Read a workspace | [`GET /workspaces/{id}`](../api-reference/endpoint/workspaces-get) |
-| Update a workspace | [`PATCH /workspaces/{id}`](../api-reference/endpoint/workspaces-update) |
-| Delete a workspace | [`DELETE /workspaces/{id}`](../api-reference/endpoint/workspaces-delete) |
+Give the key only the capabilities it needs. Phaseo also checks workspace membership and role, so a capability alone never grants access to another workspace. A new workspace's `slug` must be 1 to 50 lowercase letters, numbers, or dashes.
+
+Keep management keys in server-side secret storage, never in browser code, desktop logs, source control, or chat.
 
 <Note>
-Workspace management endpoints are currently marked Beta. Keep administrative automation easy to retry and review API responses before applying follow-up changes.
+The workspace endpoints are in beta. Make automation safe to retry, and check each response before you make a follow-up change.
 </Note>
 
-## Choose the right access
+## Rename or delete a workspace
 
-Create a management key with only the workspace capabilities your integration needs:
-
-- `workspaces:read` to list and inspect workspaces
-- `workspaces:write` to create or update workspaces
-- `workspaces:delete` to remove workspaces
-
-Phaseo also checks workspace membership and roles. A capability does not grant access to another workspace by itself.
-
-Keep management keys in server-side secret storage. Do not expose them in browser code, desktop logs, source control, or chat.
-
-## Deleting a workspace
-
-The default workspace cannot be deleted. Before deleting another workspace, remove or move its active API keys so requests are not left pointing at a workspace that no longer exists.
-
-## Billing
-
-Workspaces do not create separate pricing tiers. Usage continues under the standard pay-as-you-go billing described in [Pricing & Billing](../pricing/tiers).
-
-## Next steps
-
-<CardGroup cols={2}>
-	<Card title="Management API Keys" icon="key-round" href="../developers/management-api-keys">
-		Create a scoped server-side credential for workspace administration.
-	</Card>
-	<Card title="Authentication" icon="key" href="../developers/authentication">
-		Use Gateway API keys for model and generation requests.
-	</Card>
-</CardGroup>
+The personal (default) workspace can't be renamed or deleted; both return `400 bad_request`. Before you delete another workspace, remove or move its active API keys so no requests point at a workspace that no longer exists.

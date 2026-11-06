@@ -1,5 +1,3 @@
-"use client";
-
 import { ThinkingOrb } from "thinking-orbs";
 import { cn } from "@/lib/utils";
 
