@@ -501,6 +501,10 @@ async function handleOAuthCleanupScheduledEvent(env: GatewayBindings): Promise<v
 	try {
 		const { error } = await getSupabaseAdmin().rpc("cleanup_expired_oauth_artifacts");
 		if (error) throw new Error(error.message || "Failed to clean up expired OAuth artifacts");
+		// Approved key requests hold the new key's encrypted secret until the CLI collects it. Runs every
+		// 5 minutes, so an uncollected secret is gone within 15 minutes of approval even if nobody polls.
+		const wiped = await getSupabaseAdmin().rpc("wipe_expired_api_key_request_secrets");
+		if (wiped.error) throw new Error(wiped.error.message || "Failed to wipe expired key request secrets");
 	} finally {
 		clearRuntime();
 	}

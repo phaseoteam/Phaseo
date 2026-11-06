@@ -73,7 +73,7 @@ Use `--json` quando um agente ou script precisar da nova chave; ela só é mostr
 
 ## Conecte um agente de programação
 
-Use o nome do agente como comando. A CLI cria uma chave dedicada e grava a configuração do agente:
+Use o nome do agente como comando. A CLI pede uma chave dedicada, que você aprova no navegador, e grava a configuração do agente:
 
 ```bash
 phaseo codex
@@ -94,6 +94,14 @@ phaseo cursor
 ```
 
 Use `--model`, `--catalog all|default` ou `--dry-run` conforme precisar. `phaseo setup <agent>` e `phaseo integrations setup <agent>` também funcionam.
+
+### Aprove a chave no navegador
+
+Na primeira vez que você configura um agente, a CLI abre uma página do painel da Phaseo e mostra o link dela. A página mostra o workspace, o nome da chave, o limite de gastos mensal de $100 e a expiração após 90 dias, e que a CLI da Phaseo pediu a chave. Escolha **Aprovar e criar chave** e a CLI recebe a chave uma única vez e conclui a configuração. Se você escolher **Recusar**, ou deixar a solicitação expirar após 10 minutos, nada é criado.
+
+Aprove conectado ao painel com a conta que você usou na CLI, como proprietário ou administrador do workspace e com seu segundo fator, se tiver configurado um. Um login da CLI não consegue criar chaves sozinho. Por SSH ou em CI, abra o link mostrado em qualquer dispositivo em que você esteja conectado.
+
+Para usar uma chave que você criou no painel, passe-a com `--key <key>`, ou com `--key-stdin` para que ela não fique no histórico do shell. A CLI verifica a chave e a guarda, e não a revoga quando você remove o agente.
 
 Para executar o Cline, o Kilo Code, o oh-my-pi, o Muse Code ou o MiniMax Code com configurações temporárias que são apagadas quando ele é encerrado, use o executor de sessão. As flags do Phaseo vêm antes de `--`, e as do próprio agente, depois:
 

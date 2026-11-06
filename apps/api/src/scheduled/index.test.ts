@@ -254,6 +254,8 @@ describe("handleScheduledEvent", () => {
 		expect(configureRuntimeMock).toHaveBeenCalledWith(env);
 		expect(clearRuntimeMock).toHaveBeenCalled();
 		expect(oauthCleanupRpcMock).toHaveBeenCalledWith("cleanup_expired_oauth_artifacts");
+		// Uncollected key request secrets are wiped on every 5-minute tick, whether or not anyone polls.
+		expect(oauthCleanupRpcMock).toHaveBeenCalledWith("wipe_expired_api_key_request_secrets");
 		expect(oauthCleanupRpcMock).toHaveBeenCalledWith("process_v2_analytics_outbox", {
 			p_limit: 250,
 		});

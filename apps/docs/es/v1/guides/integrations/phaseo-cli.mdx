@@ -73,7 +73,7 @@ Usa `--json` cuando un agente o un script necesite la nueva clave; solo se muest
 
 ## Conecta un agente de programación
 
-Usa el nombre del agente como comando. La CLI crea una clave propia y escribe la configuración del agente:
+Usa el nombre del agente como comando. La CLI pide una clave propia, que apruebas en el navegador, y escribe la configuración del agente:
 
 ```bash
 phaseo codex
@@ -94,6 +94,14 @@ phaseo cursor
 ```
 
 Usa `--model`, `--catalog all|default` o `--dry-run` según lo necesites. `phaseo setup <agent>` y `phaseo integrations setup <agent>` también funcionan.
+
+### Aprueba la clave en el navegador
+
+La primera vez que configuras un agente, la CLI abre una página del panel de Phaseo y muestra su enlace. La página indica el espacio de trabajo, el nombre de la clave, su límite de gasto mensual de $100 y su caducidad a los 90 días, y que la pidió la CLI de Phaseo. Elige **Aprobar y crear clave** y la CLI recoge la clave una sola vez y termina la configuración. Si eliges **Rechazar**, o dejas la solicitud 10 minutos hasta que caduque, no se crea nada.
+
+Aprueba con la sesión iniciada en el panel con la cuenta que usaste en la CLI, como propietario o administrador del espacio de trabajo y con tu segundo factor si lo has configurado. Un inicio de sesión de la CLI no puede crear claves por sí solo. Por SSH o en CI, abre el enlace mostrado en cualquier dispositivo en el que hayas iniciado sesión.
+
+Para usar en su lugar una clave que creaste en el panel, pásala con `--key <key>`, o con `--key-stdin` para que no quede en el historial de la shell. La CLI comprueba la clave y la guarda, y no la revoca cuando quitas el agente.
 
 Para ejecutar Cline, Kilo Code, oh-my-pi, Muse Code o MiniMax Code con ajustes temporales que se borran al cerrarse, usa el ejecutor de sesiones. Los flags de Phaseo van antes de `--`, y los del propio agente, después:
 
