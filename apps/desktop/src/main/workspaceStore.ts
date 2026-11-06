@@ -866,7 +866,8 @@ export class WorkspaceStore {
 		catch (error) { this.db.exec("ROLLBACK"); throw error; }
 	}
 	importTask(command: Extract<WorkspaceCommand, { type: "create-task" }>, conversation: Pick<Task, "title" | "messages" | "createdAt" | "handoffFrom" | "nativeSessionId">, attachments: Attachment[], initialModels?: Task["nativeModels"]): Task {
-		this.db.exec("BEGIN");
+		// Reserve the writer before validation reads; a concurrent transcript commit would invalidate a deferred snapshot.
+		this.db.exec("BEGIN IMMEDIATE");
 		try {
 			const task = this.apply(command, initialModels);
 			const files = new Map(attachments.map(attachment => [attachment.id, { ...attachment, taskId: task.id }]));

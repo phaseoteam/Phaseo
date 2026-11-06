@@ -1,6 +1,7 @@
 import { mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it, vi } from "vitest";
 import { parseConversation, readConversation } from "./taskImport";
 import { WorkspaceRuntime } from "./workspaceRuntime";
@@ -9,6 +10,25 @@ import { taskExport } from "./taskExport";
 const snapshot = { format: "phaseo-conversation", version: 1, title: "Imported research", harness: "codex", createdAt: "2026-10-03", messages: [{ role: "user", text: "Research", createdAt: "2026-10-03", attachments: ["original-file"] }], attachments: [{ id: "original-file", name: "notes.txt", encoding: "base64", data: Buffer.from("Research 🌍").toString("base64"), mimeType: "incorrect/on-purpose", text: "Untrusted cached text" }], nativeSessionId: "never-resume", accountId: "never-import", projectId: "never-import" };
 
 describe("conversation import", () => {
+	it("imports the complete conversation while another connection tries to write after validation reads", async () => {
+		const root = mkdtempSync(path.join(tmpdir(), "phaseo-import-writer-")); const runtime = new WorkspaceRuntime(root);
+		const writer = new DatabaseSync(runtime.store.filename);
+		const projects = runtime.store.getProjects.bind(runtime.store);
+		const write = () => writer.prepare("INSERT OR REPLACE INTO preferences (id, data) VALUES ('concurrent-import-fixture', '{}')").run();
+		vi.spyOn(runtime.store, "getProjects").mockImplementationOnce(() => {
+			const result = projects();
+			try { write(); } catch (error) { if (!(error instanceof Error) || !error.message.includes("database is locked")) throw error; }
+			return result;
+		});
+		try {
+			const result = await runtime.importTask({ type: "create-task", harness: "codex", mode: "chat", model: "default" }, parseConversation(JSON.stringify(snapshot)));
+			const task = runtime.store.getTask(result.taskId);
+			expect(task).toMatchObject({ title: "Imported research", status: "idle", queue: [] });
+			expect(task.messages[0].text).toBe("Research");
+			const file = task.messages[0].attachments![0]; expect(file.taskId).toBe(task.id); expect((await runtime.attachments.read(file.id)).text).toBe(Buffer.from(snapshot.attachments[0].data, "base64").toString());
+			write(); expect(writer.prepare("SELECT id FROM preferences WHERE id = 'concurrent-import-fixture'").get()).toBeDefined();
+		} finally { writer.close(); await runtime.close(); rmSync(root, { recursive: true, force: true }); }
+	});
 	it("waits for staged import cleanup before closing the workspace", async () => {
 		const root = mkdtempSync(path.join(tmpdir(), "phaseo-import-close-")); const runtime = new WorkspaceRuntime(root); let release!: () => void;
 		const gate = new Promise<void>(resolve => { release = resolve; }); const original = runtime.attachments.prepare.bind(runtime.attachments);
