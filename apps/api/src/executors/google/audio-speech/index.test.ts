@@ -236,27 +236,30 @@ describe("google audio.speech executor", () => {
 	});
 
 	it.each([
-		["gemini-3.8-flash-tts", "mp3", "AUDIO_WAV"],
-		["gemini-3.1-flash-tts-preview", "opus", undefined],
-	] as const)("returns WAV when %s is asked for a format it cannot make (%s)", async (model, responseFormat, mimeType) => {
-		let capturedBody: any = null;
-		const pcm = Buffer.from([1, 0, 2, 0]).toString("base64");
+		["gemini-3.8-flash-tts", "mp3"],
+		["gemini-3.1-flash-tts-preview", "opus"],
+	] as const)("rejects formats %s cannot return (%s) before calling Google", async (model, responseFormat) => {
+		const mock = installFetchMock([]);
+		const result = await execute(buildArgs({ model, input: "Format test", responseFormat }));
+		mock.restore();
+		expect(result.upstream?.status).toBe(400);
+		const payload = await result.upstream?.clone().json();
+		expect(payload?.error?.param).toBe("response_format");
+	});
+
+	it("returns Google's bytes as they are when the PCM cannot be decoded", async () => {
 		const mock = installFetchMock([
 			{
 				match: (url) => url.includes(":generateContent?key="),
 				response: () => jsonResponse({
-					candidates: [{ content: { parts: [{ inlineData: { data: pcm, mimeType: "audio/L16;codec=pcm;rate=24000" } }] } }],
+					candidates: [{ content: { parts: [{ inlineData: { data: "@@not-base64@@", mimeType: "audio/L16;codec=pcm;rate=24000" } }] } }],
 				}),
-				onRequest: (call) => {
-					capturedBody = call.bodyJson;
-				},
 			},
 		]);
-		const result = await execute(buildArgs({ model, input: "Format test", responseFormat }));
+		const result = await execute(buildArgs({ model: "gemini-3.1-flash-tts-preview", input: "Bad audio", responseFormat: "wav" }));
 		mock.restore();
 		expect(result.upstream?.status).toBe(200);
-		expect(capturedBody?.generationConfig?.responseFormat?.audio?.mimeType).toBe(mimeType);
-		expect((result as any).ir?.audio?.mimeType).toBe("audio/wav");
+		expect((result as any).ir?.audio).toMatchObject({ data: "@@not-base64@@", mimeType: "audio/L16;codec=pcm;rate=24000" });
 	});
 
 	it("adds a WAV header when an older model returns raw PCM for a wav request", async () => {

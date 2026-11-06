@@ -98,4 +98,8 @@ describe("LTX documented model constraints", () => {
 			expect(buildLtxVideoRequest(request({ size } as any), "ltx-2-5-pro").resolution).toBe(size);
 		}
 	});
+
+	it.each(["1440x1440", "2160x2160", "1440p", "4k"])("refuses the unpriced or non-pixel size %s before submission", (size) => {
+		expect(() => buildLtxVideoRequest(request({ size } as any), "ltx-2-5-fast")).toThrow("LTX resolution must be one of");
+	});
 });

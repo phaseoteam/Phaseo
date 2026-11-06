@@ -74,15 +74,15 @@ function invalidVoiceResponse(voice: string, model: string, supported: string[],
 }
 
 /**
- * The format to return. Gemini only makes WAV or raw PCM; any other request (mp3 is what
- * most clients send by default) gets WAV with a matching content type rather than a 400,
- * so existing callers keep working.
+ * The format to return, or an error before the paid call when Gemini can't make it. Gemini
+ * only returns WAV or raw PCM; an mp3 request used to get raw PCM, which no mp3 decoder reads.
  */
-function resolveRequestedFormat(model: string, ir: IRAudioSpeechRequest): { format?: string } {
+function resolveRequestedFormat(model: string, ir: IRAudioSpeechRequest): { format?: string; error?: string } {
 	const format = ir.responseFormat ?? ir.format;
 	if (!format) return {};
 	const allowed = googleTtsSupportsCustomVoices(model) ? Object.keys(GEMINI_38_AUDIO_MIME_TYPES) : [...LEGACY_FORMATS];
-	return { format: allowed.includes(format) ? format : "wav" };
+	if (allowed.includes(format)) return { format };
+	return { error: `Google model "${model}" can return ${allowed.join(" or ")} audio, not "${format}".` };
 }
 
 function irToGeminiTtsRequest(ir: IRAudioSpeechRequest, model: string, format?: string): Record<string, any> {
@@ -140,7 +140,10 @@ function isRawPcmMimeType(mimeType: string | undefined): boolean {
 }
 
 function base64ToBytes(value: string): Uint8Array {
-	return Uint8Array.from(atob(value), (char) => char.charCodeAt(0));
+	// Google may return URL-safe base64; atob only reads the standard alphabet.
+	const standard = value.replace(/-/g, "+").replace(/_/g, "/").replace(/\s+/g, "");
+	const padded = standard + "=".repeat((4 - (standard.length % 4)) % 4);
+	return Uint8Array.from(atob(padded), (char) => char.charCodeAt(0));
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
@@ -194,15 +197,21 @@ function geminiTtsToIR(
 	if (!audioPart?.data) return null;
 
 	// Older models only return raw PCM, so a wav request gets a header added here.
-	const wrapAsWav = format === "wav" && isRawPcmMimeType(audioPart.mimeType);
+	let audio: { data: string; mimeType: string } = { data: audioPart.data, mimeType: audioPart.mimeType ?? "audio/wav" };
+	if (format === "wav" && isRawPcmMimeType(audioPart.mimeType)) {
+		try {
+			audio = { data: wrapPcmAsWav(audioPart.data, audioPart.mimeType), mimeType: "audio/wav" };
+		} catch {
+			// Undecodable audio: return Google's bytes as they are (with their own MIME type)
+			// rather than failing a request that has already been billed upstream.
+		}
+	}
 	return {
 		id: requestId,
 		nativeId: json?.responseId ?? json?.id ?? undefined,
 		model,
 		provider,
-		audio: wrapAsWav
-			? { data: wrapPcmAsWav(audioPart.data, audioPart.mimeType), mimeType: "audio/wav" }
-			: { data: audioPart.data, mimeType: audioPart.mimeType ?? "audio/wav" },
+		audio,
 		usage: googleUsageMetadataToIRUsage(json?.usageMetadata),
 		rawResponse: json,
 	};
@@ -245,6 +254,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	}
 
 	const requested = resolveRequestedFormat(model, ir);
+	if (requested.error) {
+		return rejected(invalidParamResponse(ir.responseFormat ? "response_format" : "format", requested.error));
+	}
 	const bodyObject = irToGeminiTtsRequest(ir, model, requested.format);
 	const requestBody = JSON.stringify(bodyObject);
 	const mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest)

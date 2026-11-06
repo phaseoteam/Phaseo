@@ -287,12 +287,12 @@ describe("x-ai video executor", () => {
 		}
 	});
 
-	it("still rejects Grok Imagine Video 1.5 reference images", () => {
+	it.each(["reference", "last_frame"])("still rejects a Grok Imagine Video 1.5 %s image", (role) => {
 		expect(() => __xAiVideoGenerateTestUtils.buildXAiVideoRequest({
 			model: "spacex-ai/grok-imagine-video-1.5",
 			prompt: "Unsupported references",
 			duration: 5,
-			inputReferences: [{ type: "image", role: "reference", url: "https://example.com/a.png" }],
+			inputReferences: [{ type: "image", role, url: "https://example.com/a.png" } as any],
 		}, "grok-imagine-video-1.5")).toThrow("accepts text-only input or one first_frame image");
 	});
 

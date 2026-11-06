@@ -128,6 +128,13 @@ describe("Together image wire format", () => {
 		expect(result.bill.usage?.image_pixels).toBe(800 * 600);
 	});
 
+	it("fills the missing dimension from size when only one is given", async () => {
+		const { result, capturedBody } = await runTogether({ size: "1536x768", width: 800 });
+		expect(capturedBody).toMatchObject({ width: 800, height: 768 });
+		expect(capturedBody).not.toHaveProperty("size");
+		expect(result.bill.usage?.image_pixels).toBe(800 * 768);
+	});
+
 	it("maps response_format b64_json to Together's base64 and keeps url", async () => {
 		const b64 = await runTogether({ response_format: "b64_json" });
 		expect(b64.capturedBody.response_format).toBe("base64");

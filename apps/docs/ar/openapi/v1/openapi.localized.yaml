@@ -15777,6 +15777,7 @@ components:
         enhance_prompt:
           type: boolean
         compression_quality:
+          description: ضغط المخرجات. يقبل Vertex Veo القيمة optimized أو lossless ويرفض الرقم؛ أما المزوّدون الآخرون الذين يدعمونه فيقبلون عددًا صحيحًا.
           oneOf:
             - type: integer
             - type: string
@@ -15825,7 +15826,7 @@ components:
         provider_params:
           type: object
           additionalProperties: true
-          description: امتدادات خاصة بالمزوّد فقط. يُرفض تمرير الطلب كاملاً وتكرار حقول التوجيه أو الموجه أو رد الاتصال أو الفوترة.
+          description: 'امتدادات خاصة بالمزوّد فقط. يُرفض تمرير الطلب كاملاً وتكرار حقول التوجيه أو الموجه أو رد الاتصال أو الفوترة. على سبيل المثال، يقبل Wan 3.0 الخيار smart_duration: true ليختار النموذج المدة (لا ترسل duration معه)؛ تحجز المهمة 30 ثانية وتُحتسب المدة التي يبلغ عنها المزوّد.'
         provider_options:
           type: object
           additionalProperties:

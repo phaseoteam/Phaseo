@@ -16,7 +16,8 @@ describe("xAI audio transcription", () => {
 		const mock = installFetchMock([{ match: (url, init) => { if (url !== "https://api.x.ai/v1/stt") return false; form = init?.body as FormData; return true; }, response: jsonResponse({ text: "Phaseo costs $100.", language: "English", duration: 3.45, words: [{ text: "Phaseo", start: 0, end: 0.4 }] }) }]);
 		const result = await exec(args({ language: "en", keywords: ["Phaseo"], diarize: true }));
 		mock.restore();
-		expect([...form!.keys()]).toEqual(["format", "language", "diarize", "keyterm", "file"]);
+		expect([...form!.keys()]).toEqual(["model", "format", "language", "diarize", "keyterm", "file"]);
+		expect(form!.get("model")).toBe("grok-transcribe");
 		expect(result.normalized).toMatchObject({ text: "Phaseo costs $100.", usage: { input_audio_seconds: 3.45, requests: 1 } });
 		expect(result.bill.usage).toMatchObject({ input_audio_seconds: 3.45 });
 	});
@@ -29,6 +30,7 @@ describe("xAI audio transcription", () => {
 		mock.restore();
 		expect(result.upstream.status).toBe(200);
 		expect(form!.getAll("keyterm")).toEqual(["Phaseo", "a".repeat(50)]);
+		expect(form!.get("model")).toBe("grok-voice-transcribe-2.0");
 	});
 
 	it("rejects OpenAI-only transcription controls", async () => {

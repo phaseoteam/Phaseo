@@ -83,6 +83,16 @@ type EndpointConfig = {
 	body: (model: string) => Record<string, unknown>;
 };
 
+/** Speech fields that depend on the model: Gemini and MiMo only return WAV (or PCM), and MiMo VoiceDesign is described in instructions instead of a voice. */
+function speechExampleOptions(model: string): Record<string, string> {
+	const provider = model.split("/")[0]?.toLowerCase();
+	const wavOnly = provider === "google" || provider === "google-ai-studio" || provider === "xiaomi";
+	return {
+		response_format: wavOnly ? "wav" : "mp3",
+		...(/voicedesign/i.test(model) ? { instructions: "A warm, calm voice with a steady pace." } : {}),
+	};
+}
+
 /** The example voice for a speech model; MiMo VoiceDesign takes none (the instructions describe it). */
 function resolveSpeechVoiceForModel(model: string): string | undefined {
 	const provider = model.split("/")[0]?.toLowerCase();
@@ -180,7 +190,7 @@ const ENDPOINT_CONFIGS: EndpointConfig[] = [
 			model,
 			...(resolveSpeechVoiceForModel(model) ? { voice: resolveSpeechVoiceForModel(model) } : {}),
 			input: "Welcome to the Phaseo Gateway where latency, uptime, and pricing are always in your control.",
-			response_format: "mp3",
+			...speechExampleOptions(model),
 		}),
 	},
 	{

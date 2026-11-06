@@ -47,7 +47,15 @@ describe("xAI audio.speech endpoint", () => {
 		expect(result.normalized?.usage?.output_seconds).toBe(1.25);
 	});
 
-	it("sends the caller's language from config.xai and drops instructions", async () => {
+	it("rejects instructions, which xAI has no field for", async () => {
+		const mock = installFetchMock([]);
+		const result = await exec(args({ instructions: "Whisper" }));
+		mock.restore();
+		expect(result.upstream.status).toBe(400);
+		expect((await result.upstream.json() as any).error.param).toBe("instructions");
+	});
+
+	it("sends the caller's language from config.xai", async () => {
 		let requestBody: any;
 		const mock = installFetchMock([{
 			match: (url) => url.endsWith("/v1/tts"),
@@ -55,12 +63,11 @@ describe("xAI audio.speech endpoint", () => {
 			onRequest: (call) => { requestBody = call.bodyJson; },
 		}]);
 
-		const result = await exec(args({ instructions: "Whisper", config: { xai: { language: "pt-BR" } } }));
+		const result = await exec(args({ config: { xai: { language: "pt-BR" } } }));
 		mock.restore();
 
 		expect(result.upstream.status).toBe(200);
 		expect(requestBody.language).toBe("pt-BR");
-		expect(requestBody).not.toHaveProperty("instructions");
 		expect(requestBody).not.toHaveProperty("speed");
 	});
 

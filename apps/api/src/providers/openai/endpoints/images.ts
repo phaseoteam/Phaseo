@@ -125,10 +125,8 @@ function mapGatewayToOpenAIImages(
     const isTogether = providerId === "together";
     const explicitWidth = rawBody.width ?? providerParams.width;
     const explicitHeight = rawBody.height ?? providerParams.height;
-    // Explicit width or height wins; otherwise a WIDTHxHEIGHT size becomes both.
-    const sizeDimensions = explicitWidth === undefined && explicitHeight === undefined
-        ? parseSizeDimensions(body.size)
-        : null;
+    // Each explicit width or height wins; a WIDTHxHEIGHT size fills whichever is missing.
+    const sizeDimensions = parseSizeDimensions(body.size);
     const togetherParams = isTogether ? {
         width: explicitWidth ?? sizeDimensions?.width,
         height: explicitHeight ?? sizeDimensions?.height,

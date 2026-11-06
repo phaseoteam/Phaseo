@@ -162,7 +162,12 @@ function buildXAiVideoRequest(ir: IRVideoGenerationRequest, model: string): {
 	// Grok Imagine 1.5 (and Lite) run text-to-video or image-to-video from one first frame
 	// (docs.x.ai video generation guide, checked 2026-11-05). Reference-to-video is not
 	// wired up for 1.5 here yet.
-	if (isGrokImagineVideo15(model) && (imageUrls.length > 1 || useReferenceImages)) {
+	if (isGrokImagineVideo15(model) && (
+		imageUrls.length > 1 ||
+		useReferenceImages ||
+		// xAI uses `image` as the first frame, so any other role would be misread.
+		imageReferences.some((entry) => entry.role != null && entry.role !== "first_frame")
+	)) {
 		throw new InvalidXAiVideoRequestError(`${model} accepts text-only input or one first_frame image.`);
 	}
 	if (seconds != null) body.duration = seconds;

@@ -107,7 +107,10 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 	if (typeof body.speed === "number" && (body.speed < XAI_MIN_SPEED || body.speed > XAI_MAX_SPEED)) {
 		return rejected("speed", `xAI /v1/tts takes speed from ${XAI_MIN_SPEED} to ${XAI_MAX_SPEED}.`);
 	}
-	// xAI has no instructions field (style goes in inline speech tags), so instructions are not sent.
+	// xAI has no instructions field (style goes in inline speech tags in the text).
+	if (typeof body.instructions === "string" && body.instructions.trim()) {
+		return rejected("instructions", "xAI /v1/tts has no instructions field; put style tags in the input text instead.");
+	}
 	const requestBody = {
 		text: body.input,
 		voice_id: extractVoiceCandidate(body.voice) ?? "eve",

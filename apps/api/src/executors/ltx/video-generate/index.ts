@@ -54,6 +54,9 @@ function inputAudio(ir: IRVideoGenerationRequest, config: Record<string, any>): 
 }
 
 const HIGH_RESOLUTIONS = new Set(["2560x1440", "1440x2560", "3840x2160", "2160x3840"]);
+// The sizes Phaseo has prices for (720p to 4K, landscape and portrait). LTX also documents
+// square and 3:2 sizes; they stay refused until they are priced.
+const SUPPORTED_RESOLUTIONS = new Set(["1280x720", "720x1280", "1920x1080", "1080x1920", ...HIGH_RESOLUTIONS]);
 
 // Longest input audio LTX accepts for audio-to-video (docs.ltx.io audio-to-video
 // reference, checked 2026-11-05): LTX-2.5 Pro takes 10 s at every resolution;
@@ -78,6 +81,9 @@ function buildRequest(ir: IRVideoGenerationRequest, model: string) {
 	const audio = inputAudio(ir, config);
 	const lastFrame = toString(config.last_frame_uri ?? config.lastFrameUri ?? ir.lastFrame ?? ir.input?.lastFrame);
 	const resolution = resolveVideoSize({ size: ir.size, resolution: ir.resolution }) ?? "1920x1080";
+	if (!SUPPORTED_RESOLUTIONS.has(resolution)) {
+		throw new InvalidLtxVideoRequestError(`LTX resolution must be one of ${[...SUPPORTED_RESOLUTIONS].join(", ")}.`);
+	}
 	const generateAudio = generateAudioSetting(ir, config);
 	if (audio) {
 		if (!["ltx-2-5-fast", "ltx-2-5-pro", "ltx-2-3-pro", "ltx-2-pro"].includes(model)) {

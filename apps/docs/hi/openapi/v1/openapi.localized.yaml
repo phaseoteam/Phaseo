@@ -15777,6 +15777,7 @@ components:
         enhance_prompt:
           type: boolean
         compression_quality:
+          description: आउटपुट कम्प्रेशन। Vertex Veo optimized या lossless लेता है और संख्या अस्वीकार करता है; इसे सपोर्ट करने वाले अन्य प्रोवाइडर पूर्णांक लेते हैं।
           oneOf:
             - type: integer
             - type: string
@@ -15825,7 +15826,7 @@ components:
         provider_params:
           type: object
           additionalProperties: true
-          description: केवल प्रदाता-विशिष्ट एक्सटेंशन। पूरे अनुरोध का passthrough और दोहराए गए रूटिंग, prompt, callback या बिलिंग फ़ील्ड अस्वीकार किए जाते हैं।
+          description: 'केवल प्रदाता-विशिष्ट एक्सटेंशन। पूरे अनुरोध का passthrough और दोहराए गए रूटिंग, prompt, callback या बिलिंग फ़ील्ड अस्वीकार किए जाते हैं। उदाहरण के लिए, Wan 3.0 smart_duration: true लेता है ताकि मॉडल लंबाई चुने (इसके साथ duration न भेजें); जॉब 30 सेकंड आरक्षित करता है और प्रोवाइडर द्वारा बताई गई लंबाई का बिल बनता है।'
         provider_options:
           type: object
           additionalProperties:

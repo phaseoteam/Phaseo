@@ -15777,6 +15777,7 @@ components:
         enhance_prompt:
           type: boolean
         compression_quality:
+          description: Ausgabekomprimierung. Vertex Veo akzeptiert optimized oder lossless und lehnt eine Zahl ab; andere Anbieter, die sie unterstützen, akzeptieren eine ganze Zahl.
           oneOf:
             - type: integer
             - type: string
@@ -15825,7 +15826,7 @@ components:
         provider_params:
           type: object
           additionalProperties: true
-          description: Nur anbieterspezifische Erweiterungen. Vollständige Durchleitung der Anfrage und doppelte Routing-, Prompt-, Callback- oder Abrechnungsfelder werden abgelehnt.
+          description: 'Nur anbieterspezifische Erweiterungen. Vollständige Durchleitung der Anfrage und doppelte Routing-, Prompt-, Callback- oder Abrechnungsfelder werden abgelehnt. Wan 3.0 akzeptiert zum Beispiel smart_duration: true, damit das Modell die Länge wählt (dann keine duration senden); der Job reserviert 30 Sekunden und abgerechnet wird die vom Anbieter gemeldete Länge.'
         provider_options:
           type: object
           additionalProperties:

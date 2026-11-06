@@ -15777,6 +15777,7 @@ components:
         enhance_prompt:
           type: boolean
         compression_quality:
+          description: 输出压缩。Vertex Veo 接受 optimized 或 lossless，不接受数字；支持此参数的其他提供商接受整数。
           oneOf:
             - type: integer
             - type: string
@@ -15825,7 +15826,7 @@ components:
         provider_params:
           type: object
           additionalProperties: true
-          description: 仅限提供商特定扩展。完整请求透传以及重复的路由、提示词、回调或计费字段会被拒绝。
+          description: '仅限提供商特定扩展。完整请求透传以及重复的路由、提示词、回调或计费字段会被拒绝。例如，Wan 3.0 接受 smart_duration: true，由模型决定时长（此时不要发送 duration）；任务预留 30 秒，并按提供商报告的时长计费。'
         provider_options:
           type: object
           additionalProperties:
