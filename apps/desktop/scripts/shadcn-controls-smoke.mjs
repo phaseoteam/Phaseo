@@ -62,13 +62,34 @@ app.whenReady().then(async () => {
     await run("document.querySelector('[aria-label=\"Forward\"]').click()");
     await wait(`window.__auditChatTitle()===${JSON.stringify(secondChat)}&&${rows}[1]?.getAttribute('aria-current')==='page'`);
     await run("document.querySelector('[aria-label=\"Hide sidebar\"]').click()");
-    await wait("!document.querySelector('aside[aria-label=\"Chats\"]')&&Boolean(document.querySelector('[aria-label=\"Show sidebar\"]'))");
+    await wait("document.querySelector('aside[aria-label=\"Chats\"]').inert&&Boolean(document.querySelector('[aria-label=\"Show sidebar\"]'))");
     await run("document.querySelector('[aria-label=\"Show sidebar\"]').click()");
-    await wait("Boolean(document.querySelector('aside[aria-label=\"Chats\"]'))");
+    await wait("!document.querySelector('aside[aria-label=\"Chats\"]').inert");
     await run("window.dispatchEvent(new KeyboardEvent('keydown',{key:'b',ctrlKey:true,bubbles:true}))");
-    await wait("!document.querySelector('aside[aria-label=\"Chats\"]')");
+    await wait("document.querySelector('aside[aria-label=\"Chats\"]').inert");
     await run("window.dispatchEvent(new KeyboardEvent('keydown',{key:'b',ctrlKey:true,bubbles:true}))");
-    await wait("Boolean(document.querySelector('aside[aria-label=\"Chats\"]'))");
+    await wait("!document.querySelector('aside[aria-label=\"Chats\"]').inert");
+    const sidebarMotion = await run(`(async()=>{
+      const frame=document.querySelector('[data-sidebar-frame]'),width=frame.getBoundingClientRect().width;
+      await Promise.all(frame.getAnimations().map(animation=>animation.finished));
+      frame.querySelector('button').focus();
+      window.dispatchEvent(new KeyboardEvent('keydown',{key:'b',ctrlKey:true,bubbles:true}));
+      await new Promise(requestAnimationFrame);
+      const motion=frame.getAnimations().find(animation=>animation.transitionProperty==='--sidebar-open');
+      if(!motion)throw Error('Sidebar did not slide');
+      motion.pause();motion.currentTime=motion.effect.getTiming().duration/2;
+      const edge=frame.getBoundingClientRect().right,chat=document.querySelector('main').getBoundingClientRect().left;
+      if(!(edge>0&&edge<width&&Math.abs(edge-chat)<1&&frame.getBoundingClientRect().width===width))throw Error('Sidebar content reflowed or detached from the conversation');
+      if(!frame.inert||frame.hasAttribute('data-focus-region')||document.activeElement.getAttribute('aria-label')!=='Show sidebar')throw Error('Collapsed sidebar retained keyboard focus');
+      motion.play();await motion.finished;
+      if(Math.abs(frame.getBoundingClientRect().right)>1)throw Error('Sidebar did not finish closing');
+      document.documentElement.dataset.animations='off';
+      document.querySelector('[aria-label="Show sidebar"]').click();await new Promise(requestAnimationFrame);
+      if(frame.getBoundingClientRect().right!==width||frame.inert)throw Error('Animations off did not open the sidebar immediately');
+      delete document.documentElement.dataset.animations;
+      return {fixedContentWidth:width,midpointEdge:edge,conversationEdge:chat,focusRestored:true,animationsOff:true};
+    })()`);
+    console.log('SIDEBAR_MOTION_SMOKE',JSON.stringify(sidebarMotion));
     // Code lists chats across projects, each card naming its project, with Settled folded at the bottom; Back returns to the chat that was open.
     await run("Array.from(document.querySelectorAll('[role=radiogroup][aria-label=Workspace] [role=radio]')).find(button=>button.textContent==='Code').click()");
     await wait("Boolean(document.querySelector('aside[aria-label=\"Projects\"]'))&&window.__auditChatTitle()===undefined");

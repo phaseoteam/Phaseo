@@ -1,7 +1,7 @@
 import { formatAgoShort, formatDateParts } from "@phaseo/app-kit/format";
 import { useNow } from "../lib/useNow";
 import { prefetchTask } from "../lib/useSelectedTask";
-import { lazy, Suspense, useMemo, useState, type ReactNode } from "react";
+import { lazy, Suspense, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { JumpHint, publishSidebarOrder, useJumpHints } from "../lib/sidebarOrder";
 import { Archive, ArchiveRestore, CalendarClock, Copy, Link2, Mail, Trash2, ChartLine, Inbox, Columns3, GitPullRequestArrow, Ellipsis, ExternalLink, LogIn, RefreshCw, Pencil, Pin, PinOff, Plus, Settings, Gauge, UserRound } from "lucide-react";
@@ -260,11 +260,18 @@ function PullRequestsLink() {
 
 /** The sidebar's frame: its width is dragged from the right edge and remembered for Chat, Code and Factory apart. */
 function SidebarFrame({ label, children }: { label: string; children: ReactNode }) {
-	const { mode, codeView } = useWorkspace();
+	const { mode, codeView, sidebarOpen, settings } = useWorkspace();
 	const [width, setWidth] = useSidebarWidth(sidebarSurface(mode, codeView));
 	const [dragging, setDragging] = useState(false);
+	const frame = useRef<HTMLElement>(null);
+	const open = sidebarOpen || Boolean(settings);
+	useLayoutEffect(() => {
+		if (!open && frame.current?.contains(document.activeElement)) document.querySelector<HTMLButtonElement>('header [aria-label="Show sidebar"]')?.focus({ preventScroll: true });
+	}, [open]);
 	const clamp = clampSidebarWidth;
-	return <aside aria-label={label} data-focus-region style={{ width: clamp(width) }} className="relative flex shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+	return <aside ref={frame} aria-label={label} aria-hidden={!open || undefined} inert={!open} data-focus-region={open || undefined} data-sidebar-frame data-open={open}
+		style={{ width: clamp(width), "--sidebar-width": `${clamp(width)}px`, "--sidebar-open": open ? 1 : 0 } as CSSProperties}
+		className="sidebar-frame relative flex shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
 		{children}
 		<div role="separator" aria-orientation="vertical" aria-label="Resize sidebar" aria-valuemin={sidebarWidths.min} aria-valuemax={sidebarWidths.max} aria-valuenow={clamp(width)} tabIndex={0} title="Drag to resize, double-click to reset"
 			onPointerDown={event => {

@@ -569,6 +569,11 @@ summary:has(> svg:first-child)::before { display: none; }
 /* The quit-shortcut hold bar (shell/QuitHoldNotice.tsx). */
 @keyframes quit-hold { from { width: 0%; } to { width: 100%; } }
 
+/* Animate openness independently of width so dragging and keyboard resizing stay immediate. */
+@property --sidebar-open { syntax: "<number>"; inherits: false; initial-value: 1; }
+.sidebar-frame { margin-left: calc((var(--sidebar-open) - 1) * var(--sidebar-width)); transition: --sidebar-open 200ms ease-out; }
+@media (prefers-reduced-motion: reduce) { .sidebar-frame { transition: none; } }
+
 /*
  * Chat icons move only to mark something that just happened: a step that finished pops in, a tick draws itself, a failure
  * gives a small shake, a new step slides in, and buttons answer the pointer. Nothing moves on its own or when a chat opens.

@@ -146,7 +146,6 @@ function ErrorBanner() {
 }
 
 function Shell() {
-	const { sidebarOpen, settings } = useWorkspace();
 	// The welcome loads only until it has been seen or skipped (shell/FirstRun.tsx).
 	const [firstRunPending] = useState(() => { try { return localStorage.getItem("phaseo.desktop.onboarded") === null; } catch { return false; } });
 	useShortcuts();
@@ -154,7 +153,7 @@ function Shell() {
 	return <div className="flex h-full flex-col">
 		<Titlebar />
 		<div className="relative flex min-h-0 flex-1">
-			{(sidebarOpen || settings) && <Sidebar />}
+			<Sidebar />
 			{/* A maximised pane takes the chat column's place. */}
 			<main className="relative min-w-0 flex-1 bg-background [&:has(~aside[data-maximized])]:hidden"><Suspense><Main /></Suspense><BrowserMiniPlayerHost /></main>
 			<RightPanel />
