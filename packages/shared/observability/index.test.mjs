@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { createServer } from 'node:http';
 import { emitLogs, logPayload, safeError, sampled, sendOtlp, telemetryConfig, telemetryEndpoint, traceContext } from './index.mjs';
 
 const config = { enabled: true, environment: 'staging', service: 'phaseo-gateway', endpoint: 'https://otlp-gateway-prod-eu-west-0.grafana.net/otlp', authorization: 'Basic dGVzdA==' };
@@ -35,6 +36,34 @@ test('delivery reports partial rejection, caps remote responses and fails open w
   assert.equal(calls, 1);
   assert.equal(result.state, 'failed');
   assert.equal((await sendOtlp(config, 'logs', {}, async () => new Response('{}'))).state, 'delivered');
+});
+
+test('redirect responses fail without forwarding ingest credentials or retrying', async () => {
+  let redirectsFollowed = 0;
+  let exports = 0;
+  const server = createServer((request, response) => {
+    if (request.url === '/redirected') {
+      redirectsFollowed++;
+      response.end('{}');
+      return;
+    }
+    exports++;
+    assert.equal(request.headers.authorization, config.authorization);
+    response.writeHead(307, { Location: '/redirected' });
+    response.end('{}');
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  try {
+    const address = server.address();
+    const fetcher = (_url, init) => fetch(`http://127.0.0.1:${address.port}/export`, init);
+    for (const signal of ['logs', 'traces']) {
+      assert.deepEqual(await sendOtlp(config, signal, {}, fetcher), { state: 'failed', reason: 'http_307' });
+    }
+    assert.equal(exports, 2);
+    assert.equal(redirectsFollowed, 0);
+  } finally {
+    await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+  }
 });
 
 test('trace parsing and sampling are stable and do not accept malformed identities', () => {
