@@ -47,6 +47,8 @@ assert(/from public\.gateway_request_charges charge[\s\S]*gr\.billing_request_id
   'charges without a request row count as usage');
 assert(!/charge\.is_final/.test(schemaBody) && !/interval '1 day'/.test(schemaBody),
   'every applied charge counts, open or settled, with no time window on the request lookup');
+assert(/adjustment\.created_at >= v_purchase\.event_time/.test(schemaBody), 'stepped charges count by debit time');
+assert(!/not like 'batch\\_capture:%'/.test(schemaBody), 'batch captures are counted, not left out');
 // Outside the usage query the body is the previous one.
 const outsideUsage = (body) => {
   const usageStart = body.indexOf('    select coalesce(sum(gr.cost_nanos), 0)::bigint');
@@ -102,7 +104,7 @@ try {
   await db.query('insert into public.wallets (workspace_id) values ($1)', [ws]);
   await db.exec(previous.sql);
   // The request row's charge key (production has it) and the stepped charge columns.
-  await db.exec('alter table public.gateway_requests add column billing_request_id text;');
+  await db.exec('alter table public.gateway_requests add column billing_request_id text, add column request_id text;');
   await db.exec(chargeTotals.sql);
 
   // ---------- Before the fix ----------
@@ -161,15 +163,50 @@ try {
     values ($1, true, $2, now() - interval '2 hours', 'sync_bill')`, [ws, usd(5)]);
   await setBalance(usd(12));
   assert.equal((await claim('sync_first')).ok, true, 'a one-off charge with its request row is counted once');
-  // A batch capture is counted from its per-row request rows, which carry no billing id.
+  // A batch capture counts once, whether its per-row request rows persisted fully, partly or not
+  // at all: each scenario charges $5, and the purchase had a prior balance of $4 or $6.
+  const batch = async (prefix, rowsPersisted, priorBalance) => {
+    await reset();
+    await purchase(`${prefix}_first`, usd(10), usd(priorBalance), 3);
+    await db.query(`insert into public.gateway_request_charges (workspace_id, request_id, cost_nanos, status, created_at)
+      values ($1, $2, $3, 'applied', now() - interval '2 hours')`, [ws, `batch_capture:${prefix}_batch`, usd(5)]);
+    await db.query(`insert into public.gateway_requests (workspace_id, success, cost_nanos, created_at, request_id)
+      select $1, true, $2, now() - interval '2 hours', 'batch_usage:' || $3 || ':' || i from generate_series(1, $4::int) i`,
+      [ws, usd(1), `${prefix}_batch`, rowsPersisted]);
+    await setBalance(usd(priorBalance + 10));
+    return claim(`${prefix}_first`);
+  };
+  assert.equal((await batch('batch_full', 5, 6)).ok, true, 'a batch with all its rows is counted once ($5 fits in $6)');
+  assert.equal((await batch('batch_full_low', 5, 4)).reason, 'lot_used', 'a batch with all its rows counts its $5');
+  assert.equal((await batch('batch_missing', 0, 4)).reason, 'lot_used', 'a batch whose rows never persisted still counts its $5');
+  assert.equal((await batch('batch_partial', 2, 4)).reason, 'lot_used', 'a batch with 2 of 5 rows persisted still counts its $5');
+  assert.equal((await batch('batch_partial_ok', 2, 6)).ok, true, 'a partly persisted batch is counted once, not rows plus capture');
+
+  // A stream charged at checkpoints that started before the purchase: checkpoint 1 ($3) debited
+  // before it, checkpoint 2 ($4 more) after. The $4 used the new purchase; the $3 did not.
+  const stepped = async (prefix, priorBalance) => {
+    await reset();
+    await setBalance(usd(20));
+    const charge = (total) => asService(() => db.query('select public.gateway_charge_request_total($1, $2, $3, false, null, null)', [ws, `${prefix}_bill`, total]));
+    await charge(usd(3));
+    await db.query(`update public.gateway_request_charges set created_at = now() - interval '3 hours' where request_id = $1`, [`${prefix}_bill`]);
+    await db.query(`update public.credit_ledger set created_at = now() - interval '3 hours' where ref_type = 'gateway_request_charge'`);
+    await purchase(`${prefix}_first`, usd(10), usd(priorBalance), 2);
+    await charge(usd(7));
+    await setBalance(usd(priorBalance + 10));
+    return claim(`${prefix}_first`);
+  };
+  assert.equal((await stepped('ckpt', 3)).reason, 'lot_used', 'a checkpoint after the purchase uses it, even for a request that started before');
+  assert.equal((await stepped('ckpt_ok', 5)).ok, true, 'only the $4 debited after the purchase counts, not the earlier $3');
+  // Its request row, once written, is not counted on top of the debits.
   await reset();
-  await purchase('batch_first', usd(10), usd(7), 3);
-  await db.query(`insert into public.gateway_request_charges (workspace_id, request_id, cost_nanos, status, created_at)
-    values ($1, 'batch_capture:batch_1', $2, 'applied', now() - interval '2 hours')`, [ws, usd(5)]);
-  await db.query(`insert into public.gateway_requests (workspace_id, success, cost_nanos, created_at)
-    select $1, true, $2, now() - interval '2 hours' from generate_series(1, 5)`, [ws, usd(1)]);
-  await setBalance(usd(12));
-  assert.equal((await claim('batch_first')).ok, true, 'a batch capture is not counted on top of its request rows');
+  await setBalance(usd(20));
+  await purchase('ckpt_row_first', usd(10), usd(5), 2);
+  await asService(() => db.query('select public.gateway_charge_request_total($1, $2, $3, true, null, null)', [ws, 'ckpt_row_bill', usd(4)]));
+  await db.query(`insert into public.gateway_requests (workspace_id, success, cost_nanos, created_at, billing_request_id)
+    values ($1, false, $2, now() - interval '1 hour', 'ckpt_row_bill')`, [ws, usd(4)]);
+  await setBalance(usd(15));
+  assert.equal((await claim('ckpt_row_first')).ok, true, 'a stepped request row is not counted on top of its debits ($4 fits in $5)');
   // A stepped charge from before the purchase is not usage of it.
   await reset();
   await stoppedDrain('old_bill', usd(5), 600);
