@@ -2,7 +2,8 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
   p_workspace_id        uuid,
   p_since               timestamp with time zone,
   p_key_ids             uuid[] DEFAULT NULL::uuid[],
-  p_exclude_request_ids text[] DEFAULT '{}'::text[]
+  p_exclude_request_ids text[] DEFAULT '{}'::text[],
+  p_exclude_charge_ids  text[] DEFAULT '{}'::text[]
 )
   RETURNS TABLE (
     key_id uuid,
@@ -19,6 +20,9 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
   -- seed). A budget's usage is the sum of nanos over rows that are active or at/after its period
   -- start. p_key_ids limits the rows to those keys (NULL: the whole workspace). p_since (NULL: all
   -- time) bounds the history read; active holds are returned whenever they were made.
+  -- p_exclude_request_ids leaves out gateway_requests rows and p_exclude_charge_ids stepped charges
+  -- (gateway_request_charges.request_id, the billing request id) that the SpendLimit Durable
+  -- Object is still counting from memory.
   --
   -- * Requests: every gateway_requests row with a positive cost, whether or not it succeeded (a
   --   cancelled or failed request can still be charged), read as two disjoint parts so each uses
@@ -32,8 +36,10 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
   -- * Stepped stream charges (gateway_charge_request_total, is_final false) whose gateway_requests
   --   row has not landed: money already taken for a stream whose worker may have stopped before
   --   writing it. Active from the charge's created_at in every period until the request row
-  --   (billing_request_id) lands, which then counts instead. The charge row records no key, so
-  --   these count toward workspace budgets (p_key_ids NULL) only.
+  --   (billing_request_id) lands, which then counts instead. Read from the few open charge rows
+  --   (gateway_request_charges_open_step_idx), each checked against
+  --   gateway_requests_workspace_billing_request_idx. The charge row records no key, so these
+  --   count toward workspace budgets (p_key_ids NULL) only.
   select request.key_id, request.created_at, false, request.cost_nanos
   from public.gateway_requests request
   where request.workspace_id = p_workspace_id
@@ -99,7 +105,7 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
     and charge.is_final is false
     and charge.status = 'applied'
     and charge.cost_nanos > 0
-    and not (charge.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
+    and not (charge.request_id = any (coalesce(p_exclude_charge_ids, '{}'::text[])))
     and not exists (
       select 1 from public.gateway_requests request
       where request.workspace_id = charge.workspace_id
@@ -107,10 +113,10 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
     );
 $function$;
 
-COMMENT ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[]) IS 'Spend items counted toward workspace and department budgets: positive-cost requests, active holds in every period, captured video and free-model holds less their audited cost (each hold''s batch_hold_usage rows counted once), and stepped stream charges whose request row has not landed (workspace only).';
+COMMENT ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) IS 'Spend items counted toward workspace and department budgets: positive-cost requests, active holds in every period, captured video and free-model holds less their audited cost (each hold''s batch_hold_usage rows counted once), and stepped stream charges whose request row has not landed (workspace only).';
 
-REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[]) FROM PUBLIC;
+REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) FROM PUBLIC;
 
-REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[]) FROM "postgres";
+REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[]) TO "postgres";
+GRANT EXECUTE ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) TO "postgres";
