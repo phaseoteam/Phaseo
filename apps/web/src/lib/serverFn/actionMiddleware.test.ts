@@ -22,11 +22,18 @@ describe("serverAuthRedirectAction", () => {
 				throw redirect({ href: "/settings/keys?tab=active", statusCode: 307 });
 			},
 		});
-		// The call never settles: the page is unloading.
-		const settled = await Promise.race([pending.then(() => "settled"), new Promise((r) => setTimeout(() => r("pending"), 20))]);
+		let settled = false;
+		void pending.then(
+			() => { settled = true; },
+			() => { settled = true; },
+		);
+		await vi.waitFor(() => expect(assign).toHaveBeenCalledWith("/settings/keys?tab=active"));
+		// Let any settlement queued after the navigation run before checking.
+		await Promise.resolve();
+		await Promise.resolve();
 
-		expect(settled).toBe("pending");
-		expect(assign).toHaveBeenCalledWith("/settings/keys?tab=active");
+		// The call never settles: the page is unloading.
+		expect(settled).toBe(false);
 		expect(navigate).not.toHaveBeenCalled();
 	});
 
