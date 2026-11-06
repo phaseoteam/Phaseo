@@ -35,11 +35,13 @@ try {
   const name = (await readdir(migrations)).find((file) => file.endsWith('_preset_version_labels.sql'));
   assert.ok(name, 'migration exists');
   const migration = await readFile(new URL(name, migrations), 'utf8');
-  // The migration carries the declarative definitions verbatim.
+  // The migration carries the declarative definitions verbatim, apart from the OAuth-client write policies a
+  // later migration added (preset-oauth-writes-and-resolution.test.mjs checks those).
+  const laterPolicies = /CREATE POLICY "[a-z_]+_no_oauth_client_(insert|update|delete)"[\s\S]*?;\n\n/g;
   for (const file of [
     'public/tables/preset_version_labels.sql',
     'public/functions/remove_preset_version_label.sql',
-  ]) assert.ok(migration.includes(await schema(file)), `migration includes ${file}`);
+  ]) assert.ok(migration.includes((await schema(file)).replace(laterPolicies, '')), `migration includes ${file}`);
   // A later migration stops non-creators labelling private versions, so the latest one carries set_preset_version_label.
   const labelHeader = 'CREATE OR REPLACE FUNCTION public.set_preset_version_label (';
   const labelMigrations = [];
@@ -74,7 +76,7 @@ try {
     create table public.workspace_members (workspace_id uuid, user_id uuid, role text);
   `);
   // preset_versions as production has it before this change.
-  await db.exec(versionsSchema.replace(uniqueLine, ''));
+  await db.exec(versionsSchema.replace(uniqueLine, '').replace(laterPolicies, ''));
   await db.exec(await schema('public/tables/preset_versions.fk.sql'));
 
   // Context payload for unpinned references before the change, to compare after.

@@ -11,7 +11,6 @@
 // dist/index.js file URL. Run: node supabase/tests/preset-oauth-writes-and-resolution.test.mjs
 import assert from 'node:assert/strict';
 import { readdir, readFile } from 'node:fs/promises';
-import { execFileSync } from 'node:child_process';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8').then((text) => text.replace(/\r\n/g, '\n').trim());
@@ -124,9 +123,17 @@ try {
       insert into public.preset_version_labels (preset_id, label, version_id) values ('${presetId}', 'prod', '${versionId}');`);
   }
   const labelled = 'gateway_fetch_request_context_without_workspace_budget';
+  // The definitions before this change, from the last migrations that defined each function.
+  const previous = {
+    gateway_context_access: '20261008120651_codex_security_findings.sql',
+    gateway_fetch_request_context_without_workspace_budget: '20261104124149_deranked_routes_are_a_last_resort.sql',
+  };
   for (const [name] of contextFiles) {
-    const old = execFileSync('git', ['show', `origin/main:supabase/schemas/${name === 'gateway_context_access' ? 'private' : 'public'}/functions/${name}.sql`], { encoding: 'utf8' });
-    await db.exec(presetLookup(name, old.replace(/\r\n/g, '\n')));
+    const file = await read(`../migrations/${previous[name]}`);
+    const start = file.search(new RegExp(`FUNCTION "?(private|public)"?\\."?${name}"?\\s*\\(`));
+    assert(start >= 0, `${previous[name]} defines ${name}`);
+    const old = file.slice(start, file.indexOf('$function$;', start));
+    await db.exec(presetLookup(name, old));
     const picked = (await db.query(`select lookup.${name}($1, $2, '@support') p`, [ws, key])).rows[0].p;
     assert(picked, `before the fix ${name} silently picks one of two matching presets`);
   }
