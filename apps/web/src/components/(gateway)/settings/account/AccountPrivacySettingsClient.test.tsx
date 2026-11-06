@@ -21,7 +21,7 @@ vi.mock("@/i18n/react", () => ({ useTranslations: (namespace: string) => (key: s
 
 const policy: AccountPrivacyPolicy = {
 	privacyEnablePaidMayTrain: true, privacyEnableFreeMayTrain: true, privacyEnableInputOutputLogging: true, privacyZdrOnly: false,
-	providerRestrictionMode: "blocklist", providerRestrictionProviderIds: ["fixture-provider"], modelRestrictionMode: "none", modelRestrictionModelIds: [],
+	providerRestrictionMode: "blocklist", providerRestrictionProviderIds: ["fixture-provider"], modelRestrictionMode: "blocklist", modelRestrictionModelIds: ["fixture-model"],
 };
 let root: Root;
 let container: HTMLDivElement;
@@ -33,9 +33,10 @@ beforeEach(() => {
 });
 afterEach(async () => { await act(() => root.unmount()); container.remove(); vi.unstubAllGlobals(); });
 async function render(section: "privacy" | "access" = "privacy", canManage = true) {
-	await act(() => root.render(<AccountPrivacySettingsClient section={section} canManage={canManage} policy={policy} providers={[{ id: "fixture-provider", name: "Fixture provider" }]} models={[]} workspaceId="workspace-1" workspaceLogStorage={{ enabled: false, retentionDays: 90, includeProviderPayloads: true, contentsAccess: "admins" }} />));
+	await act(() => root.render(<AccountPrivacySettingsClient section={section} canManage={canManage} policy={policy} providers={[{ id: "fixture-provider", name: "Fixture provider" }]} models={[{ id: "fixture-model", name: "Fixture model", organisationId: "fixture-lab", organisationName: "Fixture lab", providerIds: [] }]} workspaceId="workspace-1" workspaceLogStorage={{ enabled: false, retentionDays: 90, includeProviderPayloads: true, contentsAccess: "admins" }} />));
 }
 async function submit() { await act(() => container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }))); }
+function isDisabled(control: Element) { return control.matches(":disabled") || control.getAttribute("aria-disabled") === "true"; }
 
 it("saves data and log settings together without replacing the separate route restrictions", async () => {
 	const response = Promise.withResolvers<{ success: true }>();
@@ -50,6 +51,10 @@ it("saves data and log settings together without replacing the separate route re
 	expect(input).toMatchObject({ expectedWorkspaceId: "workspace-1", payload: { privacyEnablePaidMayTrain: false, ioLoggingContentsAccess: "admins", ioLoggingEnabled: false } });
 	expect(input.payload).not.toHaveProperty("providerRestrictionMode");
 	expect(container.querySelector("fieldset")!.disabled).toBe(true);
+	const switchControl = container.querySelector<HTMLButtonElement>("[role=switch]")!;
+	expect(isDisabled(switchControl)).toBe(true);
+	await act(() => switchControl.click());
+	expect(switchControl.getAttribute("aria-checked")).toBe("false");
 	await act(() => response.resolve({ success: true }));
 	expect(container.textContent).toContain(common.ui.privacyEligibility.changesSaved);
 });
@@ -70,7 +75,44 @@ it("separates route access from data handling and keeps member policies read-onl
 	expect(container.textContent).toContain("Route Access");
 	expect(container.textContent).not.toContain("Data Handling");
 	expect(container.textContent).not.toContain("Gateway Log Storage");
-	expect(container.querySelector("fieldset")!.disabled).toBe(true);
+	expect(isDisabled(container.querySelector("[role=checkbox]")!)).toBe(true);
+	await submit();
+	expect(updateGlobalGuardrailsSettings).not.toHaveBeenCalled();
+});
+
+it("lets members browse model restrictions and availability without editing policy", async () => {
+	await render("access", false);
+	const modelsTab = container.querySelector<HTMLButtonElement>('[role=tab][aria-selected=false]')!;
+	expect(modelsTab.matches(":disabled")).toBe(false);
+	await act(() => modelsTab.click());
+	expect(modelsTab.getAttribute("aria-selected")).toBe("true");
+	expect(container.querySelector("input[placeholder]")!.matches(":disabled")).toBe(false);
+	const modelCheckbox = container.querySelector<HTMLButtonElement>("[role=checkbox]")!;
+	expect(isDisabled(modelCheckbox)).toBe(true);
+	expect(modelCheckbox.getAttribute("aria-checked")).toBe("true");
+	await act(() => modelCheckbox.click());
+	expect(modelCheckbox.getAttribute("aria-checked")).toBe("true");
+	const clearAll = [...container.querySelectorAll("button")].find((button) => button.textContent === common.ui.privacyEligibility.clearAll)!;
+	expect(clearAll.matches(":disabled")).toBe(true);
+	const available = [...container.querySelectorAll("button")].find((button) => button.textContent === common.ui.privacyEligibility.availableCount)!;
+	expect(available.matches(":disabled")).toBe(false);
+	await act(() => available.click());
+	expect(container.textContent).toContain(common.ui.privacyEligibility.noItemsMatchFilters);
+	const providers = [...container.querySelectorAll("button")].find((button) => !button.hasAttribute("role") && button.textContent === common.ui.privacyEligibility.providers)!;
+	expect(providers.matches(":disabled")).toBe(false);
+	await act(() => providers.click());
+	expect(container.textContent).toContain(common.ui.privacyEligibility.providerCoverage);
+	await submit();
+	expect(updateGlobalGuardrailsSettings).not.toHaveBeenCalled();
+});
+
+it("keeps member data and log controls read-only while availability filters work", async () => {
+	await render("privacy", false);
+	for (const control of container.querySelectorAll('[role=switch], [role=combobox]')) expect(isDisabled(control)).toBe(true);
+	const providers = [...container.querySelectorAll("button")].find((button) => button.textContent === common.ui.privacyEligibility.providers)!;
+	expect(providers.matches(":disabled")).toBe(false);
+	await act(() => providers.click());
+	expect(container.textContent).toContain(common.ui.privacyEligibility.providerCoverage);
 	await submit();
 	expect(updateGlobalGuardrailsSettings).not.toHaveBeenCalled();
 });

@@ -50,6 +50,7 @@ export default function RoutingSettingsClient({ workspaceId, canManage, initialM
 	const [draft, setDraft] = useState(saved);
 	const [saving, setSaving] = useState(false);
 	const savingRef = useRef(false);
+	const editingDisabled = !canManage || saving;
 	const [error, setError] = useState<string | null>(null);
 	const [notice, setNotice] = useState<string | null>(null);
 	const { mode, betaChannelEnabled, alphaChannelEnabled, responseHealingEnabled, responseHealingLocked, responseHealingMode } = draft;
@@ -99,7 +100,7 @@ export default function RoutingSettingsClient({ workspaceId, canManage, initialM
 								{activeOption?.description}
 							</p>
 						</div>
-					<Select
+					<Select disabled={editingDisabled}
 						value={mode}
 						items={routingOptions}
 						onValueChange={(value) => update("mode", value as RoutingMode)}
@@ -126,7 +127,7 @@ export default function RoutingSettingsClient({ workspaceId, canManage, initialM
 						<label htmlFor="beta-channel" className="text-sm font-medium">{t("credits.Beta Channel" as never)}</label>
 						<p className="mt-1 text-sm text-muted-foreground">{t("strings.phraseIncludeBetaProvidersInASmallShareOfProductionTraffic" as never)}</p>
 						</div>
-						<Switch
+						<Switch disabled={editingDisabled}
 							id="beta-channel"
 							checked={betaChannelEnabled}
 							onCheckedChange={(enabled) => setDraft((current) => ({ ...current, betaChannelEnabled: enabled, alphaChannelEnabled: enabled && current.alphaChannelEnabled }))}
@@ -142,7 +143,7 @@ export default function RoutingSettingsClient({ workspaceId, canManage, initialM
 							<label htmlFor="alpha-channel" className="text-sm font-medium">{t("credits.Alpha Channel" as never)}</label>
 							<p className="mt-1 text-sm text-muted-foreground">{t("strings.phraseIncludeAlphaProvidersWithinBetaCanaryTraffic" as never)}</p>
 							</div>
-							<Switch
+							<Switch disabled={editingDisabled}
 								id="alpha-channel"
 								checked={alphaChannelEnabled}
 								onCheckedChange={(enabled) => update("alphaChannelEnabled", enabled)}
@@ -165,7 +166,7 @@ export default function RoutingSettingsClient({ workspaceId, canManage, initialM
 							<label htmlFor="response-healing" className="text-sm font-medium">{t("credits.Enable by Default" as never)}</label>
 							<p className="mt-1 text-sm text-muted-foreground">{t("strings.phraseRepairCompatibleStructuredOutputResponsesForThisWorkspace" as never)}</p>
 						</div>
-						<Switch
+						<Switch disabled={editingDisabled}
 							id="response-healing"
 							checked={responseHealingEnabled}
 							onCheckedChange={(enabled) => update("responseHealingEnabled", enabled)}
@@ -182,7 +183,7 @@ export default function RoutingSettingsClient({ workspaceId, canManage, initialM
 									: t("strings.phraseApplyBoundedRepairsSuchAsTrailingCommaCleanupAndSafeCloserRecovery" as never)}
 							</p>
 						</div>
-						<Select
+						<Select disabled={editingDisabled}
 							value={responseHealingMode}
 							items={responseHealingOptions}
 							onValueChange={(value) =>
@@ -211,7 +212,7 @@ export default function RoutingSettingsClient({ workspaceId, canManage, initialM
 							<label htmlFor="response-healing-lock" className="text-sm font-medium">{t("credits.Lock Workspace Policy" as never)}</label>
 							<p className="mt-1 text-sm text-muted-foreground">{t("strings.phrasePreventPresetsAndRequestsFromOverridingThisDefault" as never)}</p>
 						</div>
-						<Switch
+						<Switch disabled={editingDisabled}
 							id="response-healing-lock"
 							checked={responseHealingLocked}
 							onCheckedChange={(locked) => update("responseHealingLocked", locked)}

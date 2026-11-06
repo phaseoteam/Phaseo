@@ -21,7 +21,7 @@ export function WorkspacePolicyForm({ children, canManage, dirty, saving, error,
 	return <form onSubmit={submit} className="space-y-6">
 		<UnsavedChangesGuard dirty={canManage && dirty} saving={saving} guardWorkspaceSwitch />
 		{!canManage ? <p className="text-sm text-muted-foreground">{t("modelSuccessorRouting.adminsOnly")}</p> : null}
-		<fieldset disabled={!canManage || saving} className="min-w-0 space-y-6">{children}</fieldset>
+		<fieldset disabled={saving} className="min-w-0 space-y-6">{children}</fieldset>
 		{canManage ? <div className="flex flex-wrap items-center justify-end gap-3 border-t pt-4">
 			<div className="mr-auto text-sm" role={error ? "alert" : "status"} aria-live="polite">
 				{error ? <span className="text-destructive">{error}</span> : saving ? t("labels.saving") : dirty ? t("strings.Unsaved changes") : notice}

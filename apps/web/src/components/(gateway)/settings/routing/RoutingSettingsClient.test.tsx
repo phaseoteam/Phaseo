@@ -54,6 +54,8 @@ describe("routing policy saves", () => {
 		expect(updateRoutingSettings).toHaveBeenCalledWith({ data: expect.objectContaining({ expectedWorkspaceId: "workspace-1", betaChannelEnabled: true }) });
 		expect(container.textContent).not.toContain("Routing policy updated");
 		expect(container.querySelector("fieldset")!.disabled).toBe(true);
+		await toggle();
+		expect(container.querySelector<HTMLInputElement>("#beta-channel")!.checked).toBe(true);
 		await act(async () => result.resolve({ ok: true, gatewayCacheInvalidated: false }));
 		expect(container.textContent).toContain("Routing policy updated; gateway cache refresh pending");
 		expect(button("Save changes").disabled).toBe(true);
@@ -84,7 +86,7 @@ describe("routing policy saves", () => {
 	it("shows read-only policy values to members and never writes on submit", async () => {
 		await render(false);
 		expect(container.textContent).toContain("Only workspace owners and admins");
-		expect(container.querySelector("fieldset")!.disabled).toBe(true);
+		expect(container.querySelector("#beta-channel")!.matches(":disabled")).toBe(true);
 		expect(button("Save changes")).toBeUndefined();
 		await submit();
 		expect(updateRoutingSettings).not.toHaveBeenCalled();
