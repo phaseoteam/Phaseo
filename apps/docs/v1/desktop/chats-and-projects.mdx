@@ -1,0 +1,34 @@
+---
+title: "Work with chats and projects"
+description: "Choose a workspace, guide a running agent and review its changes in Phaseo Desktop."
+"og:image": "https://phaseo.app/og/dynamic?title=Work%20with%20chats%20and%20projects&description=Choose%20a%20workspace%2C%20guide%20a%20running%20agent%20and%20review%20its%20changes%20in%20Phaseo%20Desktop.&pathname=/docs/v1/desktop/chats-and-projects"
+icon: "messages-square"
+---
+
+Keep general conversations in **Chat**. Switch to **Code** when you want an agent to work in a project folder and review its changes alongside the conversation.
+
+## Start project work
+
+Add a folder as a project, select it in **Code**, and start a chat. Choose the agent and model in the message box. Use the same checkout for related work, or choose a new Git worktree when the work needs its own branch and files.
+
+Check the permissions in the model picker before sending. **Ask first** lets you review requests that need approval. Broader permission levels let the agent do more automatically; availability depends on the agent.
+
+## Queue or steer a follow-up
+
+By default, messages sent while an agent works queue for its next turn. Edit, reorder or remove them above the message box.
+
+Choose **Send now** on a queued message to add it to the running turn when the agent supports steering. `Ctrl+Shift+Enter` (`Cmd+Shift+Enter` on macOS) steers your draft, or the first queued message if the box is empty. Agents without steering support keep messages queued.
+
+Change the default in **Settings → Chat → Follow-ups while an agent works**. **Stop** interrupts the current turn.
+
+## Review the work
+
+Open files, diffs, terminals, pull requests and the browser in the right panel. They stay beside your conversation; closing the panel lets you return to it later.
+
+Review changed files and command output before committing or publishing. A chat's steps show what the agent did; expand a step for its details. Read permission requests and questions before answering.
+
+## Keep chats organized
+
+Pin chats you use often and search for them with `Ctrl+K` (`Cmd+K` on macOS). Fork a chat to explore another approach. In **Code**, settle finished work to keep the active list short. You can return to it from **Settled**; new activity makes the chat active again.
+
+For an agent that coordinates work across chats, see [the operator](./operator.mdx). For setup and appearance, see [get started](./get-started.mdx).

@@ -1,0 +1,33 @@
+---
+title: "Mit Chats und Projekten arbeiten"
+description: "Wähle einen Arbeitsbereich, steuere einen laufenden Agenten und prüfe seine Änderungen in Phaseo Desktop."
+icon: "messages-square"
+---
+
+Führe allgemeine Gespräche in **Chat**. Wechsle zu **Code**, wenn ein Agent in einem Projektordner arbeiten soll und du seine Änderungen neben dem Gespräch prüfen möchtest.
+
+## Projektarbeit starten
+
+Füge einen Ordner als Projekt hinzu, wähle ihn in **Code** aus und starte einen Chat. Wähle Agent und Modell im Nachrichtenfeld. Nutze denselben Checkout für zusammengehörige Aufgaben oder einen neuen Git-Worktree, wenn die Arbeit einen eigenen Branch und eigene Dateien benötigt.
+
+Prüfe vor dem Senden die Berechtigungen in der Modellauswahl. Mit **Ask first** kannst du Anfragen prüfen, die eine Genehmigung benötigen. Weitergehende Berechtigungen lassen den Agenten mehr automatisch erledigen; ihre Verfügbarkeit hängt vom Agenten ab.
+
+## Folgenachrichten einreihen oder sofort senden
+
+Standardmäßig werden Nachrichten, die du während der Arbeit eines Agenten sendest, für dessen nächsten Zug eingereiht. Oberhalb des Nachrichtenfelds kannst du sie bearbeiten, umsortieren oder entfernen.
+
+Wähle bei einer eingereihten Nachricht **Send now**, um sie dem laufenden Zug hinzuzufügen, sofern der Agent das unterstützt. `Ctrl+Shift+Enter` (`Cmd+Shift+Enter` unter macOS) sendet deinen Entwurf in den laufenden Zug oder bei leerem Feld die erste eingereihte Nachricht. Agenten ohne diese Unterstützung lassen Nachrichten in der Warteschlange.
+
+Ändere die Voreinstellung unter **Settings → Chat → Follow-ups while an agent works**. **Stop** unterbricht den aktuellen Zug.
+
+## Arbeit prüfen
+
+Öffne Dateien, Diffs, Terminals, Pull Requests und den Browser im rechten Panel. Sie bleiben neben deinem Gespräch; du kannst das Panel schließen und später zurückkehren.
+
+Prüfe geänderte Dateien und Befehlsausgaben, bevor du einen Commit erstellst oder veröffentlichst. Die Schritte eines Chats zeigen, was der Agent getan hat; klappe einen Schritt für Details auf. Lies Berechtigungsanfragen und Fragen, bevor du antwortest.
+
+## Chats organisieren
+
+Pinne häufig genutzte Chats an und suche sie mit `Ctrl+K` (`Cmd+K` unter macOS). Verzweige einen Chat, um einen anderen Ansatz zu erkunden. Schließe fertige Arbeit in **Code** ab, um die aktive Liste kurz zu halten. Unter **Settled** kannst du sie wieder öffnen; neue Aktivität macht den Chat wieder aktiv.
+
+Für einen Agenten, der die Arbeit über Chats hinweg koordiniert, siehe [Operator](./operator.mdx). Einrichtung und Darstellung beschreibt [der Einstieg](./get-started.mdx).

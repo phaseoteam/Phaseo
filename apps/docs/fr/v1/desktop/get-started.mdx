@@ -1,0 +1,46 @@
+---
+title: "Démarrer avec l’application de bureau"
+description: "Connectez un compte, choisissez un modèle et lancez votre premier chat dans Phaseo Desktop."
+icon: "monitor"
+---
+
+Phaseo Desktop réunit conversations, agents de programmation et outils de projet dans une seule application. Commencez par un chat personnel, puis ajoutez un projet lorsque vous souhaitez qu’un agent travaille sur des fichiers.
+
+<Note>
+Ces guides décrivent la version préliminaire de l’application de bureau. Les fonctionnalités disponibles dépendent de votre version et de l’agent connecté.
+</Note>
+
+## Ouvrir l’application
+
+Si vous disposez déjà d’une version préliminaire, ouvrez Phaseo. Pour l’exécuter depuis les sources, installez Git, Node.js 24 et pnpm 10.33, puis lancez :
+
+```bash
+git clone https://github.com/phaseoteam/Phaseo.git
+cd Phaseo
+pnpm install
+pnpm --filter @phaseo/desktop dev
+```
+
+La commande de développement compile les paquets nécessaires et ouvre la fenêtre de l’application. Gardez le terminal ouvert pendant son utilisation.
+
+## Connecter un compte
+
+Ouvrez **Settings → Accounts**. Connectez-vous à Phaseo, ajoutez un compte API ou utilisez un agent de programmation déjà connecté sur cet ordinateur. **Settings → Agents** affiche les agents disponibles sur votre machine.
+
+Votre compte détermine les modèles accessibles et la facturation de l’utilisation. Un abonnement connecté conserve les limites de son fournisseur ; les requêtes passant par Phaseo utilisent votre compte Phaseo.
+
+## Démarrer un chat
+
+1. Choisissez **Chat**, puis **New chat**.
+2. Ouvrez le sélecteur de modèles à côté du champ de message. Choisissez un agent et un modèle, puis réglez le raisonnement ou la vitesse lorsque ces options sont disponibles.
+3. Saisissez un message et envoyez-le. Aucun projet n’est requis.
+
+Si des modèles manquent, vérifiez votre connexion dans **Accounts** et la disponibilité de l’agent dans **Agents**.
+
+## Personnaliser l’application
+
+**Settings → Appearance** contrôle les thèmes, les polices et la durée d’animation des panneaux : de 0 à 600 ms, avec 200 ms par défaut. Cliquez sur l’espace de travail miniature pour un aperçu. Une durée nulle, **Animations** désactivé ou la préférence système de réduction des animations fait apparaître les panneaux immédiatement.
+
+Utilisez `Ctrl+K` (`Cmd+K` sur macOS) pour rechercher des chats et des commandes. **Settings → Keyboard shortcuts** affiche vos raccourcis actuels.
+
+Poursuivez avec [les chats et les projets](./chats-and-projects.mdx) ou [l’opérateur](./operator.mdx).

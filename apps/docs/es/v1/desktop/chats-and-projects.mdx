@@ -1,0 +1,33 @@
+---
+title: "Trabaja con chats y proyectos"
+description: "Elige un espacio de trabajo, orienta a un agente en ejecución y revisa sus cambios en Phaseo Desktop."
+icon: "messages-square"
+---
+
+Mantén las conversaciones generales en **Chat**. Cambia a **Code** cuando quieras que un agente trabaje en una carpeta de proyecto y revisar sus cambios junto a la conversación.
+
+## Empieza a trabajar en un proyecto
+
+Añade una carpeta como proyecto, selecciónala en **Code** e inicia un chat. Elige el agente y el modelo en el cuadro de mensaje. Usa el mismo checkout para tareas relacionadas o elige un nuevo worktree de Git cuando el trabajo necesite su propia rama y sus archivos.
+
+Comprueba los permisos en el selector de modelos antes de enviar el mensaje. **Ask first** te permite revisar las solicitudes que requieren aprobación. Los niveles de permisos más amplios permiten al agente hacer más automáticamente; su disponibilidad depende del agente.
+
+## Pon en cola o dirige un mensaje de seguimiento
+
+Por defecto, los mensajes enviados mientras un agente trabaja se ponen en cola para su próximo turno. Puedes editarlos, reordenarlos o eliminarlos encima del cuadro de mensaje.
+
+Elige **Send now** en un mensaje en cola para añadirlo al turno en curso si el agente admite esta función. `Ctrl+Shift+Enter` (`Cmd+Shift+Enter` en macOS) envía tu borrador al turno en curso, o el primer mensaje en cola si el cuadro está vacío. Los agentes sin esta función mantienen los mensajes en cola.
+
+Cambia el comportamiento predeterminado en **Settings → Chat → Follow-ups while an agent works**. **Stop** interrumpe el turno actual.
+
+## Revisa el trabajo
+
+Abre archivos, diferencias, terminales, solicitudes de incorporación de cambios y el navegador en el panel derecho. Permanecen junto a tu conversación; puedes cerrar el panel y volver a él más tarde.
+
+Revisa los archivos modificados y la salida de los comandos antes de confirmar o publicar. Los pasos del chat muestran lo que hizo el agente; expande un paso para ver los detalles. Lee las solicitudes de permiso y las preguntas antes de responder.
+
+## Organiza los chats
+
+Fija los chats que uses a menudo y búscalos con `Ctrl+K` (`Cmd+K` en macOS). Bifurca un chat para explorar otro enfoque. En **Code**, marca como terminado el trabajo completado para acortar la lista activa. Puedes volver a él desde **Settled**; la actividad nueva vuelve a activar el chat.
+
+Para coordinar trabajo entre chats con un agente, consulta [el operador](./operator.mdx). Para la configuración y la apariencia, consulta [primeros pasos](./get-started.mdx).

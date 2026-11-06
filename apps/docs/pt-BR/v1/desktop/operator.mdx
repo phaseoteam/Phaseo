@@ -1,0 +1,35 @@
+---
+title: "Coordene o trabalho com o operador"
+description: "Peça a um agente fixado que acompanhe chats, coordene outros agentes e altere configurações do aplicativo."
+icon: "radio"
+---
+
+O operador é um chat fixado que coordena outros chats e agentes. Peça a ele para acompanhar o trabalho, abrir a conversa relevante quando algo mudar ou atualizar configurações do aplicativo.
+
+## Abra o operador
+
+Inicie primeiro um chat comum para que o Phaseo tenha um agente, uma conta e um modelo para usar. Abra a paleta de comandos com `Ctrl+K` (`Cmd+K` no macOS) e escolha **Operator**. Ao reabri-lo, você volta ao mesmo chat.
+
+<Warning>
+O operador inicia em Code com Full access e sem pasta de projeto. Seus agentes delegados não podem receber permissões mais amplas que as dele. Use-o somente com contas e agentes nos quais confia para agir em seu nome.
+</Warning>
+
+## Diga o que acompanhar
+
+Dê ao operador uma tarefa específica e nomeie os chats envolvidos. Por exemplo:
+
+> Acompanhe o chat chamado “Verificações de lançamento”. Quando terminar ou falhar, abra-o e mostre uma notificação. Não altere nada no projeto.
+
+O operador cria suas próprias assinaturas de eventos. Ele pode acompanhar conclusão de chats, falhas, solicitações de atenção e limites de uso, além de atualizações de acompanhamentos existentes de pull requests e issues. Os eventos chegam como mensagens; os que chegam em sequência são agrupados antes de ativá-lo.
+
+Você também pode pedir que abra páginas ou altere configurações:
+
+> Abra Appearance e defina as animações dos painéis para 300 ms.
+
+## Pause e retome
+
+Escolha **Pause** no aviso do operador, ou **Pause the operator** na paleta de comandos, para pará-lo junto com seus agentes. Os eventos recebidos ficam retidos. **Resume** permite recebê-los novamente.
+
+As proteções padrão permitem 12 ativações por eventos a cada hora e pausam após quatro ativações consecutivas sem chamada de ferramenta. O gasto registrado no Phaseo para o operador e seus agentes aciona uma pausa no limite padrão de $5; esse limite não atribui preço ao uso por assinatura. Se ele pausar no limite, escolha **Raise the cap by $5** e depois **Resume**. Só você pode aumentar o limite ou retomá-lo.
+
+A prévia ainda não acompanha todos os eventos do aplicativo nem controla ambientes remotos. Comece com uma tarefa pequena e confira suas mensagens e ações antes de ampliar as responsabilidades.

@@ -1,0 +1,36 @@
+---
+title: "Coordinate work with the operator"
+description: "Ask one pinned agent to watch chats, coordinate other agents and change app settings."
+"og:image": "https://phaseo.app/og/dynamic?title=Coordinate%20work%20with%20the%20operator&description=Ask%20one%20pinned%20agent%20to%20watch%20chats%2C%20coordinate%20other%20agents%20and%20change%20app%20settings.&pathname=/docs/v1/desktop/operator"
+icon: "radio"
+---
+
+The operator is a pinned chat that coordinates other chats and agents. Ask it to watch work, open the relevant conversation when something changes, or update app settings.
+
+## Open the operator
+
+Start an ordinary chat first so Phaseo has an agent, account and model to use. Open the command palette with `Ctrl+K` (`Cmd+K` on macOS), then choose **Operator**. Reopening it returns to the same chat.
+
+<Warning>
+The operator starts in Code with Full access and no project folder. Its delegated agents cannot receive broader permissions than it has. Use it only with accounts and agents you trust to act on your behalf.
+</Warning>
+
+## Tell it what to watch
+
+Give the operator a specific task and name the chats involved. For example:
+
+> Watch the chat called “Release checks”. When it finishes or fails, open it and show me a notification. Change nothing in the project.
+
+The operator creates its own subscriptions. It can watch chat completion, failure, requests for your attention and usage limits, plus updates from existing pull request and issue watches. Events arrive as messages; bursts are grouped before waking it.
+
+You can also ask it to open pages or change settings:
+
+> Open Appearance and set panel animations to 300 ms.
+
+## Pause and resume
+
+Choose **Pause** in the operator's notice, or **Pause the operator** in the command palette, to stop it and its agents. Incoming events are held. **Resume** lets it receive them again.
+
+The default safeguards allow 12 event wakes per hour and pause after four event wakes in a row that called no tool. Recorded Phaseo spend for the operator and its agents triggers a pause at the default $5 cap; subscription usage is not priced by that cap. If it pauses at the cap, choose **Raise the cap by $5**, then **Resume**. Only you can raise the cap or resume it.
+
+The preview does not yet watch every app event or control remote environments. Start with a small task and check its messages and actions before expanding its responsibilities.

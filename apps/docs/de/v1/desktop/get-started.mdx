@@ -1,0 +1,46 @@
+---
+title: "Mit der Desktop-App loslegen"
+description: "Verbinde ein Konto, wähle ein Modell und starte deinen ersten Chat in Phaseo Desktop."
+icon: "monitor"
+---
+
+Phaseo Desktop vereint Gespräche, Programmieragenten und Projektwerkzeuge in einer App. Starte mit einem persönlichen Chat und füge ein Projekt hinzu, wenn ein Agent an Dateien arbeiten soll.
+
+<Note>
+Diese Anleitungen beschreiben die Desktop-Vorschau. Die verfügbaren Funktionen hängen von deiner Version und dem verbundenen Agenten ab.
+</Note>
+
+## App öffnen
+
+Wenn du bereits eine Vorschauversion hast, öffne Phaseo. Um die App aus dem Quellcode zu starten, installiere Git, Node.js 24 und pnpm 10.33 und führe Folgendes aus:
+
+```bash
+git clone https://github.com/phaseoteam/Phaseo.git
+cd Phaseo
+pnpm install
+pnpm --filter @phaseo/desktop dev
+```
+
+Der Entwicklungsbefehl baut die benötigten Pakete und öffnet das Desktop-Fenster. Lass das Terminal während der Nutzung geöffnet.
+
+## Konto verbinden
+
+Öffne **Settings → Accounts**. Melde dich bei Phaseo an, füge ein API-Konto hinzu oder nutze einen Programmieragenten, der auf diesem Computer bereits angemeldet ist. **Settings → Agents** zeigt die auf deinem Rechner verfügbaren Agenten.
+
+Dein Konto bestimmt, welche Modelle du nutzen kannst und wie die Nutzung abgerechnet wird. Ein verbundenes Abonnement behält die Nutzungslimits seines Anbieters; Anfragen über Phaseo verwenden dein Phaseo-Konto.
+
+## Chat starten
+
+1. Wähle **Chat** und **New chat**.
+2. Öffne die Modellauswahl neben dem Nachrichtenfeld. Wähle einen Agenten und ein Modell und passe, sofern unterstützt, Denktiefe oder Geschwindigkeit an.
+3. Schreibe eine Nachricht und sende sie ab. Ein Projekt ist nicht erforderlich.
+
+Falls Modelle fehlen, prüfe deine Anmeldung unter **Accounts** und die Verfügbarkeit des Agenten unter **Agents**.
+
+## App anpassen
+
+**Settings → Appearance** steuert Designs, Schriftarten und die Animationsdauer der Panels: 0–600 ms, standardmäßig 200 ms. Klicke auf den Miniatur-Arbeitsbereich für eine Vorschau. Bei null, deaktiviertem **Animations** oder der Systemeinstellung für reduzierte Bewegung erscheinen Panels sofort.
+
+Mit `Ctrl+K` (`Cmd+K` unter macOS) findest du Chats und Befehle. **Settings → Keyboard shortcuts** zeigt deine aktuellen Tastenkürzel.
+
+Weiter geht es mit [Chats und Projekten](./chats-and-projects.mdx) oder [dem Operator](./operator.mdx).

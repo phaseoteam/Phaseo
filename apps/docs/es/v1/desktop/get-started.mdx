@@ -1,0 +1,46 @@
+---
+title: "Empieza con la aplicación de escritorio"
+description: "Conecta una cuenta, elige un modelo e inicia tu primer chat en Phaseo Desktop."
+icon: "monitor"
+---
+
+Phaseo Desktop reúne conversaciones, agentes de programación y herramientas de proyectos en una sola aplicación. Empieza con un chat personal y añade un proyecto cuando quieras que un agente trabaje con archivos.
+
+<Note>
+Estas guías describen la versión preliminar de escritorio. Las funciones disponibles dependen de tu compilación y del agente conectado.
+</Note>
+
+## Abre la aplicación
+
+Si ya tienes una versión preliminar, abre Phaseo. Para ejecutarlo desde el código fuente, instala Git, Node.js 24 y pnpm 10.33, y ejecuta:
+
+```bash
+git clone https://github.com/phaseoteam/Phaseo.git
+cd Phaseo
+pnpm install
+pnpm --filter @phaseo/desktop dev
+```
+
+El comando de desarrollo compila los paquetes necesarios y abre la ventana de escritorio. Mantén la terminal abierta mientras lo usas.
+
+## Conecta una cuenta
+
+Abre **Settings → Accounts**. Inicia sesión en Phaseo, añade una cuenta de API o usa un agente de programación con una sesión iniciada en este equipo. **Settings → Agents** muestra los agentes disponibles en tu equipo.
+
+Tu cuenta determina los modelos que puedes usar y cómo se factura el uso. Una suscripción conectada conserva los límites de uso de su proveedor; las solicitudes a través de Phaseo usan tu cuenta de Phaseo.
+
+## Inicia un chat
+
+1. Elige **Chat** y **New chat**.
+2. Abre el selector de modelos junto al cuadro de mensaje. Elige un agente y un modelo, y ajusta el razonamiento o la velocidad cuando estén disponibles.
+3. Escribe un mensaje y envíalo. No necesitas un proyecto.
+
+Si faltan modelos, comprueba tu sesión en **Accounts** y la disponibilidad del agente en **Agents**.
+
+## Personaliza la aplicación
+
+**Settings → Appearance** controla los temas, las fuentes y la duración de las animaciones de los paneles: de 0 a 600 ms, con 200 ms por defecto. Haz clic en el espacio de trabajo en miniatura para ver una vista previa. Con cero, **Animations** desactivado o la preferencia del sistema de movimiento reducido, los paneles aparecen inmediatamente.
+
+Usa `Ctrl+K` (`Cmd+K` en macOS) para buscar chats y comandos. **Settings → Keyboard shortcuts** muestra tus atajos actuales.
+
+Continúa con [chats y proyectos](./chats-and-projects.mdx) o [el operador](./operator.mdx).

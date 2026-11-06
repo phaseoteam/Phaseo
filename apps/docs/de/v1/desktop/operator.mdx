@@ -1,0 +1,35 @@
+---
+title: "Arbeit mit dem Operator koordinieren"
+description: "Lass einen angepinnten Agenten Chats überwachen, andere Agenten koordinieren und App-Einstellungen ändern."
+icon: "radio"
+---
+
+Der Operator ist ein angepinnter Chat, der andere Chats und Agenten koordiniert. Bitte ihn, Arbeit zu überwachen, bei Änderungen das passende Gespräch zu öffnen oder App-Einstellungen anzupassen.
+
+## Operator öffnen
+
+Starte zuerst einen normalen Chat, damit Phaseo einen Agenten, ein Konto und ein Modell verwenden kann. Öffne die Befehlspalette mit `Ctrl+K` (`Cmd+K` unter macOS) und wähle **Operator**. Beim erneuten Öffnen kehrst du zum selben Chat zurück.
+
+<Warning>
+Der Operator startet in Code mit Full access und ohne Projektordner. Seine delegierten Agenten können keine weitergehenden Berechtigungen erhalten als er selbst. Verwende ihn nur mit Konten und Agenten, denen du vertraust, in deinem Namen zu handeln.
+</Warning>
+
+## Festlegen, was überwacht werden soll
+
+Gib dem Operator eine konkrete Aufgabe und benenne die beteiligten Chats. Zum Beispiel:
+
+> Überwache den Chat „Release-Prüfungen“. Wenn er fertig ist oder fehlschlägt, öffne ihn und zeige mir eine Benachrichtigung. Ändere nichts im Projekt.
+
+Der Operator erstellt seine eigenen Abonnements. Er kann abgeschlossene oder fehlgeschlagene Chats, Anfragen nach deiner Aufmerksamkeit und Nutzungslimits überwachen, außerdem Updates aus bestehenden Pull-Request- und Issue-Beobachtungen. Ereignisse kommen als Nachrichten an; kurz aufeinanderfolgende Ereignisse werden vor dem Aufwecken gebündelt.
+
+Du kannst ihn auch bitten, Seiten zu öffnen oder Einstellungen zu ändern:
+
+> Öffne Appearance und stelle die Panelanimationen auf 300 ms.
+
+## Pausieren und fortsetzen
+
+Wähle **Pause** im Hinweis des Operators oder **Pause the operator** in der Befehlspalette, um ihn und seine Agenten zu stoppen. Eingehende Ereignisse werden zurückgehalten. Mit **Resume** kann er sie wieder empfangen.
+
+Die Standardschutzmaßnahmen erlauben 12 ereignisbedingte Aktivierungen pro Stunde und pausieren nach vier aufeinanderfolgenden Aktivierungen ohne Werkzeugaufruf. Erfasste Phaseo-Ausgaben für den Operator und seine Agenten lösen beim Standardlimit von $5 eine Pause aus; Abonnementnutzung wird von diesem Limit nicht bepreist. Pausiert er am Limit, wähle **Raise the cap by $5** und dann **Resume**. Nur du kannst das Limit erhöhen oder ihn fortsetzen.
+
+Die Vorschau überwacht noch nicht jedes App-Ereignis und steuert keine entfernten Umgebungen. Beginne mit einer kleinen Aufgabe und prüfe Nachrichten und Aktionen, bevor du seine Verantwortung erweiterst.

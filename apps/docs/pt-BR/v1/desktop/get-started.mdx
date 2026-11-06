@@ -1,0 +1,46 @@
+---
+title: "Comece no aplicativo para desktop"
+description: "Conecte uma conta, escolha um modelo e inicie seu primeiro chat no Phaseo Desktop."
+icon: "monitor"
+---
+
+O Phaseo Desktop reúne conversas, agentes de programação e ferramentas de projeto em um só aplicativo. Comece com um chat pessoal e adicione um projeto quando quiser que um agente trabalhe com arquivos.
+
+<Note>
+Estes guias descrevem a versão de prévia para desktop. Os recursos disponíveis dependem da sua versão e do agente conectado.
+</Note>
+
+## Abra o aplicativo
+
+Se você já tem uma versão de prévia, abra o Phaseo. Para executar a partir do código-fonte, instale Git, Node.js 24 e pnpm 10.33 e execute:
+
+```bash
+git clone https://github.com/phaseoteam/Phaseo.git
+cd Phaseo
+pnpm install
+pnpm --filter @phaseo/desktop dev
+```
+
+O comando de desenvolvimento compila os pacotes necessários e abre a janela do aplicativo. Mantenha o terminal aberto enquanto o utiliza.
+
+## Conecte uma conta
+
+Abra **Settings → Accounts**. Entre no Phaseo, adicione uma conta de API ou use um agente de programação que já esteja conectado neste computador. **Settings → Agents** mostra os agentes disponíveis na sua máquina.
+
+Sua conta determina quais modelos você pode usar e como o uso é cobrado. Uma assinatura conectada mantém os limites de uso do provedor; solicitações pelo Phaseo usam sua conta Phaseo.
+
+## Inicie um chat
+
+1. Escolha **Chat** e **New chat**.
+2. Abra o seletor de modelos ao lado da caixa de mensagem. Escolha um agente e um modelo e ajuste o raciocínio ou a velocidade quando houver suporte.
+3. Digite uma mensagem e envie. Não é necessário ter um projeto.
+
+Se faltarem modelos, confira seu login em **Accounts** e a disponibilidade do agente em **Agents**.
+
+## Personalize o aplicativo
+
+**Settings → Appearance** controla temas, fontes e a duração das animações dos painéis: de 0 a 600 ms, com padrão de 200 ms. Clique no espaço de trabalho em miniatura para visualizar. Zero, **Animations** desativado e a preferência do sistema por movimento reduzido fazem os painéis aparecerem imediatamente.
+
+Use `Ctrl+K` (`Cmd+K` no macOS) para encontrar chats e comandos. **Settings → Keyboard shortcuts** lista seus atalhos atuais.
+
+Continue com [chats e projetos](./chats-and-projects.mdx) ou [o operador](./operator.mdx).

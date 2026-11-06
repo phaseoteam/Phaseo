@@ -1,0 +1,35 @@
+---
+title: "Coordina el trabajo con el operador"
+description: "Pide a un agente fijado que supervise chats, coordine otros agentes y cambie los ajustes de la aplicación."
+icon: "radio"
+---
+
+El operador es un chat fijado que coordina otros chats y agentes. Pídele que supervise el trabajo, abra la conversación pertinente cuando algo cambie o actualice los ajustes de la aplicación.
+
+## Abre el operador
+
+Inicia primero un chat normal para que Phaseo tenga un agente, una cuenta y un modelo que usar. Abre la paleta de comandos con `Ctrl+K` (`Cmd+K` en macOS) y elige **Operator**. Si lo abres de nuevo, volverás al mismo chat.
+
+<Warning>
+El operador empieza en Code con Full access y sin carpeta de proyecto. Sus agentes delegados no pueden recibir permisos más amplios que los suyos. Úsalo solo con cuentas y agentes en los que confíes para actuar en tu nombre.
+</Warning>
+
+## Indica qué debe supervisar
+
+Dale al operador una tarea concreta e indica los chats implicados. Por ejemplo:
+
+> Supervisa el chat llamado «Comprobaciones de publicación». Cuando termine o falle, ábrelo y muéstrame una notificación. No cambies nada en el proyecto.
+
+El operador crea sus propias suscripciones. Puede supervisar la finalización de chats, fallos, solicitudes de tu atención y límites de uso, además de actualizaciones de seguimientos existentes de solicitudes de incorporación de cambios e incidencias. Los eventos llegan como mensajes; las ráfagas se agrupan antes de activarlo.
+
+También puedes pedirle que abra páginas o cambie ajustes:
+
+> Abre Appearance y establece las animaciones de los paneles en 300 ms.
+
+## Pausa y reanuda
+
+Elige **Pause** en el aviso del operador, o **Pause the operator** en la paleta de comandos, para detenerlo junto con sus agentes. Los eventos entrantes quedan retenidos. **Resume** permite recibirlos de nuevo.
+
+Las protecciones predeterminadas permiten 12 activaciones por eventos cada hora y pausan tras cuatro activaciones consecutivas que no llamen a ninguna herramienta. El gasto registrado en Phaseo del operador y sus agentes provoca una pausa al alcanzar el límite predeterminado de $5; ese límite no asigna un precio al uso por suscripción. Si se pausa por el límite, elige **Raise the cap by $5** y luego **Resume**. Solo tú puedes aumentar el límite o reanudarlo.
+
+La versión preliminar aún no supervisa todos los eventos de la aplicación ni controla entornos remotos. Empieza con una tarea pequeña y revisa sus mensajes y acciones antes de ampliar sus responsabilidades.

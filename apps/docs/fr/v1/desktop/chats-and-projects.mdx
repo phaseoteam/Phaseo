@@ -1,0 +1,33 @@
+---
+title: "Travailler avec les chats et les projets"
+description: "Choisissez un espace de travail, guidez un agent en cours d’exécution et examinez ses modifications dans Phaseo Desktop."
+icon: "messages-square"
+---
+
+Gardez les conversations générales dans **Chat**. Passez à **Code** pour qu’un agent travaille dans un dossier de projet et pour examiner ses modifications à côté de la conversation.
+
+## Commencer un projet
+
+Ajoutez un dossier comme projet, sélectionnez-le dans **Code** et démarrez un chat. Choisissez l’agent et le modèle dans le champ de message. Utilisez le même checkout pour des tâches liées, ou choisissez un nouveau worktree Git lorsque le travail nécessite sa propre branche et ses fichiers.
+
+Vérifiez les permissions dans le sélecteur de modèles avant l’envoi. **Ask first** vous permet d’examiner les demandes qui nécessitent une approbation. Des permissions plus larges permettent à l’agent d’agir davantage automatiquement ; leur disponibilité dépend de l’agent.
+
+## Mettre un message en attente ou guider le tour en cours
+
+Par défaut, les messages envoyés pendant qu’un agent travaille sont mis en attente pour son prochain tour. Modifiez-les, réordonnez-les ou supprimez-les au-dessus du champ de message.
+
+Choisissez **Send now** sur un message en attente pour l’ajouter au tour en cours si l’agent le permet. `Ctrl+Shift+Enter` (`Cmd+Shift+Enter` sur macOS) transmet votre brouillon au tour en cours, ou le premier message en attente si le champ est vide. Les agents ne prenant pas cette fonction en charge gardent les messages en attente.
+
+Changez le comportement par défaut dans **Settings → Chat → Follow-ups while an agent works**. **Stop** interrompt le tour actuel.
+
+## Examiner le travail
+
+Ouvrez fichiers, différences, terminaux, demandes de fusion et navigateur dans le panneau droit. Ils restent à côté de la conversation ; vous pouvez fermer le panneau et y revenir plus tard.
+
+Examinez les fichiers modifiés et la sortie des commandes avant de créer un commit ou de publier. Les étapes du chat montrent ce que l’agent a fait ; développez une étape pour voir ses détails. Lisez les demandes de permission et les questions avant de répondre.
+
+## Organiser les chats
+
+Épinglez les chats fréquents et recherchez-les avec `Ctrl+K` (`Cmd+K` sur macOS). Créez une branche de conversation pour explorer une autre approche. Dans **Code**, classez les travaux terminés pour raccourcir la liste active. Retrouvez-les dans **Settled** ; toute nouvelle activité réactive le chat.
+
+Pour coordonner le travail entre chats avec un agent, consultez [l’opérateur](./operator.mdx). Pour la configuration et l’apparence, consultez [le guide de démarrage](./get-started.mdx).

@@ -1,0 +1,47 @@
+---
+title: "Get started with desktop"
+description: "Connect an account, choose a model and start your first chat in Phaseo Desktop."
+"og:image": "https://phaseo.app/og/dynamic?title=Get%20started%20with%20desktop&description=Connect%20an%20account%2C%20choose%20a%20model%20and%20start%20your%20first%20chat%20in%20Phaseo%20Desktop.&pathname=/docs/v1/desktop/get-started"
+icon: "monitor"
+---
+
+Phaseo Desktop brings conversations, coding agents and project tools into one app. Start with a personal chat, then add a project when you want an agent to work on files.
+
+<Note>
+These guides describe the desktop preview. Available features depend on your build and connected agent.
+</Note>
+
+## Open the app
+
+If you already have a preview build, open Phaseo. To run from source, install Git, Node.js 24 and pnpm 10.33, then run:
+
+```bash
+git clone https://github.com/phaseoteam/Phaseo.git
+cd Phaseo
+pnpm install
+pnpm --filter @phaseo/desktop dev
+```
+
+The development command builds the required packages and opens the desktop window. Keep the terminal running while you use it.
+
+## Connect an account
+
+Open **Settings → Accounts**. Sign in to Phaseo, add an API account, or use a coding agent already signed in on this computer. **Settings → Agents** shows the agents available on your machine.
+
+Your account determines which models you can use and how usage is billed. A connected subscription keeps its provider's usage limits; requests through Phaseo use your Phaseo account.
+
+## Start a chat
+
+1. Choose **Chat** and **New chat**.
+2. Open the model picker beside the message box. Choose an agent and model, then adjust reasoning or speed where supported.
+3. Type a message and send it. No project is required.
+
+If models are missing, check your sign-in in **Accounts** and the agent's availability in **Agents**.
+
+## Make it yours
+
+**Settings → Appearance** controls themes, fonts and panel animation duration: 0–600 ms, with a 200 ms default. Click the miniature workspace to preview it. Zero, **Animations** off and your system's reduced-motion preference make panels appear immediately.
+
+Use `Ctrl+K` (`Cmd+K` on macOS) to find chats and commands. **Settings → Keyboard shortcuts** lists your current bindings.
+
+Continue with [chats and projects](./chats-and-projects.mdx) or [the operator](./operator.mdx).

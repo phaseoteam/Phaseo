@@ -1,0 +1,35 @@
+---
+title: "Coordonner le travail avec l’opérateur"
+description: "Demandez à un agent épinglé de surveiller des chats, coordonner d’autres agents et modifier les réglages de l’application."
+icon: "radio"
+---
+
+L’opérateur est un chat épinglé qui coordonne les autres chats et agents. Demandez-lui de surveiller le travail, d’ouvrir la conversation concernée lorsqu’un changement survient ou de modifier les réglages de l’application.
+
+## Ouvrir l’opérateur
+
+Démarrez d’abord un chat ordinaire pour que Phaseo dispose d’un agent, d’un compte et d’un modèle. Ouvrez la palette de commandes avec `Ctrl+K` (`Cmd+K` sur macOS), puis choisissez **Operator**. Le rouvrir vous ramène au même chat.
+
+<Warning>
+L’opérateur démarre dans Code avec Full access et sans dossier de projet. Ses agents délégués ne peuvent pas recevoir de permissions plus larges que les siennes. Utilisez-le uniquement avec des comptes et des agents auxquels vous faites confiance pour agir en votre nom.
+</Warning>
+
+## Indiquer quoi surveiller
+
+Donnez à l’opérateur une tâche précise et nommez les chats concernés. Par exemple :
+
+> Surveille le chat « Vérifications de publication ». Quand il se termine ou échoue, ouvre-le et affiche une notification. Ne change rien dans le projet.
+
+L’opérateur crée ses propres abonnements. Il peut surveiller les chats terminés, les échecs, les demandes d’attention et les limites d’utilisation, ainsi que les mises à jour des suivis existants de demandes de fusion et de tickets. Les événements arrivent sous forme de messages ; les arrivées rapprochées sont regroupées avant de le réveiller.
+
+Vous pouvez aussi lui demander d’ouvrir des pages ou de modifier des réglages :
+
+> Ouvre Appearance et règle les animations des panneaux sur 300 ms.
+
+## Mettre en pause et reprendre
+
+Choisissez **Pause** dans l’avis de l’opérateur, ou **Pause the operator** dans la palette de commandes, pour l’arrêter ainsi que ses agents. Les événements entrants sont conservés en attente. **Resume** lui permet de les recevoir à nouveau.
+
+Les protections par défaut autorisent 12 réveils par événement par heure et mettent en pause après quatre réveils consécutifs sans appel d’outil. Les dépenses Phaseo enregistrées pour l’opérateur et ses agents déclenchent une pause au plafond par défaut de $5 ; ce plafond ne chiffre pas l’utilisation par abonnement. S’il s’arrête au plafond, choisissez **Raise the cap by $5**, puis **Resume**. Vous seul pouvez augmenter le plafond ou reprendre l’exécution.
+
+La version préliminaire ne surveille pas encore tous les événements de l’application et ne contrôle pas les environnements distants. Commencez par une petite tâche et vérifiez ses messages et ses actions avant d’élargir ses responsabilités.

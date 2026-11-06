@@ -1,0 +1,46 @@
+---
+title: "开始使用桌面应用"
+description: "连接账户、选择模型，并在 Phaseo Desktop 中开始第一次聊天。"
+icon: "monitor"
+---
+
+Phaseo Desktop 将对话、编程智能体和项目工具整合在一个应用中。先开始个人聊天，需要智能体处理文件时再添加项目。
+
+<Note>
+这些指南介绍桌面预览版。可用功能取决于你的构建版本和已连接的智能体。
+</Note>
+
+## 打开应用
+
+如果你已有预览版，直接打开 Phaseo。要从源代码运行，请安装 Git、Node.js 24 和 pnpm 10.33，然后运行：
+
+```bash
+git clone https://github.com/phaseoteam/Phaseo.git
+cd Phaseo
+pnpm install
+pnpm --filter @phaseo/desktop dev
+```
+
+开发命令会构建所需的软件包并打开桌面窗口。使用期间请保持终端运行。
+
+## 连接账户
+
+打开 **Settings → Accounts**。登录 Phaseo、添加 API 账户，或使用已在此计算机上登录的编程智能体。**Settings → Agents** 显示本机可用的智能体。
+
+你的账户决定可使用的模型及使用量的计费方式。已连接的订阅仍遵循其提供方的使用限制；通过 Phaseo 发出的请求使用你的 Phaseo 账户。
+
+## 开始聊天
+
+1. 选择 **Chat**，然后选择 **New chat**。
+2. 打开消息框旁的模型选择器。选择智能体和模型，并在支持时调整推理或速度。
+3. 输入消息并发送。无需项目。
+
+如果缺少模型，请在 **Accounts** 中检查登录状态，并在 **Agents** 中确认智能体是否可用。
+
+## 个性化设置
+
+**Settings → Appearance** 可设置主题、字体和面板动画时长：范围为 0–600 ms，默认 200 ms。点击微型工作区即可预览。时长设为零、关闭 **Animations** 或启用系统的减少动态效果偏好，都会让面板立即显示。
+
+使用 `Ctrl+K`（macOS 上为 `Cmd+K`）查找聊天和命令。**Settings → Keyboard shortcuts** 列出当前快捷键。
+
+接下来阅读[聊天与项目](./chats-and-projects.mdx)或[操作员](./operator.mdx)。

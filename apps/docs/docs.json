@@ -71,6 +71,16 @@
                 ]
               },
               {
+                "group": "Desktop",
+                "icon": "monitor",
+                "expanded": false,
+                "pages": [
+                  "v1/desktop/get-started",
+                  "v1/desktop/chats-and-projects",
+                  "v1/desktop/operator"
+                ]
+              },
+              {
                 "group": "Models & Routing",
                 "icon": "route",
                 "expanded": false,
@@ -1784,6 +1794,16 @@
                   "es/v1/developers/cli-and-mcp",
                   "es/v1/developers/manage-from-an-agent",
                   "es/v1/community/faq"
+                ]
+              },
+              {
+                "group": "Escritorio",
+                "icon": "monitor",
+                "expanded": false,
+                "pages": [
+                  "es/v1/desktop/get-started",
+                  "es/v1/desktop/chats-and-projects",
+                  "es/v1/desktop/operator"
                 ]
               },
               {
@@ -3537,6 +3557,16 @@
                 ]
               },
               {
+                "group": "Application de bureau",
+                "icon": "monitor",
+                "expanded": false,
+                "pages": [
+                  "fr/v1/desktop/get-started",
+                  "fr/v1/desktop/chats-and-projects",
+                  "fr/v1/desktop/operator"
+                ]
+              },
+              {
                 "group": "Modèles et routage",
                 "icon": "route",
                 "expanded": false,
@@ -5284,6 +5314,16 @@
                   "de/v1/developers/cli-and-mcp",
                   "de/v1/developers/manage-from-an-agent",
                   "de/v1/community/faq"
+                ]
+              },
+              {
+                "group": "Desktop-App",
+                "icon": "monitor",
+                "expanded": false,
+                "pages": [
+                  "de/v1/desktop/get-started",
+                  "de/v1/desktop/chats-and-projects",
+                  "de/v1/desktop/operator"
                 ]
               },
               {
@@ -7037,6 +7077,16 @@
                 ]
               },
               {
+                "group": "Aplicativo para desktop",
+                "icon": "monitor",
+                "expanded": false,
+                "pages": [
+                  "pt-BR/v1/desktop/get-started",
+                  "pt-BR/v1/desktop/chats-and-projects",
+                  "pt-BR/v1/desktop/operator"
+                ]
+              },
+              {
                 "group": "Modelos e roteamento",
                 "icon": "route",
                 "expanded": false,
@@ -8784,6 +8834,16 @@
                   "ja/v1/developers/cli-and-mcp",
                   "ja/v1/developers/manage-from-an-agent",
                   "ja/v1/community/faq"
+                ]
+              },
+              {
+                "group": "デスクトップ",
+                "icon": "monitor",
+                "expanded": false,
+                "pages": [
+                  "ja/v1/desktop/get-started",
+                  "ja/v1/desktop/chats-and-projects",
+                  "ja/v1/desktop/operator"
                 ]
               },
               {
@@ -10537,6 +10597,16 @@
                 ]
               },
               {
+                "group": "桌面应用",
+                "icon": "monitor",
+                "expanded": false,
+                "pages": [
+                  "zh-Hans/v1/desktop/get-started",
+                  "zh-Hans/v1/desktop/chats-and-projects",
+                  "zh-Hans/v1/desktop/operator"
+                ]
+              },
+              {
                 "group": "模型与路由",
                 "icon": "route",
                 "expanded": false,
@@ -12287,6 +12357,16 @@
                 ]
               },
               {
+                "group": "डेस्कटॉप",
+                "icon": "monitor",
+                "expanded": false,
+                "pages": [
+                  "hi/v1/desktop/get-started",
+                  "hi/v1/desktop/chats-and-projects",
+                  "hi/v1/desktop/operator"
+                ]
+              },
+              {
                 "group": "मॉडल और रूटिंग",
                 "icon": "route",
                 "expanded": false,
@@ -14034,6 +14114,16 @@
                   "ar/v1/developers/cli-and-mcp",
                   "ar/v1/developers/manage-from-an-agent",
                   "ar/v1/community/faq"
+                ]
+              },
+              {
+                "group": "سطح المكتب",
+                "icon": "monitor",
+                "expanded": false,
+                "pages": [
+                  "ar/v1/desktop/get-started",
+                  "ar/v1/desktop/chats-and-projects",
+                  "ar/v1/desktop/operator"
                 ]
               },
               {
