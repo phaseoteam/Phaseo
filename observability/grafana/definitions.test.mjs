@@ -9,10 +9,10 @@ test('importable dashboard and alert JSON matches canonical definitions', async 
   assert.equal(new Set(definitions.map(item => item.uid)).size, 5);
   for (const dashboard of definitions) {
     assert.deepEqual(JSON.parse(await readFile(new URL(`./dashboards/${dashboard.uid}.json`, import.meta.url), 'utf8')), dashboard);
-    for (const panel of dashboard.panels) {
+    for (const panel of dashboard.panels) for (const target of panel.targets ?? []) {
       assert.equal(panel.datasource.type, 'loki');
-      assert.ok(panel.targets[0].expr.includes('environment="$environment"'));
-      assert.ok(!panel.targets[0].expr.includes('deployment_environment_name='));
+      assert.ok(target.expr.includes('environment="$environment"'));
+      assert.ok(!target.expr.includes('deployment_environment_name='));
     }
   }
   assert.deepEqual(JSON.parse(await readFile(new URL('./alerts.json', import.meta.url), 'utf8')), alertRules({ lokiUid: 'SET_LOKI_DATASOURCE_UID' }));
@@ -25,6 +25,38 @@ test('importable dashboard and alert JSON matches canonical definitions', async 
   }
   assert.ok(alertRules({ lokiUid: 'loki' })[0].data[0].model.expr.includes('>= 20'));
   assert.ok(alertRules({ lokiUid: 'loki' })[1].data[0].model.expr.includes('absent_over_time'));
+});
+test('live validation checks every series and skips instruction panels', async () => {
+  const queries = [];
+  const fetcher = async (url, init) => {
+    assert.equal(init.method, 'GET');
+    if (url.includes('/datasources/uid/')) return Response.json({ type: 'loki' });
+    const query = new URL(url).searchParams.get('query');
+    assert.ok(query);
+    assert.ok(!query.includes('$'), 'Grafana variables must be expanded for direct Loki requests');
+    queries.push(query);
+    return Response.json({ status: 'success', data: { result: [] } });
+  };
+  await provision({ args: ['--check'], env: { GRAFANA_URL: 'https://phaseo.grafana.net', GRAFANA_SERVICE_ACCOUNT_TOKEN: 'private', GRAFANA_LOKI_UID: 'logs' }, fetcher, log: () => {} });
+  const dashboardQueries = dashboards().flatMap(dashboard => dashboard.panels.flatMap(panel => panel.targets ?? []));
+  assert.equal(queries.length, dashboardQueries.length + alertRules({ lokiUid: 'logs' }).length);
+  assert.ok(queries.some(query => query.includes('web.server_error') && query.includes('[5m]')));
+});
+test('the overview keeps summary cards and investigations visible without overlapping panels', () => {
+  const overview = dashboards()[0];
+  assert.equal(overview.time.from, 'now-1h');
+  for (const panel of overview.panels.filter(panel => /^(Traffic|Failures) ·/.test(panel.title))) assert.equal(panel.interval, '5m', 'counts use at least a five-minute interval');
+  for (const [index, panel] of overview.panels.entries()) {
+    const a = panel.gridPos;
+    assert.ok(a.x >= 0 && a.y >= 0 && a.w > 0 && a.h > 0 && a.x + a.w <= 24);
+    for (const other of overview.panels.slice(index + 1)) {
+      const b = other.gridPos;
+      assert.ok(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y, `${panel.title} overlaps ${other.title}`);
+    }
+  }
+  for (const panel of overview.panels.filter(panel => panel.type === 'stat')) {
+    assert.ok(panel.fieldConfig.defaults.links[0].url.includes('var-environment=$environment&from=$__from&to=$__to'), 'investigations preserve environment and incident time');
+  }
 });
 test('provisioning defaults to no network and rejects credential-unsafe stack URLs', async () => {
   let calls = 0;

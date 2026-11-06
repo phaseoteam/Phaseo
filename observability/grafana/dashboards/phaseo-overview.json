@@ -1,7 +1,7 @@
 {
   "uid": "phaseo-overview",
   "title": "Phaseo · Overview",
-  "description": "Start here. Quiet traffic is normal; the scheduler heartbeat provides independent telemetry freshness.",
+  "description": "Check received traffic and failures, then investigate the affected service. Scheduler freshness is not an external uptime check.",
   "schemaVersion": 39,
   "version": 1,
   "editable": true,
@@ -12,7 +12,7 @@
   "timezone": "browser",
   "refresh": "1m",
   "time": {
-    "from": "now-6h",
+    "from": "now-1h",
     "to": "now"
   },
   "links": [
@@ -100,7 +100,7 @@
           "text": "",
           "value": ""
         },
-        "hide": 0
+        "hide": 2
       }
     ]
   },
@@ -125,66 +125,514 @@
       "gridPos": {
         "x": 0,
         "y": 0,
-        "w": 12,
-        "h": 9
+        "w": 24,
+        "h": 5
       },
-      "title": "Gateway requests / second",
-      "type": "timeseries",
-      "datasource": {
-        "type": "loki",
-        "uid": "${loki}"
-      },
-      "description": "",
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "sum(rate({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | __error__=\"\" [$__auto])) or vector(0)",
-          "datasource": {
-            "type": "loki",
-            "uid": "${loki}"
-          },
-          "queryType": "range",
-          "instant": false,
-          "range": true,
-          "legendFormat": ""
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "reqps",
-          "noValue": "No data",
-          "custom": {
-            "spanNulls": false
-          }
-        },
-        "overrides": []
-      },
+      "title": "Start here",
+      "type": "text",
       "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
-        }
+        "mode": "markdown",
+        "content": "**1. Check collection:** “Arriving” means a scheduler heartbeat was received in the last 5 minutes. “Missing” means check cron and telemetry delivery. **2. Check failures:** red counts need investigation; click a count to open its service dashboard. **3. Compare the charts:** did failures or latency rise after a deployment?\n\nCounts cover the selected time range and received events only. Zero requests can mean quiet traffic; zero failures does not prove uptime. Use external checks to establish availability and alert rules to configure notifications."
       }
     },
     {
       "id": 2,
       "gridPos": {
-        "x": 12,
-        "y": 0,
-        "w": 12,
-        "h": 9
+        "x": 0,
+        "y": 5,
+        "w": 4,
+        "h": 4
       },
-      "title": "Actionable failures / second",
+      "title": "Scheduler telemetry · last 5m",
+      "type": "stat",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "At least one recent heartbeat confirms scheduler telemetry is arriving. This does not test the website or generation endpoints from outside Cloudflare.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(count_over_time({service_name=~\"phaseo-jobs\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"job.heartbeat\" | __error__=\"\" [5m])) or vector(0)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "instant",
+          "instant": true,
+          "range": false,
+          "legendFormat": ""
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "thresholds",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "range",
+              "options": {
+                "from": 0,
+                "to": 0,
+                "result": {
+                  "text": "Missing",
+                  "color": "red"
+                }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 1,
+                "to": 1000000,
+                "result": {
+                  "text": "Arriving",
+                  "color": "green"
+                }
+              }
+            }
+          ],
+          "links": [
+            {
+              "title": "Investigate",
+              "url": "/d/phaseo-telemetry?var-environment=$environment&from=$__from&to=$__to"
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": 3,
+      "gridPos": {
+        "x": 4,
+        "y": 5,
+        "w": 4,
+        "h": 4
+      },
+      "title": "Gateway requests",
+      "type": "stat",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "Received terminal gateway request events in the selected time range. Includes success, error and cancellation; not a billing count.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | __error__=\"\" [$__range])) or vector(0)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "instant",
+          "instant": true,
+          "range": false,
+          "legendFormat": ""
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [],
+          "links": [
+            {
+              "title": "Investigate",
+              "url": "/d/phaseo-gateway?var-environment=$environment&from=$__from&to=$__to"
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": 4,
+      "gridPos": {
+        "x": 8,
+        "y": 5,
+        "w": 4,
+        "h": 4
+      },
+      "title": "Gateway failures",
+      "type": "stat",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "Actionable logical request failures, including failures after streaming HTTP 200. Client cancellations are excluded.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", actionable=\"actionable\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | actionable=\"true\" | __error__=\"\" [$__range])) or vector(0)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "instant",
+          "instant": true,
+          "range": false,
+          "legendFormat": ""
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "thresholds",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [],
+          "links": [
+            {
+              "title": "Investigate",
+              "url": "/d/phaseo-gateway?var-environment=$environment&from=$__from&to=$__to"
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": 5,
+      "gridPos": {
+        "x": 12,
+        "y": 5,
+        "w": 4,
+        "h": 4
+      },
+      "title": "Web API requests",
+      "type": "stat",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "Web API response-header events in the selected time range. This is separate from gateway generation traffic.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | __error__=\"\" [$__range])) or vector(0)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "instant",
+          "instant": true,
+          "range": false,
+          "legendFormat": ""
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [],
+          "links": [
+            {
+              "title": "Investigate",
+              "url": "/d/phaseo-web?var-environment=$environment&from=$__from&to=$__to"
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": 6,
+      "gridPos": {
+        "x": 16,
+        "y": 5,
+        "w": 4,
+        "h": 4
+      },
+      "title": "Web API 5xx",
+      "type": "stat",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "Server-error responses only. Expected client rejections such as 401 and 404 are excluded.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", status_code=\"status_code\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | status_code >= 500 | __error__=\"\" [$__range])) or vector(0)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "instant",
+          "instant": true,
+          "range": false,
+          "legendFormat": ""
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "thresholds",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [],
+          "links": [
+            {
+              "title": "Investigate",
+              "url": "/d/phaseo-web?var-environment=$environment&from=$__from&to=$__to"
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": 7,
+      "gridPos": {
+        "x": 20,
+        "y": 5,
+        "w": 4,
+        "h": 4
+      },
+      "title": "Job failures",
+      "type": "stat",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "Job invocations that threw or explicitly reported known item failures. A completed handler can still contain internally handled failures.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(count_over_time({service_name=~\"phaseo-jobs|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"job.run\" | outcome=\"error\" | __error__=\"\" [$__range])) or vector(0)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "instant",
+          "instant": true,
+          "range": false,
+          "legendFormat": ""
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "thresholds",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [],
+          "links": [
+            {
+              "title": "Investigate",
+              "url": "/d/phaseo-jobs?var-environment=$environment&from=$__from&to=$__to"
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": 8,
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 12,
+        "h": 8
+      },
+      "title": "Traffic · per interval",
       "type": "timeseries",
       "datasource": {
         "type": "loki",
         "uid": "${loki}"
       },
-      "description": "Logical request failures classified as actionable. Client cancellations are excluded.",
+      "description": "Each point counts events in the preceding query interval, with a five-minute minimum. The window grows with the query step on long ranges so events between points remain counted. Web API and gateway are separate traffic populations; do not add them as unique requests.",
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", actionable=\"actionable\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | actionable=\"true\" | __error__=\"\" [$__auto])) or vector(0)",
+          "expr": "sum(count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | __error__=\"\" [$__auto])) or vector(0)",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -192,12 +640,24 @@
           "queryType": "range",
           "instant": false,
           "range": true,
-          "legendFormat": ""
+          "legendFormat": "Gateway"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | __error__=\"\" [$__auto])) or vector(0)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "range",
+          "instant": false,
+          "range": true,
+          "legendFormat": "Web API"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "reqps",
+          "unit": "short",
           "noValue": "No data",
           "custom": {
             "spanNulls": false
@@ -210,15 +670,111 @@
           "displayMode": "list",
           "placement": "bottom"
         }
-      }
+      },
+      "interval": "5m"
     },
     {
-      "id": 3,
+      "id": 9,
       "gridPos": {
-        "x": 0,
+        "x": 12,
         "y": 9,
         "w": 12,
-        "h": 9
+        "h": 8
+      },
+      "title": "Failures · per interval",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "Received failure events per category in the preceding query interval, with a five-minute minimum. The window grows with the query step on long ranges so short spikes remain counted. These are not distinct incidents; one incident can produce events in multiple categories.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", actionable=\"actionable\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | actionable=\"true\" | __error__=\"\" [$__auto])) or vector(0)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "range",
+          "instant": false,
+          "range": true,
+          "legendFormat": "Gateway actionable"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", status_code=\"status_code\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | status_code >= 500 | __error__=\"\" [$__auto])) or vector(0)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "range",
+          "instant": false,
+          "range": true,
+          "legendFormat": "Web API 5xx"
+        },
+        {
+          "refId": "C",
+          "expr": "sum(count_over_time({service_name=~\"phaseo-web\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.server_error\" | __error__=\"\" [$__auto])) or vector(0)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "range",
+          "instant": false,
+          "range": true,
+          "legendFormat": "Website server errors"
+        },
+        {
+          "refId": "D",
+          "expr": "sum(count_over_time({service_name=~\"phaseo-jobs|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"job.run\" | outcome=\"error\" | __error__=\"\" [$__auto])) or vector(0)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "range",
+          "instant": false,
+          "range": true,
+          "legendFormat": "Job failures"
+        },
+        {
+          "refId": "E",
+          "expr": "sum(count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"ops.failure\" | __error__=\"\" [$__auto])) or vector(0)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "range",
+          "instant": false,
+          "range": true,
+          "legendFormat": "Operational failures"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No data",
+          "custom": {
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "interval": "5m"
+    },
+    {
+      "id": 10,
+      "gridPos": {
+        "x": 0,
+        "y": 17,
+        "w": 12,
+        "h": 8
       },
       "title": "Gateway p95 duration",
       "type": "timeseries",
@@ -226,7 +782,7 @@
         "type": "loki",
         "uid": "${loki}"
       },
-      "description": "Terminal request duration, including streamed responses. Missing timing is omitted.",
+      "description": "95% of received terminal gateway timings are at or below this value. Includes streamed response completion. Interpret with request volume; a percentile from very few requests is unstable. Missing timing stays empty.",
       "targets": [
         {
           "refId": "A",
@@ -259,12 +815,12 @@
       }
     },
     {
-      "id": 4,
+      "id": 11,
       "gridPos": {
         "x": 12,
-        "y": 9,
+        "y": 17,
         "w": 12,
-        "h": 9
+        "h": 8
       },
       "title": "Web API p95 headers",
       "type": "timeseries",
@@ -272,7 +828,7 @@
         "type": "loki",
         "uid": "${loki}"
       },
-      "description": "Time to response headers; streamed generation completion is measured by the gateway.",
+      "description": "95% of received web API timings reach response headers within this duration. Does not measure full streamed response completion. Empty means no matching timings, not zero latency.",
       "targets": [
         {
           "refId": "A",
@@ -305,57 +861,231 @@
       }
     },
     {
-      "id": 5,
+      "id": 12,
       "gridPos": {
         "x": 0,
-        "y": 18,
+        "y": 25,
         "w": 12,
-        "h": 9
+        "h": 7
       },
-      "title": "Scheduler ticks / 15 minutes",
-      "type": "timeseries",
+      "title": "Gateway outcomes",
+      "type": "bargauge",
       "datasource": {
         "type": "loki",
         "uid": "${loki}"
       },
-      "description": "Expected about 15 ticks. Zero means missing scheduler or missing telemetry, even if there are no users.",
+      "description": "Counts in the selected time range. Cancellation is separate from success and error; error is not always operationally actionable.",
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(count_over_time({service_name=~\"phaseo-jobs\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"job.heartbeat\" | __error__=\"\" [15m])) or vector(0)",
+          "expr": "sum by (outcome) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | __error__=\"\" [$__range]))",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
           },
-          "queryType": "range",
-          "instant": false,
-          "range": true,
-          "legendFormat": ""
+          "queryType": "instant",
+          "instant": true,
+          "range": false,
+          "legendFormat": "{{outcome}}"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "noValue": "No data",
-          "custom": {
-            "spanNulls": false
+          "decimals": 0,
+          "min": 0,
+          "noValue": "No matching events",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
           }
         },
         "overrides": []
       },
       "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": false,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
         }
       }
     },
     {
-      "id": 6,
+      "id": 13,
       "gridPos": {
         "x": 12,
-        "y": 18,
+        "y": 25,
         "w": 12,
+        "h": 7
+      },
+      "title": "Web API responses by status",
+      "type": "bargauge",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "Counts by HTTP status in the selected time range. A 4xx response is a client rejection and is not automatically an outage.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (status_code) (count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", status_code=\"status_code\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | __error__=\"\" [$__range]))",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "instant",
+          "instant": true,
+          "range": false,
+          "legendFormat": "HTTP {{status_code}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "min": 0,
+          "noValue": "No matching events",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": false,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 14,
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 12,
+        "h": 7
+      },
+      "title": "Web API 5xx by route",
+      "type": "bargauge",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "Up to 10 route templates with received server-error responses in the selected time range. Empty means no matching events, not confirmed availability.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "topk(10, sum by (route) (count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", route=\"route\", status_code=\"status_code\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | status_code >= 500 | __error__=\"\" [$__range])))",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "instant",
+          "instant": true,
+          "range": false,
+          "legendFormat": "{{route}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "min": 0,
+          "noValue": "No matching events",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": false,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 15,
+      "gridPos": {
+        "x": 12,
+        "y": 32,
+        "w": 12,
+        "h": 7
+      },
+      "title": "Provider attempt failures",
+      "type": "bargauge",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "Up to 10 providers with failed attempts in the selected time range. Retries and fallbacks can recover, so these are not necessarily failed customer requests. Attempt detail is capped per request.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "topk(10, sum by (provider) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | outcome=\"error\" | __error__=\"\" [$__range])))",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "instant",
+          "instant": true,
+          "range": false,
+          "legendFormat": "{{provider}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "min": 0,
+          "noValue": "No matching events",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": false,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 16,
+      "gridPos": {
+        "x": 0,
+        "y": 39,
+        "w": 24,
         "h": 9
       },
       "title": "Recent actionable events",
@@ -364,11 +1094,11 @@
         "type": "loki",
         "uid": "${loki}"
       },
-      "description": "",
+      "description": "Start with the newest event. Expand it for service, route, job, outcome and request/trace IDs. No matching events does not establish external uptime.",
       "targets": [
         {
           "refId": "A",
-          "expr": "{service_name=~\"phaseo-.*\"} | json environment=\"environment\", event_name=\"event_name\", actionable=\"actionable\" | __error__=\"\" | environment=\"$environment\" | actionable=\"true\"",
+          "expr": "{service_name=~\"phaseo-gateway|phaseo-web-api|phaseo-web|phaseo-jobs\"} | json environment=\"environment\", event_name=\"event_name\", actionable=\"actionable\" | __error__=\"\" | environment=\"$environment\" | actionable=\"true\"",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -394,6 +1124,21 @@
         "wrapLogMessage": true,
         "enableLogDetails": true,
         "sortOrder": "Descending"
+      }
+    },
+    {
+      "id": 17,
+      "gridPos": {
+        "x": 0,
+        "y": 48,
+        "w": 24,
+        "h": 7
+      },
+      "title": "Investigate and recover",
+      "type": "text",
+      "options": {
+        "mode": "markdown",
+        "content": "**API failures:** open [Gateway and providers](/d/phaseo-gateway?var-environment=$environment&from=$__from&to=$__to) and look for shared providers, outcomes or request IDs. **Website problems:** open [Web experience](/d/phaseo-web?var-environment=$environment&from=$__from&to=$__to); browser errors and Web Vitals are in [Frontend Observability](/a/grafana-kowalski-app). **Job or settlement failures:** open [Jobs and settlement](/d/phaseo-jobs?var-environment=$environment&from=$__from&to=$__to).\n\nExpand a log, then search its `trace_id` in **Explore → Tempo**. Only 5% of backend traces are retained; a missing trace is expected for most requests. Compare the incident time with [recent deployments](https://github.com/phaseoteam/Phaseo/actions/workflows/ci.yml). After a fix or rollback, test the affected page or endpoint directly and confirm errors settle. [Alert rules](/alerting/list) show notification-rule state; this dashboard itself does not send notifications."
       }
     }
   ]
