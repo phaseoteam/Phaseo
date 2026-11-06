@@ -62,7 +62,6 @@ export function Accounts() {
 	const state = (account: (typeof visible)[number]) => account.oauthExpiresAt ? Date.parse(account.oauthExpiresAt) <= Date.now() ? "Sign-in expired" : account.profile?.email ? `Signed in as ${account.profile.email}` : "Signed in" : account.kind === "api" ? account.harness === "cursor" ? "Cursor API key" : account.endpoint : account.configured ? "Signed in" : "Sign-in required";
 	return <SettingsPageLayout title="Accounts" description="Subscriptions and API keys your chats run on." className="accounts-page">
 		{error && <p className="text-[13px] text-destructive" role="alert">{error}</p>}
-		<PhaseoAccountSection workspace={workspace} accountId={phaseoAgain} onCancel={() => setPhaseoAgain(undefined)} onConnected={setWorkspace} />
 		<SettingsSection title="Logins on this computer" description="Codex and Claude Code use the login you already have in their own apps.">
 			{(["codex", "claude"] as const).map(harness => <article key={harness}>
 				<SettingsRow icon={<HarnessLogo harness={harness} />} title={`${harness === "codex" ? "Codex" : "Claude Code"} login`} description="Your existing sign-in"
@@ -90,6 +89,7 @@ export function Accounts() {
 			</article>)}
 			{!visible.length && <SettingsNote>{showArchived ? "No archived accounts." : "No accounts connected yet. Add one below."}</SettingsNote>}
 		</SettingsSection>
+		<PhaseoAccountSection workspace={workspace} accountId={phaseoAgain} onCancel={() => setPhaseoAgain(undefined)} onConnected={setWorkspace} />
 		<SettingsSection title="Add an account">
 			<div className="flex flex-col gap-4 p-4">
 				<form className="flex flex-col gap-3" aria-label="Add account" onSubmit={event => { event.preventDefault(); void add(); }}>

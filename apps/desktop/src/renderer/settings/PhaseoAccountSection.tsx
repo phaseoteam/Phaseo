@@ -17,8 +17,8 @@ export function PhaseoAccountSection({ workspace, accountId, onConnected, onCanc
 			<h2 className="flex items-center gap-2 text-sm font-semibold"><HarnessLogo harness="phaseo" />Phaseo account</h2>
 			<p className="mt-1.5 text-xs text-muted-foreground">Sign in with your Phaseo account to use your credits.</p>
 		</div>
-		{showForm ? <div className="w-full max-w-sm">
-			<PhaseoSignInForm key={accountId ?? "new"} accountId={accountId} onCancel={accounts.length ? close : undefined} onConnected={next => { onConnected(next); close(); }} />
+		{showForm ? <div className="w-full">
+			<PhaseoSignInForm key={accountId ?? "new"} accountId={accountId} sideBySide onCancel={accounts.length ? close : undefined} onConnected={next => { onConnected(next); close(); }} />
 		</div> : <div className="flex flex-wrap items-center gap-3">
 			<Button variant="outline" size="sm" onClick={() => setAdding(true)}><Plus />Add another account</Button>
 		</div>}
