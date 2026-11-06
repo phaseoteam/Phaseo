@@ -52,7 +52,8 @@ import { runModelDiscoveryJob } from "./index";
 
 const writes = (table: string, op: string): Call[] => supabase.calls.filter((call) => call.table === table && call.op === op);
 const upsertedSeenRows = () => writes("model_discovery_seen_models", "upsert")
-	.flatMap((call) => call.args[0] as Array<{ provider_id: string; model_id: string }>);
+	.flatMap((call) => call.args[0] as Array<{ provider_id: string; model_id: string; removal_pending?: boolean }>);
+const hoursAgo = (hours: number) => new Date(Date.now() - hours * 3600_000).toISOString();
 
 describe("runModelDiscoveryJob", () => {
 	let fetchMock: ReturnType<typeof installFetchMock>;
@@ -152,6 +153,100 @@ describe("runModelDiscoveryJob", () => {
 		expect([...new Set(upsertedSeenRows().map((row) => row.provider_id))]).toEqual(["vercel"]);
 	});
 
+	describe("removal debounce", () => {
+		// vercel lists model-a and model-b; model-gone is stored but no longer listed.
+		const storeVercel = (gone: { removal_pending: boolean; last_seen_at?: string }) => {
+			supabase.tables.model_discovery_seen_models = [
+				{ provider_id: "vercel", model_id: "model-a", watch_snapshot: null, removal_pending: false },
+				{ provider_id: "vercel", model_id: "model-b", watch_snapshot: null, removal_pending: false },
+				{ provider_id: "vercel", model_id: "model-gone", watch_snapshot: null, ...gone },
+			];
+		};
+		const run = () => runModelDiscoveryJob({ trigger: "manual", source: "test", notify: false, prune: false });
+		const reviewRows = () => writes("rpc", "upsert_model_discovery_review_items");
+
+		it("marks a newly missing model pending without announcing or deleting it", async () => {
+			storeVercel({ removal_pending: false, last_seen_at: hoursAgo(0.25) });
+
+			const summary = await run();
+
+			expect(summary.changes).toEqual([]);
+			expect(reviewRows()).toEqual([]);
+			expect(writes("model_discovery_seen_models", "delete")).toEqual([]);
+			expect(writes("model_discovery_seen_models", "update")).toHaveLength(1);
+			expect(writes("model_discovery_seen_models", "update")[0]!.args[0]).toMatchObject({ removal_pending: true });
+		});
+
+		it("keeps a model pending, with its clock untouched, until it has been missing for the whole window", async () => {
+			storeVercel({ removal_pending: true, last_seen_at: hoursAgo(5) });
+
+			const summary = await run();
+
+			expect(summary.changes).toEqual([]);
+			expect(reviewRows()).toEqual([]);
+			expect(writes("model_discovery_seen_models", "delete")).toEqual([]);
+			// Re-marking it would restart the clock and the removal would never be confirmed.
+			expect(writes("model_discovery_seen_models", "update")).toEqual([]);
+		});
+
+		it("confirms the removal once the model has been missing for the window", async () => {
+			storeVercel({ removal_pending: true, last_seen_at: hoursAgo(6.1) });
+
+			const summary = await run();
+
+			expect(summary.changes.find((change) => change.providerId === "vercel")).toMatchObject({ added: [], removed: ["model-gone"] });
+			expect(writes("model_discovery_seen_models", "delete")).toHaveLength(1);
+		});
+
+		it("restores a pending model that comes back without announcing it as new", async () => {
+			supabase.tables.model_discovery_seen_models = [
+				{ provider_id: "vercel", model_id: "model-a", watch_snapshot: null, removal_pending: false },
+				// Missing for 5 hours, then listed again by another CDN edge.
+				{ provider_id: "vercel", model_id: "model-b", watch_snapshot: null, removal_pending: true, last_seen_at: hoursAgo(5) },
+			];
+
+			const summary = await run();
+
+			expect(summary.changes).toEqual([]);
+			expect(reviewRows()).toEqual([]);
+			expect(upsertedSeenRows().find((row) => row.provider_id === "vercel" && row.model_id === "model-b")).toMatchObject({ removal_pending: false });
+		});
+
+		it("still announces a model that is genuinely new straight away", async () => {
+			supabase.tables.model_discovery_seen_models = [{ provider_id: "vercel", model_id: "model-a", watch_snapshot: null, removal_pending: false }];
+
+			const summary = await run();
+
+			expect(summary.changes.find((change) => change.providerId === "vercel")).toMatchObject({ added: ["model-b"] });
+		});
+
+		it("honours MODEL_DISCOVERY_REMOVAL_CONFIRM_MINUTES", async () => {
+			supabase.bindings = { ...supabase.bindings, MODEL_DISCOVERY_REMOVAL_CONFIRM_MINUTES: "30" };
+			storeVercel({ removal_pending: true, last_seen_at: hoursAgo(1) });
+
+			const summary = await run();
+
+			expect(summary.changes.find((change) => change.providerId === "vercel")).toMatchObject({ removed: ["model-gone"] });
+		});
+
+		it("applies the same window to every provider", async () => {
+			supabase.tables.model_discovery_seen_models = ["vercel", "venice", "novita"].flatMap((providerId) => [
+				{ provider_id: providerId, model_id: "model-a", watch_snapshot: null, removal_pending: false },
+				{ provider_id: providerId, model_id: "model-b", watch_snapshot: null, removal_pending: false },
+				{ provider_id: providerId, model_id: `${providerId}-recent`, watch_snapshot: null, removal_pending: true, last_seen_at: hoursAgo(2) },
+				{ provider_id: providerId, model_id: `${providerId}-old`, watch_snapshot: null, removal_pending: true, last_seen_at: hoursAgo(8) },
+			]);
+			supabase.bindings = { ...supabase.bindings, VENICE_API_KEY: "venice-key" };
+
+			const summary = await run();
+
+			const removedByProvider = Object.fromEntries(
+				summary.changes.filter((change) => ["vercel", "venice", "novita"].includes(change.providerId)).map((change) => [change.providerId, change.removed]),
+			);
+			expect(removedByProvider).toEqual({ vercel: ["vercel-old"], venice: ["venice-old"], novita: ["novita-old"] });
+		});
+	});
+
 	it("writes no seen-model rows when a second sweep finds nothing changed", async () => {
 		const first = await runModelDiscoveryJob({ trigger: "manual", source: "test", notify: false, prune: false });
 		// Store what the first sweep wrote, as Postgres would hand it back.
@@ -240,7 +335,7 @@ describe("runModelDiscoveryJob", () => {
 			const second = await sweepTwice(() => {
 				supabase.tables.model_discovery_seen_models = [
 					...supabase.tables.model_discovery_seen_models!,
-					{ provider_id: "vercel", model_id: "model-gone", watch_snapshot: null, removal_pending: true, last_seen_at: new Date().toISOString() },
+					{ provider_id: "vercel", model_id: "model-gone", watch_snapshot: null, removal_pending: true, last_seen_at: hoursAgo(7) },
 				];
 			});
 
