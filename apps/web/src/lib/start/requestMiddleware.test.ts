@@ -6,6 +6,7 @@ vi.mock("@supabase/ssr", () => ({
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { createServerClient } from "@supabase/ssr";
+import { isRedirect, redirect } from "@tanstack/react-router";
 import { publicLocales } from "@/i18n/locales";
 import { requestOverride } from "@/lib/start/request-override";
 import { phaseoRequestMiddleware } from "./requestMiddleware";
@@ -236,6 +237,22 @@ describe("request middleware", () => {
 		expect(response.status).toBe(200);
 		expect(page).toHaveBeenCalledTimes(1);
 	});
+
+	it.each(["/_serverFn/sign-in", "/settings/account"])(
+		"keeps a redirect thrown under %s as the same redirect object",
+		async (pathname) => {
+			configureSupabase({ user: { id: "user-1" }, session: { access_token: "session-token" } });
+			const thrown = redirect({ href: "/sign-in?error=auth-failed", statusCode: 307 });
+			page = vi.fn(() => thrown);
+			const response = await send(pathname, { method: pathname.startsWith("/_serverFn") ? "POST" : "GET" });
+
+			// Start serialises server function redirects only when it can still
+			// recognise them; a copy reaches the browser as a raw 307 + POST.
+			expect(response).toBe(thrown);
+			expect(isRedirect(response)).toBe(true);
+			expect(response.headers.get("strict-transport-security")).toBeTruthy();
+		},
+	);
 
 	it.each(["/oauth/consent/submit", "/api/chat/completions"])(
 		"leaves POSTs to the %s route handler alone",
