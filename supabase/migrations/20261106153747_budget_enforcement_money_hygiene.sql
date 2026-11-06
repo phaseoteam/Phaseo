@@ -12,10 +12,9 @@
 --    gateway_fetch_request_context_without_workspace_budget), the seed's key usage, hold
 --    admission (gateway_wallet_reserve_once_without_workspace_budget) and the department alert
 --    sweep (workspace_department_budget_status); request counts stay successful requests only.
---    A small partial index, gateway_requests_charged_unsuccessful_cost_idx, serves those rows.
---    Stepped stream charges (gateway_request_charges.is_final false, from
---    fix/async-billing-20261104) whose request row has not landed count toward workspace budgets
---    until it does. This migration therefore needs that change applied first.
+--    The indexes these reads use are built by the three migrations just before this one.
+--    Applied stepped stream charges (gateway_request_charges.is_final false) whose request row
+--    has not landed count until it does, toward the charge key's department too when it has one.
 -- 2. gateway_department_budget_status gates batch and video holds (gateway_wallet_reserve_once),
 --    realtime sessions (gateway_realtime_create_with_hold, gateway_realtime_extend_hold_once) and
 --    the request-context fallback (gateway_fetch_request_context, gateway_fetch_request_context_bundle),
@@ -32,12 +31,52 @@
 --    or completed and billed, a day after the hold. This migration releases nothing itself.
 
 
+CREATE OR REPLACE FUNCTION private.open_stepped_charges (
+  p_workspace_id uuid
+)
+  RETURNS TABLE (
+    billing_request_id text,
+    key_id             uuid,
+    created_at         timestamp with time zone,
+    cost_nanos         bigint
+  )
+  LANGUAGE sql
+  STABLE
+  SET search_path TO ''
+  AS $function$
+  -- Stepped stream charges (gateway_charge_request_total: applied, not final) whose
+  -- gateway_requests row has not landed: money already taken for a stream whose worker may have
+  -- stopped before writing it. Identified by billing request id (gateway_request_charges.request_id,
+  -- gateway_requests.billing_request_id), never by the public request id. Read from
+  -- gateway_request_charges_open_step_idx, each checked against
+  -- gateway_requests_workspace_billing_request_idx.
+  select charge.request_id, charge.key_id, charge.created_at, charge.cost_nanos
+  from public.gateway_request_charges charge
+  where charge.workspace_id = p_workspace_id
+    and charge.is_final is false
+    and charge.status = 'applied'
+    and charge.cost_nanos > 0
+    and not exists (
+      select 1 from public.gateway_requests request
+      where request.workspace_id = charge.workspace_id
+        and request.billing_request_id = charge.request_id
+    );
+$function$;
+
+COMMENT ON FUNCTION "private"."open_stepped_charges"(uuid) IS 'Applied, not yet final stepped stream charges of a workspace whose request row has not landed, by billing request id. Counted by budget_spend_items (admission) and returned by gateway_spend_limit_seed for the SpendLimit Durable Object.';
+
+REVOKE ALL ON FUNCTION "private"."open_stepped_charges"(uuid) FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION "private"."open_stepped_charges"(uuid) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "private"."open_stepped_charges"(uuid) TO "postgres";
+
 CREATE OR REPLACE FUNCTION private.budget_spend_items (
   p_workspace_id        uuid,
   p_since               timestamp with time zone,
   p_key_ids             uuid[] DEFAULT NULL::uuid[],
   p_exclude_request_ids text[] DEFAULT '{}'::text[],
-  p_exclude_charge_ids  text[] DEFAULT '{}'::text[]
+  p_include_open_charges boolean DEFAULT true
 )
   RETURNS TABLE (
     key_id uuid,
@@ -50,13 +89,15 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
   SET search_path TO ''
   AS $function$
   -- The spend that counts toward workspace and department budgets, one row per item, shared by
-  -- gateway_workspace_budget_status and private.department_budget_usage (and so the spend-limit
+  -- private.workspace_budget_status and private.department_budget_usage (and so the spend-limit
   -- seed). A budget's usage is the sum of nanos over rows that are active or at/after its period
   -- start. p_key_ids limits the rows to those keys (NULL: the whole workspace). p_since (NULL: all
-  -- time) bounds the history read; active holds are returned whenever they were made.
-  -- p_exclude_request_ids leaves out gateway_requests rows and p_exclude_charge_ids stepped charges
-  -- (gateway_request_charges.request_id, the billing request id) that the SpendLimit Durable
-  -- Object is still counting from memory.
+  -- time) bounds the history read, written as created_at >= coalesce(...) so partitions of
+  -- gateway_requests are pruned under generic plans; active holds are returned whenever they were
+  -- made. p_exclude_request_ids leaves out gateway_requests rows (by public request id) the
+  -- SpendLimit Durable Object is still counting from memory. p_include_open_charges false leaves
+  -- out open stepped charges, which gateway_spend_limit_seed hands to the Durable Object by billing
+  -- request id instead.
   --
   -- * Requests: every gateway_requests row with a positive cost, whether or not it succeeded (a
   --   cancelled or failed request can still be charged), read as two disjoint parts so each uses
@@ -67,25 +108,25 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
   --   captured or released. Realtime holds carry no key; their session does.
   -- * Captured video and free-model holds made in the period, less the cost audited for them, so
   --   a capture counts before (or without) its request row and once after it lands.
-  -- * Stepped stream charges (gateway_charge_request_total, is_final false) whose gateway_requests
-  --   row has not landed: money already taken for a stream whose worker may have stopped before
-  --   writing it. Active from the charge's created_at in every period until the request row
-  --   (billing_request_id) lands, which then counts instead. Read from the few open charge rows
-  --   (gateway_request_charges_open_step_idx), each checked against
-  --   gateway_requests_workspace_billing_request_idx. The charge row records no key, so these
-  --   count toward workspace budgets (p_key_ids NULL) only.
+  -- * Open stepped stream charges (private.open_stepped_charges): active from the charge's
+  --   created_at in every period until the request row lands, which then counts instead;
+  --   attributed to the charge's key when it has one (keyless charges count toward workspace
+  --   budgets only).
+  --
+  -- Holds and request rows are matched by workspace and ids; their keys are compared null-safely
+  -- because deleting a key sets both key_id columns to NULL (ON DELETE SET NULL).
   select request.key_id, request.created_at, false, request.cost_nanos
   from public.gateway_requests request
   where request.workspace_id = p_workspace_id
     and (p_key_ids is null or request.key_id = any (p_key_ids))
     and request.success is true
     and request.cost_nanos > 0
-    and (p_since is null or request.created_at >= p_since)
+    and request.created_at >= coalesce(p_since, '-infinity'::timestamptz)
     and not (request.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
     and not (request.request_id like 'batch_hold_usage:%' and exists (
       select 1 from public.gateway_wallet_reservations hold
       where hold.workspace_id = request.workspace_id
-        and hold.key_id = request.key_id
+        and hold.key_id is not distinct from request.key_id
         and hold.status in ('held', 'reserved')
         and starts_with(request.request_id, 'batch_hold_usage:' || hold.reservation_id || ':')
     ))
@@ -97,7 +138,7 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
     and (p_key_ids is null or request.key_id = any (p_key_ids))
     and request.success is not true
     and request.cost_nanos > 0
-    and (p_since is null or request.created_at >= p_since)
+    and request.created_at >= coalesce(p_since, '-infinity'::timestamptz)
     and not (request.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
   union all
   select coalesce(reservation.key_id, session.key_id), reservation.created_at,
@@ -119,7 +160,7 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
     from public.gateway_requests request
     where (reservation.reservation_id like 'video_hold:%' or reservation.reservation_id like 'free_model_hold:%')
       and request.workspace_id = reservation.workspace_id
-      and request.key_id = reservation.key_id
+      and request.key_id is not distinct from reservation.key_id
       and request.request_id = reservation.hold_ref_id
       and coalesce(request.cost_nanos, 0) > 0
       and (reservation.reservation_id not like 'free_model_hold:%'
@@ -130,35 +171,27 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
     and (reservation.status in ('held', 'reserved')
       or (reservation.status = 'captured'
         and (reservation.reservation_id like 'video_hold:%' or reservation.reservation_id like 'free_model_hold:%')
-        and (p_since is null or reservation.created_at >= p_since)))
+        and reservation.created_at >= coalesce(p_since, '-infinity'::timestamptz)))
   union all
-  select null::uuid, charge.created_at, true, charge.cost_nanos
-  from public.gateway_request_charges charge
-  where p_key_ids is null
-    and charge.workspace_id = p_workspace_id
-    and charge.is_final is false
-    and charge.status = 'applied'
-    and charge.cost_nanos > 0
-    and not (charge.request_id = any (coalesce(p_exclude_charge_ids, '{}'::text[])))
-    and not exists (
-      select 1 from public.gateway_requests request
-      where request.workspace_id = charge.workspace_id
-        and request.billing_request_id = charge.request_id
-    );
+  select charge.key_id, charge.created_at, true, charge.cost_nanos
+  from private.open_stepped_charges(p_workspace_id) charge
+  where coalesce(p_include_open_charges, true)
+    and (p_key_ids is null or charge.key_id = any (p_key_ids));
 $function$;
 
-COMMENT ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) IS 'Spend items counted toward workspace and department budgets: positive-cost requests, active holds in every period, captured video and free-model holds less their audited cost (each hold''s batch_hold_usage rows counted once), and stepped stream charges whose request row has not landed (workspace only).';
+COMMENT ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], boolean) IS 'Spend items counted toward workspace and department budgets: positive-cost requests, active holds in every period, captured video and free-model holds less their audited cost (each hold''s batch_hold_usage rows counted once), and applied stepped stream charges whose request row has not landed (attributed to the charge''s key when it has one).';
 
-REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) FROM PUBLIC;
+REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], boolean) FROM PUBLIC;
 
-REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) FROM "postgres";
+REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], boolean) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) TO "postgres";
+GRANT EXECUTE ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], boolean) TO "postgres";
 
 CREATE OR REPLACE FUNCTION private.department_budget_usage (
   p_workspace_id        uuid,
   p_key_id              uuid   DEFAULT NULL::uuid,
-  p_exclude_request_ids text[] DEFAULT '{}'::text[]
+  p_exclude_request_ids  text[]  DEFAULT '{}'::text[],
+  p_include_open_charges boolean DEFAULT true
 )
   RETURNS TABLE (
     id              uuid,
@@ -198,7 +231,7 @@ CREATE OR REPLACE FUNCTION private.department_budget_usage (
       (select min(budgets.period_start) from budgets),
       array(select distinct dk.key_id from department_keys dk where dk.department_id in (select budgets.department_id from budgets)),
       p_exclude_request_ids,
-      p_exclude_request_ids
+      p_include_open_charges
     ) item
   )
   select budgets.id, budgets.department_id, budgets.name, budgets.interval, budgets.limit_nanos,
@@ -212,18 +245,18 @@ CREATE OR REPLACE FUNCTION private.department_budget_usage (
   from budgets;
 $function$;
 
-COMMENT ON FUNCTION "private"."department_budget_usage"(uuid, uuid, text[]) IS 'Department budgets of a workspace with their usage this UTC period (private.budget_spend_items of the department''s keys) and keys; shared by gateway_department_budget_status and gateway_spend_limit_seed.';
+COMMENT ON FUNCTION "private"."department_budget_usage"(uuid, uuid, text[], boolean) IS 'Department budgets of a workspace with their usage this UTC period (private.budget_spend_items of the department''s keys) and keys; shared by gateway_department_budget_status and gateway_spend_limit_seed.';
 
-REVOKE ALL ON FUNCTION "private"."department_budget_usage"(uuid, uuid, text[]) FROM PUBLIC;
+REVOKE ALL ON FUNCTION "private"."department_budget_usage"(uuid, uuid, text[], boolean) FROM PUBLIC;
 
-REVOKE ALL ON FUNCTION "private"."department_budget_usage"(uuid, uuid, text[]) FROM "postgres";
+REVOKE ALL ON FUNCTION "private"."department_budget_usage"(uuid, uuid, text[], boolean) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "private"."department_budget_usage"(uuid, uuid, text[]) TO "postgres";
+GRANT EXECUTE ON FUNCTION "private"."department_budget_usage"(uuid, uuid, text[], boolean) TO "postgres";
 
 CREATE OR REPLACE FUNCTION private.workspace_budget_status (
   p_workspace_id           uuid,
   p_requested_amount_nanos bigint DEFAULT 0,
-  p_exclude_charge_ids     text[] DEFAULT '{}'::text[]
+  p_include_open_charges   boolean DEFAULT true
 )
   RETURNS jsonb
   LANGUAGE plpgsql
@@ -274,7 +307,7 @@ begin
       (select case when bool_or(configured.window_start is null) then null else min(configured.window_start) end from configured),
       null::uuid[],
       '{}'::text[],
-      p_exclude_charge_ids
+      p_include_open_charges
     ) item
     where exists (select 1 from configured)
   ), usage_rows as (
@@ -339,13 +372,13 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[]) IS 'Workspace budgets with usage this UTC period (private.budget_spend_items), for gateway_workspace_budget_status and gateway_spend_limit_seed. p_exclude_charge_ids leaves out stepped charges the SpendLimit Durable Object counts from memory; request rows are never excluded here (the Durable Object stops counting those once the seed reports them).';
+COMMENT ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, boolean) IS 'Workspace budgets with usage this UTC period (private.budget_spend_items), for gateway_workspace_budget_status and gateway_spend_limit_seed. p_include_open_charges false leaves out open stepped charges, which the seed returns by billing request id for the SpendLimit Durable Object to count.';
 
-REVOKE ALL ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[]) FROM PUBLIC;
+REVOKE ALL ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, boolean) FROM PUBLIC;
 
-REVOKE ALL ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[]) FROM "postgres";
+REVOKE ALL ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, boolean) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[]) TO "postgres";
+GRANT EXECUTE ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, boolean) TO "postgres";
 
 CREATE OR REPLACE FUNCTION public.gateway_department_budget_status (
   p_workspace_id           uuid,
@@ -399,7 +432,7 @@ begin
   ) order by case usage.budget_interval when 'daily' then 1 when 'weekly' then 2 else 3 end,
     usage.department_name, usage.department_id), '[]'::jsonb)
   into v_result
-  from private.department_budget_usage(p_workspace_id, p_key_id, '{}'::text[]) usage;
+  from private.department_budget_usage(p_workspace_id, p_key_id, '{}'::text[], true) usage;
 
   select budget into v_exceeded
   from jsonb_array_elements(v_result) with ordinality as item(budget, position)
@@ -449,7 +482,7 @@ CREATE OR REPLACE FUNCTION public.gateway_workspace_budget_status (
 begin
   -- Workspace budgets with their usage this UTC period and whether one is reached (or, with
   -- p_requested_amount_nanos, would be passed); see private.workspace_budget_status.
-  return private.workspace_budget_status(p_workspace_id, p_requested_amount_nanos, '{}'::text[]);
+  return private.workspace_budget_status(p_workspace_id, p_requested_amount_nanos, true);
 end;
 $function$;
 
@@ -491,8 +524,7 @@ begin
   if cardinality(v_key_ids) > 100 then
     raise exception using errcode = '22023', message = 'too_many_key_ids';
   end if;
-  -- Up to 5,000 excluded entries, each with its request id and billing request id.
-  if cardinality(v_exclude) > 10000 then
+  if cardinality(v_exclude) > 5000 then
     raise exception using errcode = '22023', message = 'too_many_excluded_request_ids';
   end if;
 
@@ -563,7 +595,8 @@ begin
   -- Department budgets with their usage this UTC period and every key that counts toward each
   -- department, from private.department_budget_usage, the calculation gateway_department_budget_status
   -- admits holds with: positive-cost requests of the department's keys (less excluded request ids)
-  -- plus their outstanding batch, video and realtime holds.
+  -- plus their outstanding batch, video and realtime holds. Open stepped charges are left out here
+  -- and returned in open_charges.
   if exists (select 1 from public.workspace_department_budgets b where b.workspace_id = p_workspace_id) then
     select coalesce(jsonb_agg(jsonb_build_object(
       'id', usage.id,
@@ -577,7 +610,7 @@ begin
       'key_ids', to_jsonb(usage.key_ids)
     ) order by usage.department_id, usage.budget_interval), '[]'::jsonb)
     into v_departments
-    from private.department_budget_usage(p_workspace_id, null, v_exclude) usage;
+    from private.department_budget_usage(p_workspace_id, null, v_exclude, false) usage;
   end if;
 
   -- Excluded requests that are already persisted, so the caller can stop
@@ -603,7 +636,18 @@ begin
     'week_start', to_jsonb(week_start),
     'month_start', to_jsonb(month_start),
     'keys', v_keys,
-    'budget_status', private.workspace_budget_status(p_workspace_id, 0, v_exclude),
+    'budget_status', private.workspace_budget_status(p_workspace_id, 0, false),
+    -- Open stepped charges, by billing request id: the coordinator counts each one it does not
+    -- already hold in memory toward the workspace budgets, the department and the cost of its key.
+    'open_charges', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'billing_request_id', charge.billing_request_id,
+        'key_id', charge.key_id,
+        'cost_nanos', charge.cost_nanos,
+        'created_at', charge.created_at
+      ) order by charge.billing_request_id)
+      from private.open_stepped_charges(p_workspace_id) charge
+    ), '[]'::jsonb),
     'excluded_rows', v_excluded,
     'department_budgets', v_departments
   );
@@ -2615,17 +2659,6 @@ REVOKE ALL ON FUNCTION "public"."gateway_wallet_release_stale_orphan_batch_reser
 GRANT EXECUTE ON FUNCTION "public"."gateway_wallet_release_stale_orphan_batch_reservations"(integer, integer) TO "postgres";
 
 REVOKE ALL ON FUNCTION "public"."gateway_wallet_release_stale_orphan_batch_reservations"(integer, integer) FROM PUBLIC, "anon", "authenticated";
-
--- Partial and small: requests with a billing request id, and open stepped charges.
-CREATE INDEX IF NOT EXISTS gateway_requests_workspace_billing_request_idx ON public.gateway_requests USING btree (workspace_id, billing_request_id)
-  WHERE (billing_request_id IS NOT NULL);
-
-CREATE INDEX IF NOT EXISTS gateway_request_charges_open_step_idx ON public.gateway_request_charges USING btree (workspace_id)
-  WHERE (is_final IS FALSE);
-
--- Partial and small (charged requests that did not succeed); built on every partition.
-CREATE INDEX IF NOT EXISTS gateway_requests_charged_unsuccessful_cost_idx ON public.gateway_requests USING btree (workspace_id, created_at) INCLUDE (key_id, cost_nanos)
-  WHERE ((success IS NOT TRUE) AND (cost_nanos > 0));
 
 DROP FUNCTION IF EXISTS public.wallet_apply_delta(uuid, bigint);
 

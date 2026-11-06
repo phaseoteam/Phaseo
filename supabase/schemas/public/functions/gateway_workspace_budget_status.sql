@@ -10,7 +10,7 @@ CREATE OR REPLACE FUNCTION public.gateway_workspace_budget_status (
 begin
   -- Workspace budgets with their usage this UTC period and whether one is reached (or, with
   -- p_requested_amount_nanos, would be passed); see private.workspace_budget_status.
-  return private.workspace_budget_status(p_workspace_id, p_requested_amount_nanos, '{}'::text[]);
+  return private.workspace_budget_status(p_workspace_id, p_requested_amount_nanos, true);
 end;
 $function$;
 
