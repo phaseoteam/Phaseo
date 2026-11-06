@@ -63,7 +63,7 @@ function dashboard(uid, title, description, panels) {
 export function dashboards() {
   const requestFilter = ' | request_id=~"${request:regex}.*"';
   const selectedCount = (service, event, filter = '', fields = []) => count(service, event, filter, fields, '$__range');
-  const windowCount = (service, event, filter = '', fields = []) => count(service, event, filter, fields, '5m');
+  const windowCount = (service, event, filter = '', fields = []) => count(service, event, filter, fields);
   const groupedCount = (service, event, field, filter = '', fields = []) => `sum by (${field}) (count_over_time(${logs(service, event, [field, ...fields])}${filter} | __error__="" [$__range]))`;
   const overview = dashboard('phaseo-overview', 'Overview', 'Check received traffic and failures, then investigate the affected service. Scheduler freshness is not an external uptime check.', [
     note('Start here', '**1. Check collection:** “Arriving” means a scheduler heartbeat was received in the last 5 minutes. “Missing” means check cron and telemetry delivery. **2. Check failures:** red counts need investigation; click a count to open its service dashboard. **3. Compare the charts:** did failures or latency rise after a deployment?\n\nCounts cover the selected time range and received events only. Zero requests can mean quiet traffic; zero failures does not prove uptime. Use external checks to establish availability and alert rules to configure notifications.', { x: 0, y: 0, w: 24, h: 5 }),
@@ -73,12 +73,12 @@ export function dashboards() {
     stat('Web API requests', selectedCount('phaseo-web-api', 'web.request'), 12, { description: 'Web API response-header events in the selected time range. This is separate from gateway generation traffic.' }),
     stat('Web API 5xx', selectedCount('phaseo-web-api', 'web.request', ' | status_code >= 500', ['status_code']), 16, { failures: true, description: 'Server-error responses only. Expected client rejections such as 401 and 404 are excluded.' }),
     stat('Job failures', selectedCount('phaseo-jobs|phaseo-web-api', 'job.run', ' | outcome="error"', ['outcome']), 20, { failures: true, description: 'Job invocations that threw or explicitly reported known item failures. A completed handler can still contain internally handled failures.' }),
-    panel('Traffic · rolling 5 minutes', '', { gridPos: { x: 0, y: 9, w: 12, h: 8 },
-      description: 'Each point counts events received in the preceding 5 minutes. Web API and gateway are separate traffic populations; do not add them as unique requests.',
+    panel('Traffic · per interval', '', { interval: '5m', gridPos: { x: 0, y: 9, w: 12, h: 8 },
+      description: 'Each point counts events in the preceding query interval, with a five-minute minimum. The window grows with the query step on long ranges so events between points remain counted. Web API and gateway are separate traffic populations; do not add them as unique requests.',
       series: [[windowCount(gateway, 'gateway.request'), 'Gateway'], [windowCount('phaseo-web-api', 'web.request'), 'Web API']],
     }),
-    panel('Failures · rolling 5 minutes', '', { gridPos: { x: 12, y: 9, w: 12, h: 8 },
-      description: 'Received failure events per category, not distinct incidents. One incident can produce events in multiple categories.',
+    panel('Failures · per interval', '', { interval: '5m', gridPos: { x: 12, y: 9, w: 12, h: 8 },
+      description: 'Received failure events per category in the preceding query interval, with a five-minute minimum. The window grows with the query step on long ranges so short spikes remain counted. These are not distinct incidents; one incident can produce events in multiple categories.',
       series: [[windowCount(gateway, 'gateway.request', ' | actionable="true"', ['actionable']), 'Gateway actionable'], [windowCount('phaseo-web-api', 'web.request', ' | status_code >= 500', ['status_code']), 'Web API 5xx'], [windowCount('phaseo-web', 'web.server_error'), 'Website server errors'], [windowCount('phaseo-jobs|phaseo-web-api', 'job.run', ' | outcome="error"', ['outcome']), 'Job failures'], [windowCount(gateway, 'ops.failure'), 'Operational failures']],
     }),
     panel('Gateway p95 duration', percentile(gateway, 'gateway.request', 'duration_ms'), { unit: 'ms', gridPos: { x: 0, y: 17, w: 12, h: 8 }, description: '95% of received terminal gateway timings are at or below this value. Includes streamed response completion. Interpret with request volume; a percentile from very few requests is unstable. Missing timing stays empty.' }),

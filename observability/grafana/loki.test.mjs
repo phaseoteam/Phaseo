@@ -62,4 +62,18 @@ test('dashboard queries run against OTLP fixtures and alerts distinguish failure
   assert.equal(Number(heartbeat[0].value[1]), 0, 'fresh heartbeat is healthy');
   const missing = await query(rules[1].data[0].model.expr.replaceAll('environment="staging"', 'environment="production"'));
   assert.equal(Number(missing[0].value[1]), 1, 'missing scheduler telemetry is unhealthy');
+
+  const rangeEnd = Math.floor(now / 600000) * 600000;
+  const spikeEnvironment = `${environment}-long-range`;
+  const spike = await fetch(`${url.origin}/otlp/v1/logs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(logPayload({ service: 'phaseo-web-api', environment: spikeEnvironment }, [{ event_name: 'web.request', status_code: 503, actionable: true }], rangeEnd - 7 * 60000)) });
+  assert.ok(spike.ok, await spike.text());
+  for (const panel of dashboards()[0].panels.filter(panel => /^(Traffic|Failures) ·/.test(panel.title))) {
+    const target = panel.targets.find(target => target.legendFormat === (panel.title.startsWith('Traffic') ? 'Web API' : 'Web API 5xx'));
+    const expression = target.expr.replaceAll('$__auto', '10m').replaceAll('$environment', spikeEnvironment);
+    const response = await fetch(`${url.origin}/loki/api/v1/query_range?${new URLSearchParams({ query: expression, start: String(BigInt(rangeEnd - 20 * 60000) * 1000000n), end: String(BigInt(rangeEnd) * 1000000n), step: '600' })}`);
+    const data = await response.json();
+    assert.equal(response.status, 200);
+    const counted = data.data.result.flatMap(series => series.values).reduce((total, [, value]) => total + Number(value), 0);
+    assert.equal(counted, 1, `${panel.title} must retain a spike between points when the step exceeds five minutes`);
+  }
 });

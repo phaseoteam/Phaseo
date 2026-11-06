@@ -622,17 +622,17 @@
         "w": 12,
         "h": 8
       },
-      "title": "Traffic · rolling 5 minutes",
+      "title": "Traffic · per interval",
       "type": "timeseries",
       "datasource": {
         "type": "loki",
         "uid": "${loki}"
       },
-      "description": "Each point counts events received in the preceding 5 minutes. Web API and gateway are separate traffic populations; do not add them as unique requests.",
+      "description": "Each point counts events in the preceding query interval, with a five-minute minimum. The window grows with the query step on long ranges so events between points remain counted. Web API and gateway are separate traffic populations; do not add them as unique requests.",
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | __error__=\"\" [5m])) or vector(0)",
+          "expr": "sum(count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | __error__=\"\" [$__auto])) or vector(0)",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -644,7 +644,7 @@
         },
         {
           "refId": "B",
-          "expr": "sum(count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | __error__=\"\" [5m])) or vector(0)",
+          "expr": "sum(count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | __error__=\"\" [$__auto])) or vector(0)",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -670,7 +670,8 @@
           "displayMode": "list",
           "placement": "bottom"
         }
-      }
+      },
+      "interval": "5m"
     },
     {
       "id": 9,
@@ -680,17 +681,17 @@
         "w": 12,
         "h": 8
       },
-      "title": "Failures · rolling 5 minutes",
+      "title": "Failures · per interval",
       "type": "timeseries",
       "datasource": {
         "type": "loki",
         "uid": "${loki}"
       },
-      "description": "Received failure events per category, not distinct incidents. One incident can produce events in multiple categories.",
+      "description": "Received failure events per category in the preceding query interval, with a five-minute minimum. The window grows with the query step on long ranges so short spikes remain counted. These are not distinct incidents; one incident can produce events in multiple categories.",
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", actionable=\"actionable\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | actionable=\"true\" | __error__=\"\" [5m])) or vector(0)",
+          "expr": "sum(count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", actionable=\"actionable\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | actionable=\"true\" | __error__=\"\" [$__auto])) or vector(0)",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -702,7 +703,7 @@
         },
         {
           "refId": "B",
-          "expr": "sum(count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", status_code=\"status_code\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | status_code >= 500 | __error__=\"\" [5m])) or vector(0)",
+          "expr": "sum(count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", status_code=\"status_code\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | status_code >= 500 | __error__=\"\" [$__auto])) or vector(0)",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -714,7 +715,7 @@
         },
         {
           "refId": "C",
-          "expr": "sum(count_over_time({service_name=~\"phaseo-web\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.server_error\" | __error__=\"\" [5m])) or vector(0)",
+          "expr": "sum(count_over_time({service_name=~\"phaseo-web\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.server_error\" | __error__=\"\" [$__auto])) or vector(0)",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -726,7 +727,7 @@
         },
         {
           "refId": "D",
-          "expr": "sum(count_over_time({service_name=~\"phaseo-jobs|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"job.run\" | outcome=\"error\" | __error__=\"\" [5m])) or vector(0)",
+          "expr": "sum(count_over_time({service_name=~\"phaseo-jobs|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"job.run\" | outcome=\"error\" | __error__=\"\" [$__auto])) or vector(0)",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -738,7 +739,7 @@
         },
         {
           "refId": "E",
-          "expr": "sum(count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"ops.failure\" | __error__=\"\" [5m])) or vector(0)",
+          "expr": "sum(count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"ops.failure\" | __error__=\"\" [$__auto])) or vector(0)",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -764,7 +765,8 @@
           "displayMode": "list",
           "placement": "bottom"
         }
-      }
+      },
+      "interval": "5m"
     },
     {
       "id": 10,

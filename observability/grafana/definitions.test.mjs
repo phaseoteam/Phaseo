@@ -45,6 +45,7 @@ test('live validation checks every series and skips instruction panels', async (
 test('the overview keeps summary cards and investigations visible without overlapping panels', () => {
   const overview = dashboards()[0];
   assert.equal(overview.time.from, 'now-1h');
+  for (const panel of overview.panels.filter(panel => /^(Traffic|Failures) ·/.test(panel.title))) assert.equal(panel.interval, '5m', 'counts use at least a five-minute interval');
   for (const [index, panel] of overview.panels.entries()) {
     const a = panel.gridPos;
     assert.ok(a.x >= 0 && a.y >= 0 && a.w > 0 && a.h > 0 && a.x + a.w <= 24);
