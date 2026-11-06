@@ -1,5 +1,6 @@
 import { Hono } from "hono";
-import { requireUser } from "@/auth/requireUser";
+import { oauthClientWriteRefused } from "@/auth/oauthClientWrites";
+import { hasOAuthClientToken, requireUser } from "@/auth/requireUser";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
@@ -258,6 +259,9 @@ accountSettingsProfileRouter.put("/account/profile", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const body: Record<string, unknown> = await c.req.json<Record<string, unknown>>().catch(() => ({}));
+	// The default workspace is where browser chat and the dashboard go when no workspace is selected, so an
+	// app's token can't move it, not even to another workspace the person belongs to.
+	if (body.default_workspace_id !== undefined && hasOAuthClientToken(c.req.raw)) return oauthClientWriteRefused(c);
 	const client = getDataClient(c.env);
 	const update: Record<string, unknown> = { user_id: user.id };
 	for (const field of ["display_name", "default_workspace_id", "obfuscate_info"] as const) if (body[field] !== undefined) update[field] = body[field];

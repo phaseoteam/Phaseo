@@ -8,15 +8,17 @@ import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 // Every other write is refused, so a new route is refused until someone decides it belongs here.
 const ALLOWED_WRITES: Array<[method: string, path: RegExp]> = [
 	["POST", /^\/api\/account\/auth\/workspace-accessed$/],
+	// Onboarding progress only; the handler refuses the workspace and key it would steer the dashboard to.
 	["PUT", /^\/api\/account\/auth\/onboarding$/],
 	["POST", /^\/api\/account\/chat\/issues$/],
 	["POST", /^\/api\/account\/credits\/redeem$/],
-	["POST", /^\/api\/account\/settings\/privacy\/review$/],
 	// Push devices receive private balance, payment and key alerts, so an app may only take notifications
 	// away: unregister the caller's own device, or switch notifications or categories off (the handler
 	// refuses anything else). Registering a device, rules and test pushes stay refused.
 	["DELETE", /^\/api\/account\/settings\/mobile-notifications\/devices\/[^/]+$/],
 	["PUT", /^\/api\/account\/settings\/mobile-notifications$/],
+	// Name and display preferences; the handler refuses default_workspace_id, which picks the workspace
+	// browser chat and the dashboard use when no workspace is selected.
 	["PUT", /^\/api\/account\/settings\/account\/profile$/],
 	["POST", /^\/api\/account\/settings\/profile\/avatar$/],
 	["POST", /^\/api\/account\/settings\/teams\/[^/]+\/logo$/],

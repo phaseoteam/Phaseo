@@ -1,5 +1,6 @@
 import { Hono } from "hono";
-import { requireUser } from "@/auth/requireUser";
+import { oauthClientWriteRefused } from "@/auth/oauthClientWrites";
+import { hasOAuthClientToken, requireUser } from "@/auth/requireUser";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
@@ -251,10 +252,17 @@ accountAuthRouter.post("/oauth-consent/validate", async (c) => {
 	return c.json({ valid: true }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
+const ONBOARDING_SELECTION_FIELDS = ["workspaceId", "selectedKeyId", "createdKeyId"] as const;
+
 accountAuthRouter.put("/onboarding", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const body: Record<string, unknown> = await c.req.json<Record<string, unknown>>().catch(() => ({}));
+	// The saved workspace and key pick where onboarding in the dashboard creates and uses a key, so an app's
+	// token may record progress but not choose them.
+	if (ONBOARDING_SELECTION_FIELDS.some((field) => Object.prototype.hasOwnProperty.call(body, field)) && hasOAuthClientToken(c.req.raw)) {
+		return oauthClientWriteRefused(c);
+	}
 	const client = getDataClient(c.env);
 	let existing = await client.from("users").select("onboarding_state,declared_country_code").eq("user_id", user.id).maybeSingle();
 	let countryStorageAvailable = true;

@@ -69,6 +69,8 @@ describe("web-api writes with an OAuth client's token", () => {
 			"POST /api/account/settings/teams/:workspaceId/invites", "POST /api/account/settings/teams/invites/accept",
 			// A push device would keep receiving private alerts after the token is revoked.
 			"PUT /api/account/settings/mobile-notifications/devices/:installationId", "POST /api/account/settings/mobile-notifications/rules",
+			// Browser chat skips its privacy notice for a confirmed workspace.
+			"POST /api/account/settings/privacy/review",
 		]));
 	});
 
@@ -82,7 +84,6 @@ describe("web-api writes with an OAuth client's token", () => {
 			"POST /api/account/auth/workspace-accessed",
 			"POST /api/account/chat/issues",
 			"POST /api/account/credits/redeem",
-			"POST /api/account/settings/privacy/review",
 			"POST /api/account/settings/profile/avatar",
 			"POST /api/account/settings/provider-onboarding/preview",
 			"POST /api/account/settings/teams",
