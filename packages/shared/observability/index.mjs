@@ -105,7 +105,8 @@ export async function sendOtlp(config, signal, payload, fetcher = fetch) {
     if (new TextEncoder().encode(body).byteLength > 128 * 1024) return { state: 'failed', reason: 'payload_limit' };
     const response = await fetcher(endpoint, {
       method: 'POST', headers: { Authorization: config.authorization, 'Content-Type': 'application/json' },
-      body, signal: AbortSignal.timeout(1500), redirect: 'error',
+      // Workers supports manual redirects; never forward ingest credentials.
+      body, signal: AbortSignal.timeout(1500), redirect: 'manual',
     });
     // Never print remote bodies or authorization values, and never retry per request.
     if (!response.ok) { await response.body?.cancel(); return { state: 'failed', reason: `http_${response.status}` }; }
