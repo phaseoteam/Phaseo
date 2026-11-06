@@ -31,6 +31,7 @@ try {
     create table if not exists public.gateway_request_charges (workspace_id uuid, request_id text, cost_nanos bigint, status text,
       is_final boolean not null default true, key_id uuid, created_at timestamptz default now());
     alter table public.gateway_requests add column if not exists billing_request_id text;
+    alter table public.gateway_requests add column if not exists expected_cost_nanos bigint;
     alter table public.keys add column if not exists department_id uuid;
     -- Department tables, trimmed to what the seed reads.
     create table public.workspace_departments (id uuid primary key, workspace_id uuid not null, name text not null);

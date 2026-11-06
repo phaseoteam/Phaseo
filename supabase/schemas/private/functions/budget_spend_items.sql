@@ -30,6 +30,10 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
   --   cancelled or failed request can still be charged), read as two disjoint parts so each uses
   --   its partial index, except excluded request ids and the batch_hold_usage rows of a hold that
   --   is still active, which the hold itself counts.
+  -- * Delivered requests whose wallet charge is pending reconciliation (expected_cost_nanos, set
+  --   by the request audit when the charge failed): the part of the expected amount cost_nanos
+  --   does not yet cover, so each such row counts greatest(cost_nanos, expected_cost_nanos) and a
+  --   later charge never counts twice (gateway_requests_expected_cost_idx).
   -- * Active holds (held or reserved), in every period until they end: video and free-model
   --   holds less the cost already audited for them, other holds (batch, realtime) less what was
   --   captured or released. Realtime holds carry no key; their session does.
@@ -65,6 +69,16 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
     and (p_key_ids is null or request.key_id = any (p_key_ids))
     and request.success is not true
     and request.cost_nanos > 0
+    and request.created_at >= coalesce(p_since, '-infinity'::timestamptz)
+    and not (request.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
+  union all
+  select request.key_id, request.created_at, false,
+    request.expected_cost_nanos - greatest(coalesce(request.cost_nanos, 0), 0)
+  from public.gateway_requests request
+  where request.workspace_id = p_workspace_id
+    and request.expected_cost_nanos is not null
+    and request.expected_cost_nanos > greatest(coalesce(request.cost_nanos, 0), 0)
+    and (p_key_ids is null or request.key_id = any (p_key_ids))
     and request.created_at >= coalesce(p_since, '-infinity'::timestamptz)
     and not (request.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
   union all
@@ -106,7 +120,7 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
     and (p_key_ids is null or charge.key_id = any (p_key_ids));
 $function$;
 
-COMMENT ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], boolean) IS 'Spend items counted toward workspace and department budgets: positive-cost requests, active holds in every period, captured video and free-model holds less their audited cost (each hold''s batch_hold_usage rows counted once), and applied stepped stream charges whose request row has not landed (attributed to the charge''s key when it has one).';
+COMMENT ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], boolean) IS 'Spend items counted toward workspace and department budgets: positive-cost requests, active holds in every period, captured video and free-model holds less their audited cost (each hold''s batch_hold_usage rows counted once), the uncharged part of delivered requests pending reconciliation (expected_cost_nanos), and applied stepped stream charges whose request row has not landed (attributed to the charge''s key when it has one).';
 
 REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], boolean) FROM PUBLIC;
 

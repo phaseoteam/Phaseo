@@ -74,6 +74,17 @@ begin
         and charged.cost_nanos > 0
         and charged.created_at >= least(week_start, month_start)
         and not (charged.request_id = any(v_exclude))
+      union all
+      -- Delivered requests whose charge is pending reconciliation: the uncharged expected cost.
+      select pending.key_id, pending.created_at,
+        pending.expected_cost_nanos - greatest(coalesce(pending.cost_nanos, 0), 0), false
+      from public.gateway_requests pending
+      where pending.workspace_id = p_workspace_id
+        and pending.key_id = any(array(select key_rows.id from key_rows where key_rows.limited))
+        and pending.expected_cost_nanos is not null
+        and pending.expected_cost_nanos > greatest(coalesce(pending.cost_nanos, 0), 0)
+        and pending.created_at >= least(week_start, month_start)
+        and not (pending.request_id = any(v_exclude))
     ) gr
     group by gr.key_id
   )
