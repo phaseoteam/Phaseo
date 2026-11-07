@@ -21,6 +21,8 @@ const findMigration = async (suffix) => {
   return { name, sql: normalize(await read(`../migrations/${name}`)) };
 };
 const previous = await findMigration('_billing_security_fixes.sql');
+const expectedCostColumn = await findMigration('_gateway_requests_expected_cost_nanos.sql');
+const expectedCostCheck = await findMigration('_validate_gateway_requests_expected_cost_nanos_check.sql');
 const chargeColumns = await findMigration('_gateway_request_charges_stepped_columns.sql');
 const chargeTotals = await findMigration('_gateway_charge_request_total.sql');
 const overdraftColumn = await findMigration('_gateway_wallet_reservations_overdraft.sql');
@@ -28,6 +30,13 @@ const settlement = await findMigration('_async_settlement_always_charges.sql');
 const migration = await findMigration('_refund_claim_counts_charged_failures.sql');
 const billingIndex = await findMigration('_gateway_requests_billing_request_index.sql');
 assert(migration.name > chargeTotals.name, 'the refund migration runs after the stepped charge columns exist');
+// The claim reads gateway_requests.expected_cost_nanos: this PR adds the column, before every other
+// migration of it, so no claim runs between the new body and the column (#3547 reads it too).
+assert(expectedCostColumn.name < expectedCostCheck.name && expectedCostCheck.name < chargeColumns.name,
+  'the expected cost column and its validation are the first migrations');
+assert(/LANGUAGE plpgsql/.test(normalize(await read('../schemas/public/functions/stripe_claim_self_serve_refund.sql'))));
+assert(normalize(await read('../schemas/public/tables/gateway_requests.sql')).includes('"expected_cost_nanos"               bigint,'),
+  'the declarative table has the column');
 assert(billingIndex.name > migration.name, 'the index migration runs after the refund migration');
 // The index migration holds the lock timeout and the one index, and nothing else.
 assert.equal(
@@ -108,10 +117,14 @@ try {
   await db.query('insert into public.workspace_members values ($1, $2)', [ws, owner]);
   await db.query('insert into public.wallets (workspace_id) values ($1)', [ws]);
   await db.exec(previous.sql);
-  // The request row's charge key and audit details (production has them), the expected cost of a
-  // pending reconciliation (added by #3547), and the stepped charge columns.
+  // The request row's charge key and audit details (production has them), then this PR's migrations
+  // in order.
   await db.exec(`alter table public.gateway_requests add column billing_request_id text, add column request_id text,
-    add column detail_metadata jsonb, add column expected_cost_nanos bigint;`);
+    add column detail_metadata jsonb;`);
+  await db.exec(expectedCostColumn.sql);
+  await db.exec(expectedCostCheck.sql);
+  await assert.rejects(db.query('insert into public.gateway_requests (workspace_id, expected_cost_nanos) values ($1, -1)', [ws]),
+    /gateway_requests_expected_cost_nanos_check/);
   await db.exec(chargeColumns.sql);
   await db.exec(chargeTotals.sql);
   await db.exec(overdraftColumn.sql);
@@ -261,6 +274,87 @@ try {
     values ($1, false, 0, now() - interval '2 hours'), ($1, false, null, now() - interval '2 hours')`, [ws]);
   await setBalance(usd(10));
   assert.equal((await claim('free_first')).ok, true, 'unsuccessful rows without a charge do not use up a purchase');
+
+  // A video, reserved as video_hold:<request id> (the executors reserve with the request id) and
+  // settled at its actual $10 by gateway_wallet_settle_once, whose async_job_charge debit names the
+  // provider's video id. Its request row was written when the job was created; the settlement's
+  // update of the row's cost was skipped (cost 0) or applied ($10). The debit counts at its time,
+  // whole; the request row does not count once the hold is debited.
+  const video = async (prefix, { rowWrittenAfterPurchase = false, rowCost = 0, priorBalance, debitBeforePurchase = false }) => {
+    await reset();
+    const requestId = `${prefix}_req`;
+    const reservation = `video_hold:${requestId}`;
+    await db.query(`update public.wallets set balance_nanos = $2, reserved_nanos = $3 where workspace_id = $1`, [ws, usd(30), usd(3)]);
+    await db.query(`insert into public.gateway_wallet_reservations (workspace_id, reservation_id, amount_nanos, status, hold_ref_id, created_at)
+      values ($1, $2, $3, 'held', $4, now() - interval '3 hours')`, [ws, reservation, usd(3), requestId]);
+    await db.query(`insert into public.gateway_requests (workspace_id, success, cost_nanos, created_at, request_id)
+      values ($1, true, $2, now() - make_interval(mins => $3::int), $4)`, [ws, rowCost, rowWrittenAfterPurchase ? 90 : 170, requestId]);
+    const settle = async () => {
+      const settled = await asService(() => one('select * from public.gateway_wallet_settle_once($1, $2, $3, $4)', [ws, reservation, usd(10), `${prefix}_provider_video`]));
+      assert.equal(settled.ok, true, JSON.stringify(settled));
+    };
+    if (debitBeforePurchase) {
+      await settle();
+      await db.query(`update public.credit_ledger set created_at = now() - interval '150 minutes' where ref_type = 'async_job_charge'`);
+    }
+    await purchase(`${prefix}_first`, usd(10), usd(priorBalance), 2);
+    if (!debitBeforePurchase) await settle();
+    await purchase(`${prefix}_second`, usd(10), usd(priorBalance), 1);
+    await setBalance(usd(priorBalance + 20));
+    return claim(`${prefix}_first`);
+  };
+  assert.equal((await video('video_skipped', { priorBalance: 5 })).reason, 'lot_used',
+    "a video's $10 debit counts though its request row's cost was never updated");
+  assert.equal((await video('video_skipped_ok', { priorBalance: 11 })).ok, true, 'and counts once ($10 fits in $11)');
+  assert.equal((await video('video_old_row', { rowCost: usd(10), priorBalance: 5 })).reason, 'lot_used',
+    'a video counts its debit though its request row was written before the purchase');
+  assert.equal((await video('video_updated', { rowWrittenAfterPurchase: true, rowCost: usd(10), priorBalance: 11 })).ok, true,
+    'a video whose row records its cost is counted once, not as the row plus the debit ($10 fits in $11)');
+  assert.equal((await video('video_debit_before', { debitBeforePurchase: true, rowWrittenAfterPurchase: true, rowCost: usd(10), priorBalance: 0 })).ok, true,
+    'a video debited before the purchase does not use it, though its audit row landed after it');
+
+  // A batch counts its whole debit at the debit's time; its per-row usage does not count.
+  const capturedBatch = async (prefix, { captureMinutesAgo, rowsMinutesAgo, rows, rowNanos, captureNanos, priorBalance }) => {
+    await reset();
+    await db.query(`insert into public.gateway_request_charges (workspace_id, request_id, cost_nanos, status, created_at)
+      values ($1, $2, $3, 'applied', now() - make_interval(mins => $4::int))`, [ws, `batch_capture:${prefix}_batch`, captureNanos, captureMinutesAgo]);
+    await db.query(`insert into public.gateway_requests (workspace_id, success, cost_nanos, created_at, request_id)
+      select $1, true, $2, now() - make_interval(mins => $5::int), 'batch_usage:' || $3 || ':' || i from generate_series(1, $4::int) i`,
+      [ws, rowNanos, `${prefix}_batch`, rows, rowsMinutesAgo]);
+    await purchase(`${prefix}_first`, usd(10), usd(priorBalance), 2);
+    await setBalance(usd(priorBalance + 10));
+    return claim(`${prefix}_first`);
+  };
+  assert.equal((await capturedBatch('batch_before', { captureMinutesAgo: 150, rowsMinutesAgo: 60, rows: 5, rowNanos: usd(1), captureNanos: usd(5), priorBalance: 0 })).ok, true,
+    'a batch debited before the purchase does not use it, though its rows were audited after it');
+  assert.equal((await capturedBatch('batch_rows_80', { captureMinutesAgo: 60, rowsMinutesAgo: 60, rows: 8, rowNanos: usd(10), captureNanos: usd(50), priorBalance: 60 })).ok, true,
+    'rows of $80 and a capture of $50 count $50 ($50 fits in $60)');
+  assert.equal((await capturedBatch('batch_rows_80_low', { captureMinutesAgo: 60, rowsMinutesAgo: 60, rows: 8, rowNanos: usd(10), captureNanos: usd(50), priorBalance: 49 })).reason, 'lot_used',
+    'and the capture of $50 does count ($50 does not fit in $49)');
+
+  // Rows written from 2026-11-09 00:00 UTC are pending only by expected_cost_nanos: the JSON
+  // billing_status is read strictly before it. The cutoff is moved to an hour ago for this check.
+  const shipped = normalize(migration.sql);
+  assert.equal(shipped.split("pending.created_at < '2026-11-09 00:00:00+00'::timestamptz").length - 1, 2,
+    'both JSON-pending lookups apply the cutoff');
+  const cutoff = (await one(`select date_trunc('second', now() - interval '1 hour') as at`)).at;
+  await db.exec(migration.sql.replaceAll("'2026-11-09 00:00:00+00'::timestamptz", `'${cutoff.toISOString()}'::timestamptz`));
+  // A committed $5 one-off charge whose audit row has a NULL cost and only the JSON flag.
+  const flaggedAt = async (prefix, offsetMs) => {
+    await reset();
+    await purchase(`${prefix}_first`, usd(10), 0, 3);
+    await asService(() => db.query('select public.gateway_charge_with_credit_cache($1, $2, $3, null)', [ws, `${prefix}_bill`, usd(5)]));
+    await db.query(`insert into public.gateway_requests (workspace_id, success, cost_nanos, created_at, billing_request_id, detail_metadata)
+      values ($1, false, null, $2::timestamptz + make_interval(secs => $3::float8 / 1000), $4, $5::jsonb)`,
+      [ws, cutoff, offsetMs, `${prefix}_bill`, JSON.stringify({ accounting_finalization: { billing_status: 'pending_reconciliation' } })]);
+    await purchase(`${prefix}_second`, usd(10), usd(5), 1);
+    await setBalance(usd(15));
+    return claim(`${prefix}_first`);
+  };
+  assert.equal((await flaggedAt('cut_before', -1)).reason, 'lot_used', 'just before the cutoff the flag marks the row pending: the charge counts');
+  assert.equal((await flaggedAt('cut_at', 0)).ok, true, 'exactly at the cutoff the flag is not read: the row (NULL cost) counts, not the charge');
+  assert.equal((await flaggedAt('cut_after', 1)).ok, true, 'after the cutoff the flag is not read either');
+  await db.exec(migration.sql);
 
   // ---------- Money movements win over a pending reconciliation's audit cost ----------
   // A delivered request whose charge attempts all failed is audited as pending reconciliation with
