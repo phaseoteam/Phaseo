@@ -109,4 +109,4 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 ## उपयोग और मूल्य
 
-हर फ़ेच `usage.server_tool_use.web_fetch_requests` में 1 जोड़ता है। प्रबंधित फ़ेच का बिल `server_tool_web_fetch_requests` से बनता है। मूल फ़ेच का बिल `native_web_fetch_requests` से बनता है, जहां मॉडल का मूल्य कार्ड इसे परिभाषित करता है।
+हर fetch `usage.server_tool_use.web_fetch_requests` में 1 जोड़ता है। Phaseo, Exa, Parallel या Firecrawl से हर managed fetch के लिए $0.001 लेता है, जब तक मॉडल का price card `server_tool_web_fetch_requests` के लिए अपनी कीमत तय न करे; direct fetches मुफ़्त हैं। सशुल्क engines से fetches के लिए क्रेडिट चाहिए, भले ही मॉडल मुफ़्त हो। Native fetch का बिल `native_web_fetch_requests` से बनता है, जहाँ मॉडल का price card इसे तय करता है।

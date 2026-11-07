@@ -51,6 +51,7 @@ describe("reserveVideoGenerationCredits", () => {
 		["daily_cost_limit_reached", 429, "key_limit_exceeded"],
 		["monthly_request_limit_reached", 429, "key_limit_exceeded"],
 		["workspace_lifetime_cost_budget_reached", 429, "workspace_budget_exceeded"],
+		["department_daily_cost_budget_reached", 429, "key_limit_exceeded"],
 		["insufficient_funds", 402, "insufficient_funds"],
 		["key_not_active", 401, "invalid_api_key"],
 	] as const)("reports %s as a local admission rejection", async (reason, status, code) => {

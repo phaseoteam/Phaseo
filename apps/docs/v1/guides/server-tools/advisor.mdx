@@ -121,4 +121,4 @@ The Advisor keeps no state between requests. If you replay earlier messages and 
 
 ## Usage and pricing
 
-Each call adds 1 to `usage.server_tool_use.advisor_requests` and can be billed with `server_tool_advisor_requests`. The Advisor's tokens are added to the request's usage and priced at the Advisor model's rates.
+Each call adds 1 to `usage.server_tool_use.advisor_requests` and can be billed with `server_tool_advisor_requests`. The Advisor's tokens are billed at the Advisor model's own rates, as a separate line on the request's bill; they are not added to the calling model's token counts. A paid Advisor model needs credits even when the calling model is free.

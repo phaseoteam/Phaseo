@@ -549,6 +549,8 @@ function buildSupaRow(args: {
     outputSpeedTps?: number | null; tpotMs?: number | null;
     itlMs?: number | null; phaseoOverheadMs?: number | null;
     usage?: any | null; costNanos?: number | null; currency?: string | null;
+    /** The bill a delivered request meant to charge while its charge is pending reconciliation. */
+    expectedCostNanos?: number | null;
     pricingLines?: any[] | null; throughput?: number | null;
     finishReason?: string | null;
     requestPayload?: unknown;
@@ -626,6 +628,7 @@ function buildSupaRow(args: {
         usage: args.usage ?? {},
         ...usageColumns,
         ...(args.costNanos != null ? { cost_nanos: Math.round(args.costNanos as number) } : {}),
+        ...(args.expectedCostNanos != null ? { expected_cost_nanos: Math.max(0, Math.round(args.expectedCostNanos)) } : {}),
         currency: args.currency ?? null,
         pricing_lines: Array.isArray(args.pricingLines) ? args.pricingLines : [],
         key_id: args.keyId ?? null,
@@ -749,6 +752,8 @@ export async function auditSuccess(input: {
     internalLatencyMs?: number | null;
     endToEndMs?: number | null;
     usagePriced: any; totalCents: number; totalNanos?: number | null; currency: "USD" | string;
+    /** The priced bill of a success pending reconciliation (rounds that could not be priced). */
+    expectedCostNanos?: number | null;
     finishReason?: string | null;
     statusCode: number; throughput?: number | null; keyId?: string | null;
     /** Zero data retention applies to the request, so no content is stored: no I/O log. */
@@ -847,6 +852,7 @@ export async function auditSuccess(input: {
             requestPayload: args.requestPayload,
             gatewayResponse: args.gatewayResponse,
             costNanos: args.totalNanos ?? (Number.isFinite(args.totalCents) ? Math.round((args.totalCents as number) * 1e7) : null),
+            expectedCostNanos: args.expectedCostNanos ?? null,
             currency: args.currency,
             pricingLines,
             throughput: args.throughput ?? null,
@@ -1077,6 +1083,10 @@ type AuditFailureBefore = {
 };
 type AuditFailureExecute = {
     nativeResponseId?: string | null;
+    /** What the failed request was still charged; null or absent when it was not charged. */
+    costNanos?: number | null;
+    /** The bill it meant to charge, while the charge is pending reconciliation (expected_cost_nanos). */
+    expectedCostNanos?: number | null;
     stage: "execute";
     requestId: string;
     workspaceId: string;
@@ -1347,6 +1357,8 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
             latencyMs: args.latencyMs ?? null,
             generationMs: args.generationMs ?? null,
             usage: args.usage ?? {},
+            costNanos: args.costNanos ?? null,
+            ...(args.expectedCostNanos != null ? { expectedCostNanos: args.expectedCostNanos } : {}),
             requestPayload: args.requestPayload,
             gatewayResponse: args.gatewayResponse,
             currency: args.currency ?? null,
@@ -1385,7 +1397,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                     statusCode: args.statusCode,
                     success: false,
                     usage: args.usage ?? {},
-                    totalNanos: 0,
+                    totalNanos: args.costNanos ?? 0,
                     currency: args.currency ?? null,
                     latencyMs: args.latencyMs ?? null,
                     generationMs: args.generationMs ?? null,
@@ -1425,6 +1437,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                         authMethod: args.authMethod ?? null,
                         userAgent: args.userAgent ?? null,
                         clientSource: args.clientSource ?? null,
+                        costNanos: args.costNanos ?? null,
                         currency: args.currency ?? null,
                         toolCallCount: readToolCallCount(args.usage, null),
                         // A failed request's tool calls were never checked.

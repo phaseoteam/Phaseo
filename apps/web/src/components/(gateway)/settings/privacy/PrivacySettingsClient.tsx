@@ -696,8 +696,6 @@ export default function PrivacySettingsClient(props: {
 											}
 										>
 										<option value="90">{s("90 days")}</option>
-										<option value="180">{s("180 days")}</option>
-										<option value="365">{s("365 days")}</option>
 										</select>
 									</label>
 									<ToggleRow

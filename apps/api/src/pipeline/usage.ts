@@ -112,6 +112,32 @@ export function keepStreamServerToolMeters(
     return merged;
 }
 
+/**
+ * Flat meters for Phaseo's own server tools, written by the server-tool loop. A zero is an
+ * explicit "not billable" marker (a TinyFish search, a direct fetch): it stops the engine
+ * from pricing server_tool_use counts as a provider-native tool.
+ */
+export const MANAGED_SERVER_TOOL_METER_KEYS = [
+    "server_tool_web_search_requests",
+    "server_tool_web_search_extra_results",
+    "server_tool_web_fetch_requests",
+    "server_tool_advisor_requests",
+    "server_tool_image_generation_requests",
+    "server_tool_apply_patch_requests",
+    "server_tool_subagent_requests",
+    "server_tool_fusion_requests",
+    "server_tool_search_models_requests",
+] as const;
+
+export function pickManagedServerToolMeters(usage: unknown): Record<string, number> | null {
+    if (!isUsageObject(usage)) return null;
+    const meters: Record<string, number> = {};
+    for (const key of MANAGED_SERVER_TOOL_METER_KEYS) {
+        if (isFiniteCount(usage[key])) meters[key] = usage[key];
+    }
+    return Object.keys(meters).length ? meters : null;
+}
+
 /** Media inputs counted from the request body, used when upstream usage omits them. */
 export type RequestMediaCounts = { images: number; audio: number; video: number };
 

@@ -120,4 +120,4 @@ Advisor はリクエスト間で状態を保持しません。以前のメッセ
 
 ## 利用量と料金
 
-呼び出しごとに `usage.server_tool_use.advisor_requests` に 1 が加算され、`server_tool_advisor_requests` で課金されることがあります。Advisor のトークンはリクエストの利用量に加算され、Advisor のモデルの料金で計算されます。
+呼び出しごとに `usage.server_tool_use.advisor_requests` に 1 が加算され、`server_tool_advisor_requests` で課金されることがあります。Advisor のトークンは Advisor モデル自身の料金で、リクエストの請求の別項目として課金され、呼び出し元モデルのトークン数には加算されません。有料の Advisor モデルを使うには、呼び出し元モデルが無料でもクレジットが必要です。

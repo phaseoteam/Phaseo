@@ -134,6 +134,8 @@ export function computeCreditSnapshotTtlForContext(context: GatewayContextData):
 
 export function hasConfiguredKeyLimits(keyLimit: GatewayContextData["keyLimit"]): boolean {
 	if ((keyLimit?.budgets?.length ?? 0) > 0) return true;
+	// Department budgets change with every request of the department's keys, like key caps.
+	if ((keyLimit?.departmentBudgets?.length ?? 0) > 0) return true;
 	const buckets = keyLimit?.buckets ?? null;
 	return [buckets?.daily, buckets?.weekly, buckets?.monthly].some((bucket) =>
 		Boolean(
@@ -358,6 +360,9 @@ export function cloneGatewayContextData(value: GatewayContextData): GatewayConte
 			? {
 					...value.keyLimit,
 					budgets: value.keyLimit.budgets?.map((budget) => ({ ...budget })) ?? value.keyLimit.budgets ?? null,
+					...(value.keyLimit.departmentBudgets
+						? { departmentBudgets: value.keyLimit.departmentBudgets.map((budget) => ({ ...budget })) }
+						: {}),
 					buckets: value.keyLimit.buckets
 						? {
 								daily: value.keyLimit.buckets.daily

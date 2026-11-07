@@ -59,6 +59,30 @@ function allowsNoCreditForFreeRequest(args: { model: string; context: any; provi
     return pricedCards.every((card) => isFreePriceCard(card));
 }
 
+/**
+ * The wallet credit check every paid request passes: internal callers and invoice-billed
+ * workspaces skip it, a request whose every route is free needs no credit, and anything else
+ * needs the context's credit gate to pass. Server tools apply it to each model they call, so
+ * a free main model cannot unlock paid model calls from an empty wallet.
+ */
+export function passesWalletCreditCheck(args: { model: string; context: any; providers: any[]; internal?: boolean }): boolean {
+    return walletCanPay(args) || allowsNoCreditForFreeRequest(args);
+}
+
+/**
+ * Whether the workspace can pay for paid work at all: internal callers, invoice billing, or a
+ * passing credit gate. Paid managed tools (web search and fetch on Phaseo's keys) need this
+ * even when the model is free.
+ */
+export function walletCanPay(args: { context: { credit?: { ok?: boolean } | null; teamSettings?: { billingMode?: unknown } | null } | null | undefined; internal?: boolean }): boolean {
+    if (args.internal) return true;
+    if (args.context?.credit?.ok) return true;
+    const billingMode = String(args.context?.teamSettings?.billingMode ?? "wallet")
+        .trim()
+        .toLowerCase();
+    return billingMode === "invoice";
+}
+
 function classifyProviderCandidateFailure(diagnostics: ProviderCandidateBuildDiagnostics): {
     errorType: "user" | "system";
     errorOrigin: "user" | "gateway";
@@ -638,22 +662,7 @@ export async function guardContext(args: {
             };
         }
 
-        const billingMode = String(context.teamSettings?.billingMode ?? "wallet")
-            .trim()
-            .toLowerCase();
-        const bypassWalletCreditCheck = billingMode === "invoice";
-        const allowFreeWithoutCredits = allowsNoCreditForFreeRequest({
-            model: args.model,
-            context,
-            providers,
-        });
-
-        if (
-            !args.internal &&
-            !context.credit.ok &&
-            !bypassWalletCreditCheck &&
-            !allowFreeWithoutCredits
-        ) {
+        if (!passesWalletCreditCheck({ model: args.model, context, providers, internal: args.internal })) {
             return {
                 ok: false,
                 response: err("insufficient_funds", {

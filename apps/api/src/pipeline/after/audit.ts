@@ -11,10 +11,11 @@ import {
 } from "@pipeline/execute/attempt-health";
 import { auditSuccess, auditFailure } from "../audit";
 import { protectStealthAuditArgs } from "../audit/stealth-identity";
+import { claimFailureSpendSettlement, failureBudgetNanos, recordsServerToolAccounting, serverToolReconciliation } from "./server-tool-charges";
 import { isStealthRequest } from "../stealth";
 import { applyRequestClassifiers } from "../classification/request-classifiers";
 import { keyIdIsOAuthClientId } from "@core/request-key";
-import { recordShadowSpend, releaseSpend, settleEnforcedSpend } from "@core/spend-limits";
+import { recordShadowSpend, releaseSpend, settleChargedFailureSpend, settleEnforcedSpend } from "@core/spend-limits";
 import { hasConfiguredKeyLimits } from "../before/context.shared";
 import type { PipelineContext } from "../before/types";
 import { finishStreamingProvider, recordLifecycleEvent, retainedLifecycle } from "../lifecycle";
@@ -233,6 +234,52 @@ export function shouldPersistGatewayAudit(ctx: Pick<PipelineContext, "testingMod
 	return !ctx.testingMode || ctx.billableInternalTesting === true;
 }
 
+/**
+ * The pending-reconciliation fields of a failure row (shared by every failure writer): cost_nanos
+ * is the charge the database confirmed after the request's charge attempts failed, and
+ * expected_cost_nanos the bill it meant to charge. An intended bill of 0 (a stepped request's
+ * refund to zero that did not go through) is still a bill: the row keeps the checkpoint charge the
+ * database holds.
+ *
+ * A row pending reconciliation always gets expected_cost_nanos (readers tell pending rows by it),
+ * also when no charge failed: an error before the charge, after it, or before anything could be
+ * priced. It is then the priced bill, or a stepped request's charged total (what it settles at),
+ * or 0 when nothing was priced or charged (the raw usage stays on the row for repricing).
+ */
+export function pendingChargeFields(
+	ctx: PipelineContext,
+	pendingReconciliation = false,
+): { costNanos?: number; expectedCostNanos?: number } {
+	const expected = ctx.uncollectedChargeNanos;
+	if (typeof expected === "number" && Number.isFinite(expected) && expected >= 0) {
+		const confirmed = ctx.confirmedChargeNanos;
+		return {
+			expectedCostNanos: Math.round(expected),
+			...(typeof confirmed === "number" && confirmed >= 0 ? { costNanos: Math.round(confirmed) } : {}),
+		};
+	}
+	if (!pendingReconciliation) return {};
+	const meta = ctx.meta as Record<string, unknown>;
+	const intended = nanosOrNull(meta.__intendedChargeNanos);
+	const recorded = meta.__usageChargeRecorded === true;
+	if (meta.__chargedInSteps === true) {
+		const charged = recorded
+			? intended ?? 0
+			: nanosOrNull(ctx.confirmedChargeNanos) ?? nanosOrNull(meta.__checkpointTotalNanos) ?? 0;
+		return { expectedCostNanos: intended ?? charged, costNanos: charged };
+	}
+	return { expectedCostNanos: intended ?? 0, costNanos: recorded ? intended ?? 0 : 0 };
+}
+
+function isPendingReconciliation(errorDetails: unknown): boolean {
+	return Boolean(errorDetails && typeof errorDetails === "object" &&
+		(errorDetails as Record<string, unknown>).billing_status === "pending_reconciliation");
+}
+
+function nanosOrNull(value: unknown): number | null {
+	return typeof value === "number" && Number.isFinite(value) && value >= 0 ? Math.round(value) : null;
+}
+
 export async function handleFailureAudit(
     ctx: PipelineContext,
     result: RequestResult,
@@ -247,6 +294,8 @@ export async function handleFailureAudit(
         rawUsage: unknown;
         pricingCard?: unknown;
     },
+    /** What the failed request was charged (a stream the client left, charged at drain checkpoints). */
+    billing?: { costNanos: number },
 ) {
 	finishStreamingProvider(ctx, "error");
 	// The served attempt was marked successful when headers arrived. A stream that
@@ -257,8 +306,54 @@ export async function handleFailureAudit(
 	// A provider accepted the request, even if the response then failed: earlier
 	// 4xx rejections on other routes were Phaseo's routing or mapping problem.
 	reclassifyAttemptsAcceptedElsewhere(ctx.providerAttempts);
-	// Enforce mode: a failed request frees its spend-limit admission (no-op without one).
-	releaseSpend(ctx.spendAdmission);
+	// Enforce mode: a failed request frees its spend-limit admission (no-op without one). A failed
+	// request that was still charged counts its charge instead, once its row is written.
+	// A delivered request whose charge did not go through: the row owns what the database holds
+	// (ctx.confirmedChargeNanos) and the bill it meant to charge (expected_cost_nanos).
+	// Completed server-tool rounds: the row carries their charge and usage. Rounds held for
+	// reconciliation are recorded on the row even when nothing was charged.
+	const partialCharge = ctx.serverToolPartialCharge && !ctx.serverToolPartialCharge.persistedBy &&
+		recordsServerToolAccounting(ctx.serverToolPartialCharge)
+		? ctx.serverToolPartialCharge
+		: null;
+	const reconciliation = partialCharge ? serverToolReconciliation(partialCharge, ctx.billingRequestId, ctx.uncollectedChargeReason) : null;
+	// This writes the failure row, so handleError (always called after this) writes none.
+	if (partialCharge) partialCharge.persistedBy = "failure_audit";
+	// Every row pending reconciliation records expected_cost_nanos (#3534's pendingChargeFields),
+	// including rounds held for reconciliation with nothing charged.
+	const pending = pendingChargeFields(ctx, isPendingReconciliation(errorDetails) || reconciliation != null);
+	// The row's cost: a stream's drain-checkpoint charge, else what the database confirmed after a
+	// failed charge (absent when unreadable), else the charged server-tool rounds.
+	const rowCostNanos = billing != null ? billing.costNanos
+		: pending.expectedCostNanos != null ? pending.costNanos
+		: partialCharge && partialCharge.costNanos > 0 ? partialCharge.costNanos
+		: undefined;
+	const billedNanos = Math.max(0, Math.round(Number(rowCostNanos) || 0));
+	const writeCost = rowCostNanos != null;
+	// Spend limits count the bill even when the wallet did not take it.
+	const spendNanos = Math.max(billedNanos, pending.expectedCostNanos ?? 0);
+	// A stream charged at drain checkpoints already recorded its charge: settle it to the final
+	// amount, 0 included (a refund), from its row below instead of releasing.
+	const chargedInSteps = (ctx.meta as Record<string, unknown>).__chargedInSteps === true;
+	const settleBilledSpend = (billing != null || chargedInSteps) && (spendNanos > 0 || (writeCost && chargedInSteps)) &&
+		!keyIdIsOAuthClientId(ctx.meta.apiKeyRef);
+	if (settleBilledSpend) claimFailureSpendSettlement(ctx);
+	// Otherwise charged rounds, or the bill of a delivered response the wallet did not take, count
+	// against spend limits whether or not the row lands (an ordinary admission: once the row lands
+	// the database counts it, and without a row it expires after the pending TTL). A failure that
+	// owes nothing frees the slot.
+	const budgetNanos = settleBilledSpend ? 0 : failureBudgetNanos(ctx);
+	if (budgetNanos > 0 && claimFailureSpendSettlement(ctx)) settleChargedFailureSpend(ctx, budgetNanos);
+	if (!settleBilledSpend && budgetNanos <= 0) releaseSpend(ctx.spendAdmission);
+	// A charge that did not go through (recordUsageAndChargeOnce gave a reason): the standard
+	// pending-accounting record, for every caller.
+	const uncollected = ctx.uncollectedChargeReason && pending.expectedCostNanos != null ? {
+		billing_status: "pending_reconciliation",
+		billing_request_id: ctx.billingRequestId ?? null,
+		charged_nanos: pending.costNanos ?? null,
+		expected_nanos: pending.expectedCostNanos,
+		reason: ctx.uncollectedChargeReason,
+	} : null;
     const protectedOtlp = protectStealthAuditArgs({
         model: ctx.model,
         requestedModel: ctx.requestedModel ?? ctx.model,
@@ -362,7 +457,11 @@ export async function handleFailureAudit(
                         finish_reason: result.bill?.finish_reason ?? null,
                         raw_usage: accountingContext.rawUsage,
                         pricing_card: accountingContext.pricingCard ?? null,
+                        ...(reconciliation ?? {}),
+                        ...(uncollected ?? {}),
                     }),
+                } : reconciliation || uncollected ? {
+                    accounting_finalization: sanitizeForAxiom({ ...(reconciliation ?? {}), ...(uncollected ?? {}) }),
                 } : {}),
                 labels: ctx.meta.labels ?? [],
                 client_source: ctx.meta.clientSource ?? null,
@@ -381,13 +480,23 @@ export async function handleFailureAudit(
                 )),
                 replay_supported: true,
             },
-            usage: (result.bill?.usage && typeof result.bill.usage === "object")
-                ? result.bill.usage as Record<string, unknown>
-                : {},
-            currency: result.bill?.currency ?? null,
-			pricingLines: Array.isArray((result.bill?.usage as any)?.pricing?.lines)
-				? (result.bill?.usage as any).pricing.lines
-				: [],
+            ...(pending.expectedCostNanos != null ? { expectedCostNanos: pending.expectedCostNanos } : {}),
+            ...(partialCharge
+                ? {
+                    usage: partialCharge.usage,
+                    currency: partialCharge.currency,
+                    pricingLines: partialCharge.pricingLines,
+                }
+                : {
+                    usage: (result.bill?.usage && typeof result.bill.usage === "object")
+                        ? result.bill.usage as Record<string, unknown>
+                        : {},
+                    currency: result.bill?.currency ?? null,
+                    pricingLines: Array.isArray((result.bill?.usage as any)?.pricing?.lines)
+                        ? (result.bill?.usage as any).pricing.lines
+                        : [],
+                }),
+            ...(writeCost ? { costNanos: billedNanos } : {}),
         }) : null,
         writeOtlp: () => enqueueGatewayOtlpExport({
             requestId: ctx.requestId,
@@ -441,6 +550,23 @@ export async function handleFailureAudit(
             gatewayResponse: gatewayErrorPayload ?? gatewayFailurePayload,
         }),
         onDeliveryFailure: emitGatewayTelemetryDeliveryFailure,
+    }).then((deliveries) => {
+        if (!settleBilledSpend) return;
+        // A one-off charge pending reconciliation settles like a stepped request's final: its debit
+        // may have committed with or without this row, and the coordinator holds it under both its
+        // request and billing ids, so the seed does not also count its charge row.
+        const settleAsFinal = chargedInSteps || pending.expectedCostNanos != null;
+        settleEnforcedSpend({
+            admission: ctx.spendAdmission,
+            rowWritten: deliveries.some((delivery) => delivery.sink === "supabase" && delivery.delivered),
+            workspaceId: ctx.workspaceId,
+            keyId: ctx.meta.apiKeyId ?? ctx.keyId ?? null,
+            billingRequestId: ctx.billingRequestId,
+            requestId: ctx.requestId,
+            costNanos: spendNanos,
+            internal: ctx.internal,
+            ...(settleAsFinal ? { replace: true } : {}),
+        });
     }).finally(() => releaseRuntime?.());
     dispatchBackground(telemetry);
 }
@@ -604,6 +730,9 @@ export async function handleSuccessAudit(
             usagePriced: usageWithMultimodal,
             totalCents,
             totalNanos,
+            // Rounds that could not be priced make the row pending reconciliation: it records the
+            // priced bill as expected_cost_nanos (the unpriced rounds stay on it for repricing).
+            ...(Array.isArray(ctx.serverToolRoundsBill?.pricing?.unpriced_rounds) ? { expectedCostNanos: totalNanos } : {}),
             currency,
             finishReason,
             statusCode,
@@ -626,6 +755,16 @@ export async function handleSuccessAudit(
                 response_timeline: buildResponseTimeline(ctx),
                 labels: ctx.meta.labels ?? [],
                 classifications: ctx.requestClassifications ?? null,
+                // Rounds of a server-tool request that could not be priced: recorded as an
+                // unpriceable single request is (accounting_finalization), for reconciliation.
+                ...(Array.isArray(ctx.serverToolRoundsBill?.pricing?.unpriced_rounds) ? {
+                    accounting_finalization: sanitizeForAxiom({
+                        billing_status: "pending_reconciliation",
+                        billing_request_id: ctx.billingRequestId ?? null,
+                        charged_nanos: totalNanos,
+                        unpriced_rounds: ctx.serverToolRoundsBill.pricing.unpriced_rounds,
+                    }),
+                } : {}),
                 client_source: ctx.meta.clientSource ?? null,
                 preset: presetMetadata(ctx),
                 prompt_template: promptTemplateMetadata(ctx),
@@ -724,18 +863,21 @@ export async function handleSuccessAudit(
 			internal: ctx.internal,
 		});
 	}
-	// Enforce mode only: count the charge with the coordinator (or release the admission when no
-	// row was written). Independent of the legacy key-limit state.
+	// Enforce mode only: count the charge with the coordinator. The response was delivered and
+	// charged, so it counts whether or not its row landed; only a request that writes no row at
+	// all (testing mode) frees the admission. Independent of the legacy key-limit state.
 	if (!keyIdIsOAuthClientId(ctx.meta.apiKeyRef)) {
 		settleEnforcedSpend({
 			admission: ctx.spendAdmission,
-			rowWritten,
+			rowWritten: shouldPersistGatewayAudit(ctx),
 			workspaceId: ctx.workspaceId,
 			keyId: ctx.meta.apiKeyId ?? ctx.keyId ?? null,
 			billingRequestId: ctx.billingRequestId,
 			requestId: ctx.requestId,
 			costNanos: totalNanos,
 			internal: ctx.internal,
+			// Drain checkpoints already recorded part of this charge: the final amount replaces it.
+			...((ctx.meta as Record<string, unknown>).__chargedInSteps === true ? { replace: true } : {}),
 		});
 	}
 

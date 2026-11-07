@@ -124,8 +124,24 @@ type Pending = {
 	requests: number;
 	at: number;
 	recordedAt: number;
-	/** The gateway_requests row exists: budget status already includes it. */
+	/**
+	 * Its audit row exists (the seed returned it among the excluded rows), so the next seed does not
+	 * exclude it. That says nothing about whether a published seed counts its spend: the entry is
+	 * counted from memory until a seed that did not exclude its ids is published (handoff), then dropped.
+	 */
 	persisted: boolean;
+	/**
+	 * A stream charged at drain checkpoints: `cost` is its charged total so far, raised by each
+	 * checkpoint and set by the final record. It follows the ordinary pending lifecycle; once it
+	 * expires, the seed counts the request's charge row (no longer excluded) instead.
+	 */
+	stepped?: { final: boolean };
+	/**
+	 * Opened by a record other than the request's first checkpoint (checkpoint 1 was lost, or a
+	 * one-off charge settled as a final): the seed in use may already count its charge row, so it
+	 * counts from memory only once a seed that excludes its ids has been published.
+	 */
+	awaitingSeed?: boolean;
 };
 
 type Lease = {
@@ -160,6 +176,8 @@ type LeaseRow = {
 
 const ZERO: Usage = { requests: 0, cost: 0 };
 const MAX_SEEN_IDS = 50_000;
+/** Loads per seed when held entries go stale, or new ones are recorded, while it loads. */
+const MAX_SEED_ATTEMPTS = 3;
 
 function nonNegative(value: unknown): number {
 	const parsed = Number(value);
@@ -347,7 +365,7 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			if (!this.recordOne(entry, now)) duplicates += 1;
 			if (entry && this.draining(entry.keyId, now)) drainKeyIds.add(entry.keyId);
 		}
-		if (this.seed && this.unpersistedCount() >= SPEND_LEASE.maxExcludedRequestIds) this.reseedInBackground();
+		if (this.seed && this.unpersistedIdCount() >= SPEND_LEASE.maxExcludedRequestIds) this.reseedInBackground();
 		return { duplicates, drainKeyIds: [...drainKeyIds] };
 	}
 
@@ -357,12 +375,38 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			console.warn("spend_limit_invalid_record", { workspaceId: this.workspaceId });
 			return false;
 		}
-		if (this.seen.has(entry.billingRequestId) || this.pending.has(entry.billingRequestId)) return false;
-		this.seen.add(entry.billingRequestId);
-		if (this.seen.size > MAX_SEEN_IDS) {
-			const oldest = this.seen.values().next();
-			if (!oldest.done) this.seen.delete(oldest.value);
+		const existing = this.pending.get(entry.billingRequestId);
+		const replace = entry.replace === true;
+		const final = replace && entry.final === true;
+		let awaitingSeed = false;
+		if (replace) {
+			if (!existing) {
+				// A record for an entry this coordinator held before (expired, retired at a period end,
+				// or settled) is ignored: its charge row is no longer excluded, and the seed counts it.
+				if (this.seen.has(entry.billingRequestId)) return false;
+				// Any other record opens the entry at its total: the first checkpoint, or a later one or
+				// the final when checkpoint 1 never arrived (or was reordered after the final, which a
+				// held final entry then ignores).
+				awaitingSeed = !(entry.revision === 1 && !final);
+			} else {
+				if (!existing.stepped || existing.keyId !== entry.keyId || existing.stepped.final) return false;
+				// A checkpoint only raises the charged total (delivery can reorder checkpoints); the final
+				// record sets it, lower or 0 included, and nothing changes it after that.
+				const cost = final ? nonNegative(entry.costNanos) : Math.max(existing.cost, nonNegative(entry.costNanos));
+				if (!final && cost === existing.cost) return false;
+				const lease = entry.leaseId ? this.leases.get(entry.leaseId) : undefined;
+				if (lease && lease.keyId === entry.keyId) {
+					lease.consumed = Math.max(0, lease.consumed + cost - existing.cost);
+					this.settleIfDone(lease);
+				}
+				existing.cost = cost;
+				existing.recordedAt = now;
+				existing.stepped = { final };
+				return true;
+			}
 		}
+		if (this.seen.has(entry.billingRequestId) || existing) return false;
+		this.markSeen(entry.billingRequestId);
 		const cost = nonNegative(entry.costNanos);
 		const requests = nonNegative(entry.requests);
 		const at = Number.isFinite(entry.occurredAtMs) ? Number(entry.occurredAtMs) : now;
@@ -375,7 +419,10 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			at,
 			recordedAt: now,
 			persisted: false,
+			...(replace ? { stepped: { final } } : {}),
+			...(awaitingSeed ? { awaitingSeed: true } : {}),
 		});
+		if (awaitingSeed) this.reseedInBackground();
 		const lease = entry.leaseId ? this.leases.get(entry.leaseId) : undefined;
 		if (lease && lease.keyId === entry.keyId) {
 			lease.successes += requests;
@@ -389,6 +436,40 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			this.workspaceAvgCost = this.workspaceAvgCost ? this.workspaceAvgCost * 0.9 + perRequest * 0.1 : perRequest;
 		}
 		return true;
+	}
+
+	private markSeen(billingRequestId: string): void {
+		this.seen.add(billingRequestId);
+		if (this.seen.size > MAX_SEEN_IDS) {
+			const oldest = this.seen.values().next();
+			if (!oldest.done) this.seen.delete(oldest.value);
+		}
+	}
+
+	/**
+	 * Before a seed's exclusions are built: entries past the pending TTL are dropped, and stepped
+	 * entries whose day, week or month has ended since they opened are retired (later records for
+	 * them are ignored). The entry counts all its spend at the time it opened; the database counts
+	 * each debit at its own time, so from here the same seed counts their spend instead.
+	 */
+	private retireStaleEntries(now: number): void {
+		for (const entry of this.pending.values()) {
+			const stale = this.staleness(entry, now);
+			if (!stale) continue;
+			this.pending.delete(entry.billingRequestId);
+			if (stale === "period_ended") this.markSeen(entry.billingRequestId);
+		}
+	}
+
+	private staleness(entry: Pending, now: number): "expired" | "period_ended" | null {
+		if (entry.persisted) return null;
+		if (now - entry.recordedAt > SPEND_LEASE.pendingTtlMs) return "expired";
+		if (!entry.stepped) return null;
+		const opened = windowStarts(entry.at);
+		const current = windowStarts(now);
+		return opened.daily !== current.daily || opened.weekly !== current.weekly || opened.monthly !== current.monthly
+			? "period_ended"
+			: null;
 	}
 
 	/** Reads seed data. Overridden in tests. */
@@ -451,6 +532,8 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 		} finally {
 			if (this.seeding === run) this.seeding = null;
 		}
+		// An entry opened while this seed loaded is not excluded by it yet.
+		if ([...this.pending.values()].some((entry) => entry.awaitingSeed)) this.reseedInBackground();
 	}
 
 	private async runSeed(extraKeyId: string | null): Promise<void> {
@@ -459,33 +542,67 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 		const activeSince = Date.now() - SPEND_LEASE.keyIdleMs;
 		for (const [keyId, key] of this.keys) if (key.lastUsedAt < activeSince && keyId !== extraKeyId) this.keys.delete(keyId);
 		const keyIds = [...new Set([...this.keys.keys(), ...(extraKeyId ? [extraKeyId] : [])])];
-		// Exclude recorded spend whose row may not be visible yet; it is counted from memory.
-		// Spend already confirmed persisted is not excluded: the seed counts it, so it is dropped.
-		const unpersisted = [...this.pending.values()].filter((entry) => !entry.persisted)
-			.sort((left, right) => right.recordedAt - left.recordedAt);
-		if (unpersisted.length > SPEND_LEASE.maxExcludedRequestIds) {
-			// Should not happen with a reseed per minute; the oldest are most likely persisted already.
-			console.warn("spend_limit_exclusion_overflow", { workspaceId, dropped: unpersisted.length - SPEND_LEASE.maxExcludedRequestIds });
-			for (const entry of unpersisted.slice(SPEND_LEASE.maxExcludedRequestIds)) this.pending.delete(entry.billingRequestId);
-		}
-		const excluded = unpersisted.slice(0, SPEND_LEASE.maxExcludedRequestIds);
-		const exclude = [...new Set(excluded.map((entry) => entry.requestId))];
-		const persistedBefore = [...this.pending.values()].filter((entry) => entry.persisted);
 		const chunks: string[][] = [];
 		for (let index = 0; index < Math.max(1, keyIds.length); index += SPEND_LEASE.maxKeysPerSeed) {
 			chunks.push(keyIds.slice(index, index + SPEND_LEASE.maxKeysPerSeed));
 		}
-		for (const chunk of chunks) {
-			const seed = await this.loadSeed(workspaceId, chunk, exclude);
-			this.applySeed(seed, chunk, persistedBefore);
-		}
-		const now = Date.now();
-		for (const entry of this.pending.values()) {
-			if (!entry.persisted && now - entry.recordedAt > SPEND_LEASE.pendingTtlMs) this.pending.delete(entry.billingRequestId);
+		for (let attempt = 1; ; attempt += 1) {
+			// Exclude recorded spend whose row may not be visible yet; it is counted from memory.
+			// Spend already confirmed persisted is not excluded: the seed counts it, so it is dropped.
+			this.retireStaleEntries(Date.now());
+			const excluded = this.excludeFromSeed(workspaceId);
+			const exclude = excluded.flatMap((entry) => entry.ids);
+			// Held entries this seed does not exclude: it counts their spend, so they are handed off.
+			const includedBySeed = [...this.pending.values()].filter((entry) => entry.persisted);
+			const heldAtStart = new Set(this.pending.keys());
+			const seeds: SpendLimitSeed[] = [];
+			for (const chunk of chunks) seeds.push(await this.loadSeed(workspaceId, chunk, exclude));
+			// An entry this seed excluded that expired or reached a period end while it loaded would be
+			// counted by neither the seed nor memory once retired. It stays held until a seed that does
+			// not exclude it is published: load again now, or keep it for the next seed to retire.
+			// An entry recorded while it loaded is not excluded, but the seed may already count its row:
+			// load again with it excluded, rather than count it twice. After the last attempt both are
+			// kept (over-counted, never lost) until the next seed.
+			const now = Date.now();
+			const stale = excluded.some(({ entry }) => this.staleness(entry, now));
+			const addedWhileLoading = [...this.pending.keys()].some((id) => !heldAtStart.has(id));
+			if (attempt < MAX_SEED_ATTEMPTS && (stale || addedWhileLoading)) continue;
+			chunks.forEach((chunk, index) => this.applySeed(seeds[index], chunk, includedBySeed));
+			for (const { entry } of excluded) delete entry.awaitingSeed;
+			return;
 		}
 	}
 
-	private applySeed(seed: SpendLimitSeed, chunk: string[], persistedBefore: Pending[]): void {
+	/**
+	 * Contract with gateway_spend_limit_seed: it skips gateway_requests rows whose request_id is
+	 * listed and gateway_request_charges rows whose request_id (the billing id) is listed; that
+	 * spend is counted from memory instead. Every entry lists both ids: an ordinary request's charge
+	 * row (under its billing id) lands before its audit row, and a stepped request's charge row is
+	 * updated at each checkpoint. The cap (the SQL rejects more) counts ids, not entries.
+	 * Entries past it (newest first; the oldest are most likely persisted already) are dropped, and
+	 * the seed counts their rows instead.
+	 */
+	private excludeFromSeed(workspaceId: string): Array<{ entry: Pending; ids: string[] }> {
+		const unpersisted = [...this.pending.values()].filter((entry) => !entry.persisted)
+			.sort((left, right) => right.recordedAt - left.recordedAt);
+		const excluded: Array<{ entry: Pending; ids: string[] }> = [];
+		const excludedIds = new Set<string>();
+		let dropped = 0;
+		for (const entry of unpersisted) {
+			const ids = [...new Set([entry.requestId, entry.billingRequestId])].filter((id) => !excludedIds.has(id));
+			if (excludedIds.size + ids.length > SPEND_LEASE.maxExcludedRequestIds) {
+				this.pending.delete(entry.billingRequestId);
+				dropped += 1;
+				continue;
+			}
+			for (const id of ids) excludedIds.add(id);
+			excluded.push({ entry, ids });
+		}
+		if (dropped) console.warn("spend_limit_exclusion_overflow", { workspaceId, dropped });
+		return excluded;
+	}
+
+	private applySeed(seed: SpendLimitSeed, chunk: string[], includedBySeed: Pending[]): void {
 		const parse = (value: string) => {
 			const ms = Date.parse(value);
 			if (!Number.isFinite(ms)) throw new Error("spend_limit_seed_invalid");
@@ -551,8 +668,8 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			if (averages.length) this.workspaceAvgCost = averages.reduce((sum, value) => sum + value, 0) / averages.length;
 		}
 		const chunkKeys = new Set(chunk);
-		for (const entry of persistedBefore) {
-			// Counted by this seed: stop tracking it separately.
+		for (const entry of includedBySeed) {
+			// Not excluded from this seed, which counts its spend: stop tracking it separately.
 			if (chunkKeys.has(entry.keyId) || !this.keys.has(entry.keyId)) this.pending.delete(entry.billingRequestId);
 		}
 		const found = new Set((seed.excluded_rows ?? []).map((row) => row.request_id));
@@ -567,7 +684,7 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 		let requests = base.requests;
 		let cost = base.cost;
 		for (const entry of this.pending.values()) {
-			if (entry.keyId === keyId && entry.at >= windows[window]) {
+			if (entry.keyId === keyId && !entry.awaitingSeed && entry.at >= windows[window]) {
 				requests += entry.requests;
 				cost += entry.cost;
 			}
@@ -578,7 +695,8 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 	private budgetUsage(budget: BudgetState): number {
 		let usage = budget.statusUsage;
 		for (const entry of this.pending.values()) {
-			if (!entry.persisted && (budget.windowStart === null || entry.at >= budget.windowStart)) usage += entry.cost;
+			// Every held entry was excluded from the published seed's budget status (persisted or not).
+			if (!entry.awaitingSeed && (budget.windowStart === null || entry.at >= budget.windowStart)) usage += entry.cost;
 		}
 		return usage;
 	}
@@ -624,7 +742,7 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 	private departmentUsage(budget: DepartmentBudgetState): number {
 		let usage = budget.base;
 		for (const entry of this.pending.values()) {
-			if (budget.keyIds.has(entry.keyId) && entry.at >= budget.windowStart) usage += entry.cost;
+			if (budget.keyIds.has(entry.keyId) && !entry.awaitingSeed && entry.at >= budget.windowStart) usage += entry.cost;
 		}
 		return usage;
 	}
@@ -825,9 +943,12 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 		return (this.drainUntil.get(keyId) ?? 0) > now || (this.drainUntil.get("*") ?? 0) > now;
 	}
 
-	private unpersistedCount(): number {
+	/** Ids the next seed must exclude: each held entry needs its request id and its billing id. */
+	private unpersistedIdCount(): number {
 		let count = 0;
-		for (const entry of this.pending.values()) if (!entry.persisted) count += 1;
+		for (const entry of this.pending.values()) {
+			if (!entry.persisted) count += entry.requestId === entry.billingRequestId ? 1 : 2;
+		}
 		return count;
 	}
 }

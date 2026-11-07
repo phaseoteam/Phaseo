@@ -22,7 +22,12 @@ vi.mock("./spend-limit-footprint", async (importOriginal) => ({
 	readSpendLimitFootprint: (...args: unknown[]) => runtime.readFootprint(...args),
 }));
 
+// handleError's telemetry sinks; the partial-charge test only needs the spend-limit settlement.
+vi.mock("@observability/events", () => ({ emitGatewayRequestEvent: async () => undefined }));
+vi.mock("@observability/otlp-export", () => ({ enqueueGatewayOtlpExport: async () => undefined }));
+
 import { SpendLimitDurableObject, type SpendLimitSeed } from "./spend-limit-durable-object";
+import { handleError } from "./error-handler";
 import { LeasePool, type LeaseTransport } from "./lease-pool";
 import {
 	__resetSpendLimitsForTests,
@@ -32,6 +37,7 @@ import {
 	enforcedSpendLimit,
 	flushSpendRecordsForTests,
 	getSpendLimitMode,
+	recordCheckpointSpend,
 	recordShadowSpend,
 	recordSpend,
 	releaseSpend,
@@ -48,7 +54,7 @@ const WORKSPACE = "workspace-1";
 const KEY = "key-1";
 const DAY = 86_400_000;
 
-type Row = { requestId: string; keyId: string | null; success: boolean; cost: number; createdAt: number };
+type Row = { requestId: string; keyId: string | null; success: boolean; cost: number; createdAt: number; billingId?: string };
 type KeyConfig = { workspaceId: string; softBlocked?: boolean; daily?: [number, number]; weekly?: [number, number]; monthly?: [number, number] };
 type Budget = { id: string; interval: "daily" | "weekly" | "monthly" | "lifetime"; limit: number; holds?: number };
 type DepartmentBudget = { id: string; departmentId: string; name: string; interval: "daily" | "weekly" | "monthly"; limit: number; keyIds: string[] };
@@ -62,6 +68,20 @@ class FakeDatabase {
 	/** Seeds as written before department budgets could block (no department_budgets field). */
 	legacyShape = false;
 	calls: Array<{ keyIds: string[]; exclude: string[] }> = [];
+	/**
+	 * Debit movements of charges (one per checkpoint, final or refund), each at its own time: counted
+	 * unless the charge's billing id is excluded, or an audit row records it (billingId), which then
+	 * counts it once instead.
+	 */
+	charges: Array<{ billingId: string; keyId: string; total: number; at: number }> = [];
+
+	chargeCost(keyIds: string[] | null, start: number | null, exclude: string[]): { cost: number; requests: number } {
+		const now = Date.now();
+		const audited = new Set(this.rows.filter((row) => row.billingId && row.success && row.createdAt <= now).map((row) => row.billingId));
+		const rows = this.charges.filter((row) => (keyIds === null || keyIds.includes(row.keyId)) && !exclude.includes(row.billingId) &&
+			!audited.has(row.billingId) && (start === null || row.at >= start) && row.at <= now);
+		return { cost: rows.reduce((sum, row) => sum + row.total, 0), requests: new Set(rows.map((row) => row.billingId)).size };
+	}
 	fail = false;
 	/** Holds every seed read until resolved (a stalled Postgres call). */
 	stall: Promise<void> | null = null;
@@ -80,7 +100,8 @@ class FakeDatabase {
 		for (const window of ["daily", "weekly", "monthly"] as const) {
 			const rows = this.rows.filter((row) => row.keyId === keyId && row.success && row.createdAt >= windows[window] &&
 				row.createdAt <= Date.now() && !exclude.includes(row.requestId));
-			result[window] = { requests: rows.length, cost_nanos: rows.reduce((sum, row) => sum + row.cost, 0) };
+			const charges = this.chargeCost([keyId], windows[window], exclude);
+			result[window] = { requests: rows.length + charges.requests, cost_nanos: rows.reduce((sum, row) => sum + row.cost, 0) + charges.cost };
 		}
 		return result;
 	}
@@ -88,6 +109,8 @@ class FakeDatabase {
 	seed(workspaceId: string, keyIds: string[], exclude: string[]): SpendLimitSeed {
 		this.calls.push({ keyIds: [...keyIds], exclude: [...exclude] });
 		if (this.fail) throw new Error("database unavailable");
+		// gateway_spend_limit_seed rejects more excluded ids than this.
+		if (exclude.length > SPEND_LEASE.maxExcludedRequestIds) throw new Error("too_many_excluded_request_ids");
 		const now = Date.now();
 		const windows = FakeDatabase.windows(now);
 		const iso = (ms: number) => new Date(ms).toISOString();
@@ -104,8 +127,9 @@ class FakeDatabase {
 		});
 		const budgets = this.budgets.map((budget) => {
 			const start = budget.interval === "lifetime" ? null : windows[budget.interval];
-			const completed = this.rows.filter((row) => row.success && row.createdAt <= now && (start === null || row.createdAt >= start))
-				.reduce((sum, row) => sum + row.cost, 0);
+			// Like the key buckets, less the spend the coordinator still counts from memory.
+			const completed = this.rows.filter((row) => row.success && row.createdAt <= now && (start === null || row.createdAt >= start) &&
+				!exclude.includes(row.requestId)).reduce((sum, row) => sum + row.cost, 0) + this.chargeCost(null, start, exclude).cost;
 			const end = budget.interval === "daily" ? start! + DAY : budget.interval === "weekly" ? start! + 7 * DAY : null;
 			return {
 				id: budget.id, interval: budget.interval, limit_nanos: budget.limit, usage_nanos: completed + (budget.holds ?? 0),
@@ -280,6 +304,402 @@ describe("spend-limit coordinator", () => {
 		expect(next.keyLimit?.buckets?.daily).toMatchObject({ requestsUsed: 1, costUsedNanos: 250 });
 	});
 
+	it("keeps the latest checkpoint and the final settlement of a stepped charge, in any delivery order", async () => {
+		const used = async () => (await probe())?.daily;
+		const entry = { keyId: KEY, billingRequestId: "bill-stepped", requestId: "req-stepped", requests: 1, replace: true };
+		await checkSpendLimit({ workspaceId: WORKSPACE, keyId: KEY, admissionId: "warm" });
+		// Checkpoints report the charged total so far; the drain may be stopped before it settles.
+		await coordinator.record(WORKSPACE, { ...entry, costNanos: 100, revision: 1 });
+		expect(await used()).toMatchObject({ requestsUsed: 1, costUsedNanos: 100 });
+		await coordinator.record(WORKSPACE, { ...entry, costNanos: 250, revision: 2 });
+		expect(await used()).toMatchObject({ requestsUsed: 1, costUsedNanos: 250 });
+		// A replay, or checkpoint 1 delivered late, changes nothing.
+		expect(await coordinator.record(WORKSPACE, { ...entry, costNanos: 250, revision: 2 })).toMatchObject({ duplicates: 1 });
+		expect(await coordinator.record(WORKSPACE, { ...entry, costNanos: 100, revision: 1 })).toMatchObject({ duplicates: 1 });
+		expect(await used()).toMatchObject({ costUsedNanos: 250 });
+		// The final settlement (a refund to 0 here) replaces the checkpoints instead of adding to them.
+		await coordinator.record(WORKSPACE, { ...entry, costNanos: 0, final: true });
+		expect(await used()).toMatchObject({ requestsUsed: 1, costUsedNanos: 0 });
+		// A checkpoint delayed past the final, a replayed final, or a plain record never replace it.
+		expect(await coordinator.record(WORKSPACE, { ...entry, costNanos: 600, revision: 3 })).toMatchObject({ duplicates: 1 });
+		expect(await coordinator.record(WORKSPACE, { ...entry, costNanos: 0, final: true })).toMatchObject({ duplicates: 1 });
+		expect(await coordinator.record(WORKSPACE, { ...entry, replace: undefined, costNanos: 900 })).toMatchObject({ duplicates: 1 });
+		expect(await used()).toMatchObject({ costUsedNanos: 0 });
+	});
+
+	describe("stepped charges as ordinary entries", () => {
+		const entry = (billingRequestId: string) => ({ keyId: KEY, billingRequestId, requestId: `req-${billingRequestId}`, requests: 1, replace: true });
+		const daily = async () => (await probe())?.daily?.costUsedNanos;
+		const reseed = async () => {
+			vi.setSystemTime(Date.now() + SPEND_LEASE.reseedMs + 1);
+			await probe();
+			await flush();
+		};
+		// The checkpoint debit commits the charge row before the coordinator hears of it.
+		// The debit of the increase, at its own time, then the report of the running total.
+		const charged = (billingRequestId: string) => database.charges
+			.filter((charge) => charge.billingId === billingRequestId).reduce((sum, charge) => sum + charge.total, 0);
+		const debit = (billingRequestId: string, total: number) => {
+			const delta = total - charged(billingRequestId);
+			if (delta !== 0) database.charges.push({ billingId: billingRequestId, keyId: KEY, total: delta, at: Date.now() });
+		};
+		const checkpoint = (billingRequestId: string, total: number, revision: number) => {
+			debit(billingRequestId, total);
+			return coordinator.record(WORKSPACE, { ...entry(billingRequestId), costNanos: total, revision });
+		};
+		const buckets = async () => {
+			const value = await probe();
+			return { daily: value?.daily?.costUsedNanos, weekly: value?.weekly?.costUsedNanos, monthly: value?.monthly?.costUsedNanos };
+		};
+		beforeEach(async () => {
+			await checkSpendLimit({ workspaceId: WORKSPACE, keyId: KEY, admissionId: "warm" });
+			await flush();
+		});
+
+		it("raises the entry with each checkpoint and never lowers it", async () => {
+			await checkpoint("b-raise", 100, 1);
+			expect(await daily()).toBe(100);
+			await checkpoint("b-raise", 300, 2);
+			expect(await daily()).toBe(300);
+			// A reordered, lower checkpoint changes nothing.
+			expect(await coordinator.record(WORKSPACE, { ...entry("b-raise"), costNanos: 250, revision: 3 })).toMatchObject({ duplicates: 1 });
+			expect(await daily()).toBe(300);
+		});
+
+		it("lets the final lower it, then ignores late checkpoints", async () => {
+			await checkpoint("b-final", 300, 1);
+			await coordinator.record(WORKSPACE, { ...entry("b-final"), costNanos: 50, final: true });
+			expect(await daily()).toBe(50);
+			expect(await coordinator.record(WORKSPACE, { ...entry("b-final"), costNanos: 600, revision: 2 })).toMatchObject({ duplicates: 1 });
+			expect(await coordinator.record(WORKSPACE, { ...entry("b-final"), costNanos: 0, final: true })).toMatchObject({ duplicates: 1 });
+			expect(await daily()).toBe(50);
+		});
+
+		it("excludes both its request and billing ids while it is held, so the seed does not count it twice", async () => {
+			await checkpoint("b-excl", 300, 1);
+			await reseed();
+			expect(database.calls.at(-1)?.exclude.sort()).toEqual(["b-excl", "req-b-excl"]);
+			expect(await daily()).toBe(300);
+		});
+
+		it("ends with the same total after it expires and the seed counts the charge row", async () => {
+			await checkpoint("b-expire", 300, 1);
+			await reseed();
+			expect(await daily()).toBe(300);
+			vi.setSystemTime(Date.now() + SPEND_LEASE.pendingTtlMs + 1);
+			// The very next seed after expiry no longer excludes it, so it counts the charge row.
+			await reseed();
+			expect(database.calls.at(-1)?.exclude).toEqual([]);
+			expect(await daily()).toBe(300);
+			// A late record for the expired entry is ignored, never recreated: the charge row counts.
+			expect(await coordinator.record(WORKSPACE, { ...entry("b-expire"), costNanos: 400, revision: 2 })).toMatchObject({ duplicates: 1 });
+			expect(await daily()).toBe(300);
+		});
+
+		it("keeps a never-audited stepped request counted after its entry expires, final refund included", async () => {
+			// The seed counts charges without an audit row from their ledger movements (#3547), so
+			// retiring the entry hands its spend to the database instead of losing it.
+			await checkpoint("b-unaudited", 300, 1);
+			await reseed();
+			expect(await daily()).toBe(300);
+			vi.setSystemTime(Date.now() + SPEND_LEASE.pendingTtlMs + 1);
+			await reseed();
+			expect(database.calls.at(-1)?.exclude).toEqual([]);
+			expect(await daily()).toBe(300);
+			// The final refunds to $1. The coordinator ignores its record (the id was seen), but the
+			// refund is a ledger movement, and the next seed counts it.
+			debit("b-unaudited", 100);
+			expect(await coordinator.record(WORKSPACE, { ...entry("b-unaudited"), costNanos: 100, final: true })).toMatchObject({ duplicates: 1 });
+			await reseed();
+			expect(await daily()).toBe(100);
+		});
+
+		it("is dropped by a restart; the seed counts the charge row until a later record opens it again", async () => {
+			await checkpoint("b-restart", 300, 1);
+			coordinator = createCoordinator();
+			await reseed();
+			expect(database.calls.at(-1)?.exclude).toEqual([]);
+			expect(await daily()).toBe(300);
+			// Checkpoint 2 reopens it: counted from memory once a seed excludes the charge row, never twice.
+			await checkpoint("b-restart", 500, 2);
+			await flush();
+			expect(await daily()).toBe(500);
+			debit("b-restart", 0);
+			await coordinator.record(WORKSPACE, { ...entry("b-restart"), costNanos: 0, final: true });
+			expect(await daily()).toBe(0);
+			await reseed();
+			expect(await daily()).toBe(0);
+		});
+
+		it.each([
+			["a daily boundary (Friday to Saturday)", "2026-10-09T23:58:00Z", "2026-10-10T00:01:00Z", { daily: 50, weekly: 150, monthly: 150 }],
+			["a weekly boundary (Sunday to Monday)", "2026-10-11T23:58:00Z", "2026-10-12T00:01:00Z", { daily: 50, weekly: 50, monthly: 150 }],
+			["a monthly boundary (31 October to 1 November)", "2026-10-31T23:58:00Z", "2026-11-01T00:01:00Z", { daily: 50, weekly: 150, monthly: 50 }],
+		])("retires an entry held across %s, so each debit counts in its own period", async (_label, before, after, expected) => {
+			database.keys.set(KEY, { workspaceId: WORKSPACE, daily: [100, 1_000_000], weekly: [0, 1_000_000], monthly: [0, 1_000_000] });
+			vi.setSystemTime(new Date(before));
+			await reseed();
+			await checkpoint("b-roll", 100, 1);
+			expect(await buckets()).toEqual({ daily: 100, weekly: 100, monthly: 100 });
+			// Past midnight: checkpoint 2 debits $50 more while the coordinator still holds the entry.
+			vi.setSystemTime(new Date(after));
+			await checkpoint("b-roll", 150, 2);
+			await reseed();
+			expect(database.calls.at(-1)?.exclude).toEqual([]);
+			expect(await buckets()).toEqual(expected);
+			// Later records for the retired entry are ignored; the database counts them.
+			expect(await coordinator.record(WORKSPACE, { ...entry("b-roll"), costNanos: 200, revision: 3 })).toMatchObject({ duplicates: 1 });
+			expect(await buckets()).toEqual(expected);
+		});
+
+		describe("an entry that goes stale while a seed is loading", () => {
+			// The seed starts while the entry is held (so it excludes the entry's charge row) and is
+			// still loading when the entry passes midnight or its pending TTL.
+			// The seed helper moves the clock a minute on: the entry opens at 23:58:00 and 12:01:00.
+			const scenarios = [
+				{
+					// A checkpoint after midnight debits $50 more while the seed is still loading.
+					label: "a stepped entry held past midnight", laterTotal: 150,
+					start: "2026-10-09T23:57:00Z", seedAt: "2026-10-09T23:59:01Z", loadedAt: "2026-10-10T00:01:00Z",
+					expected: { daily: 50, weekly: 150, monthly: 150 }, lifetime: 150,
+				},
+				{
+					label: "a stepped entry past its pending TTL", laterTotal: null,
+					start: "2026-10-09T12:00:00Z", seedAt: "2026-10-09T12:14:30Z", loadedAt: "2026-10-09T12:16:30Z",
+					expected: { daily: 100, weekly: 100, monthly: 100 }, lifetime: 100,
+				},
+			];
+			const stalledSeed = async (scenario: (typeof scenarios)[number]) => {
+				vi.setSystemTime(new Date(scenario.start));
+				await reseed();
+				await checkpoint("b-stall", 100, 1);
+				// A background reseed starts with the entry held, then stalls in Postgres.
+				let unstall!: () => void;
+				database.stall = new Promise((resolve) => { unstall = resolve; });
+				vi.setSystemTime(new Date(scenario.seedAt));
+				const calls = database.calls.length;
+				void probe();
+				await flush();
+				vi.setSystemTime(new Date(scenario.loadedAt));
+				if (scenario.laterTotal !== null) await checkpoint("b-stall", scenario.laterTotal, 2);
+				database.stall = null;
+				unstall();
+				await flush();
+				expect(database.calls[calls]?.exclude.sort()).toEqual(["b-stall", "req-b-stall"]);
+			};
+
+			it.each(scenarios)("keeps the spend of $label", async (scenario) => {
+				database.keys.set(KEY, { workspaceId: WORKSPACE, daily: [100, 1_000_000], weekly: [0, 1_000_000], monthly: [0, 1_000_000] });
+				await stalledSeed(scenario);
+				expect(await buckets()).toEqual(scenario.expected);
+			});
+
+			it.each(scenarios)("keeps the lifetime budget spend of $label", async (scenario) => {
+				// Reached exactly at the request's total, so the coordinator reports the usage it counts.
+				database.budgets.push({ id: "lifetime", interval: "lifetime", limit: scenario.lifetime });
+				await stalledSeed(scenario);
+				const result = await coordinator.acquire(WORKSPACE, KEY, { requests: 1, units: 0 }, { requests: 1, units: 0 }, [], "lifetime-probe");
+				expect("denial" in result ? result.denial?.gate : null).toMatchObject({
+					reason: "workspace_lifetime_cost_budget_reached", currentValue: scenario.lifetime,
+				});
+			});
+		});
+
+		it("ends at the money moved when a refund commits after the audit read back the old total", async () => {
+			await checkpoint("b-late", 500, 1);
+			// The final refund to 300 fails as far as the gateway can tell; the read-back still sees 500,
+			// so the failure audit settles the entry at max(500 confirmed, 300 expected).
+			await coordinator.record(WORKSPACE, { ...entry("b-late"), costNanos: 500, final: true });
+			expect(await daily()).toBe(500);
+			// The refund commits afterwards, and the pending row lands with its frozen 500.
+			debit("b-late", 300);
+			database.rows.push({ requestId: "req-b-late", keyId: KEY, success: false, cost: 500, createdAt: Date.now() });
+			await reseed();
+			await reseed();
+			// The seed counts a pending request by its money movements, not by the row's cost.
+			expect(database.calls.at(-1)?.exclude).toEqual([]);
+			expect(await daily()).toBe(300);
+		});
+
+		it("keeps counting an entry whose audit row landed until a seed counts its money movements", async () => {
+			database.budgets.push({ id: "lifetime", interval: "lifetime", limit: 300 });
+			await checkpoint("b-hand", 300, 1);
+			// The audit lands as a pending failure row: the seed counts the request by its charge
+			// movements, never the row's cost (the money-movements rule), so the row adds nothing.
+			database.rows.push({ requestId: "req-b-hand", keyId: KEY, success: false, cost: 300, createdAt: Date.now() });
+			const denied = async () => {
+				const result = await coordinator.acquire(WORKSPACE, KEY, { requests: 1, units: 0 }, { requests: 1, units: 0 }, [], `p-${Math.random()}`);
+				return "denial" in result ? result.denial?.gate : null;
+			};
+			// This seed excludes both its ids and finds its row: the entry is marked persisted, but the
+			// seed does not count its spend, so memory still must.
+			await reseed();
+			expect(database.calls.at(-1)?.exclude.sort()).toEqual(["b-hand", "req-b-hand"]);
+			expect(await denied()).toMatchObject({ reason: "workspace_lifetime_cost_budget_reached", currentValue: 300 });
+			// The next seed no longer excludes it and counts the charge row: handed off, still 300.
+			await reseed();
+			expect(database.calls.at(-1)?.exclude).toEqual([]);
+			expect(await denied()).toMatchObject({ reason: "workspace_lifetime_cost_budget_reached", currentValue: 300 });
+		});
+
+		it("reloads a seed rather than count twice a request recorded while it loaded", async () => {
+			database.keys.set(KEY, { workspaceId: WORKSPACE, daily: [100, 1_000] });
+			await reseed();
+			let unstall!: () => void;
+			database.stall = new Promise((resolve) => { unstall = resolve; });
+			vi.setSystemTime(Date.now() + SPEND_LEASE.reseedMs + 1);
+			void probe();
+			await flush();
+			// While the seed is loading, a $6 request's audit row lands and then its spend is recorded.
+			database.rows.push({ requestId: "req-loaded", keyId: KEY, success: true, cost: 600, createdAt: Date.now() });
+			await coordinator.record(WORKSPACE, { keyId: KEY, billingRequestId: "bill-loaded", requestId: "req-loaded", costNanos: 600, requests: 1 });
+			database.stall = null;
+			unstall();
+			await flush();
+			// Counted once ($6), not by both the seed's row and memory ($12).
+			expect(database.calls.at(-1)?.exclude.sort()).toEqual(["bill-loaded", "req-loaded"]);
+			expect((await probe())?.daily).toMatchObject({ requestsUsed: 1, costUsedNanos: 600 });
+		});
+
+		it("counts an ordinary request once while held, when its audit lands and after the seed takes it over", async () => {
+			// The fake-seed version of #3547's real-SQL handoff test: the charge row lands first under
+			// the billing id, then the coordinator records the $4.50 request.
+			const ordinary = { keyId: KEY, billingRequestId: "bill-ordinary", requestId: "req-ordinary", costNanos: 450, requests: 1 };
+			database.charges.push({ billingId: "bill-ordinary", keyId: KEY, total: 450, at: Date.now() });
+			await coordinator.record(WORKSPACE, ordinary);
+			expect(await daily()).toBe(450);
+			// A seed while it is held excludes both ids, so the charge row is not counted as well.
+			await reseed();
+			expect(await daily()).toBe(450);
+			expect(database.calls.at(-1)?.exclude.sort()).toEqual(["bill-ordinary", "req-ordinary"]);
+			// The audit row lands: the next seed still excludes it and finds the row.
+			database.rows.push({ requestId: "req-ordinary", billingId: "bill-ordinary", keyId: KEY, success: true, cost: 450, createdAt: Date.now() });
+			await reseed();
+			expect(await daily()).toBe(450);
+			// The seed after that counts the row (the charge row once, through it); the held copy goes.
+			await reseed();
+			expect(database.calls.at(-1)?.exclude).toEqual([]);
+			expect(await daily()).toBe(450);
+			coordinator = createCoordinator();
+			expect(await daily()).toBe(450);
+		});
+
+		it("reseeds once the held entries' ids, two per request, reach the seed's limit", async () => {
+			const calls = database.calls.length;
+			// 2,600 requests need 5,200 ids, above the 5,000 the seed accepts.
+			for (let batch = 0; batch < 26; batch += 1) {
+				await coordinator.record(WORKSPACE, Array.from({ length: 100 }, (_, index) => {
+					const n = batch * 100 + index;
+					return { keyId: KEY, billingRequestId: `bill-burst-${n}`, requestId: `req-burst-${n}`, costNanos: 1, requests: 1 };
+				}));
+			}
+			await flush();
+			// A reseed started on its own, and no seed was sent more ids than it accepts.
+			expect(database.calls.length).toBeGreaterThan(calls);
+			expect(Math.max(...database.calls.slice(calls).map((call) => call.exclude.length))).toBeLessThanOrEqual(SPEND_LEASE.maxExcludedRequestIds);
+			expect(database.calls.at(-1)?.exclude).toHaveLength(SPEND_LEASE.maxExcludedRequestIds);
+		});
+
+		it("ignores a first checkpoint that arrives after the request's final", async () => {
+			// The stream was refunded to 0 at its final; delivery put the final first.
+			debit("b-reordered", 300);
+			debit("b-reordered", 0);
+			// The final opens the entry, set at 0; the late checkpoint cannot raise a final entry.
+			expect(await coordinator.record(WORKSPACE, { ...entry("b-reordered"), costNanos: 0, final: true })).toMatchObject({ duplicates: 0 });
+			expect(await coordinator.record(WORKSPACE, { ...entry("b-reordered"), costNanos: 300, revision: 1 })).toMatchObject({ duplicates: 1 });
+			await flush();
+			expect(await daily()).toBe(0);
+			await reseed();
+			expect(await daily()).toBe(0);
+		});
+
+		it("counts a request whose first checkpoint never arrived, once", async () => {
+			// Checkpoint 1 debited $100 but its record was lost; the seed already counts the charge row.
+			debit("b-lost", 100);
+			await reseed();
+			expect(await daily()).toBe(100);
+			// Checkpoint 2 opens the entry. It counts from memory only once a seed excluding the charge
+			// row is published, which the coordinator starts at once: never $100 + $250.
+			let unstall!: () => void;
+			database.stall = new Promise((resolve) => { unstall = resolve; });
+			await checkpoint("b-lost", 250, 2);
+			expect(await daily()).toBe(100);
+			database.stall = null;
+			unstall();
+			await flush();
+			expect(database.calls.at(-1)?.exclude.sort()).toEqual(["b-lost", "req-b-lost"]);
+			expect(await daily()).toBe(250);
+			debit("b-lost", 200);
+			await coordinator.record(WORKSPACE, { ...entry("b-lost"), costNanos: 200, final: true });
+			expect(await daily()).toBe(200);
+			await reseed();
+			expect(await daily()).toBe(200);
+		});
+
+		it("counts a final for a request it never held (every checkpoint record lost, or a one-off charge)", async () => {
+			debit("b-final-only", 300);
+			await coordinator.record(WORKSPACE, { ...entry("b-final-only"), costNanos: 300, final: true });
+			await flush();
+			expect(database.calls.at(-1)?.exclude.sort()).toEqual(["b-final-only", "req-b-final-only"]);
+			expect(await daily()).toBe(300);
+			// Later records for it change nothing.
+			expect(await coordinator.record(WORKSPACE, { ...entry("b-final-only"), costNanos: 900, revision: 3 })).toMatchObject({ duplicates: 1 });
+			await reseed();
+			expect(await daily()).toBe(300);
+		});
+	});
+
+	it("applies a checkpoint to the isolate's cached slice, so the next request near the cap is refused", async () => {
+		runtime.bindings = { ...runtime.bindings!, GATEWAY_SPEND_LIMIT_DO_MODE: "enforce" };
+		const key = "00000000-0000-4000-8000-000000000002";
+		database.keys.set(key, { workspaceId: WORKSPACE, daily: [0, 1_000] });
+		const first = await checkSpendLimit({ workspaceId: WORKSPACE, keyId: key, admissionId: "req-a" });
+		if (first.outcome !== "allowed") throw new Error("expected admission");
+		const args = { admission: first.admission, workspaceId: WORKSPACE, keyId: key, billingRequestId: "bill-a", requestId: "req-a" };
+		recordCheckpointSpend({ ...args, costNanos: 1_100, revision: 1 });
+		await flush();
+		expect((await checkSpendLimit({ workspaceId: WORKSPACE, keyId: key, admissionId: "req-b" })).outcome).toBe("denied");
+		// The final settlement replaces the checkpoint units on the slice instead of adding to them.
+		settleEnforcedSpend({ ...args, rowWritten: true, costNanos: 1_100, replace: true });
+		await flush();
+		expect((await probe(key))?.daily).toMatchObject({ costUsedNanos: 1_100 });
+		expect((await checkSpendLimit({ workspaceId: WORKSPACE, keyId: key, admissionId: "req-c" })).outcome).toBe("denied");
+	});
+
+	it("frees the slice again when a checkpointed request is refunded to 0", async () => {
+		runtime.bindings = { ...runtime.bindings!, GATEWAY_SPEND_LIMIT_DO_MODE: "enforce" };
+		const key = "00000000-0000-4000-8000-000000000003";
+		database.keys.set(key, { workspaceId: WORKSPACE, daily: [0, 1_000] });
+		const first = await checkSpendLimit({ workspaceId: WORKSPACE, keyId: key, admissionId: "req-a" });
+		if (first.outcome !== "allowed") throw new Error("expected admission");
+		const args = { admission: first.admission, workspaceId: WORKSPACE, keyId: key, billingRequestId: "bill-r", requestId: "req-a" };
+		recordCheckpointSpend({ ...args, costNanos: 1_100, revision: 1 });
+		await flush();
+		settleEnforcedSpend({ ...args, rowWritten: false, costNanos: 0, replace: true });
+		await flush();
+		expect((await probe(key))?.daily).toMatchObject({ costUsedNanos: 0 });
+		expect((await checkSpendLimit({ workspaceId: WORKSPACE, keyId: key, admissionId: "req-d" })).outcome).toBe("allowed");
+	});
+
+	it("records checkpoint spend in enforce mode without settling the admission", async () => {
+		runtime.bindings = { ...runtime.bindings!, GATEWAY_SPEND_LIMIT_DO_MODE: "enforce" };
+		const key = "00000000-0000-4000-8000-000000000001";
+		database.keys.set(key, { workspaceId: WORKSPACE, daily: [0, 1_000] });
+		const decision = await checkSpendLimit({ workspaceId: WORKSPACE, keyId: key, admissionId: "req-ckpt" });
+		if (decision.outcome !== "allowed") throw new Error("expected admission");
+		const record = vi.spyOn(coordinator, "record");
+		const args = { admission: decision.admission, workspaceId: WORKSPACE, keyId: key, billingRequestId: "bill-ckpt", requestId: "req-ckpt" };
+		recordCheckpointSpend({ ...args, costNanos: 600, revision: 1 });
+		await flush();
+		expect(record).toHaveBeenLastCalledWith(WORKSPACE, [expect.objectContaining({ billingRequestId: "bill-ckpt", costNanos: 600, replace: true })]);
+		// The drain is stopped here: the coordinator still holds the 600 for this key's budget.
+		expect((await probe(key))?.daily).toMatchObject({ costUsedNanos: 600 });
+		// When it does settle, the final amount replaces the checkpoint's.
+		settleEnforcedSpend({ ...args, rowWritten: false, costNanos: 350, replace: true });
+		await flush();
+		expect((await probe(key))?.daily).toMatchObject({ costUsedNanos: 350 });
+	});
+
 	it("never grants more requests than remain, across isolates and failures", async () => {
 		database.rows.push(...Array.from({ length: 37 }, (_, index) => ({
 			requestId: `seeded-${index}`, keyId: KEY, success: true, cost: 1, createdAt: Date.parse("2026-10-09T03:00:00Z"),
@@ -350,7 +770,7 @@ describe("spend-limit coordinator", () => {
 		vi.setSystemTime(Date.now() + SPEND_LEASE.reseedMs + 1);
 		await probe();
 		await flush();
-		expect(database.calls.at(-1)?.exclude.sort()).toEqual(["r1", "r2"]);
+		expect(database.calls.at(-1)?.exclude.sort()).toEqual(["b1", "b2", "r1", "r2"]);
 		expect((await probe())?.daily).toMatchObject({ requestsUsed: 3, costUsedNanos: 1_300 });
 
 		// r1 is now known to be persisted: the next seed counts it instead of excluding it.
@@ -358,7 +778,7 @@ describe("spend-limit coordinator", () => {
 		vi.setSystemTime(Date.now() + SPEND_LEASE.reseedMs + 1);
 		await probe();
 		await flush();
-		expect(database.calls.at(-1)?.exclude).toEqual(["r2"]);
+		expect(database.calls.at(-1)?.exclude.sort()).toEqual(["b2", "r2"]);
 		expect((await probe())?.daily).toMatchObject({ requestsUsed: 3, costUsedNanos: 1_300 });
 		vi.setSystemTime(Date.now() + SPEND_LEASE.reseedMs + 1);
 		await probe();
@@ -767,6 +1187,86 @@ describe("spend-limit coordinator", () => {
 			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, admissionId: "r" })).toMatchObject({
 				outcome: "denied", keyLimit: { reason: "daily_request_limit_reached" },
 			});
+		});
+
+		it("counts charged server-tool failures against a cost budget, so repeating them cannot drain the wallet", async () => {
+			// $0.000001 a day; each failed request was charged 400 nanos for its completed rounds.
+			database.keys.set(API_KEY, { workspaceId: WORKSPACE, daily: [0, 1_000] });
+			const audited: Array<Record<string, unknown>> = [];
+			let admitted = 0;
+			for (let attempt = 0; attempt < 10; attempt++) {
+				const slot = createSpendLimitSlot();
+				const decision = await enforcedSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, requestId: `r${attempt}`, slot });
+				if (decision?.outcome !== "allowed") break;
+				admitted++;
+				await handleError({
+					stage: "execute",
+					res: new Response(JSON.stringify({ error: "gateway_server_tool_limit" }), { status: 400 }),
+					endpoint: "chat.completions",
+					ctx: {
+						requestId: `r${attempt}`, billingRequestId: `b${attempt}`, workspaceId: WORKSPACE, keyId: API_KEY,
+						endpoint: "chat.completions", model: "openai/gpt-5.4-nano", meta: { apiKeyId: API_KEY },
+						spendAdmission: await slotAdmission(slot),
+						serverToolPartialCharge: { costNanos: 400, currency: "USD", usage: { input_tokens: 3_000 }, pricingLines: [{ dimension: "input_text_tokens", line_nanos: 400 }] },
+					} as any,
+					auditFailure: async (args: Record<string, unknown>) => { audited.push(args); },
+				});
+				await flush();
+			}
+			// Admitted while spend is below the budget: 0, 400 and 800 nanos; the fourth (1,200) is refused.
+			expect(admitted).toBe(3);
+			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, admissionId: "r-next" })).toMatchObject({
+				outcome: "denied", keyLimit: { reason: "daily_cost_limit_reached", currentValue: 1_200 },
+			});
+			// Each failure row carries what was charged.
+			expect(audited.map((args) => args.costNanos)).toEqual([400, 400, 400]);
+			expect(audited[0]).toMatchObject({ usage: { input_tokens: 3_000 }, pricingLines: [{ dimension: "input_text_tokens" }], billingRequestId: "b0" });
+		});
+
+		it("counts delivered responses the wallet did not take even when their failure rows cannot be written", async () => {
+			// A database outage: the wallet charge and the failure-row insert both exhausted their
+			// retries. Each delivered response was expected to cost 400 nanos.
+			database.keys.set(API_KEY, { workspaceId: WORKSPACE, daily: [0, 1_000] });
+			let admitted = 0;
+			for (let attempt = 0; attempt < 10; attempt++) {
+				const slot = createSpendLimitSlot();
+				const decision = await enforcedSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, requestId: `d${attempt}`, slot });
+				if (decision?.outcome !== "allowed") break;
+				admitted++;
+				await handleError({
+					stage: "execute",
+					res: new Response(JSON.stringify({ error: "stream_finalization_failed" }), { status: 500 }),
+					endpoint: "chat.completions",
+					ctx: {
+						requestId: `d${attempt}`, billingRequestId: `bd${attempt}`, workspaceId: WORKSPACE, keyId: API_KEY,
+						endpoint: "chat.completions", model: "openai/gpt-5.4-nano", meta: { apiKeyId: API_KEY },
+						spendAdmission: await slotAdmission(slot),
+						uncollectedChargeNanos: 400,
+						uncollectedChargeReason: "persistence_failed",
+					} as any,
+					auditFailure: async () => { throw new Error("database unavailable"); },
+				});
+				await flush();
+			}
+			// The admissions are settled at the expected amount, never released: 0, 400, 800 admitted.
+			expect(admitted).toBe(3);
+			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, admissionId: "d-next" })).toMatchObject({
+				outcome: "denied", keyLimit: { reason: "daily_cost_limit_reached", currentValue: 1_200 },
+			});
+		});
+
+		it("still frees the admission of a failure that charged nothing", async () => {
+			const slot = createSpendLimitSlot();
+			await enforcedSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, requestId: "r1", slot });
+			await handleError({
+				stage: "execute",
+				res: new Response(JSON.stringify({ error: "upstream_error" }), { status: 502 }),
+				endpoint: "chat.completions",
+				ctx: { requestId: "r1", billingRequestId: "b1", workspaceId: WORKSPACE, keyId: API_KEY, endpoint: "chat.completions", meta: { apiKeyId: API_KEY }, spendAdmission: await slotAdmission(slot) } as any,
+				auditFailure: async () => {},
+			});
+			await flush();
+			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, admissionId: "r2" })).toMatchObject({ outcome: "allowed" });
 		});
 	});
 
