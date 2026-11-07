@@ -6,9 +6,9 @@ CREATE OR REPLACE FUNCTION private.pending_json_cutoff ()
   SET search_path TO ''
   AS $function$
 -- Rows created before this are pending reconciliation by their JSON billing_status as well as
--- by expected_cost_nanos; see private.billing_cutoffs. -infinity (the flag is never read) if the
--- marker is missing.
-  select coalesce((select pending_json_cutoff from private.billing_cutoffs where singleton), '-infinity'::timestamptz);
+-- by expected_cost_nanos; see private.billing_cutoffs. infinity (the flag is always read) while the
+-- marker is NULL or missing.
+  select coalesce((select pending_json_cutoff from private.billing_cutoffs where singleton), 'infinity'::timestamptz);
 $function$;
 
 GRANT EXECUTE ON FUNCTION "private"."pending_json_cutoff"() TO "service_role";
