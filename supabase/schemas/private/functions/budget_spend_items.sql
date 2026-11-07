@@ -27,16 +27,21 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
   --
   -- * Requests: every gateway_requests row with a positive cost, whether or not it succeeded (a
   --   cancelled or failed request can still be charged), read as two disjoint parts so each uses
-  --   its partial index, except excluded request ids and the batch_hold_usage rows of a hold that
-  --   is still active, which the hold itself counts.
+  --   its partial index, except excluded request ids, the batch_hold_usage rows of a hold that
+  --   is still active, which the hold itself counts, and rows whose money movements replace them
+  --   (private.unbilled_spend counts the movements): a request charged in steps, a failure row
+  --   pending reconciliation whose charge was applied, a debited batch's batch_usage rows and a
+  --   settled hold's placeholders. Each is decided per row with index lookups
+  --   (credit_ledger_source_ref_idx, the gateway_request_charges and reservation primary keys),
+  --   with no assumption about when the row landed.
   -- * Active holds (held or reserved), in every period until they end: video and free-model
   --   holds less the cost already audited for them, other holds (batch, realtime) less what was
   --   captured or released. Realtime holds carry no key; their session does.
   -- * Captured video and free-model holds made in the period, less the cost audited for them, so
   --   a capture counts before (or without) its request row and once after it lands.
-  -- * Unbilled spend (private.unbilled_spend): wallet movements of charges whose request row has
-  --   not landed, each at its time, and the uncharged part of delivered requests pending
-  --   reconciliation.
+  -- * Money movements (private.unbilled_spend), each at its time: stepped charges, one-off charges
+  --   whose request row has not landed or is pending reconciliation, batch debits, and the
+  --   uncollected part of delivered requests pending reconciliation.
   --
   -- Holds and request rows are matched by workspace and ids; their keys are compared null-safely
   -- because deleting a key sets both key_id columns to NULL (ON DELETE SET NULL).
@@ -55,6 +60,40 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
         and hold.status in ('held', 'reserved')
         and starts_with(request.request_id, 'batch_hold_usage:' || hold.reservation_id || ':')
     ))
+    -- Charged in steps, or pending reconciliation with an applied charge.
+    and not (request.billing_request_id is not null and (
+      exists (
+        select 1 from public.credit_ledger movement
+        where movement.source_ref_type = 'gateway_request'
+          and movement.source_ref_id = request.billing_request_id
+          and movement.workspace_id = request.workspace_id
+          and movement.ref_type = 'gateway_request_charge')
+      or ((request.expected_cost_nanos is not null
+          or coalesce(request.detail_metadata #>> '{accounting_finalization,billing_status}' = 'pending_reconciliation', false))
+        and exists (
+          select 1 from public.gateway_request_charges charge
+          where charge.workspace_id = request.workspace_id
+            and charge.request_id = request.billing_request_id
+            and charge.status = 'applied'))))
+    -- A debited batch's rows.
+    and not (starts_with(request.request_id, 'batch_usage:') and (
+      exists (
+        select 1 from public.gateway_request_charges capture
+        where capture.workspace_id = request.workspace_id
+          and capture.request_id = 'batch_capture:' || split_part(request.request_id, ':', 2)
+          and capture.status = 'applied')
+      or exists (
+        select 1 from public.credit_ledger debit
+        where debit.source_ref_type = 'async_job'
+          and debit.source_ref_id = split_part(request.request_id, ':', 2)
+          and debit.workspace_id = request.workspace_id
+          and debit.ref_type = 'async_job_charge')))
+    -- A settled hold's placeholders (batch_hold_usage:<reservation>:<n>).
+    and not (starts_with(request.request_id, 'batch_hold_usage:') and exists (
+      select 1 from public.gateway_wallet_reservations hold
+      where hold.workspace_id = request.workspace_id
+        and hold.reservation_id = regexp_replace(substr(request.request_id, 18), ':[^:]*$', '')
+        and hold.status not in ('held', 'reserved')))
   union all
   -- Charged requests that did not succeed (gateway_requests_charged_unsuccessful_cost_idx).
   select request.key_id, request.created_at, false, request.cost_nanos
@@ -65,6 +104,21 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
     and request.cost_nanos > 0
     and request.created_at >= coalesce(p_since, '-infinity'::timestamptz)
     and not (request.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
+    -- Charged in steps, or pending reconciliation with an applied charge.
+    and not (request.billing_request_id is not null and (
+      exists (
+        select 1 from public.credit_ledger movement
+        where movement.source_ref_type = 'gateway_request'
+          and movement.source_ref_id = request.billing_request_id
+          and movement.workspace_id = request.workspace_id
+          and movement.ref_type = 'gateway_request_charge')
+      or ((request.expected_cost_nanos is not null
+          or coalesce(request.detail_metadata #>> '{accounting_finalization,billing_status}' = 'pending_reconciliation', false))
+        and exists (
+          select 1 from public.gateway_request_charges charge
+          where charge.workspace_id = request.workspace_id
+            and charge.request_id = request.billing_request_id
+            and charge.status = 'applied'))))
   union all
   select coalesce(reservation.key_id, session.key_id), reservation.created_at,
     reservation.status in ('held', 'reserved'),
@@ -102,7 +156,7 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
   from private.unbilled_spend(p_workspace_id, p_since, p_key_ids, p_exclude_request_ids, p_exclude_charge_ids) unbilled;
 $function$;
 
-COMMENT ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) IS 'Spend items counted toward workspace and department budgets: positive-cost requests, active holds in every period, captured video and free-model holds less their audited cost (each hold''s batch_hold_usage rows counted once), and private.unbilled_spend (wallet movements of charges without a request row, delivered requests pending reconciliation).';
+COMMENT ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) IS 'Spend items counted toward workspace and department budgets: positive-cost requests except those whose money movements replace them, active holds in every period, captured video and free-model holds less their audited cost (each hold''s batch_hold_usage rows counted once), and private.unbilled_spend (money movements, each at its time).';
 
 REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) FROM PUBLIC;
 

@@ -65,7 +65,7 @@ try {
   for (const name of ['20261106234000_gateway_requests_expected_cost_nanos.sql', '20261106234001_validate_gateway_requests_expected_cost_nanos_check.sql']) {
     await db.exec(await readFile(new URL(`../migrations/${name}`, import.meta.url), 'utf8'));
   }
-  for (const path of ['private/functions/unbilled_spend.sql', 'private/functions/budget_spend_items.sql', 'private/functions/department_budget_usage.sql',
+  for (const path of ['private/functions/unbilled_spend.sql', 'private/functions/key_spend_items.sql', 'private/functions/budget_spend_items.sql', 'private/functions/department_budget_usage.sql',
     'private/functions/workspace_budget_status.sql', 'public/functions/gateway_workspace_budget_status.sql', 'public/functions/gateway_spend_limit_seed.sql',
     'public/functions/workspace_department_budget_status.sql']) {
     const definition = (await schema(path)).trim();
