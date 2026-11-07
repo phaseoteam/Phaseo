@@ -263,38 +263,18 @@ begin
   if greatest(v_day_req_limit, v_wk_req_limit, v_mo_req_limit,
       v_day_cost_limit, v_wk_cost_limit, v_mo_cost_limit) > 0 then
   select
-    count(*) filter (where gr.served and gr.created_at >= day_start)                    as used_day_reqs,
-    count(*) filter (where gr.served and gr.created_at >= week_start)                   as used_wk_reqs,
-    count(*) filter (where gr.served and gr.created_at >= month_start)                  as used_mo_reqs,
-    coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= day_start), 0)::bigint   as used_day_cost,
-    coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= week_start), 0)::bigint  as used_wk_cost,
-    coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= month_start), 0)::bigint as used_mo_cost
+    count(*) filter (where gr.served and gr.at >= day_start)                    as used_day_reqs,
+    count(*) filter (where gr.served and gr.at >= week_start)                   as used_wk_reqs,
+    count(*) filter (where gr.served and gr.at >= month_start)                  as used_mo_reqs,
+    coalesce(sum(gr.nanos) filter (where gr.at >= day_start), 0)::bigint   as used_day_cost,
+    coalesce(sum(gr.nanos) filter (where gr.at >= week_start), 0)::bigint  as used_wk_cost,
+    coalesce(sum(gr.nanos) filter (where gr.at >= month_start), 0)::bigint as used_mo_cost
   into
     used_day_reqs, used_wk_reqs, used_mo_reqs,
     used_day_cost, used_wk_cost, used_mo_cost
-  -- Successful requests count as requests and cost. A request that did not succeed but was
-  -- charged (a cancelled stream that was billed) counts toward cost only.
-  from (
-    select served.created_at, served.cost_nanos, true as served
-    from public.gateway_requests served
-    where served.key_id = gateway_context_access.api_key_id
-      and served.workspace_id = gateway_context_access.workspace_id
-      and served.success is true
-      and served.created_at >= least(week_start, month_start)
-    union all
-    select charged.created_at, charged.cost_nanos, false
-    from public.gateway_requests charged
-    where charged.workspace_id = gateway_context_access.workspace_id
-      and charged.key_id = gateway_context_access.api_key_id
-      and charged.success is not true
-      and charged.cost_nanos > 0
-      and charged.created_at >= least(week_start, month_start)
-    -- Unbilled spend (private.unbilled_spend): charges without a request row, delivered requests
-    -- pending reconciliation; cost only.
-    union all
-    select unbilled.at, unbilled.nanos, false
-    from private.unbilled_spend(gateway_context_access.workspace_id, least(week_start, month_start), array[gateway_context_access.api_key_id]) unbilled
-  ) gr;
+  -- The key's usage (private.key_spend_items): successful requests count as requests and cost,
+  -- charged ones that did not succeed and money movements as cost only.
+  from private.key_spend_items(gateway_context_access.workspace_id, least(week_start, month_start), array[gateway_context_access.api_key_id]) gr;
   end if;
 
   if v_soft_blocked then

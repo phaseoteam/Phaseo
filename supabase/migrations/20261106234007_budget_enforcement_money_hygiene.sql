@@ -1,20 +1,19 @@
 -- phaseo:allow-destructive-migration reason: TRUNCATE appears only in a REVOKE that removes it from anon and authenticated on gateway_wallet_reservations; no table or row is removed.
 --
 -- Budget enforcement and money hygiene:
--- 1. One budget usage calculation, private.budget_spend_items: positive-cost requests (whether or
---    not they succeeded), active holds in every period until they end, and captured video and
---    free-model holds less the cost audited for them, with each batch hold counted once.
---    gateway_workspace_budget_status uses it, and private.department_budget_usage applies it to
---    each department's keys for both gateway_department_budget_status and gateway_spend_limit_seed
---    (the SpendLimit Durable Object).
---    Charged requests that did not succeed (a cancelled stream that was billed) also count
---    toward key-limit cost in the request context (private.gateway_context_access,
---    gateway_fetch_request_context_without_workspace_budget), the seed's key usage, hold
---    admission (gateway_wallet_reserve_once_without_workspace_budget) and the department alert
---    sweep (workspace_department_budget_status); request counts stay successful requests only.
---    The indexes these reads use are built by the three migrations just before this one.
---    Applied stepped stream charges (gateway_request_charges.is_final false) whose request row
---    has not landed count until it does, toward the charge key's department too when it has one.
+-- 1. Money movements win: a request's spend is its money movements, each at its own time, and its
+--    audit cost_nanos only when it has none (private.unbilled_spend). A request charged in steps
+--    counts its adjustment ledger rows; a request pending reconciliation (expected_cost_nanos set,
+--    or billing_status pending_reconciliation) with an applied charge counts that charge plus
+--    greatest(expected - charged, 0); a debited batch counts its debit, not its placeholders or
+--    rows. One budget calculation, private.budget_spend_items (requests, holds, money movements),
+--    serves workspace and department budgets and the spend-limit seed; one key calculation,
+--    private.key_spend_items, serves both request-context key checks, hold admission
+--    (gateway_wallet_reserve_once_without_workspace_budget), the seed's key usage and the 80%
+--    warnings (sweep_spend_limit_warnings), which now read what the gateway enforces rather than
+--    the hourly rollup. Charged requests that did not succeed count toward cost; request counts
+--    stay successful requests only. The indexes these reads use are built by the migrations just
+--    before this one.
 -- 2. gateway_department_budget_status gates batch and video holds (gateway_wallet_reserve_once),
 --    realtime sessions (gateway_realtime_create_with_hold, gateway_realtime_extend_hold_once) and
 --    the request-context fallback (gateway_fetch_request_context, gateway_fetch_request_context_bundle),
@@ -49,53 +48,47 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
   STABLE
   SET search_path TO ''
   AS $function$
-  -- Spend that budgets and key caps count although no ordinary request row carries it yet, one
-  -- row per wallet movement, by billing request id. p_key_ids limits the rows to those keys (NULL:
-  -- the whole workspace); p_since (NULL: all time) is the earliest window the caller counts.
+  -- Spend that budgets and key caps count from money movements rather than from a request row's
+  -- cost, one row per movement, by billing request id. p_key_ids limits the rows to those keys
+  -- (NULL: the whole workspace); p_since (NULL: all time) is the earliest window the caller counts.
+  --
+  -- Money movements win: a request's spend is its movements, each at its own time, and its audit
+  -- cost_nanos only when it has none. The request readers (private.budget_spend_items,
+  -- private.key_spend_items) leave out the cost of the rows these movements replace:
+  --   (a) a request charged in steps (adjustment ledger rows from gateway_charge_request_total);
+  --   (b) a row pending reconciliation (expected_cost_nanos set, or
+  --       detail_metadata.accounting_finalization.billing_status 'pending_reconciliation') whose
+  --       gateway_request_charges row was applied (a pending row with none counts its audit cost);
+  --   (c) a batch's batch_usage rows once the batch is debited, and its batch_hold_usage
+  --       placeholders once its hold has settled.
   --
   -- The SpendLimit Durable Object counts an admission it still holds from memory and lists both
   -- its ids: p_exclude_charge_ids leaves out charge rows by billing request id
   -- (gateway_request_charges.request_id), p_exclude_request_ids request rows by request id.
+  -- Charges before 2026-11-04 00:00 UTC are left out: request rows recorded billing_request_id only
+  -- from 2026-11-03 14:43 UTC, so an older charge's request row cannot be matched and already
+  -- counts.
   --
-  -- A wallet charge counts until a gateway_requests row with its billing_request_id lands (that
-  -- row then counts), probed per charge with LIMIT 1 on #3534's (workspace_id, billing_request_id)
-  -- index. Charges before 2026-11-04 00:00 UTC are left out: request rows recorded
-  -- billing_request_id only from 2026-11-03 14:43 UTC, so an older charge's audit row cannot be
-  -- matched and is already counted.
-  --
-  -- * 'stepped': a stream charged at drain checkpoints (gateway_charge_request_total), through the
-  --   adjustment ledger rows it writes, one per debit or refund, each at its own time; attributed
-  --   to the key on the charge row.
-  -- * 'charge': a one-off charge (no adjustment rows), one movement at the charge's time.
-  -- * 'batch': a correction at the debit's time that makes a batch count exactly its debit: the
-  --   debit less the per-row request rows that already count it, which may be negative (a capture
-  --   cheaper than its hold, whose batch_hold_usage placeholders were written at the held price).
-  --   The rows stay in their own windows. A batch without a reservation is charged as
-  --   batch_capture:<batch>; a reserved batch is settled into an async_job_charge ledger row
-  --   (gateway_wallet_settle_once). Rows are found by batch identity, whenever they were written:
-  --   the batch_usage:<batch>: (or batch_hold_usage:<reservation>:) prefix, as a range on
-  --   gateway_requests_batch_rows_idx (text_pattern_ops, since the collation is not C).
-  -- * 'unpaid': a delivered request whose wallet charge failed (expected_cost_nanos, pending
-  --   reconciliation): the part of the expected amount cost_nanos does not cover, so the row
-  --   counts greatest(cost_nanos, expected_cost_nanos) and a later charge never counts twice.
+  -- * 'stepped': every adjustment ledger row of a request charged in steps (rule a), debits and
+  --   refunds, at its time, attributed to the key on the charge row.
+  -- * 'charge': a one-off charge (no adjustment rows) at its time, while its request row has not
+  --   landed or one is pending reconciliation (rule b), each found per charge with LIMIT 1 on
+  --   #3534's (workspace_id, billing_request_id) index.
+  -- * 'batch': a batch's debit, whole, at its time (rule c): a batch_capture:<batch> charge, or a
+  --   reserved batch's async_job_charge ledger row (gateway_wallet_settle_once).
+  -- * 'unpaid': what a request pending reconciliation with an applied charge (stepped or one-off)
+  --   has not collected, greatest(max(expected_cost_nanos) - charge.cost_nanos, 0) per billing
+  --   request id, at the time of the row with the largest expected amount.
   select 'stepped'::text, charge.request_id, charge.key_id, movement.created_at, -movement.amount_nanos
   from public.credit_ledger movement
   join public.gateway_request_charges charge
     on charge.workspace_id = movement.workspace_id
     and charge.request_id = movement.source_ref_id
-  left join lateral (
-    select 1 as found
-    from public.gateway_requests request
-    where request.workspace_id = charge.workspace_id
-      and request.billing_request_id = charge.request_id
-    limit 1
-  ) audit on true
   where movement.workspace_id = p_workspace_id
     and movement.ref_type = 'gateway_request_charge'
     and movement.source_ref_type = 'gateway_request'
     and movement.status = 'applied'
     and movement.created_at >= greatest(coalesce(p_since, '-infinity'::timestamptz), '2026-11-04 00:00:00+00'::timestamptz)
-    and audit.found is null
     and (p_key_ids is null or charge.key_id = any (p_key_ids))
     and not (charge.request_id = any (coalesce(p_exclude_charge_ids, '{}'::text[])))
   union all
@@ -110,6 +103,15 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
   ) audit on true
   left join lateral (
     select 1 as found
+    from public.gateway_requests request
+    where request.workspace_id = charge.workspace_id
+      and request.billing_request_id = charge.request_id
+      and (request.expected_cost_nanos is not null
+        or coalesce(request.detail_metadata #>> '{accounting_finalization,billing_status}' = 'pending_reconciliation', false))
+    limit 1
+  ) pending on true
+  left join lateral (
+    select 1 as found
     from public.credit_ledger movement
     where movement.source_ref_type = 'gateway_request'
       and movement.source_ref_id = charge.request_id
@@ -122,23 +124,13 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
     and charge.cost_nanos > 0
     and charge.created_at >= greatest(coalesce(p_since, '-infinity'::timestamptz), '2026-11-04 00:00:00+00'::timestamptz)
     and not starts_with(charge.request_id, 'batch_capture:')
-    and audit.found is null
+    and (audit.found is null or pending.found is not null)
     and stepped.found is null
     and (p_key_ids is null or charge.key_id = any (p_key_ids))
     and not (charge.request_id = any (coalesce(p_exclude_charge_ids, '{}'::text[])))
   union all
-  select 'batch'::text, charge.request_id, charge.key_id, charge.created_at,
-    charge.cost_nanos - coalesce(persisted.cost, 0)
+  select 'batch'::text, charge.request_id, charge.key_id, charge.created_at, charge.cost_nanos
   from public.gateway_request_charges charge
-  left join lateral (
-    select sum(request.cost_nanos) as cost
-    from public.gateway_requests request
-    where request.workspace_id = charge.workspace_id
-      -- The constant range selects gateway_requests_batch_rows_idx; the second is this batch's rows.
-      and request.request_id ~>=~ 'batch' and request.request_id ~<~ 'batci'
-      and request.request_id ~>=~ ('batch_usage:' || substr(charge.request_id, 15) || ':') and request.request_id ~<~ ('batch_usage:' || substr(charge.request_id, 15) || ';')
-      and request.cost_nanos > 0
-  ) persisted on true
   where charge.workspace_id = p_workspace_id
     and starts_with(charge.request_id, 'batch_capture:')
     and charge.status = 'applied'
@@ -147,30 +139,11 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
     and (p_key_ids is null or charge.key_id = any (p_key_ids))
     and not (charge.request_id = any (coalesce(p_exclude_charge_ids, '{}'::text[])))
   union all
-  select 'batch'::text, debit.ref_id, hold.key_id, debit.created_at,
-    -debit.amount_nanos - coalesce(persisted.cost, 0) - coalesce(placeholders.cost, 0)
+  select 'batch'::text, debit.ref_id, hold.key_id, debit.created_at, -debit.amount_nanos
   from public.credit_ledger debit
   join public.gateway_wallet_reservations hold
     on hold.workspace_id = debit.workspace_id
     and hold.reservation_id = substr(debit.ref_id, length(debit.workspace_id::text) + 2)
-  left join lateral (
-    select sum(request.cost_nanos) as cost
-    from public.gateway_requests request
-    where request.workspace_id = debit.workspace_id
-      -- The constant range selects gateway_requests_batch_rows_idx; the second is this batch's rows.
-      and request.request_id ~>=~ 'batch' and request.request_id ~<~ 'batci'
-      and request.request_id ~>=~ ('batch_usage:' || debit.source_ref_id || ':') and request.request_id ~<~ ('batch_usage:' || debit.source_ref_id || ';')
-      and request.cost_nanos > 0
-  ) persisted on true
-  left join lateral (
-    select sum(request.cost_nanos) as cost
-    from public.gateway_requests request
-    where request.workspace_id = debit.workspace_id
-      -- The constant range selects gateway_requests_batch_rows_idx; the second is this batch's rows.
-      and request.request_id ~>=~ 'batch' and request.request_id ~<~ 'batci'
-      and request.request_id ~>=~ ('batch_hold_usage:' || hold.reservation_id || ':') and request.request_id ~<~ ('batch_hold_usage:' || hold.reservation_id || ';')
-      and request.cost_nanos > 0
-  ) placeholders on true
   where debit.workspace_id = p_workspace_id
     and debit.ref_type = 'async_job_charge'
     and starts_with(debit.ref_id, p_workspace_id::text || ':batch_hold:')
@@ -178,18 +151,27 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
     and debit.created_at >= greatest(coalesce(p_since, '-infinity'::timestamptz), '2026-11-04 00:00:00+00'::timestamptz)
     and (p_key_ids is null or hold.key_id = any (p_key_ids))
   union all
-  select 'unpaid'::text, request.billing_request_id, request.key_id, request.created_at,
-    request.expected_cost_nanos - greatest(coalesce(request.cost_nanos, 0), 0)
-  from public.gateway_requests request
-  where request.workspace_id = p_workspace_id
-    and request.expected_cost_nanos is not null
-    and request.expected_cost_nanos > greatest(coalesce(request.cost_nanos, 0), 0)
-    and (p_key_ids is null or request.key_id = any (p_key_ids))
-    and request.created_at >= coalesce(p_since, '-infinity'::timestamptz)
-    and not (request.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])));
+  select 'unpaid'::text, owed.billing_request_id, owed.key_id, owed.at, owed.nanos
+  from (
+    select distinct on (request.billing_request_id)
+      request.billing_request_id, request.key_id, request.created_at as at,
+      request.expected_cost_nanos - charge.cost_nanos as nanos
+    from public.gateway_requests request
+    join public.gateway_request_charges charge
+      on charge.workspace_id = request.workspace_id
+      and charge.request_id = request.billing_request_id
+      and charge.status = 'applied'
+    where request.workspace_id = p_workspace_id
+      and request.expected_cost_nanos is not null
+      and (p_key_ids is null or request.key_id = any (p_key_ids))
+      and request.created_at >= coalesce(p_since, '-infinity'::timestamptz)
+      and not (request.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
+    order by request.billing_request_id, request.expected_cost_nanos desc, request.created_at
+  ) owed
+  where owed.nanos > 0;
 $function$;
 
-COMMENT ON FUNCTION "private"."unbilled_spend"(uuid, timestamp with time zone, uuid[], text[], text[]) IS 'Spend counted toward budgets and key caps that no ordinary request row carries yet, by wallet movement: stepped charges through their adjustment ledger rows (each at its time), one-off charges without a request row, batch debits their rows do not cover, and the uncharged part of delivered requests pending reconciliation (expected_cost_nanos). Charge rows the SpendLimit Durable Object holds are excluded by billing request id, request rows by request id.';
+COMMENT ON FUNCTION "private"."unbilled_spend"(uuid, timestamp with time zone, uuid[], text[], text[]) IS 'Spend counted toward budgets and key caps from money movements, each at its time: adjustment ledger rows of requests charged in steps, one-off charges whose request row has not landed or is pending reconciliation, batch debits, and what a request pending reconciliation with an applied charge has not collected. Charge rows the SpendLimit Durable Object holds are excluded by billing request id, request rows by request id.';
 
 REVOKE ALL ON FUNCTION "private"."unbilled_spend"(uuid, timestamp with time zone, uuid[], text[], text[]) FROM PUBLIC;
 
@@ -200,6 +182,114 @@ GRANT EXECUTE ON FUNCTION "private"."unbilled_spend"(uuid, timestamp with time z
 -- private.gateway_context_access runs as its caller (service_role, through
 -- gateway_fetch_request_context_bundle) and reads this.
 GRANT EXECUTE ON FUNCTION "private"."unbilled_spend"(uuid, timestamp with time zone, uuid[], text[], text[]) TO "service_role";
+
+CREATE OR REPLACE FUNCTION private.key_spend_items (
+  p_workspace_id        uuid,
+  p_since               timestamp with time zone,
+  p_key_ids             uuid[],
+  p_exclude_request_ids text[] DEFAULT '{}'::text[],
+  p_exclude_charge_ids  text[] DEFAULT '{}'::text[]
+)
+  RETURNS TABLE (
+    key_id uuid,
+    at     timestamp with time zone,
+    served boolean,
+    nanos  bigint
+  )
+  LANGUAGE sql
+  STABLE
+  SET search_path TO ''
+  AS $function$
+  -- What API key limits count for p_key_ids since p_since (NULL: all time), one row per item: the
+  -- one key usage calculation behind both request-context key checks, hold admission, the
+  -- spend-limit seed and the 80% warnings. Request limits count served rows; cost limits sum nanos.
+  -- The SpendLimit Durable Object lists the ids of admissions it holds (see private.unbilled_spend).
+  --
+  -- * Successful requests: a request each, and their cost unless money movements replace it.
+  -- * Charged requests that did not succeed: cost only, unless movements replace it.
+  -- Movements replace a row charged in steps, a row pending reconciliation with an applied charge,
+  -- a debited batch's batch_usage rows and a settled hold's placeholders (private.unbilled_spend).
+  -- * Money movements (private.unbilled_spend), cost only, each at its time.
+  -- The replacement checks are the same as private.budget_spend_items', per row through index
+  -- lookups.
+  select served.key_id, served.created_at, true,
+    case when (served.billing_request_id is not null and (
+        exists (
+          select 1 from public.credit_ledger movement
+          where movement.source_ref_type = 'gateway_request'
+            and movement.source_ref_id = served.billing_request_id
+            and movement.workspace_id = served.workspace_id
+            and movement.ref_type = 'gateway_request_charge')
+        or ((served.expected_cost_nanos is not null
+            or coalesce(served.detail_metadata #>> '{accounting_finalization,billing_status}' = 'pending_reconciliation', false))
+          and exists (
+            select 1 from public.gateway_request_charges charge
+            where charge.workspace_id = served.workspace_id
+              and charge.request_id = served.billing_request_id
+              and charge.status = 'applied'))))
+      or (starts_with(served.request_id, 'batch_usage:') and (
+        exists (
+          select 1 from public.gateway_request_charges capture
+          where capture.workspace_id = served.workspace_id
+            and capture.request_id = 'batch_capture:' || split_part(served.request_id, ':', 2)
+            and capture.status = 'applied')
+        or exists (
+          select 1 from public.credit_ledger debit
+          where debit.source_ref_type = 'async_job'
+            and debit.source_ref_id = split_part(served.request_id, ':', 2)
+            and debit.workspace_id = served.workspace_id
+            and debit.ref_type = 'async_job_charge')))
+      or (starts_with(served.request_id, 'batch_hold_usage:') and exists (
+        select 1 from public.gateway_wallet_reservations hold
+        where hold.workspace_id = served.workspace_id
+          and hold.reservation_id = regexp_replace(substr(served.request_id, 18), ':[^:]*$', '')
+          and hold.status not in ('held', 'reserved')))
+    then 0 else coalesce(served.cost_nanos, 0) end
+  from public.gateway_requests served
+  where served.key_id = any (p_key_ids)
+    and served.workspace_id = p_workspace_id
+    and served.success is true
+    and served.created_at >= coalesce(p_since, '-infinity'::timestamptz)
+    and not (served.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
+  union all
+  select charged.key_id, charged.created_at, false, charged.cost_nanos
+  from public.gateway_requests charged
+  where charged.workspace_id = p_workspace_id
+    and charged.key_id = any (p_key_ids)
+    and charged.success is not true
+    and charged.cost_nanos > 0
+    and charged.created_at >= coalesce(p_since, '-infinity'::timestamptz)
+    and not (charged.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
+    and not (charged.billing_request_id is not null and (
+      exists (
+        select 1 from public.credit_ledger movement
+        where movement.source_ref_type = 'gateway_request'
+          and movement.source_ref_id = charged.billing_request_id
+          and movement.workspace_id = charged.workspace_id
+          and movement.ref_type = 'gateway_request_charge')
+      or ((charged.expected_cost_nanos is not null
+          or coalesce(charged.detail_metadata #>> '{accounting_finalization,billing_status}' = 'pending_reconciliation', false))
+        and exists (
+          select 1 from public.gateway_request_charges charge
+          where charge.workspace_id = charged.workspace_id
+            and charge.request_id = charged.billing_request_id
+            and charge.status = 'applied'))))
+  union all
+  select unbilled.key_id, unbilled.at, false, unbilled.nanos
+  from private.unbilled_spend(p_workspace_id, p_since, p_key_ids, p_exclude_request_ids, p_exclude_charge_ids) unbilled;
+$function$;
+
+COMMENT ON FUNCTION "private"."key_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) IS 'What API key limits count: successful requests (a request each, and their cost unless money movements replace it), charged requests that did not succeed (cost only, unless replaced), and private.unbilled_spend (money movements, each at its time). Shared by the request-context key checks, hold admission, the spend-limit seed and the 80% warnings.';
+
+REVOKE ALL ON FUNCTION "private"."key_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION "private"."key_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "private"."key_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) TO "postgres";
+
+-- private.gateway_context_access runs as its caller (service_role, through
+-- gateway_fetch_request_context_bundle) and reads this.
+GRANT EXECUTE ON FUNCTION "private"."key_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) TO "service_role";
 
 CREATE OR REPLACE FUNCTION private.budget_spend_items (
   p_workspace_id        uuid,
@@ -230,16 +320,21 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
   --
   -- * Requests: every gateway_requests row with a positive cost, whether or not it succeeded (a
   --   cancelled or failed request can still be charged), read as two disjoint parts so each uses
-  --   its partial index, except excluded request ids and the batch_hold_usage rows of a hold that
-  --   is still active, which the hold itself counts.
+  --   its partial index, except excluded request ids, the batch_hold_usage rows of a hold that
+  --   is still active, which the hold itself counts, and rows whose money movements replace them
+  --   (private.unbilled_spend counts the movements): a request charged in steps, a failure row
+  --   pending reconciliation whose charge was applied, a debited batch's batch_usage rows and a
+  --   settled hold's placeholders. Each is decided per row with index lookups
+  --   (credit_ledger_source_ref_idx, the gateway_request_charges and reservation primary keys),
+  --   with no assumption about when the row landed.
   -- * Active holds (held or reserved), in every period until they end: video and free-model
   --   holds less the cost already audited for them, other holds (batch, realtime) less what was
   --   captured or released. Realtime holds carry no key; their session does.
   -- * Captured video and free-model holds made in the period, less the cost audited for them, so
   --   a capture counts before (or without) its request row and once after it lands.
-  -- * Unbilled spend (private.unbilled_spend): wallet movements of charges whose request row has
-  --   not landed, each at its time, and the uncharged part of delivered requests pending
-  --   reconciliation.
+  -- * Money movements (private.unbilled_spend), each at its time: stepped charges, one-off charges
+  --   whose request row has not landed or is pending reconciliation, batch debits, and the
+  --   uncollected part of delivered requests pending reconciliation.
   --
   -- Holds and request rows are matched by workspace and ids; their keys are compared null-safely
   -- because deleting a key sets both key_id columns to NULL (ON DELETE SET NULL).
@@ -258,6 +353,40 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
         and hold.status in ('held', 'reserved')
         and starts_with(request.request_id, 'batch_hold_usage:' || hold.reservation_id || ':')
     ))
+    -- Charged in steps, or pending reconciliation with an applied charge.
+    and not (request.billing_request_id is not null and (
+      exists (
+        select 1 from public.credit_ledger movement
+        where movement.source_ref_type = 'gateway_request'
+          and movement.source_ref_id = request.billing_request_id
+          and movement.workspace_id = request.workspace_id
+          and movement.ref_type = 'gateway_request_charge')
+      or ((request.expected_cost_nanos is not null
+          or coalesce(request.detail_metadata #>> '{accounting_finalization,billing_status}' = 'pending_reconciliation', false))
+        and exists (
+          select 1 from public.gateway_request_charges charge
+          where charge.workspace_id = request.workspace_id
+            and charge.request_id = request.billing_request_id
+            and charge.status = 'applied'))))
+    -- A debited batch's rows.
+    and not (starts_with(request.request_id, 'batch_usage:') and (
+      exists (
+        select 1 from public.gateway_request_charges capture
+        where capture.workspace_id = request.workspace_id
+          and capture.request_id = 'batch_capture:' || split_part(request.request_id, ':', 2)
+          and capture.status = 'applied')
+      or exists (
+        select 1 from public.credit_ledger debit
+        where debit.source_ref_type = 'async_job'
+          and debit.source_ref_id = split_part(request.request_id, ':', 2)
+          and debit.workspace_id = request.workspace_id
+          and debit.ref_type = 'async_job_charge')))
+    -- A settled hold's placeholders (batch_hold_usage:<reservation>:<n>).
+    and not (starts_with(request.request_id, 'batch_hold_usage:') and exists (
+      select 1 from public.gateway_wallet_reservations hold
+      where hold.workspace_id = request.workspace_id
+        and hold.reservation_id = regexp_replace(substr(request.request_id, 18), ':[^:]*$', '')
+        and hold.status not in ('held', 'reserved')))
   union all
   -- Charged requests that did not succeed (gateway_requests_charged_unsuccessful_cost_idx).
   select request.key_id, request.created_at, false, request.cost_nanos
@@ -268,6 +397,21 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
     and request.cost_nanos > 0
     and request.created_at >= coalesce(p_since, '-infinity'::timestamptz)
     and not (request.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
+    -- Charged in steps, or pending reconciliation with an applied charge.
+    and not (request.billing_request_id is not null and (
+      exists (
+        select 1 from public.credit_ledger movement
+        where movement.source_ref_type = 'gateway_request'
+          and movement.source_ref_id = request.billing_request_id
+          and movement.workspace_id = request.workspace_id
+          and movement.ref_type = 'gateway_request_charge')
+      or ((request.expected_cost_nanos is not null
+          or coalesce(request.detail_metadata #>> '{accounting_finalization,billing_status}' = 'pending_reconciliation', false))
+        and exists (
+          select 1 from public.gateway_request_charges charge
+          where charge.workspace_id = request.workspace_id
+            and charge.request_id = request.billing_request_id
+            and charge.status = 'applied'))))
   union all
   select coalesce(reservation.key_id, session.key_id), reservation.created_at,
     reservation.status in ('held', 'reserved'),
@@ -305,7 +449,7 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
   from private.unbilled_spend(p_workspace_id, p_since, p_key_ids, p_exclude_request_ids, p_exclude_charge_ids) unbilled;
 $function$;
 
-COMMENT ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) IS 'Spend items counted toward workspace and department budgets: positive-cost requests, active holds in every period, captured video and free-model holds less their audited cost (each hold''s batch_hold_usage rows counted once), and private.unbilled_spend (wallet movements of charges without a request row, delivered requests pending reconciliation).';
+COMMENT ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) IS 'Spend items counted toward workspace and department budgets: positive-cost requests except those whose money movements replace them, active holds in every period, captured video and free-model holds less their audited cost (each hold''s batch_hold_usage rows counted once), and private.unbilled_spend (money movements, each at its time).';
 
 REVOKE ALL ON FUNCTION "private"."budget_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) FROM PUBLIC;
 
@@ -674,37 +818,15 @@ begin
   ), usage as (
     select
       gr.key_id,
-      count(*) filter (where gr.served and gr.created_at >= day_start)                    as used_day_reqs,
-      count(*) filter (where gr.served and gr.created_at >= week_start)                   as used_wk_reqs,
-      count(*) filter (where gr.served and gr.created_at >= month_start)                  as used_mo_reqs,
-      coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= day_start), 0)::bigint   as used_day_cost,
-      coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= week_start), 0)::bigint  as used_wk_cost,
-      coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= month_start), 0)::bigint as used_mo_cost
-    -- Successful requests count as requests and cost; charged requests that did not succeed
-    -- count toward cost only.
-    from (
-      select served.key_id, served.created_at, served.cost_nanos, true as served
-      from public.gateway_requests served
-      where served.key_id = any(array(select key_rows.id from key_rows where key_rows.limited))
-        and served.workspace_id = p_workspace_id
-        and served.success is true
-        and served.created_at >= least(week_start, month_start)
-        and not (served.request_id = any(v_exclude))
-      union all
-      select charged.key_id, charged.created_at, charged.cost_nanos, false
-      from public.gateway_requests charged
-      where charged.workspace_id = p_workspace_id
-        and charged.key_id = any(array(select key_rows.id from key_rows where key_rows.limited))
-        and charged.success is not true
-        and charged.cost_nanos > 0
-        and charged.created_at >= least(week_start, month_start)
-        and not (charged.request_id = any(v_exclude))
-      union all
-      -- Unbilled spend of the key (private.unbilled_spend), cost only.
-      select unbilled.key_id, unbilled.at, unbilled.nanos, false
-      from private.unbilled_spend(p_workspace_id, least(week_start, month_start),
-        array(select key_rows.id from key_rows where key_rows.limited), v_exclude, v_exclude) unbilled
-    ) gr
+      count(*) filter (where gr.served and gr.at >= day_start)                    as used_day_reqs,
+      count(*) filter (where gr.served and gr.at >= week_start)                   as used_wk_reqs,
+      count(*) filter (where gr.served and gr.at >= month_start)                  as used_mo_reqs,
+      coalesce(sum(gr.nanos) filter (where gr.at >= day_start), 0)::bigint   as used_day_cost,
+      coalesce(sum(gr.nanos) filter (where gr.at >= week_start), 0)::bigint  as used_wk_cost,
+      coalesce(sum(gr.nanos) filter (where gr.at >= month_start), 0)::bigint as used_mo_cost
+    -- The limited keys' usage (private.key_spend_items), less the admissions the coordinator holds.
+    from private.key_spend_items(p_workspace_id, least(week_start, month_start),
+      array(select key_rows.id from key_rows where key_rows.limited), v_exclude, v_exclude) gr
     group by gr.key_id
   )
   select coalesce(jsonb_agg(jsonb_build_object(
@@ -897,12 +1019,12 @@ CREATE OR REPLACE FUNCTION public.sweep_spend_limit_warnings (
   AS $function$
 -- Warns once when a workspace budget or an active API key's limit is about 80% used in its
 -- current period, as a money push: owners and admins hear about it, and for a key limit so does
--- the key's creator. Usage comes from v2_private_usage_15m (cost, and successful requests for
--- request limits), which is rebuilt hourly and so lags; the push says "about". The rollup leaves
--- out async jobs and realtime sessions, which the gateway's limits count, so their successful
--- requests are added from gateway_requests through a small partial index. Nothing is sent
--- for a limit already reached this period (record_spend_limit_reached), or one the rollup puts
--- at 100% or more: the gateway blocks the next request and that alert follows. Weekly and
+-- the key's creator. Usage is what the gateway enforces, up to p_now: private.budget_spend_items
+-- for workspace budgets and private.key_spend_items for keys, so money movements win (a request
+-- charged in steps counts its movements, a delivered request pending reconciliation its charge and
+-- what remains uncollected, a debited batch its debit). Nothing is sent for a limit already reached
+-- this period (record_spend_limit_reached), or one at 100% or more: the gateway blocks the next
+-- request and that alert follows. Weekly and
 -- monthly warnings say when the limit runs out at the period's pace so far, if that is before
 -- the period ends. One event per budget or key limit, period and limit value, so a limit raised
 -- mid-period can warn again. Only workspaces with a budget or a limited key are read.
@@ -937,40 +1059,20 @@ begin
       and greatest(k.daily_limit_requests, k.weekly_limit_requests, k.monthly_limit_requests,
         k.daily_limit_cost_nanos, k.weekly_limit_cost_nanos, k.monthly_limit_cost_nanos) > 0
   ),
-  async_requests as (
-    -- Async jobs, which the rollup leaves out (private.v2_usage_overview_requests: video, batch,
-    -- music; realtime is in the rollup): successful ones as requests and cost, charged ones that did
-    -- not succeed as cost only.
-    select r.key_id, r.created_at, case when r.success is true then 1 else 0 end::bigint as requests,
-      coalesce(r.cost_nanos, 0)::numeric as cost_nanos
-    from public.gateway_requests r
-    where (r.success is true or r.cost_nanos > 0)
-      and r.endpoint = any (array['video.generation', 'batch', 'music.generate'])
-      and r.workspace_id in (select k.workspace_id from limited_keys k)
-      and r.created_at >= least(v_week, v_month)
-      and r.created_at <= p_now
-      and r.key_id in (select k.id from limited_keys k)
-  ),
   key_usage as (
-    -- One pass over each limited key's workspace since the earlier of this week's and this month's start.
+    -- One read per workspace of its limited keys since the earlier of this week's and this month's start.
     select
       u.key_id,
-      coalesce(sum(u.successful_requests) filter (where u.bucket_start >= v_day), 0) as day_requests,
-      coalesce(sum(u.successful_requests) filter (where u.bucket_start >= v_week), 0) as week_requests,
-      coalesce(sum(u.successful_requests) filter (where u.bucket_start >= v_month), 0) as month_requests,
-      coalesce(sum(u.cost_nanos) filter (where u.bucket_start >= v_day), 0) as day_cost,
-      coalesce(sum(u.cost_nanos) filter (where u.bucket_start >= v_week), 0) as week_cost,
-      coalesce(sum(u.cost_nanos) filter (where u.bucket_start >= v_month), 0) as month_cost
-    from (
-      select u.key_id, u.bucket_start, u.successful_requests, u.cost_nanos
-      from public.v2_private_usage_15m u
-      where u.workspace_id in (select k.workspace_id from limited_keys k)
-        and u.bucket_start >= least(v_week, v_month)
-        and u.bucket_start <= p_now
-        and u.key_id in (select k.id from limited_keys k)
-      union all
-      select a.key_id, a.created_at, a.requests, a.cost_nanos from async_requests a
-    ) u
+      count(*) filter (where u.served and u.at >= v_day) as day_requests,
+      count(*) filter (where u.served and u.at >= v_week) as week_requests,
+      count(*) filter (where u.served and u.at >= v_month) as month_requests,
+      coalesce(sum(u.nanos) filter (where u.at >= v_day), 0) as day_cost,
+      coalesce(sum(u.nanos) filter (where u.at >= v_week), 0) as week_cost,
+      coalesce(sum(u.nanos) filter (where u.at >= v_month), 0) as month_cost
+    from (select distinct k.workspace_id from limited_keys k) w
+    cross join lateral private.key_spend_items(w.workspace_id, least(v_week, v_month),
+      array(select k.id from limited_keys k where k.workspace_id = w.workspace_id)) u
+    where u.at <= p_now
     group by u.key_id
   ),
   limits as (
@@ -979,20 +1081,12 @@ begin
       'budget_warning' as kind, 'budget:' || b.id as subject, b.interval as time_window, 'cost' as metric,
       b.limit_nanos::numeric as limit_value,
       (
-        select coalesce(sum(u.cost_nanos), 0)
-        from public.v2_private_usage_15m u
-        where u.workspace_id = b.workspace_id
-          and u.bucket_start >= coalesce((private.spend_limit_period(b.interval, p_now)).period_start, '-infinity'::timestamptz)
-          and u.bucket_start <= p_now
-      ) + (
-        select coalesce(sum(r.cost_nanos), 0)
-        from public.gateway_requests r
-        where (r.success is true or r.cost_nanos > 0)
-          and r.endpoint = any (array['video.generation', 'batch', 'music.generate'])
-          and r.workspace_id = b.workspace_id
-          and r.created_at >= coalesce((private.spend_limit_period(b.interval, p_now)).period_start, '-infinity'::timestamptz)
-          and r.created_at <= p_now
-      ) as used
+        -- Active holds count in every period, as the gateway's budget check counts them.
+        select coalesce(sum(item.nanos), 0)
+        from private.budget_spend_items(b.workspace_id, (private.spend_limit_period(b.interval, p_now)).period_start) item
+        where (item.active or item.at >= coalesce((private.spend_limit_period(b.interval, p_now)).period_start, '-infinity'::timestamptz))
+          and item.at <= p_now
+      )::numeric as used
     from public.workspace_budgets b
     union all
     select
@@ -1325,38 +1419,18 @@ begin
   if greatest(v_day_req_limit, v_wk_req_limit, v_mo_req_limit,
       v_day_cost_limit, v_wk_cost_limit, v_mo_cost_limit) > 0 then
   select
-    count(*) filter (where gr.served and gr.created_at >= day_start)                    as used_day_reqs,
-    count(*) filter (where gr.served and gr.created_at >= week_start)                   as used_wk_reqs,
-    count(*) filter (where gr.served and gr.created_at >= month_start)                  as used_mo_reqs,
-    coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= day_start), 0)::bigint   as used_day_cost,
-    coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= week_start), 0)::bigint  as used_wk_cost,
-    coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= month_start), 0)::bigint as used_mo_cost
+    count(*) filter (where gr.served and gr.at >= day_start)                    as used_day_reqs,
+    count(*) filter (where gr.served and gr.at >= week_start)                   as used_wk_reqs,
+    count(*) filter (where gr.served and gr.at >= month_start)                  as used_mo_reqs,
+    coalesce(sum(gr.nanos) filter (where gr.at >= day_start), 0)::bigint   as used_day_cost,
+    coalesce(sum(gr.nanos) filter (where gr.at >= week_start), 0)::bigint  as used_wk_cost,
+    coalesce(sum(gr.nanos) filter (where gr.at >= month_start), 0)::bigint as used_mo_cost
   into
     used_day_reqs, used_wk_reqs, used_mo_reqs,
     used_day_cost, used_wk_cost, used_mo_cost
-  -- Successful requests count as requests and cost. A request that did not succeed but was
-  -- charged (a cancelled stream that was billed) counts toward cost only.
-  from (
-    select served.created_at, served.cost_nanos, true as served
-    from public.gateway_requests served
-    where served.key_id = gateway_context_access.api_key_id
-      and served.workspace_id = gateway_context_access.workspace_id
-      and served.success is true
-      and served.created_at >= least(week_start, month_start)
-    union all
-    select charged.created_at, charged.cost_nanos, false
-    from public.gateway_requests charged
-    where charged.workspace_id = gateway_context_access.workspace_id
-      and charged.key_id = gateway_context_access.api_key_id
-      and charged.success is not true
-      and charged.cost_nanos > 0
-      and charged.created_at >= least(week_start, month_start)
-    -- Unbilled spend (private.unbilled_spend): charges without a request row, delivered requests
-    -- pending reconciliation; cost only.
-    union all
-    select unbilled.at, unbilled.nanos, false
-    from private.unbilled_spend(gateway_context_access.workspace_id, least(week_start, month_start), array[gateway_context_access.api_key_id]) unbilled
-  ) gr;
+  -- The key's usage (private.key_spend_items): successful requests count as requests and cost,
+  -- charged ones that did not succeed and money movements as cost only.
+  from private.key_spend_items(gateway_context_access.workspace_id, least(week_start, month_start), array[gateway_context_access.api_key_id]) gr;
   end if;
 
   if v_soft_blocked then
@@ -1854,38 +1928,18 @@ begin
   if greatest(v_day_req_limit, v_wk_req_limit, v_mo_req_limit,
       v_day_cost_limit, v_wk_cost_limit, v_mo_cost_limit) > 0 then
   select
-    count(*) filter (where gr.served and gr.created_at >= day_start)                    as used_day_reqs,
-    count(*) filter (where gr.served and gr.created_at >= week_start)                   as used_wk_reqs,
-    count(*) filter (where gr.served and gr.created_at >= month_start)                  as used_mo_reqs,
-    coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= day_start), 0)::bigint   as used_day_cost,
-    coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= week_start), 0)::bigint  as used_wk_cost,
-    coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= month_start), 0)::bigint as used_mo_cost
+    count(*) filter (where gr.served and gr.at >= day_start)                    as used_day_reqs,
+    count(*) filter (where gr.served and gr.at >= week_start)                   as used_wk_reqs,
+    count(*) filter (where gr.served and gr.at >= month_start)                  as used_mo_reqs,
+    coalesce(sum(gr.nanos) filter (where gr.at >= day_start), 0)::bigint   as used_day_cost,
+    coalesce(sum(gr.nanos) filter (where gr.at >= week_start), 0)::bigint  as used_wk_cost,
+    coalesce(sum(gr.nanos) filter (where gr.at >= month_start), 0)::bigint as used_mo_cost
   into
     used_day_reqs, used_wk_reqs, used_mo_reqs,
     used_day_cost, used_wk_cost, used_mo_cost
-  -- Successful requests count as requests and cost. A request that did not succeed but was
-  -- charged (a cancelled stream that was billed) counts toward cost only.
-  from (
-    select served.created_at, served.cost_nanos, true as served
-    from public.gateway_requests served
-    where served.key_id = gateway_fetch_request_context_without_workspace_budget.api_key_id
-      and served.workspace_id = gateway_fetch_request_context_without_workspace_budget.workspace_id
-      and served.success is true
-      and served.created_at >= least(week_start, month_start)
-    union all
-    select charged.created_at, charged.cost_nanos, false
-    from public.gateway_requests charged
-    where charged.workspace_id = gateway_fetch_request_context_without_workspace_budget.workspace_id
-      and charged.key_id = gateway_fetch_request_context_without_workspace_budget.api_key_id
-      and charged.success is not true
-      and charged.cost_nanos > 0
-      and charged.created_at >= least(week_start, month_start)
-    -- Unbilled spend (private.unbilled_spend): charges without a request row, delivered requests
-    -- pending reconciliation; cost only.
-    union all
-    select unbilled.at, unbilled.nanos, false
-    from private.unbilled_spend(gateway_fetch_request_context_without_workspace_budget.workspace_id, least(week_start, month_start), array[gateway_fetch_request_context_without_workspace_budget.api_key_id]) unbilled
-  ) gr;
+  -- The key's usage (private.key_spend_items): successful requests count as requests and cost,
+  -- charged ones that did not succeed and money movements as cost only.
+  from private.key_spend_items(gateway_fetch_request_context_without_workspace_budget.workspace_id, least(week_start, month_start), array[gateway_fetch_request_context_without_workspace_budget.api_key_id]) gr;
   end if;
 
   if v_soft_blocked then
@@ -2333,31 +2387,18 @@ begin
       return;
     end if;
 
-    -- Successful requests count as requests and cost; charged requests that did not succeed
-    -- count toward cost only.
+    -- The key's usage (private.key_spend_items): successful requests count as requests and cost,
+    -- charged ones that did not succeed and money movements as cost only.
     select
-      count(*) filter (where usage.served and usage.created_at >= v_day_start),
-      count(*) filter (where usage.served and usage.created_at >= v_week_start),
-      count(*) filter (where usage.served and usage.created_at >= v_month_start),
-      coalesce(sum(usage.cost_nanos) filter (where usage.created_at >= v_day_start), 0),
-      coalesce(sum(usage.cost_nanos) filter (where usage.created_at >= v_week_start), 0),
-      coalesce(sum(usage.cost_nanos) filter (where usage.created_at >= v_month_start), 0)
+      count(*) filter (where usage.served and usage.at >= v_day_start),
+      count(*) filter (where usage.served and usage.at >= v_week_start),
+      count(*) filter (where usage.served and usage.at >= v_month_start),
+      coalesce(sum(usage.nanos) filter (where usage.at >= v_day_start), 0),
+      coalesce(sum(usage.nanos) filter (where usage.at >= v_week_start), 0),
+      coalesce(sum(usage.nanos) filter (where usage.at >= v_month_start), 0)
     into v_day_requests, v_week_requests, v_month_requests,
       v_day_cost, v_week_cost, v_month_cost
-    from (
-      select served.created_at, served.cost_nanos, true as served
-      from public.gateway_requests served
-      where served.workspace_id = p_workspace_id and served.key_id = p_key_id and served.success is true
-      union all
-      select charged.created_at, charged.cost_nanos, false
-      from public.gateway_requests charged
-      where charged.workspace_id = p_workspace_id and charged.key_id = p_key_id
-        and charged.success is not true and charged.cost_nanos > 0
-      -- Unbilled spend (private.unbilled_spend), cost only.
-      union all
-      select unbilled.at, unbilled.nanos, false
-      from private.unbilled_spend(p_workspace_id, least(v_day_start, v_week_start, v_month_start), array[p_key_id]) unbilled
-    ) usage;
+    from private.key_spend_items(p_workspace_id, least(v_day_start, v_week_start, v_month_start), array[p_key_id]) usage;
 
     -- Video create audit rows have zero cost until completion. Count the unpaid
     -- portion of each reservation under the same key lock as admission. Captured
