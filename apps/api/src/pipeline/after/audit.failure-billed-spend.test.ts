@@ -111,8 +111,8 @@ describe("failed requests that were still charged", () => {
 
 	describe("a delivered request whose charge did not go through", () => {
 		// recordUsageAndChargeOnce leaves the intended bill and what the database holds on ctx.
-		async function finalizationFailed(id: string, pending: { uncollected: number; confirmed: number | null }) {
-			const ctx = context(id, admit(id));
+		async function finalizationFailed(id: string, pending: { uncollected: number; confirmed: number | null }, meta?: Record<string, unknown>) {
+			const ctx = context(id, admit(id), meta);
 			ctx.uncollectedChargeNanos = pending.uncollected;
 			ctx.confirmedChargeNanos = pending.confirmed;
 			await handleFailureAudit(
@@ -143,6 +143,14 @@ describe("failed requests that were still charged", () => {
 			expect(row.expectedCostNanos).toBe(300);
 			expect(row).not.toHaveProperty("costNanos");
 			expect(budget.recorded.get("bill_unreadable")).toBe(300);
+		});
+
+		it("keeps a 300 checkpoint charge when the stream's refund to 0 did not go through", async () => {
+			budget.recorded.set("bill_refund_failed", 300);
+			const row = await finalizationFailed("refund_failed", { uncollected: 0, confirmed: 300 }, { __chargedInSteps: true });
+			// The intended bill is 0, but the wallet still holds the 300 debit: the row records both.
+			expect(row).toMatchObject({ costNanos: 300, expectedCostNanos: 0 });
+			expect(budget.recorded.get("bill_refund_failed")).toBe(300);
 		});
 	});
 });

@@ -236,11 +236,13 @@ export function shouldPersistGatewayAudit(ctx: Pick<PipelineContext, "testingMod
 /**
  * The pending-reconciliation fields of a failure row (shared by every failure writer): cost_nanos
  * is the charge the database confirmed after the request's charge attempts failed, and
- * expected_cost_nanos the bill it meant to charge. Both absent when no charge failed.
+ * expected_cost_nanos the bill it meant to charge. Both absent when no charge failed. An intended
+ * bill of 0 (a stepped request's refund to zero that did not go through) is still a bill: the row
+ * keeps the checkpoint charge the database holds.
  */
 export function pendingChargeFields(ctx: PipelineContext): { costNanos?: number; expectedCostNanos?: number } {
 	const expected = ctx.uncollectedChargeNanos;
-	if (!(typeof expected === "number" && expected > 0)) return {};
+	if (!(typeof expected === "number" && Number.isFinite(expected) && expected >= 0)) return {};
 	const confirmed = ctx.confirmedChargeNanos;
 	return {
 		expectedCostNanos: Math.round(expected),
