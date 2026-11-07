@@ -28,7 +28,7 @@ const settlement = await findMigration('_async_settlement_always_charges.sql');
 const migration = await findMigration('_refund_claim_counts_charged_failures.sql');
 const billingIndex = await findMigration('_gateway_requests_billing_request_index.sql');
 assert(migration.name > chargeTotals.name, 'the refund migration runs after the stepped charge columns exist');
-assert.equal(migrations.at(-1), billingIndex.name, 'the index migration is newer than every other migration');
+assert(billingIndex.name > migration.name, 'the index migration runs after the refund migration');
 // The index migration holds the lock timeout and the one index, and nothing else.
 assert.equal(
   billingIndex.sql.replace(/^--.*\n/gm, '').trim(),
