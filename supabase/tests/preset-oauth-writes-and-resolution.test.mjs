@@ -1,9 +1,10 @@
 // Standalone PostgreSQL regression test for preset content and preset references (2026-11-06 review).
 // 1. Tokens the auth provider's OAuth server issues to apps (and to the CLI and desktop app, whose client
 //    IDs are public) carry a client_id claim. Through the Data API they could create, change and delete
-//    presets as the person. Restrictive policies (refuse_oauth_client_writes, which covers every writable
-//    table) now refuse any write from such a token on presets, preset_versions and preset_version_labels,
-//    while the person's own session (no client_id) and reads are unaffected.
+//    presets as the person. Restrictive policies (added by presets' own oauth_client_policies migration; see
+//    refuse-oauth-client-writes.test.mjs) now refuse any write from such a token on presets, while the
+//    person's own session (no client_id) and reads are unaffected. preset_versions and preset_version_labels
+//    grant signed-in users no writes at all.
 // 2. The gateway resolves "@slug" case-insensitively and took "limit 1", so two presets whose slugs differ only
 //    in case resolved arbitrarily. A unique index prevents that among non-archived presets, and both gateway
 //    context functions refuse a reference that still matches two.
@@ -16,7 +17,7 @@ const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pgli
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8').then((text) => text.replace(/\r\n/g, '\n').trim());
 const migrationNames = await readdir(new URL('../migrations/', import.meta.url));
 const migrationName = migrationNames.find((name) => name.endsWith('_unique_preset_resolution.sql'));
-const oauthMigrationName = migrationNames.find((name) => name.endsWith('_refuse_oauth_client_writes.sql'));
+const oauthMigrationName = migrationNames.find((name) => name.endsWith('_oauth_client_policies_presets.sql'));
 assert(migrationName && oauthMigrationName, 'the migrations exist');
 const migration = await read(`../migrations/${migrationName}`);
 const oauthMigration = await read(`../migrations/${oauthMigrationName}`);
@@ -27,12 +28,13 @@ const contextFiles = [
 ];
 
 // The declarative files carry the same statements as the migration.
-for (const table of ['presets', 'preset_versions', 'preset_version_labels']) {
+for (const op of ['insert', 'update', 'delete']) {
+  const policy = presetsSql.match(new RegExp(`CREATE POLICY "presets_no_oauth_client_${op}"[\\s\\S]*?;`))?.[0];
+  assert(policy && oauthMigration.includes(policy), `presets.sql and the migration share the ${op} policy`);
+}
+for (const table of ['preset_versions', 'preset_version_labels']) {
   const sql = await read(`../schemas/public/tables/${table}.sql`);
-  for (const op of ['insert', 'update', 'delete']) {
-    const policy = sql.match(new RegExp(`CREATE POLICY "${table}_no_oauth_client_${op}"[\\s\\S]*?;`))?.[0];
-    assert(policy && oauthMigration.includes(policy), `${table}.sql and the migration share the ${op} policy`);
-  }
+  assert(!/GRANT [^;]*(INSERT|UPDATE|DELETE)[^;]* TO [^;]*"authenticated"/.test(sql), `${table} grants signed-in users no writes`);
 }
 const index = presetsSql.match(/CREATE UNIQUE INDEX presets_workspace_resolution_key[\s\S]*?;/)?.[0];
 assert(index && migration.includes(index), 'presets.sql and the migration share the resolution index');
@@ -170,9 +172,7 @@ try {
 
   // After: OAuth client tokens can't write preset content; the person's session and reads still work.
   await db.exec(await read('../schemas/public/functions/request_is_oauth_client.sql'));
-  for (const table of ['presets', 'preset_versions', 'preset_version_labels']) {
-    await db.exec(oauthMigration.match(new RegExp(`CREATE POLICY "${table}_no_oauth_client_insert"[\\s\\S]*?_no_oauth_client_delete"[\\s\\S]*?;`))[0]);
-  }
+  await db.exec(`begin; ${oauthMigration} commit;`);
   for (const token of [appToken, cliToken]) {
     await as(token, async () => {
       assert.equal((await db.query(`select id from public.presets where id = $1`, [preset])).rows.length, 1, `${token.client_id} still reads presets`);
@@ -190,10 +190,8 @@ try {
     await db.query(`insert into public.presets (workspace_id, name, slug, created_by) values ($1, '@mine', 'mine', $2)`, [ws, person]);
   });
   assert.equal((await db.query(`select config->>'model' m from public.presets where id = $1`, [preset])).rows[0].m, 'd', 'the person\'s session still writes');
-  for (const table of ['presets', 'preset_versions', 'preset_version_labels']) {
-    const { rows } = await db.query(`select count(*)::int n from pg_policy where polrelid = $1::regclass and polname like '%no_oauth_client%' and polpermissive = false`, [`public.${table}`]);
-    assert.equal(rows[0].n, 3, `${table} has the three restrictive policies`);
-  }
+  const { rows } = await db.query(`select count(*)::int n from pg_policy where polrelid = 'public.presets'::regclass and polname like '%no_oauth_client%' and polpermissive = false`);
+  assert.equal(rows[0].n, 3, 'presets has the three restrictive policies');
   await db.exec('set role service_role');
   await db.query(`update public.presets set config = '{"model":"e"}' where id = $1`, [preset]);
   await db.exec('reset role');

@@ -35,25 +35,6 @@ CREATE UNIQUE INDEX gateway_batch_requests_workspace_batch_custom_idx ON public.
 
 CREATE INDEX gateway_batch_requests_workspace_batch_status_idx ON public.gateway_batch_requests USING btree (workspace_id, batch_id, status, request_index);
 
-CREATE POLICY "gateway_batch_requests_no_oauth_client_insert" ON "public"."gateway_batch_requests"
-  AS RESTRICTIVE
-  FOR INSERT
-  TO "authenticated"
-  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
-
-CREATE POLICY "gateway_batch_requests_no_oauth_client_update" ON "public"."gateway_batch_requests"
-  AS RESTRICTIVE
-  FOR UPDATE
-  TO "authenticated"
-  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
-  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
-
-CREATE POLICY "gateway_batch_requests_no_oauth_client_delete" ON "public"."gateway_batch_requests"
-  AS RESTRICTIVE
-  FOR DELETE
-  TO "authenticated"
-  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
-
 CREATE POLICY "gateway_batch_requests_select_workspace_members" ON "public"."gateway_batch_requests"
   FOR SELECT
   TO "authenticated"
