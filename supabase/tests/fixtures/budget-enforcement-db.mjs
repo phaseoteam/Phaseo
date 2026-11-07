@@ -14,7 +14,7 @@ export const COLUMN_MIGRATION_FILES = [
   '20261106234001_validate_gateway_requests_expected_cost_nanos_check.sql',
 ];
 export const INDEX_MIGRATION_FILES = [
-  '20261106233954_gateway_requests_billing_request_index.sql', // fix/async-billing-20261104's
+  '20261106233956_gateway_requests_billing_request_index.sql', // fix/async-billing-20261104's
   '20261106234002_gateway_requests_expected_cost_idx.sql',
   '20261106234003_gateway_requests_charged_unsuccessful_cost_idx.sql',
   '20261106234004_gateway_request_charges_applied_cost_idx.sql',
