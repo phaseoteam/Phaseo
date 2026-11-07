@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { applyMigration, createBudgetDatabase, readColumnMigrations, readIndexMigrations, readMigration, readSchema } from './fixtures/budget-enforcement-db.mjs';
+import { applyMigration, createBudgetDatabase, readColumnMigrations, readIndexMigrations, readMigration, readSchema, readTableMigrations } from './fixtures/budget-enforcement-db.mjs';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 
 // Migration 20261106234007_budget_enforcement_money_hygiene against production shapes (see the
@@ -138,18 +138,33 @@ try {
       assert.ok(order.indexOf('private/functions/department_budget_usage.sql') > order.indexOf('private/functions/budget_spend_items.sql'));
       assert.ok(order.indexOf('private/functions/department_budget_usage.sql') > order.indexOf('private/functions/spend_limit_period.sql'));
     }
-    assert.match(migration, /^-- phaseo:allow-destructive-migration reason: /);
-    assert.doesNotMatch(migration, /create\s+index/i, 'indexes have their own migrations');
+    // The lock plan: every migration of this change sets a lock timeout first; the function
+    // migration locks no table; each other migration locks at most one existing table.
+    const tableStatement = /\b(alter\s+table|create\s+(unique\s+)?index|drop\s+index|(create|drop)\s+(or\s+replace\s+)?(trigger|policy)|(grant|revoke)\s[^;]*\bon\s+table|comment\s+on\s+(table|column))\b/i;
+    const statementsOf = (sql) => sql.replace(/--.*$/gm, '').replace(/\$(\w*)\$[\s\S]*?\$\1\$/g, '$$$$')
+      .split(';').map((part) => part.trim()).filter(Boolean);
+    assert.match(migration, /^SET LOCAL lock_timeout = '10s';/);
+    assert.ok(!statementsOf(migration).some((statement) => tableStatement.test(statement)), 'the function migration locks no table');
+    const ours = [...await readColumnMigrations(), ...await readIndexMigrations(), ...await readTableMigrations()]
+      .filter((sql) => !sql.includes('gateway_requests_workspace_billing_request_idx')); // fix/async-billing-20261104's
+    for (const sql of ours) {
+      assert.match(sql, /^SET LOCAL lock_timeout = '10s';/);
+      const tables = new Set(statementsOf(sql).filter((statement) => tableStatement.test(statement))
+        .map((statement) => statement.match(/\bpublic\.(\w+)|"public"\."(\w+)"/i)).filter(Boolean).map((match) => match[1] ?? match[2]));
+      assert.ok(tables.size <= 1, `one table per migration: ${[...tables].join(', ')}`);
+    }
     const [addColumn, validate] = await readColumnMigrations();
     assert.match(addColumn, /ADD COLUMN IF NOT EXISTS expected_cost_nanos bigint;/);
     assert.match(addColumn, /CHECK \(\(expected_cost_nanos >= 0\)\) NOT VALID;/);
     assert.match(validate, /VALIDATE CONSTRAINT gateway_requests_expected_cost_nanos_check;/);
     for (const index of await readIndexMigrations()) {
-      const statements = index.split('\n').filter((line) => !line.startsWith('--')).join('\n').split(';').filter((part) => part.trim());
+      const statements = index.split('\n').filter((line) => !line.startsWith('--')).join('\n').split(';').filter((part) => part.trim())
+        .filter((part) => !/^\s*SET LOCAL lock_timeout/i.test(part));
       assert.equal(statements.length, 1, 'one statement per index migration');
       assert.match(statements[0], /^\s*CREATE INDEX IF NOT EXISTS /i);
     }
-    assert.match(migration, /raise notice 'io_logging_retention_days set to 90 on % workspace_settings row\(s\)', v_count;/);
+    assert.match((await readTableMigrations()).find((sql) => sql.includes('workspace_settings')),
+      /raise notice 'io_logging_retention_days set to 90 on % workspace_settings row\(s\)', v_count;/);
   });
   await check('the migration applies over workspaces with 180- and 365-day retention, setting them to 90', async () => {
     try {

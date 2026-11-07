@@ -1,3 +1,5 @@
+SET LOCAL lock_timeout = '10s';
+
 -- Applied wallet charges by workspace and debit time: budgets count each one whose request row
 -- has not landed (private.unbilled_spend).
 -- Its own migration, so the SHARE lock it takes on gateway_request_charges (blocking writes, not

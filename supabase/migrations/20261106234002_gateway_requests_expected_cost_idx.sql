@@ -1,3 +1,5 @@
+SET LOCAL lock_timeout = '10s';
+
 -- Delivered requests whose wallet charge is pending reconciliation (expected_cost_nanos), which
 -- budgets count until charged; partial and small. Built on every partition of gateway_requests.
 -- Its own migration, so the SHARE lock it takes on gateway_requests and each of its partitions
