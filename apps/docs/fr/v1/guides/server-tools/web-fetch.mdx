@@ -109,4 +109,4 @@ Vérifiez `truncated` avant de supposer que le modèle a vu la page entière. Po
 
 ## Utilisation et tarification
 
-Chaque récupération ajoute 1 à `usage.server_tool_use.web_fetch_requests`. La récupération gérée est facturée avec `server_tool_web_fetch_requests`. La récupération native est facturée avec `native_web_fetch_requests` lorsque la carte tarifaire du modèle la définit.
+Chaque récupération ajoute 1 à `usage.server_tool_use.web_fetch_requests`. Phaseo facture chaque récupération gérée via Exa, Parallel ou Firecrawl $0.001, sauf si la fiche tarifaire du modèle définit son propre prix pour `server_tool_web_fetch_requests` ; les récupérations directes sont gratuites. Les récupérations via des moteurs payants nécessitent du crédit même lorsque le modèle est gratuit. La récupération native est facturée avec `native_web_fetch_requests` lorsque la fiche tarifaire du modèle la définit.

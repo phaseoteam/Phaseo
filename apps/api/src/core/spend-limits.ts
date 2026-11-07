@@ -28,6 +28,7 @@
 //            it loses no spend.
 
 import type { GateCheck } from "@pipeline/before/types";
+import { keyIdIsOAuthClientId } from "@core/request-key";
 import { hasConfiguredKeyLimits } from "@pipeline/before/context.shared";
 import { footprintIsEmpty, readSpendLimitFootprint, type SpendLimitFootprint } from "@core/spend-limit-footprint";
 import { LeasePool, type LeaseTransport } from "@core/lease-pool";
@@ -604,6 +605,32 @@ export function settleEnforcedSpend(args: {
 	} catch (error) {
 		console.warn("spend_limit_enforce_record_failed", { error: error instanceof Error ? error.message : String(error) });
 	}
+}
+
+/**
+ * A failed request that still owes money: charged completed server-tool rounds, or a delivered
+ * response whose wallet charge failed (counted at its expected amount). It is counted like a
+ * success whether or not its failure row lands, so a database outage cannot let a capped
+ * workspace keep receiving output. OAuth client keys hold no key limits, as on the success path.
+ */
+export function settleChargedFailureSpend(
+	ctx: { spendAdmission?: SpendAdmission | null; workspaceId: string; keyId?: string | null; billingRequestId: string; requestId: string; internal?: boolean; meta?: { apiKeyId?: string | null; apiKeyRef?: string | null } },
+	costNanos: number,
+): void {
+	if (keyIdIsOAuthClientId(ctx.meta?.apiKeyRef)) {
+		releaseSpend(ctx.spendAdmission);
+		return;
+	}
+	settleEnforcedSpend({
+		admission: ctx.spendAdmission,
+		rowWritten: true,
+		workspaceId: ctx.workspaceId,
+		keyId: ctx.meta?.apiKeyId ?? ctx.keyId ?? null,
+		billingRequestId: ctx.billingRequestId,
+		requestId: ctx.requestId,
+		costNanos,
+		internal: ctx.internal,
+	});
 }
 
 /** Clears isolate lease state (tests only). */

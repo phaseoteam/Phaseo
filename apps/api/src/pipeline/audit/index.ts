@@ -752,6 +752,8 @@ export async function auditSuccess(input: {
     internalLatencyMs?: number | null;
     endToEndMs?: number | null;
     usagePriced: any; totalCents: number; totalNanos?: number | null; currency: "USD" | string;
+    /** The priced bill of a success pending reconciliation (rounds that could not be priced). */
+    expectedCostNanos?: number | null;
     finishReason?: string | null;
     statusCode: number; throughput?: number | null; keyId?: string | null;
     /** Zero data retention applies to the request, so no content is stored: no I/O log. */
@@ -850,6 +852,7 @@ export async function auditSuccess(input: {
             requestPayload: args.requestPayload,
             gatewayResponse: args.gatewayResponse,
             costNanos: args.totalNanos ?? (Number.isFinite(args.totalCents) ? Math.round((args.totalCents as number) * 1e7) : null),
+            expectedCostNanos: args.expectedCostNanos ?? null,
             currency: args.currency,
             pricingLines,
             throughput: args.throughput ?? null,

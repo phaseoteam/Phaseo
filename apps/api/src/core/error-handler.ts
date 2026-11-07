@@ -23,7 +23,9 @@ import { enqueueGatewayOtlpExport } from "@observability/otlp-export";
 import { metadataTraceContext, parseW3cTraceContext, requestMetadata as readRequestMetadata } from "@observability/trace-context";
 import { readDownstreamRateLimitHeaders, applyDownstreamRateLimitHeaders } from "@pipeline/upstream-rate-limit-headers";
 import { dispatchBackground, ensureRuntimeForBackground } from "@/runtime/env";
-import { releaseSpend } from "./spend-limits";
+import { releaseSpend, settleChargedFailureSpend } from "./spend-limits";
+import { claimFailureSpendSettlement, failureBudgetNanos, recordsServerToolAccounting, serverToolReconciliation } from "@pipeline/after/server-tool-charges";
+import { pendingChargeFields } from "@pipeline/after/audit";
 
 const REDACT_ERROR_KEYS = new Set([
     "messages",
@@ -701,8 +703,20 @@ export async function handleError({
     }
 
     console.log(`Handling ${stage} error for endpoint ${endpoint}: status ${res.status}`);
-    // Enforce mode: a request failing after admission frees its spend-limit slot (no-op without one).
-    releaseSpend(ctx?.spendAdmission);
+    // Work a server-tool request completed before failing was charged: its row carries the cost
+    // and it counts against spend limits like a success. Otherwise the admission is freed.
+    const chargedFailure = stage === "execute" && ctx?.serverToolPartialCharge && recordsServerToolAccounting(ctx.serverToolPartialCharge)
+        ? ctx.serverToolPartialCharge
+        : null;
+    // handleFailureAudit already wrote this failure's row and settles it; this call writes nothing.
+    const partialCharge = chargedFailure && !chargedFailure.persistedBy ? chargedFailure : null;
+    if (partialCharge) partialCharge.persistedBy = "error_handler";
+    // A charge, or the expected charge the wallet did not take, counts against spend limits; the
+    // writer that persists the row settles it (handleFailureAudit, when it ran first). A request
+    // that owes nothing frees its slot (no-op without one).
+    const budgetNanos = stage === "execute" && ctx ? failureBudgetNanos(ctx) : 0;
+    if (budgetNanos > 0 && ctx && claimFailureSpendSettlement(ctx)) settleChargedFailureSpend(ctx, budgetNanos);
+    if (budgetNanos <= 0) releaseSpend(ctx?.spendAdmission);
 
     const body = await safeJson(res);
     const debugHeader = req?.headers.get("x-gateway-debug");
@@ -1146,6 +1160,24 @@ export async function handleError({
         auditArgs.providerAttempts = Array.isArray(ctx?.providerAttempts)
             ? ctx.providerAttempts
             : null;
+        // Rounds held for reconciliation (unpriced rounds, or a bill the wallet did not take) make the
+        // row pending reconciliation, as an unpriceable request is.
+        const reconciliation = partialCharge ? serverToolReconciliation(partialCharge, ctx?.billingRequestId, ctx?.uncollectedChargeReason) : null;
+        // Every row pending reconciliation records expected_cost_nanos, and a charge that did not go
+        // through its confirmed cost (absent when unreadable): #3534's pendingChargeFields.
+        const pending = ctx ? pendingChargeFields(ctx, reconciliation != null) : {};
+        if (pending.expectedCostNanos != null) auditArgs.expectedCostNanos = pending.expectedCostNanos;
+        if (partialCharge) {
+            auditArgs.usage = partialCharge.usage;
+            auditArgs.costNanos = pending.expectedCostNanos != null ? pending.costNanos ?? null : partialCharge.costNanos;
+            auditArgs.currency = partialCharge.currency;
+            auditArgs.pricingLines = partialCharge.pricingLines;
+            if (reconciliation) {
+                auditArgs.detailMetadata.accounting_finalization = sanitizeForAxiom({ ...reconciliation, charged_nanos: pending.costNanos ?? null });
+            }
+        } else if (pending.costNanos != null) {
+            auditArgs.costNanos = pending.costNanos;
+        }
     }
     // The error response does not depend on audit persistence; deliver it in the
     // background so clients are not held for database writes and retries.

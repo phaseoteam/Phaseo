@@ -28,6 +28,11 @@ vi.mock("@core/spend-limits", () => ({
 		if (!args.rowWritten && !args.replace) return;
 		if (args.replace || !budget.recorded.has(args.billingRequestId)) budget.recorded.set(args.billingRequestId, args.costNanos);
 	},
+	// Like the real one: a failure that owes money is recorded whether or not its row lands.
+	settleChargedFailureSpend: (ctx: { spendAdmission: { admissionId: string } | null; billingRequestId: string }, costNanos: number) => {
+		if (ctx.spendAdmission) budget.open.delete(ctx.spendAdmission.admissionId);
+		if (!budget.recorded.has(ctx.billingRequestId)) budget.recorded.set(ctx.billingRequestId, costNanos);
+	},
 }));
 
 import { handleFailureAudit } from "./audit";

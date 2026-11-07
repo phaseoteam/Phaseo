@@ -61,4 +61,4 @@ curl https://api.phaseo.app/v1/responses \
 
 ## 用量和价格
 
-每张图像会使 `usage.server_tool_use.image_generation_requests` 加 1，并可按 `server_tool_image_generation_requests` 计费。当图像模型报告 token 用量时，这些用量会计入请求的用量，并按该模型的正常价格计费。
+每张图像会使 `usage.server_tool_use.image_generation_requests` 加 1，并可通过 `server_tool_image_generation_requests` 计费。图像模型按其自身费率计费，作为请求账单中的单独一项。即使调用模型免费，使用付费图像模型也需要账户有余额。

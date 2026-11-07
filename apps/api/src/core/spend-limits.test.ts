@@ -22,7 +22,12 @@ vi.mock("./spend-limit-footprint", async (importOriginal) => ({
 	readSpendLimitFootprint: (...args: unknown[]) => runtime.readFootprint(...args),
 }));
 
+// handleError's telemetry sinks; the partial-charge test only needs the spend-limit settlement.
+vi.mock("@observability/events", () => ({ emitGatewayRequestEvent: async () => undefined }));
+vi.mock("@observability/otlp-export", () => ({ enqueueGatewayOtlpExport: async () => undefined }));
+
 import { SpendLimitDurableObject, type SpendLimitSeed } from "./spend-limit-durable-object";
+import { handleError } from "./error-handler";
 import { LeasePool, type LeaseTransport } from "./lease-pool";
 import {
 	__resetSpendLimitsForTests,
@@ -1182,6 +1187,86 @@ describe("spend-limit coordinator", () => {
 			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, admissionId: "r" })).toMatchObject({
 				outcome: "denied", keyLimit: { reason: "daily_request_limit_reached" },
 			});
+		});
+
+		it("counts charged server-tool failures against a cost budget, so repeating them cannot drain the wallet", async () => {
+			// $0.000001 a day; each failed request was charged 400 nanos for its completed rounds.
+			database.keys.set(API_KEY, { workspaceId: WORKSPACE, daily: [0, 1_000] });
+			const audited: Array<Record<string, unknown>> = [];
+			let admitted = 0;
+			for (let attempt = 0; attempt < 10; attempt++) {
+				const slot = createSpendLimitSlot();
+				const decision = await enforcedSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, requestId: `r${attempt}`, slot });
+				if (decision?.outcome !== "allowed") break;
+				admitted++;
+				await handleError({
+					stage: "execute",
+					res: new Response(JSON.stringify({ error: "gateway_server_tool_limit" }), { status: 400 }),
+					endpoint: "chat.completions",
+					ctx: {
+						requestId: `r${attempt}`, billingRequestId: `b${attempt}`, workspaceId: WORKSPACE, keyId: API_KEY,
+						endpoint: "chat.completions", model: "openai/gpt-5.4-nano", meta: { apiKeyId: API_KEY },
+						spendAdmission: await slotAdmission(slot),
+						serverToolPartialCharge: { costNanos: 400, currency: "USD", usage: { input_tokens: 3_000 }, pricingLines: [{ dimension: "input_text_tokens", line_nanos: 400 }] },
+					} as any,
+					auditFailure: async (args: Record<string, unknown>) => { audited.push(args); },
+				});
+				await flush();
+			}
+			// Admitted while spend is below the budget: 0, 400 and 800 nanos; the fourth (1,200) is refused.
+			expect(admitted).toBe(3);
+			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, admissionId: "r-next" })).toMatchObject({
+				outcome: "denied", keyLimit: { reason: "daily_cost_limit_reached", currentValue: 1_200 },
+			});
+			// Each failure row carries what was charged.
+			expect(audited.map((args) => args.costNanos)).toEqual([400, 400, 400]);
+			expect(audited[0]).toMatchObject({ usage: { input_tokens: 3_000 }, pricingLines: [{ dimension: "input_text_tokens" }], billingRequestId: "b0" });
+		});
+
+		it("counts delivered responses the wallet did not take even when their failure rows cannot be written", async () => {
+			// A database outage: the wallet charge and the failure-row insert both exhausted their
+			// retries. Each delivered response was expected to cost 400 nanos.
+			database.keys.set(API_KEY, { workspaceId: WORKSPACE, daily: [0, 1_000] });
+			let admitted = 0;
+			for (let attempt = 0; attempt < 10; attempt++) {
+				const slot = createSpendLimitSlot();
+				const decision = await enforcedSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, requestId: `d${attempt}`, slot });
+				if (decision?.outcome !== "allowed") break;
+				admitted++;
+				await handleError({
+					stage: "execute",
+					res: new Response(JSON.stringify({ error: "stream_finalization_failed" }), { status: 500 }),
+					endpoint: "chat.completions",
+					ctx: {
+						requestId: `d${attempt}`, billingRequestId: `bd${attempt}`, workspaceId: WORKSPACE, keyId: API_KEY,
+						endpoint: "chat.completions", model: "openai/gpt-5.4-nano", meta: { apiKeyId: API_KEY },
+						spendAdmission: await slotAdmission(slot),
+						uncollectedChargeNanos: 400,
+						uncollectedChargeReason: "persistence_failed",
+					} as any,
+					auditFailure: async () => { throw new Error("database unavailable"); },
+				});
+				await flush();
+			}
+			// The admissions are settled at the expected amount, never released: 0, 400, 800 admitted.
+			expect(admitted).toBe(3);
+			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, admissionId: "d-next" })).toMatchObject({
+				outcome: "denied", keyLimit: { reason: "daily_cost_limit_reached", currentValue: 1_200 },
+			});
+		});
+
+		it("still frees the admission of a failure that charged nothing", async () => {
+			const slot = createSpendLimitSlot();
+			await enforcedSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, requestId: "r1", slot });
+			await handleError({
+				stage: "execute",
+				res: new Response(JSON.stringify({ error: "upstream_error" }), { status: 502 }),
+				endpoint: "chat.completions",
+				ctx: { requestId: "r1", billingRequestId: "b1", workspaceId: WORKSPACE, keyId: API_KEY, endpoint: "chat.completions", meta: { apiKeyId: API_KEY }, spendAdmission: await slotAdmission(slot) } as any,
+				auditFailure: async () => {},
+			});
+			await flush();
+			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, admissionId: "r2" })).toMatchObject({ outcome: "allowed" });
 		});
 	});
 

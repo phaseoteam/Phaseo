@@ -62,4 +62,4 @@ Un `prompt`: la pregunta que necesita varias perspectivas.
 
 ## Uso y precios
 
-Cada llamada suma 1 a `usage.server_tool_use.fusion_requests` y se puede facturar con `server_tool_fusion_requests`. Los tokens de cada llamada de análisis y del analista se suman al uso de la solicitud y se cobran a las tarifas de ese modelo.
+Cada llamada suma 1 a `usage.server_tool_use.fusion_requests` y puede cobrarse con `server_tool_fusion_requests`. Cada llamada de análisis y de analista se cobra según las tarifas de su modelo, como una línea aparte en la factura de la solicitud; sus tokens no se suman a los del modelo que la llama. Los modelos de pago requieren saldo aunque el modelo que los llama sea gratuito.

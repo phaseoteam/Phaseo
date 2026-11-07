@@ -62,4 +62,4 @@ Un `prompt` : la question qui nécessite plusieurs points de vue.
 
 ## Utilisation et tarification
 
-Chaque appel ajoute 1 à `usage.server_tool_use.fusion_requests` et peut être facturé via `server_tool_fusion_requests`. Les tokens de chaque appel d’analyse et de l’analyste s’ajoutent à l’utilisation de la requête et sont facturés au tarif du modèle concerné.
+Chaque appel ajoute 1 à `usage.server_tool_use.fusion_requests` et peut être facturé avec `server_tool_fusion_requests`. Chaque appel d’analyse et d’analyste est facturé aux tarifs de son modèle, sur une ligne distincte de la facture de la requête ; ses jetons ne s’ajoutent pas à ceux du modèle appelant. Les modèles payants nécessitent du crédit même lorsque le modèle appelant est gratuit.

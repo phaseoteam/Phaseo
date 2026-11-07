@@ -29,6 +29,7 @@ vi.mock("@core/spend-limits", () => ({
 	recordCheckpointSpend: vi.fn(),
 	releaseSpend: vi.fn(),
 	settleEnforcedSpend: vi.fn(),
+	settleChargedFailureSpend: vi.fn(),
 }));
 
 import { handleFailureAudit } from "./audit";
@@ -97,6 +98,22 @@ describe("a gateway_requests row pending reconciliation", () => {
 		const ctx = context();
 		await settled(recordUsageAndChargeOnce({ ctx, costNanos: 300, endpoint: "chat.completions", throwOnFailure: true }));
 		expect(await auditPending(ctx)).toEqual(row);
+	});
+
+	// The database's own refusal shapes: definite (one attempt) and recorded with their reason.
+	it.each([
+		["wallet_refused", new Error("gateway_charge_not_applied:insufficient_balance")],
+		["wallet_not_found", { code: "P0001", message: "wallet_not_found", details: null, hint: null }],
+		["persistence_failed", new TypeError("fetch failed")],
+	])("records the intended bill and the reason when the charge ends as %s", async (reason, error) => {
+		db.oneOff.mockRejectedValue(error);
+		const ctx = context();
+		await settled(recordUsageAndChargeOnce({ ctx, costNanos: 300, endpoint: "chat.completions", throwOnFailure: true }));
+		expect(db.oneOff).toHaveBeenCalledTimes(reason === "persistence_failed" ? 3 : 1);
+		expect(await auditPending(ctx)).toEqual({ expected: 300, cost: 0 });
+		expect(auditFailureMock.mock.calls.at(-1)![0].detailMetadata.accounting_finalization).toMatchObject({
+			billing_status: "pending_reconciliation", charged_nanos: 0, expected_nanos: 300, reason,
+		});
 	});
 
 	it("records 0 as the intended bill of a stepped refund to zero that did not go through", async () => {

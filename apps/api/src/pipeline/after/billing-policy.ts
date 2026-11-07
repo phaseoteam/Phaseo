@@ -1,8 +1,97 @@
-import type { PipelineContext } from "../before/types";
+import type { PipelineContext, ServerToolSubCallCharge } from "../before/types";
 import type { RequestResult } from "../execute";
 import { shapeUsageForClient } from "../usage";
 
+const positiveCount = (value: unknown): boolean =>
+	typeof value === "number" && Number.isFinite(value) && value > 0;
+
+/**
+ * Whether the request carried input the provider charges for: prompt tokens, cache reads
+ * (inside input_tokens) or cache writes. A provider that reports its own cost of zero
+ * (usage.cost === 0) has explicitly not charged.
+ */
+function hasBillableInput(usage: any): boolean {
+	if (!usage || typeof usage !== "object") return false;
+	if (usage.cost === 0) return false;
+	return [
+		usage.input_tokens,
+		usage.prompt_tokens,
+		usage.input_text_tokens,
+		usage.cached_read_text_tokens,
+		usage.cached_write_text_tokens,
+		usage.cached_write_text_tokens_5m,
+		usage.cached_write_text_tokens_1h,
+	].some(positiveCount);
+}
+
+/**
+ * Add the charges for model calls a server tool made (priced on each called model's own
+ * route) to a request's bill, one pricing line per call.
+ */
+export function applyServerToolSubCallCharges<T extends { pricedUsage: any; totalNanos: number; totalCents: number }>(
+	billed: T,
+	charges: readonly ServerToolSubCallCharge[] | null | undefined,
+): T {
+	const billable = (charges ?? []).filter((charge) => Number.isFinite(charge.totalNanos) && charge.totalNanos > 0);
+	if (billable.length === 0) return billed;
+	const subCallNanos = billable.reduce((sum, charge) => sum + Math.round(charge.totalNanos), 0);
+	const totalNanos = Math.max(0, Math.round(billed.totalNanos)) + subCallNanos;
+	const usage = billed.pricedUsage && typeof billed.pricedUsage === "object" ? billed.pricedUsage : {};
+	const pricing = usage.pricing && typeof usage.pricing === "object" ? usage.pricing : {};
+	const lines = [
+		...(Array.isArray(pricing.lines) ? pricing.lines : []),
+		...billable.map((charge) => {
+			const usd = String(Number((charge.totalNanos / 1_000_000_000).toFixed(9)));
+			return {
+				dimension: `server_tool_${charge.kind}_model_call`,
+				quantity: 1,
+				billable_units: 1,
+				unit_size: 1,
+				unit_price_usd: usd,
+				line_cost_usd: usd,
+				line_nanos: Math.round(charge.totalNanos),
+				sub_call: {
+					kind: charge.kind,
+					model: charge.model,
+					provider: charge.provider,
+					...(typeof charge.inputTokens === "number" ? { input_tokens: charge.inputTokens } : {}),
+					...(typeof charge.outputTokens === "number" ? { output_tokens: charge.outputTokens } : {}),
+				},
+			};
+		}),
+	];
+	const totalCents = Math.trunc(totalNanos / 10_000_000);
+	return {
+		...billed,
+		pricedUsage: {
+			...usage,
+			pricing: {
+				currency: "USD",
+				...pricing,
+				total_nanos: totalNanos,
+				total_cents: totalCents,
+				total_usd_str: String(Number((totalNanos / 1_000_000_000).toFixed(9))),
+				lines,
+				server_tool_sub_call_nanos: subCallNanos,
+			},
+		},
+		totalNanos,
+		totalCents,
+	};
+}
+
 export function applySuccessfulResponseBillingPolicy(args: {
+	endpoint: string;
+	pricedUsage: any;
+	totalNanos: number;
+	totalCents: number;
+	/** Model calls server tools made; billed even when the main model's own usage is waived. */
+	subCallCharges?: readonly ServerToolSubCallCharge[] | null;
+}): { pricedUsage: any; totalNanos: number; totalCents: number; billingSuppressed: boolean } {
+	return applyServerToolSubCallCharges(zeroOutputBillingPolicy(args), args.subCallCharges);
+}
+
+function zeroOutputBillingPolicy(args: {
 	endpoint: string;
 	pricedUsage: any;
 	totalNanos: number;
@@ -32,7 +121,11 @@ export function applySuccessfulResponseBillingPolicy(args: {
 			key.startsWith("native_web_")
 		) && typeof value === "number" && Number.isFinite(value) && value > 0
 	);
-	const suppress = isTextGeneration && outputTokens === 0 && toolCalls <= 0 && !hasNonTextOrServerToolOutput;
+	// An empty answer is waived only when the provider charged nothing for it either: no
+	// prompt or cache tokens (or a reported cost of zero). Input is billed upstream even when
+	// the model produces no output.
+	const suppress = isTextGeneration && outputTokens === 0 && toolCalls <= 0 && !hasNonTextOrServerToolOutput &&
+		!hasBillableInput(args.pricedUsage);
 	if (!suppress) {
 		return {
 			pricedUsage: args.pricedUsage,
