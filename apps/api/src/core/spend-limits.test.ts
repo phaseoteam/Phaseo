@@ -391,6 +391,24 @@ describe("spend-limit coordinator", () => {
 			expect(await daily()).toBe(300);
 		});
 
+		it("keeps a never-audited stepped request counted after its entry expires, final refund included", async () => {
+			// The seed counts charges without an audit row from their ledger movements (#3547), so
+			// retiring the entry hands its spend to the database instead of losing it.
+			await checkpoint("b-unaudited", 300, 1);
+			await reseed();
+			expect(await daily()).toBe(300);
+			vi.setSystemTime(Date.now() + SPEND_LEASE.pendingTtlMs + 1);
+			await reseed();
+			expect(database.calls.at(-1)?.exclude).toEqual([]);
+			expect(await daily()).toBe(300);
+			// The final refunds to $1. The coordinator ignores its record (the id was seen), but the
+			// refund is a ledger movement, and the next seed counts it.
+			debit("b-unaudited", 100);
+			expect(await coordinator.record(WORKSPACE, { ...entry("b-unaudited"), costNanos: 100, final: true })).toMatchObject({ duplicates: 1 });
+			await reseed();
+			expect(await daily()).toBe(100);
+		});
+
 		it("is dropped by a restart; the seed counts the charge row until a later record opens it again", async () => {
 			await checkpoint("b-restart", 300, 1);
 			coordinator = createCoordinator();
