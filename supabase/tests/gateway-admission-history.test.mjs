@@ -62,14 +62,15 @@ try {
   assert.equal((await access('public.gateway_fetch_request_context_without_workspace_budget')).key_limit_ok.reason, 'daily_request_limit_reached');
   // Money movements win: a request pending reconciliation with an applied charge counts that charge
   // and what it did not collect, never its row's cost. One row holds a stale 500 against an intended
-  // 300 whose charge is 200 (counts 200 + 100); one is pending by billing_status only, its row
-  // saying 70 against a 40 charge (counts 40).
+  // 300 whose charge is 200 (counts 200 + 100); the other says 70 against an intended and charged 40
+  // (counts 40). (A legacy row flagged only by billing_status is checked in
+  // budget-enforcement-money-hygiene.test.mjs, at fixed dates around its cutoff.)
   await db.exec('reset role');
   await db.query(`insert into public.gateway_request_charges(workspace_id,request_id,cost_nanos,status,is_final,key_id) values
     ($1,'billing-stale',200,'applied',true,$2),($1,'billing-flag',40,'applied',true,$2)`, [workspace,key]);
   await db.query(`insert into public.gateway_requests(workspace_id,key_id,created_at,success,cost_nanos,billing_request_id,expected_cost_nanos,detail_metadata) values
     ($1,$2,now(),false,500,'billing-stale',300,null),
-    ($1,$2,now(),false,70,'billing-flag',null,'{"accounting_finalization":{"billing_status":"pending_reconciliation"}}')`, [workspace,key]);
+    ($1,$2,now(),false,70,'billing-flag',40,null)`, [workspace,key]);
   await db.exec('set role service_role');
   for (const name of ['private.gateway_context_access', 'public.gateway_fetch_request_context_without_workspace_budget']) {
     assert.equal((await access(name)).key_limit_ok.buckets.daily.cost_used_nanos, 10 + 999 + 300 + 40, name);
