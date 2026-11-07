@@ -5,9 +5,10 @@ import type {
 	IR,
 	IRModel,
 	IROperation,
-	IRSchema
+	IRSchema,
+	ModelTypeResolver
 } from "@phaseo/oapi-core";
-import { splitPathTemplate } from "@phaseo/oapi-core";
+import { createModelTypeResolver, splitPathTemplate } from "@phaseo/oapi-core";
 
 export const backendRust: Backend = {
 	id: "rust",
@@ -44,8 +45,9 @@ function renderModels(models: IRModel[]): string {
 		"}",
 		""
 	];
+	const modelTypes = createModelTypeResolver(models);
 	for (const model of models) {
-		lines.push(renderModel(model));
+		lines.push(renderModel(model, modelTypes));
 		lines.push("");
 	}
 	return lines.join("\n");
@@ -56,7 +58,7 @@ function renderModels(models: IRModel[]): string {
 // ErrorResponse.error is the error object, or the code string older responses sent.
 const JSON_VALUE_FIELDS = new Set(["ErrorResponse.error"]);
 
-function renderModel(model: IRModel): string {
+function renderModel(model: IRModel, modelTypes: ModelTypeResolver): string {
 	if (model.schema.kind === "object") {
 		const required = new Set(model.schema.required);
 		const fields = Object.keys(model.schema.properties).sort((a, b) => a.localeCompare(b));
@@ -68,7 +70,8 @@ function renderModel(model: IRModel): string {
 				: renderFieldType(
 					model.schema.properties[field],
 					required.has(field),
-					model.name === "ImagesEditRequest" && field === "image"
+					model.name === "ImagesEditRequest" && field === "image",
+					(schema) => modelTypes(schema, model.name)
 				);
 			lines.push(`\tpub ${name}: ${type},`);
 		}
@@ -232,15 +235,15 @@ function renderJsonValueFieldType(required: boolean): string {
 	return required ? "serde_json::Value" : "Option<serde_json::Value>";
 }
 
-function renderFieldType(schema: IRSchema, required: boolean, stringOrStringArray = false): string {
-	const base = stringOrStringArray ? "StringOrStringArray" : rustType(schema);
+function renderFieldType(schema: IRSchema, required: boolean, stringOrStringArray = false, modelType: (schema: IRSchema) => string | undefined = () => undefined): string {
+	const base = stringOrStringArray ? "StringOrStringArray" : rustType(schema, modelType);
 	if (required) {
 		return base;
 	}
 	return `Option<${base}>`;
 }
 
-function rustType(schema: IRSchema): string {
+function rustType(schema: IRSchema, modelType: (schema: IRSchema) => string | undefined = () => undefined): string {
 	switch (schema.kind) {
 		case "primitive":
 			if (schema.type === "boolean") return "bool";
@@ -248,8 +251,15 @@ function rustType(schema: IRSchema): string {
 			if (schema.type === "number") return "f64";
 			return "String";
 		case "array":
-			return `Vec<${rustType(schema.items)}>`;
+			return `Vec<${rustType(schema.items, modelType)}>`;
 		case "object":
+			// The loader inlines $refs; name the model an object came from so nested objects (a list of
+			// failures, each with an error object) keep their shape. A free-form object without properties
+			// matches any empty model by structure, so it stays a map.
+			if (Object.keys(schema.properties).length > 0) {
+				const name = modelType(schema);
+				if (name) return name;
+			}
 			if (isModelLifecycleObject(schema)) return "ModelLifecycle";
 			return "HashMap<String, String>";
 		case "enum":
@@ -263,7 +273,7 @@ function rustType(schema: IRSchema): string {
 		case "ref":
 			return schema.name;
 		case "nullable":
-			return `Option<${rustType(schema.inner)}>`;
+			return `Option<${rustType(schema.inner, modelType)}>`;
 		default:
 			return "String";
 	}

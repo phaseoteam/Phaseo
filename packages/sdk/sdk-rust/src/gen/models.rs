@@ -22,7 +22,7 @@ pub struct ActivityEntry {
 }
 
 pub struct ActivityResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<ActivityEntry>,
 }
 
 pub struct AnalyticsAccessTokenRequiredResponse {
@@ -37,14 +37,14 @@ pub struct AnalyticsNotImplementedResponse {
 }
 
 pub struct AnalyticsResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<ActivityEntry>,
 	pub limit: i64,
 	pub offset: i64,
 	pub total_count: i64,
 }
 
 pub struct AnthropicContentBlock {
-	pub cache_control: Option<HashMap<String, String>>,
+	pub cache_control: Option<CacheControl>,
 	pub content: Option<String>,
 	pub id: Option<String>,
 	pub input: Option<HashMap<String, String>>,
@@ -61,9 +61,9 @@ pub struct AnthropicMessage {
 }
 
 pub struct AnthropicMessagesRequest {
-	pub cache_control: Option<HashMap<String, String>>,
+	pub cache_control: Option<CacheControl>,
 	pub context_management: Option<HashMap<String, String>>,
-	pub debug: Option<HashMap<String, String>>,
+	pub debug: Option<DebugOptions>,
 	pub echo_upstream_request: Option<bool>,
 	pub max_tokens: i64,
 	pub messages: Vec<String>,
@@ -72,11 +72,11 @@ pub struct AnthropicMessagesRequest {
 	pub model: String,
 	pub models: Option<Vec<String>>,
 	pub plugins: Option<Vec<String>>,
-	pub prompt: Option<HashMap<String, String>>,
+	pub prompt: Option<PromptTemplateReference>,
 	pub prompt_cache_key: Option<Option<String>>,
-	pub provider: Option<HashMap<String, String>>,
-	pub provider_options: Option<HashMap<String, String>>,
-	pub reasoning: Option<HashMap<String, String>>,
+	pub provider: Option<ProviderRoutingOptions>,
+	pub provider_options: Option<ProviderOptions>,
+	pub reasoning: Option<ReasoningConfig>,
 	pub service_tier: Option<String>,
 	pub session_id: Option<String>,
 	pub stop_sequences: Option<Vec<String>>,
@@ -92,7 +92,7 @@ pub struct AnthropicMessagesRequest {
 }
 
 pub struct AnthropicMessagesResponse {
-	pub content: Option<Vec<HashMap<String, String>>>,
+	pub content: Option<Vec<AnthropicContentBlock>>,
 	pub context_management: Option<HashMap<String, String>>,
 	pub id: Option<String>,
 	pub model: Option<String>,
@@ -100,7 +100,7 @@ pub struct AnthropicMessagesResponse {
 	pub stop_reason: Option<String>,
 	pub stop_sequence: Option<String>,
 	pub r#type: Option<String>,
-	pub usage: Option<HashMap<String, String>>,
+	pub usage: Option<AnthropicUsage>,
 }
 
 pub struct AnthropicSystemMessage {
@@ -109,7 +109,7 @@ pub struct AnthropicSystemMessage {
 }
 
 pub struct AnthropicSystemTextBlock {
-	pub cache_control: Option<HashMap<String, String>>,
+	pub cache_control: Option<CacheControl>,
 	pub text: String,
 	pub r#type: String,
 }
@@ -126,7 +126,7 @@ pub struct AnthropicUsage {
 	pub cache_creation_input_tokens: Option<i64>,
 	pub cache_read_input_tokens: Option<i64>,
 	pub cost: Option<f64>,
-	pub cost_details: Option<HashMap<String, String>>,
+	pub cost_details: Option<UsageCostDetails>,
 	pub input_tokens: Option<i64>,
 	pub output_tokens: Option<i64>,
 }
@@ -147,7 +147,7 @@ pub struct ApiKey {
 	pub limit: Option<f64>,
 	pub limit_remaining: Option<f64>,
 	pub limit_reset: Option<String>,
-	pub limits: HashMap<String, String>,
+	pub limits: ApiKeyLimitWindows,
 	pub name: Option<String>,
 	pub prefix: Option<String>,
 	pub scopes: String,
@@ -157,7 +157,7 @@ pub struct ApiKey {
 	pub updated_at: Option<String>,
 	pub usage: f64,
 	pub usage_daily: f64,
-	pub usage_details: HashMap<String, String>,
+	pub usage_details: ApiKeyUsageWindows,
 	pub usage_monthly: f64,
 	pub usage_weekly: f64,
 	pub workspace_id: String,
@@ -170,7 +170,7 @@ pub struct ApiKeyCreateRequest {
 	pub include_byok_in_limit: Option<bool>,
 	pub limit: Option<Option<f64>>,
 	pub limit_reset: Option<String>,
-	pub limits: Option<HashMap<String, String>>,
+	pub limits: Option<ApiKeyLimitInputWindows>,
 	pub name: String,
 	pub scopes: Option<String>,
 	pub soft_blocked: Option<bool>,
@@ -191,24 +191,24 @@ pub struct ApiKeyLimitInputBucket {
 }
 
 pub struct ApiKeyLimitInputWindows {
-	pub daily: Option<HashMap<String, String>>,
-	pub monthly: Option<HashMap<String, String>>,
-	pub weekly: Option<HashMap<String, String>>,
+	pub daily: Option<ApiKeyLimitInputBucket>,
+	pub monthly: Option<ApiKeyLimitInputBucket>,
+	pub weekly: Option<ApiKeyLimitInputBucket>,
 }
 
 pub struct ApiKeyLimitWindows {
-	pub daily: HashMap<String, String>,
-	pub monthly: HashMap<String, String>,
-	pub weekly: HashMap<String, String>,
+	pub daily: ApiKeyLimitBucket,
+	pub monthly: ApiKeyLimitBucket,
+	pub weekly: ApiKeyLimitBucket,
 }
 
 pub struct ApiKeyListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<ApiKey>,
 	pub total_count: i64,
 }
 
 pub struct ApiKeyResponse {
-	pub data: HashMap<String, String>,
+	pub data: ApiKey,
 }
 
 pub struct ApiKeyRotateRequest {
@@ -217,7 +217,7 @@ pub struct ApiKeyRotateRequest {
 }
 
 pub struct ApiKeyRotateResponse {
-	pub data: HashMap<String, String>,
+	pub data: ApiKeyWithValue,
 	pub previous_key_expires_at: Option<String>,
 }
 
@@ -233,7 +233,7 @@ pub struct ApiKeyUpdateRequest {
 	pub ip_allowlist: Option<Vec<HashMap<String, String>>>,
 	pub limit: Option<Option<f64>>,
 	pub limit_reset: Option<String>,
-	pub limits: Option<HashMap<String, String>>,
+	pub limits: Option<ApiKeyLimitInputWindows>,
 	pub name: Option<String>,
 	pub scopes: Option<String>,
 	pub soft_blocked: Option<bool>,
@@ -246,10 +246,10 @@ pub struct ApiKeyUsageBucket {
 }
 
 pub struct ApiKeyUsageWindows {
-	pub daily: HashMap<String, String>,
-	pub monthly: HashMap<String, String>,
-	pub total: HashMap<String, String>,
-	pub weekly: HashMap<String, String>,
+	pub daily: ApiKeyUsageBucket,
+	pub monthly: ApiKeyUsageBucket,
+	pub total: ApiKeyUsageBucket,
+	pub weekly: ApiKeyUsageBucket,
 }
 
 pub struct ApiKeyWithValue {
@@ -269,7 +269,7 @@ pub struct ApiKeyWithValue {
 	pub limit: Option<f64>,
 	pub limit_remaining: Option<f64>,
 	pub limit_reset: Option<String>,
-	pub limits: HashMap<String, String>,
+	pub limits: ApiKeyLimitWindows,
 	pub name: Option<String>,
 	pub prefix: Option<String>,
 	pub scopes: String,
@@ -279,14 +279,14 @@ pub struct ApiKeyWithValue {
 	pub updated_at: Option<String>,
 	pub usage: f64,
 	pub usage_daily: f64,
-	pub usage_details: HashMap<String, String>,
+	pub usage_details: ApiKeyUsageWindows,
 	pub usage_monthly: f64,
 	pub usage_weekly: f64,
 	pub workspace_id: String,
 }
 
 pub struct ApiKeyWithValueResponse {
-	pub data: HashMap<String, String>,
+	pub data: ApiKeyWithValue,
 	pub key: String,
 }
 
@@ -333,8 +333,8 @@ pub struct AsyncWebhookDeliverySummary {
 }
 
 pub struct AsyncWebhookPublicState {
-	pub attempts: Option<Vec<HashMap<String, String>>>,
-	pub delivery: Option<HashMap<String, String>>,
+	pub attempts: Option<Vec<AsyncWebhookDeliveryAttempt>>,
+	pub delivery: Option<AsyncWebhookDeliverySummary>,
 	pub events: Option<Vec<String>>,
 	pub has_secret: Option<bool>,
 	pub url: Option<Option<String>>,
@@ -351,7 +351,7 @@ pub struct AudioSpeechRequest {
 	pub input: String,
 	pub model: String,
 	pub models: Option<Vec<String>>,
-	pub provider: Option<HashMap<String, String>>,
+	pub provider: Option<ProviderRoutingOptions>,
 	pub speed: Option<f64>,
 	pub voice: Option<String>,
 }
@@ -365,7 +365,7 @@ pub struct AudioTranscriptionRequest {
 	pub language: Option<String>,
 	pub model: String,
 	pub models: Option<Vec<String>>,
-	pub provider: Option<HashMap<String, String>>,
+	pub provider: Option<ProviderRoutingOptions>,
 }
 
 pub struct AudioTranscriptionResponse {
@@ -379,7 +379,7 @@ pub struct AudioTranslationRequest {
 	pub model: String,
 	pub models: Option<Vec<String>>,
 	pub prompt: Option<String>,
-	pub provider: Option<HashMap<String, String>>,
+	pub provider: Option<ProviderRoutingOptions>,
 	pub temperature: Option<f64>,
 }
 
@@ -400,7 +400,7 @@ pub struct AuthorizedApp {
 }
 
 pub struct AuthorizedAppListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<AuthorizedApp>,
 }
 
 pub struct AuthorizedAppRevokedResponse {
@@ -428,7 +428,7 @@ pub struct AutoRoutingSettings {
 }
 
 pub struct AutoRoutingSettingsResponse {
-	pub data: HashMap<String, String>,
+	pub data: AutoRoutingSettings,
 }
 
 pub struct AutoRoutingSettingsUpdateRequest {
@@ -465,7 +465,7 @@ pub struct BatchBillingSummary {
 }
 
 pub struct BatchListResponse {
-	pub data: Option<Vec<HashMap<String, String>>>,
+	pub data: Option<Vec<BatchResponse>>,
 	pub first_id: Option<Option<String>>,
 	pub has_more: Option<bool>,
 	pub last_id: Option<Option<String>>,
@@ -478,7 +478,7 @@ pub struct BatchModelCapability {
 	pub name: Option<String>,
 	pub output_types: Option<Vec<String>>,
 	pub pricing: Option<HashMap<String, String>>,
-	pub providers: Option<Vec<HashMap<String, String>>>,
+	pub providers: Option<Vec<BatchModelProviderCapability>>,
 	pub status: Option<String>,
 	pub supported_parameters: Option<Vec<String>>,
 	pub supported_parameters_detail: Option<HashMap<String, String>>,
@@ -495,7 +495,7 @@ pub struct BatchModelProviderCapability {
 }
 
 pub struct BatchModelsResponse {
-	pub data: Option<Vec<HashMap<String, String>>>,
+	pub data: Option<Vec<BatchModelCapability>>,
 	pub object: Option<String>,
 }
 
@@ -512,7 +512,7 @@ pub struct BatchProviderCapability {
 
 pub struct BatchRequest {
 	pub completion_window: Option<String>,
-	pub debug: Option<HashMap<String, String>>,
+	pub debug: Option<DebugOptions>,
 	pub endpoint: Option<String>,
 	pub input_file_id: Option<String>,
 	pub items: Option<Vec<HashMap<String, String>>>,
@@ -520,9 +520,9 @@ pub struct BatchRequest {
 	pub metadata: Option<HashMap<String, String>>,
 	pub model: Option<String>,
 	pub prompts: Option<Vec<String>>,
-	pub provider: Option<HashMap<String, String>>,
+	pub provider: Option<ProviderRoutingOptions>,
 	pub provider_options: Option<HashMap<String, String>>,
-	pub requests: Option<Vec<HashMap<String, String>>>,
+	pub requests: Option<Vec<BatchRequestItem>>,
 	pub session_id: Option<String>,
 	pub system: Option<String>,
 	pub temperature: Option<f64>,
@@ -567,7 +567,7 @@ pub struct BatchRequestRow {
 }
 
 pub struct BatchResponse {
-	pub billing: Option<HashMap<String, String>>,
+	pub billing: Option<BatchBillingSummary>,
 	pub cancel_url: Option<Option<String>>,
 	pub cancelled_at: Option<i64>,
 	pub cancelling_at: Option<i64>,
@@ -598,13 +598,13 @@ pub struct BatchResponse {
 	pub pricing_lines: Option<Vec<HashMap<String, String>>>,
 	pub progress: Option<i64>,
 	pub provider: Option<String>,
-	pub request_counts: Option<HashMap<String, String>>,
+	pub request_counts: Option<BatchRequestCounts>,
 	pub request_id: Option<String>,
 	pub results_url: Option<Option<String>>,
 	pub session_id: Option<String>,
 	pub status: Option<String>,
 	pub usage: Option<HashMap<String, String>>,
-	pub webhook: Option<HashMap<String, String>>,
+	pub webhook: Option<AsyncWebhookPublicState>,
 	pub websocket_url: Option<String>,
 }
 
@@ -631,22 +631,22 @@ pub struct ChatAudioOutputPart {
 pub struct ChatChoice {
 	pub finish_reason: Option<String>,
 	pub index: Option<i64>,
-	pub message: Option<HashMap<String, String>>,
+	pub message: Option<ChatResponseMessage>,
 }
 
 pub struct ChatCompletionsRequest {
-	pub cache_control: Option<HashMap<String, String>>,
-	pub debug: Option<HashMap<String, String>>,
+	pub cache_control: Option<CacheControl>,
+	pub debug: Option<DebugOptions>,
 	pub echo_upstream_request: Option<bool>,
 	pub frequency_penalty: Option<f64>,
-	pub image_config: Option<HashMap<String, String>>,
+	pub image_config: Option<ImageConfig>,
 	pub include_reasoning: Option<bool>,
 	pub logit_bias: Option<HashMap<String, String>>,
 	pub logprobs: Option<bool>,
 	pub max_completion_tokens: Option<i64>,
 	pub max_tokens: Option<i64>,
 	pub max_tool_calls: Option<i64>,
-	pub messages: Vec<HashMap<String, String>>,
+	pub messages: Vec<ChatMessage>,
 	pub meta: Option<bool>,
 	pub metadata: Option<HashMap<String, String>>,
 	pub modalities: Option<Vec<String>>,
@@ -656,13 +656,13 @@ pub struct ChatCompletionsRequest {
 	pub plugins: Option<Vec<String>>,
 	pub prediction: Option<HashMap<String, String>>,
 	pub presence_penalty: Option<f64>,
-	pub prompt: Option<HashMap<String, String>>,
+	pub prompt: Option<PromptTemplateReference>,
 	pub prompt_cache_key: Option<Option<String>>,
-	pub prompt_cache_options: Option<HashMap<String, String>>,
+	pub prompt_cache_options: Option<PromptCacheOptions>,
 	pub prompt_cache_retention: Option<String>,
 	pub provider: Option<String>,
-	pub provider_options: Option<HashMap<String, String>>,
-	pub reasoning: Option<HashMap<String, String>>,
+	pub provider_options: Option<ProviderOptions>,
+	pub reasoning: Option<OpenAIReasoningConfig>,
 	pub reasoning_effort: Option<String>,
 	pub response_format: Option<String>,
 	pub safety_identifier: Option<Option<String>>,
@@ -684,14 +684,14 @@ pub struct ChatCompletionsRequest {
 }
 
 pub struct ChatCompletionsResponse {
-	pub choices: Option<Vec<HashMap<String, String>>>,
+	pub choices: Option<Vec<ChatChoice>>,
 	pub created: Option<i64>,
 	pub id: Option<String>,
 	pub model: Option<String>,
 	pub nativeResponseId: Option<Option<String>>,
 	pub object: Option<String>,
 	pub provider: Option<String>,
-	pub usage: Option<HashMap<String, String>>,
+	pub usage: Option<Usage>,
 }
 
 pub struct ChatImageOutputPart {
@@ -702,16 +702,16 @@ pub struct ChatImageOutputPart {
 
 pub struct ChatMessage {
 	pub audio: Option<Option<HashMap<String, String>>>,
-	pub audios: Option<Vec<HashMap<String, String>>>,
+	pub audios: Option<Vec<ChatAudioOutputPart>>,
 	pub content: Option<String>,
-	pub images: Option<Vec<HashMap<String, String>>>,
+	pub images: Option<Vec<ChatImageOutputPart>>,
 	pub name: Option<String>,
 	pub reasoning: Option<String>,
 	pub reasoning_content: Option<String>,
-	pub reasoning_details: Option<Vec<HashMap<String, String>>>,
+	pub reasoning_details: Option<Vec<ChatReasoningDetail>>,
 	pub role: String,
 	pub tool_call_id: Option<String>,
-	pub tool_calls: Option<Vec<HashMap<String, String>>>,
+	pub tool_calls: Option<Vec<ToolCall>>,
 }
 
 pub struct ChatReasoningDetail {
@@ -727,23 +727,23 @@ pub struct ChatReasoningDetail {
 
 pub struct ChatResponseMessage {
 	pub audio: Option<HashMap<String, String>>,
-	pub audios: Option<Vec<HashMap<String, String>>>,
+	pub audios: Option<Vec<ChatAudioOutputPart>>,
 	pub content: Option<String>,
-	pub images: Option<Vec<HashMap<String, String>>>,
+	pub images: Option<Vec<ChatImageOutputPart>>,
 	pub name: Option<String>,
 	pub reasoning: Option<String>,
 	pub reasoning_content: Option<String>,
-	pub reasoning_details: Option<Vec<HashMap<String, String>>>,
+	pub reasoning_details: Option<Vec<ChatReasoningDetail>>,
 	pub role: String,
 	pub tool_call_id: Option<String>,
-	pub tool_calls: Option<Vec<HashMap<String, String>>>,
+	pub tool_calls: Option<Vec<ToolCall>>,
 }
 
 pub struct Classifier {
 	pub created_at: String,
 	pub created_by: Option<String>,
 	pub description: Option<String>,
-	pub dimensions: Vec<HashMap<String, String>>,
+	pub dimensions: Vec<ClassifierDimension>,
 	pub enabled: bool,
 	pub id: String,
 	pub input_scope: String,
@@ -753,14 +753,14 @@ pub struct Classifier {
 	pub name: String,
 	pub sample_by: String,
 	pub sample_rate: f64,
-	pub scope: HashMap<String, String>,
+	pub scope: ClassifierScope,
 	pub updated_at: String,
 	pub workspace_id: String,
 }
 
 pub struct ClassifierCreateInput {
 	pub description: Option<Option<String>>,
-	pub dimensions: Vec<HashMap<String, String>>,
+	pub dimensions: Vec<ClassifierDimension>,
 	pub enabled: Option<bool>,
 	pub input_scope: Option<String>,
 	pub instructions: Option<String>,
@@ -769,7 +769,7 @@ pub struct ClassifierCreateInput {
 	pub name: String,
 	pub sample_by: Option<String>,
 	pub sample_rate: Option<f64>,
-	pub scope: Option<HashMap<String, String>>,
+	pub scope: Option<ClassifierScope>,
 }
 
 pub struct ClassifierDeleteResponse {
@@ -782,17 +782,17 @@ pub struct ClassifierDimension {
 	pub key: String,
 	pub multiple: Option<bool>,
 	pub name: Option<String>,
-	pub values: Vec<HashMap<String, String>>,
+	pub values: Vec<ClassifierValue>,
 }
 
 pub type ClassifierInputScope = JsonValue;
 
 pub struct ClassifierListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<Classifier>,
 }
 
 pub struct ClassifierResponse {
-	pub data: HashMap<String, String>,
+	pub data: Classifier,
 }
 
 pub type ClassifierSampleBy = JsonValue;
@@ -815,7 +815,7 @@ pub struct ClassifierTestResponse {
 
 pub struct ClassifierUpdateInput {
 	pub description: Option<Option<String>>,
-	pub dimensions: Option<Vec<HashMap<String, String>>>,
+	pub dimensions: Option<Vec<ClassifierDimension>>,
 	pub enabled: Option<bool>,
 	pub input_scope: Option<String>,
 	pub instructions: Option<String>,
@@ -824,7 +824,7 @@ pub struct ClassifierUpdateInput {
 	pub name: Option<String>,
 	pub sample_by: Option<String>,
 	pub sample_rate: Option<f64>,
-	pub scope: Option<HashMap<String, String>>,
+	pub scope: Option<ClassifierScope>,
 }
 
 pub struct ClassifierValue {
@@ -866,7 +866,7 @@ pub struct CreditTopupCreateRequest {
 
 pub struct CreditTopupResponse {
 	pub ok: bool,
-	pub topup: HashMap<String, String>,
+	pub topup: CreditTopup,
 }
 
 pub struct DataContributionCategories {
@@ -916,7 +916,7 @@ pub struct DataContributionClassifierInput {
 }
 
 pub struct DataContributionClassifierResponse {
-	pub data: HashMap<String, String>,
+	pub data: DataContributionClassifier,
 }
 
 pub struct DataContributionClassifierUpdateRequest {
@@ -981,7 +981,7 @@ pub struct DecisionBox {
 }
 
 pub struct DecisionBoxAnswer {
-	pub r#box: HashMap<String, String>,
+	pub r#box: DecisionBox,
 	pub confidence: Option<f64>,
 	pub name: Option<String>,
 	pub r#type: String,
@@ -1017,7 +1017,7 @@ pub struct DecisionImage {
 }
 
 pub struct DecisionInputAudio {
-	pub input_audio: HashMap<String, String>,
+	pub input_audio: DecisionAudioSource,
 	pub r#type: String,
 }
 
@@ -1087,17 +1087,17 @@ pub struct DecisionScoreQuestion {
 }
 
 pub struct DecisionsRequest {
-	pub debug: Option<HashMap<String, String>>,
+	pub debug: Option<DebugOptions>,
 	pub echo_upstream_request: Option<bool>,
 	pub images: Option<Vec<String>>,
 	pub meta: Option<bool>,
 	pub metadata: Option<HashMap<String, String>>,
 	pub model: String,
 	pub models: Option<Vec<String>>,
-	pub provider: Option<HashMap<String, String>>,
-	pub provider_options: Option<HashMap<String, String>>,
+	pub provider: Option<ProviderRoutingOptions>,
+	pub provider_options: Option<DecisionProviderOptions>,
 	pub questions: HashMap<String, String>,
-	pub routing: Option<HashMap<String, String>>,
+	pub routing: Option<ProviderRoutingOptions>,
 	pub state: String,
 }
 
@@ -1106,7 +1106,7 @@ pub struct DecisionsResponse {
 	pub meta: Option<HashMap<String, String>>,
 	pub model: Option<String>,
 	pub request_id: Option<Option<String>>,
-	pub usage: Option<HashMap<String, String>>,
+	pub usage: Option<DecisionsUsage>,
 }
 
 pub struct DecisionsUsage {
@@ -1150,11 +1150,11 @@ pub struct DepartmentBudgetInput {
 pub type DepartmentBudgetInterval = JsonValue;
 
 pub struct DepartmentBudgetListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<DepartmentBudget>,
 }
 
 pub struct DepartmentBudgetResponse {
-	pub data: HashMap<String, String>,
+	pub data: DepartmentBudget,
 }
 
 pub struct DepartmentBudgetUpdateInput {
@@ -1163,7 +1163,7 @@ pub struct DepartmentBudgetUpdateInput {
 }
 
 pub struct DynamicRoute {
-	pub config: HashMap<String, String>,
+	pub config: DynamicRouteConfig,
 	pub created_at: Option<Option<String>>,
 	pub deployed_version: Option<Option<i64>>,
 	pub description: Option<Option<String>>,
@@ -1174,7 +1174,7 @@ pub struct DynamicRoute {
 	pub status: String,
 	pub updated_at: Option<Option<String>>,
 	pub version: i64,
-	pub versions: Vec<HashMap<String, String>>,
+	pub versions: Vec<DynamicRouteVersion>,
 	pub workspace_id: String,
 }
 
@@ -1197,17 +1197,17 @@ pub struct DynamicRouteCondition {
 
 pub struct DynamicRouteConfig {
 	pub cacheAwareRouting: Option<bool>,
-	pub defaultAction: Option<HashMap<String, String>>,
-	pub edges: Option<Vec<HashMap<String, String>>>,
+	pub defaultAction: Option<DynamicRouteAction>,
+	pub edges: Option<Vec<DynamicRouteEdge>>,
 	pub entryNodeId: Option<Option<String>>,
-	pub nodes: Option<Vec<HashMap<String, String>>>,
-	pub rules: Option<Vec<HashMap<String, String>>>,
+	pub nodes: Option<Vec<DynamicRouteNode>>,
+	pub rules: Option<Vec<DynamicRouteRule>>,
 	pub schemaVersion: Option<String>,
 	pub sessionAffinity: Option<bool>,
 }
 
 pub struct DynamicRouteCreateRequest {
-	pub config: HashMap<String, String>,
+	pub config: DynamicRouteConfig,
 	pub description: Option<Option<String>>,
 	pub name: String,
 	pub slug: Option<String>,
@@ -1238,7 +1238,7 @@ pub struct DynamicRouteKeysUpdateRequest {
 }
 
 pub struct DynamicRouteListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<DynamicRoute>,
 	pub total_count: i64,
 }
 
@@ -1250,19 +1250,19 @@ pub struct DynamicRouteNode {
 }
 
 pub struct DynamicRouteResponse {
-	pub data: HashMap<String, String>,
+	pub data: DynamicRoute,
 }
 
 pub struct DynamicRouteRule {
-	pub action: HashMap<String, String>,
-	pub condition: HashMap<String, String>,
+	pub action: DynamicRouteAction,
+	pub condition: DynamicRouteCondition,
 	pub enabled: bool,
 	pub id: String,
 	pub name: String,
 }
 
 pub struct DynamicRouteUpdateRequest {
-	pub config: Option<HashMap<String, String>>,
+	pub config: Option<DynamicRouteConfig>,
 	pub description: Option<Option<String>>,
 	pub name: Option<String>,
 	pub status: Option<String>,
@@ -1286,22 +1286,22 @@ pub struct EmbeddingsMultimodalInput {
 }
 
 pub struct EmbeddingsRequest {
-	pub debug: Option<HashMap<String, String>>,
+	pub debug: Option<DebugOptions>,
 	pub dimensions: Option<i64>,
 	pub encoding_format: Option<String>,
 	pub input: String,
 	pub model: String,
 	pub models: Option<Vec<String>>,
-	pub provider: Option<HashMap<String, String>>,
+	pub provider: Option<ProviderRoutingOptions>,
 	pub provider_options: Option<HashMap<String, String>>,
 	pub user: Option<String>,
 }
 
 pub struct EmbeddingsResponse {
-	pub data: Option<Vec<HashMap<String, String>>>,
+	pub data: Option<Vec<Embedding>>,
 	pub model: Option<String>,
 	pub object: Option<String>,
-	pub usage: Option<HashMap<String, String>>,
+	pub usage: Option<Usage>,
 }
 
 pub struct EndpointCatalogueEntry {
@@ -1314,7 +1314,7 @@ pub struct EndpointCatalogueEntry {
 }
 
 pub struct EndpointCatalogueResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<EndpointCatalogueEntry>,
 	pub endpoints: Vec<String>,
 	pub ok: bool,
 	pub sample_models: Vec<String>,
@@ -1371,20 +1371,20 @@ pub struct ErrorResponse {
 	pub error_type: Option<String>,
 	pub failed_providers: Option<Vec<String>>,
 	pub failed_statuses: Option<Vec<i64>>,
-	pub failure_sample: Option<Vec<HashMap<String, String>>>,
+	pub failure_sample: Option<Vec<ErrorFailureSampleItem>>,
 	pub generation_id: Option<String>,
 	pub message: Option<String>,
 	pub missing_pricing_providers: Option<Vec<String>>,
 	pub ok: Option<bool>,
-	pub provider_candidate_diagnostics: Option<HashMap<String, String>>,
-	pub provider_enablement: Option<HashMap<String, String>>,
-	pub provider_failure_diagnostics: Option<HashMap<String, String>>,
+	pub provider_candidate_diagnostics: Option<ErrorProviderCandidateDiagnostics>,
+	pub provider_enablement: Option<ErrorProviderEnablementDiagnostics>,
+	pub provider_failure_diagnostics: Option<ErrorProviderFailureDiagnostics>,
 	pub provider_payment_required_provider: Option<String>,
 	pub provider_payment_required_support_notice: Option<String>,
 	pub reason: Option<String>,
-	pub routing_diagnostics: Option<HashMap<String, String>>,
+	pub routing_diagnostics: Option<ErrorRoutingDiagnostics>,
 	pub status_code: Option<i64>,
-	pub upstream_error: Option<HashMap<String, String>>,
+	pub upstream_error: Option<ErrorUpstreamError>,
 }
 
 pub struct ErrorRoutingDiagnostics {
@@ -1455,7 +1455,7 @@ pub struct ExtractionNumberField {
 
 pub struct ExtractionRequest {
 	pub fields: HashMap<String, String>,
-	pub images: Option<Vec<HashMap<String, String>>>,
+	pub images: Option<Vec<ExtractionImage>>,
 	pub input: String,
 	pub model: String,
 	pub reference_date: Option<String>,
@@ -1465,7 +1465,7 @@ pub struct ExtractionResponse {
 	pub answers: HashMap<String, String>,
 	pub model: String,
 	pub truncated: bool,
-	pub usage: HashMap<String, String>,
+	pub usage: ExtractionUsage,
 }
 
 pub struct ExtractionStringAnswer {
@@ -1492,7 +1492,7 @@ pub struct ExtractionUsage {
 }
 
 pub struct FileContentPart {
-	pub cache_control: Option<HashMap<String, String>>,
+	pub cache_control: Option<CacheControl>,
 	pub file: HashMap<String, String>,
 	pub r#type: String,
 }
@@ -1515,7 +1515,7 @@ pub struct FileUploadRequest {
 
 pub struct FunctionToolDefinition {
 	pub r#async: Option<bool>,
-	pub cache_control: Option<HashMap<String, String>>,
+	pub cache_control: Option<CacheControl>,
 	pub function: HashMap<String, String>,
 	pub r#type: String,
 }
@@ -1577,15 +1577,15 @@ pub struct GatewayFeedbackCreateRequest {
 }
 
 pub struct GatewayFeedbackListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<GatewayFeedback>,
 }
 
 pub struct GatewayFeedbackResponse {
-	pub data: HashMap<String, String>,
+	pub data: GatewayFeedback,
 }
 
 pub struct GatewayFeedbackSummaryResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<GatewayFeedbackSummaryRow>,
 	pub group_by: String,
 }
 
@@ -1623,12 +1623,12 @@ pub struct GatewayModelLimits {
 }
 
 pub struct GatewayModelOffer {
-	pub capabilities: HashMap<String, String>,
+	pub capabilities: GatewayCapabilities,
 	pub effective: HashMap<String, String>,
 	pub endpoints: Vec<String>,
-	pub modalities: HashMap<String, String>,
+	pub modalities: GatewayModalities,
 	pub model: Option<String>,
-	pub pricing: HashMap<String, String>,
+	pub pricing: GatewayPricing,
 	pub provider: HashMap<String, String>,
 	pub routable: bool,
 	pub routing: HashMap<String, String>,
@@ -1642,7 +1642,7 @@ pub type GatewayModelOrganization = JsonValue;
 pub struct GatewayModelsResponse {
 	pub availability_mode: String,
 	pub limit: i64,
-	pub models: Vec<HashMap<String, String>>,
+	pub models: Vec<Model>,
 	pub offset: i64,
 	pub ok: bool,
 	pub total: i64,
@@ -1685,11 +1685,11 @@ pub struct GatewayObservabilityEventCreateRequest {
 }
 
 pub struct GatewayObservabilityEventListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<GatewayObservabilityEvent>,
 }
 
 pub struct GatewayObservabilityEventResponse {
-	pub data: HashMap<String, String>,
+	pub data: GatewayObservabilityEvent,
 }
 
 pub type GatewayPlugin = JsonValue;
@@ -1733,7 +1733,7 @@ pub struct GatewayRequestLog {
 }
 
 pub struct GatewayRequestLogListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<GatewayRequestLog>,
 	pub from_time: String,
 	pub limit: i64,
 	pub offset: i64,
@@ -1743,7 +1743,7 @@ pub struct GatewayRequestLogListResponse {
 }
 
 pub struct GatewayRequestLogResponse {
-	pub data: HashMap<String, String>,
+	pub data: GatewayRequestLog,
 	pub ok: bool,
 }
 
@@ -1849,7 +1849,7 @@ pub struct GuardrailDetailResponse {
 
 pub struct GuardrailKeyAddResponse {
 	pub added_count: i64,
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<GuardrailKeyAssignment>,
 }
 
 pub struct GuardrailKeyAssignment {
@@ -1869,7 +1869,7 @@ pub struct GuardrailKeyIdsRequest {
 }
 
 pub struct GuardrailKeyListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<GuardrailKeyAssignment>,
 	pub total_count: i64,
 }
 
@@ -1878,13 +1878,13 @@ pub struct GuardrailKeySetResponse {
 }
 
 pub struct GuardrailListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<Guardrail>,
 	pub total_count: i64,
 }
 
 pub struct GuardrailMemberAddResponse {
 	pub added_count: i64,
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<GuardrailMemberAssignment>,
 }
 
 pub struct GuardrailMemberAssignment {
@@ -1895,7 +1895,7 @@ pub struct GuardrailMemberAssignment {
 }
 
 pub struct GuardrailMemberListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<GuardrailMemberAssignment>,
 	pub total_count: i64,
 }
 
@@ -1925,7 +1925,7 @@ pub struct GuardrailRemoveResponse {
 }
 
 pub struct GuardrailResponse {
-	pub data: HashMap<String, String>,
+	pub data: Guardrail,
 }
 
 pub struct GuardrailUpdateRequest {
@@ -1994,7 +1994,7 @@ pub struct ImagesEditRequest {
 	pub output_format: Option<String>,
 	pub partial_images: Option<i64>,
 	pub prompt: String,
-	pub provider: Option<HashMap<String, String>>,
+	pub provider: Option<ProviderRoutingOptions>,
 	pub quality: Option<String>,
 	pub resolution: Option<String>,
 	pub size: Option<String>,
@@ -2005,7 +2005,7 @@ pub struct ImagesEditRequest {
 
 pub struct ImagesEditResponse {
 	pub created: Option<i64>,
-	pub data: Option<Vec<HashMap<String, String>>>,
+	pub data: Option<Vec<Image>>,
 }
 
 pub struct ImagesGenerationRequest {
@@ -2021,7 +2021,7 @@ pub struct ImagesGenerationRequest {
 	pub output_format: Option<String>,
 	pub partial_images: Option<i64>,
 	pub prompt: String,
-	pub provider: Option<HashMap<String, String>>,
+	pub provider: Option<ProviderRoutingOptions>,
 	pub quality: Option<String>,
 	pub resolution: Option<String>,
 	pub response_format: Option<String>,
@@ -2034,13 +2034,13 @@ pub struct ImagesGenerationRequest {
 
 pub struct ImagesGenerationResponse {
 	pub created: Option<i64>,
-	pub data: Option<Vec<HashMap<String, String>>>,
+	pub data: Option<Vec<Image>>,
 	pub svg_usage: Option<HashMap<String, String>>,
 }
 
 pub struct InputTokensDetails {
 	pub cache_write_tokens: Option<i64>,
-	pub cache_write_tokens_details: Option<HashMap<String, String>>,
+	pub cache_write_tokens_details: Option<CacheWriteTokensDetails>,
 	pub cached_tokens: Option<i64>,
 }
 
@@ -2077,17 +2077,17 @@ pub struct LegacyDecisionBoxQuestion {
 }
 
 pub struct LegacyDecisionsRequest {
-	pub debug: Option<HashMap<String, String>>,
+	pub debug: Option<DebugOptions>,
 	pub echo_upstream_request: Option<bool>,
 	pub images: Option<Vec<String>>,
 	pub meta: Option<bool>,
 	pub metadata: Option<HashMap<String, String>>,
 	pub model: String,
 	pub models: Option<Vec<String>>,
-	pub provider: Option<HashMap<String, String>>,
-	pub provider_options: Option<HashMap<String, String>>,
+	pub provider: Option<ProviderRoutingOptions>,
+	pub provider_options: Option<DecisionProviderOptions>,
 	pub questions: HashMap<String, String>,
-	pub routing: Option<HashMap<String, String>>,
+	pub routing: Option<ProviderRoutingOptions>,
 	pub state: String,
 }
 
@@ -2096,16 +2096,16 @@ pub struct LegacyDecisionsResponse {
 	pub meta: Option<HashMap<String, String>>,
 	pub model: Option<String>,
 	pub request_id: Option<Option<String>>,
-	pub usage: Option<HashMap<String, String>>,
+	pub usage: Option<DecisionsUsage>,
 }
 
 pub struct ListFilesResponse {
-	pub data: Option<Vec<HashMap<String, String>>>,
+	pub data: Option<Vec<FileResponse>>,
 	pub object: Option<String>,
 }
 
 pub struct ManagementKeyCollectionResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<ManagementKeyRuntime>,
 }
 
 pub struct ManagementKeyCreateRequest {
@@ -2118,7 +2118,7 @@ pub struct ManagementKeyCreateRequest {
 }
 
 pub struct ManagementKeyCreateResponse {
-	pub key: HashMap<String, String>,
+	pub key: ProvisioningKeyWithValue,
 	pub ok: bool,
 }
 
@@ -2128,12 +2128,12 @@ pub struct ManagementKeyDeleteResponse {
 }
 
 pub struct ManagementKeyDetailResponse {
-	pub key: HashMap<String, String>,
+	pub key: ProvisioningKeyDetail,
 	pub ok: bool,
 }
 
 pub struct ManagementKeyListResponse {
-	pub keys: Vec<HashMap<String, String>>,
+	pub keys: Vec<ProvisioningKey>,
 	pub limit: i64,
 	pub offset: i64,
 	pub ok: bool,
@@ -2192,7 +2192,7 @@ pub struct ManagementKeyRuntimeCreateRequest {
 }
 
 pub struct ManagementKeyRuntimeCreateResponse {
-	pub data: HashMap<String, String>,
+	pub data: ManagementKeyRuntimeCreated,
 }
 
 pub struct ManagementKeyRuntimeDeleteResponse {
@@ -2200,7 +2200,7 @@ pub struct ManagementKeyRuntimeDeleteResponse {
 }
 
 pub struct ManagementKeyRuntimeResponse {
-	pub data: HashMap<String, String>,
+	pub data: ManagementKeyRuntime,
 }
 
 pub struct ManagementKeyRuntimeUpdateRequest {
@@ -2237,18 +2237,18 @@ pub type MessageContentPart = JsonValue;
 
 pub struct Model {
 	pub aliases: Vec<String>,
-	pub availability: HashMap<String, String>,
+	pub availability: ModelAvailability,
 	pub base_model_id: String,
-	pub capabilities: HashMap<String, String>,
+	pub capabilities: GatewayCapabilities,
 	pub description: String,
 	pub id: String,
-	pub lifecycle: HashMap<String, String>,
-	pub limits: HashMap<String, String>,
-	pub modalities: HashMap<String, String>,
+	pub lifecycle: GatewayModelLifecycle,
+	pub limits: GatewayModelLimits,
+	pub modalities: GatewayModalities,
 	pub name: String,
-	pub offers: Vec<HashMap<String, String>>,
+	pub offers: Vec<GatewayModelOffer>,
 	pub organization: Option<HashMap<String, String>>,
-	pub pricing: HashMap<String, String>,
+	pub pricing: GatewayPricing,
 	pub variant: String,
 	pub variants: HashMap<String, String>,
 }
@@ -2262,15 +2262,15 @@ pub struct ModelAvailability {
 }
 
 pub struct ModelEndpointCapability {
-	pub capabilities: HashMap<String, String>,
+	pub capabilities: GatewayCapabilities,
 	pub capability_id: String,
 	pub collection: String,
 	pub effective: HashMap<String, String>,
 	pub endpoint: String,
 	pub id: String,
-	pub modalities: HashMap<String, String>,
+	pub modalities: GatewayModalities,
 	pub model: Option<String>,
-	pub pricing: HashMap<String, String>,
+	pub pricing: GatewayPricing,
 	pub provider: HashMap<String, String>,
 	pub public_path: String,
 	pub routable: bool,
@@ -2282,9 +2282,9 @@ pub struct ModelEndpointCapability {
 pub struct ModelEndpointsResponse {
 	pub availability_mode: String,
 	pub description: String,
-	pub endpoints: Vec<HashMap<String, String>>,
+	pub endpoints: Vec<ModelEndpointCapability>,
 	pub id: String,
-	pub modalities: HashMap<String, String>,
+	pub modalities: GatewayModalities,
 	pub name: String,
 	pub ok: bool,
 	pub organization: Option<HashMap<String, String>>,
@@ -2353,29 +2353,29 @@ pub struct ModerationCategoryScores {
 }
 
 pub struct ModerationResult {
-	pub categories: Option<HashMap<String, String>>,
-	pub category_scores: Option<HashMap<String, String>>,
+	pub categories: Option<ModerationCategories>,
+	pub category_scores: Option<ModerationCategoryScores>,
 	pub flagged: Option<bool>,
 }
 
 pub struct ModerationsRequest {
-	pub debug: Option<HashMap<String, String>>,
+	pub debug: Option<DebugOptions>,
 	pub input: String,
 	pub meta: Option<bool>,
 	pub model: String,
 	pub models: Option<Vec<String>>,
-	pub provider: Option<HashMap<String, String>>,
+	pub provider: Option<ProviderRoutingOptions>,
 }
 
 pub struct ModerationsResponse {
 	pub id: Option<String>,
 	pub meta: Option<HashMap<String, String>>,
 	pub model: Option<String>,
-	pub results: Option<Vec<HashMap<String, String>>>,
+	pub results: Option<Vec<ModerationResult>>,
 }
 
 pub struct MusicGenerateRequest {
-	pub debug: Option<HashMap<String, String>>,
+	pub debug: Option<DebugOptions>,
 	pub duration: Option<i64>,
 	pub echo_upstream_request: Option<bool>,
 	pub elevenlabs: Option<HashMap<String, String>>,
@@ -2383,7 +2383,7 @@ pub struct MusicGenerateRequest {
 	pub model: String,
 	pub models: Option<Vec<String>>,
 	pub prompt: Option<String>,
-	pub provider: Option<HashMap<String, String>>,
+	pub provider: Option<ProviderRoutingOptions>,
 	pub suno: Option<HashMap<String, String>>,
 }
 
@@ -2415,7 +2415,7 @@ pub struct MyJoinRequestCreatedResponse {
 }
 
 pub struct MyJoinRequestListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<MyJoinRequest>,
 }
 
 pub struct NotImplementedResponse {
@@ -2496,7 +2496,7 @@ pub struct OAuthClientInput {
 }
 
 pub struct OAuthClientListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<OAuthClient>,
 	pub pagination: HashMap<String, String>,
 }
 
@@ -2527,10 +2527,10 @@ pub struct ObservabilityDestination {
 	pub include_generation_metadata: Option<bool>,
 	pub include_identity_metadata: Option<bool>,
 	pub include_request_context: Option<bool>,
-	pub key_filters: Vec<HashMap<String, String>>,
+	pub key_filters: Vec<ObservabilityKeyFilter>,
 	pub name: String,
 	pub privacy_mode: bool,
-	pub rule_groups: Vec<HashMap<String, String>>,
+	pub rule_groups: Vec<ObservabilityRuleGroup>,
 	pub sampling_rate: f64,
 	pub r#type: String,
 	pub updated_at: Option<Option<String>>,
@@ -2545,16 +2545,16 @@ pub struct ObservabilityDestinationCreateRequest {
 	pub include_generation_metadata: Option<bool>,
 	pub include_identity_metadata: Option<bool>,
 	pub include_request_context: Option<bool>,
-	pub key_filters: Option<Vec<HashMap<String, String>>>,
+	pub key_filters: Option<Vec<ObservabilityKeyFilter>>,
 	pub name: String,
 	pub privacy_mode: Option<bool>,
-	pub rule_groups: Option<Vec<HashMap<String, String>>>,
+	pub rule_groups: Option<Vec<ObservabilityRuleGroup>>,
 	pub sampling_rate: Option<f64>,
 	pub r#type: String,
 }
 
 pub struct ObservabilityDestinationListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<ObservabilityDestination>,
 	pub total_count: i64,
 }
 
@@ -2565,15 +2565,15 @@ pub struct ObservabilityDestinationPolicyInput {
 	pub include_generation_metadata: Option<bool>,
 	pub include_identity_metadata: Option<bool>,
 	pub include_request_context: Option<bool>,
-	pub key_filters: Option<Vec<HashMap<String, String>>>,
+	pub key_filters: Option<Vec<ObservabilityKeyFilter>>,
 	pub name: Option<String>,
 	pub privacy_mode: Option<bool>,
-	pub rule_groups: Option<Vec<HashMap<String, String>>>,
+	pub rule_groups: Option<Vec<ObservabilityRuleGroup>>,
 	pub sampling_rate: Option<f64>,
 }
 
 pub struct ObservabilityDestinationResponse {
-	pub data: HashMap<String, String>,
+	pub data: ObservabilityDestination,
 }
 
 pub struct ObservabilityDestinationTestRequest {
@@ -2595,10 +2595,10 @@ pub struct ObservabilityDestinationUpdateRequest {
 	pub include_generation_metadata: Option<bool>,
 	pub include_identity_metadata: Option<bool>,
 	pub include_request_context: Option<bool>,
-	pub key_filters: Option<Vec<HashMap<String, String>>>,
+	pub key_filters: Option<Vec<ObservabilityKeyFilter>>,
 	pub name: Option<String>,
 	pub privacy_mode: Option<bool>,
-	pub rule_groups: Option<Vec<HashMap<String, String>>>,
+	pub rule_groups: Option<Vec<ObservabilityRuleGroup>>,
 	pub sampling_rate: Option<f64>,
 }
 
@@ -2619,7 +2619,7 @@ pub struct ObservabilityLoggingPolicy {
 }
 
 pub struct ObservabilityLoggingPolicyResponse {
-	pub data: HashMap<String, String>,
+	pub data: ObservabilityLoggingPolicy,
 }
 
 pub struct ObservabilityLoggingPolicyUpdateRequest {
@@ -2636,17 +2636,17 @@ pub struct ObservabilityRule {
 
 pub struct ObservabilityRuleGroup {
 	pub r#match: String,
-	pub rules: Vec<HashMap<String, String>>,
+	pub rules: Vec<ObservabilityRule>,
 }
 
 pub struct OcrRequest {
-	pub debug: Option<HashMap<String, String>>,
+	pub debug: Option<DebugOptions>,
 	pub echo_upstream_request: Option<bool>,
 	pub image: String,
 	pub language: Option<String>,
 	pub model: String,
 	pub models: Option<Vec<String>>,
-	pub provider: Option<HashMap<String, String>>,
+	pub provider: Option<ProviderRoutingOptions>,
 }
 
 pub struct OcrResponse {
@@ -2667,17 +2667,17 @@ pub struct OpenAIDecisionScoreQuestion {
 }
 
 pub struct OpenAIDecisionsRequest {
-	pub debug: Option<HashMap<String, String>>,
+	pub debug: Option<DebugOptions>,
 	pub echo_upstream_request: Option<bool>,
 	pub input: String,
 	pub meta: Option<bool>,
 	pub metadata: Option<HashMap<String, String>>,
 	pub model: String,
 	pub models: Option<Vec<String>>,
-	pub provider: Option<HashMap<String, String>>,
-	pub provider_options: Option<HashMap<String, String>>,
+	pub provider: Option<ProviderRoutingOptions>,
+	pub provider_options: Option<DecisionProviderOptions>,
 	pub questions: Vec<String>,
-	pub routing: Option<HashMap<String, String>>,
+	pub routing: Option<ProviderRoutingOptions>,
 	pub safety_identifier: Option<Option<String>>,
 }
 
@@ -2686,7 +2686,7 @@ pub struct OpenAIDecisionsResponse {
 	pub meta: Option<HashMap<String, String>>,
 	pub model: String,
 	pub request_id: Option<Option<String>>,
-	pub usage: HashMap<String, String>,
+	pub usage: DecisionsUsage,
 }
 
 pub struct OpenAIModel {
@@ -2697,7 +2697,7 @@ pub struct OpenAIModel {
 }
 
 pub struct OpenAIModelsResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<OpenAIModel>,
 	pub object: String,
 }
 
@@ -2754,7 +2754,7 @@ pub struct ParameterSpec {
 	pub aliases: Option<Vec<String>>,
 	pub always_on: Option<bool>,
 	pub default: Option<String>,
-	pub dimensions: Option<HashMap<String, String>>,
+	pub dimensions: Option<ParameterDimensions>,
 	pub extra: Option<HashMap<String, String>>,
 	pub format: Option<String>,
 	pub formats: Option<Vec<String>>,
@@ -2771,7 +2771,7 @@ pub struct ParameterSpec {
 	pub multiple_of: Option<f64>,
 	pub notes: Option<String>,
 	pub open: Option<bool>,
-	pub options: Option<Vec<HashMap<String, String>>>,
+	pub options: Option<Vec<ParameterOption>>,
 	pub properties: Option<HashMap<String, String>>,
 	pub provider_default: Option<String>,
 	pub required: Option<bool>,
@@ -2784,7 +2784,7 @@ pub struct ParameterSpec {
 	pub upstream_name: Option<String>,
 	pub upstream_values: Option<Vec<String>>,
 	pub values: Option<Vec<String>>,
-	pub when: Option<Vec<HashMap<String, String>>>,
+	pub when: Option<Vec<ParameterRule>>,
 }
 
 pub struct ParameterSpecs {
@@ -2804,8 +2804,8 @@ pub struct ParseBoundingBox {
 }
 
 pub struct ParseImage {
-	pub bounding_box: HashMap<String, String>,
-	pub bounding_box_normalized: HashMap<String, String>,
+	pub bounding_box: ParseBoundingBox,
+	pub bounding_box_normalized: ParseBoundingBox,
 	pub category: String,
 	pub description: String,
 	pub id: String,
@@ -2814,14 +2814,14 @@ pub struct ParseImage {
 pub type ParsePage = JsonValue;
 
 pub struct ParseRequest {
-	pub debug: Option<HashMap<String, String>>,
+	pub debug: Option<DebugOptions>,
 	pub document: HashMap<String, String>,
 	pub echo_upstream_request: Option<bool>,
 	pub model: String,
 	pub models: Option<Vec<String>>,
 	pub output_format: Option<String>,
-	pub provider: Option<HashMap<String, String>>,
-	pub routing: Option<HashMap<String, String>>,
+	pub provider: Option<ProviderRoutingOptions>,
+	pub routing: Option<ProviderRoutingOptions>,
 }
 
 pub struct ParseResponse {
@@ -2836,7 +2836,7 @@ pub struct ParseResponse {
 
 pub struct Preset {
 	pub active_version_id: Option<Option<String>>,
-	pub config: HashMap<String, String>,
+	pub config: PresetConfig,
 	pub created_at: Option<Option<String>>,
 	pub created_by: Option<Option<String>>,
 	pub description: Option<Option<String>>,
@@ -2853,11 +2853,11 @@ pub struct Preset {
 }
 
 pub struct PresetConfig {
-	pub prompt: Option<HashMap<String, String>>,
+	pub prompt: Option<PresetPromptTemplate>,
 }
 
 pub struct PresetCreateRequest {
-	pub config: Option<HashMap<String, String>>,
+	pub config: Option<PresetConfig>,
 	pub description: Option<Option<String>>,
 	pub name: String,
 	pub slug: Option<String>,
@@ -2867,7 +2867,7 @@ pub struct PresetCreateRequest {
 
 pub struct PresetCreateResponse {
 	pub canonical_model: String,
-	pub data: HashMap<String, String>,
+	pub data: Preset,
 }
 
 pub struct PresetForkRequest {
@@ -2890,11 +2890,11 @@ pub struct PresetLabelDeleteResponse {
 }
 
 pub struct PresetLabelListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<PresetLabel>,
 }
 
 pub struct PresetLabelResponse {
-	pub data: HashMap<String, String>,
+	pub data: PresetLabel,
 }
 
 pub struct PresetLabelSetRequest {
@@ -2903,12 +2903,12 @@ pub struct PresetLabelSetRequest {
 }
 
 pub struct PresetListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<Preset>,
 	pub total_count: i64,
 }
 
 pub struct PresetPromptTemplate {
-	pub messages: Vec<HashMap<String, String>>,
+	pub messages: Vec<PresetPromptTemplateMessage>,
 	pub response_format: Option<HashMap<String, String>>,
 	pub syntax: Option<String>,
 	pub tool_choice: Option<String>,
@@ -2936,7 +2936,7 @@ pub struct PresetPublisher {
 }
 
 pub struct PresetPublisherResponse {
-	pub data: HashMap<String, String>,
+	pub data: PresetPublisher,
 }
 
 pub struct PresetPublisherUpdateRequest {
@@ -2944,7 +2944,7 @@ pub struct PresetPublisherUpdateRequest {
 }
 
 pub struct PresetResponse {
-	pub data: HashMap<String, String>,
+	pub data: Preset,
 }
 
 pub struct PresetTestRun {
@@ -2979,16 +2979,16 @@ pub struct PresetTestRunCreateRequest {
 }
 
 pub struct PresetTestRunDetailResponse {
-	pub data: HashMap<String, String>,
-	pub feedback_summary: Option<HashMap<String, String>>,
+	pub data: PresetTestRun,
+	pub feedback_summary: Option<GatewayFeedbackSummaryRow>,
 }
 
 pub struct PresetTestRunListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<PresetTestRun>,
 }
 
 pub struct PresetTestRunResponse {
-	pub data: HashMap<String, String>,
+	pub data: PresetTestRun,
 }
 
 pub struct PresetTestRunUpdateRequest {
@@ -3001,7 +3001,7 @@ pub struct PresetTestRunUpdateRequest {
 }
 
 pub struct PresetUpdateRequest {
-	pub config: Option<HashMap<String, String>>,
+	pub config: Option<PresetConfig>,
 	pub description: Option<Option<String>>,
 	pub name: Option<String>,
 	pub replace_config: Option<bool>,
@@ -3019,7 +3019,7 @@ pub struct PresetUpstreamApplyResponse {
 }
 
 pub struct PresetVersion {
-	pub config: HashMap<String, String>,
+	pub config: PresetConfig,
 	pub created_at: String,
 	pub created_by: String,
 	pub description: Option<Option<String>>,
@@ -3038,7 +3038,7 @@ pub struct PresetVersion {
 pub type PresetVersioningMethod = JsonValue;
 
 pub struct PresetVersionListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<PresetVersion>,
 }
 
 pub struct PresetVersionPublishRequest {
@@ -3047,7 +3047,7 @@ pub struct PresetVersionPublishRequest {
 }
 
 pub struct PresetVersionResponse {
-	pub data: HashMap<String, String>,
+	pub data: PresetVersion,
 }
 
 pub type PresetVisibility = JsonValue;
@@ -3101,11 +3101,11 @@ pub struct PrivateModelDeleteResponse {
 }
 
 pub struct PrivateModelListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<PrivateModel>,
 }
 
 pub struct PrivateModelResponse {
-	pub data: HashMap<String, String>,
+	pub data: PrivateModel,
 }
 
 pub struct PrivateModelUpdateRequest {
@@ -3187,7 +3187,7 @@ pub struct ProviderCredentialDeleteResponse {
 }
 
 pub struct ProviderCredentialListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<ProviderCredential>,
 	pub total_count: i64,
 }
 
@@ -3202,7 +3202,7 @@ pub struct ProviderCredentialReorderResponse {
 }
 
 pub struct ProviderCredentialResponse {
-	pub data: HashMap<String, String>,
+	pub data: ProviderCredential,
 }
 
 pub type ProviderCredentialRoutingMode = JsonValue;
@@ -3294,12 +3294,12 @@ pub struct RateLimitAssignmentInput {
 }
 
 pub struct RateLimitAssignmentListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<RateLimitAssignment>,
 	pub has_more: bool,
 }
 
 pub struct RateLimitAssignmentResponse {
-	pub data: HashMap<String, String>,
+	pub data: RateLimitAssignment,
 }
 
 pub struct RateLimitAssignmentUpdateInput {
@@ -3334,12 +3334,12 @@ pub struct RateLimitPolicyInput {
 }
 
 pub struct RateLimitPolicyListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<RateLimitPolicy>,
 	pub has_more: bool,
 }
 
 pub struct RateLimitPolicyResponse {
-	pub data: HashMap<String, String>,
+	pub data: RateLimitPolicy,
 }
 
 pub struct RateLimitPolicyUpdateInput {
@@ -3368,13 +3368,13 @@ pub struct ReasoningConfig {
 pub type RerankDocument = JsonValue;
 
 pub struct RerankRequest {
-	pub debug: Option<HashMap<String, String>>,
+	pub debug: Option<DebugOptions>,
 	pub documents: String,
 	pub max_chunks_per_doc: Option<i64>,
 	pub metadata: Option<HashMap<String, String>>,
 	pub model: String,
 	pub models: Option<Vec<String>>,
-	pub provider: Option<HashMap<String, String>>,
+	pub provider: Option<ProviderRoutingOptions>,
 	pub provider_options: Option<HashMap<String, String>>,
 	pub query: String,
 	pub rank_fields: Option<Vec<String>>,
@@ -3389,8 +3389,8 @@ pub struct RerankResponse {
 	pub model: Option<String>,
 	pub nativeResponseId: Option<Option<String>>,
 	pub object: Option<String>,
-	pub results: Option<Vec<HashMap<String, String>>>,
-	pub usage: Option<HashMap<String, String>>,
+	pub results: Option<Vec<RerankResult>>,
+	pub usage: Option<Usage>,
 }
 
 pub struct RerankResult {
@@ -3412,7 +3412,7 @@ pub struct ResponsesInputItem {
 	pub id: Option<String>,
 	pub role: Option<String>,
 	pub signature: Option<String>,
-	pub summary: Option<Vec<HashMap<String, String>>>,
+	pub summary: Option<Vec<ResponsesReasoningSummaryPart>>,
 	pub r#type: Option<String>,
 }
 
@@ -3441,7 +3441,7 @@ pub struct ResponsesOutputItem {
 	pub id: Option<String>,
 	pub name: Option<String>,
 	pub role: Option<String>,
-	pub summary: Option<Vec<HashMap<String, String>>>,
+	pub summary: Option<Vec<ResponsesReasoningSummaryPart>>,
 	pub r#type: Option<String>,
 }
 
@@ -3463,10 +3463,10 @@ pub struct ResponsesReasoningTextPart {
 
 pub struct ResponsesRequest {
 	pub background: Option<bool>,
-	pub cache_control: Option<HashMap<String, String>>,
-	pub debug: Option<HashMap<String, String>>,
+	pub cache_control: Option<CacheControl>,
+	pub debug: Option<DebugOptions>,
 	pub echo_upstream_request: Option<bool>,
-	pub image_config: Option<HashMap<String, String>>,
+	pub image_config: Option<ImageConfig>,
 	pub include: Option<Vec<String>>,
 	pub input: String,
 	pub instructions: Option<String>,
@@ -3479,13 +3479,13 @@ pub struct ResponsesRequest {
 	pub parallel_tool_calls: Option<bool>,
 	pub plugins: Option<Vec<String>>,
 	pub previous_response_id: Option<String>,
-	pub prompt: Option<HashMap<String, String>>,
+	pub prompt: Option<PromptTemplateReference>,
 	pub prompt_cache_key: Option<Option<String>>,
-	pub prompt_cache_options: Option<HashMap<String, String>>,
+	pub prompt_cache_options: Option<PromptCacheOptions>,
 	pub prompt_cache_retention: Option<String>,
-	pub provider: Option<HashMap<String, String>>,
-	pub provider_options: Option<HashMap<String, String>>,
-	pub reasoning: Option<HashMap<String, String>>,
+	pub provider: Option<ProviderRoutingOptions>,
+	pub provider_options: Option<ProviderOptions>,
+	pub reasoning: Option<OpenAIReasoningConfig>,
 	pub safety_identifier: Option<Option<String>>,
 	pub service_tier: Option<Option<String>>,
 	pub session_id: Option<String>,
@@ -3513,8 +3513,8 @@ pub struct ResponsesResponse {
 	pub model: Option<String>,
 	pub nativeResponseId: Option<Option<String>>,
 	pub object: Option<String>,
-	pub output: Option<Vec<HashMap<String, String>>>,
-	pub output_items: Option<Vec<HashMap<String, String>>>,
+	pub output: Option<Vec<ResponsesOutputItem>>,
+	pub output_items: Option<Vec<ResponsesOutputItem>>,
 	pub pricing_lines: Option<Vec<HashMap<String, String>>>,
 	pub provider: Option<String>,
 	pub provider_id: Option<String>,
@@ -3522,7 +3522,7 @@ pub struct ResponsesResponse {
 	pub status: Option<String>,
 	pub stop_reason: Option<String>,
 	pub r#type: Option<String>,
-	pub usage: Option<HashMap<String, String>>,
+	pub usage: Option<Usage>,
 }
 
 pub struct SearchModelsToolDefinition {
@@ -3567,11 +3567,11 @@ pub struct SpendBlock {
 pub type SpendBlockLiftReason = JsonValue;
 
 pub struct SpendBlockListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<SpendBlock>,
 }
 
 pub struct SpendBlockResponse {
-	pub data: HashMap<String, String>,
+	pub data: SpendBlock,
 }
 
 pub struct SpendRule {
@@ -3622,7 +3622,7 @@ pub struct SpendRuleHistory {
 }
 
 pub struct SpendRuleHistoryResponse {
-	pub data: HashMap<String, String>,
+	pub data: SpendRuleHistory,
 }
 
 pub struct SpendRuleInput {
@@ -3655,7 +3655,7 @@ pub struct SpendRuleInput {
 }
 
 pub struct SpendRuleListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<SpendRule>,
 	pub max_rules: i64,
 }
 
@@ -3693,17 +3693,17 @@ pub struct SpendRulePreview {
 }
 
 pub struct SpendRulePreviewResponse {
-	pub data: HashMap<String, String>,
+	pub data: SpendRulePreview,
 }
 
 pub struct SpendRuleResponse {
-	pub data: HashMap<String, String>,
+	pub data: SpendRule,
 }
 
 pub type SpendRuleScope = JsonValue;
 
 pub struct SpendRuleTestResponse {
-	pub data: HashMap<String, String>,
+	pub data: SpendRuleTestResult,
 }
 
 pub struct SpendRuleTestResult {
@@ -3758,7 +3758,7 @@ pub struct SuccessorReplacement {
 }
 
 pub struct SuccessorReplacementListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<SuccessorReplacementRow>,
 }
 
 pub struct SuccessorReplacementRemovedResponse {
@@ -3767,7 +3767,7 @@ pub struct SuccessorReplacementRemovedResponse {
 }
 
 pub struct SuccessorReplacementResponse {
-	pub data: HashMap<String, String>,
+	pub data: SuccessorReplacementRow,
 }
 
 pub struct SuccessorReplacementRow {
@@ -3794,14 +3794,14 @@ pub struct SystemOneNoulQuestion {
 }
 
 pub struct SystemOneRequest {
-	pub debug: Option<HashMap<String, String>>,
+	pub debug: Option<DebugOptions>,
 	pub echo_upstream_request: Option<bool>,
 	pub meta: Option<bool>,
 	pub metadata: Option<HashMap<String, String>>,
 	pub model: String,
-	pub provider: Option<HashMap<String, String>>,
+	pub provider: Option<ProviderRoutingOptions>,
 	pub questions: HashMap<String, String>,
-	pub routing: Option<HashMap<String, String>>,
+	pub routing: Option<ProviderRoutingOptions>,
 	pub state: String,
 }
 
@@ -3810,7 +3810,7 @@ pub struct SystemOneResponse {
 	pub meta: Option<HashMap<String, String>>,
 	pub model: Option<String>,
 	pub request_id: Option<Option<String>>,
-	pub usage: Option<HashMap<String, String>>,
+	pub usage: Option<SystemOneUsage>,
 }
 
 pub struct SystemOneScoreQuestion {
@@ -3826,8 +3826,8 @@ pub struct SystemOneUsage {
 }
 
 pub struct TextContentPart {
-	pub cache_control: Option<HashMap<String, String>>,
-	pub prompt_cache_breakpoint: Option<HashMap<String, String>>,
+	pub cache_control: Option<CacheControl>,
+	pub prompt_cache_breakpoint: Option<PromptCacheBreakpoint>,
 	pub text: String,
 	pub r#type: String,
 }
@@ -3860,13 +3860,13 @@ pub struct UpdatedResponse {
 pub struct Usage {
 	pub completion_tokens: Option<i64>,
 	pub cost: Option<f64>,
-	pub cost_details: Option<HashMap<String, String>>,
+	pub cost_details: Option<UsageCostDetails>,
 	pub input_tokens: Option<i64>,
-	pub input_tokens_details: Option<HashMap<String, String>>,
+	pub input_tokens_details: Option<InputTokensDetails>,
 	pub output_tokens: Option<i64>,
 	pub prompt_tokens: Option<i64>,
-	pub prompt_tokens_details: Option<HashMap<String, String>>,
-	pub server_tool_use: Option<HashMap<String, String>>,
+	pub prompt_tokens_details: Option<InputTokensDetails>,
+	pub server_tool_use: Option<ServerToolUsage>,
 	pub total_tokens: Option<i64>,
 }
 
@@ -3882,7 +3882,7 @@ pub struct UserProfile {
 }
 
 pub struct UserProfileResponse {
-	pub data: HashMap<String, String>,
+	pub data: UserProfile,
 }
 
 pub struct UserProfileUpdateRequest {
@@ -3933,10 +3933,10 @@ pub struct VideoGenerationRequest {
 	pub model: String,
 	pub models: Option<Vec<String>>,
 	pub negative_prompt: Option<String>,
-	pub output: Option<HashMap<String, String>>,
+	pub output: Option<VideoOutputConfig>,
 	pub person_generation: Option<String>,
 	pub prompt: String,
-	pub provider: Option<HashMap<String, String>>,
+	pub provider: Option<ProviderRoutingOptions>,
 	pub provider_options: Option<HashMap<String, String>>,
 	pub provider_params: Option<HashMap<String, String>>,
 	pub resize_mode: Option<String>,
@@ -3950,7 +3950,7 @@ pub struct VideoGenerationRequest {
 pub struct VideoGenerationResponse {
 	pub asset: Option<Option<HashMap<String, String>>>,
 	pub audio: Option<bool>,
-	pub billing: Option<HashMap<String, String>>,
+	pub billing: Option<VideoBillingSummary>,
 	pub cancel_url: Option<Option<String>>,
 	pub completed_at: Option<Option<String>>,
 	pub content_url: Option<String>,
@@ -3969,7 +3969,7 @@ pub struct VideoGenerationResponse {
 	pub next_webhook_retry_at: Option<Option<String>>,
 	pub object: Option<String>,
 	pub output_access: Option<String>,
-	pub outputs: Option<Vec<HashMap<String, String>>>,
+	pub outputs: Option<Vec<VideoOutput>>,
 	pub poll_after_seconds: Option<i64>,
 	pub polling_url: Option<String>,
 	pub progress: Option<Option<i64>>,
@@ -3982,14 +3982,14 @@ pub struct VideoGenerationResponse {
 	pub started_at: Option<Option<String>>,
 	pub status: Option<String>,
 	pub usage: Option<HashMap<String, String>>,
-	pub webhook: Option<HashMap<String, String>>,
+	pub webhook: Option<AsyncWebhookPublicState>,
 	pub websocket_url: Option<String>,
 }
 
 pub type VideoInputReference = JsonValue;
 
 pub struct VideoListResponse {
-	pub data: Option<Vec<HashMap<String, String>>>,
+	pub data: Option<Vec<VideoGenerationResponse>>,
 	pub first_id: Option<Option<String>>,
 	pub has_more: Option<bool>,
 	pub last_id: Option<Option<String>>,
@@ -4002,7 +4002,7 @@ pub struct VideoModelCapability {
 	pub name: Option<String>,
 	pub output_types: Option<Vec<String>>,
 	pub pricing: Option<HashMap<String, String>>,
-	pub providers: Option<Vec<HashMap<String, String>>>,
+	pub providers: Option<Vec<VideoModelProviderCapability>>,
 	pub status: Option<String>,
 	pub supported_parameters: Option<Vec<String>>,
 	pub supported_parameters_detail: Option<HashMap<String, String>>,
@@ -4020,7 +4020,7 @@ pub struct VideoModelProviderCapability {
 }
 
 pub struct VideoModelsResponse {
-	pub data: Option<Vec<HashMap<String, String>>>,
+	pub data: Option<Vec<VideoModelCapability>>,
 	pub object: Option<String>,
 }
 
@@ -4082,7 +4082,7 @@ pub struct WebhookEndpointInput {
 }
 
 pub struct WebhookEndpointListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<WebhookEndpoint>,
 	pub object: String,
 }
 
@@ -4161,11 +4161,11 @@ pub struct WorkloadIdentityPolicyInput {
 
 pub struct WorkloadIdentityPolicyListResponse {
 	pub audience: String,
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<WorkloadIdentityPolicy>,
 }
 
 pub struct WorkloadIdentityPolicyResponse {
-	pub data: HashMap<String, String>,
+	pub data: WorkloadIdentityPolicy,
 }
 
 pub struct WorkloadIdentityPolicyUpdateInput {
@@ -4198,7 +4198,7 @@ pub struct WorkspaceActivityEntry {
 }
 
 pub struct WorkspaceActivityResponse {
-	pub activity: Vec<HashMap<String, String>>,
+	pub activity: Vec<WorkspaceActivityEntry>,
 	pub limit: i64,
 	pub offset: i64,
 	pub ok: bool,
@@ -4223,7 +4223,7 @@ pub struct WorkspaceApp {
 }
 
 pub struct WorkspaceAppListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<WorkspaceApp>,
 	pub limit: i64,
 	pub offset: i64,
 	pub total_count: i64,
@@ -4238,7 +4238,7 @@ pub struct WorkspaceAppMergeResponse {
 }
 
 pub struct WorkspaceAppResponse {
-	pub data: HashMap<String, String>,
+	pub data: WorkspaceApp,
 }
 
 pub struct WorkspaceAppUpdateRequest {
@@ -4255,11 +4255,11 @@ pub type WorkspaceAssignableRole = JsonValue;
 
 pub struct WorkspaceAuditEvent {
 	pub action: String,
-	pub actor: Option<Option<HashMap<String, String>>>,
+	pub actor: Option<Option<WorkspaceAuditEventActor>>,
 	pub actor_user_id: Option<Option<String>>,
 	pub created_at: String,
 	pub id: String,
-	pub metadata: HashMap<String, String>,
+	pub metadata: WorkspaceAuditEventMetadata,
 	pub request_id: Option<Option<String>>,
 	pub target_id: String,
 	pub target_name: Option<Option<String>>,
@@ -4283,7 +4283,7 @@ pub struct WorkspaceAuditEventLimits {
 }
 
 pub struct WorkspaceAuditEventListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<WorkspaceAuditEvent>,
 	pub has_more: bool,
 	pub next_cursor: Option<Option<String>>,
 }
@@ -4292,7 +4292,7 @@ pub struct WorkspaceAuditEventMetadata {
 	pub accessTemplate: Option<String>,
 	pub changedFields: Option<Vec<String>>,
 	pub expiresAt: Option<Option<String>>,
-	pub limits: Option<HashMap<String, String>>,
+	pub limits: Option<WorkspaceAuditEventLimits>,
 	pub prefix: Option<Option<String>>,
 	pub previousKeyExpiresAt: Option<Option<String>>,
 	pub replacementKeyId: Option<String>,
@@ -4348,11 +4348,11 @@ pub struct WorkspaceBudgetInput {
 pub type WorkspaceBudgetInterval = JsonValue;
 
 pub struct WorkspaceBudgetListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<WorkspaceBudget>,
 }
 
 pub struct WorkspaceBudgetResponse {
-	pub data: HashMap<String, String>,
+	pub data: WorkspaceBudget,
 }
 
 pub struct WorkspaceBudgetUpdateInput {
@@ -4394,7 +4394,7 @@ pub struct WorkspaceDepartmentInput {
 }
 
 pub struct WorkspaceDepartmentListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<WorkspaceDepartment>,
 }
 
 pub struct WorkspaceDepartmentMember {
@@ -4410,11 +4410,11 @@ pub struct WorkspaceDepartmentMemberRequest {
 }
 
 pub struct WorkspaceDepartmentMemberResponse {
-	pub data: HashMap<String, String>,
+	pub data: WorkspaceDepartmentMember,
 }
 
 pub struct WorkspaceDepartmentResponse {
-	pub data: HashMap<String, String>,
+	pub data: WorkspaceDepartment,
 }
 
 pub struct WorkspaceDepartmentUpdateRequest {
@@ -4426,7 +4426,7 @@ pub struct WorkspaceDepartmentUpdateRequest {
 
 pub struct WorkspaceDirectoryMember {
 	pub access_source: String,
-	pub department: Option<HashMap<String, String>>,
+	pub department: Option<WorkspaceDepartment>,
 	pub department_override_enabled: bool,
 	pub department_override_id: Option<String>,
 	pub department_source: String,
@@ -4470,11 +4470,11 @@ pub struct WorkspaceGroupMappingCreateRequest {
 }
 
 pub struct WorkspaceGroupMappingListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<WorkspaceGroupMapping>,
 }
 
 pub struct WorkspaceGroupMappingResponse {
-	pub data: HashMap<String, String>,
+	pub data: WorkspaceGroupMapping,
 }
 
 pub struct WorkspaceGroupMappingUpdateRequest {
@@ -4505,12 +4505,12 @@ pub struct WorkspaceInviteCreateRequest {
 }
 
 pub struct WorkspaceInviteCreateResponse {
-	pub data: HashMap<String, String>,
+	pub data: WorkspaceInvite,
 	pub token: String,
 }
 
 pub struct WorkspaceInviteListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<WorkspaceInvite>,
 	pub total_count: i64,
 }
 
@@ -4526,18 +4526,18 @@ pub struct WorkspaceJoinRequest {
 }
 
 pub struct WorkspaceJoinRequestListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<WorkspaceJoinRequest>,
 	pub total_count: i64,
 }
 
 pub struct WorkspaceJoinRequestResponse {
-	pub data: HashMap<String, String>,
+	pub data: WorkspaceJoinRequest,
 }
 
 pub type WorkspaceJoinRequestStatus = JsonValue;
 
 pub struct WorkspaceListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<Workspace>,
 	pub total_count: i64,
 }
 
@@ -4561,7 +4561,7 @@ pub struct WorkspaceMember {
 
 pub struct WorkspaceMemberAddResponse {
 	pub added_count: i64,
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<WorkspaceMember>,
 }
 
 pub struct WorkspaceMemberBulkRequest {
@@ -4570,7 +4570,7 @@ pub struct WorkspaceMemberBulkRequest {
 }
 
 pub struct WorkspaceMemberListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<WorkspaceMember>,
 	pub total_count: i64,
 }
 
@@ -4583,7 +4583,7 @@ pub struct WorkspaceMemberRemoveResponse {
 }
 
 pub struct WorkspaceMemberResponse {
-	pub data: HashMap<String, String>,
+	pub data: WorkspaceMember,
 }
 
 pub struct WorkspaceMemberRoleUpdateRequest {
@@ -4612,11 +4612,11 @@ pub struct WorkspaceNotificationDestinationCreateRequest {
 }
 
 pub struct WorkspaceNotificationDestinationListResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<WorkspaceNotificationDestination>,
 }
 
 pub struct WorkspaceNotificationDestinationResponse {
-	pub data: HashMap<String, String>,
+	pub data: WorkspaceNotificationDestination,
 }
 
 pub struct WorkspaceNotificationDestinationTestRequest {
@@ -4659,11 +4659,11 @@ pub struct WorkspaceNotificationRouteMap {
 }
 
 pub struct WorkspaceNotificationRouteResponse {
-	pub data: HashMap<String, String>,
+	pub data: WorkspaceNotificationRoute,
 }
 
 pub struct WorkspaceNotificationRoutesResponse {
-	pub data: HashMap<String, String>,
+	pub data: WorkspaceNotificationRouteMap,
 }
 
 pub struct WorkspaceNotificationRouteUpdateRequest {
@@ -4671,21 +4671,21 @@ pub struct WorkspaceNotificationRouteUpdateRequest {
 }
 
 pub struct WorkspaceNotificationSettings {
-	pub auto_top_up: HashMap<String, String>,
-	pub email_preferences: HashMap<String, String>,
-	pub low_balance_email: HashMap<String, String>,
-	pub spend: HashMap<String, String>,
+	pub auto_top_up: WorkspaceAutoTopUpSettings,
+	pub email_preferences: WorkspaceNotificationEmailPreferences,
+	pub low_balance_email: WorkspaceLowBalanceEmailSettings,
+	pub spend: WorkspaceSpendSettings,
 }
 
 pub struct WorkspaceNotificationSettingsResponse {
-	pub data: HashMap<String, String>,
+	pub data: WorkspaceNotificationSettings,
 }
 
 pub struct WorkspaceNotificationSettingsUpdateRequest {
-	pub auto_top_up: Option<HashMap<String, String>>,
-	pub email_preferences: Option<HashMap<String, String>>,
-	pub low_balance_email: Option<HashMap<String, String>>,
-	pub spend: Option<HashMap<String, String>>,
+	pub auto_top_up: Option<WorkspaceAutoTopUpUpdate>,
+	pub email_preferences: Option<WorkspaceNotificationEmailPreferencesUpdate>,
+	pub low_balance_email: Option<WorkspaceLowBalanceEmailUpdate>,
+	pub spend: Option<WorkspaceSpendSettingsUpdate>,
 }
 
 pub struct WorkspaceNotificationTestResponse {
@@ -4695,7 +4695,7 @@ pub struct WorkspaceNotificationTestResponse {
 pub type WorkspaceProviderRestrictionMode = JsonValue;
 
 pub struct WorkspaceResponse {
-	pub data: HashMap<String, String>,
+	pub data: Workspace,
 }
 
 pub type WorkspaceRole = JsonValue;
@@ -4703,7 +4703,7 @@ pub type WorkspaceRole = JsonValue;
 pub type WorkspaceRoutingMode = JsonValue;
 
 pub struct WorkspaceScimAuditResponse {
-	pub data: Vec<HashMap<String, String>>,
+	pub data: Vec<WorkspaceScimEvent>,
 }
 
 pub struct WorkspaceScimEndpoint {
@@ -4714,7 +4714,7 @@ pub struct WorkspaceScimEndpoint {
 }
 
 pub struct WorkspaceScimEndpointResponse {
-	pub data: HashMap<String, String>,
+	pub data: WorkspaceScimEndpoint,
 }
 
 pub struct WorkspaceScimEvent {
@@ -4784,7 +4784,7 @@ pub struct WorkspaceSettings {
 }
 
 pub struct WorkspaceSettingsResponse {
-	pub data: HashMap<String, String>,
+	pub data: WorkspaceSettings,
 }
 
 pub struct WorkspaceSettingsUpdateRequest {
@@ -4831,7 +4831,7 @@ pub struct WorkspaceSpendSettingsUpdate {
 }
 
 pub struct WorkspaceSsoResponse {
-	pub data: HashMap<String, String>,
+	pub data: WorkspaceSsoSettings,
 }
 
 pub struct WorkspaceSsoSettings {
