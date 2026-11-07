@@ -27,7 +27,8 @@ const migration = async (suffix) => {
 // strongly locks at most one table (ALTER TABLE, CREATE INDEX, CREATE POLICY, triggers, LOCK), and a
 // migration that changes functions changes no table. A deploy that took ACCESS EXCLUSIVE on several
 // hot tables in one transaction deadlocked in production.
-const PR_MIGRATIONS = ['_gateway_request_charges_stepped_columns.sql', '_gateway_charge_request_total.sql',
+const PR_MIGRATIONS = ['_gateway_requests_expected_cost_nanos.sql', '_validate_gateway_requests_expected_cost_nanos_check.sql',
+  '_gateway_request_charges_stepped_columns.sql', '_gateway_charge_request_total.sql',
   '_validate_gateway_request_charges_cost_check.sql', '_gateway_wallet_reservations_overdraft.sql',
   '_async_settlement_always_charges.sql', '_refund_claim_counts_charged_failures.sql', '_gateway_requests_billing_request_index.sql'];
 const prNames = PR_MIGRATIONS.map((suffix) => migrations.find((file) => file.endsWith(suffix)));
@@ -51,6 +52,7 @@ for (const suffix of PR_MIGRATIONS) {
 
 const usd = (n) => Math.round(n * 1e9);
 const ws = '10000000-0000-4000-8000-000000000001';
+const owner = '20000000-0000-4000-8000-000000000001';
 const db = new PGlite();
 const one = async (sql, params = []) => (await db.query(sql, params)).rows[0];
 const asService = async (fn) => { await db.exec('set role service_role'); try { return await fn(); } finally { await db.exec('reset role'); } };
@@ -61,10 +63,29 @@ try {
   await db.query('insert into public.workspaces (id) values ($1)', [ws]);
   await db.query('insert into public.wallets (workspace_id, balance_nanos) values ($1, $2)', [ws, usd(10)]);
   // Production state before this PR (gateway_requests already has these columns), then this PR's
-  // migrations in order.
-  await db.exec('alter table public.gateway_requests add column billing_request_id text, add column request_id text;');
+  // migrations in order. supabase db push applies them one transaction at a time while the gateway
+  // serves refund claims, so a claim made after any prefix of them must work: the claim must never
+  // read a column a later migration adds.
+  await db.exec('alter table public.gateway_requests add column billing_request_id text, add column request_id text, add column detail_metadata jsonb;');
+  await db.exec("create or replace function public.mfa_satisfied() returns boolean language sql stable as 'select true';");
+  await db.query('insert into public.workspace_members values ($1, $2)', [ws, owner]);
   await db.exec(await migration('_billing_security_fixes.sql'));
-  for (const suffix of PR_MIGRATIONS) await db.exec(await migration(suffix));
+  const claimAfter = async (step) => {
+    const pi = `prefix_${step}`;
+    await db.query(`insert into public.credit_ledger (workspace_id, event_time, kind, amount_nanos, before_balance_nanos, after_balance_nanos, ref_type, ref_id, status)
+      values ($1, now() - interval '1 hour', 'top_up', $3, 0, $3, 'Stripe_Payment_Intent', $2, 'Paid')`, [ws, pi, usd(1)]);
+    const result = await asService(() => one('select * from public.stripe_claim_self_serve_refund($1, $2, $3)', [ws, pi, owner]))
+      .catch((error) => assert.fail(`a refund claim after ${step} failed: ${error.message}`));
+    assert(result.ok || result.reason, step);
+    // Undo the claim so the next step starts from the same wallet.
+    await db.query(`delete from public.credit_ledger where workspace_id = $1 and (ref_id = $2 or source_ref_id = $2)`, [ws, pi]);
+    await db.query('update public.wallets set balance_nanos = $2, reserved_nanos = 0 where workspace_id = $1', [ws, usd(10)]);
+  };
+  await claimAfter('the previous migrations');
+  for (const suffix of PR_MIGRATIONS) {
+    await db.exec(await migration(suffix));
+    await claimAfter(suffix);
+  }
 
   // The signatures: every parameter the previous gateway passes keeps its name and type, and each
   // new parameter has a default, so the previous calls still resolve to exactly one function.

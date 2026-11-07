@@ -8,7 +8,8 @@ const schema = await read('../schemas/public/tables/gateway_requests.sql');
 const reconciliation = await read('../operations/gateway-billing-reconciliation.sql');
 
 // The declarative definition and the forward migration describe the same column.
-assert.match(schema, /"billing_request_id"\s+text\n\) PARTITION BY RANGE/);
+// Later columns (expected_cost_nanos) and constraints may follow it.
+assert.match(schema, /"billing_request_id"\s+text,?\n[\s\S]*?\) PARTITION BY RANGE/);
 const comment = migration.match(/COMMENT ON COLUMN [^\n]+/)[0];
 assert.ok(schema.includes(comment), 'schema and migration column comments differ');
 
