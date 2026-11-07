@@ -6,7 +6,7 @@ import { dispatchBackground, getBindingsIfConfigured, getSupabaseAdmin } from "@
 //     used up, record_spend_limit_reached records one "requests blocked" alert for that budget or
 //     key limit and period. This runs in the background after the rejection is returned;
 //   * every 15 minutes, sweep_spend_limit_warnings warns once per period at about 80%, from the
-//     hourly usage rollup, with a forecast for weekly and monthly periods.
+//     same usage the gateway enforces, with a forecast for weekly and monthly periods.
 // Every worker that serves requests records the rejection, including the regional gateways
 // where MOBILE_PUSH_ENABLED is off: the central job that sends pushes fans the alert out. Only
 // the sweep is tied to that job.
@@ -97,7 +97,8 @@ export type DepartmentBudgetSweepSummary = { budgets: number; alerted: number };
 
 /**
  * sweep_department_budget_alerts sends the department budget 80% warning and the 100% alert from
- * the same hourly rollup: the gateway's department-budget rejections send no push themselves.
+ * the same usage department admission enforces: the gateway's department-budget rejections send no
+ * push themselves.
  */
 export async function runDepartmentBudgetAlertSweep(): Promise<DepartmentBudgetSweepSummary> {
 	const { data, error } = await getSupabaseAdmin().rpc("sweep_department_budget_alerts", {});
