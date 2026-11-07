@@ -56,7 +56,6 @@ Les propriétaires et administrateurs gèrent les budgets de département avec `
 
 Une fois qu’un département a utilisé son budget quotidien, hebdomadaire ou mensuel, les requêtes par clé API qui comptent pour lui renvoient `429` avec `key_limit_exceeded` et le motif `department_daily_cost_budget_reached`, `department_weekly_cost_budget_reached` ou `department_monthly_cost_budget_reached`. Les champs `department_id` et `department_name` du corps identifient le département, et `reset_at` et `Retry-After` indiquent quand son budget se réinitialise.
 
-- Les requêtes effectuées avec un jeton d’accès OAuth ne sont pas bloquées par les budgets de département et ne comptent pour aucun département.
 - Si la vérification du budget est brièvement indisponible, les requêtes sont autorisées : un département peut donc dépasser son budget pendant un court instant.
 - Les propriétaires et administrateurs reçoivent une notification push mobile vers 80 % puis à 100 % d’un budget. Pour ces alertes, les budgets sont vérifiés toutes les 15 minutes : des requêtes peuvent donc être refusées avant l’arrivée de l’alerte à 100 %.
 
@@ -128,7 +127,7 @@ Règles de limite de débit pour les agents, résumant cette page :
 
 - Les quotas de la passerelle renvoient `429` avec le motif `customer_requests_per_minute` (code `key_limit_exceeded`) ou `free_requests_per_day` (code `phaseo_free_model_limit_exceeded`) ; attendez `Retry-After` secondes. Si l’application des quotas est indisponible, la passerelle renvoie `503` avec des indications pour réessayer.
 - Les limites de clés et les budgets renvoient `429` avec `key_limit_exceeded` et un `reset_at`. Sans `Retry-After`, la limite ne se réinitialise pas seule : relevez la limite ou utilisez une autre clé au lieu de réessayer.
-- Un budget de département épuisé renvoie `429` avec `key_limit_exceeded`, le motif `department_<interval>_cost_budget_reached`, `department_id`, `department_name` et `reset_at` ; attendez `Retry-After` secondes ou relevez le budget. Les requêtes effectuées avec un jeton d’accès OAuth ne sont pas bloquées par les budgets de département. Si la vérification du budget est indisponible, la requête est autorisée.
+- Un budget de département épuisé renvoie `429` avec `key_limit_exceeded`, le motif `department_<interval>_cost_budget_reached`, `department_id`, `department_name` et `reset_at` ; attendez `Retry-After` secondes ou relevez le budget. Si la vérification du budget est indisponible, la requête est autorisée.
 - Les règles de dépenses qui bloquent renvoient `429` avec `spend_rule_blocked` ; attendez `Retry-After`, ou demandez à un propriétaire ou à un administrateur de lever le blocage. `x-phaseo-spend-warning` signifie qu’un blocage peut suivre.
 - Les politiques de limite de débit de l’espace de travail renvoient `429` avec `rate_limit_exceeded`, `policy_id` et `limit_scope`. `x-ratelimit-remaining-requests` est approximatif.
 - `Retry-After` peut être en secondes ou une date HTTP ; validez-le avant de planifier une nouvelle tentative. Ne soumettez jamais à nouveau une tâche vidéo ou par lots ambiguë ; vérifiez plutôt son état.

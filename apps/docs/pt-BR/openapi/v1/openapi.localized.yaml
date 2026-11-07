@@ -4878,7 +4878,7 @@ paths:
         - Gateway
       operationId: createDepartmentBudget
       summary: Create a department budget
-      description: Cria um orçamento de gastos diário, semanal ou mensal para um departamento. Quando o departamento o esgota, as solicitações com chave de API que contam para ele retornam 429 key_limit_exceeded até o orçamento ser redefinido. Solicitações feitas com um token de acesso OAuth não são bloqueadas. Se a verificação do orçamento ficar indisponível por um instante, as solicitações são permitidas em vez de recusadas. Proprietários e administradores recebem uma notificação push no celular em cerca de 80% e em 100%.
+      description: Cria um orçamento de gastos diário, semanal ou mensal para um departamento. Quando o departamento o esgota, as solicitações com chave de API que contam para ele retornam 429 key_limit_exceeded até o orçamento ser redefinido. Se a verificação do orçamento ficar indisponível por um instante, as solicitações são permitidas em vez de recusadas. Proprietários e administradores recebem uma notificação push no celular em cerca de 80% e em 100%.
       requestBody:
         required: true
         content:

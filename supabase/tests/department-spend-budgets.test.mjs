@@ -146,7 +146,7 @@ try {
     await db.exec(await read('../migrations/20261107015208_billing_cutoffs.sql'));
     for (const file of ['../schemas/private/functions/unbilled_spend.sql', '../schemas/private/functions/budget_spend_items.sql']) await db.exec(await read(file));
     await db.exec(await read('../schemas/public/functions/workspace_department_budget_status.sql'));
-    // And the current sweep (its 100% push names the one exception: OAuth access tokens).
+    // And the current sweep (its 100% push says the department's requests are refused).
     await db.exec(await read('../schemas/public/functions/sweep_department_budget_alerts.sql'));
     assert.match((await one(`select obj_description('public.workspace_department_budgets'::regclass, 'pg_class') c`)).c, /Budgets block the department's API-key requests/);
 
@@ -217,7 +217,7 @@ try {
     assert.deepEqual(await sweep(NOW), { budgets: 4, alerted: 2 });
     let sent = await events();
     assert.deepEqual(sent.map(e => [e.kind, e.title, e.body, e.href]).sort(), [
-        ['department_budget_reached', 'Sales has used its daily budget', "$11.00 of $10.00 so far today. The department's requests are now refused until the budget resets, except those made with an OAuth access token.", '/settings/usage/overview'],
+        ['department_budget_reached', 'Sales has used its daily budget', "$11.00 of $10.00 so far today. The department's requests are now refused until the budget resets.", '/settings/usage/overview'],
         ['department_budget_warning', 'Engineering is at about 80% of its monthly budget', '$84.00 of $100.00 so far this month.', '/settings/usage/overview'],
     ]);
     assert.ok(sent.every(e => e.dedupe_key.includes(':department_budget:')));
@@ -235,7 +235,7 @@ try {
     assert.deepEqual(await sweep(NOW), { budgets: 4, alerted: 1 });
     sent = await events();
     assert.equal(sent.at(-1).title, 'Engineering has used its monthly budget');
-    assert.equal(sent.at(-1).body, "$104.00 of $100.00 so far this month. The department's requests are now refused until the budget resets, except those made with an OAuth access token.");
+    assert.equal(sent.at(-1).body, "$104.00 of $100.00 so far this month. The department's requests are now refused until the budget resets.");
 
     // Raising the limit mid-period can warn again at the new limit.
     await db.exec(`update public.workspace_department_budgets set limit_nanos = ${125 * DOLLAR} where department_id = '${ENG}'`);

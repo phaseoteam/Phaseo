@@ -67,7 +67,7 @@ begin
               else d.name || ' is at about 80% of its ' || d.time_window || ' budget' end,
             'body', private.spend_limit_amount('cost', d.used) || ' of ' || private.spend_limit_amount('cost', d.limit_value)
               || d.so_far
-              || case when d.kind = 'department_budget_reached' then ' The department''s requests are now refused until the budget resets, except those made with an OAuth access token.' else '' end,
+              || case when d.kind = 'department_budget_reached' then ' The department''s requests are now refused until the budget resets.' else '' end,
             'href', '/settings/usage/overview'
           ),
           'departmentBudgetId', d.budget_id, 'window', d.time_window, 'metric', 'cost',

@@ -1,7 +1,6 @@
 // Department spend budgets. Once a department's budget is used, the gateway refuses
-// the requests, holds and realtime sessions of the keys that count toward it
-// (requests made with an OAuth access token carry no key, so they neither count nor
-// are refused). The spend-limit coordinator reseeds budgets from
+// the requests, holds and realtime sessions of the keys that count toward it,
+// OAuth-delegated keys included. The spend-limit coordinator reseeds budgets from
 // gateway_spend_limit_seed about every minute, so changes here need no cache
 // invalidation. The 15-minute sweep (sweep_department_budget_alerts) pushes owners
 // and admins at about 80% and 100%. Spend shown here comes from

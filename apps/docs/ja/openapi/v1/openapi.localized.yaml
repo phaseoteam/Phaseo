@@ -4878,7 +4878,7 @@ paths:
         - Gateway
       operationId: createDepartmentBudget
       summary: Create a department budget
-      description: 1 つの部門に日次、週次、または月次の支出予算を作成します。部門が予算を使い切ると、その部門に計上される API キーのリクエストは、予算がリセットされるまで 429 key_limit_exceeded を返します。OAuth アクセストークンで行うリクエストはブロックされません。予算のチェックが一時的に利用できない場合、リクエストは拒否されずに許可されます。約 80% と 100% に達すると、オーナーと管理者にモバイルのプッシュ通知が届きます。
+      description: 1 つの部門に日次、週次、または月次の支出予算を作成します。部門が予算を使い切ると、その部門に計上される API キーのリクエストは、予算がリセットされるまで 429 key_limit_exceeded を返します。予算のチェックが一時的に利用できない場合、リクエストは拒否されずに許可されます。約 80% と 100% に達すると、オーナーと管理者にモバイルのプッシュ通知が届きます。
       requestBody:
         required: true
         content:
