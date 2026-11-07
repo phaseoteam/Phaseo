@@ -208,7 +208,7 @@ begin
           where pending.workspace_id = gr.workspace_id
             and pending.billing_request_id = gr.billing_request_id
             and (pending.expected_cost_nanos is not null
-              or (pending.created_at < private.pending_json_cutoff()
+              or (pending.created_at < (select private.pending_json_cutoff())
                 and pending.detail_metadata #>> '{accounting_finalization,billing_status}' = 'pending_reconciliation'))
         ) and exists (
           select 1 from public.gateway_request_charges charge
@@ -268,7 +268,7 @@ begin
           where pending.workspace_id = charge.workspace_id
             and pending.billing_request_id = charge.request_id
             and (pending.expected_cost_nanos is not null
-              or (pending.created_at < private.pending_json_cutoff()
+              or (pending.created_at < (select private.pending_json_cutoff())
                 and pending.detail_metadata #>> '{accounting_finalization,billing_status}' = 'pending_reconciliation'))
         ))
         and not exists (

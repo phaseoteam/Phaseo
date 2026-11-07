@@ -358,7 +358,7 @@ try {
   // expected_cost_nanos: the JSON billing_status is read strictly before it. The marker is moved to
   // an hour ago for this check.
   const shipped = normalize(migration.sql);
-  assert.equal(shipped.split('pending.created_at < private.pending_json_cutoff()').length - 1, 2,
+  assert.equal(shipped.split('pending.created_at < (select private.pending_json_cutoff())').length - 1, 2,
     'both JSON-pending lookups apply the cutoff');
   assert(!/2026-11-09/.test(shipped), 'no fixed date');
   const deployed = await marker();
