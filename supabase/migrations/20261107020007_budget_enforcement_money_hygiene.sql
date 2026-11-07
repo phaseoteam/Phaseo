@@ -558,7 +558,7 @@ GRANT EXECUTE ON FUNCTION "private"."department_budget_usage"(uuid, uuid, text[]
 CREATE OR REPLACE FUNCTION private.workspace_budget_status (
   p_workspace_id           uuid,
   p_requested_amount_nanos bigint DEFAULT 0,
-  p_exclude_charge_ids     text[] DEFAULT '{}'::text[]
+  p_exclude_ids            text[] DEFAULT '{}'::text[]
 )
   RETURNS jsonb
   LANGUAGE plpgsql
@@ -609,8 +609,8 @@ begin
       p_workspace_id,
       (select case when bool_or(configured.window_start is null) then null else min(configured.window_start) end from configured),
       null::uuid[],
-      '{}'::text[],
-      p_exclude_charge_ids
+      p_exclude_ids,
+      p_exclude_ids
     ) item
     where exists (select 1 from configured)
   ), usage_rows as (
@@ -675,7 +675,7 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[]) IS 'Workspace budgets with usage this UTC period (private.budget_spend_items), for gateway_workspace_budget_status and gateway_spend_limit_seed. p_exclude_charge_ids leaves out charge rows (by billing request id) of admissions the SpendLimit Durable Object holds; request rows are not excluded here (the Durable Object stops counting those once the seed reports them).';
+COMMENT ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[]) IS 'Workspace budgets with usage this UTC period (private.budget_spend_items), for gateway_workspace_budget_status and gateway_spend_limit_seed. p_exclude_ids are the request ids and billing ids of admissions the SpendLimit Durable Object holds: their request rows and charge rows are left out, as for department and key usage, because the Durable Object counts them from memory until a seed that does not exclude them is published.';
 
 REVOKE ALL ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[]) FROM PUBLIC;
 
@@ -830,7 +830,8 @@ begin
   -- p_exclude_request_ids is the SpendLimit Durable Object's spend still counted from memory: for
   -- each admission it holds, its request id and its billing request id. gateway_requests rows are
   -- skipped by request_id and charge rows (gateway_request_charges, their adjustment ledger rows)
-  -- by billing request id, in key and department usage; workspace budgets skip only charge rows.
+  -- by billing request id, in key, department and workspace usage alike: the Durable Object counts
+  -- each held admission from memory until a seed that does not exclude it is published.
   if cardinality(v_exclude) > 5000 then
     raise exception using errcode = '22023', message = 'too_many_excluded_request_ids';
   end if;
