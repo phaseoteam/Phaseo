@@ -576,12 +576,15 @@ export function settleEnforcedSpend(args: {
 	requestId: string;
 	costNanos: number;
 	internal?: boolean;
-	/** A stream charged at drain checkpoints: the cost replaces what the checkpoints recorded. */
+	/**
+	 * The cost is the request's final charged total: a stream charged at drain checkpoints (it
+	 * replaces what they recorded), or a one-off charge pending reconciliation.
+	 */
 	replace?: boolean;
 }): void {
 	try {
-		// A stepped charge exists in the database whether or not the request row was written, and
-		// the checkpoints already recorded it: settle it to its final amount rather than release.
+		// A stepped or pending charge exists in the database whether or not the request row was
+		// written: settle it to its final amount rather than release.
 		if (!args.rowWritten && !args.replace) {
 			releaseSpend(args.admission);
 			return;

@@ -145,6 +145,17 @@ describe("failed requests that were still charged", () => {
 			expect(budget.recorded.get("bill_unreadable")).toBe(300);
 		});
 
+		it("counts a committed one-off debit even when its failure row is not written", async () => {
+			auditFailureMock.mockRejectedValueOnce(new Error("insert failed"));
+			const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+			const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+			await finalizationFailed("lost_row", { uncollected: 300, confirmed: 300 });
+			error.mockRestore();
+			warn.mockRestore();
+			expect(budget.recorded.get("bill_lost_row")).toBe(300);
+			expect(budget.open.size).toBe(0);
+		});
+
 		it("keeps a 300 checkpoint charge when the stream's refund to 0 did not go through", async () => {
 			budget.recorded.set("bill_refund_failed", 300);
 			const row = await finalizationFailed("refund_failed", { uncollected: 0, confirmed: 300 }, { __chargedInSteps: true });

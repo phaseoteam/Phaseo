@@ -476,6 +476,10 @@ export async function handleFailureAudit(
         onDeliveryFailure: emitGatewayTelemetryDeliveryFailure,
     }).then((deliveries) => {
         if (!settleBilledSpend) return;
+        // A one-off charge pending reconciliation settles like a stepped request's final: its debit
+        // may have committed with or without this row, and the coordinator holds it under both its
+        // request and billing ids, so the seed does not also count its charge row.
+        const settleAsFinal = chargedInSteps || pending.expectedCostNanos != null;
         settleEnforcedSpend({
             admission: ctx.spendAdmission,
             rowWritten: deliveries.some((delivery) => delivery.sink === "supabase" && delivery.delivered),
@@ -485,7 +489,7 @@ export async function handleFailureAudit(
             requestId: ctx.requestId,
             costNanos: spendNanos,
             internal: ctx.internal,
-            ...(chargedInSteps ? { replace: true } : {}),
+            ...(settleAsFinal ? { replace: true } : {}),
         });
     }).finally(() => releaseRuntime?.());
     dispatchBackground(telemetry);
