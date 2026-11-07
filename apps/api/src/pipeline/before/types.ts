@@ -67,6 +67,18 @@ export type GateCheck = {
         windowStart: string | null;
         resetAt: string | null;
     }> | null;
+    /** Department budgets the key counts toward (gateway_department_budget_status), even below their limit. */
+    departmentBudgets?: Array<{
+        id: string;
+        departmentId: string;
+        departmentName: string | null;
+        interval: "daily" | "weekly" | "monthly";
+        limitNanos: number;
+        usageNanos: number;
+        exceeded: boolean;
+        windowStart: string | null;
+        resetAt: string | null;
+    }> | null;
 };
 
 /**
@@ -720,6 +732,20 @@ export type PipelineContext = {
     capability: string;
     /** Server-owned idempotency key for this billable pipeline execution. */
     billingRequestId: string;
+    /**
+     * The bill a delivered request meant to charge when every charge attempt failed (one-off or a
+     * stepped request's final total). Its failure row records it as expected_cost_nanos; spend limits
+     * count it as if it had been charged.
+     */
+    uncollectedChargeNanos?: number;
+    /**
+     * What the database holds as charged for this request after those attempts failed (read back
+     * from gateway_request_charges: a debit can commit while every response is lost). The failure
+     * row records it as cost_nanos. Null when it could not be read.
+     */
+    confirmedChargeNanos?: number | null;
+    /** Where confirmedChargeNanos came from: the charge row, or the last checkpoint sent. */
+    confirmedChargeSource?: "database" | "last_checkpoint";
     requestId: string;
     protocol?: string;
     providerCapabilitiesBeta?: boolean;

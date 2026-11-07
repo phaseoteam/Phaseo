@@ -2,7 +2,8 @@ CREATE OR REPLACE FUNCTION public.gateway_charge_with_credit_cache (
   p_workspace_id                  uuid,
   p_request_id                    text,
   p_cost_nanos                    bigint,
-  p_credit_snapshot_balance_nanos bigint DEFAULT NULL::bigint
+  p_credit_snapshot_balance_nanos bigint DEFAULT NULL::bigint,
+  p_key_id                        uuid   DEFAULT NULL::uuid
 )
   RETURNS jsonb
   LANGUAGE plpgsql
@@ -18,7 +19,7 @@ begin
   -- A successful debit holds its wallet row lock until this transaction ends.
   select to_jsonb(charged) into v_result
   from public.gateway_deduct_and_check_top_up_once(
-    p_workspace_id, p_request_id, p_cost_nanos
+    p_workspace_id, p_request_id, p_cost_nanos, p_key_id
   ) as charged;
 
   if v_result is null then raise exception 'gateway_charge_result_missing'; end if;
@@ -67,10 +68,10 @@ begin
 end;
 $function$;
 
-GRANT EXECUTE ON FUNCTION "public"."gateway_charge_with_credit_cache"(uuid, text, bigint, bigint) TO "service_role";
+GRANT EXECUTE ON FUNCTION "public"."gateway_charge_with_credit_cache"(uuid, text, bigint, bigint, uuid) TO "service_role";
 
-REVOKE ALL ON FUNCTION "public"."gateway_charge_with_credit_cache"(uuid, text, bigint, bigint) FROM "postgres";
+REVOKE ALL ON FUNCTION "public"."gateway_charge_with_credit_cache"(uuid, text, bigint, bigint, uuid) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."gateway_charge_with_credit_cache"(uuid, text, bigint, bigint) TO "postgres";
+GRANT EXECUTE ON FUNCTION "public"."gateway_charge_with_credit_cache"(uuid, text, bigint, bigint, uuid) TO "postgres";
 
-REVOKE ALL ON FUNCTION "public"."gateway_charge_with_credit_cache"(uuid, text, bigint, bigint) FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."gateway_charge_with_credit_cache"(uuid, text, bigint, bigint, uuid) FROM PUBLIC, "anon", "authenticated";

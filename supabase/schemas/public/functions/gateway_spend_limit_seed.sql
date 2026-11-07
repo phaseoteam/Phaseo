@@ -1,7 +1,8 @@
 CREATE OR REPLACE FUNCTION public.gateway_spend_limit_seed (
   p_workspace_id        uuid,
   p_key_ids             uuid[],
-  p_exclude_request_ids text[] DEFAULT '{}'::text[]
+  p_exclude_request_ids text[] DEFAULT '{}'::text[],
+  p_contract_version    integer DEFAULT 1
 )
   RETURNS jsonb
   LANGUAGE plpgsql
@@ -28,6 +29,18 @@ begin
   if cardinality(v_key_ids) > 100 then
     raise exception using errcode = '22023', message = 'too_many_key_ids';
   end if;
+  -- p_exclude_request_ids is the SpendLimit Durable Object's spend still counted from memory: for
+  -- each admission it holds, its request id and its billing request id. gateway_requests rows are
+  -- skipped by request_id and charge rows (gateway_request_charges, their adjustment ledger rows)
+  -- by billing request id in key and department usage.
+  --
+  -- p_contract_version says how the calling coordinator treats a held admission whose audit row
+  -- this seed reports in excluded_rows:
+  -- * 1 (the coordinator on main, and any caller that does not send it): it stops counting the
+  --   admission in workspace budgets at once, so workspace usage here leaves out only its charge
+  --   rows and counts its request row.
+  -- * 2 (fix/async-billing-20261104's coordinator): it keeps counting the admission until a seed
+  --   that does not exclude it is published, so workspace usage leaves out its request row too.
   if cardinality(v_exclude) > 5000 then
     raise exception using errcode = '22023', message = 'too_many_excluded_request_ids';
   end if;
@@ -48,18 +61,15 @@ begin
   ), usage as (
     select
       gr.key_id,
-      count(*) filter (where gr.created_at >= day_start)                                  as used_day_reqs,
-      count(*) filter (where gr.created_at >= week_start)                                 as used_wk_reqs,
-      count(*) filter (where gr.created_at >= month_start)                                as used_mo_reqs,
-      coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= day_start), 0)::bigint   as used_day_cost,
-      coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= week_start), 0)::bigint  as used_wk_cost,
-      coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= month_start), 0)::bigint as used_mo_cost
-    from public.gateway_requests gr
-    where gr.key_id = any(array(select key_rows.id from key_rows where key_rows.limited))
-      and gr.workspace_id = p_workspace_id
-      and gr.success is true
-      and gr.created_at >= least(week_start, month_start)
-      and not (gr.request_id = any(v_exclude))
+      count(*) filter (where gr.served and gr.at >= day_start)                    as used_day_reqs,
+      count(*) filter (where gr.served and gr.at >= week_start)                   as used_wk_reqs,
+      count(*) filter (where gr.served and gr.at >= month_start)                  as used_mo_reqs,
+      coalesce(sum(gr.nanos) filter (where gr.at >= day_start), 0)::bigint   as used_day_cost,
+      coalesce(sum(gr.nanos) filter (where gr.at >= week_start), 0)::bigint  as used_wk_cost,
+      coalesce(sum(gr.nanos) filter (where gr.at >= month_start), 0)::bigint as used_mo_cost
+    -- The limited keys' usage (private.key_spend_items), less the admissions the coordinator holds.
+    from private.key_spend_items(p_workspace_id, least(week_start, month_start),
+      array(select key_rows.id from key_rows where key_rows.limited), v_exclude, v_exclude) gr
     group by gr.key_id
   )
   select coalesce(jsonb_agg(jsonb_build_object(
@@ -82,52 +92,24 @@ begin
   from key_rows
   left join usage on usage.key_id = key_rows.id;
 
-  -- Department budgets with their usage this UTC period, counted like key usage (successful
-  -- gateway_requests rows of the department's keys, less excluded request ids), and every key
-  -- that counts toward each department (private.department_budget_key_departments).
+  -- Department budgets with their usage this UTC period and every key that counts toward each
+  -- department, from private.department_budget_usage, the calculation gateway_department_budget_status
+  -- admits holds with: positive-cost requests of the department's keys (less excluded request ids)
+  -- plus their outstanding batch, video and realtime holds and unbilled spend.
   if exists (select 1 from public.workspace_department_budgets b where b.workspace_id = p_workspace_id) then
-    with department_keys as (
-      select kd.key_id, kd.department_id
-      from private.department_budget_key_departments(p_workspace_id) kd
-    ), budgets as (
-      select b.id, b.department_id, d.name as department_name, b.interval, b.limit_nanos, p.period_start, p.reset_at
-      from public.workspace_department_budgets b
-      join public.workspace_departments d on d.id = b.department_id
-      cross join lateral private.spend_limit_period(b.interval, now()) p
-      where b.workspace_id = p_workspace_id
-    ), spend as (
-      select gr.key_id, gr.created_at, coalesce(gr.cost_nanos, 0) as cost_nanos
-      from public.gateway_requests gr
-      where gr.key_id in (select department_keys.key_id from department_keys)
-        and gr.workspace_id = p_workspace_id
-        and gr.success is true
-        and gr.created_at >= (select min(budgets.period_start) from budgets)
-        and not (gr.request_id = any(v_exclude))
-    ), usage as (
-      select budgets.id, coalesce(sum(spend.cost_nanos), 0)::bigint as usage_nanos
-      from budgets
-      left join department_keys on department_keys.department_id = budgets.department_id
-      left join spend on spend.key_id = department_keys.key_id and spend.created_at >= budgets.period_start
-      group by budgets.id
-    )
     select coalesce(jsonb_agg(jsonb_build_object(
-      'id', budgets.id,
-      'department_id', budgets.department_id,
-      'department_name', budgets.department_name,
-      'interval', budgets.interval,
-      'limit_nanos', budgets.limit_nanos,
+      'id', usage.id,
+      'department_id', usage.department_id,
+      'department_name', usage.department_name,
+      'interval', usage.budget_interval,
+      'limit_nanos', usage.limit_nanos,
       'usage_nanos', usage.usage_nanos,
-      'window_start', budgets.period_start,
-      'reset_at', budgets.reset_at,
-      'key_ids', coalesce((
-        select jsonb_agg(department_keys.key_id order by department_keys.key_id)
-        from department_keys
-        where department_keys.department_id = budgets.department_id
-      ), '[]'::jsonb)
-    ) order by budgets.department_id, budgets.interval), '[]'::jsonb)
+      'window_start', usage.period_start,
+      'reset_at', usage.reset_at,
+      'key_ids', to_jsonb(usage.key_ids)
+    ) order by usage.department_id, usage.budget_interval), '[]'::jsonb)
     into v_departments
-    from budgets
-    join usage on usage.id = budgets.id;
+    from private.department_budget_usage(p_workspace_id, null, v_exclude) usage;
   end if;
 
   -- Excluded requests that are already persisted, so the caller can stop
@@ -153,19 +135,20 @@ begin
     'week_start', to_jsonb(week_start),
     'month_start', to_jsonb(month_start),
     'keys', v_keys,
-    'budget_status', public.gateway_workspace_budget_status(p_workspace_id, 0),
+    'budget_status', private.workspace_budget_status(p_workspace_id, 0,
+      case when coalesce(p_contract_version, 1) >= 2 then v_exclude else '{}'::text[] end, v_exclude),
     'excluded_rows', v_excluded,
     'department_budgets', v_departments
   );
 end;
 $function$;
 
-GRANT EXECUTE ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[]) TO "service_role";
+GRANT EXECUTE ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[], integer) TO "service_role";
 
-COMMENT ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[]) IS 'Seeds the gateway spend-limit coordinator: per-key day/week/month usage with the request-context windows and filters (excluding already-recorded request ids), plus workspace budget status and department budgets with their usage and keys.';
+COMMENT ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[], integer) IS 'Seeds the gateway spend-limit coordinator: per-key day/week/month usage with the request-context windows and filters (excluding already-recorded request ids), plus workspace budget status and department budgets with their usage and keys. p_contract_version (default 1) selects how workspace usage treats held admissions: see the function body.';
 
-REVOKE ALL ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[]) FROM "postgres";
+REVOKE ALL ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[], integer) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[]) TO "postgres";
+GRANT EXECUTE ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[], integer) TO "postgres";
 
-REVOKE ALL ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[]) FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[], integer) FROM PUBLIC, "anon", "authenticated";

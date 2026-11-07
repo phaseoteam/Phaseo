@@ -33,7 +33,11 @@ assert.deepEqual(migrationNames.map((name) => name.replace(/^\d+_/, '')), ['enfo
 const migrationName = migrationNames[0];
 const migrationFiles = await Promise.all(migrationNames.map(async (name) => normalize(await read(`../migrations/${name}`))));
 const migration = migrationFiles.join('\n');
-assert(migrationNames[0] > migrations.filter((name) => !migrationNames.includes(name)).sort().at(-1), 'the migration files are the newest');
+// Its files run together, after every migration that was on main before it (the OAuth client
+// policies hotfix, 20261107010450, was the latest); later migrations may follow them.
+const others = migrations.filter((name) => !migrationNames.includes(name)).sort();
+assert(migrationNames[0] > '20261107010450', 'the migration files run after the OAuth client policies hotfix');
+assert(!others.some((name) => name > migrationNames[0] && name < migrationNames.at(-1)), 'no other migration runs between its files');
 
 // Lock plan: each file starts with a lock timeout and locks at most one table strongly. Functions take
 // no table locks; the policies lock only workspace_members; the index locks only workspace_settings.

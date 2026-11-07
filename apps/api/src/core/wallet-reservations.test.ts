@@ -51,6 +51,12 @@ describe("wallet reservation RPC compatibility", () => {
 		expect(noteSpendLimitReachedMock.mock.calls).toEqual([[{ workspaceId: "ws_1", keyId: "key_1", reason: "workspace_monthly_cost_budget_reached" }]]);
 	});
 
+	it("keeps a department budget refusal as its own status", async () => {
+		rpcMock.mockResolvedValueOnce({ data: [{ ok: false, applied: false, reason: "department_weekly_cost_budget_reached", amount_nanos: 5 }], error: null });
+		const refused = await reserveWalletCredits({ workspaceId: "ws_1", reservationId: "batch_hold:1", amountNanos: 5, keyId: "key_1", requestCount: 1 });
+		expect(refused).toMatchObject({ applied: false, status: "department_weekly_cost_budget_reached" });
+	});
+
 	it("retries reserve calls against legacy p_team_id signatures", async () => {
 		rpcMock
 			.mockResolvedValueOnce({

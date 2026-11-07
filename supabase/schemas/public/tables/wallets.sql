@@ -69,7 +69,7 @@ COMMENT ON COLUMN "public"."wallets"."auto_top_up_account_id" IS 'Stripe account
 
 REVOKE ALL ON TABLE "public"."wallets" FROM "anon";
 
-GRANT DELETE, MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."wallets" TO "anon";
+GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."wallets" TO "anon";
 
 REVOKE ALL ON TABLE "public"."wallets" FROM "authenticated";
 

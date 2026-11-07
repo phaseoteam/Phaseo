@@ -149,6 +149,7 @@ export type RequestMeta = {
     // Internal: the latest round read to the end, from its first output to its end; null when it had no output.
     lastProviderRoundSpeedWindow?: { durationMs: number | null; outputTokens: number; reasoningTokens?: number | null; arrivals?: number | null } | null;
     downstreamDisconnected?: boolean; // Client closed the response while the gateway continued draining upstream
+    upstreamStreamBroken?: boolean; // The upstream body errored (connection reset) before the stream ended
     streamCancellationSupport?: "supported" | "unsupported" | "unknown";
     streamProviderBillingOnCancel?: "stops" | "unknown";
     streamDisconnectAction?: "cancel_upstream" | "drain_upstream";
